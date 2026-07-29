@@ -40,22 +40,23 @@ function slotSpawned(i, type) {
 
 function hideSlot(i) { bulletMesh.setMatrixAt(i, HIDE); }
 
+// map (s,y) onto the tower for one live slot: position + scale only for the
+// uniform spheres, no yaw/quaternion work
 function syncSlot(i, b) {
-    // work. Only L (stretched bolt) and F (flattened crawler) compose.
-    const bp = polyAt(SEGS, b.x, _pp);
-    const def = CONFIG.weapons[b.type];
-    if (b.type === 'L' || b.type === 'F') {
-      _bs.fromArray(b.crawling ? def.crawlScale : def.scale);
-      const yaw = yawAt(SEGS, b.x, YAWB);
-      const ang = b.crawling ? 0 : Math.atan2(b.vy, b.vx);
-      _bq.setFromEuler(_be.set(0, yaw, ang, 'YZX'));
-      _bm.compose(_bv.set(bp.x, b.y, bp.z), _bq, _bs);
-    } else {
-      const s = def.scale[0];
-      _bm.makeScale(s, s, s);
-      _bm.setPosition(bp.x, b.y, bp.z);
-    }
-    bulletMesh.setMatrixAt(i, _bm);
+  const bp = polyAt(SEGS, b.x, _pp);
+  const def = CONFIG.weapons[b.type];
+  if (b.type === 'L' || b.type === 'F') {
+    _bs.fromArray(b.crawling ? def.crawlScale : def.scale);
+    const yaw = yawAt(SEGS, b.x, YAWB);
+    const ang = b.crawling ? 0 : Math.atan2(b.vy, b.vx);
+    _bq.setFromEuler(_be.set(0, yaw, ang, 'YZX'));
+    _bm.compose(_bv.set(bp.x, b.y, bp.z), _bq, _bs);
+  } else {
+    const s = def.scale[0];
+    _bm.makeScale(s, s, s);
+    _bm.setPosition(bp.x, b.y, bp.z);
+  }
+  bulletMesh.setMatrixAt(i, _bm);
 }
 
 function flush() { bulletMesh.instanceMatrix.needsUpdate = true; }

@@ -31,32 +31,50 @@ import {
   buildSpawnTable,
 } from '../src/pure/generator.js';
 
-/* ---------------------- purity guard (static) ----------------------- *
- * The pure layer must stay runnable with zero three.js/DOM surface and
- * must not reach into src/sim, src/render, or src/ui — that is what makes
- * it testable here and safe to import from a Node bot harness.        */
+/* ---------------------- layer guards (static) ------------------------ *
+ * The pure layer must stay runnable with zero three.js/DOM surface and must
+ * not reach into src/sim, src/render, or src/ui — that is what makes it
+ * testable here. The sim layer carries the same no-renderer rule (it may use
+ * src/pure, src/config.js and src/mode.js): it is what lets a Node bot
+ * harness import and step the whole simulation with no browser. Comments are
+ * stripped first, so prose may still name three.js or the DOM.          */
 const here = dirname(fileURLToPath(import.meta.url));
-const pureDir = join(here, '..', 'src', 'pure');
-const pureFiles = [
-  join(here, '..', 'src', 'config.js'),
-  ...readdirSync(pureDir).filter((f) => f.endsWith('.js')).map((f) => join(pureDir, f)),
-];
+const srcDir = join(here, '..', 'src');
+const layerFiles = (name) =>
+  readdirSync(join(srcDir, name)).filter((f) => f.endsWith('.js')).map((f) => join(srcDir, name, f));
+
 const banned = /\b(THREE|document|window|renderer|scene|addEventListener|requestAnimationFrame|innerWidth|innerHeight|devicePixelRatio|performance)\b/;
-for (const file of pureFiles) {
-  const src = readFileSync(file, 'utf8');
-  const hit = src.match(banned);
-  if (hit) {
-    console.error('pathcheck: forbidden reference in ' + file + ': ' + hit[0]);
-    process.exit(1);
-  }
-  for (const m of src.matchAll(/^\s*(?:import|export)[^'"]*from\s*['"]([^'"]+)['"]/gm)) {
-    const spec = m[1];
-    if (spec !== '../config.js' && !/^\.\/[\w-]+\.js$/.test(spec)) {
-      console.error('pathcheck: pure module ' + file + ' imports outside the pure layer: ' + spec);
+const stripComments = (src) =>
+  src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ').replace(/\/\/[^\n'"`]*$/gm, ' ');
+
+function guardLayer(label, files, allowed) {
+  for (const file of files) {
+    const src = readFileSync(file, 'utf8');
+    const hit = stripComments(src).match(banned);
+    if (hit) {
+      console.error('pathcheck: forbidden ' + label + ' reference in ' + file + ': ' + hit[0]);
       process.exit(1);
+    }
+    for (const m of src.matchAll(/^\s*(?:import|export)[^'"]*from\s*['"]([^'"]+)['"]/gm)) {
+      if (!allowed(m[1])) {
+        console.error('pathcheck: ' + label + ' module ' + file + ' imports across its layer: ' + m[1]);
+        process.exit(1);
+      }
     }
   }
 }
+
+guardLayer(
+  'pure',
+  [join(srcDir, 'config.js'), ...layerFiles('pure')],
+  (spec) => spec === '../config.js' || /^\.\/[\w-]+\.js$/.test(spec),
+);
+guardLayer(
+  'sim',
+  layerFiles('sim'),
+  (spec) => spec === '../config.js' || spec === '../mode.js' ||
+    /^\.\/[\w-]+\.js$/.test(spec) || /^\.\.\/pure\/[\w-]+\.js$/.test(spec),
+);
 
 /* ===================== pathcheck test suite ====================== */
 let fails = 0, passes = 0;

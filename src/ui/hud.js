@@ -1,4 +1,4 @@
-/* =============================== UI =============================== */
+/* ============================== HUD =============================== */
 /* The four corner readouts and the control legend. Reads sim state only —
    no HUD element is ever a source of truth. */
 
