@@ -3,7 +3,8 @@
  *  Scope: player controller, forced scroll, one enemy (wasp), shooting,
  *  polygonal tower (polyline rendering, wave gates, corner ritual).
  *  Later passes: retune, layout richness, weapons, enemy roster, boss,
- *  flight segment, juice, menus, audio. Sections receive them below.
+ *  flight segment, juice, menus, audio. The modules under src/ receive
+ *  them — one lane per file.
  * ================================================================== */
 /* This module is the composition root: it wires input, the frame loop, the
    run lifecycle (resetGame), the browser self-test, and the read-only
@@ -48,6 +49,8 @@ import {
   calibrateEdges, handleResize, resetCameraYaw, syncCamera,
 } from './render/camera.js';
 import { clearCorpses, updateCorpses } from './render/hostiles.js';
+// imported for their side effects: each builds its meshes and installs its
+// half of the view bridge as it loads, before anything below runs
 import './render/level.js';
 import './render/player.js';
 import './render/capsules.js';
