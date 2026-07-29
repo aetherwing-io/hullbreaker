@@ -69,12 +69,28 @@ single jump clears +2, double clears +3. Current speeds: scroll 4.2, run 9.4.
 All constants in `CONFIG`; jump/tier/gap relationships are asserted by
 `tools/pathcheck.mjs` so retunes can't silently break traversal.
 
+## Weapons (shipped)
+
+Letter capsules drift from destroyed carrier drones (one carrier per face,
+mid-face, deterministic). Drop order: the four letters seeded-shuffled,
+then rare gold modifier capsules. R rifle / S spread (5-way) / L laser
+(piercing, stretched bolt) / H homing (2 seeking darts) / F flame (lobbed,
+then crawls the deck hugging terrain, dies at gaps). One instanced pool;
+per-type color/scale/behavior. On taking a hit the capsule pops out toward
+the threat — recatch within 2.2s or you're back on the rifle. Death resets
+to rifle and clears modifiers.
+
+Modifiers (timed, stackable): RAGE 10s 2× fire rate + red tint · GHOST
+SQUAD 12s, two spectral clones replay your shots at 0.5s/1.0s delay ·
+ORBITAL LANCE 1s telegraph beam then a screen-clearing strike (killed
+carriers still drop!) · CHRONO 4s, world at 0.35× while the player and
+their bullets run full speed (world timers stay realtime — known, small
+simplification).
+
 ## Build order (remaining)
 
-1. **Weapons**: letter capsules from carrier drones — R rifle / S spread /
-   L laser / H homing / F flame; capsule pops out on hit, ~2s recatch.
-   Stackable rare modifiers: RAGE, GHOST SQUAD, ORBITAL LANCE, CHRONO.
-2. **Enemy roster**: polyp turret, houndframe charger, carrier, spore mortar.
+2. **Enemy roster**: polyp turret, houndframe charger, spore mortar
+   (carrier shipped early with the weapons pass).
 3. **Boss**: THE IMMUNE HEART — three phases, hit-stop transitions.
 4. **Flight interlude**: ~60s vertical shooter up the spine shaft.
 5. **Juice**: trauma shake, hit-stop, muzzle lights, particles, tracers,

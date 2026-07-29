@@ -45,16 +45,23 @@ Implemented:
 - Forced scroll with left-edge damage plane, wave gates, corner rituals
 - Pattern-chunk level generator (stairs, gap-hops, plateaus, trenches,
   island-hops, ridges) with three vertical tiers of one-way catwalks
-- One enemy (wasp drone: sine cruise + dive) with escalating per-wave
-  spawn composition, keyed to scroll distance
+- Two enemies: wasp drone (sine cruise + dive) with escalating per-wave
+  spawn composition, and the carrier drone (one per face) that drops a
+  letter capsule when killed
+- Full weapon system: R rifle / S spread / L laser (piercing) / H homing
+  swarm / F flame wave (ground-crawling); taking a hit pops your capsule
+  out for a ~2.2s recatch window, classic style
+- Rare stackable modifiers from late carriers: RAGE (2× fire rate),
+  GHOST SQUAD (two clones replay your shots on delay), ORBITAL LANCE
+  (telegraphed screen clear), CHRONO (world at 0.35×, you at full speed)
 - Mock-3D enemy presence: enemies materialize out of the tower depth,
   breathe on the depth axis while alive, and dissolve back on death —
   collision is strictly 2D and only while fully materialized
 - Pooled instanced bullets, instanced tiles, seeded/deterministic sim
 
-Not yet built (in build order): weapon letters + modifiers, the full enemy
-roster, the boss, the flight interlude, juice pass (shake/hit-stop/
-particles), menus, WebAudio synth. See `docs/DESIGN.md`.
+Not yet built (in build order): the remaining enemy roster (polyp turret,
+houndframe, spore mortar), the boss, the flight interlude, juice pass
+(shake/hit-stop/particles), menus, WebAudio synth. See `docs/DESIGN.md`.
 
 ## Architecture
 

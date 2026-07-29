@@ -36,6 +36,7 @@
 </script>
 </head>
 <body>
+<div id="tint" style="position:fixed;inset:0;z-index:5;pointer-events:none;background:transparent;"></div>
 <div id="hudTL" class="hud"></div>
 <div id="hudTC" class="hud"></div>
 <div id="hudTR" class="hud"></div>
@@ -108,7 +109,35 @@ const CONFIG = {
   },
 
   rifle: { fireRateMs: 130, speed: 26, lifeMs: 1100, radius: 0.16, damage: 1 },  // fat tracer for the pulled-back
-                                             // view; bullet-vs-wasp test stays 0.55 in updateBullets
+                                             // view; wasp hit radius lives on the entity (hitR)
+
+  weapons: {                   // letter weapons; R = rifle (stats above)
+    S: { name: 'SPREAD', fireRateMs: 240, speed: 23, damage: 1, lifeMs: 900, count: 5, arcDeg: 48 },
+    L: { name: 'LASER',  fireRateMs: 300, speed: 40, damage: 2, lifeMs: 800, pierce: true },
+    H: { name: 'HOMING', fireRateMs: 260, speed: 18, damage: 1, lifeMs: 1600, count: 2,
+         splayDeg: 24, turnRate: 7, seekRange: 14 },
+    F: { name: 'FLAME',  fireRateMs: 300, speed: 13, damage: 1, lifeMs: 1500, pierce: true,
+         crawlSpeed: 10, dropAccel: -40 },
+  },
+
+  capsules: {                  // pickups: letters (magenta) + rare modifiers (gold)
+    driftSpeed: 1.6, sinkSpeed: 0.35, bobAmp: 0.5, bobFreq: 2.0, size: 0.55,
+    recatchMs: 2200, blinkLastMs: 800,           // dropped-on-hit recatch timer
+    popVx: 3.5, popVy: 9, gravity: -22,
+    pickupRadius: 0.95,
+  },
+
+  carrier: {                   // capsule delivery drone — the only new enemy this pass
+    hp: 10, speed: 1.1, bobAmp: 0.4, bobFreq: 1.4, hitRadius: 1.0, laneAbove: 4.5,
+    perFaceFrac: [0.45, 0.4, 0.5, 0.42, 0.55, 0.38],   // one per face, mid-face (clear of corner zones)
+  },
+
+  mods: {                      // rare stackable modifiers (carrier drops 5+)
+    rageMs: 10000, rageFireMult: 0.5,            // RG: 2× fire rate + red tint
+    ghostMs: 12000, ghostDelayMs: [500, 1000],   // GS: two clones replay your shots
+    chronoMs: 4000, chronoScale: 0.35,           // CH: world slow, player full speed
+    lanceTelegraphMs: 1000, lanceFlashMs: 280,   // OL: telegraph, then screen clear
+  },
   wasp: {
     hp: 4, cruiseSpeed: 2.0, bobFreq: 3.0, bobAmp: 0.9,
     diveRange: 6.5, diveSpeed: 10, diveMs: 700, diveCooldownMs: 1800,
@@ -151,6 +180,8 @@ const CONFIG = {
   palette: {                    // grey-box: neutral + readability hints
     bg: 0x232830, ground: 0x767c85, groundAlt: 0x6a707a, catwalk: 0x8d939c,
     player: 0xd9dde2, gun: 0xffc966, wasp: 0x7cc47c, bullet: 0xfff0c2,
+    carrier: 0x4e8f5a, capsule: '#ff4fd8', modCapsule: '#ffd75e',
+    shots: { R: 0xfff0c2, S: 0xffc76a, L: 0x9ff7ff, H: 0xff9adf, F: 0xff8a4a },
   },
 };
 
@@ -707,50 +738,153 @@ function builtGroundTopAt(x) {
 }
 
 /* ======================== POOLS / WEAPONS ========================= */
-/* Grey-box: rifle only. Weapon letters (S/L/H/F) + modifiers land here. */
+/* Letter weapons R/S/L/H/F share one instanced pool; per-type behavior,
+   scale, and color are set per projectile. Damage flows through hitWasp
+   so kills credit the weapon (favorite-weapon stat).                  */
 
 const bulletPool = [];
-for (let i = 0; i < BULLET_MAX; i++) bulletPool.push({ alive: false, x: 0, y: 0, vx: 0, vy: 0, dieAt: 0 });
+for (let i = 0; i < BULLET_MAX; i++) bulletPool.push({
+  alive: false, x: 0, y: 0, vx: 0, vy: 0, dieAt: 0,
+  type: 'R', damage: 1, pierce: false, phase: '', dir: 1, hitSet: new Set(),
+});
 
 const bulletMesh = new THREE.InstancedMesh(
   new THREE.SphereGeometry(CONFIG.rifle.radius, 6, 6),
-  new THREE.MeshBasicMaterial({ color: CONFIG.palette.bullet }),
+  new THREE.MeshBasicMaterial({ color: 0xffffff }),
   BULLET_MAX
 );
 bulletMesh.frustumCulled = false;
 scene.add(bulletMesh);
 const _bm = new THREE.Matrix4();
+const _bq = new THREE.Quaternion();
+const _be = new THREE.Euler();
+const _bs = new THREE.Vector3();
+const _bv = new THREE.Vector3();
+const _shotColor = new THREE.Color();
+for (let i = 0; i < BULLET_MAX; i++) bulletMesh.setColorAt(i, _shotColor.setHex(0xffffff));
 
 let shotsFired = 0;
+let currentWeapon = 'R';
+const weaponKills = { R: 0, S: 0, L: 0, H: 0, F: 0 };
 
-function spawnBullet(x, y, dx, dy) {
-  for (const b of bulletPool) {
+function weaponDef(letter) {
+  if (letter === 'R') {
+    const r = CONFIG.rifle;
+    return { name: 'RIFLE', fireRateMs: r.fireRateMs, speed: r.speed, damage: r.damage, lifeMs: r.lifeMs };
+  }
+  return CONFIG.weapons[letter];
+}
+
+function spawnProj(type, x, y, dx, dy, def) {
+  for (let i = 0; i < BULLET_MAX; i++) {
+    const b = bulletPool[i];
     if (b.alive) continue;
-    b.alive = true; b.x = x; b.y = y;
-    b.vx = dx * CONFIG.rifle.speed; b.vy = dy * CONFIG.rifle.speed;
-    b.dieAt = gameMs + CONFIG.rifle.lifeMs;
-    shotsFired++;
+    b.alive = true; b.type = type; b.x = x; b.y = y;
+    b.vx = dx * def.speed; b.vy = dy * def.speed;
+    b.damage = def.damage; b.pierce = !!def.pierce;
+    b.dieAt = gameMs + def.lifeMs;
+    b.phase = type === 'F' ? 'fly' : '';
+    b.dir = Math.sign(dx) || player.facing;
+    b.hitSet.clear();
+    bulletMesh.setColorAt(i, _shotColor.setHex(CONFIG.palette.shots[type]));
+    bulletMesh.instanceColor.needsUpdate = true;
     return;
   }
 }
 
+// One trigger pull → one "shot" for stats; clones replay without logging.
+function fireWeapon(letter, x, y, ax, ay, clone) {
+  if (!clone) {
+    shotsFired++;
+    if (gameMs < mods.ghostUntil) logShot(letter, x, y, ax, ay);
+  }
+  const def = weaponDef(letter);
+  const base = Math.atan2(ay, ax);
+  if (letter === 'S') {
+    const arc = def.arcDeg * DEG;
+    for (let k = 0; k < def.count; k++) {
+      const a = base + arc * (k / (def.count - 1) - 0.5);
+      spawnProj(letter, x, y, Math.cos(a), Math.sin(a), def);
+    }
+  } else if (letter === 'H') {
+    for (let k = 0; k < def.count; k++) {
+      const a = base + def.splayDeg * DEG * (k - (def.count - 1) / 2);
+      spawnProj(letter, x, y, Math.cos(a), Math.sin(a), def);
+    }
+  } else if (letter === 'F') {
+    spawnProj(letter, x, y, ax, ay * 0.6 + 0.12, def);   // lobbed: gravity takes it to the deck
+  } else {
+    spawnProj(letter, x, y, ax, ay, def);
+  }
+}
+
 function updateBullets(dt) {
+  const HDEF = CONFIG.weapons.H, FDEF = CONFIG.weapons.F;
   for (let i = 0; i < BULLET_MAX; i++) {
     const b = bulletPool[i];
     if (!b.alive) { bulletMesh.setMatrixAt(i, HIDE); continue; }
-    b.x += b.vx * dt; b.y += b.vy * dt;
-    if (gameMs > b.dieAt || builtSolidAt(b.x, b.y)) { b.alive = false; bulletMesh.setMatrixAt(i, HIDE); continue; }
-    let hit = false;
+
+    if (b.type === 'H') {                                // steer toward nearest live hostile
+      let best = null, bestD = HDEF.seekRange * HDEF.seekRange;
+      for (const e of wasps) {
+        if (gameMs < e.enterUntil) continue;
+        const d = (e.x - b.x) ** 2 + (e.y - b.y) ** 2;
+        if (d < bestD) { bestD = d; best = e; }
+      }
+      if (best) {
+        const cur = Math.atan2(b.vy, b.vx);
+        const want = Math.atan2(best.y - b.y, best.x - b.x);
+        let diff = want - cur;
+        while (diff > Math.PI) diff -= 2 * Math.PI;
+        while (diff < -Math.PI) diff += 2 * Math.PI;
+        const turn = Math.max(-HDEF.turnRate * dt, Math.min(HDEF.turnRate * dt, diff));
+        const a = cur + turn, sp = HDEF.speed;
+        b.vx = Math.cos(a) * sp; b.vy = Math.sin(a) * sp;
+      }
+      b.x += b.vx * dt; b.y += b.vy * dt;
+    } else if (b.type === 'F' && b.phase === 'fly') {    // arc down to the deck…
+      b.vy += FDEF.dropAccel * dt;
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      const g = builtGroundTopAt(b.x);
+      if (g > -100 && b.y <= g + 0.35 && b.vy <= 0) { b.phase = 'crawl'; b.y = g + 0.35; }
+    } else if (b.type === 'F') {                         // …then crawl it, hugging terrain
+      b.x += b.dir * FDEF.crawlSpeed * dt;
+      const g = builtGroundTopAt(b.x);
+      if (g > -100) b.y = approach(b.y, g + 0.35, 30 * dt);
+      else { b.alive = false; bulletMesh.setMatrixAt(i, HIDE); continue; }   // gap: fire dies
+    } else {
+      b.x += b.vx * dt; b.y += b.vy * dt;
+    }
+
+    const wallDead = b.type === 'F' && b.phase === 'crawl'
+      ? builtSolidAt(b.x + b.dir * 0.4, b.y + 0.4)       // crawler dies against tall walls only
+      : builtSolidAt(b.x, b.y);
+    if (gameMs > b.dieAt || wallDead) { b.alive = false; bulletMesh.setMatrixAt(i, HIDE); continue; }
+
+    let dead = false;
     for (let w = wasps.length - 1; w >= 0; w--) {
       const e = wasps[w];
-      if (gameMs < e.enterUntil) continue;             // still materializing: no hitbox
-      if ((b.x - e.x) ** 2 + (b.y - e.y) ** 2 < 0.55 ** 2) {
-        hitWasp(e, w); hit = true; break;
+      if (gameMs < e.enterUntil) continue;               // still materializing: no hitbox
+      if (b.pierce && b.hitSet.has(e.id)) continue;
+      if ((b.x - e.x) ** 2 + (b.y - e.y) ** 2 < e.hitR * e.hitR) {
+        if (b.pierce) b.hitSet.add(e.id);
+        hitWasp(e, w, b.damage, b.type);
+        if (!b.pierce) { dead = true; break; }
       }
     }
-    if (hit) { b.alive = false; bulletMesh.setMatrixAt(i, HIDE); continue; }
+    if (dead) { b.alive = false; bulletMesh.setMatrixAt(i, HIDE); continue; }
+
+    // render: map (s,y) onto the tower, orient along velocity, scale by type
     const bp = polyAt(SEGS, b.x, _pp);
-    _bm.setPosition(bp.x, b.y, bp.z);
+    const yaw = yawAt(SEGS, b.x, CONFIG.path.yawBlendTiles);
+    const ang = b.type === 'F' && b.phase === 'crawl' ? 0 : Math.atan2(b.vy, b.vx);
+    if (b.type === 'L') _bs.set(7, 0.45, 0.45);          // stretched piercing bolt
+    else if (b.type === 'F') _bs.set(b.phase === 'crawl' ? 1.5 : 1.1, b.phase === 'crawl' ? 0.9 : 1.1, 1.1);
+    else if (b.type === 'S') _bs.set(0.8, 0.8, 0.8);
+    else if (b.type === 'H') _bs.set(0.7, 0.7, 0.7);
+    else _bs.set(1, 1, 1);
+    _bq.setFromEuler(_be.set(0, yaw, ang, 'YZX'));
+    _bm.compose(_bv.set(bp.x, b.y, bp.z), _bq, _bs);
     bulletMesh.setMatrixAt(i, _bm);
   }
   bulletMesh.instanceMatrix.needsUpdate = true;
@@ -922,11 +1056,13 @@ function updatePlayer(dt) {
   // -- fell into a gap
   if (player.y < CONFIG.edges.killY) { loseLife(); return; }
 
-  // -- fire
+  // -- fire (RAGE halves the interval)
   if (keys.fire && gameMs >= player.nextFireAt) {
-    player.nextFireAt = gameMs + CONFIG.rifle.fireRateMs;
+    const def = weaponDef(currentWeapon);
+    const rageMult = gameMs < mods.rageUntil ? CONFIG.mods.rageFireMult : 1;
+    player.nextFireAt = gameMs + def.fireRateMs * rageMult;
     const a = player.aim;
-    spawnBullet(player.x + a.x * 0.6, player.y + 1.05 + a.y * 0.5, a.x, a.y);
+    fireWeapon(currentWeapon, player.x + a.x * 0.6, player.y + 1.05 + a.y * 0.5, a.x, a.y, false);
   }
 
   // -- rig transform (s,y → tower world) + aim pose + i-frame flicker
@@ -942,14 +1078,24 @@ function damagePlayer(amount, fromX) {
   player.hp -= amount;
   player.iframesUntil = gameMs + P.iframesMs;
   player.hitstunUntil = gameMs + P.hitstunMs;
-  player.vx = Math.sign(player.x - fromX || 1) * P.knockbackX;
+  const away = Math.sign(player.x - fromX || 1);
+  player.vx = away * P.knockbackX;
   player.vy = P.knockbackY;
   player.grounded = false;
+  // classic tension: the weapon capsule pops out toward the threat —
+  // recatch it within the window or fall back to the rifle
+  if (currentWeapon !== 'R' && player.hp > 0) {
+    spawnCapsule('letter', currentWeapon, player.x, player.y + 1.2, 'pop', -away * CAP.popVx);
+    currentWeapon = 'R';
+  }
   if (player.hp <= 0) loseLife();
 }
 
 function loseLife() {
   player.lives--;
+  currentWeapon = 'R';                     // death resets the arsenal
+  mods.rageUntil = 0; mods.ghostUntil = 0; mods.chronoUntil = 0;
+  mods.lance = null; lanceBeam.visible = false;
   if (player.lives < 0) { setState('GAME_OVER'); return; }
   respawn();
 }
@@ -973,19 +1119,27 @@ function respawn() {
 
 const wasps = [];
 const waspGeo = new THREE.OctahedronGeometry(CONFIG.wasp.visualRadius);
+const carrierGeo = new THREE.BoxGeometry(1.7, 0.9, 0.9);
 let kills = 0;
 let waspRng = mulberry32(5150);          // seeded: sim randomness is reproducible
+let nextWaspId = 1;
 
-function spawnWasp(x, y, delayMs) {
+function spawnWasp(x, y, delayMs, kind) {
+  kind = kind || 'wasp';
+  const carrier = kind === 'carrier';
   const mat = new THREE.MeshStandardMaterial({
-    color: CONFIG.palette.wasp, flatShading: true, transparent: true, opacity: 0,
+    color: carrier ? CONFIG.palette.carrier : CONFIG.palette.wasp,
+    flatShading: true, transparent: true, opacity: 0,
   });
-  const mesh = new THREE.Mesh(waspGeo, mat);
+  const mesh = new THREE.Mesh(carrier ? carrierGeo : waspGeo, mat);
   mesh.visible = false;                    // hidden until its materialization begins
   scene.add(mesh);
   wasps.push({
+    id: nextWaspId++, kind,
     x, y, baseY: y, vx: 0, vy: 0, dir: -1, t: waspRng() * 6,
-    hp: CONFIG.wasp.hp, state: 'cruise', stateUntil: 0, diveCdUntil: 0,
+    hp: carrier ? CONFIG.carrier.hp : CONFIG.wasp.hp,
+    hitR: carrier ? CONFIG.carrier.hitRadius : 0.55,
+    state: 'cruise', stateUntil: 0, diveCdUntil: 0,
     enterUntil: gameMs + (delayMs || 0) + CONFIG.wasp.enterMs,
     flashUntil: 0, mesh, mat,
   });
@@ -1003,11 +1157,13 @@ function removeWasp(idx, fade) {         // single removal path: gates count eve
   onWaspRemoved();
 }
 
-function hitWasp(e, idx) {
-  e.hp -= CONFIG.rifle.damage;
+function hitWasp(e, idx, damage, weapon) {
+  e.hp -= damage;
   e.flashUntil = gameMs + 70;
   if (e.hp <= 0) {
     kills++;
+    if (weaponKills[weapon] !== undefined) weaponKills[weapon]++;
+    if (e.kind === 'carrier') dropFromCarrier(e.x, e.y);
     removeWasp(idx, true);
   }
 }
@@ -1048,7 +1204,15 @@ function updateWasps(dt) {
     }
     e.mesh.visible = true;
     e.t += dt;
-    if (e.state === 'cruise') {
+    if (e.kind === 'carrier') {                        // slow hauler: cruise only, never dives
+      const C = CONFIG.carrier;
+      if (gate) {                                      // patrol box: nobody strands the gate
+        if (e.x < sLeftEdge() + 2) e.dir = 1;
+        else if (e.x > sRightEdge() - 2) e.dir = -1;
+      }
+      e.x += e.dir * C.speed * dt;
+      e.y = e.baseY + Math.sin(e.t * C.bobFreq) * C.bobAmp;
+    } else if (e.state === 'cruise') {
       if (gate) {                                      // patrol box: nobody strands the gate
         if (e.x < sLeftEdge() + 2) e.dir = 1;
         else if (e.x > sRightEdge() - 2) e.dir = -1;
@@ -1084,9 +1248,10 @@ function updateWasps(dt) {
 
     // contact damage: circle vs player AABB — only once fully materialized
     if (gameMs >= e.enterUntil) {
+      const cr = e.kind === 'carrier' ? e.hitR : W.contactRadius;
       const cx = Math.max(player.x - player.hw, Math.min(e.x, player.x + player.hw));
       const cy = Math.max(player.y, Math.min(e.y, player.y + player.h));
-      if ((e.x - cx) ** 2 + (e.y - cy) ** 2 < W.contactRadius ** 2) damagePlayer(1, e.x);
+      if ((e.x - cx) ** 2 + (e.y - cy) ** 2 < cr * cr) damagePlayer(1, e.x);
     }
 
     // mock-3D presence: materialize in from tower depth, breathe while alive
@@ -1107,9 +1272,205 @@ function updateWasps(dt) {
     const wp = polyAt(SEGS, e.x, _pp);
     e.mesh.position.set(wp.x + Math.sin(yaw) * depth, e.y, wp.z + Math.cos(yaw) * depth);
     e.mesh.rotation.y = yaw;
-    e.mesh.rotation.z = e.t * 2;
+    e.mesh.rotation.z = e.kind === 'carrier' ? Math.sin(e.t * 1.3) * 0.08 : e.t * 2;
     e.mesh.scale.setScalar(scale);
   }
+}
+
+/* ================= ENTITIES: CAPSULES (PICKUPS) =================== */
+/* Letter capsules drift from destroyed carriers; on taking a hit the
+   current weapon pops out and can be recaught for ~2.2s before it burns
+   away. Modifier capsules (gold) are rare late-run carrier drops.      */
+
+const capsules = [];
+const CAP = CONFIG.capsules;
+const letterTexCache = {};
+
+function letterTexture(text, bg) {
+  const key = text + '|' + bg;
+  if (letterTexCache[key]) return letterTexCache[key];
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 64;
+  const g = cv.getContext('2d');
+  g.fillStyle = bg;
+  g.fillRect(0, 0, 64, 64);
+  g.fillStyle = '#14181e';
+  g.font = 'bold ' + (text.length > 1 ? 30 : 42) + 'px monospace';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(text, 32, 35);
+  const tex = new THREE.CanvasTexture(cv);
+  letterTexCache[key] = tex;
+  return tex;
+}
+
+// mode 'drift': flies from a killed carrier, sinks slowly toward catch height.
+// mode 'pop': knocked out of the player, lands, expires after the recatch window.
+function spawnCapsule(kind, letter, x, y, mode, vx) {
+  const bg = kind === 'mod' ? CONFIG.palette.modCapsule : CONFIG.palette.capsule;
+  const mat = new THREE.MeshBasicMaterial({ map: letterTexture(letter, bg) });
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(CAP.size, CAP.size, CAP.size), mat);
+  scene.add(mesh);
+  capsules.push({
+    kind, letter, x, y, baseY: y, vx: vx || 0, vy: mode === 'pop' ? CAP.popVy : 0,
+    mode, dieAt: mode === 'pop' ? gameMs + CAP.recatchMs : 0, t: 0, mesh, mat,
+  });
+}
+
+function removeCapsule(i) {
+  const c = capsules[i];
+  scene.remove(c.mesh);
+  c.mat.dispose();
+  capsules.splice(i, 1);
+}
+
+// Carrier drop order: seeded shuffle of the four letters, then rare
+// modifiers. Deterministic run to run.
+const capsuleRng = mulberry32(2600);
+function shuffled(arr, rng) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+const letterDrops = shuffled(['S', 'L', 'H', 'F'], capsuleRng);
+const modDrops = shuffled(['RG', 'GS', 'OL', 'CH'], capsuleRng);
+let carrierDropIdx = 0;
+
+function dropFromCarrier(x, y) {
+  const i = carrierDropIdx++;
+  if (i < letterDrops.length) spawnCapsule('letter', letterDrops[i], x, y, 'drift');
+  else spawnCapsule('mod', modDrops[(i - letterDrops.length) % modDrops.length], x, y, 'drift');
+}
+
+function updateCapsules(dt) {
+  for (let i = capsules.length - 1; i >= 0; i--) {
+    const c = capsules[i];
+    c.t += dt;
+    if (c.mode === 'drift') {
+      c.x -= CAP.driftSpeed * dt;
+      const g = builtGroundTopAt(c.x);
+      const floorY = (g > -100 ? g : 2) + 1.5;
+      c.baseY = Math.max(c.baseY - CAP.sinkSpeed * dt, floorY);
+      c.y = c.baseY + Math.sin(c.t * CAP.bobFreq) * CAP.bobAmp;
+      if (c.x < sLeftEdge() - 4) { removeCapsule(i); continue; }
+    } else {
+      c.vy += CAP.gravity * dt;
+      c.x += c.vx * dt;
+      c.y += c.vy * dt;
+      const g = builtGroundTopAt(c.x);
+      if (g > -100 && c.y <= g + 0.3 && c.vy < 0) { c.y = g + 0.3; c.vy = 0; c.vx *= 0.8; }
+      if (c.y < CONFIG.edges.killY || gameMs > c.dieAt) { removeCapsule(i); continue; }
+    }
+
+    // pickup: point-in-expanded-player-box
+    const px = Math.max(player.x - player.hw, Math.min(c.x, player.x + player.hw));
+    const py = Math.max(player.y, Math.min(c.y, player.y + player.h));
+    if ((c.x - px) ** 2 + (c.y - py) ** 2 < CAP.pickupRadius ** 2) {
+      if (c.kind === 'mod') applyMod(c.letter);
+      else currentWeapon = c.letter;
+      removeCapsule(i);
+      continue;
+    }
+
+    // expiring pop-capsules blink through their last stretch
+    c.mesh.visible = c.mode !== 'pop' || c.dieAt - gameMs > CAP.blinkLastMs ||
+                     Math.floor(gameMs / 90) % 2 === 0;
+    const wp = polyAt(SEGS, c.x, _pp);
+    c.mesh.position.set(wp.x, c.y, wp.z);
+    c.mesh.rotation.y = yawAt(SEGS, c.x, CONFIG.path.yawBlendTiles) + c.t * 2.2;
+  }
+}
+
+/* ======================== MODIFIERS (RARE) ======================== */
+/* RAGE 2× fire rate · GHOST SQUAD delayed clone fire · ORBITAL LANCE
+   telegraphed screen clear · CHRONO world slow. Stackable, timed.     */
+
+const mods = { rageUntil: 0, ghostUntil: 0, chronoUntil: 0, lance: null, lanceFlashUntil: 0 };
+const shotLog = [];                       // ghost squad: shots awaiting replay
+const posLog = [];                        // ghost squad: player position trail
+
+const cloneMeshes = [0, 1].map(() => {
+  const m = new THREE.Mesh(
+    new THREE.BoxGeometry(0.45, 1.5, 0.4),
+    new THREE.MeshBasicMaterial({ color: CONFIG.palette.player, transparent: true, opacity: 0.32 })
+  );
+  m.visible = false;
+  scene.add(m);
+  return m;
+});
+
+const lanceBeam = new THREE.Mesh(
+  new THREE.BoxGeometry(0.35, 16, 0.35),
+  new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 })
+);
+lanceBeam.visible = false;
+scene.add(lanceBeam);
+
+function applyMod(code) {
+  const M = CONFIG.mods;
+  if (code === 'RG') mods.rageUntil = gameMs + M.rageMs;
+  else if (code === 'GS') mods.ghostUntil = gameMs + M.ghostMs;
+  else if (code === 'CH') mods.chronoUntil = gameMs + M.chronoMs;
+  else if (code === 'OL') mods.lance = { s: player.x, at: gameMs + M.lanceTelegraphMs };
+}
+
+function logShot(letter, x, y, ax, ay) {
+  shotLog.push({ t: gameMs, letter, x, y, ax, ay, fired: [false, false] });
+  if (shotLog.length > 80) shotLog.shift();
+}
+
+function updateMods() {
+  const M = CONFIG.mods;
+
+  // ghost squad: clones trail the player and replay logged shots late
+  const ghost = gameMs < mods.ghostUntil;
+  posLog.push({ t: gameMs, x: player.x, y: player.y });
+  while (posLog.length && posLog[0].t < gameMs - 1300) posLog.shift();
+  for (let d = 0; d < M.ghostDelayMs.length; d++) {
+    const delay = M.ghostDelayMs[d];
+    for (const s of shotLog) {
+      if (!s.fired[d] && gameMs >= s.t + delay) {
+        s.fired[d] = true;
+        if (ghost) fireWeapon(s.letter, s.x, s.y, s.ax, s.ay, true);
+      }
+    }
+    const cm = cloneMeshes[d];
+    cm.visible = ghost;
+    if (ghost) {
+      let p = posLog[0];
+      for (const q of posLog) { if (q.t <= gameMs - delay) p = q; else break; }
+      const wp = polyAt(SEGS, p.x, _pp);
+      cm.position.set(wp.x, p.y + 0.85, wp.z);
+      cm.rotation.y = yawAt(SEGS, p.x, CONFIG.path.yawBlendTiles);
+    }
+  }
+  while (shotLog.length && shotLog[0].t + 1100 < gameMs && shotLog[0].fired[0] && shotLog[0].fired[1])
+    shotLog.shift();
+
+  // orbital lance: telegraph beam, then the strike clears every hostile
+  if (mods.lance) {
+    const L = mods.lance;
+    lanceBeam.visible = true;
+    const wp = polyAt(SEGS, L.s, _pp);
+    lanceBeam.position.set(wp.x, 8, wp.z);
+    lanceBeam.material.opacity = 0.25 + 0.35 * (0.5 + 0.5 * Math.sin(gameMs / 40));
+    if (gameMs >= L.at) {
+      for (let i = wasps.length - 1; i >= 0; i--) hitWasp(wasps[i], i, 999, 'OL');
+      mods.lanceFlashUntil = gameMs + M.lanceFlashMs;
+      mods.lance = null;
+      lanceBeam.visible = false;
+    }
+  }
+
+  // screen tint: lance flash > rage red > chrono blue
+  let tint = 'transparent';
+  if (gameMs < mods.lanceFlashUntil) tint = 'rgba(255,255,255,0.5)';
+  else if (gameMs < mods.rageUntil) tint = 'rgba(255,50,50,0.14)';
+  else if (gameMs < mods.chronoUntil) tint = 'rgba(90,200,255,0.12)';
+  if (tint !== tintLast) { tintLast = tint; tintEl.style.background = tint; }
 }
 
 /* ============================ SPAWNER ============================= */
@@ -1123,6 +1484,15 @@ function updateWasps(dt) {
 const spawnTable = buildSpawnTable(CONFIG);
 let spawnIdx = 0;
 let spawnRng = mulberry32(9001);
+
+// One carrier per face at a mid-face fraction — deterministic, clear of
+// every corner zone (fracs 0.38–0.55 of a 65-tile face sit ≥29 tiles
+// before the corner and ≥24 after the previous one).
+const carrierS = CONFIG.carrier.perFaceFrac.map((frac, f) => {
+  const start = f === 0 ? 24 : CORNER_S[f - 1];
+  return start + frac * (CORNER_S[f] - start);
+});
+let carrierIdx = 0;
 
 function updateSpawner() {
   if (cornerBusy()) return;              // gates author their own waves; on wide
@@ -1139,6 +1509,11 @@ function updateSpawner() {
     const r = spawnRng();
     const lane = r < 0.45 ? 2.6 : r < 0.8 ? 4.6 : 7.2;   // low / mid / high tier
     spawnWasp(s.x, Math.min((base > -100 ? base : 3) + lane + spawnRng() * 0.8, 10));
+  }
+  while (carrierIdx < carrierS.length && carrierS[carrierIdx] < re - 1.5) {
+    const cs = carrierS[carrierIdx++];
+    const base = groundTopAt(cs);
+    spawnWasp(cs, Math.min((base > -100 ? base : 3) + CONFIG.carrier.laneAbove, 9.5), 0, 'carrier');
   }
 }
 
@@ -1254,6 +1629,8 @@ function updateZipper(c, tMs) {          // near-to-far brick slam of the next f
 
 /* =============================== UI =============================== */
 
+const tintEl = document.getElementById('tint');
+let tintLast = 'transparent';
 const hudTL = document.getElementById('hudTL');
 const hudTC = document.getElementById('hudTC');
 const hudTR = document.getElementById('hudTR');
@@ -1265,7 +1642,7 @@ const ovBody = document.getElementById('ovBody');
 hudBL.innerHTML =
   'MOVE wasd/arrows &nbsp; JUMP space (hold = higher, again in air = double) &nbsp; FIRE j or x<br>' +
   'AIM 8-way via move keys &nbsp; STRAFE-LOCK shift &nbsp; DROP down+jump on catwalks<br>' +
-  'PAUSE p/esc &nbsp;&middot;&nbsp; grey-box build';
+  'CAPSULES swap weapons &middot; hit = weapon pops out, recatch it fast &nbsp;&middot;&nbsp; PAUSE p/esc';
 
 // updateHUD runs every rAF frame; assigning textContent replaces the text
 // node even when identical, dirtying layout for three fixed elements 60x/s.
@@ -1275,8 +1652,13 @@ let hudTLLast = null, hudTCLast = null, hudTRLast = null;
 
 function updateHUD() {
   const hp = Math.max(0, player.hp);
-  const tl = 'RIG ' + '▰'.repeat(hp) + '▱'.repeat(P.maxHealth - hp) +
-             '  ×' + Math.max(0, player.lives);
+  let tl = 'RIG ' + '▰'.repeat(hp) + '▱'.repeat(P.maxHealth - hp) +
+           '  ×' + Math.max(0, player.lives) +
+           '  ·  [' + currentWeapon + '] ' + weaponDef(currentWeapon).name;
+  if (gameMs < mods.rageUntil) tl += ' · RAGE ' + Math.ceil((mods.rageUntil - gameMs) / 1000) + 's';
+  if (gameMs < mods.ghostUntil) tl += ' · GHOST ' + Math.ceil((mods.ghostUntil - gameMs) / 1000) + 's';
+  if (gameMs < mods.chronoUntil) tl += ' · CHRONO ' + Math.ceil((mods.chronoUntil - gameMs) / 1000) + 's';
+  if (mods.lance) tl += ' · LANCE ARMING';
   if (tl !== hudTLLast) { hudTLLast = tl; hudTL.textContent = tl; }
   const tr = Math.floor(scrollX) + 'm  ·  ' + kills + ' kills';
   if (tr !== hudTRLast) { hudTRLast = tr; hudTR.textContent = tr; }
@@ -1288,6 +1670,12 @@ function updateHUD() {
     tc = 'CLEAR';
   }
   if (tc !== hudTCLast) { hudTCLast = tc; hudTC.textContent = tc; }
+}
+
+function favoriteWeaponLine() {
+  let best = 'R';
+  for (const k of Object.keys(weaponKills)) if (weaponKills[k] > weaponKills[best]) best = k;
+  return `favorite weapon: ${weaponDef(best).name} (${weaponKills[best]} kills)`;
 }
 
 function showOverlay(title, lines) {
@@ -1309,11 +1697,13 @@ function setState(next) {
   else if (next === 'PAUSED') showOverlay('PAUSED', [{ text: 'p / esc to resume', dim: true }]);
   else if (next === 'GAME_OVER') showOverlay('SIGNAL LOST', [
     { text: `${Math.floor(scrollX)}m · ${kills} kills · ${shotsFired} shots` },
+    { text: favoriteWeaponLine() },
     { text: 'r to restart', dim: true },
   ]);
   else if (next === 'VICTORY') showOverlay('SECTOR CLEAR', [
     { text: 'grey-box complete' },
     { text: `${Math.floor(scrollX)}m · ${kills} kills · ${shotsFired} shots` },
+    { text: favoriteWeaponLine() },
     { text: 'r to restart', dim: true },
   ]);
 }
@@ -1329,6 +1719,16 @@ function resetGame() {
   for (const c of corpses) { scene.remove(c.mesh); c.mat.dispose(); }
   corpses.length = 0;
   for (const b of bulletPool) b.alive = false;
+  for (let i = capsules.length - 1; i >= 0; i--) removeCapsule(i);
+  currentWeapon = 'R';
+  for (const k of Object.keys(weaponKills)) weaponKills[k] = 0;
+  mods.rageUntil = 0; mods.ghostUntil = 0; mods.chronoUntil = 0;
+  mods.lance = null; mods.lanceFlashUntil = 0;
+  lanceBeam.visible = false;
+  for (const cm of cloneMeshes) cm.visible = false;
+  shotLog.length = 0; posLog.length = 0;
+  tintEl.style.background = 'transparent'; tintLast = 'transparent';
+  carrierIdx = 0; carrierDropIdx = 0;
   scrollX = 0;
   spawnIdx = 0;
   spawnRng = mulberry32(9001);
@@ -1386,12 +1786,17 @@ function updateCamera(dt) {
 
 function update(dt) {
   gameMs += dt * 1000;
-  updateCamera(dt);
+  // CHRONO: the world runs slow, the player (and their bullets) run full
+  // speed. Timers stay on real gameMs — a 4s window keeps the drift small.
+  const wScale = gameMs < mods.chronoUntil ? CONFIG.mods.chronoScale : 1;
+  updateCamera(dt * wScale);
   updateSpawner();
   updatePlayer(dt);
   if (state !== 'PLAYING') return;      // died on the last frame
-  updateWasps(dt);
+  updateWasps(dt * wScale);
   updateCorpses();
+  updateCapsules(dt * wScale);
+  updateMods();
   updateBullets(dt);
   if (scrollX >= END_SCROLL) setState('VICTORY');
 }
