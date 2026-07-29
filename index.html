@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HULLBREAKER — grey-box</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #232830; }
+  canvas { display: block; }
+  .hud {
+    position: fixed; z-index: 10; user-select: none; pointer-events: none;
+    font-family: ui-monospace, Menlo, Consolas, monospace; color: #e8edf2;
+    text-shadow: 0 1px 3px rgba(0,0,0,.7);
+  }
+  #hudTL { top: 14px; left: 18px;  font-size: 16px; line-height: 1.55; letter-spacing: .06em; }
+  #hudTC { top: 14px; left: 50%; transform: translateX(-50%); font-size: 18px; letter-spacing: .08em; }
+  #hudTR { top: 14px; right: 18px; font-size: 15px; line-height: 1.55; text-align: right; }
+  #hudBL { bottom: 12px; left: 18px; font-size: 12px; line-height: 1.5; opacity: .5; }
+  #overlay {
+    position: fixed; inset: 0; z-index: 20; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(8, 12, 16, .62);
+    font-family: ui-monospace, Menlo, Consolas, monospace; color: #fff; text-align: center;
+  }
+  #overlay h1 { margin: 0 0 14px; font-size: 44px; letter-spacing: .22em; font-weight: 700; }
+  #overlay p  { margin: 5px 0; font-size: 15px; opacity: .85; letter-spacing: .05em; }
+  #overlay .dim { opacity: .5; margin-top: 18px; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="hudTL" class="hud"></div>
+<div id="hudTC" class="hud"></div>
+<div id="hudTR" class="hud"></div>
+<div id="hudBL" class="hud"></div>
+<div id="overlay"><h1 id="ovTitle"></h1><div id="ovBody"></div></div>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ================================================================== *
+ *  HULLBREAKER — grey-box pass
+ *  Scope: player controller, forced scroll, one enemy (wasp), shooting,
+ *  polygonal tower (polyline rendering, wave gates, corner ritual).
+ *  Later passes: retune, layout richness, weapons, enemy roster, boss,
+ *  flight segment, juice, menus, audio. Sections receive them below.
+ * ================================================================== */
+
+/* ============================ CONFIG ============================== */
+/* @pure-begin */
+
+const CONFIG = {
+  scrollSpeed: 4.2,            // camera advance, units/sec (~11%/s of screen width)
+  levelLength: 445,            // tiles = 24 intro + 6 faces × 65 + 31 outro
+
+  camera: { fov: 56, x: 5.0, y: 5.9, z: 19.5, lookX: 7.2, lookY: 4.6 }, // pulled back: player ~8% of screen height
+  fog: { near: 30, far: 74 },  // pushed out with the camera
+
+  path: {                      // hexagonal tower circuit; sim stays in (s, y)
+    faces: 6, faceTiles: 65, introTiles: 24, outroTiles: 31,
+    chamferTiles: 2,           // two bends per corner, this many tiles apart
+    turnDeg: 30,               // per bend; one corner turns 2 × turnDeg
+    turnSign: 1,               // +1 bends toward -z, keeping the camera exterior
+    yawBlendTiles: 1.0,        // dynamic-entity yaw blend half-width per bend
+  },
+
+  gen: {                       // pattern-chunk layout generator (pure, seeded)
+    seed: 1337, tierSeed: 777,
+    minH: 2, maxH: 4,          // ground height band; adjacent steps stay ≤ 2
+    gapMax: 5, landingMin: 3,  // widest gap run / guaranteed landing after it
+                               //   (5 demands a committed full jump: 6.64 tiles available)
+    tailFlat: 20,              // flat outro tail
+    maxReach: 5,               // catwalk support ceiling (double-jump apex 5.07)
+    weights: { flat: 20, step: 16, stairs: 12, gapHop: 14, plateau: 10, trench: 8, islandHop: 8, ridge: 12 },
+  },
+
+  spawner: {                   // ambient spawn director (gate waves live in waves)
+    startS: 28, endFromEnd: 40, seed: 4242,
+    faceGapSec: [2.3, 2.0, 1.8, 1.6, 1.45, 1.35],  // gap between spawns in SECONDS of
+    jitterSec: 0.6,                              //   scroll — density scales with speed
+    pairChance: [0.15, 0.25, 0.35, 0.45, 0.55, 0.65],  // trailing wingman odds per face
+    pairGapTiles: 2,
+    cornerClearBefore: 10, cornerClearAfter: 20, // before: small, so stragglers reach the
+                                                 //   gate; after: post-ritual breather —
+                                                 //   updateSpawner also pauses while a
+                                                 //   corner holds the scroll, so no aspect
+                                                 //   ratio can leak ambient spawns onto
+                                                 //   the unbuilt face during a gate
+  },
+
+  player: {
+    runSpeed: 9.4,
+    accelGround: 120, accelAir: 76,
+    jumpVel: 14, gravity: -36, fallGravityMult: 1.5, terminalVel: -32,   // FROZEN: apex 2.72 vs +3 tiers
+    jumpCutMult: 0.45,         // multiply vy on jump release (variable height)
+    airJumps: 1, airJumpVel: 13,
+    coyoteMs: 100, jumpBufferMs: 120, dropThroughMs: 260,
+    width: 0.7, height: 1.7,
+    maxHealth: 3, lives: 3,
+    iframesMs: 1200, hitstunMs: 220, knockbackX: 6, knockbackY: 5,
+  },
+
+  rifle: { fireRateMs: 130, speed: 26, lifeMs: 1100, radius: 0.16, damage: 1 },  // fat tracer for the pulled-back
+                                             // view; bullet-vs-wasp test stays 0.55 in updateBullets
+  wasp: {
+    hp: 4, cruiseSpeed: 2.0, bobFreq: 3.0, bobAmp: 0.9,
+    diveRange: 6.5, diveSpeed: 10, diveMs: 700, diveCooldownMs: 1800,
+    contactRadius: 0.55, visualRadius: 0.5,  // readability bump; hitbox unchanged
+    // mock-3D presence: enemies materialize from tower depth and dissolve back.
+    // Purely visual — sim stays 2D; collision only while fully materialized.
+    enterMs: 900, enterDepth: -12,           // condense in from the foggy interior
+    dieMs: 500, dieDepth: -7,                // death: flash, tumble, recede, fade
+    wobbleAmp: 0.4, wobbleFreq: 2.2,         // alive: depth breathing
+  },
+
+  waves: {                     // corner wave gates + snap ritual + brick zipper
+    haltOffset: 14,            // scroll halts at cornerS - haltOffset
+    baseSize: 3, sizePerWave: 1,               // wave k = baseSize + sizePerWave·k
+    laneHeights: [2.6, 4.6, 7.2],
+    staggerMs: 220,            // gate wave materializes one presence at a time
+    comp: [                                    // lane index per slot per wave —
+      [0, 0, 1, 0],                            //   altitude mix escalates with k;
+      [0, 1, 0, 1, 2],                         //   every wave keeps a low target
+      [0, 1, 2, 1, 0, 2],
+      [1, 0, 2, 1, 2, 0, 1],
+      [1, 2, 1, 0, 2, 1, 2, 0],
+      [2, 1, 2, 1, 0, 2, 1, 2, 2],
+    ],
+    gateDiveCooldownMs: 1100, gateDiveRange: 9.0,   // hotter wasps while gated
+    gateCruiseSpeed: 5.0,      // gated approach speed — fights, not drift-watching
+    windUpMs: 70, windUpDeg: -1.5,             // counter-rotation blink
+    snap1Ms: 150, holdMs: 420, snap2Ms: 130, settleMs: 130, resumeMs: 200,
+                               // hold 420: zipper locks (860 ms) before scroll
+                               //   resumes (t5 = 900); event total 1100 ms
+    backS: 1.1,                // easeOutBack overshoot (~5%, one settle, no wobble)
+    clearMsgMs: 700,
+    zipStartMs: 220,           // zipper starts on snap 1's impact frame
+    zipCols: 31, zipPerColMs: 16, zipDropMs: 120,
+    zipDropTiles: 2.75, zipDipTiles: 0.06, zipDipMs: 40,
+  },
+
+  edges: { margin: 0.4, killY: -7 },
+
+  palette: {                    // grey-box: neutral + readability hints
+    bg: 0x232830, ground: 0x767c85, groundAlt: 0x6a707a, catwalk: 0x8d939c,
+    player: 0xd9dde2, gun: 0xffc966, wasp: 0x7cc47c, bullet: 0xfff0c2,
+  },
+};
+
+/* ============================= PATH =============================== */
+/* Pure polyline math for the hexagonal tower. Gameplay simulates in
+   logical coords (s = distance along the level in tiles, y = height);
+   only rendering maps s → world via these. No three.js, no DOM. */
+
+const DEG = Math.PI / 180;
+
+function cornerSList(cfg) {
+  const out = [];
+  for (let k = 1; k <= cfg.path.faces; k++) out.push(cfg.path.introTiles + cfg.path.faceTiles * k);
+  return out;
+}
+
+function haltSFor(cornerS, cfg) { return cornerS - cfg.waves.haltOffset; }
+
+// face index of a distance s: 0 = intro, 1..faces = tower faces, faces+1 = outro
+function faceIndexAt(s, cfg) {
+  const p = cfg.path;
+  if (s < p.introTiles) return 0;
+  return Math.min(Math.floor((s - p.introTiles) / p.faceTiles) + 1, p.faces + 1);
+}
+
+// segment table: sharp polyline with a 2-tile chamfer (two turnDeg bends)
+// at every corner. Headings sum to a full 360° circuit after 6 corners.
+function buildSegments(cfg) {
+  const turn = cfg.path.turnDeg * DEG * cfg.path.turnSign;
+  const segs = [{ s0: 0, x: 0, z: 0, heading: 0 }];
+  for (const cs of cornerSList(cfg)) {
+    for (const bs of [cs, cs + cfg.path.chamferTiles]) {
+      const prev = segs[segs.length - 1];
+      const len = bs - prev.s0;
+      segs.push({
+        s0: bs,
+        x: prev.x + Math.cos(prev.heading) * len,
+        z: prev.z - Math.sin(prev.heading) * len,
+        heading: prev.heading + turn,
+      });
+    }
+  }
+  return segs;
+}
+
+function segAt(segs, s) {
+  for (let i = segs.length - 1; i >= 0; i--) if (s >= segs[i].s0) return segs[i];
+  return segs[0];
+}
+
+function polyAt(segs, s, out = { x: 0, z: 0 }) { // s → world position at height 0;
+  const g = segAt(segs, s);                      //   out-param lets per-frame callers
+  const d = s - g.s0;                            //   reuse one scratch (no GC churn)
+  out.x = g.x + Math.cos(g.heading) * d;
+  out.z = g.z - Math.sin(g.heading) * d;
+  return out;
+}
+
+function headingAt(segs, s) { return segAt(segs, s).heading; }   // sharp, per segment
+
+// blended heading for dynamic entities: smoothstep each bend's turn over
+// ±blend tiles so rigs don't pop 30° when crossing a bend column.
+function yawAt(segs, s, blend) {
+  if (!(blend > 0)) return headingAt(segs, s);
+  let yaw = segs[0].heading;
+  for (let i = 1; i < segs.length; i++) {
+    const d = segs[i].heading - segs[i - 1].heading;
+    const u = Math.min(1, Math.max(0, (s - (segs[i].s0 - blend)) / (2 * blend)));
+    yaw += d * u * u * (3 - 2 * u);
+  }
+  return yaw;
+}
+
+const CORNER_S = cornerSList(CONFIG);            // [89, 154, 219, 284, 349, 414]
+const SEGS = buildSegments(CONFIG);
+const HALT_S = CORNER_S.map((cs) => haltSFor(cs, CONFIG));
+
+/* ============================ WAVES =============================== */
+/* Pure choreography math for wave gates and the corner ritual: the
+   yaw-snap timeline, the scroll resume curve, and the brick zipper.
+   All timings are event-local ms (t = gameMs - tStart). */
+
+function waveSize(k, cfg) { return cfg.waves.baseSize + cfg.waves.sizePerWave * k; }
+
+function waveLane(k, i, cfg) {                   // per-wave altitude composition
+  const comp = cfg.waves.comp[k - 1];
+  return cfg.waves.laneHeights[comp[i % comp.length]];
+}
+
+function easeOutBack(u, s) {
+  const v = u - 1;
+  return 1 + (s + 1) * v * v * v + s * v * v;
+}
+
+function cornerTimeline(cfg) {
+  const W = cfg.waves;
+  const t1 = W.windUpMs;                         // wind-up ends
+  const t2 = t1 + W.snap1Ms;                     // snap 1 impact frame
+  const t3 = t2 + W.holdMs;                      // ratchet hold ends
+  const t4 = t3 + W.snap2Ms;                     // snap 2 lands
+  const t5 = t4 + W.settleMs;                    // settle ends, scroll resumes
+  const t6 = t5 + W.resumeMs;                    // event done
+  return { t1, t2, t3, t4, t5, t6 };
+}
+
+function cornerEventTotalMs(cfg) { return cornerTimeline(cfg).t6; }
+
+// camera yaw delta (degrees) over the event: 0 → -1.5 → 30 → hold → 60
+function cornerYawDeltaDeg(tMs, cfg) {
+  const W = cfg.waves;
+  const T = cornerTimeline(cfg);
+  const snap = cfg.path.turnDeg;                 // per-snap magnitude (30)
+  if (tMs <= 0) return 0;
+  if (tMs < T.t1) { const u = tMs / W.windUpMs; return W.windUpDeg * u * u; }
+  if (tMs < T.t2) { const u = (tMs - T.t1) / W.snap1Ms; return W.windUpDeg + (snap - W.windUpDeg) * easeOutBack(u, W.backS); }
+  if (tMs < T.t3) return snap;
+  if (tMs < T.t4) { const u = (tMs - T.t3) / W.snap2Ms; return snap + snap * easeOutBack(u, W.backS); }
+  return snap * 2;
+}
+
+// scroll velocity during the event: frozen, then quadratic ease back in
+function cornerScrollVel(tMs, cfg) {
+  const T = cornerTimeline(cfg);
+  if (tMs < T.t5) return 0;
+  const u = Math.min(1, (tMs - T.t5) / cfg.waves.resumeMs);
+  return cfg.scrollSpeed * u * u;
+}
+
+// brick-slam zipper: column j (0-based within the slam set) drops from
+// zipDropTiles above with gravity ease, dips one beat, then locks.
+function zipperOffset(tMs, colIdx, cfg) {
+  const W = cfg.waves;
+  const local = tMs - (W.zipStartMs + colIdx * W.zipPerColMs);
+  if (local < 0) return { phase: 'hidden', dy: 0 };
+  if (local < W.zipDropMs) {
+    const u = local / W.zipDropMs;
+    return { phase: 'drop', dy: W.zipDropTiles * (1 - u * u) };
+  }
+  if (local < W.zipDropMs + W.zipDipMs) return { phase: 'dip', dy: -W.zipDipTiles };
+  return { phase: 'locked', dy: 0 };
+}
+
+/* =========================== GENERATOR ============================ */
+/* Pattern-chunk layout + ambient spawn-director math. Pure: no three.js,
+   no DOM — the harness rebuilds the level and asserts every invariant.
+   Ground is authored as a stream of named chunks (flats, steps, stairs,
+   plateaus, trenches, gap hops, island hops, ridges) instead of a
+   coin-flip walk. Invariants: heights within [minH, maxH]; adjacent
+   solid columns differ by ≤ 2; gap runs ≤ gapMax with ≥ landingMin solid
+   columns after and ≤ 1 height change across; intro + tail flat; corner
+   aprons flat and platform-free; every catwalk within maxReach. */
+
+const GAP = -999;
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function clampH(v, g) { return Math.max(g.minH, Math.min(g.maxH, v)); }
+
+// Each chunk emits {cols, h}: column heights (GAP for gaps) plus the walk
+// height after the chunk. Every chunk's last solid column equals its
+// returned h, so chunk-to-chunk seams can never step more than the
+// chunk's own internal moves (≤ 2).
+const CHUNK_LIB = [
+  ['flat', (rng, h, g) => ({ cols: new Array(4 + Math.floor(rng() * 5)).fill(h), h })],
+  ['step', (rng, h, g) => {                    // single ledge up/down (±1, sometimes ±2)
+    const nh = clampH(h + (rng() < 0.5 ? -1 : 1) * (rng() < 0.3 ? 2 : 1), g);
+    return { cols: new Array(3 + Math.floor(rng() * 4)).fill(nh), h: nh };
+  }],
+  ['stairs', (rng, h, g) => {                  // 2–3 risers with short treads
+    const dir = rng() < 0.5 ? 1 : -1;
+    const cols = [];
+    let hh = h;
+    for (let i = 0, n = 2 + Math.floor(rng() * 2); i < n; i++) {
+      hh = clampH(hh + dir, g);
+      for (let j = 0, run = 2 + Math.floor(rng() * 2); j < run; j++) cols.push(hh);
+    }
+    return { cols, h: hh };
+  }],
+  ['gapHop', (rng, h, g) => {                  // gap + guaranteed landing strip
+    const cols = new Array(2 + Math.floor(rng() * (g.gapMax - 1))).fill(GAP);
+    for (let j = 0; j < g.landingMin; j++) cols.push(h);
+    return { cols, h };
+  }],
+  ['plateau', (rng, h, g) => {                 // raised slab, then back down
+    const cols = new Array(3 + Math.floor(rng() * 3)).fill(clampH(h + 2, g));
+    for (let j = 0, run = 2 + Math.floor(rng() * 2); j < run; j++) cols.push(h);
+    return { cols, h };
+  }],
+  ['trench', (rng, h, g) => {                  // dip to the floor, climb back out
+    const cols = new Array(3 + Math.floor(rng() * 3)).fill(g.minH);
+    for (let j = 0, run = 2 + Math.floor(rng() * 2); j < run; j++) cols.push(h);
+    return { cols, h };
+  }],
+  ['islandHop', (rng, h, g) => {               // gap, 3-tile island, gap, landing
+    const cols = [GAP, GAP, h, h, h, GAP, GAP];
+    for (let j = 0; j < g.landingMin; j++) cols.push(h);
+    return { cols, h };
+  }],
+  ['ridge', (rng, h, g) => {                   // bumpy rhythm of one-tile lips
+    const hi = clampH(h + 1, g);
+    const cols = [];
+    for (let c = 0, n = 2 + Math.floor(rng() * 2); c < n; c++) cols.push(h, h, hi, hi);
+    cols.push(h, h);
+    return { cols, h };
+  }],
+];
+
+function pickChunk(rng, weights) {
+  let total = 0;
+  for (const [name] of CHUNK_LIB) total += weights[name];
+  let r = rng() * total;
+  for (const entry of CHUNK_LIB) {
+    r -= weights[entry[0]];
+    if (r < 0) return entry;
+  }
+  return CHUNK_LIB[0];
+}
+
+function buildLevel(cfg) {
+  const L = cfg.levelLength;
+  const G = cfg.gen;
+  const corners = cornerSList(cfg);
+  const groundH = new Array(L);
+  const platforms = [];                        // one-way catwalks {x0, x1, y}
+  const chunkLog = [];                         // chunk names, for variety asserts
+  const rng = mulberry32(G.seed);
+
+  // ground: flat intro, chunk stream, flat outro tail
+  let x = 0, h = 3;
+  while (x < cfg.path.introTiles) groundH[x++] = 3;
+  const tail = L - G.tailFlat;
+  while (x < tail) {
+    const picked = pickChunk(rng, G.weights);
+    const c = picked[1](rng, h, G);
+    chunkLog.push(picked[0]);
+    for (const col of c.cols) {
+      if (x >= tail) break;
+      groundH[x++] = col;
+    }
+    h = c.h;
+  }
+  while (x < L) groundH[x++] = 3;
+
+  // Contra tiers: a near-continuous mid lane (+2.35 over local ground) with
+  // high lane stretches (+3 again) above it. All one-way: jump up through
+  // them, down+jump drops a tier. Mid needs a committed full-hold jump —
+  // analytic apex is 2.72, but the semi-implicit integrator's discrete apex
+  // is 2.61 @60Hz and 2.49 @30Hz, so +2.35 keeps mounting frame-rate safe
+  // (margins +0.26 / +0.14). High still needs the double jump (mid→high +3).
+  const prng = mulberry32(G.tierSeed);
+  let cx = 26;
+  while (cx < L - 28) {
+    const segLen = 8 + Math.floor(prng() * 7);         // 8–14 column segments
+    let base = 2;
+    for (let k = cx; k < Math.min(cx + segLen, L); k++)
+      if (groundH[k] > -100) base = Math.max(base, groundH[k]);
+    if (prng() < 0.8) {
+      const len = segLen - 2 - Math.floor(prng() * 2); // leaves 2–3 column lane gaps
+      const y = base + 2.35;
+      platforms.push({ x0: cx, x1: cx + len, y });
+      if (y + 3 <= 10 && prng() < 0.5) {
+        const hiLen = Math.max(3, len - 3);
+        const off = 1 + Math.floor(prng() * 2);
+        platforms.push({ x0: cx + off, x1: cx + off + hiLen, y: y + 3 });
+      }
+    }
+    cx += segLen;
+  }
+
+  // corner aprons (corner-zone cleanliness): solid flat staging ground
+  // through each chamfer — the pivot and both bend columns must be ground,
+  // not gap — and no catwalk may span a bend.
+  for (const cs of corners) {
+    for (let s = cs - 5; s <= cs + 2; s++) groundH[s] = 3;
+    for (let i = platforms.length - 1; i >= 0; i--)
+      if (platforms[i].x1 >= cs - 3 && platforms[i].x0 <= cs + 3) platforms.splice(i, 1);
+  }
+
+  // reachability sweep: the apron pass can orphan a high catwalk whose mid
+  // support it deleted — prune anything beyond double-jump reach, repeating
+  // until stable (pruning one support can strand another).
+  let pruned = true;
+  while (pruned) {
+    pruned = false;
+    for (let i = platforms.length - 1; i >= 0; i--) {
+      const p = platforms[i];
+      let best = -999;
+      for (let k = Math.max(0, p.x0 - 1); k <= Math.min(L - 1, p.x1 + 1); k++)
+        if (groundH[k] > -100) best = Math.max(best, groundH[k]);
+      for (const q of platforms)
+        if (q !== p && q.y < p.y && q.x1 > p.x0 - 1 && q.x0 < p.x1 + 1) best = Math.max(best, q.y);
+      if (p.y - best > G.maxReach) { platforms.splice(i, 1); pruned = true; }
+    }
+  }
+
+  return { groundH, platforms, chunkLog };
+}
+
+// Ambient spawn table: density authored in seconds of scroll so it scales
+// with scrollSpeed, escalating per face; corner-clear zones stay empty —
+// gate waves are authored by the wave system, never by this table.
+function buildSpawnTable(cfg) {
+  const S = cfg.spawner;
+  const corners = cornerSList(cfg);
+  const rng = mulberry32(S.seed);
+  const nearCorner = (x) =>
+    corners.some((cs) => x >= cs - S.cornerClearBefore && x <= cs + S.cornerClearAfter);
+  const out = [];
+  const end = cfg.levelLength - S.endFromEnd;
+  let x = S.startS;
+  while (x < end) {
+    const f = Math.min(cfg.path.faces, Math.max(1, faceIndexAt(x, cfg)));
+    if (!nearCorner(x)) {
+      out.push({ x, type: 'wasp' });
+      if (rng() < S.pairChance[f - 1] && !nearCorner(x + S.pairGapTiles) && x + S.pairGapTiles < end)
+        out.push({ x: x + S.pairGapTiles, type: 'wasp' });
+    }
+    x += Math.max(2, Math.round((S.faceGapSec[f - 1] + rng() * S.jitterSec) * cfg.scrollSpeed));
+  }
+  return out;
+}
+
+/* @pure-end */
+
+const TILE_DEPTH = 8;           // solid tiles below each surface (collision)
+const BULLET_MAX = 256;
+const _pp = { x: 0, z: 0 };     // polyAt scratch shared by the per-frame call sites
+
+/* ======================== RENDERER / SCENE ======================== */
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(CONFIG.palette.bg);
+scene.fog = new THREE.Fog(CONFIG.palette.bg, CONFIG.fog.near, CONFIG.fog.far);
+
+const camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, innerWidth / innerHeight, 0.1, 200);
+
+const HIDE = new THREE.Matrix4().makeScale(0, 0, 0);   // shared "invisible instance" matrix
+
+const hemi = new THREE.HemisphereLight(0xcfd8e3, 0x3a3f46, 1.1);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+sun.position.set(6, 12, 8);
+scene.add(sun);
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  calibrateEdges();
+});
+
+/* ========================== LOOP / TIME =========================== */
+
+let gameMs = 0;                 // gameplay clock — only advances while PLAYING
+let scrollX = 0;
+
+function approach(v, target, step) {
+  return v < target ? Math.min(target, v + step) : Math.max(target, v - step);
+}
+
+// Screen edges as constant s-offsets from scrollX, calibrated at boot and
+// on resize with a probe camera at the local rig pose. Replaces per-frame
+// frustum unprojection, which goes invalid the moment the camera yaws.
+// Because they derive from scrollX, edges freeze during corner events.
+let EDGE_L = 0, EDGE_R = 0;
+const _edgeV = new THREE.Vector3();
+const _probe = new THREE.PerspectiveCamera(CONFIG.camera.fov, 1, 0.1, 200);
+
+function probeXAtNdc(ndcX) {
+  _edgeV.set(ndcX, 0, 0.5).unproject(_probe).sub(_probe.position).normalize();
+  return _probe.position.x + _edgeV.x * (-_probe.position.z / _edgeV.z);
+}
+
+function calibrateEdges() {
+  const C = CONFIG.camera;
+  _probe.fov = C.fov;
+  _probe.aspect = innerWidth / innerHeight;
+  _probe.position.set(C.x, C.y, C.z);
+  _probe.lookAt(C.lookX, C.lookY, 0);
+  _probe.updateProjectionMatrix();
+  _probe.updateMatrixWorld(true);
+  EDGE_L = probeXAtNdc(-1);
+  EDGE_R = probeXAtNdc(1);
+}
+
+function sLeftEdge()  { return scrollX + EDGE_L; }
+function sRightEdge() { return scrollX + EDGE_R; }
+
+/* ============================= INPUT ============================== */
+
+const keys = { left: false, right: false, up: false, down: false, jump: false, fire: false, strafe: false };
+const KEYMAP = {
+  ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
+  ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down',
+  Space: 'jump', KeyK: 'jump', KeyJ: 'fire', KeyX: 'fire',
+  ShiftLeft: 'strafe', ShiftRight: 'strafe',
+};
+let jumpBufferedUntil = 0;
+
+addEventListener('keydown', (e) => {
+  if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); e.preventDefault(); return; }
+  if (e.code === 'KeyR' && (state === 'GAME_OVER' || state === 'VICTORY')) { resetGame(); return; }
+  const k = KEYMAP[e.code];
+  if (!k) return;
+  e.preventDefault();
+  if (k === 'jump' && !e.repeat) jumpBufferedUntil = gameMs + CONFIG.player.jumpBufferMs;
+  keys[k] = true;
+});
+addEventListener('keyup', (e) => {
+  const k = KEYMAP[e.code];
+  if (k) keys[k] = false;
+});
+
+/* ============================= LEVEL ============================== */
+
+const LEVEL_LEN = CONFIG.levelLength;
+const END_SCROLL = LEVEL_LEN - 30;
+// groundH: surface y per column (-999 = gap); platforms: one-way catwalks
+// {x0, x1, y}. Both authored by the pure pattern-chunk generator, which
+// also enforces corner-apron cleanliness for the gate rituals.
+const { groundH, platforms } = buildLevel(CONFIG);
+
+function isSolid(i, j) {
+  if (i < 0 || i >= LEVEL_LEN) return true;            // walls at level ends
+  const g = groundH[i];
+  return g > -100 && j < g && j >= g - TILE_DEPTH;
+}
+function solidAt(x, y) { return isSolid(Math.floor(x), Math.floor(y)); }
+function groundTopAt(x) {
+  const g = groundH[Math.floor(x)];
+  return g > -100 ? g : -999;
+}
+
+// --- level meshes: baked per-face static geometry ---------------------
+// Tile instances are baked once along the tower polyline with per-column
+// instance ranges + base matrices (and per-face ranges for later passes),
+// so the corner ritual can slam columns in without a rebuild.
+const VISUAL_DEPTH = 4;
+let tiles;
+const tileBaseMats = [];                                  // final matrix per instance
+const columnInstances = new Array(LEVEL_LEN).fill(null);  // col → {start, count, settled}
+const faceRanges = [];                                    // face → {col0, col1, inst0, inst1}
+const slamSets = [];                                      // corner k-1 → zipper column list
+const farSets = [];                                       // corner k-1 → rest of the next face
+const slatMeshes = [];                                    // catwalk slats {mesh, x0, x1}
+{
+  let count = 0;
+  for (let i = 0; i < LEVEL_LEN; i++) if (groundH[i] > -100) count += VISUAL_DEPTH;
+
+  const tileGeo = new THREE.BoxGeometry(1, 1, 2);
+  const tileMat = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true });
+  tiles = new THREE.InstancedMesh(tileGeo, tileMat, count);
+  tiles.frustumCulled = false;
+
+  const cA = new THREE.Color(CONFIG.palette.ground);
+  const cB = new THREE.Color(CONFIG.palette.groundAlt);
+  let idx = 0;
+  for (let i = 0; i < LEVEL_LEN; i++) {
+    const f = faceIndexAt(i, CONFIG);
+    if (!faceRanges[f]) faceRanges[f] = { col0: i, col1: i, inst0: idx, inst1: idx - 1 };
+    faceRanges[f].col1 = i;
+    if (groundH[i] < -100) continue;                   // gap column: no instances
+    const p = polyAt(SEGS, i + 0.5);
+    const colYaw = headingAt(SEGS, i + 0.5);           // sharp per-column facing
+    columnInstances[i] = { start: idx, count: VISUAL_DEPTH, settled: true };
+    for (let d = 1; d <= VISUAL_DEPTH; d++) {
+      const j = groundH[i] - d;
+      const m = new THREE.Matrix4().makeRotationY(colYaw);
+      m.setPosition(p.x, j + 0.5, p.z);
+      tileBaseMats.push(m);
+      tiles.setMatrixAt(idx, m);
+      tiles.setColorAt(idx, (i + j) % 2 === 0 ? cA : cB);   // checker = scroll-speed readability
+      idx++;
+    }
+    faceRanges[f].inst1 = idx - 1;
+  }
+  scene.add(tiles);
+
+  for (const cs of CORNER_S) {                         // next face: zipper strip + far rest,
+    const strip = [], far = [];                        //   both unbuilt until the ritual
+    const faceEnd = Math.min(cs + CONFIG.path.faceTiles - 1, LEVEL_LEN - 1);
+    for (let s = cs; s <= Math.min(cs + CONFIG.waves.zipCols - 1, LEVEL_LEN - 1); s++) strip.push(s);
+    for (let s = cs + CONFIG.waves.zipCols; s <= faceEnd; s++) far.push(s);
+    slamSets.push(strip);
+    farSets.push(far);
+  }
+
+  const walkMat = new THREE.MeshStandardMaterial({ color: CONFIG.palette.catwalk, flatShading: true });
+  for (const p of platforms) {
+    const len = p.x1 - p.x0;
+    const mid = (p.x0 + p.x1) / 2;
+    const wp = polyAt(SEGS, mid);
+    const slat = new THREE.Mesh(new THREE.BoxGeometry(len, 0.18, 1.4), walkMat);
+    slat.position.set(wp.x, p.y - 0.09, wp.z);
+    slat.rotation.y = headingAt(SEGS, mid);            // aprons keep slats off the bends
+    scene.add(slat);
+    slatMeshes.push({ mesh: slat, x0: p.x0, x1: p.x1 });
+  }
+  hideAllSlamColumns();                                // after slats: they hide with their face
+}
+
+function hideAllSlamColumns() {          // next faces stay unbuilt until their ritual
+  for (const sets of [slamSets, farSets]) {
+    for (const cols of sets) {
+      for (const s of cols) {
+        const col = columnInstances[s];
+        if (!col) continue;
+        col.settled = false;
+        for (let n = 0; n < col.count; n++) tiles.setMatrixAt(col.start + n, HIDE);
+      }
+    }
+  }
+  tiles.instanceMatrix.needsUpdate = true;
+  for (const sl of slatMeshes)           // catwalks over an unbuilt face are unbuilt too
+    sl.mesh.visible = !CORNER_S.some((cs) =>
+      sl.x1 >= cs && sl.x0 <= cs + CONFIG.path.faceTiles - 1);
+}
+
+// Settled-aware terrain queries: while a face is still unbuilt (columns
+// hidden until its corner ritual slams them in), bullets and wasp floor
+// checks must not collide with the invisible terrain — the face does not
+// exist yet. Player collision never reaches past the corner clamp, and
+// once a column locks (or the face commits) these degrade to the plain
+// groundH queries.
+function builtSolidAt(x, y) {
+  const i = Math.floor(x);
+  if (i >= 0 && i < LEVEL_LEN) {
+    const col = columnInstances[i];
+    if (col && !col.settled) return false;
+  }
+  return isSolid(i, Math.floor(y));
+}
+
+function builtGroundTopAt(x) {
+  const i = Math.floor(x);
+  if (i >= 0 && i < LEVEL_LEN) {
+    const col = columnInstances[i];
+    if (col && !col.settled) return -999;
+  }
+  return groundTopAt(x);
+}
+
+/* ======================== POOLS / WEAPONS ========================= */
+/* Grey-box: rifle only. Weapon letters (S/L/H/F) + modifiers land here. */
+
+const bulletPool = [];
+for (let i = 0; i < BULLET_MAX; i++) bulletPool.push({ alive: false, x: 0, y: 0, vx: 0, vy: 0, dieAt: 0 });
+
+const bulletMesh = new THREE.InstancedMesh(
+  new THREE.SphereGeometry(CONFIG.rifle.radius, 6, 6),
+  new THREE.MeshBasicMaterial({ color: CONFIG.palette.bullet }),
+  BULLET_MAX
+);
+bulletMesh.frustumCulled = false;
+scene.add(bulletMesh);
+const _bm = new THREE.Matrix4();
+
+let shotsFired = 0;
+
+function spawnBullet(x, y, dx, dy) {
+  for (const b of bulletPool) {
+    if (b.alive) continue;
+    b.alive = true; b.x = x; b.y = y;
+    b.vx = dx * CONFIG.rifle.speed; b.vy = dy * CONFIG.rifle.speed;
+    b.dieAt = gameMs + CONFIG.rifle.lifeMs;
+    shotsFired++;
+    return;
+  }
+}
+
+function updateBullets(dt) {
+  for (let i = 0; i < BULLET_MAX; i++) {
+    const b = bulletPool[i];
+    if (!b.alive) { bulletMesh.setMatrixAt(i, HIDE); continue; }
+    b.x += b.vx * dt; b.y += b.vy * dt;
+    if (gameMs > b.dieAt || builtSolidAt(b.x, b.y)) { b.alive = false; bulletMesh.setMatrixAt(i, HIDE); continue; }
+    let hit = false;
+    for (let w = wasps.length - 1; w >= 0; w--) {
+      const e = wasps[w];
+      if (gameMs < e.enterUntil) continue;             // still materializing: no hitbox
+      if ((b.x - e.x) ** 2 + (b.y - e.y) ** 2 < 0.55 ** 2) {
+        hitWasp(e, w); hit = true; break;
+      }
+    }
+    if (hit) { b.alive = false; bulletMesh.setMatrixAt(i, HIDE); continue; }
+    const bp = polyAt(SEGS, b.x, _pp);
+    _bm.setPosition(bp.x, b.y, bp.z);
+    bulletMesh.setMatrixAt(i, _bm);
+  }
+  bulletMesh.instanceMatrix.needsUpdate = true;
+}
+
+/* ======================== ENTITIES: PLAYER ======================== */
+
+const P = CONFIG.player;
+const player = {
+  x: 6, y: 3, vx: 0, vy: 0,
+  hw: P.width / 2, h: P.height,
+  facing: 1, aim: new THREE.Vector2(1, 0),
+  grounded: false, onOneWay: null, airJumpsLeft: P.airJumps,
+  coyoteUntil: 0, dropUntil: 0, jumpCutDone: true,
+  hp: P.maxHealth, lives: P.lives,
+  iframesUntil: 0, hitstunUntil: 0,
+  nextFireAt: 0,
+};
+
+const rig = new THREE.Group();
+{
+  const mat = new THREE.MeshStandardMaterial({ color: CONFIG.palette.player, flatShading: true });
+  // slimmed ~12% in width/depth for the pulled-back camera; heights and the
+  // 0.7 × 1.7 collision box unchanged
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.85, 0.4), mat);
+  torso.position.y = 0.95;
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.3, 0.28), mat);
+  head.position.y = 1.55;
+  const legL = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.55, 0.19), mat);
+  legL.position.set(-0.12, 0.28, 0);
+  const legR = legL.clone();
+  legR.position.x = 0.12;
+  rig.add(torso, head, legL, legR);
+}
+const gunGroup = new THREE.Group();
+gunGroup.position.set(0, 1.05, 0.25);
+const gun = new THREE.Mesh(
+  new THREE.BoxGeometry(0.75, 0.14, 0.14),
+  new THREE.MeshStandardMaterial({ color: CONFIG.palette.gun, flatShading: true })
+);
+gun.position.x = 0.45;
+gunGroup.add(gun);
+rig.add(gunGroup);
+scene.add(rig);
+
+function computeAim() {
+  const h = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+  const v = (keys.up ? 1 : 0) - (keys.down ? 1 : 0);
+  if (h !== 0) player.facing = h;
+  if (keys.strafe) return;                        // strafe-lock: aim frozen
+  let ax, ay;
+  if (h === 0 && v === 0)      { ax = player.facing; ay = 0; }
+  else if (h === 0 && v > 0)   { ax = 0; ay = 1; }
+  else if (h === 0 && v < 0)   { ax = player.grounded ? player.facing : 0; ay = -1; }
+  else                         { ax = h; ay = v; }
+  const n = Math.hypot(ax, ay);
+  player.aim.set(ax / n, ay / n);
+}
+
+function playerOverlapsSolid() {
+  const x0 = Math.floor(player.x - player.hw + 0.02), x1 = Math.floor(player.x + player.hw - 0.02);
+  const y0 = Math.floor(player.y + 0.02), y1 = Math.floor(player.y + player.h - 0.02);
+  for (let i = x0; i <= x1; i++) for (let j = y0; j <= y1; j++) if (isSolid(i, j)) return true;
+  return false;
+}
+
+function updatePlayer(dt) {
+  computeAim();
+
+  // -- horizontal drive (locked out during hitstun so knockback registers)
+  const h = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+  if (gameMs >= player.hitstunUntil) {
+    const accel = player.grounded ? P.accelGround : P.accelAir;
+    player.vx = approach(player.vx, h * P.runSpeed, accel * dt);
+  }
+
+  // -- jump: buffer + coyote + one air jump; down+jump on a catwalk = drop-through
+  if (jumpBufferedUntil > gameMs) {
+    if (player.grounded || player.coyoteUntil > gameMs) {
+      jumpBufferedUntil = 0;
+      if (player.grounded && player.onOneWay && keys.down) {
+        player.dropUntil = gameMs + P.dropThroughMs;
+        player.y -= 0.05;
+        player.grounded = false;
+      } else {
+        player.vy = P.jumpVel;
+        player.grounded = false;
+        player.jumpCutDone = false;
+        player.coyoteUntil = 0;
+      }
+    } else if (player.airJumpsLeft > 0) {
+      jumpBufferedUntil = 0;
+      player.airJumpsLeft--;
+      player.vy = P.airJumpVel;
+      player.jumpCutDone = false;
+    }
+  }
+  // variable jump height: releasing jump cuts upward velocity once
+  if (!keys.jump && player.vy > 0 && !player.jumpCutDone) {
+    player.vy *= P.jumpCutMult;
+    player.jumpCutDone = true;
+  }
+
+  // -- gravity
+  const g = P.gravity * (player.vy < 0 ? P.fallGravityMult : 1);
+  player.vy = Math.max(P.terminalVel, player.vy + g * dt);
+
+  // -- integrate X, resolve against solids (dt clamp keeps moves < 1 tile)
+  player.x += player.vx * dt;
+  if (player.vx > 0) {
+    const ci = Math.floor(player.x + player.hw);
+    for (let j = Math.floor(player.y + 0.02); j <= Math.floor(player.y + player.h - 0.02); j++)
+      if (isSolid(ci, j)) { player.x = ci - player.hw - 0.001; player.vx = 0; break; }
+  } else if (player.vx < 0) {
+    const ci = Math.floor(player.x - player.hw);
+    for (let j = Math.floor(player.y + 0.02); j <= Math.floor(player.y + player.h - 0.02); j++)
+      if (isSolid(ci, j)) { player.x = ci + 1 + player.hw + 0.001; player.vx = 0; break; }
+  }
+
+  // -- integrate Y, resolve against solids + one-way catwalks
+  const prevY = player.y;
+  player.y += player.vy * dt;
+  const wasGrounded = player.grounded;
+  player.grounded = false;
+  player.onOneWay = null;
+  if (player.vy <= 0) {
+    const i0 = Math.floor(player.x - player.hw + 0.02), i1 = Math.floor(player.x + player.hw - 0.02);
+    let landY = null, landPl = null;
+    for (let j = Math.floor(prevY); j >= Math.floor(player.y); j--) {
+      if (j + 1 > prevY + 0.001) continue;             // feet started below this surface
+      if (isSolid(i0, j) || isSolid(i1, j)) { landY = j + 1; break; }
+    }
+    if (player.dropUntil <= gameMs) {
+      for (const pl of platforms) {                    // stacked lanes: land on highest crossed
+        if (player.x + player.hw > pl.x0 && player.x - player.hw < pl.x1 &&
+            prevY >= pl.y - 0.001 && player.y <= pl.y &&
+            (landY === null || pl.y > landY)) {
+          landY = pl.y; landPl = pl;
+        }
+      }
+    }
+    if (landY !== null) {
+      player.y = landY; player.vy = 0; player.grounded = true; player.onOneWay = landPl;
+    }
+  } else {
+    const cj = Math.floor(player.y + player.h);
+    const i0 = Math.floor(player.x - player.hw + 0.02), i1 = Math.floor(player.x + player.hw - 0.02);
+    if (isSolid(i0, cj) || isSolid(i1, cj)) { player.y = cj - player.h - 0.001; player.vy = 0; }
+  }
+  if (player.grounded) { player.coyoteUntil = gameMs + P.coyoteMs; player.airJumpsLeft = P.airJumps; }
+  if (!wasGrounded && player.grounded) player.jumpCutDone = true;
+
+  // -- frustum constraints: left edge is a damage plane that pushes.
+  //    Crush damage is suspended while a corner gate/turn holds the scroll —
+  //    the plane isn't advancing, so a pin there would be unfair jank.
+  const le = sLeftEdge() + CONFIG.edges.margin;
+  if (player.x - player.hw < le) {
+    player.x = le + player.hw;
+    if (playerOverlapsSolid() && !cornerBusy()) damagePlayer(1, player.x - 1);   // crushed against terrain
+  }
+  //    Right clamp: while the active corner's face is still unbuilt, the
+  //    pivot is the wall — the screen edge must not let the player walk
+  //    onto hidden slam terrain (invisible floors and gaps past the corner).
+  const ac = activeCorner();
+  let re = sRightEdge() - CONFIG.edges.margin;
+  if (ac) re = Math.min(re, ac.s + 1 - CONFIG.edges.margin);
+  if (player.x + player.hw > re) player.x = re - player.hw;
+
+  // -- fell into a gap
+  if (player.y < CONFIG.edges.killY) { loseLife(); return; }
+
+  // -- fire
+  if (keys.fire && gameMs >= player.nextFireAt) {
+    player.nextFireAt = gameMs + CONFIG.rifle.fireRateMs;
+    const a = player.aim;
+    spawnBullet(player.x + a.x * 0.6, player.y + 1.05 + a.y * 0.5, a.x, a.y);
+  }
+
+  // -- rig transform (s,y → tower world) + aim pose + i-frame flicker
+  const pp = polyAt(SEGS, player.x, _pp);
+  rig.position.set(pp.x, player.y, pp.z);
+  rig.rotation.y = yawAt(SEGS, player.x, CONFIG.path.yawBlendTiles);
+  gunGroup.rotation.z = Math.atan2(player.aim.y, player.aim.x);
+  rig.visible = gameMs >= player.iframesUntil || Math.floor(gameMs / 90) % 2 === 0;
+}
+
+function damagePlayer(amount, fromX) {
+  if (gameMs < player.iframesUntil) return;
+  player.hp -= amount;
+  player.iframesUntil = gameMs + P.iframesMs;
+  player.hitstunUntil = gameMs + P.hitstunMs;
+  player.vx = Math.sign(player.x - fromX || 1) * P.knockbackX;
+  player.vy = P.knockbackY;
+  player.grounded = false;
+  if (player.hp <= 0) loseLife();
+}
+
+function loseLife() {
+  player.lives--;
+  if (player.lives < 0) { setState('GAME_OVER'); return; }
+  respawn();
+}
+
+function respawn() {
+  let i = Math.max(2, Math.ceil(sLeftEdge()) + 3);
+  while (i < LEVEL_LEN - 2 && (groundH[i] < -100 || groundH[i + 1] < -100)) i++;
+  player.x = i + 0.5;
+  player.y = (groundH[i] > -100 ? groundH[i] : 3) + 4;   // drop in from above
+  player.vx = 0; player.vy = 0;
+  player.hp = P.maxHealth;
+  player.iframesUntil = gameMs + 2000;
+  player.hitstunUntil = 0;
+  player.dropUntil = 0;
+  player.grounded = false;
+  player.airJumpsLeft = P.airJumps;
+}
+
+/* ==================== ENTITIES: WASP DRONE ======================== */
+/* Roster pass adds: polyp turret, houndframe, carrier, spore mortar. */
+
+const wasps = [];
+const waspGeo = new THREE.OctahedronGeometry(CONFIG.wasp.visualRadius);
+let kills = 0;
+let waspRng = mulberry32(5150);          // seeded: sim randomness is reproducible
+
+function spawnWasp(x, y, delayMs) {
+  const mat = new THREE.MeshStandardMaterial({
+    color: CONFIG.palette.wasp, flatShading: true, transparent: true, opacity: 0,
+  });
+  const mesh = new THREE.Mesh(waspGeo, mat);
+  mesh.visible = false;                    // hidden until its materialization begins
+  scene.add(mesh);
+  wasps.push({
+    x, y, baseY: y, vx: 0, vy: 0, dir: -1, t: waspRng() * 6,
+    hp: CONFIG.wasp.hp, state: 'cruise', stateUntil: 0, diveCdUntil: 0,
+    enterUntil: gameMs + (delayMs || 0) + CONFIG.wasp.enterMs,
+    flashUntil: 0, mesh, mat,
+  });
+}
+
+function removeWasp(idx, fade) {         // single removal path: gates count every exit
+  const e = wasps[idx];
+  if (fade) {                            // hand the mesh to the corpse pass to dissolve
+    corpses.push({ mesh: e.mesh, mat: e.mat, s: e.x, y: e.y, spin: e.t, t0: gameMs });
+  } else {
+    scene.remove(e.mesh);
+    e.mat.dispose();
+  }
+  wasps.splice(idx, 1);
+  onWaspRemoved();
+}
+
+function hitWasp(e, idx) {
+  e.hp -= CONFIG.rifle.damage;
+  e.flashUntil = gameMs + 70;
+  if (e.hp <= 0) {
+    kills++;
+    removeWasp(idx, true);
+  }
+}
+
+// Dead wasps are display-only: no sim, no gate participation (removeWasp
+// already fired onWaspRemoved), just the dissolve back into tower depth.
+const corpses = [];
+function updateCorpses() {
+  const W = CONFIG.wasp;
+  for (let i = corpses.length - 1; i >= 0; i--) {
+    const c = corpses[i];
+    const u = (gameMs - c.t0) / W.dieMs;
+    if (u >= 1) { scene.remove(c.mesh); c.mat.dispose(); corpses.splice(i, 1); continue; }
+    const yaw = yawAt(SEGS, c.s, CONFIG.path.yawBlendTiles);
+    const d = W.dieDepth * u * u;                 // accelerate away into the dark
+    const wp = polyAt(SEGS, c.s, _pp);
+    c.mesh.position.set(wp.x + Math.sin(yaw) * d, c.y - 0.6 * u, wp.z + Math.cos(yaw) * d);
+    c.mesh.rotation.y = yaw;
+    c.mesh.rotation.z = c.spin + u * 9;           // death tumble
+    c.mesh.scale.setScalar(1 + 0.3 * u);
+    c.mat.opacity = 1 - u * u;
+    c.mat.emissive.setHex(u < 0.16 ? 0xffffff : 0x000000);   // death pop, then dissolve
+  }
+}
+
+function updateWasps(dt) {
+  const W = CONFIG.wasp;
+  const GW = CONFIG.waves;
+  const gate = gateActive();
+  const diveRange = gate ? GW.gateDiveRange : W.diveRange;         // gated wasps press harder
+  const diveCooldown = gate ? GW.gateDiveCooldownMs : W.diveCooldownMs;
+  const cullX = sLeftEdge() - 8;
+  for (let i = wasps.length - 1; i >= 0; i--) {
+    const e = wasps[i];
+    if (gameMs < e.enterUntil - W.enterMs) {           // staged wave slot: not yet condensing
+      e.mesh.visible = false;
+      continue;
+    }
+    e.mesh.visible = true;
+    e.t += dt;
+    if (e.state === 'cruise') {
+      if (gate) {                                      // patrol box: nobody strands the gate
+        if (e.x < sLeftEdge() + 2) e.dir = 1;
+        else if (e.x > sRightEdge() - 2) e.dir = -1;
+      }
+      e.x += e.dir * (gate ? GW.gateCruiseSpeed : W.cruiseSpeed) * dt;
+      e.y = e.baseY + Math.sin(e.t * W.bobFreq) * W.bobAmp;
+      if (Math.abs(e.x - player.x) < diveRange && player.y + 1 < e.y &&
+          gameMs > e.diveCdUntil && gameMs >= e.enterUntil) {   // no ghost dives mid-materialize
+        const tx = player.x - e.x, ty = (player.y + 0.9) - e.y;
+        const n = Math.hypot(tx, ty) || 1;
+        e.vx = tx / n * W.diveSpeed; e.vy = ty / n * W.diveSpeed;
+        e.state = 'dive';
+        e.stateUntil = gameMs + W.diveMs;
+      }
+    } else if (e.state === 'dive') {
+      e.x += e.vx * dt; e.y += e.vy * dt;
+      const floor = builtGroundTopAt(e.x);       // hidden faces have no floor yet
+      if (gameMs > e.stateUntil || e.y < floor + 0.4) {
+        e.state = 'recover';
+        e.diveCdUntil = gameMs + diveCooldown;
+      }
+    } else {                                             // recover: climb back up
+      e.x -= 1.2 * dt;
+      if (gate) e.x = Math.max(e.x, sLeftEdge() + 1);    // no drifting out of the fight
+      e.y = approach(e.y, e.baseY, 5 * dt);
+      if (Math.abs(e.y - e.baseY) < 0.05) { e.state = 'cruise'; e.t = 0; }
+    }
+
+    if (e.x < cullX) {
+      removeWasp(i);
+      continue;
+    }
+
+    // contact damage: circle vs player AABB — only once fully materialized
+    if (gameMs >= e.enterUntil) {
+      const cx = Math.max(player.x - player.hw, Math.min(e.x, player.x + player.hw));
+      const cy = Math.max(player.y, Math.min(e.y, player.y + player.h));
+      if ((e.x - cx) ** 2 + (e.y - cy) ** 2 < W.contactRadius ** 2) damagePlayer(1, e.x);
+    }
+
+    // mock-3D presence: materialize in from tower depth, breathe while alive
+    let depth, scale;
+    if (gameMs < e.enterUntil) {
+      const u = 1 - (e.enterUntil - gameMs) / W.enterMs;    // 0 → 1 over the entrance
+      const ease = 1 - (1 - u) ** 3;
+      depth = W.enterDepth * (1 - ease);
+      scale = 0.7 + 0.3 * ease;
+      e.mat.opacity = u;
+    } else {
+      depth = Math.sin(e.t * W.wobbleFreq) * W.wobbleAmp;
+      scale = 1;
+      e.mat.opacity = 1;
+    }
+    e.mat.emissive.setHex(gameMs < e.flashUntil ? 0xffffff : 0x000000);
+    const yaw = yawAt(SEGS, e.x, CONFIG.path.yawBlendTiles);
+    const wp = polyAt(SEGS, e.x, _pp);
+    e.mesh.position.set(wp.x + Math.sin(yaw) * depth, e.y, wp.z + Math.cos(yaw) * depth);
+    e.mesh.rotation.y = yaw;
+    e.mesh.rotation.z = e.t * 2;
+    e.mesh.scale.setScalar(scale);
+  }
+}
+
+/* ============================ SPAWNER ============================= */
+/* Spawn director: data array keyed to scroll distance, built by the pure
+   generator — density authored in seconds of scroll (scales with
+   scrollSpeed), escalating per face along with the wingman pair chance.
+   Roster pass extends entries with more types; this is the final
+   mechanism. Corner zones are kept clean — gate waves are authored by
+   the wave system, never by the ambient table. */
+
+const spawnTable = buildSpawnTable(CONFIG);
+let spawnIdx = 0;
+let spawnRng = mulberry32(9001);
+
+function updateSpawner() {
+  if (cornerBusy()) return;              // gates author their own waves; on wide
+                                         //   aspect ratios the halted look-ahead
+                                         //   would otherwise reach past the
+                                         //   corner-clear zone and drop ambient
+                                         //   wasps onto the unbuilt face
+  // Trigger once the entry sits just INSIDE the view, so its materialization
+  // happens on screen instead of completing past the right edge.
+  const re = sRightEdge();
+  while (spawnIdx < spawnTable.length && spawnTable[spawnIdx].x < re - 1.5) {
+    const s = spawnTable[spawnIdx++];
+    const base = groundTopAt(s.x);
+    const r = spawnRng();
+    const lane = r < 0.45 ? 2.6 : r < 0.8 ? 4.6 : 7.2;   // low / mid / high tier
+    spawnWasp(s.x, Math.min((base > -100 ? base : 3) + lane + spawnRng() * 0.8, 10));
+  }
+}
+
+/* ====================== WAVES: GATE RUNTIME ======================= */
+/* Scroll halts at each corner until the wave is cleared; the killing
+   shot triggers the corner ritual — wind-up, two yaw snaps with a
+   ratchet hold, brick-slam zipper building the next face — then the
+   scroll eases back in. Byte-identical at all six corners. */
+
+const cornerEvents = CORNER_S.map((s, i) => ({ s, k: i + 1, state: 'idle', tStart: 0 }));
+
+function activeCorner() {                // first corner not yet completed
+  for (const c of cornerEvents) if (c.state !== 'done') return c;
+  return null;
+}
+
+function gateActive() {
+  const c = activeCorner();
+  return !!c && c.state === 'gate';
+}
+
+function cornerBusy() {                  // gate fight or turning: scroll is held
+  const c = activeCorner();
+  return !!c && (c.state === 'gate' || c.state === 'turning');
+}
+
+function armGate(c) {
+  c.state = 'gate';
+  spawnGateWave(c.k);
+}
+
+function spawnGateWave(k) {              // deterministic: no rng in wave layout
+  const W = CONFIG.waves;
+  const n = waveSize(k, CONFIG);
+  // Materialize IN the arena: the view is frozen during a gate, so the wave
+  // condenses out of the tower depth in front of the player — staggered
+  // right-to-left, one presence at a time. Placement is bounded by the real
+  // (aspect-corrected) view edges and never crosses onto the unbuilt face,
+  // so this is safe at any window shape.
+  const pivot = CORNER_S[k - 1];
+  const right = Math.min(sRightEdge() - 2, pivot - 2);
+  const left = Math.min(sLeftEdge() + 6, right - 4);
+  const span = Math.max(right - left, 4);
+  for (let i = 0; i < n; i++) {
+    const f = n === 1 ? 0 : i / (n - 1);
+    const sx = right - f * span;
+    const base = groundTopAt(sx);
+    const lane = waveLane(k, i, CONFIG);       // authored altitude mix per wave
+    spawnWasp(sx, Math.min((base > -100 ? base : 3) + lane, 10), i * W.staggerMs);
+  }
+}
+
+// Event-driven clear: called from every wasp removal path, so the ritual
+// starts on the exact frame the last hostile dies — the snap IS the stinger.
+function onWaspRemoved() {
+  const c = activeCorner();
+  if (c && c.state === 'gate' && wasps.length === 0) {
+    c.state = 'turning';
+    c.tStart = gameMs;
+  }
+}
+
+function finishCorner(c) {
+  updateZipper(c, 1e9);                  // lock every slam column to base
+  revealFaceRest(c);                     // rest of the face commits, fog-covered
+  c.state = 'done';
+  camYawBase += 2 * CONFIG.path.turnDeg * DEG * CONFIG.path.turnSign;
+  camYaw = camYawBase;
+}
+
+function revealFaceRest(c) {             // beyond the zipper strip: one distant commit
+  for (const s of farSets[c.k - 1]) {
+    const col = columnInstances[s];
+    if (!col || col.settled) continue;
+    col.settled = true;
+    for (let n = 0; n < col.count; n++)
+      tiles.setMatrixAt(col.start + n, tileBaseMats[col.start + n]);
+  }
+  tiles.instanceMatrix.needsUpdate = true;
+  const faceEnd = c.s + CONFIG.path.faceTiles - 1;
+  for (const sl of slatMeshes)           // this face's catwalks come back with it
+    if (sl.x1 >= c.s && sl.x0 <= faceEnd) sl.mesh.visible = true;
+}
+
+const _zm = new THREE.Matrix4();
+function updateZipper(c, tMs) {          // near-to-far brick slam of the next face
+  const cols = slamSets[c.k - 1];
+  let touched = false;
+  for (let j = 0; j < cols.length; j++) {
+    const col = columnInstances[cols[j]];
+    if (!col || col.settled) continue;   // gap column, or already locked
+    const z = zipperOffset(tMs, j, CONFIG);
+    if (z.phase === 'hidden') continue;
+    for (let n = 0; n < col.count; n++) {
+      const inst = col.start + n;
+      _zm.copy(tileBaseMats[inst]);
+      _zm.elements[13] += z.dy;
+      tiles.setMatrixAt(inst, _zm);
+    }
+    if (z.phase === 'locked') col.settled = true;
+    touched = true;
+  }
+  if (touched) tiles.instanceMatrix.needsUpdate = true;
+}
+
+/* ============================== FX ================================ */
+/* Juice pass: trauma shake, hit-stop, muzzle lights, particles,
+   tracers, squash-and-stretch. Intentionally empty in grey-box. */
+
+/* ============================= AUDIO ============================== */
+/* Audio pass: WebAudio-synthesized SFX + generative bass loop.
+   Intentionally empty in grey-box. */
+
+/* =============================== UI =============================== */
+
+const hudTL = document.getElementById('hudTL');
+const hudTC = document.getElementById('hudTC');
+const hudTR = document.getElementById('hudTR');
+const hudBL = document.getElementById('hudBL');
+const overlay = document.getElementById('overlay');
+const ovTitle = document.getElementById('ovTitle');
+const ovBody = document.getElementById('ovBody');
+
+hudBL.innerHTML =
+  'MOVE wasd/arrows &nbsp; JUMP space (hold = higher, again in air = double) &nbsp; FIRE j or x<br>' +
+  'AIM 8-way via move keys &nbsp; STRAFE-LOCK shift &nbsp; DROP down+jump on catwalks<br>' +
+  'PAUSE p/esc &nbsp;&middot;&nbsp; grey-box build';
+
+// updateHUD runs every rAF frame; assigning textContent replaces the text
+// node even when identical, dirtying layout for three fixed elements 60x/s.
+// Cache the last-written string per element and write only on change — in
+// steady state DOM writes drop to near zero.
+let hudTLLast = null, hudTCLast = null, hudTRLast = null;
+
+function updateHUD() {
+  const hp = Math.max(0, player.hp);
+  const tl = 'RIG ' + '▰'.repeat(hp) + '▱'.repeat(P.maxHealth - hp) +
+             '  ×' + Math.max(0, player.lives);
+  if (tl !== hudTLLast) { hudTLLast = tl; hudTL.textContent = tl; }
+  const tr = Math.floor(scrollX) + 'm  ·  ' + kills + ' kills';
+  if (tr !== hudTRLast) { hudTRLast = tr; hudTR.textContent = tr; }
+  const c = activeCorner();
+  let tc = '';
+  if (c && c.state === 'gate') {
+    tc = 'WAVE ' + c.k + '/' + CONFIG.path.faces + ' — ' + wasps.length + ' HOSTILES';
+  } else if (c && c.state === 'turning' && gameMs - c.tStart < CONFIG.waves.clearMsgMs) {
+    tc = 'CLEAR';
+  }
+  if (tc !== hudTCLast) { hudTCLast = tc; hudTC.textContent = tc; }
+}
+
+function showOverlay(title, lines) {
+  ovTitle.textContent = title;
+  ovBody.innerHTML = lines.map(l => `<p${l.dim ? ' class="dim"' : ''}>${l.text}</p>`).join('');
+  overlay.style.display = 'flex';
+}
+function hideOverlay() { overlay.style.display = 'none'; }
+
+/* ============================= STATES ============================= */
+/* Full machine: BOOT → MENU → PLAYING → PAUSED → GAME_OVER → VICTORY.
+   Grey-box boots straight into PLAYING; MENU arrives with the UI pass. */
+
+let state = 'BOOT';
+
+function setState(next) {
+  state = next;
+  if (next === 'PLAYING') hideOverlay();
+  else if (next === 'PAUSED') showOverlay('PAUSED', [{ text: 'p / esc to resume', dim: true }]);
+  else if (next === 'GAME_OVER') showOverlay('SIGNAL LOST', [
+    { text: `${Math.floor(scrollX)}m · ${kills} kills · ${shotsFired} shots` },
+    { text: 'r to restart', dim: true },
+  ]);
+  else if (next === 'VICTORY') showOverlay('SECTOR CLEAR', [
+    { text: 'grey-box complete' },
+    { text: `${Math.floor(scrollX)}m · ${kills} kills · ${shotsFired} shots` },
+    { text: 'r to restart', dim: true },
+  ]);
+}
+
+function togglePause() {
+  if (state === 'PLAYING') setState('PAUSED');
+  else if (state === 'PAUSED') setState('PLAYING');
+}
+
+function resetGame() {
+  for (const e of wasps) { scene.remove(e.mesh); e.mat.dispose(); }
+  wasps.length = 0;
+  for (const c of corpses) { scene.remove(c.mesh); c.mat.dispose(); }
+  corpses.length = 0;
+  for (const b of bulletPool) b.alive = false;
+  scrollX = 0;
+  spawnIdx = 0;
+  spawnRng = mulberry32(9001);
+  waspRng = mulberry32(5150);
+  kills = 0; shotsFired = 0;
+  player.x = 6; player.y = 3; player.vx = 0; player.vy = 0;
+  player.hp = P.maxHealth; player.lives = P.lives;
+  player.facing = 1; player.aim.set(1, 0);
+  player.iframesUntil = 0; player.hitstunUntil = 0;
+  player.coyoteUntil = 0; player.dropUntil = 0; player.nextFireAt = 0;
+  player.grounded = false; player.onOneWay = null; player.jumpCutDone = true;
+  player.airJumpsLeft = P.airJumps;
+  jumpBufferedUntil = 0;
+  for (const c of cornerEvents) { c.state = 'idle'; c.tStart = 0; }
+  camYaw = 0; camYawBase = 0;
+  hideAllSlamColumns();
+  hudTC.textContent = '';
+  hudTCLast = '';                        // keep the HUD write cache coherent
+  updateCamera(0);
+  setState('PLAYING');
+}
+
+/* =========================== MAIN LOOP ============================ */
+
+let camYaw = 0;                 // render yaw (radians); animated by corner events
+let camYawBase = 0;             // face heading after all completed corners
+const _look = new THREE.Vector3();
+
+function updateCamera(dt) {
+  const c = activeCorner();
+  if (c && c.state === 'turning') {
+    const t = gameMs - c.tStart;
+    scrollX = Math.min(scrollX + cornerScrollVel(t, CONFIG) * dt, END_SCROLL);
+    camYaw = camYawBase + cornerYawDeltaDeg(t, CONFIG) * DEG * CONFIG.path.turnSign;
+    updateZipper(c, t);
+    if (t >= cornerEventTotalMs(CONFIG)) finishCorner(c);
+  } else {
+    let target = END_SCROLL;                             // wave-gate scroll clamp
+    if (c) target = Math.min(target, HALT_S[c.k - 1]);
+    scrollX = Math.min(scrollX + CONFIG.scrollSpeed * dt, target);
+    camYaw = camYawBase;
+    if (c && c.state === 'idle' && scrollX >= HALT_S[c.k - 1] - 1e-6) armGate(c);
+  }
+
+  // chamfered camera path: anchor rides the polyline; yaw is ritual-driven
+  const C = CONFIG.camera;
+  const a = polyAt(SEGS, scrollX, _pp);
+  const fx = Math.cos(camYaw), fz = -Math.sin(camYaw);   // fwd along the face
+  const rx = -fz, rz = fx;                               // right = fwd × up
+  camera.position.set(a.x + fx * C.x + rx * C.z, C.y, a.z + fz * C.x + rz * C.z);
+  _look.set(a.x + fx * C.lookX, C.lookY, a.z + fz * C.lookX);
+  camera.lookAt(_look);
+  camera.updateMatrixWorld();
+}
+
+function update(dt) {
+  gameMs += dt * 1000;
+  updateCamera(dt);
+  updateSpawner();
+  updatePlayer(dt);
+  if (state !== 'PLAYING') return;      // died on the last frame
+  updateWasps(dt);
+  updateCorpses();
+  updateBullets(dt);
+  if (scrollX >= END_SCROLL) setState('VICTORY');
+}
+
+let last = performance.now();
+function frame(t) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(50, t - last) / 1000;
+  last = t;
+  if (state === 'PLAYING') update(dt);
+  renderer.render(scene, camera);
+  updateHUD();
+}
+
+calibrateEdges();
+updateCamera(0);
+setState('PLAYING');
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
