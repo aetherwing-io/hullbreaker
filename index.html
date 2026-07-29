@@ -794,6 +794,7 @@ function buildSpawnTable(cfg) {
 const QUERY = new URLSearchParams(location.search);
 const IS_TRAVERSAL_SLICE = QUERY.get('slice') === 'traversal';
 const SLICE_ENEMIES_ENABLED = QUERY.get('enemies') !== '0';
+const ACTIVE_SLICE = IS_TRAVERSAL_SLICE ? TRAVERSAL_FIXTURE : null;
 
 const TILE_DEPTH = 8;           // solid tiles below each surface (collision)
 const BULLET_MAX = 256;
@@ -845,6 +846,11 @@ addEventListener('resize', () => {
 
 let gameMs = 0;                 // gameplay clock — only advances while PLAYING
 let scrollX = 0;
+let sliceRetryTimer = 0;
+const sliceStats = {
+  attempts: 0, failures: 0, falls: 0, airJumps: 0,
+  minEdgeMargin: Infinity, startedAt: 0,
+};
 
 function approach(v, target, step) {
   return v < target ? Math.min(target, v + step) : Math.max(target, v - step);
@@ -895,7 +901,12 @@ addEventListener('keydown', (e) => {
     e.preventDefault();
     return;
   }
-  if (e.code === 'KeyR' && (state === 'GAME_OVER' || state === 'VICTORY')) { resetGame(); return; }
+  if (e.code === 'KeyR' &&
+      (IS_TRAVERSAL_SLICE || state === 'GAME_OVER' || state === 'VICTORY')) {
+    e.preventDefault();
+    if (!e.repeat) resetGame();
+    return;
+  }
   const k = KEYMAP[e.code];
   if (!k) return;
   e.preventDefault();
@@ -916,6 +927,10 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) relea
 
 const LEVEL_LEN = CONFIG.levelLength;
 const END_SCROLL = LEVEL_LEN - 30;
+function activeScrollEnd() { return ACTIVE_SLICE ? ACTIVE_SLICE.run.endScroll : END_SCROLL; }
+function activeScrollSpeed() {
+  return ACTIVE_SLICE ? ACTIVE_SLICE.run.recommendedScrollSpeed : CONFIG.scrollSpeed;
+}
 // Traversal mode overlays one authored straight-face fixture; normal mode
 // remains the seeded six-face generator byte-for-byte.
 const levelData = IS_TRAVERSAL_SLICE ? buildTraversalLevel(CONFIG) : buildLevel(CONFIG);
@@ -1403,6 +1418,7 @@ function updatePlayer(dt) {
     } else if (player.airJumpsLeft > 0) {
       jumpBufferedUntil = 0;
       player.airJumpsLeft--;
+      if (IS_TRAVERSAL_SLICE) sliceStats.airJumps++;
       player.vy = P.airJumpVel;
       player.jumpCutDone = false;
     }
@@ -1528,7 +1544,7 @@ function updatePlayer(dt) {
   if (player.traversalState !== 'free' &&
       player.x - player.hw < le + P.traversalEdgeGuard) {
     clearPlayerTraversal(gameMs + P.traversalRecatchMs);
-    player.vx = Math.max(player.vx, CONFIG.scrollSpeed);
+    player.vx = Math.max(player.vx, activeScrollSpeed());
   }
   if (player.x - player.hw < le) {
     player.x = le + player.hw;
@@ -1543,7 +1559,14 @@ function updatePlayer(dt) {
   if (player.x + player.hw > re) player.x = re - player.hw;
 
   // -- fell into a gap
-  if (player.y < CONFIG.edges.killY) { loseLife(); return; }
+  if (IS_TRAVERSAL_SLICE) {
+    sliceStats.minEdgeMargin = Math.min(
+      sliceStats.minEdgeMargin,
+      player.x - player.hw - sLeftEdge()
+    );
+  }
+
+  if (player.y < CONFIG.edges.killY) { loseLife('fall'); return; }
 
   // -- fire (RAGE halves the interval)
   if (keys.fire && gameMs >= player.nextFireAt) {
@@ -1577,12 +1600,30 @@ function damagePlayer(amount, fromX) {
     spawnCapsule('letter', currentWeapon, player.x, player.y + 1.2, 'pop', -away * CAP.popVx);
     currentWeapon = 'R';
   }
-  if (player.hp <= 0) loseLife();
+  if (player.hp <= 0) loseLife('damage');
 }
 
-function loseLife() {
+function scheduleSliceRetry(reason) {
+  if (!IS_TRAVERSAL_SLICE || state === 'SLICE_RETRY') return;
+  sliceStats.failures++;
+  if (reason === 'fall') sliceStats.falls++;
   clearPlayerTraversal(0);
   jumpBufferedUntil = 0;
+  releaseAllKeys();
+  setState('SLICE_RETRY');
+  sliceRetryTimer = setTimeout(() => {
+    sliceRetryTimer = 0;
+    if (state === 'SLICE_RETRY') resetGame();
+  }, 650);
+}
+
+function loseLife(reason = 'damage') {
+  clearPlayerTraversal(0);
+  jumpBufferedUntil = 0;
+  if (IS_TRAVERSAL_SLICE) {
+    scheduleSliceRetry(reason);
+    return;
+  }
   player.lives--;
   currentWeapon = 'R';                     // death resets the arsenal
   clearMods();
@@ -1804,6 +1845,7 @@ function letterTexture(text, bg) {
 
 // mode 'drift': flies from a killed carrier, sinks slowly toward catch height.
 // mode 'pop': knocked out of the player, lands, expires after the recatch window.
+// mode 'fixed': authored dare-pocket reward; bobs in place until collected.
 function spawnCapsule(kind, letter, x, y, mode, vx) {
   const bg = kind === 'mod' ? CONFIG.palette.modCapsule : CONFIG.palette.capsule;
   const mat = new THREE.MeshBasicMaterial({ map: letterTexture(letter, bg) });
@@ -1854,13 +1896,15 @@ function updateCapsules(dt) {
       c.baseY = Math.max(c.baseY - CAP.sinkSpeed * dt, floorY);
       c.y = c.baseY + Math.sin(c.t * CAP.bobFreq) * CAP.bobAmp;
       if (c.x < sLeftEdge() - 4) { removeCapsule(i); continue; }
-    } else {
+    } else if (c.mode === 'pop') {
       c.vy += CAP.gravity * dt;
       c.x += c.vx * dt;
       c.y += c.vy * dt;
       const g = builtGroundTopAt(c.x);
       if (g > -100 && c.y <= g + 0.3 && c.vy < 0) { c.y = g + 0.3; c.vy = 0; c.vx *= 0.8; }
       if (c.y < CONFIG.edges.killY || gameMs > c.dieAt) { removeCapsule(i); continue; }
+    } else {
+      c.y = c.baseY + Math.sin(c.t * CAP.bobFreq) * CAP.bobAmp * 0.3;
     }
 
     if (circleHitsPlayer(c.x, c.y, CAP.pickupRadius)) {
@@ -1990,7 +2034,7 @@ function updateMods() {
    mechanism. Corner zones are kept clean — gate waves are authored by
    the wave system, never by the ambient table. */
 
-const spawnTable = buildSpawnTable(CONFIG);
+const spawnTable = IS_TRAVERSAL_SLICE ? [] : buildSpawnTable(CONFIG);
 let spawnIdx = 0;
 let spawnRng = mulberry32(9001);
 
@@ -2002,6 +2046,7 @@ function spawnLaneY(s, lane, cap = 10) {
 }
 
 function updateSpawner() {
+  if (IS_TRAVERSAL_SLICE) return;         // fixture spawns are authored per attempt
   if (cornerBusy()) return;              // gates author their own waves; on wide
                                          //   aspect ratios the halted look-ahead
                                          //   would otherwise reach past the
@@ -2031,6 +2076,7 @@ function updateSpawner() {
 const cornerEvents = CORNER_S.map((s, i) => ({ s, k: i + 1, state: 'idle', tStart: 0 }));
 
 function activeCorner() {                // first corner not yet completed
+  if (IS_TRAVERSAL_SLICE) return null;    // fixture rejoins before corner machinery
   for (const c of cornerEvents) if (c.state !== 'done') return c;
   return null;
 }
@@ -2143,10 +2189,13 @@ const overlay = document.getElementById('overlay');
 const ovTitle = document.getElementById('ovTitle');
 const ovBody = document.getElementById('ovBody');
 
-hudBL.innerHTML =
-  'MOVE wasd/arrows &nbsp; JUMP space (hold = higher, again in air = double) &nbsp; FIRE j or x<br>' +
-  'AIM 8-way via move keys &nbsp; STRAFE-LOCK shift &nbsp; DROP down+jump on catwalks<br>' +
-  'CAPSULES swap weapons &middot; hit = weapon pops out, recatch it fast &nbsp;&middot;&nbsp; PAUSE p/esc';
+hudBL.innerHTML = IS_TRAVERSAL_SLICE
+  ? 'MOVE wasd/arrows &nbsp; JUMP space &nbsp; FIRE j or x &nbsp; RETRY r<br>' +
+    'LEDGE near-misses catch: jump launches, down releases &nbsp;&middot;&nbsp; WALL contact: jump launches, down releases<br>' +
+    'MAGENTA POCKET = optional wager &nbsp;&middot;&nbsp; PAUSE p/esc'
+  : 'MOVE wasd/arrows &nbsp; JUMP space (hold = higher, again in air = double) &nbsp; FIRE j or x<br>' +
+    'AIM 8-way via move keys &nbsp; STRAFE-LOCK shift &nbsp; DROP down+jump on catwalks<br>' +
+    'CAPSULES swap weapons &middot; hit = weapon pops out, recatch it fast &nbsp;&middot;&nbsp; PAUSE p/esc';
 
 // updateHUD runs every rAF frame; assigning textContent replaces the text
 // node even when identical, dirtying layout for three fixed elements 60x/s.
@@ -2158,17 +2207,25 @@ const MOD_LABELS = [['rageUntil', 'RAGE'], ['ghostUntil', 'GHOST'], ['chronoUnti
 function updateHUD() {
   const hp = Math.max(0, player.hp);
   let tl = 'RIG ' + '▰'.repeat(hp) + '▱'.repeat(P.maxHealth - hp) +
-           '  ×' + Math.max(0, player.lives) +
+           (IS_TRAVERSAL_SLICE ? '' : '  ×' + Math.max(0, player.lives)) +
            '  ·  [' + currentWeapon + '] ' + weaponDef(currentWeapon).name;
   for (const [f, label] of MOD_LABELS)
     if (gameMs < mods[f]) tl += ' · ' + label + ' ' + Math.ceil((mods[f] - gameMs) / 1000) + 's';
   if (mods.lance) tl += ' · LANCE ARMING';
   if (tl !== hudTLLast) { hudTLLast = tl; hudTL.textContent = tl; }
-  const tr = Math.floor(scrollX) + 'm  ·  ' + kills + ' kills';
+  const edge = Number.isFinite(sliceStats.minEdgeMargin)
+    ? Math.max(0, sliceStats.minEdgeMargin).toFixed(1)
+    : '—';
+  const tr = IS_TRAVERSAL_SLICE
+    ? `ATTEMPT ${sliceStats.attempts} · EDGE ${edge} · ${kills} kills`
+    : Math.floor(scrollX) + 'm  ·  ' + kills + ' kills';
   if (tr !== hudTRLast) { hudTRLast = tr; hudTR.textContent = tr; }
   const c = activeCorner();
   let tc = '';
-  if (c && c.state === 'gate') {
+  if (IS_TRAVERSAL_SLICE && gameMs - sliceStats.startedAt < 2400) {
+    tc = 'TRAVERSAL SLICE · ' +
+      (SLICE_ENEMIES_ENABLED ? ACTIVE_SLICE.enemies.length + ' WASPS' : 'MOVEMENT ONLY');
+  } else if (c && c.state === 'gate') {
     let gaters = 0;
     for (const e of hostiles) if (ENEMY[e.kind].gating) gaters++;
     tc = 'WAVE ' + c.k + '/' + CONFIG.path.faces + ' — ' + gaters + ' HOSTILES';
@@ -2192,7 +2249,7 @@ function showOverlay(title, lines) {
 function hideOverlay() { overlay.style.display = 'none'; }
 
 /* ============================= STATES ============================= */
-/* Full machine: BOOT → MENU → PLAYING → PAUSED → GAME_OVER → VICTORY.
+/* Full machine: BOOT → MENU → PLAYING → PAUSED/SLICE_RETRY → GAME_OVER/VICTORY.
    Grey-box boots straight into PLAYING; MENU arrives with the UI pass. */
 
 let state = 'BOOT';
@@ -2201,17 +2258,36 @@ function setState(next) {
   state = next;
   if (next === 'PLAYING') hideOverlay();
   else if (next === 'PAUSED') showOverlay('PAUSED', [{ text: 'p / esc to resume', dim: true }]);
+  else if (next === 'SLICE_RETRY') showOverlay('ROUTE LOST', [
+    { text: 'resetting traversal fixture…', dim: true },
+    { text: 'r to retry now', dim: true },
+  ]);
   else if (next === 'GAME_OVER') showOverlay('SIGNAL LOST', [
     { text: `${Math.floor(scrollX)}m · ${kills} kills · ${shotsFired} shots` },
     { text: favoriteWeaponLine() },
     { text: 'r to restart', dim: true },
   ]);
-  else if (next === 'VICTORY') showOverlay('SECTOR CLEAR', [
-    { text: 'grey-box complete' },
-    { text: `${Math.floor(scrollX)}m · ${kills} kills · ${shotsFired} shots` },
-    { text: favoriteWeaponLine() },
-    { text: 'r to restart', dim: true },
-  ]);
+  else if (next === 'VICTORY') {
+    if (IS_TRAVERSAL_SLICE) {
+      const elapsed = Math.max(0, (gameMs - sliceStats.startedAt) / 1000).toFixed(1);
+      const edge = Number.isFinite(sliceStats.minEdgeMargin)
+        ? Math.max(0, sliceStats.minEdgeMargin).toFixed(1)
+        : '—';
+      showOverlay('TRAVERSAL CLEAR', [
+        { text: `${elapsed}s · ${kills} kills · ${sliceStats.airJumps} air jumps` },
+        { text: `closest damage-edge margin: ${edge} tiles` },
+        { text: `attempt ${sliceStats.attempts} · ${sliceStats.falls} total falls` },
+        { text: 'r to replay', dim: true },
+      ]);
+    } else {
+      showOverlay('SECTOR CLEAR', [
+        { text: 'grey-box complete' },
+        { text: `${Math.floor(scrollX)}m · ${kills} kills · ${shotsFired} shots` },
+        { text: favoriteWeaponLine() },
+        { text: 'r to restart', dim: true },
+      ]);
+    }
+  }
 }
 
 function togglePause() {
@@ -2220,6 +2296,11 @@ function togglePause() {
 }
 
 function resetGame() {
+  if (sliceRetryTimer) {
+    clearTimeout(sliceRetryTimer);
+    sliceRetryTimer = 0;
+  }
+  releaseAllKeys();
   for (const e of hostiles) { scene.remove(e.mesh); e.mat.dispose(); }
   hostiles.length = 0;
   for (const c of corpses) { scene.remove(c.mesh); c.mat.dispose(); }
@@ -2230,12 +2311,14 @@ function resetGame() {
   for (const k of Object.keys(weaponKills)) weaponKills[k] = 0;
   clearMods();
   carrierDropIdx = 0;
-  scrollX = 0;
+  scrollX = ACTIVE_SLICE ? ACTIVE_SLICE.run.startScroll : 0;
   spawnIdx = 0;
   spawnRng = mulberry32(9001);
   hostileRng = mulberry32(5150);
   kills = 0; shotsFired = 0;
-  player.x = 6; player.y = 3; player.vx = 0; player.vy = 0;
+  player.x = ACTIVE_SLICE ? ACTIVE_SLICE.run.playerSpawn.x : 6;
+  player.y = ACTIVE_SLICE ? ACTIVE_SLICE.run.playerSpawn.y : 3;
+  player.vx = 0; player.vy = 0;
   player.hp = P.maxHealth; player.lives = P.lives;
   player.facing = 1; player.aim.set(1, 0);
   player.iframesUntil = 0; player.hitstunUntil = 0;
@@ -2247,6 +2330,18 @@ function resetGame() {
   for (const c of cornerEvents) { c.state = 'idle'; c.tStart = 0; }
   camYaw = 0; camYawBase = 0;
   hideAllSlamColumns();
+  if (ACTIVE_SLICE) {
+    sliceStats.attempts++;
+    sliceStats.airJumps = 0;
+    sliceStats.minEdgeMargin = Infinity;
+    sliceStats.startedAt = gameMs;
+    const reward = ACTIVE_SLICE.darePocket.reward;
+    spawnCapsule(reward.kind, reward.letter, reward.x, reward.y, reward.mode);
+    if (SLICE_ENEMIES_ENABLED) {
+      for (const e of ACTIVE_SLICE.enemies)
+        spawnHostile(e.x, e.y, e.delayMs, e.kind);
+    }
+  }
   hudTC.textContent = '';
   hudTCLast = '';                        // keep the HUD write cache coherent
   updateCamera(0);
@@ -2263,14 +2358,14 @@ function updateCamera(dt) {
   const c = activeCorner();
   if (c && c.state === 'turning') {
     const t = gameMs - c.tStart;
-    scrollX = Math.min(scrollX + cornerScrollVel(t, CONFIG) * dt, END_SCROLL);
+    scrollX = Math.min(scrollX + cornerScrollVel(t, CONFIG) * dt, activeScrollEnd());
     camYaw = camYawBase + cornerYawDeltaDeg(t, CONFIG) * DEG * CONFIG.path.turnSign;
     updateZipper(c, t);
     if (t >= cornerEventTotalMs(CONFIG)) finishCorner(c);
   } else {
-    let target = END_SCROLL;                             // wave-gate scroll clamp
+    let target = activeScrollEnd();                     // wave-gate / fixture clamp
     if (c) target = Math.min(target, HALT_S[c.k - 1]);
-    scrollX = Math.min(scrollX + CONFIG.scrollSpeed * dt, target);
+    scrollX = Math.min(scrollX + activeScrollSpeed() * dt, target);
     camYaw = camYawBase;
     if (c && c.state === 'idle' && scrollX >= HALT_S[c.k - 1] - 1e-6) armGate(c);
   }
@@ -2300,7 +2395,11 @@ function update(dt) {
   updateCapsules(dt * wScale);
   updateMods();
   updateBullets(dt);
-  if (scrollX >= END_SCROLL) setState('VICTORY');
+  if (IS_TRAVERSAL_SLICE) {
+    if (player.x >= ACTIVE_SLICE.rejoin.x0) setState('VICTORY');
+  } else if (scrollX >= END_SCROLL) {
+    setState('VICTORY');
+  }
 }
 
 let last = performance.now();
@@ -2334,7 +2433,14 @@ if (QUERY.has('selftest')) {
     dispatchEvent(new Event('resize'));
     check('resize handled', Math.abs(camera.aspect - innerWidth / innerHeight) < 1e-6);
     resetGame();
-    check('restart', scrollX === 0 && state === 'PLAYING' && hostiles.length === 0);
+    const expectedScroll = ACTIVE_SLICE ? ACTIVE_SLICE.run.startScroll : 0;
+    const expectedHostiles = ACTIVE_SLICE && SLICE_ENEMIES_ENABLED ? ACTIVE_SLICE.enemies.length : 0;
+    check('restart', scrollX === expectedScroll && state === 'PLAYING' &&
+      hostiles.length === expectedHostiles);
+    if (ACTIVE_SLICE) {
+      check('slice fixture selected', levelData.fixture === ACTIVE_SLICE);
+      check('fixed dare reward', capsules.length === 1 && capsules[0].mode === 'fixed');
+    }
     const fails = results.filter((r) => !r[1]).map((r) => r[0]);
     const msg = fails.length
       ? 'SELFTEST FAIL: ' + fails.join(', ')
@@ -2344,8 +2450,7 @@ if (QUERY.has('selftest')) {
   }, 1500);
 }
 
-updateCamera(0);
-setState('PLAYING');
+resetGame();
 requestAnimationFrame(frame);
 </script>
 </body>
