@@ -541,6 +541,10 @@ function buildSpawnTable(cfg) {
 
 /* @pure-end */
 
+const QUERY = new URLSearchParams(location.search);
+const IS_TRAVERSAL_SLICE = QUERY.get('slice') === 'traversal';
+const SLICE_ENEMIES_ENABLED = QUERY.get('enemies') !== '0';
+
 const TILE_DEPTH = 8;           // solid tiles below each surface (collision)
 const BULLET_MAX = 256;
 const _pp = { x: 0, z: 0 };     // polyAt scratch shared by the per-frame call sites
@@ -1889,7 +1893,7 @@ calibrateEdges();
    a human and an automated tab can read the verdict. No effect without
    the query param. */
 
-if (new URLSearchParams(location.search).has('selftest')) {
+if (QUERY.has('selftest')) {
   setTimeout(() => {
     const results = [];
     const check = (name, cond) => results.push([name, !!cond]);
