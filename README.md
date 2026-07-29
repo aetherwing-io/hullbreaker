@@ -57,7 +57,10 @@ Implemented:
 - Mock-3D enemy presence: enemies materialize out of the tower depth,
   breathe on the depth axis while alive, and dissolve back on death —
   collision is strictly 2D and only while fully materialized
-- Pooled instanced bullets, instanced tiles, seeded/deterministic sim
+- Pooled instanced bullets, instanced tiles; all generation, spawning, and
+  sim randomness is seeded and reproducible (the simulation itself runs on
+  a clamped variable timestep; projectiles integrate in substeps so fast
+  bolts can't tunnel through thin walls or enemies on slow frames)
 
 Not yet built (in build order): the remaining enemy roster (polyp turret,
 houndframe, spore mortar), the boss, the flight interlude, juice pass
@@ -85,7 +88,11 @@ states → main loop.
 node tools/pathcheck.mjs
 ```
 
-Extracts the pure block from `index.html` and runs 125 assertions: polyline
+For a live browser smoke test, open `index.html?selftest=1` — after 1.5s it
+verifies the render loop, pause/resume, resize, and restart, reporting
+SELFTEST PASS/FAIL in both the console and the page title.
+
+The headless harness extracts the pure block from `index.html` and runs 125 assertions: polyline
 continuity, corner-ritual timeline exactness, generator invariants
 (reachability, tier coverage, gap limits, corner-apron cleanliness), spawn
 ordering, and jump math derived from the shipped constants. Exits non-zero

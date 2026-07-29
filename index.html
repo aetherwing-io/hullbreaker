@@ -636,7 +636,11 @@ const KEYMAP = {
 let jumpBufferedUntil = 0;
 
 addEventListener('keydown', (e) => {
-  if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); e.preventDefault(); return; }
+  if (e.code === 'KeyP' || e.code === 'Escape') {
+    if (!e.repeat) togglePause();          // held key must not strobe the pause state
+    e.preventDefault();
+    return;
+  }
   if (e.code === 'KeyR' && (state === 'GAME_OVER' || state === 'VICTORY')) { resetGame(); return; }
   const k = KEYMAP[e.code];
   if (!k) return;
@@ -648,6 +652,11 @@ addEventListener('keyup', (e) => {
   const k = KEYMAP[e.code];
   if (k) keys[k] = false;
 });
+
+// losing focus mid-hold would otherwise leave movement/fire keys stuck on
+function releaseAllKeys() { for (const k in keys) keys[k] = false; }
+addEventListener('blur', releaseAllKeys);
+document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAllKeys(); });
 
 /* ============================= LEVEL ============================== */
 
@@ -874,39 +883,49 @@ function updateBullets(dt) {
         while (diff < -Math.PI) diff += 2 * Math.PI;
         const a = approach(cur, cur + diff, HDEF.turnRate * dt);
         b.vx = Math.cos(a) * HDEF.speed; b.vy = Math.sin(a) * HDEF.speed;
-      }
-      b.x += b.vx * dt; b.y += b.vy * dt;
-    } else if (b.type === 'F' && !b.crawling) {          // arc down to the deck…
-      b.vy += FDEF.dropAccel * dt;
-      b.x += b.vx * dt; b.y += b.vy * dt;
-      const g = builtGroundTopAt(b.x);
-      if (g > -100 && b.y <= g + FDEF.hugY && b.vy <= 0) { b.crawling = true; b.y = g + FDEF.hugY; }
-    } else if (b.type === 'F') {                         // …then crawl it, hugging terrain
-      b.x += b.dir * FDEF.crawlSpeed * dt;
-      const g = builtGroundTopAt(b.x);
-      if (g > -100) b.y = approach(b.y, g + FDEF.hugY, FDEF.hugRate * dt);
-      else { killBullet(b, i); continue; }               // gap: fire dies
-    } else {
-      b.x += b.vx * dt; b.y += b.vy * dt;
+      }                                                  // integration happens in substeps below
+    } else if (b.type === 'F' && !b.crawling) {
+      b.vy += FDEF.dropAccel * dt;                       // gravity once per frame
     }
 
-    const wallDead = b.crawling
-      ? builtSolidAt(b.x + b.dir * FDEF.probeX, b.y + FDEF.probeY)   // crawler: tall walls only
-      : builtSolidAt(b.x, b.y);
-    if (gameMs > b.dieAt || wallDead) { killBullet(b, i); continue; }
+    // integrate + collide in SUBSTEPS: a clamped 50ms frame moves a laser
+    // 2 tiles — far enough to cross a 1-wide pillar or a 0.55-radius
+    // hostile between endpoint tests. Steps sized so no substep exceeds
+    // ~0.45 units (capped at 4: worst case 0.5, still under both).
+    const spd = b.crawling ? FDEF.crawlSpeed : Math.hypot(b.vx, b.vy);
+    const steps = Math.min(4, Math.max(1, Math.ceil(spd * dt / 0.45)));
+    const sdt = dt / steps;
+    let gone = false;
+    for (let k = 0; k < steps && !gone; k++) {
+      if (b.type === 'F' && !b.crawling) {               // arc down to the deck…
+        b.x += b.vx * sdt; b.y += b.vy * sdt;
+        const g = builtGroundTopAt(b.x);
+        if (g > -100 && b.y <= g + FDEF.hugY && b.vy <= 0) { b.crawling = true; b.y = g + FDEF.hugY; }
+      } else if (b.type === 'F') {                       // …then crawl, hugging terrain
+        b.x += b.dir * FDEF.crawlSpeed * sdt;
+        const g = builtGroundTopAt(b.x);
+        if (g > -100) b.y = approach(b.y, g + FDEF.hugY, FDEF.hugRate * sdt);
+        else { gone = true; break; }                     // gap: fire dies
+      } else {
+        b.x += b.vx * sdt; b.y += b.vy * sdt;
+      }
 
-    let dead = false;
-    for (let w = hostiles.length - 1; w >= 0; w--) {
-      const e = hostiles[w];
-      if (gameMs < e.enterUntil) continue;               // still materializing: no hitbox
-      if (b.pierce && b.hitSet.has(e.id)) continue;
-      if ((b.x - e.x) ** 2 + (b.y - e.y) ** 2 < e.hitR * e.hitR) {
-        if (b.pierce) b.hitSet.add(e.id);
-        hitHostile(e, w, b.damage, b.type);
-        if (!b.pierce) { dead = true; break; }
+      if (b.crawling
+          ? builtSolidAt(b.x + b.dir * FDEF.probeX, b.y + FDEF.probeY)   // crawler: tall walls only
+          : builtSolidAt(b.x, b.y)) { gone = true; break; }
+
+      for (let w = hostiles.length - 1; w >= 0; w--) {
+        const e = hostiles[w];
+        if (gameMs < e.enterUntil) continue;             // still materializing: no hitbox
+        if (b.pierce && b.hitSet.has(e.id)) continue;
+        if ((b.x - e.x) ** 2 + (b.y - e.y) ** 2 < e.hitR * e.hitR) {
+          if (b.pierce) b.hitSet.add(e.id);
+          hitHostile(e, w, b.damage, b.type);
+          if (!b.pierce) { gone = true; break; }
+        }
       }
     }
-    if (dead) { killBullet(b, i); continue; }
+    if (gone || gameMs > b.dieAt) { killBullet(b, i); continue; }
 
     // render: map (s,y) onto the tower. R/S/H are uniform-scale spheres, so
     // orientation is invisible — position + scale only, no yaw/quaternion
@@ -1139,7 +1158,8 @@ function loseLife() {
   player.lives--;
   currentWeapon = 'R';                     // death resets the arsenal
   clearMods();
-  if (player.lives < 0) { setState('GAME_OVER'); return; }
+  // ×3 on the HUD means three deaths total ends the run
+  if (player.lives <= 0) { setState('GAME_OVER'); return; }
   respawn();
 }
 
@@ -1862,6 +1882,36 @@ function frame(t) {
 }
 
 calibrateEdges();
+/* =========================== SELF-TEST ============================ */
+/* Open index.html?selftest=1: after 1.5s of normal play the page runs a
+   boot smoke — render loop alive, pause/resume, resize, restart — and
+   reports SELFTEST PASS/FAIL to the console AND the page title, so both
+   a human and an automated tab can read the verdict. No effect without
+   the query param. */
+
+if (new URLSearchParams(location.search).has('selftest')) {
+  setTimeout(() => {
+    const results = [];
+    const check = (name, cond) => results.push([name, !!cond]);
+    check('canvas attached', renderer.domElement.isConnected);
+    // frames-rendered, not wall-clock: an occluded tab throttles rAF but
+    // still paints the first frames; a broken boot paints none
+    check('render loop alive', renderer.info.render.frame > 0);
+    togglePause(); check('pause', state === 'PAUSED');
+    togglePause(); check('resume', state === 'PLAYING');
+    dispatchEvent(new Event('resize'));
+    check('resize handled', Math.abs(camera.aspect - innerWidth / innerHeight) < 1e-6);
+    resetGame();
+    check('restart', scrollX === 0 && state === 'PLAYING' && hostiles.length === 0);
+    const fails = results.filter((r) => !r[1]).map((r) => r[0]);
+    const msg = fails.length
+      ? 'SELFTEST FAIL: ' + fails.join(', ')
+      : 'SELFTEST PASS (' + results.length + ' checks)';
+    console.log(msg);
+    document.title = msg;
+  }, 1500);
+}
+
 updateCamera(0);
 setState('PLAYING');
 requestAnimationFrame(frame);

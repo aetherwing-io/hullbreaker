@@ -9,8 +9,9 @@
 //
 // Run from the repo root:  node tools/pathcheck.mjs
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -372,7 +373,11 @@ console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');
 process.exit(fails ? 1 : 0);
 `;
 
-const outFile = join(here, 'pathcheck.gen.mjs');
+// unique temp file: no repo artifact, no stale output, no concurrent-run
+// collisions; kept (with its path printed) when the suite fails, for debugging
+const outFile = join(tmpdir(), `hullbreaker-pathcheck-${process.pid}.mjs`);
 writeFileSync(outFile, pure + '\n' + TESTS);
 const r = spawnSync(process.execPath, [outFile], { stdio: 'inherit' });
+if (r.status === 0) { try { unlinkSync(outFile); } catch {} }
+else console.error('pathcheck: generated suite kept at ' + outFile);
 process.exit(r.status ?? 1);
