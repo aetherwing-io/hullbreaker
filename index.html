@@ -349,6 +349,149 @@ function zipperOffset(tMs, colIdx, cfg) {
 
 const GAP = -999;
 
+// Deterministic traversal showcase, overlaid only by buildTraversalLevel.
+// Bounds are half-open and stay wholly on straight face 1 (columns 24..78).
+// Route metadata is deliberately explicit so the headless harness can inspect
+// topology and timing without reverse-engineering it from render geometry.
+const TRAVERSAL_FIXTURE = {
+  id: 'traversal-v1',
+  bounds: { x0: 24, x1: 79 },
+  targetPlaySeconds: { min: 30, max: 45 },
+  run: {
+    startScroll: 19,
+    endScroll: 73,
+    recommendedScrollSpeed: 1.7,
+    playerSpawn: { x: 27.5, y: 3 },
+  },
+  entry: 'entry',
+  exit: 'rejoin',
+  immediateChoiceCap: 3,
+  firstFork: { connector: 'entry', choices: ['low-approach', 'mid-entry', 'upper-entry'] },
+  groundRuns: [
+    { x0: 24, x1: 32, y: 3 },
+    { x0: 32, x1: 39, y: 2 },
+    { x0: 39, x1: 47, y: 3 },
+    { x0: 47, x1: 57, y: 1 },
+    { x0: 57, x1: 64, y: 3 },
+    { x0: 64, x1: 79, y: 4 },
+  ],
+  solidRects: [
+    { id: 'chimney-left', role: 'wall', x0: 39, x1: 40, y0: 5, y1: 10 },
+    { id: 'chimney-right', role: 'wall', x0: 44, x1: 45, y0: 5, y1: 10 },
+    { id: 'dare-overhang', role: 'overhang', x0: 48, x1: 56, y0: 5, y1: 6 },
+    { id: 'dare-dead-end', role: 'wall', x0: 56, x1: 57, y0: 1, y1: 7 },
+  ],
+  platforms: [
+    { id: 'mid-entry', x0: 29, x1: 38, y: 5.35 },
+    { id: 'upper-entry', x0: 34, x1: 39, y: 8.35 },
+    { id: 'chimney-floor', x0: 40, x1: 44, y: 5.35 },
+    { id: 'recovery-ledge', x0: 43, x1: 48, y: 3.6 },
+    { id: 'mid-bridge', x0: 45, x1: 49, y: 5.35 },
+    { id: 'post-mid', x0: 57, x1: 65, y: 5.35 },
+    { id: 'post-high', x0: 58, x1: 66, y: 8.35 },
+    { id: 'exit-mid', x0: 64, x1: 73, y: 6.35 },
+    { id: 'exit-high', x0: 66, x1: 72, y: 9.35 },
+  ],
+  connectors: [
+    { id: 'entry', kind: 'entry', x: 27.5, y: 3 },
+    { id: 'low-approach', kind: 'floor', x: 34, y: 2 },
+    { id: 'mid-entry', kind: 'ledge', x: 33, y: 5.35 },
+    { id: 'upper-entry', kind: 'ledge', x: 36, y: 8.35 },
+    { id: 'low-step', kind: 'floor', x: 43, y: 3 },
+    { id: 'chimney-base', kind: 'chimney', x: 42, y: 5.35 },
+    { id: 'chimney-top', kind: 'chimney', x: 44.5, y: 10 },
+    { id: 'recovery', kind: 'ledge', x: 46, y: 3.6 },
+    { id: 'pocket-commit', kind: 'dare-commit', x: 48, y: 1 },
+    { id: 'pocket-reward', kind: 'reward', x: 54, y: 1 },
+    { id: 'pocket-wall', kind: 'wall', x: 55.6, y: 3.4 },
+    { id: 'overhang-top', kind: 'solid-top', x: 52, y: 6 },
+    { id: 'post-low', kind: 'floor', x: 59, y: 3 },
+    { id: 'post-mid', kind: 'ledge', x: 60, y: 5.35 },
+    { id: 'post-high', kind: 'ledge', x: 61, y: 8.35 },
+    { id: 'exit-mid', kind: 'ledge', x: 68, y: 6.35 },
+    { id: 'exit-high', kind: 'ledge', x: 68, y: 9.35 },
+    { id: 'rejoin', kind: 'rejoin', x: 75, y: 4 },
+  ],
+  edges: [
+    { routeId: 'lower-service', from: 'entry', to: 'low-approach', verb: 'run' },
+    { routeId: 'lower-service', from: 'low-approach', to: 'low-step', verb: 'run-jump' },
+    { routeId: 'lower-service', from: 'low-step', to: 'recovery', verb: 'jump' },
+    { routeId: 'lower-service', from: 'recovery', to: 'overhang-top', verb: 'ledge-catch' },
+    { routeId: 'lower-service', from: 'overhang-top', to: 'post-low', verb: 'wall-jump' },
+    { routeId: 'lower-service', from: 'post-low', to: 'rejoin', verb: 'run-jump' },
+
+    { routeId: 'mid-catwalk', from: 'entry', to: 'mid-entry', verb: 'jump' },
+    { routeId: 'mid-catwalk', from: 'mid-entry', to: 'chimney-base', verb: 'jump' },
+    { routeId: 'mid-catwalk', from: 'chimney-base', to: 'overhang-top', verb: 'jump' },
+    { routeId: 'mid-catwalk', from: 'overhang-top', to: 'post-mid', verb: 'jump' },
+    { routeId: 'mid-catwalk', from: 'post-mid', to: 'exit-mid', verb: 'jump' },
+    { routeId: 'mid-catwalk', from: 'exit-mid', to: 'rejoin', verb: 'drop' },
+
+    { routeId: 'upper-chimney', from: 'entry', to: 'mid-entry', verb: 'jump' },
+    { routeId: 'upper-chimney', from: 'mid-entry', to: 'upper-entry', verb: 'air-jump' },
+    { routeId: 'upper-chimney', from: 'upper-entry', to: 'chimney-top', verb: 'wall-jump' },
+    { routeId: 'upper-chimney', from: 'chimney-top', to: 'overhang-top', verb: 'long-drop' },
+    { routeId: 'upper-chimney', from: 'overhang-top', to: 'post-high', verb: 'air-jump' },
+    { routeId: 'upper-chimney', from: 'post-high', to: 'exit-high', verb: 'jump' },
+    { routeId: 'upper-chimney', from: 'exit-high', to: 'rejoin', verb: 'drop' },
+
+    { routeId: 'wall-launch', from: 'entry', to: 'mid-entry', verb: 'jump' },
+    { routeId: 'wall-launch', from: 'mid-entry', to: 'chimney-base', verb: 'jump' },
+    { routeId: 'wall-launch', from: 'chimney-base', to: 'chimney-top', verb: 'wall-slide-jump' },
+    { routeId: 'wall-launch', from: 'chimney-top', to: 'overhang-top', verb: 'long-drop' },
+    { routeId: 'wall-launch', from: 'overhang-top', to: 'post-high', verb: 'air-jump' },
+    { routeId: 'wall-launch', from: 'post-high', to: 'exit-high', verb: 'jump' },
+    { routeId: 'wall-launch', from: 'exit-high', to: 'rejoin', verb: 'drop' },
+
+    { routeId: 'dare-pocket', from: 'entry', to: 'low-approach', verb: 'run' },
+    { routeId: 'dare-pocket', from: 'low-approach', to: 'pocket-commit', verb: 'drop' },
+    { routeId: 'dare-pocket', from: 'pocket-commit', to: 'pocket-reward', verb: 'run' },
+    { routeId: 'dare-pocket', from: 'pocket-reward', to: 'pocket-wall', verb: 'turn' },
+    { routeId: 'dare-pocket', from: 'pocket-wall', to: 'pocket-commit', verb: 'run-left' },
+    { routeId: 'dare-pocket', from: 'pocket-commit', to: 'recovery', verb: 'jump-left' },
+    { routeId: 'dare-pocket', from: 'recovery', to: 'post-mid', verb: 'jump' },
+    { routeId: 'dare-pocket', from: 'post-mid', to: 'exit-mid', verb: 'jump' },
+    { routeId: 'dare-pocket', from: 'exit-mid', to: 'rejoin', verb: 'drop' },
+
+    { routeId: 'recovery-scramble', from: 'upper-entry', to: 'recovery', verb: 'fall-catch' },
+    { routeId: 'recovery-scramble', from: 'recovery', to: 'overhang-top', verb: 'jump' },
+    { routeId: 'recovery-scramble', from: 'overhang-top', to: 'post-low', verb: 'drop' },
+    { routeId: 'recovery-scramble', from: 'post-low', to: 'rejoin', verb: 'run-jump' },
+  ],
+  routes: [
+    { id: 'lower-service', connectorIds: ['entry', 'low-approach', 'low-step', 'recovery', 'overhang-top', 'post-low', 'rejoin'] },
+    { id: 'mid-catwalk', connectorIds: ['entry', 'mid-entry', 'chimney-base', 'overhang-top', 'post-mid', 'exit-mid', 'rejoin'] },
+    { id: 'upper-chimney', connectorIds: ['entry', 'mid-entry', 'upper-entry', 'chimney-top', 'overhang-top', 'post-high', 'exit-high', 'rejoin'] },
+    { id: 'wall-launch', connectorIds: ['entry', 'mid-entry', 'chimney-base', 'chimney-top', 'overhang-top', 'post-high', 'exit-high', 'rejoin'] },
+    { id: 'dare-pocket', connectorIds: ['entry', 'low-approach', 'pocket-commit', 'pocket-reward', 'pocket-wall', 'pocket-commit', 'recovery', 'post-mid', 'exit-mid', 'rejoin'] },
+    { id: 'recovery-scramble', connectorIds: ['upper-entry', 'recovery', 'overhang-top', 'post-low', 'rejoin'] },
+  ],
+  darePocket: {
+    commit: 'pocket-commit',
+    rewardConnector: 'pocket-reward',
+    rejoin: 'recovery',
+    retreatPath: ['pocket-reward', 'pocket-wall', 'pocket-commit', 'recovery'],
+    reward: { kind: 'letter', letter: 'H', mode: 'fixed', x: 54, y: 2 },
+    timing: { retreatSeconds: 6, scrollBudgetTiles: 10.2, minEdgeMarginTiles: 8 },
+  },
+  rejoin: { connector: 'rejoin', x0: 72, x1: 79, y: 4 },
+  enemies: [
+    { id: 'entry-wasp', kind: 'wasp', x: 37, y: 8.4, delayMs: 0 },
+    { id: 'rejoin-wasp', kind: 'wasp', x: 63, y: 8.8, delayMs: 600 },
+  ],
+};
+
+function solidRectContains(rect, x, y) {
+  return x >= rect.x0 && x < rect.x1 && y >= rect.y0 && y < rect.y1;
+}
+
+function levelSolidCell(level, i, j, tileDepth) {
+  const g = level.groundH[i];
+  if (g > -100 && j < g && j >= g - tileDepth) return true;
+  for (const rect of level.solidRects || []) if (solidRectContains(rect, i, j)) return true;
+  return false;
+}
+
 function mulberry32(a) {
   return function () {
     a |= 0; a = a + 0x6D2B79F5 | 0;
@@ -502,6 +645,22 @@ function buildLevel(cfg) {
   }
 
   return { groundH, platforms, chunkLog };
+}
+
+function buildTraversalLevel(cfg) {
+  const base = buildLevel(cfg);
+  const B = TRAVERSAL_FIXTURE.bounds;
+  for (const run of TRAVERSAL_FIXTURE.groundRuns)
+    for (let x = run.x0; x < run.x1; x++) base.groundH[x] = run.y;
+  const platforms = base.platforms.filter((p) => p.x1 <= B.x0 || p.x0 >= B.x1);
+  for (const p of TRAVERSAL_FIXTURE.platforms) platforms.push({ ...p });
+  return {
+    groundH: base.groundH,
+    platforms,
+    solidRects: TRAVERSAL_FIXTURE.solidRects.map((r) => ({ ...r })),
+    chunkLog: base.chunkLog.concat(TRAVERSAL_FIXTURE.id),
+    fixture: TRAVERSAL_FIXTURE,
+  };
 }
 
 // Ambient spawn table: density authored in seconds of scroll so it scales
@@ -666,15 +825,15 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) relea
 
 const LEVEL_LEN = CONFIG.levelLength;
 const END_SCROLL = LEVEL_LEN - 30;
-// groundH: surface y per column (-999 = gap); platforms: one-way catwalks
-// {x0, x1, y}. Both authored by the pure pattern-chunk generator, which
-// also enforces corner-apron cleanliness for the gate rituals.
-const { groundH, platforms } = buildLevel(CONFIG);
+// Traversal mode overlays one authored straight-face fixture; normal mode
+// remains the seeded six-face generator byte-for-byte.
+const levelData = IS_TRAVERSAL_SLICE ? buildTraversalLevel(CONFIG) : buildLevel(CONFIG);
+const { groundH, platforms } = levelData;
+const solidRects = levelData.solidRects || [];
 
 function isSolid(i, j) {
   if (i < 0 || i >= LEVEL_LEN) return true;            // walls at level ends
-  const g = groundH[i];
-  return g > -100 && j < g && j >= g - TILE_DEPTH;
+  return levelSolidCell(levelData, i, j, TILE_DEPTH);
 }
 function solidAt(x, y) { return isSolid(Math.floor(x), Math.floor(y)); }
 function groundTopAt(x) {
@@ -694,6 +853,7 @@ const faceRanges = [];                                    // face → {col0, col
 const slamSets = [];                                      // corner k-1 → zipper column list
 const farSets = [];                                       // corner k-1 → rest of the next face
 const slatMeshes = [];                                    // catwalk slats {mesh, x0, x1}
+const authoredSolidMeshes = [];                           // traversal-only tagged solid rectangles
 {
   let count = 0;
   for (let i = 0; i < LEVEL_LEN; i++) if (groundH[i] > -100) count += VISUAL_DEPTH;
@@ -734,6 +894,22 @@ const slatMeshes = [];                                    // catwalk slats {mesh
     for (let s = cs + CONFIG.waves.zipCols; s <= faceEnd; s++) far.push(s);
     slamSets.push(strip);
     farSets.push(far);
+  }
+
+  const solidMat = new THREE.MeshStandardMaterial({ color: CONFIG.palette.groundAlt, flatShading: true });
+  for (const rect of solidRects) {
+    const midX = (rect.x0 + rect.x1) / 2;
+    const midY = (rect.y0 + rect.y1) / 2;
+    const wp = polyAt(SEGS, midX);
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(rect.x1 - rect.x0, rect.y1 - rect.y0, 2),
+      solidMat
+    );
+    mesh.position.set(wp.x, midY, wp.z);
+    mesh.rotation.y = headingAt(SEGS, midX);
+    mesh.userData.fixtureSolidId = rect.id;
+    scene.add(mesh);
+    authoredSolidMeshes.push(mesh);
   }
 
   const walkMat = new THREE.MeshStandardMaterial({ color: CONFIG.palette.catwalk, flatShading: true });
