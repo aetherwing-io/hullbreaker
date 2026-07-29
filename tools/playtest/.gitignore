@@ -1,0 +1,9 @@
+# Dev-only harness deps and ephemeral run artifacts. Demo reports under
+# reports/demo/**/*.json and *.md are committed on purpose; screenshots,
+# videos, and scratch runs are not.
+node_modules/
+runs/
+*.png
+*.jpg
+*.jpeg
+*.webm

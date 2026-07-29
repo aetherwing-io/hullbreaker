@@ -1,0 +1,13 @@
+{
+  "name": "hullbreaker-playtest",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Dev-only bot-player playtest harness for HULLBREAKER. Not part of the game runtime.",
+  "type": "module",
+  "scripts": {
+    "test": "node run.mjs scripts/mid-route.json"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.48.0"
+  }
+}

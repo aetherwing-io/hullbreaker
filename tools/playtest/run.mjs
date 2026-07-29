@@ -1,0 +1,158 @@
+#!/usr/bin/env node
+// run.mjs — CLI entry point for the HULLBREAKER bot-player playtest harness.
+//
+//   node tools/playtest/run.mjs scripts/mid-route.json
+//   node tools/playtest/run.mjs scripts/mid-route.json --headed --video
+//   node tools/playtest/run.mjs scripts/mid-route.json --url http://localhost:8741/index.html?slice=traversal
+//
+// See tools/playtest/README.md for the full flag list and script format.
+
+import { readFile } from 'node:fs/promises';
+import { dirname, join, relative, resolve, basename } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { startStaticServer } from './lib/server.mjs';
+import { compileScript, scriptEndMs } from './lib/compile.mjs';
+import { runPlaytest } from './lib/driver.mjs';
+import { computeMetrics } from './lib/metrics.mjs';
+import { writeReport } from './lib/report.mjs';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const repoRoot = resolve(here, '..', '..');
+
+function parseArgs(argv) {
+  const out = { _: [] };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === '--headed') out.headed = true;
+    else if (a === '--video') out.video = true;
+    else if (a === '--url') out.url = argv[++i];
+    else if (a === '--out') out.out = argv[++i];
+    else if (a === '--sample-ms') out.sampleMs = Number(argv[++i]);
+    else if (a === '--viewport') out.viewport = argv[++i];
+    else if (a === '--channel') out.channel = argv[++i];
+    else if (a === '--max-runtime-ms') out.maxRuntimeMs = Number(argv[++i]);
+    else if (a === '--tail-ms') out.tailMs = Number(argv[++i]);
+    else if (a === '--port') out.port = Number(argv[++i]);
+    else if (a === '--help' || a === '-h') out.help = true;
+    else out._.push(a);
+  }
+  return out;
+}
+
+function usage() {
+  console.log(`Usage: node run.mjs <script.json> [options]
+
+Options:
+  --url <url>          Override the target URL entirely (skips the local static server).
+  --headed              Show the browser window instead of running headless.
+  --video               Record a webm video of the run (Playwright's built-in recorder).
+  --out <dir>           Output directory for report.json/summary.md/screenshot (default: runs/<script>-<timestamp>).
+  --sample-ms <n>       Requested state-sample interval in ms (default 75).
+  --viewport WxH        Viewport size, e.g. 1280x800 (default from script or 1280x800).
+  --channel <name>      Playwright browser channel (default "chrome" — the installed system Chrome, no download).
+  --max-runtime-ms <n>  Hard cap on total run time in ms (default 25000) — safety net if something hangs.
+  --tail-ms <n>         Grace period after the last scripted input before stopping (default 900).
+  --port <n>            Fixed port for the local static server (default: OS-assigned free port).
+`);
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  if (args.help || args._.length === 0) { usage(); process.exit(args.help ? 0 : 1); }
+
+  const scriptPath = resolve(args._[0]);
+  const script = JSON.parse(await readFile(scriptPath, 'utf8'));
+  const scriptName = script.name || basename(scriptPath, '.json');
+
+  const events = compileScript(script);
+  const endMs = scriptEndMs(events, script);
+
+  let viewport = { width: 1280, height: 800 };
+  if (args.viewport) {
+    const [w, h] = args.viewport.split('x').map(Number);
+    viewport = { width: w, height: h };
+  } else if (script.viewport) {
+    viewport = script.viewport;
+  }
+
+  let server = null;
+  let url = args.url;
+  if (!url) {
+    server = await startStaticServer(repoRoot, { port: args.port || 0 });
+    const scriptUrl = script.url || 'index.html?slice=traversal';
+    url = `${server.baseUrl}/${scriptUrl.replace(/^\//, '')}`;
+  }
+
+  const outDir = args.out
+    ? resolve(args.out)
+    : join(here, 'runs', `${scriptName}-${Date.now()}`);
+
+  console.log(`[playtest] script:  ${scriptName} (${events.length} events, script window ${endMs}ms)`);
+  console.log(`[playtest] url:     ${url}`);
+  console.log(`[playtest] out:     ${outDir}`);
+
+  const startedAt = new Date().toISOString();
+  let result;
+  try {
+    result = await runPlaytest({
+      events, url, outDir,
+      durationMs: script.durationMs || 0,
+      headed: !!args.headed,
+      video: !!args.video,
+      sampleMs: args.sampleMs || 75,
+      viewport,
+      channel: args.channel || 'chrome',
+      maxRuntimeMs: args.maxRuntimeMs || 25000,
+      tailMs: args.tailMs != null ? args.tailMs : 900,
+    });
+  } finally {
+    if (server) await server.close();
+  }
+
+  const metrics = computeMetrics(result.trace, {
+    events: result.dispatchedEvents,
+    wallTimeMs: result.wallTimeMs,
+    achievedSampleIntervalsMs: result.achievedSampleIntervalsMs,
+  });
+
+  const jitters = result.dispatchedEvents.filter((e) => typeof e.jitterMs === 'number').map((e) => e.jitterMs);
+  const avgJitter = jitters.length ? +(jitters.reduce((a, b) => a + Math.abs(b), 0) / jitters.length).toFixed(1) : null;
+  const maxJitter = jitters.length ? Math.max(...jitters.map(Math.abs)) : null;
+
+  // Report paths relative to the repo root / output dir rather than absolute
+  // filesystem paths — those are local-machine-specific and would otherwise
+  // get baked verbatim into a committed report.json.
+  const report = {
+    meta: {
+      scriptName, scriptPath: relative(repoRoot, scriptPath), description: script.description || null,
+      url, startedAt, wallTimeMs: result.wallTimeMs,
+      viewport, sampleIntervalRequestedMs: args.sampleMs || 75,
+      bootError: result.bootError,
+      dispatchJitterMsAvg: avgJitter, dispatchJitterMsMax: maxJitter,
+    },
+    outcome: metrics.outcome,
+    metrics,
+    consoleErrors: result.consoleErrors,
+    pageErrors: result.pageErrors,
+    events: result.dispatchedEvents,
+    trace: result.trace,
+    screenshot: result.screenshotPath && basename(result.screenshotPath),
+    video: result.videoPath && basename(result.videoPath),
+  };
+
+  await writeReport(outDir, report);
+
+  console.log(`[playtest] outcome: ${metrics.outcome.result} (fidelity: ${metrics.fidelity}${metrics.hbDetected ? '' : ', degraded — no window.HB'})`);
+  console.log(`[playtest] report:  ${outDir}/report.json`);
+  console.log(`[playtest] summary: ${outDir}/summary.md`);
+  if (result.bootError) {
+    console.error(`[playtest] BOOT ERROR: ${result.bootError}`);
+    process.exitCode = 1;
+  }
+}
+
+main().catch((err) => {
+  console.error('[playtest] fatal:', err);
+  process.exit(1);
+});
