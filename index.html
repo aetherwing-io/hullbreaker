@@ -105,6 +105,12 @@ const CONFIG = {
     jumpCutMult: 0.45,         // multiply vy on jump release (variable height)
     airJumps: 1, airJumpVel: 13,
     coyoteMs: 100, jumpBufferMs: 120, dropThroughMs: 260,
+    ledgeReachX: 0.28, ledgeReachY: 0.42, ledgeGrabHeight: 1.42,
+    ledgeHangMs: 460, ledgeLaunchX: 6.4, ledgeLaunchY: 11.5,
+    ledgeMantleInset: 0.03, ledgeReleaseNudge: 0.08,
+    wallSlideSpeed: 4.2, wallSlideMs: 520,
+    wallJumpX: 11.8, wallJumpY: 12.5,
+    traversalRecatchMs: 180, traversalEdgeGuard: 0.5,
     width: 0.7, height: 1.7,
     maxHealth: 3, lives: 3,
     iframesMs: 1200, hitstunMs: 220, knockbackX: 6, knockbackY: 5,
@@ -196,6 +202,88 @@ const CONFIG = {
     tints: { lance: 'rgba(255,255,255,0.5)', rage: 'rgba(255,50,50,0.14)', chrono: 'rgba(90,200,255,0.12)' },
   },
 };
+
+/* Small, DOM-free traversal decisions. Runtime geometry is supplied as an
+   isSolid cell callback so authored rectangles and ground use one contract. */
+function traversalLedgeProbe(state, geometry, cfg = CONFIG.player) {
+  if (state.grounded || state.vy >= 0 || state.down ||
+      state.now < state.recatchUntil) return null;
+
+  const toward = Math.sign(state.hInput || state.vx);
+  if (!toward) return null;
+  const side = toward;
+  const cellX = Math.floor(state.x + side * (state.hw + cfg.ledgeReachX));
+  if (cellX < geometry.minCellX || cellX >= geometry.maxCellX) return null;
+
+  const faceX = side > 0 ? cellX : cellX + 1;
+  const gap = side > 0
+    ? faceX - (state.x + state.hw)
+    : (state.x - state.hw) - faceX;
+  if (gap < -0.03 || gap > cfg.ledgeReachX) return null;
+
+  const handY = state.y + cfg.ledgeGrabHeight;
+  const topY = Math.round(handY);
+  if (Math.abs(handY - topY) > cfg.ledgeReachY ||
+      !geometry.isSolid(cellX, topY - 1) ||
+      geometry.isSolid(cellX, topY)) return null;
+
+  const snapX = faceX - side * (state.hw + 0.001);
+  const snapY = topY - cfg.ledgeGrabHeight;
+  if (snapX - state.hw < geometry.minPlayerX) return null;
+
+  // The hanging body and head must both fit on the approach side.
+  const outsideX = cellX - side;
+  for (let j = Math.floor(snapY + 0.02);
+       j <= Math.floor(snapY + state.h - 0.02); j++) {
+    if (geometry.isSolid(outsideX, j)) return null;
+  }
+  return { side, cellX, topY, snapX, snapY };
+}
+
+function traversalLedgeDecision(state, cfg = CONFIG.player) {
+  if (state.down) {
+    return { kind: 'release', recatchUntil: state.now + cfg.traversalRecatchMs };
+  }
+  if (state.jumpBuffered) {
+    const entrySpeed = Math.abs(state.entryVx || 0);
+    return {
+      kind: 'launch',
+      vx: state.side * Math.max(cfg.ledgeLaunchX, entrySpeed),
+      vy: cfg.ledgeLaunchY,
+      recatchUntil: state.now + cfg.traversalRecatchMs,
+    };
+  }
+  if (state.now >= state.until) {
+    return { kind: 'release', recatchUntil: state.now + cfg.traversalRecatchMs };
+  }
+  return { kind: 'hang', vx: 0, vy: 0 };
+}
+
+function traversalWallDecision(state, geometry, cfg = CONFIG.player) {
+  const side = Math.sign(state.side);
+  let touchesWall = false;
+  for (let j = Math.floor(state.y + 0.02);
+       side !== 0 && !state.grounded &&
+       state.cellX >= geometry.minCellX && state.cellX < geometry.maxCellX &&
+       j <= Math.floor(state.y + state.h - 0.02); j++) {
+    if (geometry.isSolid(state.cellX, j)) { touchesWall = true; break; }
+  }
+  if (!touchesWall || state.down) {
+    return { kind: 'release', recatchUntil: state.now + cfg.traversalRecatchMs };
+  }
+  if (state.jumpBuffered) {
+    return {
+      kind: 'jump',
+      vx: -side * cfg.wallJumpX,
+      vy: cfg.wallJumpY,
+      recatchUntil: state.now + cfg.traversalRecatchMs,
+    };
+  }
+  if (state.hInput === -side || state.now >= state.until) {
+    return { kind: 'release', recatchUntil: state.now + cfg.traversalRecatchMs };
+  }
+  return { kind: 'slide', vx: 0, vy: Math.max(state.vy, -cfg.wallSlideSpeed) };
+}
 
 /* ============================= PATH =============================== */
 /* Pure polyline math for the hexagonal tower. Gameplay simulates in
@@ -1140,6 +1228,10 @@ const player = {
   facing: 1, aim: new THREE.Vector2(1, 0),
   grounded: false, onOneWay: null, airJumpsLeft: P.airJumps,
   coyoteUntil: 0, dropUntil: 0, jumpCutDone: true,
+  traversalState: 'free', traversalSide: 0,
+  traversalCellX: 0, traversalTopY: 0,
+  traversalSnapX: 0, traversalSnapY: 0,
+  traversalUntil: 0, traversalRecatchUntil: 0, traversalEntryVx: 0,
   hp: P.maxHealth, lives: P.lives,
   iframesUntil: 0, hitstunUntil: 0,
   nextFireAt: 0,
@@ -1199,18 +1291,103 @@ function playerOverlapsSolid() {
   return false;
 }
 
+const playerTraversalGeometry = {
+  isSolid,
+  minCellX: 1,
+  maxCellX: LEVEL_LEN - 1,
+  minPlayerX: -Infinity,
+};
+
+function clearPlayerTraversal(recatchUntil = player.traversalRecatchUntil) {
+  player.traversalState = 'free';
+  player.traversalSide = 0;
+  player.traversalCellX = 0;
+  player.traversalTopY = 0;
+  player.traversalSnapX = 0;
+  player.traversalSnapY = 0;
+  player.traversalUntil = 0;
+  player.traversalEntryVx = 0;
+  player.traversalRecatchUntil = recatchUntil;
+}
+
 function updatePlayer(dt) {
   computeAim();
 
-  // -- horizontal drive (locked out during hitstun so knockback registers)
   const h = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-  if (gameMs >= player.hitstunUntil) {
+  let ledgeHanging = false;
+  let wallSliding = false;
+
+  // Contextual traversal launches happen before the ordinary jump branch so
+  // they neither consume nor refill the player's remaining air jump.
+  if (!IS_TRAVERSAL_SLICE && player.traversalState !== 'free') clearPlayerTraversal(0);
+  if (IS_TRAVERSAL_SLICE && player.traversalState === 'ledge') {
+    const action = traversalLedgeDecision({
+      side: player.traversalSide,
+      down: keys.down,
+      jumpBuffered: jumpBufferedUntil > gameMs,
+      entryVx: player.traversalEntryVx,
+      now: gameMs,
+      until: player.traversalUntil,
+    }, P);
+    if (action.kind === 'launch') {
+      const side = player.traversalSide;
+      const faceX = side > 0 ? player.traversalCellX : player.traversalCellX + 1;
+      player.x = faceX + side * (player.hw + P.ledgeMantleInset);
+      player.y = player.traversalTopY + 0.001;
+      clearPlayerTraversal(action.recatchUntil);
+      jumpBufferedUntil = 0;
+      player.vx = action.vx; player.vy = action.vy;
+      player.grounded = false; player.onOneWay = null;
+      player.coyoteUntil = 0; player.jumpCutDone = false;
+    } else if (action.kind === 'release') {
+      const side = player.traversalSide;
+      clearPlayerTraversal(action.recatchUntil);
+      player.x -= side * P.ledgeReleaseNudge;
+      player.vy = Math.min(player.vy, -0.01);
+      player.jumpCutDone = true;
+    } else {
+      player.x = player.traversalSnapX;
+      player.y = player.traversalSnapY;
+      player.vx = 0; player.vy = 0;
+      player.grounded = false; player.onOneWay = null;
+      player.jumpCutDone = true;
+      ledgeHanging = true;
+    }
+  } else if (IS_TRAVERSAL_SLICE && player.traversalState === 'wall') {
+    const action = traversalWallDecision({
+      side: player.traversalSide,
+      cellX: player.traversalCellX,
+      x: player.x, y: player.y, h: player.h,
+      vy: player.vy, grounded: player.grounded,
+      down: keys.down, hInput: h,
+      jumpBuffered: jumpBufferedUntil > gameMs,
+      now: gameMs, until: player.traversalUntil,
+    }, playerTraversalGeometry, P);
+    if (action.kind === 'jump') {
+      clearPlayerTraversal(action.recatchUntil);
+      jumpBufferedUntil = 0;
+      player.vx = action.vx; player.vy = action.vy;
+      player.grounded = false; player.onOneWay = null;
+      player.coyoteUntil = 0; player.jumpCutDone = false;
+    } else if (action.kind === 'release') {
+      const side = player.traversalSide;
+      clearPlayerTraversal(action.recatchUntil);
+      player.x -= side * P.ledgeReleaseNudge;
+    } else {
+      player.x = player.traversalSnapX;
+      player.vx = action.vx; player.vy = action.vy;
+      wallSliding = true;
+    }
+  }
+
+  // -- horizontal drive (locked out during hitstun and contextual contact)
+  if (!ledgeHanging && !wallSliding && gameMs >= player.hitstunUntil) {
     const accel = player.grounded ? P.accelGround : P.accelAir;
     player.vx = approach(player.vx, h * P.runSpeed, accel * dt);
   }
 
   // -- jump: buffer + coyote + one air jump; down+jump on a catwalk = drop-through
-  if (jumpBufferedUntil > gameMs) {
+  if (player.traversalState === 'free' && jumpBufferedUntil > gameMs) {
     if (player.grounded || player.coyoteUntil > gameMs) {
       jumpBufferedUntil = 0;
       if (player.grounded && player.onOneWay && keys.down) {
@@ -1237,58 +1414,122 @@ function updatePlayer(dt) {
   }
 
   // -- gravity
-  const g = P.gravity * (player.vy < 0 ? P.fallGravityMult : 1);
-  player.vy = Math.max(P.terminalVel, player.vy + g * dt);
+  if (!ledgeHanging) {
+    const g = P.gravity * (player.vy < 0 ? P.fallGravityMult : 1);
+    player.vy = Math.max(P.terminalVel, player.vy + g * dt);
+    if (wallSliding) player.vy = Math.max(player.vy, -P.wallSlideSpeed);
+  }
 
   // -- integrate X, resolve against solids (dt clamp keeps moves < 1 tile)
-  player.x += player.vx * dt;
-  if (player.vx > 0) {
-    const ci = Math.floor(player.x + player.hw);
-    for (let j = Math.floor(player.y + 0.02); j <= Math.floor(player.y + player.h - 0.02); j++)
-      if (isSolid(ci, j)) { player.x = ci - player.hw - 0.001; player.vx = 0; break; }
-  } else if (player.vx < 0) {
-    const ci = Math.floor(player.x - player.hw);
-    for (let j = Math.floor(player.y + 0.02); j <= Math.floor(player.y + player.h - 0.02); j++)
-      if (isSolid(ci, j)) { player.x = ci + 1 + player.hw + 0.001; player.vx = 0; break; }
+  let wallHit = null;
+  const collisionVx = player.vx;
+  if (!ledgeHanging && !wallSliding) {
+    player.x += player.vx * dt;
+    if (player.vx > 0) {
+      const ci = Math.floor(player.x + player.hw);
+      for (let j = Math.floor(player.y + 0.02); j <= Math.floor(player.y + player.h - 0.02); j++) {
+        if (isSolid(ci, j)) {
+          player.x = ci - player.hw - 0.001; player.vx = 0;
+          wallHit = { side: 1, cellX: ci, snapX: player.x };
+          break;
+        }
+      }
+    } else if (player.vx < 0) {
+      const ci = Math.floor(player.x - player.hw);
+      for (let j = Math.floor(player.y + 0.02); j <= Math.floor(player.y + player.h - 0.02); j++) {
+        if (isSolid(ci, j)) {
+          player.x = ci + 1 + player.hw + 0.001; player.vx = 0;
+          wallHit = { side: -1, cellX: ci, snapX: player.x };
+          break;
+        }
+      }
+    }
   }
 
   // -- integrate Y, resolve against solids + one-way catwalks
   const prevY = player.y;
-  player.y += player.vy * dt;
   const wasGrounded = player.grounded;
-  player.grounded = false;
-  player.onOneWay = null;
-  if (player.vy <= 0) {
-    const i0 = Math.floor(player.x - player.hw + 0.02), i1 = Math.floor(player.x + player.hw - 0.02);
-    let landY = null, landPl = null;
-    for (let j = Math.floor(prevY); j >= Math.floor(player.y); j--) {
-      if (j + 1 > prevY + 0.001) continue;             // feet started below this surface
-      if (isSolid(i0, j) || isSolid(i1, j)) { landY = j + 1; break; }
-    }
-    if (player.dropUntil <= gameMs) {
-      for (const pl of platforms) {                    // stacked lanes: land on highest crossed
-        if (player.x + player.hw > pl.x0 && player.x - player.hw < pl.x1 &&
-            prevY >= pl.y - 0.001 && player.y <= pl.y &&
-            (landY === null || pl.y > landY)) {
-          landY = pl.y; landPl = pl;
+  if (!ledgeHanging) {
+    player.y += player.vy * dt;
+    player.grounded = false;
+    player.onOneWay = null;
+    if (player.vy <= 0) {
+      const i0 = Math.floor(player.x - player.hw + 0.02), i1 = Math.floor(player.x + player.hw - 0.02);
+      let landY = null, landPl = null;
+      for (let j = Math.floor(prevY); j >= Math.floor(player.y); j--) {
+        if (j + 1 > prevY + 0.001) continue;             // feet started below this surface
+        if (isSolid(i0, j) || isSolid(i1, j)) { landY = j + 1; break; }
+      }
+      if (player.dropUntil <= gameMs) {
+        for (const pl of platforms) {                    // stacked lanes: land on highest crossed
+          if (player.x + player.hw > pl.x0 && player.x - player.hw < pl.x1 &&
+              prevY >= pl.y - 0.001 && player.y <= pl.y &&
+              (landY === null || pl.y > landY)) {
+            landY = pl.y; landPl = pl;
+          }
         }
       }
+      if (landY !== null) {
+        player.y = landY; player.vy = 0; player.grounded = true; player.onOneWay = landPl;
+      }
+    } else {
+      const cj = Math.floor(player.y + player.h);
+      const i0 = Math.floor(player.x - player.hw + 0.02), i1 = Math.floor(player.x + player.hw - 0.02);
+      if (isSolid(i0, cj) || isSolid(i1, cj)) { player.y = cj - player.h - 0.001; player.vy = 0; }
     }
-    if (landY !== null) {
-      player.y = landY; player.vy = 0; player.grounded = true; player.onOneWay = landPl;
-    }
-  } else {
-    const cj = Math.floor(player.y + player.h);
-    const i0 = Math.floor(player.x - player.hw + 0.02), i1 = Math.floor(player.x + player.hw - 0.02);
-    if (isSolid(i0, cj) || isSolid(i1, cj)) { player.y = cj - player.h - 0.001; player.vy = 0; }
   }
-  if (player.grounded) { player.coyoteUntil = gameMs + P.coyoteMs; player.airJumpsLeft = P.airJumps; }
+  if (player.grounded) {
+    clearPlayerTraversal();
+    player.coyoteUntil = gameMs + P.coyoteMs;
+    player.airJumpsLeft = P.airJumps;
+  }
   if (!wasGrounded && player.grounded) player.jumpCutDone = true;
+
+  // Falling near a real solid top catches before a lower wall slide. One-way
+  // catwalks are intentionally absent because the probe only uses isSolid.
+  if (IS_TRAVERSAL_SLICE && player.traversalState === 'free' &&
+      !player.grounded && player.vy < 0) {
+    playerTraversalGeometry.minPlayerX =
+      sLeftEdge() + CONFIG.edges.margin + P.traversalEdgeGuard;
+    const catchState = traversalLedgeProbe({
+      x: player.x, y: player.y, hw: player.hw, h: player.h,
+      vx: collisionVx, vy: player.vy, grounded: player.grounded,
+      down: keys.down, hInput: wallHit ? wallHit.side : h,
+      now: gameMs, recatchUntil: player.traversalRecatchUntil,
+    }, playerTraversalGeometry, P);
+    if (catchState) {
+      player.traversalState = 'ledge';
+      player.traversalSide = catchState.side;
+      player.traversalCellX = catchState.cellX;
+      player.traversalTopY = catchState.topY;
+      player.traversalSnapX = catchState.snapX;
+      player.traversalSnapY = catchState.snapY;
+      player.traversalUntil = gameMs + P.ledgeHangMs;
+      player.traversalEntryVx = collisionVx;
+      player.x = catchState.snapX; player.y = catchState.snapY;
+      player.vx = 0; player.vy = 0; player.jumpCutDone = true;
+    } else if (wallHit && wallHit.cellX >= playerTraversalGeometry.minCellX &&
+               wallHit.cellX < playerTraversalGeometry.maxCellX &&
+               gameMs >= player.traversalRecatchUntil) {
+      player.traversalState = 'wall';
+      player.traversalSide = wallHit.side;
+      player.traversalCellX = wallHit.cellX;
+      player.traversalSnapX = wallHit.snapX;
+      player.traversalUntil = gameMs + P.wallSlideMs;
+      player.vy = Math.max(player.vy, -P.wallSlideSpeed);
+      player.jumpCutDone = true;
+    }
+  }
 
   // -- frustum constraints: left edge is a damage plane that pushes.
   //    Crush damage is suspended while a corner gate/turn holds the scroll —
   //    the plane isn't advancing, so a pin there would be unfair jank.
   const le = sLeftEdge() + CONFIG.edges.margin;
+  if (player.traversalState !== 'free' &&
+      player.x - player.hw < le + P.traversalEdgeGuard) {
+    clearPlayerTraversal(gameMs + P.traversalRecatchMs);
+    player.vx = Math.max(player.vx, CONFIG.scrollSpeed);
+  }
   if (player.x - player.hw < le) {
     player.x = le + player.hw;
     if (playerOverlapsSolid() && !cornerBusy()) damagePlayer(1, player.x - 1);   // crushed against terrain
@@ -1321,6 +1562,8 @@ function updatePlayer(dt) {
 
 function damagePlayer(amount, fromX) {
   if (gameMs < player.iframesUntil) return;
+  clearPlayerTraversal(gameMs + P.traversalRecatchMs);
+  jumpBufferedUntil = 0;
   player.hp -= amount;
   player.iframesUntil = gameMs + P.iframesMs;
   player.hitstunUntil = gameMs + P.hitstunMs;
@@ -1338,6 +1581,8 @@ function damagePlayer(amount, fromX) {
 }
 
 function loseLife() {
+  clearPlayerTraversal(0);
+  jumpBufferedUntil = 0;
   player.lives--;
   currentWeapon = 'R';                     // death resets the arsenal
   clearMods();
@@ -1356,8 +1601,11 @@ function respawn() {
   player.iframesUntil = gameMs + 2000;
   player.hitstunUntil = 0;
   player.dropUntil = 0;
-  player.grounded = false;
+  player.coyoteUntil = 0;
+  player.grounded = false; player.onOneWay = null; player.jumpCutDone = true;
   player.airJumpsLeft = P.airJumps;
+  clearPlayerTraversal(0);
+  jumpBufferedUntil = 0;
 }
 
 /* ===================== ENTITIES: HOSTILES ========================= */
@@ -1994,6 +2242,7 @@ function resetGame() {
   player.coyoteUntil = 0; player.dropUntil = 0; player.nextFireAt = 0;
   player.grounded = false; player.onOneWay = null; player.jumpCutDone = true;
   player.airJumpsLeft = P.airJumps;
+  clearPlayerTraversal(0);
   jumpBufferedUntil = 0;
   for (const c of cornerEvents) { c.state = 'idle'; c.tStart = 0; }
   camYaw = 0; camYawBase = 0;
