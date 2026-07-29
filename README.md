@@ -85,7 +85,7 @@ states → main loop.
 node tools/pathcheck.mjs
 ```
 
-Extracts the pure block from `index.html` and runs 123 assertions: polyline
+Extracts the pure block from `index.html` and runs 125 assertions: polyline
 continuity, corner-ritual timeline exactness, generator invariants
 (reachability, tier coverage, gap limits, corner-apron cleanliness), spawn
 ordering, and jump math derived from the shipped constants. Exits non-zero

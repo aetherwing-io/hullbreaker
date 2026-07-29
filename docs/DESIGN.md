@@ -63,9 +63,10 @@ Enemies use the depth axis (face normal) as theater while the sim stays 2D:
 ## Movement feel (tuned via playtests)
 
 Double jump (one air jump, slightly weaker than ground jump), coyote 100ms,
-buffer 120ms, variable height via release-cut, drop-through catwalks. Three
-vertical tiers: ground (h 2–4), mid lane (+3), high lane (+3 more, cap y=10);
-single jump clears +2, double clears +3. Current speeds: scroll 4.2, run 9.4.
+buffer 120ms, variable height via release-cut, drop-through catwalks. Up to
+four vertical levels: ground (h 2–4), a near-continuous mid lane (+2.35),
+high-lane stretches (+3), and occasional third-tier lanes (cap y=12);
+single jump clears +2, double clears +3. Current speeds: scroll 4.3, run 9.4.
 All constants in `CONFIG`; jump/tier/gap relationships are asserted by
 `tools/pathcheck.mjs` so retunes can't silently break traversal.
 
@@ -89,14 +90,15 @@ simplification).
 
 ## Build order (remaining)
 
-2. **Enemy roster**: polyp turret, houndframe charger, spore mortar
-   (carrier shipped early with the weapons pass).
-3. **Boss**: THE IMMUNE HEART — three phases, hit-stop transitions.
-4. **Flight interlude**: ~60s vertical shooter up the spine shaft.
-5. **Juice**: trauma shake, hit-stop, muzzle lights, particles, tracers,
+1. **Enemy roster**: polyp turret, houndframe charger, spore mortar
+   (carrier shipped early with the weapons pass — add each as an ENEMY
+   table row + a movement branch in updateHostiles).
+2. **Boss**: THE IMMUNE HEART — three phases, hit-stop transitions.
+3. **Flight interlude**: ~60s vertical shooter up the spine shaft.
+4. **Juice**: trauma shake, hit-stop, muzzle lights, particles, tracers,
    squash-and-stretch, UI tweens.
-6. **Menus/states**: title over live level, pause, death/victory stats.
-7. **Audio**: WebAudio-synthesized SFX + generative bass loop.
+5. **Menus/states**: title over live level, pause, death/victory stats.
+6. **Audio**: WebAudio-synthesized SFX + generative bass loop.
 
 Acceptance: 60fps with 200+ bullets, no console errors, start → boss →
 flight → victory in ~4–5 minutes.

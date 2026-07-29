@@ -58,10 +58,11 @@ import * as THREE from 'three';
 /* @pure-begin */
 
 const CONFIG = {
-  scrollSpeed: 4.2,            // camera advance, units/sec (~11%/s of screen width)
+  scrollSpeed: 4.3,            // camera advance, units/sec (~10%/s of the wider screen)
   levelLength: 445,            // tiles = 24 intro + 6 faces × 65 + 31 outro
 
-  camera: { fov: 56, x: 5.0, y: 5.9, z: 19.5, lookX: 7.2, lookY: 4.6 }, // pulled back: player ~8% of screen height
+  camera: { fov: 56, x: 5.0, y: 6.2, z: 22.5, lookX: 7.4, lookY: 4.8 }, // pulled back further: more room
+                                             // to jump/dodge/shoot; player ~7% of screen height
   fog: { near: 30, far: 74 },  // pushed out with the camera
 
   path: {                      // hexagonal tower circuit; sim stays in (s, y)
@@ -79,7 +80,8 @@ const CONFIG = {
                                //   (5 demands a committed full jump: 6.64 tiles available)
     tailFlat: 20,              // flat outro tail
     maxReach: 5,               // catwalk support ceiling (double-jump apex 5.07)
-    weights: { flat: 20, step: 16, stairs: 12, gapHop: 14, plateau: 10, trench: 8, islandHop: 8, ridge: 12 },
+    weights: { flat: 12, step: 16, stairs: 12, gapHop: 14, plateau: 14, trench: 12, islandHop: 10, ridge: 16 },
+    laneChance: 0.92, hiChance: 0.6, thirdChance: 0.35, laneCapY: 12,
   },
 
   spawner: {                   // ambient spawn director (gate waves live in waves)
@@ -108,16 +110,24 @@ const CONFIG = {
     iframesMs: 1200, hitstunMs: 220, knockbackX: 6, knockbackY: 5,
   },
 
-  rifle: { fireRateMs: 130, speed: 26, lifeMs: 1100, radius: 0.16, damage: 1 },  // fat tracer for the pulled-back
-                                             // view; wasp hit radius lives on the entity (hitR)
+  rifle: { radius: 0.16 },     // shared tracer geometry; rifle stats live in weapons.R
 
-  weapons: {                   // letter weapons; R = rifle (stats above)
-    S: { name: 'SPREAD', fireRateMs: 240, speed: 23, damage: 1, lifeMs: 900, count: 5, arcDeg: 48 },
-    L: { name: 'LASER',  fireRateMs: 300, speed: 40, damage: 2, lifeMs: 800, pierce: true },
-    H: { name: 'HOMING', fireRateMs: 260, speed: 18, damage: 1, lifeMs: 1600, count: 2,
-         splayDeg: 24, turnRate: 7, seekRange: 14 },
-    F: { name: 'FLAME',  fireRateMs: 300, speed: 13, damage: 1, lifeMs: 1500, pierce: true,
-         crawlSpeed: 10, dropAccel: -40 },
+  weapons: {                   // letter weapons — every stat, spawn shape, and look
+                               // lives here; fireWeapon reads defs, never branches.
+                               // splayDeg = per-shot fan step around the aim.
+    R: { name: 'RIFLE',  fireRateMs: 130, speed: 26, damage: 1, lifeMs: 1100,
+         scale: [1, 1, 1] },
+    S: { name: 'SPREAD', fireRateMs: 240, speed: 23, damage: 1, lifeMs: 900,
+         count: 5, splayDeg: 12, scale: [0.8, 0.8, 0.8] },
+    L: { name: 'LASER',  fireRateMs: 300, speed: 40, damage: 2, lifeMs: 800,
+         pierce: true, scale: [7, 0.45, 0.45] },
+    H: { name: 'HOMING', fireRateMs: 260, speed: 18, damage: 1, lifeMs: 1600,
+         count: 2, splayDeg: 24, turnRate: 7, seekRange: 14, scale: [0.7, 0.7, 0.7] },
+    F: { name: 'FLAME',  fireRateMs: 300, speed: 13, damage: 1, lifeMs: 1500,
+         pierce: true, crawlSpeed: 10, dropAccel: -40,
+         lobScaleY: 0.6, lobBias: 0.12,          // aims-to-lob conversion at fire time
+         hugY: 0.35, hugRate: 30, probeX: 0.4, probeY: 0.4,   // deck-hugging crawl
+         scale: [1.1, 1.1, 1.1], crawlScale: [1.5, 0.9, 1.1] },
   },
 
   capsules: {                  // pickups: letters (magenta) + rare modifiers (gold)
@@ -127,9 +137,10 @@ const CONFIG = {
     pickupRadius: 0.95,
   },
 
-  carrier: {                   // capsule delivery drone — the only new enemy this pass
+  carrier: {                   // capsule delivery drone
     hp: 10, speed: 1.1, bobAmp: 0.4, bobFreq: 1.4, hitRadius: 1.0, laneAbove: 4.5,
-    perFaceFrac: [0.45, 0.4, 0.5, 0.42, 0.55, 0.38],   // one per face, mid-face (clear of corner zones)
+    rollFreq: 1.3, rollAmp: 0.08, size: [1.7, 0.9, 0.9],
+    perFaceFrac: [0.45, 0.4, 0.5, 0.42, 0.55, 0.38],   // one per face, mid-face
   },
 
   mods: {                      // rare stackable modifiers (carrier drops 5+)
@@ -162,7 +173,7 @@ const CONFIG = {
       [1, 2, 1, 0, 2, 1, 2, 0],
       [2, 1, 2, 1, 0, 2, 1, 2, 2],
     ],
-    gateDiveCooldownMs: 1100, gateDiveRange: 9.0,   // hotter wasps while gated
+    gateDiveCooldownMs: 1100, gateDiveRange: 9.0,   // hotter hostiles while gated
     gateCruiseSpeed: 5.0,      // gated approach speed — fights, not drift-watching
     windUpMs: 70, windUpDeg: -1.5,             // counter-rotation blink
     snap1Ms: 150, holdMs: 420, snap2Ms: 130, settleMs: 130, resumeMs: 200,
@@ -179,9 +190,10 @@ const CONFIG = {
 
   palette: {                    // grey-box: neutral + readability hints
     bg: 0x232830, ground: 0x767c85, groundAlt: 0x6a707a, catwalk: 0x8d939c,
-    player: 0xd9dde2, gun: 0xffc966, wasp: 0x7cc47c, bullet: 0xfff0c2,
+    player: 0xd9dde2, gun: 0xffc966, wasp: 0x7cc47c,
     carrier: 0x4e8f5a, capsule: '#ff4fd8', modCapsule: '#ffd75e',
     shots: { R: 0xfff0c2, S: 0xffc76a, L: 0x9ff7ff, H: 0xff9adf, F: 0xff8a4a },
+    tints: { lance: 'rgba(255,255,255,0.5)', rage: 'rgba(255,50,50,0.14)', chrono: 'rgba(90,200,255,0.12)' },
   },
 };
 
@@ -248,6 +260,7 @@ function yawAt(segs, s, blend) {
   if (!(blend > 0)) return headingAt(segs, s);
   let yaw = segs[0].heading;
   for (let i = 1; i < segs.length; i++) {
+    if (s <= segs[i].s0 - blend) break;        // segs sorted by s0: later bends add 0
     const d = segs[i].heading - segs[i - 1].heading;
     const u = Math.min(1, Math.max(0, (s - (segs[i].s0 - blend)) / (2 * blend)));
     yaw += d * u * u * (3 - 2 * u);
@@ -441,18 +454,22 @@ function buildLevel(cfg) {
   const prng = mulberry32(G.tierSeed);
   let cx = 26;
   while (cx < L - 28) {
-    const segLen = 8 + Math.floor(prng() * 7);         // 8–14 column segments
+    const segLen = 7 + Math.floor(prng() * 6);         // 7–12 column segments: denser rhythm
     let base = 2;
     for (let k = cx; k < Math.min(cx + segLen, L); k++)
       if (groundH[k] > -100) base = Math.max(base, groundH[k]);
-    if (prng() < 0.8) {
+    if (prng() < G.laneChance) {
       const len = segLen - 2 - Math.floor(prng() * 2); // leaves 2–3 column lane gaps
       const y = base + 2.35;
       platforms.push({ x0: cx, x1: cx + len, y });
-      if (y + 3 <= 10 && prng() < 0.5) {
+      if (y + 3 <= G.laneCapY && prng() < G.hiChance) {
         const hiLen = Math.max(3, len - 3);
         const off = 1 + Math.floor(prng() * 2);
-        platforms.push({ x0: cx + off, x1: cx + off + hiLen, y: y + 3 });
+        const yHi = y + 3;
+        platforms.push({ x0: cx + off, x1: cx + off + hiLen, y: yHi });
+        if (yHi + 3 <= G.laneCapY && prng() < G.thirdChance) {   // third tier over low ground
+          platforms.push({ x0: cx + off + 1, x1: cx + off + 1 + Math.max(3, hiLen - 2), y: yHi + 3 });
+        }
       }
     }
     cx += segLen;
@@ -508,6 +525,17 @@ function buildSpawnTable(cfg) {
     }
     x += Math.max(2, Math.round((S.faceGapSec[f - 1] + rng() * S.jitterSec) * cfg.scrollSpeed));
   }
+  // one carrier per face at an authored mid-face fraction — same table, same
+  // corner-clear discipline, harness-assertable like every other row. Nudge
+  // off any occupied column: the table stays strictly ascending in x.
+  const used = new Set(out.map((r) => r.x));
+  cfg.carrier.perFaceFrac.forEach((frac, f) => {
+    const start = f === 0 ? cfg.path.introTiles : corners[f - 1];
+    let cx = Math.round(start + frac * (corners[f] - start));
+    while (used.has(cx)) cx++;
+    if (!nearCorner(cx)) { out.push({ x: cx, type: 'carrier' }); used.add(cx); }
+  });
+  out.sort((a, b) => a.x - b.x);
   return out;
 }
 
@@ -516,6 +544,19 @@ function buildSpawnTable(cfg) {
 const TILE_DEPTH = 8;           // solid tiles below each surface (collision)
 const BULLET_MAX = 256;
 const _pp = { x: 0, z: 0 };     // polyAt scratch shared by the per-frame call sites
+
+// (s, y, depth) → tower world placement for a mesh. depth rides the outward
+// face normal (positive = toward camera). Returns the yaw for callers that
+// compose further on top of it. Every dynamic entity places through here.
+function placeOnTower(mesh, s, y, depth) {
+  const yaw = yawAt(SEGS, s, CONFIG.path.yawBlendTiles);
+  const wp = polyAt(SEGS, s, _pp);
+  mesh.position.set(wp.x + Math.sin(yaw) * depth, y, wp.z + Math.cos(yaw) * depth);
+  mesh.rotation.y = yaw;
+  return yaw;
+}
+
+function blink(periodMs = 90) { return Math.floor(gameMs / periodMs) % 2 === 0; }
 
 /* ======================== RENDERER / SCENE ======================== */
 
@@ -739,13 +780,13 @@ function builtGroundTopAt(x) {
 
 /* ======================== POOLS / WEAPONS ========================= */
 /* Letter weapons R/S/L/H/F share one instanced pool; per-type behavior,
-   scale, and color are set per projectile. Damage flows through hitWasp
+   scale, and color are set per projectile. Damage flows through hitHostile
    so kills credit the weapon (favorite-weapon stat).                  */
 
 const bulletPool = [];
 for (let i = 0; i < BULLET_MAX; i++) bulletPool.push({
   alive: false, x: 0, y: 0, vx: 0, vy: 0, dieAt: 0,
-  type: 'R', damage: 1, pierce: false, phase: '', dir: 1, hitSet: new Set(),
+  type: 'R', damage: 1, pierce: false, crawling: false, dir: 1, hitSet: new Set(),
 });
 
 const bulletMesh = new THREE.InstancedMesh(
@@ -761,19 +802,16 @@ const _be = new THREE.Euler();
 const _bs = new THREE.Vector3();
 const _bv = new THREE.Vector3();
 const _shotColor = new THREE.Color();
-for (let i = 0; i < BULLET_MAX; i++) bulletMesh.setColorAt(i, _shotColor.setHex(0xffffff));
+bulletMesh.setColorAt(0, _shotColor.setHex(0xffffff));   // allocates instanceColor up front
+const slotType = new Array(BULLET_MAX).fill('');         // gate color uploads on change
 
 let shotsFired = 0;
 let currentWeapon = 'R';
-const weaponKills = { R: 0, S: 0, L: 0, H: 0, F: 0 };
+// derived rosters: adding a weapon to CONFIG.weapons wires kills + drops
+const WEAPON_LETTERS = Object.keys(CONFIG.weapons);
+const weaponKills = Object.fromEntries(WEAPON_LETTERS.map(k => [k, 0]));
 
-function weaponDef(letter) {
-  if (letter === 'R') {
-    const r = CONFIG.rifle;
-    return { name: 'RIFLE', fireRateMs: r.fireRateMs, speed: r.speed, damage: r.damage, lifeMs: r.lifeMs };
-  }
-  return CONFIG.weapons[letter];
-}
+function weaponDef(letter) { return CONFIG.weapons[letter]; }
 
 function spawnProj(type, x, y, dx, dy, def) {
   for (let i = 0; i < BULLET_MAX; i++) {
@@ -783,108 +821,109 @@ function spawnProj(type, x, y, dx, dy, def) {
     b.vx = dx * def.speed; b.vy = dy * def.speed;
     b.damage = def.damage; b.pierce = !!def.pierce;
     b.dieAt = gameMs + def.lifeMs;
-    b.phase = type === 'F' ? 'fly' : '';
+    b.crawling = false;
     b.dir = Math.sign(dx) || player.facing;
     b.hitSet.clear();
-    bulletMesh.setColorAt(i, _shotColor.setHex(CONFIG.palette.shots[type]));
-    bulletMesh.instanceColor.needsUpdate = true;
+    if (slotType[i] !== type) {
+      slotType[i] = type;
+      bulletMesh.setColorAt(i, _shotColor.setHex(CONFIG.palette.shots[type]));
+      bulletMesh.instanceColor.needsUpdate = true;
+    }
     return;
   }
 }
 
 // One trigger pull → one "shot" for stats; clones replay without logging.
+// No per-letter branches: count/splayDeg/lob fields on the def drive the fan.
 function fireWeapon(letter, x, y, ax, ay, clone) {
   if (!clone) {
     shotsFired++;
     if (gameMs < mods.ghostUntil) logShot(letter, x, y, ax, ay);
   }
   const def = weaponDef(letter);
+  if (def.lobBias !== undefined) ay = ay * def.lobScaleY + def.lobBias;   // flame lob
   const base = Math.atan2(ay, ax);
-  if (letter === 'S') {
-    const arc = def.arcDeg * DEG;
-    for (let k = 0; k < def.count; k++) {
-      const a = base + arc * (k / (def.count - 1) - 0.5);
-      spawnProj(letter, x, y, Math.cos(a), Math.sin(a), def);
-    }
-  } else if (letter === 'H') {
-    for (let k = 0; k < def.count; k++) {
-      const a = base + def.splayDeg * DEG * (k - (def.count - 1) / 2);
-      spawnProj(letter, x, y, Math.cos(a), Math.sin(a), def);
-    }
-  } else if (letter === 'F') {
-    spawnProj(letter, x, y, ax, ay * 0.6 + 0.12, def);   // lobbed: gravity takes it to the deck
-  } else {
-    spawnProj(letter, x, y, ax, ay, def);
+  const n = def.count || 1;
+  const step = (def.splayDeg || 0) * DEG;
+  for (let k = 0; k < n; k++) {
+    const a = base + step * (k - (n - 1) / 2);
+    spawnProj(letter, x, y, Math.cos(a), Math.sin(a), def);
   }
 }
 
+function killBullet(b, i) { b.alive = false; bulletMesh.setMatrixAt(i, HIDE); }
+
 function updateBullets(dt) {
   const HDEF = CONFIG.weapons.H, FDEF = CONFIG.weapons.F;
+  const YAWB = CONFIG.path.yawBlendTiles;
   for (let i = 0; i < BULLET_MAX; i++) {
     const b = bulletPool[i];
     if (!b.alive) { bulletMesh.setMatrixAt(i, HIDE); continue; }
 
     if (b.type === 'H') {                                // steer toward nearest live hostile
       let best = null, bestD = HDEF.seekRange * HDEF.seekRange;
-      for (const e of wasps) {
+      for (const e of hostiles) {
         if (gameMs < e.enterUntil) continue;
         const d = (e.x - b.x) ** 2 + (e.y - b.y) ** 2;
         if (d < bestD) { bestD = d; best = e; }
       }
       if (best) {
         const cur = Math.atan2(b.vy, b.vx);
-        const want = Math.atan2(best.y - b.y, best.x - b.x);
-        let diff = want - cur;
+        let diff = Math.atan2(best.y - b.y, best.x - b.x) - cur;
         while (diff > Math.PI) diff -= 2 * Math.PI;
         while (diff < -Math.PI) diff += 2 * Math.PI;
-        const turn = Math.max(-HDEF.turnRate * dt, Math.min(HDEF.turnRate * dt, diff));
-        const a = cur + turn, sp = HDEF.speed;
-        b.vx = Math.cos(a) * sp; b.vy = Math.sin(a) * sp;
+        const a = approach(cur, cur + diff, HDEF.turnRate * dt);
+        b.vx = Math.cos(a) * HDEF.speed; b.vy = Math.sin(a) * HDEF.speed;
       }
       b.x += b.vx * dt; b.y += b.vy * dt;
-    } else if (b.type === 'F' && b.phase === 'fly') {    // arc down to the deck…
+    } else if (b.type === 'F' && !b.crawling) {          // arc down to the deck…
       b.vy += FDEF.dropAccel * dt;
       b.x += b.vx * dt; b.y += b.vy * dt;
       const g = builtGroundTopAt(b.x);
-      if (g > -100 && b.y <= g + 0.35 && b.vy <= 0) { b.phase = 'crawl'; b.y = g + 0.35; }
+      if (g > -100 && b.y <= g + FDEF.hugY && b.vy <= 0) { b.crawling = true; b.y = g + FDEF.hugY; }
     } else if (b.type === 'F') {                         // …then crawl it, hugging terrain
       b.x += b.dir * FDEF.crawlSpeed * dt;
       const g = builtGroundTopAt(b.x);
-      if (g > -100) b.y = approach(b.y, g + 0.35, 30 * dt);
-      else { b.alive = false; bulletMesh.setMatrixAt(i, HIDE); continue; }   // gap: fire dies
+      if (g > -100) b.y = approach(b.y, g + FDEF.hugY, FDEF.hugRate * dt);
+      else { killBullet(b, i); continue; }               // gap: fire dies
     } else {
       b.x += b.vx * dt; b.y += b.vy * dt;
     }
 
-    const wallDead = b.type === 'F' && b.phase === 'crawl'
-      ? builtSolidAt(b.x + b.dir * 0.4, b.y + 0.4)       // crawler dies against tall walls only
+    const wallDead = b.crawling
+      ? builtSolidAt(b.x + b.dir * FDEF.probeX, b.y + FDEF.probeY)   // crawler: tall walls only
       : builtSolidAt(b.x, b.y);
-    if (gameMs > b.dieAt || wallDead) { b.alive = false; bulletMesh.setMatrixAt(i, HIDE); continue; }
+    if (gameMs > b.dieAt || wallDead) { killBullet(b, i); continue; }
 
     let dead = false;
-    for (let w = wasps.length - 1; w >= 0; w--) {
-      const e = wasps[w];
+    for (let w = hostiles.length - 1; w >= 0; w--) {
+      const e = hostiles[w];
       if (gameMs < e.enterUntil) continue;               // still materializing: no hitbox
       if (b.pierce && b.hitSet.has(e.id)) continue;
       if ((b.x - e.x) ** 2 + (b.y - e.y) ** 2 < e.hitR * e.hitR) {
         if (b.pierce) b.hitSet.add(e.id);
-        hitWasp(e, w, b.damage, b.type);
+        hitHostile(e, w, b.damage, b.type);
         if (!b.pierce) { dead = true; break; }
       }
     }
-    if (dead) { b.alive = false; bulletMesh.setMatrixAt(i, HIDE); continue; }
+    if (dead) { killBullet(b, i); continue; }
 
-    // render: map (s,y) onto the tower, orient along velocity, scale by type
+    // render: map (s,y) onto the tower. R/S/H are uniform-scale spheres, so
+    // orientation is invisible — position + scale only, no yaw/quaternion
+    // work. Only L (stretched bolt) and F (flattened crawler) compose.
     const bp = polyAt(SEGS, b.x, _pp);
-    const yaw = yawAt(SEGS, b.x, CONFIG.path.yawBlendTiles);
-    const ang = b.type === 'F' && b.phase === 'crawl' ? 0 : Math.atan2(b.vy, b.vx);
-    if (b.type === 'L') _bs.set(7, 0.45, 0.45);          // stretched piercing bolt
-    else if (b.type === 'F') _bs.set(b.phase === 'crawl' ? 1.5 : 1.1, b.phase === 'crawl' ? 0.9 : 1.1, 1.1);
-    else if (b.type === 'S') _bs.set(0.8, 0.8, 0.8);
-    else if (b.type === 'H') _bs.set(0.7, 0.7, 0.7);
-    else _bs.set(1, 1, 1);
-    _bq.setFromEuler(_be.set(0, yaw, ang, 'YZX'));
-    _bm.compose(_bv.set(bp.x, b.y, bp.z), _bq, _bs);
+    const def = CONFIG.weapons[b.type];
+    if (b.type === 'L' || b.type === 'F') {
+      _bs.fromArray(b.crawling ? def.crawlScale : def.scale);
+      const yaw = yawAt(SEGS, b.x, YAWB);
+      const ang = b.crawling ? 0 : Math.atan2(b.vy, b.vx);
+      _bq.setFromEuler(_be.set(0, yaw, ang, 'YZX'));
+      _bm.compose(_bv.set(bp.x, b.y, bp.z), _bq, _bs);
+    } else {
+      const s = def.scale[0];
+      _bm.makeScale(s, s, s);
+      _bm.setPosition(bp.x, b.y, bp.z);
+    }
     bulletMesh.setMatrixAt(i, _bm);
   }
   bulletMesh.instanceMatrix.needsUpdate = true;
@@ -942,6 +981,13 @@ function computeAim() {
   else                         { ax = h; ay = v; }
   const n = Math.hypot(ax, ay);
   player.aim.set(ax / n, ay / n);
+}
+
+// circle vs the player's AABB — shared by contact damage and capsule pickup
+function circleHitsPlayer(x, y, r) {
+  const cx = Math.max(player.x - player.hw, Math.min(x, player.x + player.hw));
+  const cy = Math.max(player.y, Math.min(y, player.y + player.h));
+  return (x - cx) ** 2 + (y - cy) ** 2 < r * r;
 }
 
 function playerOverlapsSolid() {
@@ -1066,11 +1112,9 @@ function updatePlayer(dt) {
   }
 
   // -- rig transform (s,y → tower world) + aim pose + i-frame flicker
-  const pp = polyAt(SEGS, player.x, _pp);
-  rig.position.set(pp.x, player.y, pp.z);
-  rig.rotation.y = yawAt(SEGS, player.x, CONFIG.path.yawBlendTiles);
+  placeOnTower(rig, player.x, player.y, 0);
   gunGroup.rotation.z = Math.atan2(player.aim.y, player.aim.x);
-  rig.visible = gameMs >= player.iframesUntil || Math.floor(gameMs / 90) % 2 === 0;
+  rig.visible = gameMs >= player.iframesUntil || blink();
 }
 
 function damagePlayer(amount, fromX) {
@@ -1094,8 +1138,7 @@ function damagePlayer(amount, fromX) {
 function loseLife() {
   player.lives--;
   currentWeapon = 'R';                     // death resets the arsenal
-  mods.rageUntil = 0; mods.ghostUntil = 0; mods.chronoUntil = 0;
-  mods.lance = null; lanceBeam.visible = false;
+  clearMods();
   if (player.lives < 0) { setState('GAME_OVER'); return; }
   respawn();
 }
@@ -1114,62 +1157,72 @@ function respawn() {
   player.airJumpsLeft = P.airJumps;
 }
 
-/* ==================== ENTITIES: WASP DRONE ======================== */
-/* Roster pass adds: polyp turret, houndframe, carrier, spore mortar. */
+/* ===================== ENTITIES: HOSTILES ========================= */
+/* Kinds: wasp drone, carrier. Roster pass adds polyp turret, houndframe,
+   spore mortar as ENEMY rows + movement branches. */
 
-const wasps = [];
+const hostiles = [];
 const waspGeo = new THREE.OctahedronGeometry(CONFIG.wasp.visualRadius);
-const carrierGeo = new THREE.BoxGeometry(1.7, 0.9, 0.9);
+const carrierGeo = new THREE.BoxGeometry(...CONFIG.carrier.size);
 let kills = 0;
-let waspRng = mulberry32(5150);          // seeded: sim randomness is reproducible
+let hostileRng = mulberry32(5150);          // seeded: sim randomness is reproducible
 let nextWaspId = 1;
 
-function spawnWasp(x, y, delayMs, kind) {
+// Per-kind stats resolved once at spawn — the roster pass adds kinds as rows
+// here, not as ternaries at every use site. `gating: false` kinds never hold
+// a wave gate closed (a slow hauler or future stationary emplacement parked
+// near a corner must not deadlock the ritual).
+const ENEMY = {
+  wasp:    { geo: waspGeo,    color: CONFIG.palette.wasp,    hp: CONFIG.wasp.hp,
+             hitR: CONFIG.wasp.contactRadius, gating: true },
+  carrier: { geo: carrierGeo, color: CONFIG.palette.carrier, hp: CONFIG.carrier.hp,
+             hitR: CONFIG.carrier.hitRadius, gating: false },
+};
+
+function spawnHostile(x, y, delayMs, kind) {
   kind = kind || 'wasp';
-  const carrier = kind === 'carrier';
+  const K = ENEMY[kind];
   const mat = new THREE.MeshStandardMaterial({
-    color: carrier ? CONFIG.palette.carrier : CONFIG.palette.wasp,
-    flatShading: true, transparent: true, opacity: 0,
+    color: K.color, flatShading: true, transparent: true, opacity: 0,
   });
-  const mesh = new THREE.Mesh(carrier ? carrierGeo : waspGeo, mat);
+  const mesh = new THREE.Mesh(K.geo, mat);
   mesh.visible = false;                    // hidden until its materialization begins
   scene.add(mesh);
-  wasps.push({
+  hostiles.push({
     id: nextWaspId++, kind,
-    x, y, baseY: y, vx: 0, vy: 0, dir: -1, t: waspRng() * 6,
-    hp: carrier ? CONFIG.carrier.hp : CONFIG.wasp.hp,
-    hitR: carrier ? CONFIG.carrier.hitRadius : 0.55,
+    x, y, baseY: y, vx: 0, vy: 0, dir: -1, t: hostileRng() * 6,
+    hp: K.hp, hitR: K.hitR,
     state: 'cruise', stateUntil: 0, diveCdUntil: 0,
     enterUntil: gameMs + (delayMs || 0) + CONFIG.wasp.enterMs,
     flashUntil: 0, mesh, mat,
   });
 }
 
-function removeWasp(idx, fade) {         // single removal path: gates count every exit
-  const e = wasps[idx];
+function removeHostile(idx, fade) {         // single removal path: gates count every exit
+  const e = hostiles[idx];
   if (fade) {                            // hand the mesh to the corpse pass to dissolve
     corpses.push({ mesh: e.mesh, mat: e.mat, s: e.x, y: e.y, spin: e.t, t0: gameMs });
   } else {
     scene.remove(e.mesh);
     e.mat.dispose();
   }
-  wasps.splice(idx, 1);
-  onWaspRemoved();
+  hostiles.splice(idx, 1);
+  onHostileRemoved();
 }
 
-function hitWasp(e, idx, damage, weapon) {
+function hitHostile(e, idx, damage, weapon) {
   e.hp -= damage;
   e.flashUntil = gameMs + 70;
   if (e.hp <= 0) {
     kills++;
     if (weaponKills[weapon] !== undefined) weaponKills[weapon]++;
     if (e.kind === 'carrier') dropFromCarrier(e.x, e.y);
-    removeWasp(idx, true);
+    removeHostile(idx, true);
   }
 }
 
-// Dead wasps are display-only: no sim, no gate participation (removeWasp
-// already fired onWaspRemoved), just the dissolve back into tower depth.
+// Dead hostiles are display-only: no sim, no gate participation (removeHostile
+// already fired onHostileRemoved), just the dissolve back into tower depth.
 const corpses = [];
 function updateCorpses() {
   const W = CONFIG.wasp;
@@ -1177,11 +1230,7 @@ function updateCorpses() {
     const c = corpses[i];
     const u = (gameMs - c.t0) / W.dieMs;
     if (u >= 1) { scene.remove(c.mesh); c.mat.dispose(); corpses.splice(i, 1); continue; }
-    const yaw = yawAt(SEGS, c.s, CONFIG.path.yawBlendTiles);
-    const d = W.dieDepth * u * u;                 // accelerate away into the dark
-    const wp = polyAt(SEGS, c.s, _pp);
-    c.mesh.position.set(wp.x + Math.sin(yaw) * d, c.y - 0.6 * u, wp.z + Math.cos(yaw) * d);
-    c.mesh.rotation.y = yaw;
+    placeOnTower(c.mesh, c.s, c.y - 0.6 * u, W.dieDepth * u * u);   // recede into the dark
     c.mesh.rotation.z = c.spin + u * 9;           // death tumble
     c.mesh.scale.setScalar(1 + 0.3 * u);
     c.mat.opacity = 1 - u * u;
@@ -1189,34 +1238,37 @@ function updateCorpses() {
   }
 }
 
-function updateWasps(dt) {
+function updateHostiles(dt) {
   const W = CONFIG.wasp;
   const GW = CONFIG.waves;
   const gate = gateActive();
-  const diveRange = gate ? GW.gateDiveRange : W.diveRange;         // gated wasps press harder
+  const diveRange = gate ? GW.gateDiveRange : W.diveRange;         // gated hostiles press harder
   const diveCooldown = gate ? GW.gateDiveCooldownMs : W.diveCooldownMs;
   const cullX = sLeftEdge() - 8;
-  for (let i = wasps.length - 1; i >= 0; i--) {
-    const e = wasps[i];
+  // Patrol right bound: the frozen screen edge reaches ~12 tiles past the
+  // corner pivot, so bounding on the edge alone let hostiles drift around
+  // the corner onto the next face — foreshortened, clustered, idling. The
+  // arena ends at the pivot; nobody fights around a corner that isn't
+  // built yet.
+  const patrolR = gate ? Math.min(sRightEdge() - 2, activeCorner().s - 1.5) : 0;
+  const patrolL = gate ? sLeftEdge() + 2 : 0;
+  for (let i = hostiles.length - 1; i >= 0; i--) {
+    const e = hostiles[i];
     if (gameMs < e.enterUntil - W.enterMs) {           // staged wave slot: not yet condensing
       e.mesh.visible = false;
       continue;
     }
     e.mesh.visible = true;
     e.t += dt;
+    if (gate) {                                        // patrol box: nobody strands the gate
+      if (e.x < patrolL) e.dir = 1;
+      else if (e.x > patrolR) e.dir = -1;
+    }
     if (e.kind === 'carrier') {                        // slow hauler: cruise only, never dives
       const C = CONFIG.carrier;
-      if (gate) {                                      // patrol box: nobody strands the gate
-        if (e.x < sLeftEdge() + 2) e.dir = 1;
-        else if (e.x > sRightEdge() - 2) e.dir = -1;
-      }
       e.x += e.dir * C.speed * dt;
       e.y = e.baseY + Math.sin(e.t * C.bobFreq) * C.bobAmp;
     } else if (e.state === 'cruise') {
-      if (gate) {                                      // patrol box: nobody strands the gate
-        if (e.x < sLeftEdge() + 2) e.dir = 1;
-        else if (e.x > sRightEdge() - 2) e.dir = -1;
-      }
       e.x += e.dir * (gate ? GW.gateCruiseSpeed : W.cruiseSpeed) * dt;
       e.y = e.baseY + Math.sin(e.t * W.bobFreq) * W.bobAmp;
       if (Math.abs(e.x - player.x) < diveRange && player.y + 1 < e.y &&
@@ -1242,17 +1294,12 @@ function updateWasps(dt) {
     }
 
     if (e.x < cullX) {
-      removeWasp(i);
+      removeHostile(i);
       continue;
     }
 
-    // contact damage: circle vs player AABB — only once fully materialized
-    if (gameMs >= e.enterUntil) {
-      const cr = e.kind === 'carrier' ? e.hitR : W.contactRadius;
-      const cx = Math.max(player.x - player.hw, Math.min(e.x, player.x + player.hw));
-      const cy = Math.max(player.y, Math.min(e.y, player.y + player.h));
-      if ((e.x - cx) ** 2 + (e.y - cy) ** 2 < cr * cr) damagePlayer(1, e.x);
-    }
+    // contact damage — only once fully materialized (hitR doubles as contact radius)
+    if (gameMs >= e.enterUntil && circleHitsPlayer(e.x, e.y, e.hitR)) damagePlayer(1, e.x);
 
     // mock-3D presence: materialize in from tower depth, breathe while alive
     let depth, scale;
@@ -1268,11 +1315,10 @@ function updateWasps(dt) {
       e.mat.opacity = 1;
     }
     e.mat.emissive.setHex(gameMs < e.flashUntil ? 0xffffff : 0x000000);
-    const yaw = yawAt(SEGS, e.x, CONFIG.path.yawBlendTiles);
-    const wp = polyAt(SEGS, e.x, _pp);
-    e.mesh.position.set(wp.x + Math.sin(yaw) * depth, e.y, wp.z + Math.cos(yaw) * depth);
-    e.mesh.rotation.y = yaw;
-    e.mesh.rotation.z = e.kind === 'carrier' ? Math.sin(e.t * 1.3) * 0.08 : e.t * 2;
+    placeOnTower(e.mesh, e.x, e.y, depth);
+    e.mesh.rotation.z = e.kind === 'carrier'
+      ? Math.sin(e.t * CONFIG.carrier.rollFreq) * CONFIG.carrier.rollAmp
+      : e.t * 2;
     e.mesh.scale.setScalar(scale);
   }
 }
@@ -1284,6 +1330,7 @@ function updateWasps(dt) {
 
 const capsules = [];
 const CAP = CONFIG.capsules;
+const capsuleGeo = new THREE.BoxGeometry(CAP.size, CAP.size, CAP.size);   // shared: never disposed
 const letterTexCache = {};
 
 function letterTexture(text, bg) {
@@ -1309,7 +1356,7 @@ function letterTexture(text, bg) {
 function spawnCapsule(kind, letter, x, y, mode, vx) {
   const bg = kind === 'mod' ? CONFIG.palette.modCapsule : CONFIG.palette.capsule;
   const mat = new THREE.MeshBasicMaterial({ map: letterTexture(letter, bg) });
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(CAP.size, CAP.size, CAP.size), mat);
+  const mesh = new THREE.Mesh(capsuleGeo, mat);
   scene.add(mesh);
   capsules.push({
     kind, letter, x, y, baseY: y, vx: vx || 0, vy: mode === 'pop' ? CAP.popVy : 0,
@@ -1335,7 +1382,7 @@ function shuffled(arr, rng) {
   }
   return a;
 }
-const letterDrops = shuffled(['S', 'L', 'H', 'F'], capsuleRng);
+const letterDrops = shuffled(WEAPON_LETTERS.filter(k => k !== 'R'), capsuleRng);
 const modDrops = shuffled(['RG', 'GS', 'OL', 'CH'], capsuleRng);
 let carrierDropIdx = 0;
 
@@ -1365,10 +1412,7 @@ function updateCapsules(dt) {
       if (c.y < CONFIG.edges.killY || gameMs > c.dieAt) { removeCapsule(i); continue; }
     }
 
-    // pickup: point-in-expanded-player-box
-    const px = Math.max(player.x - player.hw, Math.min(c.x, player.x + player.hw));
-    const py = Math.max(player.y, Math.min(c.y, player.y + player.h));
-    if ((c.x - px) ** 2 + (c.y - py) ** 2 < CAP.pickupRadius ** 2) {
+    if (circleHitsPlayer(c.x, c.y, CAP.pickupRadius)) {
       if (c.kind === 'mod') applyMod(c.letter);
       else currentWeapon = c.letter;
       removeCapsule(i);
@@ -1376,11 +1420,9 @@ function updateCapsules(dt) {
     }
 
     // expiring pop-capsules blink through their last stretch
-    c.mesh.visible = c.mode !== 'pop' || c.dieAt - gameMs > CAP.blinkLastMs ||
-                     Math.floor(gameMs / 90) % 2 === 0;
-    const wp = polyAt(SEGS, c.x, _pp);
-    c.mesh.position.set(wp.x, c.y, wp.z);
-    c.mesh.rotation.y = yawAt(SEGS, c.x, CONFIG.path.yawBlendTiles) + c.t * 2.2;
+    c.mesh.visible = c.mode !== 'pop' || c.dieAt - gameMs > CAP.blinkLastMs || blink();
+    placeOnTower(c.mesh, c.x, c.y, 0);
+    c.mesh.rotation.y += c.t * 2.2;               // pickup twirl on top of face yaw
   }
 }
 
@@ -1391,8 +1433,11 @@ function updateCapsules(dt) {
 const mods = { rageUntil: 0, ghostUntil: 0, chronoUntil: 0, lance: null, lanceFlashUntil: 0 };
 const shotLog = [];                       // ghost squad: shots awaiting replay
 const posLog = [];                        // ghost squad: player position trail
+// both buffers must outlive the longest clone delay or the trail lookup
+// snaps to a stale sample — derived, so retuning ghostDelayMs cannot drift
+const GHOST_TRAIL_MS = Math.max(...CONFIG.mods.ghostDelayMs) + 300;
 
-const cloneMeshes = [0, 1].map(() => {
+const cloneMeshes = CONFIG.mods.ghostDelayMs.map(() => {
   const m = new THREE.Mesh(
     new THREE.BoxGeometry(0.45, 1.5, 0.4),
     new THREE.MeshBasicMaterial({ color: CONFIG.palette.player, transparent: true, opacity: 0.32 })
@@ -1418,47 +1463,59 @@ function applyMod(code) {
 }
 
 function logShot(letter, x, y, ax, ay) {
-  shotLog.push({ t: gameMs, letter, x, y, ax, ay, fired: [false, false] });
-  if (shotLog.length > 80) shotLog.shift();
+  shotLog.push({ t: gameMs, letter, x, y, ax, ay, fired: CONFIG.mods.ghostDelayMs.map(() => false) });
+  if (shotLog.length > 80) shotLog.shift();   // >> ghostMs / min fireRateMs would ever produce
+}
+
+// full modifier teardown — the ONLY reset path, shared by loseLife/resetGame
+function clearMods() {
+  mods.rageUntil = 0; mods.ghostUntil = 0; mods.chronoUntil = 0;
+  mods.lance = null; mods.lanceFlashUntil = 0;
+  lanceBeam.visible = false;
+  for (const cm of cloneMeshes) cm.visible = false;
+  shotLog.length = 0; posLog.length = 0;
+  tintEl.style.background = 'transparent'; tintLast = 'transparent';
 }
 
 function updateMods() {
   const M = CONFIG.mods;
 
-  // ghost squad: clones trail the player and replay logged shots late
-  const ghost = gameMs < mods.ghostUntil;
-  posLog.push({ t: gameMs, x: player.x, y: player.y });
-  while (posLog.length && posLog[0].t < gameMs - 1300) posLog.shift();
-  for (let d = 0; d < M.ghostDelayMs.length; d++) {
-    const delay = M.ghostDelayMs[d];
-    for (const s of shotLog) {
-      if (!s.fired[d] && gameMs >= s.t + delay) {
-        s.fired[d] = true;
-        if (ghost) fireWeapon(s.letter, s.x, s.y, s.ax, s.ay, true);
-      }
+  // ghost squad: clones trail the player and replay logged shots late.
+  // Inactive: buffers stay empty — no trail bookkeeping for a rare mod.
+  if (gameMs >= mods.ghostUntil) {
+    if (posLog.length) {
+      for (const cm of cloneMeshes) cm.visible = false;
+      shotLog.length = 0; posLog.length = 0;
     }
-    const cm = cloneMeshes[d];
-    cm.visible = ghost;
-    if (ghost) {
+  } else {
+    posLog.push({ t: gameMs, x: player.x, y: player.y });
+    while (posLog.length && posLog[0].t < gameMs - GHOST_TRAIL_MS) posLog.shift();
+    for (let d = 0; d < M.ghostDelayMs.length; d++) {
+      const delay = M.ghostDelayMs[d];
+      for (const s of shotLog) {
+        if (!s.fired[d] && gameMs >= s.t + delay) {
+          s.fired[d] = true;
+          fireWeapon(s.letter, s.x, s.y, s.ax, s.ay, true);
+        }
+      }
+      const cm = cloneMeshes[d];
+      cm.visible = true;
       let p = posLog[0];
       for (const q of posLog) { if (q.t <= gameMs - delay) p = q; else break; }
-      const wp = polyAt(SEGS, p.x, _pp);
-      cm.position.set(wp.x, p.y + 0.85, wp.z);
-      cm.rotation.y = yawAt(SEGS, p.x, CONFIG.path.yawBlendTiles);
+      placeOnTower(cm, p.x, p.y + 0.85, 0);
     }
+    while (shotLog.length && shotLog[0].t + GHOST_TRAIL_MS < gameMs && shotLog[0].fired.every(Boolean))
+      shotLog.shift();
   }
-  while (shotLog.length && shotLog[0].t + 1100 < gameMs && shotLog[0].fired[0] && shotLog[0].fired[1])
-    shotLog.shift();
 
   // orbital lance: telegraph beam, then the strike clears every hostile
   if (mods.lance) {
     const L = mods.lance;
     lanceBeam.visible = true;
-    const wp = polyAt(SEGS, L.s, _pp);
-    lanceBeam.position.set(wp.x, 8, wp.z);
+    placeOnTower(lanceBeam, L.s, 8, 0);
     lanceBeam.material.opacity = 0.25 + 0.35 * (0.5 + 0.5 * Math.sin(gameMs / 40));
     if (gameMs >= L.at) {
-      for (let i = wasps.length - 1; i >= 0; i--) hitWasp(wasps[i], i, 999, 'OL');
+      for (let i = hostiles.length - 1; i >= 0; i--) hitHostile(hostiles[i], i, 999, 'OL');
       mods.lanceFlashUntil = gameMs + M.lanceFlashMs;
       mods.lance = null;
       lanceBeam.visible = false;
@@ -1466,10 +1523,11 @@ function updateMods() {
   }
 
   // screen tint: lance flash > rage red > chrono blue
+  const T = CONFIG.palette.tints;
   let tint = 'transparent';
-  if (gameMs < mods.lanceFlashUntil) tint = 'rgba(255,255,255,0.5)';
-  else if (gameMs < mods.rageUntil) tint = 'rgba(255,50,50,0.14)';
-  else if (gameMs < mods.chronoUntil) tint = 'rgba(90,200,255,0.12)';
+  if (gameMs < mods.lanceFlashUntil) tint = T.lance;
+  else if (gameMs < mods.rageUntil) tint = T.rage;
+  else if (gameMs < mods.chronoUntil) tint = T.chrono;
   if (tint !== tintLast) { tintLast = tint; tintEl.style.background = tint; }
 }
 
@@ -1485,35 +1543,31 @@ const spawnTable = buildSpawnTable(CONFIG);
 let spawnIdx = 0;
 let spawnRng = mulberry32(9001);
 
-// One carrier per face at a mid-face fraction — deterministic, clear of
-// every corner zone (fracs 0.38–0.55 of a 65-tile face sit ≥29 tiles
-// before the corner and ≥24 after the previous one).
-const carrierS = CONFIG.carrier.perFaceFrac.map((frac, f) => {
-  const start = f === 0 ? 24 : CORNER_S[f - 1];
-  return start + frac * (CORNER_S[f] - start);
-});
-let carrierIdx = 0;
+// helper shared by every spawn site: lane altitude over local ground,
+// gap-safe, capped so hostiles stay in the fightable band
+function spawnLaneY(s, lane, cap = 10) {
+  const base = groundTopAt(s);
+  return Math.min((base > -100 ? base : 3) + lane, cap);
+}
 
 function updateSpawner() {
   if (cornerBusy()) return;              // gates author their own waves; on wide
                                          //   aspect ratios the halted look-ahead
                                          //   would otherwise reach past the
                                          //   corner-clear zone and drop ambient
-                                         //   wasps onto the unbuilt face
+                                         //   hostiles onto the unbuilt face
   // Trigger once the entry sits just INSIDE the view, so its materialization
   // happens on screen instead of completing past the right edge.
   const re = sRightEdge();
   while (spawnIdx < spawnTable.length && spawnTable[spawnIdx].x < re - 1.5) {
     const s = spawnTable[spawnIdx++];
-    const base = groundTopAt(s.x);
-    const r = spawnRng();
-    const lane = r < 0.45 ? 2.6 : r < 0.8 ? 4.6 : 7.2;   // low / mid / high tier
-    spawnWasp(s.x, Math.min((base > -100 ? base : 3) + lane + spawnRng() * 0.8, 10));
-  }
-  while (carrierIdx < carrierS.length && carrierS[carrierIdx] < re - 1.5) {
-    const cs = carrierS[carrierIdx++];
-    const base = groundTopAt(cs);
-    spawnWasp(cs, Math.min((base > -100 ? base : 3) + CONFIG.carrier.laneAbove, 9.5), 0, 'carrier');
+    if (s.type === 'carrier') {
+      spawnHostile(s.x, spawnLaneY(s.x, CONFIG.carrier.laneAbove), 0, 'carrier');
+    } else {
+      const r = spawnRng();
+      const lane = r < 0.45 ? 2.6 : r < 0.8 ? 4.6 : 7.2;   // low / mid / high tier
+      spawnHostile(s.x, spawnLaneY(s.x, lane + spawnRng() * 0.8));
+    }
   }
 }
 
@@ -1560,17 +1614,16 @@ function spawnGateWave(k) {              // deterministic: no rng in wave layout
   for (let i = 0; i < n; i++) {
     const f = n === 1 ? 0 : i / (n - 1);
     const sx = right - f * span;
-    const base = groundTopAt(sx);
     const lane = waveLane(k, i, CONFIG);       // authored altitude mix per wave
-    spawnWasp(sx, Math.min((base > -100 ? base : 3) + lane, 10), i * W.staggerMs);
+    spawnHostile(sx, spawnLaneY(sx, lane), i * W.staggerMs);
   }
 }
 
 // Event-driven clear: called from every wasp removal path, so the ritual
 // starts on the exact frame the last hostile dies — the snap IS the stinger.
-function onWaspRemoved() {
+function onHostileRemoved() {
   const c = activeCorner();
-  if (c && c.state === 'gate' && wasps.length === 0) {
+  if (c && c.state === 'gate' && !hostiles.some(e => ENEMY[e.kind].gating)) {
     c.state = 'turning';
     c.tStart = gameMs;
   }
@@ -1649,15 +1702,15 @@ hudBL.innerHTML =
 // Cache the last-written string per element and write only on change — in
 // steady state DOM writes drop to near zero.
 let hudTLLast = null, hudTCLast = null, hudTRLast = null;
+const MOD_LABELS = [['rageUntil', 'RAGE'], ['ghostUntil', 'GHOST'], ['chronoUntil', 'CHRONO']];
 
 function updateHUD() {
   const hp = Math.max(0, player.hp);
   let tl = 'RIG ' + '▰'.repeat(hp) + '▱'.repeat(P.maxHealth - hp) +
            '  ×' + Math.max(0, player.lives) +
            '  ·  [' + currentWeapon + '] ' + weaponDef(currentWeapon).name;
-  if (gameMs < mods.rageUntil) tl += ' · RAGE ' + Math.ceil((mods.rageUntil - gameMs) / 1000) + 's';
-  if (gameMs < mods.ghostUntil) tl += ' · GHOST ' + Math.ceil((mods.ghostUntil - gameMs) / 1000) + 's';
-  if (gameMs < mods.chronoUntil) tl += ' · CHRONO ' + Math.ceil((mods.chronoUntil - gameMs) / 1000) + 's';
+  for (const [f, label] of MOD_LABELS)
+    if (gameMs < mods[f]) tl += ' · ' + label + ' ' + Math.ceil((mods[f] - gameMs) / 1000) + 's';
   if (mods.lance) tl += ' · LANCE ARMING';
   if (tl !== hudTLLast) { hudTLLast = tl; hudTL.textContent = tl; }
   const tr = Math.floor(scrollX) + 'm  ·  ' + kills + ' kills';
@@ -1665,7 +1718,9 @@ function updateHUD() {
   const c = activeCorner();
   let tc = '';
   if (c && c.state === 'gate') {
-    tc = 'WAVE ' + c.k + '/' + CONFIG.path.faces + ' — ' + wasps.length + ' HOSTILES';
+    let gaters = 0;
+    for (const e of hostiles) if (ENEMY[e.kind].gating) gaters++;
+    tc = 'WAVE ' + c.k + '/' + CONFIG.path.faces + ' — ' + gaters + ' HOSTILES';
   } else if (c && c.state === 'turning' && gameMs - c.tStart < CONFIG.waves.clearMsgMs) {
     tc = 'CLEAR';
   }
@@ -1714,25 +1769,20 @@ function togglePause() {
 }
 
 function resetGame() {
-  for (const e of wasps) { scene.remove(e.mesh); e.mat.dispose(); }
-  wasps.length = 0;
+  for (const e of hostiles) { scene.remove(e.mesh); e.mat.dispose(); }
+  hostiles.length = 0;
   for (const c of corpses) { scene.remove(c.mesh); c.mat.dispose(); }
   corpses.length = 0;
   for (const b of bulletPool) b.alive = false;
   for (let i = capsules.length - 1; i >= 0; i--) removeCapsule(i);
   currentWeapon = 'R';
   for (const k of Object.keys(weaponKills)) weaponKills[k] = 0;
-  mods.rageUntil = 0; mods.ghostUntil = 0; mods.chronoUntil = 0;
-  mods.lance = null; mods.lanceFlashUntil = 0;
-  lanceBeam.visible = false;
-  for (const cm of cloneMeshes) cm.visible = false;
-  shotLog.length = 0; posLog.length = 0;
-  tintEl.style.background = 'transparent'; tintLast = 'transparent';
-  carrierIdx = 0; carrierDropIdx = 0;
+  clearMods();
+  carrierDropIdx = 0;
   scrollX = 0;
   spawnIdx = 0;
   spawnRng = mulberry32(9001);
-  waspRng = mulberry32(5150);
+  hostileRng = mulberry32(5150);
   kills = 0; shotsFired = 0;
   player.x = 6; player.y = 3; player.vx = 0; player.vy = 0;
   player.hp = P.maxHealth; player.lives = P.lives;
@@ -1793,7 +1843,7 @@ function update(dt) {
   updateSpawner();
   updatePlayer(dt);
   if (state !== 'PLAYING') return;      // died on the last frame
-  updateWasps(dt * wScale);
+  updateHostiles(dt * wScale);
   updateCorpses();
   updateCapsules(dt * wScale);
   updateMods();

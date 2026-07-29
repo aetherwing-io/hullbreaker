@@ -228,8 +228,8 @@ ok(waveLane(1, 0, CONFIG) === WW.laneHeights[WW.comp[0][0]] &&
 
 // --- retune constants --------------------------------------------------
 const PL = CONFIG.player, CC = CONFIG.camera, GG = CONFIG.gen, SP = CONFIG.spawner;
-ok(CONFIG.scrollSpeed === 4.2 && PL.runSpeed === 9.4 && PL.accelGround === 120 && PL.accelAir === 76,
-   'stage-2 motion retune (4.2 / 9.4 / 120 / 76)');
+ok(CONFIG.scrollSpeed === 4.3 && PL.runSpeed === 9.4 && PL.accelGround === 120 && PL.accelAir === 76,
+   'stage-2 motion retune (4.3 / 9.4 / 120 / 76)');
 ok(PL.jumpVel === 14 && PL.gravity === -36 && PL.fallGravityMult === 1.5 && PL.terminalVel === -32 &&
    PL.jumpCutMult === 0.45 && PL.airJumps === 1 && PL.airJumpVel === 13,
    'jump tune frozen');
@@ -243,7 +243,7 @@ ok(apex1 + apex2 > 3.4, 'double jump clears +3 lanes (apex ' + (apex1 + apex2) +
   ok((tUp + tDown) * PL.runSpeed > CONFIG.gen.gapMax + 1.5,
      'full jump at run speed clears the widest gap with margin');
 }
-ok(CC.fov === 56 && CC.x === 5.0 && CC.y === 5.9 && CC.z === 19.5 && CC.lookX === 7.2 && CC.lookY === 4.6,
+ok(CC.fov === 56 && CC.x === 5.0 && CC.y === 6.2 && CC.z === 22.5 && CC.lookX === 7.4 && CC.lookY === 4.8,
    'camera pull-back pose');
 {
   const halfH = CC.z * Math.tan(CC.fov / 2 * DEG);
@@ -320,7 +320,7 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
   ok(plats.length >= 20, 'catwalk lanes generated, got ' + plats.length);
   let badY = 0, unreachable = 0;
   for (const p of plats) {
-    if (p.y > 10) badY++;
+    if (p.y > GG.laneCapY) badY++;
     let best = -999;
     for (let k = Math.max(0, p.x0 - 1); k <= Math.min(gH.length - 1, p.x1 + 1); k++)
       if (gH[k] > -100) best = Math.max(best, gH[k]);
@@ -328,7 +328,7 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
       if (q !== p && q.y < p.y && q.x1 > p.x0 - 1 && q.x0 < p.x1 + 1) best = Math.max(best, q.y);
     if (p.y - best > GG.maxReach) { unreachable++; console.error('  unreachable catwalk ' + JSON.stringify(p)); }
   }
-  ok(badY === 0, 'catwalks capped at y=10');
+  ok(badY === 0, 'catwalks capped at laneCapY');
   ok(unreachable === 0, 'every catwalk within double-jump reach');
 }
 
@@ -346,6 +346,11 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
   ok(sorted, 'spawn table strictly ascending');
   ok(clean, 'no ambient spawns inside corner-clear zones');
   ok(inBounds, 'spawn positions within authored range');
+  const carriers = table.filter((e) => e.type === 'carrier');
+  ok(carriers.length === CONFIG.carrier.perFaceFrac.length,
+     'one carrier row per face, got ' + carriers.length);
+  ok(Object.keys(CONFIG.weapons).every((k) => CONFIG.palette.shots[k] !== undefined),
+     'every weapon letter has a shot color');
   const perFace = new Array(PP.faces).fill(0);
   for (const e of table) {
     const f = faceIndexAt(e.x, CONFIG);
