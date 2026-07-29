@@ -1,43 +1,63 @@
 #!/usr/bin/env node
-// pathcheck.mjs — HULLBREAKER pure-block harness.
+// pathcheck.mjs — HULLBREAKER pure-layer harness.
 //
-// Extracts the code between /* @pure-begin */ and /* @pure-end */ from the
-// game file (default: ../index.html relative to this script, override with
-// argv[2]), verifies it references no three.js/DOM globals, concatenates the
-// test suite below after it, writes the combined module to pathcheck.gen.mjs
-// next to this file, and runs it with node. Exits non-zero on any failure.
+// Imports src/config.js and the src/pure/* modules directly (the game is now
+// split into ES modules, so there is no pure block to regex out of the HTML),
+// checks that the pure layer still references no three.js/DOM surface and
+// imports nothing outside itself, then runs the assertion suite below with
+// node. Exits non-zero on any failure.
 //
 // Run from the repo root:  node tools/pathcheck.mjs
 
-import { readFileSync, writeFileSync, unlinkSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
-import { tmpdir } from 'node:os';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { CONFIG } from '../src/config.js';
+import {
+  DEG, CORNER_S, SEGS, HALT_S, polyAt, headingAt, yawAt, faceIndexAt,
+} from '../src/pure/path.js';
+import {
+  waveSize, waveLane, easeOutBack, cornerTimeline, cornerEventTotalMs,
+  cornerYawDeltaDeg, cornerScrollVel, zipperOffset,
+} from '../src/pure/waves.js';
+import {
+  TRAVERSAL_FIXTURE, traversalLedgeProbe, traversalLedgeDecision,
+  traversalWallDecision, traversalSolidAllowsGrab, traversalFollowTarget,
+  traversalCameraDepth,
+} from '../src/pure/traversal.js';
+import {
+  solidRectContains, levelSolidCell, buildLevel, buildTraversalLevel,
+  buildSpawnTable,
+} from '../src/pure/generator.js';
+
+/* ---------------------- purity guard (static) ----------------------- *
+ * The pure layer must stay runnable with zero three.js/DOM surface and
+ * must not reach into src/sim, src/render, or src/ui — that is what makes
+ * it testable here and safe to import from a Node bot harness.        */
 const here = dirname(fileURLToPath(import.meta.url));
-const gameFile = process.argv[2] ?? join(here, '..', 'index.html');
-const html = readFileSync(gameFile, 'utf8');
-
-const BEGIN = '/* @pure-begin */';
-const END = '/* @pure-end */';
-const b = html.indexOf(BEGIN);
-const e = html.indexOf(END);
-if (b < 0 || e < 0 || e <= b) {
-  console.error('pathcheck: pure-block markers not found in ' + gameFile);
-  process.exit(1);
-}
-const pure = html.slice(b + BEGIN.length, e);
-
-// Purity guard: the block must be runnable with zero three.js/DOM surface.
+const pureDir = join(here, '..', 'src', 'pure');
+const pureFiles = [
+  join(here, '..', 'src', 'config.js'),
+  ...readdirSync(pureDir).filter((f) => f.endsWith('.js')).map((f) => join(pureDir, f)),
+];
 const banned = /\b(THREE|document|window|renderer|scene|addEventListener|requestAnimationFrame|innerWidth|innerHeight|devicePixelRatio|performance)\b/;
-const hit = pure.match(banned);
-if (hit) {
-  console.error('pathcheck: forbidden reference in pure block: ' + hit[0]);
-  process.exit(1);
+for (const file of pureFiles) {
+  const src = readFileSync(file, 'utf8');
+  const hit = src.match(banned);
+  if (hit) {
+    console.error('pathcheck: forbidden reference in ' + file + ': ' + hit[0]);
+    process.exit(1);
+  }
+  for (const m of src.matchAll(/^\s*(?:import|export)[^'"]*from\s*['"]([^'"]+)['"]/gm)) {
+    const spec = m[1];
+    if (spec !== '../config.js' && !/^\.\/[\w-]+\.js$/.test(spec)) {
+      console.error('pathcheck: pure module ' + file + ' imports outside the pure layer: ' + spec);
+      process.exit(1);
+    }
+  }
 }
 
-const TESTS = `
 /* ===================== pathcheck test suite ====================== */
 let fails = 0, passes = 0;
 function ok(cond, msg) {
@@ -774,13 +794,3 @@ const ledgeState = {
 
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');
 process.exit(fails ? 1 : 0);
-`;
-
-// unique temp file: no repo artifact, no stale output, no concurrent-run
-// collisions; kept (with its path printed) when the suite fails, for debugging
-const outFile = join(tmpdir(), `hullbreaker-pathcheck-${process.pid}.mjs`);
-writeFileSync(outFile, pure + '\n' + TESTS);
-const r = spawnSync(process.execPath, [outFile], { stdio: 'inherit' });
-if (r.status === 0) { try { unlinkSync(outFile); } catch {} }
-else console.error('pathcheck: generated suite kept at ' + outFile);
-process.exit(r.status ?? 1);
