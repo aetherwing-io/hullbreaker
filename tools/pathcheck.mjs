@@ -47,6 +47,15 @@ function ok(cond, msg) {
 function near(a, b, eps, msg) {
   ok(Math.abs(a - b) <= eps, msg + ' [got ' + a + ', want ' + b + ']');
 }
+function fingerprint(value) {
+  const text = JSON.stringify(value);
+  let hash = 2166136261;
+  for (let i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
 
 const PP = CONFIG.path, WW = CONFIG.waves;
 
@@ -331,6 +340,318 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
   }
   ok(badY === 0, 'catwalks capped at laneCapY');
   ok(unreachable === 0, 'every catwalk within double-jump reach');
+}
+
+// --- authored traversal slice ------------------------------------------
+ok(gH.length === 445 && plats.length === 49 && LVL.chunkLog.length === 59,
+   'normal generator shape unchanged (445 columns / 49 platforms / 59 chunks)');
+ok(fingerprint(LVL) === 'cc6afd7c',
+   'normal generator fingerprint unchanged, got ' + fingerprint(LVL));
+
+const fixtureBefore = JSON.stringify(TRAVERSAL_FIXTURE);
+const configBefore = JSON.stringify(CONFIG);
+const TL = buildTraversalLevel(CONFIG);
+const TL2 = buildTraversalLevel(CONFIG);
+ok(JSON.stringify(TL) === JSON.stringify(TL2),
+   'traversal fixture builds deterministically');
+ok(JSON.stringify(TRAVERSAL_FIXTURE) === fixtureBefore && JSON.stringify(CONFIG) === configBefore,
+   'traversal build does not mutate fixture metadata or CONFIG');
+ok(TL !== TL2 && TL.groundH !== TL2.groundH && TL.platforms !== TL2.platforms &&
+   TL.solidRects !== TL2.solidRects &&
+   TL.solidRects.every(function (r, i) { return r !== TL2.solidRects[i]; }),
+   'traversal builds return fresh geometry arrays and solid objects');
+
+const TF = TRAVERSAL_FIXTURE;
+const B = TF.bounds;
+ok(Number.isInteger(B.x0) && Number.isInteger(B.x1) &&
+   B.x0 >= 0 && B.x0 < B.x1 && B.x1 <= CONFIG.levelLength,
+   'fixture bounds are a valid half-open level interval');
+ok(TL.groundH.length === CONFIG.levelLength &&
+   TL.groundH.every(function (h) { return Number.isFinite(h); }),
+   'traversal ground spans the level with finite numeric heights');
+
+{
+  let valid = true;
+  const covered = new Set();
+  for (const run of TF.groundRuns) {
+    if (!Number.isInteger(run.x0) || !Number.isInteger(run.x1) ||
+        !Number.isFinite(run.y) || run.x0 < B.x0 || run.x1 > B.x1 ||
+        run.x0 >= run.x1) valid = false;
+    for (let x = run.x0; x < run.x1; x++) {
+      if (covered.has(x) || TL.groundH[x] !== run.y) valid = false;
+      covered.add(x);
+    }
+  }
+  ok(valid && covered.size === B.x1 - B.x0,
+     'authored ground runs cover fixture bounds once and match built heights');
+}
+{
+  const ids = new Set();
+  let valid = true;
+  for (const p of TF.platforms) {
+    if (typeof p.id !== 'string' || ids.has(p.id) ||
+        !Number.isFinite(p.x0) || !Number.isFinite(p.x1) || !Number.isFinite(p.y) ||
+        p.x0 < B.x0 || p.x1 > B.x1 || p.x0 >= p.x1) valid = false;
+    ids.add(p.id);
+  }
+  ok(valid && ids.size === TF.platforms.length,
+     'authored platforms have unique ids and finite in-bounds spans');
+}
+{
+  const ids = new Set();
+  let valid = true, halfOpen = true, built = true;
+  for (const r of TF.solidRects) {
+    if (typeof r.id !== 'string' || ids.has(r.id) ||
+        ![r.x0, r.x1, r.y0, r.y1].every(Number.isInteger) ||
+        r.x0 < B.x0 || r.x1 > B.x1 || r.x0 >= r.x1 || r.y0 >= r.y1) valid = false;
+    ids.add(r.id);
+    if (!solidRectContains(r, r.x0, r.y0) ||
+        !solidRectContains(r, r.x1 - 1, r.y1 - 1) ||
+        solidRectContains(r, r.x1, r.y0) ||
+        solidRectContains(r, r.x0, r.y1) ||
+        solidRectContains(r, r.x0 - 1, r.y0)) halfOpen = false;
+    if (!levelSolidCell(TL, r.x0, r.y0, 8)) built = false;
+  }
+  ok(valid && ids.size === TF.solidRects.length,
+     'authored solid rectangles have unique ids and integer in-bounds extents');
+  ok(halfOpen, 'solid rectangle membership is half-open on x and y');
+  ok(built, 'level solid predicate includes every authored solid rectangle');
+}
+{
+  const overhangs = TF.solidRects.filter(function (r) { return r.role === 'overhang'; });
+  const o = overhangs[0];
+  const x = o && Math.floor((o.x0 + o.x1) / 2);
+  ok(overhangs.length === 1, 'fixture declares exactly one tagged overhang');
+  ok(!!o && levelSolidCell(TL, x, o.y0, 8) &&
+     !levelSolidCell(TL, x, o.y0 - 1, 8) &&
+     !levelSolidCell(TL, x, o.y1, 8),
+     'overhang is solid while its underside and space above stay open');
+  ok(!!o && o.y0 - TL.groundH[x] > PL.height + 0.5,
+     'overhang leaves player-height clearance below it');
+}
+{
+  const x = B.x0, ground = TL.groundH[x];
+  ok(levelSolidCell(TL, x, ground - 1, 8) && !levelSolidCell(TL, x, ground, 8),
+     'level solid predicate preserves half-open ground-top collision');
+}
+
+const connectorById = new Map();
+let connectorIntegrity = true;
+for (const c of TF.connectors) {
+  if (typeof c.id !== 'string' || connectorById.has(c.id) ||
+      !Number.isFinite(c.x) || !Number.isFinite(c.y) ||
+      c.x < B.x0 || c.x >= B.x1 ||
+      levelSolidCell(TL, Math.floor(c.x), Math.floor(c.y), 8)) connectorIntegrity = false;
+  connectorById.set(c.id, c);
+}
+ok(connectorIntegrity && connectorById.size === TF.connectors.length &&
+   connectorById.has(TF.entry) && connectorById.has(TF.exit),
+   'connectors are unique, finite, in bounds, open, and include entry/exit');
+
+const routeById = new Map(TF.routes.map(function (r) { return [r.id, r]; }));
+let edgeIntegrity = true;
+for (const e of TF.edges) {
+  if (!routeById.has(e.routeId) || !connectorById.has(e.from) ||
+      !connectorById.has(e.to) || e.from === e.to ||
+      typeof e.verb !== 'string' || e.verb.length === 0) edgeIntegrity = false;
+}
+ok(edgeIntegrity, 'every traversal edge names a route, two connectors, and a verb');
+ok(TF.routes.length === 6 && routeById.size === 6,
+   'fixture declares six uniquely named traversal routes');
+
+{
+  let valid = true;
+  const used = new Set();
+  for (const route of TF.routes) {
+    const ids = route.connectorIds;
+    if (!Array.isArray(ids) || ids.length < 2 ||
+        ids[0] !== TF.entry || ids[ids.length - 1] !== TF.exit) valid = false;
+    for (let i = 1; i < ids.length; i++) {
+      const found = TF.edges.some(function (e) {
+        return e.routeId === route.id && e.from === ids[i - 1] && e.to === ids[i];
+      });
+      if (!found) valid = false;
+      used.add(route.id + '|' + ids[i - 1] + '|' + ids[i]);
+    }
+  }
+  const allUsed = TF.edges.every(function (e) {
+    return used.has(e.routeId + '|' + e.from + '|' + e.to);
+  });
+  ok(valid, 'all six route sequences travel entry to rejoin on consecutive declared edges');
+  ok(allUsed, 'every declared traversal edge participates in its route sequence');
+}
+{
+  const outgoing = new Map(), incoming = new Map();
+  for (const e of TF.edges) {
+    if (!outgoing.has(e.from)) outgoing.set(e.from, new Set());
+    if (!incoming.has(e.to)) incoming.set(e.to, new Set());
+    outgoing.get(e.from).add(e.to);
+    incoming.get(e.to).add(e.from);
+  }
+  let maxChoices = 0;
+  for (const choices of outgoing.values()) maxChoices = Math.max(maxChoices, choices.size);
+  const fork = TF.firstFork;
+  ok(maxChoices >= 2 && maxChoices <= TF.immediateChoiceCap &&
+     TF.immediateChoiceCap === 3,
+     'graph splits without exceeding the three-choice readability cap');
+  ok(fork.connector === TF.entry && fork.choices.length >= 2 &&
+     fork.choices.length <= TF.immediateChoiceCap &&
+     fork.choices.every(function (id) { return connectorById.has(id); }),
+     'declared first fork offers valid bounded route choices');
+  ok((incoming.get(TF.exit) || new Set()).size >= 2 &&
+     TF.routes.every(function (r) { return r.connectorIds[r.connectorIds.length - 1] === TF.exit; }),
+     'alternate routes reconnect through a shared exit');
+  const elevations = new Set(TF.connectors.map(function (c) {
+    return Math.round(c.y * 100) / 100;
+  }));
+  ok(elevations.size >= 5, 'connector graph uses at least five distinct elevations');
+}
+{
+  const verbs = new Set(TF.edges.map(function (e) { return e.verb; }));
+  ok(Array.from(verbs).some(function (v) { return v.indexOf('ledge') >= 0 || v.indexOf('catch') >= 0; }) &&
+     Array.from(verbs).some(function (v) { return v.indexOf('wall') >= 0; }),
+     'route graph exercises both ledge-catch and wall-jump verbs');
+}
+
+{
+  const D = TF.darePocket;
+  const dareRoute = routeById.get('dare-pocket');
+  const rewardRoutes = TF.routes.filter(function (r) {
+    return r.connectorIds.indexOf(D.rewardConnector) >= 0;
+  });
+  ok(!!dareRoute && rewardRoutes.length === 1 && rewardRoutes[0].id === dareRoute.id &&
+     TF.routes.some(function (r) { return r.connectorIds.indexOf(D.rewardConnector) < 0; }),
+     'dare reward is optional and confined to its named route');
+  let retreatValid = D.retreatPath[0] === D.rewardConnector &&
+    D.retreatPath[D.retreatPath.length - 1] === D.rejoin;
+  for (let i = 1; i < D.retreatPath.length; i++) {
+    if (!TF.edges.some(function (e) {
+      return e.routeId === dareRoute.id &&
+        e.from === D.retreatPath[i - 1] && e.to === D.retreatPath[i];
+    })) retreatValid = false;
+  }
+  ok(retreatValid, 'dare reward has a directed retreat path back to the declared rejoin');
+
+  const nominalSeconds = (TF.run.endScroll - TF.run.startScroll) /
+    TF.run.recommendedScrollSpeed;
+  ok(Number.isFinite(nominalSeconds) &&
+     nominalSeconds >= TF.targetPlaySeconds.min &&
+     nominalSeconds <= TF.targetPlaySeconds.max,
+     'slice nominal duration stays in target range, got ' + nominalSeconds.toFixed(2) + ' s');
+  const retreatAdvance = D.timing.retreatSeconds * TF.run.recommendedScrollSpeed;
+  ok(TF.run.recommendedScrollSpeed > 0 &&
+     TF.run.recommendedScrollSpeed < PL.runSpeed &&
+     D.timing.scrollBudgetTiles + 1e-9 >= retreatAdvance &&
+     D.timing.scrollBudgetTiles >= D.timing.minEdgeMarginTiles &&
+     D.timing.minEdgeMarginTiles > PL.width + 2 * CONFIG.edges.margin,
+     'dare retreat scroll budget covers advance with a substantial edge margin');
+}
+
+// --- traversal movement decisions --------------------------------------
+function gridGeometry(cells) {
+  const filled = new Set(cells.map(function (c) { return c[0] + ',' + c[1]; }));
+  return {
+    isSolid: function (i, j) { return filled.has(i + ',' + j); },
+    minCellX: 0,
+    maxCellX: 20,
+    minPlayerX: 0,
+  };
+}
+const ledgeState = {
+  x: 1.4, y: 1.58, hw: PL.width / 2, h: PL.height,
+  vx: 3, vy: -2, grounded: false, down: false, hInput: 1,
+  now: 100, recatchUntil: 0,
+};
+{
+  const caught = traversalLedgeProbe(ledgeState, gridGeometry([[2, 2]]));
+  ok(!!caught && caught.side === 1 && caught.cellX === 2 && caught.topY === 3 &&
+     Math.abs(caught.snapX - 1.649) < 1e-9 && Math.abs(caught.snapY - 1.58) < 1e-9,
+     'ledge probe catches a falling right-side near miss and returns its snap');
+  const left = traversalLedgeProbe(
+    { ...ledgeState, x: 2.4, vx: -3, hInput: -1 },
+    gridGeometry([[1, 2]])
+  );
+  ok(!!left && left.side === -1 && left.cellX === 1,
+     'ledge probe mirrors correctly for a left-side catch');
+}
+{
+  const rejected = [
+    { grounded: true },
+    { vy: 0 },
+    { down: true },
+    { now: 100, recatchUntil: 101 },
+    { hInput: 0, vx: 0 },
+  ].every(function (patch) {
+    return traversalLedgeProbe({ ...ledgeState, ...patch }, gridGeometry([[2, 2]])) === null;
+  });
+  ok(rejected, 'ledge probe rejects grounded, rising, releasing, recatch, and no-intent states');
+  ok(traversalLedgeProbe(ledgeState, gridGeometry([])) === null &&
+     traversalLedgeProbe(ledgeState, gridGeometry([[2, 2], [2, 3]])) === null &&
+     traversalLedgeProbe(ledgeState, gridGeometry([[2, 2], [1, 2]])) === null,
+     'ledge probe rejects missing ledges, blocked tops, and blocked hanging bodies');
+}
+{
+  const base = {
+    down: false, jumpBuffered: false, now: 100, until: 500,
+    side: 1, entryVx: 3,
+  };
+  const hang = traversalLedgeDecision(base);
+  const down = traversalLedgeDecision({ ...base, down: true });
+  const expired = traversalLedgeDecision({ ...base, now: 500 });
+  ok(hang.kind === 'hang' && hang.vx === 0 && hang.vy === 0,
+     'ledge decision holds only inside its short hang window');
+  ok(down.kind === 'release' && expired.kind === 'release' &&
+     down.recatchUntil === base.now + PL.traversalRecatchMs &&
+     expired.recatchUntil === 500 + PL.traversalRecatchMs,
+     'down and timeout release a ledge with recatch protection');
+  const launch = traversalLedgeDecision({
+    ...base, side: -1, entryVx: 8, jumpBuffered: true,
+  });
+  ok(launch.kind === 'launch' && launch.vx === -8 &&
+     launch.vy === PL.ledgeLaunchY &&
+     launch.recatchUntil === base.now + PL.traversalRecatchMs,
+     'ledge jump preserves stronger entry speed and launches upward along the side');
+  ok(traversalLedgeDecision({ ...base, down: true, jumpBuffered: true }).kind === 'release',
+     'ledge release takes priority over a simultaneous buffered jump');
+}
+{
+  const wallGeometry = gridGeometry([[3, 1]]);
+  const base = {
+    side: 1, cellX: 3, y: 1.2, h: PL.height, vy: -10,
+    grounded: false, down: false, hInput: 1, jumpBuffered: false,
+    now: 100, until: 500,
+  };
+  const slide = traversalWallDecision(base, wallGeometry);
+  const slowSlide = traversalWallDecision({ ...base, vy: -2 }, wallGeometry);
+  ok(slide.kind === 'slide' && slide.vx === 0 && slide.vy === -PL.wallSlideSpeed &&
+     slowSlide.kind === 'slide' && slowSlide.vy === -2,
+     'wall slide caps fast falls without accelerating a slower descent');
+
+  const jump = traversalWallDecision({ ...base, jumpBuffered: true }, wallGeometry);
+  const leftJump = traversalWallDecision(
+    { ...base, side: -1, cellX: 1, hInput: -1, jumpBuffered: true },
+    gridGeometry([[1, 1]])
+  );
+  ok(jump.kind === 'jump' && jump.vx === -PL.wallJumpX && jump.vy === PL.wallJumpY &&
+     leftJump.kind === 'jump' && leftJump.vx === PL.wallJumpX && leftJump.vy === PL.wallJumpY,
+     'wall jumps launch upward and away from either wall');
+  ok(jump.recatchUntil === base.now + PL.traversalRecatchMs &&
+     leftJump.recatchUntil === base.now + PL.traversalRecatchMs,
+     'wall jumps apply recatch protection');
+
+  const releases = [
+    [base, gridGeometry([])],
+    [{ ...base, grounded: true }, wallGeometry],
+    [{ ...base, down: true }, wallGeometry],
+    [{ ...base, hInput: -1 }, wallGeometry],
+    [{ ...base, now: 500 }, wallGeometry],
+    [{ ...base, side: 0 }, wallGeometry],
+  ].map(function (pair) {
+    return traversalWallDecision(pair[0], pair[1]);
+  });
+  ok(releases.every(function (r) {
+    return r.kind === 'release' && Number.isFinite(r.recatchUntil);
+  }), 'wall decision releases on no wall, landing, down, away input, timeout, or no side');
 }
 
 // --- ambient spawn director -------------------------------------------
