@@ -5,6 +5,11 @@ three.js (ES modules via CDN import map). Full 3D low-poly visuals; gameplay
 locked to a 2D plane. You are **RIG**, a salvage marine fighting up the
 exterior of a feral terraforming ship's tower, one wave at a time.
 
+The target game direction lives in [`docs/DESIGN.md`](docs/DESIGN.md), with
+narrative canon and open lore questions in
+[`docs/STORY.md`](docs/STORY.md). New working sessions should begin with
+[`docs/HANDOFF.md`](docs/HANDOFF.md).
+
 ## Play
 
 Open `index.html` in a modern browser — that's the whole game. No build step,
