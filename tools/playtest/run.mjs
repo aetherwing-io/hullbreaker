@@ -34,10 +34,20 @@ function parseArgs(argv) {
     else if (a === '--max-runtime-ms') out.maxRuntimeMs = Number(argv[++i]);
     else if (a === '--tail-ms') out.tailMs = Number(argv[++i]);
     else if (a === '--port') out.port = Number(argv[++i]);
+    else if (a === '--no-testapi') out.noTestapi = true;
     else if (a === '--help' || a === '-h') out.help = true;
     else out._.push(a);
   }
   return out;
+}
+
+// The game's own ?testapi=1 read-only telemetry hook (commit 15f66d2) is the
+// highest-fidelity channel this harness has — see lib/sampler.mjs. On by
+// default; --no-testapi opts back out to the DOM/window.HB fallback chain
+// (e.g. to test what a "real" browser session with no debug flags sees).
+function ensureTestApi(url, enabled) {
+  if (!enabled || /[?&]testapi=/.test(url)) return url;
+  return url + (url.includes('?') ? '&' : '?') + 'testapi=1';
 }
 
 function usage() {
@@ -54,6 +64,7 @@ Options:
   --max-runtime-ms <n>  Hard cap on total run time in ms (default 25000) — safety net if something hangs.
   --tail-ms <n>         Grace period after the last scripted input before stopping (default 900).
   --port <n>            Fixed port for the local static server (default: OS-assigned free port).
+  --no-testapi          Don't append ?testapi=1 (on by default) — falls back to window.HB, then DOM/HUD parsing.
 `);
 }
 
@@ -83,6 +94,7 @@ async function main() {
     const scriptUrl = script.url || 'index.html?slice=traversal';
     url = `${server.baseUrl}/${scriptUrl.replace(/^\//, '')}`;
   }
+  url = ensureTestApi(url, !args.noTestapi);
 
   const outDir = args.out
     ? resolve(args.out)
@@ -143,7 +155,7 @@ async function main() {
 
   await writeReport(outDir, report);
 
-  console.log(`[playtest] outcome: ${metrics.outcome.result} (fidelity: ${metrics.fidelity}${metrics.hbDetected ? '' : ', degraded — no window.HB'})`);
+  console.log(`[playtest] outcome: ${metrics.outcome.result} (fidelity: ${metrics.fidelity}${metrics.highFidelityDetected ? '' : ', degraded — no testapi/window.HB'})`);
   console.log(`[playtest] report:  ${outDir}/report.json`);
   console.log(`[playtest] summary: ${outDir}/summary.md`);
   if (result.bootError) {

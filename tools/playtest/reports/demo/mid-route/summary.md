@@ -1,22 +1,25 @@
 # mid-route-competent — playtest report
 
-- URL: `http://127.0.0.1:54934/index.html?slice=traversal`
-- Started: 2026-07-29T22:54:18.649Z
-- Wall time: 8.5s
-- Fidelity: **dom** (no `window.HB` — degraded/DOM mode, see limitations)
-- Sampling: requested every 75ms, achieved avg 75.7ms / max 78ms (107 samples)
+- URL: `http://127.0.0.1:55902/index.html?slice=traversal&testapi=1`
+- Started: 2026-07-29T23:04:08.918Z
+- Wall time: 7.8s
+- Fidelity: **testapi**
+- Sampling: requested every 75ms, achieved avg 75.5ms / max 78ms (97 samples)
 
 ## Outcome
 - Result: **completed**
-- Attempts: 1, falls (final attempt, only visible on victory): n/a
+- Attempts: 1, falls (final attempt, only visible on victory): 0
 - Kills: 0, deaths observed: 0, hits survived: 2
 
 ## Pacing / fairness metrics
-- Idle time: **unavailable** — window.HB not present or no velocity samples — idle time needs (vx, vy) over time, which the HUD never renders
-- Closest approach to crush edge: 18.4 tiles
-- Vertical range: **unavailable** — window.HB not present — y position is never shown in the HUD
-- Route inference: **unavailable** — window.HB not present — route inference needs an (x, y) position trace, which the HUD never renders
-- Air jumps: **unavailable** — window.HB not present — sliceStats.airJumps is never rendered to the HUD mid-run
-- Dare pocket: entered=true (hud-text), reward taken=false
-- Input density: 3.06 events/sec (26 total: 13 down / 13 up)
+- Idle time (A.5 `stallMs`): 0.0s of 6.8s PLAYING time (fraction 0)
+- Airborne time (`airMs`): 6.0s
+- Closest approach to crush edge (`minEdgeMargin`): 17.57 tiles
+- Vertical range: y 3.28–12.25 (span 8.97)
+- Route coverage (A.5 `routeIds`, >=3 connectors matched in order): **[upper-chimney, recovery-scramble]**
+- Route inference (harness-only best guess): **upper-chimney** (confidence 0.5, 4 connectors matched)
+- Air jumps: **unavailable** — window.HB has not landed and the ?testapi=1 snapshot does not currently expose sliceStats.airJumps (it has attempt/falls but not airJumps) — recommend adding it alongside those, or via window.HB
+- Dare pocket: entered=true (position-in-bounds), reward taken=false
+- Input density (A.5: deliberately NOT a score input): 3.34 events/sec (26 total: 13 down / 13 up)
+- protoScore (A.5 formula, proxy airborneKills/links — see README): **147.5** (airborneKills=0, links≈3, airMs=6041, stallMs=0)
 
