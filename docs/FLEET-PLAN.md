@@ -46,7 +46,7 @@ the intensity is far off.** The fleet exists to close that gap:
 - Roughly ten agents; the operator is the only fun oracle and reviews at the
   checkpoints below.
 
-## Current state (HEAD `15f66d2`)
+## Current state (updated post-split; wave 1 complete)
 
 - Traversal slice at `index.html?slice=traversal` (add `&enemies=0` to tune
   movement without wasps): authored fixture, six named routes, ledge catch,
@@ -57,9 +57,20 @@ the intensity is far off.** The fleet exists to close that gap:
   grab dwell capped at 240/300ms, minimum scroll 2.6, target pass time cut to
   4–12s. **The operator has not yet judged this accelerated pass** — that is
   checkpoint CP1.
-- `tools/pathcheck.mjs`: 178 assertions, green. It regex-extracts the pure
-  block; the module split replaces that with real imports.
-- No bot-player exists yet. The route-graph checks are analytical only.
+- Module split merged as `5e9dbc8`: `index.html` is a shell over 35 ES
+  modules (`src/config.js` → `src/pure/` → `src/sim/` → `src/render/`+
+  `src/ui/` → `src/main.js`), sim layer free of DOM/THREE behind
+  `src/sim/bridge.js` hooks. Gates passed: pathcheck 178/178 (now
+  import-based, layer purity statically guarded), browser selftest PASS ×3,
+  harness demo metrics unchanged within noise. Code review: no BLOCKER/MAJOR
+  findings; two MINOR doc notes (camera→`setEdges` writes sim state outside
+  the bridge — pre-existing coupling; zipper force-lock is a second,
+  idempotent `updateZipper` call site).
+- Bot-player harness at `tools/playtest/` (see its README): scripted
+  keyboard runs against real Chrome, sampling the `?testapi=1` telemetry
+  hook; metrics include idle fraction, closest crush margin, and protoScore
+  per the proposal doc's Appendix A.5.
+- Score/setback proposals at `docs/proposals/2026-07-score-and-setback.md`.
 
 ## Diagnosis of "boring" (for all agents)
 
