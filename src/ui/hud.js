@@ -1,0 +1,74 @@
+/* =============================== UI =============================== */
+/* The four corner readouts and the control legend. Reads sim state only —
+   no HUD element is ever a source of truth. */
+
+import { CONFIG } from '../config.js';
+import { ACTIVE_SLICE, IS_TRAVERSAL_SLICE, SLICE_ENEMIES_ENABLED } from '../mode.js';
+import { gameMs, scrollX, sliceStats } from '../sim/time.js';
+import { player, P } from '../sim/player.js';
+import { currentWeapon, weaponDef } from '../sim/weapons.js';
+import { mods } from '../sim/mods.js';
+import { hostiles, ENEMY, kills } from '../sim/hostiles.js';
+import { activeCorner } from '../sim/wavegate.js';
+
+const hudTL = document.getElementById('hudTL');
+const hudTC = document.getElementById('hudTC');
+const hudTR = document.getElementById('hudTR');
+const hudBL = document.getElementById('hudBL');
+
+hudBL.innerHTML = IS_TRAVERSAL_SLICE
+  ? 'MOVE wasd/arrows &nbsp; JUMP space &nbsp; FIRE j or x &nbsp; RETRY r<br>' +
+    'LEDGE near-misses catch: jump launches, down releases &nbsp;&middot;&nbsp; WALL contact: jump launches, down releases<br>' +
+    'DROP down+jump &nbsp;&middot;&nbsp; MAGENTA POCKET = take H, retreat left &nbsp;&middot;&nbsp; PAUSE p/esc'
+  : 'MOVE wasd/arrows &nbsp; JUMP space (hold = higher, again in air = double) &nbsp; FIRE j or x<br>' +
+    'AIM 8-way via move keys &nbsp; STRAFE-LOCK shift &nbsp; DROP down+jump on catwalks<br>' +
+    'CAPSULES swap weapons &middot; hit = weapon pops out, recatch it fast &nbsp;&middot;&nbsp; PAUSE p/esc';
+
+// updateHUD runs every rAF frame; assigning textContent replaces the text
+// node even when identical, dirtying layout for three fixed elements 60x/s.
+// Cache the last-written string per element and write only on change — in
+// steady state DOM writes drop to near zero.
+let hudTLLast = null, hudTCLast = null, hudTRLast = null;
+const MOD_LABELS = [['rageUntil', 'RAGE'], ['ghostUntil', 'GHOST'], ['chronoUntil', 'CHRONO']];
+
+export function updateHUD() {
+  const hp = Math.max(0, player.hp);
+  let tl = 'RIG ' + '▰'.repeat(hp) + '▱'.repeat(P.maxHealth - hp) +
+           (IS_TRAVERSAL_SLICE ? '' : '  ×' + Math.max(0, player.lives)) +
+           '  ·  [' + currentWeapon + '] ' + weaponDef(currentWeapon).name;
+  for (const [f, label] of MOD_LABELS)
+    if (gameMs < mods[f]) tl += ' · ' + label + ' ' + Math.ceil((mods[f] - gameMs) / 1000) + 's';
+  if (mods.lance) tl += ' · LANCE ARMING';
+  if (tl !== hudTLLast) { hudTLLast = tl; hudTL.textContent = tl; }
+  const edge = Number.isFinite(sliceStats.minEdgeMargin)
+    ? Math.max(0, sliceStats.minEdgeMargin).toFixed(1)
+    : '—';
+  const tr = IS_TRAVERSAL_SLICE
+    ? `ATTEMPT ${sliceStats.attempts} · EDGE ${edge} · ${kills} kills`
+    : Math.floor(scrollX) + 'm  ·  ' + kills + ' kills';
+  if (tr !== hudTRLast) { hudTRLast = tr; hudTR.textContent = tr; }
+  const c = activeCorner();
+  let tc = '';
+  const pocket = ACTIVE_SLICE && ACTIVE_SLICE.darePocket.bounds;
+  if (pocket && player.x >= pocket.x0 && player.x < pocket.x1) {
+    tc = currentWeapon === ACTIVE_SLICE.darePocket.reward.letter
+      ? 'H ACQUIRED · RETREAT LEFT ←'
+      : 'H WAGER → · EXIT LEFT ←';
+  } else if (IS_TRAVERSAL_SLICE && gameMs - sliceStats.startedAt < 2400) {
+    tc = 'TRAVERSAL SLICE · ' +
+      (SLICE_ENEMIES_ENABLED ? ACTIVE_SLICE.enemies.length + ' WASPS' : 'MOVEMENT ONLY');
+  } else if (c && c.state === 'gate') {
+    let gaters = 0;
+    for (const e of hostiles) if (ENEMY[e.kind].gating) gaters++;
+    tc = 'WAVE ' + c.k + '/' + CONFIG.path.faces + ' — ' + gaters + ' HOSTILES';
+  } else if (c && c.state === 'turning' && gameMs - c.tStart < CONFIG.waves.clearMsgMs) {
+    tc = 'CLEAR';
+  }
+  if (tc !== hudTCLast) { hudTCLast = tc; hudTC.textContent = tc; }
+}
+
+// resetGame clears the corner message and keeps the write cache coherent
+export function resetHudMessage() {
+  hudTC.textContent = '';
+  hudTCLast = '';
+}
