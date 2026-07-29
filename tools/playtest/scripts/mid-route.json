@@ -1,0 +1,22 @@
+{
+  "name": "mid-route-competent",
+  "description": "Best-effort 'competent' open-loop run: hold right, hold fire, and hop periodically to lean on the game's forgiving ledge catch instead of solving exact jump timing. This is a heuristic policy, not a route-perfect execution — see README limitations for why open-loop scripts rarely finish a route cleanly.",
+  "url": "index.html?slice=traversal",
+  "durationMs": 9000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 8800 },
+    { "hold": "fire", "fromMs": 100, "toMs": 8800 },
+
+    { "tap": "jump", "atMs": 300, "holdMs": 380 },
+    { "tap": "jump", "atMs": 1100, "holdMs": 380 },
+    { "tap": "jump", "atMs": 1900, "holdMs": 380 },
+    { "tap": "jump", "atMs": 2700, "holdMs": 380 },
+    { "tap": "jump", "atMs": 3500, "holdMs": 380 },
+    { "tap": "jump", "atMs": 4300, "holdMs": 380 },
+    { "tap": "jump", "atMs": 5100, "holdMs": 380 },
+    { "tap": "jump", "atMs": 5900, "holdMs": 380 },
+    { "tap": "jump", "atMs": 6700, "holdMs": 380 },
+    { "tap": "jump", "atMs": 7500, "holdMs": 380 },
+    { "tap": "jump", "atMs": 8200, "holdMs": 380 }
+  ]
+}

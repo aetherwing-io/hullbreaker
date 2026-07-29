@@ -1,0 +1,7 @@
+{
+  "name": "idle-greedy",
+  "description": "Deliberately does nothing: zero key events for the whole window. Proves the idle-time metric actually discriminates rather than always reading near-zero. Runs with &enemies=0 to isolate the idle signal from ambient wasp combat (an idle player being killed by a wasp is a real and interesting finding, but a separate question from 'does the idle metric work' — see README).",
+  "url": "index.html?slice=traversal&enemies=0",
+  "durationMs": 8000,
+  "events": []
+}

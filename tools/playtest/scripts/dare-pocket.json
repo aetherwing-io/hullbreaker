@@ -1,0 +1,19 @@
+{
+  "name": "dare-pocket-attempt",
+  "description": "Commits to the dare pocket: runs in, holds through the reward, retreats left within the wagered window, then continues toward the rejoin with periodic hops. Exercises darePocket entered/rewardTaken and the crush-edge-margin metric specifically.",
+  "url": "index.html?slice=traversal",
+  "durationMs": 9500,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 2600 },
+    { "hold": "left", "fromMs": 2650, "toMs": 4250 },
+    { "hold": "right", "fromMs": 4300, "toMs": 9300 },
+    { "hold": "fire", "fromMs": 100, "toMs": 9300 },
+
+    { "tap": "jump", "atMs": 4500, "holdMs": 380 },
+    { "tap": "jump", "atMs": 5300, "holdMs": 380 },
+    { "tap": "jump", "atMs": 6100, "holdMs": 380 },
+    { "tap": "jump", "atMs": 6900, "holdMs": 380 },
+    { "tap": "jump", "atMs": 7700, "holdMs": 380 },
+    { "tap": "jump", "atMs": 8500, "holdMs": 380 }
+  ]
+}
