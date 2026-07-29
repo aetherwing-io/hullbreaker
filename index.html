@@ -247,6 +247,7 @@ function traversalLedgeProbe(state, geometry, cfg = CONFIG.player) {
   const snapX = faceX - side * (state.hw + 0.001);
   const snapY = topY - cfg.ledgeGrabHeight;
   if (snapX - state.hw < geometry.minPlayerX) return null;
+  if (geometry.allowsGrab && !geometry.allowsGrab(cellX, snapY, state.h)) return null;
 
   // The hanging body and head must both fit on the approach side.
   const outsideX = cellX - side;
@@ -461,13 +462,34 @@ const GAP = -999;
 const TRAVERSAL_FIXTURE = {
   id: 'traversal-v1',
   bounds: { x0: 24, x1: 79 },
-  targetPlaySeconds: { min: 30, max: 45 },
+  targetPlaySeconds: { min: 4, max: 12 },
   run: {
     startScroll: 19,
     endScroll: 73,
-    recommendedScrollSpeed: 1.5,
-    maxLeadTiles: 10,
+    minimumScrollSpeed: 2.6,
+    followLeadTiles: 16,
+    lookAheadTiles: 2.5,
+    portraitMinAspect: 0.9,
     playerSpawn: { x: 27.5, y: 3 },
+  },
+  movement: {
+    runSpeed: 10.8,
+    accelGround: 150,
+    accelAir: 84,
+    jumpVel: 16.5,
+    gravity: -42,
+    fallGravityMult: 1.6,
+    terminalVel: -36,
+    jumpCutMult: 0.58,
+    airJumpVel: 15.5,
+    ledgeHangMs: 240,
+    ledgeLaunchX: 10.8,
+    ledgeLaunchY: 15.5,
+    wallSlideSpeed: 7.5,
+    wallSlideMs: 300,
+    wallJumpX: 13.5,
+    wallJumpY: 16,
+    traversalLaunchControlMs: 100,
   },
   entry: 'entry',
   exit: 'rejoin',
@@ -485,7 +507,7 @@ const TRAVERSAL_FIXTURE = {
     { id: 'chimney-left', role: 'wall', x0: 39, x1: 40, y0: 5, y1: 10 },
     { id: 'chimney-right', role: 'wall', x0: 44, x1: 45, y0: 5, y1: 10 },
     { id: 'dare-overhang', role: 'overhang', x0: 48, x1: 56, y0: 5, y1: 6 },
-    { id: 'dare-dead-end', role: 'wall', x0: 56, x1: 57, y0: 1, y1: 7 },
+    { id: 'dare-dead-end', role: 'wall', grabbable: false, x0: 56, x1: 57, y0: 1, y1: 7 },
   ],
   platforms: [
     { id: 'mid-entry', x0: 29, x1: 38, y: 5.35 },
@@ -579,9 +601,10 @@ const TRAVERSAL_FIXTURE = {
     commit: 'pocket-commit',
     rewardConnector: 'pocket-reward',
     rejoin: 'recovery',
+    bounds: { x0: 48, x1: 57 },
     retreatPath: ['pocket-reward', 'pocket-wall', 'pocket-commit', 'recovery'],
     reward: { kind: 'letter', letter: 'H', mode: 'fixed', x: 54, y: 2 },
-    timing: { retreatSeconds: 6, scrollBudgetTiles: 9, minEdgeMarginTiles: 8 },
+    timing: { retreatSeconds: 1.5, entryEdgeMarginTiles: 18, minExitMarginTiles: 8 },
   },
   rejoin: { connector: 'rejoin', x0: 72, x1: 79, y: 4 },
   enemies: [
@@ -599,6 +622,26 @@ function levelSolidCell(level, i, j, tileDepth) {
   if (g > -100 && j < g && j >= g - tileDepth) return true;
   for (const rect of level.solidRects || []) if (solidRectContains(rect, i, j)) return true;
   return false;
+}
+
+function traversalSolidAllowsGrab(fixture, cellX, y, h) {
+  if (!fixture) return true;
+  const y0 = Math.floor(y + 0.02);
+  const y1 = Math.floor(y + h - 0.02);
+  return !(fixture.solidRects || []).some(function (rect) {
+    return rect.grabbable === false &&
+      cellX >= rect.x0 && cellX < rect.x1 &&
+      y1 >= rect.y0 && y0 < rect.y1;
+  });
+}
+
+function traversalFollowTarget(scroll, playerRight, screenLeadTiles, run) {
+  const lead = Math.max(0, Math.min(run.followLeadTiles, screenLeadTiles));
+  return Math.max(scroll, playerRight - lead);
+}
+
+function traversalCameraDepth(baseDepth, aspect, run) {
+  return baseDepth * Math.max(1, run.portraitMinAspect / aspect);
 }
 
 function mulberry32(a) {
@@ -887,16 +930,28 @@ function probeXAtNdc(ndcX) {
   return _probe.position.x + _edgeV.x * (-_probe.position.z / _edgeV.z);
 }
 
+function activeCameraDepth() {
+  return ACTIVE_SLICE
+    ? traversalCameraDepth(CONFIG.camera.z, innerWidth / innerHeight, ACTIVE_SLICE.run)
+    : CONFIG.camera.z;
+}
+
 function calibrateEdges() {
   const C = CONFIG.camera;
+  const cameraDepth = activeCameraDepth();
   _probe.fov = C.fov;
   _probe.aspect = innerWidth / innerHeight;
-  _probe.position.set(C.x, C.y, C.z);
+  _probe.position.set(C.x, C.y, cameraDepth);
   _probe.lookAt(C.lookX, C.lookY, 0);
   _probe.updateProjectionMatrix();
   _probe.updateMatrixWorld(true);
   EDGE_L = probeXAtNdc(-1);
   EDGE_R = probeXAtNdc(1);
+  // Pulling back for a narrow slice viewport should not push the grey-box into
+  // fog. Move the fog band by the same depth delta so contrast stays stable.
+  const fogShift = ACTIVE_SLICE ? cameraDepth - C.z : 0;
+  scene.fog.near = CONFIG.fog.near + fogShift;
+  scene.fog.far = CONFIG.fog.far + fogShift;
 }
 
 function sLeftEdge()  { return scrollX + EDGE_L; }
@@ -947,7 +1002,7 @@ const LEVEL_LEN = CONFIG.levelLength;
 const END_SCROLL = LEVEL_LEN - 30;
 function activeScrollEnd() { return ACTIVE_SLICE ? ACTIVE_SLICE.run.endScroll : END_SCROLL; }
 function activeScrollSpeed() {
-  return ACTIVE_SLICE ? ACTIVE_SLICE.run.recommendedScrollSpeed : CONFIG.scrollSpeed;
+  return ACTIVE_SLICE ? ACTIVE_SLICE.run.minimumScrollSpeed : CONFIG.scrollSpeed;
 }
 // Traversal mode overlays one authored straight-face fixture; normal mode
 // remains the seeded six-face generator byte-for-byte.
@@ -1254,7 +1309,12 @@ function updateBullets(dt) {
 
 /* ======================== ENTITIES: PLAYER ======================== */
 
-const P = CONFIG.player;
+// The vertical slice is allowed to prove a more forceful controller without
+// silently changing the shipped six-face run. Every omitted field inherits the
+// frozen base tune.
+const P = ACTIVE_SLICE
+  ? { ...CONFIG.player, ...ACTIVE_SLICE.movement }
+  : CONFIG.player;
 const player = {
   x: 6, y: 3, vx: 0, vy: 0,
   hw: P.width / 2, h: P.height,
@@ -1265,6 +1325,7 @@ const player = {
   traversalCellX: 0, traversalTopY: 0,
   traversalSnapX: 0, traversalSnapY: 0,
   traversalUntil: 0, traversalRecatchUntil: 0, traversalEntryVx: 0,
+  traversalControlUntil: 0,
   hp: P.maxHealth, lives: P.lives,
   iframesUntil: 0, hitstunUntil: 0,
   nextFireAt: 0,
@@ -1326,6 +1387,8 @@ function playerOverlapsSolid() {
 
 const playerTraversalGeometry = {
   isSolid,
+  allowsGrab: (cellX, y, h) =>
+    traversalSolidAllowsGrab(ACTIVE_SLICE, cellX, y, h),
   minCellX: 1,
   maxCellX: LEVEL_LEN - 1,
   minPlayerX: -Infinity,
@@ -1357,7 +1420,7 @@ function updatePlayer(dt) {
     const action = traversalLedgeDecision({
       side: player.traversalSide,
       down: keys.down,
-      jumpBuffered: jumpBufferedUntil > gameMs,
+      jumpBuffered: jumpBufferedUntil > gameMs || keys.jump,
       entryVx: player.traversalEntryVx,
       now: gameMs,
       until: player.traversalUntil,
@@ -1371,7 +1434,8 @@ function updatePlayer(dt) {
       jumpBufferedUntil = 0;
       player.vx = action.vx; player.vy = action.vy;
       player.grounded = false; player.onOneWay = null;
-      player.coyoteUntil = 0; player.jumpCutDone = false;
+      player.coyoteUntil = 0; player.jumpCutDone = true;
+      player.traversalControlUntil = gameMs + P.traversalLaunchControlMs;
     } else if (action.kind === 'release') {
       const side = player.traversalSide;
       clearPlayerTraversal(action.recatchUntil);
@@ -1393,7 +1457,7 @@ function updatePlayer(dt) {
       x: player.x, y: player.y, h: player.h,
       vy: player.vy, grounded: player.grounded,
       down: keys.down, hInput: h,
-      jumpBuffered: jumpBufferedUntil > gameMs,
+      jumpBuffered: jumpBufferedUntil > gameMs || keys.jump,
       now: gameMs, until: player.traversalUntil,
     }, playerTraversalGeometry, P);
     if (action.kind === 'jump') {
@@ -1401,7 +1465,8 @@ function updatePlayer(dt) {
       jumpBufferedUntil = 0;
       player.vx = action.vx; player.vy = action.vy;
       player.grounded = false; player.onOneWay = null;
-      player.coyoteUntil = 0; player.jumpCutDone = false;
+      player.coyoteUntil = 0; player.jumpCutDone = true;
+      player.traversalControlUntil = gameMs + P.traversalLaunchControlMs;
     } else if (action.kind === 'release') {
       const side = player.traversalSide;
       clearPlayerTraversal(action.recatchUntil);
@@ -1414,7 +1479,8 @@ function updatePlayer(dt) {
   }
 
   // -- horizontal drive (locked out during hitstun and contextual contact)
-  if (!ledgeHanging && !wallSliding && gameMs >= player.hitstunUntil) {
+  if (!ledgeHanging && !wallSliding &&
+      gameMs >= player.hitstunUntil && gameMs >= player.traversalControlUntil) {
     const accel = player.grounded ? P.accelGround : P.accelAir;
     player.vx = approach(player.vx, h * P.runSpeed, accel * dt);
   }
@@ -1514,6 +1580,7 @@ function updatePlayer(dt) {
   }
   if (player.grounded) {
     clearPlayerTraversal();
+    player.traversalControlUntil = 0;
     player.coyoteUntil = gameMs + P.coyoteMs;
     player.airJumpsLeft = P.airJumps;
   }
@@ -1544,6 +1611,7 @@ function updatePlayer(dt) {
       player.vx = 0; player.vy = 0; player.jumpCutDone = true;
     } else if (wallHit && wallHit.cellX >= playerTraversalGeometry.minCellX &&
                wallHit.cellX < playerTraversalGeometry.maxCellX &&
+               playerTraversalGeometry.allowsGrab(wallHit.cellX, player.y, player.h) &&
                gameMs >= player.traversalRecatchUntil) {
       player.traversalState = 'wall';
       player.traversalSide = wallHit.side;
@@ -1573,7 +1641,6 @@ function updatePlayer(dt) {
   //    onto hidden slam terrain (invisible floors and gaps past the corner).
   const ac = activeCorner();
   let re = sRightEdge() - CONFIG.edges.margin;
-  if (ACTIVE_SLICE) re = Math.min(re, scrollX + ACTIVE_SLICE.run.maxLeadTiles);
   if (ac) re = Math.min(re, ac.s + 1 - CONFIG.edges.margin);
   if (player.x + player.hw > re) player.x = re - player.hw;
 
@@ -1605,6 +1672,7 @@ function updatePlayer(dt) {
 function damagePlayer(amount, fromX) {
   if (gameMs < player.iframesUntil) return;
   clearPlayerTraversal(gameMs + P.traversalRecatchMs);
+  player.traversalControlUntil = 0;
   jumpBufferedUntil = 0;
   player.hp -= amount;
   player.iframesUntil = gameMs + P.iframesMs;
@@ -1627,6 +1695,7 @@ function scheduleSliceRetry(reason) {
   sliceStats.failures++;
   if (reason === 'fall') sliceStats.falls++;
   clearPlayerTraversal(0);
+  player.traversalControlUntil = 0;
   jumpBufferedUntil = 0;
   releaseAllKeys();
   setState('SLICE_RETRY');
@@ -1638,6 +1707,7 @@ function scheduleSliceRetry(reason) {
 
 function loseLife(reason = 'damage') {
   clearPlayerTraversal(0);
+  player.traversalControlUntil = 0;
   jumpBufferedUntil = 0;
   if (IS_TRAVERSAL_SLICE) {
     scheduleSliceRetry(reason);
@@ -1665,6 +1735,7 @@ function respawn() {
   player.grounded = false; player.onOneWay = null; player.jumpCutDone = true;
   player.airJumpsLeft = P.airJumps;
   clearPlayerTraversal(0);
+  player.traversalControlUntil = 0;
   jumpBufferedUntil = 0;
 }
 
@@ -2211,7 +2282,7 @@ const ovBody = document.getElementById('ovBody');
 hudBL.innerHTML = IS_TRAVERSAL_SLICE
   ? 'MOVE wasd/arrows &nbsp; JUMP space &nbsp; FIRE j or x &nbsp; RETRY r<br>' +
     'LEDGE near-misses catch: jump launches, down releases &nbsp;&middot;&nbsp; WALL contact: jump launches, down releases<br>' +
-    'MAGENTA POCKET = optional wager &nbsp;&middot;&nbsp; PAUSE p/esc'
+    'DROP down+jump &nbsp;&middot;&nbsp; MAGENTA POCKET = take H, retreat left &nbsp;&middot;&nbsp; PAUSE p/esc'
   : 'MOVE wasd/arrows &nbsp; JUMP space (hold = higher, again in air = double) &nbsp; FIRE j or x<br>' +
     'AIM 8-way via move keys &nbsp; STRAFE-LOCK shift &nbsp; DROP down+jump on catwalks<br>' +
     'CAPSULES swap weapons &middot; hit = weapon pops out, recatch it fast &nbsp;&middot;&nbsp; PAUSE p/esc';
@@ -2241,7 +2312,12 @@ function updateHUD() {
   if (tr !== hudTRLast) { hudTRLast = tr; hudTR.textContent = tr; }
   const c = activeCorner();
   let tc = '';
-  if (IS_TRAVERSAL_SLICE && gameMs - sliceStats.startedAt < 2400) {
+  const pocket = ACTIVE_SLICE && ACTIVE_SLICE.darePocket.bounds;
+  if (pocket && player.x >= pocket.x0 && player.x < pocket.x1) {
+    tc = currentWeapon === ACTIVE_SLICE.darePocket.reward.letter
+      ? 'H ACQUIRED · RETREAT LEFT ←'
+      : 'H WAGER → · EXIT LEFT ←';
+  } else if (IS_TRAVERSAL_SLICE && gameMs - sliceStats.startedAt < 2400) {
     tc = 'TRAVERSAL SLICE · ' +
       (SLICE_ENEMIES_ENABLED ? ACTIVE_SLICE.enemies.length + ' WASPS' : 'MOVEMENT ONLY');
   } else if (c && c.state === 'gate') {
@@ -2345,6 +2421,7 @@ function resetGame() {
   player.grounded = false; player.onOneWay = null; player.jumpCutDone = true;
   player.airJumpsLeft = P.airJumps;
   clearPlayerTraversal(0);
+  player.traversalControlUntil = 0;
   jumpBufferedUntil = 0;
   for (const c of cornerEvents) { c.state = 'idle'; c.tStart = 0; }
   camYaw = 0; camYawBase = 0;
@@ -2384,17 +2461,36 @@ function updateCamera(dt) {
   } else {
     let target = activeScrollEnd();                     // wave-gate / fixture clamp
     if (c) target = Math.min(target, HALT_S[c.k - 1]);
-    scrollX = Math.min(scrollX + activeScrollSpeed() * dt, target);
+    let nextScroll = scrollX + activeScrollSpeed() * dt;
+    if (ACTIVE_SLICE) {
+      // The fixture's lead is a camera-follow offset, not an invisible player
+      // wall. On narrow screens the live frustum becomes the tighter offset.
+      const screenLead = Math.max(
+        2,
+        EDGE_R - CONFIG.edges.margin - ACTIVE_SLICE.run.lookAheadTiles
+      );
+      nextScroll = Math.max(
+        nextScroll,
+        traversalFollowTarget(
+          scrollX,
+          player.x + player.hw,
+          screenLead,
+          ACTIVE_SLICE.run
+        )
+      );
+    }
+    scrollX = Math.min(nextScroll, target);
     camYaw = camYawBase;
     if (c && c.state === 'idle' && scrollX >= HALT_S[c.k - 1] - 1e-6) armGate(c);
   }
 
   // chamfered camera path: anchor rides the polyline; yaw is ritual-driven
   const C = CONFIG.camera;
+  const cameraDepth = activeCameraDepth();
   const a = polyAt(SEGS, scrollX, _pp);
   const fx = Math.cos(camYaw), fz = -Math.sin(camYaw);   // fwd along the face
   const rx = -fz, rz = fx;                               // right = fwd × up
-  camera.position.set(a.x + fx * C.x + rx * C.z, C.y, a.z + fz * C.x + rz * C.z);
+  camera.position.set(a.x + fx * C.x + rx * cameraDepth, C.y, a.z + fz * C.x + rz * cameraDepth);
   _look.set(a.x + fx * C.lookX, C.lookY, a.z + fz * C.lookX);
   camera.lookAt(_look);
   camera.updateMatrixWorld();
@@ -2419,6 +2515,32 @@ function update(dt) {
   } else if (scrollX >= END_SCROLL) {
     setState('VICTORY');
   }
+}
+
+// Read-only browser telemetry for automated movement checks. It is absent from
+// every ordinary URL and cannot mutate the simulation.
+if (QUERY.has('testapi')) {
+  Object.defineProperty(globalThis, '__HULLBREAKER_TEST__', {
+    value: {
+      snapshot: () => ({
+        gameMs, state, scrollX,
+        minimumScrollSpeed: activeScrollSpeed(),
+        player: {
+          x: player.x, y: player.y, vx: player.vx, vy: player.vy,
+          grounded: player.grounded,
+          traversalState: player.traversalState,
+          traversalControlUntil: player.traversalControlUntil,
+        },
+        screenRight: sRightEdge() - CONFIG.edges.margin,
+        edgeMargin: player.x - player.hw - sLeftEdge(),
+        weapon: currentWeapon,
+        attempt: sliceStats.attempts,
+        falls: sliceStats.falls,
+      }),
+    },
+    configurable: false,
+    writable: false,
+  });
 }
 
 let last = performance.now();

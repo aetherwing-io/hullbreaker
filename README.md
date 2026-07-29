@@ -22,6 +22,10 @@ python3 -m http.server 8741
 # → http://127.0.0.1:8741/index.html
 ```
 
+The focused traversal playtest is available at
+`index.html?slice=traversal`. Add `&enemies=0` to tune movement without wasps.
+The normal six-face run remains the default.
+
 ## Controls
 
 | Input | Action |
@@ -32,7 +36,7 @@ python3 -m http.server 8741
 | Shift | Strafe-lock (freeze aim while moving) |
 | Down + Jump | Drop through catwalks |
 | P / Esc | Pause |
-| R | Restart (on death/victory screens) |
+| R | Restart (any time in the traversal slice; on death/victory elsewhere) |
 
 ## Current build: grey-box v3 — "corner waves"
 
@@ -48,6 +52,8 @@ Implemented:
 - Kinematic player controller: coyote time, jump buffering, variable jump
   height, double jump, drop-through catwalks, i-frames/knockback, 3 lives
 - Forced scroll with left-edge damage plane, wave gates, corner rituals
+- Opt-in authored traversal lattice with six connected routes, forgiving ledge
+  catches, wall launches, a visible H dare pocket, camera follow, and fast retry
 - Pattern-chunk level generator (stairs, gap-hops, plateaus, trenches,
   island-hops, ridges) with three vertical tiers of one-way catwalks
 - Two enemies: wasp drone (sine cruise + dive) with escalating per-wave
@@ -78,7 +84,9 @@ CONFIG → renderer/scene → loop/time → input → PATH (pure) → level bake
 pools/weapons → player → wasps → spawner → WAVES → fx/audio stubs → ui →
 states → main loop.
 
-- **All tuning constants** are in the `CONFIG` object at the top of the file.
+- Normal-run tuning constants are in `CONFIG`; the opt-in slice keeps its
+  authored geometry and playtest-only movement overrides in
+  `TRAVERSAL_FIXTURE`.
 - The sim runs in 2D logical coordinates `(s, y)` — distance along the level
   and height. A piecewise-linear polyline maps that ribbon onto the hexagonal
   tower for rendering and camera only; collision, physics, and spawning never
@@ -97,9 +105,9 @@ For a live browser smoke test, open `index.html?selftest=1` — after 1.5s it
 verifies the render loop, pause/resume, resize, and restart, reporting
 SELFTEST PASS/FAIL in both the console and the page title.
 
-The headless harness extracts the pure block from `index.html` and runs 125 assertions: polyline
-continuity, corner-ritual timeline exactness, generator invariants
-(reachability, tier coverage, gap limits, corner-apron cleanliness), spawn
-ordering, and jump math derived from the shipped constants. Exits non-zero
-on failure. Pass a different game file as the first argument to test a
+The headless harness extracts the pure block from `index.html` and runs 178
+assertions: polyline continuity, corner-ritual timing, normal-generator
+invariants and fingerprint, traversal topology and camera-follow contracts,
+dare-pocket safety, movement decisions, spawn ordering, and jump math. It exits
+non-zero on failure. Pass a different game file as the first argument to test a
 variant.

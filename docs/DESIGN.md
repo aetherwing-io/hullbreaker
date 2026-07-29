@@ -361,8 +361,16 @@ buffer 120ms, variable height via release-cut, drop-through catwalks. Up to
 four vertical levels: ground (h 2–4), a near-continuous mid lane (+2.35),
 high-lane stretches (+3), and occasional third-tier lanes (cap y=12);
 single jump clears +2, double clears +3. Current speeds: scroll 4.3, run 9.4.
-All constants in `CONFIG`; jump/tier/gap relationships are asserted by
-`tools/pathcheck.mjs` so retunes can't silently break traversal.
+All normal-run constants remain in `CONFIG`; jump/tier/gap relationships are
+asserted by `tools/pathcheck.mjs` so retunes can't silently break traversal.
+
+The opt-in traversal slice deliberately keeps those normal-run constants
+unchanged while testing a more forceful controller. Its first playtest proved
+that players saw and selected distinct routes—including the H dare pocket—but
+rejected a 29-second camera-limited pass as slow. The current experiment lets
+the camera follow forward motion, strengthens jumping, gives contact launches
+fixed short arcs, and caps neutral ledge/wall adhesion at 240/300ms. This is
+playtest tuning, not yet a global controller decision.
 
 ### Weapons (shipped)
 

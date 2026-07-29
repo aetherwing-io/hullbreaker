@@ -362,6 +362,7 @@ ok(TL !== TL2 && TL.groundH !== TL2.groundH && TL.platforms !== TL2.platforms &&
    'traversal builds return fresh geometry arrays and solid objects');
 
 const TF = TRAVERSAL_FIXTURE;
+const TP = { ...PL, ...TF.movement };
 const B = TF.bounds;
 ok(Number.isInteger(B.x0) && Number.isInteger(B.x1) &&
    B.x0 >= 0 && B.x0 < B.x1 && B.x1 <= CONFIG.levelLength,
@@ -403,7 +404,8 @@ ok(TL.groundH.length === CONFIG.levelLength &&
   for (const r of TF.solidRects) {
     if (typeof r.id !== 'string' || ids.has(r.id) ||
         ![r.x0, r.x1, r.y0, r.y1].every(Number.isInteger) ||
-        r.x0 < B.x0 || r.x1 > B.x1 || r.x0 >= r.x1 || r.y0 >= r.y1) valid = false;
+        r.x0 < B.x0 || r.x1 > B.x1 || r.x0 >= r.x1 || r.y0 >= r.y1 ||
+        (r.grabbable !== undefined && typeof r.grabbable !== 'boolean')) valid = false;
     ids.add(r.id);
     if (!solidRectContains(r, r.x0, r.y0) ||
         !solidRectContains(r, r.x1 - 1, r.y1 - 1) ||
@@ -416,6 +418,14 @@ ok(TL.groundH.length === CONFIG.levelLength &&
      'authored solid rectangles have unique ids and integer in-bounds extents');
   ok(halfOpen, 'solid rectangle membership is half-open on x and y');
   ok(built, 'level solid predicate includes every authored solid rectangle');
+}
+{
+  const deadEnd = TF.solidRects.find(function (r) { return r.id === 'dare-dead-end'; });
+  ok(!!deadEnd &&
+     !traversalSolidAllowsGrab(TF, deadEnd.x0, deadEnd.y0, PL.height) &&
+     traversalSolidAllowsGrab(TF, 39, 5, PL.height) &&
+     traversalSolidAllowsGrab(null, deadEnd.x0, deadEnd.y0, PL.height),
+     'dare dead-end rejects hidden wall adhesion without changing other walls or normal mode');
 }
 {
   const overhangs = TF.solidRects.filter(function (r) { return r.role === 'overhang'; });
@@ -532,19 +542,66 @@ ok(TF.routes.length === 6 && routeById.size === 6,
   }
   ok(retreatValid, 'dare reward has a directed retreat path back to the declared rejoin');
 
-  const nominalSeconds = (TF.run.endScroll - TF.run.startScroll) /
-    TF.run.recommendedScrollSpeed;
+  const nominalSeconds = (TF.rejoin.x0 - TF.run.playerSpawn.x) / TP.runSpeed;
   ok(Number.isFinite(nominalSeconds) &&
      nominalSeconds >= TF.targetPlaySeconds.min &&
      nominalSeconds <= TF.targetPlaySeconds.max,
-     'slice nominal duration stays in target range, got ' + nominalSeconds.toFixed(2) + ' s');
-  const retreatAdvance = D.timing.retreatSeconds * TF.run.recommendedScrollSpeed;
-  ok(TF.run.recommendedScrollSpeed > 0 &&
-     TF.run.recommendedScrollSpeed < PL.runSpeed &&
-     D.timing.scrollBudgetTiles + 1e-9 >= retreatAdvance &&
-     D.timing.scrollBudgetTiles >= D.timing.minEdgeMarginTiles &&
-     D.timing.minEdgeMarginTiles > PL.width + 2 * CONFIG.edges.margin,
-     'dare retreat scroll budget covers advance with a substantial edge margin');
+     'slice uninterrupted sprint stays in the fast target range, got ' + nominalSeconds.toFixed(2) + ' s');
+  const retreatAdvance = D.timing.retreatSeconds * TF.run.minimumScrollSpeed;
+  const retreatDistance = D.reward.x - D.bounds.x0;
+  ok(TF.run.minimumScrollSpeed > 0 &&
+     TF.run.minimumScrollSpeed < TP.runSpeed &&
+     D.timing.entryEdgeMarginTiles - retreatDistance - retreatAdvance + 1e-9 >=
+       D.timing.minExitMarginTiles &&
+     D.timing.minExitMarginTiles > PL.width + 2 * CONFIG.edges.margin,
+     'dare entry margin covers backtrack plus scroll advance and preserves the exit margin');
+}
+{
+  const run = TF.run;
+  const playerRight0 = run.playerSpawn.x + PL.width / 2;
+  const followStart = run.startScroll + run.followLeadTiles;
+  const slack = followStart - playerRight0;
+  const timeToFollow = slack / (TP.runSpeed - run.minimumScrollSpeed);
+  const nearestForkX = Math.min.apply(null, TF.firstFork.choices.map(function (id) {
+    return connectorById.get(id).x;
+  }));
+  ok(Number.isFinite(timeToFollow) && timeToFollow >= 0.5,
+     'opening sprint stays unpinned for at least half a second, got ' + timeToFollow.toFixed(2) + ' s');
+  ok(followStart >= nearestForkX + PL.width / 2,
+     'camera-follow threshold reaches the first authored route choice');
+  ok(traversalFollowTarget(run.startScroll, playerRight0, 100, run) === run.startScroll &&
+     traversalFollowTarget(run.startScroll, followStart + 2, 100, run) === run.startScroll + 2 &&
+     traversalFollowTarget(run.startScroll, followStart + 2, 10, run) === followStart - 8,
+     'camera follow is idle inside its lead and tracks beyond authored or narrow-screen leads');
+  ok(TP.wallJumpX * 0.05 < run.lookAheadTiles,
+     'camera look-ahead exceeds the largest one-frame contextual launch');
+  const portraitAspect = 390 / 844;
+  const portraitDepth = traversalCameraDepth(CC.z, portraitAspect, run);
+  const portraitWidth = 2 * portraitDepth * Math.tan(CC.fov / 2 * DEG) * portraitAspect;
+  ok(traversalCameraDepth(CC.z, 16 / 9, run) === CC.z &&
+     portraitDepth > CC.z &&
+     portraitDepth <= CC.z * 2 &&
+     portraitWidth >= TF.darePocket.timing.entryEdgeMarginTiles + run.lookAheadTiles,
+     'portrait pullback preserves retreat room and preview without shrinking play below half scale');
+}
+{
+  const apex = TP.jumpVel * TP.jumpVel / (2 * -TP.gravity);
+  const tUp = TP.jumpVel / -TP.gravity;
+  const tDown = Math.sqrt(2 * apex / (-TP.gravity * TP.fallGravityMult));
+  ok(TP.runSpeed > PL.runSpeed && TP.accelGround > PL.accelGround &&
+     TP.jumpVel > PL.jumpVel && TP.jumpCutMult > PL.jumpCutMult,
+     'slice tune is intentionally faster and gives short jump taps more authority');
+  ok(apex >= 3 && apex <= 3.5 && tUp >= 0.3 && tUp <= 0.45 && tUp + tDown < 0.8,
+     'slice jump is higher but remains quick, apex ' + apex.toFixed(2) + ' in ' + (tUp + tDown).toFixed(2) + ' s');
+  ok(TP.ledgeLaunchY >= TP.jumpVel * 0.9 &&
+     TP.wallJumpY >= TP.jumpVel * 0.9 &&
+     TP.ledgeLaunchX >= TP.runSpeed * 0.8 &&
+     TP.wallJumpX >= TP.runSpeed * 1.1,
+     'contextual launches match the stronger jump and preserve forward authority');
+  ok(TP.ledgeHangMs <= 300 && TP.wallSlideMs <= 400 &&
+     TP.traversalLaunchControlMs >= 80 && TP.traversalLaunchControlMs <= 150 &&
+     TP.traversalRecatchMs >= 120 && TP.traversalRecatchMs <= 250,
+     'grab dwell, launch control, and recatch windows stay inside responsive budgets');
 }
 
 // --- traversal movement decisions --------------------------------------
@@ -575,6 +632,30 @@ const ledgeState = {
      'ledge probe mirrors correctly for a left-side catch');
 }
 {
+  const deadEndState = {
+    x: 57.5, y: 5.58, hw: PL.width / 2, h: PL.height,
+    vx: -3, vy: -2, grounded: false, down: false, hInput: -1,
+    now: 100, recatchUntil: 0,
+  };
+  const deadEndCells = new Set(Array.from({ length: 6 }, function (_, i) {
+    return '56,' + (i + 1);
+  }));
+  const baseGeometry = {
+    isSolid: function (i, j) { return deadEndCells.has(i + ',' + j); },
+    minCellX: 0,
+    maxCellX: CONFIG.levelLength,
+    minPlayerX: -Infinity,
+  };
+  const otherwiseCatchable = traversalLedgeProbe(deadEndState, baseGeometry);
+  const authoredGeometry = {
+    ...baseGeometry,
+    allowsGrab: function () { return false; },
+  };
+  ok(!!otherwiseCatchable && otherwiseCatchable.cellX === 56 &&
+     traversalLedgeProbe(deadEndState, authoredGeometry) === null,
+     'non-grabbable dare wall rejects its top ledge catch as well as wall adhesion');
+}
+{
   const rejected = [
     { grounded: true },
     { vy: 0 },
@@ -595,23 +676,23 @@ const ledgeState = {
     down: false, jumpBuffered: false, now: 100, until: 500,
     side: 1, entryVx: 3,
   };
-  const hang = traversalLedgeDecision(base);
-  const down = traversalLedgeDecision({ ...base, down: true });
-  const expired = traversalLedgeDecision({ ...base, now: 500 });
+  const hang = traversalLedgeDecision(base, TP);
+  const down = traversalLedgeDecision({ ...base, down: true }, TP);
+  const expired = traversalLedgeDecision({ ...base, now: 500 }, TP);
   ok(hang.kind === 'hang' && hang.vx === 0 && hang.vy === 0,
      'ledge decision holds only inside its short hang window');
   ok(down.kind === 'release' && expired.kind === 'release' &&
-     down.recatchUntil === base.now + PL.traversalRecatchMs &&
-     expired.recatchUntil === 500 + PL.traversalRecatchMs,
+     down.recatchUntil === base.now + TP.traversalRecatchMs &&
+     expired.recatchUntil === 500 + TP.traversalRecatchMs,
      'down and timeout release a ledge with recatch protection');
   const launch = traversalLedgeDecision({
     ...base, side: -1, entryVx: 8, jumpBuffered: true,
-  });
-  ok(launch.kind === 'launch' && launch.vx === -8 &&
-     launch.vy === PL.ledgeLaunchY &&
-     launch.recatchUntil === base.now + PL.traversalRecatchMs,
-     'ledge jump preserves stronger entry speed and launches upward along the side');
-  ok(traversalLedgeDecision({ ...base, down: true, jumpBuffered: true }).kind === 'release',
+  }, TP);
+  ok(launch.kind === 'launch' && launch.vx === -TP.ledgeLaunchX &&
+     launch.vy === TP.ledgeLaunchY &&
+     launch.recatchUntil === base.now + TP.traversalRecatchMs,
+     'ledge jump applies its responsive minimum and launches upward along the side');
+  ok(traversalLedgeDecision({ ...base, down: true, jumpBuffered: true }, TP).kind === 'release',
      'ledge release takes priority over a simultaneous buffered jump');
 }
 {
@@ -621,22 +702,23 @@ const ledgeState = {
     grounded: false, down: false, hInput: 1, jumpBuffered: false,
     now: 100, until: 500,
   };
-  const slide = traversalWallDecision(base, wallGeometry);
-  const slowSlide = traversalWallDecision({ ...base, vy: -2 }, wallGeometry);
-  ok(slide.kind === 'slide' && slide.vx === 0 && slide.vy === -PL.wallSlideSpeed &&
+  const slide = traversalWallDecision(base, wallGeometry, TP);
+  const slowSlide = traversalWallDecision({ ...base, vy: -2 }, wallGeometry, TP);
+  ok(slide.kind === 'slide' && slide.vx === 0 && slide.vy === -TP.wallSlideSpeed &&
      slowSlide.kind === 'slide' && slowSlide.vy === -2,
      'wall slide caps fast falls without accelerating a slower descent');
 
-  const jump = traversalWallDecision({ ...base, jumpBuffered: true }, wallGeometry);
+  const jump = traversalWallDecision({ ...base, jumpBuffered: true }, wallGeometry, TP);
   const leftJump = traversalWallDecision(
     { ...base, side: -1, cellX: 1, hInput: -1, jumpBuffered: true },
-    gridGeometry([[1, 1]])
+    gridGeometry([[1, 1]]),
+    TP
   );
-  ok(jump.kind === 'jump' && jump.vx === -PL.wallJumpX && jump.vy === PL.wallJumpY &&
-     leftJump.kind === 'jump' && leftJump.vx === PL.wallJumpX && leftJump.vy === PL.wallJumpY,
+  ok(jump.kind === 'jump' && jump.vx === -TP.wallJumpX && jump.vy === TP.wallJumpY &&
+     leftJump.kind === 'jump' && leftJump.vx === TP.wallJumpX && leftJump.vy === TP.wallJumpY,
      'wall jumps launch upward and away from either wall');
-  ok(jump.recatchUntil === base.now + PL.traversalRecatchMs &&
-     leftJump.recatchUntil === base.now + PL.traversalRecatchMs,
+  ok(jump.recatchUntil === base.now + TP.traversalRecatchMs &&
+     leftJump.recatchUntil === base.now + TP.traversalRecatchMs,
      'wall jumps apply recatch protection');
 
   const releases = [
@@ -647,7 +729,7 @@ const ledgeState = {
     [{ ...base, now: 500 }, wallGeometry],
     [{ ...base, side: 0 }, wallGeometry],
   ].map(function (pair) {
-    return traversalWallDecision(pair[0], pair[1]);
+    return traversalWallDecision(pair[0], pair[1], TP);
   });
   ok(releases.every(function (r) {
     return r.kind === 'release' && Number.isFinite(r.recatchUntil);

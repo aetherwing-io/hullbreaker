@@ -172,6 +172,25 @@ The point is not to demonstrate every planned verb. The point is to discover
 whether moving through a connected hull while shooting is fun enough to build
 the rest of the game around.
 
+## First traversal-slice playtest
+
+The first pass answered the spatial question but failed the pacing question:
+
+- The player voluntarily chose the upper route first and the H dare pocket on
+  replay. No route or character-readability failure was reported.
+- Ledge and wall contacts worked, but felt somewhat sluggish or sticky.
+- The 29-second pass felt slow, jumps felt weak, and the player repeatedly
+  reached an invisible forward clamp before the next route choice.
+- The pocket compounded the problem: its dead-end wall could create an
+  uncommunicated wall state while the slow camera made six tiles feel long.
+
+This supersedes the original 30–45-second timing guess for this fixture. The
+active tuning experiment is a short, high-action pass: preserve normal-mode
+physics, give the slice stronger and crisper jumps, make held jump launch on
+contact, shorten grab dwell, prevent adhesion to the pocket dead end, and make
+the camera follow forward motion instead of pinning RIG. Do not scale the
+content count until the user approves that revised feel.
+
 ## Implementation landmarks
 
 The relevant code is still compact enough to understand directly:
