@@ -64,21 +64,26 @@ function showStateScreen(next) {
                            `${(sc.playMs / 1000).toFixed(1)}s` });
       }
       lines.push({ text: `pace: ${ACTIVE_SLICE.pace.label}`, dim: true });
-      // near (default) is silent: byte-identical VICTORY overlay when ?view=
-      // is absent, same rule as the transient HUD tag above.
-      if (VIEW_ID !== 'near') {
+      // far (default) is silent: the VICTORY overlay only self-labels when a
+      // non-default view was selected, same rule as the transient HUD tag.
+      if (VIEW_ID !== 'far') {
         lines.push({ text: `view: ${CONFIG.viewScales[VIEW_ID].label}`, dim: true });
       }
       lines.push({ text: 'r to replay', dim: true });
       showOverlay('TRAVERSAL CLEAR', lines);
     } else if (IS_TRANSFORM_SLICE) {
       const elapsed = Math.max(0, (gameMs - sliceStats.startedAt) / 1000).toFixed(1);
-      showOverlay('BREACH CLEAR', [
+      const transformLines = [
         { text: `${elapsed}s · ${committedBand} of 2 transformations · ${kills} kills` },
         { text: `climbed ${Math.round(transformAltitudeAt(player.x))} tiles of body, on foot` },
         { text: 'flip inward → the passage climbs → breach out, one 2D controller the whole way' },
-        { text: 'r to replay', dim: true },
-      ]);
+      ];
+      // Same self-labeling rule as TRAVERSAL CLEAR: non-default views only.
+      if (VIEW_ID !== 'far') {
+        transformLines.push({ text: `view: ${CONFIG.viewScales[VIEW_ID].label}`, dim: true });
+      }
+      transformLines.push({ text: 'r to replay', dim: true });
+      showOverlay('BREACH CLEAR', transformLines);
     } else {
       showOverlay('SECTOR CLEAR', [
         { text: 'grey-box complete' },
