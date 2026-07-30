@@ -13,7 +13,10 @@
    simulation), src/render (three.js), and src/ui (DOM). */
 
 import { CONFIG } from './config.js';
-import { ACTIVE_SLICE, IS_TRAVERSAL_SLICE, QUERY, SLICE_ENEMIES_ENABLED } from './mode.js';
+import {
+  ACTIVE_FIXTURE, ACTIVE_SLICE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, QUERY,
+  SLICE_ENEMIES_ENABLED,
+} from './mode.js';
 import { installHost } from './sim/bridge.js';
 import {
   advanceGameMs, gameMs, scrollX, setScrollX, sliceStats,
@@ -43,6 +46,9 @@ import {
 import { clearMods, mods, updateMods } from './sim/mods.js';
 import { resetSpawner, updateSpawner } from './sim/spawner.js';
 import { resetCornerEvents } from './sim/wavegate.js';
+import {
+  activeTransformEvent, committedBand, resetTransform, transformAltitude,
+} from './sim/transform.js';
 import { updateScroll } from './sim/scroll.js';
 import { camera, renderer, scene } from './render/scene.js';
 import {
@@ -52,6 +58,7 @@ import { clearCorpses, updateCorpses } from './render/hostiles.js';
 // imported for their side effects: each builds its meshes and installs its
 // half of the view bridge as it loads, before anything below runs
 import './render/level.js';
+import './render/transform.js';
 import './render/player.js';
 import './render/capsules.js';
 import './render/bullets.js';
@@ -117,12 +124,12 @@ function resetGame() {
   resetWeaponKills();
   clearMods();
   resetCarrierDrops();
-  setScrollX(ACTIVE_SLICE ? ACTIVE_SLICE.run.startScroll : 0);
+  setScrollX(ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.startScroll : 0);
   resetSpawner();
   resetHostileRng();
   resetKills(); resetShotsFired();
-  player.x = ACTIVE_SLICE ? ACTIVE_SLICE.run.playerSpawn.x : 6;
-  player.y = ACTIVE_SLICE ? ACTIVE_SLICE.run.playerSpawn.y : 3;
+  player.x = ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.playerSpawn.x : 6;
+  player.y = ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.playerSpawn.y : 3;
   player.vx = 0; player.vy = 0;
   player.hp = P.maxHealth; player.lives = P.lives;
   player.facing = 1; player.aim.set(1, 0);
@@ -134,13 +141,16 @@ function resetGame() {
   player.traversalControlUntil = 0;
   clearJumpBuffer();
   resetCornerEvents();
+  resetTransform();
   resetCameraYaw();
   unbuildFutureFaces();
-  if (ACTIVE_SLICE) {
+  if (ACTIVE_FIXTURE) {
     sliceStats.attempts++;
     sliceStats.airJumps = 0;
     sliceStats.minEdgeMargin = Infinity;
     sliceStats.startedAt = gameMs;
+  }
+  if (ACTIVE_SLICE) {
     const reward = ACTIVE_SLICE.darePocket.reward;
     spawnCapsule(reward.kind, reward.letter, reward.x, reward.y, reward.mode);
     if (SLICE_ENEMIES_ENABLED) {
@@ -173,6 +183,8 @@ function update(dt) {
   updateBullets(dt);
   if (IS_TRAVERSAL_SLICE) {
     if (player.x >= ACTIVE_SLICE.rejoin.x0) setState('VICTORY');
+  } else if (IS_TRANSFORM_SLICE) {
+    if (player.x >= ACTIVE_FIXTURE.finish.x0) setState('VICTORY');
   } else if (scrollX >= END_SCROLL) {
     setState('VICTORY');
   }
@@ -182,9 +194,23 @@ function update(dt) {
 // both debug channels — `__HULLBREAKER_TEST__` (the playtest harness's canonical
 // channel, field names frozen) and window.HB.snapshot() below — so the two can
 // never drift apart. It is a pure read of sim state and cannot mutate anything.
+// The transformation slice adds one read-only block so a bot run can prove the
+// sequence completed (which surface the world is on, which ritual is running,
+// and the rendered altitude) without scraping pixels.
+function transformTelemetry() {
+  const ev = activeTransformEvent();
+  return {
+    band: committedBand,
+    altitude: transformAltitude(),
+    event: ev ? ev.id : null,
+    eventState: ev ? ev.state : 'complete',
+  };
+}
+
 function telemetry() {
   return {
     gameMs, state, scrollX,
+    transform: IS_TRANSFORM_SLICE ? transformTelemetry() : undefined,
     minimumScrollSpeed: activeScrollSpeed(),
     player: {
       x: player.x, y: player.y, vx: player.vx, vy: player.vy,
@@ -290,13 +316,17 @@ if (QUERY.has('selftest')) {
     dispatchEvent(new Event('resize'));
     check('resize handled', Math.abs(camera.aspect - innerWidth / innerHeight) < 1e-6);
     resetGame();
-    const expectedScroll = ACTIVE_SLICE ? ACTIVE_SLICE.run.startScroll : 0;
+    const expectedScroll = ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.startScroll : 0;
     const expectedHostiles = ACTIVE_SLICE && SLICE_ENEMIES_ENABLED ? ACTIVE_SLICE.enemies.length : 0;
     check('restart', scrollX === expectedScroll && state === 'PLAYING' &&
       hostiles.length === expectedHostiles);
+    if (ACTIVE_FIXTURE) check('slice fixture selected', levelData.fixture === ACTIVE_FIXTURE);
     if (ACTIVE_SLICE) {
-      check('slice fixture selected', levelData.fixture === ACTIVE_SLICE);
       check('fixed dare reward', capsules.length === 1 && capsules[0].mode === 'fixed');
+    }
+    if (IS_TRANSFORM_SLICE) {
+      check('surfaces reset', committedBand === 0 && transformAltitude() === 0);
+      check('first ritual armed', activeTransformEvent().state === 'idle');
     }
     const fails = results.filter((r) => !r[1]).map((r) => r[0]);
     const msg = fails.length

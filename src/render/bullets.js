@@ -6,13 +6,12 @@
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-import { SEGS, polyAt, yawAt } from '../pure/path.js';
 import { installView } from '../sim/bridge.js';
 import { BULLET_MAX } from '../sim/weapons.js';
 import { scene, HIDE } from './scene.js';
+import { towerPose } from './tower.js';
 
-const _pp = { x: 0, z: 0 };     // polyAt scratch shared by the per-frame call sites
-const YAWB = CONFIG.path.yawBlendTiles;
+const _pp = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 };   // shared per-frame pose scratch
 
 const bulletMesh = new THREE.InstancedMesh(
   new THREE.SphereGeometry(CONFIG.rifle.radius, 6, 6),
@@ -43,18 +42,17 @@ function hideSlot(i) { bulletMesh.setMatrixAt(i, HIDE); }
 // map (s,y) onto the tower for one live slot: position + scale only for the
 // uniform spheres, no yaw/quaternion work
 function syncSlot(i, b) {
-  const bp = polyAt(SEGS, b.x, _pp);
+  const bp = towerPose(b.x, _pp);
   const def = CONFIG.weapons[b.type];
   if (b.type === 'L' || b.type === 'F') {
     _bs.fromArray(b.crawling ? def.crawlScale : def.scale);
-    const yaw = yawAt(SEGS, b.x, YAWB);
     const ang = b.crawling ? 0 : Math.atan2(b.vy, b.vx);
-    _bq.setFromEuler(_be.set(0, yaw, ang, 'YZX'));
-    _bm.compose(_bv.set(bp.x, b.y, bp.z), _bq, _bs);
+    _bq.setFromEuler(_be.set(0, bp.yaw, ang, 'YZX'));
+    _bm.compose(_bv.set(bp.x, b.y + bp.alt, bp.z), _bq, _bs);
   } else {
     const s = def.scale[0];
     _bm.makeScale(s, s, s);
-    _bm.setPosition(bp.x, b.y, bp.z);
+    _bm.setPosition(bp.x, b.y + bp.alt, bp.z);
   }
   bulletMesh.setMatrixAt(i, _bm);
 }

@@ -3,11 +3,12 @@
    machine itself is sim (src/sim/state.js) and reaches this presentation
    through the view bridge, so the sim owns no copy. */
 
-import { IS_TRAVERSAL_SLICE } from '../mode.js';
+import { IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE } from '../mode.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { weaponDef, weaponKills, shotsFired } from '../sim/weapons.js';
 import { kills } from '../sim/hostiles.js';
+import { committedBand, transformAltitude } from '../sim/transform.js';
 
 const overlay = document.getElementById('overlay');
 const ovTitle = document.getElementById('ovTitle');
@@ -30,7 +31,7 @@ function showStateScreen(next) {
   if (next === 'PLAYING') hideOverlay();
   else if (next === 'PAUSED') showOverlay('PAUSED', [{ text: 'p / esc to resume', dim: true }]);
   else if (next === 'SLICE_RETRY') showOverlay('ROUTE LOST', [
-    { text: 'resetting traversal fixture…', dim: true },
+    { text: 'resetting fixture…', dim: true },
     { text: 'r to retry now', dim: true },
   ]);
   else if (next === 'GAME_OVER') showOverlay('SIGNAL LOST', [
@@ -48,6 +49,14 @@ function showStateScreen(next) {
         { text: `${elapsed}s · ${kills} kills · ${sliceStats.airJumps} air jumps` },
         { text: `closest damage-edge margin: ${edge} tiles` },
         { text: `attempt ${sliceStats.attempts} · ${sliceStats.falls} total falls` },
+        { text: 'r to replay', dim: true },
+      ]);
+    } else if (IS_TRANSFORM_SLICE) {
+      const elapsed = Math.max(0, (gameMs - sliceStats.startedAt) / 1000).toFixed(1);
+      showOverlay('BREACH CLEAR', [
+        { text: `${elapsed}s · ${committedBand} of 2 transformations · ${kills} kills` },
+        { text: `rendered altitude gained: ${transformAltitude()} tiles` },
+        { text: 'bulkhead flip inward → interior corridor → breach return, one 2D controller' },
         { text: 'r to replay', dim: true },
       ]);
     } else {

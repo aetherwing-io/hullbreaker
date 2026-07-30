@@ -8,20 +8,23 @@
 import { CONFIG } from '../config.js';
 import { CORNER_S } from '../pure/path.js';
 import { buildLevel, buildTraversalLevel, levelSolidCell } from '../pure/generator.js';
-import { ACTIVE_SLICE, IS_TRAVERSAL_SLICE } from '../mode.js';
+import { buildTransformLevel } from '../pure/transform.js';
+import { ACTIVE_FIXTURE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE } from '../mode.js';
 import { view } from './bridge.js';
 
 const TILE_DEPTH = 8;           // solid tiles below each surface (collision)
 
 export const LEVEL_LEN = CONFIG.levelLength;
 export const END_SCROLL = LEVEL_LEN - 30;
-export function activeScrollEnd() { return ACTIVE_SLICE ? ACTIVE_SLICE.run.endScroll : END_SCROLL; }
+export function activeScrollEnd() { return ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.endScroll : END_SCROLL; }
 export function activeScrollSpeed() {
-  return ACTIVE_SLICE ? ACTIVE_SLICE.run.minimumScrollSpeed : CONFIG.scrollSpeed;
+  return ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.minimumScrollSpeed : CONFIG.scrollSpeed;
 }
-// Traversal mode overlays one authored straight-face fixture; normal mode
-// remains the seeded six-face generator byte-for-byte.
-export const levelData = IS_TRAVERSAL_SLICE ? buildTraversalLevel(CONFIG) : buildLevel(CONFIG);
+// Each fixture overlays its authored columns on the seeded layout; normal
+// mode remains the seeded six-face generator byte-for-byte.
+export const levelData = IS_TRAVERSAL_SLICE
+  ? buildTraversalLevel(CONFIG)
+  : IS_TRANSFORM_SLICE ? buildTransformLevel(CONFIG) : buildLevel(CONFIG);
 export const { groundH, platforms } = levelData;
 export const solidRects = levelData.solidRects || [];
 
@@ -60,6 +63,10 @@ export function settleColumn(s) { built[s] = 1; }
 
 // next faces stay unbuilt until their ritual (was hideAllSlamColumns)
 export function unbuildFutureFaces() {
+  // The transformation fixture replaces the tower with its own bands and
+  // owns their build state (src/sim/transform.js), so the six-face corner
+  // sets must not mark its columns inert.
+  if (IS_TRANSFORM_SLICE) return;
   for (const sets of [slamSets, farSets])
     for (const cols of sets)
       for (const s of cols) if (columnHasGround(s)) built[s] = 0;
