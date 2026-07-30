@@ -5,7 +5,8 @@
 import { CONFIG } from '../config.js';
 import { TRANSFORM_FIXTURE } from '../pure/transform.js';
 import {
-  ACTIVE_SLICE, HOUND_TRIAL_STAGE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE,
+  ACTIVE_SLICE, FLOW_ENABLED, HOOK_ENABLED, HOOK_INPUT, HOUND_TRIAL_STAGE,
+  IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE,
   SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN,
 } from '../mode.js';
 import { scoreNotchGlyphs } from '../pure/score.js';
@@ -16,6 +17,8 @@ import { currentWeapon, weaponDef } from '../sim/weapons.js';
 import { mods } from '../sim/mods.js';
 import { hostiles, ENEMY, kills } from '../sim/hostiles.js';
 import { activeCorner } from '../sim/wavegate.js';
+import { hookSnapshot } from '../sim/hook.js';
+import { flowSnapshot } from '../sim/flow.js';
 import {
   activeTransformEvent, committedBand, lastCommit, transformAltitude, transformBandLabel,
 } from '../sim/transform.js';
@@ -25,11 +28,24 @@ const hudTC = document.getElementById('hudTC');
 const hudTR = document.getElementById('hudTR');
 const hudBL = document.getElementById('hudBL');
 
+const HOOK_LEGEND = HOOK_ENABLED
+  ? (HOOK_INPUT === 'auto'
+    ? '<br>SNAP HOOK auto &mdash; fly near a lit anchor and the tether takes it: ' +
+      'it zips you there and throws you forward (jump = throw early, down = drop off)'
+    : '<br>SNAP HOOK l or e &mdash; grabs the lit anchor ahead, zips you to it, ' +
+      'throws you forward (jump = throw early, down = drop off)')
+  : '';
+const FLOW_LEGEND = FLOW_ENABLED
+  ? '<br>FLOW: every ledge / wall / hook launch without touching the floor ' +
+    'compounds your speed &mdash; the floor bleeds it back off'
+  : '';
+
 hudBL.innerHTML = IS_TRAVERSAL_SLICE
   ? 'MOVE wasd/arrows &nbsp; JUMP space &nbsp; FIRE j or x &nbsp; RETRY r<br>' +
     'LEDGE near-misses catch: jump launches, down releases &nbsp;&middot;&nbsp; WALL contact: jump launches, down releases<br>' +
     'DROP down+jump &nbsp;&middot;&nbsp; MAGENTA POCKET = take H, retreat left &nbsp;&middot;&nbsp; PAUSE p/esc<br>' +
-    'LOSING HP = HULL FALLBACK: the ship drops you to the route below and play continues'
+    'LOSING HP = HULL FALLBACK: the ship drops you to the route below and play continues' +
+    HOOK_LEGEND + FLOW_LEGEND
   : IS_TRANSFORM_SLICE
     ? 'MOVE wasd/arrows &nbsp; JUMP space (hold = higher, again in air = double) &nbsp; FIRE j or x &nbsp; RETRY r<br>' +
       'TRANSFORMATION SLICE &nbsp;&middot;&nbsp; run into the open panel, then into the one ahead: ' +
@@ -57,6 +73,20 @@ export function updateHUD() {
     const notch = scoreNotchNow();
     tl += ' ' + scoreNotchGlyphs(notch) +
       (notch >= CONFIG.score.notches.length ? ' BREAKING' : '');
+  }
+  // FLOW rides the same readout for the same reason: the player's eye is
+  // already there, and the chain has to be visible while it builds and bleeds.
+  if (FLOW_ENABLED) {
+    const fl = flowSnapshot();
+    tl += ' · FLOW ' + '▮'.repeat(fl.links) + '▯'.repeat(fl.max - fl.links) +
+      (fl.links ? ' ×' + fl.mult.toFixed(2) : '');
+  }
+  // kept to one short word: this readout sits beside the centered slice banner,
+  // and an anchor id here overlapped it (browser screenshot)
+  if (HOOK_ENABLED) {
+    const hk = hookSnapshot();
+    if (hk.phase !== 'idle') tl += ' · TETHER';
+    else if (hk.acquirable) tl += ' · HOOK';
   }
   for (const [f, label] of MOD_LABELS)
     if (gameMs < mods[f]) tl += ' · ' + label + ' ' + Math.ceil((mods[f] - gameMs) / 1000) + 's';

@@ -29,6 +29,7 @@ export const view = {
     armed: noop, started: noop, ritual: noop, finished: noop, reset: noop,
     frame: noop,                         // per-frame presentation tick (weather)
   },
+  hook:     { sync: noop },              // anchor markers + the live tether line
 };
 
 // group-wise merge: installView({ player: { sync } }) replaces only that hook
