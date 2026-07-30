@@ -369,12 +369,14 @@ if (QUERY.has('selftest')) {
     dispatchEvent(new Event('resize'));
     check('resize handled', Math.abs(camera.aspect - innerWidth / innerHeight) < 1e-6);
     // view-scale experiment: an unrecognized/absent ?view= must resolve to
-    // `near` (depthMult 1, the pre-view-scale camera depth exactly).
+    // `near` (depthMult 1, the pre-view-scale camera depth exactly) — checked
+    // against ACTIVE_FIXTURE (mode-agnostic: traversal or transform), the same
+    // thing activeCameraDepth() itself reads, so this holds at any aspect.
     check('view resolved', !!CONFIG.viewScales[VIEW_ID] &&
       Number.isFinite(activeCameraDepth()) && activeCameraDepth() > 0 &&
       CONFIG.viewScales.near.depthMult === 1 &&
-      (VIEW_ID !== 'near' || activeCameraDepth() === (ACTIVE_SLICE
-        ? traversalCameraDepth(CONFIG.camera.z, innerWidth / innerHeight, ACTIVE_SLICE.run)
+      (VIEW_ID !== 'near' || activeCameraDepth() === (ACTIVE_FIXTURE
+        ? traversalCameraDepth(CONFIG.camera.z, innerWidth / innerHeight, ACTIVE_FIXTURE.run)
         : CONFIG.camera.z)));
     resetGame();
     const expectedScroll = ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.startScroll : 0;

@@ -113,8 +113,10 @@ function transformMessage() {
   if (ev && ev.state === 'turning') return ev.label;
   if (lastCommit && gameMs - lastCommit.at < CONFIG.transform.clearMsgMs)
     return `${lastCommit.ev.label} — ${transformBandLabel()} · MERIDIAN: ${transformShipState()}`;
-  if (gameMs - sliceStats.startedAt < 2400)
-    return 'TRANSFORMATION SLICE · ' + transformBandLabel();
+  if (gameMs - sliceStats.startedAt < 2400) {
+    const viewTag = VIEW_ID === 'near' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
+    return 'TRANSFORMATION SLICE · ' + transformBandLabel() + viewTag;
+  }
   return '';
 }
 
