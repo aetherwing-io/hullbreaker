@@ -378,6 +378,10 @@ export const CONFIG = {
     hound: 0x5f8f3c,                       // same acid-green ecology as the wasp (concept art):
                                            //   heavier value, and the SILHOUETTE carries the read
     houndTell: 0xffd0a0, houndCharge: 0x3d7a1a,   // warm warning blink / lit-up committed glow
+    // snap-hook markers (?hook=1): warm hardware idle, hot when live, pale
+    // tether. Never the pickup magenta and never the hostile green — an anchor
+    // has to read as grabbable machinery at a glance (DESIGN's aiming rule).
+    hookAnchor: 0xc8a04a, hookLive: 0xffd166, hookTether: 0xfff0c2,
     shots: { R: 0xfff0c2, S: 0xffc76a, L: 0x9ff7ff, H: 0xff9adf, F: 0xff8a4a },
     tints: { lance: 'rgba(255,255,255,0.5)', rage: 'rgba(255,50,50,0.14)', chrono: 'rgba(90,200,255,0.12)' },
   },

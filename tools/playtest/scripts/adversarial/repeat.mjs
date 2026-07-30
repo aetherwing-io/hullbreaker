@@ -47,6 +47,7 @@ function parseArgs(argv) {
     else if (a === '--max-runtime-ms') out.maxRuntimeMs = Number(argv[++i]);
     else if (a === '--tag') out.tag = argv[++i];
     else if (a === '--query') out.query = argv[++i];
+    else if (a === '--base-url') out.baseUrl = argv[++i];
     else if (a === '--json') out.json = argv[++i];
     else if (a === '--baseline') out.baseline = argv[++i];
     else out.scripts.push(a);
@@ -275,6 +276,19 @@ async function main() {
         ? await variantScript(scriptPath, args.query, outDir)
         : scriptPath;
       const argv = ['run.mjs', target, '--out', outDir];
+      // --base-url points every run at an already-running static server instead
+      // of run.mjs's ephemeral one. The reason this exists: four separate
+      // captures in this lane were invalidated by merges landing mid-batch,
+      // because the built-in server serves the live working tree and a
+      // twelve-script capture takes ~15 minutes. Serve a pinned worktree
+      // instead and a capture describes exactly one build:
+      //   git worktree add /tmp/hb-pin <sha> && (cd /tmp/hb-pin && python3 -m http.server 8749)
+      //   node scripts/adversarial/repeat.mjs --base-url http://127.0.0.1:8749 ...
+      if (args.baseUrl) {
+        const script = JSON.parse(await readFile(target, 'utf8'));
+        const rel = (script.url || 'index.html?slice=traversal').replace(/^\//, '');
+        argv.push('--url', `${args.baseUrl.replace(/\/$/, '')}/${rel}`);
+      }
       if (args.viewport) argv.push('--viewport', args.viewport);
       if (args.maxRuntimeMs) argv.push('--max-runtime-ms', String(args.maxRuntimeMs));
       const r = await run(process.execPath, argv, playtestRoot);

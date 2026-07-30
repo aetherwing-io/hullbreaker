@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 import { startStaticServer } from './lib/server.mjs';
 import { compileScript, scriptEndMs } from './lib/compile.mjs';
+import { compilePolicy } from './lib/policy.mjs';
 import { runPlaytest } from './lib/driver.mjs';
 import { computeMetrics } from './lib/metrics.mjs';
 import { writeReport } from './lib/report.mjs';
@@ -35,6 +36,7 @@ function parseArgs(argv) {
     else if (a === '--tail-ms') out.tailMs = Number(argv[++i]);
     else if (a === '--port') out.port = Number(argv[++i]);
     else if (a === '--no-testapi') out.noTestapi = true;
+    else if (a === '--deterministic') out.deterministic = true;
     else if (a === '--help' || a === '-h') out.help = true;
     else out._.push(a);
   }
@@ -65,6 +67,11 @@ Options:
   --tail-ms <n>         Grace period after the last scripted input before stopping (default 900).
   --port <n>            Fixed port for the local static server (default: OS-assigned free port).
   --no-testapi          Don't append ?testapi=1 (on by default) — falls back to window.HB, then DOM/HUD parsing.
+  --deterministic       Key event dispatch to the game's own gameMs instead of wall-clock (see README "Deterministic injection mode").
+                        Requires testapi or window.HB (sample.gameMs must be a number).
+
+A script may declare "policy": { "rules": [...] } for closed-loop reactive input (see README "Closed-loop policy mode")
+alongside or instead of "events"/"moves". Policy rules run regardless of --deterministic; the two are independent.
 `);
 }
 
@@ -78,6 +85,26 @@ async function main() {
 
   const events = compileScript(script);
   const endMs = scriptEndMs(events, script);
+
+  let policyRules = null;
+  if (script.policy) {
+    policyRules = compilePolicy(script.policy);
+    // A code with genuinely ambiguous ownership (both a static hold/tap and
+    // a policy `hold` rule) is a script bug, not something to silently
+    // arbitrate — same philosophy as compile.mjs's double-edge check.
+    // Policy `tap` actions are deliberately not checked here: a tap is a
+    // momentary edge-triggered press, and coexisting with a static tap on
+    // the same code is unusual but not structurally ambiguous the way two
+    // `hold` owners would be.
+    const staticCodes = new Set(events.map((e) => e.code));
+    const holdCodes = policyRules.filter((r) => r.action.kind === 'hold').map((r) => r.action.code);
+    for (const code of holdCodes) {
+      if (staticCodes.has(code)) {
+        throw new Error(`policy "hold" rule targets ${code}, which the script's static events/moves ` +
+          'list also controls — pick one owner per code');
+      }
+    }
+  }
 
   let viewport = { width: 1280, height: 800 };
   if (args.viewport) {
@@ -100,9 +127,11 @@ async function main() {
     ? resolve(args.out)
     : join(here, 'runs', `${scriptName}-${Date.now()}`);
 
-  console.log(`[playtest] script:  ${scriptName} (${events.length} events, script window ${endMs}ms)`);
+  console.log(`[playtest] script:  ${scriptName} (${events.length} events` +
+    `${policyRules ? `, ${policyRules.length} policy rules` : ''}, script window ${endMs}ms)`);
   console.log(`[playtest] url:     ${url}`);
   console.log(`[playtest] out:     ${outDir}`);
+  if (args.deterministic) console.log('[playtest] mode:    deterministic injection (keyed to gameMs)');
 
   const startedAt = new Date().toISOString();
   let result;
@@ -117,6 +146,8 @@ async function main() {
       channel: args.channel || 'chrome',
       maxRuntimeMs: args.maxRuntimeMs || 25000,
       tailMs: args.tailMs != null ? args.tailMs : 900,
+      deterministic: !!args.deterministic,
+      policyRules,
     });
   } finally {
     if (server) await server.close();
@@ -132,6 +163,20 @@ async function main() {
   const avgJitter = jitters.length ? +(jitters.reduce((a, b) => a + Math.abs(b), 0) / jitters.length).toFixed(1) : null;
   const maxJitter = jitters.length ? Math.max(...jitters.map(Math.abs)) : null;
 
+  // Honesty check: --deterministic silently does nothing if gameMs was never
+  // available (dom-only fallback) — every event would just never dispatch.
+  // Surface that loudly rather than let a report quietly show zero events
+  // fired with no explanation.
+  if (args.deterministic && events.length > 0) {
+    const dispatchedCount = result.dispatchedEvents.filter((e) => typeof e.actualDispatchGameMs === 'number').length;
+    if (dispatchedCount === 0) {
+      console.error('[playtest] ERROR: --deterministic requested but no events were dispatched — ' +
+        'sample.gameMs was never a number (needs testapi or window.HB). Check --no-testapi wasn\'t ' +
+        'combined with a build that also lacks window.HB.');
+      process.exitCode = 1;
+    }
+  }
+
   // Report paths relative to the repo root / output dir rather than absolute
   // filesystem paths — those are local-machine-specific and would otherwise
   // get baked verbatim into a committed report.json.
@@ -142,6 +187,7 @@ async function main() {
       viewport, sampleIntervalRequestedMs: args.sampleMs || 75,
       bootError: result.bootError,
       dispatchJitterMsAvg: avgJitter, dispatchJitterMsMax: maxJitter,
+      deterministic: result.deterministic,
     },
     outcome: metrics.outcome,
     metrics,
@@ -156,6 +202,16 @@ async function main() {
       maxLagMs: result.maxRetryDetectionLagMs,
       count: result.retryReassertions.length,
     },
+    // Closed-loop policy mode (lib/policy.mjs): every hold-start/hold-end/
+    // tap-down/tap-up the driver dispatched from a rule, plus how many times
+    // each rule's condition referenced a sample field that was never
+    // present (a likely typo or a field this fidelity/slice doesn't carry —
+    // see README "Closed-loop policy mode").
+    policy: policyRules ? {
+      rules: policyRules.map((r) => ({ index: r.index, when: r.when, action: r.action, fireCount: r.fireCount })),
+      log: result.policyLog,
+      missingFieldWarnings: result.policyMissingFieldWarnings,
+    } : null,
     consoleErrors: result.consoleErrors,
     pageErrors: result.pageErrors,
     events: result.dispatchedEvents,
@@ -167,6 +223,13 @@ async function main() {
   await writeReport(outDir, report);
 
   console.log(`[playtest] outcome: ${metrics.outcome.result} (fidelity: ${metrics.fidelity}${metrics.highFidelityDetected ? '' : ', degraded — no testapi/window.HB'})`);
+  if (policyRules) {
+    const fires = policyRules.reduce((a, r) => a + r.fireCount, 0);
+    console.log(`[playtest] policy:  ${fires} tap fire(s) across ${policyRules.length} rule(s)` +
+      (report.policy.missingFieldWarnings.length
+        ? `; WARNING missing fields: ${report.policy.missingFieldWarnings.map((w) => `${w.field}(rule ${w.rule}, x${w.count})`).join(', ')}`
+        : ''));
+  }
   console.log(`[playtest] report:  ${outDir}/report.json`);
   console.log(`[playtest] summary: ${outDir}/summary.md`);
   if (result.bootError) {
