@@ -51,7 +51,7 @@ import {
 import { resetSpawner, updateSpawner } from './sim/spawner.js';
 import { resetCornerEvents } from './sim/wavegate.js';
 import {
-  activeTransformEvent, committedBand, resetTransform, transformAltitude,
+  activeTransformEvent, committedBand, resetTransform, transformAltitudeAt,
 } from './sim/transform.js';
 import { updateScroll } from './sim/scroll.js';
 import { camera, renderer, scene } from './render/scene.js';
@@ -225,7 +225,7 @@ function transformTelemetry() {
   const ev = activeTransformEvent();
   return {
     band: committedBand,
-    altitude: transformAltitude(),
+    altitude: transformAltitudeAt(player.x),
     event: ev ? ev.id : null,
     eventState: ev ? ev.state : 'complete',
   };
@@ -381,8 +381,9 @@ if (QUERY.has('selftest')) {
         : scrollX === expectedScroll);
     }
     if (IS_TRANSFORM_SLICE) {
-      check('surfaces reset', committedBand === 0 && transformAltitude() === 0);
-      check('first ritual armed', activeTransformEvent().state === 'idle');
+      check('body static at spawn', committedBand === 0 &&
+        transformAltitudeAt(ACTIVE_FIXTURE.run.playerSpawn.x) === 0);
+      check('first turn idle', activeTransformEvent().state === 'idle');
     }
     const fails = results.filter((r) => !r[1]).map((r) => r[0]);
     const msg = fails.length

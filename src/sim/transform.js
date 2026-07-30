@@ -1,9 +1,13 @@
 /* ==================== TRANSFORMATION: RUNTIME ===================== */
-/* The gate runtime for the world transformations, mirroring the corner
-   ritual in ./wavegate.js one level up: the scroll halts at the seam
-   apron, RIG walking into the threshold fires the ritual, the ritual
-   freezes the scroll while the next surface slams in, and then the scroll
-   eases back. Only ?slice=transform arms any of it.
+/* The gate runtime for the world transitions, mirroring the corner ritual
+   in ./wavegate.js: the scroll halts at the turn apron, RIG walking into
+   the threshold starts the turn, the view swings through the bend while
+   the scroll carries it around, and then the scroll eases back. Only
+   ?slice=transform arms any of it.
+
+   Nothing in the world is built, moved or revealed by this module: the
+   body is static and pre-placed. What a transition changes is where the
+   view is pointing and how far along the path the scroll has come.
 
    The sim owns *when*; src/pure/transform.js owns the choreography math
    and src/render/transform.js executes it. RIG keeps full control the
@@ -11,8 +15,9 @@
 
 import { CONFIG } from '../config.js';
 import {
-  TRANSFORM_FIXTURE, TRANSFORM_FRAMES, transformEventTotalMs, transformFrontierS,
-  transformHaltS, transformScrollOffset, transformSealS, transformTriggerS,
+  TRANSFORM_FIXTURE, TRANSFORM_PATH, transformAltAt, transformBandIndexAt,
+  transformEventTotalMs, transformFrontierS, transformHaltS, transformScrollOffset,
+  transformSealS, transformTriggerS,
 } from '../pure/transform.js';
 import { traversalFollowTarget } from '../pure/traversal.js';
 import { IS_TRANSFORM_SLICE } from '../mode.js';
@@ -50,9 +55,9 @@ export function transformTurning() {
 }
 
 // Right clamp: until a ritual has finished, the surface past the threshold
-// either does not exist yet or is still mid-slam, so the threshold is the
+// is around a bend the view has not turned to yet, so the threshold is the
 // wall — exactly what the corner ritual does with its pivot column. RIG keeps
-// full control inside it; they simply cannot outrun the transformation.
+// full control inside it; they simply cannot outrun the turn.
 export function transformFrontierX() {
   const ev = activeTransformEvent();
   return ev ? transformFrontierS(ev, CONFIG) : Infinity;
@@ -67,12 +72,16 @@ export function transformSealX() {
   return seal;
 }
 
-export function transformAltitude() {    // rendered altitude of the current surface
-  return TRANSFORM_FRAMES[committedBand].alt;
-}
+// Rendered altitude at a point on the path: the body climbs, so this is a
+// property of WHERE RIG is, not of which transition has fired.
+export function transformAltitudeAt(s) { return transformAltAt(TRANSFORM_PATH, s); }
 
 export function transformBandLabel() {
-  return TRANSFORM_FRAMES[committedBand].band.label;
+  return FIX.bands[committedBand].label;
+}
+
+export function transformBandLabelAt(s) {
+  return FIX.bands[transformBandIndexAt(FIX, s)].label;
 }
 
 /* --------------------------- scroll + gating ------------------------ *
@@ -93,7 +102,7 @@ export function updateTransformScroll(dt, playerRow) {
       ev.scroll0 + transformScrollOffset(t, FIX.run.minimumScrollSpeed, CONFIG),
       activeScrollEnd()
     ));
-    view.transform.ritual(ev, t);        // render: panels, slam chunks, atmosphere
+    view.transform.ritual(ev, t);        // render: the cover and the air, nothing else
     if (t >= transformEventTotalMs(CONFIG)) finishTransform(ev);
     return false;
   }

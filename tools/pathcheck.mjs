@@ -40,12 +40,12 @@ import {
   buildSpawnTable, GAP,
 } from '../src/pure/generator.js';
 import {
-  TRANSFORM_FIXTURE, TRANSFORM_FRAMES, bandSlamLockMs, bandSlamOffset,
-  buildTransformFrames, buildTransformLevel, transformAltDelta,
-  transformAtmosphereMix, transformBandIndexAt, transformEventCtx,
-  transformEventTotalMs, transformFrontierS, transformHaltS, transformPanelState,
-  transformPosAt, transformScrollOffset, transformScrollVel, transformSeamPull,
-  transformSealS, transformTimeline, transformTriggerS, transformYawDeltaDeg,
+  TRANSFORM_FIXTURE, TRANSFORM_PATH, bandSlamOffset, buildTransformLevel,
+  buildTransformPath, transformAltAt, transformAtmosphereMix, transformBandHeading,
+  transformBandIndexAt, transformEventTotalMs, transformFrontierS, transformHaltS,
+  transformHeadingAt, transformPanelState, transformPathAt, transformScrollOffset,
+  transformScrollVel, transformSeamPull, transformSealS, transformTimeline,
+  transformTriggerS, transformYawAt, transformYawDeltaDeg,
 } from '../src/pure/transform.js';
 
 // The sim layer carries the same no-three.js/no-DOM guarantee as pure/ (see
@@ -806,110 +806,147 @@ const ledgeState = {
   }), 'wall decision releases on no wall, landing, down, away input, timeout, or no side');
 }
 
-/* ===================== world-transformation slice ====================== *
- * The opt-in ?slice=transform demo: a short exterior run, a bulkhead flip
- * inward onto an interior corridor, then a breach return onto an exterior
- * face 30 tiles higher. Asserted the same way the corner ritual is — the
- * timeline must be exact, the surfaces must stay continuous at the seams,
- * and every apron must be valid before the scroll resumes.               */
-const XF = TRANSFORM_FIXTURE, XT = CONFIG.transform, XFR = TRANSFORM_FRAMES;
+/* ======================= world transitions (slice) ====================== *
+ * The opt-in ?slice=transform demo: an outer face, a flip inward through an
+ * opening onto an inner passage that CLIMBS, then a breach back out onto an
+ * outer face 36 tiles higher.
+ *
+ * The governing rule, and what most of these assertions defend: the body is
+ * ONE STATIC MASS. Nothing assembles, slams or rotates into place — the path
+ * is baked with its bends and its altitude profile, and a transition is the
+ * VIEW swinging through a bend on the corner ritual's detent curve while RIG
+ * runs the chamfer. So the checks below pin the path (continuity, unit
+ * spacing, exact turns, a walkable grade), the view curve (exact detents,
+ * dead-flat holds), the covers (the only moving parts) and every apron.    */
+const XF = TRANSFORM_FIXTURE, XT = CONFIG.transform;
+const XP = TRANSFORM_PATH;
 const XTL = transformTimeline(CONFIG);
 const XB = XF.bounds;
 
-// --- bands / frames ----------------------------------------------------
+// --- the body: one static path -----------------------------------------
 {
-  let valid = XFR.length === XF.bands.length && XFR[0].s0 === XB.x0 &&
-    XFR[XFR.length - 1].s1 === XB.x1;
-  for (let i = 1; i < XFR.length; i++) if (XFR[i - 1].s1 !== XFR[i].s0) valid = false;
-  ok(valid, 'bands tile the fixture bounds contiguously');
-  ok(XFR.map((f) => f.kind).join('>') === 'exterior>interior>exterior',
-     'surfaces go exterior → interior → exterior, got ' + XFR.map((f) => f.kind).join('>'));
-  ok(JSON.stringify(buildTransformFrames(XF)) === JSON.stringify(XFR),
-     'frame table is a pure function of the fixture');
+  let valid = XF.bands[0].s0 === XB.x0 &&
+    XF.bands[XF.bands.length - 1].s1 === XB.x1;
+  for (let i = 1; i < XF.bands.length; i++)
+    if (XF.bands[i - 1].s1 !== XF.bands[i].s0) valid = false;
+  ok(valid, 'stretches tile the fixture bounds contiguously');
+  ok(XF.bands.map((b) => b.kind).join('>') === 'exterior>interior>exterior',
+     'the run goes outside → inside → outside, got ' + XF.bands.map((b) => b.kind).join('>'));
+  ok(JSON.stringify(buildTransformPath(XF, CONFIG)) === JSON.stringify(XP),
+     'the path is a pure function of the fixture');
+  ok(XP.segs.length === 1 + 2 * XF.events.length,
+     'two bends per turn, got ' + XP.segs.length + ' segments');
 }
 {
-  // A seam is continuous in POSITION: only heading and altitude step across
-  // it. That is what lets one ritual animate the whole transition.
-  let seamContinuous = true, turnExact = true, altRises = true;
-  for (const ev of XF.events) {
-    const from = XFR[ev.fromBand], to = XFR[ev.toBand];
-    const p = transformPosAt(from, ev.seamS);
-    if (Math.hypot(p.x - to.x, p.z - to.z) > 1e-9) seamContinuous = false;
-    if (to.s0 !== ev.seamS) seamContinuous = false;
-    if (Math.abs((to.heading - from.heading) / DEG - 2 * XT.snapDeg) > 1e-9) turnExact = false;
-    if (!(to.alt > from.alt)) altRises = false;
+  // Position is continuous everywhere (a bend is a chamfer, not a jump) and a
+  // unit of s is a unit of world inside a stretch: the ribbon is never
+  // stretched by the body it is drawn on.
+  let bad = 0, cont = true;
+  for (let s = XB.x0; s < XB.x1; s++) {
+    const a = transformPathAt(XP, s), b = transformPathAt(XP, s + 1);
+    const d = Math.hypot(a.x - b.x, a.z - b.z);
+    if (d > 1 + 1e-9 || d < Math.cos(XT.snapDeg * DEG / 2) - 1e-6) bad++;
   }
-  ok(seamContinuous, 'every seam point is shared by both of its band frames');
-  ok(turnExact, 'every ritual turns exactly 2 × snapDeg (90 deg), matching its yaw curve');
-  ok(altRises, 'every transformation gains rendered altitude');
-}
-{
-  // unit s steps stay unit world steps inside a band: the sim ribbon is never
-  // stretched by the surface it is drawn on
-  let bad = 0;
-  for (const f of XFR) {
-    for (let s = f.s0; s < f.s1; s++) {
-      const a = transformPosAt(f, s), b = transformPosAt(f, s + 1);
-      if (Math.abs(Math.hypot(a.x - b.x, a.z - b.z) - 1) > 1e-9) bad++;
-    }
+  for (const g of XP.segs) {
+    const a = transformPathAt(XP, g.s0 - 1e-7), b = transformPathAt(XP, g.s0 + 1e-7);
+    if (Math.hypot(a.x - b.x, a.z - b.z) > 1e-5) cont = false;
   }
-  ok(bad === 0, 'unit spacing preserved inside every band');
-  ok(transformBandIndexAt(XFR, XB.x0) === 0 &&
-     transformBandIndexAt(XFR, XF.events[0].seamS - 1) === 0 &&
-     transformBandIndexAt(XFR, XF.events[0].seamS) === 1 &&
-     transformBandIndexAt(XFR, XF.events[1].seamS) === 2 &&
-     transformBandIndexAt(XFR, XB.x1 - 1) === 2,
-     'band lookup maps each column to the surface that renders it');
+  ok(bad === 0, 'every unit step along the body stays a unit step (no stretch)');
+  ok(cont, 'the path is continuous through every bend');
 }
 {
-  // Altitude has to be *unmistakable*, which is a measurable claim: the
-  // breach gain exceeds a full screen height, and it is much larger than the
-  // flip so the two breaks read differently.
+  // Each turn is exactly two detents of snapDeg, and the heading a stretch
+  // rests at is what the view rests at — so the animated yaw and the baked
+  // geometry can never disagree about where "around the bend" is.
+  let turns = true;
+  for (let i = 0; i < XF.events.length; i++) {
+    const ev = XF.events[i];
+    const before = transformHeadingAt(XP, ev.seamS - XT.chamferTiles);
+    const after = transformHeadingAt(XP, ev.seamS + XT.chamferTiles);
+    if (Math.abs((after - before) / DEG - 2 * XT.snapDeg) > 1e-9) turns = false;
+    if (Math.abs(before - transformBandHeading(XF, ev.fromBand, CONFIG)) > 1e-9) turns = false;
+    if (Math.abs(after - transformBandHeading(XF, ev.toBand, CONFIG)) > 1e-9) turns = false;
+  }
+  ok(turns, 'every turn is two snapDeg detents, and stretch headings match the view rest angles');
+  ok(Math.abs(transformYawDeltaDeg(XTL.t4, CONFIG) - 2 * XT.snapDeg) < 1e-9,
+     'the animated view delta lands exactly on the geometric turn');
+}
+{
+  // The climb is geometry, not an event: monotone, gained inside the body, and
+  // at a grade RIG can plausibly run up.
+  const P = XP.profile;
+  let monotone = true, maxGrade = 0;
+  for (let i = 1; i < P.length; i++) {
+    if (P[i].alt < P[i - 1].alt - 1e-9 || P[i].s <= P[i - 1].s) monotone = false;
+    maxGrade = Math.max(maxGrade, (P[i].alt - P[i - 1].alt) / (P[i].s - P[i - 1].s));
+  }
+  const total = P[P.length - 1].alt - P[0].alt;
   const screenH = 2 * CC.z * Math.tan(CC.fov / 2 * DEG);
-  const flip = XFR[1].alt - XFR[0].alt;
-  const breach = XFR[2].alt - XFR[1].alt;
-  ok(breach > screenH,
-     'breach gain (' + breach + ') exceeds one screen height (' + screenH.toFixed(1) + ')');
-  ok(flip > 1 && flip < breach / 3,
-     'flip lifts a readable step, the breach is the big one (' + flip + ' vs ' + breach + ')');
-  ok(XFR[2].alt >= 30, 'the far exterior face sits at least 30 tiles up, got ' + XFR[2].alt);
+  // The rendered grade is only half the climb: the passage decks step up too, so
+  // RIG gains altitude with their legs as well as along the ramp. Both halves
+  // together have to clear a screen height, and the ramp alone has to stay at a
+  // slope a side-on view can still read.
+  const deckClimb = XF.groundRuns.filter((r) => !r.gap)
+    .reduce((m, r) => Math.max(m, r.y), 0) - XF.run.playerSpawn.y;
+  ok(monotone, 'the altitude profile only ever climbs');
+  ok(total + deckClimb > screenH,
+     'the run climbs more than a screen height (' + total + ' rendered + ' +
+     deckClimb + ' jumped)');
+  ok(deckClimb >= 4, 'a real part of the climb is jumped, got ' + deckClimb + ' tiles of deck');
+  ok(maxGrade > 0.2 && maxGrade <= 0.45,
+     'the grade stays readable side-on, got ' + maxGrade.toFixed(2) + ' tiles per tile');
+  const seam1 = XF.events[0].seamS, seam2 = XF.events[1].seamS;
+  ok(transformAltAt(XP, XB.x0) === 0 && transformAltAt(XP, seam1 - XT.chamferTiles) === 0,
+     'the outer face is flat: nothing is climbed before the way in');
+  ok(transformAltAt(XP, seam2 + XT.chamferTiles) === total &&
+     transformAltAt(XP, XB.x1 - 1) === total,
+     'the high face is flat: the climb finished when RIG came back out');
+  const inside = transformAltAt(XP, seam2 - XT.chamferTiles) - transformAltAt(XP, seam1);
+  ok(inside > total * 0.8,
+     'the body is climbed from the inside (' + inside.toFixed(1) + ' of ' + total + ' tiles)');
+  // and RIG is the thing that gains it: at run speed the climb takes seconds
+  const climbSeconds = (seam2 - seam1) / PL.runSpeed;
+  ok(climbSeconds > 3, 'the ascent is run, not cut: ' + climbSeconds.toFixed(1) + ' s of climbing');
 }
 {
-  // The skyline silhouettes are authored at ABSOLUTE altitude, so the same
-  // structures loom overhead on face A and lie far below on face C. This is
-  // the altitude cue that survives a screenshot, so it is asserted.
-  const a = XFR[0], c = XFR[2];
-  const eyeA = a.alt + CC.y;
-  const deckC = c.alt + 3;
-  ok(a.band.skyline.length >= 2 && c.band.skyline.length >= 2,
-     'both exterior faces carry background silhouettes');
-  ok(a.band.skyline.some((s) => s.top > eyeA + 6),
-     'face A silhouettes rise well above the camera eye');
-  ok(c.band.skyline.every((s) => s.top < deckC - 5),
-     'the same silhouettes sit below the high face deck, not above it');
-  ok(c.band.skyline.every((s) => s.height > 12 && s.depth < -10),
-     'silhouettes stay tall and behind the combat plane');
-  // …and they land inside the strip the camera can actually see below the deck.
-  // This is a shallow side-on view, so a roof 25 tiles under RIG is simply
-  // off-screen and proves nothing: anything claiming to show the drop has to be
-  // in frame at its own distance from the camera.
+  const A = XF.bands[0], C = XF.bands[2];
+  const deckC = transformAltAt(XP, C.s0 + 6) +
+    XF.groundRuns.find((r) => r.x0 === C.s0).y;
+  const eyeA = CC.y;
+  ok(A.skyline.length >= 2 && C.skyline.length >= 2,
+     'both outer faces carry background silhouettes');
+  ok(A.skyline.some((sk) => sk.top > eyeA + 6),
+     'low-face silhouettes rise well above the camera eye');
+  ok(C.skyline.every((sk) => sk.top < deckC - 5),
+     'the same silhouettes sit below the high deck, not above it');
   let framed = true;
-  for (const s of c.band.skyline) {
-    const dist = CC.z - s.depth;                        // camera depth + how far back
-    const frameBottom = c.alt + CC.lookY - Math.tan(CC.fov / 2 * DEG) * dist;
-    if (!(s.top > frameBottom + 2 && s.top < deckC - 5)) framed = false;
+  for (const sk of C.skyline) {
+    const dist = CC.z - sk.depth;
+    const frameBottom = transformAltAt(XP, sk.atS) + CC.lookY - Math.tan(CC.fov / 2 * DEG) * dist;
+    if (!(sk.top > frameBottom + 2 && sk.top < deckC - 5)) framed = false;
   }
   ok(framed, 'every below-deck silhouette is in frame under the deck, not off-screen');
-  ok(a.band.hullWall.pattern === 'solid' && c.band.hullWall.pattern === 'towers',
-     'the hull encloses RIG low down and opens into towers high up');
-  // Weather is the loudest altitude cue on the concept board, so the high face
-  // has to declare one and the low face must not (the contrast IS the cue).
+  ok(A.hullWall.pattern === 'solid' && C.hullWall.pattern === 'towers',
+     'the body encloses RIG low down and opens into towers high up');
   const screenH = 2 * CC.z * Math.tan(CC.fov / 2 * DEG);
-  ok(!!c.band.weather && !a.band.weather && c.band.weather.count > 100 &&
-     c.band.weather.speed > 10 && c.band.weather.spanY >= screenH,
-     'only the high exterior face runs weather, and it spans the whole view');
-  ok(a.band.hullDrop > 12 && c.band.hullDrop > a.band.hullDrop,
+  ok(!!C.weather && !A.weather && C.weather.count > 100 &&
+     C.weather.speed > 10 && C.weather.spanY >= screenH,
+     'only the high face runs weather, and it spans the whole view');
+  ok(A.hullDrop > 12 && C.hullDrop > A.hullDrop,
      'the high face hangs a longer wall into the fog than the low one');
+}
+{
+  // Nothing arrives: the assembly curve still exists, but it is reserved for
+  // hostile constructs and no transition parameter references it.
+  ok(!!XT.assembly && XT.assembly.chunks > 0,
+     'the assembly choreography is retained for later hostile constructs');
+  const transitionKeys = Object.keys(XT).filter((k) => k !== 'assembly');
+  ok(transitionKeys.every((k) => !/slam|assemble/i.test(k)),
+     'no transition constant drives an assembly, got ' + transitionKeys.join(','));
+  const slam = bandSlamOffset(XT.assembly.startMs + XT.assembly.dropMs + XT.assembly.dipMs + 1,
+                              0, CONFIG);
+  ok(slam.phase === 'locked' && slam.dy === 0,
+     'the reserved assembly curve still settles to its base');
 }
 
 // --- ritual timeline ---------------------------------------------------
@@ -945,37 +982,16 @@ near(transformYawDeltaDeg(99999, CONFIG), 2 * XT.snapDeg, 1e-9, 'yaw clamped aft
   near(dip, XT.windUpDeg, 0.05, 'wind-up dips to windUpDeg');
 }
 {
-  const gain = XFR[2].alt - XFR[1].alt;                 // the breach: the big lift
-  const step1 = gain * XT.altStep1;
-  near(transformAltDelta(0, gain, CONFIG), 0, 1e-9, 'altitude flat at t=0');
-  near(transformAltDelta(XTL.t1 - 0.001, gain, CONFIG), -XT.altPreloadTiles, 0.01,
-       'the deck drops a hair before the first snap');
-  near(transformAltDelta(XTL.t2, gain, CONFIG), step1, 1e-9,
-       'snap 1 takes exactly altStep1 of the gain');
-  near(transformAltDelta(400, gain, CONFIG), step1, 1e-9, 'altitude holds flat through the ratchet');
-  near(transformAltDelta(XTL.t4, gain, CONFIG), gain, 1e-9, 'snap 2 lands the full gain exactly');
-  near(transformAltDelta(99999, gain, CONFIG), gain, 1e-9, 'altitude clamped after the ritual');
-  let peak = 0, minAfter = Infinity;
-  for (let t = 0; t <= XTL.t6; t += 0.25) {
-    const v = transformAltDelta(t, gain, CONFIG);
-    peak = Math.max(peak, v);
-    if (t >= XTL.t2) minAfter = Math.min(minAfter, v);
-  }
-  ok(peak > gain && peak < gain * 1.05, 'altitude lurches past the landing once, peak ' + peak.toFixed(2));
-  ok(minAfter >= step1 - 1e-9, 'altitude never sags back below a landed step');
-  const flipGain = XFR[1].alt - XFR[0].alt;
-  ok(transformAltDelta(XTL.t4, flipGain, CONFIG) === flipGain,
-     'the same curve lands the flip gain exactly (one ritual shape, two magnitudes)');
-}
-{
   const sp = XF.run.minimumScrollSpeed;
   ok(transformScrollVel(0, sp, CONFIG) === 0 && transformScrollVel(XTL.t5 - 0.1, sp, CONFIG) === 0,
      'scroll speed frozen until the settle ends');
-  // the seam pull: nothing moves through the wind-up, snap 1 and the hold, then
-  // the second clack carries the view through the seam onto the new surface
+  // the seam pull: the view travels the chamfer from the FIRST detent onward, so
+  // the bend comes to the player instead of the world assembling at a distance
   ok(transformScrollOffset(0, sp, CONFIG) === 0 &&
-     transformScrollOffset(XTL.t3, sp, CONFIG) === 0,
-     'the world holds still through the first snap and the ratchet hold');
+     transformScrollOffset(XTL.t2, sp, CONFIG) === 0,
+     'the view holds still through the wind-up and into the first detent');
+  ok(transformSeamPull(XTL.t3, CONFIG) > XT.seamPullTiles * 0.4,
+     'the bend is already coming to the player during the ratchet hold');
   near(transformSeamPull(XTL.t5, CONFIG), XT.seamPullTiles, 1e-9,
        'the seam pull completes exactly as the settle ends');
   ok(XT.seamPullTiles > XT.haltOffset,
@@ -1000,30 +1016,6 @@ near(transformYawDeltaDeg(99999, CONFIG), 2 * XT.snapDeg, 1e-9, 'yaw clamped aft
   near(transformScrollVel(9999, sp, CONFIG), sp, 1e-9, 'scroll clamped to full speed after');
 }
 {
-  // the next surface slams in near-to-far and every chunk locks before the
-  // scroll resumes — the corner ritual's apron rule, one seam later
-  ok(bandSlamOffset(XT.slamStartMs - 1, 0, CONFIG).phase === 'hidden',
-     'slam chunk 0 hidden before its start beat');
-  near(bandSlamOffset(XT.slamStartMs, 0, CONFIG).dy, XT.slamDropTiles, 1e-9,
-       'slam chunk 0 starts a full drop above its base');
-  near(bandSlamOffset(XT.slamStartMs + XT.slamDropMs / 2, 0, CONFIG).dy, XT.slamDropTiles * 0.75, 1e-9,
-       'gravity ease: half the drop time leaves 75 percent of the distance');
-  ok(bandSlamOffset(XT.slamStartMs + XT.slamPerColMs - 1, 1, CONFIG).phase === 'hidden' &&
-     bandSlamOffset(XT.slamStartMs + XT.slamPerColMs, 1, CONFIG).phase === 'drop',
-     'chunk 1 starts exactly slamPerColMs later');
-  const dip = bandSlamOffset(XT.slamStartMs + XT.slamDropMs + 1, 0, CONFIG);
-  const lock = bandSlamOffset(XT.slamStartMs + XT.slamDropMs + XT.slamDipMs + 1, 0, CONFIG);
-  ok(dip.phase === 'dip' && Math.abs(dip.dy + XT.slamDipTiles) < 1e-9, 'one-beat dip on landing');
-  ok(lock.phase === 'locked' && lock.dy === 0, 'chunk locks to base after its dip');
-  const lastLock = bandSlamLockMs(CONFIG);
-  ok(lastLock === 606 + XT.slamDipMs && lastLock <= XTL.t5,
-     'the whole surface is locked (' + lastLock + ' ms) before the scroll resumes (t5=' + XTL.t5 + ')');
-  let allLocked = true;
-  for (let i = 0; i < XT.slamChunks; i++)
-    if (bandSlamOffset(XTL.t5, i, CONFIG).phase !== 'locked') allLocked = false;
-  ok(allLocked, 'every slam chunk is locked at t5');
-}
-{
   const flipEv = XF.events[0], breachEv = XF.events[1];
   const closed = transformPanelState(0, flipEv, CONFIG);
   const jolted = transformPanelState(XT.windUpMs - 0.001, flipEv, CONFIG);
@@ -1044,43 +1036,14 @@ near(transformYawDeltaDeg(99999, CONFIG), 2 * XT.snapDeg, 1e-9, 'yaw clamped aft
 near(transformAtmosphereMix(XTL.t1, CONFIG), 0, 1e-9, 'atmosphere starts at the first snap');
 near(transformAtmosphereMix(XTL.t4, CONFIG), 1, 1e-9, 'atmosphere completes when the surface does');
 near(transformAtmosphereMix(9999, CONFIG), 1, 1e-9, 'atmosphere mix clamped');
-{
-  // The animated frame must start as the FROM surface extended past the seam
-  // (what RIG is standing on) and end as the TO surface exactly — that is
-  // what keeps the deck under their feet through the whole ritual.
-  let startsFrom = true, endsTo = true, pivotFixed = true;
-  for (const ev of XF.events) {
-    const from = XFR[ev.fromBand], to = XFR[ev.toBand];
-    const c0 = transformEventCtx(XFR, ev, 0, CONFIG);
-    const p0 = transformPosAt(c0, ev.seamS + 2);
-    const q0 = transformPosAt(from, ev.seamS + 2);
-    if (Math.abs(c0.heading - from.heading) > 1e-12 || Math.abs(c0.alt - from.alt) > 1e-12 ||
-        Math.hypot(p0.x - q0.x, p0.z - q0.z) > 1e-9) startsFrom = false;
-    const c1 = transformEventCtx(XFR, ev, XTL.t4, CONFIG);
-    for (const s of [ev.seamS, ev.seamS + 3, ev.seamS + 20]) {
-      const a = transformPosAt(c1, s), b = transformPosAt(to, s);
-      if (Math.hypot(a.x - b.x, a.z - b.z) > 1e-9) endsTo = false;
-    }
-    if (Math.abs(c1.alt - to.alt) > 1e-12 || Math.abs(c1.heading - to.heading) > 1e-12) endsTo = false;
-    const pivot = transformPosAt(transformEventCtx(XFR, ev, 0, CONFIG), ev.seamS);
-    for (let t = 0; t <= XTL.t6; t += 15) {
-      const p = transformPosAt(transformEventCtx(XFR, ev, t, CONFIG), ev.seamS);
-      if (Math.hypot(p.x - pivot.x, p.z - pivot.z) > 1e-9) pivotFixed = false;
-    }
-  }
-  ok(startsFrom, 'a ritual opens on the surface RIG is already standing on');
-  ok(endsTo, 'a ritual closes exactly on the next surface frame');
-  ok(pivotFixed, 'the seam point never moves during a ritual (the deck stays under RIG)');
-}
-
 // --- fixture / apron validity ------------------------------------------
 const XL = buildTransformLevel(CONFIG);
 {
   // Interior threat sockets: mounts the combat roster will fill later. They are
   // asserted like any other authored geometry so the corridor cannot drift into
   // a state where a later polyp lands inside a wall or on a seam apron.
-  const IB = XFR[1];
-  const sockets = IB.band.threatSockets || [];
+  const IB = XF.bands[1];
+  const sockets = IB.threatSockets || [];
   const ids = new Set();
   let valid = true;
   for (const so of sockets) {
@@ -1150,7 +1113,7 @@ const XL = buildTransformLevel(CONFIG);
     if (!(halt < ev.seamS && ev.seamS < trig && trig < front &&
           front < ev.seamS + XT.thresholdTiles && seal < trig && seal > ev.seamS)) ordered = false;
     if (ev.seamS - halt !== XT.haltOffset) ordered = false;
-    if (XFR[ev.toBand].s0 !== ev.seamS || XFR[ev.fromBand].s1 !== ev.seamS) ordered = false;
+    if (XF.bands[ev.toBand].s0 !== ev.seamS || XF.bands[ev.fromBand].s1 !== ev.seamS) ordered = false;
   }
   ok(ordered,
      'gate geometry orders halt < seam < seal < trigger < frontier < threshold end');
@@ -1209,10 +1172,10 @@ const XL = buildTransformLevel(CONFIG);
   const tDown = Math.sqrt(2 * (PL.jumpVel ** 2 / (2 * -PL.gravity)) / (-PL.gravity * PL.fallGravityMult));
   ok((tUp + tDown) * PL.runSpeed > widest + 1.5,
      'the frozen jump clears the fixture widest gap with margin');
-  const IN = XFR[1].band.interior;
+  const IN = XF.bands[1].interior;
   ok(IN.ceilingAbove > PL.height + PL.jumpVel ** 2 / (2 * -PL.gravity) + 1,
      'the interior ceiling clears a full jump, so the corridor never traps RIG');
-  ok(XF.platforms.filter((p) => p.x0 >= XFR[1].s0 && p.x1 <= XFR[1].s1)
+  ok(XF.platforms.filter((p) => p.x0 >= XF.bands[1].s0 && p.x1 <= XF.bands[1].s1)
        .every((p) => p.y + PL.height + 0.5 < XL.groundH[Math.floor(p.x0)] + IN.ceilingAbove),
      'interior catwalks keep player headroom under the ceiling');
 }

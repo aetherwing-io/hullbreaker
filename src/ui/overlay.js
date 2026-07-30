@@ -11,7 +11,8 @@ import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { scoreSnapshot } from '../sim/score.js';
 import { weaponDef, weaponKills, shotsFired } from '../sim/weapons.js';
 import { kills } from '../sim/hostiles.js';
-import { committedBand, transformAltitude } from '../sim/transform.js';
+import { player } from '../sim/player.js';
+import { committedBand, transformAltitudeAt } from '../sim/transform.js';
 
 const overlay = document.getElementById('overlay');
 const ovTitle = document.getElementById('ovTitle');
@@ -68,8 +69,8 @@ function showStateScreen(next) {
       const elapsed = Math.max(0, (gameMs - sliceStats.startedAt) / 1000).toFixed(1);
       showOverlay('BREACH CLEAR', [
         { text: `${elapsed}s · ${committedBand} of 2 transformations · ${kills} kills` },
-        { text: `rendered altitude gained: ${transformAltitude()} tiles` },
-        { text: 'flip inward → inner passage → breach out, one 2D controller the whole way' },
+        { text: `climbed ${Math.round(transformAltitudeAt(player.x))} tiles of body, on foot` },
+        { text: 'flip inward → the passage climbs → breach out, one 2D controller the whole way' },
         { text: 'r to replay', dim: true },
       ]);
     } else {

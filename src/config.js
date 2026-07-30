@@ -144,37 +144,43 @@ export const CONFIG = {
     zipDropTiles: 2.75, zipDipTiles: 0.06, zipDipMs: 40,
   },
 
-  transform: {                 // world-transformation rituals (bulkhead flip inward,
-                               //   breach return) — the opt-in ?slice=transform demo.
-                               //   Same discrete, chunky grammar as the corner ritual:
-                               //   two snaps with a ratchet hold, ~1s, player in control.
-    haltOffset: 9,             // scroll halts at seamS - haltOffset (the door apron):
-                               //   close enough that the seam is the focal point and
-                               //   the camera sweeps a short radius around it
-    thresholdTiles: 6,         // door/breach threshold: columns both bands render
-    armLookahead: 4,           // the ship opens the way when RIG gets this close
-    triggerOffset: 1.0,        // RIG must be this far past the seam to fire the ritual
+  transform: {                 // world transitions (flip inward, breach out) —
+                               //   the opt-in ?slice=transform demo. The body is
+                               //   static; a transition is the VIEW swinging through
+                               //   a bend on the corner ritual's detent curve, ~1s,
+                               //   with the player in control the whole way.
+    haltOffset: 9,             // scroll halts at seamS - haltOffset (the turn apron):
+                               //   close enough that the bend is the focal point and
+                               //   the view sweeps a short radius around it
+    chamferTiles: 2,           // the two bends of a turn, this many tiles apart
+    thresholdTiles: 6,         // columns of the turn RIG rounds while the view swings
+    armLookahead: 4,           // the way opens when RIG gets this close
+    triggerOffset: 1.0,        // RIG must be this far past the seam to start the turn
     armMaxMs: 2600,            // then the pursuing edge resumes and pushes them in
-    pressedOffset: 4,          // …but only to seamS - this, so the arena stays framed
-    clampMargin: 0.5,          // right clamp inside the threshold while the next band
-                               //   is still unbuilt (the corner ritual's pivot-wall rule)
-    sealInset: 0.4,            // the panel seals behind RIG once the band commits
+    pressedOffset: 4,          // …but only to seamS - this, so the turn stays framed
+    clampMargin: 0.5,          // right clamp inside the threshold: RIG rounds the bend
+                               //   with the view, and never past what it has turned to
+    sealInset: 0.4,            // a committed turn is one-way (the cover is behind RIG)
     windUpMs: 90, windUpDeg: -3,               // latch jolt / counter-rotation blink
     snap1Ms: 160, holdMs: 300, snap2Ms: 140, settleMs: 120, resumeMs: 180,
-                               // t5 = 810 (band locked by 646), event total 990 ms
-    seamPullTiles: 11,         // on the second snap the ship pulls the view through
-                               //   the seam (haltOffset + 2), so the ritual ends with
-                               //   the camera on the new surface, not outside it
+                               // t5 = 810, event total 990 ms
+    seamPullTiles: 11,         // from the FIRST detent the view travels the chamfer:
+                               //   the bend comes to the player (haltOffset + 2)
     backS: 1.1,                // yaw easeOutBack overshoot (~5%, one settle)
-    snapDeg: 45,               // per snap; one ritual turns 2 × snapDeg = 90°
-    altStep1: 0.35,            // fraction of the altitude gain taken on snap 1
-    altPreloadTiles: 0.35,     // the deck drops a hair before the first snap
-    altBackS: 0.7,             // altitude overshoot per snap (a lurch, not a wobble)
-    panelJoltTiles: 0.18, panelBlowMs: 320,    // unlatch jolt / blown-panel flight
+    snapDeg: 45,               // per detent; one turn is 2 × snapDeg = 90°
+    coverOpenMs: 420,          // a door swings open as RIG arrives: the way into
+                               //   the body pre-exists, the cover is just shut
+    panelJoltTiles: 0.18, panelBlowMs: 320,    // unlatch jolt / blown-cover flight
     panelBlowTiles: 11, panelSpinTurns: 1.35,
-    slamStartMs: 200, slamChunks: 24, slamPerColMs: 12, slamDropMs: 130,
-    slamDropTiles: 3.2, slamDipTiles: 0.06, slamDipMs: 40,
-    clearMsgMs: 1400,          // how long the ritual's HUD stinger stays up
+    clearMsgMs: 1400,          // how long a turn's HUD stinger stays up
+    // RETIRED FROM TRANSITIONS, RESERVED FOR HOSTILE CONSTRUCTS (FLEET-PLAN
+    // July 30 addendum): the staggered assembly drop. The creature's body
+    // never assembles; things the ship builds do. Kept whole for a later
+    // traps/enemies lane — nothing in the transition path reads it.
+    assembly: {
+      startMs: 200, chunks: 24, perColMs: 12, dropMs: 130,
+      dropTiles: 3.2, dipTiles: 0.06, dipMs: 40,
+    },
   },
 
   edges: { margin: 0.4, killY: -7 },

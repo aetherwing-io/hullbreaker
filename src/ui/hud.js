@@ -17,7 +17,7 @@ import { mods } from '../sim/mods.js';
 import { hostiles, ENEMY, kills } from '../sim/hostiles.js';
 import { activeCorner } from '../sim/wavegate.js';
 import {
-  activeTransformEvent, committedBand, lastCommit, transformAltitude, transformBandLabel,
+  activeTransformEvent, committedBand, lastCommit, transformAltitudeAt, transformBandLabel,
 } from '../sim/transform.js';
 
 const hudTL = document.getElementById('hudTL');
@@ -70,8 +70,8 @@ export function updateHUD() {
       (sliceStats.setbacks ? ` · FALLBACK ${sliceStats.setbacks}` : '') +
       ` · ${kills} kills`
     : IS_TRANSFORM_SLICE
-      ? `ALT ${Math.round(transformAltitude() + player.y)}m · ` +
-        `${committedBand}/2 BREAKS · ${kills} kills`
+      ? `ALT ${Math.round(transformAltitudeAt(player.x) + player.y)}m · ` +
+        `${committedBand}/2 TURNS · ${kills} kills`
       : Math.floor(scrollX) + 'm  ·  ' + kills + ' kills';
   if (SCORE_ENABLED) tr += ' · THREAT ' + Math.round(scoreThreat());
   if (tr !== hudTRLast) { hudTRLast = tr; hudTR.textContent = tr; }
