@@ -6,7 +6,7 @@ import { CONFIG } from '../config.js';
 import { TRANSFORM_FIXTURE } from '../pure/transform.js';
 import {
   ACTIVE_SLICE, HOUND_TRIAL_STAGE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE,
-  SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN,
+  SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN, VIEW_ID,
 } from '../mode.js';
 import { scoreNotchGlyphs } from '../pure/score.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
@@ -86,8 +86,12 @@ export function updateHUD() {
       ? 'H ACQUIRED · RETREAT LEFT ←'
       : 'H WAGER → · EXIT LEFT ←';
   } else if (IS_TRAVERSAL_SLICE && gameMs - sliceStats.startedAt < 2400) {
+    // view-scale experiment: self-documents on screenshots so a variant is
+    // identifiable without cross-referencing the URL (near is the shipped
+    // camera and stays silent to keep that overlay unchanged by default).
+    const viewTag = VIEW_ID === 'near' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
     tc = 'TRAVERSAL SLICE · ' + ACTIVE_SLICE.pace.label +
-      (HOUND_TRIAL_STAGE ? ' + ' + HOUND_TRIAL_STAGE.label : '') + ' · ' +
+      (HOUND_TRIAL_STAGE ? ' + ' + HOUND_TRIAL_STAGE.label : '') + viewTag + ' · ' +
       (SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length + ' HOSTILES' : 'MOVEMENT ONLY');
   } else if (c && c.state === 'gate') {
     let gaters = 0;
@@ -109,8 +113,10 @@ function transformMessage() {
   if (ev && ev.state === 'turning') return ev.label;
   if (lastCommit && gameMs - lastCommit.at < CONFIG.transform.clearMsgMs)
     return `${lastCommit.ev.label} — ${transformBandLabel()} · MERIDIAN: ${transformShipState()}`;
-  if (gameMs - sliceStats.startedAt < 2400)
-    return 'TRANSFORMATION SLICE · ' + transformBandLabel();
+  if (gameMs - sliceStats.startedAt < 2400) {
+    const viewTag = VIEW_ID === 'near' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
+    return 'TRANSFORMATION SLICE · ' + transformBandLabel() + viewTag;
+  }
   return '';
 }
 

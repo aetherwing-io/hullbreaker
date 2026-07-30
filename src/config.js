@@ -12,6 +12,26 @@ export const CONFIG = {
                                              // to jump/dodge/shoot; player ~7% of screen height
   fog: { near: 30, far: 74 },  // pushed out with the camera
 
+  // View-scale experiment (wave 3, viewscale lane): ?view=near|mid|far pulls
+  // the camera straight back along its depth axis ONLY — x, y, lookX, lookY
+  // (and fov) are untouched — which leaves the anchor's angular position in
+  // frame unchanged (composition/follow behavior is preserved to a fraction
+  // of a degree) while shrinking RIG's screen-height fraction and widening
+  // the calibrated s-strip proportionally. `near` (default/absent) is
+  // depthMult 1, i.e. byte-identical to the shipped camera. Applied in
+  // src/render/camera.js's activeCameraDepth(), which is the single function
+  // both syncCamera (camera pose) and calibrateEdges (setEdges → sim/edges.js)
+  // already read — so this table is the only new surface, and the seconds-
+  // bounded pursuit clock (src/pure/traversal.js) never has to know views
+  // exist, because it never reads EDGE_L/EDGE_R (see traversalMarginCapScroll).
+  // Measured RIG screen-height fraction at each (docs/concept-art's "~7%"
+  // invariant is `near`): near 7.0%, mid 5.0%, far 3.7%.
+  viewScales: {
+    near: { id: 'near', label: 'NEAR',  depthMult: 1 },
+    mid:  { id: 'mid',  label: 'MID',   depthMult: 1.42 },
+    far:  { id: 'far',  label: 'FAR',   depthMult: 1.9 },
+  },
+
   path: {                      // hexagonal tower circuit; sim stays in (s, y)
     faces: 6, faceTiles: 65, introTiles: 24, outroTiles: 31,
     chamferTiles: 2,           // two bends per corner, this many tiles apart

@@ -5,6 +5,7 @@
    (Node bot harness) can set globalThis.__HB_QUERY__ to a query string
    before importing the game to select the same modes without a browser. */
 
+import { CONFIG } from './config.js';
 import {
   TRAVERSAL_FIXTURE, houndTrialStage, resolveTraversalPace, traversalEnemyPlan,
 } from './pure/traversal.js';
@@ -34,6 +35,11 @@ export const ACTIVE_FIXTURE = IS_TRANSFORM_SLICE ? TRANSFORM_FIXTURE : ACTIVE_SL
 // ROUTE LOST retry instead of HULL FALLBACK tier 1.
 export const SCORE_ENABLED = QUERY.get('score') === '1';
 export const SLICE_FALLBACK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('fallback') !== '0';
+// ?view=near|mid|far selects a camera pull-back multiplier (CONFIG.viewScales,
+// the view-scale experiment). Anything unrecognized — including no flag —
+// resolves to `near`, which is byte-identical to the shipped camera.
+const VIEW_RAW = QUERY.get('view');
+export const VIEW_ID = CONFIG.viewScales[VIEW_RAW] ? VIEW_RAW : 'near';
 
 // Opt-in houndframe trial (DESIGN: teach → test → remix), orthogonal to the
 // pace: ?hound=1 teaches the charge alone, ?hound=2 adds the wasp that contests

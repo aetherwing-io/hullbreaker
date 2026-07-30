@@ -658,6 +658,63 @@ ok(TF.routes.length === 6 && routeById.size === 6,
      portraitWidth >= TF.darePocket.timing.entryEdgeMarginTiles + run.lookAheadTiles,
      'portrait pullback preserves retreat room and preview without shrinking play below half scale');
 }
+
+/* ===================== view-scale experiment (viewscale lane) =========== *
+ * ?view=near|mid|far (CONFIG.viewScales) pulls the camera straight back
+ * along its depth axis only, in src/render/camera.js's activeCameraDepth():
+ * whatever depth the slice/portrait math above already produced gets
+ * multiplied by viewScales[id].depthMult. That function needs three.js
+ * (unproject) to calibrate the real screen edges, so it can't run in this
+ * pure harness — but the RIG screen-height fraction it targets is
+ * closed-form: reproduce syncCamera's geometry for a straight face (yaw 0,
+ * so fx=1,fz=0,rx=0,rz=1 — the same identity the portrait check above
+ * leans on) and solve the same 2·depth·tan(vFov/2) screen-height-at-depth
+ * the render loop uses. Browser-side confirmation (real calibrated edges,
+ * actual rendered RIG height in pixels) lives in the headless selftest and
+ * playtest screenshot evidence — see the viewscale agent's report.        */
+{
+  const VS = CONFIG.viewScales;
+  const ids = Object.keys(VS);
+  ok(ids.length >= 3 && VS.near && VS.mid && VS.far && VS.near.id === 'near' &&
+     ids.every(function (id) { return VS[id].id === id && typeof VS[id].label === 'string'; }),
+     'at least three named views declared (near/mid/far present), ids self-consistent');
+  ok(VS.near.depthMult === 1,
+     '`near` is depthMult 1 exactly: ?view= absent or =near is byte-identical to the shipped camera');
+  ok(ids.every(function (id) { return Number.isFinite(VS[id].depthMult) && VS[id].depthMult >= 1; }) &&
+     VS.near.depthMult < VS.mid.depthMult && VS.mid.depthMult < VS.far.depthMult,
+     'every view only pulls the camera back (never in), strictly increasing near < mid < far');
+
+  // RIG screen-height fraction at a given total camera depth: same geometry
+  // as syncCamera for a straight face, measured at the fixture's own spawn
+  // height so it matches what a screenshot at boot actually shows.
+  function rigFraction(depth) {
+    const P = { x: CC.x, y: CC.y, z: depth };
+    const T = { x: CC.lookX, y: CC.lookY, z: 0 };
+    const D = { x: T.x - P.x, y: T.y - P.y, z: T.z - P.z };
+    const dlen = Math.sqrt(D.x * D.x + D.y * D.y + D.z * D.z);
+    const dir = { x: D.x / dlen, y: D.y / dlen, z: D.z / dlen };
+    const footY = TF.run.playerSpawn.y;
+    const Q = { x: CC.lookX, y: footY + PL.height / 2, z: 0 };
+    const QP = { x: Q.x - P.x, y: Q.y - P.y, z: Q.z - P.z };
+    const viewDepth = QP.x * dir.x + QP.y * dir.y + QP.z * dir.z;
+    const screenHeightWorld = 2 * viewDepth * Math.tan(CC.fov / 2 * DEG);
+    return PL.height / screenHeightWorld;
+  }
+
+  const fNear = rigFraction(CC.z * VS.near.depthMult);
+  const fMid = rigFraction(CC.z * VS.mid.depthMult);
+  const fFar = rigFraction(CC.z * VS.far.depthMult);
+  ok(Math.abs(fNear - 0.07) < 0.01,
+     'near matches the concept-art invariant (docs/concept-art/README.md: RIG ~7% of screen height), got ' +
+       (fNear * 100).toFixed(2) + '%');
+  ok(fMid < fNear && fFar < fMid,
+     'each further view shrinks RIG strictly more than the last, got ' +
+       [fNear, fMid, fFar].map(function (f) { return (f * 100).toFixed(2) + '%'; }).join(' > '));
+  ok(Math.abs(fMid - 0.05) < 0.005 && Math.abs(fFar - 0.037) < 0.005,
+     'mid/far land near the operator-requested ~5% / ~3.5-4% targets, got ' +
+       (fMid * 100).toFixed(2) + '% / ' + (fFar * 100).toFixed(2) + '%');
+}
+
 {
   const apex = TP.jumpVel * TP.jumpVel / (2 * -TP.gravity);
   const tUp = TP.jumpVel / -TP.gravity;
@@ -1794,15 +1851,21 @@ const XL = buildTransformLevel(CONFIG);
    * The shipped lead is a distance, so the same fixture gives 13.9 s of slack
    * at 1600x600 and 7.0 s at 800x1000 (adversarial F6) — two different games
    * from one build. A pace that declares crushSlackSeconds must produce the
-   * same clock on any frustum.                                              */
+   * same clock on any frustum. This also has to hold for the view-scale
+   * experiment (?view=near|mid|far, CONFIG.viewScales just above): a wider
+   * view only ever manifests here as a more negative edgeOffset (a further-
+   * left calibrated EDGE_L), and -31.1/-42.4 are the actual EDGE_L a
+   * from-scratch reimplementation of calibrateEdges's unproject math
+   * produces for `far` at 16:9/21:9 respectively (near/16:9 is -12.2, for
+   * comparison) — real view-scale magnitudes, not arbitrary stand-ins.     */
   {
     let invariant = true, contested = true, clocks = [];
     for (const F of resolved) {
       const cap = F.pursuit.marginCapTiles;
       if (cap <= 0) continue;
       const playerLeft = 40;
-      // two very different calibrated frustums, same clock
-      for (const edgeOffset of [-3.1, -10.4, -18.0]) {
+      // narrow portrait through view-scale-widened landscape, same clock
+      for (const edgeOffset of [-3.1, -10.4, -12.2, -18.0, -31.1, -42.4]) {
         const scroll = traversalMarginCapScroll(playerLeft, edgeOffset, cap);
         const margin = playerLeft - (scroll + edgeOffset);
         if (Math.abs(margin - cap) > 1e-9) invariant = false;

@@ -13,7 +13,7 @@ import {
   TRANSFORM_FIXTURE, TRANSFORM_PATH, transformAltAt, transformBandHeading,
   transformYawDeltaDeg,
 } from '../pure/transform.js';
-import { ACTIVE_FIXTURE, IS_TRANSFORM_SLICE } from '../mode.js';
+import { ACTIVE_FIXTURE, IS_TRANSFORM_SLICE, VIEW_ID } from '../mode.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs, scrollX } from '../sim/time.js';
 import { setEdges } from '../sim/edges.js';
@@ -31,10 +31,20 @@ function probeXAtNdc(ndcX) {
   return _probe.position.x + _edgeV.x * (-_probe.position.z / _edgeV.z);
 }
 
+// ?view=<id> (CONFIG.viewScales) pulls the camera straight back along its
+// depth axis only, independent of the traversal-slice portrait correction
+// above: near is depthMult 1 (exact, so `near`/absent is byte-identical to
+// the pre-view-scale camera), mid/far shrink RIG's screen fraction and widen
+// the calibrated s-strip by the same factor. See CONFIG.viewScales' comment.
+function activeViewDepthMult() {
+  return (CONFIG.viewScales[VIEW_ID] || CONFIG.viewScales.near).depthMult;
+}
+
 export function activeCameraDepth() {
-  return ACTIVE_FIXTURE
+  const base = ACTIVE_FIXTURE
     ? traversalCameraDepth(CONFIG.camera.z, innerWidth / innerHeight, ACTIVE_FIXTURE.run)
     : CONFIG.camera.z;
+  return base * activeViewDepthMult();
 }
 
 function calibrateEdges() {
@@ -50,9 +60,10 @@ function calibrateEdges() {
   // The transformation slice's atmosphere is a per-band cue owned by
   // src/render/transform.js (interior compresses it, altitude opens it up).
   if (IS_TRANSFORM_SLICE) return;
-  // Pulling back for a narrow slice viewport should not push the grey-box into
-  // fog. Move the fog band by the same depth delta so contrast stays stable.
-  const fogShift = ACTIVE_FIXTURE ? cameraDepth - C.z : 0;
+  // Pulling back — for a narrow slice viewport (portrait correction) or for a
+  // ?view= pull-back — should not push the grey-box into fog. Move the fog
+  // band by the same depth delta so contrast stays stable at every depth.
+  const fogShift = cameraDepth - C.z;
   scene.fog.near = CONFIG.fog.near + fogShift;
   scene.fog.far = CONFIG.fog.far + fogShift;
 }
