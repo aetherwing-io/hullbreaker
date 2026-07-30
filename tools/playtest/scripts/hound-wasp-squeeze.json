@@ -1,0 +1,12 @@
+{
+  "name": "hound-wasp-squeeze",
+  "description": "Combination stage of the houndframe trial (?hound=2): the SAME policy as hound-jump.json — the jump that beats a lone houndframe charge — replayed with a wasp cruising the arc over the hound's plate. If the combination is real, the movement answer that survived the solo stage now costs a hit in the air, which is DESIGN's 'hound forces the jump that the wasp contests' as a measurement rather than an assertion.",
+  "url": "index.html?slice=traversal&hound=2",
+  "viewport": { "width": 1280, "height": 800 },
+  "durationMs": 2400,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 2400 },
+    { "tap": "jump", "atMs": 1000, "holdMs": 120 },
+    { "tap": "jump", "atMs": 1240, "holdMs": 200 }
+  ]
+}

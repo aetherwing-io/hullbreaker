@@ -247,6 +247,76 @@ export const TRAVERSAL_FIXTURE = {
   ],
 };
 
+/* ===================== HOUNDFRAME TRIAL (opt-in) ==================== *
+ * DESIGN's teach → test rule for the floor-denial enemy, laid over the same
+ * fixture and reached only through ?hound=. Stage data lives outside
+ * TRAVERSAL_FIXTURE.enemies on purpose: the slice's default composition (and
+ * any retune of it) stays untouched, and traversalEnemyPlan picks exactly one
+ * authored list per attempt.
+ *
+ * `deck` is the authored ground height the hound owns — the spawn height is
+ * derived from CONFIG.hound.rideY so the frame always sits on that plate, and
+ * `patrol` keeps each hound pacing one ground run of the fixture instead of
+ * wandering the level. Every authored beat sits on a floor the player would
+ * otherwise sprint across without a decision.
+ *
+ * `contests` names the fixture route each hostile is assigned to, because the
+ * placement pattern is per-route threat assignment (docs/concept-art shows the
+ * quadruped standing on one route's platform while wasps work another):
+ * choosing a route chooses a matchup. Hounds take the floor routes; the
+ * upper-chimney and wall-launch routes stay a pure air problem, and the
+ * harness asserts that separation so it cannot quietly erode.            */
+export const HOUND_TRIAL = {
+  id: 'hound-trial-v1',
+  stages: {
+    // teach: floor pressure only. Three plates the low route needs, each one
+    // temporarily wrong to stand on. Answer: jump, wall-launch, or drop behind.
+    solo: {
+      label: 'HOUND SOLO',
+      replacesFixtureEnemies: true,
+      enemies: [
+        { id: 'hound-teach', kind: 'hound', contests: 'lower-service',
+          deck: 3, x: 45.5, dir: -1, delayMs: 0, patrol: { x0: 39.5, x1: 46.5 } },
+        { id: 'hound-pocket', kind: 'hound', contests: 'dare-pocket',
+          deck: 1, x: 54.5, dir: -1, delayMs: 400, patrol: { x0: 48.5, x1: 55.5 } },
+        { id: 'hound-rejoin', kind: 'hound', contests: 'lower-service',
+          deck: 3, x: 63.5, dir: -1, delayMs: 800, patrol: { x0: 57.5, x1: 63.5 } },
+      ],
+    },
+    // test: the documented combination — "hound forces the jump that the wasp
+    // contests". The wasp cruises the arc directly over the hound's plate, so
+    // the movement answer to the charge is the one the air threat punishes.
+    combo: {
+      label: 'HOUND + WASP',
+      replacesFixtureEnemies: true,
+      enemies: [
+        { id: 'hound-squeeze', kind: 'hound', contests: 'lower-service',
+          deck: 3, x: 45.5, dir: -1, delayMs: 0, patrol: { x0: 39.5, x1: 46.5 } },
+        { id: 'squeeze-wasp', kind: 'wasp', contests: 'lower-service',
+          x: 44, y: 7.6, delayMs: 300 },
+        { id: 'hound-rejoin', kind: 'hound', contests: 'lower-service',
+          deck: 3, x: 63.5, dir: -1, delayMs: 900, patrol: { x0: 57.5, x1: 63.5 } },
+      ],
+    },
+  },
+};
+
+export function houndTrialStage(name) {
+  return (name && HOUND_TRIAL.stages[name]) || null;
+}
+
+// One attempt's authored hostiles. With no trial selected this returns the
+// fixture's own list unchanged, so the default slice stays byte-identical.
+export function traversalEnemyPlan(fixture, trialName, cfg = CONFIG) {
+  if (!fixture) return [];
+  const stage = houndTrialStage(trialName);
+  if (!stage) return fixture.enemies;
+  const authored = stage.enemies.map(function (e) {
+    return e.deck === undefined ? { ...e } : { ...e, y: e.deck + cfg.hound.rideY };
+  });
+  return stage.replacesFixtureEnemies ? authored : fixture.enemies.concat(authored);
+}
+
 export function traversalSolidAllowsGrab(fixture, cellX, y, h) {
   if (!fixture) return true;
   const y0 = Math.floor(y + 0.02);

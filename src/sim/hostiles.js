@@ -1,13 +1,13 @@
 /* ===================== ENTITIES: HOSTILES ========================= */
-/* Kinds: wasp drone, carrier. Roster pass adds polyp turret, houndframe,
-   spore mortar as ENEMY rows + movement branches. */
+/* Kinds: wasp drone, carrier, houndframe. Roster pass adds polyp turret
+   and spore mortar as further ENEMY rows + movement branches. */
 
 import { CONFIG } from '../config.js';
 import { mulberry32 } from '../pure/rng.js';
 import { view } from './bridge.js';
 import { gameMs, approach } from './time.js';
 import { sLeftEdge, sRightEdge } from './edges.js';
-import { builtGroundTopAt } from './level.js';
+import { builtGroundTopAt, builtSolidAt } from './level.js';
 import { player, circleHitsPlayer, damagePlayer } from './player.js';
 import { weaponKills } from './weapons.js';
 import { dropFromCarrier } from './capsules.js';
@@ -28,16 +28,27 @@ export const ENEMY = {
              hitR: CONFIG.wasp.contactRadius, gating: true },
   carrier: { hp: CONFIG.carrier.hp,
              hitR: CONFIG.carrier.hitRadius, gating: false },
+  // A deck unit inside a corner arena is a legitimate gate holder: unlike a
+  // slow hauler it cannot drift out of the fight — its prowl is bounded by
+  // terrain and its authored patrol span.
+  hound:   { hp: CONFIG.hound.hp,
+             hitR: CONFIG.hound.hitRadius, gating: true, start: 'prowl' },
 };
 
-export function spawnHostile(x, y, delayMs, kind) {
+// `opts` carries authored per-row spawn data (currently the houndframe's
+// facing and patrol span). Every caller may omit it; the defaults reproduce
+// the shipped wasp/carrier rows exactly.
+export function spawnHostile(x, y, delayMs, kind, opts) {
   kind = kind || 'wasp';
   const K = ENEMY[kind];
+  const patrol = (opts && opts.patrol) || null;
   const e = {
     id: nextWaspId++, kind,
-    x, y, baseY: y, vx: 0, vy: 0, dir: -1, t: hostileRng() * 6,
+    x, y, baseY: y, vx: 0, vy: 0, dir: (opts && opts.dir) || -1, t: hostileRng() * 6,
     hp: K.hp, hitR: K.hitR,
-    state: 'cruise', stateUntil: 0, diveCdUntil: 0,
+    state: K.start || 'cruise', stateUntil: 0, diveCdUntil: 0,
+    patrolX0: patrol ? patrol.x0 : -Infinity,
+    patrolX1: patrol ? patrol.x1 : Infinity,
     enterUntil: gameMs + (delayMs || 0) + CONFIG.wasp.enterMs,
     flashUntil: 0,
   };
@@ -63,6 +74,127 @@ export function hitHostile(e, idx, damage, weapon) {
   }
 }
 
+/* ------------------------- HOUNDFRAME ------------------------------ *
+ * Spatial job: make a floor route temporarily unsafe with a committed
+ * charge. It paces its plate (prowl), plants and telegraphs when the player
+ * enters its lane (tell), then commits to a charge it cannot re-aim, and
+ * pants afterwards (skid) so the lane goes safe again in a readable rhythm.
+ *
+ * Terrain is honoured on both sides of that commitment, which is what makes
+ * topology an answer: a PROWLING hound turns at deck edges, tall steps, and
+ * walls — it never walks itself off the level — while a CHARGING one only
+ * mounts steps up to stepUpTiles, skids off anything taller, and runs
+ * straight off a deck edge into a tumble. Lead a charge at a gap and the
+ * hound removes itself. Deck-hugging follow is the flame crawler's pattern
+ * (src/sim/weapons.js); like the crawler, hounds ride ground only — one-way
+ * catwalks are grating and carry no frames.
+ *
+ * Counterplay is always a movement verb, never a damage race: the charge is
+ * faster than any run tune (you cannot retreat), it commits before it can
+ * re-aim (you can be somewhere else), and the prowl is slow enough to get
+ * behind. Fairness of the telegraph vs. the player's jump physics is
+ * asserted in tools/pathcheck.mjs.                                       */
+
+function houndInLane(e, H) {
+  const dy = player.y - e.y;
+  return Math.abs(player.x - e.x) < H.senseRange &&
+    dy > -H.laneBelow && dy < H.laneAbove;
+}
+
+// true when the deck ahead cannot be walked onto: no plate, too tall a step,
+// or a wall at body height. Shared by the prowl (turns) and the charge (skids).
+function houndBlockedAhead(e, H, deckAhead) {
+  return deckAhead > e.y - H.rideY + H.stepUpTiles ||
+    builtSolidAt(e.x + e.dir * H.probeX, e.y + H.wallProbeY);
+}
+
+function houndSkid(e, H, intoWall) {
+  e.state = 'skid';
+  e.stateUntil = gameMs + H.skidMs;
+  e.diveCdUntil = gameMs + H.chargeCooldownMs;   // shared cooldown field: pant window
+  if (intoWall) { e.vx = 0; e.dir = -e.dir; }    // impact: stop dead, turn around
+  else e.vx = e.dir * H.chargeSpeed;             // run-out: slide to a stop
+}
+
+function updateHound(e, dt) {
+  const H = CONFIG.hound;
+
+  if (e.state === 'tumble') {                    // committed off an edge: no steering
+    e.vy = Math.max(H.fallTerminal, e.vy + H.fallGravity * dt);
+    e.x += e.vx * dt;
+    e.y += e.vy * dt;
+    const landing = builtGroundTopAt(e.x);
+    if (landing > -100 && e.y <= landing + H.rideY) {
+      e.y = landing + H.rideY;
+      e.vy = 0;
+      houndSkid(e, H, true);                     // picks itself up on the lower deck
+    }
+    return;
+  }
+
+  const deck = builtGroundTopAt(e.x);
+  if (deck > -100) e.y = approach(e.y, deck + H.rideY, H.hugRate * dt);
+
+  if (e.state === 'prowl') {
+    const deckAhead = builtGroundTopAt(e.x + e.dir * H.probeX);
+    if (deckAhead < -100 || houndBlockedAhead(e, H, deckAhead) ||
+        (e.dir < 0 && e.x <= e.patrolX0) || (e.dir > 0 && e.x >= e.patrolX1)) {
+      e.dir = -e.dir;                            // pacing turn: never a self-inflicted fall
+    } else {
+      e.x += e.dir * H.prowlSpeed * dt;
+    }
+    if (gameMs >= e.enterUntil && gameMs >= e.diveCdUntil && houndInLane(e, H)) {
+      e.dir = Math.sign(player.x - e.x) || e.dir;
+      // never telegraph nose-to-wall: a charge with nowhere to go would be an
+      // unreadable tell-skid stutter, so it keeps pacing and turns instead
+      const facing = builtGroundTopAt(e.x + e.dir * H.probeX);
+      if (facing > -100 && !houndBlockedAhead(e, H, facing)) {
+        e.state = 'tell';
+        e.stateUntil = gameMs + H.tellMs;
+      }
+    }
+    return;
+  }
+
+  if (e.state === 'tell') {                      // planted: the whole window is pre-commitment
+    e.x -= e.dir * (H.tellBackTiles / (H.tellMs / 1000)) * dt;   // rears back, visibly
+    if (gameMs >= e.stateUntil) {
+      e.state = 'charge';
+      e.stateUntil = gameMs + H.chargeMs;
+      e.vx = e.dir * H.chargeSpeed;              // locked here: a charge never re-aims
+    }
+    return;
+  }
+
+  if (e.state === 'charge') {
+    // Substepped for the same reason projectiles are: a clamped 50 ms frame
+    // moves the charge 0.78 tiles, far enough to skip the terrain probe or
+    // tunnel through the player between endpoint tests.
+    const steps = Math.min(H.substeps, Math.max(1, Math.ceil(Math.abs(e.vx) * dt / 0.45)));
+    const sdt = dt / steps;
+    for (let k = 0; k < steps; k++) {
+      e.x += e.vx * sdt;
+      const under = builtGroundTopAt(e.x);
+      if (under > -100) e.y = approach(e.y, under + H.rideY, H.hugRate * sdt);
+      if (gameMs >= e.enterUntil && circleHitsPlayer(e.x, e.y, e.hitR)) damagePlayer(1, e.x);
+      const deckAhead = builtGroundTopAt(e.x + e.dir * H.probeX);
+      if (deckAhead < -100) {                    // ran out of deck — commitment costs
+        e.state = 'tumble';
+        e.vy = 0;
+        e.diveCdUntil = gameMs + H.chargeCooldownMs;
+        return;
+      }
+      if (houndBlockedAhead(e, H, deckAhead)) { houndSkid(e, H, true); return; }
+    }
+    if (gameMs >= e.stateUntil) houndSkid(e, H, false);
+    return;
+  }
+
+  e.vx = approach(e.vx, 0, H.chargeSpeed * 4 * dt);   // skid: the lane is briefly safe
+  e.x += e.vx * dt;
+  if (gameMs >= e.stateUntil) { e.state = 'prowl'; e.vx = 0; }
+}
+
 export function updateHostiles(dt) {
   const W = CONFIG.wasp;
   const GW = CONFIG.waves;
@@ -84,11 +216,13 @@ export function updateHostiles(dt) {
       continue;
     }
     e.t += dt;
-    if (gate) {                                        // patrol box: nobody strands the gate
-      if (e.x < patrolL) e.dir = 1;
-      else if (e.x > patrolR) e.dir = -1;
+    if (gate && e.state !== 'charge' && e.state !== 'tumble') {
+      if (e.x < patrolL) e.dir = 1;                    // patrol box: nobody strands the gate
+      else if (e.x > patrolR) e.dir = -1;              //   (a committed charge is exempt)
     }
-    if (e.kind === 'carrier') {                        // slow hauler: cruise only, never dives
+    if (e.kind === 'hound') {                          // deck unit: floor denial, see above
+      updateHound(e, dt);
+    } else if (e.kind === 'carrier') {                 // slow hauler: cruise only, never dives
       const C = CONFIG.carrier;
       e.x += e.dir * C.speed * dt;
       e.y = e.baseY + Math.sin(e.t * C.bobFreq) * C.bobAmp;
@@ -117,7 +251,7 @@ export function updateHostiles(dt) {
       if (Math.abs(e.y - e.baseY) < 0.05) { e.state = 'cruise'; e.t = 0; }
     }
 
-    if (e.x < cullX) {
+    if (e.x < cullX || e.y < CONFIG.edges.killY) {     // off the back, or tumbled out of the world
       removeHostile(i);
       continue;
     }

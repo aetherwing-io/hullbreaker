@@ -13,7 +13,9 @@
    simulation), src/render (three.js), and src/ui (DOM). */
 
 import { CONFIG } from './config.js';
-import { ACTIVE_SLICE, IS_TRAVERSAL_SLICE, QUERY, SLICE_ENEMIES_ENABLED } from './mode.js';
+import {
+  ACTIVE_SLICE, IS_TRAVERSAL_SLICE, QUERY, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN,
+} from './mode.js';
 import { installHost } from './sim/bridge.js';
 import {
   advanceGameMs, gameMs, scrollX, setScrollX, sliceStats,
@@ -144,8 +146,10 @@ function resetGame() {
     const reward = ACTIVE_SLICE.darePocket.reward;
     spawnCapsule(reward.kind, reward.letter, reward.x, reward.y, reward.mode);
     if (SLICE_ENEMIES_ENABLED) {
-      for (const e of ACTIVE_SLICE.enemies)
-        spawnHostile(e.x, e.y, e.delayMs, e.kind);
+      // one authored list per attempt: the fixture's own, or the opt-in
+      // houndframe trial's teach/test stage (src/mode.js resolves which)
+      for (const e of SLICE_ENEMY_PLAN)
+        spawnHostile(e.x, e.y, e.delayMs, e.kind, e);
     }
   }
   resetHudMessage();                     // keep the HUD write cache coherent
@@ -256,6 +260,7 @@ window.HB = Object.freeze({
       currentWeapon, kills, shotsFired,
       hostiles: hostiles.map((e) => ({
         id: e.id, kind: e.kind, x: e.x, y: e.y, hp: e.hp,
+        state: e.state, dir: e.dir,      // houndframe: prowl/tell/charge/skid/tumble
         materialized: gameMs >= e.enterUntil,
       })),
       capsules: capsules.map((c) => ({
@@ -291,7 +296,7 @@ if (QUERY.has('selftest')) {
     check('resize handled', Math.abs(camera.aspect - innerWidth / innerHeight) < 1e-6);
     resetGame();
     const expectedScroll = ACTIVE_SLICE ? ACTIVE_SLICE.run.startScroll : 0;
-    const expectedHostiles = ACTIVE_SLICE && SLICE_ENEMIES_ENABLED ? ACTIVE_SLICE.enemies.length : 0;
+    const expectedHostiles = SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length : 0;
     check('restart', scrollX === expectedScroll && state === 'PLAYING' &&
       hostiles.length === expectedHostiles);
     if (ACTIVE_SLICE) {

@@ -3,7 +3,10 @@
    no HUD element is ever a source of truth. */
 
 import { CONFIG } from '../config.js';
-import { ACTIVE_SLICE, IS_TRAVERSAL_SLICE, SLICE_ENEMIES_ENABLED } from '../mode.js';
+import {
+  ACTIVE_SLICE, HOUND_TRIAL_STAGE, IS_TRAVERSAL_SLICE, SLICE_ENEMIES_ENABLED,
+  SLICE_ENEMY_PLAN,
+} from '../mode.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { player, P } from '../sim/player.js';
 import { currentWeapon, weaponDef } from '../sim/weapons.js';
@@ -55,8 +58,10 @@ export function updateHUD() {
       ? 'H ACQUIRED · RETREAT LEFT ←'
       : 'H WAGER → · EXIT LEFT ←';
   } else if (IS_TRAVERSAL_SLICE && gameMs - sliceStats.startedAt < 2400) {
-    tc = 'TRAVERSAL SLICE · ' +
-      (SLICE_ENEMIES_ENABLED ? ACTIVE_SLICE.enemies.length + ' WASPS' : 'MOVEMENT ONLY');
+    tc = 'TRAVERSAL SLICE · ' + (!SLICE_ENEMIES_ENABLED ? 'MOVEMENT ONLY'
+      : HOUND_TRIAL_STAGE
+        ? HOUND_TRIAL_STAGE.label + ' · ' + SLICE_ENEMY_PLAN.length + ' HOSTILES'
+        : SLICE_ENEMY_PLAN.length + ' WASPS');
   } else if (c && c.state === 'gate') {
     let gaters = 0;
     for (const e of hostiles) if (ENEMY[e.kind].gating) gaters++;
