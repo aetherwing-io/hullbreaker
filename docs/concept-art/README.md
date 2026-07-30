@@ -9,6 +9,35 @@ They are **not** exact level blueprints or final asset designs. Preserve the
 principles below; do not blindly reproduce incidental platform positions,
 enemy anatomy, door engineering, or surface decoration.
 
+## Current art-direction ruling
+
+Operator feedback on July 29 rejected the rectilinear, warehouse-heavy macro
+environment in much of images 1–5 and 8. Their palette, enemy readability,
+route logic, and transformation intent remain useful, but they should not define
+the Meridian's large-scale form.
+
+The corrected hierarchy is:
+
+- **macro:** one continent-sized floating robotic creature-ship;
+- **meso:** carapace scutes, ribs, gills, vertebrae, joints, limbs, and tendon
+  machinery form the traversal topology;
+- **local:** functional colony-ship infrastructure supplies seams, mechanisms,
+  inhabited scale, and readable play surfaces; and
+- **Crown:** a real bridge, command, terraforming, defense, and transmitter
+  complex—not a separate creature, head, brain, or literal heart.
+
+The traversal lattice must feel grown from the creature-ship's engineered
+anatomy, not like scaffolding attached to a warehouse. Images 9–11 and 13 are
+the leading environment-form and camera references. Image 6 remains the leading
+enemy-form and color reference.
+
+The CP3 render ruling further constrains those references: during ordinary
+turns and transitions the body anatomy already exists and remains static. RIG
+and the camera reveal the next face. Only doors, neck access plates, vent
+covers, shutters, traps, enemies, and functional Crown mechanisms may move;
+live damage may destroy or expose existing routes. Literal scute/rib assembly
+shown in images 10–13 is superseded by this rule.
+
 ## Reference images
 
 ### 1. Finished exterior gameplay
@@ -64,7 +93,8 @@ Shows the target dramatic ramp from left to right:
 3. compressed interior crossfire;
 4. machinery, landing denial, and more vertical traversal;
 5. a high exterior kill lattice with mixed threats; and
-6. the HULLBREAKER summit, where the world transforms during peak-power combat.
+6. the HULLBREAKER summit, where doors, interlocks, traps, and damage reshape
+   route access during peak-power combat without assembling the body.
 
 ### 5. Start-screen directions
 
@@ -122,9 +152,97 @@ change:
 - upper-interior breach back to a higher exterior; and
 - Crown lockdown, structural rejection, and scuttle.
 
-The diagnostic standard is that RIG stays controllable, moving structure remains
-playable, and the committed playfield presents a new route problem. The panels
-are sequence targets, not frame-accurate engineering plans.
+The diagnostic standard is that RIG stays controllable, permitted moving
+mechanisms remain playable, and the committed playfield presents a new route
+problem. The panels are sequence targets, not frame-accurate engineering plans.
+Their literal moving-wall imagery is not current transition canon: body anatomy
+stays static, while only doors, covers, shutters, and Crown mechanisms may move.
+
+### 9. Meridian creature directions
+
+![Meridian creature direction board](09-meridian-creature-directions.png)
+
+Tests three macro body plans from left to right:
+
+1. **Crownback Sky-Ray:** broad plates, gill cavities, and underside-to-dorsal
+   transitions;
+2. **Meridian Spine-Serpent:** vertebral districts, vertical coils, and discrete
+   camera ratchets around static segments; and
+3. **Six-Limbed Ark-Beast:** limb transfers, joint sockets, and an armored
+   colony shell.
+
+The current synthesis uses the Spine-Serpent's climbable ascent structure with
+the Sky-Ray's broad scutes and gill cavities. All three deliberately preserve a
+functional Crown and inhabited colony-ship scale.
+
+### 10. Creature-lattice chaos
+
+![Creature-lattice gameplay keyframe](10-creature-lattice-chaos.png)
+
+Shows the corrected moment-to-moment fantasy:
+
+- the traversal lattice is the body—scutes, ribs, tendon transfers, gimbals,
+  and opened cavities;
+- the distant spine, limbs, Crown, and settlement keep macro scale visible;
+- one access plate and one vent cover may move while nearby anatomy stays
+  prebuilt and static; and
+- geometry changes, enemies, fire, and debris layer into readable chaos.
+
+This is an intensity target, not a requirement to activate every system in
+every encounter. Use its route density and silhouette hierarchy, not its literal
+body articulation.
+
+### 11. Creature flip and breach sequences
+
+![Creature flip and breach sequence board](11-creature-flip-breach-sequences.png)
+
+The top row visualizes an exterior-to-interior **neck access-plate flip**. The
+bottom row visualizes a **dorsal vent breach** onto a much higher spinal ridge.
+Its rolling scutes and telescoping lattice are superseded: only the access plate
+or vent cover may move, while the next route and surrounding ribs already exist.
+
+Repeated scutes, capsules, and edge lights make orientation traceable through
+the reveal. The access plate or vent cover should feel like a procedural defense
+response while preserving control and route readability.
+
+### 12. Kaiju-ship level anthology
+
+![Kaiju-ship level anthology board](12-kaiju-ship-level-anthology.png)
+
+Explores—but does not canonize—the three creature silhouettes as three complete
+levels:
+
+- Sky-Ray: wind, gills, plate flips, and underside-to-dorsal movement;
+- Spine-Serpent: camera ratchets around vertebral facets, coils, and altitude;
+- Ark-Beast: limb-to-shell transfers and joint-driven set pieces.
+
+The operator rejected this as a moment-to-moment camera reference: it pulls too
+far out, makes RIG microscopic, and turns the climb into an infographic. The
+cyan traces are explanatory only and are not proposed HUD. Keep the board only
+as a macro comparison of possible world-bodies or level identities. The
+existing single-Meridian story remains canon until the operator chooses
+otherwise.
+
+### 13. Human-scale monster-climb grammar
+
+![Human-scale monster-climb board](13-human-scale-monster-climb-grammar.png)
+
+Corrects the camera relationship:
+
+- ordinary play shows a human-scale RIG on one building-sized patch of the
+  creature's machinery;
+- the whole monster is inferred through curvature, far static limbs, fog,
+  camera orbit, and the next transition—not framed like a map;
+- the shipped 60-degree ritual becomes a camera turn around a static faceted
+  leg or body ring;
+- a long phase can run up one ribline;
+- one door-like neck access plate can flip inward while carrying the player;
+  and
+- an upper vent cover can open onto an already-existing exterior far higher.
+
+The corresponding implementable six-phase layout, screen windows, gate
+fixtures, and test questions live in the
+[`Meridian monster greybox map proposal`](../proposals/2026-07-meridian-monster-greybox-map.md).
 
 ## Visual invariants
 
@@ -136,6 +254,12 @@ Future concepts and implementation should preserve:
 - three-to-five immediately readable routes even when a phase contains more;
 - surfaces that belong to a connected hull rather than arbitrary floating
   platforms;
+- a creature-ship macro silhouette visible often enough that local machinery
+  never collapses into a warehouse or refinery;
+- route geometry derived from armored anatomy—scutes, ribs, gills, vertebrae,
+  joints, limbs, and tendon mechanisms—before generic catwalks or scaffolding;
+- static monumental anatomy during turns, revealed by RIG/camera motion rather
+  than body assembly;
 - color roles: deep teal atmosphere, rust-orange structure, acid-green danger,
   hot-magenta power/reward, and warm-white player fire;
 - visible altitude gain across phases; and

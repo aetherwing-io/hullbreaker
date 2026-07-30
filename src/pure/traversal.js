@@ -273,7 +273,11 @@ export const TRAVERSAL_FIXTURE = {
     groundKnockTiles: 1.5,    // already lowest: you pay margin instead of altitude
     iframesMs: 1400,
     messageMs: 1100,
-    maxConsecutive: 3,        // ceiling before the fixture retries (tier 2 unbuilt)
+    maxConsecutive: 2,        // ceiling before the fixture retries (tier 2 unbuilt).
+                              //   Two free dislodges per 4-12 s pass: enough for a
+                              //   real mercy chain, tight enough that total
+                              //   inaction reaches a terminal state inside the
+                              //   fixture's own timescale rather than at ~16 s.
     recoverTiles: 8,          // advancing this far past a fallback clears the streak
   },
 };
@@ -304,7 +308,13 @@ export const TRAVERSAL_PACES = {
       mode: 'constant', cruiseSpeed: 2.6, minSpeed: 2.6, maxSpeed: 2.6,
       pocketSpeed: 2.6, accel: 0, decel: 0,
       crushSlackSeconds: 0,   // 0 = unbounded: the shipped screen-width clock
-      edgePinDamageMs: 0,     // 0 = the shipped free conveyor
+      edgePinDamageMs: 0,     // 0 = the shipped free conveyor. Consequence, kept
+                              //   deliberately so the control stays the control:
+                              //   a zero-input run in `base` takes one crush
+                              //   fallback and then rides the plane instead of
+                              //   reaching a terminal state. The three variants
+                              //   all retire an idler in 11-15 s. Flip this to
+                              //   600 if the A/B should compare fixed-to-fixed.
     },
   },
 
@@ -609,10 +619,13 @@ export const HOUND_TRIAL = {
     },
     // remix: the floor beats on top of the pace's own air pressure. Nothing is
     // re-authored — whatever the pace fields keeps its ids, positions, and
-    // tunes, and the floor simply stops being free.
+    // tunes, and the floor simply stops being free. The ceiling watcher comes
+    // too: adversarial measured this stage's whole roster as costing a roof
+    // policy 0.0 tiles of margin at base, because no pace parks anything in the
+    // flight band, and a stage that a degenerate route ignores teaches nothing.
     mix: {
       id: 'mix', label: 'HOUND MIX', compose: 'add',
-      enemies: HOUND_FLOOR_BEATS,
+      enemies: HOUND_FLOOR_BEATS.concat([CEILING_WASPS[0]]),
     },
     // Test bench, not a feel stage: ONE houndframe deep in the pocket with its
     // fuse pulled (tune.senseRange 0 — it paces and never telegraphs, so it is

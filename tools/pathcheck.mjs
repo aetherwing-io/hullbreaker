@@ -43,12 +43,12 @@ import {
   buildSpawnTable, GAP,
 } from '../src/pure/generator.js';
 import {
-  TRANSFORM_FIXTURE, TRANSFORM_FRAMES, bandSlamLockMs, bandSlamOffset,
-  buildTransformFrames, buildTransformLevel, transformAltDelta,
-  transformAtmosphereMix, transformBandIndexAt, transformEventCtx,
-  transformEventTotalMs, transformFrontierS, transformHaltS, transformPanelState,
-  transformPosAt, transformScrollOffset, transformScrollVel, transformSeamPull,
-  transformSealS, transformTimeline, transformTriggerS, transformYawDeltaDeg,
+  TRANSFORM_FIXTURE, TRANSFORM_PATH, bandSlamOffset, buildTransformLevel,
+  buildTransformPath, transformAltAt, transformAtmosphereMix, transformBandHeading,
+  transformBandIndexAt, transformEventTotalMs, transformFrontierS, transformHaltS,
+  transformHeadingAt, transformPanelState, transformPathAt, transformScrollOffset,
+  transformScrollVel, transformSeamPull, transformSealS, transformTimeline,
+  transformTriggerS, transformYawAt, transformYawDeltaDeg,
 } from '../src/pure/transform.js';
 
 // The sim layer carries the same no-three.js/no-DOM guarantee as pure/ (see
@@ -63,7 +63,10 @@ import {
 import {
   keys as simKeys, bufferJumpUntil as bufferSimJump, clearJumpBuffer as clearSimJumpBuffer,
 } from '../src/sim/input.js';
-import { platforms as simPlatforms } from '../src/sim/level.js';
+import {
+  platforms as simPlatforms, groundH as simGroundH, isSolid as simIsSolid,
+} from '../src/sim/level.js';
+import { setScrollX as setSimScrollX, scrollX as simScrollX } from '../src/sim/time.js';
 import { cornerEvents as simCornerEvents } from '../src/sim/wavegate.js';
 
 /* ---------------------- layer guards (static) ------------------------ *
@@ -657,6 +660,63 @@ ok(TF.routes.length === 6 && routeById.size === 6,
      portraitWidth >= TF.darePocket.timing.entryEdgeMarginTiles + run.lookAheadTiles,
      'portrait pullback preserves retreat room and preview without shrinking play below half scale');
 }
+
+/* ===================== view-scale experiment (viewscale lane) =========== *
+ * ?view=near|mid|far (CONFIG.viewScales) pulls the camera straight back
+ * along its depth axis only, in src/render/camera.js's activeCameraDepth():
+ * whatever depth the slice/portrait math above already produced gets
+ * multiplied by viewScales[id].depthMult. That function needs three.js
+ * (unproject) to calibrate the real screen edges, so it can't run in this
+ * pure harness — but the RIG screen-height fraction it targets is
+ * closed-form: reproduce syncCamera's geometry for a straight face (yaw 0,
+ * so fx=1,fz=0,rx=0,rz=1 — the same identity the portrait check above
+ * leans on) and solve the same 2·depth·tan(vFov/2) screen-height-at-depth
+ * the render loop uses. Browser-side confirmation (real calibrated edges,
+ * actual rendered RIG height in pixels) lives in the headless selftest and
+ * playtest screenshot evidence — see the viewscale agent's report.        */
+{
+  const VS = CONFIG.viewScales;
+  const ids = Object.keys(VS);
+  ok(ids.length >= 3 && VS.near && VS.mid && VS.far && VS.near.id === 'near' &&
+     ids.every(function (id) { return VS[id].id === id && typeof VS[id].label === 'string'; }),
+     'at least three named views declared (near/mid/far present), ids self-consistent');
+  ok(VS.near.depthMult === 1,
+     '`near` is depthMult 1 exactly: ?view= absent or =near is byte-identical to the shipped camera');
+  ok(ids.every(function (id) { return Number.isFinite(VS[id].depthMult) && VS[id].depthMult >= 1; }) &&
+     VS.near.depthMult < VS.mid.depthMult && VS.mid.depthMult < VS.far.depthMult,
+     'every view only pulls the camera back (never in), strictly increasing near < mid < far');
+
+  // RIG screen-height fraction at a given total camera depth: same geometry
+  // as syncCamera for a straight face, measured at the fixture's own spawn
+  // height so it matches what a screenshot at boot actually shows.
+  function rigFraction(depth) {
+    const P = { x: CC.x, y: CC.y, z: depth };
+    const T = { x: CC.lookX, y: CC.lookY, z: 0 };
+    const D = { x: T.x - P.x, y: T.y - P.y, z: T.z - P.z };
+    const dlen = Math.sqrt(D.x * D.x + D.y * D.y + D.z * D.z);
+    const dir = { x: D.x / dlen, y: D.y / dlen, z: D.z / dlen };
+    const footY = TF.run.playerSpawn.y;
+    const Q = { x: CC.lookX, y: footY + PL.height / 2, z: 0 };
+    const QP = { x: Q.x - P.x, y: Q.y - P.y, z: Q.z - P.z };
+    const viewDepth = QP.x * dir.x + QP.y * dir.y + QP.z * dir.z;
+    const screenHeightWorld = 2 * viewDepth * Math.tan(CC.fov / 2 * DEG);
+    return PL.height / screenHeightWorld;
+  }
+
+  const fNear = rigFraction(CC.z * VS.near.depthMult);
+  const fMid = rigFraction(CC.z * VS.mid.depthMult);
+  const fFar = rigFraction(CC.z * VS.far.depthMult);
+  ok(Math.abs(fNear - 0.07) < 0.01,
+     'near matches the concept-art invariant (docs/concept-art/README.md: RIG ~7% of screen height), got ' +
+       (fNear * 100).toFixed(2) + '%');
+  ok(fMid < fNear && fFar < fMid,
+     'each further view shrinks RIG strictly more than the last, got ' +
+       [fNear, fMid, fFar].map(function (f) { return (f * 100).toFixed(2) + '%'; }).join(' > '));
+  ok(Math.abs(fMid - 0.05) < 0.005 && Math.abs(fFar - 0.037) < 0.005,
+     'mid/far land near the operator-requested ~5% / ~3.5-4% targets, got ' +
+       (fMid * 100).toFixed(2) + '% / ' + (fFar * 100).toFixed(2) + '%');
+}
+
 {
   const apex = TP.jumpVel * TP.jumpVel / (2 * -TP.gravity);
   const tUp = TP.jumpVel / -TP.gravity;
@@ -788,6 +848,23 @@ function airTimeAbove(T, h) {            // seconds the feet stay above h on a f
      'hound dies to under a second of baseline rifle fire: no HP sponge');
   ok(HD.chargeCooldownMs / (HD.tellMs + HD.chargeMs + HD.chargeCooldownMs) >= 0.4,
      'the floor is denied temporarily, not permanently (safe fraction of the cycle)');
+  /* Facetanking arithmetic (pre-empting the adversarial question): i-frames
+     must cover ONE charge sweep so a single pass cannot shred a player who
+     mistimed once — and must expire well inside the hound's own cycle, so
+     walking through a chokepoint a second time costs a second point. Measured
+     against the real numbers: a grounded hold-right policy took exactly 1 hp
+     per charge cycle, 2 hp across the two chokepoints of a 6.5 s pass. */
+  {
+    const sweepWindow = 2 * (HD.hitRadius + PL.width / 2) / HD.chargeSpeed;
+    const cycleMs = HD.tellMs + HD.chargeMs + HD.chargeCooldownMs;
+    ok(PL.iframesMs / 1000 > sweepWindow * 2,
+       'i-frames cover a whole charge sweep: one pass costs one point, not several');
+    ok(PL.iframesMs < cycleMs,
+       'i-frames expire inside the hound cycle: the next charge is not free (' +
+       PL.iframesMs + ' < ' + cycleMs + ' ms)');
+    ok(Math.ceil(PL.maxHealth * cycleMs / 1000) <= 8,
+       'facetanking a chokepoint hound spends the whole health bar in under 8 s');
+  }
   ok(HD.laneBelow >= (GG.maxH - GG.minH) + HD.rideY,
      'lane band reaches a full generator step below the plate: the step down is no loophole');
   ok(2.35 - HD.rideY > HD.laneAbove,
@@ -845,11 +922,16 @@ function airTimeAbove(T, h) {            // seconds the feet stay above h on a f
           if (plan.length !== stage.enemies.length ||
               !plan.every(function (e, i) { return e.id === stage.enemies[i].id; })) replaced = false;
         } else {
+          const tail = plan.slice(F.enemies.length);
+          const authored = new Set(stage.enemies.map(function (e) { return e.id; }));
           if (plan.length !== F.enemies.length + stage.enemies.length ||
               !F.enemies.every(function (e, i) {
                 return JSON.stringify(plan[i]) === JSON.stringify(e);
               }) ||
-              !plan.slice(F.enemies.length).every(function (e) { return e.kind === 'hound'; })) {
+              // the appended tail is exactly the stage's own authored rows, and
+              // it always brings at least one hound (it is a hound stage)
+              !tail.every(function (e) { return authored.has(e.id); }) ||
+              !tail.some(function (e) { return e.kind === 'hound'; })) {
             appended = false;
           }
         }
@@ -1284,110 +1366,147 @@ const ledgeState = {
   }), 'wall decision releases on no wall, landing, down, away input, timeout, or no side');
 }
 
-/* ===================== world-transformation slice ====================== *
- * The opt-in ?slice=transform demo: a short exterior run, a bulkhead flip
- * inward onto an interior corridor, then a breach return onto an exterior
- * face 30 tiles higher. Asserted the same way the corner ritual is — the
- * timeline must be exact, the surfaces must stay continuous at the seams,
- * and every apron must be valid before the scroll resumes.               */
-const XF = TRANSFORM_FIXTURE, XT = CONFIG.transform, XFR = TRANSFORM_FRAMES;
+/* ======================= world transitions (slice) ====================== *
+ * The opt-in ?slice=transform demo: an outer face, a flip inward through an
+ * opening onto an inner passage that CLIMBS, then a breach back out onto an
+ * outer face 36 tiles higher.
+ *
+ * The governing rule, and what most of these assertions defend: the body is
+ * ONE STATIC MASS. Nothing assembles, slams or rotates into place — the path
+ * is baked with its bends and its altitude profile, and a transition is the
+ * VIEW swinging through a bend on the corner ritual's detent curve while RIG
+ * runs the chamfer. So the checks below pin the path (continuity, unit
+ * spacing, exact turns, a walkable grade), the view curve (exact detents,
+ * dead-flat holds), the covers (the only moving parts) and every apron.    */
+const XF = TRANSFORM_FIXTURE, XT = CONFIG.transform;
+const XP = TRANSFORM_PATH;
 const XTL = transformTimeline(CONFIG);
 const XB = XF.bounds;
 
-// --- bands / frames ----------------------------------------------------
+// --- the body: one static path -----------------------------------------
 {
-  let valid = XFR.length === XF.bands.length && XFR[0].s0 === XB.x0 &&
-    XFR[XFR.length - 1].s1 === XB.x1;
-  for (let i = 1; i < XFR.length; i++) if (XFR[i - 1].s1 !== XFR[i].s0) valid = false;
-  ok(valid, 'bands tile the fixture bounds contiguously');
-  ok(XFR.map((f) => f.kind).join('>') === 'exterior>interior>exterior',
-     'surfaces go exterior → interior → exterior, got ' + XFR.map((f) => f.kind).join('>'));
-  ok(JSON.stringify(buildTransformFrames(XF)) === JSON.stringify(XFR),
-     'frame table is a pure function of the fixture');
+  let valid = XF.bands[0].s0 === XB.x0 &&
+    XF.bands[XF.bands.length - 1].s1 === XB.x1;
+  for (let i = 1; i < XF.bands.length; i++)
+    if (XF.bands[i - 1].s1 !== XF.bands[i].s0) valid = false;
+  ok(valid, 'stretches tile the fixture bounds contiguously');
+  ok(XF.bands.map((b) => b.kind).join('>') === 'exterior>interior>exterior',
+     'the run goes outside → inside → outside, got ' + XF.bands.map((b) => b.kind).join('>'));
+  ok(JSON.stringify(buildTransformPath(XF, CONFIG)) === JSON.stringify(XP),
+     'the path is a pure function of the fixture');
+  ok(XP.segs.length === 1 + 2 * XF.events.length,
+     'two bends per turn, got ' + XP.segs.length + ' segments');
 }
 {
-  // A seam is continuous in POSITION: only heading and altitude step across
-  // it. That is what lets one ritual animate the whole transition.
-  let seamContinuous = true, turnExact = true, altRises = true;
-  for (const ev of XF.events) {
-    const from = XFR[ev.fromBand], to = XFR[ev.toBand];
-    const p = transformPosAt(from, ev.seamS);
-    if (Math.hypot(p.x - to.x, p.z - to.z) > 1e-9) seamContinuous = false;
-    if (to.s0 !== ev.seamS) seamContinuous = false;
-    if (Math.abs((to.heading - from.heading) / DEG - 2 * XT.snapDeg) > 1e-9) turnExact = false;
-    if (!(to.alt > from.alt)) altRises = false;
+  // Position is continuous everywhere (a bend is a chamfer, not a jump) and a
+  // unit of s is a unit of world inside a stretch: the ribbon is never
+  // stretched by the body it is drawn on.
+  let bad = 0, cont = true;
+  for (let s = XB.x0; s < XB.x1; s++) {
+    const a = transformPathAt(XP, s), b = transformPathAt(XP, s + 1);
+    const d = Math.hypot(a.x - b.x, a.z - b.z);
+    if (d > 1 + 1e-9 || d < Math.cos(XT.snapDeg * DEG / 2) - 1e-6) bad++;
   }
-  ok(seamContinuous, 'every seam point is shared by both of its band frames');
-  ok(turnExact, 'every ritual turns exactly 2 × snapDeg (90 deg), matching its yaw curve');
-  ok(altRises, 'every transformation gains rendered altitude');
-}
-{
-  // unit s steps stay unit world steps inside a band: the sim ribbon is never
-  // stretched by the surface it is drawn on
-  let bad = 0;
-  for (const f of XFR) {
-    for (let s = f.s0; s < f.s1; s++) {
-      const a = transformPosAt(f, s), b = transformPosAt(f, s + 1);
-      if (Math.abs(Math.hypot(a.x - b.x, a.z - b.z) - 1) > 1e-9) bad++;
-    }
+  for (const g of XP.segs) {
+    const a = transformPathAt(XP, g.s0 - 1e-7), b = transformPathAt(XP, g.s0 + 1e-7);
+    if (Math.hypot(a.x - b.x, a.z - b.z) > 1e-5) cont = false;
   }
-  ok(bad === 0, 'unit spacing preserved inside every band');
-  ok(transformBandIndexAt(XFR, XB.x0) === 0 &&
-     transformBandIndexAt(XFR, XF.events[0].seamS - 1) === 0 &&
-     transformBandIndexAt(XFR, XF.events[0].seamS) === 1 &&
-     transformBandIndexAt(XFR, XF.events[1].seamS) === 2 &&
-     transformBandIndexAt(XFR, XB.x1 - 1) === 2,
-     'band lookup maps each column to the surface that renders it');
+  ok(bad === 0, 'every unit step along the body stays a unit step (no stretch)');
+  ok(cont, 'the path is continuous through every bend');
 }
 {
-  // Altitude has to be *unmistakable*, which is a measurable claim: the
-  // breach gain exceeds a full screen height, and it is much larger than the
-  // flip so the two breaks read differently.
+  // Each turn is exactly two detents of snapDeg, and the heading a stretch
+  // rests at is what the view rests at — so the animated yaw and the baked
+  // geometry can never disagree about where "around the bend" is.
+  let turns = true;
+  for (let i = 0; i < XF.events.length; i++) {
+    const ev = XF.events[i];
+    const before = transformHeadingAt(XP, ev.seamS - XT.chamferTiles);
+    const after = transformHeadingAt(XP, ev.seamS + XT.chamferTiles);
+    if (Math.abs((after - before) / DEG - 2 * XT.snapDeg) > 1e-9) turns = false;
+    if (Math.abs(before - transformBandHeading(XF, ev.fromBand, CONFIG)) > 1e-9) turns = false;
+    if (Math.abs(after - transformBandHeading(XF, ev.toBand, CONFIG)) > 1e-9) turns = false;
+  }
+  ok(turns, 'every turn is two snapDeg detents, and stretch headings match the view rest angles');
+  ok(Math.abs(transformYawDeltaDeg(XTL.t4, CONFIG) - 2 * XT.snapDeg) < 1e-9,
+     'the animated view delta lands exactly on the geometric turn');
+}
+{
+  // The climb is geometry, not an event: monotone, gained inside the body, and
+  // at a grade RIG can plausibly run up.
+  const P = XP.profile;
+  let monotone = true, maxGrade = 0;
+  for (let i = 1; i < P.length; i++) {
+    if (P[i].alt < P[i - 1].alt - 1e-9 || P[i].s <= P[i - 1].s) monotone = false;
+    maxGrade = Math.max(maxGrade, (P[i].alt - P[i - 1].alt) / (P[i].s - P[i - 1].s));
+  }
+  const total = P[P.length - 1].alt - P[0].alt;
   const screenH = 2 * CC.z * Math.tan(CC.fov / 2 * DEG);
-  const flip = XFR[1].alt - XFR[0].alt;
-  const breach = XFR[2].alt - XFR[1].alt;
-  ok(breach > screenH,
-     'breach gain (' + breach + ') exceeds one screen height (' + screenH.toFixed(1) + ')');
-  ok(flip > 1 && flip < breach / 3,
-     'flip lifts a readable step, the breach is the big one (' + flip + ' vs ' + breach + ')');
-  ok(XFR[2].alt >= 30, 'the far exterior face sits at least 30 tiles up, got ' + XFR[2].alt);
+  // The rendered grade is only half the climb: the passage decks step up too, so
+  // RIG gains altitude with their legs as well as along the ramp. Both halves
+  // together have to clear a screen height, and the ramp alone has to stay at a
+  // slope a side-on view can still read.
+  const deckClimb = XF.groundRuns.filter((r) => !r.gap)
+    .reduce((m, r) => Math.max(m, r.y), 0) - XF.run.playerSpawn.y;
+  ok(monotone, 'the altitude profile only ever climbs');
+  ok(total + deckClimb > screenH,
+     'the run climbs more than a screen height (' + total + ' rendered + ' +
+     deckClimb + ' jumped)');
+  ok(deckClimb >= 4, 'a real part of the climb is jumped, got ' + deckClimb + ' tiles of deck');
+  ok(maxGrade > 0.2 && maxGrade <= 0.45,
+     'the grade stays readable side-on, got ' + maxGrade.toFixed(2) + ' tiles per tile');
+  const seam1 = XF.events[0].seamS, seam2 = XF.events[1].seamS;
+  ok(transformAltAt(XP, XB.x0) === 0 && transformAltAt(XP, seam1 - XT.chamferTiles) === 0,
+     'the outer face is flat: nothing is climbed before the way in');
+  ok(transformAltAt(XP, seam2 + XT.chamferTiles) === total &&
+     transformAltAt(XP, XB.x1 - 1) === total,
+     'the high face is flat: the climb finished when RIG came back out');
+  const inside = transformAltAt(XP, seam2 - XT.chamferTiles) - transformAltAt(XP, seam1);
+  ok(inside > total * 0.8,
+     'the body is climbed from the inside (' + inside.toFixed(1) + ' of ' + total + ' tiles)');
+  // and RIG is the thing that gains it: at run speed the climb takes seconds
+  const climbSeconds = (seam2 - seam1) / PL.runSpeed;
+  ok(climbSeconds > 3, 'the ascent is run, not cut: ' + climbSeconds.toFixed(1) + ' s of climbing');
 }
 {
-  // The skyline silhouettes are authored at ABSOLUTE altitude, so the same
-  // structures loom overhead on face A and lie far below on face C. This is
-  // the altitude cue that survives a screenshot, so it is asserted.
-  const a = XFR[0], c = XFR[2];
-  const eyeA = a.alt + CC.y;
-  const deckC = c.alt + 3;
-  ok(a.band.skyline.length >= 2 && c.band.skyline.length >= 2,
-     'both exterior faces carry background silhouettes');
-  ok(a.band.skyline.some((s) => s.top > eyeA + 6),
-     'face A silhouettes rise well above the camera eye');
-  ok(c.band.skyline.every((s) => s.top < deckC - 5),
-     'the same silhouettes sit below the high face deck, not above it');
-  ok(c.band.skyline.every((s) => s.height > 12 && s.depth < -10),
-     'silhouettes stay tall and behind the combat plane');
-  // …and they land inside the strip the camera can actually see below the deck.
-  // This is a shallow side-on view, so a roof 25 tiles under RIG is simply
-  // off-screen and proves nothing: anything claiming to show the drop has to be
-  // in frame at its own distance from the camera.
+  const A = XF.bands[0], C = XF.bands[2];
+  const deckC = transformAltAt(XP, C.s0 + 6) +
+    XF.groundRuns.find((r) => r.x0 === C.s0).y;
+  const eyeA = CC.y;
+  ok(A.skyline.length >= 2 && C.skyline.length >= 2,
+     'both outer faces carry background silhouettes');
+  ok(A.skyline.some((sk) => sk.top > eyeA + 6),
+     'low-face silhouettes rise well above the camera eye');
+  ok(C.skyline.every((sk) => sk.top < deckC - 5),
+     'the same silhouettes sit below the high deck, not above it');
   let framed = true;
-  for (const s of c.band.skyline) {
-    const dist = CC.z - s.depth;                        // camera depth + how far back
-    const frameBottom = c.alt + CC.lookY - Math.tan(CC.fov / 2 * DEG) * dist;
-    if (!(s.top > frameBottom + 2 && s.top < deckC - 5)) framed = false;
+  for (const sk of C.skyline) {
+    const dist = CC.z - sk.depth;
+    const frameBottom = transformAltAt(XP, sk.atS) + CC.lookY - Math.tan(CC.fov / 2 * DEG) * dist;
+    if (!(sk.top > frameBottom + 2 && sk.top < deckC - 5)) framed = false;
   }
   ok(framed, 'every below-deck silhouette is in frame under the deck, not off-screen');
-  ok(a.band.hullWall.pattern === 'solid' && c.band.hullWall.pattern === 'towers',
-     'the hull encloses RIG low down and opens into towers high up');
-  // Weather is the loudest altitude cue on the concept board, so the high face
-  // has to declare one and the low face must not (the contrast IS the cue).
+  ok(A.hullWall.pattern === 'solid' && C.hullWall.pattern === 'towers',
+     'the body encloses RIG low down and opens into towers high up');
   const screenH = 2 * CC.z * Math.tan(CC.fov / 2 * DEG);
-  ok(!!c.band.weather && !a.band.weather && c.band.weather.count > 100 &&
-     c.band.weather.speed > 10 && c.band.weather.spanY >= screenH,
-     'only the high exterior face runs weather, and it spans the whole view');
-  ok(a.band.hullDrop > 12 && c.band.hullDrop > a.band.hullDrop,
+  ok(!!C.weather && !A.weather && C.weather.count > 100 &&
+     C.weather.speed > 10 && C.weather.spanY >= screenH,
+     'only the high face runs weather, and it spans the whole view');
+  ok(A.hullDrop > 12 && C.hullDrop > A.hullDrop,
      'the high face hangs a longer wall into the fog than the low one');
+}
+{
+  // Nothing arrives: the assembly curve still exists, but it is reserved for
+  // hostile constructs and no transition parameter references it.
+  ok(!!XT.assembly && XT.assembly.chunks > 0,
+     'the assembly choreography is retained for later hostile constructs');
+  const transitionKeys = Object.keys(XT).filter((k) => k !== 'assembly');
+  ok(transitionKeys.every((k) => !/slam|assemble/i.test(k)),
+     'no transition constant drives an assembly, got ' + transitionKeys.join(','));
+  const slam = bandSlamOffset(XT.assembly.startMs + XT.assembly.dropMs + XT.assembly.dipMs + 1,
+                              0, CONFIG);
+  ok(slam.phase === 'locked' && slam.dy === 0,
+     'the reserved assembly curve still settles to its base');
 }
 
 // --- ritual timeline ---------------------------------------------------
@@ -1423,37 +1542,16 @@ near(transformYawDeltaDeg(99999, CONFIG), 2 * XT.snapDeg, 1e-9, 'yaw clamped aft
   near(dip, XT.windUpDeg, 0.05, 'wind-up dips to windUpDeg');
 }
 {
-  const gain = XFR[2].alt - XFR[1].alt;                 // the breach: the big lift
-  const step1 = gain * XT.altStep1;
-  near(transformAltDelta(0, gain, CONFIG), 0, 1e-9, 'altitude flat at t=0');
-  near(transformAltDelta(XTL.t1 - 0.001, gain, CONFIG), -XT.altPreloadTiles, 0.01,
-       'the deck drops a hair before the first snap');
-  near(transformAltDelta(XTL.t2, gain, CONFIG), step1, 1e-9,
-       'snap 1 takes exactly altStep1 of the gain');
-  near(transformAltDelta(400, gain, CONFIG), step1, 1e-9, 'altitude holds flat through the ratchet');
-  near(transformAltDelta(XTL.t4, gain, CONFIG), gain, 1e-9, 'snap 2 lands the full gain exactly');
-  near(transformAltDelta(99999, gain, CONFIG), gain, 1e-9, 'altitude clamped after the ritual');
-  let peak = 0, minAfter = Infinity;
-  for (let t = 0; t <= XTL.t6; t += 0.25) {
-    const v = transformAltDelta(t, gain, CONFIG);
-    peak = Math.max(peak, v);
-    if (t >= XTL.t2) minAfter = Math.min(minAfter, v);
-  }
-  ok(peak > gain && peak < gain * 1.05, 'altitude lurches past the landing once, peak ' + peak.toFixed(2));
-  ok(minAfter >= step1 - 1e-9, 'altitude never sags back below a landed step');
-  const flipGain = XFR[1].alt - XFR[0].alt;
-  ok(transformAltDelta(XTL.t4, flipGain, CONFIG) === flipGain,
-     'the same curve lands the flip gain exactly (one ritual shape, two magnitudes)');
-}
-{
   const sp = XF.run.minimumScrollSpeed;
   ok(transformScrollVel(0, sp, CONFIG) === 0 && transformScrollVel(XTL.t5 - 0.1, sp, CONFIG) === 0,
      'scroll speed frozen until the settle ends');
-  // the seam pull: nothing moves through the wind-up, snap 1 and the hold, then
-  // the second clack carries the view through the seam onto the new surface
+  // the seam pull: the view travels the chamfer from the FIRST detent onward, so
+  // the bend comes to the player instead of the world assembling at a distance
   ok(transformScrollOffset(0, sp, CONFIG) === 0 &&
-     transformScrollOffset(XTL.t3, sp, CONFIG) === 0,
-     'the world holds still through the first snap and the ratchet hold');
+     transformScrollOffset(XTL.t2, sp, CONFIG) === 0,
+     'the view holds still through the wind-up and into the first detent');
+  ok(transformSeamPull(XTL.t3, CONFIG) > XT.seamPullTiles * 0.4,
+     'the bend is already coming to the player during the ratchet hold');
   near(transformSeamPull(XTL.t5, CONFIG), XT.seamPullTiles, 1e-9,
        'the seam pull completes exactly as the settle ends');
   ok(XT.seamPullTiles > XT.haltOffset,
@@ -1478,30 +1576,6 @@ near(transformYawDeltaDeg(99999, CONFIG), 2 * XT.snapDeg, 1e-9, 'yaw clamped aft
   near(transformScrollVel(9999, sp, CONFIG), sp, 1e-9, 'scroll clamped to full speed after');
 }
 {
-  // the next surface slams in near-to-far and every chunk locks before the
-  // scroll resumes — the corner ritual's apron rule, one seam later
-  ok(bandSlamOffset(XT.slamStartMs - 1, 0, CONFIG).phase === 'hidden',
-     'slam chunk 0 hidden before its start beat');
-  near(bandSlamOffset(XT.slamStartMs, 0, CONFIG).dy, XT.slamDropTiles, 1e-9,
-       'slam chunk 0 starts a full drop above its base');
-  near(bandSlamOffset(XT.slamStartMs + XT.slamDropMs / 2, 0, CONFIG).dy, XT.slamDropTiles * 0.75, 1e-9,
-       'gravity ease: half the drop time leaves 75 percent of the distance');
-  ok(bandSlamOffset(XT.slamStartMs + XT.slamPerColMs - 1, 1, CONFIG).phase === 'hidden' &&
-     bandSlamOffset(XT.slamStartMs + XT.slamPerColMs, 1, CONFIG).phase === 'drop',
-     'chunk 1 starts exactly slamPerColMs later');
-  const dip = bandSlamOffset(XT.slamStartMs + XT.slamDropMs + 1, 0, CONFIG);
-  const lock = bandSlamOffset(XT.slamStartMs + XT.slamDropMs + XT.slamDipMs + 1, 0, CONFIG);
-  ok(dip.phase === 'dip' && Math.abs(dip.dy + XT.slamDipTiles) < 1e-9, 'one-beat dip on landing');
-  ok(lock.phase === 'locked' && lock.dy === 0, 'chunk locks to base after its dip');
-  const lastLock = bandSlamLockMs(CONFIG);
-  ok(lastLock === 606 + XT.slamDipMs && lastLock <= XTL.t5,
-     'the whole surface is locked (' + lastLock + ' ms) before the scroll resumes (t5=' + XTL.t5 + ')');
-  let allLocked = true;
-  for (let i = 0; i < XT.slamChunks; i++)
-    if (bandSlamOffset(XTL.t5, i, CONFIG).phase !== 'locked') allLocked = false;
-  ok(allLocked, 'every slam chunk is locked at t5');
-}
-{
   const flipEv = XF.events[0], breachEv = XF.events[1];
   const closed = transformPanelState(0, flipEv, CONFIG);
   const jolted = transformPanelState(XT.windUpMs - 0.001, flipEv, CONFIG);
@@ -1522,43 +1596,14 @@ near(transformYawDeltaDeg(99999, CONFIG), 2 * XT.snapDeg, 1e-9, 'yaw clamped aft
 near(transformAtmosphereMix(XTL.t1, CONFIG), 0, 1e-9, 'atmosphere starts at the first snap');
 near(transformAtmosphereMix(XTL.t4, CONFIG), 1, 1e-9, 'atmosphere completes when the surface does');
 near(transformAtmosphereMix(9999, CONFIG), 1, 1e-9, 'atmosphere mix clamped');
-{
-  // The animated frame must start as the FROM surface extended past the seam
-  // (what RIG is standing on) and end as the TO surface exactly — that is
-  // what keeps the deck under their feet through the whole ritual.
-  let startsFrom = true, endsTo = true, pivotFixed = true;
-  for (const ev of XF.events) {
-    const from = XFR[ev.fromBand], to = XFR[ev.toBand];
-    const c0 = transformEventCtx(XFR, ev, 0, CONFIG);
-    const p0 = transformPosAt(c0, ev.seamS + 2);
-    const q0 = transformPosAt(from, ev.seamS + 2);
-    if (Math.abs(c0.heading - from.heading) > 1e-12 || Math.abs(c0.alt - from.alt) > 1e-12 ||
-        Math.hypot(p0.x - q0.x, p0.z - q0.z) > 1e-9) startsFrom = false;
-    const c1 = transformEventCtx(XFR, ev, XTL.t4, CONFIG);
-    for (const s of [ev.seamS, ev.seamS + 3, ev.seamS + 20]) {
-      const a = transformPosAt(c1, s), b = transformPosAt(to, s);
-      if (Math.hypot(a.x - b.x, a.z - b.z) > 1e-9) endsTo = false;
-    }
-    if (Math.abs(c1.alt - to.alt) > 1e-12 || Math.abs(c1.heading - to.heading) > 1e-12) endsTo = false;
-    const pivot = transformPosAt(transformEventCtx(XFR, ev, 0, CONFIG), ev.seamS);
-    for (let t = 0; t <= XTL.t6; t += 15) {
-      const p = transformPosAt(transformEventCtx(XFR, ev, t, CONFIG), ev.seamS);
-      if (Math.hypot(p.x - pivot.x, p.z - pivot.z) > 1e-9) pivotFixed = false;
-    }
-  }
-  ok(startsFrom, 'a ritual opens on the surface RIG is already standing on');
-  ok(endsTo, 'a ritual closes exactly on the next surface frame');
-  ok(pivotFixed, 'the seam point never moves during a ritual (the deck stays under RIG)');
-}
-
 // --- fixture / apron validity ------------------------------------------
 const XL = buildTransformLevel(CONFIG);
 {
   // Interior threat sockets: mounts the combat roster will fill later. They are
   // asserted like any other authored geometry so the corridor cannot drift into
   // a state where a later polyp lands inside a wall or on a seam apron.
-  const IB = XFR[1];
-  const sockets = IB.band.threatSockets || [];
+  const IB = XF.bands[1];
+  const sockets = IB.threatSockets || [];
   const ids = new Set();
   let valid = true;
   for (const so of sockets) {
@@ -1628,7 +1673,7 @@ const XL = buildTransformLevel(CONFIG);
     if (!(halt < ev.seamS && ev.seamS < trig && trig < front &&
           front < ev.seamS + XT.thresholdTiles && seal < trig && seal > ev.seamS)) ordered = false;
     if (ev.seamS - halt !== XT.haltOffset) ordered = false;
-    if (XFR[ev.toBand].s0 !== ev.seamS || XFR[ev.fromBand].s1 !== ev.seamS) ordered = false;
+    if (XF.bands[ev.toBand].s0 !== ev.seamS || XF.bands[ev.fromBand].s1 !== ev.seamS) ordered = false;
   }
   ok(ordered,
      'gate geometry orders halt < seam < seal < trigger < frontier < threshold end');
@@ -1687,10 +1732,10 @@ const XL = buildTransformLevel(CONFIG);
   const tDown = Math.sqrt(2 * (PL.jumpVel ** 2 / (2 * -PL.gravity)) / (-PL.gravity * PL.fallGravityMult));
   ok((tUp + tDown) * PL.runSpeed > widest + 1.5,
      'the frozen jump clears the fixture widest gap with margin');
-  const IN = XFR[1].band.interior;
+  const IN = XF.bands[1].interior;
   ok(IN.ceilingAbove > PL.height + PL.jumpVel ** 2 / (2 * -PL.gravity) + 1,
      'the interior ceiling clears a full jump, so the corridor never traps RIG');
-  ok(XF.platforms.filter((p) => p.x0 >= XFR[1].s0 && p.x1 <= XFR[1].s1)
+  ok(XF.platforms.filter((p) => p.x0 >= XF.bands[1].s0 && p.x1 <= XF.bands[1].s1)
        .every((p) => p.y + PL.height + 0.5 < XL.groundH[Math.floor(p.x0)] + IN.ceilingAbove),
      'interior catwalks keep player headroom under the ceiling');
 }
@@ -2041,15 +2086,21 @@ const XL = buildTransformLevel(CONFIG);
    * The shipped lead is a distance, so the same fixture gives 13.9 s of slack
    * at 1600x600 and 7.0 s at 800x1000 (adversarial F6) — two different games
    * from one build. A pace that declares crushSlackSeconds must produce the
-   * same clock on any frustum.                                              */
+   * same clock on any frustum. This also has to hold for the view-scale
+   * experiment (?view=near|mid|far, CONFIG.viewScales just above): a wider
+   * view only ever manifests here as a more negative edgeOffset (a further-
+   * left calibrated EDGE_L), and -31.1/-42.4 are the actual EDGE_L a
+   * from-scratch reimplementation of calibrateEdges's unproject math
+   * produces for `far` at 16:9/21:9 respectively (near/16:9 is -12.2, for
+   * comparison) — real view-scale magnitudes, not arbitrary stand-ins.     */
   {
     let invariant = true, contested = true, clocks = [];
     for (const F of resolved) {
       const cap = F.pursuit.marginCapTiles;
       if (cap <= 0) continue;
       const playerLeft = 40;
-      // two very different calibrated frustums, same clock
-      for (const edgeOffset of [-3.1, -10.4, -18.0]) {
+      // narrow portrait through view-scale-widened landscape, same clock
+      for (const edgeOffset of [-3.1, -10.4, -12.2, -18.0, -31.1, -42.4]) {
         const scroll = traversalMarginCapScroll(playerLeft, edgeOffset, cap);
         const margin = playerLeft - (scroll + edgeOffset);
         if (Math.abs(margin - cap) > 1e-9) invariant = false;
@@ -2064,6 +2115,17 @@ const XL = buildTransformLevel(CONFIG);
     }
     ok(invariant && clocks.length >= 2,
        'seconds-bounded paces produce one aspect-invariant clock: ' + clocks.join(' '));
+    // The cap only governs if it is tighter than the narrowest supported
+    // frustum's own follow margin; past that the screen binds first and the
+    // clock would drift with aspect ratio again. 15.6 tiles is the measured
+    // steady-state follow margin at 900x1000 (the fixture's portraitMinAspect
+    // 0.9); the same probe reads 23.1 at 1280x800 and 33.4 at 1600x600, which
+    // is the 2.1x variance this whole mechanism exists to remove.
+    const PORTRAIT_FOLLOW_MARGIN = 15.6;
+    const caps = resolved.map(function (F) { return F.pursuit.marginCapTiles; });
+    ok(caps.every(function (c) { return c <= PORTRAIT_FOLLOW_MARGIN; }),
+       'every declared crush clock still binds inside the narrowest supported ' +
+       'frustum, caps ' + caps.map(function (c) { return c.toFixed(1); }).join(','));
     ok(contested,
        'a seconds-bounded pace also makes the plane lethal, so idling is not a free ride');
   }
@@ -2541,6 +2603,238 @@ const XL = buildTransformLevel(CONFIG);
     ok(sim.afterReset.charge === 0 && sim.afterReset.threat === 0 &&
        sim.afterReset.counts.link === 0 && sim.eventsAfterReset === 0,
        'HB.score.reset() clears the meter, the score and the ring buffer');
+  }
+}
+
+/* ---- the damage plane never leaves geometry behind it ------------------ *
+ * Two shipped versions of the plane push were wrong in opposite directions:
+ * assigning x with no collision test shoved a pinned player through a solid
+ * wall (adversarial F4), and ejecting them back out of the column they were
+ * shoved into left them BEHIND the plane (edgeMargin -0.60) and ground them
+ * through the wall a tile per frame regardless. This drives the real sim
+ * against a real two-tile step in the shipped level and pins down the
+ * six-face contract: the wall holds, the player never ends a frame inside
+ * terrain, and the hp cadence is the shipped one (i-frame gated, not a
+ * teleport). The fixture's stricter contract — margin never negative,
+ * because a crush resolves in its own frame — is proved in the child
+ * process below, where the slice can actually be selected.               */
+{
+  // find a step at least as tall as the player, with room to stand in front
+  let stepX = -1;
+  for (let i = 40; i < 300; i++) {
+    if (simGroundH[i] > -100 && simGroundH[i + 1] > -100 &&
+        simGroundH[i + 1] - simGroundH[i] >= 2 &&
+        simGroundH[i - 1] === simGroundH[i]) { stepX = i; break; }
+  }
+  ok(stepX > 0, 'the shipped level contains a player-height step to pin against');
+
+  const savedScroll = simScrollX;
+  simKeys.left = false; simKeys.right = false; simKeys.jump = false;
+  simKeys.down = false; simKeys.fire = false;
+  clearSimJumpBuffer();
+  clearSimTraversal(0);
+  setSimEdges(0, 30);                         // le = scrollX + edges.margin
+  const hw = simPlayer.hw;
+  simPlayer.x = stepX + 1 - hw - 0.05;        // standing right at the wall face
+  simPlayer.y = simGroundH[stepX];
+  simPlayer.vx = 0; simPlayer.vy = 0;
+  simPlayer.grounded = true; simPlayer.onOneWay = null;
+  simPlayer.hp = CONFIG.player.maxHealth; simPlayer.lives = 3;
+  simPlayer.iframesUntil = 0; simPlayer.hitstunUntil = 0;
+  simPlayer.edgePinnedMs = 0;
+  setSimScrollX(simPlayer.x - hw - CONFIG.edges.margin - 0.2);
+
+  const dt = 1 / 60;
+  let behindPlane = 0, insideSolid = 0, pastWall = 0, hpDrops = 0;
+  const startHp = simPlayer.hp;
+  for (let f = 0; f < 240; f++) {
+    setSimScrollX(simScrollX + CONFIG.scrollSpeed * dt);   // the plane advances
+    const hpBefore = simPlayer.hp;
+    updateSimPlayer(dt);
+    if (simPlayer.hp < hpBefore) hpDrops++;
+    if (simPlayer.lives < 3) break;             // resolved: the crush killed
+    const le = simScrollX + CONFIG.edges.margin;
+    if (simPlayer.x - hw < le - 1e-6) behindPlane++;
+    // never inside terrain at the end of a frame
+    const x0 = Math.floor(simPlayer.x - hw + 0.02), x1 = Math.floor(simPlayer.x + hw - 0.02);
+    const y0 = Math.floor(simPlayer.y + 0.02), y1 = Math.floor(simPlayer.y + simPlayer.h - 0.02);
+    for (let i = x0; i <= x1; i++) for (let j = y0; j <= y1; j++) if (simIsSolid(i, j)) insideSolid++;
+    if (simPlayer.x + hw > stepX + 1 + 1e-6) pastWall++;   // never through the wall
+  }
+  ok(insideSolid === 0,
+     'a plane-pinned player never ends a frame inside terrain, got ' + insideSolid + ' frames');
+  ok(pastWall === 0,
+     'the plane never pushes a player through the wall it is pinned against, got ' +
+     pastWall + ' frames');
+  ok(hpDrops > 0 && simPlayer.hp < startHp || simPlayer.lives < 3,
+     'being crushed against terrain costs hp instead of being free');
+  // Each crush frame costs one hp with no i-frame gating, so the pin resolves in
+  // at most maxHealth frames (~50ms) rather than grinding for a second and a half.
+  ok(behindPlane <= CONFIG.player.maxHealth,
+     'the six-face pin resolves within an hp bar instead of stranding the player ' +
+     'behind the plane, got ' + behindPlane + ' frames');
+
+  // restore the module state the later assertions share
+  setSimScrollX(savedScroll);
+  simPlayer.hp = CONFIG.player.maxHealth; simPlayer.lives = 3;
+  simPlayer.iframesUntil = 0; simPlayer.edgePinnedMs = 0;
+  clearSimTraversal(0);
+}
+
+/* ---- HULL FALLBACK cannot pay for itself (fixture contract) ------------ *
+ * The streak that caps consecutive fallbacks used to clear on player.x, and
+ * the damage plane's own shove supplies forward x — so a zero-input run reset
+ * the safeguard with the exact displacement the safeguard exists to punish and
+ * never died (12/12 runs at full hp, conveyed 36 tiles). Selecting the slice
+ * needs __HB_QUERY__ before module init, hence a child process; it also lets
+ * this assert the fixture's strict plane invariant, which the six-face branch
+ * above deliberately does not share.                                       */
+{
+  const child = (query, drive) => `
+    globalThis.__HB_QUERY__ = ${JSON.stringify(query)};
+    const [T, E, S, P, ST, IN, L, C] = await Promise.all([
+      ${JSON.stringify('file://' + join(srcDir, 'sim', 'time.js'))},
+      ${JSON.stringify('file://' + join(srcDir, 'sim', 'edges.js'))},
+      ${JSON.stringify('file://' + join(srcDir, 'sim', 'scroll.js'))},
+      ${JSON.stringify('file://' + join(srcDir, 'sim', 'player.js'))},
+      ${JSON.stringify('file://' + join(srcDir, 'sim', 'state.js'))},
+      ${JSON.stringify('file://' + join(srcDir, 'sim', 'input.js'))},
+      ${JSON.stringify('file://' + join(srcDir, 'sim', 'level.js'))},
+      ${JSON.stringify('file://' + join(srcDir, 'config.js'))},
+    ].map((u) => import(u)));
+    const F = ${JSON.stringify('file://' + join(srcDir, 'mode.js'))};
+    const M = await import(F);
+    const fx = M.ACTIVE_SLICE;
+    // the fixture's own opening state, as resetGame would leave it
+    E.setEdges(-3.1, 24);                       // 1280x800 calibration
+    T.setScrollX(fx.run.startScroll);
+    T.sliceStats.startedAt = 0;
+    T.sliceStats.setbacks = 0;
+    P.player.x = fx.run.playerSpawn.x; P.player.y = fx.run.playerSpawn.y;
+    P.player.vx = 0; P.player.vy = 0;
+    P.player.hp = P.P.maxHealth; P.player.lives = P.P.lives;
+    P.player.grounded = false; P.player.onOneWay = null;
+    P.player.iframesUntil = 0; P.player.hitstunUntil = 0;
+    P.player.fallbackStreak = 0; P.player.fallbackEarnedTiles = 0;
+    P.player.edgePinnedMs = 0;
+    ST.setState('PLAYING');
+    const dt = 1 / 60;
+    const out = { negMargin: 0, insideSolid: 0, worstMargin: Infinity, setbacks: 0,
+                  hpZero: 0, states: {}, cap: fx.fallback.maxConsecutive };
+    for (let f = 0; f < 900; f++) {
+      ${drive}
+      T.advanceGameMs(dt * 1000);
+      S.updateScroll(dt);
+      P.updatePlayer(dt);
+      out.states[ST.state] = (out.states[ST.state] || 0) + 1;
+      if (ST.state !== 'PLAYING') break;
+      const margin = P.player.x - P.player.hw - E.sLeftEdge();
+      out.worstMargin = Math.min(out.worstMargin, margin);
+      if (margin < -1e-6) out.negMargin++;
+      const x0 = Math.floor(P.player.x - P.player.hw + 0.02);
+      const x1 = Math.floor(P.player.x + P.player.hw - 0.02);
+      const y0 = Math.floor(P.player.y + 0.02);
+      const y1 = Math.floor(P.player.y + P.player.h - 0.02);
+      for (let i = x0; i <= x1; i++) for (let j = y0; j <= y1; j++)
+        if (L.isSolid(i, j)) out.insideSolid++;
+    }
+    out.setbacks = T.sliceStats.setbacks;
+    out.finalState = ST.state;
+    out.streak = P.player.fallbackStreak;
+    out.earned = Math.round(P.player.fallbackEarnedTiles * 100) / 100;
+    P.cancelSliceRetry();
+    console.log(JSON.stringify(out));
+  `;
+  const run = (query, drive, label) => {
+    try {
+      return JSON.parse(execFileSync(process.execPath,
+        ['--input-type=module', '-e', child(query, drive)], { encoding: 'utf8' }));
+    } catch (e) {
+      console.error('pathcheck: slice child (' + label + ') failed: ' + e.message);
+      return null;
+    }
+  };
+
+  const fx0 = resolveTraversalPace('hunt');
+  // zero input: the plane conveys, nothing is earned, the cap must fire
+  const idle = run('slice=traversal&pace=hunt', '', 'idle');
+  ok(!!idle, 'the fixture sim steps headlessly with no input');
+  if (idle) {
+    ok(idle.finalState === 'SLICE_RETRY' &&
+       idle.setbacks >= 1 && idle.setbacks <= idle.cap,
+       'a zero-input fixture run reaches a terminal state: ' + idle.setbacks +
+       ' fallbacks then ' + idle.finalState);
+    ok(idle.earned < fx0.fallback.recoverTiles,
+       'conveyed displacement cannot buy the fallback mercy chain: earned ' +
+       idle.earned + ' of ' + fx0.fallback.recoverTiles + ' tiles');
+    ok(idle.negMargin === 0,
+       'the fixture plane never strands the player behind it, worst margin ' +
+       idle.worstMargin.toFixed(3));
+    ok(idle.insideSolid === 0,
+       'a crushed fixture player never ends a frame inside terrain, got ' +
+       idle.insideSolid + ' frames');
+  }
+
+  // The mercy chain, driven where a lower route exists: take a fallback, run
+  // forward under your own power past recoverTiles, take another — the streak
+  // must have been forgiven, so the cap is not tripped and play continues.
+  const mercy = (() => {
+    const script = `
+      globalThis.__HB_QUERY__ = 'slice=traversal&pace=hunt';
+      const [T, E, S, P, ST, IN] = await Promise.all([
+        ${JSON.stringify('file://' + join(srcDir, 'sim', 'time.js'))},
+        ${JSON.stringify('file://' + join(srcDir, 'sim', 'edges.js'))},
+        ${JSON.stringify('file://' + join(srcDir, 'sim', 'scroll.js'))},
+        ${JSON.stringify('file://' + join(srcDir, 'sim', 'player.js'))},
+        ${JSON.stringify('file://' + join(srcDir, 'sim', 'state.js'))},
+        ${JSON.stringify('file://' + join(srcDir, 'sim', 'input.js'))},
+      ].map((u) => import(u)));
+      E.setEdges(-3.1, 24);
+      const put = (x, y) => {
+        P.player.x = x; P.player.y = y; P.player.vx = 0; P.player.vy = 0;
+        P.player.hp = P.P.maxHealth; P.player.iframesUntil = 0;
+        P.player.grounded = true; P.player.onOneWay = null;
+        T.setScrollX(x - 30);                 // plane far behind: room to be knocked back
+      };
+      ST.setState('PLAYING');
+      P.player.fallbackStreak = 0; P.player.fallbackEarnedTiles = 0;
+      const out = {};
+      put(60, 8.35);                          // an upper route with floor below it
+      P.loseLife('damage');
+      out.firstStreak = P.player.fallbackStreak;
+      out.firstState = ST.state;
+      IN.keys.right = true;                   // earn the mercy back on foot
+      for (let f = 0; f < 120; f++) {
+        T.advanceGameMs(1000 / 60); S.updateScroll(1 / 60); P.updatePlayer(1 / 60);
+        if (ST.state !== 'PLAYING') break;
+      }
+      IN.keys.right = false;
+      out.earned = Math.round(P.player.fallbackEarnedTiles * 100) / 100;
+      put(P.player.x, 8.35);
+      P.loseLife('damage');
+      out.secondStreak = P.player.fallbackStreak;
+      out.secondState = ST.state;
+      P.cancelSliceRetry();
+      console.log(JSON.stringify(out));
+    `;
+    try {
+      return JSON.parse(execFileSync(process.execPath,
+        ['--input-type=module', '-e', script], { encoding: 'utf8' }));
+    } catch (e) {
+      console.error('pathcheck: mercy child failed: ' + e.message);
+      return null;
+    }
+  })();
+  ok(!!mercy, 'the fixture sim can be driven through a fallback and a recovery');
+  if (mercy) {
+    ok(mercy.firstStreak === 1 && mercy.firstState === 'PLAYING',
+       'a fallback with a route below it keeps play running, streak ' + mercy.firstStreak);
+    ok(mercy.earned >= fx0.fallback.recoverTiles,
+       'running forward under your own power is credited: earned ' + mercy.earned +
+       ' of ' + fx0.fallback.recoverTiles + ' tiles');
+    ok(mercy.secondStreak === 1 && mercy.secondState === 'PLAYING',
+       'the earned mercy forgives the streak instead of tripping the cap: streak ' +
+       mercy.secondStreak + ', state ' + mercy.secondState);
   }
 }
 

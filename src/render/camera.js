@@ -9,11 +9,16 @@ import { CONFIG } from '../config.js';
 import { DEG, SEGS, polyAt } from '../pure/path.js';
 import { cornerYawDeltaDeg } from '../pure/waves.js';
 import { traversalCameraDepth } from '../pure/traversal.js';
-import { ACTIVE_FIXTURE, IS_TRANSFORM_SLICE } from '../mode.js';
+import {
+  TRANSFORM_FIXTURE, TRANSFORM_PATH, transformAltAt, transformBandHeading,
+  transformYawDeltaDeg,
+} from '../pure/transform.js';
+import { ACTIVE_FIXTURE, IS_TRANSFORM_SLICE, VIEW_ID } from '../mode.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs, scrollX } from '../sim/time.js';
 import { setEdges } from '../sim/edges.js';
 import { activeCorner } from '../sim/wavegate.js';
+import { activeTransformEvent, committedBand } from '../sim/transform.js';
 import { renderer, scene, camera } from './scene.js';
 import { towerPose } from './tower.js';
 
@@ -26,10 +31,20 @@ function probeXAtNdc(ndcX) {
   return _probe.position.x + _edgeV.x * (-_probe.position.z / _edgeV.z);
 }
 
+// ?view=<id> (CONFIG.viewScales) pulls the camera straight back along its
+// depth axis only, independent of the traversal-slice portrait correction
+// above: near is depthMult 1 (exact, so `near`/absent is byte-identical to
+// the pre-view-scale camera), mid/far shrink RIG's screen fraction and widen
+// the calibrated s-strip by the same factor. See CONFIG.viewScales' comment.
+function activeViewDepthMult() {
+  return (CONFIG.viewScales[VIEW_ID] || CONFIG.viewScales.near).depthMult;
+}
+
 export function activeCameraDepth() {
-  return ACTIVE_FIXTURE
+  const base = ACTIVE_FIXTURE
     ? traversalCameraDepth(CONFIG.camera.z, innerWidth / innerHeight, ACTIVE_FIXTURE.run)
     : CONFIG.camera.z;
+  return base * activeViewDepthMult();
 }
 
 function calibrateEdges() {
@@ -45,9 +60,10 @@ function calibrateEdges() {
   // The transformation slice's atmosphere is a per-band cue owned by
   // src/render/transform.js (interior compresses it, altitude opens it up).
   if (IS_TRANSFORM_SLICE) return;
-  // Pulling back for a narrow slice viewport should not push the grey-box into
-  // fog. Move the fog band by the same depth delta so contrast stays stable.
-  const fogShift = ACTIVE_FIXTURE ? cameraDepth - C.z : 0;
+  // Pulling back — for a narrow slice viewport (portrait correction) or for a
+  // ?view= pull-back — should not push the grey-box into fog. Move the fog
+  // band by the same depth delta so contrast stays stable at every depth.
+  const fogShift = cameraDepth - C.z;
   scene.fog.near = CONFIG.fog.near + fogShift;
   scene.fog.far = CONFIG.fog.far + fogShift;
 }
@@ -73,14 +89,24 @@ const _tp = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 };   // transform-slice pose scra
 export function syncCamera() {
   const C = CONFIG.camera;
   const cameraDepth = activeCameraDepth();
-  let ax, az, alt = 0;
+  let ax, az, alt = 0, altAhead = 0, slope = 0;
   if (IS_TRANSFORM_SLICE) {
-    // The slice's frame carries the heading AND the phase altitude: the same
-    // pose code, one term higher up the ship. Everything the frame lifts, the
-    // hull already behind RIG does not — that is the climb, rendered.
+    // The anchor rides the static path (position AND the altitude the body has
+    // climbed by here); the YAW is the only animated quantity in a transition —
+    // the view swinging through the bend on the two-detent curve, exactly like
+    // the corner ritual. Nothing in the world moves to meet it.
     const p = towerPose(scrollX, _tp);
     ax = p.x; az = p.z; alt = p.alt;
-    camYaw = p.yaw;
+    const ev = activeTransformEvent();
+    const base = transformBandHeading(TRANSFORM_FIXTURE, committedBand, CONFIG);
+    camYaw = ev && ev.state === 'turning'
+      ? base + transformYawDeltaDeg(gameMs - ev.tStart, CONFIG) * DEG
+      : base;
+    // Where the body climbs, the view runs along the climb: the look point takes
+    // the altitude of the path ahead, so RIG stays framed on a 30-degree ramp
+    // instead of walking off the top of the screen.
+    altAhead = transformAltAt(TRANSFORM_PATH, scrollX + C.lookX);
+    slope = (altAhead - alt) / C.lookX;
   } else {
     const c = activeCorner();
     camYaw = c && c.state === 'turning'
@@ -92,8 +118,10 @@ export function syncCamera() {
   }
   const fx = Math.cos(camYaw), fz = -Math.sin(camYaw);   // fwd along the face
   const rx = -fz, rz = fx;                               // right = fwd × up
-  camera.position.set(ax + fx * C.x + rx * cameraDepth, C.y + alt, az + fz * C.x + rz * cameraDepth);
-  _look.set(ax + fx * C.lookX, C.lookY + alt, az + fz * C.lookX);
+  camera.position.set(
+    ax + fx * C.x + rx * cameraDepth, C.y + alt + slope * C.x, az + fz * C.x + rz * cameraDepth
+  );
+  _look.set(ax + fx * C.lookX, C.lookY + (IS_TRANSFORM_SLICE ? altAhead : alt), az + fz * C.lookX);
   camera.lookAt(_look);
   camera.updateMatrixWorld();
 }

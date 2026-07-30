@@ -16,8 +16,9 @@ import { CONFIG } from './config.js';
 import {
   ACTIVE_FIXTURE, ACTIVE_SLICE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, QUERY,
   SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN, SLICE_FALLBACK_ENABLED,
-  SLICE_PACE,
+  SLICE_PACE, VIEW_ID,
 } from './mode.js';
+import { traversalCameraDepth } from './pure/traversal.js';
 import { installHost } from './sim/bridge.js';
 import {
   advanceGameMs, gameMs, scrollX, setScrollX, sliceStats,
@@ -52,12 +53,12 @@ import {
 import { resetSpawner, updateSpawner } from './sim/spawner.js';
 import { resetCornerEvents } from './sim/wavegate.js';
 import {
-  activeTransformEvent, committedBand, resetTransform, transformAltitude,
+  activeTransformEvent, committedBand, resetTransform, transformAltitudeAt,
 } from './sim/transform.js';
 import { updateScroll } from './sim/scroll.js';
 import { camera, renderer, scene } from './render/scene.js';
 import {
-  calibrateEdges, handleResize, resetCameraYaw, syncCamera,
+  activeCameraDepth, calibrateEdges, handleResize, resetCameraYaw, syncCamera,
 } from './render/camera.js';
 import { clearCorpses, updateCorpses } from './render/hostiles.js';
 // imported for their side effects: each builds its meshes and installs its
@@ -145,7 +146,7 @@ function resetGame() {
   player.grounded = false; player.onOneWay = null; player.jumpCutDone = true;
   player.airJumpsLeft = P.airJumps;
   player.traversalChain = 0; player.traversalChainUntil = 0;
-  player.fallbackStreak = 0; player.fallbackRecoverX = -Infinity;
+  player.fallbackStreak = 0; player.fallbackEarnedTiles = 0;
   player.edgePinnedMs = 0;
   clearPlayerTraversal(0);
   player.traversalControlUntil = 0;
@@ -229,7 +230,7 @@ function transformTelemetry() {
   const ev = activeTransformEvent();
   return {
     band: committedBand,
-    altitude: transformAltitude(),
+    altitude: transformAltitudeAt(player.x),
     event: ev ? ev.id : null,
     eventState: ev ? ev.state : 'complete',
   };
@@ -309,6 +310,9 @@ window.HB = Object.freeze({
   shotsFired: () => shotsFired,
   edges: () => ({ left: sLeftEdge(), right: sRightEdge() }),
   pace: () => (ACTIVE_SLICE ? { ...ACTIVE_SLICE.pace, pursuit: ACTIVE_SLICE.pursuit } : null),
+  // view-scale experiment (?view=near|mid|far, CONFIG.viewScales): resolved
+  // id/label/depthMult plus the camera depth it actually produced this frame.
+  view: () => ({ ...CONFIG.viewScales[VIEW_ID], cameraDepth: activeCameraDepth() }),
   pursuitSpeed: () => paceSpeed(),
   // proposal A.5's read surface, verbatim: ring-buffered events, one snapshot,
   // and the reset the harness may assert. Inert unless ?score=1.
@@ -365,6 +369,16 @@ if (QUERY.has('selftest')) {
     togglePause(); check('resume', state === 'PLAYING');
     dispatchEvent(new Event('resize'));
     check('resize handled', Math.abs(camera.aspect - innerWidth / innerHeight) < 1e-6);
+    // view-scale experiment: an unrecognized/absent ?view= must resolve to
+    // `near` (depthMult 1, the pre-view-scale camera depth exactly) — checked
+    // against ACTIVE_FIXTURE (mode-agnostic: traversal or transform), the same
+    // thing activeCameraDepth() itself reads, so this holds at any aspect.
+    check('view resolved', !!CONFIG.viewScales[VIEW_ID] &&
+      Number.isFinite(activeCameraDepth()) && activeCameraDepth() > 0 &&
+      CONFIG.viewScales.near.depthMult === 1 &&
+      (VIEW_ID !== 'near' || activeCameraDepth() === (ACTIVE_FIXTURE
+        ? traversalCameraDepth(CONFIG.camera.z, innerWidth / innerHeight, ACTIVE_FIXTURE.run)
+        : CONFIG.camera.z)));
     resetGame();
     const expectedScroll = ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.startScroll : 0;
     const expectedHostiles = SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length : 0;
@@ -381,14 +395,19 @@ if (QUERY.has('selftest')) {
         capsules.length === ACTIVE_SLICE.rewards.length &&
         capsules.every((c) => c.mode === 'fixed'));
       check('hull fallback armed', SLICE_FALLBACK_ENABLED === (QUERY.get('fallback') !== '0'));
+      // The cap bounds daylight from above; a frustum narrower than the cap
+      // binds first, so the clock is <= crushSlackSeconds on every aspect
+      // ratio and never more. (Measured: 9.45/9.45/9.45 tiles for hunt across
+      // 900x1000, 1280x800 and 1600x600, against 15.7-33.4 uncapped.)
       const cap = ACTIVE_SLICE.pursuit.marginCapTiles;
-      check('crush clock armed at spawn', cap > 0
-        ? Math.abs((player.x - player.hw - sLeftEdge()) - cap) < 0.05
+      check('crush clock bounded at spawn', cap > 0
+        ? player.x - player.hw - sLeftEdge() <= cap + 0.05
         : scrollX === expectedScroll);
     }
     if (IS_TRANSFORM_SLICE) {
-      check('surfaces reset', committedBand === 0 && transformAltitude() === 0);
-      check('first ritual armed', activeTransformEvent().state === 'idle');
+      check('body static at spawn', committedBand === 0 &&
+        transformAltitudeAt(ACTIVE_FIXTURE.run.playerSpawn.x) === 0);
+      check('first turn idle', activeTransformEvent().state === 'idle');
     }
     const fails = results.filter((r) => !r[1]).map((r) => r[0]);
     const msg = fails.length

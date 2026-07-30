@@ -7,7 +7,7 @@ import { TRANSFORM_FIXTURE } from '../pure/transform.js';
 import {
   ACTIVE_SLICE, AIM_ASSIST_ENABLED, CROUCH_ENABLED, HOUND_TRIAL_STAGE,
   IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, SCORE_ENABLED, SLICE_ENEMIES_ENABLED,
-  SLICE_ENEMY_PLAN,
+  SLICE_ENEMY_PLAN, VIEW_ID,
 } from '../mode.js';
 import { scoreNotchGlyphs } from '../pure/score.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
@@ -18,7 +18,7 @@ import { mods } from '../sim/mods.js';
 import { hostiles, ENEMY, kills } from '../sim/hostiles.js';
 import { activeCorner } from '../sim/wavegate.js';
 import {
-  activeTransformEvent, committedBand, lastCommit, transformAltitude, transformBandLabel,
+  activeTransformEvent, committedBand, lastCommit, transformAltitudeAt, transformBandLabel,
 } from '../sim/transform.js';
 
 const hudTL = document.getElementById('hudTL');
@@ -77,8 +77,8 @@ export function updateHUD() {
       (sliceStats.setbacks ? ` · FALLBACK ${sliceStats.setbacks}` : '') +
       ` · ${kills} kills`
     : IS_TRANSFORM_SLICE
-      ? `ALT ${Math.round(transformAltitude() + player.y)}m · ` +
-        `${committedBand}/2 BREAKS · ${kills} kills`
+      ? `ALT ${Math.round(transformAltitudeAt(player.x) + player.y)}m · ` +
+        `${committedBand}/2 TURNS · ${kills} kills`
       : Math.floor(scrollX) + 'm  ·  ' + kills + ' kills';
   if (SCORE_ENABLED) tr += ' · THREAT ' + Math.round(scoreThreat());
   if (tr !== hudTRLast) { hudTRLast = tr; hudTR.textContent = tr; }
@@ -93,8 +93,12 @@ export function updateHUD() {
       ? 'H ACQUIRED · RETREAT LEFT ←'
       : 'H WAGER → · EXIT LEFT ←';
   } else if (IS_TRAVERSAL_SLICE && gameMs - sliceStats.startedAt < 2400) {
+    // view-scale experiment: self-documents on screenshots so a variant is
+    // identifiable without cross-referencing the URL (near is the shipped
+    // camera and stays silent to keep that overlay unchanged by default).
+    const viewTag = VIEW_ID === 'near' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
     tc = 'TRAVERSAL SLICE · ' + ACTIVE_SLICE.pace.label +
-      (HOUND_TRIAL_STAGE ? ' + ' + HOUND_TRIAL_STAGE.label : '') + ' · ' +
+      (HOUND_TRIAL_STAGE ? ' + ' + HOUND_TRIAL_STAGE.label : '') + viewTag + ' · ' +
       (SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length + ' HOSTILES' : 'MOVEMENT ONLY');
   } else if (c && c.state === 'gate') {
     let gaters = 0;
@@ -116,8 +120,10 @@ function transformMessage() {
   if (ev && ev.state === 'turning') return ev.label;
   if (lastCommit && gameMs - lastCommit.at < CONFIG.transform.clearMsgMs)
     return `${lastCommit.ev.label} — ${transformBandLabel()} · MERIDIAN: ${transformShipState()}`;
-  if (gameMs - sliceStats.startedAt < 2400)
-    return 'TRANSFORMATION SLICE · ' + transformBandLabel();
+  if (gameMs - sliceStats.startedAt < 2400) {
+    const viewTag = VIEW_ID === 'near' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
+    return 'TRANSFORMATION SLICE · ' + transformBandLabel() + viewTag;
+  }
   return '';
 }
 

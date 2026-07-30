@@ -177,3 +177,163 @@ Lighting/mood: deep teal fog and interiors, rust-orange hull, acid-green defense
 Constraints: each middle panel must unmistakably show a physical transition and each right panel must reveal a genuinely different spatial problem, not just a reskin; show altitude through fog, shrinking settlement, Crown proximity, weather, and accumulated damage; Meridian is functional infrastructure, never a creature; no words, letters, numbers, arrows, HUD, logo, watermark
 Avoid: nine unrelated illustrations, cinematic cameras, floating-platform grids, magical portals, generic reactor boss, literal heart monster, unreadable final chaos, photorealism
 ```
+
+## Direction correction after operator review
+
+The operator retained the established palette and enemy language but rejected
+the rectilinear, industrial-warehouse macro environment. Earlier prompts
+incorrectly extended the rule “the Crown is not a creature” to the whole
+Meridian. The corrected rule is:
+
+- the whole Meridian may and should read as a colossal engineered creature;
+- its close-up surfaces remain functional colony-ship infrastructure; and
+- only the Crown is constrained to remain a bridge/transmitter complex rather
+  than a separate creature, head, brain, or literal heart.
+
+The prompts below avoid images 1–5 and 8 as broad environment references because
+their wall façades, catwalks, ladders, and refinery silhouettes pull generation
+back toward the rejected direction.
+
+## 9. Meridian creature directions
+
+No image references.
+
+```text
+Use case: stylized-concept
+Asset type: three-direction start-screen and macro-silhouette board for HULLBREAKER
+Primary request: create one cohesive wide comparison board with exactly three equal vertical panels, each presenting a distinct body plan for the Meridian, a continent-sized floating robotic creature that is also a functional terraforming colony ship. It must read first as one immense articulated beast in the sky, second as a vessel with climbable inhabited machinery. These are start-screen composition studies with clean negative space for a future title, but no actual text or logo.
+Panel 1 — Crownback Sky-Ray: a continent-wide manta or whale-like mechanical leviathan seen from below and alongside, broad articulated wing plates and armored gill cavities, a long rising tail and dorsal spine, with the functional Meridian Crown embedded as a bridge-and-transmitter crest along the upper back rather than a head or eye. Its underside eclipses the settlement; enormous overlapping armor scutes and rib spars imply climbable routes.
+Panel 2 — Meridian Spine-Serpent: a kilometer-long armored serpentine colony ship coiling upward through storm clouds, built from colossal vertebral districts, overlapping carapace scales, lateral fin bones, rib arches, and actuator tendons. Several coils disappear through deep teal fog to prove altitude. The Crown is a functional antenna-and-command complex mounted at the highest spinal segment, never a face. This direction should best support an upward climb and discrete segment ratchets.
+Panel 3 — Six-Limbed Ark-Beast: a vast non-humanoid terraforming animal-machine, part beetle, whale, and crouched siege beast, suspended above the colony with four immense manipulation limbs, two trailing stabilizers, a colony-bearing armored shell, and a functional Crown complex along the forward shoulder ridge. One limb unfolds across the composition. Preserve inhabited ship scale through tiny maintenance lights, bays, and surface districts.
+Shared form language: 70 percent functional terraforming vessel and 30 percent animal posture and anatomy; chunky low-poly armored carapace, vertebral drums, rib cages, gill-like atmosphere processors, synthetic tendon cables, hydraulic muscle bundles, huge joint gimbals, dorsal transmitter spines, and repeated three-lobed mechanisms. Mechanical and dry, no wet flesh.
+Style/medium: polished flat-shaded low-poly game key art, bold graphic silhouettes, restrained eight-color arcade palette, no photorealism
+Composition/framing: exactly three equal tall panels with narrow dark gutters; each creature occupies most of its panel but leaves one calm region for future menu/title; place a tiny human settlement and a nearly microscopic tethered RIG silhouette below or against the hull for continental scale
+Lighting/color: deep teal sky and fog, weathered rust-orange armor, acid-green defense lights only in small clusters, hot-magenta transmitter energy at the Crown, warm-white human settlement and work lights
+Canon constraints: the entire Meridian may look and move like an engineered creature, but it remains a colony ship and procedural infrastructure; the Crown is a real bridge, terraforming command, defense coordinator, and transmitter—not a separate monster, face, brain, or literal heart
+Constraints: macro silhouette must dominate before surface detail; no words, letters, numbers, UI, logo, watermark
+Avoid: industrial warehouse, refinery, oil rig, city tower, rectangular wall façade, ordinary spaceship, humanoid Transformer or Gundam, literal eyes, mouth, teeth, claws, wet flesh, fantasy dragon, creature standing behind a separate level, tiny scaffolding dominating the silhouette
+```
+
+## 10. Creature-lattice chaos
+
+References:
+
+- `09-meridian-creature-directions.png` for the center creature's climbable
+  spine and the left creature's broad scutes and gill cavities.
+- `06-enemy-form-language.png` for enemies and color roles.
+
+```text
+Use case: stylized-concept
+Asset type: finished-game side-on gameplay keyframe for HULLBREAKER
+Primary request: show RIG fighting upward through a dense traversal lattice that is literally the articulated anatomy of the Meridian, a continent-sized floating robotic creature-colony ship. It must read first as one colossal body in motion and second as a playable level—never as scaffolding bolted onto a warehouse wall.
+Input images: Image 1 is the approved macro body-plan reference. Use the climbable segmented spine of its CENTER creature, combined with the broad overlapping armor plates and gill cavities of its LEFT creature. Do not copy the right creature's compact body. Image 2 is the enemy form and palette reference; use the center-column Brace Hound, Iris Polyp, and Seed-Pod Tripod shapes where called for.
+Scene/backdrop: the near flank of the Meridian rises diagonally from lower left to upper right through deep teal storm fog. A curved spinal keel crosses the upper third; enormous rib arches braid through the center; one three-lobed shoulder or hip gimbal anchors the middle; a vast jointed limb descends into fog below; far-side coils, limbs, and the receding torso silhouette prove the playfield belongs to one airborne mechanical leviathan. The distant settlement is barely visible far below and the functional Crown glows higher along the spine.
+Traversal lattice: create three locally readable connected routes grown from anatomy. Upper route: fast and exposed across overlapping dorsal carapace scutes. Middle route: technical path weaving through rib arches, short chimneys, plate lips, wall-launch surfaces, and one hanging synthetic-tendon transfer. Lower route: dangerous ventral conduit gutter with cover and a visible escape connector. Routes split, cross, descend, and reconnect; only three-to-five immediate choices compete at once. Place one hot-magenta weapon capsule in a visible dare pocket inside the rotating joint socket, with its entry and retreat route legible.
+Transformation and chaos: freeze a high-energy moment where the torso twists around its spine; a huge scapular carapace scute rotates inward around the central gimbal while remaining a playable surface under RIG; adjacent ribs scissor into a new route; farther right a damaged rib bay tears outward, armor petals shear apart, tendon cables stretch, and exposed vertebral machinery becomes the next playable lattice; dorsal scutes lift and close behind RIG; the distant limb changes pose. RIG launches from the moving scute while firing warm-white rounds. One wasp contests the jump arc, one Brace Hound charges a lower rib, one Iris Polyp unfolds from a seam to lock a connector, and a single Seed-Pod lob marks an intended landing.
+Chaos hierarchy: the flipping scute is the dominant event, the breach is secondary, enemy threats tertiary, sparks/debris/vapor the lowest layer. Chaos comes from simultaneous geometry, route changes, threats, and body motion—not from explosions obscuring the frame. Keep a clean silhouette pocket around RIG, every required landing visible, and at least two forward choices.
+Form language: 70 percent functional terraforming colony ship and 30 percent animal posture; chunky flat-shaded low-poly carapace scutes, vertebral drums, rib arches, armored gills, synthetic tendon bundles, hydraulic limb gimbals, dorsal transmitter spines, three-lobed joints, hex fasteners, tiny inhabited maintenance lights. Interior cavities resemble a dry mechanical thorax, not a factory room.
+Composition/framing: wide 16:9 strict side-on gameplay plane with slight perspective depth only to show the far body and limb silhouettes; RIG about five-to-seven percent of frame height; connected surfaces, bold readable shapes
+Lighting/color: deep teal atmosphere and body shadows, rust-orange armor, acid-green enemies and hostile residue, hot magenta only for power, warm-white RIG fire and route-edge lights
+Constraints: entire creature is the level, not a boss behind the level; Crown stays functional infrastructure rather than a head, face, brain, or heart; no HUD, text, arrows, logo, watermark; no photorealism
+Avoid: industrial warehouse, refinery, oil rig, square rooms, dominant ladders, steel trusses, scaffolding, crates, flat pipe-covered walls, ordinary spaceship corridors, disconnected floating platforms, tidy machinery, humanoid mech, literal animal face, eyes, teeth, wet flesh, cinematic camera, motion blur, unreadable particles
+```
+
+## 11. Creature flip and breach sequences
+
+References:
+
+- `09-meridian-creature-directions.png` for the creature-ship body plan.
+- `06-enemy-form-language.png` for enemies and color roles.
+
+```text
+Use case: stylized-concept
+Asset type: bulkhead-flip and breach-return transformation board for HULLBREAKER
+Primary request: create one landscape diagnostic board with exactly six equal panels arranged as two horizontal rows by three columns. Each row uses a locked side-on gameplay camera and shows BEFORE, ACTIVE TRANSFORMATION, and COMMITTED NEW PLAYFIELD with no written labels. The Meridian is the continent-sized floating robotic creature-colony ship from Image 1; use its center segmented spine combined with its left broad carapace and gill cavities. The traversal lattice must be its anatomy, not warehouse scaffolding.
+Input images: Image 1 defines the macro creature-ship body plan and palette. Image 2 defines the center-column enemy family. Use both as references, generating new scenes.
+Row 1 — Rib Inversion / bulkhead flip:
+Before: RIG traverses an immense curved exterior flank. Three-to-five routes braid across overlapping rust-orange scutes, projecting rib arches, tendon cables, hook nodes, and recessed armored-gill pockets. A gigantic limb and the body's curve remain visible through teal fog.
+Active: the Meridian flinches. One articulated rib ring contracts and exactly three connected armor scutes roll inward in sequence around a three-lobed joint. The same surfaces visibly carry RIG, a Brace Hound, and one magenta capsule through the rotation. Floors become sloped walls, overhangs become hanging routes, wasps swarm through sparks and dry pressure vapor, deeper machinery flexes in the opposite direction. Violent but readable.
+After: those same three recognizable scutes lock inside a vast rib cavity as a compressed containment lattice of vertebral drums, hydraulic muscle bundles, dry ceramic pressure membranes, and rib tracks. The carried routes visibly reconnect but now create different risks: exterior shortcut becomes underside path, gill pocket becomes Iris Polyp nest, vertical rib becomes the main climb.
+Row 2 — Armored Gill Eruption / breach return:
+Before: RIG fights through an organ-mechanical pressure chamber made of vertebral rings, ceramic membranes, rib tracks, piston-tendon bundles, and a Seed-Pod mortar. The connected lattice converges toward one sealed armored gill.
+Active: the ship violently expels the intrusion. Multiple ribs spread, the dry membrane ruptures, and gill scutes peel outward like armored petals. A connected section of the interior lattice telescopes through the breach with RIG still running and firing on it. The entire distant creature rolls; fog, shattered scutes, stretched cables, wasps, houndframe, pressure discharge, and debris move in distinct directions without hiding the route.
+After: the expelled lattice clamps onto a much higher spinal ridge. Three-to-five new routes continue across arched dorsal plates toward the functional Crown. A gigantic limb hangs far below, the settlement is tiny beneath the fog, and completed body segments recede downward, making altitude undeniable.
+Continuity landmarks: repeat one fork-shaped armor scute, one hot-magenta capsule, and one warm-white segmented edge light in all three panels of each row. RIG stays under control and roughly seven percent of panel height. Exact surfaces must remain recognizable through each transition.
+Style/medium: polished low-poly 3D game environment concept board, flat-shaded chunky geometry, strong silhouettes, restrained eight-color arcade palette, no photorealism
+Composition/framing: exact 2 by 3 grid with narrow dark gutters; strict side-on gameplay plane with slight 3D depth; three-to-five locally readable routes per panel
+Lighting/color: deep teal fog and cavities, rust-orange carapace, acid-green enemies and defense organs, hot magenta power only, warm-white player fire and route-edge lights
+Canon constraints: the whole Meridian has engineered creature anatomy but remains functional colony infrastructure; the Crown remains a bridge/transmitter complex, never a literal head, face, brain, or heart
+Avoid: factory, warehouse, refinery, square room, ordinary door, steel gantry, dominant ladders, pipe-grid walls, crates, conventional spaceship corridor, magical portal, humanoid mech, wet flesh, teeth, eyes, disconnected platforms, unrelated panels, explosions substituting for articulation, chaos hiding safe surfaces, text, labels, arrows, HUD, logo, watermark
+```
+
+## 12. Kaiju-ship level anthology
+
+References:
+
+- `09-meridian-creature-directions.png` for the three creature silhouettes.
+- `10-creature-lattice-chaos.png` for gameplay grammar and intensity.
+- `06-enemy-form-language.png` for enemies and color roles.
+
+```text
+Use case: stylized-concept
+Asset type: three-level kaiju-ship campaign exploration board for HULLBREAKER
+Primary request: create one cohesive wide concept board with exactly three equal vertical panels, treating the three colossal robotic creature-ships from Image 1 as three distinct full playable levels that RIG defeats by climbing through and sabotaging their transforming systems. Each panel must show a different side-on traversal grammar built from that creature's anatomy, while all three still feel like one game and one enemy ecology. This is a future-direction experiment, not established story canon.
+Input images: Image 1 defines the three macro creature-ship silhouettes, one per panel in the same left-to-right order. Image 2 defines the finished side-on anatomical traversal lattice, density, transformation chaos, tiny RIG scale, and material finish. Image 3 defines the Houndframe, Iris Polyp, and Seed-Pod enemy family and color roles.
+Panel 1 — Sky-Ray level: RIG climbs from the shadowed ventral underside through huge gill processors to the dorsal Crownback. Traversal uses broad overlapping wing scutes, rib spars, armored gill petals, wind tunnels, hanging tendon cables, and an underside-to-dorsal bulkhead flip. One wing banks through teal storm fog while playable plates peel and relock. The level identity is exposure, sweeping lateral routes, violent wind, and large armor surfaces folding around RIG.
+Panel 2 — Spine-Serpent level: RIG ascends across several kilometer-scale vertebral districts coiling vertically through clouds. Traversal uses rib arches, vertebral rings, lateral fin bones, narrow tendon transfers, rotating joint sockets, and breach returns from the inside of one segment onto a much higher coil. Adjacent segments ratchet and jackknife, crushing old routes and creating new ones. The level identity is relentless upward momentum, discrete body-segment transformations, and visible altitude.
+Panel 3 — Six-Limbed Ark-Beast level: RIG transfers from a moving manipulation limb through a shoulder gimbal into the armored colony shell. Traversal uses limb joints, shell ridges, tendon bridges, actuator chimneys, rotating socket dare pockets, and giant plates flexing open into internal mechanical-thorax routes. Far limbs change pose and become temporary connectors. The level identity is moving-body set pieces, limb-to-shell transfers, and a fortress-like interior carried by an unmistakable beast silhouette.
+Shared defeat fantasy: no conventional health bars and no creature standing behind a separate arena. RIG fights on and inside each body, breaks exposed interlocks, redirects a functional system, and forces the creature's own defensive transformation to open the next route. Show a clear hot-magenta system objective in each panel, but do not depict gore, death, or a final victory cutscene.
+Gameplay readability: strict side-on 2D play plane with slight 3D depth; tiny RIG about five-to-seven percent of panel height; exactly three-to-five immediate connected routes; enemies pressure different route nodes; chaos from moving anatomy, breaches, and route changes while every landing and at least two forward choices remain visible
+Style/medium: polished flat-shaded low-poly 3D game concept art, bold silhouettes, restrained eight-color arcade palette, no photorealism
+Lighting/color: deep teal atmosphere and cavities, rust-orange carapace, acid-green enemies and hostile residue, hot-magenta objectives and power, warm-white RIG fire and settlement lights
+Canon guardrail: every kaiju is also a functional terraforming colony vessel with vast inhabited scale; command/transmitter structures remain infrastructure, never literal heads, brains, faces, or hearts
+Composition/framing: exactly three equal tall gameplay panels with narrow dark gutters; each panel shows enough distant body silhouette to prove the level is the creature itself, not a factory built on it
+Avoid: industrial warehouse, refinery, conventional spaceship corridor, flat wall, scaffolding-led level, dominant ladders, crates, disconnected platforms, ordinary boss arena, giant health bar, humanoid mech, fantasy dragon, literal eyes, mouth, teeth, wet flesh, chaos obscuring RIG, text, labels, HUD, logo, watermark
+```
+
+## 13. Human-scale monster-climb grammar
+
+References:
+
+- `09-meridian-creature-directions.png` for macro anatomy only.
+- `10-creature-lattice-chaos.png` for anatomical materials and intensity.
+- `11-creature-flip-breach-sequences.png` for transformation logic.
+
+```text
+Use case: stylized-concept
+Asset type: human-scale side-scroller camera and monster-climb grammar board for HULLBREAKER
+Primary request: create one cohesive landscape storyboard with exactly six equal panels arranged as two horizontal rows by three columns. Every panel must look like an actual playable side-scrolling game frame at human scale: RIG is clearly readable at roughly eight-to-ten percent of each panel's height, running, bounding, wall-launching, and firing across a building-sized patch of the Meridian's machinery. The player is climbing ON and THROUGH a continent-sized floating robotic creature-ship, but the normal camera is too close to show the whole creature. Its anatomy is inferred from immense curvature, moving joints, distant limbs, body roll, and the transitions between surfaces.
+Input images: Image 1 defines the Meridian's macro mechanical-creature anatomy only; never copy its zoomed-out poster framing. Image 2 defines the dense anatomical traversal material and combat intensity, but bring the camera much closer and make RIG larger and clearer. Image 3 defines rib-inversion and armored-gill breach mechanics; preserve their articulated-body logic while using true side-scroller framing.
+Panel sequence, read left to right across the top row and then the bottom:
+1. Lower leg exterior — a strict side-on gameplay frame on one building-sized face of a colossal faceted manipulation leg. RIG runs and bounds across connected armor scutes, piston braces, tendon conduits, joint lips, one wall-launch rib, and an underside route. Only three-to-five local choices show. A distant second limb and the leg's huge curvature through teal fog reveal that this is a creature body, not a tower.
+2. Sixty-degree leg turn active — after a gate clear, the combat plane snaps around a 60-degree corner of the same polygonal leg. Show the near armor face rotating out while the adjacent face ratchets into view in two chunky stages; exact scutes zipper and slam into playable alignment; RIG keeps full control, jumping and firing during the turn. It is a turn around the circumference of a limb, not a corridor corner or detached platform.
+3. New leg face committed — the same side-on camera has settled on the adjacent face, visibly higher and around the limb. Previous surfaces fall behind into fog; new connected plates, tendon trenches, and a joint-socket dare pocket create a different three-route problem. RIG immediately launches onward; no pause.
+4. Long ribline ascent — a fast straight gameplay phase climbing along one enormous rib or spinal keel toward the upper torso. The local side-scroller frame shows braided elevations built from rib arches, overlapping scutes, short chimneys, under-rib hangs, and one magenta capsule pocket. The rib rises diagonally and disappears beyond frame; far below, lower limbs and the settlement establish altitude without shrinking RIG.
+5. Neck flip inward — at the armored neck or collar, a huge curved collar scute hinges inward approximately 90 degrees and carries RIG through the body wall while they run and fire. Exterior armor becomes an interior ramp; neighboring ribs scissor into wall-jump surfaces; the side-on combat plane stays readable. Reveal a dry mechanical neck cavity of vertebral drums, hydraulic muscle bundles, cable tendons, and pressure organs—not a square room, corridor, or fleshy throat.
+6. Upper vent breach outward — far higher inside the neck, an armored atmosphere vent violently peels open. A connected interior play surface telescopes through the breach with RIG still fighting on it and clamps onto the upper exterior near the functional Crown. Teal storm sky bursts into view; a vast shoulder and lower coils recede beneath the fog; the settlement is tiny far below. The new exterior routes are visible before the motion finishes.
+Shared gameplay grammar: strict side-on 2D combat plane with slight 3D depth; connected anatomical machinery rather than floating platforms; every landing visible; at least two viable forward routes; RIG silhouette kept in a clean negative-space pocket. Use only a few canonical enemies per panel: wasp contesting an arc, Brace Hound on a lower scute, Iris Polyp rooted in a seam, Seed-Pod mortar marking a landing. Chaos rises across the six panels through simultaneous body motion, route reconfiguration, enemies, projectiles, sparks, vapor, and debris, but safe surfaces and RIG remain legible.
+Style/medium: polished flat-shaded low-poly 3D gameplay concept art, chunky graphic geometry, restrained eight-color arcade palette, no photorealism
+Lighting/color: deep teal atmosphere and mechanical shadows, rust-orange carapace, acid-green enemies and hostile residue, hot-magenta rewards only, warm-white RIG fire and edge lights
+Canon constraints: the entire Meridian is an engineered creature-colony ship; local machinery remains functional infrastructure; the Crown is a bridge/transmitter complex and never a literal head, face, brain, or heart
+Composition/framing: exact 2 by 3 grid with narrow dark gutters; every panel is a close playable side-scroller frame, never a macro poster or map
+Constraints: no route-overlay lines, arrows, labels, text, numbers, HUD, logo, watermark; preserve the same recognizable RIG scale and side view across all six panels
+Avoid: zoomed-out whole-creature composition, infographic, map, industrial warehouse, refinery, tower façade, square rooms, ordinary spaceship corridor, steel scaffolding, dominant ladders, crates, generic catwalk grid, disconnected platforms, humanoid mech, literal eyes, teeth, wet flesh, cinematic camera, motion blur, chaos hiding RIG
+```
+
+## CP3 static-anatomy correction
+
+The prompts above are preserved as generation records, but the CP3 playtest
+ruling supersedes their literal moving-body choreography. Future generation and
+implementation must follow these rules:
+
+- the Meridian's anatomy and route-bearing body surfaces already exist and stay
+  monumental and static during ordinary transitions;
+- RIG and the camera move around the body, revealing the next face through
+  self-occlusion, fog, and parallax;
+- only a door-like neck access plate, vent cover, iris, shutter, Crown
+  interlock, or other clearly functional mechanism may move;
+- live damage may destroy or expose existing routes, and traps or enemies may
+  assemble, but the creature's body never assembles; and
+- rolling scutes, scissoring ribs, telescoping lattices, ratcheting body
+  segments, and limb pose changes in prompts 10–13 are topology/intensity
+  references only, not current render canon.
