@@ -372,6 +372,11 @@ export function updatePlayer(dt) {
     // A pace may also make the plane itself lethal over time. Without this the
     // plane is a free conveyor: doing nothing at all survives on open ground
     // because the push costs no hp (adversarial F5).
+    // NOTE: this clock is guarded by !cornerBusy() but not !transformBusy().
+    // It is dead in the transformation fixture only because EDGE_PIN_MS comes
+    // from ACTIVE_SLICE, which is null there. If EDGE_PIN_MS is ever
+    // generalized to ACTIVE_FIXTURE, add the transform guard here too — a
+    // held scroll must not bill the player for standing still.
     if (EDGE_PIN_MS > 0 && !cornerBusy()) {
       player.edgePinnedMs += dt * 1000;
       if (player.edgePinnedMs >= EDGE_PIN_MS) {
@@ -484,6 +489,10 @@ function fallbackSurfaces(x) {
   return out;
 }
 
+// Reachable only while ACTIVE_SLICE is non-null: FALLBACK is that fixture's
+// data and SLICE_FALLBACK_ENABLED is traversal-only, so no other fixture can
+// get here. Revisit both if hull fallback ever extends to another fixture —
+// otherwise this throws on the first frame it is reached.
 function hullFallback(reason) {
   const F = FALLBACK;
   if (player.x > player.fallbackRecoverX) player.fallbackStreak = 0;
