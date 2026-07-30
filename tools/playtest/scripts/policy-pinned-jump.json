@@ -1,0 +1,14 @@
+{
+  "name": "policy-pinned-jump",
+  "description": "Closed-loop proof for the F8/H3 problem (docs/playtests/2026-07-adversarial.md): the column-39 low-route step needs a jump tapped within a one-to-two-frame window RELATIVE TO A MOVING ARRIVAL TIME, so a fixed-timestamp tap (16ms at a literal ms value) passed pre-CP1 and now misses entirely. This script holds right statically and never schedules a single timed jump — the only jump input is the policy rule 'when pinned, tap jump', which reacts to the sim reporting grounded+vx~0 while a direction key is held, regardless of when that actually happens. Run with &enemies=0 to isolate the movement question from combat.",
+  "url": "index.html?slice=traversal&enemies=0",
+  "durationMs": 9000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 8800 }
+  ],
+  "policy": {
+    "rules": [
+      { "when": "pinned", "do": { "tap": "jump", "holdMs": 90 } }
+    ]
+  }
+}

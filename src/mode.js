@@ -22,10 +22,30 @@ export const SLICE_ENEMIES_ENABLED = QUERY.get('enemies') !== '0';
 // ?pace=hunt|swarm|surge selects a CP1 pacing variant; anything else (including
 // no flag) resolves to `base`, which is byte-for-byte the shipped pass.
 export const SLICE_PACE = QUERY.get('pace') || 'base';
+/* Movement-verb prototypes (fleet wave 3), both default OFF and both scoped to
+   the slice, so every shipped URL keeps its exact behavior:
+     ?hook=1        arms the snap hook / tether (src/sim/hook.js)
+     ?hookinput=    which trigger the hook listens to — `key` (default: the
+                    dedicated L / E key) or `auto` (a valid anchor grabs itself
+                    while airborne, the way a ledge catch does). An A/B for
+                    DESIGN's open "jump vs fire vs dedicated" question.
+     ?flow=1        arms the momentum spine (src/sim/flow.js) on ANY pace
+     ?autobounce=1  a HELD jump re-arms the jump buffer on every landing. The
+                    buffer only ever arms on a keydown with !e.repeat, so today
+                    a player who holds jump lands and stays there — the root of
+                    adversarial F11 (a held-jump policy parked against a
+                    one-tile lip for 9.6 s) and a classic feel option in its own
+                    right: with it, holding jump reads as "keep bouncing", which
+                    is the same intent the momentum spine rewards.            */
+export const HOOK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('hook') === '1';
+export const HOOK_INPUT = QUERY.get('hookinput') === 'auto' ? 'auto' : 'key';
+export const FLOW_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('flow') === '1';
+export const AUTOBOUNCE_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('autobounce') === '1';
 // ACTIVE_SLICE stays the traversal fixture specifically: it selects that
 // slice's movement overrides, pacing variant, dare pocket and traversal verbs.
 export const ACTIVE_SLICE = IS_TRAVERSAL_SLICE
-  ? resolveTraversalPace(SLICE_PACE, TRAVERSAL_FIXTURE)
+  ? resolveTraversalPace(SLICE_PACE, TRAVERSAL_FIXTURE,
+      { hook: HOOK_ENABLED, flow: FLOW_ENABLED })
   : null;
 // ACTIVE_FIXTURE is the mode-agnostic handle — anything true of *any* authored
 // fixture (its run window, scroll floor, spawn point, fast retry) reads this

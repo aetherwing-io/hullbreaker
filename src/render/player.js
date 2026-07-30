@@ -7,6 +7,7 @@ import { CONFIG } from '../config.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs, blink } from '../sim/time.js';
 import { player } from '../sim/player.js';
+import { flowSnapshot } from '../sim/flow.js';
 import { scene } from './scene.js';
 import { placeOnTower } from './tower.js';
 
@@ -46,6 +47,11 @@ function sync() {
   rig.scale.y = squash;
   gunGroup.position.y = player.muzzleY / squash;    // rig is squashed: undo it here
   gunGroup.rotation.z = Math.atan2(player.aim.y, player.aim.x);
+  // A live momentum chain (?flow=1) leans the body into its own speed: the
+  // chain has to be visible in the character, not only in the HUD. Presentation
+  // only, and exactly zero without the flag.
+  const lean = flowSnapshot().mult - 1;
+  rig.rotation.z = lean > 0 ? -Math.sign(player.vx || 1) * lean * 1.4 : 0;
   rig.visible = gameMs >= player.iframesUntil || blink();
 }
 installView({ player: { sync } });

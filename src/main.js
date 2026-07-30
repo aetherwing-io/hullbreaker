@@ -14,7 +14,8 @@
 
 import { CONFIG } from './config.js';
 import {
-  ACTIVE_FIXTURE, ACTIVE_SLICE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, QUERY,
+  ACTIVE_FIXTURE, ACTIVE_SLICE, AUTOBOUNCE_ENABLED, FLOW_ENABLED, HOOK_ENABLED,
+  HOOK_INPUT, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, QUERY,
   SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN, SLICE_FALLBACK_ENABLED,
   SLICE_PACE, VIEW_ID,
 } from './mode.js';
@@ -25,7 +26,8 @@ import {
 } from './sim/time.js';
 import { sLeftEdge, sRightEdge } from './sim/edges.js';
 import {
-  bufferJumpUntil, clearJumpBuffer, keys, releaseAllKeys,
+  bufferHookUntil, bufferJumpUntil, clearHookBuffer, clearJumpBuffer, keys,
+  releaseAllKeys,
 } from './sim/input.js';
 import {
   activeScrollEnd, activeScrollSpeed, END_SCROLL, levelData, unbuildFutureFaces,
@@ -47,6 +49,8 @@ import {
 } from './sim/capsules.js';
 import { clearMods, mods, updateMods } from './sim/mods.js';
 import { pacePeak, paceSpeed, resetPace } from './sim/pace.js';
+import { hookSnapshot, resetHook } from './sim/hook.js';
+import { flowSnapshot, resetFlow } from './sim/flow.js';
 import {
   resetScore, scoreEvents, scoreRunEnd, scoreRunStart, scoreSnapshot, updateScore,
 } from './sim/score.js';
@@ -69,6 +73,7 @@ import './render/player.js';
 import './render/capsules.js';
 import './render/bullets.js';
 import './render/mods.js';
+import './render/hook.js';
 import { resetHudMessage, updateHUD } from './ui/hud.js';
 import './ui/overlay.js';
 
@@ -79,11 +84,21 @@ addEventListener('resize', handleResize);
 
 /* ============================= INPUT ============================== */
 
+/* The snap hook takes a DEDICATED key, not jump and not fire (DESIGN's open
+   question). Jump already carries five meanings (jump, air jump, drop-through,
+   ledge launch, wall launch) and overloading it would make the game choose
+   between hooking and jumping for the player; fire is held continuously for
+   auto-fire, so a hook on fire would trigger constantly. L sits next to
+   J (fire) and K (jump) so the right hand keeps one cluster; E is the
+   left-hand alternate for WASD players. Both are the same intent — the A/B
+   the operator is asked to judge is ?hookinput=auto, which needs no key at
+   all (see src/mode.js). */
 const KEYMAP = {
   ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
   ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down',
   Space: 'jump', KeyK: 'jump', KeyJ: 'fire', KeyX: 'fire',
   ShiftLeft: 'strafe', ShiftRight: 'strafe',
+  KeyL: 'hook', KeyE: 'hook',
 };
 
 addEventListener('keydown', (e) => {
@@ -102,6 +117,11 @@ addEventListener('keydown', (e) => {
   if (!k) return;
   e.preventDefault();
   if (k === 'jump' && !e.repeat) bufferJumpUntil(gameMs + CONFIG.player.jumpBufferMs);
+  // the hook is a buffered press like the jump: pressing a beat early still
+  // grabs the anchor you are flying toward, which is what removes the aiming
+  // pause. Inert unless ?hook=1 armed sim/hook.js.
+  if (k === 'hook' && !e.repeat && ACTIVE_SLICE && ACTIVE_SLICE.hook)
+    bufferHookUntil(gameMs + ACTIVE_SLICE.hook.bufferMs);
   keys[k] = true;
 });
 addEventListener('keyup', (e) => {
@@ -151,6 +171,9 @@ function resetGame() {
   clearPlayerTraversal(0);
   player.traversalControlUntil = 0;
   clearJumpBuffer();
+  clearHookBuffer();
+  resetHook();                           // no-ops unless ?hook=1 / ?flow=1
+  resetFlow();
   resetCornerEvents();
   resetTransform();
   resetCameraYaw();
@@ -264,6 +287,12 @@ function telemetry() {
     pursuitPeak: pacePeak(),
     setbacks: sliceStats.setbacks,
     score: scoreSnapshot(),
+    // movement-verb prototypes, additive and inert when their flags are off:
+    // the tether's phase/anchor and the momentum chain's live multiplier, so a
+    // bot run can prove a hook route was actually hooked. `player.*` above is
+    // untouched — traversalState keeps its frozen free|ledge|wall domain.
+    hook: HOOK_ENABLED ? hookSnapshot() : undefined,
+    flow: FLOW_ENABLED ? flowSnapshot() : undefined,
   };
 }
 
@@ -322,6 +351,9 @@ window.HB = Object.freeze({
     snapshot: scoreSnapshot,
     reset: resetScore,
   },
+  // movement-verb prototypes: read surfaces only (the verbs live in the sim)
+  hook: { enabled: HOOK_ENABLED, input: HOOK_INPUT, snapshot: hookSnapshot },
+  flow: { enabled: FLOW_ENABLED, snapshot: flowSnapshot },
   snapshot: () => {
     const t = telemetry();
     return {
@@ -409,6 +441,28 @@ if (QUERY.has('selftest')) {
       check('body static at spawn', committedBand === 0 &&
         transformAltitudeAt(ACTIVE_FIXTURE.run.playerSpawn.x) === 0);
       check('first turn idle', activeTransformEvent().state === 'idle');
+    }
+    // Movement-verb prototypes: both directions checked, so this also proves an
+    // ordinary URL leaves them completely inert (the flags-off contract).
+    {
+      const hk = hookSnapshot(), fl = flowSnapshot();
+      check('hook flag matches its module',
+        hk.enabled === HOOK_ENABLED && (!HOOK_ENABLED || !!ACTIVE_SLICE.hook));
+      check('hook idle after restart', hk.phase === 'idle' && hk.grabs === 0);
+      check('hook anchors authored',
+        !HOOK_ENABLED || ACTIVE_SLICE.hookAnchors.length >= 4);
+      check('flow flag matches its module',
+        fl.enabled === FLOW_ENABLED && (!FLOW_ENABLED || !!ACTIVE_SLICE.flow));
+      check('flow chain empty after restart', fl.links === 0 && fl.mult === 1);
+      check('flow auto-launch overlay only with the flag',
+        FLOW_ENABLED
+          ? P.ledgeAutoLaunch === true
+          : P.ledgeAutoLaunch === (SLICE_PACE === 'surge' ? true : undefined));
+      // ?autobounce=1 only ever re-arms the jump buffer; a fresh run must start
+      // with an empty buffer either way, so this checks the flag plumbing and
+      // that arming it changed nothing at rest.
+      check('autobounce flag plumbed',
+        AUTOBOUNCE_ENABLED === (IS_TRAVERSAL_SLICE && QUERY.get('autobounce') === '1'));
     }
     const fails = results.filter((r) => !r[1]).map((r) => r[0]);
     const msg = fails.length

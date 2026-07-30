@@ -209,6 +209,14 @@ export const CONFIG = {
     tellRise: 0.45, tellNarrow: 0.18, tellRear: 0.42,  // rear-up on a low body: big silhouette
                                //   change, which is what stays readable at full sprint
     tellBlinkSlowMs: 170, tellBlinkFastMs: 60,         // warning light, accelerating
+    tellCoilMs: 120,           // the COMMIT cue: the last stretch of the tell stops
+                               //   blinking and goes solid while the frame coils hard.
+                               //   A ramp alone reads as "go"; a ramp that resolves into
+                               //   a held glow reads "not yet… NOW", which is the
+                               //   difference between a reflex cue and a commit cue —
+                               //   and the charge is answered on the commit, not the
+                               //   onset (see the ruling in tools/pathcheck.mjs).
+    tellCoilSquash: 0.22,      // silhouette drop as it coils: the spring loading
     chargeStretch: 0.35, chargeSquash: 0.12, chargeLean: 0.2,
     gaitFreq: 9, gaitAmp: 0.07, gaitTilt: 0.05,        // prowl stride bob
   },
@@ -326,6 +334,10 @@ export const CONFIG = {
     hound: 0x5f8f3c,                       // same acid-green ecology as the wasp (concept art):
                                            //   heavier value, and the SILHOUETTE carries the read
     houndTell: 0xffd0a0, houndCharge: 0x3d7a1a,   // warm warning blink / lit-up committed glow
+    // snap-hook markers (?hook=1): warm hardware idle, hot when live, pale
+    // tether. Never the pickup magenta and never the hostile green — an anchor
+    // has to read as grabbable machinery at a glance (DESIGN's aiming rule).
+    hookAnchor: 0xc8a04a, hookLive: 0xffd166, hookTether: 0xfff0c2,
     shots: { R: 0xfff0c2, S: 0xffc76a, L: 0x9ff7ff, H: 0xff9adf, F: 0xff8a4a },
     tints: { lance: 'rgba(255,255,255,0.5)', rage: 'rgba(255,50,50,0.14)', chrono: 'rgba(90,200,255,0.12)' },
   },

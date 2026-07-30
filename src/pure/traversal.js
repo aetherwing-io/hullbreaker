@@ -264,6 +264,47 @@ export const TRAVERSAL_FIXTURE = {
     { id: 'entry-wasp', kind: 'wasp', x: 37, y: 8.4, delayMs: 0 },
     { id: 'rejoin-wasp', kind: 'wasp', x: 63, y: 8.8, delayMs: 600 },
   ],
+  /* ---------------------- SNAP HOOK anchors (?hook=1) ------------------ *
+   * Authored, clearly marked tether points. Pure data: inert unless ?hook=1
+   * arms src/sim/hook.js, and identical in every pace so an A/B still
+   * compares pacing only.
+   *
+   * `arc` is [centerDeg, halfWidthDeg] measured from the ANCHOR toward the
+   * player (270 = straight below, 180 = directly behind), which is how the
+   * concept boards read: a bracket accepts the line RIG throws from below or
+   * behind it, never from ahead. Every anchor is asserted acquirable from at
+   * least one taught connector, non-embedded, and line-of-sight clear
+   * (tools/pathcheck.mjs).
+   *
+   * Placement follows board 03 (a tether spanning a gap between two route
+   * bands) and boards 09/10/12 (RIG dangling under machinery):
+   *   entry-lift   — teaches the verb on the first fork: one press replaces
+   *                  jump + air-jump onto the upper entry.
+   *   shaft-lift   — the chimney in one input instead of a wall pump.
+   *   pocket-span  — the roof line's price. The y:10 roof is the degenerate
+   *                  fast route (adversarial F1/F10); this anchor makes
+   *                  LEAVING it attractive: grabbed from the chimney top it
+   *                  is a fast diagonal drop-forward that lands on the armed
+   *                  mid line, beating a roof run on time.
+   *   post-lift    — reachable in mid-air off pocket-span's whip: the first
+   *                  hook→hook link, the "chained aerial movement" of the art.
+   *   exit-lift    — the last link: the high exit band into the rejoin.       */
+  hookAnchors: [
+    { id: 'entry-lift', x: 33.5, y: 7.2, arc: [215, 80],
+      teaches: 'entry', note: 'first fork: deck → upper entry in one press' },
+    // arc kept narrow and downward on purpose: a shallow grab from the left at
+    // roof height clips the chimney wall with the BODY even though the tether
+    // line is clear (the bot found it), and while a clipped zip converts to a
+    // launch rather than sticking, a mis-grab is not what should teach the verb.
+    { id: 'shaft-lift', x: 42.0, y: 11.0, arc: [262, 58],
+      teaches: 'chimney-base', note: 'the chimney shaft without the wall pump' },
+    { id: 'pocket-span', x: 51.5, y: 7.6, arc: [180, 62],
+      teaches: 'chimney-top', note: 'roof → mid transfer over the dare pocket' },
+    { id: 'post-lift', x: 61.5, y: 10.6, arc: [230, 70],
+      teaches: 'post-mid', note: 'mid-air link off pocket-span; post band' },
+    { id: 'exit-lift', x: 65.0, y: 11.2, arc: [210, 72],
+      teaches: 'post-high', note: 'high exit band into the rejoin' },
+  ],
   // HULL FALLBACK tier 1 (proposal B.1): losing drops RIG to the next route
   // down instead of stopping the world with a modal. Forward position is kept.
   fallback: {
@@ -280,6 +321,84 @@ export const TRAVERSAL_FIXTURE = {
                               //   fixture's own timescale rather than at ~16 s.
     recoverTiles: 8,          // advancing this far past a fallback clears the streak
   },
+};
+
+/* ======================= SNAP HOOK tuning (?hook=1) ================== *
+ * One physics model, tuned once. The verb is a three-beat state machine that
+ * deliberately mirrors the ledge catch the player already knows —
+ * grab → brief dangle → launch — because DESIGN's governing rule is "every
+ * grab wants to become another launch", and a verb that reads like the
+ * existing ones needs no new lesson:
+ *
+ *   ZIP   the tether is taut and pulls RIG along it at zipSpeed, faster than
+ *         a sprint, substepped so it cannot cross a wall. Gravity is off, the
+ *         way it is off during a ledge hang.
+ *   HANG  a 110 ms dangle at the anchor (the boards' dangling RIG, board 09).
+ *         Long enough to read, far too short to become a pause. Jump launches
+ *         out of it early; down releases and drops.
+ *   WHIP  forward launch, entry speed preserved, air jump refunded — so the
+ *         very next thing you can do is another grab.
+ *
+ * Rejected models are recorded in the completion report: an instant impulse
+ * (no tether to read, no dangle) and a full pendulum swing (a swing is a WAIT,
+ * which the pursuing edge makes lethal and pillar 1 forbids).             */
+export const TRAVERSAL_HOOK = {
+  id: 'hook-v1',
+  range: 8.6,               // acquisition radius, tiles (hand to anchor)
+  minRange: 1.6,            // …and a floor: you cannot grab what you stand under
+  handHeight: 1.2,          // where the line leaves the body
+  behindTiles: 0.9,         // an anchor may sit barely behind and still take
+  behindPenalty: 1.7,       // …but a candidate ahead always wins the tie
+  losStepTiles: 0.35,       // tether sight sampling: finer than the 1-tile walls
+  bufferMs: 140,            // press buffering, exactly like the jump buffer
+  // Cooldown and zip speed are the two constants that keep the verb from
+  // becoming a shortcut past the whole fixture. At zipSpeed 21 / cooldown 240
+  // the headless bot cleared the slice in 3.7 s — faster than sprinting the
+  // level in a straight line (4.1 s at runSpeed 10.8), i.e. the tether beat the
+  // pursuing edge by existing, which is not a route choice. At 16 / 420 the zip
+  // is still clearly quicker than a sprint over the same span but the win comes
+  // from ALTITUDE and the whip, and each further grab has to be flown to.
+  cooldownMs: 420,          // between grabs
+  sameAnchorLockMs: 900,    // no instant re-grab of the anchor you just left
+  zipSpeed: 16.0,           // tiles/s along the line (run speed is 10.8)
+  zipMaxMs: 520,            // hard ceiling: a zip can never become a ride
+  zipSubstepTiles: 0.3,     // collision safety per substep
+  arriveRadius: 0.28,
+  hangMs: 110,              // the dangle. Auto-whips on expiry, always.
+  launchX: 11.6, launchY: 14.6,
+  // A whip preserves the speed you arrived with (the way a ledge launch does),
+  // and that is a compounding path: launch at 13.5 → grab inside the 100 ms
+  // control window → whip at max(11.6, 13.5)×chain → grab again… The headless
+  // bot reached 14.9 t/s this way before the ceiling existed, and nothing in the
+  // controller bounded it, because the drive that normally pulls speed back to
+  // runSpeed is suspended for exactly that window. This ceiling is the bound the
+  // endpoint-only wall check depends on: 15.9 × the 50 ms dt clamp = 0.795 of a
+  // tile, asserted in tools/pathcheck.mjs.
+  launchCeiling: 15.9,
+  releaseVy: -2.0,          // down: let go and fall, keeping drift
+  refundAirJump: true,
+};
+
+/* ==================== MOMENTUM SPINE tuning (?flow=1) ================ *
+ * Generalizes surge's launch chain into a flag that composes with any pace.
+ * The cap is the load-bearing constant: maxTotalMult bounds the product of a
+ * pace's own chain and flow's, which is what keeps every attainable speed
+ * inside the dt-clamp displacement budget asserted in tools/pathcheck.mjs.  */
+export const TRAVERSAL_FLOW = {
+  id: 'flow-v1',
+  windowMs: 1200,           // airborne grace between chain links
+  step: 0.05, max: 4,       // +5% forward per link, four links
+  maxTotalMult: 1.22,       // composed with a pace chain (surge tops at 1.18)
+  speedMultCap: 1.22,       // sustained drive target while the chain lives
+  // …and the same absolute bound the hook carries, applied to the amplified
+  // launch itself, because a launch inherits the speed it arrived with: no
+  // chain of any length can put a horizontal launch past this.
+  launchCeiling: 16.5,
+  groundGraceMs: 220,       // a bounce through the floor keeps the chain…
+  groundDecayMs: 140,       // …standing on it sheds one link per this
+  refundAirJump: true,
+  autoLaunch: true,         // surge's ledgeAutoLaunch, generalized to any pace
+  linkVerbs: ['ledge', 'wall', 'hook'],
 };
 
 /* ---------------------- pacing variants (CP1) ------------------------ *
@@ -462,12 +581,25 @@ export const TRAVERSAL_PACE_IDS = Object.keys(TRAVERSAL_PACES);
 
 /* Resolve one pace into a complete fixture. Never mutates TRAVERSAL_PACES or
    TRAVERSAL_FIXTURE: every consumer (level build, player tune, HUD, harness)
-   reads the resolved object, so a variant cannot leak into another. */
-export function resolveTraversalPace(name, fixture = TRAVERSAL_FIXTURE) {
+   reads the resolved object, so a variant cannot leak into another.
+
+   `opts` carries the movement-verb prototype flags (?hook=1 / ?flow=1). With
+   no opts — every shipped URL — the result is byte-for-byte what it was
+   before those verbs existed: `hook` and `flow` resolve to null and no
+   movement field moves. That equivalence is asserted both as data
+   (tools/pathcheck.mjs) and as behavior (trace fingerprints, per pace). */
+export function resolveTraversalPace(name, fixture = TRAVERSAL_FIXTURE, opts = {}) {
   const pace = TRAVERSAL_PACES[name] || TRAVERSAL_PACES.base;
   const reward = { ...fixture.darePocket.reward, ...(pace.pocketReward || {}) };
+  const flow = opts.flow ? { ...TRAVERSAL_FLOW } : null;
+  const hook = opts.hook ? { ...TRAVERSAL_HOOK } : null;
+  // flow's one movement override: surge's "dwell expiry throws you off instead
+  // of dropping you", generalized to whichever pace is running underneath.
+  const flowMovement = flow && flow.autoLaunch ? { ledgeAutoLaunch: true } : null;
   return {
     ...fixture,
+    hook,
+    flow,
     pace: { id: pace.id, label: pace.label, hypothesis: pace.hypothesis },
     pursuit: {
       ...pace.pursuit,
@@ -484,7 +616,7 @@ export function resolveTraversalPace(name, fixture = TRAVERSAL_FIXTURE) {
       ...fixture.run, ...(pace.run || {}),
       minimumScrollSpeed: pace.pursuit.cruiseSpeed,
     },
-    movement: { ...fixture.movement, ...(pace.movement || {}) },
+    movement: { ...fixture.movement, ...(pace.movement || {}), ...(flowMovement || {}) },
     chain: pace.chain ? { ...pace.chain } : null,
     enemies: (pace.enemies || fixture.enemies).map((e) => ({ ...e })),
     rewards: [reward, ...(pace.rewards || [])].map((r) => ({ ...r })),
