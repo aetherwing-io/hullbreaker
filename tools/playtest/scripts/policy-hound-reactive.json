@@ -1,0 +1,16 @@
+{
+  "name": "policy-hound-reactive",
+  "description": "Closed-loop rebuild of hound-jump.json, which needed two fixed-timestamp taps (880ms for the column-39 step, 1330ms to dodge the hound's tell before it commits) — a pairing the adversarial report (H3) found breaks the moment CP1's pace tuning changes when the player actually arrives, because the low route's window is one-to-two frames wide RELATIVE TO A MOVING ARRIVAL TIME. This script schedules zero timed jumps: 'pinned' clears whatever terrain is actually in the way whenever it actually jams, and 'houndTell' dodges the charge whenever the hound actually plants, regardless of build-specific timing. Same URL/enemies/window as hound-jump.json so the two are otherwise comparable.",
+  "url": "index.html?slice=traversal&hound=1",
+  "viewport": { "width": 1280, "height": 800 },
+  "durationMs": 2400,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 2400 }
+  ],
+  "policy": {
+    "rules": [
+      { "when": "pinned", "do": { "tap": "jump", "holdMs": 80 } },
+      { "when": "houndTell", "do": { "tap": "jump", "holdMs": 200 } }
+    ]
+  }
+}

@@ -6,6 +6,7 @@
 
 import { chromium } from 'playwright-core';
 import { sampleState, isReady } from './sampler.mjs';
+import { evaluatePolicyTick } from './policy.mjs';
 
 const DEFAULT_VIEWPORT = { width: 1280, height: 800 };
 
@@ -22,6 +23,8 @@ export async function runPlaytest({
   maxRuntimeMs = 25000,
   tailMs = 900,
   victorySettleMs = 400,
+  deterministic = false,
+  policyRules = null,
 }) {
   const browser = await chromium.launch({ channel, headless: !headed });
   const contextOpts = { viewport };
@@ -68,7 +71,8 @@ export async function runPlaytest({
   // the instant a retry fires, and stays dead until the script's own
   // scheduled keyup/keydown next touches that code — measured as 5.2s of
   // zero motion with a key conceptually held. heldCodes tracks what the
-  // script currently considers "down"; the sample loop watches the
+  // script currently considers "down" (shared by the static timeline, policy
+  // hold rules, and policy taps below); the sample loop watches the
   // testapi/HB `attempts` counter (already polled every sampleMs) and, the
   // moment it ticks up, re-dispatches a keydown for every currently-held
   // code. Verified empirically: a second page.keyboard.down() for an
@@ -91,6 +95,23 @@ export async function runPlaytest({
   // never let a sparse event list truncate the run early.
   const scriptEndMs = Math.max(lastEventT, durationMs) + tailMs;
 
+  async function pressKey(code) {
+    try {
+      await page.keyboard.down(code);
+    } catch (err) {
+      pageErrors.push({ message: `key down failed for ${code}: ${err.message}` });
+    }
+    heldCodes.add(code);
+  }
+  async function releaseKey(code) {
+    try {
+      await page.keyboard.up(code);
+    } catch (err) {
+      pageErrors.push({ message: `key up failed for ${code}: ${err.message}` });
+    }
+    heldCodes.delete(code);
+  }
+
   async function reassertHeldKeys(tMs, attempts) {
     const codes = [...heldCodes];
     if (codes.length === 0) return;
@@ -102,6 +123,94 @@ export async function runPlaytest({
       }
     }
     retryReassertions.push({ tMs, attempts, codes });
+  }
+
+  // --- Deterministic injection mode ------------------------------------
+  // Default (deterministic: false) dispatches events on a wall-clock timer
+  // (inputLoop below) — subject to Node/CDP round-trip jitter interacting
+  // with the game's own variable rAF cadence. The adversarial report
+  // measured this compounding into a 28-tile maxX spread from byte-identical
+  // input on one build (t2-transform-seam-rush). Deterministic mode instead
+  // keys dispatch to the game's own sim clock: every sample tick, dispatch
+  // any event whose `t` has been reached by that tick's `gameMs`. This
+  // quantizes dispatch to the sample interval (an event scheduled for
+  // gameMs=1400 fires at the first tick where gameMs>=1400, up to `sampleMs`
+  // of sim time late — reported per-event as `gameMsJitterMs`) rather than
+  // eliminating jitter outright; --sample-ms controls that bound. Requires
+  // testapi/HB (sample.gameMs must be a number) — dom-only fallback cannot
+  // support this mode, and the driver reports an error rather than silently
+  // behaving like wall-clock mode.
+  let nextDeterministicIdx = 0;
+  let deterministicGameMsMissingWarned = false;
+
+  async function dispatchDueDeterministicEvents(sample, tMs) {
+    if (typeof sample.gameMs !== 'number') {
+      if (!deterministicGameMsMissingWarned) {
+        pageErrors.push({
+          message: 'deterministic mode requested but sample.gameMs is not a number ' +
+            '(needs testapi or window.HB) — no events can be dispatched by sim time',
+        });
+        deterministicGameMsMissingWarned = true;
+      }
+      return;
+    }
+    while (nextDeterministicIdx < events.length && events[nextDeterministicIdx].t <= sample.gameMs) {
+      const ev = events[nextDeterministicIdx++];
+      if (ev.type === 'keydown') await pressKey(ev.code); else await releaseKey(ev.code);
+      ev.actualDispatchMs = tMs;
+      ev.actualDispatchGameMs = sample.gameMs;
+      ev.gameMsJitterMs = +(sample.gameMs - ev.t).toFixed(2);
+      ev.jitterMs = tMs - ev.t;   // wall-clock figure too, for cross-mode comparison
+      if (stop) break;
+    }
+  }
+
+  // --- Closed-loop policy mode ------------------------------------------
+  // See lib/policy.mjs for the condition/action vocabulary. Evaluated every
+  // sample tick against that tick's already-polled snapshot — no extra
+  // page.evaluate calls. `hold` rules are level-triggered and synced every
+  // tick (OR-combined across rules targeting the same code); `tap` rules
+  // fire once per false->true edge and self-release after holdMs via a
+  // fire-and-forget timer so a tap's hold duration never blocks the sample
+  // cadence. Known limitation (documented, not engineered around — this is
+  // meant to stay a dumb reflex layer): rapid re-triggering of the same
+  // `tap` code before its previous release fires can release early; not
+  // expected for the shipped predicates' natural trigger cadence (a hound's
+  // `tell` window, a pin against a step) since those don't oscillate faster
+  // than one sample interval.
+  const policyHeldCodes = new Set();
+  const policyLog = [];
+  const policyMissingFieldCounts = new Map();
+
+  async function runPolicyTick(sample, tMs) {
+    const { desiredHolds, tapsToFire, missingFieldWarnings } = evaluatePolicyTick(policyRules, sample, heldCodes);
+    for (const w of missingFieldWarnings) {
+      const key = `${w.rule}:${w.field}`;
+      policyMissingFieldCounts.set(key, (policyMissingFieldCounts.get(key) || 0) + 1);
+    }
+    for (const code of desiredHolds) {
+      if (!policyHeldCodes.has(code)) {
+        await pressKey(code);
+        policyHeldCodes.add(code);
+        policyLog.push({ tMs, action: 'hold-start', code });
+      }
+    }
+    for (const code of [...policyHeldCodes]) {
+      if (!desiredHolds.has(code)) {
+        await releaseKey(code);
+        policyHeldCodes.delete(code);
+        policyLog.push({ tMs, action: 'hold-end', code });
+      }
+    }
+    for (const t of tapsToFire) {
+      await pressKey(t.code);
+      policyLog.push({ tMs, action: 'tap-down', code: t.code, rule: t.rule });
+      setTimeout(() => {
+        releaseKey(t.code).then(() => {
+          policyLog.push({ tMs: elapsed(), action: 'tap-up', code: t.code, rule: t.rule });
+        });
+      }, t.holdMs);
+    }
   }
 
   async function sampleLoop() {
@@ -126,6 +235,8 @@ export async function runPlaytest({
         }
         lastAttemptsForRetry = sample.attempts;
       }
+      if (deterministic && sample) await dispatchDueDeterministicEvents(sample, tMs);
+      if (policyRules && policyRules.length && sample) await runPolicyTick(sample, tMs);
       const timeUp = tMs >= scriptEndMs;
       const hardCap = tMs >= maxRuntimeMs;
       const victoryDone = victorySeenAt !== null && tMs >= victorySeenAt + victorySettleMs;
@@ -136,16 +247,12 @@ export async function runPlaytest({
   }
 
   async function inputLoop() {
+    if (deterministic) return;   // dispatched from sampleLoop instead, keyed to gameMs
     for (const ev of events) {
       const wait = ev.t - elapsed();
       if (wait > 0) await new Promise((r) => setTimeout(r, wait));
       const dispatchedAt = elapsed();
-      try {
-        if (ev.type === 'keydown') { await page.keyboard.down(ev.code); heldCodes.add(ev.code); }
-        else { await page.keyboard.up(ev.code); heldCodes.delete(ev.code); }
-      } catch (err) {
-        pageErrors.push({ message: `input dispatch failed for ${ev.type} ${ev.code}: ${err.message}` });
-      }
+      if (ev.type === 'keydown') await pressKey(ev.code); else await releaseKey(ev.code);
       ev.actualDispatchMs = dispatchedAt;
       ev.jitterMs = dispatchedAt - ev.t;
       if (stop) break;
@@ -184,5 +291,11 @@ export async function runPlaytest({
     dispatchedEvents: events,
     retryReassertions,
     maxRetryDetectionLagMs: sampleMs,
+    deterministic,
+    policyLog,
+    policyMissingFieldWarnings: [...policyMissingFieldCounts.entries()].map(([key, count]) => {
+      const [rule, field] = key.split(':');
+      return { rule: Number(rule), field, count };
+    }),
   };
 }

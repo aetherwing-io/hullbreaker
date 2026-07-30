@@ -32,7 +32,7 @@ const VALID_CODES = new Set([
   'Space', 'KeyK', 'KeyJ', 'KeyX', 'ShiftLeft', 'ShiftRight', 'KeyP', 'KeyR', 'Escape',
 ]);
 
-function resolveCode(nameOrCode) {
+export function resolveCode(nameOrCode) {
   const code = ALIAS_TO_CODE[nameOrCode] || nameOrCode;
   if (!VALID_CODES.has(code)) {
     throw new Error(`unknown key/alias "${nameOrCode}" — expected one of the game's real ` +

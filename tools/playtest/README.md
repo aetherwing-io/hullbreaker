@@ -33,6 +33,7 @@ node run.mjs scripts/mid-route.json --video            # also record a .webm
 node run.mjs scripts/mid-route.json --out my-run-dir    # explicit output dir
 node run.mjs scripts/mid-route.json --url http://localhost:8741/index.html?slice=traversal
 node run.mjs scripts/mid-route.json --no-testapi        # test what a debug-flag-free session sees
+node run.mjs scripts/adversarial/t2-transform-seam-rush.json --deterministic --max-runtime-ms 26000
 node run.mjs --help                                     # full flag list
 ```
 
@@ -94,6 +95,162 @@ by `--max-runtime-ms` (default 25000ms) as a hang safety net, or cut short
 The compiler (`lib/compile.mjs`) rejects a script with unmatched
 keydown/keyup pairs for the same code — that's a script bug, not something
 the driver silently tolerates.
+
+## Closed-loop policy mode
+
+Motivated by two attacks the adversarial report (`docs/playtests/2026-07-adversarial.md`,
+finding H3) found structurally impossible for a fixed-timestamp script: the
+column-39 low-route step needs a jump tapped within a one-to-two-frame
+window, but that window is relative to a *moving arrival time* — CP1's pace
+tuning changed when the player gets there, so a tap pinned to a literal ms
+value that passed pre-CP1 now misses. No amount of retiming a fixed
+timestamp fixes this; the script needs to react to the game's own state.
+
+A script may add a `"policy"` block, alongside or instead of `"events"`/`"moves"`:
+
+```json
+{ "policy": { "rules": [
+  { "when": "pinned",            "do": { "tap": "jump" } },
+  { "when": "houndTell",         "do": { "tap": "jump", "holdMs": 90 } },
+  { "when": "grounded && x>44",  "do": { "hold": "right" } }
+] } }
+```
+
+Rules are evaluated every sample tick against that tick's already-polled
+snapshot (`lib/sampler.mjs`) — no extra `page.evaluate` calls, no lookahead,
+no planning. This is a reflex layer, not an AI, on purpose: every condition a
+script can express is meant to be readable at a glance.
+
+**Condition grammar** (`lib/policy.mjs`) — `a && b && c` only, no `||`, no
+parens, and never `eval()`/`new Function()`. Each clause is either:
+
+- a named predicate, optionally negated with `!`:
+  - `pinned` — grounded, `|vx| < 0.3`, and the harness currently has a
+    direction key held (`ArrowLeft`/`ArrowRight`) — the F8/H3 "commanded to
+    move but jammed" signal.
+  - `airborne`, `grounded` — `player.grounded` false/true.
+  - `houndTell`, `houndCharge` — any hostile with `kind: 'hound'` currently
+    in the `tell`/`charge` state (`src/sim/hostiles.js`'s
+    prowl→tell→charge→skid/tumble machine).
+  - `victory` — the traversal-slice VICTORY overlay or `state`.
+- a bare sample field, optionally negated, tested for truthiness (e.g. `grounded`, `!grounded`).
+- a numeric comparison against a sample field: `field OP number`, `OP` one of `> >= < <= == !=` (e.g. `x>44`, `hp<=1`).
+
+A field that never appears in any sample (a typo, or a field this
+slice/fidelity doesn't carry) evaluates its clause to `false` rather than
+crashing the run, but every occurrence is counted and surfaced in
+`report.json`'s `policy.missingFieldWarnings` (and printed to the console) —
+a typo doesn't fail silently forever, it just doesn't stop a 25-second run
+either.
+
+**Actions:**
+
+- `tap` — edge-triggered: fires once on a false→true transition, presses the
+  key, releases after `holdMs` (default 60ms) via a fire-and-forget timer so
+  a tap's hold duration never blocks the sample cadence. Won't re-fire on a
+  second consecutive true tick — the condition has to go false and true
+  again.
+- `hold` — level-triggered: the key is down for exactly as long as the
+  condition is true, re-synced every tick. Multiple `hold` rules targeting
+  the same code combine by OR.
+
+`run.mjs` rejects a script where a policy `hold` rule and the static
+events/moves list target the same code — that ownership conflict is
+genuinely ambiguous, same philosophy as the double-edge check on the static
+timeline. (`tap` rules aren't checked against the static list — a momentary
+press coexisting with a static tap on the same code is unusual but not
+structurally ambiguous the same way.)
+
+**Known, accepted limitation** (documented, not engineered around — keeping
+this a dumb reflex layer was the point): rapid re-triggering of the same
+`tap` code before its previous release fires can release the key early.
+Not expected to matter for the shipped predicates — a hound's `tell` window
+and a terrain pin don't oscillate faster than one sample interval — but
+worth knowing before adding a new fast-oscillating predicate.
+
+**Proof it works, precisely** (`scripts/policy-hound-reactive.json`,
+`?slice=traversal&hound=1`, committed under `reports/demo/policy-hound-reactive/`):
+rebuilds `hound-jump.json` (two fixed taps at 880ms/1330ms) with zero timed
+jumps — `pinned` and `houndTell` only. The committed run shows the *second*
+of three hounds (`hostiles[1]`) entering `tell` at x=49.47 while the first
+hound had already passed to x=32.38 in `prowl` — the rule correctly fired on
+the hound that was actually telegraphing, not a fixed clock. (Whether that
+particular jump *dodges* the resulting charge is a separate, real combat-
+tuning question the run also surfaced honestly: hp dropped 3→2 despite the
+reactive tap firing at the right instant — flagging for `combat`/adversarial
+rather than tuning it here.) `scripts/policy-pinned-jump.json` is the
+narrower single-predicate version: holds right with zero timed jumps at all,
+fires `pinned` 13 times crossing the whole route's terrain, and reaches the
+dare pocket (grabbing the reward) purely reactively.
+
+## Deterministic injection mode
+
+The adversarial report also measured non-determinism: `t2-transform-seam-rush`
+(hold right + mash Space for 20s, byte-identical input) produced `maxX`
+112.11 / 83.65 / 87.30 across three runs — a 28-tile spread — with wall-clock
+dispatch jitter interacting with the game's variable-timestep frame loop as
+the suspected cause.
+
+`--deterministic` changes *when* an event is sent: instead of a wall-clock
+timer, the driver polls `sample.gameMs` (the game's own sim clock, requires
+`testapi`/`window.HB`) every sample tick and dispatches any event whose `t`
+has been reached, in order. This quantizes dispatch to the sample interval —
+an event scheduled for `gameMs=1400` fires at the first tick where
+`gameMs>=1400`, up to `sampleMs` of sim time late, recorded per-event as
+`gameMsJitterMs` — rather than eliminating jitter outright; lower
+`--sample-ms` for a tighter bound. A useful side effect: an event scheduled
+during a pause/retry freeze (`gameMs` doesn't advance) correctly waits for
+gameplay to resume instead of firing based on real elapsed time regardless.
+Requires `testapi`/`window.HB`; without a number in `sample.gameMs`,
+`run.mjs` prints an error and exits non-zero rather than silently behaving
+like wall-clock mode (this was caught immediately in practice — see
+Honesty/limitations below).
+
+**Quantified, both directions:**
+
+- **`mid-route.json` (traversal slice, no ritual thresholds), 3× wall-clock
+  vs 3× deterministic:** victory time spread shrank from 609ms (6827–7436ms)
+  to 74ms (6297–6371ms) — about 8× tighter. `protoScore` spread shrank from
+  32.3 (140.5–172.8) to 2.7 (83.0–85.7) — over 10× tighter. `minEdgeMargin`
+  landed on the exact same value (35.44 tiles) in all three deterministic
+  runs versus a small spread wall-clock. This is what the mode is supposed
+  to do, and it does it.
+- **`t2-transform-seam-rush.json` (transform slice, crosses ritual
+  thresholds), 5× wall-clock vs 5× deterministic:** `maxX` spread did
+  **not** meaningfully shrink (48.39 tiles wall-clock vs 48.48 deterministic)
+  — essentially unchanged. But the *reason* is itself the finding: three of
+  the five deterministic runs landed at `maxX` 132.45/132.61/132.61 (a
+  0.16-tile spread — near-perfect determinism within that cluster), and the
+  other two landed at 84.13/84.89. Digging into *when* — the two clusters'
+  **first death time diverges by up to ~6.5 seconds of `gameMs`**
+  (2805–3351ms vs 8797–9268ms) from byte-identical, sim-time-locked input.
+  An input-dispatch-jitter explanation cannot produce a divergence that
+  large; something inside the simulation itself forks into one of two
+  outcomes depending on factors this mode doesn't control.
+
+**Characterizing the residual divergence (per the task's ask):** dispatch
+jitter is not the dominant source of `t2`'s non-determinism — the game's
+"clamped variable timestep" (per `README.md`'s architecture notes) means
+frame-to-frame `dt` varies with real rendering/host load regardless of when
+input was sent, and if a ritual-arming or threshold check is sensitive to
+which side of a knife-edge that accumulated variance lands on, byte-identical
+input can still fork into qualitatively different runs. Deterministic
+*input* was necessary but not sufficient here. This isn't something the
+harness can fix by injecting input more precisely — it would need either a
+fixed-timestep simulation mode or a way to pin `dt` itself, which is a
+game-side question, not a harness one. **Hook request, not a build:** if a
+fixed-timestep (or seeded-`dt`) mode for `?slice=transform` (or generally)
+is cheap to add, it would let a future harness pass isolate whether the
+fork is really `dt`-driven; if not, this is at least now a precisely bounded
+finding (~6.5s of gameMs at a specific point early in the run) instead of a
+28-tile number with no further diagnosis.
+
+Reproduce the quantification:
+
+```sh
+for i in 1 2 3 4 5; do node run.mjs scripts/adversarial/t2-transform-seam-rush.json --max-runtime-ms 26000 --out /tmp/wc-$i; done
+for i in 1 2 3 4 5; do node run.mjs scripts/adversarial/t2-transform-seam-rush.json --max-runtime-ms 26000 --deterministic --out /tmp/det-$i; done
+```
 
 ## How input is actually delivered
 
@@ -313,37 +470,42 @@ adversarial report left open).
 
 ## Demo runs
 
-Four scripts are committed under `scripts/`, with their reports committed
+Six scripts are committed under `scripts/`, with their reports committed
 under `reports/demo/` (screenshots/videos are gitignored; the JSON + summary
-are the actual demo artifact). All four now run in **`testapi` fidelity**.
+are the actual demo artifact). All six run in **`testapi` fidelity**. The
+original four are **re-baselined under `--deterministic`** as of this pass —
+see "Deterministic injection mode" above for why that's the more
+reproducible reference going forward; numbers below reflect that mode and
+will differ from earlier commits' wall-clock baseline (the game's own
+tuning has also moved since — CP1 pace/crush fixes landed in the meantime).
 
 | Script | Policy | Result |
 | --- | --- | --- |
-| `mid-route.json` | Hold right + hold fire + tap jump every ~800ms — a heuristic that leans on the game's forgiving ledge/wall-jump catch instead of solving exact timing | **completed**, idle fraction **3%**, airborne 6.3s, crush margin 18.4 tiles, protoScore **149.1** |
-| `dare-pocket.json` | Commits into the dare pocket, retreats within the wager window, then resumes the hop policy | **not-completed**, idle fraction **34%**, crush margin 11.1 tiles, protoScore **122.2** |
-| `idle-greedy.json` | Zero key events for 8s (`&enemies=0` to isolate the signal from ambient wasp combat) | **stalled**, idle fraction **94.1%**, crush margin **0.4 tiles**, protoScore **−36.1** |
-| `retry-recovery.json` | Holds right only; dies once (deterministic, `enemies=0`), proves the F7 fix (above) | **died**, 1 retry detected, `vx` 0 -> 10.08 tiles/s within 75ms of the retry |
+| `mid-route.json` | Hold right + hold fire + tap jump every ~800ms — a heuristic that leans on the game's forgiving ledge/wall-jump catch instead of solving exact timing | **completed**, idle fraction **0%**, crush margin 35.44 tiles, protoScore **70.2** |
+| `dare-pocket.json` | Commits into the dare pocket, retreats within the wager window, then resumes the hop policy | **not-completed**, idle fraction **43%**, crush margin 28.13 tiles, protoScore **65.1** |
+| `idle-greedy.json` | Zero key events for 8s (`&enemies=0` to isolate the signal from ambient wasp combat) | **stalled**, idle fraction **95.8%**, crush margin **12.3 tiles**, protoScore **−63.6** |
+| `retry-recovery.json` | Holds right only; dies once (`enemies=0`), proves the F7 fix still holds under `--deterministic` | **died**, 1 retry detected, `vx` 0 → 10.8 tiles/s within 75ms of the retry |
+| `policy-pinned-jump.json` | Holds right, **zero timed jumps** — the only jump input is `{when: "pinned", do: {tap: "jump"}}` | **not-completed** (reaches the dare pocket, grabs the reward, jams at the dead-end wall — see "Closed-loop policy mode" above), 13 reactive jumps fired across the whole route |
+| `policy-hound-reactive.json` | Closed-loop rebuild of `hound-jump.json` — zero timed jumps, `pinned` + `houndTell` only, `?hound=1` | **not-completed** (2.4s window by design, mirroring the script it replaces); correctly dodged-attempted on the *second* of three hounds' `tell`, not a fixed clock — see above for the hp-drop caveat |
 
-The headline finding across the first three: idle fraction (3% / 34% / 94%),
-crush-edge margin (18.4 / 11.1 / 0.4 tiles), and protoScore (149.1 / 122.2 /
-−36.1) all move in lockstep and cleanly separate "moving with intent,"
-"moving but distracted," and "standing still." That's a direct, working
-confirmation of the pursuit-pressure diagnosis in `docs/FLEET-PLAN.md`
-("Pursuit clock too soft ... no timed decisions"), backed by real
-position/velocity data. Exact numbers shift slightly run-to-run — the
-adversarial report documents this as physics-timing sensitivity in
-open-loop scripts, not dispatch jitter (which measured 0-2ms average, ≤4ms
-max) — so treat each number as "about this," not to the decimal.
+The idle fraction / crush-margin / protoScore lockstep finding from the
+first pass (before CP1's pace fixes) still holds in shape here — idle
+fraction and protoScore both move in the same direction across the three
+non-reactive policies, confirming the pursuit-pressure diagnosis in
+`docs/FLEET-PLAN.md` remains legible under the new tuning. Absolute numbers
+moved because the game did (crush margins are markedly larger post-CP1) —
+treat each as "about this, given the tuning at commit time," not as a fixed
+target.
 
-Reproduce any of them (exact numbers will vary run-to-run — physics timing
-against a live scroll/spawn clock isn't perfectly deterministic frame-to-frame
-for an open-loop script):
+Reproduce any of them:
 
 ```sh
-node run.mjs scripts/mid-route.json --out /tmp/check
-node run.mjs scripts/dare-pocket.json --out /tmp/check
-node run.mjs scripts/idle-greedy.json --out /tmp/check
-node run.mjs scripts/retry-recovery.json --out /tmp/check   # F7 regression proof
+node run.mjs scripts/mid-route.json --out /tmp/check --deterministic
+node run.mjs scripts/dare-pocket.json --out /tmp/check --deterministic
+node run.mjs scripts/idle-greedy.json --out /tmp/check --deterministic
+node run.mjs scripts/retry-recovery.json --out /tmp/check --deterministic   # F7 regression proof
+node run.mjs scripts/policy-pinned-jump.json --out /tmp/check               # closed-loop proof
+node run.mjs scripts/policy-hound-reactive.json --out /tmp/check --max-runtime-ms 15000
 ```
 
 ## Honesty / limitations — read before trusting a report
@@ -387,35 +549,75 @@ node run.mjs scripts/retry-recovery.json --out /tmp/check   # F7 regression proo
    actual scripts through this harness, not by this harness auditing itself
    — external, adversarial verification found real defects that internal
    testing during the first two passes did not.
-6. **Every report before this fix should be treated as suspect past a
+6. **Every report before F7's fix should be treated as suspect past a
    run's first death.** The three original demo reports (`mid-route`,
    `dare-pocket`, `idle-greedy`) never died within their scripted windows, so
    they were never actually affected by F7 — but any other harness output
    generated before this fix, from any script that died and kept running,
    measured a zombie attempt for everything after the first retry.
+7. **`houndTell`/`houndCharge` (and any future hostile-state predicate) need
+   `window.HB`, not `testapi`.** `?testapi=1`'s snapshot doesn't carry
+   `hostiles` at all as of this writing; the sampler enriches every sample
+   with `window.HB.snapshot()`'s `hostiles` array regardless of which
+   channel is primary (window.HB is unconditional, so this works today) —
+   but if a future build ever removed `window.HB` while keeping `testapi`,
+   these predicates would silently always evaluate false rather than error.
+   Worth a real hook request (below) rather than relying on this fallback
+   indefinitely.
+8. **Deterministic mode fixes one jitter source, not all of them** — see
+   "Deterministic injection mode" above. The `t2-transform-seam-rush`
+   quantification is the concrete example: don't assume `--deterministic`
+   makes a script fully reproducible just because it removes dispatch
+   jitter as a variable.
+9. **Resource contention between stacked headless Chrome launches is real.**
+   Running many `run.mjs` invocations back-to-back in one session (as this
+   pass's quantification did — 18 runs total) produced one transient
+   `bootError` (game didn't reach a rendered frame within 8s) that a
+   simple retry resolved. Not a bug in the harness's logic, but worth
+   spacing out heavy batch runs or increasing the boot timeout if it
+   recurs — see "Known limitations" below.
 
 ## Hook requests for the game/module-split side
 
 1. ~~Add `sliceStats.airJumps` to the `?testapi=1` snapshot~~ — **done**
    (the module split's `src/main.js` publishes it; this harness just needed
    to stop dropping it, fixed above).
-2. **Land `HB.score.events`/`HB.score.snapshot()`** per A.5, once the CHARGE
+2. **Add `hostiles` (with `state`/`dir`) to the `?testapi=1` snapshot**,
+   matching what `HB.snapshot()` already carries — closes the gap in
+   limitation #7 above and removes this harness's only remaining dependency
+   on `window.HB` specifically rather than either channel.
+3. **Land `HB.score.events`/`HB.score.snapshot()`** per A.5, once the CHARGE
    system exists, so `computeAirborneKills`/the `links` proxy in
    `lib/metrics.mjs` can be replaced with the real event-derived counts
    instead of the kills+grounded / route-matcher approximations described
    above.
-3. The module split has landed `src/pure/traversal.js` — `lib/fixture.mjs`'s
+4. **A fixed-timestep (or seeded-`dt`) simulation mode**, at least for
+   `?slice=transform` — see "Deterministic injection mode" above. This is
+   the one thing deterministic *input* injection cannot fix on its own;
+   flagging it as a hook request rather than attempting to build around it
+   from the harness side, per this task's own guidance.
+5. The module split has landed `src/pure/traversal.js` — `lib/fixture.mjs`'s
    hand-copied snapshot can now be replaced with a real import (not done in
-   this pass; scoped out to stay focused on the two reported defects). The
+   this pass; scoped out to stay focused on the requested capabilities). The
    adversarial report already diffed the two byte-for-byte and found no
    drift, so this is a safe, low-risk cleanup whenever someone picks it up.
-4. `window.HB` now exists (unconditional, richer than `testapi`) — no
+6. `window.HB` now exists (unconditional, richer than `testapi`) — no
    longer a hook request, just confirmed working via `HB.snapshot()`.
+7. **In flight, noted for context (not this harness's ask):** the
+   `g1-limbturn` agent is adding ritual state + seal position
+   (`transformSealX`) to the `?testapi=1`/`HB` snapshot's `transform` object
+   in parallel with this pass. This harness didn't wait for it — the
+   `transform` field is already passed through verbatim in `lib/sampler.mjs`
+   (see "additive telemetry fields" comment there), and the policy condition
+   grammar now supports dotted paths and string equality
+   (`"transform.eventState=='turning'"`) specifically so that hook lands
+   into an already-capable consumer, not one that needs a follow-up change.
 
 ## Known limitations (engineering, not measurement)
 
 - No retry/backoff around browser launch or page navigation failures beyond
-  the boot-readiness timeout (8s) reported as `meta.bootError`.
+  the boot-readiness timeout (8s) reported as `meta.bootError` — see
+  limitation #9 above for a concrete instance (stacked headless launches).
 - The static server has no directory index handling beyond `/` →
   `index.html`; fine for this repo's flat layout, not general-purpose.
 - Video recording (`--video`) uses Playwright's built-in per-context
@@ -424,6 +626,9 @@ node run.mjs scripts/retry-recovery.json --out /tmp/check   # F7 regression proo
 - No parallel-run support (one browser per `run.mjs` invocation); running
   multiple scripts concurrently means invoking `run.mjs` multiple times,
   each getting its own ephemeral static-server port.
+- Policy `tap` actions can release early under rapid same-code
+  re-triggering — see "Closed-loop policy mode" above; not engineered
+  around on purpose.
 
 ## Files
 
@@ -433,26 +638,30 @@ tools/playtest/
   run.mjs                CLI entry point
   lib/
     server.mjs           static file server for the repo root
-    compile.mjs           moves/events -> flat time-sorted event list
-    driver.mjs            browser launch, input replay, sampling loop
+    compile.mjs           moves/events -> flat time-sorted event list; exports resolveCode (shared with policy.mjs)
+    policy.mjs             closed-loop rules: condition grammar, tap/hold actions
+    driver.mjs            browser launch, input replay (wall-clock or deterministic), policy tick, sampling loop
     sampler.mjs            in-page probe (testapi / window.HB / DOM fallback)
     metrics.mjs            trace -> report metrics, incl. A.5 alignment
     fixture.mjs             hardcoded TRAVERSAL_FIXTURE route-graph snapshot
     report.mjs              report.json + summary.md writer
-  scripts/                 example input scripts (incl. retry-recovery.json, the F7 proof)
+  scripts/                 example input scripts (incl. retry-recovery.json (F7 proof),
+                            policy-pinned-jump.json / policy-hound-reactive.json (closed-loop proof))
   reports/demo/             committed demo run output (json/md only)
   runs/                     default ad-hoc output dir (gitignored)
 ```
 
 ## Single best next action
 
-Replace `lib/fixture.mjs`'s hand-copied `TRAVERSAL_FIXTURE` snapshot with a
-real `import` from `src/pure/traversal.js`, now that the module split has
-landed it — the last documented staleness risk in this harness's own code,
-and the adversarial report already confirmed there's currently zero drift to
-reconcile, so it's a safe, mechanical change whenever picked up. Separately,
-and not this harness's call: the adversarial report left F7's *human*-facing
-consequence as `SUSPECTED`, not `CONFIRMED` — whether a real held movement
-key recovers via Chrome's own auto-repeat before a player notices is a
-question for `physics-reviewer`/a hands-on check, independent of this
-harness-side measurement fix.
+Pick up the `t2-transform-seam-rush` residual-divergence finding from
+"Deterministic injection mode" above: file (or build, if it's cheap and
+someone owns `sim/time.js`) the fixed-timestep/seeded-`dt` hook request, then
+re-run the 5×/5× quantification. That would tell us whether the ~6.5-second
+first-death-time fork is really `dt`-driven or something else entirely — the
+one open question this pass could characterize precisely but not close.
+
+Secondary, lower-cost: replace `lib/fixture.mjs`'s hand-copied
+`TRAVERSAL_FIXTURE` snapshot with a real `import` from `src/pure/traversal.js`
+— the last documented staleness risk in this harness's own code, and the
+adversarial report already confirmed there's currently zero drift to
+reconcile, so it's a safe, mechanical change whenever picked up.
