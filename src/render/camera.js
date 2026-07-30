@@ -13,7 +13,7 @@ import {
   TRANSFORM_FIXTURE, TRANSFORM_PATH, transformAltAt, transformBandHeading,
   transformYawDeltaDeg,
 } from '../pure/transform.js';
-import { ACTIVE_FIXTURE, IS_TRANSFORM_SLICE, VIEW_ID } from '../mode.js';
+import { ACTIVE_FIXTURE, IS_G1, IS_TRANSFORM_SLICE, VIEW_ID } from '../mode.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs, scrollX } from '../sim/time.js';
 import { setEdges } from '../sim/edges.js';
@@ -63,9 +63,13 @@ function calibrateEdges() {
   // Pulling back — for a narrow slice viewport (portrait correction) or for a
   // ?view= pull-back — should not push the grey-box into fog. Move the fog
   // band by the same depth delta so contrast stays stable at every depth.
+  // ?g1=1 swaps the band for the limb's tighter haze (CONFIG.limb.fog): the
+  // facet past a joint has to wash out. The pull-back shift composes on top,
+  // so ?g1=1&view=far keeps the same contrast at its wider radius.
   const fogShift = cameraDepth - C.z;
-  scene.fog.near = CONFIG.fog.near + fogShift;
-  scene.fog.far = CONFIG.fog.far + fogShift;
+  const F = IS_G1 ? CONFIG.limb.fog : CONFIG.fog;
+  scene.fog.near = F.near + fogShift;
+  scene.fog.far = F.far + fogShift;
 }
 
 export { calibrateEdges };
