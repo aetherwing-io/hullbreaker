@@ -32,6 +32,17 @@ import {
   traversalMarginCapScroll, traversalPocketEntryMargin,
 } from '../src/pure/traversal.js';
 import {
+  TRAVERSAL_HOOK, TRAVERSAL_FLOW,
+} from '../src/pure/traversal.js';
+import {
+  hookAnchorReachableFrom, hookArcAccepts, hookHoldPoint, hookLineClear,
+  hookWhipDir, hookWhipVelocity, hookZipMarch,
+} from '../src/pure/hook.js';
+import {
+  flowAddLink, flowCompose, flowFreshState, flowGroundLifetimeMs, flowLaunchMultFor,
+  flowMult, flowSpeedMult, flowStepState,
+} from '../src/pure/flow.js';
+import {
   SCORE, scoreNotch, scoreNotchMult, scoreFireRateMult, scoreChargeGain,
   scoreThreatGain, scoreApplyGain, scoreDrainPerSec, scoreStep,
   scoreClassification, scoreNotchGlyphs, scoreConnectorAt, scoreRoutesCompleted,
@@ -2034,6 +2045,295 @@ const XL = buildTransformLevel(CONFIG);
   }
 }
 
+/* ============ MOVEMENT VERB PROTOTYPES (wave 3, opt-in) ============= *
+ * SNAP HOOK (?hook=1) and the MOMENTUM SPINE (?flow=1). Both are flags-off by
+ * default, so the first thing asserted is that the shipped resolution is
+ * untouched; everything after that is a property the prototypes' fairness or
+ * collision safety depends on:
+ *   - every authored anchor is acquirable from a taught position, cannot be
+ *     grabbed from ahead (a grab is always forward progress), fits a hanging
+ *     body, and cannot be reached through rock;
+ *   - the zip's substep is finer than the thinnest wall in the fixture, so a
+ *     tether cannot tunnel where the endpoint-only player collision would;
+ *   - no chain of any length puts a horizontal launch past the dt-clamp
+ *     displacement budget the whole controller relies on.                   */
+{
+  const HK = TRAVERSAL_HOOK, FL = TRAVERSAL_FLOW;
+  const AN = TRAVERSAL_FIXTURE.hookAnchors;
+  const solid = (i, j) => levelSolidCell(TL, i, j, 8);
+  const bodyFits = (x, y) => {
+    for (let i = Math.floor(x - PL.width / 2 + 0.02); i <= Math.floor(x + PL.width / 2 - 0.02); i++)
+      for (let j = Math.floor(y + 0.02); j <= Math.floor(y + PL.height - 0.02); j++)
+        if (solid(i, j)) return false;
+    return true;
+  };
+
+  // ---- flags off is the shipped game -----------------------------------
+  {
+    let inert = true;
+    for (const id of TRAVERSAL_PACE_IDS) {
+      const plain = resolveTraversalPace(id);
+      const off = resolveTraversalPace(id, TRAVERSAL_FIXTURE, { hook: false, flow: false });
+      if (plain.hook !== null || plain.flow !== null) inert = false;
+      if (JSON.stringify(plain.movement) !== JSON.stringify(off.movement)) inert = false;
+      // the pace's own movement overrides, untouched by the prototypes
+      const want = { ...TRAVERSAL_FIXTURE.movement, ...(TRAVERSAL_PACES[id].movement || {}) };
+      if (JSON.stringify(plain.movement) !== JSON.stringify(want)) inert = false;
+    }
+    ok(inert, 'no ?hook / ?flow: every pace resolves exactly as it shipped');
+  }
+  {
+    let overlay = true;
+    for (const id of TRAVERSAL_PACE_IDS) {
+      const on = resolveTraversalPace(id, TRAVERSAL_FIXTURE, { hook: true, flow: true });
+      const plain = resolveTraversalPace(id);
+      if (JSON.stringify(on.hook) !== JSON.stringify(HK)) overlay = false;
+      if (JSON.stringify(on.flow) !== JSON.stringify(FL)) overlay = false;
+      // flow's ONLY movement override is surge's auto-launch, generalized
+      const diff = Object.keys(on.movement).filter((k) =>
+        JSON.stringify(on.movement[k]) !== JSON.stringify(plain.movement[k]));
+      if (diff.length !== (plain.movement.ledgeAutoLaunch ? 0 : 1) ||
+          (diff.length === 1 && diff[0] !== 'ledgeAutoLaunch')) overlay = false;
+      if (on.movement.ledgeAutoLaunch !== true) overlay = false;
+      // and the geometry, routes and stakes are still the pace's own
+      if (JSON.stringify(on.enemies) !== JSON.stringify(plain.enemies) ||
+          JSON.stringify(on.platforms) !== JSON.stringify(plain.platforms) ||
+          JSON.stringify(on.rewards) !== JSON.stringify(plain.rewards)) overlay = false;
+    }
+    ok(overlay,
+       'arming both verbs adds the two tuning tables and exactly one movement override');
+  }
+
+  // ---- anchor data ------------------------------------------------------
+  {
+    let valid = true, ordered = true;
+    const ids = new Set();
+    for (let i = 0; i < AN.length; i++) {
+      const a = AN[i];
+      if (ids.has(a.id) || typeof a.note !== 'string' || !a.teaches) valid = false;
+      ids.add(a.id);
+      if (a.x < TRAVERSAL_FIXTURE.bounds.x0 || a.x >= TRAVERSAL_FIXTURE.bounds.x1) valid = false;
+      if (!(a.arc && a.arc.length === 2 && a.arc[0] >= 0 && a.arc[0] < 360 &&
+            a.arc[1] >= 10 && a.arc[1] <= 90)) valid = false;
+      if (solid(Math.floor(a.x), Math.floor(a.y))) valid = false;   // never embedded
+      const hold = hookHoldPoint(a, HK);
+      if (!bodyFits(hold.x, hold.y)) valid = false;                 // a body can hang here
+      if (i > 0 && AN[i - 1].x > a.x) ordered = false;
+    }
+    ok(AN.length >= 4 && AN.length <= 6 && valid,
+       'four to six anchors, unique, in bounds, not embedded, and hangable');
+    ok(ordered, 'anchors are authored in forward order, so acquisition ties break forward');
+  }
+
+  // ---- an anchor can never be grabbed from ahead of it ------------------
+  {
+    let forwardOnly = true;
+    for (const a of AN) {
+      // a position directly ahead at hand height, and one ahead-and-above
+      if (hookArcAccepts(a, a.x + 4, a.y) || hookArcAccepts(a, a.x + 4, a.y + 3))
+        forwardOnly = false;
+    }
+    ok(forwardOnly,
+       'every anchor arc rejects an approach from ahead: a grab is always forward progress');
+  }
+
+  // ---- reachability: every anchor is acquirable from a taught position ---
+  {
+    const conns = TRAVERSAL_FIXTURE.connectors;
+    const rows = [];
+    let allReachable = true, teachesValid = true;
+    for (const a of AN) {
+      const from = conns.filter((c) =>
+        hookAnchorReachableFrom(a, c.x, c.y, HK, solid, 1));
+      rows.push(a.id + '<-' + (from.map((c) => c.id).join('/') || 'NOTHING'));
+      if (!from.length) allReachable = false;
+      if (!from.some((c) => c.id === a.teaches)) teachesValid = false;
+    }
+    ok(allReachable,
+       'every hook anchor is acquirable from at least one authored connector: ' + rows.join(' '));
+    ok(teachesValid,
+       'each anchor is acquirable from the connector it claims to teach from');
+  }
+
+  // ---- the roof line is priced: leaving it is a real option -------------
+  {
+    const span = AN.find((a) => a.id === 'pocket-span');
+    const roof = TRAVERSAL_FIXTURE.connectors.find((c) => c.id === 'chimney-top');
+    ok(!!span && !!roof && hookAnchorReachableFrom(span, roof.x, roof.y, HK, solid, 1),
+       'the roof (chimney-top) can grab the pocket-span anchor, so leaving the degenerate ' +
+       'fast line is an available choice rather than a nerf');
+    // …and that grab moves the player FORWARD and DOWN, off the roof
+    ok(span.x > roof.x && hookHoldPoint(span, HK).y < roof.y,
+       'and that grab is a forward, downward transfer (roof y=' + roof.y +
+       ' → hold y=' + hookHoldPoint(span, HK).y.toFixed(2) + ')');
+  }
+
+  // ---- line of sight is honest ------------------------------------------
+  {
+    const wall = TRAVERSAL_FIXTURE.solidRects.find((r) => r.id === 'chimney-left');
+    const thinnest = Math.min.apply(null, TRAVERSAL_FIXTURE.solidRects.map((r) => r.x1 - r.x0));
+    ok(HK.losStepTiles < thinnest,
+       'the tether sight step (' + HK.losStepTiles + ') is finer than the thinnest authored wall (' +
+       thinnest + '), so it cannot step over one');
+    const midRow = wall.y0 + 1;
+    ok(!hookLineClear(wall.x0 - 2, midRow + 0.5, wall.x1 + 2, midRow + 0.5, solid, HK.losStepTiles),
+       'a tether line through a wall is refused');
+    ok(hookLineClear(wall.x0 - 2, wall.y1 + 1.5, wall.x1 + 2, wall.y1 + 1.5, solid, HK.losStepTiles),
+       'a tether line over that same wall is allowed');
+    // the dare pocket keeps its authored retreat: no hook out from under the roof
+    const pocketFloorY = TRAVERSAL_FIXTURE.groundRuns.find((r) => r.x0 === 47).y;
+    const span = AN.find((a) => a.id === 'pocket-span');
+    ok(!hookAnchorReachableFrom(span, 52, pocketFloorY, HK, solid, 1),
+       'standing in the dare pocket cannot hook out through the overhang — the wager keeps ' +
+       'its measured retreat');
+  }
+
+  // ---- the zip cannot tunnel at the dt clamp ----------------------------
+  {
+    const mainSrc = readFileSync(join(srcDir, 'main.js'), 'utf8');
+    const mm = mainSrc.match(/Math\.min\(\s*(\d+(?:\.\d+)?)\s*,\s*t\s*-\s*last\s*\)/);
+    const dtMax = (mm ? Number(mm[1]) : 50) / 1000;
+    const travel = HK.zipSpeed * dtMax;
+    const steps = Math.max(1, Math.ceil(travel / HK.zipSubstepTiles));
+    const perStep = travel / steps;
+    ok(perStep <= HK.zipSubstepTiles + 1e-9 && HK.zipSubstepTiles <= 0.5,
+       'the zip advances at most ' + perStep.toFixed(3) +
+       ' of a tile per substep at the dt clamp (budget ' + HK.zipSubstepTiles + ')');
+    // a substepped body cannot cross a 1-wide wall: clearing it needs
+    // 1 + player width of travel, i.e. several substeps, each of which is tested
+    ok(HK.zipSubstepTiles < 1 - 1e-9,
+       'and a substep is smaller than a wall, so every crossing attempt is tested inside it');
+    // the whip, and the drive, under every pace with both verbs armed
+    let worstH = 0, worstUp = 0, worst = '';
+    for (const id of TRAVERSAL_PACE_IDS) {
+      const F = resolveTraversalPace(id, TRAVERSAL_FIXTURE, { hook: true, flow: true });
+      const TPp = { ...PL, ...F.movement };
+      const paceChain = traversalChainMult(F.chain ? F.chain.max : 0, F.chain);
+      const composed = flowCompose(paceChain, F.flow.max, F.flow);
+      const cands = [
+        TPp.runSpeed * flowSpeedMult(F.flow.max, F.flow),       // sustained drive
+        Math.min(F.flow.launchCeiling, TPp.wallJumpX * composed),
+        Math.min(F.flow.launchCeiling, TPp.ledgeLaunchX * composed),
+        F.hook.launchCeiling,                                   // the whip's own bound
+        TPp.knockbackX,
+      ];
+      const h = Math.max.apply(null, cands);
+      if (h > worstH) { worstH = h; worst = id; }
+      worstUp = Math.max(worstUp, TPp.jumpVel, TPp.airJumpVel, TPp.wallJumpY,
+        TPp.ledgeLaunchY, F.hook.launchY);
+    }
+    ok(worstH * dtMax < 0.9,
+       'hook + flow + every pace chain keeps horizontal displacement under a tile per clamped ' +
+       'frame, worst ' + (worstH * dtMax).toFixed(3) + ' tiles (' + worstH.toFixed(2) +
+       ' u/s in ' + worst + ')');
+    ok(worstUp * dtMax < 0.9,
+       'no verb raises an upward launch into the endpoint-only ceiling check, worst ' +
+       (worstUp * dtMax).toFixed(3) + ' tiles');
+    // the whip must not out-jump a jump, or the hook becomes a better jump button
+    let sane = true;
+    for (const id of TRAVERSAL_PACE_IDS) {
+      const TPp = { ...PL, ...resolveTraversalPace(id).movement };
+      if (!(HK.launchY < TPp.jumpVel && HK.launchX >= TPp.runSpeed * 0.8)) sane = false;
+    }
+    ok(sane, 'the whip has launch authority but never beats a plain jump for height');
+  }
+
+  // ---- hook state-machine invariants (pure) -----------------------------
+  {
+    ok(HK.sameAnchorLockMs > HK.cooldownMs && HK.cooldownMs > 0,
+       'a released anchor stays locked longer than the global cooldown: no instant re-grab');
+    ok(HK.hangMs > 0 && HK.hangMs <= 200 && HK.zipMaxMs > 0 && HK.zipMaxMs <= 600,
+       'the dangle is readable but never a pause, and a zip can never become a ride');
+    ok(HK.minRange > PL.height * 0.8 && HK.range > HK.minRange &&
+       HK.range < TRAVERSAL_FIXTURE.run.lookAheadTiles * 4,
+       'acquisition has both a floor (no grabbing what you stand under) and a ceiling');
+    // whip direction: from behind = forward, overhead = facing
+    const a = { id: 'x', x: 50, y: 8, arc: [200, 70] };
+    ok(hookWhipDir(a, 45, 1) === 1 && hookWhipDir(a, 55, -1) === -1 &&
+       hookWhipDir(a, 50.1, 1) === 1 && hookWhipDir(a, 50.1, -1) === -1,
+       'a whip always throws the way the player travelled through the anchor');
+    // entry speed is preserved and then bounded
+    const slow = hookWhipVelocity(HK, 1, 3, 1);
+    const fast = hookWhipVelocity(HK, 1, 14, 1);
+    const capped = hookWhipVelocity(HK, 1, 14, 1.3);
+    ok(slow.vx === HK.launchX && fast.vx === 14 && capped.vx === HK.launchCeiling &&
+       slow.vy === HK.launchY,
+       'the whip preserves a fast approach, floors a slow one, and clamps at its ceiling');
+    // the zip march: arrives, stops at the last position that fit, never overshoots
+    const open = () => true;
+    const m1 = hookZipMarch({ x: 0, y: 0 }, { x: 10, y: 0 }, 16, 1 / 60, 0.3, open);
+    ok(!m1.arrived && Math.abs(m1.x - 16 / 60) < 1e-9 && m1.traveled <= 16 / 60 + 1e-9,
+       'one frame of zip travels exactly speed x dt and no further');
+    const m2 = hookZipMarch({ x: 0, y: 0 }, { x: 0.1, y: 0 }, 16, 1 / 60, 0.3, open);
+    ok(m2.arrived && m2.x === 0.1, 'a zip inside one frame arrives exactly on the anchor');
+    const blocked = hookZipMarch({ x: 0, y: 0 }, { x: 10, y: 0 }, 16, 1 / 60, 0.05,
+      (x) => x < 0.12);
+    ok(blocked.blocked && blocked.x < 0.12 && blocked.x > 0,
+       'a blocked zip stops at the last position that fit and reports it, so it can launch');
+  }
+
+  // ---- momentum spine (pure) -------------------------------------------
+  {
+    ok(FL.linkVerbs.indexOf('air') < 0 && FL.linkVerbs.length === 3,
+       'only contact launches build a chain — mashing the air jump pays nothing');
+    ok(flowMult(0, FL) === 1 && flowMult(-3, FL) === 1 &&
+       Math.abs(flowMult(FL.max, FL) - (1 + FL.step * FL.max)) < 1e-9 &&
+       flowMult(FL.max + 5, FL) === flowMult(FL.max, FL),
+       'the chain multiplier starts at 1, rises per link, and clamps at its max');
+    ok(flowCompose(1.18, FL.max, FL) === FL.maxTotalMult &&
+       flowCompose(1, 0, FL) === 1 && flowCompose(1, 1, FL) > 1,
+       'composing with a pace chain is capped at maxTotalMult');
+    ok(flowSpeedMult(FL.max, FL) <= FL.speedMultCap + 1e-9 && flowSpeedMult(0, FL) === 1,
+       'the sustained drive multiplier is capped and neutral at rest');
+    ok(flowCompose(1, 0, null) === 1 && flowMult(3, null) === 1 &&
+       flowLaunchMultFor(1.18, 4, null, 13.5) === 1.18,
+       'with no flow config nothing anywhere is amplified');
+    // the ceiling holds for every base speed a launch can carry
+    let bounded = true;
+    for (const base of [6, 10.8, 11.6, 13.5, 15.9, 20]) {
+      for (let links = 0; links <= FL.max; links++) {
+        const m = flowLaunchMultFor(1.18, links, FL, base);
+        if (base * m > FL.launchCeiling + 1e-9) bounded = false;
+        if (m > flowCompose(1.18, links, FL) + 1e-9) bounded = false;
+      }
+    }
+    ok(bounded,
+       'no chain length and no entry speed can push an amplified launch past the ceiling');
+    // decay: a bounce keeps the chain, standing sheds it one link at a time
+    {
+      const dtMs = 1000 / 60;
+      const stepFor = (ms, grounded, from) => {
+        let st = from;
+        for (let t = 0; t < ms; t += dtMs)
+          st = flowStepState(st, { dtMs, grounded, now: 1e6 }, FL);
+        return st;
+      };
+      const full = flowAddLink(flowAddLink(flowAddLink(flowAddLink(
+        flowFreshState(), 0, FL), 0, FL), 0, FL), 0, FL);
+      ok(full.links === FL.max, 'four contact launches fill the chain');
+      const bounced = stepFor(FL.groundGraceMs * 0.8, true, full);
+      ok(bounced.links === FL.max,
+         'a bounce through the floor inside the grace keeps every link');
+      const shed = stepFor(FL.groundGraceMs + FL.groundDecayMs * 1.5, true, full);
+      ok(shed.links === FL.max - 1,
+         'standing past the grace sheds exactly one link per decay step, got ' + shed.links);
+      const gone = stepFor(flowGroundLifetimeMs(FL.max, FL) + 3 * dtMs, true, full);
+      ok(gone.links === 0,
+         'a full chain dies on the floor in ' + flowGroundLifetimeMs(FL.max, FL) +
+         ' ms — quickly, but not instantly');
+      ok(flowGroundLifetimeMs(FL.max, FL) < 1000 && FL.groundGraceMs >= 150,
+         'that lifetime is under a second and its grace is long enough for a real bounce');
+      const expired = flowStepState({ ...full, expiresAt: 100 },
+        { dtMs, grounded: false, now: 200 }, FL);
+      ok(expired.links === 0,
+         'and an airborne chain expires on its own window: a long fall is not a chain');
+      const alive = flowStepState({ ...full, expiresAt: 1000 },
+        { dtMs, grounded: false, now: 200 }, FL);
+      ok(alive.links === FL.max, 'inside the window, airborne time costs nothing');
+    }
+  }
+}
+
 /* ------------- headroom over every authored ground run --------------- *
  * A route you can run along must not hide an invisible underside: if the
  * clearance over a ground column is barely the player's height, arriving a
@@ -2368,6 +2668,256 @@ const XL = buildTransformLevel(CONFIG);
     ok(sim.afterReset.charge === 0 && sim.afterReset.threat === 0 &&
        sim.afterReset.counts.link === 0 && sim.eventsAfterReset === 0,
        'HB.score.reset() clears the meter, the score and the ring buffer');
+  }
+}
+
+/* ------- the snap hook, driven through the REAL sim loop -------------- *
+ * The pure functions above prove the geometry; this proves the wiring. Same
+ * child-process trick the score block uses (src/mode.js resolves its flags at
+ * import time), driving the unmodified src/sim/player.js with ?hook=1&flow=1&
+ * score=1 from the fixture's own spawn point. What is asserted here is exactly
+ * what a refactor could silently break: the tether owns movement while it is
+ * taut, it always hands back a bounded forward launch, a grab is never a stop,
+ * and a hook launch pays a CHARGE `link` through the ordinary A.1 path with no
+ * special-casing.                                                          */
+{
+  const child = `
+    globalThis.__HB_QUERY__ = 'slice=traversal&pace=surge&hook=1&flow=1&score=1';
+    const base = ${JSON.stringify('file://' + join(srcDir, 'sim'))};
+    const M = await import(${JSON.stringify('file://' + join(srcDir, 'mode.js'))});
+    const E = await import(base + '/edges.js');
+    const T = await import(base + '/time.js');
+    const I = await import(base + '/input.js');
+    const PLm = await import(base + '/player.js');
+    const HK = await import(base + '/hook.js');
+    const FL = await import(base + '/flow.js');
+    const S = await import(base + '/score.js');
+    const WG = await import(base + '/wavegate.js');
+    const p = PLm.player;
+    const out = { phases: [], events: [] };
+    // a viewport wide enough that neither the crush plane nor the right clamp
+    // participates: this block is about the verb, not about the frustum
+    E.setEdges(-200, 200);
+    for (const c of WG.cornerEvents) c.state = 'done';
+    const spawn = M.ACTIVE_SLICE.run.playerSpawn;
+    const place = () => {
+      p.x = spawn.x; p.y = spawn.y; p.vx = 0; p.vy = 0;
+      p.grounded = true; p.onOneWay = null; p.jumpCutDone = true;
+      p.airJumpsLeft = 0;                      // so a refund is observable
+      p.hp = PLm.P.maxHealth;
+      p.iframesUntil = 0; p.hitstunUntil = 0; p.coyoteUntil = 0; p.dropUntil = 0;
+      PLm.clearPlayerTraversal(0);
+      I.clearJumpBuffer(); I.clearHookBuffer();
+      for (const k in I.keys) I.keys[k] = false;
+      HK.resetHook(); FL.resetFlow();
+    };
+    // the real frame order: the clock advances, then the player steps. Every
+    // window in these verbs (buffer, dangle, cooldown, chain) is a gameMs
+    // deadline, so a stepper that froze the clock would prove nothing.
+    const step = (n, dt) => {
+      const d = dt || 1 / 60;
+      for (let i = 0; i < n; i++) { T.advanceGameMs(d * 1000); PLm.updatePlayer(d); }
+    };
+
+    // 1. a grab from the fixture's own spawn: press, then let it run
+    place();
+    out.anchors = M.ACTIVE_SLICE.hookAnchors.length;
+    I.bufferHookUntil(T.gameMs + M.ACTIVE_SLICE.hook.bufferMs);
+    step(1);
+    const zip = HK.hookSnapshot();
+    out.zip = { phase: zip.phase, anchor: zip.anchorId, vx: p.vx, vy: p.vy,
+      grounded: p.grounded, y: p.y };
+    let sawHang = false, movedForward = p.x;
+    for (let i = 0; i < 60; i++) {
+      step(1);
+      const s = HK.hookSnapshot();
+      if (s.phase === 'hang') sawHang = true;
+      if (s.phase !== 'zip' && s.phase !== 'hang') break;
+      if (s.phase === 'zip' && (p.vx !== 0 || p.vy !== 0)) out.zipVelocityLeak = true;
+      movedForward = p.x;
+    }
+    out.sawHang = sawHang;
+    const after = HK.hookSnapshot();
+    out.whip = { phase: after.phase, grabs: after.grabs, whips: after.whips,
+      vx: p.vx, vy: p.vy, airJumpsLeft: p.airJumpsLeft, x: p.x, y: p.y,
+      cooldownMs: after.cooldownMs };
+    out.flowAfterWhip = FL.flowSnapshot();
+    out.launchCeiling = M.ACTIVE_SLICE.hook.launchCeiling;
+    out.launchY = M.ACTIVE_SLICE.hook.launchY;
+    // a second press on the same frame must not re-grab (cooldown + lock)
+    I.bufferHookUntil(T.gameMs + M.ACTIVE_SLICE.hook.bufferMs);
+    step(1);
+    out.regrab = HK.hookSnapshot().grabs;
+    // …and the flight lands, which is where the A.1 link is paid
+    for (let i = 0; i < 240 && !p.grounded; i++) step(1);
+    out.landed = { grounded: p.grounded, y: p.y };
+    out.score = S.scoreSnapshot().counts;
+    out.events = S.scoreEvents.map((e) => e.type);
+
+    // 2. down releases instead of launching (the established grammar)
+    place();
+    I.bufferHookUntil(T.gameMs + M.ACTIVE_SLICE.hook.bufferMs);
+    step(2);
+    I.keys.down = true;
+    step(1);
+    const dropped = HK.hookSnapshot();
+    out.drop = { phase: dropped.phase, releases: dropped.releases, whips: dropped.whips,
+      vy: p.vy };
+    I.keys.down = false;
+
+    // 3. pressing with no anchor in range does nothing at all
+    place();
+    p.x = 70; p.y = 4;
+    const before = { x: p.x, y: p.y };
+    I.bufferHookUntil(T.gameMs + M.ACTIVE_SLICE.hook.bufferMs);
+    step(3);
+    out.miss = { phase: HK.hookSnapshot().phase, grabs: HK.hookSnapshot().grabs,
+      moved: Math.abs(p.x - before.x) > 3 };
+
+    // 4. a live momentum chain carried into the plane's wall pocket dies like
+    //    everything else: the crush resolves in its own frame, the chain and the
+    //    tether are both cleared by the damage path, and no frame ever leaves
+    //    RIG inside terrain or behind the plane.
+    const C = await import(${JSON.stringify('file://' + join(srcDir, 'config.js'))});
+    const LV = await import(base + '/level.js');
+    const overlaps = () => {
+      for (let i = Math.floor(p.x - p.hw + 0.02); i <= Math.floor(p.x + p.hw - 0.02); i++)
+        for (let j = Math.floor(p.y + 0.02); j <= Math.floor(p.y + p.h - 0.02); j++)
+          if (LV.isSolid(i, j)) return true;
+      return false;
+    };
+    const ST = await import(base + '/state.js');
+    const dt = 1 / 60;
+    // Drives the plane into RIG exactly as src/main.js's loop would: the frame
+    // is only simulated while the run is PLAYING, so nothing is measured after a
+    // terminal state the real game would never step.
+    const shoveIntoWall = (atX, atY, links) => {
+      place();
+      ST.setState('PLAYING');
+      T.sliceStats.setbacks = 0;
+      p.x = atX; p.y = atY; p.grounded = true;
+      for (let i = 0; i < links; i++) FL.flowLaunch(p, 'wall', 1, 13.5);
+      const before = FL.flowSnapshot().links;
+      E.setEdges(0, 60);
+      T.setScrollX(p.x - p.hw - C.CONFIG.edges.margin - 0.15);
+      let insideSolid = 0, behindPlane = 0, hpZeroFrames = 0, frames = 0;
+      let chainAtCrush = null;
+      for (let f = 0; f < 90; f++) {
+        T.setScrollX(T.scrollX + 3 * dt);                 // the plane advances
+        T.advanceGameMs(dt * 1000);
+        const hpBefore = p.hp;
+        PLm.updatePlayer(dt);
+        frames++;
+        if (p.hp < hpBefore) chainAtCrush = FL.flowSnapshot().links;
+        if (p.hp <= 0) hpZeroFrames++;
+        if (overlaps()) insideSolid++;
+        if (p.x - p.hw < E.sLeftEdge() + C.CONFIG.edges.margin - 1e-6) behindPlane++;
+        if (ST.state !== 'PLAYING') break;               // the real loop stops here
+        if (T.sliceStats.setbacks > 0) break;
+      }
+      return {
+        before, frames, insideSolid, behindPlane, hpZeroFrames, chainAtCrush,
+        chainAfter: FL.flowSnapshot().links, hookPhase: HK.hookSnapshot().phase,
+        setbacks: T.sliceStats.setbacks, state: ST.state, hp: p.hp,
+      };
+    };
+    // 4a. the sealed dare pocket: nowhere to fall, nowhere to retreat — the
+    //     merged contract calls that terminal, and a live chain must not rescue it
+    const pocket = M.ACTIVE_SLICE.darePocket.bounds;
+    out.sealed = shoveIntoWall(pocket.x1 - 1 - p.hw - 0.05, 1, 2);
+    // 4b. the other half of the setback contract: a lethal HIT mid-chain (no
+    //     wall involved) dislodges RIG to the route below and play continues —
+    //     and the chain is gone there too, because a setback un-earns momentum.
+    place();
+    ST.setState('PLAYING');
+    T.sliceStats.setbacks = 0;
+    p.x = 42; p.y = 5.35; p.grounded = true;        // the chimney floor
+    E.setEdges(-40, 60);
+    T.setScrollX(20);
+    FL.flowLaunch(p, 'wall', 1, 13.5);
+    FL.flowLaunch(p, 'wall', 1, 13.5);
+    const hitChain = FL.flowSnapshot().links;
+    PLm.damagePlayer(PLm.P.maxHealth, p.x - 1);     // a lethal hit, not a crush
+    out.dislodged = {
+      before: hitChain, chainAfter: FL.flowSnapshot().links,
+      hookPhase: HK.hookSnapshot().phase,
+      setbacks: T.sliceStats.setbacks, state: ST.state, hp: p.hp,
+      y: p.y, movedDown: p.y < 5.35,
+    };
+    console.log(JSON.stringify(out));
+  `;
+  let sim = null;
+  try {
+    sim = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', child],
+      { encoding: 'utf8' }));
+  } catch (e) {
+    console.error('pathcheck: sim hook child failed: ' + e.message);
+  }
+  ok(!!sim, 'sim/hook.js drives the real player loop headlessly with ?hook=1');
+  if (sim) {
+    ok(sim.zip.phase === 'zip' && sim.zip.anchor === 'entry-lift' && !sim.zip.grounded,
+       'pressing hook at the fixture spawn grabs the anchor that teaches it (got ' +
+       sim.zip.phase + '/' + sim.zip.anchor + ')');
+    ok(sim.zip.vx === 0 && sim.zip.vy === 0 && !sim.zipVelocityLeak,
+       'while the tether is taut the player carries no velocity — it owns position, ' +
+       'so the normal integrator can never resume holding a zip-speed vector');
+    ok(sim.sawHang, 'the zip arrives and dangles before it throws (the boards’ dangle)');
+    ok(sim.whip.phase === 'idle' && sim.whip.whips === 1 && sim.whip.grabs === 1,
+       'the dangle always converts: one grab, one whip, back to idle');
+    // vy is sampled one frame after the launch, so it has already paid one
+    // frame of gravity — the bound that matters is that it never EXCEEDS the
+    // authored lift (a hook must not out-jump a jump) and is still rising.
+    ok(sim.whip.vx > 0 && sim.whip.vx <= sim.launchCeiling + 1e-9 &&
+       sim.whip.vy > 0 && sim.whip.vy <= sim.launchY + 1e-9 &&
+       sim.whip.vy > sim.launchY - 1.0,
+       'the whip throws forward at a bounded speed (' + sim.whip.vx.toFixed(2) +
+       ' <= ' + sim.launchCeiling + ') with the authored lift (vy ' +
+       sim.whip.vy.toFixed(2) + ' of ' + sim.launchY + ')');
+    ok(sim.whip.airJumpsLeft === 1,
+       'the whip refunds the air jump, so a grab can become another launch');
+    ok(sim.whip.y > sim.zip.y + 2,
+       'the grab gained real altitude: ' + (sim.whip.y - sim.zip.y).toFixed(2) + ' tiles');
+    ok(sim.regrab === 1, 'the cooldown and the anchor lock refuse an instant re-grab');
+    ok(sim.flowAfterWhip.links === 1 && sim.flowAfterWhip.mult > 1,
+       'a hook launch is a momentum-chain link');
+    ok(sim.landed.grounded && sim.score.link >= 1,
+       'the launch that followed the grab pays a CHARGE `link` through the ordinary ' +
+       'A.1 path — no scoring special case for the hook');
+    ok(sim.events.indexOf('link') >= 0 && sim.events.indexOf('stall_tick') < 0,
+       'and the A.5 event stream carries it, with no stall while the tether ran');
+    ok(sim.drop.phase === 'idle' && sim.drop.releases === 1 && sim.drop.whips === 0 &&
+       sim.drop.vy < 0,
+       'down releases the tether and drops, exactly like a ledge or a wall');
+    ok(sim.miss.phase === 'idle' && sim.miss.grabs === 0 && !sim.miss.moved,
+       'a press with no valid anchor is simply a miss: nothing moves, nothing sticks');
+    /* the crush contract, with the momentum spine live. Both outcomes the merged
+       crush/fallback rules define are exercised: the sealed pocket is terminal
+       (nowhere to fall, nowhere to retreat) and the open step is a dislodging.
+       In both, a live chain must die with the crush — momentum is earned, and
+       being crushed is exactly the thing that un-earns it.                    */
+    {
+      const r = sim.sealed;
+      ok(r.before === 2, 'crush case: two contact launches armed a live chain');
+      ok(r.chainAtCrush === 0 && r.chainAfter === 0 && r.hookPhase === 'idle',
+         'a live chain carried into the plane\'s wall pocket dies on the crush frame ' +
+         'itself (chain at crush ' + r.chainAtCrush + ', tether ' + r.hookPhase + ')');
+      ok(r.behindPlane === 0, 'and no frame left RIG behind the damage plane');
+      ok(r.hpZeroFrames <= 1,
+         'the crush still resolves in its own frame rather than grinding (' +
+         r.hpZeroFrames + ' frame(s) at zero hp)');
+      ok(r.state === 'SLICE_RETRY' && r.setbacks === 0,
+         'and the sealed pocket stays terminal: the momentum spine cannot buy a ' +
+         'rescue the merged fallback rule denies (state ' + r.state + ')');
+    }
+    {
+      const r = sim.dislodged;
+      ok(r.before === 2 && r.chainAfter === 0 && r.hookPhase === 'idle',
+         'a lethal hit mid-chain also un-earns the chain (' + r.before + ' → ' +
+         r.chainAfter + ')');
+      ok(r.setbacks === 1 && r.state === 'PLAYING' && r.hp > 0 && r.movedDown,
+         'and the setback is still a dislodging, not a stop: play continues at full ' +
+         'hp on a lower route (y ' + r.y.toFixed(2) + ', setbacks ' + r.setbacks + ')');
+    }
   }
 }
 
