@@ -86,7 +86,10 @@ Implemented:
 - Pooled instanced bullets, instanced tiles; all generation, spawning, and
   sim randomness is seeded and reproducible (the simulation itself runs on
   a clamped variable timestep; projectiles integrate in substeps so fast
-  bolts can't tunnel through thin walls or enemies on slow frames)
+  bolts can't tunnel through thin walls or enemies on slow frames, and cull
+  cleanly at hex-corner/transform bends on the face tangent rather than
+  visibly curving around them — the operator's view-scale-verdict ruling
+  that shots shouldn't snipe across corners)
 
 Not yet built (in build order): the remaining enemy roster (houndframe, polyp
 turret, spore mortar), the boss, the flight interlude, juice pass
@@ -142,9 +145,11 @@ verifies the render loop, pause/resume, resize, and restart, reporting
 SELFTEST PASS/FAIL in both the console and the page title.
 
 The headless harness imports `src/config.js` and `src/pure/*` directly and runs
-178 assertions: polyline continuity, corner-ritual timing, normal-generator
-invariants and fingerprint, traversal topology and camera-follow contracts,
-dare-pocket safety, movement decisions, spawn ordering, and jump math. Before
+a growing assertion suite (178 at the module split, 600+ and climbing as
+fleet work lands — run it for the current count) covering polyline
+continuity, corner-ritual timing, normal-generator invariants and
+fingerprint, traversal topology and camera-follow contracts, dare-pocket
+safety, movement decisions, spawn ordering, and jump math. Before
 the suite it statically guards both layer contracts: no three.js/DOM references
 (in code, comments excepted) and no cross-layer imports in `src/pure/` or
 `src/sim/` — the property that keeps the simulation steppable without a

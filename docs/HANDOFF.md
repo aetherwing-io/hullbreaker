@@ -9,15 +9,30 @@ remain authoritative where this handoff only summarizes them.
 [`FLEET-PLAN.md`](FLEET-PLAN.md) first — it governs that work, assigns lanes,
 and defines the operator checkpoints (CP1–CP4) that gate it. This handoff
 remains the brief for solo sessions and for background FLEET-PLAN doesn't
-repeat. As of this writing: **CP1 concluded** with no single pace crowned
-winner (the `intensity` agent's hunt/swarm/surge variants all read as
-"directionally correct" versus base), and the operator pivoted the mission —
-stop diagnosing "boring," start building the movement verbs the concept art
-promises (tether/hook launches, chained launches, human-scale RIG). The fleet
-is now in **wave 3**: movement-verb prototypes (snap hook/tether first), a
-view-scale experiment, plus continuing CP2 (houndframe) and CP3
-(transformation) work. See [`decisions.md`](decisions.md) entry 2 for the
-full pivot and `FLEET-PLAN.md` for the live lane assignments.
+repeat. As of this writing, **the fleet has judged every checkpoint at least
+once** (CP1 pace, CP2 houndframe, CP2.5 the houndframe follow-up, CP3 the
+transformation slice's first pass) and is deep into **wave 3**: movement-verb
+prototyping. The headline verdicts — full detail in
+[`decisions.md`](decisions.md) entries 2–7 — are:
+
+- **CP1:** no pace crowned; the mission pivoted from tuning pace in
+  isolation to building the movement verbs the concept art promises.
+- **CP2 / CP2.5 (houndframe):** lands well — "enemies feel like they are
+  coming for me" — iterate from `?hound=2.5`; crouch (`?crouch=1`) and
+  aim-assist (`?aim=assist`) are undecided A/B prototypes for a real 8-way
+  aim gap.
+- **CP3 (transformation):** directionally right, but transitions must
+  render as RIG ascending around **static** creature anatomy, not
+  assembling geometry — a second pass is expected.
+- **Movement verdict:** snap hook v1 (`?hook=1`) **rejected** — wrong
+  anchors/input, not the wrong verb; FLOW (`?flow=1`) is the live candidate,
+  still unjudged.
+- **View-scale verdict:** FAR is now the *default* camera (`?view=` opts
+  into near/mid); projectiles no longer visibly curve around corners
+  (shipped default behavior, no flag).
+
+`FLEET-PLAN.md` has the live lane assignments and exact URLs/questions for
+whatever's still open.
 
 ## Start here
 
@@ -67,8 +82,8 @@ through the integrator before touching overlapping runtime areas.
 
 - Branch: `main`
 - HEAD when this handoff was last updated:
-  `738a890 Merge CP3 transformation slice: bulkhead flip, breach return,
-  rendered altitude`
+  `e7b2952 Merge G1 limb-turn: static anatomy corner reveal, bend cull,
+  ritual telemetry`
 - Runtime: [`index.html`](../index.html) is now only a thin shell (CSS, HUD
   markup, the three.js import map, and one module script tag); the game
   itself is 35 ES modules under [`src/`](../src/). See
@@ -154,17 +169,40 @@ weakness that used to be the main gap here:
   (`?fallback`, on by default) inside the traversal slice — all prototypes
   for testing, none of them canon;
 - an opt-in transformation slice (`?slice=transform`): bulkhead flip inward,
-  breach return, and rendered altitude gain, merged for checkpoint CP3 (see
-  below — the operator has already judged the first pass and asked for a
-  render rework, not full approval);
-- houndframe (`94913ad`), a floor-denial enemy in the traversal slice with
-  trial stages and per-pace fairness assertions, merged for checkpoint CP2
-  and awaiting the operator's judgment;
+  breach return, and rendered altitude gain, merged and judged at CP3 —
+  directionally right, but the operator asked for a render rework so
+  transitions read as ascent around static anatomy, not assembly
+  (`decisions.md` entry 3);
+- houndframe (`94913ad`), a floor-denial enemy with trial stages, merged and
+  judged at CP2 ("those feel much better," iterate from `?hound=2.5`); its
+  CP2.5 follow-up — ownership placement, roof contest, commit-coil dodge
+  cue, plus two undecided A/B prototypes for a real 8-way-aim gap
+  (`?crouch=1`, `?aim=assist`) — merged and was judged strongly positive
+  ("enemies feel like they are coming for me"; `decisions.md` entries 4
+  and 6);
+- movement-verb prototypes: snap hook (`?hook=1`) **judged and rejected**
+  (wrong anchors/input, not the wrong verb — stays in the tree inert, no
+  further investment), FLOW (`?flow=1`, momentum spine) still unjudged, and
+  `?autobounce=1` (held jump re-arms the buffer on landing) as a related
+  feel option (`decisions.md` entry 5);
+- the view-scale experiment (`?view=near|mid|far`): **FAR is now the
+  default** camera depth (RIG ≈ 3.7% of screen height, per concept board
+  13), and projectiles no longer visibly curve around hex-corners or
+  transform bends — both shipped as default behavior, no flag
+  (`decisions.md` entry 7);
+- the **G1 limb-turn experiment** (`?g1=1`) on the normal six-face run: the
+  shipped corner ritual re-rendered as a camera orbit around a static
+  faceted limb instead of the brick-slam zipper, with the underlying
+  simulation byte-for-byte unchanged (`tools/pathcheck.mjs` proves it by
+  comparing traces) — the render-side answer to the CP3 static-anatomy
+  ruling, not yet operator-judged itself;
 - the runtime split into 35 ES modules under `src/` (see README's
   Architecture section), with a `?testapi=1`/`window.HB` telemetry surface
   the split added specifically to support tooling; and
-- a bot-player playtest harness (`tools/playtest/`) that plays scripted input
-  in a real browser and reports pacing/fairness metrics.
+- a bot-player playtest harness (`tools/playtest/`), now with a closed-loop
+  bot mode and deterministic input injection (harness v2), that plays
+  scripted or reactive input in a real browser and reports pacing/fairness
+  metrics.
 
 The operator's verdict on the traversal slice's first pass was **boring — the
 spatial grammar is right, the intensity is far off** (see `FLEET-PLAN.md`'s
@@ -172,10 +210,11 @@ diagnosis: soft pursuit pressure, uncontested routes, and no stakes
 differential between routes). `15f66d2` was the first response to that
 verdict, and the `intensity` agent's hunt/swarm/surge variants were the
 second — at checkpoint CP1 all three read as "directionally correct" and none
-was crowned. Rather than keep tuning pace in isolation, the operator pivoted
-the mission toward building the movement verbs the concept art promises (see
-`decisions.md` entry 2) — that pivot, not the old "ground plus floating
-platforms" framing or a still-pending CP1, is the live state of the gap.
+was crowned. The operator pivoted the mission toward building the movement
+verbs the concept art promises (`decisions.md` entry 2); every checkpoint has
+since been judged at least once (see the intro callout above and
+`decisions.md` entries 2–7 for the full verdict set) and the fleet is deep
+into wave 3.
 
 ## Traversal slice
 
@@ -221,6 +260,10 @@ are just where to start reading:
 - `src/pure/transform.js` + `src/render/transform.js` hold the bulkhead-flip/
   breach-return choreography and its rendering, shipped for CP3 at
   `?slice=transform` (see "What currently works" below).
+- `src/sim/hook.js` (snap hook, rejected v1 — inert, kept extractable),
+  `src/sim/flow.js` (momentum spine, unjudged), and `src/sim/pace.js` (the
+  CP1 pacing variants) are the wave-3 movement-verb modules; `src/render/limb.js`
+  is the G1 limb-turn experiment's render-only static-anatomy bake.
 - `tools/pathcheck.mjs` imports `src/config.js` and `src/pure/*` directly (no
   more regex-extracting a pure block) and asserts path, generation, spawn, and
   jump invariants. The assertion count keeps climbing fast as fleet work
@@ -258,30 +301,45 @@ This is now happening in parallel across the fleet rather than as a single
 session's next step — see `FLEET-PLAN.md`'s wave roster and checkpoints (CP2
 houndframe, CP3 bulkhead flip + altitude, CP4 scored run + setback
 prototype). CP1 concluded without a single winner and pivoted the mission
-into **wave 3**: movement-verb prototypes (snap hook/tether, then
-generalizing `surge`'s chained-launch momentum) and a view-scale experiment
-(smaller RIG relative to the world), running alongside the continuing CP2
-work and CP3's second pass below — see [`decisions.md`](decisions.md)
-entries 2 and 3. The order below, from `DESIGN.md`'s Development sequence,
-remains the target convergence point once those variants are judged:
+into **wave 3**: movement-verb prototypes and a view-scale experiment, both
+of which now have verdicts (view-scale: FAR default, shipped; movement:
+snap hook v1 rejected, FLOW still unjudged), running alongside CP2's
+already-positive CP2.5 follow-up and CP3's second pass below — see
+[`decisions.md`](decisions.md) entries 2–7 for the full set. The order
+below, from `DESIGN.md`'s Development sequence, remains the target
+convergence point once the remaining variants are judged:
 
 1. Build one bulkhead flip inward and one breach return while keeping the same
    2D controls and making altitude gain unmistakable. **Merged** (`738a890`,
    `?slice=transform`) and judged at CP3: directionally right, but the
    operator called the transition choreography choppy and ruled that the
    creature's anatomy must read as static and monumental, revealed by camera
-   movement rather than assembled — see `decisions.md` entry 3. A second pass
-   applying that rule is expected before CP3 is considered met.
+   movement rather than assembled — see `decisions.md` entry 3. The G1
+   limb-turn experiment (`?g1=1`, `e7b2952`) is a render-only first answer to
+   that rule for the six-face corner ritual specifically, not yet itself
+   judged. A second CP3 pass applying the rule to the transform slice is
+   still expected.
 2. Add houndframe, polyp, and mortar one at a time, proving each movement answer
-   and then one useful combination. **Houndframe merged** (`94913ad`, floor-
-   denial enemy with trial stages and per-pace fairness assertions),
-   awaiting the operator's CP2 judgment; polyp and mortar not yet started.
+   and then one useful combination. **Houndframe merged and judged at CP2**
+   ("those feel much better," iterate from `?hound=2.5`) and its CP2.5
+   follow-up (ownership placement, roof contest, crouch/aim-assist
+   prototypes, commit coil) merged and judged strongly positive ("enemies
+   feel like they are coming for me") — see `decisions.md` entries 4 and 6.
+   Polyp and mortar not yet started.
 3. Add baseline hit, hurt, launch, pickup, warning, and transformation feedback.
    (Deferred — `FLEET-PLAN.md` keeps juice/audio out of scope for this push.)
 4. Author the full six-phase escalation.
 5. Build the Meridian Crown finale.
 6. Decide whether flight strengthens the ending.
 7. Finish front-end, accessibility, audio, and polish.
+
+Wave 3's movement-verb lane itself: snap hook v1 (`?hook=1`) was built,
+judged, and **rejected** — the anchors were too authored and the dedicated
+input added confusion, but the tether *concept* wasn't rejected, so a future
+marker-less, button-less version remains possible (`decisions.md` entry 5).
+FLOW (`?flow=1`, momentum spine) is the movement lane's live, still-unjudged
+candidate; `?autobounce=1` is a related held-jump feel option shipped
+alongside it.
 
 A parallel track not in `DESIGN.md`'s original sequence: a movement-driven
 score/momentum system and six death/setback proposals (replacing lives and
