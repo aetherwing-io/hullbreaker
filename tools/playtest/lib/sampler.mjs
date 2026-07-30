@@ -138,6 +138,21 @@ export function sampleState() {
   /* eslint-enable no-undef */
 }
 
+// Shared victory-detection helper for every Node-side consumer
+// (lib/metrics.mjs, lib/driver.mjs, lib/policy.mjs) — kept in one place so
+// the game's per-slice overlay titles can't drift out of sync across call
+// sites the way they did before this fix: the traversal slice's overlay
+// reads "TRAVERSAL CLEAR" and the transform slice's reads "BREACH CLEAR"
+// (src/ui/overlay.js), but both set the same sim `state: 'VICTORY'`
+// (src/main.js) — checking `state` first is slice-agnostic and available in
+// testapi/full fidelity; the two overlay-text variants are the dom-mode
+// fallback (dom mode never populates `state`). Runs in Node (not shipped to
+// the page), so this can import normally, unlike sampleState() above.
+export function isVictorySample(sample) {
+  return !!sample && (sample.state === 'VICTORY' ||
+    sample.ovTitle === 'TRAVERSAL CLEAR' || sample.ovTitle === 'BREACH CLEAR');
+}
+
 // Cheap readiness probe used by the driver before sampling/input begin:
 // true once the HUD has painted at least one frame's text (proof the game
 // loop is alive), independent of fidelity mode.

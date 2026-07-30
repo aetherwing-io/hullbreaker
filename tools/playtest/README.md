@@ -332,9 +332,17 @@ that also somehow lacks `window.HB`.
 
 - **`fidelity` / `highFidelityDetected` / `testapiDetected`** — which channel
   supplied the majority of samples.
-- **outcome** (`completed` / `died` / `stalled` / `not-completed`) — derived
-  from the traversal slice's own overlay text (`TRAVERSAL CLEAR` = completed)
-  and `attempts`/idle fraction for the other labels. See `computeOutcome` in
+- **outcome** (`completed` / `died` / `stalled` / `not-completed`) — completed
+  is `isVictorySample()` (`lib/sampler.mjs`): `sample.state === 'VICTORY'`
+  first (slice-agnostic, `testapi`/`full` only), falling back to overlay
+  text (`TRAVERSAL CLEAR` for the traversal slice, `BREACH CLEAR` for the
+  transform slice — `dom` mode has no `state`, so text is all it has). A bug
+  here (state-check missing, `BREACH CLEAR` unmatched) mislabeled every
+  completed transform-slice run as `not-completed`; fixed by centralizing
+  the check in one place so `lib/metrics.mjs`, `lib/driver.mjs`, and
+  `lib/policy.mjs`'s `victory` predicate can't drift out of sync with each
+  other or with a future third slice's overlay title again. `attempts`/idle
+  fraction drive the other labels — see `computeOutcome` in
   `lib/metrics.mjs`; it's a heuristic, not ground truth, and `stalled`
   specifically requires an idle-fraction number that only `testapi`/`full`
   fidelity supplies (in `dom`-only mode it falls back to `not-completed`).
@@ -470,9 +478,9 @@ adversarial report left open).
 
 ## Demo runs
 
-Six scripts are committed under `scripts/`, with their reports committed
+Seven scripts are committed under `scripts/`, with their reports committed
 under `reports/demo/` (screenshots/videos are gitignored; the JSON + summary
-are the actual demo artifact). All six run in **`testapi` fidelity**. The
+are the actual demo artifact). All seven run in **`testapi` fidelity**. The
 original four are **re-baselined under `--deterministic`** as of this pass —
 see "Deterministic injection mode" above for why that's the more
 reproducible reference going forward; numbers below reflect that mode and
@@ -487,6 +495,23 @@ tuning has also moved since — CP1 pace/crush fixes landed in the meantime).
 | `retry-recovery.json` | Holds right only; dies once (`enemies=0`), proves the F7 fix still holds under `--deterministic` | **died**, 1 retry detected, `vx` 0 → 10.8 tiles/s within 75ms of the retry |
 | `policy-pinned-jump.json` | Holds right, **zero timed jumps** — the only jump input is `{when: "pinned", do: {tap: "jump"}}` | **not-completed** (reaches the dare pocket, grabs the reward, jams at the dead-end wall — see "Closed-loop policy mode" above), 13 reactive jumps fired across the whole route |
 | `policy-hound-reactive.json` | Closed-loop rebuild of `hound-jump.json` — zero timed jumps, `pinned` + `houndTell` only, `?hound=1` | **not-completed** (2.4s window by design, mirroring the script it replaces); correctly dodged-attempted on the *second* of three hounds' `tell`, not a fixed clock — see above for the hp-drop caveat |
+| `transform-slice.json` | Hold right + hold fire + periodic jump, `?slice=transform` — pre-existing smoke script, not authored by this harness | **completed** — proof for the `BREACH CLEAR` outcome-labeling fix below: the trace has 7 samples with `state==='VICTORY'` and `ovTitle==='BREACH CLEAR'`; the pre-fix `ovTitle==='TRAVERSAL CLEAR'`-only check would have returned `victorySeen: false` for this exact run |
+
+**Bug fixed since the previous pass:** `computeOutcome` (and the driver's
+early-stop-after-victory check, and the policy `victory` predicate) matched
+only `ovTitle === 'TRAVERSAL CLEAR'`, so every completed `?slice=transform`
+run was mislabeled `not-completed` — a false negative for anyone gating on
+`outcome.result` for that slice, caught by the adversarial agent (one run
+showed 62 consecutive `state==='VICTORY'` samples with `outcome:
+not-completed`). Fixed by centralizing victory detection in one place,
+`isVictorySample()` in `lib/sampler.mjs`: `sample.state === 'VICTORY'` first
+(slice-agnostic, available in `testapi`/`full`), falling back to matching
+*either* overlay title (`TRAVERSAL CLEAR` or `BREACH CLEAR`) only for
+`dom`-only mode, which has no `state` field. `lib/metrics.mjs`,
+`lib/driver.mjs`, and `lib/policy.mjs` all now import this one function
+instead of each carrying their own copy of the check — the exact drift that
+caused the bug can't recur silently the same way, and a future third slice
+only needs its overlay title added to the one function.
 
 The idle fraction / crush-margin / protoScore lockstep finding from the
 first pass (before CP1's pace fixes) still holds in shape here — idle
@@ -506,6 +531,7 @@ node run.mjs scripts/idle-greedy.json --out /tmp/check --deterministic
 node run.mjs scripts/retry-recovery.json --out /tmp/check --deterministic   # F7 regression proof
 node run.mjs scripts/policy-pinned-jump.json --out /tmp/check               # closed-loop proof
 node run.mjs scripts/policy-hound-reactive.json --out /tmp/check --max-runtime-ms 15000
+node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 20000   # BREACH CLEAR fix proof
 ```
 
 ## Honesty / limitations — read before trusting a report
