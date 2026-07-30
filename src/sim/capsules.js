@@ -18,12 +18,14 @@ export const capsules = [];
 export const CAP = CONFIG.capsules;
 
 // mode 'drift': flies from a killed carrier, sinks slowly toward catch height.
-// mode 'pop': knocked out of the player, lands, expires after the recatch window.
+// mode 'pop': knocked out of the player, briefly uncatchable so the weapon
+//   actually leaves your hands, lands, expires after the recatch window.
 // mode 'fixed': authored dare-pocket reward; bobs in place until collected.
 export function spawnCapsule(kind, letter, x, y, mode, vx) {
   const c = {
     kind, letter, x, y, baseY: y, vx: vx || 0, vy: mode === 'pop' ? CAP.popVy : 0,
     mode, dieAt: mode === 'pop' ? gameMs + CAP.recatchMs : 0, t: 0,
+    noCatchUntil: mode === 'pop' ? gameMs + CAP.popNoCatchMs : 0,
   };
   capsules.push(c);
   view.capsules.spawned(c);              // render: lettered box in the capsule palette
@@ -78,7 +80,7 @@ export function updateCapsules(dt) {
       c.y = c.baseY + Math.sin(c.t * CAP.bobFreq) * CAP.bobAmp * 0.3;
     }
 
-    if (circleHitsPlayer(c.x, c.y, CAP.pickupRadius)) {
+    if (gameMs >= c.noCatchUntil && circleHitsPlayer(c.x, c.y, CAP.pickupRadius)) {
       if (c.kind === 'mod') applyMod(c.letter);
       else setWeapon(c.letter);
       // scoring: an authored reward starts a wager, a 'pop' recatch closes the

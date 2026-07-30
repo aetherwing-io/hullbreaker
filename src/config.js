@@ -86,6 +86,11 @@ export const CONFIG = {
   capsules: {                  // pickups: letters (magenta) + rare modifiers (gold)
     driftSpeed: 1.6, sinkSpeed: 0.35, bobAmp: 0.5, bobFreq: 2.0, size: 0.55,
     recatchMs: 2200, blinkLastMs: 800,           // dropped-on-hit recatch timer
+    popNoCatchMs: 250,           // …during which the pop cannot be re-caught. The
+                                 //   capsule spawns inside the player's own AABB,
+                                 //   so without this the "recatch it fast" panic
+                                 //   DESIGN describes never happened: the same
+                                 //   frame's pickup test handed the weapon back.
     popVx: 3.5, popVy: 9, gravity: -22,
     pickupRadius: 0.95,
   },

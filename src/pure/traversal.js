@@ -156,7 +156,11 @@ export const TRAVERSAL_FIXTURE = {
     { id: 'chimney-left', role: 'wall', x0: 39, x1: 40, y0: 6, y1: 10 },
     { id: 'chimney-right', role: 'wall', x0: 44, x1: 45, y0: 6, y1: 10 },
     { id: 'dare-overhang', role: 'overhang', x0: 48, x1: 56, y0: 5, y1: 6 },
-    { id: 'dare-dead-end', role: 'wall', grabbable: false, x0: 56, x1: 57, y0: 1, y1: 7 },
+    // Flush with the overhang roof, not one tile above it: a 1-tile lip there
+    // is too short to ledge-catch, too tall to walk over, and not grabbable,
+    // so a held-jump policy parked against it for 9.6 s doing nothing
+    // (adversarial F11). Rows 1-5 still seal the pocket for anyone inside it.
+    { id: 'dare-dead-end', role: 'wall', grabbable: false, x0: 56, x1: 57, y0: 1, y1: 6 },
   ],
   platforms: [
     { id: 'mid-entry', x0: 29, x1: 38, y: 5.35 },
@@ -293,11 +297,14 @@ export const TRAVERSAL_PACES = {
     id: 'base', label: 'BASE',
     hypothesis:
       'Control: the 15f66d2 accelerated pass unchanged — constant 2.6 edge, ' +
-      'two wasps, one pocket reward. If a variant is not clearly better than ' +
-      'this, the variant is wrong.',
+      'two wasps, one pocket reward, and a crush clock bounded by screen width ' +
+      'rather than by seconds. If a variant is not clearly better than this, ' +
+      'the variant is wrong.',
     pursuit: {
       mode: 'constant', cruiseSpeed: 2.6, minSpeed: 2.6, maxSpeed: 2.6,
       pocketSpeed: 2.6, accel: 0, decel: 0,
+      crushSlackSeconds: 0,   // 0 = unbounded: the shipped screen-width clock
+      edgePinDamageMs: 0,     // 0 = the shipped free conveyor
     },
   },
 
@@ -321,13 +328,29 @@ export const TRAVERSAL_PACES = {
       comfortTiles: 11,       // above this much daylight the ship closes
       mercyTiles: 5,          // below this it backs off — fair, and legible
       accel: 4.0, decel: 6.0, // tiles/s² — audible acceleration, no snapping
-      pocketSpeed: 2.6,
+      pocketSpeed: 1.3,       // the pocket release, re-derived for the tighter clock
+      crushSlackSeconds: 2.6, // 2.6 s of standing still at cruise, 1.4 s while
+                              //   charging — and identical on every aspect ratio
+      edgePinDamageMs: 600,   // the plane is no longer a free ride
     },
-    enemies: [               // both wasps contest the FAST low line, not the air
+    pocketTiming: { minExitMarginTiles: 4.0 },
+    pocketReward: { x: 51 },  // shallower wager: it has to fit the tighter clock
+    enemies: [               // the wasps contest the FAST low line…
       { id: 'low-contest', kind: 'wasp', x: 35, y: 4.9, delayMs: 0,
         tune: { diveRange: 8.5, diveCooldownMs: 900 } },
       { id: 'pocket-mouth', kind: 'wasp', x: 50, y: 6.6, delayMs: 300,
         tune: { cruiseSpeed: 0.5, diveRange: 7.0, diveCooldownMs: 1100 } },
+      // …and two cruise the ROOF band head-on. A wasp only dives when the player
+      // is below it, so every wasp authored at y 8-9 left the y:10 chimney-top
+      // roof — the fastest and safest line in the fixture — uncontested
+      // (adversarial F1/F10). Station-keepers there did nothing either: a dive
+      // leads a 10.8 t/s sprinter by 7 tiles. Cruising left at 3.2 through the
+      // y 11.8-12.4 jump band means a mash-forward policy closes on them at
+      // 14 t/s and has to either shoot or change line.
+      { id: 'roof-hunter-a', kind: 'wasp', x: 47, y: 11.9, delayMs: 150,
+        tune: { cruiseSpeed: 3.2, diveRange: 9.0, diveCooldownMs: 800 } },
+      { id: 'roof-hunter-b', kind: 'wasp', x: 60, y: 12.3, delayMs: 300,
+        tune: { cruiseSpeed: 3.2, diveRange: 9.0, diveCooldownMs: 800 } },
     ],
   },
 
@@ -342,8 +365,13 @@ export const TRAVERSAL_PACES = {
       'that pays a weapon. Geometry becomes a combat decision.',
     pursuit: {
       mode: 'constant', cruiseSpeed: 2.9, minSpeed: 2.6, maxSpeed: 2.9,
-      pocketSpeed: 2.6, accel: 0, decel: 0,
+      pocketSpeed: 2.0, accel: 0, decel: 0,
+      crushSlackSeconds: 4.0, // the threats are the pressure here, but the clock
+                              //   is still bounded in seconds, not screen widths
+      edgePinDamageMs: 600,
     },
+    pocketTiming: { minExitMarginTiles: 3.5 },
+    pocketReward: { x: 53 },
     enemies: [
       { id: 'low-contest-a', kind: 'wasp', x: 35, y: 4.8, delayMs: 0,
         tune: { diveRange: 8.5, diveCooldownMs: 900 } },
@@ -351,8 +379,13 @@ export const TRAVERSAL_PACES = {
         tune: { diveRange: 8.0, diveCooldownMs: 950 } },
       { id: 'pocket-guard', kind: 'wasp', x: 51, y: 6.8, delayMs: 200,
         tune: { cruiseSpeed: 0.4, diveRange: 6.0, diveCooldownMs: 1200 } },
-      { id: 'chimney-hold', kind: 'wasp', x: 44, y: 10.6, delayMs: 0,
+      // above the chimney top, so it contests the wall-pump exit itself
+      { id: 'chimney-hold', kind: 'wasp', x: 44, y: 11.6, delayMs: 0,
         tune: { cruiseSpeed: 0.5, diveRange: 7.5, diveCooldownMs: 1000 } },
+      { id: 'roof-hunter-a', kind: 'wasp', x: 52, y: 12.0, delayMs: 300,
+        tune: { cruiseSpeed: 3.4, diveRange: 9.0, diveCooldownMs: 850 } },
+      { id: 'roof-hunter-b', kind: 'wasp', x: 66, y: 12.4, delayMs: 500,
+        tune: { cruiseSpeed: 3.0, diveRange: 9.0, diveCooldownMs: 850 } },
       { id: 'rejoin-wasp', kind: 'wasp', x: 63, y: 8.8, delayMs: 600 },
       // the lure: killing it arms you, and it only flies over the high line
       { id: 'upper-lure', kind: 'carrier', x: 64, y: 10.6, delayMs: 0,
@@ -377,9 +410,13 @@ export const TRAVERSAL_PACES = {
       // 9 s ramp meant the crescendo never arrived before the exit
       rampMs: 6000,
       accel: 5.0, decel: 6.0,
-      pocketSpeed: 3.0,       // the wager gets tighter here, provably still escapable
+      pocketSpeed: 1.6,       // the wager gets tighter here, provably still escapable
+      crushSlackSeconds: 3.2, // 3.2 s at the opening cruise, 1.2 s once the ramp
+                              //   tops out: the clock itself is the crescendo
+      edgePinDamageMs: 600,
     },
-    pocketTiming: { minExitMarginTiles: 7.0 },
+    pocketTiming: { minExitMarginTiles: 3.0 },
+    pocketReward: { x: 50.5 },
     movement: {               // verbs: no dwell, harder launches
       ledgeHangMs: 90, ledgeAutoLaunch: true,
       wallSlideMs: 160,
@@ -398,6 +435,11 @@ export const TRAVERSAL_PACES = {
       { id: 'entry-wasp', kind: 'wasp', x: 37, y: 8.4, delayMs: 0 },
       { id: 'mid-arc-wasp', kind: 'wasp', x: 46, y: 7.2, delayMs: 300,
         tune: { diveRange: 7.5, diveCooldownMs: 1000 } },
+      // the roof is the fastest line, so it has to cost something here too
+      { id: 'roof-hunter-a', kind: 'wasp', x: 50, y: 11.8, delayMs: 200,
+        tune: { cruiseSpeed: 3.2, diveRange: 9.0, diveCooldownMs: 850 } },
+      { id: 'roof-hunter-b', kind: 'wasp', x: 64, y: 12.2, delayMs: 400,
+        tune: { cruiseSpeed: 3.2, diveRange: 9.0, diveCooldownMs: 850 } },
       { id: 'rejoin-wasp', kind: 'wasp', x: 63, y: 8.8, delayMs: 600 },
     ],
     rewards: [                // stakes: the high line is armed
@@ -413,10 +455,21 @@ export const TRAVERSAL_PACE_IDS = Object.keys(TRAVERSAL_PACES);
    reads the resolved object, so a variant cannot leak into another. */
 export function resolveTraversalPace(name, fixture = TRAVERSAL_FIXTURE) {
   const pace = TRAVERSAL_PACES[name] || TRAVERSAL_PACES.base;
+  const reward = { ...fixture.darePocket.reward, ...(pace.pocketReward || {}) };
   return {
     ...fixture,
     pace: { id: pace.id, label: pace.label, hypothesis: pace.hypothesis },
-    pursuit: { ...pace.pursuit },
+    pursuit: {
+      ...pace.pursuit,
+      // Crush slack authored in SECONDS becomes a margin cap in tiles at the
+      // pace's cruise speed: a fixed distance (so the camera never jitters as
+      // the edge accelerates), a fixed clock at cruise, and — because it no
+      // longer derives from the frustum — the same clock at every aspect ratio.
+      // 0 keeps the shipped screen-width behavior.
+      marginCapTiles: pace.pursuit.crushSlackSeconds
+        ? pace.pursuit.crushSlackSeconds * pace.pursuit.cruiseSpeed
+        : 0,
+    },
     run: {
       ...fixture.run, ...(pace.run || {}),
       minimumScrollSpeed: pace.pursuit.cruiseSpeed,
@@ -424,10 +477,10 @@ export function resolveTraversalPace(name, fixture = TRAVERSAL_FIXTURE) {
     movement: { ...fixture.movement, ...(pace.movement || {}) },
     chain: pace.chain ? { ...pace.chain } : null,
     enemies: (pace.enemies || fixture.enemies).map((e) => ({ ...e })),
-    rewards: [fixture.darePocket.reward, ...(pace.rewards || [])]
-      .map((r) => ({ ...r })),
+    rewards: [reward, ...(pace.rewards || [])].map((r) => ({ ...r })),
     darePocket: {
       ...fixture.darePocket,
+      reward,
       timing: { ...fixture.darePocket.timing, ...(pace.pocketTiming || {}) },
     },
   };
@@ -462,6 +515,23 @@ export function traversalPaceStep(p, current, ctx, dt) {
     ? Math.min(target, current + rate)
     : Math.max(target, current - rate);
   return Math.max(p.minSpeed, Math.min(p.maxSpeed, next));
+}
+
+// The scroll cursor at which the player's crush margin equals capTiles.
+// edgeLeftOffset is the calibrated left-frustum offset from the scroll cursor
+// (negative), so bounding the margin here bounds the clock in seconds on every
+// aspect ratio — the shipped screen-width lead varies 2x between 1600x600 and
+// 800x1000, which is why the same fixture read as two different games.
+export function traversalMarginCapScroll(playerLeft, edgeLeftOffset, capTiles) {
+  return playerLeft - edgeLeftOffset - capTiles;
+}
+
+// The daylight a pace actually grants at the dare pocket: the authored screen
+// -width figure, or the pace's own margin cap when it bounds slack in seconds.
+export function traversalPocketEntryMargin(fixture) {
+  const cap = fixture.pursuit.marginCapTiles;
+  const authored = fixture.darePocket.timing.entryEdgeMarginTiles;
+  return cap > 0 ? Math.min(cap, authored) : authored;
 }
 
 // Worst-case tiles the edge can advance during a pocket retreat: the clamp is

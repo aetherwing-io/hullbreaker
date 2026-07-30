@@ -141,6 +141,7 @@ function resetGame() {
   player.airJumpsLeft = P.airJumps;
   player.traversalChain = 0; player.traversalChainUntil = 0;
   player.fallbackStreak = 0; player.fallbackRecoverX = -Infinity;
+  player.edgePinnedMs = 0;
   clearPlayerTraversal(0);
   player.traversalControlUntil = 0;
   clearJumpBuffer();
@@ -338,7 +339,10 @@ if (QUERY.has('selftest')) {
     resetGame();
     const expectedScroll = ACTIVE_SLICE ? ACTIVE_SLICE.run.startScroll : 0;
     const expectedHostiles = ACTIVE_SLICE && SLICE_ENEMIES_ENABLED ? ACTIVE_SLICE.enemies.length : 0;
-    check('restart', scrollX === expectedScroll && state === 'PLAYING' &&
+    // A pace that bounds crush slack in seconds arms its clock on the first
+    // frame, so the opening scroll is the authored start pushed forward to the
+    // margin cap — hence >= rather than ===, with the cap itself checked below.
+    check('restart', scrollX >= expectedScroll && state === 'PLAYING' &&
       hostiles.length === expectedHostiles);
     if (ACTIVE_SLICE) {
       check('slice fixture selected', levelData.fixture === ACTIVE_SLICE);
@@ -348,6 +352,10 @@ if (QUERY.has('selftest')) {
         capsules.length === ACTIVE_SLICE.rewards.length &&
         capsules.every((c) => c.mode === 'fixed'));
       check('hull fallback armed', SLICE_FALLBACK_ENABLED === (QUERY.get('fallback') !== '0'));
+      const cap = ACTIVE_SLICE.pursuit.marginCapTiles;
+      check('crush clock armed at spawn', cap > 0
+        ? Math.abs((player.x - player.hw - sLeftEdge()) - cap) < 0.05
+        : scrollX === expectedScroll);
     }
     const fails = results.filter((r) => !r[1]).map((r) => r[0]);
     const msg = fails.length

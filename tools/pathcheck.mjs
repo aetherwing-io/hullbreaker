@@ -28,6 +28,7 @@ import {
   traversalWallDecision, traversalSolidAllowsGrab, traversalFollowTarget,
   traversalCameraDepth, traversalPaceTargetSpeed, traversalPaceStep,
   traversalPocketAdvanceTiles, traversalChainMult, traversalFallbackTarget,
+  traversalMarginCapScroll, traversalPocketEntryMargin,
 } from '../src/pure/traversal.js';
 import {
   SCORE, scoreNotch, scoreNotchMult, scoreFireRateMult, scoreChargeGain,
@@ -1044,10 +1045,17 @@ const ledgeState = {
         seenLabels.has(F.pace.label)) boundedPursuit = false;
     seenLabels.add(F.pace.label);
     if (!(PU.minSpeed > 0 && PU.minSpeed <= PU.cruiseSpeed && PU.cruiseSpeed <= PU.maxSpeed &&
-          PU.pocketSpeed >= PU.minSpeed && PU.pocketSpeed <= PU.maxSpeed &&
+          // the pocket clamp is a release, never a spike: it may (and now does)
+          // sit below the pursuit floor, because it is the only speed acting
+          // during a retreat and traversalPaceStep applies it before the clamp
+          PU.pocketSpeed > 0 && PU.pocketSpeed <= PU.cruiseSpeed &&
           PU.accel >= 0 && PU.decel >= 0 &&
+          PU.edgePinDamageMs >= 0 && PU.crushSlackSeconds >= 0 &&
           ['constant', 'hunt', 'ramp'].indexOf(PU.mode) >= 0 &&
           F.run.minimumScrollSpeed === PU.cruiseSpeed)) boundedPursuit = false;
+    // crush slack authored in seconds resolves to a margin cap in tiles
+    const wantCap = PU.crushSlackSeconds ? PU.crushSlackSeconds * PU.cruiseSpeed : 0;
+    if (Math.abs(PU.marginCapTiles - wantCap) > 1e-9) boundedPursuit = false;
     // the player must always be able to outrun the edge on the flat
     const TPp = { ...PL, ...F.movement };
     if (PU.maxSpeed >= TPp.runSpeed) boundedPursuit = false;
@@ -1060,19 +1068,104 @@ const ledgeState = {
      'each pace declares a labelled hypothesis and a bounded, outrunnable pursuit model');
 
   // dare-pocket retreat timing, re-proved at each variant's pocket speed
+  // A pace that bounds slack in seconds grants LESS daylight at the pocket than
+  // the authored screen-width figure, so the wager is re-derived per pace from
+  // the margin it actually gets (adversarial F8: the shipped pocket was a free
+  // pickup with 18-19 tiles of exit margin against a documented 8-tile floor).
   let pocketFair = true;
   for (const F of resolved) {
     const D = F.darePocket;
+    const entry = traversalPocketEntryMargin(F);
     const advance = traversalPocketAdvanceTiles(F.pursuit, D.timing.retreatSeconds);
     const backtrack = D.reward.x - D.bounds.x0;
-    if (D.timing.entryEdgeMarginTiles - backtrack - advance + 1e-9 < D.timing.minExitMarginTiles ||
+    const exit = entry - backtrack - advance;
+    if (exit + 1e-9 < D.timing.minExitMarginTiles ||
         D.timing.minExitMarginTiles <= PL.width + 2 * CONFIG.edges.margin ||
-        advance <= 0) {
+        backtrack <= 0 || advance <= 0 ||
+        D.reward.x < D.bounds.x0 || D.reward.x >= D.bounds.x1) {
       pocketFair = false;
-      console.error('  pocket unfair in pace ' + F.pace.id + ': advance ' + advance.toFixed(2));
+      console.error('  pocket unfair in pace ' + F.pace.id + ': entry ' + entry.toFixed(2) +
+        ' backtrack ' + backtrack + ' advance ' + advance.toFixed(2) +
+        ' exit ' + exit.toFixed(2) + ' need ' + D.timing.minExitMarginTiles);
     }
   }
-  ok(pocketFair, 'dare retreat clears its exit margin at every pace pocket speed');
+  ok(pocketFair,
+     'dare retreat clears its exit margin at the daylight each pace actually grants');
+  // …and the wager is no longer free: a pace with a real clock must leave less
+  // slack than the shipped screen-width pocket did.
+  {
+    const slack = resolved.filter(function (F) { return F.pursuit.marginCapTiles > 0; })
+      .map(function (F) {
+        return traversalPocketEntryMargin(F) - (F.darePocket.reward.x - F.darePocket.bounds.x0) -
+          traversalPocketAdvanceTiles(F.pursuit, F.darePocket.timing.retreatSeconds);
+      });
+    const baseSlack = traversalPocketEntryMargin(resolved[0]) -
+      (resolved[0].darePocket.reward.x - resolved[0].darePocket.bounds.x0) -
+      traversalPocketAdvanceTiles(resolved[0].pursuit, resolved[0].darePocket.timing.retreatSeconds);
+    ok(slack.length >= 2 && slack.every(function (v) { return v < baseSlack; }),
+       'every seconds-bounded pace makes the pocket a tighter wager than base, got ' +
+       slack.map(function (v) { return v.toFixed(1); }).join(',') + ' vs ' + baseSlack.toFixed(1));
+  }
+
+  /* ---- the crush clock is bounded in SECONDS, not in screen width -------- *
+   * The shipped lead is a distance, so the same fixture gives 13.9 s of slack
+   * at 1600x600 and 7.0 s at 800x1000 (adversarial F6) — two different games
+   * from one build. A pace that declares crushSlackSeconds must produce the
+   * same clock on any frustum.                                              */
+  {
+    let invariant = true, contested = true, clocks = [];
+    for (const F of resolved) {
+      const cap = F.pursuit.marginCapTiles;
+      if (cap <= 0) continue;
+      const playerLeft = 40;
+      // two very different calibrated frustums, same clock
+      for (const edgeOffset of [-3.1, -10.4, -18.0]) {
+        const scroll = traversalMarginCapScroll(playerLeft, edgeOffset, cap);
+        const margin = playerLeft - (scroll + edgeOffset);
+        if (Math.abs(margin - cap) > 1e-9) invariant = false;
+        if (Math.abs(margin / F.pursuit.cruiseSpeed - F.pursuit.crushSlackSeconds) > 1e-9)
+          invariant = false;
+      }
+      clocks.push(F.pace.id + '=' + F.pursuit.crushSlackSeconds + 's');
+      // and standing still has to actually kill: the plane cannot be a conveyor
+      if (!(F.pursuit.edgePinDamageMs > 0 &&
+            F.pursuit.edgePinDamageMs * PL.maxHealth < F.pursuit.crushSlackSeconds * 4000))
+        contested = false;
+    }
+    ok(invariant && clocks.length >= 2,
+       'seconds-bounded paces produce one aspect-invariant clock: ' + clocks.join(' '));
+    ok(contested,
+       'a seconds-bounded pace also makes the plane lethal, so idling is not a free ride');
+  }
+
+  /* ---- the roof line is contested (adversarial F1/F10) ------------------ *
+   * Every winning degenerate policy pumps a chimney wall to its top and runs
+   * the y:10 roof east, because a wasp only dives when the player is BELOW it
+   * and every authored wasp sat at y 8.4-8.8. A pace has to price that line. */
+  {
+    const roofY = Math.max.apply(null, TRAVERSAL_FIXTURE.solidRects.map(function (r) { return r.y1; }));
+    let priced = 0;
+    for (const F of resolved) {
+      if (F.pace.id === 'base') continue;
+      const above = F.enemies.filter(function (e) { return e.y > roofY + 1; });
+      if (above.length >= 1) priced++;
+      else console.error('  roof line uncontested in pace ' + F.pace.id);
+    }
+    ok(priced === resolved.length - 1,
+       'every variant places a hostile above the y=' + roofY + ' roof so the fastest line costs something');
+  }
+
+  /* ---- no 1-tile lip on a walkable roof (adversarial F11) --------------- */
+  {
+    const overhang = TRAVERSAL_FIXTURE.solidRects.find(function (r) { return r.role === 'overhang'; });
+    const lip = TRAVERSAL_FIXTURE.solidRects.find(function (r) { return r.id === 'dare-dead-end'; });
+    ok(overhang && lip && lip.y1 <= overhang.y1 && lip.x0 >= overhang.x1 - 1,
+       'the pocket dead end never rises above the overhang roof it meets (no held-jump trap)');
+    ok(lip.y1 > TRAVERSAL_FIXTURE.groundRuns.find(function (r) {
+      return r.x0 <= lip.x0 && r.x1 > lip.x0;
+    }).y + PL.height,
+       'the dead end still seals the pocket for a player standing inside it');
+  }
 
   // authored rewards and hostiles per pace
   let stakesValid = true;
@@ -1422,6 +1515,22 @@ const ledgeState = {
   ok(SCORE.shockDamage >= CONFIG.wasp.hp && SCORE.shockDamage < CONFIG.carrier.hp &&
      SCORE.shockRadius > CONFIG.wasp.contactRadius,
      'BREAKING launch shock kills a wasp on contact without deleting a carrier');
+  /* ---- the weapon-pop panic actually happens (adversarial F9) ---------- *
+   * The popped capsule spawns inside the player's own AABB, so the same
+   * frame's pickup test used to hand the weapon straight back: DESIGN's
+   * "recatch it within 2.2s" beat was a no-op. The grace window has to be long
+   * enough for the pop's own arc to clear the body in BOTH axes.            */
+  {
+    const C = CONFIG.capsules;
+    const t = C.popNoCatchMs / 1000;
+    const rise = C.popVy * t + 0.5 * C.gravity * t * t;      // from y + 1.2
+    const drift = C.popVx * t;
+    ok(C.popNoCatchMs > 0 && C.popNoCatchMs < C.recatchMs * 0.2,
+       'the pop grace is real but small against the recatch window');
+    ok(1.2 + rise > PL.height || drift > PL.width / 2 + C.pickupRadius,
+       'by the end of the grace the popped capsule has left the player: rise ' +
+       (1.2 + rise).toFixed(2) + ' vs height ' + PL.height + ', drift ' + drift.toFixed(2));
+  }
   ok(SCORE.reclaim.lowTiles < SCORE.reclaim.highTiles && SCORE.reclaim.windowMs > 0 &&
      SCORE.linkDropTiles >= 2 && SCORE.launchGraceMs === 600 && SCORE.eventCap === 256,
      'reclaim/link/launch windows and the A.5 ring buffer match the proposal');

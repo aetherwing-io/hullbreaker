@@ -33,6 +33,7 @@ export const P = ACTIVE_SLICE
 // launch chaining and hull fallback are pacing-variant data, absent by default
 const CHAIN = ACTIVE_SLICE ? ACTIVE_SLICE.chain : null;
 const FALLBACK = ACTIVE_SLICE ? ACTIVE_SLICE.fallback : null;
+const EDGE_PIN_MS = ACTIVE_SLICE ? ACTIVE_SLICE.pursuit.edgePinDamageMs : 0;
 // aim is a plain 2-vector, not a THREE.Vector2: the sim stays renderer-free
 // and the renderer only reads .x/.y off it.
 export const player = {
@@ -47,7 +48,7 @@ export const player = {
   traversalUntil: 0, traversalRecatchUntil: 0, traversalEntryVx: 0,
   traversalControlUntil: 0,
   traversalChain: 0, traversalChainUntil: 0,
-  fallbackStreak: 0, fallbackRecoverX: -Infinity,
+  fallbackStreak: 0, fallbackRecoverX: -Infinity, edgePinnedMs: 0,
   hp: P.maxHealth, lives: P.lives,
   iframesUntil: 0, hitstunUntil: 0,
   nextFireAt: 0,
@@ -352,8 +353,31 @@ export function updatePlayer(dt) {
     player.vx = Math.max(player.vx, activeScrollSpeed());
   }
   if (player.x - player.hw < le) {
+    // The plane used to assign x with no collision resolution, so a pinned
+    // player was pushed straight THROUGH a solid wall for 1 hp (adversarial
+    // F4, reproduced against the dare-pocket dead end). Being crushed against
+    // terrain has to be lethal pressure, not a teleport: stop at the wall's
+    // outside face and let the damage stand, so the wall holds and the hp
+    // clock (and then HULL FALLBACK) decides the outcome.
     player.x = le + player.hw;
-    if (playerOverlapsSolid() && !cornerBusy()) damagePlayer(1, player.x - 1);   // crushed against terrain
+    let crushed = false;
+    if (playerOverlapsSolid()) {
+      player.x = Math.floor(player.x + player.hw) - player.hw - 0.001;
+      crushed = true;
+    }
+    if (crushed && !cornerBusy()) damagePlayer(1, player.x - 1);
+    // A pace may also make the plane itself lethal over time. Without this the
+    // plane is a free conveyor: doing nothing at all survives on open ground
+    // because the push costs no hp (adversarial F5).
+    if (EDGE_PIN_MS > 0 && !cornerBusy()) {
+      player.edgePinnedMs += dt * 1000;
+      if (player.edgePinnedMs >= EDGE_PIN_MS) {
+        player.edgePinnedMs = 0;
+        damagePlayer(1, player.x - 1);
+      }
+    }
+  } else {
+    player.edgePinnedMs = 0;
   }
   //    Right clamp: while the active corner's face is still unbuilt, the
   //    pivot is the wall — the screen edge must not let the player walk
