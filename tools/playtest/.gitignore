@@ -7,3 +7,4 @@ runs/
 *.jpg
 *.jpeg
 *.webm
+node_modules
