@@ -28,6 +28,7 @@ function parseArgs(argv) {
     if (a === '--headed') out.headed = true;
     else if (a === '--video') out.video = true;
     else if (a === '--url') out.url = argv[++i];
+    else if (a === '--base-url') out.baseUrl = argv[++i];
     else if (a === '--out') out.out = argv[++i];
     else if (a === '--sample-ms') out.sampleMs = Number(argv[++i]);
     else if (a === '--viewport') out.viewport = argv[++i];
@@ -56,7 +57,11 @@ function usage() {
   console.log(`Usage: node run.mjs <script.json> [options]
 
 Options:
-  --url <url>          Override the target URL entirely (skips the local static server).
+  --url <url>           Override the target URL entirely (skips the local static server).
+  --base-url <origin>   Serve from an already-running static server instead of the ephemeral
+                        built-in one (e.g. a pinned git worktree) — the script's own "url" field
+                        is still read and appended, unlike --url. See README "Pinned-worktree
+                        capture" for the recommended recipe for any batch longer than one run.
   --headed              Show the browser window instead of running headless.
   --video               Record a webm video of the run (Playwright's built-in recorder).
   --out <dir>           Output directory for report.json/summary.md/screenshot (default: runs/<script>-<timestamp>).
@@ -116,7 +121,15 @@ async function main() {
 
   let server = null;
   let url = args.url;
-  if (!url) {
+  if (!url && args.baseUrl) {
+    // Adopted from scripts/adversarial/repeat.mjs's --base-url: read the
+    // script's own url field (same as the built-in server path below) but
+    // against an already-running static server instead of an ephemeral one
+    // — the point being a pinned git worktree, so a multi-minute batch
+    // describes exactly one build instead of whatever merged mid-flight.
+    const scriptUrl = script.url || 'index.html?slice=traversal';
+    url = `${args.baseUrl.replace(/\/$/, '')}/${scriptUrl.replace(/^\//, '')}`;
+  } else if (!url) {
     server = await startStaticServer(repoRoot, { port: args.port || 0 });
     const scriptUrl = script.url || 'index.html?slice=traversal';
     url = `${server.baseUrl}/${scriptUrl.replace(/^\//, '')}`;

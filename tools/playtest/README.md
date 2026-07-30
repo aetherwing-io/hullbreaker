@@ -228,28 +228,86 @@ Honesty/limitations below).
   large; something inside the simulation itself forks into one of two
   outcomes depending on factors this mode doesn't control.
 
-**Characterizing the residual divergence (per the task's ask):** dispatch
-jitter is not the dominant source of `t2`'s non-determinism — the game's
-"clamped variable timestep" (per `README.md`'s architecture notes) means
-frame-to-frame `dt` varies with real rendering/host load regardless of when
-input was sent, and if a ritual-arming or threshold check is sensitive to
-which side of a knife-edge that accumulated variance lands on, byte-identical
-input can still fork into qualitatively different runs. Deterministic
-*input* was necessary but not sufficient here. This isn't something the
-harness can fix by injecting input more precisely — it would need either a
-fixed-timestep simulation mode or a way to pin `dt` itself, which is a
-game-side question, not a harness one. **Hook request, not a build:** if a
-fixed-timestep (or seeded-`dt`) mode for `?slice=transform` (or generally)
-is cheap to add, it would let a future harness pass isolate whether the
-fork is really `dt`-driven; if not, this is at least now a precisely bounded
-finding (~6.5s of gameMs at a specific point early in the run) instead of a
-28-tile number with no further diagnosis.
+**Update: the `?fixeddt=<ms>` hook landed (commit `24ebe3d`) and was tested —
+the fork is NOT dt-driven.** `src/main.js` now accepts `?fixeddt=<ms>`
+(clamped `[1, 50]`; absent = the shipped variable timestep, unchanged) —
+every frame advances the sim by that constant instead of measured wall-clock
+time; under load the game runs slower than realtime rather than skipping sim
+time (verification-only, not a gameplay change). This granted the hook
+request above, so `t2` was re-quantified with `--deterministic` +
+`&fixeddt=16.667` (a ~60fps-equivalent step) against a pinned worktree (see
+"Pinned-worktree capture" below), 5 runs each side, same commit both times:
+
+- **Confirmed `fixeddt` was genuinely active**, not silently a no-op: the
+  `gameMs`/wall-clock-time ratio at a fixed point in the run was 2.015–2.020
+  across all 5 `fixeddt` runs — tightly consistent, and clearly different
+  from natural variable-timestep behavior.
+- **`maxX` spread was statistically unchanged**: 62.02 tiles without
+  `fixeddt` vs 61.78 tiles with it, on the same pinned commit. (Also worth
+  noting plainly: re-measured on this newer commit, the *undamped* spread is
+  now larger than the 48-tile figure quantified earlier in this section —
+  the game keeps moving, so these are two different snapshots in time, not
+  a regression in the fix.)
+- **First-death-time spread got *worse* under `fixeddt`, not better**: 2.2ms
+  (four of five runs landed within 2.2ms of each other) without `fixeddt`,
+  versus 8116.8ms (7583–15700ms) with it.
+
+This disconfirms the dt-driven hypothesis this section previously proposed.
+Before concluding "something in the sim," `src/sim/` and `src/pure/` were
+grepped for `Math.random()` and `Date.now()`/`performance.now()` — **zero
+hits**. The only `performance.now()` in the entire codebase is `main.js`'s
+frame-loop `last` variable, used exclusively to compute variable-`dt`, which
+`fixeddt` mode already bypasses. There is no unseeded randomness and no
+stray wall-clock read for `fixeddt` to have missed.
+
+Best remaining hypothesis, **not proven, flagged for physics-review rather
+than built around**: `--deterministic` decides *when* the harness asks the
+browser to inject a key event (gated on the last-polled `gameMs`), but the
+actual CDP-dispatched event still enters the browser's real event queue and
+is processed relative to the *next* real `requestAnimationFrame` callback —
+`fixeddt` fixes the sim's `dt` **value** per frame, not which real frame
+boundary an asynchronously-delivered keyboard event lands before or after.
+If any decision in the sim is knife-edge-sensitive to that ordering (a
+one-frame-early-or-late input on a ritual-arming check, for instance), two
+runs that are byte-identical in *scheduled* gameMs can still diverge in
+*delivered* frame alignment. This harness cannot close that gap by injecting
+input more precisely — it would need a synchronous, frame-scoped input hook
+(e.g. "apply this key state at the start of the next `update()` call," not
+"send this event and let the browser's queue sort out when it lands"),
+which is a different and larger game-side ask than `fixeddt` was. Filed
+below as a new, more specific hook request rather than assumed to exist.
 
 Reproduce the quantification:
 
 ```sh
-for i in 1 2 3 4 5; do node run.mjs scripts/adversarial/t2-transform-seam-rush.json --max-runtime-ms 26000 --out /tmp/wc-$i; done
-for i in 1 2 3 4 5; do node run.mjs scripts/adversarial/t2-transform-seam-rush.json --max-runtime-ms 26000 --deterministic --out /tmp/det-$i; done
+# variable dt / fixed dt, both deterministic-injection, same pinned commit:
+for i in 1 2 3 4 5; do node run.mjs scripts/adversarial/t2-transform-seam-rush.json --max-runtime-ms 26000 --deterministic --base-url http://127.0.0.1:8749 --out /tmp/nofdt-$i; done
+for i in 1 2 3 4 5; do node run.mjs scripts/adversarial/t2-transform-seam-rush.json --max-runtime-ms 26000 --deterministic --url "http://127.0.0.1:8749/index.html?slice=transform&fixeddt=16.667" --out /tmp/fdt-$i; done
+```
+
+## Pinned-worktree capture
+
+Adopted from `scripts/adversarial/repeat.mjs`'s `--base-url` (that lane hit
+four invalidated captures in a row from merges landing mid-batch — the
+built-in static server serves the live working tree, and a multi-minute
+batch is not atomic against `git pull` happening underneath it). `run.mjs`
+now has the same flag: `--base-url <origin>` serves from an already-running
+static server instead of launching the ephemeral built-in one, while still
+reading the script's own `"url"` field (unlike `--url`, which needs the
+whole URL supplied). Verified composing with `--deterministic` (used
+together for the `fixeddt` quantification above) and with a plain `--url`
+override (for appending an ad-hoc query param like `&fixeddt=16.667` that
+the script's own `url` field doesn't have).
+
+Recommended recipe for anything longer than a single run:
+
+```sh
+git worktree add /tmp/hb-pin <sha-or-branch>
+(cd /tmp/hb-pin && python3 -m http.server 8749 &)
+node run.mjs scripts/whatever.json --base-url http://127.0.0.1:8749 [--deterministic ...]
+# when done:
+pkill -f "http.server 8749"
+git worktree remove /tmp/hb-pin
 ```
 
 ## How input is actually delivered
@@ -617,19 +675,31 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    `lib/metrics.mjs` can be replaced with the real event-derived counts
    instead of the kills+grounded / route-matcher approximations described
    above.
-4. **A fixed-timestep (or seeded-`dt`) simulation mode**, at least for
-   `?slice=transform` — see "Deterministic injection mode" above. This is
-   the one thing deterministic *input* injection cannot fix on its own;
-   flagging it as a hook request rather than attempting to build around it
-   from the harness side, per this task's own guidance.
-5. The module split has landed `src/pure/traversal.js` — `lib/fixture.mjs`'s
+4. ~~A fixed-timestep (or seeded-`dt`) simulation mode~~ — **done and
+   tested** (`?fixeddt=<ms>`, commit `24ebe3d`). Confirmed genuinely active
+   (stable `gameMs`/wall-time ratio across runs) but it did **not** collapse
+   `t2-transform-seam-rush`'s divergence — see "Deterministic injection
+   mode" above for the full result and the ruled-out candidates
+   (`Math.random()`, stray `performance.now()`/`Date.now()`: none found in
+   `src/sim/` or `src/pure/`). Superseded by hook request #5 below.
+5. **New, more specific hook request arising from #4's negative result:**
+   a synchronous, frame-scoped input hook — a way to say "this key state
+   applies starting at the next `update()` call," rather than dispatching a
+   real CDP key event and letting the browser's own event queue decide which
+   `requestAnimationFrame` callback it lands before or after. `fixeddt` fixes
+   the sim's `dt` value per frame; it doesn't and can't control which real
+   frame boundary an asynchronously-delivered keyboard event straddles. This
+   is a different, larger ask than `fixeddt` was, and not something to
+   assume is cheap — flagged for physics-review to evaluate, not built
+   around from the harness side.
+6. The module split has landed `src/pure/traversal.js` — `lib/fixture.mjs`'s
    hand-copied snapshot can now be replaced with a real import (not done in
    this pass; scoped out to stay focused on the requested capabilities). The
    adversarial report already diffed the two byte-for-byte and found no
    drift, so this is a safe, low-risk cleanup whenever someone picks it up.
-6. `window.HB` now exists (unconditional, richer than `testapi`) — no
+7. `window.HB` now exists (unconditional, richer than `testapi`) — no
    longer a hook request, just confirmed working via `HB.snapshot()`.
-7. **In flight, noted for context (not this harness's ask):** the
+8. **In flight, noted for context (not this harness's ask):** the
    `g1-limbturn` agent is adding ritual state + seal position
    (`transformSealX`) to the `?testapi=1`/`HB` snapshot's `transform` object
    in parallel with this pass. This harness didn't wait for it — the
@@ -679,12 +749,19 @@ tools/playtest/
 
 ## Single best next action
 
-Pick up the `t2-transform-seam-rush` residual-divergence finding from
-"Deterministic injection mode" above: file (or build, if it's cheap and
-someone owns `sim/time.js`) the fixed-timestep/seeded-`dt` hook request, then
-re-run the 5×/5× quantification. That would tell us whether the ~6.5-second
-first-death-time fork is really `dt`-driven or something else entirely — the
-one open question this pass could characterize precisely but not close.
+Hand `t2-transform-seam-rush`'s residual divergence to physics-review as a
+scoped question, not a harness one: with both deterministic input injection
+*and* a confirmed-active fixed timestep, `maxX` spread stayed ~62 tiles and
+first-death-time spread got worse (2.2ms → 8.1s). `Math.random()` and stray
+wall-clock reads are ruled out by direct grep — zero hits outside the one
+legitimate, `fixeddt`-bypassed `performance.now()` in the frame loop. The
+concrete, actionable next step is hook request #5 above (a synchronous,
+frame-scoped input-application point) — but confirm it's worth building
+before starting: instrument one specific suspect decision point (most
+likely the ritual-arming check in `src/sim/transform.js`, since that's what
+`t2` is deliberately stress-testing) to see whether it's actually sensitive
+to which frame an input lands in, rather than assuming the hook will fix it
+sight unseen.
 
 Secondary, lower-cost: replace `lib/fixture.mjs`'s hand-copied
 `TRAVERSAL_FIXTURE` snapshot with a real `import` from `src/pure/traversal.js`
