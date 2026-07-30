@@ -146,3 +146,59 @@ pass rather than rewritten outright, since the underlying design question
 (does it reuse jump/aim/fire or a dedicated input?) is still open — only its
 priority changed. Does not supersede CP2, CP3, or CP4 as checkpoints; those
 continue alongside wave 3.
+
+## 3 — 2026-07-30 — CP3 verdict: transitions must read as ascent around static anatomy, not assembling geometry
+
+**Decision:** the transformation slice's first pass (bulkhead flip, breach
+return, rendered altitude — merged `738a890`, playable at `?slice=transform`)
+was judged at checkpoint CP3. Verdict: directionally right, but the
+transition choreography itself reads wrong. Fix, as an explicit rule for all
+future world-transformation rendering: the creature's anatomy is monumental
+and **static** during a transition — RIG and the camera are what move. The
+next stretch of world already exists and is *revealed* (by the camera
+rotating around a limb, plus natural self-occlusion and fog), never
+*assembled*, slammed, or articulated into place.
+
+**Rationale, operator verbatim:** on the first pass — "much more aligned to
+the feel, but the transitions a little too choppy ... it sort of looks like
+all of the assets are being thrown together and smack into place, instead of
+the transition being a smooth, chonky, reveal." Clarifying ruling — "it
+should read like the RIG is running up around a monstrous leg, ascending the
+monster."
+
+**What this changes, precisely:** the shipped hull-ratchet "brick-slam
+zipper" (`docs/DESIGN.md`'s "The tower (corner waves)": next-face tile
+columns dropping into place, staggered near-to-far, during the corner
+ritual) is exactly the kind of geometry-assembling reveal this ruling now
+calls out as choppy — it is not being torn out today, but it is flagged as
+needing rework under the new rule, alongside the CP3 bulkhead-flip/breach
+render work. Chunky two-snap detents stay, but live in the *camera's* ratchet
+curve, not in asset arrival. Doors and vent covers may still move; body
+parts (the anatomy itself) do not assemble. Sim-side, the inert-until-
+crossed gating that keeps determinism and gameplay honest is unaffected —
+this is a render-only rule. Render-side, the upcoming band must now be
+pre-built wherever a sightline could expose it, rather than built lazily at
+the transition.
+
+**Addendum, same date — zip-assembly is retired from the world, not
+deleted:** the operator, on the "zip" mechanic specifically: it "may be
+something we bring back for traps that assemble or different enemies that
+are presented later." The emerging rule is narrower than "no assembly
+anywhere" — the creature's own body never assembles, but things the ship
+*builds* (traps, emplacements, later defenders) may. Assembly reads as
+hostile activity, not as the world itself. The zipper choreography code
+should stay extractable for that future reuse rather than being deleted
+outright when the corner-ritual rework happens.
+
+**Source:** operator interview, July 30. Recorded in `FLEET-PLAN.md` under
+"CP3 verdict: transitions must read as ascent around static anatomy" and its
+"zip-assembly retention" addendum. Evidence frames from the judged pass:
+`artifacts/cp3-transform/`.
+
+**Supersedes:** nothing in decided canon — this refines *how* the already-
+canon world-transformation grammar (`DESIGN.md`, "World-transformation
+grammar") should render, not what transformations exist or when they fire.
+Flags (does not yet fix) the "brick-slam zipper" description in `DESIGN.md`'s
+implementation record as describing a technique the operator has since ruled
+against for the creature reveal. CP3 itself is not closed — a second pass
+applying this ruling is expected before the checkpoint is considered met.

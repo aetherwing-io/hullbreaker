@@ -192,6 +192,15 @@ the implementation record and code still use them:
   not a body part or a creature fought directly — see `STORY.md`'s finale
   section.
 
+**Render rule, per the CP3 verdict** (`decisions.md` entry 3): the anatomy
+above is monumental and *static* during a transition. RIG and the camera are
+what move; the next stretch of world already exists and is *revealed* — by
+the camera rotating around a limb plus natural self-occlusion and fog —
+never assembled, slammed, or articulated into place. Two-snap chunkiness
+lives in the camera's ratchet curve, not in geometry arriving. This refines
+how the beats above render; it does not change what they are or when they
+fire, and the sim-side inert-until-crossed gating is unaffected.
+
 Exterior phases favor exposure, long jumps, gaps, flying threats, and broad
 sightlines. Interior phases favor walls, ceilings, shafts, traps, machinery,
 turrets, and compressed routes.
@@ -365,6 +374,15 @@ tower with corner events** (shipped):
   During the ritual the next face's tile columns drop into place with a
   heavy ease, staggered near-to-far from the corner, locking before the
   scroll resumes. Unbuilt terrain is inert: no bullet or enemy collision.
+  **Flagged by the CP3 ruling** (`decisions.md` entry 3): this is exactly the
+  geometry-*assembling* reveal the operator has since ruled against for the
+  creature's own anatomy — it should read as static and monumental, revealed
+  by camera rotation, not built piece-by-piece. Per the same ruling's
+  addendum, the zip-assembly technique itself is not being deleted: it may be
+  repurposed for things the ship *builds* (traps, emplacements, later
+  enemies), just retired from anatomy/world reveals. Still shipped and
+  accurate as written for the corner ritual; not yet reworked, and the code
+  should stay extractable for that future reuse.
 - Tiles keep sharp per-face orientation (chunky bricks). Only the camera
   path is chamfered (±3 tiles) around corners; entity yaw blends over
   ±1.5 tiles so characters visibly turn corners.
@@ -441,13 +459,17 @@ entire climb:
    see [`decisions.md`](decisions.md) entry 2.
 2. **Transformation slice:** preserve the shipped hull ratchet, add one
    bulkhead flip and breach return, and make the resulting altitude gain
-   unmistakable without changing 2D collision. In progress in an isolated
-   fleet worktree, targeting checkpoint CP3.
+   unmistakable without changing 2D collision. **Merged** (`738a890`,
+   `?slice=transform`) and judged at checkpoint CP3: directionally right, but
+   the transition choreography itself was called choppy — see the render
+   rule added to "World-transformation grammar" above and `decisions.md`
+   entry 3. A second pass applying that rule is expected before CP3 is met.
 3. **Combat grammar:** add houndframe, polyp, and mortar one at a time. Prove
    each enemy's tell, movement answer, weapon interaction, and two-enemy
-   combination before adding the next. Houndframe is in progress in an
-   isolated fleet worktree, targeting checkpoint CP2; polyp and mortar are not
-   yet started.
+   combination before adding the next. **Houndframe merged** (`94913ad`, a
+   floor-denial enemy with trial stages and per-pace fairness assertions),
+   awaiting the operator's CP2 judgment; polyp and mortar are not yet
+   started.
 4. **Baseline feedback now:** add essential hit, hurt, launch, pickup, warning,
    and transformation sounds plus restrained hit-stop, shake, flashes, and
    particles. Full polish can wait; readable timing cannot.
