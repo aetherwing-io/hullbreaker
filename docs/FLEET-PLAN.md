@@ -41,6 +41,24 @@ the intensity is far off.** The fleet exists to close that gap:
   (transformation), and the in-flight CP1 defect fixes (fallback
   self-defeat, crush wall-grind). The roof-contest decision folds into CP2+.
 
+### July 30 — CP3 verdict: transitions must read as ascent around static anatomy
+
+- CP3 first pass: "much more aligned to the feel, but the transitions a
+  little too choppy... it sort of looks like all of the assets are being
+  thrown together and smack into place, instead of the transition being a
+  smooth, chonky, reveal."
+- Clarifying ruling, operator verbatim: "it should read like the RIG is
+  running up around a monstrous leg, ascending the monster."
+- Transformation grammar consequence: the creature's anatomy is monumental
+  and STATIC during transitions; RIG (and the camera) are what move. The
+  next stretch of world pre-exists and is revealed by the view rotating
+  around the limb plus natural self-occlusion and fog — never by geometry
+  assembling, slamming, or articulating into place. Chunky two-snap detents
+  live in the camera's ratchet curve, not in asset arrival. Doors/vent
+  covers may move; body parts do not assemble. Sim-side inert-until-crossed
+  gating stays (determinism/gameplay); render-side the upcoming band must be
+  pre-built wherever sightlines could expose it.
+
 ### July 30 — the Meridian is a creature (canon + visual direction)
 
 - The *Meridian* IS a colossal machine-creature, and the sterilization fiction
