@@ -117,7 +117,6 @@ function push(out, kind, facet, s, w, y, h, depth, d) {
 }
 
 export function limbBakePlan(cfg, groundH) {
-  const L = cfg.limb;
   const out = [];
   for (const facet of limbFacets(cfg)) {
     facetPlan(out, facet, cfg, groundH);

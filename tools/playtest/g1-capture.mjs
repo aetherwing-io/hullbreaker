@@ -111,20 +111,18 @@ const PROBE = () => {
 };
 
 /* ------------------------- the policy (closed loop) ------------------ *
- * Hold right, hold fire, hop on a cadence, and point the 8-way aim at the
- * nearest hostile ahead — enough of a player to clear a corner gate. Every
- * key event it sends is recorded, so the same run can be replayed verbatim
- * against another render mode (that is the whole equivalence proof).      */
-async function drive(page, { maxMs, onSample, record }) {
+ * Hold fire, run right, point the 8-way aim at the nearest hostile on either
+ * side, and hop — enough of a player to fight a corner gate, which the
+ * evidence capture needs because the ritual only fires when the wave dies.
+ * The equivalence proof deliberately does NOT use this: see fixedScript().  */
+async function drive(page, { maxMs, onSample }) {
   const t0 = Date.now();
-  let lastGameMs = 0;
   const held = new Set();
   const send = async (type, code) => {
     if (type === 'down' && held.has(code)) return;
     if (type === 'up' && !held.has(code)) return;
     if (type === 'down') held.add(code); else held.delete(code);
     try { await page.keyboard[type === 'down' ? 'down' : 'up'](code); } catch {}
-    if (record) record.push({ t: Date.now() - t0, gameMs: lastGameMs, type, code });
   };
   await send('down', 'KeyJ');                     // the trigger is always held
   let jumping = false, lastJump = 0;
@@ -133,14 +131,11 @@ async function drive(page, { maxMs, onSample, record }) {
     const now = Date.now() - t0;
     const st = await page.evaluate(PROBE);
     if (st) {
-      lastGameMs = st.gameMs;
       trace.push({ t: now, ...st });
       if (onSample && (await onSample(st, now)) === 'stop') break;
-      // Run right, point the 8-way aim at the nearest hostile ahead, hop on a
-      // cadence, and hop early when something is diving into contact range.
-      // It is a mediocre player: a gate wave of four wasps beats it often
-      // enough that captureRun() retries (see `attempts` there) rather than
-      // pretending one open-loop pass always wins a fight.
+      // A mediocre player: a gate wave of four wasps beats it often, which is
+      // why captureRun() restarts the run rather than pretending one pass
+      // always wins a fight.
       const dist = st.aimDx === null ? Infinity : Math.hypot(st.aimDx, st.aimDy);
       const behind = st.aimDx !== null && st.aimDx < -0.6 && dist < 20;
       await send(behind ? 'down' : 'up', 'ArrowLeft');   // turn and fight
@@ -163,31 +158,6 @@ async function drive(page, { maxMs, onSample, record }) {
   }
   for (const code of ['ArrowRight', 'ArrowLeft', 'KeyJ', 'ArrowUp', 'ArrowDown', 'Space'])
     await send('up', code);
-  return trace;
-}
-
-// Replay a recording verbatim: identical input, wall-clock scheduled the same
-// way, with no reaction to what it sees. The only difference between two
-// replays is the browser's own frame timing.
-async function replay(page, events, { maxMs, onSample }) {
-  const t0 = Date.now();
-  const trace = [];
-  let i = 0;
-  while (Date.now() - t0 < maxMs) {
-    const st = await page.evaluate(PROBE);
-    if (st) {
-      // dispatch on the GAME's clock, not the wall clock: with ?fixeddt the
-      // same key lands at the same sim time in every replay
-      while (i < events.length && events[i].gameMs <= st.gameMs) {
-        const e = events[i++];
-        try { await page.keyboard[e.type === 'down' ? 'down' : 'up'](e.code); } catch {}
-      }
-      trace.push({ t: Date.now() - t0, ...st });
-      if (onSample && (await onSample(st, Date.now() - t0)) === 'stop') break;
-      if (i >= events.length && st.gameMs > events[events.length - 1].gameMs + 2500) break;
-    }
-    await page.waitForTimeout(20);
-  }
   return trace;
 }
 
@@ -279,9 +249,15 @@ async function shots() {
   // bot's reaction rate per unit of GAME time, which is the only reason the
   // limb build (more geometry, slower frames here, free on a GPU) was losing
   // the same fight the default build wins.
+  // MEASURED, and the reason the near pair is the honest evidence: a corner
+  // gate's wave is laid out between the live screen edges (sim/wavegate.js's
+  // spawnGateWave), so at ?view=far the arena is 33 tiles wide instead of 16
+  // and the four wasps stand ~11 tiles apart. This policy cannot clear that in
+  // 13 restarts in EITHER render mode; at ?view=near it clears it routinely.
   const F = '&fixeddt=16.6667';
   const runs = [
     ['default', '?testapi=1' + F],
+    ['default-near', '?view=near&testapi=1' + F],
     ['g1', '?g1=1&testapi=1' + F],
     ['g1-near', '?g1=1&view=near&testapi=1' + F],
   ];
@@ -304,7 +280,11 @@ async function shots() {
 
 async function video() {
   await withBrowser(async (server, browser) => {
-    const { context, page } = await openPage(browser, server, '?g1=1&testapi=1', { video: true });
+    // ?view=near for the video: the bot has to WIN the gate for the ritual to
+    // fire, and the far arena (33 tiles, wasps 11 apart) beats this policy in
+    // both render modes — see the note on `runs` in shots().
+    const { context, page } = await openPage(
+      browser, server, '?g1=1&view=near&testapi=1&fixeddt=16.6667', { video: true });
     await captureRun(page, 'video-g1');
     const v = page.video();
     await context.close();
