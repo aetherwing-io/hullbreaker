@@ -1,0 +1,12 @@
+{
+  "name": "aim-gap-8way",
+  "description": "CONTROL for the CP2 aim-control complaint, mechanized: sprint into the dare pocket, stop on the pocket floor about 4 tiles short of the aim-bench houndframe (?hound=aim parks one there with its fuse pulled, so this is a target range, not a fight), and hold fire for 2.5s while perfectly lined up and in no danger. Expected: ~20 shots, ZERO kills — the standing firing line (muzzle 1.05 over the deck) passes over the hound's hit circle (0.03-0.87), and the only 8-way alternative, the down-diagonal, buries itself in the deck within a tile. Pairs with aim-gap-crouch.json and aim-gap-assist.json, which differ ONLY by their flag.",
+  "url": "index.html?slice=traversal&hound=aim",
+  "viewport": { "width": 1280, "height": 800 },
+  "durationMs": 5000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 2200 },
+    { "tap": "jump", "atMs": 880, "holdMs": 80 },
+    { "hold": "fire", "fromMs": 2450, "toMs": 4950 }
+  ]
+}

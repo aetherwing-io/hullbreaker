@@ -39,6 +39,12 @@ scene.add(rig);
 // called at the end of updatePlayer, where the single-file build placed the rig
 function sync() {
   placeOnTower(rig, player.x, player.y, 0);
+  // crouch (?crouch=1) has to be visible or the lowered firing line is a
+  // mystery: the body squashes to the crouched collision height and the gun
+  // drops with the muzzle the sim is actually firing from.
+  const squash = player.crouched ? CONFIG.crouch.height / CONFIG.player.height : 1;
+  rig.scale.y = squash;
+  gunGroup.position.y = player.muzzleY / squash;    // rig is squashed: undo it here
   gunGroup.rotation.z = Math.atan2(player.aim.y, player.aim.x);
   rig.visible = gameMs >= player.iframesUntil || blink();
 }

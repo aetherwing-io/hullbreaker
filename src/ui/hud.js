@@ -5,8 +5,9 @@
 import { CONFIG } from '../config.js';
 import { TRANSFORM_FIXTURE } from '../pure/transform.js';
 import {
-  ACTIVE_SLICE, HOUND_TRIAL_STAGE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE,
-  SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN,
+  ACTIVE_SLICE, AIM_ASSIST_ENABLED, CROUCH_ENABLED, HOUND_TRIAL_STAGE,
+  IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, SCORE_ENABLED, SLICE_ENEMIES_ENABLED,
+  SLICE_ENEMY_PLAN,
 } from '../mode.js';
 import { scoreNotchGlyphs } from '../pure/score.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
@@ -29,7 +30,13 @@ hudBL.innerHTML = IS_TRAVERSAL_SLICE
   ? 'MOVE wasd/arrows &nbsp; JUMP space &nbsp; FIRE j or x &nbsp; RETRY r<br>' +
     'LEDGE near-misses catch: jump launches, down releases &nbsp;&middot;&nbsp; WALL contact: jump launches, down releases<br>' +
     'DROP down+jump &nbsp;&middot;&nbsp; MAGENTA POCKET = take H, retreat left &nbsp;&middot;&nbsp; PAUSE p/esc<br>' +
-    'LOSING HP = HULL FALLBACK: the ship drops you to the route below and play continues'
+    'LOSING HP = HULL FALLBACK: the ship drops you to the route below and play continues' +
+    // the aim-gap A/B prototypes announce themselves, or the operator cannot
+    // tell which of the two answers they are currently feeling
+    (CROUCH_ENABLED
+      ? '<br>CROUCH hold down while grounded: low firing line, low profile, no walking'
+      : '') +
+    (AIM_ASSIST_ENABLED ? '<br>AIM ASSIST on: shots bend up to 8&deg; toward what you point at' : '')
   : IS_TRANSFORM_SLICE
     ? 'MOVE wasd/arrows &nbsp; JUMP space (hold = higher, again in air = double) &nbsp; FIRE j or x &nbsp; RETRY r<br>' +
       'TRANSFORMATION SLICE &nbsp;&middot;&nbsp; run into the open panel, then into the one ahead: ' +

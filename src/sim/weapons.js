@@ -5,6 +5,8 @@
 
 import { CONFIG, WEAPON_LETTERS } from '../config.js';
 import { DEG } from '../pure/path.js';
+import { assistDirection } from '../pure/assist.js';
+import { AIM_ASSIST_ENABLED } from '../mode.js';
 import { view } from './bridge.js';
 import { gameMs, approach } from './time.js';
 import { builtSolidAt, builtGroundTopAt } from './level.js';
@@ -46,7 +48,28 @@ function spawnProj(type, x, y, dx, dy, def) {
 
 // One trigger pull → one "shot" for stats; clones replay without logging.
 // No per-letter branches: count/splayDeg/lob fields on the def drive the fan.
+// ?aim=assist (A/B prototype): correct the heading at fire time only, by at
+// most CONFIG.assist.maxDeg, toward a materialized hostile the player was
+// already pointing at. Applied before the shot is logged, so GHOST clones
+// replay the same corrected heading, and before the fan, so every weapon's
+// spread is preserved around it. Pure math + bounds live in src/pure/assist.js.
+const assistTargets = [];
+const assistOut = { x: 1, y: 0, targetId: 0, adjustedDeg: 0 };
+
+function assistHeading(x, y, ax, ay) {
+  assistTargets.length = 0;
+  for (const e of hostiles) {
+    if (gameMs < e.enterUntil) continue;          // still materializing: not in play
+    assistTargets.push(e);
+  }
+  return assistDirection(ax, ay, x, y, assistTargets, CONFIG.assist, assistOut);
+}
+
 export function fireWeapon(letter, x, y, ax, ay, clone) {
+  if (AIM_ASSIST_ENABLED && !clone) {
+    const a = assistHeading(x, y, ax, ay);
+    ax = a.x; ay = a.y;
+  }
   if (!clone) {
     shotsFired++;
     if (gameMs < mods.ghostUntil) logShot(letter, x, y, ax, ay);

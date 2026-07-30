@@ -57,9 +57,13 @@ export function spawnHostile(x, y, delayMs, kind, row) {
     cruiseSpeed: T && T.cruiseSpeed !== undefined ? T.cruiseSpeed : undefined,
     diveRange: T && T.diveRange !== undefined ? T.diveRange : undefined,
     diveCooldownMs: T && T.diveCooldownMs !== undefined ? T.diveCooldownMs : undefined,
+    senseRange: T && T.senseRange !== undefined ? T.senseRange : undefined,
     state: K.start || 'cruise', stateUntil: 0, diveCdUntil: 0,
     patrolX0: patrol ? patrol.x0 : -Infinity,
     patrolX1: patrol ? patrol.x1 : Infinity,
+    // a raised-surface hound rides the top of an authored solid instead of the
+    // ground run; cleared if it ever tumbles down onto the deck below
+    deckY: row && row.surface === 'solid-top' ? row.deck : undefined,
     enterUntil: gameMs + (delayMs || 0) + CONFIG.wasp.enterMs,
     flashUntil: 0,
   };
@@ -101,8 +105,11 @@ export function hitHostile(e, idx, damage, weapon) {
  * mounts steps up to stepUpTiles, skids off anything taller, and runs
  * straight off a deck edge into a tumble. Lead a charge at a gap and the
  * hound removes itself. Deck-hugging follow is the flame crawler's pattern
- * (src/sim/weapons.js); like the crawler, hounds ride ground only — one-way
- * catwalks are grating and carry no frames.
+ * (src/sim/weapons.js); like the crawler, hounds ride SOLID surfaces only —
+ * one-way catwalks are grating and carry no frames. An authored row may name
+ * a raised solid top (`surface: 'solid-top'`) instead of the ground run, which
+ * is how a roof becomes a patrolled lane; a roof runner that charges off its
+ * edge tumbles to the deck below and hunts on from there.
  *
  * Counterplay is always a movement verb, never a damage race: the charge is
  * faster than any run tune (you cannot retreat), it commits before it can
@@ -112,8 +119,17 @@ export function hitHostile(e, idx, damage, weapon) {
 
 function houndInLane(e, H) {
   const dy = player.y - e.y;
-  return Math.abs(player.x - e.x) < H.senseRange &&
+  const sense = e.senseRange !== undefined ? e.senseRange : H.senseRange;
+  return Math.abs(player.x - e.x) < sense &&
     dy > -H.laneBelow && dy < H.laneAbove;
+}
+
+// The surface under a hound. Ground runners read the terrain; a raised-surface
+// runner holds its authored plate for exactly as long as there is solid tile
+// beneath it, which is what makes a roof a lane with edges rather than a floor.
+function houndDeckAt(e, x) {
+  if (e.deckY === undefined) return builtGroundTopAt(x);
+  return builtSolidAt(x, e.deckY - 0.5) ? e.deckY : -999;
 }
 
 // true when the deck ahead cannot be walked onto: no plate, too tall a step,
@@ -138,20 +154,21 @@ function updateHound(e, dt) {
     e.vy = Math.max(H.fallTerminal, e.vy + H.fallGravity * dt);
     e.x += e.vx * dt;
     e.y += e.vy * dt;
-    const landing = builtGroundTopAt(e.x);
-    if (landing > -100 && e.y <= landing + H.rideY) {
-      e.y = landing + H.rideY;
+    const landing = builtGroundTopAt(e.x);      // always the ground: a roof runner
+    if (landing > -100 && e.y <= landing + H.rideY) {  //   that overcommits comes down
+      e.y = landing + H.rideY;                 //   and keeps hunting on the deck
       e.vy = 0;
+      e.deckY = undefined;
       houndSkid(e, H, true);                     // picks itself up on the lower deck
     }
     return;
   }
 
-  const deck = builtGroundTopAt(e.x);
+  const deck = houndDeckAt(e, e.x);
   if (deck > -100) e.y = approach(e.y, deck + H.rideY, H.hugRate * dt);
 
   if (e.state === 'prowl') {
-    const deckAhead = builtGroundTopAt(e.x + e.dir * H.probeX);
+    const deckAhead = houndDeckAt(e, e.x + e.dir * H.probeX);
     if (deckAhead < -100 || houndBlockedAhead(e, H, deckAhead) ||
         (e.dir < 0 && e.x <= e.patrolX0) || (e.dir > 0 && e.x >= e.patrolX1)) {
       e.dir = -e.dir;                            // pacing turn: never a self-inflicted fall
@@ -162,7 +179,7 @@ function updateHound(e, dt) {
       e.dir = Math.sign(player.x - e.x) || e.dir;
       // never telegraph nose-to-wall: a charge with nowhere to go would be an
       // unreadable tell-skid stutter, so it keeps pacing and turns instead
-      const facing = builtGroundTopAt(e.x + e.dir * H.probeX);
+      const facing = houndDeckAt(e, e.x + e.dir * H.probeX);
       if (facing > -100 && !houndBlockedAhead(e, H, facing)) {
         e.state = 'tell';
         e.stateUntil = gameMs + H.tellMs;
@@ -189,10 +206,10 @@ function updateHound(e, dt) {
     const sdt = dt / steps;
     for (let k = 0; k < steps; k++) {
       e.x += e.vx * sdt;
-      const under = builtGroundTopAt(e.x);
+      const under = houndDeckAt(e, e.x);
       if (under > -100) e.y = approach(e.y, under + H.rideY, H.hugRate * sdt);
       if (gameMs >= e.enterUntil && circleHitsPlayer(e.x, e.y, e.hitR)) damagePlayer(1, e.x);
-      const deckAhead = builtGroundTopAt(e.x + e.dir * H.probeX);
+      const deckAhead = houndDeckAt(e, e.x + e.dir * H.probeX);
       if (deckAhead < -100) {                    // ran out of deck — commitment costs
         e.state = 'tumble';
         e.vy = 0;

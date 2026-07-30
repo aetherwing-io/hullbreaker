@@ -59,6 +59,10 @@ export const CONFIG = {
     wallJumpX: 11.8, wallJumpY: 12.5,
     traversalRecatchMs: 180, traversalEdgeGuard: 0.5,
     width: 0.7, height: 1.7,
+    muzzleY: 1.05,             // firing line above the feet while standing. It sits ABOVE a
+                               //   houndframe's hit circle (deck+0.03..0.87), which is the
+                               //   whole reason the crouch/assist prototypes exist — the gap
+                               //   is asserted in tools/pathcheck.mjs so it stays honest.
     maxHealth: 3, lives: 3,
     iframesMs: 1200, hitstunMs: 220, knockbackX: 6, knockbackY: 5,
   },
@@ -116,6 +120,30 @@ export const CONFIG = {
     enterMs: 900, enterDepth: -12,           // condense in from the foggy interior
     dieMs: 500, dieDepth: -7,                // death: flash, tumble, recede, fade
     wobbleAmp: 0.4, wobbleFreq: 2.2,         // alive: depth breathing
+  },
+
+  crouch: {                    // ?crouch=1 — A/B prototype for the 8-way aim gap.
+                               // A PLANTED stance, not a movement mode: it buys a low firing
+                               // line and a low profile, and costs all horizontal speed while
+                               // held (momentum doctrine — a crouch that let you keep running
+                               // would just be a better default, and the answer to a charge
+                               // must stay a movement verb). Jump still leaves instantly.
+    height: 1.0,               // profile while crouched (standing 1.7): ducks a skimming dive
+    muzzleY: 0.45,             // firing line: dead centre on a houndframe's hit circle
+    aimLevel: true,            // crouched aim is horizontal — down means "get low", not "aim
+                               //   at the deck", which is what the 8-way diagonal already did
+  },
+
+  assist: {                    // ?aim=assist — the other A/B answer to the same gap.
+                               // Fire-time only: the shot leaves along a slightly corrected
+                               // heading. Deliberately NOT per-frame steering (that is
+                               // homing, and homing is a weapon), and hard-clamped so it can
+                               // read as generosity rather than autoplay.
+    coneDeg: 16,               // half-angle searched around the player's own aim
+    maxDeg: 8,                 // hard cap on the correction: a few degrees, never a turn
+    range: 12,                 // ignore anything further than this (rifle reach is 28)
+    minFixTiles: 5,            // design contract: from here out, the cap is enough to close
+                               //   the standing firing-line gap on a houndframe (asserted)
   },
 
   hound: {                     // houndframe: denies a FLOOR route with a committed charge.

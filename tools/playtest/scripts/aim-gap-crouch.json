@@ -1,0 +1,13 @@
+{
+  "name": "aim-gap-crouch",
+  "description": "ANSWER A to the aim gap (?crouch=1): identical to aim-gap-8way.json — same route, same stop, same 2.5s of held fire on the same target — plus DOWN held while firing, which drops the firing line from 1.05 to 0.45 and the profile from 1.7 to 1.0. Expected: the same ~20 shots now kill the houndframe. The stance is planted, so the trade is explicit: the low line costs all horizontal speed while it is held.",
+  "url": "index.html?slice=traversal&hound=aim&crouch=1",
+  "viewport": { "width": 1280, "height": 800 },
+  "durationMs": 5000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 2200 },
+    { "tap": "jump", "atMs": 880, "holdMs": 80 },
+    { "hold": "down", "fromMs": 2400, "toMs": 4950 },
+    { "hold": "fire", "fromMs": 2450, "toMs": 4950 }
+  ]
+}

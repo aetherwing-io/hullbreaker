@@ -502,41 +502,82 @@ export function resolveTraversalPace(name, fixture = TRAVERSAL_FIXTURE) {
  * With no stage selected the plan IS the pace's list, so every ordinary URL —
  * including each ?pace= variant — is byte-identical to what it fields today.
  *
- * `deck` is the authored ground height the hound owns — the spawn height is
- * derived from CONFIG.hound.rideY so the frame always sits on that plate, and
- * `patrol` keeps each hound pacing one ground run of the fixture instead of
- * wandering the level. Every authored beat sits on a floor the player would
- * otherwise sprint across without a decision.
+ * `deck` is the authored surface height the hound owns — the spawn height is
+ * derived from CONFIG.hound.rideY so the frame always sits on that plate. A
+ * `surface: 'solid-top'` row rides the top of an authored solid rectangle
+ * instead of the ground run (see updateHound): the same enemy, one tier up.
  *
- * `contests` names the fixture route each hostile is assigned to, because the
- * placement pattern is per-route threat assignment (docs/concept-art shows the
- * quadruped standing on one route's platform while wasps work another):
- * choosing a route chooses a matchup. Hounds take the floor routes; the
- * upper-chimney and wall-launch routes stay a pure air problem, and the
- * harness asserts that separation so it cannot quietly erode.            */
+ * `contests` names the fixture route each hostile is assigned to, and `owns`
+ * names the CONNECTOR it stands over, because CP2's verdict was that a hound
+ * on open plate is scenery: "one hound doesn't pose any threat." A patrol span
+ * is therefore short and centred on something the route cannot skip — a
+ * landing, a pocket mouth, the one segment every route shares — so the frame
+ * is always near the decision instead of pacing eight tiles away from it. The
+ * harness asserts the span is tight, contains the owned connector, and that a
+ * charge from either end of it still sweeps that connector.
+ *
+ * Threat assignment stays per-route (docs/concept-art shows the quadruped
+ * standing on one route's platform while wasps work another): choosing a route
+ * chooses a matchup, and at least two routes stay a pure air problem.      */
+
+// Each beat owns one thing the low line cannot skip: the step-up landing at
+// x=43, the pocket mouth at x=48, and the drop-down landing at x=59.
 const HOUND_FLOOR_BEATS = [
-  { id: 'hound-teach', kind: 'hound', contests: 'lower-service',
-    deck: 3, x: 45.5, dir: -1, delayMs: 0, patrol: { x0: 39.5, x1: 46.5 } },
-  { id: 'hound-pocket', kind: 'hound', contests: 'dare-pocket',
-    deck: 1, x: 54.5, dir: -1, delayMs: 400, patrol: { x0: 48.5, x1: 55.5 } },
-  { id: 'hound-rejoin', kind: 'hound', contests: 'lower-service',
-    deck: 3, x: 63.5, dir: -1, delayMs: 800, patrol: { x0: 57.5, x1: 63.5 } },
+  { id: 'hound-teach', kind: 'hound', contests: 'lower-service', owns: 'low-step',
+    deck: 3, x: 44.2, dir: -1, delayMs: 0, patrol: { x0: 41.6, x1: 44.6 } },
+  { id: 'hound-pocket', kind: 'hound', contests: 'dare-pocket', owns: 'pocket-commit',
+    deck: 1, x: 49.8, dir: -1, delayMs: 400, patrol: { x0: 47.6, x1: 50.4 } },
+  { id: 'hound-rejoin', kind: 'hound', contests: 'lower-service', owns: 'post-low',
+    deck: 3, x: 60.2, dir: -1, delayMs: 800, patrol: { x0: 57.8, x1: 60.6 } },
+];
+
+// The overhang roof (solid rect `dare-overhang`, top y=6, x 48..56) is the one
+// segment EVERY authored route crosses — `overhang-top` appears in all six. A
+// hound pacing it turns the fixture's shared rejoin into a timed lane, and
+// overcommitting drops it into the pocket, where it keeps hunting on the floor.
+const HOUND_ROOF_BEAT = {
+  id: 'hound-roof', kind: 'hound', contests: 'mid-catwalk', owns: 'overhang-top',
+  surface: 'solid-top', deck: 6, x: 52.4, dir: -1, delayMs: 500,
+  patrol: { x0: 50.4, x1: 53.4 },
+};
+
+// Adversarial's p4 mash policy clears the slice untouched by flying the y 9.5-13
+// band: nothing authored below y 9 can reach it, and a hound never will. Wasps
+// only dive at a player BELOW them, so contesting that lane needs wasps parked
+// above it — these two cruise the ceiling head-on and make the freeway a lane.
+// Height is a fairness constraint, not a taste call: a dive travels 7 tiles, so
+// parking them at 15.6+ keeps the deepest reach (8.6) ABOVE the apex of a jump
+// made from the floor plus a standing body — clearing a hound is never punished
+// from above — while still crossing the 9.5-13 flight band a chained mash policy
+// lives in. Both bounds are asserted.
+const CEILING_WASPS = [
+  { id: 'ceiling-a', kind: 'wasp', contests: 'upper-chimney', x: 47, y: 15.6, delayMs: 200,
+    tune: { cruiseSpeed: 3.0, diveRange: 9.0, diveCooldownMs: 850 } },
+  { id: 'ceiling-b', kind: 'wasp', contests: 'wall-launch', x: 62, y: 15.9, delayMs: 500,
+    tune: { cruiseSpeed: 3.0, diveRange: 9.0, diveCooldownMs: 850 } },
 ];
 
 export const HOUND_TRIAL = {
   id: 'hound-trial-v1',
   stages: {
-    // teach: floor pressure only. Three plates the low route needs, each one
-    // temporarily wrong to stand on. Answer: jump, wall-launch, or drop behind.
+    // teach: floor pressure only. Three chokepoints the low line needs, each
+    // one temporarily wrong to stand on. Answer: jump, wall-launch, or drop
+    // behind. The ceiling pair is here because a stage that only threatens the
+    // floor teaches "fly over everything" instead of teaching the hound.
     solo: {
       id: 'solo', label: 'HOUND SOLO', compose: 'replace',
-      enemies: HOUND_FLOOR_BEATS,
+      enemies: HOUND_FLOOR_BEATS.concat(CEILING_WASPS),
     },
     // test: the documented combination — "hound forces the jump that the wasp
     // contests". The wasp cruises the arc directly over the hound's plate, so
     // the movement answer to the charge is the one the air threat punishes.
     combo: {
       id: 'combo', label: 'HOUND + WASP', compose: 'replace',
+      // FROZEN: this is the roster the operator judged at CP2 ("those feel much
+      // better"), kept byte-identical as the A/B baseline for 2.5. It predates
+      // the chokepoint placement contract and is deliberately exempt from it —
+      // the harness asserts that exactly one stage claims this exemption.
+      frozen: true,
       enemies: [
         { id: 'hound-squeeze', kind: 'hound', contests: 'lower-service',
           deck: 3, x: 45.5, dir: -1, delayMs: 0, patrol: { x0: 39.5, x1: 46.5 } },
@@ -546,12 +587,48 @@ export const HOUND_TRIAL = {
           deck: 3, x: 63.5, dir: -1, delayMs: 900, patrol: { x0: 57.5, x1: 63.5 } },
       ],
     },
+    // CP2's iteration point ("3 was a little busy"): stage 2's squeeze, plus one
+    // more route contested and the flight lane closed. Four bodies instead of
+    // stage 3's five-to-eight, and every one of them owns a different decision —
+    // the low landing, the arc that answers it, the roof segment all six routes
+    // share, and the ceiling. Stage 2 is left untouched as the comparison.
+    squeezePlus: {
+      id: 'squeezePlus', label: 'HOUND 2.5', compose: 'replace',
+      enemies: [
+        { id: 'hound-squeeze', kind: 'hound', contests: 'lower-service', owns: 'low-step',
+          deck: 3, x: 44.2, dir: -1, delayMs: 0, patrol: { x0: 41.6, x1: 44.6 } },
+        { id: 'squeeze-wasp', kind: 'wasp', contests: 'lower-service',
+          x: 44, y: 7.6, delayMs: 300 },
+        HOUND_ROOF_BEAT,
+        // the EARLY ceiling watcher: the flight lane has to be contested while
+        // the player is still climbing into it, or a fast pass simply outruns
+        // the contest (measured: the late watcher alone let 2 of 3 mash runs
+        // reach the exit untouched)
+        CEILING_WASPS[0],
+      ],
+    },
     // remix: the floor beats on top of the pace's own air pressure. Nothing is
     // re-authored — whatever the pace fields keeps its ids, positions, and
     // tunes, and the floor simply stops being free.
     mix: {
       id: 'mix', label: 'HOUND MIX', compose: 'add',
       enemies: HOUND_FLOOR_BEATS,
+    },
+    // Test bench, not a feel stage: ONE houndframe deep in the pocket with its
+    // fuse pulled (tune.senseRange 0 — it paces and never telegraphs, so it is
+    // a target, not a fight). Standing anywhere on the pocket floor puts the
+    // player on its deck, perfectly lined up and in no danger — and 8-way aim
+    // still cannot reach it, which is exactly the operator's complaint. Used by
+    // the crouch/assist A/B scripts, and by the operator to feel both answers
+    // with nothing else going on.
+    aim: {
+      id: 'aim', label: 'AIM BENCH', compose: 'replace',
+      bench: true,
+      enemies: [
+        { id: 'hound-bench', kind: 'hound', contests: 'dare-pocket', owns: 'pocket-reward',
+          deck: 1, x: 54.6, dir: -1, delayMs: 0, patrol: { x0: 53.8, x1: 55.2 },
+          tune: { senseRange: 0 } },
+      ],
     },
   },
 };

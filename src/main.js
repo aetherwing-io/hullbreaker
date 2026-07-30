@@ -246,6 +246,7 @@ function telemetry() {
     player: {
       x: player.x, y: player.y, vx: player.vx, vy: player.vy,
       grounded: player.grounded,
+      crouched: player.crouched, muzzleY: player.muzzleY,
       traversalState: player.traversalState,
       traversalControlUntil: player.traversalControlUntil,
     },
