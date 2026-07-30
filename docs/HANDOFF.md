@@ -107,10 +107,14 @@ this snapshot is still exact — it changes quickly during the fleet push.
 - Continuous helix rotation was rejected. World turns should be discrete,
   chunky events: hull ratchets, bulkhead flips inward, and breach returns.
 - The ship defending itself is the escalation fiction. Its states are
-  **Observe → Intercept → Contain → Quarantine → Sterilize → Scuttle**.
-- The **Meridian Crown** is the summit command/transmission complex and final
-  transforming environment. There is no literal “Immune Heart” boss in the
-  current direction.
+  **Observe → Intercept → Contain → Quarantine → Sterilize → Scuttle** — read
+  together, that ladder is the *Meridian*'s immune system escalating against
+  a detected infection (see `decisions.md` entry 1).
+- The **Meridian** is literally a colossal machine-creature (July 30 canon
+  decision — see [`decisions.md`](decisions.md)); its anatomy is the
+  traversal lattice. The **Meridian Crown** remains the summit
+  command/transmission complex and final transforming environment: not a body
+  part, and not a literal creature-boss fought directly.
 - Story delivery cannot stop the action. Use transformations, environmental
   changes, terse ship statuses, and very short radio exchanges.
 - Flight is optional and must earn its place later; the story and climax cannot
