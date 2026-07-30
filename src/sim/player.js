@@ -472,6 +472,10 @@ export function updatePlayer(dt) {
 // keeps its shipped hp cadence at the wall face.
 function crushPlayer() {
   player.iframesUntil = 0;
+  // A crush resolves the pin — clear the EDGE_PIN_MS accumulator so the
+  // sibling pin-damage clock can't fire a stale second hit on the same frame
+  // against the just-relocated (and possibly just-healed) player.
+  player.edgePinnedMs = 0;
   damagePlayer(player.hp, player.x - 1);
 }
 

@@ -369,9 +369,10 @@ if (QUERY.has('selftest')) {
     togglePause(); check('resume', state === 'PLAYING');
     dispatchEvent(new Event('resize'));
     check('resize handled', Math.abs(camera.aspect - innerWidth / innerHeight) < 1e-6);
-    // view-scale experiment: an unrecognized/absent ?view= must resolve to
-    // `near` (depthMult 1, the pre-view-scale camera depth exactly) — checked
-    // against ACTIVE_FIXTURE (mode-agnostic: traversal or transform), the same
+    // view scales: any ?view= must resolve to a declared entry (default is
+    // `far` per the July 30 operator verdict); when `near` IS selected it must
+    // reproduce the pre-view-scale camera depth exactly — checked against
+    // ACTIVE_FIXTURE (mode-agnostic: traversal or transform), the same
     // thing activeCameraDepth() itself reads, so this holds at any aspect.
     check('view resolved', !!CONFIG.viewScales[VIEW_ID] &&
       Number.isFinite(activeCameraDepth()) && activeCameraDepth() > 0 &&

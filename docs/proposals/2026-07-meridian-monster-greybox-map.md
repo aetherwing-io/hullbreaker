@@ -64,19 +64,23 @@ Presentation adds a phase-level altitude base and anatomical surface normal.
 | P1 — Ignition | `24–89` | `75 / 89` | `0 → +12` | Lower stabilizer exterior | `monster-g1-limb-turn` |
 | P2 — Lift | `89–154` | `140 / 154` | `+12 → +30` | Outer haunch and ascending ribline | `monster-g2-neck-flip` |
 | P3 — Crossfire | `154–219` | `205 / 219` | `+30 → +48` | Lower neck / thoracic interior | `monster-g3-neck-turn` |
-| P4 — Displacement | `219–284` | `270 / 284` | `+48 → +78` | Upper neck pressure tract and gill manifold | `monster-g4-vent-breach` |
-| P5 — Kill Lattice | `284–349` | `335 / 349` | `+78 → +114` | Dorsal neck and Crown roots | `monster-g5-collar-turn` |
-| P6 — HULLBREAKER | `349–414` | `400 / 414` | `+114 → +154` | Crownback and transmitter shell | `monster-g6-crown-scuttle` |
-| Crown outro | `414–445` | — | `+154` | Breached transmitter / finale | — |
+| P4 — Displacement | `219–284` | `270 / 284` | `+48 → +63` | Upper neck pressure tract and gill manifold | `monster-g4-vent-breach` |
+| P5 — Kill Lattice | `284–349` | `335 / 349` | `+63 → +99` | Dorsal neck and Crown roots | `monster-g5-collar-turn` |
+| P6 — HULLBREAKER | `349–414` | `400 / 414` | `+99 → +139` | Crownback and transmitter shell | `monster-g6-crown-scuttle` |
+| Crown outro | `414–445` | — | `+139` | Breached transmitter / finale | — |
 
-The render-altitude deltas intentionally increase:
+The provisional render-altitude deltas are:
 
 ```text
-+12, +18, +18, +30, +36, +40
++12, +18, +18, +15, +36, +40
 ```
 
-The vent breach and late Crown transformations therefore provide the strongest
-visual proof of ascent.
+G4 deliberately carries fifteen fewer tiles than the earlier draft. CP3 v2
+showed that a smaller gain earned on foot reads more honestly than a larger
+number granted by a camera snap. Do not restore the missing `+15` through
+transition choreography; recover it only if a later layout authors enough
+additional climb. The vent remains the clearest *reveal* of altitude, while
+the late Crown climbs provide the largest gains.
 
 ## Shared 65-tile phase contract
 
@@ -92,9 +96,11 @@ Use local phase coordinate `u = 0–65`:
 | `u51–65` | Gate arena and clean transformation apron |
 | `u65` | Exact face pivot or committed transition |
 
-At the current `4.3 tiles/s`, the ungated traversal portion is roughly twelve
-seconds. Add pressure through enemy composition, route stakes, and the gate
-fight rather than lowering scroll speed to manufacture duration.
+At the shipped six-face baseline of `4.3 tiles/s`, the 51-tile ungated span is
+`≈11.9 s`. Treat that only as a reference: CP1 left
+`base|hunt|swarm|surge` unconsolidated, so phase duration must be recomputed
+after one pace is chosen. Add pressure through enemy composition, route stakes,
+and the gate fight rather than slowing the edge merely to manufacture duration.
 
 The current 16:9 camera sees approximately 44 `s`-tiles:
 
@@ -201,7 +207,9 @@ preserve two recognizable exits without implying that the neck assembles?
 The camera performs the interior 60-degree turn around a static cervical ring.
 An iris shutter may close the central connector, but the vertebral rail, rib
 hang, shaft, and routes on the next facet are prebuilt and revealed by the
-orbit. Iris Polyps control specific connectors rather than the whole screen.
+orbit. Reserve sockets for a future connector-control turret; the fixture tests
+that role at specific connectors rather than locking the enemy's final name or
+form.
 
 **Test:** Does the turn recontextualize floor and ceiling without becoming a
 square room, and does every turret sightline leave a real movement answer?
@@ -214,22 +222,25 @@ square room, and does every turret sightline leave a real movement answer?
 
 **Routes:** five immediate.
 
-1. High hook arc between tendon anchors.
+1. High tendon-anchor arc (**requires the snap-hook prototype to graduate;
+   until then, greybox this branch as a chained wall-launch route**).
 2. Service-diaphragm shutters.
 3. Rib-lip stair with redirectable landings.
 4. Lower tension-cable track.
 5. Opened vent-louver route.
 
+The pressure tract earns G4's `+15` on foot from local `u11–47`
+(global `s230–266`, grade `≈0.42`), then stays flat through the gate apron.
 A vent cover opens and pressure vapor clears the sightline to a pre-existing
 dorsal route. The first snap frames the cover opening; the hold reveals sky,
 settlement, and the already-authored exterior lattice; the second snap commits
-the camera to exterior materials and the `+30` altitude band. No rib or route
-telescopes, clamps, or assembles. Mortar landing denial, one Polyp connector,
-and one exit wasp pressure different routes.
+only the camera and materials. The ritual adds `0` altitude. No rib or route
+telescopes, clamps, or assembles. Mortar landing denial, one connector-control
+socket, and one exit wasp pressure different routes.
 
-**Test:** Does the vent opening reveal the settlement far below and make the
-render-altitude jump obvious while local collision and body anatomy remain
-unchanged?
+**Test:** Does the on-foot pressure-tract climb earn the altitude, then does
+the vent opening reveal that height while local collision and body anatomy
+remain unchanged?
 
 ### G5 — Crown-Collar Camera Ratchet
 
@@ -248,9 +259,9 @@ unchanged?
 The camera ratchets around a static collar and reveals a prebuilt dorsal face.
 Hostile emplacements may unfold from seams and damaged covers may fall away,
 but the scutes, fin root, and route-bearing anatomy do not reposition. Hound,
-Polyp, mortar, and wasps occupy different route nodes, but no more than three
-attack types tell simultaneously. A carrier pulls a modifier into a broken
-dorsal spur with a visible hook return.
+connector-control turret, mortar, and wasps occupy different route nodes, but
+no more than three attack types tell simultaneously. A carrier pulls a modifier
+into a broken dorsal spur with a visible hook return.
 
 **Test:** Can the camera turn plus hostile activation feel like escalating
 creature defense while RIG, three tells, the dare return, and two forward routes
@@ -322,9 +333,9 @@ Do not build the full monster first.
 2. If the operator reports that the gate reads as “around a leg,” build **G2**
    with one allowed 10–12-tile moving neck access plate, static surrounding
    anatomy, and three continuity connectors.
-3. Build **G4** next as the altitude proof, because it tests the largest new
-   presentation claim: open one vent cover and reveal a prebuilt exterior route
-   without requiring the Crown finale.
+3. Build **G4** next as the earned-altitude and reveal proof: climb `+15` on
+   foot, open one vent cover, and reveal a prebuilt exterior route without
+   requiring the Crown finale.
 
 The first comparison should answer one question:
 
