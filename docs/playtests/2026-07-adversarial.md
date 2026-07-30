@@ -983,6 +983,33 @@ attacking.
 and ritual skipping can only be attacked blind — I can tell you nothing broke,
 but not that nothing *can*.
 
+### Both transform attacks re-run on the rework (`a89e93d`)
+
+The rework changed fixture geometry, not just presentation, so the T2 numbers
+above are superseded by these. Both scripts are geometry-agnostic (they only hold
+right and mash), so neither needed retiming.
+
+**T1 holds exactly.** Died 3/3, four deaths per run, `maxX` 35.66, margin
+0.28–0.31 — the same figures as before the rework, to two decimals. The gate and
+arming machinery are unchanged as the integrator predicted, and refusing to enter
+a seam is still not a hiding place.
+
+**T2: the naive policy climbs the new interior further than it climbed the old
+one.** `maxX` rose to **132.94 / 119.77 / 119.77** (was 112.11 / 83.65 / 87.30)
+and `maxY` to **10.58–10.74** (was ~8.3). So the reworked interior — a
+0.42-tiles-per-tile grade with six deck step-ups and roughly 25 tiles of on-foot
+ascent — is traversed by hold-right-and-mash, the same policy that clears the
+traversal lattice. The new geometry reads as real climbing in the altitude trace,
+which is the point of the rework and it works; what it does not yet do is *demand*
+anything the naive policy lacks. Worth knowing before the on-foot ascent is
+judged as a difficulty increase: it is an altitude increase.
+
+Determinism improved but is not clean: two runs landed identically at 119.77 and
+one at 132.94, with deaths 1 / 3 / 1 and the longest pin at wildly different
+places (x=60.45 / 30.45 / 65.15). Still a signal for the transformation lane
+rather than a defect claim, and still un-diagnosable from outside without the
+ritual-state hook above. No console or page errors in any run.
+
 ## Single best next action
 
 *(Original recommendation, now partly implemented — the CP1 variants bounded the
