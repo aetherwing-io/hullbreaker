@@ -15,8 +15,9 @@
 import { CONFIG } from './config.js';
 import {
   ACTIVE_SLICE, IS_TRAVERSAL_SLICE, QUERY, SCORE_ENABLED, SLICE_ENEMIES_ENABLED,
-  SLICE_FALLBACK_ENABLED, SLICE_PACE,
+  SLICE_FALLBACK_ENABLED, SLICE_PACE, VIEW_ID,
 } from './mode.js';
+import { traversalCameraDepth } from './pure/traversal.js';
 import { installHost } from './sim/bridge.js';
 import {
   advanceGameMs, gameMs, scrollX, setScrollX, sliceStats,
@@ -53,7 +54,7 @@ import { resetCornerEvents } from './sim/wavegate.js';
 import { updateScroll } from './sim/scroll.js';
 import { camera, renderer, scene } from './render/scene.js';
 import {
-  calibrateEdges, handleResize, resetCameraYaw, syncCamera,
+  activeCameraDepth, calibrateEdges, handleResize, resetCameraYaw, syncCamera,
 } from './render/camera.js';
 import { clearCorpses, updateCorpses } from './render/hostiles.js';
 // imported for their side effects: each builds its meshes and installs its
@@ -281,6 +282,9 @@ window.HB = Object.freeze({
   shotsFired: () => shotsFired,
   edges: () => ({ left: sLeftEdge(), right: sRightEdge() }),
   pace: () => (ACTIVE_SLICE ? { ...ACTIVE_SLICE.pace, pursuit: ACTIVE_SLICE.pursuit } : null),
+  // view-scale experiment (?view=near|mid|far, CONFIG.viewScales): resolved
+  // id/label/depthMult plus the camera depth it actually produced this frame.
+  view: () => ({ ...CONFIG.viewScales[VIEW_ID], cameraDepth: activeCameraDepth() }),
   pursuitSpeed: () => paceSpeed(),
   // proposal A.5's read surface, verbatim: ring-buffered events, one snapshot,
   // and the reset the harness may assert. Inert unless ?score=1.
@@ -336,6 +340,14 @@ if (QUERY.has('selftest')) {
     togglePause(); check('resume', state === 'PLAYING');
     dispatchEvent(new Event('resize'));
     check('resize handled', Math.abs(camera.aspect - innerWidth / innerHeight) < 1e-6);
+    // view-scale experiment: an unrecognized/absent ?view= must resolve to
+    // `near` (depthMult 1, the pre-view-scale camera depth exactly).
+    check('view resolved', !!CONFIG.viewScales[VIEW_ID] &&
+      Number.isFinite(activeCameraDepth()) && activeCameraDepth() > 0 &&
+      CONFIG.viewScales.near.depthMult === 1 &&
+      (VIEW_ID !== 'near' || activeCameraDepth() === (ACTIVE_SLICE
+        ? traversalCameraDepth(CONFIG.camera.z, innerWidth / innerHeight, ACTIVE_SLICE.run)
+        : CONFIG.camera.z)));
     resetGame();
     const expectedScroll = ACTIVE_SLICE ? ACTIVE_SLICE.run.startScroll : 0;
     const expectedHostiles = ACTIVE_SLICE && SLICE_ENEMIES_ENABLED ? ACTIVE_SLICE.enemies.length : 0;
