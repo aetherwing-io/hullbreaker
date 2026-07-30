@@ -41,6 +41,27 @@ the intensity is far off.** The fleet exists to close that gap:
   (transformation), and the in-flight CP1 defect fixes (fallback
   self-defeat, crush wall-grind). The roof-contest decision folds into CP2+.
 
+### July 30 — CP2 verdict: houndframe lands; iterate from "hound 2.5"
+
+- Operator on the hound stages: "those feel much better." Iterate from
+  roughly **hound 2.5** — stage 3 (mix) was "a little busy"; the sweet spot
+  is above stage 2's clean squeeze, below the full pace roster + hounds.
+- **A lone hound poses no threat** — placement/layout iteration needed
+  (chokepoints, patrol spans on routes the player actually needs), not stat
+  buffs.
+- "Walls are a little too tight with the pace at times, so I sort of feel
+  invincible going through walls, running past enemies." Two threads:
+  (a) the through-walls invincibility is the KNOWN crush wall-clip defect
+  already in a fix cycle — re-judge wall tightness only after it merges;
+  (b) "running past enemies... might be viable paths to play in the future"
+  — noted as a design seed: evasion as a legitimate scored playstyle later,
+  but it must be a choice, not a physics accident.
+- **8-way aim is insufficient against low targets**: "sometimes I have to
+  try and jump (may add crouch?) but sometimes I'm lined up to shoot and
+  safe and can't quite get the projectiles to the target." Prototype
+  candidates: crouch (lowers firing line + hitbox) and/or light projectile
+  aim-assist — A/B-able flags, operator judges.
+
 ### July 30 — CP3 verdict: transitions must read as ascent around static anatomy
 
 - CP3 first pass: "much more aligned to the feel, but the transitions a
