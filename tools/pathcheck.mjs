@@ -16,7 +16,8 @@ import { fileURLToPath } from 'node:url';
 
 import { CONFIG } from '../src/config.js';
 import {
-  DEG, CORNER_S, SEGS, HALT_S, polyAt, headingAt, yawAt, faceIndexAt,
+  DEG, BEND_S, CORNER_S, SEGS, HALT_S, bendSList, crossesBend, polyAt, headingAt,
+  yawAt, faceIndexAt,
 } from '../src/pure/path.js';
 import {
   waveSize, waveLane, easeOutBack, cornerTimeline, cornerEventTotalMs,
@@ -54,7 +55,12 @@ import {
   buildSpawnTable, GAP,
 } from '../src/pure/generator.js';
 import {
-  TRANSFORM_FIXTURE, TRANSFORM_PATH, bandSlamOffset, buildTransformLevel,
+  limbBakePlan, limbFacets, limbFacetTone, limbJoints, limbOutwardReach,
+  limbPlanViolations, limbSpanHasGap, limbSpansPlayBand,
+} from '../src/pure/limb.js';
+import {
+  TRANSFORM_BEND_S, TRANSFORM_FIXTURE, TRANSFORM_PATH, bandSlamOffset,
+  buildTransformLevel,
   buildTransformPath, transformAltAt, transformAtmosphereMix, transformBandHeading,
   transformBandIndexAt, transformEventTotalMs, transformFrontierS, transformHaltS,
   transformHeadingAt, transformPanelState, transformPathAt, transformScrollOffset,
@@ -3447,6 +3453,374 @@ const XL = buildTransformLevel(CONFIG);
     ok(mercy.secondStreak === 1 && mercy.secondState === 'PLAYING',
        'the earned mercy forgives the streak instead of tripping the cap: streak ' +
        mercy.secondStreak + ', state ' + mercy.secondState);
+  }
+}
+
+/* ---- G1: the limb read of the tower, and the bend cull ----------------- *
+ * ?g1=1 is a RENDER interpretation of the shipped corner ritual (the camera
+ * orbits a static faceted leg instead of a face being zippered into place), so
+ * the assertions here are about two things only: that the bake plan is static
+ * and legal, and that projectiles stop at a bend instead of steering around
+ * the body with the ribbon. Nothing in this section touches sim behaviour,
+ * which is the whole claim being checked.                                  */
+{
+  const level = buildLevel(CONFIG);
+  const groundH = level.groundH;
+  const plan = limbBakePlan(CONFIG, groundH);
+  const L = CONFIG.limb;
+
+  // --- the plan is a static bake, not choreography ---------------------
+  ok(plan.length > 200, 'the limb bakes a body (' + plan.length + ' pieces)');
+  {
+    const again = limbBakePlan(CONFIG, groundH);
+    ok(JSON.stringify(plan) === JSON.stringify(again),
+       'the bake plan is deterministic: same config, same body, no rng');
+    const src = readFileSync(join(srcDir, 'pure', 'limb.js'), 'utf8');
+    ok(!/\bgameMs\b|\btMs\b|\bdt\b|Math\.random/.test(stripComments(src)),
+       'src/pure/limb.js takes no time or randomness argument: a body that ' +
+       'cannot be animated cannot assemble (CP3 ruling)');
+    const rsrc = stripComments(readFileSync(join(srcDir, 'render', 'limb.js'), 'utf8'));
+    ok(!/installView|view\./.test(rsrc),
+       'src/render/limb.js installs no view hook at all: no per-frame, ritual ' +
+       'or build callback can move the limb');
+  }
+
+  // --- facets and joints line up with the shipped path -----------------
+  {
+    const facets = limbFacets(CONFIG);
+    ok(facets.length === CONFIG.path.faces + 1,
+       'one armour facet per straight run of the polyline, got ' + facets.length);
+    ok(facets[0].s0 === 0 && facets[facets.length - 1].s1 === CONFIG.levelLength,
+       'the facets cover the whole level, intro to outro');
+    let contiguous = true;
+    for (let i = 1; i < facets.length; i++)
+      if (facets[i].s0 !== facets[i - 1].s1 + CONFIG.path.chamferTiles) contiguous = false;
+    ok(contiguous, 'consecutive facets are exactly one chamfer apart');
+    for (const f of facets) {
+      const a = headingAt(SEGS, f.s0 + 0.5), b = headingAt(SEGS, f.s1 - 0.5);
+      ok(Math.abs(a - b) < 1e-12,
+         'facet ' + f.k + ' is one flat plane: no bend inside it');
+    }
+    const joints = limbJoints(CONFIG);
+    ok(joints.length === CORNER_S.length &&
+       joints.every((j, i) => j.s === CORNER_S[i]),
+       'one joint per shipped corner, at the shipped pivot');
+    ok(joints.every((j) => Math.abs(j.sMid - (j.s + CONFIG.path.chamferTiles / 2)) < 1e-12),
+       'the joint is centred on the chamfer, so its mass reads as one hinge');
+    // the generator's apron is what makes far outward mass legal at a joint
+    for (const j of joints)
+      ok(!limbSpanHasGap(groundH, j.apron0, j.apron1),
+         'joint ' + j.k + ' apron is solid ground in every column');
+    ok(limbFacetTone(0, CONFIG).join() === '1,1,1',
+       'facet 0 is the untinted reference tone');
+  }
+
+  // --- the two rules that keep the theatre honest ----------------------
+  {
+    const bad = limbPlanViolations(plan, CONFIG, groundH);
+    ok(bad.length === 0, 'no limb piece breaks the play-band/fall rules' +
+       (bad.length ? ': ' + bad[0].why + ' ' + JSON.stringify(bad[0].piece) : ''));
+    const outward = plan.filter((p) => limbOutwardReach(p, CONFIG) > 0);
+    ok(outward.length > 0, 'the limb HAS outward armour (that is the parallax)');
+    // the deck kerb is the one documented exception (its top is below the deck,
+    // so a camera looking down at the deck cannot have it occlude anything on
+    // the deck) and carries its own two rules, checked by limbPlanViolations
+    ok(outward.every((p) => p.kind === 'kerb' || !limbSpansPlayBand(p, CONFIG)),
+       'not one outward piece except the deck kerb enters y [' +
+       L.playBand.y0 + ', ' + L.playBand.y1 + ']');
+    {
+      const kerbs = plan.filter((p) => p.kind === 'kerb');
+      const solid = groundH.filter((g) => g > -100).length;
+      ok(kerbs.length === solid,
+         'the ramp edge runs every solid column and only those (' +
+         kerbs.length + ' vs ' + solid + ')');
+      ok(kerbs.every((p) => p.y + p.h / 2 <= groundH[Math.floor(p.s)] + 1e-9),
+         'every kerb top sits below the deck it edges: it can never occlude RIG');
+      ok(kerbs.every((p) => limbOutwardReach(p, CONFIG) <= L.kerbOutwardMax),
+         'no kerb reaches more than ' + L.kerbOutwardMax + ' past the plane');
+      // continuity is the whole point: the line must not break at a joint
+      const j = limbJoints(CONFIG)[0];
+      let run = 0;
+      for (let x = j.apron0; x < j.apron1; x++)
+        if (kerbs.some((p) => Math.abs(p.s - (x + 0.5)) < 1e-9)) run++;
+      ok(run === j.apron1 - j.apron0,
+         'the ramp edge is unbroken across a joint apron (' + run + '/' +
+         (j.apron1 - j.apron0) + ' columns)');
+    }
+    const far = outward.filter((p) => limbOutwardReach(p, CONFIG) > L.fallOutwardMax);
+    ok(far.length === CORNER_S.length * 2,
+       'exactly the joint buttress and cup reach far outward, got ' + far.length);
+    // an enemy at the spawn cap, and a rig at the deck, are never inside armour
+    const capY = CONFIG.gen.laneCapY;
+    ok(L.playBand.y1 >= capY + 0.5,
+       'the protected band clears the hostile lane cap (' + capY + ')');
+    ok(L.playBand.y0 <= -1,
+       'the protected band clears the deck stack (4 tiles below ground)');
+  }
+
+  // --- projectiles leave on the tangent: the bend cull -----------------
+  {
+    const bends = bendSList(CONFIG);
+    ok(bends.length === CORNER_S.length &&
+       bends.every((b, i) => b === CORNER_S[i] + CONFIG.path.chamferTiles / 2),
+       'a bend boundary sits at every chamfer midpoint, got ' + bends.join());
+    ok(BEND_S.join() === '90,155,220,285,350,415',
+       'shipped bend boundaries, got ' + BEND_S.join());
+    ok(TRANSFORM_BEND_S.join() === TRANSFORM_FIXTURE.events.map((e) => e.seamS).join(),
+       'the transformation fixture bends at its seams');
+    ok(bends.every((b) => b < TRAVERSAL_FIXTURE.bounds.x0 || b > TRAVERSAL_FIXTURE.bounds.x1),
+       'no bend boundary falls inside the traversal slice: the movement fixture ' +
+       'is on one straight facet, so the cull cannot change its gunplay');
+    ok(crossesBend(bends, 89.5, 90.5) && crossesBend(bends, 90.5, 89.5),
+       'a crossing is caught in both directions: no shooting backwards around a limb');
+    ok(!crossesBend(bends, 80, 89.9) && !crossesBend(bends, 90.1, 99),
+       'a shot that stays on one facet is never culled');
+    ok(!crossesBend(bends, 90, 91),
+       'a projectile already past a boundary is not culled again by it');
+    // Tunneling: the test is over the whole substep interval, so the fastest
+    // bolt at the worst clamped frame cannot skip a boundary. Prove it with the
+    // real substep arithmetic from src/sim/weapons.js.
+    {
+      const fastest = Math.max(...Object.values(CONFIG.weapons).map((w) => w.speed));
+      const dt = 0.05;                       // the frame clamp in src/main.js
+      const steps = Math.min(4, Math.max(1, Math.ceil(fastest * dt / 0.45)));
+      const perStep = fastest * dt / steps;
+      ok(perStep <= 0.5, 'worst substep is ' + perStep.toFixed(3) + ' tiles');
+      let skipped = 0;
+      for (let start = 85; start < 89.999; start += perStep / 3) {
+        let x = start, hit = false;
+        for (let k = 0; k < 40 && !hit; k++) {
+          const x0 = x; x += perStep;
+          if (crossesBend(bends, x0, x)) hit = true;
+        }
+        if (!hit) skipped++;
+      }
+      ok(skipped === 0, 'no max-speed bolt path fired short of a boundary skips it (' +
+         skipped + ' skipped)');
+      // and a 10x-over-speed projectile, in case a later weapon outruns the
+      // substep budget: the interval test still catches it
+      let hitBig = false;
+      for (let x = 80, k = 0; k < 5; k++) { const x0 = x; x += 4; if (crossesBend(bends, x0, x)) hitBig = true; }
+      ok(hitBig, 'even a 4-tile-per-substep projectile is caught by the interval test');
+    }
+  }
+}
+
+/* ---- the bend cull, driven through the REAL bullet loop ---------------- *
+ * The pure interval test above is the rule; this is the rule actually running
+ * in src/sim/weapons.js. A child process so the shipped six-face mode is
+ * selected at module init, and so the view bridge can be instrumented without
+ * leaking into the assertions that share this process's module state.
+ *
+ * The control matters as much as the case: the same shot fired at a hostile on
+ * THIS side of the bend must still kill it, or "no damage past the bend" would
+ * pass for a build where the gun simply stopped working.                    */
+{
+  const simUrl = 'file://' + join(srcDir, 'sim');
+  const child = `
+    globalThis.__HB_QUERY__ = '';
+    const [W, H, P, B, T] = await Promise.all([
+      import(${JSON.stringify('file://' + join(srcDir, 'sim', 'weapons.js'))}),
+      import(${JSON.stringify('file://' + join(srcDir, 'sim', 'hostiles.js'))}),
+      import(${JSON.stringify('file://' + join(srcDir, 'sim', 'player.js'))}),
+      import(${JSON.stringify('file://' + join(srcDir, 'sim', 'bridge.js'))}),
+      import(${JSON.stringify('file://' + join(srcDir, 'sim', 'time.js'))}),
+    ]);
+    const LANE = 7;                       // above every generator ground height
+    const culls = [];
+    B.installView({ bullets: { bendCulled: (i, b, fromX) => culls.push({ x: b.x, fromX, phase: 'far' }) } });
+    P.player.x = 85; P.player.y = 3; P.player.facing = 1;
+    // both hostiles fully materialized before anything is fired: a wasp still
+    // condensing out of the tower depth has no hitbox at all
+    H.spawnHostile(92, LANE, 0);          // past the bend: must be unreachable
+    H.spawnHostile(87, LANE, 0);          // before it: the control, must die
+    T.advanceGameMs(2000);
+    const past = H.hostiles[0], near = H.hostiles[1];
+    const pastHp0 = past.hp, nearHp0 = near.hp;
+    const run = (steps) => {
+      for (let k = 0; k < steps; k++) {
+        W.updateBullets(1 / 60);
+        T.advanceGameMs(1000 / 60);
+      }
+    };
+    // 1. the case: fire past the bend, with the near hostile removed from the line
+    H.hostiles.splice(1, 1);
+    W.fireWeapon('L', 85, LANE, 1, 0, true);        // the fastest bolt in the roster
+    run(90);
+    const pastHp = past.hp;
+    // 2. the control: put the near hostile back and fire the same shot
+    H.spawnHostile(87, LANE, 0);
+    T.advanceGameMs(2000);
+    const ctrl = H.hostiles[H.hostiles.length - 1];
+    const ctrlHp0 = ctrl.hp;
+    W.fireWeapon('R', 85, LANE, 1, 0, true);        // R does not pierce: it stops here
+    run(30);
+    const ctrlHp = ctrl.hp;
+    // 3. backwards: from the far facet toward the one RIG came from, with the
+    //    arena emptied so nothing but the boundary can stop the bolt
+    H.hostiles.splice(0, H.hostiles.length);
+    const back = [];
+    B.installView({ bullets: { bendCulled: (i, b, fromX) => back.push({ x: b.x, fromX }) } });
+    W.fireWeapon('R', 95, LANE, -1, 0, true);
+    run(60);
+    console.log(JSON.stringify({
+      culls, back, pastHp0, pastHp, ctrlHp0, ctrlHp,
+      live: W.bulletPool.filter((b) => b.alive).length,
+    }));
+  `;
+  let sim = null;
+  try {
+    sim = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', child],
+      { encoding: 'utf8' }));
+  } catch (e) {
+    console.error('pathcheck: bend-cull child failed: ' + e.message);
+  }
+  ok(!!sim, 'the bullet loop runs headlessly with no renderer');
+  if (sim) {
+    ok(sim.culls.length === 1, 'one shot fired across a bend, one cull, got ' + sim.culls.length);
+    if (sim.culls.length) {
+      const c = sim.culls[0];
+      ok(c.x >= 90 && c.x <= 90.5,
+         'the bolt dies within half a tile past the boundary, at ' + c.x.toFixed(3));
+      ok(c.fromX < 90,
+         'the departure tangent is read from BEFORE the boundary (' + c.fromX.toFixed(3) + ')');
+    }
+    ok(sim.pastHp === sim.pastHp0,
+       'a hostile 2 tiles past the bend takes no damage: no shooting around the limb');
+    ok(sim.ctrlHp < sim.ctrlHp0,
+       'CONTROL: the same bolt still kills a hostile on this side of the bend ' +
+       '(' + sim.ctrlHp0 + ' -> ' + sim.ctrlHp + ')');
+    ok(sim.back.length === 1 && sim.back[0].x <= 90 && sim.back[0].x > 89.4,
+       'a shot fired back toward the previous facet dies at the same boundary, got ' +
+       JSON.stringify(sim.back));
+    ok(sim.live === 0, 'no culled projectile is left alive in the pool');
+  }
+}
+
+/* ---- ?g1=1 is render-only, proved at the sim layer -------------------- *
+ * The strongest form of the claim: run the SAME scripted six-face pass twice
+ * in two child processes, once with no flags and once with __HB_QUERY__ set to
+ * ?g1=1, with a fixed timestep and no renderer at all — then compare the full
+ * simulation trace. src/sim/* and src/pure/* both import src/mode.js, so if the
+ * flag reached any simulated decision (scroll, gate arming, the ritual clock,
+ * the built-column state machine, spawn tables, collision, the player) the two
+ * traces would differ. The gate wave is cleared through the real removal path,
+ * so the corner ritual actually fires inside the compared window.
+ *
+ * This is the mechanical half of the render-only proof; the browser half (which
+ * exercises the render layer that the flag DOES change) lives in
+ * tools/playtest/g1-capture.mjs's `equivalence` mode.                       */
+{
+  const simBase = 'file://' + join(srcDir, 'sim');
+  const traceChild = (query) => `
+    globalThis.__HB_QUERY__ = ${JSON.stringify(query)};
+    const [T, E, LV, SC, PLm, IN, ST, HO, WP, SP, WG] = await Promise.all([
+      import(${JSON.stringify(simBase + '/time.js')}),
+      import(${JSON.stringify(simBase + '/edges.js')}),
+      import(${JSON.stringify(simBase + '/level.js')}),
+      import(${JSON.stringify(simBase + '/scroll.js')}),
+      import(${JSON.stringify(simBase + '/player.js')}),
+      import(${JSON.stringify(simBase + '/input.js')}),
+      import(${JSON.stringify(simBase + '/state.js')}),
+      import(${JSON.stringify(simBase + '/hostiles.js')}),
+      import(${JSON.stringify(simBase + '/weapons.js')}),
+      import(${JSON.stringify(simBase + '/spawner.js')}),
+      import(${JSON.stringify(simBase + '/wavegate.js')}),
+    ]);
+    // the boot the composition root performs: edges from the camera probe
+    // (hard-coded here to the shipped 16:9 calibration, identical either way),
+    // the level's build state, and the player on the first face
+    E.setEdges(-18.9, 26.4);
+    LV.unbuildFutureFaces();
+    ST.setState('PLAYING');
+    const p = PLm.player;
+    p.x = 6; p.y = 3; p.vx = 0; p.vy = 0;
+    IN.keys.right = true; IN.keys.fire = true;
+    const dt = 1 / 60;
+    const rows = [];
+    let jumpUntil = 0;
+    for (let f = 0; f < 2400; f++) {
+      // A jump policy, not a jump schedule: hop when the deck ahead is a gap or
+      // a step. It reads only simulation state, so it is deterministic — and if
+      // the flag under test changed any of that state, the policy would diverge
+      // too, which makes the comparison stricter rather than weaker.
+      if (p.grounded &&
+          (LV.groundTopAt(p.x + 1.7) < -100 || LV.groundTopAt(p.x + 1.2) > p.y + 0.6)) {
+        IN.bufferJumpUntil(T.gameMs + 120);
+        IN.keys.jump = true;
+        jumpUntil = T.gameMs + 260;
+      }
+      if (T.gameMs > jumpUntil) IN.keys.jump = false;
+      T.advanceGameMs(dt * 1000);
+      SC.updateScroll(dt);
+      SP.updateSpawner();
+      PLm.updatePlayer(dt);
+      if (ST.state !== 'PLAYING') break;
+      HO.updateHostiles(dt);
+      WP.updateBullets(dt);
+      // Clear the gate the way the game does — through the one removal path
+      // that reports to the gate runtime — as soon as the wave has fully
+      // materialized, so the ritual fires at a deterministic frame.
+      const c = WG.activeCorner();
+      if (c && c.state === 'gate') {
+        for (let i = HO.hostiles.length - 1; i >= 0; i--)
+          if (T.gameMs >= HO.hostiles[i].enterUntil) HO.removeHostile(i, false);
+      }
+      const cc = WG.activeCorner();
+      rows.push([
+        f, T.gameMs.toFixed(3), T.scrollX.toFixed(6),
+        p.x.toFixed(6), p.y.toFixed(6), p.vx.toFixed(6), p.vy.toFixed(6),
+        p.grounded ? 1 : 0, p.hp, p.lives,
+        cc ? cc.k : 0, cc ? cc.state : 'done', cc ? (cc.tStart | 0) : 0,
+        HO.hostiles.length, HO.kills,
+        // the built-column state machine: what the next face collides as
+        LV.columnBuilt(89) ? 1 : 0, LV.columnBuilt(100) ? 1 : 0,
+        LV.builtGroundTopAt(92).toFixed(3),
+        HO.hostiles.map((e) => e.x.toFixed(3) + ':' + e.y.toFixed(3)).join('|'),
+      ].join(','));
+      if (cc === null) break;                     // every corner done
+    }
+    console.log(JSON.stringify({
+      rows: rows.length,
+      digest: rows.join(String.fromCharCode(10)).length,
+      trace: rows,
+      state: ST.state, kills: HO.kills, scrollX: T.scrollX,
+    }));
+  `;
+  const runTrace = (query) => {
+    try {
+      return JSON.parse(execFileSync(process.execPath,
+        ['--input-type=module', '-e', traceChild(query)],
+        { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
+    } catch (e) {
+      console.error('pathcheck: g1 equivalence child failed (' + query + '): ' + e.message);
+      return null;
+    }
+  };
+  const base = runTrace('');
+  const g1 = runTrace('?g1=1');
+  ok(!!base && !!g1, 'the six-face sim runs headlessly in both render modes');
+  if (base && g1) {
+    ok(base.rows > 1000,
+       'the scripted pass is long enough to contain a corner ritual (' + base.rows + ' frames)');
+    // the window really did include the ritual and the face commit
+    const turning = base.trace.filter((r) => r.split(',')[11] === 'turning').length;
+    ok(turning > 50, 'the compared window contains the turning ritual (' + turning + ' frames)');
+    const committed = base.trace.some((r) => r.split(',')[16] === '1');
+    ok(committed, 'the compared window contains the next face committing to collision');
+    let firstDiff = -1;
+    for (let i = 0; i < Math.min(base.trace.length, g1.trace.length); i++)
+      if (base.trace[i] !== g1.trace[i]) { firstDiff = i; break; }
+    ok(base.rows === g1.rows,
+       'both modes simulate the same number of frames (' + base.rows + ' vs ' + g1.rows + ')');
+    ok(firstDiff === -1,
+       'every simulated value is identical with ?g1=1: scroll, gate state, ritual ' +
+       'clock, built columns, spawns, hostiles, player' +
+       (firstDiff >= 0 ? ' — first difference at frame ' + firstDiff +
+         '\n  base: ' + base.trace[firstDiff] + '\n  g1:   ' + g1.trace[firstDiff] : ''));
+    ok(base.kills === g1.kills && base.state === g1.state &&
+       base.scrollX === g1.scrollX,
+       'same kills, same end state, same scroll cursor');
   }
 }
 

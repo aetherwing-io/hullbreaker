@@ -51,6 +51,14 @@ export const ACTIVE_SLICE = IS_TRAVERSAL_SLICE
 // fixture (its run window, scroll floor, spawn point, fast retry) reads this
 // one, so a second fixture does not have to re-plumb the composition root.
 export const ACTIVE_FIXTURE = IS_TRANSFORM_SLICE ? TRANSFORM_FIXTURE : ACTIVE_SLICE;
+// ?g1=1 — the G1 limb-turn experiment (docs/proposals/
+// 2026-07-meridian-monster-greybox-map.md, "smallest implementation
+// experiment"): the SIX-FACE run, unchanged in every simulated respect, with
+// the corner ritual re-read as a camera orbit around a static faceted leg.
+// Render-only: it selects the limb bake (src/render/limb.js), its atmosphere,
+// and the suppression of the brick-slam zipper's *visuals*. The fixtures own
+// their own transitions, so the flag is a normal-run flag only.
+export const IS_G1 = ACTIVE_FIXTURE === null && QUERY.get('g1') === '1';
 // ?score=1 arms the CHARGE/THREAT prototype; ?fallback=0 restores the old
 // ROUTE LOST retry instead of HULL FALLBACK tier 1.
 export const SCORE_ENABLED = QUERY.get('score') === '1';

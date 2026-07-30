@@ -15,10 +15,13 @@
 import { CONFIG } from './config.js';
 import {
   ACTIVE_FIXTURE, ACTIVE_SLICE, AUTOBOUNCE_ENABLED, FLOW_ENABLED, HOOK_ENABLED,
-  HOOK_INPUT, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, QUERY,
+  HOOK_INPUT, IS_G1, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, QUERY,
   SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN, SLICE_FALLBACK_ENABLED,
   SLICE_PACE, VIEW_ID,
 } from './mode.js';
+import { HALT_S } from './pure/path.js';
+import { cornerEventTotalMs } from './pure/waves.js';
+import { transformEventTotalMs } from './pure/transform.js';
 import { traversalCameraDepth } from './pure/traversal.js';
 import { installHost } from './sim/bridge.js';
 import {
@@ -55,9 +58,10 @@ import {
   resetScore, scoreEvents, scoreRunEnd, scoreRunStart, scoreSnapshot, updateScore,
 } from './sim/score.js';
 import { resetSpawner, updateSpawner } from './sim/spawner.js';
-import { resetCornerEvents } from './sim/wavegate.js';
+import { activeCorner, resetCornerEvents } from './sim/wavegate.js';
 import {
   activeTransformEvent, committedBand, resetTransform, transformAltitudeAt,
+  transformFrontierX, transformSealX,
 } from './sim/transform.js';
 import { updateScroll } from './sim/scroll.js';
 import { camera, renderer, scene } from './render/scene.js';
@@ -68,10 +72,11 @@ import { clearCorpses, updateCorpses } from './render/hostiles.js';
 // imported for their side effects: each builds its meshes and installs its
 // half of the view bridge as it loads, before anything below runs
 import './render/level.js';
+import { limbPieces } from './render/limb.js';
 import './render/transform.js';
 import './render/player.js';
 import './render/capsules.js';
-import './render/bullets.js';
+import { clearDepartingTracers } from './render/bullets.js';
 import './render/mods.js';
 import './render/hook.js';
 import { resetHudMessage, updateHUD } from './ui/hud.js';
@@ -145,6 +150,7 @@ function resetGame() {
   clearHostiles();
   clearCorpses();
   clearBullets();
+  clearDepartingTracers();               // render: no bend-cull tracer outlives a run
   for (let i = capsules.length - 1; i >= 0; i--) removeCapsule(i);
   setWeapon('R');
   resetWeaponKills();
@@ -251,11 +257,41 @@ function update(dt) {
 // and the rendered altitude) without scraping pixels.
 function transformTelemetry() {
   const ev = activeTransformEvent();
+  const total = transformEventTotalMs(CONFIG);
+  const t = ev && ev.state === 'turning' ? gameMs - ev.tStart : 0;
   return {
     band: committedBand,
     altitude: transformAltitudeAt(player.x),
     event: ev ? ev.id : null,
     eventState: ev ? ev.state : 'complete',
+    // additive (ritual state, so a bot can attack or trace a turn instead of
+    // guessing where it is): event-local ms and 0…1 progress through the same
+    // 990 ms timeline src/pure/transform.js owns, plus the two clamps RIG is
+    // actually bounded by. The clamps expose their raw sentinels: frontierX is
+    // +Infinity when no turn is pending, sealX is -Infinity until one commits.
+    tMs: t,
+    progress: total > 0 ? Math.min(1, t / total) : 0,
+    frontierX: transformFrontierX(),
+    sealX: transformSealX(),
+  };
+}
+
+// Corner-ritual state on the six-face run, same additive contract as the
+// transform block above: which corner is pending, what it is doing
+// (idle → gate → turning → complete), where its scroll halt and pivot are, and
+// how far through the 1100 ms two-snap ritual it is. Read-only sim state; the
+// fixtures author their own transitions, so they report no corner at all.
+function cornerTelemetry() {
+  const c = activeCorner();
+  const total = cornerEventTotalMs(CONFIG);
+  const t = c && c.state === 'turning' ? gameMs - c.tStart : 0;
+  return {
+    k: c ? c.k : null,
+    pivotS: c ? c.s : null,
+    haltS: c ? HALT_S[c.k - 1] : null,
+    state: c ? c.state : 'complete',
+    tMs: t,
+    progress: total > 0 ? Math.min(1, t / total) : 0,
   };
 }
 
@@ -263,6 +299,7 @@ function telemetry() {
   return {
     gameMs, state, scrollX,
     transform: IS_TRANSFORM_SLICE ? transformTelemetry() : undefined,
+    corner: ACTIVE_FIXTURE ? undefined : cornerTelemetry(),
     // unchanged semantics: the fixture's declared scroll floor. The live
     // pursuit speed a pacing variant is commanding is `pursuitSpeed` below.
     minimumScrollSpeed: ACTIVE_FIXTURE
@@ -287,6 +324,16 @@ function telemetry() {
     pursuitPeak: pacePeak(),
     setbacks: sliceStats.setbacks,
     score: scoreSnapshot(),
+    // Additive (adversarial-lane request): the live hostile rows, so a bot
+    // policy can read what it is fighting from the frozen channel instead of
+    // enriching from window.HB. Same fields and same meaning HB.snapshot()
+    // publishes, including houndframe's prowl/tell/charge/skid/tumble `state`
+    // and the mock-3D `materialized` flag (a hostile still condensing out of
+    // the tower depth has no hitbox).
+    hostiles: hostiles.map((e) => ({
+      id: e.id, kind: e.kind, state: e.state, dir: e.dir,
+      x: e.x, y: e.y, hp: e.hp, materialized: gameMs >= e.enterUntil,
+    })),
     // movement-verb prototypes, additive and inert when their flags are off:
     // the tether's phase/anchor and the momentum chain's live multiplier, so a
     // bot run can prove a hook route was actually hooked. `player.*` above is
@@ -354,6 +401,10 @@ window.HB = Object.freeze({
   // view-scale experiment (?view=near|mid|far, CONFIG.viewScales): resolved
   // id/label/depthMult plus the camera depth it actually produced this frame.
   view: () => ({ ...CONFIG.viewScales[VIEW_ID], cameraDepth: activeCameraDepth() }),
+  // ?g1=1 (limb-turn experiment) — render-mode facts only, deliberately OUTSIDE
+  // the frozen telemetry channel so a default-vs-g1 testapi trace comparison
+  // has nothing mode-dependent in it to explain away.
+  g1: IS_G1 ? { pieces: limbPieces, fog: { ...CONFIG.limb.fog } } : null,
   pursuitSpeed: () => paceSpeed(),
   // proposal A.5's read surface, verbatim: ring-buffered events, one snapshot,
   // and the reset the harness may assert. Inert unless ?score=1.
@@ -377,11 +428,8 @@ window.HB = Object.freeze({
         airJumpsLeft: player.airJumpsLeft,
       },
       currentWeapon, kills, shotsFired,
-      hostiles: hostiles.map((e) => ({
-        id: e.id, kind: e.kind, x: e.x, y: e.y, hp: e.hp,
-        state: e.state, dir: e.dir,      // houndframe: prowl/tell/charge/skid/tumble
-        materialized: gameMs >= e.enterUntil,
-      })),
+      // `hostiles` now comes from telemetry() itself (the frozen channel
+      // publishes it too), so the two channels cannot drift on the field set.
       capsules: capsules.map((c) => ({
         kind: c.kind, letter: c.letter, x: c.x, y: c.y, mode: c.mode,
       })),
@@ -448,6 +496,17 @@ if (QUERY.has('selftest')) {
       check('crush clock bounded at spawn', cap > 0
         ? player.x - player.hw - sLeftEdge() <= cap + 0.05
         : scrollX === expectedScroll);
+    }
+    if (IS_G1) {
+      // the limb baked, the air is the limb's, and the corner machinery is
+      // still the shipped one — the experiment is render-only by construction
+      check('limb baked', limbPieces > 0);
+      // the limb's own fog BAND (not its absolute distances: the ?view=
+      // pull-back shifts both ends by the same delta)
+      check('limb haze armed', Math.abs((scene.fog.far - scene.fog.near) -
+        (CONFIG.limb.fog.far - CONFIG.limb.fog.near)) < 1e-6);
+      check('corner ritual untouched', activeCorner().k === 1 &&
+        activeCorner().state === 'idle' && cornerEventTotalMs(CONFIG) === 1100);
     }
     if (IS_TRANSFORM_SLICE) {
       check('body static at spawn', committedBand === 0 &&

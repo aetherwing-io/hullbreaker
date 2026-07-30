@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { SEGS, CORNER_S, polyAt, headingAt, faceIndexAt } from '../pure/path.js';
-import { IS_TRANSFORM_SLICE } from '../mode.js';
+import { IS_G1, IS_TRANSFORM_SLICE } from '../mode.js';
 import { installView } from '../sim/bridge.js';
 import {
   LEVEL_LEN, groundH, platforms, solidRects, slamSets, farSets,
@@ -28,9 +28,17 @@ const slatMeshes = [];                                    // catwalk slats {mesh
 const authoredSolidMeshes = [];                           // traversal-only tagged solid rectangles
 
 /* ---- view hooks: the build state of a face, made visible ---------- */
+/* THE ZIPPER IS RETIRED FROM THE WORLD, NOT DELETED (docs/decisions.md
+   entry 3 + its July 30 addendum): the creature's body may not assemble,
+   but things the ship BUILDS may, so this choreography stays whole and
+   callable for the traps/emplacements lane. ?g1=1 reads the same corner as
+   an orbit around a static limb (../render/limb.js), so all three hooks
+   below no-op there and every column stays where the bake put it — the
+   next facet was always there. The sim's build state machine is untouched
+   in both modes; only the story the geometry tells changes.            */
 
 function unbuiltHidden() {               // next faces stay unbuilt until their ritual
-  if (!tiles) return;                    // transformation slice: no tower bake
+  if (!tiles || IS_G1) return;           // transformation slice: no tower bake
   for (const sets of [slamSets, farSets]) {
     for (const cols of sets) {
       for (const s of cols) {
@@ -49,6 +57,7 @@ function unbuiltHidden() {               // next faces stay unbuilt until their 
 
 const _zm = new THREE.Matrix4();
 function zipperColumn(s, dy, locked) {   // one brick-slam column, dy tiles above base
+  if (IS_G1) return;                     // a limb does not assemble
   const col = tiles && columnInstances[s];
   if (!col) return;
   for (let n = 0; n < col.count; n++) {
@@ -62,7 +71,7 @@ function zipperColumn(s, dy, locked) {   // one brick-slam column, dy tiles abov
 }
 
 function faceRevealed(c) {               // beyond the zipper strip: one distant commit
-  if (!tiles) return;
+  if (!tiles || IS_G1) return;           // nothing to reveal: the facet was baked
   for (const s of farSets[c.k - 1]) {
     const col = columnInstances[s];
     if (!col || col.settled) continue;

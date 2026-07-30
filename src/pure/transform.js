@@ -214,6 +214,16 @@ export function buildTransformPath(fixture, cfg) {
 
 export const TRANSFORM_PATH = buildTransformPath(TRANSFORM_FIXTURE, CONFIG);
 
+// Bend boundaries, same rule as the tower's corners (./path.js): the middle of
+// each turn's chamfer — which for a seam-centred chamfer IS the seam. A
+// projectile that reaches one leaves on its own tangent instead of following
+// the body around the turn.
+export function transformBendSList(fixture) {
+  return fixture.events.map((ev) => ev.seamS);
+}
+
+export const TRANSFORM_BEND_S = transformBendSList(TRANSFORM_FIXTURE);
+
 function segAt(segs, s) {
   for (let i = segs.length - 1; i >= 0; i--) if (s >= segs[i].s0) return segs[i];
   return segs[0];

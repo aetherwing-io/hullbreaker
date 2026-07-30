@@ -286,6 +286,96 @@ export const CONFIG = {
     },
   },
 
+  limb: {                      // ?g1=1 — the six-face tower READ AS a creature
+                               //   limb (docs/proposals/2026-07-meridian-monster-
+                               //   greybox-map.md, gate G1). Render-only: the
+                               //   simulation, the corner ritual timings and the
+                               //   built-column state machine are untouched, so
+                               //   every constant here is presentation.
+    fog: { near: 24, far: 52 },   // tighter than CONFIG.fog: the facet around the
+                                  //   joint has to wash out into haze. The visible
+                                  //   route strip (≈26 tiles ahead) stays under
+                                  //   ~15% fog; 20 tiles past the joint is ~55%.
+    bg: 0x46525f,              // Haze, not void: the shipped bg is darker than the
+                               //   grey-box itself, so distance READ AS BLACK and a
+                               //   limb has no atmosphere to recede into. A mid-value
+                               //   blue-grey lets far armour wash out and silhouette,
+                               //   while the deck (palette.ground) stays the
+                               //   brightest thing on screen.
+    // The protected volume. NOTHING baked outward of the play plane may enter
+    // it, so the limb can never hide RIG, a hostile, a bullet or a deck.
+    // pathcheck asserts it over every piece of the plan.
+    playBand: { y0: -1.0, y1: 12.6 },
+    planeHalfDepth: 1.0,       // tile half-depth: "outward" means beyond this
+    fallOutwardMax: 2.2,       // outward reach allowed over columns that may be a
+                               //   gap — a fall must stay visible to the kill plane
+    // The one exception to the play-band rule, and the reason it is safe: a
+    // kerb along the deck's outer lip whose TOP sits below the deck surface.
+    // The camera looks slightly DOWN at the deck, so a lip lower than the deck
+    // cannot occlude anything standing, crawling or flying above it — it only
+    // covers the tile faces beneath. Concept board 14 (the switchback ramp
+    // spiralling the body) reads as one continuous route precisely because its
+    // ramp edge is unbroken around every turn, so this is the piece that keeps
+    // RIG landing on the SAME ramp rather than on a new face.
+    kerb: { outward: 0.36, h: 0.5, under: 0.3, thickness: 0.9, overlap: 0.06 },
+    kerbOutwardMax: 0.4,
+    jointOutwardMax: 7.5,      // …and over a joint apron, where the generator
+                               //   guarantees flat solid ground (no fall to hide)
+    chunkCols: 8,              // dressing granularity along a facet (deck ref step)
+    // the mass under the deck: armour skin, then the body running off frame
+    hull: { drop: 34, depth: -1.1, thickness: 3.6, ribH: 0.5, ribThickness: 4.6 },
+    // overlapping scutes: the limb's skin. They read as shingles at the grazing
+    // angle a facet is seen at once it is 20+ tiles away, which is what makes the
+    // stretch past the joint read as armour instead of as the next level.
+    scute: { every: 5, len: 6.4, h: 2.6, thickness: 1.3, depth: 1.5,
+             under: 1.6, stagger: 0.42, ribEvery: 3, ribW: 0.7, ribH: 3.4 },
+    // The body rising behind the combat plane, told in HORIZONTAL plate seams
+    // and two receding tiers. Nothing vertical: a colonnade of ribs reads as
+    // architecture (the macro form the operator rejected in boards 1-5), while
+    // stacked plates stepping backwards read as a body curving away.
+    // Above the wall's shoulder there is nothing but haze: stacked tiers and
+    // light horizontal caps read as ceiling beams and shelves (and compete
+    // with the catwalks RIG actually stands on), so the only lines here are
+    // DARK seams — shadow, not structure.
+    wall: { depth: -6.0, below: 6, above: 6.5, thickness: 0.9,
+            capH: 0.5, capThickness: 1.1, capDepth: 0.1,
+            seamAt: [2.2], seamH: 0.35, seamThickness: 0.6 },
+    // the joint: what the camera orbits. A ridge where two armour facets meet, a
+    // tendon-anchor buttress under the deck (outward, so it sweeps the frame in
+    // parallax), and a cowl plate over the top of the joint.
+    joint: {
+      apronBack: 5, apronFwd: 3,          // the generator's flat apron: [cs-5, cs+3)
+      ridgeW: 3.2, ridgeThickness: 5.4, ridgeDepth: -5.0, ridgeBelow: 7, ridgeAbove: 9,
+      collarW: 5.6, collarH: 2.4, collarThickness: 4.6, collarDepth: -5.6, collarAt: 1.4,
+      buttressW: 4.0, buttressH: 11, buttressThickness: 8.0, buttressDepth: 2.6,
+      buttressTop: -1.4,                  // …entirely below playBand.y0
+      cupW: 3.0, cupH: 3.4, cupThickness: 5.0, cupDepth: 1.4, cupTop: -1.6,
+      tendonW: 1.1, tendonThickness: 1.1, tendonDepth: -2.2,   // behind the plane
+      // NOTE: an outward cowl plate over the joint was tried and cut. Anything
+      // with mass above eye level shows the camera its unlit underside, and a
+      // black lid over the route is exactly the "interior warehouse" read the
+      // operator rejected for the macro form. The joint carries itself on the
+      // ridge, the collar and the buttress.
+    },
+    // Distant anatomy: the limb continuing up out of frame and the body beyond
+    // it, authored at ABSOLUTE height so it stays static like everything else.
+    // Placed to clear the wall cap and sit deep in the fog band — silhouettes,
+    // never readable surfaces. `atFrac` is a fraction of the facet's length.
+    // Thin plates, not blocks: anything with mass above eye level shows the
+    // camera its unlit underside, which is what turns distant anatomy into a
+    // ceiling. A slab 2.4 deep reads as a silhouette in the haze instead.
+    silhouette: [
+      { atFrac: 0.40, y0: 22, h: 46, w: 40, depth: -34, thickness: 2.4 },
+      { atFrac: 0.86, y0: 27, h: 40, w: 24, depth: -26, thickness: 2.4 },
+    ],
+    // Per-facet material tone: weathering, not a state change. Each facet keeps
+    // its tone forever, so a joint has two visibly different armour planes.
+    tone: [
+      [1.00, 1.00, 1.00], [1.04, 1.02, 0.99], [0.96, 0.98, 1.03], [1.02, 1.00, 0.97],
+      [0.97, 1.00, 1.04], [1.03, 1.01, 0.98], [0.98, 0.99, 1.02],
+    ],
+  },
+
   edges: { margin: 0.4, killY: -7 },
 
   score: {                     // CHARGE/THREAT prototype — docs/proposals/
