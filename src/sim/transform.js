@@ -83,6 +83,7 @@ export function transformBandLabel() {
 export function updateTransformScroll(dt, playerRow) {
   const ev = activeTransformEvent();
   const playerRight = playerRow.x + playerRow.hw;
+  view.transform.frame(dt * 1000);       // render: weather, and nothing gameplay
 
   if (ev && ev.state === 'turning') {
     const t = gameMs - ev.tStart;

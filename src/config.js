@@ -86,6 +86,11 @@ export const CONFIG = {
   capsules: {                  // pickups: letters (magenta) + rare modifiers (gold)
     driftSpeed: 1.6, sinkSpeed: 0.35, bobAmp: 0.5, bobFreq: 2.0, size: 0.55,
     recatchMs: 2200, blinkLastMs: 800,           // dropped-on-hit recatch timer
+    popNoCatchMs: 250,           // …during which the pop cannot be re-caught. The
+                                 //   capsule spawns inside the player's own AABB,
+                                 //   so without this the "recatch it fast" panic
+                                 //   DESIGN describes never happened: the same
+                                 //   frame's pickup test handed the weapon back.
     popVx: 3.5, popVy: 9, gravity: -22,
     pickupRadius: 0.95,
   },
@@ -173,6 +178,45 @@ export const CONFIG = {
   },
 
   edges: { margin: 0.4, killY: -7 },
+
+  score: {                     // CHARGE/THREAT prototype — docs/proposals/
+                               //   2026-07-score-and-setback.md A.4, opt-in via
+                               //   ?score=1. CHARGE is sim state (it gates the
+                               //   weapon), THREAT is display only.
+    max: 100,
+    notches: [40, 100],        // A.4 cuts A.3's three-notch ladder to two:
+    notchNames: ['COLD', 'WARM', 'BREAKING'],   //   WARM 40, BREAKING 100
+    notchMult: [1.0, 1.4, 1.9],                 // THREAT multiplier per notch
+    warmFireMult: 0.85,        // WARM: the gun gets hotter, nothing else changes
+    shockRadius: 2.4, shockDamage: 4,   // BREAKING: a launch kills a wasp on
+                                        //   contact (wasp hp 4; a carrier dents)
+    // Gains are A.3's table doubled, per A.4's "scale the constants for the
+    // fixture": the slice pass is 4–12 s, not 45, so the meter needs a ~6 s
+    // horizon. Drain is doubled by the same factor so the asymmetry that is
+    // the whole design (the floor cools you, the air does not) survives the
+    // rescale. Neither set carries to the full game.
+    gain: {
+      airborne_kill: 28, launch_kill: 20, link: 12,
+      reclaim: 36, wager: 50, recatch: 40, ground_kill: 6,
+    },
+    drain: { moving: 14, stopped: 44 },   // per second while grounded
+    threat: {
+      airborne_kill: 100, launch_kill: 60, link: 25,
+      reclaim: 150, wager: 250, recatch: 200, ground_kill: 25,
+    },
+    launchGraceMs: 600,        // a kill this soon after a launch is a launch_kill
+    stallSpeed: 2.0, stallTickMs: 100,    // A.5's one idle definition, shared
+                                          //   with the playtest harness
+    linkDropTiles: 2,          // a launch only "links" if it went somewhere
+    reclaim: { lowTiles: 2.0, highTiles: 8.0, windowMs: 2500 },
+    routeRadiusTiles: 2.2,     // connector visit radius (A.5 route coverage)
+    routeMinConnectors: 3,
+    eventCap: 256,             // A.5 ring buffer
+    classification: [          // the ship's own ladder; the slice never crosses
+      [0, 'OBSERVE'], [2000, 'INTERCEPT'], [5000, 'CONTAIN'],   //   more than a
+      [9000, 'QUARANTINE'], [14000, 'STERILIZE'], [20000, 'SCUTTLE'],  // step
+    ],
+  },
 
   palette: {                    // grey-box: neutral + readability hints
     bg: 0x232830, ground: 0x767c85, groundAlt: 0x6a707a, catwalk: 0x8d939c,

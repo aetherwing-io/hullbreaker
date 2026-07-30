@@ -5,31 +5,39 @@
 //
 // Three fidelity channels, checked in this order (highest first):
 //
-//   'testapi' — globalThis.__HULLBREAKER_TEST__ is present (opt-in via
-//               ?testapi=1 on the URL, which run.mjs adds by default). This
-//               landed in commit 15f66d2, predates and is independent of the
-//               splitter's planned window.HB, and was missed in this
-//               harness's first pass — it already gives exact
-//               player.{x,y,vx,vy,grounded,traversalState,
-//               traversalControlUntil}, scrollX, gameMs, state, an exact
-//               (unrounded) edgeMargin, weapon, attempt, falls. The game's
-//               own comment documents it as read-only and unable to mutate
-//               the simulation.
+//   'testapi' — globalThis.__HULLBREAKER_TEST__.snapshot() is present,
+//               opt-in via ?testapi=1 on the URL (which run.mjs adds by
+//               default; --no-testapi opts out). Documented in src/main.js
+//               as "the playtest harness's canonical channel, field names
+//               frozen". Landed pre-module-split (commit 15f66d2) and was
+//               missed in this harness's first pass, which assumed no such
+//               hook existed.
 //
-//   'full'    — window.HB is present instead (the splitter's planned debug
-//               handle; not present on main as of this writing). Same kind
-//               of data, different source.
+//   'full'    — globalThis.window.HB.snapshot() is present instead. Unlike
+//               testapi, window.HB is now unconditional — present on every
+//               load, no query param needed (src/main.js: "Read-only debug
+//               handle, always present"). Both channels are built from the
+//               same telemetry() function in src/main.js so their shared
+//               fields (gameMs, state, scrollX, player.{x,y,vx,vy,grounded,
+//               traversalState}, edgeMargin, weapon, attempt, falls,
+//               airJumps) can't drift apart; HB.snapshot() additionally
+//               carries player.{hp,lives,facing,airJumpsLeft}, kills,
+//               shotsFired, hostiles, capsules. Note window.HB's *other*
+//               top-level members (HB.state, HB.scrollX, HB.currentWeapon,
+//               HB.kills, …) are getter *functions*, not values — this
+//               sampler only ever reads them through snapshot(), never as
+//               bare properties, specifically to avoid that trap.
 //
-//   'dom'     — neither exists. Falls back to parsing the same numbers the
-//               HUD already shows: attempt count, crush-edge margin
-//               (sliceStats.minEdgeMargin, pre-computed by the game),
-//               kill count, hp pips, current weapon letter, and the
+//   'dom'     — neither exists. Falls back to parsing the HUD/overlay text
+//               nodes: attempt count, crush-edge margin (rounded to 1
+//               decimal), kill count, hp pips, current weapon letter,
 //               dare-pocket/overlay text.
 //
 // The DOM-derived fields (kills, hp, weapon, overlay/HUD text) are always
-// read first as a base layer, then testapi/HB fields are overlaid on top —
-// neither telemetry channel exposes kills/hp itself, so even 'testapi'/'full'
-// samples still carry them from the HUD.
+// read first as a base layer; testapi/full overlay whatever extra precision
+// or fields they have, and use their own kills/hp when the channel actually
+// carries it (HB.snapshot() does; testapi's frozen shape deliberately
+// doesn't).
 
 export function sampleState() {
   /* eslint-disable no-undef */
@@ -67,7 +75,7 @@ export function sampleState() {
   };
 
   const testapi = typeof globalThis !== 'undefined' ? globalThis.__HULLBREAKER_TEST__ : undefined;
-  if (testapi) {
+  if (testapi && typeof testapi.snapshot === 'function') {
     const s = testapi.snapshot();
     return {
       ...base,
@@ -79,26 +87,27 @@ export function sampleState() {
       edgeMargin: s.edgeMargin,          // exact, not the HUD's 1-decimal display
       weapon: s.weapon || base.weapon,
       attempts: s.attempt, falls: s.falls,
+      airJumps: typeof s.airJumps === 'number' ? s.airJumps : null,
     };
   }
 
   const HB = typeof window !== 'undefined' ? window.HB : undefined;
-  if (HB && HB.player) {
-    const p = HB.player;
-    const ss = HB.sliceStats;
+  if (HB && typeof HB.snapshot === 'function') {
+    const s = HB.snapshot();
     return {
       ...base,
       fidelity: 'full',
-      x: p.x, y: p.y, vx: p.vx, vy: p.vy, grounded: !!p.grounded,
-      traversalState: p.traversalState || 'free',
-      scrollX: HB.scrollX, state: HB.state,
-      weapon: HB.currentWeapon || base.weapon,
-      kills: typeof HB.kills === 'number' ? HB.kills : base.kills,
-      hostiles: Array.isArray(HB.hostiles) ? HB.hostiles.length : null,
-      attempts: ss ? ss.attempts : base.attempts,
-      falls: ss ? ss.falls : base.falls,
-      airJumps: ss && typeof ss.airJumps === 'number' ? ss.airJumps : null,
-      edgeMargin: ss && typeof ss.minEdgeMargin === 'number' ? ss.minEdgeMargin : base.edgeMargin,
+      x: s.player.x, y: s.player.y, vx: s.player.vx, vy: s.player.vy,
+      grounded: !!s.player.grounded,
+      traversalState: s.player.traversalState || 'free',
+      scrollX: s.scrollX, gameMs: s.gameMs, state: s.state,
+      edgeMargin: s.edgeMargin,
+      weapon: s.weapon || base.weapon,
+      attempts: s.attempt, falls: s.falls,
+      airJumps: typeof s.airJumps === 'number' ? s.airJumps : null,
+      hp: typeof s.player.hp === 'number' ? s.player.hp : base.hp,
+      kills: typeof s.kills === 'number' ? s.kills : base.kills,
+      hostiles: Array.isArray(s.hostiles) ? s.hostiles.length : null,
     };
   }
 

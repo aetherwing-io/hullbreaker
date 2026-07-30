@@ -214,6 +214,42 @@ function addSkyline(root, band, M) {
   return g;
 }
 
+// Threat mounts: empty plinths where the interior's own roster will live. They
+// are readable as sockets rather than decoration, so a later pass can drop a
+// polyp or a hazard tank on one without re-authoring the corridor.
+function addThreatSockets(root, band, M) {
+  for (const so of band.band.threatSockets || []) {
+    const lx = so.x - band.s0;
+    if (so.kind === 'polyp') {
+      box(1.5, 0.5, 1.5, M.rib, lx, so.y, so.depth, root);
+      box(0.8, 0.9, 0.8, M.machine, lx, so.y + 0.7, so.depth, root);
+    } else {
+      box(2.2, 0.9, 2.2, M.machine, lx, so.y + 0.45, so.depth, root);
+      box(1.7, 0.25, 1.7, M.accent, lx, so.y + 0.95, so.depth, root);
+    }
+  }
+}
+
+// Driving rain on the exposed high face: presentation only, advanced from the
+// slice per-frame hook. The concept board tells the top of the climb through
+// weather, and it is the cue that survives a still frame.
+function addWeather(root, band, M) {
+  const W = band.band.weather;
+  if (!W) return null;
+  const geo = new THREE.BoxGeometry(0.07, W.length, 0.07);
+  const mat = new THREE.MeshBasicMaterial({ color: 0x9fb4c6, transparent: true, opacity: 0.34 });
+  const mesh = new THREE.InstancedMesh(geo, mat, W.count);
+  mesh.frustumCulled = false;
+  root.add(mesh);
+  const span = band.s1 - band.s0;
+  const drops = [];
+  let seed = 20260729;                          // deterministic scatter, no run rng
+  const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+  for (let i = 0; i < W.count; i++)
+    drops.push({ x: rnd() * span, y: rnd() * W.spanY - 8, z: rnd() * W.spanZ - 8 });
+  return { mesh, drops, W };
+}
+
 function buildBand(frame) {
   const M = bandMaterials(frame.band.tone);
   const root = new THREE.Group();
@@ -237,6 +273,8 @@ function buildBand(frame) {
     chunks.push(g);
   }
   const skyline = addSkyline(root, frame, M);
+  addThreatSockets(root, frame, M);
+  const weather = addWeather(root, frame, M);
 
   // The threshold plate lives in the scene, not the band: while the ritual
   // runs it rides the animated frame with RIG, then settles onto the band.
@@ -267,7 +305,7 @@ function buildBand(frame) {
     // the hull opening RIG steps into, and the panel that has to give way
     buildDoorway(root, frame, next, M);
   }
-  return { root, chunks, plate, overlap, skyline, frame };
+  return { root, chunks, plate, overlap, skyline, weather, frame };
 }
 
 function restPlate(plate, frame) {
@@ -310,13 +348,31 @@ function buildDoorway(root, frame, next, M) {
   box(1.25, 0.7, DOOR_W, M.accent, 0, DOOR_H - 1.6, zc, leaf);            // warning stripes
   box(1.25, 0.7, DOOR_W, M.accent, 0, 1.9, zc, leaf);
   box(1.5, 1.4, 1.4, M.rib, 0, DOOR_H * 0.5, zc + DOOR_W / 2 - 0.7, leaf); // latch block
-  panels.push({ hinge, leaf, root });
+
+  // A breach blows OUTWARD: hull chunks go with the panel, tumbling away
+  // through the hole ahead of RIG. Authored offsets, no rng — the same nine
+  // pieces every run, so a bot trace and a screenshot stay comparable.
+  const debris = [];
+  const isBreach = FIX.events.some((e) => e.kind === 'breach' && e.seamS === next.s0);
+  if (isBreach) {
+    for (let i = 0; i < 9; i++) {
+      const sz = 0.6 + (i % 3) * 0.5;
+      const m = box(sz, sz * 0.7, sz, i % 2 ? M.panel : M.hull,
+                    dx, ref + 1.2 + i * 1.3, HINGE_Z + 1.4 + (i % 4), root);
+      debris.push({
+        mesh: m, base: m.position.clone(),
+        vx: 1 + (i % 5) * 0.5, vy: 0.35 + (i % 3) * 0.45, vz: ((i % 3) - 1) * 0.6,
+        spin: 3 + (i % 4),
+      });
+    }
+  }
+  panels.push({ hinge, leaf, root, debris });
 }
 
 // Called at the bottom of the module, after every constant it reads exists.
 function buildSlice() {
   for (const frame of FRAMES) bands.push(buildBand(frame));
-  installView({ transform: { armed, started, ritual, finished, reset } });
+  installView({ transform: { armed, started, ritual, finished, reset, frame } });
   reset();
 }
 
@@ -326,6 +382,30 @@ function setBandVisible(b, visible) {
   for (const c of b.chunks) c.visible = visible;
   if (b.plate) b.plate.visible = visible;
   b.skyline.visible = visible;
+  if (b.weather) b.weather.mesh.visible = visible;
+}
+
+// Per-frame presentation tick for the slice (src/sim/transform.js calls it once
+// per update, ritual or not). Rain only: everything else is event-driven.
+const _rm = new THREE.Matrix4();
+function frame(dtMs) {
+  const dt = Math.min(50, dtMs) / 1000;
+  for (const b of bands) {
+    const w = b.weather;
+    if (!w || !w.mesh.visible) continue;
+    const span = b.frame.s1 - b.frame.s0;
+    for (let i = 0; i < w.drops.length; i++) {
+      const d = w.drops[i];
+      d.y -= w.W.speed * dt;
+      d.x += w.W.drift * dt;
+      if (d.y < -10) { d.y += w.W.spanY; d.x += 3; }
+      if (d.x < 0) d.x += span;
+      _rm.makeRotationZ(0.16);           // leaned with the wind, not falling straight
+      _rm.setPosition(d.x, d.y, d.z);
+      w.mesh.setMatrixAt(i, _rm);
+    }
+    w.mesh.instanceMatrix.needsUpdate = true;
+  }
 }
 
 function applyAtmosphere(a, b, u) {
@@ -344,7 +424,9 @@ function armed() {}
 function started(ev) {
   atmoFrom = FRAMES[ev.fromBand].band.atmosphere;
   atmoTo = FRAMES[ev.toBand].band.atmosphere;
+  // the next surface brings its own sky: silhouettes and weather arrive with it
   bands[ev.toBand].skyline.visible = true;
+  if (bands[ev.toBand].weather) bands[ev.toBand].weather.mesh.visible = true;
   ritual(ev, 0);
 }
 
@@ -380,6 +462,13 @@ function ritual(ev, t) {
     p.leaf.position.set(st.jolt + st.blow, st.blow * 0.4, 0);
     p.leaf.rotation.z = st.spin;
     p.leaf.rotation.x = st.spin * 0.35;
+    for (const d of p.debris) {
+      d.mesh.visible = st.visible && st.blow > 0;
+      d.mesh.position.set(
+        d.base.x + st.blow * d.vx, d.base.y + st.blow * d.vy, d.base.z + st.blow * d.vz
+      );
+      d.mesh.rotation.set(st.spin * d.spin * 0.3, st.spin * d.spin * 0.2, st.spin * d.spin * 0.4);
+    }
   }
   if (atmoFrom) applyAtmosphere(atmoFrom, atmoTo, transformAtmosphereMix(t, CONFIG));
 }
@@ -391,7 +480,10 @@ function finished(ev) {
   for (const c of to.chunks) { c.visible = true; c.position.y = 0; }
   if (to.plate) restPlate(to.plate, FRAMES[ev.toBand]);
   const p = panels[ev.index];
-  if (p) p.hinge.visible = false;
+  if (p) {
+    p.hinge.visible = false;
+    for (const d of p.debris) d.mesh.visible = false;
+  }
   applyAtmosphere(FRAMES[ev.fromBand].band.atmosphere, FRAMES[ev.toBand].band.atmosphere, 1);
   atmoFrom = atmoTo = null;
 }
@@ -408,6 +500,11 @@ function reset() {                       // run reset: back to the first surface
     p.hinge.rotation.y = 0;
     p.leaf.position.set(0, 0, 0);
     p.leaf.rotation.set(0, 0, 0);
+    for (const d of p.debris) {
+      d.mesh.visible = false;
+      d.mesh.position.copy(d.base);
+      d.mesh.rotation.set(0, 0, 0);
+    }
   }
   atmoFrom = atmoTo = null;
   const a = FRAMES[0].band.atmosphere;

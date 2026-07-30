@@ -9,21 +9,29 @@ import { CONFIG } from '../config.js';
 import { CORNER_S } from '../pure/path.js';
 import { buildLevel, buildTraversalLevel, levelSolidCell } from '../pure/generator.js';
 import { buildTransformLevel } from '../pure/transform.js';
-import { ACTIVE_FIXTURE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE } from '../mode.js';
+import {
+  ACTIVE_FIXTURE, ACTIVE_SLICE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE,
+} from '../mode.js';
 import { view } from './bridge.js';
+import { paceSpeed } from './pace.js';
 
 const TILE_DEPTH = 8;           // solid tiles below each surface (collision)
 
 export const LEVEL_LEN = CONFIG.levelLength;
 export const END_SCROLL = LEVEL_LEN - 30;
 export function activeScrollEnd() { return ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.endScroll : END_SCROLL; }
+// The pursuing edge is a constant in the shipped run, in the `base` slice pace
+// and in the transformation fixture; the CP1 variants make it a behavior, so
+// the traversal slice's live value comes from sim/pace.js.
+// run.minimumScrollSpeed stays the declared cruise floor.
 export function activeScrollSpeed() {
+  if (ACTIVE_SLICE) return paceSpeed();
   return ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.minimumScrollSpeed : CONFIG.scrollSpeed;
 }
 // Each fixture overlays its authored columns on the seeded layout; normal
 // mode remains the seeded six-face generator byte-for-byte.
 export const levelData = IS_TRAVERSAL_SLICE
-  ? buildTraversalLevel(CONFIG)
+  ? buildTraversalLevel(CONFIG, ACTIVE_SLICE)
   : IS_TRANSFORM_SLICE ? buildTransformLevel(CONFIG) : buildLevel(CONFIG);
 export const { groundH, platforms } = levelData;
 export const solidRects = levelData.solidRects || [];

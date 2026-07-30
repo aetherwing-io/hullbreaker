@@ -53,7 +53,7 @@ export const TRANSFORM_FIXTURE = {
   bands: [
     {
       id: 'hull-face-A', kind: 'exterior', s0: 0, s1: 60, headingDeg: 0, alt: 0,
-      label: 'HULL FACE A', shipState: 'INTERCEPT',
+      label: 'OUTER FACE A', shipState: 'INTERCEPT',
       // Atmosphere and material tone are the altitude cues DESIGN asks for.
       // The grey-box palette stays a neutral placeholder, but the hue walk
       // rhymes with the concept board's phase progression: teal-grey lower
@@ -74,20 +74,33 @@ export const TRANSFORM_FIXTURE = {
     },
     {
       id: 'service-corridor', kind: 'interior', s0: 60, s1: 106, headingDeg: 90, alt: 6,
-      label: 'SERVICE CORRIDOR', shipState: 'CONTAIN',
+      label: 'INNER PASSAGE', shipState: 'CONTAIN',
       atmosphere: { bg: 0x241e26, fogNear: 14, fogFar: 42 },
       // brighter as well as warmer: an interior lit by its own machinery, and
       // a deck that still reads as the brightest thing on screen
       tone: [1.26, 1.12, 1.18],
       interior: { ceilingAbove: 10, wallDepth: -3.6, ribEvery: 7, alcoveEvery: 5, pipeEvery: 9 },
       skyline: [],
+      // Mounts the interior's own vocabulary will hang off once the roster
+      // exists (polyp emplacements on the wall, hazard tanks on the deck).
+      // This slice renders the plinths and leaves them empty: it proves the
+      // transformation, and interior threats belong to the combat lane.
+      threatSockets: [
+        { id: 'polyp-mid', kind: 'polyp', x: 76, y: 7.4, depth: -2.4 },
+        { id: 'polyp-high', kind: 'polyp', x: 96, y: 9.4, depth: -2.4 },
+        { id: 'hazard-pit', kind: 'hazard', x: 88, y: 3, depth: -1.2 },
+        { id: 'hazard-shelf', kind: 'hazard', x: 94, y: 4, depth: -1.2 },
+      ],
     },
     {
       id: 'hull-face-C', kind: 'exterior', s0: 106, s1: 152, headingDeg: 180, alt: 36,
-      label: 'HULL FACE C', shipState: 'QUARANTINE',
+      label: 'OUTER FACE C', shipState: 'QUARANTINE',
       atmosphere: { bg: 0x2d3a4a, fogNear: 26, fogFar: 70 },
       tone: [1.02, 1.09, 1.22],            // thinner, cooler air at altitude
       hullDrop: 40,                        // a far longer wall dropping away below
+      // Weather is the loudest altitude cue the concept board uses: the high
+      // face is told through driving rain, not just through geometry.
+      weather: { count: 260, speed: 30, drift: -4.5, length: 1.7, spanY: 34, spanZ: 22 },
       // open sky between hull towers instead of a continuous skin: up here the
       // ship stops enclosing RIG, and the gaps are where the drop shows
       hullWall: { height: 22, pattern: 'towers' },
@@ -106,11 +119,11 @@ export const TRANSFORM_FIXTURE = {
   events: [
     {
       id: 'bulkhead-flip', kind: 'flip', seamS: 60, fromBand: 0, toBand: 1,
-      armMsg: 'BULKHEAD OPEN — GO IN', label: 'BULKHEAD FLIP',
+      armMsg: 'PANEL OPEN — GO IN', label: 'FLIP INWARD',
     },
     {
       id: 'breach-return', kind: 'breach', seamS: 106, fromBand: 1, toBand: 2,
-      armMsg: 'HULL PANEL AHEAD — PUSH THROUGH', label: 'BREACH RETURN',
+      armMsg: 'PANEL AHEAD — PUSH THROUGH', label: 'BREACH OUT',
     },
   ],
   groundRuns: [

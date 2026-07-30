@@ -1,0 +1,20 @@
+{
+  "name": "pace-dawdle",
+  "description": "Pressure-clock probe for the CP1 pacing variants: sprint for 2s, stand completely still for 2.5s on the floor, then sprint again. The number that matters is how much crush-edge margin (and, with ?score=1, how much CHARGE) the pause costs — that is a direct measurement of FLEET-PLAN's 'pursuit clock too soft / no timed decisions' diagnosis. Run it against &pace=base vs &pace=hunt vs &pace=surge.",
+  "url": "index.html?slice=traversal",
+  "durationMs": 11000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 2000 },
+    { "hold": "fire", "fromMs": 100, "toMs": 10500 },
+    { "tap": "jump", "atMs": 600, "holdMs": 200 },
+
+    { "hold": "right", "fromMs": 4500, "toMs": 10500 },
+    { "tap": "jump", "atMs": 5200, "holdMs": 380 },
+    { "tap": "jump", "atMs": 6000, "holdMs": 380 },
+    { "tap": "jump", "atMs": 6800, "holdMs": 380 },
+    { "tap": "jump", "atMs": 7600, "holdMs": 380 },
+    { "tap": "jump", "atMs": 8400, "holdMs": 380 },
+    { "tap": "jump", "atMs": 9200, "holdMs": 380 },
+    { "tap": "jump", "atMs": 10000, "holdMs": 380 }
+  ]
+}

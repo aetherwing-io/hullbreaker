@@ -8,12 +8,15 @@
 import { CONFIG } from '../config.js';
 import { HALT_S } from '../pure/path.js';
 import { cornerScrollVel, cornerEventTotalMs } from '../pure/waves.js';
-import { traversalFollowTarget } from '../pure/traversal.js';
-import { ACTIVE_FIXTURE, IS_TRANSFORM_SLICE } from '../mode.js';
-import { gameMs, scrollX, setScrollX } from './time.js';
-import { EDGE_R } from './edges.js';
+import {
+  traversalFollowTarget, traversalMarginCapScroll,
+} from '../pure/traversal.js';
+import { ACTIVE_FIXTURE, ACTIVE_SLICE, IS_TRANSFORM_SLICE } from '../mode.js';
+import { gameMs, scrollX, setScrollX, sliceStats } from './time.js';
+import { EDGE_R, sLeftEdge } from './edges.js';
 import { activeScrollEnd, activeScrollSpeed } from './level.js';
 import { hostiles, removeHostile } from './hostiles.js';
+import { updatePace } from './pace.js';
 import { player } from './player.js';
 import { activeCorner, armGate, finishCorner, updateZipper } from './wavegate.js';
 import { updateTransformScroll } from './transform.js';
@@ -26,6 +29,17 @@ export function updateScroll(dt) {
     if (updateTransformScroll(dt, player))
       for (let i = hostiles.length - 1; i >= 0; i--) removeHostile(i, true);
     return;
+  }
+  // The pursuit model decides this frame's edge speed before anything reads
+  // it. Its inputs are the two things a pursuing edge can honestly react to:
+  // how much daylight the player has, and how long the pass has been running.
+  if (ACTIVE_SLICE) {
+    const bounds = ACTIVE_SLICE.darePocket.bounds;
+    updatePace(dt, {
+      marginTiles: player.x - player.hw - sLeftEdge(),
+      elapsedMs: gameMs - sliceStats.startedAt,
+      inPocket: player.x >= bounds.x0 && player.x < bounds.x1,
+    });
   }
   const c = activeCorner();
   if (c && c.state === 'turning') {
@@ -53,6 +67,16 @@ export function updateScroll(dt) {
           ACTIVE_FIXTURE.run
         )
       );
+      // A pace that bounds crush slack in seconds also caps how far behind the
+      // player the plane may sit, so the clock cannot be widened by a wider
+      // screen. Scroll only ever ratchets forward, so this can crowd the player
+      // but never rewind the world.
+      const cap = ACTIVE_SLICE ? ACTIVE_SLICE.pursuit.marginCapTiles : 0;
+      if (cap > 0) {
+        nextScroll = Math.max(nextScroll, traversalMarginCapScroll(
+          player.x - player.hw, sLeftEdge() - scrollX, cap,
+        ));
+      }
     }
     setScrollX(Math.min(nextScroll, target));
     if (c && c.state === 'idle' && scrollX >= HALT_S[c.k - 1] - 1e-6) armGate(c);
