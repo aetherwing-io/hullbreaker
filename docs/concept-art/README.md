@@ -277,7 +277,9 @@ camera snap, it has drifted from this direction.
 Future concepts and implementation should preserve:
 
 - a side-on gameplay camera with slight 3D perspective depth;
-- RIG at roughly seven percent of the screen height;
+- RIG at roughly three-to-five percent of the screen height (revised from the
+  original seven percent by board 13's human-scale grammar and the operator's
+  July 30 "far" view verdict — the shipped default renders RIG at ~3.7%);
 - strong silhouettes and flat-shaded, chunky industrial geometry;
 - three-to-five immediately readable routes even when a phase contains more;
 - surfaces that belong to a connected hull rather than arbitrary floating
