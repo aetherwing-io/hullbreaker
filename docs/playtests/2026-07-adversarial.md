@@ -625,15 +625,206 @@ Two further limits worth stating plainly:
   human keypress durations make implausible in the other.
 - **Any run that dies measures nothing after the death** (F7). Treat
   post-death samples in any report from this harness as void until the retry
-  re-arms held keys.
+  re-arms held keys. **Superseded on 2026-07-30** — see the addendum.
+
+## Addendum — 2026-07-30
+
+### F7 is fixed at the measurement layer only; the game behaviour stands
+
+`18c1a54` ("Fix zombie attempts (F7) and restore dropped airJumps (S4)") fixed
+this harness-side: `lib/driver.mjs` now tracks which codes the script considers
+held, watches the `attempts` counter every sample tick, and re-dispatches
+`keydown` for each held code the moment a retry fires. Post-death samples are
+therefore usable again, and the fix records its own re-assertion latency rather
+than assuming it is instant.
+
+Two things to keep straight:
+
+- **`src/` is unchanged** (`git diff 39bb6dc HEAD -- src index.html` is empty).
+  The game still calls `releaseAllKeys()` on every retry, so the human-side
+  question in F7 is still open: movement keys likely recover through Chrome's
+  auto-repeat, but jump buffering is gated on `!e.repeat`, so a player holding
+  jump across a retry still gets no jump until they release and press again.
+- **The defect is no longer observable through the harness.** `x4-retry-input-loss`
+  now measures the driver's re-assertion latency, not the game's input loss.
+  The pre-fix evidence is preserved above; reproducing the *game* behaviour now
+  needs a driver without the re-assertion.
+
+Measured side effect on this report's own baseline numbers: `p1-hold-right-only`
+attempt 2 now runs east instead of standing at spawn (final x 38.65 post-fix
+versus 27.50 pre-fix), which moves its `minEdgeMargin` from 0.59 to 5.55. Same
+game, same script — a different observer.
+
+### In-game victory time is frame-rate sensitive; compare outcome and margin instead
+
+Two full-suite captures on the same commit, hours apart, disagree on timing but
+not on verdicts. `p5-hop-500ms` measured 5.55s ×3 in one batch and 5.94s ×3 in
+another, while `p4-hold-right-mash-jump` held at 5.36–5.37s in both, and every
+outcome and crush margin was identical (18.4 tiles for both scripts). No game
+code changed between them; the machine was carrying other agents' browser
+batches during the second one. The mechanism is the sensitivity
+`tools/pathcheck.mjs` now asserts directly under "discrete jump-apex frame-rate
+dependence": under CPU contention a jump resolves on a slightly different frame,
+the apex differs, and a 500ms cadence lands somewhere else.
+
+Practical rule for anyone using this suite as a gate: **outcome and
+`minEdgeMargin` are the load-robust axes; treat `victorySec` as indicative and
+only compare it within one batch.** Do not run two harness batches concurrently.
+
+### New evidence for F4: the crush push can leave the player *behind* the plane, and `edgeMargin` goes negative
+
+Re-capturing the baseline surfaced a sharper version of F4. `x4-retry-input-loss`
+produced two qualitatively different micro-behaviours on the same game commit,
+both ending in the same wall tunnel:
+
+| | x position while crushed | reported `edgeMargin` |
+| --- | --- | --- |
+| First capture | smooth slide, 38.727 → 38.924 → 39.118 … at 2.6 tiles/s | pinned at exactly **+0.400** |
+| Second capture | snapped tile to tile, 38.649 → 38.649 → 38.649 → 39.649 → … | decays **0.33 → 0.13 → −0.06 → −0.26 → −0.45**, snaps back to +0.35 on each tile step |
+
+Those snapped values are the wall faces (`39 − 0.35 − 0.001 = 38.649`, then
+`40 − 0.35 − 0.001 = 39.649`), i.e. the horizontal collision resolver ejecting
+the player back out of the column the crush push just shoved them into. While
+that tug-of-war runs, the plane advances past the player: **the player is up to
+0.60 tiles behind the damage plane**, and the HUD's own EDGE readout — and the
+`minEdgeMargin` metric A.5 shares — goes negative, a state nothing downstream
+appears to expect. `minEdgeMargin` is not bounded below by
+`CONFIG.edges.margin`; any consumer assuming ≥ 0.4 is wrong.
+
+I did not establish why one capture grinds tile-by-tile and the other slides
+smoothly. The plausible mechanism is the 220ms hitstun window (which skips the
+horizontal drive, leaving the knockback velocity to trigger the collision
+resolver) landing on a different frame phase, but that is a hypothesis, not a
+result. Either way the F4 outcome held 3/3 in both captures.
+
+For the gate this means **`x4`'s margin is not a comparable axis** — it reflects
+which micro-behaviour occurred, not a property of the build. Its outcome (dies
+3/3) is comparable.
+
+**Suggested owner.** `physics-reviewer`, alongside F4.
+
+### Baseline and regression-gate procedure
+
+**The frozen pre-CP1 reference is the tables in this report**, captured at
+`5e9dbc8`/`39bb6dc`: `p4` completing 3/3 at 5.37s with an 18.40-tile margin,
+`p3` 3/3, `p1` 0/3, `x1` first contact 6.98s and first damage 11.23s. Those are
+the numbers a CP1 variant has to move.
+
+No committed `baseline-*.json` accompanies them, and the reason is worth
+recording rather than hiding: **two attempts to freeze one were both invalidated
+by merges landing mid-capture.** The first straddled an edit to
+`lib/sampler.mjs`/`lib/driver.mjs` (its first two scripts measured by one
+harness, the rest by another). The second, taken from a clean tree, straddled the
+CP1 intensity merge itself — 1,119 lines of runtime change including "Bound the
+crush clock in seconds" — so its early scripts measured the old game and its
+late scripts the new one. Both were deleted. A twelve-script × three-repetition
+capture takes about twelve minutes, which on an active integration day is long
+enough for the tree to move underneath it.
+
+The lesson for anyone freezing a baseline here: capture only when the integrator
+confirms no merge is in flight, then check afterwards that
+`git diff <commit-at-start> HEAD -- src index.html tools/playtest/lib` is empty.
+The runner records the game commit, harness-lib hash, dirty-tree state and load
+average into every `--json` file precisely so a straddled capture is detectable
+instead of silently misleading; it cannot prevent one.
+
+```sh
+cd tools/playtest
+
+# gate a variant (repeat per variant flag; --query needs no script edits):
+node scripts/adversarial/repeat.mjs --reps 3 --max-runtime-ms 26000 \
+  --query "&intensity=b" --tag variant-b \
+  --baseline scripts/adversarial/baseline-2026-07-30.json \
+  --json /tmp/variant-b.json \
+  scripts/adversarial/*.json
+
+# re-freeze the baseline after an intentional runtime change (clean tree only):
+node scripts/adversarial/repeat.mjs --reps 3 --max-runtime-ms 26000 --tag base \
+  --json scripts/adversarial/baseline-<date>.json scripts/adversarial/p*.json scripts/adversarial/x*.json
+```
+
+The headline gate is one line of that delta table: if
+`p4-hold-right-mash-jump` still shows `completed 3/3` with `minMargin` near
+18.4, the pressure change did not land.
+
+## CP1 variant regression gate — 2026-07-30, game `0a0310f`
+
+Run per the integrator's standing order, against the merged CP1 variants
+(`?pace=hunt|swarm|surge`; anything else is `base`). Three scripts × four paces
+× 3 repetitions, default viewport, `--max-runtime-ms 26000`:
+
+```sh
+cd tools/playtest
+node scripts/adversarial/repeat.mjs --reps 3 --max-runtime-ms 26000 --tag gate2-base \
+  scripts/adversarial/p4-hold-right-mash-jump.json scripts/adversarial/p3-hold-right-hop-nofire.json \
+  scripts/adversarial/x1-crush-clock-and-shove.json
+# and the same with --query "&pace=hunt" / "&pace=swarm" / "&pace=surge"
+```
+
+| Pace | `p4` mash-jump (the minimal winning policy) | `p3` 800ms cadence | `x1` idle: plane contact / first damage |
+| --- | --- | --- | --- |
+| pre-CP1 (`39bb6dc`) | **3/3**, 5.37s, margin **18.40** | 3/3, 6.78–7.21s | 6.98s / 11.23s, **died 13.66s** |
+| base | **3/3**, 5.25–5.26s, margin **18.38–18.40** | 2/3 | 6.98s / 11.23s, no death in 21s |
+| hunt | **3/3**, 4.88s, margin **5.74–5.87** | **0/3** | 2.96s / 3.56s, no death in 21s |
+| swarm | **3/3**, 5.74–6.77s, margin **6.37–8.25** | 1/3 | 3.87s / 4.40s, no death in 21s |
+| surge | **3/3**, 4.93–5.08s, margin **4.59–6.39** | 3/3, margin 1.01–1.26 | 2.28s / 2.89s, no death in 21s |
+
+**The clock fix landed; the degenerate strategy did not close.** All three
+variants tighten the naive policy's crush margin from 18.4 tiles to 4.6–8.3 —
+a 2.2× to 4× squeeze — and cut an idle player's grace from 6.98s to 2.28–3.87s.
+That is a real and large improvement on F3. But `p4` (hold right, mash Space, no
+fire, no route reading) still completes **3/3 in every variant**, and in `hunt`
+and `surge` it completes *faster* than at base (4.88–5.08s versus 5.25s).
+
+The variants raised the floor without raising the ceiling: slower or sloppier
+input is what they punish (`p3`'s 800ms cadence collapses to 0/3 in `hunt`, 1/3
+in `swarm`), while mashing remains both viable and optimal. `surge` comes
+closest to the gate's headline condition — 4.59 tiles is 1.8 seconds of slack —
+but no variant makes `p4` uncomfortable, and none of them touches the reason it
+wins: the chimney wall-pump onto an uncontested top tier (F1, F10).
+
+### New on this build: HULL FALLBACK makes idling free, and its streak cap self-defeats
+
+Pre-CP1, the zero-input script died at 13.66s (3/3). On `0a0310f` it dies in
+none of the twelve variant runs: it ends every run at **full hp with
+`attempts` still 1**, having been conveyed from x=27.5 to **x=63.4** — 36 tiles
+of involuntary forward progress, 8.6 tiles short of the x=72 win line — while
+doing nothing at all.
+
+The mechanism is the newly merged `hullFallback` (`src/sim/player.js:463-524`,
+proposal B.1 tier 1): what would have been a death drops the player to a lower
+surface and restores hp instead. It has a deliberate ceiling —
+`if (player.fallbackStreak >= F.maxConsecutive) scheduleSliceRetry(reason)` —
+but the line above it resets the streak on forward progress:
+`if (player.x > player.fallbackRecoverX) player.fallbackStreak = 0`. The damage
+plane's own shove (F3: 2.6+ tiles/s, no input required) supplies that forward
+progress, so **the streak never reaches the cap while the plane is pushing.**
+The safeguard is defeated by the thing it is supposed to safeguard against.
+
+CONFIRMED for the outcome (12/12 runs, no death, full hp, 36 tiles gained);
+the streak-reset explanation is read from the code, not instrumented.
+
+**Suggested owner.** `intensity` (fallback interaction with the conveyor) with
+`score-designer` (B.1's intent — a fallback is documented as "never free", and
+against an idle player it currently is). Worth resolving before the operator
+judges CP1: they will be told the clock is tighter, which is true, but the
+consequence of losing to it got softer.
 
 ## Single best next action
 
-Bound the crush margin in *time*, not in screen widths: clamp
-`traversalFollowTarget`'s effective lead so the plane is never more than ~2.5–3
-seconds behind a moving player at any aspect ratio, then re-run this suite. F1,
-F3, F5 and F9 are all the same root cause — a 9.9-second clock that no 5-second
-route can feel — and F10's "safest route is fastest" only becomes interesting
-once standing on the roof costs something. The suite is the regression test: if
-`p4-hold-right-mash-jump` still completes 3/3 with 18 tiles of margin after the
-change, the pressure fix did not land.
+*(Original recommendation, now partly implemented — the CP1 variants bounded the
+clock as suggested. Superseded by the line below.)*
+
+~~Bound the crush margin in *time*, not in screen widths~~ — done in `bbb1c9c`,
+and it worked: 18.4 tiles down to 4.6–8.3 across the variants.
+
+**Contest the top tier.** The clock is no longer the binding constraint on the
+naive policy; the uncontested roof is. `p4` still wins 3/3 under every variant
+because nothing occupies y=10–13.9, where it spends its whole run — the fixture's
+wasps only dive at targets *below* them (F10), so the fastest route remains the
+safest one. Until something threatens the chimney wall-pump or the roof run,
+tightening the clock will keep making mashing *more* optimal rather than less,
+because it punishes every slower policy first (`p3`: 3/3 → 0/3 in `hunt`). The
+second item, cheap and independent: stop the plane's shove from resetting
+`fallbackStreak`, so idling cannot ride a fallback loop 36 tiles forward at full
+hp.
