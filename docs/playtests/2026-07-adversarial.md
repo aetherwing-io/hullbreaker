@@ -851,8 +851,31 @@ consequence of losing to it got softer.
 ### Gate part 2 — the fairness scripts across all four paces
 
 3 scripts × 4 paces × 3 reps, plus a narrow-viewport pass and the
-previously-failing policies as controls. Verdicts against each thing the
-integrator asked to have verified:
+previously-failing policies as controls.
+
+**Version disclosure, checked after the fact:** the CP3 transformation merge
+(`738a890`, 01:07:56Z — it touched `src/sim/player.js`, `scroll.js`, `level.js`,
+`spawner.js` and `render/camera.js`) landed inside this batch's window
+(01:01:17Z–01:16:32Z). I classified all 60 runs by `meta.startedAt` against that
+boundary:
+
+- **No script × pace group is internally mixed** — every three-repetition group
+  fell entirely on one side, so no single claim below rests on blended data.
+- **Post-merge (current code), therefore safe as stated:** the critical one-key
+  regression (`p1` on all four paces, `p2` and `p6` on `surge`), the
+  narrow-viewport aspect pass, `x2`/`x3`/`x5` on `surge`, `x5` on `swarm`.
+- **Pre-merge, so the pace-to-pace comparisons below cross a version boundary at
+  the `surge` column:** `x2` and `x3` on base/hunt/swarm, `x5` on base/hunt.
+  Their direction (margin collapsing as the pace tightens) is consistent across
+  both sides, but the exact numbers are not a clean single-build series.
+
+I deliberately did **not** re-run the pre-merge groups immediately: the
+intensity defect-fix branch is in flight and will invalidate them again, so
+those three scripts are queued for the post-fix-cycle capture rather than being
+measured twice. The hound merge (`94913ad`, 01:20:36Z) landed after this batch
+ended and affected none of it.
+
+Verdicts against each thing the integrator asked to have verified:
 
 | Question | Verdict | Evidence |
 | --- | --- | --- |
@@ -863,6 +886,61 @@ integrator asked to have verified:
 | Conveyor free-rides? | **WORSE** | See the critical regression above. |
 | Aspect sensitivity of the seconds-bounded clock (F9)? | **PERSISTS** | `p4` at 800×1000 completes 3/3 with margin 11.12 at base (versus 18.40 at 1280×800) and 5.04–6.66 on `surge` (versus 4.59–6.39 wide). Ratios track the frustum exactly as before, so bounding the clock in seconds did not decouple it from window shape. No route closure narrow — that still holds. |
 | Held-jump dead-end pin (F11)? | **FIXED at base** | `x3` completes in 6.69–6.71s with **zero pinned time** at base, versus a 9.6s pin and a 16.78s finish pre-CP1. It reappears under `swarm` (0/3, pinned 9.0–9.5s at x=63.65, a different spot) — so the lip itself is passable now, but the policy still finds new places to jam. |
+
+## Standing order #2 — first pass at the CP2/CP3 fixtures (game `94913ad`)
+
+One sharp attack per new fixture, 3 reps each, rather than a full campaign — the
+intensity defect-fix branch is in flight and a full sweep would need re-running
+after it merges.
+
+### T1 — transform ritual gate: crush suspension CANNOT be farmed (resisted)
+
+`src/sim/player.js:371` suspends crush damage while `transformBusy()`, and
+`src/sim/transform.js` only promotes a ritual from `armed` to `turning` once the
+scroll has halted at the threshold *and* RIG has walked into it. That reads like
+an off switch: walk up to a seam, stop, and the halted scroll should mean a
+halted damage plane.
+
+It is not. `t1-transform-gate-stall` (hold right 3s to reach the first
+threshold, then zero input for eighteen seconds) **died 3/3, four deaths per
+run**, closest margin 0.30–0.33, never getting past x=35.66. The `armMaxMs`
+timeout on the armed state does press, and the plane keeps arriving. Refusing to
+enter a seam is not a safe hiding place, and the transform fixture's retry loop
+handled four consecutive deaths cleanly with no console errors.
+
+```sh
+node scripts/adversarial/repeat.mjs --reps 3 --max-runtime-ms 26000 \
+  scripts/adversarial/t1-transform-gate-stall.json
+```
+
+### H1 — a lone houndframe never meets the naive winning route
+
+`h1-hound-facetank` runs the known-winning p4 policy (hold right + mash Space)
+plus held fire against `?hound=1`, never reading a plant and never leaving a
+lane. It **completes 3/3 in 4.28–5.36s with zero deaths and zero damage taken**,
+crush margin 18.4 — i.e. slightly *faster* than the same policy on the base
+slice, and completely untouched.
+
+The reason is F10 again, not i-frames: the hound paces deck lanes while the
+winning policy is on the roof at y=12.76–13.12. It never enters the hound's lane
+at all. This corroborates the operator's own CP2 note ("a lone hound poses no
+threat — placement/layout iteration needed, not stat buffs") from the opposite
+direction: the problem is not the hound's strength, it is that the fixture's
+dominant route does not pass through anywhere a hound can stand.
+
+**The i-frame facetank question is therefore still open**, and testing it needs a
+policy that stays *grounded* through the hound's lane. That is buildable from
+`x6-step39-slot-sweep`: its 16ms tap is the only input I have found that puts a
+player on the low floor, so "x6's slot pass + hold right + hold fire, never
+leaving the deck" is the script that would actually answer it. Named here as the
+next concrete attack rather than guessed at.
+
+**Script-error disclosure:** the first version of `h1` held right and fire with
+no jump at all, which cannot clear the column-39 step (F8) — it jammed there 3/3
+at x=38.65 and never reached the hound, so it measured nothing about the hound.
+It was replaced by the version above. Its one incidental result: negative crush
+margins (−0.55 to −0.60) re-confirming the wall-grind defect on the hound
+fixture too.
 
 ## Single best next action
 
