@@ -305,10 +305,22 @@ if (QUERY.has('testapi')) {
   });
 }
 
+/* ?fixeddt=<ms> (verification hook, harness-engineer request): every frame
+   advances the sim by a CONSTANT dt instead of measured wall-clock time, so a
+   sim-time-locked input script produces one outcome instead of forking on the
+   browser's rAF cadence. Clamped to the same [1, 50]ms envelope the live clock
+   already has; absent/invalid = 0 = the shipped variable timestep, untouched.
+   Verification-only: under load the game runs slower than realtime rather than
+   ever skipping sim time. */
+const FIXED_DT_MS = (() => {
+  const raw = parseFloat(QUERY.get('fixeddt'));
+  return Number.isFinite(raw) && raw > 0 ? Math.min(50, Math.max(1, raw)) : 0;
+})();
+
 let last = performance.now();
 function frame(t) {
   requestAnimationFrame(frame);
-  const dt = Math.min(50, t - last) / 1000;
+  const dt = FIXED_DT_MS ? FIXED_DT_MS / 1000 : Math.min(50, t - last) / 1000;
   last = t;
   if (state === 'PLAYING') update(dt);
   renderer.render(scene, camera);
