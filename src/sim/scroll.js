@@ -11,15 +11,25 @@ import { cornerScrollVel, cornerEventTotalMs } from '../pure/waves.js';
 import {
   traversalFollowTarget, traversalMarginCapScroll,
 } from '../pure/traversal.js';
-import { ACTIVE_SLICE } from '../mode.js';
+import { ACTIVE_FIXTURE, ACTIVE_SLICE, IS_TRANSFORM_SLICE } from '../mode.js';
 import { gameMs, scrollX, setScrollX, sliceStats } from './time.js';
 import { EDGE_R, sLeftEdge } from './edges.js';
 import { activeScrollEnd, activeScrollSpeed } from './level.js';
+import { hostiles, removeHostile } from './hostiles.js';
 import { updatePace } from './pace.js';
 import { player } from './player.js';
 import { activeCorner, armGate, finishCorner, updateZipper } from './wavegate.js';
+import { updateTransformScroll } from './transform.js';
 
 export function updateScroll(dt) {
+  if (IS_TRANSFORM_SLICE) {
+    // The transformation fixture's own gate runtime owns the scroll. A
+    // starting ritual clears the arena the way a corner gate is already
+    // clear before its ritual: nobody fights through a bulkhead flip.
+    if (updateTransformScroll(dt, player))
+      for (let i = hostiles.length - 1; i >= 0; i--) removeHostile(i, true);
+    return;
+  }
   // The pursuit model decides this frame's edge speed before anything reads
   // it. Its inputs are the two things a pursuing edge can honestly react to:
   // how much daylight the player has, and how long the pass has been running.
@@ -41,12 +51,12 @@ export function updateScroll(dt) {
     let target = activeScrollEnd();                     // wave-gate / fixture clamp
     if (c) target = Math.min(target, HALT_S[c.k - 1]);
     let nextScroll = scrollX + activeScrollSpeed() * dt;
-    if (ACTIVE_SLICE) {
+    if (ACTIVE_FIXTURE) {
       // The fixture's lead is a camera-follow offset, not an invisible player
       // wall. On narrow screens the live frustum becomes the tighter offset.
       const screenLead = Math.max(
         2,
-        EDGE_R - CONFIG.edges.margin - ACTIVE_SLICE.run.lookAheadTiles
+        EDGE_R - CONFIG.edges.margin - ACTIVE_FIXTURE.run.lookAheadTiles
       );
       nextScroll = Math.max(
         nextScroll,
@@ -54,14 +64,14 @@ export function updateScroll(dt) {
           scrollX,
           player.x + player.hw,
           screenLead,
-          ACTIVE_SLICE.run
+          ACTIVE_FIXTURE.run
         )
       );
       // A pace that bounds crush slack in seconds also caps how far behind the
       // player the plane may sit, so the clock cannot be widened by a wider
       // screen. Scroll only ever ratchets forward, so this can crowd the player
       // but never rewind the world.
-      const cap = ACTIVE_SLICE.pursuit.marginCapTiles;
+      const cap = ACTIVE_SLICE ? ACTIVE_SLICE.pursuit.marginCapTiles : 0;
       if (cap > 0) {
         nextScroll = Math.max(nextScroll, traversalMarginCapScroll(
           player.x - player.hw, sLeftEdge() - scrollX, cap,

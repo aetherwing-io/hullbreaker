@@ -20,6 +20,10 @@ export const view = {
   mods:     { sync: noop, cleared: noop, lanceTelegraph: noop },
   level:    { unbuiltHidden: noop, zipperColumn: noop, faceRevealed: noop },
   corner:   { finished: noop },
+  transform: {                           // world-transformation rituals (slice-only)
+    armed: noop, started: noop, ritual: noop, finished: noop, reset: noop,
+    frame: noop,                         // per-frame presentation tick (weather)
+  },
 };
 
 // group-wise merge: installView({ player: { sync } }) replaces only that hook

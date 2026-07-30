@@ -37,8 +37,16 @@ import {
 } from '../src/pure/score.js';
 import {
   solidRectContains, levelSolidCell, buildLevel, buildTraversalLevel,
-  buildSpawnTable,
+  buildSpawnTable, GAP,
 } from '../src/pure/generator.js';
+import {
+  TRANSFORM_FIXTURE, TRANSFORM_FRAMES, bandSlamLockMs, bandSlamOffset,
+  buildTransformFrames, buildTransformLevel, transformAltDelta,
+  transformAtmosphereMix, transformBandIndexAt, transformEventCtx,
+  transformEventTotalMs, transformFrontierS, transformHaltS, transformPanelState,
+  transformPosAt, transformScrollOffset, transformScrollVel, transformSeamPull,
+  transformSealS, transformTimeline, transformTriggerS, transformYawDeltaDeg,
+} from '../src/pure/transform.js';
 
 // The sim layer carries the same no-three.js/no-DOM guarantee as pure/ (see
 // guardLayer('sim', ...) below), so it is Node-importable exactly like the
@@ -796,6 +804,450 @@ const ledgeState = {
   ok(releases.every(function (r) {
     return r.kind === 'release' && Number.isFinite(r.recatchUntil);
   }), 'wall decision releases on no wall, landing, down, away input, timeout, or no side');
+}
+
+/* ===================== world-transformation slice ====================== *
+ * The opt-in ?slice=transform demo: a short exterior run, a bulkhead flip
+ * inward onto an interior corridor, then a breach return onto an exterior
+ * face 30 tiles higher. Asserted the same way the corner ritual is — the
+ * timeline must be exact, the surfaces must stay continuous at the seams,
+ * and every apron must be valid before the scroll resumes.               */
+const XF = TRANSFORM_FIXTURE, XT = CONFIG.transform, XFR = TRANSFORM_FRAMES;
+const XTL = transformTimeline(CONFIG);
+const XB = XF.bounds;
+
+// --- bands / frames ----------------------------------------------------
+{
+  let valid = XFR.length === XF.bands.length && XFR[0].s0 === XB.x0 &&
+    XFR[XFR.length - 1].s1 === XB.x1;
+  for (let i = 1; i < XFR.length; i++) if (XFR[i - 1].s1 !== XFR[i].s0) valid = false;
+  ok(valid, 'bands tile the fixture bounds contiguously');
+  ok(XFR.map((f) => f.kind).join('>') === 'exterior>interior>exterior',
+     'surfaces go exterior → interior → exterior, got ' + XFR.map((f) => f.kind).join('>'));
+  ok(JSON.stringify(buildTransformFrames(XF)) === JSON.stringify(XFR),
+     'frame table is a pure function of the fixture');
+}
+{
+  // A seam is continuous in POSITION: only heading and altitude step across
+  // it. That is what lets one ritual animate the whole transition.
+  let seamContinuous = true, turnExact = true, altRises = true;
+  for (const ev of XF.events) {
+    const from = XFR[ev.fromBand], to = XFR[ev.toBand];
+    const p = transformPosAt(from, ev.seamS);
+    if (Math.hypot(p.x - to.x, p.z - to.z) > 1e-9) seamContinuous = false;
+    if (to.s0 !== ev.seamS) seamContinuous = false;
+    if (Math.abs((to.heading - from.heading) / DEG - 2 * XT.snapDeg) > 1e-9) turnExact = false;
+    if (!(to.alt > from.alt)) altRises = false;
+  }
+  ok(seamContinuous, 'every seam point is shared by both of its band frames');
+  ok(turnExact, 'every ritual turns exactly 2 × snapDeg (90 deg), matching its yaw curve');
+  ok(altRises, 'every transformation gains rendered altitude');
+}
+{
+  // unit s steps stay unit world steps inside a band: the sim ribbon is never
+  // stretched by the surface it is drawn on
+  let bad = 0;
+  for (const f of XFR) {
+    for (let s = f.s0; s < f.s1; s++) {
+      const a = transformPosAt(f, s), b = transformPosAt(f, s + 1);
+      if (Math.abs(Math.hypot(a.x - b.x, a.z - b.z) - 1) > 1e-9) bad++;
+    }
+  }
+  ok(bad === 0, 'unit spacing preserved inside every band');
+  ok(transformBandIndexAt(XFR, XB.x0) === 0 &&
+     transformBandIndexAt(XFR, XF.events[0].seamS - 1) === 0 &&
+     transformBandIndexAt(XFR, XF.events[0].seamS) === 1 &&
+     transformBandIndexAt(XFR, XF.events[1].seamS) === 2 &&
+     transformBandIndexAt(XFR, XB.x1 - 1) === 2,
+     'band lookup maps each column to the surface that renders it');
+}
+{
+  // Altitude has to be *unmistakable*, which is a measurable claim: the
+  // breach gain exceeds a full screen height, and it is much larger than the
+  // flip so the two breaks read differently.
+  const screenH = 2 * CC.z * Math.tan(CC.fov / 2 * DEG);
+  const flip = XFR[1].alt - XFR[0].alt;
+  const breach = XFR[2].alt - XFR[1].alt;
+  ok(breach > screenH,
+     'breach gain (' + breach + ') exceeds one screen height (' + screenH.toFixed(1) + ')');
+  ok(flip > 1 && flip < breach / 3,
+     'flip lifts a readable step, the breach is the big one (' + flip + ' vs ' + breach + ')');
+  ok(XFR[2].alt >= 30, 'the far exterior face sits at least 30 tiles up, got ' + XFR[2].alt);
+}
+{
+  // The skyline silhouettes are authored at ABSOLUTE altitude, so the same
+  // structures loom overhead on face A and lie far below on face C. This is
+  // the altitude cue that survives a screenshot, so it is asserted.
+  const a = XFR[0], c = XFR[2];
+  const eyeA = a.alt + CC.y;
+  const deckC = c.alt + 3;
+  ok(a.band.skyline.length >= 2 && c.band.skyline.length >= 2,
+     'both exterior faces carry background silhouettes');
+  ok(a.band.skyline.some((s) => s.top > eyeA + 6),
+     'face A silhouettes rise well above the camera eye');
+  ok(c.band.skyline.every((s) => s.top < deckC - 5),
+     'the same silhouettes sit below the high face deck, not above it');
+  ok(c.band.skyline.every((s) => s.height > 12 && s.depth < -10),
+     'silhouettes stay tall and behind the combat plane');
+  // …and they land inside the strip the camera can actually see below the deck.
+  // This is a shallow side-on view, so a roof 25 tiles under RIG is simply
+  // off-screen and proves nothing: anything claiming to show the drop has to be
+  // in frame at its own distance from the camera.
+  let framed = true;
+  for (const s of c.band.skyline) {
+    const dist = CC.z - s.depth;                        // camera depth + how far back
+    const frameBottom = c.alt + CC.lookY - Math.tan(CC.fov / 2 * DEG) * dist;
+    if (!(s.top > frameBottom + 2 && s.top < deckC - 5)) framed = false;
+  }
+  ok(framed, 'every below-deck silhouette is in frame under the deck, not off-screen');
+  ok(a.band.hullWall.pattern === 'solid' && c.band.hullWall.pattern === 'towers',
+     'the hull encloses RIG low down and opens into towers high up');
+  // Weather is the loudest altitude cue on the concept board, so the high face
+  // has to declare one and the low face must not (the contrast IS the cue).
+  const screenH = 2 * CC.z * Math.tan(CC.fov / 2 * DEG);
+  ok(!!c.band.weather && !a.band.weather && c.band.weather.count > 100 &&
+     c.band.weather.speed > 10 && c.band.weather.spanY >= screenH,
+     'only the high exterior face runs weather, and it spans the whole view');
+  ok(a.band.hullDrop > 12 && c.band.hullDrop > a.band.hullDrop,
+     'the high face hangs a longer wall into the fog than the low one');
+}
+
+// --- ritual timeline ---------------------------------------------------
+{
+  const total = transformEventTotalMs(CONFIG);
+  ok(total === 990, 'transformation ritual total 990 ms, got ' + total);
+  ok(total >= 800 && total <= 1200, 'ritual stays inside the 0.8-1.2 s transformation budget');
+  ok(XTL.t1 === 90 && XTL.t2 === 250 && XTL.t3 === 550 && XTL.t4 === 690 && XTL.t5 === 810,
+     'timeline beats at 90/250/550/690/810, got ' +
+     [XTL.t1, XTL.t2, XTL.t3, XTL.t4, XTL.t5].join('/'));
+}
+near(transformYawDeltaDeg(0, CONFIG), 0, 1e-9, 'ritual yaw 0 at t=0');
+near(transformYawDeltaDeg(-50, CONFIG), 0, 1e-9, 'ritual yaw 0 before the event');
+near(transformYawDeltaDeg(XTL.t1 - 0.001, CONFIG), XT.windUpDeg, 0.01,
+     'wind-up reaches the counter-rotation blink');
+near(transformYawDeltaDeg(XTL.t2, CONFIG), XT.snapDeg, 1e-9, 'snap 1 lands exactly 45');
+near(transformYawDeltaDeg(400, CONFIG), XT.snapDeg, 1e-9, 'ratchet hold flat at 45');
+near(transformYawDeltaDeg(XTL.t4, CONFIG), 2 * XT.snapDeg, 1e-9, 'snap 2 lands exactly 90');
+near(transformYawDeltaDeg(99999, CONFIG), 2 * XT.snapDeg, 1e-9, 'yaw clamped after the ritual');
+{
+  let flat = true;
+  for (let t = XTL.t2; t <= XTL.t3; t += 1)
+    if (transformYawDeltaDeg(t, CONFIG) !== XT.snapDeg) flat = false;
+  for (let t = XTL.t4; t <= XTL.t6; t += 1)
+    if (transformYawDeltaDeg(t, CONFIG) !== 2 * XT.snapDeg) flat = false;
+  ok(flat, 'ritual holds are dead flat (clack … clack, no wobble)');
+  let peak1 = 0, peak2 = 0, dip = 0;
+  for (let t = XTL.t1; t <= XTL.t2; t += 0.25) peak1 = Math.max(peak1, transformYawDeltaDeg(t, CONFIG));
+  for (let t = XTL.t3; t <= XTL.t4; t += 0.25) peak2 = Math.max(peak2, transformYawDeltaDeg(t, CONFIG));
+  for (let t = 0; t <= XTL.t1; t += 0.25) dip = Math.min(dip, transformYawDeltaDeg(t, CONFIG));
+  ok(peak1 > XT.snapDeg && peak1 < XT.snapDeg * 1.06, 'snap 1 overshoots once, peak ' + peak1);
+  ok(peak2 > 2 * XT.snapDeg && peak2 < 2 * XT.snapDeg * 1.04, 'snap 2 overshoots once, peak ' + peak2);
+  near(dip, XT.windUpDeg, 0.05, 'wind-up dips to windUpDeg');
+}
+{
+  const gain = XFR[2].alt - XFR[1].alt;                 // the breach: the big lift
+  const step1 = gain * XT.altStep1;
+  near(transformAltDelta(0, gain, CONFIG), 0, 1e-9, 'altitude flat at t=0');
+  near(transformAltDelta(XTL.t1 - 0.001, gain, CONFIG), -XT.altPreloadTiles, 0.01,
+       'the deck drops a hair before the first snap');
+  near(transformAltDelta(XTL.t2, gain, CONFIG), step1, 1e-9,
+       'snap 1 takes exactly altStep1 of the gain');
+  near(transformAltDelta(400, gain, CONFIG), step1, 1e-9, 'altitude holds flat through the ratchet');
+  near(transformAltDelta(XTL.t4, gain, CONFIG), gain, 1e-9, 'snap 2 lands the full gain exactly');
+  near(transformAltDelta(99999, gain, CONFIG), gain, 1e-9, 'altitude clamped after the ritual');
+  let peak = 0, minAfter = Infinity;
+  for (let t = 0; t <= XTL.t6; t += 0.25) {
+    const v = transformAltDelta(t, gain, CONFIG);
+    peak = Math.max(peak, v);
+    if (t >= XTL.t2) minAfter = Math.min(minAfter, v);
+  }
+  ok(peak > gain && peak < gain * 1.05, 'altitude lurches past the landing once, peak ' + peak.toFixed(2));
+  ok(minAfter >= step1 - 1e-9, 'altitude never sags back below a landed step');
+  const flipGain = XFR[1].alt - XFR[0].alt;
+  ok(transformAltDelta(XTL.t4, flipGain, CONFIG) === flipGain,
+     'the same curve lands the flip gain exactly (one ritual shape, two magnitudes)');
+}
+{
+  const sp = XF.run.minimumScrollSpeed;
+  ok(transformScrollVel(0, sp, CONFIG) === 0 && transformScrollVel(XTL.t5 - 0.1, sp, CONFIG) === 0,
+     'scroll speed frozen until the settle ends');
+  // the seam pull: nothing moves through the wind-up, snap 1 and the hold, then
+  // the second clack carries the view through the seam onto the new surface
+  ok(transformScrollOffset(0, sp, CONFIG) === 0 &&
+     transformScrollOffset(XTL.t3, sp, CONFIG) === 0,
+     'the world holds still through the first snap and the ratchet hold');
+  near(transformSeamPull(XTL.t5, CONFIG), XT.seamPullTiles, 1e-9,
+       'the seam pull completes exactly as the settle ends');
+  ok(XT.seamPullTiles > XT.haltOffset,
+     'the pull carries the view past the seam it halted before (' + XT.seamPullTiles +
+     ' > ' + XT.haltOffset + ')');
+  let monotone = true, prev = -1;
+  for (let t = 0; t <= XTL.t6; t += 5) {
+    const v = transformScrollOffset(t, sp, CONFIG);
+    if (v < prev - 1e-12) monotone = false;
+    prev = v;
+  }
+  ok(monotone, 'the ritual never scrolls the world backwards');
+  const endOffset = transformScrollOffset(XTL.t6, sp, CONFIG);
+  near(endOffset, XT.seamPullTiles + sp * (XT.resumeMs / 1000) / 3, 1e-9,
+       'the resume ramp adds exactly its closed-form distance');
+  const d = (transformScrollOffset(XTL.t6, sp, CONFIG) -
+             transformScrollOffset(XTL.t6 - 1, sp, CONFIG)) * 1000;
+  near(d, sp, 0.02, 'the ritual hands back to ordinary scrolling at full speed');
+  near(transformScrollVel(XTL.t5 + XT.resumeMs / 2, sp, CONFIG), sp * 0.25, 1e-9,
+       'quadratic ease at the resume midpoint');
+  near(transformScrollVel(XTL.t6, sp, CONFIG), sp, 1e-9, 'full fixture speed at the ritual end');
+  near(transformScrollVel(9999, sp, CONFIG), sp, 1e-9, 'scroll clamped to full speed after');
+}
+{
+  // the next surface slams in near-to-far and every chunk locks before the
+  // scroll resumes — the corner ritual's apron rule, one seam later
+  ok(bandSlamOffset(XT.slamStartMs - 1, 0, CONFIG).phase === 'hidden',
+     'slam chunk 0 hidden before its start beat');
+  near(bandSlamOffset(XT.slamStartMs, 0, CONFIG).dy, XT.slamDropTiles, 1e-9,
+       'slam chunk 0 starts a full drop above its base');
+  near(bandSlamOffset(XT.slamStartMs + XT.slamDropMs / 2, 0, CONFIG).dy, XT.slamDropTiles * 0.75, 1e-9,
+       'gravity ease: half the drop time leaves 75 percent of the distance');
+  ok(bandSlamOffset(XT.slamStartMs + XT.slamPerColMs - 1, 1, CONFIG).phase === 'hidden' &&
+     bandSlamOffset(XT.slamStartMs + XT.slamPerColMs, 1, CONFIG).phase === 'drop',
+     'chunk 1 starts exactly slamPerColMs later');
+  const dip = bandSlamOffset(XT.slamStartMs + XT.slamDropMs + 1, 0, CONFIG);
+  const lock = bandSlamOffset(XT.slamStartMs + XT.slamDropMs + XT.slamDipMs + 1, 0, CONFIG);
+  ok(dip.phase === 'dip' && Math.abs(dip.dy + XT.slamDipTiles) < 1e-9, 'one-beat dip on landing');
+  ok(lock.phase === 'locked' && lock.dy === 0, 'chunk locks to base after its dip');
+  const lastLock = bandSlamLockMs(CONFIG);
+  ok(lastLock === 606 + XT.slamDipMs && lastLock <= XTL.t5,
+     'the whole surface is locked (' + lastLock + ' ms) before the scroll resumes (t5=' + XTL.t5 + ')');
+  let allLocked = true;
+  for (let i = 0; i < XT.slamChunks; i++)
+    if (bandSlamOffset(XTL.t5, i, CONFIG).phase !== 'locked') allLocked = false;
+  ok(allLocked, 'every slam chunk is locked at t5');
+}
+{
+  const flipEv = XF.events[0], breachEv = XF.events[1];
+  const closed = transformPanelState(0, flipEv, CONFIG);
+  const jolted = transformPanelState(XT.windUpMs - 0.001, flipEv, CONFIG);
+  const opened = transformPanelState(XTL.t4, flipEv, CONFIG);
+  const gone = transformPanelState(XTL.t6, flipEv, CONFIG);
+  ok(closed.open === 0 && closed.jolt === 0 && closed.visible, 'panel starts closed and latched');
+  near(jolted.jolt, XT.panelJoltTiles, 0.01, 'the latch jolts through the wind-up');
+  ok(opened.open === 1 && opened.blow === 0, 'the bulkhead leaf tracks the snaps to fully open');
+  ok(!gone.visible, 'the panel is gone once the ritual ends');
+  near(transformPanelState(XTL.t2, flipEv, CONFIG).open, 0.5, 1e-9,
+       'the leaf is exactly half open on snap 1 — it clacks with the world');
+  const blown = transformPanelState(XT.windUpMs + XT.panelBlowMs, breachEv, CONFIG);
+  ok(blown.blow === XT.panelBlowTiles && blown.spin > Math.PI,
+     'the hull panel is blown clear and tumbling by the end of its flight');
+  ok(transformPanelState(XTL.t4, breachEv, CONFIG).blow === XT.panelBlowTiles,
+     'the breach panel is clear before the surface commits');
+}
+near(transformAtmosphereMix(XTL.t1, CONFIG), 0, 1e-9, 'atmosphere starts at the first snap');
+near(transformAtmosphereMix(XTL.t4, CONFIG), 1, 1e-9, 'atmosphere completes when the surface does');
+near(transformAtmosphereMix(9999, CONFIG), 1, 1e-9, 'atmosphere mix clamped');
+{
+  // The animated frame must start as the FROM surface extended past the seam
+  // (what RIG is standing on) and end as the TO surface exactly — that is
+  // what keeps the deck under their feet through the whole ritual.
+  let startsFrom = true, endsTo = true, pivotFixed = true;
+  for (const ev of XF.events) {
+    const from = XFR[ev.fromBand], to = XFR[ev.toBand];
+    const c0 = transformEventCtx(XFR, ev, 0, CONFIG);
+    const p0 = transformPosAt(c0, ev.seamS + 2);
+    const q0 = transformPosAt(from, ev.seamS + 2);
+    if (Math.abs(c0.heading - from.heading) > 1e-12 || Math.abs(c0.alt - from.alt) > 1e-12 ||
+        Math.hypot(p0.x - q0.x, p0.z - q0.z) > 1e-9) startsFrom = false;
+    const c1 = transformEventCtx(XFR, ev, XTL.t4, CONFIG);
+    for (const s of [ev.seamS, ev.seamS + 3, ev.seamS + 20]) {
+      const a = transformPosAt(c1, s), b = transformPosAt(to, s);
+      if (Math.hypot(a.x - b.x, a.z - b.z) > 1e-9) endsTo = false;
+    }
+    if (Math.abs(c1.alt - to.alt) > 1e-12 || Math.abs(c1.heading - to.heading) > 1e-12) endsTo = false;
+    const pivot = transformPosAt(transformEventCtx(XFR, ev, 0, CONFIG), ev.seamS);
+    for (let t = 0; t <= XTL.t6; t += 15) {
+      const p = transformPosAt(transformEventCtx(XFR, ev, t, CONFIG), ev.seamS);
+      if (Math.hypot(p.x - pivot.x, p.z - pivot.z) > 1e-9) pivotFixed = false;
+    }
+  }
+  ok(startsFrom, 'a ritual opens on the surface RIG is already standing on');
+  ok(endsTo, 'a ritual closes exactly on the next surface frame');
+  ok(pivotFixed, 'the seam point never moves during a ritual (the deck stays under RIG)');
+}
+
+// --- fixture / apron validity ------------------------------------------
+const XL = buildTransformLevel(CONFIG);
+{
+  // Interior threat sockets: mounts the combat roster will fill later. They are
+  // asserted like any other authored geometry so the corridor cannot drift into
+  // a state where a later polyp lands inside a wall or on a seam apron.
+  const IB = XFR[1];
+  const sockets = IB.band.threatSockets || [];
+  const ids = new Set();
+  let valid = true;
+  for (const so of sockets) {
+    if (typeof so.id !== 'string' || ids.has(so.id) ||
+        !['polyp', 'hazard'].includes(so.kind) ||
+        so.x < IB.s0 + XT.thresholdTiles || so.x >= IB.s1 ||
+        !Number.isFinite(so.y) || so.depth > -1) valid = false;
+    ids.add(so.id);
+    if (levelSolidCell(XL, Math.floor(so.x), Math.floor(so.y), 8)) valid = false;
+    for (const ev of XF.events)
+      if (so.x >= ev.seamS - 5 && so.x < ev.seamS + XT.thresholdTiles) valid = false;
+  }
+  ok(sockets.length >= 3 && valid && ids.size === sockets.length,
+     'interior threat sockets are unique, open, behind the plane and clear of the aprons');
+  ok(sockets.some((so) => so.kind === 'polyp') && sockets.some((so) => so.kind === 'hazard'),
+     'the interior declares both an emplacement and a hazard socket for the roster pass');
+}
+{
+  const XL2 = buildTransformLevel(CONFIG);
+  const fixtureBefore2 = JSON.stringify(XF);
+  const configBefore2 = JSON.stringify(CONFIG);
+  ok(JSON.stringify(XL) === JSON.stringify(XL2), 'transformation fixture builds deterministically');
+  ok(JSON.stringify(XF) === fixtureBefore2 && JSON.stringify(CONFIG) === configBefore2,
+     'transformation build mutates neither the fixture nor CONFIG');
+  ok(XL.groundH !== XL2.groundH && XL.platforms !== XL2.platforms && XL.fixture === XF,
+     'transformation builds return fresh geometry and reference their fixture');
+  let outsideMatches = true;
+  for (let i = 0; i < CONFIG.levelLength; i++)
+    if ((i < XB.x0 || i >= XB.x1) && XL.groundH[i] !== gH[i]) outsideMatches = false;
+  ok(outsideMatches, 'the seeded layout outside the fixture bounds is untouched');
+}
+{
+  let valid = true;
+  const covered = new Set();
+  for (const run of XF.groundRuns) {
+    if (!Number.isInteger(run.x0) || !Number.isInteger(run.x1) || run.x0 >= run.x1 ||
+        run.x0 < XB.x0 || run.x1 > XB.x1 ||
+        (!run.gap && !Number.isFinite(run.y))) valid = false;
+    for (let x = run.x0; x < run.x1; x++) {
+      if (covered.has(x)) valid = false;
+      if (XL.groundH[x] !== (run.gap ? GAP : run.y)) valid = false;
+      covered.add(x);
+    }
+  }
+  ok(valid && covered.size === XB.x1 - XB.x0,
+     'authored surfaces cover the fixture bounds once and match the built heights');
+}
+{
+  // Seam aprons: flat, solid, platform-free staging ground through the whole
+  // threshold. A ritual must never fire over a gap or a step.
+  let clean = true;
+  for (const ev of XF.events) {
+    const a = ev.seamS - 5, b = ev.seamS + XT.thresholdTiles;
+    const h = XL.groundH[a];
+    for (let s = a; s < b; s++) if (XL.groundH[s] !== h) clean = false;
+    for (const p of XF.platforms) if (p.x1 > a && p.x0 < b) clean = false;
+  }
+  ok(clean, 'every seam apron is flat, solid and platform-free through its threshold');
+}
+{
+  let ordered = true;
+  for (const ev of XF.events) {
+    const halt = transformHaltS(ev, CONFIG);
+    const trig = transformTriggerS(ev, CONFIG);
+    const front = transformFrontierS(ev, CONFIG);
+    const seal = transformSealS(ev, CONFIG);
+    if (!(halt < ev.seamS && ev.seamS < trig && trig < front &&
+          front < ev.seamS + XT.thresholdTiles && seal < trig && seal > ev.seamS)) ordered = false;
+    if (ev.seamS - halt !== XT.haltOffset) ordered = false;
+    if (XFR[ev.toBand].s0 !== ev.seamS || XFR[ev.fromBand].s1 !== ev.seamS) ordered = false;
+  }
+  ok(ordered,
+     'gate geometry orders halt < seam < seal < trigger < frontier < threshold end');
+  // The trigger is past the seam ON PURPOSE: the new surface only renders from
+  // the seam onward, so RIG must be standing on it when the world commits.
+  ok(XF.events.every((ev) => transformTriggerS(ev, CONFIG) - PL.width / 2 >= ev.seamS),
+     'RIG is wholly past the seam before a ritual can fire');
+  // and the seam has to be on screen while the scroll waits at the apron
+  const halfW = CC.z * Math.tan(CC.fov / 2 * DEG) * (16 / 9);
+  ok(XT.haltOffset + XT.thresholdTiles < halfW + CC.x,
+     'the whole threshold is visible from the apron halt at 16:9');
+  ok(XT.armLookahead > 0 && XT.armLookahead < XT.haltOffset &&
+     XT.pressedOffset > 0 && XT.pressedOffset < XT.haltOffset,
+     'the arming lookahead and the squeeze cap both stay inside the apron');
+  ok(XT.pressedOffset + XT.thresholdTiles < halfW + CC.x,
+     'even a squeezed dawdler sees the whole ritual on screen');
+}
+{
+  const ids = new Set();
+  let valid = true, reachable = true;
+  for (const p of XF.platforms) {
+    if (typeof p.id !== 'string' || ids.has(p.id) || p.x0 >= p.x1 ||
+        p.x0 < XB.x0 || p.x1 > XB.x1 || !Number.isFinite(p.y)) valid = false;
+    ids.add(p.id);
+    let best = -999;
+    for (let k = p.x0 - 1; k <= p.x1 + 1; k++)
+      if (XL.groundH[k] > -100) best = Math.max(best, XL.groundH[k]);
+    for (const q of XF.platforms)
+      if (q !== p && q.y < p.y && q.x1 > p.x0 - 1 && q.x0 < p.x1 + 1) best = Math.max(best, q.y);
+    if (p.y - best > GG.maxReach) reachable = false;
+  }
+  ok(valid && ids.size === XF.platforms.length,
+     'authored catwalks have unique ids and in-bounds spans');
+  ok(reachable, 'every authored catwalk is within double-jump reach of a lower surface');
+}
+{
+  // The slice deliberately keeps the FROZEN normal-run controller (DESIGN:
+  // the same 2D controls throughout), so its layout must be legal for it.
+  ok(XF.movement === undefined,
+     'the transformation fixture overrides no movement constant');
+  let widest = 0, badLanding = 0;
+  let i = XB.x0;
+  while (i < XB.x1) {
+    if (XL.groundH[i] > -100) { i++; continue; }
+    const start = i;
+    while (i < XB.x1 && XL.groundH[i] < -100) i++;
+    widest = Math.max(widest, i - start);
+    let solid = 0;
+    while (i + solid < XB.x1 && XL.groundH[i + solid] > -100) solid++;
+    if (solid < GG.landingMin) badLanding++;
+    if (Math.abs(XL.groundH[start - 1] - XL.groundH[i]) > 1) badLanding++;
+  }
+  ok(widest > 0 && widest <= GG.gapMax, 'fixture gaps stay inside the jumpable band, widest ' + widest);
+  ok(badLanding === 0, 'every fixture gap has a legal landing strip after it');
+  const tUp = PL.jumpVel / -PL.gravity;
+  const tDown = Math.sqrt(2 * (PL.jumpVel ** 2 / (2 * -PL.gravity)) / (-PL.gravity * PL.fallGravityMult));
+  ok((tUp + tDown) * PL.runSpeed > widest + 1.5,
+     'the frozen jump clears the fixture widest gap with margin');
+  const IN = XFR[1].band.interior;
+  ok(IN.ceilingAbove > PL.height + PL.jumpVel ** 2 / (2 * -PL.gravity) + 1,
+     'the interior ceiling clears a full jump, so the corridor never traps RIG');
+  ok(XF.platforms.filter((p) => p.x0 >= XFR[1].s0 && p.x1 <= XFR[1].s1)
+       .every((p) => p.y + PL.height + 0.5 < XL.groundH[Math.floor(p.x0)] + IN.ceilingAbove),
+     'interior catwalks keep player headroom under the ceiling');
+}
+{
+  let sorted = true, clear = true, typed = true;
+  for (let i = 0; i < XF.spawns.length; i++) {
+    const e = XF.spawns[i];
+    if (i > 0 && e.x <= XF.spawns[i - 1].x) sorted = false;
+    if (e.x < XB.x0 || e.x >= XB.x1) clear = false;
+    if (e.type !== 'wasp' || !Number.isFinite(e.lane)) typed = false;
+    for (const ev of XF.events)
+      if (e.x >= ev.seamS - XF.spawnClear.before && e.x <= ev.seamS + XF.spawnClear.after) clear = false;
+  }
+  ok(sorted, 'the fixture ambient table is strictly ascending');
+  ok(clear, 'no ambient spawn sits in a seam-clear zone');
+  ok(typed, 'fixture spawns are authored wasps with authored lanes');
+  ok(XF.spawns.length >= 4 && XF.spawns.length <= 8,
+     'the ecology stays simple: this slice proves the transformation, got ' + XF.spawns.length);
+}
+{
+  const run = XF.run;
+  const halfWide = CC.z * Math.tan(CC.fov / 2 * DEG) * (16 / 9);
+  ok(run.startScroll + CC.x - halfWide >= XB.x0,
+     'the opening frame is filled by authored hull, not void off the left edge');
+  ok(run.endScroll < XF.finish.x0 && XF.finish.x1 <= XB.x1 &&
+     XF.finish.x0 > XF.events[1].seamS + 20,
+     'the run window ends on the far exterior face, past the breach');
+  ok(run.minimumScrollSpeed > 0 && run.minimumScrollSpeed < PL.runSpeed,
+     'RIG can outrun the pursuing edge in the fixture');
+  const sprint = (XF.finish.x0 - run.playerSpawn.x) / PL.runSpeed +
+    2 * transformEventTotalMs(CONFIG) / 1000;
+  ok(sprint >= XF.targetPlaySeconds.min && sprint <= XF.targetPlaySeconds.max,
+     'an uninterrupted run plus both rituals fits the fixture target, got ' + sprint.toFixed(1) + ' s');
+  ok(XL.groundH[Math.floor(run.playerSpawn.x)] <= run.playerSpawn.y,
+     'the spawn point stands on authored ground');
 }
 
 // --- ledge-probe reach/gap epsilon boundaries --------------------------

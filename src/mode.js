@@ -6,6 +6,7 @@
    before importing the game to select the same modes without a browser. */
 
 import { TRAVERSAL_FIXTURE, resolveTraversalPace } from './pure/traversal.js';
+import { TRANSFORM_FIXTURE } from './pure/transform.js';
 
 const SEARCH = typeof globalThis.__HB_QUERY__ === 'string'
   ? globalThis.__HB_QUERY__
@@ -13,13 +14,20 @@ const SEARCH = typeof globalThis.__HB_QUERY__ === 'string'
 
 export const QUERY = new URLSearchParams(SEARCH);
 export const IS_TRAVERSAL_SLICE = QUERY.get('slice') === 'traversal';
+export const IS_TRANSFORM_SLICE = QUERY.get('slice') === 'transform';
 export const SLICE_ENEMIES_ENABLED = QUERY.get('enemies') !== '0';
 // ?pace=hunt|swarm|surge selects a CP1 pacing variant; anything else (including
 // no flag) resolves to `base`, which is byte-for-byte the shipped pass.
 export const SLICE_PACE = QUERY.get('pace') || 'base';
+// ACTIVE_SLICE stays the traversal fixture specifically: it selects that
+// slice's movement overrides, pacing variant, dare pocket and traversal verbs.
 export const ACTIVE_SLICE = IS_TRAVERSAL_SLICE
   ? resolveTraversalPace(SLICE_PACE, TRAVERSAL_FIXTURE)
   : null;
+// ACTIVE_FIXTURE is the mode-agnostic handle — anything true of *any* authored
+// fixture (its run window, scroll floor, spawn point, fast retry) reads this
+// one, so a second fixture does not have to re-plumb the composition root.
+export const ACTIVE_FIXTURE = IS_TRANSFORM_SLICE ? TRANSFORM_FIXTURE : ACTIVE_SLICE;
 // ?score=1 arms the CHARGE/THREAT prototype; ?fallback=0 restores the old
 // ROUTE LOST retry instead of HULL FALLBACK tier 1.
 export const SCORE_ENABLED = QUERY.get('score') === '1';

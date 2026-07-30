@@ -1,0 +1,153 @@
+{
+  "name": "transform-slice",
+  "description": "Smoke run of the world-transformation slice: hold right, hold fire, tap jump on a steady cadence. The fixture's 2-tile gaps need a jump, so a pure hold-right policy falls in; everything else is open-loop. Proves both rituals fire and the run reaches the far exterior face.",
+  "url": "index.html?slice=transform&enemies=0",
+  "durationMs": 17500,
+  "moves": [
+    {
+      "hold": "right",
+      "fromMs": 0,
+      "toMs": 17300
+    },
+    {
+      "hold": "fire",
+      "fromMs": 150,
+      "toMs": 17300
+    },
+    {
+      "tap": "jump",
+      "atMs": 300,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 920,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 1540,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 2160,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 2780,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 3400,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 4020,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 4640,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 5260,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 5880,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 6500,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 7120,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 7740,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 8360,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 8980,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 9600,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 10220,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 10840,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 11460,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 12080,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 12700,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 13320,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 13940,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 14560,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 15180,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 15800,
+      "holdMs": 310
+    },
+    {
+      "tap": "jump",
+      "atMs": 16420,
+      "holdMs": 310
+    }
+  ]
+}
