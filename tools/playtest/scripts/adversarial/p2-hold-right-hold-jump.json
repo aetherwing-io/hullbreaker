@@ -1,0 +1,10 @@
+{
+  "name": "p2-hold-right-hold-jump",
+  "description": "ATTACK: the two-key policy. Hold ArrowRight and hold Space for the entire run and never touch anything else — zero timing, zero route choice, zero fire. This targets the launch-on-contact rule: src/pure/traversal.js reads jumpBuffered as (jumpBufferedUntil > now || keys.jump), so a HELD jump key converts every ledge catch and every wall contact into a full-power launch with no input at all. The jump buffer itself only fires once (src/main.js buffers on keydown with !e.repeat), so any height beyond the first jump has to come from contact launches. If this clears the slice, route choice is decorative.",
+  "url": "index.html?slice=traversal",
+  "durationMs": 14000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 13800 },
+    { "hold": "jump", "fromMs": 0, "toMs": 13800 }
+  ]
+}

@@ -1,25 +1,25 @@
 # mid-route-competent — playtest report
 
-- URL: `http://127.0.0.1:55902/index.html?slice=traversal&testapi=1`
-- Started: 2026-07-29T23:04:08.918Z
-- Wall time: 7.8s
+- URL: `http://127.0.0.1:54257/index.html?slice=traversal&testapi=1`
+- Started: 2026-07-30T00:27:20.054Z
+- Wall time: 8.5s
 - Fidelity: **testapi**
-- Sampling: requested every 75ms, achieved avg 75.5ms / max 78ms (97 samples)
+- Sampling: requested every 75ms, achieved avg 75.3ms / max 79ms (108 samples)
 
 ## Outcome
 - Result: **completed**
 - Attempts: 1, falls (final attempt, only visible on victory): 0
-- Kills: 0, deaths observed: 0, hits survived: 2
+- Kills: 0, deaths observed: 0, hits survived: 1
 
 ## Pacing / fairness metrics
-- Idle time (A.5 `stallMs`): 0.0s of 6.8s PLAYING time (fraction 0)
-- Airborne time (`airMs`): 6.0s
-- Closest approach to crush edge (`minEdgeMargin`): 17.57 tiles
-- Vertical range: y 3.28–12.25 (span 8.97)
+- Idle time (A.5 `stallMs`): 0.2s of 7.6s PLAYING time (fraction 0.03)
+- Airborne time (`airMs`): 6.3s
+- Closest approach to crush edge (`minEdgeMargin`): 18.38 tiles
+- Vertical range: y 3.36–12.36 (span 9)
 - Route coverage (A.5 `routeIds`, >=3 connectors matched in order): **[upper-chimney, recovery-scramble]**
 - Route inference (harness-only best guess): **upper-chimney** (confidence 0.5, 4 connectors matched)
-- Air jumps: **unavailable** — window.HB has not landed and the ?testapi=1 snapshot does not currently expose sliceStats.airJumps (it has attempt/falls but not airJumps) — recommend adding it alongside those, or via window.HB
+- Air jumps: 2 final attempt (peak single attempt 2; resets every retry)
 - Dare pocket: entered=true (position-in-bounds), reward taken=false
-- Input density (A.5: deliberately NOT a score input): 3.34 events/sec (26 total: 13 down / 13 up)
-- protoScore (A.5 formula, proxy airborneKills/links — see README): **147.5** (airborneKills=0, links≈3, airMs=6041, stallMs=0)
+- Input density (A.5: deliberately NOT a score input): 3.06 events/sec (26 total: 13 down / 13 up)
+- protoScore (A.5 formula, proxy airborneKills/links — see README): **149.1** (airborneKills=0, links≈3, airMs=6328, stallMs=226)
 

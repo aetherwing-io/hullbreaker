@@ -3,20 +3,25 @@
 import { CONFIG } from '../config.js';
 import {
   traversalLedgeProbe, traversalLedgeDecision, traversalWallDecision,
-  traversalSolidAllowsGrab,
+  traversalSolidAllowsGrab, traversalChainMult, traversalFallbackTarget,
 } from '../pure/traversal.js';
-import { ACTIVE_SLICE, IS_TRAVERSAL_SLICE } from '../mode.js';
+import {
+  ACTIVE_SLICE, IS_TRAVERSAL_SLICE, SLICE_FALLBACK_ENABLED,
+} from '../mode.js';
 import { view, host } from './bridge.js';
 import { gameMs, sliceStats, approach } from './time.js';
 import { sLeftEdge, sRightEdge } from './edges.js';
 import { keys, jumpBufferedUntil, clearJumpBuffer, releaseAllKeys } from './input.js';
 import {
-  LEVEL_LEN, groundH, platforms, isSolid, activeScrollSpeed,
+  LEVEL_LEN, groundH, groundTopAt, platforms, isSolid, activeScrollSpeed,
 } from './level.js';
 import { state, setState } from './state.js';
 import { currentWeapon, setWeapon, weaponDef, fireWeapon } from './weapons.js';
 import { mods, clearMods } from './mods.js';
 import { CAP, spawnCapsule } from './capsules.js';
+import {
+  scoreContact, scoreFireMult, scoreLaunch, scoreRunEnd, scoreSetback,
+} from './score.js';
 import { activeCorner, cornerBusy } from './wavegate.js';
 
 // The vertical slice is allowed to prove a more forceful controller without
@@ -25,6 +30,10 @@ import { activeCorner, cornerBusy } from './wavegate.js';
 export const P = ACTIVE_SLICE
   ? { ...CONFIG.player, ...ACTIVE_SLICE.movement }
   : CONFIG.player;
+// launch chaining and hull fallback are pacing-variant data, absent by default
+const CHAIN = ACTIVE_SLICE ? ACTIVE_SLICE.chain : null;
+const FALLBACK = ACTIVE_SLICE ? ACTIVE_SLICE.fallback : null;
+const EDGE_PIN_MS = ACTIVE_SLICE ? ACTIVE_SLICE.pursuit.edgePinDamageMs : 0;
 // aim is a plain 2-vector, not a THREE.Vector2: the sim stays renderer-free
 // and the renderer only reads .x/.y off it.
 export const player = {
@@ -38,6 +47,8 @@ export const player = {
   traversalSnapX: 0, traversalSnapY: 0,
   traversalUntil: 0, traversalRecatchUntil: 0, traversalEntryVx: 0,
   traversalControlUntil: 0,
+  traversalChain: 0, traversalChainUntil: 0,
+  fallbackStreak: 0, fallbackRecoverX: -Infinity, edgePinnedMs: 0,
   hp: P.maxHealth, lives: P.lives,
   iframesUntil: 0, hitstunUntil: 0,
   nextFireAt: 0,
@@ -92,6 +103,21 @@ export function clearPlayerTraversal(recatchUntil = player.traversalRecatchUntil
   player.traversalRecatchUntil = recatchUntil;
 }
 
+// Consecutive contextual launches inside the chain window amplify the next
+// one's FORWARD speed (the surge pace) and refund the air jump, so a chain can
+// be kept alive. Deliberately scoped to horizontal launch speed: runSpeed,
+// gravity, jumpVel and every vertical launch stay frozen, so the endpoint-only
+// wall/ceiling checks keep their full sub-tile-per-frame budget.
+function chainLaunchMult() {
+  if (!CHAIN) return 1;
+  player.traversalChain = gameMs < player.traversalChainUntil
+    ? Math.min(player.traversalChain + 1, CHAIN.max)
+    : 0;
+  player.traversalChainUntil = gameMs + CHAIN.windowMs;
+  if (CHAIN.refundAirJump && player.traversalChain > 0) player.airJumpsLeft = P.airJumps;
+  return traversalChainMult(player.traversalChain, CHAIN);
+}
+
 export function updatePlayer(dt) {
   computeAim();
 
@@ -118,10 +144,11 @@ export function updatePlayer(dt) {
       player.y = player.traversalTopY + 0.001;
       clearPlayerTraversal(action.recatchUntil);
       clearJumpBuffer();
-      player.vx = action.vx; player.vy = action.vy;
+      player.vx = action.vx * chainLaunchMult(); player.vy = action.vy;
       player.grounded = false; player.onOneWay = null;
       player.coyoteUntil = 0; player.jumpCutDone = true;
       player.traversalControlUntil = gameMs + P.traversalLaunchControlMs;
+      scoreLaunch('ledge', player.x, player.y);
     } else if (action.kind === 'release') {
       const side = player.traversalSide;
       clearPlayerTraversal(action.recatchUntil);
@@ -149,10 +176,11 @@ export function updatePlayer(dt) {
     if (action.kind === 'jump') {
       clearPlayerTraversal(action.recatchUntil);
       clearJumpBuffer();
-      player.vx = action.vx; player.vy = action.vy;
+      player.vx = action.vx * chainLaunchMult(); player.vy = action.vy;
       player.grounded = false; player.onOneWay = null;
       player.coyoteUntil = 0; player.jumpCutDone = true;
       player.traversalControlUntil = gameMs + P.traversalLaunchControlMs;
+      scoreLaunch('wall', player.x, player.y);
     } else if (action.kind === 'release') {
       const side = player.traversalSide;
       clearPlayerTraversal(action.recatchUntil);
@@ -191,6 +219,7 @@ export function updatePlayer(dt) {
       if (IS_TRAVERSAL_SLICE) sliceStats.airJumps++;
       player.vy = P.airJumpVel;
       player.jumpCutDone = false;
+      scoreLaunch('air', player.x, player.y);
     }
   }
   // variable jump height: releasing jump cuts upward velocity once
@@ -270,7 +299,10 @@ export function updatePlayer(dt) {
     player.coyoteUntil = gameMs + P.coyoteMs;
     player.airJumpsLeft = P.airJumps;
   }
-  if (!wasGrounded && player.grounded) player.jumpCutDone = true;
+  if (!wasGrounded && player.grounded) {
+    player.jumpCutDone = true;
+    scoreContact(player.y, 'land');       // a launch that went somewhere = a link
+  }
 
   // Falling near a real solid top catches before a lower wall slide. One-way
   // catwalks are intentionally absent because the probe only uses isSolid.
@@ -295,6 +327,7 @@ export function updatePlayer(dt) {
       player.traversalEntryVx = collisionVx;
       player.x = catchState.snapX; player.y = catchState.snapY;
       player.vx = 0; player.vy = 0; player.jumpCutDone = true;
+      scoreContact(player.y, 'ledge');
     } else if (wallHit && wallHit.cellX >= playerTraversalGeometry.minCellX &&
                wallHit.cellX < playerTraversalGeometry.maxCellX &&
                playerTraversalGeometry.allowsGrab(wallHit.cellX, player.y, player.h) &&
@@ -306,6 +339,7 @@ export function updatePlayer(dt) {
       player.traversalUntil = gameMs + P.wallSlideMs;
       player.vy = Math.max(player.vy, -P.wallSlideSpeed);
       player.jumpCutDone = true;
+      scoreContact(player.y, 'wall');
     }
   }
 
@@ -319,8 +353,31 @@ export function updatePlayer(dt) {
     player.vx = Math.max(player.vx, activeScrollSpeed());
   }
   if (player.x - player.hw < le) {
+    // The plane used to assign x with no collision resolution, so a pinned
+    // player was pushed straight THROUGH a solid wall for 1 hp (adversarial
+    // F4, reproduced against the dare-pocket dead end). Being crushed against
+    // terrain has to be lethal pressure, not a teleport: stop at the wall's
+    // outside face and let the damage stand, so the wall holds and the hp
+    // clock (and then HULL FALLBACK) decides the outcome.
     player.x = le + player.hw;
-    if (playerOverlapsSolid() && !cornerBusy()) damagePlayer(1, player.x - 1);   // crushed against terrain
+    let crushed = false;
+    if (playerOverlapsSolid()) {
+      player.x = Math.floor(player.x + player.hw) - player.hw - 0.001;
+      crushed = true;
+    }
+    if (crushed && !cornerBusy()) damagePlayer(1, player.x - 1);
+    // A pace may also make the plane itself lethal over time. Without this the
+    // plane is a free conveyor: doing nothing at all survives on open ground
+    // because the push costs no hp (adversarial F5).
+    if (EDGE_PIN_MS > 0 && !cornerBusy()) {
+      player.edgePinnedMs += dt * 1000;
+      if (player.edgePinnedMs >= EDGE_PIN_MS) {
+        player.edgePinnedMs = 0;
+        damagePlayer(1, player.x - 1);
+      }
+    }
+  } else {
+    player.edgePinnedMs = 0;
   }
   //    Right clamp: while the active corner's face is still unbuilt, the
   //    pivot is the wall — the screen edge must not let the player walk
@@ -344,7 +401,8 @@ export function updatePlayer(dt) {
   if (keys.fire && gameMs >= player.nextFireAt) {
     const def = weaponDef(currentWeapon);
     const rageMult = gameMs < mods.rageUntil ? CONFIG.mods.rageFireMult : 1;
-    player.nextFireAt = gameMs + def.fireRateMs * rageMult;
+    // CHARGE gates the gun and nothing else: WARM shortens the interval
+    player.nextFireAt = gameMs + def.fireRateMs * rageMult * scoreFireMult();
     const a = player.aim;
     fireWeapon(currentWeapon, player.x + a.x * 0.6, player.y + 1.05 + a.y * 0.5, a.x, a.y, false);
   }
@@ -381,6 +439,7 @@ let sliceRetryTimer = 0;
 function scheduleSliceRetry(reason) {
   if (!IS_TRAVERSAL_SLICE || state === 'SLICE_RETRY') return;
   sliceStats.failures++;
+  scoreRunEnd(reason === 'fall' ? 'fell' : 'lost');
   if (reason === 'fall') sliceStats.falls++;
   clearPlayerTraversal(0);
   player.traversalControlUntil = 0;
@@ -401,19 +460,84 @@ export function cancelSliceRetry() {
   }
 }
 
+/* --------------------- HULL FALLBACK tier 1 (B.1) -------------------- *
+ * The ship does not delete an anomaly on its hull, it dislodges one. Losing
+ * costs altitude, CHARGE and a couple of seconds of position — never control,
+ * and never a modal. Forward progress `s` is kept, and the routes below are
+ * the worse ones, so the punishment is a demotion rather than a restart.    */
+function fallbackSurfaces(x) {
+  const out = [];
+  const g = groundTopAt(x);
+  if (g > -100) out.push(g);
+  for (const pl of platforms)
+    if (x + player.hw > pl.x0 && x - player.hw < pl.x1) out.push(pl.y);
+  return out;
+}
+
+function hullFallback(reason) {
+  const F = FALLBACK;
+  if (player.x > player.fallbackRecoverX) player.fallbackStreak = 0;
+  // Ceiling on consecutive fallbacks: B.1's tier 2 (band fallback into a
+  // recovery shaft) is not built, so the fixture still retries past it rather
+  // than letting a stuck player fall forever.
+  if (player.fallbackStreak >= F.maxConsecutive) { scheduleSliceRetry(reason); return; }
+
+  const y0 = player.y;
+  const surfaces = fallbackSurfaces(player.x);
+  let landY = traversalFallbackTarget(surfaces, y0, F);
+  if (landY === null && surfaces.length) {
+    const lowest = Math.min.apply(null, surfaces);
+    if (y0 < lowest) landY = lowest;      // fell out of the world: the deck catches
+  }
+  if (landY === null && !surfaces.length) {           // over a gap: catch ahead
+    let i = Math.max(0, Math.floor(player.x));
+    while (i < LEVEL_LEN - 2 && groundTopAt(i) < -100) i++;
+    player.x = i + 0.5;
+    landY = groundTopAt(i) > -100 ? groundTopAt(i) : 3;
+  }
+
+  if (landY !== null) {
+    player.y = landY + F.dropAboveTiles;
+    player.vy = F.tossVy;
+  } else {
+    // Already on the lowest route: there is no altitude left to take, so the
+    // ship takes margin instead. A fallback is never free.
+    const le = sLeftEdge() + CONFIG.edges.margin + player.hw;
+    player.x = Math.max(le, player.x - F.groundKnockTiles);
+    player.vy = Math.max(player.vy, 0);
+  }
+  player.vx = Math.max(player.vx, F.tossVx);          // thrown forward, not stopped
+  player.grounded = false; player.onOneWay = null; player.jumpCutDone = true;
+  player.airJumpsLeft = P.airJumps;
+  player.hp = P.maxHealth;
+  player.iframesUntil = gameMs + F.iframesMs;
+  player.hitstunUntil = 0;
+  player.dropUntil = 0;
+  player.coyoteUntil = 0;
+  player.traversalChain = 0; player.traversalChainUntil = 0;
+  player.fallbackStreak++;
+  player.fallbackRecoverX = player.x + F.recoverTiles;
+  sliceStats.setbacks++;
+  sliceStats.lastSetbackAt = gameMs;
+  sliceStats.failures++;
+  if (reason === 'fall') sliceStats.falls++;
+  scoreSetback(landY !== null ? 'fallback' : 'ground', y0, player.y);
+}
+
 export function loseLife(reason = 'damage') {
   clearPlayerTraversal(0);
   player.traversalControlUntil = 0;
   clearJumpBuffer();
   if (IS_TRAVERSAL_SLICE) {
-    scheduleSliceRetry(reason);
+    if (SLICE_FALLBACK_ENABLED) hullFallback(reason);
+    else scheduleSliceRetry(reason);
     return;
   }
   player.lives--;
   setWeapon('R');                     // death resets the arsenal
   clearMods();
   // ×3 on the HUD means three deaths total ends the run
-  if (player.lives <= 0) { setState('GAME_OVER'); return; }
+  if (player.lives <= 0) { scoreRunEnd('game-over'); setState('GAME_OVER'); return; }
   respawn();
 }
 

@@ -1,0 +1,12 @@
+{
+  "name": "hound-jump-surge",
+  "description": "hound-jump.json replayed at the SURGE pace (?pace=surge&hound=1): identical to hound-grounded-surge.json plus one jump inside the first houndframe's telegraph. Surge is the pace that changes launch behavior (auto-launch on dwell expiry, chained launches, refunded air jump), so this is the run that shows the tell still buys the player a movement answer when the verbs are at their crispest.",
+  "url": "index.html?slice=traversal&pace=surge&hound=1",
+  "viewport": { "width": 1280, "height": 800 },
+  "durationMs": 2400,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 2400 },
+    { "tap": "jump", "atMs": 880, "holdMs": 80 },
+    { "tap": "jump", "atMs": 1330, "holdMs": 200 }
+  ]
+}

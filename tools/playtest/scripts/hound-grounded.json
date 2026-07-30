@@ -6,6 +6,6 @@
   "durationMs": 2400,
   "moves": [
     { "hold": "right", "fromMs": 0, "toMs": 2400 },
-    { "tap": "jump", "atMs": 1000, "holdMs": 120 }
+    { "tap": "jump", "atMs": 880, "holdMs": 80 }
   ]
 }

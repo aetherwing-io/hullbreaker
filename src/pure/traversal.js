@@ -44,21 +44,29 @@ export function traversalLedgeProbe(state, geometry, cfg = CONFIG.player) {
   return { side, cellX, topY, snapX, snapY };
 }
 
+function ledgeLaunch(state, cfg, auto) {
+  const entrySpeed = Math.abs(state.entryVx || 0);
+  return {
+    kind: 'launch',
+    auto: !!auto,
+    vx: state.side * Math.max(cfg.ledgeLaunchX, entrySpeed),
+    vy: cfg.ledgeLaunchY,
+    recatchUntil: state.now + cfg.traversalRecatchMs,
+  };
+}
+
 export function traversalLedgeDecision(state, cfg = CONFIG.player) {
   if (state.down) {
     return { kind: 'release', recatchUntil: state.now + cfg.traversalRecatchMs };
   }
-  if (state.jumpBuffered) {
-    const entrySpeed = Math.abs(state.entryVx || 0);
-    return {
-      kind: 'launch',
-      vx: state.side * Math.max(cfg.ledgeLaunchX, entrySpeed),
-      vy: cfg.ledgeLaunchY,
-      recatchUntil: state.now + cfg.traversalRecatchMs,
-    };
-  }
+  if (state.jumpBuffered) return ledgeLaunch(state, cfg, false);
   if (state.now >= state.until) {
-    return { kind: 'release', recatchUntil: state.now + cfg.traversalRecatchMs };
+    // ledgeAutoLaunch (the surge pace): dwell expiry throws you off the ledge
+    // instead of dropping you, so a catch can never become a pause. Down still
+    // releases and jump still launches early — the player keeps both intents.
+    return cfg.ledgeAutoLaunch
+      ? ledgeLaunch(state, cfg, true)
+      : { kind: 'release', recatchUntil: state.now + cfg.traversalRecatchMs };
   }
   return { kind: 'hang', vx: 0, vy: 0 };
 }
@@ -138,10 +146,21 @@ export const TRAVERSAL_FIXTURE = {
     { x0: 64, x1: 79, y: 4 },
   ],
   solidRects: [
-    { id: 'chimney-left', role: 'wall', x0: 39, x1: 40, y0: 5, y1: 10 },
-    { id: 'chimney-right', role: 'wall', x0: 44, x1: 45, y0: 5, y1: 10 },
+    // The chimney walls start one row higher than the shaft floor on purpose.
+    // Rows 5-10 put their underside 2.0 tiles over the low route's y:3 deck at
+    // x 39 and 44, which left a 1.7-tall RIG a 0.3-tile threading window: run
+    // the low line a fraction high (a hop, a landing bounce) and you bonked an
+    // invisible underside and got dragged into a wall slide. Rows 6-10 give
+    // 3.0 tiles of clearance (1.3 of slack, asserted) and still present four
+    // solid rows to wall-kick off from the chimney floor at y 5.35.
+    { id: 'chimney-left', role: 'wall', x0: 39, x1: 40, y0: 6, y1: 10 },
+    { id: 'chimney-right', role: 'wall', x0: 44, x1: 45, y0: 6, y1: 10 },
     { id: 'dare-overhang', role: 'overhang', x0: 48, x1: 56, y0: 5, y1: 6 },
-    { id: 'dare-dead-end', role: 'wall', grabbable: false, x0: 56, x1: 57, y0: 1, y1: 7 },
+    // Flush with the overhang roof, not one tile above it: a 1-tile lip there
+    // is too short to ledge-catch, too tall to walk over, and not grabbable,
+    // so a held-jump policy parked against it for 9.6 s doing nothing
+    // (adversarial F11). Rows 1-5 still seal the pocket for anyone inside it.
+    { id: 'dare-dead-end', role: 'wall', grabbable: false, x0: 56, x1: 57, y0: 1, y1: 6 },
   ],
   platforms: [
     { id: 'mid-entry', x0: 29, x1: 38, y: 5.35 },
@@ -245,14 +264,243 @@ export const TRAVERSAL_FIXTURE = {
     { id: 'entry-wasp', kind: 'wasp', x: 37, y: 8.4, delayMs: 0 },
     { id: 'rejoin-wasp', kind: 'wasp', x: 63, y: 8.8, delayMs: 600 },
   ],
+  // HULL FALLBACK tier 1 (proposal B.1): losing drops RIG to the next route
+  // down instead of stopping the world with a modal. Forward position is kept.
+  fallback: {
+    minDropTiles: 1.2,        // a "lower route" has to be genuinely lower
+    dropAboveTiles: 1.2,      // dislodged: placed above the catch, falling onto it
+    tossVx: 5.0, tossVy: -3.0, // thrown forward and down — never a dead stop
+    groundKnockTiles: 1.5,    // already lowest: you pay margin instead of altitude
+    iframesMs: 1400,
+    messageMs: 1100,
+    maxConsecutive: 3,        // ceiling before the fixture retries (tier 2 unbuilt)
+    recoverTiles: 8,          // advancing this far past a fallback clears the streak
+  },
 };
 
+/* ---------------------- pacing variants (CP1) ------------------------ *
+ * Three sharply different pacing arguments over ONE fixture. The geometry,
+ * seed, and route graph are identical in every variant, so the operator can
+ * A/B them back to back and the only thing that moved is pacing: the pursuit
+ * model, where the threats sit, what the routes pay, and how crisp the verbs
+ * are. Selected with ?slice=traversal&pace=<id>; `base` is exactly what
+ * 15f66d2 shipped and stays the default.
+ *
+ * Every pursuit model answers one question the DESIGN doc leaves open — "does
+ * the pursuing edge maintain constant speed through dare pockets?" — the same
+ * way: no. Inside the pocket bounds the edge drops to `pocketSpeed`
+ * immediately (not rate-limited), which is what keeps the wager provably
+ * escapable at any variant's speed while still advancing, so dawdling in the
+ * pocket is never safe.                                                     */
+export const TRAVERSAL_PACES = {
+  base: {
+    id: 'base', label: 'BASE',
+    hypothesis:
+      'Control: the 15f66d2 accelerated pass unchanged — constant 2.6 edge, ' +
+      'two wasps, one pocket reward, and a crush clock bounded by screen width ' +
+      'rather than by seconds. If a variant is not clearly better than this, ' +
+      'the variant is wrong.',
+    pursuit: {
+      mode: 'constant', cruiseSpeed: 2.6, minSpeed: 2.6, maxSpeed: 2.6,
+      pocketSpeed: 2.6, accel: 0, decel: 0,
+      crushSlackSeconds: 0,   // 0 = unbounded: the shipped screen-width clock
+      edgePinDamageMs: 0,     // 0 = the shipped free conveyor
+    },
+  },
+
+  hunt: {
+    id: 'hunt', label: 'HUNT',
+    // Pressure clock. Same content, same verbs: only the edge changes kind.
+    hypothesis:
+      'The slice is boring because banked margin never expires: once you are ' +
+      'ahead, nothing is timed. A hunting edge that charges (6.8, 2.6x the ' +
+      'shipped speed) whenever you are comfortable and eases back to the ' +
+      'shipped 2.6 when it is about to crush you removes safe coasting and ' +
+      'makes every vertical detour cost measurable ground.',
+    pursuit: {
+      mode: 'hunt',
+      cruiseSpeed: 3.6,       // the neutral band between mercy and comfort
+      minSpeed: 2.6,          // mercy: pinned players get room to recover, but
+                              //   never LESS pressure than the shipped pass —
+                              //   bot runs showed a 2.4 floor made total
+                              //   inaction softer in hunt than in base
+      maxSpeed: 6.8,          // the charge: standing still is now expensive
+      comfortTiles: 11,       // above this much daylight the ship closes
+      mercyTiles: 5,          // below this it backs off — fair, and legible
+      accel: 4.0, decel: 6.0, // tiles/s² — audible acceleration, no snapping
+      pocketSpeed: 1.3,       // the pocket release, re-derived for the tighter clock
+      crushSlackSeconds: 2.6, // 2.6 s of standing still at cruise, 1.4 s while
+                              //   charging — and identical on every aspect ratio
+      edgePinDamageMs: 600,   // the plane is no longer a free ride
+    },
+    pocketTiming: { minExitMarginTiles: 4.0 },
+    pocketReward: { x: 51 },  // shallower wager: it has to fit the tighter clock
+    enemies: [               // the wasps contest the FAST low line…
+      { id: 'low-contest', kind: 'wasp', x: 35, y: 4.9, delayMs: 0,
+        tune: { diveRange: 8.5, diveCooldownMs: 900 } },
+      { id: 'pocket-mouth', kind: 'wasp', x: 50, y: 6.6, delayMs: 300,
+        tune: { cruiseSpeed: 0.5, diveRange: 7.0, diveCooldownMs: 1100 } },
+      // …and two cruise the ROOF band head-on. A wasp only dives when the player
+      // is below it, so every wasp authored at y 8-9 left the y:10 chimney-top
+      // roof — the fastest and safest line in the fixture — uncontested
+      // (adversarial F1/F10). Station-keepers there did nothing either: a dive
+      // leads a 10.8 t/s sprinter by 7 tiles. Cruising left at 3.2 through the
+      // y 11.8-12.4 jump band means a mash-forward policy closes on them at
+      // 14 t/s and has to either shoot or change line.
+      { id: 'roof-hunter-a', kind: 'wasp', x: 47, y: 11.9, delayMs: 150,
+        tune: { cruiseSpeed: 3.2, diveRange: 9.0, diveCooldownMs: 800 } },
+      { id: 'roof-hunter-b', kind: 'wasp', x: 60, y: 12.3, delayMs: 300,
+        tune: { cruiseSpeed: 3.2, diveRange: 9.0, diveCooldownMs: 800 } },
+    ],
+  },
+
+  swarm: {
+    id: 'swarm', label: 'SWARM',
+    // Contested space. Pursuit stays near baseline; the routes stop being equal.
+    hypothesis:
+      'Route choice only matters when routes carry different threats. Six ' +
+      'placed hostiles (five wasps + one carrier, no new kinds) give each line ' +
+      'its own matchup: the low line is fastest and dive-contested, the mid ' +
+      'catwalk is safe but slow, the upper chimney is hardest and the only one ' +
+      'that pays a weapon. Geometry becomes a combat decision.',
+    pursuit: {
+      mode: 'constant', cruiseSpeed: 2.9, minSpeed: 2.6, maxSpeed: 2.9,
+      pocketSpeed: 2.0, accel: 0, decel: 0,
+      crushSlackSeconds: 4.0, // the threats are the pressure here, but the clock
+                              //   is still bounded in seconds, not screen widths
+      edgePinDamageMs: 600,
+    },
+    pocketTiming: { minExitMarginTiles: 3.5 },
+    pocketReward: { x: 53 },
+    enemies: [
+      { id: 'low-contest-a', kind: 'wasp', x: 35, y: 4.8, delayMs: 0,
+        tune: { diveRange: 8.5, diveCooldownMs: 900 } },
+      { id: 'low-contest-b', kind: 'wasp', x: 46, y: 4.4, delayMs: 500,
+        tune: { diveRange: 8.0, diveCooldownMs: 950 } },
+      { id: 'pocket-guard', kind: 'wasp', x: 51, y: 6.8, delayMs: 200,
+        tune: { cruiseSpeed: 0.4, diveRange: 6.0, diveCooldownMs: 1200 } },
+      // above the chimney top, so it contests the wall-pump exit itself
+      { id: 'chimney-hold', kind: 'wasp', x: 44, y: 11.6, delayMs: 0,
+        tune: { cruiseSpeed: 0.5, diveRange: 7.5, diveCooldownMs: 1000 } },
+      { id: 'roof-hunter-a', kind: 'wasp', x: 52, y: 12.0, delayMs: 300,
+        tune: { cruiseSpeed: 3.4, diveRange: 9.0, diveCooldownMs: 850 } },
+      { id: 'roof-hunter-b', kind: 'wasp', x: 66, y: 12.4, delayMs: 500,
+        tune: { cruiseSpeed: 3.0, diveRange: 9.0, diveCooldownMs: 850 } },
+      { id: 'rejoin-wasp', kind: 'wasp', x: 63, y: 8.8, delayMs: 600 },
+      // the lure: killing it arms you, and it only flies over the high line
+      { id: 'upper-lure', kind: 'carrier', x: 64, y: 10.6, delayMs: 0,
+        tune: { hp: 5 } },
+    ],
+  },
+
+  surge: {
+    id: 'surge', label: 'SURGE',
+    // Crescendo + verb crispness. The clock escalates and the verbs compound.
+    hypothesis:
+      'Intensity should be a crescendo the player answers with skill, not a ' +
+      'constant. The edge ramps 2.6 → 7.0 across the pass while every contact ' +
+      'auto-converts to a launch and chained launches amplify each other and ' +
+      'refund the air jump — so the only way to stay ahead of the ship late in ' +
+      'the pass is to keep the chain alive, and the two hardest routes are the ' +
+      'ones that pay.',
+    pursuit: {
+      mode: 'ramp',
+      cruiseSpeed: 2.6, minSpeed: 2.6, maxSpeed: 7.0,
+      // 6 s, not the 12 s ceiling: bot runs clear this fixture in 6.5-9 s, and a
+      // 9 s ramp meant the crescendo never arrived before the exit
+      rampMs: 6000,
+      accel: 5.0, decel: 6.0,
+      pocketSpeed: 1.6,       // the wager gets tighter here, provably still escapable
+      crushSlackSeconds: 3.2, // 3.2 s at the opening cruise, 1.2 s once the ramp
+                              //   tops out: the clock itself is the crescendo
+      edgePinDamageMs: 600,
+    },
+    pocketTiming: { minExitMarginTiles: 3.0 },
+    pocketReward: { x: 50.5 },
+    movement: {               // verbs: no dwell, harder launches
+      ledgeHangMs: 90, ledgeAutoLaunch: true,
+      wallSlideMs: 160,
+      ledgeLaunchX: 11.2, ledgeLaunchY: 16.0,
+      wallJumpX: 13.5, wallJumpY: 16.4,
+    },
+    // Consecutive launches compound FORWARD, never upward: the ceiling check in
+    // sim/player.js is endpoint-only, so a chained vertical launch could cross a
+    // one-tile overhang in a single clamped 50 ms frame. Forward speed is also
+    // the thing that actually beats a pursuing edge, so the restriction costs
+    // the design nothing.
+    chain: {
+      windowMs: 900, step: 0.06, max: 3, refundAirJump: true,
+    },
+    enemies: [                // placed on the launch arcs: chain fuel, not walls
+      { id: 'entry-wasp', kind: 'wasp', x: 37, y: 8.4, delayMs: 0 },
+      { id: 'mid-arc-wasp', kind: 'wasp', x: 46, y: 7.2, delayMs: 300,
+        tune: { diveRange: 7.5, diveCooldownMs: 1000 } },
+      // the roof is the fastest line, so it has to cost something here too
+      { id: 'roof-hunter-a', kind: 'wasp', x: 50, y: 11.8, delayMs: 200,
+        tune: { cruiseSpeed: 3.2, diveRange: 9.0, diveCooldownMs: 850 } },
+      { id: 'roof-hunter-b', kind: 'wasp', x: 64, y: 12.2, delayMs: 400,
+        tune: { cruiseSpeed: 3.2, diveRange: 9.0, diveCooldownMs: 850 } },
+      { id: 'rejoin-wasp', kind: 'wasp', x: 63, y: 8.8, delayMs: 600 },
+    ],
+    rewards: [                // stakes: the high line is armed
+      { kind: 'letter', letter: 'S', mode: 'fixed', x: 61, y: 9.9 },
+    ],
+  },
+};
+
+export const TRAVERSAL_PACE_IDS = Object.keys(TRAVERSAL_PACES);
+
+/* Resolve one pace into a complete fixture. Never mutates TRAVERSAL_PACES or
+   TRAVERSAL_FIXTURE: every consumer (level build, player tune, HUD, harness)
+   reads the resolved object, so a variant cannot leak into another. */
+export function resolveTraversalPace(name, fixture = TRAVERSAL_FIXTURE) {
+  const pace = TRAVERSAL_PACES[name] || TRAVERSAL_PACES.base;
+  const reward = { ...fixture.darePocket.reward, ...(pace.pocketReward || {}) };
+  return {
+    ...fixture,
+    pace: { id: pace.id, label: pace.label, hypothesis: pace.hypothesis },
+    pursuit: {
+      ...pace.pursuit,
+      // Crush slack authored in SECONDS becomes a margin cap in tiles at the
+      // pace's cruise speed: a fixed distance (so the camera never jitters as
+      // the edge accelerates), a fixed clock at cruise, and — because it no
+      // longer derives from the frustum — the same clock at every aspect ratio.
+      // 0 keeps the shipped screen-width behavior.
+      marginCapTiles: pace.pursuit.crushSlackSeconds
+        ? pace.pursuit.crushSlackSeconds * pace.pursuit.cruiseSpeed
+        : 0,
+    },
+    run: {
+      ...fixture.run, ...(pace.run || {}),
+      minimumScrollSpeed: pace.pursuit.cruiseSpeed,
+    },
+    movement: { ...fixture.movement, ...(pace.movement || {}) },
+    chain: pace.chain ? { ...pace.chain } : null,
+    enemies: (pace.enemies || fixture.enemies).map((e) => ({ ...e })),
+    rewards: [reward, ...(pace.rewards || [])].map((r) => ({ ...r })),
+    darePocket: {
+      ...fixture.darePocket,
+      reward,
+      timing: { ...fixture.darePocket.timing, ...(pace.pocketTiming || {}) },
+    },
+  };
+}
+
 /* ===================== HOUNDFRAME TRIAL (opt-in) ==================== *
- * DESIGN's teach → test rule for the floor-denial enemy, laid over the same
- * fixture and reached only through ?hound=. Stage data lives outside
- * TRAVERSAL_FIXTURE.enemies on purpose: the slice's default composition (and
- * any retune of it) stays untouched, and traversalEnemyPlan picks exactly one
- * authored list per attempt.
+ * DESIGN's teach → test → remix rule for the floor-denial enemy, laid over the
+ * same fixture and reached only through ?hound=. It is ORTHOGONAL to the pace:
+ * a stage composes with whatever pace resolved, so the pace always keeps its
+ * pursuit model, movement overrides, and stakes, and the operator can ask "does
+ * floor denial still read at surge's clock and chained launches?" directly.
+ *
+ * Composition rule, declared per stage and asserted in tools/pathcheck.mjs:
+ *   replace — the stage's authored hostiles are the whole roster. Teaching a
+ *             new enemy happens under low pressure (DESIGN phase rhythm), and
+ *             it keeps a bot damage measurement attributable to the charge.
+ *   add     — the stage's hounds are appended to the pace's own plan. That is
+ *             the remix beat and the honest preview of a real phase.
+ * With no stage selected the plan IS the pace's list, so every ordinary URL —
+ * including each ?pace= variant — is byte-identical to what it fields today.
  *
  * `deck` is the authored ground height the hound owns — the spawn height is
  * derived from CONFIG.hound.rideY so the frame always sits on that plate, and
@@ -266,29 +514,29 @@ export const TRAVERSAL_FIXTURE = {
  * choosing a route chooses a matchup. Hounds take the floor routes; the
  * upper-chimney and wall-launch routes stay a pure air problem, and the
  * harness asserts that separation so it cannot quietly erode.            */
+const HOUND_FLOOR_BEATS = [
+  { id: 'hound-teach', kind: 'hound', contests: 'lower-service',
+    deck: 3, x: 45.5, dir: -1, delayMs: 0, patrol: { x0: 39.5, x1: 46.5 } },
+  { id: 'hound-pocket', kind: 'hound', contests: 'dare-pocket',
+    deck: 1, x: 54.5, dir: -1, delayMs: 400, patrol: { x0: 48.5, x1: 55.5 } },
+  { id: 'hound-rejoin', kind: 'hound', contests: 'lower-service',
+    deck: 3, x: 63.5, dir: -1, delayMs: 800, patrol: { x0: 57.5, x1: 63.5 } },
+];
+
 export const HOUND_TRIAL = {
   id: 'hound-trial-v1',
   stages: {
     // teach: floor pressure only. Three plates the low route needs, each one
     // temporarily wrong to stand on. Answer: jump, wall-launch, or drop behind.
     solo: {
-      label: 'HOUND SOLO',
-      replacesFixtureEnemies: true,
-      enemies: [
-        { id: 'hound-teach', kind: 'hound', contests: 'lower-service',
-          deck: 3, x: 45.5, dir: -1, delayMs: 0, patrol: { x0: 39.5, x1: 46.5 } },
-        { id: 'hound-pocket', kind: 'hound', contests: 'dare-pocket',
-          deck: 1, x: 54.5, dir: -1, delayMs: 400, patrol: { x0: 48.5, x1: 55.5 } },
-        { id: 'hound-rejoin', kind: 'hound', contests: 'lower-service',
-          deck: 3, x: 63.5, dir: -1, delayMs: 800, patrol: { x0: 57.5, x1: 63.5 } },
-      ],
+      id: 'solo', label: 'HOUND SOLO', compose: 'replace',
+      enemies: HOUND_FLOOR_BEATS,
     },
     // test: the documented combination — "hound forces the jump that the wasp
     // contests". The wasp cruises the arc directly over the hound's plate, so
     // the movement answer to the charge is the one the air threat punishes.
     combo: {
-      label: 'HOUND + WASP',
-      replacesFixtureEnemies: true,
+      id: 'combo', label: 'HOUND + WASP', compose: 'replace',
       enemies: [
         { id: 'hound-squeeze', kind: 'hound', contests: 'lower-service',
           deck: 3, x: 45.5, dir: -1, delayMs: 0, patrol: { x0: 39.5, x1: 46.5 } },
@@ -298,6 +546,13 @@ export const HOUND_TRIAL = {
           deck: 3, x: 63.5, dir: -1, delayMs: 900, patrol: { x0: 57.5, x1: 63.5 } },
       ],
     },
+    // remix: the floor beats on top of the pace's own air pressure. Nothing is
+    // re-authored — whatever the pace fields keeps its ids, positions, and
+    // tunes, and the floor simply stops being free.
+    mix: {
+      id: 'mix', label: 'HOUND MIX', compose: 'add',
+      enemies: HOUND_FLOOR_BEATS,
+    },
   },
 };
 
@@ -305,8 +560,9 @@ export function houndTrialStage(name) {
   return (name && HOUND_TRIAL.stages[name]) || null;
 }
 
-// One attempt's authored hostiles. With no trial selected this returns the
-// fixture's own list unchanged, so the default slice stays byte-identical.
+// One attempt's authored hostiles, for the pace that resolved. With no trial
+// stage this returns the pace's own list unchanged, so every ordinary URL is
+// byte-identical; a stage either replaces that list or appends to it.
 export function traversalEnemyPlan(fixture, trialName, cfg = CONFIG) {
   if (!fixture) return [];
   const stage = houndTrialStage(trialName);
@@ -314,7 +570,86 @@ export function traversalEnemyPlan(fixture, trialName, cfg = CONFIG) {
   const authored = stage.enemies.map(function (e) {
     return e.deck === undefined ? { ...e } : { ...e, y: e.deck + cfg.hound.rideY };
   });
-  return stage.replacesFixtureEnemies ? authored : fixture.enemies.concat(authored);
+  return stage.compose === 'add'
+    ? fixture.enemies.map(function (e) { return { ...e }; }).concat(authored)
+    : authored;
+}
+
+/* ---------------------- pursuit (the damage edge) -------------------- *
+ * One pure step function for every pace. `constant` is the shipped behavior,
+ * `hunt` rubber-bands off the player's own margin, `ramp` escalates with
+ * elapsed pass time. The pocket clamp is applied first and is never
+ * rate-limited downward, which is what makes the dare retreat provable.   */
+export function traversalPaceTargetSpeed(p, ctx) {
+  if (ctx.inPocket) return p.pocketSpeed;
+  if (p.mode === 'ramp') {
+    const u = Math.max(0, Math.min(1, (ctx.elapsedMs || 0) / p.rampMs));
+    return p.cruiseSpeed + (p.maxSpeed - p.cruiseSpeed) * u;
+  }
+  if (p.mode === 'hunt') {
+    if (ctx.marginTiles <= p.mercyTiles) return p.minSpeed;
+    if (ctx.marginTiles >= p.comfortTiles) return p.maxSpeed;
+    return p.cruiseSpeed;
+  }
+  return p.cruiseSpeed;
+}
+
+export function traversalPaceStep(p, current, ctx, dt) {
+  const target = traversalPaceTargetSpeed(p, ctx);
+  // Committing to the pocket releases pressure on the same frame; leaving it
+  // re-accelerates at the pace's own rate, so the release cannot be farmed.
+  if (ctx.inPocket) return Math.min(current, target);
+  const rate = (target > current ? p.accel : p.decel) * dt;
+  const next = target > current
+    ? Math.min(target, current + rate)
+    : Math.max(target, current - rate);
+  return Math.max(p.minSpeed, Math.min(p.maxSpeed, next));
+}
+
+// The scroll cursor at which the player's crush margin equals capTiles.
+// edgeLeftOffset is the calibrated left-frustum offset from the scroll cursor
+// (negative), so bounding the margin here bounds the clock in seconds on every
+// aspect ratio — the shipped screen-width lead varies 2x between 1600x600 and
+// 800x1000, which is why the same fixture read as two different games.
+export function traversalMarginCapScroll(playerLeft, edgeLeftOffset, capTiles) {
+  return playerLeft - edgeLeftOffset - capTiles;
+}
+
+// The daylight a pace actually grants at the dare pocket: the authored screen
+// -width figure, or the pace's own margin cap when it bounds slack in seconds.
+export function traversalPocketEntryMargin(fixture) {
+  const cap = fixture.pursuit.marginCapTiles;
+  const authored = fixture.darePocket.timing.entryEdgeMarginTiles;
+  return cap > 0 ? Math.min(cap, authored) : authored;
+}
+
+// Worst-case tiles the edge can advance during a pocket retreat: the clamp is
+// immediate, so it is exactly pocketSpeed × seconds. Stated as a function so
+// the harness asserts the same arithmetic the runtime performs.
+export function traversalPocketAdvanceTiles(p, seconds) {
+  return p.pocketSpeed * seconds;
+}
+
+// Launch chaining (surge): consecutive contacts inside the window amplify the
+// next launch's FORWARD speed only. Never touches runSpeed, gravity, jumpVel or
+// any vertical launch — the frozen movement contract stays frozen, and the
+// endpoint-only ceiling check keeps its full one-tile-per-frame budget.
+export function traversalChainMult(chain, cfg) {
+  if (!cfg) return 1;
+  return 1 + cfg.step * Math.max(0, Math.min(chain, cfg.max));
+}
+
+/* ------------------- HULL FALLBACK tier 1 (B.1) --------------------- *
+ * Pick the route RIG is dislodged onto: the highest surface that is still
+ * genuinely below them. `null` means there is nothing lower — the caller
+ * pays margin instead of altitude.                                       */
+export function traversalFallbackTarget(surfaces, fromY, cfg) {
+  let best = null;
+  for (const s of surfaces) {
+    if (s > fromY - cfg.minDropTiles) continue;
+    if (best === null || s > best) best = s;
+  }
+  return best;
 }
 
 export function traversalSolidAllowsGrab(fixture, cellX, y, h) {

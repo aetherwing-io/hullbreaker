@@ -74,8 +74,8 @@ Implemented:
   a clamped variable timestep; projectiles integrate in substeps so fast
   bolts can't tunnel through thin walls or enemies on slow frames)
 
-Not yet built (in build order): the remaining enemy roster (polyp turret,
-houndframe, spore mortar), the boss, the flight interlude, juice pass
+Not yet built (in build order): the remaining enemy roster (houndframe, polyp
+turret, spore mortar), the boss, the flight interlude, juice pass
 (shake/hit-stop/particles), menus, WebAudio synth. See `docs/DESIGN.md`.
 
 ## Architecture
@@ -146,8 +146,9 @@ Two read-only channels expose the same sampler, so they cannot drift:
   `player.{hp,lives,facing,airJumpsLeft}`, `hostiles[]` and `capsules[]`
   (position/kind/hp), `kills`, `shotsFired`, `scrollEnd`, `edgeLeft`,
   `edgeRight`, and a copy of `sliceStats` — via `HB.snapshot()`. It also holds
-  live references (`HB.player`, `HB.hostiles`, `HB.capsules`, `HB.mods`,
-  `HB.keys`, `HB.CONFIG`, `HB.fixture`, `HB.levelData`) and getters
+  live references (`HB.player`, `HB.playerTune`, `HB.hostiles`, `HB.capsules`,
+  `HB.mods`, `HB.sliceStats`, `HB.keys`, `HB.CONFIG`, `HB.fixture`,
+  `HB.levelData`) and getters
   (`HB.state()`, `HB.scrollX()`, `HB.gameMs()`, `HB.currentWeapon()`,
   `HB.kills()`, `HB.shotsFired()`, `HB.edges()`).
 

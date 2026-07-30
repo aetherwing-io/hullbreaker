@@ -11,6 +11,7 @@ import { builtGroundTopAt, builtSolidAt } from './level.js';
 import { player, circleHitsPlayer, damagePlayer } from './player.js';
 import { weaponKills } from './weapons.js';
 import { dropFromCarrier } from './capsules.js';
+import { consumeLaunchShock, scoreKill } from './score.js';
 import { activeCorner, gateActive, onHostileRemoved } from './wavegate.js';
 
 export const hostiles = [];
@@ -35,17 +36,27 @@ export const ENEMY = {
              hitR: CONFIG.hound.hitRadius, gating: true, start: 'prowl' },
 };
 
-// `opts` carries authored per-row spawn data (currently the houndframe's
-// facing and patrol span). Every caller may omit it; the defaults reproduce
-// the shipped wasp/carrier rows exactly.
-export function spawnHostile(x, y, delayMs, kind, opts) {
+// `row` is the optional authored spawn row this hostile came from. Two things
+// ride on it, and nothing else in the sim needs to know which:
+//   tune — per-spawn stat overrides (hp, cruiseSpeed, diveRange,
+//          diveCooldownMs) authored by a traversal pacing variant, so the same
+//          kinds can hold a station, guard a pocket mouth, or press a line
+//          without new kinds or new branches;
+//   dir / patrol — a houndframe's facing and the ground run it paces.
+// Absent for the shipped six-face spawner and gate waves, whose rows then
+// reproduce the CONFIG.wasp behavior exactly.
+export function spawnHostile(x, y, delayMs, kind, row) {
   kind = kind || 'wasp';
   const K = ENEMY[kind];
-  const patrol = (opts && opts.patrol) || null;
+  const T = (row && row.tune) || null;
+  const patrol = (row && row.patrol) || null;
   const e = {
     id: nextWaspId++, kind,
-    x, y, baseY: y, vx: 0, vy: 0, dir: (opts && opts.dir) || -1, t: hostileRng() * 6,
-    hp: K.hp, hitR: K.hitR,
+    x, y, baseY: y, vx: 0, vy: 0, dir: (row && row.dir) || -1, t: hostileRng() * 6,
+    hp: T && T.hp !== undefined ? T.hp : K.hp, hitR: K.hitR,
+    cruiseSpeed: T && T.cruiseSpeed !== undefined ? T.cruiseSpeed : undefined,
+    diveRange: T && T.diveRange !== undefined ? T.diveRange : undefined,
+    diveCooldownMs: T && T.diveCooldownMs !== undefined ? T.diveCooldownMs : undefined,
     state: K.start || 'cruise', stateUntil: 0, diveCdUntil: 0,
     patrolX0: patrol ? patrol.x0 : -Infinity,
     patrolX1: patrol ? patrol.x1 : Infinity,
@@ -69,6 +80,10 @@ export function hitHostile(e, idx, damage, weapon) {
   if (e.hp <= 0) {
     kills++;
     if (weaponKills[weapon] !== undefined) weaponKills[weapon]++;
+    // the one death path, so one score event per death however it died
+    scoreKill(e.kind, weapon, {
+      grounded: player.grounded, vy: player.vy, x: e.x, y: e.y,
+    });
     if (e.kind === 'carrier') dropFromCarrier(e.x, e.y);
     removeHostile(idx, true);
   }
@@ -199,9 +214,12 @@ export function updateHostiles(dt) {
   const W = CONFIG.wasp;
   const GW = CONFIG.waves;
   const gate = gateActive();
-  const diveRange = gate ? GW.gateDiveRange : W.diveRange;         // gated hostiles press harder
-  const diveCooldown = gate ? GW.gateDiveCooldownMs : W.diveCooldownMs;
   const cullX = sLeftEdge() - 8;
+  // BREAKING (CHARGE notch 2): the launch RIG just made is itself a weapon.
+  // Armed in sim/score.js by the launch branch, consumed here in the same
+  // frame, so neither module has to import the other.
+  const shock = consumeLaunchShock();
+  const shockR2 = CONFIG.score.shockRadius * CONFIG.score.shockRadius;
   // Patrol right bound: the frozen screen edge reaches ~12 tiles past the
   // corner pivot, so bounding on the edge alone let hostiles drift around
   // the corner onto the next face — foreshortened, clustered, idling. The
@@ -216,6 +234,20 @@ export function updateHostiles(dt) {
       continue;
     }
     e.t += dt;
+    // gated hostiles press harder; otherwise a variant's per-enemy tune wins
+    const diveRange = gate ? GW.gateDiveRange
+      : (e.diveRange !== undefined ? e.diveRange : W.diveRange);
+    const diveCooldown = gate ? GW.gateDiveCooldownMs
+      : (e.diveCooldownMs !== undefined ? e.diveCooldownMs : W.diveCooldownMs);
+    const cruiseSpeed = gate ? GW.gateCruiseSpeed
+      : (e.cruiseSpeed !== undefined ? e.cruiseSpeed : W.cruiseSpeed);
+    // BREAKING launch shock is kind-agnostic on purpose: a chained launch that
+    // pops a charging houndframe is exactly the fantasy the notch is selling.
+    if (shock && gameMs >= e.enterUntil &&
+        (e.x - shock.x) ** 2 + (e.y - shock.y) ** 2 <= shockR2) {
+      hitHostile(e, i, CONFIG.score.shockDamage, 'shock');
+      continue;
+    }
     if (gate && e.state !== 'charge' && e.state !== 'tumble') {
       if (e.x < patrolL) e.dir = 1;                    // patrol box: nobody strands the gate
       else if (e.x > patrolR) e.dir = -1;              //   (a committed charge is exempt)
@@ -224,10 +256,10 @@ export function updateHostiles(dt) {
       updateHound(e, dt);
     } else if (e.kind === 'carrier') {                 // slow hauler: cruise only, never dives
       const C = CONFIG.carrier;
-      e.x += e.dir * C.speed * dt;
+      e.x += e.dir * (e.cruiseSpeed !== undefined ? e.cruiseSpeed : C.speed) * dt;
       e.y = e.baseY + Math.sin(e.t * C.bobFreq) * C.bobAmp;
     } else if (e.state === 'cruise') {
-      e.x += e.dir * (gate ? GW.gateCruiseSpeed : W.cruiseSpeed) * dt;
+      e.x += e.dir * cruiseSpeed * dt;
       e.y = e.baseY + Math.sin(e.t * W.bobFreq) * W.bobAmp;
       if (Math.abs(e.x - player.x) < diveRange && player.y + 1 < e.y &&
           gameMs > e.diveCdUntil && gameMs >= e.enterUntil) {   // no ghost dives mid-materialize

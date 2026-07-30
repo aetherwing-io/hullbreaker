@@ -4,11 +4,13 @@
 
 import { CONFIG } from '../config.js';
 import {
-  ACTIVE_SLICE, HOUND_TRIAL_STAGE, IS_TRAVERSAL_SLICE, SLICE_ENEMIES_ENABLED,
-  SLICE_ENEMY_PLAN,
+  ACTIVE_SLICE, HOUND_TRIAL_STAGE, IS_TRAVERSAL_SLICE, SCORE_ENABLED,
+  SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN,
 } from '../mode.js';
+import { scoreNotchGlyphs } from '../pure/score.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { player, P } from '../sim/player.js';
+import { scoreNotchNow, scoreThreat } from '../sim/score.js';
 import { currentWeapon, weaponDef } from '../sim/weapons.js';
 import { mods } from '../sim/mods.js';
 import { hostiles, ENEMY, kills } from '../sim/hostiles.js';
@@ -22,7 +24,8 @@ const hudBL = document.getElementById('hudBL');
 hudBL.innerHTML = IS_TRAVERSAL_SLICE
   ? 'MOVE wasd/arrows &nbsp; JUMP space &nbsp; FIRE j or x &nbsp; RETRY r<br>' +
     'LEDGE near-misses catch: jump launches, down releases &nbsp;&middot;&nbsp; WALL contact: jump launches, down releases<br>' +
-    'DROP down+jump &nbsp;&middot;&nbsp; MAGENTA POCKET = take H, retreat left &nbsp;&middot;&nbsp; PAUSE p/esc'
+    'DROP down+jump &nbsp;&middot;&nbsp; MAGENTA POCKET = take H, retreat left &nbsp;&middot;&nbsp; PAUSE p/esc<br>' +
+    'LOSING HP = HULL FALLBACK: the ship drops you to the route below and play continues'
   : 'MOVE wasd/arrows &nbsp; JUMP space (hold = higher, again in air = double) &nbsp; FIRE j or x<br>' +
     'AIM 8-way via move keys &nbsp; STRAFE-LOCK shift &nbsp; DROP down+jump on catwalks<br>' +
     'CAPSULES swap weapons &middot; hit = weapon pops out, recatch it fast &nbsp;&middot;&nbsp; PAUSE p/esc';
@@ -39,6 +42,13 @@ export function updateHUD() {
   let tl = 'RIG ' + '▰'.repeat(hp) + '▱'.repeat(P.maxHealth - hp) +
            (IS_TRAVERSAL_SLICE ? '' : '  ×' + Math.max(0, player.lives)) +
            '  ·  [' + currentWeapon + '] ' + weaponDef(currentWeapon).name;
+  // CHARGE notches are welded to the weapon readout, not given their own bar:
+  // the player reads "how hot is my gun", in the place their eye already goes.
+  if (SCORE_ENABLED) {
+    const notch = scoreNotchNow();
+    tl += ' ' + scoreNotchGlyphs(notch) +
+      (notch >= CONFIG.score.notches.length ? ' BREAKING' : '');
+  }
   for (const [f, label] of MOD_LABELS)
     if (gameMs < mods[f]) tl += ' · ' + label + ' ' + Math.ceil((mods[f] - gameMs) / 1000) + 's';
   if (mods.lance) tl += ' · LANCE ARMING';
@@ -46,22 +56,27 @@ export function updateHUD() {
   const edge = Number.isFinite(sliceStats.minEdgeMargin)
     ? Math.max(0, sliceStats.minEdgeMargin).toFixed(1)
     : '—';
-  const tr = IS_TRAVERSAL_SLICE
-    ? `ATTEMPT ${sliceStats.attempts} · EDGE ${edge} · ${kills} kills`
+  let tr = IS_TRAVERSAL_SLICE
+    ? `ATTEMPT ${sliceStats.attempts} · EDGE ${edge}` +
+      (sliceStats.setbacks ? ` · FALLBACK ${sliceStats.setbacks}` : '') +
+      ` · ${kills} kills`
     : Math.floor(scrollX) + 'm  ·  ' + kills + ' kills';
+  if (SCORE_ENABLED) tr += ' · THREAT ' + Math.round(scoreThreat());
   if (tr !== hudTRLast) { hudTRLast = tr; hudTR.textContent = tr; }
   const c = activeCorner();
   let tc = '';
   const pocket = ACTIVE_SLICE && ACTIVE_SLICE.darePocket.bounds;
-  if (pocket && player.x >= pocket.x0 && player.x < pocket.x1) {
+  if (ACTIVE_SLICE && gameMs - sliceStats.lastSetbackAt < ACTIVE_SLICE.fallback.messageMs) {
+    // HULL FALLBACK has to be explainable (pillar 5) — one line, existing slot
+    tc = 'HULL FALLBACK · LOWER ROUTE · KEEP MOVING →';
+  } else if (pocket && player.x >= pocket.x0 && player.x < pocket.x1) {
     tc = currentWeapon === ACTIVE_SLICE.darePocket.reward.letter
       ? 'H ACQUIRED · RETREAT LEFT ←'
       : 'H WAGER → · EXIT LEFT ←';
   } else if (IS_TRAVERSAL_SLICE && gameMs - sliceStats.startedAt < 2400) {
-    tc = 'TRAVERSAL SLICE · ' + (!SLICE_ENEMIES_ENABLED ? 'MOVEMENT ONLY'
-      : HOUND_TRIAL_STAGE
-        ? HOUND_TRIAL_STAGE.label + ' · ' + SLICE_ENEMY_PLAN.length + ' HOSTILES'
-        : SLICE_ENEMY_PLAN.length + ' WASPS');
+    tc = 'TRAVERSAL SLICE · ' + ACTIVE_SLICE.pace.label +
+      (HOUND_TRIAL_STAGE ? ' + ' + HOUND_TRIAL_STAGE.label : '') + ' · ' +
+      (SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length + ' HOSTILES' : 'MOVEMENT ONLY');
   } else if (c && c.state === 'gate') {
     let gaters = 0;
     for (const e of hostiles) if (ENEMY[e.kind].gating) gaters++;

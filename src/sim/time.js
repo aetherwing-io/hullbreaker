@@ -9,6 +9,7 @@ export let gameMs = 0;          // gameplay clock — only advances while PLAYIN
 export let scrollX = 0;
 export const sliceStats = {
   attempts: 0, failures: 0, falls: 0, airJumps: 0,
+  setbacks: 0, lastSetbackAt: -1e9,      // HULL FALLBACK tier 1 (proposal B.1)
   minEdgeMargin: Infinity, startedAt: 0,
 };
 
