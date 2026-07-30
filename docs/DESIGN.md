@@ -140,7 +140,10 @@ Target additions should preserve speed:
 - **Cliff hang:** a momentary dodge, aiming position, or route transfer—not a
   long shimmy sequence.
 - **Snap hook (later candidate):** a context-sensitive launch toward clearly
-  marked anchors with minimal aiming interruption.
+  marked anchors with minimal aiming interruption. No longer just a later
+  candidate — this is the lead wave-3 movement-verb prototype following the
+  CP1 pivot (`decisions.md` entry 2); the open design question below is
+  unresolved either way.
 - **Traps (later candidate):** thrown, dropped, or triggered while moving.
   Avoid a separate construction mode; hostile and player-owned traps should
   share readable rules when possible.
@@ -308,7 +311,9 @@ Resolve these through small prototypes and playtests rather than assumption:
 - What is the authored campaign weapon order, and what recovery floor prevents
   late damage from permanently deflating the power ramp?
 - Does the snap hook reuse jump, aim/fire, or a dedicated input, and can a new
-  player understand valid anchors without stopping to aim?
+  player understand valid anchors without stopping to aim? (Under active
+  prototyping as of the wave-3 pivot — `decisions.md` entry 2 — but still
+  unresolved.)
 - Are traps a carried resource, a weapon behavior, or fixed world mechanisms
   that either side can trigger?
 - Does the pursuing edge maintain constant speed through dare pockets, or can
@@ -429,8 +434,11 @@ entire climb:
    telegraphed dare pocket, and pursuit-aware reachability tests. **Built** as
    the opt-in `?slice=traversal` fixture and accelerated once already
    (`15f66d2`) after its first playtest proved the spatial grammar and failed
-   the pacing test. The operator's verdict on the accelerated pass is pending
-   (fleet checkpoint CP1 — see `HANDOFF.md`, `FLEET-PLAN.md`).
+   the pacing test. Checkpoint CP1 has since concluded: the accelerated pass
+   plus the `intensity` agent's further pace variants all read as
+   "directionally correct," no single one was crowned, and the operator
+   pivoted the mission toward concept-art-driven movement verbs (wave 3) —
+   see [`decisions.md`](decisions.md) entry 2.
 2. **Transformation slice:** preserve the shipped hull ratchet, add one
    bulkhead flip and breach return, and make the resulting altitude gain
    unmistakable without changing 2D collision. In progress in an isolated

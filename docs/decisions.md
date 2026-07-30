@@ -104,3 +104,45 @@ this pass to keep the Crown's "not a body-part boss" meaning while dropping
 the now-inaccurate implication that the ship's body isn't a creature. Does
 not supersede the single-*Meridian*, single-Crown story premise, or any
 shipped mechanic.
+
+## 2 — 2026-07-30 — CP1 verdict: no single winner, pivot from "hunt boring" to "build toward the renders"
+
+**Decision:** checkpoint CP1 (judging the accelerated traversal-slice pacing
+pass, `15f66d2`, plus the `intensity` agent's hunt/swarm/surge variants)
+concluded with no single pace crowned a winner — all three read as
+"directionally correct" versus the un-accelerated base. Rather than keep
+consolidating pace in isolation, the operator pivoted the fleet's whole
+mission: stop diagnosing "boring" and start building the specific movement
+verbs the concept art promises. This opens a **wave 3**.
+
+**Rationale, operator verbatim:** "stop hunting boring, let's start working
+toward the kinds of mechanics that need to be tested to better hit the feel
+of the concept arts." The diagnostic question (is the pacing intense enough)
+is judged sufficiently answered — directionally, by all three variants — so
+the more valuable question is now whether the shipped movement grammar can
+deliver the specific fantasy already visible in boards 01/03/08/10/11/12: a
+small, human-scale RIG running and bounding up colossal creature machinery —
+tether/hook dangles and launches, long rib-line runs, chained launches,
+riding transforming surfaces, vent bursts.
+
+**Source:** operator interview, July 30. Recorded in `FLEET-PLAN.md` under
+"CP1 verdict and the wave-3 pivot."
+
+**What changes:** new wave-3 lanes — movement-verb prototypes (snap
+hook/tether first, since it appears throughout the concept art and is one of
+`DESIGN.md`'s open decisions; then generalizing `surge`'s chained-launch
+momentum), a view-scale experiment (smaller RIG relative to the world), plus
+the already-in-flight CP2 (houndframe) and CP3 (transformation) work and the
+CP1 defect fixes already found (fallback self-defeat, crush wall-grind). Snap
+hook — previously out of scope for this push — is now the lead wave-3
+prototype; the roof-contest decision folds into CP2 and later.
+
+**Supersedes:** `HANDOFF.md`'s and `DESIGN.md`'s framing of CP1 as still
+pending the operator's judgment (both said "the operator has not yet judged
+this accelerated pass") — reworded in this pass to record the verdict and the
+pivot. Also supersedes `HANDOFF.md`'s "snap hook ... out of scope" line and
+`DESIGN.md`'s "snap hook (later candidate)" framing, both annotated in this
+pass rather than rewritten outright, since the underlying design question
+(does it reuse jump/aim/fire or a dedicated input?) is still open — only its
+priority changed. Does not supersede CP2, CP3, or CP4 as checkpoints; those
+continue alongside wave 3.

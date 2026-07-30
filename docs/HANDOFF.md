@@ -9,10 +9,15 @@ remain authoritative where this handoff only summarizes them.
 [`FLEET-PLAN.md`](FLEET-PLAN.md) first — it governs that work, assigns lanes,
 and defines the operator checkpoints (CP1–CP4) that gate it. This handoff
 remains the brief for solo sessions and for background FLEET-PLAN doesn't
-repeat. As of this writing the fleet's live milestone is **CP1**: judging the
-accelerated traversal-slice pacing pass (`15f66d2`) plus the `intensity`
-agent's further variants against the operator's "boring" verdict on the first
-pass.
+repeat. As of this writing: **CP1 concluded** with no single pace crowned
+winner (the `intensity` agent's hunt/swarm/surge variants all read as
+"directionally correct" versus base), and the operator pivoted the mission —
+stop diagnosing "boring," start building the movement verbs the concept art
+promises (tether/hook launches, chained launches, human-scale RIG). The fleet
+is now in **wave 3**: movement-verb prototypes (snap hook/tether first), a
+view-scale experiment, plus continuing CP2 (houndframe) and CP3
+(transformation) work. See [`decisions.md`](decisions.md) entry 2 for the
+full pivot and `FLEET-PLAN.md` for the live lane assignments.
 
 ## Start here
 
@@ -150,21 +155,27 @@ weakness that used to be the main gap here:
 The operator's verdict on the traversal slice's first pass was **boring — the
 spatial grammar is right, the intensity is far off** (see `FLEET-PLAN.md`'s
 diagnosis: soft pursuit pressure, uncontested routes, and no stakes
-differential between routes). `15f66d2` is the first response to that
-verdict; the fleet's `intensity` agent is producing further variants for the
-operator's CP1 judgment. Treat FLEET-PLAN's diagnosis, not the old "ground
-plus floating platforms" framing, as the live description of the gap.
+differential between routes). `15f66d2` was the first response to that
+verdict, and the `intensity` agent's hunt/swarm/surge variants were the
+second — at checkpoint CP1 all three read as "directionally correct" and none
+was crowned. Rather than keep tuning pace in isolation, the operator pivoted
+the mission toward building the movement verbs the concept art promises (see
+`decisions.md` entry 2) — that pivot, not the old "ground plus floating
+platforms" framing or a still-pending CP1, is the live state of the gap.
 
 ## Traversal slice: built, and now the fleet's pacing target
 
 **Status: this objective is complete.** The slice described below was built,
 played by the operator, and — per the verdict recorded in `FLEET-PLAN.md` —
 proved the spatial grammar and failed the pacing test ("boring"). `15f66d2`
-accelerated it once already; the fleet's live question (checkpoint CP1) is
-whether that acceleration, plus the `intensity` agent's further variants,
-fixes the verdict. The subsections below are kept as the design rationale for
-the slice's shape — still worth reading before touching it — not as a to-do
-list. For the current milestone and how to help, read `FLEET-PLAN.md`.
+accelerated it once, and the `intensity` agent's further hunt/swarm/surge
+variants were judged at checkpoint CP1: all three read as "directionally
+correct," no single one was crowned, and the operator pivoted the mission to
+building concept-art-driven movement verbs instead of further pace tuning
+(see `decisions.md` entry 2). The subsections below are kept as the design
+rationale for the slice's shape — still worth reading before touching it —
+not as a to-do list. For the current milestone and how to help, read
+`FLEET-PLAN.md`.
 
 ### Prove one traversal vertical slice
 
@@ -234,8 +245,11 @@ contact, shorten grab dwell, prevent adhesion to the pocket dead end, and make
 the camera follow forward motion instead of pinning RIG. Do not scale the
 content count until the user approves that revised feel.
 
-The operator has not yet judged this accelerated pass — that is the fleet's
-checkpoint CP1 (`FLEET-PLAN.md`).
+The operator has since judged this accelerated pass at checkpoint CP1,
+alongside the `intensity` agent's further variants: all read as
+"directionally correct," none was crowned a winner, and the mission pivoted
+toward concept-art-driven movement verbs rather than further pace tuning —
+see [`decisions.md`](decisions.md) entry 2 and `FLEET-PLAN.md`.
 
 ## Implementation landmarks
 
@@ -345,7 +359,10 @@ reversal of the reasoning that kept them out of one session's slice.
 
 - Converting all six phases to the new lattice.
 - Ten simultaneous lanes or maximum vertical density.
-- Snap hook, player traps, hostile traps, or cliff-shimmy systems.
+- Snap hook, player traps, hostile traps, or cliff-shimmy systems. (Snap
+  hook/tether is now the lead wave-3 movement-verb prototype, per the CP1
+  pivot — see `decisions.md` entry 2. Traps and cliff-shimmy remain out of
+  scope.)
 - Bulkhead flip, interior face, breach return, or rendered altitude system.
   (Now in progress — fleet `transformation` agent, targeting CP3.)
 - Houndframe, polyp, mortar, or other new enemies. (Houndframe now in
@@ -362,10 +379,15 @@ one hard question clearly.
 ## What follows the slice
 
 This is now happening in parallel across the fleet rather than as a single
-session's next step — see `FLEET-PLAN.md`'s wave 2 roster and checkpoints
-(CP2 houndframe, CP3 bulkhead flip + altitude, CP4 scored run + setback
-prototype). The order below, from `DESIGN.md`'s Development sequence, remains
-the target convergence point once those variants are judged:
+session's next step — see `FLEET-PLAN.md`'s wave roster and checkpoints (CP2
+houndframe, CP3 bulkhead flip + altitude, CP4 scored run + setback
+prototype). CP1 concluded without a single winner and pivoted the mission
+into **wave 3**: movement-verb prototypes (snap hook/tether, then
+generalizing `surge`'s chained-launch momentum) and a view-scale experiment
+(smaller RIG relative to the world), running alongside the continuing CP2/CP3
+work below — see [`decisions.md`](decisions.md) entry 2. The order below,
+from `DESIGN.md`'s Development sequence, remains the target convergence point
+once those variants are judged:
 
 1. Build one bulkhead flip inward and one breach return while keeping the same
    2D controls and making altitude gain unmistakable. (In progress — fleet
