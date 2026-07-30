@@ -21,7 +21,8 @@ export const view = {
   player:   { sync: noop },              // rig transform, gun pose, i-frame flicker
   hostiles: { spawned: noop, removed: noop, sync: noop },
   capsules: { spawned: noop, removed: noop, sync: noop },
-  bullets:  { slotSpawned: noop, hideSlot: noop, syncSlot: noop, flush: noop },
+  bullets:  { slotSpawned: noop, hideSlot: noop, syncSlot: noop, flush: noop,
+              bendCulled: noop },
   mods:     { sync: noop, cleared: noop, lanceTelegraph: noop },
   level:    { unbuiltHidden: noop, zipperColumn: noop, faceRevealed: noop },
   corner:   { finished: noop },

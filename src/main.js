@@ -76,7 +76,7 @@ import { limbPieces } from './render/limb.js';
 import './render/transform.js';
 import './render/player.js';
 import './render/capsules.js';
-import './render/bullets.js';
+import { clearDepartingTracers } from './render/bullets.js';
 import './render/mods.js';
 import './render/hook.js';
 import { resetHudMessage, updateHUD } from './ui/hud.js';
@@ -150,6 +150,7 @@ function resetGame() {
   clearHostiles();
   clearCorpses();
   clearBullets();
+  clearDepartingTracers();               // render: no bend-cull tracer outlives a run
   for (let i = capsules.length - 1; i >= 0; i--) removeCapsule(i);
   setWeapon('R');
   resetWeaponKills();
@@ -322,6 +323,16 @@ function telemetry() {
     pursuitPeak: pacePeak(),
     setbacks: sliceStats.setbacks,
     score: scoreSnapshot(),
+    // Additive (adversarial-lane request): the live hostile rows, so a bot
+    // policy can read what it is fighting from the frozen channel instead of
+    // enriching from window.HB. Same fields and same meaning HB.snapshot()
+    // publishes, including houndframe's prowl/tell/charge/skid/tumble `state`
+    // and the mock-3D `materialized` flag (a hostile still condensing out of
+    // the tower depth has no hitbox).
+    hostiles: hostiles.map((e) => ({
+      id: e.id, kind: e.kind, state: e.state, dir: e.dir,
+      x: e.x, y: e.y, hp: e.hp, materialized: gameMs >= e.enterUntil,
+    })),
     // movement-verb prototypes, additive and inert when their flags are off:
     // the tether's phase/anchor and the momentum chain's live multiplier, so a
     // bot run can prove a hook route was actually hooked. `player.*` above is
@@ -416,11 +427,8 @@ window.HB = Object.freeze({
         airJumpsLeft: player.airJumpsLeft,
       },
       currentWeapon, kills, shotsFired,
-      hostiles: hostiles.map((e) => ({
-        id: e.id, kind: e.kind, x: e.x, y: e.y, hp: e.hp,
-        state: e.state, dir: e.dir,      // houndframe: prowl/tell/charge/skid/tumble
-        materialized: gameMs >= e.enterUntil,
-      })),
+      // `hostiles` now comes from telemetry() itself (the frozen channel
+      // publishes it too), so the two channels cannot drift on the field set.
       capsules: capsules.map((c) => ({
         kind: c.kind, letter: c.letter, x: c.x, y: c.y, mode: c.mode,
       })),

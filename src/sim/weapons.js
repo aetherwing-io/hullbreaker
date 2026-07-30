@@ -4,7 +4,9 @@
    so kills credit the weapon (favorite-weapon stat).                  */
 
 import { CONFIG, WEAPON_LETTERS } from '../config.js';
-import { DEG } from '../pure/path.js';
+import { BEND_S, DEG, crossesBend } from '../pure/path.js';
+import { TRANSFORM_BEND_S } from '../pure/transform.js';
+import { IS_TRANSFORM_SLICE } from '../mode.js';
 import { view } from './bridge.js';
 import { gameMs, approach } from './time.js';
 import { builtSolidAt, builtGroundTopAt } from './level.js';
@@ -27,6 +29,10 @@ export let currentWeapon = 'R';
 export const weaponKills = Object.fromEntries(WEAPON_LETTERS.map(k => [k, 0]));
 
 export function weaponDef(letter) { return CONFIG.weapons[letter]; }
+
+// Where the ribbon changes facet on the active path. A projectile dies here
+// rather than steering around the body with it (../pure/path.js's header).
+const BENDS = IS_TRANSFORM_SLICE ? TRANSFORM_BEND_S : BEND_S;
 
 function spawnProj(type, x, y, dx, dy, def) {
   for (let i = 0; i < BULLET_MAX; i++) {
@@ -98,6 +104,7 @@ export function updateBullets(dt) {
     const sdt = dt / steps;
     let gone = false;
     for (let k = 0; k < steps && !gone; k++) {
+      const x0 = b.x;                                    // substep start, for the bend test
       if (b.type === 'F' && !b.crawling) {               // arc down to the deck…
         b.x += b.vx * sdt; b.y += b.vy * sdt;
         const g = builtGroundTopAt(b.x);
@@ -109,6 +116,16 @@ export function updateBullets(dt) {
         else { gone = true; break; }                     // gap: fire dies
       } else {
         b.x += b.vx * sdt; b.y += b.vy * sdt;
+      }
+
+      // The bend cull comes FIRST in the substep, before terrain and before
+      // any hostile test: nothing on the far side of a bend may be hit, so a
+      // limb can never be shot around. The render flies the tracer off on the
+      // tangent it arrived with (view.bullets.bendCulled).
+      if (crossesBend(BENDS, x0, b.x)) {
+        view.bullets.bendCulled(i, b, x0);
+        gone = true;
+        break;
       }
 
       if (b.crawling

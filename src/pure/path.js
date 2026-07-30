@@ -71,6 +71,33 @@ export function yawAt(segs, s, blend) {
   return yaw;
 }
 
+/* ---------------------------- bend boundaries ---------------------- *
+ * A projectile is not a ribbon. RIG's (s, y) lane may wrap around the body,
+ * but a bolt fired along a facet leaves on that facet's TANGENT — it does
+ * not steer around the limb (operator ruling, July 30: "projectiles also
+ * curve around corners", recorded in FLEET-PLAN). The boundary is the
+ * middle of each chamfer, i.e. the line where the ribbon has turned half of
+ * its 60°: src/sim/weapons.js kills a projectile that crosses one (in
+ * either direction — there is no shooting backwards around a limb either)
+ * before any hit test on the far side, and src/render/bullets.js flies the
+ * tracer off along the tangent it had. The transformation fixture's seams
+ * are the same idea (src/pure/transform.js).                            */
+
+export function bendSList(cfg) {
+  return cornerSList(cfg).map((cs) => cs + cfg.path.chamferTiles / 2);
+}
+
+// Interval test, deliberately not an endpoint test: a substep that leaps over
+// a boundary still crosses it, so no projectile speed or frame time can skip
+// the cull. Half-open (lo, hi] so a projectile already sitting exactly on a
+// boundary is not culled forever.
+export function crossesBend(bends, x0, x1) {
+  const lo = Math.min(x0, x1), hi = Math.max(x0, x1);
+  for (const b of bends) if (b > lo && b <= hi) return true;
+  return false;
+}
+
 export const CORNER_S = cornerSList(CONFIG);            // [89, 154, 219, 284, 349, 414]
+export const BEND_S = bendSList(CONFIG);                // [90, 155, 220, 285, 350, 415]
 export const SEGS = buildSegments(CONFIG);
 export const HALT_S = CORNER_S.map((cs) => haltSFor(cs, CONFIG));

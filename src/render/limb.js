@@ -49,33 +49,35 @@ const BASE_COLORS = {
 // end of the ladder: the joint is the landmark the orbit is about.
 const MATERIAL_FOR = {
   hull: 'hull', hullRib: 'shadow', wall: 'wall', wallSeam: 'shadow', wallCap: 'shadow',
-  scute: 'scute', scuteRib: 'scuteAlt', silhouette: 'skyline',
+  kerb: 'machine', scute: 'scute', scuteRib: 'scuteAlt', silhouette: 'skyline',
   ridge: 'rib', collar: 'wall', tendon: 'shadow', buttress: 'wall', cup: 'rib',
 };
 
-function facetMaterials(tone) {
-  const out = {};
-  const c = new THREE.Color();
-  for (const [key, hex] of Object.entries(BASE_COLORS)) {
-    c.setHex(hex);
-    out[key] = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(
-        Math.min(1, c.r * tone[0]), Math.min(1, c.g * tone[1]), Math.min(1, c.b * tone[2])
-      ),
-      flatShading: true,
-    });
-  }
-  return out;
-}
+/* The whole limb is ONE instanced draw per material: a unit box scaled per
+   piece, positioned on the polyline, and tinted by its facet's tone through
+   the instance color (the same trick the tile bake uses for its checker). ~800
+   armour pieces would otherwise be ~800 draw calls, which is free on a GPU and
+   very much not free on a software rasteriser — and it buys the property that
+   matters here anyway: the limb is uploaded once and never touched again. */
+
+const _m = new THREE.Matrix4();
+const _q = new THREE.Quaternion();
+const _e = new THREE.Euler();
+const _s = new THREE.Vector3();
+const _v = new THREE.Vector3();
+const _c = new THREE.Color();
+const _tint = new THREE.Color();
 
 // (s, y, depth) → world, with the SHARP heading of the facet (or, for a joint
 // piece, of the chamfer that bisects it). Same mapping the tile bake uses, so
 // the armour and the deck are the same body.
-function placePiece(mesh, s, y, depth) {
-  const p = polyAt(SEGS, s);
-  const yaw = headingAt(SEGS, s);
-  mesh.position.set(p.x + Math.sin(yaw) * depth, y, p.z + Math.cos(yaw) * depth);
-  mesh.rotation.y = yaw;
+function pieceMatrix(piece) {
+  const p = polyAt(SEGS, piece.s);
+  const yaw = headingAt(SEGS, piece.s);
+  _q.setFromEuler(_e.set(0, yaw, 0));
+  _s.set(piece.w, piece.h, piece.d);
+  _v.set(p.x + Math.sin(yaw) * piece.depth, piece.y, p.z + Math.cos(yaw) * piece.depth);
+  return _m.compose(_v, _q, _s);
 }
 
 function bakeLimb() {
@@ -87,19 +89,30 @@ function bakeLimb() {
   scene.fog.color.setHex(CONFIG.limb.bg);
 
   const plan = limbBakePlan(CONFIG, groundH);
-  const materials = new Map();                 // facet → material set
-  const group = new THREE.Group();             // identity: children are in world
-  scene.add(group);
+  const byMaterial = new Map();                // material key → pieces
   for (const piece of plan) {
-    if (!materials.has(piece.facet))
-      materials.set(piece.facet, facetMaterials(limbFacetTone(piece.facet, CONFIG)));
-    const M = materials.get(piece.facet);
-    const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(piece.w, piece.h, piece.d),
-      M[MATERIAL_FOR[piece.kind] || 'hull']
+    const key = MATERIAL_FOR[piece.kind] || 'hull';
+    if (!byMaterial.has(key)) byMaterial.set(key, []);
+    byMaterial.get(key).push(piece);
+  }
+  const geo = new THREE.BoxGeometry(1, 1, 1);
+  for (const [key, pieces] of byMaterial) {
+    const mesh = new THREE.InstancedMesh(
+      geo,
+      new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true }),
+      pieces.length
     );
-    placePiece(mesh, piece.s, piece.y, piece.depth);
-    group.add(mesh);
+    mesh.frustumCulled = false;                // static bake, one upload
+    for (let i = 0; i < pieces.length; i++) {
+      const piece = pieces[i];
+      mesh.setMatrixAt(i, pieceMatrix(piece));
+      const tone = limbFacetTone(piece.facet, CONFIG);
+      _c.setHex(BASE_COLORS[key]);
+      mesh.setColorAt(i, _tint.setRGB(
+        Math.min(1, _c.r * tone[0]), Math.min(1, _c.g * tone[1]), Math.min(1, _c.b * tone[2])
+      ));
+    }
+    scene.add(mesh);
   }
   return plan.length;
 }

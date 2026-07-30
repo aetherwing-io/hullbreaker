@@ -273,6 +273,16 @@ export const CONFIG = {
     planeHalfDepth: 1.0,       // tile half-depth: "outward" means beyond this
     fallOutwardMax: 2.2,       // outward reach allowed over columns that may be a
                                //   gap — a fall must stay visible to the kill plane
+    // The one exception to the play-band rule, and the reason it is safe: a
+    // kerb along the deck's outer lip whose TOP sits below the deck surface.
+    // The camera looks slightly DOWN at the deck, so a lip lower than the deck
+    // cannot occlude anything standing, crawling or flying above it — it only
+    // covers the tile faces beneath. Concept board 14 (the switchback ramp
+    // spiralling the body) reads as one continuous route precisely because its
+    // ramp edge is unbroken around every turn, so this is the piece that keeps
+    // RIG landing on the SAME ramp rather than on a new face.
+    kerb: { outward: 0.36, h: 0.5, under: 0.3, thickness: 0.9, overlap: 0.06 },
+    kerbOutwardMax: 0.4,
     jointOutwardMax: 7.5,      // …and over a joint apron, where the generator
                                //   guarantees flat solid ground (no fall to hide)
     chunkCols: 8,              // dressing granularity along a facet (deck ref step)

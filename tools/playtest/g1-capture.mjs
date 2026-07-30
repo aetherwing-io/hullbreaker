@@ -8,7 +8,7 @@
 //   node g1-capture.mjs selftest      — ?selftest=1 matrix: normal, normal+g1,
 //                                       g1+view=far, traversal, transform
 //   node g1-capture.mjs shots         — evidence frames on the first corner
-//                                       ritual: default vs g1 vs g1&view=far
+//                                       ritual: default vs g1 vs g1&view=near
 //   node g1-capture.mjs equivalence   — identical-input runs, default x2 (noise
 //                                       floor) vs g1, trace comparison
 //   node g1-capture.mjs video         — a .webm of the g1 corner
@@ -86,9 +86,14 @@ const PROBE = () => {
   if (!s || !hb) return null;
   const full = hb.snapshot();
   const p = s.player;
+  // Nearest materialized hostile on EITHER side: a corner gate's wave
+  // materializes in the arena RIG has just run through, i.e. behind them, so a
+  // policy that only ever looks forward never fires a shot that can hit
+  // anything (and, since projectiles now die at the bend, a forward shot at the
+  // pivot dies half a tile from the muzzle).
   let aim = null;
-  for (const h of full.hostiles) {
-    if (!h.materialized || h.hp <= 0 || h.x < p.x - 4) continue;
+  for (const h of s.hostiles) {
+    if (!h.materialized || h.hp <= 0) continue;
     const d = Math.abs(h.x - p.x);
     if (d > 34) continue;
     if (!aim || d < Math.abs(aim.x - p.x)) aim = h;
@@ -98,8 +103,9 @@ const PROBE = () => {
     x: p.x, y: p.y, vx: p.vx, vy: p.vy, grounded: p.grounded,
     screenRight: s.screenRight, edgeMargin: s.edgeMargin, weapon: s.weapon,
     attempt: s.attempt, kills: full.kills, hp: full.player.hp, lives: full.player.lives,
-    hostiles: full.hostiles.map((h) => ({ id: h.id, kind: h.kind, x: h.x, y: h.y, hp: h.hp })),
+    hostiles: s.hostiles.map((h) => ({ id: h.id, kind: h.kind, x: h.x, y: h.y, hp: h.hp })),
     aimDy: aim ? aim.y - (p.y + 0.85) : 0,
+    aimDx: aim ? aim.x - p.x : null,
     g1: hb.g1 ? hb.g1.pieces : 0,
   };
 };
@@ -111,29 +117,51 @@ const PROBE = () => {
  * against another render mode (that is the whole equivalence proof).      */
 async function drive(page, { maxMs, onSample, record }) {
   const t0 = Date.now();
+  let lastGameMs = 0;
+  const held = new Set();
   const send = async (type, code) => {
+    if (type === 'down' && held.has(code)) return;
+    if (type === 'up' && !held.has(code)) return;
+    if (type === 'down') held.add(code); else held.delete(code);
     try { await page.keyboard[type === 'down' ? 'down' : 'up'](code); } catch {}
-    if (record) record.push({ t: Date.now() - t0, type, code });
+    if (record) record.push({ t: Date.now() - t0, gameMs: lastGameMs, type, code });
   };
-  await send('down', 'ArrowRight');
-  await send('down', 'KeyJ');
-  let up = false, down = false, jumping = false, lastJump = 0;
+  await send('down', 'KeyJ');                     // the trigger is always held
+  let jumping = false, lastJump = 0;
   const trace = [];
   while (Date.now() - t0 < maxMs) {
     const now = Date.now() - t0;
     const st = await page.evaluate(PROBE);
     if (st) {
+      lastGameMs = st.gameMs;
       trace.push({ t: now, ...st });
       if (onSample && (await onSample(st, now)) === 'stop') break;
-      const wantUp = st.aimDy > 1.2, wantDown = st.aimDy < -1.6;
-      if (wantUp !== up) { await send(wantUp ? 'down' : 'up', 'ArrowUp'); up = wantUp; }
-      if (wantDown !== down) { await send(wantDown ? 'down' : 'up', 'ArrowDown'); down = wantDown; }
-      if (!jumping && now - lastJump > 900) { await send('down', 'Space'); jumping = true; lastJump = now; }
-      else if (jumping && now - lastJump > 240) { await send('up', 'Space'); jumping = false; }
+      // Run right, point the 8-way aim at the nearest hostile ahead, hop on a
+      // cadence, and hop early when something is diving into contact range.
+      // It is a mediocre player: a gate wave of four wasps beats it often
+      // enough that captureRun() retries (see `attempts` there) rather than
+      // pretending one open-loop pass always wins a fight.
+      const dist = st.aimDx === null ? Infinity : Math.hypot(st.aimDx, st.aimDy);
+      const behind = st.aimDx !== null && st.aimDx < -0.6 && dist < 20;
+      await send(behind ? 'down' : 'up', 'ArrowLeft');   // turn and fight
+      await send(behind ? 'up' : 'down', 'ArrowRight');
+      await send(st.aimDy > 1.2 ? 'down' : 'up', 'ArrowUp');
+      await send(st.aimDy < -1.6 ? 'down' : 'up', 'ArrowDown');
+      // The hop cadence is measured in GAME time, not wall time. Doing this in
+      // wall time was a real bug: under ?fixeddt a slow (software-rasterised)
+      // frame rate makes the sim run at a fraction of real time, so a 900 ms
+      // wall cadence became a ~270 ms game cadence — jump spam, permanently
+      // airborne, and death in the first gap.
+      const wantHop = dist < 2.6 && st.grounded;
+      if (!jumping && (wantHop || st.gameMs - lastJump > 900)) {
+        await send('down', 'Space'); jumping = true; lastJump = st.gameMs;
+      } else if (jumping && st.gameMs - lastJump > 240) {
+        await send('up', 'Space'); jumping = false;
+      }
     }
-    await page.waitForTimeout(25);
+    await page.waitForTimeout(20);
   }
-  for (const code of ['ArrowRight', 'KeyJ', 'ArrowUp', 'ArrowDown', 'Space'])
+  for (const code of ['ArrowRight', 'ArrowLeft', 'KeyJ', 'ArrowUp', 'ArrowDown', 'Space'])
     await send('up', code);
   return trace;
 }
@@ -146,18 +174,19 @@ async function replay(page, events, { maxMs, onSample }) {
   const trace = [];
   let i = 0;
   while (Date.now() - t0 < maxMs) {
-    const now = Date.now() - t0;
-    while (i < events.length && events[i].t <= now) {
-      const e = events[i++];
-      try { await page.keyboard[e.type === 'down' ? 'down' : 'up'](e.code); } catch {}
-    }
     const st = await page.evaluate(PROBE);
     if (st) {
-      trace.push({ t: now, ...st });
-      if (onSample && (await onSample(st, now)) === 'stop') break;
+      // dispatch on the GAME's clock, not the wall clock: with ?fixeddt the
+      // same key lands at the same sim time in every replay
+      while (i < events.length && events[i].gameMs <= st.gameMs) {
+        const e = events[i++];
+        try { await page.keyboard[e.type === 'down' ? 'down' : 'up'](e.code); } catch {}
+      }
+      trace.push({ t: Date.now() - t0, ...st });
+      if (onSample && (await onSample(st, Date.now() - t0)) === 'stop') break;
+      if (i >= events.length && st.gameMs > events[events.length - 1].gameMs + 2500) break;
     }
-    if (i >= events.length && now > events[events.length - 1].t + 1500) break;
-    await page.waitForTimeout(25);
+    await page.waitForTimeout(20);
   }
   return trace;
 }
@@ -168,7 +197,7 @@ async function selftest() {
   const urls = [
     ['normal', '?selftest=1'],
     ['normal+g1', '?g1=1&selftest=1'],
-    ['normal+g1+view=far', '?g1=1&view=far&selftest=1'],
+    ['normal+g1+view=near', '?g1=1&view=near&selftest=1'],
     ['traversal', '?slice=traversal&selftest=1'],
     ['transform', '?slice=transform&selftest=1'],
   ];
@@ -205,12 +234,24 @@ const KEYFRAMES = [
   ['6-resumed', (st, c) => c.doneMs > 900],
 ];
 
-async function captureRun(page, tag, { maxMs = 60000 } = {}) {
-  const taken = [];
-  let gateAt = null, doneAt = null, next = 0;
+async function captureRun(page, tag, { maxMs = 200000 } = {}) {
+  let taken = [];
+  let gateAt = null, doneAt = null, next = 0, lives = 0;
   const trace = await drive(page, {
     maxMs,
     onSample: async (st, now) => {
+      // A lost run restarts in place (R, which the six-face build accepts on
+      // GAME_OVER) instead of tearing down the page: the corner gate is a real
+      // fight this policy loses often, and a fresh boot per attempt spends most
+      // of the budget on the 17 s approach. A restart discards the partial
+      // capture, so no frame set is ever spliced across two attempts.
+      if (st.state !== 'PLAYING') {
+        lives++;
+        if (lives > 12) return 'stop';
+        await page.keyboard.press('KeyR');
+        taken = []; next = 0; gateAt = null; doneAt = null;
+        return null;
+      }
       if (st.corner && st.corner.state === 'gate' && gateAt === null) gateAt = now;
       if (st.corner && st.corner.k === 2 && doneAt === null) doneAt = now;
       const c = {
@@ -224,26 +265,37 @@ async function captureRun(page, tag, { maxMs = 60000 } = {}) {
         next++;
       }
       if (next >= KEYFRAMES.length) return 'stop';
-      if (st.state !== 'PLAYING') return 'stop';
       return null;
     },
   });
-  return { taken, trace };
+  return { taken, trace, restarts: lives };
 }
 
 async function shots() {
+  // ?view=far is the shipped default since 79f8d88, so `g1` IS the far shot;
+  // the near pass is the tighter framing the camera used before that verdict.
+  // ?fixeddt pins the SIM timestep — it changes nothing about what is drawn,
+  // but it stops a software-rasterised headless frame rate from starving the
+  // bot's reaction rate per unit of GAME time, which is the only reason the
+  // limb build (more geometry, slower frames here, free on a GPU) was losing
+  // the same fight the default build wins.
+  const F = '&fixeddt=16.6667';
   const runs = [
-    ['default', '?testapi=1'],
-    ['g1', '?g1=1&testapi=1'],
-    ['g1-far', '?g1=1&view=far&testapi=1'],
+    ['default', '?testapi=1' + F],
+    ['g1', '?g1=1&testapi=1' + F],
+    ['g1-near', '?g1=1&view=near&testapi=1' + F],
   ];
+  const only = ARGV.slice(1).filter((a) => !a.startsWith('--'));
   await withBrowser(async (server, browser) => {
     for (const [tag, query] of runs) {
+      if (only.length && !only.includes(tag)) continue;
       const { context, page, errors } = await openPage(browser, server, query);
-      const { taken } = await captureRun(page, tag);
-      console.log(`${tag}: ${taken.map((k) => `${k.name}@${k.tMs}ms`).join(' ')}`);
-      if (taken.length < KEYFRAMES.length)
-        console.log(`  ${tag}: MISSED ${KEYFRAMES.length - taken.length} keyframe(s)`);
+      const { taken, restarts } = await captureRun(page, tag, { maxMs: 420000 });
+      const ok = taken.length === KEYFRAMES.length;
+      console.log(`${tag}: ` +
+        taken.map((k) => `${k.name}@${Math.round(k.tMs)}ms`).join(' ') +
+        ` [${restarts} restart(s)]` +
+        (ok ? '' : ` — MISSED ${KEYFRAMES.length - taken.length}`));
       for (const e of errors) console.log(`  CONSOLE: ${e}`);
       await context.close();
     }
@@ -272,9 +324,19 @@ function invariants(trace) {
   const gate = firstWhere(trace, (s) => s.corner && s.corner.state === 'gate');
   const turn = firstWhere(trace, (s) => s.corner && s.corner.state === 'turning');
   const after = firstWhere(trace, (s) => s.corner && s.corner.k === 2);
-  const wave = gate
-    ? (firstWhere(trace, (s) => s.corner.state === 'gate' && s.hostiles.length >= 4) || gate)
-    : null;
+  // The gate wave, by IDENTITY rather than by position: the four rows that
+  // appear on the frame the gate arms. Their x is the authored spawn position
+  // (they have not moved yet, and cannot until they finish materializing), so
+  // this is exact — whereas "the hostiles present when there are four of them"
+  // also catches ambient wasps mid-flight and reads as noise.
+  let wave = null;
+  const gi = gate ? trace.indexOf(gate) : -1;
+  if (gi > 0) {
+    const before = new Set(trace[gi - 1].hostiles.map((h) => h.id));
+    wave = { hostiles: gate.hostiles.filter((h) => !before.has(h.id)) };
+  } else if (gate) {
+    wave = gate;
+  }
   return {
     edgeStrip: trace.length ? +(trace[0].screenRight - trace[0].scrollX).toFixed(6) : null,
     haltS: gate ? gate.corner.haltS : null,
@@ -284,6 +346,8 @@ function invariants(trace) {
     ritualMaxTMs: Math.max(0, ...trace.map((s) => (s.corner ? s.corner.tMs : 0))),
     gateWaveX: wave ? wave.hostiles.filter((h) => h.kind === 'wasp')
       .map((h) => +h.x.toFixed(4)).sort((a, b) => a - b) : null,
+    gateWaveY: wave ? wave.hostiles.filter((h) => h.kind === 'wasp')
+      .map((h) => +h.y.toFixed(4)).sort((a, b) => a - b) : null,
     afterScrollX: after ? +after.scrollX.toFixed(6) : null,
     kindsSeen: [...new Set(trace.flatMap((s) => s.hostiles.map((h) => h.kind)))].sort(),
     attempts: Math.max(...trace.map((s) => s.attempt)),
@@ -312,41 +376,93 @@ function deviation(a, b) {
            maxDScrollX: +ds.toFixed(4), maxDEdgeMargin: +dm.toFixed(4) };
 }
 
-// drive() records into an array the caller owns, so capture the events there.
+/* A FIXED, feedback-free input script, in the game's own clock.
+ *
+ * The first pass at this recorded the closed-loop policy above and replayed the
+ * recording. That was a mistake worth writing down: an aim-reactive policy makes
+ * the run chaotic, so one frame of dispatch quantization amplified into tens of
+ * tiles of position difference between two runs of the SAME build — the
+ * comparison was measuring the policy, not the change. A dumb script (hold
+ * right, hold fire, hop on a cadence, sweep the aim up periodically) clears the
+ * first corner gate anyway, and it is stable enough that two same-build runs
+ * land on top of each other, which is what makes a cross-mode difference mean
+ * something.                                                                */
+function fixedScript(budgetMs) {
+  const ev = [];
+  ev.push({ gameMs: 200, type: 'down', code: 'ArrowRight' });
+  ev.push({ gameMs: 350, type: 'down', code: 'KeyJ' });
+  for (let t = 1000; t < budgetMs; t += 900) {
+    ev.push({ gameMs: t, type: 'down', code: 'Space' });
+    ev.push({ gameMs: t + 240, type: 'up', code: 'Space' });
+  }
+  // the high lane of a gate wave sits +4.6 over the deck: sweep the 8-way aim
+  // up on a slow cadence so a level-held trigger still reaches it
+  for (let t = 1800; t < budgetMs; t += 2400) {
+    ev.push({ gameMs: t, type: 'down', code: 'ArrowUp' });
+    ev.push({ gameMs: t + 700, type: 'up', code: 'ArrowUp' });
+  }
+  ev.sort((a, b) => a.gameMs - b.gameMs);
+  return ev;
+}
+
+// Replay one script against one mode, in sim time. Polls fast (the sim advances
+// in fixed 16.67 ms steps under ?fixeddt, so a 10 ms poll never collapses a
+// 240 ms tap into one frame) and stops on the same SIM-time condition in every
+// run, so all three runs cover the same interval of the game.
+async function runScript(page, events, { budgetMs, stopAfterCornerMs = 2000 }) {
+  const trace = [];
+  let i = 0, doneAt = null;
+  const wall0 = Date.now();
+  while (Date.now() - wall0 < 240000) {
+    const st = await page.evaluate(PROBE);
+    if (st) {
+      while (i < events.length && events[i].gameMs <= st.gameMs) {
+        const e = events[i++];
+        try { await page.keyboard[e.type === 'down' ? 'down' : 'up'](e.code); } catch {}
+      }
+      trace.push(st);
+      if (st.corner && st.corner.k === 2 && doneAt === null) doneAt = st.gameMs;
+      if (doneAt !== null && st.gameMs - doneAt > stopAfterCornerMs) break;
+      if (st.gameMs > budgetMs || st.state !== 'PLAYING') break;
+    }
+    await page.waitForTimeout(10);
+  }
+  for (const code of ['ArrowRight', 'KeyJ', 'ArrowUp', 'Space'])
+    try { await page.keyboard.up(code); } catch {}
+  return trace;
+}
+
 async function equivalenceRuns() {
   return withBrowser(async (server, browser) => {
-    const record = [];
-    const a = await openPage(browser, server, '?testapi=1');
-    let gateAt = null, doneAt = null;
-    const traceA = await drive(a.page, {
-      maxMs: 60000, record,
-      onSample: async (st, now) => {
-        if (st.corner && st.corner.state === 'gate' && gateAt === null) gateAt = now;
-        if (st.corner && st.corner.k === 2 && doneAt === null) doneAt = now;
-        if (doneAt !== null && now - doneAt > 1500) return 'stop';
-        if (st.state !== 'PLAYING') return 'stop';
-        return null;
-      },
-    });
-    const errorsA = [...a.errors];
-    await a.context.close();
-    const runMs = record.length ? record[record.length - 1].t + 2500 : 45000;
-    writeFileSync(`${OUT}/${PREFIX}recorded-input.json`, JSON.stringify({
-      name: 'g1-equivalence-recording',
-      description: 'closed-loop policy recorded on the default six-face run, ' +
-        'replayed verbatim against default and ?g1=1',
-      url: 'index.html?testapi=1', durationMs: runMs,
-      events: record.map((e) => ({ t: e.t, type: e.type === 'down' ? 'keydown' : 'keyup', code: e.code })),
+    const budgetMs = 45000;
+    const events = fixedScript(budgetMs);
+    writeFileSync(`${OUT}/${PREFIX}equivalence-input.json`, JSON.stringify({
+      name: 'g1-equivalence',
+      description: 'fixed, feedback-free input in the game clock; replayed against ' +
+        'default (twice, as the noise floor) and ?g1=1, all under ?fixeddt',
+      budgetMs, events,
     }, null, 2));
-
+    const FIXED = '&fixeddt=16.6667';
     const replays = [];
-    for (const [tag, query] of [['defaultA', '?testapi=1'], ['defaultB', '?testapi=1'], ['g1', '?g1=1&testapi=1']]) {
+    for (const [tag, query] of [['defaultA', '?testapi=1' + FIXED],
+                                ['defaultB', '?testapi=1' + FIXED],
+                                ['g1', '?g1=1&testapi=1' + FIXED]]) {
       const r = await openPage(browser, server, query);
-      const trace = await replay(r.page, record, { maxMs: runMs });
+      const trace = await runScript(r.page, events, { budgetMs });
       replays.push({ tag, query, trace, errors: [...r.errors], g1: trace.length ? trace[0].g1 : 0 });
+      const last = trace[trace.length - 1];
+      console.log(`${tag}: ${trace.length} samples, gameMs ${last ? last.gameMs.toFixed(0) : 0}` +
+        `, state ${last ? last.state : '?'}, corner ${last && last.corner ? last.corner.state : '?'}` +
+        `, kills ${last ? last.kills : 0}, maxX ${Math.max(...trace.map((s) => s.x)).toFixed(2)}`);
       await r.context.close();
     }
-    return { traceA, errorsA, replays, runMs, events: record.length };
+    writeFileSync(`${OUT}/${PREFIX}equivalence-traces.json`, JSON.stringify(
+      replays.map((r) => ({ tag: r.tag, trace: r.trace.map((s) => [
+        +s.gameMs.toFixed(2), +s.x.toFixed(4), +s.y.toFixed(4), +s.scrollX.toFixed(4),
+        s.corner ? s.corner.state : null, s.corner ? +s.corner.tMs.toFixed(1) : null,
+        s.kills, s.state,
+      ]) })), null, 2));
+    return { replays, budgetMs, events: events.length };
   });
 }
 
@@ -365,29 +481,51 @@ function compareAndReport(res) {
     if (k === 'ritualMaxTMs') continue;
     if (a !== g || b !== g) mismatches.push({ key: k, defaultA: inv[0][k], defaultB: inv[1][k], g1: inv[2][k] });
   }
+  const runs = res.replays.map((r) => {
+    const last = r.trace[r.trace.length - 1];
+    return {
+      tag: r.tag, query: r.query, samples: r.trace.length,
+      lastGameMs: last ? +last.gameMs.toFixed(1) : 0,
+      endState: last ? last.state : '?',
+      maxX: r.trace.length ? +Math.max(...r.trace.map((s) => s.x)).toFixed(3) : 0,
+      kills: last ? last.kills : 0,
+      ritualSeen: r.trace.some((s) => s.corner && s.corner.state === 'turning'),
+      cornersCleared: r.trace.length
+        ? Math.max(...r.trace.map((s) => (s.corner && s.corner.k ? s.corner.k - 1 : 0))) : 0,
+    };
+  });
   const report = {
     generatedAt: new Date().toISOString(),
     devFast: DEV_FAST,
     inputEvents: res.events,
-    runMs: res.runMs,
+    budgetMs: res.budgetMs,
+    runs,
     g1PiecesBaked: G.g1,
     invariants: inv,
     invariantMismatches: mismatches,
     deviation: { 'defaultA-vs-defaultB (noise floor)': noise, 'defaultA-vs-g1': cross, 'defaultB-vs-g1': cross2 },
     consoleErrors: Object.fromEntries(res.replays.map((r) => [r.tag, r.errors])),
+    ritualCovered: runs.every((r) => r.ritualSeen),
     verdict: null,
   };
   const within = (c, n) =>
     c.maxDx <= Math.max(n.maxDx * 1.5, n.maxDx + 0.5) &&
     c.maxDScrollX <= Math.max(n.maxDScrollX * 1.5, n.maxDScrollX + 0.5);
-  report.verdict = mismatches.length === 0 && G.g1 > 0 &&
+  report.verdict = mismatches.length === 0 && G.g1 > 0 && report.ritualCovered &&
     within(cross, noise) && within(cross2, noise) ? 'RENDER-ONLY' : 'REVIEW';
   writeFileSync(`${OUT}/${PREFIX}equivalence.json`, JSON.stringify(report, null, 2));
   const md = [
     '# G1 equivalence: default vs ?g1=1 (identical input)', '',
-    `Recorded policy: ${res.events} key events, replayed verbatim three times`,
-    `(default, default again as the frame-timing noise floor, and ?g1=1).`,
+    `A fixed, feedback-free script of ${res.events} key events, dispatched on the`,
+    `game's own clock under \`?fixeddt=16.6667\`, run against the default six-face`,
+    `build twice (the frame-timing noise floor) and against \`?g1=1\` once.`,
     `Limb pieces baked in the g1 run: **${G.g1}**.`, '',
+    '## Runs', '',
+    '| run | samples | last gameMs | end state | maxX | kills | ritual seen | corners cleared |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...runs.map((r) => `| ${r.tag} | ${r.samples} | ${r.lastGameMs} | ${r.endState} | ` +
+      `${r.maxX} | ${r.kills} | ${r.ritualSeen} | ${r.cornersCleared} |`),
+    '',
     '## Frame-timing-independent invariants', '',
     '| quantity | defaultA | defaultB | g1 |', '| --- | --- | --- | --- |',
     ...invKeys.map((k) => `| ${k} | ${JSON.stringify(inv[0][k])} | ${JSON.stringify(inv[1][k])} | ${JSON.stringify(inv[2][k])} |`),
@@ -397,7 +535,8 @@ function compareAndReport(res) {
     '| --- | --- | --- | --- | --- | --- |',
     ...Object.entries(report.deviation).map(([k, v]) =>
       `| ${k} | ${v.matched} | ${v.maxDx} | ${v.maxDy} | ${v.maxDScrollX} | ${v.maxDEdgeMargin} |`),
-    '', `Verdict: **${report.verdict}**`, '',
+    '', `Corner ritual covered by every run: **${report.ritualCovered}**`,
+    `Verdict: **${report.verdict}**`, '',
     'Read the deviation table against the noise floor row: two runs of the same',
     'build differ by browser frame timing alone, so a cross-mode pair that is no',
     'further apart than that pair carries no mode-dependent gameplay signal.', '',

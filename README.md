@@ -30,6 +30,17 @@ pulled-back `far` view (RIG ≈ 3.7% of screen height, per the concept-art
 scale); `?view=near` restores the original close camera and `?view=mid`
 sits between.
 
+`index.html?g1=1` is the **G1 limb-turn experiment** on that normal six-face
+run: the same corner ritual, re-read as the camera orbiting 60° around a joint
+of one static faceted creature limb instead of the next face zippering itself
+into place. It is render-only and opt-in — the simulation, the ritual's timing,
+the wave gates, the spawn tables and the built-column state machine are the
+shipped ones, byte for byte, which `tools/pathcheck.mjs` proves by running the
+same scripted pass in both modes and comparing the whole trace. Combine it with
+the view flags (`?g1=1&view=near`) as usual. See
+`docs/proposals/2026-07-meridian-monster-greybox-map.md` (gate G1) for what it
+is trying to prove and `artifacts/g1-limbturn/` for the frames.
+
 ## Controls
 
 | Input | Action |
@@ -148,16 +159,35 @@ Two read-only channels expose the same sampler, so they cannot drift:
   playtest harness's canonical channel: `gameMs`, `state`, `scrollX`,
   `minimumScrollSpeed`, `player.{x,y,vx,vy,grounded,traversalState,
   traversalControlUntil}`, `screenRight`, `edgeMargin`, `weapon`, `attempt`,
-  `falls`, `airJumps`.
+  `falls`, `airJumps`. Those names are frozen; everything added since is
+  additive, and a run mode that has nothing to say omits its block entirely:
+  - `hostiles[]` — `{id, kind, state, dir, x, y, hp, materialized}` per live
+    hostile (`state` carries houndframe's prowl/tell/charge/skid/tumble;
+    `materialized` is false while a hostile is still condensing out of the
+    tower depth, which is exactly when it has no hitbox). A closed-loop bot
+    policy reads its targets here instead of from `window.HB`.
+  - `corner` (six-face run only) — the corner ritual's own state:
+    `{k, pivotS, haltS, state, tMs, progress}`, where `state` walks
+    idle → gate → turning → complete and `tMs`/`progress` measure the 1100 ms
+    two-snap ritual from its start. `k` is null once all six are done.
+  - `transform` (`?slice=transform` only) — `band`, `altitude`, `event`,
+    `eventState`, plus `tMs`/`progress` through the 990 ms turn and the two
+    clamps RIG is actually bounded by: `frontierX` (raw `+Infinity` when no
+    turn is pending) and `sealX` (raw `-Infinity` until one commits).
+  - `pace`, `pursuitSpeed`, `pursuitPeak`, `setbacks`, `score`, and the
+    movement-verb blocks `hook` / `flow` (present only with their flags).
 - `window.HB` is always present and is a superset: the fields above plus
-  `player.{hp,lives,facing,airJumpsLeft}`, `hostiles[]` and `capsules[]`
-  (position/kind/hp), `kills`, `shotsFired`, `scrollEnd`, `edgeLeft`,
-  `edgeRight`, and a copy of `sliceStats` — via `HB.snapshot()`. It also holds
+  `player.{hp,lives,facing,airJumpsLeft}`, `capsules[]`, `kills`,
+  `shotsFired`, `scrollEnd`, `edgeLeft`, `edgeRight`, and a copy of
+  `sliceStats` — via `HB.snapshot()`. It also holds
   live references (`HB.player`, `HB.playerTune`, `HB.hostiles`, `HB.capsules`,
   `HB.mods`, `HB.sliceStats`, `HB.keys`, `HB.CONFIG`, `HB.fixture`,
   `HB.levelData`) and getters
   (`HB.state()`, `HB.scrollX()`, `HB.gameMs()`, `HB.currentWeapon()`,
-  `HB.kills()`, `HB.shotsFired()`, `HB.edges()`).
+  `HB.kills()`, `HB.shotsFired()`, `HB.edges()`, `HB.view()`), plus `HB.g1`
+  (the limb bake's piece count and fog band, or null) — render-mode facts are
+  deliberately kept out of the frozen channel so a default-vs-`?g1=1` trace
+  comparison has nothing mode-dependent in it to explain away.
 
 Both are pure reads. Writing through the live references desynchronizes the
 run — treat them as read-only.

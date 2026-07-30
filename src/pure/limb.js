@@ -160,6 +160,18 @@ function facetPlan(out, facet, cfg, groundH) {
       push(out, 'wallSeam', k, mid, span, ref + at, W.seamH,
            W.depth + 0.6, W.seamThickness);
   }
+  // --- the ramp edge: one unbroken kerb along the deck's outer lip -----
+  // Per column, at that column's own deck height, so the line follows every
+  // step and breaks only where the route itself does (a gap is a gap). It is
+  // the only outward piece allowed inside the play band's y range, and it is
+  // allowed because its top is below the deck: see CONFIG.limb.kerb.
+  const K = L.kerb;
+  const kerbDepth = L.planeHalfDepth + K.outward - K.thickness / 2;
+  for (let s = facet.s0; s < facet.s1; s++) {
+    if (!(groundH[s] > -100)) continue;
+    push(out, 'kerb', k, s + 0.5, 1 + K.overlap, groundH[s] - K.under - K.h / 2, K.h,
+         kerbDepth, K.thickness);
+  }
   // --- the skin: overlapping scutes below the deck --------------------
   const S = L.scute;
   for (let s = facet.s0; s < facet.s1; s += S.every) {
@@ -204,6 +216,16 @@ function jointPlan(out, joint, cfg, groundH) {
        J.collarDepth, J.collarThickness);
   push(out, 'tendon', k, s - 1.6, J.tendonW, ref + 4, 14, J.tendonDepth, J.tendonThickness);
   push(out, 'tendon', k, s + 1.6, J.tendonW, ref + 4, 14, J.tendonDepth, J.tendonThickness);
+  // The ramp edge continues THROUGH the chamfer: the two columns that belong to
+  // no facet are exactly the ones where the route has to read as continuing
+  // around the limb rather than stopping at a new face (concept board 14).
+  const K = cfg.limb.kerb;
+  const kerbDepth = cfg.limb.planeHalfDepth + K.outward - K.thickness / 2;
+  for (let c = joint.s; c < joint.s + cfg.path.chamferTiles; c++) {
+    if (!(groundH[c] > -100)) continue;
+    push(out, 'kerb', k, c + 0.5, 1 + K.overlap, groundH[c] - K.under - K.h / 2, K.h,
+         kerbDepth, K.thickness);
+  }
   // The tendon anchor under the joint, reaching OUT of the limb: the one big
   // outward mass in the whole plan. It sweeps across frame while the camera
   // swings, which is the parallax that sells an orbit — and it is only legal
@@ -241,6 +263,15 @@ export function limbPlanViolations(plan, cfg, groundH) {
   for (const p of plan) {
     const reach = limbOutwardReach(p, cfg);
     if (reach <= 0) continue;                   // behind the plane: always fine
+    if (p.kind === 'kerb') {
+      // the deck lip: exempt from the play band, held to its own two rules
+      const deck = groundH[Math.floor(p.s)];
+      if (!(p.y + p.h / 2 <= deck + 1e-9))
+        bad.push({ piece: p, why: 'kerb rises to or above the deck it edges' });
+      if (reach > L.kerbOutwardMax)
+        bad.push({ piece: p, why: 'kerb reaches past the kerb limit' });
+      continue;
+    }
     if (limbSpansPlayBand(p, cfg))
       bad.push({ piece: p, why: 'outward piece enters the play band' });
     if (reach > L.fallOutwardMax && !limbInJointApron(p, cfg))
