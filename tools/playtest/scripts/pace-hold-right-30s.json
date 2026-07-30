@@ -1,0 +1,9 @@
+{
+  "name": "pace-hold-right-30s",
+  "description": "One key, held, for thirty seconds. The adversarial gate found p1-hold-right-only completing on surge (conveyed through the dare-dead-end column) and still being conveyed forward on base/hunt/swarm when p1's 16s window ended, so the terminal-state question needs a window longer than any pass. What this measures per pace: does a single held key ever reach a terminal state, how many HULL FALLBACKs it costs, and whether the crush-edge margin ever goes negative (it must not — a crush resolves in its own frame instead of displacing the body through terrain).",
+  "url": "index.html?slice=traversal",
+  "durationMs": 30000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 29800 }
+  ]
+}

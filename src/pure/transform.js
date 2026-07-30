@@ -1,17 +1,17 @@
-/* ========================= TRANSFORMATION ========================= */
-/* World-transformation grammar: the rendered surfaces (bands) the 2D
-   ribbon is mapped onto, the two discrete rituals that move between them
-   (bulkhead flip inward, breach return), and the authored fixture the
-   opt-in ?slice=transform demo is built from.
+/* ========================= TRANSITIONS ============================= */
+/* The grammar for moving between stretches of the world: the static path
+   the 2D ribbon is mapped onto, the two turns along it (flip inward,
+   breach out), and the authored fixture the opt-in ?slice=transform demo
+   is built from.
 
-   The simulation never learns about any of this: RIG still runs in
-   (s, y). A band is a frame — an origin, a heading and a rendered
-   ALTITUDE — and a ritual is a ~1s, two-snap animation of that frame
-   (the same chunky grammar as the corner ritual in ./waves.js, which
-   this deliberately mirrors: wind-up → snap → ratchet hold → snap →
-   settle → scroll eases back in). Altitude is what makes the climb
-   perceptible: the frame lifts, the hull RIG left behind stays where it
-   was and falls into the fog below.
+   The simulation never learns about any of this: RIG still runs in (s, y).
+   The world is ONE STATIC BODY — a bent path with an altitude profile,
+   baked once. Nothing assembles, slams or rotates into place: the next
+   stretch was always there, hidden around the bend of the limb and behind
+   the fog. A turn is the VIEW swinging through that bend on the corner
+   ritual's two-snap detent curve (./waves.js) while RIG runs the chamfer
+   under their own power. Altitude is *earned*: the inner passage climbs,
+   so RIG ascends the body by running and jumping up it.
 
    Pure: no three.js, no DOM. The harness asserts the whole timeline. */
 
@@ -23,23 +23,30 @@ import { GAP, buildLevel } from './generator.js';
 const clamp01 = (u) => (u < 0 ? 0 : u > 1 ? 1 : u);
 
 /* ------------------------------ fixture ---------------------------- *
- * Three bands, two rituals: a short exterior run, a bulkhead flip inward
- * onto an interior service corridor, then a breach return onto another
- * exterior face 30 tiles higher. Bands chain: each band's world origin is
- * the previous band's position at the seam, so the seam column is
- * continuous and only heading + altitude change across it.
+ * Three stretches of one body, two turns: an outer face, a flip inward
+ * through an opening onto an inner passage that CLIMBS, then a breach back
+ * out onto an outer face 36 tiles higher. The path is chamfered at each
+ * seam exactly like the six-face tower's corners, so position and altitude
+ * stay continuous and only the heading steps — which is what the view
+ * swings through.
  *
  * Every ground column in [bounds.x0, bounds.x1) is authored exactly once,
- * seam aprons are flat and platform-free, and the threshold columns after
- * each seam belong to the NEXT band (both bands render them; only one copy
- * is visible at a time, and they are coincident at the frame the ritual
- * fires, so the swap is invisible).                                    */
+ * and seam aprons are flat and platform-free so a turn never happens over
+ * a gap or a step.                                                     */
 export const TRANSFORM_FIXTURE = {
   id: 'transform-v1',
   // Face A starts well left of the spawn so the first frame is already a hull
   // face rather than half a screen of void.
   bounds: { x0: 0, x1: 152 },
   origin: { x: 0, z: 0 },
+  // The climb, as geometry rather than as an event: flat along the outer face,
+  // then a readable grade from the lip of the opening to the vent it comes back
+  // out of, flat again up high. RIG gains every tile of it under their own
+  // power — the grade with their legs, and another six tiles by jumping the
+  // passage's rising decks (see groundRuns). Nothing lifts them.
+  altitudeProfile: [
+    { s: 0, alt: 0 }, { s: 59, alt: 0 }, { s: 107, alt: 20 }, { s: 152, alt: 20 },
+  ],
   targetPlaySeconds: { min: 12, max: 30 },
   run: {
     startScroll: 19,
@@ -52,7 +59,7 @@ export const TRANSFORM_FIXTURE = {
   },
   bands: [
     {
-      id: 'hull-face-A', kind: 'exterior', s0: 0, s1: 60, headingDeg: 0, alt: 0,
+      id: 'outer-face-a', kind: 'exterior', s0: 0, s1: 60, headingDeg: 0,
       label: 'OUTER FACE A', shipState: 'INTERCEPT',
       // Atmosphere and material tone are the altitude cues DESIGN asks for.
       // The grey-box palette stays a neutral placeholder, but the hue walk
@@ -73,7 +80,7 @@ export const TRANSFORM_FIXTURE = {
       ],
     },
     {
-      id: 'service-corridor', kind: 'interior', s0: 60, s1: 106, headingDeg: 90, alt: 6,
+      id: 'inner-passage', kind: 'interior', s0: 60, s1: 106, headingDeg: 90,
       label: 'INNER PASSAGE', shipState: 'CONTAIN',
       atmosphere: { bg: 0x241e26, fogNear: 14, fogFar: 42 },
       // brighter as well as warmer: an interior lit by its own machinery, and
@@ -86,14 +93,14 @@ export const TRANSFORM_FIXTURE = {
       // This slice renders the plinths and leaves them empty: it proves the
       // transformation, and interior threats belong to the combat lane.
       threatSockets: [
-        { id: 'polyp-mid', kind: 'polyp', x: 76, y: 7.4, depth: -2.4 },
-        { id: 'polyp-high', kind: 'polyp', x: 96, y: 9.4, depth: -2.4 },
-        { id: 'hazard-pit', kind: 'hazard', x: 88, y: 3, depth: -1.2 },
-        { id: 'hazard-shelf', kind: 'hazard', x: 94, y: 4, depth: -1.2 },
+        { id: 'polyp-mid', kind: 'polyp', x: 76, y: 8.4, depth: -2.4 },
+        { id: 'polyp-high', kind: 'polyp', x: 96, y: 11.4, depth: -2.4 },
+        { id: 'hazard-pit', kind: 'hazard', x: 88, y: 6, depth: -1.2 },
+        { id: 'hazard-shelf', kind: 'hazard', x: 94, y: 7, depth: -1.2 },
       ],
     },
     {
-      id: 'hull-face-C', kind: 'exterior', s0: 106, s1: 152, headingDeg: 180, alt: 36,
+      id: 'outer-face-c', kind: 'exterior', s0: 106, s1: 152, headingDeg: 180,
       label: 'OUTER FACE C', shipState: 'QUARANTINE',
       atmosphere: { bg: 0x2d3a4a, fogNear: 26, fogFar: 70 },
       tone: [1.02, 1.09, 1.22],            // thinner, cooler air at altitude
@@ -108,11 +115,11 @@ export const TRANSFORM_FIXTURE = {
       // RIG here — authored inside the strip the camera can actually see below
       // the deck, so the drop reads in a single still instead of off-screen.
       skyline: [
-        { atS: 109, top: 33, height: 26, width: 10, depth: -16, below: true },
-        { atS: 117, top: 30, height: 24, width: 13, depth: -23, below: true },
-        { atS: 126, top: 32, height: 30, width: 9, depth: -18, below: true },
-        { atS: 134, top: 30, height: 22, width: 14, depth: -26, below: true },
-        { atS: 145, top: 33, height: 26, width: 10, depth: -20, below: true },
+        { atS: 109, top: 21, height: 26, width: 10, depth: -16, below: true },
+        { atS: 117, top: 19, height: 24, width: 13, depth: -23, below: true },
+        { atS: 126, top: 20, height: 30, width: 9, depth: -18, below: true },
+        { atS: 134, top: 18, height: 22, width: 14, depth: -26, below: true },
+        { atS: 145, top: 21, height: 26, width: 10, depth: -20, below: true },
       ],
     },
   ],
@@ -134,32 +141,34 @@ export const TRANSFORM_FIXTURE = {
     { x0: 44, x1: 48, y: 4 },
     { x0: 48, x1: 50, gap: true },
     { x0: 50, x1: 60, y: 3 },              // flip apron (flat through the seam)
-    { x0: 60, x1: 66, y: 3 },              // door threshold: rendered by both bands
-    { x0: 66, x1: 72, y: 3 },
+    { x0: 60, x1: 66, y: 3 },              // the way in: flat through the turn
+    // inside, the decks climb too: six one-tile steps RIG jumps, so the ascent
+    // is played and not only rendered
+    { x0: 66, x1: 72, y: 4 },
     { x0: 72, x1: 74, gap: true },         // service pit, under a ceiling
-    { x0: 74, x1: 82, y: 4 },
+    { x0: 74, x1: 82, y: 5 },
     { x0: 82, x1: 84, gap: true },
-    { x0: 84, x1: 92, y: 3 },
-    { x0: 92, x1: 99, y: 4 },
-    { x0: 99, x1: 106, y: 3 },             // breach apron
-    { x0: 106, x1: 112, y: 3 },            // breach threshold
-    { x0: 112, x1: 120, y: 3 },
+    { x0: 84, x1: 92, y: 6 },
+    { x0: 92, x1: 99, y: 7 },
+    { x0: 99, x1: 106, y: 8 },             // breach apron
+    { x0: 106, x1: 112, y: 8 },            // breach threshold
+    { x0: 112, x1: 120, y: 8 },
     { x0: 120, x1: 122, gap: true },
-    { x0: 122, x1: 130, y: 4 },
+    { x0: 122, x1: 130, y: 7 },
     { x0: 130, x1: 132, gap: true },
-    { x0: 132, x1: 140, y: 3 },
-    { x0: 140, x1: 152, y: 4 },
+    { x0: 132, x1: 140, y: 6 },
+    { x0: 140, x1: 152, y: 7 },
   ],
   platforms: [
     { id: 'a-lower', x0: 27, x1: 33, y: 5.35 },
     { id: 'a-mid', x0: 37, x1: 43, y: 5.35 },
     { id: 'a-high', x0: 39, x1: 44, y: 8.35 },
-    { id: 'i-walk-1', x0: 67, x1: 73, y: 5.35 },
-    { id: 'i-walk-2', x0: 85, x1: 92, y: 5.35 },
-    { id: 'i-walk-3', x0: 87, x1: 93, y: 8.35 },
-    { id: 'c-walk-1', x0: 113, x1: 119, y: 5.35 },
-    { id: 'c-walk-2', x0: 124, x1: 130, y: 6.35 },
-    { id: 'c-walk-3', x0: 134, x1: 141, y: 5.35 },
+    { id: 'i-walk-1', x0: 67, x1: 73, y: 6.35 },
+    { id: 'i-walk-2', x0: 85, x1: 92, y: 8.35 },
+    { id: 'i-walk-3', x0: 87, x1: 93, y: 11.35 },
+    { id: 'c-walk-1', x0: 113, x1: 119, y: 10.35 },
+    { id: 'c-walk-2', x0: 124, x1: 130, y: 9.35 },
+    { id: 'c-walk-3', x0: 134, x1: 141, y: 8.35 },
   ],
   // Ambient wasps only, and never inside a seam-clear zone: this slice
   // proves the transformation, not interior combat. ?enemies=0 empties it.
@@ -175,53 +184,104 @@ export const TRANSFORM_FIXTURE = {
   finish: { x0: 146, x1: 152 },
 };
 
-/* ------------------------------ frames ----------------------------- */
+/* -------------------------------- path ----------------------------- */
+/* One static polyline with a chamfered bend at each seam, plus a
+   piecewise-linear altitude profile. This is the whole world model: the
+   body does not move, so every consumer (camera anchor, RIG, hostiles,
+   bullets, every baked column) reads its place from here and only the
+   camera's YAW is animated during a ritual. */
 
-// Chain the authored bands into world frames. Band k+1's origin is band k's
-// position at the seam, so a seam is continuous in position: only heading
-// and altitude step across it, which is exactly what a ritual animates.
-export function buildTransformFrames(fixture) {
-  const out = [];
-  for (let i = 0; i < fixture.bands.length; i++) {
-    const b = fixture.bands[i];
-    let x = fixture.origin.x, z = fixture.origin.z;
-    if (i > 0) {
-      const p = out[i - 1];
-      const d = b.s0 - p.s0;
-      x = p.x + Math.cos(p.heading) * d;
-      z = p.z - Math.sin(p.heading) * d;
+// Bend anchors: two `snapDeg` bends, `chamferTiles` apart, centred on the
+// seam — the six-face tower's corner chamfer, one turn wider.
+export function buildTransformPath(fixture, cfg) {
+  const T = cfg.transform;
+  const half = T.chamferTiles / 2;
+  const segs = [{ s0: fixture.bands[0].s0, x: fixture.origin.x, z: fixture.origin.z, heading: 0 }];
+  for (const ev of fixture.events) {
+    for (const bs of [ev.seamS - half, ev.seamS + half]) {
+      const prev = segs[segs.length - 1];
+      const len = bs - prev.s0;
+      segs.push({
+        s0: bs,
+        x: prev.x + Math.cos(prev.heading) * len,
+        z: prev.z - Math.sin(prev.heading) * len,
+        heading: prev.heading + T.snapDeg * DEG,
+      });
     }
-    out.push({
-      index: i, id: b.id, kind: b.kind, s0: b.s0, s1: b.s1,
-      x, z, heading: b.headingDeg * DEG, alt: b.alt, band: b,
-    });
   }
-  return out;
+  return { segs, profile: fixture.altitudeProfile.map((p) => ({ ...p })) };
 }
 
-export const TRANSFORM_FRAMES = buildTransformFrames(TRANSFORM_FIXTURE);
+export const TRANSFORM_PATH = buildTransformPath(TRANSFORM_FIXTURE, CONFIG);
 
-export function transformBandIndexAt(frames, s) {
-  for (let i = frames.length - 1; i >= 0; i--) if (s >= frames[i].s0) return i;
+function segAt(segs, s) {
+  for (let i = segs.length - 1; i >= 0; i--) if (s >= segs[i].s0) return segs[i];
+  return segs[0];
+}
+
+export function transformHeadingAt(path, s) { return segAt(path.segs, s).heading; }
+
+// Blended heading for anything that moves along the path (RIG, hostiles,
+// bullets): smoothstep each bend over ±blend tiles so a rig turns the bend
+// instead of popping 45°. Same helper the tower uses for its corners.
+export function transformYawAt(path, s, blend) {
+  const segs = path.segs;
+  if (!(blend > 0)) return transformHeadingAt(path, s);
+  let yaw = segs[0].heading;
+  for (let i = 1; i < segs.length; i++) {
+    if (s <= segs[i].s0 - blend) break;
+    const d = segs[i].heading - segs[i - 1].heading;
+    const u = Math.min(1, Math.max(0, (s - (segs[i].s0 - blend)) / (2 * blend)));
+    yaw += d * u * u * (3 - 2 * u);
+  }
+  return yaw;
+}
+
+// Rendered altitude at s: piecewise-linear through the authored profile.
+export function transformAltAt(path, s) {
+  const P = path.profile;
+  if (s <= P[0].s) return P[0].alt;
+  for (let i = 1; i < P.length; i++) {
+    if (s > P[i].s) continue;
+    const a = P[i - 1], b = P[i];
+    return a.alt + (b.alt - a.alt) * ((s - a.s) / (b.s - a.s));
+  }
+  return P[P.length - 1].alt;
+}
+
+// Local grade of the climb at s (tiles of altitude per tile of path). The bake
+// tilts every floor-like piece by it, so a deck top IS the profile RIG walks on
+// instead of a staircase RIG floats over.
+export function transformGradeAt(path, s) {
+  const P = path.profile;
+  for (let i = 1; i < P.length; i++) {
+    if (s > P[i].s) continue;
+    return (P[i].alt - P[i - 1].alt) / (P[i].s - P[i - 1].s);
+  }
   return 0;
 }
 
-// (s → world) inside one frame. `ctx` is {s0, x, z, heading, alt}: either a
-// static band frame or the animated frame of a running ritual, so every
-// caller — camera, rig, hostiles, bullets, the threshold plate — maps
-// through one function and can never disagree about where the world is.
-export function transformPosAt(ctx, s, out = { x: 0, z: 0 }) {
-  const d = s - ctx.s0;
-  out.x = ctx.x + Math.cos(ctx.heading) * d;
-  out.z = ctx.z - Math.sin(ctx.heading) * d;
+// The one (s → world) mapping: position along the static polyline plus the
+// altitude the body has climbed by then.
+export function transformPathAt(path, s, out = { x: 0, z: 0, alt: 0 }) {
+  const g = segAt(path.segs, s);
+  const d = s - g.s0;
+  out.x = g.x + Math.cos(g.heading) * d;
+  out.z = g.z - Math.sin(g.heading) * d;
+  out.alt = transformAltAt(path, s);
   return out;
 }
 
-export function transformFrameCtx(frame, out = {}) {
-  out.s0 = frame.s0; out.x = frame.x; out.z = frame.z;
-  out.heading = frame.heading; out.alt = frame.alt;
-  out.kind = frame.kind; out.band = frame.index;
-  return out;
+export function transformBandIndexAt(fixture, s) {
+  const bands = fixture.bands;
+  for (let i = bands.length - 1; i >= 0; i--) if (s >= bands[i].s0) return i;
+  return 0;
+}
+
+// The heading the view rests at on a given stretch. A ritual animates from
+// this to the next one; nothing else about the world changes.
+export function transformBandHeading(fixture, i, cfg) {
+  return i * 2 * cfg.transform.snapDeg * DEG;
 }
 
 /* ---------------------------- timeline ----------------------------- *
@@ -232,7 +292,7 @@ export function transformTimeline(cfg) {
   const t1 = T.windUpMs;                   // latch jolt / counter-rotation ends
   const t2 = t1 + T.snap1Ms;               // snap 1 impact frame
   const t3 = t2 + T.holdMs;                // ratchet hold ends
-  const t4 = t3 + T.snap2Ms;               // snap 2 lands: the surface has committed
+  const t4 = t3 + T.snap2Ms;               // snap 2 lands: the view is around the bend
   const t5 = t4 + T.settleMs;              // settle ends, scroll resumes
   const t6 = t5 + T.resumeMs;              // event done
   return { t1, t2, t3, t4, t5, t6 };
@@ -240,7 +300,8 @@ export function transformTimeline(cfg) {
 
 export function transformEventTotalMs(cfg) { return transformTimeline(cfg).t6; }
 
-// yaw delta (degrees) over the ritual: 0 → windUpDeg → 45 → hold → 90
+// View yaw delta (degrees) over the ritual: 0 → windUpDeg → 45 → hold → 90.
+// The only animated quantity in the whole transformation.
 export function transformYawDeltaDeg(tMs, cfg) {
   const T = cfg.transform;
   const TL = transformTimeline(cfg);
@@ -259,28 +320,6 @@ export function transformYawDeltaDeg(tMs, cfg) {
   return snap * 2;
 }
 
-// altitude delta (tiles) over the ritual: the deck drops a hair, then the
-// world ratchets up in the same two beats as the yaw — snap 1 takes
-// altStep1 of the gain, snap 2 takes the rest. Discrete, not a lift ride.
-export function transformAltDelta(tMs, gain, cfg) {
-  const T = cfg.transform;
-  const TL = transformTimeline(cfg);
-  const pre = -T.altPreloadTiles;
-  const step1 = gain * T.altStep1;
-  if (tMs <= 0) return 0;
-  if (tMs < TL.t1) { const u = tMs / T.windUpMs; return pre * u * u; }
-  if (tMs < TL.t2) {
-    const u = (tMs - TL.t1) / T.snap1Ms;
-    return pre + (step1 - pre) * easeOutBack(u, T.altBackS);
-  }
-  if (tMs < TL.t3) return step1;
-  if (tMs < TL.t4) {
-    const u = (tMs - TL.t3) / T.snap2Ms;
-    return step1 + (gain - step1) * easeOutBack(u, T.altBackS);
-  }
-  return gain;
-}
-
 // scroll velocity after a ritual: the same quadratic ease back in the corner
 // ritual uses (the fixture floor speed, not the six-face scroll).
 export function transformScrollVel(tMs, speed, cfg) {
@@ -290,16 +329,15 @@ export function transformScrollVel(tMs, speed, cfg) {
   return speed * u * u;
 }
 
-// Seam pull: on the second snap the ship carries the view THROUGH the seam,
-// so a ritual ends with the camera on the new surface instead of hanging
-// outside the door it just opened. Frozen through the wind-up, snap 1 and the
-// ratchet hold — the pull is part of the second clack, not a dolly move.
+// Seam pull: the bend comes to the player rather than the world assembling at
+// a distance. It starts on the FIRST detent (t2) and runs through the hold and
+// the second detent, so the view travels the chamfer while it swings.
 export function transformSeamPull(tMs, cfg) {
   const T = cfg.transform;
   const TL = transformTimeline(cfg);
-  if (tMs <= TL.t3) return 0;
+  if (tMs <= TL.t2) return 0;
   if (tMs >= TL.t5) return T.seamPullTiles;
-  const u = (tMs - TL.t3) / (TL.t5 - TL.t3);
+  const u = (tMs - TL.t2) / (TL.t5 - TL.t2);
   return T.seamPullTiles * (1 - (1 - u) * (1 - u) * (1 - u));
 }
 
@@ -315,25 +353,9 @@ export function transformScrollOffset(tMs, speed, cfg) {
   return pull + speed * (cfg.transform.resumeMs / 1000) * (u * u * u) / 3;
 }
 
-// The animated frame of a running ritual. At t ≤ 0 it is the FROM band
-// extended past the seam (what RIG is standing on when the ritual fires);
-// at t ≥ t4 it is exactly the TO band's frame. Position rotates about the
-// seam point, which both frames share.
-export function transformEventCtx(frames, ev, tMs, cfg, out = {}) {
-  const from = frames[ev.fromBand];
-  const to = frames[ev.toBand];
-  const yaw = transformYawDeltaDeg(tMs, cfg) * DEG * (to.heading >= from.heading ? 1 : -1);
-  out.s0 = ev.seamS;
-  out.x = to.x; out.z = to.z;                    // the shared seam point
-  out.heading = from.heading + yaw;
-  out.alt = from.alt + transformAltDelta(tMs, to.alt - from.alt, cfg);
-  out.kind = from.kind;
-  out.band = from.index;
-  return out;
-}
-
-// Door leaf / blown panel motion. `open` is chunky by construction: it
-// tracks the yaw snaps, so the panel clacks with the world.
+// Cover motion: a door swings, a vent cover is blown off and tumbles away.
+// Covers are the one piece of the body allowed to move, and `open` is chunky
+// by construction — it tracks the view's detents, so the cover clacks with it.
 export function transformPanelState(tMs, ev, cfg, out = {}) {
   const T = cfg.transform;
   const TL = transformTimeline(cfg);
@@ -352,28 +374,37 @@ export function transformPanelState(tMs, ev, cfg, out = {}) {
   return out;
 }
 
-// The next band slams in near-to-far while the ritual turns — the corner
-// ritual's brick zipper, one chunk at a time — and every chunk is locked
-// before the scroll resumes.
-export function bandSlamOffset(tMs, chunkIdx, cfg) {
-  const T = cfg.transform;
-  const local = tMs - (T.slamStartMs + chunkIdx * T.slamPerColMs);
-  if (local < 0) return { phase: 'hidden', dy: 0 };
-  if (local < T.slamDropMs) {
-    const u = local / T.slamDropMs;
-    return { phase: 'drop', dy: T.slamDropTiles * (1 - u * u) };
+/* ------------------- reserved: assembly choreography ---------------- *
+ * RETIRED FROM TRANSITIONS, RESERVED FOR HOSTILE CONSTRUCTS (FLEET-PLAN
+ * July 30 addendum). The creature's own body never assembles — it is
+ * static and RIG moves around it — but things the ship BUILDS should:
+ * traps that snap together, emplacements that deploy, later enemies that
+ * arrive in pieces. That reads as hostile activity precisely because the
+ * anatomy never does it. The staggered drop curve below is kept whole and
+ * callable so a traps/enemies lane can lift it as-is; nothing in the
+ * transformation path calls it.                                       */
+
+export function bandSlamOffset(tMs, chunkIdx, cfg, out = { phase: 'hidden', dy: 0 }) {
+  const T = cfg.transform.assembly;
+  const local = tMs - (T.startMs + chunkIdx * T.perColMs);
+  if (local < 0) { out.phase = 'hidden'; out.dy = 0; return out; }
+  if (local < T.dropMs) {
+    const u = local / T.dropMs;
+    out.phase = 'drop'; out.dy = T.dropTiles * (1 - u * u);
+    return out;
   }
-  if (local < T.slamDropMs + T.slamDipMs) return { phase: 'dip', dy: -T.slamDipTiles };
-  return { phase: 'locked', dy: 0 };
+  if (local < T.dropMs + T.dipMs) { out.phase = 'dip'; out.dy = -T.dipTiles; return out; }
+  out.phase = 'locked'; out.dy = 0;
+  return out;
 }
 
-export function bandSlamLockMs(cfg) {           // last chunk settles at this t
-  const T = cfg.transform;
-  return T.slamStartMs + (T.slamChunks - 1) * T.slamPerColMs + T.slamDropMs + T.slamDipMs;
+export function bandSlamLockMs(cfg, chunks) {     // last chunk settles at this t
+  const T = cfg.transform.assembly;
+  return T.startMs + (chunks - 1) * T.perColMs + T.dropMs + T.dipMs;
 }
 
-// Atmosphere cross-fade: fog band and background move with the surface, so
-// stepping inside compresses the sightlines and coming out high opens them.
+// Atmosphere cross-fade: the air changes with the stretch of body RIG is on —
+// compressed and close inside, open and driving with rain up high.
 export function transformAtmosphereMix(tMs, cfg) {
   const TL = transformTimeline(cfg);
   return clamp01((tMs - TL.t1) / (TL.t4 - TL.t1));
@@ -383,13 +414,12 @@ export function transformAtmosphereMix(tMs, cfg) {
 
 export function transformHaltS(ev, cfg) { return ev.seamS - cfg.transform.haltOffset; }
 export function transformTriggerS(ev, cfg) { return ev.seamS + cfg.transform.triggerOffset; }
-// While the next band is unbuilt the threshold's far edge is the wall —
-// the corner ritual's "pivot is the wall" rule, one seam later.
+// RIG rounds the bend while the view swings, and no further: past the
+// threshold the view would be looking down a stretch it has not turned to yet.
 export function transformFrontierS(ev, cfg) {
   return ev.seamS + cfg.transform.thresholdTiles - cfg.transform.clampMargin;
 }
-// Once a band commits, the panel has sealed behind RIG: the previous band's
-// columns are no longer rendered under their feet, so they cannot be walked.
+// A committed turn is one-way: the cover has closed or blown out behind RIG.
 export function transformSealS(ev, cfg) { return ev.seamS + cfg.transform.sealInset; }
 
 /* ------------------------------- level ----------------------------- */

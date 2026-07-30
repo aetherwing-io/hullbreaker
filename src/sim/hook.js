@@ -46,7 +46,7 @@ const st = {
   phase: 'idle',                 // 'idle' | 'zip' | 'hang'
   anchor: null,
   targetX: 0, targetY: 0,
-  fromX: 0, entryVx: 0, dir: 1,
+  entryVx: 0, dir: 1,
   startedAt: 0, hangUntil: 0,
   cooldownUntil: 0,
   lockedId: null, lockedUntil: 0,
@@ -56,9 +56,6 @@ const st = {
 
 export function hookEnabled() { return !!H; }
 export function hookAnchors() { return ANCHORS; }
-export function hookOwnsMovement() { return st.phase === 'zip' || st.phase === 'hang'; }
-export function hookPhase() { return st.phase; }
-export function hookActiveAnchor() { return st.anchor; }
 
 // A.5-style read surface: presentation and telemetry only, never a decision.
 export function hookSnapshot() {
@@ -95,7 +92,6 @@ function grab(player, anchor, api) {
   st.phase = 'zip';
   st.anchor = anchor;
   st.targetX = hold.x; st.targetY = hold.y;
-  st.fromX = player.x;
   st.entryVx = player.vx;
   st.dir = hookWhipDir(anchor, player.x, player.facing);
   st.startedAt = gameMs;
@@ -123,21 +119,22 @@ function whip(player, api, reason) {
   if (H.refundAirJump) player.airJumpsLeft = CONFIG.player.airJumps;
   st.whips++;
   if (reason === 'blocked') st.blocked++;
-  release(player, 'whip');
+  release();
   scoreLaunch('hook', player.x, player.y);
 }
 
-// Let go without a launch (down, or a cancel): fall, keeping a little drift.
-function drop(player, reason) {
+// Let go without a launch (down): fall, keeping a little of the drift.
+function drop(player) {
   player.vx = st.dir * Math.min(Math.abs(st.entryVx), CONFIG.player.runSpeed) * 0.5;
   player.vy = H.releaseVy;
   player.grounded = false; player.onOneWay = null;
   player.jumpCutDone = true;
-  if (reason === 'down') st.releases++;
-  release(player, reason);
+  st.releases++;
+  release();
 }
 
-function release(player, reason) {
+// Back to idle, with the anchor you just left locked out for a beat.
+function release() {
   if (st.anchor) {
     st.lockedId = st.anchor.id;
     st.lockedUntil = gameMs + H.sameAnchorLockMs;
@@ -147,7 +144,6 @@ function release(player, reason) {
   st.cooldownUntil = gameMs + H.cooldownMs;
   clearHookBuffer();
   clearJumpBuffer();                   // the press was spent on the tether
-  void reason;
 }
 
 /* One frame. Returns true while the tether owns movement, which is the flag
@@ -188,7 +184,7 @@ export function hookUpdate(player, dt, api) {
   }
 
   if (keys.down) {                     // established grammar: down releases
-    drop(player, 'down');
+    drop(player);
     view.hook.sync();
     return false;
   }
@@ -235,8 +231,9 @@ export function hookUpdate(player, dt, api) {
   return true;
 }
 
-// A hit, a setback, or a run reset takes RIG off the tether.
-export function hookCancel(player) {
+// A hit or a setback takes RIG off the tether. The caller has already assigned
+// the knockback velocity, so this only drops the tether state.
+export function hookCancel() {
   if (!H || st.phase === 'idle') return;
   st.phase = 'idle';
   st.anchor = null;
@@ -248,7 +245,7 @@ export function resetHook() {
   st.phase = 'idle';
   st.anchor = null;
   st.targetX = 0; st.targetY = 0;
-  st.fromX = 0; st.entryVx = 0; st.dir = 1;
+  st.entryVx = 0; st.dir = 1;
   st.startedAt = 0; st.hangUntil = 0;
   st.cooldownUntil = 0;
   st.lockedId = null; st.lockedUntil = 0;

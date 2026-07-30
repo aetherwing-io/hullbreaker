@@ -5,6 +5,7 @@
    (Node bot harness) can set globalThis.__HB_QUERY__ to a query string
    before importing the game to select the same modes without a browser. */
 
+import { CONFIG } from './config.js';
 import {
   TRAVERSAL_FIXTURE, houndTrialStage, resolveTraversalPace, traversalEnemyPlan,
 } from './pure/traversal.js';
@@ -28,10 +29,18 @@ export const SLICE_PACE = QUERY.get('pace') || 'base';
                     dedicated L / E key) or `auto` (a valid anchor grabs itself
                     while airborne, the way a ledge catch does). An A/B for
                     DESIGN's open "jump vs fire vs dedicated" question.
-     ?flow=1        arms the momentum spine (src/sim/flow.js) on ANY pace   */
+     ?flow=1        arms the momentum spine (src/sim/flow.js) on ANY pace
+     ?autobounce=1  a HELD jump re-arms the jump buffer on every landing. The
+                    buffer only ever arms on a keydown with !e.repeat, so today
+                    a player who holds jump lands and stays there — the root of
+                    adversarial F11 (a held-jump policy parked against a
+                    one-tile lip for 9.6 s) and a classic feel option in its own
+                    right: with it, holding jump reads as "keep bouncing", which
+                    is the same intent the momentum spine rewards.            */
 export const HOOK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('hook') === '1';
 export const HOOK_INPUT = QUERY.get('hookinput') === 'auto' ? 'auto' : 'key';
 export const FLOW_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('flow') === '1';
+export const AUTOBOUNCE_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('autobounce') === '1';
 // ACTIVE_SLICE stays the traversal fixture specifically: it selects that
 // slice's movement overrides, pacing variant, dare pocket and traversal verbs.
 export const ACTIVE_SLICE = IS_TRAVERSAL_SLICE
@@ -46,6 +55,11 @@ export const ACTIVE_FIXTURE = IS_TRANSFORM_SLICE ? TRANSFORM_FIXTURE : ACTIVE_SL
 // ROUTE LOST retry instead of HULL FALLBACK tier 1.
 export const SCORE_ENABLED = QUERY.get('score') === '1';
 export const SLICE_FALLBACK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('fallback') !== '0';
+// ?view=near|mid|far selects a camera pull-back multiplier (CONFIG.viewScales,
+// the view-scale experiment). Anything unrecognized — including no flag —
+// resolves to `near`, which is byte-identical to the shipped camera.
+const VIEW_RAW = QUERY.get('view');
+export const VIEW_ID = CONFIG.viewScales[VIEW_RAW] ? VIEW_RAW : 'near';
 
 // Opt-in houndframe trial (DESIGN: teach → test → remix), orthogonal to the
 // pace: ?hound=1 teaches the charge alone, ?hound=2 adds the wasp that contests

@@ -5,6 +5,12 @@
    writes them (advanceGameMs from the main loop, setScrollX from
    sim/scroll.js), so every mutable clock has exactly one owner. */
 
+/* CHRONO convention (sitewide): gameMs always advances at REAL time — the
+   main loop calls advanceGameMs(dt*1000) before computing wScale — while
+   entity updates receive the CHRONO-scaled dt for movement. So any state
+   machine that stores gameMs deadlines (wasp dive/cooldown, hound tell/
+   charge, capsule expiry) keeps real-time durations under CHRONO while its
+   motion slows. New enemy kinds should reuse this pattern, not fight it. */
 export let gameMs = 0;          // gameplay clock — only advances while PLAYING
 export let scrollX = 0;
 export const sliceStats = {

@@ -1,0 +1,9 @@
+{
+  "name": "t1-transform-gate-stall",
+  "description": "ATTACK (CP3 transform slice): can crush suspension be farmed at an armed ritual gate? src/sim/player.js:371 suspends crush damage while transformBusy(), and src/sim/transform.js only fires a ritual once the scroll has HALTED at the threshold and RIG has walked into it (ev.state 'armed' -> 'turning' requires both). So a player who walks up to the threshold and then stops has halted the scroll — and a halted scroll is a halted damage plane. This script runs right for three seconds to reach the first threshold, then issues no input at all for eighteen more. If the player sits indefinitely at full health with the plane frozen, the pursuit clock has an off switch at every ritual seam. transform.js:106 references an armMaxMs timeout on the armed state, so the counter-hypothesis is that something presses after a while; this measures which. Run with --max-runtime-ms 26000.",
+  "url": "index.html?slice=transform",
+  "durationMs": 21000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 3000 }
+  ]
+}

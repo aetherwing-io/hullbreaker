@@ -54,6 +54,8 @@ const MATRIX = [
   'index.html?slice=traversal&hound=1&hook=1&flow=1',
   'index.html?slice=traversal&pace=surge&hound=3&hook=1&flow=1&score=1',
   'index.html?slice=traversal&hook=1&flow=1&enemies=0',
+  'index.html?slice=traversal&autobounce=1',
+  'index.html?slice=traversal&pace=surge&hook=1&flow=1&autobounce=1&view=far',
 ];
 
 const MIME = {

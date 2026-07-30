@@ -31,8 +31,10 @@ const GRIDS = {
       'slice=traversal&hound=1',
       'slice=traversal&hound=2',
       'slice=traversal&pace=surge&hound=3',
+      'slice=traversal&view=far',
     ],
-    policies: ['dash', 'roof', 'idle'],
+    // holdjump exercises the landing branch specifically (?autobounce=1's site)
+    policies: ['dash', 'roof', 'holdjump', 'idle'],
     seconds: 16,
   },
   // The two new verbs, on and off, against the paces the operator plays.

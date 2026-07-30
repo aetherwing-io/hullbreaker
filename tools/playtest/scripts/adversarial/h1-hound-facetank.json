@@ -1,0 +1,298 @@
+{
+  "name": "h1-hound-facetank",
+  "description": "ATTACK (CP2 houndframe): is the charge tell irrelevant to a player who refuses to react to it? This is the p4 traversal policy (hold right + mash Space, which is known to clear the base slice 3/3) plus held fire, run against ?hound=1 \u2014 so it traverses normally but never reads a plant, never leaves a lane, and never reroutes. Hound contact is ordinary contact damage and the player carries 3 hp behind CONFIG.player.iframesMs 1200, so a charge that lands inside an i-frame window is free. If this clears the fixture, the designed counterplay (read the plant, leave the lane, or bait the tumble) is optional and the tell is decoration. NOTE: the first version of this script held right and fire with NO jump, which cannot traverse the column-39 step at all - it jammed there 3/3 and never reached the hound. That run tested nothing about the hound and was replaced by this one; the jam itself is finding F8, and its negative crush margins re-confirm the wall-grind defect on this fixture.",
+  "url": "index.html?slice=traversal&hound=1",
+  "durationMs": 13000,
+  "moves": [
+    {
+      "hold": "right",
+      "fromMs": 0,
+      "toMs": 12800
+    },
+    {
+      "hold": "fire",
+      "fromMs": 100,
+      "toMs": 12800
+    },
+    {
+      "tap": "jump",
+      "atMs": 300,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 520,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 740,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 960,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1180,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1400,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1620,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1840,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 2060,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 2280,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 2500,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 2720,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 2940,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 3160,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 3380,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 3600,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 3820,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 4040,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 4260,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 4480,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 4700,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 4920,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 5140,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 5360,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 5580,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 5800,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 6020,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 6240,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 6460,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 6680,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 6900,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 7120,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 7340,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 7560,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 7780,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 8000,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 8220,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 8440,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 8660,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 8880,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 9100,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 9320,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 9540,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 9760,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 9980,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 10200,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 10420,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 10640,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 10860,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 11080,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 11300,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 11520,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 11740,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 11960,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 12180,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 12400,
+      "holdMs": 110
+    }
+  ]
+}

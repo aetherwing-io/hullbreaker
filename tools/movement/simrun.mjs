@@ -152,6 +152,12 @@ const POLICIES = {
     };
   },
 
+  // Hold right and HOLD jump, forever. The jump buffer only arms on a fresh
+  // keydown, so this policy jumps exactly once and then walks into whatever the
+  // level puts in front of it (adversarial F11's root). It is the A/B partner
+  // for ?autobounce=1, which re-arms the buffer on every landing.
+  holdjump() { return { right: true, jump: true, fire: true }; },
+
   // Stand still: the pressure/fairness control.
   idle() { return {}; },
 };
@@ -259,7 +265,7 @@ export async function runSim(opts) {
     outcome: 'not-completed', clearMs: null, frames: 0,
     minMargin: Infinity, maxY: -Infinity, minY: Infinity,
     airFrames: 0, groundFrames: 0, stallFrames: 0,
-    contacts: { ledge: 0, wall: 0 }, launches: { ledge: 0, wall: 0, air: 0, hook: 0 },
+    contacts: { ledge: 0, wall: 0 },
     hooks: 0, hookBlocked: 0, hookReleases: 0,
     flowPeakLinks: 0, flowPeakMult: 1, flowAmpFrames: 0,
     peakVx: 0, peakSpeedMult: 1,
@@ -358,7 +364,6 @@ export async function runSim(opts) {
   m.airFraction = round(m.airFrames / Math.max(1, m.frames));
   m.stallFraction = round(m.stallFrames / Math.max(1, m.frames));
   m.score = SCORE.scoreSnapshot();
-  m.launches = { ...m.launches, ...(m.score.counts ? {} : {}) };
   m.links = m.score.counts ? m.score.counts.link : 0;
   m.fingerprint = fingerprint([
     m.outcome, m.clearMs, m.frames, m.minMargin, m.maxY, m.minY, m.xEnd,

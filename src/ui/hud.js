@@ -5,9 +5,9 @@
 import { CONFIG } from '../config.js';
 import { TRANSFORM_FIXTURE } from '../pure/transform.js';
 import {
-  ACTIVE_SLICE, FLOW_ENABLED, HOOK_ENABLED, HOOK_INPUT, HOUND_TRIAL_STAGE,
-  IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE,
-  SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN,
+  ACTIVE_SLICE, AUTOBOUNCE_ENABLED, FLOW_ENABLED, HOOK_ENABLED, HOOK_INPUT,
+  HOUND_TRIAL_STAGE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE,
+  SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN, VIEW_ID,
 } from '../mode.js';
 import { scoreNotchGlyphs } from '../pure/score.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
@@ -20,7 +20,7 @@ import { activeCorner } from '../sim/wavegate.js';
 import { hookSnapshot } from '../sim/hook.js';
 import { flowSnapshot } from '../sim/flow.js';
 import {
-  activeTransformEvent, committedBand, lastCommit, transformAltitude, transformBandLabel,
+  activeTransformEvent, committedBand, lastCommit, transformAltitudeAt, transformBandLabel,
 } from '../sim/transform.js';
 
 const hudTL = document.getElementById('hudTL');
@@ -39,13 +39,16 @@ const FLOW_LEGEND = FLOW_ENABLED
   ? '<br>FLOW: every ledge / wall / hook launch without touching the floor ' +
     'compounds your speed &mdash; the floor bleeds it back off'
   : '';
+const BOUNCE_LEGEND = AUTOBOUNCE_ENABLED
+  ? '<br>AUTOBOUNCE: hold jump to keep bouncing &mdash; every landing re-arms it'
+  : '';
 
 hudBL.innerHTML = IS_TRAVERSAL_SLICE
   ? 'MOVE wasd/arrows &nbsp; JUMP space &nbsp; FIRE j or x &nbsp; RETRY r<br>' +
     'LEDGE near-misses catch: jump launches, down releases &nbsp;&middot;&nbsp; WALL contact: jump launches, down releases<br>' +
     'DROP down+jump &nbsp;&middot;&nbsp; MAGENTA POCKET = take H, retreat left &nbsp;&middot;&nbsp; PAUSE p/esc<br>' +
     'LOSING HP = HULL FALLBACK: the ship drops you to the route below and play continues' +
-    HOOK_LEGEND + FLOW_LEGEND
+    HOOK_LEGEND + FLOW_LEGEND + BOUNCE_LEGEND
   : IS_TRANSFORM_SLICE
     ? 'MOVE wasd/arrows &nbsp; JUMP space (hold = higher, again in air = double) &nbsp; FIRE j or x &nbsp; RETRY r<br>' +
       'TRANSFORMATION SLICE &nbsp;&middot;&nbsp; run into the open panel, then into the one ahead: ' +
@@ -100,8 +103,8 @@ export function updateHUD() {
       (sliceStats.setbacks ? ` · FALLBACK ${sliceStats.setbacks}` : '') +
       ` · ${kills} kills`
     : IS_TRANSFORM_SLICE
-      ? `ALT ${Math.round(transformAltitude() + player.y)}m · ` +
-        `${committedBand}/2 BREAKS · ${kills} kills`
+      ? `ALT ${Math.round(transformAltitudeAt(player.x) + player.y)}m · ` +
+        `${committedBand}/2 TURNS · ${kills} kills`
       : Math.floor(scrollX) + 'm  ·  ' + kills + ' kills';
   if (SCORE_ENABLED) tr += ' · THREAT ' + Math.round(scoreThreat());
   if (tr !== hudTRLast) { hudTRLast = tr; hudTR.textContent = tr; }
@@ -116,8 +119,12 @@ export function updateHUD() {
       ? 'H ACQUIRED · RETREAT LEFT ←'
       : 'H WAGER → · EXIT LEFT ←';
   } else if (IS_TRAVERSAL_SLICE && gameMs - sliceStats.startedAt < 2400) {
+    // view-scale experiment: self-documents on screenshots so a variant is
+    // identifiable without cross-referencing the URL (near is the shipped
+    // camera and stays silent to keep that overlay unchanged by default).
+    const viewTag = VIEW_ID === 'near' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
     tc = 'TRAVERSAL SLICE · ' + ACTIVE_SLICE.pace.label +
-      (HOUND_TRIAL_STAGE ? ' + ' + HOUND_TRIAL_STAGE.label : '') + ' · ' +
+      (HOUND_TRIAL_STAGE ? ' + ' + HOUND_TRIAL_STAGE.label : '') + viewTag + ' · ' +
       (SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length + ' HOSTILES' : 'MOVEMENT ONLY');
   } else if (c && c.state === 'gate') {
     let gaters = 0;
@@ -139,8 +146,10 @@ function transformMessage() {
   if (ev && ev.state === 'turning') return ev.label;
   if (lastCommit && gameMs - lastCommit.at < CONFIG.transform.clearMsgMs)
     return `${lastCommit.ev.label} — ${transformBandLabel()} · MERIDIAN: ${transformShipState()}`;
-  if (gameMs - sliceStats.startedAt < 2400)
-    return 'TRANSFORMATION SLICE · ' + transformBandLabel();
+  if (gameMs - sliceStats.startedAt < 2400) {
+    const viewTag = VIEW_ID === 'near' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
+    return 'TRANSFORMATION SLICE · ' + transformBandLabel() + viewTag;
+  }
   return '';
 }
 

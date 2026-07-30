@@ -3,15 +3,17 @@
    machine itself is sim (src/sim/state.js) and reaches this presentation
    through the view bridge, so the sim owns no copy. */
 
+import { CONFIG } from '../config.js';
 import {
-  ACTIVE_SLICE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, SCORE_ENABLED,
+  ACTIVE_SLICE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, SCORE_ENABLED, VIEW_ID,
 } from '../mode.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { scoreSnapshot } from '../sim/score.js';
 import { weaponDef, weaponKills, shotsFired } from '../sim/weapons.js';
 import { kills } from '../sim/hostiles.js';
-import { committedBand, transformAltitude } from '../sim/transform.js';
+import { player } from '../sim/player.js';
+import { committedBand, transformAltitudeAt } from '../sim/transform.js';
 
 const overlay = document.getElementById('overlay');
 const ovTitle = document.getElementById('ovTitle');
@@ -62,14 +64,19 @@ function showStateScreen(next) {
                            `${(sc.playMs / 1000).toFixed(1)}s` });
       }
       lines.push({ text: `pace: ${ACTIVE_SLICE.pace.label}`, dim: true });
+      // near (default) is silent: byte-identical VICTORY overlay when ?view=
+      // is absent, same rule as the transient HUD tag above.
+      if (VIEW_ID !== 'near') {
+        lines.push({ text: `view: ${CONFIG.viewScales[VIEW_ID].label}`, dim: true });
+      }
       lines.push({ text: 'r to replay', dim: true });
       showOverlay('TRAVERSAL CLEAR', lines);
     } else if (IS_TRANSFORM_SLICE) {
       const elapsed = Math.max(0, (gameMs - sliceStats.startedAt) / 1000).toFixed(1);
       showOverlay('BREACH CLEAR', [
         { text: `${elapsed}s · ${committedBand} of 2 transformations · ${kills} kills` },
-        { text: `rendered altitude gained: ${transformAltitude()} tiles` },
-        { text: 'flip inward → inner passage → breach out, one 2D controller the whole way' },
+        { text: `climbed ${Math.round(transformAltitudeAt(player.x))} tiles of body, on foot` },
+        { text: 'flip inward → the passage climbs → breach out, one 2D controller the whole way' },
         { text: 'r to replay', dim: true },
       ]);
     } else {

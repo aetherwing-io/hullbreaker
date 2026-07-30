@@ -3,52 +3,28 @@
    2D ribbon onto the hexagonal tower through the pure polyline. Every
    dynamic entity's mesh places through here.
 
-   The transformation fixture swaps the polyline for its band frames (an
-   origin, a heading and a rendered altitude) and, while a ritual runs, for
-   that ritual's animated frame. Same contract, one extra term: altitude.
-   Everything that draws in (s, y) reads it from `activeFrame()`, so the
-   camera, RIG, hostiles, capsules, bullets and the slice's own hull
-   geometry can never disagree about where the world currently is. */
+   The transformation fixture swaps the tower polyline for its own static
+   path — the same kind of thing with one extra term: the altitude the body
+   has climbed by that point. Nothing in this mapping is animated. During a
+   transition only the CAMERA's yaw moves (src/render/camera.js); the world
+   RIG runs on stays exactly where it was baked, which is what makes a turn
+   read as RIG rounding a limb instead of the world rearranging itself. */
 
 import { CONFIG } from '../config.js';
 import { SEGS, polyAt, yawAt } from '../pure/path.js';
-import {
-  TRANSFORM_FRAMES, transformEventCtx, transformFrameCtx, transformPosAt,
-} from '../pure/transform.js';
+import { TRANSFORM_PATH, transformPathAt, transformYawAt } from '../pure/transform.js';
 import { IS_TRANSFORM_SLICE } from '../mode.js';
-import { gameMs } from '../sim/time.js';
-import { activeTransformEvent, committedBand } from '../sim/transform.js';
 
 const _pp = { x: 0, z: 0 };     // polyAt scratch shared by the per-frame call sites
-const _ctx = { s0: 0, x: 0, z: 0, heading: 0, alt: 0, kind: '', band: 0 };
-let _ctxStamp = -1;
 
-// The frame the world is drawn in this tick: a committed band, or the
-// animated frame of the ritual in progress. Recomputed once per gameplay
-// frame (gameMs advances exactly once per update) and shared by reference.
-export function activeFrame() {
-  if (_ctxStamp !== gameMs) {
-    const ev = activeTransformEvent();
-    if (ev && ev.state === 'turning') {
-      transformEventCtx(TRANSFORM_FRAMES, ev, gameMs - ev.tStart, CONFIG, _ctx);
-    } else {
-      transformFrameCtx(TRANSFORM_FRAMES[committedBand], _ctx);
-    }
-    _ctxStamp = gameMs;
-  }
-  return _ctx;
-}
-
-// (s, y, depth) → world placement for a mesh, plus the yaw for callers that
-// compose further on top of it (depth rides the outward face normal,
-// positive = toward the camera). `out` receives the same values for callers
-// that need the numbers instead of a mesh.
+// (s, y, depth) → world placement, plus the yaw for callers that compose
+// further on top of it (depth rides the outward face normal, positive =
+// toward the camera). `out` receives the same values for callers that want
+// the numbers rather than a posed mesh.
 export function towerPose(s, out = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 }) {
   if (IS_TRANSFORM_SLICE) {
-    const c = activeFrame();
-    transformPosAt(c, s, out);
-    out.yaw = c.heading;
-    out.alt = c.alt;
+    transformPathAt(TRANSFORM_PATH, s, out);
+    out.yaw = transformYawAt(TRANSFORM_PATH, s, CONFIG.path.yawBlendTiles);
     return out;
   }
   polyAt(SEGS, s, out);
@@ -60,17 +36,23 @@ export function towerPose(s, out = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 }) {
 const _pose = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 };
 
 export function placeOnTower(mesh, s, y, depth) {
-  if (IS_TRANSFORM_SLICE) {
-    const p = towerPose(s, _pose);
-    mesh.position.set(
-      p.x + Math.sin(p.yaw) * depth, y + p.alt, p.z + Math.cos(p.yaw) * depth
-    );
-    mesh.rotation.y = p.yaw;
-    return p.yaw;
-  }
-  const yaw = yawAt(SEGS, s, CONFIG.path.yawBlendTiles);
-  const wp = polyAt(SEGS, s, _pp);
-  mesh.position.set(wp.x + Math.sin(yaw) * depth, y, wp.z + Math.cos(yaw) * depth);
+  const p = towerPose(s, _pose);
+  mesh.position.set(
+    p.x + Math.sin(p.yaw) * depth, y + p.alt, p.z + Math.cos(p.yaw) * depth
+  );
+  mesh.rotation.y = p.yaw;
+  return p.yaw;
+}
+
+// Static-bake variant for the slice's own geometry: same mapping, but the
+// heading is sharp per column so bricks keep a crisp facing (the tower bakes
+// its tiles the same way) instead of blending like a moving rig.
+export function placeSharp(mesh, s, y, depth) {
+  const p = towerPose(s, _pose);
+  const yaw = IS_TRANSFORM_SLICE ? transformYawAt(TRANSFORM_PATH, s, 0) : p.yaw;
+  mesh.position.set(
+    p.x + Math.sin(yaw) * depth, y + p.alt, p.z + Math.cos(yaw) * depth
+  );
   mesh.rotation.y = yaw;
   return yaw;
 }

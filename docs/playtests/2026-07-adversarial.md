@@ -783,6 +783,44 @@ closest to the gate's headline condition — 4.59 tiles is 1.8 seconds of slack 
 but no variant makes `p4` uncomfortable, and none of them touches the reason it
 wins: the chimney wall-pump onto an uncontested top tier (F1, F10).
 
+### CRITICAL regression: on `surge`, holding one key wins the slice
+
+`p1-hold-right-only` — ArrowRight held, nothing else, ever — **completes 3/3 on
+`surge`** in 12.43–12.50s. Pre-CP1 that policy died 3/3. So did
+`p2-hold-right-hold-jump` (stalled 3/3 before, **completes 3/3** now) and
+`p6-hop-1200ms` (0/3 before, **completes 3/3** now, in 5.73s). On `surge`, every
+policy in this suite completes, including all three that the pre-CP1 build
+correctly rejected.
+
+The mechanism, read straight off the `p1` surge trace (r3, all three alike):
+
+| t | state |
+| --- | --- |
+| 8.05s | pinned at x=55.65, the dare-dead-end lip, on the pocket floor y=1, margin 2.16 |
+| 9.19s | crush hit, hp 3→2, knockback |
+| 9.79s | **x=56.65 — inside the solid wall column** (body 56.30–57.00) |
+| 10.40s | second crush hit, hp 2→1, margin −0.58 |
+| 10.47s | **x=57.65, y=0.13 — through the wall and now below the floor** |
+| 10.78–11.46s | x marches 58.65 → 62.65 at **y=0.00**, i.e. conveyed six tiles *inside the terrain* (that ground run's surface is y=3) |
+| 11.61s | x=63.37, y=4.02, **hp back to 3** — a hull fallback rescues the player onto a surface past the obstacle, at full health |
+| 12.45s | x=72.01 → **VICTORY** |
+
+The damage plane is acting as a tunnel-boring machine and the fallback as a free
+rescue: two of the three defects already on the board (crush wall-grind,
+fallback self-defeat) compound into a third that is much worse than either
+description suggests. The pursuit mechanic now *delivers* an inattentive player
+to the exit.
+
+On `base`, `hunt` and `swarm` the same one-key policy does not reach the line
+inside the script's 16s window, but it is conveyed to x=55.7 / 62.8–63.2 / 63.5
+respectively — 8.5 to 16 tiles short. Those runs end because the window ends,
+not because anything stopped them; whether a longer window also completes them
+is untested and worth one run before assuming `surge` is the only exposure.
+
+**Suggested owner.** `intensity` (task #10 already covers both root causes) —
+but this raises the priority: it is not just "idling is free", it is "idling
+wins". Verify against `p1`, not only `p4`, when the fix lands.
+
 ### New on this build: HULL FALLBACK makes idling free, and its streak cap self-defeats
 
 Pre-CP1, the zero-input script died at 13.66s (3/3). On `0a0310f` it dies in
@@ -809,6 +847,168 @@ the streak-reset explanation is read from the code, not instrumented.
 against an idle player it currently is). Worth resolving before the operator
 judges CP1: they will be told the clock is tighter, which is true, but the
 consequence of losing to it got softer.
+
+### Gate part 2 — the fairness scripts across all four paces
+
+3 scripts × 4 paces × 3 reps, plus a narrow-viewport pass and the
+previously-failing policies as controls.
+
+**Version disclosure, checked after the fact:** the CP3 transformation merge
+(`738a890`, 01:07:56Z — it touched `src/sim/player.js`, `scroll.js`, `level.js`,
+`spawner.js` and `render/camera.js`) landed inside this batch's window
+(01:01:17Z–01:16:32Z). I classified all 60 runs by `meta.startedAt` against that
+boundary:
+
+- **No script × pace group is internally mixed** — every three-repetition group
+  fell entirely on one side, so no single claim below rests on blended data.
+- **Post-merge (current code), therefore safe as stated:** the critical one-key
+  regression (`p1` on all four paces, `p2` and `p6` on `surge`), the
+  narrow-viewport aspect pass, `x2`/`x3`/`x5` on `surge`, `x5` on `swarm`.
+- **Pre-merge, so the pace-to-pace comparisons below cross a version boundary at
+  the `surge` column:** `x2` and `x3` on base/hunt/swarm, `x5` on base/hunt.
+  Their direction (margin collapsing as the pace tightens) is consistent across
+  both sides, but the exact numbers are not a clean single-build series.
+
+I deliberately did **not** re-run the pre-merge groups immediately: the
+intensity defect-fix branch is in flight and will invalidate them again, so
+those three scripts are queued for the post-fix-cycle capture rather than being
+measured twice. The hound merge (`94913ad`, 01:20:36Z) landed after this batch
+ended and affected none of it.
+
+Verdicts against each thing the integrator asked to have verified:
+
+| Question | Verdict | Evidence |
+| --- | --- | --- |
+| Weapon pop (F6) now a real recatch scramble? | **FIXED** | `CONFIG.capsules.popNoCatchMs` 250 gates the pickup test (`src/sim/capsules.js:83`). Empirically, three runs where the player carried H when a wasp connected show weapon H → **R** and staying R for the rest of the run — the capsule genuinely leaves your hands. Pre-CP1 the same situation read H → H. |
+| Wall-clip through solids (F4) fixed? | **NOT FIXED** | 16 of 36 runs push the body more than 0.3 tiles into the `dare-dead-end` column while the plane is in contact (x=56.65, body 56.30–57.00, feet y=1, margin 0.23–0.59), and **all 16 emerge past x=57**. The `p1` surge trace additionally shows passage *below* the floor at y=0.00 for six tiles. |
+| Dare-pocket cheese (F5)? | **MATERIALLY BETTER** | `x2` still completes 3/3 at every pace, but the margin collapses from 13.87–18.40 at base to 0.40–2.85 (`hunt`), −0.59–3.07 (`swarm`), −0.59 to −0.12 (`surge`). The round trip is now a real wager; it is no longer free. |
+| Dawdle survival (five seconds in the dead end)? | **NOT FIXED** | `x5` completes 3/3 at every pace (11.73–16.50s), margins at or below zero under the variants. The fallback carries it. |
+| Conveyor free-rides? | **WORSE** | See the critical regression above. |
+| Aspect sensitivity of the seconds-bounded clock (F9)? | **PERSISTS** | `p4` at 800×1000 completes 3/3 with margin 11.12 at base (versus 18.40 at 1280×800) and 5.04–6.66 on `surge` (versus 4.59–6.39 wide). Ratios track the frustum exactly as before, so bounding the clock in seconds did not decouple it from window shape. No route closure narrow — that still holds. |
+| Held-jump dead-end pin (F11)? | **FIXED at base** | `x3` completes in 6.69–6.71s with **zero pinned time** at base, versus a 9.6s pin and a 16.78s finish pre-CP1. It reappears under `swarm` (0/3, pinned 9.0–9.5s at x=63.65, a different spot) — so the lip itself is passable now, but the policy still finds new places to jam. |
+
+## Standing order #2 — first pass at the CP2/CP3 fixtures (game `94913ad`)
+
+One sharp attack per new fixture, 3 reps each, rather than a full campaign — the
+intensity defect-fix branch is in flight and a full sweep would need re-running
+after it merges.
+
+### T1 — transform ritual gate: crush suspension CANNOT be farmed (resisted)
+
+`src/sim/player.js:371` suspends crush damage while `transformBusy()`, and
+`src/sim/transform.js` only promotes a ritual from `armed` to `turning` once the
+scroll has halted at the threshold *and* RIG has walked into it. That reads like
+an off switch: walk up to a seam, stop, and the halted scroll should mean a
+halted damage plane.
+
+It is not. `t1-transform-gate-stall` (hold right 3s to reach the first
+threshold, then zero input for eighteen seconds) **died 3/3, four deaths per
+run**, closest margin 0.30–0.33, never getting past x=35.66. The `armMaxMs`
+timeout on the armed state does press, and the plane keeps arriving. Refusing to
+enter a seam is not a safe hiding place, and the transform fixture's retry loop
+handled four consecutive deaths cleanly with no console errors.
+
+```sh
+node scripts/adversarial/repeat.mjs --reps 3 --max-runtime-ms 26000 \
+  scripts/adversarial/t1-transform-gate-stall.json
+```
+
+### H1 — a lone houndframe never meets the naive winning route
+
+`h1-hound-facetank` runs the known-winning p4 policy (hold right + mash Space)
+plus held fire against `?hound=1`, never reading a plant and never leaving a
+lane. It **completes 3/3 in 4.28–5.36s with zero deaths and zero damage taken**,
+crush margin 18.4 — i.e. slightly *faster* than the same policy on the base
+slice, and completely untouched.
+
+The reason is F10 again, not i-frames: the hound paces deck lanes while the
+winning policy is on the roof at y=12.76–13.12. It never enters the hound's lane
+at all. This corroborates the operator's own CP2 note ("a lone hound poses no
+threat — placement/layout iteration needed, not stat buffs") from the opposite
+direction: the problem is not the hound's strength, it is that the fixture's
+dominant route does not pass through anywhere a hound can stand.
+
+**The i-frame facetank question is therefore still open**, and testing it needs a
+policy that stays *grounded* through the hound's lane. That is buildable from
+`x6-step39-slot-sweep`: its 16ms tap is the only input I have found that puts a
+player on the low floor, so "x6's slot pass + hold right + hold fire, never
+leaving the deck" is the script that would actually answer it. Named here as the
+next concrete attack rather than guessed at.
+
+**Script-error disclosure:** the first version of `h1` held right and fire with
+no jump at all, which cannot clear the column-39 step (F8) — it jammed there 3/3
+at x=38.65 and never reached the hound, so it measured nothing about the hound.
+It was replaced by the version above. Its one incidental result: negative crush
+margins (−0.55 to −0.60) re-confirming the wall-grind defect on the hound
+fixture too.
+
+### H3 — the grounded facetank is not reachable by open-loop scripting (and that is a finding about F8)
+
+`h3-hound-deck-facetank` was the script I named as the way to answer the i-frame
+question: hold right and fire, jump exactly once with a 16ms tap to thread the
+column-39 slot, then never leave the deck. It **failed 3/3** — pinned at x=38.65
+for 2.2s, then shoved past the step by the plane (the wall-grind again, margins
+−0.49 to −0.52), ending stalled at x=49.34 with the hound never engaged.
+
+The reason matters more than the failure: **the 16ms tap passed 3/3 when I
+measured it pre-CP1 and passes 0/3 now.** Nothing about the slot changed; the
+CP1 movement and pace work changed *when the player arrives at it*, so a tap
+pinned to a fixed 1400ms no longer lands inside the one-to-two-frame window.
+F8's severity should be restated accordingly: the low route is not merely gated
+behind one frame of precision, it is gated behind one frame *relative to a
+moving arrival time*, which no fixed-time script can hit twice across builds.
+
+Two open-loop attempts is enough to conclude that **the i-frame facetank
+question needs closed-loop control** — a bot that watches `traversalState`/`vx`
+for the pin and then taps — and that this harness cannot answer it as built.
+Recommending against a third scripted attempt.
+
+### T2 — transform seams did not break, but progress variance is large
+
+`t2-transform-seam-rush` (hold right + mash Space for twenty seconds through
+every threshold) produced **no console or page errors, no softlock, and no
+observable seal crossing** across three runs. The rituals held.
+
+What it did show is spread: three identical runs reached `maxX` **112.11 / 83.65
+/ 87.30** and recorded **1 / 3 / 3** deaths. That is a 28-tile difference in
+progress from byte-identical input on one build. Some of that is the death count
+compounding, but the first divergence precedes it. Flagging for the
+transformation lane as a determinism signal rather than a defect claim — I did
+not isolate a cause, and `?slice=transform` has no telemetry for ritual state or
+seal position, so a scripted attack currently cannot see the thing it is
+attacking.
+
+**Hook request (transformation/harness):** expose ritual state and
+`transformSealX` in the `?testapi=1` snapshot. Without them, threshold clipping
+and ritual skipping can only be attacked blind — I can tell you nothing broke,
+but not that nothing *can*.
+
+### Both transform attacks re-run on the rework (`a89e93d`)
+
+The rework changed fixture geometry, not just presentation, so the T2 numbers
+above are superseded by these. Both scripts are geometry-agnostic (they only hold
+right and mash), so neither needed retiming.
+
+**T1 holds exactly.** Died 3/3, four deaths per run, `maxX` 35.66, margin
+0.28–0.31 — the same figures as before the rework, to two decimals. The gate and
+arming machinery are unchanged as the integrator predicted, and refusing to enter
+a seam is still not a hiding place.
+
+**T2: the naive policy climbs the new interior further than it climbed the old
+one.** `maxX` rose to **132.94 / 119.77 / 119.77** (was 112.11 / 83.65 / 87.30)
+and `maxY` to **10.58–10.74** (was ~8.3). So the reworked interior — a
+0.42-tiles-per-tile grade with six deck step-ups and roughly 25 tiles of on-foot
+ascent — is traversed by hold-right-and-mash, the same policy that clears the
+traversal lattice. The new geometry reads as real climbing in the altitude trace,
+which is the point of the rework and it works; what it does not yet do is *demand*
+anything the naive policy lacks. Worth knowing before the on-foot ascent is
+judged as a difficulty increase: it is an altitude increase.
+
+Determinism improved but is not clean: two runs landed identically at 119.77 and
+one at 132.94, with deaths 1 / 3 / 1 and the longest pin at wildly different
+places (x=60.45 / 30.45 / 65.15). Still a signal for the transformation lane
+rather than a defect claim, and still un-diagnosable from outside without the
+ritual-state hook above. No console or page errors in any run.
 
 ## Single best next action
 

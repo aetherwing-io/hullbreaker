@@ -148,6 +148,24 @@ claim(Math.max(TRAVERSAL_HOOK.launchCeiling, TRAVERSAL_FLOW.launchCeiling) * dtM
       'both ceilings sit inside the displacement budget');
 void CONFIG;
 
+/* ---- E. autobounce: the held-jump trap --------------------------------- */
+console.log('\nE. ?autobounce=1 — A HELD JUMP  (policy: holdjump, one keydown for the whole run)');
+console.log('   mode                       outcome   clear    air     stall   hits  maxY');
+let bounceHelps = true;
+for (const [label, q] of [['autobounce off', 'slice=traversal'],
+  ['autobounce on', 'slice=traversal&autobounce=1'],
+  ['off + hound 1', 'slice=traversal&hound=1'],
+  ['on + hound 1', 'slice=traversal&hound=1&autobounce=1']]) {
+  const m = run(q, 'holdjump');
+  console.log('   ' + label.padEnd(26) + m.outcome.padEnd(10) + ms(m).padEnd(9) +
+    m.airFraction.toFixed(3).padEnd(8) + m.stallFraction.toFixed(3).padEnd(8) +
+    String(m.hits).padEnd(6) + m.maxY.toFixed(1));
+  if (label.startsWith('autobounce on') && m.airFraction < 0.8) bounceHelps = false;
+}
+claim(bounceHelps,
+      'holding jump with ?autobounce=1 keeps RIG bouncing (airborne most of the pass) ' +
+      'instead of landing once and walking — the F11 root cause, as an option');
+
 console.log('\n' + (fails === 0
   ? 'movement evidence: all claims PASS'
   : 'movement evidence: ' + fails + ' claim(s) FAILED'));

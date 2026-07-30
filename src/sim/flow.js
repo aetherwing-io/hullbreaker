@@ -31,8 +31,6 @@ const AIR_JUMPS = ACTIVE_SLICE && ACTIVE_SLICE.movement.airJumps !== undefined
 let st = flowFreshState();
 const stats = { links: 0, peakLinks: 0, breaks: 0 };
 
-export function flowActive() { return !!F; }
-export function flowLinks() { return F ? st.links : 0; }
 
 /* The launch amplification. Returns `paceMult` untouched when the flag is off,
    so the call site in sim/player.js is a no-op multiply in every shipped mode.
