@@ -146,8 +146,15 @@ export const TRAVERSAL_FIXTURE = {
     { x0: 64, x1: 79, y: 4 },
   ],
   solidRects: [
-    { id: 'chimney-left', role: 'wall', x0: 39, x1: 40, y0: 5, y1: 10 },
-    { id: 'chimney-right', role: 'wall', x0: 44, x1: 45, y0: 5, y1: 10 },
+    // The chimney walls start one row higher than the shaft floor on purpose.
+    // Rows 5-10 put their underside 2.0 tiles over the low route's y:3 deck at
+    // x 39 and 44, which left a 1.7-tall RIG a 0.3-tile threading window: run
+    // the low line a fraction high (a hop, a landing bounce) and you bonked an
+    // invisible underside and got dragged into a wall slide. Rows 6-10 give
+    // 3.0 tiles of clearance (1.3 of slack, asserted) and still present four
+    // solid rows to wall-kick off from the chimney floor at y 5.35.
+    { id: 'chimney-left', role: 'wall', x0: 39, x1: 40, y0: 6, y1: 10 },
+    { id: 'chimney-right', role: 'wall', x0: 44, x1: 45, y0: 6, y1: 10 },
     { id: 'dare-overhang', role: 'overhang', x0: 48, x1: 56, y0: 5, y1: 6 },
     { id: 'dare-dead-end', role: 'wall', grabbable: false, x0: 56, x1: 57, y0: 1, y1: 7 },
   ],

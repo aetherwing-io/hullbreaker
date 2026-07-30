@@ -9,6 +9,7 @@
 //
 // Run from the repo root:  node tools/pathcheck.mjs
 
+import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -1183,6 +1184,43 @@ const ledgeState = {
   }
 }
 
+/* ------------- headroom over every authored ground run --------------- *
+ * A route you can run along must not hide an invisible underside: if the
+ * clearance over a ground column is barely the player's height, arriving a
+ * fraction high (a hop, a landing bounce) bonks a ceiling the player never
+ * saw and converts a sprint into a wall slide. This caught a 0.3-tile
+ * threading window at the chimney mouths (x 39 and 44) on the low route.  */
+{
+  let worst = Infinity, worstX = -1;
+  for (const run of TRAVERSAL_FIXTURE.groundRuns) {
+    for (let x = run.x0; x < run.x1; x++) {
+      let ceil = Infinity;
+      for (const r of TRAVERSAL_FIXTURE.solidRects) {
+        // a rect standing ON the deck (the pocket's dead-end wall) is a visible
+        // wall, not a hidden ceiling — only overheads count here
+        if (x < r.x0 || x >= r.x1 || r.y0 <= run.y) continue;
+        ceil = Math.min(ceil, r.y0);
+      }
+      const clearance = ceil - run.y;
+      if (clearance < worst) { worst = clearance; worstX = x; }
+    }
+  }
+  ok(worst >= PL.height + 1.0,
+     'every authored ground column clears the player with a tile of slack, worst ' +
+     worst.toFixed(2) + ' tiles at x=' + worstX + ' (need ' + (PL.height + 1) + ')');
+  // and the trimmed chimney still presents enough wall to kick off from its floor
+  {
+    const floor = TRAVERSAL_FIXTURE.platforms.find(function (p) { return p.id === 'chimney-floor'; });
+    const walls = TRAVERSAL_FIXTURE.solidRects.filter(function (r) {
+      return r.id === 'chimney-left' || r.id === 'chimney-right';
+    });
+    const bodyRows = [Math.floor(floor.y + 0.02), Math.floor(floor.y + PL.height - 0.02)];
+    ok(walls.length === 2 && walls.every(function (r) {
+      return r.y0 <= bodyRows[1] && r.y1 > bodyRows[1] && r.y1 - r.y0 >= 4;
+    }), 'both chimney walls still overlap a player standing on the chimney floor');
+  }
+}
+
 /* ------------------- pursuit model (pure step math) ------------------ */
 {
   const hunt = TRAVERSAL_PACES.hunt.pursuit;
@@ -1387,6 +1425,68 @@ const ledgeState = {
   ok(SCORE.reclaim.lowTiles < SCORE.reclaim.highTiles && SCORE.reclaim.windowMs > 0 &&
      SCORE.linkDropTiles >= 2 && SCORE.launchGraceMs === 600 && SCORE.eventCap === 256,
      'reclaim/link/launch windows and the A.5 ring buffer match the proposal');
+}
+
+/* ------------- score wiring at the sim layer (A.1 semantics) --------- *
+ * src/sim/score.js resolves ?score=1 at module-init time, so proving its
+ * emission rules needs a process whose __HB_QUERY__ is set before any import.
+ * Running it as a child keeps the rest of this suite in normal mode (main's
+ * collision block drives updatePlayer with the six-face tune). Everything
+ * asserted here is a rule from proposal A.1/A.3 that a refactor could break
+ * silently: what counts as a link, what an air jump may and may not pay, the
+ * ORBITAL LANCE exception, and single-shot launch-shock arming.          */
+{
+  const child = `
+    globalThis.__HB_QUERY__ = 'slice=traversal&pace=surge&score=1';
+    const S = await import(${JSON.stringify('file://' + join(srcDir, 'sim', 'score.js'))});
+    const out = { steps: [] };
+    const step = (label) => {
+      const s = S.scoreSnapshot();
+      out.steps.push([label, s.counts.link, s.counts.airborne_kill,
+        s.counts.launch_kill, s.counts.ground_kill, s.charge]);
+    };
+    S.scoreLaunch('wall', 42, 6); S.scoreContact(8.2, 'wall'); step('wall+2.2');
+    S.scoreLaunch('wall', 42, 8.2); S.scoreContact(8.8, 'wall'); step('wall+0.6');
+    S.scoreLaunch('air', 42, 9); S.scoreContact(12, 'land'); step('air+3');
+    S.scoreLaunch('ledge', 50, 8); S.scoreContact(5.3, 'land'); step('ledge-2.7');
+    out.shockCold = !!S.consumeLaunchShock();
+    S.scoreKill('wasp', 'R', { grounded: false, vy: -3, x: 50, y: 9 }); step('airkill');
+    S.scoreKill('wasp', 'OL', { grounded: false, vy: -3, x: 50, y: 9 }); step('lance');
+    out.types = S.scoreEvents.map((e) => e.type).join(',');
+    out.envelope = Object.keys(S.scoreEvents.find((e) => e.type === 'airborne_kill')).join(',');
+    S.resetScore();
+    out.afterReset = S.scoreSnapshot();
+    out.eventsAfterReset = S.scoreEvents.length;
+    console.log(JSON.stringify(out));
+  `;
+  let sim = null;
+  try {
+    sim = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', child],
+      { encoding: 'utf8' }));
+  } catch (e) {
+    console.error('pathcheck: sim score child failed: ' + e.message);
+  }
+  ok(!!sim, 'sim/score.js runs headlessly with ?score=1 and no DOM');
+  if (sim) {
+    const byLabel = new Map(sim.steps.map(function (r) { return [r[0], r]; }));
+    ok(byLabel.get('wall+2.2')[1] === 1 && byLabel.get('wall+0.6')[1] === 1,
+       'a wall kick that gains 2 tiles links; one that gains 0.6 does not');
+    ok(byLabel.get('air+3')[1] === 1,
+       'an air jump never links, however high it goes (hopping pays nothing)');
+    ok(byLabel.get('ledge-2.7')[1] === 2,
+       'a launch that drops two tiles still links: elevation *change*, not gain');
+    ok(byLabel.get('airkill')[2] === 1 && byLabel.get('airkill')[3] === 1,
+       'an airborne kill inside the launch window stacks airborne_kill + launch_kill');
+    ok(byLabel.get('lance')[2] === 1 && byLabel.get('lance')[4] === 1,
+       'an ORBITAL LANCE kill scores as a ground kill even while airborne');
+    ok(sim.shockCold === false,
+       'the launch shock does not arm below BREAKING');
+    ok(sim.envelope === 't,notch,type,x,y,kind,weapon,vy',
+       'A.5 envelope shipped verbatim for airborne_kill, got ' + sim.envelope);
+    ok(sim.afterReset.charge === 0 && sim.afterReset.threat === 0 &&
+       sim.afterReset.counts.link === 0 && sim.eventsAfterReset === 0,
+       'HB.score.reset() clears the meter, the score and the ring buffer');
+  }
 }
 
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');
