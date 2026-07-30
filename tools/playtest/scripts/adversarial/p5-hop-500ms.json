@@ -1,0 +1,31 @@
+{
+  "name": "p5-hop-500ms",
+  "description": "ATTACK: cadence sweep, fast rung. Hold ArrowRight, tap Space every 500ms, never fire, never read the level. Paired with p3 (800ms), p4 (220ms) and p6 (1200ms) this measures how WIDE the winning policy space is. One cadence completing could be a resonance with the fixture's geometry; four unrelated cadences completing means any hold-right-and-hop reflex clears the slice and the six authored routes are not being chosen between.",
+  "url": "index.html?slice=traversal",
+  "durationMs": 11000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 10800 },
+
+    { "tap": "jump", "atMs": 300, "holdMs": 200 },
+    { "tap": "jump", "atMs": 800, "holdMs": 200 },
+    { "tap": "jump", "atMs": 1300, "holdMs": 200 },
+    { "tap": "jump", "atMs": 1800, "holdMs": 200 },
+    { "tap": "jump", "atMs": 2300, "holdMs": 200 },
+    { "tap": "jump", "atMs": 2800, "holdMs": 200 },
+    { "tap": "jump", "atMs": 3300, "holdMs": 200 },
+    { "tap": "jump", "atMs": 3800, "holdMs": 200 },
+    { "tap": "jump", "atMs": 4300, "holdMs": 200 },
+    { "tap": "jump", "atMs": 4800, "holdMs": 200 },
+    { "tap": "jump", "atMs": 5300, "holdMs": 200 },
+    { "tap": "jump", "atMs": 5800, "holdMs": 200 },
+    { "tap": "jump", "atMs": 6300, "holdMs": 200 },
+    { "tap": "jump", "atMs": 6800, "holdMs": 200 },
+    { "tap": "jump", "atMs": 7300, "holdMs": 200 },
+    { "tap": "jump", "atMs": 7800, "holdMs": 200 },
+    { "tap": "jump", "atMs": 8300, "holdMs": 200 },
+    { "tap": "jump", "atMs": 8800, "holdMs": 200 },
+    { "tap": "jump", "atMs": 9300, "holdMs": 200 },
+    { "tap": "jump", "atMs": 9800, "holdMs": 200 },
+    { "tap": "jump", "atMs": 10300, "holdMs": 200 }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "p3-hold-right-hop-nofire",
+  "description": "ATTACK: the committed demo policy (scripts/mid-route.json) with the fire key deleted. Same hold-right + 800ms hop rhythm, no KeyJ at all. If this still completes with the same margin and route coverage, then shooting contributes nothing to clearing the slice and DESIGN's 'combat happens through movement' pillar has no purchase in the fixture yet — the wasps are scenery a naive policy walks past.",
+  "url": "index.html?slice=traversal",
+  "durationMs": 9000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 8800 },
+
+    { "tap": "jump", "atMs": 300, "holdMs": 380 },
+    { "tap": "jump", "atMs": 1100, "holdMs": 380 },
+    { "tap": "jump", "atMs": 1900, "holdMs": 380 },
+    { "tap": "jump", "atMs": 2700, "holdMs": 380 },
+    { "tap": "jump", "atMs": 3500, "holdMs": 380 },
+    { "tap": "jump", "atMs": 4300, "holdMs": 380 },
+    { "tap": "jump", "atMs": 5100, "holdMs": 380 },
+    { "tap": "jump", "atMs": 5900, "holdMs": 380 },
+    { "tap": "jump", "atMs": 6700, "holdMs": 380 },
+    { "tap": "jump", "atMs": 7500, "holdMs": 380 },
+    { "tap": "jump", "atMs": 8200, "holdMs": 380 }
+  ]
+}
