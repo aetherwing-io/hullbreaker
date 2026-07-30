@@ -486,6 +486,95 @@ export function resolveTraversalPace(name, fixture = TRAVERSAL_FIXTURE) {
   };
 }
 
+/* ===================== HOUNDFRAME TRIAL (opt-in) ==================== *
+ * DESIGN's teach → test → remix rule for the floor-denial enemy, laid over the
+ * same fixture and reached only through ?hound=. It is ORTHOGONAL to the pace:
+ * a stage composes with whatever pace resolved, so the pace always keeps its
+ * pursuit model, movement overrides, and stakes, and the operator can ask "does
+ * floor denial still read at surge's clock and chained launches?" directly.
+ *
+ * Composition rule, declared per stage and asserted in tools/pathcheck.mjs:
+ *   replace — the stage's authored hostiles are the whole roster. Teaching a
+ *             new enemy happens under low pressure (DESIGN phase rhythm), and
+ *             it keeps a bot damage measurement attributable to the charge.
+ *   add     — the stage's hounds are appended to the pace's own plan. That is
+ *             the remix beat and the honest preview of a real phase.
+ * With no stage selected the plan IS the pace's list, so every ordinary URL —
+ * including each ?pace= variant — is byte-identical to what it fields today.
+ *
+ * `deck` is the authored ground height the hound owns — the spawn height is
+ * derived from CONFIG.hound.rideY so the frame always sits on that plate, and
+ * `patrol` keeps each hound pacing one ground run of the fixture instead of
+ * wandering the level. Every authored beat sits on a floor the player would
+ * otherwise sprint across without a decision.
+ *
+ * `contests` names the fixture route each hostile is assigned to, because the
+ * placement pattern is per-route threat assignment (docs/concept-art shows the
+ * quadruped standing on one route's platform while wasps work another):
+ * choosing a route chooses a matchup. Hounds take the floor routes; the
+ * upper-chimney and wall-launch routes stay a pure air problem, and the
+ * harness asserts that separation so it cannot quietly erode.            */
+const HOUND_FLOOR_BEATS = [
+  { id: 'hound-teach', kind: 'hound', contests: 'lower-service',
+    deck: 3, x: 45.5, dir: -1, delayMs: 0, patrol: { x0: 39.5, x1: 46.5 } },
+  { id: 'hound-pocket', kind: 'hound', contests: 'dare-pocket',
+    deck: 1, x: 54.5, dir: -1, delayMs: 400, patrol: { x0: 48.5, x1: 55.5 } },
+  { id: 'hound-rejoin', kind: 'hound', contests: 'lower-service',
+    deck: 3, x: 63.5, dir: -1, delayMs: 800, patrol: { x0: 57.5, x1: 63.5 } },
+];
+
+export const HOUND_TRIAL = {
+  id: 'hound-trial-v1',
+  stages: {
+    // teach: floor pressure only. Three plates the low route needs, each one
+    // temporarily wrong to stand on. Answer: jump, wall-launch, or drop behind.
+    solo: {
+      id: 'solo', label: 'HOUND SOLO', compose: 'replace',
+      enemies: HOUND_FLOOR_BEATS,
+    },
+    // test: the documented combination — "hound forces the jump that the wasp
+    // contests". The wasp cruises the arc directly over the hound's plate, so
+    // the movement answer to the charge is the one the air threat punishes.
+    combo: {
+      id: 'combo', label: 'HOUND + WASP', compose: 'replace',
+      enemies: [
+        { id: 'hound-squeeze', kind: 'hound', contests: 'lower-service',
+          deck: 3, x: 45.5, dir: -1, delayMs: 0, patrol: { x0: 39.5, x1: 46.5 } },
+        { id: 'squeeze-wasp', kind: 'wasp', contests: 'lower-service',
+          x: 44, y: 7.6, delayMs: 300 },
+        { id: 'hound-rejoin', kind: 'hound', contests: 'lower-service',
+          deck: 3, x: 63.5, dir: -1, delayMs: 900, patrol: { x0: 57.5, x1: 63.5 } },
+      ],
+    },
+    // remix: the floor beats on top of the pace's own air pressure. Nothing is
+    // re-authored — whatever the pace fields keeps its ids, positions, and
+    // tunes, and the floor simply stops being free.
+    mix: {
+      id: 'mix', label: 'HOUND MIX', compose: 'add',
+      enemies: HOUND_FLOOR_BEATS,
+    },
+  },
+};
+
+export function houndTrialStage(name) {
+  return (name && HOUND_TRIAL.stages[name]) || null;
+}
+
+// One attempt's authored hostiles, for the pace that resolved. With no trial
+// stage this returns the pace's own list unchanged, so every ordinary URL is
+// byte-identical; a stage either replaces that list or appends to it.
+export function traversalEnemyPlan(fixture, trialName, cfg = CONFIG) {
+  if (!fixture) return [];
+  const stage = houndTrialStage(trialName);
+  if (!stage) return fixture.enemies;
+  const authored = stage.enemies.map(function (e) {
+    return e.deck === undefined ? { ...e } : { ...e, y: e.deck + cfg.hound.rideY };
+  });
+  return stage.compose === 'add'
+    ? fixture.enemies.map(function (e) { return { ...e }; }).concat(authored)
+    : authored;
+}
+
 /* ---------------------- pursuit (the damage edge) -------------------- *
  * One pure step function for every pace. `constant` is the shipped behavior,
  * `hunt` rubber-bands off the player's own margin, `ramp` escalates with

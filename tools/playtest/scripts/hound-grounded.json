@@ -1,0 +1,11 @@
+{
+  "name": "hound-grounded",
+  "description": "Control run for the houndframe trial (?hound=1): sprint the low floor route into the first hound's plate (x=39..47) and stay on the deck. The only jump is the one the terrain demands — the +1 step at x=39 — and the houndframe's telegraph is ignored. Pairs with hound-jump.json, which is byte-identical apart from one extra jump on the tell, so the damage difference between the two runs is caused by the charge and nothing else. Neither script fires: this is evidence about movement, not about killing the enemy.",
+  "url": "index.html?slice=traversal&hound=1",
+  "viewport": { "width": 1280, "height": 800 },
+  "durationMs": 2400,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 2400 },
+    { "tap": "jump", "atMs": 880, "holdMs": 80 }
+  ]
+}

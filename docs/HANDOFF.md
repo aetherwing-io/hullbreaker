@@ -9,10 +9,15 @@ remain authoritative where this handoff only summarizes them.
 [`FLEET-PLAN.md`](FLEET-PLAN.md) first — it governs that work, assigns lanes,
 and defines the operator checkpoints (CP1–CP4) that gate it. This handoff
 remains the brief for solo sessions and for background FLEET-PLAN doesn't
-repeat. As of this writing the fleet's live milestone is **CP1**: judging the
-accelerated traversal-slice pacing pass (`15f66d2`) plus the `intensity`
-agent's further variants against the operator's "boring" verdict on the first
-pass.
+repeat. As of this writing: **CP1 concluded** with no single pace crowned
+winner (the `intensity` agent's hunt/swarm/surge variants all read as
+"directionally correct" versus base), and the operator pivoted the mission —
+stop diagnosing "boring," start building the movement verbs the concept art
+promises (tether/hook launches, chained launches, human-scale RIG). The fleet
+is now in **wave 3**: movement-verb prototypes (snap hook/tether first), a
+view-scale experiment, plus continuing CP2 (houndframe) and CP3
+(transformation) work. See [`decisions.md`](decisions.md) entry 2 for the
+full pivot and `FLEET-PLAN.md` for the live lane assignments.
 
 ## Start here
 
@@ -62,7 +67,8 @@ through the integrator before touching overlapping runtime areas.
 
 - Branch: `main`
 - HEAD when this handoff was last updated:
-  `5e9dbc8 Merge module split: index.html -> 35 ES modules (splitter)`
+  `738a890 Merge CP3 transformation slice: bulkhead flip, breach return,
+  rendered altitude`
 - Runtime: [`index.html`](../index.html) is now only a thin shell (CSS, HUD
   markup, the three.js import map, and one module script tag); the game
   itself is 35 ES modules under [`src/`](../src/). See
@@ -70,8 +76,10 @@ through the integrator before touching overlapping runtime areas.
   breakdown (`config.js` → `pure/` → `sim/` → `render/`+`ui/` → `main.js`)
   and `src/sim/bridge.js` for the sim/render boundary.
 - Headless verification: [`tools/pathcheck.mjs`](../tools/pathcheck.mjs), now
-  importing `src/config.js` and `src/pure/*` directly (178 assertions)
-  instead of regex-extracting a pure block from a single file.
+  importing `src/config.js` and `src/pure/*` directly instead of
+  regex-extracting a pure block from a single file — run it for the current
+  assertion count rather than trusting a number in prose; it has grown
+  substantially past its 178-at-the-split baseline as CP1/CP3 work landed.
 - A second, independent verification surface now exists:
   [`tools/playtest/`](../tools/playtest/), a dev-only Playwright bot-player
   harness with its own `package.json` that plays the game in a real browser
@@ -141,6 +149,17 @@ weakness that used to be the main gap here:
   connected routes, forgiving ledge catches, wall grab/slide/jump, one
   telegraphed dare pocket, camera-follow, and a fast retry loop — accelerated
   once already (`15f66d2`) after its first playtest;
+- three CP1 pacing variants (`?pace=hunt|swarm|surge`, default `base`), a
+  two-notch CHARGE/THREAT prototype (`?score=1`), and Hull Fallback tier 1
+  (`?fallback`, on by default) inside the traversal slice — all prototypes
+  for testing, none of them canon;
+- an opt-in transformation slice (`?slice=transform`): bulkhead flip inward,
+  breach return, and rendered altitude gain, merged for checkpoint CP3 (see
+  below — the operator has already judged the first pass and asked for a
+  render rework, not full approval);
+- houndframe (`94913ad`), a floor-denial enemy in the traversal slice with
+  trial stages and per-pace fairness assertions, merged for checkpoint CP2
+  and awaiting the operator's judgment;
 - the runtime split into 35 ES modules under `src/` (see README's
   Architecture section), with a `?testapi=1`/`window.HB` telemetry surface
   the split added specifically to support tooling; and
@@ -150,92 +169,37 @@ weakness that used to be the main gap here:
 The operator's verdict on the traversal slice's first pass was **boring — the
 spatial grammar is right, the intensity is far off** (see `FLEET-PLAN.md`'s
 diagnosis: soft pursuit pressure, uncontested routes, and no stakes
-differential between routes). `15f66d2` is the first response to that
-verdict; the fleet's `intensity` agent is producing further variants for the
-operator's CP1 judgment. Treat FLEET-PLAN's diagnosis, not the old "ground
-plus floating platforms" framing, as the live description of the gap.
+differential between routes). `15f66d2` was the first response to that
+verdict, and the `intensity` agent's hunt/swarm/surge variants were the
+second — at checkpoint CP1 all three read as "directionally correct" and none
+was crowned. Rather than keep tuning pace in isolation, the operator pivoted
+the mission toward building the movement verbs the concept art promises (see
+`decisions.md` entry 2) — that pivot, not the old "ground plus floating
+platforms" framing or a still-pending CP1, is the live state of the gap.
 
-## Traversal slice: built, and now the fleet's pacing target
+## Traversal slice
 
-**Status: this objective is complete.** The slice described below was built,
-played by the operator, and — per the verdict recorded in `FLEET-PLAN.md` —
-proved the spatial grammar and failed the pacing test ("boring"). `15f66d2`
-accelerated it once already; the fleet's live question (checkpoint CP1) is
-whether that acceleration, plus the `intensity` agent's further variants,
-fixes the verdict. The subsections below are kept as the design rationale for
-the slice's shape — still worth reading before touching it — not as a to-do
-list. For the current milestone and how to help, read `FLEET-PLAN.md`.
+**Status: built, tuned, and judged — the fleet has moved on to wave 3.** The
+slice was built at `?slice=traversal`, played by the operator, and proved the
+spatial grammar while failing the pacing test ("boring"). `15f66d2`
+accelerated it once; the `intensity` agent's further hunt/swarm/surge pace
+variants (`?pace=hunt|swarm|surge`, default `base` = the `15f66d2` values)
+were judged at checkpoint CP1 — all three read as "directionally correct,"
+none was crowned, and the operator pivoted the mission toward concept-art-
+driven movement verbs instead of further pace tuning (wave 3; see
+[`decisions.md`](decisions.md) entry 2). Two prototypes from
+`docs/proposals/2026-07-score-and-setback.md` also shipped inside the slice
+during the CP1 push: a two-notch CHARGE/THREAT meter (`?score=1`,
+`src/pure/score.js` + `src/sim/score.js`) and Hull Fallback tier 1
+(`?fallback`, on by default, `src/sim/player.js`) — both are prototypes for
+testing, not canon decisions (the proposal doc itself is still just a
+proposal).
 
-### Prove one traversal vertical slice
-
-Build one short, deterministic section—roughly 30–45 seconds of play—that proves
-the new movement and route grammar before changing the whole game.
-
-Prefer an opt-in entry point such as `?slice=traversal` so the fixture is fast to
-replay and the normal six-face run remains unchanged until the idea is proven.
-A fixed early face is acceptable if a separate entry point would add more
-machinery than value. Do not rewrite all six faces or generalize a large
-procedural system first.
-
-The slice should contain:
-
-1. **A connected five-to-six-route lattice.** Across the whole section, use
-   floors, vertical walls, staggered ledges, an overhang or short chimney, and
-   route reconnections. Show only about three immediate choices at once.
-2. **Forgiving ledge catch.** A near miss catches automatically. Jump should
-   immediately mantle or launch; down should release. It must not become a slow
-   hanging mode.
-3. **Wall grab, slide, and jump.** Contact should create a brief controllable
-   slide and a strong launch opportunity. Avoid stamina, repeated slow climbing,
-   or a state that makes stopping safer than moving.
-4. **One dare pocket.** Put a clearly visible magenta reward in an optional
-   dead end. Show the commitment and retreat route before entry, and leave
-   enough scroll margin for a player who acts promptly.
-5. **Existing combat pressure.** First tune the route once with enemies disabled
-   so collision and movement weaknesses are obvious. Then add one or two wasps
-   and the current weapons to make route and launch timing matter. Do not add a
-   new enemy to rescue a weak layout.
-6. **A clean rejoin.** Alternate routes should return to a common forward path
-   so the existing scroll and corner flow can continue.
-7. **A fast repeat loop.** If the slice has its own entry point, make retry take
-   roughly one second. Lightweight counters for attempts, falls, route choice,
-   air-jump use, and closest approach to the damage edge are useful if they do
-   not distract from the movement work.
-
-A representative micro-sequence:
-
-1. RIG sees upper, middle, and lower approaches.
-2. A wasp contests the obvious jump arc.
-3. A wall launch exposes a safer or faster alternate route.
-4. The reward pocket tempts RIG below or behind the forward line.
-5. The pursuing edge turns the pickup into a readable time wager.
-6. The routes reconnect and immediately feed the next launch or existing gate.
-
-The point is not to demonstrate every planned verb. The point is to discover
-whether moving through a connected hull while shooting is fun enough to build
-the rest of the game around.
-
-## First traversal-slice playtest
-
-The first pass answered the spatial question but failed the pacing question:
-
-- The player voluntarily chose the upper route first and the H dare pocket on
-  replay. No route or character-readability failure was reported.
-- Ledge and wall contacts worked, but felt somewhat sluggish or sticky.
-- The 29-second pass felt slow, jumps felt weak, and the player repeatedly
-  reached an invisible forward clamp before the next route choice.
-- The pocket compounded the problem: its dead-end wall could create an
-  uncommunicated wall state while the slow camera made six tiles feel long.
-
-This supersedes the original 30–45-second timing guess for this fixture. The
-active tuning experiment is a short, high-action pass: preserve normal-mode
-physics, give the slice stronger and crisper jumps, make held jump launch on
-contact, shorten grab dwell, prevent adhesion to the pocket dead end, and make
-the camera follow forward motion instead of pinning RIG. Do not scale the
-content count until the user approves that revised feel.
-
-The operator has not yet judged this accelerated pass — that is the fleet's
-checkpoint CP1 (`FLEET-PLAN.md`).
+The original build brief, first-playtest narrative, definition-of-done
+checklist, and this milestone's original scope fence are archived at
+[`archive/2026-07-traversal-slice-build-history.md`](archive/2026-07-traversal-slice-build-history.md)
+— still useful design rationale for anyone touching the slice's shape, no
+longer current status.
 
 ## Implementation landmarks
 
@@ -254,9 +218,14 @@ are just where to start reading:
   single file touched a mesh or DOM element mid-simulation, the sim now calls
   a named view hook instead, which is what keeps `src/pure/` and `src/sim/`
   three.js/DOM-free and importable in Node.
+- `src/pure/transform.js` + `src/render/transform.js` hold the bulkhead-flip/
+  breach-return choreography and its rendering, shipped for CP3 at
+  `?slice=transform` (see "What currently works" below).
 - `tools/pathcheck.mjs` imports `src/config.js` and `src/pure/*` directly (no
   more regex-extracting a pure block) and asserts path, generation, spawn, and
-  jump invariants — 178 assertions as of this writing.
+  jump invariants. The assertion count keeps climbing fast as fleet work
+  lands (178 at the module split, hundreds more since) — re-run it rather
+  than trusting any number written here.
 
 Implementation constraints:
 
@@ -277,102 +246,36 @@ Implementation constraints:
 - Avoid a new framework, dependency stack, editor, or generalized entity system
   for this slice.
 
-## Definition of done for the slice
-
-This checklist was already run once for the slice's initial build. The fleet
-reapplies the same play-acceptance criteria — and the operator's five
-questions below — when judging the accelerated pass at checkpoint CP1.
-
-### Play
-
-- Players voluntarily change route or elevation while firing.
-- A player can chain run → jump → ledge catch or wall contact → immediate launch
-  without a dead stop.
-- At most three-to-five route choices compete for attention at one time.
-- Most moments retain at least two viable forward routes.
-- Every required landing is visible before takeoff. Missing an ambitious upper
-  route should cost time or position but fall back to a valid lower route when
-  the topology allows it.
-- The dare pocket reads as a conscious risk before commitment and can be escaped
-  with a reasonable safety margin.
-- Faster or more demanding routes provide a perceptible reward such as extra
-  scroll margin, a cleaner firing angle, or the visible capsule.
-- A missed catch or route choice produces a recoverable scramble, not an
-  unexplained death or unavoidable crush.
-- Threats, character silhouette, reward, and safe surfaces remain readable.
-- The existing corner/gate cadence still works around the new section.
-
-### Verification
-
-- Extend the headless harness to cover any new pure layout data, required
-  movement verbs, mandatory connector reachability, and dare-pocket retreat
-  timing.
-- Run:
-
-  ```sh
-  node tools/pathcheck.mjs
-  ```
-
-- Serve the game and verify:
-
-  ```sh
-  python3 -m http.server 8741
-  ```
-
-  Then play both `index.html` and `index.html?selftest=1`.
-
-- Manually try the slice at more than one viewport width. Confirm that scrolling
-  pressure and route visibility do not create an aspect-ratio-specific trap.
-- Check the browser console and self-test result.
-- Repeat each mandatory route enough to expose intermittent collision or camera
-  failures; a 20-run soak through the short fixture is a useful target.
-- Give the user a playable build and ask:
-  1. Which route did you choose, and why?
-  2. Did either grab feel like a pause rather than a launch?
-  3. Was the dare-pocket risk readable before entering?
-  4. Where did you stop moving or lose the character?
-  5. Do you want to replay the slice?
-
-Passing tests is necessary but not sufficient. Do not expand the content count
-until the user says the movement slice feels good.
-
-## Deliberately out of scope for this milestone
-
-This was the original single-slice milestone's scope fence. Several of these
-items are now being prototyped in parallel by the fleet (marked below) — that
-is FLEET-PLAN's decision to widen scope for the coordinated push, not a
-reversal of the reasoning that kept them out of one session's slice.
-
-- Converting all six phases to the new lattice.
-- Ten simultaneous lanes or maximum vertical density.
-- Snap hook, player traps, hostile traps, or cliff-shimmy systems.
-- Bulkhead flip, interior face, breach return, or rendered altitude system.
-  (Now in progress — fleet `transformation` agent, targeting CP3.)
-- Houndframe, polyp, mortar, or other new enemies. (Houndframe now in
-  progress — fleet `combat` agent, targeting CP2; polyp and mortar remain
-  out of scope.)
-- Full weapon-order and recovery-floor redesign. (A first-draft recovery-floor
-  proposal now exists — see below — but nothing is implemented or decided.)
-- Story scripting, voice work, the Crown finale, flight, menus, or final art.
-- A broad generator rewrite before the authored slice proves its grammar.
-
-Resist combining the traversal and transformation milestones. Each should answer
-one hard question clearly.
+This milestone's original definition-of-done checklist and scope fence are
+also preserved verbatim in
+[`archive/2026-07-traversal-slice-build-history.md`](archive/2026-07-traversal-slice-build-history.md)
+— both are historical (the checklist has been run; the scope fence has been
+widened by the fleet, per `FLEET-PLAN.md`) rather than current status.
 
 ## What follows the slice
 
 This is now happening in parallel across the fleet rather than as a single
-session's next step — see `FLEET-PLAN.md`'s wave 2 roster and checkpoints
-(CP2 houndframe, CP3 bulkhead flip + altitude, CP4 scored run + setback
-prototype). The order below, from `DESIGN.md`'s Development sequence, remains
-the target convergence point once those variants are judged:
+session's next step — see `FLEET-PLAN.md`'s wave roster and checkpoints (CP2
+houndframe, CP3 bulkhead flip + altitude, CP4 scored run + setback
+prototype). CP1 concluded without a single winner and pivoted the mission
+into **wave 3**: movement-verb prototypes (snap hook/tether, then
+generalizing `surge`'s chained-launch momentum) and a view-scale experiment
+(smaller RIG relative to the world), running alongside the continuing CP2
+work and CP3's second pass below — see [`decisions.md`](decisions.md)
+entries 2 and 3. The order below, from `DESIGN.md`'s Development sequence,
+remains the target convergence point once those variants are judged:
 
 1. Build one bulkhead flip inward and one breach return while keeping the same
-   2D controls and making altitude gain unmistakable. (In progress — fleet
-   `transformation` agent, isolated worktree, targeting CP3.)
+   2D controls and making altitude gain unmistakable. **Merged** (`738a890`,
+   `?slice=transform`) and judged at CP3: directionally right, but the
+   operator called the transition choreography choppy and ruled that the
+   creature's anatomy must read as static and monumental, revealed by camera
+   movement rather than assembled — see `decisions.md` entry 3. A second pass
+   applying that rule is expected before CP3 is considered met.
 2. Add houndframe, polyp, and mortar one at a time, proving each movement answer
-   and then one useful combination. (Houndframe in progress — fleet `combat`
-   agent, targeting CP2; polyp and mortar not yet started.)
+   and then one useful combination. **Houndframe merged** (`94913ad`, floor-
+   denial enemy with trial stages and per-pace fairness assertions),
+   awaiting the operator's CP2 judgment; polyp and mortar not yet started.
 3. Add baseline hit, hurt, launch, pickup, warning, and transformation feedback.
    (Deferred — `FLEET-PLAN.md` keeps juice/audio out of scope for this push.)
 4. Author the full six-phase escalation.
@@ -384,7 +287,10 @@ A parallel track not in `DESIGN.md`'s original sequence: a movement-driven
 score/momentum system and six death/setback proposals (replacing lives and
 checkpoints) are sketched in
 [`docs/proposals/2026-07-score-and-setback.md`](proposals/2026-07-score-and-setback.md),
-targeting CP4. Nothing there is decided or implemented yet.
+targeting CP4. Two of its smallest prototypes — the two-notch CHARGE/THREAT
+meter and Hull Fallback tier 1 — shipped inside the traversal slice during
+the CP1 push (`?score=1`, `?fallback`); see the proposal doc's own status
+headers. Nothing there is a decided, canon design yet.
 
 ## Open questions are not blockers
 

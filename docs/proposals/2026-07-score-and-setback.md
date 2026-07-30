@@ -6,6 +6,13 @@
 playtesting, not a decision. No runtime code was written and no existing file
 was modified.
 
+**Update, 2026-07-30:** two of this document's own smallest-prototype
+proposals have since been built as CP1 prototypes-for-testing (not as a
+canon pick) — see the status notes on section A.4 ("Smallest playable
+prototype") and section B.1 ("HULL FALLBACK") below. Everything else here,
+including all of Parts A and B not called out as built, remains unbuilt
+proposal and live reference.
+
 Audience note: this document explains *why* each mechanism should change how the
 game feels, and separates what is observably true of the current build from what
 is design opinion. Where there is a choice, there is a recommendation — not a
@@ -349,6 +356,13 @@ Stated explicitly so the adversarial agent has something to break:
 
 ## A.4 Smallest playable prototype
 
+> **Status: built, as a CP1 prototype-for-testing.** A two-notch CHARGE/THREAT
+> meter shipped behind `?score=1` in the traversal slice during the CP1 push
+> (`src/pure/score.js`, `src/sim/score.js`). This is scaffolding to test the
+> hypothesis, not a canon decision — see `decisions.md`. Per-weapon hot
+> traits, the three-notch design, and phase floors beyond the slice remain
+> unbuilt.
+
 Build this in the traversal slice, behind `?score=1`, and change nothing else.
 Target: under a day of work, and a real answer to one question.
 
@@ -490,6 +504,12 @@ Five criteria for judging the proposals below:
    all.
 
 ## B.1 HULL FALLBACK — you lose altitude, not the run
+
+> **Status: Tier 1 built, as a CP1 prototype-for-testing.** Shipped behind
+> `?fallback` (on by default in the traversal slice) as `hullFallback` in
+> `src/sim/player.js`. This tests the hypothesis; it has not been chosen by
+> the operator over B.2–B.6 — see `decisions.md`. Tier 2 (band fallback) is
+> unbuilt.
 
 **Fiction fit.** The ship does not kill an anomaly on the hull; it *dislodges*
 it. A hull ratchet reverses, a plate vents, a service band retracts, and RIG is

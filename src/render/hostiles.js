@@ -13,11 +13,60 @@ import { placeOnTower } from './tower.js';
 
 const waspGeo = new THREE.OctahedronGeometry(CONFIG.wasp.visualRadius);
 const carrierGeo = new THREE.BoxGeometry(...CONFIG.carrier.size);
+const houndGeo = new THREE.BoxGeometry(...CONFIG.hound.size);
+
+/* The houndframe's state theater: the shared presence pass below owns
+   materialization, depth breathing, and the hit flash for every kind — this
+   only adds the pose that makes its charge readable at full sprint.
+     tell   — rears back and up, narrows, leans OUT of the combat plane, and
+              blinks a warning light that accelerates as commitment nears;
+     charge — snaps back into the plane, stretches along the run, holds a
+              constant hot glow: "this is live and it is not steering";
+     prowl  — a small stride bob so a patrolling frame still reads as alive.
+   One reused object: sync runs per hostile per frame, so no allocation. */
+const HOUND_POSE = { depth: 0, sx: 1, sy: 1, sz: 1, glow: 0x000000 };
+
+function houndTellU(e) {                 // 0 → 1 across the reaction window
+  return 1 - Math.max(0, Math.min(1, (e.stateUntil - gameMs) / CONFIG.hound.tellMs));
+}
+
+function houndPose(e) {
+  const H = CONFIG.hound;
+  const p = HOUND_POSE;
+  p.depth = 0; p.sx = 1; p.sy = 1; p.sz = 1; p.glow = 0x000000;
+  if (e.state === 'tell') {
+    const u = houndTellU(e);
+    p.depth = H.tellDepth * u;
+    p.sy = 1 + H.tellRise * u;
+    p.sx = 1 - H.tellNarrow * u;
+    const period = H.tellBlinkSlowMs + (H.tellBlinkFastMs - H.tellBlinkSlowMs) * u;
+    if (Math.floor(gameMs / period) % 2 === 0) p.glow = CONFIG.palette.houndTell;
+  } else if (e.state === 'charge') {
+    p.sx = 1 + H.chargeStretch;
+    p.sy = 1 - H.chargeSquash;
+    p.glow = CONFIG.palette.houndCharge;
+  } else if (e.state === 'prowl') {
+    p.sy = 1 + Math.sin(e.t * H.gaitFreq) * H.gaitAmp;
+  }
+  return p;
+}
+
+function houndRoll(e) {
+  const H = CONFIG.hound;
+  if (e.state === 'tell') return -e.dir * H.tellRear * houndTellU(e);
+  if (e.state === 'charge') return e.dir * H.chargeLean;
+  if (e.state === 'tumble') return e.t * 6;
+  return Math.sin(e.t * H.gaitFreq) * H.gaitTilt;
+}
 
 // per-kind look, keyed by the same kind rows as ENEMY in src/sim/hostiles.js
 const LOOK = {
-  wasp:    { geo: waspGeo,    color: CONFIG.palette.wasp },
-  carrier: { geo: carrierGeo, color: CONFIG.palette.carrier },
+  wasp:    { geo: waspGeo,    color: CONFIG.palette.wasp,
+             roll: (e) => e.t * 2 },
+  carrier: { geo: carrierGeo, color: CONFIG.palette.carrier,
+             roll: (e) => Math.sin(e.t * CONFIG.carrier.rollFreq) * CONFIG.carrier.rollAmp },
+  hound:   { geo: houndGeo,   color: CONFIG.palette.hound,
+             roll: houndRoll, pose: houndPose },
 };
 const meshes = new Map();                // sim hostile row → { mesh, mat }
 
@@ -66,12 +115,19 @@ function sync(e) {
     scale = 1;
     v.mat.opacity = 1;
   }
-  v.mat.emissive.setHex(gameMs < e.flashUntil ? 0xffffff : 0x000000);
+  const K = LOOK[e.kind];
+  let sx = scale, sy = scale, sz = scale;
+  let glow = gameMs < e.flashUntil ? 0xffffff : 0x000000;
+  if (K.pose) {                          // per-kind state theater over the shared presence
+    const p = K.pose(e);
+    depth += p.depth;
+    sx *= p.sx; sy *= p.sy; sz *= p.sz;
+    if (glow === 0x000000) glow = p.glow;              // a hit flash still wins
+  }
+  v.mat.emissive.setHex(glow);
   placeOnTower(v.mesh, e.x, e.y, depth);
-  v.mesh.rotation.z = e.kind === 'carrier'
-    ? Math.sin(e.t * CONFIG.carrier.rollFreq) * CONFIG.carrier.rollAmp
-    : e.t * 2;
-  v.mesh.scale.setScalar(scale);
+  v.mesh.rotation.z = K.roll(e);
+  v.mesh.scale.set(sx, sy, sz);
 }
 
 installView({ hostiles: { spawned, removed, sync } });

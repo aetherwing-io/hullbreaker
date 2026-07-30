@@ -140,7 +140,10 @@ Target additions should preserve speed:
 - **Cliff hang:** a momentary dodge, aiming position, or route transfer—not a
   long shimmy sequence.
 - **Snap hook (later candidate):** a context-sensitive launch toward clearly
-  marked anchors with minimal aiming interruption.
+  marked anchors with minimal aiming interruption. No longer just a later
+  candidate — this is the lead wave-3 movement-verb prototype following the
+  CP1 pivot (`decisions.md` entry 2); the open design question below is
+  unresolved either way.
 - **Traps (later candidate):** thrown, dropped, or triggered while moving.
   Avoid a separate construction mode; hostile and player-owned traps should
   share readable rules when possible.
@@ -188,6 +191,15 @@ the implementation record and code still use them:
   established rules. The Crown remains a command/defense/transmitter complex,
   not a body part or a creature fought directly — see `STORY.md`'s finale
   section.
+
+**Render rule, per the CP3 verdict** (`decisions.md` entry 3): the anatomy
+above is monumental and *static* during a transition. RIG and the camera are
+what move; the next stretch of world already exists and is *revealed* — by
+the camera rotating around a limb plus natural self-occlusion and fog —
+never assembled, slammed, or articulated into place. Two-snap chunkiness
+lives in the camera's ratchet curve, not in geometry arriving. This refines
+how the beats above render; it does not change what they are or when they
+fire, and the sim-side inert-until-crossed gating is unaffected.
 
 Exterior phases favor exposure, long jumps, gaps, flying threats, and broad
 sightlines. Interior phases favor walls, ceilings, shafts, traps, machinery,
@@ -308,7 +320,9 @@ Resolve these through small prototypes and playtests rather than assumption:
 - What is the authored campaign weapon order, and what recovery floor prevents
   late damage from permanently deflating the power ramp?
 - Does the snap hook reuse jump, aim/fire, or a dedicated input, and can a new
-  player understand valid anchors without stopping to aim?
+  player understand valid anchors without stopping to aim? (Under active
+  prototyping as of the wave-3 pivot — `decisions.md` entry 2 — but still
+  unresolved.)
 - Are traps a carried resource, a weapon behavior, or fixed world mechanisms
   that either side can trigger?
 - Does the pursuing edge maintain constant speed through dare pockets, or can
@@ -360,6 +374,15 @@ tower with corner events** (shipped):
   During the ritual the next face's tile columns drop into place with a
   heavy ease, staggered near-to-far from the corner, locking before the
   scroll resumes. Unbuilt terrain is inert: no bullet or enemy collision.
+  **Flagged by the CP3 ruling** (`decisions.md` entry 3): this is exactly the
+  geometry-*assembling* reveal the operator has since ruled against for the
+  creature's own anatomy — it should read as static and monumental, revealed
+  by camera rotation, not built piece-by-piece. Per the same ruling's
+  addendum, the zip-assembly technique itself is not being deleted: it may be
+  repurposed for things the ship *builds* (traps, emplacements, later
+  enemies), just retired from anatomy/world reveals. Still shipped and
+  accurate as written for the corner ritual; not yet reworked, and the code
+  should stay extractable for that future reuse.
 - Tiles keep sharp per-face orientation (chunky bricks). Only the camera
   path is chamfered (±3 tiles) around corners; entity yaw blends over
   ±1.5 tiles so characters visibly turn corners.
@@ -429,17 +452,24 @@ entire climb:
    telegraphed dare pocket, and pursuit-aware reachability tests. **Built** as
    the opt-in `?slice=traversal` fixture and accelerated once already
    (`15f66d2`) after its first playtest proved the spatial grammar and failed
-   the pacing test. The operator's verdict on the accelerated pass is pending
-   (fleet checkpoint CP1 — see `HANDOFF.md`, `FLEET-PLAN.md`).
+   the pacing test. Checkpoint CP1 has since concluded: the accelerated pass
+   plus the `intensity` agent's further pace variants all read as
+   "directionally correct," no single one was crowned, and the operator
+   pivoted the mission toward concept-art-driven movement verbs (wave 3) —
+   see [`decisions.md`](decisions.md) entry 2.
 2. **Transformation slice:** preserve the shipped hull ratchet, add one
    bulkhead flip and breach return, and make the resulting altitude gain
-   unmistakable without changing 2D collision. In progress in an isolated
-   fleet worktree, targeting checkpoint CP3.
+   unmistakable without changing 2D collision. **Merged** (`738a890`,
+   `?slice=transform`) and judged at checkpoint CP3: directionally right, but
+   the transition choreography itself was called choppy — see the render
+   rule added to "World-transformation grammar" above and `decisions.md`
+   entry 3. A second pass applying that rule is expected before CP3 is met.
 3. **Combat grammar:** add houndframe, polyp, and mortar one at a time. Prove
    each enemy's tell, movement answer, weapon interaction, and two-enemy
-   combination before adding the next. Houndframe is in progress in an
-   isolated fleet worktree, targeting checkpoint CP2; polyp and mortar are not
-   yet started.
+   combination before adding the next. **Houndframe merged** (`94913ad`, a
+   floor-denial enemy with trial stages and per-pace fairness assertions),
+   awaiting the operator's CP2 judgment; polyp and mortar are not yet
+   started.
 4. **Baseline feedback now:** add essential hit, hurt, launch, pickup, warning,
    and transformation sounds plus restrained hit-stop, shake, flashes, and
    particles. Full polish can wait; readable timing cannot.

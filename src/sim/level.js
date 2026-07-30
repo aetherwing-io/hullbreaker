@@ -8,7 +8,10 @@
 import { CONFIG } from '../config.js';
 import { CORNER_S } from '../pure/path.js';
 import { buildLevel, buildTraversalLevel, levelSolidCell } from '../pure/generator.js';
-import { ACTIVE_SLICE, IS_TRAVERSAL_SLICE } from '../mode.js';
+import { buildTransformLevel } from '../pure/transform.js';
+import {
+  ACTIVE_FIXTURE, ACTIVE_SLICE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE,
+} from '../mode.js';
 import { view } from './bridge.js';
 import { paceSpeed } from './pace.js';
 
@@ -16,18 +19,20 @@ const TILE_DEPTH = 8;           // solid tiles below each surface (collision)
 
 export const LEVEL_LEN = CONFIG.levelLength;
 export const END_SCROLL = LEVEL_LEN - 30;
-export function activeScrollEnd() { return ACTIVE_SLICE ? ACTIVE_SLICE.run.endScroll : END_SCROLL; }
-// The pursuing edge is a constant in the shipped run and in the `base` slice
-// pace; the CP1 variants make it a behavior, so the live value comes from
-// sim/pace.js. run.minimumScrollSpeed stays the pace's declared cruise floor.
+export function activeScrollEnd() { return ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.endScroll : END_SCROLL; }
+// The pursuing edge is a constant in the shipped run, in the `base` slice pace
+// and in the transformation fixture; the CP1 variants make it a behavior, so
+// the traversal slice's live value comes from sim/pace.js.
+// run.minimumScrollSpeed stays the declared cruise floor.
 export function activeScrollSpeed() {
-  return ACTIVE_SLICE ? paceSpeed() : CONFIG.scrollSpeed;
+  if (ACTIVE_SLICE) return paceSpeed();
+  return ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.minimumScrollSpeed : CONFIG.scrollSpeed;
 }
-// Traversal mode overlays one authored straight-face fixture; normal mode
-// remains the seeded six-face generator byte-for-byte.
+// Each fixture overlays its authored columns on the seeded layout; normal
+// mode remains the seeded six-face generator byte-for-byte.
 export const levelData = IS_TRAVERSAL_SLICE
   ? buildTraversalLevel(CONFIG, ACTIVE_SLICE)
-  : buildLevel(CONFIG);
+  : IS_TRANSFORM_SLICE ? buildTransformLevel(CONFIG) : buildLevel(CONFIG);
 export const { groundH, platforms } = levelData;
 export const solidRects = levelData.solidRects || [];
 
@@ -66,6 +71,10 @@ export function settleColumn(s) { built[s] = 1; }
 
 // next faces stay unbuilt until their ritual (was hideAllSlamColumns)
 export function unbuildFutureFaces() {
+  // The transformation fixture replaces the tower with its own bands and
+  // owns their build state (src/sim/transform.js), so the six-face corner
+  // sets must not mark its columns inert.
+  if (IS_TRANSFORM_SLICE) return;
   for (const sets of [slamSets, farSets])
     for (const cols of sets)
       for (const s of cols) if (columnHasGround(s)) built[s] = 0;
