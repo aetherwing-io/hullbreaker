@@ -2,13 +2,16 @@
 
 ## Concept
 
-The *Meridian* is a continent-sized terraforming colony ship gone feral. RIG,
-a salvage marine, fights from the stern-side lower hull to the Meridian Crown
-at the summit to stop a sterilization and fire humanity's last transmission
-home. Tone: 80s action-movie excess. Palette (≤8 colors): deep teal
-environment, rust-orange metal, acid-green enemy glow, hot magenta pickups,
-warm white muzzle light. Flat-shaded low-poly, fog matched to background.
-(Grey-box currently uses a neutral placeholder palette.)
+The *Meridian* is a continent-sized terraforming colony ship gone feral —
+and, per the operator's canon decision (see [`decisions.md`](decisions.md)
+entry 1), literally a colossal machine-creature: a ship-beast whose
+sterilization response is its own immune system exterminating an infection.
+RIG, a salvage marine, fights from the stern-side lower hull to the Meridian
+Crown at the summit to stop that response and fire humanity's last
+transmission home. Tone: 80s action-movie excess. Palette (≤8 colors): deep
+teal environment, rust-orange metal, acid-green enemy glow, hot magenta
+pickups, warm white muzzle light. Flat-shaded low-poly, fog matched to
+background. (Grey-box currently uses a neutral placeholder palette.)
 
 Visual direction, stage-layout references, and their source prompts live in the
 [`docs/concept-art` reference pack](concept-art/README.md).
@@ -30,9 +33,11 @@ The north-star cadence is:
 > **PUMP → PUMP → PUMP → JUMP → JUMP → JUMP → HULLBREAKER.**
 
 A **phase** is one combat-traversal segment ending in a world transformation.
-A **face** is the physical exterior or interior surface that hosts it. Most
-phases occupy one face, but the distinction lets later encounters cross a door
-or reconfigure a surface without changing the underlying 2D simulation. Boss
+A **face** is the physical exterior or interior surface that hosts it —
+fictionally, a ribline, scute run, or cavity wall of the Meridian's anatomy
+(see [`STORY.md`](STORY.md), concept-art boards 09–12). Most phases occupy
+one face, but the distinction lets later encounters cross a door or
+reconfigure a surface without changing the underlying 2D simulation. Boss
 phases are named separately.
 
 ## Design pillars
@@ -162,16 +167,27 @@ mandatory dead end that becomes lethal only after entry is a generation error.
 
 World transformations are spatial punctuation and proof of ascent. They all keep
 gameplay in local `(s, y)` while changing the rendered surface, topology, enemy
-ecology, palette, and atmosphere.
+ecology, palette, and atmosphere. Per the operator's creature-canon decision
+([`decisions.md`](decisions.md) entry 1), the names below gain a fiction
+layer only — the underlying corner/gate/flip/breach mechanics, tuning, and
+code names are unchanged, and the old tower terms stay in parentheses because
+the implementation record and code still use them:
 
-- **Hull ratchet:** the exterior turns around a polygonal corner, new hull
-  columns slam into place, and the next face begins at a higher visual band.
-- **Bulkhead flip:** a door or wall panel opens inward; the combat plane rotates
-  through it and commits to an interior wall without changing the core controls.
-- **Breach return:** an interior panel blows outward and reveals that RIG has
-  emerged much higher on another exposed face.
-- **HULLBREAKER event:** summit geometry transforms during active combat rather
-  than waiting for a clean transition, proving mastery of the established rules.
+- **Hull ratchet — turning around a limb** (implementation record: "corner
+  ritual"): the exterior turns around a polygonal corner, new hull columns
+  (armor plates) slam into place, and the next face (ribline) begins at a
+  higher visual band.
+- **Bulkhead flip — through the neck:** a door or wall panel opens inward; the
+  combat plane rotates through it and commits to an interior wall (an internal
+  cavity) without changing the core controls.
+- **Breach return — emerging from a vent:** an interior panel blows outward
+  and reveals that RIG has emerged much higher on another exposed face
+  (ribline).
+- **HULLBREAKER event:** summit geometry transforms during active combat
+  rather than waiting for a clean transition, proving mastery of the
+  established rules. The Crown remains a command/defense/transmitter complex,
+  not a body part or a creature fought directly — see `STORY.md`'s finale
+  section.
 
 Exterior phases favor exposure, long jumps, gaps, flying threats, and broad
 sightlines. Interior phases favor walls, ceilings, shafts, traps, machinery,
@@ -254,9 +270,11 @@ inside those sequences provides replay texture.
 ## Finale structure
 
 THE MERIDIAN CROWN is the summit bridge, command network, defense coordinator,
-and long-range transmitter. It is not a creature or a literal heart. The whole
-ship is the antagonist, and the Crown is the final environment through which it
-acts.
+and long-range transmitter. It is not a body part, a detached creature-boss,
+or a literal heart fought directly — the ship-creature's body is the world RIG
+has been climbing the whole run, not a health bar waiting at the summit. The
+whole ship is the antagonist, and the Crown is the final environment and
+system through which it acts.
 
 The finale is a three-beat movement final exam:
 
