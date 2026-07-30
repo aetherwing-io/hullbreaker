@@ -58,6 +58,13 @@ the intensity is far off.** The fleet exists to close that gap:
   covers may move; body parts do not assemble. Sim-side inert-until-crossed
   gating stays (determinism/gameplay); render-side the upcoming band must be
   pre-built wherever sightlines could expose it.
+- Addendum (operator): the "zip" assembly mechanic is retired from world
+  transitions but RETAINED in the toolbox — "may be something we bring back
+  for traps that assemble or different enemies that are presented later."
+  Emerging visual-language rule: the creature's body never assembles; things
+  the ship BUILDS (traps, emplacements, later defenders) do. Assembly reads
+  as hostile activity, not as the world. Keep the zipper choreography code
+  extractable rather than deleting it outright.
 
 ### July 30 — the Meridian is a creature (canon + visual direction)
 
