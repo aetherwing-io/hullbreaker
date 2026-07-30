@@ -20,7 +20,72 @@ the intensity is far off.** The fleet exists to close that gap:
 4. Build the machinery that lets agents iterate and *measure* pace: the module
    split and a bot-player playtest harness.
 
-## Operator decisions on record (July 29 interview)
+## Operator decisions on record
+
+### July 30 — CP1 verdict and the wave-3 pivot: build toward the renders
+
+- **CP1:** hunt, swarm, and surge all read as "directionally correct" versus
+  base. No single winner was picked; keep all three paces while mechanics
+  evolve, consolidate later.
+- **Mission pivot, operator verbatim:** "stop hunting boring, let's start
+  working toward the kinds of mechanics that need to be tested to better hit
+  the feel of the concept arts." The diagnostic phase is over. The target is
+  the movement fantasy visible in the boards (01/03/08/10/11/12): a small,
+  human-scale RIG running and bounding up colossal creature machinery —
+  tether/hook dangles and launches, long rib-line runs, chained launches,
+  riding transforming surfaces, vent bursts.
+- **Wave 3 lanes:** movement-verb prototypes (snap hook/tether first — it
+  appears throughout the art and is DESIGN's open decision; plus
+  generalizing surge's chained-launch momentum), a view-scale experiment
+  (smaller RIG relative to the world), continuing CP2 (houndframe) and CP3
+  (transformation), and the in-flight CP1 defect fixes (fallback
+  self-defeat, crush wall-grind). The roof-contest decision folds into CP2+.
+
+### July 30 — CP3 verdict: transitions must read as ascent around static anatomy
+
+- CP3 first pass: "much more aligned to the feel, but the transitions a
+  little too choppy... it sort of looks like all of the assets are being
+  thrown together and smack into place, instead of the transition being a
+  smooth, chonky, reveal."
+- Clarifying ruling, operator verbatim: "it should read like the RIG is
+  running up around a monstrous leg, ascending the monster."
+- Transformation grammar consequence: the creature's anatomy is monumental
+  and STATIC during transitions; RIG (and the camera) are what move. The
+  next stretch of world pre-exists and is revealed by the view rotating
+  around the limb plus natural self-occlusion and fog — never by geometry
+  assembling, slamming, or articulating into place. Chunky two-snap detents
+  live in the camera's ratchet curve, not in asset arrival. Doors/vent
+  covers may move; body parts do not assemble. Sim-side inert-until-crossed
+  gating stays (determinism/gameplay); render-side the upcoming band must be
+  pre-built wherever sightlines could expose it.
+
+### July 30 — the Meridian is a creature (canon + visual direction)
+
+- The *Meridian* IS a colossal machine-creature, and the sterilization fiction
+  is an immune response: the ship-beast is trying to exterminate an
+  infection. This harmonizes with (rather than replaces) the existing
+  defense-state ladder, which already reads as immune escalation.
+- Of the creature boards (docs/concept-art/09–12), the operator endorses the
+  directions in 10/11/12 over 09's straight portraits; the anthology (12) has
+  two flagged flaws: the player figure is drawn too large, and there is not
+  enough variation. Operator feedback to the artist, verbatim:
+  > "imagine a small frame of the player at human scale, running and bounding
+  > up the machinery (in the side scroller format we've been discussing) the
+  > lore is that the player is climbing the monster, so the '60 degree bends'
+  > and gate breaches are 'turns' around the leg, or a long straight up a
+  > ribline, flipping indoor through the neck, back out of some vent up
+  > higher."
+- **Gameplay is unchanged.** The mapping is fiction-level: corner ritual =
+  turning around a limb; a face/wave = a long straight up a ribline; bulkhead
+  flip = entering through the neck; breach return = emerging from a vent
+  visibly higher. The 2D `(s, y)` sim and polyline mapping are form-agnostic
+  by design; the pivot lands in path data, render form-language, palette, and
+  naming — not in mechanics, enemies, weapons, score, or harness.
+- Player scale note for later: "player still too large" is art feedback today,
+  but implies a future camera/world-scale question (smaller RIG relative to
+  the world = more world per screen).
+
+### July 29 interview
 
 - **Feel verdict:** first slice pass was boring. Machine checks passing is not
   the gate; the operator's replay desire is.

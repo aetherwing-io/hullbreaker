@@ -9,18 +9,26 @@
 import { CONFIG } from '../config.js';
 import { mulberry32 } from '../pure/rng.js';
 import { buildSpawnTable } from '../pure/generator.js';
-import { IS_TRAVERSAL_SLICE } from '../mode.js';
+import { TRANSFORM_FIXTURE } from '../pure/transform.js';
+import { IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, SLICE_ENEMIES_ENABLED } from '../mode.js';
 import { sRightEdge } from './edges.js';
 import { spawnLaneY } from './level.js';
 import { spawnHostile } from './hostiles.js';
 import { cornerBusy } from './wavegate.js';
+import { transformBusy } from './transform.js';
 
-export const spawnTable = IS_TRAVERSAL_SLICE ? [] : buildSpawnTable(CONFIG);
+// The transformation fixture authors its ambient table by hand (lanes
+// included, so it consumes none of the seeded lane rng) and keeps every
+// entry outside its seam-clear zones.
+export const spawnTable = IS_TRANSFORM_SLICE
+  ? (SLICE_ENEMIES_ENABLED ? TRANSFORM_FIXTURE.spawns : [])
+  : IS_TRAVERSAL_SLICE ? [] : buildSpawnTable(CONFIG);
 let spawnIdx = 0;
 let spawnRng = mulberry32(9001);
 
 export function updateSpawner() {
   if (IS_TRAVERSAL_SLICE) return;         // fixture spawns are authored per attempt
+  if (transformBusy()) return;           // nobody arrives through a bulkhead flip
   if (cornerBusy()) return;              // gates author their own waves; on wide
                                          //   aspect ratios the halted look-ahead
                                          //   would otherwise reach past the
@@ -33,6 +41,8 @@ export function updateSpawner() {
     const s = spawnTable[spawnIdx++];
     if (s.type === 'carrier') {
       spawnHostile(s.x, spawnLaneY(s.x, CONFIG.carrier.laneAbove), 0, 'carrier');
+    } else if (s.lane !== undefined) {          // authored lane (fixture table)
+      spawnHostile(s.x, spawnLaneY(s.x, s.lane), 0, 'wasp');
     } else {
       const r = spawnRng();
       const lane = r < 0.45 ? 2.6 : r < 0.8 ? 4.6 : 7.2;   // low / mid / high tier

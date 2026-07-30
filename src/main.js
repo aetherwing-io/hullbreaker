@@ -14,8 +14,9 @@
 
 import { CONFIG } from './config.js';
 import {
-  ACTIVE_SLICE, IS_TRAVERSAL_SLICE, QUERY, SCORE_ENABLED, SLICE_ENEMIES_ENABLED,
-  SLICE_ENEMY_PLAN, SLICE_FALLBACK_ENABLED, SLICE_PACE,
+  ACTIVE_FIXTURE, ACTIVE_SLICE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, QUERY,
+  SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN, SLICE_FALLBACK_ENABLED,
+  SLICE_PACE,
 } from './mode.js';
 import { installHost } from './sim/bridge.js';
 import {
@@ -50,6 +51,9 @@ import {
 } from './sim/score.js';
 import { resetSpawner, updateSpawner } from './sim/spawner.js';
 import { resetCornerEvents } from './sim/wavegate.js';
+import {
+  activeTransformEvent, committedBand, resetTransform, transformAltitude,
+} from './sim/transform.js';
 import { updateScroll } from './sim/scroll.js';
 import { camera, renderer, scene } from './render/scene.js';
 import {
@@ -59,6 +63,7 @@ import { clearCorpses, updateCorpses } from './render/hostiles.js';
 // imported for their side effects: each builds its meshes and installs its
 // half of the view bridge as it loads, before anything below runs
 import './render/level.js';
+import './render/transform.js';
 import './render/player.js';
 import './render/capsules.js';
 import './render/bullets.js';
@@ -124,14 +129,14 @@ function resetGame() {
   resetWeaponKills();
   clearMods();
   resetCarrierDrops();
-  setScrollX(ACTIVE_SLICE ? ACTIVE_SLICE.run.startScroll : 0);
+  setScrollX(ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.startScroll : 0);
   resetPace();
   resetScore();
   resetSpawner();
   resetHostileRng();
   resetKills(); resetShotsFired();
-  player.x = ACTIVE_SLICE ? ACTIVE_SLICE.run.playerSpawn.x : 6;
-  player.y = ACTIVE_SLICE ? ACTIVE_SLICE.run.playerSpawn.y : 3;
+  player.x = ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.playerSpawn.x : 6;
+  player.y = ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.playerSpawn.y : 3;
   player.vx = 0; player.vy = 0;
   player.hp = P.maxHealth; player.lives = P.lives;
   player.facing = 1; player.aim.set(1, 0);
@@ -146,15 +151,18 @@ function resetGame() {
   player.traversalControlUntil = 0;
   clearJumpBuffer();
   resetCornerEvents();
+  resetTransform();
   resetCameraYaw();
   unbuildFutureFaces();
-  if (ACTIVE_SLICE) {
+  if (ACTIVE_FIXTURE) {
     sliceStats.attempts++;
     sliceStats.airJumps = 0;
     sliceStats.setbacks = 0;
     sliceStats.lastSetbackAt = -1e9;
     sliceStats.minEdgeMargin = Infinity;
     sliceStats.startedAt = gameMs;
+  }
+  if (ACTIVE_SLICE) {
     // route stakes: `rewards` is the pocket capsule plus whatever the active
     // pacing variant parks on its harder lines
     for (const r of ACTIVE_SLICE.rewards)
@@ -202,6 +210,8 @@ function update(dt) {
   });
   if (IS_TRAVERSAL_SLICE) {
     if (player.x >= ACTIVE_SLICE.rejoin.x0) { scoreRunEnd('clear'); setState('VICTORY'); }
+  } else if (IS_TRANSFORM_SLICE) {
+    if (player.x >= ACTIVE_FIXTURE.finish.x0) { scoreRunEnd('clear'); setState('VICTORY'); }
   } else if (scrollX >= END_SCROLL) {
     scoreRunEnd('clear');
     setState('VICTORY');
@@ -212,13 +222,27 @@ function update(dt) {
 // both debug channels — `__HULLBREAKER_TEST__` (the playtest harness's canonical
 // channel, field names frozen) and window.HB.snapshot() below — so the two can
 // never drift apart. It is a pure read of sim state and cannot mutate anything.
+// The transformation slice adds one read-only block so a bot run can prove the
+// sequence completed (which surface the world is on, which ritual is running,
+// and the rendered altitude) without scraping pixels.
+function transformTelemetry() {
+  const ev = activeTransformEvent();
+  return {
+    band: committedBand,
+    altitude: transformAltitude(),
+    event: ev ? ev.id : null,
+    eventState: ev ? ev.state : 'complete',
+  };
+}
+
 function telemetry() {
   return {
     gameMs, state, scrollX,
+    transform: IS_TRANSFORM_SLICE ? transformTelemetry() : undefined,
     // unchanged semantics: the fixture's declared scroll floor. The live
     // pursuit speed a pacing variant is commanding is `pursuitSpeed` below.
-    minimumScrollSpeed: ACTIVE_SLICE
-      ? ACTIVE_SLICE.run.minimumScrollSpeed : CONFIG.scrollSpeed,
+    minimumScrollSpeed: ACTIVE_FIXTURE
+      ? ACTIVE_FIXTURE.run.minimumScrollSpeed : CONFIG.scrollSpeed,
     player: {
       x: player.x, y: player.y, vx: player.vx, vy: player.vy,
       grounded: player.grounded,
@@ -341,15 +365,15 @@ if (QUERY.has('selftest')) {
     dispatchEvent(new Event('resize'));
     check('resize handled', Math.abs(camera.aspect - innerWidth / innerHeight) < 1e-6);
     resetGame();
-    const expectedScroll = ACTIVE_SLICE ? ACTIVE_SLICE.run.startScroll : 0;
+    const expectedScroll = ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.startScroll : 0;
     const expectedHostiles = SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length : 0;
     // A pace that bounds crush slack in seconds arms its clock on the first
     // frame, so the opening scroll is the authored start pushed forward to the
     // margin cap — hence >= rather than ===, with the cap itself checked below.
     check('restart', scrollX >= expectedScroll && state === 'PLAYING' &&
       hostiles.length === expectedHostiles);
+    if (ACTIVE_FIXTURE) check('slice fixture selected', levelData.fixture === ACTIVE_FIXTURE);
     if (ACTIVE_SLICE) {
-      check('slice fixture selected', levelData.fixture === ACTIVE_SLICE);
       check('pace resolved', ACTIVE_SLICE.pace.id === SLICE_PACE ||
         (SLICE_PACE !== 'base' && ACTIVE_SLICE.pace.id === 'base'));
       check('authored rewards spawned',
@@ -360,6 +384,10 @@ if (QUERY.has('selftest')) {
       check('crush clock armed at spawn', cap > 0
         ? Math.abs((player.x - player.hw - sLeftEdge()) - cap) < 0.05
         : scrollX === expectedScroll);
+    }
+    if (IS_TRANSFORM_SLICE) {
+      check('surfaces reset', committedBand === 0 && transformAltitude() === 0);
+      check('first ritual armed', activeTransformEvent().state === 'idle');
     }
     const fails = results.filter((r) => !r[1]).map((r) => r[0]);
     const msg = fails.length

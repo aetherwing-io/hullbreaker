@@ -7,7 +7,7 @@
 import { CONFIG } from '../config.js';
 import { CORNER_S } from '../pure/path.js';
 import { waveSize, waveLane, zipperOffset } from '../pure/waves.js';
-import { IS_TRAVERSAL_SLICE } from '../mode.js';
+import { ACTIVE_FIXTURE } from '../mode.js';
 import { view } from './bridge.js';
 import { gameMs } from './time.js';
 import { sLeftEdge, sRightEdge } from './edges.js';
@@ -19,7 +19,7 @@ import { hostiles, ENEMY, spawnHostile } from './hostiles.js';
 export const cornerEvents = CORNER_S.map((s, i) => ({ s, k: i + 1, state: 'idle', tStart: 0 }));
 
 export function activeCorner() {         // first corner not yet completed
-  if (IS_TRAVERSAL_SLICE) return null;    // fixture rejoins before corner machinery
+  if (ACTIVE_FIXTURE) return null;        // fixtures author their own transitions
   for (const c of cornerEvents) if (c.state !== 'done') return c;
   return null;
 }

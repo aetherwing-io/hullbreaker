@@ -3,9 +3,10 @@
    no HUD element is ever a source of truth. */
 
 import { CONFIG } from '../config.js';
+import { TRANSFORM_FIXTURE } from '../pure/transform.js';
 import {
-  ACTIVE_SLICE, HOUND_TRIAL_STAGE, IS_TRAVERSAL_SLICE, SCORE_ENABLED,
-  SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN,
+  ACTIVE_SLICE, HOUND_TRIAL_STAGE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE,
+  SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN,
 } from '../mode.js';
 import { scoreNotchGlyphs } from '../pure/score.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
@@ -15,6 +16,9 @@ import { currentWeapon, weaponDef } from '../sim/weapons.js';
 import { mods } from '../sim/mods.js';
 import { hostiles, ENEMY, kills } from '../sim/hostiles.js';
 import { activeCorner } from '../sim/wavegate.js';
+import {
+  activeTransformEvent, committedBand, lastCommit, transformAltitude, transformBandLabel,
+} from '../sim/transform.js';
 
 const hudTL = document.getElementById('hudTL');
 const hudTC = document.getElementById('hudTC');
@@ -26,9 +30,14 @@ hudBL.innerHTML = IS_TRAVERSAL_SLICE
     'LEDGE near-misses catch: jump launches, down releases &nbsp;&middot;&nbsp; WALL contact: jump launches, down releases<br>' +
     'DROP down+jump &nbsp;&middot;&nbsp; MAGENTA POCKET = take H, retreat left &nbsp;&middot;&nbsp; PAUSE p/esc<br>' +
     'LOSING HP = HULL FALLBACK: the ship drops you to the route below and play continues'
-  : 'MOVE wasd/arrows &nbsp; JUMP space (hold = higher, again in air = double) &nbsp; FIRE j or x<br>' +
-    'AIM 8-way via move keys &nbsp; STRAFE-LOCK shift &nbsp; DROP down+jump on catwalks<br>' +
-    'CAPSULES swap weapons &middot; hit = weapon pops out, recatch it fast &nbsp;&middot;&nbsp; PAUSE p/esc';
+  : IS_TRANSFORM_SLICE
+    ? 'MOVE wasd/arrows &nbsp; JUMP space (hold = higher, again in air = double) &nbsp; FIRE j or x &nbsp; RETRY r<br>' +
+      'TRANSFORMATION SLICE &nbsp;&middot;&nbsp; run into the open panel, then into the one ahead: ' +
+      'the ship turns the world, you keep the same controls<br>' +
+      'ALT is the rendered altitude of the surface you are standing on &nbsp;&middot;&nbsp; PAUSE p/esc'
+    : 'MOVE wasd/arrows &nbsp; JUMP space (hold = higher, again in air = double) &nbsp; FIRE j or x<br>' +
+      'AIM 8-way via move keys &nbsp; STRAFE-LOCK shift &nbsp; DROP down+jump on catwalks<br>' +
+      'CAPSULES swap weapons &middot; hit = weapon pops out, recatch it fast &nbsp;&middot;&nbsp; PAUSE p/esc';
 
 // updateHUD runs every rAF frame; assigning textContent replaces the text
 // node even when identical, dirtying layout for three fixed elements 60x/s.
@@ -60,11 +69,14 @@ export function updateHUD() {
     ? `ATTEMPT ${sliceStats.attempts} · EDGE ${edge}` +
       (sliceStats.setbacks ? ` · FALLBACK ${sliceStats.setbacks}` : '') +
       ` · ${kills} kills`
-    : Math.floor(scrollX) + 'm  ·  ' + kills + ' kills';
+    : IS_TRANSFORM_SLICE
+      ? `ALT ${Math.round(transformAltitude() + player.y)}m · ` +
+        `${committedBand}/2 BREAKS · ${kills} kills`
+      : Math.floor(scrollX) + 'm  ·  ' + kills + ' kills';
   if (SCORE_ENABLED) tr += ' · THREAT ' + Math.round(scoreThreat());
   if (tr !== hudTRLast) { hudTRLast = tr; hudTR.textContent = tr; }
   const c = activeCorner();
-  let tc = '';
+  let tc = transformMessage();
   const pocket = ACTIVE_SLICE && ACTIVE_SLICE.darePocket.bounds;
   if (ACTIVE_SLICE && gameMs - sliceStats.lastSetbackAt < ACTIVE_SLICE.fallback.messageMs) {
     // HULL FALLBACK has to be explainable (pillar 5) — one line, existing slot
@@ -85,6 +97,25 @@ export function updateHUD() {
     tc = 'CLEAR';
   }
   if (tc !== hudTCLast) { hudTCLast = tc; hudTC.textContent = tc; }
+}
+
+/* The transformation slice's centre callout: the ship opening a way in, the
+   ritual itself, and then the defensive state the break moved it to
+   (Intercept → Contain → Quarantine, per the story spine). */
+function transformMessage() {
+  if (!IS_TRANSFORM_SLICE) return '';
+  const ev = activeTransformEvent();
+  if (ev && ev.state === 'armed') return ev.armMsg;
+  if (ev && ev.state === 'turning') return ev.label;
+  if (lastCommit && gameMs - lastCommit.at < CONFIG.transform.clearMsgMs)
+    return `${lastCommit.ev.label} — ${transformBandLabel()} · MERIDIAN: ${transformShipState()}`;
+  if (gameMs - sliceStats.startedAt < 2400)
+    return 'TRANSFORMATION SLICE · ' + transformBandLabel();
+  return '';
+}
+
+function transformShipState() {
+  return IS_TRANSFORM_SLICE ? TRANSFORM_FIXTURE.bands[committedBand].shipState : '';
 }
 
 // resetGame clears the corner message and keeps the write cache coherent

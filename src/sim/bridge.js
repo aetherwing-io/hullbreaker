@@ -7,7 +7,12 @@
    can import and step the whole sim with no renderer at all.
 
    Contract: hooks are presentation-only. A hook must never write sim
-   state or the headless run diverges from the played run.             */
+   state or the headless run diverges from the played run.
+
+   Known exception (deliberate, pre-dates the split): render/camera.js
+   calls sim/edges.js setEdges() directly — screen edges are derivable
+   only from the camera projection, so that one render→sim write happens
+   outside this bridge. Headless hosts must call setEdges() themselves. */
 
 const noop = () => {};
 
@@ -20,6 +25,10 @@ export const view = {
   mods:     { sync: noop, cleared: noop, lanceTelegraph: noop },
   level:    { unbuiltHidden: noop, zipperColumn: noop, faceRevealed: noop },
   corner:   { finished: noop },
+  transform: {                           // world-transformation rituals (slice-only)
+    armed: noop, started: noop, ritual: noop, finished: noop, reset: noop,
+    frame: noop,                         // per-frame presentation tick (weather)
+  },
 };
 
 // group-wise merge: installView({ player: { sync } }) replaces only that hook

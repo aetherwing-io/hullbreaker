@@ -6,7 +6,7 @@ import {
   traversalSolidAllowsGrab, traversalChainMult, traversalFallbackTarget,
 } from '../pure/traversal.js';
 import {
-  ACTIVE_SLICE, IS_TRAVERSAL_SLICE, SLICE_FALLBACK_ENABLED,
+  ACTIVE_FIXTURE, ACTIVE_SLICE, IS_TRAVERSAL_SLICE, SLICE_FALLBACK_ENABLED,
 } from '../mode.js';
 import { view, host } from './bridge.js';
 import { gameMs, sliceStats, approach } from './time.js';
@@ -23,6 +23,7 @@ import {
   scoreContact, scoreFireMult, scoreLaunch, scoreRunEnd, scoreSetback,
 } from './score.js';
 import { activeCorner, cornerBusy } from './wavegate.js';
+import { transformBusy, transformFrontierX, transformSealX } from './transform.js';
 
 // The vertical slice is allowed to prove a more forceful controller without
 // silently changing the shipped six-face run. Every omitted field inherits the
@@ -365,7 +366,9 @@ export function updatePlayer(dt) {
       player.x = Math.floor(player.x + player.hw) - player.hw - 0.001;
       crushed = true;
     }
-    if (crushed && !cornerBusy()) damagePlayer(1, player.x - 1);
+    // A ritual that holds the scroll suspends crush pressure for the same
+    // reason a corner does: the plane is not advancing, so a pin there is jank.
+    if (crushed && !cornerBusy() && !transformBusy()) damagePlayer(1, player.x - 1);
     // A pace may also make the plane itself lethal over time. Without this the
     // plane is a free conveyor: doing nothing at all survives on open ground
     // because the push costs no hp (adversarial F5).
@@ -382,13 +385,20 @@ export function updatePlayer(dt) {
   //    Right clamp: while the active corner's face is still unbuilt, the
   //    pivot is the wall — the screen edge must not let the player walk
   //    onto hidden slam terrain (invisible floors and gaps past the corner).
+  //    A pending transformation seam applies the same rule at its threshold.
   const ac = activeCorner();
   let re = sRightEdge() - CONFIG.edges.margin;
   if (ac) re = Math.min(re, ac.s + 1 - CONFIG.edges.margin);
+  re = Math.min(re, transformFrontierX());
   if (player.x + player.hw > re) player.x = re - player.hw;
+  //    Left clamp: a committed transformation sealed its panel behind RIG.
+  //    The surface they came from is no longer rendered under their feet, so
+  //    walking back through the seam is not a route.
+  const seal = transformSealX();
+  if (player.x - player.hw < seal) { player.x = seal + player.hw; player.vx = Math.max(player.vx, 0); }
 
   // -- fell into a gap
-  if (IS_TRAVERSAL_SLICE) {
+  if (ACTIVE_FIXTURE) {
     sliceStats.minEdgeMargin = Math.min(
       sliceStats.minEdgeMargin,
       player.x - player.hw - sLeftEdge()
@@ -437,7 +447,7 @@ export function damagePlayer(amount, fromX) {
 let sliceRetryTimer = 0;
 
 function scheduleSliceRetry(reason) {
-  if (!IS_TRAVERSAL_SLICE || state === 'SLICE_RETRY') return;
+  if (!ACTIVE_FIXTURE || state === 'SLICE_RETRY') return;
   sliceStats.failures++;
   scoreRunEnd(reason === 'fall' ? 'fell' : 'lost');
   if (reason === 'fall') sliceStats.falls++;
@@ -528,7 +538,7 @@ export function loseLife(reason = 'damage') {
   clearPlayerTraversal(0);
   player.traversalControlUntil = 0;
   clearJumpBuffer();
-  if (IS_TRAVERSAL_SLICE) {
+  if (ACTIVE_FIXTURE) {                 // fixtures restart instead of spending a life
     if (SLICE_FALLBACK_ENABLED) hullFallback(reason);
     else scheduleSliceRetry(reason);
     return;

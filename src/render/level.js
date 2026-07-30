@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { SEGS, CORNER_S, polyAt, headingAt, faceIndexAt } from '../pure/path.js';
+import { IS_TRANSFORM_SLICE } from '../mode.js';
 import { installView } from '../sim/bridge.js';
 import {
   LEVEL_LEN, groundH, platforms, solidRects, slamSets, farSets,
@@ -29,6 +30,7 @@ const authoredSolidMeshes = [];                           // traversal-only tagg
 /* ---- view hooks: the build state of a face, made visible ---------- */
 
 function unbuiltHidden() {               // next faces stay unbuilt until their ritual
+  if (!tiles) return;                    // transformation slice: no tower bake
   for (const sets of [slamSets, farSets]) {
     for (const cols of sets) {
       for (const s of cols) {
@@ -47,7 +49,7 @@ function unbuiltHidden() {               // next faces stay unbuilt until their 
 
 const _zm = new THREE.Matrix4();
 function zipperColumn(s, dy, locked) {   // one brick-slam column, dy tiles above base
-  const col = columnInstances[s];
+  const col = tiles && columnInstances[s];
   if (!col) return;
   for (let n = 0; n < col.count; n++) {
     const inst = col.start + n;
@@ -60,6 +62,7 @@ function zipperColumn(s, dy, locked) {   // one brick-slam column, dy tiles abov
 }
 
 function faceRevealed(c) {               // beyond the zipper strip: one distant commit
+  if (!tiles) return;
   for (const s of farSets[c.k - 1]) {
     const col = columnInstances[s];
     if (!col || col.settled) continue;
@@ -76,7 +79,10 @@ function faceRevealed(c) {               // beyond the zipper strip: one distant
 // installed before the bake below, which finishes by unbuilding future faces
 installView({ level: { unbuiltHidden, zipperColumn, faceRevealed } });
 
-{
+// The transformation slice replaces the tower with its own band geometry
+// (src/render/transform.js), so the six-face bake is skipped entirely
+// rather than left hidden behind the fog at the wrong heading.
+if (!IS_TRANSFORM_SLICE) {
   let count = 0;
   for (let i = 0; i < LEVEL_LEN; i++) if (groundH[i] > -100) count += VISUAL_DEPTH;
 

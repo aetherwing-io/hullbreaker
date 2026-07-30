@@ -100,9 +100,13 @@ modules, each importing only downward:
   hook is a no-op, so the whole sim can be imported and stepped in Node.
 - Meshes are held in render-side maps keyed by sim rows, so sim entities stay
   plain numbers. Coupling that remains: the corner ritual's build state is sim
-  truth in `sim/level.js`, mirrored by tile instances in `render/level.js`;
-  `src/mode.js` reads the URL (or `globalThis.__HB_QUERY__`) for the run-mode
-  flags the sim needs at boot.
+  truth in `sim/level.js`, mirrored by tile instances in `render/level.js`
+  (updated idempotently per corner across `updateZipper`'s two call sites —
+  the per-frame advance in `sim/scroll.js` and the force-lock in
+  `finishCorner`); `render/camera.js` writes `sim/edges.js` directly via
+  `setEdges()`, the one render→sim write outside the bridge (see
+  `src/sim/bridge.js` header); `src/mode.js` reads the URL (or
+  `globalThis.__HB_QUERY__`) for the run-mode flags the sim needs at boot.
 - Normal-run tuning constants are in `CONFIG`; the opt-in slice keeps its
   authored geometry and playtest-only movement overrides in
   `TRAVERSAL_FIXTURE` (`src/pure/traversal.js`).

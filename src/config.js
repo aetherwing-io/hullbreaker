@@ -191,6 +191,39 @@ export const CONFIG = {
     zipDropTiles: 2.75, zipDipTiles: 0.06, zipDipMs: 40,
   },
 
+  transform: {                 // world-transformation rituals (bulkhead flip inward,
+                               //   breach return) — the opt-in ?slice=transform demo.
+                               //   Same discrete, chunky grammar as the corner ritual:
+                               //   two snaps with a ratchet hold, ~1s, player in control.
+    haltOffset: 9,             // scroll halts at seamS - haltOffset (the door apron):
+                               //   close enough that the seam is the focal point and
+                               //   the camera sweeps a short radius around it
+    thresholdTiles: 6,         // door/breach threshold: columns both bands render
+    armLookahead: 4,           // the ship opens the way when RIG gets this close
+    triggerOffset: 1.0,        // RIG must be this far past the seam to fire the ritual
+    armMaxMs: 2600,            // then the pursuing edge resumes and pushes them in
+    pressedOffset: 4,          // …but only to seamS - this, so the arena stays framed
+    clampMargin: 0.5,          // right clamp inside the threshold while the next band
+                               //   is still unbuilt (the corner ritual's pivot-wall rule)
+    sealInset: 0.4,            // the panel seals behind RIG once the band commits
+    windUpMs: 90, windUpDeg: -3,               // latch jolt / counter-rotation blink
+    snap1Ms: 160, holdMs: 300, snap2Ms: 140, settleMs: 120, resumeMs: 180,
+                               // t5 = 810 (band locked by 646), event total 990 ms
+    seamPullTiles: 11,         // on the second snap the ship pulls the view through
+                               //   the seam (haltOffset + 2), so the ritual ends with
+                               //   the camera on the new surface, not outside it
+    backS: 1.1,                // yaw easeOutBack overshoot (~5%, one settle)
+    snapDeg: 45,               // per snap; one ritual turns 2 × snapDeg = 90°
+    altStep1: 0.35,            // fraction of the altitude gain taken on snap 1
+    altPreloadTiles: 0.35,     // the deck drops a hair before the first snap
+    altBackS: 0.7,             // altitude overshoot per snap (a lurch, not a wobble)
+    panelJoltTiles: 0.18, panelBlowMs: 320,    // unlatch jolt / blown-panel flight
+    panelBlowTiles: 11, panelSpinTurns: 1.35,
+    slamStartMs: 200, slamChunks: 24, slamPerColMs: 12, slamDropMs: 130,
+    slamDropTiles: 3.2, slamDipTiles: 0.06, slamDipMs: 40,
+    clearMsgMs: 1400,          // how long the ritual's HUD stinger stays up
+  },
+
   edges: { margin: 0.4, killY: -7 },
 
   score: {                     // CHARGE/THREAT prototype — docs/proposals/

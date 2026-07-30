@@ -2,13 +2,16 @@
 
 ## Concept
 
-The *Meridian* is a continent-sized terraforming colony ship gone feral. RIG,
-a salvage marine, fights from the stern-side lower hull to the Meridian Crown
-at the summit to stop a sterilization and fire humanity's last transmission
-home. Tone: 80s action-movie excess. Palette (≤8 colors): deep teal
-environment, rust-orange metal, acid-green enemy glow, hot magenta pickups,
-warm white muzzle light. Flat-shaded low-poly, fog matched to background.
-(Grey-box currently uses a neutral placeholder palette.)
+The *Meridian* is a continent-sized terraforming colony ship gone feral —
+and, per the operator's canon decision (see [`decisions.md`](decisions.md)
+entry 1), literally a colossal machine-creature: a ship-beast whose
+sterilization response is its own immune system exterminating an infection.
+RIG, a salvage marine, fights from the stern-side lower hull to the Meridian
+Crown at the summit to stop that response and fire humanity's last
+transmission home. Tone: 80s action-movie excess. Palette (≤8 colors): deep
+teal environment, rust-orange metal, acid-green enemy glow, hot magenta
+pickups, warm white muzzle light. Flat-shaded low-poly, fog matched to
+background. (Grey-box currently uses a neutral placeholder palette.)
 
 Visual direction, stage-layout references, and their source prompts live in the
 [`docs/concept-art` reference pack](concept-art/README.md).
@@ -30,9 +33,11 @@ The north-star cadence is:
 > **PUMP → PUMP → PUMP → JUMP → JUMP → JUMP → HULLBREAKER.**
 
 A **phase** is one combat-traversal segment ending in a world transformation.
-A **face** is the physical exterior or interior surface that hosts it. Most
-phases occupy one face, but the distinction lets later encounters cross a door
-or reconfigure a surface without changing the underlying 2D simulation. Boss
+A **face** is the physical exterior or interior surface that hosts it —
+fictionally, a ribline, scute run, or cavity wall of the Meridian's anatomy
+(see [`STORY.md`](STORY.md), concept-art boards 09–12). Most phases occupy
+one face, but the distinction lets later encounters cross a door or
+reconfigure a surface without changing the underlying 2D simulation. Boss
 phases are named separately.
 
 ## Design pillars
@@ -135,7 +140,10 @@ Target additions should preserve speed:
 - **Cliff hang:** a momentary dodge, aiming position, or route transfer—not a
   long shimmy sequence.
 - **Snap hook (later candidate):** a context-sensitive launch toward clearly
-  marked anchors with minimal aiming interruption.
+  marked anchors with minimal aiming interruption. No longer just a later
+  candidate — this is the lead wave-3 movement-verb prototype following the
+  CP1 pivot (`decisions.md` entry 2); the open design question below is
+  unresolved either way.
 - **Traps (later candidate):** thrown, dropped, or triggered while moving.
   Avoid a separate construction mode; hostile and player-owned traps should
   share readable rules when possible.
@@ -162,16 +170,27 @@ mandatory dead end that becomes lethal only after entry is a generation error.
 
 World transformations are spatial punctuation and proof of ascent. They all keep
 gameplay in local `(s, y)` while changing the rendered surface, topology, enemy
-ecology, palette, and atmosphere.
+ecology, palette, and atmosphere. Per the operator's creature-canon decision
+([`decisions.md`](decisions.md) entry 1), the names below gain a fiction
+layer only — the underlying corner/gate/flip/breach mechanics, tuning, and
+code names are unchanged, and the old tower terms stay in parentheses because
+the implementation record and code still use them:
 
-- **Hull ratchet:** the exterior turns around a polygonal corner, new hull
-  columns slam into place, and the next face begins at a higher visual band.
-- **Bulkhead flip:** a door or wall panel opens inward; the combat plane rotates
-  through it and commits to an interior wall without changing the core controls.
-- **Breach return:** an interior panel blows outward and reveals that RIG has
-  emerged much higher on another exposed face.
-- **HULLBREAKER event:** summit geometry transforms during active combat rather
-  than waiting for a clean transition, proving mastery of the established rules.
+- **Hull ratchet — turning around a limb** (implementation record: "corner
+  ritual"): the exterior turns around a polygonal corner, new hull columns
+  (armor plates) slam into place, and the next face (ribline) begins at a
+  higher visual band.
+- **Bulkhead flip — through the neck:** a door or wall panel opens inward; the
+  combat plane rotates through it and commits to an interior wall (an internal
+  cavity) without changing the core controls.
+- **Breach return — emerging from a vent:** an interior panel blows outward
+  and reveals that RIG has emerged much higher on another exposed face
+  (ribline).
+- **HULLBREAKER event:** summit geometry transforms during active combat
+  rather than waiting for a clean transition, proving mastery of the
+  established rules. The Crown remains a command/defense/transmitter complex,
+  not a body part or a creature fought directly — see `STORY.md`'s finale
+  section.
 
 Exterior phases favor exposure, long jumps, gaps, flying threats, and broad
 sightlines. Interior phases favor walls, ceilings, shafts, traps, machinery,
@@ -254,9 +273,11 @@ inside those sequences provides replay texture.
 ## Finale structure
 
 THE MERIDIAN CROWN is the summit bridge, command network, defense coordinator,
-and long-range transmitter. It is not a creature or a literal heart. The whole
-ship is the antagonist, and the Crown is the final environment through which it
-acts.
+and long-range transmitter. It is not a body part, a detached creature-boss,
+or a literal heart fought directly — the ship-creature's body is the world RIG
+has been climbing the whole run, not a health bar waiting at the summit. The
+whole ship is the antagonist, and the Crown is the final environment and
+system through which it acts.
 
 The finale is a three-beat movement final exam:
 
@@ -290,7 +311,9 @@ Resolve these through small prototypes and playtests rather than assumption:
 - What is the authored campaign weapon order, and what recovery floor prevents
   late damage from permanently deflating the power ramp?
 - Does the snap hook reuse jump, aim/fire, or a dedicated input, and can a new
-  player understand valid anchors without stopping to aim?
+  player understand valid anchors without stopping to aim? (Under active
+  prototyping as of the wave-3 pivot — `decisions.md` entry 2 — but still
+  unresolved.)
 - Are traps a carried resource, a weapon behavior, or fixed world mechanisms
   that either side can trigger?
 - Does the pursuing edge maintain constant speed through dare pockets, or can
@@ -411,8 +434,11 @@ entire climb:
    telegraphed dare pocket, and pursuit-aware reachability tests. **Built** as
    the opt-in `?slice=traversal` fixture and accelerated once already
    (`15f66d2`) after its first playtest proved the spatial grammar and failed
-   the pacing test. The operator's verdict on the accelerated pass is pending
-   (fleet checkpoint CP1 — see `HANDOFF.md`, `FLEET-PLAN.md`).
+   the pacing test. Checkpoint CP1 has since concluded: the accelerated pass
+   plus the `intensity` agent's further pace variants all read as
+   "directionally correct," no single one was crowned, and the operator
+   pivoted the mission toward concept-art-driven movement verbs (wave 3) —
+   see [`decisions.md`](decisions.md) entry 2.
 2. **Transformation slice:** preserve the shipped hull ratchet, add one
    bulkhead flip and breach return, and make the resulting altitude gain
    unmistakable without changing 2D collision. In progress in an isolated
