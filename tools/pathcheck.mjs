@@ -864,6 +864,32 @@ function airTimeAbove(T, h) {            // seconds the feet stay above h on a f
        PL.iframesMs + ' < ' + cycleMs + ' ms)');
     ok(Math.ceil(PL.maxHealth * cycleMs / 1000) <= 8,
        'facetanking a chokepoint hound spends the whole health bar in under 8 s');
+
+    /* Mercy-chain farming (code review's open adversarial case): the fallback
+       streak clears after `recoverTiles` of un-pinned FORWARD progress, and a
+       hound charging from behind knocks the player forward, so hound hits do
+       credit that counter. Two bounds keep it from being a strategy: a whole
+       health bar of knockback banks less than the threshold, and the plane
+       advances further during the hits than the hits can ever bank. */
+    const FB = TF.fallback;
+    const knockTiles = PL.knockbackX * (PL.hitstunMs / 1000);
+    ok(knockTiles * PL.maxHealth < FB.recoverTiles,
+       'a full health bar of forward hound knockback banks ' +
+       (knockTiles * PL.maxHealth).toFixed(2) + ' tiles, under the ' +
+       FB.recoverTiles + '-tile mercy threshold: charges cannot buy a fallback');
+    let losingTrade = true;
+    const hitsNeeded = Math.ceil(FB.recoverTiles / knockTiles);
+    for (const id of TRAVERSAL_PACE_IDS) {
+      const PU = resolveTraversalPace(id).pursuit;
+      // one hit per hound cycle (i-frames, asserted above), so banking the
+      // threshold takes this long — and the edge eats this much ground meanwhile
+      if (!(hitsNeeded * (cycleMs / 1000) * PU.cruiseSpeed > FB.recoverTiles * 2)) {
+        losingTrade = false;
+      }
+    }
+    ok(losingTrade,
+       'farming mercy off hound hits needs ' + hitsNeeded +
+       ' charges and costs far more ground than it banks, at every pace');
   }
   ok(HD.laneBelow >= (GG.maxH - GG.minH) + HD.rideY,
      'lane band reaches a full generator step below the plate: the step down is no loophole');
