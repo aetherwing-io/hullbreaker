@@ -41,6 +41,22 @@ the intensity is far off.** The fleet exists to close that gap:
   (transformation), and the in-flight CP1 defect fixes (fallback
   self-defeat, crush wall-grind). The roof-contest decision folds into CP2+.
 
+### July 30 — movement verdict: hook v1 rejected
+
+- Operator: "i didn't particularly like the hooking implementation."
+  Diagnosis (operator-selected): anchors/placement — "specific anchors is
+  too on the nose maybe" — and the input: "the hook doesn't add anything
+  but an extra button press and confusion."
+- Notably NOT selected: "wrong verb entirely." A tether is not banned from
+  the movement language; THIS shape (authored bracket-marked anchor points +
+  a dedicated button) is rejected.
+- Disposition: ?hook=1 stays in the tree as an inert, off-by-default
+  prototype but receives no further investment. Any future tether must be
+  marker-less and button-less — emerging from the world and context, not
+  from authored points the player services. The movement lane's live
+  candidates are now FLOW (?flow=1, still unjudged) and the authored-slope
+  rib-run (costed, not started).
+
 ### July 30 — CP2.5 verdict: "enemies feel like they are coming for me"
 
 - Operator on the CP2.5 merge (ownership placement, roof contest, commit
