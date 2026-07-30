@@ -337,3 +337,37 @@ implementation must follow these rules:
 - rolling scutes, scissoring ribs, telescoping lattices, ratcheting body
   segments, and limb pose changes in prompts 10–13 are topology/intensity
   references only, not current render canon.
+
+## 14. Vertical assault level
+
+Generation used the built-in image-generation tool in two passes. The first
+pass used these project references:
+
+- `04-six-phase-escalation.png` for cumulative miniature phase density, rising
+  pressure, and palette only—not its panel divisions or warehouse form;
+- `09-meridian-creature-directions.png` for static macro anatomy;
+- `13-human-scale-monster-climb-grammar.png` for tiny readable RIG scale and
+  side-on connected play surfaces—not its grid; and
+- `06-enemy-form-language.png` for compact hostile silhouettes and color roles.
+
+The final refinement used the generated first-pass draft as **Image 1, edit
+target**; `09-meridian-creature-directions.png` as **Image 2, macro-anatomy
+reference**; `13-human-scale-monster-climb-grammar.png` as **Image 3,
+human-scale gameplay reference**; and `06-enemy-form-language.png` as **Image
+4, enemy-form reference**. Board 04's escalation influence was already carried
+by the edit target and was not reintroduced directly, avoiding renewed panel
+and warehouse drift.
+
+Exact final refinement prompt:
+
+```text
+Use case: stylized-concept
+Asset type: final vertical level-direction concept art for HULLBREAKER greybox planning
+Input images: Image 1 is the edit target and must retain its exact tall portrait composition, one uninterrupted bottom-to-top level, continuously rising sawtooth path, tiny readable RIG traversal poses, deep fog, palette, settlement far below, and three-beat Crown climax. Image 2 is the macro static machine-creature anatomy reference: use its broad overlapping scutes, segmented vertebral spine, rib cages, gill cavities, tendon bundles, and joint gimbals. Image 3 is a reference only for human-scale side-on readability and connected playable anatomy. Image 4 supplies the compact hostile silhouettes and their tiny acid-green tells.
+Primary request: Refine Image 1 with one targeted change: make the middle and lower macro-form unmistakably the engineered anatomy of ONE colossal static machine creature rather than stacked roads, a tower, or industrial architecture. Preserve the route topology and all major action placement; redesign the boxiest rectangular masses beneath the path as huge curved vertebral drums, interlocking rib arches, broad carapace scutes, armored gill louvers, synthetic tendon belts, deep joint cups, and three-lobed limb gimbals. Every playable lip still grows directly from and remains connected to this anatomy.
+Anatomical continuity: The bottom begins on a monumental ankle/leg joint; the central switchbacks wrap around one leg and haunch; the middle right/up run follows a truly enormous ribline; one clearly functional hinged neck access plate opens into a dry mechanical pressure tract whose existing rib ramps climb steeply on foot; one opened vent cover returns the route to an exterior dorsal ridge higher up; fixed collar rings lead into the functional transmitter Crown. The body extends beyond the canvas and stays weighty and motionless.
+Invariants: Keep the entire scene borderless and unpanelized. Keep the primary path continuous and always rising: right/up, zero-altitude turn around a fixed facet, left/up, back right/up along ribs, inward through the one access plate, steep pressure-tract climb, out through one vent, around a fixed collar, then Crown. Keep only 2–4 short route braids, all reconnecting. Keep gates as compact switchback turns that grant zero altitude. Keep the three summit action beats clearly separated and ascending: launch burst, enemy/interlock kill impact, immediate relaunch into the breached Crown—visual BAM BAM BAM with no words. Preserve the restrained deep indigo, cyan, amber/rust, coral, warm-white palette and sparse acid-green hostile tells.
+Static-anatomy canon: Scutes, ribs, spine, leg, neck, collar, and route-bearing surfaces are already built and never move, rotate, telescope, zipper, assemble, or change pose. Only the single access door and vent cover may be open; traps/enemies may unfold and live Crown damage may break covers.
+Style/medium: polished flat-shaded low-poly 3D side-on game-environment diorama, chunky sculptural machine-animal anatomy, slight depth but readable collision-like surfaces, no photorealism.
+Avoid: changing the portrait framing or route, adding panels or borders, whole-monster poster, square building blocks, tower façade, roads, warehouse walls, gantries, scaffolding, ladders, crates, pipe grids, flat platform strips, floating platforms, ordinary spaceship rooms, humanoid mech, face, eyes, mouth, teeth, wet flesh, moving body anatomy, text, labels, arrows, route overlays, HUD, logo, watermark.
+```

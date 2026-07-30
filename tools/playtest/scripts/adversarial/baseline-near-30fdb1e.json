@@ -1,0 +1,272 @@
+{
+  "capturedAt": "2026-07-30",
+  "commit": "72326cb",
+  "treeDirty": [
+    "M tools/playtest/README.md",
+    " M tools/playtest/run.mjs",
+    " M tools/playtest/scripts/adversarial/repeat.mjs",
+    "?? tools/playtest/scripts/adversarial/baseline-far-30fdb1e.json"
+  ],
+  "harnessHash": "a7bd78f3ace9",
+  "loadAvg1m": 7.63,
+  "query": "&view=near&fixeddt=16.667",
+  "viewport": "default",
+  "loadSensitiveFields": [
+    "victorySec"
+  ],
+  "scripts": [
+    {
+      "name": "p4-hold-right-mash-jump",
+      "viewport": "default",
+      "runs": 3,
+      "completed": 3,
+      "outcomes": [
+        "completed",
+        "completed",
+        "completed"
+      ],
+      "victorySec": {
+        "min": 4.92,
+        "max": 5.38
+      },
+      "minEdgeMargin": {
+        "min": 18.4,
+        "max": 18.4
+      },
+      "idleFraction": {
+        "min": 0.03,
+        "max": 0.03
+      },
+      "maxY": {
+        "min": 12.72,
+        "max": 12.72
+      },
+      "deaths": {
+        "min": 0,
+        "max": 0
+      },
+      "routeIds": [
+        "recovery-scramble",
+        "upper-chimney"
+      ],
+      "rewardTaken": false,
+      "errors": 0
+    },
+    {
+      "name": "x1-crush-clock-and-shove",
+      "viewport": "default",
+      "runs": 3,
+      "completed": 0,
+      "outcomes": [
+        "died",
+        "died",
+        "died"
+      ],
+      "victorySec": null,
+      "minEdgeMargin": {
+        "min": 0.4,
+        "max": 0.4
+      },
+      "idleFraction": {
+        "min": 0.98,
+        "max": 0.98
+      },
+      "maxY": {
+        "min": 3,
+        "max": 3
+      },
+      "deaths": {
+        "min": 3,
+        "max": 3
+      },
+      "routeIds": [],
+      "rewardTaken": false,
+      "errors": 0
+    }
+  ],
+  "runs": [
+    {
+      "name": "p4-hold-right-mash-jump",
+      "rep": 1,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 2,
+      "maxX": 72,
+      "finalX": 71.28,
+      "maxY": 12.72,
+      "victoryMs": 2737,
+      "victorySec": 5.38,
+      "minEdgeMargin": 18.4,
+      "marginAtEnd": 25.86,
+      "idleFraction": 0.028,
+      "airMs": 2356,
+      "protoScore": 177.7,
+      "routeIds": [
+        "upper-chimney",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "p4-hold-right-mash-jump",
+      "rep": 2,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 2,
+      "maxX": 72.04,
+      "finalX": 71.14,
+      "maxY": 12.72,
+      "victoryMs": 2726,
+      "victorySec": 5.38,
+      "minEdgeMargin": 18.4,
+      "marginAtEnd": 25.86,
+      "idleFraction": 0.028,
+      "airMs": 2422,
+      "protoScore": 178.5,
+      "routeIds": [
+        "upper-chimney",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "p4-hold-right-mash-jump",
+      "rep": 3,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 1,
+      "maxX": 72.14,
+      "finalX": 71.24,
+      "maxY": 12.72,
+      "victoryMs": 2501,
+      "victorySec": 4.92,
+      "minEdgeMargin": 18.4,
+      "marginAtEnd": 25.86,
+      "idleFraction": 0.03,
+      "airMs": 2121,
+      "protoScore": 174.9,
+      "routeIds": [
+        "upper-chimney",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "x1-crush-clock-and-shove",
+      "rep": 1,
+      "viewport": "default",
+      "outcome": "died",
+      "attempts": 4,
+      "deaths": 3,
+      "hits": 3,
+      "maxX": 38.71,
+      "finalX": 27.5,
+      "maxY": 3,
+      "victoryMs": null,
+      "victorySec": null,
+      "minEdgeMargin": 0.4,
+      "marginAtEnd": 2.5,
+      "idleFraction": 0.985,
+      "airMs": 303,
+      "protoScore": -128.7,
+      "routeIds": [],
+      "pocket": {
+        "entered": false,
+        "enteredMethod": null,
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 4328,
+      "pinnedAtX": 27.5,
+      "errors": 0
+    },
+    {
+      "name": "x1-crush-clock-and-shove",
+      "rep": 2,
+      "viewport": "default",
+      "outcome": "died",
+      "attempts": 4,
+      "deaths": 3,
+      "hits": 3,
+      "maxX": 38.71,
+      "finalX": 27.5,
+      "maxY": 3,
+      "victoryMs": null,
+      "victorySec": null,
+      "minEdgeMargin": 0.4,
+      "marginAtEnd": 2.58,
+      "idleFraction": 0.981,
+      "airMs": 381,
+      "protoScore": -126.9,
+      "routeIds": [],
+      "pocket": {
+        "entered": false,
+        "enteredMethod": null,
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 4326,
+      "pinnedAtX": 27.5,
+      "errors": 0
+    },
+    {
+      "name": "x1-crush-clock-and-shove",
+      "rep": 3,
+      "viewport": "default",
+      "outcome": "died",
+      "attempts": 4,
+      "deaths": 3,
+      "hits": 3,
+      "maxX": 38.71,
+      "finalX": 27.5,
+      "maxY": 3,
+      "victoryMs": null,
+      "victorySec": null,
+      "minEdgeMargin": 0.4,
+      "marginAtEnd": 2.54,
+      "idleFraction": 0.985,
+      "airMs": 304,
+      "protoScore": -127.9,
+      "routeIds": [],
+      "pocket": {
+        "entered": false,
+        "enteredMethod": null,
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 4327,
+      "pinnedAtX": 27.5,
+      "errors": 0
+    }
+  ]
+}

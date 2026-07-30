@@ -1108,6 +1108,38 @@ touched. My read is that this is the acceptable case and the bar was drawn one
 rung too high — but it is the intensity lane's call, not mine, so it is recorded
 as a failed criterion with the reasoning attached.
 
+### The frozen baseline (finally): `baseline-far-30fdb1e.json` + a `view=near` control
+
+Captured against a worktree pinned at `30fdb1e` (which contains the movement
+verbs, harness v2 and the `?fixeddt` hook), with `?view=` pinned explicitly per
+the comparability trap above, and with `--deterministic` plus `&fixeddt=16.667`
+so input timing and step length are both fixed. 42 runs, **zero console or page
+errors**, one provable build.
+
+| Script | view=far (operator default) | notes |
+| --- | --- | --- |
+| `p1-hold-right-only` | **0/3** | margin floor 0.40 — the one-key policy stays dead |
+| `p2-hold-right-hold-jump` | **3/3**, 6.67s | now completes at the far default (was stalling at near); the lip pin it used to die on is gone |
+| `p3-hop-800ms` | 3/3, 6.57–6.62s | |
+| `p4-mash-jump` | 3/3, 4.92–4.97s | the reference policy |
+| `p5-hop-500ms` | 3/3, 6.57–7.48s | |
+| `p6-hop-1200ms` | 3/3, 5.55–9.23s | the accepted-for-now case |
+| `x1-crush-clock` | **0/3** | dies at base pace, margin floor 0.40 |
+| `x2-pocket-grab` | 3/3, 8.88–9.23s | margin 31.72–31.76 |
+| `x3-deadend-lip-pin` | 3/3, 6.65–6.67s | |
+| `x4-retry-input-loss` | **0/3** | |
+| `x5-pocket-dawdle` | 3/3, 12.27–14.68s | margin 13.67–23.44 |
+| `x6-step39-slot-sweep` | 3/3, 5.75–6.47s | |
+
+Crush margins at `view=far` sit at **35.46–35.50** for policies that never get
+caught, versus **18.40** in the `view=near` control — and that control's 18.40 is
+exactly the figure every pre-`79f8d88` table in this report records, so the
+historical series translates cleanly onto the new default.
+
+Deterministic mode's honest limits, measured: `minEdgeMargin` and `maxX` became
+bit-stable across repetitions, `victorySec` reproduced within 20ms, and `maxY`
+still varied by ~0.14 tiles. Substantially reproducible, not yet bit-exact.
+
 ## Why four captures in a row were invalid, and the fix
 
 Four separate captures in this lane were invalidated by merges landing

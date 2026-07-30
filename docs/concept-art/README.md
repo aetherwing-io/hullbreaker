@@ -244,6 +244,34 @@ The corresponding implementable six-phase layout, screen windows, gate
 fixtures, and test questions live in the
 [`Meridian monster greybox map proposal`](../proposals/2026-07-meridian-monster-greybox-map.md).
 
+### 14. Vertical assault level
+
+![Vertical assault level](14-vertical-assault-level.png)
+
+Fuses board 04's cumulative phase pressure with the corrected creature anatomy
+and altitude model as one borderless ankle-to-Crown level. This is a stitched
+macro sequencing reference for greybox planning, not the ordinary gameplay
+camera: each local screen should still preserve board 13's human-scale RIG
+relationship.
+
+The layout makes a firmer ruling than the earlier escalation boards:
+
+- altitude is earned continuously on the traversal stretches themselves;
+- gates are compact switchback turns around static facets and grant **zero**
+  altitude;
+- the main route keeps climbing right/up, left/up, and back/right/up through
+  leg, haunch, ribline, neck, pressure tract, vent, collar, and Crown;
+- two-to-four short route braids may create local choices, but they reconnect
+  quickly instead of becoming long screen-wide strips;
+- only the neck access plate and vent cover may move before the Crown; the
+  surrounding anatomy and every route-bearing body surface already exist; and
+- the Crown resolves the climb with a legible launch → kill → relaunch cadence,
+  using live damage and functional interlocks rather than assembling anatomy.
+
+The portrait framing is intentionally diagnostic: if a future greybox cannot
+be traced upward without arrows, or if a gate appears to award height by
+camera snap, it has drifted from this direction.
+
 ## Visual invariants
 
 Future concepts and implementation should preserve:

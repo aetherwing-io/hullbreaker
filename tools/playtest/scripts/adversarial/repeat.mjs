@@ -48,6 +48,7 @@ function parseArgs(argv) {
     else if (a === '--tag') out.tag = argv[++i];
     else if (a === '--query') out.query = argv[++i];
     else if (a === '--base-url') out.baseUrl = argv[++i];
+    else if (a === '--deterministic') out.deterministic = true;
     else if (a === '--json') out.json = argv[++i];
     else if (a === '--baseline') out.baseline = argv[++i];
     else out.scripts.push(a);
@@ -290,6 +291,9 @@ async function main() {
         argv.push('--url', `${args.baseUrl.replace(/\/$/, '')}/${rel}`);
       }
       if (args.viewport) argv.push('--viewport', args.viewport);
+      // Harness v2's gameMs-keyed injection. Pairs with &fixeddt=<ms> on the URL:
+      // one pins WHEN inputs land, the other pins how long a sim step is.
+      if (args.deterministic) argv.push('--deterministic');
       if (args.maxRuntimeMs) argv.push('--max-runtime-ms', String(args.maxRuntimeMs));
       const r = await run(process.execPath, argv, playtestRoot);
       if (r.code !== 0) {

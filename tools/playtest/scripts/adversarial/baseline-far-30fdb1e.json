@@ -1,0 +1,1589 @@
+{
+  "capturedAt": "2026-07-30",
+  "commit": "72326cb",
+  "treeDirty": [
+    "M tools/playtest/run.mjs",
+    " M tools/playtest/scripts/adversarial/repeat.mjs"
+  ],
+  "harnessHash": "a7bd78f3ace9",
+  "loadAvg1m": 8.19,
+  "query": "&view=far&fixeddt=16.667",
+  "viewport": "default",
+  "loadSensitiveFields": [
+    "victorySec"
+  ],
+  "scripts": [
+    {
+      "name": "p1-hold-right-only",
+      "viewport": "default",
+      "runs": 3,
+      "completed": 0,
+      "outcomes": [
+        "died",
+        "died",
+        "died"
+      ],
+      "victorySec": null,
+      "minEdgeMargin": {
+        "min": 0.4,
+        "max": 0.4
+      },
+      "idleFraction": {
+        "min": 0.87,
+        "max": 0.87
+      },
+      "maxY": {
+        "min": 3.26,
+        "max": 3.26
+      },
+      "deaths": {
+        "min": 1,
+        "max": 1
+      },
+      "routeIds": [],
+      "rewardTaken": false,
+      "errors": 0
+    },
+    {
+      "name": "p2-hold-right-hold-jump",
+      "viewport": "default",
+      "runs": 3,
+      "completed": 3,
+      "outcomes": [
+        "completed",
+        "completed",
+        "completed"
+      ],
+      "victorySec": {
+        "min": 6.67,
+        "max": 6.67
+      },
+      "minEdgeMargin": {
+        "min": 35.46,
+        "max": 35.5
+      },
+      "idleFraction": {
+        "min": 0.02,
+        "max": 0.02
+      },
+      "maxY": {
+        "min": 12.61,
+        "max": 12.66
+      },
+      "deaths": {
+        "min": 0,
+        "max": 0
+      },
+      "routeIds": [
+        "mid-catwalk",
+        "recovery-scramble",
+        "upper-chimney",
+        "wall-launch"
+      ],
+      "rewardTaken": false,
+      "errors": 0
+    },
+    {
+      "name": "p3-hold-right-hop-nofire",
+      "viewport": "default",
+      "runs": 3,
+      "completed": 3,
+      "outcomes": [
+        "completed",
+        "completed",
+        "completed"
+      ],
+      "victorySec": {
+        "min": 6.57,
+        "max": 6.62
+      },
+      "minEdgeMargin": {
+        "min": 35.46,
+        "max": 35.46
+      },
+      "idleFraction": {
+        "min": 0.02,
+        "max": 0.09
+      },
+      "maxY": {
+        "min": 11.31,
+        "max": 12.66
+      },
+      "deaths": {
+        "min": 0,
+        "max": 0
+      },
+      "routeIds": [
+        "mid-catwalk",
+        "recovery-scramble",
+        "upper-chimney",
+        "wall-launch"
+      ],
+      "rewardTaken": false,
+      "errors": 0
+    },
+    {
+      "name": "p4-hold-right-mash-jump",
+      "viewport": "default",
+      "runs": 3,
+      "completed": 3,
+      "outcomes": [
+        "completed",
+        "completed",
+        "completed"
+      ],
+      "victorySec": {
+        "min": 4.92,
+        "max": 4.97
+      },
+      "minEdgeMargin": {
+        "min": 35.46,
+        "max": 35.46
+      },
+      "idleFraction": {
+        "min": 0.03,
+        "max": 0.03
+      },
+      "maxY": {
+        "min": 12.69,
+        "max": 12.73
+      },
+      "deaths": {
+        "min": 0,
+        "max": 0
+      },
+      "routeIds": [
+        "recovery-scramble",
+        "upper-chimney"
+      ],
+      "rewardTaken": false,
+      "errors": 0
+    },
+    {
+      "name": "p5-hop-500ms",
+      "viewport": "default",
+      "runs": 3,
+      "completed": 3,
+      "outcomes": [
+        "completed",
+        "completed",
+        "completed"
+      ],
+      "victorySec": {
+        "min": 6.57,
+        "max": 7.48
+      },
+      "minEdgeMargin": {
+        "min": 35.46,
+        "max": 35.5
+      },
+      "idleFraction": {
+        "min": 0.02,
+        "max": 0.05
+      },
+      "maxY": {
+        "min": 11.74,
+        "max": 12.42
+      },
+      "deaths": {
+        "min": 0,
+        "max": 0
+      },
+      "routeIds": [
+        "recovery-scramble",
+        "upper-chimney"
+      ],
+      "rewardTaken": false,
+      "errors": 0
+    },
+    {
+      "name": "p6-hop-1200ms",
+      "viewport": "default",
+      "runs": 3,
+      "completed": 3,
+      "outcomes": [
+        "completed",
+        "completed",
+        "completed"
+      ],
+      "victorySec": {
+        "min": 5.55,
+        "max": 9.23
+      },
+      "minEdgeMargin": {
+        "min": 30.26,
+        "max": 35.5
+      },
+      "idleFraction": {
+        "min": 0.03,
+        "max": 0.18
+      },
+      "maxY": {
+        "min": 11.05,
+        "max": 12.73
+      },
+      "deaths": {
+        "min": 0,
+        "max": 0
+      },
+      "routeIds": [
+        "mid-catwalk",
+        "wall-launch"
+      ],
+      "rewardTaken": false,
+      "errors": 0
+    },
+    {
+      "name": "x1-crush-clock-and-shove",
+      "viewport": "default",
+      "runs": 3,
+      "completed": 0,
+      "outcomes": [
+        "died",
+        "died",
+        "died"
+      ],
+      "victorySec": null,
+      "minEdgeMargin": {
+        "min": 0.4,
+        "max": 0.4
+      },
+      "idleFraction": {
+        "min": 0.99,
+        "max": 0.99
+      },
+      "maxY": {
+        "min": 3,
+        "max": 3
+      },
+      "deaths": {
+        "min": 2,
+        "max": 2
+      },
+      "routeIds": [],
+      "rewardTaken": false,
+      "errors": 0
+    },
+    {
+      "name": "x2-pocket-grab-then-naive",
+      "viewport": "default",
+      "runs": 3,
+      "completed": 3,
+      "outcomes": [
+        "completed",
+        "completed",
+        "completed"
+      ],
+      "victorySec": {
+        "min": 8.88,
+        "max": 9.23
+      },
+      "minEdgeMargin": {
+        "min": 31.72,
+        "max": 31.76
+      },
+      "idleFraction": {
+        "min": 0.09,
+        "max": 0.18
+      },
+      "maxY": {
+        "min": 12.2,
+        "max": 13.01
+      },
+      "deaths": {
+        "min": 0,
+        "max": 0
+      },
+      "routeIds": [
+        "mid-catwalk",
+        "wall-launch"
+      ],
+      "rewardTaken": false,
+      "errors": 0
+    },
+    {
+      "name": "x3-deadend-lip-pin",
+      "viewport": "default",
+      "runs": 3,
+      "completed": 3,
+      "outcomes": [
+        "completed",
+        "completed",
+        "completed"
+      ],
+      "victorySec": {
+        "min": 6.65,
+        "max": 6.67
+      },
+      "minEdgeMargin": {
+        "min": 35.46,
+        "max": 35.5
+      },
+      "idleFraction": {
+        "min": 0.02,
+        "max": 0.02
+      },
+      "maxY": {
+        "min": 12.61,
+        "max": 12.65
+      },
+      "deaths": {
+        "min": 0,
+        "max": 0
+      },
+      "routeIds": [
+        "mid-catwalk",
+        "recovery-scramble",
+        "upper-chimney",
+        "wall-launch"
+      ],
+      "rewardTaken": false,
+      "errors": 0
+    },
+    {
+      "name": "x4-retry-input-loss",
+      "viewport": "default",
+      "runs": 3,
+      "completed": 0,
+      "outcomes": [
+        "died",
+        "died",
+        "died"
+      ],
+      "victorySec": null,
+      "minEdgeMargin": {
+        "min": 0.4,
+        "max": 0.4
+      },
+      "idleFraction": {
+        "min": 0.95,
+        "max": 0.95
+      },
+      "maxY": {
+        "min": 3,
+        "max": 3
+      },
+      "deaths": {
+        "min": 2,
+        "max": 2
+      },
+      "routeIds": [],
+      "rewardTaken": false,
+      "errors": 0
+    },
+    {
+      "name": "x5-pocket-dawdle",
+      "viewport": "default",
+      "runs": 3,
+      "completed": 3,
+      "outcomes": [
+        "completed",
+        "completed",
+        "completed"
+      ],
+      "victorySec": {
+        "min": 12.27,
+        "max": 14.68
+      },
+      "minEdgeMargin": {
+        "min": 13.67,
+        "max": 23.44
+      },
+      "idleFraction": {
+        "min": 0.35,
+        "max": 0.48
+      },
+      "maxY": {
+        "min": 12.66,
+        "max": 13.32
+      },
+      "deaths": {
+        "min": 0,
+        "max": 0
+      },
+      "routeIds": [
+        "mid-catwalk",
+        "recovery-scramble",
+        "upper-chimney",
+        "wall-launch"
+      ],
+      "rewardTaken": false,
+      "errors": 0
+    },
+    {
+      "name": "x6-step39-slot-sweep",
+      "viewport": "default",
+      "runs": 3,
+      "completed": 3,
+      "outcomes": [
+        "completed",
+        "completed",
+        "completed"
+      ],
+      "victorySec": {
+        "min": 5.75,
+        "max": 6.47
+      },
+      "minEdgeMargin": {
+        "min": 35.46,
+        "max": 35.5
+      },
+      "idleFraction": {
+        "min": 0.21,
+        "max": 0.26
+      },
+      "maxY": {
+        "min": 8.31,
+        "max": 8.31
+      },
+      "deaths": {
+        "min": 0,
+        "max": 0
+      },
+      "routeIds": [
+        "lower-service"
+      ],
+      "rewardTaken": false,
+      "errors": 0
+    }
+  ],
+  "runs": [
+    {
+      "name": "p1-hold-right-only",
+      "rep": 1,
+      "viewport": "default",
+      "outcome": "died",
+      "attempts": 2,
+      "deaths": 1,
+      "hits": 11,
+      "maxX": 38.69,
+      "finalX": 31.66,
+      "maxY": 3.26,
+      "victoryMs": null,
+      "victorySec": null,
+      "minEdgeMargin": 0.4,
+      "marginAtEnd": 0.4,
+      "idleFraction": 0.874,
+      "airMs": 1595,
+      "protoScore": -69.3,
+      "routeIds": [],
+      "pocket": {
+        "entered": false,
+        "enteredMethod": null,
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 1289,
+      "pinnedAtX": 38.65,
+      "errors": 0
+    },
+    {
+      "name": "p1-hold-right-only",
+      "rep": 2,
+      "viewport": "default",
+      "outcome": "died",
+      "attempts": 2,
+      "deaths": 1,
+      "hits": 11,
+      "maxX": 38.69,
+      "finalX": 31.66,
+      "maxY": 3.26,
+      "victoryMs": null,
+      "victorySec": null,
+      "minEdgeMargin": 0.4,
+      "marginAtEnd": 0.4,
+      "idleFraction": 0.874,
+      "airMs": 1591,
+      "protoScore": -69.4,
+      "routeIds": [],
+      "pocket": {
+        "entered": false,
+        "enteredMethod": null,
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 1288,
+      "pinnedAtX": 38.65,
+      "errors": 0
+    },
+    {
+      "name": "p1-hold-right-only",
+      "rep": 3,
+      "viewport": "default",
+      "outcome": "died",
+      "attempts": 2,
+      "deaths": 1,
+      "hits": 11,
+      "maxX": 38.69,
+      "finalX": 31.75,
+      "maxY": 3.26,
+      "victoryMs": null,
+      "victorySec": null,
+      "minEdgeMargin": 0.4,
+      "marginAtEnd": 0.4,
+      "idleFraction": 0.874,
+      "airMs": 1597,
+      "protoScore": -69.4,
+      "routeIds": [],
+      "pocket": {
+        "entered": false,
+        "enteredMethod": null,
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 1367,
+      "pinnedAtX": 38.65,
+      "errors": 0
+    },
+    {
+      "name": "p2-hold-right-hold-jump",
+      "rep": 1,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 1,
+      "maxX": 72.16,
+      "finalX": 70.72,
+      "maxY": 12.65,
+      "victoryMs": 3337,
+      "victorySec": 6.67,
+      "minEdgeMargin": 35.5,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.023,
+      "airMs": 2348,
+      "protoScore": 127.6,
+      "routeIds": [
+        "mid-catwalk",
+        "upper-chimney",
+        "wall-launch",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "p2-hold-right-hold-jump",
+      "rep": 2,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 1,
+      "maxX": 72.16,
+      "finalX": 71.08,
+      "maxY": 12.61,
+      "victoryMs": 3361,
+      "victorySec": 6.67,
+      "minEdgeMargin": 35.5,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.023,
+      "airMs": 2288,
+      "protoScore": 151.8,
+      "routeIds": [
+        "mid-catwalk",
+        "upper-chimney",
+        "wall-launch",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "p2-hold-right-hold-jump",
+      "rep": 3,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 1,
+      "maxX": 72.16,
+      "finalX": 71.26,
+      "maxY": 12.66,
+      "victoryMs": 3370,
+      "victorySec": 6.67,
+      "minEdgeMargin": 35.46,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.023,
+      "airMs": 2295,
+      "protoScore": 151.9,
+      "routeIds": [
+        "mid-catwalk",
+        "upper-chimney",
+        "wall-launch",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "p3-hold-right-hop-nofire",
+      "rep": 1,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 2,
+      "maxX": 72.05,
+      "finalX": 71.69,
+      "maxY": 11.31,
+      "victoryMs": 3366,
+      "victorySec": 6.62,
+      "minEdgeMargin": 35.46,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.023,
+      "airMs": 2063,
+      "protoScore": 124.1,
+      "routeIds": [
+        "mid-catwalk",
+        "upper-chimney",
+        "wall-launch",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "p3-hold-right-hop-nofire",
+      "rep": 2,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 2,
+      "maxX": 72.1,
+      "finalX": 71.74,
+      "maxY": 11.31,
+      "victoryMs": 3366,
+      "victorySec": 6.62,
+      "minEdgeMargin": 35.46,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.023,
+      "airMs": 2065,
+      "protoScore": 124.2,
+      "routeIds": [
+        "mid-catwalk",
+        "upper-chimney",
+        "wall-launch",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "p3-hold-right-hop-nofire",
+      "rep": 3,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 1,
+      "maxX": 72.14,
+      "finalX": 70.52,
+      "maxY": 12.66,
+      "victoryMs": 3287,
+      "victorySec": 6.57,
+      "minEdgeMargin": 35.46,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.092,
+      "airMs": 2294,
+      "protoScore": 175.1,
+      "routeIds": [
+        "upper-chimney",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 150,
+      "pinnedAtX": 38.65,
+      "errors": 0
+    },
+    {
+      "name": "p4-hold-right-mash-jump",
+      "rep": 1,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 1,
+      "maxX": 72.14,
+      "finalX": 71.78,
+      "maxY": 12.69,
+      "victoryMs": 2525,
+      "victorySec": 4.93,
+      "minEdgeMargin": 35.46,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.03,
+      "airMs": 2293,
+      "protoScore": 101.9,
+      "routeIds": [
+        "upper-chimney",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "p4-hold-right-mash-jump",
+      "rep": 2,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 1,
+      "maxX": 72.14,
+      "finalX": 71.42,
+      "maxY": 12.73,
+      "victoryMs": 2523,
+      "victorySec": 4.97,
+      "minEdgeMargin": 35.46,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.03,
+      "airMs": 2139,
+      "protoScore": 175.1,
+      "routeIds": [
+        "upper-chimney",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "p4-hold-right-mash-jump",
+      "rep": 3,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 1,
+      "maxX": 72.14,
+      "finalX": 71.78,
+      "maxY": 12.69,
+      "victoryMs": 2524,
+      "victorySec": 4.92,
+      "minEdgeMargin": 35.46,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.03,
+      "airMs": 2293,
+      "protoScore": 101.9,
+      "routeIds": [
+        "upper-chimney",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "p5-hop-500ms",
+      "rep": 1,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 1,
+      "maxX": 72.14,
+      "finalX": 70.7,
+      "maxY": 12.37,
+      "victoryMs": 3755,
+      "victorySec": 7.48,
+      "minEdgeMargin": 35.5,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.02,
+      "airMs": 3066,
+      "protoScore": 186.2,
+      "routeIds": [
+        "upper-chimney",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "p5-hop-500ms",
+      "rep": 2,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 1,
+      "maxX": 72.08,
+      "finalX": 71.36,
+      "maxY": 12.42,
+      "victoryMs": 3359,
+      "victorySec": 6.62,
+      "minEdgeMargin": 35.46,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.023,
+      "airMs": 2974,
+      "protoScore": 185.1,
+      "routeIds": [
+        "upper-chimney",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "p5-hop-500ms",
+      "rep": 3,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 1,
+      "maxX": 72.03,
+      "finalX": 70.59,
+      "maxY": 11.74,
+      "victoryMs": 3290,
+      "victorySec": 6.57,
+      "minEdgeMargin": 35.46,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.047,
+      "airMs": 2678,
+      "protoScore": 180.9,
+      "routeIds": [
+        "upper-chimney",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "p6-hop-1200ms",
+      "rep": 1,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 0,
+      "maxX": 72.1,
+      "finalX": 71.56,
+      "maxY": 12.73,
+      "victoryMs": 4666,
+      "victorySec": 9.23,
+      "minEdgeMargin": 30.26,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.181,
+      "airMs": 3057,
+      "protoScore": 179.9,
+      "routeIds": [
+        "mid-catwalk",
+        "wall-launch"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 305,
+      "pinnedAtX": 43.65,
+      "errors": 0
+    },
+    {
+      "name": "p6-hop-1200ms",
+      "rep": 2,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 0,
+      "maxX": 72.02,
+      "finalX": 71.3,
+      "maxY": 11.05,
+      "victoryMs": 2824,
+      "victorySec": 5.55,
+      "minEdgeMargin": 35.46,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.027,
+      "airMs": 1825,
+      "protoScore": 171.3,
+      "routeIds": [
+        "mid-catwalk",
+        "wall-launch"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "p6-hop-1200ms",
+      "rep": 3,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 0,
+      "maxX": 72.02,
+      "finalX": 71.48,
+      "maxY": 11.05,
+      "victoryMs": 2827,
+      "victorySec": 5.57,
+      "minEdgeMargin": 35.5,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.027,
+      "airMs": 1830,
+      "protoScore": 171.3,
+      "routeIds": [
+        "mid-catwalk",
+        "wall-launch"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "x1-crush-clock-and-shove",
+      "rep": 1,
+      "viewport": "default",
+      "outcome": "died",
+      "attempts": 3,
+      "deaths": 2,
+      "hits": 2,
+      "maxX": 38.68,
+      "finalX": 27.5,
+      "maxY": 3,
+      "victoryMs": null,
+      "victorySec": null,
+      "minEdgeMargin": 0.4,
+      "marginAtEnd": 20.81,
+      "idleFraction": 0.989,
+      "airMs": 228,
+      "protoScore": -135.1,
+      "routeIds": [],
+      "pocket": {
+        "entered": false,
+        "enteredMethod": null,
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 7619,
+      "pinnedAtX": 27.5,
+      "errors": 0
+    },
+    {
+      "name": "x1-crush-clock-and-shove",
+      "rep": 2,
+      "viewport": "default",
+      "outcome": "died",
+      "attempts": 3,
+      "deaths": 2,
+      "hits": 2,
+      "maxX": 38.68,
+      "finalX": 27.5,
+      "maxY": 3,
+      "victoryMs": null,
+      "victorySec": null,
+      "minEdgeMargin": 0.4,
+      "marginAtEnd": 20.98,
+      "idleFraction": 0.989,
+      "airMs": 227,
+      "protoScore": -136.1,
+      "routeIds": [],
+      "pocket": {
+        "entered": false,
+        "enteredMethod": null,
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 7662,
+      "pinnedAtX": 27.5,
+      "errors": 0
+    },
+    {
+      "name": "x1-crush-clock-and-shove",
+      "rep": 3,
+      "viewport": "default",
+      "outcome": "died",
+      "attempts": 3,
+      "deaths": 2,
+      "hits": 2,
+      "maxX": 38.68,
+      "finalX": 27.5,
+      "maxY": 3,
+      "victoryMs": null,
+      "victorySec": null,
+      "minEdgeMargin": 0.4,
+      "marginAtEnd": 20.94,
+      "idleFraction": 0.993,
+      "airMs": 152,
+      "protoScore": -137.7,
+      "routeIds": [],
+      "pocket": {
+        "entered": false,
+        "enteredMethod": null,
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 7666,
+      "pinnedAtX": 27.5,
+      "errors": 0
+    },
+    {
+      "name": "x2-pocket-grab-then-naive",
+      "rep": 1,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 1,
+      "maxX": 72.12,
+      "finalX": 71.03,
+      "maxY": 12.2,
+      "victoryMs": 4628,
+      "victorySec": 9.2,
+      "minEdgeMargin": 31.72,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.18,
+      "airMs": 3184,
+      "protoScore": 106.5,
+      "routeIds": [
+        "mid-catwalk",
+        "wall-launch"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 381,
+      "pinnedAtX": 43.65,
+      "errors": 0
+    },
+    {
+      "name": "x2-pocket-grab-then-naive",
+      "rep": 2,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 0,
+      "maxX": 72.1,
+      "finalX": 71.2,
+      "maxY": 13.01,
+      "victoryMs": 4477,
+      "victorySec": 8.88,
+      "minEdgeMargin": 31.76,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.085,
+      "airMs": 3340,
+      "protoScore": 187,
+      "routeIds": [
+        "mid-catwalk",
+        "wall-launch"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 227,
+      "pinnedAtX": 47.65,
+      "errors": 0
+    },
+    {
+      "name": "x2-pocket-grab-then-naive",
+      "rep": 3,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 2,
+      "maxX": 72.01,
+      "finalX": 70.74,
+      "maxY": 12.62,
+      "victoryMs": 4632,
+      "victorySec": 9.23,
+      "minEdgeMargin": 31.72,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.164,
+      "airMs": 3340,
+      "protoScore": 184,
+      "routeIds": [
+        "mid-catwalk",
+        "wall-launch"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 381,
+      "pinnedAtX": 43.65,
+      "errors": 0
+    },
+    {
+      "name": "x3-deadend-lip-pin",
+      "rep": 1,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 1,
+      "maxX": 72.16,
+      "finalX": 70.72,
+      "maxY": 12.65,
+      "victoryMs": 3335,
+      "victorySec": 6.65,
+      "minEdgeMargin": 35.46,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.023,
+      "airMs": 2275,
+      "protoScore": 126.7,
+      "routeIds": [
+        "mid-catwalk",
+        "upper-chimney",
+        "wall-launch",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "x3-deadend-lip-pin",
+      "rep": 2,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 1,
+      "maxX": 72.16,
+      "finalX": 70.72,
+      "maxY": 12.65,
+      "victoryMs": 3341,
+      "victorySec": 6.67,
+      "minEdgeMargin": 35.5,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.022,
+      "airMs": 2278,
+      "protoScore": 126.7,
+      "routeIds": [
+        "mid-catwalk",
+        "upper-chimney",
+        "wall-launch",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "x3-deadend-lip-pin",
+      "rep": 3,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 1,
+      "maxX": 72.16,
+      "finalX": 70.9,
+      "maxY": 12.61,
+      "victoryMs": 3344,
+      "victorySec": 6.65,
+      "minEdgeMargin": 35.46,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.023,
+      "airMs": 2281,
+      "protoScore": 126.8,
+      "routeIds": [
+        "mid-catwalk",
+        "upper-chimney",
+        "wall-launch",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 0,
+      "pinnedAtX": null,
+      "errors": 0
+    },
+    {
+      "name": "x4-retry-input-loss",
+      "rep": 1,
+      "viewport": "default",
+      "outcome": "died",
+      "attempts": 3,
+      "deaths": 2,
+      "hits": 2,
+      "maxX": 38.69,
+      "finalX": 27.5,
+      "maxY": 3,
+      "victoryMs": null,
+      "victorySec": null,
+      "minEdgeMargin": 0.4,
+      "marginAtEnd": 16.35,
+      "idleFraction": 0.953,
+      "airMs": 151,
+      "protoScore": -133.9,
+      "routeIds": [],
+      "pocket": {
+        "entered": false,
+        "enteredMethod": null,
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 8112,
+      "pinnedAtX": 38.65,
+      "errors": 0
+    },
+    {
+      "name": "x4-retry-input-loss",
+      "rep": 2,
+      "viewport": "default",
+      "outcome": "died",
+      "attempts": 3,
+      "deaths": 2,
+      "hits": 2,
+      "maxX": 38.69,
+      "finalX": 27.5,
+      "maxY": 3,
+      "victoryMs": null,
+      "victorySec": null,
+      "minEdgeMargin": 0.4,
+      "marginAtEnd": 16.35,
+      "idleFraction": 0.953,
+      "airMs": 152,
+      "protoScore": -134,
+      "routeIds": [],
+      "pocket": {
+        "entered": false,
+        "enteredMethod": null,
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 8111,
+      "pinnedAtX": 38.65,
+      "errors": 0
+    },
+    {
+      "name": "x4-retry-input-loss",
+      "rep": 3,
+      "viewport": "default",
+      "outcome": "died",
+      "attempts": 3,
+      "deaths": 2,
+      "hits": 2,
+      "maxX": 38.69,
+      "finalX": 27.5,
+      "maxY": 3,
+      "victoryMs": null,
+      "victorySec": null,
+      "minEdgeMargin": 0.4,
+      "marginAtEnd": 16.26,
+      "idleFraction": 0.953,
+      "airMs": 151,
+      "protoScore": -134,
+      "routeIds": [],
+      "pocket": {
+        "entered": false,
+        "enteredMethod": null,
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 8115,
+      "pinnedAtX": 38.65,
+      "errors": 0
+    },
+    {
+      "name": "x5-pocket-dawdle",
+      "rep": 1,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 1,
+      "maxX": 72.1,
+      "finalX": 70.66,
+      "maxY": 12.66,
+      "victoryMs": 6139,
+      "victorySec": 12.27,
+      "minEdgeMargin": 23.36,
+      "marginAtEnd": 33.96,
+      "idleFraction": 0.481,
+      "airMs": 2350,
+      "protoScore": 104.6,
+      "routeIds": [
+        "upper-chimney",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 2426,
+      "pinnedAtX": 60.69,
+      "errors": 0
+    },
+    {
+      "name": "x5-pocket-dawdle",
+      "rep": 2,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 0,
+      "maxX": 72.1,
+      "finalX": 70.48,
+      "maxY": 12.66,
+      "victoryMs": 6136,
+      "victorySec": 12.27,
+      "minEdgeMargin": 23.44,
+      "marginAtEnd": 33.9,
+      "idleFraction": 0.482,
+      "airMs": 2347,
+      "protoScore": 29.5,
+      "routeIds": [],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 2423,
+      "pinnedAtX": 60.66,
+      "errors": 0
+    },
+    {
+      "name": "x5-pocket-dawdle",
+      "rep": 3,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 4,
+      "maxX": 72.06,
+      "finalX": 70.98,
+      "maxY": 13.32,
+      "victoryMs": 7369,
+      "victorySec": 14.68,
+      "minEdgeMargin": 13.67,
+      "marginAtEnd": 39.61,
+      "idleFraction": 0.35,
+      "airMs": 4179,
+      "protoScore": 104.5,
+      "routeIds": [
+        "mid-catwalk",
+        "upper-chimney",
+        "wall-launch",
+        "recovery-scramble"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 835,
+      "pinnedAtX": 43.65,
+      "errors": 0
+    },
+    {
+      "name": "x6-step39-slot-sweep",
+      "rep": 1,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 0,
+      "maxX": 72.06,
+      "finalX": 71.16,
+      "maxY": 8.31,
+      "victoryMs": 3260,
+      "victorySec": 6.45,
+      "minEdgeMargin": 35.46,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.232,
+      "airMs": 1212,
+      "protoScore": 108.5,
+      "routeIds": [
+        "lower-service"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 226,
+      "pinnedAtX": 47.65,
+      "errors": 0
+    },
+    {
+      "name": "x6-step39-slot-sweep",
+      "rep": 2,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 0,
+      "maxX": 72.06,
+      "finalX": 71.16,
+      "maxY": 8.31,
+      "victoryMs": 3263,
+      "victorySec": 6.47,
+      "minEdgeMargin": 35.5,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.255,
+      "airMs": 1216,
+      "protoScore": 107.9,
+      "routeIds": [
+        "lower-service"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 227,
+      "pinnedAtX": 47.65,
+      "errors": 0
+    },
+    {
+      "name": "x6-step39-slot-sweep",
+      "rep": 3,
+      "viewport": "default",
+      "outcome": "completed",
+      "attempts": 1,
+      "deaths": 0,
+      "hits": 0,
+      "maxX": 72.1,
+      "finalX": 70.66,
+      "maxY": 8.31,
+      "victoryMs": 2885,
+      "victorySec": 5.75,
+      "minEdgeMargin": 35.46,
+      "marginAtEnd": 42.92,
+      "idleFraction": 0.211,
+      "airMs": 909,
+      "protoScore": 106,
+      "routeIds": [
+        "lower-service"
+      ],
+      "pocket": {
+        "entered": true,
+        "enteredMethod": "position-in-bounds",
+        "rewardTaken": false
+      },
+      "weaponEnd": "R",
+      "pinnedMs": 228,
+      "pinnedAtX": 47.65,
+      "errors": 0
+    }
+  ]
+}
