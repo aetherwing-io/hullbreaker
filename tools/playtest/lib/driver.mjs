@@ -61,6 +61,28 @@ export async function runPlaytest({
   let victorySeenAt = null;
   let stop = false;
 
+  // F7 fix (adversarial report, x4-retry-input-loss): the game's fast retry
+  // calls releaseAllKeys() on every SLICE_RETRY -> resetGame() transition, so
+  // a scripted key that is still "held" per the script's own timeline (a
+  // `hold` from t0 to t1 with no keyup dispatched yet) goes dead in the game
+  // the instant a retry fires, and stays dead until the script's own
+  // scheduled keyup/keydown next touches that code — measured as 5.2s of
+  // zero motion with a key conceptually held. heldCodes tracks what the
+  // script currently considers "down"; the sample loop watches the
+  // testapi/HB `attempts` counter (already polled every sampleMs) and, the
+  // moment it ticks up, re-dispatches a keydown for every currently-held
+  // code. Verified empirically: a second page.keyboard.down() for an
+  // already-down code produces a real `repeat: true` keydown (not an error,
+  // not a fresh press) — exactly what re-arming a held key should look like,
+  // and harmless for jump specifically since the game only schedules a fresh
+  // jump buffer on `!e.repeat`. Detection lag is bounded by the polling
+  // interval (sampleMs) plus one CDP round-trip, not the multi-second gap
+  // the unpatched harness produced — both are recorded in retryReassertions
+  // for the report rather than assumed instantaneous.
+  const heldCodes = new Set();
+  const retryReassertions = [];
+  let lastAttemptsForRetry = null;
+
   const t0 = Date.now();
   const elapsed = () => Date.now() - t0;
   const lastEventT = events.reduce((m, e) => Math.max(m, e.t), 0);
@@ -68,6 +90,19 @@ export async function runPlaytest({
   // script has no events at all but must still run its full intended length) —
   // never let a sparse event list truncate the run early.
   const scriptEndMs = Math.max(lastEventT, durationMs) + tailMs;
+
+  async function reassertHeldKeys(tMs, attempts) {
+    const codes = [...heldCodes];
+    if (codes.length === 0) return;
+    for (const code of codes) {
+      try {
+        await page.keyboard.down(code);
+      } catch (err) {
+        pageErrors.push({ message: `retry re-assertion failed for ${code}: ${err.message}` });
+      }
+    }
+    retryReassertions.push({ tMs, attempts, codes });
+  }
 
   async function sampleLoop() {
     while (!stop) {
@@ -85,6 +120,12 @@ export async function runPlaytest({
       if (sample && sample.ovTitle === 'TRAVERSAL CLEAR' && victorySeenAt === null) {
         victorySeenAt = tMs;
       }
+      if (sample && typeof sample.attempts === 'number') {
+        if (lastAttemptsForRetry !== null && sample.attempts > lastAttemptsForRetry) {
+          await reassertHeldKeys(tMs, sample.attempts);
+        }
+        lastAttemptsForRetry = sample.attempts;
+      }
       const timeUp = tMs >= scriptEndMs;
       const hardCap = tMs >= maxRuntimeMs;
       const victoryDone = victorySeenAt !== null && tMs >= victorySeenAt + victorySettleMs;
@@ -100,8 +141,8 @@ export async function runPlaytest({
       if (wait > 0) await new Promise((r) => setTimeout(r, wait));
       const dispatchedAt = elapsed();
       try {
-        if (ev.type === 'keydown') await page.keyboard.down(ev.code);
-        else await page.keyboard.up(ev.code);
+        if (ev.type === 'keydown') { await page.keyboard.down(ev.code); heldCodes.add(ev.code); }
+        else { await page.keyboard.up(ev.code); heldCodes.delete(ev.code); }
       } catch (err) {
         pageErrors.push({ message: `input dispatch failed for ${ev.type} ${ev.code}: ${err.message}` });
       }
@@ -141,5 +182,7 @@ export async function runPlaytest({
     screenshotPath,
     videoPath,
     dispatchedEvents: events,
+    retryReassertions,
+    maxRetryDetectionLagMs: sampleMs,
   };
 }

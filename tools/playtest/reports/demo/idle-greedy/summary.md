@@ -1,10 +1,10 @@
 # idle-greedy — playtest report
 
-- URL: `http://127.0.0.1:55951/index.html?slice=traversal&enemies=0&testapi=1`
-- Started: 2026-07-29T23:04:29.785Z
-- Wall time: 9.2s
+- URL: `http://127.0.0.1:54387/index.html?slice=traversal&enemies=0&testapi=1`
+- Started: 2026-07-30T00:27:41.681Z
+- Wall time: 9.3s
 - Fidelity: **testapi**
-- Sampling: requested every 75ms, achieved avg 75.6ms / max 77ms (119 samples)
+- Sampling: requested every 75ms, achieved avg 75.3ms / max 77ms (120 samples)
 
 ## Outcome
 - Result: **stalled**
@@ -12,14 +12,14 @@
 - Kills: 0, deaths observed: 0, hits survived: 0
 
 ## Pacing / fairness metrics
-- Idle time (A.5 `stallMs`): 8.5s of 8.9s PLAYING time (fraction 0.949)
+- Idle time (A.5 `stallMs`): 8.4s of 9.0s PLAYING time (fraction 0.941)
 - Airborne time (`airMs`): 0.5s
 - Closest approach to crush edge (`minEdgeMargin`): 0.4 tiles
-- Vertical range: y 2.39–4 (span 1.61)
+- Vertical range: y 2–4 (span 2)
 - Route coverage (A.5 `routeIds`, >=3 connectors matched in order): **[none]**
 - Route inference (harness-only best guess): **lower-service** (confidence 0.29, 2 connectors matched)
-- Air jumps: **unavailable** — window.HB has not landed and the ?testapi=1 snapshot does not currently expose sliceStats.airJumps (it has attempt/falls but not airJumps) — recommend adding it alongside those, or via window.HB
+- Air jumps: 0 final attempt (peak single attempt 0; resets every retry)
 - Dare pocket: entered=false (not observed), reward taken=false
 - Input density (A.5: deliberately NOT a score input): 0 events/sec (0 total: 0 down / 0 up)
-- protoScore (A.5 formula, proxy airborneKills/links — see README): **-37.2** (airborneKills=0, links≈1, airMs=456, stallMs=8463)
+- protoScore (A.5 formula, proxy airborneKills/links — see README): **-36.1** (airborneKills=0, links≈1, airMs=530, stallMs=8433)
 

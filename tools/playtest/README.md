@@ -131,30 +131,45 @@ The sampler (`lib/sampler.mjs`) checks, in order:
 1. **`testapi`** — `globalThis.__HULLBREAKER_TEST__.snapshot()`, present when
    the URL has `?testapi=1` (which `run.mjs` adds **by default**; disable
    with `--no-testapi`). This is a read-only telemetry hook the game itself
-   already ships (introduced in commit `15f66d2`, "Accelerate traversal
-   slice from playtest feedback"; since the module split it lives in
-   `src/main.js`, documented as unable to mutate the simulation). **This
-   was missed in this harness's
-   first pass**, which assumed no such hook existed and built a DOM/HUD-text
-   fallback as the only option; it was found while aligning metrics with
-   Appendix A.5 below. It gives exact `player.{x,y,vx,vy,grounded,
-   traversalState,traversalControlUntil}`, `scrollX`, `gameMs`, `state`, an
-   *unrounded* `edgeMargin`, `weapon`, `attempt`, `falls`.
-2. **`full`** (`window.HB`) — the splitter's planned debug handle, not
-   present on `main` as of this writing. Same kind of data as `testapi`, from
-   a different source, for whenever it lands.
+   already ships (introduced pre-module-split in commit `15f66d2`; lives in
+   `src/main.js` now, documented there as "the playtest harness's canonical
+   channel, field names frozen" and unable to mutate the simulation). **This
+   was missed in this harness's first pass**, which assumed no such hook
+   existed and built a DOM/HUD-text fallback as the only option; it was
+   found while aligning metrics with Appendix A.5 below. It gives exact
+   `player.{x,y,vx,vy,grounded,traversalState,traversalControlUntil}`,
+   `scrollX`, `gameMs`, `state`, an *unrounded* `edgeMargin`, `weapon`,
+   `attempt`, `falls`, `airJumps`.
+2. **`full`** (`window.HB.snapshot()`) — `window.HB` is now **unconditional**:
+   present on every load, no query param needed (`src/main.js`: "Read-only
+   debug handle, always present"). It shares the same underlying
+   `telemetry()` function as `testapi` so their common fields can't drift
+   apart, and additionally carries `player.{hp,lives,facing,airJumpsLeft}`,
+   `kills`, `shotsFired`, `hostiles`, `capsules`. Used whenever `--no-testapi`
+   is passed (or if `?testapi=1` is ever removed from `run.mjs`'s default).
+   **Note:** `window.HB`'s *other* top-level members (`HB.state`,
+   `HB.scrollX`, `HB.currentWeapon`, `HB.kills`, …) are getter **functions**,
+   not values — calling them bare (`HB.state` instead of `HB.state()`) would
+   silently return a function reference instead of the real value. This
+   sampler only ever reads through `HB.snapshot()`, specifically to avoid
+   that trap; it was caught during this update, before it ever shipped in a
+   committed report (the `full` channel had never actually been exercised —
+   `testapi` was always preferred and, until now, always present in every
+   demo run).
 3. **`dom`** — neither exists. Falls back to parsing the HUD/overlay text
    nodes: attempt count, crush-edge margin (rounded to 1 decimal), kill
    count, hp pips, current weapon letter, dare-pocket/overlay text.
 
-kills/hp/weapon/overlay text are always read from the DOM as a base layer and
-merged with whichever physics channel is available — neither telemetry
-channel exposes those itself.
+kills/hp/weapon/overlay text are always read from the DOM as a base layer;
+`testapi` overlays its frozen minimal set on top (kills/hp still come from
+the DOM even in `testapi` mode, since that channel deliberately doesn't
+carry them), while `full` (`HB.snapshot()`) overlays its own richer
+kills/hp directly since it does carry them.
 
-**Every demo run in this repo now runs in `testapi` mode** (see below) — the
-degraded-`dom`-mode caveats from earlier drafts of this README no longer
-apply to the committed demo reports, only to a hypothetical run with
-`--no-testapi` and no `window.HB`.
+**Every demo run in this repo runs in `testapi` mode** (the default) — the
+degraded-`dom`-mode caveats from earlier drafts of this README don't apply
+to the committed demo reports, only to a run with `--no-testapi` on a build
+that also somehow lacks `window.HB`.
 
 ## Metrics and what they mean
 
@@ -188,11 +203,10 @@ apply to the committed demo reports, only to a hypothetical run with
   approximate even then — nearest-neighbor greedy matching, not a
   topological solve, against a fixture copy that can silently drift from
   `index.html` (see `lib/fixture.mjs`'s header comment).
-- **jump/air-jump counts** — `sliceStats.airJumps`. **Still unavailable even
-  in `testapi` mode** — the snapshot has `attempt`/`falls` but not
-  `airJumps`. Only `window.HB` (if it adds it) can supply this today. Even
-  then it only reflects the *current* attempt, since the game resets the
-  counter every retry.
+- **jump/air-jump counts** — `sliceStats.airJumps`, from either `testapi` or
+  `full`. Only reflects the *current* attempt, since the game resets the
+  counter every retry — reported as both `finalAttemptAirJumps` and
+  `peakSingleAttemptAirJumps` with that caveat inline.
 - **input density** — scripted events/sec. Always available (a script
   property, not an observation). A.5 is explicit that this is **not** a
   score input ("rewarding input density would reward mashing"); it's
@@ -247,25 +261,79 @@ request, this harness adopted it as follows:
 - `minEdgeMargin` is read from the game (via `testapi`/HUD), never
   recomputed, per A.5's determinism note.
 
+## Fixed: zombie attempts (F7)
+
+The adversarial agent's report (`docs/playtests/2026-07-adversarial.md`,
+finding F7) found that the game's fast retry — `scheduleSliceRetry()` and
+`resetGame()` in `src/sim/player.js`/`src/main.js` — calls
+`releaseAllKeys()` on every death-to-respawn transition. A script that dies
+mid-`hold` (e.g. `hold right fromMs:0 toMs:8800`, then dies at 3s) produced a
+**zombie second attempt**: the game's `keys.right` gets wiped, and since
+Playwright dispatches exactly one `keydown` per `hold` (no OS-level
+auto-repeat), nothing ever tells the game the key is still down. Measured in
+the adversarial report as 5.2s of `vx = 0` with the key conceptually held.
+Every metric computed past that point — idle fraction, route coverage,
+margins, `protoScore` — was measuring an empty room.
+
+**Fix** (`lib/driver.mjs`, `reassertHeldKeys`): the driver now tracks which
+codes the script currently considers "held" (`heldCodes`, updated as
+scripted keydown/keyup events are dispatched) and watches the
+`testapi`/`full` `attempts` counter on every sample (already polled every
+`sampleMs`, no extra cost). The instant `attempts` ticks up, it re-dispatches
+a `keydown` for every currently-held code. Verified empirically that a
+second `page.keyboard.down()` for an already-down code produces a real
+`repeat: true` keydown, not an error and not a fresh press — and it's
+harmless for a held jump specifically, since the game only schedules a new
+jump buffer on `!e.repeat`. Detection lag is bounded by `sampleMs` (default
+75ms) plus one CDP round-trip, not the multi-second gap the unpatched
+harness produced; every run reports the exact lag and count in
+`retryReassertions`/`retryDetection`.
+
+**Proof** (`scripts/retry-recovery.json`, committed under
+`reports/demo/retry-recovery/`): holds `ArrowRight` only, dies deterministically
+around 13.9s (jams on the known column-39 step, `enemies=0`), and the trace
+shows `vx` at exactly **0** on the sample carrying the attempt increment
+(`tMs=13937`) and **10.08** on the very next sample 75ms later — full run
+speed within one polling interval, not 5.2 seconds. `retryReassertions` in
+that report's JSON records the single re-press: `{tMs: 13937, attempts: 2,
+codes: ["ArrowRight"]}`.
+
+**What this doesn't fix:** a script that dies *while a `tap` is between its
+keydown and keyup* (e.g. jump held for its scripted 90ms right as a death
+happens) will have that key correctly re-armed too, but the fix can't do
+anything about the ~1 polling-interval detection lag itself — a report's
+`retryDetection.maxLagMs` states that bound explicitly rather than implying
+instantaneous recovery. This is a harness-side fix only; it does not touch
+`src/sim/player.js` or `src/main.js` (the adversarial report's suggested
+game-side alternative — re-arming held keys on retry, or preserving key
+state and only clearing the jump buffer — remains open for
+`physics-reviewer` if a game-side fix is still wanted for real-player
+experience, which is a separate, `SUSPECTED`-not-`CONFIRMED` question the
+adversarial report left open).
+
 ## Demo runs
 
-Three scripts are committed under `scripts/`, with their reports committed
+Four scripts are committed under `scripts/`, with their reports committed
 under `reports/demo/` (screenshots/videos are gitignored; the JSON + summary
-are the actual demo artifact). All three now run in **`testapi` fidelity**.
+are the actual demo artifact). All four now run in **`testapi` fidelity**.
 
 | Script | Policy | Result |
 | --- | --- | --- |
-| `mid-route.json` | Hold right + hold fire + tap jump every ~800ms — a heuristic that leans on the game's forgiving ledge/wall-jump catch instead of solving exact timing | **completed**, idle fraction **0%**, airborne 6.0s, crush margin 17.6 tiles, protoScore **147.5** |
-| `dare-pocket.json` | Commits into the dare pocket, retreats within the wager window, then resumes the hop policy | **not-completed**, idle fraction **34%**, crush margin 11.1 tiles, protoScore **120.7** |
-| `idle-greedy.json` | Zero key events for 8s (`&enemies=0` to isolate the signal from ambient wasp combat) | **stalled**, idle fraction **94.9%**, crush margin **0.4 tiles**, protoScore **−37.2** |
+| `mid-route.json` | Hold right + hold fire + tap jump every ~800ms — a heuristic that leans on the game's forgiving ledge/wall-jump catch instead of solving exact timing | **completed**, idle fraction **3%**, airborne 6.3s, crush margin 18.4 tiles, protoScore **149.1** |
+| `dare-pocket.json` | Commits into the dare pocket, retreats within the wager window, then resumes the hop policy | **not-completed**, idle fraction **34%**, crush margin 11.1 tiles, protoScore **122.2** |
+| `idle-greedy.json` | Zero key events for 8s (`&enemies=0` to isolate the signal from ambient wasp combat) | **stalled**, idle fraction **94.1%**, crush margin **0.4 tiles**, protoScore **−36.1** |
+| `retry-recovery.json` | Holds right only; dies once (deterministic, `enemies=0`), proves the F7 fix (above) | **died**, 1 retry detected, `vx` 0 -> 10.08 tiles/s within 75ms of the retry |
 
-The headline finding: idle fraction (0% / 34% / 95%), crush-edge margin
-(17.6 / 11.1 / 0.4 tiles), and protoScore (147.5 / 120.7 / −37.2) all move in
-lockstep and cleanly separate all three policies — "moving with intent,"
+The headline finding across the first three: idle fraction (3% / 34% / 94%),
+crush-edge margin (18.4 / 11.1 / 0.4 tiles), and protoScore (149.1 / 122.2 /
+−36.1) all move in lockstep and cleanly separate "moving with intent,"
 "moving but distracted," and "standing still." That's a direct, working
 confirmation of the pursuit-pressure diagnosis in `docs/FLEET-PLAN.md`
-("Pursuit clock too soft ... no timed decisions"), and it's now backed by
-real position/velocity data, not just the crush-margin proxy alone.
+("Pursuit clock too soft ... no timed decisions"), backed by real
+position/velocity data. Exact numbers shift slightly run-to-run — the
+adversarial report documents this as physics-timing sensitivity in
+open-loop scripts, not dispatch jitter (which measured 0-2ms average, ≤4ms
+max) — so treat each number as "about this," not to the decimal.
 
 Reproduce any of them (exact numbers will vary run-to-run — physics timing
 against a live scroll/spawn clock isn't perfectly deterministic frame-to-frame
@@ -275,6 +343,7 @@ for an open-loop script):
 node run.mjs scripts/mid-route.json --out /tmp/check
 node run.mjs scripts/dare-pocket.json --out /tmp/check
 node run.mjs scripts/idle-greedy.json --out /tmp/check
+node run.mjs scripts/retry-recovery.json --out /tmp/check   # F7 regression proof
 ```
 
 ## Honesty / limitations — read before trusting a report
@@ -295,42 +364,53 @@ node run.mjs scripts/idle-greedy.json --out /tmp/check
 3. **Route coverage/inference is approximate.** The nearest-connector greedy
    matcher in `lib/metrics.mjs` is not a topological solve, and
    `lib/fixture.mjs` is a hand-copied snapshot of `TRAVERSAL_FIXTURE`, not an
-   import — nothing checks it against `index.html`, so it can silently go
-   stale if fixture geometry changes (flagged in the file's header comment).
-4. **Jump/air-jump counts remain unavailable** even in `testapi` mode — the
-   snapshot doesn't expose `sliceStats.airJumps`. Only a future `window.HB`
-   (or a trivial addition to the `testapi` snapshot) can supply this.
-5. **Sampling is polled (~75ms), not event-driven.** A single fast frame at
+   import — nothing checks it against `index.html` (though the adversarial
+   report independently diffed it byte-for-byte against the live fixture and
+   found no drift yet), so it can silently go stale if fixture geometry
+   changes (flagged in the file's header comment).
+4. **Sampling is polled (~75ms), not event-driven.** A single fast frame at
    the true instantaneous minimum/maximum can be missed by a sample or two —
    e.g. the harness's tracked `minEdgeMargin` and the game's own end-of-run
    overlay figure can differ by a small amount for exactly this reason, not
-   a bug.
-6. **This harness's first pass missed the `?testapi=1` hook entirely** and
+   a bug. The same applies to retry detection (see "Fixed: zombie attempts"
+   above): recovery is bounded by the polling interval, not instantaneous.
+5. **This harness's first pass missed the `?testapi=1` hook entirely** and
    built a DOM/HUD-text-only fallback assuming no such channel existed. That
-   fallback is still there (and still the least-bad option if `testapi` is
-   disabled and `window.HB` hasn't landed), but the initial round of demo
+   fallback is still there (and still the least-bad option if both `testapi`
+   and `window.HB` are ever unavailable), but the initial round of demo
    reports and this README's original "degraded DOM mode" framing were
    written before the hook was found. Worth remembering when trusting any
    analysis this harness (or any tool) produces about its own environment:
    verify the assumption that a capability doesn't exist before designing
-   around its absence.
+   around its absence. The zombie-attempts defect (F7) and the missing
+   `airJumps` field (S4) were both caught by the adversarial agent playing
+   actual scripts through this harness, not by this harness auditing itself
+   — external, adversarial verification found real defects that internal
+   testing during the first two passes did not.
+6. **Every report before this fix should be treated as suspect past a
+   run's first death.** The three original demo reports (`mid-route`,
+   `dare-pocket`, `idle-greedy`) never died within their scripted windows, so
+   they were never actually affected by F7 — but any other harness output
+   generated before this fix, from any script that died and kept running,
+   measured a zombie attempt for everything after the first retry.
 
 ## Hook requests for the game/module-split side
 
-1. **Add `sliceStats.airJumps` to the `?testapi=1` snapshot** (or expose it
-   via `window.HB`) — the only field this harness still can't get despite
-   `testapi` otherwise covering almost everything asked for. Trivial,
-   alongside the existing `attempt`/`falls` fields.
+1. ~~Add `sliceStats.airJumps` to the `?testapi=1` snapshot~~ — **done**
+   (the module split's `src/main.js` publishes it; this harness just needed
+   to stop dropping it, fixed above).
 2. **Land `HB.score.events`/`HB.score.snapshot()`** per A.5, once the CHARGE
    system exists, so `computeAirborneKills`/the `links` proxy in
    `lib/metrics.mjs` can be replaced with the real event-derived counts
    instead of the kills+grounded / route-matcher approximations described
    above.
-3. Once the module split lands `src/pure/traversal.js`, replace
-   `lib/fixture.mjs`'s hand-copied snapshot with a real import.
-4. `window.HB` itself is now a lower priority for this harness specifically
-   — `testapi` already covers player physics/traversal state/scrollX/state.
-   It's still useful to other consumers per the splitter's original brief.
+3. The module split has landed `src/pure/traversal.js` — `lib/fixture.mjs`'s
+   hand-copied snapshot can now be replaced with a real import (not done in
+   this pass; scoped out to stay focused on the two reported defects). The
+   adversarial report already diffed the two byte-for-byte and found no
+   drift, so this is a safe, low-risk cleanup whenever someone picks it up.
+4. `window.HB` now exists (unconditional, richer than `testapi`) — no
+   longer a hook request, just confirmed working via `HB.snapshot()`.
 
 ## Known limitations (engineering, not measurement)
 
@@ -359,14 +439,20 @@ tools/playtest/
     metrics.mjs            trace -> report metrics, incl. A.5 alignment
     fixture.mjs             hardcoded TRAVERSAL_FIXTURE route-graph snapshot
     report.mjs              report.json + summary.md writer
-  scripts/                 example input scripts
+  scripts/                 example input scripts (incl. retry-recovery.json, the F7 proof)
   reports/demo/             committed demo run output (json/md only)
   runs/                     default ad-hoc output dir (gitignored)
 ```
 
 ## Single best next action
 
-Add `sliceStats.airJumps` to the `?testapi=1` snapshot (one line, alongside
-the existing `attempt`/`falls` fields) — it's the single remaining gap this
-harness can't close on its own, and unlike `HB.score.events` it doesn't
-require the score system to exist first.
+Replace `lib/fixture.mjs`'s hand-copied `TRAVERSAL_FIXTURE` snapshot with a
+real `import` from `src/pure/traversal.js`, now that the module split has
+landed it — the last documented staleness risk in this harness's own code,
+and the adversarial report already confirmed there's currently zero drift to
+reconcile, so it's a safe, mechanical change whenever picked up. Separately,
+and not this harness's call: the adversarial report left F7's *human*-facing
+consequence as `SUSPECTED`, not `CONFIRMED` — whether a real held movement
+key recovers via Chrome's own auto-repeat before a player notices is a
+question for `physics-reviewer`/a hands-on check, independent of this
+harness-side measurement fix.

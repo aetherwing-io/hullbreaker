@@ -66,6 +66,66 @@ Shows the target dramatic ramp from left to right:
 5. a high exterior kill lattice with mixed threats; and
 6. the HULLBREAKER summit, where the world transforms during peak-power combat.
 
+### 5. Start-screen directions
+
+![Start-screen direction board](05-start-screen-directions.png)
+
+Tests three brand promises from left to right:
+
+1. **The Impossible Climb** centers human scale, altitude, and the settlement;
+2. **The Ship Wakes** makes transforming architecture the signature hook; and
+3. **Scuttle the Crown** promises the maximal summit spectacle.
+
+These are composition studies with deliberate title/menu space, not finished UI
+or logo treatments. The middle direction is the most game-specific; the left is
+the clearest story pitch; the right is the strongest action-poster pitch.
+
+### 6. Enemy form language
+
+![Enemy form-language sheet](06-enemy-form-language.png)
+
+Compares three enemy families by row:
+
+- Houndframe ground chargers;
+- rooted polyp connector turrets; and
+- spore mortars for delayed landing denial.
+
+Each row moves left to right from repurposed maintenance hardware, through the
+recommended bio-industrial balance, to more uncanny terraforming machinery. The
+center column currently gives the strongest shared family: **Brace Hound**,
+**Iris Polyp**, and **Seed-Pod Tripod**. This board explores form language; it
+does not lock final models.
+
+### 7. Enemy combat readability
+
+![Enemy combat-readability board](07-enemy-combat-readability.png)
+
+Places the recommended enemy forms into four side-on play situations:
+
+- a Brace Hound announcing a committed floor charge;
+- an Iris Polyp locking one connector while alternatives remain visible;
+- a Seed-Pod Tripod marking the intended landing surface; and
+- a non-aggressive carrier luring RIG into a recoverable dare pocket.
+
+The hound mass and mortar denial read strongly. The polyp likely needs a more
+side-facing barrel in a model pass, and the carrier should retain its broad,
+non-predatory silhouette.
+
+### 8. Transformation sequences
+
+![Transformation sequence board](08-transformation-sequences.png)
+
+Uses locked before/during/after views to test spatial—not merely cosmetic—
+change:
+
+- exterior bulkhead flip into interior containment;
+- upper-interior breach back to a higher exterior; and
+- Crown lockdown, structural rejection, and scuttle.
+
+The diagnostic standard is that RIG stays controllable, moving structure remains
+playable, and the committed playfield presents a new route problem. The panels
+are sequence targets, not frame-accurate engineering plans.
+
 ## Visual invariants
 
 Future concepts and implementation should preserve:
