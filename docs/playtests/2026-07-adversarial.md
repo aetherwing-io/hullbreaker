@@ -1010,6 +1010,112 @@ places (x=60.45 / 30.45 / 65.15). Still a signal for the transformation lane
 rather than a defect claim, and still un-diagnosable from outside without the
 ritual-state hook above. No console or page errors in any run.
 
+### A1–A4 — hound density and aspect passes on both new fixtures (`a89e93d`)
+
+**The hound roster is invisible to a roof-runner, and hound=3 at swarm density is
+not unwinnable.** The question combat asked was whether stage 3's
+add-composition creates unwinnable spawn overlaps at swarm's density. It does
+not — for this policy it creates nothing at all:
+
+| Config | `p4` mash-jump | `h1` mash + held fire | Crush margin |
+| --- | --- | --- | --- |
+| `hound=3&pace=swarm` | completed 3/3, 6.77–6.78s, **0 deaths** | completed 3/3, 4.10–5.13s, **0 deaths** | 6.22–6.45 |
+| `hound=3` (base pace) | completed 3/3, 5.23–5.24s, **0 deaths** | completed 3/3, 4.09–5.36s, **0 deaths** | 18.40–18.42 |
+
+Reading those two rows against each other isolates the variables cleanly:
+**adding the full hound composition changes the naive policy's crush margin by
+0.0 tiles at base (18.40 → 18.40) and its clear time by −0.01s (5.25 → 5.24).**
+Every tile of the margin squeeze in the top row comes from `swarm`, none from the
+hounds. No run took a single death in twelve attempts at maximum roster density.
+
+This is not evidence the encounter is easy for a human — it is evidence the
+encounter is *not on the route this policy takes*, which is the same roof-line
+finding as F10 and h1, now quantified at full density. Combat's 2.5 cycle can
+treat "a lone hound poses no threat" as generalizing to the whole roster until
+the roof is contested.
+
+**Aspect, hound fixture: no trap.** `p4` at 800×1000 with `hound=2` completes 3/3
+in 4.78–4.79s at margin 11.08–11.12 — the same figures as the traversal slice at
+that viewport, so the hound changes nothing about aspect behaviour.
+
+**Aspect, transform fixture: a real asymmetry.** The seam rush at 800×1000
+reaches `maxX` **145.04 / 146.07 / 146.00** and **completes 2 of 3 runs**
+(16.23s, 18.76s), versus `maxX` 119.77–132.94 and **0 of 3** completions at
+1280×800 inside the same twenty-second window — about 13% more progress on the
+narrower window, while the crush margin is *tighter* there (5.34–5.71 versus
+12.69–13.03). Whether a transform run finishes at all currently depends on
+viewport shape. Flagged for the transform lane; I did not isolate the mechanism,
+though the portrait camera pullback (`traversalCameraDepth` /
+`portraitMinAspect`) changing the follow lead is the obvious suspect.
+
+**Harness bug found while checking that claim (owner: harness-engineer).**
+`computeOutcome` in `tools/playtest/lib/metrics.mjs` recognizes only the
+traversal slice's overlay: `trace.some((s) => s.ovTitle === 'TRAVERSAL CLEAR')`.
+The transform slice's victory overlay reads **`BREACH CLEAR`**, so a completed
+transform run is labelled `not-completed` — or `died`, if it also recorded an
+attempt. The run above shows 62 consecutive `state === 'VICTORY'` samples from
+t=16.29s while the report's own outcome field says `not-completed`. Anyone gating
+`?slice=transform` on `outcome.result` today is reading a false negative; the
+`victorySec` field in this lane's runner is derived from `state`, which is why
+the completions were visible at all.
+
+## Intensity-fix re-gate — the fix works on every criterion I could measure
+
+Runs valid on the fix build (started after `726207c`, before the movement merge
+`9a530ab`): 26 runs across hunt, swarm and surge.
+
+| Acceptance criterion | Verdict | Evidence |
+| --- | --- | --- |
+| `edgeMargin` never negative | **PASS** | 0 of 26 runs below −0.05. The floor is exactly **0.40** (= `CONFIG.edges.margin`) in every run. Before the fix, −0.58 to −0.60 was routine. The wall-grind is closed. |
+| `p1-hold-right-only` must fail on surge | **PASS, emphatically** | died 3/3 with **attempts = 5** per run. Before the fix it completed 3/3 in 12.4s. One held key now dies repeatedly instead of being delivered to the exit. |
+| `p2-hold-right-hold-jump` must fail on surge | **PASS** | stalled 2/2 (the third repetition's report is missing — the batch was cut short, see below). |
+| `x1` must reach a terminal state on every pace | **PASS on hunt and swarm** | died 3/3 on each, **attempts = 3** per run. Before the fix, twelve runs across four paces produced zero deaths and rode the conveyor 36 tiles at full hp. |
+| Straddled trio re-measured | **hunt and swarm done** | `x3` on swarm now stalls 3/3 at margin 6.21–6.44 — the lip pin persists as a *stall* but no longer tunnels. `x5` dawdle on swarm dropped to 1/3 completions (was 3/3), so dawdle immunity is materially reduced. `x2` still completes 2–3/3 but at margins of 0.40–7.04. |
+| base pace, surge `x1`/`p6`, `view=far` probe | **NOT MEASURED** | base straddled two merges; the rest were lost when the batch aborted (16 `FAILED`/`fatal` lines in its log, first appearing after `9a530ab` landed). |
+
+The manual conflict resolution reads correctly to me as well as measuring
+correctly. `fallbackEarnedTiles` only accumulates in the non-pinned branch
+(`src/sim/player.js:406`), so plane-driven displacement can no longer reset the
+streak safeguard — that is the self-defeat closed at its root rather than
+papered over. One scope note for whoever writes the assertion: the six-face
+branch of the crush deliberately snaps RIG to the wall's *outside* face
+(`player.x = Math.floor(player.x + player.hw) - player.hw - 0.001`), which sits
+behind the plane by design, so **"edgeMargin ≥ 0" is a fixture-scoped invariant,
+not a global one.**
+
+## Why four captures in a row were invalid, and the fix
+
+Four separate captures in this lane were invalidated by merges landing
+mid-batch: the harness sampler/driver edit, the CP3 merge, then the far-default
+plus crush-fix pair, then the movement merge. That is not carelessness at either
+end — it is arithmetic. A twelve-script × three-repetition capture takes about
+fifteen minutes, `run.mjs`'s built-in static server serves the **live working
+tree**, and on an active integration day the tree changes faster than that.
+Announce-before-merge helps a human notice; it cannot make a fifteen-minute
+capture atomic.
+
+The fix is to stop serving the working tree. `repeat.mjs` now takes
+`--base-url`, so a capture can target a static server rooted at a *pinned* git
+worktree:
+
+```sh
+git worktree add /tmp/hb-pin <sha>
+(cd /tmp/hb-pin && python3 -m http.server 8749 &)
+node scripts/adversarial/repeat.mjs --base-url http://127.0.0.1:8749 --reps 3 <scripts...>
+```
+
+Verified end to end against a worktree pinned at `726207c`. A capture taken this
+way describes exactly one build no matter what merges during it, and the commit
+recorded in the `--json` provenance becomes the pin rather than a guess about
+which build was live.
+
+**One more comparability trap, from the same merge window.** `79f8d88` made
+`far` the default view. The same policy on the same fixture reports
+`minEdgeMargin` **18.40 on `near`** and **35.44 on `far`** — the frustum is
+wider, so every margin number in this report from before that commit belongs to
+a different camera. Any cross-build margin comparison from here on must pin
+`?view=` explicitly; the earlier tables should be read as `view=near` data.
+
 ## Single best next action
 
 *(Original recommendation, now partly implemented — the CP1 variants bounded the
