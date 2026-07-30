@@ -1,0 +1,200 @@
+{
+  "generatedAt": "2026-07-30T03:30:41.540Z",
+  "devFast": false,
+  "inputEvents": 130,
+  "budgetMs": 45000,
+  "runs": [
+    {
+      "tag": "defaultA",
+      "query": "?testapi=1&fixeddt=16.6667",
+      "samples": 1299,
+      "lastGameMs": 33200.1,
+      "endState": "GAME_OVER",
+      "maxX": 89.25,
+      "kills": 1,
+      "ritualSeen": false,
+      "cornersCleared": 0
+    },
+    {
+      "tag": "defaultB",
+      "query": "?testapi=1&fixeddt=16.6667",
+      "samples": 1291,
+      "lastGameMs": 33016.7,
+      "endState": "GAME_OVER",
+      "maxX": 89.25,
+      "kills": 2,
+      "ritualSeen": false,
+      "cornersCleared": 0
+    },
+    {
+      "tag": "g1",
+      "query": "?g1=1&testapi=1&fixeddt=16.6667",
+      "samples": 1306,
+      "lastGameMs": 33200.1,
+      "endState": "GAME_OVER",
+      "maxX": 89.25,
+      "kills": 3,
+      "ritualSeen": false,
+      "cornersCleared": 0
+    }
+  ],
+  "g1PiecesBaked": 836,
+  "invariants": [
+    {
+      "tag": "defaultA",
+      "edgeStrip": 45.334924,
+      "haltS": 75,
+      "pivotS": 89,
+      "gateScrollX": 75,
+      "turnStartScrollX": null,
+      "ritualMaxTMs": 0,
+      "gateWaveX": [
+        53.5617,
+        64.7078,
+        75.8539,
+        86.8333
+      ],
+      "gateWaveY": [
+        4.6,
+        4.6,
+        4.8599,
+        7.6
+      ],
+      "afterScrollX": null,
+      "kindsSeen": [
+        "carrier",
+        "wasp"
+      ],
+      "attempts": 0
+    },
+    {
+      "tag": "defaultB",
+      "edgeStrip": 45.334924,
+      "haltS": 75,
+      "pivotS": 89,
+      "gateScrollX": 75,
+      "turnStartScrollX": null,
+      "ritualMaxTMs": 0,
+      "gateWaveX": [
+        53.5617,
+        64.7078,
+        75.8539,
+        86.9167
+      ],
+      "gateWaveY": [
+        4.6,
+        4.6,
+        4.8352,
+        7.6
+      ],
+      "afterScrollX": null,
+      "kindsSeen": [
+        "carrier",
+        "wasp"
+      ],
+      "attempts": 0
+    },
+    {
+      "tag": "g1",
+      "edgeStrip": 45.334924,
+      "haltS": 75,
+      "pivotS": 89,
+      "gateScrollX": 75,
+      "turnStartScrollX": null,
+      "ritualMaxTMs": 0,
+      "gateWaveX": [
+        53.5617,
+        64.7078,
+        75.8539,
+        86.9167
+      ],
+      "gateWaveY": [
+        4.6,
+        4.6,
+        4.8352,
+        7.6
+      ],
+      "afterScrollX": null,
+      "kindsSeen": [
+        "carrier",
+        "wasp"
+      ],
+      "attempts": 0
+    }
+  ],
+  "invariantMismatches": [],
+  "invariantNoise": [
+    {
+      "key": "gateWaveX",
+      "defaultA": [
+        53.5617,
+        64.7078,
+        75.8539,
+        86.8333
+      ],
+      "defaultB": [
+        53.5617,
+        64.7078,
+        75.8539,
+        86.9167
+      ],
+      "g1": [
+        53.5617,
+        64.7078,
+        75.8539,
+        86.9167
+      ]
+    },
+    {
+      "key": "gateWaveY",
+      "defaultA": [
+        4.6,
+        4.6,
+        4.8599,
+        7.6
+      ],
+      "defaultB": [
+        4.6,
+        4.6,
+        4.8352,
+        7.6
+      ],
+      "g1": [
+        4.6,
+        4.6,
+        4.8352,
+        7.6
+      ]
+    }
+  ],
+  "deviation": {
+    "defaultA-vs-defaultB (noise floor)": {
+      "matched": 765,
+      "maxDx": 11.851,
+      "maxDy": 4.35,
+      "maxDScrollX": 0.0717,
+      "maxDEdgeMargin": 11.851
+    },
+    "defaultA-vs-g1": {
+      "matched": 765,
+      "maxDx": 11.8299,
+      "maxDy": 4.35,
+      "maxDScrollX": 0.0717,
+      "maxDEdgeMargin": 11.8299
+    },
+    "defaultB-vs-g1": {
+      "matched": 770,
+      "maxDx": 1.2533,
+      "maxDy": 1.1533,
+      "maxDScrollX": 0.0717,
+      "maxDEdgeMargin": 1.1817
+    }
+  },
+  "consoleErrors": {
+    "defaultA": [],
+    "defaultB": [],
+    "g1": []
+  },
+  "ritualCovered": false,
+  "verdict": "RENDER-ONLY UP TO THE GATE (ritual window proved in tools/pathcheck.mjs)"
+}

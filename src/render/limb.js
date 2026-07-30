@@ -29,8 +29,6 @@ import { IS_G1 } from '../mode.js';
 import { groundH } from '../sim/level.js';
 import { scene } from './scene.js';
 
-const PAL = CONFIG.palette;
-
 // Grey-box palette, one value ladder: the deck (CONFIG.palette.ground) stays
 // the brightest thing on screen, and the limb reads as mass around it.
 // Values are chosen against what the renderer actually PRODUCES, not against
@@ -42,7 +40,7 @@ const PAL = CONFIG.palette;
 const BASE_COLORS = {
   hull: 0x5f656e, wall: 0x646a73, rib: 0x7b818a, machine: 0x868c95,
   shadow: 0x4b515a,                      // seam lines: shadow, never structure
-  scute: 0x6a707a, scuteAlt: 0x747a84, skyline: 0x505a67, accent: PAL.gun,
+  scute: 0x6a707a, scuteAlt: 0x747a84, skyline: 0x505a67,
 };
 
 // kind → material. Joint pieces deliberately use the brighter `rib`/`machine`

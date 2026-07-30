@@ -30,13 +30,22 @@ for (const [tag, query] of [['g1', '?g1=1&view=near&testapi=1'], ['default', '?v
   await page.evaluate(() => { window.HB.CONFIG.scrollSpeed = 9.0; });
   await page.keyboard.down('ArrowRight');
   const t0 = Date.now();
-  let shot = 0;
-  while (Date.now() - t0 < 60000 && shot < 3) {
+  let shot = 0, jumping = false, lastJump = 0;
+  while (Date.now() - t0 < 90000 && shot < 3) {
     const st = await page.evaluate(() => {
       const s = globalThis.__HULLBREAKER_TEST__.snapshot();
-      return { x: s.player.x, corner: s.corner, state: s.state, scrollX: s.scrollX };
+      return {
+        x: s.player.x, corner: s.corner, state: s.state, scrollX: s.scrollX,
+        gameMs: s.gameMs, grounded: s.player.grounded,
+      };
     });
     if (st.state !== 'PLAYING') break;
+    // hop on a game-time cadence: the fixture's gaps kill a pure hold-right run
+    if (!jumping && st.gameMs - lastJump > 800) {
+      await page.keyboard.down('Space'); jumping = true; lastJump = st.gameMs;
+    } else if (jumping && st.gameMs - lastJump > 240) {
+      await page.keyboard.up('Space'); jumping = false;
+    }
     // at the pivot clamp with the gate up: fire forward, into the joint
     if (st.corner && st.corner.state === 'gate' && st.x > st.corner.pivotS - 1.2) {
       await page.keyboard.down('KeyJ');
