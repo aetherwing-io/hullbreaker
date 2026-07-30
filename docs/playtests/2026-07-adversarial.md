@@ -1083,6 +1083,31 @@ branch of the crush deliberately snaps RIG to the wall's *outside* face
 behind the plane by design, so **"edgeMargin ≥ 0" is a fixture-scoped invariant,
 not a global one.**
 
+### Re-gate closeout — the three unmeasured items, on a pinned build
+
+Captured against a git worktree pinned at `4d09c42` and served on its own port,
+so the integrator's merge train could not touch it. This is the first capture in
+this lane that is provably one build.
+
+| Item | Verdict | Evidence |
+| --- | --- | --- |
+| `x1` terminal state at **base** pace | **PASS** | died 3/3, one death each, margin floor 0.40, `maxX` 38.68. Before the fix, base-pace idling never died at all. Note the grace is now ~15s (pinned 14.94s at spawn before the plane arrives) because the far default widens the strip — as predicted, and not a regression, but base-pace idle timing is not comparable to the near-view rows above. |
+| `x1` terminal state at **surge** | **PASS** | died 3/3, four deaths each. |
+| `p6-hop-1200ms` must fail on surge | **FAIL — criterion not met** | completed **3/3** in 5.73s at margin 2.48–2.51. |
+| View-invariance of the seconds-bounded paces | **PASS, confirmed empirically** | `p4` on surge at `view=near` gives margin 4.05–6.41 versus 4.59–6.39 at the far default — overlapping ranges. `x1` on surge is identical across both views (died 3/3, four deaths, same `maxX` 38.72, same 2.88s pin). No view leakage into sim beyond the documented base-pace margin. |
+
+**On the one failure, stated plainly rather than buried:** I set "p1/p2/p6 must
+fail on surge" as the acceptance bar and `p6` does not meet it. What I would not
+do is call that the same defect as `p1`. `p1` completing was pathological — no
+forward input at all, carried through solid geometry by the plane and rescued at
+full hp. `p6` inputs a real jump every 1200ms, travels under its own power, and
+finishes with 2.5 tiles of margin, which is about one second of slack. That is a
+lazy-but-genuine policy finishing by the skin of its teeth, and it is CP1's
+pacing that made it viable (it failed 3/3 pre-CP1) rather than anything the fix
+touched. My read is that this is the acceptable case and the bar was drawn one
+rung too high — but it is the intensity lane's call, not mine, so it is recorded
+as a failed criterion with the reasoning attached.
+
 ## Why four captures in a row were invalid, and the fix
 
 Four separate captures in this lane were invalidated by merges landing
