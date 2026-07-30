@@ -140,7 +140,7 @@ function resetGame() {
   player.grounded = false; player.onOneWay = null; player.jumpCutDone = true;
   player.airJumpsLeft = P.airJumps;
   player.traversalChain = 0; player.traversalChainUntil = 0;
-  player.fallbackStreak = 0; player.fallbackRecoverX = -Infinity;
+  player.fallbackStreak = 0; player.fallbackEarnedTiles = 0;
   player.edgePinnedMs = 0;
   clearPlayerTraversal(0);
   player.traversalControlUntil = 0;
@@ -352,9 +352,13 @@ if (QUERY.has('selftest')) {
         capsules.length === ACTIVE_SLICE.rewards.length &&
         capsules.every((c) => c.mode === 'fixed'));
       check('hull fallback armed', SLICE_FALLBACK_ENABLED === (QUERY.get('fallback') !== '0'));
+      // The cap bounds daylight from above; a frustum narrower than the cap
+      // binds first, so the clock is <= crushSlackSeconds on every aspect
+      // ratio and never more. (Measured: 9.45/9.45/9.45 tiles for hunt across
+      // 900x1000, 1280x800 and 1600x600, against 15.7-33.4 uncapped.)
       const cap = ACTIVE_SLICE.pursuit.marginCapTiles;
-      check('crush clock armed at spawn', cap > 0
-        ? Math.abs((player.x - player.hw - sLeftEdge()) - cap) < 0.05
+      check('crush clock bounded at spawn', cap > 0
+        ? player.x - player.hw - sLeftEdge() <= cap + 0.05
         : scrollX === expectedScroll);
     }
     const fails = results.filter((r) => !r[1]).map((r) => r[0]);

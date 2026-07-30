@@ -48,7 +48,7 @@ export const player = {
   traversalUntil: 0, traversalRecatchUntil: 0, traversalEntryVx: 0,
   traversalControlUntil: 0,
   traversalChain: 0, traversalChainUntil: 0,
-  fallbackStreak: 0, fallbackRecoverX: -Infinity, edgePinnedMs: 0,
+  fallbackStreak: 0, fallbackEarnedTiles: 0, edgePinnedMs: 0,
   hp: P.maxHealth, lives: P.lives,
   iframesUntil: 0, hitstunUntil: 0,
   nextFireAt: 0,
@@ -120,6 +120,7 @@ function chainLaunchMult() {
 
 export function updatePlayer(dt) {
   computeAim();
+  const frameStartX = player.x;
 
   const h = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
   let ledgeHanging = false;
@@ -352,20 +353,32 @@ export function updatePlayer(dt) {
     clearPlayerTraversal(gameMs + P.traversalRecatchMs);
     player.vx = Math.max(player.vx, activeScrollSpeed());
   }
-  if (player.x - player.hw < le) {
-    // The plane used to assign x with no collision resolution, so a pinned
-    // player was pushed straight THROUGH a solid wall for 1 hp (adversarial
-    // F4, reproduced against the dare-pocket dead end). Being crushed against
-    // terrain has to be lethal pressure, not a teleport: stop at the wall's
-    // outside face and let the damage stand, so the wall holds and the hp
-    // clock (and then HULL FALLBACK) decides the outcome.
+  const pinned = player.x - player.hw < le;
+  if (pinned) {
+    // The plane pushes, and it only ever pushes FORWARD. Two earlier versions
+    // of this were both wrong: assigning x with no collision test shoved a
+    // pinned player straight through a solid wall (adversarial F4), and then
+    // ejecting them back out of the column they were shoved into left them
+    // BEHIND the plane (edgeMargin measured to -0.60) and ground them through
+    // the wall a tile per frame anyway. There is no position that satisfies
+    // both "ahead of the plane" and "outside the wall" — that IS the crush, so
+    // it resolves on the frame it happens instead of leaking geometry.
     player.x = le + player.hw;
-    let crushed = false;
-    if (playerOverlapsSolid()) {
-      player.x = Math.floor(player.x + player.hw) - player.hw - 0.001;
-      crushed = true;
+    if (playerOverlapsSolid() && !cornerBusy()) {
+      if (IS_TRAVERSAL_SLICE) {
+        crushPlayer();                 // resolves inside this frame, see below
+      } else {
+        // Six-face run: the wall HOLDS — RIG is pinned at its outside face
+        // instead of being teleported through it — and the crush ignores
+        // i-frames like the fixture's does, so the pin resolves in a few frames
+        // (one hp each) instead of grinding through terrain for a second and a
+        // half. Shipped behaviour was a slow teleport into invisible geometry
+        // that ended in death anyway; this ends in the same death, legibly.
+        player.x = Math.floor(player.x + player.hw) - player.hw - 0.001;
+        player.iframesUntil = 0;
+        damagePlayer(1, player.x - 1);
+      }
     }
-    if (crushed && !cornerBusy()) damagePlayer(1, player.x - 1);
     // A pace may also make the plane itself lethal over time. Without this the
     // plane is a free conveyor: doing nothing at all survives on open ground
     // because the push costs no hp (adversarial F5).
@@ -378,6 +391,11 @@ export function updatePlayer(dt) {
     }
   } else {
     player.edgePinnedMs = 0;
+    // Earned progress: forward motion on a frame the plane was NOT shoving us.
+    // The streak that caps consecutive fallbacks used to clear on player.x
+    // alone, which the plane's own shove supplies — a zero-input run reset the
+    // safeguard with the very displacement the safeguard exists to punish.
+    if (player.x > frameStartX) player.fallbackEarnedTiles += player.x - frameStartX;
   }
   //    Right clamp: while the active corner's face is still unbuilt, the
   //    pivot is the wall — the screen edge must not let the player walk
@@ -409,6 +427,17 @@ export function updatePlayer(dt) {
 
   // -- rig transform (s,y → tower world) + aim pose + i-frame flicker
   view.player.sync();
+}
+
+// A crush is the damage plane and a solid closing on the same tile: there is no
+// position that is both ahead of the plane and outside the wall. It is not a
+// "hit", so i-frames must not hold RIG inside terrain while the plane keeps
+// advancing — it lands in full on the frame it happens, and HULL FALLBACK
+// relocates RIG immediately with control kept. Fixture only; the six-face run
+// keeps its shipped hp cadence at the wall face.
+function crushPlayer() {
+  player.iframesUntil = 0;
+  damagePlayer(player.hp, player.x - 1);
 }
 
 export function damagePlayer(amount, fromX) {
@@ -474,15 +503,37 @@ function fallbackSurfaces(x) {
   return out;
 }
 
+// Resolve any residual overlap by riding the top of what we are inside, but
+// only while that stays at or below `ceilY`. Returns false when the only way
+// out would be upward — i.e. RIG is trapped against geometry the plane has
+// already reached, and this fallback has nothing left to take.
+function settleFallback(ceilY) {
+  for (let guard = 0; guard < 6; guard++) {
+    if (!playerOverlapsSolid()) return true;
+    const i0 = Math.floor(player.x - player.hw + 0.02);
+    const i1 = Math.floor(player.x + player.hw - 0.02);
+    let top = -Infinity;
+    for (let i = i0; i <= i1; i++)
+      for (let j = Math.floor(player.y + 0.02); j <= Math.floor(player.y + player.h - 0.02); j++)
+        if (isSolid(i, j)) top = Math.max(top, j + 1);
+    if (top === -Infinity) return true;
+    if (top + 0.001 > ceilY) return false;
+    player.y = top + 0.001;
+  }
+  return !playerOverlapsSolid();
+}
+
 function hullFallback(reason) {
   const F = FALLBACK;
-  if (player.x > player.fallbackRecoverX) player.fallbackStreak = 0;
+  // Mercy chain: RIG who fights back down a lower route earns the next
+  // fallback. Conveyed distance never counts, so idling cannot buy mercy.
+  if (player.fallbackEarnedTiles >= F.recoverTiles) player.fallbackStreak = 0;
   // Ceiling on consecutive fallbacks: B.1's tier 2 (band fallback into a
   // recovery shaft) is not built, so the fixture still retries past it rather
   // than letting a stuck player fall forever.
   if (player.fallbackStreak >= F.maxConsecutive) { scheduleSliceRetry(reason); return; }
 
-  const y0 = player.y;
+  const y0 = player.y, x0 = player.x;
   const surfaces = fallbackSurfaces(player.x);
   let landY = traversalFallbackTarget(surfaces, y0, F);
   if (landY === null && surfaces.length) {
@@ -506,6 +557,18 @@ function hullFallback(reason) {
     player.x = Math.max(le, player.x - F.groundKnockTiles);
     player.vy = Math.max(player.vy, 0);
   }
+  // A fallback may only ever move RIG down or back — never up past the band
+  // they were dislodged from. Without that rule this settle step "rescued" a
+  // one-key policy: pinned in the dare pocket with the plane on top of it, the
+  // knock-back was cancelled (no room), RIG was left embedded in the dead-end
+  // column, and the settle lifted them onto its top — over the very wall that
+  // trapped them — from where they ran to victory at full hp. Nowhere to fall
+  // and nowhere to retreat is a terminal state, not a lift.
+  if (!settleFallback(y0)) {
+    player.x = x0; player.y = y0;
+    scheduleSliceRetry(reason);
+    return;
+  }
   player.vx = Math.max(player.vx, F.tossVx);          // thrown forward, not stopped
   player.grounded = false; player.onOneWay = null; player.jumpCutDone = true;
   player.airJumpsLeft = P.airJumps;
@@ -516,7 +579,7 @@ function hullFallback(reason) {
   player.coyoteUntil = 0;
   player.traversalChain = 0; player.traversalChainUntil = 0;
   player.fallbackStreak++;
-  player.fallbackRecoverX = player.x + F.recoverTiles;
+  player.fallbackEarnedTiles = 0;
   sliceStats.setbacks++;
   sliceStats.lastSetbackAt = gameMs;
   sliceStats.failures++;
