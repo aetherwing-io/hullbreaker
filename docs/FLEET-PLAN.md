@@ -22,6 +22,25 @@ the intensity is far off.** The fleet exists to close that gap:
 
 ## Operator decisions on record
 
+### July 30 — CP1 verdict and the wave-3 pivot: build toward the renders
+
+- **CP1:** hunt, swarm, and surge all read as "directionally correct" versus
+  base. No single winner was picked; keep all three paces while mechanics
+  evolve, consolidate later.
+- **Mission pivot, operator verbatim:** "stop hunting boring, let's start
+  working toward the kinds of mechanics that need to be tested to better hit
+  the feel of the concept arts." The diagnostic phase is over. The target is
+  the movement fantasy visible in the boards (01/03/08/10/11/12): a small,
+  human-scale RIG running and bounding up colossal creature machinery —
+  tether/hook dangles and launches, long rib-line runs, chained launches,
+  riding transforming surfaces, vent bursts.
+- **Wave 3 lanes:** movement-verb prototypes (snap hook/tether first — it
+  appears throughout the art and is DESIGN's open decision; plus
+  generalizing surge's chained-launch momentum), a view-scale experiment
+  (smaller RIG relative to the world), continuing CP2 (houndframe) and CP3
+  (transformation), and the in-flight CP1 defect fixes (fallback
+  self-defeat, crush wall-grind). The roof-contest decision folds into CP2+.
+
 ### July 30 — the Meridian is a creature (canon + visual direction)
 
 - The *Meridian* IS a colossal machine-creature, and the sterilization fiction
