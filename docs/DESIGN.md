@@ -140,10 +140,14 @@ Target additions should preserve speed:
 - **Cliff hang:** a momentary dodge, aiming position, or route transfer—not a
   long shimmy sequence.
 - **Snap hook (later candidate):** a context-sensitive launch toward clearly
-  marked anchors with minimal aiming interruption. No longer just a later
-  candidate — this is the lead wave-3 movement-verb prototype following the
-  CP1 pivot (`decisions.md` entry 2); the open design question below is
-  unresolved either way.
+  marked anchors with minimal aiming interruption. **v1 rejected** — built
+  and judged as the wave-3 lead prototype (`decisions.md` entry 2), then
+  rejected in that shape: authored anchor markers plus a dedicated trigger
+  read as "too on the nose" and "an extra button press and confusion" (see
+  `decisions.md` entry 5). The verb itself is not banned; a future tether
+  must be marker-less and button-less, emerging from world/context rather
+  than authored points the player services. The movement lane's live
+  candidate is now FLOW (momentum spine, `?flow=1`), still unjudged.
 - **Traps (later candidate):** thrown, dropped, or triggered while moving.
   Avoid a separate construction mode; hostile and player-owned traps should
   share readable rules when possible.
@@ -316,13 +320,23 @@ Resolve these through small prototypes and playtests rather than assumption:
 - Is the primary finished experience an authored cinematic ascent, an arcade
   score attack, or an authored first run with a score/replay mode afterward?
 - How much rendered altitude does each phase gain, and which camera/background
-  cues make that gain unmistakable without shrinking the player?
+  cues make that gain unmistakable without shrinking the player? Partially
+  answered: the operator ruled the pulled-back FAR camera (RIG ≈ 3.7% of
+  screen height) the default over the original near view (`decisions.md`
+  entry 7); the tradeoff — smaller RIG reads as more world per screen but
+  costs tell/glyph readability at distance — is accepted for now, with a
+  follow-up art/readability pass on tells and glyphs still open.
 - What is the authored campaign weapon order, and what recovery floor prevents
   late damage from permanently deflating the power ramp?
 - Does the snap hook reuse jump, aim/fire, or a dedicated input, and can a new
-  player understand valid anchors without stopping to aim? (Under active
-  prototyping as of the wave-3 pivot — `decisions.md` entry 2 — but still
-  unresolved.)
+  player understand valid anchors without stopping to aim? Narrowed, not
+  answered: v1 (authored anchors, dedicated input) is rejected (`decisions.md`
+  entry 5); the question still applies to whatever marker-less, button-less
+  shape comes next.
+- Is 8-way aim sufficient against low targets, or does the game need a crouch
+  (lowered firing line/hitbox), light aim-assist, or neither? Raised by the
+  CP2 verdict (`decisions.md` entry 4); both are shipped as A/B flags
+  (`?crouch=1`, `?aim=assist`), neither chosen.
 - Are traps a carried resource, a weapon behavior, or fixed world mechanisms
   that either side can trigger?
 - Does the pursuing edge maintain constant speed through dare pockets, or can
@@ -466,10 +480,12 @@ entire climb:
    entry 3. A second pass applying that rule is expected before CP3 is met.
 3. **Combat grammar:** add houndframe, polyp, and mortar one at a time. Prove
    each enemy's tell, movement answer, weapon interaction, and two-enemy
-   combination before adding the next. **Houndframe merged** (`94913ad`, a
-   floor-denial enemy with trial stages and per-pace fairness assertions),
-   awaiting the operator's CP2 judgment; polyp and mortar are not yet
-   started.
+   combination before adding the next. **Houndframe merged and judged**
+   (`94913ad`; CP2 verdict "those feel much better," iterate from hound 2.5
+   — `decisions.md` entry 4); the CP2.5 follow-up (ownership placement, roof
+   contest, crouch/aim-assist prototypes, commit coil) also merged and was
+   judged strongly positive ("enemies feel like they are coming for me" —
+   entry 6). Polyp and mortar are not yet started.
 4. **Baseline feedback now:** add essential hit, hurt, launch, pickup, warning,
    and transformation sounds plus restrained hit-stop, shake, flashes, and
    particles. Full polish can wait; readable timing cannot.
