@@ -61,7 +61,10 @@ import {
 import {
   keys as simKeys, bufferJumpUntil as bufferSimJump, clearJumpBuffer as clearSimJumpBuffer,
 } from '../src/sim/input.js';
-import { platforms as simPlatforms } from '../src/sim/level.js';
+import {
+  platforms as simPlatforms, groundH as simGroundH, isSolid as simIsSolid,
+} from '../src/sim/level.js';
+import { setScrollX as setSimScrollX, scrollX as simScrollX } from '../src/sim/time.js';
 import { cornerEvents as simCornerEvents } from '../src/sim/wavegate.js';
 
 /* ---------------------- layer guards (static) ------------------------ *
@@ -1814,6 +1817,17 @@ const XL = buildTransformLevel(CONFIG);
     }
     ok(invariant && clocks.length >= 2,
        'seconds-bounded paces produce one aspect-invariant clock: ' + clocks.join(' '));
+    // The cap only governs if it is tighter than the narrowest supported
+    // frustum's own follow margin; past that the screen binds first and the
+    // clock would drift with aspect ratio again. 15.6 tiles is the measured
+    // steady-state follow margin at 900x1000 (the fixture's portraitMinAspect
+    // 0.9); the same probe reads 23.1 at 1280x800 and 33.4 at 1600x600, which
+    // is the 2.1x variance this whole mechanism exists to remove.
+    const PORTRAIT_FOLLOW_MARGIN = 15.6;
+    const caps = resolved.map(function (F) { return F.pursuit.marginCapTiles; });
+    ok(caps.every(function (c) { return c <= PORTRAIT_FOLLOW_MARGIN; }),
+       'every declared crush clock still binds inside the narrowest supported ' +
+       'frustum, caps ' + caps.map(function (c) { return c.toFixed(1); }).join(','));
     ok(contested,
        'a seconds-bounded pace also makes the plane lethal, so idling is not a free ride');
   }
@@ -2291,6 +2305,238 @@ const XL = buildTransformLevel(CONFIG);
     ok(sim.afterReset.charge === 0 && sim.afterReset.threat === 0 &&
        sim.afterReset.counts.link === 0 && sim.eventsAfterReset === 0,
        'HB.score.reset() clears the meter, the score and the ring buffer');
+  }
+}
+
+/* ---- the damage plane never leaves geometry behind it ------------------ *
+ * Two shipped versions of the plane push were wrong in opposite directions:
+ * assigning x with no collision test shoved a pinned player through a solid
+ * wall (adversarial F4), and ejecting them back out of the column they were
+ * shoved into left them BEHIND the plane (edgeMargin -0.60) and ground them
+ * through the wall a tile per frame regardless. This drives the real sim
+ * against a real two-tile step in the shipped level and pins down the
+ * six-face contract: the wall holds, the player never ends a frame inside
+ * terrain, and the hp cadence is the shipped one (i-frame gated, not a
+ * teleport). The fixture's stricter contract — margin never negative,
+ * because a crush resolves in its own frame — is proved in the child
+ * process below, where the slice can actually be selected.               */
+{
+  // find a step at least as tall as the player, with room to stand in front
+  let stepX = -1;
+  for (let i = 40; i < 300; i++) {
+    if (simGroundH[i] > -100 && simGroundH[i + 1] > -100 &&
+        simGroundH[i + 1] - simGroundH[i] >= 2 &&
+        simGroundH[i - 1] === simGroundH[i]) { stepX = i; break; }
+  }
+  ok(stepX > 0, 'the shipped level contains a player-height step to pin against');
+
+  const savedScroll = simScrollX;
+  simKeys.left = false; simKeys.right = false; simKeys.jump = false;
+  simKeys.down = false; simKeys.fire = false;
+  clearSimJumpBuffer();
+  clearSimTraversal(0);
+  setSimEdges(0, 30);                         // le = scrollX + edges.margin
+  const hw = simPlayer.hw;
+  simPlayer.x = stepX + 1 - hw - 0.05;        // standing right at the wall face
+  simPlayer.y = simGroundH[stepX];
+  simPlayer.vx = 0; simPlayer.vy = 0;
+  simPlayer.grounded = true; simPlayer.onOneWay = null;
+  simPlayer.hp = CONFIG.player.maxHealth; simPlayer.lives = 3;
+  simPlayer.iframesUntil = 0; simPlayer.hitstunUntil = 0;
+  simPlayer.edgePinnedMs = 0;
+  setSimScrollX(simPlayer.x - hw - CONFIG.edges.margin - 0.2);
+
+  const dt = 1 / 60;
+  let behindPlane = 0, insideSolid = 0, pastWall = 0, hpDrops = 0;
+  const startHp = simPlayer.hp;
+  for (let f = 0; f < 240; f++) {
+    setSimScrollX(simScrollX + CONFIG.scrollSpeed * dt);   // the plane advances
+    const hpBefore = simPlayer.hp;
+    updateSimPlayer(dt);
+    if (simPlayer.hp < hpBefore) hpDrops++;
+    if (simPlayer.lives < 3) break;             // resolved: the crush killed
+    const le = simScrollX + CONFIG.edges.margin;
+    if (simPlayer.x - hw < le - 1e-6) behindPlane++;
+    // never inside terrain at the end of a frame
+    const x0 = Math.floor(simPlayer.x - hw + 0.02), x1 = Math.floor(simPlayer.x + hw - 0.02);
+    const y0 = Math.floor(simPlayer.y + 0.02), y1 = Math.floor(simPlayer.y + simPlayer.h - 0.02);
+    for (let i = x0; i <= x1; i++) for (let j = y0; j <= y1; j++) if (simIsSolid(i, j)) insideSolid++;
+    if (simPlayer.x + hw > stepX + 1 + 1e-6) pastWall++;   // never through the wall
+  }
+  ok(insideSolid === 0,
+     'a plane-pinned player never ends a frame inside terrain, got ' + insideSolid + ' frames');
+  ok(pastWall === 0,
+     'the plane never pushes a player through the wall it is pinned against, got ' +
+     pastWall + ' frames');
+  ok(hpDrops > 0 && simPlayer.hp < startHp || simPlayer.lives < 3,
+     'being crushed against terrain costs hp instead of being free');
+  // Each crush frame costs one hp with no i-frame gating, so the pin resolves in
+  // at most maxHealth frames (~50ms) rather than grinding for a second and a half.
+  ok(behindPlane <= CONFIG.player.maxHealth,
+     'the six-face pin resolves within an hp bar instead of stranding the player ' +
+     'behind the plane, got ' + behindPlane + ' frames');
+
+  // restore the module state the later assertions share
+  setSimScrollX(savedScroll);
+  simPlayer.hp = CONFIG.player.maxHealth; simPlayer.lives = 3;
+  simPlayer.iframesUntil = 0; simPlayer.edgePinnedMs = 0;
+  clearSimTraversal(0);
+}
+
+/* ---- HULL FALLBACK cannot pay for itself (fixture contract) ------------ *
+ * The streak that caps consecutive fallbacks used to clear on player.x, and
+ * the damage plane's own shove supplies forward x — so a zero-input run reset
+ * the safeguard with the exact displacement the safeguard exists to punish and
+ * never died (12/12 runs at full hp, conveyed 36 tiles). Selecting the slice
+ * needs __HB_QUERY__ before module init, hence a child process; it also lets
+ * this assert the fixture's strict plane invariant, which the six-face branch
+ * above deliberately does not share.                                       */
+{
+  const child = (query, drive) => `
+    globalThis.__HB_QUERY__ = ${JSON.stringify(query)};
+    const [T, E, S, P, ST, IN, L, C] = await Promise.all([
+      ${JSON.stringify('file://' + join(srcDir, 'sim', 'time.js'))},
+      ${JSON.stringify('file://' + join(srcDir, 'sim', 'edges.js'))},
+      ${JSON.stringify('file://' + join(srcDir, 'sim', 'scroll.js'))},
+      ${JSON.stringify('file://' + join(srcDir, 'sim', 'player.js'))},
+      ${JSON.stringify('file://' + join(srcDir, 'sim', 'state.js'))},
+      ${JSON.stringify('file://' + join(srcDir, 'sim', 'input.js'))},
+      ${JSON.stringify('file://' + join(srcDir, 'sim', 'level.js'))},
+      ${JSON.stringify('file://' + join(srcDir, 'config.js'))},
+    ].map((u) => import(u)));
+    const F = ${JSON.stringify('file://' + join(srcDir, 'mode.js'))};
+    const M = await import(F);
+    const fx = M.ACTIVE_SLICE;
+    // the fixture's own opening state, as resetGame would leave it
+    E.setEdges(-3.1, 24);                       // 1280x800 calibration
+    T.setScrollX(fx.run.startScroll);
+    T.sliceStats.startedAt = 0;
+    T.sliceStats.setbacks = 0;
+    P.player.x = fx.run.playerSpawn.x; P.player.y = fx.run.playerSpawn.y;
+    P.player.vx = 0; P.player.vy = 0;
+    P.player.hp = P.P.maxHealth; P.player.lives = P.P.lives;
+    P.player.grounded = false; P.player.onOneWay = null;
+    P.player.iframesUntil = 0; P.player.hitstunUntil = 0;
+    P.player.fallbackStreak = 0; P.player.fallbackEarnedTiles = 0;
+    P.player.edgePinnedMs = 0;
+    ST.setState('PLAYING');
+    const dt = 1 / 60;
+    const out = { negMargin: 0, insideSolid: 0, worstMargin: Infinity, setbacks: 0,
+                  hpZero: 0, states: {}, cap: fx.fallback.maxConsecutive };
+    for (let f = 0; f < 900; f++) {
+      ${drive}
+      T.advanceGameMs(dt * 1000);
+      S.updateScroll(dt);
+      P.updatePlayer(dt);
+      out.states[ST.state] = (out.states[ST.state] || 0) + 1;
+      if (ST.state !== 'PLAYING') break;
+      const margin = P.player.x - P.player.hw - E.sLeftEdge();
+      out.worstMargin = Math.min(out.worstMargin, margin);
+      if (margin < -1e-6) out.negMargin++;
+      const x0 = Math.floor(P.player.x - P.player.hw + 0.02);
+      const x1 = Math.floor(P.player.x + P.player.hw - 0.02);
+      const y0 = Math.floor(P.player.y + 0.02);
+      const y1 = Math.floor(P.player.y + P.player.h - 0.02);
+      for (let i = x0; i <= x1; i++) for (let j = y0; j <= y1; j++)
+        if (L.isSolid(i, j)) out.insideSolid++;
+    }
+    out.setbacks = T.sliceStats.setbacks;
+    out.finalState = ST.state;
+    out.streak = P.player.fallbackStreak;
+    out.earned = Math.round(P.player.fallbackEarnedTiles * 100) / 100;
+    P.cancelSliceRetry();
+    console.log(JSON.stringify(out));
+  `;
+  const run = (query, drive, label) => {
+    try {
+      return JSON.parse(execFileSync(process.execPath,
+        ['--input-type=module', '-e', child(query, drive)], { encoding: 'utf8' }));
+    } catch (e) {
+      console.error('pathcheck: slice child (' + label + ') failed: ' + e.message);
+      return null;
+    }
+  };
+
+  const fx0 = resolveTraversalPace('hunt');
+  // zero input: the plane conveys, nothing is earned, the cap must fire
+  const idle = run('slice=traversal&pace=hunt', '', 'idle');
+  ok(!!idle, 'the fixture sim steps headlessly with no input');
+  if (idle) {
+    ok(idle.finalState === 'SLICE_RETRY' &&
+       idle.setbacks >= 1 && idle.setbacks <= idle.cap,
+       'a zero-input fixture run reaches a terminal state: ' + idle.setbacks +
+       ' fallbacks then ' + idle.finalState);
+    ok(idle.earned < fx0.fallback.recoverTiles,
+       'conveyed displacement cannot buy the fallback mercy chain: earned ' +
+       idle.earned + ' of ' + fx0.fallback.recoverTiles + ' tiles');
+    ok(idle.negMargin === 0,
+       'the fixture plane never strands the player behind it, worst margin ' +
+       idle.worstMargin.toFixed(3));
+    ok(idle.insideSolid === 0,
+       'a crushed fixture player never ends a frame inside terrain, got ' +
+       idle.insideSolid + ' frames');
+  }
+
+  // The mercy chain, driven where a lower route exists: take a fallback, run
+  // forward under your own power past recoverTiles, take another — the streak
+  // must have been forgiven, so the cap is not tripped and play continues.
+  const mercy = (() => {
+    const script = `
+      globalThis.__HB_QUERY__ = 'slice=traversal&pace=hunt';
+      const [T, E, S, P, ST, IN] = await Promise.all([
+        ${JSON.stringify('file://' + join(srcDir, 'sim', 'time.js'))},
+        ${JSON.stringify('file://' + join(srcDir, 'sim', 'edges.js'))},
+        ${JSON.stringify('file://' + join(srcDir, 'sim', 'scroll.js'))},
+        ${JSON.stringify('file://' + join(srcDir, 'sim', 'player.js'))},
+        ${JSON.stringify('file://' + join(srcDir, 'sim', 'state.js'))},
+        ${JSON.stringify('file://' + join(srcDir, 'sim', 'input.js'))},
+      ].map((u) => import(u)));
+      E.setEdges(-3.1, 24);
+      const put = (x, y) => {
+        P.player.x = x; P.player.y = y; P.player.vx = 0; P.player.vy = 0;
+        P.player.hp = P.P.maxHealth; P.player.iframesUntil = 0;
+        P.player.grounded = true; P.player.onOneWay = null;
+        T.setScrollX(x - 30);                 // plane far behind: room to be knocked back
+      };
+      ST.setState('PLAYING');
+      P.player.fallbackStreak = 0; P.player.fallbackEarnedTiles = 0;
+      const out = {};
+      put(60, 8.35);                          // an upper route with floor below it
+      P.loseLife('damage');
+      out.firstStreak = P.player.fallbackStreak;
+      out.firstState = ST.state;
+      IN.keys.right = true;                   // earn the mercy back on foot
+      for (let f = 0; f < 120; f++) {
+        T.advanceGameMs(1000 / 60); S.updateScroll(1 / 60); P.updatePlayer(1 / 60);
+        if (ST.state !== 'PLAYING') break;
+      }
+      IN.keys.right = false;
+      out.earned = Math.round(P.player.fallbackEarnedTiles * 100) / 100;
+      put(P.player.x, 8.35);
+      P.loseLife('damage');
+      out.secondStreak = P.player.fallbackStreak;
+      out.secondState = ST.state;
+      P.cancelSliceRetry();
+      console.log(JSON.stringify(out));
+    `;
+    try {
+      return JSON.parse(execFileSync(process.execPath,
+        ['--input-type=module', '-e', script], { encoding: 'utf8' }));
+    } catch (e) {
+      console.error('pathcheck: mercy child failed: ' + e.message);
+      return null;
+    }
+  })();
+  ok(!!mercy, 'the fixture sim can be driven through a fallback and a recovery');
+  if (mercy) {
+    ok(mercy.firstStreak === 1 && mercy.firstState === 'PLAYING',
+       'a fallback with a route below it keeps play running, streak ' + mercy.firstStreak);
+    ok(mercy.earned >= fx0.fallback.recoverTiles,
+       'running forward under your own power is credited: earned ' + mercy.earned +
+       ' of ' + fx0.fallback.recoverTiles + ' tiles');
+    ok(mercy.secondStreak === 1 && mercy.secondState === 'PLAYING',
+       'the earned mercy forgives the streak instead of tripping the cap: streak ' +
+       mercy.secondStreak + ', state ' + mercy.secondState);
   }
 }
 
