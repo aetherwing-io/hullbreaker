@@ -783,6 +783,44 @@ closest to the gate's headline condition — 4.59 tiles is 1.8 seconds of slack 
 but no variant makes `p4` uncomfortable, and none of them touches the reason it
 wins: the chimney wall-pump onto an uncontested top tier (F1, F10).
 
+### CRITICAL regression: on `surge`, holding one key wins the slice
+
+`p1-hold-right-only` — ArrowRight held, nothing else, ever — **completes 3/3 on
+`surge`** in 12.43–12.50s. Pre-CP1 that policy died 3/3. So did
+`p2-hold-right-hold-jump` (stalled 3/3 before, **completes 3/3** now) and
+`p6-hop-1200ms` (0/3 before, **completes 3/3** now, in 5.73s). On `surge`, every
+policy in this suite completes, including all three that the pre-CP1 build
+correctly rejected.
+
+The mechanism, read straight off the `p1` surge trace (r3, all three alike):
+
+| t | state |
+| --- | --- |
+| 8.05s | pinned at x=55.65, the dare-dead-end lip, on the pocket floor y=1, margin 2.16 |
+| 9.19s | crush hit, hp 3→2, knockback |
+| 9.79s | **x=56.65 — inside the solid wall column** (body 56.30–57.00) |
+| 10.40s | second crush hit, hp 2→1, margin −0.58 |
+| 10.47s | **x=57.65, y=0.13 — through the wall and now below the floor** |
+| 10.78–11.46s | x marches 58.65 → 62.65 at **y=0.00**, i.e. conveyed six tiles *inside the terrain* (that ground run's surface is y=3) |
+| 11.61s | x=63.37, y=4.02, **hp back to 3** — a hull fallback rescues the player onto a surface past the obstacle, at full health |
+| 12.45s | x=72.01 → **VICTORY** |
+
+The damage plane is acting as a tunnel-boring machine and the fallback as a free
+rescue: two of the three defects already on the board (crush wall-grind,
+fallback self-defeat) compound into a third that is much worse than either
+description suggests. The pursuit mechanic now *delivers* an inattentive player
+to the exit.
+
+On `base`, `hunt` and `swarm` the same one-key policy does not reach the line
+inside the script's 16s window, but it is conveyed to x=55.7 / 62.8–63.2 / 63.5
+respectively — 8.5 to 16 tiles short. Those runs end because the window ends,
+not because anything stopped them; whether a longer window also completes them
+is untested and worth one run before assuming `surge` is the only exposure.
+
+**Suggested owner.** `intensity` (task #10 already covers both root causes) —
+but this raises the priority: it is not just "idling is free", it is "idling
+wins". Verify against `p1`, not only `p4`, when the fix lands.
+
 ### New on this build: HULL FALLBACK makes idling free, and its streak cap self-defeats
 
 Pre-CP1, the zero-input script died at 13.66s (3/3). On `0a0310f` it dies in
@@ -809,6 +847,22 @@ the streak-reset explanation is read from the code, not instrumented.
 against an idle player it currently is). Worth resolving before the operator
 judges CP1: they will be told the clock is tighter, which is true, but the
 consequence of losing to it got softer.
+
+### Gate part 2 — the fairness scripts across all four paces
+
+3 scripts × 4 paces × 3 reps, plus a narrow-viewport pass and the
+previously-failing policies as controls. Verdicts against each thing the
+integrator asked to have verified:
+
+| Question | Verdict | Evidence |
+| --- | --- | --- |
+| Weapon pop (F6) now a real recatch scramble? | **FIXED** | `CONFIG.capsules.popNoCatchMs` 250 gates the pickup test (`src/sim/capsules.js:83`). Empirically, three runs where the player carried H when a wasp connected show weapon H → **R** and staying R for the rest of the run — the capsule genuinely leaves your hands. Pre-CP1 the same situation read H → H. |
+| Wall-clip through solids (F4) fixed? | **NOT FIXED** | 16 of 36 runs push the body more than 0.3 tiles into the `dare-dead-end` column while the plane is in contact (x=56.65, body 56.30–57.00, feet y=1, margin 0.23–0.59), and **all 16 emerge past x=57**. The `p1` surge trace additionally shows passage *below* the floor at y=0.00 for six tiles. |
+| Dare-pocket cheese (F5)? | **MATERIALLY BETTER** | `x2` still completes 3/3 at every pace, but the margin collapses from 13.87–18.40 at base to 0.40–2.85 (`hunt`), −0.59–3.07 (`swarm`), −0.59 to −0.12 (`surge`). The round trip is now a real wager; it is no longer free. |
+| Dawdle survival (five seconds in the dead end)? | **NOT FIXED** | `x5` completes 3/3 at every pace (11.73–16.50s), margins at or below zero under the variants. The fallback carries it. |
+| Conveyor free-rides? | **WORSE** | See the critical regression above. |
+| Aspect sensitivity of the seconds-bounded clock (F9)? | **PERSISTS** | `p4` at 800×1000 completes 3/3 with margin 11.12 at base (versus 18.40 at 1280×800) and 5.04–6.66 on `surge` (versus 4.59–6.39 wide). Ratios track the frustum exactly as before, so bounding the clock in seconds did not decouple it from window shape. No route closure narrow — that still holds. |
+| Held-jump dead-end pin (F11)? | **FIXED at base** | `x3` completes in 6.69–6.71s with **zero pinned time** at base, versus a 9.6s pin and a 16.78s finish pre-CP1. It reappears under `swarm` (0/3, pinned 9.0–9.5s at x=63.65, a different spot) — so the lip itself is passable now, but the policy still finds new places to jam. |
 
 ## Single best next action
 
