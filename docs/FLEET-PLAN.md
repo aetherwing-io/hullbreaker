@@ -41,6 +41,20 @@ the intensity is far off.** The fleet exists to close that gap:
   (transformation), and the in-flight CP1 defect fixes (fallback
   self-defeat, crush wall-grind). The roof-contest decision folds into CP2+.
 
+### July 30 — view-scale verdict: FAR is the default; bullets don't turn corners
+
+- Operator: "far feels right." FAR (RIG ≈ 3.7% of screen height, matching
+  board 13's 3–5% range) becomes the DEFAULT view; near/mid stay available
+  via ?view=. The known readability cost (capsule glyphs, wasp tells at
+  distance) is accepted for now with a follow-up: scale tells/glyphs up as
+  an art/readability pass rather than keeping RIG large.
+- Operator: "the only feedback is that projectiles also curve around
+  corners." Ruling: projectiles must NOT visibly follow the world-ribbon
+  around bends/corners. Fix: shots reaching a bend boundary leave the
+  surface on the face tangent and fade/cull — sim culls them at the bend so
+  visuals and hitboxes agree (no shooting around limbs; removes cross-corner
+  sniping). Applies to hex corners and transform bends alike.
+
 ### July 30 — CP2 verdict: houndframe lands; iterate from "hound 2.5"
 
 - Operator on the hound stages: "those feel much better." Iterate from
