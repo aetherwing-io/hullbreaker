@@ -1,0 +1,263 @@
+{
+  "name": "x5-pocket-dawdle",
+  "description": "ATTACK: how long can a greedy player stand in the dare pocket and still get out? Identical to x2 up to the reward pickup, then stands still on the pocket floor for five seconds before the identical retreat and finish. Margin at the reward is ~25 tiles and the plane advances at minimumScrollSpeed 2.6, so the arithmetic says the wager only becomes a wager after roughly seven seconds of standing still - longer than the fixture's entire 4-12s target pass time. This run tests that arithmetic against the game. Same open-loop caveat as x2: verify darePocket.rewardTaken. Run with --max-runtime-ms 26000.",
+  "url": "index.html?slice=traversal",
+  "durationMs": 19000,
+  "moves": [
+    {
+      "hold": "right",
+      "fromMs": 0,
+      "toMs": 2560
+    },
+    {
+      "tap": "jump",
+      "atMs": 300,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 520,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 740,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 960,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1180,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1400,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1620,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1840,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 2060,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 2280,
+      "holdMs": 110
+    },
+    {
+      "hold": "down",
+      "fromMs": 2900,
+      "toMs": 3660
+    },
+    {
+      "tap": "jump",
+      "atMs": 2950,
+      "holdMs": 90
+    },
+    {
+      "tap": "jump",
+      "atMs": 3150,
+      "holdMs": 90
+    },
+    {
+      "tap": "jump",
+      "atMs": 3350,
+      "holdMs": 90
+    },
+    {
+      "tap": "jump",
+      "atMs": 3550,
+      "holdMs": 90
+    },
+    {
+      "hold": "right",
+      "fromMs": 3700,
+      "toMs": 4800
+    },
+    {
+      "hold": "left",
+      "fromMs": 9860,
+      "toMs": 10640
+    },
+    {
+      "tap": "jump",
+      "atMs": 10480,
+      "holdMs": 300
+    },
+    {
+      "hold": "right",
+      "fromMs": 10680,
+      "toMs": 18600
+    },
+    {
+      "tap": "jump",
+      "atMs": 10900,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 11420,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 11660,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 11900,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 12140,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 12380,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 12620,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 12860,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 13100,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 13340,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 13580,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 13820,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 14060,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 14300,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 14540,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 14780,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 15020,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 15260,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 15500,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 15740,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 15980,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 16220,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 16460,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 16700,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 16940,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 17180,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 17420,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 17660,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 17900,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 18140,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 18380,
+      "holdMs": 110
+    }
+  ]
+}

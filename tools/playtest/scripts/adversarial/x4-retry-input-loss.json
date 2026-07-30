@@ -1,0 +1,10 @@
+{
+  "name": "x4-retry-input-loss",
+  "description": "ATTACK: control frames lost across the fixture's fast retry, as a within-run A/B. ArrowRight is held continuously from t=0. With enemies disabled the death is deterministic: hold-right jams on the +1 ground step at column 39, the damage plane arrives ~10s later and crushes the pinned player. src/sim/player.js scheduleSliceRetry() and src/main.js resetGame() both call releaseAllKeys(), so attempt 2 begins with keys.right = false even though the key is still physically down — and nothing re-sets it, because the game only writes keys[k] on a keydown event. Phase A (t=14s..19s): the key is still held; if the player does not move, the input was dropped. Phase B (t=19.2s): the same key is released and re-pressed once; if the player immediately runs, the game was fine and only the held-key state was lost. Real Chrome sends auto-repeat keydowns for a physically held key, which would restore keys.right for a human (jump is exempted by !e.repeat) — Playwright's keyboard.down() sends exactly one, so this run measures the harness's worst case and the human case needs a hands-on check. Run with --max-runtime-ms 26000.",
+  "url": "index.html?slice=traversal&enemies=0",
+  "durationMs": 21500,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 19000 },
+    { "hold": "right", "fromMs": 19200, "toMs": 21300 }
+  ]
+}

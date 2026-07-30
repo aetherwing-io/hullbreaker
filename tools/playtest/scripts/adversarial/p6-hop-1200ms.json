@@ -1,0 +1,21 @@
+{
+  "name": "p6-hop-1200ms",
+  "description": "ATTACK: cadence sweep, slow rung. Hold ArrowRight, tap Space every 1200ms (a lazy, half-attentive rhythm), never fire. The slowest rung of the p3/p4/p5/p6 sweep — if even this clears the slice, no jump-timing skill is being tested at all.",
+  "url": "index.html?slice=traversal",
+  "durationMs": 13000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 12800 },
+
+    { "tap": "jump", "atMs": 300, "holdMs": 380 },
+    { "tap": "jump", "atMs": 1500, "holdMs": 380 },
+    { "tap": "jump", "atMs": 2700, "holdMs": 380 },
+    { "tap": "jump", "atMs": 3900, "holdMs": 380 },
+    { "tap": "jump", "atMs": 5100, "holdMs": 380 },
+    { "tap": "jump", "atMs": 6300, "holdMs": 380 },
+    { "tap": "jump", "atMs": 7500, "holdMs": 380 },
+    { "tap": "jump", "atMs": 8700, "holdMs": 380 },
+    { "tap": "jump", "atMs": 9900, "holdMs": 380 },
+    { "tap": "jump", "atMs": 11100, "holdMs": 380 },
+    { "tap": "jump", "atMs": 12300, "holdMs": 380 }
+  ]
+}

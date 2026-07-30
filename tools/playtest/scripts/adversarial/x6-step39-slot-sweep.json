@@ -1,0 +1,68 @@
+{
+  "name": "x6-step39-slot-sweep",
+  "description": "ATTACK: can a run-jump actually take the low route past the column-39 step? The fixture declares lower-service low-approach -> low-step with verb 'run-jump' and routes dare-pocket through the same ground, but the chimney-left wall (39..40, y=5..10) puts a ceiling two tiles above that +1 step, so a jumping player's head enters cell (39,5) long before their feet clear cell (39,2). The passable band is feet in [2.98, 3.32] at the instant of the horizontal collision check - about one to two frames of a 16.5-tile/s jump. This script holds ArrowRight for the whole run (which pins the player at x=38.65 against the step) and tries eleven different jump hold lengths, 16ms through 500ms, 900ms apart, before the damage plane arrives. If maxX never exceeds ~38.7 and the run ends pinned, no jump duration opens the slot from the y=2 floor. Not an exhaustive proof - it sweeps hold length, not sub-frame press phase - but eleven failures plus the geometry is the case.",
+  "url": "index.html?slice=traversal&enemies=0",
+  "durationMs": 12000,
+  "moves": [
+    {
+      "hold": "right",
+      "fromMs": 0,
+      "toMs": 11200
+    },
+    {
+      "tap": "jump",
+      "atMs": 1400,
+      "holdMs": 16
+    },
+    {
+      "tap": "jump",
+      "atMs": 2300,
+      "holdMs": 33
+    },
+    {
+      "tap": "jump",
+      "atMs": 3200,
+      "holdMs": 50
+    },
+    {
+      "tap": "jump",
+      "atMs": 4100,
+      "holdMs": 60
+    },
+    {
+      "tap": "jump",
+      "atMs": 5000,
+      "holdMs": 80
+    },
+    {
+      "tap": "jump",
+      "atMs": 5900,
+      "holdMs": 120
+    },
+    {
+      "tap": "jump",
+      "atMs": 6800,
+      "holdMs": 160
+    },
+    {
+      "tap": "jump",
+      "atMs": 7700,
+      "holdMs": 200
+    },
+    {
+      "tap": "jump",
+      "atMs": 8600,
+      "holdMs": 300
+    },
+    {
+      "tap": "jump",
+      "atMs": 9500,
+      "holdMs": 400
+    },
+    {
+      "tap": "jump",
+      "atMs": 10400,
+      "holdMs": 500
+    }
+  ]
+}

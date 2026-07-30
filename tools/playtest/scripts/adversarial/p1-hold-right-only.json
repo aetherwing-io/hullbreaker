@@ -1,0 +1,9 @@
+{
+  "name": "p1-hold-right-only",
+  "description": "ATTACK: degenerate-strategy floor. One key, held, forever: ArrowRight. No jump, no fire, no route reading. This is the least skilled policy that exists, and it is the control case for the whole ladder — if the slice resists this, the ladder's later rungs measure how much skill the slice actually demands above zero. Expected failure point is the +1 ground step at x=39 (groundRuns 32..39 y=2 -> 39..47 y=3 in TRAVERSAL_FIXTURE), which no amount of holding right can climb.",
+  "url": "index.html?slice=traversal",
+  "durationMs": 16000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 15800 }
+  ]
+}
