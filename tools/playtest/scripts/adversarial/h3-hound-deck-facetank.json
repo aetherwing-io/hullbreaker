@@ -1,0 +1,23 @@
+{
+  "name": "h3-hound-deck-facetank",
+  "description": "ATTACK (CP2): i-frame facetank of the hound charge, on the deck where the hound actually lives. h1 could not answer this because the naive winning policy flies the roof and never enters a hound lane. This script holds ArrowRight and KeyJ for the whole run and jumps exactly ONCE - a 16ms tap at 1400ms, the only input found that threads the column-39 slot (finding F8) onto the y=3 floor. From there it never leaves the deck, so it walks straight through the hound's patrol band with no reroute, no bait, and no reaction to the plant telegraph. Hound contact is ordinary contact damage against 3 hp behind CONFIG.player.iframesMs 1200, so if a charge lands inside an i-frame window it is free. Completion here would mean the tell is decoration for anyone willing to eat the hits.",
+  "url": "index.html?slice=traversal&hound=2",
+  "durationMs": 14000,
+  "moves": [
+    {
+      "hold": "right",
+      "fromMs": 0,
+      "toMs": 13800
+    },
+    {
+      "hold": "fire",
+      "fromMs": 100,
+      "toMs": 13800
+    },
+    {
+      "tap": "jump",
+      "atMs": 1400,
+      "holdMs": 16
+    }
+  ]
+}

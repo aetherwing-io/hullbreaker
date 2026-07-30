@@ -942,6 +942,47 @@ It was replaced by the version above. Its one incidental result: negative crush
 margins (−0.55 to −0.60) re-confirming the wall-grind defect on the hound
 fixture too.
 
+### H3 — the grounded facetank is not reachable by open-loop scripting (and that is a finding about F8)
+
+`h3-hound-deck-facetank` was the script I named as the way to answer the i-frame
+question: hold right and fire, jump exactly once with a 16ms tap to thread the
+column-39 slot, then never leave the deck. It **failed 3/3** — pinned at x=38.65
+for 2.2s, then shoved past the step by the plane (the wall-grind again, margins
+−0.49 to −0.52), ending stalled at x=49.34 with the hound never engaged.
+
+The reason matters more than the failure: **the 16ms tap passed 3/3 when I
+measured it pre-CP1 and passes 0/3 now.** Nothing about the slot changed; the
+CP1 movement and pace work changed *when the player arrives at it*, so a tap
+pinned to a fixed 1400ms no longer lands inside the one-to-two-frame window.
+F8's severity should be restated accordingly: the low route is not merely gated
+behind one frame of precision, it is gated behind one frame *relative to a
+moving arrival time*, which no fixed-time script can hit twice across builds.
+
+Two open-loop attempts is enough to conclude that **the i-frame facetank
+question needs closed-loop control** — a bot that watches `traversalState`/`vx`
+for the pin and then taps — and that this harness cannot answer it as built.
+Recommending against a third scripted attempt.
+
+### T2 — transform seams did not break, but progress variance is large
+
+`t2-transform-seam-rush` (hold right + mash Space for twenty seconds through
+every threshold) produced **no console or page errors, no softlock, and no
+observable seal crossing** across three runs. The rituals held.
+
+What it did show is spread: three identical runs reached `maxX` **112.11 / 83.65
+/ 87.30** and recorded **1 / 3 / 3** deaths. That is a 28-tile difference in
+progress from byte-identical input on one build. Some of that is the death count
+compounding, but the first divergence precedes it. Flagging for the
+transformation lane as a determinism signal rather than a defect claim — I did
+not isolate a cause, and `?slice=transform` has no telemetry for ritual state or
+seal position, so a scripted attack currently cannot see the thing it is
+attacking.
+
+**Hook request (transformation/harness):** expose ritual state and
+`transformSealX` in the `?testapi=1` snapshot. Without them, threshold clipping
+and ritual skipping can only be attacked blind — I can tell you nothing broke,
+but not that nothing *can*.
+
 ## Single best next action
 
 *(Original recommendation, now partly implemented — the CP1 variants bounded the
