@@ -171,19 +171,22 @@ export function buildLevel(cfg) {
   return { groundH, platforms, chunkLog };
 }
 
-export function buildTraversalLevel(cfg) {
+// The fixture argument is the resolved pacing variant (src/mode.js). Every
+// pace shares this geometry — only pacing moves — so an A/B between variants
+// compares the same seed, the same lattice, and the same routes.
+export function buildTraversalLevel(cfg, fixture = TRAVERSAL_FIXTURE) {
   const base = buildLevel(cfg);
-  const B = TRAVERSAL_FIXTURE.bounds;
-  for (const run of TRAVERSAL_FIXTURE.groundRuns)
+  const B = fixture.bounds;
+  for (const run of fixture.groundRuns)
     for (let x = run.x0; x < run.x1; x++) base.groundH[x] = run.y;
   const platforms = base.platforms.filter((p) => p.x1 <= B.x0 || p.x0 >= B.x1);
-  for (const p of TRAVERSAL_FIXTURE.platforms) platforms.push({ ...p });
+  for (const p of fixture.platforms) platforms.push({ ...p });
   return {
     groundH: base.groundH,
     platforms,
-    solidRects: TRAVERSAL_FIXTURE.solidRects.map((r) => ({ ...r })),
-    chunkLog: base.chunkLog.concat(TRAVERSAL_FIXTURE.id),
-    fixture: TRAVERSAL_FIXTURE,
+    solidRects: fixture.solidRects.map((r) => ({ ...r })),
+    chunkLog: base.chunkLog.concat(fixture.id),
+    fixture,
   };
 }
 

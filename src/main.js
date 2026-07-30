@@ -13,7 +13,10 @@
    simulation), src/render (three.js), and src/ui (DOM). */
 
 import { CONFIG } from './config.js';
-import { ACTIVE_SLICE, IS_TRAVERSAL_SLICE, QUERY, SLICE_ENEMIES_ENABLED } from './mode.js';
+import {
+  ACTIVE_SLICE, IS_TRAVERSAL_SLICE, QUERY, SCORE_ENABLED, SLICE_ENEMIES_ENABLED,
+  SLICE_FALLBACK_ENABLED, SLICE_PACE,
+} from './mode.js';
 import { installHost } from './sim/bridge.js';
 import {
   advanceGameMs, gameMs, scrollX, setScrollX, sliceStats,
@@ -41,6 +44,10 @@ import {
   capsules, removeCapsule, resetCarrierDrops, spawnCapsule, updateCapsules,
 } from './sim/capsules.js';
 import { clearMods, mods, updateMods } from './sim/mods.js';
+import { pacePeak, paceSpeed, resetPace } from './sim/pace.js';
+import {
+  resetScore, scoreEvents, scoreRunEnd, scoreRunStart, scoreSnapshot, updateScore,
+} from './sim/score.js';
 import { resetSpawner, updateSpawner } from './sim/spawner.js';
 import { resetCornerEvents } from './sim/wavegate.js';
 import { updateScroll } from './sim/scroll.js';
@@ -118,6 +125,8 @@ function resetGame() {
   clearMods();
   resetCarrierDrops();
   setScrollX(ACTIVE_SLICE ? ACTIVE_SLICE.run.startScroll : 0);
+  resetPace();
+  resetScore();
   resetSpawner();
   resetHostileRng();
   resetKills(); resetShotsFired();
@@ -130,6 +139,9 @@ function resetGame() {
   player.coyoteUntil = 0; player.dropUntil = 0; player.nextFireAt = 0;
   player.grounded = false; player.onOneWay = null; player.jumpCutDone = true;
   player.airJumpsLeft = P.airJumps;
+  player.traversalChain = 0; player.traversalChainUntil = 0;
+  player.fallbackStreak = 0; player.fallbackRecoverX = -Infinity;
+  player.edgePinnedMs = 0;
   clearPlayerTraversal(0);
   player.traversalControlUntil = 0;
   clearJumpBuffer();
@@ -139,14 +151,21 @@ function resetGame() {
   if (ACTIVE_SLICE) {
     sliceStats.attempts++;
     sliceStats.airJumps = 0;
+    sliceStats.setbacks = 0;
+    sliceStats.lastSetbackAt = -1e9;
     sliceStats.minEdgeMargin = Infinity;
     sliceStats.startedAt = gameMs;
-    const reward = ACTIVE_SLICE.darePocket.reward;
-    spawnCapsule(reward.kind, reward.letter, reward.x, reward.y, reward.mode);
+    // route stakes: `rewards` is the pocket capsule plus whatever the active
+    // pacing variant parks on its harder lines
+    for (const r of ACTIVE_SLICE.rewards)
+      spawnCapsule(r.kind, r.letter, r.x, r.y, r.mode);
     if (SLICE_ENEMIES_ENABLED) {
       for (const e of ACTIVE_SLICE.enemies)
-        spawnHostile(e.x, e.y, e.delayMs, e.kind);
+        spawnHostile(e.x, e.y, e.delayMs, e.kind, e.tune);
     }
+    scoreRunStart(CONFIG.gen.seed, ACTIVE_SLICE.id, ACTIVE_SLICE.pace.id);
+  } else {
+    scoreRunStart(CONFIG.gen.seed, 'six-face', 'normal');
   }
   resetHudMessage();                     // keep the HUD write cache coherent
   updateScroll(0);                       // was updateCamera(0): scroll, then pose
@@ -171,9 +190,17 @@ function update(dt) {
   updateCapsules(dt * wScale);
   updateMods();
   updateBullets(dt);
+  // CHARGE steps on real dt: CHRONO must not inflate the meter (proposal A.3)
+  updateScore(dt, {
+    grounded: player.grounded, vx: player.vx,
+    traversalState: player.traversalState,
+    x: player.x, y: player.y,
+    margin: player.x - player.hw - sLeftEdge(),
+  });
   if (IS_TRAVERSAL_SLICE) {
-    if (player.x >= ACTIVE_SLICE.rejoin.x0) setState('VICTORY');
+    if (player.x >= ACTIVE_SLICE.rejoin.x0) { scoreRunEnd('clear'); setState('VICTORY'); }
   } else if (scrollX >= END_SCROLL) {
+    scoreRunEnd('clear');
     setState('VICTORY');
   }
 }
@@ -185,7 +212,10 @@ function update(dt) {
 function telemetry() {
   return {
     gameMs, state, scrollX,
-    minimumScrollSpeed: activeScrollSpeed(),
+    // unchanged semantics: the fixture's declared scroll floor. The live
+    // pursuit speed a pacing variant is commanding is `pursuitSpeed` below.
+    minimumScrollSpeed: ACTIVE_SLICE
+      ? ACTIVE_SLICE.run.minimumScrollSpeed : CONFIG.scrollSpeed,
     player: {
       x: player.x, y: player.y, vx: player.vx, vy: player.vy,
       grounded: player.grounded,
@@ -198,6 +228,13 @@ function telemetry() {
     attempt: sliceStats.attempts,
     falls: sliceStats.falls,
     airJumps: sliceStats.airJumps,
+    // additive since the harness froze the fields above: the pacing variant in
+    // play, the live pursuit speed, and the score/setback prototype's state
+    pace: ACTIVE_SLICE ? ACTIVE_SLICE.pace.id : null,
+    pursuitSpeed: activeScrollSpeed(),
+    pursuitPeak: pacePeak(),
+    setbacks: sliceStats.setbacks,
+    score: scoreSnapshot(),
   };
 }
 
@@ -243,6 +280,16 @@ window.HB = Object.freeze({
   kills: () => kills,
   shotsFired: () => shotsFired,
   edges: () => ({ left: sLeftEdge(), right: sRightEdge() }),
+  pace: () => (ACTIVE_SLICE ? { ...ACTIVE_SLICE.pace, pursuit: ACTIVE_SLICE.pursuit } : null),
+  pursuitSpeed: () => paceSpeed(),
+  // proposal A.5's read surface, verbatim: ring-buffered events, one snapshot,
+  // and the reset the harness may assert. Inert unless ?score=1.
+  score: {
+    enabled: SCORE_ENABLED,
+    events: scoreEvents,
+    snapshot: scoreSnapshot,
+    reset: resetScore,
+  },
   snapshot: () => {
     const t = telemetry();
     return {
@@ -292,11 +339,23 @@ if (QUERY.has('selftest')) {
     resetGame();
     const expectedScroll = ACTIVE_SLICE ? ACTIVE_SLICE.run.startScroll : 0;
     const expectedHostiles = ACTIVE_SLICE && SLICE_ENEMIES_ENABLED ? ACTIVE_SLICE.enemies.length : 0;
-    check('restart', scrollX === expectedScroll && state === 'PLAYING' &&
+    // A pace that bounds crush slack in seconds arms its clock on the first
+    // frame, so the opening scroll is the authored start pushed forward to the
+    // margin cap — hence >= rather than ===, with the cap itself checked below.
+    check('restart', scrollX >= expectedScroll && state === 'PLAYING' &&
       hostiles.length === expectedHostiles);
     if (ACTIVE_SLICE) {
       check('slice fixture selected', levelData.fixture === ACTIVE_SLICE);
-      check('fixed dare reward', capsules.length === 1 && capsules[0].mode === 'fixed');
+      check('pace resolved', ACTIVE_SLICE.pace.id === SLICE_PACE ||
+        (SLICE_PACE !== 'base' && ACTIVE_SLICE.pace.id === 'base'));
+      check('authored rewards spawned',
+        capsules.length === ACTIVE_SLICE.rewards.length &&
+        capsules.every((c) => c.mode === 'fixed'));
+      check('hull fallback armed', SLICE_FALLBACK_ENABLED === (QUERY.get('fallback') !== '0'));
+      const cap = ACTIVE_SLICE.pursuit.marginCapTiles;
+      check('crush clock armed at spawn', cap > 0
+        ? Math.abs((player.x - player.hw - sLeftEdge()) - cap) < 0.05
+        : scrollX === expectedScroll);
     }
     const fails = results.filter((r) => !r[1]).map((r) => r[0]);
     const msg = fails.length

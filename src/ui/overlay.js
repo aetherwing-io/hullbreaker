@@ -3,9 +3,10 @@
    machine itself is sim (src/sim/state.js) and reaches this presentation
    through the view bridge, so the sim owns no copy. */
 
-import { IS_TRAVERSAL_SLICE } from '../mode.js';
+import { ACTIVE_SLICE, IS_TRAVERSAL_SLICE, SCORE_ENABLED } from '../mode.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
+import { scoreSnapshot } from '../sim/score.js';
 import { weaponDef, weaponKills, shotsFired } from '../sim/weapons.js';
 import { kills } from '../sim/hostiles.js';
 
@@ -44,12 +45,22 @@ function showStateScreen(next) {
       const edge = Number.isFinite(sliceStats.minEdgeMargin)
         ? Math.max(0, sliceStats.minEdgeMargin).toFixed(1)
         : '—';
-      showOverlay('TRAVERSAL CLEAR', [
+      const lines = [
         { text: `${elapsed}s · ${kills} kills · ${sliceStats.airJumps} air jumps` },
         { text: `closest damage-edge margin: ${edge} tiles` },
-        { text: `attempt ${sliceStats.attempts} · ${sliceStats.falls} total falls` },
-        { text: 'r to replay', dim: true },
-      ]);
+        { text: `attempt ${sliceStats.attempts} · ${sliceStats.falls} falls · ` +
+                `${sliceStats.setbacks} hull fallbacks` },
+      ];
+      if (SCORE_ENABLED) {
+        const sc = scoreSnapshot();
+        lines.push({ text: `THREAT ${sc.threat} · ${sc.counts.airborne_kill} airborne ` +
+                           `· ${sc.counts.link} links · ${sc.counts.wager} wagers` });
+        lines.push({ text: `hot for ${(sc.hotMs / 1000).toFixed(1)}s of ` +
+                           `${(sc.playMs / 1000).toFixed(1)}s` });
+      }
+      lines.push({ text: `pace: ${ACTIVE_SLICE.pace.label}`, dim: true });
+      lines.push({ text: 'r to replay', dim: true });
+      showOverlay('TRAVERSAL CLEAR', lines);
     } else {
       showOverlay('SECTOR CLEAR', [
         { text: 'grey-box complete' },

@@ -1,0 +1,32 @@
+{
+  "name": "pace-chimney",
+  "description": "Verb-crispness probe for the CP1 pacing variants: sprint into the chimney shaft (columns 39-45) and then alternate direction + jump for four seconds to force repeated wall contacts and launches. Open-loop and deliberately sloppy — what it measures is airborne fraction and how many contacts convert to launches, which is where &pace=surge (auto-launch on dwell expiry + chained launch amplification) should separate from &pace=base.",
+  "url": "index.html?slice=traversal",
+  "durationMs": 10000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 1500 },
+    { "hold": "fire", "fromMs": 200, "toMs": 9600 },
+    { "tap": "jump", "atMs": 1150, "holdMs": 380 },
+
+    { "hold": "right", "fromMs": 1700, "toMs": 2100 },
+    { "tap": "jump", "atMs": 1950, "holdMs": 300 },
+    { "hold": "left", "fromMs": 2200, "toMs": 2600 },
+    { "tap": "jump", "atMs": 2450, "holdMs": 300 },
+    { "hold": "right", "fromMs": 2700, "toMs": 3100 },
+    { "tap": "jump", "atMs": 2950, "holdMs": 300 },
+    { "hold": "left", "fromMs": 3200, "toMs": 3600 },
+    { "tap": "jump", "atMs": 3450, "holdMs": 300 },
+    { "hold": "right", "fromMs": 3700, "toMs": 4100 },
+    { "tap": "jump", "atMs": 3950, "holdMs": 300 },
+    { "hold": "left", "fromMs": 4200, "toMs": 4600 },
+    { "tap": "jump", "atMs": 4450, "holdMs": 300 },
+
+    { "hold": "right", "fromMs": 4800, "toMs": 9600 },
+    { "tap": "jump", "atMs": 5300, "holdMs": 380 },
+    { "tap": "jump", "atMs": 6100, "holdMs": 380 },
+    { "tap": "jump", "atMs": 6900, "holdMs": 380 },
+    { "tap": "jump", "atMs": 7700, "holdMs": 380 },
+    { "tap": "jump", "atMs": 8500, "holdMs": 380 },
+    { "tap": "jump", "atMs": 9300, "holdMs": 380 }
+  ]
+}

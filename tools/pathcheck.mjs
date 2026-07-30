@@ -9,6 +9,7 @@
 //
 // Run from the repo root:  node tools/pathcheck.mjs
 
+import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,10 +23,18 @@ import {
   cornerYawDeltaDeg, cornerScrollVel, zipperOffset,
 } from '../src/pure/waves.js';
 import {
-  TRAVERSAL_FIXTURE, traversalLedgeProbe, traversalLedgeDecision,
+  TRAVERSAL_FIXTURE, TRAVERSAL_PACES, TRAVERSAL_PACE_IDS, resolveTraversalPace,
+  traversalLedgeProbe, traversalLedgeDecision,
   traversalWallDecision, traversalSolidAllowsGrab, traversalFollowTarget,
-  traversalCameraDepth,
+  traversalCameraDepth, traversalPaceTargetSpeed, traversalPaceStep,
+  traversalPocketAdvanceTiles, traversalChainMult, traversalFallbackTarget,
+  traversalMarginCapScroll, traversalPocketEntryMargin,
 } from '../src/pure/traversal.js';
+import {
+  SCORE, scoreNotch, scoreNotchMult, scoreFireRateMult, scoreChargeGain,
+  scoreThreatGain, scoreApplyGain, scoreDrainPerSec, scoreStep,
+  scoreClassification, scoreNotchGlyphs, scoreConnectorAt, scoreRoutesCompleted,
+} from '../src/pure/score.js';
 import {
   solidRectContains, levelSolidCell, buildLevel, buildTraversalLevel,
   buildSpawnTable,
@@ -992,6 +1001,601 @@ const ledgeState = {
   ok(apexDoubleFloor > 3,
      'discrete double-jump apex clears the +3 high-lane offset at the dt-clamp floor, margin ' +
      (apexDoubleFloor - 3).toFixed(3) + ' tiles');
+}
+
+/* ================= pacing variants (CP1) ========================== *
+ * Three sharply different pacing arguments over one fixture. Everything
+ * asserted here is a property the operator's A/B depends on: the geometry is
+ * identical across variants, each variant's pursuit model is bounded and
+ * fair, and the dare pocket stays provably escapable at every variant's
+ * pocket speed — a variant that can crush a prompt player in the pocket is a
+ * generation error, not intensity.                                       */
+{
+  const pacesBefore = JSON.stringify(TRAVERSAL_PACES);
+  const fixtureSnapshot = JSON.stringify(TRAVERSAL_FIXTURE);
+  const resolved = TRAVERSAL_PACE_IDS.map(function (id) { return resolveTraversalPace(id); });
+  ok(TRAVERSAL_PACE_IDS.length >= 3 && TRAVERSAL_PACE_IDS[0] === 'base',
+     'at least three paces declared, base first, got ' + TRAVERSAL_PACE_IDS.join(','));
+  ok(JSON.stringify(TRAVERSAL_PACES) === pacesBefore &&
+     JSON.stringify(TRAVERSAL_FIXTURE) === fixtureSnapshot,
+     'resolving a pace mutates neither the pace table nor the base fixture');
+  ok(resolveTraversalPace('nonexistent-pace').pace.id === 'base',
+     'an unknown ?pace= falls back to base rather than breaking the slice');
+
+  const baseResolved = resolved[0];
+  ok(JSON.stringify(baseResolved.movement) === JSON.stringify(TRAVERSAL_FIXTURE.movement) &&
+     JSON.stringify(baseResolved.enemies) === JSON.stringify(TRAVERSAL_FIXTURE.enemies) &&
+     baseResolved.run.minimumScrollSpeed === TRAVERSAL_FIXTURE.run.minimumScrollSpeed &&
+     baseResolved.rewards.length === 1 && baseResolved.chain === null,
+     'the base pace is the shipped pass unchanged (default behavior preserved)');
+
+  let sameGeometry = true, boundedPursuit = true, sameRoutes = true;
+  const seenLabels = new Set();
+  for (const F of resolved) {
+    const PU = F.pursuit;
+    if (JSON.stringify(F.groundRuns) !== JSON.stringify(TRAVERSAL_FIXTURE.groundRuns) ||
+        JSON.stringify(F.platforms) !== JSON.stringify(TRAVERSAL_FIXTURE.platforms) ||
+        JSON.stringify(F.solidRects) !== JSON.stringify(TRAVERSAL_FIXTURE.solidRects) ||
+        JSON.stringify(F.connectors) !== JSON.stringify(TRAVERSAL_FIXTURE.connectors) ||
+        F.bounds !== TRAVERSAL_FIXTURE.bounds) sameGeometry = false;
+    if (JSON.stringify(F.routes) !== JSON.stringify(TRAVERSAL_FIXTURE.routes) ||
+        JSON.stringify(F.edges) !== JSON.stringify(TRAVERSAL_FIXTURE.edges)) sameRoutes = false;
+    if (typeof F.pace.id !== 'string' || typeof F.pace.label !== 'string' ||
+        typeof F.pace.hypothesis !== 'string' || F.pace.hypothesis.length < 40 ||
+        seenLabels.has(F.pace.label)) boundedPursuit = false;
+    seenLabels.add(F.pace.label);
+    if (!(PU.minSpeed > 0 && PU.minSpeed <= PU.cruiseSpeed && PU.cruiseSpeed <= PU.maxSpeed &&
+          // the pocket clamp is a release, never a spike: it may (and now does)
+          // sit below the pursuit floor, because it is the only speed acting
+          // during a retreat and traversalPaceStep applies it before the clamp
+          PU.pocketSpeed > 0 && PU.pocketSpeed <= PU.cruiseSpeed &&
+          PU.accel >= 0 && PU.decel >= 0 &&
+          PU.edgePinDamageMs >= 0 && PU.crushSlackSeconds >= 0 &&
+          ['constant', 'hunt', 'ramp'].indexOf(PU.mode) >= 0 &&
+          F.run.minimumScrollSpeed === PU.cruiseSpeed)) boundedPursuit = false;
+    // crush slack authored in seconds resolves to a margin cap in tiles
+    const wantCap = PU.crushSlackSeconds ? PU.crushSlackSeconds * PU.cruiseSpeed : 0;
+    if (Math.abs(PU.marginCapTiles - wantCap) > 1e-9) boundedPursuit = false;
+    // the player must always be able to outrun the edge on the flat
+    const TPp = { ...PL, ...F.movement };
+    if (PU.maxSpeed >= TPp.runSpeed) boundedPursuit = false;
+    if (PU.mode === 'hunt' && !(PU.mercyTiles > 0 && PU.mercyTiles < PU.comfortTiles)) boundedPursuit = false;
+    if (PU.mode === 'ramp' && !(PU.rampMs > 0)) boundedPursuit = false;
+  }
+  ok(sameGeometry, 'every pace shares one geometry: an A/B compares pacing only');
+  ok(sameRoutes, 'every pace shares one route graph, so route metrics stay comparable');
+  ok(boundedPursuit,
+     'each pace declares a labelled hypothesis and a bounded, outrunnable pursuit model');
+
+  // dare-pocket retreat timing, re-proved at each variant's pocket speed
+  // A pace that bounds slack in seconds grants LESS daylight at the pocket than
+  // the authored screen-width figure, so the wager is re-derived per pace from
+  // the margin it actually gets (adversarial F8: the shipped pocket was a free
+  // pickup with 18-19 tiles of exit margin against a documented 8-tile floor).
+  let pocketFair = true;
+  for (const F of resolved) {
+    const D = F.darePocket;
+    const entry = traversalPocketEntryMargin(F);
+    const advance = traversalPocketAdvanceTiles(F.pursuit, D.timing.retreatSeconds);
+    const backtrack = D.reward.x - D.bounds.x0;
+    const exit = entry - backtrack - advance;
+    if (exit + 1e-9 < D.timing.minExitMarginTiles ||
+        D.timing.minExitMarginTiles <= PL.width + 2 * CONFIG.edges.margin ||
+        backtrack <= 0 || advance <= 0 ||
+        D.reward.x < D.bounds.x0 || D.reward.x >= D.bounds.x1) {
+      pocketFair = false;
+      console.error('  pocket unfair in pace ' + F.pace.id + ': entry ' + entry.toFixed(2) +
+        ' backtrack ' + backtrack + ' advance ' + advance.toFixed(2) +
+        ' exit ' + exit.toFixed(2) + ' need ' + D.timing.minExitMarginTiles);
+    }
+  }
+  ok(pocketFair,
+     'dare retreat clears its exit margin at the daylight each pace actually grants');
+  // …and the wager is no longer free: a pace with a real clock must leave less
+  // slack than the shipped screen-width pocket did.
+  {
+    const slack = resolved.filter(function (F) { return F.pursuit.marginCapTiles > 0; })
+      .map(function (F) {
+        return traversalPocketEntryMargin(F) - (F.darePocket.reward.x - F.darePocket.bounds.x0) -
+          traversalPocketAdvanceTiles(F.pursuit, F.darePocket.timing.retreatSeconds);
+      });
+    const baseSlack = traversalPocketEntryMargin(resolved[0]) -
+      (resolved[0].darePocket.reward.x - resolved[0].darePocket.bounds.x0) -
+      traversalPocketAdvanceTiles(resolved[0].pursuit, resolved[0].darePocket.timing.retreatSeconds);
+    ok(slack.length >= 2 && slack.every(function (v) { return v < baseSlack; }),
+       'every seconds-bounded pace makes the pocket a tighter wager than base, got ' +
+       slack.map(function (v) { return v.toFixed(1); }).join(',') + ' vs ' + baseSlack.toFixed(1));
+  }
+
+  /* ---- the crush clock is bounded in SECONDS, not in screen width -------- *
+   * The shipped lead is a distance, so the same fixture gives 13.9 s of slack
+   * at 1600x600 and 7.0 s at 800x1000 (adversarial F6) — two different games
+   * from one build. A pace that declares crushSlackSeconds must produce the
+   * same clock on any frustum.                                              */
+  {
+    let invariant = true, contested = true, clocks = [];
+    for (const F of resolved) {
+      const cap = F.pursuit.marginCapTiles;
+      if (cap <= 0) continue;
+      const playerLeft = 40;
+      // two very different calibrated frustums, same clock
+      for (const edgeOffset of [-3.1, -10.4, -18.0]) {
+        const scroll = traversalMarginCapScroll(playerLeft, edgeOffset, cap);
+        const margin = playerLeft - (scroll + edgeOffset);
+        if (Math.abs(margin - cap) > 1e-9) invariant = false;
+        if (Math.abs(margin / F.pursuit.cruiseSpeed - F.pursuit.crushSlackSeconds) > 1e-9)
+          invariant = false;
+      }
+      clocks.push(F.pace.id + '=' + F.pursuit.crushSlackSeconds + 's');
+      // and standing still has to actually kill: the plane cannot be a conveyor
+      if (!(F.pursuit.edgePinDamageMs > 0 &&
+            F.pursuit.edgePinDamageMs * PL.maxHealth < F.pursuit.crushSlackSeconds * 4000))
+        contested = false;
+    }
+    ok(invariant && clocks.length >= 2,
+       'seconds-bounded paces produce one aspect-invariant clock: ' + clocks.join(' '));
+    ok(contested,
+       'a seconds-bounded pace also makes the plane lethal, so idling is not a free ride');
+  }
+
+  /* ---- the roof line is contested (adversarial F1/F10) ------------------ *
+   * Every winning degenerate policy pumps a chimney wall to its top and runs
+   * the y:10 roof east, because a wasp only dives when the player is BELOW it
+   * and every authored wasp sat at y 8.4-8.8. A pace has to price that line. */
+  {
+    const roofY = Math.max.apply(null, TRAVERSAL_FIXTURE.solidRects.map(function (r) { return r.y1; }));
+    let priced = 0;
+    for (const F of resolved) {
+      if (F.pace.id === 'base') continue;
+      const above = F.enemies.filter(function (e) { return e.y > roofY + 1; });
+      if (above.length >= 1) priced++;
+      else console.error('  roof line uncontested in pace ' + F.pace.id);
+    }
+    ok(priced === resolved.length - 1,
+       'every variant places a hostile above the y=' + roofY + ' roof so the fastest line costs something');
+  }
+
+  /* ---- no 1-tile lip on a walkable roof (adversarial F11) --------------- */
+  {
+    const overhang = TRAVERSAL_FIXTURE.solidRects.find(function (r) { return r.role === 'overhang'; });
+    const lip = TRAVERSAL_FIXTURE.solidRects.find(function (r) { return r.id === 'dare-dead-end'; });
+    ok(overhang && lip && lip.y1 <= overhang.y1 && lip.x0 >= overhang.x1 - 1,
+       'the pocket dead end never rises above the overhang roof it meets (no held-jump trap)');
+    ok(lip.y1 > TRAVERSAL_FIXTURE.groundRuns.find(function (r) {
+      return r.x0 <= lip.x0 && r.x1 > lip.x0;
+    }).y + PL.height,
+       'the dead end still seals the pocket for a player standing inside it');
+  }
+
+  // authored rewards and hostiles per pace
+  let stakesValid = true;
+  for (const F of resolved) {
+    const ids = new Set();
+    if (JSON.stringify(F.rewards[0]) !== JSON.stringify(F.darePocket.reward)) stakesValid = false;
+    for (const r of F.rewards) {
+      if (r.mode !== 'fixed' || r.x < F.bounds.x0 || r.x >= F.bounds.x1 ||
+          levelSolidCell(TL, Math.floor(r.x), Math.floor(r.y), 8)) stakesValid = false;
+    }
+    for (const e of F.enemies) {
+      if (ids.has(e.id) || ['wasp', 'carrier'].indexOf(e.kind) < 0 ||
+          e.x < F.bounds.x0 || e.x >= F.bounds.x1 || e.y <= 0 || e.delayMs < 0 ||
+          levelSolidCell(TL, Math.floor(e.x), Math.floor(e.y), 8)) stakesValid = false;
+      ids.add(e.id);
+      if (e.tune) {
+        const T = e.tune;
+        if ((T.hp !== undefined && !(T.hp > 0)) ||
+            (T.cruiseSpeed !== undefined && !(T.cruiseSpeed >= 0)) ||
+            (T.diveRange !== undefined && !(T.diveRange > 0)) ||
+            (T.diveCooldownMs !== undefined && !(T.diveCooldownMs > 0))) stakesValid = false;
+      }
+    }
+  }
+  ok(stakesValid,
+     'every pace spawns unique, in-bounds, non-embedded hostiles and fixed rewards');
+
+  // route stakes actually differ: no two paces field the same threat layout
+  const layouts = new Set(resolved.map(function (F) {
+    return JSON.stringify(F.enemies.map(function (e) { return [e.kind, e.x, e.y]; }));
+  }));
+  ok(layouts.size === resolved.length,
+     'the variants differ in kind: no two share a threat layout');
+  const enemyCounts = resolved.map(function (F) { return F.enemies.length; });
+  ok(Math.max.apply(null, enemyCounts) >= 2 * Math.min.apply(null, enemyCounts),
+     'density spread across paces is real, got ' + enemyCounts.join(','));
+
+  // movement/verb budgets hold for every pace, not just the base tune
+  let verbsValid = true;
+  for (const F of resolved) {
+    const TPp = { ...PL, ...F.movement };
+    const apex = TPp.jumpVel * TPp.jumpVel / (2 * -TPp.gravity);
+    if (!(apex >= 3 && apex <= 3.5)) verbsValid = false;
+    if (!(TPp.ledgeHangMs <= 300 && TPp.wallSlideMs <= 400 &&
+          TPp.traversalLaunchControlMs >= 80 && TPp.traversalLaunchControlMs <= 150 &&
+          TPp.traversalRecatchMs >= 120 && TPp.traversalRecatchMs <= 250)) verbsValid = false;
+    if (!(TPp.ledgeLaunchY >= TPp.jumpVel * 0.9 && TPp.wallJumpY >= TPp.jumpVel * 0.9 &&
+          TPp.ledgeLaunchX >= TPp.runSpeed * 0.8 &&
+          TPp.wallJumpX >= TPp.runSpeed * 1.1)) verbsValid = false;
+    // a chained launch is still readable inside the camera's look-ahead
+    const chainMax = traversalChainMult(F.chain ? F.chain.max : 0, F.chain);
+    if (TPp.wallJumpX * chainMax * 0.05 >= F.run.lookAheadTiles) verbsValid = false;
+    if (F.chain && !(F.chain.windowMs > 0 && F.chain.step > 0 && F.chain.max >= 1 &&
+                     chainMax <= 1.35)) verbsValid = false;
+    if (TPp.ledgeAutoLaunch && !(TPp.ledgeHangMs > 0)) verbsValid = false;
+  }
+  ok(verbsValid,
+     'every pace keeps jump apex, dwell budgets, launch authority and chain gain in range');
+
+  // The dt-clamp/tunneling budget proved above for the base tune has to hold for
+  // every pace, chain amplification included: the X wall stop and the Y ceiling
+  // stop are endpoint-only, so no attainable launch may cross a tile in one
+  // clamped frame. Read the clamp from source rather than restating it.
+  {
+    const mainSrc = readFileSync(join(srcDir, 'main.js'), 'utf8');
+    const mm = mainSrc.match(/Math\.min\(\s*(\d+(?:\.\d+)?)\s*,\s*t\s*-\s*last\s*\)/);
+    const dtMax = (mm ? Number(mm[1]) : 50) / 1000;
+    let worstH = 0, worstUp = 0, worstPace = '';
+    for (const F of resolved) {
+      const TPp = { ...PL, ...F.movement };
+      const chainMax = traversalChainMult(F.chain ? F.chain.max : 0, F.chain);
+      // chaining amplifies forward speed only — asserted here, and the reason
+      // src/sim/player.js multiplies vx and not vy
+      const h = Math.max(TPp.runSpeed, TPp.knockbackX,
+        TPp.wallJumpX * chainMax, TPp.ledgeLaunchX * chainMax);
+      const up = Math.max(TPp.jumpVel, TPp.airJumpVel, TPp.wallJumpY, TPp.ledgeLaunchY);
+      if (h > worstH) { worstH = h; worstPace = F.pace.id; }
+      worstUp = Math.max(worstUp, up);
+      // the pursuing edge is a relative speed too: it can only push the player
+      if (F.pursuit.maxSpeed * dtMax >= 0.9) worstH = Infinity;
+    }
+    ok(worstH * dtMax < 0.9,
+       'no pace (chain included) crosses a tile in one clamped frame, worst ' +
+       (worstH * dtMax).toFixed(3) + ' tiles in pace ' + worstPace);
+    ok(worstUp * dtMax < 0.9,
+       'no pace raises a vertical launch into the endpoint-only ceiling check, worst ' +
+       (worstUp * dtMax).toFixed(3) + ' tiles');
+  }
+  ok(traversalChainMult(0, null) === 1 && traversalChainMult(5, null) === 1,
+     'no chain config means no launch amplification anywhere else in the game');
+  {
+    const c = { windowMs: 900, step: 0.1, max: 2, refundAirJump: true };
+    ok(traversalChainMult(0, c) === 1 &&
+       Math.abs(traversalChainMult(1, c) - 1.1) < 1e-9 &&
+       Math.abs(traversalChainMult(9, c) - 1.2) < 1e-9,
+       'chain multiplier starts at 1 and clamps at its declared max');
+  }
+
+  // surge's auto-launch ledge: expiry throws you off instead of dropping you
+  {
+    const base = { down: false, jumpBuffered: false, now: 600, until: 500, side: 1, entryVx: 4 };
+    const auto = { ...PL, ...TRAVERSAL_PACES.surge.movement };
+    const a = traversalLedgeDecision(base, auto);
+    ok(a.kind === 'launch' && a.auto === true && a.vy === auto.ledgeLaunchY,
+       'ledgeAutoLaunch converts dwell expiry into a launch');
+    ok(traversalLedgeDecision({ ...base, down: true }, auto).kind === 'release' &&
+       traversalLedgeDecision({ ...base, now: 100, jumpBuffered: true }, auto).auto === false,
+       'auto-launch still lets down release and an early jump launch first');
+  }
+}
+
+/* ------------- headroom over every authored ground run --------------- *
+ * A route you can run along must not hide an invisible underside: if the
+ * clearance over a ground column is barely the player's height, arriving a
+ * fraction high (a hop, a landing bounce) bonks a ceiling the player never
+ * saw and converts a sprint into a wall slide. This caught a 0.3-tile
+ * threading window at the chimney mouths (x 39 and 44) on the low route.  */
+{
+  let worst = Infinity, worstX = -1;
+  for (const run of TRAVERSAL_FIXTURE.groundRuns) {
+    for (let x = run.x0; x < run.x1; x++) {
+      let ceil = Infinity;
+      for (const r of TRAVERSAL_FIXTURE.solidRects) {
+        // a rect standing ON the deck (the pocket's dead-end wall) is a visible
+        // wall, not a hidden ceiling — only overheads count here
+        if (x < r.x0 || x >= r.x1 || r.y0 <= run.y) continue;
+        ceil = Math.min(ceil, r.y0);
+      }
+      const clearance = ceil - run.y;
+      if (clearance < worst) { worst = clearance; worstX = x; }
+    }
+  }
+  ok(worst >= PL.height + 1.0,
+     'every authored ground column clears the player with a tile of slack, worst ' +
+     worst.toFixed(2) + ' tiles at x=' + worstX + ' (need ' + (PL.height + 1) + ')');
+  // and the trimmed chimney still presents enough wall to kick off from its floor
+  {
+    const floor = TRAVERSAL_FIXTURE.platforms.find(function (p) { return p.id === 'chimney-floor'; });
+    const walls = TRAVERSAL_FIXTURE.solidRects.filter(function (r) {
+      return r.id === 'chimney-left' || r.id === 'chimney-right';
+    });
+    const bodyRows = [Math.floor(floor.y + 0.02), Math.floor(floor.y + PL.height - 0.02)];
+    ok(walls.length === 2 && walls.every(function (r) {
+      return r.y0 <= bodyRows[1] && r.y1 > bodyRows[1] && r.y1 - r.y0 >= 4;
+    }), 'both chimney walls still overlap a player standing on the chimney floor');
+  }
+}
+
+/* ------------------- pursuit model (pure step math) ------------------ */
+{
+  const hunt = TRAVERSAL_PACES.hunt.pursuit;
+  const ramp = TRAVERSAL_PACES.surge.pursuit;
+  const flat = TRAVERSAL_PACES.base.pursuit;
+  const ctx = function (margin, elapsed, inPocket) {
+    return { marginTiles: margin, elapsedMs: elapsed, inPocket: !!inPocket };
+  };
+  ok(traversalPaceTargetSpeed(flat, ctx(50, 9e9)) === flat.cruiseSpeed &&
+     traversalPaceStep(flat, flat.cruiseSpeed, ctx(50, 9e9), 1 / 60) === flat.cruiseSpeed,
+     'a constant pace is exactly constant');
+  ok(traversalPaceTargetSpeed(hunt, ctx(hunt.comfortTiles + 1, 0)) === hunt.maxSpeed &&
+     traversalPaceTargetSpeed(hunt, ctx(hunt.mercyTiles - 1, 0)) === hunt.minSpeed &&
+     traversalPaceTargetSpeed(hunt, ctx((hunt.mercyTiles + hunt.comfortTiles) / 2, 0)) ===
+       hunt.cruiseSpeed,
+     'hunt charges on banked margin, eases when the player is nearly pinned');
+  {
+    let mono = true, prev = -1;
+    for (let t = 0; t <= ramp.rampMs * 1.5; t += 100) {
+      const v = traversalPaceTargetSpeed(ramp, ctx(20, t));
+      if (v < prev - 1e-9) mono = false;
+      prev = v;
+    }
+    ok(mono && traversalPaceTargetSpeed(ramp, ctx(20, 0)) === ramp.cruiseSpeed &&
+       traversalPaceTargetSpeed(ramp, ctx(20, ramp.rampMs)) === ramp.maxSpeed &&
+       traversalPaceTargetSpeed(ramp, ctx(20, ramp.rampMs * 9)) === ramp.maxSpeed,
+       'ramp escalates monotonically from cruise to max and clamps there');
+  }
+  {
+    // rate limiting: a step can never move faster than the declared accel/decel
+    let bounded = true, hitsMax = false;
+    let v = hunt.cruiseSpeed;
+    for (let i = 0; i < 600; i++) {
+      const next = traversalPaceStep(hunt, v, ctx(20, i * 16.7), 1 / 60);
+      if (next - v > hunt.accel / 60 + 1e-9 || v - next > hunt.decel / 60 + 1e-9) bounded = false;
+      if (next > hunt.maxSpeed + 1e-9 || next < hunt.minSpeed - 1e-9) bounded = false;
+      v = next;
+      if (Math.abs(v - hunt.maxSpeed) < 1e-9) hitsMax = true;
+    }
+    ok(bounded && hitsMax, 'pursuit speed is rate-limited and reaches its ceiling');
+  }
+  {
+    // the pocket clamp is immediate in every pace: that is what makes the
+    // retreat provable rather than dependent on how fast the edge was going
+    let clamped = true;
+    for (const id of TRAVERSAL_PACE_IDS) {
+      const PU = TRAVERSAL_PACES[id].pursuit;
+      const stepped = traversalPaceStep(PU, PU.maxSpeed, ctx(1, 9e9, true), 1 / 60);
+      if (stepped > PU.pocketSpeed + 1e-9) clamped = false;
+      const slow = traversalPaceStep(PU, PU.minSpeed, ctx(1, 9e9, true), 1 / 60);
+      if (slow > PU.pocketSpeed + 1e-9) clamped = false;
+    }
+    ok(clamped, 'entering the dare pocket drops the edge to pocketSpeed on the same frame');
+  }
+}
+
+/* ------------------ HULL FALLBACK tier 1 (proposal B.1) -------------- */
+{
+  const FB = TRAVERSAL_FIXTURE.fallback;
+  ok(FB.minDropTiles > 0 && FB.dropAboveTiles > 0 && FB.iframesMs > 0 &&
+     FB.messageMs > 0 && FB.maxConsecutive >= 1 && FB.recoverTiles > 0 &&
+     FB.tossVx > 0 && FB.tossVy < 0 && FB.groundKnockTiles > 0,
+     'fallback constants are declared and signed correctly');
+  ok(traversalFallbackTarget([3, 5.35, 8.35], 8.35, FB) === 5.35 &&
+     traversalFallbackTarget([3, 5.35, 8.35], 5.35, FB) === 3 &&
+     traversalFallbackTarget([3], 3, FB) === null &&
+     traversalFallbackTarget([], 9, FB) === null,
+     'fallback picks the highest genuinely lower surface, or nothing');
+  ok(traversalFallbackTarget([3, 8.35 - FB.minDropTiles + 0.01], 8.35, FB) === 3,
+     'a surface inside minDropTiles is not a fallback route');
+  // Tier 1 must always have a defined outcome: either a genuinely lower route
+  // to be dislodged onto, or a surface so close to the deck that the fallback
+  // pays margin instead of altitude. A platform with neither would leave the
+  // player stuck, which is the failure mode this assertion exists to catch.
+  let defined = true, elevatedCovered = 0;
+  for (const pl of TRAVERSAL_FIXTURE.platforms) {
+    const x = Math.floor((pl.x0 + pl.x1) / 2);
+    const surfaces = [TL.groundH[x]];
+    for (const q of TRAVERSAL_FIXTURE.platforms)
+      if (x + PL.width / 2 > q.x0 && x - PL.width / 2 < q.x1) surfaces.push(q.y);
+    const lower = traversalFallbackTarget(surfaces, pl.y, FB);
+    const lowest = Math.min.apply(null, surfaces);
+    if (lower !== null) elevatedCovered++;
+    else if (pl.y - lowest >= FB.minDropTiles) {
+      defined = false;
+      console.error('  undefined fallback below platform ' + pl.id);
+    }
+  }
+  ok(defined && elevatedCovered >= TRAVERSAL_FIXTURE.platforms.length - 1,
+     'every authored platform resolves to a lower route or to the margin knock, got ' +
+     elevatedCovered + '/' + TRAVERSAL_FIXTURE.platforms.length + ' with a lower route');
+}
+
+/* ============== CHARGE / THREAT prototype (proposal A.4) ============= */
+{
+  ok(SCORE === CONFIG.score, 'the score module reads its tune from CONFIG');
+  let monotone = true;
+  for (let i = 1; i < SCORE.notches.length; i++)
+    if (SCORE.notches[i] <= SCORE.notches[i - 1]) monotone = false;
+  ok(monotone && SCORE.notches.length === 2 &&
+     SCORE.notches[SCORE.notches.length - 1] === SCORE.max &&
+     SCORE.notchMult.length === SCORE.notches.length + 1 &&
+     SCORE.notchNames.length === SCORE.notches.length + 1,
+     'A.4 prototype: two monotone notches, top notch at full charge, one mult/name each');
+  ok(scoreNotch(0) === 0 && scoreNotch(SCORE.notches[0] - 0.01) === 0 &&
+     scoreNotch(SCORE.notches[0]) === 1 && scoreNotch(SCORE.max) === 2 &&
+     scoreNotch(9999) === 2,
+     'notch thresholds are inclusive, ordered, and clamped');
+  ok(scoreNotchMult(0) === 1 && scoreNotchMult(2) > scoreNotchMult(1) &&
+     scoreNotchMult(99) === SCORE.notchMult[SCORE.notchMult.length - 1],
+     'THREAT multiplier rises with the notch and clamps');
+  ok(scoreFireRateMult(0) === 1 && scoreFireRateMult(1) === SCORE.warmFireMult &&
+     scoreFireRateMult(2) === SCORE.warmFireMult && SCORE.warmFireMult < 1,
+     'WARM shortens the fire interval; nothing else is gated by notch 1');
+  ok(Object.keys(SCORE.gain).sort().join(',') === Object.keys(SCORE.threat).sort().join(','),
+     'CHARGE and THREAT tables cover the same event set');
+  ok(['airborne_kill', 'launch_kill', 'link', 'reclaim', 'wager', 'recatch']
+       .every(function (k) { return SCORE.gain[k] > 0 && SCORE.threat[k] > 0; }) &&
+     SCORE.gain.airborne_kill > SCORE.gain.ground_kill * 3 &&
+     SCORE.gain.wager > SCORE.gain.link,
+     'A.1 event set is priced, and movement kills dominate ground kills');
+  // the asymmetry that is the whole design: the floor cools you, the air does not
+  ok(scoreDrainPerSec({ grounded: false, traversal: false, launchGrace: false, vx: 0 }) === 0 &&
+     scoreDrainPerSec({ grounded: true, traversal: true, launchGrace: false, vx: 0 }) === 0 &&
+     scoreDrainPerSec({ grounded: true, traversal: false, launchGrace: true, vx: 0 }) === 0 &&
+     scoreDrainPerSec({ grounded: true, traversal: false, launchGrace: false, vx: 9 }) ===
+       SCORE.drain.moving &&
+     scoreDrainPerSec({ grounded: true, traversal: false, launchGrace: false, vx: 0 }) ===
+       SCORE.drain.stopped &&
+     SCORE.drain.stopped > SCORE.drain.moving,
+     'drain: zero in the air/traversal/launch window, worst while standing still');
+  ok(SCORE.stallSpeed === 2.0 && SCORE.stallTickMs === 100,
+     'stall threshold matches A.5 (and therefore the playtest harness) exactly');
+  ok(scoreStep(50, SCORE.drain.stopped, 1, 0) === 50 - SCORE.drain.stopped &&
+     scoreStep(10, SCORE.drain.stopped, 1, 0) === 0 &&
+     scoreStep(40, SCORE.drain.stopped, 1, 34) === 34 &&
+     scoreStep(SCORE.max, -50, 1, 0) === SCORE.max,
+     'drain never crosses the phase floor and charge never exceeds its max');
+  ok(scoreApplyGain(SCORE.max - 1, 'airborne_kill') === SCORE.max &&
+     scoreApplyGain(0, 'not_an_event') === 0,
+     'gains clamp at max and unknown events are inert');
+  {
+    // a fixed event script produces a fixed notch timeline (A.5 determinism)
+    // one plausible hot streak inside a 4-12 s pass, then a long stall
+    const script = [
+      ['step', 0.5], ['link'], ['airborne_kill'], ['step', 0.15], ['launch_kill'],
+      ['airborne_kill'], ['step', 0.1], ['launch_kill'], ['wager'], ['step', 3.0],
+    ];
+    const run = function () {
+      let charge = 0;
+      const timeline = [];
+      for (const row of script) {
+        if (row[0] === 'step') charge = scoreStep(charge, SCORE.drain.stopped, row[1], 0);
+        else charge = scoreApplyGain(charge, row[0]);
+        timeline.push(scoreNotch(charge) + ':' + charge.toFixed(2));
+      }
+      return timeline.join(' ');
+    };
+    const a = run(), b = run();
+    ok(a === b, 'the same event script always produces the same notch timeline');
+    ok(/(^|\s)1:/.test(a) && /(^|\s)2:/.test(a),
+       'the scripted 6-second horizon actually reaches BREAKING, got ' + a);
+  }
+  {
+    let climbing = true, prev = '';
+    for (const row of SCORE.classification) {
+      if (scoreClassification(row[0]) !== row[1]) climbing = false;
+      if (row[0] > 0 && scoreClassification(row[0] - 1) === row[1]) climbing = false;
+      prev = row[1];
+    }
+    ok(climbing && scoreClassification(-5) === SCORE.classification[0][1] &&
+       scoreClassification(9e9) === prev,
+       'classification ladder is a monotone step function of THREAT');
+  }
+  ok(scoreNotchGlyphs(0).length === SCORE.notches.length &&
+     scoreNotchGlyphs(2) === '▮▮' && scoreNotchGlyphs(1) === '▮▯' &&
+     scoreNotchGlyphs(0).indexOf('▰') < 0,
+     'notch glyphs are one per notch and never collide with the hp pips');
+  ok(scoreThreatGain('airborne_kill', 0) === SCORE.threat.airborne_kill &&
+     scoreThreatGain('airborne_kill', 2) ===
+       SCORE.threat.airborne_kill * SCORE.notchMult[2] &&
+     scoreThreatGain('stall_tick', 2) === 0,
+     'THREAT scales with the notch and stalling never subtracts from it');
+  {
+    const C = TRAVERSAL_FIXTURE.connectors;
+    const entry = C.find(function (c) { return c.id === 'entry'; });
+    ok(scoreConnectorAt(C, entry.x, entry.y, 0.5) === 'entry' &&
+       scoreConnectorAt(C, entry.x, entry.y + 40, 2.2) === null,
+       'connector visits resolve by nearest inside the radius');
+    const mid = TRAVERSAL_FIXTURE.routes.find(function (r) { return r.id === 'mid-catwalk'; });
+    ok(scoreRoutesCompleted(TRAVERSAL_FIXTURE.routes, mid.connectorIds.slice(0, 3))
+         .indexOf('mid-catwalk') >= 0 &&
+       scoreRoutesCompleted(TRAVERSAL_FIXTURE.routes, mid.connectorIds.slice(0, 2))
+         .indexOf('mid-catwalk') < 0 &&
+       scoreRoutesCompleted(TRAVERSAL_FIXTURE.routes,
+         mid.connectorIds.slice(0, 3).reverse()).indexOf('mid-catwalk') < 0,
+       'A.5 route coverage: three connectors, in order, or it does not count');
+  }
+  ok(SCORE.shockDamage >= CONFIG.wasp.hp && SCORE.shockDamage < CONFIG.carrier.hp &&
+     SCORE.shockRadius > CONFIG.wasp.contactRadius,
+     'BREAKING launch shock kills a wasp on contact without deleting a carrier');
+  /* ---- the weapon-pop panic actually happens (adversarial F9) ---------- *
+   * The popped capsule spawns inside the player's own AABB, so the same
+   * frame's pickup test used to hand the weapon straight back: DESIGN's
+   * "recatch it within 2.2s" beat was a no-op. The grace window has to be long
+   * enough for the pop's own arc to clear the body in BOTH axes.            */
+  {
+    const C = CONFIG.capsules;
+    const t = C.popNoCatchMs / 1000;
+    const rise = C.popVy * t + 0.5 * C.gravity * t * t;      // from y + 1.2
+    const drift = C.popVx * t;
+    ok(C.popNoCatchMs > 0 && C.popNoCatchMs < C.recatchMs * 0.2,
+       'the pop grace is real but small against the recatch window');
+    ok(1.2 + rise > PL.height || drift > PL.width / 2 + C.pickupRadius,
+       'by the end of the grace the popped capsule has left the player: rise ' +
+       (1.2 + rise).toFixed(2) + ' vs height ' + PL.height + ', drift ' + drift.toFixed(2));
+  }
+  ok(SCORE.reclaim.lowTiles < SCORE.reclaim.highTiles && SCORE.reclaim.windowMs > 0 &&
+     SCORE.linkDropTiles >= 2 && SCORE.launchGraceMs === 600 && SCORE.eventCap === 256,
+     'reclaim/link/launch windows and the A.5 ring buffer match the proposal');
+}
+
+/* ------------- score wiring at the sim layer (A.1 semantics) --------- *
+ * src/sim/score.js resolves ?score=1 at module-init time, so proving its
+ * emission rules needs a process whose __HB_QUERY__ is set before any import.
+ * Running it as a child keeps the rest of this suite in normal mode (main's
+ * collision block drives updatePlayer with the six-face tune). Everything
+ * asserted here is a rule from proposal A.1/A.3 that a refactor could break
+ * silently: what counts as a link, what an air jump may and may not pay, the
+ * ORBITAL LANCE exception, and single-shot launch-shock arming.          */
+{
+  const child = `
+    globalThis.__HB_QUERY__ = 'slice=traversal&pace=surge&score=1';
+    const S = await import(${JSON.stringify('file://' + join(srcDir, 'sim', 'score.js'))});
+    const out = { steps: [] };
+    const step = (label) => {
+      const s = S.scoreSnapshot();
+      out.steps.push([label, s.counts.link, s.counts.airborne_kill,
+        s.counts.launch_kill, s.counts.ground_kill, s.charge]);
+    };
+    S.scoreLaunch('wall', 42, 6); S.scoreContact(8.2, 'wall'); step('wall+2.2');
+    S.scoreLaunch('wall', 42, 8.2); S.scoreContact(8.8, 'wall'); step('wall+0.6');
+    S.scoreLaunch('air', 42, 9); S.scoreContact(12, 'land'); step('air+3');
+    S.scoreLaunch('ledge', 50, 8); S.scoreContact(5.3, 'land'); step('ledge-2.7');
+    out.shockCold = !!S.consumeLaunchShock();
+    S.scoreKill('wasp', 'R', { grounded: false, vy: -3, x: 50, y: 9 }); step('airkill');
+    S.scoreKill('wasp', 'OL', { grounded: false, vy: -3, x: 50, y: 9 }); step('lance');
+    out.types = S.scoreEvents.map((e) => e.type).join(',');
+    out.envelope = Object.keys(S.scoreEvents.find((e) => e.type === 'airborne_kill')).join(',');
+    S.resetScore();
+    out.afterReset = S.scoreSnapshot();
+    out.eventsAfterReset = S.scoreEvents.length;
+    console.log(JSON.stringify(out));
+  `;
+  let sim = null;
+  try {
+    sim = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', child],
+      { encoding: 'utf8' }));
+  } catch (e) {
+    console.error('pathcheck: sim score child failed: ' + e.message);
+  }
+  ok(!!sim, 'sim/score.js runs headlessly with ?score=1 and no DOM');
+  if (sim) {
+    const byLabel = new Map(sim.steps.map(function (r) { return [r[0], r]; }));
+    ok(byLabel.get('wall+2.2')[1] === 1 && byLabel.get('wall+0.6')[1] === 1,
+       'a wall kick that gains 2 tiles links; one that gains 0.6 does not');
+    ok(byLabel.get('air+3')[1] === 1,
+       'an air jump never links, however high it goes (hopping pays nothing)');
+    ok(byLabel.get('ledge-2.7')[1] === 2,
+       'a launch that drops two tiles still links: elevation *change*, not gain');
+    ok(byLabel.get('airkill')[2] === 1 && byLabel.get('airkill')[3] === 1,
+       'an airborne kill inside the launch window stacks airborne_kill + launch_kill');
+    ok(byLabel.get('lance')[2] === 1 && byLabel.get('lance')[4] === 1,
+       'an ORBITAL LANCE kill scores as a ground kill even while airborne');
+    ok(sim.shockCold === false,
+       'the launch shock does not arm below BREAKING');
+    ok(sim.envelope === 't,notch,type,x,y,kind,weapon,vy',
+       'A.5 envelope shipped verbatim for airborne_kill, got ' + sim.envelope);
+    ok(sim.afterReset.charge === 0 && sim.afterReset.threat === 0 &&
+       sim.afterReset.counts.link === 0 && sim.eventsAfterReset === 0,
+       'HB.score.reset() clears the meter, the score and the ring buffer');
+  }
 }
 
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');
