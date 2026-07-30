@@ -1,0 +1,11 @@
+{
+  "name": "hound-grounded-surge",
+  "description": "hound-grounded.json replayed at the SURGE pace (?pace=surge&hound=1): the same floor route and the same single terrain jump, against surge's ramping edge, no-dwell contacts, and chained launches. Pairs with hound-jump-surge.json. Proves the floor-denial counterplay is a property of the enemy, not of one pacing variant — the telegraph has to survive the pace the operator may actually pick.",
+  "url": "index.html?slice=traversal&pace=surge&hound=1",
+  "viewport": { "width": 1280, "height": 800 },
+  "durationMs": 2400,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 2400 },
+    { "tap": "jump", "atMs": 880, "holdMs": 80 }
+  ]
+}

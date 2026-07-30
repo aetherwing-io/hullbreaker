@@ -15,7 +15,8 @@
 import { CONFIG } from './config.js';
 import {
   ACTIVE_FIXTURE, ACTIVE_SLICE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, QUERY,
-  SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_FALLBACK_ENABLED, SLICE_PACE,
+  SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN, SLICE_FALLBACK_ENABLED,
+  SLICE_PACE,
 } from './mode.js';
 import { installHost } from './sim/bridge.js';
 import {
@@ -167,8 +168,11 @@ function resetGame() {
     for (const r of ACTIVE_SLICE.rewards)
       spawnCapsule(r.kind, r.letter, r.x, r.y, r.mode);
     if (SLICE_ENEMIES_ENABLED) {
-      for (const e of ACTIVE_SLICE.enemies)
-        spawnHostile(e.x, e.y, e.delayMs, e.kind, e.tune);
+      // one authored list per attempt: the active pace's own, or that list
+      // composed with the opt-in houndframe trial stage (src/mode.js resolves
+      // which, src/pure/traversal.js owns the composition rule)
+      for (const e of SLICE_ENEMY_PLAN)
+        spawnHostile(e.x, e.y, e.delayMs, e.kind, e);
     }
     scoreRunStart(CONFIG.gen.seed, ACTIVE_SLICE.id, ACTIVE_SLICE.pace.id);
   } else {
@@ -326,6 +330,7 @@ window.HB = Object.freeze({
       currentWeapon, kills, shotsFired,
       hostiles: hostiles.map((e) => ({
         id: e.id, kind: e.kind, x: e.x, y: e.y, hp: e.hp,
+        state: e.state, dir: e.dir,      // houndframe: prowl/tell/charge/skid/tumble
         materialized: gameMs >= e.enterUntil,
       })),
       capsules: capsules.map((c) => ({
@@ -361,7 +366,7 @@ if (QUERY.has('selftest')) {
     check('resize handled', Math.abs(camera.aspect - innerWidth / innerHeight) < 1e-6);
     resetGame();
     const expectedScroll = ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.startScroll : 0;
-    const expectedHostiles = ACTIVE_SLICE && SLICE_ENEMIES_ENABLED ? ACTIVE_SLICE.enemies.length : 0;
+    const expectedHostiles = SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length : 0;
     // A pace that bounds crush slack in seconds arms its clock on the first
     // frame, so the opening scroll is the authored start pushed forward to the
     // margin cap — hence >= rather than ===, with the cap itself checked below.

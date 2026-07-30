@@ -5,8 +5,8 @@
 import { CONFIG } from '../config.js';
 import { TRANSFORM_FIXTURE } from '../pure/transform.js';
 import {
-  ACTIVE_SLICE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, SCORE_ENABLED,
-  SLICE_ENEMIES_ENABLED,
+  ACTIVE_SLICE, HOUND_TRIAL_STAGE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE,
+  SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN,
 } from '../mode.js';
 import { scoreNotchGlyphs } from '../pure/score.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
@@ -86,8 +86,9 @@ export function updateHUD() {
       ? 'H ACQUIRED · RETREAT LEFT ←'
       : 'H WAGER → · EXIT LEFT ←';
   } else if (IS_TRAVERSAL_SLICE && gameMs - sliceStats.startedAt < 2400) {
-    tc = 'TRAVERSAL SLICE · ' + ACTIVE_SLICE.pace.label + ' · ' +
-      (SLICE_ENEMIES_ENABLED ? ACTIVE_SLICE.enemies.length + ' HOSTILES' : 'MOVEMENT ONLY');
+    tc = 'TRAVERSAL SLICE · ' + ACTIVE_SLICE.pace.label +
+      (HOUND_TRIAL_STAGE ? ' + ' + HOUND_TRIAL_STAGE.label : '') + ' · ' +
+      (SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length + ' HOSTILES' : 'MOVEMENT ONLY');
   } else if (c && c.state === 'gate') {
     let gaters = 0;
     for (const e of hostiles) if (ENEMY[e.kind].gating) gaters++;

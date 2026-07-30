@@ -1,0 +1,12 @@
+{
+  "name": "hound-wasp-squeeze",
+  "description": "Combination stage of the houndframe trial (?hound=2). Same route and same terrain jump as hound-grounded.json, with the dodge jump at 1200ms — a timing that is completely safe against the lone houndframe (the measured solo-safe window is 1200-1330ms) and costs a hit every run once a wasp cruises the arc over the hound's plate, because clearing the charge early enough now lands inside the dive. That narrowing is the combination: DESIGN's 'hound forces the jump that the wasp contests', measured rather than asserted. A perfectly timed dodge (1300-1330ms, what hound-jump.json uses) still clears both, so the squeeze is a window that mastery can thread, not a wall.",
+  "url": "index.html?slice=traversal&hound=2",
+  "viewport": { "width": 1280, "height": 800 },
+  "durationMs": 2400,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 2400 },
+    { "tap": "jump", "atMs": 880, "holdMs": 80 },
+    { "tap": "jump", "atMs": 1200, "holdMs": 200 }
+  ]
+}

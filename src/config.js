@@ -118,6 +118,53 @@ export const CONFIG = {
     wobbleAmp: 0.4, wobbleFreq: 2.2,         // alive: depth breathing
   },
 
+  hound: {                     // houndframe: denies a FLOOR route with a committed charge.
+                               // Difficulty is timing and topology, never HP: the answer is
+                               // always a movement verb (jump / wall-launch / drop behind).
+                               // Presence timings (materialize, dissolve, depth breathing)
+                               // are deliberately shared with CONFIG.wasp — that grammar is
+                               // global, only the pose theater below is per-kind.
+    hp: 6,                     // ~0.8 s of rifle fire; a sponge would punish the wrong thing
+    hitRadius: 0.42,           // contact circle, sized to the frame's HEIGHT so it stays
+                               //   inside the silhouette: the wide front and back of the
+                               //   chassis are theater, and a hit is always explicable
+    size: [1.7, 0.9, 1.0],     // low, wide, 2.4x the player's width and half their height —
+                               //   the concept-art quadruped read (docs/concept-art), and
+                               //   unmistakable against the wasp's small flyer profile
+    rideY: 0.45,               // body center over the deck it walks (chassis sits on the plate)
+    fallGravity: -46, fallTerminal: -30,       // only while tumbling off a committed charge
+
+    prowlSpeed: 3.4,           // ~1/3 of the run: the player can always get behind it
+    senseRange: 8.0,           // tell trigger distance, either side. Tuned against the
+                               //   sweep below: threaten only ground a charge can actually
+                               //   cover, so the frame stays near the plate it guards
+                               //   instead of running off down the level after every dodge.
+    laneBelow: 2.8, laneAbove: 1.2,   // "in my lane" band around the body. Below reaches a
+                               //   full generator step (2) down, so standing on the step
+                               //   below its plate is not a loophole — a charge pours down
+                               //   steps. Above stops short of the +2.35 mid catwalk: a
+                               //   hound denies the floor, never the tier above it.
+    tellMs: 520,               // the whole reaction window sits BEFORE commitment
+    tellBackTiles: 0.5,        // visible rear-back across the tell (motion tell at sprint)
+    chargeSpeed: 15.5,         // faster than any run tune: retreat is not an answer
+    chargeMs: 560,             // 8.7-tile sweep > senseRange: the charge lands where it aimed
+    chargeCooldownMs: 1500,    // pant window — the lane goes safe again, rhythmically
+    skidMs: 420,
+    stepUpTiles: 1.0,          // decks it can mount; a taller wall ends a charge in a skid
+    probeX: 0.75, wallProbeY: 0.5,             // deck/wall look-ahead from the body center;
+                               //   the wall probe is mid-chassis, so this low frame walks
+                               //   under an overhang it fits beneath and stops at real walls
+    hugRate: 26,               // deck-hugging follow rate (flame-crawler prior art)
+    substeps: 4,               // charge integration: no substep exceeds 0.45 tiles
+
+    tellDepth: 1.3,            // presence: leans out of the plane winding up, snaps back
+    tellRise: 0.45, tellNarrow: 0.18, tellRear: 0.42,  // rear-up on a low body: big silhouette
+                               //   change, which is what stays readable at full sprint
+    tellBlinkSlowMs: 170, tellBlinkFastMs: 60,         // warning light, accelerating
+    chargeStretch: 0.35, chargeSquash: 0.12, chargeLean: 0.2,
+    gaitFreq: 9, gaitAmp: 0.07, gaitTilt: 0.05,        // prowl stride bob
+  },
+
   waves: {                     // corner wave gates + snap ritual + brick zipper
     haltOffset: 14,            // scroll halts at cornerS - haltOffset
     baseSize: 3, sizePerWave: 1,               // wave k = baseSize + sizePerWave·k
@@ -222,6 +269,9 @@ export const CONFIG = {
     bg: 0x232830, ground: 0x767c85, groundAlt: 0x6a707a, catwalk: 0x8d939c,
     player: 0xd9dde2, gun: 0xffc966, wasp: 0x7cc47c,
     carrier: 0x4e8f5a, capsule: '#ff4fd8', modCapsule: '#ffd75e',
+    hound: 0x5f8f3c,                       // same acid-green ecology as the wasp (concept art):
+                                           //   heavier value, and the SILHOUETTE carries the read
+    houndTell: 0xffd0a0, houndCharge: 0x3d7a1a,   // warm warning blink / lit-up committed glow
     shots: { R: 0xfff0c2, S: 0xffc76a, L: 0x9ff7ff, H: 0xff9adf, F: 0xff8a4a },
     tints: { lance: 'rgba(255,255,255,0.5)', rage: 'rgba(255,50,50,0.14)', chrono: 'rgba(90,200,255,0.12)' },
   },

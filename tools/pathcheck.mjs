@@ -24,6 +24,7 @@ import {
 } from '../src/pure/waves.js';
 import {
   TRAVERSAL_FIXTURE, TRAVERSAL_PACES, TRAVERSAL_PACE_IDS, resolveTraversalPace,
+  HOUND_TRIAL, houndTrialStage, traversalEnemyPlan,
   traversalLedgeProbe, traversalLedgeDecision,
   traversalWallDecision, traversalSolidAllowsGrab, traversalFollowTarget,
   traversalCameraDepth, traversalPaceTargetSpeed, traversalPaceStep,
@@ -672,6 +673,270 @@ ok(TF.routes.length === 6 && routeById.size === 6,
      TP.traversalLaunchControlMs >= 80 && TP.traversalLaunchControlMs <= 150 &&
      TP.traversalRecatchMs >= 120 && TP.traversalRecatchMs <= 250,
      'grab dwell, launch control, and recatch windows stay inside responsive budgets');
+}
+
+/* --- houndframe: telegraph fairness vs. player reaction physics --------
+ * The hound is only legitimate if the tell is a real reaction window and the
+ * movement answer physically fits inside it. These assertions tie the enemy's
+ * constants to the *player's* jump constants for the frozen six-face tune AND
+ * for every pace's movement overlay, so neither a hound retune nor a pacing
+ * retune can silently make the charge unfair — it fails here instead.
+ *
+ * Two closing speeds matter per pace, because surge amplifies launches:
+ *   sustained — the ground drive times the pace's chain ceiling. The charge
+ *               must beat this, or retreat becomes a valid answer and the
+ *               enemy stops being a movement problem.
+ *   burst     — the strongest contact launch times that same ceiling. The
+ *               telegraph must stay visible for at least twice the reaction
+ *               cost even when the player arrives on a chained wall launch.
+ * A chained burst CAN transiently exceed the charge speed (surge peaks at
+ * 15.93 vs 15.5) and that is deliberate: outrunning a hound with a live launch
+ * chain is exactly surge's thesis and one of DESIGN's listed answers. What may
+ * never happen is a charge landing before the tell was legible.           */
+function riseTimeTo(T, h) {              // seconds from a grounded jump to feet height h
+  const g = -T.gravity;
+  const disc = T.jumpVel * T.jumpVel - 2 * g * h;
+  return disc < 0 ? Infinity : (T.jumpVel - Math.sqrt(disc)) / g;
+}
+function airTimeAbove(T, h) {            // seconds the feet stay above h on a full jump
+  const g = -T.gravity;
+  const apex = T.jumpVel * T.jumpVel / (2 * g);
+  if (apex <= h) return 0;
+  return (T.jumpVel / g - riseTimeTo(T, h)) +
+    Math.sqrt(2 * (apex - h) / (g * T.fallGravityMult));
+}
+{
+  const HD = CONFIG.hound;
+  const clearance = HD.rideY + HD.hitRadius;      // feet height that clears its hit circle
+  const tellSec = HD.tellMs / 1000;
+  // buffered-input latency: a jump pressed anywhere in the buffer window plus
+  // one slow (30 fps) frame before it is serviced
+  const latency = (PL.jumpBufferMs + 1000 / 30) / 1000;
+  const contactGap = HD.hitRadius + PL.width / 2;
+  // one row per player tune the hound can ever meet: the frozen six-face tune,
+  // then every pace's resolved movement overlay with its own chain ceiling
+  const HOUND_TUNES = [['normal tune', PL, null]].concat(
+    TRAVERSAL_PACE_IDS.map(function (id) {
+      const F = resolveTraversalPace(id);
+      return ['pace ' + id, { ...PL, ...F.movement }, F.chain];
+    })
+  );
+  let tightestVisible = Infinity, tightestTune = '';
+  for (const [label, T, chain] of HOUND_TUNES) {
+    const chainMult = chain ? traversalChainMult(chain.max, chain) : 1;
+    const sustained = T.runSpeed * chainMult;
+    const burst = Math.max(T.runSpeed, T.ledgeLaunchX, T.wallJumpX) * chainMult;
+    const cost = riseTimeTo(T, clearance) + latency;
+    ok(Number.isFinite(cost) && tellSec >= 2 * cost,
+       'hound telegraph is at least twice the reaction cost of jumping clear (' + label +
+       ': tell ' + tellSec.toFixed(3) + ' s vs ' + cost.toFixed(3) + ' s)');
+    // The telegraph has to stay legible for that same window even at the pace's
+    // fastest possible approach — the hound is planted through its whole tell,
+    // so this is (sense range − contact gap) / burst closing speed.
+    const visible = (HD.senseRange - contactGap) / burst;
+    ok(visible >= 2 * cost,
+       'telegraph stays visible for twice the reaction cost at the fastest ' +
+       'approach this pace allows (' + label + ': ' + visible.toFixed(3) + ' s vs ' +
+       cost.toFixed(3) + ' s, burst ' + burst.toFixed(2) + ' t/s)');
+    if (visible / cost < tightestVisible) { tightestVisible = visible / cost; tightestTune = label; }
+    // once airborne the player must stay clear for longer than the charge
+    // needs to sweep past their body — a dodge cannot be undone by landing
+    const sweepWindow = 2 * (HD.hitRadius + T.width / 2) / HD.chargeSpeed;
+    ok(airTimeAbove(T, clearance) > 3 * sweepWindow,
+       'a full jump outlasts the charge sweep by 3x (' + label + ': air ' +
+       airTimeAbove(T, clearance).toFixed(3) + ' s vs sweep ' + sweepWindow.toFixed(3) + ' s)');
+    // sustained sprint: the tell still fires ahead of the player, and the
+    // charge still beats the ground drive so retreat is never the answer
+    ok(sustained * tellSec + contactGap < HD.senseRange,
+       'telegraph fires ahead of a sustained sprint (' + label + ': ' +
+       (sustained * tellSec + contactGap).toFixed(2) + ' < ' + HD.senseRange + ')');
+    ok(HD.chargeSpeed > sustained,
+       'charge outruns the sustained drive: retreat is not an answer (' + label +
+       ': ' + HD.chargeSpeed + ' vs ' + sustained.toFixed(2) + ')');
+    ok(HD.prowlSpeed < T.runSpeed * 0.5,
+       'prowl is slow enough to get behind (' + label + ')');
+  }
+  ok(tightestVisible >= 2,
+     'tightest telegraph headroom across all tunes is ' + tightestVisible.toFixed(2) +
+     'x the reaction cost (' + tightestTune + ')');
+  // A hound hit must cost margin, never the run: its knockback may not eat a
+  // meaningful share of the seconds-bounded crush slack a pace grants.
+  {
+    let survivable = true, worst = 0;
+    for (const id of TRAVERSAL_PACE_IDS) {
+      const F = resolveTraversalPace(id);
+      const cap = F.pursuit.marginCapTiles;
+      if (!cap) continue;                          // base: unbounded screen-width clock
+      const knocked = PL.knockbackX * (PL.hitstunMs / 1000);
+      worst = Math.max(worst, knocked / cap);
+      if (knocked > cap * 0.25) survivable = false;
+    }
+    ok(survivable,
+       'a hound hit spends at most a quarter of any pace crush slack (worst ' +
+       (worst * 100).toFixed(0) + '%)');
+  }
+  ok(HD.chargeSpeed * HD.chargeMs / 1000 >= HD.senseRange,
+     'the charge sweeps at least the ground it threatened (' +
+     (HD.chargeSpeed * HD.chargeMs / 1000).toFixed(1) + ' vs ' + HD.senseRange + ' tiles)');
+  ok(HD.chargeSpeed * 0.05 / HD.substeps <= 0.45,
+     'charge substeps stay under 0.45 tiles at a clamped 50 ms frame (no tunneling)');
+  ok(HD.hitRadius < HD.size[0] / 2 && HD.hitRadius < HD.size[1] / 2,
+     'hound hit circle stays inside its silhouette');
+  ok(HD.hp * CONFIG.weapons.R.fireRateMs / 1000 <= 1,
+     'hound dies to under a second of baseline rifle fire: no HP sponge');
+  ok(HD.chargeCooldownMs / (HD.tellMs + HD.chargeMs + HD.chargeCooldownMs) >= 0.4,
+     'the floor is denied temporarily, not permanently (safe fraction of the cycle)');
+  ok(HD.laneBelow >= (GG.maxH - GG.minH) + HD.rideY,
+     'lane band reaches a full generator step below the plate: the step down is no loophole');
+  ok(2.35 - HD.rideY > HD.laneAbove,
+     'lane band stops below the mid catwalk: a hound denies the floor, not the tier above');
+  ok(HD.stepUpTiles < GG.maxH - GG.minH + 1e-9,
+     'a full generator height step can still stop a charge');
+}
+{
+  // --- houndframe trial: authored teach/test/remix stages --------------
+  const HD = CONFIG.hound;
+  const STAGE_NAMES = ['solo', 'combo', 'mix'];
+  ok(traversalEnemyPlan(TF, null) === TF.enemies &&
+     traversalEnemyPlan(TF, 'nonsense') === TF.enemies &&
+     traversalEnemyPlan(null, 'solo').length === 0,
+     'without an opt-in stage the slice keeps its own composition exactly');
+  ok(TF.enemies.length === 2 && TF.enemies.every(function (e) { return e.kind === 'wasp'; }),
+     'fixture default composition is still the two authored wasps');
+  ok(STAGE_NAMES.every(function (n) { return houndTrialStage(n) === HOUND_TRIAL.stages[n]; }) &&
+     houndTrialStage(null) === null && houndTrialStage('nope') === null,
+     'trial stages resolve by name and reject anything else');
+  ok(STAGE_NAMES.every(function (n) {
+    const s = HOUND_TRIAL.stages[n];
+    return ['replace', 'add'].indexOf(s.compose) >= 0 && s.id === n &&
+      typeof s.label === 'string' && s.enemies.length >= 1;
+  }), 'every stage declares an id, a label, and one of the two composition rules');
+
+  /* The composition rule, proved against every pace: with no stage the plan IS
+     the pace's list (identity, so no ?pace= URL changes behavior); a `replace`
+     stage fields only its own roster (teaching a new enemy stays isolated at
+     every pacing); an `add` stage appends its hounds and leaves every pace row —
+     ids, positions, per-enemy tunes — untouched. */
+  {
+    const trialBefore = JSON.stringify(HOUND_TRIAL);
+    const paceBefore = JSON.stringify(TRAVERSAL_PACES);
+    let identity = true, replaced = true, appended = true, unique = true;
+    for (const id of TRAVERSAL_PACE_IDS) {
+      const F = resolveTraversalPace(id);
+      if (traversalEnemyPlan(F, null) !== F.enemies ||
+          traversalEnemyPlan(F, 'nonsense') !== F.enemies) identity = false;
+      for (const name of STAGE_NAMES) {
+        const stage = HOUND_TRIAL.stages[name];
+        const plan = traversalEnemyPlan(F, name);
+        const ids = new Set(plan.map(function (e) { return e.id; }));
+        if (ids.size !== plan.length) unique = false;
+        if (!plan.some(function (e) { return e.kind === 'hound'; })) unique = false;
+        if (stage.compose === 'replace') {
+          if (plan.length !== stage.enemies.length ||
+              !plan.every(function (e, i) { return e.id === stage.enemies[i].id; })) replaced = false;
+        } else {
+          if (plan.length !== F.enemies.length + stage.enemies.length ||
+              !F.enemies.every(function (e, i) {
+                return JSON.stringify(plan[i]) === JSON.stringify(e);
+              }) ||
+              !plan.slice(F.enemies.length).every(function (e) { return e.kind === 'hound'; })) {
+            appended = false;
+          }
+        }
+      }
+    }
+    ok(identity, 'no stage selected: every pace plan is its own authored list, unchanged');
+    ok(replaced, 'replace stages field only their own roster at every pace');
+    ok(appended, 'the add stage appends hounds and leaves every pace row byte-identical');
+    ok(unique, 'composed plans have unique ids and always contain a hound, at every pace');
+    ok(JSON.stringify(HOUND_TRIAL) === trialBefore &&
+       JSON.stringify(TRAVERSAL_PACES) === paceBefore,
+       'composing a plan mutates neither the trial table nor the pace table');
+  }
+
+  for (const name of STAGE_NAMES) {
+    const plan = traversalEnemyPlan(TF, name);
+    const hounds = plan.filter(function (e) { return e.kind === 'hound'; });
+    const ids = new Set(plan.map(function (e) { return e.id; }));
+    ok(hounds.length >= 1 && ids.size === plan.length &&
+       plan.every(function (e) {
+         return Number.isFinite(e.x) && Number.isFinite(e.y) &&
+           Number.isFinite(e.delayMs) && e.delayMs >= 0 &&
+           e.x >= B.x0 && e.x < B.x1;
+       }),
+       name + ' stage authors uniquely named, in-bounds hostiles including a hound');
+    let planted = true, paced = true, sweeps = true;
+    for (const h of hounds) {
+      if (TL.groundH[Math.floor(h.x)] !== h.deck ||
+          Math.abs(h.y - (h.deck + HD.rideY)) > 1e-9 ||
+          Math.abs(h.dir) !== 1) planted = false;
+      const run = TF.groundRuns.find(function (r) { return h.x >= r.x0 && h.x < r.x1; });
+      if (!run || run.y !== h.deck ||
+          h.patrol.x0 < run.x0 + 0.5 || h.patrol.x1 > run.x1 - 0.5 ||
+          h.x < h.patrol.x0 || h.x > h.patrol.x1 ||
+          h.patrol.x1 - h.patrol.x0 < 4) paced = false;
+      // the plate it guards must be wide enough that a charge is a real
+      // sweep rather than an instant skid into the nearest wall
+      const plate = run ? run.x1 - run.x0 : 0;
+      if (plate < HD.chargeSpeed * 0.25) sweeps = false;
+    }
+    ok(planted, name + ' hounds sit on the authored deck they guard, facing a declared way');
+    ok(paced, name + ' hound patrol spans stay inside one ground run at that deck');
+    ok(sweeps, name + ' hound plates are wide enough for a readable charge');
+
+    // Per-route threat assignment: every hostile the TRIAL authors is assigned
+    // to a real route, and a hound must actually stand on a connector that route
+    // walks — that is what makes "choosing a route" mean "choosing a matchup".
+    // (The remix stage also carries the pace's own rows, which are the pacing
+    // lane's to place and are checked by the pace assertions instead.)
+    const authoredIds = new Set(HOUND_TRIAL.stages[name].enemies.map(function (e) { return e.id; }));
+    let assigned = true, onRoute = true;
+    for (const e of plan.filter(function (r) { return authoredIds.has(r.id); })) {
+      const route = routeById.get(e.contests);
+      if (!route) { assigned = false; continue; }
+      if (e.kind !== 'hound') continue;
+      const guarded = route.connectorIds.some(function (id) {
+        const c = connectorById.get(id);
+        return c && c.x >= e.patrol.x0 && c.x <= e.patrol.x1 &&
+          Math.abs(c.y - e.deck) < 0.5;
+      });
+      if (!guarded) onRoute = false;
+    }
+    ok(assigned, name + ' stage assigns every hostile to a declared fixture route');
+    ok(onRoute, name + ' hounds patrol a connector their assigned route actually walks');
+    const houndRoutes = new Set(hounds.map(function (h) { return h.contests; }));
+    const clearRoutes = TF.routes.filter(function (r) { return !houndRoutes.has(r.id); });
+    ok(clearRoutes.length >= 2 &&
+       clearRoutes.some(function (r) { return r.id === 'upper-chimney'; }),
+       name + ' stage leaves the upper routes hound-free: the elevation choice is a matchup choice');
+  }
+  {
+    // "Hound forces the jump that the wasp contests" — the combination stage
+    // has to actually place the air threat on the arc that answers a charge.
+    const combo = traversalEnemyPlan(TF, 'combo');
+    const wasps = combo.filter(function (e) { return e.kind === 'wasp'; });
+    const hounds = combo.filter(function (e) { return e.kind === 'hound'; });
+    const apex = TP.jumpVel * TP.jumpVel / (2 * -TP.gravity);
+    const contested = wasps.some(function (w) {
+      return hounds.some(function (h) {
+        return w.contests === h.contests &&
+          Math.abs(w.x - h.x) < CONFIG.wasp.diveRange &&
+          w.y > h.deck + apex + 1 &&
+          w.y - h.deck < CONFIG.wasp.diveSpeed * CONFIG.wasp.diveMs / 1000;
+      });
+    });
+    ok(wasps.length >= 1 && hounds.length >= 1 && contested,
+       'combo stage puts a wasp in dive reach of the jump arc over a hound plate');
+    const pocketHound = traversalEnemyPlan(TF, 'solo').find(function (e) {
+      return e.kind === 'hound' && e.deck === TF.darePocket.reward.y - 1;
+    });
+    ok(!!pocketHound &&
+       pocketHound.patrol.x0 >= TF.darePocket.bounds.x0 &&
+       pocketHound.patrol.x1 <= TF.darePocket.bounds.x1 &&
+       HD.chargeSpeed * HD.chargeMs / 1000 >
+         pocketHound.patrol.x1 - TF.darePocket.bounds.x0,
+       'the pocket hound guards inside the pocket and any charge can be baited out of its mouth');
+  }
 }
 
 // --- traversal movement decisions --------------------------------------
@@ -2013,6 +2278,15 @@ const XL = buildTransformLevel(CONFIG);
     out.shockCold = !!S.consumeLaunchShock();
     S.scoreKill('wasp', 'R', { grounded: false, vy: -3, x: 50, y: 9 }); step('airkill');
     S.scoreKill('wasp', 'OL', { grounded: false, vy: -3, x: 50, y: 9 }); step('lance');
+    // houndframe: a deck unit must need no special case at all — the same
+    // single death path classifies it by what the PLAYER was doing, and its
+    // kind rides through into the A.5 envelope untouched.
+    S.scoreKill('hound', 'R', { grounded: false, vy: 1.5, x: 42, y: 3.5 }); step('houndair');
+    S.scoreKill('hound', 'R', { grounded: true, vy: 0, x: 42, y: 3.5 }); step('houndground');
+    out.houndEvents = S.scoreEvents
+      .filter((e) => e.kind === 'hound' &&
+        (e.type === 'airborne_kill' || e.type === 'ground_kill'))
+      .map((e) => e.type + ':' + e.kind + ':' + e.weapon).join(',');
     out.types = S.scoreEvents.map((e) => e.type).join(',');
     out.envelope = Object.keys(S.scoreEvents.find((e) => e.type === 'airborne_kill')).join(',');
     S.resetScore();
@@ -2042,6 +2316,13 @@ const XL = buildTransformLevel(CONFIG);
        'an ORBITAL LANCE kill scores as a ground kill even while airborne');
     ok(sim.shockCold === false,
        'the launch shock does not arm below BREAKING');
+    ok(sim.houndEvents === 'airborne_kill:hound:R,ground_kill:hound:R',
+       'a houndframe scores through the same death path, airborne vs grounded, ' +
+       'with its kind intact and no special case, got ' + sim.houndEvents);
+    ok(byLabel.get('houndair')[2] === 2 && byLabel.get('houndair')[4] === 1 &&
+       byLabel.get('houndground')[4] === 2,
+       'killing a hound mid-charge while airborne counts as an airborne kill; ' +
+       'killing it from the deck counts as a ground kill');
     ok(sim.envelope === 't,notch,type,x,y,kind,weapon,vy',
        'A.5 envelope shipped verbatim for airborne_kill, got ' + sim.envelope);
     ok(sim.afterReset.charge === 0 && sim.afterReset.threat === 0 &&
