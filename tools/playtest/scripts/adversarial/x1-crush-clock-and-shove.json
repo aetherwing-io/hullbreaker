@@ -1,0 +1,7 @@
+{
+  "name": "x1-crush-clock-and-shove",
+  "description": "ATTACK: measure the pursuit clock instead of guessing at it. Zero input for 20 seconds with enemies disabled, so the only thing acting on the player is the damage edge. Three numbers come out of one run: (1) seconds from spawn until the edge plane actually touches the player (spawn margin 18.4 tiles / minimumScrollSpeed 2.6 = ~7s); (2) what the plane DOES on open ground once it arrives — src/sim/player.js only calls damagePlayer when playerOverlapsSolid(), so on a flat run it should shove the player forward at scroll speed with no damage at all; (3) how far the shove carries before terrain pins the player (the +1 ground step at column 39) and the crush finally becomes lethal. Run with --max-runtime-ms 26000.",
+  "url": "index.html?slice=traversal&enemies=0",
+  "durationMs": 21000,
+  "events": []
+}

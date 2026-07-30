@@ -1,0 +1,10 @@
+{
+  "name": "x3-deadend-lip-pin",
+  "description": "ATTACK: the held-jump dead end, run long enough to see how it ends. Same two-key policy as p2 (hold right + hold Space) but with a 22s window instead of 14s. p2 lands on the dare overhang's top surface (y=6) and jams against the dare-dead-end lip at x=55.65: column 56 of that rect rises to y=7, one tile above the overhang, and the rect is grabbable:false, so there is no wall state to launch from and a held jump never re-buffers (src/main.js only buffers on a keydown with !e.repeat). This run answers what the damage edge does to a player standing there: how long the pin survives, whether the plane's arrival is a shove or a kill, and how many crush hits it takes. Run with --max-runtime-ms 26000.",
+  "url": "index.html?slice=traversal",
+  "durationMs": 22000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 21800 },
+    { "hold": "jump", "fromMs": 0, "toMs": 21800 }
+  ]
+}

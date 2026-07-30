@@ -1,0 +1,263 @@
+{
+  "name": "x2-pocket-grab-then-naive",
+  "description": "ATTACK: is the dare pocket a wager? A prompt player takes the H capsule and then finishes the slice with the known-winning naive policy. Phase 1 is the p4 policy (hold right + mash Space), which parks the player in the chimney. Phase 2 holds Down across four jump attempts so whichever one lands while standing on the chimney-floor catwalk drops through it onto the y=3 floor - the cheap way past the column-39 step, which a run-jump cannot clear because the chimney-left wall's base sits two tiles above it. Phase 3 runs east off that floor at x=47 into the pocket and collects the reward at x=54. Phase 4 retreats west, hops the +2 step back out, climbs onto the dare overhang's roof and resumes mashing to the rejoin. DESIGN prices this round trip as a wager ('a dead-end round trip plus safety margin fits inside the available crush time'; fixture timing retreatSeconds 1.5 / entryEdgeMarginTiles 18 / minExitMarginTiles 8). What this run reports is what the round trip actually costs in crush margin. Open-loop caveat: the drop-through depends on where phase 1 leaves the player, so this script reproduces the pocket grab in most runs, not all of them - check darePocket.rewardTaken in the report before trusting a single run.",
+  "url": "index.html?slice=traversal",
+  "durationMs": 14000,
+  "moves": [
+    {
+      "hold": "right",
+      "fromMs": 0,
+      "toMs": 2560
+    },
+    {
+      "tap": "jump",
+      "atMs": 300,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 520,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 740,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 960,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1180,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1400,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1620,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1840,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 2060,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 2280,
+      "holdMs": 110
+    },
+    {
+      "hold": "down",
+      "fromMs": 2900,
+      "toMs": 3660
+    },
+    {
+      "tap": "jump",
+      "atMs": 2950,
+      "holdMs": 90
+    },
+    {
+      "tap": "jump",
+      "atMs": 3150,
+      "holdMs": 90
+    },
+    {
+      "tap": "jump",
+      "atMs": 3350,
+      "holdMs": 90
+    },
+    {
+      "tap": "jump",
+      "atMs": 3550,
+      "holdMs": 90
+    },
+    {
+      "hold": "right",
+      "fromMs": 3700,
+      "toMs": 4800
+    },
+    {
+      "hold": "left",
+      "fromMs": 4860,
+      "toMs": 5640
+    },
+    {
+      "tap": "jump",
+      "atMs": 5480,
+      "holdMs": 300
+    },
+    {
+      "hold": "right",
+      "fromMs": 5680,
+      "toMs": 13600
+    },
+    {
+      "tap": "jump",
+      "atMs": 5900,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 6420,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 6660,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 6900,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 7140,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 7380,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 7620,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 7860,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 8100,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 8340,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 8580,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 8820,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 9060,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 9300,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 9540,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 9780,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 10020,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 10260,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 10500,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 10740,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 10980,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 11220,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 11460,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 11700,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 11940,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 12180,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 12420,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 12660,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 12900,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 13140,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 13380,
+      "holdMs": 110
+    }
+  ]
+}
