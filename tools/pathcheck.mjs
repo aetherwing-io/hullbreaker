@@ -38,6 +38,21 @@ import {
   buildSpawnTable,
 } from '../src/pure/generator.js';
 
+// The sim layer carries the same no-three.js/no-DOM guarantee as pure/ (see
+// guardLayer('sim', ...) below), so it is Node-importable exactly like the
+// bot-player harness relies on. A handful of collision-edge assertions drive
+// the real sim loop directly below, instead of re-deriving its physics.
+import { setEdges as setSimEdges } from '../src/sim/edges.js';
+import {
+  player as simPlayer, updatePlayer as updateSimPlayer,
+  clearPlayerTraversal as clearSimTraversal,
+} from '../src/sim/player.js';
+import {
+  keys as simKeys, bufferJumpUntil as bufferSimJump, clearJumpBuffer as clearSimJumpBuffer,
+} from '../src/sim/input.js';
+import { platforms as simPlatforms } from '../src/sim/level.js';
+import { cornerEvents as simCornerEvents } from '../src/sim/wavegate.js';
+
 /* ---------------------- layer guards (static) ------------------------ *
  * The pure layer must stay runnable with zero three.js/DOM surface and must
  * not reach into src/sim, src/render, or src/ui — that is what makes it
@@ -781,6 +796,32 @@ const ledgeState = {
   }), 'wall decision releases on no wall, landing, down, away input, timeout, or no side');
 }
 
+// --- ledge-probe reach/gap epsilon boundaries --------------------------
+// traversalLedgeProbe's candidate column is cellX = floor(x + side*(hw +
+// ledgeReachX)) -- which already caps gap = cellX - (x+hw) at ledgeReachX by
+// construction (floor() can't overshoot the value it floors). So a grab
+// right at maximum reach must still catch (that boundary IS reachable and
+// worth pinning); an approach further than reach simply resolves to a
+// different, empty cellX rather than tripping the explicit `gap >
+// ledgeReachX` branch, which is effectively unreachable dead code documented
+// here for whoever next touches this function. The `-0.03` overlap
+// tolerance on the near side, by contrast, is an independent check and IS
+// reachable -- pinned below.
+{
+  const hw = PL.width / 2;
+  const farGeo = gridGeometry([[12, 2]]);
+  const atMaxReach = traversalLedgeProbe(
+    { ...ledgeState, x: 12 - hw - PL.ledgeReachX + 0.001, hInput: 1 }, farGeo);
+  ok(!!atMaxReach && atMaxReach.cellX === 12,
+     'a ledge grab right at maximum reach (gap approx ledgeReachX) still catches');
+  const insideOverlap = traversalLedgeProbe(
+    { ...ledgeState, x: 12 - hw + 0.02, hInput: 1 }, farGeo);   // gap approx -0.02
+  const outsideOverlap = traversalLedgeProbe(
+    { ...ledgeState, x: 12 - hw + 0.05, hInput: 1 }, farGeo);   // gap approx -0.05
+  ok(!!insideOverlap, 'ledge probe forgives a small overlap inside the -0.03 tolerance (gap approx -0.02)');
+  ok(outsideOverlap === null, 'ledge probe rejects overlap deeper than the -0.03 tolerance (gap approx -0.05)');
+}
+
 // --- ambient spawn director -------------------------------------------
 {
   const table = buildSpawnTable(CONFIG);
@@ -815,6 +856,149 @@ const ledgeState = {
   ok(esc, 'per-face gap shrinks and pair chance grows');
   ok(Math.round(SP.faceGapSec[PP.faces - 1] * CONFIG.scrollSpeed) >= 6,
      'hottest face still >= 6 tiles between ambient spawns');
+}
+
+// --- frame dt clamp vs. collision safety margins (tunneling) -----------
+// src/main.js clamps the frame dt with Math.min(N, t - last) before any sim
+// step. src/sim/player.js resolves the X-axis wall stop and the Y-axis
+// ceiling stop by checking only the single grid cell at the END of that
+// frame's move (not every cell crossed) -- correct only as long as no
+// attainable velocity can cross a full tile in one clamped frame. (Falling
+// onto solid ground or a one-way platform IS swept cell-by-cell and is
+// exercised directly below; it does not depend on this budget.) Read the
+// clamp from source instead of duplicating it as a second magic number, so
+// this stays true if the clamp itself is ever retuned.
+{
+  const mainSrc = readFileSync(join(srcDir, 'main.js'), 'utf8');
+  const m = mainSrc.match(/Math\.min\(\s*(\d+(?:\.\d+)?)\s*,\s*t\s*-\s*last\s*\)/);
+  ok(!!m, 'main.js frame loop clamps dt with the expected Math.min(N, t - last) shape');
+  const dtMax = (m ? Number(m[1]) : 50) / 1000;
+
+  const maxHorizVel = Math.max(PL.runSpeed, PL.wallJumpX, PL.knockbackX,
+    TP.runSpeed, TP.wallJumpX, TP.ledgeLaunchX);
+  const maxUpVel = Math.max(PL.jumpVel, PL.airJumpVel, PL.wallJumpY, PL.ledgeLaunchY,
+    TP.jumpVel, TP.airJumpVel, TP.wallJumpY, TP.ledgeLaunchY);
+  ok(maxHorizVel * dtMax < 0.9,
+     'no configured horizontal speed crosses a full tile in one clamped frame (endpoint-only wall check would tunnel), got ' +
+     (maxHorizVel * dtMax).toFixed(3) + ' tiles at ' + maxHorizVel + ' u/s');
+  ok(maxUpVel * dtMax < 0.9,
+     'no configured upward speed crosses a full tile in one clamped frame (endpoint-only ceiling check would tunnel), got ' +
+     (maxUpVel * dtMax).toFixed(3) + ' tiles at ' + maxUpVel + ' u/s');
+
+  // src/sim/weapons.js caps bullet substeps at 4 regardless of speed, so a
+  // fast enough projectile could exceed the intended ~0.45-unit substep and
+  // tunnel through a 1-wide pillar or the smallest hostile hitbox. Guard the
+  // real worst case (speed * dtMax / 4) against both.
+  const minHitDiameter = 2 * Math.min(CONFIG.wasp.contactRadius, CONFIG.carrier.hitRadius);
+  let worstSubstep = 0;
+  for (const letter of Object.keys(CONFIG.weapons)) {
+    worstSubstep = Math.max(worstSubstep, CONFIG.weapons[letter].speed * dtMax / 4);
+  }
+  ok(worstSubstep < Math.min(0.9, minHitDiameter * 0.9),
+     'every weapon speed keeps the capped bullet substep under both a 1-wide pillar and the smallest hostile hitbox, worst case ' +
+     worstSubstep.toFixed(3) + ' tiles');
+}
+
+// --- sim-layer collision integration ------------------------------------
+// Drives the real, unmodified src/sim/player.js loop (not a reimplementation)
+// against a synthetic one-way platform placed past the generator's platform
+// range (x >= 417 has none) so it can't collide with authored terrain. Pins
+// three collision-edge behaviors from the physics review: a fast fall at the
+// clamped max frame dt must not tunnel through a one-way platform, rising
+// through the same platform must pass through it, and resting on it for many
+// frames must not chatter loose from float drift.
+{
+  setSimEdges(-1000, 1000);                    // wide viewport: no frustum clamp interference
+  for (const c of simCornerEvents) c.state = 'done';   // no wave-gate right-edge clamp either
+  for (const k in simKeys) simKeys[k] = false;
+
+  const testX0 = 430, testX1 = 434, testY = 10;
+  simPlatforms.push({ x0: testX0, x1: testX1, y: testY });
+  const midX = (testX0 + testX1) / 2;
+
+  simPlayer.x = midX; simPlayer.y = testY + 20;
+  simPlayer.vx = 0; simPlayer.vy = 0;
+  simPlayer.grounded = false; simPlayer.onOneWay = null; simPlayer.dropUntil = 0;
+  clearSimTraversal(0);
+  let landedAt = -1;
+  for (let i = 0; i < 60 && landedAt < 0; i++) {
+    updateSimPlayer(0.05);                     // the real clamped max frame dt
+    if (simPlayer.grounded) landedAt = i;
+  }
+  ok(landedAt >= 0 && simPlayer.y === testY && simPlayer.vy === 0,
+     'fast fall at the clamped max frame dt lands exactly on a one-way platform, no tunneling (y=' +
+     simPlayer.y + ' at frame ' + landedAt + ')');
+
+  simPlayer.x = midX; simPlayer.y = testY - 0.5;
+  simPlayer.vx = 0; simPlayer.vy = 16;
+  simPlayer.grounded = false; simPlayer.onOneWay = null; simPlayer.dropUntil = 0;
+  clearSimTraversal(0);
+  updateSimPlayer(0.05);
+  ok(simPlayer.y > testY && !simPlayer.grounded,
+     'rising through a one-way platform passes through instead of snapping to it (y=' + simPlayer.y + ')');
+
+  simPlayer.x = midX; simPlayer.y = testY;
+  simPlayer.vx = 0; simPlayer.vy = 0;
+  simPlayer.grounded = true; simPlayer.onOneWay = simPlatforms[simPlatforms.length - 1];
+  simPlayer.dropUntil = 0;
+  clearSimTraversal(0);
+  let everFell = false;
+  for (let i = 0; i < 300; i++) {
+    updateSimPlayer(1 / 60);
+    if (!simPlayer.grounded) everFell = true;
+  }
+  ok(!everFell && simPlayer.y === testY,
+     '300 frames resting on a one-way platform stay pinned with no float-drift chatter (y=' + simPlayer.y + ')');
+}
+
+// --- discrete jump-apex frame-rate dependence ---------------------------
+// src/pure/generator.js documents that the semi-implicit integrator's
+// DISCRETE jump apex is lower than the analytic apex checked earlier
+// (2.61 @60Hz / 2.49 @30Hz vs analytic 2.72), and that the mid-lane's +2.35
+// offset was chosen to stay under both with margin (+0.26 / +0.14) -- but
+// that comment only reasons about 60Hz and 30Hz. The real worst case is
+// whatever src/main.js's frame clamp allows (dt=0.05s, 20fps-equivalent),
+// which is slower than 30Hz and never checked anywhere. Simulate the actual
+// discrete jump with the real sim loop at that clamp floor and confirm the
+// margin the generator relies on hasn't gone (or drifted toward) negative.
+{
+  function jumpApex(dt, doDouble) {
+    for (const k in simKeys) simKeys[k] = false;
+    simPlayer.x = 438; simPlayer.y = 3;
+    simPlayer.vx = 0; simPlayer.vy = 0;
+    simPlayer.grounded = true; simPlayer.onOneWay = null;
+    simPlayer.airJumpsLeft = PL.airJumps;
+    simPlayer.coyoteUntil = 0; simPlayer.dropUntil = 0; simPlayer.jumpCutDone = true;
+    clearSimTraversal(0);
+    clearSimJumpBuffer();
+    simKeys.jump = true;               // held throughout: no variable-height cut
+    bufferSimJump(1);                  // gameMs stays 0; 1 > 0 fires the jump next call
+    let maxY = simPlayer.y, airJumped = !doDouble, prevVy = 0;
+    for (let i = 0; i < 400; i++) {
+      if (!airJumped && i > 0 && prevVy > 0 && simPlayer.vy <= 0) {
+        bufferSimJump(1);               // air-jump at apex 1: maximizes total height
+        airJumped = true;
+      }
+      prevVy = simPlayer.vy;
+      updateSimPlayer(dt);
+      maxY = Math.max(maxY, simPlayer.y);
+      if (simPlayer.grounded && i > 4) break;
+    }
+    return maxY - 3;
+  }
+  const DT_20FPS = 0.05;              // the real src/main.js clamp floor, extracted above
+  const apexSingle60 = jumpApex(1 / 60, false);
+  const apexSingle30 = jumpApex(1 / 30, false);
+  const apexSingleFloor = jumpApex(DT_20FPS, false);
+  near(apexSingle60, 2.61, 0.02, 'discrete single-jump apex at 60Hz matches the documented figure');
+  near(apexSingle30, 2.49, 0.02, 'discrete single-jump apex at 30Hz matches the documented figure');
+  ok(apexSingleFloor > 2.35,
+     'discrete single-jump apex clears the mid-lane +2.35 offset even at the actual dt-clamp floor (20fps), margin ' +
+     (apexSingleFloor - 2.35).toFixed(3) + ' tiles -- thinner than the documented 30Hz margin, worth a wider buffer if retuned');
+  const apexDoubleFloor = jumpApex(DT_20FPS, true);
+  ok(apexDoubleFloor > 3,
+     'discrete double-jump apex clears the +3 high-lane offset at the dt-clamp floor, margin ' +
+     (apexDoubleFloor - 3).toFixed(3) + ' tiles');
 }
 
 /* ================= pacing variants (CP1) ========================== *
@@ -946,6 +1130,36 @@ const ledgeState = {
   }
   ok(verbsValid,
      'every pace keeps jump apex, dwell budgets, launch authority and chain gain in range');
+
+  // The dt-clamp/tunneling budget proved above for the base tune has to hold for
+  // every pace, chain amplification included: the X wall stop and the Y ceiling
+  // stop are endpoint-only, so no attainable launch may cross a tile in one
+  // clamped frame. Read the clamp from source rather than restating it.
+  {
+    const mainSrc = readFileSync(join(srcDir, 'main.js'), 'utf8');
+    const mm = mainSrc.match(/Math\.min\(\s*(\d+(?:\.\d+)?)\s*,\s*t\s*-\s*last\s*\)/);
+    const dtMax = (mm ? Number(mm[1]) : 50) / 1000;
+    let worstH = 0, worstUp = 0, worstPace = '';
+    for (const F of resolved) {
+      const TPp = { ...PL, ...F.movement };
+      const chainMax = traversalChainMult(F.chain ? F.chain.max : 0, F.chain);
+      // chaining amplifies forward speed only — asserted here, and the reason
+      // src/sim/player.js multiplies vx and not vy
+      const h = Math.max(TPp.runSpeed, TPp.knockbackX,
+        TPp.wallJumpX * chainMax, TPp.ledgeLaunchX * chainMax);
+      const up = Math.max(TPp.jumpVel, TPp.airJumpVel, TPp.wallJumpY, TPp.ledgeLaunchY);
+      if (h > worstH) { worstH = h; worstPace = F.pace.id; }
+      worstUp = Math.max(worstUp, up);
+      // the pursuing edge is a relative speed too: it can only push the player
+      if (F.pursuit.maxSpeed * dtMax >= 0.9) worstH = Infinity;
+    }
+    ok(worstH * dtMax < 0.9,
+       'no pace (chain included) crosses a tile in one clamped frame, worst ' +
+       (worstH * dtMax).toFixed(3) + ' tiles in pace ' + worstPace);
+    ok(worstUp * dtMax < 0.9,
+       'no pace raises a vertical launch into the endpoint-only ceiling check, worst ' +
+       (worstUp * dtMax).toFixed(3) + ' tiles');
+  }
   ok(traversalChainMult(0, null) === 1 && traversalChainMult(5, null) === 1,
      'no chain config means no launch amplification anywhere else in the game');
   {

@@ -305,7 +305,10 @@ export const TRAVERSAL_PACES = {
     pursuit: {
       mode: 'hunt',
       cruiseSpeed: 3.6,       // the neutral band between mercy and comfort
-      minSpeed: 2.4,          // mercy: pinned players get room to recover
+      minSpeed: 2.6,          // mercy: pinned players get room to recover, but
+                              //   never LESS pressure than the shipped pass —
+                              //   bot runs showed a 2.4 floor made total
+                              //   inaction softer in hunt than in base
       maxSpeed: 6.8,          // the charge: standing still is now expensive
       comfortTiles: 11,       // above this much daylight the ship closes
       mercyTiles: 5,          // below this it backs off — fair, and legible
@@ -362,7 +365,9 @@ export const TRAVERSAL_PACES = {
     pursuit: {
       mode: 'ramp',
       cruiseSpeed: 2.6, minSpeed: 2.6, maxSpeed: 7.0,
-      rampMs: 9000,           // the whole intended pass, so it never plateaus early
+      // 6 s, not the 12 s ceiling: bot runs clear this fixture in 6.5-9 s, and a
+      // 9 s ramp meant the crescendo never arrived before the exit
+      rampMs: 6000,
       accel: 5.0, decel: 6.0,
       pocketSpeed: 3.0,       // the wager gets tighter here, provably still escapable
     },
@@ -370,11 +375,16 @@ export const TRAVERSAL_PACES = {
     movement: {               // verbs: no dwell, harder launches
       ledgeHangMs: 90, ledgeAutoLaunch: true,
       wallSlideMs: 160,
-      ledgeLaunchX: 11.6, ledgeLaunchY: 16.4,
-      wallJumpX: 14.6, wallJumpY: 17.0,
+      ledgeLaunchX: 11.2, ledgeLaunchY: 16.0,
+      wallJumpX: 13.5, wallJumpY: 16.4,
     },
-    chain: {                  // consecutive launches compound (verb crispness)
-      windowMs: 900, step: 0.07, max: 3, refundAirJump: true,
+    // Consecutive launches compound FORWARD, never upward: the ceiling check in
+    // sim/player.js is endpoint-only, so a chained vertical launch could cross a
+    // one-tile overhang in a single clamped 50 ms frame. Forward speed is also
+    // the thing that actually beats a pursuing edge, so the restriction costs
+    // the design nothing.
+    chain: {
+      windowMs: 900, step: 0.06, max: 3, refundAirJump: true,
     },
     enemies: [                // placed on the launch arcs: chain fuel, not walls
       { id: 'entry-wasp', kind: 'wasp', x: 37, y: 8.4, delayMs: 0 },
@@ -454,8 +464,9 @@ export function traversalPocketAdvanceTiles(p, seconds) {
 }
 
 // Launch chaining (surge): consecutive contacts inside the window amplify the
-// next launch. Never touches runSpeed, gravity, or jumpVel — the frozen
-// movement contract stays frozen; only the contextual launch is boosted.
+// next launch's FORWARD speed only. Never touches runSpeed, gravity, jumpVel or
+// any vertical launch — the frozen movement contract stays frozen, and the
+// endpoint-only ceiling check keeps its full one-tile-per-frame budget.
 export function traversalChainMult(chain, cfg) {
   if (!cfg) return 1;
   return 1 + cfg.step * Math.max(0, Math.min(chain, cfg.max));

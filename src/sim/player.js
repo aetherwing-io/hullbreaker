@@ -19,7 +19,9 @@ import { state, setState } from './state.js';
 import { currentWeapon, setWeapon, weaponDef, fireWeapon } from './weapons.js';
 import { mods, clearMods } from './mods.js';
 import { CAP, spawnCapsule } from './capsules.js';
-import { scoreContact, scoreFireMult, scoreLaunch, scoreSetback } from './score.js';
+import {
+  scoreContact, scoreFireMult, scoreLaunch, scoreRunEnd, scoreSetback,
+} from './score.js';
 import { activeCorner, cornerBusy } from './wavegate.js';
 
 // The vertical slice is allowed to prove a more forceful controller without
@@ -100,10 +102,11 @@ export function clearPlayerTraversal(recatchUntil = player.traversalRecatchUntil
   player.traversalRecatchUntil = recatchUntil;
 }
 
-// Consecutive contextual launches inside the chain window amplify the next one
-// (the surge pace) and refund the air jump, so a chain can be kept alive.
-// Deliberately scoped to the launch impulse: runSpeed, gravity and jumpVel stay
-// frozen, because every traversal contract is asserted against them.
+// Consecutive contextual launches inside the chain window amplify the next
+// one's FORWARD speed (the surge pace) and refund the air jump, so a chain can
+// be kept alive. Deliberately scoped to horizontal launch speed: runSpeed,
+// gravity, jumpVel and every vertical launch stay frozen, so the endpoint-only
+// wall/ceiling checks keep their full sub-tile-per-frame budget.
 function chainLaunchMult() {
   if (!CHAIN) return 1;
   player.traversalChain = gameMs < player.traversalChainUntil
@@ -140,8 +143,7 @@ export function updatePlayer(dt) {
       player.y = player.traversalTopY + 0.001;
       clearPlayerTraversal(action.recatchUntil);
       clearJumpBuffer();
-      const mult = chainLaunchMult();
-      player.vx = action.vx * mult; player.vy = action.vy * mult;
+      player.vx = action.vx * chainLaunchMult(); player.vy = action.vy;
       player.grounded = false; player.onOneWay = null;
       player.coyoteUntil = 0; player.jumpCutDone = true;
       player.traversalControlUntil = gameMs + P.traversalLaunchControlMs;
@@ -173,8 +175,7 @@ export function updatePlayer(dt) {
     if (action.kind === 'jump') {
       clearPlayerTraversal(action.recatchUntil);
       clearJumpBuffer();
-      const mult = chainLaunchMult();
-      player.vx = action.vx * mult; player.vy = action.vy * mult;
+      player.vx = action.vx * chainLaunchMult(); player.vy = action.vy;
       player.grounded = false; player.onOneWay = null;
       player.coyoteUntil = 0; player.jumpCutDone = true;
       player.traversalControlUntil = gameMs + P.traversalLaunchControlMs;
@@ -414,6 +415,7 @@ let sliceRetryTimer = 0;
 function scheduleSliceRetry(reason) {
   if (!IS_TRAVERSAL_SLICE || state === 'SLICE_RETRY') return;
   sliceStats.failures++;
+  scoreRunEnd(reason === 'fall' ? 'fell' : 'lost');
   if (reason === 'fall') sliceStats.falls++;
   clearPlayerTraversal(0);
   player.traversalControlUntil = 0;
@@ -511,7 +513,7 @@ export function loseLife(reason = 'damage') {
   setWeapon('R');                     // death resets the arsenal
   clearMods();
   // ×3 on the HUD means three deaths total ends the run
-  if (player.lives <= 0) { setState('GAME_OVER'); return; }
+  if (player.lives <= 0) { scoreRunEnd('game-over'); setState('GAME_OVER'); return; }
   respawn();
 }
 

@@ -221,7 +221,10 @@ weapon-pop mechanic creates an excellent local panic, but a missed late-game
 recatch must not erase the entire run's crescendo. Before phase-five tuning,
 choose a recovery floor: an upgraded fallback rifle, a rapid recovery carrier,
 retained weapon unlocks, or another solution that makes setbacks sharp but
-brief.
+brief. A first-draft proposal for this floor — tying it to a phase-scoped
+floor on a movement-momentum meter — is sketched in
+[`docs/proposals/2026-07-score-and-setback.md`](proposals/2026-07-score-and-setback.md);
+it is a starting point for prototyping, not a decision.
 
 ## Level-construction contract
 
@@ -294,6 +297,14 @@ Resolve these through small prototypes and playtests rather than assumption:
   authored pockets briefly alter pressure without teaching the player to wait?
 - Does flight strengthen the final crescendo enough to justify a second
   movement model?
+
+A fleet proposal exploring the first question (a movement-driven CHARGE/THREAT
+score system for the ascent × score-attack mashup) and the recovery-floor
+question above, plus six alternatives to lives-and-checkpoints for the death/
+setback question, is sketched in
+[`docs/proposals/2026-07-score-and-setback.md`](proposals/2026-07-score-and-setback.md).
+Treat it as material for prototyping and playtesting, not as an answer to any
+of the questions above.
 
 ---
 
@@ -397,13 +408,20 @@ entire climb:
 
 1. **Traversal vertical slice:** replace one representative platform field with
    a five-to-six-route lattice; add ledge catch, wall grab/slide/jump, one
-   telegraphed dare pocket, and pursuit-aware reachability tests.
+   telegraphed dare pocket, and pursuit-aware reachability tests. **Built** as
+   the opt-in `?slice=traversal` fixture and accelerated once already
+   (`15f66d2`) after its first playtest proved the spatial grammar and failed
+   the pacing test. The operator's verdict on the accelerated pass is pending
+   (fleet checkpoint CP1 — see `HANDOFF.md`, `FLEET-PLAN.md`).
 2. **Transformation slice:** preserve the shipped hull ratchet, add one
    bulkhead flip and breach return, and make the resulting altitude gain
-   unmistakable without changing 2D collision.
+   unmistakable without changing 2D collision. In progress in an isolated
+   fleet worktree, targeting checkpoint CP3.
 3. **Combat grammar:** add houndframe, polyp, and mortar one at a time. Prove
    each enemy's tell, movement answer, weapon interaction, and two-enemy
-   combination before adding the next.
+   combination before adding the next. Houndframe is in progress in an
+   isolated fleet worktree, targeting checkpoint CP2; polyp and mortar are not
+   yet started.
 4. **Baseline feedback now:** add essential hit, hurt, launch, pickup, warning,
    and transformation sounds plus restrained hit-stop, shake, flashes, and
    particles. Full polish can wait; readable timing cannot.

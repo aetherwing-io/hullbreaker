@@ -131,9 +131,10 @@ The sampler (`lib/sampler.mjs`) checks, in order:
 1. **`testapi`** — `globalThis.__HULLBREAKER_TEST__.snapshot()`, present when
    the URL has `?testapi=1` (which `run.mjs` adds **by default**; disable
    with `--no-testapi`). This is a read-only telemetry hook the game itself
-   already ships (commit `15f66d2`, "Read-only browser telemetry for
-   automated movement checks" — explicitly documented in `index.html` as
-   unable to mutate the simulation). **This was missed in this harness's
+   already ships (introduced in commit `15f66d2`, "Accelerate traversal
+   slice from playtest feedback"; since the module split it lives in
+   `src/main.js`, documented as unable to mutate the simulation). **This
+   was missed in this harness's
    first pass**, which assumed no such hook existed and built a DOM/HUD-text
    fallback as the only option; it was found while aligning metrics with
    Appendix A.5 below. It gives exact `player.{x,y,vx,vy,grounded,

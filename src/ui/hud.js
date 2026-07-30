@@ -23,7 +23,8 @@ const hudBL = document.getElementById('hudBL');
 hudBL.innerHTML = IS_TRAVERSAL_SLICE
   ? 'MOVE wasd/arrows &nbsp; JUMP space &nbsp; FIRE j or x &nbsp; RETRY r<br>' +
     'LEDGE near-misses catch: jump launches, down releases &nbsp;&middot;&nbsp; WALL contact: jump launches, down releases<br>' +
-    'DROP down+jump &nbsp;&middot;&nbsp; MAGENTA POCKET = take H, retreat left &nbsp;&middot;&nbsp; PAUSE p/esc'
+    'DROP down+jump &nbsp;&middot;&nbsp; MAGENTA POCKET = take H, retreat left &nbsp;&middot;&nbsp; PAUSE p/esc<br>' +
+    'LOSING HP = HULL FALLBACK: the ship drops you to the route below and play continues'
   : 'MOVE wasd/arrows &nbsp; JUMP space (hold = higher, again in air = double) &nbsp; FIRE j or x<br>' +
     'AIM 8-way via move keys &nbsp; STRAFE-LOCK shift &nbsp; DROP down+jump on catwalks<br>' +
     'CAPSULES swap weapons &middot; hit = weapon pops out, recatch it fast &nbsp;&middot;&nbsp; PAUSE p/esc';

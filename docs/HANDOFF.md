@@ -5,6 +5,15 @@ session. It summarizes decisions already made, current repository state, and the
 smallest next implementation milestone. The deeper design and story documents
 remain authoritative where this handoff only summarizes them.
 
+**If you are joining the multi-agent fleet push**, read
+[`FLEET-PLAN.md`](FLEET-PLAN.md) first — it governs that work, assigns lanes,
+and defines the operator checkpoints (CP1–CP4) that gate it. This handoff
+remains the brief for solo sessions and for background FLEET-PLAN doesn't
+repeat. As of this writing the fleet's live milestone is **CP1**: judging the
+accelerated traversal-slice pacing pass (`15f66d2`) plus the `intensity`
+agent's further variants against the operator's "boring" verdict on the first
+pass.
+
 ## Start here
 
 Read these in order:
@@ -41,40 +50,46 @@ The user is learning game development. Collaborate at that altitude:
 This is **not an OSTK repository**. Do not initialize, boot, or introduce OSTK
 files or workflow.
 
-Another coding agent may be working in the repository. At the start of every
-implementation session, inspect `git status`, `git diff`, and recent commits.
-Treat unfamiliar changes as someone else's work. Do not overwrite, revert, or
-reformat them; coordinate before touching overlapping runtime areas.
+A fleet of roughly ten agents may be working in the repository at once, each
+in an isolated git worktree, with an integrator session merging to `main` one
+runtime change at a time (see `FLEET-PLAN.md`'s integration protocol). At the
+start of every implementation session, inspect `git status`, `git diff`, and
+recent commits regardless. Treat unfamiliar changes as someone else's
+already-reviewed work. Do not overwrite, revert, or reformat them; coordinate
+through the integrator before touching overlapping runtime areas.
 
 ## Repository state at handoff
 
 - Branch: `main`
-- HEAD when this handoff was written:
-  `6f21c76 Address external review: projectile substeps, input hardening,
-  self-test`
-- Runtime: one self-contained [`index.html`](../index.html), using Three.js
-  through a CDN import map.
-- Headless verification: [`tools/pathcheck.mjs`](../tools/pathcheck.mjs).
-- There is no package/build pipeline to preserve or extend.
+- HEAD when this handoff was last updated:
+  `5e9dbc8 Merge module split: index.html -> 35 ES modules (splitter)`
+- Runtime: [`index.html`](../index.html) is now only a thin shell (CSS, HUD
+  markup, the three.js import map, and one module script tag); the game
+  itself is 35 ES modules under [`src/`](../src/). See
+  [`../README.md`](../README.md)'s Architecture section for the layer
+  breakdown (`config.js` → `pure/` → `sim/` → `render/`+`ui/` → `main.js`)
+  and `src/sim/bridge.js` for the sim/render boundary.
+- Headless verification: [`tools/pathcheck.mjs`](../tools/pathcheck.mjs), now
+  importing `src/config.js` and `src/pure/*` directly (178 assertions)
+  instead of regex-extracting a pure block from a single file.
+- A second, independent verification surface now exists:
+  [`tools/playtest/`](../tools/playtest/), a dev-only Playwright bot-player
+  harness with its own `package.json` that plays the game in a real browser
+  from scripted input and reports pacing/fairness metrics. It has no effect
+  on the shipped game.
+- Two read-only debug channels exist for tooling: `?testapi=1` (the playtest
+  harness's canonical telemetry channel) and `window.HB` (always present, a
+  superset for console/harness use) — see README's "Debug handles" section.
+- There is still no package/build pipeline for the game itself to preserve or
+  extend (`tools/playtest/` has its own, scoped to that directory).
 - The simulation is 2D in `(s, y)`; a polyline maps it onto 3D hull surfaces for
-  rendering and camera motion.
+  rendering and camera motion. This is unchanged by the module split.
 
-The worktree is intentionally dirty from the design, lore, and concept-art
-pass:
-
-```text
- M README.md
- M docs/DESIGN.md
-?? docs/HANDOFF.md
-?? docs/STORY.md
-?? docs/concept-art/
-```
-
-Those files are wanted work. Do not discard them. This documentation pass did
-not modify runtime code.
-
-Because the worktree can change after this handoff, verify this snapshot rather
-than assuming it is still exact.
+A roughly ten-agent fleet is currently iterating on mechanics and pacing in
+parallel, isolated worktrees, with an integrator session merging to `main`;
+see [`FLEET-PLAN.md`](FLEET-PLAN.md) for the roster, lanes, and checkpoint
+schedule. Verify branch/HEAD/worktree state yourself rather than assuming
+this snapshot is still exact — it changes quickly during the fleet push.
 
 ## Established creative decisions
 
@@ -103,7 +118,9 @@ than assuming it is still exact.
 
 ## What currently works
 
-The shipped grey-box already provides a solid base:
+The shipped grey-box provides a solid base, and the traversal slice work
+below has since addressed the "reads as ground plus floating platforms"
+weakness that used to be the main gap here:
 
 - fast run, variable jump, one air jump, coyote time, jump buffering, and
   drop-through catwalks;
@@ -113,15 +130,37 @@ The shipped grey-box already provides a solid base:
 - seeded ground chunks and stacked one-way catwalks;
 - wasp and carrier drones with mock-3D materialization;
 - rifle, spread, laser, homing, and flame weapons;
-- RAGE, GHOST SQUAD, ORBITAL LANCE, and CHRONO modifiers; and
+- RAGE, GHOST SQUAD, ORBITAL LANCE, and CHRONO modifiers;
 - pure generation/choreography code extracted and tested by the headless
-  harness.
+  harness;
+- an opt-in authored traversal lattice (`?slice=traversal`) with six
+  connected routes, forgiving ledge catches, wall grab/slide/jump, one
+  telegraphed dare pocket, camera-follow, and a fast retry loop — accelerated
+  once already (`15f66d2`) after its first playtest;
+- the runtime split into 35 ES modules under `src/` (see README's
+  Architecture section), with a `?testapi=1`/`window.HB` telemetry surface
+  the split added specifically to support tooling; and
+- a bot-player playtest harness (`tools/playtest/`) that plays scripted input
+  in a real browser and reports pacing/fairness metrics.
 
-The main weakness is spatial: despite denser tiers, the field still reads as
-ground plus floating platforms. It does not yet make traversal a satisfying
-combat language.
+The operator's verdict on the traversal slice's first pass was **boring — the
+spatial grammar is right, the intensity is far off** (see `FLEET-PLAN.md`'s
+diagnosis: soft pursuit pressure, uncontested routes, and no stakes
+differential between routes). `15f66d2` is the first response to that
+verdict; the fleet's `intensity` agent is producing further variants for the
+operator's CP1 judgment. Treat FLEET-PLAN's diagnosis, not the old "ground
+plus floating platforms" framing, as the live description of the gap.
 
-## Recommended next-session objective
+## Traversal slice: built, and now the fleet's pacing target
+
+**Status: this objective is complete.** The slice described below was built,
+played by the operator, and — per the verdict recorded in `FLEET-PLAN.md` —
+proved the spatial grammar and failed the pacing test ("boring"). `15f66d2`
+accelerated it once already; the fleet's live question (checkpoint CP1) is
+whether that acceleration, plus the `intensity` agent's further variants,
+fixes the verdict. The subsections below are kept as the design rationale for
+the slice's shape — still worth reading before touching it — not as a to-do
+list. For the current milestone and how to help, read `FLEET-PLAN.md`.
 
 ### Prove one traversal vertical slice
 
@@ -191,19 +230,29 @@ contact, shorten grab dwell, prevent adhesion to the pocket dead end, and make
 the camera follow forward motion instead of pinning RIG. Do not scale the
 content count until the user approves that revised feel.
 
+The operator has not yet judged this accelerated pass — that is the fleet's
+checkpoint CP1 (`FLEET-PLAN.md`).
+
 ## Implementation landmarks
 
-The relevant code is still compact enough to understand directly:
+The runtime is no longer one file. See [`../README.md`](../README.md)'s
+Architecture section for the authoritative layer table; the pointers below
+are just where to start reading:
 
-- `CONFIG` near the top of `index.html` holds all tuning.
-- `CHUNK_LIB` and `buildLevel` generate ground and horizontal catwalks inside
-  the pure block.
-- `groundH` and `platforms` are baked and rendered immediately after the pure
-  block.
-- `updatePlayer` contains movement, solid collision, one-way landing,
-  scrolling-edge pressure, and firing.
-- `tools/pathcheck.mjs` extracts the pure block and asserts path, generation,
-  spawn, and jump invariants.
+- `src/config.js` holds `CONFIG` — all normal-run tuning.
+- `src/pure/generator.js` holds `buildLevel`/`buildTraversalLevel` (ground,
+  catwalks, and the traversal fixture's authored geometry) and
+  `buildSpawnTable`; `src/pure/traversal.js` holds `TRAVERSAL_FIXTURE` and the
+  ledge/wall movement-decision helpers.
+- `src/sim/player.js` contains movement, solid collision, one-way landing,
+  and scrolling-edge pressure; `src/sim/weapons.js` contains firing.
+- `src/sim/bridge.js` is the sim's only outward boundary — where the old
+  single file touched a mesh or DOM element mid-simulation, the sim now calls
+  a named view hook instead, which is what keeps `src/pure/` and `src/sim/`
+  three.js/DOM-free and importable in Node.
+- `tools/pathcheck.mjs` imports `src/config.js` and `src/pure/*` directly (no
+  more regex-extracting a pure block) and asserts path, generation, spawn, and
+  jump invariants — 178 assertions as of this writing.
 
 Implementation constraints:
 
@@ -212,9 +261,9 @@ Implementation constraints:
 - Extend the level representation only as far as the slice requires. A small
   authored traversal-chunk shape with declared connectors is preferable to
   hiding a showcase layout inside more random probabilities.
-- Keep new deterministic geometry or reachability logic inside
-  `/* @pure-begin */` and `/* @pure-end */` when practical so the harness can
-  test it.
+- Keep new deterministic geometry or reachability logic inside `src/pure/`
+  (no DOM/three.js references, no cross-layer imports — both statically
+  guarded by `tools/pathcheck.mjs`) so the harness can test it.
 - Current jump constants are deliberately frozen and asserted by the harness.
   Do not retune the whole controller merely to make an invalid layout reachable.
   If playtesting proves a retune is necessary, change it intentionally and
@@ -225,6 +274,10 @@ Implementation constraints:
   for this slice.
 
 ## Definition of done for the slice
+
+This checklist was already run once for the slice's initial build. The fleet
+reapplies the same play-acceptance criteria — and the operator's five
+questions below — when judging the accelerated pass at checkpoint CP1.
 
 ### Play
 
@@ -281,31 +334,53 @@ until the user says the movement slice feels good.
 
 ## Deliberately out of scope for this milestone
 
+This was the original single-slice milestone's scope fence. Several of these
+items are now being prototyped in parallel by the fleet (marked below) — that
+is FLEET-PLAN's decision to widen scope for the coordinated push, not a
+reversal of the reasoning that kept them out of one session's slice.
+
 - Converting all six phases to the new lattice.
 - Ten simultaneous lanes or maximum vertical density.
 - Snap hook, player traps, hostile traps, or cliff-shimmy systems.
 - Bulkhead flip, interior face, breach return, or rendered altitude system.
-- Houndframe, polyp, mortar, or other new enemies.
-- Full weapon-order and recovery-floor redesign.
+  (Now in progress — fleet `transformation` agent, targeting CP3.)
+- Houndframe, polyp, mortar, or other new enemies. (Houndframe now in
+  progress — fleet `combat` agent, targeting CP2; polyp and mortar remain
+  out of scope.)
+- Full weapon-order and recovery-floor redesign. (A first-draft recovery-floor
+  proposal now exists — see below — but nothing is implemented or decided.)
 - Story scripting, voice work, the Crown finale, flight, menus, or final art.
 - A broad generator rewrite before the authored slice proves its grammar.
 
 Resist combining the traversal and transformation milestones. Each should answer
 one hard question clearly.
 
-## What follows if the slice is fun
+## What follows the slice
 
-Continue in the order defined in `DESIGN.md`:
+This is now happening in parallel across the fleet rather than as a single
+session's next step — see `FLEET-PLAN.md`'s wave 2 roster and checkpoints
+(CP2 houndframe, CP3 bulkhead flip + altitude, CP4 scored run + setback
+prototype). The order below, from `DESIGN.md`'s Development sequence, remains
+the target convergence point once those variants are judged:
 
 1. Build one bulkhead flip inward and one breach return while keeping the same
-   2D controls and making altitude gain unmistakable.
+   2D controls and making altitude gain unmistakable. (In progress — fleet
+   `transformation` agent, isolated worktree, targeting CP3.)
 2. Add houndframe, polyp, and mortar one at a time, proving each movement answer
-   and then one useful combination.
+   and then one useful combination. (Houndframe in progress — fleet `combat`
+   agent, targeting CP2; polyp and mortar not yet started.)
 3. Add baseline hit, hurt, launch, pickup, warning, and transformation feedback.
+   (Deferred — `FLEET-PLAN.md` keeps juice/audio out of scope for this push.)
 4. Author the full six-phase escalation.
 5. Build the Meridian Crown finale.
 6. Decide whether flight strengthens the ending.
 7. Finish front-end, accessibility, audio, and polish.
+
+A parallel track not in `DESIGN.md`'s original sequence: a movement-driven
+score/momentum system and six death/setback proposals (replacing lives and
+checkpoints) are sketched in
+[`docs/proposals/2026-07-score-and-setback.md`](proposals/2026-07-score-and-setback.md),
+targeting CP4. Nothing there is decided or implemented yet.
 
 ## Open questions are not blockers
 
@@ -316,6 +391,12 @@ original failure, the ground voice, RIG's exact identity, and Earth's reply.
 Do not settle these merely to make the documents look complete. The next slice
 can proceed without them. Lock answers only when they improve a playable beat,
 visual motif, relationship, or ending.
+
+A first-draft proposal touching the score-attack question and the
+recovery-floor/setback question exists at
+[`docs/proposals/2026-07-score-and-setback.md`](proposals/2026-07-score-and-setback.md)
+— read it before prototyping either, but it is a starting point, not a
+resolution.
 
 ## End-of-session handoff checklist
 
