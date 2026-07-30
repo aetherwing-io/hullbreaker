@@ -1,12 +1,27 @@
 {
   "name": "hound-jump",
-  "description": "Counterplay run for the houndframe trial (?hound=1): identical to hound-grounded.json — same URL, same enemies, same 2.4s window, same terrain jump at the x=39 step — plus ONE jump at 1330ms, inside the first hound's telegraph and before it commits. Whichever way the approach resolves, that press is a movement answer: from the deck it is a jump over the charge, and from the chimney face it is a wall-launch away from it. Everything else is held constant, so the hit-count difference isolates the hound's charge.",
+  "description": "Counterplay run for the houndframe trial (?hound=1): identical to hound-grounded.json - same URL, same enemies, same 2.4s window, same terrain jump at the x=39 step - plus ONE jump at 1280ms, inside the first houndframe's telegraph and before it commits. 1280ms is the centre of the measured safe window (1230-1330ms at the current placements and camera scale); jumping later than that eats the charge, earlier eats it too. Everything else is held constant, so the hit-count difference isolates the charge.",
   "url": "index.html?slice=traversal&hound=1",
-  "viewport": { "width": 1280, "height": 800 },
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
   "durationMs": 2400,
   "moves": [
-    { "hold": "right", "fromMs": 0, "toMs": 2400 },
-    { "tap": "jump", "atMs": 880, "holdMs": 80 },
-    { "tap": "jump", "atMs": 1330, "holdMs": 200 }
+    {
+      "hold": "right",
+      "fromMs": 0,
+      "toMs": 2400
+    },
+    {
+      "tap": "jump",
+      "atMs": 880,
+      "holdMs": 80
+    },
+    {
+      "tap": "jump",
+      "atMs": 1280,
+      "holdMs": 200
+    }
   ]
 }
