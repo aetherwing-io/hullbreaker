@@ -177,6 +177,13 @@ export function hookUpdate(player, dt, api) {
 
   // The crush plane wins over a tether: being dragged into it must not park
   // the player inside the damage edge for the whole zip.
+  // KNOWN HAZARD (code review, low priority — hook v1 is operator-rejected
+  // and inert): this check is one-shot against the PRE-march position, and at
+  // hunt's zipSpeed (16 t/s) one clamped 50ms frame can travel 0.8 tiles —
+  // beyond the 0.5-tile EDGE_GUARD. A sufficiently leftward zip could land
+  // behind the plane for ONE frame; the general crush resolver catches it the
+  // next frame once hooked releases. If the hook is ever revived, re-check
+  // this guard post-march (or inside the substep loop).
   if (player.x - player.hw < sLeftEdge() + CONFIG.edges.margin + EDGE_GUARD) {
     whip(player, api, 'edge');
     view.hook.sync();
