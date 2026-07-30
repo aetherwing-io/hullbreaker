@@ -2,6 +2,13 @@
 
 Prepared by the `adversarial` agent of the fleet push, against `main` at
 `5e9dbc8` (the merged module split). Target: `index.html?slice=traversal`.
+The physics audit merged as `39bb6dc` landed while these runs were in flight;
+it touched only docs, `README.md`, `tools/pathcheck.mjs` and the playtest
+README, so no runtime file under `src/` changed and every measurement below
+still describes the current tree. Re-verified after that merge:
+`node tools/pathcheck.mjs` reports 192 passed / 0 failed, and the headline
+script `p4-hold-right-mash-jump` still completes 3/3 at 5.37-5.38s in-game with
+a closest crush margin of 18.40 tiles.
 
 This report attacks the **fun and fairness** of the current build. Every claim is
 either CONFIRMED by a committed input script that reproduces it, or SUSPECTED
@@ -215,6 +222,13 @@ right-hand clamp guards forward motion past a corner; nothing guards this).
 **Contract violated.** DESIGN pillar 5 ("Chaos stays readable … able to explain
 why they were hit"), and the technical acceptance goal of reproducible
 collision.
+
+**Not covered by the new tunneling assertions.** The physics audit merged as
+`39bb6dc` added `frame dt clamp vs. collision safety margins (tunneling)` to
+`tools/pathcheck.mjs`, but those assertions bound `velocity × dtMax` — they
+prove *integrated* motion cannot skip a cell. The crush push is not integrated
+motion; it assigns `player.x` directly, so it passes through terrain regardless
+of how tight the dt clamp is.
 
 **Suggested owner.** `physics-reviewer`.
 
