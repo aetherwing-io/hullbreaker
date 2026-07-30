@@ -41,6 +41,20 @@ the intensity is far off.** The fleet exists to close that gap:
   (transformation), and the in-flight CP1 defect fixes (fallback
   self-defeat, crush wall-grind). The roof-contest decision folds into CP2+.
 
+### July 30 — CP2.5 verdict: "enemies feel like they are coming for me"
+
+- Operator on the CP2.5 merge (ownership placement, roof contest, commit
+  coil): "yes, this is much better, enemies feel like they are coming for
+  me." The placement-over-stats doctrine is validated; hound 2.5 is the
+  working baseline going forward.
+- Still open from the CP2.5 question set (no verdict yet): crouch vs
+  aim-assist (keep one/both/neither), commit-coil dodge-timing feel, and
+  whether the roof still reads as a free ride. Also still open: the five
+  movement-verb questions (hook feel, auto vs key, hook-costs-pressure,
+  flow legibility, anchor density).
+- p6 metronome-hop surviving surge at 2.5-tile margins is accepted-for-now
+  (integrator judgment, adversarial concurring); operator feel can overturn.
+
 ### July 30 — view-scale verdict: FAR is the default; bullets don't turn corners
 
 - Operator: "far feels right." FAR (RIG ≈ 3.7% of screen height, matching
