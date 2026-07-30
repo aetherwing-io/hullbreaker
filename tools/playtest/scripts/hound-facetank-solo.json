@@ -1,0 +1,23 @@
+{
+  "name": "hound-facetank-solo",
+  "description": "ACCEPTANCE, facetank: adversarial's h3 deck-facetank policy (hold right + fire, one 16ms jump at 1400ms to thread column 39, then never leave the deck) replayed against stage 1's reworked chokepoint placements. The question is whether i-frames make the telegraph decoration for a player willing to eat hits: 1200ms of i-frames vs a ~100ms charge sweep means one pass costs exactly one point, and the two chokepoints of a pass cost two of three. Reported as a damage count, not a pass/fail on completion \u2014 eating the hound is allowed to be a choice, it just has to cost.",
+  "url": "index.html?slice=traversal&hound=1",
+  "durationMs": 14000,
+  "moves": [
+    {
+      "hold": "right",
+      "fromMs": 0,
+      "toMs": 13800
+    },
+    {
+      "hold": "fire",
+      "fromMs": 100,
+      "toMs": 13800
+    },
+    {
+      "tap": "jump",
+      "atMs": 1400,
+      "holdMs": 16
+    }
+  ]
+}

@@ -73,10 +73,22 @@ export const VIEW_ID = CONFIG.viewScales[VIEW_RAW] ? VIEW_RAW : 'far';
 const HOUND_PARAM = IS_TRAVERSAL_SLICE ? QUERY.get('hound') : null;
 export const HOUND_STAGE =
   HOUND_PARAM === null || HOUND_PARAM === '0' || HOUND_PARAM === 'off' ? null
+  : HOUND_PARAM === 'aim' ? 'aim'
   : HOUND_PARAM === '3' || HOUND_PARAM === 'mix' ? 'mix'
+  // ?hound=2.5 — the CP2 iteration point: stage 2's squeeze plus one more
+  // route contested. Stage 2 itself stays byte-identical for comparison.
+  : HOUND_PARAM === '2.5' || HOUND_PARAM === 'squeeze+' ? 'squeezePlus'
   : HOUND_PARAM === '2' || HOUND_PARAM === 'combo' ? 'combo'
   : 'solo';
 export const HOUND_TRIAL_STAGE = houndTrialStage(HOUND_STAGE);
 // The authored hostile list for one slice attempt — resolved once, read by
 // resetGame, the self-test, and the HUD so all three can never disagree.
 export const SLICE_ENEMY_PLAN = traversalEnemyPlan(ACTIVE_SLICE, HOUND_STAGE);
+
+// Two independent A/B answers to the operator's 8-way aim gap against low
+// targets. Both are opt-in and orthogonal to everything above, so they can be
+// judged separately or together: ?crouch=1 lowers the firing line from a
+// planted stance, ?aim=assist nudges the shot itself. Absent on every ordinary
+// URL, including the six-face run.
+export const CROUCH_ENABLED = QUERY.get('crouch') === '1';
+export const AIM_ASSIST_ENABLED = QUERY.get('aim') === 'assist';

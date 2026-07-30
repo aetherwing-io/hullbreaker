@@ -1,0 +1,12 @@
+{
+  "name": "aim-gap-assist",
+  "description": "ANSWER B to the aim gap (?aim=assist): byte-identical inputs to aim-gap-8way.json — the player still fires level from a standing muzzle and never touches DOWN — but each shot leaves along a heading corrected by at most 8 degrees toward a hostile already inside a 16-degree cone. Expected: the same ~20 shots now kill the houndframe. The cap is what keeps this generosity: at the assist's maximum range the correction cannot reach a neighbouring lane (asserted in pathcheck), so it can never pick a target the player was not pointing at.",
+  "url": "index.html?slice=traversal&hound=aim&aim=assist",
+  "viewport": { "width": 1280, "height": 800 },
+  "durationMs": 5000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 2200 },
+    { "tap": "jump", "atMs": 880, "holdMs": 80 },
+    { "hold": "fire", "fromMs": 2450, "toMs": 4950 }
+  ]
+}

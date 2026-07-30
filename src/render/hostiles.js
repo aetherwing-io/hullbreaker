@@ -39,8 +39,17 @@ function houndPose(e) {
     p.depth = H.tellDepth * u;
     p.sy = 1 + H.tellRise * u;
     p.sx = 1 - H.tellNarrow * u;
-    const period = H.tellBlinkSlowMs + (H.tellBlinkFastMs - H.tellBlinkSlowMs) * u;
-    if (Math.floor(gameMs / period) % 2 === 0) p.glow = CONFIG.palette.houndTell;
+    if (e.stateUntil - gameMs <= H.tellCoilMs) {
+      // the coil: blink resolves into a held glow and the frame drops onto its
+      // haunches. This is the "NOW" the player answers — the accelerating blink
+      // before it is the "not yet".
+      p.glow = CONFIG.palette.houndTell;
+      p.sy -= H.tellCoilSquash;
+      p.sx += H.tellCoilSquash * 0.5;
+    } else {
+      const period = H.tellBlinkSlowMs + (H.tellBlinkFastMs - H.tellBlinkSlowMs) * u;
+      if (Math.floor(gameMs / period) % 2 === 0) p.glow = CONFIG.palette.houndTell;
+    }
   } else if (e.state === 'charge') {
     p.sx = 1 + H.chargeStretch;
     p.sy = 1 - H.chargeSquash;

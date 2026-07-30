@@ -5,9 +5,10 @@ import {
   traversalLedgeProbe, traversalLedgeDecision, traversalWallDecision,
   traversalSolidAllowsGrab, traversalChainMult, traversalFallbackTarget,
 } from '../pure/traversal.js';
+import { crouchStance } from '../pure/stance.js';
 import {
-  ACTIVE_FIXTURE, ACTIVE_SLICE, AUTOBOUNCE_ENABLED, FLOW_ENABLED, HOOK_ENABLED,
-  IS_TRAVERSAL_SLICE, SLICE_FALLBACK_ENABLED,
+  ACTIVE_FIXTURE, ACTIVE_SLICE, AUTOBOUNCE_ENABLED, CROUCH_ENABLED, FLOW_ENABLED,
+  HOOK_ENABLED, IS_TRAVERSAL_SLICE, SLICE_FALLBACK_ENABLED,
 } from '../mode.js';
 import { view, host } from './bridge.js';
 import { gameMs, sliceStats, approach } from './time.js';
@@ -57,6 +58,7 @@ export const player = {
   traversalControlUntil: 0,
   traversalChain: 0, traversalChainUntil: 0,
   fallbackStreak: 0, fallbackEarnedTiles: 0, edgePinnedMs: 0,
+  crouched: false, muzzleY: P.muzzleY,
   hp: P.maxHealth, lives: P.lives,
   iframesUntil: 0, hitstunUntil: 0,
   nextFireAt: 0,
@@ -135,7 +137,23 @@ export function updatePlayer(dt) {
   computeAim();
   const frameStartX = player.x;
 
-  const h = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+  // ?crouch=1 (A/B prototype): a planted stance that drops the firing line onto
+  // low targets and the profile under skimming ones. Pure decision in
+  // src/pure/stance.js; here it only sets the body height, the muzzle, and — as
+  // the cost — zeroes the horizontal input while it is held.
+  const stance = crouchStance({
+    enabled: CROUCH_ENABLED, grounded: player.grounded, down: keys.down,
+    jumpBuffered: jumpBufferedUntil > gameMs,
+    traversalState: player.traversalState,
+    standHeight: P.height, standMuzzleY: P.muzzleY,
+  }, CONFIG.crouch);
+  player.crouched = stance.crouched;
+  player.muzzleY = stance.muzzleY;
+  player.h = stance.height;
+  if (!stance.crouched && playerOverlapsSolid()) player.h = CONFIG.crouch.height;
+  if (stance.crouched && CONFIG.crouch.aimLevel) player.aim.set(player.facing, 0);
+
+  const h = stance.planted ? 0 : (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
   let ledgeHanging = false;
   let wallSliding = false;
   // SNAP HOOK (?hook=1): runs before the ledge/wall branches so a grab can take
@@ -469,7 +487,8 @@ export function updatePlayer(dt) {
     // CHARGE gates the gun and nothing else: WARM shortens the interval
     player.nextFireAt = gameMs + def.fireRateMs * rageMult * scoreFireMult();
     const a = player.aim;
-    fireWeapon(currentWeapon, player.x + a.x * 0.6, player.y + 1.05 + a.y * 0.5, a.x, a.y, false);
+    fireWeapon(currentWeapon, player.x + a.x * 0.6,
+      player.y + player.muzzleY + a.y * 0.5, a.x, a.y, false);
   }
 
   // -- rig transform (s,y → tower world) + aim pose + i-frame flicker

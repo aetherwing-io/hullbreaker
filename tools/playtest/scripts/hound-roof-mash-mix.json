@@ -1,0 +1,292 @@
+{
+  "name": "hound-roof-mash-mix",
+  "description": "ACCEPTANCE, stage 3: adversarial's p4 mash cadence with fire held, at ?hound=3 on the base pace \u2014 the exact comparison that measured the full hound roster as costing this policy 0.0 tiles of crush margin and zero deaths in twelve attempts. The remix stage now carries the ceiling watcher too, so the flight lane costs something at every hound stage rather than only at the two authored ones.",
+  "url": "index.html?slice=traversal&hound=3",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "durationMs": 12000,
+  "moves": [
+    {
+      "hold": "right",
+      "fromMs": 0,
+      "toMs": 11800
+    },
+    {
+      "hold": "fire",
+      "fromMs": 0,
+      "toMs": 11800
+    },
+    {
+      "tap": "jump",
+      "atMs": 200,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 420,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 640,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 860,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1080,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1300,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1520,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1740,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 1960,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 2180,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 2400,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 2620,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 2840,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 3060,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 3280,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 3500,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 3720,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 3940,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 4160,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 4380,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 4600,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 4820,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 5040,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 5260,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 5480,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 5700,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 5920,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 6140,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 6360,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 6580,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 6800,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 7020,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 7240,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 7460,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 7680,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 7900,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 8120,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 8340,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 8560,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 8780,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 9000,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 9220,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 9440,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 9660,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 9880,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 10100,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 10320,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 10540,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 10760,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 10980,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 11200,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 11420,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 11640,
+      "holdMs": 110
+    },
+    {
+      "tap": "jump",
+      "atMs": 11860,
+      "holdMs": 110
+    }
+  ]
+}

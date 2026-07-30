@@ -31,6 +31,8 @@ import {
   traversalPocketAdvanceTiles, traversalChainMult, traversalFallbackTarget,
   traversalMarginCapScroll, traversalPocketEntryMargin,
 } from '../src/pure/traversal.js';
+import { crouchStance } from '../src/pure/stance.js';
+import { assistDirection, assistVerticalReach } from '../src/pure/assist.js';
 import {
   TRAVERSAL_HOOK, TRAVERSAL_FLOW,
 } from '../src/pure/traversal.js';
@@ -827,6 +829,42 @@ function airTimeAbove(T, h) {            // seconds the feet stay above h on a f
     ok(HD.prowlSpeed < T.runSpeed * 0.5,
        'prowl is slow enough to get behind (' + label + ')');
   }
+  /* RULING (CP2.5, closed-loop harness finding): a bot that jumps the instant it
+     sees the tell still eats the charge, while a jump timed late clears it. That
+     is INTENDED, and it is arithmetic rather than taste: the telegraph is longer
+     than a jump stays above the charge envelope, so "jump at the light" cannot
+     be the answer to a hound — by the time the charge arrives an onset jump has
+     already landed. The tell is half a second of DECISION (commit late, reroute,
+     drop behind, or shoot it now that crouch/assist exist), and the accelerating
+     blink resolving into a held coil is what says "not yet… NOW".
+     Two things must hold for that to be a skill rather than a trap: the onset
+     jump must genuinely be too early (or the ruling is a lie), and the set of
+     jump times that DO work must be wide enough for a human. */
+  {
+    const clear = HD.rideY + HD.hitRadius;
+    const tellSec = HD.tellMs / 1000;
+    const rise = riseTimeTo(TP, clear);
+    const air = airTimeAbove(TP, clear);
+    const sweep = 2 * (HD.hitRadius + TP.width / 2) / HD.chargeSpeed;
+    // worst-case trigger distance: the tell fires at sense range, the player
+    // keeps closing through it, the hound recoils, then they converge
+    const gapAtCommit = HD.senseRange - TP.runSpeed * tellSec + HD.tellBackTiles;
+    const contact = tellSec + Math.max(0, gapAtCommit) / (HD.chargeSpeed + TP.runSpeed);
+    ok(air < contact + sweep,
+       'an onset jump lands before the charge arrives (' + air.toFixed(3) + ' s of air vs ' +
+       contact.toFixed(3) + ' s to contact): the tell is a commit cue, not a reflex cue');
+    // …and the answer window is generous once the player waits for the coil
+    const windowSec = (contact + sweep) - (contact) + (air - rise - sweep);
+    ok(windowSec >= 0.3,
+       'the set of jump times that clear the charge spans ' + windowSec.toFixed(3) +
+       ' s — well over human timing jitter');
+    ok(HD.tellCoilMs >= 80 && HD.tellCoilMs <= HD.tellMs * 0.3,
+       'the commit coil is a distinct final beat of the tell, not the whole tell');
+    // the coil must also start no earlier than the point where a jump works, or
+    // the cue would be telling the player to move while moving is still wrong
+    ok(tellSec - HD.tellCoilMs / 1000 + rise <= contact,
+       'the coil fires inside the window where jumping actually clears the charge');
+  }
   ok(tightestVisible >= 2,
      'tightest telegraph headroom across all tunes is ' + tightestVisible.toFixed(2) +
      'x the reaction cost (' + tightestTune + ')');
@@ -857,6 +895,49 @@ function airTimeAbove(T, h) {            // seconds the feet stay above h on a f
      'hound dies to under a second of baseline rifle fire: no HP sponge');
   ok(HD.chargeCooldownMs / (HD.tellMs + HD.chargeMs + HD.chargeCooldownMs) >= 0.4,
      'the floor is denied temporarily, not permanently (safe fraction of the cycle)');
+  /* Facetanking arithmetic (pre-empting the adversarial question): i-frames
+     must cover ONE charge sweep so a single pass cannot shred a player who
+     mistimed once — and must expire well inside the hound's own cycle, so
+     walking through a chokepoint a second time costs a second point. Measured
+     against the real numbers: a grounded hold-right policy took exactly 1 hp
+     per charge cycle, 2 hp across the two chokepoints of a 6.5 s pass. */
+  {
+    const sweepWindow = 2 * (HD.hitRadius + PL.width / 2) / HD.chargeSpeed;
+    const cycleMs = HD.tellMs + HD.chargeMs + HD.chargeCooldownMs;
+    ok(PL.iframesMs / 1000 > sweepWindow * 2,
+       'i-frames cover a whole charge sweep: one pass costs one point, not several');
+    ok(PL.iframesMs < cycleMs,
+       'i-frames expire inside the hound cycle: the next charge is not free (' +
+       PL.iframesMs + ' < ' + cycleMs + ' ms)');
+    ok(Math.ceil(PL.maxHealth * cycleMs / 1000) <= 8,
+       'facetanking a chokepoint hound spends the whole health bar in under 8 s');
+
+    /* Mercy-chain farming (code review's open adversarial case): the fallback
+       streak clears after `recoverTiles` of un-pinned FORWARD progress, and a
+       hound charging from behind knocks the player forward, so hound hits do
+       credit that counter. Two bounds keep it from being a strategy: a whole
+       health bar of knockback banks less than the threshold, and the plane
+       advances further during the hits than the hits can ever bank. */
+    const FB = TF.fallback;
+    const knockTiles = PL.knockbackX * (PL.hitstunMs / 1000);
+    ok(knockTiles * PL.maxHealth < FB.recoverTiles,
+       'a full health bar of forward hound knockback banks ' +
+       (knockTiles * PL.maxHealth).toFixed(2) + ' tiles, under the ' +
+       FB.recoverTiles + '-tile mercy threshold: charges cannot buy a fallback');
+    let losingTrade = true;
+    const hitsNeeded = Math.ceil(FB.recoverTiles / knockTiles);
+    for (const id of TRAVERSAL_PACE_IDS) {
+      const PU = resolveTraversalPace(id).pursuit;
+      // one hit per hound cycle (i-frames, asserted above), so banking the
+      // threshold takes this long — and the edge eats this much ground meanwhile
+      if (!(hitsNeeded * (cycleMs / 1000) * PU.cruiseSpeed > FB.recoverTiles * 2)) {
+        losingTrade = false;
+      }
+    }
+    ok(losingTrade,
+       'farming mercy off hound hits needs ' + hitsNeeded +
+       ' charges and costs far more ground than it banks, at every pace');
+  }
   ok(HD.laneBelow >= (GG.maxH - GG.minH) + HD.rideY,
      'lane band reaches a full generator step below the plate: the step down is no loophole');
   ok(2.35 - HD.rideY > HD.laneAbove,
@@ -867,7 +948,15 @@ function airTimeAbove(T, h) {            // seconds the feet stay above h on a f
 {
   // --- houndframe trial: authored teach/test/remix stages --------------
   const HD = CONFIG.hound;
-  const STAGE_NAMES = ['solo', 'combo', 'mix'];
+  const STAGE_NAMES = ['solo', 'combo', 'squeezePlus', 'mix', 'aim'];
+  // stages the operator plays for feel carry the threat contract below; the aim
+  // bench is a target range and declares itself with `bench: true`
+  const FEEL_STAGES = STAGE_NAMES.filter(function (n) { return !HOUND_TRIAL.stages[n].bench; });
+  // the chokepoint placement contract applies to every stage except the frozen
+  // CP2 baseline (stage 2, kept exactly as judged) and the bench's station rules
+  const PLACED_STAGES = STAGE_NAMES.filter(function (n) { return !HOUND_TRIAL.stages[n].frozen; });
+  ok(STAGE_NAMES.filter(function (n) { return HOUND_TRIAL.stages[n].frozen; }).join(',') === 'combo',
+     'exactly one stage claims the frozen-baseline exemption, and it is stage 2');
   ok(traversalEnemyPlan(TF, null) === TF.enemies &&
      traversalEnemyPlan(TF, 'nonsense') === TF.enemies &&
      traversalEnemyPlan(null, 'solo').length === 0,
@@ -906,11 +995,16 @@ function airTimeAbove(T, h) {            // seconds the feet stay above h on a f
           if (plan.length !== stage.enemies.length ||
               !plan.every(function (e, i) { return e.id === stage.enemies[i].id; })) replaced = false;
         } else {
+          const tail = plan.slice(F.enemies.length);
+          const authored = new Set(stage.enemies.map(function (e) { return e.id; }));
           if (plan.length !== F.enemies.length + stage.enemies.length ||
               !F.enemies.every(function (e, i) {
                 return JSON.stringify(plan[i]) === JSON.stringify(e);
               }) ||
-              !plan.slice(F.enemies.length).every(function (e) { return e.kind === 'hound'; })) {
+              // the appended tail is exactly the stage's own authored rows, and
+              // it always brings at least one hound (it is a hound stage)
+              !tail.every(function (e) { return authored.has(e.id); }) ||
+              !tail.some(function (e) { return e.kind === 'hound'; })) {
             appended = false;
           }
         }
@@ -936,24 +1030,56 @@ function airTimeAbove(T, h) {            // seconds the feet stay above h on a f
            e.x >= B.x0 && e.x < B.x1;
        }),
        name + ' stage authors uniquely named, in-bounds hostiles including a hound');
-    let planted = true, paced = true, sweeps = true;
+
+    /* The CP2 placement contract. "One hound doesn't pose any threat" was a
+       PLACEMENT verdict, so it is placement that is asserted: every hound
+       stands on the surface it guards, paces a SHORT span (a long span is how a
+       frame ends up eight tiles from the decision, i.e. scenery), and that span
+       is centred on the connector it declares it `owns` — with a charge from
+       either end still sweeping that connector. */
+    let planted = true, paced = true, owns = true, sweeps = true;
     for (const h of hounds) {
-      if (TL.groundH[Math.floor(h.x)] !== h.deck ||
-          Math.abs(h.y - (h.deck + HD.rideY)) > 1e-9 ||
-          Math.abs(h.dir) !== 1) planted = false;
-      const run = TF.groundRuns.find(function (r) { return h.x >= r.x0 && h.x < r.x1; });
-      if (!run || run.y !== h.deck ||
-          h.patrol.x0 < run.x0 + 0.5 || h.patrol.x1 > run.x1 - 0.5 ||
-          h.x < h.patrol.x0 || h.x > h.patrol.x1 ||
-          h.patrol.x1 - h.patrol.x0 < 4) paced = false;
-      // the plate it guards must be wide enough that a charge is a real
-      // sweep rather than an instant skid into the nearest wall
-      const plate = run ? run.x1 - run.x0 : 0;
-      if (plate < HD.chargeSpeed * 0.25) sweeps = false;
+      const roof = h.surface === 'solid-top';
+      const span = h.patrol.x1 - h.patrol.x0;
+      if (Math.abs(h.y - (h.deck + HD.rideY)) > 1e-9 || Math.abs(h.dir) !== 1 ||
+          h.x < h.patrol.x0 || h.x > h.patrol.x1) planted = false;
+      if (roof) {
+        // a raised runner needs an authored solid whose TOP is its deck, and
+        // whose extent contains the whole span with a tile of edge to spare
+        const rect = TF.solidRects.find(function (r) {
+          return r.y1 === h.deck && h.x >= r.x0 && h.x < r.x1;
+        });
+        if (!rect || h.patrol.x0 < rect.x0 + 1 || h.patrol.x1 > rect.x1 - 1) paced = false;
+        // sim-side: the surface really is solid under the frame, and open above
+        if (!rect || !levelSolidCell(TL, Math.floor(h.x), h.deck - 1, 8) ||
+            levelSolidCell(TL, Math.floor(h.x), h.deck, 8)) planted = false;
+        // falling off a roof must cost position, never the run: ground below
+        if (!(TL.groundH[Math.floor(h.x)] > -100 &&
+              TL.groundH[Math.floor(h.x)] < h.deck)) sweeps = false;
+      } else {
+        if (TL.groundH[Math.floor(h.x)] !== h.deck) planted = false;
+        const run = TF.groundRuns.find(function (r) { return h.x >= r.x0 && h.x < r.x1; });
+        if (!run || run.y !== h.deck ||
+            h.patrol.x0 < run.x0 + 0.5 || h.patrol.x1 > run.x1 - 0.5) paced = false;
+      }
+      // a threat span is short; a bench station may be shorter still
+      const minSpan = HOUND_TRIAL.stages[name].bench ? 0.5 : 2.0;
+      if (!HOUND_TRIAL.stages[name].frozen && (span < minSpan || span > 4.0)) paced = false;
+
+      if (HOUND_TRIAL.stages[name].frozen) continue;      // baseline: predates the contract
+      const c = connectorById.get(h.owns);
+      if (!c || c.x < h.patrol.x0 || c.x > h.patrol.x1 ||
+          Math.abs(c.y - h.deck) > 0.6) owns = false;
+      // from either end of the span, a charge still reaches what it owns
+      const reach = HD.chargeSpeed * HD.chargeMs / 1000;
+      if (!c || Math.max(Math.abs(c.x - h.patrol.x0), Math.abs(c.x - h.patrol.x1)) > reach) {
+        sweeps = false;
+      }
     }
-    ok(planted, name + ' hounds sit on the authored deck they guard, facing a declared way');
-    ok(paced, name + ' hound patrol spans stay inside one ground run at that deck');
-    ok(sweeps, name + ' hound plates are wide enough for a readable charge');
+    ok(planted, name + ' hounds sit on the authored surface they guard, facing a declared way');
+    ok(paced, name + ' hound patrol spans are short and inside one authored surface');
+    ok(owns, name + ' every hound owns a real connector inside its patrol span');
+    ok(sweeps, name + ' a charge from either end of the span still sweeps what it owns');
 
     // Per-route threat assignment: every hostile the TRIAL authors is assigned
     // to a real route, and a hound must actually stand on a connector that route
@@ -966,20 +1092,58 @@ function airTimeAbove(T, h) {            // seconds the feet stay above h on a f
       const route = routeById.get(e.contests);
       if (!route) { assigned = false; continue; }
       if (e.kind !== 'hound') continue;
-      const guarded = route.connectorIds.some(function (id) {
-        const c = connectorById.get(id);
-        return c && c.x >= e.patrol.x0 && c.x <= e.patrol.x1 &&
-          Math.abs(c.y - e.deck) < 0.5;
-      });
-      if (!guarded) onRoute = false;
+      if (HOUND_TRIAL.stages[name].frozen) {          // baseline: any connector on the route
+        const some = route.connectorIds.some(function (id) {
+          const c = connectorById.get(id);
+          return c && c.x >= e.patrol.x0 && c.x <= e.patrol.x1 && Math.abs(c.y - e.deck) < 0.5;
+        });
+        if (!some) onRoute = false;
+      } else if (route.connectorIds.indexOf(e.owns) < 0) onRoute = false;
     }
     ok(assigned, name + ' stage assigns every hostile to a declared fixture route');
-    ok(onRoute, name + ' hounds patrol a connector their assigned route actually walks');
-    const houndRoutes = new Set(hounds.map(function (h) { return h.contests; }));
-    const clearRoutes = TF.routes.filter(function (r) { return !houndRoutes.has(r.id); });
-    ok(clearRoutes.length >= 2 &&
-       clearRoutes.some(function (r) { return r.id === 'upper-chimney'; }),
-       name + ' stage leaves the upper routes hound-free: the elevation choice is a matchup choice');
+    ok(onRoute, name + ' every hound owns a connector its assigned route actually walks');
+  }
+  {
+    // Route stakes: hounds may not colonise every line. The floor and the one
+    // shared roof segment are theirs; at least two routes stay a pure air
+    // problem, so choosing an elevation is still choosing a matchup.
+    for (const name of FEEL_STAGES) {
+      const hounds = traversalEnemyPlan(TF, name).filter(function (e) { return e.kind === 'hound'; });
+      const houndRoutes = new Set(hounds.map(function (h) { return h.contests; }));
+      const clear = TF.routes.filter(function (r) { return !houndRoutes.has(r.id); });
+      ok(clear.length >= 2,
+         name + ' leaves at least two routes hound-free (' + clear.length + ')');
+    }
+  }
+  {
+    /* Roof fairness (the first hounds above the floor). A raised lane commits
+       the player: they arrive at one point and cannot side-step off it for
+       free. So the telegraph has to start BEFORE they are inside the span —
+       the arrival connector sits outside the patrol span, and within sense
+       range of it, which is exactly "tell visible before the catwalk commits
+       you into the patrol span". */
+    let fair = true, checked = 0;
+    for (const name of FEEL_STAGES) {
+      for (const h of traversalEnemyPlan(TF, name)) {
+        if (h.kind !== 'hound' || h.surface !== 'solid-top') continue;
+        checked++;
+        const rect = TF.solidRects.find(function (r) {
+          return r.y1 === h.deck && h.x >= r.x0 && h.x < r.x1;
+        });
+        // both approaches onto the surface: its two edges
+        for (const arrival of [rect.x0, rect.x1]) {
+          const gap = arrival < h.patrol.x0
+            ? h.patrol.x0 - arrival
+            : arrival - h.patrol.x1;
+          if (!(gap > 0.5 && gap < HD.senseRange)) fair = false;
+        }
+        // and the surface has to be wider than the span it is patrolled with,
+        // or there is nowhere to dodge on it at all
+        if (!(rect.x1 - rect.x0 >= (h.patrol.x1 - h.patrol.x0) + 3)) fair = false;
+      }
+    }
+    ok(checked >= 1 && fair,
+       'every roof hound telegraphs before its span, on a surface with room to dodge');
   }
   {
     // "Hound forces the jump that the wasp contests" — the combination stage
@@ -998,16 +1162,149 @@ function airTimeAbove(T, h) {            // seconds the feet stay above h on a f
     });
     ok(wasps.length >= 1 && hounds.length >= 1 && contested,
        'combo stage puts a wasp in dive reach of the jump arc over a hound plate');
+    // the pocket guard owns the MOUTH: the wager's only way in and out, so the
+    // dare stops being a free pickup — and its charge can still be baited out
+    // through that mouth, which is what keeps the retreat contract intact.
     const pocketHound = traversalEnemyPlan(TF, 'solo').find(function (e) {
-      return e.kind === 'hound' && e.deck === TF.darePocket.reward.y - 1;
+      return e.owns === TF.darePocket.commit;
     });
+    const mouthX = connectorById.get(TF.darePocket.commit).x;
     ok(!!pocketHound &&
-       pocketHound.patrol.x0 >= TF.darePocket.bounds.x0 &&
-       pocketHound.patrol.x1 <= TF.darePocket.bounds.x1 &&
-       HD.chargeSpeed * HD.chargeMs / 1000 >
-         pocketHound.patrol.x1 - TF.darePocket.bounds.x0,
-       'the pocket hound guards inside the pocket and any charge can be baited out of its mouth');
+       Math.abs(pocketHound.patrol.x0 - mouthX) <= 1.0 &&
+       pocketHound.patrol.x1 < TF.darePocket.reward.x &&
+       HD.chargeSpeed * HD.chargeMs / 1000 > pocketHound.patrol.x1 - mouthX,
+       'the pocket guard owns the mouth without camping the reward, and can be baited out');
   }
+}
+
+
+/* --- the 8-way aim gap, and the two prototypes answering it -----------
+ * CP2, operator verbatim: "sometimes I'm lined up to shoot and safe and can't
+ * quite get the projectiles to the target." That is geometry, not feel: the
+ * standing firing line passes over a houndframe's hit circle, and the 8-way
+ * down-diagonal buries itself in the deck within a tile. Both prototypes are
+ * asserted against that same geometry, so neither can drift into either
+ * uselessness or autoplay.                                                */
+{
+  const HD = CONFIG.hound, CR = CONFIG.crouch, AS = CONFIG.assist;
+  const circleTop = HD.rideY + HD.hitRadius;      // 0.87 over the deck it walks
+  const circleBottom = HD.rideY - HD.hitRadius;
+
+  // the gap itself — the reason both flags exist. If a retune ever closes it,
+  // these prototypes are pointless and this assertion says so out loud.
+  ok(PL.muzzleY > circleTop,
+     'the standing firing line really does pass over a houndframe (' + PL.muzzleY +
+     ' vs ' + circleTop.toFixed(2) + '): the aim gap is real');
+  // a 45-degree down shot from a standing muzzle reaches the deck in about a
+  // tile, so the 8-way answer covers point-blank range only
+  ok(PL.muzzleY < 1.5,
+     'the down-diagonal reaches the deck within ~1 tile, so 8-way covers point blank only');
+
+  // --- crouch -------------------------------------------------------
+  ok(CR.muzzleY > circleBottom && CR.muzzleY < circleTop,
+     'the crouched firing line lands inside the hound hit circle (' + CR.muzzleY + ')');
+  ok(Math.abs(CR.muzzleY - HD.rideY) <= HD.hitRadius / 2,
+     'the crouched line sits near the middle of that circle, not on its edge');
+  ok(CR.height <= PL.height * 0.65 && CR.height > 0,
+     'crouching is a real profile change (' + CR.height + ' vs ' + PL.height + ')');
+  // crouch may NOT become an answer to the charge: the crouched body still
+  // occupies the charge envelope, so the movement verb stays the movement verb
+  ok(CR.height > circleBottom,
+     'a crouched player is still inside the charge envelope: crouch is not a dodge');
+  {
+    const base = {
+      enabled: true, grounded: true, down: true, jumpBuffered: false,
+      traversalState: 'free', standHeight: PL.height, standMuzzleY: PL.muzzleY,
+    };
+    const on = crouchStance(base, CR);
+    ok(on.crouched && on.planted && on.height === CR.height && on.muzzleY === CR.muzzleY,
+       'crouch engages grounded with down held, and plants the player while it does');
+    const off = [
+      { enabled: false }, { grounded: false }, { down: false },
+      { jumpBuffered: true }, { traversalState: 'wall' },
+    ].map(function (patch) { return crouchStance({ ...base, ...patch }, CR); });
+    ok(off.every(function (r) {
+      return !r.crouched && !r.planted &&
+        r.height === PL.height && r.muzzleY === PL.muzzleY;
+    }), 'crouch never engages disabled, airborne, un-held, mid-launch, or on a wall');
+    ok(!crouchStance({ ...base, jumpBuffered: true }, CR).crouched,
+       'a buffered jump always wins over the stance: ducking cannot eat the tell window');
+  }
+
+  // --- aim assist ---------------------------------------------------
+  ok(AS.maxDeg <= AS.coneDeg && AS.coneDeg < 45 && AS.maxDeg <= 10 && AS.range > 0,
+     'assist bounds are light: cone < 45 deg, correction <= 10 deg, cap <= cone');
+  ok(AS.range <= CONFIG.weapons.R.speed * CONFIG.weapons.R.lifeMs / 1000,
+     'assist never reaches past the baseline rifle shot it is correcting');
+  // the design contract: from minFixTiles out, the cap is enough to drop a
+  // level shot onto a hound; closer than that the player crouches or jumps
+  ok(assistVerticalReach(AS.minFixTiles, AS) >= PL.muzzleY - HD.rideY,
+     'assist closes the standing firing-line gap from ' + AS.minFixTiles +
+     ' tiles out (reach ' + assistVerticalReach(AS.minFixTiles, AS).toFixed(2) + ')');
+  // …and the anti-autoplay bound: even at maximum range it cannot pull a shot
+  // into a different lane, so it can never pick a target the player did not
+  ok(assistVerticalReach(AS.range, AS) < 2.35,
+     'at maximum range the correction stays inside one lane (' +
+     assistVerticalReach(AS.range, AS).toFixed(2) + ' < 2.35 tile tier gap)');
+  {
+    const cfg = AS;
+    const none = assistDirection(1, 0, 0, 0, [], cfg);
+    ok(none.x === 1 && none.y === 0 && none.targetId === 0,
+       'assist with no targets returns the heading untouched');
+    const far = assistDirection(1, 0, 0, 0, [{ id: 1, x: cfg.range + 2, y: 0 }], cfg);
+    const behind = assistDirection(1, 0, 0, 0, [{ id: 2, x: -4, y: 0 }], cfg);
+    const outside = assistDirection(1, 0, 0, 0, [{ id: 3, x: 4, y: 4 }], cfg);
+    ok(far.targetId === 0 && behind.targetId === 0 && outside.targetId === 0,
+       'assist ignores targets out of range, behind the player, or outside the cone');
+    // a target inside the cone but past the cap: rotated by exactly the cap
+    const capped = assistDirection(1, 0, 0, 0, [{ id: 4, x: 6, y: -1.5 }], cfg);
+    ok(capped.targetId === 4 && Math.abs(capped.adjustedDeg + cfg.maxDeg) < 1e-9 &&
+       Math.abs(Math.hypot(capped.x, capped.y) - 1) < 1e-12,
+       'a correction past the cap is clamped to the cap and stays a unit heading');
+    // a hound 6 tiles ahead on the player's own deck: the exact CP2 complaint
+    const dy = HD.rideY - PL.muzzleY;
+    const hound = assistDirection(1, 0, 0, 0, [{ id: 5, x: 6, y: dy }], cfg);
+    const hitsAt6 = Math.abs(hound.y / hound.x * 6 - dy) <= HD.hitRadius;
+    ok(hound.targetId === 5 && hitsAt6,
+       'the corrected shot reaches a hound standing 6 tiles away on the same deck');
+    // nearest-inside-cone wins, deterministically
+    const two = assistDirection(1, 0, 0, 0,
+      [{ id: 6, x: 8, y: -0.2 }, { id: 7, x: 4, y: -0.1 }], cfg);
+    ok(two.targetId === 7, 'assist prefers the smallest angular offset, deterministically');
+  }
+}
+
+/* --- contesting the flight lane (adversarial F10 / the roof freeway) ---
+ * A mash-jump policy with fire held clears the slice untouched by flying above
+ * everything authored: nothing on the floor can reach it, and a hound never
+ * will. Wasps only dive at a player BELOW them, so the fix inside the existing
+ * roster is wasps parked above the highest place a player can reach.       */
+{
+  const topPlatform = Math.max.apply(null, TF.platforms.map(function (p) { return p.y; }));
+  const apex = TP.jumpVel * TP.jumpVel / (2 * -TP.gravity);
+  const reachableApex = topPlatform + apex;       // best case standing launch
+  const diveReach = CONFIG.wasp.diveSpeed * CONFIG.wasp.diveMs / 1000;
+  let contested = 0, valid = true;
+  for (const name of ['solo', 'squeezePlus']) {
+    const ceiling = traversalEnemyPlan(TF, name).filter(function (e) {
+      return e.kind === 'wasp' && e.y > topPlatform;
+    });
+    if (ceiling.length < 1) valid = false;
+    for (const w of ceiling) {
+      contested++;
+      // above the highest apex a player can make, plus the dive's own gate…
+      if (!(w.y > reachableApex + 1)) valid = false;
+      // …still able to reach down into the lane it is watching…
+      if (!(w.y - topPlatform <= diveReach)) valid = false;
+      // …and high enough that its deepest reach cannot punish a player who is
+      // merely clearing a floor hound: dodging a charge stays free of the roof
+      if (!(w.y - diveReach > 3 + apex + PL.height + CONFIG.wasp.contactRadius)) valid = false;
+      if (!(w.tune && w.tune.diveRange >= CONFIG.wasp.diveRange)) valid = false;
+    }
+  }
+  ok(contested >= 3 && valid,
+     'the teach and 2.5 stages park wasps above the highest reachable apex (' +
+     reachableApex.toFixed(2) + '), close enough to dive into it');
 }
 
 // --- traversal movement decisions --------------------------------------
