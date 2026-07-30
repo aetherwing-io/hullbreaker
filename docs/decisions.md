@@ -202,3 +202,139 @@ Flags (does not yet fix) the "brick-slam zipper" description in `DESIGN.md`'s
 implementation record as describing a technique the operator has since ruled
 against for the creature reveal. CP3 itself is not closed — a second pass
 applying this ruling is expected before the checkpoint is considered met.
+
+## 4 — 2026-07-30 — CP2 verdict: houndframe lands; iterate from "hound 2.5"
+
+**Decision:** the houndframe merge (`94913ad` — trial stages `?hound=1/2/3`,
+per-pace fairness assertions) was judged at checkpoint CP2. Verdict: the
+hound stages read well; iterate from roughly **hound 2.5** — stage 3
+("mix") was "a little busy," and the target sits above stage 2's clean
+squeeze but below the full pace roster plus hounds. Two further findings,
+both about *placement* rather than *stats*: (1) a lone hound poses no
+threat — the fix is chokepoints and patrol spans on routes the player
+actually needs, not stat buffs; (2) 8-way aim is insufficient against low
+targets — "sometimes I have to try and jump... sometimes I'm lined up to
+shoot and safe and can't quite get the projectiles to the target."
+
+**Rationale, operator verbatim:** on the hound stages, "those feel much
+better." On aim: "sometimes I have to try and jump (may add crouch?) but
+sometimes I'm lined up to shoot and safe and can't quite get the
+projectiles to the target." On a related tightness complaint: "walls are a
+little too tight with the pace at times, so I sort of feel invincible
+going through walls, running past enemies."
+
+**What this opens:** (1) `?hound=2.5` (`squeezePlus`) as a new trial stage
+one notch above stage 2, built to iterate toward the target; (2) two
+orthogonal A/B prototypes for the aim gap — `?crouch=1` (lowers the firing
+line and hitbox from a planted stance) and `?aim=assist` (light projectile
+aim-assist) — neither chosen yet, both operator-judged separately or
+together; (3) the "invincible through walls" complaint splits into two
+threads: the known crush wall-clip defect (already in a fix cycle —
+re-judge wall tightness only after it merges) and a genuine design seed —
+"running past enemies... might be viable paths to play in the future" —
+noted as future evasion-as-scored-playstyle, but only if it becomes a
+choice, not a physics accident.
+
+**Source:** operator interview, July 30. Recorded in `FLEET-PLAN.md` under
+"CP2 verdict: houndframe lands; iterate from 'hound 2.5'."
+
+**Supersedes:** the "awaiting the operator's CP2 judgment" status this
+project's docs carried after the houndframe merge — CP2 has a verdict now,
+though it is "iterate from here," not "done." Does not supersede DESIGN.md's
+weapon or movement grammar; crouch and aim-assist are prototypes, not new
+canon verbs.
+
+## 5 — 2026-07-30 — Movement verdict: hook v1 rejected
+
+**Decision:** the wave-3 movement-verb merge's snap hook (`?hook=1`, marker-
+anchors + a dedicated key/auto trigger) was judged and rejected in its
+current shape. The verb concept is not banned — a future tether must be
+**marker-less and button-less**, emerging from world/context rather than
+authored points the player services.
+
+**Rationale, operator verbatim:** "i didn't particularly like the hooking
+implementation." Diagnosis, operator-selected from a provided list: the
+anchors/placement ("specific anchors is too on the nose maybe") and the
+input ("the hook doesn't add anything but an extra button press and
+confusion"). Notably **not** selected: "wrong verb entirely."
+
+**What this changes:** `?hook=1` (and `?hookinput=key|auto`) stay in the
+tree as an inert, off-by-default prototype — receiving no further
+investment, not deleted, per the same "keep it extractable" instinct as the
+CP3 zip-assembly addendum (entry 3). The movement lane's live candidates
+are now FLOW (`?flow=1`, momentum spine — still unjudged) and the authored-
+slope rib-run (costed, not started). `DESIGN.md`'s "snap hook" as the "lead
+wave-3 prototype" (this doc's own entry 2) is superseded by this verdict —
+hook is no longer the lane's active bet; flow is.
+
+**Source:** operator interview, July 30. Recorded in `FLEET-PLAN.md` under
+"movement verdict: hook v1 rejected."
+
+**Supersedes:** entry 2's framing of snap hook as "the lead wave-3
+movement-verb prototype." Does not resolve `DESIGN.md`'s open question
+("does the snap hook reuse jump, aim/fire, or a dedicated input") — a
+*future*, differently-shaped tether still has to answer it; this verdict
+only rules out v1's specific answer (dedicated input, authored anchors).
+
+## 6 — 2026-07-30 — CP2.5 verdict: "enemies feel like they are coming for me"
+
+**Decision:** the CP2.5 merge (ownership placement, roof contest, crouch +
+aim-assist prototypes, commit-coil dodge cue) was judged. Verdict: strongly
+positive, and it validates a doctrine — placement beats stats as the lever
+for enemy pressure — plus confirms hound 2.5 as the working baseline going
+forward.
+
+**Rationale, operator verbatim:** "yes, this is much better, enemies feel
+like they are coming for me."
+
+**Still open (no verdict yet):** crouch vs. aim-assist — keep one, both, or
+neither; the commit-coil dodge-timing feel; whether the roof still reads as
+a free ride; and the five movement-verb questions from the wave-3 pivot
+(hook feel — now answered by entry 5 — auto vs. key, hook-costs-pressure,
+flow legibility, anchor density, the last three still live for FLOW).
+`p6` (a metronome-hop policy surviving surge at 2.5-tile margins) is
+accepted-for-now by integrator/adversarial judgment, not an operator
+ruling, and can still be overturned by feel.
+
+**Source:** operator interview, July 30. Recorded in `FLEET-PLAN.md` under
+"CP2.5 verdict" (merge `72326cb`).
+
+**Supersedes:** nothing decided — validates the placement-over-stats
+doctrine and hound 2.5 as baseline; crouch/aim-assist remain undecided
+prototypes per entry 4.
+
+## 7 — 2026-07-30 — View-scale verdict: FAR is the default; bullets don't turn corners
+
+**Decision:** two rulings from the same session. (1) The `?view=` experiment
+(`3993150`) is judged: FAR (RIG ≈ 3.7% of screen height, matching concept
+board 13's 3–5% range) becomes the **default** view; near/mid remain
+reachable via `?view=near`/`?view=mid` for comparison. The known readability
+cost (capsule glyphs, wasp tells read smaller at distance) is accepted for
+now, with a follow-up to scale tells/glyphs up as an art/readability pass
+rather than keeping RIG large. (2) Projectiles must not visibly curve around
+hex-corners or transform bends — shots reaching a bend boundary leave the
+surface on the face tangent and fade/cull, so sim and visuals agree (no
+cross-corner sniping).
+
+**Rationale, operator verbatim:** "far feels right." On projectiles: "the
+only feedback is that projectiles also curve around corners."
+
+**What shipped:** FAR is now the code default (`src/mode.js`'s `VIEW_ID`
+resolves unrecognized/absent `?view=` to `'far'`; `?view=near` stays exactly
+byte-identical to the pre-view-scale camera for comparison). The bend cull
+(`view.bullets.bendCulled`, `src/sim/weapons.js`, `src/pure/path.js`) is
+sim-agreed and shipped as default behavior — no flag, applies everywhere
+projectiles can reach a bend.
+
+**Source:** operator interview, July 30. Recorded in `FLEET-PLAN.md` under
+"view-scale verdict: FAR is the default; bullets don't turn corners." Visual
+grounding: `docs/concept-art/README.md` board 13
+(`13-human-scale-monster-climb-grammar.png`).
+
+**Supersedes:** the near view as the default camera depth (still reachable,
+no longer the default) and any prior assumption that projectiles followed
+the rendered ribbon around bends. Note for a future consistency pass:
+`docs/concept-art/README.md`'s own "Visual invariants" list still says "RIG
+at roughly seven percent of the screen height," which now reads inconsistent
+with board 13's 3–5% and the shipped 3.7% FAR default — flagged, not fixed,
+since `concept-art/` is outside this project's docs lane.
