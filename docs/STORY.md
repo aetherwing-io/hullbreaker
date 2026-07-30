@@ -22,11 +22,18 @@ catastrophe are all the *Meridian* escalating its response to RIG.
 
 ## Core canon
 
-- The *Meridian* is a continent-sized terraforming colony ship. Its original
-  crew is dead, but the ship continues its mission under autonomous control.
+- The *Meridian* is a continent-sized terraforming colony ship — and,
+  literally, a colossal machine-creature (operator decision, July 30; see
+  [`decisions.md`](decisions.md) entry 1). Its armored scutes, ribs, gills,
+  vertebrae, joints, and limbs are its actual anatomy, not a metaphor for
+  conventional hull structure — see the
+  [`concept-art` reference pack](concept-art/README.md), boards 09–12. Its
+  original crew is dead, but the ship-creature continues its mission under
+  autonomous control.
 - A human settlement survives in the ship's shadow. The *Meridian* no longer
   recognizes these people as its authorized colony and has begun a final
-  sterilization procedure that will erase them.
+  sterilization procedure — its own immune response to a detected infection —
+  that will erase them.
 - **RIG** is a salvage marine from that settlement: capable, physically
   fearless, and equipped to work on the hull—not a chosen one or super-soldier.
 - The settlement cannot reach Earth. The only transmitter powerful enough to
@@ -36,14 +43,20 @@ catastrophe are all the *Meridian* escalating its response to RIG.
   complex.
 - RIG boards the stern-side lower hull, climbs toward the Crown, stops the
   sterilization, and sends humanity's last transmission home.
-- The *Meridian* itself is the antagonist. The Crown is its final position and
-  organizing intelligence, not a separate evil mastermind or a literal heart
-  monster.
+- The *Meridian* itself is the antagonist, and its body is now literally the
+  world RIG climbs — scutes, ribs, gills, and limbs form the traversal
+  lattice. The Crown remains its final position and organizing intelligence:
+  a command, defense, and transmitter complex, not a separate creature, a
+  detached boss body, or a literal heart monster fought in an arena. The
+  finale is a confrontation with that system and place, exactly as before —
+  the creature decision changes what the world is made of, not what the
+  player fights at the top.
 
 The exact accident, contradiction, or corrupted directive that made the ship
 reject its own colonists remains open. Whatever the answer, the *Meridian*
 believes it is protecting the mission. It does not hate RIG, seek conquest, or
-enjoy cruelty.
+enjoy cruelty — an infected body's immune response is not malice, and the
+ship's own language (below) should keep reflecting that.
 
 ## The emotional engine
 
@@ -111,7 +124,10 @@ These are tone samples, not final lines.
 
 The Crown's defensive states are the story layer of the six gameplay phases.
 There is no seventh narrative escalation for a detached boss fight; terminal
-denial continues through the finale.
+denial continues through the finale. Read in sequence, Observe → Intercept →
+Contain → Quarantine → Sterilize → Scuttle *is* the creature's immune system
+escalating against a detected pathogen — RIG — exactly the way a body's own
+defenses escalate against an infection it cannot expel.
 
 | Phase | Defense state | What the ship does | Story turn |
 | --- | --- | --- | --- |
