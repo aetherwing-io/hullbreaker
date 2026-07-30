@@ -53,6 +53,7 @@
 // silently forever.
 
 import { resolveCode } from './compile.mjs';
+import { isVictorySample } from './sampler.mjs';
 
 // Grounded, nearly stationary, while the script is actively commanding
 // horizontal movement (a currently-held direction key). This is the F8/H3
@@ -80,7 +81,7 @@ const PREDICATES = {
     return Array.isArray(sample.hostiles) &&
       sample.hostiles.some((h) => h.kind === 'hound' && h.state === 'charge');
   },
-  victory(sample) { return sample.ovTitle === 'TRAVERSAL CLEAR' || sample.state === 'VICTORY'; },
+  victory(sample) { return isVictorySample(sample); },
 };
 
 const COMPARISON_RE = /^([\w.]+)\s*(>=|<=|==|!=|>|<)\s*(.+)$/;

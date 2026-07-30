@@ -13,6 +13,7 @@
 // and the one place this harness's original definition differed from A.5's.
 
 import { TRAVERSAL_FIXTURE_SNAPSHOT } from './fixture.mjs';
+import { isVictorySample } from './sampler.mjs';
 
 // A.5: "Same definition both sides: grounded, abs(vx) < 2, no traversal
 // state. One threshold, one owner." This harness is that owner; adopted
@@ -219,7 +220,7 @@ function computeDarePocket(trace) {
 }
 
 function computeOutcome(trace) {
-  const victorySeen = trace.some((s) => s.ovTitle === 'TRAVERSAL CLEAR');
+  const victorySeen = trace.some(isVictorySample);
   const lastAttemptsSample = [...trace].reverse().find((s) => typeof s.attempts === 'number');
   const lastAttempts = lastAttemptsSample ? lastAttemptsSample.attempts : null;
   const lastFallsSample = [...trace].reverse().find((s) => typeof s.falls === 'number');

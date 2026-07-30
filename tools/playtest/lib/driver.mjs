@@ -5,7 +5,7 @@
 // page.evaluate() over DOM/window, exactly what a human's browser would see.
 
 import { chromium } from 'playwright-core';
-import { sampleState, isReady } from './sampler.mjs';
+import { sampleState, isReady, isVictorySample } from './sampler.mjs';
 import { evaluatePolicyTick } from './policy.mjs';
 
 const DEFAULT_VIEWPORT = { width: 1280, height: 800 };
@@ -226,7 +226,7 @@ export async function runPlaytest({
       trace.push({ tMs, ...sample });
       if (lastSampleAt !== null) achievedSampleIntervalsMs.push(tMs - lastSampleAt);
       lastSampleAt = tMs;
-      if (sample && sample.ovTitle === 'TRAVERSAL CLEAR' && victorySeenAt === null) {
+      if (sample && isVictorySample(sample) && victorySeenAt === null) {
         victorySeenAt = tMs;
       }
       if (sample && typeof sample.attempts === 'number') {
