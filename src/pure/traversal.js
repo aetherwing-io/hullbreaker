@@ -306,9 +306,10 @@ export const TRAVERSAL_PACES = {
     // Pressure clock. Same content, same verbs: only the edge changes kind.
     hypothesis:
       'The slice is boring because banked margin never expires: once you are ' +
-      'ahead, nothing is timed. A hunting edge that charges (6.8) whenever you ' +
-      'are comfortable and eases (2.4) when it is about to crush you removes ' +
-      'safe coasting and makes every vertical detour cost measurable ground.',
+      'ahead, nothing is timed. A hunting edge that charges (6.8, 2.6x the ' +
+      'shipped speed) whenever you are comfortable and eases back to the ' +
+      'shipped 2.6 when it is about to crush you removes safe coasting and ' +
+      'makes every vertical detour cost measurable ground.',
     pursuit: {
       mode: 'hunt',
       cruiseSpeed: 3.6,       // the neutral band between mercy and comfort
