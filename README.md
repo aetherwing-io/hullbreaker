@@ -25,7 +25,10 @@ python3 -m http.server 8741
 
 The focused traversal playtest is available at
 `index.html?slice=traversal`. Add `&enemies=0` to tune movement without wasps.
-The normal six-face run remains the default.
+The normal six-face run remains the default. The camera defaults to the
+pulled-back `far` view (RIG ≈ 3.7% of screen height, per the concept-art
+scale); `?view=near` restores the original close camera and `?view=mid`
+sits between.
 
 ## Controls
 

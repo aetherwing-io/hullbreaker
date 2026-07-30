@@ -89,7 +89,7 @@ export function updateHUD() {
     // view-scale experiment: self-documents on screenshots so a variant is
     // identifiable without cross-referencing the URL (near is the shipped
     // camera and stays silent to keep that overlay unchanged by default).
-    const viewTag = VIEW_ID === 'near' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
+    const viewTag = VIEW_ID === 'far' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
     tc = 'TRAVERSAL SLICE · ' + ACTIVE_SLICE.pace.label +
       (HOUND_TRIAL_STAGE ? ' + ' + HOUND_TRIAL_STAGE.label : '') + viewTag + ' · ' +
       (SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length + ' HOSTILES' : 'MOVEMENT ONLY');
@@ -114,7 +114,7 @@ function transformMessage() {
   if (lastCommit && gameMs - lastCommit.at < CONFIG.transform.clearMsgMs)
     return `${lastCommit.ev.label} — ${transformBandLabel()} · MERIDIAN: ${transformShipState()}`;
   if (gameMs - sliceStats.startedAt < 2400) {
-    const viewTag = VIEW_ID === 'near' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
+    const viewTag = VIEW_ID === 'far' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
     return 'TRANSFORMATION SLICE · ' + transformBandLabel() + viewTag;
   }
   return '';

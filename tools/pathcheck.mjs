@@ -679,7 +679,7 @@ ok(TF.routes.length === 6 && routeById.size === 6,
      ids.every(function (id) { return VS[id].id === id && typeof VS[id].label === 'string'; }),
      'at least three named views declared (near/mid/far present), ids self-consistent');
   ok(VS.near.depthMult === 1,
-     '`near` is depthMult 1 exactly: ?view= absent or =near is byte-identical to the shipped camera');
+     '`near` is depthMult 1 exactly: ?view=near reproduces the pre-view-scale camera (default is far per operator verdict)');
   ok(ids.every(function (id) { return Number.isFinite(VS[id].depthMult) && VS[id].depthMult >= 1; }) &&
      VS.near.depthMult < VS.mid.depthMult && VS.mid.depthMult < VS.far.depthMult,
      'every view only pulls the camera back (never in), strictly increasing near < mid < far');
