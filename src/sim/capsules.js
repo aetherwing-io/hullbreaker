@@ -12,6 +12,7 @@ import { builtGroundTopAt } from './level.js';
 import { circleHitsPlayer } from './player.js';
 import { setWeapon } from './weapons.js';
 import { applyMod } from './mods.js';
+import { scoreRecatch, scoreRewardTaken } from './score.js';
 
 export const capsules = [];
 export const CAP = CONFIG.capsules;
@@ -80,6 +81,10 @@ export function updateCapsules(dt) {
     if (circleHitsPlayer(c.x, c.y, CAP.pickupRadius)) {
       if (c.kind === 'mod') applyMod(c.letter);
       else setWeapon(c.letter);
+      // scoring: an authored reward starts a wager, a 'pop' recatch closes the
+      // classic panic beat (proposal A.1) — both are pickups that already exist
+      if (c.mode === 'fixed') scoreRewardTaken(c.letter, c.x, c.y);
+      else if (c.mode === 'pop') scoreRecatch(c.letter, c.dieAt - gameMs, c.x, c.y);
       removeCapsule(i);
       continue;
     }

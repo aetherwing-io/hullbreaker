@@ -11,6 +11,7 @@ import { builtGroundTopAt } from './level.js';
 import { player, circleHitsPlayer, damagePlayer } from './player.js';
 import { weaponKills } from './weapons.js';
 import { dropFromCarrier } from './capsules.js';
+import { consumeLaunchShock, scoreKill } from './score.js';
 import { activeCorner, gateActive, onHostileRemoved } from './wavegate.js';
 
 export const hostiles = [];
@@ -30,13 +31,22 @@ export const ENEMY = {
              hitR: CONFIG.carrier.hitRadius, gating: false },
 };
 
-export function spawnHostile(x, y, delayMs, kind) {
+// `tune` is an optional per-spawn override (hp, cruiseSpeed, diveRange,
+// diveCooldownMs) authored by a traversal pacing variant: the same two enemy
+// kinds can hold a station over a connector, guard a pocket mouth, or press a
+// floor line without new kinds or new branches. Absent everywhere else, so the
+// shipped six-face run keeps the CONFIG.wasp behavior exactly.
+export function spawnHostile(x, y, delayMs, kind, tune) {
   kind = kind || 'wasp';
   const K = ENEMY[kind];
+  const T = tune || null;
   const e = {
     id: nextWaspId++, kind,
     x, y, baseY: y, vx: 0, vy: 0, dir: -1, t: hostileRng() * 6,
-    hp: K.hp, hitR: K.hitR,
+    hp: T && T.hp !== undefined ? T.hp : K.hp, hitR: K.hitR,
+    cruiseSpeed: T && T.cruiseSpeed !== undefined ? T.cruiseSpeed : undefined,
+    diveRange: T && T.diveRange !== undefined ? T.diveRange : undefined,
+    diveCooldownMs: T && T.diveCooldownMs !== undefined ? T.diveCooldownMs : undefined,
     state: 'cruise', stateUntil: 0, diveCdUntil: 0,
     enterUntil: gameMs + (delayMs || 0) + CONFIG.wasp.enterMs,
     flashUntil: 0,
@@ -58,6 +68,10 @@ export function hitHostile(e, idx, damage, weapon) {
   if (e.hp <= 0) {
     kills++;
     if (weaponKills[weapon] !== undefined) weaponKills[weapon]++;
+    // the one death path, so one score event per death however it died
+    scoreKill(e.kind, weapon, {
+      grounded: player.grounded, vy: player.vy, x: e.x, y: e.y,
+    });
     if (e.kind === 'carrier') dropFromCarrier(e.x, e.y);
     removeHostile(idx, true);
   }
@@ -67,9 +81,12 @@ export function updateHostiles(dt) {
   const W = CONFIG.wasp;
   const GW = CONFIG.waves;
   const gate = gateActive();
-  const diveRange = gate ? GW.gateDiveRange : W.diveRange;         // gated hostiles press harder
-  const diveCooldown = gate ? GW.gateDiveCooldownMs : W.diveCooldownMs;
   const cullX = sLeftEdge() - 8;
+  // BREAKING (CHARGE notch 2): the launch RIG just made is itself a weapon.
+  // Armed in sim/score.js by the launch branch, consumed here in the same
+  // frame, so neither module has to import the other.
+  const shock = consumeLaunchShock();
+  const shockR2 = CONFIG.score.shockRadius * CONFIG.score.shockRadius;
   // Patrol right bound: the frozen screen edge reaches ~12 tiles past the
   // corner pivot, so bounding on the edge alone let hostiles drift around
   // the corner onto the next face — foreshortened, clustered, idling. The
@@ -84,16 +101,28 @@ export function updateHostiles(dt) {
       continue;
     }
     e.t += dt;
+    // gated hostiles press harder; otherwise a variant's per-enemy tune wins
+    const diveRange = gate ? GW.gateDiveRange
+      : (e.diveRange !== undefined ? e.diveRange : W.diveRange);
+    const diveCooldown = gate ? GW.gateDiveCooldownMs
+      : (e.diveCooldownMs !== undefined ? e.diveCooldownMs : W.diveCooldownMs);
+    const cruiseSpeed = gate ? GW.gateCruiseSpeed
+      : (e.cruiseSpeed !== undefined ? e.cruiseSpeed : W.cruiseSpeed);
+    if (shock && gameMs >= e.enterUntil &&
+        (e.x - shock.x) ** 2 + (e.y - shock.y) ** 2 <= shockR2) {
+      hitHostile(e, i, CONFIG.score.shockDamage, 'shock');
+      continue;
+    }
     if (gate) {                                        // patrol box: nobody strands the gate
       if (e.x < patrolL) e.dir = 1;
       else if (e.x > patrolR) e.dir = -1;
     }
     if (e.kind === 'carrier') {                        // slow hauler: cruise only, never dives
       const C = CONFIG.carrier;
-      e.x += e.dir * C.speed * dt;
+      e.x += e.dir * (e.cruiseSpeed !== undefined ? e.cruiseSpeed : C.speed) * dt;
       e.y = e.baseY + Math.sin(e.t * C.bobFreq) * C.bobAmp;
     } else if (e.state === 'cruise') {
-      e.x += e.dir * (gate ? GW.gateCruiseSpeed : W.cruiseSpeed) * dt;
+      e.x += e.dir * cruiseSpeed * dt;
       e.y = e.baseY + Math.sin(e.t * W.bobFreq) * W.bobAmp;
       if (Math.abs(e.x - player.x) < diveRange && player.y + 1 < e.y &&
           gameMs > e.diveCdUntil && gameMs >= e.enterUntil) {   // no ghost dives mid-materialize

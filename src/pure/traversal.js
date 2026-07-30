@@ -44,21 +44,29 @@ export function traversalLedgeProbe(state, geometry, cfg = CONFIG.player) {
   return { side, cellX, topY, snapX, snapY };
 }
 
+function ledgeLaunch(state, cfg, auto) {
+  const entrySpeed = Math.abs(state.entryVx || 0);
+  return {
+    kind: 'launch',
+    auto: !!auto,
+    vx: state.side * Math.max(cfg.ledgeLaunchX, entrySpeed),
+    vy: cfg.ledgeLaunchY,
+    recatchUntil: state.now + cfg.traversalRecatchMs,
+  };
+}
+
 export function traversalLedgeDecision(state, cfg = CONFIG.player) {
   if (state.down) {
     return { kind: 'release', recatchUntil: state.now + cfg.traversalRecatchMs };
   }
-  if (state.jumpBuffered) {
-    const entrySpeed = Math.abs(state.entryVx || 0);
-    return {
-      kind: 'launch',
-      vx: state.side * Math.max(cfg.ledgeLaunchX, entrySpeed),
-      vy: cfg.ledgeLaunchY,
-      recatchUntil: state.now + cfg.traversalRecatchMs,
-    };
-  }
+  if (state.jumpBuffered) return ledgeLaunch(state, cfg, false);
   if (state.now >= state.until) {
-    return { kind: 'release', recatchUntil: state.now + cfg.traversalRecatchMs };
+    // ledgeAutoLaunch (the surge pace): dwell expiry throws you off the ledge
+    // instead of dropping you, so a catch can never become a pause. Down still
+    // releases and jump still launches early — the player keeps both intents.
+    return cfg.ledgeAutoLaunch
+      ? ledgeLaunch(state, cfg, true)
+      : { kind: 'release', recatchUntil: state.now + cfg.traversalRecatchMs };
   }
   return { kind: 'hang', vx: 0, vy: 0 };
 }
@@ -245,7 +253,226 @@ export const TRAVERSAL_FIXTURE = {
     { id: 'entry-wasp', kind: 'wasp', x: 37, y: 8.4, delayMs: 0 },
     { id: 'rejoin-wasp', kind: 'wasp', x: 63, y: 8.8, delayMs: 600 },
   ],
+  // HULL FALLBACK tier 1 (proposal B.1): losing drops RIG to the next route
+  // down instead of stopping the world with a modal. Forward position is kept.
+  fallback: {
+    minDropTiles: 1.2,        // a "lower route" has to be genuinely lower
+    dropAboveTiles: 1.2,      // dislodged: placed above the catch, falling onto it
+    tossVx: 5.0, tossVy: -3.0, // thrown forward and down — never a dead stop
+    groundKnockTiles: 1.5,    // already lowest: you pay margin instead of altitude
+    iframesMs: 1400,
+    messageMs: 1100,
+    maxConsecutive: 3,        // ceiling before the fixture retries (tier 2 unbuilt)
+    recoverTiles: 8,          // advancing this far past a fallback clears the streak
+  },
 };
+
+/* ---------------------- pacing variants (CP1) ------------------------ *
+ * Three sharply different pacing arguments over ONE fixture. The geometry,
+ * seed, and route graph are identical in every variant, so the operator can
+ * A/B them back to back and the only thing that moved is pacing: the pursuit
+ * model, where the threats sit, what the routes pay, and how crisp the verbs
+ * are. Selected with ?slice=traversal&pace=<id>; `base` is exactly what
+ * 15f66d2 shipped and stays the default.
+ *
+ * Every pursuit model answers one question the DESIGN doc leaves open — "does
+ * the pursuing edge maintain constant speed through dare pockets?" — the same
+ * way: no. Inside the pocket bounds the edge drops to `pocketSpeed`
+ * immediately (not rate-limited), which is what keeps the wager provably
+ * escapable at any variant's speed while still advancing, so dawdling in the
+ * pocket is never safe.                                                     */
+export const TRAVERSAL_PACES = {
+  base: {
+    id: 'base', label: 'BASE',
+    hypothesis:
+      'Control: the 15f66d2 accelerated pass unchanged — constant 2.6 edge, ' +
+      'two wasps, one pocket reward. If a variant is not clearly better than ' +
+      'this, the variant is wrong.',
+    pursuit: {
+      mode: 'constant', cruiseSpeed: 2.6, minSpeed: 2.6, maxSpeed: 2.6,
+      pocketSpeed: 2.6, accel: 0, decel: 0,
+    },
+  },
+
+  hunt: {
+    id: 'hunt', label: 'HUNT',
+    // Pressure clock. Same content, same verbs: only the edge changes kind.
+    hypothesis:
+      'The slice is boring because banked margin never expires: once you are ' +
+      'ahead, nothing is timed. A hunting edge that charges (6.8) whenever you ' +
+      'are comfortable and eases (2.4) when it is about to crush you removes ' +
+      'safe coasting and makes every vertical detour cost measurable ground.',
+    pursuit: {
+      mode: 'hunt',
+      cruiseSpeed: 3.6,       // the neutral band between mercy and comfort
+      minSpeed: 2.4,          // mercy: pinned players get room to recover
+      maxSpeed: 6.8,          // the charge: standing still is now expensive
+      comfortTiles: 11,       // above this much daylight the ship closes
+      mercyTiles: 5,          // below this it backs off — fair, and legible
+      accel: 4.0, decel: 6.0, // tiles/s² — audible acceleration, no snapping
+      pocketSpeed: 2.6,
+    },
+    enemies: [               // both wasps contest the FAST low line, not the air
+      { id: 'low-contest', kind: 'wasp', x: 35, y: 4.9, delayMs: 0,
+        tune: { diveRange: 8.5, diveCooldownMs: 900 } },
+      { id: 'pocket-mouth', kind: 'wasp', x: 50, y: 6.6, delayMs: 300,
+        tune: { cruiseSpeed: 0.5, diveRange: 7.0, diveCooldownMs: 1100 } },
+    ],
+  },
+
+  swarm: {
+    id: 'swarm', label: 'SWARM',
+    // Contested space. Pursuit stays near baseline; the routes stop being equal.
+    hypothesis:
+      'Route choice only matters when routes carry different threats. Six ' +
+      'placed hostiles (five wasps + one carrier, no new kinds) give each line ' +
+      'its own matchup: the low line is fastest and dive-contested, the mid ' +
+      'catwalk is safe but slow, the upper chimney is hardest and the only one ' +
+      'that pays a weapon. Geometry becomes a combat decision.',
+    pursuit: {
+      mode: 'constant', cruiseSpeed: 2.9, minSpeed: 2.6, maxSpeed: 2.9,
+      pocketSpeed: 2.6, accel: 0, decel: 0,
+    },
+    enemies: [
+      { id: 'low-contest-a', kind: 'wasp', x: 35, y: 4.8, delayMs: 0,
+        tune: { diveRange: 8.5, diveCooldownMs: 900 } },
+      { id: 'low-contest-b', kind: 'wasp', x: 46, y: 4.4, delayMs: 500,
+        tune: { diveRange: 8.0, diveCooldownMs: 950 } },
+      { id: 'pocket-guard', kind: 'wasp', x: 51, y: 6.8, delayMs: 200,
+        tune: { cruiseSpeed: 0.4, diveRange: 6.0, diveCooldownMs: 1200 } },
+      { id: 'chimney-hold', kind: 'wasp', x: 44, y: 10.6, delayMs: 0,
+        tune: { cruiseSpeed: 0.5, diveRange: 7.5, diveCooldownMs: 1000 } },
+      { id: 'rejoin-wasp', kind: 'wasp', x: 63, y: 8.8, delayMs: 600 },
+      // the lure: killing it arms you, and it only flies over the high line
+      { id: 'upper-lure', kind: 'carrier', x: 64, y: 10.6, delayMs: 0,
+        tune: { hp: 5 } },
+    ],
+  },
+
+  surge: {
+    id: 'surge', label: 'SURGE',
+    // Crescendo + verb crispness. The clock escalates and the verbs compound.
+    hypothesis:
+      'Intensity should be a crescendo the player answers with skill, not a ' +
+      'constant. The edge ramps 2.6 → 7.0 across the pass while every contact ' +
+      'auto-converts to a launch and chained launches amplify each other and ' +
+      'refund the air jump — so the only way to stay ahead of the ship late in ' +
+      'the pass is to keep the chain alive, and the two hardest routes are the ' +
+      'ones that pay.',
+    pursuit: {
+      mode: 'ramp',
+      cruiseSpeed: 2.6, minSpeed: 2.6, maxSpeed: 7.0,
+      rampMs: 9000,           // the whole intended pass, so it never plateaus early
+      accel: 5.0, decel: 6.0,
+      pocketSpeed: 3.0,       // the wager gets tighter here, provably still escapable
+    },
+    pocketTiming: { minExitMarginTiles: 7.0 },
+    movement: {               // verbs: no dwell, harder launches
+      ledgeHangMs: 90, ledgeAutoLaunch: true,
+      wallSlideMs: 160,
+      ledgeLaunchX: 11.6, ledgeLaunchY: 16.4,
+      wallJumpX: 14.6, wallJumpY: 17.0,
+    },
+    chain: {                  // consecutive launches compound (verb crispness)
+      windowMs: 900, step: 0.07, max: 3, refundAirJump: true,
+    },
+    enemies: [                // placed on the launch arcs: chain fuel, not walls
+      { id: 'entry-wasp', kind: 'wasp', x: 37, y: 8.4, delayMs: 0 },
+      { id: 'mid-arc-wasp', kind: 'wasp', x: 46, y: 7.2, delayMs: 300,
+        tune: { diveRange: 7.5, diveCooldownMs: 1000 } },
+      { id: 'rejoin-wasp', kind: 'wasp', x: 63, y: 8.8, delayMs: 600 },
+    ],
+    rewards: [                // stakes: the high line is armed
+      { kind: 'letter', letter: 'S', mode: 'fixed', x: 61, y: 9.9 },
+    ],
+  },
+};
+
+export const TRAVERSAL_PACE_IDS = Object.keys(TRAVERSAL_PACES);
+
+/* Resolve one pace into a complete fixture. Never mutates TRAVERSAL_PACES or
+   TRAVERSAL_FIXTURE: every consumer (level build, player tune, HUD, harness)
+   reads the resolved object, so a variant cannot leak into another. */
+export function resolveTraversalPace(name, fixture = TRAVERSAL_FIXTURE) {
+  const pace = TRAVERSAL_PACES[name] || TRAVERSAL_PACES.base;
+  return {
+    ...fixture,
+    pace: { id: pace.id, label: pace.label, hypothesis: pace.hypothesis },
+    pursuit: { ...pace.pursuit },
+    run: {
+      ...fixture.run, ...(pace.run || {}),
+      minimumScrollSpeed: pace.pursuit.cruiseSpeed,
+    },
+    movement: { ...fixture.movement, ...(pace.movement || {}) },
+    chain: pace.chain ? { ...pace.chain } : null,
+    enemies: (pace.enemies || fixture.enemies).map((e) => ({ ...e })),
+    rewards: [fixture.darePocket.reward, ...(pace.rewards || [])]
+      .map((r) => ({ ...r })),
+    darePocket: {
+      ...fixture.darePocket,
+      timing: { ...fixture.darePocket.timing, ...(pace.pocketTiming || {}) },
+    },
+  };
+}
+
+/* ---------------------- pursuit (the damage edge) -------------------- *
+ * One pure step function for every pace. `constant` is the shipped behavior,
+ * `hunt` rubber-bands off the player's own margin, `ramp` escalates with
+ * elapsed pass time. The pocket clamp is applied first and is never
+ * rate-limited downward, which is what makes the dare retreat provable.   */
+export function traversalPaceTargetSpeed(p, ctx) {
+  if (ctx.inPocket) return p.pocketSpeed;
+  if (p.mode === 'ramp') {
+    const u = Math.max(0, Math.min(1, (ctx.elapsedMs || 0) / p.rampMs));
+    return p.cruiseSpeed + (p.maxSpeed - p.cruiseSpeed) * u;
+  }
+  if (p.mode === 'hunt') {
+    if (ctx.marginTiles <= p.mercyTiles) return p.minSpeed;
+    if (ctx.marginTiles >= p.comfortTiles) return p.maxSpeed;
+    return p.cruiseSpeed;
+  }
+  return p.cruiseSpeed;
+}
+
+export function traversalPaceStep(p, current, ctx, dt) {
+  const target = traversalPaceTargetSpeed(p, ctx);
+  // Committing to the pocket releases pressure on the same frame; leaving it
+  // re-accelerates at the pace's own rate, so the release cannot be farmed.
+  if (ctx.inPocket) return Math.min(current, target);
+  const rate = (target > current ? p.accel : p.decel) * dt;
+  const next = target > current
+    ? Math.min(target, current + rate)
+    : Math.max(target, current - rate);
+  return Math.max(p.minSpeed, Math.min(p.maxSpeed, next));
+}
+
+// Worst-case tiles the edge can advance during a pocket retreat: the clamp is
+// immediate, so it is exactly pocketSpeed × seconds. Stated as a function so
+// the harness asserts the same arithmetic the runtime performs.
+export function traversalPocketAdvanceTiles(p, seconds) {
+  return p.pocketSpeed * seconds;
+}
+
+// Launch chaining (surge): consecutive contacts inside the window amplify the
+// next launch. Never touches runSpeed, gravity, or jumpVel — the frozen
+// movement contract stays frozen; only the contextual launch is boosted.
+export function traversalChainMult(chain, cfg) {
+  if (!cfg) return 1;
+  return 1 + cfg.step * Math.max(0, Math.min(chain, cfg.max));
+}
+
+/* ------------------- HULL FALLBACK tier 1 (B.1) --------------------- *
+ * Pick the route RIG is dislodged onto: the highest surface that is still
+ * genuinely below them. `null` means there is nothing lower — the caller
+ * pays margin instead of altitude.                                       */
+export function traversalFallbackTarget(surfaces, fromY, cfg) {
+  let best = null;
+  for (const s of surfaces) {
+    if (s > fromY - cfg.minDropTiles) continue;
+    if (best === null || s > best) best = s;
+  }
+  return best;
+}
 
 export function traversalSolidAllowsGrab(fixture, cellX, y, h) {
   if (!fixture) return true;

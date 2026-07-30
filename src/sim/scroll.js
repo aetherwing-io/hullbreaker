@@ -10,13 +10,25 @@ import { HALT_S } from '../pure/path.js';
 import { cornerScrollVel, cornerEventTotalMs } from '../pure/waves.js';
 import { traversalFollowTarget } from '../pure/traversal.js';
 import { ACTIVE_SLICE } from '../mode.js';
-import { gameMs, scrollX, setScrollX } from './time.js';
-import { EDGE_R } from './edges.js';
+import { gameMs, scrollX, setScrollX, sliceStats } from './time.js';
+import { EDGE_R, sLeftEdge } from './edges.js';
 import { activeScrollEnd, activeScrollSpeed } from './level.js';
+import { updatePace } from './pace.js';
 import { player } from './player.js';
 import { activeCorner, armGate, finishCorner, updateZipper } from './wavegate.js';
 
 export function updateScroll(dt) {
+  // The pursuit model decides this frame's edge speed before anything reads
+  // it. Its inputs are the two things a pursuing edge can honestly react to:
+  // how much daylight the player has, and how long the pass has been running.
+  if (ACTIVE_SLICE) {
+    const bounds = ACTIVE_SLICE.darePocket.bounds;
+    updatePace(dt, {
+      marginTiles: player.x - player.hw - sLeftEdge(),
+      elapsedMs: gameMs - sliceStats.startedAt,
+      inPocket: player.x >= bounds.x0 && player.x < bounds.x1,
+    });
+  }
   const c = activeCorner();
   if (c && c.state === 'turning') {
     const t = gameMs - c.tStart;
