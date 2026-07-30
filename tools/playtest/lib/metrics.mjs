@@ -107,8 +107,7 @@ function computeJumpCounts(trace) {
   if (withAirJumps.length === 0) {
     return {
       finalAttemptAirJumps: null, peakSingleAttemptAirJumps: null,
-      unavailableReason: 'window.HB has not landed and the ?testapi=1 snapshot does not currently expose sliceStats.airJumps ' +
-        '(it has attempt/falls but not airJumps) — recommend adding it alongside those, or via window.HB',
+      unavailableReason: HIGH_FIDELITY_UNAVAILABLE,
     };
   }
   const peak = Math.max(...withAirJumps.map((s) => s.airJumps));

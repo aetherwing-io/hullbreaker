@@ -1,0 +1,9 @@
+{
+  "name": "retry-recovery",
+  "description": "Regression proof for F7 (adversarial report, docs/playtests/2026-07-adversarial.md): holds ArrowRight continuously and does nothing else. With enemies disabled the hold-right-only policy dies deterministically (jams on the column-39 step, the pursuing crush edge catches up) and the game's fast retry calls releaseAllKeys(), wiping keys.right even though the script never released it. Before the driver's retry-reassertion fix (lib/driver.mjs reassertHeldKeys), this produced a zombie second attempt: vx stayed 0 for the rest of the run because Playwright sends exactly one keydown and nothing re-presses it. After the fix, the driver watches the testapi/HB attempts counter and re-presses every currently-held key within one sample interval of the retry completing — check the report's retryReassertions array and confirm vx returns to full run speed on the sample immediately after the attempts increment, not 5+ seconds later.",
+  "url": "index.html?slice=traversal&enemies=0",
+  "durationMs": 20000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 19800 }
+  ]
+}

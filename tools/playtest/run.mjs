@@ -145,6 +145,17 @@ async function main() {
     },
     outcome: metrics.outcome,
     metrics,
+    // F7 fix: every time the testapi/HB `attempts` counter ticked up (a
+    // retry completed and releaseAllKeys() fired game-side), the driver
+    // re-pressed every key the script still considered "held". See
+    // lib/driver.mjs's reassertHeldKeys. Empty array = either the run never
+    // retried, or (dom-only fallback with no attempts signal at all) retries
+    // couldn't be detected — check meta.retryDetection below for which.
+    retryReassertions: result.retryReassertions,
+    retryDetection: {
+      maxLagMs: result.maxRetryDetectionLagMs,
+      count: result.retryReassertions.length,
+    },
     consoleErrors: result.consoleErrors,
     pageErrors: result.pageErrors,
     events: result.dispatchedEvents,

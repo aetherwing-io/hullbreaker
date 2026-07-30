@@ -23,6 +23,12 @@ function renderSummary(report) {
   lines.push(`- Result: **${metrics.outcome.result}**`);
   lines.push(`- Attempts: ${metrics.outcome.attempts ?? 'n/a'}, falls (final attempt, only visible on victory): ${metrics.outcome.falls ?? 'n/a'}`);
   lines.push(`- Kills: ${metrics.finalKills ?? 'n/a'}, deaths observed: ${metrics.deaths}, hits survived: ${metrics.hitsWithoutDeath}`);
+  const rr = report.retryReassertions || [];
+  if ((metrics.outcome.attempts ?? 1) > 1) {
+    lines.push(rr.length
+      ? `- Retry key re-assertion: ${rr.length} retry transition(s) detected, held keys re-pressed within <=${report.retryDetection.maxLagMs}ms each time (script held: ${[...new Set(rr.flatMap((r) => r.codes))].join(', ') || 'none'}) — see README "Fixed: zombie attempts (F7)"`
+      : '- Retry key re-assertion: multiple attempts observed but no held keys needed re-pressing (nothing was down at any retry instant)');
+  }
   lines.push('');
   lines.push('## Pacing / fairness metrics');
   if (metrics.idleTime.unavailableReason) {
