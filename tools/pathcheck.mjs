@@ -40,6 +40,11 @@ import {
   hitStopArm, hitStopEvent, hitStopMsFor, hitStopScaleAt, particleAlpha,
   particleScale, shakeAt, traumaAdd, traumaAfter, warnPulse,
 } from '../src/pure/juice.js';
+import {
+  MORTAR_TRIAL, mortarArcClearsTerrain, mortarArcX, mortarArcY, mortarArmed,
+  mortarBlastHitsRect, mortarComposePlan, mortarPulsePeriodMs, mortarTrialStage,
+  mortarWarningMs,
+} from '../src/pure/mortar.js';
 import { crouchStance } from '../src/pure/stance.js';
 import { assistDirection, assistVerticalReach } from '../src/pure/assist.js';
 import {
@@ -53,6 +58,13 @@ import {
   hookAnchorReachableFrom, hookArcAccepts, hookHoldPoint, hookLineClear,
   hookWhipDir, hookWhipVelocity, hookZipMarch,
 } from '../src/pure/hook.js';
+import {
+  DEFAULT_START_DIRECTION, RIG_SCREEN_FRACTION, SHELL_CONSUMING_INTENTS,
+  SHELL_ELEMENT_TYPES, SHELL_ELEMENT_VARS, SHELL_ROLES, START_DIRECTIONS,
+  START_DIRECTION_IDS, compositionViolations, elementVars, formatClock,
+  formatSeconds, killsPerHundredShots, resolveStartDirection, runStatRows,
+  shellKeyIntent, startDirection, startDirectionAt,
+} from '../src/pure/shell.js';
 import {
   flowAddLink, flowCompose, flowFreshState, flowGroundLifetimeMs, flowLaunchMultFor,
   flowMult, flowSpeedMult, flowStepState,
@@ -5494,13 +5506,15 @@ const G2GATE = G2E.gate;
   // the guard certifies the ecology that actually ships, not authored colors
   // no module consumes (that is why there is no generic "enemyGlow" token).
   ok([C.wasp, C.carrier, C.hound, C.houndCharge,
-      C.polyp, C.polypBeam].every(acid),
+      C.polyp, C.polypBeam, C.mortar, C.mortarPod].every(acid),
      'palette: concept enemy tokens are acid green (g dominant)');
   // the roster's ONE warning language: tells (and the polyp's spent-vent
   // ember) stay warm in BOTH modes — a telegraph must never read as a body,
   // so it may not drift into the acid family the way the bodies do.
   ok([C.houndTell, C.polypTell, C.polypVent,
-      PAL_CLASSIC.houndTell, PAL_CLASSIC.polypTell, PAL_CLASSIC.polypVent]
+      C.mortarTell, C.mortarMark, C.mortarBlast,
+      PAL_CLASSIC.houndTell, PAL_CLASSIC.polypTell, PAL_CLASSIC.polypVent,
+      PAL_CLASSIC.mortarTell, PAL_CLASSIC.mortarMark, PAL_CLASSIC.mortarBlast]
        .every((h) => rust(h) && !acid(h)),
      'palette: hostile tells/vent stay warm WARN amber in both modes');
   // Every hostile kind the SIM can spawn needs a body token in both tables.
@@ -5644,6 +5658,304 @@ const G2GATE = G2E.gate;
   ok(wgFinish.indexOf("state = 'done'") >= 0 &&
      wgFinish.indexOf("state = 'done'") < wgFinish.indexOf('view.corner.finished'),
      "T-012: wavegate.finishCorner commits state='done' before corner.finished fires");
+}
+
+/* ================= T-014: SPORE MORTAR (?mortar=) ==================
+ * DESIGN's last enemy role — "denies intended landing zones after a
+ * readable delay" — is legitimate only if (1) the warning is a real
+ * reaction window for the SLOWEST answer at every player tune, not just
+ * the jump; (2) the denial is a MOMENT over a patch of floor, never a
+ * state and never a tier; (3) the marked patch sits on a landing the
+ * player actually wants, with the alternatives DESIGN names (redirect in
+ * the air, or take a different connector) provably intact over the real
+ * fixture terrain; and (4) killing it is a decision about time, never a
+ * damage race. Same contract shape as the houndframe and polyp blocks
+ * above, so a retune has to argue with the same arithmetic.          */
+{
+  const MO = CONFIG.mortar, HD = CONFIG.hound, R = CONFIG.weapons.R;
+  const cycleMs = MO.lobMs + MO.fuseMs + MO.burstMs + MO.coolMs;
+  const warnMs = mortarWarningMs(MO);
+  const latency = (PL.jumpBufferMs + 1000 / 30) / 1000;
+  const solidAtM = function (x, y) { return levelSolidCell(TL, Math.floor(x), Math.floor(y), 8); };
+
+  // -- the sim roster row (the render twin is covered by the ENEMY-table
+  //    sweep in the polyp block, which walks every sim kind) -------------
+  ok(!!simEnemyTable.mortar && simEnemyTable.mortar.gating === false &&
+     simEnemyTable.mortar.start === 'aim' &&
+     simEnemyTable.mortar.hp === MO.hp && simEnemyTable.mortar.hitR === MO.hitRadius,
+     'sim ENEMY table carries the mortar: non-gating, born aiming, CONFIG-matched');
+
+  // -- rhythm: a denial you can wait out, an opening you can spend -------
+  ok(MO.burstMs / cycleMs <= 0.15,
+     'the landing zone is denied for a MOMENT, not held (' +
+     (MO.burstMs / cycleMs * 100).toFixed(1) + '% of the cycle)');
+  ok(warnMs / MO.burstMs >= 5,
+     'the readable warning is at least 5x the denial it announces (' +
+     (warnMs / MO.burstMs).toFixed(1) + 'x)');
+  ok(MO.hp * R.fireRateMs <= MO.coolMs,
+     'one reload window of baseline rifle fire kills the tripod (' +
+     (MO.hp * R.fireRateMs) + ' <= ' + MO.coolMs + ' ms): never a damage race');
+  ok(PL.iframesMs > MO.burstMs,
+     'i-frames outlast one detonation: standing in it costs one point, not a bar');
+  ok(PL.iframesMs < cycleMs,
+     'i-frames expire inside the bombardment cycle: the next shell is not free');
+  ok(MO.hitRadius <= MO.size + 1e-9,
+     'mortar hit circle stays inside its launch-tube silhouette');
+  // the CP2 aim-gap lesson, applied at authoring time: the tube centers on the
+  // standing firing line of its OWN catwalk, so the reroute that answers the
+  // denial (go up) is also the reroute that lets you shoot back
+  ok(Math.abs(PL.muzzleY - MO.bodyY) <= MO.hitRadius / 2,
+     'a standing level shot from the mortar deck center-punches the tube (muzzle ' +
+     PL.muzzleY + ' vs body ' + MO.bodyY + ')');
+
+  // -- escape physics: the warning covers the SLOWEST answer, per tune ---
+  {
+    ok(MO.blastHeight > PL.height,
+       'the slab is taller than a standing body (' + MO.blastHeight + ' > ' +
+       PL.height + '): there is no ducking a spore burst, only leaving');
+    const TUNES = [['normal tune', PL]].concat(
+      TRAVERSAL_PACE_IDS.map(function (id) {
+        return ['pace ' + id, { ...PL, ...resolveTraversalPace(id).movement }];
+      })
+    );
+    for (const [label, T] of TUNES) {
+      const jumpCost = riseTimeTo(T, MO.blastHeight) + latency;
+      // running clear of the patch, charged conservatively at 60% of the run
+      // tune (the standing start is real) — the slowest of the two answers
+      const runCost = (MO.blastHalf + T.width / 2) / (T.runSpeed * 0.6) + latency;
+      const slowest = Math.max(jumpCost, runCost);
+      ok(Number.isFinite(jumpCost) && warnMs / 1000 >= 2 * slowest,
+         'mortar warning is at least twice the cost of the slowest answer (' + label +
+         ': ' + (warnMs / 1000).toFixed(3) + ' s vs ' + slowest.toFixed(3) + ' s)');
+      // the fuse ALONE — the beat after the pod visibly plants, which is the
+      // loudest part of the tell — still covers that answer once over
+      ok(MO.fuseMs / 1000 >= slowest,
+         'the planted fuse alone covers the slowest answer (' + label + ': ' +
+         (MO.fuseMs / 1000).toFixed(3) + ' s vs ' + slowest.toFixed(3) + ' s)');
+      const air = airTimeAbove(T, MO.blastHeight);
+      ok(air > MO.burstMs / 1000,
+         'a full jump stays above the slab longer than the whole detonation (' +
+         label + ': ' + air.toFixed(3) + ' s vs ' + (MO.burstMs / 1000) + ' s)');
+      // pillar 2: crossing the marked patch in the air is always available —
+      // the denial is about STANDING there, never about passage
+      const jumpSpan = T.runSpeed * (2 * T.jumpVel / -T.gravity);
+      ok(jumpSpan > 2 * MO.blastHalf + T.width,
+         'one full jump clears the whole marked patch horizontally (' + label +
+         ': ' + jumpSpan.toFixed(2) + ' vs ' + (2 * MO.blastHalf + T.width).toFixed(2) + ' tiles)');
+    }
+  }
+
+  // -- pure geometry units ---------------------------------------------
+  ok(mortarArcX(10, 20, 0) === 10 && mortarArcX(10, 20, 1) === 20 &&
+     mortarArcX(10, 20, 0.5) === 15,
+     'arc x is a straight, monotone sweep from muzzle to zone');
+  ok(mortarArcY(9, 5, 3, 0) === 9 && mortarArcY(9, 5, 3, 1) === 5 &&
+     Math.abs(mortarArcY(9, 5, 3, 0.5) - (7 + 3)) < 1e-12,
+     'arc y lands exactly on the zone and bulges arcTiles over the chord midpoint');
+  {
+    let above = true;
+    for (let k = 1; k < 40; k++) {
+      const u = k / 40;
+      if (mortarArcY(9, 5, 3, u) <= 9 + (5 - 9) * u) above = false;
+    }
+    ok(above, 'the lob is above its own chord for the whole flight: it throws OVER, never through');
+  }
+  ok(mortarArcClearsTerrain(10, 5, 2, 5, 3, function () { return false; }, 32) &&
+     !mortarArcClearsTerrain(10, 5, 2, 5, 3, function (x, y) { return y > 6; }, 32),
+     'arc clearance marches the flight and reports a ceiling it would pass through');
+  ok(!mortarBlastHitsRect(10, 5, 1.5, 1.8, 12, 13, 5, 6.7),
+     'a body beside the marked patch is safe');
+  ok(mortarBlastHitsRect(10, 5, 1.5, 1.8, 9.6, 10.3, 5, 6.7),
+     'a body standing on the marked patch is inside the slab');
+  ok(!mortarBlastHitsRect(10, 5, 1.5, 1.8, 9.6, 10.3, 6.9, 8.6),
+     'a body jumped above the slab is safe');
+  ok(!mortarBlastHitsRect(10, 5, 1.5, 1.8, 9.6, 10.3, 2, 3.7),
+     'a body on the deck below the marked surface is safe: one landing, never a tier');
+  ok(mortarArmed(48, 59.5, 13) && mortarArmed(70, 59.5, 13) &&
+     !mortarArmed(44, 59.5, 13) && !mortarArmed(75, 59.5, 13),
+     'the ZONE is what watches: arming is a window around the marked place, either side');
+  {
+    const slow = mortarPulsePeriodMs(600, 600, 200, 70);
+    const mid = mortarPulsePeriodMs(300, 600, 200, 70);
+    const fast = mortarPulsePeriodMs(0, 600, 200, 70);
+    ok(slow === 200 && fast === 70 && mid < slow && mid > fast &&
+       mortarPulsePeriodMs(-50, 600, 200, 70) === 70 &&
+       mortarPulsePeriodMs(9999, 600, 200, 70) === 200,
+       'the mark blink accelerates monotonically across the fuse and clamps at both ends');
+  }
+  ok(mortarWarningMs(MO) === MO.lobMs + MO.fuseMs,
+     'the warning is the whole flight plus the fuse: the mark is lit from launch');
+
+  // -- stages and composition -------------------------------------------
+  const MSTAGE_NAMES = ['solo', 'combo'];
+  ok(Object.keys(MORTAR_TRIAL.stages).join(',') === MSTAGE_NAMES.join(','),
+     'the mortar trial is exactly teach (solo) then one two-enemy combination (combo)');
+  ok(MSTAGE_NAMES.every(function (n) { return mortarTrialStage(n) === MORTAR_TRIAL.stages[n]; }) &&
+     mortarTrialStage(null) === null && mortarTrialStage('nope') === null,
+     'mortar stages resolve by name and reject anything else');
+  ok(MORTAR_TRIAL.stages.solo.enemies.length === 1 &&
+     MORTAR_TRIAL.stages.solo.enemies[0].kind === 'mortar',
+     'the teach stage is ONE mortar and nothing else: every point of damage is the blast');
+  {
+    const mortarBefore = JSON.stringify(MORTAR_TRIAL);
+    const HSTAGE_NAMES = [null, 'solo', 'combo', 'squeezePlus', 'mix', 'aim'];
+    const PSTAGE = [null, 'solo', 'combo'];
+    let identity = true, replaced = true, derived = true;
+    for (const id of TRAVERSAL_PACE_IDS) {
+      const F = resolveTraversalPace(id);
+      for (const h of HSTAGE_NAMES) {
+        for (const p of PSTAGE) {
+          const base = traversalEnemyPlan(F, h, p);
+          // no ?mortar= (and any junk value) leaves the plan byte-identical —
+          // the same array reference, so nothing downstream can even copy it
+          if (mortarComposePlan(base, null) !== base ||
+              mortarComposePlan(base, 'nonsense') !== base) identity = false;
+          for (const m of MSTAGE_NAMES) {
+            const stage = MORTAR_TRIAL.stages[m];
+            const plan = mortarComposePlan(base, m);
+            if (plan.length !== stage.enemies.length) { replaced = false; continue; }
+            plan.forEach(function (e, i) {
+              const a = stage.enemies[i];
+              if (e.id !== a.id || e.kind !== a.kind) replaced = false;
+              if (a.deck !== undefined) {
+                const ride = e.kind === 'mortar' ? MO.bodyY : HD.rideY;
+                if (Math.abs(e.y - (a.deck + ride)) > 1e-9) derived = false;
+              }
+            });
+          }
+        }
+      }
+    }
+    ok(identity, 'no ?mortar=: every pace x hound x polyp plan is byte-identical to today');
+    ok(replaced, 'mortar stages field only their own roster, at every pace and prior stage');
+    ok(derived, 'mortar rows plant at deck+bodyY, hound rows ride deck+rideY, in composed plans');
+    ok(JSON.stringify(MORTAR_TRIAL) === mortarBefore,
+       'composing a plan never mutates the mortar trial table');
+  }
+
+  // -- authored placement over the real fixture terrain ------------------
+  for (const name of MSTAGE_NAMES) {
+    const plan = mortarComposePlan(traversalEnemyPlan(TF, null, null), name);
+    const ids = new Set(plan.map(function (e) { return e.id; }));
+    ok(ids.size === plan.length && plan.every(function (e) {
+      return Number.isFinite(e.x) && Number.isFinite(e.y) &&
+        Number.isFinite(e.delayMs) && e.delayMs >= 0 && e.x >= B.x0 && e.x < B.x1;
+    }), name + ' mortar stage authors uniquely named, in-bounds hostiles');
+    const mortars = plan.filter(function (e) { return e.kind === 'mortar'; });
+    ok(mortars.length === 1, name + ' fields exactly one mortar: the lesson stays attributable');
+    for (const m of mortars) {
+      const mount = (m.mount || '').split(':');
+      const plat = TF.platforms.find(function (r) { return r.id === mount[1]; });
+      ok(mount[0] === 'platform' && !!plat && plat.y === m.deck &&
+         m.x >= plat.x0 + 0.5 && m.x <= plat.x1 - 0.5 && Math.abs(m.dir) === 1,
+         name + ' tripod stands on its declared catwalk, inside its extent, facing a declared way');
+      const y = m.deck + MO.bodyY;
+      const zone = m.zone;
+      const surface = (zone.surface || '').split(':');
+      const zonePlat = TF.platforms.find(function (r) { return r.id === surface[1]; });
+      // the marked patch has to be a real LANDING SURFACE, wall to wall — a
+      // mark hanging off the end of a catwalk would be a lie about where the
+      // denial is
+      ok(surface[0] === 'platform' && !!zonePlat && zonePlat.y === zone.y &&
+         zone.x - MO.blastHalf >= zonePlat.x0 && zone.x + MO.blastHalf <= zonePlat.x1,
+         name + ' the marked patch lies wholly on a real authored landing surface');
+      const c = connectorById.get(m.owns);
+      const route = routeById.get(m.contests);
+      ok(!!route && !!c && route.connectorIds.indexOf(m.owns) >= 0,
+         name + ' mortar owns a real connector its assigned route actually walks');
+      ok(mortarBlastHitsRect(zone.x, zone.y, MO.blastHalf, MO.blastHeight,
+           c.x - 0.35, c.x + 0.35, c.y, c.y + PL.height),
+         name + ' the mark covers the authored landing point it claims to deny');
+      // ANSWER 1 — redirect in the air: the catwalk keeps standing room past
+      // the mark, and one full jump from the roof lip the route arrives over
+      // carries the whole patch
+      ok(zonePlat.x1 - (zone.x + MO.blastHalf) >= 2,
+         name + ' the same catwalk keeps a landing strip past the mark (' +
+         (zonePlat.x1 - (zone.x + MO.blastHalf)).toFixed(1) + ' tiles): land long');
+      {
+        const roof = TF.solidRects.find(function (r) { return r.id === 'dare-overhang'; });
+        const span = PL.runSpeed * (2 * PL.jumpVel / -PL.gravity);   // frozen tune: worst case
+        ok(roof.x1 + span > zone.x + MO.blastHalf && roof.x1 < zone.x - MO.blastHalf,
+           name + ' a jump off the shared roof lip clears the entire mark (' +
+           (roof.x1 + span).toFixed(1) + ' past ' + (zone.x + MO.blastHalf) + ')');
+      }
+      // ANSWER 2 — a different connector: the tiers directly above and below
+      // stay clean, and they are real connectors on real routes
+      for (const alt of ['post-high', 'post-low']) {
+        const a = connectorById.get(alt);
+        ok(!!a && !mortarBlastHitsRect(zone.x, zone.y, MO.blastHalf, MO.blastHeight,
+             a.x - 0.35, a.x + 0.35, a.y, a.y + PL.height) &&
+           TF.routes.some(function (r) { return r.connectorIds.indexOf(alt) >= 0; }),
+           name + ' the ' + alt + ' reroute is a real connector and outside the slab');
+      }
+      // the shared overhang segment every route crosses is never denied: the
+      // fork stays chosen in the open (the same rule the polyp station keeps)
+      const shared = connectorById.get('overhang-top');
+      ok(!mortarBlastHitsRect(zone.x, zone.y, MO.blastHalf, MO.blastHeight,
+           shared.x - 0.35, shared.x + 0.35, shared.y, shared.y + PL.height),
+         name + ' the shared overhang-top segment is never inside the denial');
+      // the lob itself: a real flight over the terrain, and both ends of it on
+      // screen together (the fixture's own follow lead is the conservative
+      // bound — the FAR default only ever shows MORE than this)
+      ok(mortarArcClearsTerrain(m.x, y, zone.x, zone.y, MO.arcTiles, solidAtM, 96),
+         name + ' the pod arc clears solid terrain for its whole flight');
+      let apex = -Infinity;
+      for (let k = 0; k <= 100; k++) apex = Math.max(apex, mortarArcY(y, zone.y, MO.arcTiles, k / 100));
+      ok(apex > Math.max(y, zone.y) + 0.5,
+         name + ' the lob visibly arcs (apex ' + apex.toFixed(2) + ' over a ' +
+         y.toFixed(2) + ' → ' + zone.y + ' chord)');
+      ok(Math.abs(m.x - zone.x) >= 2 * MO.blastHalf &&
+         Math.abs(m.x - zone.x) <= TF.run.followLeadTiles,
+         name + ' the tripod stands off from its own zone by at least the width it marks, ' +
+         'and never further than one screen lead (' + Math.abs(m.x - zone.x).toFixed(1) +
+         ' in [' + (2 * MO.blastHalf) + ', ' + TF.run.followLeadTiles + '])');
+      // standing in the marked zone, the emplacement is NOT answerable with a
+      // level shot: you leave the zone to trade, which is the whole point
+      ok(Math.abs(y - (zone.y + PL.muzzleY)) > MO.hitRadius,
+         name + ' a level shot from inside the marked zone cannot reach the tube');
+      ok(!mortarBlastHitsRect(zone.x, zone.y, MO.blastHalf, MO.blastHeight,
+           m.x - MO.size, m.x + MO.size, y - MO.size, y + MO.size),
+         name + ' the tripod never stands in its own blast');
+      ok(TF.connectors.every(function (cc) {
+        return cc.id === m.owns ||
+          !mortarBlastHitsRect(zone.x, zone.y, MO.blastHalf, MO.blastHeight,
+            cc.x - 0.35, cc.x + 0.35, cc.y, cc.y + PL.height);
+      }), name + ' exactly one authored connector is ever inside the denial');
+    }
+  }
+
+  // -- the combination: DESIGN's own combine column ----------------------
+  {
+    const combo = mortarComposePlan(traversalEnemyPlan(TF, null, null), 'combo');
+    ok(combo.length === 2,
+       'the combination stage is exactly two enemies: one new lesson at a time');
+    const m = combo.find(function (e) { return e.kind === 'mortar'; });
+    const h = combo.find(function (e) { return e.kind === 'hound'; });
+    ok(!!m && !!h, 'combo pairs the mortar with a houndframe');
+    const span = h.patrol.x1 - h.patrol.x0;
+    const run = TF.groundRuns.find(function (r) { return h.x >= r.x0 && h.x < r.x1; });
+    const hc = connectorById.get(h.owns);
+    const reachH = HD.chargeSpeed * HD.chargeMs / 1000;
+    ok(!!run && run.y === h.deck && TL.groundH[Math.floor(h.x)] === h.deck &&
+       Math.abs(h.y - (h.deck + HD.rideY)) <= 1e-9 && Math.abs(h.dir) === 1 &&
+       h.x >= h.patrol.x0 && h.x <= h.patrol.x1 &&
+       h.patrol.x0 >= run.x0 + 0.5 && h.patrol.x1 <= run.x1 - 0.5 &&
+       span >= 2.0 && span <= 4.0 &&
+       !!hc && routeById.get(h.contests).connectorIds.indexOf(h.owns) >= 0 &&
+       hc.x >= h.patrol.x0 && hc.x <= h.patrol.x1 && Math.abs(hc.y - h.deck) <= 0.6 &&
+       Math.max(Math.abs(hc.x - h.patrol.x0), Math.abs(hc.x - h.patrol.x1)) <= reachH,
+       'combo hound is the judged rejoin beat: planted, short span, owns a swept connector');
+    // "hound punishes a panicked return to the floor" — literally: its patrol
+    // lies under the marked patch, and the floor it patrols is itself outside
+    // the slab, so the drop is a real answer that now has a price
+    ok(h.patrol.x0 < m.zone.x + MO.blastHalf && h.patrol.x1 > m.zone.x - MO.blastHalf,
+       'the hound patrols the floor directly beneath the marked landing zone');
+    ok(hc.y + PL.height < m.zone.y,
+       'that floor is below the slab: the drop reroute is priced by the hound, not by the blast');
+    ok(h.contests !== m.contests,
+       'the two threats price different routes — reroute vs denial is a real choice, ' +
+       'never double jeopardy on one line');
+  }
 }
 
 /* ================ T-011: juice — the feedback pass ==================== *
@@ -5989,6 +6301,316 @@ const G2GATE = G2E.gate;
        'round-robin step, never a scan of the pool');
     ok(/pool\.free\[pool\.top\+\+\] = i;/.test(fxCode),
        'T-011: …and a row rejoins the free stack exactly where it dies');
+  }
+}
+
+/* ================= T-013: game shell (pure + guards) =================== *
+ * The shell is ui-layer, but three things about it are load-bearing enough
+ * to prove headlessly: (1) the start screen is a COMPOSITION STUDY of
+ * concept board 05 and has to obey the same invariants the game does —
+ * RIG at 3–5% of screen height (decisions.md entry 7 / board 13) and
+ * DESIGN's ≤8 colour roles; (2) the key-intent table must never swallow a
+ * gameplay key, or every committed bot script and the browser self-test
+ * would break behind a title screen; (3) the run-stats screen is pure
+ * formatting over counters the game already keeps.                      */
+{
+  // --- start-screen directions (board 05) ------------------------------
+  ok(START_DIRECTIONS.length === 3, 'T-013: board 05 offers three start-screen directions');
+  ok(new Set(START_DIRECTION_IDS).size === 3, 'T-013: direction ids are unique');
+  ok(START_DIRECTION_IDS.join(',') === 'climb,wake,crown',
+     'T-013: directions are ordered left-to-right as board 05 presents them');
+  ok(DEFAULT_START_DIRECTION === 'wake' && startDirection('wake').panel === 'middle',
+     'T-013: the shipped default is board 05\'s MIDDLE panel ("The Ship Wakes")');
+  ok(Object.keys(SHELL_ROLES).length <= 8,
+     'T-013: the start screen stays inside DESIGN\'s 8-colour budget, got ' +
+     Object.keys(SHELL_ROLES).length);
+  ok(Object.values(SHELL_ROLES).every((c) => /^#[0-9a-f]{6}$/.test(c)),
+     'T-013: every colour role is a literal hex');
+  // resolution: id, panel name, or the 1..3 ordinal; anything else is default
+  ok(resolveStartDirection(null) === 'wake' && resolveStartDirection(undefined) === 'wake' &&
+     resolveStartDirection('') === 'wake' && resolveStartDirection('nonsense') === 'wake',
+     'T-013: an absent or unrecognised ?title= resolves to the canon default');
+  ok(resolveStartDirection('climb') === 'climb' && resolveStartDirection('1') === 'climb' &&
+     resolveStartDirection('left') === 'climb' && resolveStartDirection('CROWN') === 'crown' &&
+     resolveStartDirection('3') === 'crown' && resolveStartDirection(' wake ') === 'wake',
+     'T-013: ?title= accepts the id, the panel, or the board ordinal');
+  ok(startDirection('nope').id === 'wake', 'T-013: startDirection falls back to the default');
+  ok(startDirectionAt(0).id === 'climb' && startDirectionAt(2).id === 'crown' &&
+     startDirectionAt(3).id === 'climb' && startDirectionAt(-1).id === 'crown',
+     'T-013: the 1/2/3 picker wraps in both directions');
+  for (const dir of START_DIRECTIONS) {
+    const v = compositionViolations(dir);
+    ok(v.length === 0, 'T-013: composition "' + dir.id + '" is conformant' +
+       (v.length ? ' — ' + v.join('; ') : ''));
+    ok(dir.elements.every((e) => SHELL_ELEMENT_TYPES.includes(e.t)),
+       'T-013: "' + dir.id + '" uses only declared element types');
+    const rig = dir.elements.find((e) => e.t === 'rig');
+    ok(rig && rig.h >= RIG_SCREEN_FRACTION.min && rig.h <= RIG_SCREEN_FRACTION.max,
+       'T-013: "' + dir.id + '" keeps RIG at human scale (board 13: 3–5% of frame height), got ' +
+       (rig ? rig.h : 'none'));
+    ok(dir.tagline.length > 0 && dir.label.length > 0 && dir.promise.length > 0,
+       'T-013: "' + dir.id + '" carries its board-05 brand promise as copy');
+  }
+  /* --- the custom-property set (the inheritance trap) -------------------
+     CSS custom properties inherit, so an element that leaves one unset
+     picks up its parent's. For an attached child that is a rendering bug:
+     it already rides the parent's transform, so an inherited --rot applies
+     the parent's rotation twice (RIG at 74° on the 37° plate), an
+     inherited --o multiplies its opacity and an inherited --c paints it in
+     the parent's tone. elementVars() resolves the WHOLE set with defaults;
+     src/ui/shell.js writes all of it on every element. (The rendered
+     result — a laid-out DOM — is checked by ?selftest=1 in src/main.js;
+     these assertions only pin the data and the defaults.)              */
+  {
+    const bare = elementVars({ t: 'mass', x: 1, y: 2, w: 3, h: 4 });
+    ok(Object.keys(bare).join(',') === SHELL_ELEMENT_VARS.join(','),
+       'T-013: elementVars resolves exactly the declared custom-property set');
+    ok(bare['--rot'] === '0deg' && bare['--o'] === '1' && bare['--c'] === 'transparent',
+       'T-013: an element with no rot/opacity/tone gets explicit defaults, never inherits');
+    ok(bare['--x'] === '1%' && bare['--w'] === '3%' && bare['--h'] === '4%',
+       'T-013: frame-relative geometry is written in percent');
+    const rig = elementVars({ t: 'rig', x: 34, y: -37, w: 2.5, h: 3.8, tone: 'warm' });
+    ok(rig['--w'] === '2.5vh' && rig['--h'] === '3.8vh',
+       'T-013: RIG measures itself against frame HEIGHT in both axes (vh), so it never stretches');
+    ok(rig['--rot'] === '0deg',
+       'T-013: an attached RIG carries no rotation of its own — it rides its surface\'s transform');
+    ok(rig['--c'] === SHELL_ROLES.warm && rig['--o'] === '1',
+       'T-013: a tone resolves to its role colour and a missing opacity to 1');
+    const tilted = elementVars({ t: 'slab', x: -8, y: 24, w: 100, h: 11, rot: 37, o: 0.5 });
+    ok(tilted['--rot'] === '37deg' && tilted['--o'] === '0.5',
+       'T-013: a declared rotation and opacity pass through unchanged');
+    for (const dir of START_DIRECTIONS) {
+      const bad = dir.elements.filter((e) => {
+        const v = elementVars(e);
+        return SHELL_ELEMENT_VARS.some((k) => typeof v[k] !== 'string' || v[k] === '' ||
+          /undefined|NaN/.test(v[k]));
+      });
+      ok(bad.length === 0, 'T-013: every element of "' + dir.id +
+         '" resolves a complete custom-property set (' + bad.length + ' incomplete)');
+    }
+  }
+
+  // the validator has to actually reject: a hero-scale RIG is the failure
+  // mode this guard exists for (concept-art README flags "player drawn too
+  // large" as an art defect, decisions.md entry 1)
+  {
+    const fat = { id: 'x', titleBox: { x: 0, y: 0, w: 10 },
+      elements: [{ t: 'rig', x: 10, y: 10, w: 8, h: 22, tone: 'warm' }] };
+    ok(compositionViolations(fat).some((m) => /concept-art range/.test(m)),
+       'T-013: the composition guard rejects a hero-scale RIG');
+    const offFrame = { id: 'x', titleBox: { x: 0, y: 0, w: 10 },
+      elements: [{ t: 'rig', x: 10, y: 10, w: 2, h: 3.8, tone: 'warm' },
+                 { t: 'mass', x: 140, y: 10, w: 10, h: 10, tone: 'metal' }] };
+    ok(compositionViolations(offFrame).some((m) => /outside the frame/.test(m)),
+       'T-013: the composition guard rejects an element that never touches the frame');
+    const badTone = { id: 'x', titleBox: { x: 0, y: 0, w: 10 },
+      elements: [{ t: 'rig', x: 10, y: 10, w: 2, h: 3.8, tone: 'chartreuse' }] };
+    ok(compositionViolations(badTone).some((m) => /not one of the declared roles/.test(m)),
+       'T-013: the composition guard rejects a colour outside the role table');
+  }
+
+  // --- the harness contract: the shell never swallows a gameplay key ----
+  // KEYMAP is read out of src/main.js itself, so this cannot drift from the
+  // real bindings the bot harness dispatches.
+  const mainSrc = readFileSync(join(srcDir, 'main.js'), 'utf8');
+  const keymapBlock = mainSrc.slice(mainSrc.indexOf('const KEYMAP = {'),
+                                    mainSrc.indexOf('};', mainSrc.indexOf('const KEYMAP = {')));
+  const gameplayCodes = [...keymapBlock.matchAll(/(\w+)\s*:\s*'/g)].map((m) => m[1]);
+  ok(gameplayCodes.length >= 14 && gameplayCodes.includes('Space') &&
+     gameplayCodes.includes('KeyJ') && gameplayCodes.includes('ArrowRight'),
+     'T-013: KEYMAP parsed out of src/main.js (' + gameplayCodes.length + ' codes)');
+  const ALL_STATES = ['BOOT', 'MENU', 'PLAYING', 'PAUSED', 'SLICE_RETRY', 'GAME_OVER', 'VICTORY'];
+  for (const code of gameplayCodes) {
+    for (const st of ALL_STATES) {
+      const intent = shellKeyIntent(code, st);
+      ok(intent === null || intent === 'start',
+         'T-013: gameplay key ' + code + ' is never consumed by the shell in ' + st +
+         ' (got ' + intent + ')');
+    }
+  }
+  // …and while the simulation is running the shell is completely inert
+  for (const st of ['BOOT', 'PLAYING', 'SLICE_RETRY']) {
+    ok([...gameplayCodes, 'KeyQ', 'KeyH', 'KeyR', 'Digit1', 'Digit2', 'Digit3', 'Escape']
+      .every((c) => shellKeyIntent(c, st) === null),
+       'T-013: the shell claims no key at all in ' + st);
+  }
+  ok(shellKeyIntent('ArrowRight', 'MENU') === 'start' &&
+     shellKeyIntent('Space', 'MENU') === 'start' &&
+     shellKeyIntent('KeyJ', 'MENU') === 'start' &&
+     shellKeyIntent('Enter', 'MENU') === 'start',
+     'T-013: any gameplay key (and Enter) starts the run from the title');
+  ok(shellKeyIntent('Escape', 'MENU') === null && shellKeyIntent('KeyP', 'MENU') === null &&
+     shellKeyIntent('ShiftLeft', 'MENU') === 'start' &&
+     shellKeyIntent('ControlLeft', 'MENU') === null &&
+     shellKeyIntent('F5', 'MENU') === null && shellKeyIntent('Tab', 'MENU') === null,
+     'T-013: pause keys, bare modifiers and browser keys do not start a run');
+  ok(shellKeyIntent('Digit1', 'MENU') === 'pick:0' &&
+     shellKeyIntent('Digit2', 'MENU') === 'pick:1' &&
+     shellKeyIntent('Numpad3', 'MENU') === 'pick:2' &&
+     shellKeyIntent('KeyH', 'MENU') === 'hud',
+     'T-013: the title screen owns 1/2/3 (direction) and H (HUD) only');
+  ok(shellKeyIntent('KeyR', 'PAUSED') === 'restart' &&
+     shellKeyIntent('KeyQ', 'PAUSED') === 'title' &&
+     shellKeyIntent('KeyH', 'PAUSED') === 'hud' &&
+     shellKeyIntent('ArrowLeft', 'PAUSED') === null,
+     'T-013: the pause screen owns R / Q / H only');
+  ok(shellKeyIntent('KeyQ', 'GAME_OVER') === 'title' &&
+     shellKeyIntent('KeyQ', 'VICTORY') === 'title' &&
+     shellKeyIntent('KeyR', 'GAME_OVER') === null && shellKeyIntent('KeyR', 'VICTORY') === null,
+     'T-013: the end screens add Q only — R keeps its existing src/main.js branch');
+  {
+    // completeness: every intent the table can emit is either the
+    // fall-through 'start' or declared in SHELL_CONSUMING_INTENTS
+    const probes = [...gameplayCodes, 'KeyQ', 'KeyH', 'KeyR', 'KeyZ', 'Enter', 'Escape',
+      'Digit1', 'Digit2', 'Digit3', 'Numpad1', 'Numpad2', 'Numpad3', 'F1', 'MetaLeft'];
+    const seen = new Set();
+    for (const c of probes) for (const st of ALL_STATES) {
+      const i = shellKeyIntent(c, st);
+      if (i !== null) seen.add(i);
+    }
+    ok([...seen].every((i) => i === 'start' || SHELL_CONSUMING_INTENTS.includes(i)),
+       'T-013: every emitted intent is declared (' + [...seen].sort().join(', ') + ')');
+    ok(shellKeyIntent(undefined, 'MENU') === null && shellKeyIntent(42, 'MENU') === null,
+       'T-013: a non-string key code yields no intent');
+  }
+
+  // --- run stats: pure formatting over existing counters ----------------
+  ok(formatClock(0) === '0:00.0' && formatClock(65432) === '1:05.4' &&
+     formatClock(-5) === '0:00.0' && formatClock(NaN) === '0:00.0' &&
+     formatClock(599900) === '9:59.9',
+     'T-013: the run clock formats m:ss.d and clamps junk to zero');
+  ok(formatSeconds(2500) === '2.5s' && formatSeconds(-1) === '0.0s',
+     'T-013: seconds format to one decimal');
+  ok(killsPerHundredShots(3, 12) === 25 && killsPerHundredShots(0, 0) === null &&
+     killsPerHundredShots(1, 3) === 33.3,
+     'T-013: kills-per-100-shots is null with no shots and rounded to 0.1 otherwise');
+  {
+    const base = {
+      elapsedMs: 61000, distanceM: 214.7, kills: 12, shots: 90, falls: 2, airJumps: 7,
+      bestWeapon: { name: 'SPREAD', kills: 8 }, deaths: 1, attempts: 3,
+      altitudeTiles: 41.2, bands: 2, setbacks: 0, minEdgeMargin: 1.234,
+      score: { enabled: false },
+    };
+    const labels = (rows) => rows.map((r) => r.label);
+    const six = runStatRows({ ...base, mode: 'six-face' });
+    ok(labels(six).includes('TIME') && labels(six).includes('DISTANCE') &&
+       labels(six).includes('KILLS') && labels(six).includes('DEATHS'),
+       'T-013: the six-face stats screen reports time, distance, kills and deaths');
+    ok(six[0].label === 'TIME' && six[0].value === '1:01.0',
+       'T-013: time leads the stats screen');
+    ok(six.every((r) => typeof r.label === 'string' && typeof r.value === 'string' &&
+                        r.value.length > 0),
+       'T-013: no stats row is empty or undefined');
+    const trav = runStatRows({ ...base, mode: 'traversal' });
+    ok(labels(trav).includes('ATTEMPT') && !labels(trav).includes('DISTANCE') &&
+       !labels(trav).includes('DEATHS'),
+       'T-013: the fixture stats screen counts attempts, not metres or lives');
+    const xf = runStatRows({ ...base, mode: 'transform' });
+    ok(labels(xf).includes('ALTITUDE') && labels(xf).includes('TURNS') &&
+       xf.find((r) => r.label === 'TURNS').value === '2 / 2',
+       'T-013: the transform stats screen reports altitude climbed and turns taken');
+    ok(!labels(six).includes('THREAT') && !labels(six).includes('CHARGE'),
+       'T-013: the score prototype adds no rows while ?score=1 is off');
+    const scored = runStatRows({ ...base, mode: 'six-face',
+      score: { enabled: true, threat: 420, classification: 'HOT', notch: 2,
+               notchName: 'BREAKING', hotMs: 30000, playMs: 61000 } });
+    ok(labels(scored).includes('THREAT') && labels(scored).includes('CHARGE') &&
+       labels(scored).includes('HOT'),
+       'T-013: ?score=1 folds the protoScore fields into the same screen');
+    ok(runStatRows({ mode: 'six-face' }).length > 0,
+       'T-013: an empty run still produces a stats screen');
+    ok(!labels(runStatRows({ ...base, mode: 'six-face', setbacks: 0 })).includes('HULL FALLBACKS') &&
+       labels(runStatRows({ ...base, mode: 'traversal', setbacks: 3 })).includes('HULL FALLBACKS'),
+       'T-013: hull fallbacks appear only when the run actually took some');
+  }
+
+  // --- static guards: ui-layer only, no assets, harness path intact -----
+  {
+    const shellSrc = readFileSync(join(srcDir, 'ui', 'shell.js'), 'utf8');
+    const shellCode = stripComments(shellSrc);
+    const imports = [...shellSrc.matchAll(/^\s*import\s*(?:{([^}]*)}\s*from\s*)?['"]([^'"]+)['"]/gm)]
+      .map((m) => ({ names: (m[1] || '').split(',').map((s) => s.trim()).filter(Boolean), spec: m[2] }));
+    ok(imports.length > 0, 'T-013: the shell module declares imports');
+    ok(imports.every((im) => !/render|three/i.test(im.spec)),
+       'T-013: ui/shell.js imports nothing from the render layer or three.js');
+    // every sim import is a read surface — no setters, no spawners, no state writes
+    const shellSimAllow = {
+      '../sim/time.js': ['gameMs', 'scrollX', 'sliceStats'],
+      '../sim/player.js': ['player', 'P'],
+      '../sim/hostiles.js': ['kills'],
+      '../sim/weapons.js': ['shotsFired', 'weaponDef', 'weaponKills'],
+      '../sim/score.js': ['scoreSnapshot'],
+      '../sim/transform.js': ['committedBand', 'transformAltitudeAt'],
+    };
+    for (const im of imports) {
+      if (!im.spec.startsWith('../sim/')) continue;
+      const allow = shellSimAllow[im.spec];
+      ok(!!allow && im.names.length > 0 && im.names.every((n) => allow.includes(n)),
+         'T-013: shell sim import is a sanctioned read surface: ' +
+         im.spec + ' { ' + im.names.join(', ') + ' }');
+    }
+    ok(!/\b(setState|resetGame|spawn\w+|setScrollX|advanceGameMs)\s*\(/.test(shellCode),
+       'T-013: the shell never drives the run itself (lifecycle stays in src/main.js)');
+    for (const f of layerFiles('sim'))
+      ok(!/\bshell\b/.test(stripComments(readFileSync(f, 'utf8'))),
+         'T-013: sim untouched by the shell: ' + f);
+    // no image assets anywhere in the shell: the composition is flat-shaded
+    // CSS (task constraint, and it keeps the no-build-step rule)
+    const htmlSrc = readFileSync(join(here, '..', 'index.html'), 'utf8');
+    for (const [label, src] of [['index.html', htmlSrc], ['ui/shell.js', shellSrc],
+                                ['pure/shell.js', readFileSync(join(srcDir, 'pure', 'shell.js'), 'utf8')]])
+      ok(!/\burl\(|<img|\.png|\.jpg|\.svg|background-image/i.test(src),
+         'T-013: no image assets referenced in ' + label);
+    ok(/id="shell"/.test(htmlSrc) && /id="ovPanel"/.test(htmlSrc),
+       'T-013: index.html carries the shell root and the overlay panel slot');
+    // the composition root writes the whole var set through elementVars(), so
+    // no property can be left to inherit from an attached element's parent
+    ok(/elementVars\(e\)/.test(shellCode) &&
+       !/setProperty\('--(x|y|w|h|rot|o|c)'/.test(shellCode),
+       'T-013: ui/shell.js writes element vars through elementVars(), never one-off/conditionally');
+    // clip-path clips an element's own pseudo-elements, so the RIG silhouette
+    // lives on ::before — with it on .sl-rig the muzzle flash (::after, which
+    // sits past the box's right edge) is cut away and the "firing" figure
+    // described in the composition data never renders
+    const rigRule = htmlSrc.slice(htmlSrc.indexOf('.sl-rig {'), htmlSrc.indexOf('.sl-rig::after'));
+    ok(rigRule.length > 0 && !/\.sl-rig \{[^}]*clip-path/.test(rigRule) &&
+       /\.sl-rig::before \{[^}]*clip-path/.test(rigRule),
+       'T-013: the RIG silhouette is clipped on ::before, so the muzzle flash is not clipped away');
+    ok(htmlSrc.indexOf('id="ovTitle"') < htmlSrc.indexOf('id="ovPanel"') &&
+       htmlSrc.indexOf('id="ovPanel"') < htmlSrc.indexOf('id="ovBody"'),
+       'T-013: the shell panel sits between the overlay title and body');
+
+    // the overlay still owns (and still writes first) the text the playtest
+    // harness scrapes; the shell is appended after it
+    const overlaySrc = stripComments(readFileSync(join(srcDir, 'ui', 'overlay.js'), 'utf8'));
+    ok(overlaySrc.indexOf('drawStateScreen(next)') < overlaySrc.indexOf('shellStateChanged(next)'),
+       'T-013: the overlay draws its own title/body before the shell adds its panel');
+    for (const title of ['TRAVERSAL CLEAR', 'BREACH CLEAR', 'SECTOR CLEAR', 'SIGNAL LOST',
+                         'ROUTE LOST', 'PAUSED'])
+      ok(overlaySrc.includes("'" + title + "'"),
+         'T-013: overlay outcome title still published unchanged: ' + title);
+
+    // the harness safety net itself: an automated session must auto-start
+    const modeSrc = stripComments(readFileSync(join(srcDir, 'mode.js'), 'utf8'));
+    ok(/SHELL_AUTOSTART\s*=[^;]*QUERY\.has\('testapi'\)/.test(modeSrc) &&
+       /SHELL_AUTOSTART\s*=[^;]*QUERY\.has\('selftest'\)/.test(modeSrc),
+       'T-013: ?testapi=1 and ?selftest=1 both auto-start past the title screen');
+    ok(/SHELL_ENABLED\s*=\s*SHELL_RAW\s*!==\s*'0'/.test(modeSrc),
+       'T-013: ?shell=0 restores the pre-shell boot');
+    const mainCode = stripComments(mainSrc);
+    ok(/if \(SHELL_ENABLED && !SHELL_AUTOSTART\) setState\('MENU'\);/.test(mainCode),
+       'T-013: main.js parks at the title only when the shell is on and not auto-starting');
+    ok(/if \(intent === 'start'\) \{ startRun\(\); startedFromTitle = true; \}\s*\/\/ fall through/
+       .test(mainSrc),
+       'T-013: leaving the title does not consume the keypress that did it');
+    // …but the press that left the title must not fall through into the
+    // traversal slice's own R = restart branch: that would start the run AND
+    // reset it, spending an attempt merely for having looked at the title.
+    ok(/if \(e\.code === 'KeyR' && !startedFromTitle &&/.test(mainCode),
+       'T-013: the press that leaves the title never also restarts the run');
+    ok(mainCode.indexOf('shellKeyIntent(e.code, state)') > 0 &&
+       mainCode.indexOf('shellKeyIntent(e.code, state)') < mainCode.indexOf('const k = KEYMAP[e.code];'),
+       'T-013: the shell gets first look, then the ordinary gameplay path runs');
   }
 }
 

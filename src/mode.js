@@ -6,10 +6,12 @@
    before importing the game to select the same modes without a browser. */
 
 import { CONFIG } from './config.js';
+import { resolveStartDirection } from './pure/shell.js';
 import {
   TRAVERSAL_FIXTURE, houndTrialStage, polypTrialStage, resolveTraversalPace,
   traversalEnemyPlan,
 } from './pure/traversal.js';
+import { mortarComposePlan, mortarTrialStage } from './pure/mortar.js';
 import { ribrunFixture } from './pure/ribrun.js';
 import { TRANSFORM_FIXTURE, selectTransformFixture } from './pure/transform.js';
 
@@ -145,9 +147,22 @@ export const POLYP_STAGE =
   : POLYP_PARAM === '2' || POLYP_PARAM === 'combo' ? 'combo'
   : 'solo';
 export const POLYP_TRIAL_STAGE = polypTrialStage(POLYP_STAGE);
+// Opt-in Spore Mortar trial (DESIGN's last enemy role — delayed landing-zone
+// denial), same shape as the hound and polyp trials and orthogonal to the
+// pace: ?mortar=1 teaches the lob → mark → delay → detonation cycle alone,
+// ?mortar=2 adds the hound patrolling the floor the denial pushes you toward.
+// Absent — every ordinary URL, including every ?hound=/?polyp= stage — the
+// plan is byte-identical to what it fields today.
+const MORTAR_PARAM = IS_TRAVERSAL_SLICE ? QUERY.get('mortar') : null;
+export const MORTAR_STAGE =
+  MORTAR_PARAM === null || MORTAR_PARAM === '0' || MORTAR_PARAM === 'off' ? null
+  : MORTAR_PARAM === '2' || MORTAR_PARAM === 'combo' ? 'combo'
+  : 'solo';
+export const MORTAR_TRIAL_STAGE = mortarTrialStage(MORTAR_STAGE);
 // The authored hostile list for one slice attempt — resolved once, read by
 // resetGame, the self-test, and the HUD so all three can never disagree.
-export const SLICE_ENEMY_PLAN = traversalEnemyPlan(ACTIVE_SLICE, HOUND_STAGE, POLYP_STAGE);
+export const SLICE_ENEMY_PLAN = mortarComposePlan(
+  traversalEnemyPlan(ACTIVE_SLICE, HOUND_STAGE, POLYP_STAGE), MORTAR_STAGE);
 
 // ?juice=0 — the kill flag for the baseline feedback pass (T-011): hit-stop,
 // screen shake, muzzle flashes, impact/death/hurt/pickup particles, and the
@@ -158,6 +173,29 @@ export const SLICE_ENEMY_PLAN = traversalEnemyPlan(ACTIVE_SLICE, HOUND_STAGE, PO
 // (decisions.md entry 8's delivery mandate), and the operator judges its
 // INTENSITY, which is what the flag exists to A/B against.
 export const JUICE_ENABLED = QUERY.get('juice') !== '0';
+
+/* ------------------------- game shell (T-013) ---------------------- *
+ * The front end: title screen, pause/options, death/restart, run stats.
+ *   ?shell=0      the pre-shell boot, byte-for-byte — straight into
+ *                 PLAYING with no title screen and no shell panels.
+ *   ?shell=title  force the title screen even in an automated session
+ *                 (the only way to screenshot it through the bot
+ *                 harness, which always appends ?testapi=1).
+ *   ?title=climb|wake|crown (or 1|2|3) picks the concept-board-05
+ *                 start-screen direction; unjudged, so it stays
+ *                 swappable — `wake` is the shipped default.
+ *
+ * HARNESS CONTRACT: an automated session boots straight into the run.
+ * `?testapi=1` (every bot playtest) and `?selftest=1` (the browser smoke
+ * test) auto-start, so no committed script can have its first input
+ * eaten by a title screen. Even without that, the title consumes no
+ * gameplay key — src/pure/shell.js's intent table starts the run on the
+ * same press that plays it (asserted in tools/pathcheck.mjs).        */
+const SHELL_RAW = QUERY.get('shell');
+export const SHELL_ENABLED = SHELL_RAW !== '0';
+export const SHELL_AUTOSTART = SHELL_ENABLED && SHELL_RAW !== 'title' &&
+  (QUERY.has('testapi') || QUERY.has('selftest'));
+export const START_DIRECTION_ID = resolveStartDirection(QUERY.get('title'));
 
 // Two independent A/B answers to the operator's 8-way aim gap against low
 // targets. Both are opt-in and orthogonal to everything above, so they can be

@@ -25,6 +25,130 @@
   #overlay h1 { margin: 0 0 14px; font-size: 44px; letter-spacing: .22em; font-weight: 700; }
   #overlay p  { margin: 5px 0; font-size: 15px; opacity: .85; letter-spacing: .05em; }
   #overlay .dim { opacity: .5; margin-top: 18px; }
+
+  /* ---- game shell (T-013): stats / options panel + start screen ----
+     Flat-shaded CSS only: no image assets, no external fonts. The start
+     screen composes concept board 05's directions out of boxes,
+     gradients and one clip-path silhouette. */
+  #ovPanel { display: none; margin: 4px 0 16px; }
+  #ovPanel .panel {
+    min-width: 320px; max-width: min(560px, 88vw); margin: 0 auto;
+    border: 1px solid rgba(255,233,194,.22); padding: 12px 16px 10px;
+    background: rgba(7,19,26,.55);
+  }
+  #ovPanel .statgrid {
+    display: grid; grid-template-columns: auto auto; gap: 2px 22px;
+    justify-content: space-between; font-size: 13px; letter-spacing: .06em;
+  }
+  #ovPanel .statgrid .k { opacity: .55; text-align: left; }
+  #ovPanel .statgrid .v { text-align: right; color: #ffe9c2; }
+  #ovPanel .statgrid .v a { color: #e8edf2; opacity: .55; text-decoration: none; border-bottom: 1px dotted; }
+  #ovPanel .statgrid .v a:hover { opacity: 1; }
+  #ovPanel .statgrid .v b { color: #9ce23e; font-weight: 700; }
+  #ovPanel .keys { margin: 10px 0 2px; font-size: 12px; opacity: .7; letter-spacing: .06em; }
+  #ovPanel .keys b { color: #ffe9c2; }
+  #ovPanel .note { margin: 8px 0 0; font-size: 11px; }
+
+  #shell {
+    position: fixed; inset: 0; z-index: 30; display: none; overflow: hidden;
+    background: #07131a; color: #e8edf2;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    user-select: none;
+  }
+  #shell.on { display: block; }
+  body.at-title .hud, body.nohud .hud { opacity: 0; }
+  #shellArt { position: absolute; inset: 0; overflow: hidden; }
+  #shellArt .sl {
+    position: absolute; left: var(--x); top: var(--y);
+    width: var(--w); height: var(--h); opacity: var(--o, 1);
+    transform: rotate(var(--rot, 0deg)); transform-origin: 50% 50%;
+  }
+  /* atmosphere */
+  .sl-sky   { background: linear-gradient(172deg, var(--c) 0%, #07131a 82%); }
+  .sl-glow  { background: radial-gradient(closest-side, var(--c), transparent 100%); }
+  .sl-haze  { background: linear-gradient(180deg, transparent 0%, var(--c) 46%, transparent 100%); }
+  .sl-vignette {
+    background: radial-gradient(ellipse at 50% 44%, transparent 34%, var(--c) 100%);
+  }
+  .sl-steam {
+    background: radial-gradient(closest-side, rgba(232,237,242,.22), transparent 100%);
+    animation: sl-drift 11s ease-in-out infinite alternate;
+  }
+  /* machinery: flat facets, hard shadow side, rivet stripe */
+  .sl-mass {
+    background:
+      repeating-linear-gradient(90deg, rgba(7,19,26,.34) 0 1px, transparent 1px 13px),
+      linear-gradient(101deg, var(--c) 0%, rgba(7,19,26,.94) 74%);
+    box-shadow: inset 0 0 0 1px rgba(7,19,26,.5);
+  }
+  .sl-slab {
+    background:
+      repeating-linear-gradient(90deg, rgba(7,19,26,.20) 0 2px, transparent 2px 46px),
+      linear-gradient(96deg, rgba(7,19,26,.6) 0%, transparent 22%, transparent 74%, rgba(7,19,26,.8) 100%),
+      linear-gradient(186deg, #96502a 0%, var(--c) 20%, #33200f 64%, #150d07 100%);
+    box-shadow: inset 0 1px 0 rgba(255,233,194,.34), inset 0 -2px 0 rgba(7,19,26,.8),
+                0 18px 44px rgba(7,19,26,.85);
+  }
+  .sl-bridge {
+    background: linear-gradient(180deg, rgba(255,233,194,.28) 0 1px, var(--c) 1px, #1a1009 100%);
+  }
+  .sl-debris { background: linear-gradient(120deg, var(--c) 0%, #120b07 100%); }
+  .sl-lamp   { background: var(--c); border-radius: 40%; box-shadow: 0 0 14px 4px var(--c); }
+  .sl-beam   {
+    background: linear-gradient(180deg, transparent 0%, var(--c) 22%, #fff 52%, var(--c) 78%, transparent 100%);
+    box-shadow: 0 0 46px 14px var(--c);
+  }
+  /* RIG: one human-scale silhouette, 3.8% of frame height (board 13), warm
+     against the dark machinery, with a muzzle flash off the barrel.
+     The clip-path lives on ::before, NOT on .sl-rig itself: clip-path clips
+     an element's pseudo-elements too, so a silhouette on the box would cut
+     away the flash beside it (::after sits past the box's right edge) and
+     nothing would render. */
+  .sl-rig { filter: drop-shadow(0 1px 3px rgba(7,19,26,.95)); }
+  .sl-rig::before {
+    content: ''; position: absolute; inset: 0; background: var(--c);
+    clip-path: polygon(40% 0%, 68% 9%, 60% 33%, 80% 43%, 62% 58%,
+                       86% 100%, 64% 100%, 47% 70%, 30% 100%, 8% 95%,
+                       32% 52%, 18% 27%);
+  }
+  .sl-rig::after {
+    /* off the barrel: the silhouette's weapon arm reaches x = 80% */
+    content: ''; position: absolute; left: 96%; top: 31%;
+    width: 56%; height: 15%; background: #fff; border-radius: 50%;
+    box-shadow: 0 0 10px 4px rgba(255,233,194,.9);
+    animation: sl-flash 1.7s steps(1, end) infinite;
+  }
+  @keyframes sl-drift { from { transform: translate3d(0,0,0) scale(1); opacity: .5; }
+                        to   { transform: translate3d(2%, -6%, 0) scale(1.25); opacity: .9; } }
+  @keyframes sl-flash { 0%, 12% { opacity: 1; } 13%, 100% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .sl-steam, .sl-rig::after { animation: none; }
+  }
+  #shellText {
+    position: absolute; left: var(--tx); top: var(--ty); width: var(--tw);
+    min-width: 260px; text-shadow: 0 2px 18px rgba(7,19,26,.95);
+  }
+  #shellText h1 {
+    margin: 0; font-size: clamp(30px, 5.4vw, 68px); letter-spacing: .18em;
+    font-weight: 700; color: #ffe9c2;
+  }
+  #shellText .tag { margin: 10px 0 0; font-size: 13px; letter-spacing: .16em; opacity: .72; }
+  #shellText .prompt {
+    margin: 26px 0 0; font-size: 15px; letter-spacing: .3em; color: #9ce23e;
+    animation: sl-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes sl-pulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { #shellText .prompt { animation: none; } }
+  #shellFoot {
+    position: absolute; right: 16px; bottom: 12px; left: 16px;
+    font-size: 11px; line-height: 1.7; letter-spacing: .06em; text-align: right;
+    text-shadow: 0 1px 8px #07131a, 0 0 18px #07131a;
+  }
+  #shellFoot p { margin: 0; opacity: .75; }
+  #shellFoot b { color: #9ce23e; }
+  #shellFoot .dim, #shellFoot .dim b { opacity: .8; }
+  #shellFoot .dim { opacity: .45; }
+
   @media (max-width: 600px) {
     #hudTL { top: 8px; left: 10px; font-size: 12px; line-height: 1.3; }
     #hudTR {
@@ -41,6 +165,12 @@
     }
     #overlay h1 { font-size: 28px; letter-spacing: .14em; }
     #overlay p { max-width: calc(100% - 30px); font-size: 12px; }
+    #ovPanel .panel { min-width: 0; padding: 9px 11px 8px; }
+    #ovPanel .statgrid { gap: 1px 12px; font-size: 11px; }
+    #ovPanel .keys { font-size: 10px; }
+    #shellText { left: 5%; width: 90%; text-align: left; }
+    #shellText .tag { font-size: 11px; letter-spacing: .1em; }
+    #shellFoot { font-size: 9px; line-height: 1.5; }
   }
 </style>
 <script type="importmap">
@@ -58,7 +188,10 @@
 <div id="hudTC" class="hud"></div>
 <div id="hudTR" class="hud"></div>
 <div id="hudBL" class="hud"></div>
-<div id="overlay"><h1 id="ovTitle"></h1><div id="ovBody"></div></div>
+<div id="overlay"><h1 id="ovTitle"></h1><div id="ovPanel"></div><div id="ovBody"></div></div>
+<!-- The game shell's start screen (src/ui/shell.js fills it; ?shell=0 boots
+     straight into the run and this element is never shown). -->
+<div id="shell"></div>
 
 <!-- The game itself is ES modules under src/. Because module scripts are
      fetched with CORS, the page must be served over http (see README) —

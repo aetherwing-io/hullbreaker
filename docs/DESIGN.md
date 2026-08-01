@@ -489,6 +489,44 @@ carriers still drop!) · CHRONO 4s, world at 0.35× while the player and
 their bullets run full speed (world timers stay realtime — known, small
 simplification).
 
+### Game shell (shipped, T-013)
+
+The front end from development-sequence item 8, minus onboarding and
+accessibility: a start screen, a pause/options panel, the death/restart
+flow, and an end-of-run stats screen. It is ui-layer only — the run
+lifecycle stays in `src/main.js`, the state screens stay in
+`src/ui/overlay.js` (whose outcome titles and body lines are unchanged, so
+the bot harness classifies runs exactly as before), and the stats screen
+formats counters the game already keeps rather than adding sim state.
+
+The start screen is a **composition study of concept board 05**, built from
+flat-shaded CSS boxes and gradients with no image assets. Board 05's three
+brand-promise directions are all implemented and swappable at runtime
+(`1`/`2`/`3`, or `?title=climb|wake|crown`); the middle one ("The Ship
+Wakes") ships as the default because the concept-art pack calls it the most
+game-specific, **not because a direction has been judged** — that verdict is
+queued for the operator. The compositions obey the same invariants the game
+does: RIG at 3–5% of frame height (board 13), DESIGN's ≤8 colour roles, and
+the static-anatomy rule (nothing on the screen assembles; only light,
+vapour and haze move).
+
+Those invariants are checked at two levels, because a green headless gate
+is not proof that a screen looks right. `tools/pathcheck.mjs` asserts the
+composition **data** in `src/pure/shell.js` (the declared figure height,
+the role table, the resolved custom-property set); the **rendered** result
+needs a layout engine, so `?selftest=1` measures the laid-out title itself
+on all three directions — the figure's own rotation and its box against
+board 13's 3–5% band, plus the fact that no element leans on an inherited
+custom property. The first pass shipped a figure whose declared 3.8%
+rendered at 3.45% and 74° (an inherited `--rot` re-rotating RIG on top of
+the plate it stands on) with the data gate green, which is why the second
+level exists.
+
+`?shell=0` restores the pre-shell boot exactly. The harness contract is
+two-layered: `?testapi=1` and `?selftest=1` auto-start past the title, and
+the shell's key-intent table never consumes a `KEYMAP` key — leaving the
+title happens on the same press that plays the game, so no committed bot
+script can lose its first input (both halves asserted in pathcheck).
 ### Feedback pass (juice)
 
 Dev-sequence item 4's visual half (T-011), on by default, `?juice=0` for a
@@ -585,7 +623,20 @@ entire climb:
    (tell vs the slowest escape, per pace tune) and placement (rooted mount,
    owned connector coverage, clear reroutes above and below) are asserted
    in `tools/pathcheck.mjs`; bot evidence in `reports/tasks/T-004/`.
-   Mortar is not yet started.
+   **Spore Mortar v1 built, unjudged**: the last role in the enemy table,
+   an opt-in trial in the traversal slice (`?mortar=1` solo teach,
+   `?mortar=2` the one two-enemy combination — DESIGN's own combine
+   column, the mortar denying the post-mid landing strip while the judged
+   hound-rejoin beat patrols the floor the panicked answer runs to). It is
+   a rooted Seed-Pod Tripod on the post-high catwalk (boards 06/07):
+   aim→lob→fuse→burst→cool, where the pod's whole flight plus its fuse is
+   the warning, the marked patch is three tiles of an eight-tile catwalk
+   (so landing long, or taking the tier above or below, are all live
+   answers), and the denial itself lasts a fifth of a second — shorter
+   than a jump stays above it. Fairness (warning vs the slowest answer,
+   per pace tune) and placement (mount, marked surface, owned landing,
+   intact reroutes, arc clearance) are asserted in `tools/pathcheck.mjs`;
+   bot evidence in `reports/tasks/T-014/`.
 4. **Baseline feedback now:** add essential hit, hurt, launch, pickup, warning,
    and transformation sounds plus restrained hit-stop, shake, flashes, and
    particles. Full polish can wait; readable timing cannot. **Both halves

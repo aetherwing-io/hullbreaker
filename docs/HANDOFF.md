@@ -358,7 +358,12 @@ convergence point once the remaining variants are judged:
    The Iris Polyp turret v1 ships as the opt-in `?slice=traversal&polyp=1`
    solo teach stage and `?polyp=2` two-enemy combination (beam sightline
    lock on the post-mid lane, iris armour with vent openings, rooted
-   placement per entry 6's doctrine), unjudged. Mortar not started.
+   placement per entry 6's doctrine), unjudged. The Spore Mortar v1 ships
+   the same way — opt-in `?slice=traversal&mortar=1` solo teach and
+   `?mortar=2` two-enemy combination (a rooted tripod on post-high
+   bombarding the post-mid landing strip: lob → marked zone → readable
+   delay → detonation, with the judged hound-rejoin beat patrolling the
+   floor below in the combination) — also unjudged.
 3. Add baseline hit, hurt, launch, pickup, warning, and transformation feedback.
    (Unlocked — the entry-8 delivery mandate released the juice/audio
    deferral; queued in `SPRINT.md`.)
