@@ -79,7 +79,7 @@ finding (capsule = 9.6px at FAR; see checkpoint queue) as the evidence
 base; the operator's direction pick (world-space scale-up vs HUD read)
 steers the implementation.
 
-## T-004 | feature | doing | P1
+## T-004 | feature | done | P1
 
 goal: polyp turret v1 (Iris Polyp, boards 06/07) — next enemy in DESIGN's
 teach-then-combine order: locks a connector/sightline, creates target
@@ -108,7 +108,7 @@ accept:
 owner: gameplay-engineer
 verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic --out /tmp/t005-check
 
-## T-006 | feature | todo | P3
+## T-006 | feature | doing | P3
 
 goal: rib-run authored-slope movement prototype — the costed-but-unstarted
 movement-lane candidate (decisions.md entry 5): a long diagonal ribline run
@@ -174,7 +174,7 @@ verify: node tools/pathcheck.mjs; a new full-run playtest script (policy mode)
 notes: biggest task in the queue — split into sub-worktrees if needed;
 sequenced after T-001/T-004 merge to integrate their landings.
 
-## T-010 | art | doing | P1
+## T-010 | art | review | P1
 
 goal: palette pass — replace the neutral grey-box palette with DESIGN's ≤8
 color roles (deep teal environment, rust-orange metal, acid-green enemy
