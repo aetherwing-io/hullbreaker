@@ -35,11 +35,17 @@
 //   - a named predicate, optionally negated with a leading `!`
 //     (pinned, airborne, grounded, houndTell, houndCharge, polypTell,
 //     polypFire, polypOpen, mortarLob, mortarFuse, mortarBurst,
-//     mortarMarked, victory)
+//     mortarMarked, targetLevel, targetDiag, targetVert, victory)
 //   - a bare sample field, optionally negated, tested for truthiness
 //     (e.g. "grounded", "!grounded")
 //   - a comparison against a sample field: field OP value, where OP is one
 //     of > >= < <= == != (e.g. "x>44", "hp<=1", "transform.eventState=='turning'")
+//   - a comparison against a `threat.*` field (lib/threat.mjs): the same
+//     grammar over a per-tick relative-geometry view of the hostiles the
+//     sampler already polls, e.g. "threat.diveDist<4", "threat.diagN>0".
+//     A `threat.` name that is not in THREAT_FIELDS is rejected at compile
+//     time — a typo there fails the run at load instead of quietly reading
+//     false for two minutes.
 //
 // Fields may be dotted paths into nested sample objects (e.g.
 // "transform.eventState", once the transform-slice ritual-state hook
@@ -56,6 +62,10 @@
 
 import { resolveCode } from './compile.mjs';
 import { isVictorySample } from './sampler.mjs';
+import { deriveThreat, THREAT_FIELDS } from './threat.mjs';
+
+const THREAT_PREFIX = 'threat.';
+const THREAT_FIELD_SET = new Set(THREAT_FIELDS);
 
 // Grounded, nearly stationary, while the script is actively commanding
 // horizontal movement (a currently-held direction key). This is the F8/H3
@@ -123,6 +133,18 @@ const PREDICATES = {
       sample.hostiles.some((h) => h.kind === 'mortar' &&
         (h.state === 'lob' || h.state === 'fuse' || h.state === 'burst'));
   },
+  // 8-way aim, as reflexes (lib/threat.mjs). The game resolves the shot
+  // heading from the held direction keys (computeAim, src/sim/player.js), so
+  // "can I hit anything from here without changing what I hold" is a question
+  // about three rays out of the muzzle: level (no `up`), 45° up-forward (`up`
+  // + the direction already held), straight up (`up` alone, nothing
+  // horizontal). Each predicate is true when at least one materialized
+  // hostile sits within one hit radius of that ray, inside
+  // THREAT_GEOM.rangeTiles. Sugar over threat.levelN/diagN/vertN — a script
+  // wanting "two or more" writes the comparison itself.
+  targetLevel(sample, heldCodes, threat) { return threat.levelN > 0; },
+  targetDiag(sample, heldCodes, threat) { return threat.diagN > 0; },
+  targetVert(sample, heldCodes, threat) { return threat.vertN > 0; },
   victory(sample) { return isVictorySample(sample); },
 };
 
@@ -133,7 +155,17 @@ const NUMBER_RE = /^-?\d+(?:\.\d+)?$/;
 // Dotted-path lookup (e.g. "transform.eventState") — plain property access
 // one segment at a time, undefined-safe. Single-segment fields (the common
 // case) behave exactly like sample[field] always did.
-function getField(sample, path) {
+//
+// `threat.*` is the one namespace that does NOT come off the sample: it is
+// the per-tick derived view (lib/threat.mjs) of the hostiles the sampler
+// already polled, resolved here so a rule can name relative geometry without
+// the grammar growing an expression language. Its names are validated at
+// compile time, and every one of them is always defined, so a threat clause
+// never produces a missing-field warning.
+function getField(sample, path, threat) {
+  if (path.startsWith(THREAT_PREFIX)) {
+    return threat ? threat[path.slice(THREAT_PREFIX.length)] : undefined;
+  }
   return path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), sample);
 }
 
@@ -148,8 +180,8 @@ function parseRhs(raw) {
   return { type: 'string', value: quoted ? quoted[2] : trimmed };
 }
 
-function evalComparison(field, op, rhs, sample) {
-  const actual = getField(sample, field);
+function evalComparison(field, op, rhs, sample, threat) {
+  const actual = getField(sample, field, threat);
   if (actual === undefined) return { result: false, missingField: field };
   if (rhs.type === 'string') {
     return { result: op === '==' ? actual === rhs.value : actual !== rhs.value };
@@ -166,14 +198,26 @@ function evalComparison(field, op, rhs, sample) {
   }
 }
 
-function evalBoolean(negate, name, sample, heldCodes) {
+function evalBoolean(negate, name, sample, heldCodes, threat) {
   if (name in PREDICATES) {
-    const r = PREDICATES[name](sample, heldCodes);
+    const r = PREDICATES[name](sample, heldCodes, threat);
     return { result: negate ? !r : r };
   }
-  const actual = getField(sample, name);
+  const actual = getField(sample, name, threat);
   if (actual === undefined) return { result: false, missingField: name };
   return { result: negate ? !actual : !!actual };
+}
+
+// A `threat.` clause that names a field lib/threat.mjs does not publish is a
+// script bug worth failing on immediately: unlike a sample field (which may
+// legitimately be absent in a different slice or fidelity), the threat view
+// is derived locally and always has exactly these keys.
+function assertKnownThreatField(field, clause, conditionStr) {
+  if (!field.startsWith(THREAT_PREFIX)) return;
+  const name = field.slice(THREAT_PREFIX.length);
+  if (THREAT_FIELD_SET.has(name)) return;
+  throw new Error(`unknown threat field "${field}" in "${clause}" (condition "${conditionStr}") — ` +
+    `known: ${THREAT_FIELDS.map((f) => THREAT_PREFIX + f).join(', ')}`);
 }
 
 export function compileCondition(conditionStr) {
@@ -188,22 +232,26 @@ export function compileCondition(conditionStr) {
         throw new Error(`"${clause}" (in "${conditionStr}") — ordering operators (> >= < <=) ` +
           'need a numeric value, got a string');
       }
+      assertKnownThreatField(field, clause, conditionStr);
       return { kind: 'cmp', field, op, rhs };
     }
     const bool = clause.match(BOOLEAN_RE);
-    if (bool) return { kind: 'bool', negate: !!bool[1], name: bool[2] };
+    if (bool) {
+      assertKnownThreatField(bool[2], clause, conditionStr);
+      return { kind: 'bool', negate: !!bool[1], name: bool[2] };
+    }
     throw new Error(`unparsable policy condition clause: "${clause}" (in "${conditionStr}") — ` +
       'expected "field OP value" or an optionally-!-negated name, joined only by &&');
   });
   return {
     raw: conditionStr,
-    evaluate(sample, heldCodes) {
+    evaluate(sample, heldCodes, threat) {
       const missingFields = [];
       let result = true;
       for (const p of parsed) {
         const r = p.kind === 'cmp'
-          ? evalComparison(p.field, p.op, p.rhs, sample)
-          : evalBoolean(p.negate, p.name, sample, heldCodes);
+          ? evalComparison(p.field, p.op, p.rhs, sample, threat)
+          : evalBoolean(p.negate, p.name, sample, heldCodes, threat);
         if (r.missingField) missingFields.push(r.missingField);
         result = result && r.result;
       }
@@ -235,13 +283,18 @@ export function compilePolicy(policy) {
 // Returns which codes should be held this tick (union of true `hold` rules)
 // and which `tap` rules just rose from false to true. Mutates each rule's
 // own wasTrue/fireCount bookkeeping — call once per tick, in tick order.
+//
+// The relative-geometry view is derived ONCE per tick, before any rule runs,
+// from the same snapshot every rule sees: two rules in one tick can never
+// disagree about where a hostile was, and nothing here polls the page again.
 export function evaluatePolicyTick(rules, sample, heldCodes) {
   const desiredHolds = new Set();
   const tapsToFire = [];
   const evaluations = [];
   const missingFieldWarnings = [];
+  const threat = deriveThreat(sample, heldCodes);
   for (const rule of rules) {
-    const { result, missingFields } = rule.condition.evaluate(sample, heldCodes);
+    const { result, missingFields } = rule.condition.evaluate(sample, heldCodes, threat);
     for (const field of missingFields) missingFieldWarnings.push({ rule: rule.index, when: rule.when, field });
     evaluations.push({ rule: rule.index, when: rule.when, result });
     if (rule.action.kind === 'hold') {
@@ -252,5 +305,5 @@ export function evaluatePolicyTick(rules, sample, heldCodes) {
     }
     rule.wasTrue = result;
   }
-  return { desiredHolds, tapsToFire, evaluations, missingFieldWarnings };
+  return { desiredHolds, tapsToFire, evaluations, missingFieldWarnings, threat };
 }

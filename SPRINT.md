@@ -162,7 +162,11 @@ as the G1 static-limb orbit. The entry-0a integration hold is released by
 entry 8; post a checkpoint packet instead of blocking.
 accept:
 - [ ] default run's six faces gain lattice route choice (3–5 readable routes,
-      dare pockets with measured retreat) without breaking wave gates
+      with pockets) without breaking wave gates
+      NOTE (decisions.md entry 9, 2026-08-01): the "measured retreat" half of
+      this box is WITHDRAWN by operator verdict. The pocket capsule is a plain
+      pickup, judged by whether it escalates the action — not a dare. Do not
+      re-litigate; the dare concept is parked as T-021.
 - [ ] hound placement per entry 6's doctrine on at least faces 2+
 - [ ] corner ritual uses the static-anatomy render path by default (G1
       grammar); zipper assembly retired from world reveals (kept extractable)
@@ -322,7 +326,7 @@ accept:
 owner: gameplay-engineer
 verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic; node tools/assets/check.mjs --selftest
 
-## T-018 | harness | doing | P1
+## T-018 | harness | done | P1
 
 RESULT (2026-08-01): the lane answered **(a) a HARNESS limit**, with per-tick
 evidence on both trees, and landed the grammar extension. `sample.hostiles`
@@ -361,7 +365,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; six-face-full-run.json --deterministic against a pinned tree
 
-## T-019 | harness | todo | P2
+## T-019 | harness | doing | P2
 
 goal: the last unproven delivery box — a bot run that reaches VICTORY. T-018
 established the blocker was the policy grammar (not difficulty, not the
@@ -381,7 +385,7 @@ owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; six-face-aimed-run.json --deterministic against a pinned tree
 blocked-by: T-018 merged (its grammar extension is the foundation)
 
-## T-020 | investigation | todo | P2
+## T-020 | investigation | doing | P2
 
 goal: triage I-021 — every six-face run, on pristine main and on the lattice
 tree alike, spends its first life at ~3.0s falling into the same 3-tile gap at
@@ -404,6 +408,29 @@ accept:
 - [ ] never widen the jump constants to make it fit (frozen, entry-asserted)
 owner: lattice-designer
 verify: node tools/pathcheck.mjs; a run that reaches the first gate without losing a life
+
+## T-021 | design | parked | P3
+
+goal: the DARE, as its own concept. Operator verdict decisions.md entry 9
+parked rather than rejected it: "dare can be remembered and implemented in a
+different concept". This task exists so the thinking is not lost, and is NOT
+to be dispatched without an operator go-ahead.
+what we learned paying for it once (T-009, three passes):
+- pricing an optional reward in HEIGHT cannot work: RIG's jump + air-jump
+  envelope is frozen and generous, so anything authored in the tier band the
+  player already occupies is inside it, and raising it is an arms race with a
+  constant the fleet may not retune
+- the currency that IS real here is TIME against the pursuing edge: RIG
+  crosses ground at scroll speed (~4.3 t/s) when holding right, so every tile
+  spent moving backward is daylight surrendered — a dare priced in retreat
+  time is enforceable where one priced in reach is not
+- an assertion must have the PLAYER's reachable envelope as its subject; the
+  original pocket assertions were all true and all missed the defect because
+  they asserted shelf-reachability instead of reward-reachability
+candidate shapes, unjudged: an optional harder ROUTE whose cost is the route
+itself; a contested plate that must be held; a reward that must be carried.
+owner: unassigned
+verify: n/a until dispatched
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
@@ -860,7 +887,18 @@ forces the title for a screenshot. Cheapest fixes, for triage: treat a
 by wall clock, or note the constraint in the harness README's deterministic
 section next to the pause/retry paragraph it already has.
 
-## I-019 | fairness | S1 | repro: serve `task/T-009 770ea6b`, then drive the shipped sim with the deck-line policy pathcheck itself uses (`hold right`; hold a jump whenever `groundTopAt(x + 1.2)` is a hole or a step) — all six pocket rewards are collected with `airJumpsLeft` never decrementing; in the browser, `node run.mjs <worktree>/tools/playtest/scripts/six-face-full-run.json --deterministic --max-runtime-ms 150000 --base-url <pinned 8951>` takes pocket 1's `S` at x = 45.94 while airborne and moving right | evidence: reports/tasks/T-009/playtest.md; tools/playtest/runs/gate-T-009-fullrun-branch/report.json (weapon R→S at gameMs 7908)
+## I-019 — CLOSED BY OPERATOR VERDICT (decisions.md entry 9)
+
+The defect was real and correctly found: the pocket reward was collectable
+from the deck line, first by the mandatory crossing jump mid-ascent (all six
+pockets), then by the air jump (2 of 6) after the first fix. But the
+REQUIREMENT it violated has been withdrawn — the operator ruled the reward is
+a plain pickup, so there is nothing left to violate. Closed as obsolete, not
+as fixed. The three passes stand as the evidence that pricing an optional
+reward in HEIGHT cannot work against a frozen jump+air-jump envelope; that
+lesson belongs to T-021.
+
+## I-019 (original report) | fairness | S1 | repro: serve `task/T-009 770ea6b`, then drive the shipped sim with the deck-line policy pathcheck itself uses (`hold right`; hold a jump whenever `groundTopAt(x + 1.2)` is a hole or a step) — all six pocket rewards are collected with `airJumpsLeft` never decrementing; in the browser, `node run.mjs <worktree>/tools/playtest/scripts/six-face-full-run.json --deterministic --max-runtime-ms 150000 --base-url <pinned 8951>` takes pocket 1's `S` at x = 45.94 while airborne and moving right | evidence: reports/tasks/T-009/playtest.md; tools/playtest/runs/gate-T-009-fullrun-branch/report.json (weapon R→S at gameMs 7908)
 
 The T-009 dare pockets do not cost the retreat they are designed and
 documented to cost: the reward is collected by the same deck-line jump the
@@ -962,3 +1000,20 @@ on the not-yet-built face and take 5-8s to cruise back into reach while the
 gate holds shut. Measurement only — no spawner behaviour was changed. Operator
 question, queued: is that the intended pressure, or should the corner-clear
 zone keep ambient spawns out of a gate arena entirely?
+
+## I-023 | docs | S3 | repro: `node -e "import('<task/T-018 dc32cf1>/tools/playtest/lib/policy.mjs').then(({compileCondition})=>console.log(compileCondition('x==3+1').evaluate({x:4},new Set(),{})))"` → compiles, `{result:false}`, no warning; same on `main`'s engine | evidence: reports/tasks/T-018/playtest.md
+
+Wording nit found while gating T-018, on a claim the task newly makes in two
+places: `tools/playtest/README.md` ("the compiler *rejects* `||`, parens,
+arithmetic, unknown fields and string ordering") and `tools/pathcheck.mjs`
+(`rejects('threat.dist < 3 + 1', 'arithmetic')`). Arithmetic is only rejected
+behind an ORDERING operator, where the string rhs trips the "ordering needs a
+number" guard. Behind `==`/`!=` it is accepted: `x==3+1` parses `3+1` as the
+string `"3+1"`, compares it to a number, and reads false for the whole run with
+no `missingFieldWarnings` entry — the silent-forever failure mode the
+threat-field validation exists to prevent. Nothing is evaluated as JS either
+way, so this is a foot-gun, not a hole in the &&-only grammar, and it is
+**pre-existing on main** (verified against a `git archive main` copy of the old
+engine), not introduced by T-018. Fix is either wording ("arithmetic is
+rejected behind ordering operators") or one more compile-time guard rejecting a
+non-numeric rhs that contains an operator character.

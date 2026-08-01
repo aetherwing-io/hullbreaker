@@ -92,6 +92,18 @@ export function sampleState() {
     scrollX: null, gameMs: null, state: null, falls: null, airJumps: null,
     transform: null, pace: null, pursuitSpeed: null, pursuitPeak: null, setbacks: null,
     score: null, hostiles: null, capsules: null,
+    // window.HB-only enrichment (like `capsules` below): which way the gun
+    // points. The frozen testapi shape has no equivalent field, so this is
+    // null on a page that publishes testapi without window.HB. The
+    // relative-geometry view (lib/threat.mjs) prefers the harness's own held
+    // direction anyway and only consults this when nothing is held.
+    facing: null,
+    // window.HB-only terrain probe, filled below: where the floor ends in
+    // front of RIG. The other half of the same relative-geometry gap the
+    // `threat.*` view closes for hostiles (T-018) — a policy could say "a
+    // hound is telegraphing" but had no way to say "the deck runs out in two
+    // tiles", so a gap could only be jumped by a fixed timestamp.
+    terrain: null,
   };
 
   // One normalizer for both sources, so a channel switch can't change the
@@ -156,6 +168,40 @@ export function sampleState() {
   // fidelity, or a page with window.HB but no ?testapi=1.
   if (result.hostiles == null && hbSnap && Array.isArray(hbSnap.hostiles)) {
     result.hostiles = mapHostiles(hbSnap.hostiles);
+  }
+  if (hbSnap && hbSnap.player && (hbSnap.player.facing === 1 || hbSnap.player.facing === -1)) {
+    result.facing = hbSnap.player.facing;
+  }
+
+  // --- terrain probe (window.HB.levelData.groundH) -----------------------
+  // The ground column array the PLAYER's own collision reads (src/sim/level.js
+  // imports groundH directly, unlike hostiles, which use the built-face
+  // variants), so what this reports and what RIG lands on cannot disagree.
+  // Deliberately bounded to PROBE_TILES ahead: a human sees the deck run out
+  // well before that at the shipped FAR camera, so this is strictly less
+  // information than the screen already gives, and a bounded window keeps the
+  // per-tick cost O(12) instead of O(level).
+  const gh = HB && HB.levelData && HB.levelData.groundH;
+  if (gh && typeof result.x === 'number') {
+    const PROBE_TILES = 12;
+    const ABSENT = 99;
+    const dir = result.facing === -1 ? -1 : 1;
+    const i0 = Math.floor(result.x);
+    const here = gh[i0] !== undefined && gh[i0] > -100 ? gh[i0] : null;
+    let gapDist = ABSENT, gapWidth = 0, farY = ABSENT;
+    for (let k = 1; k <= PROBE_TILES; k++) {
+      const i = i0 + k * dir;
+      if (i < 0 || i >= gh.length) break;
+      if (gh[i] <= -100) {                       // first hole in the walking direction
+        gapDist = Math.abs((dir > 0 ? i : i + 1) - result.x);
+        let j = i;
+        while (j >= 0 && j < gh.length && gh[j] <= -100) j += dir;
+        gapWidth = Math.abs(j - i);
+        farY = (j >= 0 && j < gh.length && gh[j] > -100) ? gh[j] : ABSENT;
+        break;
+      }
+    }
+    result.terrain = { gapDist, gapWidth, farY, groundY: here, probeTiles: PROBE_TILES };
   }
   if (hbSnap && Array.isArray(hbSnap.capsules)) {
     result.capsules = hbSnap.capsules.map((c) => ({ kind: c.kind, letter: c.letter, x: c.x, y: c.y, mode: c.mode }));
