@@ -464,24 +464,41 @@ request, this harness adopted it as follows:
   (`>= 3` connectors visited in order). The match radius (2.2 tiles) is this
   harness's own choice — A.5 doesn't specify one — and is documented inline.
 - **`protoScore`**: computed with A.5's exact published formula,
-  `100·airborneKills + 25·links + 12·(airMs/1000) − 8·(stallMs/1000)`, but
-  **`airborneKills` and `links` are proxies, not the real thing**, because
-  `HB.score.events`/`HB.score.snapshot()` don't exist yet (A.5 proposes them
-  as a *future* surface, not something already shipped):
+  `100·airborneKills + 25·links + 12·(airMs/1000) − 8·(stallMs/1000)`, from
+  one of two clearly-labeled sources (`metrics.protoScore.source`):
+  - **`HB.score` (real)** — when the run was started with `?score=1`
+    (either fixture or the default six-face run, since T-016's CP4
+    promotion), the game's own A.5 snapshot rides both telemetry channels
+    and the sampler passes it through (`sample.score`). All four terms then
+    come from the game's event-derived counts and sim-owned clocks
+    (`counts.airborne_kill`, `counts.link`, `airMs`, `stallMs`) — this is
+    the authoritative number A.5 describes, and the report also carries the
+    full final snapshot as `metrics.score` (CHARGE/notch, THREAT/
+    classification, per-event counts, setbacks, and which tune — `slice`
+    vs `run` — priced the stream).
+  - **`proxy`** — on a run without `?score=1`, `airborneKills` and `links`
+    remain the pre-event-stream approximations:
   - `airborneKills` proxy: every observed increase in the kills counter where
     the preceding `testapi`/`full` sample had `grounded === false`.
   - `links` proxy: `(best-matched route's matched-connector count) − 1`, i.e.
     connector-to-connector transitions the position trace actually passed
     through, from this harness's own route matcher.
-  - Both are labeled `unavailableReason`/`note` in the report so a reader
-    doesn't mistake them for the authoritative event-derived numbers A.5
-    describes. **Replace both with real counts once `HB.score.events` lands**
-    — that's a small, isolated change in `lib/metrics.mjs`'s
-    `computeAirborneKills`/`inferRoute`.
+  - The proxy stays labeled by `source`/`note` in the report so a reader
+    doesn't mistake it for the authoritative event-derived numbers. (The
+    old "replace both once `HB.score.events` lands" note is resolved: the
+    surface landed and the harness consumes it — the proxy path remains
+    only for flag-off runs.)
 - **Input density is deliberately excluded from `protoScore`**, per A.5's own
   reasoning; reported separately.
 - `minEdgeMargin` is read from the game (via `testapi`/HUD), never
   recomputed, per A.5's determinism note.
+- **Honesty note for default-run (non-slice) traces** (`scored-run*.json`):
+  the `route`, `darePocket`, and jump-count metrics are computed against the
+  *traversal fixture's* authored connectors/bounds and are meaningless on a
+  default six-face trace — read `metrics.score` (real, game-owned) instead
+  there, and treat `route`/`darePocket` as noise. `outcome.attempts` is also
+  fixture-flavored: the default run counts `resetGame` calls, not deaths —
+  use `metrics.deaths`/`metrics.score.setbacks` for failure counts.
 
 ## Fixed: zombie attempts (F7)
 
@@ -672,11 +689,14 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    matching what `HB.snapshot()` already carries — closes the gap in
    limitation #7 above and removes this harness's only remaining dependency
    on `window.HB` specifically rather than either channel.
-3. **Land `HB.score.events`/`HB.score.snapshot()`** per A.5, once the CHARGE
-   system exists, so `computeAirborneKills`/the `links` proxy in
-   `lib/metrics.mjs` can be replaced with the real event-derived counts
-   instead of the kills+grounded / route-matcher approximations described
-   above.
+3. ~~Land `HB.score.events`/`HB.score.snapshot()` per A.5~~ — **done**
+   (game-side the surface shipped with the CHARGE prototype in `src/main.js`
+   /`src/sim/score.js`; harness-side consumed as of T-016: the sampler
+   passes the snapshot through as `sample.score` and `lib/metrics.mjs`
+   computes `protoScore` from the real event-derived counts whenever the
+   run has `?score=1` — see "Alignment with the score proposal (A.5)"
+   above. The kills+grounded / route-matcher proxies remain only for
+   flag-off runs).
 4. ~~A fixed-timestep (or seeded-`dt`) simulation mode~~ — **done and
    tested** (`?fixeddt=<ms>`, commit `24ebe3d`). Confirmed genuinely active
    (stable `gameMs`/wall-time ratio across runs) but it did **not** collapse

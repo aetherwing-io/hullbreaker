@@ -234,14 +234,41 @@ function computeOutcome(trace) {
   return { result: 'not-completed', attempts: lastAttempts, falls: lastFalls };
 }
 
+// The last sample carrying the game's own A.5 score snapshot (hook request
+// #3, landed): present only when the run was started with ?score=1 — the
+// snapshot rides both telemetry channels, `score.enabled` gates trust.
+function lastScoreSample(trace) {
+  for (let i = trace.length - 1; i >= 0; i--) {
+    const s = trace[i].score;
+    if (s && s.enabled === true && s.counts) return s;
+  }
+  return null;
+}
+
 // A.5: "protoScore = 100*airborneKills + 25*links + 12*(airMs/1000) -
 // 8*(stallMs/1000). Publish this formula in the harness so pre- and
 // post-implementation runs are comparable in shape, not just in trend."
-// `links` isn't directly observable pre-event-stream either; approximated
-// here as (best-matched route's connector count - 1), i.e. the number of
-// connector-to-connector transitions the position trace actually passed
-// through. Proxy, not the real `link` event count — see README.
-function computeProtoScore(airborneKillsResult, routeResult, airborneMsResult, idleTimeResult) {
+//
+// Two sources, clearly labeled:
+//  - `source: 'HB.score'` — the run carried ?score=1, so every term comes
+//    from the game's own event-derived snapshot (real counts, the sim's own
+//    air/stall clocks). This is the authoritative number A.5 describes.
+//  - `source: 'proxy'` — no score snapshot in the trace; `airborneKills` is
+//    the kills+grounded approximation and `links` is (best-matched route's
+//    connector count - 1) from this harness's route matcher, as before.
+function computeProtoScore(trace, airborneKillsResult, routeResult, airborneMsResult, idleTimeResult) {
+  const real = lastScoreSample(trace);
+  if (real) {
+    const protoScore = 100 * real.counts.airborne_kill + 25 * real.counts.link +
+      12 * (real.airMs / 1000) - 8 * (real.stallMs / 1000);
+    return {
+      protoScore: +protoScore.toFixed(1),
+      source: 'HB.score',
+      unavailableReason: null,
+      note: 'real: all four terms come from the game\'s own A.5 event stream (?score=1) — ' +
+        'counts.airborne_kill=' + real.counts.airborne_kill + ', counts.link=' + real.counts.link,
+    };
+  }
   if (airborneKillsResult.unavailableReason || routeResult.unavailableReason ||
       airborneMsResult.unavailableReason || idleTimeResult.unavailableReason) {
     return { protoScore: null, unavailableReason: HIGH_FIDELITY_UNAVAILABLE };
@@ -252,6 +279,7 @@ function computeProtoScore(airborneKillsResult, routeResult, airborneMsResult, i
   return {
     protoScore: +protoScore.toFixed(1),
     linksApprox: links,
+    source: 'proxy',
     unavailableReason: null,
     note: 'proxy: airborneKills/links are approximated from kills+grounded and the route matcher, not real HB.score.events — see README',
   };
@@ -271,7 +299,8 @@ export function computeMetrics(trace, { events, wallTimeMs, achievedSampleInterv
   const route = inferRoute(trace);
   const darePocket = computeDarePocket(trace);
   const outcome = computeOutcome(trace);
-  const protoScore = computeProtoScore(airborneKills, route, airborne, idle);
+  const protoScore = computeProtoScore(trace, airborneKills, route, airborne, idle);
+  const scoreFinal = lastScoreSample(trace);
 
   const keydowns = events.filter((e) => e.type === 'keydown').length;
   const keyups = events.filter((e) => e.type === 'keyup').length;
@@ -299,6 +328,11 @@ export function computeMetrics(trace, { events, wallTimeMs, achievedSampleInterv
     route,
     darePocket,
     protoScore,
+    // The final A.5 score snapshot verbatim (null unless the run had
+    // ?score=1): CHARGE/notch, THREAT/classification, per-event counts,
+    // sim-owned air/stall/hot clocks, setbacks, and which tune ('slice'
+    // = A.4's doubled table, 'run' = A.3's full-run table) priced it.
+    score: scoreFinal,
     input: {
       totalEvents: events.length, keydownCount: keydowns, keyupCount: keyups,
       eventsPerSecond: inputDensityEventsPerSec,
