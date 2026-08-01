@@ -246,6 +246,10 @@ function analyze({ path, report }) {
 
   push('');
   push('## aim coverage (ticks with any materialized hostile in the sample)');
+  if (!rules) {
+    push('- n/a: this run had no policy, and coverage is reconstructed by replaying the ' +
+      'policy over the trace — a static timeline\'s held keys are not in the sample.');
+  }
   if ((report.policy ? report.policy.rules : []).some((r) => r.action.code === 'ShiftLeft' || r.action.code === 'ShiftRight')) {
     push('- NOT MODELLED for this run: the policy holds `strafe`, which freezes the aim ' +
       'vector (computeAim returns early) — the numbers below read the aim off the held ' +
