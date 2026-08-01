@@ -89,6 +89,15 @@ export const THREAT_FIELDS = Object.freeze([
   'diveDist',   // distance to the nearest diving one
   'diveDx',     // signed x offset of the nearest diving one
   'diveDy',     // signed y offset of the nearest diving one from the muzzle line
+  // The dive mark's ANGLE, completing the same (dist, dx, dy, adx, slope)
+  // shape the nearest mark and the up-mark already publish (T-019). A dive is
+  // the one hostile motion that is aimed AT the player — the sim points it at
+  // (player.x, player.y + 0.9) and freezes that heading for the whole dive
+  // (src/sim/hostiles.js) — so the ray that answers a dive is simply the ray
+  // that points at the diver, and picking between the three 8-way rays is a
+  // question about this number and nothing else.
+  'diveAdx',    // |diveDx|
+  'diveSlope',  // diveDy / |diveDx|, same finite capping as `slope`/`upSlope`
 ]);
 
 const RIGHT_CODES = ['ArrowRight', 'KeyD'];
@@ -120,7 +129,7 @@ function emptyThreat(side) {
     n: 0, dist: A, dx: A, dy: A, adx: A, fwd: A, slope: 0, side, kind: '', state: '',
     levelN: 0, diagN: 0, vertN: 0, aboveN: 0,
     upDist: A, upDx: A, upDy: A, upAdx: A, upSlope: 0,
-    diveN: 0, diveDist: A, diveDx: A, diveDy: A,
+    diveN: 0, diveDist: A, diveDx: A, diveDy: A, diveAdx: A, diveSlope: 0,
   };
 }
 
@@ -163,7 +172,11 @@ export function deriveThreat(sample, heldCodes) {
     }
     if (h.state === 'dive') {
       out.diveN++;
-      if (d < diveD) { diveD = d; out.diveDist = d; out.diveDx = dx; out.diveDy = dy; }
+      if (d < diveD) {
+        diveD = d;
+        out.diveDist = d; out.diveDx = dx; out.diveDy = dy;
+        out.diveAdx = Math.abs(dx); out.diveSlope = slopeOf(dx, dy);
+      }
     }
     if (d > G.rangeTiles) continue;                     // out of the corridors' reach
     const fwd = dx * side;                              // >0: in front of the gun

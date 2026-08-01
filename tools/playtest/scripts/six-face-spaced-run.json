@@ -1,0 +1,110 @@
+{
+  "name": "six-face-spaced-run",
+  "description": "The DEFAULT six-face run, T-019's best-measured reflex policy: six-face-aimed-run.json plus the two clauses this task's per-tick forensics justified. (1) PERSONAL SPACE — step away from the nearest body when it is inside 2.2 tiles, because the shipped policy's most common damage event is walking or hopping into a CRUISING hostile, not being dived on (a low-lane wasp bobs down to 1.7 above its deck, exactly a standing RIG's head). (2) DON'T POGO AGAINST SOMETHING THAT ISN'T A STEP — `pinned` reports 'jammed while trying to run' without saying why, so answering every pin with a jump makes RIG bounce against the screen's own right clamp, which during a gate sits at the corner pivot; `terrain.stepUp>0.5` makes the jump answer an actual step. MEASURED, NOT ASPIRATIONAL (2026-08-01, `main` pinned and served — the last run from the task/T-019 worktree, whose src/ is byte-identical to main — --deterministic --stop-on-game-over --max-runtime-ms 145000, 1440x900, 9 runs — every one ended at GAME_OVER long before the window): survives 50.2-55.1 s (median 53.1 over all nine; 53.6 over the seven in the finding's own table) against the shipped aimed policy's 46.2-52.8 s (median 48.7 over 8 default-rate runs, re-measured on main by this task — its own file carries both that measurement and T-018's older, unreproduced gate-3 one), 10-16 kills, and reaches wave gate 2 / scroll 140 of 415 EVERY time without clearing it. It does NOT reach VICTORY and no bot run has: the wall, the arithmetic behind it, and the operator packet that has to answer the delivery box are in docs/playtests/2026-08-victory-box.md. Read that before writing another full-run policy. Run-to-run spread is +/-6 s, so read the gate reached, never one run's decimals.",
+  "url": "index.html",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "durationMs": 240000,
+  "moves": [
+    {
+      "hold": "fire",
+      "fromMs": 400,
+      "toMs": 240000
+    }
+  ],
+  "policy": {
+    "rules": [
+      {
+        "when": "!hudTC",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "hudTC && threat.upDist<13 && threat.upDx>1 && threat.upSlope<2.5",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "hudTC && threat.upDist<13 && threat.upDx<-1 && threat.upSlope<2.5",
+        "do": {
+          "hold": "left"
+        }
+      },
+      {
+        "when": "hudTC && threat.upDist>13 && threat.dx>2",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "hudTC && threat.upDist>13 && threat.dx<-2",
+        "do": {
+          "hold": "left"
+        }
+      },
+      {
+        "when": "edgeMargin<8",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "threat.dist<2.2 && threat.dx>0 && edgeMargin>6",
+        "do": {
+          "hold": "left"
+        }
+      },
+      {
+        "when": "threat.dist<2.2 && threat.dx<0",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "threat.upDist<13 && threat.upSlope>0.5",
+        "do": {
+          "hold": "up"
+        }
+      },
+      {
+        "when": "pinned && terrain.stepUp>0.5",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "houndTell",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "grounded && terrain.gapDist>3 && threat.upDist>3.5",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "grounded && terrain.gapDist<2.2",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "!grounded && vy<0 && terrain.gapDist<1.2",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      }
+    ]
+  }
+}
