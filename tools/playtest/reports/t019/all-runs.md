@@ -4,6 +4,7 @@
 | six-face-aimed-run | 49.8s | 140 | 1,2 | 11 | 9 | 1.2 | 86% | 32% | SHIP-1 |
 | six-face-aimed-run | 52.8s | 140 | 1,2 | 16 | 9 | 1.8 | 85% | 35% | SHIP-2 |
 | six-face-aimed-run | 46.7s | 140 | 1,2 | 9 | 9 | 1.0 | 87% | 27% | SHIP-3 |
+| six-face-aimed-run | 46.7s | 140 | 1,2 | 10 | 9 | 1.1 | 86% | 27% | VERIFY |
 | six-face-aimed-run | 50.2s | 140 | 1,2 | 13 | 9 | 1.4 | 90% | 32% | FAST-1 |
 | six-face-aimed-run | 50.2s | 140 | 1,2 | 12 | 9 | 1.3 | 89% | 32% | FAST-2 |
 | six-face-aimed-run | 44.1s | 140 | 1,2 | 10 | 9 | 1.1 | 90% | 23% | FAST-3 |
@@ -43,6 +44,7 @@
 | expK-combo | 54.9s | 140 | 1,2 | 11 | 9 | 1.2 | 84% | 38% | KB-1 |
 | expK-combo | 52.2s | 140 | 1,2 | 15 | 9 | 1.7 | 86% | 35% | KB-2 |
 | expK-combo | 50.2s | 140 | 1,2 | 13 | 9 | 1.4 | 84% | 32% | KB-3 |
+| six-face-spaced-run | 52.0s | 140 | 1,2 | 10 | 9 | 1.1 | 82% | 35% | SPACED |
 | expL-strafe-space | 49.3s | 140 | 1,2 | 12 | 9 | 1.3 | 85% | 31% | L-1 |
 | expL-strafe-space | 33.3s | 75 | 1 | 5 | 9 | 0.6 | 86% | 47% | L-2 |
 | expL-strafe-space | 45.1s | 127 | 1 | 9 | 9 | 1.0 | 87% | 32% | L-3 |

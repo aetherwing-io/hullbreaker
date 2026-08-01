@@ -6,12 +6,11 @@ worktree), `tools/playtest/run.mjs --deterministic`, real Chrome, `testapi`
 fidelity, 1440×900.
 
 **Verdict: no bot run reaches VICTORY, and this task did not get one.**
-Thirteen policy variants (plus a latency control) over 47 runs land on the same
-wall — wave **gate 2**, scroll
-**140 of 415**, at about **50 s**, all three lives spent. Exactly one run in 47
-got past it (scroll 165, gate 3 in sight, 64 s) and then died the same way. The
-last delivery box has to be answered by an **operator run**; the packet is
-§6.
+Thirteen policy variants (plus a latency control) over 49 runs land on the same
+wall — wave **gate 2**, scroll **140 of 415**, at about **50 s**, all three
+lives spent. Exactly one run in 49 got past it (scroll 165, gate 3 in sight,
+64 s) and then died the same way. The last delivery box has to be answered by
+an **operator run**; the packet is §6.
 
 No game file, wave gate, or movement constant was touched: `git diff
 main...HEAD -- src/` is empty, and pathcheck now asserts that the six-face
@@ -29,7 +28,7 @@ sample, i.e. how long the run stayed alive.
 
 | variant | what it changes vs the shipped aimed policy | runs | survived (s), sorted | median | scroll |
 | --- | --- | --- | --- | --- | --- |
-| `six-face-aimed-run` (shipped) | — (T-018's policy, the baseline) | 4 | 46.7 / 47.5 / 49.8 / 52.8 | 48.6 | 140 ×4 |
+| `six-face-aimed-run` (T-018's, the baseline) | — | 5 | 46.7 / 46.7 / 47.5 / 49.8 / 52.8 | 47.5 | 140 ×5 |
 | same, `--sample-ms 40` | halves reaction latency — a control, not a policy | 3 | 44.1 / 50.2 / 50.2 | 50.2 | 140 ×3 |
 | `expA-nohop` | deletes the free hop | 1 | 45.5 | — | 140 |
 | `expB-v1` | grounded rewrite: dive-angle aim, terrain-driven jumps | 1 | 33.9 | — | 103 |
@@ -40,7 +39,7 @@ sample, i.e. how long the run stayed alive.
 | `expH-dodge` | shipped + the steep-dive dodge alone | 3 | 35.0 / 48.3 / 51.9 | 48.3 | 97–140 |
 | `expI-space` | shipped + personal space alone | 3 | 52.0 / 52.2 / 58.8 | 52.2 | 140 ×3 |
 | `expJ-strafe` | shipped + a `strafe`-locked 45° servo (§3.2) | 10 | 48.8 / 49.0 / 49.1 / 49.3 / 49.4 / 52.8 / 53.7 / 56.2 / 58.2 / **64.4** | 51.1 | 140 ×9, **165** ×1 |
-| **`six-face-spaced-run`** (shipped by this task) | shipped + personal space + step guard | 7 | 50.2 / 52.2 / 52.9 / 53.6 / 54.4 / 54.9 / 55.1 | **53.6** | 140 ×7 |
+| **`six-face-spaced-run`** (shipped by this task) | baseline + personal space + step guard | 7 (+1 from the committed file: 52.0) | 50.2 / 52.2 / 52.9 / 53.6 / 54.4 / 54.9 / 55.1 | **53.6** | 140 ×8 |
 | `expL-strafe-space` | strafe servo + personal space + step guard | 4 | 33.3 / 45.1 / 49.3 / 49.8 | 47.2 | 75–140 |
 
 Three things to read out of that table.
@@ -48,10 +47,10 @@ Three things to read out of that table.
 **Scroll 140 is not a coincidence.** `HALT_S[1] = 140` — the scroll freezes
 there for wave gate 2 and does not move again until the wave is dead, so
 "scroll 140" is literally "reached gate 2, never cleared it". Gate 1 was
-cleared 41 times out of 45 attempts (median 11.3 s held, 5–7 bodies present
-where the wave authors 4). Gate 2 was cleared **once in 37** (11.9 s, 9 bodies
-present where the wave authors 5); the other 36 runs ended inside it, a median
-5.3 s after it armed. **Nothing ever reached gate 3.**
+cleared **45 times out of 49** (median 11.3 s held, range 7.6–18.2, with 5–7
+bodies present where the wave authors 4). Gate 2 was cleared **once in 41**
+(11.9 s, 9 bodies present where the wave authors 5); the other 40 runs ended
+inside it, a median 5.3 s after it armed. **Nothing ever reached gate 3.**
 
 **Nothing moved the wall.** Deleting the hop, adding a pace servo, adding
 personal space, adding a dive dodge, fixing the terrain probe, using the
@@ -61,7 +60,7 @@ gate that ends the run never changes.
 
 **The best of them is worth about 10 %.** `six-face-spaced-run` (median 53.6 s
 over 7 runs, all seven inside 50.2–55.1) beats the shipped aimed policy's
-48.6 s. It is committed as the new best-known reflex policy, and it is still
+47.5 s. It is committed as the new best-known reflex policy, and it is still
 nowhere near the run.
 
 ## 2. Why: the exchange rate
@@ -76,7 +75,7 @@ The run's requirements are authored and countable.
   **5–6 at gate 1 (4 authored)** and **7–9 at gate 2 (5 authored)**. Taking
   the measured +1…+4, a full run has to kill roughly **50–55 gating bodies**.
 - **Damage budget.** 3 hp × 3 lives = **9 hits**, no heal anywhere in the run.
-- **What the bot actually trades.** Across all 47 runs: **0.6–2.3 kills per
+- **What the bot actually trades.** Across all 49 runs: **0.6–2.3 kills per
   hit taken**, median ≈ 1.3. (Every run spends exactly 9 — that is what ends
   it.)
 
@@ -84,12 +83,12 @@ So the requirement is about **6 kills per hit** and the measured rate is
 **1.3**. The gap is a factor of four to five, not a tuning margin.
 
 The same gap in time: 415 scroll tiles at 4.3 tiles/s is **96.5 s** of
-scrolling, plus the gates, which freeze it. Measured across 41 cleared gate-1
+scrolling, plus the gates, which freeze it. Measured across 45 cleared gate-1
 fights and the single cleared gate 2, a gate takes a **median 11.3 s** (range
 7.6–18.2) for 5–7 bodies — about 2 s per body — so the six waves, at the body
 counts they actually field, are roughly **100–130 s**. A finished run is
-therefore **200–230 s** of PLAYING time. The median bot run survives **53 s**,
-and its best is 64 s.
+therefore **200–230 s** of PLAYING time. The best policy's median run survives
+**53.6 s**; the longest run of the whole task, on any variant, was **64.4 s**.
 
 **This is not a difficulty claim.** Nothing above says the run is too hard, or
 too long, or that a wave should be smaller — a bot is not a fun oracle, and
@@ -155,7 +154,7 @@ game's own `strafe` key (`ShiftLeft`, `KEYMAP` in `src/main.js`), which
 freezes the aim vector while you move, to hold a 45° line on a target while
 retreating to keep it there — a bang-bang servo on `threat.upSlope` around 1.
 It produced the only run that cleared gate 2 (21 kills, scroll 165) — and over
-ten runs a median of 51.1 s, no better than the shipped policy's 48.6 s and
+ten runs a median of 51.1 s, no better than the baseline's 47.5 s and
 below the 53.6 s of the far simpler personal-space policy. One tail is not a
 capability. (Its aim coverage is
 deliberately *not* reported: the analyzer reads the aim off the held keys, and
@@ -278,8 +277,9 @@ Questions, in the order a run answers them:
    `cruise → dive` on the same frame, at gate range 9 and a 1.1 s cadence.
    Fair, or does it want the `tell` the rest of the roster has?
 5. **Do gates 3–6 assume a weapon?** A carrier drop is the only upgrade path,
-   and it is incidental — the bot picked up LASER twice in 39 runs, by
-   accident. If SPREAD/LASER is the intended answer to eight or nine bodies,
+   and it is incidental — the bot picked up LASER twice in 49 runs, by
+   accident (it shot a carrier that happened to be on its firing line, and the
+   capsule happened to drift into it). If SPREAD/LASER is the intended answer to eight or nine bodies,
    the delivery of it may need to be something the player can choose to go get.
 
 ## 7. Reproduce
@@ -289,12 +289,14 @@ Questions, in the order a run answers them:
 cd <worktree> && python3 -m http.server 8771 &
 
 cd tools/playtest
-# the shipped policy, the baseline every variant above is measured against
+# the best-measured policy (this task's), and the T-018 baseline it beats by 10%
+node run.mjs scripts/six-face-spaced-run.json --base-url http://127.0.0.1:8771 \
+  --deterministic --stop-on-game-over --max-runtime-ms 145000 --out /tmp/spaced
 node run.mjs scripts/six-face-aimed-run.json --base-url http://127.0.0.1:8771 \
   --deterministic --stop-on-game-over --max-runtime-ms 145000 --out /tmp/aimed
 
-node analyze-run.mjs /tmp/aimed            # full per-tick breakdown
-node analyze-run.mjs --brief /tmp/aimed    # one row, for batch comparison
+node analyze-run.mjs /tmp/spaced            # full per-tick breakdown
+node analyze-run.mjs --brief /tmp/spaced /tmp/aimed   # one row each, for batches
 ```
 
 `node tools/pathcheck.mjs` covers the new marks and the anti-scripting guard.
