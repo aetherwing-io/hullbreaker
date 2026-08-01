@@ -411,35 +411,69 @@ verify: node tools/pathcheck.mjs; a run that reaches the first gate without losi
 
 ## T-021 | feature | doing | P1
 
-goal: the DARE, rebuilt as the operator's run energy demands it — decisions.md
-entry 10. NOT a cul-de-sac: a LOOP. The player commits at a fork, takes a
-longer, higher, more exposed line, and REJOINS the route ahead — paying in time
-against the pursuing edge and in exposure, never by turning around. DESIGN's
-own question survives ("do I have time to grab that capsule?"); what changes is
-that answering it never breaks forward motion.
-Target energy, operator verbatim: "lots of split decisions, esceleration,
-action, climb, climb climb, keep going faster kind of energy for the player."
+goal: the SPLIT DECISION — decisions.md entries 10 and 11. A fork the player
+reads and commits to AT SPEED, where the right branch carries challenge AND
+reward (higher, more exposed, it pays, and it rejoins ahead) and the wrong
+branch DEAD-ENDS, costing real time against the pursuing edge. The dead end is
+the stake that makes it a decision; the rejoin is what keeps the run moving
+forward. Both are required.
+Target energy (entry 11, operator): "lots of split decisions, esceleration,
+action, climb, climb climb, keep going faster."
 accept:
 - [ ] prototype in the TRAVERSAL SLICE behind a flag, off by default (the
-      six-face lattice is contended by T-009/T-020 this cycle — do not touch
-      src/pure/generator.js or src/pure/lattice.js)
-- [ ] the greedy line is the HIGHER, more exposed one, and it rejoins ahead:
-      no reversal, no dead end, no free drop back to the main line
-- [ ] the fork is readable AT SPEED at the FAR default — the player commits
-      without stopping; if it needs a pause to read, it has failed
-- [ ] CURRENCY + FALSIFYING TEST (entry 10's acceptance rule): the cost is
-      time-against-the-edge and exposure. Assert it as: a policy that always
-      takes the main line collects zero loop rewards, AND a policy that takes
-      the loop still finishes with the pursuing-edge daylight margin intact.
-      Assert against the PLAYER's reachable envelope, not the author's intent
-      — the I-019 assertions were all true and all missed the defect
-- [ ] a written proposal in docs/proposals/ specifying the mechanic, so the
-      six-face integration has something exact to build against once the
-      lattice lanes land
-- [ ] operator packet: URL + questions on whether the fork reads as a split
-      decision at speed and whether taking it escalates the action
+      six-face lattice is contended by T-009 — do not touch generator.js or
+      lattice.js)
+- [ ] the rewarding branch is the HIGHER, more exposed one and REJOINS ahead:
+      no reversal to collect, no free drop back to the main line
+- [ ] the wrong branch dead-ends and costs measurable time against the edge
+- [ ] FAIRNESS RIDER (entry 11): the dead end is legible as a risk BEFORE
+      commitment — a dead end the player could not have read is a memorization
+      trap. Say how it advertises itself and prove it in a FAR screenshot
+- [ ] readable at speed at the FAR default: committing must not require a stop
+- [ ] CURRENCY + FALSIFYING TEST (entry 10's rule): cost is time-against-the-
+      edge and exposure. Assert: a policy that always takes the main line
+      collects zero rewards; a policy that takes the reward branch still keeps
+      the daylight margin; a policy that takes the dead end measurably loses
+      it. Derive the cost from the shipped sim — do NOT inherit a speed number
+- [ ] docs/proposals/ write-up specifying the mechanic for six-face integration
 owner: lattice-designer
-verify: node tools/pathcheck.mjs; a named playtest script that takes the loop and one that skips it, both --deterministic; screenshots at ?view=far
+verify: node tools/pathcheck.mjs; named playtest scripts for all three lines (main / reward / dead end), --deterministic; screenshots at ?view=far
+
+## T-022 | feature | doing | P1
+
+goal: pace escalation coupled to PLAYER MOMENTUM, per decisions.md entry 11 —
+"pace should escalate across the faces, but at the player's momentum. A good
+player escalates the action to intense levels of explosion and speed, a new
+player is pushed along while they learn the mechanics."
+The mechanism is available and now measured: runSpeed 9.4 t/s against a scroll
+of ~4.3 t/s means moving forward BANKS daylight (T-020,
+docs/playtests/2026-08-first-gap-triage.md). Banked daylight is the natural
+currency — read well, bank distance, and the run answers with more pressure and
+more payoff; lose the bank and it holds at a floor pace that carries you.
+accept:
+- [ ] escalation is EARNED from player state, not a per-face scripted ramp
+- [ ] there is a FLOOR: a struggling player is still carried forward and can
+      still finish; escalation may never become a death spiral
+- [ ] there is a CEILING that leaves headroom for T-023's boosts rather than
+      hard-coding the top of the curve
+- [ ] frozen CONFIG movement/jump constants are NOT touched (entry 11 is
+      explicit); the levers are pace, spawn cadence, scroll behaviour
+- [ ] determinism holds: same inputs, same escalation, replayable
+- [ ] behind a flag, off by default, until the operator judges it
+- [ ] pathcheck assertions for the floor, the ceiling and the earn curve
+- [ ] operator packet: a good-player run and a struggling-player run, same URL
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; two named playtest scripts (strong vs weak policy) showing different escalation from the same build
+
+## T-023 | feature | parked | P2
+
+goal: boosts and scene transitions that rocket the player forward and upward,
+with face transitions ratcheting and pumping — the "scaling a goliath" fantasy
+made physical (decisions.md entry 11, operator: "eventually"). PARKED by the
+operator's own sequencing; do not dispatch without a go-ahead. T-022 must leave
+escalation headroom for this rather than hard-coding a ceiling.
+owner: unassigned
+verify: n/a until dispatched
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
