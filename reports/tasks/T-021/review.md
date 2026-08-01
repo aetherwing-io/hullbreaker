@@ -1,120 +1,146 @@
 REQUEST_CHANGES
 
-Reviewed commit `7f24787` on `task/T-021` (diff `main...HEAD`, merge-base `b83b4e5`).
-`node tools/pathcheck.mjs` run by this gate against a pristine export of that
-commit: **exit 0, 1787 passed, 0 failed.** Layer purity, determinism and the
-frozen movement block are clean (`src/pure/split.js` imports only
-`config.js`/`path.js`/`traversal.js`; no THREE/document/window, no
-`Math.random`/`Date.now`/`performance.now`; `src/config.js` untouched;
-`?hook=1` untouched). The pathcheck diff is purely additive — one import block
-and one trailing section — no existing assertion was deleted, weakened or
-retimed.
+Reviewed `task/T-021` at **71fd90b** (diff `main...HEAD`, merge-base `debdc28`),
+including the two untracked artifacts. `node tools/pathcheck.mjs`, run by this
+gate against a pristine `git archive` export of that commit: **exit 0, 1869
+passed, 0 failed.** Browser smoke run by this gate against a served copy of the
+worktree (playwright-core, 1440x900): `index.html?selftest=1` **SELFTEST PASS
+(29 checks)**, `index.html?split=1&selftest=1` **PASS (29)**,
+`index.html?slice=traversal&split=1&selftest=1` **PASS (31)**, zero page errors
+on all three.
 
-Two findings block the merge.
+The four acceptance boxes this pass was dispatched to verify all hold:
+
+- **`?split=1` assertions run on the `?split=1` build.** The static half builds
+  `buildLevel(CONFIG, {split:true})` explicitly (`tools/pathcheck.mjs:8613`),
+  and the sim probe's child sets `__HB_QUERY__='split=1'` and is pinned by a
+  subject guard (`:9138`) that requires the child's own
+  `SPLIT_FORKS_ENABLED === true` plus fork-for-fork, height-for-height identity
+  with the forks asserted above, and a second guard (`:9187`) requiring
+  `7 x forks` runs so no `.every()` can pass over an empty set. The vacuous
+  class the task named is closed.
+- **The falsifying trio holds through the shipped sim.** Main 0/4 capsules and
+  finishes on `weapon === 'R'`; reward 4/4, carrying each fork's own letter,
+  every pickup taken forward of `spanX0` in flight or on the span; dead end
+  −9.9 tiles of daylight and +2.3 s on every fork, and its escape floor is now
+  swept (`marginFloor`) instead of resting on the probe's authored 30.
+- **FAR screenshots exist and match the text.** I opened them: `face1-approach`
+  carries plate, slot, span and capsule in one frame; `face1-cave` has RIG under
+  the plate against the seal; `face1-span` has RIG on the span with the capsule
+  in shot; `face2-zip-gate` shows the halt line with face 2 unbuilt and nothing
+  hanging over it.
+- **Flag off by default leaves the run unchanged.** Generator fingerprint
+  equality, `base.solidRects === undefined`, pocket-array identity, no
+  `minLane`/`laneCap` row in the default spawn table, `ownsStakes` inert at
+  every pace, `splitForks` empty in `src/sim/level.js` and `src/main.js`. Layer
+  purity and determinism are clean: `src/pure/split.js` imports only
+  `config.js`/`path.js`/`traversal.js`, no THREE/document/window, no
+  `Math.random`/`Date.now`/`performance.now`, no rng consumed by fork siting,
+  and `src/sim/spawner.js` keeps both seeded draws in their original order
+  (`minLane` is applied after the draw as a floor). `CONFIG`'s movement block is
+  untouched; `?hook=1` untouched. The committed pathcheck diff has **zero**
+  deleted lines — nothing was weakened or retimed to get green.
+
+One finding blocks.
 
 ---
 
-**MAJOR — src/render/level.js:42 — three of the four forks render a solid slab
-over an unbuilt face, from boot until that face's corner ritual finishes.**
+**MAJOR — docs/proposals/2026-08-split-decision.md:101 — the write-up still
+states a caveat this same commit's harness measures as false.**
 
-This branch is the first thing to put `solidRects` on the *six-face* level
-(`src/pure/split.js:687` `splitApplyForks`, reaching the runtime through
-`src/sim/level.js` → `levelData.solidRects`). `src/render/level.js:130-143`
-bakes every solid rect into its own `THREE.Mesh` at boot and files it in
-`authoredSolidMeshes` — a list whose own comment still reads "traversal-only
-tagged solid rectangles". The face-reveal path never touches that list:
-`unbuiltHidden()` (`src/render/level.js:42-58`) hides ground tile instances and
-`slatMeshes`, and `faceRevealed()` (`:75-88`, called from
-`src/sim/wavegate.js:86` in `finishCorner`) brings exactly those two back.
-
-Measured fork placement on this build (`buildLevel(CONFIG, {split:true})`):
-
-| rect | columns | corner | set |
-| --- | --- | --- | --- |
-| fork-plate-2 / seal-2 | 121-128 | 89 | `farSets[0]` (120-153) |
-| fork-plate-4 / seal-4 | 250-257 | 219 | `farSets[2]` (250-283) |
-| fork-plate-6 / seal-6 | 382-389 | 349 | `farSets[4]` (380-413) |
-
-So on faces 2, 4 and 6 the plate and seal are visible while the ground beneath
-them, and the fork's own span slat, are hidden — a slab hanging in the void
-across the corner ritual, which is the one beat `decisions.md` entry 3 is most
-protective of ("revealed, never assembled"). The FAR evidence in
-`artifacts/t021-split/` is face 1 only, so nothing in the packet can catch it.
-
-Fix is small and local: gate `authoredSolidMeshes` by face in `unbuiltHidden()` /
-`faceRevealed()` exactly as `slatMeshes` already are. Verify by running
-`tools/playtest/split-capture.mjs 2` and looking at the approach frame before
-corner 1's ritual.
-
-**MAJOR — tools/pathcheck.mjs:9102 and docs/proposals/2026-08-split-decision.md:101 —
-the "hop takes 4 of 4 without joining the branch" caveat is asserted from a
-probe that never records where the hop landed, and it is wrong.**
-
-`took` (`tools/pathcheck.mjs:8916`) counts only whether the capsule left the
-array; the `hop` stage (`:8870`) returns to `'plate'` regardless of the surface
-it lands on. Neither the note nor the proposal's §3 has any evidence for the
-"without joining the branch" half of the claim.
-
-Measured by this gate, driving the unmodified `src/sim/player.js` off fork 1's
-plate at 60 Hz, holding jump and spending the air jump at apex (fork 1: plate
-58-65 at y=6, span 65-72 at y=9, capsule x=69 y=10.5):
-
-```
-take-off x=59.0 .. 62.5  → capsule taken, LANDS ON THE SPAN (y=9)   [joins the branch]
-take-off x=63.0 .. 63.5  → capsule taken, lands back on the DECK (y=2, x≈75.6)
-take-off x=64.0 .. 65.0  → capsule taken, lands on a y=4 catwalk (x≈76)
-```
-
-Most of the plate's take-off window *is* the branch — the hop lands on the span.
-The real caveat is a narrow late window (x≈63-65 of a 7-tile plate) that
-collects in flight and comes down on the line it never left, which is the I-019
-shape the slice half of this file engineers against explicitly
-(`tools/pathcheck.mjs:8036`, "touching it and joining the branch are the same
-event"). As written the packet overstates the defect and hides its actual
-shape, which is exactly the kind of evidence error that drives a wrong operator
-verdict. Record the landing surface in the probe and restate both the note and
-§3 from that measurement; then the residual late-hop window is a clean operator
-question rather than a claim.
+§3's last bullet reads "a plate-line policy that hops for no reason takes 4 of 4
+capsules without joining the branch". `tools/pathcheck.mjs` at this HEAD now
+measures where the hop lands and prints the opposite: all four hop *policy* runs
+come down on the **span**, which is joining the branch, and the 52-take-off
+sweep finds that only the last ~2.5 tiles of each 7-tile plate (`+5..+7` past
+the commit line, on all four forks) collect without joining — asserted at
+`tools/pathcheck.mjs:9294` ("a hop taken in the first 4 tiles of the plate lands
+on the SPAN every time") and `:9300`. The previous gate's finding required both
+the note *and* §3 restated from that measurement; the note was fixed, §3 was
+not, so the branch now ships a harness and a packet that contradict each other,
+with the packet overstating the defect. The proposal is the artifact the
+operator reads before answering the five feel questions in §7, and this bullet
+misdescribes the shape of the thing being judged. It is a three-line edit:
+restate it as the narrow late window the sweep found.
 
 ---
 
 Minors (not blocking; listed for the record):
 
-- **tools/pathcheck.mjs:8582 / src/pure/split.js:87 — scope.** The superseded
-  traversal-slice prototype ships with the branch: `TRAVERSAL_SPLIT` +
-  `splitFixture` (`src/pure/split.js:1-468`) and ~550 assertions
-  (`tools/pathcheck.mjs:8036-8581`), on a lane the task closes explicitly
-  ("Build it in the six-face run, NOT the traversal slice") and `decisions.md`
-  entry 13 rules cannot settle this question. It is off by default and green, so
-  it harms nothing, but it is permanent maintenance weight on a closed lane and
-  it gives `?split=1` two different meanings.
-- **tools/pathcheck.mjs:8838 — the fairness probe's daylight is an input, not a
-  measurement.** "The wrong branch always gets out with daylight to spare" is
-  measured from an authored 30-tile starting margin (`reset(startX, f.y0, 30)`),
-  not from the daylight a played run actually reaches a fork with. Disclosed in
-  the comment and the proposal, but the headline fairness claim rests on it.
-- **tools/pathcheck.mjs:8915 — a reported field that can never carry evidence.**
-  `WPN.weaponKey` is not exported by `src/sim/weapons.js`, so `weapon` is always
-  `null` in every probe row.
-- **tools/pathcheck.mjs:8639 — "the pocket STAYS" is asserted only as
-  non-overlap.** Nothing asserts `lvl.pockets` is identical to the default
-  build's. The ordering in `src/pure/generator.js` (pockets sited and carved
-  before `splitCarveForks`, splice range strictly inside the fork window) makes
-  it true today; entry 12 deserves the direct equality assertion rather than an
-  inference.
+- **docs/proposals/2026-08-split-decision.md:154 — §6 is now inaccurate.** "The
+  only runtime change outside `src/pure/` is one optional pass-through in the
+  spawn director" was true at `91eb352`; `71fd90b` adds a render-layer change
+  (`src/render/level.js:25,68,100` — authored solids gated by face). The section
+  should name it, and §6's "does not touch" list should say `src/render/` is
+  touched.
+- **docs/proposals/2026-08-split-decision.md:83 vs tools/playtest/README.md:844
+  — two different clocks for the same run.** The proposal says the dead-end bot
+  loses its first life "10.5 s into the run"; the README, committed later for
+  the same script and the same column (x=63.649), says 12.9 s. One is stale.
+- **docs/proposals/2026-08-split-decision.md:137 — frame caption drifted from
+  the rig.** `face1-span.png` is described as "at the capsule"; `split-capture.mjs`
+  deliberately parks RIG **2.5 tiles short** so standing on it does not collect
+  it (`tools/playtest/split-capture.mjs:99`, and `frames.json`'s own note).
+- **docs/proposals/2026-08-split-decision.md:48 and tools/pathcheck.mjs:8812 —
+  the probe does not drive `src/sim/scroll.js`.** Both say it drives "player,
+  scroll, spawner, hostiles, capsules"; the probe advances the edge itself with
+  `T.setScrollX(T.scrollX + C.scrollSpeed * dt)` (`:8972`, `:9031`, `:9074`) and
+  never imports `scroll.js`. It is faithful for the shipped six-face run (no
+  camera-follow there, `?momentum=1` off by default, corner events forced done
+  on purpose), so this is a wording fix, not a measurement error.
+- **tools/pathcheck.mjs:9253 — the fairness threshold is argued against a clamp
+  that is not what produced the number.** "a fifth of the 41 the screen clamp
+  lets a forward runner bank": the player right clamp at FAR is
+  `sRightEdge() - 0.4` (`src/sim/player.js:467`), i.e. roughly 71 tiles of
+  daylight, and the 40.6 in the probe is simply what a 21-tile fork window from
+  a 30-tile start yields. The `dead <= 15` floor claim stands on its own; the
+  comparison sentence should not borrow a clamp.
+- **src/pure/lattice.js:222-241 — the density metric now credits a surface
+  nobody can stand on.** `latticeSurfacesAt`/`latticeBands` push `r.y1` for
+  every solid rect, including the fork seal (`y0..y0+3`) whose top is buried
+  directly under the plate (`y0+3..y0+4`): column 64 reports surfaces
+  `[2, 5, 6]` and `bandMerge` 0.9 keeps 5 and 6 apart. Route counts stay in the
+  3-5 band with the flag on (f6 reads 3-4) and the default build is untouched,
+  but it is a phantom route band in a metric this repo's own doctrine says must
+  assert what a player can do.
+- **artifacts/t021-split/face2-zip-gate.png — the render gate's evidence stops
+  one tile short of its subject.** Disclosed in `71fd90b`'s own message: the
+  frame's right edge falls at world x~120.7 and fork 2's plate starts at 121, so
+  no frame shows a *fork* gated with its face. The pathcheck guard for it
+  (`tools/pathcheck.mjs:8727`) is a source-text regex over `unbuiltHidden`/
+  `faceRevealed`, which proves the identifier is wired in, not that the meshes
+  hide. Both are honest about it; the gap is real and only reachable under
+  `?zip=1` (`IS_G1` short-circuits both hooks on every shipped URL).
+- **Scope, carried unchanged from the previous gate:** the superseded
+  traversal-slice prototype (`src/pure/split.js:87-468` plus ~550 assertions at
+  `tools/pathcheck.mjs:8036-8581`) still ships with the branch, on a lane
+  `decisions.md` entry 13 closed, and it gives `?split=1` two different
+  meanings depending on `?slice=`. Off by default and green, so it harms
+  nothing today.
 
-Verified and clean, for the record: the flag is genuinely off (`buildLevel`
-fingerprint, `ownsStakes` inert at every pace, `laneCap`/`minLane` both
-optional pass-throughs that leave pre-existing rows byte-identical); the fork
-never overlaps a pocket, a corner apron or the wave gate's halt line; nothing
-authored spawns inside a seal and the `sealSweep` probe drives the real spawner
-to prove it; the sim-driven three-policy currency test is real (main 0/4 taken,
-reward 4/4, dead end −9.9 tiles of daylight and +2.3 s on every fork); the
-playtest scripts and `tools/playtest/README.md` are honest about the harness's
-inability to select a branch, and `split-capture.mjs` is explicit that RIG is
-parked, not played.
+Verified and clean, for the record, beyond the acceptance boxes: the fork never
+overlaps T-009's pocket, a corner apron, a bend or the wave gate's halt line
+(fork 1 ends at 74 against a halt line of 75, asserted); the cave is floored,
+roofed and sealed and nothing the run spawns materialises inside it
+(`sealSweep` drives the real spawner the length of the level); the ambient lane
+floor is a floor, not a lane assignment, so rng order and cadence are preserved;
+route density and the reachability/stranding sweeps hold with the flag on; the
+three `split-*.json` scripts and `tools/playtest/README.md` are explicit that
+the harness's terrain probe is blind to `solidRects` and therefore cannot select
+a branch; `split-capture.mjs` is explicit that RIG is parked, not played, and
+that a parked frame proves nothing about standability.
 
-Integration note, not a finding: at review time the worktree carried a
-half-applied merge of `main` (T-022 momentum) whose `tools/pathcheck.mjs` does
-not parse (`SyntaxError: Unexpected end of input` at :9650). The reviewed
-commit is green on its own; the merged result needs re-running before the gate.
+Process note, not a finding: `71fd90b` landed in this worktree **during** this
+review, authored by a fix agent from an older, believed-closed T-021 dispatch —
+the shared-worktree hazard `docs/ORCHESTRATION.md` documents. Its content is
+exactly the diff I had already reviewed as uncommitted work (render gate,
+pocket-identity equality, plate sweep, margin floors, `currentWeapon`, the
+capture rig's i-frame fix), it is green at 1869/0, and the commit message
+records the provenance. Nothing else came in with it. Re-verify HEAD has not
+moved again before merging.
+
+Operator questions this gate is not entitled to answer (they belong in the
+checkpoint packet, and §7 of the proposal already carries them): whether the
+sealed slot reads as a risk at FAR before the commit line, whether ~10 tiles of
+daylight plus a doubled time-in-reach is the right price, and whether a free
+capsule one late hop off the plate cheapens the fork.
