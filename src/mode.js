@@ -11,7 +11,7 @@ import {
   traversalEnemyPlan,
 } from './pure/traversal.js';
 import { ribrunFixture } from './pure/ribrun.js';
-import { TRANSFORM_FIXTURE } from './pure/transform.js';
+import { TRANSFORM_FIXTURE, selectTransformFixture } from './pure/transform.js';
 
 const SEARCH = typeof globalThis.__HB_QUERY__ === 'string'
   ? globalThis.__HB_QUERY__
@@ -19,7 +19,19 @@ const SEARCH = typeof globalThis.__HB_QUERY__ === 'string'
 
 export const QUERY = new URLSearchParams(SEARCH);
 export const IS_TRAVERSAL_SLICE = QUERY.get('slice') === 'traversal';
-export const IS_TRANSFORM_SLICE = QUERY.get('slice') === 'transform';
+// ?g2=1 — the G2 neck access-plate flip gate fixture (docs/proposals/
+// 2026-07-meridian-monster-greybox-map.md §G2, "smallest implementation
+// experiment" step 2). It runs on the transform-slice machinery with the
+// `monster-g2-neck-flip` fixture selected instead of the v1 demo, so
+// ?g2=1 alone (or ?slice=transform&g2=1) arms it and every other URL —
+// including plain ?slice=transform — keeps the shipped v1 fixture
+// byte-identical. Off by default.
+export const IS_G2 = QUERY.get('g2') === '1';
+export const IS_TRANSFORM_SLICE = QUERY.get('slice') === 'transform' || IS_G2;
+// Fixture selection happens HERE, before any module body reads the live
+// transform bindings (everything that consumes them imports this module
+// first): pure/transform.js exports stay a pure function of this one call.
+selectTransformFixture(IS_G2 ? 'monster-g2-neck-flip' : 'transform-v1');
 export const SLICE_ENEMIES_ENABLED = QUERY.get('enemies') !== '0';
 // ?pace=hunt|swarm|surge selects a CP1 pacing variant; anything else (including
 // no flag) resolves to `base`, which is byte-for-byte the shipped pass.
@@ -77,6 +89,11 @@ export const IS_G1 = ACTIVE_FIXTURE === null && QUERY.get('g1') === '1';
 // ROUTE LOST retry instead of HULL FALLBACK tier 1.
 export const SCORE_ENABLED = QUERY.get('score') === '1';
 export const SLICE_FALLBACK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('fallback') !== '0';
+// CP4 promotion (T-016): ?fallback=1 arms HULL FALLBACK tier 1 in the DEFAULT
+// six-face run too — opt-in and off by default there, unlike the slice's
+// on-by-default arming above. Past its streak ceiling the stock lives path is
+// the next consequence tier (src/sim/player.js loseLife).
+export const RUN_FALLBACK_ENABLED = ACTIVE_FIXTURE === null && QUERY.get('fallback') === '1';
 // ?view=near|mid|far selects a camera pull-back multiplier (CONFIG.viewScales).
 // Operator verdict July 30 ("far feels right", matching concept board 13's
 // 3–5% RIG screen fraction): anything unrecognized — including no flag —

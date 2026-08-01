@@ -112,9 +112,11 @@ export function updateTransformScroll(dt, playerRow) {
   if (ev && ev.state === 'turning') {
     const t = gameMs - ev.tStart;
     // absolute, from the ritual start: the seam pull plus the resume ramp is a
-    // closed form, so the world advances the same distance at any frame rate
+    // closed form, so the world advances the same distance at any frame rate.
+    // The event rides along for its (optional) authored seam-pull override —
+    // gate geometry, not choreography.
     setScrollX(Math.min(
-      ev.scroll0 + transformScrollOffset(t, FIX.run.minimumScrollSpeed, CONFIG),
+      ev.scroll0 + transformScrollOffset(t, FIX.run.minimumScrollSpeed, CONFIG, ev),
       activeScrollEnd()
     ));
     view.transform.ritual(ev, t);        // render: the cover and the air, nothing else

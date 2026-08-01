@@ -128,6 +128,19 @@ parens, and never `eval()`/`new Function()`. Each clause is either:
   - `pinned` — grounded, `|vx| < 0.3`, and the harness currently has a
     direction key held (`ArrowLeft`/`ArrowRight`) — the F8/H3 "commanded to
     move but jammed" signal.
+    **Honesty note — `pinned` is also true on the first tick after a
+    respawn**, and after any `resetGame`: RIG stands still at the spawn
+    point while the script is still holding right. In a script that only
+    ever ran clean this never shows, but as soon as one death occurs, a
+    bare `{ "when": "pinned" }` rule fires a jump *out of the spawn point*
+    on every retry — which is exactly enough to carry RIG airborne through
+    the next position window, so a closed-loop gap jump silently never
+    fires and every retry then dies at the same tile. (Seen for real on
+    `g2-neck-flip-pressure`: 9 attempts, 7 falls, every fall at x=101.65,
+    on a fixture whose crossing is fine.) Scope the rule to where the jam
+    it answers actually is (`pinned && x>125.5 && x<130.5`), or pair it
+    with a position guard — a run-wide `pinned` is a retry trap, not a
+    safety net.
   - `airborne`, `grounded` — `player.grounded` false/true.
   - `houndTell`, `houndCharge` — any hostile with `kind: 'hound'` currently
     in the `tell`/`charge` state (`src/sim/hostiles.js`'s
@@ -440,9 +453,33 @@ that also somehow lacks `window.HB`.
   property, not an observation). A.5 is explicit that this is **not** a
   score input ("rewarding input density would reward mashing"); it's
   reported purely as a harness/pacing diagnostic and never feeds `protoScore`.
-- **damage/death events** — `deaths` counts `attempts` increments (every
-  mode); `hitsWithoutDeath` counts hp-pip decreases that didn't coincide with
-  a death (every mode — hp pips are always in the HUD).
+- **damage/death events** — `deaths` counts `attempts` increments, which is
+  **fixture-only, not "every mode"** (an earlier version of this line said
+  every mode; it was wrong): `src/main.js` increments `sliceStats.attempts`
+  only inside `if (ACTIVE_FIXTURE)`, so `deaths` — and `outcome.attempts`,
+  which reads the same counter — are structurally `0` on a **default
+  six-face run** no matter how many times the run died. `metrics.deathsScope`
+  now says so in every report. `hitsWithoutDeath` counts hp-pip decreases
+  that didn't coincide with an attempt increment (every mode — hp pips are
+  always in the HUD).
+- **stock lives** (`metrics.lives`) — the failure counter that *does* work
+  outside fixtures: `{start, end, spent, losses[]}` parsed from the HUD's own
+  `RIG ▰▰▰  ×N` readout in `hudTL`, which the sampler's DOM base layer reads
+  in **every** fidelity mode. `losses[]` carries each life's `gameMs` and the
+  `xBefore → x` respawn knock-back. Honest limitations: the **traversal
+  slice prints no `×N` at all** (`src/ui/hud.js` gates the readout on
+  `IS_TRAVERSAL_SLICE`), so `unavailableReason` is set there and `attempts`
+  is the counter to use instead; it is poll-rate sampled, so two deaths
+  inside one sample interval read as one drop of 2 (`spent` still totals
+  correctly); and only decreases are counted, so a post-`GAME_OVER`
+  `resetGame()` restoring lives cannot subtract from the total. It is a HUD
+  *text* parse because `player.lives` rides `HB.snapshot()` but not the
+  frozen `testapi` channel — see hook request #9. Validated the same way the
+  `fixture.mjs` swap was: every metric was recomputed with and without this
+  change over all 15 traces on hand (7 committed demo runs + 8 CP4/smoke
+  runs) — every pre-existing field is byte-identical, `lives` is the only
+  addition, and it reads `null`/unavailable on exactly the traversal-slice
+  traces and a number on every default-run and transform-slice trace.
 - **airborne kills, `protoScore`** — see the A.5 section immediately below;
   both are proxies pending the real score-event stream.
 - **dare pocket** — `entered` (position-in-bounds in `testapi`/`full`, or the
@@ -471,25 +508,60 @@ request, this harness adopted it as follows:
   (`>= 3` connectors visited in order). The match radius (2.2 tiles) is this
   harness's own choice — A.5 doesn't specify one — and is documented inline.
 - **`protoScore`**: computed with A.5's exact published formula,
-  `100·airborneKills + 25·links + 12·(airMs/1000) − 8·(stallMs/1000)`, but
-  **`airborneKills` and `links` are proxies, not the real thing** — the
-  `HB.score.events`/`HB.score.snapshot()` surface A.5 proposed has since
-  shipped with the CHARGE prototype (events flow only under `?score=1`),
-  but this harness has not switched over yet (see hook request #3):
+  `100·airborneKills + 25·links + 12·(airMs/1000) − 8·(stallMs/1000)`, from
+  one of two clearly-labeled sources (`metrics.protoScore.source`):
+  - **`HB.score` (real)** — when the run was started with `?score=1`
+    (either fixture or the default six-face run, since T-016's CP4
+    promotion), the game's own A.5 snapshot rides both telemetry channels
+    and the sampler passes it through (`sample.score`). All four terms then
+    come from the game's event-derived counts and sim-owned clocks
+    (`counts.airborne_kill`, `counts.link`, `airMs`, `stallMs`) — this is
+    the authoritative number A.5 describes, and the report also carries the
+    full final snapshot as `metrics.score` (CHARGE/notch, THREAT/
+    classification, per-event counts, setbacks, and which tune — `slice`
+    vs `run` — priced the stream).
+  - **`proxy`** — on a run without `?score=1`, `airborneKills` and `links`
+    remain the pre-event-stream approximations:
   - `airborneKills` proxy: every observed increase in the kills counter where
     the preceding `testapi`/`full` sample had `grounded === false`.
   - `links` proxy: `(best-matched route's matched-connector count) − 1`, i.e.
     connector-to-connector transitions the position trace actually passed
     through, from this harness's own route matcher.
-  - Both are labeled `unavailableReason`/`note` in the report so a reader
-    doesn't mistake them for the authoritative event-derived numbers A.5
-    describes. **Replace both with real counts** — the surface is there now,
-    for runs that pass `?score=1` — a small, isolated change in
-    `lib/metrics.mjs`'s `computeAirborneKills`/`inferRoute`.
+  - The proxy stays labeled by `source`/`note` in the report so a reader
+    doesn't mistake it for the authoritative event-derived numbers. (The
+    old "replace both once `HB.score.events` lands" note is resolved: the
+    surface landed and the harness consumes it — the proxy path remains
+    only for flag-off runs.)
 - **Input density is deliberately excluded from `protoScore`**, per A.5's own
   reasoning; reported separately.
 - `minEdgeMargin` is read from the game (via `testapi`/HUD), never
   recomputed, per A.5's determinism note.
+- **Honesty note for default-run (non-slice) traces** (`scored-run*.json`):
+  the `route`, `darePocket`, and jump-count metrics are computed against the
+  *traversal fixture's* authored connectors/bounds and are meaningless on a
+  default six-face trace — read `metrics.score` (real, game-owned) instead
+  there, and treat `route`/`darePocket` as noise.
+  **Failure counting on a default run** (corrected — the first version of
+  this note pointed at `metrics.deaths`, which is the same blind counter it
+  was warning about, and would have made every future default-run gate
+  report zero deaths for a run that died):
+  - `outcome.attempts` and `metrics.deaths` are **fixture-only** and are
+    structurally `0` here — `sliceStats.attempts` is incremented inside
+    `if (ACTIVE_FIXTURE)` in `src/main.js` and nowhere else. Do not read
+    either as a failure count outside a fixture; `metrics.deathsScope`
+    repeats this warning in the report.
+  - Use **`metrics.lives.spent`** (HUD `×N` readout, present on every
+    default-run and transform-slice trace) for stock deaths, with
+    `metrics.lives.losses[]` giving the timestamp and `xBefore → x`
+    knock-back of each one.
+  - Use **`metrics.score.setbacks`** for HULL FALLBACK absorptions on a
+    `?score=1` run (`sliceStats.setbacks`, tracked in every mode since
+    T-016). Setbacks and lives are *different tiers of the same ladder*, so
+    a fallback-armed run's failure story is both numbers, not either alone.
+  - Corroborating signature in the raw trace, if you want it independent of
+    the HUD: a stock respawn shows `hp 1→3` with `x` snapping backward to
+    the respawn point and `setbacks` unchanged; an absorbed fallback shows
+    `hp 1→3` with `setbacks` incrementing and `x` continuous.
 
 ## Fixed: zombie attempts (F7)
 
@@ -609,11 +681,23 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    bot (reading `testapi`/`window.HB` and reacting per-frame) is a different
    kind of evidence. `dare-pocket` not completing in one scripted attempt is
    the expected, unsurprising case, not a harness failure.
-2. **`airborneKills` and `links` (and therefore `protoScore`) are proxies**,
-   not the real A.5 event-derived numbers — see the A.5 section above. They
-   are internally consistent enough to rank the three demo policies
-   correctly, but should not be treated as literally comparable to a future
-   `HB.score.snapshot()`-derived score until the real event stream exists.
+2. **`airborneKills` and `links` (and therefore `protoScore`) are proxies on
+   a run WITHOUT `?score=1`** — see the A.5 section above. On a `?score=1`
+   run they are not: `metrics.protoScore.source === 'HB.score'` means all
+   four terms came from the game's own event stream (T-016). Always read
+   `source` before comparing two runs' `protoScore` — a proxy number and a
+   real number are not literally comparable, and the proxy is only
+   internally consistent enough to rank policies against each other.
+   Even between two real (`HB.score`) runs of the *same* `--deterministic`
+   script, the event stream is not identical. Measured over five repeats of
+   `scored-run.json`: `protoScore` held a ≈2% band (586.9 / 597.9 / 598.0 /
+   598.8 / 600.5) and so did its inputs (3 airborne kills every time), but
+   **setbacks came out 3 four times and 2 once, THREAT 920 four times and 444
+   once, recatches 2 or 0, hot time 13.8 s or 17.9 s** — while lives spent (0)
+   and final x (89.25) were identical in all five. Score/THREAT numbers from a
+   single run are a band, not a target; structural outcomes (lives, forward
+   progress, terminal state) are the stable evidence. See honesty items 4 and
+   8 for why `--deterministic` cannot close this gap.
 3. **Route coverage/inference is approximate.** The nearest-connector greedy
    matcher in `lib/metrics.mjs` is not a topological solve. (The other half
    of this limitation as originally written — `lib/fixture.mjs` being a
@@ -701,14 +785,14 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    the primary channel's own `hostiles` is the remaining, purely
    harness-local change that would drop the last `window.HB`-specific
    dependency.
-3. **Land `HB.score.events`/`HB.score.snapshot()`** per A.5 — the surface
-   itself **has landed** with the CHARGE/THREAT prototype (`src/main.js`
-   publishes `HB.score = {enabled, events, snapshot, reset}`; events flow
-   only under `?score=1` and the surface is inert otherwise). Still open on
-   the harness side: `computeAirborneKills`/the `links` proxy in
-   `lib/metrics.mjs` have not been switched over — and can only be for runs
-   that pass `?score=1` — so reported `protoScore` remains proxy-derived
-   until that change lands.
+3. ~~Land `HB.score.events`/`HB.score.snapshot()` per A.5~~ — **done**
+   (game-side the surface shipped with the CHARGE prototype in `src/main.js`
+   /`src/sim/score.js`; harness-side consumed as of T-016: the sampler
+   passes the snapshot through as `sample.score` and `lib/metrics.mjs`
+   computes `protoScore` from the real event-derived counts whenever the
+   run has `?score=1` — see "Alignment with the score proposal (A.5)"
+   above. The kills+grounded / route-matcher proxies remain only for
+   flag-off runs).
 4. ~~A fixed-timestep (or seeded-`dt`) simulation mode~~ — **done and
    tested** (`?fixeddt=<ms>`, commit `24ebe3d`). Confirmed genuinely active
    (stable `gameMs`/wall-time ratio across runs) but it did **not** collapse
@@ -753,6 +837,18 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    "additive telemetry fields" comment there), and the policy grammar's
    dotted paths and string equality (`"transform.eventState=='turning'"`)
    consume it as-is.
+9. **Publish `player.lives` (and `player.hp`) on the frozen `?testapi=1`
+   channel.** Filed by T-016's fix cycle, after a gate found the harness had
+   no working death counter for a **default six-face run**: `attempts` is
+   fixture-only, and `lives`/`hp` live on `HB.snapshot()` and the HUD but not
+   on `testapi`'s frozen shape (`telemetry()` in `src/main.js` deliberately
+   omits them). `metrics.lives` closes the gap today by parsing the HUD's
+   `×N` text, which works in every fidelity mode but is a *text* dependency:
+   it breaks silently if the HUD restyles that readout, and it is absent in
+   the traversal slice because that HUD omits it. Two additive fields on the
+   telemetry object would make the failure ladder (setbacks → lives) fully
+   readable from the primary channel. Small ask; not urgent while the HUD
+   parse holds.
 
 ## Known limitations (engineering, not measurement)
 
@@ -789,6 +885,9 @@ tools/playtest/
   scripts/                 example input scripts (incl. retry-recovery.json (F7 proof),
                             policy-pinned-jump.json / policy-hound-reactive.json (closed-loop proof))
   reports/demo/             committed demo run output (json/md only)
+  reports/cp4/              committed CP4 decision-packet evidence + how to
+                            regenerate it (see its README); lives here because
+                            a decision packet must not cite gitignored paths
   runs/                     default ad-hoc output dir (gitignored)
   transform-capture.mjs    dev-only evidence script for the CP3 transform slice:
                             keyframe screenshots keyed on the ?testapi=1 transform
