@@ -385,7 +385,7 @@ owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; six-face-aimed-run.json --deterministic against a pinned tree
 blocked-by: T-018 merged (its grammar extension is the foundation)
 
-## T-020 | investigation | doing | P2
+## T-020 | investigation | done | P2
 
 goal: triage I-021 — every six-face run, on pristine main and on the lattice
 tree alike, spends its first life at ~3.0s falling into the same 3-tile gap at
@@ -988,7 +988,7 @@ Status flow: todo → doing → review → done; `operator` parks a task on a fe
 verdict; `blocked` parks it on a dependency or two failed attempts (note
 why). The Stop-hook flywheel only counts todo/doing/review as open work.
 
-## I-021 | bug | S2 | TRIAGED -> T-020 | repro: any six-face run on main OR task/T-009, --deterministic, aimless or aimed policy | evidence: docs/playtests/2026-08-gate-fight-harness.md (T-018); tools/playtest/runs/gate-T-009-fullrun-*
+## I-021 | bug | S2 | RESOLVED by T-020 — NOT a defect | repro: any six-face run on main OR task/T-009, --deterministic, aimless or aimed policy | evidence: docs/playtests/2026-08-gate-fight-harness.md (T-018); tools/playtest/runs/gate-T-009-fullrun-*
 
 Found by T-018 while instrumenting the gate fight: **every** run on both trees
 spends its first life at ~3.0s falling into the same 3-tile gap at x = 31.649
@@ -1074,3 +1074,23 @@ reads global. Fix is either honest wording in `tools/playtest/README.md` (and th
 flag table in the root README) that `enemies=0` is slice-only, or a default-run
 ambient-spawn kill switch for measurement, which is a new query flag and needs
 the usual off-by-default treatment.
+
+---
+
+**CORRECTION (integrator, 2026-08-01) — I-021 / T-020, and a premise I
+propagated.** I briefed T-020 that "RIG crosses ground at scroll speed 4.3 t/s
+holding right, so a held jump travels ~3.0 tiles and the gap is exactly 3 —
+marginal by construction." That is WRONG, and the gate proved it in a real
+browser rather than on paper: the right-screen clamp does not bind at the first
+gap in the shipped FAR view. Measured from a six-face trace, RIG approaches it
+at **9.40 t/s — exactly `runSpeed`** (x 15.48 -> 25.43 across gameMs
+1102 -> 2161); the clamp is tens of tiles ahead. The honest takeoff window is
+**449 ms (~27 frames at 60 Hz)**, plus ~16 frames of late-press grace via the
+air jump — not marginal, and not frame-perfect. The gap is authored to be
+jumped and the BOT could not see it; the generator was correctly left untouched.
+
+Where the bad number came from: T-009's build report observed that RIG is
+clamped to screen-right and therefore crosses at scroll speed. That is true
+*once RIG is riding the clamp*, and I applied it at an x where it is not. Any
+future claim about traversal cost must state WHERE the player is relative to
+the clamp, and be measured, not inherited.
