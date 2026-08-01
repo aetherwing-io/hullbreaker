@@ -59,11 +59,14 @@ import {
   limbPlanViolations, limbSpanHasGap, limbSpansPlayBand,
 } from '../src/pure/limb.js';
 import {
-  TRANSFORM_BEND_S, TRANSFORM_FIXTURE, TRANSFORM_PATH, bandSlamOffset,
+  TRANSFORM_BEND_S, TRANSFORM_FIXTURE, TRANSFORM_FIXTURES, TRANSFORM_PATH,
+  bandSlamOffset,
   buildTransformLevel,
-  buildTransformPath, transformAltAt, transformAtmosphereMix, transformBandHeading,
-  transformBandIndexAt, transformCoverAjar, transformEventTotalMs, transformFrontierS,
-  transformHaltS,
+  buildTransformPath, selectTransformFixture, transformAltAt,
+  transformAtmosphereMix, transformBandHeading,
+  transformBandIndexAt, transformBendSList, transformCoverAjar,
+  transformEventTotalMs, transformFrontierS,
+  transformGradeAt, transformHaltS,
   transformHeadingAt, transformPanelState, transformPathAt, transformScrollOffset,
   transformVapor,
   transformScrollVel, transformSeamPull, transformSealS, transformTimeline,
@@ -2001,6 +2004,440 @@ const XL = buildTransformLevel(CONFIG);
      'an uninterrupted run plus both rituals fits the fixture target, got ' + sprint.toFixed(1) + ' s');
   ok(XL.groundH[Math.floor(run.playerSpawn.x)] <= run.playerSpawn.y,
      'the spawn point stands on authored ground');
+}
+
+/* ================ G2 — neck access-plate flip gate (?g2=1) ============== *
+ * The monster-g2-neck-flip fixture: the greybox proposal's §G2 gate built on
+ * the transform-slice machinery with T-001's landed flip choreography reused
+ * verbatim. These assertions defend, in order: the opt-in selection wiring
+ * (every shipped URL keeps v1 byte-identical), the proposal's own numbers
+ * (halt 140 / pivot 154 / 14-tile apron / 10–12-tile plate / connectors near
+ * y 3-6-9 / five routes / hound low + wasp apex), the static-anatomy rule
+ * (gate overrides are geometry only — the shared curves are untouched), and
+ * the same fixture-validity contract the v1 sections hold themselves to.   */
+const G2F = TRANSFORM_FIXTURES['monster-g2-neck-flip'];
+const G2P = buildTransformPath(G2F, CONFIG);
+const G2L = buildTransformLevel(CONFIG, G2F);
+const G2E = G2F.events[0];
+const G2B = G2F.bounds;
+const G2GATE = G2E.gate;
+
+// --- selection wiring: opt-in, restorable, off by default ---------------
+{
+  ok(TRANSFORM_FIXTURE === XF && XF.id === 'transform-v1',
+     'the live transform fixture defaults to v1 (G2 is opt-in)');
+  ok(Object.keys(TRANSFORM_FIXTURES).sort().join() ===
+     'monster-g2-neck-flip,transform-v1',
+     'exactly two authored transform fixtures');
+  const v1Fix = TRANSFORM_FIXTURE;
+  const v1Path = JSON.stringify(TRANSFORM_PATH);
+  const v1Bends = JSON.stringify(TRANSFORM_BEND_S);
+  const v1Json = JSON.stringify(v1Fix);
+  const sel = selectTransformFixture('monster-g2-neck-flip');
+  ok(sel === G2F && TRANSFORM_FIXTURE === G2F &&
+     TRANSFORM_BEND_S.length === 1 && TRANSFORM_BEND_S[0] === G2E.seamS &&
+     TRANSFORM_PATH.segs.length === 3,
+     'selecting g2 swaps fixture, path and bend list together');
+  ok(JSON.stringify(buildTransformLevel(CONFIG)) === JSON.stringify(G2L),
+     'the default-arg level build follows the live selection');
+  const back = selectTransformFixture('transform-v1');
+  ok(back === v1Fix && TRANSFORM_FIXTURE === v1Fix &&
+     JSON.stringify(TRANSFORM_PATH) === v1Path &&
+     JSON.stringify(TRANSFORM_BEND_S) === v1Bends &&
+     JSON.stringify(TRANSFORM_FIXTURE) === v1Json,
+     'reselecting v1 restores the shipped bindings exactly (selection mutates nothing)');
+  ok(selectTransformFixture('no-such-fixture') === v1Fix,
+     'an unknown fixture id falls back to v1: the flag cannot half-arm');
+}
+
+// --- the proposal's own gate numbers ------------------------------------
+{
+  ok(G2F.id === 'monster-g2-neck-flip' && G2E.kind === 'flip' &&
+     G2F.bands.map((b) => b.kind).join('>') === 'exterior>interior',
+     'G2 is one flip from the haunch exterior into the neck interior');
+  ok(transformHaltS(G2E, CONFIG) === 140 && G2E.seamS === 154,
+     'scroll halt 140 and pivot 154, exactly the proposal P2 numbers (u51/u65)');
+  ok(G2E.seamS - transformHaltS(G2E, CONFIG) === 14,
+     'the gate apron is the proposal 14 tiles');
+  ok(transformHaltS(G2E, CONFIG) >= 119 &&
+     G2E.seamS + XT.thresholdTiles <= 161,
+     'gate arena and threshold stay inside the proposal s119-161 screen window');
+  ok(G2GATE.haltS === transformHaltS(G2E, CONFIG) &&
+     G2GATE.pivotS === G2E.seamS,
+     'the gate declaration matches the computed halt and pivot');
+  // the override mechanism must not leak into the shipped demo
+  ok(XF.events.every((ev) => transformHaltS(ev, CONFIG) === ev.seamS - XT.haltOffset),
+     'v1 events keep the CONFIG halt offset (no override present)');
+  near(transformSeamPull(XTL.t5, CONFIG), XT.seamPullTiles, 1e-9,
+       'seam pull without an event still resolves to the CONFIG tiles');
+  // pull override: same landing invariant as both v1 turns (halt + pull = seam + 2)
+  near(transformSeamPull(XTL.t5, CONFIG, G2E), G2E.seamPullTiles, 1e-9,
+       'the G2 event pull reaches its authored tiles by t5');
+  near(transformSeamPull(XTL.t2, CONFIG, G2E), 0, 1e-9,
+       'the G2 pull still starts on the first detent');
+  ok(transformHaltS(G2E, CONFIG) + G2E.seamPullTiles === G2E.seamS + 2 &&
+     XF.events.every((ev) => transformHaltS(ev, CONFIG) + XT.seamPullTiles === ev.seamS + 2),
+     'every turn, v1 and G2, lands its ritual pull exactly 2 tiles past the pivot');
+  near(transformScrollOffset(XTL.t5, G2F.run.minimumScrollSpeed, CONFIG, G2E),
+       G2E.seamPullTiles, 1e-9,
+       'the ritual scroll offset carries the G2 pull override');
+  // the wider apron still frames the whole ritual
+  const halfW = CC.z * Math.tan(CC.fov / 2 * DEG) * (16 / 9);
+  ok(G2E.haltOffset + XT.thresholdTiles < halfW + CC.x,
+     'the whole G2 threshold is visible from its 14-tile apron halt at 16:9');
+  ok(XT.armLookahead < G2E.haltOffset && XT.pressedOffset < G2E.haltOffset,
+     'arming lookahead and squeeze cap stay inside the G2 apron');
+  let ordered = true;
+  {
+    const halt = transformHaltS(G2E, CONFIG);
+    const trig = transformTriggerS(G2E, CONFIG);
+    const front = transformFrontierS(G2E, CONFIG);
+    const seal = transformSealS(G2E, CONFIG);
+    if (!(halt < G2E.seamS && G2E.seamS < trig && trig < front &&
+          front < G2E.seamS + XT.thresholdTiles && seal < trig && seal > G2E.seamS)) ordered = false;
+    if (G2F.bands[G2E.toBand].s0 !== G2E.seamS ||
+        G2F.bands[G2E.fromBand].s1 !== G2E.seamS) ordered = false;
+  }
+  ok(ordered, 'G2 gate geometry orders halt < seam < seal < trigger < frontier < threshold end');
+  ok(transformTriggerS(G2E, CONFIG) - PL.width / 2 >= G2E.seamS,
+     'RIG is wholly past the G2 seam before the ritual can fire');
+}
+
+// --- one static body: path, bands, climb --------------------------------
+{
+  let valid = G2F.bands[0].s0 === G2B.x0 &&
+    G2F.bands[G2F.bands.length - 1].s1 === G2B.x1;
+  for (let i = 1; i < G2F.bands.length; i++)
+    if (G2F.bands[i - 1].s1 !== G2F.bands[i].s0) valid = false;
+  ok(valid, 'G2 stretches tile the fixture bounds contiguously');
+  ok(JSON.stringify(buildTransformPath(G2F, CONFIG)) === JSON.stringify(G2P),
+     'the G2 path is a pure function of the fixture');
+  ok(G2P.segs.length === 1 + 2 * G2F.events.length,
+     'two bends for the one G2 turn, got ' + G2P.segs.length + ' segments');
+  let bad = 0, cont = true;
+  for (let s = G2B.x0; s < G2B.x1; s++) {
+    const a = transformPathAt(G2P, s), b = transformPathAt(G2P, s + 1);
+    const d = Math.hypot(a.x - b.x, a.z - b.z);
+    if (d > 1 + 1e-9 || d < Math.cos(XT.snapDeg * DEG / 2) - 1e-6) bad++;
+  }
+  for (const g of G2P.segs) {
+    const a = transformPathAt(G2P, g.s0 - 1e-7), b = transformPathAt(G2P, g.s0 + 1e-7);
+    if (Math.hypot(a.x - b.x, a.z - b.z) > 1e-5) cont = false;
+  }
+  ok(bad === 0 && cont, 'the G2 path is continuous with unit steps through its bend');
+  const before = transformHeadingAt(G2P, G2E.seamS - XT.chamferTiles);
+  const after = transformHeadingAt(G2P, G2E.seamS + XT.chamferTiles);
+  ok(Math.abs((after - before) / DEG - 2 * XT.snapDeg) < 1e-9 &&
+     Math.abs(before - transformBandHeading(G2F, 0, CONFIG)) < 1e-9 &&
+     Math.abs(after - transformBandHeading(G2F, 1, CONFIG)) < 1e-9 &&
+     G2F.bands[0].headingDeg === G2GATE.normalBeforeDeg &&
+     G2F.bands[1].headingDeg === G2GATE.normalAfterDeg,
+     'the G2 turn is two snapDeg detents between the declared surface normals');
+  ok(JSON.stringify(transformBendSList(G2F)) === JSON.stringify([G2E.seamS]),
+     'the bullet bend cull boundary sits on the G2 seam');
+  // the climb: earned on the ribline, flat across the whole gate footprint
+  const P = G2P.profile;
+  let monotone = true, maxGrade = 0;
+  for (let i = 1; i < P.length; i++) {
+    if (P[i].alt < P[i - 1].alt - 1e-9 || P[i].s <= P[i - 1].s) monotone = false;
+    maxGrade = Math.max(maxGrade, (P[i].alt - P[i - 1].alt) / (P[i].s - P[i - 1].s));
+  }
+  ok(monotone, 'the G2 altitude profile only ever climbs');
+  ok(maxGrade > 0.2 && maxGrade <= 0.45,
+     'the G2 grade stays readable side-on, got ' + maxGrade.toFixed(2));
+  ok(transformAltAt(G2P, 89) === 12,
+     'P2 starts at the proposal +12 render altitude');
+  ok(transformAltAt(G2P, transformHaltS(G2E, CONFIG)) - transformAltAt(G2P, 89) >= 14,
+     'at least +14 of P2 lift is earned on foot before the halt');
+  let flat = true;
+  for (let s = transformHaltS(G2E, CONFIG); s <= G2E.seamS + XT.thresholdTiles; s++)
+    if (transformAltAt(G2P, s) !== G2GATE.altBefore) flat = false;
+  ok(flat && G2GATE.altBefore === G2GATE.altAfter,
+     'altitude is dead flat across apron, seam and threshold: the ritual grants 0');
+  const climbSeconds = (transformHaltS(G2E, CONFIG) - 89) / PL.runSpeed;
+  ok(climbSeconds > 4, 'the P2 ascent is run, not cut: ' +
+     climbSeconds.toFixed(1) + ' s of ribline');
+}
+
+// --- authored surfaces, gaps, routes ------------------------------------
+{
+  let valid = true;
+  const covered = new Set();
+  for (const run of G2F.groundRuns) {
+    if (!Number.isInteger(run.x0) || !Number.isInteger(run.x1) || run.x0 >= run.x1 ||
+        run.x0 < G2B.x0 || run.x1 > G2B.x1 ||
+        (!run.gap && !Number.isFinite(run.y))) valid = false;
+    for (let x = run.x0; x < run.x1; x++) {
+      if (covered.has(x)) valid = false;
+      if (G2L.groundH[x] !== (run.gap ? GAP : run.y)) valid = false;
+      covered.add(x);
+    }
+  }
+  ok(valid && covered.size === G2B.x1 - G2B.x0,
+     'G2 authored surfaces cover the fixture bounds once and match the built heights');
+  let outsideMatches = true;
+  for (let i = 0; i < CONFIG.levelLength; i++)
+    if ((i < G2B.x0 || i >= G2B.x1) && G2L.groundH[i] !== gH[i]) outsideMatches = false;
+  ok(outsideMatches, 'the seeded layout outside the G2 bounds is untouched');
+  let widest = 0, badLanding = 0;
+  let i = G2B.x0;
+  while (i < G2B.x1) {
+    if (G2L.groundH[i] > -100) { i++; continue; }
+    const start = i;
+    while (i < G2B.x1 && G2L.groundH[i] < -100) i++;
+    widest = Math.max(widest, i - start);
+    let solid = 0;
+    while (i + solid < G2B.x1 && G2L.groundH[i + solid] > -100) solid++;
+    if (solid < GG.landingMin) badLanding++;
+    if (Math.abs(G2L.groundH[start - 1] - G2L.groundH[i]) > 1) badLanding++;
+  }
+  ok(widest > 0 && widest <= GG.gapMax,
+     'G2 gaps stay inside the jumpable band, widest ' + widest);
+  ok(badLanding === 0, 'every G2 gap has a legal landing strip after it');
+  ok(G2F.movement === undefined, 'the G2 fixture overrides no movement constant');
+  // catwalk validity + double-jump reachability (same rule as v1)
+  const ids = new Set();
+  let pvalid = true, reachable = true;
+  for (const p of G2F.platforms) {
+    if (typeof p.id !== 'string' || ids.has(p.id) || p.x0 >= p.x1 ||
+        p.x0 < G2B.x0 || p.x1 > G2B.x1 || !Number.isFinite(p.y)) pvalid = false;
+    ids.add(p.id);
+    let best = -999;
+    for (let k = p.x0 - 1; k <= p.x1 + 1; k++)
+      if (G2L.groundH[k] > -100) best = Math.max(best, G2L.groundH[k]);
+    for (const q of G2F.platforms)
+      if (q !== p && q.y < p.y && q.x1 > p.x0 - 1 && q.x0 < p.x1 + 1) best = Math.max(best, q.y);
+    if (p.y - best > GG.maxReach) reachable = false;
+  }
+  ok(pvalid && ids.size === G2F.platforms.length,
+     'G2 catwalks have unique ids and in-bounds spans');
+  ok(reachable, 'every G2 catwalk is within double-jump reach of a lower surface');
+  // five routes, by name: ridge, chimney, scapular plate, floor, underside
+  ok(['r1-', 'r2-', 'r3-', 'r5-'].every((pre) =>
+       G2F.platforms.some((p) => p.id.startsWith(pre))) &&
+     G2L.groundH[135] === 3,
+     'all five proposal routes are authored (r1 ridge, r2 chimney, r3 plate, low floor, r5 underside)');
+  const plate = G2F.platforms.find((p) => p.id === 'r3-scapular-plate');
+  ok(plate && plate.x1 - plate.x0 >= 10,
+     'the scapular plate is broad: ' + (plate ? plate.x1 - plate.x0 : 0) + ' tiles');
+}
+
+// --- the twin-rib chimney (authored solids) -----------------------------
+{
+  const ribs = G2F.solidRects;
+  ok(ribs.length === 2 && ribs.every((r) =>
+       Number.isInteger(r.x0) && Number.isInteger(r.x1) &&
+       Number.isInteger(r.y0) && Number.isInteger(r.y1) &&
+       r.x0 >= G2B.x0 && r.x1 <= G2B.x1 && r.y1 > r.y0),
+     'the chimney is exactly two in-bounds authored ribs');
+  ok(JSON.stringify(G2L.solidRects.map((r) => ({ ...r }))) === JSON.stringify(ribs.map((r) => ({ ...r }))),
+     'the built level carries the authored ribs');
+  const [ra, rb] = ribs;
+  ok(rb.x0 - ra.x1 >= 3 && rb.x0 - ra.x1 <= 5,
+     'the chimney mouth between the ribs is a jumpable 3-5 tiles, got ' + (rb.x0 - ra.x1));
+  // the low route runs (and a hound paces) beneath both ribs
+  let clearance = true;
+  for (const r of ribs)
+    for (let x = r.x0; x < r.x1; x++)
+      if (r.y0 - G2L.groundH[x] < PL.height + 0.3) clearance = false;
+  ok(clearance, 'both rib undersides clear a running player on the low route');
+  ok(ribs.every((r) => r.x1 <= G2E.seamS - 5 || r.x0 >= G2E.seamS + XT.thresholdTiles),
+     'no rib intrudes on the gate apron or threshold');
+  // solid collision truth: the rib cells really are solid, the mouth is not
+  ok(levelSolidCell(G2L, ra.x0, ra.y0, 8) === true &&
+     levelSolidCell(G2L, ra.x0, ra.y1, 8) === false &&
+     levelSolidCell(G2L, ra.x1, Math.floor((ra.y0 + ra.y1) / 2), 8) === false,
+     'rib collision matches its authored rect (solid inside, open above and beside)');
+  const apex = G2F.platforms.find((p) => p.id === 'r2-apex');
+  ok(apex && apex.x0 >= ra.x0 && apex.x1 <= rb.x1 && apex.y > 10 && apex.y < rb.y1,
+     'the chimney apex catwalk sits between and above the ribs');
+  // a wasp contests the apex hop (proposal: the wall-launch apex)
+  const apexWasp = G2F.spawns.find((s) => s.type === 'wasp' &&
+    s.x >= apex.x0 - 3 && s.x <= apex.x1 + 3);
+  const laneY = apexWasp && Math.min(G2L.groundH[Math.floor(apexWasp.x)] + apexWasp.lane, 10);
+  ok(!!apexWasp && laneY >= apex.y - 1.5 && laneY <= apex.y + 1.5,
+     'a wasp contests the chimney apex at its own height');
+}
+
+// --- the plate, the carry, the connectors -------------------------------
+{
+  ok(G2GATE.plate.tiles >= 10 && G2GATE.plate.tiles <= 12,
+     'the access plate is the proposal 10-12 tiles, got ' + G2GATE.plate.tiles);
+  const carry = G2GATE.carry;
+  ok(carry.s0 === G2E.seamS - 5 && carry.s1 === G2E.seamS + XT.thresholdTiles,
+     'the carried deck spans exactly the ritual footprint (apron mouth through threshold)');
+  ok(carry.s0 < G2E.seamS && carry.s1 > G2E.seamS,
+     'the carried surface exists on BOTH sides of the seam: it is carried, not rebuilt');
+  let flat = true, clean = true;
+  for (let s = carry.s0; s < carry.s1; s++)
+    if (G2L.groundH[s] !== carry.y) flat = false;
+  for (const p of G2F.platforms) if (p.x1 > carry.s0 && p.x0 < carry.s1) clean = false;
+  ok(flat, 'the carried deck is flat and solid at the declared height');
+  ok(clean, 'the G2 apron is platform-free through its threshold');
+  // three continuity connectors near local y 3 / 6 / 9
+  const want = [3, 6, 9];
+  ok(G2GATE.connectors.length === 3 &&
+     G2GATE.connectors.every((c, i) => Math.abs(c.y - want[i]) <= 0.5),
+     'continuity connectors sit near local y 3, 6 and 9');
+  ok(G2GATE.connectors[0].y === carry.y &&
+     G2GATE.connectors[0].during === 'carried',
+     'the low connector IS the carried deck, marked carried during the flip');
+  ok(G2GATE.connectors.every((c) => c.before && c.during && c.after),
+     'every connector declares its before/during/after visibility');
+  // mid and high: a shelf reaches the mouth outside, a catwalk answers inside
+  let linked = true;
+  for (const c of G2GATE.connectors.slice(1)) {
+    const outside = G2F.platforms.some((p) =>
+      p.y === c.y && p.x1 >= carry.s0 && p.x1 <= G2E.seamS);
+    const inside = G2F.platforms.some((p) =>
+      p.y === c.y && p.x0 >= G2E.seamS && p.x0 <= G2E.seamS + 10);
+    if (!outside || !inside) linked = false;
+  }
+  ok(linked, 'mid and high connectors have a shelf to the mouth and a catwalk beyond it');
+  ok(G2GATE.forwardExits.length >= 2 &&
+     G2GATE.forwardExits.every((id) => G2GATE.connectors.some((c) => c.id === id)),
+     'two or more declared forward exits survive the transformation');
+  ok(G2GATE.mechanism === 'access-plate',
+     'the gate declares the plate as its only permitted motion');
+}
+
+// --- the dare pocket (underside hang) -----------------------------------
+{
+  const dp = G2GATE.darePocket;
+  const shelf = G2F.platforms.find((p) => p.id === 'r5-pocket-shelf');
+  let gapAll = true;
+  for (let s = dp.s0; s < dp.s1; s++) if (G2L.groundH[s] > -100) gapAll = false;
+  ok(gapAll && shelf && shelf.x0 <= dp.s0 && shelf.x1 >= dp.s1 && shelf.y === dp.floorY,
+     'the underside pocket is a floor gap with its hang shelf beneath');
+  const deckY = G2L.groundH[dp.s1];
+  const apexRise = PL.jumpVel * PL.jumpVel / (2 * -PL.gravity);
+  ok(dp.floorY + apexRise >= deckY + 0.5,
+     'a single frozen jump escapes the pocket with clearance to spare');
+  // declared retreat timing is honest: at least the physics minimum, still short
+  const rise = deckY - dp.floorY;
+  const disc = Math.sqrt(PL.jumpVel * PL.jumpVel - 2 * -PL.gravity * rise);
+  const riseT = (PL.jumpVel - disc) / -PL.gravity;
+  const minSec = riseT + (dp.rejoinS - dp.s0) / PL.runSpeed;
+  ok(dp.retreatSec >= minSec && dp.retreatSec <= 2,
+     'declared pocket retreat (' + dp.retreatSec + 's) covers the physics minimum (' +
+     minSec.toFixed(2) + 's) and stays a SHORT hang');
+  ok(dp.s1 <= transformHaltS(G2E, CONFIG),
+     'the pocket commits before the gate halt, not inside the arena');
+  const ribA = G2F.solidRects[0];
+  ok(Math.abs(dp.rejoinS - ribA.x0) <= 2,
+     'the underside hang rejoins at the chimney base, per the proposal route 5');
+  // the reward socket hangs in the pocket, in open air
+  const rw = G2GATE.sockets.reward[0];
+  ok(!!rw && rw.x >= dp.s0 && rw.x < dp.s1 && rw.y >= dp.floorY &&
+     !levelSolidCell(G2L, Math.floor(rw.x), Math.floor(rw.y), 8),
+     'the pocket reward socket is declared, inside the pocket, in open air');
+}
+
+// --- authored pressure: hound low, wasps contested ----------------------
+{
+  let sorted = true, clear = true, typed = true;
+  for (let i = 0; i < G2F.spawns.length; i++) {
+    const e = G2F.spawns[i];
+    if (i > 0 && e.x <= G2F.spawns[i - 1].x) sorted = false;
+    if (e.x < G2B.x0 || e.x >= G2B.x1) clear = false;
+    if (e.type === 'wasp') { if (!Number.isFinite(e.lane)) typed = false; }
+    else if (e.type === 'hound') { if (!e.patrol || !Number.isFinite(e.dir)) typed = false; }
+    else typed = false;
+    for (const ev of G2F.events)
+      if (e.x >= ev.seamS - G2F.spawnClear.before && e.x <= ev.seamS + G2F.spawnClear.after) clear = false;
+  }
+  ok(sorted, 'the G2 ambient table is strictly ascending');
+  ok(clear, 'no G2 spawn sits in the seam-clear zone');
+  ok(typed, 'G2 spawns are authored wasps with lanes plus houndframes with patrols');
+  ok(G2F.spawns.length >= 4 && G2F.spawns.length <= 8,
+     'the G2 ecology stays simple, got ' + G2F.spawns.length);
+  const hounds = G2F.spawns.filter((s) => s.type === 'hound');
+  ok(hounds.length === 1, 'exactly one houndframe pressures the gate, got ' + hounds.length);
+  const h = hounds[0];
+  let floorRun = true;
+  for (let s = Math.floor(h.patrol.x0); s <= Math.ceil(h.patrol.x1); s++)
+    if (G2L.groundH[s] !== 3) floorRun = false;
+  ok(floorRun, 'the hound patrol paces a continuous stretch of the low joint-collar floor');
+  ok(h.patrol.x1 - h.patrol.x0 >= 6,
+     'the patrol is a real chokepoint span (entry 6: placement, not stats), got ' +
+     (h.patrol.x1 - h.patrol.x0).toFixed(1) + ' tiles');
+  ok(h.x >= h.patrol.x0 && h.x <= h.patrol.x1 && h.patrol.x1 < G2GATE.carry.s0,
+     'the hound spawns inside its patrol, short of the carried deck');
+}
+
+// --- interior validity + threat sockets (same contract as v1) -----------
+{
+  const IB = G2F.bands[1];
+  const IN = IB.interior;
+  ok(IN.ceilingAbove > PL.height + PL.jumpVel ** 2 / (2 * -PL.gravity) + 1,
+     'the neck interior ceiling clears a full jump');
+  ok(G2F.platforms.filter((p) => p.x0 >= IB.s0 && p.x1 <= IB.s1)
+       .every((p) => p.y + PL.height + 0.5 < G2L.groundH[Math.floor(p.x0)] + IN.ceilingAbove),
+     'interior catwalks keep player headroom under the neck ceiling');
+  const sockets = IB.threatSockets || [];
+  const ids = new Set();
+  let valid = true;
+  for (const so of sockets) {
+    if (typeof so.id !== 'string' || ids.has(so.id) ||
+        !['polyp', 'hazard'].includes(so.kind) ||
+        so.x < IB.s0 + XT.thresholdTiles || so.x >= IB.s1 ||
+        !Number.isFinite(so.y) || so.depth > -1) valid = false;
+    ids.add(so.id);
+    if (levelSolidCell(G2L, Math.floor(so.x), Math.floor(so.y), 8)) valid = false;
+    for (const ev of G2F.events)
+      if (so.x >= ev.seamS - 5 && so.x < ev.seamS + XT.thresholdTiles) valid = false;
+  }
+  ok(sockets.length >= 3 && valid && ids.size === sockets.length,
+     'G2 threat sockets are unique, open, behind the plane and clear of the apron');
+  ok(sockets.some((so) => so.kind === 'polyp') && sockets.some((so) => so.kind === 'hazard'),
+     'the neck interior declares both emplacement and hazard sockets');
+  ok(G2GATE.sockets.enemy.slice().sort().join() ===
+     sockets.map((so) => so.id).sort().join(),
+     'the gate declaration and the band agree on the enemy socket ids');
+}
+
+// --- run window ---------------------------------------------------------
+{
+  const run = G2F.run;
+  const halfWide = CC.z * Math.tan(CC.fov / 2 * DEG) * (16 / 9);
+  ok(run.startScroll + CC.x - halfWide >= G2B.x0,
+     'the G2 opening frame is filled by authored hull, not void');
+  ok(run.endScroll < G2F.finish.x0 && G2F.finish.x1 <= G2B.x1 &&
+     G2F.finish.x0 > G2E.seamS + 20,
+     'the G2 run ends well inside the neck, past the flip');
+  ok(run.minimumScrollSpeed > 0 && run.minimumScrollSpeed < PL.runSpeed,
+     'RIG can outrun the pursuing edge in the G2 fixture');
+  const sprint = (G2F.finish.x0 - run.playerSpawn.x) / PL.runSpeed +
+    transformEventTotalMs(CONFIG) / 1000;
+  ok(sprint >= G2F.targetPlaySeconds.min && sprint <= G2F.targetPlaySeconds.max,
+     'an uninterrupted G2 run plus the ritual fits the target, got ' + sprint.toFixed(1) + ' s');
+  ok(G2L.groundH[Math.floor(run.playerSpawn.x)] <= run.playerSpawn.y,
+     'the G2 spawn point stands on authored ground');
+}
+
+// --- choreography reuse: geometry overrides only ------------------------
+{
+  // The G2 event may add gate GEOMETRY on top of a v1 flip event — never a
+  // second choreography. Whitelist the extra keys so a drive-by curve
+  // override cannot sneak in through the fixture.
+  const baseKeys = new Set(Object.keys(XF.events[0]));
+  const extras = Object.keys(G2E).filter((k) => !baseKeys.has(k)).sort().join();
+  ok(extras === 'gate,haltOffset,plateRamp,seamPullTiles',
+     'G2 event extras are gate geometry + declarations only, got: ' + extras);
+  // and the shared flip curve is bit-identical for both events at every beat
+  let same = true;
+  for (let t = -50; t <= transformEventTotalMs(CONFIG) + 100; t += 10) {
+    const a = transformPanelState(t, XF.events[0], CONFIG);
+    const b = transformPanelState(t, G2E, CONFIG, {});
+    if (a.open !== b.open || a.jolt !== b.jolt || a.seated !== b.seated) same = false;
+  }
+  ok(same, 'the G2 plate runs T-001 flip choreography verbatim (relock on the hold)');
+  // static-anatomy guard: the sim can never read the render-only gate fields
+  for (const file of layerFiles('sim')) {
+    const src = stripComments(readFileSync(file, 'utf8'));
+    ok(!/plateRamp|seatRake|\.gate\./.test(src),
+       file.split('/').pop() + ' never reads the G2 render-only gate fields');
+  }
 }
 
 // --- ledge-probe reach/gap epsilon boundaries --------------------------
