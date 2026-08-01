@@ -431,3 +431,111 @@ game at all, and in what form. Parked as T-021 so the thinking is not lost.
 
 **Source:** operator verdict, 2026-08-01, in response to the integrator's
 escalation after the third failed attempt at I-019.
+
+## 10 — 2026-08-01 — Run-energy verdict: split decisions at speed; the pocket becomes a loop, not a cul-de-sac
+
+**Verdict:** T-021 is **unparked**, and the run's target energy is stated by
+the operator as governing direction for the lattice, pacing and optional
+content:
+
+**Operator verbatim:** "correct, unpark t-021. i want lots of split decisions,
+esceleration, action, climb, climb climb, keep going faster kind of energy for
+the player"
+
+**The tension this creates, named rather than buried.** `docs/DESIGN.md:176`
+defines a dare pocket as a **dead end** — "Do I have time to grab that
+capsule?" — escapable at the current scroll speed (`:284`), advertising its
+reward and retreat path before commitment (`:169`). That mechanic was built
+and playtested in the traversal slice (`:446`, `:565`) and it works. But a
+cul-de-sac is a *decelerating* structure: the decision is instant, the
+execution is a reversal. "Keep going faster" and "climb, climb, climb" argue
+against ever asking the player to turn around in the main run.
+
+**Resolution (integrator design call under this verdict; reverse it if wrong):
+the pocket becomes a LOOP, not a cul-de-sac.** The player commits at a fork,
+takes a longer and more exposed line that **rejoins the route ahead**, and
+pays in time and risk without reversing. This keeps DESIGN's actual question —
+"do I have time to grab that capsule?" — while never breaking forward motion:
+- the DECISION stays split-second, taken at the fork at speed;
+- the COST stays real and measurable in the currency that exists here, time
+  against the pursuing edge plus exposure, not distance travelled backward;
+- the shape serves "climb": the greedy line is the higher, more exposed one.
+
+The dead-end form is **not** deleted — it remains valid in the traversal slice
+and anywhere a deliberate pause is wanted. It is the MAIN RUN that takes the
+loop form, and `DESIGN.md`'s dare-pocket section is to be updated to say so.
+
+**Consequences beyond the pocket** — this verdict governs the lattice, not
+just T-021:
+- **Split decisions** are a density target: forks the player reads and commits
+  to at speed, frequently, not one wager per face.
+- **Escalation** is the benefit test carried over from entry 9: power and
+  pressure rise together (pillar 3); a pickup that feeds the fight is good.
+- **Climb** is the dominant motion; a face that reads as a flat corridor is a
+  defect even if its route count is nominally in range.
+- **"Keep going faster"** puts run TEMPO in scope — whether pace escalates
+  across the six faces is now a live design question rather than a fixed
+  constant. It is NOT authorized as a movement-constant retune (those stay
+  frozen, entry-asserted); it means pacing, spawn cadence and lattice shape.
+
+**Acceptance rule adopted at the same time**, from the three failed passes at
+I-019: a task's acceptance box must name **the currency the player pays in**
+and **the test that would falsify it**. "Measured retreat" is a feeling and
+cannot be gated; "a policy that never leaves the main line collects zero
+rewards" is a gate. Feelings go to the operator; boxes get tests.
+
+**Source:** operator verdict, 2026-08-01, after the integrator surfaced that
+the three failed pocket passes had built a reach puzzle rather than the
+documented time wager.
+
+## 11 — 2026-08-01 — Split-decision verdict: dead ends are the wrong branch; pace escalates at the player's momentum
+
+**Operator verbatim:** "yes, a dead end as a wrong decision, there must be some
+challenge and reward. yes, pace should esclate across the faces, but at the
+player's momemntum. a good player escalates the action to intense levels of
+explosion and speed, a new player is pushed along while they learn the
+mechanics. eventually, boosts and scene transitions may rocket the player
+forward and upward in a variety of ways with the face transitions ratching and
+pumping the 'scaling a goliath' feel more real and action packed"
+
+**This amends entry 10's resolution.** Entry 10 had me rule the pocket a LOOP
+and retire the cul-de-sac from the main run. That was half right. The forward
+energy holds — but the dead end is **restored, in a different role**: it is
+what a WRONG split decision costs you, not the shape the reward lives on.
+
+**The structure, as it now stands:**
+1. A **fork** the player reads and commits to at speed.
+2. The right branch carries **challenge AND reward** — higher, more exposed,
+   it pays, and it rejoins ahead.
+3. The wrong branch **dead-ends**. Choosing it costs real time against the
+   pursuing edge. That is the stake that makes the decision a decision.
+
+**Fairness rider (integrator, binding until an operator says otherwise):** the
+dead end must be **legible as a risk before commitment** — the player can see
+that branch might not go through. `DESIGN.md:169` already requires pockets to
+advertise before commitment, and that survives here restated: a dead end you
+could not have read is a memorization trap, and punishes replay knowledge
+rather than skill. A dead end you gambled on is the mechanic working.
+
+**Pace escalates at the player's momentum, not on a timer.** A good player
+escalates the action to intense speed and explosion; a new player is pushed
+along while they learn. The physics already supports this and we now have it
+measured (T-020): `runSpeed` 9.4 t/s against a scroll of ~4.3 t/s, so **moving
+forward BANKS daylight**. That banked daylight is the natural currency of
+escalation — read the forks well, bank distance, and the run answers with more
+pressure and more payoff; read them badly, lose the bank, and the run holds at
+its floor pace and carries you. Escalation is therefore an EARNED consequence
+of route-reading quality, not a scripted ramp per face.
+
+**Explicitly NOT authorized by this entry:** retuning the frozen jump/movement
+constants. Pace, spawn cadence, scroll behaviour and lattice shape are the
+levers; `CONFIG`'s movement block stays frozen and asserted.
+
+**Direction of travel, recorded now so it is designed toward rather than
+bolted on later ("eventually"):** boosts and scene transitions that rocket the
+player forward and upward, with face transitions ratcheting and pumping — the
+"scaling a goliath" fantasy made physical. Parked as T-023; the pace work
+(T-022) should leave room for it rather than hard-coding a ceiling.
+
+**Source:** operator direction, 2026-08-01, after the integrator asked whether
+the pocket failures were a design problem or unclear direction.

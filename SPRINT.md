@@ -385,7 +385,7 @@ owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; six-face-aimed-run.json --deterministic against a pinned tree
 blocked-by: T-018 merged (its grammar extension is the foundation)
 
-## T-020 | investigation | doing | P2
+## T-020 | investigation | done | P2
 
 goal: triage I-021 — every six-face run, on pristine main and on the lattice
 tree alike, spends its first life at ~3.0s falling into the same 3-tile gap at
@@ -409,28 +409,37 @@ accept:
 owner: lattice-designer
 verify: node tools/pathcheck.mjs; a run that reaches the first gate without losing a life
 
-## T-021 | design | parked | P3
+## T-021 | feature | doing | P1
 
-goal: the DARE, as its own concept. Operator verdict decisions.md entry 9
-parked rather than rejected it: "dare can be remembered and implemented in a
-different concept". This task exists so the thinking is not lost, and is NOT
-to be dispatched without an operator go-ahead.
-what we learned paying for it once (T-009, three passes):
-- pricing an optional reward in HEIGHT cannot work: RIG's jump + air-jump
-  envelope is frozen and generous, so anything authored in the tier band the
-  player already occupies is inside it, and raising it is an arms race with a
-  constant the fleet may not retune
-- the currency that IS real here is TIME against the pursuing edge: RIG
-  crosses ground at scroll speed (~4.3 t/s) when holding right, so every tile
-  spent moving backward is daylight surrendered — a dare priced in retreat
-  time is enforceable where one priced in reach is not
-- an assertion must have the PLAYER's reachable envelope as its subject; the
-  original pocket assertions were all true and all missed the defect because
-  they asserted shelf-reachability instead of reward-reachability
-candidate shapes, unjudged: an optional harder ROUTE whose cost is the route
-itself; a contested plate that must be held; a reward that must be carried.
-owner: unassigned
-verify: n/a until dispatched
+goal: the DARE, rebuilt as the operator's run energy demands it — decisions.md
+entry 10. NOT a cul-de-sac: a LOOP. The player commits at a fork, takes a
+longer, higher, more exposed line, and REJOINS the route ahead — paying in time
+against the pursuing edge and in exposure, never by turning around. DESIGN's
+own question survives ("do I have time to grab that capsule?"); what changes is
+that answering it never breaks forward motion.
+Target energy, operator verbatim: "lots of split decisions, esceleration,
+action, climb, climb climb, keep going faster kind of energy for the player."
+accept:
+- [ ] prototype in the TRAVERSAL SLICE behind a flag, off by default (the
+      six-face lattice is contended by T-009/T-020 this cycle — do not touch
+      src/pure/generator.js or src/pure/lattice.js)
+- [ ] the greedy line is the HIGHER, more exposed one, and it rejoins ahead:
+      no reversal, no dead end, no free drop back to the main line
+- [ ] the fork is readable AT SPEED at the FAR default — the player commits
+      without stopping; if it needs a pause to read, it has failed
+- [ ] CURRENCY + FALSIFYING TEST (entry 10's acceptance rule): the cost is
+      time-against-the-edge and exposure. Assert it as: a policy that always
+      takes the main line collects zero loop rewards, AND a policy that takes
+      the loop still finishes with the pursuing-edge daylight margin intact.
+      Assert against the PLAYER's reachable envelope, not the author's intent
+      — the I-019 assertions were all true and all missed the defect
+- [ ] a written proposal in docs/proposals/ specifying the mechanic, so the
+      six-face integration has something exact to build against once the
+      lattice lanes land
+- [ ] operator packet: URL + questions on whether the fork reads as a split
+      decision at speed and whether taking it escalates the action
+owner: lattice-designer
+verify: node tools/pathcheck.mjs; a named playtest script that takes the loop and one that skips it, both --deterministic; screenshots at ?view=far
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
@@ -979,7 +988,7 @@ Status flow: todo → doing → review → done; `operator` parks a task on a fe
 verdict; `blocked` parks it on a dependency or two failed attempts (note
 why). The Stop-hook flywheel only counts todo/doing/review as open work.
 
-## I-021 | bug | S2 | TRIAGED -> T-020 | repro: any six-face run on main OR task/T-009, --deterministic, aimless or aimed policy | evidence: docs/playtests/2026-08-gate-fight-harness.md (T-018); tools/playtest/runs/gate-T-009-fullrun-*
+## I-021 | bug | S2 | RESOLVED by T-020 — NOT a defect | repro: any six-face run on main OR task/T-009, --deterministic, aimless or aimed policy | evidence: docs/playtests/2026-08-gate-fight-harness.md (T-018); tools/playtest/runs/gate-T-009-fullrun-*
 
 Found by T-018 while instrumenting the gate fight: **every** run on both trees
 spends its first life at ~3.0s falling into the same 3-tile gap at x = 31.649
@@ -1017,3 +1026,71 @@ way, so this is a foot-gun, not a hole in the &&-only grammar, and it is
 engine), not introduced by T-018. Fix is either wording ("arithmetic is
 rejected behind ordering operators") or one more compile-time guard rejecting a
 non-numeric rhs that contains an operator character.
+
+## I-024 | docs | S3 | repro: in a `git archive task/T-020` copy, replace the floor pin inside the gap probe's `cross()` (`if (floor) E.setEdges(x0 + hw + M - 200, x0 + hw + M);` → `if (false) …`) and run `node tools/pathcheck.mjs` → **1527 passed, 0 failed** | evidence: reports/tasks/T-020/playtest.md §4; tools/pathcheck.mjs (search `FAIR-GAP INVARIANT`)
+
+Found while gating T-020, on the guard the new invariant uses to prove its own
+honesty: `'the same gaps are wider still at run speed … (the probe really is
+measuring the floor, not a free run)'` asserts `runSingle > floorSingle`
+**strictly**, which catches a probe that starts at `runSpeed` (the builder's own
+negative control fails exactly this, verified) but not one that keeps the
+scroll-speed start and merely loses the screen clamp. Measured that case
+independently: with the clamp gone but `vx` still initialised to `scrollSpeed`,
+RIG accelerates to `runSpeed` in the air and the "floor" window for gap 29-31
+balloons **0.74 → 4.12 tiles** against a run-speed 4.22 — still strictly less, so
+the guard passes while the column silently reports an almost-free run under the
+label "SCROLL speed". Nothing is wrong with the shipped numbers (they reproduce
+under independent code with the pin present); this is about how much protection
+the guard buys the next person to edit `sim/edges.js` or `CONFIG.edges.margin`.
+Fix is one more assertion inside the probe — e.g. record max `|vx|` during the
+floor sweep and assert it never exceeds `scrollSpeed + ε`, which is the property
+the label actually claims.
+
+## I-025 | feel | S3 | repro: `cd tools/playtest && node run.mjs <a policy script: hold right + tap jump on terrain.gapDist<2.2> --deterministic --max-runtime-ms 20000 --base-url <pinned main-equivalent tree>` — hp 3→2 at `gameMs` 2769, RIG airborne at x = 30.49 y = 4.68 over gap 29-31, wasp id 2 in `dive` at x = 31.28 | evidence: tools/playtest/runs/gate-T-020-firstgap/report.json; docs/playtests/2026-08-first-gap-triage.md §4b; reports/tasks/T-020/playtest.md §3(e)
+
+`CONFIG.spawner.startS = 28` puts the ambient table's first row — a wasp — one
+column before the first gap's near lip, i.e. on the takeoff itself. T-020 found
+it analytically; this gate reproduced it in a real browser on the shipped FAR
+camera: the wasp dives into RIG mid-flight over the pit at t ≈ 2.8 s, and because
+`damagePlayer` sets `vx = sign(x − fromX) * knockbackX`, a hit taken from ahead
+throws him **backwards into the hole he is crossing** (trace: x 30.44 → 30.17 →
+29.72 after the hit). Over a gap that converts a heart into a life. It lands
+before the player has been taught anything and before the first wave gate. Not a
+terrain defect and not fixed by T-020 — an operator difficulty call, per that
+doc's §6 Q5: push `spawner.startS` past the landing strip (`28 → 33`), keep it as
+a "shoot before you jump" lesson, or treat the compound punishment as the point.
+
+## I-026 | docs | S3 | repro: `cd tools/playtest && node run.mjs <any default-run script with url `index.html?enemies=0`> --deterministic --base-url <pinned tree>` → the trace carries 2–6 live `wasp`/`carrier` rows in `hostiles[]` from the first sample on | evidence: tools/playtest/runs/gate-T-020-firstgap/report.json (url `index.html?enemies=0&testapi=1`, hostiles present throughout); src/mode.js:37; src/sim/spawner.js:24
+
+`?enemies=0` sets `SLICE_ENEMIES_ENABLED`, which is only ever consulted for the
+**slice fixtures** (`spawner.js` uses it to blank a fixture's authored spawn
+list). On a default six-face run the ambient spawner is untouched, so the flag is
+a silent no-op: a run authored as "terrain only, combat isolated" is in fact a
+live-combat run, and any per-gap or pacing number taken from it inherits hostile
+knockback it was designed to exclude. Caught while writing T-020's gate evidence
+— the run intended as a clean terrain crossing took a wasp hit over the gap at
+2.8 s (see I-025). Nothing is broken in the game; the trap is that the flag name
+reads global. Fix is either honest wording in `tools/playtest/README.md` (and the
+flag table in the root README) that `enemies=0` is slice-only, or a default-run
+ambient-spawn kill switch for measurement, which is a new query flag and needs
+the usual off-by-default treatment.
+
+---
+
+**CORRECTION (integrator, 2026-08-01) — I-021 / T-020, and a premise I
+propagated.** I briefed T-020 that "RIG crosses ground at scroll speed 4.3 t/s
+holding right, so a held jump travels ~3.0 tiles and the gap is exactly 3 —
+marginal by construction." That is WRONG, and the gate proved it in a real
+browser rather than on paper: the right-screen clamp does not bind at the first
+gap in the shipped FAR view. Measured from a six-face trace, RIG approaches it
+at **9.40 t/s — exactly `runSpeed`** (x 15.48 -> 25.43 across gameMs
+1102 -> 2161); the clamp is tens of tiles ahead. The honest takeoff window is
+**449 ms (~27 frames at 60 Hz)**, plus ~16 frames of late-press grace via the
+air jump — not marginal, and not frame-perfect. The gap is authored to be
+jumped and the BOT could not see it; the generator was correctly left untouched.
+
+Where the bad number came from: T-009's build report observed that RIG is
+clamped to screen-right and therefore crosses at scroll speed. That is true
+*once RIG is riding the clamp*, and I applied it at an x where it is not. Any
+future claim about traversal cost must state WHERE the player is relative to
+the clamp, and be measured, not inherited.

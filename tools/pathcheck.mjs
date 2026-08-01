@@ -462,6 +462,260 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
   ok(badDelta === 0, 'height change across each gap <= 1');
   ok(gapCols >= 10, 'terrain actually has gaps, got ' + gapCols + ' gap columns');
 }
+
+/* --- FAIR-GAP INVARIANT: every gap crosses at the SCROLL FLOOR ---------- *
+ * T-020's triage of I-021. Every full-run measurement this sprint spent its
+ * first life at t≈3.0 s at x = 31.649 — the far lip of the first gap (columns
+ * 29–31), on pristine `main` and on every branch, to three decimals. It is a
+ * geometric constant, not a tuning artifact: 31.649 = 32 − hw − 0.001 is the
+ * x-collision resolution against the far lip's wall face, i.e. RIG walked off
+ * the near lip and slid down the far one. See
+ * docs/playtests/2026-08-first-gap-triage.md.
+ *
+ * The two guards that were already here are the reason it shipped unseen:
+ * `gap runs <= gapMax`, immediately above, asserts a WIDTH, and the
+ * frozen-tune check further up ("full jump at run speed clears the widest gap
+ * with margin") asserts reach at PL.runSpeed — the fastest RIG can ever move.
+ * Neither asks the question a player asks: can I get across from where I am
+ * standing, at the speed I actually have? Same failure mode as T-009's, whose
+ * pocket assertions were all true and all missed the actual defect because
+ * they asserted what the generator intended rather than what a player can do.
+ *
+ * RIG's ground speed has a floor and a ceiling. The ceiling is runSpeed (9.4).
+ * The floor is CONFIG.scrollSpeed (4.3): the right screen clamp in
+ * sim/player.js pins x + hw to sRightEdge() − edges.margin, and that edge
+ * advances with scrollX, so a player jammed against it crosses ground at
+ * exactly the scroll speed however hard they hold right. Every gap must be
+ * jumpable at the FLOOR, because a player who has been caught by the plane
+ * has no faster option and no way to earn one.
+ *
+ * The probe below drives the real, unmodified sim/player.js loop over the
+ * real generated columns in a CHILD process (like the ?g1=1 equivalence test
+ * further down) so it cannot perturb this file's shared clock, keys, edges or
+ * weapon state. For every gap it sweeps takeoff positions along the left lip,
+ * holds right, presses jump once, and asks whether RIG ends up standing,
+ * alive, past the gap — landing on a catwalk that reaches past it counts,
+ * because a player standing on one has crossed.                            */
+{
+  // the same gap enumeration the child runs, over this file's own copy of the
+  // generated columns — so a probe that silently saw different terrain trips
+  const gapRuns = (cols) => {
+    const out = [];
+    let i = 0;
+    while (i < cols.length) {
+      if (cols[i] > -100) { i++; continue; }
+      const s = i;
+      while (i < cols.length && cols[i] < -100) i++;
+      if (s > 0 && i < cols.length) out.push([s, i - 1]);
+    }
+    return out;
+  };
+  const simURL = 'file://' + join(srcDir, 'sim');
+  const gapProbeChild = `
+    globalThis.__HB_QUERY__ = '';
+    const [T, E, LV, PLm, IN, WG, CF] = await Promise.all([
+      import(${JSON.stringify(simURL + '/time.js')}),
+      import(${JSON.stringify(simURL + '/edges.js')}),
+      import(${JSON.stringify(simURL + '/level.js')}),
+      import(${JSON.stringify(simURL + '/player.js')}),
+      import(${JSON.stringify(simURL + '/input.js')}),
+      import(${JSON.stringify(simURL + '/wavegate.js')}),
+      import(${JSON.stringify('file://' + join(srcDir, 'config.js'))}),
+    ]);
+    const C = CF.CONFIG, PL = C.player, hw = PL.width / 2, M = C.edges.margin;
+    const p = PLm.player;
+    // No corner may clamp the right edge during the probe: this measures
+    // terrain, not the wave-gate pivot wall.
+    for (const c of WG.cornerEvents) c.state = 'done';
+
+    const gaps = [];
+    { let i = 0;
+      while (i < LV.groundH.length) {
+        if (LV.groundH[i] > -100) { i++; continue; }
+        const s = i;
+        while (i < LV.groundH.length && LV.groundH[i] < -100) i++;
+        if (s > 0 && i < LV.groundH.length)
+          gaps.push({ x0: s, x1: i - 1, w: i - s, hL: LV.groundH[s - 1], hR: LV.groundH[i] });
+      } }
+
+    // One attempt. RIG stands on the left lip at takeoff x0, holds right,
+    // presses jump on frame 0 (again at the apex when air=true), and touches
+    // nothing else. floor=true pins him against the right screen clamp, so his
+    // ground speed is exactly CONFIG.scrollSpeed; floor=false lets him run.
+    function cross(g, x0, dt, air, floor) {
+      for (const k in IN.keys) IN.keys[k] = false;
+      IN.clearJumpBuffer(); PLm.clearPlayerTraversal(0); T.setScrollX(0);
+      p.x = x0; p.y = g.hL;
+      p.vx = floor ? C.scrollSpeed : PL.runSpeed; p.vy = 0;
+      p.grounded = true; p.onOneWay = null;
+      p.airJumpsLeft = PL.airJumps; p.coyoteUntil = 0; p.dropUntil = 0;
+      p.jumpCutDone = true; p.hp = PL.maxHealth; p.lives = PL.lives;
+      p.iframesUntil = 0; p.hitstunUntil = 0; p.traversalControlUntil = 0;
+      if (floor) E.setEdges(x0 + hw + M - 200, x0 + hw + M);
+      else E.setEdges(-1000, 1000);
+      IN.keys.right = true; IN.keys.jump = true;
+      IN.bufferJumpUntil(T.gameMs + PL.jumpBufferMs);
+      let airLeft = air, prevVy = 0;
+      for (let i = 0, n = Math.ceil(4 / dt); i < n; i++) {
+        if (airLeft && i > 0 && prevVy > 0 && p.vy <= 0) {
+          IN.bufferJumpUntil(T.gameMs + PL.jumpBufferMs); airLeft = false;
+        }
+        prevVy = p.vy;
+        T.advanceGameMs(dt * 1000);
+        if (floor) T.setScrollX(T.scrollX + C.scrollSpeed * dt);
+        PLm.updatePlayer(dt);
+        // Bail before the kill plane so the probe never runs the death path
+        // (loseLife would touch weapons, mods and the score). Gap height
+        // deltas are capped at 1 tile, so 2 below the takeoff lip is a fall.
+        if (p.y < g.hL - 2) return false;
+        if (p.grounded && i > 2 && p.x - hw > g.x1 + 0.5) return true;
+      }
+      return false;
+    }
+
+    // The takeoff window: the run of positions on the left lip from which that
+    // one press crosses. hi is the last x where RIG is still grounded — the
+    // sim's own rule, floor(x - hw + 0.02) still indexing the lip column.
+    function windowFor(g, dt, air, floor) {
+      const hi = g.x0 + hw - 0.02;
+      let lo = null, up = null;
+      for (let n = 0; ; n++) {
+        const x = g.x0 - 8 + n * 0.02;
+        if (x > hi) break;
+        if (cross(g, x, dt, air, floor)) { if (lo === null) lo = x; up = x; }
+      }
+      return { lo, up, width: lo === null ? 0 : up - lo, atLip: cross(g, hi, dt, air, floor) };
+    }
+
+    // Late-press grace: run off the lip at full speed and press jump n frames
+    // LATE. Measured twice. With air=false the air jump is withheld, which
+    // isolates coyote time — and on a level gap that buys ZERO frames: one
+    // frame past the lip RIG's feet are already below the far lip's top, and a
+    // jump only restores the height it left from, so he arrives at the far
+    // wall's FACE instead of its top. With air=true (the real game) the late
+    // press spends the air jump instead, and that is what actually forgives it.
+    function graceFrames(g, dt, floor, air) {
+      const hi = g.x0 + hw - 0.02;
+      let n = 0;
+      for (; n < 40; n++) {
+        for (const k in IN.keys) IN.keys[k] = false;
+        IN.clearJumpBuffer(); PLm.clearPlayerTraversal(0); T.setScrollX(0);
+        p.x = hi; p.y = g.hL; p.vx = floor ? C.scrollSpeed : PL.runSpeed; p.vy = 0;
+        p.grounded = true; p.onOneWay = null; p.coyoteUntil = 0; p.dropUntil = 0;
+        p.jumpCutDone = true; p.hp = PL.maxHealth; p.lives = PL.lives;
+        p.iframesUntil = 0; p.hitstunUntil = 0; p.traversalControlUntil = 0;
+        if (floor) E.setEdges(hi + hw + M - 200, hi + hw + M); else E.setEdges(-1000, 1000);
+        IN.keys.right = true;
+        let crossed = false, pressed = false;
+        for (let i = 0, fr = Math.ceil(4 / dt); i < fr; i++) {
+          p.airJumpsLeft = air ? PL.airJumps : 0;
+          if (i === n) { IN.keys.jump = true; IN.bufferJumpUntil(T.gameMs + PL.jumpBufferMs); pressed = true; }
+          T.advanceGameMs(dt * 1000);
+          if (floor) T.setScrollX(T.scrollX + C.scrollSpeed * dt);
+          PLm.updatePlayer(dt);
+          if (p.y < g.hL - 2) break;
+          if (p.grounded && pressed && i > n + 2 && p.x - hw > g.x1 + 0.5) { crossed = true; break; }
+        }
+        if (!crossed) break;
+      }
+      return n - 1;
+    }
+
+    const dt = 1 / 60;
+    const out = gaps.map((g) => {
+      const single = windowFor(g, dt, false, true);
+      const dbl = single.lo === null ? windowFor(g, dt, true, true) : single;
+      const run = windowFor(g, dt, false, false);
+      return { x0: g.x0, x1: g.x1, w: g.w, hL: g.hL, hR: g.hR,
+        floorSingle: +single.width.toFixed(4), floorSingleAtLip: single.atLip,
+        floorAny: +dbl.width.toFixed(4), needsAirJump: single.lo === null,
+        runSingle: +run.width.toFixed(4), runSingleAtLip: run.atLip,
+        floorGrace: graceFrames(g, dt, true, true),
+        runGrace: graceFrames(g, dt, false, true),
+        floorGraceGround: graceFrames(g, dt, true, false) };
+    });
+    console.log(JSON.stringify({ gate1: WG.cornerEvents[0].s, gaps: out }));
+  `;
+  let probe = null;
+  try {
+    probe = JSON.parse(execFileSync(process.execPath,
+      ['--input-type=module', '-e', gapProbeChild],
+      { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }));
+  } catch (e) {
+    console.error('pathcheck: gap-crossing probe child failed: ' + e.message);
+  }
+  ok(!!probe, 'the gap-crossing probe drives the real player loop headlessly');
+  if (probe) {
+    const G = probe.gaps;
+    ok(G.length === gapRuns(gH).length && G.length >= 8,
+       'the probe saw every generated gap (' + G.length + ')');
+    // A fair gap is one whose takeoff window is at least as wide as the game's
+    // own forgiveness: CONFIG.player.jumpBufferMs of travel at the floor speed.
+    // Narrower than that and the input buffer cannot cover a mistimed press.
+    const MIN_W = PL.jumpBufferMs / 1000 * CONFIG.scrollSpeed;
+    const face1 = G.filter((g) => g.x1 < probe.gate1);
+    ok(face1.length >= 2, 'face 1 has gaps to check before the first wave gate (' +
+       face1.length + ' before s=' + probe.gate1 + ')');
+    const fmt = (g) => g.x0 + '-' + g.x1 + '(w' + g.w + ') floor ' + g.floorSingle.toFixed(2) +
+      't/' + (g.floorSingle / CONFIG.scrollSpeed * 1000).toFixed(0) + 'ms';
+    {
+      const thin = face1.filter((g) => g.floorSingle < MIN_W || !g.floorSingleAtLip);
+      ok(thin.length === 0,
+         'every face-1 gap before the first wave gate is crossable from the deck at SCROLL speed ' +
+         'with one held jump, window >= one jump buffer (' + MIN_W.toFixed(2) + ' tiles): ' +
+         face1.map(fmt).join(', ') + (thin.length ? ' -- FAILS: ' + thin.map(fmt).join(', ') : ''));
+    }
+    {
+      const worst = Math.min.apply(null, face1.map((g) => g.runSingle));
+      // Strictly wider, not merely wider-or-equal: at 2.2x the ground speed the
+      // same gap must be easier. Equality would mean the right-clamp pin never
+      // bit and the "floor" column was quietly measured at run speed.
+      ok(face1.every((g) => g.runSingle > g.floorSingle && g.runSingleAtLip),
+         'the same gaps are wider still at run speed, worst window ' + worst.toFixed(2) +
+         ' tiles (the probe really is measuring the floor, not a free run)');
+    }
+    {
+      // The first gap the run presents, named: it is the first thing the game
+      // teaches, and I-021 says it is where every measured run died.
+      const first = G[0];
+      ok(first.x0 === 29 && first.x1 === 31 && first.w === 3 && first.hL === 2 && first.hR === 2,
+         'the first gap is still columns 29-31 at h=2 (' + fmt(first) + ')');
+      ok(first.floorSingle >= MIN_W && first.floorSingleAtLip && first.runSingle >= 4,
+         'the first gap is jumpable both ways: ' + first.floorSingle.toFixed(2) +
+         ' tiles of takeoff at the scroll floor, ' + first.runSingle.toFixed(2) + ' at run speed');
+    }
+    {
+      // A late press must still cross. Note the third figure in the message:
+      // with the air jump withheld the grace is 0 frames on every level gap —
+      // one frame past the lip RIG's feet are below the far lip's top and a
+      // jump only restores the height it left from, so coyote time cannot
+      // save a flat gap. The air jump is what actually forgives it.
+      const coyoteFrames = Math.round(PL.coyoteMs / 1000 * 60);
+      const stingy = face1.filter((g) => g.floorGrace < coyoteFrames);
+      ok(stingy.length === 0,
+         'a press up to ' + coyoteFrames + ' frames late (one coyote window) still crosses every ' +
+         'face-1 gap at the scroll floor, measured ' +
+         face1.map((g) => g.x0 + '-' + g.x1 + ': ' + g.floorGrace + 'f floor / ' + g.runGrace +
+                   'f run / ' + g.floorGraceGround + 'f without the air jump').join(', '));
+    }
+    {
+      const stuck = G.filter((g) => g.floorAny < MIN_W);
+      ok(stuck.length === 0,
+         'EVERY generated gap is crossable from the deck at the scroll floor with the taught ' +
+         'vocabulary (run, jump, air jump)' + (stuck.length ? ' -- FAILS: ' + stuck.map(fmt).join(', ') : ''));
+      // Two of the wide gaps clear only because a mid-lane catwalk sits over
+      // them and catches RIG mid-flight. That is a real route, but it is
+      // incidental — the tier pass does not know where the gaps are, and the
+      // reachability prune can delete a catwalk. Kept visible on purpose.
+      const air = G.filter((g) => g.needsAirJump);
+      ok(air.every((g) => g.x1 >= probe.gate1),
+         'no gap needing the air jump at the floor speed appears before the first wave gate' +
+         (air.length ? ' (air-jump-only: ' + air.map((g) => g.x0 + '-' + g.x1).join(', ') + ')'
+                     : ' (none in the level)'));
+    }
+  }
+}
+
 {
   const kinds = new Set(LVL.chunkLog);
   ok(kinds.size >= 6, 'chunk variety: ' + kinds.size + ' of 8 kinds used');
