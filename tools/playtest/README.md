@@ -692,6 +692,15 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    is a different, larger ask than `fixeddt` was, and not something to
    assume is cheap — flagged for physics-review to evaluate, not built
    around from the harness side.
+   **Status (T-002): confirmed worth building** — the pre-build instrument
+   this README asked for ran, and the verdict is in
+   `docs/playtests/2026-07-t2-frame-alignment.md`: the sim is bit-identical
+   under frame-scoped input (so this hook is *sufficient* to make bot runs
+   fully reproducible), a one-frame shift of a single tap forks the t2
+   outcome (so nothing weaker is), and the ritual-arming check itself was
+   refuted as the knife-edge (so there is no sim-side fix to prefer
+   instead). Until it lands, `tools/simlab/t2lab.mjs` provides the same
+   injection semantics headlessly against the real sim.
 6. The module split has landed `src/pure/traversal.js` — `lib/fixture.mjs`'s
    hand-copied snapshot can now be replaced with a real import (not done in
    this pass; scoped out to stay focused on the requested capabilities). The
@@ -749,19 +758,18 @@ tools/playtest/
 
 ## Single best next action
 
-Hand `t2-transform-seam-rush`'s residual divergence to physics-review as a
-scoped question, not a harness one: with both deterministic input injection
-*and* a confirmed-active fixed timestep, `maxX` spread stayed ~62 tiles and
-first-death-time spread got worse (2.2ms → 8.1s). `Math.random()` and stray
-wall-clock reads are ruled out by direct grep — zero hits outside the one
-legitimate, `fixeddt`-bypassed `performance.now()` in the frame loop. The
-concrete, actionable next step is hook request #5 above (a synchronous,
-frame-scoped input-application point) — but confirm it's worth building
-before starting: instrument one specific suspect decision point (most
-likely the ritual-arming check in `src/sim/transform.js`, since that's what
-`t2` is deliberately stress-testing) to see whether it's actually sensitive
-to which frame an input lands in, rather than assuming the hook will fix it
-sight unseen.
+~~Instrument the suspected ritual-arming decision point before building hook
+request #5~~ — **done (T-002)**, full finding in
+`docs/playtests/2026-07-t2-frame-alignment.md`. Short version: the
+ritual-arming check in `src/sim/transform.js` was instrumented and
+**refuted** as the knife-edge (it is halt-bound with clamp-contracted
+position in every observed run); the real sensitivity is ordinary
+traversal/hazard knife-edges (gap lips, wasp contact) amplified by
+death→retry timeline shifts; a one-frame shift of a single scripted tap
+forks the outcome (26/178 variants), and the sim is bit-deterministic once
+input lands on defined frames. The new single best next action is therefore
+to **build hook request #5 game-side** (see its Status note above) — the
+evidence now says it is both sufficient and the only fix that can work.
 
 Secondary, lower-cost: replace `lib/fixture.mjs`'s hand-copied
 `TRAVERSAL_FIXTURE` snapshot with a real `import` from `src/pure/traversal.js`
