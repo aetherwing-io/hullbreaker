@@ -99,6 +99,15 @@ import {
 import { setScrollX as setSimScrollX, scrollX as simScrollX } from '../src/sim/time.js';
 import { cornerEvents as simCornerEvents } from '../src/sim/wavegate.js';
 
+// The render-side palette module (T-010) is deliberately Node-safe — no
+// three.js, DOM writes guarded — precisely so its token tables and pure
+// resolvers can be asserted here. It is the ONE render module this harness
+// imports; everything else render-side stays browser-only.
+import {
+  CLASSIC as PAL_CLASSIC, CONCEPT as PAL_CONCEPT, PAL as PAL_ACTIVE,
+  PALETTE_ID as PAL_ID, atmosphereBg, resolvePaletteId,
+} from '../src/render/palette.js';
+
 /* ---------------------- layer guards (static) ------------------------ *
  * The pure layer must stay runnable with zero three.js/DOM surface and must
  * not reach into src/sim, src/render, or src/ui — that is what makes it
@@ -5399,6 +5408,147 @@ const G2GATE = G2E.gate;
     ok(runA.state === runB.state && runA.x === runB.x,
        'same end state and final position across the twin runs');
   }
+}
+
+// --- palette pass (T-010): centralized render-side color roles ---------
+// DESIGN Concept: deep teal environment, rust-orange metal, acid-green enemy
+// glow, hot-magenta pickups, warm-white muzzle light; fog matched to
+// background. Concept is the default; ?palette=classic is the grey-box
+// baseline and must stay byte-faithful to CONFIG.palette.
+{
+  ok(resolvePaletteId('classic') === 'classic', 'palette: ?palette=classic resolves classic');
+  ok(resolvePaletteId(null) === 'concept' && resolvePaletteId('') === 'concept' &&
+     resolvePaletteId('junk') === 'concept',
+     'palette: absent/junk ?palette resolves to the concept default');
+  ok(PAL_ID === 'concept' && PAL_ACTIVE === PAL_CONCEPT,
+     'palette: headless import (no query) lands on the concept default');
+
+  const keyShape = (t) => Object.keys(t).sort().join(',');
+  ok(keyShape(PAL_CLASSIC) === keyShape(PAL_CONCEPT),
+     'palette: classic and concept tables carry identical token sets');
+  for (const nested of ['limb', 'transform', 'shots', 'tints']) {
+    ok(keyShape(PAL_CLASSIC[nested]) === keyShape(PAL_CONCEPT[nested]),
+       'palette: nested "' + nested + '" token sets match across modes');
+  }
+
+  // classic fidelity: every key CONFIG.palette carries must appear unchanged,
+  // so the grey-box comparison URL can never drift from the shipped look
+  let faithful = true;
+  for (const [k, v] of Object.entries(CONFIG.palette)) {
+    if (k === 'shots' || k === 'tints') {
+      for (const [kk, vv] of Object.entries(v)) if (PAL_CLASSIC[k][kk] !== vv) faithful = false;
+    } else if (k.startsWith('hook')) {
+      continue;                    // hook.js is judged-rejected and untokenized on purpose
+    } else if (PAL_CLASSIC[k] !== v) faithful = false;
+  }
+  ok(faithful, 'palette: classic table is byte-faithful to CONFIG.palette');
+  ok(PAL_CLASSIC.limbBg === CONFIG.limb.bg, 'palette: classic limb haze is CONFIG.limb.bg');
+
+  // role hue guards on the concept table — the point of the pass. Channel
+  // predicates, not exact values, so a later tuning stays inside its role.
+  const ch = (h) => [(h >> 16) & 255, (h >> 8) & 255, h & 255];
+  const teal = (h) => { const [r, g, b] = ch(h); return g > r && b > r; };
+  const rust = (h) => { const [r, g, b] = ch(h); return r > g && g > b; };
+  const acid = (h) => { const [r, g, b] = ch(h); return g > r && g > b; };
+  const C = PAL_CONCEPT;
+  // boards 01/10/13 split the two environment roles: atmosphere/backdrop is
+  // deep teal, everything RIG runs on plus all body mass is rust metal
+  ok([C.bg, C.limbBg, C.limb.wall, C.limb.shadow, C.limb.skyline,
+      C.transform.wall, C.transform.skyline, C.rain, C.vapor].every(teal),
+     'palette: concept atmosphere/backdrop ladder is deep teal (g,b over r) — ' +
+     'weather and breach vapor are atmosphere, so they ride the same family');
+  ok(PAL_CLASSIC.vapor === 0xaebbc6 && PAL_CLASSIC.rain === 0x9fb4c6,
+     'palette: classic weather/vapor stay byte-faithful to the shipped literals');
+  ok([C.ground, C.groundAlt, C.catwalk, C.solid, C.limb.hull, C.limb.scute,
+      C.limb.scuteAlt, C.limb.rib, C.limb.machine, C.transform.hull,
+      C.transform.ceiling, C.transform.rib, C.transform.machine,
+      C.transform.panel].every(rust),
+     'palette: concept body/route/mechanism ladder is rust-orange (r>g>b)');
+  // every token in this list is read by a mesh in src/render/hostiles.js —
+  // the guard certifies the ecology that actually ships, not authored colors
+  // no module consumes (that is why there is no generic "enemyGlow" token).
+  ok([C.wasp, C.carrier, C.hound, C.houndCharge,
+      C.polyp, C.polypBeam].every(acid),
+     'palette: concept enemy tokens are acid green (g dominant)');
+  // the roster's ONE warning language: tells (and the polyp's spent-vent
+  // ember) stay warm in BOTH modes — a telegraph must never read as a body,
+  // so it may not drift into the acid family the way the bodies do.
+  ok([C.houndTell, C.polypTell, C.polypVent,
+      PAL_CLASSIC.houndTell, PAL_CLASSIC.polypTell, PAL_CLASSIC.polypVent]
+       .every((h) => rust(h) && !acid(h)),
+     'palette: hostile tells/vent stay warm WARN amber in both modes');
+  // Every hostile kind the SIM can spawn needs a body token in both tables.
+  // This is the guard the T-010/T-004 collision was missing: the polyp landed
+  // on main while this branch was in flight, CLASSIC never learned about it,
+  // and the byte-fidelity assertion below only caught it after the merge.
+  ok(Object.keys(simEnemyTable).every((k) =>
+       PAL_CLASSIC[k] !== undefined && PAL_CONCEPT[k] !== undefined),
+     'palette: every sim ENEMY kind has a body color token in both modes ' +
+     '(' + Object.keys(simEnemyTable).join(', ') + ')');
+  // identity tokens are an ABSENCE of palette choice: they may not be remapped
+  ok(PAL_CLASSIC.glowOff === PAL_CONCEPT.glowOff && PAL_CLASSIC.glowOff === 0x000000 &&
+     PAL_CLASSIC.hitFlash === PAL_CONCEPT.hitFlash && PAL_CLASSIC.hitFlash === 0xffffff,
+     'palette: glowOff/hitFlash identity tokens are mode-independent');
+  {
+    const m = C.capsule.match(/^#([0-9a-f]{6})$/i);
+    const [r, g, b] = m ? ch(parseInt(m[1], 16)) : [0, 0, 0];
+    ok(r > 2 * g && b > 2 * g, 'palette: concept pickup capsule stays hot magenta');
+  }
+  {
+    const [r, g, b] = ch(C.muzzle);
+    ok(r >= g && g >= b && b >= 200, 'palette: concept muzzle/lance is warm white');
+  }
+  ok(Object.keys(CONFIG.weapons).every((k) =>
+       PAL_CLASSIC.shots[k] !== undefined && PAL_CONCEPT.shots[k] !== undefined),
+     'palette: every weapon letter has a shot color in both modes');
+
+  // the transform fixture's three authored atmosphere bgs remap to teal in
+  // concept and pass through untouched in classic (unknown values pass too)
+  const bandBgs = TRANSFORM_FIXTURE.bands.map((b) => b.atmosphere.bg);
+  ok(bandBgs.every((bg) => teal(atmosphereBg(bg, PAL_CONCEPT))),
+     'palette: every transform atmosphere bg lands teal under concept');
+  ok(bandBgs.every((bg) => atmosphereBg(bg, PAL_CLASSIC) === bg) &&
+     atmosphereBg(0x123456, PAL_CONCEPT) === 0x123456,
+     'palette: classic atmosphere is identity; unknown bgs pass through');
+
+  // centralization is structural, not aspirational: the recolored render
+  // modules may not reach CONFIG.palette directly any more. hostiles.js was
+  // lane-fenced to the in-flight hostiles task (T-004) while this branch was
+  // open; that task has merged, so the fence is lifted and the module is
+  // tokenized like the rest. hook.js stays the ONE exemption — a judged-
+  // rejected prototype (decisions.md entry 5) that gets no further investment.
+  const tokenized = ['scene.js', 'level.js', 'capsules.js', 'bullets.js',
+    'player.js', 'mods.js', 'limb.js', 'transform.js', 'tower.js', 'fx.js',
+    'hostiles.js'];
+  let scattered = [], literals = [];
+  for (const f of tokenized) {
+    const src = stripComments(readFileSync(join(srcDir, 'render', f), 'utf8'));
+    if (/CONFIG\.palette|CONFIG\.limb\.bg/.test(src)) scattered.push(f);
+    // raw colors are forbidden here too — a merged-in literal must be pulled
+    // into palette.js (both tables) or it silently skips the concept remap
+    // (this caught nothing at authoring time; T-001's vapor literal arrived
+    // via merge). Both spellings count: 0xRRGGBB numbers AND CSS strings
+    // ('#rgb'/'#rrggbb'/'#rrggbbaa', rgb()/rgba()), because the palette
+    // already carries string tokens (capsuleInk, capsule) and a string
+    // literal would skip the remap exactly as silently. The one exception is
+    // 0xffffff: the identity base color of instance-/tint-colored materials,
+    // not a palette choice.
+    const colorLiteral =
+      /0x[0-9a-fA-F]{6}\b|#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b|\brgba?\s*\(/g;
+    for (const m of src.match(colorLiteral) || []) {
+      if (m.toLowerCase() !== '0xffffff') literals.push(f + ':' + m);
+    }
+  }
+  ok(scattered.length === 0,
+     'palette: no scattered CONFIG.palette reads in tokenized render files' +
+     (scattered.length ? ' (found: ' + scattered.join(', ') + ')' : ''));
+  ok(literals.length === 0,
+     'palette: no raw color literals — 0xRRGGBB or CSS #hex/rgb() — in ' +
+     'tokenized render files (0xffffff identity base excepted)' +
+     (literals.length ? ' (found: ' + literals.join(', ') + ')' : ''));
+  const sceneSrc = stripComments(readFileSync(join(srcDir, 'render', 'scene.js'), 'utf8'));
+  ok(/new THREE\.Color\(PAL\.bg\)/.test(sceneSrc) && /new THREE\.Fog\(PAL\.bg,/.test(sceneSrc),
+     'palette: scene background and fog are constructed from the same bg token');
 }
 
 /* =============== T-012: audio layer (ui) static guards ================= *

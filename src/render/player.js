@@ -10,10 +10,11 @@ import { player } from '../sim/player.js';
 import { flowSnapshot } from '../sim/flow.js';
 import { scene } from './scene.js';
 import { placeOnTower } from './tower.js';
+import { PAL } from './palette.js';
 
 const rig = new THREE.Group();
 {
-  const mat = new THREE.MeshStandardMaterial({ color: CONFIG.palette.player, flatShading: true });
+  const mat = new THREE.MeshStandardMaterial({ color: PAL.player, flatShading: true });
   // slimmed ~12% in width/depth for the pulled-back camera; heights and the
   // 0.7 × 1.7 collision box unchanged
   const torso = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.85, 0.4), mat);
@@ -30,7 +31,7 @@ const gunGroup = new THREE.Group();
 gunGroup.position.set(0, 1.05, 0.25);
 const gun = new THREE.Mesh(
   new THREE.BoxGeometry(0.75, 0.14, 0.14),
-  new THREE.MeshStandardMaterial({ color: CONFIG.palette.gun, flatShading: true })
+  new THREE.MeshStandardMaterial({ color: PAL.gun, flatShading: true })
 );
 gun.position.x = 0.45;
 gunGroup.add(gun);

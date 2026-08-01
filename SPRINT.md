@@ -379,7 +379,34 @@ verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic
   dive into the mouth feel committed-chunky or rushed? (5) At the FAR
   default, do five routes plus hound-low/wasp-apex stay readable through
   the gate window, or is the approach lattice too busy?
-- (new packets append here as tasks land: palette, juice, shell, six-face run)
+- **Palette v1 (T-010):** default (concept palette) vs `?palette=classic`, at
+  FAR — the six-face run (`/index.html`), `?slice=traversal`,
+  `?slice=traversal&polyp=1` (the enemy-color frames), `?g1=1`, and
+  `?slice=transform`. Side-by-side pairs in `artifacts/palette-v1/` —
+  `sixface-boot/sixface-action`, `traversal-action`, `polyp-tell`,
+  `polyp-beam`, `g1-limb`, `transform-boot`, each
+  `--classic/--concept/--pair.png` (judge against boards 01/06/10/13). The
+  acid-green hostile ecology is LIVE on every enemy mesh this pass, the Iris
+  Polyp included; only the tells and the polyp's spent vent stay warm amber,
+  in both modes. The polyp is TWO stills, not one: a single emplacement wears
+  exactly one emissive per iris state, so `polyp-tell` is the dilating bulb
+  under its warm blink (RIG grounded on the walk at x≈54, hp 3, un-hit) and
+  `polyp-beam` is the committed hot-acid bar from the same cycle under a
+  second later (RIG caught in the lane at x≈61, knocked off its feet by the
+  volley, hp 2). Both are state-triggered and pixel-verified by the rig
+  (concept/classic: 542/796 px brightened on the blink — the kept ON frame
+  against the dark half of the same blink, measurable only at capture — and
+  2497/2650 px of hot acid the tell frame does not have, which anyone can
+  recompute from the two committed stills); the closed → tell → fire → vent
+  rhythm itself is a moving read and has to be judged live at the URL, not
+  from stills. Questions: (1) does teal-air/rust-body read as the boards'
+  Meridian, or does the rust drift toward terracotta? (2) do threats and
+  capsules still pop at FAR on the rust deck? (3) is the deck still the
+  obvious route surface (brightest large shape)? (4) does the G1 limb
+  backdrop separate from the facet RIG runs on? (5) at FAR, do the acid
+  bodies and their warm-amber tells stay two separate reads against boards
+  01/06/10 — including the rooted polyp against the flying wasp?
+- (new packets append here as tasks land: juice, shell, six-face run)
 
 ## Inbox (playtester/adversarial file here; integrator triages each cycle)
 
