@@ -487,3 +487,55 @@ rewards" is a gate. Feelings go to the operator; boxes get tests.
 **Source:** operator verdict, 2026-08-01, after the integrator surfaced that
 the three failed pocket passes had built a reach puzzle rather than the
 documented time wager.
+
+## 11 — 2026-08-01 — Split-decision verdict: dead ends are the wrong branch; pace escalates at the player's momentum
+
+**Operator verbatim:** "yes, a dead end as a wrong decision, there must be some
+challenge and reward. yes, pace should esclate across the faces, but at the
+player's momemntum. a good player escalates the action to intense levels of
+explosion and speed, a new player is pushed along while they learn the
+mechanics. eventually, boosts and scene transitions may rocket the player
+forward and upward in a variety of ways with the face transitions ratching and
+pumping the 'scaling a goliath' feel more real and action packed"
+
+**This amends entry 10's resolution.** Entry 10 had me rule the pocket a LOOP
+and retire the cul-de-sac from the main run. That was half right. The forward
+energy holds — but the dead end is **restored, in a different role**: it is
+what a WRONG split decision costs you, not the shape the reward lives on.
+
+**The structure, as it now stands:**
+1. A **fork** the player reads and commits to at speed.
+2. The right branch carries **challenge AND reward** — higher, more exposed,
+   it pays, and it rejoins ahead.
+3. The wrong branch **dead-ends**. Choosing it costs real time against the
+   pursuing edge. That is the stake that makes the decision a decision.
+
+**Fairness rider (integrator, binding until an operator says otherwise):** the
+dead end must be **legible as a risk before commitment** — the player can see
+that branch might not go through. `DESIGN.md:169` already requires pockets to
+advertise before commitment, and that survives here restated: a dead end you
+could not have read is a memorization trap, and punishes replay knowledge
+rather than skill. A dead end you gambled on is the mechanic working.
+
+**Pace escalates at the player's momentum, not on a timer.** A good player
+escalates the action to intense speed and explosion; a new player is pushed
+along while they learn. The physics already supports this and we now have it
+measured (T-020): `runSpeed` 9.4 t/s against a scroll of ~4.3 t/s, so **moving
+forward BANKS daylight**. That banked daylight is the natural currency of
+escalation — read the forks well, bank distance, and the run answers with more
+pressure and more payoff; read them badly, lose the bank, and the run holds at
+its floor pace and carries you. Escalation is therefore an EARNED consequence
+of route-reading quality, not a scripted ramp per face.
+
+**Explicitly NOT authorized by this entry:** retuning the frozen jump/movement
+constants. Pace, spawn cadence, scroll behaviour and lattice shape are the
+levers; `CONFIG`'s movement block stays frozen and asserted.
+
+**Direction of travel, recorded now so it is designed toward rather than
+bolted on later ("eventually"):** boosts and scene transitions that rocket the
+player forward and upward, with face transitions ratcheting and pumping — the
+"scaling a goliath" fantasy made physical. Parked as T-023; the pace work
+(T-022) should leave room for it rather than hard-coding a ceiling.
+
+**Source:** operator direction, 2026-08-01, after the integrator asked whether
+the pocket failures were a design problem or unclear direction.
