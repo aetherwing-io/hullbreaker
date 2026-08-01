@@ -38,6 +38,7 @@ function parseArgs(argv) {
     else if (a === '--port') out.port = Number(argv[++i]);
     else if (a === '--no-testapi') out.noTestapi = true;
     else if (a === '--deterministic') out.deterministic = true;
+    else if (a === '--stop-on-game-over') out.stopOnGameOver = true;
     else if (a === '--help' || a === '-h') out.help = true;
     else out._.push(a);
   }
@@ -74,6 +75,8 @@ Options:
   --no-testapi          Don't append ?testapi=1 (on by default) — falls back to window.HB, then DOM/HUD parsing.
   --deterministic       Key event dispatch to the game's own gameMs instead of wall-clock (see README "Deterministic injection mode").
                         Requires testapi or window.HB (sample.gameMs must be a number).
+  --stop-on-game-over   End the run once the game reaches GAME_OVER (last life spent) instead of sampling a frozen
+                        world for the rest of the script window. Off by default; the run's own outcome is unchanged.
 
 A script may declare "policy": { "rules": [...] } for closed-loop reactive input (see README "Closed-loop policy mode")
 alongside or instead of "events"/"moves". Policy rules run regardless of --deterministic; the two are independent.
@@ -160,6 +163,7 @@ async function main() {
       maxRuntimeMs: args.maxRuntimeMs || 25000,
       tailMs: args.tailMs != null ? args.tailMs : 900,
       deterministic: !!args.deterministic,
+      stopOnGameOver: !!args.stopOnGameOver,
       policyRules,
     });
   } finally {

@@ -107,6 +107,82 @@ decisions.md, flag anything under-specified as one question batch for me,
 then dispatch the first wave.
 ```
 
+## Merge playbook (hard-won — every item here cost a real cycle)
+
+Read this before resolving any conflict. Each entry is a mistake that was
+actually made in the 2026-08-01 delivery push, not a hypothetical.
+
+**Order of operations.** Commit gate artifacts (`reports/tasks/**`) and any
+concurrent SPRINT Inbox writes BEFORE running the gate — it refuses on a dirty
+tree. Gate agents file issues into `SPRINT.md` while you are merging, so expect
+to commit-and-retry once.
+
+**Conflicts: compose both sides, then check which side is stale.** Almost every
+conflict this push was two lanes appending different truths to the same place.
+Keep both. But one side is often *out of date* — e.g. two README items each
+described a different half as "still open" when both halves had landed. Read
+what each side claims, not just where it sits.
+
+**`tools/pathcheck.mjs` — never hand-balance braces.** Its assertions embed
+regex literals containing `\{` and `\}`, which defeats brace counting, and its
+section banners contain runs of `=` that a naive `^=======$`-less regex will
+match as a conflict separator. Both bit. The reliable resolution is structural:
+take main's file whole and splice the lane's self-contained section into it
+(`git show main:tools/pathcheck.mjs` vs `git show HEAD:tools/pathcheck.mjs`),
+lifting from its banner comment to its closing brace and carrying any imports
+that section needs. Verify by parse, not by counting.
+
+**Verify ES modules as ES modules.** `node --check file.js` parses as CommonJS
+and will happily pass a broken ES module — a missing `}` in `src/main.js`
+survived it and only the browser caught it. Always:
+`node --input-type=module --check < file`.
+
+**Prove the server pin with curl before believing a smoke failure.** A server
+started from the wrong directory produces exactly the symptom of a boot break
+("did not reach a rendered HUD frame"). Fetch a file that exists ONLY in the
+tree under test and confirm 200 — then a 404/no-boot means something real.
+
+**Stale `http.server` processes squat gate ports** after a worktree is pruned
+and cause phantom boot failures on a random port draw. `ps aux | grep
+[h]ttp.server`, kill the orphans — but never `:8741`, which is the operator's
+own dev server from `CLAUDE.md`.
+
+**The palette collision class.** Any lane that forked before
+`src/render/palette.js` landed may read `CONFIG.palette` or carry raw hex in a
+tokenized render file; pathcheck now rejects both. Repoint to `PAL`, use
+`PAL.glowOff`/`PAL.hitFlash` for the identity literals, and give any new sim
+`ENEMY` kind a body token in BOTH tables (classic = CONFIG passthrough,
+concept = its own value in the right hue family). EXTEND the guard lists to
+cover new tokens; never relax them. If a lane's own assertion required the old
+read, UPDATE it with the reasoning inline — same invariant, the table moved.
+
+**Do not inherit measured numbers.** A speed figure taken from one lane's
+report was applied to a location where its precondition did not hold, and it
+propagated into two task briefs and a decision before a gate re-measured it in
+a browser and disproved it. Any claim about physics must state the conditions
+it holds under and be measured on the tree under test.
+
+**A lane's own fix cycle is not a stall.** Fix agents read for 20+ minutes
+before writing. Do not infer death from quiet; infer it from the whole fleet
+going silent (see the monitor below).
+
+## Watching the fleet (what the integrator's monitor should fire on)
+
+Only two states need the integrator, and a monitor that fires on more than
+these trains you to ignore it:
+
+- **MERGEABLE** — review APPROVE *and* playtest PASS, and BOTH verdict files
+  newer than the branch head. Freshness matters: verdict files persist across
+  fix cycles and budget restarts, so a stale PASS would otherwise merge
+  unjudged commits (`merge-task.sh` now refuses these itself).
+- **FLEET IDLE** — no workflow agent transcript written for 10+ minutes while
+  task branches are still open. That is what budget exhaustion and mass agent
+  death actually look like; a single quiet lane is not.
+
+Routine `REQUEST_CHANGES`/`FAIL` should NOT wake the integrator: the pipeline
+runs its own fix cycle. Only once that cycle is spent does a rejection need an
+integrator-dispatched re-gate scoped strictly to the findings.
+
 ## Kill switches
 
 - `touch HALT` — flywheel releases and `merge-task.sh` refuses to merge.

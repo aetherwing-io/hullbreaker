@@ -17,7 +17,12 @@ The default six-face run, start → summit → victory, playable end-to-end with
   SFX + layered ambience — restrained per DESIGN, but present;
 - a game shell: start screen, pause/options, death/restart flow, run stats;
 - 60fps with 200+ projectiles, no console errors, `?selftest=1` green,
-  pathcheck green, smoke suite green, boot-to-victory ≈ 4–5 min;
+  pathcheck green, smoke suite green, boot-to-victory ≈ 4–5 min
+  — **boot-to-victory is OPERATOR-ONLY** (T-019, merged): no reflex policy
+  reaches VICTORY, the wall is wave gate 2, and the gate independently
+  reproduced that rather than taking the builder's word. The harness bends,
+  the game does not, so this box is answered by an operator run — no bot has
+  proved it and the delivery report must not imply one did;
 - operator checkpoint packets posted for every feel question raised en route.
 
 ## Queue
@@ -365,7 +370,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; six-face-full-run.json --deterministic against a pinned tree
 
-## T-019 | harness | doing | P2
+## T-019 | harness | done | P2
 
 goal: the last unproven delivery box — a bot run that reaches VICTORY. T-018
 established the blocker was the policy grammar (not difficulty, not the
@@ -411,35 +416,69 @@ verify: node tools/pathcheck.mjs; a run that reaches the first gate without losi
 
 ## T-021 | feature | doing | P1
 
-goal: the DARE, rebuilt as the operator's run energy demands it — decisions.md
-entry 10. NOT a cul-de-sac: a LOOP. The player commits at a fork, takes a
-longer, higher, more exposed line, and REJOINS the route ahead — paying in time
-against the pursuing edge and in exposure, never by turning around. DESIGN's
-own question survives ("do I have time to grab that capsule?"); what changes is
-that answering it never breaks forward motion.
-Target energy, operator verbatim: "lots of split decisions, esceleration,
-action, climb, climb climb, keep going faster kind of energy for the player."
+goal: the SPLIT DECISION — decisions.md entries 10 and 11. A fork the player
+reads and commits to AT SPEED, where the right branch carries challenge AND
+reward (higher, more exposed, it pays, and it rejoins ahead) and the wrong
+branch DEAD-ENDS, costing real time against the pursuing edge. The dead end is
+the stake that makes it a decision; the rejoin is what keeps the run moving
+forward. Both are required.
+Target energy (entry 11, operator): "lots of split decisions, esceleration,
+action, climb, climb climb, keep going faster."
 accept:
 - [ ] prototype in the TRAVERSAL SLICE behind a flag, off by default (the
-      six-face lattice is contended by T-009/T-020 this cycle — do not touch
-      src/pure/generator.js or src/pure/lattice.js)
-- [ ] the greedy line is the HIGHER, more exposed one, and it rejoins ahead:
-      no reversal, no dead end, no free drop back to the main line
-- [ ] the fork is readable AT SPEED at the FAR default — the player commits
-      without stopping; if it needs a pause to read, it has failed
-- [ ] CURRENCY + FALSIFYING TEST (entry 10's acceptance rule): the cost is
-      time-against-the-edge and exposure. Assert it as: a policy that always
-      takes the main line collects zero loop rewards, AND a policy that takes
-      the loop still finishes with the pursuing-edge daylight margin intact.
-      Assert against the PLAYER's reachable envelope, not the author's intent
-      — the I-019 assertions were all true and all missed the defect
-- [ ] a written proposal in docs/proposals/ specifying the mechanic, so the
-      six-face integration has something exact to build against once the
-      lattice lanes land
-- [ ] operator packet: URL + questions on whether the fork reads as a split
-      decision at speed and whether taking it escalates the action
+      six-face lattice is contended by T-009 — do not touch generator.js or
+      lattice.js)
+- [ ] the rewarding branch is the HIGHER, more exposed one and REJOINS ahead:
+      no reversal to collect, no free drop back to the main line
+- [ ] the wrong branch dead-ends and costs measurable time against the edge
+- [ ] FAIRNESS RIDER (entry 11): the dead end is legible as a risk BEFORE
+      commitment — a dead end the player could not have read is a memorization
+      trap. Say how it advertises itself and prove it in a FAR screenshot
+- [ ] readable at speed at the FAR default: committing must not require a stop
+- [ ] CURRENCY + FALSIFYING TEST (entry 10's rule): cost is time-against-the-
+      edge and exposure. Assert: a policy that always takes the main line
+      collects zero rewards; a policy that takes the reward branch still keeps
+      the daylight margin; a policy that takes the dead end measurably loses
+      it. Derive the cost from the shipped sim — do NOT inherit a speed number
+- [ ] docs/proposals/ write-up specifying the mechanic for six-face integration
 owner: lattice-designer
-verify: node tools/pathcheck.mjs; a named playtest script that takes the loop and one that skips it, both --deterministic; screenshots at ?view=far
+verify: node tools/pathcheck.mjs; named playtest scripts for all three lines (main / reward / dead end), --deterministic; screenshots at ?view=far
+
+## T-022 | feature | doing | P1
+
+goal: pace escalation coupled to PLAYER MOMENTUM, per decisions.md entry 11 —
+"pace should escalate across the faces, but at the player's momentum. A good
+player escalates the action to intense levels of explosion and speed, a new
+player is pushed along while they learn the mechanics."
+The mechanism is available and now measured: runSpeed 9.4 t/s against a scroll
+of ~4.3 t/s means moving forward BANKS daylight (T-020,
+docs/playtests/2026-08-first-gap-triage.md). Banked daylight is the natural
+currency — read well, bank distance, and the run answers with more pressure and
+more payoff; lose the bank and it holds at a floor pace that carries you.
+accept:
+- [ ] escalation is EARNED from player state, not a per-face scripted ramp
+- [ ] there is a FLOOR: a struggling player is still carried forward and can
+      still finish; escalation may never become a death spiral
+- [ ] there is a CEILING that leaves headroom for T-023's boosts rather than
+      hard-coding the top of the curve
+- [ ] frozen CONFIG movement/jump constants are NOT touched (entry 11 is
+      explicit); the levers are pace, spawn cadence, scroll behaviour
+- [ ] determinism holds: same inputs, same escalation, replayable
+- [ ] behind a flag, off by default, until the operator judges it
+- [ ] pathcheck assertions for the floor, the ceiling and the earn curve
+- [ ] operator packet: a good-player run and a struggling-player run, same URL
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; two named playtest scripts (strong vs weak policy) showing different escalation from the same build
+
+## T-023 | feature | parked | P2
+
+goal: boosts and scene transitions that rocket the player forward and upward,
+with face transitions ratcheting and pumping — the "scaling a goliath" fantasy
+made physical (decisions.md entry 11, operator: "eventually"). PARKED by the
+operator's own sequencing; do not dispatch without a go-ahead. T-022 must leave
+escalation headroom for this rather than hard-coding a ceiling.
+owner: unassigned
+verify: n/a until dispatched
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
@@ -542,6 +581,33 @@ verify: node tools/pathcheck.mjs; a named playtest script that takes the loop an
   backdrop separate from the facet RIG runs on? (5) at FAR, do the acid
   bodies and their warm-amber tells stay two separate reads against boards
   01/06/10 — including the rooted polyp against the flying wasp?
+- **THE DELIVERY BOX ITSELF (T-019) — the one thing a bot cannot supply.**
+  One operator run of `http://127.0.0.1:8741/index.html` (default six-face run,
+  no flags), played to VICTORY or to wherever it ends, noting **which gate and
+  how many lives were left**. 49 deterministic bot runs across 13 policy
+  variants all wall at wave gate 2 (scroll 140 of 415, ~50 s, three lives);
+  exactly one cleared gate 2 and died heading for gate 3. The harness was
+  extended twice and never weakened the game, so this box is answered by a
+  human run or not at all. Evidence: `docs/playtests/2026-08-victory-box.md`,
+  `tools/playtest/reports/t019/all-runs.md`.
+  Questions that go with the run:
+  (1) Gate 2 is fought as 7-9 bodies where the wave authors 5 — ambient spawns
+  drift in before it arms (gate 1 peaks 5-7 against 4 authored). Does the
+  second gate read as the intended step up from the first, or as a spike?
+  (2) The whole route is 9 hits (3 hp x 3 lives, no heal) against ~50-55
+  gating bodies. How many hits do gates 1 and 2 cost you — and does a six-gate
+  run have the life budget it needs, or does it want a heal or a checkpoint?
+  (3) A corner arena is ~14 tiles wide (crush plane behind, pivot clamp ahead)
+  while 5-9 bodies dive into it at 10 tiles/s. Does that fight have room to
+  move (pillar 2), or is it a box you win by trading hp?
+  (4) The wasp still has no telegraph — cruise to dive on the same frame, from
+  9 tiles while gated, every 1.1 s, while hound/polyp/mortar all have
+  pathcheck-asserted tells. Fair at that range and cadence?
+  (5) Do gates 3-6 assume a weapon? A carrier drop is the only upgrade path
+  and it is incidental — the bot picked up LASER twice in 49 runs, by
+  accident. **Note this now interacts with decisions entry 9:** the pocket
+  pickups you made free are exactly a way for a player to CHOOSE to go get
+  one, so the answer here may already be landing.
 - (new packets append here as tasks land: juice, shell, six-face run)
 
 ## Inbox (playtester/adversarial file here; integrator triages each cycle)
@@ -988,7 +1054,7 @@ Status flow: todo → doing → review → done; `operator` parks a task on a fe
 verdict; `blocked` parks it on a dependency or two failed attempts (note
 why). The Stop-hook flywheel only counts todo/doing/review as open work.
 
-## I-021 | bug | S2 | RESOLVED by T-020 — NOT a defect | repro: any six-face run on main OR task/T-009, --deterministic, aimless or aimed policy | evidence: docs/playtests/2026-08-gate-fight-harness.md (T-018); tools/playtest/runs/gate-T-009-fullrun-*
+## I-021 | bug | S2 | RESOLVED — not a defect (T-020), and not reproducible on main with a terrain-aware policy (T-019) | repro: any six-face run on main OR task/T-009, --deterministic, aimless or aimed policy | evidence: docs/playtests/2026-08-gate-fight-harness.md (T-018); tools/playtest/runs/gate-T-009-fullrun-*
 
 Found by T-018 while instrumenting the gate fight: **every** run on both trees
 spends its first life at ~3.0s falling into the same 3-tile gap at x = 31.649
@@ -1094,3 +1160,51 @@ clamped to screen-right and therefore crosses at scroll speed. That is true
 *once RIG is riding the clamp*, and I applied it at an x where it is not. Any
 future claim about traversal cost must state WHERE the player is relative to
 the clamp, and be measured, not inherited.
+
+---
+
+## I-027 | docs | S3 | repro: `cd <task/T-019 6ad3fc5>/tools/playtest && node run.mjs scripts/six-face-spaced-run.json --deterministic --stop-on-game-over --max-runtime-ms 145000 --base-url <that worktree pinned>` ×3 | evidence: tools/playtest/runs/gate-T-019-spaced-{1,2,3}/analysis.txt; reports/tasks/T-019/playtest.md §2
+
+Found while gating T-019 (PASS). `scripts/six-face-spaced-run.json`'s own
+`description` says the policy "reaches wave gate 2 / scroll 140 of 415 EVERY
+time" and "survives 50.2-55.1 s (median 53.1 over all nine)". Three independent
+runs by this gate, same pinned tree and same flags, produced **58.9 s / scroll
+140**, **54.3 s / scroll 140**, and **38.2 s dying inside wave gate 1 at scroll
+79** — one run outside the band above, one below, and one that never reached the
+gate the description promises. This is the same overstatement the reviewer
+already made the branch correct for `six-face-aimed-run.json` (whose description
+now carries FIXVERIFY-1's gate-1 death); the sibling script kept the absolute
+wording. The finding's own honesty note — "read the gate reached, never one
+run's decimals" — is the right frame, except that here even the gate reached
+varies. Fix is wording only: "usually gate 2, sometimes gate 1" plus a band that
+covers the observed 38–59 s. Nothing about the T-019 conclusion changes; my runs
+support it more strongly than the builder's (zero VICTORY samples in 4/4).
+
+## I-028 | bug | S3 | repro: replay any `six-face-spaced-run.json` trace through `lib/threat.mjs` and count PLAYING ticks with `edgeMargin` in (6,8) AND `threat.dist<2.2` AND `threat.dx>0` — 3 of 777 on gate-T-019-spaced-1, min `edgeMargin` 7.37 | evidence: tools/playtest/runs/gate-T-019-spaced-1/report.json; reports/tasks/T-019/playtest.md §1
+
+Found while gating T-019 (PASS), by trying to construct a case where a new
+policy clause misfires. Two `hold` rules in the shipped six-face policy overlap
+in a window where they command opposite directions: `edgeMargin<8 → hold right`
+(the crush-plane emergency) and the new `threat.dist<2.2 && threat.dx>0 &&
+edgeMargin>6 → hold left` (personal space). Between 6 and 8 tiles of margin both
+fire, `hold` rules OR per key code, `left` and `right` are both down, and
+`computeAim`'s `h = 0` leaves RIG standing still — inside the one window whose
+rule exists precisely to make RIG run. Measured cost is small (3 of 777 PLAYING
+ticks in the sampled run, and no life loss attributable to the crush edge; run
+minimum margin 3.52 tiles), and the finding already reports the general
+rule-cancellation rate honestly (§3.3, 4.8-9.9 % of ticks, 5.3 % measured here).
+Filed because this particular pair is the one where cancelling is worst: raising
+the personal-space guard to `edgeMargin>8` closes it with no other effect. Policy
+script only — no game file involved, and the clause is legitimate relative
+geometry, so the anti-scripting guard is not implicated.
+
+**I-021 follow-up (T-019, 2026-08-01).** Independently of T-020's fairness
+finding, the x=31.649 death does **not** reproduce on `main` with a
+terrain-aware policy: across 9 inspected runs the first life goes at 20.6-28.4 s
+at x 65-89, inside the gate-1 fight, because the terrain probe already clears
+that hole. It reproduces only for policies with no terrain-driven jump — i.e.
+it was a property of the old aimless script, not of the level. A *different*
+3-tile gap around x 47-50 did kill the no-hop variants, reached airborne after
+a 2-tile step-down so the grounded-jump rule never fired; that is why T-019
+added `terrain.landDist` and made `gapDist` read 0 while over a hole. Data for
+the lattice lane, not a defect report.

@@ -187,21 +187,57 @@ export function sampleState() {
     const ABSENT = 99;
     const dir = result.facing === -1 ? -1 : 1;
     const i0 = Math.floor(result.x);
-    const here = gh[i0] !== undefined && gh[i0] > -100 ? gh[i0] : null;
+    const solidAt = (i) => i >= 0 && i < gh.length && gh[i] > -100;
+    const here = solidAt(i0) ? gh[i0] : null;
+    // The scan starts at RIG's OWN column, not the next one (T-019). The
+    // original started at k=1, which made the reading incoherent exactly when
+    // it matters most: mid-fall inside a hole, `gapDist` reported the distance
+    // to the next hole column AHEAD (a fraction of a tile) — the same small
+    // number as "a hole is right in front of me", which is the opposite
+    // situation. Over a hole the honest reading is gapDist 0, and the useful
+    // number becomes `landDist` below.
     let gapDist = ABSENT, gapWidth = 0, farY = ABSENT;
-    for (let k = 1; k <= PROBE_TILES; k++) {
+    for (let k = 0; k <= PROBE_TILES; k++) {
       const i = i0 + k * dir;
       if (i < 0 || i >= gh.length) break;
-      if (gh[i] <= -100) {                       // first hole in the walking direction
-        gapDist = Math.abs((dir > 0 ? i : i + 1) - result.x);
+      if (gh[i] <= -100) {                       // first hole at or ahead of RIG
+        gapDist = k === 0 ? 0 : Math.abs((dir > 0 ? i : i + 1) - result.x);
         let j = i;
         while (j >= 0 && j < gh.length && gh[j] <= -100) j += dir;
         gapWidth = Math.abs(j - i);
-        farY = (j >= 0 && j < gh.length && gh[j] > -100) ? gh[j] : ABSENT;
+        farY = solidAt(j) ? gh[j] : ABSENT;
         break;
       }
     }
-    result.terrain = { gapDist, gapWidth, farY, groundY: here, probeTiles: PROBE_TILES };
+    // Where the next landable surface is, measured the way a jump decision
+    // actually needs it: 0 while RIG is over solid ground, and otherwise the
+    // distance to the near lip of the next solid column. Falling into a hole
+    // with `landDist` still small means the far side is reachable; a jump
+    // rule can be written on it without knowing whether the hole under RIG is
+    // the one it meant to clear.
+    let landDist = 0, landY = here;
+    if (here === null) {
+      landDist = ABSENT; landY = ABSENT;
+      for (let k = 1; k <= PROBE_TILES; k++) {
+        const i = i0 + k * dir;
+        if (i < 0 || i >= gh.length) break;
+        if (solidAt(i)) {
+          landDist = Math.abs((dir > 0 ? i : i + 1) - result.x);
+          landY = gh[i];
+          break;
+        }
+      }
+    }
+    // The step in front of RIG's feet: how much higher (or lower) the very
+    // next column is. The `pinned` predicate reports "jammed while trying to
+    // run" without saying WHY, and a bot that answers every pin with a jump
+    // pogos against things that are not steps at all — most expensively the
+    // screen's own right clamp, which during a gate sits at the corner pivot
+    // (src/sim/player.js) and looks exactly like a wall to a policy. 0 over a
+    // hole or off the end of the array: a hole is `gapDist`'s business.
+    const iAhead = i0 + dir;
+    const stepUp = (here !== null && solidAt(iAhead)) ? gh[iAhead] - here : 0;
+    result.terrain = { gapDist, gapWidth, farY, groundY: here, landDist, landY, stepUp, probeTiles: PROBE_TILES };
   }
   if (hbSnap && Array.isArray(hbSnap.capsules)) {
     result.capsules = hbSnap.capsules.map((c) => ({ kind: c.kind, letter: c.letter, x: c.x, y: c.y, mode: c.mode }));
