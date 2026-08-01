@@ -191,8 +191,13 @@ export function atmosphereBg(hex, table = PAL) {
   return mapped === undefined ? hex : mapped;
 }
 
-// The page behind the canvas matches the scene bg (index.html's CSS carries
-// the grey-box value; this keeps the pre-boot flash coherent in both modes).
+// The page behind the canvas matches the scene bg, so letterboxing and any
+// gap around the canvas read as the same air the scene is drawn in.
+// Deliberately NOT a pre-boot fix: index.html's CSS paints #232830 (the
+// grey-box bg) before any module runs, and this write happens at module
+// evaluation, so concept mode still shows one grey-box frame between first
+// paint and src/main.js booting. Classic mode writes the same value the CSS
+// already carries, so there it is an identity.
 if (typeof document !== 'undefined' && document.body) {
   document.body.style.background = '#' + PAL.bg.toString(16).padStart(6, '0');
 }
