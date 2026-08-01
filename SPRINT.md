@@ -717,6 +717,26 @@ attempts/falls/hits, `minEdgeMargin` within 0.03 tiles and final x within
 0.02 tiles, which is simulation-identical evidence, not byte-identity. No
 runtime impact; prefer the README's phrasing in all three places.
 
+## I-017 | docs | S3 | repro: `cd <task/T-014 9dd13b1>/tools/playtest && node run.mjs scripts/mortar-zone-deny.json --deterministic --max-runtime-ms 17000 --base-url <pinned task/T-014 9dd13b1>` — the bot pauses ≈150 ms at the lip (x 57.60 → 57.64, vx 2.9 → 0.0 across two samples) and crosses the marked strip during `fuse`/`burst`, clearing the slab at x = 62.21, not inside `cool` | evidence: tools/playtest/runs/gate-T-014-mortar-solo/report.json; reports/tasks/T-014/playtest.md
+
+Found while gating T-014 (spore mortar, PASS — the run itself is fine:
+completed, 1 attempt, 0 falls, hp 3/3, full `aim → lob → fuse → burst → cool`
+cycle). The committed script's own `description` field states its load-bearing
+beat as measured fact — "Measured 3/3 on this tree: … one full lob -> fuse ->
+burst cycle observed with the bot held at the lip through it and crossing the
+strip inside the reload window" — and then lists "Regression signals", which
+invites the next agent to read that beat as a contract. It is not one: a fresh
+deterministic run on the same tree took the *other* branch of the same policy
+(arrived late in the cycle, barely waited, crossed while the mark was still
+lit) and still passed every stated regression signal. The sibling evidence
+README already hedges this correctly ("Arrival timing is not identical run to
+run … a bot that arrives late in a cycle barely waits at all"), and the
+harness README's honesty items 2/4/8 explain why. Fix is wording only: move
+the flat 3/3 claim into the same hedge the README uses, and keep the
+regression signals (stall short of the rejoin, hp < 3, no mortar state change)
+as the actual contract, since those are what held. No runtime impact, no
+change to the policy rules.
+
 ---
 
 ## Task schema
