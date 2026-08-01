@@ -1075,6 +1075,35 @@ tools/playtest/
                             live beam is retried, and the rig throws rather
                             than write evidence that does not show what its
                             name claims.
+  legibility-capture.mjs    dev-only screenshot rig for the T-003 FAR readability
+                            pass (docs/decisions.md entry 7's follow-up + inbox
+                            I-003). Five scenes — capsule-glyph, hound-tell,
+                            polyp-onset, polyp-late-tell, wasp-dive — each shot
+                            with the pass on (shipped default) and off
+                            (?legibility=0), the first two also at
+                            ?view=near|mid|far, then composed into labeled
+                            before/after pairs, a near|mid|far strip, and a
+                            2.4x center-crop detail panel. Writes to
+                            artifacts/legibility-v1/ at the served repo root.
+                            Replays already-judged scripts from scripts/ —
+                            policy form (polyp-lane-dodge) or moves form
+                            (dare-pocket, hound-facetank-solo, mid-route) —
+                            and authors only a run/fire/jump tail when a moves
+                            timeline runs out before the moment arrives.
+                            HONESTY: the two sides of a pair are separate runs
+                            keyed to sim STATE, not frame-locked replay, so RIG
+                            and hostile positions differ — judge the tell, the
+                            glyph and the lamp, never pixel deltas. Every frame
+                            is verified after the shutter (the sim is read back
+                            and the frame kept only if the named state was
+                            still live, retried otherwise); an unverified frame
+                            is written as -FALLBACK and logged, never passed
+                            off as the moment. The polyp-onset scene aims at
+                            the first 150ms of an 800ms tell and prints the
+                            measured ms-into-tell of the frame it kept — read
+                            that number before trusting the frame. The detail
+                            crop is a fixed center rectangle, not a tracked
+                            subject: the full frame above it is the authority.
   juice-stress.mjs         dev-only budget measurement for the T-011 feedback pass:
                             saturates the projectile + spark pools through the game's
                             own spawn paths and reads window.HB.perf(). Honesty: rAF

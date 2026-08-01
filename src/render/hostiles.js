@@ -12,6 +12,10 @@ import { gameMs } from '../sim/time.js';
 import { PAL } from './palette.js';
 import { scene } from './scene.js';
 import { placeOnTower } from './tower.js';
+import {
+  CUE_GAIN, LAMP_COIL_SWELL, LAMP_OFF_ALPHA, LAMP_OFF_SWELL, LAMP_R, LEGIBILITY_ON, POSE_GAIN,
+  POLYP_ONSET_MS, POLYP_SWELL_EASE, WASP_DIVE_NARROW, waspDiveStretch,
+} from './legibility.js';
 
 const waspGeo = new THREE.OctahedronGeometry(CONFIG.wasp.visualRadius);
 const carrierGeo = new THREE.BoxGeometry(...CONFIG.carrier.size);
@@ -46,16 +50,19 @@ function houndPose(e) {
   p.depth = 0; p.sx = 1; p.sy = 1; p.sz = 1; p.glow = PAL.glowOff;
   if (e.state === 'tell') {
     const u = houndTellU(e);
-    p.depth = H.tellDepth * u;
-    p.sy = 1 + H.tellRise * u;
-    p.sx = 1 - H.tellNarrow * u;
+    // POSE_GAIN (T-003): the wind-up silhouette takes back 60% of the FAR
+    // pull-back, so the rear-up still reads on a ~15px chassis. It is 1 at
+    // ?view=near and under ?legibility=0 — the pre-pass pose, exactly.
+    p.depth = H.tellDepth * POSE_GAIN * u;
+    p.sy = 1 + H.tellRise * POSE_GAIN * u;
+    p.sx = 1 - H.tellNarrow * POSE_GAIN * u;
     if (e.stateUntil - gameMs <= H.tellCoilMs) {
       // the coil: blink resolves into a held glow and the frame drops onto its
       // haunches. This is the "NOW" the player answers — the accelerating blink
       // before it is the "not yet".
       p.glow = PAL.houndTell;
-      p.sy -= H.tellCoilSquash;
-      p.sx += H.tellCoilSquash * 0.5;
+      p.sy -= H.tellCoilSquash * POSE_GAIN;
+      p.sx += H.tellCoilSquash * POSE_GAIN * 0.5;
     } else {
       const period = H.tellBlinkSlowMs + (H.tellBlinkFastMs - H.tellBlinkSlowMs) * u;
       if (Math.floor(gameMs / period) % 2 === 0) p.glow = PAL.houndTell;
@@ -72,7 +79,7 @@ function houndPose(e) {
 
 function houndRoll(e) {
   const H = CONFIG.hound;
-  if (e.state === 'tell') return -e.dir * H.tellRear * houndTellU(e);
+  if (e.state === 'tell') return -e.dir * H.tellRear * POSE_GAIN * houndTellU(e);
   if (e.state === 'charge') return e.dir * H.chargeLean;
   if (e.state === 'tumble') return e.t * 6;
   return Math.sin(e.t * H.gaitFreq) * H.gaitTilt;
@@ -97,13 +104,22 @@ function polypPose(e) {
   p.depth = 0; p.sx = 1; p.sy = 1; p.sz = 1; p.glow = PAL.glowOff;
   if (e.state === 'tell') {
     const u = 1 - Math.max(0, Math.min(1, (e.stateUntil - gameMs) / PP.tellMs));
-    p.sy = 1 + PP.tellSwell * u;
-    p.sz = 1 + PP.tellSwell * u;
+    // I-003 (playtest inbox): at the shipped FAR view the first ~300ms of the
+    // 800ms iris tell read as a small dark notch in the bulb, so nearly a
+    // third of the reaction window carried almost no signal. Two fixes, both
+    // render-only and both vanishing under ?legibility=0: the dilation is
+    // FRONT-LOADED (u ** 0.55 — most of the silhouette change happens in the
+    // first beats) and it is boosted by POSE_GAIN so the swelled bulb still
+    // reads at ~19px. The third is the iris lamp in polypLamp() below, which
+    // is lit from the first frame of the tell.
+    const swellU = LEGIBILITY_ON ? u ** POLYP_SWELL_EASE : u;
+    p.sy = 1 + PP.tellSwell * POSE_GAIN * swellU;
+    p.sz = 1 + PP.tellSwell * POSE_GAIN * swellU;
     const period = PP.tellBlinkSlowMs + (PP.tellBlinkFastMs - PP.tellBlinkSlowMs) * u;
     if (Math.floor(gameMs / period) % 2 === 0) p.glow = PAL.polypTell;
   } else if (e.state === 'fire') {
-    p.sy = 1 + PP.tellSwell;
-    p.sz = 1 + PP.tellSwell;
+    p.sy = 1 + PP.tellSwell * POSE_GAIN;
+    p.sz = 1 + PP.tellSwell * POSE_GAIN;
     p.glow = PAL.polypBeam;
   } else if (e.state === 'vent') {
     p.sy = 1 - PP.ventSag;
@@ -112,10 +128,50 @@ function polypPose(e) {
   return p;
 }
 
+/* The wasp's dive, made readable at the shipped FAR view (T-003). A drone is
+   ~17px there, and its cruise and its dive looked the same: a small acid
+   diamond. The sim gives it no wind-up state to telegraph — a dive commits
+   the frame it starts — so what the render adds is a COMMITMENT read, in the
+   roster's existing language (hot acid = live and not steering, exactly like
+   the houndframe's charge and the polyp's beam):
+     - it points down its own dive vector instead of idly spinning;
+     - it narrows into a dart, which is free — a drawn body may always claim
+       LESS than its hit circle;
+     - it wears PAL.waspDive, the hot end of the acid family.
+   The elongation is clamped by waspDiveStretch() so the drawn nose can never
+   claim reach past the contact circle. Warm amber is NOT used here on
+   purpose: that is the roster's warning color, and a dive is past warning. */
+const WASP_POSE = { depth: 0, sx: 1, sy: 1, sz: 1, glow: PAL.glowOff };
+
+function waspDiving(e) {
+  return LEGIBILITY_ON && e.state === 'dive';
+}
+
+function waspPose(e) {
+  const p = WASP_POSE;
+  p.depth = 0; p.sx = 1; p.sy = 1; p.sz = 1; p.glow = PAL.glowOff;
+  if (waspDiving(e)) {
+    // the nose reaches exactly the contact circle and the cross-section is
+    // traded against THAT, not against the body — the dart must never make a
+    // 17px drone smaller than the one that was cruising
+    const grow = 1 + waspDiveStretch();
+    p.sx = grow;
+    p.sy = grow * (1 - WASP_DIVE_NARROW);
+    p.sz = grow * (1 - WASP_DIVE_NARROW);
+    p.glow = PAL.waspDive;
+  }
+  return p;
+}
+
+function waspRoll(e) {
+  // local +x is the dart's nose, so this points the whole pose down the dive
+  return waspDiving(e) ? Math.atan2(e.vy, e.vx) : e.t * 2;
+}
+
 // per-kind look, keyed by the same kind rows as ENEMY in src/sim/hostiles.js
 const LOOK = {
   wasp:    { geo: waspGeo,    color: PAL.wasp,
-             roll: (e) => e.t * 2 },
+             roll: waspRoll,  pose: waspPose },
   carrier: { geo: carrierGeo, color: PAL.carrier,
              roll: (e) => Math.sin(e.t * CONFIG.carrier.rollFreq) * CONFIG.carrier.rollAmp },
   hound:   { geo: houndGeo,   color: PAL.hound,
@@ -125,6 +181,92 @@ const LOOK = {
   mortar:  { geo: mortarTubeGeo, color: PAL.mortar,
              roll: mortarRoll, pose: mortarPose },
 };
+
+/* ------------------------- THE TELL LAMP (T-003) -------------------------
+ * The warning light the houndframe's and the polyp's code comments have
+ * always described, given actual geometry so it survives the FAR default
+ * view. Until now the "blink" was an emissive tint on the body: at ~15px of
+ * chassis that is a color flicker competing with the deck behind it, which
+ * is what the operator accepted as a cost in decisions.md entry 7 and asked
+ * to fix here.
+ *
+ * It is a LAMP, not a HUD marker — a small light on the machine, sized in
+ * world tiles and placed on the part of the body that is arming (the
+ * houndframe's head, the polyp's iris aperture). CUE_GAIN holds its screen
+ * size across the pull-back, so it stops shrinking away without becoming a
+ * floating icon. It wears the roster's ONE warning color (PAL.houndTell /
+ * PAL.polypTell — warm amber in both palettes), never the acid a body wears,
+ * and it exists only while the sim row is actually in its tell state, so it
+ * can never promise a threat the sim is not running. ?legibility=0 removes
+ * it entirely.
+ *
+ * Deliberately NOT given to the wasp: a lamp per drone in a swarm is the
+ * clutter pillar 5 forbids, and a diving wasp already has a whole-body
+ * commitment read (waspPose above).                                       */
+const lampGeo = new THREE.OctahedronGeometry(1);   // unit radius: scaled per frame
+const LAMP_DEPTH = 0.35;                 // just proud of the combat plane, toward the
+                                         //   camera, so the body never eats its own lamp
+const LAMP_ON_ALPHA = 0.95;
+
+function lampAttach(v, color) {
+  const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0 });
+  const lamp = new THREE.Mesh(lampGeo, mat);
+  lamp.visible = false;
+  scene.add(lamp);
+  v.lamp = lamp;
+  v.lampMat = mat;
+}
+
+function lampDetach(v) {
+  scene.remove(v.lamp);
+  v.lampMat.dispose();
+}
+
+function lampShow(v, e, dx, dy, alpha, swell) {
+  v.lamp.visible = true;
+  v.lampMat.opacity = alpha;
+  v.lamp.scale.setScalar(LAMP_R * CUE_GAIN * swell);
+  placeOnTower(v.lamp, e.x + dx, e.y + dy, LAMP_DEPTH);
+}
+
+// houndframe: the lamp rides the head it rears back on, blinks in the same
+// accelerating period the pose blinks in, and goes solid and big on the coil
+// — the "not yet… NOW" the charge is answered on.
+function houndLamp(v, e) {
+  const H = CONFIG.hound;
+  if (!LEGIBILITY_ON || e.state !== 'tell') { v.lamp.visible = false; return; }
+  const dx = e.dir * 0.55, dy = 0.95;    // clear of the chassis it rears on
+  if (e.stateUntil - gameMs <= H.tellCoilMs) {
+    lampShow(v, e, dx, dy, 1, LAMP_COIL_SWELL);
+    return;
+  }
+  const u = houndTellU(e);
+  const period = H.tellBlinkSlowMs + (H.tellBlinkFastMs - H.tellBlinkSlowMs) * u;
+  const on = Math.floor(gameMs / period) % 2 === 0;
+  lampShow(v, e, dx, dy, on ? LAMP_ON_ALPHA : LAMP_OFF_ALPHA, on ? 1 : LAMP_OFF_SWELL);
+}
+
+// Iris Polyp: the lamp IS the iris, at the aperture the beam will leave
+// from. I-003's fix lives in its first beat — POLYP_ONSET_MS of held,
+// full-size light at the very start of the tell, before the accelerating
+// blink begins, so the opening of the reaction window is not a dark notch.
+function polypLamp(v, e) {
+  const PP = CONFIG.polyp;
+  if (!LEGIBILITY_ON || e.state !== 'tell') { v.lamp.visible = false; return; }
+  const dx = e.dir * PP.barrelTiles, dy = 0;
+  const left = Math.max(0, e.stateUntil - gameMs);
+  if (PP.tellMs - left <= POLYP_ONSET_MS) {     // the onset flash
+    lampShow(v, e, dx, dy, 1, LAMP_COIL_SWELL);
+    return;
+  }
+  const u = 1 - Math.max(0, Math.min(1, left / PP.tellMs));
+  const period = PP.tellBlinkSlowMs + (PP.tellBlinkFastMs - PP.tellBlinkSlowMs) * u;
+  const on = Math.floor(gameMs / period) % 2 === 0;
+  lampShow(v, e, dx, dy, on ? LAMP_ON_ALPHA : LAMP_OFF_ALPHA, on ? 1 : LAMP_OFF_SWELL);
+}
+
+const LAMP_SYNC = { hound: houndLamp, polyp: polypLamp };
+
 const meshes = new Map();                // sim hostile row → { mesh, mat }
 
 function spawned(e) {
@@ -158,6 +300,11 @@ function spawned(e) {
   } else if (e.kind === 'mortar') {
     mortarAttach(v, mesh);                 // legs, pod, and the marked-zone props
   }
+  // the tell lamp (T-003): only the two kinds whose telegraph is a wind-up
+  // ON the body, and only while the readability pass is on
+  if (LEGIBILITY_ON && LAMP_SYNC[e.kind]) {
+    lampAttach(v, e.kind === 'polyp' ? PAL.polypTell : PAL.houndTell);
+  }
   mesh.visible = false;                    // hidden until its materialization begins
   scene.add(mesh);
   meshes.set(e, v);
@@ -172,7 +319,8 @@ function removed(e, fade) {
     v.beamMat.dispose();
   }
   if (v.pod) mortarDetach(v);            // nor does a pod, a mark, or a blast
-  if (fade) {                            // hand the mesh to the corpse pass to dissolve
+  if (v.lamp) lampDetach(v);             // nor a tell lamp: a corpse never warns
+  if (fade) {                          // hand the mesh to the corpse pass to dissolve
     corpses.push({ mesh: v.mesh, mat: v.mat, s: e.x, y: e.y, spin: e.t, t0: gameMs });
   } else {
     scene.remove(v.mesh);
@@ -188,6 +336,7 @@ function sync(e) {
     v.mesh.visible = false;
     if (v.beam) v.beam.visible = false;
     if (v.pod) mortarHide(v);
+    if (v.lamp) v.lamp.visible = false;
     return;
   }
   v.mesh.visible = true;
@@ -234,6 +383,8 @@ function sync(e) {
     }
   }
   if (v.pod) mortarSync(v, e);           // pod arc + marked zone + detonation
+  // the tell lamp reads the same sim state the pose does, one frame, no memory
+  if (v.lamp) LAMP_SYNC[e.kind](v, e);
 }
 
 installView({ hostiles: { spawned, removed, sync } });

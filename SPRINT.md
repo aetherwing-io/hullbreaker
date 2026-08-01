@@ -59,7 +59,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; repro per tools/playtest/README.md §Deterministic injection mode
 
-## T-003 | art | doing | P1
+## T-003 | art | done | P1
 
 goal: FAR-camera readability pass — the accepted follow-up from the view-scale
 verdict (decisions.md entry 7): scale up enemy tells, capsule letter glyphs,
@@ -176,12 +176,20 @@ sequenced after T-001/T-004 merge to integrate their landings.
 SCOPE SPLIT (integrator, 2026-08-01): stages 1-3 (lattice route density,
 dare pockets, hound stations, static-anatomy corner reveal by default) are
 this task's deliverable. The "full-run script completes start -> summit ->
-victory" box moves to T-018, on evidence: the same six-face-full-run.json
-under the same deterministic policy fails on BOTH trees, and the branch gets
-nearly twice as far as main (main maxX 89.2 / scroll 75 / 8 kills / 27.4s
-play; branch maxX 154.2 / scroll 140 / 11 kills / 48.5s). Runs committed at
-tools/playtest/runs/integ-T009-on-main and integ-T009-on-branch. So the
-lattice is not what stops the bot, and stages 1-3 stand on their own.
+victory" box moves to T-018 because the same six-face-full-run.json under the
+same deterministic policy fails on BOTH trees — so the lattice is not what
+stops the bot.
+
+CORRECTION (integrator, after the T-009 playtest gate): the magnitude I first
+recorded here was overclaimed from a single run per side. I measured branch
+maxX 154.2 / scroll 140 vs main 89.2 / 75 and wrote "nearly twice as far"; the
+gate re-ran it THREE times per side and got branch 89.25 / 89.25 / 110.65 and
+main 89.25 / 89.25 / 89.25. My run was an outlier (the build agent reproduced
+it once, which is why it went unchallenged). What survives, and is what the
+split actually rests on: both trees fail, and main fails at the identical spot
+three times out of three. The "~1.7x further" claim does not hold and must not
+be repeated. Filed as I-020; the gate's runs are under
+tools/playtest/runs/gate-T-009-fullrun-{branch,main}[-2,-3].
 
 ## T-010 | art | done | P1
 
@@ -792,6 +800,67 @@ forces the title for a screenshot. Cheapest fixes, for triage: treat a
 `MENU`-state sample as "clock not started" and dispatch the pending head event
 by wall clock, or note the constraint in the harness README's deterministic
 section next to the pause/retry paragraph it already has.
+
+## I-019 | fairness | S1 | repro: serve `task/T-009 770ea6b`, then drive the shipped sim with the deck-line policy pathcheck itself uses (`hold right`; hold a jump whenever `groundTopAt(x + 1.2)` is a hole or a step) — all six pocket rewards are collected with `airJumpsLeft` never decrementing; in the browser, `node run.mjs <worktree>/tools/playtest/scripts/six-face-full-run.json --deterministic --max-runtime-ms 150000 --base-url <pinned 8951>` takes pocket 1's `S` at x = 45.94 while airborne and moving right | evidence: reports/tasks/T-009/playtest.md; tools/playtest/runs/gate-T-009-fullrun-branch/report.json (weapon R→S at gameMs 7908)
+
+The T-009 dare pockets do not cost the retreat they are designed and
+documented to cost: the reward is collected by the same deck-line jump the
+player must make to cross the pocket chasm, with no climb to the mid lane, no
+air jump onto the shelf, and no leftward movement at all. The arithmetic is
+systematic rather than seed luck — the reward sits at `deckY + 5.05`
+(`shelfY + rewardRise`, bobbing ±0.15) while a held jump from the approach deck
+peaks at `deckY + 2.72`, putting RIG's head (height 1.7) at `deckY + 4.42`,
+which is 0.48 tiles under the capsule's bob floor and well inside the 0.95
+pickup radius. Face-1 pickup fires at x = 46.07, y = 5.44, still ascending. The
+pathcheck assertions are individually true and collectively miss it: they prove
+the *shelf* is unreachable from the deck (`shelf.y - landingY > doubleApex`) and
+that the reward is in pickup range *of the shelf*, but nothing asserts the
+reward is out of reach from below. Cheapest fix for triage: raise `rewardRise`
+so the capsule is only reachable from the shelf deck — anything in roughly
+[1.1, 2.5] separates the two cases (from the shelf, standing head is
+`shelfY + 1.7`, so ≤ `+2.65` still picks up; from the deck, apex head is
+`shelfY - 0.93`, so ≥ `+1.1` is clear) — plus an assertion that a held jump
+launched anywhere on the approach deck cannot bring the player's head within
+`pickupRadius` of the reward, and (separately) that `retreat.seconds` counts the
+climb, not only the horizontal round trip. S1 because it is T-009's own accept
+box ("dare pockets with measured retreat"), the claim shipped in `DESIGN.md`
+and `src/pure/lattice.js`, and an operator packet built on it would ask about a
+wager the player never makes.
+
+## I-020 | docs | S2 | repro: `node run.mjs <worktree>/tools/playtest/scripts/six-face-full-run.json --deterministic --max-runtime-ms 150000 --base-url <pinned tree>` ×3 against a pinned `task/T-009 770ea6b` and ×3 against a pristine `main 16099f6` snapshot | evidence: tools/playtest/runs/gate-T-009-fullrun-{branch,branch-2,branch-3,main,main-2,main-3}/report.json; reports/tasks/T-009/playtest.md
+
+The A/B recorded in T-009's SCOPE SPLIT note and quoted verbatim inside
+`tools/playtest/scripts/six-face-full-run.json`'s `description` ("branch maxX
+154.3 / scroll 140 / 11 kills / 48.5 s vs main 89.3 / 75 / 8 / 27.1 s … the
+lattice tree gets ~1.7× further") is a one-run-per-side measurement and does
+not reproduce. Three runs per side, same script, same flags, both trees pinned:
+branch 89.25 / 89.25 / 110.65 (scroll 75 / 75 / 112), main 89.25 / 89.25 / 89.25
+(scroll 75 ×3) — 2 of 3 branch runs land on exactly main's number, and the
+branch's best is 1.24×. For scale on the noise, the same branch under `?zip=1`
+(render-only; pathcheck proves the sim traces are identical) produced maxX
+154.25 and 113.40, so the entire claimed lattice effect fits inside the spread
+of a flag that cannot touch the simulation — this is the harness's documented
+multi-modal behaviour (playtest README honesty items #2 and #8). The split's
+conclusion is unaffected and arguably strengthened (both trees die in the same
+wave-gate fight at the same x, so the lattice is not what stops the bot), but
+the published numbers should be restated with repeats, or struck, in both
+places. S2, not S3: it is the evidence a scope split was granted on, and it is
+committed in a script description future agents will cite.
+
+## I-021 | docs | S3 | repro: read `README.md`'s new "FAR readability pass" paragraph and `docs/DESIGN.md`'s updated view-scale bullet at `task/T-003 74b7267` against `src/render/legibility.js`'s `SHARE = { glyph: 1, cue: 1, pose: 0.6 }` and pathcheck's `legibility: a pose is boosted less than a lamp` assertion | evidence: reports/tasks/T-003/playtest.md; artifacts/legibility-v1/capsule-glyph--views-after.png
+
+Found while gating T-003 (FAR readability pass, PASS). Both user-facing docs say
+the pass scales the boosted features "back up by the same factor, so they land at
+the screen size the near view already read at" (README) and "scaled back up by the
+view's own pull-back factor" (DESIGN). That is exact for capsule glyphs and the new
+tell lamps (share 1.0 → gain = `depthMult` 1.9 at FAR, and the views strip does show
+one screen size across near/mid/far), but a tell POSE deliberately takes only 60%
+of the compensation (gain 1.54), so a boosted hound rear-up or iris dilation lands
+*smaller* at FAR than it did at near — by design, and correctly stated in
+`legibility.js`'s header and in the commit message, just not in the two docs a
+reader is most likely to hit first. Fix is one clause in each ("information whole,
+a pose partly"), not a behavior change. S3: no gate or verdict rests on it, but this
+repo's docs rule is that a claim may not outrun its evidence.
 
 ---
 

@@ -122,12 +122,22 @@ import { cornerEvents as simCornerEvents } from '../src/sim/wavegate.js';
 
 // The render-side palette module (T-010) is deliberately Node-safe — no
 // three.js, DOM writes guarded — precisely so its token tables and pure
-// resolvers can be asserted here. It is the ONE render module this harness
-// imports; everything else render-side stays browser-only.
+// resolvers can be asserted here. The legibility module (T-003) is the
+// second of that kind: pure scale arithmetic over CONFIG.viewScales, so the
+// readability contract it encodes is checkable without a browser. These two
+// are the ONLY render modules this harness imports; everything else
+// render-side stays browser-only.
 import {
   CLASSIC as PAL_CLASSIC, CONCEPT as PAL_CONCEPT, PAL as PAL_ACTIVE,
   PALETTE_ID as PAL_ID, atmosphereBg, resolvePaletteId,
 } from '../src/render/palette.js';
+import {
+  CUE_GAIN as LEG_CUE_GAIN, GLYPH_GAIN as LEG_GLYPH_GAIN,
+  GLYPH_INK_FILL, LAMP_R, LEGIBILITY_ON, LEGIBLE_PX_FLOOR, NEAR_RIG_PCT,
+  POLYP_ONSET_MS, POLYP_SWELL_EASE, POSE_GAIN as LEG_POSE_GAIN, SHARE,
+  WASP_DIVE_NARROW, legibilityGain, resolveLegibility, rigScreenPct, screenPx,
+  waspDiveStretch,
+} from '../src/render/legibility.js';
 
 /* ---------------------- layer guards (static) ------------------------ *
  * The pure layer must stay runnable with zero three.js/DOM surface and must
@@ -5488,9 +5498,16 @@ const G2GATE = G2E.gate;
   // every token in this list is read by a mesh in src/render/hostiles.js —
   // the guard certifies the ecology that actually ships, not authored colors
   // no module consumes (that is why there is no generic "enemyGlow" token).
-  ok([C.wasp, C.carrier, C.hound, C.houndCharge,
+  ok([C.wasp, C.waspDive, C.carrier, C.hound, C.houndCharge,
       C.polyp, C.polypBeam, C.mortar, C.mortarPod].every(acid),
      'palette: concept enemy tokens are acid green (g dominant)');
+  // T-003's dive cue joins the ecology's COMMITMENT language, not its warning
+  // language: hotter than the cruising body it replaces, and never amber.
+  {
+    const lum = (h) => { const [r, g, b] = ch(h); return r + g + b; };
+    ok(lum(C.waspDive) > lum(C.wasp) && lum(PAL_CLASSIC.waspDive) > lum(PAL_CLASSIC.wasp),
+       'palette: the wasp dive glow is hotter than the wasp body in both modes');
+  }
   // the roster's ONE warning language: tells (and the polyp's spent-vent
   // ember) stay warm in BOTH modes — a telegraph must never read as a body,
   // so it may not drift into the acid family the way the bodies do.
@@ -5542,7 +5559,7 @@ const G2GATE = G2E.gate;
   // rejected prototype (decisions.md entry 5) that gets no further investment.
   const tokenized = ['scene.js', 'level.js', 'capsules.js', 'bullets.js',
     'player.js', 'mods.js', 'limb.js', 'transform.js', 'tower.js', 'fx.js',
-    'hostiles.js'];
+    'hostiles.js', 'legibility.js'];
   let scattered = [], literals = [];
   for (const f of tokenized) {
     const src = stripComments(readFileSync(join(srcDir, 'render', f), 'utf8'));
@@ -5572,6 +5589,175 @@ const G2GATE = G2E.gate;
   const sceneSrc = stripComments(readFileSync(join(srcDir, 'render', 'scene.js'), 'utf8'));
   ok(/new THREE\.Color\(PAL\.bg\)/.test(sceneSrc) && /new THREE\.Fog\(PAL\.bg,/.test(sceneSrc),
      'palette: scene background and fog are constructed from the same bg token');
+}
+
+/* ========== T-003: FAR-view legibility compensation (entry 7) ==========
+ * decisions.md entry 7 made FAR the default view, accepted the readability
+ * cost, and named the follow-up: scale the TELLS and GLYPHS up — never RIG,
+ * never the camera. src/render/legibility.js is that rule as arithmetic:
+ *
+ *   gain(share) = 1 + (depthMult - 1) * share
+ *
+ * What is asserted here is the contract, not the taste. Four families:
+ *   1. the resolver and the gains (near is exactly 1; ?legibility=0 is 1;
+ *      the shares are ordered and bounded);
+ *   2. the SCREEN ARITHMETIC — that the derived RIG fractions reproduce
+ *      CONFIG.viewScales' measured 7.0/5.0/3.7, that it reproduces T-015's
+ *      measured 9.6px capsule, and that the compensated glyph clears the
+ *      legibility floor at every view instead of only at near;
+ *   3. HITBOX HONESTY — a readability boost may never claim reach the sim
+ *      does not have, and may never shrink a drawn body inside its own hit
+ *      circle;
+ *   4. static guards — the pass is render-only, and it never scales a
+ *      damage volume (the polyp beam, the mortar mark and its blast slab
+ *      are drawn from what the sim marched and must keep being exactly
+ *      that).                                                              */
+{
+  const VS = CONFIG.viewScales;
+  const views = ['near', 'mid', 'far'];
+
+  // (1) resolver + gains
+  ok(resolveLegibility('0') === false && resolveLegibility('off') === false,
+     'legibility: ?legibility=0|off turns the readability pass off');
+  ok([null, '', '1', 'junk', 'on'].every((v) => resolveLegibility(v) === true),
+     'legibility: absent/junk ?legibility leaves the pass on (it is the default)');
+  ok(LEGIBILITY_ON === true, 'legibility: headless import (no query) has the pass on');
+  ok(Object.values(SHARE).every((s) => s > 0 && s <= 1),
+     'legibility: every share is a fraction of the pull-back, never more');
+  ok(SHARE.glyph === 1 && SHARE.cue === 1 && SHARE.pose < 1,
+     'legibility: information (glyph, lamp) is restored whole; a POSE deforms a ' +
+     'real body, so it only takes part of the compensation');
+  for (const share of Object.values(SHARE)) {
+    ok(legibilityGain(share, 'near') === 1,
+       'legibility: near view is exactly gain 1 — the near art is untouched');
+    ok(views.every((v) => legibilityGain(share, v, false) === 1),
+       'legibility: ?legibility=0 is gain 1 at every view');
+    ok(legibilityGain(share, 'far') > legibilityGain(share, 'mid') &&
+       legibilityGain(share, 'mid') > 1,
+       'legibility: compensation grows with the pull-back');
+    ok(legibilityGain(share, 'junk-view') === 1,
+       'legibility: an unknown view id falls back to near (gain 1), never to a boost');
+  }
+  near(legibilityGain(SHARE.glyph, 'far'), VS.far.depthMult, 1e-12,
+     'legibility: a glyph takes the whole pull-back back');
+  near(LEG_GLYPH_GAIN, VS.far.depthMult, 1e-12,
+     'legibility: the shipped default view (far) resolves the live glyph gain');
+  near(LEG_CUE_GAIN, VS.far.depthMult, 1e-12, 'legibility: the live cue gain matches');
+  near(LEG_POSE_GAIN, 1 + (VS.far.depthMult - 1) * SHARE.pose, 1e-12,
+     'legibility: the live pose gain is the partial share, not the whole');
+  ok(LEG_POSE_GAIN < LEG_CUE_GAIN, 'legibility: a pose is boosted less than a lamp');
+
+  // (2) screen arithmetic — the measurements this pass was opened by
+  near(rigScreenPct('near'), 7.0, 0.01, 'legibility: near RIG fraction is the measured 7.0%');
+  near(rigScreenPct('mid'), 5.0, 0.1, 'legibility: mid RIG fraction reproduces the measured 5.0%');
+  near(rigScreenPct('far'), 3.7, 0.1, 'legibility: far RIG fraction reproduces the measured 3.7%');
+  ok(rigScreenPct('far') >= RIG_SCREEN_FRACTION.min && rigScreenPct('far') <= RIG_SCREEN_FRACTION.max,
+     'legibility: the FAR default keeps RIG inside board 13\'s 3-5% scale invariant ' +
+     '(this pass may not move it — entry 7 is law)');
+  const CAPS = CONFIG.capsules;
+  near(screenPx(CAPS.size, 'far', 800), 9.6, 0.15,
+     'legibility: the arithmetic reproduces T-015\'s measured 9.6px FAR capsule');
+  ok(screenPx(CAPS.size, 'far', 800) * GLYPH_INK_FILL < LEGIBLE_PX_FLOOR,
+     'legibility: THE DEFECT — an uncompensated capsule letter renders under the ' +
+     'legibility floor at the shipped default view');
+  ok(views.every((v) =>
+       screenPx(CAPS.size * legibilityGain(SHARE.glyph, v), v, 800) * GLYPH_INK_FILL
+         >= LEGIBLE_PX_FLOOR),
+     'legibility: THE FIX — the compensated capsule letter clears the floor at ' +
+     'every view, including the FAR default');
+  {
+    const px = views.map((v) => screenPx(CAPS.size * legibilityGain(SHARE.glyph, v), v, 800));
+    ok(Math.max(...px) - Math.min(...px) < 1e-9,
+       'legibility: a compensated glyph lands at the SAME screen size at every ' +
+       'view — restoring near, never overshooting it');
+  }
+  ok(views.every((v) =>
+       screenPx(2 * LAMP_R * legibilityGain(SHARE.cue, v), v, 800) >= LEGIBLE_PX_FLOOR),
+     'legibility: the tell lamp holds at least the legibility floor at every view');
+
+  // (3) hitbox honesty — the sim is untouched and no drawn cue lies about it
+  ok(CAPS.size === 0.55 && CAPS.pickupRadius === 0.95,
+     'legibility: the readability pass changed no sim capsule constant');
+  ok(CAPS.size * LEG_GLYPH_GAIN / 2 <= CAPS.pickupRadius,
+     'legibility: the drawn capsule box stays inside the catch radius — a pickup ' +
+     'never looks bigger than the circle that collects it');
+  {
+    const W = CONFIG.wasp;
+    ok(W.visualRadius * (1 + waspDiveStretch(LEG_POSE_GAIN)) <= W.contactRadius + 1e-12,
+       'legibility: the dive dart\'s drawn nose never reaches past the contact circle');
+    ok(waspDiveStretch(1) > 0 && WASP_DIVE_NARROW > 0 && WASP_DIVE_NARROW < 1,
+       'legibility: the dive cue is a real shape change');
+    {
+      // the cross-section is traded against the STRETCHED body, so the drone a
+      // player must react to never draws smaller than the one that was
+      // cruising past. (Measured the hard way: the first capture of this pass
+      // narrowed against the body and the diving wasp read smaller at FAR.)
+      const cross = (1 + waspDiveStretch(LEG_POSE_GAIN)) * (1 - WASP_DIVE_NARROW);
+      ok(cross >= 0.95 && cross <= W.contactRadius / W.visualRadius,
+         'legibility: a diving wasp keeps its screen footprint — the dart cue may ' +
+         'not shrink the body it is trying to make readable [got ' + cross.toFixed(3) + ']');
+    }
+  }
+  {
+    const H = CONFIG.hound;
+    // mirrors houndPose(): sx is narrowest at the end of the tell, sy is
+    // smallest at its start; the coil only widens and only shortens from a
+    // taller pose, and a roll about the body center cannot change the inradius
+    const inradius = (g) => Math.min(
+      H.size[0] / 2 * (1 - H.tellNarrow * g),
+      H.size[1] / 2 * Math.min(1, 1 + (H.tellRise - H.tellCoilSquash) * g));
+    ok(views.every((v) => inradius(legibilityGain(SHARE.pose, v)) >= H.hitRadius),
+       'legibility: a boosted houndframe tell still contains its own hit circle at ' +
+       'every view');
+    const PP = CONFIG.polyp;
+    ok(views.every((v) => PP.size * (1 + PP.tellSwell * legibilityGain(SHARE.pose, v))
+         >= PP.hitRadius),
+       'legibility: a dilated iris bulb still contains its own hit circle');
+  }
+
+  // I-003 (playtest inbox): the first ~300ms of the 800ms iris tell carried
+  // almost no signal at FAR. The onset flash covers the opening of that
+  // window, and the front-loaded curve moves the dilation into it.
+  ok(POLYP_ONSET_MS >= 100 && POLYP_ONSET_MS <= CONFIG.polyp.tellMs * 0.25,
+     'legibility (I-003): the iris onset flash is long enough to be seen and short ' +
+     'enough to leave the accelerating blink its job');
+  {
+    const u300 = 300 / CONFIG.polyp.tellMs;          // the window I-003 measured
+    ok(u300 ** POLYP_SWELL_EASE >= 1.4 * u300,
+       'legibility (I-003): at 300ms the front-loaded iris has dilated at least 40% ' +
+       'further than the linear curve did');
+    ok(0 ** POLYP_SWELL_EASE === 0 && 1 ** POLYP_SWELL_EASE === 1,
+       'legibility (I-003): front-loading re-times the dilation without changing ' +
+       'where it starts or ends — the sim\'s reaction window is untouched');
+  }
+
+  // (4) static guards
+  {
+    const legSrc = readFileSync(join(srcDir, 'render', 'legibility.js'), 'utf8');
+    const legCode = stripComments(legSrc);
+    const specs = [...legSrc.matchAll(/^\s*import\s[^'"]*['"]([^'"]+)['"]/gm)].map((m) => m[1]);
+    ok(specs.length > 0 && specs.every((s) => s === '../config.js' || s === '../mode.js'),
+       'legibility: the module imports only config and mode — no three.js, no sim, ' +
+       'no render (' + specs.join(', ') + ')');
+    ok(!/THREE|document|window/.test(legCode),
+       'legibility: the module is Node-safe, which is why this harness can assert it');
+    const hostilesCode = stripComments(readFileSync(join(srcDir, 'render', 'hostiles.js'), 'utf8'));
+    const damageProp = /\b(beam|blast|mark)\b/;
+    const scaled = hostilesCode.split('\n')
+      .filter((l) => damageProp.test(l) && /GAIN/.test(l));
+    ok(scaled.length === 0,
+       'legibility: no readability gain is ever applied to a damage volume — the ' +
+       'polyp beam, the mortar mark and its blast slab keep drawing exactly what ' +
+       'the sim marched' + (scaled.length ? ' (found: ' + scaled.join(' | ') + ')' : ''));
+    const capsulesCode = stripComments(readFileSync(join(srcDir, 'render', 'capsules.js'), 'utf8'));
+    ok(/new THREE\.BoxGeometry\(CAP\.size/.test(capsulesCode) &&
+       /scale\.setScalar\(GLYPH_GAIN\)/.test(capsulesCode),
+       'legibility: the capsule box is still authored at the SIM size and the ' +
+       'readability boost is a render-side scale on top of it');
+    for (const file of [...layerFiles('pure'), ...layerFiles('sim')])
+      ok(!stripComments(readFileSync(file, 'utf8')).includes('legibility'),
+         'legibility: the sim and pure layers do not know this pass exists: ' + file);
+  }
 }
 
 /* =============== T-012: audio layer (ui) static guards ================= *
