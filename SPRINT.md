@@ -190,7 +190,7 @@ accept:
 owner: asset-artist
 verify: node tools/pathcheck.mjs; tools/playtest screenshots at ?view=far
 
-## T-011 | juice | doing | P1
+## T-011 | juice | done | P1
 
 goal: baseline feedback pass (DESIGN dev-sequence item 4, unlocked by entry
 8): hit-stop, screen shake, muzzle flashes, impact/death particles, pickup
