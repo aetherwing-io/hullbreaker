@@ -39,6 +39,11 @@
 //   - "on target" is corridor occupancy at that instant (lib/threat.mjs's
 //     model: a straight line from the standing muzzle), not a hit prediction,
 //     and it inherits that module's documented no-bend-awareness limit.
+//   - Aim coverage assumes the aim comes from the keys held THIS tick. A
+//     policy that holds `strafe` freezes the aim vector at whatever it was
+//     (computeAim returns early, src/sim/player.js), so coverage is not
+//     modelled for those runs — the report says so out loud rather than
+//     printing a number that is quietly wrong.
 //   - Attribution names what was NEAR the loss, not what caused it. A hound
 //     charging past and a wasp diving in are both listed; the analysis does
 //     not adjudicate between them.
@@ -183,19 +188,27 @@ function analyze({ path, report }) {
       }
     }
 
-    // gate segmentation
-    if (g && (!gate || gate.k !== g.k)) {
-      if (gate) gate.endMs = prev ? prev.gameMs : s.gameMs;
-      gate = { k: g.k, startMs: s.gameMs, endMs: null, peak: g.bodies, killsAtStart: s.kills ?? null, killsAtEnd: null, scroll: s.scrollX };
-      gates.push(gate);
-    } else if (g && gate) {
-      gate.peak = Math.max(gate.peak, g.bodies);
-      gate.killsAtEnd = s.kills ?? gate.killsAtEnd;
-      gate.endMs = s.gameMs;
-    } else if (!g && gate && gate.endMs === null) {
-      gate.endMs = prev ? prev.gameMs : s.gameMs;
+    // Gate segmentation. The HUD prints `WAVE k/6 — N HOSTILES` only while the
+    // gate actually holds the scroll (src/ui/hud.js), so the segment ends the
+    // tick that line stops appearing — and `gate` is dropped there, or the
+    // next gate's arrival would overwrite the end it already has.
+    if (g) {
+      if (!gate || gate.k !== g.k) {
+        gate = { k: g.k, startMs: s.gameMs, endMs: s.gameMs, peak: g.bodies,
+                 killsAtStart: s.kills ?? null, killsAtEnd: s.kills ?? null,
+                 scroll: s.scrollX, cleared: false };
+        gates.push(gate);
+      } else {
+        gate.peak = Math.max(gate.peak, g.bodies);
+        gate.killsAtEnd = s.kills ?? gate.killsAtEnd;
+        gate.endMs = s.gameMs;
+      }
+    } else if (gate) {
+      // `CLEAR` is the corner ritual's own stinger: the wave died rather than
+      // the run ending inside it.
+      gate.cleared = s.hudTC === 'CLEAR';
+      gate = null;
     }
-    if (!g && gate && gate.endMs !== null && gate.closed !== true) gate.closed = true;
 
     prev = s;
   }
@@ -225,13 +238,19 @@ function analyze({ path, report }) {
   push('');
   push('## gates');
   for (const g of gates) {
-    push(`- wave ${g.k}: ${secs(g.startMs)} → ${secs(g.endMs)} (${secs((g.endMs ?? 0) - (g.startMs ?? 0))} held) · ` +
+    push(`- wave ${g.k}: ${secs(g.startMs)} → ${secs(g.endMs)} (${secs((g.endMs ?? 0) - (g.startMs ?? 0))} held, ` +
+      `${g.cleared ? 'CLEARED' : 'run ended inside it'}) · ` +
       `peak ${g.peak} bodies · kills ${g.killsAtStart}→${g.killsAtEnd} · scroll ${f1(g.scroll)}`);
   }
   if (!gates.length) push('(no gate ever armed)');
 
   push('');
   push('## aim coverage (ticks with any materialized hostile in the sample)');
+  if ((report.policy ? report.policy.rules : []).some((r) => r.action.code === 'ShiftLeft' || r.action.code === 'ShiftRight')) {
+    push('- NOT MODELLED for this run: the policy holds `strafe`, which freezes the aim ' +
+      'vector (computeAim returns early) — the numbers below read the aim off the held ' +
+      'keys and would be wrong. Treat them as a lower bound at best.');
+  }
   const pct = (a, b) => (b ? (100 * a / b).toFixed(1) + '%' : 'n/a');
   push(`- overall: gun on target ${pct(onTarget, ticks)} · some 8-way ray had one ${pct(anyRay, ticks)} (n=${ticks})`);
   push(`- inside a gate: ${pct(perPhase.gate.on, perPhase.gate.n)} on target, ` +
@@ -331,12 +350,54 @@ function analyze({ path, report }) {
   return out.join('\n');
 }
 
+// One markdown table row per run — for comparing a batch of repeats without
+// reading five screens of forensics per run.
+function brief({ path, report }) {
+  const trace = report.trace || [];
+  const m = report.metrics || {};
+  let lastGameMs = 0, maxScroll = 0, gateMs = 0, playMs = 0, airMs = 0, prev = null;
+  let hpEvents = 0;
+  for (const s of trace) {
+    if (typeof s.gameMs === 'number') lastGameMs = Math.max(lastGameMs, s.gameMs);
+    if (typeof s.scrollX === 'number') maxScroll = Math.max(maxScroll, s.scrollX);
+    if (prev) {
+      const dt = (s.gameMs ?? 0) - (prev.gameMs ?? 0);
+      if (dt > 0 && dt < 2000 && prev.state === 'PLAYING') {
+        playMs += dt;
+        if (gateOf(prev)) gateMs += dt;
+        if (prev.grounded === false) airMs += dt;
+      }
+      // one event per sample, exactly like the detailed pass: the killing hit
+      // drops hp AND a life on the same tick and must not count twice
+      const lv0 = livesOf(prev), lv1 = livesOf(s);
+      const lifeDrop = lv0 !== null && lv1 !== null && lv1 < lv0;
+      const hpDrop = typeof prev.hp === 'number' && typeof s.hp === 'number' && s.hp < prev.hp;
+      if (lifeDrop || hpDrop) hpEvents++;
+    }
+    prev = s;
+  }
+  const gates = new Set(trace.map((s) => (gateOf(s) || {}).k).filter(Boolean));
+  const kills = m.finalKills ?? 0;
+  return `| ${report.meta.scriptName} | ${secs(lastGameMs)} | ${maxScroll.toFixed(0)} | ` +
+    `${[...gates].join(',') || '—'} | ${kills} | ${hpEvents} | ` +
+    `${(kills / Math.max(1, hpEvents)).toFixed(1)} | ${(100 * airMs / Math.max(1, playMs)).toFixed(0)}% | ` +
+    `${(100 * gateMs / Math.max(1, playMs)).toFixed(0)}% | ${path.replace(/.*\/([^/]+)\/report\.json/, '$1')} |`;
+}
+
 const args = process.argv.slice(2);
-if (!args.length) {
-  console.error('usage: node analyze-run.mjs <run-dir-or-report.json> [...]');
+const briefMode = args.includes('--brief');
+const targets = args.filter((a) => a !== '--brief');
+if (!targets.length) {
+  console.error('usage: node analyze-run.mjs [--brief] <run-dir-or-report.json> [...]');
   process.exit(1);
 }
-for (const a of args) {
-  console.log(analyze(loadReport(resolve(a))));
-  console.log('');
+if (briefMode) {
+  console.log('| script | survived | scroll | gates seen | kills | damage events | kills/hit | airborne | gated | run |');
+  console.log('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+  for (const a of targets) console.log(brief(loadReport(resolve(a))));
+} else {
+  for (const a of targets) {
+    console.log(analyze(loadReport(resolve(a))));
+    console.log('');
+  }
 }

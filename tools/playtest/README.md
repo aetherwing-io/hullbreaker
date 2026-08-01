@@ -34,6 +34,7 @@ node run.mjs scripts/mid-route.json --out my-run-dir    # explicit output dir
 node run.mjs scripts/mid-route.json --url http://localhost:8741/index.html?slice=traversal
 node run.mjs scripts/mid-route.json --no-testapi        # test what a debug-flag-free session sees
 node run.mjs scripts/adversarial/t2-transform-seam-rush.json --deterministic --max-runtime-ms 26000
+node run.mjs scripts/six-face-aimed-run.json --stop-on-game-over  # end at the last life, not at the script window
 node run.mjs --help                                     # full flag list
 ```
 
@@ -259,6 +260,7 @@ false`, which have no hitbox in the sim either):
 | `threat.aboveN` | how many are above the firing line at all, within range |
 | `threat.upDist` / `upDx` / `upDy` / `upAdx` / `upSlope` | the same numbers for the nearest hostile **above the firing line** — the mark a "tilt the gun up" reflex needs, because the nearest hostile overall is regularly a deck unit standing *under* the muzzle |
 | `threat.diveN` / `diveDist` / `diveDx` / `diveDy` | the wasp `dive` state, and the nearest diving one |
+| `threat.diveAdx` / `diveSlope` | that diver's `\|dx\|` and **angle** (T-019). A dive is the one hostile motion the sim aims *at* RIG — the heading is set from the player's position once and then frozen (`src/sim/hostiles.js`) — so the ray that answers a dive is the ray that points at it, and the whole level/45°/vertical choice is this number |
 | `threat.side` | which way the gun points this tick: `1` right, `-1` left |
 
 `terrain.*` — an in-page probe (`lib/sampler.mjs`) of
@@ -267,10 +269,12 @@ collision** reads, bounded to 12 tiles in the walking direction:
 
 | field | meaning |
 | --- | --- |
-| `terrain.gapDist` | tiles from RIG to the near lip of the next hole in the deck |
+| `terrain.gapDist` | tiles from RIG to the near lip of the next hole in the deck — **0 while RIG is over one** (T-019: the scan starts at RIG's own column, so mid-fall no longer reports the same small number as "a hole is right in front of me") |
 | `terrain.gapWidth` | how many columns wide that hole is |
 | `terrain.farY` | ground height of its far lip |
-| `terrain.groundY` | ground height of the column RIG is standing over |
+| `terrain.groundY` | ground height of the column RIG is standing over (`null` over a hole) |
+| `terrain.landDist` / `landY` | where the next landable surface is (T-019): `0` over solid ground, otherwise the distance to the near lip of the next solid column and its height. The number an air-jump rule wants — `!grounded && vy<0 && terrain.landDist>1.2` reads "falling with nothing under me" without having to know which hole this is |
+| `terrain.stepUp` | how much higher the very next column is (T-019). `pinned` says RIG is jammed while trying to run, but not *why*; a policy that answers every pin with a jump pogos against things that are not steps — most expensively the screen's own right clamp, which during a gate sits at the corner pivot. `pinned && terrain.stepUp>0.5` is the honest version |
 | `terrain.probeTiles` | the probe window, so a report can say how far it looked |
 
 Two conventions worth internalizing:
@@ -335,6 +339,60 @@ rather than tuning it here.) `scripts/policy-pinned-jump.json` is the
 narrower single-predicate version: holds right with zero timed jumps at all,
 fires `pinned` 13 times crossing the whole route's terrain, and reaches the
 dare pocket (grabbing the reward) purely reactively.
+
+### Where a reflex policy actually stops (T-019)
+
+T-018 closed the two things the grammar could not *say*. T-019 asked the next
+question — can a policy written in it finish the run? — and the answer is no,
+with numbers: full finding in `docs/playtests/2026-08-victory-box.md`.
+
+Read that before writing another full-run policy, because it saves you the
+same nine variants. The short version, all on `main`, `--deterministic`:
+
+- **The ceiling is wave gate 2 / scroll 140 of 415, at about 50 s**, and it is
+  the same ceiling for every variant tried (the shipped aimed policy, that
+  policy with the free hop deleted, a pace servo at two different standoffs, a
+  personal-space rule, a dive-angle dodge, a `strafe`-locked 45° servo, and two
+  combinations). Run-to-run spread is ±6 s and never changed which gate ended
+  the run.
+- **The binding constraint is the exchange rate, not aim.** A full run has to
+  kill roughly 59 gating bodies (39 authored across the six waves plus the
+  ambient stragglers that drift into the arenas) on 9 hp. Measured, the bot
+  trades **1.0–1.8 kills per hp** — it needs about **6.5**.
+- **Ray choice is not the bottleneck; position is.** In a gate, *some* 8-way
+  ray has a target on only 31–36 % of ticks, and the policy is already on
+  target for 21–31 %. The missing two thirds are ticks where **no** ray out of
+  RIG's current position touches anything: fixing that means moving somewhere
+  better several ticks ahead of the shot, which is planning, not reflex.
+- **Latency is not the bottleneck either.** Re-running the shipped policy at
+  `--sample-ms 40` (roughly double the reaction rate, well inside human
+  reaction time) lands on the same gate at the same second.
+
+Two harness pieces came out of it, both useful for any long policy run:
+
+- `--stop-on-game-over` — end a run at the terminal failure state instead of
+  sampling a frozen world for the rest of the script window. Off by default
+  (a report whose length no longer matches its script window is a surprise,
+  and the fixture scripts deliberately keep running through retries); with it,
+  a dead six-face run reports in ~50 s instead of four minutes.
+- `analyze-run.mjs` — per-tick forensics over a finished `report.json`:
+
+```sh
+node tools/playtest/analyze-run.mjs /tmp/aimed            # one run, full breakdown
+node tools/playtest/analyze-run.mjs --brief /tmp/run-*    # one markdown row per run
+```
+
+  It attributes every hp/life loss to what was next to RIG on the sample
+  before (kind, state, offset, airborne/grounded, in-gate, terrain probe),
+  prints the gate timeline with the HUD's own body counts, aim coverage per
+  phase, a **rule-conflict census** (two `hold` rules that disagree cancel —
+  `left` and `right` both down is `h = 0` in `computeAim`, so RIG stands
+  still), and a **dive census**: every `cruise→dive` inside the corridor, what
+  the gun was doing while it fell, and whether it ended in contact or a kill.
+  Honesty notes are in the file header — the two that matter are that "ended
+  in contact" is inferred from hp dropping inside the dive's window (the sim
+  publishes no per-hit attribution), and that aim coverage is not modelled for
+  a policy that holds `strafe`, since that freezes the aim vector.
 
 ## Deterministic injection mode
 
@@ -1039,6 +1097,10 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
 tools/playtest/
   package.json          playwright-core, dev-only, no runtime impact
   run.mjs                CLI entry point
+  analyze-run.mjs        per-tick forensics over a finished report.json (T-019):
+                          damage attribution, gate timeline, aim coverage,
+                          rule-conflict census, dive census; --brief for one
+                          markdown row per run
   lib/
     server.mjs           static file server for the repo root
     compile.mjs           moves/events -> flat time-sorted event list; exports resolveCode (shared with policy.mjs)
