@@ -65,17 +65,20 @@ export const LATTICE = {
   },
 
   /* ---------------------------- dare pockets ------------------------ *
-   * One authored chunk per face, at a fraction of the face deliberately
-   * inside its FIRST half: the wave gate's arena is the last ~40 columns
-   * before a corner, and a chasm does not belong in a fight the player
-   * cannot walk backwards out of. `cornerClearBefore` asserts that.     */
+   * One authored chunk per face, in the face's FIRST half: the wave gate's
+   * arena is the last ~35 columns before a corner, and a chasm does not
+   * belong in a fight the player cannot walk backwards out of.
+   * `cornerClearBefore` asserts that.                                   */
   pocket: {
-    // Per-face position (fraction of the face), varied so the run does not
-    // metronome. The band is bounded on both sides by the two clearances
-    // below: a pocket starts after the corner apron it follows and ENDS a
-    // full arena's width before the corner it leads to, which leaves
-    // [0.13, 0.25] of a 65-column face to place it in.
-    perFaceFrac: [0.24, 0.14, 0.21, 0.17, 0.245, 0.155],
+    /* Per-face position (fraction of the face). The placeable band is
+       narrow and every edge of it is somebody's rule: the pocket LANDING
+       has to clear the spawner's 20-column post-corner breather (that is
+       where the houndframe stands, and the breather is a no-spawn zone),
+       and the pocket's far end has to clear the wave gate's 35-column
+       arena. On a 65-column face that leaves x0 in [+13, +17] — so these
+       fractions vary the placement by the four columns actually available
+       rather than pretending to more freedom than the face has.        */
+    perFaceFrac: [0.24, 0.21, 0.26, 0.20, 0.245, 0.225],
     deckMin: 3,                     // approach deck: the incoming column's own
                                     //   height, never below this — the landing
                                     //   is authored one tile lower, so the deck
@@ -139,6 +142,20 @@ export const LATTICE = {
     // worst-case floor, well under the ~30 tiles a 16:10 window shows), and
     // the retreat must leave `minExitMarginTiles` when it is over.
     timing: { entryEdgeMarginTiles: 14, minExitMarginTiles: 6 },
+  },
+
+  /* ------------------ houndframe stations (decisions.md 6) ----------- */
+  hound: {
+    firstFace: 2,                   // face 1 teaches the lattice unpressured
+    patrolCols: 3,                  // the judged hound-2.5 span: tight enough
+                                    //   that the frame is always ON the thing
+                                    //   it owns, never pacing away from it
+    // ONE station per face is not modesty, it is arithmetic: a 65-column
+    // face already spends its first 20 columns on the spawner's post-corner
+    // breather and its last 35 on the wave gate's arena, and the pocket
+    // occupies most of what is left. A second ambient station would have to
+    // stand in one of those two zones, and both exist for good reasons.
+    cornerClearBefore: 35,          // the gate arena, same figure the pockets use
   },
 };
 
@@ -297,6 +314,55 @@ export function latticeCarvePocket(groundH, site, GAP) {
       : s < site.gap.x1 ? GAP
       : site.landingY;
   }
+}
+
+/* -------------------- houndframe placement (faces 2+) ----------------- *
+ * decisions.md entry 6: placement beats stats. A hound on open plate is
+ * scenery — "one hound doesn't pose any threat" — so every station here is a
+ * short patrol centred on a piece of deck the route cannot skip, exactly the
+ * contract the judged hound-2.5 stage follows in the traversal fixture:
+ *
+ *   the POCKET LANDING (every face from 2 on) — the deck you land on after
+ *   the committed hop. It is the one column-run every deck-line player
+ *   touches on that face, and the answer to it is already built: the pocket's
+ *   own mid lane runs directly overhead, so the hound pushes you off the
+ *   floor and into the route the shelf hangs from. Bait its charge over the
+ *   chasm and it removes itself.
+ *
+ * Two rules keep them honest, both asserted in tools/pathcheck.mjs:
+ *   1. every patrol column is solid and at ONE height — a hound needs a
+ *      plate, not a staircase, and its charge has to sweep what it owns;
+ *   2. no station may sit inside a wave gate's arena. Ambient rows also
+ *      carry `gating: false`: a gate is cleared by killing its WAVE, and a
+ *      ground unit that cannot fly to the arena must never be able to hold
+ *      the ritual shut from half a face away (the flyer's straggler rule is
+ *      deliberate and unchanged — a wasp always comes to you).            */
+
+// A flat, solid run of `len` columns starting at s, all at the same height.
+export function latticeFlatRunAt(groundH, s, len) {
+  const h = groundH[s];
+  if (!(h > -100)) return false;
+  for (let k = s; k < s + len; k++) if (groundH[k] !== h) return false;
+  return true;
+}
+
+export function latticeHoundBeats(cfg, groundH, pockets, L = LATTICE) {
+  const H = L.hound;
+  const out = [];
+  for (const p of pockets) {
+    if (p.face < H.firstFace) continue;
+    // beat A: the pocket landing, patrol tight around the touchdown column
+    const a0 = p.gap.x1;
+    if (latticeFlatRunAt(groundH, a0, H.patrolCols + 1)) {
+      out.push({
+        x: a0 + H.patrolCols / 2, type: 'hound', kind: 'hound',
+        deck: groundH[a0], dir: -1, gating: false,
+        contests: 'deck-line', owns: p.id + '-landing',
+        patrol: { x0: a0, x1: a0 + H.patrolCols },
+      });
+    }
+  }
+  return out;
 }
 
 /* ------------------------- density repair -------------------------- */

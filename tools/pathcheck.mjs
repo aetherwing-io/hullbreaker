@@ -447,15 +447,15 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
 // --- authored traversal slice ------------------------------------------
 // Re-pinned by T-009 (six-face integration): the lattice pass now carves one
 // dare pocket per face and repairs route density (src/pure/lattice.js), so the
-// shipped six-face geometry deliberately moved — 49 -> 63 catwalks, and the
+// shipped six-face geometry deliberately moved — 49 -> 62 catwalks, and the
 // build result gained its `pockets` / `lattice` report. The chunk stream itself
 // is untouched (59 chunks, same seed, same rng draws): the lattice consumes no
 // randomness. Both values below are regression pins, not targets — if a change
 // moves them again it has to be as deliberate as this one was.
-ok(gH.length === 445 && plats.length === 63 && LVL.chunkLog.length === 59,
-   'normal generator shape pinned (445 columns / 63 platforms / 59 chunks), got ' +
+ok(gH.length === 445 && plats.length === 62 && LVL.chunkLog.length === 59,
+   'normal generator shape pinned (445 columns / 62 platforms / 59 chunks), got ' +
    gH.length + '/' + plats.length + '/' + LVL.chunkLog.length);
-ok(fingerprint(LVL) === '0a8f4379',
+ok(fingerprint(LVL) === 'dad96774',
    'normal generator fingerprint unchanged, got ' + fingerprint(LVL));
 
 const fixtureBefore = JSON.stringify(TRAVERSAL_FIXTURE);
@@ -4603,6 +4603,129 @@ const XL = buildTransformLevel(CONFIG);
     for (const run of TRAVERSAL_FIXTURE.groundRuns)
       for (let x = run.x0; x < run.x1; x++) if (slice.groundH[x] !== run.y) groundOk = false;
     ok(groundOk, 'T-009: the fixture band still owns its authored ground runs');
+  }
+}
+
+/* ------ T-009: houndframe stations on the six-face run (faces 2+) ------ *
+ * decisions.md entry 6 as invariants: a station stands ON the thing it owns,
+ * on a plate it can actually charge across, with the answer to it already
+ * built one jump above — and it can never hold a wave gate shut.          */
+{
+  const LAT = latticeModule;
+  const H = LAT.LATTICE.hound;
+  const table = buildSpawnTable(CONFIG, LVL);
+  const stations = table.filter((r) => r.type === 'hound');
+  const PJ = CONFIG.player;
+  const apex = (PJ.jumpVel * PJ.jumpVel) / (2 * -PJ.gravity);
+
+  ok(stations.length === CONFIG.path.faces - (H.firstFace - 1),
+     'T-009: one houndframe station per face from ' + H.firstFace +
+     ' on, got ' + stations.length);
+  {
+    const faces = stations.map((r) => faceIndexAt(r.x, CONFIG)).sort((a, b) => a - b);
+    ok(faces.every((f, i) => f === H.firstFace + i),
+       'T-009: stations sit on consecutive faces ' + H.firstFace + '..' +
+       CONFIG.path.faces + ', got ' + faces.join(','));
+    ok(!faces.includes(1), 'T-009: face 1 teaches the lattice with no floor denial');
+  }
+
+  let badPlate = 0, badSpan = 0, badArena = 0, badRow = 0, badAnswer = 0, badSweep = 0;
+  const sweep = CONFIG.hound.chargeSpeed * (CONFIG.hound.chargeMs / 1000);
+  for (const r of stations) {
+    if (r.patrol.x1 - r.patrol.x0 !== H.patrolCols) badSpan++;
+    if (!(r.x > r.patrol.x0 && r.x < r.patrol.x1)) badSpan++;
+    // the plate: every patrol column solid, one height, and that height is
+    // the deck the row declares (the spawner derives the ride height from it)
+    for (let s = r.patrol.x0; s < r.patrol.x1; s++)
+      if (!(LVL.groundH[s] > -100) || LVL.groundH[s] !== r.deck) badPlate++;
+    // a charge has to be able to sweep what it owns, from either end
+    if (sweep < r.patrol.x1 - r.patrol.x0) badSweep++;
+    // never in a gate arena, never in the ambient corner-clear zones
+    for (const cs of CORNER_S) {
+      if (r.x > cs - H.cornerClearBefore && r.x < cs + CONFIG.spawner.cornerClearAfter) badArena++;
+      if (r.x >= cs - CONFIG.spawner.cornerClearBefore && r.x <= cs + CONFIG.spawner.cornerClearAfter)
+        badArena++;
+    }
+    if (r.gating !== false || r.dir !== -1 || r.kind !== 'hound') badRow++;
+    // THE ANSWER: a catwalk over the plate, inside one jump of it. A hound
+    // denies the floor; if the floor is all there is, it denies the route.
+    const over = LVL.platforms.some((p) =>
+      p.x1 > r.patrol.x0 && p.x0 < r.patrol.x1 &&
+      p.y > r.deck && p.y - r.deck <= apex);
+    if (!over) badAnswer++;
+  }
+  ok(badSpan === 0, 'T-009: every station patrols exactly ' + H.patrolCols +
+     ' columns around its own spawn column');
+  ok(badPlate === 0, 'T-009: every station stands on solid, single-height plate');
+  ok(badSweep === 0, 'T-009: a charge (' + sweep.toFixed(1) +
+     ' tiles) sweeps the whole patrol span');
+  ok(badArena === 0, 'T-009: no station sits in a gate arena or a corner-clear zone');
+  ok(badRow === 0, 'T-009: every station row is a non-gating hound facing back down the lane');
+  ok(badAnswer === 0, 'T-009: every station has a catwalk answer within one jump ' +
+     '(apex ' + apex.toFixed(2) + ') over its plate');
+  // the placement contract itself: the owned landing is the pocket's
+  {
+    let owned = 0;
+    for (const r of stations)
+      if (LVL.pockets.some((p) => r.owns === p.id + '-landing' &&
+          r.patrol.x0 === p.gap.x1 && r.deck === p.landingY)) owned++;
+    ok(owned === stations.length,
+       'T-009: every station owns its face pocket landing (' + owned + '/' + stations.length + ')');
+  }
+}
+
+/* ---- T-009: a non-gating station cannot hold a wave gate shut ---------- *
+ * The behavioural half of the row-level `gating` opt-out, driven through the
+ * real gate runtime in a child process: with the wave dead, a corner whose
+ * only survivor is an ambient houndframe must still turn — and the control
+ * (the same body with the kind's own gating value) must still hold it.    */
+{
+  const simBase = 'file://' + join(srcDir, 'sim');
+  const child = `
+    const [T, E, ST, HO, WG] = await Promise.all([
+      import(${JSON.stringify(simBase + '/time.js')}),
+      import(${JSON.stringify(simBase + '/edges.js')}),
+      import(${JSON.stringify(simBase + '/state.js')}),
+      import(${JSON.stringify(simBase + '/hostiles.js')}),
+      import(${JSON.stringify(simBase + '/wavegate.js')}),
+    ]);
+    E.setEdges(-18.9, 26.4);
+    ST.setState('PLAYING');
+    const out = {};
+    const station = { dir: -1, patrol: { x0: 60, x1: 63 }, gating: false };
+    const c0 = WG.cornerEvents[0];
+    WG.armGate(c0);
+    HO.spawnHostile(61.5, 3.45, 0, 'hound', station);
+    for (let i = HO.hostiles.length - 1; i >= 0; i--)
+      if (HO.hostiles[i].kind === 'wasp') HO.removeHostile(i, false);
+    out.nonGating = c0.state;
+    out.houndAlive = HO.hostiles.some((e) => e.kind === 'hound');
+    // control: the same body without the opt-out holds the gate
+    c0.state = 'done';
+    while (HO.hostiles.length) HO.removeHostile(0, false);
+    const c1 = WG.cornerEvents[1];
+    WG.armGate(c1);
+    HO.spawnHostile(126.5, 3.45, 0, 'hound', { dir: -1, patrol: { x0: 125, x1: 128 } });
+    for (let i = HO.hostiles.length - 1; i >= 0; i--)
+      if (HO.hostiles[i].kind === 'wasp') HO.removeHostile(i, false);
+    out.gating = c1.state;
+    console.log(JSON.stringify(out));
+  `;
+  let res = null;
+  try {
+    res = JSON.parse(execFileSync(process.execPath,
+      ['--input-type=module', '-e', child], { encoding: 'utf8' }));
+  } catch (e) {
+    console.error('pathcheck: T-009 gating child failed: ' + e.message);
+  }
+  ok(!!res, 'T-009: the gate runtime runs headlessly for the gating check');
+  if (res) {
+    ok(res.houndAlive === true, 'T-009: the station is still alive when the wave dies');
+    ok(res.nonGating === 'turning',
+       'T-009: a non-gating station does not hold the ritual (state ' + res.nonGating + ')');
+    ok(res.gating === 'gate',
+       'T-009: a gating hound still holds it — the opt-out is what changed things ' +
+       '(state ' + res.gating + ')');
   }
 }
 

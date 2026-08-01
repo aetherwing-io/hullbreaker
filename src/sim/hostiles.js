@@ -79,6 +79,17 @@ export function spawnHostile(x, y, delayMs, kind, row) {
     diveCooldownMs: T && T.diveCooldownMs !== undefined ? T.diveCooldownMs : undefined,
     senseRange: T && T.senseRange !== undefined ? T.senseRange : undefined,
     state: K.start || 'cruise', stateUntil: 0, diveCdUntil: 0,
+    // Whether this body holds a corner's wave gate closed. Per KIND by
+    // default (the table above), but a row may opt out — and the six-face
+    // run's ambient houndframe stations do (T-009, src/pure/lattice.js).
+    // The reasoning is the same one that makes the carrier non-gating: a
+    // gate is cleared by killing its WAVE, and a straggler may only hold it
+    // if it can actually join the fight. A wasp always flies to you; a
+    // ground unit bounded by terrain and a 3-column patrol cannot, so a
+    // station left alive half a face back would hold the ritual shut with
+    // nothing on screen to shoot. Gate waves and every fixture row keep the
+    // kind's own value, so nothing judged changes.
+    gating: row && row.gating !== undefined ? row.gating : K.gating,
     patrolX0: patrol ? patrol.x0 : -Infinity,
     patrolX1: patrol ? patrol.x1 : Infinity,
     // a raised-surface hound rides the top of an authored solid instead of the

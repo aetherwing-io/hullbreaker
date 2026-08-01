@@ -41,6 +41,13 @@ export function updateSpawner() {
     const s = spawnTable[spawnIdx++];
     if (s.type === 'carrier') {
       spawnHostile(s.x, spawnLaneY(s.x, CONFIG.carrier.laneAbove), 0, 'carrier');
+    } else if (s.type === 'hound') {
+      // T-009: authored houndframe station (src/pure/lattice.js). The row
+      // carries the deck it rides, its facing and its patrol span, exactly
+      // like a traversal-fixture hound row, so this branch adds no policy —
+      // it derives the ride height the way the fixture path does and hands
+      // the row through for dir/patrol/gating.
+      spawnHostile(s.x, s.deck + CONFIG.hound.rideY, 0, 'hound', s);
     } else if (s.lane !== undefined) {          // authored lane (fixture table)
       spawnHostile(s.x, spawnLaneY(s.x, s.lane), 0, 'wasp');
     } else {

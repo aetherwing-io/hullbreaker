@@ -12,8 +12,8 @@ import { mulberry32 } from './rng.js';
 import { cornerSList, faceIndexAt } from './path.js';
 import { TRAVERSAL_FIXTURE } from './traversal.js';
 import {
-  LATTICE, latticeCarvePocket, latticePatchPass, latticePocketSites,
-  latticeReport, latticeThinPass,
+  LATTICE, latticeCarvePocket, latticeHoundBeats, latticePatchPass,
+  latticePocketSites, latticeReport, latticeThinPass,
 } from './lattice.js';
 
 export const GAP = -999;
@@ -241,7 +241,13 @@ export function buildTraversalLevel(cfg, fixture = TRAVERSAL_FIXTURE) {
 // Ambient spawn table: density authored in seconds of scroll so it scales
 // with scrollSpeed, escalating per face; corner-clear zones stay empty —
 // gate waves are authored by the wave system, never by this table.
-export function buildSpawnTable(cfg) {
+//
+// `level` is the built geometry the houndframe stations are placed on
+// (src/pure/lattice.js needs a deck to stand a frame on). It defaults to a
+// fresh build so every existing caller — the harness included — keeps working
+// unchanged; the six-face boot pays one extra ~10 ms build for that, and gets
+// a spawn table that cannot disagree with the level it spawns into.
+export function buildSpawnTable(cfg, level = buildLevel(cfg)) {
   const S = cfg.spawner;
   const corners = cornerSList(cfg);
   const rng = mulberry32(S.seed);
@@ -269,6 +275,15 @@ export function buildSpawnTable(cfg) {
     while (used.has(cx)) cx++;
     if (!nearCorner(cx)) { out.push({ x: cx, type: 'carrier' }); used.add(cx); }
   });
+  // houndframe stations (faces 2+, decisions.md entry 6 — placement, not
+  // stats). Authored on half-columns so they can never collide with the
+  // integer wasp/carrier rows, and skipped wholesale if a station would land
+  // in a corner-clear zone: the ambient table's discipline applies to every
+  // kind in it.
+  for (const beat of latticeHoundBeats(cfg, level.groundH, level.pockets)) {
+    if (nearCorner(beat.x) || beat.x < S.startS || beat.x >= end) continue;
+    out.push(beat);
+  }
   out.sort((a, b) => a.x - b.x);
   return out;
 }
