@@ -929,6 +929,13 @@ tools/playtest/
                             live beam is retried, and the rig throws rather
                             than write evidence that does not show what its
                             name claims.
+  juice-stress.mjs         dev-only budget measurement for the T-011 feedback pass:
+                            saturates the projectile + spark pools through the game's
+                            own spawn paths and reads window.HB.perf(). Honesty: rAF
+                            is vsync-locked, so `fps` is capped at the panel refresh
+                            rate and proves only that no frame was late — read
+                            `worstMs` / `over20ms`, and treat the result as evidence
+                            about this dev machine, not a target-device claim.
   transform-capture.mjs    dev-only evidence script for the CP3 transform slice:
                             keyframe screenshots keyed on the ?testapi=1 transform
                             block's ritual clock (run.mjs's fixed sampling cadence

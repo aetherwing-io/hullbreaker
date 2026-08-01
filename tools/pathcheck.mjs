@@ -10,7 +10,7 @@
 // Run from the repo root:  node tools/pathcheck.mjs
 
 import { execFileSync } from 'node:child_process';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -35,6 +35,11 @@ import {
 import {
   polypBeamHitsRect, polypBeamReach, polypBendClampRange,
 } from '../src/pure/polyp.js';
+import {
+  burstVelocity, clamp01 as juiceClamp01, crushWarnIntensity, flashAlpha, hash01,
+  hitStopArm, hitStopEvent, hitStopMsFor, hitStopScaleAt, particleAlpha,
+  particleScale, shakeAt, traumaAdd, traumaAfter, warnPulse,
+} from '../src/pure/juice.js';
 import { crouchStance } from '../src/pure/stance.js';
 import { assistDirection, assistVerticalReach } from '../src/pure/assist.js';
 import {
@@ -96,7 +101,11 @@ import {
 import {
   platforms as simPlatforms, groundH as simGroundH, isSolid as simIsSolid,
 } from '../src/sim/level.js';
-import { setScrollX as setSimScrollX, scrollX as simScrollX } from '../src/sim/time.js';
+import {
+  setScrollX as setSimScrollX, scrollX as simScrollX,
+  advanceGameMs as advanceSimGameMs, hitStopRemainingMs as simHitStopRemainingMs,
+  resetHitStop as resetSimHitStop, stepHitStop as stepSimHitStop,
+} from '../src/sim/time.js';
 import { cornerEvents as simCornerEvents } from '../src/sim/wavegate.js';
 
 // The render-side palette module (T-010) is deliberately Node-safe — no
@@ -5618,6 +5627,352 @@ const G2GATE = G2E.gate;
   ok(wgFinish.indexOf("state = 'done'") >= 0 &&
      wgFinish.indexOf("state = 'done'") < wgFinish.indexOf('view.corner.finished'),
      "T-012: wavegate.finishCorner commits state='done' before corner.finished fires");
+}
+
+/* ================ T-011: juice — the feedback pass ==================== *
+ * Two halves, asserted separately because they live on opposite sides of
+ * the boundary:
+ *
+ *   (a) src/pure/juice.js — the curves (hit-stop policy, trauma/shake,
+ *       crush warning, burst shapes). Pure, so everything below is a
+ *       direct call.
+ *   (b) src/sim/time.js — the hit-stop CLOCK, driven here frame by frame
+ *       at two different frame rates, because hit-stop is the one effect
+ *       in the pass that changes gameplay and it must remove the same
+ *       amount of simulated time at any cadence.
+ *
+ * Plus the static guards that keep the pass on its own side of the line:
+ * the sim owns the timing, the renderer owns the looks, and ?juice=0
+ * takes the whole thing out.
+ *
+ * This section runs LAST on purpose: it advances the shared gameMs clock,
+ * so nothing that assumes a fresh clock may follow it.                  */
+{
+  const JU = CONFIG.juice, HS = JU.hitStop, SH = JU.shake, CR = JU.crush;
+
+  /* --- config block: one home for every intensity --------------------- */
+  ok(JU && HS && SH && CR && JU.muzzle && JU.impact && JU.death && JU.hurt &&
+     JU.pickup && JU.pools,
+     'T-011: CONFIG.juice carries one block per effect (hit-stop, shake, ' +
+     'muzzle, impact, death, hurt, pickup, crush, pools)');
+  for (const [name, spec] of [['impact', JU.impact], ['death', JU.death],
+                              ['hurt', JU.hurt], ['pickup', JU.pickup]])
+    ok(spec.count > 0 && spec.speed > 0 && spec.ms > 0 && spec.size > 0 &&
+       Number.isFinite(spec.gravity),
+       'T-011: burst spec ' + name + ' declares count/speed/ms/size/gravity');
+  ok(JU.pools.particles > 0 && JU.pools.flashes > 0 &&
+     JU.pools.particles >= JU.death.count * 4,
+     'T-011: fixed pools are sized for a firefight (>= four simultaneous deaths)');
+
+  /* --- hit-stop policy (pure) ----------------------------------------- */
+  ok(HS.scale > 0 && HS.scale <= 1,
+     'T-011: hit-stop is a dt SCALE in (0,1] — it can only ever slow the ' +
+     'frame, so every tunneling/substep margin asserted above still holds');
+  ok(HS.killMs > 0 && HS.hurtMs > HS.killMs && HS.maxMs >= HS.hurtMs,
+     'T-011: hurt outlasts a kill, and the stack cap covers the longest single ' +
+     'freeze');
+  ok(HS.maxMs < CONFIG.player.hitstunMs + CONFIG.player.iframesMs,
+     'T-011: even a maximally stacked freeze is shorter than the hit-stun it ' +
+     'punctuates (the freeze is a beat, never a pause)');
+  ok(hitStopEvent(0, 0, 3, 3) === null, 'T-011: a quiet frame arms nothing');
+  ok(hitStopEvent(0, 1, 3, 3) === 'kill', 'T-011: a kill arms the kill freeze');
+  ok(hitStopEvent(0, 0, 3, 2) === 'hurt', 'T-011: damage taken arms the hurt freeze');
+  ok(hitStopEvent(0, 2, 3, 2) === 'hurt',
+     'T-011: a kill and a hit on the same frame resolve to the HURT beat');
+  ok(hitStopEvent(1, 0, 3, 3) === null && hitStopEvent(0, 0, 2, 3) === null,
+     'T-011: a rewound tally or a healed hp (respawn) arms nothing');
+  ok(hitStopMsFor('kill', HS) === HS.killMs && hitStopMsFor('hurt', HS) === HS.hurtMs &&
+     hitStopMsFor(null, HS) === 0,
+     'T-011: freeze duration comes from CONFIG, per event kind');
+  ok(hitStopArm(0, 1000, 0, HS) === 0, 'T-011: a null event never arms the clock');
+  ok(hitStopArm(0, 1000, HS.killMs, HS) === 1000 + HS.killMs,
+     'T-011: arming sets the deadline one duration ahead');
+  ok(hitStopArm(1000 + HS.hurtMs, 1000, HS.killMs, HS) === 1000 + HS.hurtMs,
+     'T-011: a shorter freeze never truncates a longer one already running');
+  ok(hitStopArm(1000 + HS.maxMs, 1000, HS.hurtMs, HS) === 1000 + HS.maxMs,
+     'T-011: stacked freezes are capped at maxMs from now — a crowd kill can ' +
+     'never stall the run');
+  ok(hitStopScaleAt(1000, 1000 + HS.killMs, HS) === HS.scale &&
+     hitStopScaleAt(1000 + HS.killMs, 1000 + HS.killMs, HS) === 1 &&
+     hitStopScaleAt(1000, 0, HS) === 1,
+     'T-011: the scale is live only strictly before the deadline');
+
+  /* --- hit-stop clock (sim), driven at two frame rates ----------------- *
+   * The property that matters: the SAME simulated time is removed whatever
+   * the cadence, to within one frame of quantization. That is what keeps a
+   * kill from being worth more on a fast machine.                        */
+  function freezeLoss(frameMs) {
+    resetSimHitStop();
+    stepSimHitStop(0, 3);                // prime: a fresh run never freezes
+    let lost = 0, frozenFrames = 0;
+    const frames = Math.ceil((HS.maxMs + 200) / frameMs);
+    for (let f = 0; f < frames; f++) {
+      advanceSimGameMs(frameMs);
+      const scale = stepSimHitStop(1, 3);   // one kill, seen from frame 0 on
+      lost += frameMs * (1 - scale);
+      if (scale !== 1) frozenFrames++;
+    }
+    return { lost, frozenFrames };
+  }
+  const want = HS.killMs * (1 - HS.scale);
+  const fast = freezeLoss(8.333), slow = freezeLoss(16.667), crawl = freezeLoss(33.33);
+  ok(Math.abs(fast.lost - want) <= 8.333 * (1 - HS.scale) + 1e-9 &&
+     Math.abs(slow.lost - want) <= 16.667 * (1 - HS.scale) + 1e-9 &&
+     Math.abs(crawl.lost - want) <= 33.33 * (1 - HS.scale) + 1e-9,
+     'T-011: a kill removes killMs*(1-scale) of simulated time at 120/60/30 fps, ' +
+     'to within one frame of quantization [got ' + fast.lost.toFixed(2) + ' / ' +
+     slow.lost.toFixed(2) + ' / ' + crawl.lost.toFixed(2) + ', want ' +
+     want.toFixed(2) + ']');
+  ok(fast.frozenFrames > 0 && crawl.frozenFrames > 0,
+     'T-011: the freeze is visible at every cadence (never rounded away)');
+  {
+    resetSimHitStop();
+    stepSimHitStop(0, 3);
+    advanceSimGameMs(16);
+    const s1 = stepSimHitStop(0, 3);
+    ok(s1 === 1 && simHitStopRemainingMs() === 0,
+       'T-011: an uneventful frame leaves the world running');
+    advanceSimGameMs(16);
+    stepSimHitStop(0, 2);                // took a hit
+    ok(simHitStopRemainingMs() > 0 && simHitStopRemainingMs() <= HS.hurtMs + 1e-6,
+       'T-011: damage arms a live freeze bounded by hurtMs');
+    resetSimHitStop();
+    ok(simHitStopRemainingMs() === 0,
+       'T-011: resetHitStop clears the freeze (a retry starts moving)');
+    // …and the priming rule: the first sample after a reset is silent even
+    // when the tallies it sees are non-zero (mid-run restarts, fixture retry)
+    advanceSimGameMs(16);
+    stepSimHitStop(7, 1);
+    ok(simHitStopRemainingMs() === 0,
+       'T-011: the first sample after a reset only seeds the baseline');
+    advanceSimGameMs(16);
+    stepSimHitStop(8, 1);
+    ok(simHitStopRemainingMs() > 0,
+       'T-011: …and the sample after that arms normally');
+    resetSimHitStop();
+  }
+
+  /* --- trauma / shake -------------------------------------------------- */
+  ok(juiceClamp01(-1) === 0 && juiceClamp01(2) === 1 && juiceClamp01(0.4) === 0.4,
+     'T-011: clamp01 bounds the unit interval');
+  ok(traumaAdd(0.9, 0.5) === 1 && traumaAdd(0, SH.kill) === SH.kill,
+     'T-011: trauma accumulates and saturates at 1');
+  ok(traumaAfter(1, 1000, SH.decayPerSec) === Math.max(0, 1 - SH.decayPerSec) &&
+     traumaAfter(0.1, 1000, SH.decayPerSec) === 0,
+     'T-011: trauma decays linearly and never goes negative');
+  ok(SH.decayPerSec > 0 && 1 / SH.decayPerSec < 1,
+     'T-011: full trauma drains in under a second — a shake is a punctuation ' +
+     'mark, not a state');
+  {
+    const out = { x: 0, y: 0, roll: 0 };
+    shakeAt(0, 1234, SH, out);
+    ok(out.x === 0 && out.y === 0 && out.roll === 0,
+       'T-011: no trauma, no shake (the camera is exactly where the pose put it)');
+    let worst = 0, worstRoll = 0, samples = 0, nonzero = 0;
+    for (let t = 0; t < 4000; t += 3.1) {
+      shakeAt(1, t, SH, out);
+      worst = Math.max(worst, Math.abs(out.x), Math.abs(out.y));
+      worstRoll = Math.max(worstRoll, Math.abs(out.roll));
+      samples++;
+      if (Math.abs(out.x) > 1e-6) nonzero++;
+    }
+    ok(worst <= SH.maxOffset + 1e-9 && worstRoll <= SH.maxRollDeg + 1e-9,
+       'T-011: shake is bounded by the configured world-tile / degree budget');
+    ok(nonzero > samples * 0.9, 'T-011: the shake actually moves (not a flat line)');
+    shakeAt(0.5, 900, SH, out);
+    const half = Math.abs(out.x);
+    shakeAt(1, 900, SH, out);
+    near(half, Math.abs(out.x) * 0.25, 1e-9,
+       'T-011: amplitude is trauma SQUARED — half the trauma is a quarter the ' +
+       'shake, so small events barely move the frame (pillar 5)');
+  }
+  {
+    // readability budget, measured against the shipped FAR view: the whole
+    // shake stays a small fraction of RIG's own height at the default depth
+    ok(SH.maxOffset < CONFIG.player.height * 0.12,
+       'T-011: peak shake offset stays under an eighth of RIG\'s height — at the ' +
+       'FAR default (decisions.md entry 7) the frame nudges, it never smears');
+  }
+
+  /* --- crush-edge warning --------------------------------------------- */
+  ok(crushWarnIntensity(CR.startTiles, CR) === 0 &&
+     crushWarnIntensity(CR.startTiles + 5, CR) === 0,
+     'T-011: the crush warning is silent while the margin is safe');
+  ok(crushWarnIntensity(0, CR) === 1 && crushWarnIntensity(-2, CR) === 1,
+     'T-011: …saturates at the plane itself');
+  {
+    let monotone = true, prevI = -1;
+    for (let m = CR.startTiles; m >= -0.5; m -= 0.05) {
+      const v = crushWarnIntensity(m, CR);
+      if (v < prevI - 1e-12) monotone = false;
+      prevI = v;
+    }
+    ok(monotone, 'T-011: warning intensity only ever rises as the margin closes');
+    ok(crushWarnIntensity(CR.startTiles / 2, CR) < 0.5,
+       'T-011: the ramp is eased so the LAST tile carries the warning, not the ' +
+       'whole approach');
+  }
+  ok(CR.startTiles > CONFIG.player.width &&
+     CR.startTiles < CONFIG.player.runSpeed * 0.6,
+     'T-011: the warning window is wider than RIG and shorter than a second of ' +
+     'running — enough to react, not a permanent light');
+  {
+    let lo = Infinity, hi = -Infinity;
+    for (let t = 0; t < 2000; t += 7) {
+      const v = warnPulse(0.6, t, CR);
+      lo = Math.min(lo, v); hi = Math.max(hi, v);
+    }
+    ok(lo >= 0 && hi <= 1 && hi - lo > 0.9, 'T-011: the warning pulse spans 0…1');
+    ok(CR.pulseFastMs < CR.pulseSlowMs,
+       'T-011: the pulse accelerates as the margin closes — the same warning ' +
+       'grammar as the hound tell and the polyp iris');
+  }
+
+  /* --- bursts and life curves ----------------------------------------- */
+  {
+    let inRange = true, distinct = new Set(), maxMag = 0;
+    const out = { s: 0, y: 0, d: 0 };
+    for (let seed = 1; seed <= 6; seed++) {
+      for (let i = 0; i < JU.death.count; i++) {
+        burstVelocity(seed, i, JU.death.count, JU.death.speed, out);
+        const mag = Math.hypot(out.s, out.y, out.d);
+        maxMag = Math.max(maxMag, mag);
+        if (!(mag <= JU.death.speed * 1.3)) inRange = false;
+        distinct.add(Math.round(Math.atan2(out.y, out.s) * 100));
+      }
+    }
+    ok(inRange, 'T-011: burst speeds stay inside their configured budget [max ' +
+       maxMag.toFixed(2) + ']');
+    ok(distinct.size >= JU.death.count,
+       'T-011: a burst fans into distinct directions (no cross, no wheel)');
+    const a = { s: 0, y: 0, d: 0 }, b = { s: 0, y: 0, d: 0 };
+    burstVelocity(3, 4, 10, 8, a);
+    burstVelocity(3, 4, 10, 8, b);
+    ok(a.s === b.s && a.y === b.y && a.d === b.d,
+       'T-011: bursts are seeded, not random — the same event always looks the ' +
+       'same, and nothing here touches the sim rng stream');
+    ok(hash01(0) >= 0 && hash01(0) < 1 && hash01(99999) >= 0 && hash01(99999) < 1,
+       'T-011: the burst hash stays in [0,1)');
+  }
+  ok(particleAlpha(0) === 1 && particleAlpha(1) === 0 &&
+     particleAlpha(0.5) < 0.5 && particleAlpha(2) === 0,
+     'T-011: particles fade out fast and end at zero (no pop)');
+  ok(particleScale(0, 1, 3) === 1 && particleScale(1, 1, 3) === 3,
+     'T-011: particle scale interpolates its endpoints');
+  ok(flashAlpha(0) === 1 && flashAlpha(0.1) === 1 && flashAlpha(1) === 0 &&
+     flashAlpha(0.5) < 1,
+     'T-011: a flash is instant-on, holds briefly, then decays to zero');
+
+  /* --- static guards: which layer owns what ---------------------------- */
+  const juiceSrc = readFileSync(join(srcDir, 'render', 'juice.js'), 'utf8');
+  const juiceCode = stripComments(juiceSrc);
+  const fxSrc = readFileSync(join(srcDir, 'render', 'fx.js'), 'utf8');
+  const fxCode = stripComments(fxSrc);
+  const timeCode = stripComments(readFileSync(join(srcDir, 'sim', 'time.js'), 'utf8'));
+  const camCode = stripComments(readFileSync(join(srcDir, 'render', 'camera.js'), 'utf8'));
+  const mainSrc = stripComments(readFileSync(join(srcDir, 'main.js'), 'utf8'));
+
+  // the sim never imports the render layer (guardLayer already enforces the
+  // general rule; this names the juice case so a future shortcut is loud)
+  for (const f of layerFiles('sim'))
+    ok(!/from\s*['"]\.\.\/render\//.test(stripComments(readFileSync(f, 'utf8'))),
+       'T-011: sim layer imports no render module: ' + f);
+  // hit-stop is decided sim-side and only ANNOUNCED to the renderer
+  ok(/stepHitStop/.test(timeCode) && /view\.juice\.hitStop\(/.test(timeCode),
+     'T-011: src/sim/time.js owns the hit-stop decision and notifies the view');
+  ok(!/hitStopUntil\s*=/.test(juiceCode) && !/hitStopUntil\s*=/.test(fxCode) &&
+     !/hitStopUntil\s*=/.test(camCode),
+     'T-011: no render module can write the hit-stop clock');
+  ok(/view\.juice\.hitStop/.test(
+       stripComments(readFileSync(join(srcDir, 'sim', 'bridge.js'), 'utf8'))) === false &&
+     /juice:\s*{\s*hitStop:\s*noop\s*}/.test(
+       stripComments(readFileSync(join(srcDir, 'sim', 'bridge.js'), 'utf8'))),
+     'T-011: the bridge declares the juice hook as an inert no-op by default');
+  // every entity dt in the loop rides the same scale (a partial freeze would
+  // desync the substep projectile integration against the world)
+  ok(/const hScale = stepHitStop\(kills, player\.hp\);/.test(mainSrc),
+     'T-011: the loop samples hit-stop once, before any entity update');
+  ok(/const wScale = \(gameMs < mods\.chronoUntil[^\n]*\) \* hScale;/.test(mainSrc),
+     'T-011: hit-stop COMPOSES with CHRONO (wScale = chrono × hit-stop) instead ' +
+     'of replacing it');
+  ok(/updateScroll\(dt \* wScale\)/.test(mainSrc) &&
+     /updateHostiles\(dt \* wScale\)/.test(mainSrc) &&
+     /updateCapsules\(dt \* wScale\)/.test(mainSrc),
+     'T-011: the pursuing scroll and the world still take the CHRONO-scaled dt ' +
+     '(now × hit-stop) — CHRONO must keep slowing the scroll it always slowed');
+  ok(/updatePlayer\(dt \* hScale\)/.test(mainSrc) &&
+     /updateBullets\(dt \* hScale\)/.test(mainSrc),
+     'T-011: RIG and their projectiles take the hit-stop factor ALONE — the ' +
+     'freeze is global, and CHRONO still leaves the player at full speed');
+  // the pools step before the death return: the frame RIG dies is the frame
+  // that spawns RIG's own burst, and a row only gets a matrix when they step
+  ok(mainSrc.indexOf('updateJuice();') > mainSrc.indexOf('updatePlayer(dt * hScale)') &&
+     mainSrc.indexOf('updateJuice();') <
+       mainSrc.indexOf("if (state !== 'PLAYING') return;"),
+     'T-011: the effect pools step after RIG and BEFORE the death early-return, ' +
+     'so a death frame still draws its own burst');
+  ok(/updateScore\(dt,/.test(mainSrc),
+     'T-011: the CHARGE meter still steps on real dt (proposal A.3), unscaled by ' +
+     'a freeze');
+  // render side: shake is applied after the pose and never near the edge probe
+  const syncBody = camCode.slice(camCode.indexOf('export function syncCamera'));
+  ok(syncBody.indexOf('camera.lookAt(_look)') < syncBody.indexOf('applyShake()'),
+     'T-011: shake is applied after the camera pose, never before it');
+  const calBody = camCode.slice(camCode.indexOf('function calibrateEdges'),
+    camCode.indexOf('export { calibrateEdges }'));
+  ok(!/trauma|shake/i.test(calBody),
+     'T-011: edge calibration (the one sanctioned render→sim write) is computed ' +
+     'from the UNSHAKEN probe pose — an effect can never move the damage plane');
+  // palette: role names resolved from the shared palette module, zero literals,
+  // and no import of a module that is not in the tree (a dangling specifier —
+  // static or lazy — is a 404 and a console error on every single boot).
+  // Updated at the T-011 merge: this assertion originally required
+  // CONFIG.palette reads, which was correct when T-011 branched. T-010 then
+  // landed src/render/palette.js and a guard REJECTING CONFIG.palette reads in
+  // tokenized render files, fx.js among them. The invariant is unchanged — an
+  // effect resolves its color from the same shared table the thing it is
+  // feedback for draws with, never from a literal — only the table moved.
+  ok(!/0x[0-9a-fA-F]{3,8}/.test(fxCode) && !/0x[0-9a-fA-F]{3,8}/.test(juiceCode),
+     'T-011: the juice modules carry no color literals — roles only');
+  ok(/\bPAL\./.test(fxCode) && !/CONFIG\.palette\./.test(fxCode),
+     'T-011: …and every fx role resolves from the render palette module (PAL), ' +
+     'not CONFIG.palette — which T-010 forbids in tokenized render files');
+  for (const [rel, code] of [['render/fx.js', fxCode], ['render/juice.js', juiceCode]]) {
+    const here = dirname(join(srcDir, rel));
+    for (const m of code.matchAll(/(?:import\s*\(|from)\s*['"](\.[^'"]+)['"]/g))
+      ok(existsSync(join(here, m[1])),
+         'T-011: ' + rel + ' imports only modules that exist: ' + m[1]);
+  }
+  // wrappers delegate, exactly like the audio layer
+  ok(/prevImpl\(a, b, c\);/.test(juiceCode),
+     'T-011: juice hook wrappers call the prior implementation first');
+  ok(/QUERY\.get\('juice'\) !== '0'/.test(
+       stripComments(readFileSync(join(srcDir, 'mode.js'), 'utf8'))),
+     'T-011: ?juice=0 is the documented kill flag');
+  ok(/if \(JUICE_ENABLED\)/.test(juiceCode) && /if \(!JUICE_ENABLED\)/.test(fxCode) &&
+     /if \(!JUICE_ENABLED\) return 1;/.test(timeCode),
+     'T-011: ?juice=0 gates the wiring, the pools, and the sim scale (a disabled ' +
+     'boot is the pre-juice game)');
+  // fixed pools, no per-event allocation in the hot path
+  ok(!/makeRow\(\)/.test(fxCode.slice(fxCode.indexOf('export function fxBurst'))) &&
+     !/new (Array|Int32Array|THREE\.)/.test(
+       fxCode.slice(fxCode.indexOf('export function fxBurst'))),
+     'T-011: bursts claim from a preallocated pool — the hot loop allocates ' +
+     'nothing');
+  // …and the claim itself is O(1): pop the free stack, else one round-robin
+  // step. A scan would make the spawn path cost most exactly when the pool is
+  // saturated and the frame budget is tightest.
+  {
+    const claimBody = fxCode.slice(fxCode.indexOf('function claim(pool)'),
+      fxCode.indexOf('function place('));
+    ok(/pool\.rows\[pool\.free\[--pool\.top\]\]/.test(claimBody) &&
+       /pool\.cursor = \(pool\.cursor \+ 1\) % pool\.rows\.length/.test(claimBody) &&
+       !/for\s*\(/.test(claimBody) && !/while\s*\(/.test(claimBody),
+       'T-011: claiming a pool row is O(1) — a free-stack pop or one ' +
+       'round-robin step, never a scan of the pool');
+    ok(/pool\.free\[pool\.top\+\+\] = i;/.test(fxCode),
+       'T-011: …and a row rejoins the free stack exactly where it dies');
+  }
 }
 
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');

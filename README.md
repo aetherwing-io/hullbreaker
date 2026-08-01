@@ -30,6 +30,15 @@ pulled-back `far` view (RIG ≈ 3.7% of screen height, per the concept-art
 scale); `?view=near` restores the original close camera and `?view=mid`
 sits between.
 
+The **baseline feedback pass** (hit-stop, screen shake, muzzle flashes,
+impact/death/hurt/pickup particles, and the crush-plane warning) is on by
+default. `?juice=0` disables all of it — including the sim-side hit-stop — for
+a simulation-identical pre-juice build to compare against: every dt scale
+collapses back to the pre-juice one (CHRONO included, which the pass composes
+with rather than replaces), no pool or mesh is built, and no bridge hook is
+wrapped. Every intensity is one block, `CONFIG.juice`, in `src/config.js`.
+`?audio=0` mutes the synth layer the same way.
+
 `index.html?g1=1` is the **G1 limb-turn experiment** on that normal six-face
 run: the same corner ritual, re-read as the camera orbiting 60° around a joint
 of one static faceted creature limb instead of the next face zippering itself
