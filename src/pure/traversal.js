@@ -591,6 +591,19 @@ export const TRAVERSAL_PACE_IDS = Object.keys(TRAVERSAL_PACES);
 export function resolveTraversalPace(name, fixture = TRAVERSAL_FIXTURE, opts = {}) {
   const pace = TRAVERSAL_PACES[name] || TRAVERSAL_PACES.base;
   const reward = { ...fixture.darePocket.reward, ...(pace.pocketReward || {}) };
+  // A pace authors its stakes and its roster against the LATTICE. A fixture
+  // overlay may not have that lattice (the rib run, src/pure/ribrun.js,
+  // climbs straight through the heights those letters sit at), so two
+  // honesty rules apply to any fixture, not just that one: a reward buried
+  // inside the fixture's own ground is not a choice and is culled, and a
+  // fixture that declares itself hostile-free fields no pace roster. Both
+  // are no-ops for the shipped fixture — every authored reward already sits
+  // above its deck and nothing declares hostileFree — asserted in
+  // tools/pathcheck.mjs as byte-equality against the pre-rib resolution.
+  const rewards = [reward, ...(pace.rewards || [])]
+    .filter(function (r) { return !traversalRewardBuried(fixture, r); })
+    .map(function (r) { return { ...r }; });
+  const roster = fixture.hostileFree ? [] : (pace.enemies || fixture.enemies);
   const flow = opts.flow ? { ...TRAVERSAL_FLOW } : null;
   const hook = opts.hook ? { ...TRAVERSAL_HOOK } : null;
   // flow's one movement override: surge's "dwell expiry throws you off instead
@@ -618,8 +631,8 @@ export function resolveTraversalPace(name, fixture = TRAVERSAL_FIXTURE, opts = {
     },
     movement: { ...fixture.movement, ...(pace.movement || {}), ...(flowMovement || {}) },
     chain: pace.chain ? { ...pace.chain } : null,
-    enemies: (pace.enemies || fixture.enemies).map((e) => ({ ...e })),
-    rewards: [reward, ...(pace.rewards || [])].map((r) => ({ ...r })),
+    enemies: roster.map((e) => ({ ...e })),
+    rewards,
     darePocket: {
       ...fixture.darePocket,
       reward,
@@ -947,6 +960,20 @@ export function traversalFallbackTarget(surfaces, fromY, cfg) {
     if (best === null || s > best) best = s;
   }
   return best;
+}
+
+// The authored deck height at x, or null outside the fixture's own ground
+// runs. Shared by the reward cull above and by the rib run's assertions.
+export function traversalGroundYAt(fixture, x) {
+  if (!fixture) return null;
+  for (const run of fixture.groundRuns || [])
+    if (x >= run.x0 && x < run.x1) return run.y;
+  return null;
+}
+
+export function traversalRewardBuried(fixture, reward) {
+  const g = traversalGroundYAt(fixture, reward.x);
+  return g !== null && reward.y < g;
 }
 
 export function traversalSolidAllowsGrab(fixture, cellX, y, h) {

@@ -120,6 +120,58 @@ function computeJumpCounts(trace) {
   };
 }
 
+// Stock-life accounting, read from the HUD's own lives readout (`RIG ▰▰▰  ×N`
+// in `hudTL`, parsed by the sampler's DOM base layer in every fidelity mode).
+//
+// This exists because `deaths`/`outcome.attempts` below CANNOT see a death
+// outside a fixture: both derive from `sliceStats.attempts`, which
+// `src/main.js` increments only inside `if (ACTIVE_FIXTURE)`. On a default
+// six-face trace they are structurally 0 no matter what happened (playtest
+// README, "damage/death events"). `player.lives` is on `HB.snapshot()` but not
+// on the frozen `testapi` channel, so the HUD text is the one signal that is
+// present on every trace — hence the parse. Honest limitations:
+//   - the traversal slice's HUD prints no `×N` at all (`src/ui/hud.js` gates it
+//     on `IS_TRAVERSAL_SLICE`), so `unavailableReason` is set there;
+//   - it is poll-rate sampled like everything else, so two deaths inside one
+//     sample interval read as one drop of 2 (the delta is summed, so `spent`
+//     still totals correctly);
+//   - `resetGame()` restores lives to `CONFIG.player.lives`, so only DECREASES
+//     are counted — a post-GAME_OVER restart cannot subtract from the total.
+function computeLives(trace) {
+  const readings = [];
+  for (const s of trace) {
+    const m = typeof s.hudTL === 'string' ? s.hudTL.match(/×\s*(\d+)/) : null;
+    if (m) readings.push({ lives: Number(m[1]), gameMs: s.gameMs ?? null, x: s.x ?? null });
+  }
+  if (readings.length === 0) {
+    return {
+      start: null, end: null, spent: null, losses: [], source: 'hud',
+      unavailableReason: 'no lives readout in this trace — the HUD prints ×N only outside the traversal slice (src/ui/hud.js)',
+    };
+  }
+  let spent = 0;
+  const losses = [];
+  for (let i = 1; i < readings.length; i++) {
+    const drop = readings[i - 1].lives - readings[i].lives;
+    if (drop > 0) {
+      spent += drop;
+      losses.push({
+        gameMs: readings[i].gameMs, from: readings[i - 1].lives, to: readings[i].lives,
+        // where the run was on the sample before the life was spent, and where
+        // it resumed on the sample after — the respawn knock-back, in tiles
+        xBefore: typeof readings[i - 1].x === 'number' ? +readings[i - 1].x.toFixed(3) : null,
+        x: typeof readings[i].x === 'number' ? +readings[i].x.toFixed(3) : null,
+      });
+    }
+  }
+  return {
+    start: readings[0].lives, end: readings[readings.length - 1].lives, spent, losses,
+    source: 'hud',
+    note: 'stock lives spent, parsed from the HUD ×N readout — the ONLY failure counter that works on a default six-face trace (deaths/outcome.attempts are fixture-only)',
+    unavailableReason: null,
+  };
+}
+
 function computeDeathAndDamageEvents(trace) {
   let deaths = 0, hitsWithoutDeath = 0;
   let lastAttempts = null, lastHp = null;
@@ -234,14 +286,41 @@ function computeOutcome(trace) {
   return { result: 'not-completed', attempts: lastAttempts, falls: lastFalls };
 }
 
+// The last sample carrying the game's own A.5 score snapshot (hook request
+// #3, landed): present only when the run was started with ?score=1 — the
+// snapshot rides both telemetry channels, `score.enabled` gates trust.
+function lastScoreSample(trace) {
+  for (let i = trace.length - 1; i >= 0; i--) {
+    const s = trace[i].score;
+    if (s && s.enabled === true && s.counts) return s;
+  }
+  return null;
+}
+
 // A.5: "protoScore = 100*airborneKills + 25*links + 12*(airMs/1000) -
 // 8*(stallMs/1000). Publish this formula in the harness so pre- and
 // post-implementation runs are comparable in shape, not just in trend."
-// `links` isn't directly observable pre-event-stream either; approximated
-// here as (best-matched route's connector count - 1), i.e. the number of
-// connector-to-connector transitions the position trace actually passed
-// through. Proxy, not the real `link` event count — see README.
-function computeProtoScore(airborneKillsResult, routeResult, airborneMsResult, idleTimeResult) {
+//
+// Two sources, clearly labeled:
+//  - `source: 'HB.score'` — the run carried ?score=1, so every term comes
+//    from the game's own event-derived snapshot (real counts, the sim's own
+//    air/stall clocks). This is the authoritative number A.5 describes.
+//  - `source: 'proxy'` — no score snapshot in the trace; `airborneKills` is
+//    the kills+grounded approximation and `links` is (best-matched route's
+//    connector count - 1) from this harness's route matcher, as before.
+function computeProtoScore(trace, airborneKillsResult, routeResult, airborneMsResult, idleTimeResult) {
+  const real = lastScoreSample(trace);
+  if (real) {
+    const protoScore = 100 * real.counts.airborne_kill + 25 * real.counts.link +
+      12 * (real.airMs / 1000) - 8 * (real.stallMs / 1000);
+    return {
+      protoScore: +protoScore.toFixed(1),
+      source: 'HB.score',
+      unavailableReason: null,
+      note: 'real: all four terms come from the game\'s own A.5 event stream (?score=1) — ' +
+        'counts.airborne_kill=' + real.counts.airborne_kill + ', counts.link=' + real.counts.link,
+    };
+  }
   if (airborneKillsResult.unavailableReason || routeResult.unavailableReason ||
       airborneMsResult.unavailableReason || idleTimeResult.unavailableReason) {
     return { protoScore: null, unavailableReason: HIGH_FIDELITY_UNAVAILABLE };
@@ -252,6 +331,7 @@ function computeProtoScore(airborneKillsResult, routeResult, airborneMsResult, i
   return {
     protoScore: +protoScore.toFixed(1),
     linksApprox: links,
+    source: 'proxy',
     unavailableReason: null,
     note: 'proxy: airborneKills/links are approximated from kills+grounded and the route matcher, not real HB.score.events — see README',
   };
@@ -267,11 +347,13 @@ export function computeMetrics(trace, { events, wallTimeMs, achievedSampleInterv
   const closestCrushApproach = computeClosestCrushApproach(trace);
   const jumpCounts = computeJumpCounts(trace);
   const deathAndDamage = computeDeathAndDamageEvents(trace);
+  const lives = computeLives(trace);
   const airborneKills = computeAirborneKills(trace);
   const route = inferRoute(trace);
   const darePocket = computeDarePocket(trace);
   const outcome = computeOutcome(trace);
-  const protoScore = computeProtoScore(airborneKills, route, airborne, idle);
+  const protoScore = computeProtoScore(trace, airborneKills, route, airborne, idle);
+  const scoreFinal = lastScoreSample(trace);
 
   const keydowns = events.filter((e) => e.type === 'keydown').length;
   const keyups = events.filter((e) => e.type === 'keyup').length;
@@ -293,12 +375,22 @@ export function computeMetrics(trace, { events, wallTimeMs, achievedSampleInterv
     verticalRange: vertical,
     closestCrushApproachTiles: closestCrushApproach,
     jumpCounts,
+    // FIXTURE-ONLY: `deaths` counts `sliceStats.attempts` increments, and
+    // src/main.js only increments that inside `if (ACTIVE_FIXTURE)` — it is
+    // structurally 0 on a default six-face trace. Read `lives.spent` there.
     deaths: deathAndDamage.deaths,
+    deathsScope: 'fixture-only (sliceStats.attempts increments; always 0 in the default run — use lives.spent)',
+    lives,
     hitsWithoutDeath: deathAndDamage.hitsWithoutDeath,
     airborneKills,
     route,
     darePocket,
     protoScore,
+    // The final A.5 score snapshot verbatim (null unless the run had
+    // ?score=1): CHARGE/notch, THREAT/classification, per-event counts,
+    // sim-owned air/stall/hot clocks, setbacks, and which tune ('slice'
+    // = A.4's doubled table, 'run' = A.3's full-run table) priced it.
+    score: scoreFinal,
     input: {
       totalEvents: events.length, keydownCount: keydowns, keyupCount: keyups,
       eventsPerSecond: inputDensityEventsPerSec,

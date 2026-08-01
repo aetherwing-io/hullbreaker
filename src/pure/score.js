@@ -13,6 +13,46 @@ import { CONFIG } from '../config.js';
 
 export const SCORE = CONFIG.score;
 
+/* ------------------- CP4 promotion: the full-run tune ------------------ *
+ * CONFIG.score's gains and drain are A.3's table DOUBLED, per A.4's "scale
+ * the constants for the fixture" — a 4-12 s slice pass needs a ~6 s meter
+ * horizon, and A.4 is explicit that those numbers must not carry to the
+ * full game. This is the un-doubled A.3 table for the default six-face run
+ * (?score=1 without a slice): same event set, same two built notches, same
+ * THREAT prices and classification ladder (so slice and run streams stay
+ * comparable event-for-event), only the meter horizon differs. Run-side
+ * tuning lives HERE, not in CONFIG (T-016 lane rule); a deliberate retune
+ * updates these numbers and the pathcheck halving assertions together.    */
+export const SCORE_RUN = Object.freeze({
+  ...CONFIG.score,
+  gain: Object.freeze({
+    airborne_kill: 14, launch_kill: 10, link: 6,
+    reclaim: 18, wager: 25, recatch: 20, ground_kill: 3,
+  }),
+  drain: Object.freeze({ moving: 7, stopped: 22 }),   // per second while grounded
+});
+
+/* ----------------- CP4 promotion: HULL FALLBACK, run tune -------------- *
+ * Proposal B.1 tier 1 for the DEFAULT six-face run (?fallback=1 there, off
+ * by default). Same shape as the slice's fixture data
+ * (src/pure/traversal.js TRAVERSAL_FIXTURE.fallback) and deliberately the
+ * same values for the first judged pass, so CP4 compares one grammar at two
+ * timescales rather than two grammars. Past maxConsecutive un-recovered
+ * fallbacks the sim escalates to the stock lives path — in the run the next
+ * consequence tier already exists, so the ceiling hands over instead of
+ * retrying. Asserted against the slice tune in tools/pathcheck.mjs; a
+ * deliberate divergence updates both together.                            */
+export const RUN_FALLBACK = Object.freeze({
+  minDropTiles: 1.2,        // a "lower route" has to be genuinely lower
+  dropAboveTiles: 1.2,      // dislodged: placed above the catch, falling onto it
+  tossVx: 5.0, tossVy: -3.0, // thrown forward and down — never a dead stop
+  groundKnockTiles: 1.5,    // already lowest: you pay margin instead of altitude
+  iframesMs: 1400,
+  messageMs: 1100,
+  maxConsecutive: 2,        // ceiling before the stock lives tier takes over
+  recoverTiles: 8,          // advancing this far past a fallback clears the streak
+});
+
 // notch 0 = COLD, 1 = WARM, 2 = BREAKING. Thresholds are asserted monotonic.
 export function scoreNotch(charge, tune = SCORE) {
   let n = 0;
