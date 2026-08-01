@@ -15,13 +15,15 @@
 import { CONFIG } from './config.js';
 import {
   ACTIVE_FIXTURE, ACTIVE_SLICE, AUTOBOUNCE_ENABLED, FLOW_ENABLED, HOOK_ENABLED,
-  HOOK_INPUT, IS_G1, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, QUERY,
+  HOOK_INPUT, IS_G1, IS_G2, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, QUERY,
   SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN, SLICE_FALLBACK_ENABLED,
   SLICE_PACE, VIEW_ID,
 } from './mode.js';
 import { HALT_S } from './pure/path.js';
 import { cornerEventTotalMs } from './pure/waves.js';
-import { transformEventTotalMs } from './pure/transform.js';
+import {
+  buildTransformPath, transformAltAt, transformEventTotalMs,
+} from './pure/transform.js';
 import { traversalCameraDepth } from './pure/traversal.js';
 import { installHost } from './sim/bridge.js';
 import {
@@ -519,9 +521,20 @@ if (QUERY.has('selftest')) {
         activeCorner().state === 'idle' && cornerEventTotalMs(CONFIG) === 1100);
     }
     if (IS_TRANSFORM_SLICE) {
+      // The live altitude must match a fresh pure rebuild of the SELECTED
+      // fixture's path — proves the ?g2 fixture selection wired every live
+      // binding — and on the v1 demo the spawn additionally still stands at
+      // altitude 0, bit-for-bit the original check.
+      const spawnX = ACTIVE_FIXTURE.run.playerSpawn.x;
+      const freshPath = buildTransformPath(ACTIVE_FIXTURE, CONFIG);
       check('body static at spawn', committedBand === 0 &&
-        transformAltitudeAt(ACTIVE_FIXTURE.run.playerSpawn.x) === 0);
+        transformAltitudeAt(spawnX) === transformAltAt(freshPath, spawnX) &&
+        (IS_G2 || transformAltitudeAt(spawnX) === 0));
       check('first turn idle', activeTransformEvent().state === 'idle');
+      check('transform fixture selected', IS_G2
+        ? ACTIVE_FIXTURE.id === 'monster-g2-neck-flip' &&
+          activeTransformEvent().id === 'neck-plate-flip'
+        : ACTIVE_FIXTURE.id === 'transform-v1');
     }
     // Movement-verb prototypes: both directions checked, so this also proves an
     // ordinary URL leaves them completely inert (the flags-off contract).
