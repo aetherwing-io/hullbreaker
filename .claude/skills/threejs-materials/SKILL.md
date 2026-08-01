@@ -56,8 +56,6 @@ pathcheck rejects raw color literals — `0xRRGGBB` and CSS
 `#rgb`/`#rrggbb`/`#rrggbbaa`/`rgb()`/`rgba()` — in tokenized render files, and
 requires every kind in the sim `ENEMY` roster to carry a body token in **both**
 tables.
-`?palette=classic` selects the grey-box baseline for operator side-by-sides;
-everything else resolves to concept.
 
 `tools/pathcheck.mjs`'s palette section defines
 
@@ -92,16 +90,10 @@ magenta pickup, warm-white muzzle, amber warn). Two tokens are deliberately
 mode-independent and must not be remapped: `glowOff` (0x000000) and
 `hitFlash` (0xffffff) — hit feedback cannot change with a URL flag.
 
-**Status, verify before relying on it:** T-010 is `review` in `SPRINT.md` and
-carries both `src/render/palette.js` and that guard on branch `task/T-010`. On
-`main` at the moment this skill was installed, `src/render/palette.js` did not
-exist yet and the render modules still read `CONFIG.palette` from
-`src/config.js`; the literal guard was not yet in `tools/pathcheck.mjs`
-either. The rule for new code is identical either way: **author no new color
-literal.** If `palette.js` is present, import `PAL` from it. If it is not, you
-are landing alongside T-010 — take the color from `CONFIG.palette` and flag
-the token in your report so the integrator can repoint it, exactly the way
-inbox item I-004 handled `src/render/hostiles.js`.
+**Status:** merged to `main` on 2026-08-01 with T-010, including the
+`src/render/hostiles.js` repoint that closed inbox item I-004 — every enemy
+mesh reads its body color from the tokens, with tells and the polyp's spent
+vent deliberately warm amber in both modes.
 
 The budget itself is `docs/DESIGN.md`: "Palette (≤8 colors): deep teal
 environment, rust-orange metal, acid-green enemy glow, hot magenta pickups,
