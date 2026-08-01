@@ -22,7 +22,7 @@ The default six-face run, start → summit → victory, playable end-to-end with
 
 ## Queue
 
-## T-001 | feature | doing | P1
+## T-001 | feature | done | P1
 
 goal: CP3 second pass — rework the transform slice (`?slice=transform`) to the
 static-anatomy render rule, so flip and breach read as RIG ascending around a
@@ -132,12 +132,22 @@ accept:
 owner: docs
 verify: grep the claims against src/main.js telemetry + README
 
-## T-008 | feature | blocked | P2
+## T-008 | feature | doing | P2
 
-goal: G2 neck access-plate flip per the greybox-map proposal (its next gate
-fixture after G1).
-blocked-by: T-001 landing the static-anatomy grammar for the transform slice.
+goal: G2 neck access-plate flip gate fixture per the greybox-map proposal
+(`docs/proposals/2026-07-meridian-monster-greybox-map.md` §G2), building on
+T-001's landed static-anatomy grammar (relock-on-detent plate beat, see
+`artifacts/cp3-transform-v3/README.md`).
+accept:
+- [ ] G2 fixture implemented per the proposal's spec, behind a flag, off by
+      default; static-anatomy rule holds (only the plate moves)
+- [ ] sim gating stays inert-until-crossed and deterministic; pathcheck
+      green incl. new gate assertions
+- [ ] capture sequence (screenshots per beat) committed under artifacts/
+- [ ] operator packet queued (URL + questions per the proposal's own test
+      questions)
 owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; deterministic playtest script crossing G2
 
 ## T-009 | feature | todo | P1
 
@@ -243,7 +253,7 @@ accept:
 owner: asset-artist
 verify: node tools/assets/check.mjs; sample round-trip committed as demo
 
-## T-016 | feature | todo | P3
+## T-016 | feature | doing | P3
 
 goal: score/setback convergence toward CP4 — promote the CHARGE/THREAT
 prototype (`?score=1`) and Hull Fallback (`?fallback`) from slice prototypes
