@@ -25,7 +25,8 @@ import { transformEventTotalMs } from './pure/transform.js';
 import { traversalCameraDepth } from './pure/traversal.js';
 import { installHost } from './sim/bridge.js';
 import {
-  advanceGameMs, gameMs, scrollX, setScrollX, sliceStats,
+  advanceGameMs, gameMs, hitStopRemainingMs, resetHitStop, scrollX, setScrollX,
+  sliceStats, stepHitStop,
 } from './sim/time.js';
 import { sLeftEdge, sRightEdge } from './sim/edges.js';
 import {
@@ -82,6 +83,10 @@ import './render/hook.js';
 import { resetHudMessage, updateHUD } from './ui/hud.js';
 import './ui/overlay.js';
 import './ui/audio.js';
+// juice loads LAST: like the audio layer it wraps the finished view bridge
+// (each wrapper delegating to the implementation already installed), so it
+// must see every render/ui module's hooks in place first.
+import { juiceSnapshot, updateJuice } from './render/juice.js';
 
 // the sim asks for a restart through this hook (fixture fast retry)
 installHost({ resetGame: () => resetGame() });
@@ -183,7 +188,9 @@ function resetGame() {
   resetFlow();
   resetCornerEvents();
   resetTransform();
-  resetCameraYaw();
+  resetHitStop();                        // no freeze (and no stale kill/hp
+                                         //   baseline) survives a restart
+  resetCameraYaw();                      // …and no camera trauma either
   unbuildFutureFaces();
   if (ACTIVE_FIXTURE) {
     sliceStats.attempts++;
@@ -219,19 +226,32 @@ function resetGame() {
 
 function update(dt) {
   advanceGameMs(dt * 1000);
+  /* HIT-STOP (T-011): the sim decides whether the world holds its breath
+     this frame, from the kill tally and RIG's health as they stood at the
+     end of the last frame (src/sim/time.js owns the clock and the policy;
+     CONFIG.juice.hitStop owns the numbers; ?juice=0 pins the scale at 1).
+     It multiplies EVERY entity dt, including projectiles and the pursuing
+     scroll: a freeze that stopped the world but let bullets fly would
+     desync the substep integration the projectiles collide in, and one
+     that stopped the player but not the crush plane would be a shove.
+     Timers stay on real gameMs — the same convention CHRONO uses below —
+     so a freeze removes exactly hitStopMs*(1-scale) of simulated time at
+     any frame rate and no deadline drifts. */
+  const hScale = stepHitStop(kills, player.hp);
   // CHRONO: the world runs slow, the player (and their bullets) run full
   // speed. Timers stay on real gameMs — a 4s window keeps the drift small.
-  const wScale = gameMs < mods.chronoUntil ? CONFIG.mods.chronoScale : 1;
-  updateScroll(dt * wScale);             // sim half of the old updateCamera
+  const wScale = (gameMs < mods.chronoUntil ? CONFIG.mods.chronoScale : 1) * hScale;
+  updateScroll(dt * hScale);             // sim half of the old updateCamera
   syncCamera();                          // render half, same point in the frame
   updateSpawner();
-  updatePlayer(dt);
+  updatePlayer(dt * hScale);
   if (state !== 'PLAYING') return;      // died on the last frame
   updateHostiles(dt * wScale);
   updateCorpses();
   updateCapsules(dt * wScale);
   updateMods();
-  updateBullets(dt);
+  updateBullets(dt * hScale);
+  updateJuice();                         // render: effect pools + crush warning
   // CHARGE steps on real dt: CHRONO must not inflate the meter (proposal A.3)
   updateScore(dt, {
     grounded: player.grounded, vx: player.vx,
@@ -348,6 +368,49 @@ function telemetry() {
     // untouched — traversalState keeps its frozen free|ledge|wall domain.
     hook: HOOK_ENABLED ? hookSnapshot() : undefined,
     flow: FLOW_ENABLED ? flowSnapshot() : undefined,
+    // additive (T-011): the feedback pass's live state and the frame-time
+    // sampler that proves its budget. `juice` is presentation counters plus
+    // the sim's own hit-stop remainder; `perf` is measured wall-clock frame
+    // intervals, so "60fps with 200+ projectiles" is a reading, not a claim.
+    juice: juiceSnapshot(),
+    perf: perfSnapshot(),
+  };
+}
+
+/* -------------------------- frame sampler ------------------------- *
+ * A fixed ring of the last PERF_N real frame intervals. Wall clock on
+ * purpose: ?fixeddt pins the SIM step, and what a juice budget has to be
+ * judged against is what the browser actually painted. Allocation-free
+ * and read-only; nothing in the run depends on it.                    */
+const PERF_N = 180;
+const perfRing = new Float64Array(PERF_N);
+let perfCount = 0, perfIdx = 0, perfLast = 0;
+
+function samplePerf(t) {
+  if (perfLast > 0) {
+    perfRing[perfIdx] = t - perfLast;
+    perfIdx = (perfIdx + 1) % PERF_N;
+    if (perfCount < PERF_N) perfCount++;
+  }
+  perfLast = t;
+}
+
+function perfSnapshot() {
+  if (perfCount === 0) return { frames: 0, fps: 0, avgMs: 0, worstMs: 0, over20ms: 0 };
+  let sum = 0, worst = 0, over = 0;
+  for (let i = 0; i < perfCount; i++) {
+    const v = perfRing[i];
+    sum += v;
+    if (v > worst) worst = v;
+    if (v > 20) over++;                  // a dropped frame at 60Hz (16.7ms + slack)
+  }
+  const avg = sum / perfCount;
+  return {
+    frames: perfCount,
+    fps: +(1000 / avg).toFixed(1),
+    avgMs: +avg.toFixed(2),
+    worstMs: +worst.toFixed(2),
+    over20ms: over,
   };
 }
 
@@ -375,6 +438,7 @@ const FIXED_DT_MS = (() => {
 let last = performance.now();
 function frame(t) {
   requestAnimationFrame(frame);
+  samplePerf(t);
   const dt = FIXED_DT_MS ? FIXED_DT_MS / 1000 : Math.min(50, t - last) / 1000;
   last = t;
   if (state === 'PLAYING') update(dt);
@@ -425,6 +489,11 @@ window.HB = Object.freeze({
   // movement-verb prototypes: read surfaces only (the verbs live in the sim)
   hook: { enabled: HOOK_ENABLED, input: HOOK_INPUT, snapshot: hookSnapshot },
   flow: { enabled: FLOW_ENABLED, snapshot: flowSnapshot },
+  // baseline feedback pass (?juice=0 disables): effect counters + the sim's
+  // live hit-stop remainder, and the frame-time sampler beside it
+  juice: juiceSnapshot,
+  perf: perfSnapshot,
+  hitStopMs: () => hitStopRemainingMs(),
   snapshot: () => {
     const t = telemetry();
     return {
@@ -542,6 +611,18 @@ if (QUERY.has('selftest')) {
       // that arming it changed nothing at rest.
       check('autobounce flag plumbed',
         AUTOBOUNCE_ENABLED === (IS_TRAVERSAL_SLICE && QUERY.get('autobounce') === '1'));
+    }
+    // Baseline feedback pass: the flag resolves both ways, and a restart
+    // leaves the whole pass at rest — no freeze, no trauma, no live effect
+    // riding into the first frame of a run.
+    {
+      const j = juiceSnapshot();
+      check('juice flag plumbed', j.enabled === (QUERY.get('juice') !== '0'));
+      check('juice idle after restart',
+        j.hitStopMs === 0 && j.trauma === 0 && j.sparks === 0 && j.flashes === 0);
+      check('juice pools sized from config',
+        !j.enabled || (j.sparkMax === CONFIG.juice.pools.particles &&
+          j.flashMax === CONFIG.juice.pools.flashes));
     }
     const fails = results.filter((r) => !r[1]).map((r) => r[0]);
     const msg = fails.length
