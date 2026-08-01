@@ -1,118 +1,115 @@
-REQUEST_CHANGES
+APPROVE
 
-Gate: reviewer, task T-009, entry-9 application pass. Worktree
+Gate: reviewer, task T-009, SECOND pass (entry-9 fix cycle). Worktree
 `/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-009` (branch
-`task/T-009`, HEAD `b747e47`). Checks I ran here myself: `node
-tools/pathcheck.mjs` → **1589 passed, 0 failed** (main: 1527, so +62 net);
-`index.html?selftest=1` in headless Chrome against a local server on this
-worktree → **SELFTEST PASS (29 checks)**, no page errors.
+`task/T-009`, HEAD `72a7db5`). Diff re-read fresh against `main`; no untracked
+files. Checks I ran here myself: `node tools/pathcheck.mjs` → **1588 passed, 0
+failed** (main: 1527); `buildLevel` measured at **9.9 ms** vs main's 1.0 ms
+(boot only, nothing added to the frame loop), spawn table **0.22 ms**;
+independent re-derivation of the shipped lattice, pockets and stations.
 
-What the verdict pass actually did, verified rather than taken on trust:
+## Prior findings — all four in-diff items fixed, verified line by line
 
-- **Geometry is the plain shape again.** `shelfRise 4.45` is deleted and the
-  shelf is `mid + LATTICE.tierRise` (`src/pure/lattice.js:301`), `rewardRise`
-  is back to `0.7`; I built the level and measured it — shelf `deck + 4.35`,
-  capsule `deck + 5.05`, one pocket per face, exit margin 12.17 tiles on all
-  six. That is the simplest shape this task ever authored (accept box 3), and
-  the A/B frames in `artifacts/t009-lattice/entry9/` support the FAR claim
-  they are cited for: in `01` the magenta `S` sits on the shelf line inside
-  the catwalk band, in `02` it floats clear of every route line. Honesty note
-  in that README is accurate about how the frames were captured.
-- **Removed, not weakened.** Against `main` the only deleted `ok()` lines in
-  the whole diff are the two generator pins (49 → 62 platforms, fingerprint
-  `cc6afd7c` → `e715cc38`), both moved with reasoning in place. Everything
-  else the verdict retired is gone with its subject: the swept deck-line arc,
-  the head-reach/double-jump envelopes, the pinned deck+1 residue, the
-  climb/total detour pricing, the "collects NOTHING" pair, the adversarial
-  child, and the four exports that fed them (`latticeApex`,
-  `latticeRiseSeconds`, `latticeHeadReach`, `latticeClimbSeconds` — no
-  dangling references anywhere). Everything the verdict says stays is still
-  asserted: one pocket per face, in-face/arena/apron placement, chasm width
-  and the held jump that clears it, shelf tip over void and mount over solid,
-  reachability with taught verbs, `latticeStranded`, standing-on-the-tip
-  payment at every bob phase, the detour clock (14 in, ≥6 out), determinism,
-  route density 3–5, and the sim-side pickup drift guards.
-- **Layer purity / determinism / scope clean.** `src/pure/lattice.js` imports
-  only `./path.js`, has no THREE/DOM/globals and no rng (seed-free `hash()`);
-  no `Math.random`/`Date.now`/`performance.now` in `src/pure` or `src/sim`;
-  `src/config.js` is not in the diff, so the frozen jump constants are
-  untouched; `?hook=1` untouched; no new runtime deps, no build step, no OSTK
-  artifacts. Cost is boot-time only — `buildLevel` 9.6 ms, spawn table 0.24 ms
-  on this machine, nothing added to the frame loop.
-- **Static-anatomy default holds** (`decisions.md` entry 3): default vs
-  `?zip=1` trace equivalence still runs and still compares two different
-  modes, the zipper hook is still installed and driven, and `src/render/limb.js`
-  is still statically proven un-animatable. HANDOFF/README/DESIGN are honest
-  that the reveal itself has never been operator-judged.
+- **MAJOR, `tools/pathcheck.mjs:7071` — fixed.** The six-face block header now
+  reads `"readable route", "reachable", or "stranded"`; "measured retreat" is
+  gone. Grep over the whole branch: every surviving `wager`/`dare` token in the
+  T-009 region (`7172`, `7236`, `7618`, `7651`, `src/pure/lattice.js:146-154`)
+  is past-tense history of the withdrawn requirement, never a live description
+  of the capsule. Everything else in the file that carries that vocabulary
+  (`843`–`4877`) is the *traversal fixture's* own dare pocket, pre-existing on
+  main and explicitly still valid per entries 10/11. The runtime's remaining
+  hits (`src/mode.js:72`, `src/ui/hud.js:50/120-127`) are gated on
+  `IS_TRAVERSAL_SLICE`/`ACTIVE_SLICE`, so the six-face run cannot render the
+  word "WAGER" anywhere. Accept box 1 met.
+- **MINOR, `tools/pathcheck.mjs:7629` — fixed.** The `rewardsLeft <
+  spawnedRewards` gate is gone; the deck-line collection count is now a
+  `console.log` note ("collected 2 of 6" on this build). Liveness keeps its
+  real proofs (`spawnedRewards === CONFIG.path.faces`, the authored-route
+  child where all six pay through the shipped pickup code, four source-drift
+  guards). The assertion count moved 1589 → 1588 for exactly this conversion.
+- **MINOR, `tools/pathcheck.mjs:5571` — fixed.** The trace-equivalence failure
+  message now names `?zip=1` vs the default, and labels the two dumped traces
+  `zip:` / `default:`.
+- **MINOR, `tools/playtest/README.md:770` — fixed.** `six-face-full-run.json`
+  has its own table row (policy, 3-runs-per-side result, I-020 retraction,
+  spread caveat), the aimed row names it instead of alluding to it, and the
+  intro count is now "Nine scripts" — which matches: I counted 9 rows.
+- **MINOR, `SPRINT.md` — correctly NOT fixed** (integrator-owned, outside this
+  branch's lane). Re-raised below so it is handled at merge.
 
-One accept box is still not met, in text rather than in code, and it is the
-box this whole cycle exists to satisfy.
+## Independent re-verification of the accept box
 
-## Findings
+- **Box 2 (removed, not weakened).** Against `main` the only `ok()` lines this
+  branch deletes are the two generator regression pins (49 → 62 platforms,
+  fingerprint `cc6afd7c` → `e715cc38`), both moved with the reasoning written
+  in place. Everything entry 9 retired was added and removed inside the branch,
+  so nothing that ever shipped is weakened. No dangling references to the four
+  deleted exports (`latticeApex`, `latticeHeadReach`, `latticeClimbSeconds`,
+  `latticeRiseSeconds`) or to `shelfRise`. What entry 9 says stays is still
+  asserted: reachability with taught verbs, `latticeStranded` = 0, the detour
+  clock (14 in, ≥ 6 out), standing-on-the-tip payment at every bob phase,
+  route density, determinism, in-face/arena/apron placement.
+- **Box 3 (simplest shape).** Rebuilt and measured: `shelf = mid + tierRise`,
+  no bespoke rise constant; pocket f1 = deck 3, landing 2, gap 46-47, mid 4.35,
+  shelf 7.35, capsule 8.05 — i.e. deck + 5.05, matching `DESIGN.md` and the
+  `artifacts/t009-lattice/entry9/` A/B exactly.
+- **Box 4 (gates).** pathcheck green, run by me. Runtime files are byte-
+  identical to `b747e47` (`git diff b747e47..HEAD` touches only
+  `tools/pathcheck.mjs` and `tools/playtest/README.md`), which is the tree the
+  previous gate verified `?selftest=1` PASS (29 checks) on; the script runs are
+  the playtester's gate.
+- **Doc honesty spot-check.** `DESIGN.md`'s numbers reproduce: 149/246 windows
+  inside [3,5] on main → 246/246 on the branch; face 2 average 2.17 → 3.46
+  ("3.5"); detour 0.43 s / 1.83 tiles / 12.17 margin. Not taken on trust.
+- **Layer purity / determinism / scope.** `src/pure/lattice.js` imports only
+  `./path.js`; no THREE/DOM/globals, no rng (seed-free `hash()`), no upward
+  imports. No `Math.random`/`Date.now`/`performance.now` added. `src/config.js`
+  is not in the diff — frozen jump constants untouched. `?hook=1` untouched. No
+  runtime deps, no build step, no OSTK artifacts. The traversal slice is
+  provably unaffected: I built it and found zero pocket holes and zero pocket
+  catwalks inside the fixture band (24..79), and its run ends at scroll 73.
+  No consumer of `platforms` assumes ordering (all iterate linearly), and
+  `spawner.js` → `level.js` introduces no import cycle.
 
-tools/pathcheck.mjs:7071 — **MAJOR — accept box 1 is not met: the six-face
-pocket block still declares "measured retreat" as live vocabulary.** The
-header of the `T-009: the six-face lattice` block says the generator and the
-harness "can never disagree about what 'readable route', 'reachable',
-'stranded', or 'measured retreat' mean." Entry 9's binding consequence is that
-no code, comment, doc, assertion or operator-packet text may describe the
-capsule as a dare, a wager, or a *measured retreat*, and the task's box 1
-repeats it verbatim. This is not history-in-the-past-tense like the compliant
-notes at 7171/7235/7620/7648 or `src/pure/lattice.js:148` — it is a
-present-tense claim about what this harness block defines, and it is also
-false: every retreat assertion in that block was deleted this pass and the
-mirrored comment in `src/pure/lattice.js:527-530` was correctly reworded to
-"readable". One word, in the one file the box names, in the pocket's own
-block. Fix the header (e.g. "reachable", "stranded", or "readable") and the
-box is met.
+## Findings (MINOR only)
 
-tools/pathcheck.mjs:7629 — **MINOR — the replacement assertion pins behaviour
-entry 9 made design-neutral.** `ok(run.rewardsLeft < run.spawnedRewards, ...)`
-requires the hold-right deck-line policy to collect at least one of the six.
-Under entry 9 whether a free crossing pays is exactly the question the harness
-"has no business certifying either answer" to (the block's own words at
-7620) — asserting the inverse of the withdrawn claim is still an assertion
-about the withdrawn subject, and a future lattice shift that moves the crossing
-arc off the capsule would fail this gate with no defect present. Liveness is
-already proved without it: `spawnedRewards === CONFIG.path.faces`, the
-authored-route child ("the pocket route PAYS at every pocket"), and the four
-source-drift guards on `spawnCapsule`/`circleHitsPlayer`/bob. Suggest reporting
-the deck-line collection count rather than gating on it.
+SPRINT.md:480 — **operator-packet text goes stale on merge** (integrator-owned,
+outside this diff, flagged not fixed — correct call by the builder). The G1
+checkpoint asks the operator to compare "default vs `?g1=1`"; after this merge
+`?g1=1` resolves to the same static-anatomy build as the default, so that A/B
+compares identical trees. The live pair is `default` vs `?zip=1`. Same file:
+line 181 still calls this task's deliverable "dare pockets", which entry 9's
+packet-text rule covers, and line 554 lists `?g1=1` for screenshot capture,
+now redundant. Lines 946/966 are I-019 history and read fine as history.
 
-tools/pathcheck.mjs:5571 — **MINOR — stale flag name in an assertion message.**
-The trace-equivalence check now compares `?zip=1` against the default (correct,
-and the comment above says so), but the failure message still reads "every
-simulated value is identical with `?g1=1`". After the default flip `?g1=1`
-selects the default, so the message names the wrong pair; reword to `?zip=1`.
+tools/playtest/README.md:754 — **restates a claim that is not true of the
+repo**: "Seven of them have their reports committed under `reports/demo/`".
+`reports/demo/` is not tracked and does not exist in either checkout (only
+`reports/STATUS.md` and `reports/tasks/**` are), and the directory map at
+:1054 says the same. Pre-existing on main and not introduced here, but this
+diff rewrites that exact sentence, so it is the cheap moment to correct it to
+wherever those outputs actually live (or drop the claim).
 
-tools/playtest/README.md:770 — **MINOR — the new script is not in the tool's
-own index.** `tools/playtest/scripts/six-face-full-run.json` is added by this
-branch and is referenced only obliquely ("the aimless script") in the
-`six-face-aimed-run.json` row. The harness DoD asks for the tool's README to be
-updated; add the row (its own description already carries the honest
-where-it-stops and the I-020 retraction, so the row can be short).
-
-SPRINT.md:480 — **MINOR — operator-packet text goes stale the moment this
-merges** (integrator-owned file, outside this diff, flagged not fixed). The G1
-checkpoint entry asks the operator to play "default vs `?g1=1`"; after this
-branch both URLs resolve to the same static-anatomy build, so the A/B compares
-identical trees. The live pair is `default` vs `?zip=1`. Same file, line 181,
-still calls this task's deliverable "dare pockets", which box 1 also covers for
-packet text.
+src/pure/lattice.js:235 — **dead parameter in a new pure export.**
+`latticeBands(level, s, cfg, L)` never reads `cfg`, and `latticeRouteCount`
+exists only to pass it through. Harmless, but it is now part of the surface
+`tools/pathcheck.mjs` asserts against, so it will be copied by the next caller.
 
 ## Not findings, recorded so they are not re-raised
 
-- `docs/DESIGN.md:459-466` pointing the pocket section at entries 10/11 (fork,
-  not spur, is the end state) is outside the literal "apply entry 9 and nothing
-  else" instruction but is doc-truthfulness only, no code, and it prevents
-  DESIGN from reading as if the shipped spur were the target. Correct call.
-- The remaining "dare pocket" language in `docs/DESIGN.md:176`,
-  `docs/HANDOFF.md:157`, `README.md:108` and the traversal-fixture assertions
-  (`tools/pathcheck.mjs:2867+`, `3215+`, `3614+`) is the *traversal slice's*
-  own mechanic, pre-existing on main and unparked by entries 10/11 — not this
-  capsule, and correctly left alone.
-- The static-anatomy reveal shipping as default while itself unjudged is
-  authorized by the task block and entry 3, and HANDOFF says plainly that it
-  has not been judged. Operator question, not a review defect.
-- Weapon economy (six free capsules per run) is answered by entry 9's
-  escalation test and belongs to the operator, not this gate.
+- Boot cost `buildLevel` 1.0 → 9.9 ms is one-time and is partly repaid by
+  `spawner.js` no longer building a second throwaway level; zero per-frame
+  allocation added, and the limb bake stays a single `InstancedMesh`.
+- The shelf tip overhangs the 2-column chasm, so walking left off it falls.
+  That is ordinary vocabulary for this generator (the seeded stream authors
+  2–5 wide gaps everywhere), `latticeStranded` is 0, and the real-sim policy
+  child proves no fall lands inside a pocket.
+- `docs/DESIGN.md:440/459` say the capsule is "not a dare" and that the dare
+  concept "is not cancelled" — negations and concept-level history under
+  entries 9/10/11, not a description of the capsule as a dare.
+- The static-anatomy reveal shipping as the default while itself unjudged is
+  authorized by the task block and entry 3; HANDOFF says plainly it has never
+  been operator-judged. Operator question, not a review defect.
+- Whether six free capsules per run flattens or escalates the run is entry 9's
+  operator test, deliberately un-asserted by the harness. Feel verdict, not a
+  gate.

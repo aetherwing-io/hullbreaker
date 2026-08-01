@@ -1128,3 +1128,40 @@ clamped to screen-right and therefore crosses at scroll speed. That is true
 *once RIG is riding the clamp*, and I applied it at an x where it is not. Any
 future claim about traversal cost must state WHERE the player is relative to
 the clamp, and be measured, not inherited.
+
+---
+
+## I-027 | docs | S3 | repro: `cd <task/T-019 6ad3fc5>/tools/playtest && node run.mjs scripts/six-face-spaced-run.json --deterministic --stop-on-game-over --max-runtime-ms 145000 --base-url <that worktree pinned>` ×3 | evidence: tools/playtest/runs/gate-T-019-spaced-{1,2,3}/analysis.txt; reports/tasks/T-019/playtest.md §2
+
+Found while gating T-019 (PASS). `scripts/six-face-spaced-run.json`'s own
+`description` says the policy "reaches wave gate 2 / scroll 140 of 415 EVERY
+time" and "survives 50.2-55.1 s (median 53.1 over all nine)". Three independent
+runs by this gate, same pinned tree and same flags, produced **58.9 s / scroll
+140**, **54.3 s / scroll 140**, and **38.2 s dying inside wave gate 1 at scroll
+79** — one run outside the band above, one below, and one that never reached the
+gate the description promises. This is the same overstatement the reviewer
+already made the branch correct for `six-face-aimed-run.json` (whose description
+now carries FIXVERIFY-1's gate-1 death); the sibling script kept the absolute
+wording. The finding's own honesty note — "read the gate reached, never one
+run's decimals" — is the right frame, except that here even the gate reached
+varies. Fix is wording only: "usually gate 2, sometimes gate 1" plus a band that
+covers the observed 38–59 s. Nothing about the T-019 conclusion changes; my runs
+support it more strongly than the builder's (zero VICTORY samples in 4/4).
+
+## I-028 | bug | S3 | repro: replay any `six-face-spaced-run.json` trace through `lib/threat.mjs` and count PLAYING ticks with `edgeMargin` in (6,8) AND `threat.dist<2.2` AND `threat.dx>0` — 3 of 777 on gate-T-019-spaced-1, min `edgeMargin` 7.37 | evidence: tools/playtest/runs/gate-T-019-spaced-1/report.json; reports/tasks/T-019/playtest.md §1
+
+Found while gating T-019 (PASS), by trying to construct a case where a new
+policy clause misfires. Two `hold` rules in the shipped six-face policy overlap
+in a window where they command opposite directions: `edgeMargin<8 → hold right`
+(the crush-plane emergency) and the new `threat.dist<2.2 && threat.dx>0 &&
+edgeMargin>6 → hold left` (personal space). Between 6 and 8 tiles of margin both
+fire, `hold` rules OR per key code, `left` and `right` are both down, and
+`computeAim`'s `h = 0` leaves RIG standing still — inside the one window whose
+rule exists precisely to make RIG run. Measured cost is small (3 of 777 PLAYING
+ticks in the sampled run, and no life loss attributable to the crush edge; run
+minimum margin 3.52 tiles), and the finding already reports the general
+rule-cancellation rate honestly (§3.3, 4.8-9.9 % of ticks, 5.3 % measured here).
+Filed because this particular pair is the one where cancelling is worst: raising
+the personal-space guard to `edgeMargin>8` closes it with no other effect. Policy
+script only — no game file involved, and the clause is legitimate relative
+geometry, so the anti-scripting guard is not implicated.
