@@ -59,7 +59,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; repro per tools/playtest/README.md §Deterministic injection mode
 
-## T-003 | art | doing | P1
+## T-003 | art | done | P1
 
 goal: FAR-camera readability pass — the accepted follow-up from the view-scale
 verdict (decisions.md entry 7): scale up enemy tells, capsule letter glyphs,
