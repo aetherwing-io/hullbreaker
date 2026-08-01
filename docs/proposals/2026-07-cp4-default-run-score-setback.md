@@ -2,11 +2,10 @@
 
 **Status: defended proposal, awaiting the CP4 operator verdict. The
 promotion is built and gated; nothing here is canon until the operator
-picks.** Prepared July 31, 2026 by the `gameplay-engineer` agent (T-016);
+picks.** Prepared July 31, 2026 by the `gameplay-engineer` agent (T-016),
 **evidence corrected and re-measured August 1, 2026** in that task's fix
-cycle (see the Correction box under "Evidence" — the mechanics are unchanged,
-the numbers were wrong).
-promoting the two CP1 prototypes-for-testing from
+cycle (see the Correction box under "Evidence" — the mechanics are unchanged;
+the numbers were wrong). It promotes the two CP1 prototypes-for-testing from
 [`2026-07-score-and-setback.md`](2026-07-score-and-setback.md) (A.4 CHARGE/
 THREAT, B.1 HULL FALLBACK tier 1) out of the traversal slice and into the
 default six-face run, per that proposal's own recommendation (A.2's
@@ -118,7 +117,7 @@ document.
 | --- | --- | --- |
 | `scored-run.json` (competent heuristic) | `score=1&fallback=1` | protoScore **598.0 (source: HB.score, real)** — 3 airborne kills, 1 launch kill, 2 recatches, THREAT 920 (OBSERVE), hot 13.8 s of 31.0 s, **3 setbacks absorbed** (2 in one of five repeats — see variance below), **0 stock lives spent (HUD ×3 at the end)**, final x = max x = **89.25** (no forward ground lost) |
 | `scored-run-baseline.json` (identical inputs) | none | stock path intact: no score surface, protoScore falls back to the labeled proxy (924.8), 0 setbacks — and it **died twice**: 2 of 3 stock lives spent (t = 19.1 s, 27.3 s), each respawn snapping x **89.25 → ~51.6**; ends at HUD **×1**, final x 75.48 against a max x of 89.25, 4 hits survived |
-| `scored-run-nojump.json` (fall-loop probe) | `score=1&fallback=1` | **dying is not a shortcut**: never jumps, and the ladder came out as setback (3.2 s) → **1 stock life spent** on a hit the fallback refused (15.9 s, HUD ×2) → setback (22.4 s) → setback (27.4 s). Ends *stalled* at x 59.65 (21.9 s of its 30.9 s idle by A.5's stall rule) against the competent run's 89.25; protoScore **−16.5** (stall-dominated); no infinite fall loop. Note the refusal at 15.9 s cannot have been the streak ceiling — only one setback preceded it and `maxConsecutive` is 2 — so it was the sim's other refusal path, "nowhere lower to settle" (`settleFallback` in `src/sim/player.js`) |
+| `scored-run-nojump.json` (fall-loop probe) | `score=1&fallback=1` | **dying is not a shortcut**: never jumps, and the ladder came out as setback (3.2 s) → **1 stock life spent** on a hit the fallback refused (16.0 s, HUD ×2) → setback (22.4 s) → setback (27.4 s). Ends *stalled* at x 59.65 (21.9 s of its 30.9 s idle by A.5's stall rule) against the competent run's 89.25; protoScore **−16.5** (stall-dominated); no infinite fall loop. Note the refusal at 16.0 s cannot have been the streak ceiling — only one setback preceded it and `maxConsecutive` is 2 — so it was the sim's other refusal path, "nowhere lower to settle" (`settleFallback` in `src/sim/player.js`) |
 | `scored-run-nojump.json`, ceiling control | `score=1` only (fallback disarmed) | the same never-jumping inputs spend **all three lives by t = 9.8 s** → `GAME_OVER` / "SIGNAL LOST", ending at x 31.65. With the fallback armed the identical script is still playing when the 31 s window closes, at x 59.65, having spent one life. That is what tier 1 stands in front of — and it is also the honest shape of the "does dying still cost anything" question: it costs less, but the run still ends |
 | `scored-run-nojump.json`, flag isolation | `fallback=1` only | no score block in telemetry at all (correct — the meter is `?score=1`-gated); the same ladder plays out to the same shape (setback 3.2 s, life 16.0 s, setbacks 22.4 s / 27.8 s, final x 59.65), i.e. the fallback tier works with the meter off and the meter does not influence it |
 
