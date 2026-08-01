@@ -22,7 +22,12 @@ function renderSummary(report) {
   lines.push('## Outcome');
   lines.push(`- Result: **${metrics.outcome.result}**`);
   lines.push(`- Attempts: ${metrics.outcome.attempts ?? 'n/a'}, falls (final attempt, only visible on victory): ${metrics.outcome.falls ?? 'n/a'}`);
-  lines.push(`- Kills: ${metrics.finalKills ?? 'n/a'}, deaths observed: ${metrics.deaths}, hits survived: ${metrics.hitsWithoutDeath}`);
+  lines.push(`- Kills: ${metrics.finalKills ?? 'n/a'}, attempt-counter deaths (FIXTURE-ONLY, structurally 0 in the default run): ${metrics.deaths}, hits survived: ${metrics.hitsWithoutDeath}`);
+  if (metrics.lives.unavailableReason) {
+    lines.push(`- Stock lives (HUD \`×N\`): **unavailable** — ${metrics.lives.unavailableReason}`);
+  } else {
+    lines.push(`- Stock lives (HUD \`×N\` — the failure counter that works outside fixtures): ${metrics.lives.start} → ${metrics.lives.end}, **${metrics.lives.spent} spent**${metrics.lives.losses.length ? ` (at ${metrics.lives.losses.map((l) => `${fmtMs(l.gameMs)}${l.xBefore != null && l.x != null ? ` x ${l.xBefore}→${l.x}` : ''}`).join(', ')})` : ''}`);
+  }
   const rr = report.retryReassertions || [];
   if ((metrics.outcome.attempts ?? 1) > 1) {
     lines.push(rr.length
@@ -62,8 +67,13 @@ function renderSummary(report) {
   lines.push(`- Input density (A.5: deliberately NOT a score input): ${metrics.input.eventsPerSecond} events/sec (${metrics.input.totalEvents} total: ${metrics.input.keydownCount} down / ${metrics.input.keyupCount} up)`);
   if (metrics.protoScore.unavailableReason) {
     lines.push(`- protoScore (A.5 formula): **unavailable** — ${metrics.protoScore.unavailableReason}`);
+  } else if (metrics.protoScore.source === 'HB.score') {
+    lines.push(`- protoScore (A.5 formula, REAL — from the game's own event stream, ?score=1): **${metrics.protoScore.protoScore}** (airborne_kill=${metrics.score.counts.airborne_kill}, link=${metrics.score.counts.link}, airMs=${metrics.score.airMs}, stallMs=${metrics.score.stallMs})`);
   } else {
     lines.push(`- protoScore (A.5 formula, proxy airborneKills/links — see README): **${metrics.protoScore.protoScore}** (airborneKills=${metrics.airborneKills.airborneKills}, links≈${metrics.protoScore.linksApprox}, airMs=${metrics.airborneTime.airMs}, stallMs=${metrics.idleTime.idleTimeMs})`);
+  }
+  if (metrics.score) {
+    lines.push(`- Score snapshot (final, tune=${metrics.score.tune}): CHARGE ${metrics.score.charge} (notch ${metrics.score.notch} ${metrics.score.notchName}), THREAT **${metrics.score.threat}** → ${metrics.score.classification}; counts ${JSON.stringify(metrics.score.counts)}; hot ${metrics.score.hotMs}ms of ${metrics.score.playMs}ms; setbacks ${metrics.score.setbacks}`);
   }
   lines.push('');
   if (report.consoleErrors.length || report.pageErrors.length) {

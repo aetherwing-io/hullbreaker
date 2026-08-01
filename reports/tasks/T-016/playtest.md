@@ -1,214 +1,249 @@
-# T-016 playtest gate
+# T-016 playtest gate — re-gate of the fix cycle
 
-FAIL
+PASS
 
-Everything mechanical in this task is green — pathcheck 693/0, both required
-smoke scripts complete, both flags behave exactly as specified in the default
-six-face run, the A.5 score surface is genuinely consumed, and flagless play is
-unchanged. The gate fails on **evidence honesty**, not behavior: the CP4
-recommendation's A/B table states a fact about the baseline run that its own
-committed artifact contradicts, and the harness README note this task added
-points every future default-run gate at a death counter that is structurally
-always zero outside fixtures. Both are cheap to fix and the fix makes the CP4
-packet *stronger*, not weaker (see "Why this is a FAIL" below).
+Both defects that failed the first gate are fixed, and I verified each one
+against the artifact rather than the prose. The mechanical gates are green
+again on the fix-cycle tip: pathcheck 798/0, both required smoke scripts exit
+0 with `"result": "completed"`, zero console errors, zero page errors, no
+bootError, no retry needed. Two residual honesty nits remain (both already
+named as reviewer MINORs, neither contradicted by any artifact) — filed as an
+Inbox S3 rather than held against the gate.
 
 ## Worktree, pinning, and provenance
 
 - Worktree under test: `/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-016`
-  at `da29e86` (branch `task/T-016`, merge-base `9eeae4a`).
-- Pinned with `python3 -m http.server 8785` served from that worktree (killed
-  after the run). Every run below used the MAIN checkout's harness with
-  `--base-url http://127.0.0.1:8785`, except the two runs explicitly marked
-  "worktree harness" (needed because the `score` passthrough only exists on the
-  branch) and the two marked MAINTREE (built-in server, main's live tree).
-- Main moved during this gate (`1154b46` → `127a89e`); the worktree did not.
-  The MAINTREE comparison below is therefore against a moving reference, which
-  is exactly why the worktree was pinned.
+  at **`a08753b`** (branch `task/T-016`, merge-base with `main` `cb321a6`,
+  clean working tree). The first gate ran `da29e86`; the fix cycle is
+  `da40e29..a08753b`.
+- Pinned with `python3 -m http.server 8803` served from that worktree; killed
+  after the last run.
+- Every run below used the **MAIN checkout's** harness
+  (`/Users/scottmeyer/projects/hullbreaker/tools/playtest`) with
+  `--base-url http://127.0.0.1:8803`, except the two marked WORKTREE HARNESS,
+  which had to run from the branch because `metrics.lives` — the thing under
+  re-gate — only exists there.
+- **The fix cycle touched no `src/` file** (`git diff --stat 3f42874 a08753b
+  -- src/` is empty; the only changes are
+  `docs/proposals/2026-07-cp4-default-run-score-setback.md`,
+  `tools/playtest/README.md`, `tools/playtest/lib/metrics.mjs`,
+  `tools/playtest/lib/report.mjs`, plus the committed CP4 artifacts). The
+  first gate's game-behavior findings (flags default-off, flagless path
+  unchanged, both tunes isolated, score events real) therefore still stand and
+  were not re-derived from scratch; the two smoke runs re-confirm the flagless
+  path at the same numbers.
 
 ## Run commands
 
 ```sh
-# required smoke set (main harness, pinned worktree)
+# pin
+cd /Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-016 && python3 -m http.server 8803 &
+
+# required smoke set (MAIN harness, pinned worktree)
 cd /Users/scottmeyer/projects/hullbreaker/tools/playtest
 node run.mjs scripts/mid-route.json --deterministic --max-runtime-ms 15000 \
-  --base-url http://127.0.0.1:8785 --out runs/gate-T-016-mid
+  --base-url http://127.0.0.1:8803 --out runs/gate-T-016-mid
 node run.mjs scripts/transform-slice.json --deterministic --max-runtime-ms 20000 \
-  --base-url http://127.0.0.1:8785 --out runs/gate-T-016-transform
+  --base-url http://127.0.0.1:8803 --out runs/gate-T-016-transform
 
-# the builder's scored-run scripts, run by the main harness against the pin
-node run.mjs ../../.claude/worktrees/T-016/tools/playtest/scripts/scored-run.json \
-  --deterministic --max-runtime-ms 32000 --base-url http://127.0.0.1:8785 --out runs/gate-T-016-scored
-node run.mjs ../../.claude/worktrees/T-016/tools/playtest/scripts/scored-run-baseline.json \
-  --deterministic --max-runtime-ms 32000 --base-url http://127.0.0.1:8785 --out runs/gate-T-016-scored-baseline
-node run.mjs ../../.claude/worktrees/T-016/tools/playtest/scripts/scored-run-nojump.json \
-  --deterministic --max-runtime-ms 32000 --base-url http://127.0.0.1:8785 --out runs/gate-T-016-scored-nojump
-
-# flag-isolation probes
-node run.mjs <nojump> --deterministic --url "http://127.0.0.1:8785/index.html?fallback=1&testapi=1" --out runs/gate-T-016-fallback-only
-node run.mjs <nojump> --deterministic --url "http://127.0.0.1:8785/index.html?score=1&testapi=1"    --out runs/gate-T-016-score-only
-node run.mjs scripts/mid-route.json --deterministic --url "http://127.0.0.1:8785/index.html?slice=traversal&score=1&testapi=1" --out runs/gate-T-016-slice-score
-
-# real-A.5 verification + tune check (WORKTREE harness, pinned worktree)
+# re-gate evidence (WORKTREE HARNESS — metrics.lives lives on the branch)
 cd /Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-016/tools/playtest
-node run.mjs scripts/scored-run.json --deterministic --max-runtime-ms 32000 \
-  --base-url http://127.0.0.1:8785 --out .../runs/gate-T-016-scored-real
-node run.mjs scripts/mid-route.json --deterministic --url ".../index.html?slice=traversal&score=1&testapi=1" --out .../runs/gate-T-016-slice-score-wt
-node run.mjs scripts/scored-run-nojump.json --deterministic --url ".../index.html?score=1&testapi=1" --out .../runs/gate-T-016-score-only-wt
-
-# flagless byte-identity comparison (main harness, main's own tree)
-cd /Users/scottmeyer/projects/hullbreaker/tools/playtest
-node run.mjs scripts/mid-route.json --deterministic --max-runtime-ms 15000 --out runs/gate-T-016-mid-MAINTREE
-node run.mjs scripts/transform-slice.json --deterministic --max-runtime-ms 20000 --out runs/gate-T-016-transform-MAINTREE
+node run.mjs scripts/scored-run-baseline.json --deterministic --max-runtime-ms 32000 \
+  --base-url http://127.0.0.1:8803 \
+  --out /Users/scottmeyer/projects/hullbreaker/tools/playtest/runs/gate2-T-016-baseline-wtharness
+node run.mjs scripts/scored-run-nojump.json --deterministic --max-runtime-ms 32000 \
+  --base-url http://127.0.0.1:8803 \
+  --out /Users/scottmeyer/projects/hullbreaker/tools/playtest/runs/gate2-T-016-nojump
 
 # game gate, in the worktree
-node /Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-016/tools/pathcheck.mjs   # exit 0, 693 passed / 0 failed
+node /Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-016/tools/pathcheck.mjs   # exit 0
 ```
 
 ## Required gate results
 
-| Run | exit | `outcome.result` | console/page errors | bootError |
+| Run | exit | `outcome.result` | console / page errors | bootError |
 | --- | --- | --- | --- | --- |
-| `mid-route.json` | 0 | **completed** | 0 / 0 | null |
-| `transform-slice.json` | 0 | **completed** | 0 / 0 | null |
+| `scripts/mid-route.json` | 0 | **completed** | 0 / 0 | null |
+| `scripts/transform-slice.json` | 0 | **completed** | 0 / 0 | null |
 
-No retry was needed — no bootError in any of the eleven runs this gate made.
+`node tools/pathcheck.mjs` in the worktree: **798 passed, 0 failed, exit 0**.
 
-Smoke metrics (worktree pin vs main's tree, same harness, same flags — none):
+Smoke metrics (fresh, this gate) vs the first gate's pinned run of the same
+scripts — inside documented polling/injection noise, i.e. the flagless path is
+still unchanged:
 
-| Metric | mid-route (pin) | mid-route (main) | transform (pin) | transform (main) |
+| Metric | mid-route (now) | mid-route (first gate) | transform (now) | transform (first gate) |
 | --- | --- | --- | --- | --- |
 | result | completed | completed | completed | completed |
-| idle fraction | 0.024 | 0.026 | 0.000 | 0.000 |
-| minEdgeMargin | 35.43 | 35.44 | 30.07 | 30.12 |
-| final x | 72.001 | 72.055 | 146.005 | 146.011 |
-| protoScore (proxy) | 82.2 | 80.1 | 311.0 | 312.9 |
+| idle fraction | 0.041 | 0.024 | 0.000 | 0.000 |
+| minEdgeMargin | 35.49 | 35.43 | 30.07 | 30.07 |
+| final x | 72.006 | 72.001 | 146.005 | 146.005 |
+| protoScore (proxy) | 87.3 | 82.2 | 319.6 | 311.0 |
 
-Within the harness's documented polling/injection noise, i.e. **flagless
-behavior is unchanged** — corroborated at source level: the only flagless-path
-edits are telemetry (`sliceStats.minEdgeMargin` now tracked in every mode,
-setback stats reset in every mode); `RUN_FALLBACK_ENABLED` requires
-`?fallback=1` and `SCORE_ENABLED` requires `?score=1`, both `ACTIVE_FIXTURE`-
-aware, and `updateScore` still returns immediately when the flag is off.
+Evidence: `tools/playtest/runs/gate-T-016-{mid,transform}/{report.json,summary.md,screenshot.png}`.
 
-## Flag verification in the DEFAULT six-face run (not just the slice)
+## Defect 1 re-gate — does the A/B table agree with its cited artifact?
 
-| URL | Score block in telemetry | tune | Setbacks | Lives at end | final x / max x |
-| --- | --- | --- | --- | --- | --- |
-| `index.html` (baseline) | absent → protoScore falls back to labeled proxy | — | 0 | **×1 (2 spent)** | 75.65 / 89.25 |
-| `index.html?score=1&fallback=1` | present, `enabled:true`, 18 events | **run** | **3 absorbed** | **×3 (0 spent)** | 89.25 / 89.25 |
-| `index.html?score=1` | present, `enabled:true` | **run** | 0 | — | — |
-| `index.html?fallback=1` | absent (correct) | — | 1 | — | — |
-| `index.html?slice=traversal&score=1` | present | **slice** | 0 | — | — |
+**Fixed.** I opened
+`.claude/worktrees/T-016/tools/playtest/reports/cp4/scored-run-baseline/report.json`
+and `.../scored-run/report.json` directly and recomputed every number in the
+two headline rows from the trace, rather than reading the summaries:
 
-- **Score events are real in the run.** Worktree-harness run
-  `gate-T-016-scored-real`: `metrics.protoScore = {protoScore: 597.9, source:
-  "HB.score", note: "real: … counts.airborne_kill=3, counts.link=0"}`, with the
-  full A.5 snapshot mirrored at `metrics.score` (CHARGE/notch, THREAT 920 →
-  OBSERVE, per-event counts, `airMs` 25405, `stallMs` 874, `setbacks` 3,
-  `tune: "run"`). All 409 samples carried the block. The A.5 hook landed and is
-  consumed — README hook request #3 is genuinely closed on the harness side.
-- **The two tunes do not cross-contaminate**: the same `mid-route.json` under
-  `?slice=traversal&score=1` reports `tune: "slice"`; the run reports
-  `tune: "run"`.
-- **The streak ceiling is real, empirically**: `scored-run-nojump` (never
-  jumps) took setbacks at t≈3.2 s / 22.4 s / 27.2 s, then spent a stock life
-  (HUD ×2) — a terminal ladder exists, no infinite fall loop, and it did not
-  out-progress the competent script (x 59.65 vs 89.25). "Dying is not a
-  shortcut" holds.
-- Flag-shape note (not a defect, worth stating in the packet): in the run the
-  arming value is exactly `?fallback=1`; a bare `?fallback` is inert there,
-  whereas in the slice `?fallback` is on-by-default and `?fallback=0` disables.
-  The proposal's URL table is correct; the asymmetry is only a trap for someone
-  typing the flag from memory.
+| Claim in `docs/proposals/2026-07-cp4-default-run-score-setback.md` §Evidence | What the cited artifact actually says | Verdict |
+| --- | --- | --- |
+| baseline "died twice: 2 of 3 stock lives spent (t = 19.1 s, 27.3 s)" | `metrics.lives = {start 3, end 1, spent 2, losses[gameMs 19053.2, 27311.5]}` | agrees |
+| "each respawn snapping x 89.25 → ~51.6" | losses carry `xBefore 89.25 → x 51.611 / 51.582`; trace shows `hp 1→3` at those instants | agrees |
+| "ends at HUD ×1" | distinct `hudTL` sequence in the trace: `×3` → `×2` → `×1`, last value `RIG ▰▰▰  ×1` | agrees |
+| "final x 75.48 against a max x of 89.25" | trace final x **75.4757**, max x **89.250** | agrees |
+| "4 hits survived", "0 setbacks", "proxy protoScore 924.8" | `hitsWithoutDeath 4`, `score: null`, `protoScore {924.8, source: "proxy"}` | agrees |
+| row 1 "protoScore 598.0 (source HB.score, real)… 3 airborne kills, 1 launch kill, 2 recatches, THREAT 920 (OBSERVE), hot 13.8 s of 31.0 s, 3 setbacks, 0 lives spent (HUD ×3), final x = max x = 89.25" | `protoScore 598 {source: "HB.score"}`, counts `airborne_kill 3 / launch_kill 1 / recatch 2`, `threat 920` → OBSERVE, `hotMs 13825` of `playMs 30978`, `setbacks 3`, `lives.spent 0` (every `hudTL` in the trace is `×3`), trace final x = max x = **89.250** | agrees |
 
-## Why this is a FAIL
+The "0 deaths" claim that failed the first gate is gone, and the correction
+box states the cause (`sliceStats.attempts` is fixture-only) accurately. Both
+headline rows now cite a **committed** `report.json`, not a gitignored `runs/`
+path.
 
-Both findings are the same root cause and both are in the artifacts this task
-exists to produce.
+Independent reproduction (not just artifact-reading): a fresh
+`scored-run-baseline.json` run I made against the pin reproduced the
+structural claim exactly — `lives.spent = 2` (losses at gameMs 19074.8 and
+27416.4, `xBefore 89.25 → x 51.579` both times), ends `×1`, max x 89.250,
+final x 74.69 (vs the doc's 75.48 — inside the documented run-to-run band).
+Evidence: `tools/playtest/runs/gate2-T-016-baseline-wtharness/report.json`.
 
-1. **`metrics.deaths` / `outcome.attempts` cannot see a death in the default
-   run, and the new README note tells readers to use them.** They derive from
-   `sliceStats.attempts`, which `src/main.js:193` increments only inside
-   `if (ACTIVE_FIXTURE)`. Every default-run report therefore reads
-   `deaths: 0, attempts: 0` no matter what happened. The note added at
-   `tools/playtest/README.md` ("the default run counts `resetGame` calls, not
-   deaths — use `metrics.deaths`/`metrics.score.setbacks` for failure counts")
-   is wrong on both halves: the run counts nothing, and `metrics.deaths` is the
-   same blind counter. Following it will make every future default-run gate
-   report zero deaths for a run that died repeatedly. That is the schema's own
-   definition of a gate-corrupting defect.
-2. **The CP4 evidence table states "0 deaths" for the baseline; it died
-   twice.** In my run `gate-T-016-scored-baseline` the trace carries two clean
-   respawn signatures — t=19080 ms and t=27412 ms, each hp 1→3 with x snapping
-   89.3 → 51.6, `setbacks` unchanged at 0 — and the end-of-run HUD reads
-   `RIG ▰▰▰ ×1`, i.e. two of three stock lives spent. The builder's **own
-   committed artifact** shows the same thing
-   (`tools/playtest/runs/scored-run-baseline-1785557898457/`: hp 3→2→1→3 twice,
-   screenshot ends at `×1`). The reviewer's "numbers match the actual run
-   artifacts" check did not catch this column.
+## Defect 2 re-gate — is the misleading death-counter note corrected?
 
-The correction strengthens the recommendation. The true A/B is: **flags off →
-2 stock lives spent and knocked back from x 89.25 to 75.65; flags on → 0 lives
-spent, 3 setbacks absorbed, forward progress never lost (final x = max x =
-89.25)**. That is a far sharper argument for the promotion than "0 deaths
-either way," and it also puts real evidence behind CP4 question 2 (does a
-fallback that costs no forward ground punish enough?).
+**Fixed, and the replacement works.** Three checks:
 
-Minimal remediation: fix the README note to state that no death counter exists
-on default-run traces today and name what does work (the `score.setbacks`
-counter on fallback-armed runs, or a lives read — `lives` is on `HB.snapshot()`
-but not on the frozen `testapi` channel, so a hook request or a `--no-testapi`
-run is the honest path); fix the baseline row of
-`docs/proposals/2026-07-cp4-default-run-score-setback.md` to the numbers above.
-No code change to `src/` is required by this verdict.
+1. **The note is gone in its wrong form.** `tools/playtest/README.md` now
+   says `outcome.attempts` and `metrics.deaths` are **fixture-only** and
+   structurally `0` on a default run, names `src/main.js`'s
+   `if (ACTIVE_FIXTURE)` guard as the reason, and directs readers to
+   `metrics.lives.spent` (+ `metrics.lives.losses[]`) and
+   `metrics.score.setbacks` instead. The "damage/death events" bullet carries
+   the same correction, and hook request #9 (publish `player.lives`/`hp` on
+   the frozen `?testapi` channel) is filed. It also gives an independent
+   raw-trace signature (`hp 1→3` + `x` snapping back + `setbacks` unchanged =
+   stock respawn; `hp 1→3` + `setbacks` incrementing + `x` continuous =
+   absorbed fallback), which is exactly how I verified defect 1 by hand.
+2. **The report itself now warns in-band.** Every report object carries
+   `deathsScope: "fixture-only (sliceStats.attempts increments; always 0 in
+   the default run — use lives.spent)"`. Confirmed in both committed CP4
+   traces and in my own fresh runs.
+3. **The replacement counter is not itself blind.** On my fresh default-run
+   traces the new counter reports the deaths the old path could not see:
+   baseline `deaths: 0` / `lives.spent: 2`; `scored-run-nojump`
+   `deaths: 0` / `lives.spent: 1` (loss at 15.9 s, `x 41.649 → 44.5`). The
+   HUD parse is corroborated by the screenshots themselves — the baseline
+   frame's HUD reads `RIG ▰▰▰ ×1` and the nojump frame reads `×2`, matching
+   `lives.end` in each report. The documented limitations hold too: on the
+   traversal slice the counter reports `unavailable` with the reason (`hud.js`
+   prints no `×N` there), which is what the committed `slice-tune-check`
+   summary shows.
+
+## Extra check I ran because the first gate could not: rows 3–5
+
+The first gate's FAIL was about a claim contradicted by its artifact. To be
+sure the rest of the table is not the same class of problem, I re-ran
+`scored-run-nojump.json` (row 3's script, same flags) against the pin:
+
+| Row 3 claim | My independent run |
+| --- | --- |
+| stalled; setbacks at 3.2 / 22.4 / 27.4 s | `outcome.result: stalled`; setbacks at **3.2 / 22.4 / 27.1 s** |
+| 1 stock life spent at 16.0 s | `lives.spent 1` at **15.9 s** |
+| ends at x 59.65; 21.9 s of 30.9 s idle | final x **59.649**; `stallMs 21888` of `playMs 30883` |
+| protoScore −16.5 (real, `HB.score`) | `protoScore −16.5 {source: "HB.score"}`; `setbacks 3` |
+
+Every checkable number reproduces within the harness's documented variance.
+So rows 3–5 are **accurate but not fully checkable from their committed
+artifacts** — their `summary.md` files carry lives/stall/score lines but not
+final x or setback timestamps, and no `report.json` is committed for them.
+That is a checkability gap in a decision packet, not a false claim; filed as
+Inbox **I-008 (docs, S3)**, not held against this gate.
 
 ## Screenshots judged
 
-Frames: `runs/gate-T-016-{mid,transform,scored,scored-baseline,scored-nojump}/screenshot.png`
-plus the builder's `runs/scored-run*/screenshot.png` in the worktree.
+Frames: `tools/playtest/runs/gate-T-016-{mid,transform}/screenshot.png`,
+`tools/playtest/runs/gate2-T-016-{baseline-wtharness,nojump}/screenshot.png`.
 
-- **FAR readability / scale invariant:** RIG measures ≈30 px in an 800 px
-  viewport (≈3.7 %), inside board 13's 3–5 % band and matching the shipped FAR
-  default. Hull silhouettes are connected and readable; ledges and catwalk
-  lines separate cleanly from the background at distance.
-- **Score readouts at FAR:** the CHARGE notch glyphs ride the weapon readout
-  and `THREAT nnn` sits top-right in the default run under `?score=1` — both
-  legible screen-space text. The center-line HULL FALLBACK callout is absent in
-  the run (slice-gated); the builder discloses this and it is already CP4
-  question 5, so it is a queued feel question, not a gate defect.
-- **Capsule glyph:** the pickup reads as a green block at FAR; its letter does
-  not survive. This corroborates T-015's measured 9.6 px finding already in the
-  operator checkpoint queue — not a new defect and not attributable to T-016.
+- **FAR readability / scale invariant:** measured on the default-run baseline
+  frame at 6× crop, RIG spans ≈32.5 px of the 800 px viewport ≈ **4.1 %** —
+  inside board 13's 3–5 % band and consistent with the shipped FAR default
+  (decisions.md entry 7). The silhouette survives at that size: head, torso,
+  legs and the yellow rifle line read as a facing tell. Hull surfaces are
+  connected, the ledge/catwalk lines separate cleanly from the background,
+  and hostiles read as distinct green wedges against the grey hull.
+- **Score readouts at FAR:** the `?score=1&fallback=1` frame carries
+  `THREAT 325` top-right and the CHARGE notch glyphs after the weapon
+  readout; the flags-off baseline frame carries neither — flag gating is
+  visible in the pixels, not just in telemetry. Both readouts are
+  screen-space text and legible at FAR.
 - **No assembling anatomy:** nothing in these frames shows body geometry
-  arriving, slamming, or articulating; the run frames are static grey-box hull
-  and the transform frame is the post-breach reveal with fog/rain. Honest
-  caveat: single end-of-run stills cannot prove choreography either way — the
-  static-anatomy judgment for the transform slice rests on T-001's
-  `artifacts/cp3-transform-v3/` sequence, not on this gate.
+  arriving, slamming, or articulating. Honest caveat, unchanged from the
+  first gate: single end-of-run stills cannot prove choreography either way —
+  the static-anatomy judgment for the transform slice rests on T-001's
+  `artifacts/cp3-transform-v3/` sequence, not on this gate. This task changed
+  no render file at all.
+- **RIG absent from the nojump frame — explained, not a defect:** the player
+  is at x 59.65 / hp 1 in that sample, and took a hit at gameMs 30357, ~500 ms
+  before the screenshot. `src/render/player.js:55` sets
+  `rig.visible = gameMs >= player.iframesUntil || blink()`, so the frame
+  landed on an i-frame blink-off phase. Pre-existing shipped behavior,
+  untouched by T-016; flagged here only so a future reader does not file it as
+  a missing-player bug.
 - **Style vs `docs/concept-art/`:** still the neutral grey-box palette (the
-  palette pass is T-010, unmerged), so no style verdict is available beyond
-  "unchanged by this task." No color-role violations introduced.
+  palette pass is T-010, unmerged), so there is no style verdict available
+  beyond "unchanged by this task" — no color-role or silhouette violations
+  introduced. The capsule still reads as a green block whose letter does not
+  survive at FAR, which is T-015's already-queued glyph-scale question, not a
+  T-016 defect.
+
+## Residual, non-blocking (named, not held against the gate)
+
+1. **Rows 3–5 are not checkable from their committed artifacts** (I-008, S3).
+   Verified accurate by an independent run above; committing
+   `scored-run-nojump/report.json`, or adding final x + setback times to those
+   summaries, would close it.
+2. **`outcome.result` can still never read `died` on a default-run trace** —
+   `computeOutcome` (`tools/playtest/lib/metrics.mjs:285`) keys off the same
+   fixture-only `attempts`, so my baseline run that spent two lives is labeled
+   `not-completed`, which is the first line of every `summary.md`. The
+   corrected README note enumerates `metrics.deaths` and `outcome.attempts`
+   but not `outcome.result`. This is the last hole of I-006's class; annotated
+   on I-006 rather than filed fresh.
 
 ## Notes for the operator (feel — never a gate failure)
 
-1. In the flags-on run the fallback never cost forward ground (final x = max x
-   = 89.25) while the flags-off run was thrown back 13.6 tiles by a stock
-   death. Does a setback that costs altitude but no forward progress read as a
-   punishment at run scale? (Sharpens CP4 question 2.)
-2. The `scored-run-nojump` probe spends its last 12 s oscillating around
-   x ≈ 59 at 71 % idle while the fallback→fallback→life ladder plays out. Does
-   that read as "the ship is escalating on me" or as "I am stuck"? (Feeds CP4
-   question 3.)
-3. `protoScore` on the identical scored-run script varied 586.9 / 597.9 /
-   600.5 across three deterministic runs (setbacks, final x, and THREAT were
-   stable). Worth knowing before any CP4 number is read as a target.
+1. Re-measured this pass: flags-off spends **2 stock lives and gets thrown
+   back from x 89.25 to 74.7–75.5**, while flags-on spends **0 lives and never
+   loses forward ground** (final x = max x = 89.25, 3 setbacks absorbed). Does
+   a setback that costs altitude but no forward progress punish enough at run
+   scale? (CP4 question 2.)
+2. The never-jumping probe spends its last ~12 s pinned at x 59.65 at 71 %
+   idle while setback → life → setback → setback plays out, and the frame at
+   that moment shows two wasps working RIG over on one ledge. Does that read
+   as "the ship is escalating on me" or as "I am stuck"? (CP4 question 3.)
+3. Variance worth knowing before any CP4 number is read as a target: on the
+   identical `scored-run` script the packet measured protoScore 586.9–600.5,
+   setbacks 3 or 2, THREAT 920 or 444 — while lives spent (0) and final x
+   (89.25) never moved. Structural outcomes are stable; the meter is not.
 
-## Issues filed
+## Issues filed / annotated in `SPRINT.md`'s Inbox
 
-- `SPRINT.md` Inbox **I-006** (bug, S1) — default-run death counting blind spot
-  plus the README note that directs future gates to it.
-- `SPRINT.md` Inbox **I-007** (docs, S2) — CP4 recommendation's baseline row
-  claims 0 deaths; artifacts show 2 stock lives spent.
+- **I-006** (bug, S1) — annotated: harness half **fixed and verified** at
+  `a08753b` (`metrics.lives` + `deathsScope` + corrected note); residual
+  `outcome.result` hole recorded on the same entry; the game-side counter
+  remains fixture-only by design, now documented and filed as harness README
+  hook request #9.
+- **I-007** (docs, S2) — annotated: **fixed and verified**; every number in
+  the two headline rows recomputed from the committed traces by this gate.
+- **I-008** (docs, S3) — new: CP4 evidence rows 3–5 cite numbers absent from
+  their committed artifacts (accuracy confirmed by an independent run; the gap
+  is checkability).
 
-(Numbered I-006/I-007 because other gates appended I-003…I-005 to the Inbox
-while this gate was running.)
+## Scope note
+
+`reports/tasks/T-016/review.md` was **not** overwritten by this gate. The
+reviewer's fresh `APPROVE` for this exact fix cycle (`3f42874..a08753b`) is
+newer than the first playtest verdict and is the reviewer lane's artifact, not
+QA's; overwriting it would have destroyed the review gate's record. This file
+is the fresh playtest verdict.

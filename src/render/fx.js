@@ -34,6 +34,7 @@
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
+import { PAL } from './palette.js';
 import { JUICE_ENABLED } from '../mode.js';
 import {
   burstVelocity, clamp01, flashAlpha, particleAlpha, particleScale, warnPulse,
@@ -44,18 +45,19 @@ import { towerPose } from './tower.js';
 const J = CONFIG.juice;
 
 /* ----------------------------- palette ---------------------------- *
- * Role names only, resolved from CONFIG.palette — the grey-box roles the
- * bullets, hostiles and capsules already draw with, so an effect can never
- * disagree with the thing it is feedback for. One table, one swap point:
- * when a render-palette module lands, these six values come from it and no
- * call site below changes. */
+ * Role names only, resolved from the render palette module — the same tokens
+ * bullets, hostiles and capsules draw with, so an effect can never disagree
+ * with the thing it is feedback for. This is the swap point this table was
+ * written for: T-010 landed src/render/palette.js, so the six values now come
+ * from PAL and no call site below changed. Reading CONFIG.palette here would
+ * fail pathcheck's tokenized-render-file guard. */
 const ROLE = {
-  muzzle: CONFIG.palette.shots.R,        // warm white: player fire family
-  enemyGlow: CONFIG.palette.wasp,        // hostile ecology
-  capsule: CONFIG.palette.capsule,       // pickup magenta
-  modCapsule: CONFIG.palette.modCapsule, // modifier gold
-  warn: CONFIG.palette.houndTell,        // the roster's one warning amber
-  rig: CONFIG.palette.player,            // RIG's own off-white
+  muzzle: PAL.shots.R,        // warm white: player fire family
+  enemyGlow: PAL.wasp,        // hostile ecology
+  capsule: PAL.capsule,       // pickup magenta
+  modCapsule: PAL.modCapsule, // modifier gold
+  warn: PAL.houndTell,        // the roster's one warning amber
+  rig: PAL.player,            // RIG's own off-white
 };
 
 export function fxRole(name) { return ROLE[name]; }

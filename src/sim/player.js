@@ -8,8 +8,9 @@ import {
 import { crouchStance } from '../pure/stance.js';
 import {
   ACTIVE_FIXTURE, ACTIVE_SLICE, AUTOBOUNCE_ENABLED, CROUCH_ENABLED, FLOW_ENABLED,
-  HOOK_ENABLED, IS_TRAVERSAL_SLICE, SLICE_FALLBACK_ENABLED,
+  HOOK_ENABLED, IS_TRAVERSAL_SLICE, RUN_FALLBACK_ENABLED, SLICE_FALLBACK_ENABLED,
 } from '../mode.js';
+import { RUN_FALLBACK } from '../pure/score.js';
 import { view, host } from './bridge.js';
 import { gameMs, sliceStats, approach } from './time.js';
 import { sLeftEdge, sRightEdge } from './edges.js';
@@ -39,9 +40,12 @@ import { flowBreak, flowLaunch, flowSpeedNow, flowStep } from './flow.js';
 export const P = ACTIVE_SLICE
   ? { ...CONFIG.player, ...ACTIVE_SLICE.movement }
   : CONFIG.player;
-// launch chaining and hull fallback are pacing-variant data, absent by default
+// launch chaining is pacing-variant data, absent by default; the hull-fallback
+// tune is the slice fixture's own where one is active, and the run tune from
+// src/pure/score.js otherwise (CP4 promotion — armed only by ?fallback=1
+// there, see RUN_FALLBACK_ENABLED in loseLife)
 const CHAIN = ACTIVE_SLICE ? ACTIVE_SLICE.chain : null;
-const FALLBACK = ACTIVE_SLICE ? ACTIVE_SLICE.fallback : null;
+const FALLBACK = ACTIVE_SLICE ? ACTIVE_SLICE.fallback : RUN_FALLBACK;
 const EDGE_PIN_MS = ACTIVE_SLICE ? ACTIVE_SLICE.pursuit.edgePinDamageMs : 0;
 // aim is a plain 2-vector, not a THREE.Vector2: the sim stays renderer-free
 // and the renderer only reads .x/.y off it.
@@ -470,13 +474,13 @@ export function updatePlayer(dt) {
   const seal = transformSealX();
   if (player.x - player.hw < seal) { player.x = seal + player.hw; player.vx = Math.max(player.vx, 0); }
 
-  // -- fell into a gap
-  if (ACTIVE_FIXTURE) {
-    sliceStats.minEdgeMargin = Math.min(
-      sliceStats.minEdgeMargin,
-      player.x - player.hw - sLeftEdge()
-    );
-  }
+  // Closest crush approach, every mode (was fixture-only): the score snapshot
+  // reads it (A.5) and the CP4 default-run promotion needs it as evidence.
+  // resetGame clears it per run; the HUD still only displays it in the slice.
+  sliceStats.minEdgeMargin = Math.min(
+    sliceStats.minEdgeMargin,
+    player.x - player.hw - sLeftEdge()
+  );
 
   if (player.y < CONFIG.edges.killY) { loseLife('fall'); return; }
 
@@ -597,19 +601,21 @@ function settleFallback(ceilY) {
   return !playerOverlapsSolid();
 }
 
-// Reachable only while ACTIVE_SLICE is non-null: FALLBACK is that fixture's
-// data and SLICE_FALLBACK_ENABLED is traversal-only, so no other fixture can
-// get here. Revisit both if hull fallback ever extends to another fixture —
-// otherwise this throws on the first frame it is reached.
+// Reached from the traversal slice (SLICE_FALLBACK_ENABLED, on by default
+// there) and — CP4 promotion — from the default six-face run behind
+// ?fallback=1 (RUN_FALLBACK_ENABLED, off by default). Returns true when the
+// setback was absorbed as a fallback; false when it has nothing left to give
+// (streak ceiling, or trapped with nowhere lower) and the caller's next
+// consequence tier applies: the slice retries, the run spends a stock life.
 function hullFallback(reason) {
   const F = FALLBACK;
   // Mercy chain: RIG who fights back down a lower route earns the next
   // fallback. Conveyed distance never counts, so idling cannot buy mercy.
   if (player.fallbackEarnedTiles >= F.recoverTiles) player.fallbackStreak = 0;
   // Ceiling on consecutive fallbacks: B.1's tier 2 (band fallback into a
-  // recovery shaft) is not built, so the fixture still retries past it rather
-  // than letting a stuck player fall forever.
-  if (player.fallbackStreak >= F.maxConsecutive) { scheduleSliceRetry(reason); return; }
+  // recovery shaft) is not built, so past the ceiling the caller escalates
+  // rather than letting a stuck player fall forever.
+  if (player.fallbackStreak >= F.maxConsecutive) return false;
 
   const y0 = player.y, x0 = player.x;
   const surfaces = fallbackSurfaces(player.x);
@@ -644,8 +650,7 @@ function hullFallback(reason) {
   // and nowhere to retreat is a terminal state, not a lift.
   if (!settleFallback(y0)) {
     player.x = x0; player.y = y0;
-    scheduleSliceRetry(reason);
-    return;
+    return false;
   }
   player.vx = Math.max(player.vx, F.tossVx);          // thrown forward, not stopped
   player.grounded = false; player.onOneWay = null; player.jumpCutDone = true;
@@ -663,6 +668,7 @@ function hullFallback(reason) {
   sliceStats.failures++;
   if (reason === 'fall') sliceStats.falls++;
   scoreSetback(landY !== null ? 'fallback' : 'ground', y0, player.y);
+  return true;
 }
 
 export function loseLife(reason = 'damage') {
@@ -672,10 +678,14 @@ export function loseLife(reason = 'damage') {
   if (HOOK_ENABLED) hookCancel();
   if (FLOW_ENABLED) flowBreak();
   if (ACTIVE_FIXTURE) {                 // fixtures restart instead of spending a life
-    if (SLICE_FALLBACK_ENABLED) hullFallback(reason);
-    else scheduleSliceRetry(reason);
+    if (!SLICE_FALLBACK_ENABLED || !hullFallback(reason)) scheduleSliceRetry(reason);
     return;
   }
+  // CP4 promotion: in the default run ?fallback=1 absorbs the setback as a
+  // HULL FALLBACK first; only past its ceiling (or trapped with nowhere
+  // lower) does the stock lives tier below bite, so the run still has a
+  // terminal state and a fall loop cannot spin forever.
+  if (RUN_FALLBACK_ENABLED && hullFallback(reason)) return;
   player.lives--;
   setWeapon('R');                     // death resets the arsenal
   clearMods();

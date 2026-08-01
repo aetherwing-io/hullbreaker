@@ -12,7 +12,7 @@ import { buildSpawnTable } from '../pure/generator.js';
 import { TRANSFORM_FIXTURE } from '../pure/transform.js';
 import { IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, SLICE_ENEMIES_ENABLED } from '../mode.js';
 import { sRightEdge } from './edges.js';
-import { spawnLaneY } from './level.js';
+import { groundTopAt, spawnLaneY } from './level.js';
 import { spawnHostile } from './hostiles.js';
 import { cornerBusy } from './wavegate.js';
 import { transformBusy } from './transform.js';
@@ -41,6 +41,11 @@ export function updateSpawner() {
     const s = spawnTable[spawnIdx++];
     if (s.type === 'carrier') {
       spawnHostile(s.x, spawnLaneY(s.x, CONFIG.carrier.laneAbove), 0, 'carrier');
+    } else if (s.type === 'hound') {
+      // Fixture-authored deck unit (the G2 gate): spawned on its deck with
+      // the entry itself as the row, so dir/patrol ride through exactly like
+      // a traversal enemy-plan row. Only a fixture table authors these.
+      spawnHostile(s.x, groundTopAt(s.x), s.delayMs || 0, 'hound', s);
     } else if (s.lane !== undefined) {          // authored lane (fixture table)
       spawnHostile(s.x, spawnLaneY(s.x, s.lane), 0, 'wasp');
     } else {
