@@ -6840,6 +6840,32 @@ const G2GATE = G2E.gate;
   ok(compileCondition('threat.upSlope>0.5 && !targetLevel').raw.length > 0,
      'T-018: a well-formed threat condition still compiles');
 
+  // --- 2b. …and stays an interpreter with no memory ----------------------
+  // The three properties a reviewer has to be able to take on faith when they
+  // read a bot report: the condition string was INTERPRETED (never handed to
+  // the JS engine), the geometry view is a pure function of one sample, and
+  // nothing carries between ticks — so a run cannot be a script wearing a
+  // policy's clothes.
+  for (const f of ['policy.mjs', 'threat.mjs']) {
+    const src = stripComments(readFileSync(join(here, 'playtest', 'lib', f), 'utf8'));
+    ok(!/\beval\s*\(/.test(src) && !/new\s+Function\s*\(/.test(src),
+       'T-018: ' + f + ' never reaches for eval()/new Function() — conditions are ' +
+       'interpreted by the grammar, not executed as JS');
+    // top-level only: an indented `let` is a local inside some function and is
+    // gone when it returns; a column-0 one would survive between ticks.
+    ok(!/^(let|var)\s/m.test(src),
+       'T-018: ' + f + ' declares no module-level mutable state (no cross-tick memory)');
+  }
+  {
+    const s1 = { x: 4, y: 2, hostiles: [{ kind: 'wasp', state: 'cruise', x: 8, y: 3, materialized: true }] };
+    const s2 = { x: 4, y: 2, hostiles: [{ kind: 'hound', state: 'prowl', x: 2, y: 2, materialized: true }] };
+    const j = (v) => JSON.stringify(deriveThreat(v, new Set(['ArrowRight'])));
+    const a1 = j(s1); j(s2); const a2 = j(s1);
+    ok(a1 === a2,
+       'T-018: deriveThreat is a pure function of (sample, heldKeys) — an intervening ' +
+       'tick with different geometry cannot change what this tick sees');
+  }
+
   // --- 3. the game is still 8-way aimed ---------------------------------
   const playerSrc = stripComments(readFileSync(join(srcDir, 'sim', 'player.js'), 'utf8'));
   ok(/function computeAim/.test(playerSrc), 'T-018: computeAim still exists');

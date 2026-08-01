@@ -235,6 +235,15 @@ still has to be spelled out in the script, and every threshold it uses stays
 visible there. (Which is why there is deliberately no `diveIncoming` predicate
 with a baked-in distance — write `threat.diveDist<4` and own the 4.)
 
+Those are not promises you have to take on trust. `tools/pathcheck.mjs` asserts
+them: that the compiler *rejects* `||`, parens, arithmetic, unknown fields and
+string ordering; that neither `policy.mjs` nor `threat.mjs` contains `eval()`
+or `new Function()`, so a condition string is interpreted and never executed as
+JS; that neither declares module-level mutable state; and — behaviorally —
+that `deriveThreat` returns the same view for the same sample even after an
+intervening tick with different geometry. A bot run is only reviewable if the
+policy cannot have been a script in disguise.
+
 `threat.*` — derived once per tick in `lib/threat.mjs`, from the muzzle line
 (`player.y + 1.05`), skipping hostiles still condensing (`materialized:
 false`, which have no hitbox in the sim either):
