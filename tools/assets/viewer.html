@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HULLBREAKER asset viewer</title>
+<!--
+  Dev-only asset viewer. Loads nothing from src/, imports no game module, and is
+  never referenced by index.html — it is a static page that happens to live in
+  the repo so the playtest harness's static server can serve it.
+
+  Why it exists: the asset-artist standing orders say a glyph that reads at
+  512px and smears at 14px on screen has failed, and the operator's view-scale
+  verdict (docs/decisions.md entry 7) made FAR the default, where RIG is 3.7% of
+  screen height. So "does this asset read?" is a question about a specific,
+  small pixel height — this page renders an asset at exactly that height, next
+  to a RIG-height reference bar and a ramp of neighbouring sizes.
+
+  Scale derivation (both numbers are the game's own, not this page's):
+    CONFIG.player.height          = 1.7 tiles              (src/config.js)
+    CONFIG.viewScales far/mid/near -> RIG at 3.7% / 5.0% / 7.0% of screen height
+                                                            (src/config.js comment)
+    => px per tile      = frac * viewportHeight / 1.7
+    => an asset `tiles` tall renders at frac * viewportHeight * tiles / 1.7 px
+  A weapon capsule is CONFIG.capsules.size = 0.55 tiles, which is why ?tiles=0.55
+  lands around ten pixels on an 800px-tall viewport.
+
+  Query parameters:
+    asset=<repo-relative path>   the PNG or SVG to display (required)
+    tiles=<n>                    the asset's world height in tiles (default 0.55)
+    view=near|mid|far            which judged camera depth (default far)
+    frac=<0..1>                  override the screen fraction directly
+    h=<px>                       override the on-screen height in pixels outright
+    bg=<hex|game|haze|void>      backdrop (default game = CONFIG.palette.bg)
+    smooth=0                     nearest-neighbour instead of smooth minification
+-->
+<style>
+  :root {
+    --ink: #14181e;
+    --fg: #d9dde2;
+    --dim: #767c85;
+    --rig: #ff4fd8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    background: #232830;
+    color: var(--fg);
+    font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    display: flex; flex-direction: column;
+  }
+  header {
+    padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.12);
+    display: flex; gap: 18px; flex-wrap: wrap; align-items: baseline;
+    background: rgba(0,0,0,0.25);
+  }
+  header b { color: #fff0c2; font-weight: 600; }
+  header span { color: var(--dim); }
+  main { flex: 1; display: flex; align-items: center; justify-content: center; gap: 44px; padding: 24px; }
+  .stop { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .stop .frame { display: flex; align-items: flex-end; gap: 10px; min-height: 8px; }
+  .stop img { display: block; }
+  .stop .cap { color: var(--dim); font-size: 11px; text-align: center; white-space: pre; }
+  .stop.primary .cap { color: #fff0c2; }
+  .rigbar { width: 6px; background: var(--rig); opacity: 0.85; }
+  .rigwrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .ramp { display: flex; align-items: flex-end; gap: 20px; }
+  footer { padding: 8px 16px; border-top: 1px solid rgba(255,255,255,0.12); color: var(--dim); font-size: 11px; }
+  .err { color: #ff9adf; padding: 24px; }
+</style>
+</head>
+<body>
+<header>
+  <b id="assetName">—</b>
+  <span id="scaleLine">—</span>
+  <span id="sizeLine">—</span>
+</header>
+<main id="stage"></main>
+<footer id="foot">
+  approximation: flat composite at the correct pixel height — no fog, perspective, lighting or mipmapping.
+</footer>
+
+<script>
+(() => {
+  const q = new URLSearchParams(location.search);
+  const stage = document.getElementById('stage');
+
+  // RIG screen-height fractions, measured in src/config.js's viewScales comment.
+  const VIEW_FRAC = { near: 0.070, mid: 0.050, far: 0.037 };
+  const RIG_TILES = 1.7;                       // CONFIG.player.height
+  const BACKDROPS = { game: '#232830', haze: '#46525f', void: '#0b0e12', ink: '#14181e' };
+
+  const asset = q.get('asset');
+  if (!asset) {
+    stage.innerHTML = '<div class="err">no ?asset= given — e.g. ?asset=assets/generated/glyphs/capsule-letter-h.png</div>';
+    return;
+  }
+
+  const view = VIEW_FRAC[q.get('view')] ? q.get('view') : 'far';
+  const tiles = Number(q.get('tiles')) || 0.55;                 // CONFIG.capsules.size
+  const frac = Number(q.get('frac')) || VIEW_FRAC[view];
+  const smooth = q.get('smooth') !== '0';
+
+  const bgRaw = q.get('bg') || 'game';
+  document.body.style.background = BACKDROPS[bgRaw] || bgRaw;
+
+  const vh = window.innerHeight;
+  const rigPx = frac * vh;
+  const gamePx = Number(q.get('h')) || (frac * vh * tiles) / RIG_TILES;
+
+  const src = '/' + String(asset).replace(/^\/+/, '');
+
+  function stop(px, label, primary) {
+    const el = document.createElement('div');
+    el.className = 'stop' + (primary ? ' primary' : '');
+    const frame = document.createElement('div');
+    frame.className = 'frame';
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.height = px + 'px';
+    img.style.width = 'auto';
+    if (!smooth) img.style.imageRendering = 'pixelated';
+    img.alt = asset;
+    frame.appendChild(img);
+    el.appendChild(frame);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = label;
+    el.appendChild(cap);
+    return el;
+  }
+
+  // The judged size, with RIG's own on-screen height beside it for comparison.
+  const primary = document.createElement('div');
+  primary.className = 'stop primary';
+  const frame = document.createElement('div');
+  frame.className = 'frame';
+  const img = document.createElement('img');
+  img.src = src;
+  img.style.height = gamePx + 'px';
+  img.style.width = 'auto';
+  if (!smooth) img.style.imageRendering = 'pixelated';
+  frame.appendChild(img);
+
+  const rigwrap = document.createElement('div');
+  rigwrap.className = 'rigwrap';
+  const bar = document.createElement('div');
+  bar.className = 'rigbar';
+  bar.style.height = rigPx + 'px';
+  rigwrap.appendChild(bar);
+  frame.appendChild(rigwrap);
+  primary.appendChild(frame);
+
+  const cap = document.createElement('div');
+  cap.className = 'cap';
+  cap.textContent = `in-game  ${gamePx.toFixed(1)}px\n(RIG bar ${rigPx.toFixed(0)}px)`;
+  primary.appendChild(cap);
+  stage.appendChild(primary);
+
+  // A ramp around the judged size: where does it stop reading?
+  const ramp = document.createElement('div');
+  ramp.className = 'ramp';
+  for (const mult of [2, 4, 8]) {
+    ramp.appendChild(stop(gamePx * mult, `${mult}x  ${(gamePx * mult).toFixed(0)}px`, false));
+  }
+  stage.appendChild(ramp);
+
+  const nativeStop = stop(0, '', false);
+  stage.appendChild(nativeStop);
+
+  document.getElementById('assetName').textContent = asset;
+  document.getElementById('scaleLine').textContent =
+    `view=${view} (RIG ${(frac * 100).toFixed(1)}% of ${vh}px) · asset ${tiles} tiles tall · in-game ${gamePx.toFixed(1)}px`;
+
+  const probe = new Image();
+  probe.onload = () => {
+    const nImg = nativeStop.querySelector('img');
+    nImg.style.height = probe.naturalHeight + 'px';
+    nativeStop.querySelector('.cap').textContent = `native  ${probe.naturalWidth}x${probe.naturalHeight}`;
+    document.getElementById('sizeLine').textContent = `source ${probe.naturalWidth}x${probe.naturalHeight}`;
+    document.documentElement.dataset.viewerReady = '1';
+  };
+  probe.onerror = () => {
+    stage.innerHTML = `<div class="err">could not load ${src} — is the path repo-relative and the server rooted at the repo?</div>`;
+    document.documentElement.dataset.viewerReady = 'error';
+  };
+  probe.src = src;
+})();
+</script>
+</body>
+</html>
