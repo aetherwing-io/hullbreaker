@@ -85,8 +85,10 @@ fi
 
 # --- merge -------------------------------------------------------------------
 printf '== merging %s\n' "$BRANCH"
-git merge --no-ff "$BRANCH" -m "Merge $TASK ($BRANCH)" \
-  || fail "merge conflict — resolve manually or rebase the task branch"
+if ! git merge --no-ff "$BRANCH" -m "Merge $TASK ($BRANCH)"; then
+  git merge --abort 2>/dev/null || true
+  fail "merge conflict (aborted, main left clean) — resolve manually or rebase the task branch"
+fi
 
 printf '== pathcheck (main, post-merge)\n'
 if ! node tools/pathcheck.mjs; then

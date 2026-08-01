@@ -42,7 +42,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; cd tools/playtest && node run.mjs scripts/transform-slice.json --deterministic --max-runtime-ms 20000
 
-## T-002 | investigation | doing | P1
+## T-002 | investigation | done | P1
 
 goal: close the t2-transform-seam-rush divergence question (playtest README
 "single best next action"): instrument the ritual-arming check in
@@ -92,7 +92,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; a named tools/playtest script (policy mode ok) exercising the turret
 
-## T-005 | harness | doing | P3
+## T-005 | harness | done | P3
 
 goal: replace `tools/playtest/lib/fixture.mjs`'s hand-copied
 TRAVERSAL_FIXTURE snapshot with a real import from `src/pure/traversal.js`
