@@ -1,0 +1,171 @@
+{
+  "query": "?slice=transform&enemies=0&testapi=1&fixeddt=16.6667",
+  "taken": [
+    {
+      "name": "00-approach-face-a",
+      "gameMs": 1400,
+      "ritual": {
+        "event": "bulkhead-flip",
+        "state": "idle",
+        "tMs": 0
+      },
+      "altitude": 0,
+      "band": 0
+    },
+    {
+      "name": "01-flip-armed-plate-ajar",
+      "gameMs": 4883,
+      "ritual": {
+        "event": "bulkhead-flip",
+        "state": "armed",
+        "tMs": 0
+      },
+      "altitude": 1.54,
+      "band": 0
+    },
+    {
+      "name": "02-flip-windup",
+      "gameMs": 5683,
+      "ritual": {
+        "event": "bulkhead-flip",
+        "state": "turning",
+        "tMs": 33
+      },
+      "altitude": 2.56,
+      "band": 0
+    },
+    {
+      "name": "03-flip-snap1-plate-clack",
+      "gameMs": 5917,
+      "ritual": {
+        "event": "bulkhead-flip",
+        "state": "turning",
+        "tMs": 267
+      },
+      "altitude": 2.56,
+      "band": 0
+    },
+    {
+      "name": "04-flip-hold-relocked",
+      "gameMs": 6050,
+      "ritual": {
+        "event": "bulkhead-flip",
+        "state": "turning",
+        "tMs": 400
+      },
+      "altitude": 2.56,
+      "band": 0
+    },
+    {
+      "name": "05-flip-snap2-committed",
+      "gameMs": 6367,
+      "ritual": {
+        "event": "bulkhead-flip",
+        "state": "turning",
+        "tMs": 717
+      },
+      "altitude": 2.56,
+      "band": 0
+    },
+    {
+      "name": "06-interior-run",
+      "gameMs": 7550,
+      "ritual": {
+        "event": "breach-return",
+        "state": "idle",
+        "tMs": 0
+      },
+      "altitude": 6.15,
+      "band": 1
+    },
+    {
+      "name": "07-interior-climb-high",
+      "gameMs": 8533,
+      "ritual": {
+        "event": "breach-return",
+        "state": "idle",
+        "tMs": 0
+      },
+      "altitude": 10,
+      "band": 1
+    },
+    {
+      "name": "08-breach-armed-shut",
+      "gameMs": 11033,
+      "ritual": {
+        "event": "breach-return",
+        "state": "armed",
+        "tMs": 0
+      },
+      "altitude": 19.8,
+      "band": 1
+    },
+    {
+      "name": "09-breach-windup-strain",
+      "gameMs": 12083,
+      "ritual": {
+        "event": "breach-return",
+        "state": "turning",
+        "tMs": 50
+      },
+      "altitude": 20,
+      "band": 1
+    },
+    {
+      "name": "10-breach-snap1-vapor",
+      "gameMs": 12300,
+      "ritual": {
+        "event": "breach-return",
+        "state": "turning",
+        "tMs": 267
+      },
+      "altitude": 20,
+      "band": 1
+    },
+    {
+      "name": "11-breach-hold-clearing",
+      "gameMs": 12533,
+      "ritual": {
+        "event": "breach-return",
+        "state": "turning",
+        "tMs": 500
+      },
+      "altitude": 20,
+      "band": 1
+    },
+    {
+      "name": "12-breach-snap2-altitude",
+      "gameMs": 12750,
+      "ritual": {
+        "event": "breach-return",
+        "state": "turning",
+        "tMs": 717
+      },
+      "altitude": 20,
+      "band": 1
+    },
+    {
+      "name": "13-face-c-high-run",
+      "gameMs": 14150,
+      "ritual": {
+        "event": null,
+        "state": "complete",
+        "tMs": 0
+      },
+      "altitude": 20,
+      "band": 2
+    },
+    {
+      "name": "14-breach-clear",
+      "gameMs": 16733,
+      "ritual": {
+        "event": null,
+        "state": "complete",
+        "tMs": 0
+      },
+      "altitude": 20,
+      "band": 2
+    }
+  ],
+  "errors": []
+}
