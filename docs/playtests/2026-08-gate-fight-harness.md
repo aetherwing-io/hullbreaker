@@ -59,6 +59,12 @@ harness's own summary reports it (`3 spent (at 3.0s x 31.649→2.516, …)`), an
 the trace shows `y` falling to −5.34 with full hp and no hostile within
 14 tiles. It is a fall, not a fight.
 
+This is not an artifact of one run or one tree. The integrator's own committed
+A/B — `tools/playtest/runs/integ-T009-on-main/summary.md` and
+`integ-T009-on-branch/summary.md`, same script, same flags, different trees —
+both begin `3 spent (at 3.0s x 31.649→2.51…`. The lattice does not move it,
+because the lattice is not what causes it.
+
 The grammar had `pinned` (a wall you are jammed against) and nothing for a
 hole you are about to run into, so the only way to jump a gap was a literal
 timestamp — the exact failure mode closed-loop policy mode exists to replace.
@@ -114,6 +120,32 @@ flying into a *cruising* wasp or the capsule carrier. The reflex hop was
 launching RIG into the lane the swarm occupies. Gating the hop on
 "nothing within 3.5 tiles" is a one-clause change that only became sayable
 with relative geometry.
+
+### 4b. The extension changes nothing for existing scripts
+
+Two kinds of evidence, because the harness is not fully deterministic and the
+weaker kind alone would be misleading:
+
+**Exact.** The policy engine is a pure function of (rules, sample, held keys).
+Replaying committed run traces through the old engine and the new one, tick by
+tick — `reports/demo/policy-pinned-jump`, `reports/demo/policy-hound-reactive`,
+the aimless full run, and two fresh runs of the first two scripts — gives
+**2321 ticks, 0 decision differences**: identical hold sets, identical tap
+edges, identical per-rule truth values, identical fire counts
+(`policy-pinned-jump` 13/13 and 12/12, `policy-hound-reactive` [0,2]/[0,2],
+the full run [0,0,0,0,2,65]/[0,0,0,0,2,65]).
+
+**End-to-end.** Four committed scripts re-run through both harnesses against
+the same served tree, `--deterministic`: `mid-route` **completed** both times
+(maxX 72.017 vs 72.068), `policy-pinned-jump` **not-completed** both times
+(maxX 55.649 both, 12 policy fires both), `policy-hound-reactive`
+**not-completed** both (2 fires both), `retry-recovery` **died** with **2
+attempts** both (minEdgeMargin 0.40 both). Zero console errors, zero page
+errors, zero missing-field warnings on every run. The residual drift
+(hundredths of a tile, ~1% on `protoScore`) is the harness's own documented
+non-determinism, not the change: a *same-harness* repeat of `mid-route`
+produced maxX 69.751 and a **different outcome label**, a swing an order of
+magnitude larger than anything old-vs-new showed.
 
 ## 5. Why this is (a) and not (b)
 

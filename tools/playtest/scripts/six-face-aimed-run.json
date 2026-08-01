@@ -1,6 +1,6 @@
 {
   "name": "six-face-aimed-run",
-  "description": "The DEFAULT six-face run in policy mode with the 8-way AIM reflexes (T-018). Same shape as six-face-full-run.json (hold fire, hold right while the world scrolls, hop on every landing, dodge a houndframe's plant) with one thing added: the relative-geometry clauses from lib/threat.mjs, so the bot holds `up` when a hostile sits on its 45-degree or straight-up firing ray and turns to face the side its nearest hostile is on during a wave gate. Nothing about the game changes; this is the same build, played with an aim the old grammar could not express. See docs/playtests/2026-08-gate-fight-harness.md for why the aimless version stalls at wave gate 2.",
+  "description": "The DEFAULT six-face run in policy mode, with the T-018 relative-geometry clauses. Same shape as six-face-full-run.json (hold fire, hold right while the world scrolls, hop, dodge a houndframe's plant) plus the three things the old grammar could not say: TILT THE GUN UP when the nearest hostile above the firing line is meaningfully above it (the game's aim is 8-way, so a level shot cannot reach the 4.6/7.2 lanes at all — see docs/playtests/2026-08-gate-fight-harness.md); FACE the side that hostile is on during a gate, since facing and moving are the same key; and JUMP AT THE LIP of a hole instead of hopping into it. Note rules 4/5 lean on the documented `99` sentinel on purpose: with nothing above and nothing near, threat.dx>2 reads true, so the bot drifts toward the pivot during the post-clear ritual rather than standing still. MEASURED, NOT ASPIRATIONAL (2026-08-01, task/T-009's tree pinned at 8751, --deterministic, 1440x900, 245 s cap): this policy clears wave gate 1 without spending a life and clears wave gate 2 — both of which the aimless script never did on any tree — and then dies on face 3. It does NOT reach VICTORY. Per-tick aim quality against the same fights: the gun points at a hostile on 20-29% of gate-1 ticks and 28% of gate-2 ticks, against 8.8% / 12.0% for the aimless policy. Run-to-run spread is real (the two variants either side of the shipped hop guard reached face 3 and gate 2 respectively), so read the structural outcomes, not one run's numbers.",
   "url": "index.html",
   "viewport": {
     "width": 1440,
@@ -23,13 +23,25 @@
         }
       },
       {
-        "when": "hudTC && threat.n>0 && threat.dx>2 && !targetVert",
+        "when": "hudTC && threat.upDist<13 && threat.upDx>1 && threat.upSlope<2.5",
         "do": {
           "hold": "right"
         }
       },
       {
-        "when": "hudTC && threat.n>0 && threat.dx<-2 && !targetVert",
+        "when": "hudTC && threat.upDist<13 && threat.upDx<-1 && threat.upSlope<2.5",
+        "do": {
+          "hold": "left"
+        }
+      },
+      {
+        "when": "hudTC && threat.upDist>13 && threat.dx>2",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "hudTC && threat.upDist>13 && threat.dx<-2",
         "do": {
           "hold": "left"
         }
@@ -41,13 +53,7 @@
         }
       },
       {
-        "when": "targetDiag",
-        "do": {
-          "hold": "up"
-        }
-      },
-      {
-        "when": "targetVert",
+        "when": "threat.upDist<13 && threat.upSlope>0.5",
         "do": {
           "hold": "up"
         }
@@ -67,7 +73,21 @@
         }
       },
       {
-        "when": "grounded",
+        "when": "grounded && terrain.gapDist>3 && threat.upDist>3.5",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "grounded && terrain.gapDist<2.2",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "!grounded && vy<0 && terrain.gapDist<1.2",
         "do": {
           "tap": "jump",
           "holdMs": 420

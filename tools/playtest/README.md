@@ -754,6 +754,7 @@ tuning has also moved since — CP1 pace/crush fixes landed in the meantime).
 | `retry-recovery.json` | Holds right only; dies once (`enemies=0`), proves the F7 fix still holds under `--deterministic` | **died**, 1 retry detected, `vx` 0 → 10.8 tiles/s within 75ms of the retry |
 | `policy-pinned-jump.json` | Holds right, **zero timed jumps** — the only jump input is `{when: "pinned", do: {tap: "jump"}}` | **not-completed** (reaches the dare pocket, grabs the reward, jams at the dead-end wall — see "Closed-loop policy mode" above), 13 reactive jumps fired across the whole route |
 | `policy-hound-reactive.json` | Closed-loop rebuild of `hound-jump.json` — zero timed jumps, `pinned` + `houndTell` only, `?hound=1` | **not-completed** (2.4s window by design, mirroring the script it replaces); correctly dodged-attempted on the *second* of three hounds' `tell`, not a fixed clock — see above for the hp-drop caveat |
+| `six-face-aimed-run.json` | The **default six-face run** with the T-018 relative-geometry clauses: tilt the gun up at what is above the firing line, face the side it is on during a gate, jump at the lip of a hole (`--max-runtime-ms 245000`) | **not-completed** — but it clears wave gates 1 *and* 2, which no aimless policy has on any tree, and dies on face 3. Gate ticks with the gun pointing at a hostile: **8.8% → 20–29%** (gate 1) and **12.0% → 27.7%** (gate 2) vs the aimless script. Boot-to-VICTORY remains unproven by a bot — see `docs/playtests/2026-08-gate-fight-harness.md` |
 | `transform-slice.json` | Hold right + hold fire + periodic jump, `?slice=transform` — pre-existing smoke script, not authored by this harness | **completed** — proof for the `BREACH CLEAR` outcome-labeling fix below: the trace has 7 samples with `state==='VICTORY'` and `ovTitle==='BREACH CLEAR'`; the pre-fix `ovTitle==='TRAVERSAL CLEAR'`-only check would have returned `victorySeen: false` for this exact run |
 
 **Bug fixed since the previous pass:** `computeOutcome` (and the driver's
@@ -894,6 +895,24 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    simple retry resolved. Not a bug in the harness's logic, but worth
    spacing out heavy batch runs or increasing the boot timeout if it
    recurs — see "Known limitations" below.
+
+10. **`threat.*` and `terrain.*` are approximations, and they are `window.HB`
+    -dependent in different ways** (T-018). The ray corridors are straight
+    lines from the standing muzzle at the *current* tick — the projectile
+    actually spawns slightly off that point and flies while the target moves,
+    so "on the ray" means "a shot fired now points at it", not "a shot fired
+    now hits it"; and with a 75ms sample interval a fast crossing can happen
+    entirely between two ticks. There is no facet-bend awareness, so a target
+    sighted across a corner may be unhittable in fact
+    (`decisions.md` entry 7). `threat.*` needs only `hostiles`, which both
+    channels carry; **`terrain.*` and `facing` are `window.HB`-only** (like
+    `capsules` — see item 7), so a `--no-testapi`-style build without `HB`
+    leaves `terrain.gapDist` missing and any rule using it reads false, which
+    will show up in `policy.missingFieldWarnings`. Finally, the terrain probe
+    gives the bot *less* than the screen gives a human (12 tiles of look-ahead
+    at a camera that shows far more), but it is still knowledge the old
+    open-loop scripts did not have: a "policy clears the route" claim after
+    T-018 is a claim about a bot that can see holes.
 
 ## Hook requests for the game/module-split side
 
