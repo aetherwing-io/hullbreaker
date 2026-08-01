@@ -153,7 +153,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; deterministic playtest script crossing G2
 
-## T-009 | feature | todo | P1
+## T-009 | feature | doing | P1
 
 goal: six-face integration — bring the judged grammar into the default run:
 traversal-lattice route density (from the slice's learnings), hound-2.5
@@ -235,12 +235,30 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; smoke suite; ?selftest=1 via harness
 
-## T-014 | feature | blocked | P2
+## T-014 | feature | doing | P2
 
 goal: spore mortar (Seed-Pod Tripod, boards 06/07) — delayed landing-zone
-denial per DESIGN's enemy table, teach-then-combine after polyp.
-blocked-by: T-004 (polyp) merged and reading clean solo.
+denial per DESIGN's enemy table (line 233: "Denies intended landing zones
+after a readable delay"; counter = redirect in the air or choose a different
+connector; combine = hound punishes a panicked return to the floor).
+Last enemy role in DESIGN's table; teach-then-combine after the polyp.
+accept:
+- [ ] solo stage behind a flag (e.g. `?mortar=1`) in the traversal slice, off
+      by default; lob → marked landing zone → readable delay → detonation,
+      all legible at the default FAR view
+- [ ] the denial is a *movement* problem: the marked zone is on a route the
+      player wants, and an alternate connector or an air redirect answers it
+      (pillar 2 — combat happens through movement)
+- [ ] placement-over-stats doctrine (decisions.md entry 6): threat comes from
+      where it lands, never from hp/damage inflation
+- [ ] materialize/depth-theater rules respected (no hitbox until solid);
+      static-anatomy rule untouched (entry 3)
+- [ ] one two-enemy combination stage (mortar + hound, per DESIGN's combine
+      column) only after the solo stage reads clean
+- [ ] pathcheck green incl. spawn/placement + telegraph-timing assertions;
+      feel questions queued for the operator — do not self-judge fun
 owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; a named tools/playtest script (policy mode ok) exercising the mortar solo stage and the combination stage
 
 ## T-015 | assets | done | P2
 
@@ -271,7 +289,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; scored-run playtest script
 
-## T-017 | harness | todo | P3
+## T-017 | harness | doing | P3
 
 goal: nit-batch cleanup triaged from the Inbox + T-015's review MINOR:
 (1) I-001 — stale hostiles/capsules enrichment comment in
