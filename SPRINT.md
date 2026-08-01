@@ -324,6 +324,21 @@ verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic
 
 ## T-018 | harness | doing | P1
 
+RESULT (2026-08-01): the lane answered **(a) a HARNESS limit**, with per-tick
+evidence on both trees, and landed the grammar extension. `sample.hostiles`
+was spawn-ordered with no geometry, so no policy could aim off the horizontal
+— and three of wave 2's five authored slots (lanes 4.6/4.6/7.2) sit above the
+highest LEVEL shot a player can produce (muzzle 1.05 + jump apex 2.72 = 3.77),
+so the aimless bot could only damage them mid-dive. Measured: the gun pointed
+at a hostile on 8.8% of gate-1 ticks and 12.0% of gate-2 ticks, where some
+8-way direction would have on 26-36%. With relative-geometry clauses and a
+terrain probe (harness-only, zero src/ changes), the same builds go 8 kills /
+scroll 75 / dead in gate 1 -> 17 kills / scroll 140 on main, and 14 -> 22
+kills / scroll 205 of 415 with gates 1-3 cleared on the lattice tree.
+Equivalence proven by replaying 2321 committed ticks through both engines with
+zero decision differences. The residual "a bot reaches VICTORY" box is split
+to T-019.
+
 goal: make "boot to victory" provable — the delivery target's last unproven
 claim. T-009's six-face-full-run.json clears wave gate 1 and dies in gate 2 on
 every tree tested, including main without the lattice. Decide, with evidence,
@@ -345,6 +360,26 @@ accept:
 - [ ] never weaken a wave gate or a movement constant to make the bot win
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; six-face-full-run.json --deterministic against a pinned tree
+
+## T-019 | harness | todo | P2
+
+goal: the last unproven delivery box — a bot run that reaches VICTORY. T-018
+established the blocker was the policy grammar (not difficulty, not the
+lattice) and extended it; the best run now clears wave gates 1-3 and ends at
+scroll 205 of 415 with three lives spent at 76.9s. Close the remaining gap, or
+establish with evidence that it cannot be closed by a reflex policy and the
+box must be answered by an operator run instead.
+accept:
+- [ ] either the full run reaches VICTORY under --deterministic, or a written
+      finding shows which specific beats defeat a reflex policy and why, with
+      per-tick evidence of the same shape T-018 produced
+- [ ] never weaken a wave gate, a movement constant, or any src/ file to make
+      the bot win — the harness bends, the game does not
+- [ ] if the answer is "a human must play it", say so plainly and post the
+      operator packet; delivery then records that box as operator-verified
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; six-face-aimed-run.json --deterministic against a pinned tree
+blocked-by: T-018 merged (its grammar extension is the foundation)
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
@@ -881,3 +916,25 @@ verify:   exact commands
 Status flow: todo → doing → review → done; `operator` parks a task on a feel
 verdict; `blocked` parks it on a dependency or two failed attempts (note
 why). The Stop-hook flywheel only counts todo/doing/review as open work.
+
+## I-021 | bug | S2 | repro: any six-face run on main OR task/T-009, --deterministic, aimless or aimed policy | evidence: docs/playtests/2026-08-gate-fight-harness.md (T-018); tools/playtest/runs/gate-T-009-fullrun-*
+
+Found by T-018 while instrumenting the gate fight: **every** run on both trees
+spends its first life at ~3.0s falling into the same 3-tile gap at x = 31.649
+— full hp, no hostile within 14 tiles, before any wave gate. It is a traversal
+fact about the shipped generator and it predates the lattice (it reproduces on
+pristine main). The old harness could not see it because the sample carried no
+terrain at all; T-018's terrain probe is what made it visible. Not a gate-fight
+problem and not caused by T-009. Triage: is the gap authored to be jumped and
+the bot simply cannot see it, or is it a hole the generator should not emit at
+x=31 on face 1 before the player has been taught anything?
+
+## I-022 | feel | S3 | repro: six-face run, wave gate 2, count gating bodies vs authored slots | evidence: docs/playtests/2026-08-gate-fight-harness.md (T-018)
+
+Found by T-018: wave gate 2 is fought as NINE gating bodies, not the five it
+authors. The other four are ambient spawns that drifted into the arena before
+the gate armed (`cornerClearBefore: 10`), and some spawn past the corner pivot
+on the not-yet-built face and take 5-8s to cruise back into reach while the
+gate holds shut. Measurement only — no spawner behaviour was changed. Operator
+question, queued: is that the intended pressure, or should the corner-clear
+zone keep ambient spawns out of a gate arena entirely?
