@@ -158,7 +158,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; deterministic playtest script crossing G2
 
-## T-009 | feature | doing | P1
+## T-009 | feature | done | P1
 
 goal: six-face integration — bring the judged grammar into the default run:
 traversal-lattice route density (from the slice's learnings), hound-2.5
@@ -608,6 +608,37 @@ verify: n/a until dispatched
   accident. **Note this now interacts with decisions entry 9:** the pocket
   pickups you made free are exactly a way for a player to CHOOSE to go get
   one, so the answer here may already be landing.
+- **T-009 six-face integration — TWO packets, and the first has never been
+  judged at all.**
+  **(a) THE CORNER REVEAL, default vs `?zip=1`.** Serve the repo
+  (`python3 -m http.server 8741`) and play `http://127.0.0.1:8741/index.html`
+  against `http://127.0.0.1:8741/index.html?zip=1` back to back. The two are
+  simulation-identical by construction (pathcheck runs both and compares whole
+  traces); only the reveal differs, and the first corner arrives ~30-60 s in.
+  If the gate fight is in the way, `artifacts/t009-lattice/merged/`
+  `06-ab-gate1-default.png` vs `07-ab-gate1-zip.png` are the same simulated
+  instant in both modes. **G1 has never been operator-judged and this pass
+  makes it the DEFAULT** on the strength of entry 3 — that call is yours to
+  confirm or reverse. Does the default read as RIG running around a
+  monumental leg that was always there, or does the orbit read as the camera
+  sliding past scenery? Under `?zip=1` the world past the corner is literal
+  void and the catwalks float; under the default there is a joint column,
+  armour under the deck, and the next facet already in the haze — is that
+  added mass an improvement in READABILITY as well as fiction, or does the
+  body behind the play plane compete with the enemies you have to track?
+  **(b) THE POCKET PICKUP under entry 9** (`artifacts/t009-lattice/entry9/`):
+  (1) when you take a pocket capsule mid-face, does the stretch after it play
+  HOTTER — more shots you want to take — or does it just change the HUD
+  letter? (2) six capsules per run on top of carrier drops: power rising with
+  pressure (pillar 3), or does having a weapon almost always flatten the drops
+  and make the rifle feel like a bug? (3) at the plain shape the capsule sits
+  deck+5.05, so the mandatory crossing jump can clip it out of the air — a
+  pickup that arrives with no decision: still a reward, or noise? (If it
+  should at least be NOTICED, the cheap lever is presentation, not height —
+  height is the arms race entry 9 closed.) (4) is the shelf-and-chasm pocket
+  still worth ENTERING, or is it now just another hole in the deck? **That
+  last answer steers T-021/T-022** — entries 10 and 11 aim this shape at a
+  fork, and it tells us whether the shelf survives the rework or is replaced.
 - (new packets append here as tasks land: juice, shell, six-face run)
 
 ## Inbox (playtester/adversarial file here; integrator triages each cycle)
