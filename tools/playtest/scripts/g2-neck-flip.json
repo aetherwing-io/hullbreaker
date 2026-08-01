@@ -1,0 +1,20 @@
+{
+  "name": "g2-neck-flip",
+  "description": "Smoke run of the G2 neck access-plate flip gate (?g2=1, choreography only via enemies=0): hold right + hold fire, with closed-loop jumps fired from position windows ahead of each authored gap instead of a timed cadence — the open-loop version forked on the documented input-arrival alignment jitter (T-002), landing one run in the 120-122 gap. `pinned` doubles as the pocket-escape reflex: falling into the 126-129 underside pocket jams at its 129 wall, and one reactive jump rejoins at the chimney base. Proves the P2 lattice is crossable, the ritual fires at halt 140 / pivot 154, and the run finishes inside the neck interior.",
+  "url": "index.html?g2=1&enemies=0",
+  "durationMs": 16500,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 16300 },
+    { "hold": "fire", "fromMs": 150, "toMs": 16300 }
+  ],
+  "policy": {
+    "rules": [
+      { "when": "grounded && x>97.2 && x<99.4", "do": { "tap": "jump", "holdMs": 280 } },
+      { "when": "grounded && x>107.2 && x<109.4", "do": { "tap": "jump", "holdMs": 280 } },
+      { "when": "grounded && x>117.2 && x<119.4", "do": { "tap": "jump", "holdMs": 280 } },
+      { "when": "grounded && x>123.0 && x<125.4", "do": { "tap": "jump", "holdMs": 300 } },
+      { "when": "grounded && x>175.2 && x<177.4", "do": { "tap": "jump", "holdMs": 280 } },
+      { "when": "pinned", "do": { "tap": "jump", "holdMs": 260 } }
+    ]
+  }
+}

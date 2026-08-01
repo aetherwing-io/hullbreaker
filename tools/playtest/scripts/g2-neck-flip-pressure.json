@@ -1,0 +1,21 @@
+{
+  "name": "g2-neck-flip-pressure",
+  "description": "The G2 gate with its authored pressure live (?g2=1, enemies on): same closed-loop route as g2-neck-flip plus a houndTell dodge reflex. Evidence run for the fixture's spawn table — the houndframe must materialize on the low joint-collar floor and pace its authored patrol into the gate, the apex wasp must contest the chimney, and the ritual must still clear the arena and commit. Combat outcome (hits taken, retries) is evidence for the packet, not a gate: the machine only asserts the crossing.",
+  "url": "index.html?g2=1",
+  "durationMs": 20000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 19800 },
+    { "hold": "fire", "fromMs": 150, "toMs": 19800 }
+  ],
+  "policy": {
+    "rules": [
+      { "when": "grounded && x>97.2 && x<99.4", "do": { "tap": "jump", "holdMs": 280 } },
+      { "when": "grounded && x>107.2 && x<109.4", "do": { "tap": "jump", "holdMs": 280 } },
+      { "when": "grounded && x>117.2 && x<119.4", "do": { "tap": "jump", "holdMs": 280 } },
+      { "when": "grounded && x>123.0 && x<125.4", "do": { "tap": "jump", "holdMs": 300 } },
+      { "when": "grounded && x>175.2 && x<177.4", "do": { "tap": "jump", "holdMs": 280 } },
+      { "when": "houndTell && grounded", "do": { "tap": "jump", "holdMs": 240 } },
+      { "when": "pinned", "do": { "tap": "jump", "holdMs": 260 } }
+    ]
+  }
+}
