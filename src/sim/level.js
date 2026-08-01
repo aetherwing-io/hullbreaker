@@ -35,6 +35,11 @@ export const levelData = IS_TRAVERSAL_SLICE
   : IS_TRANSFORM_SLICE ? buildTransformLevel(CONFIG) : buildLevel(CONFIG);
 export const { groundH, platforms } = levelData;
 export const solidRects = levelData.solidRects || [];
+// T-009: the six-face run's authored dare pockets (src/pure/lattice.js) —
+// geometry is already in groundH/platforms; this is the metadata the run
+// reset reads to place each pocket's reward on its shelf tip. Empty for the
+// fixtures, which author their own rewards.
+export const pockets = levelData.pockets || [];
 
 export function isSolid(i, j) {
   if (i < 0 || i >= LEVEL_LEN) return true;            // walls at level ends

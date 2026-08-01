@@ -4204,8 +4204,14 @@ const XL = buildTransformLevel(CONFIG);
       return null;
     }
   };
-  const base = runTrace('');
-  const g1 = runTrace('?g1=1');
+  // T-009 flipped which of these two render modes is the default (the static
+  // limb reveal now ships without a flag, decisions.md entry 3), so the pair
+  // under comparison is spelled the other way round — `?zip=1` is the legacy
+  // brick-slam reveal and the empty query is the limb. The claim, the trace,
+  // and the two modes being compared are exactly the same as before; only the
+  // flag that selects them moved.
+  const base = runTrace('?zip=1');
+  const g1 = runTrace('');
   ok(!!base && !!g1, 'the six-face sim runs headlessly in both render modes');
   if (base && g1) {
     ok(base.rows > 1000,
@@ -4603,6 +4609,63 @@ const XL = buildTransformLevel(CONFIG);
     for (const run of TRAVERSAL_FIXTURE.groundRuns)
       for (let x = run.x0; x < run.x1; x++) if (slice.groundH[x] !== run.y) groundOk = false;
     ok(groundOk, 'T-009: the fixture band still owns its authored ground runs');
+  }
+}
+
+/* ---- T-009: the static-anatomy reveal is the DEFAULT corner ritual ----- *
+ * decisions.md entry 3 made "the body never assembles" a rule; T-009 makes it
+ * the shipped behaviour of the six-face run instead of an opt-in experiment.
+ * The zipper is retired from the world, NOT deleted (that entry's addendum):
+ * its choreography stays whole, installed, and playable behind ?zip=1 for the
+ * traps/emplacements lane. Both halves are asserted here — the resolution, in
+ * a child process because src/mode.js reads its query once at import; and the
+ * extractability, at the source level.                                    */
+{
+  const modeUrl = 'file://' + join(srcDir, 'mode.js');
+  const probe = (query) => {
+    const src = `
+      globalThis.__HB_QUERY__ = ${JSON.stringify(query)};
+      const M = await import(${JSON.stringify(modeUrl)});
+      console.log(JSON.stringify({ g1: M.IS_G1, zip: M.ZIPPER_REVEAL }));
+    `;
+    try {
+      return JSON.parse(execFileSync(process.execPath,
+        ['--input-type=module', '-e', src], { encoding: 'utf8' }));
+    } catch (e) {
+      console.error('pathcheck: T-009 mode probe failed (' + query + '): ' + e.message);
+      return null;
+    }
+  };
+  const plain = probe('');
+  const zip = probe('?zip=1');
+  const off = probe('?g1=0');
+  const slice = probe('?slice=traversal');
+  ok(plain && plain.g1 === true,
+     'T-009: the default six-face run renders the static limb, no flag needed');
+  ok(zip && zip.g1 === false && zip.zip === true,
+     'T-009: ?zip=1 restores the brick-slam reveal (the choreography is still playable)');
+  ok(off && off.g1 === false,
+     'T-009: ?g1=0 is the same escape hatch, for anyone who knew the old flag');
+  ok(slice && slice.g1 === false,
+     'T-009: the fixtures still own their own transitions (no limb bake there)');
+  {
+    const lvl = stripComments(readFileSync(join(srcDir, 'render', 'level.js'), 'utf8'));
+    ok(/function zipperColumn\(/.test(lvl) && /installView\([^)]*zipperColumn/.test(lvl),
+       'T-009: the zipper hook is still written and still installed (retired, not deleted)');
+    const wg = stripComments(readFileSync(join(srcDir, 'sim', 'wavegate.js'), 'utf8'));
+    ok(/zipperOffset/.test(wg) && /function updateZipper\(/.test(wg),
+       'T-009: the gate runtime still drives the zipper timeline for ?zip=1');
+    const limbSrc = stripComments(readFileSync(join(srcDir, 'render', 'limb.js'), 'utf8'));
+    ok(!/installView|view\./.test(limbSrc) && !/\bgameMs\b|\btMs\b/.test(limbSrc),
+       'T-009: the now-default reveal still cannot be animated (CP3 ruling holds)');
+  }
+  // the ritual itself is untouched: the two-snap detent curve is the camera's,
+  // and it is the same curve at the same times it was before this task
+  {
+    const T = cornerTimeline(CONFIG);
+    ok(cornerYawDeltaDeg(T.t2, CONFIG) === CONFIG.path.turnDeg &&
+       Math.abs(cornerYawDeltaDeg(T.t6, CONFIG) - 2 * CONFIG.path.turnDeg) < 1e-9,
+       'T-009: the corner is still two 30 deg detents, ' + T.t6 + ' ms end to end');
   }
 }
 

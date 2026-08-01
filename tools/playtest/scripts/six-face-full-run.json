@@ -1,0 +1,60 @@
+{
+  "name": "six-face-full-run",
+  "description": "The DEFAULT six-face run in policy mode, with zero timed inputs: hold fire, hold right while the world is scrolling, back off (the scroll is frozen, so retreating is free) while a wave gate's message is up and there is daylight to the damage plane, hop on every landing, and dodge a houndframe the moment it plants for its charge. Everything is position- or state-triggered because a 100+ second run's event times move with every tuning change \u2014 the case the README's policy mode exists for. MEASURED, NOT ASPIRATIONAL (T-009, 150 s cap, --deterministic): this policy clears wave gate 1, crosses face 2 with the pocket's SPREAD capsule in hand, reaches the second corner's pivot (x 154.3, scroll 140 of 415) with 13 kills, and dies in gate 2. It does NOT reach VICTORY. What stops it is the gate FIGHT (8-way aim against diving wasps in three lanes), not the lattice: the same reflex policy driven through the sim with hostiles removed (tools/pathcheck.mjs, 'T-009: the run reaches the outro scroll end') crosses every face and every pocket chasm and reaches the outro with 2 lives. Use this script as the traversal+pressure smoke test it is, and treat 'a bot that clears six escalating gates' as an open harness problem.",
+  "url": "index.html",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "durationMs": 240000,
+  "moves": [
+    {
+      "hold": "fire",
+      "fromMs": 400,
+      "toMs": 240000
+    }
+  ],
+  "policy": {
+    "rules": [
+      {
+        "when": "!hudTC",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "hudTC && edgeMargin>14",
+        "do": {
+          "hold": "left"
+        }
+      },
+      {
+        "when": "hudTC && edgeMargin<10",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "pinned",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "houndTell",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "grounded",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      }
+    ]
+  }
+}
