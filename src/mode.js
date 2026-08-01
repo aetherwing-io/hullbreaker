@@ -10,6 +10,7 @@ import {
   TRAVERSAL_FIXTURE, houndTrialStage, polypTrialStage, resolveTraversalPace,
   traversalEnemyPlan,
 } from './pure/traversal.js';
+import { ribrunFixture } from './pure/ribrun.js';
 import { TRANSFORM_FIXTURE } from './pure/transform.js';
 
 const SEARCH = typeof globalThis.__HB_QUERY__ === 'string'
@@ -42,10 +43,22 @@ export const HOOK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('hook') === '1';
 export const HOOK_INPUT = QUERY.get('hookinput') === 'auto' ? 'auto' : 'key';
 export const FLOW_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('flow') === '1';
 export const AUTOBOUNCE_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('autobounce') === '1';
+/* ?ribrun=1 — the AUTHORED SLOPE (src/pure/ribrun.js), the movement lane's
+   other live candidate next to FLOW (docs/decisions.md entry 5). It swaps
+   the fixture's lattice for one long ascending ribline inside the SAME
+   bounds, run window, spawn, pursuit and frozen movement tune, so an
+   operator A/B against ?flow=1 compares the geometry and nothing else. It
+   adds no input and no verb: run, jump and the launch a contact already
+   produces are the whole vocabulary. Off by default; absent, ACTIVE_SLICE
+   resolves byte-for-byte as before. Not composed with ?hound=/?polyp=/
+   ?hook= — those roster and anchor placements are authored against the
+   lattice this overlay replaces. */
+export const RIBRUN_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('ribrun') === '1';
 // ACTIVE_SLICE stays the traversal fixture specifically: it selects that
 // slice's movement overrides, pacing variant, dare pocket and traversal verbs.
 export const ACTIVE_SLICE = IS_TRAVERSAL_SLICE
-  ? resolveTraversalPace(SLICE_PACE, TRAVERSAL_FIXTURE,
+  ? resolveTraversalPace(SLICE_PACE,
+      RIBRUN_ENABLED ? ribrunFixture(TRAVERSAL_FIXTURE) : TRAVERSAL_FIXTURE,
       { hook: HOOK_ENABLED, flow: FLOW_ENABLED })
   : null;
 // ACTIVE_FIXTURE is the mode-agnostic handle — anything true of *any* authored
