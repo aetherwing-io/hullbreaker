@@ -38,8 +38,12 @@ import {
 import { crouchStance } from '../src/pure/stance.js';
 import { assistDirection, assistVerticalReach } from '../src/pure/assist.js';
 import {
-  TRAVERSAL_HOOK, TRAVERSAL_FLOW,
+  TRAVERSAL_HOOK, TRAVERSAL_FLOW, traversalGroundYAt, traversalRewardBuried,
 } from '../src/pure/traversal.js';
+import {
+  TRAVERSAL_RIBRUN, ribrunCatchBand, ribrunCatchStep, ribrunClearSpan, ribrunDecks,
+  ribrunFixture, ribrunFlanges, ribrunHopSpan, ribrunJumpArc,
+} from '../src/pure/ribrun.js';
 import {
   hookAnchorReachableFrom, hookArcAccepts, hookHoldPoint, hookLineClear,
   hookWhipDir, hookWhipVelocity, hookZipMarch,
@@ -3468,6 +3472,400 @@ const G2GATE = G2E.gate;
       ok(alive.links === FL.max, 'inside the window, airborne time costs nothing');
     }
   }
+}
+
+/* ============ THE AUTHORED SLOPE — rib run (?ribrun=1) ============== *
+ * The movement lane's other live candidate next to FLOW (decisions.md entry
+ * 5). src/pure/ribrun.js swaps the fixture's lattice for one long ascending
+ * ribline; what is asserted here is the SLOPE CONTRACT — that the rib is
+ * climbable with the FROZEN jump constants, that its cadence is a property
+ * of the geometry rather than of a retune, and that a mistimed hop is
+ * repaid rather than punished — plus the same structural rules the shipped
+ * fixture's own ground, platforms, connectors and routes are held to.
+ *
+ * Nothing here may pass by changing a movement constant: every number is
+ * derived from the resolved tune, and the tune is asserted frozen next to
+ * the shipped fixture's above.                                          */
+{
+  const RIB = TRAVERSAL_RIBRUN;
+  const RF = ribrunFixture();
+  const RT = { ...PL, ...RF.movement };
+  const decks = ribrunDecks();
+  const flanges = ribrunFlanges();
+  const RL = buildTraversalLevel(CONFIG, RF);
+  const RB = RF.bounds;
+  const solid = function (x, y) { return levelSolidCell(RL, x, y, 8); };
+
+  // --- the flag is genuinely off by default ---------------------------
+  ok(RF !== TRAVERSAL_FIXTURE && RF.id === 'traversal-ribrun-v1' &&
+     JSON.stringify(TRAVERSAL_FIXTURE.groundRuns) !== JSON.stringify(RF.groundRuns) &&
+     JSON.stringify(buildTraversalLevel(CONFIG).groundH) === JSON.stringify(TL.groundH),
+     'the rib run is an overlay: it never touches the shipped fixture or its built level');
+  {
+    // The two rules resolveTraversalPace grew for overlay fixtures must be
+    // no-ops for every shipped URL: same rewards, same rosters, same order.
+    let unchanged = true;
+    for (const id of TRAVERSAL_PACE_IDS) {
+      const F = resolveTraversalPace(id);
+      const pace = TRAVERSAL_PACES[id];
+      const want = [
+        { ...TRAVERSAL_FIXTURE.darePocket.reward, ...(pace.pocketReward || {}) },
+        ...(pace.rewards || []),
+      ];
+      if (JSON.stringify(F.rewards) !== JSON.stringify(want)) unchanged = false;
+      if (JSON.stringify(F.enemies) !==
+          JSON.stringify(pace.enemies || TRAVERSAL_FIXTURE.enemies)) unchanged = false;
+      if (F.rewards.some(function (r) { return traversalRewardBuried(TRAVERSAL_FIXTURE, r); }))
+        unchanged = false;
+    }
+    ok(unchanged,
+       'reward culling and hostile-free resolution are inert for the shipped fixture at every pace');
+    ok(traversalGroundYAt(TRAVERSAL_FIXTURE, 54) === 1 &&
+       traversalGroundYAt(TRAVERSAL_FIXTURE, TRAVERSAL_FIXTURE.bounds.x1) === null &&
+       traversalGroundYAt(null, 54) === null,
+       'the deck lookup reads authored ground runs and stays null outside them');
+  }
+
+  // --- the slope itself ------------------------------------------------
+  {
+    let monotone = true, uniform = true, covered = 0;
+    for (let i = 1; i < decks.length; i++) {
+      if (decks[i].y - decks[i - 1].y !== RIB.riser) monotone = false;
+      if (i < decks.length - 1 && decks[i].x1 - decks[i].x0 !== RIB.tread) uniform = false;
+      if (decks[i].x0 !== decks[i - 1].x1) monotone = false;   // no seam, no gap
+    }
+    for (const d of decks) covered += d.x1 - d.x0;
+    const climb = decks[decks.length - 1].y - decks[0].y;
+    ok(monotone && uniform && decks.length === RIB.steps + 1,
+       'the rib is one contiguous monotone staircase: ' + RIB.steps + ' risers of ' +
+       RIB.riser + ' over treads of ' + RIB.tread);
+    ok(covered === RB.x1 - RB.x0 && decks[0].x0 === RB.x0 &&
+       decks[decks.length - 1].x1 === RB.x1,
+       'rib decks cover the fixture bounds exactly once with no gap column');
+    ok(climb === RIB.steps * RIB.riser && climb >= 12,
+       'the rib climbs ' + climb + ' tiles — a long straight, not a step up');
+    const slope = RIB.riser / RIB.tread;
+    ok(slope > 0.2 && slope < 0.5,
+       'the authored slope reads as a diagonal (' + slope.toFixed(3) +
+       ' = ' + (Math.atan(slope) * 180 / Math.PI).toFixed(1) + ' degrees)');
+  }
+  {
+    // every riser is a real vertical face in the BUILT level, and every deck
+    // is open above: an ascending line must never hide an overhead.
+    let faces = 0, openAbove = true;
+    for (let i = 1; i < decks.length; i++) {
+      const face = decks[i].x0, lower = decks[i - 1].y, upper = decks[i].y;
+      let wall = true;
+      for (let j = lower; j < upper; j++) if (!solid(face, j)) wall = false;
+      if (wall && !solid(face, upper) && !solid(face - 1, lower)) faces++;
+    }
+    const headroom = RIB.riser + ribrunJumpArc(RT).apex + PL.height;
+    for (const d of decks)
+      for (let x = d.x0; x < d.x1; x++)
+        for (let j = d.y; j < d.y + headroom; j++) if (solid(x, j)) openAbove = false;
+    ok(faces === RIB.steps,
+       'every riser is a solid face with an open lip and an open approach, got ' + faces);
+    ok(openAbove,
+       'no rib column hides an overhead inside a full jump over its own deck');
+  }
+
+  // --- the slope contract, against the frozen tune ---------------------
+  {
+    const arc = ribrunJumpArc(RT);
+    const clear = ribrunClearSpan(RT, RIB.riser);
+    const hop = ribrunHopSpan(RT);
+    ok(RT.jumpVel === TRAVERSAL_FIXTURE.movement.jumpVel &&
+       RT.gravity === TRAVERSAL_FIXTURE.movement.gravity &&
+       RT.runSpeed === TRAVERSAL_FIXTURE.movement.runSpeed &&
+       RT.airJumps === PL.airJumps,
+       'the rib run inherits the fixture tune untouched — the slope does the work');
+    ok(arc.apex > RIB.riser + 1,
+       'one grounded jump clears a riser with over a tile of analytic margin (apex ' +
+       arc.apex.toFixed(2) + ' vs riser ' + RIB.riser + ')');
+    ok(clear && clear.width > 4,
+       'the window in which a jump clears the next riser is ' + clear.width.toFixed(2) +
+       ' tiles wide (' + (clear.width / RT.runSpeed * 1000).toFixed(0) + ' ms at run speed)');
+    ok(clear.to < RIB.tread && RIB.tread - clear.to < 1,
+       'a cleared riser lands back on the deck ' + (RIB.tread - clear.to).toFixed(2) +
+       ' tiles before the next one: a real footfall, and a short one');
+    ok(clear.to / RIB.tread > 0.85,
+       'the rib is ' + (100 * clear.to / RIB.tread).toFixed(0) +
+       '% airborne at a constant cadence — the momentum is the geometry');
+    ok(hop > RIB.tread && hop < RIB.tread + 1.5,
+       'one full jump carries ' + hop.toFixed(2) + ' tiles, so the tread of ' + RIB.tread +
+       ' is one hop: a constant cadence is a fixed point of the rib');
+    ok(clear.from < RIB.tread - clear.to + 1,
+       'and the jump that starts that cadence can be made from the footfall itself');
+  }
+  {
+    // Tier 3: the riser face converts a fall into a ledge catch. Proved by
+    // calling the real probe against the real built rib, from the pinned
+    // position the x-collision leaves a body in.
+    const band = ribrunCatchBand(RT, RIB.riser);
+    const step = ribrunCatchStep(RT, RIB.riser, 0.05);
+    ok(band.height > 0.6 && band.lo > 0 && band.hi < RIB.riser,
+       'the catch band is a real ' + band.height.toFixed(2) +
+       '-tile window strictly between the lower deck and the lip');
+    ok(step.step < band.height,
+       'a body pinned to the face cannot step over that band in one clamped frame (' +
+       step.step.toFixed(2) + ' vs ' + band.height.toFixed(2) + ' tiles)');
+    let caught = 0, missedLow = 0;
+    const geo = {
+      isSolid: solid,
+      allowsGrab: function () { return true; },
+      minCellX: 1, maxCellX: CONFIG.levelLength - 1, minPlayerX: -Infinity,
+    };
+    for (let i = 1; i < decks.length; i++) {
+      const face = decks[i].x0, lower = decks[i - 1].y;
+      const pinnedX = face - PL.width / 2 - 0.001;
+      const mid = lower + (band.lo + band.hi) / 2;
+      const hit = traversalLedgeProbe({
+        x: pinnedX, y: mid, hw: PL.width / 2, h: PL.height,
+        vx: RT.runSpeed, vy: -6, grounded: false, down: false, hInput: 1,
+        now: 1000, recatchUntil: 0,
+      }, geo, RT);
+      if (hit && hit.cellX === face && hit.topY === decks[i].y) caught++;
+      const below = traversalLedgeProbe({
+        x: pinnedX, y: lower + 0.02, hw: PL.width / 2, h: PL.height,
+        vx: RT.runSpeed, vy: -6, grounded: false, down: false, hInput: 1,
+        now: 1000, recatchUntil: 0,
+      }, geo, RT);
+      if (below === null) missedLow++;
+    }
+    ok(caught === RIB.steps,
+       'every riser converts a pinned fall inside the band into a ledge catch on its own lip, got ' +
+       caught + '/' + RIB.steps);
+    ok(missedLow === RIB.steps,
+       'and a body already down at deck height is not silently caught — the band is the contract');
+  }
+  {
+    // Tier 2: the flanges, and the pocket they deliberately leave in front
+    // of each face so tier 3 still exists.
+    const band = ribrunCatchBand(RT, RIB.riser);
+    let valid = true, hangsFree = true, tiles = true;
+    for (let i = 0; i < flanges.length; i++) {
+      const f = flanges[i], lower = decks[i].y, upper = decks[i + 1].y;
+      if (f.y !== upper - RIB.flange.drop || f.x1 > f.face - PL.width / 2 - 0.05 ||
+          f.x0 <= decks[i].x0 || f.x1 <= f.x0) valid = false;
+      // a one-way plate must hang in open air over the deck it overlooks
+      for (let x = Math.floor(f.x0); x <= Math.floor(f.x1 - 1e-9); x++)
+        if (solid(x, Math.floor(f.y)) || solid(x, Math.floor(f.y) - 1)) hangsFree = false;
+      // the three repair tiers must leave no hole: catch band, then flange,
+      // then the deck above.
+      if (!(f.y - lower <= band.hi + 1e-9 && f.y - lower > 0 && f.y < upper)) tiles = false;
+    }
+    ok(flanges.length === RIB.steps && valid,
+       'one flange per riser, one tile under its deck, stopping clear of the face');
+    ok(hangsFree, 'every flange hangs in open air over the deck below it');
+    ok(tiles,
+       'the flange picks up exactly where the catch band stops: no miss height falls between the tiers');
+    ok(RIB.flange.gap > PL.width / 2,
+       'the catch pocket in front of each face is wider than a pinned body (' +
+       RIB.flange.gap + ' vs ' + (PL.width / 2) + ' tiles), so tier 3 is reachable');
+    ok(RF.platforms.length === RIB.steps &&
+       RF.platforms.every(function (p, i) {
+         return p.id === flanges[i].id && p.x0 === flanges[i].x0 &&
+           p.x1 === flanges[i].x1 && p.y === flanges[i].y;
+       }) && RF.solidRects.length === 0,
+       'the fixture fields exactly those flanges as one-way plates and no lattice walls');
+  }
+
+  // --- the fixture's own structural rules -----------------------------
+  {
+    const ids = new Set();
+    let integrity = true;
+    for (const c of RF.connectors) {
+      if (typeof c.id !== 'string' || ids.has(c.id) ||
+          !Number.isFinite(c.x) || !Number.isFinite(c.y) ||
+          c.x < RB.x0 || c.x >= RB.x1 || solid(Math.floor(c.x), Math.floor(c.y)))
+        integrity = false;
+      ids.add(c.id);
+    }
+    const known = function (id) { return ids.has(id); };
+    ok(integrity && ids.size === RF.connectors.length &&
+       known(RF.entry) && known(RF.exit),
+       'rib connectors are unique, in bounds, standing in open air, and include entry/exit');
+    ok(RF.edges.every(function (e) { return known(e.from) && known(e.to); }) &&
+       RF.routes.length === 1 &&
+       RF.routes[0].connectorIds.every(known) &&
+       RF.routes[0].connectorIds.length === RF.connectors.length,
+       'the ribline route names every connector once and every edge resolves');
+    const crest = decks[decks.length - 1];
+    ok(RF.rejoin.x0 >= crest.x0 && RF.rejoin.x0 < crest.x1 && RF.rejoin.y === crest.y &&
+       RF.rejoin.x0 === TRAVERSAL_FIXTURE.rejoin.x0,
+       'the victory line sits on the crest at the same x the shipped fixture uses');
+    ok(RF.run.playerSpawn.x === TRAVERSAL_FIXTURE.run.playerSpawn.x &&
+       RF.run.playerSpawn.y === decks[0].y &&
+       RF.run.startScroll === TRAVERSAL_FIXTURE.run.startScroll &&
+       RF.run.endScroll === TRAVERSAL_FIXTURE.run.endScroll,
+       'spawn and run window are the fixture\'s own: only the ground moved');
+    ok(RF.darePocket.bounds.x0 === RF.darePocket.bounds.x1 &&
+       RF.hostileFree === true && RF.enemies.length === 0,
+       'a single line has no dare pocket and fields no lattice-authored hostiles');
+    const rw = RF.darePocket.reward;
+    const deckAt = traversalGroundYAt(RF, rw.x);
+    ok(deckAt !== null && rw.y > deckAt && rw.y - deckAt < PL.height,
+       'the stake rides the line: ' + (rw.y - deckAt).toFixed(2) +
+       ' tiles over the deck at x=' + rw.x + ', grabbed on the way through');
+    let culled = true;
+    for (const id of TRAVERSAL_PACE_IDS) {
+      const F = resolveTraversalPace(id, RF);
+      if (F.enemies.length !== 0) culled = false;
+      for (const r of F.rewards) {
+        const g = traversalGroundYAt(RF, r.x);
+        if (g === null || r.y < g) culled = false;
+      }
+    }
+    ok(culled,
+       'at every pace the rib fields no hostiles and no stake buried inside its own rock');
+  }
+}
+
+/* ------- the rib run, driven through the REAL sim loop ---------------- *
+ * The arithmetic above proves the slope is climbable in principle. This
+ * proves it is climbed — by the unmodified src/sim/player.js, from the
+ * fixture's own spawn, with the fixture's own pursuing edge, under a
+ * two-rule policy that is the whole point of the acceptance test: HOLD
+ * RIGHT, and press JUMP when there is ground (or a lip) under you. No new
+ * key, no anchor, no timing table.
+ *
+ * It runs at three frame times because the discrete jump apex is
+ * frame-rate dependent and the rib's whole claim is that the FROZEN
+ * constants clear it: 60Hz, 30Hz, and src/main.js's own dt clamp
+ * (0.05 s, 20fps-equivalent), which is the worst case a real session can
+ * reach. The repair tiers are load-bearing here, not decorative — the
+ * three frame times land in different phases of the rib and each ends up
+ * using a different one.                                                */
+{
+  const child = `
+    globalThis.__HB_QUERY__ = 'slice=traversal&ribrun=1' + (process.env.HB_EXTRA || '');
+    const base = ${JSON.stringify('file://' + join(srcDir, 'sim'))};
+    const M = await import(${JSON.stringify('file://' + join(srcDir, 'mode.js'))});
+    const E = await import(base + '/edges.js');
+    const T = await import(base + '/time.js');
+    const I = await import(base + '/input.js');
+    const PLm = await import(base + '/player.js');
+    const SC = await import(base + '/scroll.js');
+    const WG = await import(base + '/wavegate.js');
+    const p = PLm.player;
+    const F = M.ACTIVE_SLICE;
+    for (const c of WG.cornerEvents) c.state = 'done';
+    // A calibrated 16:10 frustum, not an infinite one: the pursuing edge and
+    // the crush plane are part of what the rib has to be climbed against.
+    E.setEdges(-9, 17);
+    function run(dt) {
+      p.x = F.run.playerSpawn.x; p.y = F.run.playerSpawn.y;
+      p.vx = 0; p.vy = 0; p.grounded = true; p.onOneWay = null; p.jumpCutDone = true;
+      p.airJumpsLeft = PLm.P.airJumps; p.hp = PLm.P.maxHealth;
+      p.iframesUntil = 0; p.hitstunUntil = 0; p.coyoteUntil = 0; p.dropUntil = 0;
+      p.fallbackStreak = 0; p.fallbackEarnedTiles = 0; p.edgePinnedMs = 0;
+      p.traversalChain = 0; p.traversalChainUntil = 0;
+      PLm.clearPlayerTraversal(0);
+      I.clearJumpBuffer();
+      for (const k in I.keys) I.keys[k] = false;
+      T.setScrollX(F.run.startScroll);
+      T.resetSliceStats && T.resetSliceStats();
+      const t0 = T.gameMs;
+      I.keys.right = true;                       // rule 1: hold right
+      let releaseAt = 0, frames = 0, airborne = 0, slowMs = 0, maxSlowMs = 0;
+      let catches = 0, flanges = 0, walls = 0, lastState = 'free', lastGrounded = true;
+      const flangeY = new Set(F.platforms.map(function (pl) { return pl.y; }));
+      let victoryMs = -1, maxY = p.y, airJumps = 0, prevAirJumpsLeft = p.airJumpsLeft;
+      for (let i = 0; i < 4000; i++) {
+        T.advanceGameMs(dt * 1000);
+        const now = T.gameMs;
+        // rule 2: jump when there is something under you — deck, flange or lip
+        if ((p.grounded || p.traversalState === 'ledge') && now >= releaseAt) {
+          I.bufferJumpUntil(now + PLm.P.jumpBufferMs);
+          I.keys.jump = true;
+          releaseAt = now + 380;
+        }
+        if (now >= releaseAt) I.keys.jump = false;
+        SC.updateScroll(dt);
+        PLm.updatePlayer(dt);
+        frames++;
+        if (!p.grounded) airborne++;
+        // every hold the rib can put on forward motion — a hang, a slide, a
+        // re-acceleration off a stop — measured as one number
+        if (Math.abs(p.vx) < 2) { slowMs += dt * 1000; maxSlowMs = Math.max(maxSlowMs, slowMs); }
+        else slowMs = 0;
+        if (p.airJumpsLeft < prevAirJumpsLeft) airJumps++;
+        prevAirJumpsLeft = p.airJumpsLeft;
+        if (p.traversalState === 'ledge' && lastState !== 'ledge') catches++;
+        if (p.traversalState === 'wall' && lastState !== 'wall') walls++;
+        if (p.grounded && !lastGrounded && flangeY.has(p.y)) flanges++;
+        lastState = p.traversalState; lastGrounded = p.grounded;
+        maxY = Math.max(maxY, p.y);
+        if (p.x >= F.rejoin.x0) { victoryMs = now - t0; break; }
+      }
+      return {
+        dt, victoryMs, x: p.x, y: p.y, maxY, hp: p.hp, airJumps,
+        spawnX: F.run.playerSpawn.x,
+        airborneFrac: airborne / frames, maxSlowMs, catches, flanges, walls,
+        setbacks: T.sliceStats.setbacks, failures: T.sliceStats.failures,
+      };
+    }
+    console.log(JSON.stringify({
+      runs: [run(1 / 60), run(1 / 30), run(0.05)],
+      spawnY: F.run.playerSpawn.y,
+      crestY: F.rejoin.y,
+      targetPlaySeconds: F.targetPlaySeconds,
+    }));
+  `;
+  function ribChild(extra) {
+    try {
+      return JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', child],
+        { encoding: 'utf8', env: { ...process.env, HB_EXTRA: extra || '' } }));
+    } catch (e) {
+      console.error('pathcheck: rib run child failed: ' + e.message);
+      return null;
+    }
+  }
+  const sim = ribChild('');
+  ok(!!sim, 'the rib run steps headlessly through the real sim with no DOM');
+  if (sim) {
+    const cleared = sim.runs.filter(function (r) { return r.victoryMs >= 0; });
+    ok(cleared.length === 3,
+       'hold right + jump on contact climbs the whole rib at 60Hz, 30Hz and the dt clamp, got ' +
+       sim.runs.map(function (r) {
+         return (1 / r.dt).toFixed(0) + 'Hz:' + (r.victoryMs >= 0 ? 'clear' : 'x=' + r.x.toFixed(1));
+       }).join(' '));
+    for (const r of cleared) {
+      const label = (1 / r.dt).toFixed(0) + 'Hz';
+      const seconds = r.victoryMs / 1000;
+      ok(seconds >= sim.targetPlaySeconds.min && seconds <= sim.targetPlaySeconds.max,
+         label + ': the rib is a ' + seconds.toFixed(2) +
+         's pass, inside the fixture\'s own 4-12 s window');
+      ok(r.maxY - sim.spawnY >= 12 && r.y >= sim.crestY,
+         label + ': the run actually ascends ' + (r.maxY - sim.spawnY).toFixed(1) +
+         ' tiles and finishes on the crest');
+      ok(r.airborneFrac > 0.8,
+         label + ': ' + (100 * r.airborneFrac).toFixed(0) +
+         '% of the climb is airborne — sustained, not a stair-stop shuffle');
+      const avg = (r.x - r.spawnX) / seconds;
+      ok(avg > 0.85 * TRAVERSAL_FIXTURE.movement.runSpeed,
+         label + ': the whole climb averages ' + avg.toFixed(1) + ' t/s, ' +
+         (100 * avg / TRAVERSAL_FIXTURE.movement.runSpeed).toFixed(0) +
+         '% of flat-ground run speed with every repair paid for');
+      ok(r.maxSlowMs < 600,
+         label + ': the rib never holds RIG still for long — longest stretch under 2 t/s is ' +
+         r.maxSlowMs.toFixed(0) + ' ms (a hang, a slide, or a re-acceleration off one)');
+      ok(r.setbacks === 0 && r.failures === 0 && r.hp === PL.maxHealth,
+         label + ': the climb costs no hull and takes no fallback');
+      ok(r.airJumps === 0,
+         label + ': the air jump is never spent — the rib is climbed on the ground jump alone');
+    }
+    ok(sim.runs.some(function (r) { return r.catches > 0; }) &&
+       sim.runs.some(function (r) { return r.flanges > 0 || r.walls > 0; }),
+       'across the three frame times the repair tiers are really exercised (catches ' +
+       sim.runs.map(function (r) { return r.catches; }).join('/') + ', flange landings ' +
+       sim.runs.map(function (r) { return r.flanges; }).join('/') + ')');
+  }
+  // FLOW composes rather than competes: same geometry, same policy, and the
+  // momentum spine's auto-launch turns a catch into a launch with no press.
+  const flowed = ribChild('&flow=1');
+  ok(!!flowed && flowed.runs.every(function (r) { return r.victoryMs >= 0; }),
+     'the rib run composes with ?flow=1 at every frame time — the A/B is one URL apart');
 }
 
 /* ------------- headroom over every authored ground run --------------- *

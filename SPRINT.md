@@ -335,6 +335,36 @@ verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic
   follow-up. Candidate directions: scale world-space glyphs up, or move
   the letter read to the HUD. Asset batches are held until this is picked;
   T-003 implements whichever direction wins.
+- **RIB RUN vs FLOW (T-006, the movement lane's two live candidates —
+  decisions.md entry 5):** play these three back to back, same fixture
+  window, same spawn, same pursuing edge, frozen jump constants in all of
+  them:
+  1. `index.html?slice=traversal&ribrun=1` — the authored slope: one
+     ascending ribline, 6 risers of 2 tiles over treads of 7, 12 tiles of
+     climb, no hostiles (the pursuing edge is the pressure). Hold right and
+     hop; the tread is authored so a constant cadence rides it.
+  2. `index.html?slice=traversal&ribrun=1&flow=1` — the same rib with the
+     momentum spine on, which makes a mistimed hop's ledge catch auto-launch
+     with no press.
+  3. `index.html?slice=traversal&flow=1` — FLOW on the shipped lattice, the
+     incumbent, for the A/B.
+  (`&pace=surge` and `&view=near` both compose if you want the crescendo or
+  the tighter framing.)
+  Questions: (1) Does 1 read as "a long straight up a ribline" — one
+  continuous ascent — or as a staircase climbed one step at a time?
+  (2) Does the one-hop-per-rib cadence feel like sustained momentum, or does
+  the per-riser press feel like work? (3) When you mistime a hop, the rib
+  answers with a flange landing, a ledge catch, or a wall slide, in that
+  order — does that read as the rib handing the run back to you, or as the
+  rib eating it? (4) Against 3, which one better serves "every grab wants to
+  become another launch", and should the rib CARRY flow by default rather
+  than being a second flag? (5) The rib is deliberately one line, no route
+  choice and no hostiles — is a pure movement bench the right shape to keep
+  iterating on, or does it need a second line (or a contested plate) before
+  the feel can be judged? Note for 1-2: RIG climbs 12 tiles while the camera
+  holds its altitude (the traversal camera follows x only), so the crest
+  plays high in frame — the transformation slice already has an
+  altitude-following camera if that turns out to be the answer.
 - **G2 neck-plate flip (T-008):** `?g2=1` (default far view; `&enemies=0` to
   watch choreography without the houndframe/wasps, `&view=near` for the old
   framing). Frames + beat clock in `artifacts/g2-neck-flip/`. Questions per
