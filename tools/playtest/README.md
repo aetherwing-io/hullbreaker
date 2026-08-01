@@ -624,6 +624,20 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    *different* pinned checkout computes route metrics with the running
    tree's fixture, not the served one — pin both to the same commit when
    that distinction matters.)
+   **Second residual caveat, new with `?ribrun=1`** (the authored-slope
+   prototype, `src/pure/ribrun.js`): route coverage, route inference and the
+   dare-pocket columns all read the *lattice* `TRAVERSAL_FIXTURE`, because
+   that is what `lib/fixture.mjs` exports. A `?ribrun=1` run replaces that
+   lattice with one ascending ribline, so those three fields are meaningless
+   for `scripts/ribrun-climb.json` — "route: upper-chimney" and "dare
+   pocket: entered=true" are the matcher recognising x/y ranges that no
+   longer contain those routes. Everything derived from the run itself
+   (outcome, attempts, falls, hp, `airMs`, `stallMs`, vertical range,
+   `minEdgeMargin`, input density) is correct; the reward column is correct
+   by accident, since the rib does field one `H` on its line. Fixing it
+   properly means teaching `lib/fixture.mjs` to resolve the same overlay the
+   game does from the URL — a harness change, deliberately not folded into
+   the game-side task that surfaced it.
 4. **Sampling is polled (~75ms), not event-driven.** A single fast frame at
    the true instantaneous minimum/maximum can be missed by a sample or two —
    e.g. the harness's tracked `minEdgeMargin` and the game's own end-of-run

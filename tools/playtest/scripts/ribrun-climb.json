@@ -1,0 +1,27 @@
+{
+  "name": "ribrun-climb",
+  "description": "ACCEPTANCE for the authored slope (?ribrun=1, src/pure/ribrun.js): climb the whole ribline — 6 risers of 2 tiles over treads of 7, 12 tiles of ascent — with NO new input and no route knowledge. The policy is the claim: hold right, and hop on a metronome at the rib's own tread period (640ms ~= tread/runSpeed = 7/10.8), which the geometry is authored to make a fixed point — every riser then arrives at the same phase of the same jump arc. The only reactive rule is the backstop: `pinned` (grounded, commanded right, no speed) taps jump, which is what recovers the one case the three geometry repair tiers hand back to the player, a wall slide down to the deck below. No ledge markers, no dedicated key, no timed route table: the rib is the same seven tiles over and over. EXPECTED: completed/VICTORY around 4.5-5.5s, hp 3, 0 falls, 0 setbacks, y ending on the crest (15+). Measured headlessly against the same sim (tools/pathcheck.mjs drives it at 60Hz/30Hz and the 0.05s dt clamp): 4.05-4.63s, 94-97% of the pass airborne, 9.6-11.1 t/s average forward speed with every repair paid for, 7-8 jumps, air jump never spent. A run that does NOT complete, or that costs hull, is the regression signal — the rib must be climbable on run + jump alone with the frozen jump constants. Run the FLOW comparison with the same script and &flow=1 appended to the url (the operator packet's A/B).",
+  "url": "index.html?slice=traversal&ribrun=1",
+  "viewport": { "width": 1280, "height": 800 },
+  "durationMs": 9000,
+  "moves": [
+    { "tap": "jump", "atMs": 300, "holdMs": 380 },
+    { "tap": "jump", "atMs": 940, "holdMs": 380 },
+    { "tap": "jump", "atMs": 1580, "holdMs": 380 },
+    { "tap": "jump", "atMs": 2220, "holdMs": 380 },
+    { "tap": "jump", "atMs": 2860, "holdMs": 380 },
+    { "tap": "jump", "atMs": 3500, "holdMs": 380 },
+    { "tap": "jump", "atMs": 4140, "holdMs": 380 },
+    { "tap": "jump", "atMs": 4780, "holdMs": 380 },
+    { "tap": "jump", "atMs": 5420, "holdMs": 380 },
+    { "tap": "jump", "atMs": 6060, "holdMs": 380 },
+    { "tap": "jump", "atMs": 6700, "holdMs": 380 },
+    { "tap": "jump", "atMs": 7340, "holdMs": 380 }
+  ],
+  "policy": {
+    "rules": [
+      { "when": "x<80", "do": { "hold": "right" } },
+      { "when": "pinned", "do": { "tap": "jump", "holdMs": 380 } }
+    ]
+  }
+}
