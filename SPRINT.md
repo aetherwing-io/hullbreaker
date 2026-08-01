@@ -190,7 +190,7 @@ accept:
 owner: asset-artist
 verify: node tools/pathcheck.mjs; tools/playtest screenshots at ?view=far
 
-## T-011 | juice | todo | P1
+## T-011 | juice | doing | P1
 
 goal: baseline feedback pass (DESIGN dev-sequence item 4, unlocked by entry
 8): hit-stop, screen shake, muzzle flashes, impact/death particles, pickup
@@ -221,7 +221,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; smoke suite; manual listen note in report
 
-## T-013 | shell | todo | P2
+## T-013 | shell | doing | P2
 
 goal: game shell — start screen (board 05's three directions are unjudged:
 build the middle "The Ship Wakes" composition as default, keep it swappable),
