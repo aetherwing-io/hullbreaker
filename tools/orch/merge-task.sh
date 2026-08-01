@@ -6,6 +6,8 @@
 #   2. a worktree for branch task/<id> exists;
 #   3. reviewer verdict   reports/tasks/<id>/review.md   first line APPROVE;
 #   4. playtester verdict reports/tasks/<id>/playtest.md first line PASS;
+#      — and BOTH verdicts newer than the branch head's commit, so a verdict
+#        left over from an earlier pass cannot stand in for the current code;
 #   5. node tools/pathcheck.mjs green IN THE WORKTREE;
 #   6. smoke playtest green against the PINNED worktree (mid-route +
 #      transform-slice, deterministic injection), run by the main checkout's
@@ -14,13 +16,25 @@
 # and commit the status line. Prints the worktree prune command; does not
 # prune automatically.
 #
-# Flags: --skip-smoke   (documented escape hatch for pure-docs tasks; the
-#                        reviewer verdict must justify it)
+# Flags: --skip-smoke              (documented escape hatch for pure-docs tasks;
+#                                   the reviewer verdict must justify it)
+#        --accept-stale-verdicts   (escape hatch for an integrator-only commit
+#                                   on the branch — e.g. composing a doc merge
+#                                   conflict — that the landed verdicts already
+#                                   cover; never for unjudged runtime changes)
 set -euo pipefail
 
-TASK="${1:?usage: tools/orch/merge-task.sh <task-id> [--skip-smoke]}"
+TASK="${1:?usage: tools/orch/merge-task.sh <task-id> [--skip-smoke] [--accept-stale-verdicts]}"
 SKIP_SMOKE=0
-[ "${2:-}" = "--skip-smoke" ] && SKIP_SMOKE=1
+ACCEPT_STALE=0
+shift
+for arg in "$@"; do
+  case "$arg" in
+    --skip-smoke)             SKIP_SMOKE=1 ;;
+    --accept-stale-verdicts)  ACCEPT_STALE=1 ;;
+    *) printf 'merge-task: unknown flag %s\n' "$arg" >&2; exit 2 ;;
+  esac
+done
 
 BRANCH="task/$TASK"
 MAIN_ROOT="$(git rev-parse --show-toplevel)"
@@ -64,6 +78,18 @@ verdict_of() { # verdict_of <file> <ok-token> <bad-token>
   || fail "reviewer verdict is not APPROVE (see $REVIEW)"
 [ "$(verdict_of "$PLAYTEST" PASS FAIL)" = "PASS" ] \
   || fail "playtester verdict is not PASS (see $PLAYTEST)"
+
+# Freshness: a verdict older than the code it judged is not evidence. Lanes get
+# re-dispatched (fix cycles, budget restarts) and leave last pass's verdict file
+# on disk — a stale FAIL merely refuses, but a stale PASS would merge unjudged
+# commits. Compare each verdict's mtime against the branch head's commit time.
+if [ "$ACCEPT_STALE" = "0" ]; then
+  HEAD_TIME="$(git log -1 --format=%ct "$BRANCH")"
+  for v in "$REVIEW" "$PLAYTEST"; do
+    V_TIME="$(stat -f %m "$v" 2>/dev/null || stat -c %Y "$v")"
+    [ "$V_TIME" -ge "$HEAD_TIME" ] || fail "stale verdict: $v predates $BRANCH's head commit ($(git log -1 --format=%h\ %s "$BRANCH")) — re-gate the branch, or pass --accept-stale-verdicts with justification"
+  done
+fi
 
 # --- 5. headless gate in the worktree ---------------------------------------
 printf '== pathcheck (worktree)\n'
