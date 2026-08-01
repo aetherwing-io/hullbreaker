@@ -1,0 +1,298 @@
+# Sprint — wave 4: delivery push
+
+Queue for the orchestrated push toward the **delivery target** below.
+Governed by `CLAUDE.md`'s loop protocol; mission mandate in
+`docs/decisions.md` entry 8 (autonomous merges, asset lane open, loop until
+delivered); prior verdicts in entries 1–7 are law. Schema at the bottom.
+
+## Delivery target (definition of "delivered")
+
+The default six-face run, start → summit → victory, playable end-to-end with:
+- every DESIGN enemy role shipped (wasp ✓, carrier ✓, hound ✓, polyp, mortar)
+  and taught teach-then-combine;
+- transformations obeying the static-anatomy rule (CP3 v2 + G1 grammar);
+- the concept-art palette applied (deep teal / rust-orange / acid-green /
+  hot-magenta / warm-white), fog-matched, FAR-readable tells and glyphs;
+- a full juice pass (hit-stop, shake, flashes, particles) and WebAudio synth
+  SFX + layered ambience — restrained per DESIGN, but present;
+- a game shell: start screen, pause/options, death/restart flow, run stats;
+- 60fps with 200+ projectiles, no console errors, `?selftest=1` green,
+  pathcheck green, smoke suite green, boot-to-victory ≈ 4–5 min;
+- operator checkpoint packets posted for every feel question raised en route.
+
+## Queue
+
+## T-001 | feature | doing | P1
+
+goal: CP3 second pass — rework the transform slice (`?slice=transform`) to the
+static-anatomy render rule, so flip and breach read as RIG ascending around a
+monstrous, prebuilt body (decisions.md entry 3; G2/G4 fixtures in
+`docs/proposals/2026-07-meridian-monster-greybox-map.md` are the target shape).
+accept:
+- [ ] no geometry assembles, slams, or articulates during the flip or breach;
+      the upcoming band is pre-built wherever sightlines could expose it
+- [ ] only the access plate / vent cover moves; two-snap chunkiness lives in
+      the camera's ratchet curve (the G1 limb-turn bake is prior art:
+      `src/render/limb.js`, `artifacts/g1-limbturn/`)
+- [ ] sim untouched or provably equivalent (pathcheck trace-compare, as G1 did)
+- [ ] `node tools/pathcheck.mjs` green, incl. any new choreography assertions
+- [ ] `tools/playtest` `transform-slice.json --deterministic` still completes
+- [ ] screenshot sequence in `artifacts/cp3-transform-v3/` + operator packet
+      (URL + 3–5 questions) queued below
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; cd tools/playtest && node run.mjs scripts/transform-slice.json --deterministic --max-runtime-ms 20000
+
+## T-002 | investigation | doing | P1
+
+goal: close the t2-transform-seam-rush divergence question (playtest README
+"single best next action"): instrument the ritual-arming check in
+`src/sim/transform.js` to determine whether one-frame input-arrival alignment
+flips the outcome fork (first-death divergence up to ~6.5s of gameMs under
+fully deterministic injection + fixeddt).
+accept:
+- [ ] instrumentation or a targeted assertion demonstrates (or refutes) the
+      frame-alignment sensitivity at the suspected decision point
+- [ ] written finding in `docs/playtests/` with repro commands
+- [ ] a recommendation: build the synchronous frame-scoped input hook
+      (playtest README hook request #5), or a cheaper sim-side fix, or accept
+- [ ] no gameplay behavior change in this task; instrumentation dev-only
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; repro per tools/playtest/README.md §Deterministic injection mode
+
+## T-003 | art | todo | P1
+
+goal: FAR-camera readability pass — the accepted follow-up from the view-scale
+verdict (decisions.md entry 7): scale up enemy tells, capsule letter glyphs,
+and hound telegraph cues so they read at the default FAR view (RIG ≈ 3.7% of
+screen height) without enlarging RIG.
+accept:
+- [ ] render/ui-side only; no sim or hitbox changes (pathcheck layer guards prove it)
+- [ ] capsule glyphs and wasp/hound tells legible in screenshots at ?view=far
+      (compare near/mid/far captures side by side)
+- [ ] concept-art color roles preserved (acid-green danger, hot-magenta reward)
+- [ ] before/after screenshots attached for the operator packet
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; tools/playtest run at ?view=far with screenshots
+notes: sequenced after T-004 merges (both touch render/hostiles).
+
+## T-004 | feature | doing | P1
+
+goal: polyp turret v1 (Iris Polyp, boards 06/07) — next enemy in DESIGN's
+teach-then-combine order: locks a connector/sightline, creates target
+priority; side-facing barrel per board 07's note.
+accept:
+- [ ] solo stage behind a flag (e.g. `?polyp=1`) in the traversal slice, off
+      by default; tell → reaction window → movement answer all readable
+- [ ] placement-over-stats doctrine (decisions.md entry 6): it threatens by
+      position on routes the player needs, not by hp/damage inflation
+- [ ] materialize/depth-theater rules respected (no hitbox until solid)
+- [ ] one two-enemy combination stage only after solo reads clean
+- [ ] pathcheck green incl. spawn/placement assertions; feel questions queued
+      for the operator — do not self-judge fun
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; a named tools/playtest script (policy mode ok) exercising the turret
+
+## T-005 | harness | doing | P3
+
+goal: replace `tools/playtest/lib/fixture.mjs`'s hand-copied
+TRAVERSAL_FIXTURE snapshot with a real import from `src/pure/traversal.js`
+(playtest README hook request #6 — documented zero-drift, low-risk cleanup).
+accept:
+- [ ] fixture.mjs imports the real module; hand-copy deleted
+- [ ] route-coverage metrics unchanged on the committed demo scripts
+- [ ] playtest README limitations section updated (staleness risk removed)
+owner: gameplay-engineer
+verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic --out /tmp/t005-check
+
+## T-006 | feature | todo | P3
+
+goal: rib-run authored-slope movement prototype — the costed-but-unstarted
+movement-lane candidate (decisions.md entry 5): a long diagonal ribline run
+(boards 10/13 "long straight up a ribline") testing sustained ascending
+momentum, marker-less and button-less per the hook-v1 rejection.
+accept:
+- [ ] behind a flag (e.g. `?ribrun=1`), off by default
+- [ ] no new input: emerges from geometry + existing verbs (run/jump/launch)
+- [ ] pathcheck reachability + slope-contract assertions
+- [ ] operator packet queued (URL + questions vs FLOW `?flow=1`)
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; named playtest script completing the rib-run
+
+## T-007 | docs | todo | P3
+
+goal: docs drift sweep — `tools/playtest/README.md` still lists "add hostiles
+to ?testapi=1" as an open hook request but the root README documents
+`hostiles[]` as shipped in that snapshot; reconcile, and sweep
+HANDOFF/README/FLEET-PLAN for post-G1 and post-entry-8 drift (mission,
+autonomous merges, asset lane).
+accept:
+- [ ] playtest README hook-request list matches shipped telemetry
+- [ ] HANDOFF/FLEET-PLAN reflect decisions.md entry 8's mandate
+- [ ] no invented decisions; record only what's shipped/decided
+owner: docs
+verify: grep the claims against src/main.js telemetry + README
+
+## T-008 | feature | blocked | P2
+
+goal: G2 neck access-plate flip per the greybox-map proposal (its next gate
+fixture after G1).
+blocked-by: T-001 landing the static-anatomy grammar for the transform slice.
+owner: gameplay-engineer
+
+## T-009 | feature | todo | P1
+
+goal: six-face integration — bring the judged grammar into the default run:
+traversal-lattice route density (from the slice's learnings), hound-2.5
+pressure placement, pace learnings from CP1, and the corner ritual rendered
+as the G1 static-limb orbit. The entry-0a integration hold is released by
+entry 8; post a checkpoint packet instead of blocking.
+accept:
+- [ ] default run's six faces gain lattice route choice (3–5 readable routes,
+      dare pockets with measured retreat) without breaking wave gates
+- [ ] hound placement per entry 6's doctrine on at least faces 2+
+- [ ] corner ritual uses the static-anatomy render path by default (G1
+      grammar); zipper assembly retired from world reveals (kept extractable)
+- [ ] pathcheck green (generator invariants extended); full-run playtest
+      script completes; 60fps hold with instancing intact
+- [ ] operator packet: full-run URL + questions
+owner: lattice-designer
+verify: node tools/pathcheck.mjs; a new full-run playtest script (policy mode)
+notes: biggest task in the queue — split into sub-worktrees if needed;
+sequenced after T-001/T-004 merge to integrate their landings.
+
+## T-010 | art | todo | P1
+
+goal: palette pass — replace the neutral grey-box palette with DESIGN's ≤8
+color roles (deep teal environment, rust-orange metal, acid-green enemy
+glow, hot-magenta pickups, warm-white muzzle light), fog matched to
+background, per boards 01/10/13.
+accept:
+- [ ] render/ui-side only; color tokens centralized (one palette module, not
+      scattered hex literals)
+- [ ] fog/background/tile/enemy/pickup/muzzle roles match DESIGN §Concept
+- [ ] silhouettes and threat readability improve or hold in FAR screenshots
+      (side-by-side vs grey-box baseline)
+- [ ] screenshots vs boards 01/10/13 attached; operator packet queued
+owner: asset-artist
+verify: node tools/pathcheck.mjs; tools/playtest screenshots at ?view=far
+
+## T-011 | juice | todo | P1
+
+goal: baseline feedback pass (DESIGN dev-sequence item 4, unlocked by entry
+8): hit-stop, screen shake, muzzle flashes, impact/death particles, pickup
+flash, crush-edge warning intensification, ritual/transform rumble —
+restrained, readability-first.
+accept:
+- [ ] sim/render boundary respected: timing decisions that affect gameplay
+      (hit-stop) live sim-side behind bridge hooks; visuals render-side
+- [ ] every effect has an intensity constant in one juice config block
+- [ ] 60fps holds with 200+ projectiles + effects (measure, don't assume)
+- [ ] pathcheck green; smoke suite green; before/after capture for packet
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; smoke suite; fps sampled via ?testapi=1
+notes: DESIGN's caveat stands — after this lands, re-ask any "boring"
+verdicts, since some perceived intensity is feedback.
+
+## T-012 | audio | todo | P2
+
+goal: WebAudio synth layer — procedural SFX (hit, hurt, jump, launch, pickup,
+warning, ritual snaps, weapon-per-type fire) plus wave-layered mechanical
+ambience that gains a layer per face (DESIGN §altitude perception). No audio
+files, no deps: synthesized in a render/ui-layer module.
+accept:
+- [ ] sim emits events via existing bridge hooks only; audio module is
+      render/ui-side and boot-optional (mutes cleanly, no autoplay errors)
+- [ ] per-face ambience layering audible across corner rituals
+- [ ] pathcheck green (layer guards prove sim untouched); smoke green
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; smoke suite; manual listen note in report
+
+## T-013 | shell | todo | P2
+
+goal: game shell — start screen (board 05's three directions are unjudged:
+build the middle "The Ship Wakes" composition as default, keep it swappable),
+pause/options overlay upgrade, death/restart flow, end-of-run stats screen
+(time, kills, falls, protoScore fields already in telemetry).
+accept:
+- [ ] ui-layer only; boots to title, enters run on input, restarts cleanly
+- [ ] selftest still passes (it exercises pause/resume/restart)
+- [ ] run-stats screen fed from existing telemetry, no new sim state
+- [ ] operator packet: which board-05 direction should be canon
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; smoke suite; ?selftest=1 via harness
+
+## T-014 | feature | blocked | P2
+
+goal: spore mortar (Seed-Pod Tripod, boards 06/07) — delayed landing-zone
+denial per DESIGN's enemy table, teach-then-combine after polyp.
+blocked-by: T-004 (polyp) merged and reading clean solo.
+owner: gameplay-engineer
+
+## T-015 | assets | todo | P2
+
+goal: codex asset pipeline bootstrap — `tools/assets/`: a `codex exec`
+wrapper spec template, SVG→PNG rasterizer using the harness's Chrome
+(playwright-core already vendored), palette-compliance checker (≤8 roles,
+per DESIGN), `assets/manifest.json` validator, and a viewer scene/flag for
+screenshotting an asset at in-game scale.
+accept:
+- [ ] `node tools/assets/check.mjs` validates manifest + palette + PoT sizes
+- [ ] rasterizer round-trips a sample SVG glyph; viewer screenshot works
+- [ ] zero effect on the shipped game; dev-deps only under tools/
+- [ ] README with honesty section per harness convention
+owner: asset-artist
+verify: node tools/assets/check.mjs; sample round-trip committed as demo
+
+## T-016 | feature | todo | P3
+
+goal: score/setback convergence toward CP4 — promote the CHARGE/THREAT
+prototype (`?score=1`) and Hull Fallback (`?fallback`) from slice prototypes
+to a defended default-run proposal; the operator picks at CP4 (stock
+lives/checkpoints remain unwanted, entry 0a).
+accept:
+- [ ] both prototypes run in the default six-face run behind flags
+- [ ] one written recommendation w/ playtest evidence (protoScore now real
+      per A.5 once HB.score events land — include that hook if cheap)
+- [ ] CP4 operator packet queued
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; scored-run playtest script
+
+## Operator checkpoint queue (feel verdicts — never block the loop on these)
+
+- **G1 limb-turn:** default vs `?g1=1` (and `?g1=1&view=near`) on the six-face
+  run — does the camera-orbit corner read as turning around a static limb?
+  Frames in `artifacts/g1-limbturn/`. (Questions per greybox proposal §G1.)
+- **FLOW:** `?slice=traversal&flow=1` — does the momentum spine read without
+  explanation, and does it serve "every grab wants to become another launch"?
+- **Crouch vs aim-assist:** `?crouch=1` vs `?aim=assist` — keep one, both, or
+  neither (decisions.md entry 4's open question).
+- **CP3 re-judgment:** after T-001 merges — post URL + screenshot sequence.
+- (new packets append here as tasks land: palette, juice, shell, six-face run)
+
+## Inbox (playtester/adversarial file here; integrator triages each cycle)
+
+<!-- issue schema:
+## I-### | bug|feel|fairness|art|docs | S1|S2|S3 | repro: <script + flags + seed/commit> | evidence: <path>
+one-paragraph description; S1 = blocks a checkpoint or corrupts a gate,
+S2 = real defect with workaround, S3 = polish/nit.
+-->
+
+---
+
+## Task schema
+
+```
+## T-### | type | status | priority
+type:     feature | investigation | lattice | harness | docs | art | juice | audio | shell | assets
+status:   todo | doing | review | operator | blocked | done
+priority: P1 | P2 | P3
+goal:     one sentence, with doc pointers
+accept:   checkboxes an agent can verify (machine gates) + what goes to the
+          operator (feel) — never a self-declared fun verdict
+owner:    agent name (.claude/agents/)
+verify:   exact commands
+```
+
+Status flow: todo → doing → review → done; `operator` parks a task on a feel
+verdict; `blocked` parks it on a dependency or two failed attempts (note
+why). The Stop-hook flywheel only counts todo/doing/review as open work.

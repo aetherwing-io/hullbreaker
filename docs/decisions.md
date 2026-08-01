@@ -338,3 +338,43 @@ the rendered ribbon around bends. Note for a future consistency pass:
 at roughly seven percent of the screen height," which now reads inconsistent
 with board 13's 3–5% and the shipped 3.7% FAR default — flagged, not fixed,
 since `concept-art/` is outside this project's docs lane.
+
+## 8 — 2026-07-31 — Delivery mandate: autonomous merges, asset lane opened, loop until a polished playable
+
+**Decision:** four rulings from one operator directive, governing the wave-4
+orchestrated push. (1) **Mission**: the target is a *playable version with
+AAA-studio-level polish* of the full run — the fleet refines as necessary and
+loops until delivered, rather than pausing between checkpoint verdicts.
+(2) **Autonomous merges**: the integrator merges without per-merge operator
+confirmation; the gates are agent review + bot playtest + the mechanical
+merge script (`tools/orch/merge-task.sh`). (3) **Asset lane opened**: agents
+may use the **codex CLI** (`codex exec`, installed locally) to generate
+sprites/assets as needed — this releases the "juice/audio/final art
+deferred" scope fence (entry 0a / FLEET-PLAN "Out of scope") to the extent
+delivery requires. (4) **Housekeeping**: the stale wave-1 worktrees under
+`/private/tmp/hullbreaker-*` were authorized for pruning and removed.
+
+**Rationale, operator verbatim:** "it can merge autonomously, with agent
+review. the agents can use the codex cli to generate sprites/assets as
+needed and you can prune the old worktrees. I want to get to a playable
+version with AAA studio level polish. Refine as necessary, and loop until
+delivered."
+
+**What this does NOT supersede:** the operator remains the only fun oracle —
+checkpoint packets (G1, FLOW, crouch/aim-assist, CP3 v2, and new ones) keep
+queueing in `SPRINT.md` and their verdicts still land in this log; work
+proceeds without blocking on them. Entries 1–7 all stand: static-anatomy
+render rule, hook-v1 rejection, FAR default + bend cull, placement-over-
+stats, hound-2.5 baseline. The entry-0a hold on six-face integration
+("iterate in fixtures until the operator approves the feel") **is released**
+by the delivery mandate: integration proceeds, with a checkpoint packet
+posted for judgment rather than blocking on one.
+
+**What shipped:** the orchestration scaffold (root `CLAUDE.md`, `SPRINT.md`
+queue, `.claude/agents/` roster incl. the new `asset-artist`, Stop-hook
+flywheel, `tools/orch/merge-task.sh` gate — see `docs/ORCHESTRATION.md`),
+`assets/` staging + manifest, and the worktree prune (their four unmerged
+`agent/traversal-*` branch refs remain for the operator to delete — the
+sandbox refused force-deleting branches).
+
+**Source:** operator directive, July 31, at wave-4 kickoff.

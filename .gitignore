@@ -1,2 +1,5 @@
 .DS_Store
 tools/playtest/node_modules/
+.claude/worktrees/
+.claude/flywheel.on
+HALT
