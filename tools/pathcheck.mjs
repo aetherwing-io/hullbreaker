@@ -4426,8 +4426,28 @@ const XL = buildTransformLevel(CONFIG);
       C.transform.ceiling, C.transform.rib, C.transform.machine,
       C.transform.panel].every(rust),
      'palette: concept body/route/mechanism ladder is rust-orange (r>g>b)');
-  ok([C.wasp, C.carrier, C.hound, C.houndCharge, C.enemyGlow].every(acid),
+  ok([C.wasp, C.carrier, C.hound, C.houndCharge, C.enemyGlow,
+      C.polyp, C.polypBeam].every(acid),
      'palette: concept enemy tokens are acid green (g dominant)');
+  // the roster's ONE warning language: tells (and the polyp's spent-vent
+  // ember) stay warm in BOTH modes — a telegraph must never read as a body,
+  // so it may not drift into the acid family the way the bodies do.
+  ok([C.houndTell, C.polypTell, C.polypVent,
+      PAL_CLASSIC.houndTell, PAL_CLASSIC.polypTell, PAL_CLASSIC.polypVent]
+       .every((h) => rust(h) && !acid(h)),
+     'palette: hostile tells/vent stay warm WARN amber in both modes');
+  // Every hostile kind the SIM can spawn needs a body token in both tables.
+  // This is the guard the T-010/T-004 collision was missing: the polyp landed
+  // on main while this branch was in flight, CLASSIC never learned about it,
+  // and the byte-fidelity assertion below only caught it after the merge.
+  ok(Object.keys(simEnemyTable).every((k) =>
+       PAL_CLASSIC[k] !== undefined && PAL_CONCEPT[k] !== undefined),
+     'palette: every sim ENEMY kind has a body color token in both modes ' +
+     '(' + Object.keys(simEnemyTable).join(', ') + ')');
+  // identity tokens are an ABSENCE of palette choice: they may not be remapped
+  ok(PAL_CLASSIC.glowOff === PAL_CONCEPT.glowOff && PAL_CLASSIC.glowOff === 0x000000 &&
+     PAL_CLASSIC.hitFlash === PAL_CONCEPT.hitFlash && PAL_CLASSIC.hitFlash === 0xffffff,
+     'palette: glowOff/hitFlash identity tokens are mode-independent');
   {
     const m = C.capsule.match(/^#([0-9a-f]{6})$/i);
     const [r, g, b] = m ? ch(parseInt(m[1], 16)) : [0, 0, 0];
@@ -4450,12 +4470,15 @@ const XL = buildTransformLevel(CONFIG);
      atmosphereBg(0x123456, PAL_CONCEPT) === 0x123456,
      'palette: classic atmosphere is identity; unknown bgs pass through');
 
-  // centralization is structural, not aspirational: the recolored render/ui
-  // modules may not reach CONFIG.palette directly any more. hostiles.js is
-  // lane-fenced to the in-flight hostiles task (documented follow-up in
-  // palette.js) and hook.js is a judged-rejected prototype — both exempt.
+  // centralization is structural, not aspirational: the recolored render
+  // modules may not reach CONFIG.palette directly any more. hostiles.js was
+  // lane-fenced to the in-flight hostiles task (T-004) while this branch was
+  // open; that task has merged, so the fence is lifted and the module is
+  // tokenized like the rest. hook.js stays the ONE exemption — a judged-
+  // rejected prototype (decisions.md entry 5) that gets no further investment.
   const tokenized = ['scene.js', 'level.js', 'capsules.js', 'bullets.js',
-    'player.js', 'mods.js', 'limb.js', 'transform.js', 'tower.js', 'fx.js'];
+    'player.js', 'mods.js', 'limb.js', 'transform.js', 'tower.js', 'fx.js',
+    'hostiles.js'];
   let scattered = [], literals = [];
   for (const f of tokenized) {
     const src = stripComments(readFileSync(join(srcDir, 'render', f), 'utf8'));

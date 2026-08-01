@@ -31,13 +31,21 @@
    original calibration note) — so surfaces are brighter than taste says,
    and the deck stays the brightest large surface in every mode.
 
-   FOLLOW-UP (T-010, one line of work): src/render/hostiles.js still reads
-   CONFIG.palette.wasp/carrier/hound/houndTell/houndCharge directly — it was
-   lane-fenced to the in-flight hostiles task. After that merge, point it at
-   PAL.wasp/PAL.carrier/PAL.hound/PAL.houndTell/PAL.houndCharge below so the
-   acid-green ENEMY role actually lands on the meshes. The tokens are already
-   authored and asserted here. Same for src/render/hook.js (judged-rejected
-   prototype, deliberately untouched — it keeps CONFIG.palette.hook*).      */
+   FOLLOW-UP CLOSED (T-010 fix-cycle): src/render/hostiles.js was lane-fenced
+   to the in-flight hostiles task; that task (T-004, the Iris Polyp) has now
+   merged, so hostiles.js reads PAL.wasp/carrier/hound/houndTell/houndCharge
+   and PAL.polyp/polypTell/polypBeam/polypVent from here — the acid-green
+   ENEMY role now actually lands on the meshes, and pathcheck asserts the
+   module carries no CONFIG.palette reads and no raw color literals.
+   src/render/hook.js stays exempt (judged-rejected prototype, deliberately
+   untouched — it keeps CONFIG.palette.hook*).
+
+   ADDING AN ENEMY: pathcheck asserts every kind in src/sim/hostiles.js's
+   ENEMY roster has a body token in BOTH tables — that guard exists because
+   T-004's polyp landed while this branch was in flight and the classic
+   table silently fell out of byte-fidelity with CONFIG.palette. Author the
+   grey-box value in CONFIG.palette, mirror it here in CLASSIC, and give it
+   an acid-green CONCEPT value: hostile ecology is one family.             */
 
 import { CONFIG } from '../config.js';
 import { QUERY } from '../mode.js';
@@ -64,11 +72,22 @@ export const CLASSIC = {
   hound: CONFIG.palette.hound,
   houndTell: CONFIG.palette.houndTell,
   houndCharge: CONFIG.palette.houndCharge,
+  polyp: CONFIG.palette.polyp,           // T-004's rooted turret (merged after this
+  polypTell: CONFIG.palette.polypTell,   //   branch forked — see the header note)
+  polypBeam: CONFIG.palette.polypBeam,
+  polypVent: CONFIG.palette.polypVent,
   enemyGlow: CONFIG.palette.wasp,        // grey-box's "enemy color" is the wasp green
   capsule: CONFIG.palette.capsule,
   modCapsule: CONFIG.palette.modCapsule,
   capsuleInk: '#14181e',
   muzzle: 0xffffff,                      // lance beam / white flash
+  // Two identity tokens, deliberately IDENTICAL in both tables: they are not
+  // palette choices, so the concept mode must not remap them. glowOff is the
+  // absence of emission; hitFlash is the full-bright damage pop, which has to
+  // read the same in every mode or hit feedback would change with a URL flag.
+  // They live here so hostiles.js can stay free of raw color literals.
+  glowOff: 0x000000,
+  hitFlash: 0xffffff,
   shots: CONFIG.palette.shots,
   tints: CONFIG.palette.tints,
   rain: 0x9fb4c6,
@@ -103,18 +122,29 @@ export const CONCEPT = {
   solid: 0x8a5c38,                       // authored fixtures: darker rust mass
   player: 0xe9e6dd,                      // warm off-white RIG (silhouette first)
   gun: CONFIG.palette.gun,               // already the warm muzzle family
-  // ENEMY acid green — exported for the hostiles follow-up (see header note);
+  // ENEMY acid green — now live on the meshes (src/render/hostiles.js);
   // the tell stays warm amber (a telegraph must not read as a body).
   wasp: 0x9ce23e,
   carrier: 0x63b12e,
   hound: 0x84cc30,
   houndTell: CONFIG.palette.houndTell,
   houndCharge: 0x3f9e14,
+  // Iris Polyp (T-004): same acid ecology, its own value — heavier and less
+  // yellow than the wasp so a ROOTED threat separates from the flying one at
+  // FAR (decisions.md entry 7), while the silhouette still carries the read.
+  polyp: 0x76bd2c,
+  polypTell: CONFIG.palette.polypTell,   // one warning language across the roster:
+                                         //   the same warm amber blink as the hound
+  polypBeam: 0xd4ff5c,                   // committed lock: the hottest acid in the
+                                         //   ecology, so "live" never reads as "arming"
+  polypVent: CONFIG.palette.polypVent,   // spent ember: warm, dim, and deliberately
+                                         //   OUT of the acid family — the opening
   enemyGlow: 0x9dff3a,
   capsule: CONFIG.palette.capsule,       // '#ff4fd8' — already the hot magenta role
   modCapsule: CONFIG.palette.modCapsule, // amber WARN family, distinct from weapons
   capsuleInk: '#14181e',
   muzzle: 0xfff2d8,                      // warm white: lance beam + flash family
+  glowOff: 0x000000, hitFlash: 0xffffff, // identity tokens — see CLASSIC's note
   shots: CONFIG.palette.shots,           // R is already warm white; letters keep identity
   tints: CONFIG.palette.tints,
   rain: 0xa9cfc8,                        // weather leans teal-white, not steel blue
