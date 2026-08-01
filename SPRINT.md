@@ -414,7 +414,7 @@ accept:
 owner: lattice-designer
 verify: node tools/pathcheck.mjs; a run that reaches the first gate without losing a life
 
-## T-021 | feature | blocked | P1
+## T-021 | feature | review | P1
 
 goal: the SPLIT DECISION in the SIX-FACE RUN — decisions.md entries 10, 11, 12
 and 13. A fork the player reads and commits to AT SPEED: the rewarding branch
