@@ -97,13 +97,14 @@ and emits the A.5 `setback` envelope; the third consecutive un-recovered
 death crosses the ceiling into the stock lives tier; and with no flags the
 default run is the shipped stock path with a fully inert meter.
 
-Bot runs (~31 s window, `--deterministic`, real Chrome, **zero console/page
-errors and no bootError in any of the eight runs this evidence rests on** —
-the five default-run rows below, the slice tune check, and the two slice
-smokes). Artifacts and a regeneration recipe:
-`tools/playtest/reports/cp4/` (`summary.md` for every run, plus the full
-trace `report.json` for the two the headline A/B compares; `runs/` is
-gitignored, which is why they are copied there).
+Bot runs (~31 s window, `--deterministic`, real Chrome). **Zero console
+errors, zero page errors and no bootError in all eleven runs made for this
+document** — the five default-run rows below, the repeat that measures the
+variance, the slice tune check, and two rounds of the two slice smokes.
+Artifacts and a regeneration recipe: `tools/playtest/reports/cp4/`
+(`summary.md` for every run, plus the full trace `report.json` for the two
+the headline A/B compares; `runs/` is gitignored, which is why they are
+copied there).
 
 **How failure is counted here** (the thing the first version got wrong):
 `metrics.lives.spent` = stock lives spent, read from the HUD `×N` readout,
@@ -165,8 +166,9 @@ that verdict plus the run-scale question.
 flags **off** spends 2 of 3 stock lives and is thrown back from x 89.25 to
 51.6 twice, finishing 13.8 tiles behind its own high-water mark; flags **on**
 spends 0 lives, absorbs 2–3 setbacks depending on the repeat, and never gives
-up a tile of forward ground (final x = max x = 89.25 in every repeat). Momentum is the pillar this is arguing
-about, and that is the whole argument — but it cuts both ways, which is
+up a tile of forward ground (final x = max x = 89.25 in every repeat).
+Momentum is the pillar this is arguing about, and that is the whole
+argument — but it cuts both ways, which is
 exactly what question 2 below is for: a setback that costs altitude and
 CHARGE but *no forward progress* may not read as punishment at run scale.
 The nojump probe is the counterweight: without the fallback that script is
