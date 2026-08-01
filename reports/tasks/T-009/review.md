@@ -1,100 +1,113 @@
-APPROVE
+REQUEST_CHANGES
 
-Gate: reviewer, task T-009 (six-face integration — lattice route density,
-hound-2.5 station placement, static-anatomy corner reveal as default).
-Worktree /Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-009
-(branch task/T-009, HEAD 770ea6b). `git rev-list 16099f6..main` = 0, so the
-branch contains main's tip — accept box 1 is satisfied.
+Gate: reviewer, task T-009, I-019 fix pass. Worktree
+/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-009 (branch
+task/T-009, HEAD d0c3ae1). `node tools/pathcheck.mjs` re-run here:
+**1545 passed, 0 failed** (main: 1480). No assertion was deleted or loosened
+to get there — the only removals in `main...HEAD` are the two deliberately
+moved regression pins (generator shape 49 -> 62 platforms, fingerprint
+`cc6afd7c` -> `10606a27`) and the `?g1=1`/`?zip=1` inversion of the
+render-mode trace compare, each with its reasoning written in place. Layer
+purity, determinism and the frozen constants are clean: `src/pure/lattice.js`
+imports only `./path.js`, varies by a seed-free `hash()` and consumes no rng;
+`src/config.js` is not in the diff; `?hook=1` is untouched; no
+`Math.random`/`Date.now`/`performance.now` anywhere in `src/pure` or
+`src/sim`; boot pays one ~10 ms level build now that the spawner passes
+`levelData` (my MINOR from the previous pass — fixed). The static-anatomy
+default plus the `?zip=1` escape hatch match `decisions.md` entry 3 and its
+addendum, and HANDOFF/README/DESIGN are honest that the reveal itself is
+still unjudged.
 
-MINOR findings (no BLOCKER or MAJOR):
+The one defect this cycle exists to close is only partly closed, and the
+disclosure of what is left understates it.
 
-src/sim/spawner.js:25 — `buildSpawnTable(CONFIG)` leans on the new default
-parameter `level = buildLevel(cfg)` (src/pure/generator.js:250), so the
-six-face boot builds a SECOND complete level (445 columns, 62 platforms,
-~9.3 ms measured) and throws it away, even though this module already imports
-from './level.js' (`groundTopAt`) and could pass `levelData` for free. Beyond
-the boot cost it leaves a latent coupling: the station rows' `deck` heights
-come from a different level object than the one the player runs on. Safe today
-only because 'T-009: the lattice is deterministic across builds' asserts the
-two builds agree.
+## Findings
 
-src/pure/lattice.js:193 — `latticeSurfacesAt` is exported and called by
-nothing: not the runtime, not tools/pathcheck.mjs, not internally
-(`latticeBands` does its own scan). Dead export.
+src/pure/lattice.js:164 — **accept box 1 is not met: a pocket reward is still
+collectable from the deck line, by a double jump, on at least 2 of 6 faces.**
+I drove the shipped sim with the exact policy `tools/pathcheck.mjs`'s own
+T-009 full-run child uses, changed in one respect: it also spends the air jump
+while airborne (`bufferJumpUntil` when `!grounded && airJumpsLeft > 0`).
+Result: **2 of 6 rewards collected** — face 1 at x=46.36 (t=4.8 s, feet 3.45
+over the deck, i.e. past the grounded apex) and face 2 at x=108.21 (t=20.6 s)
+— with no climb, no shelf and no retreat, and the run still reached the outro
+scroll end. That is I-019's own failure mode ("the free route pays the wager")
+one input later, not an exotic case: jump-spam is ordinary play in this genre.
+The new assertions cannot see it because the sweep is scoped to `PJ.jumpVel`
+launches only; `tools/pathcheck.mjs:7069-7083` says so plainly, which is to
+the builder's credit, but a stated gap in a gate is still a gap in the gate.
 
-src/pure/lattice.js:144 + tools/pathcheck.mjs:6728 — the "measured retreat"
-invariant is arithmetic over an assumed constant (`entryEdgeMarginTiles: 14`)
-rather than a measurement of the daylight the shipped six-face follow camera
-actually grants at each pocket; as written the assertion cannot fail unless
-someone edits the constant. The traversal fixture already has the stronger
-form (tools/pathcheck.mjs:731 checks its pocket timing against a camera-derived
-`portraitWidth`), and T-009's own headless full-run child drives the real sim
-and could sample `sLeftEdge()` at each pocket. The comment is honest that 14 is
-a hand-picked worst-case floor, so this is a strength gap, not a false claim.
+docs/DESIGN.md:444-448 and src/pure/lattice.js:159-163 — **the residue is
+quantified against the wrong body point, so it reads as marginal when it is
+not.** Both passages say "the air jump reaches 5.07 ... so a deliberate double
+jump at the lip can still *touch* the capsule mid-flight", while the grounded
+case two lines earlier correctly uses **head** reach (apex 2.72 + height 1.70
+= 4.42). 5.07 is the double jump's **feet** apex; the head reaches 6.77 over
+the deck. Against a capsule bob floor of 5.95 over the deck, the capsule sits
+**0.82 tiles inside** the player's body box — not touched at the edge of a
+0.95 sphere, passed through. The same passages say "a jump-spamming bot takes
+face 1's at x=45.3" (singular); the measurement above takes two. These numbers
+are the entire basis of the operator call being requested, so they have to be
+right.
 
-src/pure/lattice.js:256 — "the approach deck adopts the incoming column's own
-height so the entry seam is flat" is not always true: `deckY` is clamped by
-`deckMin: 3`, so pockets f1/f3/f5 step UP one tile at x0 (incoming 2 → deck 3),
-and f2/f6 begin immediately after a pre-existing chunk-stream chasm (incoming
-column is GAP). Behaviour is safe — the 6-column approach exists for exactly
-this, the across-gap delta stays <= 1, and the real-sim policy never falls in a
-pocket — but the header comment overstates what the code guarantees.
+src/pure/lattice.js:161-163 and docs/DESIGN.md:447-450 — **"not retunable in
+the lane" is overstated; a lever inside this module's own constants closes
+it.** The `rewardRise` half is correct and I recomputed it: clearing the double
+jump needs `rewardRise > 3.52` while the standing-pickup ceiling is 2.50 at the
+worst bob phase, so no value satisfies both. But the ladder being blamed is not
+frozen: `mid <= landing + apex` is a frozen-constant relation, `shelf = mid +
+tierRise` is not — `LATTICE.tierRise` is this file's own number (3) and
+`CONFIG.gen.maxReach` is 5. A pocket shelf tier of roughly 4.1-4.6 puts the
+capsule above the deck-line double jump (needs shelf > ~5.37 over the deck)
+while staying inside a double jump *from the mid lane* (feet apex 5.07) and
+inside the generator's own reachability ceiling — it makes the climb harder
+without touching the mandatory crossing at all. Whether that trade is wanted is
+a feel call and belongs to the operator; foreclosing it in the doc as
+arithmetically impossible is not accurate.
 
-src/mode.js:103 — `IS_G1` keeps the experiment's name while its meaning
-inverted to "static-anatomy reveal, default on". The deferral is deliberate and
-documented (five importers, three owned by other lanes this cycle), but it
-leaves `HB.g1`, `?g1=0`, and five call sites named after a flag that no longer
-selects anything. Worth a follow-up rename task once the lanes quiesce.
+tools/playtest/scripts/six-face-full-run.json:3 — **the description repeats a
+measurement the integrator has formally retracted.** It states "maxX 154.3,
+scroll 140 of 415", "the three lives go at x 31.6, x 93.0 and x 148.0", and
+"the lattice tree gets ~1.7x further". `SPRINT.md`'s T-009 CORRECTION (filed as
+I-020) records three runs per side — branch 89.25 / 89.25 / 110.65, main
+89.25 x3 — and says the ~1.7x claim "does not hold and must not be repeated".
+That correction was on main at 13:12 and reached this branch in the 13:47
+merge, so the branch now ships the retracted claim next to the record
+retracting it. A harness script's own description is exactly where the next
+gate will read it.
 
-Verified clean:
-- pathcheck run in the worktree: 1448 passed, 0 failed (2.3 s). main measures
-  1398 — +50 assertions, none deleted. The only two rewritten assertions are the
-  deliberate shape re-pin (49 -> 62 platforms, chunkLog still 59) and the
-  fingerprint re-pin (cc6afd7c -> dad96774), both with the reasoning written in
-  place. No playtest script retimed; the one script added is new.
-- Layer purity: src/pure/lattice.js imports only './path.js'; no THREE, no
-  document/window, no upward import. The static guard enumerates src/pure/*.js
-  via readdirSync (tools/pathcheck.mjs:145), so the new file is genuinely
-  covered, not merely unlisted.
-- Determinism: no Math.random / Date.now / performance.now in the new pure code;
-  the lattice consumes no rng (hash-of-column variation), so the seeded chunk
-  stream is bit-identical (59 chunks); cross-build determinism asserted; sim
-  stays 2D (s, y).
-- Judged content untouched: I diffed `buildTraversalLevel` against a pristine
-  main tree. The first differing ground column is 103; the fixture band [24, 79)
-  and the whole slice play window (endScroll 73, right edge ~99) are
-  byte-identical, and every platform difference is at x >= 103. Pre-existing
-  generator invariants still hold over the carved terrain (adjacent step <= 2,
-  across-gap delta <= 1, corner aprons flat at 3, intro/tail flat).
-- Verdict compliance: decisions.md entry 3 satisfied (anatomy never assembles;
-  limb.js still cannot be animated, asserted at source level); its addendum
-  satisfied (zipper still written, still installed via installView, still
-  reachable at ?zip=1, asserted by a child-process mode probe over '', '?zip=1',
-  '?g1=0', '?slice=traversal'); entry 6 satisfied by placement, not stats — no
-  hound tuning value changed; ?hook=1 untouched; src/config.js not in the diff at
-  all, so the frozen jump/movement constants are unchanged.
-- The `gating` per-row opt-out is a real sim change and is asserted behaviourally
-  through the actual gate runtime, WITH a control (a default-gating hound still
-  holds the gate) — not just geometry. HUD and wavegate now agree on `e.gating`
-  and no code path pushes a hostile that bypasses spawnHostile.
-- Perf: all lattice work is build-time (9.3 ms); nothing new runs per frame; the
-  limb bake is one instanced draw per material (~12), unchanged by this task; the
-  six persistent pocket capsules are cleared on every resetGame.
-- Hygiene: no new runtime deps, no build step, no OSTK artifacts; README,
-  DESIGN.md and HANDOFF.md updated to match the flipped default; the new
-  six-face-full-run.json carries its where-it-stops-and-why note inline,
-  including the A/B against pristine main.
+SPRINT.md, operator checkpoint queue, "G1 limb-turn" entry (MINOR) — the A/B it
+names is now a no-op: it asks for "default vs `?g1=1`", and after this task both
+select the limb reveal (`src/mode.js:73-74`). The live pair is `default vs
+?zip=1`, which is what `artifacts/t009-lattice/README.md` actually captured
+(`06-ab-gate1-default.png` / `07-ab-gate1-zip.png`). SPRINT is integrator-owned,
+so flagging rather than assigning.
 
-Operator questions (not gate conditions):
-- The static-anatomy limb reveal now ships as the DEFAULT while it has still
-  never been operator-judged (HANDOFF.md says so plainly, checkpoint queued).
-  decisions.md entry 3 + entry 8 support shipping it now with ?zip=1 as the
-  escape hatch, and the task block mandates it — but the "is this the right
-  reveal" call is the operator's.
-- Six pocket weapon capsules per run changes the default run's weapon economy,
-  which was previously carrier drops only.
-- Pocket f2's exit seam steps +2 immediately past the landing the station
-  patrols (x 111-116) — legal and crossable, but a readability/feel question.
+## What is good here and should survive the fix
 
-Not verified by this gate (playtester's): mid-route + transform-slice runs and
-?selftest=1 in a browser.
+The I-019 work is not thin. The mandatory-crossing case is closed three
+independent ways — a swept arc over every launch column, speed, hold length and
+flight instant; an analytic envelope no launch choice can beat; and a
+behavioural run of the shipped sim with the shipped pickup code that ends with
+all six capsules still hanging — plus drift guards that re-read
+`src/sim/capsules.js`, `src/sim/player.js` and `src/main.js` so the arithmetic
+cannot silently stop describing the code. `climbSeconds`/`totalSeconds` are
+added without disturbing `retreat.seconds`, so the pre-existing crush-clock
+assertion is extended rather than re-based. The spawner now builds the table
+from the run's own level, with both a source guard and an empty-pockets
+regression case. Keep all of it.
+
+## Smallest path back to APPROVE
+
+1. Correct both passages to head reach (6.77) and the measured face count, and
+   say plainly that the capsule sits inside the body box, not at the margin.
+2. Either raise the pocket shelf tier (extending the assertion to the air jump
+   and moving the fingerprint pin deliberately, as this task has already done
+   twice), or leave the geometry and post a checkpoint-queue entry carrying the
+   corrected numbers with the `tierRise` option named as available — so the
+   operator is choosing, not being told the choice does not exist.
+3. Drop the retracted 154.3 / 140 / ~1.7x figures from the full-run script
+   description.
+
+Not verified by this gate (playtester's): mid-route + transform-slice runs,
+`?selftest=1`, console cleanliness, and that default and `?zip=1` both boot.

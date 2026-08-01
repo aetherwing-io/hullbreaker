@@ -1026,3 +1026,51 @@ way, so this is a foot-gun, not a hole in the &&-only grammar, and it is
 engine), not introduced by T-018. Fix is either wording ("arithmetic is
 rejected behind ordering operators") or one more compile-time guard rejecting a
 non-numeric rhs that contains an operator character.
+
+## I-024 | docs | S3 | repro: in a `git archive task/T-020` copy, replace the floor pin inside the gap probe's `cross()` (`if (floor) E.setEdges(x0 + hw + M - 200, x0 + hw + M);` → `if (false) …`) and run `node tools/pathcheck.mjs` → **1527 passed, 0 failed** | evidence: reports/tasks/T-020/playtest.md §4; tools/pathcheck.mjs (search `FAIR-GAP INVARIANT`)
+
+Found while gating T-020, on the guard the new invariant uses to prove its own
+honesty: `'the same gaps are wider still at run speed … (the probe really is
+measuring the floor, not a free run)'` asserts `runSingle > floorSingle`
+**strictly**, which catches a probe that starts at `runSpeed` (the builder's own
+negative control fails exactly this, verified) but not one that keeps the
+scroll-speed start and merely loses the screen clamp. Measured that case
+independently: with the clamp gone but `vx` still initialised to `scrollSpeed`,
+RIG accelerates to `runSpeed` in the air and the "floor" window for gap 29-31
+balloons **0.74 → 4.12 tiles** against a run-speed 4.22 — still strictly less, so
+the guard passes while the column silently reports an almost-free run under the
+label "SCROLL speed". Nothing is wrong with the shipped numbers (they reproduce
+under independent code with the pin present); this is about how much protection
+the guard buys the next person to edit `sim/edges.js` or `CONFIG.edges.margin`.
+Fix is one more assertion inside the probe — e.g. record max `|vx|` during the
+floor sweep and assert it never exceeds `scrollSpeed + ε`, which is the property
+the label actually claims.
+
+## I-025 | feel | S3 | repro: `cd tools/playtest && node run.mjs <a policy script: hold right + tap jump on terrain.gapDist<2.2> --deterministic --max-runtime-ms 20000 --base-url <pinned main-equivalent tree>` — hp 3→2 at `gameMs` 2769, RIG airborne at x = 30.49 y = 4.68 over gap 29-31, wasp id 2 in `dive` at x = 31.28 | evidence: tools/playtest/runs/gate-T-020-firstgap/report.json; docs/playtests/2026-08-first-gap-triage.md §4b; reports/tasks/T-020/playtest.md §3(e)
+
+`CONFIG.spawner.startS = 28` puts the ambient table's first row — a wasp — one
+column before the first gap's near lip, i.e. on the takeoff itself. T-020 found
+it analytically; this gate reproduced it in a real browser on the shipped FAR
+camera: the wasp dives into RIG mid-flight over the pit at t ≈ 2.8 s, and because
+`damagePlayer` sets `vx = sign(x − fromX) * knockbackX`, a hit taken from ahead
+throws him **backwards into the hole he is crossing** (trace: x 30.44 → 30.17 →
+29.72 after the hit). Over a gap that converts a heart into a life. It lands
+before the player has been taught anything and before the first wave gate. Not a
+terrain defect and not fixed by T-020 — an operator difficulty call, per that
+doc's §6 Q5: push `spawner.startS` past the landing strip (`28 → 33`), keep it as
+a "shoot before you jump" lesson, or treat the compound punishment as the point.
+
+## I-026 | docs | S3 | repro: `cd tools/playtest && node run.mjs <any default-run script with url `index.html?enemies=0`> --deterministic --base-url <pinned tree>` → the trace carries 2–6 live `wasp`/`carrier` rows in `hostiles[]` from the first sample on | evidence: tools/playtest/runs/gate-T-020-firstgap/report.json (url `index.html?enemies=0&testapi=1`, hostiles present throughout); src/mode.js:37; src/sim/spawner.js:24
+
+`?enemies=0` sets `SLICE_ENEMIES_ENABLED`, which is only ever consulted for the
+**slice fixtures** (`spawner.js` uses it to blank a fixture's authored spawn
+list). On a default six-face run the ambient spawner is untouched, so the flag is
+a silent no-op: a run authored as "terrain only, combat isolated" is in fact a
+live-combat run, and any per-gap or pacing number taken from it inherits hostile
+knockback it was designed to exclude. Caught while writing T-020's gate evidence
+— the run intended as a clean terrain crossing took a wasp hit over the gap at
+2.8 s (see I-025). Nothing is broken in the game; the trap is that the flag name
+reads global. Fix is either honest wording in `tools/playtest/README.md` (and the
+flag table in the root README) that `enemies=0` is slice-only, or a default-run
+ambient-spawn kill switch for measurement, which is a new query flag and needs
+the usual off-by-default treatment.

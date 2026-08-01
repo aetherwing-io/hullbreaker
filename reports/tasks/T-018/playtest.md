@@ -168,7 +168,15 @@ inside the spread the finding already warns about (17 pre-merge, 9/12 post-merge
 14 here) — I judged the gate reached, which was stable. 0 console errors, 0 page
 errors, **0 missing-field warnings** across 1979 samples using the new clauses;
 the terrain rules fired 60/3/2 times, so the probe is live, not inert.
-Evidence: scratch runs `wt-aimless/`, `wt-aimed/` (json+summary+screenshot).
+Evidence (json + summary + screenshot each):
+`/Users/scottmeyer/projects/hullbreaker/tools/playtest/runs/gate-T-018-aimless/`,
+`…/runs/gate-T-018-aimed/`. Merged-harness A/B copies of the ordered pair:
+`…/runs/gate-T-018-mid-mergedharness/`, `…/runs/gate-T-018-transform-mergedharness/`;
+plus `…/runs/gate-T-018-pinned/` and `…/runs/gate-T-018-hound/`. The two probes
+this gate wrote are kept beside them: `…/runs/replay-compare.mjs` (old-vs-new
+engine tick diff) and `…/runs/grammar-probe.mjs` (grammar rejection / relative-
+geometry invariance). Both are gate instruments, not harness code, and touch
+nothing under `tools/playtest/lib/`.
 
 ## Screenshots (judged, not skimmed)
 
