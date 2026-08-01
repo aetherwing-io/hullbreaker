@@ -68,6 +68,8 @@ export const CLASSIC = {
   player: CONFIG.palette.player,
   gun: CONFIG.palette.gun,
   wasp: CONFIG.palette.wasp,
+  waspDive: 0xb9f0a8,                    // T-003: the committed dive, in the grey-box's
+                                         //   own family — see CONCEPT's note
   carrier: CONFIG.palette.carrier,
   hound: CONFIG.palette.hound,
   houndTell: CONFIG.palette.houndTell,
@@ -129,6 +131,12 @@ export const CONCEPT = {
   // ENEMY acid green — now live on the meshes (src/render/hostiles.js);
   // the tell stays warm amber (a telegraph must not read as a body).
   wasp: 0x9ce23e,
+  // T-003 (FAR readability): a diving wasp is COMMITTED, so it wears the
+  // ecology's commitment language — the hot end of the acid family, like the
+  // houndframe's charge glow and the polyp's live beam — never the warm amber
+  // the roster reserves for a warning. It is the one cue that reads on a
+  // 17px drone at the shipped default view.
+  waspDive: 0xbdf03e,
   carrier: 0x63b12e,
   hound: 0x84cc30,
   houndTell: CONFIG.palette.houndTell,
