@@ -581,6 +581,33 @@ verify: n/a until dispatched
   backdrop separate from the facet RIG runs on? (5) at FAR, do the acid
   bodies and their warm-amber tells stay two separate reads against boards
   01/06/10 — including the rooted polyp against the flying wasp?
+- **THE DELIVERY BOX ITSELF (T-019) — the one thing a bot cannot supply.**
+  One operator run of `http://127.0.0.1:8741/index.html` (default six-face run,
+  no flags), played to VICTORY or to wherever it ends, noting **which gate and
+  how many lives were left**. 49 deterministic bot runs across 13 policy
+  variants all wall at wave gate 2 (scroll 140 of 415, ~50 s, three lives);
+  exactly one cleared gate 2 and died heading for gate 3. The harness was
+  extended twice and never weakened the game, so this box is answered by a
+  human run or not at all. Evidence: `docs/playtests/2026-08-victory-box.md`,
+  `tools/playtest/reports/t019/all-runs.md`.
+  Questions that go with the run:
+  (1) Gate 2 is fought as 7-9 bodies where the wave authors 5 — ambient spawns
+  drift in before it arms (gate 1 peaks 5-7 against 4 authored). Does the
+  second gate read as the intended step up from the first, or as a spike?
+  (2) The whole route is 9 hits (3 hp x 3 lives, no heal) against ~50-55
+  gating bodies. How many hits do gates 1 and 2 cost you — and does a six-gate
+  run have the life budget it needs, or does it want a heal or a checkpoint?
+  (3) A corner arena is ~14 tiles wide (crush plane behind, pivot clamp ahead)
+  while 5-9 bodies dive into it at 10 tiles/s. Does that fight have room to
+  move (pillar 2), or is it a box you win by trading hp?
+  (4) The wasp still has no telegraph — cruise to dive on the same frame, from
+  9 tiles while gated, every 1.1 s, while hound/polyp/mortar all have
+  pathcheck-asserted tells. Fair at that range and cadence?
+  (5) Do gates 3-6 assume a weapon? A carrier drop is the only upgrade path
+  and it is incidental — the bot picked up LASER twice in 49 runs, by
+  accident. **Note this now interacts with decisions entry 9:** the pocket
+  pickups you made free are exactly a way for a player to CHOOSE to go get
+  one, so the answer here may already be landing.
 - (new packets append here as tasks land: juice, shell, six-face run)
 
 ## Inbox (playtester/adversarial file here; integrator triages each cycle)
@@ -1027,7 +1054,7 @@ Status flow: todo → doing → review → done; `operator` parks a task on a fe
 verdict; `blocked` parks it on a dependency or two failed attempts (note
 why). The Stop-hook flywheel only counts todo/doing/review as open work.
 
-## I-021 | bug | S2 | RESOLVED by T-020 — NOT a defect | repro: any six-face run on main OR task/T-009, --deterministic, aimless or aimed policy | evidence: docs/playtests/2026-08-gate-fight-harness.md (T-018); tools/playtest/runs/gate-T-009-fullrun-*
+## I-021 | bug | S2 | RESOLVED — not a defect (T-020), and not reproducible on main with a terrain-aware policy (T-019) | repro: any six-face run on main OR task/T-009, --deterministic, aimless or aimed policy | evidence: docs/playtests/2026-08-gate-fight-harness.md (T-018); tools/playtest/runs/gate-T-009-fullrun-*
 
 Found by T-018 while instrumenting the gate fight: **every** run on both trees
 spends its first life at ~3.0s falling into the same 3-tile gap at x = 31.649
@@ -1170,3 +1197,14 @@ Filed because this particular pair is the one where cancelling is worst: raising
 the personal-space guard to `edgeMargin>8` closes it with no other effect. Policy
 script only — no game file involved, and the clause is legitimate relative
 geometry, so the anti-scripting guard is not implicated.
+
+**I-021 follow-up (T-019, 2026-08-01).** Independently of T-020's fairness
+finding, the x=31.649 death does **not** reproduce on `main` with a
+terrain-aware policy: across 9 inspected runs the first life goes at 20.6-28.4 s
+at x 65-89, inside the gate-1 fight, because the terrain probe already clears
+that hole. It reproduces only for policies with no terrain-driven jump — i.e.
+it was a property of the old aimless script, not of the level. A *different*
+3-tile gap around x 47-50 did kill the no-hop variants, reached airborne after
+a 2-tile step-down so the grounded-jump rule never fired; that is why T-019
+added `terrain.landDist` and made `gapDist` read 0 while over a hole. Data for
+the lattice lane, not a defect report.
