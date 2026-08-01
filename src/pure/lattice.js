@@ -136,8 +136,11 @@ export const LATTICE = {
        where a player who is on the shelf takes it by WALKING out to the tip
        (a standing player spans shelf .. shelf + 1.70 and the capsule bobs
        + 0.55 .. + 0.85, so it is inside the 0.95 pickup sphere at every bob
-       phase), and let it read at FAR as a magenta mote hanging over the void
-       rather than as a thing pasted on the catwalk.
+       phase), and read at FAR as a magenta mark sitting ON the shelf line,
+       inside the same band of catwalk routes the rest of the face reads in.
+       (artifacts/t009-lattice/entry9/ is the A/B: lifted two tiers higher the
+       capsule detaches from every route line and reads as a mote in open
+       sky.)
 
        History, so nobody re-derives it: this task raised it to 1.75 and then
        gave the shelf a 4.45 tier of its own, to lift the capsule clear of
