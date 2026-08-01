@@ -409,28 +409,37 @@ accept:
 owner: lattice-designer
 verify: node tools/pathcheck.mjs; a run that reaches the first gate without losing a life
 
-## T-021 | design | parked | P3
+## T-021 | feature | doing | P1
 
-goal: the DARE, as its own concept. Operator verdict decisions.md entry 9
-parked rather than rejected it: "dare can be remembered and implemented in a
-different concept". This task exists so the thinking is not lost, and is NOT
-to be dispatched without an operator go-ahead.
-what we learned paying for it once (T-009, three passes):
-- pricing an optional reward in HEIGHT cannot work: RIG's jump + air-jump
-  envelope is frozen and generous, so anything authored in the tier band the
-  player already occupies is inside it, and raising it is an arms race with a
-  constant the fleet may not retune
-- the currency that IS real here is TIME against the pursuing edge: RIG
-  crosses ground at scroll speed (~4.3 t/s) when holding right, so every tile
-  spent moving backward is daylight surrendered — a dare priced in retreat
-  time is enforceable where one priced in reach is not
-- an assertion must have the PLAYER's reachable envelope as its subject; the
-  original pocket assertions were all true and all missed the defect because
-  they asserted shelf-reachability instead of reward-reachability
-candidate shapes, unjudged: an optional harder ROUTE whose cost is the route
-itself; a contested plate that must be held; a reward that must be carried.
-owner: unassigned
-verify: n/a until dispatched
+goal: the DARE, rebuilt as the operator's run energy demands it — decisions.md
+entry 10. NOT a cul-de-sac: a LOOP. The player commits at a fork, takes a
+longer, higher, more exposed line, and REJOINS the route ahead — paying in time
+against the pursuing edge and in exposure, never by turning around. DESIGN's
+own question survives ("do I have time to grab that capsule?"); what changes is
+that answering it never breaks forward motion.
+Target energy, operator verbatim: "lots of split decisions, esceleration,
+action, climb, climb climb, keep going faster kind of energy for the player."
+accept:
+- [ ] prototype in the TRAVERSAL SLICE behind a flag, off by default (the
+      six-face lattice is contended by T-009/T-020 this cycle — do not touch
+      src/pure/generator.js or src/pure/lattice.js)
+- [ ] the greedy line is the HIGHER, more exposed one, and it rejoins ahead:
+      no reversal, no dead end, no free drop back to the main line
+- [ ] the fork is readable AT SPEED at the FAR default — the player commits
+      without stopping; if it needs a pause to read, it has failed
+- [ ] CURRENCY + FALSIFYING TEST (entry 10's acceptance rule): the cost is
+      time-against-the-edge and exposure. Assert it as: a policy that always
+      takes the main line collects zero loop rewards, AND a policy that takes
+      the loop still finishes with the pursuing-edge daylight margin intact.
+      Assert against the PLAYER's reachable envelope, not the author's intent
+      — the I-019 assertions were all true and all missed the defect
+- [ ] a written proposal in docs/proposals/ specifying the mechanic, so the
+      six-face integration has something exact to build against once the
+      lattice lanes land
+- [ ] operator packet: URL + questions on whether the fork reads as a split
+      decision at speed and whether taking it escalates the action
+owner: lattice-designer
+verify: node tools/pathcheck.mjs; a named playtest script that takes the loop and one that skips it, both --deterministic; screenshots at ?view=far
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
