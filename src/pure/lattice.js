@@ -23,10 +23,13 @@
         here and asserted in tools/pathcheck.mjs — a pocket that does not
         fit the crush clock is a generation error (DESIGN's route-choice
         and pursuit contract), never a surprise for the player.
-        The capsule hangs high enough over the shelf that the crossing jump
-        every player has to make anyway cannot touch it (`rewardRise`, and
-        I-019, which is the defect of it not doing so): the wager is only a
-        wager if the free route does not pay it out.
+        The shelf sits on the pocket's OWN tier and the capsule hangs a
+        further body-height over it, so that nothing thrown from the deck
+        line — the crossing jump every player has to make anyway, or that
+        jump with the air jump spent on top of it — can touch the reward
+        (`shelfRise` and `rewardRise`, and I-019, which is the defect of it
+        doing so twice): the wager is only a wager if the free route does
+        not pay it out.
 
      2. PATCHES fill the thin windows: where a lookahead window offers
         fewer than `minRoutes` bands, one catwalk is added at the tier
@@ -54,8 +57,10 @@ export const LATTICE = {
   bandStep: 0.5,                    // altitude quantization when counting bands
   bandMerge: 0.9,                   // two surfaces this close are ONE route band
 
-  // The tier ladder, identical to the generator's own (a mid lane is one
-  // committed jump over local ground; a high lane is the air jump above it).
+  // The tier ladder for PATCHED lanes, identical to the generator's own (a mid
+  // lane is one committed jump over local ground; a high lane is the air jump
+  // above it). The authored pockets do not use `tierRise` — their shelf is a
+  // taller tier of their own, for reasons spelled out at `pocket.shelfRise`.
   midRise: 2.35, tierRise: 3,
 
   patch: {
@@ -130,38 +135,70 @@ export const LATTICE = {
                                     //   exactly the landing, so the lane can
                                     //   never overhang the next chunk's gap
                                     //   and get pruned out from under the shelf
-    /* Capsule height over the shelf DECK, and the number the whole wager
-       hangs on (I-019). At +0.7 the capsule sat inside the arc of the
-       ordinary crossing jump: a held jump from the approach deck peaks
-       +2.72, RIG stands 1.7 tall, so the top of the player reaches
-       deck + 4.42 while the capsule's bob floor sat at deck + 4.90 — 0.48
-       apart, well inside the 0.95 pickup radius. The pocket paid out to a
-       player who never climbed, never stood on the shelf and never
-       retreated; the wager this module's header describes did not exist in
-       play. The capsule now hangs a full body height over the shelf:
+    /* The pocket's own tier, and the reward's height over it: the two
+       numbers the whole wager hangs on (I-019). Both are measured against
+       the TOP of RIG, never his feet — a capsule is collected when a sphere
+       of `pickupRadius` around it touches the player's whole body box, so
+       the height that decides everything is head = feet + height (1.70).
 
-         from the DECK LINE  the highest RIG can put his head is
-                             apex(2.72) + height(1.70) = 4.42 over the deck
-                             he launched from, and the shelf is deck + 4.35,
-                             so the capsule's bob floor sits deck + 5.95 —
-                             1.53 clear, 1.6x the pickup radius, at every
-                             point of the arc and every hold length;
-         from the SHELF TIP  a standing player spans shelf .. shelf + 1.70
-                             and the capsule bobs shelf + 1.60 .. + 1.90, so
-                             it is collected by WALKING onto the tip: the
-                             wager is the retreat, never a precision jump on
-                             a two-tile spur over a hole.
+       Quoted over the approach DECK (deck = 0; landing -1, mid lane +1.35).
+       Over whatever surface it launches from, the frozen jump gives:
 
-       The ceiling on this number is the same pickup radius (a capsule the
-       standing player cannot reach is not a reward), the floor is the arc
-       above; tools/pathcheck.mjs asserts both, the negative over every
-       launch column and hold length, the positive over the whole bob
-       cycle. What it does NOT buy: the air jump reaches deck + 5.07, so a
-       player who deliberately spends it at the lip can still touch the
-       capsule in flight. Closing that would need the shelf a further ~1.6
-       tiles up, which the frozen ladder (mid <= landing + apex, shelf =
-       mid + tierRise) cannot give — an operator call, not a silent retune. */
-    rewardRise: 1.75,
+         grounded, held    feet +2.72 closed form / +2.61 in-sim, head 4.42 / 4.31
+         + the air jump    feet +5.07 closed form / +4.84 in-sim, head 6.77 / 6.54
+
+       At the first authored numbers (the shelf on the generator's own tier,
+       +3, and rewardRise 0.7) the capsule bobbed at deck + 4.90 and the
+       MANDATORY crossing jump collected it in flight. rewardRise 1.75 lifted
+       it out of that arc (+5.95) but left it inside the double jump's, and a
+       jump-spamming policy — ordinary play, one input later — took two of the
+       six rewards off the deck line without ever climbing. Twice the same
+       defect: a route that pays without the wager. So the pocket stopped
+       borrowing the generator's tier and now authors its own:
+
+         shelfRise  4.45  shelf at deck + 5.80. Three ceilings, all asserted
+                          in tools/pathcheck.mjs: cfg.gen.maxReach (5) over
+                          the mid lane that supports it, the double jump that
+                          has to ENTER it (5.07 closed form, 4.84 in-sim — so
+                          0.39 of real slack), and the climb it prices below.
+                          Floor: it has to put the capsule past the arc.
+         rewardRise 2.30  capsule at deck + 8.10, bob floor + 7.95. Ceiling is
+                          the pickup radius itself — a player standing on the
+                          tip spans +5.80..+7.50, and the worst distance over
+                          the whole tip column and the whole bob cycle is 0.76
+                          against a 0.95 sphere, so the reward is still taken
+                          by WALKING out on the spur, never by a precision
+                          jump off a two-tile ledge over a hole.
+
+       What that buys, over the pocket's own deck line and every column of it
+       at or below the deck: the grounded arc misses by 3.02 tiles, the double
+       jump's head reaches 6.77 against a bob floor of 7.95 — 1.18, i.e. 0.23
+       clear of the sphere closed form and 0.46 in the sim — at every launch
+       column, every speed, every hold length and every air-jump timing. The
+       shelf itself is unstandable from there too (5.80 over the deck, 6.80
+       over the landing, both past 5.07). The only way to the capsule is the
+       climb the header describes: landing -> mid lane (one grounded jump) ->
+       shelf (jump + air jump) -> walk to the tip -> retreat to the mount
+       against the scroll. Both halves are priced in `retreat`.
+
+       What it still does NOT buy, measured rather than argued away: the
+       seeded stream leaves a plateau one tile ABOVE the pocket deck within
+       ~7 columns of four of the six chasms, and a running double jump
+       launched from there, timed so its second apex arrives under the
+       capsule, closes to 0.18 closed form (~0.41 in-sim) of the 0.95 sphere.
+       That is not the crossing jump and not jump-spam — it is an aimed detour
+       with trick-jump timing — but it is a hole, and it cannot be closed by
+       moving these two numbers: with the mid lane pinned at landing + 2.35
+       (it is the houndframe's answer lane, asserted) and the shelf inside
+       maxReach of it, the highest capsule a standing player could still reach
+       is deck + 8.69, while that plateau's double-jump head plus the sphere
+       reaches deck + 8.72. It runs out by 0.03 of a tile. Closing it needs a
+       different pocket SHAPE (a deck that steps up across the chasm) or a
+       different ladder — an operator call, not a lane retune. The residue is
+       asserted at its current size in tools/pathcheck.mjs, so it can never
+       quietly grow. */
+    shelfRise: 4.45,
+    rewardRise: 2.30,
     // Escalating stakes: the pocket pays a weapon, and the later faces pay
     // the ones that answer the later threats.
     rewardLetters: ['S', 'H', 'L', 'F', 'H', 'L'],
@@ -302,16 +339,17 @@ export function latticeHeadReach(cfg) {
 }
 // The two hops a pocket is entered by: landing -> mid lane (one grounded
 // jump), mid lane -> shelf (a jump, then the air jump at its apex, because
-// that tier is taller than a single jump). Rise time only — see the retreat
-// block in latticePocketSites for what this deliberately does not count.
-export function latticeClimbSeconds(cfg, L = LATTICE) {
+// the pocket's tier is taller than a single jump). Rise time only — see the
+// retreat block in latticePocketSites for what this deliberately does not
+// count. `rise` is the pocket's own shelf tier, not the generator's.
+export function latticeClimbSeconds(cfg, L = LATTICE, rise = L.pocket.shelfRise) {
   const P = cfg.player;
   const apex = latticeApex(cfg);
   const hop1 = latticeRiseSeconds(cfg, L.midRise);
-  const hop2 = apex >= L.tierRise
-    ? latticeRiseSeconds(cfg, L.tierRise)
+  const hop2 = apex >= rise
+    ? latticeRiseSeconds(cfg, rise)
     : (P.jumpVel / -P.gravity) +
-      latticeRiseSeconds(cfg, L.tierRise - apex, P.airJumpVel);
+      latticeRiseSeconds(cfg, rise - apex, P.airJumpVel);
   return hop1 + hop2;
 }
 
@@ -343,7 +381,7 @@ export function latticePocketSites(cfg, groundH, L = LATTICE) {
     const gap0 = x0 + P.approachCols;
     const gap1 = gap0 + P.gapCols;                  // exclusive
     const midY = landingY + L.midRise;
-    const shelfY = midY + L.tierRise;
+    const shelfY = midY + P.shelfRise;      // the pocket's tier, not the generator's
     const runSpeed = cfg.player.runSpeed;
     /* The wager, measured. Two costs in one currency — tiles of edge advance
        at the shipped scroll speed:

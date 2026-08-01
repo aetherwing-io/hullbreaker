@@ -428,27 +428,48 @@ Shipped by T-009 in `src/pure/lattice.js`, on top of the seeded chunk stream:
   is unchanged. Measured before → after: 149/246 windows inside [3, 5] →
   246/246; face 2's average went 2.17 → 3.5.
 - **Dare pockets**, one per face: a long approach, a two-column chasm, a
-  landing a tile lower, a mid lane, and a SHELF mounted on the landing that
-  reaches back out over the chasm with a weapon capsule over its tip. The
-  shelf points backward on purpose — no free drop off the tip, no forward
-  continuation — so the reward costs a climb *and* a measured retreat against
-  the scroll (0.66s of climb + 0.43s of retreat = 4.65 tiles of edge advance,
-  asserted to leave ≥6 tiles of daylight; 9.35 as shipped).
-  The capsule hangs 1.75 over the shelf deck, which is what makes any of that
-  true: at the original 0.7 the mandatory crossing jump collected it in
-  flight (I-019 — head reach 4.42 over the deck against a bob floor at 4.90,
-  inside the 0.95 pickup radius), so the wager existed only on paper. It is
-  now 1.53 clear of every deck-line arc — asserted over every launch column,
-  speed and hold length, and behaviourally through the shipped sim — while a
-  player standing on the tip still collects it by walking. What the geometry
-  cannot buy back: the air jump reaches 5.07 and the shelf sits 4.35 over the
-  approach deck, so a deliberate double jump at the lip can still touch the
-  capsule mid-flight (a jump-spamming bot takes face 1's at x=45.3; the
-  held-jump crosser takes nothing). Closing that needs the shelf ~1.6 tiles
-  higher than `mid ≤ landing + apex` and `shelf = mid + tierRise` allow, or a
-  pocket that steps *up* across the chasm — which makes the mandatory
-  crossing marginal for a screen-clamped player. Open for the operator, not
-  retunable in the lane.
+  landing a tile lower, a mid lane, and a SHELF on the pocket's own tier,
+  mounted on the landing and reaching back out over the chasm with a weapon
+  capsule over its tip. The shelf points backward on purpose — no free drop
+  off the tip, no forward continuation — so the reward costs a climb *and* a
+  measured retreat against the scroll (0.81s of climb + 0.43s of retreat =
+  5.31 tiles of edge advance, asserted to leave ≥6 tiles of daylight; 8.69 as
+  shipped).
+  Two numbers decide whether any of that is real, and I-019 is the record of
+  getting them wrong twice. Both are quoted over the approach deck and
+  measured to the TOP of RIG, because a capsule is collected when a 0.95
+  sphere touches his body box, never by his feet: a held jump puts his head at
+  +4.42 (closed form; +4.31 in-sim), and the same jump with the air jump spent
+  at its apex puts it at +6.77 (+6.54 in-sim). At the original `rewardRise`
+  0.7 the capsule bobbed at +4.90 and the mandatory crossing jump took it; at
+  1.75 (+5.95) the grounded arc missed but a jump-spamming bot — ordinary
+  play, one input later — still took two of the six off the deck line. So the
+  shelf stopped borrowing the generator's +3 tier and took its own,
+  `shelfRise` 4.45 (+5.80), with the capsule `rewardRise` 2.30 over it (+8.10,
+  bob floor +7.95). That is 1.18 over the double jump's head reach — 0.23
+  clear of the pickup sphere closed form, 0.46 in the sim — at every launch
+  column, speed, hold length and air-jump timing on the deck line, while a
+  player standing on the tip still collects it by walking (worst distance 0.76
+  of 0.95). Both halves are asserted twice over, in arithmetic and in the
+  shipped sim: a jump-spamming crosser finishes the run holding none of the
+  six, and the authored climb (landing → mid lane → jump + air jump onto the
+  shelf → walk to the tip) takes all six, 1.5s apiece.
+  What geometry cannot buy back, measured rather than argued away: the reward
+  hangs in open air inside a lattice that is 3–5 routes deep everywhere by
+  design, so a double jump launched from a CATWALK — the seeded stream's
+  plateaus one tile above the pocket deck, or any lane at deck+2.35 and up
+  within ~8 columns — can still cross the capsule's airspace. An apex-timed
+  mash-jump bot takes 4 of 6 that way, every one of them from a lane it had to
+  climb to and not one from the deck line (asserted). Lifting the capsule past
+  those launch heights is not available: the mid lane is pinned at landing +
+  2.35 because it is the houndframe's answer, the shelf has to stay inside
+  `gen.maxReach` of the mid lane, and the standing pickup caps the last 2.5 —
+  the ladder runs out 0.03 of a tile short of clearing even the deck+1
+  plateaus. Closing it needs a different pocket SHAPE (a roofed alcove, or a
+  deck that steps *up* across the chasm, which makes the mandatory crossing
+  marginal for a screen-clamped player) or a pickup that asks for contact with
+  the shelf. Operator call, not a lane retune; the residue is pinned at its
+  measured size in `tools/pathcheck.mjs` so it cannot quietly grow.
   The chasm is two columns because RIG is clamped to the right of the screen:
   a player holding right crosses ground at *scroll* speed, and a held jump
   from the clamp travels ~3.0 tiles.
