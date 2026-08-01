@@ -4426,7 +4426,10 @@ const XL = buildTransformLevel(CONFIG);
       C.transform.ceiling, C.transform.rib, C.transform.machine,
       C.transform.panel].every(rust),
      'palette: concept body/route/mechanism ladder is rust-orange (r>g>b)');
-  ok([C.wasp, C.carrier, C.hound, C.houndCharge, C.enemyGlow,
+  // every token in this list is read by a mesh in src/render/hostiles.js —
+  // the guard certifies the ecology that actually ships, not authored colors
+  // no module consumes (that is why there is no generic "enemyGlow" token).
+  ok([C.wasp, C.carrier, C.hound, C.houndCharge,
       C.polyp, C.polypBeam].every(acid),
      'palette: concept enemy tokens are acid green (g dominant)');
   // the roster's ONE warning language: tells (and the polyp's spent-vent
@@ -4483,12 +4486,18 @@ const XL = buildTransformLevel(CONFIG);
   for (const f of tokenized) {
     const src = stripComments(readFileSync(join(srcDir, 'render', f), 'utf8'));
     if (/CONFIG\.palette|CONFIG\.limb\.bg/.test(src)) scattered.push(f);
-    // raw hex colors are forbidden here too — a merged-in literal must be
-    // pulled into palette.js (both tables) or it silently skips the concept
-    // remap (this caught nothing at authoring time; T-001's vapor literal
-    // arrived via merge). The one exception is 0xffffff: the identity base
-    // color of instance-/tint-colored materials, not a palette choice.
-    for (const m of src.match(/0x[0-9a-fA-F]{6}\b/g) || []) {
+    // raw colors are forbidden here too — a merged-in literal must be pulled
+    // into palette.js (both tables) or it silently skips the concept remap
+    // (this caught nothing at authoring time; T-001's vapor literal arrived
+    // via merge). Both spellings count: 0xRRGGBB numbers AND CSS strings
+    // ('#rgb'/'#rrggbb'/'#rrggbbaa', rgb()/rgba()), because the palette
+    // already carries string tokens (capsuleInk, capsule) and a string
+    // literal would skip the remap exactly as silently. The one exception is
+    // 0xffffff: the identity base color of instance-/tint-colored materials,
+    // not a palette choice.
+    const colorLiteral =
+      /0x[0-9a-fA-F]{6}\b|#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b|\brgba?\s*\(/g;
+    for (const m of src.match(colorLiteral) || []) {
       if (m.toLowerCase() !== '0xffffff') literals.push(f + ':' + m);
     }
   }
@@ -4496,8 +4505,8 @@ const XL = buildTransformLevel(CONFIG);
      'palette: no scattered CONFIG.palette reads in tokenized render files' +
      (scattered.length ? ' (found: ' + scattered.join(', ') + ')' : ''));
   ok(literals.length === 0,
-     'palette: no raw hex color literals in tokenized render files (0xffffff ' +
-     'identity base excepted)' +
+     'palette: no raw color literals — 0xRRGGBB or CSS #hex/rgb() — in ' +
+     'tokenized render files (0xffffff identity base excepted)' +
      (literals.length ? ' (found: ' + literals.join(', ') + ')' : ''));
   const sceneSrc = stripComments(readFileSync(join(srcDir, 'render', 'scene.js'), 'utf8'));
   ok(/new THREE\.Color\(PAL\.bg\)/.test(sceneSrc) && /new THREE\.Fog\(PAL\.bg,/.test(sceneSrc),

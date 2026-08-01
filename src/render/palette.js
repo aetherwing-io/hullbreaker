@@ -76,7 +76,6 @@ export const CLASSIC = {
   polypTell: CONFIG.palette.polypTell,   //   branch forked — see the header note)
   polypBeam: CONFIG.palette.polypBeam,
   polypVent: CONFIG.palette.polypVent,
-  enemyGlow: CONFIG.palette.wasp,        // grey-box's "enemy color" is the wasp green
   capsule: CONFIG.palette.capsule,
   modCapsule: CONFIG.palette.modCapsule,
   capsuleInk: '#14181e',
@@ -139,7 +138,11 @@ export const CONCEPT = {
                                          //   ecology, so "live" never reads as "arming"
   polypVent: CONFIG.palette.polypVent,   // spent ember: warm, dim, and deliberately
                                          //   OUT of the acid family — the opening
-  enemyGlow: 0x9dff3a,
+  // NOTE: there is no generic "enemyGlow" token. Every emissive a hostile can
+  // wear is a named state color (houndTell/houndCharge/polypTell/polypBeam/
+  // polypVent, plus the mode-independent glowOff/hitFlash), so a catch-all
+  // would be a color role no mesh reads — coverage the guards can't certify.
+  // A new emissive gets its own token here, in BOTH tables, when a mesh needs it.
   capsule: CONFIG.palette.capsule,       // '#ff4fd8' — already the hot magenta role
   modCapsule: CONFIG.palette.modCapsule, // amber WARN family, distinct from weapons
   capsuleInk: '#14181e',

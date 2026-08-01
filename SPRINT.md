@@ -318,15 +318,21 @@ verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic
   the letter read to the HUD. Asset batches are held until this is picked;
   T-003 implements whichever direction wins.
 - **Palette v1 (T-010):** default (concept palette) vs `?palette=classic`, at
-  FAR — the six-face run (`/index.html`), `?slice=traversal`, `?g1=1`, and
-  `?slice=transform`. Side-by-side pairs in `artifacts/palette-v1/` (judge
-  against boards 01/10/13). Questions: (1) does teal-air/rust-body read as
-  the boards' Meridian, or does the rust drift toward terracotta? (2) do
-  threats and capsules still pop at FAR on the rust deck? (3) is the deck
-  still the obvious route surface (brightest large shape)? (4) does the G1
-  limb backdrop separate from the facet RIG runs on? Note: enemy meshes are
-  still grey-box green this pass (acid-green tokens land after the hostiles
-  lane merges).
+  FAR — the six-face run (`/index.html`), `?slice=traversal`,
+  `?slice=traversal&polyp=1` (the enemy-color frame: acid body, warm tell,
+  hot beam in one shot), `?g1=1`, and `?slice=transform`. Side-by-side pairs
+  in `artifacts/palette-v1/` — `sixface-boot/sixface-action`,
+  `traversal-action`, `polyp-trial`, `g1-limb`, `transform-boot`, each
+  `--classic/--concept/--pair.png` (judge against boards 01/06/10/13). The
+  acid-green hostile ecology is LIVE on every enemy mesh this pass, the Iris
+  Polyp included; only the tells and the polyp's spent vent stay warm amber,
+  in both modes. Questions: (1) does teal-air/rust-body read as the boards'
+  Meridian, or does the rust drift toward terracotta? (2) do threats and
+  capsules still pop at FAR on the rust deck? (3) is the deck still the
+  obvious route surface (brightest large shape)? (4) does the G1 limb
+  backdrop separate from the facet RIG runs on? (5) at FAR, do the acid
+  bodies and their warm-amber tells stay two separate reads against boards
+  01/06/10 — including the rooted polyp against the flying wasp?
 - (new packets append here as tasks land: juice, shell, six-face run)
 
 ## Inbox (playtester/adversarial file here; integrator triages each cycle)
