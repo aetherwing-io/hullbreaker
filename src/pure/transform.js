@@ -363,23 +363,84 @@ export function transformScrollOffset(tMs, speed, cfg) {
   return pull + speed * (cfg.transform.resumeMs / 1000) * (u * u * u) / 3;
 }
 
-// Cover motion: a door swings, a vent cover is blown off and tumbles away.
-// Covers are the one piece of the body allowed to move, and `open` is chunky
-// by construction — it tracks the view's detents, so the cover clacks with it.
+// Cover motion: the one piece of the body allowed to move, and it is a
+// MECHANISM, not anatomy — a hinged access plate on the way in, a hinged vent
+// cover on the way out. Nothing detaches, tumbles, or disappears: the flip
+// plate swings, then RELOCKS flush against the interior wall (the G2 shape —
+// snap 1 exposes the hinge and carries the plate, the hold rotates and
+// relocks only the plate, snap 2 commits the camera); the vent cover is
+// blown to its stop, caught, and hangs there. Both persist after the ritual:
+// a body part that popped out of the world would be assembly played
+// backwards. Chunkiness lives on the ritual's detents — every cover beat
+// lands ON a camera beat.
+//
+// Arm-time (pre-ritual) flip-plate swing: the latch throws, then one heavy
+// swing to ajar, so the way in reads before RIG commits. msSinceArm is
+// accumulated by the render frame hook; this stays a pure curve. The harness
+// asserts the arm window outlasts this swing even at a full sprint, so a
+// ritual never fires against a half-open plate.
+export function transformCoverAjar(msSinceArm, cfg) {
+  const CV = cfg.transform.cover;
+  if (msSinceArm <= CV.unlatchMs) return 0;
+  const u = clamp01((msSinceArm - CV.unlatchMs) / CV.ajarMs);
+  return CV.ajarFrac * easeOutBack(u, cfg.transform.backS);
+}
+
 export function transformPanelState(tMs, ev, cfg, out = {}) {
   const T = cfg.transform;
+  const CV = T.cover;
   const TL = transformTimeline(cfg);
-  out.visible = tMs < TL.t6;
-  out.jolt = 0; out.open = 0; out.blow = 0; out.spin = 0;
+  out.visible = true;                      // covers persist: nothing pops out
+  out.jolt = 0; out.open = 0; out.seated = false;
+  if (ev.kind === 'flip') {
+    // The arm phase already unlatched the plate and swung it to ajar; the
+    // ritual finishes the motion. The latch throw tracks the swing, so the
+    // hand-off from the arm curve is continuous — no pop, in either axis.
+    out.open = CV.ajarFrac;                // flat through the wind-up: the
+    if (tMs >= TL.t1) {                    //   camera counter-rotates, the
+      if (tMs < TL.t2) {                   //   plate waits for the detent
+        const u = (tMs - TL.t1) / T.snap1Ms;   // snap 1: clacks with the view
+        out.open = CV.ajarFrac + (CV.snapFrac - CV.ajarFrac) * easeOutBack(u, T.backS);
+      } else if (tMs < TL.t2 + CV.relockMs) {  // hold: driven home, seats flush
+        const u = (tMs - TL.t2) / CV.relockMs;
+        out.open = CV.snapFrac + (1 - CV.snapFrac) * u * u;
+      } else {
+        out.open = 1; out.seated = true;   // relocked — and it stays, forever
+      }
+    }
+    out.jolt = T.panelJoltTiles * out.open;
+    return out;
+  }
+  // breach: shut and straining through the wind-up, blown to its stop across
+  // snap 1 — one overswing, caught ON the detent — then dead still forever.
   if (tMs <= 0) return out;
   if (tMs < TL.t1) { out.jolt = T.panelJoltTiles * (tMs / T.windUpMs); return out; }
   out.jolt = T.panelJoltTiles;
-  out.open = clamp01(transformYawDeltaDeg(tMs, cfg) / (2 * T.snapDeg));
-  if (ev.kind === 'breach') {
-    const u = clamp01((tMs - TL.t1) / T.panelBlowMs);
-    const e = 1 - (1 - u) * (1 - u);
-    out.blow = T.panelBlowTiles * e;
-    out.spin = T.panelSpinTurns * 2 * Math.PI * e;
+  if (tMs < TL.t2) {
+    out.open = easeOutBack((tMs - TL.t1) / T.snap1Ms, CV.blowBackS);
+    return out;
+  }
+  out.open = 1;
+  return out;
+}
+
+// Pressure vapor at the breach: the ATMOSPHERE is what moves — a burst that
+// peaks on the first detent and is fully cleared before snap 2 commits the
+// camera, so the reveal is a sightline clearing over prebuilt anatomy (the
+// G4 shape: the cover opens, vapor clears, the dorsal route already exists).
+export function transformVapor(tMs, cfg, out = { density: 0, reach: 0 }) {
+  const TL = transformTimeline(cfg);
+  out.density = 0; out.reach = 0;
+  if (tMs >= TL.t4) { out.reach = 1; return out; }
+  if (tMs <= TL.t1) return out;
+  const ur = (tMs - TL.t1) / (TL.t4 - TL.t1);
+  out.reach = 1 - (1 - ur) * (1 - ur);
+  if (tMs < TL.t2) {
+    const u = (tMs - TL.t1) / (TL.t2 - TL.t1);
+    out.density = u * (2 - u);             // easeOutQuad rise to the detent
+  } else {
+    const u = (tMs - TL.t2) / (TL.t4 - TL.t2);
+    out.density = (1 - u) * (1 - u);       // clears through the hold
   }
   return out;
 }

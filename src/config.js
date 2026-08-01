@@ -271,10 +271,27 @@ export const CONFIG = {
                                //   the bend comes to the player (haltOffset + 2)
     backS: 1.1,                // yaw easeOutBack overshoot (~5%, one settle)
     snapDeg: 45,               // per detent; one turn is 2 × snapDeg = 90°
-    coverOpenMs: 420,          // a door swings open as RIG arrives: the way into
-                               //   the body pre-exists, the cover is just shut
-    panelJoltTiles: 0.18, panelBlowMs: 320,    // unlatch jolt / blown-cover flight
-    panelBlowTiles: 11, panelSpinTurns: 1.35,
+    panelJoltTiles: 0.18,      // unlatch jolt: the latch throws, the plate shivers
+    cover: {                   // the one moving piece of the body (both turns) is a
+                               //   MECHANISM — a hinged access plate in, a hinged
+                               //   vent cover out. Nothing detaches, tumbles, or
+                               //   disappears; every beat lands on a camera detent.
+      unlatchMs: 120,          // arm: the latch throw before the swing (clack 1)
+      ajarMs: 380,             // arm: one heavy swing to ajar — the way in reads
+                               //   before RIG commits. unlatch+ajar stays inside
+                               //   the 532 ms worst-case arm window (a full
+                               //   sprint from the arming lookahead), asserted
+      ajarFrac: 0.8,           // ajar clears the combat lane but is visibly NOT
+                               //   seated: the relock still owes a beat
+      snapFrac: 0.96,          // snap 1 carries the plate here — it clacks with
+                               //   the camera's first detent, a hair short of home
+      relockMs: 120,           // hold: the plate is driven home and seats flush
+                               //   against the interior wall (G2 "rotates and
+                               //   relocks"), well before snap 2
+      blowBackS: 2.8,          // breach: overswing past the stop, caught ON the
+                               //   detent — one motion, no tumble, no debris
+      breachStopDeg: 104,      // breach rest angle: past flush, hanging open
+    },
     clearMsgMs: 1400,          // how long a turn's HUD stinger stays up
     // RETIRED FROM TRANSITIONS, RESERVED FOR HOSTILE CONSTRUCTS (FLEET-PLAN
     // July 30 addendum): the staggered assembly drop. The creature's body

@@ -758,6 +758,13 @@ tools/playtest/
                             policy-pinned-jump.json / policy-hound-reactive.json (closed-loop proof))
   reports/demo/             committed demo run output (json/md only)
   runs/                     default ad-hoc output dir (gitignored)
+  transform-capture.mjs    dev-only evidence script for the CP3 transform slice:
+                            keyframe screenshots keyed on the ?testapi=1 transform
+                            block's ritual clock (run.mjs's fixed sampling cadence
+                            cannot pin frames to ritual beats). Honesty: frames are
+                            taken when a polled predicate first passes, so each
+                            frame's true tMs is recorded in index.json — trust
+                            those numbers, not the filenames, for beat placement.
 ```
 
 ## Single best next action

@@ -10,22 +10,30 @@
    behind the fog, and a transition reveals it by swinging the VIEW through
    that bend (src/render/camera.js) while RIG runs the chamfer.
 
-   The only things that move here are covers — a door swinging, a vent cover
-   blown off — and the atmosphere. If anything else in frame moves, it is the
-   bug the operator saw in the first pass.
+   The only things that move here are covers and the atmosphere, and a cover
+   is a MECHANISM with a hinge, not a body part: the access plate swings and
+   then RELOCKS flush against the interior wall (it stays in the world); the
+   vent cover is blown open to its stop, caught there, and hangs — one
+   motion, no tumbling debris, nothing vanishing. Every cover beat lands on
+   a camera detent (src/pure/transform.js owns the curves). The breach adds
+   a pressure-vapor burst that clears before the camera commits — vapor is
+   atmosphere, and atmosphere is allowed to move.
 
    Nothing here touches the simulation: RIG is still running in (s, y). */
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
+import { DEG } from '../pure/path.js';
 import {
   TRANSFORM_FIXTURE as FIX, TRANSFORM_PATH as PATH,
-  transformAltAt, transformAtmosphereMix, transformGradeAt, transformPanelState,
+  transformAltAt, transformAtmosphereMix, transformCoverAjar, transformGradeAt,
+  transformPanelState, transformVapor,
 } from '../pure/transform.js';
 import { IS_TRANSFORM_SLICE } from '../mode.js';
 import { installView } from '../sim/bridge.js';
 import { groundH, platforms } from '../sim/level.js';
 import { scene } from './scene.js';
+import { activeCameraDepth } from './camera.js';
 import { placeSharp } from './tower.js';
 
 const T = CONFIG.transform;
@@ -80,7 +88,7 @@ function rampAt(w, h, d, material, s, y, depth, parent) {
 }
 
 const bands = [];                        // per stretch: { group, weather, band }
-const covers = [];                       // per event: { hinge, leaf, debris }
+const covers = [];                       // per event: { hinge, leaf, vapor, … }
 let atmoFrom = null, atmoTo = null;      // atmosphere cross-fade endpoints
 
 /* ---------------------------- static bake --------------------------- */
@@ -248,10 +256,15 @@ function buildBand(band) {
 
 /* -------------------------- covers that move ------------------------ */
 /* An opening in the anatomy pre-exists; its cover is the one piece of the
-   body allowed to move. A door swings inward on chunky machinery; a vent
-   cover is blown off and tumbles away with the plate it took with it.   */
+   body allowed to move, and it never leaves the world. The access plate
+   swings inward on chunky machinery, then relocks flush against the
+   interior wall — after the turn it IS interior dressing. The vent cover
+   is blown open on its hinge to a caught stop and hangs there, while a
+   burst of pressure vapor (atmosphere) clears the sightline to the
+   prebuilt high face.                                                  */
 
 const DOOR_H = 13, DOOR_W = 6.0, HINGE_Z = -3.4;
+const VAPOR_N = 120;                     // instanced motes; deterministic scatter
 
 function buildCover(ev, M) {
   const ref = groundRefIn(ev.seamS - 2, ev.seamS + 1);
@@ -286,23 +299,36 @@ function buildCover(ev, M) {
   box(1.25, 0.7, DOOR_W, M.accent, 0, 1.9, zc, leaf);
   box(1.5, 1.4, 1.4, M.rib, 0, DOOR_H * 0.5, zc + DOOR_W / 2 - 0.7, leaf);
 
-  // A vent cover comes off in pieces: authored offsets, no rng, so a bot trace
-  // and a screenshot stay comparable run to run. This is the cover breaking,
-  // not the body moving.
-  const debris = [];
+  // The breach vents pressure: an instanced mote burst anchored at the mouth.
+  // Deterministic seeded scatter (same trick as the weather), so a bot trace
+  // and a screenshot stay comparable run to run. This is air escaping the
+  // body, not the body moving — and it is gone before the camera commits.
+  let vapor = null;
   if (ev.kind === 'breach') {
-    for (let i = 0; i < 9; i++) {
-      const sz = 0.6 + (i % 3) * 0.5;
-      const m = box(sz, sz * 0.7, sz, i % 2 ? M.panel : M.hull,
-                    0, 1.2 + i * 1.3, 1.4 + (i % 4), hinge);
-      debris.push({
-        mesh: m, base: m.position.clone(),
-        vx: 1 + (i % 5) * 0.5, vy: 0.35 + (i % 3) * 0.45, vz: ((i % 3) - 1) * 0.6,
-        spin: 3 + (i % 4),
+    const geo = new THREE.BoxGeometry(0.42, 0.42, 0.42);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0xaebbc6, transparent: true, opacity: 0, depthWrite: false,
+    });
+    const mesh = new THREE.InstancedMesh(geo, mat, VAPOR_N);
+    mesh.frustumCulled = false;
+    mesh.visible = false;
+    hinge.add(mesh);
+    const motes = [];
+    let seed = 20260731;                 // deterministic scatter, no run rng
+    const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+    for (let i = 0; i < VAPOR_N; i++) {
+      motes.push({
+        dx: 2 + rnd() * 9,               // downpath: out over the revealed face
+        dy: (rnd() - 0.15) * 7,          // mostly rising
+        dz: (rnd() - 0.5) * 5,
+        y0: 1 + rnd() * DOOR_H,          // vents from the whole mouth
+        sz: 0.6 + rnd() * 1.4,
       });
     }
+    vapor = { mesh, motes };
   }
-  return { hinge, leaf, debris, openU: 0, opening: false, kind: ev.kind };
+  const stopRad = (ev.kind === 'breach' ? T.cover.breachStopDeg : 90) * DEG;
+  return { hinge, leaf, vapor, armMs: 0, arming: false, kind: ev.kind, stopRad };
 }
 
 // local-space box for cover parts (children of the hinge, which is posed once)
@@ -317,45 +343,71 @@ function box(w, h, d, material, x, y, z, parent) {
 
 const _c = new THREE.Color();
 function applyAtmosphere(a, b, u) {
-  scene.fog.near = a.fogNear + (b.fogNear - a.fogNear) * u;
-  scene.fog.far = a.fogFar + (b.fogFar - a.fogFar) * u;
+  // Authored per-band fog is composed for the near camera; pulling the view
+  // back (?view=mid|far, or the portrait correction) must carry the fog band
+  // with it — the same depth-delta rule src/render/camera.js applies to every
+  // other mode — or the interior compresses into a void at the far default
+  // and there is nothing on screen for a turn to reveal.
+  const shift = activeCameraDepth() - CONFIG.camera.z;
+  scene.fog.near = a.fogNear + (b.fogNear - a.fogNear) * u + shift;
+  scene.fog.far = a.fogFar + (b.fogFar - a.fogFar) * u + shift;
   scene.fog.color.setHex(a.bg).lerp(_c.setHex(b.bg), u);
   scene.background.copy(scene.fog.color);
 }
+let atmoRest = null;                     // the band atmosphere the air rests at
 
-// The way into the body opens as RIG arrives: a door is the one thing here that
-// is allowed to move, and it moves *before* the turn so the turn itself is pure
-// view. A vent cover stays shut — RIG blows that one out on the way through.
+// The way into the body opens as RIG arrives: the access plate unlatches and
+// swings to AJAR — open enough that the way in reads, visibly not seated —
+// and then holds dead still. The ritual finishes the motion on its own
+// detents. A vent cover stays shut; the breach blows that one open.
 function armed(ev) {
   const c = covers[ev.index];
-  if (c && c.kind === 'flip') c.opening = true;
+  if (c && c.kind === 'flip') c.arming = true;
 }
 
 function started(ev) {
+  const c = covers[ev.index];
+  if (c) c.arming = false;               // the ritual owns the plate from here
   atmoFrom = FIX.bands[ev.fromBand].atmosphere;
   atmoTo = FIX.bands[ev.toBand].atmosphere;
   ritual(ev, 0);
 }
 
-const _panel = { visible: false, jolt: 0, open: 0, blow: 0, spin: 0 };
+const _panel = { visible: true, jolt: 0, open: 0, seated: false };
+const _vap = { density: 0, reach: 0 };
+const _vm = new THREE.Matrix4();
+
+// One pose rule for both covers: a swing on the hinge, a jolt on the latch.
+// A caught vent cover hangs with a slight sag; a relocked plate sits square.
+function applyCover(c, st) {
+  c.leaf.rotation.y = st.open * c.stopRad;
+  c.leaf.position.x = st.jolt;
+  c.leaf.rotation.z = c.kind === 'breach' ? -0.04 * Math.min(1, st.open) : 0;
+}
+
+function applyVapor(c, tMs) {
+  const st = transformVapor(tMs, CONFIG, _vap);
+  const v = c.vapor;
+  const on = st.density > 0.003;
+  v.mesh.visible = on;
+  if (!on) return;
+  v.mesh.material.opacity = 0.42 * st.density;
+  for (let i = 0; i < v.motes.length; i++) {
+    const m = v.motes[i];
+    const s = m.sz * (0.55 + 0.9 * st.reach);
+    _vm.makeScale(s, s, s);
+    _vm.setPosition(m.dx * st.reach + 0.4, m.y0 + m.dy * st.reach, m.dz * st.reach);
+    v.mesh.setMatrixAt(i, _vm);
+  }
+  v.mesh.instanceMatrix.needsUpdate = true;
+}
 
 function ritual(ev, t) {
   // Nothing about the world is touched here: only the cover and the air.
   const c = covers[ev.index];
-  if (c && ev.kind === 'breach') {
-    const st = transformPanelState(t, ev, CONFIG, _panel);
-    c.hinge.visible = st.visible;
-    c.leaf.rotation.y = st.open * 0.5;
-    c.leaf.position.set(st.jolt + st.blow, st.blow * 0.4, 0);
-    c.leaf.rotation.z = st.spin;
-    c.leaf.rotation.x = st.spin * 0.35;
-    for (const d of c.debris) {
-      d.mesh.visible = st.visible && st.blow > 0;
-      d.mesh.position.set(
-        d.base.x + st.blow * d.vx, d.base.y + st.blow * d.vy, d.base.z + st.blow * d.vz
-      );
-      d.mesh.rotation.set(st.spin * d.spin * 0.3, st.spin * d.spin * 0.2, st.spin * d.spin * 0.4);
-    }
+  if (c) {
+    applyCover(c, transformPanelState(t, ev, CONFIG, _panel));
+    if (c.vapor) applyVapor(c, t);
   }
   if (atmoFrom) applyAtmosphere(atmoFrom, atmoTo, transformAtmosphereMix(t, CONFIG));
 }
@@ -363,25 +415,33 @@ function ritual(ev, t) {
 function finished(ev) {
   const c = covers[ev.index];
   if (c) {
-    c.hinge.visible = false;
-    for (const d of c.debris) d.mesh.visible = false;
+    c.arming = false;
+    // final state, held forever: the plate relocked flush, the vent cover
+    // hanging on its caught stop. Nothing is hidden — the cover is part of
+    // the body RIG just climbed through.
+    applyCover(c, transformPanelState(1e9, ev, CONFIG, _panel));
+    if (c.vapor) c.vapor.mesh.visible = false;
   }
   applyAtmosphere(FIX.bands[ev.fromBand].atmosphere, FIX.bands[ev.toBand].atmosphere, 1);
+  atmoRest = FIX.bands[ev.toBand].atmosphere;
   atmoFrom = atmoTo = null;
 }
 
 // Per-frame presentation tick (src/sim/transform.js calls it once per update).
-// Weather only — the body has nothing to update.
+// The arming plate's swing to ajar, and weather — the body has nothing to
+// update. The curve is pure (src/pure/transform.js); only the clock is here.
 const _rm = new THREE.Matrix4();
 function frame(dtMs) {
   const dt = Math.min(50, dtMs) / 1000;
-  // a door finishing its swing: the only body part with a hinge
+  // At rest the air still tracks the camera depth (a resize can change it and
+  // camera.js's calibrateEdges leaves this slice's fog to this module).
+  if (!atmoFrom && atmoRest) applyAtmosphere(atmoRest, atmoRest, 0);
   for (const c of covers) {
-    if (!c.opening || c.openU >= 1) continue;
-    c.openU = Math.min(1, c.openU + (dtMs / T.coverOpenMs));
-    const e = 1 - (1 - c.openU) * (1 - c.openU);
-    c.leaf.rotation.y = e * Math.PI / 2;
-    c.leaf.position.x = e * T.panelJoltTiles;
+    if (!c.arming) continue;
+    c.armMs += dtMs;
+    const open = transformCoverAjar(c.armMs, CONFIG);
+    c.leaf.rotation.y = open * c.stopRad;
+    c.leaf.position.x = open * T.panelJoltTiles;
   }
   for (const b of bands) {
     const w = b.weather;
@@ -402,20 +462,15 @@ function frame(dtMs) {
 
 function reset() {                       // run reset: covers closed, air at the start
   for (const c of covers) {
-    c.hinge.visible = true;
-    c.openU = 0;
-    c.opening = false;
+    c.armMs = 0;
+    c.arming = false;
     c.leaf.rotation.set(0, 0, 0);
     c.leaf.position.set(0, 0, 0);
-    for (const d of c.debris) {
-      d.mesh.visible = false;
-      d.mesh.position.copy(d.base);
-      d.mesh.rotation.set(0, 0, 0);
-    }
+    if (c.vapor) c.vapor.mesh.visible = false;
   }
   atmoFrom = atmoTo = null;
-  const a = FIX.bands[0].atmosphere;
-  applyAtmosphere(a, a, 0);
+  atmoRest = FIX.bands[0].atmosphere;
+  applyAtmosphere(atmoRest, atmoRest, 0);
 }
 
 // Called at the bottom of the module, after every constant it reads exists.
