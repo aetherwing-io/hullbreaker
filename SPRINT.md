@@ -136,7 +136,7 @@ accept:
 owner: docs
 verify: grep the claims against src/main.js telemetry + README
 
-## T-008 | feature | doing | P2
+## T-008 | feature | review | P2
 
 goal: G2 neck access-plate flip gate fixture per the greybox-map proposal
 (`docs/proposals/2026-07-meridian-monster-greybox-map.md` §G2), building on
