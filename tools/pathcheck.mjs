@@ -57,6 +57,9 @@ import {
   solidRectContains, levelSolidCell, buildLevel, buildTraversalLevel,
   buildSpawnTable, GAP,
 } from '../src/pure/generator.js';
+// T-009: the lattice pass is asserted through its own exports (namespace
+// import so the appended section stays one self-contained block).
+import * as latticeModule from '../src/pure/lattice.js';
 import {
   limbBakePlan, limbFacets, limbFacetTone, limbJoints, limbOutwardReach,
   limbPlanViolations, limbSpanHasGap, limbSpansPlayBand,
@@ -442,9 +445,17 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
 }
 
 // --- authored traversal slice ------------------------------------------
-ok(gH.length === 445 && plats.length === 49 && LVL.chunkLog.length === 59,
-   'normal generator shape unchanged (445 columns / 49 platforms / 59 chunks)');
-ok(fingerprint(LVL) === 'cc6afd7c',
+// Re-pinned by T-009 (six-face integration): the lattice pass now carves one
+// dare pocket per face and repairs route density (src/pure/lattice.js), so the
+// shipped six-face geometry deliberately moved — 49 -> 63 catwalks, and the
+// build result gained its `pockets` / `lattice` report. The chunk stream itself
+// is untouched (59 chunks, same seed, same rng draws): the lattice consumes no
+// randomness. Both values below are regression pins, not targets — if a change
+// moves them again it has to be as deliberate as this one was.
+ok(gH.length === 445 && plats.length === 63 && LVL.chunkLog.length === 59,
+   'normal generator shape pinned (445 columns / 63 platforms / 59 chunks), got ' +
+   gH.length + '/' + plats.length + '/' + LVL.chunkLog.length);
+ok(fingerprint(LVL) === '0a8f4379',
    'normal generator fingerprint unchanged, got ' + fingerprint(LVL));
 
 const fixtureBefore = JSON.stringify(TRAVERSAL_FIXTURE);
@@ -4430,6 +4441,261 @@ const XL = buildTransformLevel(CONFIG);
   ok(wgFinish.indexOf("state = 'done'") >= 0 &&
      wgFinish.indexOf("state = 'done'") < wgFinish.indexOf('view.corner.finished'),
      "T-012: wavegate.finishCorner commits state='done' before corner.finished fires");
+}
+
+/* ============ T-009: the six-face lattice (route density) ============== *
+ * The default run's own level-construction contract, asserted the way the
+ * traversal fixture's is. Everything here reads the SHIPPED build (`LVL`
+ * above) through src/pure/lattice.js's own exported functions, so the
+ * generator and the harness can never disagree about what "readable route",
+ * "reachable", "stranded", or "measured retreat" mean.                    */
+{
+  const LAT = latticeModule;
+  const L = LAT.LATTICE;
+  const lvl = { groundH: LVL.groundH, platforms: LVL.platforms };
+
+  // --- route density: 3-5 readable routes, every face, every window -----
+  {
+    let thin = 0, busy = 0, worst = 99, most = 0;
+    for (const span of LAT.latticeInterior(CONFIG)) {
+      for (let s = span.a; s <= span.b; s++) {
+        const c = LAT.latticeRouteCount(lvl, s, CONFIG);
+        if (c < L.minRoutes) thin++;
+        if (c > L.maxRoutes) busy++;
+        worst = Math.min(worst, c); most = Math.max(most, c);
+      }
+    }
+    ok(thin === 0, 'T-009: no face window reads fewer than ' + L.minRoutes +
+       ' routes (worst ' + worst + ', ' + thin + ' thin windows)');
+    ok(busy === 0, 'T-009: no face window reads more than ' + L.maxRoutes +
+       ' routes (most ' + most + ', ' + busy + ' busy windows)');
+    ok(LAT.latticeInterior(CONFIG).length === CONFIG.path.faces,
+       'T-009: the density invariant covers all six faces');
+  }
+
+  // --- the lattice pass is a fixpoint, not a schedule -------------------
+  // Re-running both passes on the shipped level must want nothing: if it did,
+  // the level the player gets would depend on where a loop happened to stop.
+  {
+    const copy = { groundH: LVL.groundH, platforms: LVL.platforms.slice() };
+    const add = LAT.latticePatchPass(copy, CONFIG);
+    const cut = LAT.latticeThinPass(copy, CONFIG);
+    ok(add.length === 0 && cut.length === 0,
+       'T-009: the lattice pass converged (' + add.length + ' more patches, ' +
+       cut.length + ' more thins wanted)');
+    const again = buildLevel(CONFIG);
+    ok(fingerprint(again) === fingerprint(LVL),
+       'T-009: the lattice is deterministic across builds');
+  }
+
+  // --- reachability and stranding ---------------------------------------
+  {
+    const bad = LAT.latticeUnreachable(lvl, CONFIG);
+    ok(bad.length === 0, 'T-009: every catwalk (patched or authored) is within ' +
+       'double-jump reach of a support, got ' + bad.length + ' orphans');
+    const stranded = LAT.latticeStranded(lvl, CONFIG);
+    ok(stranded.length === 0, 'T-009: no catwalk strands the player at its ' +
+       'forward end, got ' + JSON.stringify(stranded.slice(0, 3)));
+  }
+
+  // --- dare pockets: shape, placement, entry, and the measured retreat ---
+  {
+    const pockets = LVL.pockets;
+    const P = L.pocket;
+    ok(pockets.length === CONFIG.path.faces,
+       'T-009: one dare pocket per face, got ' + pockets.length);
+    // the authored sites and the built terrain agree
+    const sites = LAT.latticePocketSites(CONFIG, LVL.groundH);
+    ok(JSON.stringify(sites) === JSON.stringify(pockets),
+       'T-009: the built pockets are exactly the authored sites');
+
+    let badFace = 0, badArena = 0, badChasm = 0, badDrop = 0, badApron = 0;
+    let badShelf = 0, badMount = 0, badEntry = 0, badReward = 0, badRetreat = 0;
+    let badMid = 0;
+    const PJ = CONFIG.player;
+    const apex = (PJ.jumpVel * PJ.jumpVel) / (2 * -PJ.gravity);
+    const doubleApex = apex + (PJ.airJumpVel * PJ.airJumpVel) / (2 * -PJ.gravity);
+    for (const p of pockets) {
+      const face = faceIndexAt(p.x0, CONFIG);
+      if (face !== p.face || faceIndexAt(p.x1 - 1, CONFIG) !== p.face) badFace++;
+      // never inside the wave gate's arena, never in a corner apron
+      if (p.x1 > p.corner - P.cornerClearBefore) badArena++;
+      if (p.x0 < p.corner - CONFIG.path.faceTiles + P.cornerClearAfter) badApron++;
+      // the chasm is exactly the authored hole, with solid runs either side
+      let holes = 0, approachSolid = 0, landingSolid = 0;
+      for (let s = p.x0; s < p.x1; s++) {
+        const g = LVL.groundH[s];
+        if (s >= p.gap.x0 && s < p.gap.x1) { if (g < -100) holes++; continue; }
+        if (g < -100) continue;
+        if (s < p.gap.x0) { if (g === p.deckY) approachSolid++; }
+        else if (g === p.landingY) landingSolid++;
+      }
+      if (holes !== P.gapCols) badChasm++;
+      if (approachSolid !== P.approachCols || landingSolid !== P.landingCols) badDrop++;
+      // the deck steps down by exactly one across the hole: legal for a gap
+      // (<= 1) and worth an extra tile of airtime to a cut jump
+      if (p.deckY - p.landingY !== P.landingDrop &&
+          !(p.landingY === CONFIG.gen.minH && p.deckY === CONFIG.gen.minH)) badDrop++;
+      // the shelf: tip over the void, mount over the landing
+      if (!(p.shelf.x0 === p.gap.x0 && p.shelf.x1 > p.gap.x1)) badShelf++;
+      for (let s = p.gap.x1; s < p.shelf.x1; s++)
+        if (!(LVL.groundH[s] > -100)) badMount++;
+      // ENTRY CONTRACT: the shelf may not be jumpable from the deck (or the
+      // pocket is not a pocket, it is a shortcut), and must be one air jump
+      // over its own mid lane (or it is not enterable at all).
+      if (p.shelf.y - p.landingY <= doubleApex) badEntry++;
+      if (p.mid.y - p.landingY > apex) badEntry++;
+      if (p.shelf.y - p.mid.y > doubleApex) badEntry++;
+      if (Math.abs((p.shelf.y - p.mid.y) - L.tierRise) > 1e-9) badMid++;
+      // the reward sits over the tip, inside the pickup radius of the deck
+      if (!(p.reward.x >= p.shelf.x0 && p.reward.x <= p.shelf.x0 + 1)) badReward++;
+      if (!(p.reward.y - p.shelf.y > 0 && p.reward.y - p.shelf.y <= CONFIG.capsules.pickupRadius + 1))
+        badReward++;
+      // the wager: the retreat has to leave real daylight when it is over
+      const advance = CONFIG.scrollSpeed * p.retreat.seconds;
+      if (Math.abs(advance - p.retreat.edgeAdvanceTiles) > 1e-9) badRetreat++;
+      if (P.timing.entryEdgeMarginTiles - advance < P.timing.minExitMarginTiles) badRetreat++;
+      if (p.retreat.depthTiles !== P.gapCols) badRetreat++;
+    }
+    ok(badFace === 0, 'T-009: every pocket lies wholly inside its own face');
+    ok(badArena === 0, 'T-009: no pocket reaches into the wave gate arena ' +
+       '(>= ' + P.cornerClearBefore + ' tiles clear of the corner)');
+    ok(badApron === 0, 'T-009: no pocket sits on a corner apron exit');
+    ok(badChasm === 0, 'T-009: every pocket chasm is exactly ' + P.gapCols + ' columns');
+    ok(badDrop === 0, 'T-009: every pocket has its authored approach/landing runs, ' +
+       'and the deck steps down exactly ' + P.landingDrop + ' across the hole');
+    ok(badShelf === 0, 'T-009: every shelf tip hangs over the chasm');
+    ok(badMount === 0, 'T-009: every shelf mount sits over solid landing');
+    ok(badEntry === 0, 'T-009: a shelf is unreachable from the deck (double-jump ' +
+       'apex ' + doubleApex.toFixed(2) + ') and one air jump over its own mid lane');
+    ok(badMid === 0, 'T-009: shelf sits exactly one tier (+' + L.tierRise + ') over its mid lane');
+    ok(badReward === 0, 'T-009: every pocket reward sits on the shelf tip');
+    ok(badRetreat === 0, 'T-009: every pocket retreat is measured and fits the ' +
+       'clock (' + P.timing.entryEdgeMarginTiles + ' tiles of daylight in, >= ' +
+       P.timing.minExitMarginTiles + ' out)');
+
+    // the chasm itself, against the frozen jump: a HELD jump clears it with
+    // slack from a launch one tile short of the lip
+    {
+      const airMs = (2 * PJ.jumpVel) / -PJ.gravity;
+      const fall = Math.sqrt((2 * apex) / (-PJ.gravity * PJ.fallGravityMult));
+      const reach = PJ.runSpeed * (airMs / 2 + fall);
+      ok(reach - (P.gapCols + 1.7) > 0.5,
+         'T-009: a held jump clears a pocket chasm with slack (' +
+         reach.toFixed(2) + ' tiles of travel vs ' + (P.gapCols + 1.7).toFixed(2) + ' needed)');
+      ok(P.gapCols <= CONFIG.gen.gapMax,
+         'T-009: the pocket chasm respects the generator gap ceiling');
+    }
+  }
+
+  // --- pockets never leak into the traversal slice ----------------------
+  // The slice overlays its fixture on the same seeded build; face 1's pocket
+  // lands inside those bounds and must be completely overwritten, or the
+  // judged slice would silently change under another lane's feet.
+  {
+    const slice = buildTraversalLevel(CONFIG);
+    const fb = TRAVERSAL_FIXTURE.bounds;
+    let leaked = 0;
+    for (const p of slice.platforms)
+      if (p.pocket && p.x1 > fb.x0 && p.x0 < fb.x1) leaked++;
+    ok(leaked === 0, 'T-009: no pocket catwalk survives inside the traversal fixture band');
+    let groundOk = true;
+    for (const run of TRAVERSAL_FIXTURE.groundRuns)
+      for (let x = run.x0; x < run.x1; x++) if (slice.groundH[x] !== run.y) groundOk = false;
+    ok(groundOk, 'T-009: the fixture band still owns its authored ground runs');
+  }
+}
+
+/* ---- T-009: the whole run is crossable, driven through the REAL sim ---- *
+ * The lattice assertions above are geometry. This one is behaviour: a child
+ * process runs the shipped six-face simulation with a traversal policy — hold
+ * right, and HOLD a jump whenever the deck one tile ahead is a hole or a step
+ * — and the run has to reach the outro without the terrain killing it.
+ *
+ * Two deliberate simplifications, both stated rather than hidden: hostiles are
+ * removed every frame (which also clears each gate the moment it arms), so
+ * this proves the ROUTE and not the fight; and the policy jumps at the LIP
+ * (probe 1.2), because that is what the right-screen clamp demands — a pinned
+ * player crosses ground at scroll speed, so a jump spent 2 tiles early lands
+ * in the hole it was meant to clear. That asymmetry is exactly why a pocket
+ * chasm is two columns wide; see src/pure/lattice.js.
+ *
+ * Measured for the record (terrain-only, same policy): on `main` this policy
+ * falls at x=266 and x=363 and is out of lives at 363; with the lattice it
+ * falls once (x=266.2, a seeded chunk gap that predates this task) and reaches
+ * the scroll end with 2 lives. No fall may land inside an authored pocket.  */
+{
+  const simBase = 'file://' + join(srcDir, 'sim');
+  const child = `
+    const [T, E, LV, SC, PLm, IN, ST, HO, WP, SP, WG] = await Promise.all([
+      import(${JSON.stringify(simBase + '/time.js')}),
+      import(${JSON.stringify(simBase + '/edges.js')}),
+      import(${JSON.stringify(simBase + '/level.js')}),
+      import(${JSON.stringify(simBase + '/scroll.js')}),
+      import(${JSON.stringify(simBase + '/player.js')}),
+      import(${JSON.stringify(simBase + '/input.js')}),
+      import(${JSON.stringify(simBase + '/state.js')}),
+      import(${JSON.stringify(simBase + '/hostiles.js')}),
+      import(${JSON.stringify(simBase + '/weapons.js')}),
+      import(${JSON.stringify(simBase + '/spawner.js')}),
+      import(${JSON.stringify(simBase + '/wavegate.js')}),
+    ]);
+    E.setEdges(-18.9, 26.4);
+    LV.unbuildFutureFaces();
+    ST.setState('PLAYING');
+    const p = PLm.player;
+    p.x = 6; p.y = 3;
+    IN.keys.right = true;
+    const dt = 1 / 60;
+    let jumpUntil = 0, maxX = 0, falling = false;
+    const falls = [];
+    for (let f = 0; f < 20000; f++) {
+      if (p.grounded &&
+          (LV.groundTopAt(p.x + 1.2) < -100 || LV.groundTopAt(p.x + 1.2) > p.y + 0.6)) {
+        IN.bufferJumpUntil(T.gameMs + 120);
+        IN.keys.jump = true;
+        jumpUntil = T.gameMs + 420;          // HOLD it: a committed jump
+      }
+      if (T.gameMs > jumpUntil) IN.keys.jump = false;
+      T.advanceGameMs(dt * 1000);
+      SC.updateScroll(dt);
+      PLm.updatePlayer(dt);
+      maxX = Math.max(maxX, p.x);
+      if (p.y < -6 && !falling) { falls.push(p.x); falling = true; }
+      if (p.y > 0) falling = false;
+      if (ST.state !== 'PLAYING') break;
+      while (HO.hostiles.length) HO.removeHostile(0, false);   // route, not fight
+      HO.updateHostiles(dt);
+      WP.updateBullets(dt);
+      if (T.scrollX >= LV.activeScrollEnd()) break;
+    }
+    console.log(JSON.stringify({
+      x: p.x, maxX, scrollX: T.scrollX, end: LV.activeScrollEnd(),
+      lives: p.lives, hp: p.hp, state: ST.state, falls,
+    }));
+  `;
+  let run = null;
+  try {
+    run = JSON.parse(execFileSync(process.execPath,
+      ['--input-type=module', '-e', child], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }));
+  } catch (e) {
+    console.error('pathcheck: T-009 full-run child failed: ' + e.message);
+  }
+  ok(!!run, 'T-009: the six-face run simulates headlessly end to end');
+  if (run) {
+    ok(run.state === 'PLAYING' || run.state === 'VICTORY',
+       'T-009: a held-jump policy survives the whole lattice (state ' + run.state +
+       ', lives ' + run.lives + ')');
+    ok(run.scrollX >= run.end,
+       'T-009: the run reaches the outro scroll end (' + run.scrollX.toFixed(1) +
+       ' of ' + run.end + ', maxX ' + run.maxX.toFixed(1) + ')');
+    const inPocket = run.falls.filter((x) =>
+      LVL.pockets.some((p) => x >= p.x0 - 1 && x < p.x1 + 1));
+    ok(inPocket.length === 0,
+       'T-009: no authored pocket ever swallows the policy (falls at ' +
+       JSON.stringify(run.falls.map((x) => +x.toFixed(1))) + ', in-pocket ' +
+       JSON.stringify(inPocket) + ')');
+  }
 }
 
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');
