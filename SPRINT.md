@@ -108,7 +108,7 @@ accept:
 owner: gameplay-engineer
 verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic --out /tmp/t005-check
 
-## T-006 | feature | doing | P3
+## T-006 | feature | done | P3
 
 goal: rib-run authored-slope movement prototype — the costed-but-unstarted
 movement-lane candidate (decisions.md entry 5): a long diagonal ribline run
