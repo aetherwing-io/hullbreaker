@@ -181,6 +181,15 @@ pipeline spawns no review or playtest behind it). This happened on 2026-08-01
 with T-021 and was caught only because the second builder noticed a commit it
 had not authored and messaged the integrator.
 
+**A probe that releases the jump key measures a game nobody plays.**
+`CONFIG.jumpCutMult` is 0.45 and `src/sim/player.js` applies it on release, so
+a sweep that lets go mid-flight tops out ~0.7 tiles below what a held jump
+actually reaches. That single bug produced a confident, well-evidenced,
+WRONG conclusion about a mechanic's reachability on 2026-08-01 — it was
+retracted only because its author re-checked. Any probe, pathcheck child, or
+bot policy asserting what a player can reach must hold the jump through the
+whole flight, and should say in its output that it did.
+
 ## Watching the fleet (what the integrator's monitor should fire on)
 
 Only two states need the integrator, and a monitor that fires on more than
