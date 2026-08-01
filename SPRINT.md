@@ -59,7 +59,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; repro per tools/playtest/README.md §Deterministic injection mode
 
-## T-003 | art | todo | P1
+## T-003 | art | doing | P1
 
 goal: FAR-camera readability pass — the accepted follow-up from the view-scale
 verdict (decisions.md entry 7): scale up enemy tells, capsule letter glyphs,
@@ -314,7 +314,7 @@ accept:
 owner: gameplay-engineer
 verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic; node tools/assets/check.mjs --selftest
 
-## T-018 | harness | todo | P1
+## T-018 | harness | doing | P1
 
 goal: make "boot to victory" provable — the delivery target's last unproven
 claim. T-009's six-face-full-run.json clears wave gate 1 and dies in gate 2 on
