@@ -22,7 +22,12 @@ function renderSummary(report) {
   lines.push('## Outcome');
   lines.push(`- Result: **${metrics.outcome.result}**`);
   lines.push(`- Attempts: ${metrics.outcome.attempts ?? 'n/a'}, falls (final attempt, only visible on victory): ${metrics.outcome.falls ?? 'n/a'}`);
-  lines.push(`- Kills: ${metrics.finalKills ?? 'n/a'}, deaths observed: ${metrics.deaths}, hits survived: ${metrics.hitsWithoutDeath}`);
+  lines.push(`- Kills: ${metrics.finalKills ?? 'n/a'}, attempt-counter deaths (FIXTURE-ONLY, structurally 0 in the default run): ${metrics.deaths}, hits survived: ${metrics.hitsWithoutDeath}`);
+  if (metrics.lives.unavailableReason) {
+    lines.push(`- Stock lives (HUD \`×N\`): **unavailable** — ${metrics.lives.unavailableReason}`);
+  } else {
+    lines.push(`- Stock lives (HUD \`×N\` — the failure counter that works outside fixtures): ${metrics.lives.start} → ${metrics.lives.end}, **${metrics.lives.spent} spent**${metrics.lives.losses.length ? ` (at ${metrics.lives.losses.map((l) => `${fmtMs(l.gameMs)}${l.xBefore != null && l.x != null ? ` x ${l.xBefore}→${l.x}` : ''}`).join(', ')})` : ''}`);
+  }
   const rr = report.retryReassertions || [];
   if ((metrics.outcome.attempts ?? 1) > 1) {
     lines.push(rr.length
