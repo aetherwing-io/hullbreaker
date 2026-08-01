@@ -640,6 +640,27 @@ pattern can swallow a whole file between an `import` and an unrelated
 lookahead (specifier within the next N lines of an `import` with no
 intervening `;`) or a tiny statement-level scan are the sane options.
 
+## I-015 | docs | S3 | repro: read `tools/playtest/palette-capture.mjs:312-341` (verification) against `:440-441` (the `shot()` closure) at `task/T-010 67314a6`, or run `node tools/playtest/palette-capture.mjs polyp-cycle` on a tree where the iris never verifies — `artifacts/palette-v1/polyp-{tell,beam}--<pal>.png` are already overwritten when it throws | evidence: reports/tasks/T-010/playtest.md; reports/tasks/T-010/review.md
+
+Found while gating T-010 (palette pass, PASS): the rig's own prose is one
+notch stronger than its code. `palette-capture.mjs`'s header (lines 22-25) and
+`tools/playtest/README.md` (the `palette-capture.mjs` entry) both say a frame
+that does not carry the warm blink or the live beam "is retried, and the rig
+throws rather than write evidence that does not show what its name claims."
+The `shot()` closure writes each screenshot **straight to its final artifact
+path** and `captureIrisCycle` verifies afterwards, so an unverified frame is
+written first and merely superseded on a retry — and on total failure the rig
+throws loudly with the last unverified frames still on disk (the pair PNG is
+not composed, which is the only on-disk tell). **The committed evidence is
+unaffected**: this gate re-derived the packet's own recomputable claim from
+the committed stills (beam minus tell = 2497 px concept / 2650 px classic,
+exactly as stated, 0 in the tell frames), so what shipped did verify. This is
+about the next run, and about a lane whose two previous cycles failed on
+exactly this class of gap between text and artifact. Cheap fix either way:
+screenshot to a buffer or a `.pending` path and rename on verification, or
+reword both places to "throws rather than *keep*". Also raised as MINOR in
+`reports/tasks/T-010/review.md`; filed here so it survives the merge.
+
 ---
 
 ## Task schema
