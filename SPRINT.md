@@ -699,6 +699,24 @@ screenshot to a buffer or a `.pending` path and rename on verification, or
 reword both places to "throws rather than *keep*". Also raised as MINOR in
 `reports/tasks/T-010/review.md`; filed here so it survives the merge.
 
+## I-016 | docs | S3 | repro: read `src/render/juice.js:27`, `src/mode.js:110` and `docs/DESIGN.md:461` at `task/T-011 14ade6b`, against the corrected wording in `README.md:36` | evidence: reports/tasks/T-011/playtest.md; reports/tasks/T-011/review.md
+
+Three stale doc strings found while gating T-011 (juice, PASS), all still in
+the tree at the branch head and all already raised as MINOR in T-011's
+review — filed here so they survive the merge. (1) `src/render/juice.js:27`
+still says colours are "role names resolved by fx.js (optional lazy palette
+import)"; the lazy `import('./palette.js')` is exactly what the fix commit
+deleted, so the next agent goes looking for an import that must not come
+back. (2) `src/mode.js:110` and (3) `docs/DESIGN.md:461` both promise
+`?juice=0` gives a "byte-identical pre-juice build", where `README.md:36` was
+corrected to "simulation-identical" — the accurate claim, since `samplePerf`
+still samples every frame and `telemetry()` still carries the added
+`juice`/`perf` keys under the flag. This gate's A/B supports the README's
+wording and not the stronger one: `juice=0` matched pre-juice `main` on
+attempts/falls/hits, `minEdgeMargin` within 0.03 tiles and final x within
+0.02 tiles, which is simulation-identical evidence, not byte-identity. No
+runtime impact; prefer the README's phrasing in all three places.
+
 ---
 
 ## Task schema
