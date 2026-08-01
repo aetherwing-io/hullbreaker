@@ -83,6 +83,7 @@ import './render/mods.js';
 import './render/hook.js';
 import { resetHudMessage, updateHUD } from './ui/hud.js';
 import './ui/overlay.js';
+import './ui/audio.js';
 
 // the sim asks for a restart through this hook (fixture fast retry)
 installHost({ resetGame: () => resetGame() });
