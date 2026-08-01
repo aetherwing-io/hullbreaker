@@ -34,7 +34,8 @@
 // parens); each clause is either:
 //   - a named predicate, optionally negated with a leading `!`
 //     (pinned, airborne, grounded, houndTell, houndCharge, polypTell,
-//     polypFire, polypOpen, victory)
+//     polypFire, polypOpen, mortarLob, mortarFuse, mortarBurst,
+//     mortarMarked, victory)
 //   - a bare sample field, optionally negated, tested for truthiness
 //     (e.g. "grounded", "!grounded")
 //   - a comparison against a sample field: field OP value, where OP is one
@@ -98,6 +99,28 @@ const PREDICATES = {
     return Array.isArray(sample.hostiles) &&
       sample.hostiles.some((h) => h.kind === 'polyp' &&
         (h.state === 'fire' || h.state === 'vent'));
+  },
+  // Spore Mortar bombardment cycle (aim -> lob -> fuse -> burst -> cool,
+  // src/sim/hostiles.js): `lob` is the pod in flight with the landing zone
+  // already marked, `fuse` is the planted pod counting down, `burst` is the
+  // live denial. `mortarMarked` is the whole warning — the signal a bot
+  // should treat as "that patch of floor is spoken for".
+  mortarLob(sample) {
+    return Array.isArray(sample.hostiles) &&
+      sample.hostiles.some((h) => h.kind === 'mortar' && h.state === 'lob');
+  },
+  mortarFuse(sample) {
+    return Array.isArray(sample.hostiles) &&
+      sample.hostiles.some((h) => h.kind === 'mortar' && h.state === 'fuse');
+  },
+  mortarBurst(sample) {
+    return Array.isArray(sample.hostiles) &&
+      sample.hostiles.some((h) => h.kind === 'mortar' && h.state === 'burst');
+  },
+  mortarMarked(sample) {
+    return Array.isArray(sample.hostiles) &&
+      sample.hostiles.some((h) => h.kind === 'mortar' &&
+        (h.state === 'lob' || h.state === 'fuse' || h.state === 'burst'));
   },
   victory(sample) { return isVictorySample(sample); },
 };

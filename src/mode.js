@@ -10,6 +10,7 @@ import {
   TRAVERSAL_FIXTURE, houndTrialStage, polypTrialStage, resolveTraversalPace,
   traversalEnemyPlan,
 } from './pure/traversal.js';
+import { mortarComposePlan, mortarTrialStage } from './pure/mortar.js';
 import { TRANSFORM_FIXTURE } from './pure/transform.js';
 
 const SEARCH = typeof globalThis.__HB_QUERY__ === 'string'
@@ -101,9 +102,22 @@ export const POLYP_STAGE =
   : POLYP_PARAM === '2' || POLYP_PARAM === 'combo' ? 'combo'
   : 'solo';
 export const POLYP_TRIAL_STAGE = polypTrialStage(POLYP_STAGE);
+// Opt-in Spore Mortar trial (DESIGN's last enemy role — delayed landing-zone
+// denial), same shape as the hound and polyp trials and orthogonal to the
+// pace: ?mortar=1 teaches the lob → mark → delay → detonation cycle alone,
+// ?mortar=2 adds the hound patrolling the floor the denial pushes you toward.
+// Absent — every ordinary URL, including every ?hound=/?polyp= stage — the
+// plan is byte-identical to what it fields today.
+const MORTAR_PARAM = IS_TRAVERSAL_SLICE ? QUERY.get('mortar') : null;
+export const MORTAR_STAGE =
+  MORTAR_PARAM === null || MORTAR_PARAM === '0' || MORTAR_PARAM === 'off' ? null
+  : MORTAR_PARAM === '2' || MORTAR_PARAM === 'combo' ? 'combo'
+  : 'solo';
+export const MORTAR_TRIAL_STAGE = mortarTrialStage(MORTAR_STAGE);
 // The authored hostile list for one slice attempt — resolved once, read by
 // resetGame, the self-test, and the HUD so all three can never disagree.
-export const SLICE_ENEMY_PLAN = traversalEnemyPlan(ACTIVE_SLICE, HOUND_STAGE, POLYP_STAGE);
+export const SLICE_ENEMY_PLAN = mortarComposePlan(
+  traversalEnemyPlan(ACTIVE_SLICE, HOUND_STAGE, POLYP_STAGE), MORTAR_STAGE);
 
 // Two independent A/B answers to the operator's 8-way aim gap against low
 // targets. Both are opt-in and orthogonal to everything above, so they can be

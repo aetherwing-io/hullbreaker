@@ -6,6 +6,7 @@
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
+import { mortarArcX, mortarArcY, mortarPulsePeriodMs } from '../pure/mortar.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs } from '../sim/time.js';
 import { scene } from './scene.js';
@@ -18,6 +19,10 @@ const polypGeo = new THREE.DodecahedronGeometry(CONFIG.polyp.size);
 const polypBarrelGeo = new THREE.BoxGeometry(...CONFIG.polyp.barrelSize);
 const polypStalkGeo = new THREE.BoxGeometry(0.35, CONFIG.polyp.rootY, 0.35);
 const polypBeamGeo = new THREE.BoxGeometry(1, CONFIG.polyp.beamHalf * 2, CONFIG.polyp.beamHalf * 2);
+// Seed-Pod Tripod: a squat three-sided launch tube on three legs (the leg
+// meshes and the bombardment props are built in the mortar block at the end
+// of this file, which owns everything else about this kind).
+const mortarTubeGeo = new THREE.ConeGeometry(CONFIG.mortar.size, CONFIG.mortar.size * 2.2, 3);
 
 /* The houndframe's state theater: the shared presence pass below owns
    materialization, depth breathing, and the hit flash for every kind — this
@@ -116,6 +121,8 @@ const LOOK = {
              roll: houndRoll, pose: houndPose },
   polyp:   { geo: polypGeo,   color: CONFIG.palette.polyp,
              roll: () => 0,   pose: polypPose },
+  mortar:  { geo: mortarTubeGeo, color: CONFIG.palette.mortar,
+             roll: mortarRoll, pose: mortarPose },
 };
 const meshes = new Map();                // sim hostile row → { mesh, mat }
 
@@ -147,6 +154,8 @@ function spawned(e) {
     scene.add(beam);
     v.beam = beam;
     v.beamMat = beamMat;
+  } else if (e.kind === 'mortar') {
+    mortarAttach(v, mesh);                 // legs, pod, and the marked-zone props
   }
   mesh.visible = false;                    // hidden until its materialization begins
   scene.add(mesh);
@@ -161,6 +170,7 @@ function removed(e, fade) {
     scene.remove(v.beam);
     v.beamMat.dispose();
   }
+  if (v.pod) mortarDetach(v);            // nor does a pod, a mark, or a blast
   if (fade) {                            // hand the mesh to the corpse pass to dissolve
     corpses.push({ mesh: v.mesh, mat: v.mat, s: e.x, y: e.y, spin: e.t, t0: gameMs });
   } else {
@@ -176,6 +186,7 @@ function sync(e) {
   if (gameMs < e.enterUntil - W.enterMs) {            // staged wave slot: still hidden
     v.mesh.visible = false;
     if (v.beam) v.beam.visible = false;
+    if (v.pod) mortarHide(v);
     return;
   }
   v.mesh.visible = true;
@@ -221,6 +232,7 @@ function sync(e) {
       v.beamMat.opacity = 0.65 + 0.25 * pulse;
     }
   }
+  if (v.pod) mortarSync(v, e);           // pod arc + marked zone + detonation
 }
 
 installView({ hostiles: { spawned, removed, sync } });
@@ -246,4 +258,143 @@ export function updateCorpses() {
 export function clearCorpses() {
   for (const c of corpses) { scene.remove(c.mesh); c.mat.dispose(); }
   corpses.length = 0;
+}
+
+/* ==================== SPORE MORTAR (T-014) ========================= *
+ * Everything this kind needs beyond the shared presence pass, kept in one
+ * block at the end of the file. Three props, all derived from sim fields
+ * and the SAME pure functions the sim uses (src/pure/mortar.js), so the
+ * arc that is drawn is the arc that was flown and the slab that is drawn
+ * is the slab that damages:
+ *
+ *   pod   — the seed pod in flight, replayed from the sim's podU through
+ *           the pure arc. Visible only while the tube is lobbing.
+ *   mark  — the pad on the marked landing surface, lit from the moment
+ *           the pod launches (board 07: "marking the intended landing
+ *           surface") and blinking faster as the fuse runs down, in the
+ *           roster's one warning language.
+ *   blast — the denial volume itself: a translucent column standing on
+ *           the mark, faint while it is only a warning and a full-opacity
+ *           flash for exactly the frames the sim is dealing damage.
+ *
+ * The tube's own theater is the pose function above the LOOK table: it
+ * kicks back on launch and settles across the flight, holds a warm glow
+ * through the fuse, and pops on detonation. Static-anatomy rule (entry 3)
+ * is untouched — a mortar is something the SHIP builds, and none of this
+ * moves the creature's own geometry.                                    */
+
+const M_CFG = CONFIG.mortar;
+const mortarLegGeo = new THREE.BoxGeometry(...M_CFG.legSize);
+const mortarPodGeo = new THREE.OctahedronGeometry(M_CFG.podRadius);
+const mortarMarkGeo = new THREE.BoxGeometry(
+  M_CFG.blastHalf * 2, M_CFG.markThickness, M_CFG.blastHalf * 1.1);
+const mortarBlastGeo = new THREE.BoxGeometry(
+  M_CFG.blastHalf * 2, M_CFG.blastHeight, M_CFG.blastHalf * 1.1);
+
+// reused pose object, same no-allocation rule as the hound and polyp poses
+const MORTAR_POSE = { depth: 0, sx: 1, sy: 1, sz: 1, glow: 0x000000 };
+
+function mortarPose(e) {
+  const p = MORTAR_POSE;
+  p.depth = 0; p.sx = 1; p.sy = 1; p.sz = 1; p.glow = 0x000000;
+  if (e.state === 'lob') {
+    // the kick: the tube compresses on launch and recovers across the flight
+    const settle = 1 - Math.max(0, Math.min(1, e.podU));
+    p.sy = 1 - 0.18 * settle;
+    p.glow = CONFIG.palette.mortarTell;
+  } else if (e.state === 'fuse') {
+    const remain = Math.max(0, e.stateUntil - gameMs);
+    const period = mortarPulsePeriodMs(remain, M_CFG.fuseMs,
+      M_CFG.markPulseSlowMs, M_CFG.markPulseFastMs);
+    if (Math.floor(gameMs / period) % 2 === 0) p.glow = CONFIG.palette.mortarTell;
+  } else if (e.state === 'burst') {
+    p.sy = 1 + M_CFG.burstSwell;
+    p.glow = CONFIG.palette.mortarBlast;
+  }
+  return p;
+}
+
+// the tube leans down its authored line of fire; nothing else rotates
+function mortarRoll(e) {
+  return e.dir * 0.42;
+}
+
+function mortarAttach(v, mesh) {
+  // three legs sharing the body material, so materialize/dissolve fades the
+  // whole tripod as one silhouette
+  for (const [lx, lz] of [[-0.34, 0.22], [0.34, 0.22], [0, -0.34]]) {
+    const leg = new THREE.Mesh(mortarLegGeo, v.mat);
+    leg.position.set(lx, -M_CFG.bodyY / 2, lz);
+    mesh.add(leg);
+  }
+  const podMat = new THREE.MeshBasicMaterial({
+    color: CONFIG.palette.mortarPod, transparent: true, opacity: 0.95,
+  });
+  const pod = new THREE.Mesh(mortarPodGeo, podMat);
+  pod.visible = false;
+  scene.add(pod);
+  const markMat = new THREE.MeshBasicMaterial({
+    color: CONFIG.palette.mortarMark, transparent: true, opacity: 0.8,
+  });
+  const mark = new THREE.Mesh(mortarMarkGeo, markMat);
+  mark.visible = false;
+  scene.add(mark);
+  const blastMat = new THREE.MeshBasicMaterial({
+    color: CONFIG.palette.mortarBlast, transparent: true, opacity: 0.16,
+  });
+  const blast = new THREE.Mesh(mortarBlastGeo, blastMat);
+  blast.visible = false;
+  scene.add(blast);
+  v.pod = pod; v.podMat = podMat;
+  v.mark = mark; v.markMat = markMat;
+  v.blast = blast; v.blastMat = blastMat;
+}
+
+function mortarDetach(v) {
+  for (const [mesh, mat] of [[v.pod, v.podMat], [v.mark, v.markMat], [v.blast, v.blastMat]]) {
+    scene.remove(mesh);
+    mat.dispose();
+  }
+}
+
+function mortarHide(v) {
+  v.pod.visible = false;
+  v.mark.visible = false;
+  v.blast.visible = false;
+}
+
+function mortarSync(v, e) {
+  if (gameMs < e.enterUntil) { mortarHide(v); return; }   // no props while condensing in
+  const flying = e.state === 'lob';
+  const marked = flying || e.state === 'fuse' || e.state === 'burst';
+  v.pod.visible = flying;
+  if (flying) {
+    // exactly the arc the sim flew: same pure functions, same podU
+    placeOnTower(v.pod,
+      mortarArcX(e.x, e.zoneX, e.podU),
+      mortarArcY(e.y, e.zoneY, M_CFG.arcTiles, e.podU), 0);
+    v.pod.rotation.z = e.podU * 7;
+  }
+  v.mark.visible = marked;
+  v.blast.visible = marked;
+  if (!marked) return;
+  placeOnTower(v.mark, e.zoneX, e.zoneY + M_CFG.markThickness / 2, 0);
+  placeOnTower(v.blast, e.zoneX, e.zoneY + M_CFG.blastHeight / 2, 0);
+  if (e.state === 'burst') {
+    // the detonation: the denial volume is opaque for exactly the frames the
+    // sim is dealing damage — a player can always tell live from warning
+    const u = Math.max(0, Math.min(1, (e.stateUntil - gameMs) / M_CFG.burstMs));
+    v.blastMat.opacity = 0.28 + 0.5 * u;
+    v.markMat.opacity = 0.95;
+    v.blast.scale.set(1 + (1 - u) * 0.12, 1, 1 + (1 - u) * 0.35);
+    return;
+  }
+  v.blast.scale.set(1, 1, 1);
+  v.blastMat.opacity = 0.16;
+  if (flying) { v.markMat.opacity = 0.55; return; }
+  // fuse: the mark blinks faster the closer the detonation gets
+  const remain = Math.max(0, e.stateUntil - gameMs);
+  const period = mortarPulsePeriodMs(remain, M_CFG.fuseMs,
+    M_CFG.markPulseSlowMs, M_CFG.markPulseFastMs);
+  v.markMat.opacity = Math.floor(gameMs / period) % 2 === 0 ? 0.95 : 0.45;
 }

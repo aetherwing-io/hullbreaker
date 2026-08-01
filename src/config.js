@@ -266,6 +266,57 @@ export const CONFIG = {
     beamPulseFreq: 24, beamPulseAmp: 0.25,
   },
 
+  mortar: {                    // Seed-Pod Tripod (boards 06/07): denies an intended
+                               // LANDING ZONE after a readable delay. It never aims at
+                               // the player — it bombards an authored patch of floor —
+                               // so the threat is entirely where that patch is
+                               // (decisions.md entry 6) and the answer is always a
+                               // movement verb: land short, land long, take the tier
+                               // above, or take the floor below. Presence timings
+                               // (materialize, dissolve, depth breathing) are shared
+                               // with CONFIG.wasp like every kind.
+    hp: 5,                     // ~0.65 s of rifle fire — one reload window kills it
+                               //   (asserted): destroying it is a decision about time,
+                               //   never a damage race
+    hitRadius: 0.5,            // contact circle, inside the tube silhouette
+    size: 0.5,                 // launch-tube radius (render); the legs are theater
+    legSize: [0.16, 1.05, 0.16],
+    bodyY: 1.05,               // tube center above the mounted surface — EXACTLY the
+                               //   standing firing line (player.muzzleY), asserted: a
+                               //   level shot from its OWN catwalk center-punches it,
+                               //   so the reroute that answers the denial is also the
+                               //   reroute that lets you shoot back (the CP2 aim-gap
+                               //   lesson applied at authoring time)
+    armRange: 13,              // horizontal distance from the ZONE at which it starts
+                               //   its cycle. Bounded by the fixture's own follow lead
+                               //   (asserted), so the first lob always happens on
+                               //   screen — the mechanic teaches itself before the
+                               //   player has to stand in it
+    lobMs: 900,                // pod flight, muzzle → marked zone. The mark appears at
+                               //   launch, so this is the FIRST half of the warning
+    arcTiles: 2.6,             // parabolic bulge over the muzzle→zone chord: a mortar
+                               //   throws OVER things (the readable difference from the
+                               //   polyp's sightline)
+    fuseMs: 640,               // the planted pod: the second half of the warning, and
+                               //   on its own longer than the slowest answer to it
+    burstMs: 220,              // the denial itself — a moment, never a state. Shorter
+                               //   than a full jump stays above the slab (asserted)
+    coolMs: 1500,              // reload: the zone is free and the tripod is a target,
+                               //   the same pant-window rhythm as the hound's charge
+    blastHalf: 1.5,            // marked patch half-width: 3 tiles of an 8-tile catwalk,
+                               //   so landing short or long is always available
+    blastHeight: 1.8,          // slab height over the marked surface: taller than a
+                               //   standing body (no ducking a spore burst), lower than
+                               //   any jump apex (going over it is always an answer)
+    podRadius: 0.26,
+    // pose theater (render-only): the same warning grammar as the rest of the
+    // roster — an accelerating warm blink that resolves into commitment.
+    markPulseSlowMs: 200, markPulseFastMs: 70,
+    markThickness: 0.14,       // the surface pad: readable at the FAR default
+    recoilTiles: 0.4,          // tube kicks back on launch, settles over the flight
+    burstSwell: 0.35,          // the detonation's own silhouette pop
+  },
+
   waves: {                     // corner wave gates + snap ritual + brick zipper
     haltOffset: 14,            // scroll halts at cornerS - haltOffset
     baseSize: 3, sizePerWave: 1,               // wave k = baseSize + sizePerWave·k
@@ -490,6 +541,12 @@ export const CONFIG = {
                                            //   bulb-and-barrel SILHOUETTE carries the read
     polypTell: 0xffd0a0,                   // one warning language across the roster: warm blink
     polypBeam: 0xc6ff4f, polypVent: 0xd9a06a,     // hot acid lock / dim spent "opening" glow
+    mortar: 0x6d9a4e,                      // same acid-green ecology again, its own value; the
+                                           //   tripod-and-tube SILHOUETTE carries the read
+    mortarTell: 0xffd0a0,                  // the roster's one warning language: warm blink
+    mortarPod: 0xd8ff7a,                   // the spore pod in flight — the arc has to be the
+                                           //   most legible thing on screen while it flies
+    mortarMark: 0xffa64d, mortarBlast: 0xffe08a,  // the marked landing patch / the detonation
     // snap-hook markers (?hook=1): warm hardware idle, hot when live, pale
     // tether. Never the pickup magenta and never the hostile green — an anchor
     // has to read as grabbable machinery at a glance (DESIGN's aiming rule).

@@ -96,7 +96,9 @@ traversal slice (`?slice=traversal&hound=1|2|2.5|3`; hound 2.5 is the working
 baseline — `docs/decisions.md` entries 4 and 6) but not yet placed in the
 default six-face run. The Iris Polyp turret ships as the opt-in
 `?slice=traversal&polyp=1` solo / `?polyp=2` combination trial, awaiting its
-feel verdict. Not yet built (in build order): the spore mortar, the boss,
+feel verdict; the Spore Mortar (delayed landing-zone denial) ships the same
+way as `?slice=traversal&mortar=1` solo / `?mortar=2` combination, also
+awaiting a verdict. Not yet built (in build order): the boss,
 the flight interlude, juice pass (shake/hit-stop/particles), menus, WebAudio
 synth. See `docs/DESIGN.md` and `SPRINT.md` — the wave-4 delivery queue
 covers these.
