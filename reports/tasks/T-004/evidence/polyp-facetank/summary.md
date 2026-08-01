@@ -1,28 +1,25 @@
 # polyp-facetank — playtest report
 
-- URL: `http://127.0.0.1:60572/index.html?slice=traversal&polyp=1&testapi=1`
-- Started: 2026-08-01T03:57:55.277Z
-- Wall time: 14.2s
+- URL: `http://127.0.0.1:64309/index.html?slice=traversal&polyp=1&testapi=1`
+- Started: 2026-08-01T04:21:54.291Z
+- Wall time: 14.1s
 - Fidelity: **testapi**
-- Sampling: requested every 40ms, achieved avg 40.8ms / max 45ms (342 samples)
+- Sampling: requested every 40ms, achieved avg 40.8ms / max 42ms (342 samples)
 
 ## Outcome
-- Result: **not-completed**
+- Result: **stalled**
 - Attempts: 1, falls (final attempt, only visible on victory): 0
 - Kills: 0, deaths observed: 0, hits survived: 2
 
 ## Pacing / fairness metrics
-- Idle time (A.5 `stallMs`): 7.2s of 13.9s PLAYING time (fraction 0.516)
-- Airborne time (`airMs`): 5.6s
-- Closest approach to crush edge (`minEdgeMargin`): 20.84 tiles
-- Vertical range: y 3–12.92 (span 9.92)
+- Idle time (A.5 `stallMs`): 8.7s of 13.9s PLAYING time (fraction 0.622)
+- Airborne time (`airMs`): 4.2s
+- Closest approach to crush edge (`minEdgeMargin`): 16.09 tiles
+- Vertical range: y 3–12.79 (span 9.79)
 - Route coverage (A.5 `routeIds`, >=3 connectors matched in order): **[none]**
 - Route inference (harness-only best guess): **mid-catwalk** (confidence 0.29, 2 connectors matched)
 - Air jumps: 1 final attempt (peak single attempt 1; resets every retry)
 - Dare pocket: entered=true (position-in-bounds), reward taken=false
-- Input density (A.5: deliberately NOT a score input): 0.85 events/sec (12 total: 6 down / 6 up)
-- protoScore (A.5 formula, proxy airborneKills/links — see README): **35.3** (airborneKills=0, links≈1, airMs=5645, stallMs=7179)
-
-## Errors observed
-- [page error] key up failed for Space: keyboard.up: Target page, context or browser has been closed
+- Input density (A.5: deliberately NOT a score input): 0 events/sec (0 total: 0 down / 0 up)
+- protoScore (A.5 formula, proxy airborneKills/links — see README): **6.3** (airborneKills=0, links≈1, airMs=4207, stallMs=8652)
 
