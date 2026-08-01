@@ -758,6 +758,17 @@ tools/playtest/
                             policy-pinned-jump.json / policy-hound-reactive.json (closed-loop proof))
   reports/demo/             committed demo run output (json/md only)
   runs/                     default ad-hoc output dir (gitignored)
+  viewscale-capture.mjs     dev-only screenshot rig for the ?view= experiment
+  palette-capture.mjs       dev-only screenshot rig for the T-010 palette pass:
+                            same moment in concept (default) vs ?palette=classic
+                            across sixface/traversal/g1/transform at ?view=far,
+                            plus labeled side-by-side pairs. Writes to
+                            artifacts/palette-v1/ at the served repo root (a
+                            worktree serves itself). HONESTY: pairs are matched
+                            by identical input schedules + the seeded sim rng,
+                            not frame-locked replay — sprite positions can
+                            differ by a frame or two of timing jitter; judge
+                            palette/composition, not pixel deltas.
 ```
 
 ## Single best next action
