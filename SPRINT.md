@@ -17,7 +17,12 @@ The default six-face run, start → summit → victory, playable end-to-end with
   SFX + layered ambience — restrained per DESIGN, but present;
 - a game shell: start screen, pause/options, death/restart flow, run stats;
 - 60fps with 200+ projectiles, no console errors, `?selftest=1` green,
-  pathcheck green, smoke suite green, boot-to-victory ≈ 4–5 min;
+  pathcheck green, smoke suite green, boot-to-victory ≈ 4–5 min
+  — **boot-to-victory is OPERATOR-ONLY** (T-019, merged): no reflex policy
+  reaches VICTORY, the wall is wave gate 2, and the gate independently
+  reproduced that rather than taking the builder's word. The harness bends,
+  the game does not, so this box is answered by an operator run — no bot has
+  proved it and the delivery report must not imply one did;
 - operator checkpoint packets posted for every feel question raised en route.
 
 ## Queue
@@ -365,7 +370,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; six-face-full-run.json --deterministic against a pinned tree
 
-## T-019 | harness | doing | P2
+## T-019 | harness | done | P2
 
 goal: the last unproven delivery box — a bot run that reaches VICTORY. T-018
 established the blocker was the policy grammar (not difficulty, not the
