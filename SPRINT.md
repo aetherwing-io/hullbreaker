@@ -162,7 +162,11 @@ as the G1 static-limb orbit. The entry-0a integration hold is released by
 entry 8; post a checkpoint packet instead of blocking.
 accept:
 - [ ] default run's six faces gain lattice route choice (3–5 readable routes,
-      dare pockets with measured retreat) without breaking wave gates
+      with pockets) without breaking wave gates
+      NOTE (decisions.md entry 9, 2026-08-01): the "measured retreat" half of
+      this box is WITHDRAWN by operator verdict. The pocket capsule is a plain
+      pickup, judged by whether it escalates the action — not a dare. Do not
+      re-litigate; the dare concept is parked as T-021.
 - [ ] hound placement per entry 6's doctrine on at least faces 2+
 - [ ] corner ritual uses the static-anatomy render path by default (G1
       grammar); zipper assembly retired from world reveals (kept extractable)
@@ -404,6 +408,29 @@ accept:
 - [ ] never widen the jump constants to make it fit (frozen, entry-asserted)
 owner: lattice-designer
 verify: node tools/pathcheck.mjs; a run that reaches the first gate without losing a life
+
+## T-021 | design | parked | P3
+
+goal: the DARE, as its own concept. Operator verdict decisions.md entry 9
+parked rather than rejected it: "dare can be remembered and implemented in a
+different concept". This task exists so the thinking is not lost, and is NOT
+to be dispatched without an operator go-ahead.
+what we learned paying for it once (T-009, three passes):
+- pricing an optional reward in HEIGHT cannot work: RIG's jump + air-jump
+  envelope is frozen and generous, so anything authored in the tier band the
+  player already occupies is inside it, and raising it is an arms race with a
+  constant the fleet may not retune
+- the currency that IS real here is TIME against the pursuing edge: RIG
+  crosses ground at scroll speed (~4.3 t/s) when holding right, so every tile
+  spent moving backward is daylight surrendered — a dare priced in retreat
+  time is enforceable where one priced in reach is not
+- an assertion must have the PLAYER's reachable envelope as its subject; the
+  original pocket assertions were all true and all missed the defect because
+  they asserted shelf-reachability instead of reward-reachability
+candidate shapes, unjudged: an optional harder ROUTE whose cost is the route
+itself; a contested plate that must be held; a reward that must be carried.
+owner: unassigned
+verify: n/a until dispatched
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
@@ -860,7 +887,18 @@ forces the title for a screenshot. Cheapest fixes, for triage: treat a
 by wall clock, or note the constraint in the harness README's deterministic
 section next to the pause/retry paragraph it already has.
 
-## I-019 | fairness | S1 | repro: serve `task/T-009 770ea6b`, then drive the shipped sim with the deck-line policy pathcheck itself uses (`hold right`; hold a jump whenever `groundTopAt(x + 1.2)` is a hole or a step) — all six pocket rewards are collected with `airJumpsLeft` never decrementing; in the browser, `node run.mjs <worktree>/tools/playtest/scripts/six-face-full-run.json --deterministic --max-runtime-ms 150000 --base-url <pinned 8951>` takes pocket 1's `S` at x = 45.94 while airborne and moving right | evidence: reports/tasks/T-009/playtest.md; tools/playtest/runs/gate-T-009-fullrun-branch/report.json (weapon R→S at gameMs 7908)
+## I-019 — CLOSED BY OPERATOR VERDICT (decisions.md entry 9)
+
+The defect was real and correctly found: the pocket reward was collectable
+from the deck line, first by the mandatory crossing jump mid-ascent (all six
+pockets), then by the air jump (2 of 6) after the first fix. But the
+REQUIREMENT it violated has been withdrawn — the operator ruled the reward is
+a plain pickup, so there is nothing left to violate. Closed as obsolete, not
+as fixed. The three passes stand as the evidence that pricing an optional
+reward in HEIGHT cannot work against a frozen jump+air-jump envelope; that
+lesson belongs to T-021.
+
+## I-019 (original report) | fairness | S1 | repro: serve `task/T-009 770ea6b`, then drive the shipped sim with the deck-line policy pathcheck itself uses (`hold right`; hold a jump whenever `groundTopAt(x + 1.2)` is a hole or a step) — all six pocket rewards are collected with `airJumpsLeft` never decrementing; in the browser, `node run.mjs <worktree>/tools/playtest/scripts/six-face-full-run.json --deterministic --max-runtime-ms 150000 --base-url <pinned 8951>` takes pocket 1's `S` at x = 45.94 while airborne and moving right | evidence: reports/tasks/T-009/playtest.md; tools/playtest/runs/gate-T-009-fullrun-branch/report.json (weapon R→S at gameMs 7908)
 
 The T-009 dare pockets do not cost the retreat they are designed and
 documented to cost: the reward is collected by the same deck-line jump the
