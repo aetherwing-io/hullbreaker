@@ -207,7 +207,7 @@ verify: node tools/pathcheck.mjs; smoke suite; fps sampled via ?testapi=1
 notes: DESIGN's caveat stands — after this lands, re-ask any "boring"
 verdicts, since some perceived intensity is feedback.
 
-## T-012 | audio | doing | P2
+## T-012 | audio | done | P2
 
 goal: WebAudio synth layer — procedural SFX (hit, hurt, jump, launch, pickup,
 warning, ritual snaps, weapon-per-type fire) plus wave-layered mechanical
@@ -257,7 +257,7 @@ accept:
 owner: asset-artist
 verify: node tools/assets/check.mjs; sample round-trip committed as demo
 
-## T-016 | feature | doing | P3
+## T-016 | feature | review | P3
 
 goal: score/setback convergence toward CP4 — promote the CHARGE/THREAT
 prototype (`?score=1`) and Hull Fallback (`?fallback`) from slice prototypes
