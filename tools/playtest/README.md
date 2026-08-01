@@ -128,6 +128,19 @@ parens, and never `eval()`/`new Function()`. Each clause is either:
   - `pinned` — grounded, `|vx| < 0.3`, and the harness currently has a
     direction key held (`ArrowLeft`/`ArrowRight`) — the F8/H3 "commanded to
     move but jammed" signal.
+    **Honesty note — `pinned` is also true on the first tick after a
+    respawn**, and after any `resetGame`: RIG stands still at the spawn
+    point while the script is still holding right. In a script that only
+    ever ran clean this never shows, but as soon as one death occurs, a
+    bare `{ "when": "pinned" }` rule fires a jump *out of the spawn point*
+    on every retry — which is exactly enough to carry RIG airborne through
+    the next position window, so a closed-loop gap jump silently never
+    fires and every retry then dies at the same tile. (Seen for real on
+    `g2-neck-flip-pressure`: 9 attempts, 7 falls, every fall at x=101.65,
+    on a fixture whose crossing is fine.) Scope the rule to where the jam
+    it answers actually is (`pinned && x>125.5 && x<130.5`), or pair it
+    with a position guard — a run-wide `pinned` is a retry trap, not a
+    safety net.
   - `airborne`, `grounded` — `player.grounded` false/true.
   - `houndTell`, `houndCharge` — any hostile with `kind: 'hound'` currently
     in the `tell`/`charge` state (`src/sim/hostiles.js`'s
