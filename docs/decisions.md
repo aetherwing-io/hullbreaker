@@ -378,3 +378,56 @@ flywheel, `tools/orch/merge-task.sh` gate — see `docs/ORCHESTRATION.md`),
 sandbox refused force-deleting branches).
 
 **Source:** operator directive, July 31, at wave-4 kickoff.
+
+## 9 — 2026-08-01 — Pocket verdict: the reward is a plain pickup; "dare" is parked, not cancelled
+
+**Verdict:** the six-face pockets' weapon capsule is **free**, and it is
+renamed accordingly. It is a pickup, not a wager. The requirement that
+collecting it cost a measured retreat is **withdrawn**, and with it the
+three-attempt effort to place the reward outside RIG's reach from the deck
+line. The **dare** concept itself is not rejected — it is remembered, to be
+implemented later as its own thing rather than as a shelf hanging off a
+traversal pocket.
+
+**Rationale, operator verbatim:** "Accept it's free and rename it. from my
+perspective, if it enhances the ecalation of action, it's beneficial. dare
+can be remembered and implemented in a different concept"
+
+**What forced the question.** T-009 authored the pocket as a shelf reaching
+back over a chasm so the capsule would cost a retreat against the scroll.
+Three passes, three failures, all the same shape:
+1. reward at `deckY + 5.05`; the MANDATORY crossing jump puts RIG's head at
+   `deckY + 4.42`, 0.48 tiles inside the 0.95 pickup radius — all six
+   pockets collected themselves mid-ascent, with no input change (I-019);
+2. raised, and still taken from the deck line by spending the **air jump**
+   on at least 2 of 6 faces;
+3. moved to its own tier — gate not run, because this verdict retired it.
+
+The root cause is structural, not sloppy authoring: RIG's vertical envelope
+(jump + air jump) is frozen and generous, and a reward authored in the tier
+band the player already occupies sits inside it. Pricing the wager in HEIGHT
+is an arms race against a constant the fleet is forbidden to retune.
+
+**Consequences, binding:**
+- The capsule is a plain pickup. No code, comment, doc, assertion or operator
+  packet may describe it as a dare, a wager, or a measured retreat.
+- Any assertion whose subject is the wager (reward-out-of-reach,
+  retreat-timing-as-a-cost) is removed rather than weakened — an assertion
+  that certifies a thing the game no longer claims is worse than none.
+  Assertions about what remains true (the pocket is reachable, it strands
+  nobody, daylight against the pursuing edge holds) stay.
+- Prefer the SIMPLEST pocket geometry that reads at FAR. The tier-raising
+  from passes 2 and 3 existed only to defeat reachability; with the
+  requirement gone it buys nothing and costs lattice crowding and FAR
+  legibility, so revert toward the plain shape unless it reads worse.
+- The operator's benefit test is **escalation of action**: pickups that feed
+  the fight are good. The weapon-economy question T-009's review raised (six
+  pocket capsules per run where the run previously fed on carrier drops only)
+  is answered by that test rather than by a count — observe whether the
+  escalation reads, and raise it again only if it flattens the run.
+
+**Still open, and NOT decided here:** whether a dare mechanic belongs in the
+game at all, and in what form. Parked as T-021 so the thinking is not lost.
+
+**Source:** operator verdict, 2026-08-01, in response to the integrator's
+escalation after the third failed attempt at I-019.
