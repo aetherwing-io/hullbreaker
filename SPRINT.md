@@ -73,7 +73,11 @@ accept:
 - [ ] before/after screenshots attached for the operator packet
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; tools/playtest run at ?view=far with screenshots
-notes: sequenced after T-004 merges (both touch render/hostiles).
+notes: sequenced after T-004 merges (both touch render/hostiles). Use
+T-015's scale-true viewer (`tools/assets/view.mjs`) and its measured
+finding (capsule = 9.6px at FAR; see checkpoint queue) as the evidence
+base; the operator's direction pick (world-space scale-up vs HUD read)
+steers the implementation.
 
 ## T-004 | feature | doing | P1
 
@@ -289,6 +293,14 @@ verify: node tools/pathcheck.mjs; scored-run playtest script
   passage read at the right compression now that its fog rides the camera
   pull-back? (5) Does the altitude still feel earned on foot, with the
   breach only *revealing* it?
+- **Glyph scale at FAR (T-015 finding — decide before any glyph batch):**
+  measured at rendered scale, a 0.55-tile capsule is 9.6px tall at the
+  shipped FAR view — chamfers and rivets vanish, the letter survives as a
+  smudge (`tools/assets/reports/demo/capsule-letter-h/viewer-far.png`).
+  This is the concrete evidence for entry 7's accepted readability
+  follow-up. Candidate directions: scale world-space glyphs up, or move
+  the letter read to the HUD. Asset batches are held until this is picked;
+  T-003 implements whichever direction wins.
 - (new packets append here as tasks land: palette, juice, shell, six-face run)
 
 ## Inbox (playtester/adversarial file here; integrator triages each cycle)
