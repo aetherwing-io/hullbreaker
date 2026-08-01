@@ -572,6 +572,24 @@ broken today — but a future spawn-table retune could move that contest without
 assertion noticing. Suggest pairing each mandatory gap with the wasps whose
 authored lane can reach its crossing arc.
 
+## I-013 | bug | S3 | repro: `node run.mjs <worktree>/tools/playtest/scripts/ribrun-climb.json --deterministic --max-runtime-ms 15000 --base-url <pinned task/T-006 470bc14>` — the summary reports "Route coverage: [mid-catwalk, upper-chimney, wall-launch, recovery-scramble]" and "Dare pocket: entered=true" for a fixture that contains none of them | evidence: tools/playtest/runs/gate-T-006-ribrun/summary.md; tools/playtest/runs/gate-T-006-ribrun-policyonly/summary.md; reports/tasks/T-006/playtest.md
+
+Harness metric contamination under any fixture *overlay*, surfaced by
+`?ribrun=1` and documented honestly by the T-006 builder in
+`tools/playtest/README.md` (limitation 3's new second caveat) — filed here so
+it is tracked rather than only described. `lib/fixture.mjs` re-exports the
+lattice `TRAVERSAL_FIXTURE` unconditionally, so route coverage, route
+inference and the dare-pocket columns are computed against connectors the
+served build replaced: a rib run that climbs one straight ribline is credited
+with four lattice routes and a dare-pocket entry, purely because its x/y trace
+passes through the coordinate ranges those features used to occupy. Everything
+derived from the run itself (outcome, attempts, falls, hp, `airMs`, `stallMs`,
+vertical range, `minEdgeMargin`, input density) is unaffected and was what this
+gate judged on. Fix is to teach `lib/fixture.mjs` to resolve the same overlay
+the game resolves from the URL; scope will grow as more overlays land (T-008's
+`?g2=1` has the same shape). Filed rather than fixed here: the playtester lane
+does not edit harness `lib/`.
+
 ---
 
 ## Task schema
