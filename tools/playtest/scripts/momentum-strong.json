@@ -1,0 +1,26 @@
+{
+  "name": "momentum-strong",
+  "description": "T-022 operator packet, run A of two: the SAME build and the SAME URL (index.html?momentum=1) played WELL. The policy is six-face-aimed-run.json's verbatim (hold fire, hold right, tilt the gun up at anything above the firing line, face the threat inside a gate, jump at the lip of a hole) — the only reflex set measured to clear wave gates. What it demonstrates is not that the bot is good, it is that the pace ANSWERS: this policy keeps RIG toward the right of the screen, banks daylight against the pursuing plane, and the pursuing edge escalates above the shipped 4.3 t/s. READ IT OUT OF `report.json` -> `trace` (the per-sample array; the report has no `samples` key): each entry carries the frozen `pursuitSpeed` telemetry field, drive = (pursuitSpeed/4.3 - 1)/0.4, and `hudTR` carries the on-screen MOMENTUM meter for the same instant. MEASURED, NOT ASPIRATIONAL — two runs on task/T-022's own tree (2026-08-01, --deterministic, 1440x900, `--max-runtime-ms 62000`; the 60 s window needs that cap raised off its 25000 ms default or the run is cut at ~25 s): 579 / 563 PLAYING samples; pursuitSpeed median 4.62 / 4.41 t/s, p90 5.17 / 5.11, peak 5.44 t/s both times (x1.27, drive 0.66, first reached around 11 s); above the floor on 77.5% / 73.4% of PLAYING samples and above x1.12 on 201 / 180 of them; 12 / 10 kills; edgeMargin median 43.8 / 43.6 tiles; GAME_OVER (SIGNAL LOST) at 43.9 / 42.7 s, both at 140 m of scroll. It does NOT reach VICTORY, and no bot run has. --deterministic pins input to gameMs but not the browser's frame cadence, so that spread is normal: read the structural gap against momentum-weak.json — x1.27 peak vs x1.02-1.05, 73-78% vs 12-24% of PLAYING samples above the floor, from the same build and the same URL — not one run's decimals.",
+  "url": "index.html?momentum=1",
+  "viewport": { "width": 1440, "height": 900 },
+  "durationMs": 60000,
+  "moves": [
+    { "hold": "fire", "fromMs": 400, "toMs": 60000 }
+  ],
+  "policy": {
+    "rules": [
+      { "when": "!hudTC", "do": { "hold": "right" } },
+      { "when": "hudTC && threat.upDist<13 && threat.upDx>1 && threat.upSlope<2.5", "do": { "hold": "right" } },
+      { "when": "hudTC && threat.upDist<13 && threat.upDx<-1 && threat.upSlope<2.5", "do": { "hold": "left" } },
+      { "when": "hudTC && threat.upDist>13 && threat.dx>2", "do": { "hold": "right" } },
+      { "when": "hudTC && threat.upDist>13 && threat.dx<-2", "do": { "hold": "left" } },
+      { "when": "edgeMargin<8", "do": { "hold": "right" } },
+      { "when": "threat.upDist<13 && threat.upSlope>0.5", "do": { "hold": "up" } },
+      { "when": "pinned", "do": { "tap": "jump", "holdMs": 420 } },
+      { "when": "houndTell", "do": { "tap": "jump", "holdMs": 420 } },
+      { "when": "grounded && terrain.gapDist>3 && threat.upDist>3.5", "do": { "tap": "jump", "holdMs": 420 } },
+      { "when": "grounded && terrain.gapDist<2.2", "do": { "tap": "jump", "holdMs": 420 } },
+      { "when": "!grounded && vy<0 && terrain.gapDist<1.2", "do": { "tap": "jump", "holdMs": 420 } }
+    ]
+  }
+}

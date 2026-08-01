@@ -74,6 +74,33 @@ pass in each and comparing the whole trace. Combine with the view flags
 experiment — see `docs/proposals/2026-07-meridian-monster-greybox-map.md`
 (gate G1) for what it set out to prove, `artifacts/g1-limbturn/` for its
 frames, and `artifacts/t009-lattice/` for the default run as it ships now.
+`index.html?momentum=1` arms **earned pace escalation** (`docs/decisions.md`
+entry 11) on the six-face run: the pursuing edge stops being a constant and
+rises with how well the run is being played — how far RIG is riding toward the
+right of the screen (the daylight he banks by running at 9.4 t/s against a
+4.3 t/s scroll) plus a decaying kill streak. Drive 0 is the shipped speed
+exactly, and a player pushed back toward the plane banks *no* daylight at all —
+so the pace never escalates at someone for falling behind. It is a floor, not a
+cap: the kill streak is independent, so a struggling player who keeps
+connecting still earns up to ×1.12 (that bound is asserted, and it is what
+`momentum-weak.json` gates on). Full drive is ×1.40, with a hard ceiling of
+×1.70 that later boost work shares and that the live path clamps to. Ambient spawn cadence rides the same number, because the
+spawn table triggers off the right screen edge. The HUD's `MOMENTUM` meter
+shows the live drive. Off by default and unjudged: the policy is
+`CONFIG.momentum`, the math `src/pure/momentum.js`, and the two named bot
+scripts `tools/playtest/scripts/momentum-strong.json` /
+`momentum-weak.json` play the same URL well and badly for comparison.
+
+`index.html?g1=1` is the **G1 limb-turn experiment** on that normal six-face
+run: the same corner ritual, re-read as the camera orbiting 60° around a joint
+of one static faceted creature limb instead of the next face zippering itself
+into place. It is render-only and opt-in — the simulation, the ritual's timing,
+the wave gates, the spawn tables and the built-column state machine are the
+shipped ones, byte for byte, which `tools/pathcheck.mjs` proves by running the
+same scripted pass in both modes and comparing the whole trace. Combine it with
+the view flags (`?g1=1&view=near`) as usual. See
+`docs/proposals/2026-07-meridian-monster-greybox-map.md` (gate G1) for what it
+is trying to prove and `artifacts/g1-limbturn/` for the frames.
 
 ## Controls
 

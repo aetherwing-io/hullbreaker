@@ -11,9 +11,10 @@ import { buildLevel, buildTraversalLevel, levelSolidCell } from '../pure/generat
 import { buildTransformLevel } from '../pure/transform.js';
 import {
   ACTIVE_FIXTURE, ACTIVE_SLICE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE,
+  MOMENTUM_ENABLED,
 } from '../mode.js';
 import { view } from './bridge.js';
-import { paceSpeed } from './pace.js';
+import { momentumScrollSpeed, paceSpeed } from './pace.js';
 
 const TILE_DEPTH = 8;           // solid tiles below each surface (collision)
 
@@ -24,8 +25,12 @@ export function activeScrollEnd() { return ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.e
 // and in the transformation fixture; the CP1 variants make it a behavior, so
 // the traversal slice's live value comes from sim/pace.js.
 // run.minimumScrollSpeed stays the declared cruise floor.
+// With ?momentum=1 (T-022, six-face run only) that six-face constant becomes an
+// earned value from the same module — and at drive 0 it returns
+// CONFIG.scrollSpeed exactly, so the floor IS the shipped run.
 export function activeScrollSpeed() {
   if (ACTIVE_SLICE) return paceSpeed();
+  if (MOMENTUM_ENABLED) return momentumScrollSpeed();
   return ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.minimumScrollSpeed : CONFIG.scrollSpeed;
 }
 // Each fixture overlays its authored columns on the seeded layout; normal

@@ -227,6 +227,21 @@ weakness that used to be the main gap here:
   traces). `?zip=1` still plays the zipper. It is the render-side answer to
   the CP3 static-anatomy ruling and **has still never been operator-judged**
   — an A/B checkpoint is queued;
+- the **G1 limb-turn experiment** (`?g1=1`) on the normal six-face run: the
+  shipped corner ritual re-rendered as a camera orbit around a static
+  faceted limb instead of the brick-slam zipper, with the underlying
+  simulation byte-for-byte unchanged (`tools/pathcheck.mjs` proves it by
+  comparing traces) — the render-side answer to the CP3 static-anatomy
+  ruling, not yet operator-judged itself;
+- **earned pace escalation** (`?momentum=1`, T-022) on that same six-face
+  run: the pursuing edge stops being a constant and rises with how the run
+  is being PLAYED — banked daylight (where RIG rides between the damage
+  plane and the right clamp) plus a decaying kill streak — with drive 0
+  returning today's 4.3 t/s exactly, a ×1.40 escalation ceiling and a ×1.70
+  hard ceiling that later boost work shares (`decisions.md` entry 11). Off
+  by default and **not yet operator-judged**; the two named bot scripts
+  `tools/playtest/scripts/momentum-{strong,weak}.json` play the same URL
+  well and badly for the checkpoint packet;
 - the runtime split into 35 ES modules under `src/` (see README's
   Architecture section), with a `?testapi=1`/`window.HB` telemetry surface
   the split added specifically to support tooling; and
@@ -298,6 +313,9 @@ are just where to start reading:
   T-009), and `src/pure/lattice.js` is the six-face run's route-density,
   pocket and hound-station pass (the pocket's weapon capsule is a free
   pickup — `decisions.md` entry 9).
+  CP1 pacing variants, plus T-022's earned escalation behind `?momentum=1`,
+  math in `src/pure/momentum.js`) are the wave-3 movement-verb modules; `src/render/limb.js`
+  is the G1 limb-turn experiment's render-only static-anatomy bake.
 - `tools/pathcheck.mjs` imports `src/config.js` and `src/pure/*` directly (no
   more regex-extracting a pure block) and asserts path, generation, spawn, and
   jump invariants. The assertion count keeps climbing fast as fleet work
@@ -387,7 +405,10 @@ input added confusion, but the tether *concept* wasn't rejected, so a future
 marker-less, button-less version remains possible (`decisions.md` entry 5).
 FLOW (`?flow=1`, momentum spine) is the movement lane's live, still-unjudged
 candidate; `?autobounce=1` is a related held-jump feel option shipped
-alongside it.
+alongside it. A separate, also-unjudged pace lane sits beside them:
+`?momentum=1` (T-022) makes the pursuing edge's speed something the player
+earns, per `decisions.md` entry 11, with the headroom above its ceiling
+reserved for T-023's boosts.
 
 A parallel track not in `DESIGN.md`'s original sequence: a movement-driven
 score/momentum system and six death/setback proposals (replacing lives and
