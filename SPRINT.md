@@ -847,6 +847,21 @@ the published numbers should be restated with repeats, or struck, in both
 places. S2, not S3: it is the evidence a scope split was granted on, and it is
 committed in a script description future agents will cite.
 
+## I-021 | docs | S3 | repro: read `README.md`'s new "FAR readability pass" paragraph and `docs/DESIGN.md`'s updated view-scale bullet at `task/T-003 74b7267` against `src/render/legibility.js`'s `SHARE = { glyph: 1, cue: 1, pose: 0.6 }` and pathcheck's `legibility: a pose is boosted less than a lamp` assertion | evidence: reports/tasks/T-003/playtest.md; artifacts/legibility-v1/capsule-glyph--views-after.png
+
+Found while gating T-003 (FAR readability pass, PASS). Both user-facing docs say
+the pass scales the boosted features "back up by the same factor, so they land at
+the screen size the near view already read at" (README) and "scaled back up by the
+view's own pull-back factor" (DESIGN). That is exact for capsule glyphs and the new
+tell lamps (share 1.0 → gain = `depthMult` 1.9 at FAR, and the views strip does show
+one screen size across near/mid/far), but a tell POSE deliberately takes only 60%
+of the compensation (gain 1.54), so a boosted hound rear-up or iris dilation lands
+*smaller* at FAR than it did at near — by design, and correctly stated in
+`legibility.js`'s header and in the commit message, just not in the two docs a
+reader is most likely to hit first. Fix is one clause in each ("information whole,
+a pose partly"), not a behavior change. S3: no gate or verdict rests on it, but this
+repo's docs rule is that a claim may not outrun its evidence.
+
 ---
 
 ## Task schema
