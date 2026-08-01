@@ -962,3 +962,20 @@ on the not-yet-built face and take 5-8s to cruise back into reach while the
 gate holds shut. Measurement only — no spawner behaviour was changed. Operator
 question, queued: is that the intended pressure, or should the corner-clear
 zone keep ambient spawns out of a gate arena entirely?
+
+## I-023 | docs | S3 | repro: `node -e "import('<task/T-018 dc32cf1>/tools/playtest/lib/policy.mjs').then(({compileCondition})=>console.log(compileCondition('x==3+1').evaluate({x:4},new Set(),{})))"` → compiles, `{result:false}`, no warning; same on `main`'s engine | evidence: reports/tasks/T-018/playtest.md
+
+Wording nit found while gating T-018, on a claim the task newly makes in two
+places: `tools/playtest/README.md` ("the compiler *rejects* `||`, parens,
+arithmetic, unknown fields and string ordering") and `tools/pathcheck.mjs`
+(`rejects('threat.dist < 3 + 1', 'arithmetic')`). Arithmetic is only rejected
+behind an ORDERING operator, where the string rhs trips the "ordering needs a
+number" guard. Behind `==`/`!=` it is accepted: `x==3+1` parses `3+1` as the
+string `"3+1"`, compares it to a number, and reads false for the whole run with
+no `missingFieldWarnings` entry — the silent-forever failure mode the
+threat-field validation exists to prevent. Nothing is evaluated as JS either
+way, so this is a foot-gun, not a hole in the &&-only grammar, and it is
+**pre-existing on main** (verified against a `git archive main` copy of the old
+engine), not introduced by T-018. Fix is either wording ("arithmetic is
+rejected behind ordering operators") or one more compile-time guard rejecting a
+non-numeric rhs that contains an operator character.
