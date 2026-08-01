@@ -221,7 +221,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; smoke suite; manual listen note in report
 
-## T-013 | shell | doing | P2
+## T-013 | shell | done | P2
 
 goal: game shell — start screen (board 05's three directions are unjudged:
 build the middle "The Ship Wakes" composition as default, keep it swappable),
