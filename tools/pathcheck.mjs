@@ -6868,9 +6868,9 @@ const G2GATE = G2E.gate;
         }
       }
       ok(sweptMin > RAD,
-         'T-009/I-019: no deck-line jump arc — any launch column, any speed, ' +
-         'any hold length, ascending or descending — brings RIG within the ' +
-         RAD + '-tile pickup sphere of a pocket reward (closest ' +
+         'T-009/I-019: no GROUNDED deck-line jump arc — any launch column, any ' +
+         'speed, any hold length, ascending or descending — brings RIG within ' +
+         'the ' + RAD + '-tile pickup sphere of a pocket reward (closest ' +
          sweptMin.toFixed(3) + ' at ' + JSON.stringify(sweptWhere) + ')');
       ok(envMin > RAD,
          'T-009/I-019: and no choice of launch position or run speed can beat ' +
@@ -6878,6 +6878,23 @@ const G2GATE = G2E.gate;
          '(apex ' + apex.toFixed(2) + ' + height ' + PJ.height + ' = ' +
          headReach.toFixed(2) + ') by ' + envMin.toFixed(3) + ' tiles at ' +
          JSON.stringify(envWhere));
+      /* Scope, stated rather than implied: these two prove the MANDATORY
+         crossing — the jump every player spends to get over the chasm — no
+         longer pays out, which is the defect (I-019). They deliberately do
+         not cover the AIR jump, and that is arithmetic rather than
+         oversight. The shelf sits 4.35 over the approach deck while a double
+         jump reaches 5.07, so the shelf is inside double-jump reach from the
+         lip, and anything a player can collect while STANDING on the shelf
+         is therefore touchable in flight by someone who spends the air jump
+         there. Raising the shelf out of that reach would need it ~1.6 tiles
+         higher, which `mid.y - landing <= apex` and `shelf.y = mid.y +
+         tierRise` (both asserted above, both built on frozen constants)
+         forbid; the only pocket shape that closes it steps UP across the
+         chasm instead of down, which makes the mandatory crossing itself
+         marginal for a screen-clamped player. That is an operator/design
+         call, not something to retune quietly — measured here and reported,
+         never assumed away. No assertion is written for it on purpose: an
+         assertion that fails once the geometry improves is a trap. */
 
       // …and the wager still PAYS: standing anywhere on the tip column, at
       // any point of the bob, the capsule is already inside the sphere. The

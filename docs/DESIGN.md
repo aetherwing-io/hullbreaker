@@ -436,9 +436,14 @@ Shipped by T-009 in `src/pure/lattice.js`, on top of the seeded chunk stream:
   now 1.53 clear of every deck-line arc — asserted over every launch column,
   speed and hold length, and behaviourally through the shipped sim — while a
   player standing on the tip still collects it by walking. What the geometry
-  cannot buy back: the air jump reaches 5.07, so a deliberate double jump at
-  the lip can still touch the capsule mid-flight; closing that needs the
-  shelf ~1.6 tiles higher than the frozen tier ladder allows.
+  cannot buy back: the air jump reaches 5.07 and the shelf sits 4.35 over the
+  approach deck, so a deliberate double jump at the lip can still touch the
+  capsule mid-flight (a jump-spamming bot takes face 1's at x=45.3; the
+  held-jump crosser takes nothing). Closing that needs the shelf ~1.6 tiles
+  higher than `mid ≤ landing + apex` and `shelf = mid + tierRise` allow, or a
+  pocket that steps *up* across the chasm — which makes the mandatory
+  crossing marginal for a screen-clamped player. Open for the operator, not
+  retunable in the lane.
   The chasm is two columns because RIG is clamped to the right of the screen:
   a player holding right crosses ground at *scroll* speed, and a held jump
   from the clamp travels ~3.0 tiles.
