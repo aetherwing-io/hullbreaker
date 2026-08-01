@@ -116,7 +116,7 @@ export function buildLevel(cfg) {
   }
   while (x < L) groundH[x++] = 3;
 
-  // dare pockets (src/pure/lattice.js) are carved into the deck BEFORE the
+  // pockets (src/pure/lattice.js) are carved into the deck BEFORE the
   // tier pass, so the catwalk rhythm above them reads the chunk they created
   // rather than the chunk stream they replaced. Both seams are flat at the
   // generator's own walk height, so every ground invariant above still holds.
