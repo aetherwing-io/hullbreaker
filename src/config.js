@@ -308,11 +308,14 @@ export const CONFIG = {
     blastHeight: 1.8,          // slab height over the marked surface: taller than a
                                //   standing body (no ducking a spore burst), lower than
                                //   any jump apex (going over it is always an answer)
-    podRadius: 0.26,
+    podRadius: 0.36,         // the pod in flight has to read at the FAR default, so it
+                               //   is drawn larger than a bullet and lit its own color
     // pose theater (render-only): the same warning grammar as the rest of the
     // roster — an accelerating warm blink that resolves into commitment.
     markPulseSlowMs: 200, markPulseFastMs: 70,
-    markThickness: 0.14,       // the surface pad: readable at the FAR default
+    markThickness: 0.18,       // the surface pad: the loudest element at the FAR default
+    warnDepth: -0.55,          // the denial volume sits just BEHIND the combat plane, so a
+                               //   body standing in it keeps its silhouette (pillar 5)
     recoilTiles: 0.4,          // tube kicks back on launch, settles over the flight
     burstSwell: 0.35,          // the detonation's own silhouette pop
   },

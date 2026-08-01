@@ -379,18 +379,22 @@ function mortarSync(v, e) {
   v.blast.visible = marked;
   if (!marked) return;
   placeOnTower(v.mark, e.zoneX, e.zoneY + M_CFG.markThickness / 2, 0);
-  placeOnTower(v.blast, e.zoneX, e.zoneY + M_CFG.blastHeight / 2, 0);
+  placeOnTower(v.blast, e.zoneX, e.zoneY + M_CFG.blastHeight / 2, M_CFG.warnDepth);
   if (e.state === 'burst') {
-    // the detonation: the denial volume is opaque for exactly the frames the
-    // sim is dealing damage — a player can always tell live from warning
+    // the detonation: the denial volume goes hot and bright for exactly the
+    // frames the sim is dealing damage — live and warning can never be
+    // confused — while staying behind the play plane, so a body caught in it
+    // keeps its silhouette (pillar 5: chaos stays readable)
     const u = Math.max(0, Math.min(1, (e.stateUntil - gameMs) / M_CFG.burstMs));
-    v.blastMat.opacity = 0.28 + 0.5 * u;
+    v.blastMat.color.setHex(CONFIG.palette.mortarBlast);
+    v.blastMat.opacity = 0.24 + 0.38 * u;
     v.markMat.opacity = 0.95;
     v.blast.scale.set(1 + (1 - u) * 0.12, 1, 1 + (1 - u) * 0.35);
     return;
   }
   v.blast.scale.set(1, 1, 1);
-  v.blastMat.opacity = 0.16;
+  v.blastMat.color.setHex(CONFIG.palette.mortarMark);   // warning field, not a detonation
+  v.blastMat.opacity = 0.2;
   if (flying) { v.markMat.opacity = 0.55; return; }
   // fuse: the mark blinks faster the closer the detonation gets
   const remain = Math.max(0, e.stateUntil - gameMs);
