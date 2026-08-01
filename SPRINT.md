@@ -502,6 +502,62 @@ at 15.9 s; final x 59.649; protoScore −16.5 real). Committing
 three summaries, makes the whole table checkable — worth doing before CP4 is
 judged, since evidence honesty is this packet's whole point. Non-blocking.
 
+## I-009 | bug | S3 | repro: serve task/T-008 66b13d0 and open `index.html?g2=1` — HUD reads "0/2 TURNS" before the flip, "1/2 TURNS" after, and the clear overlay reads "1 of 2 transformations", for a fixture with one event | evidence: reports/tasks/T-008/playtest.md; .claude/worktrees/T-008/tools/playtest/runs/g2-neck-flip/{02-plate-armed-ajar,07-interior-exits,09-neck-clear}.png
+
+Found while gating T-008 (PASS). `src/ui/hud.js:114` and `src/ui/overlay.js:77`
+hardcode the v1 demo's two-turn copy, so the G2 fixture — which authors a single
+`neck-plate-flip` event — advertises a second transformation that does not exist.
+Visible in every committed and freshly captured G2 frame, including the BREACH
+CLEAR overlay. Cosmetic only: no sim, gating or telemetry effect, and the ritual
+itself completes correctly. The builder flagged it in
+`artifacts/g2-neck-flip/README.md` and the reviewer carried it as a MINOR, but it
+was never filed, so filing it here. `ACTIVE_FIXTURE.events.length` is the fix once
+both files are out from under the in-flight lanes that own them (T-011 juice,
+T-013 shell).
+
+## I-010 | art | S3 | repro: any `?g2=1` run with enemies live at task/T-008 66b13d0 — compare `.claude/worktrees/T-008/tools/playtest/runs/g2-neck-flip/00-approach-ribline.png` (fresh capture) against `artifacts/g2-neck-flip/00-approach-ribline.png` (committed) at the same beat | evidence: reports/tasks/T-008/playtest.md
+
+Pre-existing render nit, not T-008's doing (both lines predate this branch), found
+while judging G2 frames at the default FAR view. A hostile in its hit-flash renders
+with `glow = 0xffffff` (`src/render/hostiles.js:197`), which at FAR erases the
+wasp's green-diamond silhouette entirely — it becomes a featureless ~13px white
+quad. Independently, RIG blinks during iframes (`src/render/player.js:55`). In the
+fresh `00` frame the two coincide, so the frame contains a white square and no
+visible player, while the committed capture of the same beat shows RIG plus the
+white quad at his muzzle. Cost real time in this gate before it was identified as
+a shot wasp rather than a player-render bug, and it will mislead any future
+screenshot gate the same way. Suggest the flash tint the existing silhouette
+rather than replace it, and fold into T-003's FAR-tells readability pass (same
+scope as I-003).
+
+## I-011 | bug | S3 | repro: any policy-mode script that ends at `--max-runtime-ms` with a `tap` in flight, e.g. `node run.mjs runs/gate-T-008-scripts/g2-pressure-PREFIX.json --deterministic --max-runtime-ms 22000 --base-url <pinned tree>` — `report.json` `pageErrors` gains `key up failed for Space: keyboard.up: Target page, context or browser has been closed` | evidence: tools/playtest/runs/gate-T-008-g2press-PREFIX-{2,3}/report.json; reports/tasks/T-008/playtest.md
+
+Harness-side only, zero game impact. A policy `tap`'s release is a fire-and-forget
+timer by design (documented in `tools/playtest/README.md`'s policy section), so a
+tap whose `holdMs` outlives context teardown records its failed keyup in
+`pageErrors` — the same channel a gate reads to decide whether the *game* threw.
+Both affected runs still exited 0 and their metrics are sound; the entry is noise,
+but it is noise in an error channel, which is exactly where noise is expensive.
+Fix is to swallow (or bucket separately) keyboard failures raised after teardown
+has begun, so `pageErrors` stays a game-error channel. Filed rather than fixed
+here: the playtester lane does not edit harness `lib/`.
+
+## I-012 | fairness | S3 | repro: `node run.mjs <worktree>/tools/playtest/scripts/g2-neck-flip-pressure.json --deterministic --max-runtime-ms 22000 --base-url <pinned task/T-008 66b13d0>` — hp 3→2 lands at x ≈ 112 and hp 2→1 at x = 129.65 in all 3 runs; the pre-fix control's every fall traces back to the same first hit at x ≈ 102 | evidence: tools/playtest/runs/gate-T-008-g2press-{1,2,3}/report.json; tools/playtest/runs/gate-T-008-g2press-PREFIX-{2,3}/report.json; reports/tasks/T-008/playtest.md
+
+Test-coverage gap, filed so triage can decide, **not** a fairness verdict — that is
+the operator's call and is queued as a packet question. The reviewer raised this at
+`tools/pathcheck.mjs:2581`: the new authored-pressure section asserts spawn
+ordering, seam-clear distance, apex-lane proximity and hound patrol containment,
+but nothing binds ambient spawn placement to the *mandatory* gaps. This gate
+measured the relation the assertion is missing: the x106 lane-4.2 wasp's dive
+envelope reaches back across the required 100–102 teach gap, the hit there is
+deterministic enough to land within 13 ms across runs, and in the pre-fix control
+it is the event that starts every fall (five deaths at x = 101.65). The fixture is
+crossable and the shipped script clears it 3/3 with a life in hand, so nothing is
+broken today — but a future spawn-table retune could move that contest without any
+assertion noticing. Suggest pairing each mandatory gap with the wasps whose
+authored lane can reach its crossing arc.
+
 ---
 
 ## Task schema
