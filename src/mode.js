@@ -7,7 +7,8 @@
 
 import { CONFIG } from './config.js';
 import {
-  TRAVERSAL_FIXTURE, houndTrialStage, resolveTraversalPace, traversalEnemyPlan,
+  TRAVERSAL_FIXTURE, houndTrialStage, polypTrialStage, resolveTraversalPace,
+  traversalEnemyPlan,
 } from './pure/traversal.js';
 import { TRANSFORM_FIXTURE, selectTransformFixture } from './pure/transform.js';
 
@@ -101,9 +102,20 @@ export const HOUND_STAGE =
   : HOUND_PARAM === '2' || HOUND_PARAM === 'combo' ? 'combo'
   : 'solo';
 export const HOUND_TRIAL_STAGE = houndTrialStage(HOUND_STAGE);
+// Opt-in Iris Polyp trial (DESIGN's next teach-then-combine enemy), same shape
+// as the hound trial and orthogonal to the pace: ?polyp=1 teaches the beam
+// alone, ?polyp=2 adds the hound pricing the drop reroute below the lane.
+// Absent — every ordinary URL, including every ?hound= stage — the plan is
+// byte-identical to what it fields today.
+const POLYP_PARAM = IS_TRAVERSAL_SLICE ? QUERY.get('polyp') : null;
+export const POLYP_STAGE =
+  POLYP_PARAM === null || POLYP_PARAM === '0' || POLYP_PARAM === 'off' ? null
+  : POLYP_PARAM === '2' || POLYP_PARAM === 'combo' ? 'combo'
+  : 'solo';
+export const POLYP_TRIAL_STAGE = polypTrialStage(POLYP_STAGE);
 // The authored hostile list for one slice attempt — resolved once, read by
 // resetGame, the self-test, and the HUD so all three can never disagree.
-export const SLICE_ENEMY_PLAN = traversalEnemyPlan(ACTIVE_SLICE, HOUND_STAGE);
+export const SLICE_ENEMY_PLAN = traversalEnemyPlan(ACTIVE_SLICE, HOUND_STAGE, POLYP_STAGE);
 
 // Two independent A/B answers to the operator's 8-way aim gap against low
 // targets. Both are opt-in and orthogonal to everything above, so they can be
