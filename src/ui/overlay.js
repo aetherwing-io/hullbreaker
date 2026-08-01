@@ -1,12 +1,19 @@
 /* =========================== OVERLAY ============================== */
-/* The state screens: pause, fixture retry, game over, victory. The state
-   machine itself is sim (src/sim/state.js) and reaches this presentation
-   through the view bridge, so the sim owns no copy. */
+/* The state screens: title, pause, fixture retry, game over, victory. The
+   state machine itself is sim (src/sim/state.js) and reaches this
+   presentation through the view bridge, so the sim owns no copy.
+
+   The overlay's own title and body text are frozen by use: the playtest
+   harness reads #ovTitle / #ovBody to classify an outcome
+   (tools/playtest/lib/sampler.mjs). The game shell (T-013) therefore
+   ADDS to these screens through src/ui/shell.js — a stats/options panel
+   in #ovPanel — instead of rewriting the lines below. */
 
 import { CONFIG } from '../config.js';
 import {
   ACTIVE_SLICE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, SCORE_ENABLED, VIEW_ID,
 } from '../mode.js';
+import { shellStateChanged } from './shell.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { scoreSnapshot } from '../sim/score.js';
@@ -33,7 +40,16 @@ function showOverlay(title, lines) {
 function hideOverlay() { overlay.style.display = 'none'; }
 
 function showStateScreen(next) {
-  if (next === 'PLAYING') hideOverlay();
+  drawStateScreen(next);
+  // the shell draws its panel into #ovPanel AFTER the body above, so the
+  // scraped overlay text is exactly what it was before the shell existed
+  shellStateChanged(next);
+}
+
+function drawStateScreen(next) {
+  // MENU is the start screen: the run is built but frozen, and src/ui/shell.js
+  // owns what is on screen — the overlay gets out of the way.
+  if (next === 'PLAYING' || next === 'MENU') hideOverlay();
   else if (next === 'PAUSED') showOverlay('PAUSED', [{ text: 'p / esc to resume', dim: true }]);
   else if (next === 'SLICE_RETRY') showOverlay('ROUTE LOST', [
     { text: 'resetting fixture…', dim: true },

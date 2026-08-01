@@ -40,6 +40,16 @@ node run.mjs --help                                     # full flag list
 `--url` skips the built-in static server entirely — point it at a
 `python3 -m http.server` instance or anything else already serving the repo.
 
+**`--no-testapi` no longer boots straight into the run.** The game shell
+(T-013) parks at its start screen unless the session carries `testapi=1` or
+`selftest=1`, so a `--no-testapi` run starts frozen on the title and its
+first scripted key is the one that leaves it — later events land that much
+earlier in the run than the script's timeline assumes. Add `shell=0` to the
+URL (`--url '…/index.html?slice=traversal&shell=0'`) to get the pre-shell
+boot back. The default path is unaffected: `run.mjs` appends `testapi=1`,
+and the shell never consumes a gameplay key, so scripted input is never
+swallowed either way.
+
 ## Input-script format
 
 A script is one JSON file: a URL, an optional viewport/duration, and a list

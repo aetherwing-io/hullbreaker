@@ -16,10 +16,14 @@ import { CONFIG } from './config.js';
 import {
   ACTIVE_FIXTURE, ACTIVE_SLICE, AUTOBOUNCE_ENABLED, FLOW_ENABLED, HOOK_ENABLED,
   HOOK_INPUT, IS_G1, IS_G2, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, QUERY,
-  SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN, SLICE_FALLBACK_ENABLED,
-  SLICE_PACE, VIEW_ID,
+  SCORE_ENABLED, SHELL_AUTOSTART, SHELL_ENABLED, SLICE_ENEMIES_ENABLED,
+  SLICE_ENEMY_PLAN, SLICE_FALLBACK_ENABLED, SLICE_PACE, START_DIRECTION_ID,
+  VIEW_ID,
 } from './mode.js';
 import { HALT_S } from './pure/path.js';
+import {
+  RIG_SCREEN_FRACTION, SHELL_ELEMENT_VARS, START_DIRECTION_IDS, shellKeyIntent,
+} from './pure/shell.js';
 import { cornerEventTotalMs } from './pure/waves.js';
 import {
   buildTransformPath, transformAltAt, transformEventTotalMs,
@@ -84,6 +88,7 @@ import './render/mods.js';
 import './render/hook.js';
 import { resetHudMessage, updateHUD } from './ui/hud.js';
 import './ui/overlay.js';
+import { shellApplyIntent, shellRunStarted, shellSnapshot } from './ui/shell.js';
 import './ui/audio.js';
 // juice loads LAST: like the audio layer it wraps the finished view bridge
 // (each wrapper delegating to the implementation already installed), so it
@@ -115,12 +120,32 @@ const KEYMAP = {
 };
 
 addEventListener('keydown', (e) => {
+  /* The game shell gets first look, but only where the simulation is not
+     running (MENU / PAUSED / GAME_OVER / VICTORY) and only for keys that
+     are not in KEYMAP below. 'start' is the load-bearing case: leaving the
+     title does NOT consume the event — the same press falls through to the
+     gameplay handling underneath, so a bot script's (or a player's) first
+     input is never swallowed. tools/pathcheck.mjs asserts that property
+     against this KEYMAP for every state. */
+  let startedFromTitle = false;
+  if (SHELL_ENABLED && !e.metaKey && !e.ctrlKey && !e.altKey) {   // leave browser shortcuts alone
+    const intent = shellKeyIntent(e.code, state);
+    if (intent === 'start') { startRun(); startedFromTitle = true; }   // fall through
+    else if (intent === 'restart') { e.preventDefault(); if (!e.repeat) resetGame(); return; }
+    else if (intent === 'title') { e.preventDefault(); if (!e.repeat) toTitle(); return; }
+    else if (intent) { e.preventDefault(); if (!e.repeat) shellApplyIntent(intent); return; }
+  }
   if (e.code === 'KeyP' || e.code === 'Escape') {
     if (!e.repeat) togglePause();          // held key must not strobe the pause state
     e.preventDefault();
     return;
   }
-  if (e.code === 'KeyR' &&
+  /* …with one exception to the fall-through: the press that LEFT the title
+     must not also restart the run it just started. R is the traversal
+     slice's unconditional restart key, so without this guard a single R at
+     the title would both start and reset the run and spend an attempt the
+     title view is not supposed to cost (see startRun/toTitle below). */
+  if (e.code === 'KeyR' && !startedFromTitle &&
       (IS_TRAVERSAL_SLICE || state === 'GAME_OVER' || state === 'VICTORY')) {
     e.preventDefault();
     if (!e.repeat) resetGame();
@@ -145,11 +170,33 @@ addEventListener('keyup', (e) => {
 addEventListener('blur', releaseAllKeys);
 document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAllKeys(); });
 
+// a click / tap is "any key" too, and it is the only input a pointer-only
+// visitor has. Nothing else in the game reads the pointer.
+addEventListener('pointerdown', () => { if (SHELL_ENABLED && state === 'MENU') startRun(); });
+
 /* ============================= STATES ============================= */
 
 function togglePause() {
   if (state === 'PLAYING') setState('PAUSED');
   else if (state === 'PAUSED') setState('PLAYING');
+}
+
+/* The shell's two lifecycle verbs. A run always begins from a full
+   resetGame, so leaving the title screen and restarting after a death
+   land in exactly the same state — the one every URL booted into before
+   the shell existed. The title screen is holding a run that was just
+   reset (both ways into MENU reset first, and a frozen sim cannot
+   drift), so LEAVING it is a state change, not a second reset —
+   otherwise merely looking at the title would tick the attempt counter
+   the HUD and the bot harness both read. */
+function startRun() {
+  if (state === 'MENU') setState('PLAYING');
+  else resetGame();
+}
+
+function toTitle() {
+  resetGame();                 // rebuild the world, then freeze it behind the title
+  setState('MENU');
 }
 
 function resetGame() {
@@ -221,6 +268,7 @@ function resetGame() {
     scoreRunStart(CONFIG.gen.seed, 'six-face', 'normal');
   }
   resetHudMessage();                     // keep the HUD write cache coherent
+  shellRunStarted();                     // ui: stamp this attempt's clock origin
   updateScroll(0);                       // was updateCamera(0): scroll, then pose
   syncCamera();
   setState('PLAYING');
@@ -384,6 +432,11 @@ function telemetry() {
     // untouched — traversalState keeps its frozen free|ledge|wall domain.
     hook: HOOK_ENABLED ? hookSnapshot() : undefined,
     flow: FLOW_ENABLED ? flowSnapshot() : undefined,
+    // additive (T-013): the front end's own state, so a bot run can prove it
+    // was never parked on the title screen. `state` above reads 'MENU' while
+    // the start screen holds a built-but-frozen run; an automated session
+    // (?testapi=1 / ?selftest=1) auto-starts and never sees it.
+    shell: SHELL_ENABLED ? shellSnapshot() : undefined,
     // additive (T-011): the feedback pass's live state and the frame-time
     // sampler that proves its budget. `juice` is presentation counters plus
     // the sim's own hit-stop remainder; `perf` is measured wall-clock frame
@@ -505,6 +558,8 @@ window.HB = Object.freeze({
   // movement-verb prototypes: read surfaces only (the verbs live in the sim)
   hook: { enabled: HOOK_ENABLED, input: HOOK_INPUT, snapshot: hookSnapshot },
   flow: { enabled: FLOW_ENABLED, snapshot: flowSnapshot },
+  // the game shell (title / pause-options / run stats), read surface only
+  shell: shellSnapshot,
   // baseline feedback pass (?juice=0 disables): effect counters + the sim's
   // live hit-stop remainder, and the frame-time sampler beside it
   juice: juiceSnapshot,
@@ -546,6 +601,9 @@ if (QUERY.has('selftest')) {
   setTimeout(() => {
     const results = [];
     const check = (name, cond) => results.push([name, !!cond]);
+    // ?selftest=1 auto-starts, so this only fires for ?selftest=1&shell=title
+    // (the capture URL): leave the title before the pause/resume checks below.
+    if (SHELL_ENABLED && state === 'MENU') startRun();
     check('canvas attached', renderer.domElement.isConnected);
     // frames-rendered, not wall-clock: an occluded tab throttles rAF but
     // still paints the first frames; a broken boot paints none
@@ -639,6 +697,83 @@ if (QUERY.has('selftest')) {
       check('autobounce flag plumbed',
         AUTOBOUNCE_ENABLED === (IS_TRAVERSAL_SLICE && QUERY.get('autobounce') === '1'));
     }
+    /* Game shell (T-013). The first check is the harness contract: a
+       ?selftest=1 session must already be PLAYING, never parked on a title
+       screen. The rest walks the whole front-end loop — run → title → run —
+       and leaves the game PLAYING exactly as the checks above found it. */
+    if (SHELL_ENABLED) {
+      // an automated session is never left sitting on the title screen: it
+      // either auto-started (?testapi=1 / ?selftest=1) or explicitly asked
+      // for the title with ?shell=title, in which case the block above
+      // pressed on through it before any of these checks ran
+      check('automated session is never parked on the title',
+        state === 'PLAYING' && !shellSnapshot().atTitle &&
+        (SHELL_AUTOSTART || QUERY.get('shell') === 'title'));
+      check('start direction resolved',
+        shellSnapshot().directions.includes(shellSnapshot().direction) &&
+        shellSnapshot().direction === START_DIRECTION_ID);
+      toTitle();
+      const menuOverlay = document.getElementById('overlay');
+      check('quit to title parks the run at the start screen',
+        state === 'MENU' && shellSnapshot().atTitle &&
+        document.getElementById('shell').classList.contains('on') &&
+        menuOverlay.style.display === 'none');
+      // the intent table must not consume any gameplay key at the title
+      check('title consumes no gameplay key',
+        ['ArrowRight', 'Space', 'KeyJ', 'KeyK', 'KeyX', 'ShiftLeft', 'KeyW']
+          .every((c) => shellKeyIntent(c, 'MENU') === 'start'));
+      /* RENDER-side composition checks, on every direction. pathcheck can
+         only see the composition DATA — it reads `3.8% of frame height` off
+         src/pure/shell.js and is satisfied — so the two ways the DOM can
+         disagree with that data are checked here, where there is a layout:
+           1. custom properties INHERIT. Every element must write its own
+              copy, or an attached child re-applies its parent's rotation on
+              top of the parent's transform (RIG at 74° on a 37° plate),
+              multiplies its opacity, or borrows its tone;
+           2. the figure that lands on screen is the one the data declares —
+              no rotation of its own beyond the surface it stands on, and a
+              rendered box still inside board 13's 3–5% of frame height. */
+      {
+        const startedOn = shellSnapshot().direction;
+        const leaked = [], tilted = [], scaled = [];
+        for (let i = 0; i < START_DIRECTION_IDS.length; i++) {
+          shellApplyIntent('pick:' + i);
+          const id = START_DIRECTION_IDS[i];
+          for (const el of document.querySelectorAll('#shellArt .sl'))
+            for (const v of SHELL_ELEMENT_VARS)
+              if (el.style.getPropertyValue(v) === '') leaked.push(id + ' ' + el.className + v);
+          const rig = document.querySelector('#shellArt .sl-rig');
+          const t = rig && getComputedStyle(rig).transform;
+          if (!rig || !(t === 'none' || /^matrix\(1,\s*0,\s*0,\s*1[,)]/.test(t)))
+            tilted.push(id + ' ' + t);
+          const pct = rig ? (rig.getBoundingClientRect().height / innerHeight) * 100 : 0;
+          if (!(pct >= RIG_SCREEN_FRACTION.min && pct <= RIG_SCREEN_FRACTION.max))
+            scaled.push(id + ' ' + pct.toFixed(2) + '%');
+        }
+        shellApplyIntent('pick:' + START_DIRECTION_IDS.indexOf(startedOn));
+        check('no composed element inherits a custom property' +
+          (leaked.length ? ' (' + leaked.slice(0, 3).join(', ') + ')' : ''), leaked.length === 0);
+        check('RIG carries no rotation of its own — it stands on its surface' +
+          (tilted.length ? ' (' + tilted.join(', ') + ')' : ''), tilted.length === 0);
+        check('RIG RENDERS at board 13\'s human scale (3–5% of frame height)' +
+          (scaled.length ? ' (' + scaled.join(', ') + ')' : ''), scaled.length === 0);
+      }
+      const attemptsAtTitle = sliceStats.attempts;
+      // a real keypress, not startRun(): R is the traversal slice's restart
+      // key, so this also proves the press that leaves the title does not
+      // fall through into a second, attempt-spending reset
+      dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyR' }));
+      check('any key leaves the title into a live run',
+        state === 'PLAYING' && !shellSnapshot().atTitle &&
+        document.getElementById('shell').classList.contains('on') === false &&
+        shellSnapshot().runMs < 50);
+      // …and it starts the run the title was already holding, rather than
+      // rebuilding it: the attempt counter must not tick for a title view
+      check('leaving the title does not spend an attempt',
+        sliceStats.attempts === attemptsAtTitle);
+    } else {
+      check('shell disabled boots straight into the run', state === 'PLAYING');
+    }
     // Baseline feedback pass: the flag resolves both ways, and a restart
     // leaves the whole pass at rest — no freeze, no trauma, no live effect
     // riding into the first frame of a run.
@@ -661,4 +796,10 @@ if (QUERY.has('selftest')) {
 }
 
 resetGame();
+/* The shell boots to its title screen with the run built but frozen (MENU).
+   An automated session — ?testapi=1 (every bot playtest) or ?selftest=1 —
+   skips it, so every committed script keeps the exact boot it had before
+   the shell existed, and so does ?shell=0. ?shell=title forces the title
+   even under those flags, which is how the harness screenshots it. */
+if (SHELL_ENABLED && !SHELL_AUTOSTART) setState('MENU');
 requestAnimationFrame(frame);
