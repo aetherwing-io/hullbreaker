@@ -1,0 +1,18 @@
+{
+  "name": "scored-run-nojump",
+  "description": "CP4 adversarial probe (T-016, B.1 fall-loop/toothlessness check): default run, ?score=1&fallback=1, hold right + fire and NEVER jump. Every gap and wasp becomes a setback. What this measures: consecutive un-recovered fallbacks must cross the streak ceiling into the stock lives tier (a terminal state exists — no free fall loop), the fallback catch-ahead must not out-progress the competent scored-run script (dying must not be a shortcut), and CHARGE must sit at the floor for a policy that never moves through the air.",
+  "url": "index.html?score=1&fallback=1",
+  "durationMs": 30000,
+  "moves": [
+    {
+      "hold": "right",
+      "fromMs": 0,
+      "toMs": 29800
+    },
+    {
+      "hold": "fire",
+      "fromMs": 100,
+      "toMs": 29800
+    }
+  ]
+}

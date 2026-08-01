@@ -49,8 +49,8 @@ import {
   flowMult, flowSpeedMult, flowStepState,
 } from '../src/pure/flow.js';
 import {
-  SCORE, scoreNotch, scoreNotchMult, scoreFireRateMult, scoreChargeGain,
-  scoreThreatGain, scoreApplyGain, scoreDrainPerSec, scoreStep,
+  RUN_FALLBACK, SCORE, SCORE_RUN, scoreNotch, scoreNotchMult, scoreFireRateMult,
+  scoreChargeGain, scoreThreatGain, scoreApplyGain, scoreDrainPerSec, scoreStep,
   scoreClassification, scoreNotchGlyphs, scoreConnectorAt, scoreRoutesCompleted,
 } from '../src/pure/score.js';
 import {
@@ -3292,6 +3292,64 @@ const XL = buildTransformLevel(CONFIG);
      'reclaim/link/launch windows and the A.5 ring buffer match the proposal');
 }
 
+/* ============ CP4 promotion: the full-run tune (T-016) =============== */
+/* The default six-face run prices the same event stream with A.3's
+ * un-doubled table (SCORE_RUN) — A.4 is explicit that the slice's ~6 s
+ * meter horizon "must not carry to the full game". These assertions pin
+ * the intended relationship: everything structural identical, gains and
+ * drain exactly halved. A deliberate run-side retune updates SCORE_RUN in
+ * src/pure/score.js and these lines together.                            */
+{
+  ok(SCORE_RUN !== SCORE && Object.isFrozen(SCORE_RUN) && Object.isFrozen(SCORE_RUN.gain) &&
+     Object.isFrozen(SCORE_RUN.drain),
+     'the run tune is its own frozen table, not an alias of the slice tune');
+  ok(SCORE_RUN.notches === SCORE.notches && SCORE_RUN.notchMult === SCORE.notchMult &&
+     SCORE_RUN.threat === SCORE.threat && SCORE_RUN.warmFireMult === SCORE.warmFireMult &&
+     SCORE_RUN.classification === SCORE.classification && SCORE_RUN.max === SCORE.max &&
+     SCORE_RUN.launchGraceMs === SCORE.launchGraceMs &&
+     SCORE_RUN.stallSpeed === SCORE.stallSpeed && SCORE_RUN.eventCap === SCORE.eventCap,
+     'run and slice tunes share notches, THREAT prices, ladder, windows and caps — ' +
+     'the two event streams stay comparable event-for-event');
+  ok(Object.keys(SCORE_RUN.gain).sort().join(',') === Object.keys(SCORE.gain).sort().join(',') &&
+     Object.keys(SCORE.gain).every(function (k) { return SCORE_RUN.gain[k] * 2 === SCORE.gain[k]; }),
+     'run CHARGE gains are exactly A.3 (the slice table halved), every event');
+  ok(SCORE_RUN.drain.moving * 2 === SCORE.drain.moving &&
+     SCORE_RUN.drain.stopped * 2 === SCORE.drain.stopped &&
+     SCORE_RUN.drain.stopped > SCORE_RUN.drain.moving && SCORE_RUN.drain.moving > 0,
+     'run drain is A.3 (halved) and keeps the floor-cools-you asymmetry');
+  ok(scoreApplyGain(0, 'airborne_kill', SCORE_RUN) === SCORE_RUN.gain.airborne_kill &&
+     scoreDrainPerSec({ grounded: true, traversal: false, launchGrace: false, vx: 0 },
+       SCORE_RUN) === SCORE_RUN.drain.stopped &&
+     scoreDrainPerSec({ grounded: false, traversal: false, launchGrace: false, vx: 0 },
+       SCORE_RUN) === 0,
+     'the pure functions accept the run tune: gains, worst-case drain, free air');
+  ok(scoreThreatGain('airborne_kill', 1, SCORE_RUN) ===
+       scoreThreatGain('airborne_kill', 1, SCORE),
+     'a WARM airborne kill is worth identical THREAT under either tune');
+  // the horizon claim in numbers: from WARM, a dead stop cools to zero in
+  // ~0.9 s under the slice tune and ~1.8 s under the run tune
+  ok(SCORE.notches[0] / SCORE.drain.stopped < 1 &&
+     SCORE_RUN.notches[0] / SCORE_RUN.drain.stopped > 1.5,
+     'the run meter horizon is genuinely slower than the slice meter horizon');
+
+  /* ---- HULL FALLBACK run tune (B.1 tier 1, promoted) ---- */
+  const FBS = TRAVERSAL_FIXTURE.fallback;
+  ok(Object.isFrozen(RUN_FALLBACK) &&
+     Object.keys(RUN_FALLBACK).sort().join(',') === Object.keys(FBS).sort().join(','),
+     'the run fallback tune has exactly the slice fallback field set');
+  ok(Object.keys(FBS).every(function (k) { return RUN_FALLBACK[k] === FBS[k]; }),
+     'run fallback values match the slice values for the first CP4 pass — ' +
+     'one grammar at two timescales, not two grammars (retune = update both)');
+  ok(RUN_FALLBACK.maxConsecutive >= 2 && RUN_FALLBACK.recoverTiles > 0 &&
+     RUN_FALLBACK.minDropTiles > 0 && RUN_FALLBACK.tossVx > 0 && RUN_FALLBACK.tossVy <= 0 &&
+     RUN_FALLBACK.iframesMs > 0 && RUN_FALLBACK.groundKnockTiles > 0,
+     'run fallback: real mercy chain, bounded streak, forward toss, paid ground knock');
+  ok(traversalFallbackTarget([3, 6, 9], 9, RUN_FALLBACK) === 6 &&
+     traversalFallbackTarget([9], 9, RUN_FALLBACK) === null,
+     'the shared fallback-target rule picks the highest genuinely-lower route ' +
+     'under the run tune, and null when nothing is lower');
+}
+
 /* ------------- score wiring at the sim layer (A.1 semantics) --------- *
  * src/sim/score.js resolves ?score=1 at module-init time, so proving its
  * emission rules needs a process whose __HB_QUERY__ is set before any import.
@@ -3328,6 +3386,7 @@ const XL = buildTransformLevel(CONFIG);
       .map((e) => e.type + ':' + e.kind + ':' + e.weapon).join(',');
     out.types = S.scoreEvents.map((e) => e.type).join(',');
     out.envelope = Object.keys(S.scoreEvents.find((e) => e.type === 'airborne_kill')).join(',');
+    out.tune = S.scoreSnapshot().tune;
     S.resetScore();
     out.afterReset = S.scoreSnapshot();
     out.eventsAfterReset = S.scoreEvents.length;
@@ -3367,6 +3426,150 @@ const XL = buildTransformLevel(CONFIG);
     ok(sim.afterReset.charge === 0 && sim.afterReset.threat === 0 &&
        sim.afterReset.counts.link === 0 && sim.eventsAfterReset === 0,
        'HB.score.reset() clears the meter, the score and the ring buffer');
+    ok(sim.tune === 'slice',
+       'a slice run prices its stream with the slice tune and says so');
+  }
+}
+
+/* ------ CP4 promotion wiring: the DEFAULT run, ?score=1&fallback=1 ---- *
+ * Same child-process trick (src/mode.js resolves flags at import time),
+ * driving the unmodified sim with NO slice selected. What is asserted is
+ * exactly what T-016 promoted: the run tune actually prices the stream, a
+ * lethal hit becomes a HULL FALLBACK that keeps lives and control, the
+ * streak ceiling hands over to the stock lives tier instead of retrying,
+ * and with the flags absent the default run is byte-for-byte the shipped
+ * lives path with a fully inert meter.                                   */
+{
+  const simBase = JSON.stringify('file://' + join(srcDir, 'sim'));
+  const childOn = `
+    globalThis.__HB_QUERY__ = 'score=1&fallback=1';
+    const base = ${simBase};
+    const M = await import(${JSON.stringify('file://' + join(srcDir, 'mode.js'))});
+    const T = await import(base + '/time.js');
+    const E = await import(base + '/edges.js');
+    const ST = await import(base + '/state.js');
+    const L = await import(base + '/level.js');
+    const PLm = await import(base + '/player.js');
+    const S = await import(base + '/score.js');
+    const out = {};
+    out.flags = [M.SCORE_ENABLED, M.RUN_FALLBACK_ENABLED,
+      M.ACTIVE_SLICE === null, M.ACTIVE_FIXTURE === null];
+    out.tune = S.scoreSnapshot().tune;
+    S.scoreKill('wasp', 'R', { grounded: false, vy: -2, x: 30, y: 6 });
+    out.chargeAirKill = S.scoreSnapshot().charge;
+    ST.setState('PLAYING');
+    E.setEdges(0, 120);
+    const p = PLm.player;
+    const lives0 = p.lives;
+    // (1) dislodged from an elevated platform: altitude paid, lives kept,
+    // control kept (state stays PLAYING), hp refilled, meter dropped to floor
+    const pl = L.platforms.find((q) => {
+      const mid = (q.x0 + q.x1) / 2;
+      const g = L.groundTopAt(mid);
+      return g > -100 && q.y - g > 1.3 && mid > 6 && mid < 110;
+    });
+    out.foundPlatform = !!pl;
+    T.advanceGameMs(3000);
+    p.x = (pl.x0 + pl.x1) / 2; p.y = pl.y; p.vx = 0; p.vy = 0;
+    p.grounded = true; p.hp = 1; p.iframesUntil = 0; p.hitstunUntil = 0;
+    PLm.damagePlayer(1, p.x - 1);
+    out.fb1 = {
+      livesKept: p.lives === lives0, hpFull: p.hp === PLm.P.maxHealth,
+      dropped: p.y < pl.y, tossed: p.vy === -3 && p.vx > 0,
+      playing: ST.state === 'PLAYING',
+      setbacks: T.sliceStats.setbacks, charge: S.scoreSnapshot().charge,
+    };
+    // (2) second un-recovered fallback on flat ground: the margin knock pays
+    let gi = 8;
+    while (L.groundTopAt(gi) < -100) gi++;
+    T.advanceGameMs(2000);
+    const x2 = gi + 0.5;
+    p.x = x2; p.y = L.groundTopAt(gi); p.vx = 0; p.vy = 0;
+    p.grounded = true; p.hp = 1; p.iframesUntil = 0; p.hitstunUntil = 0;
+    PLm.damagePlayer(1, p.x - 1);
+    out.fb2 = { livesKept: p.lives === lives0, knockedBack: p.x < x2,
+      setbacks: T.sliceStats.setbacks };
+    // (3) the ceiling: a third consecutive un-recovered death escalates to the
+    // stock lives tier (respawn, one life spent) instead of retrying/looping
+    T.advanceGameMs(2000);
+    p.hp = 1; p.iframesUntil = 0; p.hitstunUntil = 0;
+    PLm.damagePlayer(1, p.x - 1);
+    out.ceiling = { lives: p.lives, hpFull: p.hp === PLm.P.maxHealth,
+      setbacks: T.sliceStats.setbacks, playing: ST.state === 'PLAYING' };
+    const sb = S.scoreEvents.filter((e) => e.type === 'setback');
+    out.setbackEvents = sb.length;
+    out.setbackEnvelope = sb.length ? Object.keys(sb[0]).join(',') : '';
+    out.setbackKinds = sb.map((e) => e.kind).join(',');
+    console.log(JSON.stringify(out));
+  `;
+  const childOff = `
+    globalThis.__HB_QUERY__ = '';
+    const base = ${simBase};
+    const M = await import(${JSON.stringify('file://' + join(srcDir, 'mode.js'))});
+    const T = await import(base + '/time.js');
+    const E = await import(base + '/edges.js');
+    const ST = await import(base + '/state.js');
+    const L = await import(base + '/level.js');
+    const PLm = await import(base + '/player.js');
+    const S = await import(base + '/score.js');
+    const out = {};
+    out.armed = [M.SCORE_ENABLED, M.RUN_FALLBACK_ENABLED];
+    S.scoreKill('wasp', 'R', { grounded: false, vy: -2, x: 30, y: 6 });
+    out.meterInert = S.scoreSnapshot().charge === 0 && S.scoreEvents.length === 0;
+    ST.setState('PLAYING');
+    E.setEdges(0, 120);
+    const p = PLm.player;
+    const lives0 = p.lives;
+    let gi = 8;
+    while (L.groundTopAt(gi) < -100) gi++;
+    p.x = gi + 0.5; p.y = L.groundTopAt(gi); p.vx = 0; p.vy = 0;
+    p.grounded = true; p.hp = 1; p.iframesUntil = 0; p.hitstunUntil = 0;
+    PLm.damagePlayer(1, p.x - 1);
+    out.stock = { livesSpent: p.lives === lives0 - 1, hpFull: p.hp === PLm.P.maxHealth,
+      setbacks: T.sliceStats.setbacks, playing: ST.state === 'PLAYING' };
+    console.log(JSON.stringify(out));
+  `;
+  let on = null, off = null;
+  try {
+    on = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', childOn],
+      { encoding: 'utf8' }));
+    off = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', childOff],
+      { encoding: 'utf8' }));
+  } catch (e) {
+    console.error('pathcheck: CP4 promotion child failed: ' + e.message);
+  }
+  ok(!!on && !!off, 'the default-run sim boots headlessly with and without the CP4 flags');
+  if (on) {
+    ok(on.flags.every(Boolean),
+       '?score=1&fallback=1 arms both prototypes in the default run, no slice active');
+    ok(on.tune === 'run' && on.chargeAirKill === SCORE_RUN.gain.airborne_kill,
+       'the default run prices events with the RUN tune (airborne kill +' +
+       SCORE_RUN.gain.airborne_kill + ', not the slice tune +' + SCORE.gain.airborne_kill +
+       '), got +' + on.chargeAirKill);
+    ok(on.foundPlatform === true, 'the seeded six-face level offers an elevated ' +
+       'platform with ground below to prove the dislodge against');
+    ok(on.fb1.livesKept && on.fb1.hpFull && on.fb1.dropped && on.fb1.tossed &&
+       on.fb1.playing && on.fb1.setbacks === 1,
+       'a lethal hit with ?fallback=1 is a HULL FALLBACK: altitude paid, lives ' +
+       'and control kept, hp refilled, play never stops');
+    ok(on.fb1.charge === 0,
+       'the fallback drops CHARGE to the phase floor (B.1: the fall pays nothing)');
+    ok(on.fb2.livesKept && on.fb2.knockedBack && on.fb2.setbacks === 2,
+       'on the lowest route the fallback takes margin instead of altitude — never free');
+    ok(on.ceiling.lives === 2 && on.ceiling.hpFull && on.ceiling.setbacks === 2 &&
+       on.ceiling.playing,
+       'the third consecutive un-recovered death crosses the streak ceiling and ' +
+       'spends a stock life — the run keeps its terminal state, no free fall loop');
+    ok(on.setbackEvents === 2 && on.setbackKinds === 'fallback,ground' &&
+       on.setbackEnvelope === 't,notch,type,kind,phase,y0,y1,x',
+       'the A.5 setback envelope rides the run stream: kinds ' + on.setbackKinds);
+  }
+  if (off) {
+    ok(off.armed.every((f) => f === false) && off.meterInert === true,
+       'with no flags the default-run meter is fully inert (no events, no charge)');
+    ok(off.stock.livesSpent && off.stock.hpFull && off.stock.setbacks === 0 &&
+       off.stock.playing,
+       'with no flags a lethal hit spends a life through the shipped stock path');
   }
 }
 

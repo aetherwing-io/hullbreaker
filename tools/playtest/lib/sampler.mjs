@@ -81,7 +81,7 @@ export function sampleState() {
     x: null, y: null, vx: null, vy: null, grounded: null, traversalState: null,
     scrollX: null, gameMs: null, state: null, falls: null, airJumps: null,
     transform: null, pace: null, pursuitSpeed: null, pursuitPeak: null, setbacks: null,
-    hostiles: null, capsules: null,
+    score: null, hostiles: null, capsules: null,
   };
 
   function fromTelemetryLike(s, fidelity) {
@@ -105,6 +105,11 @@ export function sampleState() {
       pursuitSpeed: typeof s.pursuitSpeed === 'number' ? s.pursuitSpeed : null,
       pursuitPeak: typeof s.pursuitPeak === 'number' ? s.pursuitPeak : null,
       setbacks: s.setbacks != null ? s.setbacks : null,
+      // A.5 read surface (playtest README hook request #3): the game's own
+      // scoreSnapshot(), passed through verbatim. `score.enabled` is false
+      // unless the run was started with ?score=1 — lib/metrics.mjs only
+      // trusts it as the real event stream when it is true.
+      score: s.score || null,
     };
   }
 

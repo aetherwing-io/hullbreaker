@@ -1,0 +1,214 @@
+{
+  "name": "scored-run-baseline",
+  "description": "CP4 evidence (T-016): byte-identical inputs to scored-run.json but with NO flags — the shipped default six-face run. The A/B control: proves the flags-off run still plays the stock lives path (setbacks absent, protoScore falls back to the labeled proxy) and gives the comparison trace for the CP4 packet.",
+  "url": "index.html",
+  "durationMs": 30000,
+  "moves": [
+    {
+      "hold": "right",
+      "fromMs": 0,
+      "toMs": 29800
+    },
+    {
+      "hold": "fire",
+      "fromMs": 100,
+      "toMs": 29800
+    },
+    {
+      "tap": "jump",
+      "atMs": 300,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 1100,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 1900,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 2700,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 3500,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 4300,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 5100,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 5900,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 6700,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 7500,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 8300,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 9100,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 9900,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 10700,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 11500,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 12300,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 13100,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 13900,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 14700,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 15500,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 16300,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 17100,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 17900,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 18700,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 19500,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 20300,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 21100,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 21900,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 22700,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 23500,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 24300,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 25100,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 25900,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 26700,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 27500,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 28300,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 29100,
+      "holdMs": 380
+    }
+  ],
+  "policy": {
+    "rules": [
+      {
+        "when": "pinned",
+        "do": {
+          "tap": "jump",
+          "holdMs": 90
+        }
+      }
+    ]
+  }
+}
