@@ -61,7 +61,7 @@ import { resetSpawner, updateSpawner } from './sim/spawner.js';
 import { activeCorner, resetCornerEvents } from './sim/wavegate.js';
 import {
   activeTransformEvent, committedBand, resetTransform, transformAltitudeAt,
-  transformFrontierX, transformSealX,
+  transformDecisionTrace, transformFrontierX, transformSealX,
 } from './sim/transform.js';
 import { updateScroll } from './sim/scroll.js';
 import { camera, renderer, scene } from './render/scene.js';
@@ -273,6 +273,12 @@ function transformTelemetry() {
     progress: total > 0 ? Math.min(1, t / total) : 0,
     frontierX: transformFrontierX(),
     sealX: transformSealX(),
+    // additive (T-002 divergence investigation): the per-event decision trace —
+    // when each ritual's halt/trigger preconditions first held, the arm/start/
+    // finish frames, the start-frame trigger margin, and which precondition
+    // bound the start frame. Read-only; see transformDecisionTrace in
+    // src/sim/transform.js for field semantics.
+    decisions: transformDecisionTrace(),
   };
 }
 

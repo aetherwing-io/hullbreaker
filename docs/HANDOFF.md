@@ -5,15 +5,18 @@ session. It summarizes decisions already made, current repository state, and the
 smallest next implementation milestone. The deeper design and story documents
 remain authoritative where this handoff only summarizes them.
 
-**If you are joining the multi-agent fleet push**, read
-[`FLEET-PLAN.md`](FLEET-PLAN.md) first — it governs that work, assigns lanes,
-and defines the operator checkpoints (CP1–CP4) that gate it. This handoff
-remains the brief for solo sessions and for background FLEET-PLAN doesn't
-repeat. As of this writing, **the fleet has judged every checkpoint at least
-once** (CP1 pace, CP2 houndframe, CP2.5 the houndframe follow-up, CP3 the
-transformation slice's first pass) and is deep into **wave 3**: movement-verb
-prototyping. The headline verdicts — full detail in
-[`decisions.md`](decisions.md) entries 2–7 — are:
+**If you are joining the multi-agent fleet push**, read the root
+[`CLAUDE.md`](../CLAUDE.md) and [`SPRINT.md`](../SPRINT.md) first — since the
+July 31 delivery mandate ([`decisions.md`](decisions.md) entry 8) they govern
+the orchestrated **wave-4** push day-to-day; [`FLEET-PLAN.md`](FLEET-PLAN.md)
+remains the mission brief and operator-verdict record that push builds on,
+and [`ORCHESTRATION.md`](ORCHESTRATION.md) explains how the scaffold fits
+together. This handoff remains the brief for solo sessions and for
+background the fleet docs don't repeat. As of this writing, **the fleet has
+judged every checkpoint at least once** (CP1 pace, CP2 houndframe, CP2.5 the
+houndframe follow-up, CP3 the transformation slice's first pass) and is in
+**wave 4**: the delivery push. The headline verdicts — full detail in
+[`decisions.md`](decisions.md) entries 2–8 — are:
 
 - **CP1:** no pace crowned; the mission pivoted from tuning pace in
   isolation to building the movement verbs the concept art promises.
@@ -30,9 +33,17 @@ prototyping. The headline verdicts — full detail in
 - **View-scale verdict:** FAR is now the *default* camera (`?view=` opts
   into near/mid); projectiles no longer visibly curve around corners
   (shipped default behavior, no flag).
+- **Delivery mandate (July 31, entry 8):** the target is a playable version
+  of the full run with AAA-studio-level polish; the loop runs until
+  delivered. Merges are **autonomous** behind the agent-review + bot-playtest
+  + merge-script gates (`tools/orch/merge-task.sh`); an asset lane is open
+  (agents may use the codex CLI for sprites/assets, releasing the
+  juice/audio/final-art deferral); the entry-0a hold on six-face integration
+  is released. The operator remains the only fun oracle — checkpoint packets
+  keep queueing, but work no longer blocks on them.
 
-`FLEET-PLAN.md` has the live lane assignments and exact URLs/questions for
-whatever's still open.
+`SPRINT.md` has the live task queue and the operator checkpoint queue (exact
+URLs + questions) for whatever's still open.
 
 ## Start here
 
@@ -70,9 +81,10 @@ The user is learning game development. Collaborate at that altitude:
 This is **not an OSTK repository**. Do not initialize, boot, or introduce OSTK
 files or workflow.
 
-A fleet of roughly ten agents may be working in the repository at once, each
-in an isolated git worktree, with an integrator session merging to `main` one
-runtime change at a time (see `FLEET-PLAN.md`'s integration protocol). At the
+A fleet of agents may be working in the repository at once, each in an
+isolated git worktree, with an integrator session merging to `main` one
+runtime change at a time via `tools/orch/merge-task.sh` — the only path to
+`main` (see the root `CLAUDE.md`'s loop protocol). At the
 start of every implementation session, inspect `git status`, `git diff`, and
 recent commits regardless. Treat unfamiliar changes as someone else's
 already-reviewed work. Do not overwrite, revert, or reformat them; coordinate
@@ -82,8 +94,7 @@ through the integrator before touching overlapping runtime areas.
 
 - Branch: `main`
 - HEAD when this handoff was last updated:
-  `e7b2952 Merge G1 limb-turn: static anatomy corner reveal, bend cull,
-  ritual telemetry`
+  `15de009 SPRINT: T-002/T-005 done; merge-task aborts cleanly on conflict`
 - Runtime: [`index.html`](../index.html) is now only a thin shell (CSS, HUD
   markup, the three.js import map, and one module script tag); the game
   itself is 35 ES modules under [`src/`](../src/). See
@@ -99,7 +110,23 @@ through the integrator before touching overlapping runtime areas.
   [`tools/playtest/`](../tools/playtest/), a dev-only Playwright bot-player
   harness with its own `package.json` that plays the game in a real browser
   from scripted input and reports pacing/fairness metrics. It has no effect
-  on the shipped game.
+  on the shipped game. Its route metrics import the game's own
+  `TRAVERSAL_FIXTURE` directly from `src/pure/traversal.js` (T-005) rather
+  than a hand-copied snapshot.
+- A third, headless surface: [`tools/simlab/`](../tools/simlab/) steps the
+  real, unmodified sim in Node with synchronous frame-scoped input. Built by
+  the T-002 divergence investigation, whose finding
+  ([`playtests/2026-07-t2-frame-alignment.md`](playtests/2026-07-t2-frame-alignment.md))
+  proved the sim bit-deterministic once input lands on defined frames and
+  located the residual bot-run nondeterminism in browser input *delivery* —
+  the game-side synchronous input hook (playtest README hook request #5) is
+  the endorsed fix, not yet built.
+- The wave-4 orchestration scaffold is in place: the root
+  [`CLAUDE.md`](../CLAUDE.md) (hard rules + the integrator loop protocol),
+  [`SPRINT.md`](../SPRINT.md) (task queue, checkpoint queue, inbox),
+  `.claude/agents/` (the agent roster, including the new `asset-artist`),
+  the Stop-hook flywheel, and `tools/orch/merge-task.sh` — the only path to
+  `main`. See [`ORCHESTRATION.md`](ORCHESTRATION.md).
 - Two read-only debug channels exist for tooling: `?testapi=1` (the playtest
   harness's canonical telemetry channel) and `window.HB` (always present, a
   superset for console/harness use) — see README's "Debug handles" section.
@@ -108,11 +135,13 @@ through the integrator before touching overlapping runtime areas.
 - The simulation is 2D in `(s, y)`; a polyline maps it onto 3D hull surfaces for
   rendering and camera motion. This is unchanged by the module split.
 
-A roughly ten-agent fleet is currently iterating on mechanics and pacing in
-parallel, isolated worktrees, with an integrator session merging to `main`;
-see [`FLEET-PLAN.md`](FLEET-PLAN.md) for the roster, lanes, and checkpoint
-schedule. Verify branch/HEAD/worktree state yourself rather than assuming
-this snapshot is still exact — it changes quickly during the fleet push.
+An orchestrated agent fleet is iterating in parallel, isolated worktrees,
+with an integrator session merging to `main` autonomously behind the
+review/playtest/merge-script gates (`decisions.md` entry 8); the roster
+lives in `.claude/agents/` and the live queue in
+[`SPRINT.md`](../SPRINT.md). Verify branch/HEAD/worktree state yourself
+rather than assuming this snapshot is still exact — it changes quickly
+during the delivery push.
 
 ## Established creative decisions
 
@@ -213,12 +242,12 @@ second — at checkpoint CP1 all three read as "directionally correct" and none
 was crowned. The operator pivoted the mission toward building the movement
 verbs the concept art promises (`decisions.md` entry 2); every checkpoint has
 since been judged at least once (see the intro callout above and
-`decisions.md` entries 2–7 for the full verdict set) and the fleet is deep
-into wave 3.
+`decisions.md` entries 2–8 for the full verdict set) and the fleet is now in
+wave 4, the delivery push.
 
 ## Traversal slice
 
-**Status: built, tuned, and judged — the fleet has moved on to wave 3.** The
+**Status: built, tuned, and judged — the fleet has moved on (waves 3–4).** The
 slice was built at `?slice=traversal`, played by the operator, and proved the
 spatial grammar while failing the pacing test ("boring"). `15f66d2`
 accelerated it once; the `intensity` agent's further hunt/swarm/surge pace
@@ -298,9 +327,10 @@ widened by the fleet, per `FLEET-PLAN.md`) rather than current status.
 ## What follows the slice
 
 This is now happening in parallel across the fleet rather than as a single
-session's next step — see `FLEET-PLAN.md`'s wave roster and checkpoints (CP2
-houndframe, CP3 bulkhead flip + altitude, CP4 scored run + setback
-prototype). CP1 concluded without a single winner and pivoted the mission
+session's next step — the live queue is `SPRINT.md` (wave 4, governed by the
+entry-8 delivery mandate); `FLEET-PLAN.md` records the mission and verdicts
+behind it (CP2 houndframe, CP3 bulkhead flip + altitude, CP4 scored run +
+setback prototype). CP1 concluded without a single winner and pivoted the mission
 into **wave 3**: movement-verb prototypes and a view-scale experiment, both
 of which now have verdicts (view-scale: FAR default, shipped; movement:
 snap hook v1 rejected, FLOW still unjudged), running alongside CP2's
@@ -330,8 +360,12 @@ convergence point once the remaining variants are judged:
    lock on the post-mid lane, iris armour with vent openings, rooted
    placement per entry 6's doctrine), unjudged. Mortar not started.
 3. Add baseline hit, hurt, launch, pickup, warning, and transformation feedback.
-   (Deferred — `FLEET-PLAN.md` keeps juice/audio out of scope for this push.)
-4. Author the full six-phase escalation.
+   (Unlocked — the entry-8 delivery mandate released the juice/audio
+   deferral; queued in `SPRINT.md`.)
+4. Author the full six-phase escalation. (The entry-0a hold on six-face
+   integration is released by entry 8 — integration is queued in
+   `SPRINT.md`, with a checkpoint packet to follow rather than blocking on
+   one.)
 5. Build the Meridian Crown finale.
 6. Decide whether flight strengthens the ending.
 7. Finish front-end, accessibility, audio, and polish.

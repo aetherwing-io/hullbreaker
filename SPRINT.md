@@ -22,7 +22,7 @@ The default six-face run, start → summit → victory, playable end-to-end with
 
 ## Queue
 
-## T-001 | feature | doing | P1
+## T-001 | feature | done | P1
 
 goal: CP3 second pass — rework the transform slice (`?slice=transform`) to the
 static-anatomy render rule, so flip and breach read as RIG ascending around a
@@ -42,7 +42,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; cd tools/playtest && node run.mjs scripts/transform-slice.json --deterministic --max-runtime-ms 20000
 
-## T-002 | investigation | doing | P1
+## T-002 | investigation | done | P1
 
 goal: close the t2-transform-seam-rush divergence question (playtest README
 "single best next action"): instrument the ritual-arming check in
@@ -73,7 +73,11 @@ accept:
 - [ ] before/after screenshots attached for the operator packet
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; tools/playtest run at ?view=far with screenshots
-notes: sequenced after T-004 merges (both touch render/hostiles).
+notes: sequenced after T-004 merges (both touch render/hostiles). Use
+T-015's scale-true viewer (`tools/assets/view.mjs`) and its measured
+finding (capsule = 9.6px at FAR; see checkpoint queue) as the evidence
+base; the operator's direction pick (world-space scale-up vs HUD read)
+steers the implementation.
 
 ## T-004 | feature | doing | P1
 
@@ -92,7 +96,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; a named tools/playtest script (policy mode ok) exercising the turret
 
-## T-005 | harness | doing | P3
+## T-005 | harness | done | P3
 
 goal: replace `tools/playtest/lib/fixture.mjs`'s hand-copied
 TRAVERSAL_FIXTURE snapshot with a real import from `src/pure/traversal.js`
@@ -118,7 +122,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; named playtest script completing the rib-run
 
-## T-007 | docs | todo | P3
+## T-007 | docs | done | P3
 
 goal: docs drift sweep — `tools/playtest/README.md` still lists "add hostiles
 to ?testapi=1" as an open hook request but the root README documents
@@ -132,12 +136,22 @@ accept:
 owner: docs
 verify: grep the claims against src/main.js telemetry + README
 
-## T-008 | feature | blocked | P2
+## T-008 | feature | doing | P2
 
-goal: G2 neck access-plate flip per the greybox-map proposal (its next gate
-fixture after G1).
-blocked-by: T-001 landing the static-anatomy grammar for the transform slice.
+goal: G2 neck access-plate flip gate fixture per the greybox-map proposal
+(`docs/proposals/2026-07-meridian-monster-greybox-map.md` §G2), building on
+T-001's landed static-anatomy grammar (relock-on-detent plate beat, see
+`artifacts/cp3-transform-v3/README.md`).
+accept:
+- [ ] G2 fixture implemented per the proposal's spec, behind a flag, off by
+      default; static-anatomy rule holds (only the plate moves)
+- [ ] sim gating stays inert-until-crossed and deterministic; pathcheck
+      green incl. new gate assertions
+- [ ] capture sequence (screenshots per beat) committed under artifacts/
+- [ ] operator packet queued (URL + questions per the proposal's own test
+      questions)
 owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; deterministic playtest script crossing G2
 
 ## T-009 | feature | todo | P1
 
@@ -160,7 +174,7 @@ verify: node tools/pathcheck.mjs; a new full-run playtest script (policy mode)
 notes: biggest task in the queue — split into sub-worktrees if needed;
 sequenced after T-001/T-004 merge to integrate their landings.
 
-## T-010 | art | todo | P1
+## T-010 | art | doing | P1
 
 goal: palette pass — replace the neutral grey-box palette with DESIGN's ≤8
 color roles (deep teal environment, rust-orange metal, acid-green enemy
@@ -193,7 +207,7 @@ verify: node tools/pathcheck.mjs; smoke suite; fps sampled via ?testapi=1
 notes: DESIGN's caveat stands — after this lands, re-ask any "boring"
 verdicts, since some perceived intensity is feedback.
 
-## T-012 | audio | todo | P2
+## T-012 | audio | doing | P2
 
 goal: WebAudio synth layer — procedural SFX (hit, hurt, jump, launch, pickup,
 warning, ritual snaps, weapon-per-type fire) plus wave-layered mechanical
@@ -228,7 +242,7 @@ denial per DESIGN's enemy table, teach-then-combine after polyp.
 blocked-by: T-004 (polyp) merged and reading clean solo.
 owner: gameplay-engineer
 
-## T-015 | assets | todo | P2
+## T-015 | assets | done | P2
 
 goal: codex asset pipeline bootstrap — `tools/assets/`: a `codex exec`
 wrapper spec template, SVG→PNG rasterizer using the harness's Chrome
@@ -243,7 +257,7 @@ accept:
 owner: asset-artist
 verify: node tools/assets/check.mjs; sample round-trip committed as demo
 
-## T-016 | feature | todo | P3
+## T-016 | feature | doing | P3
 
 goal: score/setback convergence toward CP4 — promote the CHARGE/THREAT
 prototype (`?score=1`) and Hull Fallback (`?fallback`) from slice prototypes
@@ -257,6 +271,22 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; scored-run playtest script
 
+## T-017 | harness | todo | P3
+
+goal: nit-batch cleanup triaged from the Inbox + T-015's review MINOR:
+(1) I-001 — stale hostiles/capsules enrichment comment in
+`tools/playtest/lib/sampler.mjs` (~43-48), plus the harness-side follow-up
+it references (read `hostiles` from the primary testapi channel now that it
+ships there); (2) I-002 — `tools/assets/check.mjs` failure-path info header
+mislabels static imports as runtime references (~186-190); (3) T-015 review
+MINOR — `tools/assets/README.md` honesty item 4 miscounts the 100x100 blend
+census (5 blends, all hot-magenta; #ffdcc5 is below the 0.5% gate).
+accept:
+- [ ] all three fixed; harness demo run unchanged; check.mjs selftest green
+- [ ] I-001/I-002 marked resolved in the Inbox (strike or annotate)
+owner: gameplay-engineer
+verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic; node tools/assets/check.mjs --selftest
+
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
 - **G1 limb-turn:** default vs `?g1=1` (and `?g1=1&view=near`) on the six-face
@@ -266,7 +296,27 @@ verify: node tools/pathcheck.mjs; scored-run playtest script
   explanation, and does it serve "every grab wants to become another launch"?
 - **Crouch vs aim-assist:** `?crouch=1` vs `?aim=assist` — keep one, both, or
   neither (decisions.md entry 4's open question).
-- **CP3 re-judgment:** after T-001 merges — post URL + screenshot sequence.
+- **CP3 re-judgment (v3, T-001):** `?slice=transform` (default far view;
+  `&enemies=0` to watch choreography, `&view=near` for the old framing).
+  Frames + webm + equivalence report in `artifacts/cp3-transform-v3/`.
+  Questions: (1) Does the flip now read as running into a pre-existing
+  opening — the plate relocking flush during the hold — rather than
+  geometry arriving? (2) Does the breach read as pressure escaping the
+  body (cover caught on its stop, vapor clearing by the second snap)
+  instead of the cover shattering into debris? (3) Chunkiness now lives
+  only in the camera detents plus the covers clacking with them — still
+  chonky enough, or too smooth? (4) At the far default, does the interior
+  passage read at the right compression now that its fog rides the camera
+  pull-back? (5) Does the altitude still feel earned on foot, with the
+  breach only *revealing* it?
+- **Glyph scale at FAR (T-015 finding — decide before any glyph batch):**
+  measured at rendered scale, a 0.55-tile capsule is 9.6px tall at the
+  shipped FAR view — chamfers and rivets vanish, the letter survives as a
+  smudge (`tools/assets/reports/demo/capsule-letter-h/viewer-far.png`).
+  This is the concrete evidence for entry 7's accepted readability
+  follow-up. Candidate directions: scale world-space glyphs up, or move
+  the letter read to the HUD. Asset batches are held until this is picked;
+  T-003 implements whichever direction wins.
 - (new packets append here as tasks land: palette, juice, shell, six-face run)
 
 ## Inbox (playtester/adversarial file here; integrator triages each cycle)
@@ -276,6 +326,48 @@ verify: node tools/pathcheck.mjs; scored-run playtest script
 one-paragraph description; S1 = blocks a checkpoint or corrupts a gate,
 S2 = real defect with workaround, S3 = polish/nit.
 -->
+
+## I-001 | docs | S3 | repro: read tools/playtest/lib/sampler.mjs lines 43-48 at main (post-e7b2952) | evidence: reports/tasks/T-007/playtest.md
+
+Stale code comment found while gating T-007 (docs drift sweep): the
+hostiles/capsules enrichment comment in `tools/playtest/lib/sampler.mjs`
+still says "testapi does not expose hostiles/capsules at all as of this
+writing ... this is currently the only source for them." Half-stale since
+merge `e7b2952`: `?testapi=1`'s `telemetry()` now publishes `hostiles[]`
+(capsules remains HB-only, so that half is still true). T-007's playtest
+README correctly documents the real state and the open harness-side
+follow-up (read hostiles from the primary channel); the comment lives in
+harness *code*, so the docs-only T-007 lane rightly could not touch it.
+Fold the comment fix into that harness-side follow-up when it lands. Nit,
+no behavioral impact — the enrichment still works.
+
+## I-002 | bug | S3 | repro: node tools/assets/check.mjs --root <fixture tree with a static `import ... from "../assets/x.png"` in src/> at task/T-015 28b8ba2 | evidence: reports/tasks/T-015/playtest.md
+
+Cosmetic mislabel on check.mjs's failure path, found while gating T-015:
+`checkGameIndependence` (tools/assets/check.mjs ~lines 186-190) collects
+every `src/` line matching `assets/` into the info list, including lines
+that are static imports — so a static import is correctly raised as a
+problem (exit 1, right message) but is *also* printed under the header
+"game references to assets/ (runtime, not imports)", which contradicts
+itself. Fix is either filtering import-matched lines out of the info list
+or renaming the header ("all references"). Verdict unaffected: errors fire
+and exit codes are correct; the mislabel only appears on trees that are
+already failing.
+
+## I-003 | art | S3 | repro: polyp-facetank.json variant with durationMs 3300 --tail-ms 100 --deterministic --base-url <pinned task/T-004 32df995>, screenshot at first tell onset | evidence: tools/playtest/runs/gate-T-004-cap-tell-approach/screenshot.png (vs gate-T-004-cap-tell-parked/)
+
+Found while gating T-004 (polyp turret, PASS): the Iris Polyp's tell is a
+two-stage escalation — acid-green bulb dilating to a pale fully-open iris
+— and the pale phase is excellent at the default FAR view (highest-contrast
+object on screen). But the first ~300ms of the ~800ms tell reads as only a
+small notch in the green bulb at FAR; nearly a third of the reaction window
+carries little visual signal at the shipped camera. Not a blocker (the
+pale phase plus the 450ms beam make the cycle readable, and operator
+question 5 in the T-004 evidence packet already asks about silhouette
+legibility) — fold into T-003's FAR-tells readability pass, whose scope
+predates the polyp and currently names only wasp/hound tells and capsule
+glyphs. T-003 is already sequenced after T-004's merge, so this is a
+scope note, not new work.
 
 ---
 

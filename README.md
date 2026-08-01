@@ -91,11 +91,15 @@ Implemented:
   visibly curving around them — the operator's view-scale-verdict ruling
   that shots shouldn't snipe across corners)
 
-Not yet built (in build order): the spore mortar (houndframe is merged and
-judged; the Iris Polyp turret ships as the opt-in `?slice=traversal&polyp=1`
-solo / `?polyp=2` combination trial, awaiting its feel verdict), the boss,
+Houndframe (the floor-denial charger) is built and operator-judged in the
+traversal slice (`?slice=traversal&hound=1|2|2.5|3`; hound 2.5 is the working
+baseline — `docs/decisions.md` entries 4 and 6) but not yet placed in the
+default six-face run. The Iris Polyp turret ships as the opt-in
+`?slice=traversal&polyp=1` solo / `?polyp=2` combination trial, awaiting its
+feel verdict. Not yet built (in build order): the spore mortar, the boss,
 the flight interlude, juice pass (shake/hit-stop/particles), menus, WebAudio
-synth. See `docs/DESIGN.md`.
+synth. See `docs/DESIGN.md` and `SPRINT.md` — the wave-4 delivery queue
+covers these.
 
 ## Architecture
 
@@ -157,6 +161,14 @@ the suite it statically guards both layer contracts: no three.js/DOM references
 `src/sim/` — the property that keeps the simulation steppable without a
 browser. It exits non-zero on failure. (The old "pass a different game file as
 argv" mode is gone: the harness imports modules instead of scraping a file.)
+
+Two further dev-only verification surfaces live under `tools/`, each with its
+own README and honesty/limitations notes, and neither affects the shipped
+game: `tools/playtest/` — a Playwright bot-player harness that runs scripted
+or closed-loop keyboard input in real Chrome and reports pacing/fairness
+metrics — and `tools/simlab/` — a headless frame-alignment lab that steps the
+real sim in Node with frame-scoped input, built for the T-002 divergence
+investigation (finding: `docs/playtests/2026-07-t2-frame-alignment.md`).
 
 ### Debug handles
 
