@@ -424,10 +424,21 @@ Shipped by T-009 in `src/pure/lattice.js`, on top of the seeded chunk stream:
   246/246; face 2's average went 2.17 → 3.5.
 - **Dare pockets**, one per face: a long approach, a two-column chasm, a
   landing a tile lower, a mid lane, and a SHELF mounted on the landing that
-  reaches back out over the chasm with a weapon capsule on its tip. The shelf
-  points backward on purpose — no free drop off the tip, no forward
-  continuation — so the reward costs a measured retreat against the scroll
-  (1.83 tiles of edge advance, asserted to leave ≥6 tiles of daylight).
+  reaches back out over the chasm with a weapon capsule over its tip. The
+  shelf points backward on purpose — no free drop off the tip, no forward
+  continuation — so the reward costs a climb *and* a measured retreat against
+  the scroll (0.66s of climb + 0.43s of retreat = 4.65 tiles of edge advance,
+  asserted to leave ≥6 tiles of daylight; 9.35 as shipped).
+  The capsule hangs 1.75 over the shelf deck, which is what makes any of that
+  true: at the original 0.7 the mandatory crossing jump collected it in
+  flight (I-019 — head reach 4.42 over the deck against a bob floor at 4.90,
+  inside the 0.95 pickup radius), so the wager existed only on paper. It is
+  now 1.53 clear of every deck-line arc — asserted over every launch column,
+  speed and hold length, and behaviourally through the shipped sim — while a
+  player standing on the tip still collects it by walking. What the geometry
+  cannot buy back: the air jump reaches 5.07, so a deliberate double jump at
+  the lip can still touch the capsule mid-flight; closing that needs the
+  shelf ~1.6 tiles higher than the frozen tier ladder allows.
   The chasm is two columns because RIG is clamped to the right of the screen:
   a player holding right crosses ground at *scroll* speed, and a held jump
   from the clamp travels ~3.0 tiles.

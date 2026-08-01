@@ -492,7 +492,13 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
 ok(gH.length === 445 && plats.length === 62 && LVL.chunkLog.length === 59,
    'normal generator shape pinned (445 columns / 62 platforms / 59 chunks), got ' +
    gH.length + '/' + plats.length + '/' + LVL.chunkLog.length);
-ok(fingerprint(LVL) === 'dad96774',
+// Moved once more, deliberately, closing I-019: the pocket reward hangs
+// higher (rewardRise 0.7 -> 1.75, so the mandatory crossing jump can no
+// longer collect it) and each pocket's `retreat` gained the climb it costs
+// to reach the shelf at all. Geometry is untouched — same 445 columns, same
+// 62 catwalks, same 59 chunks, same rng draws — only the capsule's y and the
+// retreat metadata moved.
+ok(fingerprint(LVL) === '10606a27',
    'normal generator fingerprint unchanged, got ' + fingerprint(LVL));
 
 const fixtureBefore = JSON.stringify(TRAVERSAL_FIXTURE);
@@ -6757,6 +6763,187 @@ const G2GATE = G2E.gate;
       ok(P.gapCols <= CONFIG.gen.gapMax,
          'T-009: the pocket chasm respects the generator gap ceiling');
     }
+
+    /* --- I-019: THE WAGER IS NOT FREE --------------------------------- *
+     * Everything above was true while the pocket paid out to the mandatory
+     * crossing jump, because every one of those assertions is about the
+     * SHELF: that the shelf is out of double-jump reach of the landing, and
+     * that the reward hangs within pickup range OF the shelf. None of them
+     * ever asked the only question that decides whether the wager exists —
+     * how close the capsule's PICKUP SPHERE comes to the arc a player flies
+     * through on the way over the chasm. It came within 0.48 tiles of a
+     * 0.95-tile sphere, and the pickup fired mid-ascent, so an assertion
+     * that only compared apexes would have missed it too.
+     *
+     * Three checks: a swept arc (every launch column, every horizontal
+     * speed, every hold length, every point of the flight), an analytic
+     * envelope that no choice of launch x or speed can beat, and the
+     * positive half — a player who does stand on the tip still gets paid.
+     *
+     * The pickup model mirrors src/sim/capsules.js exactly: the test is
+     * circleHitsPlayer(c.x, c.y, CAP.pickupRadius), i.e. the distance from
+     * the capsule point to the player's AABB, and a 'fixed' capsule bobs
+     * +/- bobAmp*0.3 around its authored y. Both are guarded against drift
+     * at the end of this block, and the behavioural half — the shipped sim,
+     * the shipped pickup code, the deck-line policy that found the defect —
+     * runs in the full-run child further down.                           */
+    {
+      const CAPS = CONFIG.capsules;
+      const RAD = CAPS.pickupRadius;
+      const BOB = CAPS.bobAmp * 0.3;             // 'fixed' mode bob amplitude
+      const hw = PJ.width / 2, ph = PJ.height;
+      const headReach = LAT.latticeHeadReach(CONFIG);
+
+      // closest the player's body ever gets to the capsule across its whole
+      // bob cycle: AABB [px+-hw, py..py+ph] against the segment the capsule
+      // travels, [ry-BOB, ry+BOB] at x = rx
+      const bandGap = (px, py, rx, ry) => {
+        const dx = Math.max(0, Math.abs(rx - px) - hw);
+        const dy = Math.max(0, (ry - BOB) - (py + ph), py - (ry + BOB));
+        return Math.hypot(dx, dy);
+      };
+      // the same distance the sim computes, for one capsule position
+      const pointGap = (px, py, rx, ry) => {
+        const cx = Math.max(px - hw, Math.min(rx, px + hw));
+        const cy = Math.max(py, Math.min(ry, py + ph));
+        return Math.hypot(rx - cx, ry - cy);
+      };
+      // feet height t seconds into a jump at v0, released (cut) at tCut:
+      // rise at gravity, fall at gravity*fallGravityMult, exactly as
+      // src/sim/player.js integrates it — analytically, which is an upper
+      // envelope of the discrete integrator (its apex is 2.61 @60Hz).
+      const arcY = (t, v0, tCut) => {
+        const g = PJ.gravity;
+        const tc = Math.min(tCut, v0 / -g);
+        if (t <= tc) return v0 * t + 0.5 * g * t * t;
+        const yc = v0 * tc + 0.5 * g * tc * tc;
+        const vc = (v0 + g * tc) * PJ.jumpCutMult;
+        const tUp = vc / -g, td = t - tc;
+        if (td <= tUp) return yc + vc * td + 0.5 * g * td * td;
+        const tf = td - tUp;
+        return yc + (vc * vc) / (2 * -g) + 0.5 * g * PJ.fallGravityMult * tf * tf;
+      };
+
+      const SPEEDS = [-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1]
+        .map((k) => k * PJ.runSpeed).concat([CONFIG.scrollSpeed]);
+      const CUTS = [Infinity, 0, 1 / 60, 2 / 60, 3 / 60, 4 / 60, 6 / 60, 8 / 60];
+      const DT = 1 / 240, SPAN = 20;
+
+      let sweptMin = Infinity, sweptWhere = null;
+      let envMin = Infinity, envWhere = null;
+      for (const p of pockets) {
+        const rx = p.reward.x, ry = p.reward.y;
+        for (let s = Math.max(0, Math.floor(rx) - SPAN);
+             s <= Math.min(LVL.groundH.length - 1, Math.ceil(rx) + SPAN); s++) {
+          const gy = LVL.groundH[s];
+          if (!(gy > -100)) continue;            // the deck line, holes excluded
+          // stances on this column, including a body half over each edge
+          for (const px0 of [s - 0.4, s + 0.5, s + 1.4]) {
+            // (a) swept: fly the whole arc and watch the distance
+            for (const vx of SPEEDS) {
+              for (const tc of CUTS) {
+                for (let t = 0; t <= 1.6; t += DT) {
+                  const py = gy + arcY(t, PJ.jumpVel, tc);
+                  if (py < gy - 14) break;
+                  const d = bandGap(px0 + vx * t, py, rx, ry);
+                  if (d < sweptMin) {
+                    sweptMin = d;
+                    sweptWhere = { pocket: p.id, col: s, vx: +vx.toFixed(1),
+                                   cut: tc === Infinity ? 'held' : +tc.toFixed(3),
+                                   t: +t.toFixed(3) };
+                  }
+                }
+              }
+            }
+            // (b) envelope: no launch x and no speed can beat this. The
+            // earliest the player can be AT the capsule's x is the run at
+            // full speed; from there on the highest his head ever gets is
+            // the apex (before it) or the arc at that instant (after it).
+            const tMin = Math.max(0, Math.abs(rx - px0) - hw) / PJ.runSpeed;
+            const rise = tMin <= PJ.jumpVel / -PJ.gravity
+              ? apex : arcY(tMin, PJ.jumpVel, Infinity);
+            const clear = (ry - BOB) - (gy + rise + ph);
+            if (clear < envMin) { envMin = clear; envWhere = { pocket: p.id, col: s, gy }; }
+          }
+        }
+      }
+      ok(sweptMin > RAD,
+         'T-009/I-019: no deck-line jump arc — any launch column, any speed, ' +
+         'any hold length, ascending or descending — brings RIG within the ' +
+         RAD + '-tile pickup sphere of a pocket reward (closest ' +
+         sweptMin.toFixed(3) + ' at ' + JSON.stringify(sweptWhere) + ')');
+      ok(envMin > RAD,
+         'T-009/I-019: and no choice of launch position or run speed can beat ' +
+         'that — the capsule\'s bob floor clears every deck-line head reach ' +
+         '(apex ' + apex.toFixed(2) + ' + height ' + PJ.height + ' = ' +
+         headReach.toFixed(2) + ') by ' + envMin.toFixed(3) + ' tiles at ' +
+         JSON.stringify(envWhere));
+
+      // …and the wager still PAYS: standing anywhere on the tip column, at
+      // any point of the bob, the capsule is already inside the sphere. The
+      // cost is the retreat, never a precision jump off a two-tile spur.
+      let unpaid = 0, standWorst = 0;
+      for (const p of pockets) {
+        for (let k = 0; k <= 10; k++) {
+          const px = p.shelf.x0 + k / 10;
+          for (const phase of [-BOB, 0, BOB]) {
+            const d = pointGap(px, p.shelf.y, p.reward.x, p.reward.y + phase);
+            standWorst = Math.max(standWorst, d);
+            if (d >= RAD) unpaid++;
+          }
+        }
+      }
+      ok(unpaid === 0,
+         'T-009/I-019: a player standing anywhere on the shelf tip collects the ' +
+         'reward at every bob phase (worst distance ' + standWorst.toFixed(3) +
+         ' vs radius ' + RAD + ')');
+
+      // the retreat now counts the climb it costs to get up there at all,
+      // and the whole detour still fits the crush clock
+      let badTotal = 0;
+      for (const p of pockets) {
+        const r = p.retreat;
+        if (!(r.climbSeconds > 0) || !Number.isFinite(r.climbSeconds)) badTotal++;
+        if (Math.abs(r.totalSeconds - (r.climbSeconds + r.seconds)) > 1e-9) badTotal++;
+        if (Math.abs(r.totalEdgeAdvanceTiles - CONFIG.scrollSpeed * r.totalSeconds) > 1e-9)
+          badTotal++;
+        if (r.totalSeconds <= r.seconds) badTotal++;
+        if (P.timing.entryEdgeMarginTiles - r.totalEdgeAdvanceTiles <
+            P.timing.minExitMarginTiles) badTotal++;
+        if (Math.abs(r.totalExitMarginTiles -
+            (P.timing.entryEdgeMarginTiles - r.totalEdgeAdvanceTiles)) > 1e-9) badTotal++;
+      }
+      ok(badTotal === 0,
+         'T-009/I-019: the whole detour is measured — climb ' +
+         pockets[0].retreat.climbSeconds.toFixed(3) + 's + retreat ' +
+         pockets[0].retreat.seconds.toFixed(3) + 's costs ' +
+         pockets[0].retreat.totalEdgeAdvanceTiles.toFixed(2) + ' tiles of edge and ' +
+         'still leaves ' + pockets[0].retreat.totalExitMarginTiles.toFixed(2) +
+         ' (>= ' + P.timing.minExitMarginTiles + ')');
+
+      // the climb the retreat prices is the climb the geometry authors
+      near(LAT.latticeRiseSeconds(CONFIG, L.midRise) +
+           (PJ.jumpVel / -PJ.gravity) +
+           LAT.latticeRiseSeconds(CONFIG, L.tierRise - apex, PJ.airJumpVel),
+           pockets[0].retreat.climbSeconds, 1e-9,
+           'T-009/I-019: climbSeconds is the landing->mid hop plus the mid->shelf air jump');
+
+      /* drift guards: this whole block is arithmetic ABOUT src/sim code, so
+         it is only as true as the two lines it mirrors. */
+      const capSrc = stripComments(readFileSync(join(srcDir, 'sim', 'capsules.js'), 'utf8'));
+      ok(/circleHitsPlayer\(c\.x,\s*c\.y,\s*CAP\.pickupRadius\)/.test(capSrc),
+         'T-009/I-019: the pickup is still a sphere of CAP.pickupRadius around the capsule');
+      ok(/CAP\.bobAmp\s*\*\s*0\.3/.test(capSrc),
+         'T-009/I-019: a fixed capsule still bobs bobAmp*0.3 about its authored y');
+      const plSrc = stripComments(readFileSync(join(srcDir, 'sim', 'player.js'), 'utf8'));
+      ok(/function circleHitsPlayer\([^)]*\)\s*\{[^}]*player\.x - player\.hw[^}]*player\.y,\s*Math\.min\(y,\s*player\.y \+ player\.h\)/
+         .test(plSrc),
+         'T-009/I-019: the pickup test still measures to RIG\'s whole body box');
+      const mainSpawn = stripComments(readFileSync(join(srcDir, 'main.js'), 'utf8'));
+      ok(/spawnCapsule\(p\.reward\.kind,\s*p\.reward\.letter,\s*p\.reward\.x,\s*p\.reward\.y,\s*p\.reward\.mode\)/
+         .test(mainSpawn),
+         'T-009/I-019: the run still spawns each reward at the authored pocket geometry');
+    }
   }
 
   // --- pockets never leak into the traversal slice ----------------------
@@ -6891,6 +7078,20 @@ const G2GATE = G2E.gate;
   ok(badRow === 0, 'T-009: every station row is a non-gating hound facing back down the lane');
   ok(badAnswer === 0, 'T-009: every station has a catwalk answer within one jump ' +
      '(apex ' + apex.toFixed(2) + ') over its plate');
+  // the stations ride the level the RUN is built on, not a second one: the
+  // spawn table is built from src/sim/level.js's own `levelData`, so a deck
+  // height in a station row can never come from a build the player is not
+  // playing (it also drops the ~10 ms throwaway build the default argument
+  // used to pay for at boot)
+  {
+    const spSrc = stripComments(readFileSync(join(srcDir, 'sim', 'spawner.js'), 'utf8'));
+    ok(/buildSpawnTable\(CONFIG,\s*levelData\)/.test(spSrc) &&
+       /import \{[^}]*levelData[^}]*\} from '\.\/level\.js'/.test(spSrc),
+       'T-009: the six-face spawn table is built from the run\'s own level');
+    ok(buildSpawnTable(CONFIG, { groundH: LVL.groundH }).every((r) => r.type !== 'hound'),
+       'T-009: a level with no authored pockets fields no stations (and does not throw)');
+  }
+
   // the placement contract itself: the owned landing is the pocket's
   {
     let owned = 0;
@@ -6978,7 +7179,7 @@ const G2GATE = G2E.gate;
 {
   const simBase = 'file://' + join(srcDir, 'sim');
   const child = `
-    const [T, E, LV, SC, PLm, IN, ST, HO, WP, SP, WG] = await Promise.all([
+    const [T, E, LV, SC, PLm, IN, ST, HO, WP, SP, WG, CA] = await Promise.all([
       import(${JSON.stringify(simBase + '/time.js')}),
       import(${JSON.stringify(simBase + '/edges.js')}),
       import(${JSON.stringify(simBase + '/level.js')}),
@@ -6990,6 +7191,7 @@ const G2GATE = G2E.gate;
       import(${JSON.stringify(simBase + '/weapons.js')}),
       import(${JSON.stringify(simBase + '/spawner.js')}),
       import(${JSON.stringify(simBase + '/wavegate.js')}),
+      import(${JSON.stringify(simBase + '/capsules.js')}),
     ]);
     E.setEdges(-18.9, 26.4);
     LV.unbuildFutureFaces();
@@ -7000,6 +7202,13 @@ const G2GATE = G2E.gate;
     const dt = 1 / 60;
     let jumpUntil = 0, maxX = 0, falling = false;
     const falls = [];
+    // I-019: the six authored pocket rewards, spawned exactly the way
+    // resetGame does, so this policy plays the run the player plays. A
+    // deck-line crosser must finish it holding the rifle it started with.
+    for (const q of LV.pockets)
+      CA.spawnCapsule(q.reward.kind, q.reward.letter, q.reward.x, q.reward.y, q.reward.mode);
+    const spawnedRewards = CA.capsules.length;
+    let nearestReward = 99, nearestAt = null;
     for (let f = 0; f < 20000; f++) {
       if (p.grounded &&
           (LV.groundTopAt(p.x + 1.2) < -100 || LV.groundTopAt(p.x + 1.2) > p.y + 0.6)) {
@@ -7018,11 +7227,20 @@ const G2GATE = G2E.gate;
       while (HO.hostiles.length) HO.removeHostile(0, false);   // route, not fight
       HO.updateHostiles(dt);
       WP.updateBullets(dt);
+      CA.updateCapsules(dt);                                   // the real pickup test
+      for (const c of CA.capsules) {                           // …and how close it came
+        const cx = Math.max(p.x - p.hw, Math.min(c.x, p.x + p.hw));
+        const cy = Math.max(p.y, Math.min(c.y, p.y + p.h));
+        const d = Math.hypot(c.x - cx, c.y - cy);
+        if (d < nearestReward) { nearestReward = d; nearestAt = [+p.x.toFixed(2), +p.y.toFixed(2)]; }
+      }
       if (T.scrollX >= LV.activeScrollEnd()) break;
     }
     console.log(JSON.stringify({
       x: p.x, maxX, scrollX: T.scrollX, end: LV.activeScrollEnd(),
       lives: p.lives, hp: p.hp, state: ST.state, falls,
+      spawnedRewards, rewardsLeft: CA.capsules.length, weapon: WP.currentWeapon,
+      nearestReward: +nearestReward.toFixed(3), nearestAt,
     }));
   `;
   let run = null;
@@ -7046,6 +7264,27 @@ const G2GATE = G2E.gate;
        'T-009: no authored pocket ever swallows the policy (falls at ' +
        JSON.stringify(run.falls.map((x) => +x.toFixed(1))) + ', in-pocket ' +
        JSON.stringify(inPocket) + ')');
+    /* I-019, the behavioural half: this is the exact policy that collected
+       all six rewards for free — the shipped sim, the shipped pickup code,
+       one held jump per hole and never a step to the left. It crosses every
+       pocket (the scroll-end assertion above), so a run that ends with all
+       six capsules still bobbing is the proof that the deck line no longer
+       pays. A 'fixed' capsule is only ever removed by being collected, which
+       is what makes the count load-bearing; the weapon letter is reported
+       but NOT asserted, because a death resets it to the rifle and would
+       hide a pickup. `nearestReward` is the margin, in tiles, against the
+       0.95 sphere.                                                        */
+    ok(run.spawnedRewards === CONFIG.path.faces,
+       'T-009/I-019: the policy run carries one authored reward per face, got ' +
+       run.spawnedRewards);
+    ok(run.rewardsLeft === run.spawnedRewards,
+       'T-009/I-019: a deck-line crosser collects NOTHING — ' + run.rewardsLeft +
+       ' of ' + run.spawnedRewards + ' rewards still hanging, weapon at the end ' +
+       run.weapon + ' (closest approach ' + run.nearestReward + ' tiles at ' +
+       JSON.stringify(run.nearestAt) + ')');
+    ok(run.nearestReward > CONFIG.capsules.pickupRadius,
+       'T-009/I-019: …and it was never close, either (' + run.nearestReward +
+       ' vs radius ' + CONFIG.capsules.pickupRadius + ')');
   }
 }
 

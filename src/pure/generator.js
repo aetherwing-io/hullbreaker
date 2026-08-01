@@ -243,10 +243,11 @@ export function buildTraversalLevel(cfg, fixture = TRAVERSAL_FIXTURE) {
 // gate waves are authored by the wave system, never by this table.
 //
 // `level` is the built geometry the houndframe stations are placed on
-// (src/pure/lattice.js needs a deck to stand a frame on). It defaults to a
-// fresh build so every existing caller — the harness included — keeps working
-// unchanged; the six-face boot pays one extra ~10 ms build for that, and gets
-// a spawn table that cannot disagree with the level it spawns into.
+// (src/pure/lattice.js needs a deck to stand a frame on). The shipped boot
+// passes the level the run is actually played on (src/sim/spawner.js); the
+// default build is the fallback for a caller that has no level in hand, and
+// a level with no authored pockets (a fixture overlay) simply fields no
+// stations rather than throwing.
 export function buildSpawnTable(cfg, level = buildLevel(cfg)) {
   const S = cfg.spawner;
   const corners = cornerSList(cfg);
@@ -280,7 +281,7 @@ export function buildSpawnTable(cfg, level = buildLevel(cfg)) {
   // integer wasp/carrier rows, and skipped wholesale if a station would land
   // in a corner-clear zone: the ambient table's discipline applies to every
   // kind in it.
-  for (const beat of latticeHoundBeats(cfg, level.groundH, level.pockets)) {
+  for (const beat of latticeHoundBeats(cfg, level.groundH, level.pockets || [])) {
     if (nearCorner(beat.x) || beat.x < S.startS || beat.x >= end) continue;
     out.push(beat);
   }

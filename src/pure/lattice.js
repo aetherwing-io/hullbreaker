@@ -23,6 +23,10 @@
         here and asserted in tools/pathcheck.mjs — a pocket that does not
         fit the crush clock is a generation error (DESIGN's route-choice
         and pursuit contract), never a surprise for the player.
+        The capsule hangs high enough over the shelf that the crossing jump
+        every player has to make anyway cannot touch it (`rewardRise`, and
+        I-019, which is the defect of it not doing so): the wager is only a
+        wager if the free route does not pay it out.
 
      2. PATCHES fill the thin windows: where a lookahead window offers
         fewer than `minRoutes` bands, one catwalk is added at the tier
@@ -126,7 +130,38 @@ export const LATTICE = {
                                     //   exactly the landing, so the lane can
                                     //   never overhang the next chunk's gap
                                     //   and get pruned out from under the shelf
-    rewardRise: 0.7,                // capsule height over the shelf deck
+    /* Capsule height over the shelf DECK, and the number the whole wager
+       hangs on (I-019). At +0.7 the capsule sat inside the arc of the
+       ordinary crossing jump: a held jump from the approach deck peaks
+       +2.72, RIG stands 1.7 tall, so the top of the player reaches
+       deck + 4.42 while the capsule's bob floor sat at deck + 4.90 — 0.48
+       apart, well inside the 0.95 pickup radius. The pocket paid out to a
+       player who never climbed, never stood on the shelf and never
+       retreated; the wager this module's header describes did not exist in
+       play. The capsule now hangs a full body height over the shelf:
+
+         from the DECK LINE  the highest RIG can put his head is
+                             apex(2.72) + height(1.70) = 4.42 over the deck
+                             he launched from, and the shelf is deck + 4.35,
+                             so the capsule's bob floor sits deck + 5.95 —
+                             1.53 clear, 1.6x the pickup radius, at every
+                             point of the arc and every hold length;
+         from the SHELF TIP  a standing player spans shelf .. shelf + 1.70
+                             and the capsule bobs shelf + 1.60 .. + 1.90, so
+                             it is collected by WALKING onto the tip: the
+                             wager is the retreat, never a precision jump on
+                             a two-tile spur over a hole.
+
+       The ceiling on this number is the same pickup radius (a capsule the
+       standing player cannot reach is not a reward), the floor is the arc
+       above; tools/pathcheck.mjs asserts both, the negative over every
+       launch column and hold length, the positive over the whole bob
+       cycle. What it does NOT buy: the air jump reaches deck + 5.07, so a
+       player who deliberately spends it at the lip can still touch the
+       capsule in flight. Closing that would need the shelf a further ~1.6
+       tiles up, which the frozen ladder (mid <= landing + apex, shelf =
+       mid + tierRise) cannot give — an operator call, not a silent retune. */
+    rewardRise: 1.75,
     // Escalating stakes: the pocket pays a weapon, and the later faces pay
     // the ones that answer the later threats.
     rewardLetters: ['S', 'H', 'L', 'F', 'H', 'L'],
@@ -241,6 +276,45 @@ export function latticeSupportY(level, p) {
 // rng stream either — every shipped seed keeps its exact chunk sequence.
 function hash(i) { return ((i * 2654435761) >>> 0) / 4294967296; }
 
+/* ------------- the ballistics the pocket is authored against ---------- *
+ * Closed form over the FROZEN jump constants, exported so the authoring here
+ * and the assertions in tools/pathcheck.mjs can never drift apart about what
+ * "out of reach" means. `latticeHeadReach` is the load-bearing one: a capsule
+ * is collected by the whole body inside a pickup sphere, not by the feet, so
+ * the height that matters is the top of RIG at the top of his jump.        */
+
+export function latticeApex(cfg, v0 = cfg.player.jumpVel) {
+  return (v0 * v0) / (2 * -cfg.player.gravity);
+}
+// When a jump at v0 first reaches height h over its launch surface, or
+// Infinity when that jump never gets there.
+export function latticeRiseSeconds(cfg, h, v0 = cfg.player.jumpVel) {
+  const g = cfg.player.gravity;
+  if (h <= 0) return 0;
+  const disc = v0 * v0 + 2 * g * h;
+  if (disc < 0) return Infinity;
+  return (v0 - Math.sqrt(disc)) / -g;
+}
+// The highest the TOP of the player ever gets over the surface he launched
+// from, with one grounded jump held to its apex.
+export function latticeHeadReach(cfg) {
+  return latticeApex(cfg) + cfg.player.height;
+}
+// The two hops a pocket is entered by: landing -> mid lane (one grounded
+// jump), mid lane -> shelf (a jump, then the air jump at its apex, because
+// that tier is taller than a single jump). Rise time only — see the retreat
+// block in latticePocketSites for what this deliberately does not count.
+export function latticeClimbSeconds(cfg, L = LATTICE) {
+  const P = cfg.player;
+  const apex = latticeApex(cfg);
+  const hop1 = latticeRiseSeconds(cfg, L.midRise);
+  const hop2 = apex >= L.tierRise
+    ? latticeRiseSeconds(cfg, L.tierRise)
+    : (P.jumpVel / -P.gravity) +
+      latticeRiseSeconds(cfg, L.tierRise - apex, P.airJumpVel);
+  return hop1 + hop2;
+}
+
 /* --------------------------- dare pockets -------------------------- */
 
 /* One authored pocket chunk per face. `x0` is the first approach column and
@@ -271,13 +345,32 @@ export function latticePocketSites(cfg, groundH, L = LATTICE) {
     const midY = landingY + L.midRise;
     const shelfY = midY + L.tierRise;
     const runSpeed = cfg.player.runSpeed;
-    // The wager, measured: the tip is `gapCols` tiles of void from the first
-    // shelf column that has ground under it, so a round trip out and back is
-    // twice that, and the edge advances at the shipped scroll speed while the
-    // player spends it.
+    /* The wager, measured. Two costs in one currency — tiles of edge advance
+       at the shipped scroll speed:
+
+         `seconds`      the SHELF round trip. The tip is `gapCols` tiles of
+                        void from the first shelf column with ground under
+                        it, so out and back is twice that at runSpeed.
+         `climbSeconds` getting up there at all, now that the capsule is out
+                        of reach from the deck line: the grounded hop from
+                        the landing to the mid lane, then the jump + air jump
+                        from the mid lane onto the shelf. Closed-form RISE
+                        times against the frozen constants, which makes it a
+                        stated LOWER bound: it counts no re-plant frames, no
+                        horizontal positioning, and nothing for the way back
+                        down (gravity does that while the player still moves
+                        right).
+
+       `retreat.seconds` stays exactly what it always was, so the timing
+       assertion built on it is unchanged; `totalSeconds` is what the detour
+       actually costs the player who takes it, and the exit margin is
+       published from both. */
     const depthTiles = P.gapCols;
     const seconds = (2 * depthTiles) / runSpeed;
     const edgeAdvanceTiles = cfg.scrollSpeed * seconds;
+    const climbSeconds = latticeClimbSeconds(cfg, L);
+    const totalSeconds = climbSeconds + seconds;
+    const totalEdgeAdvanceTiles = cfg.scrollSpeed * totalSeconds;
     return {
       id: 'pocket-f' + f.face,
       face: f.face,
@@ -296,6 +389,8 @@ export function latticePocketSites(cfg, groundH, L = LATTICE) {
       retreat: {
         depthTiles, seconds, edgeAdvanceTiles,
         exitMarginTiles: P.timing.entryEdgeMarginTiles - edgeAdvanceTiles,
+        climbSeconds, totalSeconds, totalEdgeAdvanceTiles,
+        totalExitMarginTiles: P.timing.entryEdgeMarginTiles - totalEdgeAdvanceTiles,
       },
       corner: f.corner,
     };
