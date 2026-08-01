@@ -289,7 +289,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; scored-run playtest script
 
-## T-017 | harness | doing | P3
+## T-017 | harness | done | P3
 
 goal: nit-batch cleanup triaged from the Inbox + T-015's review MINOR:
 (1) I-001 — stale hostiles/capsules enrichment comment in
