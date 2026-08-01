@@ -97,6 +97,20 @@ Never overwrite these files from upstream: it deletes the guardrails.
 
 ## Definitions of done
 
+**Every acceptance box names the currency and the falsifying test**
+(`decisions.md` entry 10, adopted after three cycles were lost to a box that
+said "measured retreat"). A box that states a *feeling* cannot be gated and
+will burn cycles: "measured retreat" is a feeling; "a policy that never leaves
+the main line collects zero rewards" is a gate. Feelings go to the operator;
+boxes get tests.
+
+**Assert against what a PLAYER can do, not what the author intended.** The
+pocket assertions were all true and all missed the defect for three cycles
+because their subject was shelf-reachability instead of reward-reachability.
+Where a claim is about reachability, prove it by driving the shipped sim
+headlessly with a policy that uses every verb on by default — an assertion
+about authored geometry is not evidence about play.
+
 - **Mechanic/feature:** pathcheck green *including new assertions for any new
   pure logic*; the smoke playtest scripts still complete; unjudged behavior
   is behind a query flag; the report lists open feel questions for the
@@ -124,7 +138,11 @@ Never overwrite these files from upstream: it deletes the guardrails.
    `APPROVE` or `REQUEST_CHANGES`) and `reports/tasks/<id>/playtest.md`
    (first line `PASS` or `FAIL`).
 4. Both green → `tools/orch/merge-task.sh <id>` → mark `done` (the script
-   appends the STATUS line), prune the worktree.
+   appends the STATUS line), prune the worktree. **Read
+   `docs/ORCHESTRATION.md` § "Merge playbook" before resolving any conflict** —
+   every entry there cost a real cycle (pathcheck splicing, ESM-checking,
+   proving the server pin, the palette collision class, not inheriting measured
+   numbers).
 5. Playtester/adversarial findings go to SPRINT's Inbox as issues; triage
    them into prioritized tasks each cycle.
 6. Tasks whose acceptance needs a feel verdict: set status `operator`, add a

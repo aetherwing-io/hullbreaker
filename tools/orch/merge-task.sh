@@ -126,6 +126,13 @@ else
 fi
 
 # --- merge -------------------------------------------------------------------
+# Re-check cleanliness HERE, not only at step 1: the smoke suite above takes
+# minutes, and gate agents file Inbox issues into SPRINT.md while it runs. The
+# step-1 check can pass and the merge still abort on a dirty tree. Fail early
+# with the actual reason instead of inside git.
+git diff --quiet && git diff --cached --quiet \
+  || fail "main tree went dirty during the gate (a lane filed an issue mid-run) — commit it and re-run"
+
 printf '== merging %s\n' "$BRANCH"
 if ! git merge --no-ff "$BRANCH" -m "Merge $TASK ($BRANCH)"; then
   git merge --abort 2>/dev/null || true
