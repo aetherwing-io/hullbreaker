@@ -87,6 +87,19 @@ export const ACTIVE_FIXTURE = IS_TRANSFORM_SLICE ? TRANSFORM_FIXTURE : ACTIVE_SL
 // and the suppression of the brick-slam zipper's *visuals*. The fixtures own
 // their own transitions, so the flag is a normal-run flag only.
 export const IS_G1 = ACTIVE_FIXTURE === null && QUERY.get('g1') === '1';
+/* ?momentum=1 — EARNED pace escalation (T-022, decisions.md entry 11): the
+   pursuing edge's speed rises with how well the run is being played (where
+   RIG sits between the damage plane and the right clamp, plus a decaying kill
+   streak) instead of holding CONFIG.scrollSpeed. Policy lives in
+   CONFIG.momentum, math in src/pure/momentum.js, the live drive in
+   src/sim/pace.js.
+
+   Scoped to the SIX-FACE run (ACTIVE_FIXTURE === null) for the same reason
+   ?fallback=1 is: the traversal and transformation fixtures already own their
+   pursuit models (the `hunt`/`surge` paces in src/pure/traversal.js), and
+   entry 11 is about the faces. Off by default, so every shipped URL and every
+   fixture URL keeps the constant scroll it has today, byte for byte. */
+export const MOMENTUM_ENABLED = ACTIVE_FIXTURE === null && QUERY.get('momentum') === '1';
 // ?score=1 arms the CHARGE/THREAT prototype; ?fallback=0 restores the old
 // ROUTE LOST retry instead of HULL FALLBACK tier 1.
 export const SCORE_ENABLED = QUERY.get('score') === '1';

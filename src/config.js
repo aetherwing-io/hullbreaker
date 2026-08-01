@@ -65,6 +65,41 @@ export const CONFIG = {
                                                  //   the unbuilt face during a gate
   },
 
+  // Earned pace escalation (T-022, decisions.md entry 11 — "pace should
+  // escalate across the faces, but at the player's momentum"). PACE lever
+  // only: nothing here touches the frozen movement/jump block below, and the
+  // whole system is inert unless ?momentum=1 (src/mode.js). Math lives in
+  // src/pure/momentum.js, the live drive in src/sim/pace.js.
+  //
+  // The speed band, all multiples of scrollSpeed (4.3 t/s) and all well under
+  // the frozen runSpeed (9.4 t/s), which is what keeps escalation from ever
+  // becoming a death spiral: even at the hard ceiling RIG out-runs the plane
+  // by 2.09 t/s and can re-bank daylight.
+  //   drive 0   → 4.30 t/s  the shipped run, EXACTLY. The floor.
+  //   drive 1   → 6.02 t/s  escalation's own ceiling (ceilMult).
+  //   absolute  → 7.31 t/s  hardCeilMult: the top ANY source may reach,
+  //                         including T-023's boosts. The 1.29 t/s between
+  //                         the two is the headroom entry 11 asked for.
+  momentum: {
+    ceilMult: 1.4, hardCeilMult: 1.7,
+    // Earn ramp over RIG's position across the visible strip (0 = flush with
+    // the pursuing plane, 1 = pinned to the right clamp). A run starts at
+    // ~0.45, so nobody is handed drive for booting; the clamp reads 0.97-0.99
+    // on every view, so the ceiling is reachable on all of them. Below bankLo
+    // the player banks NOTHING — being carried is not an achievement, and a
+    // struggling player must never be escalated at.
+    bankLo: 0.55, bankHi: 0.92,
+    killFull: 4, killDecaySec: 9,   // decaying kill streak: 4 kills saturates,
+                                    //   an unfed meter empties in 9 s
+    wBank: 0.7, wCombat: 0.3,       // must sum to 1 (asserted)
+    risePerSec: 0.16,               // 6.25 s of held momentum floor → ceiling
+    fallPerSec: 0.45,               // 2.2 s to shed it: relief is faster than
+                                    //   escalation, deliberately
+    hitDrive: 0.35, hitMercyMs: 1500,  // a hit caps drive here and forbids
+                                       //   re-earning for a beat
+    tiers: [0.2, 0.5, 0.8],         // HUD/telemetry banding only
+  },
+
   player: {
     runSpeed: 9.4,
     accelGround: 120, accelAir: 76,

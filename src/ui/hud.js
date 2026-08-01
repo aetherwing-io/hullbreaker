@@ -7,9 +7,11 @@ import { TRANSFORM_FIXTURE } from '../pure/transform.js';
 import {
   ACTIVE_SLICE, AIM_ASSIST_ENABLED, AUTOBOUNCE_ENABLED, CROUCH_ENABLED,
   FLOW_ENABLED, HOOK_ENABLED, HOOK_INPUT, HOUND_TRIAL_STAGE, IS_TRANSFORM_SLICE,
-  IS_TRAVERSAL_SLICE, MORTAR_TRIAL_STAGE, POLYP_TRIAL_STAGE, SCORE_ENABLED,
-  SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN, VIEW_ID,
+  IS_TRAVERSAL_SLICE, MOMENTUM_ENABLED, MORTAR_TRIAL_STAGE, POLYP_TRIAL_STAGE,
+  SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN, VIEW_ID,
 } from '../mode.js';
+import { momentumMeter } from '../pure/momentum.js';
+import { momentumDrive, momentumScrollSpeed } from '../sim/pace.js';
 import { scoreNotchGlyphs } from '../pure/score.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { player, P } from '../sim/player.js';
@@ -114,6 +116,14 @@ export function updateHUD() {
         `${committedBand}/2 TURNS · ${kills} kills`
       : Math.floor(scrollX) + 'm  ·  ' + kills + ' kills';
   if (SCORE_ENABLED) tr += ' · THREAT ' + Math.round(scoreThreat());
+  // MOMENTUM (?momentum=1): the earned escalation, visible. The operator is
+  // judging whether the run answers how well it is being played, which is
+  // unjudgeable if the answer is invisible — so the meter and the live pace
+  // multiplier ride the existing readout. Silent on every other URL.
+  if (MOMENTUM_ENABLED) {
+    tr += ' · MOMENTUM ' + momentumMeter(momentumDrive(), CONFIG.momentum) +
+      ' ×' + (momentumScrollSpeed() / CONFIG.scrollSpeed).toFixed(2);
+  }
   if (tr !== hudTRLast) { hudTRLast = tr; hudTR.textContent = tr; }
   const c = activeCorner();
   let tc = transformMessage();

@@ -45,6 +45,12 @@ import {
   mortarBlastHitsRect, mortarComposePlan, mortarPulsePeriodMs, mortarTrialStage,
   mortarWarningMs,
 } from '../src/pure/mortar.js';
+import {
+  momentumBank, momentumBankSample, momentumClampSpeed, momentumCombatStep,
+  momentumDriveFromSpeed, momentumHardCeiling, momentumHeadroom, momentumMeter,
+  momentumOnDamage, momentumScreenFrac, momentumSpawnScale, momentumSpeed,
+  momentumStep, momentumTarget, momentumTier,
+} from '../src/pure/momentum.js';
 import { crouchStance } from '../src/pure/stance.js';
 import { assistDirection, assistVerticalReach } from '../src/pure/assist.js';
 import {
@@ -7209,6 +7215,405 @@ const G2GATE = G2E.gate;
      CONFIG.waves.gateDiveRange > CONFIG.wasp.diveRange,
      'T-018: gated hostiles really are hotter than ambient ones (the pressure the ' +
      'finding measures is authored, not imagined)');
+}
+
+/* ============ MOMENTUM — earned pace escalation (T-022) ================= *
+ * decisions.md entry 11: "pace should escalate across the faces, but at the
+ * player's momentum. a good player escalates the action to intense levels of
+ * explosion and speed, a new player is pushed along while they learn."
+ *
+ * Three claims this section exists to make falsifiable, because both failure
+ * modes of an escalating pace are silent ones:
+ *   FLOOR   — a player who is being carried is never escalated at. Every
+ *             assertion here that starts "a struggling player" is a
+ *             death-spiral guard.
+ *   CEILING — the top of the curve is a stated number, below a hard ceiling
+ *             that T-023's boosts share, and the whole band stays inside the
+ *             speeds T-020 measured every gap crossable at.
+ *   EARNED  — the drive reads player state and NOTHING else: there is no
+ *             elapsed-time term anywhere, which is what makes it different
+ *             from the `surge`/`ramp` fixture pace it sits next to.
+ * The pure curve is asserted first; then a child process drives the real
+ * six-face sim with ?momentum=1 and proves the wiring does what the curve
+ * says — an assertion about a function nothing calls is not evidence.     */
+{
+  const MM = CONFIG.momentum, base = CONFIG.scrollSpeed, RUN = CONFIG.player.runSpeed;
+  const ceilSpeed = base * MM.ceilMult, hardSpeed = base * MM.hardCeilMult;
+  const sweep = [];
+  for (let i = 0; i <= 100; i++) sweep.push(i / 100);
+
+  // --- policy shape: the numbers the rest of the section leans on ---------
+  ok(Math.abs(MM.wBank + MM.wCombat - 1) < 1e-12,
+     'momentum: the two earn weights sum to exactly 1, so the drive is a ' +
+     'weighted average and its range really is [0,1] [got ' + (MM.wBank + MM.wCombat) + ']');
+  ok(MM.bankHi > MM.bankLo && MM.bankLo > 0 && MM.bankHi < 1,
+     'momentum: the bank ramp is a real interval strictly inside the screen');
+  ok(MM.ceilMult > 1 && MM.hardCeilMult > MM.ceilMult,
+     'momentum: escalation ceiling is above the floor and below the hard ceiling');
+  ok(MM.risePerSec > 0 && MM.fallPerSec > MM.risePerSec,
+     'momentum: drive sheds faster than it earns (' + MM.fallPerSec + '/s vs ' +
+     MM.risePerSec + '/s) — relief is immediate, escalation is a climb');
+  ok(MM.hitDrive > 0 && MM.hitDrive < 1 && MM.hitMercyMs > 0,
+     'momentum: a hit caps the drive at a real value and buys a real mercy window');
+  ok(MM.killFull >= 1 && MM.killDecaySec > 0,
+     'momentum: the kill streak saturates at a whole number of kills and decays');
+  ok(MM.tiers.length >= 2 && MM.tiers.every((t, i) => t > 0 && t < 1 &&
+       (i === 0 || t > MM.tiers[i - 1])),
+     'momentum: the HUD tiers are an ascending band inside (0,1)');
+
+  // --- FLOOR --------------------------------------------------------------
+  ok(momentumSpeed(0, base, MM) === base,
+     'FLOOR: drive 0 is the shipped scroll speed EXACTLY (' + base + ' t/s) — a ' +
+     'struggling player plays the run the gates already treat as finishable');
+  ok(sweep.every((d) => momentumSpeed(d, base, MM) >= base),
+     'FLOOR: no drive value anywhere in [0,1] produces a speed below the floor');
+  ok(sweep.every((d, i) => i === 0 ||
+       momentumSpeed(d, base, MM) >= momentumSpeed(sweep[i - 1], base, MM)),
+     'FLOOR: the speed curve is monotone non-decreasing in drive');
+  {
+    // A player being carried banks NOTHING: the deadband below bankLo is the
+    // anti-death-spiral guarantee written as arithmetic.
+    const carried = [0, 0.1, 0.25, 0.4, MM.bankLo].map((f) => momentumBank(f, MM));
+    ok(carried.every((b) => b === 0),
+       'FLOOR: every screen position at or behind the bank deadband (' + MM.bankLo +
+       ' of the strip) earns zero drive — falling behind cannot escalate the run');
+    ok(momentumTarget(0, 0, MM) === 0,
+       'FLOOR: no bank and no kills is a target of zero, not a baseline of some');
+  }
+  {
+    // 5 MINUTES of a struggling player, stepped at 60Hz: nothing accumulates.
+    // This is the assertion that would fail if anyone ever added an elapsed-
+    // time term — a per-face ramp is exactly what entry 11 rules out.
+    let drive = 0, combat = 0;
+    const dt = 1 / 60;
+    for (let i = 0; i < 60 * 300; i++) {
+      combat = momentumCombatStep(combat, 0, dt, MM);
+      drive = momentumStep(drive, momentumTarget(momentumBank(0.3, MM), combat, MM), dt, MM, {});
+    }
+    ok(drive === 0 && momentumSpeed(drive, base, MM) === base,
+       'FLOOR: five minutes of being carried at 30% of the strip escalates NOTHING ' +
+       '(drive ' + drive + ') — there is no elapsed-time term to accumulate');
+  }
+  {
+    // Escalation must let go faster than it arrives: a player who falls behind
+    // is back at the floor in seconds, not minutes.
+    let drive = 1;
+    const dt = 1 / 60;
+    let t = 0;
+    for (; t < 30 && drive > 0; t += dt) drive = momentumStep(drive, 0, dt, MM, {});
+    ok(drive === 0 && t <= 1 / MM.fallPerSec + 2 * dt,
+       'FLOOR: full drive decays to the floor in ' + t.toFixed(2) + 's of falling behind');
+  }
+  {
+    // A hit backs the pressure off and forbids re-earning for a beat.
+    ok(momentumOnDamage(1, MM) === MM.hitDrive && momentumOnDamage(0.2, MM) === 0.2,
+       'FLOOR: a hit caps drive at ' + MM.hitDrive + ' and never RAISES a lower one');
+    const held = momentumStep(MM.hitDrive, 1, 1 / 60, MM, { mercy: true });
+    ok(held === MM.hitDrive,
+       'FLOOR: inside the mercy window a full-bank target cannot raise the drive');
+    ok(momentumStep(0.9, 0, 1 / 60, MM, { mercy: true }) < 0.9,
+       'FLOOR: mercy blocks the rise only — the drive may still fall');
+  }
+  ok(hardSpeed <= 0.8 * RUN,
+     'FLOOR: even the HARD ceiling (' + hardSpeed.toFixed(2) + ' t/s) leaves RIG ' +
+     (RUN - hardSpeed).toFixed(2) + ' t/s of run speed to re-bank daylight with — ' +
+     'escalation can never outrun the player and become a spiral');
+  ok(base >= CONFIG.scrollSpeed && ceilSpeed < RUN,
+     'FLOOR: the whole escalation band [' + base + ', ' + ceilSpeed.toFixed(2) +
+     '] sits inside [scrollSpeed, runSpeed], the two speeds T-020 measured every ' +
+     'generated gap crossable at');
+
+  // --- CEILING (and the headroom T-023 was promised) ----------------------
+  ok(momentumSpeed(1, base, MM) === ceilSpeed,
+     'CEILING: full drive is ' + ceilSpeed.toFixed(2) + ' t/s (x' + MM.ceilMult + ')');
+  ok(sweep.every((d) => momentumSpeed(d, base, MM) <= ceilSpeed),
+     'CEILING: escalation alone can never exceed its own ceiling');
+  ok(momentumHeadroom(base, MM) > 0 &&
+     momentumHeadroom(base, MM) >= 0.5 * (ceilSpeed - base),
+     'CEILING: ' + momentumHeadroom(base, MM).toFixed(2) + ' t/s of headroom is left ' +
+     'above escalation for T-023 boosts — at least half the escalation range again, ' +
+     'so the top of the curve is not hard-coded here');
+  ok(momentumClampSpeed(1e6, base, MM) === hardSpeed &&
+     momentumClampSpeed(hardSpeed + 1, base, MM) === hardSpeed,
+     'CEILING: the hard ceiling is enforced by one function every source shares — ' +
+     'a boost pushes speed through momentumClampSpeed, it does not re-tune this module');
+  ok(momentumClampSpeed(base - 3, base, MM) === base &&
+     momentumClampSpeed(ceilSpeed, base, MM) === ceilSpeed,
+     'CEILING: that same clamp is also the floor, and passes anything in between');
+  ok(momentumHardCeiling(base, MM) === hardSpeed,
+     'CEILING: the hard ceiling is a stated multiple of the shipped scroll speed');
+  {
+    // Readability ceiling (pillar 5): ambient spawn cadence rides the scroll,
+    // so the escalation ceiling IS the cadence ceiling. State the tightest
+    // authored gap it can produce rather than hoping it stays sane.
+    ok(sweep.every((d) => Math.abs(
+         momentumSpawnScale(d, MM) - momentumSpeed(d, base, MM) / base) < 1e-12),
+       'CEILING: spawn cadence scales with the scroll exactly — the ambient table is ' +
+       'authored in tiles and triggers off the right screen edge, so no second ' +
+       'escalation knob exists to drift out of sync with this one');
+    const tightest = Math.min.apply(null, CONFIG.spawner.faceGapSec) / MM.ceilMult;
+    ok(tightest >= 0.9,
+       'CEILING: at full drive the tightest authored ambient gap is still ' +
+       tightest.toFixed(2) + 's of scroll (face 6, ' +
+       Math.min.apply(null, CONFIG.spawner.faceGapSec) + 's at the floor) — chaos ' +
+       'stays readable at the top of the curve');
+  }
+
+  // --- EARNED: the curve reads player state, gradedly ---------------------
+  ok(momentumScreenFrac(0, 0, 10) === 0 && momentumScreenFrac(10, 0, 10) === 1 &&
+     momentumScreenFrac(5, 0, 10) === 0.5,
+     'EARNED: the bank signal is RIG\'s position across the visible strip, 0 at the ' +
+     'damage plane and 1 at the right clamp');
+  ok(momentumScreenFrac(-5, 0, 10) === 0 && momentumScreenFrac(99, 0, 10) === 1 &&
+     momentumScreenFrac(1, 0, 0) === 0,
+     'EARNED: that signal clamps rather than running off either end (or dividing by a ' +
+     'degenerate strip)');
+  {
+    // Aspect-ratio invariance: FAR is 81.3 tiles wide at 16:9 and near is 39.1
+    // (docs/playtests/2026-08-first-gap-triage.md §2). The same RELATIVE
+    // position must earn the same drive on both, or escalation becomes a
+    // window-size setting.
+    const far = momentumScreenFrac(-31.11 + 0.8 * 81.34, -31.11, 50.23);
+    const near = momentumScreenFrac(-10.38 + 0.8 * 39.12, -10.38, 28.74);
+    ok(Math.abs(far - near) < 1e-9 && Math.abs(far - 0.8) < 1e-9,
+       'EARNED: the same relative screen position reads the same on an 81-tile FAR ' +
+       'strip and a 39-tile near one — escalation is not an aspect-ratio setting');
+    // …and the ceiling has to be REACHABLE on a narrow screen: a clamped RIG
+    // sits (edges.margin + width) inside the right edge whatever the strip.
+    const narrowSpan = 24;
+    const clampedFrac = 1 - (CONFIG.edges.margin + CONFIG.player.width) / narrowSpan;
+    ok(clampedFrac >= MM.bankHi,
+       'EARNED: a player pinned to the right clamp reaches full bank even on a strip ' +
+       'as narrow as ' + narrowSpan + ' tiles (frac ' + clampedFrac.toFixed(3) +
+       ' vs bankHi ' + MM.bankHi + ')');
+  }
+  ok(momentumBank(MM.bankHi, MM) === 1 && momentumBank(1, MM) === 1 &&
+     Math.abs(momentumBank((MM.bankLo + MM.bankHi) / 2, MM) - 0.5) < 1e-12,
+     'EARNED: the bank ramp is linear between the deadband and full, not a switch');
+  ok(sweep.every((f, i) => i === 0 || momentumBank(f, MM) >= momentumBank(sweep[i - 1], MM)),
+     'EARNED: more daylight is never worth less drive');
+  {
+    const one = momentumCombatStep(0, 1, 0, MM);
+    ok(Math.abs(one - 1 / MM.killFull) < 1e-12,
+       'EARNED: one kill is worth 1/' + MM.killFull + ' of the combat term');
+    ok(momentumCombatStep(0, MM.killFull, 0, MM) === 1 &&
+       momentumCombatStep(1, 5, 0, MM) === 1,
+       'EARNED: the combat term saturates at ' + MM.killFull + ' kills and clamps there');
+    let c = 1;
+    for (let i = 0; i < 60 * MM.killDecaySec; i++) c = momentumCombatStep(c, 0, 1 / 60, MM);
+    ok(c === 0, 'EARNED: an unfed kill streak is empty after ' + MM.killDecaySec + 's');
+  }
+  ok(Math.abs(momentumTarget(1, 0, MM) - MM.wBank) < 1e-12 &&
+     Math.abs(momentumTarget(0, 1, MM) - MM.wCombat) < 1e-12 &&
+     momentumTarget(1, 1, MM) === 1,
+     'EARNED: outrunning the world alone tops out at x' +
+     (1 + (MM.ceilMult - 1) * MM.wBank).toFixed(2) + ' — the ceiling costs BOTH ' +
+     'daylight and a fed fight, which is what "explosion AND speed" means');
+  {
+    // The held scroll (gate fight, corner ritual, level end): the bank holds
+    // its last moving reading instead of drifting open for free.
+    ok(momentumBankSample(0.8, 0.99, true, MM) === 0.8,
+       'EARNED: while the scroll is held the bank keeps its last MOVING reading — ' +
+       'reaching a wave gate does not hand anyone the ceiling for standing in it');
+    ok(momentumBankSample(0.8, 0.99, false, MM) === momentumBank(0.99, MM),
+       'EARNED: …and resumes reading the screen the moment the plane advances again');
+  }
+  {
+    // Rate limits, exactly: one frame can only move the drive by its rate.
+    const dt = 1 / 60;
+    ok(Math.abs(momentumStep(0, 1, dt, MM, {}) - MM.risePerSec * dt) < 1e-12,
+       'EARNED: a frame of full-target rise moves the drive by exactly risePerSec*dt');
+    ok(Math.abs(momentumStep(1, 0, dt, MM, {}) - (1 - MM.fallPerSec * dt)) < 1e-12,
+       'EARNED: …and a frame of collapse by exactly fallPerSec*dt');
+    ok(momentumStep(0.5, 0.5, dt, MM, {}) === 0.5,
+       'EARNED: a drive already at its target does not drift');
+    let drive = 0, t = 0;
+    for (; t < 60 && drive < 1; t += dt) drive = momentumStep(drive, 1, dt, MM, {});
+    ok(t >= 4 && t <= 12,
+       'EARNED: floor to ceiling takes ' + t.toFixed(2) + 's of sustained momentum — ' +
+       'long enough to read as earned, short enough to feel inside one face');
+  }
+  {
+    // Determinism, at the level a replay depends on: the same inputs produce
+    // the same trajectory, and no call leaves state behind that changes the
+    // next one.
+    const dt = 1 / 60;
+    const trace = (jitter) => {
+      let drive = 0, combat = 0;
+      const out = [];
+      for (let i = 0; i < 600; i++) {
+        if (jitter) momentumStep(0.4, 0.9, dt, MM, {});      // an unrelated call
+        combat = momentumCombatStep(combat, i % 90 === 0 ? 1 : 0, dt, MM);
+        drive = momentumStep(drive, momentumTarget(momentumBank(0.75, MM), combat, MM),
+                             dt, MM, {});
+        out.push(drive);
+      }
+      return out.join(',');
+    };
+    const a = trace(false), b = trace(false), c = trace(true);
+    ok(a === b && a === c,
+       'DETERMINISM: the escalation curve is a pure function of its inputs — same ' +
+       'inputs, same trajectory, and no hidden state survives a call');
+    const src = readFileSync(join(srcDir, 'pure', 'momentum.js'), 'utf8');
+    const simSrc = readFileSync(join(srcDir, 'sim', 'pace.js'), 'utf8');
+    const forbidden = /\b(Math\.random|Date\.now|Date\s*\(|hrtime)\b/;
+    ok(!forbidden.test(stripComments(src)) && !forbidden.test(stripComments(simSrc)),
+       'DETERMINISM: neither the momentum math nor the pace module reads a wall clock ' +
+       'or an unseeded random — a --deterministic bot run replays exactly');
+    ok(!/elapsed|faceIndex|faceOf|runTime/i.test(stripComments(src)),
+       'EARNED: the momentum module has no elapsed-time or face-index input at all — ' +
+       'it cannot be a scripted per-face ramp even by accident');
+  }
+  {
+    // The readouts: a report recovers drive from the telemetry channel that
+    // already exists (pursuitSpeed), and the HUD meter is banded here.
+    ok(sweep.every((d) => Math.abs(
+         momentumDriveFromSpeed(momentumSpeed(d, base, MM), base, MM) - d) < 1e-12),
+       'READOUT: drive round-trips through speed, so a bot report reads escalation ' +
+       'off the existing pursuitSpeed field with no new telemetry to keep in sync');
+    ok(momentumTier(0, MM) === 0 && momentumTier(1, MM) === MM.tiers.length &&
+       momentumTier(MM.tiers[0], MM) === 1,
+       'READOUT: the tier banding covers empty to full');
+    ok(momentumMeter(0, MM).length === MM.tiers.length &&
+       momentumMeter(1, MM) === '▰'.repeat(MM.tiers.length),
+       'READOUT: the HUD meter is one glyph per tier, full at full drive');
+  }
+
+  /* --- the wiring, driven headlessly through the real six-face sim -------
+   * Everything above is a claim about a curve. This is the claim that the
+   * game plays it: a child process boots src/sim with and without the flag,
+   * PLACES the player (right clamp = a player outrunning the world, damage
+   * plane = a player being carried) and steps the shipped scroll.        */
+  const momentumChild = `
+    globalThis.__HB_QUERY__ = process.env.HB_MOM || '';
+    const S = ${JSON.stringify('file://' + join(srcDir) + '/')};
+    const [CF, T, E, LV, PL, SC, WG, PA, HO] = await Promise.all([
+      import(S + 'config.js'), import(S + 'sim/time.js'), import(S + 'sim/edges.js'),
+      import(S + 'sim/level.js'), import(S + 'sim/player.js'), import(S + 'sim/scroll.js'),
+      import(S + 'sim/wavegate.js'), import(S + 'sim/pace.js'), import(S + 'sim/hostiles.js'),
+    ]);
+    const C = CF.CONFIG, p = PL.player, hw = C.player.width / 2, M = C.edges.margin;
+    // The wave gate is a separate question (it HOLDS the scroll); the corner
+    // held case is exercised on its own below.
+    for (const c of WG.cornerEvents) c.state = 'done';
+    E.setEdges(-27.44, 45.73);                       // FAR, 1440x900 (T-020 §2)
+
+    // One controlled run. place() puts RIG at a screen position every frame,
+    // so what is measured is the pace model rather than a bot's skill.
+    function run(place, seconds, dt, opts) {
+      const o = opts || {};
+      T.setScrollX(0);
+      PA.resetPace();
+      HO.clearHostiles(); HO.resetKills();
+      p.hp = C.player.maxHealth; p.lives = C.player.lives;
+      const speeds = [];
+      const n = Math.round(seconds / dt);
+      for (let i = 0; i < n; i++) {
+        const t = i * dt;
+        if (o.hitAt != null && Math.abs(t - o.hitAt) < dt / 2) p.hp -= 1;
+        if (o.killEvery && i > 0 && i % Math.round(o.killEvery / dt) === 0) {
+          HO.spawnHostile(p.x + 6, p.y + 3, 0, 'wasp');
+          const idx = HO.hostiles.length - 1;
+          HO.hitHostile(HO.hostiles[idx], idx, 99, 'R');
+        }
+        p.x = place(E.sLeftEdge(), E.sRightEdge());
+        T.advanceGameMs(dt * 1000);
+        SC.updateScroll(dt);
+        speeds.push(+LV.activeScrollSpeed().toFixed(6));
+      }
+      return { speeds, drive: PA.momentumDrive(), peakDrive: PA.momentumPeakDrive() };
+    }
+    const clamp = (l, r) => r - M - hw;              // pinned to the right clamp
+    const plane = (l) => l + M + hw;                 // shoved against the plane
+    const dt = 1 / 60;
+    const strong = run(clamp, 25, dt);
+    const weak = run(plane, 25, dt);
+    const fed = run(clamp, 25, dt, { killEvery: 1.5 });
+    const hurt = run(clamp, 25, dt, { hitAt: 12 });
+    const strongAgain = run(clamp, 25, dt);
+    const coarse = run(clamp, 25, 1 / 30);
+    // A gate HOLDS the scroll: standing at the clamp while it is held must not
+    // bank anything. Arm corner 1 into its gate state and stand still.
+    WG.cornerEvents[0].state = 'gate';
+    const gated = run(clamp, 8, dt);
+    WG.cornerEvents[0].state = 'done';
+    console.log(JSON.stringify({
+      base: C.scrollSpeed, ceil: C.scrollSpeed * C.momentum.ceilMult,
+      strong: strong.speeds, weak: weak.speeds, fed: fed.speeds,
+      hurt: hurt.speeds, again: strongAgain.speeds, coarse: coarse.speeds,
+      gated: gated.speeds,
+      peaks: { strong: strong.peakDrive, fed: fed.peakDrive, weak: weak.peakDrive },
+    }));
+  `;
+  function momentumProbe(query) {
+    try {
+      return JSON.parse(execFileSync(process.execPath,
+        ['--input-type=module', '-e', momentumChild],
+        { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024,
+          env: { ...process.env, HB_MOM: query } }));
+    } catch (e) {
+      console.error('pathcheck: momentum probe child failed (' + query + '): ' + e.message);
+      return null;
+    }
+  }
+  const off = momentumProbe('');
+  const on = momentumProbe('momentum=1');
+  ok(!!off && !!on, 'the momentum probe drives the real six-face scroll headlessly');
+  if (off && on) {
+    ok(off.strong.every((s) => s === base) && off.weak.every((s) => s === base),
+       'WIRING: with no flag the six-face run holds ' + base + ' t/s however it is ' +
+       'played — the whole system is opt-in and every shipped URL is unchanged');
+    ok(on.weak.every((s) => s === base),
+       'WIRING/FLOOR: a player pinned against the damage plane for 25s is carried at ' +
+       'exactly the shipped speed, never faster — the run answers a struggling player ' +
+       'with the floor, not with pressure');
+    const bankOnlyCeil = base * (1 + (MM.ceilMult - 1) * MM.wBank);
+    ok(on.strong[on.strong.length - 1] > base * 1.2 &&
+       Math.abs(on.strong[on.strong.length - 1] - bankOnlyCeil) < 1e-3,
+       'WIRING/EARNED: a player riding the right clamp escalates the same build to ' +
+       on.strong[on.strong.length - 1].toFixed(2) + ' t/s (x' +
+       (on.strong[on.strong.length - 1] / base).toFixed(2) + ') on banked daylight alone');
+    ok(on.fed[on.fed.length - 1] > on.strong[on.strong.length - 1] &&
+       on.fed.every((s) => s <= ceilSpeed + 1e-9),
+       'WIRING/EARNED: feeding the fight on top of that reaches ' +
+       on.fed[on.fed.length - 1].toFixed(2) + ' t/s, and nothing crosses the ceiling ' +
+       ceilSpeed.toFixed(2));
+    ok(on.strong.every((s, i) => i === 0 || s >= on.strong[i - 1] - 1e-9),
+       'WIRING: escalation only ever rises while the player keeps earning it');
+    {
+      const hitIdx = Math.round(12 * 60);
+      const before = on.hurt[hitIdx - 2], after = on.hurt[hitIdx + 2];
+      ok(after < before && Math.abs(after - base * (1 + (MM.ceilMult - 1) * MM.hitDrive)) < 1e-3,
+       'WIRING/FLOOR: a hit at 12s drops the live pace from ' + before.toFixed(2) +
+       ' to ' + after.toFixed(2) + ' t/s on the frame it lands');
+      const mercyEnd = hitIdx + Math.round(MM.hitMercyMs / 1000 * 60);
+      ok(on.hurt.slice(hitIdx + 2, mercyEnd).every((s) => s <= after + 1e-9),
+       'WIRING/FLOOR: …and cannot climb again for the whole ' + MM.hitMercyMs +
+       'ms mercy window');
+    }
+    ok(on.gated.every((s) => s === base),
+       'WIRING: standing at the clamp while a wave gate HOLDS the scroll banks ' +
+       'nothing — a halted plane is not daylight the player earned');
+    ok(JSON.stringify(on.strong) === JSON.stringify(on.again),
+       'DETERMINISM/WIRING: the same run replayed inside the same process produces a ' +
+       'byte-identical speed trace');
+    {
+      // Frame-rate independence: the ramp is per-second, so a 30Hz host lands
+      // within one coarse frame of rise of the 60Hz one at the same instant.
+      const tol = MM.risePerSec * (1 / 30) * base * (MM.ceilMult - 1) + 1e-6;
+      const worst = Math.max.apply(null, on.coarse.map((s, i) =>
+        Math.abs(s - on.strong[Math.min(on.strong.length - 1, i * 2)])));
+      ok(worst <= tol,
+         'DETERMINISM/WIRING: the same play escalates the same at 30Hz and 60Hz ' +
+         '(worst gap ' + worst.toExponential(2) + ' t/s, one coarse frame is ' +
+         tol.toExponential(2) + ')');
+    }
+    ok(Math.max.apply(null, on.fed) <= ceilSpeed + 1e-9 &&
+       Math.max.apply(null, on.fed) < base * MM.hardCeilMult,
+       'WIRING/CEILING: nothing the player can do reaches the hard ceiling — the ' +
+       (base * MM.hardCeilMult - Math.max.apply(null, on.fed)).toFixed(2) +
+       ' t/s above the best measured run is the headroom T-023 spends');
+  }
 }
 
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');

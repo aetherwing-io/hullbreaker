@@ -11,14 +11,14 @@ import { cornerScrollVel, cornerEventTotalMs } from '../pure/waves.js';
 import {
   traversalFollowTarget, traversalMarginCapScroll,
 } from '../pure/traversal.js';
-import { ACTIVE_FIXTURE, ACTIVE_SLICE, IS_TRANSFORM_SLICE } from '../mode.js';
+import { ACTIVE_FIXTURE, ACTIVE_SLICE, IS_TRANSFORM_SLICE, MOMENTUM_ENABLED } from '../mode.js';
 import { gameMs, scrollX, setScrollX, sliceStats } from './time.js';
-import { EDGE_R, sLeftEdge } from './edges.js';
+import { EDGE_R, sLeftEdge, sRightEdge } from './edges.js';
 import { activeScrollEnd, activeScrollSpeed } from './level.js';
-import { hostiles, removeHostile } from './hostiles.js';
-import { updatePace } from './pace.js';
+import { hostiles, kills, removeHostile } from './hostiles.js';
+import { updateMomentum, updatePace } from './pace.js';
 import { player } from './player.js';
-import { activeCorner, armGate, finishCorner, updateZipper } from './wavegate.js';
+import { activeCorner, armGate, cornerBusy, finishCorner, updateZipper } from './wavegate.js';
 import { updateTransformScroll } from './transform.js';
 
 export function updateScroll(dt) {
@@ -42,6 +42,31 @@ export function updateScroll(dt) {
     });
   }
   const c = activeCorner();
+  /* MOMENTUM (T-022, ?momentum=1, six-face run only): the same "decide this
+     frame's edge speed before anything reads it" contract the fixture pursuit
+     model above uses. Its inputs are player state only — where RIG sits
+     between the damage plane and the right clamp, the kill tally, and hp —
+     because entry 11's escalation is EARNED, never a per-face script.
+
+     `held` covers every stretch where the scroll is not advancing: a wave-gate
+     fight, a corner ritual, or the level-end clamp. The daylight bank holds
+     its last moving reading there (the plane is not closing, so screen
+     position would otherwise hand anyone who reaches a gate the ceiling for
+     free) while the kill term keeps working — what escalates a held arena is
+     clearing it. */
+  if (MOMENTUM_ENABLED) {
+    const clamp = c ? Math.min(activeScrollEnd(), HALT_S[c.k - 1]) : activeScrollEnd();
+    updateMomentum(dt, {
+      playerLeft: player.x - player.hw,
+      edgeLeft: sLeftEdge(),
+      edgeRight: sRightEdge(),
+      kills,
+      hp: player.hp,
+      lives: player.lives,
+      nowMs: gameMs,
+      held: cornerBusy() || scrollX >= clamp - 1e-6,
+    });
+  }
   if (c && c.state === 'turning') {
     const t = gameMs - c.tStart;
     setScrollX(Math.min(scrollX + cornerScrollVel(t, CONFIG) * dt, activeScrollEnd()));
