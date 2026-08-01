@@ -132,6 +132,11 @@ parens, and never `eval()`/`new Function()`. Each clause is either:
   - `houndTell`, `houndCharge` — any hostile with `kind: 'hound'` currently
     in the `tell`/`charge` state (`src/sim/hostiles.js`'s
     prowl→tell→charge→skid/tumble machine).
+  - `polypTell`, `polypFire`, `polypOpen` — any hostile with `kind: 'polyp'`
+    in the dilating pre-beam `tell`, the live-beam `fire`, or either
+    vulnerable state (`fire`/`vent`) of the iris cycle
+    (closed→tell→fire→vent, same file). Closed/tell shots ping off the
+    armour, so `polypOpen` is the "shots count now" signal.
   - `victory` — the traversal-slice VICTORY overlay or `state`.
 - a bare sample field, optionally negated, tested for truthiness (e.g. `grounded`, `!grounded`).
 - a numeric comparison against a sample field: `field OP number`, `OP` one of `> >= < <= == !=` (e.g. `x>44`, `hp<=1`).

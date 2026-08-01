@@ -7,8 +7,8 @@ import { TRANSFORM_FIXTURE } from '../pure/transform.js';
 import {
   ACTIVE_SLICE, AIM_ASSIST_ENABLED, AUTOBOUNCE_ENABLED, CROUCH_ENABLED,
   FLOW_ENABLED, HOOK_ENABLED, HOOK_INPUT, HOUND_TRIAL_STAGE, IS_TRANSFORM_SLICE,
-  IS_TRAVERSAL_SLICE, SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN,
-  VIEW_ID,
+  IS_TRAVERSAL_SLICE, POLYP_TRIAL_STAGE, SCORE_ENABLED, SLICE_ENEMIES_ENABLED,
+  SLICE_ENEMY_PLAN, VIEW_ID,
 } from '../mode.js';
 import { scoreNotchGlyphs } from '../pure/score.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
@@ -131,7 +131,8 @@ export function updateHUD() {
     // camera and stays silent to keep that overlay unchanged by default).
     const viewTag = VIEW_ID === 'far' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
     tc = 'TRAVERSAL SLICE · ' + ACTIVE_SLICE.pace.label +
-      (HOUND_TRIAL_STAGE ? ' + ' + HOUND_TRIAL_STAGE.label : '') + viewTag + ' · ' +
+      (HOUND_TRIAL_STAGE ? ' + ' + HOUND_TRIAL_STAGE.label : '') +
+      (POLYP_TRIAL_STAGE ? ' + ' + POLYP_TRIAL_STAGE.label : '') + viewTag + ' · ' +
       (SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length + ' HOSTILES' : 'MOVEMENT ONLY');
   } else if (c && c.state === 'gate') {
     let gaters = 0;

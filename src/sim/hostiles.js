@@ -1,9 +1,15 @@
 /* ===================== ENTITIES: HOSTILES ========================= */
-/* Kinds: wasp drone, carrier, houndframe. Roster pass adds polyp turret
-   and spore mortar as further ENEMY rows + movement branches. */
+/* Kinds: wasp drone, carrier, houndframe, polyp turret. Roster pass adds
+   the spore mortar as a further ENEMY row + movement branch. */
 
 import { CONFIG } from '../config.js';
 import { mulberry32 } from '../pure/rng.js';
+import { BEND_S } from '../pure/path.js';
+import {
+  polypBeamHitsRect, polypBeamReach, polypBendClampRange,
+} from '../pure/polyp.js';
+import { TRANSFORM_BEND_S } from '../pure/transform.js';
+import { IS_TRANSFORM_SLICE } from '../mode.js';
 import { view } from './bridge.js';
 import { gameMs, approach } from './time.js';
 import { sLeftEdge, sRightEdge } from './edges.js';
@@ -34,7 +40,21 @@ export const ENEMY = {
   // terrain and its authored patrol span.
   hound:   { hp: CONFIG.hound.hp,
              hitR: CONFIG.hound.hitRadius, gating: true, start: 'prowl' },
+  // The stationary emplacement the gating comment above always anticipated:
+  // a rooted polyp parked near a corner must never deadlock the ritual.
+  polyp:   { hp: CONFIG.polyp.hp,
+             hitR: CONFIG.polyp.hitRadius, gating: false, start: 'closed' },
 };
+
+// While the iris is shut (closed, and through the dilating tell) shots ping
+// off the armour: hp only moves in the two OPEN states, so the polyp dies to
+// timing and position — "destroy it during an opening" — never to a bigger
+// pool. Kept as a lookup so hitHostile stays branch-light.
+const POLYP_OPEN = { fire: true, vent: true };
+
+// A sightline may never cross a facet bend (decisions.md entry 7, the same
+// rule projectiles carry) — same source list weapons.js uses.
+const BENDS = IS_TRANSFORM_SLICE ? TRANSFORM_BEND_S : BEND_S;
 
 // `row` is the optional authored spawn row this hostile came from. Two things
 // ride on it, and nothing else in the sim needs to know which:
@@ -64,6 +84,14 @@ export function spawnHostile(x, y, delayMs, kind, row) {
     // a raised-surface hound rides the top of an authored solid instead of the
     // ground run; cleared if it ever tumbles down onto the deck below
     deckY: row && row.surface === 'solid-top' ? row.deck : undefined,
+    // polyp beam state: live reach in tiles (0 unless firing), and the bend
+    // clamp on its sightline — a constant per rooted barrel, resolved once
+    beamReach: 0,
+    sightClamp: kind === 'polyp'
+      ? polypBendClampRange(
+          x + ((row && row.dir) || -1) * CONFIG.polyp.barrelTiles,
+          (row && row.dir) || -1, CONFIG.polyp.sightRange, BENDS)
+      : 0,
     enterUntil: gameMs + (delayMs || 0) + CONFIG.wasp.enterMs,
     flashUntil: 0,
   };
@@ -79,6 +107,13 @@ export function removeHostile(idx, fade) {  // single removal path: gates count 
 }
 
 export function hitHostile(e, idx, damage, weapon) {
+  // Iris armour: every damage path (bullets, launch shock, whatever comes
+  // later) flows through here, so every one of them respects the shell. The
+  // short ping flash is the feedback that a shot bounced rather than wounded.
+  if (e.kind === 'polyp' && !POLYP_OPEN[e.state]) {
+    e.flashUntil = gameMs + 40;
+    return;
+  }
   e.hp -= damage;
   e.flashUntil = gameMs + 70;
   if (e.hp <= 0) {
@@ -227,6 +262,78 @@ function updateHound(e, dt) {
   if (gameMs >= e.stateUntil) { e.state = 'prowl'; e.vx = 0; }
 }
 
+/* ------------------------- IRIS POLYP ------------------------------ *
+ * Spatial job: lock a connector's SIGHTLINE and create target priority. It
+ * is rooted — it never moves, never re-aims, and its side-facing barrel
+ * owns exactly one lane — so the whole enemy is a rhythm over that lane:
+ *
+ *   closed — iris shut, armoured, lane free. Senses with the SAME predicate
+ *            the beam damages with (pure/polyp.js), so a tell only ever
+ *            starts when the beam would already be touching the player:
+ *            behind cover, behind the barrel, on the tier above or the deck
+ *            below, it stays dormant and is simply bypassed.
+ *   tell   — the iris dilates for the whole reaction window, still
+ *            armoured. Commitment is total: the beam will fire down the
+ *            authored lane whether or not anyone is still standing in it.
+ *   fire   — the beam holds the lane. Reach is re-marched every frame so
+ *            cover keeps working mid-volley, and it is clamped at facet
+ *            bends (entry 7: sightlines do not turn corners).
+ *   vent   — open, spent, vulnerable: the authored opening. One vent window
+ *            of rifle fire kills it (asserted), so destroying it is a
+ *            timing decision, not a damage race.
+ *
+ * Counterplay is positional, never statistical: leave the lane (jump above
+ * the band, drop below it, step behind cover), reroute a tier up or down,
+ * or bait the volley and spend the opening. Fairness of the tell versus the
+ * player's escape physics is asserted in tools/pathcheck.mjs.            */
+
+function polypReachNow(e, PP) {
+  return polypBeamReach(e.x + e.dir * PP.barrelTiles, e.y, e.dir,
+    e.sightClamp, builtSolidAt, PP.beamStepTiles);
+}
+
+function polypBeamOnPlayer(e, PP, reach) {
+  return polypBeamHitsRect(e.x + e.dir * PP.barrelTiles, e.y, e.dir, reach,
+    PP.beamHalf, player.x - player.hw, player.x + player.hw,
+    player.y, player.y + player.h);
+}
+
+function updatePolyp(e) {
+  const PP = CONFIG.polyp;
+  if (gameMs < e.enterUntil) return;             // materializing: no senses, no beam
+  if (e.state === 'closed') {
+    if (gameMs < e.diveCdUntil) return;          // shared cooldown field: iris rearming
+    const reach = polypReachNow(e, PP);
+    if (polypBeamOnPlayer(e, PP, reach)) {
+      e.state = 'tell';
+      e.stateUntil = gameMs + PP.tellMs;
+    }
+    return;
+  }
+  if (e.state === 'tell') {
+    if (gameMs >= e.stateUntil) {                // committed: the lane, not the player
+      e.state = 'fire';
+      e.stateUntil = gameMs + PP.beamMs;
+    }
+    return;
+  }
+  if (e.state === 'fire') {
+    e.beamReach = polypReachNow(e, PP);          // live: cover raised mid-volley still blocks
+    if (polypBeamOnPlayer(e, PP, e.beamReach)) damagePlayer(1, e.x);
+    if (gameMs >= e.stateUntil) {
+      e.state = 'vent';
+      e.stateUntil = gameMs + PP.ventMs;
+      e.beamReach = 0;
+    }
+    return;
+  }
+  // vent: the opening — open, vulnerable, not firing
+  if (gameMs >= e.stateUntil) {
+    e.state = 'closed';
+    e.diveCdUntil = gameMs + PP.cooldownMs;
+  }
+}
+
 export function updateHostiles(dt) {
   const W = CONFIG.wasp;
   const GW = CONFIG.waves;
@@ -265,12 +372,15 @@ export function updateHostiles(dt) {
       hitHostile(e, i, CONFIG.score.shockDamage, 'shock');
       continue;
     }
-    if (gate && e.state !== 'charge' && e.state !== 'tumble') {
+    if (gate && e.kind !== 'polyp' &&                  // a rooted barrel's dir is its FACING:
+        e.state !== 'charge' && e.state !== 'tumble') {//   the box must never re-aim it
       if (e.x < patrolL) e.dir = 1;                    // patrol box: nobody strands the gate
       else if (e.x > patrolR) e.dir = -1;              //   (a committed charge is exempt)
     }
     if (e.kind === 'hound') {                          // deck unit: floor denial, see above
       updateHound(e, dt);
+    } else if (e.kind === 'polyp') {                   // rooted emplacement: sightline denial
+      updatePolyp(e);
     } else if (e.kind === 'carrier') {                 // slow hauler: cruise only, never dives
       const C = CONFIG.carrier;
       e.x += e.dir * (e.cruiseSpeed !== undefined ? e.cruiseSpeed : C.speed) * dt;

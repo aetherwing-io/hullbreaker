@@ -33,7 +33,8 @@
 // be readable at a glance in a code review. `a && b && c` only (no ||, no
 // parens); each clause is either:
 //   - a named predicate, optionally negated with a leading `!`
-//     (pinned, airborne, grounded, houndTell, houndCharge, victory)
+//     (pinned, airborne, grounded, houndTell, houndCharge, polypTell,
+//     polypFire, polypOpen, victory)
 //   - a bare sample field, optionally negated, tested for truthiness
 //     (e.g. "grounded", "!grounded")
 //   - a comparison against a sample field: field OP value, where OP is one
@@ -80,6 +81,23 @@ const PREDICATES = {
   houndCharge(sample) {
     return Array.isArray(sample.hostiles) &&
       sample.hostiles.some((h) => h.kind === 'hound' && h.state === 'charge');
+  },
+  // Iris Polyp iris cycle (closed -> tell -> fire -> vent,
+  // src/sim/hostiles.js): `tell` is the dilating pre-beam warning, `fire`
+  // is the live beam, `vent`/`polypOpen` is when the armour is down (fire
+  // and vent are the two vulnerable states — closed and tell shots ping).
+  polypTell(sample) {
+    return Array.isArray(sample.hostiles) &&
+      sample.hostiles.some((h) => h.kind === 'polyp' && h.state === 'tell');
+  },
+  polypFire(sample) {
+    return Array.isArray(sample.hostiles) &&
+      sample.hostiles.some((h) => h.kind === 'polyp' && h.state === 'fire');
+  },
+  polypOpen(sample) {
+    return Array.isArray(sample.hostiles) &&
+      sample.hostiles.some((h) => h.kind === 'polyp' &&
+        (h.state === 'fire' || h.state === 'vent'));
   },
   victory(sample) { return isVictorySample(sample); },
 };
