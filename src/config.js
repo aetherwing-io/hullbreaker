@@ -86,11 +86,15 @@ export const CONFIG = {
     // the pursuing plane, 1 = pinned to the right clamp). A run starts at
     // ~0.45, so nobody is handed drive for booting; the clamp reads 0.97-0.99
     // on every view, so the ceiling is reachable on all of them. Below bankLo
-    // the player banks NOTHING — being carried is not an achievement, and a
-    // struggling player must never be escalated at.
+    // the player banks NOTHING — being carried is not an achievement, so
+    // nobody is ever escalated at for falling behind.
     bankLo: 0.55, bankHi: 0.92,
     killFull: 4, killDecaySec: 9,   // decaying kill streak: 4 kills saturates,
                                     //   an unfed meter empties in 9 s
+    // Independent of the bank, deliberately: a struggling player who still
+    // shoots straight earns up to wCombat of the range (x1.12 = 4.82 t/s) and
+    // no more. That bound, not "always 4.30", is the floor promise, and it is
+    // what pathcheck's WIRING/FLOOR probe and momentum-weak.json gate on.
     wBank: 0.7, wCombat: 0.3,       // must sum to 1 (asserted)
     risePerSec: 0.16,               // 6.25 s of held momentum floor → ceiling
     fallPerSec: 0.45,               // 2.2 s to shed it: relief is faster than

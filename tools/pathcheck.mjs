@@ -7318,10 +7318,11 @@ const G2GATE = G2E.gate;
      'FLOOR: even the HARD ceiling (' + hardSpeed.toFixed(2) + ' t/s) leaves RIG ' +
      (RUN - hardSpeed).toFixed(2) + ' t/s of run speed to re-bank daylight with — ' +
      'escalation can never outrun the player and become a spiral');
-  ok(base >= CONFIG.scrollSpeed && ceilSpeed < RUN,
-     'FLOOR: the whole escalation band [' + base + ', ' + ceilSpeed.toFixed(2) +
-     '] sits inside [scrollSpeed, runSpeed], the two speeds T-020 measured every ' +
-     'generated gap crossable at');
+  ok(RUN - ceilSpeed >= 3 && ceilSpeed < hardSpeed,
+     'FLOOR: at escalation\'s own ceiling (' + ceilSpeed.toFixed(2) + ' t/s) RIG still ' +
+     'out-runs the plane by ' + (RUN - ceilSpeed).toFixed(2) + ' t/s, so the whole band [' +
+     base + ', ' + ceilSpeed.toFixed(2) + '] stays inside [scrollSpeed, runSpeed] — the ' +
+     'two speeds T-020 measured every generated gap crossable at');
 
   // --- CEILING (and the headroom T-023 was promised) ----------------------
   ok(momentumSpeed(1, base, MM) === ceilSpeed,
@@ -7346,11 +7347,16 @@ const G2GATE = G2E.gate;
     // Readability ceiling (pillar 5): ambient spawn cadence rides the scroll,
     // so the escalation ceiling IS the cadence ceiling. State the tightest
     // authored gap it can produce rather than hoping it stays sane.
+    // momentumSpawnScale is momentumSpeed at base 1 BY DEFINITION, so this pair
+    // proves linearity only — it is the PREDICTION the wiring probe below
+    // ("WIRING/CEILING: ambient cadence") is then measured against by counting
+    // table entries the shipped spawner actually consumed. Claiming "cadence
+    // rides the scroll" from this line alone would be circular.
     ok(sweep.every((d) => Math.abs(
          momentumSpawnScale(d, MM) - momentumSpeed(d, base, MM) / base) < 1e-12),
-       'CEILING: spawn cadence scales with the scroll exactly — the ambient table is ' +
-       'authored in tiles and triggers off the right screen edge, so no second ' +
-       'escalation knob exists to drift out of sync with this one');
+       'CEILING: the predicted cadence multiplier is the speed multiplier itself, ' +
+       'linear in drive (x1.00 at the floor, x' + MM.ceilMult + ' at the ceiling) — the ' +
+       'number the measured spawn counts below have to reproduce');
     const tightest = Math.min.apply(null, CONFIG.spawner.faceGapSec) / MM.ceilMult;
     ok(tightest >= 0.9,
        'CEILING: at full drive the tightest authored ambient gap is still ' +
@@ -7500,10 +7506,11 @@ const G2GATE = G2E.gate;
   const momentumChild = `
     globalThis.__HB_QUERY__ = process.env.HB_MOM || '';
     const S = ${JSON.stringify('file://' + join(srcDir) + '/')};
-    const [CF, T, E, LV, PL, SC, WG, PA, HO] = await Promise.all([
+    const [CF, T, E, LV, PL, SC, WG, PA, HO, SPW] = await Promise.all([
       import(S + 'config.js'), import(S + 'sim/time.js'), import(S + 'sim/edges.js'),
       import(S + 'sim/level.js'), import(S + 'sim/player.js'), import(S + 'sim/scroll.js'),
       import(S + 'sim/wavegate.js'), import(S + 'sim/pace.js'), import(S + 'sim/hostiles.js'),
+      import(S + 'sim/spawner.js'),
     ]);
     const C = CF.CONFIG, p = PL.player, hw = C.player.width / 2, M = C.edges.margin;
     // The wave gate is a separate question (it HOLDS the scroll); the corner
@@ -7517,9 +7524,11 @@ const G2GATE = G2E.gate;
       const o = opts || {};
       T.setScrollX(0);
       PA.resetPace();
-      HO.clearHostiles(); HO.resetKills();
+      HO.clearHostiles(); HO.resetKills(); HO.resetHostileRng();
+      SPW.resetSpawner();
       p.hp = C.player.maxHealth; p.lives = C.player.lives;
       const speeds = [];
+      let spawns = 0;                                // ambient table entries consumed
       const n = Math.round(seconds / dt);
       for (let i = 0; i < n; i++) {
         const t = i * dt;
@@ -7532,9 +7541,21 @@ const G2GATE = G2E.gate;
         p.x = place(E.sLeftEdge(), E.sRightEdge());
         T.advanceGameMs(dt * 1000);
         SC.updateScroll(dt);
+        // src/main.js's own order: scroll first, then the ambient director off
+        // the new right edge. Counting the delta across THIS call is what makes
+        // the cadence claim a measurement instead of a definition.
+        const before = HO.hostiles.length;
+        SPW.updateSpawner();
+        spawns += Math.max(0, HO.hostiles.length - before);
         speeds.push(+LV.activeScrollSpeed().toFixed(6));
       }
-      return { speeds, drive: PA.momentumDrive(), peakDrive: PA.momentumPeakDrive() };
+      // What the table says the distance scrolled should have uncovered, by
+      // the spawner's own trigger rule (x < right edge - 1.5). Compared to the
+      // measured count, this is the "escalation adds no entries, it makes the
+      // authored ones arrive sooner" claim, stated as an equality.
+      const predicted = SPW.spawnTable.filter((e) => e.x < E.sRightEdge() - 1.5).length;
+      return { speeds, spawns, predicted, scrolled: T.scrollX,
+               drive: PA.momentumDrive(), peakDrive: PA.momentumPeakDrive() };
     }
     const clamp = (l, r) => r - M - hw;              // pinned to the right clamp
     const plane = (l) => l + M + hw;                 // shoved against the plane
@@ -7542,6 +7563,10 @@ const G2GATE = G2E.gate;
     const strong = run(clamp, 25, dt);
     const weak = run(plane, 25, dt);
     const fed = run(clamp, 25, dt, { killEvery: 1.5 });
+    // A struggling player who still shoots straight: no daylight at all, but a
+    // fed kill streak. This is the run the operator packet's weak script gates
+    // on, so it is measured here rather than argued about there.
+    const weakFed = run(plane, 25, dt, { killEvery: 1.5 });
     const hurt = run(clamp, 25, dt, { hitAt: 12 });
     const strongAgain = run(clamp, 25, dt);
     const coarse = run(clamp, 25, 1 / 30);
@@ -7552,10 +7577,13 @@ const G2GATE = G2E.gate;
     WG.cornerEvents[0].state = 'done';
     console.log(JSON.stringify({
       base: C.scrollSpeed, ceil: C.scrollSpeed * C.momentum.ceilMult,
-      strong: strong.speeds, weak: weak.speeds, fed: fed.speeds,
+      strong: strong.speeds, weak: weak.speeds, fed: fed.speeds, weakFed: weakFed.speeds,
       hurt: hurt.speeds, again: strongAgain.speeds, coarse: coarse.speeds,
       gated: gated.speeds,
       peaks: { strong: strong.peakDrive, fed: fed.peakDrive, weak: weak.peakDrive },
+      spawns: { strong: strong.spawns, fed: fed.spawns, weak: weak.spawns },
+      predicted: { strong: strong.predicted, fed: fed.predicted, weak: weak.predicted },
+      scrolled: { strong: strong.scrolled, fed: fed.scrolled, weak: weak.scrolled },
     }));
   `;
   function momentumProbe(query) {
@@ -7612,6 +7640,20 @@ const G2GATE = G2E.gate;
        'WIRING/FLOOR: a player pinned against the damage plane for 25s is carried at ' +
        'exactly the shipped speed, never faster — the run answers a struggling player ' +
        'with the floor, not with pressure');
+    {
+      // …and the exact shape of that promise when the same struggling player
+      // still shoots straight: the daylight term stays zero (the deadband), so
+      // the ONLY escalation available is the kill streak, bounded by wCombat.
+      // This is the bound the operator packet's momentum-weak.json gates on.
+      const combatCeil = base * (1 + (MM.ceilMult - 1) * MM.wCombat);
+      const top = Math.max.apply(null, on.weakFed);
+      ok(top > base && top <= combatCeil + 1e-6,
+         'WIRING/FLOOR: a struggling player pinned to the plane who KEEPS KILLING does ' +
+         'escalate — to ' + top.toFixed(2) + ' t/s — but the daylight deadband holds, so ' +
+         'he can never pass the combat term\'s own bound ' + combatCeil.toFixed(2) +
+         ' t/s (x' + (combatCeil / base).toFixed(2) + '): the pressure a losing player ' +
+         'can bring on himself is exactly what the fight earned and nothing else');
+    }
     const bankOnlyCeil = base * (1 + (MM.ceilMult - 1) * MM.wBank);
     ok(on.strong[on.strong.length - 1] > base * 1.2 &&
        Math.abs(on.strong[on.strong.length - 1] - bankOnlyCeil) < 1e-3,
@@ -7658,6 +7700,52 @@ const G2GATE = G2E.gate;
        'WIRING/CEILING: nothing the player can do reaches the hard ceiling — the ' +
        (base * MM.hardCeilMult - Math.max.apply(null, on.fed)).toFixed(2) +
        ' t/s above the best measured run is the headroom T-023 spends');
+    {
+      /* Ambient cadence, MEASURED rather than defined: the same 25 s of wall
+         time, the shipped src/sim/spawner.js stepped in main.js's order, and a
+         count of the ambient table entries it actually consumed. This is the
+         evidence for "escalation is one knob" — the spawner has no momentum
+         input at all, it triggers off sRightEdge(), so faster scroll IS faster
+         cadence and there is nothing to drift out of sync. */
+      const sOff = off.spawns, sOn = on.spawns, dOn = on.scrolled;
+      ok(sOff.weak > 8 && sOff.strong === sOff.weak && sOn.weak === sOff.weak,
+         'WIRING/CEILING: with the flag off the ambient table delivers ' + sOff.weak +
+         ' entries in 25 s however the run is played — and a struggling player with the ' +
+         'flag ON gets exactly that same cadence, which is the floor stated in enemies');
+      ok(sOn.fed > sOn.weak && sOn.strong > sOn.weak && dOn.fed / dOn.weak > 1.2,
+         'WIRING/EARNED: the escalated runs consumed ' + sOn.fed + ' / ' + sOn.strong +
+         ' entries against the floor\'s ' + sOn.weak + ' in the same 25 s, off ' +
+         (dOn.fed / dOn.weak).toFixed(2) + 'x the distance — pressure rises with the pace ' +
+         'the player earned, through no second knob');
+      ok([off, on].every((r) => ['weak', 'strong', 'fed']
+           .every((k) => r.spawns[k] === r.predicted[k])),
+         'WIRING/CEILING: in every run, flag on and off, the spawner consumed EXACTLY ' +
+         'the table prefix its scrolled distance uncovered (x < right edge - 1.5) — ' +
+         'escalation adds no entries and skips none, it makes the authored ones arrive ' +
+         'sooner, which is why there is one knob and not two');
+      const rate = (s, d) => s / d;                  // entries per tile of scroll
+      ok(Math.abs(rate(sOn.fed, dOn.fed) / rate(sOn.weak, dOn.weak) - 1) <= 0.2,
+         'WIRING/CEILING: entries per TILE are the authored density either way (' +
+         rate(sOn.fed, dOn.fed).toFixed(3) + ' vs ' + rate(sOn.weak, dOn.weak).toFixed(3) +
+         ' /tile; the spread is the table\'s own per-face escalation, not momentum)');
+      const spawnRatio = sOn.fed / sOn.weak;
+      ok(spawnRatio <= MM.ceilMult + 1e-9,
+         'WIRING/CEILING: …and even the best-fed run\'s cadence stays inside x' +
+         MM.ceilMult + ' of the shipped table (measured x' + spawnRatio.toFixed(3) +
+         '), so chaos stays readable at the top of the curve');
+    }
+  }
+  {
+    // The hard ceiling is a CHOKEPOINT, not a convention: the one function the
+    // six-face run reads its scroll speed through applies it. Asserted against
+    // the source because it is a structural claim about the live path — the
+    // numeric consequence (nothing exceeds hardSpeed) is measured above.
+    const paceSrc = stripComments(readFileSync(join(srcDir, 'sim', 'pace.js'), 'utf8'));
+    const fn = /export function momentumScrollSpeed\(\)[^]*?\n}/.exec(paceSrc);
+    ok(!!fn && /momentumClampSpeed\(/.test(fn[0]),
+       'CEILING/WIRING: the live scroll speed leaves through momentumClampSpeed, so a ' +
+       'later source (T-023 boosts) cannot route around the hard ceiling by writing ' +
+       'drive or speed somewhere else');
   }
 }
 

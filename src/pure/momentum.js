@@ -16,14 +16,17 @@
  *
  * Three properties this module exists to make provable, not to argue for:
  *
- *   FLOOR    — drive 0 returns EXACTLY CONFIG.scrollSpeed. A struggling
- *              player plays the shipped run, which is the game the gates
- *              already treat as finishable. Escalation can only ever be
- *              earned upward, never subtracted, and a player being pushed
- *              toward the plane earns nothing (momentumBank's deadband), so
- *              falling behind cannot compound into a death spiral. Damage
- *              sheds drive on the frame it lands (momentumOnDamage) and the
- *              mercy window forbids re-earning it for a beat.
+ *   FLOOR    — drive 0 returns EXACTLY CONFIG.scrollSpeed, and a player being
+ *              pushed toward the plane banks nothing (momentumBank's
+ *              deadband), so the DAYLIGHT term of a struggling run is zero and
+ *              falling behind cannot compound into a death spiral. The floor
+ *              is a floor, not a cap: the combat term is independent, so a
+ *              player with no daylight who keeps killing still earns up to
+ *              cfg.wCombat of the range (×1.12 at the shipped numbers) — that
+ *              is the bound, and it is asserted. Damage sheds drive on the
+ *              frame it lands (momentumOnDamage), a life clears it outright
+ *              (sim/pace.js), and the mercy window forbids re-earning for a
+ *              beat.
  *   CEILING   — escalation's own top is cfg.ceilMult; the ABSOLUTE top any
  *              source may reach (T-023's boosts included) is cfg.hardCeilMult,
  *              applied by momentumClampSpeed. The gap between them is the
@@ -118,9 +121,11 @@ export function momentumSpeed(drive, baseSpeed, cfg) {
   return baseSpeed * (1 + (cfg.ceilMult - 1) * clamp01(drive));
 }
 
-// The absolute top of the pace, whatever produced it. T-023's boosts push
-// speed through THIS function, so the top of the curve lives in one place and
-// escalation's own ceiling keeps headroom below it.
+// The absolute top of the pace, whatever produced it. The live six-face path
+// already leaves through momentumClampSpeed (sim/pace.js momentumScrollSpeed),
+// so this is a chokepoint every source passes rather than a convention a later
+// one has to remember: T-023's boosts push their speed through the same
+// function, and escalation's own ceiling keeps headroom below it.
 export function momentumHardCeiling(baseSpeed, cfg) {
   return baseSpeed * cfg.hardCeilMult;
 }

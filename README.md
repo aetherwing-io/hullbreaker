@@ -63,9 +63,12 @@ entry 11) on the six-face run: the pursuing edge stops being a constant and
 rises with how well the run is being played — how far RIG is riding toward the
 right of the screen (the daylight he banks by running at 9.4 t/s against a
 4.3 t/s scroll) plus a decaying kill streak. Drive 0 is the shipped speed
-exactly, so a player who is behind is carried at today's pace and never
-escalated at; full drive is ×1.40, with a hard ceiling of ×1.70 that later
-boost work shares. Ambient spawn cadence rides the same number, because the
+exactly, and a player pushed back toward the plane banks *no* daylight at all —
+so the pace never escalates at someone for falling behind. It is a floor, not a
+cap: the kill streak is independent, so a struggling player who keeps
+connecting still earns up to ×1.12 (that bound is asserted, and it is what
+`momentum-weak.json` gates on). Full drive is ×1.40, with a hard ceiling of
+×1.70 that later boost work shares and that the live path clamps to. Ambient spawn cadence rides the same number, because the
 spawn table triggers off the right screen edge. The HUD's `MOMENTUM` meter
 shows the live drive. Off by default and unjudged: the policy is
 `CONFIG.momentum`, the math `src/pure/momentum.js`, and the two named bot

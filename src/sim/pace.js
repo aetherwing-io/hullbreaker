@@ -20,8 +20,8 @@ import { CONFIG } from '../config.js';
 import { ACTIVE_SLICE, MOMENTUM_ENABLED } from '../mode.js';
 import { traversalPaceStep } from '../pure/traversal.js';
 import {
-  momentumBankSample, momentumCombatStep, momentumOnDamage, momentumScreenFrac,
-  momentumSpeed, momentumStep, momentumTarget, momentumTier,
+  momentumBankSample, momentumClampSpeed, momentumCombatStep, momentumOnDamage,
+  momentumScreenFrac, momentumSpeed, momentumStep, momentumTarget,
 } from '../pure/momentum.js';
 
 const PURSUIT = ACTIVE_SLICE ? ACTIVE_SLICE.pursuit : null;
@@ -55,21 +55,16 @@ let peakDrive = 0;              // run-high, for the operator packet
 let mercyUntil = 0;             // gameMs: drive may fall but not rise
 let prevKills = 0, prevHp = 0, prevLives = 0, primed = false;
 
-export function momentumEnabled() { return MOMENTUM_ENABLED; }
 export function momentumDrive() { return drive; }
 export function momentumPeakDrive() { return peakDrive; }
-// The pursuing edge's speed this frame. Drive 0 returns CONFIG.scrollSpeed
-// exactly — the floor is the shipped run, not a slower version of it.
-export function momentumScrollSpeed() { return momentumSpeed(drive, CONFIG.scrollSpeed, M); }
-export function momentumSnapshot() {
-  const s = momentumScrollSpeed();
-  return {
-    enabled: MOMENTUM_ENABLED,
-    drive, bank, combat, peakDrive,
-    tier: momentumTier(drive, M),
-    speed: s,
-    mult: s / CONFIG.scrollSpeed,
-  };
+// The pursuing edge's speed this frame, and the ONLY place the six-face run
+// reads it (sim/level.js activeScrollSpeed). Drive 0 returns CONFIG.scrollSpeed
+// exactly — the floor is the shipped run, not a slower version of it — and the
+// value leaves through momentumClampSpeed, so the hard ceiling is a chokepoint
+// on the live path rather than a convention a later source has to remember.
+// It is a no-op at drive ≤ 1 today, by construction: that is the point.
+export function momentumScrollSpeed() {
+  return momentumClampSpeed(momentumSpeed(drive, CONFIG.scrollSpeed, M), CONFIG.scrollSpeed, M);
 }
 
 /* ctx: { playerLeft, edgeLeft, edgeRight, kills, hp, lives, nowMs, held }
