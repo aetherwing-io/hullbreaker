@@ -1241,3 +1241,38 @@ it was a property of the old aimless script, not of the level. A *different*
 a 2-tile step-down so the grounded-jump rule never fired; that is why T-019
 added `terrain.landDist` and made `gapDist` read 0 while over a hole. Data for
 the lattice lane, not a defect report.
+
+## I-029 | docs | S3 | repro: `cd tools/playtest && node run.mjs <task/T-022 e6e188a>/tools/playtest/scripts/momentum-{strong,weak}.json --deterministic --max-runtime-ms 62000 --base-url <that worktree pinned on 8998>` ×2 each | evidence: tools/playtest/runs/gate-T-022-{strong-1,strong-2,weak-1,weak-2}; reports/tasks/T-022/playtest.md §4, §10
+
+The two T-022 operator-packet scripts embed "MEASURED, NOT ASPIRATIONAL" bands
+in their own `description` fields, and independent repeats on the same tree land
+outside several of them: `momentum-weak` "above the floor on 11.6 % / 24.2 % of
+PLAYING samples" measured 0.7 % and 11.6 % here, and its "GAME_OVER at 27.5 /
+27.9 s" measured 22.7 / 22.9 s; `momentum-strong`'s "GAME_OVER at 43.9 / 42.7 s"
+measured 34.2 / 46.0 s. Peaks did reproduce closely (strong ×1.265/×1.280 vs
+×1.27 quoted; weak ×1.008/×1.025 vs ×1.02/×1.05), and the **structural** gap the
+descriptions themselves say to read — 12-13x separation in fraction-of-run above
+the shipped pace, ×1.12 bound never crossed by the weak policy — held in every
+pair, so the gate passed on that. Filed only so a later reader does not treat
+those decimals as a regression baseline: two runs per side is a small sample of
+a build whose documented run-to-run spread is wide (harness README, honesty items
+2 and 8). Suggested fix is a one-line hedge in each description pointing at the
+structural gap instead of the sample percentages, or a third run per side folded
+into the quoted range.
+
+## I-030 | docs | S3 | repro: read any `?momentum=1` trace — `report.json` → `trace[].pursuitSpeed` is the only escalation signal present; `grep -n "momentumDrive\|peakDrive" <task/T-022 e6e188a>/src/main.js` returns nothing | evidence: reports/tasks/T-022/playtest.md §3; tools/playtest/runs/gate-T-022-strong-2/report.json
+
+Forward-looking instrumentation gap, not a defect today. T-022's earned drive is
+recoverable from a bot trace only by inverting the pace —
+`drive = (pursuitSpeed/4.3 - 1)/0.4` — which is exactly what both packet scripts
+instruct a reader to do, and it is correct **while escalation is the only source
+feeding that number**. `src/sim/pace.js` already tracks `drive`, `peakDrive` and a
+tier, and `src/pure/momentum.js` exports `momentumTier`/`momentumDriveFromSpeed`,
+but none of them ride the frozen `testapi` channel; only the HUD string carries
+the meter. The moment T-023's boosts push their own speed through the shared
+`momentumClampSpeed` chokepoint (which is the stated design), `pursuitSpeed` stops
+distinguishing "the player earned this" from "a boost is running", and the packet's
+falsifying gates — "drive must never exceed 0.30 for a struggling player" — become
+unreadable from a trace. Cheap fix when T-023 lands: publish `momentum: {drive,
+peakDrive, tier}` on `telemetry()` beside `pursuitSpeed`, additive, inert when the
+flag is off.
