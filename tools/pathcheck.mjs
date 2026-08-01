@@ -36,6 +36,13 @@ import {
   polypBeamHitsRect, polypBeamReach, polypBendClampRange,
 } from '../src/pure/polyp.js';
 import { crouchStance } from '../src/pure/stance.js';
+import {
+  DEFAULT_START_DIRECTION, RIG_SCREEN_FRACTION, SHELL_CONSUMING_INTENTS,
+  SHELL_ELEMENT_TYPES, SHELL_ROLES, START_DIRECTIONS, START_DIRECTION_IDS,
+  compositionViolations, formatClock, formatSeconds, killsPerHundredShots,
+  resolveStartDirection, runStatRows, shellKeyIntent, startDirection,
+  startDirectionAt,
+} from '../src/pure/shell.js';
 import { assistDirection, assistVerticalReach } from '../src/pure/assist.js';
 import {
   TRAVERSAL_HOOK, TRAVERSAL_FLOW,
@@ -4430,6 +4437,258 @@ const XL = buildTransformLevel(CONFIG);
   ok(wgFinish.indexOf("state = 'done'") >= 0 &&
      wgFinish.indexOf("state = 'done'") < wgFinish.indexOf('view.corner.finished'),
      "T-012: wavegate.finishCorner commits state='done' before corner.finished fires");
+}
+
+/* ================= T-013: game shell (pure + guards) =================== *
+ * The shell is ui-layer, but three things about it are load-bearing enough
+ * to prove headlessly: (1) the start screen is a COMPOSITION STUDY of
+ * concept board 05 and has to obey the same invariants the game does —
+ * RIG at 3–5% of screen height (decisions.md entry 7 / board 13) and
+ * DESIGN's ≤8 colour roles; (2) the key-intent table must never swallow a
+ * gameplay key, or every committed bot script and the browser self-test
+ * would break behind a title screen; (3) the run-stats screen is pure
+ * formatting over counters the game already keeps.                      */
+{
+  // --- start-screen directions (board 05) ------------------------------
+  ok(START_DIRECTIONS.length === 3, 'T-013: board 05 offers three start-screen directions');
+  ok(new Set(START_DIRECTION_IDS).size === 3, 'T-013: direction ids are unique');
+  ok(START_DIRECTION_IDS.join(',') === 'climb,wake,crown',
+     'T-013: directions are ordered left-to-right as board 05 presents them');
+  ok(DEFAULT_START_DIRECTION === 'wake' && startDirection('wake').panel === 'middle',
+     'T-013: the shipped default is board 05\'s MIDDLE panel ("The Ship Wakes")');
+  ok(Object.keys(SHELL_ROLES).length <= 8,
+     'T-013: the start screen stays inside DESIGN\'s 8-colour budget, got ' +
+     Object.keys(SHELL_ROLES).length);
+  ok(Object.values(SHELL_ROLES).every((c) => /^#[0-9a-f]{6}$/.test(c)),
+     'T-013: every colour role is a literal hex');
+  // resolution: id, panel name, or the 1..3 ordinal; anything else is default
+  ok(resolveStartDirection(null) === 'wake' && resolveStartDirection(undefined) === 'wake' &&
+     resolveStartDirection('') === 'wake' && resolveStartDirection('nonsense') === 'wake',
+     'T-013: an absent or unrecognised ?title= resolves to the canon default');
+  ok(resolveStartDirection('climb') === 'climb' && resolveStartDirection('1') === 'climb' &&
+     resolveStartDirection('left') === 'climb' && resolveStartDirection('CROWN') === 'crown' &&
+     resolveStartDirection('3') === 'crown' && resolveStartDirection(' wake ') === 'wake',
+     'T-013: ?title= accepts the id, the panel, or the board ordinal');
+  ok(startDirection('nope').id === 'wake', 'T-013: startDirection falls back to the default');
+  ok(startDirectionAt(0).id === 'climb' && startDirectionAt(2).id === 'crown' &&
+     startDirectionAt(3).id === 'climb' && startDirectionAt(-1).id === 'crown',
+     'T-013: the 1/2/3 picker wraps in both directions');
+  for (const dir of START_DIRECTIONS) {
+    const v = compositionViolations(dir);
+    ok(v.length === 0, 'T-013: composition "' + dir.id + '" is conformant' +
+       (v.length ? ' — ' + v.join('; ') : ''));
+    ok(dir.elements.every((e) => SHELL_ELEMENT_TYPES.includes(e.t)),
+       'T-013: "' + dir.id + '" uses only declared element types');
+    const rig = dir.elements.find((e) => e.t === 'rig');
+    ok(rig && rig.h >= RIG_SCREEN_FRACTION.min && rig.h <= RIG_SCREEN_FRACTION.max,
+       'T-013: "' + dir.id + '" keeps RIG at human scale (board 13: 3–5% of frame height), got ' +
+       (rig ? rig.h : 'none'));
+    ok(dir.tagline.length > 0 && dir.label.length > 0 && dir.promise.length > 0,
+       'T-013: "' + dir.id + '" carries its board-05 brand promise as copy');
+  }
+  // the validator has to actually reject: a hero-scale RIG is the failure
+  // mode this guard exists for (concept-art README flags "player drawn too
+  // large" as an art defect, decisions.md entry 1)
+  {
+    const fat = { id: 'x', titleBox: { x: 0, y: 0, w: 10 },
+      elements: [{ t: 'rig', x: 10, y: 10, w: 8, h: 22, tone: 'warm' }] };
+    ok(compositionViolations(fat).some((m) => /concept-art range/.test(m)),
+       'T-013: the composition guard rejects a hero-scale RIG');
+    const offFrame = { id: 'x', titleBox: { x: 0, y: 0, w: 10 },
+      elements: [{ t: 'rig', x: 10, y: 10, w: 2, h: 3.8, tone: 'warm' },
+                 { t: 'mass', x: 140, y: 10, w: 10, h: 10, tone: 'metal' }] };
+    ok(compositionViolations(offFrame).some((m) => /outside the frame/.test(m)),
+       'T-013: the composition guard rejects an element that never touches the frame');
+    const badTone = { id: 'x', titleBox: { x: 0, y: 0, w: 10 },
+      elements: [{ t: 'rig', x: 10, y: 10, w: 2, h: 3.8, tone: 'chartreuse' }] };
+    ok(compositionViolations(badTone).some((m) => /not one of the declared roles/.test(m)),
+       'T-013: the composition guard rejects a colour outside the role table');
+  }
+
+  // --- the harness contract: the shell never swallows a gameplay key ----
+  // KEYMAP is read out of src/main.js itself, so this cannot drift from the
+  // real bindings the bot harness dispatches.
+  const mainSrc = readFileSync(join(srcDir, 'main.js'), 'utf8');
+  const keymapBlock = mainSrc.slice(mainSrc.indexOf('const KEYMAP = {'),
+                                    mainSrc.indexOf('};', mainSrc.indexOf('const KEYMAP = {')));
+  const gameplayCodes = [...keymapBlock.matchAll(/(\w+)\s*:\s*'/g)].map((m) => m[1]);
+  ok(gameplayCodes.length >= 14 && gameplayCodes.includes('Space') &&
+     gameplayCodes.includes('KeyJ') && gameplayCodes.includes('ArrowRight'),
+     'T-013: KEYMAP parsed out of src/main.js (' + gameplayCodes.length + ' codes)');
+  const ALL_STATES = ['BOOT', 'MENU', 'PLAYING', 'PAUSED', 'SLICE_RETRY', 'GAME_OVER', 'VICTORY'];
+  for (const code of gameplayCodes) {
+    for (const st of ALL_STATES) {
+      const intent = shellKeyIntent(code, st);
+      ok(intent === null || intent === 'start',
+         'T-013: gameplay key ' + code + ' is never consumed by the shell in ' + st +
+         ' (got ' + intent + ')');
+    }
+  }
+  // …and while the simulation is running the shell is completely inert
+  for (const st of ['BOOT', 'PLAYING', 'SLICE_RETRY']) {
+    ok([...gameplayCodes, 'KeyQ', 'KeyH', 'KeyR', 'Digit1', 'Digit2', 'Digit3', 'Escape']
+      .every((c) => shellKeyIntent(c, st) === null),
+       'T-013: the shell claims no key at all in ' + st);
+  }
+  ok(shellKeyIntent('ArrowRight', 'MENU') === 'start' &&
+     shellKeyIntent('Space', 'MENU') === 'start' &&
+     shellKeyIntent('KeyJ', 'MENU') === 'start' &&
+     shellKeyIntent('Enter', 'MENU') === 'start',
+     'T-013: any gameplay key (and Enter) starts the run from the title');
+  ok(shellKeyIntent('Escape', 'MENU') === null && shellKeyIntent('KeyP', 'MENU') === null &&
+     shellKeyIntent('ShiftLeft', 'MENU') === 'start' &&
+     shellKeyIntent('ControlLeft', 'MENU') === null &&
+     shellKeyIntent('F5', 'MENU') === null && shellKeyIntent('Tab', 'MENU') === null,
+     'T-013: pause keys, bare modifiers and browser keys do not start a run');
+  ok(shellKeyIntent('Digit1', 'MENU') === 'pick:0' &&
+     shellKeyIntent('Digit2', 'MENU') === 'pick:1' &&
+     shellKeyIntent('Numpad3', 'MENU') === 'pick:2' &&
+     shellKeyIntent('KeyH', 'MENU') === 'hud',
+     'T-013: the title screen owns 1/2/3 (direction) and H (HUD) only');
+  ok(shellKeyIntent('KeyR', 'PAUSED') === 'restart' &&
+     shellKeyIntent('KeyQ', 'PAUSED') === 'title' &&
+     shellKeyIntent('KeyH', 'PAUSED') === 'hud' &&
+     shellKeyIntent('ArrowLeft', 'PAUSED') === null,
+     'T-013: the pause screen owns R / Q / H only');
+  ok(shellKeyIntent('KeyQ', 'GAME_OVER') === 'title' &&
+     shellKeyIntent('KeyQ', 'VICTORY') === 'title' &&
+     shellKeyIntent('KeyR', 'GAME_OVER') === null && shellKeyIntent('KeyR', 'VICTORY') === null,
+     'T-013: the end screens add Q only — R keeps its existing src/main.js branch');
+  {
+    // completeness: every intent the table can emit is either the
+    // fall-through 'start' or declared in SHELL_CONSUMING_INTENTS
+    const probes = [...gameplayCodes, 'KeyQ', 'KeyH', 'KeyR', 'KeyZ', 'Enter', 'Escape',
+      'Digit1', 'Digit2', 'Digit3', 'Numpad1', 'Numpad2', 'Numpad3', 'F1', 'MetaLeft'];
+    const seen = new Set();
+    for (const c of probes) for (const st of ALL_STATES) {
+      const i = shellKeyIntent(c, st);
+      if (i !== null) seen.add(i);
+    }
+    ok([...seen].every((i) => i === 'start' || SHELL_CONSUMING_INTENTS.includes(i)),
+       'T-013: every emitted intent is declared (' + [...seen].sort().join(', ') + ')');
+    ok(shellKeyIntent(undefined, 'MENU') === null && shellKeyIntent(42, 'MENU') === null,
+       'T-013: a non-string key code yields no intent');
+  }
+
+  // --- run stats: pure formatting over existing counters ----------------
+  ok(formatClock(0) === '0:00.0' && formatClock(65432) === '1:05.4' &&
+     formatClock(-5) === '0:00.0' && formatClock(NaN) === '0:00.0' &&
+     formatClock(599900) === '9:59.9',
+     'T-013: the run clock formats m:ss.d and clamps junk to zero');
+  ok(formatSeconds(2500) === '2.5s' && formatSeconds(-1) === '0.0s',
+     'T-013: seconds format to one decimal');
+  ok(killsPerHundredShots(3, 12) === 25 && killsPerHundredShots(0, 0) === null &&
+     killsPerHundredShots(1, 3) === 33.3,
+     'T-013: kills-per-100-shots is null with no shots and rounded to 0.1 otherwise');
+  {
+    const base = {
+      elapsedMs: 61000, distanceM: 214.7, kills: 12, shots: 90, falls: 2, airJumps: 7,
+      bestWeapon: { name: 'SPREAD', kills: 8 }, deaths: 1, attempts: 3,
+      altitudeTiles: 41.2, bands: 2, setbacks: 0, minEdgeMargin: 1.234,
+      score: { enabled: false },
+    };
+    const labels = (rows) => rows.map((r) => r.label);
+    const six = runStatRows({ ...base, mode: 'six-face' });
+    ok(labels(six).includes('TIME') && labels(six).includes('DISTANCE') &&
+       labels(six).includes('KILLS') && labels(six).includes('DEATHS'),
+       'T-013: the six-face stats screen reports time, distance, kills and deaths');
+    ok(six[0].label === 'TIME' && six[0].value === '1:01.0',
+       'T-013: time leads the stats screen');
+    ok(six.every((r) => typeof r.label === 'string' && typeof r.value === 'string' &&
+                        r.value.length > 0),
+       'T-013: no stats row is empty or undefined');
+    const trav = runStatRows({ ...base, mode: 'traversal' });
+    ok(labels(trav).includes('ATTEMPT') && !labels(trav).includes('DISTANCE') &&
+       !labels(trav).includes('DEATHS'),
+       'T-013: the fixture stats screen counts attempts, not metres or lives');
+    const xf = runStatRows({ ...base, mode: 'transform' });
+    ok(labels(xf).includes('ALTITUDE') && labels(xf).includes('TURNS') &&
+       xf.find((r) => r.label === 'TURNS').value === '2 / 2',
+       'T-013: the transform stats screen reports altitude climbed and turns taken');
+    ok(!labels(six).includes('THREAT') && !labels(six).includes('CHARGE'),
+       'T-013: the score prototype adds no rows while ?score=1 is off');
+    const scored = runStatRows({ ...base, mode: 'six-face',
+      score: { enabled: true, threat: 420, classification: 'HOT', notch: 2,
+               notchName: 'BREAKING', hotMs: 30000, playMs: 61000 } });
+    ok(labels(scored).includes('THREAT') && labels(scored).includes('CHARGE') &&
+       labels(scored).includes('HOT'),
+       'T-013: ?score=1 folds the protoScore fields into the same screen');
+    ok(runStatRows({ mode: 'six-face' }).length > 0,
+       'T-013: an empty run still produces a stats screen');
+    ok(!labels(runStatRows({ ...base, mode: 'six-face', setbacks: 0 })).includes('HULL FALLBACKS') &&
+       labels(runStatRows({ ...base, mode: 'traversal', setbacks: 3 })).includes('HULL FALLBACKS'),
+       'T-013: hull fallbacks appear only when the run actually took some');
+  }
+
+  // --- static guards: ui-layer only, no assets, harness path intact -----
+  {
+    const shellSrc = readFileSync(join(srcDir, 'ui', 'shell.js'), 'utf8');
+    const shellCode = stripComments(shellSrc);
+    const imports = [...shellSrc.matchAll(/^\s*import\s*(?:{([^}]*)}\s*from\s*)?['"]([^'"]+)['"]/gm)]
+      .map((m) => ({ names: (m[1] || '').split(',').map((s) => s.trim()).filter(Boolean), spec: m[2] }));
+    ok(imports.length > 0, 'T-013: the shell module declares imports');
+    ok(imports.every((im) => !/render|three/i.test(im.spec)),
+       'T-013: ui/shell.js imports nothing from the render layer or three.js');
+    // every sim import is a read surface — no setters, no spawners, no state writes
+    const shellSimAllow = {
+      '../sim/time.js': ['gameMs', 'scrollX', 'sliceStats'],
+      '../sim/player.js': ['player', 'P'],
+      '../sim/hostiles.js': ['kills'],
+      '../sim/weapons.js': ['shotsFired', 'weaponDef', 'weaponKills'],
+      '../sim/score.js': ['scoreSnapshot'],
+      '../sim/transform.js': ['committedBand', 'transformAltitudeAt'],
+    };
+    for (const im of imports) {
+      if (!im.spec.startsWith('../sim/')) continue;
+      const allow = shellSimAllow[im.spec];
+      ok(!!allow && im.names.length > 0 && im.names.every((n) => allow.includes(n)),
+         'T-013: shell sim import is a sanctioned read surface: ' +
+         im.spec + ' { ' + im.names.join(', ') + ' }');
+    }
+    ok(!/\b(setState|resetGame|spawn\w+|setScrollX|advanceGameMs)\s*\(/.test(shellCode),
+       'T-013: the shell never drives the run itself (lifecycle stays in src/main.js)');
+    for (const f of layerFiles('sim'))
+      ok(!/\bshell\b/.test(stripComments(readFileSync(f, 'utf8'))),
+         'T-013: sim untouched by the shell: ' + f);
+    // no image assets anywhere in the shell: the composition is flat-shaded
+    // CSS (task constraint, and it keeps the no-build-step rule)
+    const htmlSrc = readFileSync(join(here, '..', 'index.html'), 'utf8');
+    for (const [label, src] of [['index.html', htmlSrc], ['ui/shell.js', shellSrc],
+                                ['pure/shell.js', readFileSync(join(srcDir, 'pure', 'shell.js'), 'utf8')]])
+      ok(!/\burl\(|<img|\.png|\.jpg|\.svg|background-image/i.test(src),
+         'T-013: no image assets referenced in ' + label);
+    ok(/id="shell"/.test(htmlSrc) && /id="ovPanel"/.test(htmlSrc),
+       'T-013: index.html carries the shell root and the overlay panel slot');
+    ok(htmlSrc.indexOf('id="ovTitle"') < htmlSrc.indexOf('id="ovPanel"') &&
+       htmlSrc.indexOf('id="ovPanel"') < htmlSrc.indexOf('id="ovBody"'),
+       'T-013: the shell panel sits between the overlay title and body');
+
+    // the overlay still owns (and still writes first) the text the playtest
+    // harness scrapes; the shell is appended after it
+    const overlaySrc = stripComments(readFileSync(join(srcDir, 'ui', 'overlay.js'), 'utf8'));
+    ok(overlaySrc.indexOf('drawStateScreen(next)') < overlaySrc.indexOf('shellStateChanged(next)'),
+       'T-013: the overlay draws its own title/body before the shell adds its panel');
+    for (const title of ['TRAVERSAL CLEAR', 'BREACH CLEAR', 'SECTOR CLEAR', 'SIGNAL LOST',
+                         'ROUTE LOST', 'PAUSED'])
+      ok(overlaySrc.includes("'" + title + "'"),
+         'T-013: overlay outcome title still published unchanged: ' + title);
+
+    // the harness safety net itself: an automated session must auto-start
+    const modeSrc = stripComments(readFileSync(join(srcDir, 'mode.js'), 'utf8'));
+    ok(/SHELL_AUTOSTART\s*=[^;]*QUERY\.has\('testapi'\)/.test(modeSrc) &&
+       /SHELL_AUTOSTART\s*=[^;]*QUERY\.has\('selftest'\)/.test(modeSrc),
+       'T-013: ?testapi=1 and ?selftest=1 both auto-start past the title screen');
+    ok(/SHELL_ENABLED\s*=\s*SHELL_RAW\s*!==\s*'0'/.test(modeSrc),
+       'T-013: ?shell=0 restores the pre-shell boot');
+    const mainCode = stripComments(mainSrc);
+    ok(/if \(SHELL_ENABLED && !SHELL_AUTOSTART\) setState\('MENU'\);/.test(mainCode),
+       'T-013: main.js parks at the title only when the shell is on and not auto-starting');
+    ok(/if \(intent === 'start'\) startRun\(\);\s*\/\/ fall through/.test(mainSrc),
+       'T-013: leaving the title does not consume the keypress that did it');
+    ok(mainCode.indexOf('shellKeyIntent(e.code, state)') > 0 &&
+       mainCode.indexOf('shellKeyIntent(e.code, state)') < mainCode.indexOf('const k = KEYMAP[e.code];'),
+       'T-013: the shell gets first look, then the ordinary gameplay path runs');
+  }
 }
 
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');

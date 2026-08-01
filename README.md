@@ -23,6 +23,17 @@ python3 -m http.server 8741
 # → http://127.0.0.1:8741/index.html
 ```
 
+The game boots to its **start screen** — a composition study of concept
+board 05's middle direction ("The Ship Wakes"); press any key (or click) to
+run. `?title=climb|crown` (or the `1`/`2`/`3` keys on the screen itself)
+swaps to the other two board-05 directions; none of the three has been
+judged canon yet. `?shell=0` restores the pre-shell boot, straight into the
+run. **Automated sessions never see the title:** `?testapi=1` (every bot
+playtest) and `?selftest=1` boot directly into PLAYING, and even when the
+title is up it starts the run on the same keypress that plays the
+game — it never swallows an input. `?shell=title` forces the title screen
+even under those flags, which is how the harness screenshots it.
+
 The focused traversal playtest is available at
 `index.html?slice=traversal`. Add `&enemies=0` to tune movement without wasps.
 The normal six-face run remains the default. The camera defaults to the
@@ -50,8 +61,11 @@ is trying to prove and `artifacts/g1-limbturn/` for the frames.
 | J (or X) | Fire (hold for auto) |
 | Shift | Strafe-lock (freeze aim while moving) |
 | Down + Jump | Drop through catwalks |
-| P / Esc | Pause |
-| R | Restart (any time in the traversal slice; on death/victory elsewhere) |
+| P / Esc | Pause (the pause screen carries the options panel) |
+| R | Restart (any time in the traversal slice; while paused, or on death/victory, elsewhere) |
+| Q | Back to the start screen (from pause, death or victory) |
+| H | Hide/show the HUD (start screen or pause) |
+| 1 / 2 / 3 | Start screen only: swap the board-05 composition |
 
 ## Current build: grey-box v3 — "corner waves"
 
@@ -110,9 +124,9 @@ modules, each importing only downward:
 | Layer | Contents |
 | --- | --- |
 | `src/config.js` | `CONFIG` — every normal-run tuning constant, plus the derived weapon roster |
-| `src/pure/` | deterministic math and data with no imports outside this layer: `rng`, `path` (tower polyline), `waves` (ritual/zipper choreography), `traversal` (the slice fixture + movement decisions), `generator` (level + spawn tables) |
+| `src/pure/` | deterministic math and data with no imports outside this layer: `rng`, `path` (tower polyline), `waves` (ritual/zipper choreography), `traversal` (the slice fixture + movement decisions), `generator` (level + spawn tables), `shell` (start-screen compositions, run-stat rows, the shell's key-intent table) |
 | `src/sim/` | the simulation: `time`, `edges`, `input`, `level`, `player`, `weapons`, `hostiles`, `capsules`, `mods`, `spawner`, `wavegate`, `scroll`, `state`. **No module here references THREE, `document` or `window`** |
-| `src/render/` + `src/ui/` | `scene`, `tower` (s,y → 3D), `level` (instanced tiles/slats), `camera`, `player`, `hostiles`, `capsules`, `bullets`, `mods`, `fx` stub; `hud`, `overlay`, `tint` |
+| `src/render/` + `src/ui/` | `scene`, `tower` (s,y → 3D), `level` (instanced tiles/slats), `camera`, `player`, `hostiles`, `capsules`, `bullets`, `mods`, `fx` stub; `hud`, `overlay`, `shell` (title / options / run stats), `audio`, `tint` |
 
 - `src/main.js` is the composition root: input wiring, the frame loop,
   `resetGame`, the self-test, and the debug handle.
@@ -195,6 +209,11 @@ Two read-only channels expose the same sampler, so they cannot drift:
     turn is pending) and `sealX` (raw `-Infinity` until one commits).
   - `pace`, `pursuitSpeed`, `pursuitPeak`, `setbacks`, `score`, and the
     movement-verb blocks `hook` / `flow` (present only with their flags).
+  - `shell` (absent with `?shell=0`) — the front end's own state:
+    `{enabled, autostart, atTitle, direction, directions, hud, runMs}`, so a
+    bot run can prove it was never parked on the start screen. `state` reads
+    `'MENU'` while the title holds a built-but-frozen run; an automated
+    session auto-starts and never sees it.
 - `window.HB` is always present and is a superset: the fields above plus
   `player.{hp,lives,facing,airJumpsLeft}`, `capsules[]`, `kills`,
   `shotsFired`, `scrollEnd`, `edgeLeft`, `edgeRight`, and a copy of
@@ -203,7 +222,9 @@ Two read-only channels expose the same sampler, so they cannot drift:
   `HB.mods`, `HB.sliceStats`, `HB.keys`, `HB.CONFIG`, `HB.fixture`,
   `HB.levelData`) and getters
   (`HB.state()`, `HB.scrollX()`, `HB.gameMs()`, `HB.currentWeapon()`,
-  `HB.kills()`, `HB.shotsFired()`, `HB.edges()`, `HB.view()`), plus `HB.g1`
+  `HB.kills()`, `HB.shotsFired()`, `HB.edges()`, `HB.view()`,
+  `HB.shell()` — the same shell block the telemetry channel publishes),
+  plus `HB.g1`
   (the limb bake's piece count and fog band, or null) — render-mode facts are
   deliberately kept out of the frozen channel so a default-vs-`?g1=1` trace
   comparison has nothing mode-dependent in it to explain away.

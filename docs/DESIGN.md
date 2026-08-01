@@ -456,6 +456,34 @@ carriers still drop!) · CHRONO 4s, world at 0.35× while the player and
 their bullets run full speed (world timers stay realtime — known, small
 simplification).
 
+### Game shell (shipped, T-013)
+
+The front end from development-sequence item 8, minus onboarding and
+accessibility: a start screen, a pause/options panel, the death/restart
+flow, and an end-of-run stats screen. It is ui-layer only — the run
+lifecycle stays in `src/main.js`, the state screens stay in
+`src/ui/overlay.js` (whose outcome titles and body lines are unchanged, so
+the bot harness classifies runs exactly as before), and the stats screen
+formats counters the game already keeps rather than adding sim state.
+
+The start screen is a **composition study of concept board 05**, built from
+flat-shaded CSS boxes and gradients with no image assets. Board 05's three
+brand-promise directions are all implemented and swappable at runtime
+(`1`/`2`/`3`, or `?title=climb|wake|crown`); the middle one ("The Ship
+Wakes") ships as the default because the concept-art pack calls it the most
+game-specific, **not because a direction has been judged** — that verdict is
+queued for the operator. The compositions obey the same invariants the game
+does: RIG at 3–5% of frame height (board 13), DESIGN's ≤8 colour roles, and
+the static-anatomy rule (nothing on the screen assembles; only light,
+vapour and haze move). Those invariants live as data in `src/pure/shell.js`
+so `tools/pathcheck.mjs` asserts them headlessly.
+
+`?shell=0` restores the pre-shell boot exactly. The harness contract is
+two-layered: `?testapi=1` and `?selftest=1` auto-start past the title, and
+the shell's key-intent table never consumes a `KEYMAP` key — leaving the
+title happens on the same press that plays the game, so no committed bot
+script can lose its first input (both halves asserted in pathcheck).
+
 ## Development sequence
 
 Build narrow playable slices and prove the new grammar before producing the
