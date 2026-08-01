@@ -14,7 +14,9 @@
 // approximately comparable. Threat-readability judgments should use the
 // whole frame, not pixel deltas.
 //
-//   node palette-capture.mjs        — capture all scenes, both palettes, + pairs
+//   node palette-capture.mjs                  — all scenes, both palettes, + pairs
+//   node palette-capture.mjs transform-boot   — just the named scene tag(s)
+//     (used to refresh one pair after a merge reworks only that slice)
 
 import { chromium } from 'playwright-core';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -125,10 +127,17 @@ async function composePair(browser, tag) {
   await page.close();
 }
 
+const only = process.argv.slice(2);
+const picked = only.length ? SCENES.filter((s) => only.includes(s.tag)) : SCENES;
+if (!picked.length) {
+  console.error(`no scene matches [${only.join(', ')}]; tags: ${SCENES.map((s) => s.tag).join(', ')}`);
+  process.exit(1);
+}
+
 const server = await startStaticServer(repoRoot, { port: 0 });
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 try {
-  for (const scene of SCENES) {
+  for (const scene of picked) {
     for (const pal of PALETTES) {
       const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
       const page = await context.newPage();

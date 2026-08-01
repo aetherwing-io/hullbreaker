@@ -760,15 +760,26 @@ tools/playtest/
   runs/                     default ad-hoc output dir (gitignored)
   viewscale-capture.mjs     dev-only screenshot rig for the ?view= experiment
   palette-capture.mjs       dev-only screenshot rig for the T-010 palette pass:
-                            same moment in concept (default) vs ?palette=classic
+                            same scene in concept (default) vs ?palette=classic
                             across sixface/traversal/g1/transform at ?view=far,
                             plus labeled side-by-side pairs. Writes to
                             artifacts/palette-v1/ at the served repo root (a
                             worktree serves itself). HONESTY: pairs are matched
                             by identical input schedules + the seeded sim rng,
-                            not frame-locked replay — sprite positions can
-                            differ by a frame or two of timing jitter; judge
+                            not frame-locked replay. Timed captures differ by at
+                            most a frame or two of jitter, but the
+                            traversal-action scene is EVENT-triggered (it polls
+                            for airborne-near-hostile), so its two sides can
+                            fire seconds apart — different sprite positions and
+                            center-HUD hint states are expected there. Judge
                             palette/composition, not pixel deltas.
+  transform-capture.mjs    dev-only evidence script for the CP3 transform slice:
+                            keyframe screenshots keyed on the ?testapi=1 transform
+                            block's ritual clock (run.mjs's fixed sampling cadence
+                            cannot pin frames to ritual beats). Honesty: frames are
+                            taken when a polled predicate first passes, so each
+                            frame's true tMs is recorded in index.json — trust
+                            those numbers, not the filenames, for beat placement.
 ```
 
 ## Single best next action

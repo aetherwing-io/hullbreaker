@@ -482,7 +482,13 @@ entire climb:
    `?slice=transform`) and judged at checkpoint CP3: directionally right, but
    the transition choreography itself was called choppy — see the render
    rule added to "World-transformation grammar" above and `decisions.md`
-   entry 3. A second pass applying that rule is expected before CP3 is met.
+   entry 3. The second pass applying that rule is implemented (T-001: the
+   access plate relocks flush on the ratchet hold and persists, the vent
+   cover blows open to a caught stop with a vapor burst that clears before
+   the camera commits — no debris, nothing vanishing — and the slice's fog
+   now rides the camera pull-back so the prebuilt interior reads at the
+   far default; evidence in `artifacts/cp3-transform-v3/`). CP3's
+   re-judgment of that pass is still pending.
 3. **Combat grammar:** add houndframe, polyp, and mortar one at a time. Prove
    each enemy's tell, movement answer, weapon interaction, and two-enemy
    combination before adding the next. **Houndframe merged and judged**

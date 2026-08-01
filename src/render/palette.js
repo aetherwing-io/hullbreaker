@@ -72,6 +72,7 @@ export const CLASSIC = {
   shots: CONFIG.palette.shots,
   tints: CONFIG.palette.tints,
   rain: 0x9fb4c6,
+  vapor: 0xaebbc6,                       // breach pressure burst (T-001's literal, verbatim)
   hemiSky: 0xcfd8e3, hemiGround: 0x3a3f46, sun: 0xffffff,
   limbBg: CONFIG.limb.bg,
   limb: {                                // ?g1=1 armour ladder (was limb.js BASE_COLORS)
@@ -117,6 +118,8 @@ export const CONCEPT = {
   shots: CONFIG.palette.shots,           // R is already warm white; letters keep identity
   tints: CONFIG.palette.tints,
   rain: 0xa9cfc8,                        // weather leans teal-white, not steel blue
+  vapor: 0xc2ded8,                       // breach burst: brighter of the same teal-white
+                                         // atmosphere family, so it clears INTO the haze
   hemiSky: 0xd2e6e2, hemiGround: 0x36453f, sun: 0xfff1dc,   // teal ambient, warm key
   limbBg: 0x2f565e,                      // haze: raw teal, still above the perceived deck
   limb: {

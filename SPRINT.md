@@ -22,7 +22,7 @@ The default six-face run, start → summit → victory, playable end-to-end with
 
 ## Queue
 
-## T-001 | feature | doing | P1
+## T-001 | feature | done | P1
 
 goal: CP3 second pass — rework the transform slice (`?slice=transform`) to the
 static-anatomy render rule, so flip and breach read as RIG ascending around a
@@ -73,7 +73,11 @@ accept:
 - [ ] before/after screenshots attached for the operator packet
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; tools/playtest run at ?view=far with screenshots
-notes: sequenced after T-004 merges (both touch render/hostiles).
+notes: sequenced after T-004 merges (both touch render/hostiles). Use
+T-015's scale-true viewer (`tools/assets/view.mjs`) and its measured
+finding (capsule = 9.6px at FAR; see checkpoint queue) as the evidence
+base; the operator's direction pick (world-space scale-up vs HUD read)
+steers the implementation.
 
 ## T-004 | feature | doing | P1
 
@@ -118,7 +122,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; named playtest script completing the rib-run
 
-## T-007 | docs | todo | P3
+## T-007 | docs | doing | P3
 
 goal: docs drift sweep — `tools/playtest/README.md` still lists "add hostiles
 to ?testapi=1" as an open hook request but the root README documents
@@ -132,12 +136,22 @@ accept:
 owner: docs
 verify: grep the claims against src/main.js telemetry + README
 
-## T-008 | feature | blocked | P2
+## T-008 | feature | doing | P2
 
-goal: G2 neck access-plate flip per the greybox-map proposal (its next gate
-fixture after G1).
-blocked-by: T-001 landing the static-anatomy grammar for the transform slice.
+goal: G2 neck access-plate flip gate fixture per the greybox-map proposal
+(`docs/proposals/2026-07-meridian-monster-greybox-map.md` §G2), building on
+T-001's landed static-anatomy grammar (relock-on-detent plate beat, see
+`artifacts/cp3-transform-v3/README.md`).
+accept:
+- [ ] G2 fixture implemented per the proposal's spec, behind a flag, off by
+      default; static-anatomy rule holds (only the plate moves)
+- [ ] sim gating stays inert-until-crossed and deterministic; pathcheck
+      green incl. new gate assertions
+- [ ] capture sequence (screenshots per beat) committed under artifacts/
+- [ ] operator packet queued (URL + questions per the proposal's own test
+      questions)
 owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; deterministic playtest script crossing G2
 
 ## T-009 | feature | todo | P1
 
@@ -160,7 +174,7 @@ verify: node tools/pathcheck.mjs; a new full-run playtest script (policy mode)
 notes: biggest task in the queue — split into sub-worktrees if needed;
 sequenced after T-001/T-004 merge to integrate their landings.
 
-## T-010 | art | todo | P1
+## T-010 | art | doing | P1
 
 goal: palette pass — replace the neutral grey-box palette with DESIGN's ≤8
 color roles (deep teal environment, rust-orange metal, acid-green enemy
@@ -193,7 +207,7 @@ verify: node tools/pathcheck.mjs; smoke suite; fps sampled via ?testapi=1
 notes: DESIGN's caveat stands — after this lands, re-ask any "boring"
 verdicts, since some perceived intensity is feedback.
 
-## T-012 | audio | todo | P2
+## T-012 | audio | doing | P2
 
 goal: WebAudio synth layer — procedural SFX (hit, hurt, jump, launch, pickup,
 warning, ritual snaps, weapon-per-type fire) plus wave-layered mechanical
@@ -228,7 +242,7 @@ denial per DESIGN's enemy table, teach-then-combine after polyp.
 blocked-by: T-004 (polyp) merged and reading clean solo.
 owner: gameplay-engineer
 
-## T-015 | assets | todo | P2
+## T-015 | assets | doing | P2
 
 goal: codex asset pipeline bootstrap — `tools/assets/`: a `codex exec`
 wrapper spec template, SVG→PNG rasterizer using the harness's Chrome
@@ -243,7 +257,7 @@ accept:
 owner: asset-artist
 verify: node tools/assets/check.mjs; sample round-trip committed as demo
 
-## T-016 | feature | todo | P3
+## T-016 | feature | doing | P3
 
 goal: score/setback convergence toward CP4 — promote the CHARGE/THREAT
 prototype (`?score=1`) and Hull Fallback (`?fallback`) from slice prototypes
@@ -266,7 +280,27 @@ verify: node tools/pathcheck.mjs; scored-run playtest script
   explanation, and does it serve "every grab wants to become another launch"?
 - **Crouch vs aim-assist:** `?crouch=1` vs `?aim=assist` — keep one, both, or
   neither (decisions.md entry 4's open question).
-- **CP3 re-judgment:** after T-001 merges — post URL + screenshot sequence.
+- **CP3 re-judgment (v3, T-001):** `?slice=transform` (default far view;
+  `&enemies=0` to watch choreography, `&view=near` for the old framing).
+  Frames + webm + equivalence report in `artifacts/cp3-transform-v3/`.
+  Questions: (1) Does the flip now read as running into a pre-existing
+  opening — the plate relocking flush during the hold — rather than
+  geometry arriving? (2) Does the breach read as pressure escaping the
+  body (cover caught on its stop, vapor clearing by the second snap)
+  instead of the cover shattering into debris? (3) Chunkiness now lives
+  only in the camera detents plus the covers clacking with them — still
+  chonky enough, or too smooth? (4) At the far default, does the interior
+  passage read at the right compression now that its fog rides the camera
+  pull-back? (5) Does the altitude still feel earned on foot, with the
+  breach only *revealing* it?
+- **Glyph scale at FAR (T-015 finding — decide before any glyph batch):**
+  measured at rendered scale, a 0.55-tile capsule is 9.6px tall at the
+  shipped FAR view — chamfers and rivets vanish, the letter survives as a
+  smudge (`tools/assets/reports/demo/capsule-letter-h/viewer-far.png`).
+  This is the concrete evidence for entry 7's accepted readability
+  follow-up. Candidate directions: scale world-space glyphs up, or move
+  the letter read to the HUD. Asset batches are held until this is picked;
+  T-003 implements whichever direction wins.
 - **Palette v1 (T-010):** default (concept palette) vs `?palette=classic`, at
   FAR — the six-face run (`/index.html`), `?slice=traversal`, `?g1=1`, and
   `?slice=transform`. Side-by-side pairs in `artifacts/palette-v1/` (judge
