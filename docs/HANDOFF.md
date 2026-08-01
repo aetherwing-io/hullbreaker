@@ -325,7 +325,10 @@ convergence point once the remaining variants are judged:
    follow-up (ownership placement, roof contest, crouch/aim-assist
    prototypes, commit coil) merged and judged strongly positive ("enemies
    feel like they are coming for me") — see `decisions.md` entries 4 and 6.
-   Polyp and mortar not yet started.
+   The Iris Polyp turret v1 ships as the opt-in `?slice=traversal&polyp=1`
+   solo teach stage and `?polyp=2` two-enemy combination (beam sightline
+   lock on the post-mid lane, iris armour with vent openings, rooted
+   placement per entry 6's doctrine), unjudged. Mortar not started.
 3. Add baseline hit, hurt, launch, pickup, warning, and transformation feedback.
    (Deferred — `FLEET-PLAN.md` keeps juice/audio out of scope for this push.)
 4. Author the full six-phase escalation.

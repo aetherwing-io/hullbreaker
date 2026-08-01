@@ -91,9 +91,11 @@ Implemented:
   visibly curving around them — the operator's view-scale-verdict ruling
   that shots shouldn't snipe across corners)
 
-Not yet built (in build order): the remaining enemy roster (houndframe, polyp
-turret, spore mortar), the boss, the flight interlude, juice pass
-(shake/hit-stop/particles), menus, WebAudio synth. See `docs/DESIGN.md`.
+Not yet built (in build order): the spore mortar (houndframe is merged and
+judged; the Iris Polyp turret ships as the opt-in `?slice=traversal&polyp=1`
+solo / `?polyp=2` combination trial, awaiting its feel verdict), the boss,
+the flight interlude, juice pass (shake/hit-stop/particles), menus, WebAudio
+synth. See `docs/DESIGN.md`.
 
 ## Architecture
 
