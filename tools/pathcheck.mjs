@@ -3824,5 +3824,148 @@ const XL = buildTransformLevel(CONFIG);
   }
 }
 
+/* ---- T-002: ritual decision trace + frame-scoped input determinism ---- *
+ * The t2-transform-seam-rush investigation (docs/playtests/
+ * 2026-07-t2-frame-alignment.md) instrumented the transformation ritual's
+ * arming check and proved two properties this section pins down as regression
+ * assertions:
+ *   (1) THE TRACE CONTRACT — src/sim/transform.js's decision trace records,
+ *       for a rush at the seam, the halt/trigger/arm/start frames with the
+ *       halt-bound signature: RIG reaches triggerS first, parks at the
+ *       frontier clamp, and the ritual's start frame is set by the
+ *       autonomous scroll halt (binding 'halt'), with the start-frame
+ *       trigger margin equal to the frontier-to-trigger distance — i.e. the
+ *       arming check is NOT knife-edge on input arrival in the rush case.
+ *   (2) FRAME-SCOPED DETERMINISM — two headless transform-slice runs with
+ *       byte-identical, frame-indexed input produce bit-identical full
+ *       simulation traces. This is the boundary claim behind playtest
+ *       README hook request #5: everything nondeterministic about t2 lives
+ *       in browser-side input *delivery*, not in the sim.               */
+{
+  const simBase = 'file://' + join(srcDir, 'sim');
+  const xfChild = (drive, frames, extra) => `
+    globalThis.__HB_QUERY__ = 'slice=transform&enemies=0';
+    const [T, E, LV, SC, PLm, IN, ST, HO, WP, SP, XFm] = await Promise.all([
+      import(${JSON.stringify(simBase + '/time.js')}),
+      import(${JSON.stringify(simBase + '/edges.js')}),
+      import(${JSON.stringify(simBase + '/level.js')}),
+      import(${JSON.stringify(simBase + '/scroll.js')}),
+      import(${JSON.stringify(simBase + '/player.js')}),
+      import(${JSON.stringify(simBase + '/input.js')}),
+      import(${JSON.stringify(simBase + '/state.js')}),
+      import(${JSON.stringify(simBase + '/hostiles.js')}),
+      import(${JSON.stringify(simBase + '/weapons.js')}),
+      import(${JSON.stringify(simBase + '/spawner.js')}),
+      import(${JSON.stringify(simBase + '/transform.js')}),
+    ]);
+    const M = await import(${JSON.stringify('file://' + join(srcDir, 'mode.js'))});
+    const FX = M.ACTIVE_FIXTURE;
+    E.setEdges(-3.1, 24);
+    T.setScrollX(FX.run.startScroll);
+    const p = PLm.player;
+    p.x = FX.run.playerSpawn.x; p.y = FX.run.playerSpawn.y;
+    p.vx = 0; p.vy = 0; p.grounded = false;
+    ST.setState('PLAYING');
+    const dt = 1 / 60;
+    const rows = [];
+    let jumpUntil = 0;
+    for (let f = 0; f < ${frames}; f++) {
+      ${drive}
+      T.advanceGameMs(dt * 1000);
+      SC.updateScroll(dt);
+      SP.updateSpawner();
+      PLm.updatePlayer(dt);
+      if (ST.state !== 'PLAYING') break;
+      HO.updateHostiles(dt);
+      WP.updateBullets(dt);
+      rows.push([f, T.gameMs.toFixed(3), T.scrollX.toFixed(6),
+        p.x.toFixed(6), p.y.toFixed(6), p.vx.toFixed(6), p.vy.toFixed(6),
+        p.grounded ? 1 : 0, p.hp,
+        (XFm.activeTransformEvent() || { state: 'complete' }).state].join(','));
+      ${extra || ''}
+    }
+    PLm.cancelSliceRetry();
+    console.log(JSON.stringify({
+      rows: rows.length, digest: rows.join(String.fromCharCode(10)),
+      state: ST.state, x: p.x,
+      trace: XFm.transformDecisionTrace(),
+      afterReset: (XFm.resetTransform(), XFm.transformDecisionTrace()),
+    }));
+  `;
+  const runXf = (drive, frames, extra, label) => {
+    try {
+      return JSON.parse(execFileSync(process.execPath,
+        ['--input-type=module', '-e', xfChild(drive, frames, extra)],
+        { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
+    } catch (e) {
+      console.error('pathcheck: T-002 child (' + label + ') failed: ' + e.message);
+      return null;
+    }
+  };
+
+  // (1) reactive rush to the first seam: hold right, hop gaps and steps
+  const rushDrive = `
+      if (p.grounded &&
+          (LV.groundTopAt(p.x + 1.7) < -100 || LV.groundTopAt(p.x + 1.2) > p.y + 0.6)) {
+        IN.bufferJumpUntil(T.gameMs + 120);
+        IN.keys.jump = true;
+        jumpUntil = T.gameMs + 260;
+      }
+      if (T.gameMs > jumpUntil) IN.keys.jump = false;
+      IN.keys.right = true;
+  `;
+  const rush = runXf(rushDrive, 900,
+    'if (XFm.transformEvents[0].state === "done" && f > 0 && rows.length && ' +
+    'XFm.transformEvents[0].dFinishAt > 0 && T.gameMs > XFm.transformEvents[0].dFinishAt + 500) break;',
+    'rush');
+  ok(!!rush, 'the transform-slice sim rushes the first seam headlessly');
+  if (rush) {
+    const ev = rush.trace[0];
+    const XT2 = CONFIG.transform;
+    ok(ev.state === 'done' && ev.finishAt > 0,
+       'the rush completes the first ritual (state ' + ev.state + ')');
+    ok(ev.haltAt > 0 && ev.triggerAt > 0 && ev.armAt > 0 && ev.startAt > 0,
+       'the decision trace records halt/trigger/arm/start frames');
+    ok(ev.armAt <= ev.startAt && ev.startAt >= ev.haltAt && ev.startAt >= ev.triggerAt,
+       'trace ordering: armed before started, started after both preconditions');
+    ok(ev.triggerAt < ev.haltAt && ev.binding === 'halt',
+       'a rush is HALT-bound: RIG reaches the trigger ' +
+       ((ev.haltAt - ev.triggerAt) / 1000).toFixed(2) + 's before the scroll halt — ' +
+       'the arming check is not the input knife-edge (T-002)');
+    const frontierMargin = XT2.thresholdTiles - XT2.clampMargin - XT2.triggerOffset;
+    near(ev.startTriggerMargin, frontierMargin, 0.05,
+       'start-frame trigger margin equals the frontier-to-trigger distance ' +
+       '(RIG parked at the clamp, position contracted before the start frame)');
+    ok(rush.afterReset.every((d) => d.startAt === -1 && d.haltAt === -1 &&
+       d.triggerAt === -1 && d.armAt === -1 && d.finishAt === -1 && d.binding === null),
+       'resetTransform clears the whole decision trace');
+  }
+
+  // (2) frame-indexed blind schedule, run twice: bit-identical traces.
+  // Taps land on absolute FRAME numbers (down 13k+18, up 7 frames later) —
+  // the synchronous injection semantics of playtest README hook request #5.
+  const schedDrive = `
+      const ph = f % 13;
+      if (ph === 5) {
+        IN.bufferJumpUntil(T.gameMs + 120);
+        IN.keys.jump = true;
+      } else if (ph === 12) {
+        IN.keys.jump = false;
+      }
+      IN.keys.right = true;
+  `;
+  const runA = runXf(schedDrive, 600, '', 'sched-A');
+  const runB = runXf(schedDrive, 600, '', 'sched-B');
+  ok(!!runA && !!runB, 'the frame-indexed schedule runs headlessly twice');
+  if (runA && runB) {
+    ok(runA.rows === runB.rows && runA.digest === runB.digest,
+       'byte-identical frame-scoped input yields a bit-identical simulation ' +
+       'trace (' + runA.rows + ' frames) — t2 nondeterminism is input ' +
+       'DELIVERY, not the sim (T-002)');
+    ok(runA.state === runB.state && runA.x === runB.x,
+       'same end state and final position across the twin runs');
+  }
+}
+
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');
 process.exit(fails ? 1 : 0);
