@@ -20,10 +20,10 @@
 //               same telemetry() function in src/main.js so their shared
 //               fields (gameMs, state, scrollX, player.{x,y,vx,vy,grounded,
 //               traversalState}, edgeMargin, weapon, attempt, falls,
-//               airJumps, transform, pace, pursuitSpeed/Peak, setbacks)
-//               can't drift apart; HB.snapshot() additionally carries
-//               player.{hp,lives,facing,airJumpsLeft}, kills, shotsFired,
-//               hostiles, capsules. Note window.HB's *other* top-level
+//               airJumps, transform, pace, pursuitSpeed/Peak, setbacks,
+//               hostiles) can't drift apart; HB.snapshot() additionally
+//               carries player.{hp,lives,facing,airJumpsLeft}, kills,
+//               shotsFired, capsules. Note window.HB's *other* top-level
 //               members (HB.state, HB.scrollX, HB.currentWeapon, HB.kills,
 //               …) are getter *functions*, not values — this sampler only
 //               ever reads them through snapshot(), never as bare
@@ -40,12 +40,22 @@
 // carries it (HB.snapshot() does; testapi's frozen shape deliberately
 // doesn't).
 //
-// Hostiles/capsules enrichment (added for the closed-loop policy mode, which
-// needs to react to e.g. a houndframe's `tell` telegraph): window.HB is
-// unconditional, so its snapshot's `hostiles`/`capsules` arrays are merged in
-// as an extra layer *regardless* of which channel is primary for physics —
-// testapi does not expose hostiles/capsules at all as of this writing (see
-// README hook request), so this is currently the only source for them.
+// Hostiles/capsules (added for the closed-loop policy mode, which needs to
+// react to e.g. a houndframe's `tell` telegraph). These two are no longer the
+// same case:
+//
+//   `hostiles` rides the PRIMARY channel. `?testapi=1`'s telemetry() publishes
+//   it (game-side hook request #2, merged e7b2952) and HB.snapshot() spreads
+//   that same telemetry() result, so both channels carry byte-identical rows —
+//   {id, kind, state, dir, x, y, hp, materialized}. fromTelemetryLike() below
+//   normalizes it from whichever channel is primary; the window.HB read at the
+//   bottom is now only a fallback for a page that publishes HB without testapi
+//   (or a build predating e7b2952). That drops the last window.HB-specific
+//   dependency of the hostile-state predicates in lib/policy.mjs.
+//
+//   `capsules` is still HB-only — the frozen channel has no equivalent field —
+//   so it stays a pure enrichment layer, merged in regardless of which channel
+//   is primary for physics (see README hook request #2 and limitation #7).
 
 export function sampleState() {
   /* eslint-disable no-undef */
@@ -84,6 +94,17 @@ export function sampleState() {
     hostiles: null, capsules: null,
   };
 
+  // One normalizer for both sources, so a channel switch can't change the
+  // row shape the trace/policy engine sees. Defined inside sampleState()
+  // because this whole function is serialized to the page by source text.
+  function mapHostiles(list) {
+    return list.map((h) => ({
+      id: h.id, kind: h.kind, x: h.x, y: h.y, hp: h.hp,
+      state: h.state, dir: h.dir,          // houndframe: prowl/tell/charge/skid/tumble
+      materialized: h.materialized,
+    }));
+  }
+
   function fromTelemetryLike(s, fidelity) {
     return {
       ...base,
@@ -105,6 +126,9 @@ export function sampleState() {
       pursuitSpeed: typeof s.pursuitSpeed === 'number' ? s.pursuitSpeed : null,
       pursuitPeak: typeof s.pursuitPeak === 'number' ? s.pursuitPeak : null,
       setbacks: s.setbacks != null ? s.setbacks : null,
+      // primary-channel hostiles (both channels publish the same rows); null
+      // leaves the window.HB fallback below free to fill it.
+      hostiles: Array.isArray(s.hostiles) ? mapHostiles(s.hostiles) : null,
     };
   }
 
@@ -123,12 +147,10 @@ export function sampleState() {
     result = base;
   }
 
-  if (hbSnap && Array.isArray(hbSnap.hostiles)) {
-    result.hostiles = hbSnap.hostiles.map((h) => ({
-      id: h.id, kind: h.kind, x: h.x, y: h.y, hp: h.hp,
-      state: h.state, dir: h.dir,          // houndframe: prowl/tell/charge/skid/tumble
-      materialized: h.materialized,
-    }));
+  // fallback only: the primary channel already filled this unless it was dom
+  // fidelity, or a page with window.HB but no ?testapi=1.
+  if (result.hostiles == null && hbSnap && Array.isArray(hbSnap.hostiles)) {
+    result.hostiles = mapHostiles(hbSnap.hostiles);
   }
   if (hbSnap && Array.isArray(hbSnap.capsules)) {
     result.capsules = hbSnap.capsules.map((c) => ({ kind: c.kind, letter: c.letter, x: c.x, y: c.y, mode: c.mode }));

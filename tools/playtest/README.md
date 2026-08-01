@@ -649,16 +649,19 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    they were never actually affected by F7 — but any other harness output
    generated before this fix, from any script that died and kept running,
    measured a zombie attempt for everything after the first retry.
-7. **`houndTell`/`houndCharge` (and any future hostile-state predicate) are
-   still sourced from `window.HB`, but the game-side gap is closed.** Hook
-   request #2 below was granted: `?testapi=1`'s snapshot now carries
-   `hostiles[]` (same rows `HB.snapshot()` publishes — `src/main.js`, merged
-   `e7b2952`). The sampler (`lib/sampler.mjs`) still enriches every sample
-   from `window.HB.snapshot()`'s `hostiles` array as of this writing, so the
-   original caveat is narrower but not gone: a build that removed
-   `window.HB` while keeping `testapi` would still make these predicates
-   silently evaluate false, until the small harness-side follow-up (read
-   `hostiles` from the primary channel's own snapshot) lands.
+7. **`houndTell`/`houndCharge` (and any future hostile-state predicate) now
+   read hostiles from the primary channel — the `window.HB` dependency is
+   gone.** Hook request #2 below was granted game-side (`?testapi=1`'s
+   snapshot carries `hostiles[]`, the same rows `HB.snapshot()` publishes —
+   `src/main.js`, merged `e7b2952`), and the harness half landed with T-017:
+   `lib/sampler.mjs` normalizes `hostiles` out of whichever channel is
+   primary and only falls back to `window.HB.snapshot()` when the primary
+   didn't carry them (dom fidelity, or a page with `HB` but no `?testapi=1`).
+   A build that removed `window.HB` while keeping `testapi` no longer makes
+   these predicates silently evaluate false. **What is still `HB`-only:
+   `capsules`** — the frozen channel has no equivalent field, so any future
+   capsule-state predicate would re-acquire exactly the caveat this one just
+   shed, and `--no-testapi` runs still depend on `HB` for everything.
 8. **Deterministic mode fixes one jitter source, not all of them** — see
    "Deterministic injection mode" above. The `t2-transform-seam-rush`
    quantification is the concrete example: don't assume `--deterministic`
@@ -678,15 +681,24 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    (the module split's `src/main.js` publishes it; this harness just needed
    to stop dropping it, fixed above).
 2. ~~Add `hostiles` (with `state`/`dir`) to the `?testapi=1` snapshot~~ —
-   **done game-side** (merged `e7b2952`): `src/main.js`'s `telemetry()` now
-   publishes `hostiles[]` — `{id, kind, state, dir, x, y, hp, materialized}`
-   — as an additive field of the frozen channel, and the root README's
-   "Debug handles" section documents it. The harness-side half is still
-   open: `lib/sampler.mjs` still reads hostiles via its
-   `window.HB.snapshot()` enrichment (see limitation #7), so switching it to
-   the primary channel's own `hostiles` is the remaining, purely
-   harness-local change that would drop the last `window.HB`-specific
-   dependency.
+   **done, both halves.** Game-side (merged `e7b2952`): `src/main.js`'s
+   `telemetry()` publishes `hostiles[]` — `{id, kind, state, dir, x, y, hp,
+   materialized}` — as an additive field of the frozen channel, and the root
+   README's "Debug handles" section documents it. Harness-side (T-017):
+   `lib/sampler.mjs` normalizes those rows from whichever channel is primary,
+   with the old `window.HB.snapshot()` read demoted to a fallback. Verified as
+   a content no-op the direct way, because report-level metrics still carry the
+   residual jitter of limitation #8: reading **both** channels inside a single
+   `page.evaluate` (so sim time cannot advance between them) gave identical
+   hostile rows on 10/10 probes across a live traversal run — which is what
+   `HB.snapshot()` spreading the very `telemetry()` result the primary channel
+   returns predicts. `scripts/mid-route.json --deterministic` also still
+   reports `testapi` fidelity, `completed`, 1 attempt / 0 falls / 0 deaths / 1
+   hit, dare pocket entered, `minEdgeMargin` 35.43→35.44 tiles; its pacing
+   numbers move run to run by more than the change does (three post-change runs
+   spread `airMs` 5245–5656 and `protoScore` 86.7–137.6 among themselves).
+   `capsules` remains `HB`-only; no hook request is open for it because nothing
+   in the harness reads it yet.
 3. **Land `HB.score.events`/`HB.score.snapshot()`** per A.5 — the surface
    itself **has landed** with the CHARGE/THREAT prototype (`src/main.js`
    publishes `HB.score = {enabled, events, snapshot, reset}`; events flow
