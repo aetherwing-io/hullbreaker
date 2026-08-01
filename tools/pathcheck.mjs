@@ -62,8 +62,10 @@ import {
   TRANSFORM_BEND_S, TRANSFORM_FIXTURE, TRANSFORM_PATH, bandSlamOffset,
   buildTransformLevel,
   buildTransformPath, transformAltAt, transformAtmosphereMix, transformBandHeading,
-  transformBandIndexAt, transformEventTotalMs, transformFrontierS, transformHaltS,
+  transformBandIndexAt, transformCoverAjar, transformEventTotalMs, transformFrontierS,
+  transformHaltS,
   transformHeadingAt, transformPanelState, transformPathAt, transformScrollOffset,
+  transformVapor,
   transformScrollVel, transformSeamPull, transformSealS, transformTimeline,
   transformTriggerS, transformYawAt, transformYawDeltaDeg,
 } from '../src/pure/transform.js';
@@ -1655,22 +1657,171 @@ near(transformYawDeltaDeg(99999, CONFIG), 2 * XT.snapDeg, 1e-9, 'yaw clamped aft
   near(transformScrollVel(9999, sp, CONFIG), sp, 1e-9, 'scroll clamped to full speed after');
 }
 {
+  /* --- covers: mechanisms with hinges, not anatomy — and never debris ---
+   * The CP3 v3 grammar (decisions.md entry 3; greybox proposal G2/G4): the
+   * flip plate swings, clacks with the camera's detents, and RELOCKS flush
+   * during the hold; the vent cover is blown to its stop and caught ON the
+   * detent. Both persist forever — a cover that vanished or tumbled apart
+   * would be assembly played backwards.                                  */
+  const XC = XT.cover;
   const flipEv = XF.events[0], breachEv = XF.events[1];
-  const closed = transformPanelState(0, flipEv, CONFIG);
-  const jolted = transformPanelState(XT.windUpMs - 0.001, flipEv, CONFIG);
-  const opened = transformPanelState(XTL.t4, flipEv, CONFIG);
-  const gone = transformPanelState(XTL.t6, flipEv, CONFIG);
-  ok(closed.open === 0 && closed.jolt === 0 && closed.visible, 'panel starts closed and latched');
-  near(jolted.jolt, XT.panelJoltTiles, 0.01, 'the latch jolts through the wind-up');
-  ok(opened.open === 1 && opened.blow === 0, 'the bulkhead leaf tracks the snaps to fully open');
-  ok(!gone.visible, 'the panel is gone once the ritual ends');
-  near(transformPanelState(XTL.t2, flipEv, CONFIG).open, 0.5, 1e-9,
-       'the leaf is exactly half open on snap 1 — it clacks with the world');
-  const blown = transformPanelState(XT.windUpMs + XT.panelBlowMs, breachEv, CONFIG);
-  ok(blown.blow === XT.panelBlowTiles && blown.spin > Math.PI,
-     'the hull panel is blown clear and tumbling by the end of its flight');
-  ok(transformPanelState(XTL.t4, breachEv, CONFIG).blow === XT.panelBlowTiles,
-     'the breach panel is clear before the surface commits');
+
+  // The pure state exposes exactly a hinged mechanism: swing + latch + seat.
+  // No blow distance, no spin — the disintegrating-cover API is gone.
+  const shape = Object.keys(transformPanelState(500, breachEv, CONFIG)).sort().join();
+  ok(shape === 'jolt,open,seated,visible',
+     'cover state is hinge-swing only (no blow/spin fields), got ' + shape);
+
+  // Arm phase: latch throw, one heavy swing to ajar, then dead still.
+  ok(transformCoverAjar(0, CONFIG) === 0 &&
+     transformCoverAjar(XC.unlatchMs, CONFIG) === 0,
+     'the plate holds shut through the latch throw');
+  near(transformCoverAjar(XC.unlatchMs + XC.ajarMs, CONFIG), XC.ajarFrac, 1e-9,
+       'the arm swing lands exactly at ajar');
+  near(transformCoverAjar(1e9, CONFIG), XC.ajarFrac, 1e-9,
+       'and holds there: ajar is a rest state, not a drift');
+  {
+    let peak = 0;
+    for (let t = 0; t <= XC.unlatchMs + XC.ajarMs; t += 2)
+      peak = Math.max(peak, transformCoverAjar(t, CONFIG));
+    ok(peak > XC.ajarFrac && peak < XC.ajarFrac * 1.1,
+       'the arm swing overshoots once and settles, peak ' + peak.toFixed(3));
+  }
+  ok(XC.ajarFrac >= 0.75 && XC.ajarFrac < 0.9,
+     'ajar clears the combat lane and still visibly owes the relock');
+  // Even a full sprint from the arming lookahead cannot outrun the swing, so
+  // a ritual never fires against a half-open plate.
+  const sprintMs = (XT.armLookahead + XT.triggerOffset) / PL.runSpeed * 1000;
+  ok(sprintMs > XC.unlatchMs + XC.ajarMs,
+     'the arm window outlasts the swing at a sprint (' + sprintMs.toFixed(0) +
+     ' > ' + (XC.unlatchMs + XC.ajarMs) + ' ms)');
+
+  // Flip ritual: ajar → clacks with snap 1 → relocks during the hold →
+  // seated flush forever (G2: snap 1 exposes and carries the plate, the hold
+  // rotates and relocks only the plate, snap 2 commits only the camera).
+  const f0 = transformPanelState(0, flipEv, CONFIG);
+  near(f0.open, XC.ajarFrac, 1e-9,
+       'the ritual takes the plate exactly where the arm swing left it');
+  ok(!f0.seated && f0.visible, 'ajar is not seated, and the plate is in the world');
+  {
+    let flat = true;
+    for (let t = 0; t <= XTL.t1; t += 1)
+      if (transformPanelState(t, flipEv, CONFIG).open !== XC.ajarFrac) flat = false;
+    ok(flat, 'the plate waits out the wind-up: its next beat is the camera detent');
+  }
+  near(transformPanelState(XTL.t2, flipEv, CONFIG).open, XC.snapFrac, 1e-9,
+       'snap 1 carries the plate to snapFrac — it clacks with the view');
+  const seatT = XTL.t2 + XC.relockMs;
+  ok(XC.relockMs < XT.holdMs,
+     'the relock finishes inside the ratchet hold, before snap 2');
+  ok(transformPanelState(seatT - 1, flipEv, CONFIG).seated === false &&
+     transformPanelState(seatT, flipEv, CONFIG).seated === true,
+     'the seat clack lands at t2+relockMs exactly');
+  {
+    // Monotone up to the snap's own settle: easeOutBack overshoots by design,
+    // and that settle is bounded by the overshoot of the yaw curve it rhymes
+    // with — anything larger would read as the plate bouncing.
+    const settle = (XC.snapFrac - XC.ajarFrac) * 0.06;
+    let mono = true, prev = -1;
+    for (let t = 0; t <= XTL.t6; t += 1) {
+      const v = transformPanelState(t, flipEv, CONFIG).open;
+      if (v < prev - settle) mono = false;
+      prev = v;
+    }
+    ok(mono, 'the plate never swings backwards beyond its own snap settle');
+  }
+  for (const t of [seatT, XTL.t3, XTL.t4, XTL.t6, 1e9]) {
+    const st = transformPanelState(t, flipEv, CONFIG);
+    ok(st.open === 1 && st.seated && st.visible,
+       'relocked flush and STAYS at t=' + t + ': nothing pops out of the world');
+  }
+
+  // Breach ritual: shut and straining, blown to the stop across snap 1 — one
+  // overswing, caught ON the detent — then dead still, hanging, forever.
+  const b0 = transformPanelState(0, breachEv, CONFIG);
+  ok(b0.open === 0 && b0.visible, 'the vent cover starts shut');
+  {
+    let shut = true;
+    for (let t = 0; t <= XTL.t1; t += 1)
+      if (transformPanelState(t, breachEv, CONFIG).open !== 0) shut = false;
+    ok(shut, 'the vent cover only strains through the wind-up — the blow is on the detent');
+    near(transformPanelState(XTL.t1 - 0.001, breachEv, CONFIG).jolt, XT.panelJoltTiles, 0.01,
+         'the strain jolt peaks as the wind-up ends');
+  }
+  {
+    let bpeak = 0;
+    for (let t = XTL.t1; t <= XTL.t2; t += 0.5)
+      bpeak = Math.max(bpeak, transformPanelState(t, breachEv, CONFIG).open);
+    ok(bpeak > 1.1 && bpeak < 1.5,
+       'the cover is blown past its stop once and caught, peak ' + bpeak.toFixed(2));
+  }
+  near(transformPanelState(XTL.t2, breachEv, CONFIG).open, 1, 1e-9,
+       'caught ON the first detent: the blow and the view clack together');
+  for (const t of [XTL.t3, XTL.t4, XTL.t6, 1e9]) {
+    const st = transformPanelState(t, breachEv, CONFIG);
+    ok(st.open === 1 && !st.seated && st.visible,
+       'the vent cover hangs on its caught stop at t=' + t + ' — no tumble, no vanish');
+  }
+}
+{
+  // --- vapor: the atmosphere is what moves, and it clears before commit ---
+  near(transformVapor(XTL.t1, CONFIG).density, 0, 1e-9, 'no vapor before the blow');
+  near(transformVapor(XTL.t2, CONFIG).density, 1, 1e-9, 'the burst peaks ON the first detent');
+  near(transformVapor(XTL.t4, CONFIG).density, 0, 1e-9,
+       'the sightline is fully clear when snap 2 commits the camera (G4)');
+  near(transformVapor(1e9, CONFIG).density, 0, 1e-9, 'and stays clear');
+  {
+    let rise = true, fall = true, prev = -1;
+    for (let t = XTL.t1; t <= XTL.t2; t += 1) {
+      const v = transformVapor(t, CONFIG).density;
+      if (v < prev - 1e-12) rise = false;
+      prev = v;
+    }
+    prev = 2;
+    for (let t = XTL.t2; t <= XTL.t4; t += 1) {
+      const v = transformVapor(t, CONFIG).density;
+      if (v > prev + 1e-12) fall = false;
+      prev = v;
+    }
+    ok(rise && fall, 'vapor rises to the detent and only clears after it');
+    let reachMono = true;
+    prev = -1;
+    for (let t = 0; t <= XTL.t6; t += 1) {
+      const v = transformVapor(t, CONFIG).reach;
+      if (v < prev - 1e-12) reachMono = false;
+      prev = v;
+    }
+    ok(reachMono && transformVapor(XTL.t4, CONFIG).reach === 1,
+       'the burst travels outward monotonically and has fully left by commit');
+  }
+}
+{
+  // --- the ritual grants no altitude: the climb is run, not snapped ------
+  for (const ev of XF.events) {
+    const gained = transformAltAt(XP, ev.seamS + XT.chamferTiles) -
+                   transformAltAt(XP, ev.seamS - XT.chamferTiles);
+    ok(gained <= 2 * XT.chamferTiles * 0.45 + 1e-9,
+       ev.id + ' grants at most a stride of altitude across its chamfer, got ' +
+       gained.toFixed(2));
+  }
+}
+{
+  // --- static guards: the rework is render-only by construction ----------
+  // No sim module can see the cover/vapor choreography, so no gameplay
+  // decision can depend on it: the sim-equivalence claim in one grep, the
+  // same style of proof the G1 limb bake uses.
+  for (const file of layerFiles('sim')) {
+    const src = stripComments(readFileSync(file, 'utf8'));
+    ok(!/transformPanelState|transformVapor|transformCoverAjar/.test(src),
+       file.split('/').pop() + ' never reads the cover choreography');
+  }
+  // …and the transition render can never call the retired assembly curves
+  // or grow a debris system back.
+  const rsrc = stripComments(readFileSync(join(srcDir, 'render', 'transform.js'), 'utf8'));
+  ok(!/bandSlamOffset|zipperOffset/.test(rsrc),
+     'src/render/transform.js never calls assembly choreography');
+  ok(!/debris|tumbl/i.test(rsrc),
+     'no debris system in the transition render: covers stay whole');
 }
 near(transformAtmosphereMix(XTL.t1, CONFIG), 0, 1e-9, 'atmosphere starts at the first snap');
 near(transformAtmosphereMix(XTL.t4, CONFIG), 1, 1e-9, 'atmosphere completes when the surface does');
