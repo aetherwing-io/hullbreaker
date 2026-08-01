@@ -369,6 +369,22 @@ predates the polyp and currently names only wasp/hound tells and capsule
 glyphs. T-003 is already sequenced after T-004's merge, so this is a
 scope note, not new work.
 
+## I-004 | art | S3 | repro: any run at default palette on task/T-010 0c4c003; compare src/render/hostiles.js color reads vs src/render/palette.js CONCEPT.wasp/carrier/hound tokens, or board 01's wasps vs artifacts/palette-v1/sixface-action--pair.png | evidence: reports/tasks/T-010/playtest.md; artifacts/palette-v1/sixface-action--pair.png
+
+Found while gating T-010 (palette pass, PASS): the ENEMY acid-green role
+lands only partially — `src/render/hostiles.js` still reads
+`CONFIG.palette.wasp/carrier/hound/houndTell/houndCharge` directly (the
+muted grey-box greens, e.g. wasp 0x7cc47c), not the brighter acid tokens
+palette.js's CONCEPT table authors (wasp 0x9ce23e, enemyGlow 0x9dff3a).
+Deliberate lane fence, documented in palette.js's FOLLOW-UP header note:
+hostiles.js was in-flight under T-004 when T-010 branched, so the repoint
+is deferred to after that merge. Threat readability holds in the FAR
+side-by-sides (green still separates from teal/rust), but the enemies do
+not yet reach board 01/10's acid intensity, and the "one palette module,
+not scattered hex literals" acceptance is one file short. One-line repoint
+per the palette.js note (tokens already authored and pathcheck-asserted);
+fold into the post-T-004 integration or T-003's FAR-tells pass.
+
 ---
 
 ## Task schema
