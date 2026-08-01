@@ -6955,6 +6955,85 @@ const G2GATE = G2E.gate;
      CONFIG.waves.gateDiveRange > CONFIG.wasp.diveRange,
      'T-018: gated hostiles really are hotter than ambient ones (the pressure the ' +
      'finding measures is authored, not imagined)');
+
+  /* ===== T-019: the dive mark's angle, and the anti-scripting guard ===== *
+   * T-019 asked whether a reflex policy can finish the whole run. Two things
+   * it added need a tripwire here:
+   *
+   *   1. `threat.diveSlope` / `diveAdx` complete the dive mark with the same
+   *      (adx, slope) pair the nearest mark and the up-mark already carry.
+   *      They are load-bearing because a dive is the one hostile motion the
+   *      sim aims AT the player (hostiles.js sets the heading from
+   *      player.x/player.y+0.9 once, then freezes it) — so the ray that
+   *      answers a dive is the ray that points at the diver, and the whole
+   *      choice between level / 45° / vertical is this one number.
+   *   2. The delivery box T-019 answers is "a bot run reached VICTORY". A
+   *      policy that names a literal x, a scroll distance or a clock time
+   *      would answer it with a scripted win — the exact failure mode
+   *      closed-loop policy mode exists to replace. The six-face run scripts
+   *      are therefore held to relative geometry BY ASSERTION, not by review
+   *      diligence: every clause must be a predicate, a threat/terrain field,
+   *      or one of the small set of body-state fields below.                */
+  {
+    const dive45 = deriveThreat({
+      x: 10, y: 3,
+      hostiles: [{ id: 9, kind: 'wasp', state: 'dive', x: 14, y: 8.05, materialized: true }],
+    }, held('ArrowRight'));
+    near(dive45.diveSlope, 1, 1e-9,
+       'T-019: a diver coming in at 45° reports diveSlope 1 — the 45° ray answers it');
+    near(dive45.diveAdx, 4, 1e-9, 'T-019: …and diveAdx is its horizontal reach');
+    ok(dive45.diagN === 1 && dive45.levelN === 0 && dive45.vertN === 0,
+       'T-019: …and only the 45° corridor is occupied, so the slope band and the ray agree');
+    const diveVert = deriveThreat({
+      x: 10, y: 3,
+      hostiles: [{ id: 9, kind: 'wasp', state: 'dive', x: 10.2, y: 9, materialized: true }],
+    }, held('ArrowRight'));
+    ok(diveVert.diveSlope === 9 && diveVert.vertN === 1,
+       'T-019: a diver straight overhead reports the finite slope cap and occupies the ' +
+       'vertical corridor (which needs NO horizontal key held — that is why the cap is ' +
+       'a number a script can compare against)');
+    ok(t.diveSlope === deriveThreat(sample, held('ArrowLeft')).diveSlope,
+       'T-019: the dive mark\'s angle is world-relative, not gun-relative — turning around ' +
+       'cannot change where the diver is');
+
+    // --- the anti-scripting guard ----------------------------------------
+    // Fields a six-face policy may compare against: relative geometry, the
+    // body's own state, and the HUD strings that name a PHASE (a gate is on /
+    // off) rather than a place. Deliberately NOT allowed: x, scrollX, gameMs,
+    // kills, attempts — every one of which would let a rule fire "at the
+    // third gate" or "at tile 89" instead of "when something is above me".
+    const RELATIVE_OK = new Set([
+      'grounded', 'airborne', 'pinned', 'victory', 'houndTell', 'houndCharge',
+      'polypTell', 'polypFire', 'polypOpen', 'mortarLob', 'mortarFuse',
+      'mortarBurst', 'mortarMarked', 'targetLevel', 'targetDiag', 'targetVert',
+      'hp', 'vx', 'vy', 'edgeMargin', 'hudTC', 'weapon',
+    ]);
+    const scriptsDir = join(here, 'playtest', 'scripts');
+    const sixFace = readdirSync(scriptsDir).filter((f) => /^six-face-.*\.json$/.test(f));
+    ok(sixFace.length > 0, 'T-019: there is at least one six-face run script to hold to the rule');
+    for (const file of sixFace) {
+      const script = JSON.parse(readFileSync(join(scriptsDir, file), 'utf8'));
+      const conds = ((script.policy && script.policy.rules) || []).map((r) => r.when);
+      ok(conds.length > 0, 'T-019: ' + file + ' drives itself with a policy, not a timeline');
+      for (const cond of conds) {
+        for (const clause of cond.split('&&').map((c) => c.trim())) {
+          const nameMatch = clause.match(/^!?([\w.]+)/);
+          const field = nameMatch ? nameMatch[1] : '';
+          ok(field.startsWith('threat.') || field.startsWith('terrain.') || RELATIVE_OK.has(field),
+             'T-019: ' + file + ' clause "' + clause + '" names relative geometry or body state ' +
+             '(never an absolute position, scroll distance or clock time)');
+        }
+      }
+      // …and the static timeline may only hold FIRE. A "move" is a timestamp,
+      // which is what a policy exists to replace: the run has to be driven by
+      // what the bot can see, not by when the wall clock says to press right.
+      for (const m of script.moves || []) {
+        ok(m.hold === 'fire',
+           'T-019: ' + file + ' static move "' + JSON.stringify(m) + '" is the fire hold — ' +
+           'movement is the policy\'s job, not a timestamp\'s');
+      }
+    }
+  }
 }
 
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');
