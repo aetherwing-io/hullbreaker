@@ -330,8 +330,13 @@ Resolve these through small prototypes and playtests rather than assumption:
   answered: the operator ruled the pulled-back FAR camera (RIG ≈ 3.7% of
   screen height) the default over the original near view (`decisions.md`
   entry 7); the tradeoff — smaller RIG reads as more world per screen but
-  costs tell/glyph readability at distance — is accepted for now, with a
-  follow-up art/readability pass on tells and glyphs still open.
+  costs tell/glyph readability at distance — was accepted for now, and the
+  follow-up art/readability pass has since shipped (T-003,
+  `src/render/legibility.js`): tells, capsule glyphs and the new tell lamps
+  are scaled back up by the view's own pull-back factor, RIG and the camera
+  untouched. `?legibility=0` restores the pre-pass look at any view for
+  comparison. Whether the boosted tells read right is still an operator
+  question, not a settled one.
 - What is the authored campaign weapon order, and what recovery floor prevents
   late damage from permanently deflating the power ramp?
 - Does the snap hook reuse jump, aim/fire, or a dedicated input, and can a new

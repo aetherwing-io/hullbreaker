@@ -41,6 +41,14 @@ pulled-back `far` view (RIG ≈ 3.7% of screen height, per the concept-art
 scale); `?view=near` restores the original close camera and `?view=mid`
 sits between.
 
+Because that pull-back is a known scalar, the **FAR readability pass** scales
+the things that carry *information* — capsule letters, the houndframe's and
+the Iris Polyp's warning lamps, tell poses, the diving wasp's commitment cue —
+back up by the same factor, so they land at the screen size the near view
+already read at. RIG, the camera and every hitbox are untouched.
+`?legibility=0` turns the whole pass off at any view for an A/B against the
+pre-pass look.
+
 The **baseline feedback pass** (hit-stop, screen shake, muzzle flashes,
 impact/death/hurt/pickup particles, and the crush-plane warning) is on by
 default. `?juice=0` disables all of it — including the sim-side hit-stop — for
