@@ -190,6 +190,19 @@ retracted only because its author re-checked. Any probe, pathcheck child, or
 bot policy asserting what a player can reach must hold the jump through the
 whole flight, and should say in its output that it did.
 
+**Resuming an agent by `SendMessage` can REVIVE a workflow lane you thought
+was closed.** A build that returns `blocked` normally ends its lane — but if
+you resume that build agent to relay findings, its new result feeds the
+pipeline, which advances to review and can spawn a fix agent. On 2026-08-01
+that put a second writer into a worktree an hour after its lane was believed
+dead, twice. Before relaying anything into a workflow agent, decide whether
+you want the LANE to continue; if you only want the information to reach a
+person or a different lane, put it in the next dispatch's `buildExtra` or in
+the repo instead. If you do resume one, re-check for live agents afterwards
+rather than assuming the lane stayed closed — and note that `TaskStop` does
+not take effect mid-tool-call, so confirm death by watching the transcript go
+cold AND the worktree stop changing, not by the tool's success message.
+
 ## Watching the fleet (what the integrator's monitor should fire on)
 
 Only two states need the integrator, and a monitor that fires on more than
