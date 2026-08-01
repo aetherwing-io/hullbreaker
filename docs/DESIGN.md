@@ -456,6 +456,44 @@ carriers still drop!) · CHRONO 4s, world at 0.35× while the player and
 their bullets run full speed (world timers stay realtime — known, small
 simplification).
 
+### Feedback pass (juice)
+
+Dev-sequence item 4's visual half (T-011), on by default, `?juice=0` for a
+byte-identical pre-juice build. Every intensity lives in one place —
+`CONFIG.juice` — and the math is `src/pure/juice.js`, so the whole pass is
+retuned or read without touching a renderer.
+
+- **Hit-stop is simulation, not decoration.** A kill freezes the world for
+  42ms and taking damage for 90ms (stacking capped at 120ms), applied as a
+  dt SCALE of 0.08 on *every* entity update — scroll, RIG, hostiles,
+  capsules and projectiles together. A partial freeze would desync the
+  substep integration projectiles collide in, and freezing the player but
+  not the pursuing plane would be a shove. Timers stay on real `gameMs`
+  (the CHRONO convention), so a freeze removes exactly `ms × (1 - scale)`
+  of simulated time at any frame rate. It is decided in `src/sim/time.js`
+  and only *announced* to the renderer through the `view.juice.hitStop`
+  bridge hook.
+- **Shake is trauma-squared and bounded in world tiles** (0.15 tiles, 0.55°
+  at full trauma, draining in half a second), applied after the camera pose
+  as a local translate + roll. The edge calibration that feeds the sim's
+  damage plane is computed from the *unshaken* probe pose, so an effect can
+  never move a hitbox. Events: kill, hurt, both ritual yaw detents, a face
+  reveal / band commit, plus a low sustained rumble while a ritual holds
+  the scroll.
+- **Particles and flashes** are two fixed instanced pools (224 sparks, 20
+  flashes) in `src/render/fx.js`, additive, allocation-free, and frozen
+  along with the world during hit-stop. Muzzle flash fires once per volley;
+  impacts key off an hp drop (so a polyp's armour ping correctly produces
+  no debris); deaths key off the corpse-fade removal; pickups mirror the
+  sim's own catch predicate.
+- **The crush plane now warns before it kills**: an amber band standing on
+  the pursuing edge, intensity eased so the last tile carries the warning
+  and the pulse accelerating as the margin closes — the same warning
+  grammar as the hound tell and the polyp iris.
+- Colors are palette *roles*, resolved through an optional lazy import of
+  the render palette module with CONFIG.palette's grey-box roles as the
+  fallback; the juice modules carry no color literals of their own.
+
 ## Development sequence
 
 Build narrow playable slices and prove the new grammar before producing the
@@ -505,7 +543,13 @@ entire climb:
    Mortar is not yet started.
 4. **Baseline feedback now:** add essential hit, hurt, launch, pickup, warning,
    and transformation sounds plus restrained hit-stop, shake, flashes, and
-   particles. Full polish can wait; readable timing cannot.
+   particles. Full polish can wait; readable timing cannot. **Both halves
+   built, unjudged**: the WebAudio synth layer merged (T-012, `?audio=0`
+   mutes), and the visual pass shipped with it (T-011, `?juice=0` disables) —
+   hit-stop, trauma shake, muzzle flash, impact/death/hurt/pickup particles,
+   and the crush-plane warning. See "Feedback pass (juice)" in the
+   implementation record below. Its INTENSITY is an operator feel question,
+   not a machine one.
 5. **Six-phase ramp:** author the beat sheet, traversal chunks, enemy
    compositions, weapon sequence, presentation layers, and recovery floor.
 6. **Finale:** build THE MERIDIAN CROWN as the movement final exam only after
