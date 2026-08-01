@@ -58,6 +58,20 @@ with rather than replaces), no pool or mesh is built, and no bridge hook is
 wrapped. Every intensity is one block, `CONFIG.juice`, in `src/config.js`.
 `?audio=0` mutes the synth layer the same way.
 
+`index.html?momentum=1` arms **earned pace escalation** (`docs/decisions.md`
+entry 11) on the six-face run: the pursuing edge stops being a constant and
+rises with how well the run is being played — how far RIG is riding toward the
+right of the screen (the daylight he banks by running at 9.4 t/s against a
+4.3 t/s scroll) plus a decaying kill streak. Drive 0 is the shipped speed
+exactly, so a player who is behind is carried at today's pace and never
+escalated at; full drive is ×1.40, with a hard ceiling of ×1.70 that later
+boost work shares. Ambient spawn cadence rides the same number, because the
+spawn table triggers off the right screen edge. The HUD's `MOMENTUM` meter
+shows the live drive. Off by default and unjudged: the policy is
+`CONFIG.momentum`, the math `src/pure/momentum.js`, and the two named bot
+scripts `tools/playtest/scripts/momentum-strong.json` /
+`momentum-weak.json` play the same URL well and badly for comparison.
+
 `index.html?g1=1` is the **G1 limb-turn experiment** on that normal six-face
 run: the same corner ritual, re-read as the camera orbiting 60° around a joint
 of one static faceted creature limb instead of the next face zippering itself

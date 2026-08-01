@@ -7410,6 +7410,19 @@ const G2GATE = G2E.gate;
      (1 + (MM.ceilMult - 1) * MM.wBank).toFixed(2) + ' — the ceiling costs BOTH ' +
      'daylight and a fed fight, which is what "explosion AND speed" means');
   {
+    // The precise floor promise, stated in the shape a reviewer will ask it:
+    // a player with NO daylight at all is not held at the floor by fiat, they
+    // are held there by having earned nothing — the only thing left to them is
+    // the kill term, and its whole authority is wCombat of the range.
+    const combatOnly = momentumSpeed(momentumTarget(0, 1, MM), base, MM);
+    ok(combatOnly <= base * (1 + (MM.ceilMult - 1) * MM.wCombat) + 1e-12 &&
+       combatOnly - base <= 0.6,
+       'FLOOR: a player with zero banked daylight who kills everything in reach ' +
+       'still only reaches ' + combatOnly.toFixed(2) + ' t/s (+' +
+       (combatOnly - base).toFixed(2) + ' t/s) — feeding the fight is a real answer, ' +
+       'but the pressure a struggling player can bring on themselves is bounded');
+  }
+  {
     // The held scroll (gate fight, corner ritual, level end): the bank holds
     // its last moving reading instead of drifting open for free.
     ok(momentumBankSample(0.8, 0.99, true, MM) === 0.8,
@@ -7555,6 +7568,38 @@ const G2GATE = G2E.gate;
       console.error('pathcheck: momentum probe child failed (' + query + '): ' + e.message);
       return null;
     }
+  }
+  {
+    // Flag scoping, read straight from the composition root: absent → off,
+    // and a fixture URL never arms it however it is spelled, because the
+    // traversal and transformation fixtures own their own pursuit models.
+    const modeChild = `
+      const urls = ['', 'momentum=1', 'momentum=0', 'slice=traversal&momentum=1',
+                    'slice=transform&momentum=1', 'g2=1&momentum=1'];
+      const out = {};
+      for (const q of urls) {
+        globalThis.__HB_QUERY__ = q;
+        const m = await import(${JSON.stringify('file://' + join(srcDir, 'mode.js'))} +
+          '?q=' + encodeURIComponent(q));
+        out[q || '(none)'] = m.MOMENTUM_ENABLED;
+      }
+      console.log(JSON.stringify(out));
+    `;
+    let flags = null;
+    try {
+      flags = JSON.parse(execFileSync(process.execPath,
+        ['--input-type=module', '-e', modeChild], { encoding: 'utf8' }));
+    } catch (e) {
+      console.error('pathcheck: momentum flag child failed: ' + e.message);
+    }
+    ok(!!flags && flags['(none)'] === false && flags['momentum=0'] === false,
+       'FLAG: momentum is OFF on every URL that does not ask for it');
+    ok(!!flags && flags['momentum=1'] === true,
+       'FLAG: …and on when it does');
+    ok(!!flags && flags['slice=traversal&momentum=1'] === false &&
+       flags['slice=transform&momentum=1'] === false && flags['g2=1&momentum=1'] === false,
+       'FLAG: no fixture URL can arm it — the traversal and transformation slices ' +
+       'keep the pursuit models they already own');
   }
   const off = momentumProbe('');
   const on = momentumProbe('momentum=1');

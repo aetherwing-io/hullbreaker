@@ -1,0 +1,17 @@
+{
+  "name": "momentum-weak",
+  "description": "T-022 operator packet, run B of two: the SAME build and the SAME URL (index.html?momentum=1) played BADLY, so the pair differ only in how they are played. The policy is a player who has not learned the game yet — it only moves when the damage plane crowds it (edgeMargin<12), never aims up, and jumps only at the lip it is about to walk off. That keeps RIG on the LEFT of the screen, where decisions.md entry 11's daylight bank is empty, and the run must therefore hold its floor: `pursuitSpeed` should read the shipped 4.3 t/s for the entire run, with the HUD meter empty at ×1.00. This is the death-spiral probe. If a struggling player is ever escalated at — if pursuitSpeed leaves 4.3 anywhere in this trace — the floor promise is broken and the task is not done. It is also the 'pushed along while they learn' demonstration: RIG still advances, because the plane conveys him forward whether he runs or not.",
+  "url": "index.html?momentum=1",
+  "viewport": { "width": 1440, "height": 900 },
+  "durationMs": 60000,
+  "moves": [
+    { "hold": "fire", "fromMs": 800, "toMs": 60000 }
+  ],
+  "policy": {
+    "rules": [
+      { "when": "edgeMargin<12", "do": { "hold": "right" } },
+      { "when": "grounded && terrain.gapDist<2.2", "do": { "tap": "jump", "holdMs": 420 } },
+      { "when": "!grounded && vy<0 && terrain.gapDist<1.2", "do": { "tap": "jump", "holdMs": 420 } }
+    ]
+  }
+}
