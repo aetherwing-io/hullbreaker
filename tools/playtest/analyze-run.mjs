@@ -47,6 +47,13 @@
 //   - Attribution names what was NEAR the loss, not what caused it. A hound
 //     charging past and a wasp diving in are both listed; the analysis does
 //     not adjudicate between them.
+//   - "diver killed" in the dive census is inferred the same way: a diver that
+//     leaves the hostile roster while still inside the corridor (14 tiles) is
+//     counted as killed, because the trace carries no death event. A cull or a
+//     despawn at that range would be counted as a kill too. The bias credits
+//     the bot with kills it may not have made — conservative for any claim
+//     that the bot does not kill ENOUGH, and wrong in the other direction, so
+//     never quote this number as a hit rate.
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -276,7 +283,7 @@ function analyze({ path, report }) {
     const seen = new Map();      // id -> {startMs, ticksOnRay, ticks, minDist, killed, hit}
     const done = [];
     const held2 = new Set(['KeyJ']);
-    let prevHp = null, prevIds = new Set();
+    let prevHp = null;
     for (const s of trace) {
       if (!rules || s.state !== 'PLAYING' || !Array.isArray(s.hostiles)) continue;
       const threat = deriveThreat(s, held2);
@@ -311,8 +318,11 @@ function analyze({ path, report }) {
         if (onLevel || onDiag || onVert) rec.onRay++;
         if (hpDropped && dist < 1.8) rec.hit = true;
       }
-      // a diver that vanished from the roster while still close was killed;
-      // one that left `dive` state (recover) simply finished its dive
+      // A diver that vanished from the roster while still close is counted as
+      // killed; one that left `dive` state (recover) simply finished its dive.
+      // INFERENCE, not a measurement: the trace has no death event, so a cull
+      // or a despawn inside the corridor lands in the same bucket as a kill
+      // (header honesty note). The bias credits the bot.
       for (const [id, rec] of seen) {
         if (ids.has(id)) continue;
         const still = s.hostiles.some((e) => e.id === id);
@@ -320,7 +330,6 @@ function analyze({ path, report }) {
         done.push(rec);
         seen.delete(id);
       }
-      prevIds = ids;
       prevHp = typeof s.hp === 'number' ? s.hp : prevHp;
     }
     for (const rec of seen.values()) done.push(rec);
@@ -338,10 +347,20 @@ function analyze({ path, report }) {
     };
     push('');
     push('## dive census (every cruise→dive inside the 14-tile corridor)');
-    push(fmt('all', inRange));
-    push(fmt('shallow (slope ≤ 0.5, level ray)', flat));
-    push(fmt('45°-ish (0.5 < slope ≤ 2.2, diag ray)', mid));
-    push(fmt('steep (slope > 2.2, vertical ray only)', steep));
+    if (!rules) {
+      // Same reason aim coverage bows out above: the census needs to know what
+      // the gun was doing during each dive, and that is replayed from the
+      // policy. With no rules there is nothing to replay — say so, because
+      // "none" would read as "this run had no dives".
+      push('- n/a: this run had no policy, and the census replays the policy to know which ' +
+        'ray the gun was on during each dive — a static timeline\'s held keys are not in the ' +
+        'sample. (Not "no dives happened": the dives were not classified.)');
+    } else {
+      push(fmt('all', inRange));
+      push(fmt('shallow (slope ≤ 0.5, level ray)', flat));
+      push(fmt('45°-ish (0.5 < slope ≤ 2.2, diag ray)', mid));
+      push(fmt('steep (slope > 2.2, vertical ray only)', steep));
+    }
   }
 
   if (report.policy) {

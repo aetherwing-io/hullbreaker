@@ -7008,30 +7008,71 @@ const G2GATE = G2E.gate;
       'mortarBurst', 'mortarMarked', 'targetLevel', 'targetDiag', 'targetVert',
       'hp', 'vx', 'vy', 'edgeMargin', 'hudTC', 'weapon',
     ]);
+    // A script's static timeline has TWO doors into the driver, and both are
+    // dispatched: `moves` (semantic sugar) and `events` (raw {t, type, code}),
+    // which compileScript concatenates — alongside a policy, not instead of it
+    // (lib/compile.mjs). A guard that read only `moves` would let a fully
+    // scripted timeline back in through the other one, so both are checked
+    // here, and only the FIRE key may appear on a timestamp at all.
+    const { resolveCode } = await import('./playtest/lib/compile.mjs');
+    const FIRE_CODES = new Set(['KeyJ', 'KeyX']);
+    const asCode = (nameOrCode) => {
+      try { return resolveCode(nameOrCode); } catch { return String(nameOrCode); }
+    };
+    // One checker, used twice: on the shipped six-face scripts (must come back
+    // clean) and on a synthetic scripted win (must not) — the guard is
+    // asserted to have teeth rather than trusted to.
+    const scriptViolations = (script) => {
+      const bad = [];
+      const conds = ((script.policy && script.policy.rules) || []).map((r) => r.when);
+      if (!conds.length) bad.push('no policy rules: the run would be driven by a timeline, not by what the bot sees');
+      for (const cond of conds) {
+        for (const clause of String(cond).split('&&').map((c) => c.trim())) {
+          const nameMatch = clause.match(/^!?([\w.]+)/);
+          const field = nameMatch ? nameMatch[1] : '';
+          if (!(field.startsWith('threat.') || field.startsWith('terrain.') || RELATIVE_OK.has(field))) {
+            bad.push('clause "' + clause + '" names something that is not relative geometry or body state');
+          }
+        }
+      }
+      for (const m of script.moves || []) {
+        if (!FIRE_CODES.has(asCode(m.hold)) && !FIRE_CODES.has(asCode(m.tap))) {
+          bad.push('static move ' + JSON.stringify(m) + ' presses something other than fire on a timestamp');
+        }
+      }
+      for (const ev of script.events || []) {
+        if (!FIRE_CODES.has(asCode(ev.code))) {
+          bad.push('raw event ' + JSON.stringify(ev) + ' presses something other than fire on a timestamp');
+        }
+      }
+      return bad;
+    };
     const scriptsDir = join(here, 'playtest', 'scripts');
     const sixFace = readdirSync(scriptsDir).filter((f) => /^six-face-.*\.json$/.test(f));
     ok(sixFace.length > 0, 'T-019: there is at least one six-face run script to hold to the rule');
     for (const file of sixFace) {
-      const script = JSON.parse(readFileSync(join(scriptsDir, file), 'utf8'));
-      const conds = ((script.policy && script.policy.rules) || []).map((r) => r.when);
-      ok(conds.length > 0, 'T-019: ' + file + ' drives itself with a policy, not a timeline');
-      for (const cond of conds) {
-        for (const clause of cond.split('&&').map((c) => c.trim())) {
-          const nameMatch = clause.match(/^!?([\w.]+)/);
-          const field = nameMatch ? nameMatch[1] : '';
-          ok(field.startsWith('threat.') || field.startsWith('terrain.') || RELATIVE_OK.has(field),
-             'T-019: ' + file + ' clause "' + clause + '" names relative geometry or body state ' +
-             '(never an absolute position, scroll distance or clock time)');
-        }
-      }
-      // …and the static timeline may only hold FIRE. A "move" is a timestamp,
-      // which is what a policy exists to replace: the run has to be driven by
-      // what the bot can see, not by when the wall clock says to press right.
-      for (const m of script.moves || []) {
-        ok(m.hold === 'fire',
-           'T-019: ' + file + ' static move "' + JSON.stringify(m) + '" is the fire hold — ' +
-           'movement is the policy\'s job, not a timestamp\'s');
-      }
+      const bad = scriptViolations(JSON.parse(readFileSync(join(scriptsDir, file), 'utf8')));
+      ok(bad.length === 0,
+         'T-019: ' + file + ' is driven by relative geometry and body state only — no absolute ' +
+         'position, scroll distance or clock time, and nothing but fire on a timestamp' +
+         (bad.length ? ' [' + bad.join('; ') + ']' : ''));
+    }
+    {
+      // the scripted win the guard exists to reject, in all three of its forms
+      const teeth = scriptViolations({
+        policy: { rules: [{ when: 'grounded && x>140' }] },
+        moves: [{ hold: 'fire', fromMs: 0, toMs: 10 }, { hold: 'right', fromMs: 0, toMs: 10 }],
+        events: [{ t: 900, type: 'keydown', code: 'Space' }],
+      });
+      ok(teeth.some((b) => /x>140/.test(b)),
+         'T-019: the guard catches a clause naming an absolute position');
+      ok(teeth.some((b) => /"hold":"right"/.test(b)),
+         'T-019: …a timed movement `move`');
+      ok(teeth.some((b) => /"code":"Space"/.test(b)),
+         'T-019: …and a timed movement in the RAW `events` timeline, which compile.mjs ' +
+         'dispatches just the same (the door a moves-only guard leaves open)');
+      ok(scriptViolations({ moves: [{ hold: 'fire', fromMs: 0, toMs: 10 }] }).length === 1,
+         'T-019: …and a six-face script with no policy at all is a timeline, and fails');
     }
   }
 }

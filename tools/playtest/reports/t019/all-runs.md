@@ -49,3 +49,16 @@
 | expL-strafe-space | 33.3s | 75 | 1 | 5 | 9 | 0.6 | 86% | 47% | L-2 |
 | expL-strafe-space | 45.1s | 127 | 1 | 9 | 9 | 1.0 | 87% | 32% | L-3 |
 | expL-strafe-space | 49.8s | 140 | 1,2 | 11 | 9 | 1.2 | 86% | 32% | L-4 |
+| six-face-aimed-run | 46.2s | 107 | 1 | 9 | 9 | 1.0 | 86% | 43% | FIXVERIFY-1 |
+| six-face-aimed-run | 52.3s | 140 | 1,2 | 13 | 9 | 1.4 | 87% | 35% | FIXVERIFY-2 |
+| six-face-aimed-run | 52.2s | 140 | 1,2 | 13 | 9 | 1.4 | 85% | 35% | FIXVERIFY-3 |
+| six-face-spaced-run | 53.1s | 140 | 1,2 | 14 | 9 | 1.6 | 84% | 36% | FIXVERIFY-4 |
+
+The last four rows are the re-verification runs made when the review
+corrections landed (2026-08-01, same flags, served from the `task/T-019`
+worktree — `src/` is byte-identical to `main` on this branch, so the game
+under test is the same one). They are listed apart from the 49-run corpus
+above rather than folded into its medians, and one of them is the reason the
+script's own description no longer says "every run": **FIXVERIFY-1 died in
+gate 1 at scroll 107**, where the other ten runs of that script all reached
+the gate-2 wall at scroll 140. Nothing here reached gate 3 either.

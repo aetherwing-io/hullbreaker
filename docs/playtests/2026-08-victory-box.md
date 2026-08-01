@@ -6,11 +6,11 @@ worktree), `tools/playtest/run.mjs --deterministic`, real Chrome, `testapi`
 fidelity, 1440×900.
 
 **Verdict: no bot run reaches VICTORY, and this task did not get one.**
-Thirteen policy variants (plus a latency control) over 49 runs land on the same
-wall — wave **gate 2**, scroll **140 of 415**, at about **50 s**, all three
-lives spent. Exactly one run in 49 got past it (scroll 165, gate 3 in sight,
-64 s) and then died the same way. The last delivery box has to be answered by
-an **operator run**; the packet is §6.
+Thirteen policy variants (plus a latency control) over 49 runs — and four more
+re-run afterwards, §1 — land on the same wall: wave **gate 2**, scroll
+**140 of 415**, at about **50 s**, all three lives spent. Exactly one run in 49
+got past it (scroll 165, gate 3 in sight, 64 s) and then died the same way. The
+last delivery box has to be answered by an **operator run**; the packet is §6.
 
 No game file, wave gate, or movement constant was touched: `git diff
 main...HEAD -- src/` is empty, and pathcheck now asserts that the six-face
@@ -50,7 +50,9 @@ there for wave gate 2 and does not move again until the wave is dead, so
 cleared **45 times out of 49** (median 11.3 s held, range 7.6–18.2, with 5–7
 bodies present where the wave authors 4). Gate 2 was cleared **once in 41**
 (11.9 s, 9 bodies present where the wave authors 5); the other 40 runs ended
-inside it, a median 5.3 s after it armed. **Nothing ever reached gate 3.**
+inside it, a median 5.3 s after it armed. **Nothing in these 49 runs reached
+gate 3** — including eight runs of T-018's own shipped policy, whose single
+measured run on a different tree did (§4.2).
 
 **Nothing moved the wall.** Deleting the hop, adding a pace servo, adding
 personal space, adding a dive dodge, fixing the terrain probe, using the
@@ -62,6 +64,20 @@ gate that ends the run never changes.
 over 7 runs, all seven inside 50.2–55.1) beats the shipped aimed policy's
 47.5 s. It is committed as the new best-known reflex policy, and it is still
 nowhere near the run.
+
+**Four more runs, after the fact.** Fixing what the review found (§4.2) meant
+re-running both shipped scripts; those four runs are kept *outside* the table
+above, listed at the bottom of `tools/playtest/reports/t019/all-runs.md`,
+because a corpus that grows every time someone quotes it is not a corpus.
+Folded in, they say the same thing and sharpen one claim:
+`six-face-aimed-run` is 8 default-rate runs at 46.2–52.8 s (median 48.7) and
+`six-face-spaced-run` 9 runs at 50.2–55.1 s (median 53.1) — still about 10 %,
+still the same wall. The sharpening is that **one of the three new aimed runs
+died in gate 1, at scroll 107**: gate 2 is this policy's ceiling, not its
+floor, and "every run reaches 140" was an overstatement of an 8-run sample.
+Nothing reached gate 3. Their in-gate aim coverage — 22.8–34.2 % of ticks with
+some ray available, 18.6–25.9 % on target — sits inside §3.2's band at the top
+and just under it at the bottom, the low end being that gate-1 run.
 
 ## 2. Why: the exchange rate
 
@@ -117,7 +133,12 @@ answer it. **453 dives over 22 runs:**
 | ~45° (0.5–2.2) | the diagonal: `up` **and** the direction *toward* it, i.e. closing on it | 66 | 20 % | 18 % |
 | steep (> 2.2) | vertical: `up` and **no horizontal key**, i.e. standing still under it | 53 | 21 % | 11 % |
 
-Read the last column first. **Four dives in five end with the wasp alive.** It
+Read the last column first. **Four dives in five end with the wasp alive.**
+(That last column is inferred, and the tool says so: a diver counts as killed
+when it leaves the hostile roster while still inside the 14-tile corridor, so
+a cull or a despawn at that range reads as a kill. The bias credits the bot
+with kills it may not have made, which makes "four in five survive" a floor,
+not a ceiling.) It
 recovers, climbs back to its lane, and dives again 1.1 s later
 (`gateDiveCooldownMs`) — and the gate does not open until it is dead
 (`onHostileRemoved`). Dodging is survival, not progress; only the kill counts,
@@ -194,6 +215,8 @@ asking.
 
 ## 4. What this corrects in the T-018 finding
 
+### 4.1 "Every hp loss happened while airborne"
+
 T-018 wrote: "the bot's damage log showed **every single hp loss happening
 while airborne**", and drew a hop-gating clause from it. That correlation does
 not survive a controlled comparison.
@@ -219,6 +242,46 @@ both worth keeping:
   at the corner pivot. That is now `terrain.stepUp`, and it is worth having
   even though it did not move the wall.
 
+### 4.2 "It clears gates 1, 2 and 3" — unreproduced here
+
+T-018's headline for `six-face-aimed-run.json` was one run that cleared **three**
+gates and reached scroll 205 with 22 kills, spending its third life at 76.9 s.
+This task ran that same script file **eleven** times — eight at the default
+sample rate, three at `--sample-ms 40` — and ten of them died inside **gate 2
+at scroll 140**, the eleventh in **gate 1 at scroll 107**; 9–16 kills,
+44.1–52.8 s. §1's table and `tools/playtest/reports/t019/all-runs.md` are
+those eleven rows.
+
+The finding does not claim T-018 measured wrong; it claims the gate-3 run is
+**unreproduced**, and it is careful about why, because two things moved
+between the two measurements and this task isolated neither:
+
+1. **A different tree.** T-018 pinned `task/T-009` at 8751; every run here was
+   against `main`, several merges later (the last three against this branch's
+   worktree, whose `src/` is byte-identical to `main`).
+2. **A different reading of the policy's own terrain probe.** The last rule in
+   both scripts is `!grounded && vy<0 && terrain.gapDist<1.2`. T-019 changed
+   `gapDist` to start its scan at RIG's own column (`lib/sampler.mjs`), so it
+   now reads **0 whenever RIG is over a hole** where it previously reported the
+   sub-tile distance to the next hole column ahead — the same small number as
+   "a hole is right in front of me". That rule therefore fires in a strictly
+   larger set of situations than it did under T-018's harness. The change makes
+   the *field* honest (§5) and was kept for that reason, but it does mean the
+   script measured here is not being driven by exactly the same reflex the
+   T-018 run was.
+
+Neither of those is offered as the explanation. The honest statement is the
+distribution: **eleven runs, none past gate 2**, against one earlier run that
+went further on a different build with a differently-behaving probe. Run-to-run
+spread on this harness is ±6 s and, on `expJ-strafe`, one run in ten reached
+scroll 165 where the other nine stopped at 140 — a single deeper run is
+inside what this harness produces by chance, which is exactly why every claim
+here is argued from medians over repeats and from *which gate ended the run*.
+
+Both numbers now live in the script's own `description` field, labelled with
+the tree and the run count, so nobody picks it up expecting three gates. The
+better starting point is `scripts/six-face-spaced-run.json` (§5).
+
 ## 5. What was added to the harness
 
 All of it dev-only; the game is untouched.
@@ -241,14 +304,18 @@ All of it dev-only; the game is untouched.
   default.
 - `scripts/six-face-spaced-run.json` — the best-measured reflex policy: the
   T-018 aimed policy plus personal space and the step guard. It is the one
-  variant whose whole distribution beat the baseline (7 runs, 50.2–55.1 s), and
-  it still dies in gate 2 every time. Committed evidence for it, for the
-  baseline, and for the single run that cleared gate 2 is under
-  `tools/playtest/reports/t019/`.
+  variant whose whole distribution sits above the baseline's median (9 runs,
+  50.2–55.1 s, median 53.1, against 48.7), and it still dies in gate 2 every
+  time. Committed evidence for it, for the baseline, and for the single run
+  that cleared gate 2 is under `tools/playtest/reports/t019/`.
 - pathcheck: the new marks are asserted on synthetic geometry, and every
   `six-face-*.json` policy is held to relative geometry — no `x`, no
-  `scrollX`, no `gameMs`, and static moves may only hold fire. A scripted win
-  now fails the gate instead of passing review.
+  `scrollX`, no `gameMs`. Both of a script's timeline doors are checked, not
+  just the obvious one: `moves` **and** the raw `events: [{t, type, code}]`
+  list that `lib/compile.mjs` concatenates alongside a policy, either of which
+  may carry only the fire key. The guard is run against a synthetic scripted
+  win as well as the shipped scripts, so it is asserted to have teeth rather
+  than trusted to. A scripted win now fails the gate instead of passing review.
 
 ## 6. Operator packet — the box needs a human run
 
