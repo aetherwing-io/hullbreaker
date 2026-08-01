@@ -27,21 +27,22 @@ import { installView } from '../sim/bridge.js';
 import { groundH, platforms } from '../sim/level.js';
 import { scene } from './scene.js';
 import { placeSharp } from './tower.js';
+import { PAL, atmosphereBg } from './palette.js';
 
 const T = CONFIG.transform;
-const PAL = CONFIG.palette;
 const VISUAL_DEPTH = 4;                  // tile stack drawn under each surface column
 const DRESS_COLS = 2;                    // columns per dressing segment (chunky steps)
 
 const BASE_COLORS = {
   ground: PAL.ground, groundAlt: PAL.groundAlt, catwalk: PAL.catwalk,
-  hull: 0x494f57, wall: 0x555b64, ceiling: 0x646a73, rib: 0x7b818a,
-  machine: 0x878d96, skyline: 0x333a44, panel: 0x8a9099, accent: PAL.gun,
+  hull: PAL.transform.hull, wall: PAL.transform.wall, ceiling: PAL.transform.ceiling,
+  rib: PAL.transform.rib, machine: PAL.transform.machine,
+  skyline: PAL.transform.skyline, panel: PAL.transform.panel, accent: PAL.gun,
 };
 
 // One material set per stretch, its base colors nudged by that stretch's
-// tone. Still a neutral grey-box palette — the tone is only enough hue walk
-// to make "inside the body" and "high on the body" read differently.
+// tone — only enough hue walk to make "inside the body" and "high on the
+// body" read differently on top of the palette module's ladder.
 function bandMaterials(tone) {
   const out = {};
   const c = new THREE.Color();
@@ -216,7 +217,7 @@ function addWeather(band, M) {
   scene.add(group);
   placeSharp(group, band.s0, 0, 0);       // one straight stretch: one frame is exact
   const geo = new THREE.BoxGeometry(0.07, W.length, 0.07);
-  const mat = new THREE.MeshBasicMaterial({ color: 0x9fb4c6, transparent: true, opacity: 0.34 });
+  const mat = new THREE.MeshBasicMaterial({ color: PAL.rain, transparent: true, opacity: 0.34 });
   const mesh = new THREE.InstancedMesh(geo, mat, W.count);
   mesh.frustumCulled = false;
   group.add(mesh);
@@ -319,7 +320,10 @@ const _c = new THREE.Color();
 function applyAtmosphere(a, b, u) {
   scene.fog.near = a.fogNear + (b.fogNear - a.fogNear) * u;
   scene.fog.far = a.fogFar + (b.fogFar - a.fogFar) * u;
-  scene.fog.color.setHex(a.bg).lerp(_c.setHex(b.bg), u);
+  // The fixture's bg values are pure data; the palette module remaps them
+  // render-side (identity under ?palette=classic). Fog and background stay
+  // the same color by construction.
+  scene.fog.color.setHex(atmosphereBg(a.bg)).lerp(_c.setHex(atmosphereBg(b.bg)), u);
   scene.background.copy(scene.fog.color);
 }
 

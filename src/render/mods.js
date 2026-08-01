@@ -11,11 +11,12 @@ import { mods } from '../sim/mods.js';
 import { resetTint, setTint } from '../ui/tint.js';
 import { scene } from './scene.js';
 import { placeOnTower } from './tower.js';
+import { PAL } from './palette.js';
 
 const cloneMeshes = CONFIG.mods.ghostDelayMs.map(() => {
   const m = new THREE.Mesh(
     new THREE.BoxGeometry(0.45, 1.5, 0.4),
-    new THREE.MeshBasicMaterial({ color: CONFIG.palette.player, transparent: true, opacity: 0.32 })
+    new THREE.MeshBasicMaterial({ color: PAL.player, transparent: true, opacity: 0.32 })
   );
   m.visible = false;
   scene.add(m);
@@ -24,7 +25,7 @@ const cloneMeshes = CONFIG.mods.ghostDelayMs.map(() => {
 
 const lanceBeam = new THREE.Mesh(
   new THREE.BoxGeometry(0.35, 16, 0.35),
-  new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 })
+  new THREE.MeshBasicMaterial({ color: PAL.muzzle, transparent: true, opacity: 0.5 })
 );
 lanceBeam.visible = false;
 scene.add(lanceBeam);
@@ -48,7 +49,7 @@ function sync() {
   if (!mods.lance) lanceBeam.visible = false;
 
   // screen tint: lance flash > rage red > chrono blue
-  const T = CONFIG.palette.tints;
+  const T = PAL.tints;
   let tint = 'transparent';
   if (gameMs < mods.lanceFlashUntil) tint = T.lance;
   else if (gameMs < mods.rageUntil) tint = T.rage;
