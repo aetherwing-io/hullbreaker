@@ -12,7 +12,7 @@
 // "Alignment with the score proposal (A.5)" section for the exact mapping
 // and the one place this harness's original definition differed from A.5's.
 
-import { TRAVERSAL_FIXTURE_SNAPSHOT } from './fixture.mjs';
+import { TRAVERSAL_FIXTURE } from './fixture.mjs';
 import { isVictorySample } from './sampler.mjs';
 
 // A.5: "Same definition both sides: grounded, abs(vx) < 2, no traversal
@@ -175,9 +175,9 @@ function inferRoute(trace) {
       unavailableReason: HIGH_FIDELITY_UNAVAILABLE,
     };
   }
-  const byId = new Map(TRAVERSAL_FIXTURE_SNAPSHOT.connectors.map((c) => [c.id, c]));
+  const byId = new Map(TRAVERSAL_FIXTURE.connectors.map((c) => [c.id, c]));
   const perRoute = [];
-  for (const route of TRAVERSAL_FIXTURE_SNAPSHOT.routes) {
+  for (const route of TRAVERSAL_FIXTURE.routes) {
     let cursor = 0;
     const matched = [];
     for (const s of hf) {
@@ -197,15 +197,15 @@ function inferRoute(trace) {
     matchedRouteId: best.routeId, confidence: best.confidence, matchedConnectors: best.matchedConnectors,
     routeIds,
     unavailableReason: null,
-    method: `greedy nearest-connector-in-order match against a hardcoded fixture snapshot, radius ${ROUTE_MATCH_RADIUS} tiles ` +
+    method: `greedy nearest-connector-in-order match against the game's own TRAVERSAL_FIXTURE (imported from src/pure/traversal.js), radius ${ROUTE_MATCH_RADIUS} tiles ` +
       `— approximate, not a topological solve. routeIds (A.5 "route coverage") lists every route with >= ${ROUTE_USED_MIN_CONNECTORS} ` +
       'connectors matched in order; matchedRouteId/confidence is this harness\'s supplementary single-best-guess summary.',
   };
 }
 
 function computeDarePocket(trace) {
-  const bounds = TRAVERSAL_FIXTURE_SNAPSHOT.darePocket.bounds;
-  const rewardLetter = TRAVERSAL_FIXTURE_SNAPSHOT.darePocket.reward.letter;
+  const bounds = TRAVERSAL_FIXTURE.darePocket.bounds;
+  const rewardLetter = TRAVERSAL_FIXTURE.darePocket.reward.letter;
   let entered = false, enteredMethod = null;
   for (const s of trace) {
     if (HIGH_FIDELITY.has(s.fidelity) && typeof s.x === 'number' && s.x >= bounds.x0 && s.x < bounds.x1) {

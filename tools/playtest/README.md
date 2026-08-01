@@ -418,14 +418,13 @@ that also somehow lacks `window.HB`.
   alone cleanly separated all three demo policies even in the very first,
   degraded-mode pass of this harness.
 - **vertical range** (`minY`/`maxY`/`span`) — `testapi`/`full` only.
-- **route coverage** (A.5 `routeIds`) — every fixture route (from
-  `lib/fixture.mjs`'s hardcoded `TRAVERSAL_FIXTURE` snapshot) with `>= 3`
-  connectors visited in order, matched within a 2.2-tile radius. Also reports
-  a supplementary single-best-guess `matchedRouteId`/`confidence` (this
-  harness's addition, not part of A.5). `testapi`/`full` only, and
-  approximate even then — nearest-neighbor greedy matching, not a
-  topological solve, against a fixture copy that can silently drift from
-  `index.html` (see `lib/fixture.mjs`'s header comment).
+- **route coverage** (A.5 `routeIds`) — every fixture route (from the game's
+  own `TRAVERSAL_FIXTURE`, imported via `lib/fixture.mjs` from
+  `src/pure/traversal.js`) with `>= 3` connectors visited in order, matched
+  within a 2.2-tile radius. Also reports a supplementary single-best-guess
+  `matchedRouteId`/`confidence` (this harness's addition, not part of A.5).
+  `testapi`/`full` only, and approximate even then — nearest-neighbor greedy
+  matching, not a topological solve.
 - **jump/air-jump counts** — `sliceStats.airJumps`, from either `testapi` or
   `full`. Only reflects the *current* attempt, since the game resets the
   counter every retry — reported as both `finalAttemptAirJumps` and
@@ -608,12 +607,15 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    correctly, but should not be treated as literally comparable to a future
    `HB.score.snapshot()`-derived score until the real event stream exists.
 3. **Route coverage/inference is approximate.** The nearest-connector greedy
-   matcher in `lib/metrics.mjs` is not a topological solve, and
-   `lib/fixture.mjs` is a hand-copied snapshot of `TRAVERSAL_FIXTURE`, not an
-   import — nothing checks it against `index.html` (though the adversarial
-   report independently diffed it byte-for-byte against the live fixture and
-   found no drift yet), so it can silently go stale if fixture geometry
-   changes (flagged in the file's header comment).
+   matcher in `lib/metrics.mjs` is not a topological solve. (The other half
+   of this limitation as originally written — `lib/fixture.mjs` being a
+   hand-copied snapshot that could silently go stale — is gone: it now
+   imports `TRAVERSAL_FIXTURE` directly from `src/pure/traversal.js`, per
+   hook request #6 below. One residual caveat: the import resolves against
+   the tree this harness copy runs from, so a `--base-url` run against a
+   *different* pinned checkout computes route metrics with the running
+   tree's fixture, not the served one — pin both to the same commit when
+   that distinction matters.)
 4. **Sampling is polled (~75ms), not event-driven.** A single fast frame at
    the true instantaneous minimum/maximum can be missed by a sample or two —
    e.g. the harness's tracked `minEdgeMargin` and the game's own end-of-run
@@ -692,11 +694,13 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    is a different, larger ask than `fixeddt` was, and not something to
    assume is cheap — flagged for physics-review to evaluate, not built
    around from the harness side.
-6. The module split has landed `src/pure/traversal.js` — `lib/fixture.mjs`'s
-   hand-copied snapshot can now be replaced with a real import (not done in
-   this pass; scoped out to stay focused on the requested capabilities). The
-   adversarial report already diffed the two byte-for-byte and found no
-   drift, so this is a safe, low-risk cleanup whenever someone picks it up.
+6. ~~Replace `lib/fixture.mjs`'s hand-copied snapshot with a real import from
+   `src/pure/traversal.js`~~ — **done** (T-005). `lib/fixture.mjs` now
+   re-exports the game's own `TRAVERSAL_FIXTURE`; the hand-copy is deleted.
+   Before the swap, the copy was diffed field-by-field against the real
+   module (zero drift, confirming the adversarial report's earlier
+   byte-for-byte check), and route/dare-pocket/protoScore metrics recomputed
+   over every committed demo trace are identical before and after.
 7. `window.HB` now exists (unconditional, richer than `testapi`) — no
    longer a hook request, just confirmed working via `HB.snapshot()`.
 8. **In flight, noted for context (not this harness's ask):** the
@@ -739,7 +743,7 @@ tools/playtest/
     driver.mjs            browser launch, input replay (wall-clock or deterministic), policy tick, sampling loop
     sampler.mjs            in-page probe (testapi / window.HB / DOM fallback)
     metrics.mjs            trace -> report metrics, incl. A.5 alignment
-    fixture.mjs             hardcoded TRAVERSAL_FIXTURE route-graph snapshot
+    fixture.mjs             re-exports TRAVERSAL_FIXTURE from src/pure/traversal.js
     report.mjs              report.json + summary.md writer
   scripts/                 example input scripts (incl. retry-recovery.json (F7 proof),
                             policy-pinned-jump.json / policy-hound-reactive.json (closed-loop proof))
@@ -763,8 +767,5 @@ likely the ritual-arming check in `src/sim/transform.js`, since that's what
 to which frame an input lands in, rather than assuming the hook will fix it
 sight unseen.
 
-Secondary, lower-cost: replace `lib/fixture.mjs`'s hand-copied
-`TRAVERSAL_FIXTURE` snapshot with a real `import` from `src/pure/traversal.js`
-— the last documented staleness risk in this harness's own code, and the
-adversarial report already confirmed there's currently zero drift to
-reconcile, so it's a safe, mechanical change whenever picked up.
+(The previously-listed secondary action — replacing `lib/fixture.mjs`'s
+hand-copied snapshot with a real import — is done; see hook request #6.)
