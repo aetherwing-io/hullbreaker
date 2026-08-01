@@ -417,7 +417,7 @@ tower with corner events** (shipped):
   camera geometry — no per-frame unprojection; gameplay boundaries remain
   reproducible and aspect-ratio safe.
 
-### The lattice (route density, dare pockets, hound stations)
+### The lattice (route density, pockets, hound stations)
 
 Shipped by T-009 in `src/pure/lattice.js`, on top of the seeded chunk stream:
 
@@ -427,52 +427,37 @@ Shipped by T-009 in `src/pure/lattice.js`, on top of the seeded chunk stream:
   re-prunes, looping to a fixpoint; it consumes no rng, so the chunk stream
   is unchanged. Measured before → after: 149/246 windows inside [3, 5] →
   246/246; face 2's average went 2.17 → 3.5.
-- **Dare pockets**, one per face: a long approach, a two-column chasm, a
-  landing a tile lower, a mid lane, and a SHELF on the pocket's own tier,
-  mounted on the landing and reaching back out over the chasm with a weapon
-  capsule over its tip. The shelf points backward on purpose — no free drop
-  off the tip, no forward continuation — so the reward costs a climb *and* a
-  measured retreat against the scroll (0.81s of climb + 0.43s of retreat =
-  5.31 tiles of edge advance, asserted to leave ≥6 tiles of daylight; 8.69 as
-  shipped).
-  Two numbers decide whether any of that is real, and I-019 is the record of
-  getting them wrong twice. Both are quoted over the approach deck and
-  measured to the TOP of RIG, because a capsule is collected when a 0.95
-  sphere touches his body box, never by his feet: a held jump puts his head at
-  +4.42 (closed form; +4.31 in-sim), and the same jump with the air jump spent
-  at its apex puts it at +6.77 (+6.54 in-sim). At the original `rewardRise`
-  0.7 the capsule bobbed at +4.90 and the mandatory crossing jump took it; at
-  1.75 (+5.95) the grounded arc missed but a jump-spamming bot — ordinary
-  play, one input later — still took two of the six off the deck line. So the
-  shelf stopped borrowing the generator's +3 tier and took its own,
-  `shelfRise` 4.45 (+5.80), with the capsule `rewardRise` 2.30 over it (+8.10,
-  bob floor +7.95). That is 1.18 over the double jump's head reach — 0.23
-  clear of the pickup sphere closed form, 0.46 in the sim — at every launch
-  column, speed, hold length and air-jump timing on the deck line, while a
-  player standing on the tip still collects it by walking (worst distance 0.76
-  of 0.95). Both halves are asserted twice over, in arithmetic and in the
-  shipped sim: a jump-spamming crosser finishes the run holding none of the
-  six, and the authored climb (landing → mid lane → jump + air jump onto the
-  shelf → walk to the tip) takes all six, 1.5s apiece.
-  What geometry cannot buy back, measured rather than argued away: the reward
-  hangs in open air inside a lattice that is 3–5 routes deep everywhere by
-  design, so a double jump launched from a CATWALK — the seeded stream's
-  plateaus one tile above the pocket deck, or any lane at deck+2.35 and up
-  within ~8 columns — can still cross the capsule's airspace. An apex-timed
-  mash-jump bot takes 4 of 6 that way, every one of them from a lane it had to
-  climb to and not one from the deck line (asserted). Lifting the capsule past
-  those launch heights is not available: the mid lane is pinned at landing +
-  2.35 because it is the houndframe's answer, the shelf has to stay inside
-  `gen.maxReach` of the mid lane, and the standing pickup caps the last 2.5 —
-  the ladder runs out 0.03 of a tile short of clearing even the deck+1
-  plateaus. Closing it needs a different pocket SHAPE (a roofed alcove, or a
-  deck that steps *up* across the chasm, which makes the mandatory crossing
-  marginal for a screen-clamped player) or a pickup that asks for contact with
-  the shelf. Operator call, not a lane retune; the residue is pinned at its
-  measured size in `tools/pathcheck.mjs` so it cannot quietly grow.
-  The chasm is two columns because RIG is clamped to the right of the screen:
-  a player holding right crosses ground at *scroll* speed, and a held jump
-  from the clamp travels ~3.0 tiles.
+- **Pockets**, one per face: a long approach, a two-column chasm, a landing a
+  tile lower, a mid lane, and a SHELF one generator tier above that lane,
+  mounted over the landing and reaching back out across the chasm with a
+  **weapon capsule** over its tip. The shelf points backward on purpose — no
+  free drop off the tip, no forward continuation — so a pocket reads as a
+  side room off the climb rather than a shortcut through it. The chasm is two
+  columns because RIG is clamped to the right of the screen: a player holding
+  right crosses ground at *scroll* speed, and a held jump from the clamp
+  travels ~3.0 tiles.
+  **The capsule is free** (`decisions.md` entry 9). It is a plain pickup, not
+  a dare: it costs nothing, it is collected however the player reaches it —
+  by climbing landing → mid lane → shelf → tip, or by clipping it out of the
+  air while crossing the chasm on the deck line — and the operator's test for
+  it is whether arming up mid-face **escalates the action** on the stretch
+  that follows. Entry 9 is also the record of the alternative being tried and
+  withdrawn: two passes of this task lifted the capsule out of the deck-line
+  jump arc (`rewardRise` 0.7 → 1.75, then a shelf tier of the pocket's own at
+  +4.45) so that taking it would have to be paid for in backtracking, and the
+  operator ruled that pricing a reward in HEIGHT is an arms race against
+  frozen jump constants. The geometry is the plain shape again — shelf at mid + 3, capsule
+  +0.7 over the tip, i.e. deck + 5.05 — which is also the shape that reads
+  best at FAR, because the shelf stays inside the deck's own silhouette band
+  instead of floating a body-height above the lattice.
+  What is still measured and asserted, because it is still true: the pocket is
+  reachable with taught verbs (mid lane within one grounded jump of the
+  landing, shelf within a double jump of the mid lane), nothing in it strands
+  the player, a player standing anywhere on the tip collects the capsule at
+  every bob phase, and the walk out to the tip and back costs 0.43s — 1.83
+  tiles of edge advance against 14 tiles of authored daylight, leaving 12.17
+  where ≥6 is required. The *dare* itself is not cancelled, only unhooked from
+  this pocket: it is parked as its own concept (SPRINT T-021).
 - **Houndframe stations** (faces 2+, `decisions.md` entry 6): one per face, a
   3-column patrol on that face's pocket landing, with the pocket's own mid
   lane overhead as the answer. Ambient stations are non-gating — a ground

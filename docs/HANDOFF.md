@@ -296,7 +296,8 @@ are just where to start reading:
   CP1 pacing variants) are the wave-3 movement-verb modules; `src/render/limb.js`
   is the render-only static-anatomy bake (the default corner reveal since
   T-009), and `src/pure/lattice.js` is the six-face run's route-density,
-  dare-pocket and hound-station pass.
+  pocket and hound-station pass (the pocket's weapon capsule is a free
+  pickup — `decisions.md` entry 9).
 - `tools/pathcheck.mjs` imports `src/config.js` and `src/pure/*` directly (no
   more regex-extracting a pure block) and asserts path, generation, spawn, and
   jump invariants. The assertion count keeps climbing fast as fleet work

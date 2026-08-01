@@ -1,4 +1,4 @@
-# T-009 — six-face lattice, dare pockets, hound stations, static-anatomy reveal
+# T-009 — six-face lattice, pockets, hound stations, static-anatomy reveal
 
 Two sets of frames from the DEFAULT run (`index.html`, no flags, FAR view).
 
@@ -10,7 +10,7 @@ the spore mortar (T-014) are all in the tree. Headless Chrome at 1440×900.
 
 | shot | what to look at |
 | --- | --- |
-| `01-pocket-face1.png` | face 1 just past its dare pocket: deck line across the middle, three tiers of catwalk above it, a SPREAD capsule (magenta) and hostile tells (green) on the routes ahead. RIG is ~3.5% of screen height. |
+| `01-pocket-face1.png` | face 1 just past its pocket: deck line across the middle, three tiers of catwalk above it, a SPREAD capsule (magenta) and hostile tells (green) on the routes ahead. RIG is ~3.5% of screen height. |
 | `02-corner1-static-anatomy.png` | corner 1, mid-ritual (`CLEAR` is up). The joint's dark column and its buttress are the pivot; the next facet's deck and catwalks are ALREADY THERE to the right, receding into haze. Nothing assembles — `decisions.md` entry 3 as the shipped default. |
 | `03-face2-route-density.png` | face 2 entry: what "3–5 readable routes" looks like from the deck. |
 | `04-hound-station-face2.png` | face 2's houndframe station (green, on the plate left of centre) standing on the pocket landing, with the pocket's own mid lane directly above it — the answer to the charge is the route the shelf hangs from. |
@@ -43,6 +43,13 @@ the lattice looked like when it was authored; judge `merged/` instead.
 
 ## Honesty notes
 
+- **Pocket geometry, captured vs shipped**: these frames were captured with
+  the shelf one generator tier over its mid lane and the capsule +0.7 over
+  the tip. The task later raised both (twice) to put the capsule out of reach
+  from the deck line, and `decisions.md` entry 9 then withdrew the
+  requirement that made that necessary, so the shipped shape is the captured
+  one again. Nothing here needs re-shooting for the pocket; everything else
+  in frame still dates from the capture (main `b23184b`).
 - **Capture aid, `merged/01`–`05`**: the capture loop tops RIG's HP up every
   poll so one session reaches the later faces. Nothing else is modified — the
   wave gates still had to be shot down for the scroll to resume, and the

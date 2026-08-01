@@ -266,9 +266,10 @@ function resetGame() {
     }
     scoreRunStart(CONFIG.gen.seed, ACTIVE_SLICE.id, ACTIVE_SLICE.pace.id);
   } else {
-    // T-009: the six-face run's own route stakes — one authored dare-pocket
-    // reward per face, bobbing on the shelf tip out over that face's chasm.
-    // Same 'fixed' capsule contract the traversal fixture's pocket uses.
+    // T-009: the six-face run's authored pickups — one weapon capsule per
+    // face, bobbing over that pocket's shelf tip out across the chasm. Free
+    // (decisions.md entry 9); same 'fixed' capsule contract the traversal
+    // fixture's pocket uses.
     for (const p of pockets)
       spawnCapsule(p.reward.kind, p.reward.letter, p.reward.x, p.reward.y, p.reward.mode);
     scoreRunStart(CONFIG.gen.seed, 'six-face', 'normal');
