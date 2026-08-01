@@ -3967,5 +3967,60 @@ const XL = buildTransformLevel(CONFIG);
   }
 }
 
+/* =============== T-012: audio layer (ui) static guards ================= *
+ * src/ui/audio.js is presentation-only: it may read exported sim state and
+ * wrap src/sim/bridge.js view hooks, but the sim must not know it exists,
+ * it must not touch the render layer, and every sim surface it imports is
+ * a sanctioned read surface or the bridge itself. Same class of static
+ * guarantee guardLayer() gives pure/ and sim/, scoped to the one ui module
+ * that observes the sim rather than rendering it.                        */
+{
+  const audioSrc = readFileSync(join(srcDir, 'ui', 'audio.js'), 'utf8');
+  const audioCode = stripComments(audioSrc);
+  const imports = [...audioSrc.matchAll(/^\s*import\s*(?:{([^}]*)}\s*from\s*)?['"]([^'"]+)['"]/gm)]
+    .map((m) => ({ names: (m[1] || '').split(',').map((s) => s.trim()).filter(Boolean), spec: m[2] }));
+  ok(imports.length > 0, 'T-012: audio module declares imports');
+  ok(imports.every((im) => !/render|three/i.test(im.spec)),
+     'T-012: ui/audio.js imports nothing from the render layer or three.js');
+  // every sim import is bridge or a read surface — no setters, no spawners
+  const audioSimAllow = {
+    '../sim/bridge.js': ['view'],
+    '../sim/time.js': ['gameMs', 'sliceStats'],
+    '../sim/player.js': ['player', 'circleHitsPlayer'],
+    '../sim/wavegate.js': ['activeCorner', 'cornerEvents'],
+    '../sim/transform.js': ['transformEvents'],
+  };
+  for (const im of imports) {
+    if (!im.spec.startsWith('../sim/')) continue;
+    const allow = audioSimAllow[im.spec];
+    ok(!!allow && im.names.length > 0 && im.names.every((n) => allow.includes(n)),
+       'T-012: audio sim import is a sanctioned read surface: ' +
+       im.spec + ' { ' + im.names.join(', ') + ' }');
+  }
+  // the sim layer never references the audio module (feature is ui-side only)
+  for (const f of layerFiles('sim'))
+    ok(!stripComments(readFileSync(f, 'utf8')).includes('audio'),
+       'T-012: sim untouched by the audio layer: ' + f);
+  // main.js integration is exactly one side-effect import line
+  const mainCode = stripComments(readFileSync(join(srcDir, 'main.js'), 'utf8'));
+  ok((mainCode.match(/audio/g) || []).length === 1 &&
+     mainCode.includes("import './ui/audio.js';"),
+     'T-012: main.js integration is the single side-effect import line');
+  // wrappers delegate to the previously-installed hook before any synth work
+  ok(/prev\(a, b, c\);/.test(audioCode),
+     'T-012: audio hook wrappers call the prior implementation first');
+  // ?audio=0 hard-disables: no wrapper install, no listeners, no context
+  ok(/QUERY\.get\('audio'\) !== '0'/.test(audioCode) && /if \(AUDIO_ON\)/.test(audioCode),
+     'T-012: ?audio=0 gates all wiring off');
+  // the cue schedule audio keys on: both rituals expose ordered snap frames
+  const audioCT = cornerTimeline(CONFIG), audioTT = transformTimeline(CONFIG);
+  ok(audioCT.t1 < audioCT.t2 && audioCT.t2 < audioCT.t3 &&
+     audioCT.t3 < audioCT.t4 && audioCT.t4 < audioCT.t6,
+     'T-012: corner snap impact frames (t2, t4) are ordered inside the ritual');
+  ok(audioTT.t1 < audioTT.t2 && audioTT.t2 < audioTT.t3 &&
+     audioTT.t3 < audioTT.t4 && audioTT.t4 < audioTT.t6,
+     'T-012: transform snap impact frames (t2, t4) are ordered inside the ritual');
+}
+
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');
 process.exit(fails ? 1 : 0);
