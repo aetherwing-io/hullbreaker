@@ -33,9 +33,11 @@ sits between.
 The **baseline feedback pass** (hit-stop, screen shake, muzzle flashes,
 impact/death/hurt/pickup particles, and the crush-plane warning) is on by
 default. `?juice=0` disables all of it — including the sim-side hit-stop — for
-a byte-identical pre-juice build to compare against; every intensity is one
-block, `CONFIG.juice`, in `src/config.js`. `?audio=0` mutes the synth layer the
-same way.
+a simulation-identical pre-juice build to compare against: every dt scale
+collapses back to the pre-juice one (CHRONO included, which the pass composes
+with rather than replaces), no pool or mesh is built, and no bridge hook is
+wrapped. Every intensity is one block, `CONFIG.juice`, in `src/config.js`.
+`?audio=0` mutes the synth layer the same way.
 
 `index.html?g1=1` is the **G1 limb-turn experiment** on that normal six-face
 run: the same corner ritual, re-read as the camera orbiting 60° around a joint

@@ -19,11 +19,14 @@
    growing, and colors ride instanceColor (one buffer upload per frame,
    only while something is alive).
 
-   Colors come from role names, never literals: the render palette module
-   (src/render/palette.js) is imported LAZILY and optionally — it is
-   another lane's file and may not exist in a given build — falling back
-   to CONFIG.palette's grey-box roles until it resolves. Nothing here
-   holds a hex of its own.
+   Colors come from role names, never literals: this module names roles
+   (muzzle, enemyGlow, capsule, …) and resolves them through ONE table,
+   whose values are CONFIG.palette's grey-box roles — the colors the rest
+   of the game already draws with. Nothing here holds a hex of its own,
+   and that table is the single swap point for the render-palette lane
+   when it lands. It is deliberately NOT wired to a module that does not
+   exist in this branch: a dangling import 404s on every boot and lands a
+   console error in every playtest report.
 
    ?juice=0 (src/mode.js): no geometry, no material, no mesh is built and
    every entry point returns immediately — a disabled boot costs the same
@@ -41,9 +44,11 @@ import { towerPose } from './tower.js';
 const J = CONFIG.juice;
 
 /* ----------------------------- palette ---------------------------- *
- * Role names only. The fallback table is CONFIG.palette's grey-box roles
- * (the same values palette.js's CLASSIC table mirrors), so a build without
- * the palette module looks like the grey-box rather than like nothing. */
+ * Role names only, resolved from CONFIG.palette — the grey-box roles the
+ * bullets, hostiles and capsules already draw with, so an effect can never
+ * disagree with the thing it is feedback for. One table, one swap point:
+ * when a render-palette module lands, these six values come from it and no
+ * call site below changes. */
 const ROLE = {
   muzzle: CONFIG.palette.shots.R,        // warm white: player fire family
   enemyGlow: CONFIG.palette.wasp,        // hostile ecology
@@ -52,22 +57,6 @@ const ROLE = {
   warn: CONFIG.palette.houndTell,        // the roster's one warning amber
   rig: CONFIG.palette.player,            // RIG's own off-white
 };
-
-if (JUICE_ENABLED) {
-  // optional + lazy: resolves after boot if the module is present, and is a
-  // no-op if it is not. Never awaited — the pools are usable immediately.
-  import('./palette.js').then((m) => {
-    const P = m && m.PAL;
-    if (!P) return;
-    if (P.muzzle !== undefined) ROLE.muzzle = P.muzzle;
-    if (P.enemyGlow !== undefined) ROLE.enemyGlow = P.enemyGlow;
-    if (P.capsule !== undefined) ROLE.capsule = P.capsule;
-    if (P.modCapsule !== undefined) ROLE.modCapsule = P.modCapsule;
-    if (P.houndTell !== undefined) ROLE.warn = P.houndTell;
-    if (P.player !== undefined) ROLE.rig = P.player;
-    if (crushMat) crushMat.color.set(ROLE.warn);
-  }).catch(() => {});                    // absent module: keep the fallback
-}
 
 export function fxRole(name) { return ROLE[name]; }
 
@@ -89,15 +78,27 @@ function makeRow() {
   };
 }
 
-const sparks = [];
-const flashes = [];
+/* A pool is its fixed rows plus an O(1) free stack: `free[0..top)` holds the
+   indices of the dead rows, so a claim is a pop and never a scan of the pool.
+   A row enters the stack exactly once, on its live→free transition in
+   advance(); resetFx rebuilds the stack wholesale. `cursor` is only used when
+   the stack is empty (a saturated pool), where the claim recycles the
+   round-robin row — still one step, no scan. */
+function makePool(n) {
+  const rows = new Array(n);
+  const free = new Int32Array(n);
+  for (let i = 0; i < n; i++) { rows[i] = makeRow(); free[i] = i; }
+  return { rows, free, top: n, cursor: 0 };
+}
+
+let sparks = null, flashes = null;
 let sparkMesh = null, flashMesh = null, crushMesh = null, crushMat = null;
 let seed = 1;                            // burst-shape seed, bumped per burst
 let liveSparks = 0, liveFlashes = 0;
 
 if (JUICE_ENABLED) {
-  for (let i = 0; i < SPARK_MAX; i++) sparks.push(makeRow());
-  for (let i = 0; i < FLASH_MAX; i++) flashes.push(makeRow());
+  sparks = makePool(SPARK_MAX);
+  flashes = makePool(FLASH_MAX);
 
   // no `color` here on purpose: the material's default white is the identity
   // that instanceColor multiplies, so the per-row role color IS the color and
@@ -145,19 +146,17 @@ if (JUICE_ENABLED) {
  * tangent along the ribbon, world up, and the outward face normal — so a
  * spark thrown "forward" on face 4 goes forward on face 4.             */
 
-function claim(pool, cursorRef) {
-  // prefer a free row; otherwise take the round-robin one (oldest-ish), so a
-  // burst during a firefight replaces stale sparks instead of being dropped
-  for (let k = 0; k < pool.length; k++) {
-    const i = (cursorRef.i + k) % pool.length;
-    if (pool[i].ttl <= 0) { cursorRef.i = (i + 1) % pool.length; return pool[i]; }
-  }
-  const row = pool[cursorRef.i];
-  cursorRef.i = (cursorRef.i + 1) % pool.length;
+function claim(pool) {
+  // free row if there is one (pop), otherwise the round-robin one
+  // (oldest-ish), so a burst during a firefight replaces stale sparks
+  // instead of being dropped. Both branches are O(1) and allocation-free —
+  // a saturated pool must not make the spawn path cost more, which is
+  // exactly when the frame budget is tightest.
+  if (pool.top > 0) return pool.rows[pool.free[--pool.top]];
+  const row = pool.rows[pool.cursor];
+  pool.cursor = (pool.cursor + 1) % pool.rows.length;
   return row;
 }
-
-const sparkCursor = { i: 0 }, flashCursor = { i: 0 };
 
 function place(row, s, y, depth) {
   const p = towerPose(s, _pose);
@@ -179,7 +178,7 @@ export function fxBurst(spec, s, y, color, scale = 1) {
   const n = Math.max(1, Math.round(spec.count * scale));
   const sd = seed++;
   for (let i = 0; i < n; i++) {
-    const row = claim(sparks, sparkCursor);
+    const row = claim(sparks);
     const yaw = place(row, s, y, 0);
     burstVelocity(sd, i, n, spec.speed * scale, _vel);
     row.vx = Math.cos(yaw) * _vel.s + Math.sin(yaw) * _vel.d;
@@ -198,7 +197,7 @@ export function fxBurst(spec, s, y, color, scale = 1) {
    size (a spread volley's muzzle flash is the same flash, not five). */
 export function fxFlash(ms, size, s, y, color, depth = 0) {
   if (!JUICE_ENABLED) return;
-  const row = claim(flashes, flashCursor);
+  const row = claim(flashes);
   place(row, s, y, depth);
   row.vx = 0; row.vy = 0; row.vz = 0; row.gravity = 0;
   row.t = 0;
@@ -240,12 +239,14 @@ export function updateFx(dtMs) {
 function advance(pool, mesh, dtMs, alphaOf, isFlash) {
   let live = 0, dirty = false;
   const dt = dtMs / 1000;
-  for (let i = 0; i < pool.length; i++) {
-    const row = pool[i];
+  const rows = pool.rows;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     if (row.ttl <= 0) continue;
     row.t += dtMs;
     if (row.t >= row.ttl) {
       row.ttl = 0;
+      pool.free[pool.top++] = i;         // the one place a row rejoins the stack
       mesh.setMatrixAt(i, HIDE);
       mesh.setColorAt(i, _c.setRGB(0, 0, 0));
       dirty = true;
@@ -280,18 +281,25 @@ function advance(pool, mesh, dtMs, alphaOf, isFlash) {
 /* run reset (resetGame in src/main.js): nothing survives a restart */
 export function resetFx() {
   if (!JUICE_ENABLED) return;
-  for (let i = 0; i < sparks.length; i++) {
-    sparks[i].ttl = 0;
-    sparkMesh.setMatrixAt(i, HIDE);
-  }
-  for (let i = 0; i < flashes.length; i++) {
-    flashes[i].ttl = 0;
-    flashMesh.setMatrixAt(i, HIDE);
-  }
-  sparkMesh.instanceMatrix.needsUpdate = true;
-  flashMesh.instanceMatrix.needsUpdate = true;
+  clearPool(sparks, sparkMesh);
+  clearPool(flashes, flashMesh);
   liveSparks = 0; liveFlashes = 0;
   if (crushMesh) { crushMesh.visible = false; crushMat.opacity = 0; }
+}
+
+// every row dead, every index back on the stack, cursor rewound: the free
+// stack is rebuilt wholesale here rather than pushed row by row, so a reset
+// can never leave a stale or duplicated index behind
+function clearPool(pool, mesh) {
+  const rows = pool.rows;
+  for (let i = 0; i < rows.length; i++) {
+    rows[i].ttl = 0;
+    pool.free[i] = i;
+    mesh.setMatrixAt(i, HIDE);
+  }
+  pool.top = rows.length;
+  pool.cursor = 0;
+  mesh.instanceMatrix.needsUpdate = true;
 }
 
 // read-only debug/telemetry surface (see window.HB.juice and ?testapi=1)

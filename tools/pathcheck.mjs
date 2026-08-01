@@ -10,7 +10,7 @@
 // Run from the repo root:  node tools/pathcheck.mjs
 
 import { execFileSync } from 'node:child_process';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -4704,12 +4704,25 @@ const XL = buildTransformLevel(CONFIG);
   // desync the substep projectile integration against the world)
   ok(/const hScale = stepHitStop\(kills, player\.hp\);/.test(mainSrc),
      'T-011: the loop samples hit-stop once, before any entity update');
-  ok(/updateScroll\(dt \* hScale\)/.test(mainSrc) &&
-     /updatePlayer\(dt \* hScale\)/.test(mainSrc) &&
-     /updateBullets\(dt \* hScale\)/.test(mainSrc) &&
-     /const wScale = \(gameMs < mods\.chronoUntil[^\n]*\) \* hScale;/.test(mainSrc),
-     'T-011: scroll, RIG, projectiles and the CHRONO-scaled world all take the ' +
-     'same hit-stop factor — the freeze is global or it is a desync');
+  ok(/const wScale = \(gameMs < mods\.chronoUntil[^\n]*\) \* hScale;/.test(mainSrc),
+     'T-011: hit-stop COMPOSES with CHRONO (wScale = chrono × hit-stop) instead ' +
+     'of replacing it');
+  ok(/updateScroll\(dt \* wScale\)/.test(mainSrc) &&
+     /updateHostiles\(dt \* wScale\)/.test(mainSrc) &&
+     /updateCapsules\(dt \* wScale\)/.test(mainSrc),
+     'T-011: the pursuing scroll and the world still take the CHRONO-scaled dt ' +
+     '(now × hit-stop) — CHRONO must keep slowing the scroll it always slowed');
+  ok(/updatePlayer\(dt \* hScale\)/.test(mainSrc) &&
+     /updateBullets\(dt \* hScale\)/.test(mainSrc),
+     'T-011: RIG and their projectiles take the hit-stop factor ALONE — the ' +
+     'freeze is global, and CHRONO still leaves the player at full speed');
+  // the pools step before the death return: the frame RIG dies is the frame
+  // that spawns RIG's own burst, and a row only gets a matrix when they step
+  ok(mainSrc.indexOf('updateJuice();') > mainSrc.indexOf('updatePlayer(dt * hScale)') &&
+     mainSrc.indexOf('updateJuice();') <
+       mainSrc.indexOf("if (state !== 'PLAYING') return;"),
+     'T-011: the effect pools step after RIG and BEFORE the death early-return, ' +
+     'so a death frame still draws its own burst');
   ok(/updateScore\(dt,/.test(mainSrc),
      'T-011: the CHARGE meter still steps on real dt (proposal A.3), unscaled by ' +
      'a freeze');
@@ -4722,13 +4735,19 @@ const XL = buildTransformLevel(CONFIG);
   ok(!/trauma|shake/i.test(calBody),
      'T-011: edge calibration (the one sanctioned render→sim write) is computed ' +
      'from the UNSHAKEN probe pose — an effect can never move the damage plane');
-  // palette: role names via an optional lazy import, zero literals
-  ok(/import\('\.\/palette\.js'\)/.test(fxCode) && /\.catch\(/.test(fxCode),
-     'T-011: fx.js imports the render palette lazily and optionally');
+  // palette: role names resolved from CONFIG, zero literals, and no import of
+  // a module that is not in the tree (a dangling specifier — static or lazy —
+  // is a 404 and a console error on every single boot)
   ok(!/0x[0-9a-fA-F]{3,8}/.test(fxCode) && !/0x[0-9a-fA-F]{3,8}/.test(juiceCode),
      'T-011: the juice modules carry no color literals — roles only');
   ok(/CONFIG\.palette\./.test(fxCode),
-     'T-011: …and the fallback roles come from CONFIG.palette (grey-box neutral)');
+     'T-011: …and every fx role resolves from CONFIG.palette (grey-box neutral)');
+  for (const [rel, code] of [['render/fx.js', fxCode], ['render/juice.js', juiceCode]]) {
+    const here = dirname(join(srcDir, rel));
+    for (const m of code.matchAll(/(?:import\s*\(|from)\s*['"](\.[^'"]+)['"]/g))
+      ok(existsSync(join(here, m[1])),
+         'T-011: ' + rel + ' imports only modules that exist: ' + m[1]);
+  }
   // wrappers delegate, exactly like the audio layer
   ok(/prevImpl\(a, b, c\);/.test(juiceCode),
      'T-011: juice hook wrappers call the prior implementation first');
@@ -4740,10 +4759,25 @@ const XL = buildTransformLevel(CONFIG);
      'T-011: ?juice=0 gates the wiring, the pools, and the sim scale (a disabled ' +
      'boot is the pre-juice game)');
   // fixed pools, no per-event allocation in the hot path
-  ok(/pool\[cursorRef\.i\]/.test(fxCode) && !/push\(makeRow\(\)\)/.test(
+  ok(!/makeRow\(\)/.test(fxCode.slice(fxCode.indexOf('export function fxBurst'))) &&
+     !/new (Array|Int32Array|THREE\.)/.test(
        fxCode.slice(fxCode.indexOf('export function fxBurst'))),
      'T-011: bursts claim from a preallocated pool — the hot loop allocates ' +
      'nothing');
+  // …and the claim itself is O(1): pop the free stack, else one round-robin
+  // step. A scan would make the spawn path cost most exactly when the pool is
+  // saturated and the frame budget is tightest.
+  {
+    const claimBody = fxCode.slice(fxCode.indexOf('function claim(pool)'),
+      fxCode.indexOf('function place('));
+    ok(/pool\.rows\[pool\.free\[--pool\.top\]\]/.test(claimBody) &&
+       /pool\.cursor = \(pool\.cursor \+ 1\) % pool\.rows\.length/.test(claimBody) &&
+       !/for\s*\(/.test(claimBody) && !/while\s*\(/.test(claimBody),
+       'T-011: claiming a pool row is O(1) — a free-stack pop or one ' +
+       'round-robin step, never a scan of the pool');
+    ok(/pool\.free\[pool\.top\+\+\] = i;/.test(fxCode),
+       'T-011: …and a row rejoins the free stack exactly where it dies');
+  }
 }
 
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');

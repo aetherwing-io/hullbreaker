@@ -490,9 +490,21 @@ retuned or read without touching a renderer.
   the pursuing edge, intensity eased so the last tile carries the warning
   and the pulse accelerating as the margin closes — the same warning
   grammar as the hound tell and the polyp iris.
-- Colors are palette *roles*, resolved through an optional lazy import of
-  the render palette module with CONFIG.palette's grey-box roles as the
-  fallback; the juice modules carry no color literals of their own.
+- **Budget, measured rather than assumed**: `tools/playtest/juice-stress.mjs`
+  saturates the 256-slot projectile pool and the 224-spark pool (60 shots plus
+  a death burst injected per frame through the game's own spawn paths) and
+  reads the in-game frame sampler. On the dev machine, 256 live projectiles +
+  224 sparks + 16 flashes held **120fps / 8.33ms avg / 9.4ms worst / 0 frames
+  over 20ms**, indistinguishable from the same route with no load and from the
+  same load under `?juice=0`. Numbers, method and honesty notes (rAF is
+  vsync-locked, so `worstMs`/`over20ms` are the load-bearing fields) live in
+  `artifacts/t011-juice/07-stress-perf.json`.
+- Colors are palette *roles* (`muzzle`, `enemyGlow`, `capsule`, …) resolved
+  from `CONFIG.palette` through one table in `src/render/fx.js` — the same
+  values the bullets, hostiles and capsules already draw with, so an effect
+  can never disagree with the thing it is feedback for. The juice modules
+  carry no color literals of their own, and that table is the single swap
+  point when a dedicated render-palette module lands.
 
 ## Development sequence
 

@@ -234,24 +234,36 @@ function update(dt) {
      scroll: a freeze that stopped the world but let bullets fly would
      desync the substep integration the projectiles collide in, and one
      that stopped the player but not the crush plane would be a shove.
-     Timers stay on real gameMs — the same convention CHRONO uses below —
-     so a freeze removes exactly hitStopMs*(1-scale) of simulated time at
-     any frame rate and no deadline drifts. */
+     It COMPOSES with CHRONO rather than replacing it — the two scales
+     multiply, so each entity keeps exactly the CHRONO treatment it had
+     before this pass (scroll and world slowed, RIG and bullets not) and
+     merely gains the freeze on top. Timers stay on real gameMs — the same
+     convention CHRONO uses below — so a freeze removes exactly
+     hitStopMs*(1-scale) of simulated time at any frame rate and no
+     deadline drifts. */
   const hScale = stepHitStop(kills, player.hp);
   // CHRONO: the world runs slow, the player (and their bullets) run full
   // speed. Timers stay on real gameMs — a 4s window keeps the drift small.
   const wScale = (gameMs < mods.chronoUntil ? CONFIG.mods.chronoScale : 1) * hScale;
-  updateScroll(dt * hScale);             // sim half of the old updateCamera
+  updateScroll(dt * wScale);             // sim half of the old updateCamera
   syncCamera();                          // render half, same point in the frame
   updateSpawner();
   updatePlayer(dt * hScale);
+  /* render: effect pools + crush warning. It sits BEFORE the death return on
+     purpose — the frame RIG dies is the frame that spawns RIG's own death
+     burst, and a pool row is only given a matrix when the pools step, so
+     stepping after the return would mean the death effect never draws a
+     single frame. Everything a later update spawns this frame draws on the
+     next one. Past the death/victory screen the game clock itself stops
+     (gameMs only advances while PLAYING), so live effects hold with the rest
+     of the frozen world rather than finishing alone over a dead run. */
+  updateJuice();
   if (state !== 'PLAYING') return;      // died on the last frame
   updateHostiles(dt * wScale);
   updateCorpses();
   updateCapsules(dt * wScale);
   updateMods();
   updateBullets(dt * hScale);
-  updateJuice();                         // render: effect pools + crush warning
   // CHARGE steps on real dt: CHRONO must not inflate the meter (proposal A.3)
   updateScore(dt, {
     grounded: player.grounded, vx: player.vx,
