@@ -30,8 +30,9 @@
    assembly does — on ship-built traps and emplacements.
 
    Tuning constants live below rather than in src/config.js only because
-   the in-flight T-004 lane owns config.js; folding AUDIO into CONFIG is
-   a recorded follow-up for the integrator. */
+   the in-flight T-004 lane owns config.js; folding AUDIO into CONFIG once
+   that lane lands is suggested to the integrator in the T-012 builder
+   report (reports/tasks/T-012/report.md) — it is not yet a SPRINT task. */
 
 import { CONFIG } from '../config.js';
 import { QUERY } from '../mode.js';
@@ -442,10 +443,16 @@ function onHostileRemoved(e, fade) {
   if (fade && gate('kill', A.hitGapMs)) sfxKill();
 }
 
-// capsules: removal is pickup only when the capsule actually overlaps RIG
-// (resetGame teardown and off-screen despawns don't)
+// capsules: removal is pickup only under the sim's own catch predicate
+// (updateCapsules: past noCatchUntil, overlapping RIG, and — checked first
+// there — not an expiry/cull removal). Mirroring the expiry test here keeps
+// a popped weapon that dies under the player from chiming a false pickup.
+// Accepted edge: a resetGame teardown removal on the exact frame a catchable
+// capsule overlaps RIG would still chime once, under the retry/over duck.
 function onCapsuleRemoved(c) {
-  if (circleHitsPlayer(c.x, c.y, CONFIG.capsules.pickupRadius) && gate('pickup', 80))
+  if (c.mode === 'pop' && (c.y < CONFIG.edges.killY || gameMs > c.dieAt)) return;
+  if (gameMs >= c.noCatchUntil &&
+      circleHitsPlayer(c.x, c.y, CONFIG.capsules.pickupRadius) && gate('pickup', 80))
     sfxPickup(c.kind);
 }
 
@@ -464,8 +471,12 @@ function onTransformRitual(ev, t) {
 function onTransformFinished() { sfxBoom(); applyLayers(); }
 function onTransformReset() { xfSnap.clear(); applyLayers(); }
 
-function onCornerFinished() { sfxResume(); }
-function onFaceRevealed() { sfxBoom(); applyLayers(); }
+// Layer recount belongs on corner.finished, NOT faceRevealed: wavegate's
+// finishCorner fires faceRevealed BEFORE it sets c.state = 'done', so a
+// recount there would miss the completing corner (off by one, last face
+// never entering the mix). corner.finished fires after 'done'.
+function onCornerFinished() { sfxResume(); applyLayers(); }
+function onFaceRevealed() { sfxBoom(); }
 
 function onLanceTelegraph() { if (gate('warn', A.warnGapMs)) sfxWarn(false); }
 

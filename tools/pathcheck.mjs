@@ -4020,6 +4020,20 @@ const XL = buildTransformLevel(CONFIG);
   ok(audioTT.t1 < audioTT.t2 && audioTT.t2 < audioTT.t3 &&
      audioTT.t3 < audioTT.t4 && audioTT.t4 < audioTT.t6,
      'T-012: transform snap impact frames (t2, t4) are ordered inside the ritual');
+  // ambience layer recount rides the post-'done' hook: wavegate.finishCorner
+  // fires faceRevealed BEFORE c.state = 'done' and corner.finished after it,
+  // so counting layers on faceRevealed is off by one and drops the last
+  // face's layer (review finding, T-012). Guard both sides of the fix.
+  ok(/function onCornerFinished\(\)[^\n]*applyLayers\(\)/.test(audioCode),
+     'T-012: onCornerFinished recounts ambience layers (post-done hook)');
+  ok(!/function onFaceRevealed\(\)[^\n]*applyLayers\(\)/.test(audioCode),
+     'T-012: onFaceRevealed does not recount layers (fires pre-done, undercounts)');
+  const wavegateCode = stripComments(
+    readFileSync(join(srcDir, 'sim', 'wavegate.js'), 'utf8'));
+  const wgFinish = wavegateCode.slice(wavegateCode.indexOf('function finishCorner'));
+  ok(wgFinish.indexOf("state = 'done'") >= 0 &&
+     wgFinish.indexOf("state = 'done'") < wgFinish.indexOf('view.corner.finished'),
+     "T-012: wavegate.finishCorner commits state='done' before corner.finished fires");
 }
 
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');
