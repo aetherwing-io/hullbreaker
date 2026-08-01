@@ -496,7 +496,18 @@ entire climb:
    — `decisions.md` entry 4); the CP2.5 follow-up (ownership placement, roof
    contest, crouch/aim-assist prototypes, commit coil) also merged and was
    judged strongly positive ("enemies feel like they are coming for me" —
-   entry 6). Polyp and mortar are not yet started.
+   entry 6). **Iris Polyp v1 built, unjudged**: an opt-in trial in the
+   traversal slice (`?polyp=1` solo teach, `?polyp=2` the one two-enemy
+   combination — polyp locking the post-mid lane while the judged
+   hound-rejoin beat prices the drop reroute beneath it). It is a rooted
+   emplacement with a side-facing beam (boards 06/07): closed→tell→fire→vent,
+   armoured except during fire/vent so openings — not hit points — are how
+   it dies, the beam band locks exactly one lane on the standing firing
+   line, and sightlines never cross facet bends (entry 7's rule). Fairness
+   (tell vs the slowest escape, per pace tune) and placement (rooted mount,
+   owned connector coverage, clear reroutes above and below) are asserted
+   in `tools/pathcheck.mjs`; bot evidence in `reports/tasks/T-004/`.
+   Mortar is not yet started.
 4. **Baseline feedback now:** add essential hit, hurt, launch, pickup, warning,
    and transformation sounds plus restrained hit-stop, shake, flashes, and
    particles. Full polish can wait; readable timing cannot.

@@ -79,7 +79,7 @@ finding (capsule = 9.6px at FAR; see checkpoint queue) as the evidence
 base; the operator's direction pick (world-space scale-up vs HUD read)
 steers the implementation.
 
-## T-004 | feature | doing | P1
+## T-004 | feature | done | P1
 
 goal: polyp turret v1 (Iris Polyp, boards 06/07) — next enemy in DESIGN's
 teach-then-combine order: locks a connector/sightline, creates target
@@ -108,7 +108,7 @@ accept:
 owner: gameplay-engineer
 verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic --out /tmp/t005-check
 
-## T-006 | feature | todo | P3
+## T-006 | feature | doing | P3
 
 goal: rib-run authored-slope movement prototype — the costed-but-unstarted
 movement-lane candidate (decisions.md entry 5): a long diagonal ribline run
@@ -122,7 +122,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; named playtest script completing the rib-run
 
-## T-007 | docs | doing | P3
+## T-007 | docs | done | P3
 
 goal: docs drift sweep — `tools/playtest/README.md` still lists "add hostiles
 to ?testapi=1" as an open hook request but the root README documents
@@ -174,7 +174,7 @@ verify: node tools/pathcheck.mjs; a new full-run playtest script (policy mode)
 notes: biggest task in the queue — split into sub-worktrees if needed;
 sequenced after T-001/T-004 merge to integrate their landings.
 
-## T-010 | art | doing | P1
+## T-010 | art | review | P1
 
 goal: palette pass — replace the neutral grey-box palette with DESIGN's ≤8
 color roles (deep teal environment, rust-orange metal, acid-green enemy
@@ -242,7 +242,7 @@ denial per DESIGN's enemy table, teach-then-combine after polyp.
 blocked-by: T-004 (polyp) merged and reading clean solo.
 owner: gameplay-engineer
 
-## T-015 | assets | doing | P2
+## T-015 | assets | done | P2
 
 goal: codex asset pipeline bootstrap — `tools/assets/`: a `codex exec`
 wrapper spec template, SVG→PNG rasterizer using the harness's Chrome
@@ -270,6 +270,22 @@ accept:
 - [ ] CP4 operator packet queued
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; scored-run playtest script
+
+## T-017 | harness | todo | P3
+
+goal: nit-batch cleanup triaged from the Inbox + T-015's review MINOR:
+(1) I-001 — stale hostiles/capsules enrichment comment in
+`tools/playtest/lib/sampler.mjs` (~43-48), plus the harness-side follow-up
+it references (read `hostiles` from the primary testapi channel now that it
+ships there); (2) I-002 — `tools/assets/check.mjs` failure-path info header
+mislabels static imports as runtime references (~186-190); (3) T-015 review
+MINOR — `tools/assets/README.md` honesty item 4 miscounts the 100x100 blend
+census (5 blends, all hot-magenta; #ffdcc5 is below the 0.5% gate).
+accept:
+- [ ] all three fixed; harness demo run unchanged; check.mjs selftest green
+- [ ] I-001/I-002 marked resolved in the Inbox (strike or annotate)
+owner: gameplay-engineer
+verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic; node tools/assets/check.mjs --selftest
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
@@ -320,6 +336,64 @@ verify: node tools/pathcheck.mjs; scored-run playtest script
 one-paragraph description; S1 = blocks a checkpoint or corrupts a gate,
 S2 = real defect with workaround, S3 = polish/nit.
 -->
+
+## I-001 | docs | S3 | repro: read tools/playtest/lib/sampler.mjs lines 43-48 at main (post-e7b2952) | evidence: reports/tasks/T-007/playtest.md
+
+Stale code comment found while gating T-007 (docs drift sweep): the
+hostiles/capsules enrichment comment in `tools/playtest/lib/sampler.mjs`
+still says "testapi does not expose hostiles/capsules at all as of this
+writing ... this is currently the only source for them." Half-stale since
+merge `e7b2952`: `?testapi=1`'s `telemetry()` now publishes `hostiles[]`
+(capsules remains HB-only, so that half is still true). T-007's playtest
+README correctly documents the real state and the open harness-side
+follow-up (read hostiles from the primary channel); the comment lives in
+harness *code*, so the docs-only T-007 lane rightly could not touch it.
+Fold the comment fix into that harness-side follow-up when it lands. Nit,
+no behavioral impact — the enrichment still works.
+
+## I-002 | bug | S3 | repro: node tools/assets/check.mjs --root <fixture tree with a static `import ... from "../assets/x.png"` in src/> at task/T-015 28b8ba2 | evidence: reports/tasks/T-015/playtest.md
+
+Cosmetic mislabel on check.mjs's failure path, found while gating T-015:
+`checkGameIndependence` (tools/assets/check.mjs ~lines 186-190) collects
+every `src/` line matching `assets/` into the info list, including lines
+that are static imports — so a static import is correctly raised as a
+problem (exit 1, right message) but is *also* printed under the header
+"game references to assets/ (runtime, not imports)", which contradicts
+itself. Fix is either filtering import-matched lines out of the info list
+or renaming the header ("all references"). Verdict unaffected: errors fire
+and exit codes are correct; the mislabel only appears on trees that are
+already failing.
+
+## I-003 | art | S3 | repro: polyp-facetank.json variant with durationMs 3300 --tail-ms 100 --deterministic --base-url <pinned task/T-004 32df995>, screenshot at first tell onset | evidence: tools/playtest/runs/gate-T-004-cap-tell-approach/screenshot.png (vs gate-T-004-cap-tell-parked/)
+
+Found while gating T-004 (polyp turret, PASS): the Iris Polyp's tell is a
+two-stage escalation — acid-green bulb dilating to a pale fully-open iris
+— and the pale phase is excellent at the default FAR view (highest-contrast
+object on screen). But the first ~300ms of the ~800ms tell reads as only a
+small notch in the green bulb at FAR; nearly a third of the reaction window
+carries little visual signal at the shipped camera. Not a blocker (the
+pale phase plus the 450ms beam make the cycle readable, and operator
+question 5 in the T-004 evidence packet already asks about silhouette
+legibility) — fold into T-003's FAR-tells readability pass, whose scope
+predates the polyp and currently names only wasp/hound tells and capsule
+glyphs. T-003 is already sequenced after T-004's merge, so this is a
+scope note, not new work.
+
+## I-004 | art | S3 | repro: any run at default palette on task/T-010 0c4c003; compare src/render/hostiles.js color reads vs src/render/palette.js CONCEPT.wasp/carrier/hound tokens, or board 01's wasps vs artifacts/palette-v1/sixface-action--pair.png | evidence: reports/tasks/T-010/playtest.md; artifacts/palette-v1/sixface-action--pair.png
+
+Found while gating T-010 (palette pass, PASS): the ENEMY acid-green role
+lands only partially — `src/render/hostiles.js` still reads
+`CONFIG.palette.wasp/carrier/hound/houndTell/houndCharge` directly (the
+muted grey-box greens, e.g. wasp 0x7cc47c), not the brighter acid tokens
+palette.js's CONCEPT table authors (wasp 0x9ce23e, enemyGlow 0x9dff3a).
+Deliberate lane fence, documented in palette.js's FOLLOW-UP header note:
+hostiles.js was in-flight under T-004 when T-010 branched, so the repoint
+is deferred to after that merge. Threat readability holds in the FAR
+side-by-sides (green still separates from teal/rust), but the enemies do
+not yet reach board 01/10's acid intensity, and the "one palette module,
+not scattered hex literals" acceptance is one file short. One-line repoint
+per the palette.js note (tokens already authored and pathcheck-asserted);
+fold into the post-T-004 integration or T-003's FAR-tells pass.
 
 ---
 

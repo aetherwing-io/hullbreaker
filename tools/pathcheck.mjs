@@ -25,13 +25,16 @@ import {
 } from '../src/pure/waves.js';
 import {
   TRAVERSAL_FIXTURE, TRAVERSAL_PACES, TRAVERSAL_PACE_IDS, resolveTraversalPace,
-  HOUND_TRIAL, houndTrialStage, traversalEnemyPlan,
+  HOUND_TRIAL, houndTrialStage, POLYP_TRIAL, polypTrialStage, traversalEnemyPlan,
   traversalLedgeProbe, traversalLedgeDecision,
   traversalWallDecision, traversalSolidAllowsGrab, traversalFollowTarget,
   traversalCameraDepth, traversalPaceTargetSpeed, traversalPaceStep,
   traversalPocketAdvanceTiles, traversalChainMult, traversalFallbackTarget,
   traversalMarginCapScroll, traversalPocketEntryMargin,
 } from '../src/pure/traversal.js';
+import {
+  polypBeamHitsRect, polypBeamReach, polypBendClampRange,
+} from '../src/pure/polyp.js';
 import { crouchStance } from '../src/pure/stance.js';
 import { assistDirection, assistVerticalReach } from '../src/pure/assist.js';
 import {
@@ -75,6 +78,7 @@ import {
 // bot-player harness relies on. A handful of collision-edge assertions drive
 // the real sim loop directly below, instead of re-deriving its physics.
 import { setEdges as setSimEdges } from '../src/sim/edges.js';
+import { ENEMY as simEnemyTable } from '../src/sim/hostiles.js';
 import {
   player as simPlayer, updatePlayer as updateSimPlayer,
   clearPlayerTraversal as clearSimTraversal,
@@ -1194,6 +1198,247 @@ function airTimeAbove(T, h) {            // seconds the feet stay above h on a f
   }
 }
 
+/* --- Iris Polyp: sightline fairness, iris rhythm, rooted placement -----
+ * The polyp is legitimate only if (1) the tell is a real reaction window for
+ * the SLOWEST escape, not just the jump; (2) the beam locks one lane and
+ * never a tier; (3) the iris rhythm makes openings, not hit points, the way
+ * it dies; and (4) the rooted station actually covers the connector it
+ * declares it owns, over the real fixture terrain. Constants are tied to the
+ * player's physics for the frozen tune AND every pace overlay, mirroring the
+ * houndframe contract above.                                            */
+{
+  const PP = CONFIG.polyp;
+  const HD = CONFIG.hound;
+  const R = CONFIG.weapons.R;
+  const cycleMs = PP.tellMs + PP.beamMs + PP.ventMs + PP.cooldownMs;
+  const latency = (PL.jumpBufferMs + 1000 / 30) / 1000;
+  const isSolidAt = function (x, y) { return levelSolidCell(TL, Math.floor(x), Math.floor(y), 8); };
+
+  // -- the sim roster row and its render twin ---------------------------
+  ok(!!simEnemyTable.polyp && simEnemyTable.polyp.gating === false &&
+     simEnemyTable.polyp.start === 'closed' &&
+     simEnemyTable.polyp.hp === PP.hp && simEnemyTable.polyp.hitR === PP.hitRadius,
+     'sim ENEMY table carries the polyp: non-gating, born closed, CONFIG-matched');
+  {
+    const renderSrc = readFileSync(join(srcDir, 'render', 'hostiles.js'), 'utf8');
+    ok(Object.keys(simEnemyTable).every(function (k) {
+      return new RegExp(k + ':\\s*\\{').test(renderSrc);
+    }), 'every sim ENEMY kind has a LOOK row in render/hostiles.js (polyp included)');
+  }
+
+  // -- iris rhythm: temporary lock, honest opening, no sponge -----------
+  ok(PP.hp * R.fireRateMs <= PP.ventMs,
+     'one vent window of baseline rifle fire kills the polyp (' +
+     (PP.hp * R.fireRateMs) + ' <= ' + PP.ventMs + ' ms): the opening is honest');
+  ok(PP.cooldownMs / cycleMs >= 0.4,
+     'the lane is locked temporarily, not permanently (closed fraction ' +
+     (PP.cooldownMs / cycleMs).toFixed(2) + ' of the cycle)');
+  ok(PP.beamMs / cycleMs <= 0.2,
+     'the beam itself holds the lane for at most a fifth of the cycle');
+  ok(PL.iframesMs > PP.beamMs,
+     'i-frames outlast one volley: standing in the beam costs one point, not a bar');
+  ok(PL.iframesMs < cycleMs,
+     'i-frames expire inside the iris cycle: the next volley is not free');
+  ok(PP.hitRadius < PP.size + 1e-9,
+     'polyp hit circle stays inside its bulb silhouette');
+  ok(PP.beamStepTiles < 0.5 && PP.beamHalf < 0.5,
+     'sight march is finer than a 1-tile wall and the band is under half a tile tall');
+  // the CP2 aim-gap lesson, applied at authoring time: the bulb centers on
+  // the standing firing line, so spending an opening never needs the
+  // crouch/assist prototypes
+  ok(Math.abs(PL.muzzleY - PP.rootY) <= PP.hitRadius / 2,
+     'a standing level shot from the polyp lane center-punches the bulb (muzzle ' +
+     PL.muzzleY + ' vs root ' + PP.rootY + ')');
+
+  // -- escape physics: the tell covers the SLOWEST answer, per tune -----
+  {
+    const jumpRise = PP.rootY + PP.beamHalf;      // feet clear of the band, from the deck
+    const dropFall = PL.height - (PP.rootY - PP.beamHalf);   // head below the band
+    ok(dropFall > 0, 'the band sits low enough that a drop-through can duck it at all');
+    const TUNES = [['normal tune', PL]].concat(
+      TRAVERSAL_PACE_IDS.map(function (id) {
+        return ['pace ' + id, { ...PL, ...resolveTraversalPace(id).movement }];
+      })
+    );
+    for (const [label, T] of TUNES) {
+      const jumpCost = riseTimeTo(T, jumpRise) + latency;
+      ok(Number.isFinite(jumpCost) && PP.tellMs / 1000 >= 2 * jumpCost,
+         'polyp tell is at least twice the cost of jumping clear of the band (' + label +
+         ': ' + (PP.tellMs / 1000).toFixed(3) + ' s vs ' + jumpCost.toFixed(3) + ' s)');
+      const dropCost = Math.sqrt(2 * dropFall / (-T.gravity * T.fallGravityMult)) + latency;
+      ok(PP.tellMs / 1000 >= 2 * dropCost,
+         'polyp tell is at least twice the cost of dropping below the band (' + label +
+         ': vs ' + dropCost.toFixed(3) + ' s): the slowest escape still has headroom');
+      ok(airTimeAbove(T, jumpRise) > PP.beamMs / 1000,
+         'a full jump stays above the band for longer than the whole volley (' + label +
+         ': ' + airTimeAbove(T, jumpRise).toFixed(3) + ' s vs ' + (PP.beamMs / 1000) + ' s)');
+    }
+  }
+
+  // -- pure geometry units ----------------------------------------------
+  ok(polypBendClampRange(10, 1, 9, [14]) === 4 &&
+     polypBendClampRange(10, -1, 9, [14]) === 9 &&
+     polypBendClampRange(10, -1, 9, [8]) === 2 &&
+     polypBendClampRange(10, 1, 9, []) === 9 &&
+     polypBendClampRange(10, 1, 9, [10]) === 0,
+     'bend clamp: a sightline stops at the first facet bend ahead, ignores bends behind');
+  {
+    const r1 = polypBeamReach(10, 0, -1, 9, function (x) { return Math.floor(x) === 5; }, 0.35);
+    ok(r1 > 4 - 1e-9 && r1 <= 4 + 0.35 + 1e-9 && r1 < 5,
+       'reach march stops within one step of a wall face and never crosses a 1-tile wall');
+    ok(polypBeamReach(10, 0, -1, 9, function () { return false; }, 0.35) === 9,
+       'reach march runs to the clamped range over open ground');
+    ok(polypBeamReach(10, 0, 1, 9, function () { return true; }, 0.35) <= 0.35 + 1e-9,
+       'a barrel against a wall has no lane at all');
+  }
+  ok(!polypBeamHitsRect(10, 5, -1, 0, 0.32, 0, 20, 0, 10), 'zero reach hits nothing');
+  ok(polypBeamHitsRect(10, 5, -1, 4, 0.32, 7, 8, 4, 6), 'a body in the lane is hit');
+  ok(!polypBeamHitsRect(10, 5, -1, 4, 0.32, 10.2, 11, 4, 6), 'behind the barrel tip is safe');
+  ok(!polypBeamHitsRect(10, 5, -1, 4, 0.32, 7, 8, 5.4, 7), 'above the band is safe');
+  ok(!polypBeamHitsRect(10, 5, -1, 4, 0.32, 7, 8, 3, 4.6), 'below the band is safe');
+
+  // -- stages and composition -------------------------------------------
+  const PSTAGE_NAMES = ['solo', 'combo'];
+  ok(Object.keys(POLYP_TRIAL.stages).join(',') === PSTAGE_NAMES.join(','),
+     'the polyp trial is exactly teach (solo) then one two-enemy combination (combo)');
+  ok(PSTAGE_NAMES.every(function (n) { return polypTrialStage(n) === POLYP_TRIAL.stages[n]; }) &&
+     polypTrialStage(null) === null && polypTrialStage('nope') === null,
+     'polyp stages resolve by name and reject anything else');
+  ok(POLYP_TRIAL.stages.solo.enemies.length === 1 &&
+     POLYP_TRIAL.stages.solo.enemies[0].kind === 'polyp',
+     'the teach stage is ONE polyp and nothing else: every point of damage is the beam');
+  {
+    const polypBefore = JSON.stringify(POLYP_TRIAL);
+    const HSTAGE_NAMES = [null, 'solo', 'combo', 'squeezePlus', 'mix', 'aim'];
+    let identity = true, replaced = true, derived = true;
+    for (const id of TRAVERSAL_PACE_IDS) {
+      const F = resolveTraversalPace(id);
+      for (const h of HSTAGE_NAMES) {
+        const withNone = traversalEnemyPlan(F, h);
+        if (h === null && traversalEnemyPlan(F, null, null) !== F.enemies) identity = false;
+        if (JSON.stringify(traversalEnemyPlan(F, h, null)) !== JSON.stringify(withNone) ||
+            JSON.stringify(traversalEnemyPlan(F, h, 'nonsense')) !== JSON.stringify(withNone)) {
+          identity = false;
+        }
+        for (const p of PSTAGE_NAMES) {
+          const stage = POLYP_TRIAL.stages[p];
+          const plan = traversalEnemyPlan(F, h, p);
+          if (plan.length !== stage.enemies.length) { replaced = false; continue; }
+          plan.forEach(function (e, i) {
+            const a = stage.enemies[i];
+            if (e.id !== a.id || e.kind !== a.kind) replaced = false;
+            if (a.deck !== undefined) {
+              const ride = e.kind === 'polyp' ? PP.rootY : HD.rideY;
+              if (Math.abs(e.y - (a.deck + ride)) > 1e-9) derived = false;
+            }
+          });
+        }
+      }
+    }
+    ok(identity, 'no ?polyp=: every pace x hound-stage plan is byte-identical to today');
+    ok(replaced, 'polyp stages field only their own roster, at every pace and hound stage');
+    ok(derived, 'polyp rows root at deck+rootY, hound rows ride deck+rideY, in composed plans');
+    ok(JSON.stringify(POLYP_TRIAL) === polypBefore,
+       'composing a plan never mutates the polyp trial table');
+  }
+
+  // -- rooted placement over the real fixture terrain -------------------
+  for (const name of PSTAGE_NAMES) {
+    const plan = traversalEnemyPlan(TF, null, name);
+    const ids = new Set(plan.map(function (e) { return e.id; }));
+    ok(ids.size === plan.length && plan.every(function (e) {
+      return Number.isFinite(e.x) && Number.isFinite(e.y) &&
+        Number.isFinite(e.delayMs) && e.delayMs >= 0 && e.x >= B.x0 && e.x < B.x1;
+    }), name + ' polyp stage authors uniquely named, in-bounds hostiles');
+    const polyps = plan.filter(function (e) { return e.kind === 'polyp'; });
+    ok(polyps.length === 1, name + ' fields exactly one polyp: the lesson stays attributable');
+    for (const p of polyps) {
+      const mount = (p.mount || '').split(':');
+      const plat = TF.platforms.find(function (r) { return r.id === mount[1]; });
+      ok(mount[0] === 'platform' && !!plat && plat.y === p.deck &&
+         p.x >= plat.x0 + 0.5 && p.x <= plat.x1 - 0.5 && Math.abs(p.dir) === 1,
+         name + ' polyp is rooted on its declared catwalk, inside its extent, facing a declared way');
+      const route = routeById.get(p.contests);
+      const c = connectorById.get(p.owns);
+      ok(!!route && !!c && route.connectorIds.indexOf(p.owns) >= 0,
+         name + ' polyp owns a real connector its assigned route actually walks');
+      const y = p.deck + PP.rootY;
+      const tip = p.x + p.dir * PP.barrelTiles;
+      const clamp = polypBendClampRange(tip, p.dir, PP.sightRange, BEND_S);
+      ok(clamp === PP.sightRange,
+         name + ' no facet bend cuts this station (the clamp is armed but idle here)');
+      const reach = polypBeamReach(tip, y, p.dir, clamp, isSolidAt, PP.beamStepTiles);
+      ok(reach > 2,
+         name + ' beam has a real lane to lock (reach ' + reach.toFixed(1) + ' tiles)');
+      ok(polypBeamHitsRect(tip, y, p.dir, reach, PP.beamHalf,
+           c.x - 0.35, c.x + 0.35, c.y, c.y + PL.height),
+         name + ' beam covers a standing body at the connector it owns');
+      const shared = connectorById.get('overhang-top');
+      ok(!polypBeamHitsRect(tip, y, p.dir, reach, PP.beamHalf,
+           shared.x - 0.35, shared.x + 0.35, shared.y, shared.y + PL.height),
+         name + ' the shared overhang-top decision point stays outside the lock: the ' +
+         'fork is chosen in the open (board 07)');
+      const x0 = p.dir > 0 ? tip : tip - reach;
+      const x1 = p.dir > 0 ? tip + reach : tip;
+      let below = true, above = true, clips = false;
+      for (const run of TF.groundRuns) {
+        if (run.x1 <= x0 || run.x0 >= x1) continue;
+        if (run.y + PL.height >= y - PP.beamHalf) below = false;
+      }
+      for (const plat2 of TF.platforms) {
+        if (plat2.id !== mount[1] && plat2.x1 > x0 && plat2.x0 < x1 &&
+            plat2.y > p.deck && plat2.y <= y + PP.beamHalf) above = false;
+        if (plat2.id !== mount[1] && plat2.x0 < p.x + PP.size && plat2.x1 > p.x - PP.size &&
+            plat2.y >= p.deck && plat2.y <= y + PP.size * (1 + PP.tellSwell)) clips = true;
+      }
+      ok(below, name + ' every deck below the span stays a safe reroute: no standing body in the band');
+      ok(above, name + ' no higher catwalk inside the span sits in the band: one lane, never a tier');
+      ok(!clips, name + ' the bulb (even swollen) clips no neighboring catwalk');
+      // the roof tail behind the pocket wall pays a toll inside the span —
+      // a DECLARED fact, not an accident, and fair: hopping the band from the
+      // roof is strictly easier than the asserted from-deck jump, and the
+      // pocket floor below it is asserted clear by the deck check above
+      const roof = TF.solidRects.find(function (r) { return r.id === 'dare-overhang'; });
+      ok(polypBeamHitsRect(tip, y, p.dir, reach, PP.beamHalf,
+           roof.x1 - 1.5, roof.x1, roof.y1, roof.y1 + PL.height),
+         name + ' the roof freeway pays a toll at the span tail (declared)');
+    }
+  }
+
+  // -- the combination: a vertical stack on one decision ----------------
+  {
+    const combo = traversalEnemyPlan(TF, null, 'combo');
+    ok(combo.length === 2,
+       'the combination stage is exactly two enemies: one new lesson at a time');
+    const p = combo.find(function (e) { return e.kind === 'polyp'; });
+    const h = combo.find(function (e) { return e.kind === 'hound'; });
+    ok(!!p && !!h, 'combo pairs the polyp with a houndframe');
+    const span = h.patrol.x1 - h.patrol.x0;
+    const run = TF.groundRuns.find(function (r) { return h.x >= r.x0 && h.x < r.x1; });
+    const hc = connectorById.get(h.owns);
+    const reachH = HD.chargeSpeed * HD.chargeMs / 1000;
+    ok(!!run && run.y === h.deck && TL.groundH[Math.floor(h.x)] === h.deck &&
+       Math.abs(h.y - (h.deck + HD.rideY)) <= 1e-9 && Math.abs(h.dir) === 1 &&
+       h.x >= h.patrol.x0 && h.x <= h.patrol.x1 &&
+       h.patrol.x0 >= run.x0 + 0.5 && h.patrol.x1 <= run.x1 - 0.5 &&
+       span >= 2.0 && span <= 4.0 &&
+       !!hc && routeById.get(h.contests).connectorIds.indexOf(h.owns) >= 0 &&
+       hc.x >= h.patrol.x0 && hc.x <= h.patrol.x1 && Math.abs(hc.y - h.deck) <= 0.6 &&
+       Math.max(Math.abs(hc.x - h.patrol.x0), Math.abs(hc.x - h.patrol.x1)) <= reachH,
+       'combo hound is the judged rejoin beat: planted, short span, owns a swept connector');
+    const y = p.deck + PP.rootY;
+    const tip = p.x + p.dir * PP.barrelTiles;
+    const reach = polypBeamReach(tip, y, p.dir,
+      polypBendClampRange(tip, p.dir, PP.sightRange, BEND_S), isSolidAt, PP.beamStepTiles);
+    const x0 = p.dir > 0 ? tip : tip - reach;
+    ok(hc.x > x0 && hc.x < (p.dir > 0 ? tip + reach : tip) &&
+       hc.y + PL.height < y - PP.beamHalf,
+       'the hound prices the drop reroute directly beneath the locked lane: a vertical stack');
+    ok(h.contests !== p.contests,
+       'the two threats price different routes — reroute vs lock is a real choice, ' +
+       'never double jeopardy on one line');
+  }
+}
 
 /* --- the 8-way aim gap, and the two prototypes answering it -----------
  * CP2, operator verbatim: "sometimes I'm lined up to shoot and safe and can't

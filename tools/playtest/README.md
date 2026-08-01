@@ -132,6 +132,11 @@ parens, and never `eval()`/`new Function()`. Each clause is either:
   - `houndTell`, `houndCharge` — any hostile with `kind: 'hound'` currently
     in the `tell`/`charge` state (`src/sim/hostiles.js`'s
     prowl→tell→charge→skid/tumble machine).
+  - `polypTell`, `polypFire`, `polypOpen` — any hostile with `kind: 'polyp'`
+    in the dilating pre-beam `tell`, the live-beam `fire`, or either
+    vulnerable state (`fire`/`vent`) of the iris cycle
+    (closed→tell→fire→vent, same file). Closed/tell shots ping off the
+    armour, so `polypOpen` is the "shots count now" signal.
   - `victory` — the traversal-slice VICTORY overlay or `state`.
 - a bare sample field, optionally negated, tested for truthiness (e.g. `grounded`, `!grounded`).
 - a numeric comparison against a sample field: `field OP number`, `OP` one of `> >= < <= == !=` (e.g. `x>44`, `hp<=1`).
@@ -360,7 +365,9 @@ The sampler (`lib/sampler.mjs`) checks, in order:
    debug handle, always present"). It shares the same underlying
    `telemetry()` function as `testapi` so their common fields can't drift
    apart, and additionally carries `player.{hp,lives,facing,airJumpsLeft}`,
-   `kills`, `shotsFired`, `hostiles`, `capsules`. Used whenever `--no-testapi`
+   `kills`, `shotsFired`, `capsules` (`hostiles` used to be on this list but
+   is no longer an `HB`-only extra — the frozen channel now carries it too;
+   see hook request #2). Used whenever `--no-testapi`
    is passed (or if `?testapi=1` is ever removed from `run.mjs`'s default).
    **Note:** `window.HB`'s *other* top-level members (`HB.state`,
    `HB.scrollX`, `HB.currentWeapon`, `HB.kills`, …) are getter **functions**,
@@ -465,9 +472,10 @@ request, this harness adopted it as follows:
   harness's own choice — A.5 doesn't specify one — and is documented inline.
 - **`protoScore`**: computed with A.5's exact published formula,
   `100·airborneKills + 25·links + 12·(airMs/1000) − 8·(stallMs/1000)`, but
-  **`airborneKills` and `links` are proxies, not the real thing**, because
-  `HB.score.events`/`HB.score.snapshot()` don't exist yet (A.5 proposes them
-  as a *future* surface, not something already shipped):
+  **`airborneKills` and `links` are proxies, not the real thing** — the
+  `HB.score.events`/`HB.score.snapshot()` surface A.5 proposed has since
+  shipped with the CHARGE prototype (events flow only under `?score=1`),
+  but this harness has not switched over yet (see hook request #3):
   - `airborneKills` proxy: every observed increase in the kills counter where
     the preceding `testapi`/`full` sample had `grounded === false`.
   - `links` proxy: `(best-matched route's matched-connector count) − 1`, i.e.
@@ -475,9 +483,9 @@ request, this harness adopted it as follows:
     through, from this harness's own route matcher.
   - Both are labeled `unavailableReason`/`note` in the report so a reader
     doesn't mistake them for the authoritative event-derived numbers A.5
-    describes. **Replace both with real counts once `HB.score.events` lands**
-    — that's a small, isolated change in `lib/metrics.mjs`'s
-    `computeAirborneKills`/`inferRoute`.
+    describes. **Replace both with real counts** — the surface is there now,
+    for runs that pass `?score=1` — a small, isolated change in
+    `lib/metrics.mjs`'s `computeAirborneKills`/`inferRoute`.
 - **Input density is deliberately excluded from `protoScore`**, per A.5's own
   reasoning; reported separately.
 - `minEdgeMargin` is read from the game (via `testapi`/HUD), never
@@ -641,15 +649,16 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    they were never actually affected by F7 — but any other harness output
    generated before this fix, from any script that died and kept running,
    measured a zombie attempt for everything after the first retry.
-7. **`houndTell`/`houndCharge` (and any future hostile-state predicate) need
-   `window.HB`, not `testapi`.** `?testapi=1`'s snapshot doesn't carry
-   `hostiles` at all as of this writing; the sampler enriches every sample
-   with `window.HB.snapshot()`'s `hostiles` array regardless of which
-   channel is primary (window.HB is unconditional, so this works today) —
-   but if a future build ever removed `window.HB` while keeping `testapi`,
-   these predicates would silently always evaluate false rather than error.
-   Worth a real hook request (below) rather than relying on this fallback
-   indefinitely.
+7. **`houndTell`/`houndCharge` (and any future hostile-state predicate) are
+   still sourced from `window.HB`, but the game-side gap is closed.** Hook
+   request #2 below was granted: `?testapi=1`'s snapshot now carries
+   `hostiles[]` (same rows `HB.snapshot()` publishes — `src/main.js`, merged
+   `e7b2952`). The sampler (`lib/sampler.mjs`) still enriches every sample
+   from `window.HB.snapshot()`'s `hostiles` array as of this writing, so the
+   original caveat is narrower but not gone: a build that removed
+   `window.HB` while keeping `testapi` would still make these predicates
+   silently evaluate false, until the small harness-side follow-up (read
+   `hostiles` from the primary channel's own snapshot) lands.
 8. **Deterministic mode fixes one jitter source, not all of them** — see
    "Deterministic injection mode" above. The `t2-transform-seam-rush`
    quantification is the concrete example: don't assume `--deterministic`
@@ -668,15 +677,24 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
 1. ~~Add `sliceStats.airJumps` to the `?testapi=1` snapshot~~ — **done**
    (the module split's `src/main.js` publishes it; this harness just needed
    to stop dropping it, fixed above).
-2. **Add `hostiles` (with `state`/`dir`) to the `?testapi=1` snapshot**,
-   matching what `HB.snapshot()` already carries — closes the gap in
-   limitation #7 above and removes this harness's only remaining dependency
-   on `window.HB` specifically rather than either channel.
-3. **Land `HB.score.events`/`HB.score.snapshot()`** per A.5, once the CHARGE
-   system exists, so `computeAirborneKills`/the `links` proxy in
-   `lib/metrics.mjs` can be replaced with the real event-derived counts
-   instead of the kills+grounded / route-matcher approximations described
-   above.
+2. ~~Add `hostiles` (with `state`/`dir`) to the `?testapi=1` snapshot~~ —
+   **done game-side** (merged `e7b2952`): `src/main.js`'s `telemetry()` now
+   publishes `hostiles[]` — `{id, kind, state, dir, x, y, hp, materialized}`
+   — as an additive field of the frozen channel, and the root README's
+   "Debug handles" section documents it. The harness-side half is still
+   open: `lib/sampler.mjs` still reads hostiles via its
+   `window.HB.snapshot()` enrichment (see limitation #7), so switching it to
+   the primary channel's own `hostiles` is the remaining, purely
+   harness-local change that would drop the last `window.HB`-specific
+   dependency.
+3. **Land `HB.score.events`/`HB.score.snapshot()`** per A.5 — the surface
+   itself **has landed** with the CHARGE/THREAT prototype (`src/main.js`
+   publishes `HB.score = {enabled, events, snapshot, reset}`; events flow
+   only under `?score=1` and the surface is inert otherwise). Still open on
+   the harness side: `computeAirborneKills`/the `links` proxy in
+   `lib/metrics.mjs` have not been switched over — and can only be for runs
+   that pass `?score=1` — so reported `protoScore` remains proxy-derived
+   until that change lands.
 4. ~~A fixed-timestep (or seeded-`dt`) simulation mode~~ — **done and
    tested** (`?fixeddt=<ms>`, commit `24ebe3d`). Confirmed genuinely active
    (stable `gameMs`/wall-time ratio across runs) but it did **not** collapse
@@ -712,15 +730,15 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    over every committed demo trace are identical before and after.
 7. `window.HB` now exists (unconditional, richer than `testapi`) — no
    longer a hook request, just confirmed working via `HB.snapshot()`.
-8. **In flight, noted for context (not this harness's ask):** the
-   `g1-limbturn` agent is adding ritual state + seal position
-   (`transformSealX`) to the `?testapi=1`/`HB` snapshot's `transform` object
-   in parallel with this pass. This harness didn't wait for it — the
-   `transform` field is already passed through verbatim in `lib/sampler.mjs`
-   (see "additive telemetry fields" comment there), and the policy condition
-   grammar now supports dotted paths and string equality
-   (`"transform.eventState=='turning'"`) specifically so that hook lands
-   into an already-capable consumer, not one that needs a follow-up change.
+8. **Landed** (was: in flight, not this harness's ask): the `g1-limbturn`
+   ritual telemetry merged (`e7b2952`) — the `transform` block now carries
+   `tMs`/`progress`/`frontierX`/`sealX`, a `corner` block reports the
+   six-face ritual's state, and T-002 later added the `decisions` trace to
+   the same `transform` block. As predicted, no harness change was needed:
+   `transform` is passed through verbatim in `lib/sampler.mjs` (see
+   "additive telemetry fields" comment there), and the policy grammar's
+   dotted paths and string equality (`"transform.eventState=='turning'"`)
+   consume it as-is.
 
 ## Known limitations (engineering, not measurement)
 

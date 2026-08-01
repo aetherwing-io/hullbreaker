@@ -1,3 +1,28 @@
 {
-  "assets": []
+  "assets": [
+    {
+      "id": "capsule-letter-h",
+      "path": "assets/generated/glyphs/capsule-letter-h.png",
+      "source": "assets/generated/glyphs/capsule-letter-h.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-015",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-07-31",
+      "notes": "Pipeline demo round-trip, not a promotion request. Style study for the weapon-capsule box face that src/render/capsules.js currently draws procedurally into a 64px canvas; nothing loads it. Judged at rendered scale (tools/assets/reports/demo/capsule-letter-h/viewer-far.png): at the shipped FAR view a 0.55-tile capsule is ~9.6px tall, where the rivets and chamfer disappear entirely and only the ink letter survives as a smudge - evidence for decisions.md entry 7's open glyph-readability follow-up, not a solution to it.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hot-magenta",
+          "ink",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    }
+  ]
 }

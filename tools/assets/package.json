@@ -1,0 +1,15 @@
+{
+  "name": "hullbreaker-assets",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Dev-only asset pipeline for HULLBREAKER: SVG->PNG rasterizer, palette/manifest/size checker, in-game-scale viewer, codex spec wrapper. Not part of the game runtime.",
+  "type": "module",
+  "scripts": {
+    "check": "node ../../tools/assets/check.mjs",
+    "selftest": "node ../../tools/assets/check.mjs --selftest"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.48.0"
+  },
+  "//": "playwright-core is listed so `npm install` here works as a standalone fallback, but installing it is NOT the expected path: lib/browser.mjs resolves tools/playtest/node_modules first, so the harness's single existing install serves both tools. check.mjs needs no dependency at all."
+}

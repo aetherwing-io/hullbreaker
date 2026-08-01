@@ -1,0 +1,29 @@
+{
+  "name": "polyp-combo-stack",
+  "description": "ACCEPTANCE, two-enemy combination (?polyp=2): the polyp locks the post-mid lane and the judged hound-rejoin beat prices the drop reroute directly beneath it — dodging the beam now lands the bot in a charging hound's patrol. Same fully closed-loop skeleton as polyp-lane-dodge (zero timed inputs: bunny-hop off each actual landing while x<52.8, air-jump on each falling edge inside the chimney shaft x 38-47 below roof height, pinned-recovery as backstop; then funnel into the lane while the iris is quiet, drop through on polypTell, re-mount between volleys, vault out after 10.5s), plus the proven policy-hound-reactive answer: tap jump whenever a hound telegraphs. The run demonstrates the vertical stack: polyp cycles above, hound tells/charges below, and the bot has to answer BOTH with movement verbs on the same decision point. Expected (measured 3/3 across closed-loop tuning runs) VICTORY with kills 0, two hits — both are the stack itself pricing the answer: the hound-tell jump lifts the bot into the band at the moment fire begins, the squeeze working in the other direction; hp and hull-fallback setbacks are reported honestly (the stack is allowed to cost — that is what it is for; at 1 hp a bulb contact triggers the slice's own HULL FALLBACK mercy, which restores hp, dislodges a route down and counts a setback). With no timed inputs left there is no arrival-time fork for dispatch quantization to compound through; the old ~1-in-7 approach jam is gone with the timed hops that caused it. The regression signals are a stall, or the hound/polyp never both engaging in the trace.",
+  "url": "index.html?slice=traversal&polyp=2",
+  "viewport": { "width": 1280, "height": 800 },
+  "durationMs": 15000,
+  "moves": [],
+  "policy": {
+    "rules": [
+      { "when": "x<52.8", "do": { "hold": "right" } },
+      { "when": "y>5.8 && x<58.5", "do": { "hold": "right" } },
+      { "when": "x<59.5 && y<5 && !polypTell && !polypFire", "do": { "hold": "right" } },
+      { "when": "gameMs>10500", "do": { "hold": "right" } },
+
+      { "when": "grounded && x<52.8 && gameMs<10500", "do": { "tap": "jump", "holdMs": 380 } },
+      { "when": "airborne && vy<0 && x>38 && x<47 && y<10 && gameMs<10500", "do": { "tap": "jump", "holdMs": 380 } },
+      { "when": "pinned && !polypTell && !polypFire", "do": { "tap": "jump", "holdMs": 380 } },
+
+      { "when": "polypTell && grounded && y>5 && y<5.5 && gameMs<10500", "do": { "tap": "down", "holdMs": 260 } },
+      { "when": "polypTell && grounded && y>5 && y<5.5 && gameMs<10500", "do": { "tap": "jump", "holdMs": 80 } },
+      { "when": "houndTell && y<5", "do": { "tap": "jump", "holdMs": 300 } },
+      { "when": "grounded && y>8 && x>57 && !polypTell && !polypFire", "do": { "tap": "down", "holdMs": 260 } },
+      { "when": "grounded && y>8 && x>57 && !polypTell && !polypFire", "do": { "tap": "jump", "holdMs": 80 } },
+      { "when": "grounded && y<3.5 && x>57 && !polypTell && !polypFire && !houndCharge", "do": { "tap": "jump", "holdMs": 380 } },
+
+      { "when": "gameMs>10500 && grounded && y>5 && y<5.5 && !polypTell && !polypFire", "do": { "tap": "jump", "holdMs": 380 } }
+    ]
+  }
+}

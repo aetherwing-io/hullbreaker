@@ -6,6 +6,13 @@ and playtesting work. It is subordinate to [`DESIGN.md`](DESIGN.md) (target
 experience) and [`STORY.md`](STORY.md) (canon). [`HANDOFF.md`](HANDOFF.md)
 remains the brief for solo sessions; this plan governs the fleet push only.
 
+Since July 31 the orchestrated **wave-4** push is governed day-to-day by the
+root [`CLAUDE.md`](../CLAUDE.md) (hard rules + integrator loop protocol) and
+[`SPRINT.md`](../SPRINT.md) (live queue); this plan remains the mission brief
+and the operator-verdict record (see the July 31 delivery mandate below,
+recorded as [`decisions.md`](decisions.md) entry 8, and
+[`ORCHESTRATION.md`](ORCHESTRATION.md) for the scaffold).
+
 ## Mission
 
 The traversal slice proved the spatial grammar and failed the pacing test.
@@ -20,7 +27,42 @@ the intensity is far off.** The fleet exists to close that gap:
 4. Build the machinery that lets agents iterate and *measure* pace: the module
    split and a bot-player playtest harness.
 
+**Mission update (July 31, `decisions.md` entry 8):** the diagnostic phase is
+closed enough that the target is now **delivery** — a playable version of the
+full run with AAA-studio-level polish; the fleet refines and loops until
+delivered (`SPRINT.md`'s "Delivery target" is the working definition of done)
+rather than pausing between checkpoint verdicts.
+
 ## Operator decisions on record
+
+### July 31 — delivery mandate: autonomous merges, asset lane, loop until delivered
+
+- **Mission:** the target is a playable version of the full run with
+  AAA-studio-level polish; refine as necessary and loop until delivered.
+  Operator verbatim: "it can merge autonomously, with agent review. the
+  agents can use the codex cli to generate sprites/assets as needed and you
+  can prune the old worktrees. I want to get to a playable version with AAA
+  studio level polish. Refine as necessary, and loop until delivered."
+- **Autonomous merges:** the integrator merges without per-merge operator
+  confirmation; the authority is the gate stack — agent review + bot
+  playtest + `tools/orch/merge-task.sh`, the only path to `main`.
+- **Asset lane opened:** agents may use the codex CLI (`codex exec`,
+  installed locally) to generate sprites/assets as delivery requires —
+  releasing this plan's "juice/audio/final art deferred" fence to that
+  extent (see "Out of scope" below).
+- **Six-face integration hold released:** the July 29 "no six-face
+  integration yet" ruling is released — integration proceeds, with a
+  checkpoint packet posted for judgment rather than blocking on one.
+- **The operator remains the only fun oracle.** Checkpoint packets keep
+  queueing in `SPRINT.md` and verdicts still land in `decisions.md`; work no
+  longer blocks on them. Entries 1–7 all stand.
+- Housekeeping: the stale wave-1 worktrees under `/private/tmp/hullbreaker-*`
+  were pruned (their unmerged `agent/traversal-*` branch refs remain for the
+  operator to delete).
+- Recorded as [`decisions.md`](decisions.md) entry 8. The wave-4 scaffold it
+  shipped with (root `CLAUDE.md`, `SPRINT.md`, `.claude/agents/` incl.
+  `asset-artist`, Stop-hook flywheel, merge gate) is documented in
+  [`ORCHESTRATION.md`](ORCHESTRATION.md).
 
 ### July 30 — CP1 verdict and the wave-3 pivot: build toward the renders
 
@@ -183,7 +225,7 @@ the intensity is far off.** The fleet exists to close that gap:
 - Roughly ten agents; the operator is the only fun oracle and reviews at the
   checkpoints below.
 
-## Current state (updated post-split; wave 1 complete)
+## Current state (snapshot at the wave-1→2 boundary; `SPRINT.md` and `HANDOFF.md` carry the live state)
 
 - Traversal slice at `index.html?slice=traversal` (add `&enemies=0` to tune
   movement without wasps): authored fixture, six named routes, ledge catch,
@@ -192,8 +234,8 @@ the intensity is far off.** The fleet exists to close that gap:
 - `15f66d2` already responded to the boring verdict: camera follows forward
   motion instead of pinning RIG, stronger/crisper jumps, launch-on-contact,
   grab dwell capped at 240/300ms, minimum scroll 2.6, target pass time cut to
-  4–12s. **The operator has not yet judged this accelerated pass** — that is
-  checkpoint CP1.
+  4–12s. Since judged at CP1 (see "CP1 verdict and the wave-3 pivot" above):
+  all variants read as directionally correct, none was crowned.
 - Module split merged as `5e9dbc8`: `index.html` is a shell over 35 ES
   modules (`src/config.js` → `src/pure/` → `src/sim/` → `src/render/`+
   `src/ui/` → `src/main.js`), sim layer free of DOM/THREE behind
@@ -247,6 +289,14 @@ Integrator (main session): merges, gates, dispatch, operator communication.
 | `code-reviewer` | Sonnet | Reviews every integration for conventions, perf (instancing, per-frame allocations), and readability. |
 | `docs` | Sonnet | Keeps DESIGN/HANDOFF/README truthful as decisions land; maintains the decision and checkpoint log. |
 
+### Waves 3–4
+
+Wave 3 (movement verbs + view scale) ran from the CP1 pivot; its verdicts are
+recorded above and in `decisions.md` entries 5–7. The **wave-4 delivery
+push** (July 31) moved the live roster to `.claude/agents/` and the live lane
+assignments to `SPRINT.md`'s queue — the tables above are the historical
+wave-1/2 roster, not current assignments.
+
 ## Integration protocol
 
 - Builders work in **isolated git worktrees**. Only the integrator merges to
@@ -254,6 +304,11 @@ Integrator (main session): merges, gates, dispatch, operator communication.
 - Merge gates: `node tools/pathcheck.mjs` green; browser self-test
   (`?selftest=1`) green; code review for runtime changes; docs updated when
   behavior or entry points change.
+- Since wave 4, merges are **autonomous** (`decisions.md` entry 8) and
+  mechanical: `tools/orch/merge-task.sh <task-id>` is the only path to
+  `main` — it enforces reviewer APPROVE + playtester PASS + pathcheck in the
+  worktree + a deterministic smoke run before merging, and re-runs pathcheck
+  post-merge with auto-revert on failure.
 - Lanes are disjoint. Do not edit files outside your assignment; request
   integration through the integrator for cross-lane needs.
 - Tuning constants stay in config modules. New deterministic layout or
@@ -264,7 +319,12 @@ Integrator (main session): merges, gates, dispatch, operator communication.
 - No new runtime dependencies. Dev-only dependencies are allowed under
   `tools/` with their own `package.json`.
 
-## Operator checkpoints (the only points that block on the operator)
+## Operator checkpoints
+
+Originally the only points that blocked on the operator; since the July 31
+delivery mandate (entry 8) they no longer block the loop at all — packets
+queue in `SPRINT.md`'s checkpoint queue and work continues, while the
+verdicts still land in `decisions.md` and remain law.
 
 - **CP1 — pace.** Play the accelerated slice and the intensity variants;
   pick or direct a blend. Also confirms the module split changed nothing.
@@ -278,9 +338,18 @@ five questions drawn from DESIGN's playtest list.
 
 ## Out of scope for this push
 
-Juice/audio, six-face lattice integration, snap hook, traps, the Crown
-finale, flight, menus, final art, and any canon-locking of open story
-questions.
+As written July 29: juice/audio, six-face lattice integration, snap hook,
+traps, the Crown finale, flight, menus, final art, and any canon-locking of
+open story questions.
+
+Since then, on record: snap hook was pulled into scope by the wave-3 pivot,
+built, and rejected in its v1 shape (entries 2 and 5); the July 31 delivery
+mandate (entry 8) released the juice/audio/final-art fence and the six-face
+integration hold — `SPRINT.md`'s delivery target now covers juice, audio,
+the palette/art pass, the game shell (menus), and six-face integration.
+Still out of scope: traps, flight, and canon-locking of open story
+questions; the Crown finale remains in `DESIGN.md`'s sequence but is not yet
+queued.
 
 ## Agent reporting format
 
