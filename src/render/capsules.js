@@ -3,12 +3,12 @@
    letter, and the expiry blink for capsules knocked out of the player. */
 
 import * as THREE from 'three';
-import { CONFIG } from '../config.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs, blink } from '../sim/time.js';
 import { CAP } from '../sim/capsules.js';
 import { scene } from './scene.js';
 import { placeOnTower } from './tower.js';
+import { PAL } from './palette.js';
 
 const capsuleGeo = new THREE.BoxGeometry(CAP.size, CAP.size, CAP.size);   // shared: never disposed
 const letterTexCache = {};
@@ -21,7 +21,7 @@ function letterTexture(text, bg) {
   const g = cv.getContext('2d');
   g.fillStyle = bg;
   g.fillRect(0, 0, 64, 64);
-  g.fillStyle = '#14181e';
+  g.fillStyle = PAL.capsuleInk;
   g.font = 'bold ' + (text.length > 1 ? 30 : 42) + 'px monospace';
   g.textAlign = 'center';
   g.textBaseline = 'middle';
@@ -35,7 +35,7 @@ const meshes = new Map();                // sim capsule row → { mesh, mat }
 
 function spawned(c) {
   const kind = c.kind, letter = c.letter;
-  const bg = kind === 'mod' ? CONFIG.palette.modCapsule : CONFIG.palette.capsule;
+  const bg = kind === 'mod' ? PAL.modCapsule : PAL.capsule;
   const mat = new THREE.MeshBasicMaterial({ map: letterTexture(letter, bg) });
   const mesh = new THREE.Mesh(capsuleGeo, mat);
   scene.add(mesh);

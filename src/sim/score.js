@@ -17,12 +17,19 @@
 import { CONFIG } from '../config.js';
 import { ACTIVE_SLICE, SCORE_ENABLED } from '../mode.js';
 import {
-  scoreApplyGain, scoreClassification, scoreConnectorAt, scoreDrainPerSec,
-  scoreFireRateMult, scoreNotch, scoreRoutesCompleted, scoreStep, scoreThreatGain,
+  SCORE_RUN, scoreApplyGain, scoreClassification, scoreConnectorAt,
+  scoreDrainPerSec, scoreFireRateMult, scoreNotch, scoreRoutesCompleted,
+  scoreStep, scoreThreatGain,
 } from '../pure/score.js';
 import { gameMs, sliceStats } from './time.js';
 
-const SC = CONFIG.score;
+// CP4 promotion (T-016): the slice keeps its A.4-scaled meter (CONFIG.score,
+// a ~6 s horizon for a 4-12 s pass); the default six-face run gets A.3's
+// un-doubled table (src/pure/score.js SCORE_RUN). Everything except gains and
+// drain is identical between the two, asserted by pathcheck, so the event
+// streams stay comparable. SC is passed into every pure call that prices an
+// event or a drain; structural fields (notches, windows, caps) match anyway.
+const SC = ACTIVE_SLICE ? CONFIG.score : SCORE_RUN;
 const POCKET = ACTIVE_SLICE ? ACTIVE_SLICE.darePocket : null;
 
 // A.5's ring buffer: newest last, oldest dropped, cap CONFIG.score.eventCap.
@@ -53,21 +60,21 @@ const st = {
 
 export function scoreEnabled() { return SCORE_ENABLED; }
 export function scoreCharge() { return st.charge; }
-export function scoreNotchNow() { return SCORE_ENABLED ? scoreNotch(st.charge) : 0; }
+export function scoreNotchNow() { return SCORE_ENABLED ? scoreNotch(st.charge, SC) : 0; }
 export function scoreThreat() { return st.threat; }
 // setbacks have exactly one owner (sliceStats, written by the fallback path)
 export function scoreSetbacks() { return sliceStats.setbacks; }
 
 // the only hook the weapon path needs: WARM and above shortens the interval
 export function scoreFireMult() {
-  return SCORE_ENABLED ? scoreFireRateMult(scoreNotch(st.charge)) : 1;
+  return SCORE_ENABLED ? scoreFireRateMult(scoreNotch(st.charge, SC), SC) : 1;
 }
 
 function push(type, extra, gains) {
-  const notch = scoreNotch(st.charge);
+  const notch = scoreNotch(st.charge, SC);
   if (gains) {
-    st.threat += scoreThreatGain(type, notch);
-    st.charge = scoreApplyGain(st.charge, type);
+    st.threat += scoreThreatGain(type, notch, SC);
+    st.charge = scoreApplyGain(st.charge, type, SC);
   }
   if (counts[type] !== undefined) counts[type]++;
   scoreEvents.push({ t: gameMs, notch, type, ...extra });
@@ -100,7 +107,7 @@ export function scoreLaunch(kind, x, y) {
   if (!SCORE_ENABLED) return;
   st.launchCount++;
   st.lastLaunch = { kind, at: gameMs, y, linked: false };
-  if (scoreNotch(st.charge) >= SC.notches.length) st.shock = { x, y, at: gameMs };
+  if (scoreNotch(st.charge, SC) >= SC.notches.length) st.shock = { x, y, at: gameMs };
 }
 
 // sim/player.js, when a launch resolves into a landing or another contact.
@@ -130,7 +137,7 @@ export function consumeLaunchShock() {
 export function scoreRewardTaken(letter, x, y) {
   if (!SCORE_ENABLED) return;
   if (POCKET && letter === POCKET.reward.letter) st.rewardHeld = true;
-  scoreEvents.push({ t: gameMs, notch: scoreNotch(st.charge), type: 'reward', letter, x, y });
+  scoreEvents.push({ t: gameMs, notch: scoreNotch(st.charge, SC), type: 'reward', letter, x, y });
   if (scoreEvents.length > SC.eventCap) scoreEvents.shift();
 }
 
@@ -157,7 +164,7 @@ export function scoreRunEnd(reason) {
   if (!SCORE_ENABLED) return;
   push('run_end', {
     reason, threat: Math.round(st.threat),
-    classification: scoreClassification(st.threat), ms: Math.round(st.playMs),
+    classification: scoreClassification(st.threat, SC), ms: Math.round(st.playMs),
     x: 0, y: 0,
   }, false);
 }
@@ -173,12 +180,12 @@ export function updateScore(dt, ctx) {
   const launchGrace = !!st.lastLaunch && gameMs - st.lastLaunch.at <= SC.launchGraceMs;
   st.playMs += ms;
   if (ctx.grounded) st.groundMs += ms; else st.airMs += ms;
-  if (scoreNotch(st.charge) >= 1) st.hotMs += ms;
+  if (scoreNotch(st.charge, SC) >= 1) st.hotMs += ms;
 
   const stalled = ctx.grounded && !traversal && Math.abs(ctx.vx) < SC.stallSpeed;
   st.charge = scoreStep(
     st.charge,
-    scoreDrainPerSec({ grounded: ctx.grounded, traversal, launchGrace, vx: ctx.vx }),
+    scoreDrainPerSec({ grounded: ctx.grounded, traversal, launchGrace, vx: ctx.vx }, SC),
     dt,
     st.chargeFloor,
   );
@@ -232,15 +239,19 @@ export function updateScore(dt, ctx) {
 
 /* ------------------------- the A.5 read surface ---------------------- */
 export function scoreSnapshot() {
-  const notch = scoreNotch(st.charge);
+  const notch = scoreNotch(st.charge, SC);
   return {
     enabled: SCORE_ENABLED,
+    // which tune priced this stream: 'slice' = A.4's doubled table, 'run' =
+    // A.3's full-run table (SCORE_RUN) — so a harness report can never
+    // mistake a slice trace for a run trace when comparing THREAT rates
+    tune: ACTIVE_SLICE ? 'slice' : 'run',
     charge: Math.round(st.charge * 100) / 100,
     notch,
     notchName: SC.notchNames[Math.min(notch, SC.notchNames.length - 1)],
     chargeFloor: st.chargeFloor,
     threat: Math.round(st.threat),
-    classification: scoreClassification(st.threat),
+    classification: scoreClassification(st.threat, SC),
     counts: { ...counts },
     airMs: Math.round(st.airMs),
     groundMs: Math.round(st.groundMs),

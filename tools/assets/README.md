@@ -213,10 +213,34 @@ silhouette instead of a letter? a HUD-side readout?) is a feel decision.
 4. **Measured, so you can weigh #3:** the committed 128x128 demo has 8 unique
    colors — 5 authored, 3 blends, none of them off-palette or above the gate.
    The same SVG rendered at a non-power-of-two 100x100 produces **31** unique
-   colors with six blends above the gate, one of which (`#ffdcc5`, a
-   warm-white/magenta edge blend) classifies as `rust-orange`. Power-of-two
-   sizes and integer coordinates are not just a GPU rule here; they keep the
-   palette evidence clean.
+   colors, of which **5 blends** clear the 0.5% gate (1.21%, 1.19%, 1.02%,
+   0.72%, 0.72%) — all `hot-magenta` shades, so the check still passes on
+   merit, not by luck. The one blend that *misclassifies* is `#ffdcc5`, a
+   warm-white/magenta edge blend the rule reads as `rust-orange`, and it sits
+   at **0.44% — below** the gate, not above it. So the coverage gate is doing
+   its job here by a 0.06-point margin, and the miss is invisible twice over:
+   below the gate it neither enters the recorded role list nor shows up in the
+   ungated note from #3, which lists only colors belonging to *no* role.
+   Power-of-two sizes and integer coordinates are not just a GPU rule here;
+   they keep the palette evidence clean. Re-derive both censuses with:
+
+   ```sh
+   node tools/assets/rasterize.mjs assets/generated/glyphs/capsule-letter-h.svg --size 100 --out tools/assets/runs/h-100.png
+   node --input-type=module -e "
+   import {histogram} from './tools/assets/lib/png.mjs';
+   import {classify} from './tools/assets/lib/palette.mjs';
+   const hex = (c) => '#' + [c.r,c.g,c.b].map((v) => v.toString(16).padStart(2,'0')).join('');
+   for (const c of histogram('tools/assets/runs/h-100.png',{alphaFloor:8}).colors.sort((a,b) => b.coverage-a.coverage))
+     console.log(hex(c), (c.coverage*100).toFixed(2)+'%', classify(hex(c)).roleId ?? 'OFF-PALETTE');
+   "
+   ```
+
+   (The five authored literals are `#ff4fd8 #b8309b #ff9adf #fff0c2 #14181e`;
+   everything else in that listing is a blend.)
+
+   (Per #5 these counts hold for the Chrome build that produced the committed
+   demo — re-rasterizing the 128px PNG byte-identically is the cheap check
+   that you are on it.)
 5. **PNG bytes are only reproducible against the same Chrome build.**
    Antialiasing is the renderer's business. Re-rasterizing on a different
    machine can produce a byte-different (visually identical) PNG, so do not
@@ -255,6 +279,21 @@ must boot with every asset file missing. Runtime references (a
 `THREE.TextureLoader` URL, a CSS `url()`, an `img.src`) are legal, and every one
 found is listed in the check output so the set stays visible as it grows. Today
 `src/` contains no reference to `assets/` at all.
+
+The listing counts **runtime references only**: a rejected static import is
+reported as an error and excluded from that line, with the count of rejected
+imports named beside it. (Until I-002 it was printed in both places, under a
+header that said "runtime, not imports".)
+
+**Limitation of the import scan, measured:** it matches an `import` statement
+whose module specifier is on the *same line* as the `import` keyword — the form
+every file in `src/` uses. A specifier pushed onto a later line
+(`import {\n x,\n} from '../../assets/…'`) is not detected: on a throwaway
+fixture that shape exits **0** and lands in the runtime-reference listing
+instead. So the gate is a lint over the shape this codebase writes, not a
+parser. Filed for triage rather than widened here, because a lazier
+newline-crossing regex can swallow a whole file between an `import` and an
+unrelated `'assets/…'` string literal and start failing legal runtime code.
 
 Proven by fixture rather than asserted: a throwaway tree with an off-palette
 SVG, a lying `size`, a non-power-of-two GPU texture, a malformed manifest entry

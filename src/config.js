@@ -266,6 +266,60 @@ export const CONFIG = {
     beamPulseFreq: 24, beamPulseAmp: 0.25,
   },
 
+  mortar: {                    // Seed-Pod Tripod (boards 06/07): denies an intended
+                               // LANDING ZONE after a readable delay. It never aims at
+                               // the player — it bombards an authored patch of floor —
+                               // so the threat is entirely where that patch is
+                               // (decisions.md entry 6) and the answer is always a
+                               // movement verb: land short, land long, take the tier
+                               // above, or take the floor below. Presence timings
+                               // (materialize, dissolve, depth breathing) are shared
+                               // with CONFIG.wasp like every kind.
+    hp: 5,                     // ~0.65 s of rifle fire — one reload window kills it
+                               //   (asserted): destroying it is a decision about time,
+                               //   never a damage race
+    hitRadius: 0.5,            // contact circle, inside the tube silhouette
+    size: 0.5,                 // launch-tube radius (render); the legs are theater
+    legSize: [0.16, 1.05, 0.16],
+    bodyY: 1.05,               // tube center above the mounted surface — EXACTLY the
+                               //   standing firing line (player.muzzleY), asserted: a
+                               //   level shot from its OWN catwalk center-punches it,
+                               //   so the reroute that answers the denial is also the
+                               //   reroute that lets you shoot back (the CP2 aim-gap
+                               //   lesson applied at authoring time)
+    armRange: 13,              // horizontal distance from the ZONE at which it starts
+                               //   its cycle. Bounded by the fixture's own follow lead
+                               //   (asserted), so the first lob always happens on
+                               //   screen — the mechanic teaches itself before the
+                               //   player has to stand in it
+    lobMs: 900,                // pod flight, muzzle → marked zone. The mark appears at
+                               //   launch, so this is the FIRST half of the warning
+    arcTiles: 2.6,             // parabolic bulge over the muzzle→zone chord: a mortar
+                               //   throws OVER things (the readable difference from the
+                               //   polyp's sightline)
+    fuseMs: 640,               // the planted pod: the second half of the warning, and
+                               //   on its own longer than the slowest answer to it
+    burstMs: 220,              // the denial itself — a moment, never a state. Shorter
+                               //   than a full jump stays above the slab (asserted)
+    coolMs: 1500,              // reload: the zone is free and the tripod is a target,
+                               //   the same pant-window rhythm as the hound's charge
+    blastHalf: 1.5,            // marked patch half-width: 3 tiles of an 8-tile catwalk,
+                               //   so landing short or long is always available
+    blastHeight: 1.8,          // slab height over the marked surface: taller than a
+                               //   standing body (no ducking a spore burst), lower than
+                               //   any jump apex (going over it is always an answer)
+    podRadius: 0.36,         // the pod in flight has to read at the FAR default, so it
+                               //   is drawn larger than a bullet and lit its own color
+    // pose theater (render-only): the same warning grammar as the rest of the
+    // roster — an accelerating warm blink that resolves into commitment.
+    markPulseSlowMs: 200, markPulseFastMs: 70,
+    markThickness: 0.18,       // the surface pad: the loudest element at the FAR default
+    warnDepth: -0.55,          // the denial volume sits just BEHIND the combat plane, so a
+                               //   body standing in it keeps its silhouette (pillar 5)
+    recoilTiles: 0.4,          // tube kicks back on launch, settles over the flight
+    burstSwell: 0.35,          // the detonation's own silhouette pop
+  },
+
   waves: {                     // corner wave gates + snap ritual + brick zipper
     haltOffset: 14,            // scroll halts at cornerS - haltOffset
     baseSize: 3, sizePerWave: 1,               // wave k = baseSize + sizePerWave·k
@@ -440,6 +494,68 @@ export const CONFIG = {
 
   edges: { margin: 0.4, killY: -7 },
 
+  juice: {                     // Baseline feedback pass (T-011). ONE block: every
+                               // effect below has its intensity here, so the whole
+                               // pass is retuned (or read) in one place, and
+                               // ?juice=0 makes every one of them inert.
+                               // Math lives in src/pure/juice.js; the sim owns
+                               // hit-stop (it changes gameplay), the renderer owns
+                               // everything else. Restrained by ruling, not taste:
+                               // pillar 5 (chaos stays readable) and the FAR default
+                               // view (decisions.md entry 7) mean RIG is ~3.7% of
+                               // screen height — an effect sized for a big sprite
+                               // becomes a smear here.
+    hitStop: {                 // the one gameplay-affecting effect: the world holds
+                               // still for a beat, expressed as a dt SCALE so gameMs
+                               // deadlines never drift (the CHRONO convention)
+      killMs: 42,              // a kill: shorter than one 60fps frame pair — felt,
+                               //   not waited through, even on a spread volley
+      hurtMs: 90,              // taking damage: the bigger beat, and rare
+      scale: 0.08,             // near-freeze rather than a hard 0: bullets, hostiles
+                               //   and RIG all creep, so nothing reads as a hitch
+      maxMs: 120,              // hard ceiling on a stack: a crowd kill can never
+                               //   stall the run (and the crush plane freezes with
+                               //   the world, so a freeze is never a free reprieve
+                               //   or an unfair shove)
+    },
+    shake: {                   // trauma model: amplitude is trauma SQUARED, so only
+                               // real beats move the frame
+      maxOffset: 0.15,         // world tiles at trauma 1 — ~0.5% of the FAR frame
+      maxRollDeg: 0.55,
+      freqHz: 22, decayPerSec: 2.0,
+      kill: 0.15, hurt: 0.46,  // per-event trauma
+      snap1: 0.24, snap2: 0.32,  // ritual yaw detents (corner + transform)
+      boom: 0.36,              // a face reveals / a band commits
+      rumbleMax: 0.09,         // sustained tremble while a ritual holds the scroll
+    },
+    // Sizes are in TILES and were set against the shipped FAR view, where RIG
+    // is ~3.7% of screen height: anything under ~0.1 tiles is a pixel or two
+    // and reads as noise rather than feedback (measured, see the T-011 report).
+    muzzle: { ms: 80, size: 0.5, offsetTiles: 0.5, volleyGapMs: 55 },
+    impact: { count: 4, speed: 5.5, ms: 240, size: 0.12, gravity: -14, gapMs: 40 },
+    death:  { count: 10, speed: 7.5, ms: 420, size: 0.17, gravity: -16,
+              flashMs: 130, flashSize: 0.95 },
+    hurt:   { count: 9, speed: 6.0, ms: 380, size: 0.16, gravity: -14,
+              flashMs: 150, flashSize: 1.3 },
+    pickup: { count: 7, speed: 3.6, ms: 320, size: 0.13, gravity: -6,
+              flashMs: 190, flashSize: 0.8 },   // measured: bigger than this and
+                               //   the reward flash covers RIG at the FAR view
+    crush: {                   // the pursuing damage plane, made visible before it
+                               // kills — same accelerating-warning grammar as the
+                               // hound tell and the polyp iris
+      startTiles: 3.4,         // margin at which the warning first reads
+      pulseSlowMs: 460, pulseFastMs: 130,
+      maxOpacity: 0.55,        // additive haze: it never hides a deck or a hostile
+      height: 15, width: 0.8, depth: 2.2, y0: -1.5,
+      inset: 1.0,              // the band stands just INSIDE the plane (this
+                               //   fraction of its own width), so it marks the
+                               //   strip about to be swept instead of hanging
+                               //   half off the edge of the screen
+    },
+    pools: { particles: 224, flashes: 20 },   // fixed pools; a full pool drops the
+                                              // newest request rather than allocating
+  },
+
   score: {                     // CHARGE/THREAT prototype — docs/proposals/
                                //   2026-07-score-and-setback.md A.4, opt-in via
                                //   ?score=1. CHARGE is sim state (it gates the
@@ -490,6 +606,12 @@ export const CONFIG = {
                                            //   bulb-and-barrel SILHOUETTE carries the read
     polypTell: 0xffd0a0,                   // one warning language across the roster: warm blink
     polypBeam: 0xc6ff4f, polypVent: 0xd9a06a,     // hot acid lock / dim spent "opening" glow
+    mortar: 0x6d9a4e,                      // same acid-green ecology again, its own value; the
+                                           //   tripod-and-tube SILHOUETTE carries the read
+    mortarTell: 0xffd0a0,                  // the roster's one warning language: warm blink
+    mortarPod: 0xd8ff7a,                   // the spore pod in flight — the arc has to be the
+                                           //   most legible thing on screen while it flies
+    mortarMark: 0xffa64d, mortarBlast: 0xffe08a,  // the marked landing patch / the detonation
     // snap-hook markers (?hook=1): warm hardware idle, hot when live, pale
     // tether. Never the pickup magenta and never the hostile green — an anchor
     // has to read as grabbable machinery at a glance (DESIGN's aiming rule).

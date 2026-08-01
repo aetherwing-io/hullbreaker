@@ -33,7 +33,7 @@ const clamp01 = (u) => (u < 0 ? 0 : u > 1 ? 1 : u);
  * Every ground column in [bounds.x0, bounds.x1) is authored exactly once,
  * and seam aprons are flat and platform-free so a turn never happens over
  * a gap or a step.                                                     */
-export const TRANSFORM_FIXTURE = {
+const TRANSFORM_FIXTURE_V1 = {
   id: 'transform-v1',
   // Face A starts well left of the spawn so the first frame is already a hull
   // face rather than half a screen of void.
@@ -184,6 +184,206 @@ export const TRANSFORM_FIXTURE = {
   finish: { x0: 146, x1: 152 },
 };
 
+/* ------------------------- fixture: G2 (?g2=1) ---------------------- *
+ * monster-g2-neck-flip — the neck access-plate flip gate per the greybox
+ * map proposal (docs/proposals/2026-07-meridian-monster-greybox-map.md
+ * §G2), authored in the proposal's own P2 global frame so its numbers
+ * cross-check: phase start s89, scroll halt u51 = s140, pivot u65 = s154,
+ * a 14-tile gate apron, and one 10–12-tile door-like access plate as the
+ * only thing on the body allowed to move. It reuses T-001's landed flip
+ * choreography verbatim (snap 1 exposes and carries the plate, the hold
+ * rotates and RELOCKS only the plate, snap 2 commits the camera) — the
+ * event overrides are gate GEOMETRY (haltOffset / seamPullTiles), never a
+ * second choreography.
+ *
+ * Five immediate routes into the gate, per the proposal:
+ *   1. high exposed scute ridge        (r1-* catwalks, y 8.35→10.35)
+ *   2. twin-rib wall-jump chimney      (g2-rib-a/b solids + r2-* stubs; the
+ *      wall-launch verb is traversal-slice-only today, so the greybox climbs
+ *      it on jump + air-jump stubs until the verb graduates)
+ *   3. broad carried scapular plate    (r3-scapular-plate, 14 tiles at 5.35)
+ *   4. low joint-collar floor          (the deck itself, y3 — houndframe)
+ *   5. short underside hang            (r5-pocket-shelf under the 126–129
+ *      gap, rejoining at the chimney base — the dare pocket)
+ *
+ * Continuity connectors near local y ≈ 3 / 6 / 9 (deck, mid shelf, high
+ * shelf) meet the plate's mouth and continue on the interior side, so the
+ * flip preserves three recognizable exits. The remaining +2 of P2's
+ * provisional +18 render altitude belongs to the P3 handoff a full map
+ * will author — per the G4 lesson it must NOT be recovered through the
+ * ritual, which grants zero altitude here.                              */
+const TRANSFORM_FIXTURE_G2 = {
+  id: 'monster-g2-neck-flip',
+  // The approach starts well left of the spawn (the tail of P1 on the
+  // haunch) so the first frame is already hull, not void.
+  bounds: { x0: 66, x1: 208 },
+  origin: { x: 66, z: 0 },
+  // P2 "Lift": +12 at the phase start climbing to +28 at the halt — earned
+  // on the ribline grade under RIG's own legs — then FLAT across the whole
+  // gate apron and threshold (stable entry/exit aprons; the ritual adds 0),
+  // resuming inside the neck.
+  altitudeProfile: [
+    { s: 66, alt: 8 }, { s: 89, alt: 12 }, { s: 140, alt: 28 },
+    { s: 160, alt: 28 }, { s: 176, alt: 34 }, { s: 208, alt: 34 },
+  ],
+  targetPlaySeconds: { min: 10, max: 30 },
+  run: {
+    startScroll: 85,
+    endScroll: 194,
+    minimumScrollSpeed: 3.2,
+    followLeadTiles: 16,
+    lookAheadTiles: 2.5,
+    portraitMinAspect: 0.9,
+    playerSpawn: { x: 93.5, y: 3 },
+  },
+  bands: [
+    {
+      id: 'haunch-ribline', kind: 'exterior', s0: 66, s1: 154, headingDeg: 0,
+      label: 'OUTER HAUNCH', shipState: 'INTERCEPT',
+      atmosphere: { bg: 0x233036, fogNear: 28, fogFar: 72 },
+      tone: [1, 1.02, 1.04],
+      hullDrop: 30,
+      hullWall: { height: 22, pattern: 'solid' },
+      // The neck mass looming overhead at absolute altitude: what RIG is
+      // climbing toward, readable in a single still.
+      skyline: [
+        { atS: 75, top: 34, height: 30, width: 9, depth: -26 },
+        { atS: 96, top: 38, height: 32, width: 8, depth: -22 },
+        { atS: 115, top: 42, height: 30, width: 10, depth: -27 },
+        { atS: 131, top: 44, height: 26, width: 8, depth: -24 },
+      ],
+    },
+    {
+      id: 'neck-interior', kind: 'interior', s0: 154, s1: 208, headingDeg: 90,
+      label: 'NECK INTERIOR', shipState: 'CONTAIN',
+      // "a dry mechanical neck interior that already existed": warm, dry,
+      // close air — no vapor, no wet gleam.
+      atmosphere: { bg: 0x2a2523, fogNear: 15, fogFar: 46 },
+      tone: [1.24, 1.13, 1.06],
+      interior: { ceilingAbove: 11, wallDepth: -3.6, ribEvery: 7, alcoveEvery: 5, pipeEvery: 9 },
+      skyline: [],
+      threatSockets: [
+        { id: 'g2-polyp-low', kind: 'polyp', x: 171, y: 6.4, depth: -2.4 },
+        { id: 'g2-polyp-high', kind: 'polyp', x: 185, y: 9.4, depth: -2.4 },
+        { id: 'g2-hazard-duct', kind: 'hazard', x: 189, y: 4, depth: -1.2 },
+      ],
+    },
+  ],
+  events: [
+    {
+      id: 'neck-plate-flip', kind: 'flip', seamS: 154, fromBand: 0, toBand: 1,
+      armMsg: 'ACCESS PLATE OPEN — GO IN', label: 'FLIP INWARD',
+      // Gate-geometry overrides only (the choreography curves are shared):
+      // the proposal's 14-tile apron, and a pull that still lands the view
+      // exactly 2 tiles past the pivot like both v1 turns.
+      haltOffset: 14,
+      seamPullTiles: 16,
+      // Relocked, the plate rakes to the interior climb grade — the "become
+      // an interior ramp" beat. Render dressing only; collision is static.
+      plateRamp: true,
+      // The proposal's required gate declarations, asserted by pathcheck.
+      gate: {
+        body: 'outer haunch / ribline -> lower neck interior',
+        haltS: 140, pivotS: 154,
+        normalBeforeDeg: 0, normalAfterDeg: 90,
+        altBefore: 28, altAfter: 28,          // the ritual grants no altitude
+        aprons: { entry: { s0: 140, s1: 154 }, exit: { s0: 154, s1: 160 } },
+        plate: { id: 'g2-access-plate', tiles: 11 },   // 10–12 per proposal
+        // The collision surfaces carried through the one allowed door flip:
+        // the flat deck columns spanning mouth → threshold, identical
+        // before, during and after the turn.
+        carry: { id: 'g2-plate-deck', s0: 149, s1: 160, y: 3 },
+        connectors: [
+          { id: 'g2-low', y: 3, before: 'open', during: 'carried', after: 'open' },
+          { id: 'g2-mid', y: 6.35, before: 'open', during: 'occluded', after: 'open' },
+          { id: 'g2-high', y: 9.35, before: 'open', during: 'occluded', after: 'open' },
+        ],
+        forwardExits: ['g2-low', 'g2-mid', 'g2-high'],
+        darePocket: { s0: 126, s1: 129, floorY: 1.2, rejoinS: 129, retreatSec: 0.8 },
+        sockets: {
+          enemy: ['g2-polyp-low', 'g2-polyp-high', 'g2-hazard-duct'],
+          reward: [{ id: 'g2-pocket-reward', x: 127.5, y: 2.0 }],
+        },
+        mechanism: 'access-plate',            // the only permitted motion
+      },
+    },
+  ],
+  groundRuns: [
+    { x0: 66, x1: 100, y: 3 },             // approach: haunch shelf out of G1
+    { x0: 100, x1: 102, gap: true },       // teach: first scute seam
+    { x0: 102, x1: 110, y: 3 },
+    { x0: 110, x1: 112, gap: true },
+    { x0: 112, x1: 120, y: 3 },
+    { x0: 120, x1: 122, gap: true },
+    { x0: 122, x1: 126, y: 3 },
+    { x0: 126, x1: 129, gap: true },       // r5 underside pocket (shelf below)
+    { x0: 129, x1: 149, y: 3 },            // joint-collar floor: convergence + chimney base
+    { x0: 149, x1: 160, y: 3 },            // g2-plate-deck: the carried columns
+    { x0: 160, x1: 178, y: 3 },            // neck interior deck
+    { x0: 178, x1: 180, gap: true },       // service slot
+    { x0: 180, x1: 192, y: 4 },
+    { x0: 192, x1: 208, y: 4 },
+  ],
+  // The twin-rib chimney: two static vertical ribs on the combat plane.
+  // Their undersides clear a running (and crouching, and hound-height)
+  // pass on the floor route; the mouth between them is the chimney.
+  solidRects: [
+    { id: 'g2-rib-a', x0: 130, x1: 131, y0: 5, y1: 11 },
+    { id: 'g2-rib-b', x0: 135, x1: 136, y0: 7, y1: 13 },
+  ],
+  platforms: [
+    { id: 'r3-scapular-plate', x0: 104, x1: 118, y: 5.35 },
+    { id: 'r1-ridge-a', x0: 107, x1: 113, y: 8.35 },
+    { id: 'r1-ridge-b', x0: 115, x1: 125, y: 9.35 },
+    { id: 'r1-ridge-c', x0: 125, x1: 131, y: 10.35 },
+    { id: 'r2-stub-low', x0: 131, x1: 134, y: 5.35 },
+    { id: 'r2-stub-mid', x0: 132, x1: 135, y: 8.35 },
+    { id: 'r2-apex', x0: 131, x1: 135, y: 10.85 },
+    { id: 'r5-pocket-shelf', x0: 126, x1: 129, y: 1.2 },
+    { id: 'c-mid-shelf', x0: 138, x1: 149, y: 6.35 },
+    { id: 'c-high-shelf', x0: 139, x1: 149, y: 9.35 },
+    { id: 'i-mid-catwalk', x0: 160, x1: 168, y: 6.35 },
+    { id: 'i-high-catwalk', x0: 162, x1: 170, y: 9.35 },
+    { id: 'i-mid-b', x0: 169, x1: 177, y: 6.35 },
+  ],
+  // Authored pressure per the proposal: a houndframe paces the low route's
+  // chokepoint into the gate; a wasp contests the chimney apex hop. All
+  // spawn positions stay outside the seam-clear zone; the ritual start
+  // still clears the arena like every turn.
+  spawns: [
+    { x: 106, type: 'wasp', lane: 4.2 },
+    { x: 118, type: 'wasp', lane: 7.0 },
+    { x: 133, type: 'wasp', lane: 7.0 },   // the wall-launch-apex contest
+    { x: 136, type: 'hound', dir: -1, delayMs: 0,
+      patrol: { x0: 129.5, x1: 147.5 } },
+    { x: 169, type: 'wasp', lane: 4.0 },
+    { x: 177, type: 'wasp', lane: 6.4 },
+  ],
+  spawnClear: { before: 12, after: 14 },
+  finish: { x0: 200, x1: 208 },
+};
+
+/* --------------------------- fixture select ------------------------- *
+ * The live bindings every consumer imports. Default is the shipped v1
+ * demo; src/mode.js selects once at boot from the URL (?g2=1), BEFORE any
+ * module body reads them — ES module bindings are live, so the fenced
+ * consumers (tower, hud) follow without knowing fixtures can vary. Pure:
+ * selection is a function of its argument, and an unknown id falls back
+ * to v1, which keeps every shipped URL byte-identical.                 */
+export const TRANSFORM_FIXTURES = {
+  'transform-v1': TRANSFORM_FIXTURE_V1,
+  'monster-g2-neck-flip': TRANSFORM_FIXTURE_G2,
+};
+
+export let TRANSFORM_FIXTURE = TRANSFORM_FIXTURE_V1;
+
+export function selectTransformFixture(id) {
+  TRANSFORM_FIXTURE = TRANSFORM_FIXTURES[id] || TRANSFORM_FIXTURE_V1;
+  TRANSFORM_PATH = buildTransformPath(TRANSFORM_FIXTURE, CONFIG);
+  TRANSFORM_BEND_S = transformBendSList(TRANSFORM_FIXTURE);
+  return TRANSFORM_FIXTURE;
+}
+
 /* -------------------------------- path ----------------------------- */
 /* One static polyline with a chamfered bend at each seam, plus a
    piecewise-linear altitude profile. This is the whole world model: the
@@ -212,7 +412,7 @@ export function buildTransformPath(fixture, cfg) {
   return { segs, profile: fixture.altitudeProfile.map((p) => ({ ...p })) };
 }
 
-export const TRANSFORM_PATH = buildTransformPath(TRANSFORM_FIXTURE, CONFIG);
+export let TRANSFORM_PATH = buildTransformPath(TRANSFORM_FIXTURE, CONFIG);
 
 // Bend boundaries, same rule as the tower's corners (./path.js): the middle of
 // each turn's chamfer — which for a seam-centred chamfer IS the seam. A
@@ -222,7 +422,7 @@ export function transformBendSList(fixture) {
   return fixture.events.map((ev) => ev.seamS);
 }
 
-export const TRANSFORM_BEND_S = transformBendSList(TRANSFORM_FIXTURE);
+export let TRANSFORM_BEND_S = transformBendSList(TRANSFORM_FIXTURE);
 
 function segAt(segs, s) {
   for (let i = segs.length - 1; i >= 0; i--) if (s >= segs[i].s0) return segs[i];
@@ -341,23 +541,27 @@ export function transformScrollVel(tMs, speed, cfg) {
 
 // Seam pull: the bend comes to the player rather than the world assembling at
 // a distance. It starts on the FIRST detent (t2) and runs through the hold and
-// the second detent, so the view travels the chamfer while it swings.
-export function transformSeamPull(tMs, cfg) {
+// the second detent, so the view travels the chamfer while it swings. An event
+// with a wider authored apron (G2's 14-tile gate arena) overrides the pull so
+// the view still lands exactly 2 tiles past its pivot; absent `ev` — every
+// shipped call — the CONFIG value applies unchanged.
+export function transformSeamPull(tMs, cfg, ev) {
   const T = cfg.transform;
+  const pullTiles = ev && ev.seamPullTiles !== undefined ? ev.seamPullTiles : T.seamPullTiles;
   const TL = transformTimeline(cfg);
   if (tMs <= TL.t2) return 0;
-  if (tMs >= TL.t5) return T.seamPullTiles;
+  if (tMs >= TL.t5) return pullTiles;
   const u = (tMs - TL.t2) / (TL.t5 - TL.t2);
-  return T.seamPullTiles * (1 - (1 - u) * (1 - u) * (1 - u));
+  return pullTiles * (1 - (1 - u) * (1 - u) * (1 - u));
 }
 
 // Total scroll advance since a ritual started: the seam pull, then the closed
 // form of the resume ramp (∫ speed·u² dt). Closed form rather than integrated
 // per frame, so a ritual advances the world by exactly the same distance at
 // any frame rate.
-export function transformScrollOffset(tMs, speed, cfg) {
+export function transformScrollOffset(tMs, speed, cfg, ev) {
   const TL = transformTimeline(cfg);
-  const pull = transformSeamPull(tMs, cfg);
+  const pull = transformSeamPull(tMs, cfg, ev);
   if (tMs <= TL.t5) return pull;
   const u = clamp01((tMs - TL.t5) / cfg.transform.resumeMs);
   return pull + speed * (cfg.transform.resumeMs / 1000) * (u * u * u) / 3;
@@ -483,7 +687,12 @@ export function transformAtmosphereMix(tMs, cfg) {
 
 /* --------------------------- gate geometry ------------------------- */
 
-export function transformHaltS(ev, cfg) { return ev.seamS - cfg.transform.haltOffset; }
+// The scroll halt sits `haltOffset` before the seam. A gate fixture may
+// author its own apron depth per event (G2's proposal-mandated 14-tile
+// arena); v1's events carry no override, so the shipped demo is untouched.
+export function transformHaltS(ev, cfg) {
+  return ev.seamS - (ev.haltOffset !== undefined ? ev.haltOffset : cfg.transform.haltOffset);
+}
 export function transformTriggerS(ev, cfg) { return ev.seamS + cfg.transform.triggerOffset; }
 // RIG rounds the bend while the view swings, and no further: past the
 // threshold the view would be looking down a stretch it has not turned to yet.
@@ -498,18 +707,20 @@ export function transformSealS(ev, cfg) { return ev.seamS + cfg.transform.sealIn
 // Same overlay contract as the traversal fixture: the seeded generator
 // still authors everything outside the fixture bounds (nothing renders
 // there in this slice), and the fixture owns every column inside them.
-export function buildTransformLevel(cfg) {
+// Defaults to the live selected fixture (read at call time); the harness
+// passes an explicit one to assert both without touching the selection.
+export function buildTransformLevel(cfg, fixture = TRANSFORM_FIXTURE) {
   const base = buildLevel(cfg);
-  const B = TRANSFORM_FIXTURE.bounds;
-  for (const run of TRANSFORM_FIXTURE.groundRuns)
+  const B = fixture.bounds;
+  for (const run of fixture.groundRuns)
     for (let x = run.x0; x < run.x1; x++) base.groundH[x] = run.gap ? GAP : run.y;
   const platforms = base.platforms.filter((p) => p.x1 <= B.x0 || p.x0 >= B.x1);
-  for (const p of TRANSFORM_FIXTURE.platforms) platforms.push({ ...p });
+  for (const p of fixture.platforms) platforms.push({ ...p });
   return {
     groundH: base.groundH,
     platforms,
-    solidRects: [],
-    chunkLog: base.chunkLog.concat(TRANSFORM_FIXTURE.id),
-    fixture: TRANSFORM_FIXTURE,
+    solidRects: (fixture.solidRects || []).map((r) => ({ ...r })),
+    chunkLog: base.chunkLog.concat(fixture.id),
+    fixture,
   };
 }

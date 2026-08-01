@@ -108,7 +108,7 @@ accept:
 owner: gameplay-engineer
 verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic --out /tmp/t005-check
 
-## T-006 | feature | doing | P3
+## T-006 | feature | done | P3
 
 goal: rib-run authored-slope movement prototype — the costed-but-unstarted
 movement-lane candidate (decisions.md entry 5): a long diagonal ribline run
@@ -136,7 +136,7 @@ accept:
 owner: docs
 verify: grep the claims against src/main.js telemetry + README
 
-## T-008 | feature | review | P2
+## T-008 | feature | done | P2
 
 goal: G2 neck access-plate flip gate fixture per the greybox-map proposal
 (`docs/proposals/2026-07-meridian-monster-greybox-map.md` §G2), building on
@@ -153,7 +153,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; deterministic playtest script crossing G2
 
-## T-009 | feature | todo | P1
+## T-009 | feature | doing | P1
 
 goal: six-face integration — bring the judged grammar into the default run:
 traversal-lattice route density (from the slice's learnings), hound-2.5
@@ -174,7 +174,7 @@ verify: node tools/pathcheck.mjs; a new full-run playtest script (policy mode)
 notes: biggest task in the queue — split into sub-worktrees if needed;
 sequenced after T-001/T-004 merge to integrate their landings.
 
-## T-010 | art | review | P1
+## T-010 | art | done | P1
 
 goal: palette pass — replace the neutral grey-box palette with DESIGN's ≤8
 color roles (deep teal environment, rust-orange metal, acid-green enemy
@@ -190,7 +190,7 @@ accept:
 owner: asset-artist
 verify: node tools/pathcheck.mjs; tools/playtest screenshots at ?view=far
 
-## T-011 | juice | doing | P1
+## T-011 | juice | done | P1
 
 goal: baseline feedback pass (DESIGN dev-sequence item 4, unlocked by entry
 8): hit-stop, screen shake, muzzle flashes, impact/death particles, pickup
@@ -235,12 +235,30 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; smoke suite; ?selftest=1 via harness
 
-## T-014 | feature | blocked | P2
+## T-014 | feature | done | P2
 
 goal: spore mortar (Seed-Pod Tripod, boards 06/07) — delayed landing-zone
-denial per DESIGN's enemy table, teach-then-combine after polyp.
-blocked-by: T-004 (polyp) merged and reading clean solo.
+denial per DESIGN's enemy table (line 233: "Denies intended landing zones
+after a readable delay"; counter = redirect in the air or choose a different
+connector; combine = hound punishes a panicked return to the floor).
+Last enemy role in DESIGN's table; teach-then-combine after the polyp.
+accept:
+- [ ] solo stage behind a flag (e.g. `?mortar=1`) in the traversal slice, off
+      by default; lob → marked landing zone → readable delay → detonation,
+      all legible at the default FAR view
+- [ ] the denial is a *movement* problem: the marked zone is on a route the
+      player wants, and an alternate connector or an air redirect answers it
+      (pillar 2 — combat happens through movement)
+- [ ] placement-over-stats doctrine (decisions.md entry 6): threat comes from
+      where it lands, never from hp/damage inflation
+- [ ] materialize/depth-theater rules respected (no hitbox until solid);
+      static-anatomy rule untouched (entry 3)
+- [ ] one two-enemy combination stage (mortar + hound, per DESIGN's combine
+      column) only after the solo stage reads clean
+- [ ] pathcheck green incl. spawn/placement + telegraph-timing assertions;
+      feel questions queued for the operator — do not self-judge fun
 owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; a named tools/playtest script (policy mode ok) exercising the mortar solo stage and the combination stage
 
 ## T-015 | assets | done | P2
 
@@ -257,7 +275,7 @@ accept:
 owner: asset-artist
 verify: node tools/assets/check.mjs; sample round-trip committed as demo
 
-## T-016 | feature | review | P3
+## T-016 | feature | done | P3
 
 goal: score/setback convergence toward CP4 — promote the CHARGE/THREAT
 prototype (`?score=1`) and Hull Fallback (`?fallback`) from slice prototypes
@@ -271,7 +289,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; scored-run playtest script
 
-## T-017 | harness | todo | P3
+## T-017 | harness | done | P3
 
 goal: nit-batch cleanup triaged from the Inbox + T-015's review MINOR:
 (1) I-001 — stale hostiles/capsules enrichment comment in
@@ -317,7 +335,78 @@ verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic
   follow-up. Candidate directions: scale world-space glyphs up, or move
   the letter read to the HUD. Asset batches are held until this is picked;
   T-003 implements whichever direction wins.
-- (new packets append here as tasks land: palette, juice, shell, six-face run)
+- **RIB RUN vs FLOW (T-006, the movement lane's two live candidates —
+  decisions.md entry 5):** play these three back to back, same fixture
+  window, same spawn, same pursuing edge, frozen jump constants in all of
+  them:
+  1. `index.html?slice=traversal&ribrun=1` — the authored slope: one
+     ascending ribline, 6 risers of 2 tiles over treads of 7, 12 tiles of
+     climb, no hostiles (the pursuing edge is the pressure). Hold right and
+     hop; the tread is authored so a constant cadence rides it.
+  2. `index.html?slice=traversal&ribrun=1&flow=1` — the same rib with the
+     momentum spine on, which makes a mistimed hop's ledge catch auto-launch
+     with no press.
+  3. `index.html?slice=traversal&flow=1` — FLOW on the shipped lattice, the
+     incumbent, for the A/B.
+  (`&pace=surge` and `&view=near` both compose if you want the crescendo or
+  the tighter framing.)
+  Questions: (1) Does 1 read as "a long straight up a ribline" — one
+  continuous ascent — or as a staircase climbed one step at a time?
+  (2) Does the one-hop-per-rib cadence feel like sustained momentum, or does
+  the per-riser press feel like work? (3) When you mistime a hop, the rib
+  answers with a flange landing, a ledge catch, or a wall slide, in that
+  order — does that read as the rib handing the run back to you, or as the
+  rib eating it? (4) Against 3, which one better serves "every grab wants to
+  become another launch", and should the rib CARRY flow by default rather
+  than being a second flag? (5) The rib is deliberately one line, no route
+  choice and no hostiles — is a pure movement bench the right shape to keep
+  iterating on, or does it need a second line (or a contested plate) before
+  the feel can be judged? Note for 1-2: RIG climbs 12 tiles while the camera
+  holds its altitude (the traversal camera follows x only), so the crest
+  plays high in frame — the transformation slice already has an
+  altitude-following camera if that turns out to be the answer.
+- **G2 neck-plate flip (T-008):** `?g2=1` (default far view; `&enemies=0` to
+  watch choreography without the houndframe/wasps, `&view=near` for the old
+  framing). Frames + beat clock in `artifacts/g2-neck-flip/`. Questions per
+  the proposal's own G2 test: (1) Does the flip read as the plate carrying
+  you into a neck interior that already existed — or does anything still
+  read as the neck assembling? (2) Relocked on the hold, the plate rakes to
+  the interior grade — does it read as the same plate becoming an interior
+  ramp, or as a new object appearing? (3) After the turn, do the low deck
+  and the two catwalks read as continuations of the routes you entered on
+  (two-plus recognizable exits)? (4) The proposal's 14-tile apron makes the
+  ritual pull travel 16 tiles in the same 990 ms (v1 pulled 11) — does the
+  dive into the mouth feel committed-chunky or rushed? (5) At the FAR
+  default, do five routes plus hound-low/wasp-apex stay readable through
+  the gate window, or is the approach lattice too busy?
+- **Palette v1 (T-010):** default (concept palette) vs `?palette=classic`, at
+  FAR — the six-face run (`/index.html`), `?slice=traversal`,
+  `?slice=traversal&polyp=1` (the enemy-color frames), `?g1=1`, and
+  `?slice=transform`. Side-by-side pairs in `artifacts/palette-v1/` —
+  `sixface-boot/sixface-action`, `traversal-action`, `polyp-tell`,
+  `polyp-beam`, `g1-limb`, `transform-boot`, each
+  `--classic/--concept/--pair.png` (judge against boards 01/06/10/13). The
+  acid-green hostile ecology is LIVE on every enemy mesh this pass, the Iris
+  Polyp included; only the tells and the polyp's spent vent stay warm amber,
+  in both modes. The polyp is TWO stills, not one: a single emplacement wears
+  exactly one emissive per iris state, so `polyp-tell` is the dilating bulb
+  under its warm blink (RIG grounded on the walk at x≈54, hp 3, un-hit) and
+  `polyp-beam` is the committed hot-acid bar from the same cycle under a
+  second later (RIG caught in the lane at x≈61, knocked off its feet by the
+  volley, hp 2). Both are state-triggered and pixel-verified by the rig
+  (concept/classic: 542/796 px brightened on the blink — the kept ON frame
+  against the dark half of the same blink, measurable only at capture — and
+  2497/2650 px of hot acid the tell frame does not have, which anyone can
+  recompute from the two committed stills); the closed → tell → fire → vent
+  rhythm itself is a moving read and has to be judged live at the URL, not
+  from stills. Questions: (1) does teal-air/rust-body read as the boards'
+  Meridian, or does the rust drift toward terracotta? (2) do threats and
+  capsules still pop at FAR on the rust deck? (3) is the deck still the
+  obvious route surface (brightest large shape)? (4) does the G1 limb
+  backdrop separate from the facet RIG runs on? (5) at FAR, do the acid
+  bodies and their warm-amber tells stay two separate reads against boards
+  01/06/10 — including the rooted polyp against the flying wasp?
+- (new packets append here as tasks land: juice, shell, six-face run)
 
 ## Inbox (playtester/adversarial file here; integrator triages each cycle)
 
@@ -385,6 +474,17 @@ not scattered hex literals" acceptance is one file short. One-line repoint
 per the palette.js note (tokens already authored and pathcheck-asserted);
 fold into the post-T-004 integration or T-003's FAR-tells pass.
 
+**RESOLVED — closed at the T-010 merge.** The fix-cycle wired
+`src/render/hostiles.js` to the palette tokens (`PAL.wasp/carrier/hound/polyp`
+plus tells, beam and vent), removed the pathcheck exemption, and added a
+structural guard: every kind in the sim `ENEMY` roster must carry a body token
+in **both** tables, so the T-004/T-010 collision cannot recur. The acid ecology
+is live on every enemy mesh, the Iris Polyp included; tells and the spent vent
+stay warm amber in both modes by design. Whether the acid bodies and warm
+tells hold as two separate reads at FAR is now an operator question, answerable
+from `artifacts/palette-v1/polyp-tell--*.png` / `polyp-beam--*.png` (packet
+question 5), not an open defect.
+
 ## I-005 | bug | S3 | repro: on task/T-012 26de15f, boot any URL and evaluate `window.HB.audio`/`audioSnapshot` in the console or a page.evaluate — undefined; grep shows src/ui/audio.js:545 exports it and nothing imports it | evidence: reports/tasks/T-012/playtest.md; tools/playtest/runs/gate-T-012-audio-probe/layer-probe.json
 
 Found while gating T-012 (WebAudio synth layer, PASS): `audioSnapshot()`
@@ -427,6 +527,22 @@ or a lives read (`lives` is on `HB.snapshot()` but not on the frozen
 `testapi` channel, so publishing it there is the clean follow-up hook
 request).
 
+**RESOLVED (harness half) — verified by the T-016 re-gate at `a08753b`.**
+`metrics.lives` now derives stock deaths from the HUD `×N` readout on every
+default-run trace (my fresh baseline run: `deaths: 0` but `lives.spent: 2`,
+losses at 19.1 s / 27.4 s with `x 89.25 → 51.58`), every report carries
+`deathsScope` warning that `deaths`/`outcome.attempts` are fixture-only, and
+the README note now points at `lives.spent` + `score.setbacks` instead of the
+blind counter. Game-side `sliceStats.attempts` is still fixture-only by
+design; publishing `player.lives`/`hp` on the frozen `?testapi` channel is
+filed as playtest README hook request #9. **Residual, S3:** `outcome.result`
+still cannot read `died` on a default-run trace — `computeOutcome`
+(`tools/playtest/lib/metrics.mjs:285`) keys off the same fixture-only
+`attempts`, so a run that spent two lives is labeled `not-completed` on the
+first line of its `summary.md`, and the corrected note does not name
+`outcome.result` among the fixture-only fields. One clause in that note, or
+deriving `died` from `lives.spent` when attempts are unavailable, closes it.
+
 ## I-007 | docs | S2 | repro: compare `docs/proposals/2026-07-cp4-default-run-score-setback.md` §Evidence baseline row against its own artifact `tools/playtest/runs/scored-run-baseline-1785557898457/` at task/T-016 da29e86 | evidence: reports/tasks/T-016/playtest.md; tools/playtest/runs/gate-T-016-scored-baseline/screenshot.png
 
 Found while gating T-016 (FAIL): the CP4 recommendation's A/B table says
@@ -442,6 +558,207 @@ contrast is flags-off losing 2 lives and 13.6 tiles of ground (x 89.25 →
 max x = 89.25, 3 setbacks absorbed) — which is also concrete evidence for
 the packet's own question 2 about whether a setback that costs no forward
 ground punishes enough.
+
+**RESOLVED — verified by the T-016 re-gate at `a08753b`.** The baseline row
+now reads "died twice, 2 of 3 stock lives spent (19.1 s / 27.3 s), each
+respawn snapping x 89.25 → ~51.6, ends HUD ×1, final x 75.48 vs max x 89.25,
+4 hits survived", and a correction box states the cause. I recomputed every
+number in both headline rows straight from the committed traces
+(`tools/playtest/reports/cp4/scored-run{,-baseline}/report.json`) — all agree,
+and both rows now cite committed artifacts instead of gitignored `runs/`
+paths. Reproduced independently: `tools/playtest/runs/gate2-T-016-baseline-wtharness/`.
+
+## I-008 | docs | S3 | repro: compare `docs/proposals/2026-07-cp4-default-run-score-setback.md` §Evidence rows 3–5 against their only committed artifacts (`tools/playtest/reports/cp4/{scored-run-nojump,ceiling-score-only,fallback-only}/summary.md`) at task/T-016 a08753b | evidence: reports/tasks/T-016/playtest.md; tools/playtest/runs/gate2-T-016-nojump/report.json
+
+Found while re-gating T-016 (PASS): rows 1–2 of the CP4 evidence table are
+now fully checkable against committed `report.json` traces, but rows 3–5
+still cite setback timestamps (3.2 / 22.4 / 27.4 / 27.8 s), final x (59.65,
+31.65) and the `GAME_OVER` / "SIGNAL LOST" terminal state, none of which
+appear in the only artifact committed for those runs — their `summary.md`
+carries lives, stall and score lines but neither final x nor setback times,
+and no `report.json` is committed for them. **This is checkability, not
+accuracy:** an independent gate run of row 3's script reproduced it within
+the documented variance (stalled; setbacks 3.2 / 22.4 / 27.1 s; 1 life spent
+at 15.9 s; final x 59.649; protoScore −16.5 real). Committing
+`scored-run-nojump/report.json`, or adding final x + setback times to those
+three summaries, makes the whole table checkable — worth doing before CP4 is
+judged, since evidence honesty is this packet's whole point. Non-blocking.
+
+## I-009 | bug | S3 | repro: serve task/T-008 66b13d0 and open `index.html?g2=1` — HUD reads "0/2 TURNS" before the flip, "1/2 TURNS" after, and the clear overlay reads "1 of 2 transformations", for a fixture with one event | evidence: reports/tasks/T-008/playtest.md; .claude/worktrees/T-008/tools/playtest/runs/g2-neck-flip/{02-plate-armed-ajar,07-interior-exits,09-neck-clear}.png
+
+Found while gating T-008 (PASS). `src/ui/hud.js:114` and `src/ui/overlay.js:77`
+hardcode the v1 demo's two-turn copy, so the G2 fixture — which authors a single
+`neck-plate-flip` event — advertises a second transformation that does not exist.
+Visible in every committed and freshly captured G2 frame, including the BREACH
+CLEAR overlay. Cosmetic only: no sim, gating or telemetry effect, and the ritual
+itself completes correctly. The builder flagged it in
+`artifacts/g2-neck-flip/README.md` and the reviewer carried it as a MINOR, but it
+was never filed, so filing it here. `ACTIVE_FIXTURE.events.length` is the fix once
+both files are out from under the in-flight lanes that own them (T-011 juice,
+T-013 shell).
+
+## I-010 | art | S3 | repro: any `?g2=1` run with enemies live at task/T-008 66b13d0 — compare `.claude/worktrees/T-008/tools/playtest/runs/g2-neck-flip/00-approach-ribline.png` (fresh capture) against `artifacts/g2-neck-flip/00-approach-ribline.png` (committed) at the same beat | evidence: reports/tasks/T-008/playtest.md
+
+Pre-existing render nit, not T-008's doing (both lines predate this branch), found
+while judging G2 frames at the default FAR view. A hostile in its hit-flash renders
+with `glow = 0xffffff` (`src/render/hostiles.js:197`), which at FAR erases the
+wasp's green-diamond silhouette entirely — it becomes a featureless ~13px white
+quad. Independently, RIG blinks during iframes (`src/render/player.js:55`). In the
+fresh `00` frame the two coincide, so the frame contains a white square and no
+visible player, while the committed capture of the same beat shows RIG plus the
+white quad at his muzzle. Cost real time in this gate before it was identified as
+a shot wasp rather than a player-render bug, and it will mislead any future
+screenshot gate the same way. Suggest the flash tint the existing silhouette
+rather than replace it, and fold into T-003's FAR-tells readability pass (same
+scope as I-003).
+
+## I-011 | bug | S3 | repro: any policy-mode script that ends at `--max-runtime-ms` with a `tap` in flight, e.g. `node run.mjs runs/gate-T-008-scripts/g2-pressure-PREFIX.json --deterministic --max-runtime-ms 22000 --base-url <pinned tree>` — `report.json` `pageErrors` gains `key up failed for Space: keyboard.up: Target page, context or browser has been closed` | evidence: tools/playtest/runs/gate-T-008-g2press-PREFIX-{2,3}/report.json; reports/tasks/T-008/playtest.md
+
+Harness-side only, zero game impact. A policy `tap`'s release is a fire-and-forget
+timer by design (documented in `tools/playtest/README.md`'s policy section), so a
+tap whose `holdMs` outlives context teardown records its failed keyup in
+`pageErrors` — the same channel a gate reads to decide whether the *game* threw.
+Both affected runs still exited 0 and their metrics are sound; the entry is noise,
+but it is noise in an error channel, which is exactly where noise is expensive.
+Fix is to swallow (or bucket separately) keyboard failures raised after teardown
+has begun, so `pageErrors` stays a game-error channel. Filed rather than fixed
+here: the playtester lane does not edit harness `lib/`.
+
+## I-012 | fairness | S3 | repro: `node run.mjs <worktree>/tools/playtest/scripts/g2-neck-flip-pressure.json --deterministic --max-runtime-ms 22000 --base-url <pinned task/T-008 66b13d0>` — hp 3→2 lands at x ≈ 112 and hp 2→1 at x = 129.65 in all 3 runs; the pre-fix control's every fall traces back to the same first hit at x ≈ 102 | evidence: tools/playtest/runs/gate-T-008-g2press-{1,2,3}/report.json; tools/playtest/runs/gate-T-008-g2press-PREFIX-{2,3}/report.json; reports/tasks/T-008/playtest.md
+
+Test-coverage gap, filed so triage can decide, **not** a fairness verdict — that is
+the operator's call and is queued as a packet question. The reviewer raised this at
+`tools/pathcheck.mjs:2581`: the new authored-pressure section asserts spawn
+ordering, seam-clear distance, apex-lane proximity and hound patrol containment,
+but nothing binds ambient spawn placement to the *mandatory* gaps. This gate
+measured the relation the assertion is missing: the x106 lane-4.2 wasp's dive
+envelope reaches back across the required 100–102 teach gap, the hit there is
+deterministic enough to land within 13 ms across runs, and in the pre-fix control
+it is the event that starts every fall (five deaths at x = 101.65). The fixture is
+crossable and the shipped script clears it 3/3 with a life in hand, so nothing is
+broken today — but a future spawn-table retune could move that contest without any
+assertion noticing. Suggest pairing each mandatory gap with the wasps whose
+authored lane can reach its crossing arc.
+
+## I-013 | bug | S3 | repro: `node run.mjs <worktree>/tools/playtest/scripts/ribrun-climb.json --deterministic --max-runtime-ms 15000 --base-url <pinned task/T-006 470bc14>` — the summary reports "Route coverage: [mid-catwalk, upper-chimney, wall-launch, recovery-scramble]" and "Dare pocket: entered=true" for a fixture that contains none of them | evidence: tools/playtest/runs/gate-T-006-ribrun/summary.md; tools/playtest/runs/gate-T-006-ribrun-policyonly/summary.md; reports/tasks/T-006/playtest.md
+
+Harness metric contamination under any fixture *overlay*, surfaced by
+`?ribrun=1` and documented honestly by the T-006 builder in
+`tools/playtest/README.md` (limitation 3's new second caveat) — filed here so
+it is tracked rather than only described. `lib/fixture.mjs` re-exports the
+lattice `TRAVERSAL_FIXTURE` unconditionally, so route coverage, route
+inference and the dare-pocket columns are computed against connectors the
+served build replaced: a rib run that climbs one straight ribline is credited
+with four lattice routes and a dare-pocket entry, purely because its x/y trace
+passes through the coordinate ranges those features used to occupy. Everything
+derived from the run itself (outcome, attempts, falls, hp, `airMs`, `stallMs`,
+vertical range, `minEdgeMargin`, input density) is unaffected and was what this
+gate judged on. Fix is to teach `lib/fixture.mjs` to resolve the same overlay
+the game resolves from the URL; scope will grow as more overlays land (T-008's
+`?g2=1` has the same shape). Filed rather than fixed here: the playtester lane
+does not edit harness `lib/`.
+
+## I-014 | bug | S3 | repro: `node tools/assets/check.mjs --root <tree whose src/ file contains `import {\n x,\n} from '../assets/generated/foo.png';`>` — exits **0**, PASS, and lists the specifier line under "game references to assets/ (runtime, not imports)" | evidence: reports/tasks/T-017/playtest.md; tools/assets/README.md §"Limitation of the import scan, measured"
+
+Found while gating T-017 (harness nit-batch, PASS): `checkGameIndependence`
+only detects a static import when the module specifier sits on the *same line*
+as the `import` keyword. A specifier pushed onto a later line evades the gate
+completely — on a throwaway fixture whose only asset reference is that import,
+`check.mjs` exits 0 and reports the import as a *runtime* reference, so the
+"the game must boot with every asset file missing" invariant would pass while
+being violated. Reproduced identically on `task/T-017 0059363` and on `main
+59a6501`: **pre-existing, not a T-017 regression** — T-017 documented the gap
+honestly in `tools/assets/README.md` and its commit message asked for triage,
+which this files. Nothing in `src/` writes that shape today (every import in
+the tree is single-line), so the exposure is future-shaped, not current. Fix is
+deliberately non-obvious and worth a moment's thought rather than a quick
+regex widen: the README's own note explains that a naive newline-crossing
+pattern can swallow a whole file between an `import` and an unrelated
+`'assets/…'` string literal and start failing legal runtime code. A bounded
+lookahead (specifier within the next N lines of an `import` with no
+intervening `;`) or a tiny statement-level scan are the sane options.
+
+## I-015 | docs | S3 | repro: read `tools/playtest/palette-capture.mjs:312-341` (verification) against `:440-441` (the `shot()` closure) at `task/T-010 67314a6`, or run `node tools/playtest/palette-capture.mjs polyp-cycle` on a tree where the iris never verifies — `artifacts/palette-v1/polyp-{tell,beam}--<pal>.png` are already overwritten when it throws | evidence: reports/tasks/T-010/playtest.md; reports/tasks/T-010/review.md
+
+Found while gating T-010 (palette pass, PASS): the rig's own prose is one
+notch stronger than its code. `palette-capture.mjs`'s header (lines 22-25) and
+`tools/playtest/README.md` (the `palette-capture.mjs` entry) both say a frame
+that does not carry the warm blink or the live beam "is retried, and the rig
+throws rather than write evidence that does not show what its name claims."
+The `shot()` closure writes each screenshot **straight to its final artifact
+path** and `captureIrisCycle` verifies afterwards, so an unverified frame is
+written first and merely superseded on a retry — and on total failure the rig
+throws loudly with the last unverified frames still on disk (the pair PNG is
+not composed, which is the only on-disk tell). **The committed evidence is
+unaffected**: this gate re-derived the packet's own recomputable claim from
+the committed stills (beam minus tell = 2497 px concept / 2650 px classic,
+exactly as stated, 0 in the tell frames), so what shipped did verify. This is
+about the next run, and about a lane whose two previous cycles failed on
+exactly this class of gap between text and artifact. Cheap fix either way:
+screenshot to a buffer or a `.pending` path and rename on verification, or
+reword both places to "throws rather than *keep*". Also raised as MINOR in
+`reports/tasks/T-010/review.md`; filed here so it survives the merge.
+
+## I-016 | docs | S3 | repro: read `src/render/juice.js:27`, `src/mode.js:110` and `docs/DESIGN.md:461` at `task/T-011 14ade6b`, against the corrected wording in `README.md:36` | evidence: reports/tasks/T-011/playtest.md; reports/tasks/T-011/review.md
+
+Three stale doc strings found while gating T-011 (juice, PASS), all still in
+the tree at the branch head and all already raised as MINOR in T-011's
+review — filed here so they survive the merge. (1) `src/render/juice.js:27`
+still says colours are "role names resolved by fx.js (optional lazy palette
+import)"; the lazy `import('./palette.js')` is exactly what the fix commit
+deleted, so the next agent goes looking for an import that must not come
+back. (2) `src/mode.js:110` and (3) `docs/DESIGN.md:461` both promise
+`?juice=0` gives a "byte-identical pre-juice build", where `README.md:36` was
+corrected to "simulation-identical" — the accurate claim, since `samplePerf`
+still samples every frame and `telemetry()` still carries the added
+`juice`/`perf` keys under the flag. This gate's A/B supports the README's
+wording and not the stronger one: `juice=0` matched pre-juice `main` on
+attempts/falls/hits, `minEdgeMargin` within 0.03 tiles and final x within
+0.02 tiles, which is simulation-identical evidence, not byte-identity. No
+runtime impact; prefer the README's phrasing in all three places.
+
+## I-017 | docs | S3 | repro: `cd <task/T-014 9dd13b1>/tools/playtest && node run.mjs scripts/mortar-zone-deny.json --deterministic --max-runtime-ms 17000 --base-url <pinned task/T-014 9dd13b1>` — the bot pauses ≈150 ms at the lip (x 57.60 → 57.64, vx 2.9 → 0.0 across two samples) and crosses the marked strip during `fuse`/`burst`, clearing the slab at x = 62.21, not inside `cool` | evidence: tools/playtest/runs/gate-T-014-mortar-solo/report.json; reports/tasks/T-014/playtest.md
+
+Found while gating T-014 (spore mortar, PASS — the run itself is fine:
+completed, 1 attempt, 0 falls, hp 3/3, full `aim → lob → fuse → burst → cool`
+cycle). The committed script's own `description` field states its load-bearing
+beat as measured fact — "Measured 3/3 on this tree: … one full lob -> fuse ->
+burst cycle observed with the bot held at the lip through it and crossing the
+strip inside the reload window" — and then lists "Regression signals", which
+invites the next agent to read that beat as a contract. It is not one: a fresh
+deterministic run on the same tree took the *other* branch of the same policy
+(arrived late in the cycle, barely waited, crossed while the mark was still
+lit) and still passed every stated regression signal. The sibling evidence
+README already hedges this correctly ("Arrival timing is not identical run to
+run … a bot that arrives late in a cycle barely waits at all"), and the
+harness README's honesty items 2/4/8 explain why. Fix is wording only: move
+the flat 3/3 claim into the same hedge the README uses, and keep the
+regression signals (stall short of the rejoin, hp < 3, no mortar state change)
+as the actual contract, since those are what held. No runtime impact, no
+change to the policy rules.
+
+## I-018 | bug | S3 | repro: `cd tools/playtest && node run.mjs <any script whose FIRST event is at t>0> --deterministic --max-runtime-ms 9000 --url "http://127.0.0.1:<pinned task/T-013 d3c8d28>/index.html?slice=traversal&shell=title"` — zero events dispatch, `meta.dispatchJitterMsAvg: null`, no `actualDispatchMs` on any event record, every sample `state: "MENU"` with `gameMs: 0`, outcome `not-completed`, exit 0 | evidence: tools/playtest/runs/gate-T-013-title-det-probe/report.json; reports/tasks/T-013/playtest.md
+
+Found while gating T-013 (game shell, PASS — the shell itself is clean: no
+committed script's input is eaten, first-input latency and F7 retry recovery
+are unchanged against a merge-base control). New dead state for
+`--deterministic`: the mode dispatches an event at the first tick where
+`sample.gameMs >= t`, and the shell's `MENU` state holds a built-but-frozen
+run, so `gameMs` stays at 0 until a key starts the run — but the key that
+would start it is itself gated on that clock. A script whose first event is at
+`t = 0` fires on the first tick and everything proceeds normally (proved:
+`mid-route` completes from the title screen, `runs/gate-T-013-mid-fromtitle`),
+so this only bites a script with a non-zero first event. The harness README
+already documents the *benign* half of this behaviour ("an event scheduled
+during a pause/retry freeze correctly waits for gameplay to resume"); MENU is
+the case where waiting never ends. S3, not S2: `?shell=title` is a
+capture-only flag and every committed script autostarts under `?testapi=1`, so
+nothing shipped can reach it — but the failure is quiet (exit 0, plausible-
+looking `not-completed`) and would read as a game bug to the next agent who
+forces the title for a screenshot. Cheapest fixes, for triage: treat a
+`MENU`-state sample as "clock not started" and dispatch the pending head event
+by wall clock, or note the constraint in the harness README's deterministic
+section next to the pause/retry paragraph it already has.
 
 ---
 

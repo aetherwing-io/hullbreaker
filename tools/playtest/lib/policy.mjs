@@ -34,7 +34,8 @@
 // parens); each clause is either:
 //   - a named predicate, optionally negated with a leading `!`
 //     (pinned, airborne, grounded, houndTell, houndCharge, polypTell,
-//     polypFire, polypOpen, victory)
+//     polypFire, polypOpen, mortarLob, mortarFuse, mortarBurst,
+//     mortarMarked, victory)
 //   - a bare sample field, optionally negated, tested for truthiness
 //     (e.g. "grounded", "!grounded")
 //   - a comparison against a sample field: field OP value, where OP is one
@@ -71,9 +72,10 @@ const PREDICATES = {
   grounded(sample) { return sample.grounded === true; },
   // Houndframe telegraph (prowl -> tell -> charge -> skid/tumble,
   // src/sim/hostiles.js): `tell` is the pre-commitment plant, `charge` is
-  // the committed lunge. Requires hostiles telemetry, currently only
-  // carried by window.HB (see lib/sampler.mjs) — testapi doesn't expose
-  // hostiles as of this writing.
+  // the committed lunge. Requires hostiles telemetry, which both channels
+  // now carry: the sampler reads `hostiles` from whichever channel is
+  // primary (testapi included, since e7b2952) and falls back to window.HB
+  // only when the primary didn't have it (see lib/sampler.mjs).
   houndTell(sample) {
     return Array.isArray(sample.hostiles) &&
       sample.hostiles.some((h) => h.kind === 'hound' && h.state === 'tell');
@@ -98,6 +100,28 @@ const PREDICATES = {
     return Array.isArray(sample.hostiles) &&
       sample.hostiles.some((h) => h.kind === 'polyp' &&
         (h.state === 'fire' || h.state === 'vent'));
+  },
+  // Spore Mortar bombardment cycle (aim -> lob -> fuse -> burst -> cool,
+  // src/sim/hostiles.js): `lob` is the pod in flight with the landing zone
+  // already marked, `fuse` is the planted pod counting down, `burst` is the
+  // live denial. `mortarMarked` is the whole warning — the signal a bot
+  // should treat as "that patch of floor is spoken for".
+  mortarLob(sample) {
+    return Array.isArray(sample.hostiles) &&
+      sample.hostiles.some((h) => h.kind === 'mortar' && h.state === 'lob');
+  },
+  mortarFuse(sample) {
+    return Array.isArray(sample.hostiles) &&
+      sample.hostiles.some((h) => h.kind === 'mortar' && h.state === 'fuse');
+  },
+  mortarBurst(sample) {
+    return Array.isArray(sample.hostiles) &&
+      sample.hostiles.some((h) => h.kind === 'mortar' && h.state === 'burst');
+  },
+  mortarMarked(sample) {
+    return Array.isArray(sample.hostiles) &&
+      sample.hostiles.some((h) => h.kind === 'mortar' &&
+        (h.state === 'lob' || h.state === 'fuse' || h.state === 'burst'));
   },
   victory(sample) { return isVictorySample(sample); },
 };

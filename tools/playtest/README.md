@@ -138,6 +138,19 @@ parens, and never `eval()`/`new Function()`. Each clause is either:
   - `pinned` — grounded, `|vx| < 0.3`, and the harness currently has a
     direction key held (`ArrowLeft`/`ArrowRight`) — the F8/H3 "commanded to
     move but jammed" signal.
+    **Honesty note — `pinned` is also true on the first tick after a
+    respawn**, and after any `resetGame`: RIG stands still at the spawn
+    point while the script is still holding right. In a script that only
+    ever ran clean this never shows, but as soon as one death occurs, a
+    bare `{ "when": "pinned" }` rule fires a jump *out of the spawn point*
+    on every retry — which is exactly enough to carry RIG airborne through
+    the next position window, so a closed-loop gap jump silently never
+    fires and every retry then dies at the same tile. (Seen for real on
+    `g2-neck-flip-pressure`: 9 attempts, 7 falls, every fall at x=101.65,
+    on a fixture whose crossing is fine.) Scope the rule to where the jam
+    it answers actually is (`pinned && x>125.5 && x<130.5`), or pair it
+    with a position guard — a run-wide `pinned` is a retry trap, not a
+    safety net.
   - `airborne`, `grounded` — `player.grounded` false/true.
   - `houndTell`, `houndCharge` — any hostile with `kind: 'hound'` currently
     in the `tell`/`charge` state (`src/sim/hostiles.js`'s
@@ -147,6 +160,13 @@ parens, and never `eval()`/`new Function()`. Each clause is either:
     vulnerable state (`fire`/`vent`) of the iris cycle
     (closed→tell→fire→vent, same file). Closed/tell shots ping off the
     armour, so `polypOpen` is the "shots count now" signal.
+  - `mortarLob`, `mortarFuse`, `mortarBurst`, `mortarMarked` — any hostile
+    with `kind: 'mortar'` in the pod-in-flight `lob`, the planted-and-
+    counting-down `fuse`, the live-denial `burst`, or any of the three
+    (`mortarMarked`, same file's aim→lob→fuse→burst→cool machine). The
+    landing zone is marked from the moment the pod launches, so
+    `mortarMarked` is the "that patch of floor is spoken for" signal and
+    `mortarBurst` is the only window that actually damages.
   - `victory` — the traversal-slice VICTORY overlay or `state`.
 - a bare sample field, optionally negated, tested for truthiness (e.g. `grounded`, `!grounded`).
 - a numeric comparison against a sample field: `field OP number`, `OP` one of `> >= < <= == !=` (e.g. `x>44`, `hp<=1`).
@@ -450,9 +470,33 @@ that also somehow lacks `window.HB`.
   property, not an observation). A.5 is explicit that this is **not** a
   score input ("rewarding input density would reward mashing"); it's
   reported purely as a harness/pacing diagnostic and never feeds `protoScore`.
-- **damage/death events** — `deaths` counts `attempts` increments (every
-  mode); `hitsWithoutDeath` counts hp-pip decreases that didn't coincide with
-  a death (every mode — hp pips are always in the HUD).
+- **damage/death events** — `deaths` counts `attempts` increments, which is
+  **fixture-only, not "every mode"** (an earlier version of this line said
+  every mode; it was wrong): `src/main.js` increments `sliceStats.attempts`
+  only inside `if (ACTIVE_FIXTURE)`, so `deaths` — and `outcome.attempts`,
+  which reads the same counter — are structurally `0` on a **default
+  six-face run** no matter how many times the run died. `metrics.deathsScope`
+  now says so in every report. `hitsWithoutDeath` counts hp-pip decreases
+  that didn't coincide with an attempt increment (every mode — hp pips are
+  always in the HUD).
+- **stock lives** (`metrics.lives`) — the failure counter that *does* work
+  outside fixtures: `{start, end, spent, losses[]}` parsed from the HUD's own
+  `RIG ▰▰▰  ×N` readout in `hudTL`, which the sampler's DOM base layer reads
+  in **every** fidelity mode. `losses[]` carries each life's `gameMs` and the
+  `xBefore → x` respawn knock-back. Honest limitations: the **traversal
+  slice prints no `×N` at all** (`src/ui/hud.js` gates the readout on
+  `IS_TRAVERSAL_SLICE`), so `unavailableReason` is set there and `attempts`
+  is the counter to use instead; it is poll-rate sampled, so two deaths
+  inside one sample interval read as one drop of 2 (`spent` still totals
+  correctly); and only decreases are counted, so a post-`GAME_OVER`
+  `resetGame()` restoring lives cannot subtract from the total. It is a HUD
+  *text* parse because `player.lives` rides `HB.snapshot()` but not the
+  frozen `testapi` channel — see hook request #9. Validated the same way the
+  `fixture.mjs` swap was: every metric was recomputed with and without this
+  change over all 15 traces on hand (7 committed demo runs + 8 CP4/smoke
+  runs) — every pre-existing field is byte-identical, `lives` is the only
+  addition, and it reads `null`/unavailable on exactly the traversal-slice
+  traces and a number on every default-run and transform-slice trace.
 - **airborne kills, `protoScore`** — see the A.5 section immediately below;
   both are proxies pending the real score-event stream.
 - **dare pocket** — `entered` (position-in-bounds in `testapi`/`full`, or the
@@ -481,25 +525,60 @@ request, this harness adopted it as follows:
   (`>= 3` connectors visited in order). The match radius (2.2 tiles) is this
   harness's own choice — A.5 doesn't specify one — and is documented inline.
 - **`protoScore`**: computed with A.5's exact published formula,
-  `100·airborneKills + 25·links + 12·(airMs/1000) − 8·(stallMs/1000)`, but
-  **`airborneKills` and `links` are proxies, not the real thing** — the
-  `HB.score.events`/`HB.score.snapshot()` surface A.5 proposed has since
-  shipped with the CHARGE prototype (events flow only under `?score=1`),
-  but this harness has not switched over yet (see hook request #3):
+  `100·airborneKills + 25·links + 12·(airMs/1000) − 8·(stallMs/1000)`, from
+  one of two clearly-labeled sources (`metrics.protoScore.source`):
+  - **`HB.score` (real)** — when the run was started with `?score=1`
+    (either fixture or the default six-face run, since T-016's CP4
+    promotion), the game's own A.5 snapshot rides both telemetry channels
+    and the sampler passes it through (`sample.score`). All four terms then
+    come from the game's event-derived counts and sim-owned clocks
+    (`counts.airborne_kill`, `counts.link`, `airMs`, `stallMs`) — this is
+    the authoritative number A.5 describes, and the report also carries the
+    full final snapshot as `metrics.score` (CHARGE/notch, THREAT/
+    classification, per-event counts, setbacks, and which tune — `slice`
+    vs `run` — priced the stream).
+  - **`proxy`** — on a run without `?score=1`, `airborneKills` and `links`
+    remain the pre-event-stream approximations:
   - `airborneKills` proxy: every observed increase in the kills counter where
     the preceding `testapi`/`full` sample had `grounded === false`.
   - `links` proxy: `(best-matched route's matched-connector count) − 1`, i.e.
     connector-to-connector transitions the position trace actually passed
     through, from this harness's own route matcher.
-  - Both are labeled `unavailableReason`/`note` in the report so a reader
-    doesn't mistake them for the authoritative event-derived numbers A.5
-    describes. **Replace both with real counts** — the surface is there now,
-    for runs that pass `?score=1` — a small, isolated change in
-    `lib/metrics.mjs`'s `computeAirborneKills`/`inferRoute`.
+  - The proxy stays labeled by `source`/`note` in the report so a reader
+    doesn't mistake it for the authoritative event-derived numbers. (The
+    old "replace both once `HB.score.events` lands" note is resolved: the
+    surface landed and the harness consumes it — the proxy path remains
+    only for flag-off runs.)
 - **Input density is deliberately excluded from `protoScore`**, per A.5's own
   reasoning; reported separately.
 - `minEdgeMargin` is read from the game (via `testapi`/HUD), never
   recomputed, per A.5's determinism note.
+- **Honesty note for default-run (non-slice) traces** (`scored-run*.json`):
+  the `route`, `darePocket`, and jump-count metrics are computed against the
+  *traversal fixture's* authored connectors/bounds and are meaningless on a
+  default six-face trace — read `metrics.score` (real, game-owned) instead
+  there, and treat `route`/`darePocket` as noise.
+  **Failure counting on a default run** (corrected — the first version of
+  this note pointed at `metrics.deaths`, which is the same blind counter it
+  was warning about, and would have made every future default-run gate
+  report zero deaths for a run that died):
+  - `outcome.attempts` and `metrics.deaths` are **fixture-only** and are
+    structurally `0` here — `sliceStats.attempts` is incremented inside
+    `if (ACTIVE_FIXTURE)` in `src/main.js` and nowhere else. Do not read
+    either as a failure count outside a fixture; `metrics.deathsScope`
+    repeats this warning in the report.
+  - Use **`metrics.lives.spent`** (HUD `×N` readout, present on every
+    default-run and transform-slice trace) for stock deaths, with
+    `metrics.lives.losses[]` giving the timestamp and `xBefore → x`
+    knock-back of each one.
+  - Use **`metrics.score.setbacks`** for HULL FALLBACK absorptions on a
+    `?score=1` run (`sliceStats.setbacks`, tracked in every mode since
+    T-016). Setbacks and lives are *different tiers of the same ladder*, so
+    a fallback-armed run's failure story is both numbers, not either alone.
+  - Corroborating signature in the raw trace, if you want it independent of
+    the HUD: a stock respawn shows `hp 1→3` with `x` snapping backward to
+    the respawn point and `setbacks` unchanged; an absorbed fallback shows
+    `hp 1→3` with `setbacks` incrementing and `x` continuous.
 
 ## Fixed: zombie attempts (F7)
 
@@ -619,11 +698,23 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    bot (reading `testapi`/`window.HB` and reacting per-frame) is a different
    kind of evidence. `dare-pocket` not completing in one scripted attempt is
    the expected, unsurprising case, not a harness failure.
-2. **`airborneKills` and `links` (and therefore `protoScore`) are proxies**,
-   not the real A.5 event-derived numbers — see the A.5 section above. They
-   are internally consistent enough to rank the three demo policies
-   correctly, but should not be treated as literally comparable to a future
-   `HB.score.snapshot()`-derived score until the real event stream exists.
+2. **`airborneKills` and `links` (and therefore `protoScore`) are proxies on
+   a run WITHOUT `?score=1`** — see the A.5 section above. On a `?score=1`
+   run they are not: `metrics.protoScore.source === 'HB.score'` means all
+   four terms came from the game's own event stream (T-016). Always read
+   `source` before comparing two runs' `protoScore` — a proxy number and a
+   real number are not literally comparable, and the proxy is only
+   internally consistent enough to rank policies against each other.
+   Even between two real (`HB.score`) runs of the *same* `--deterministic`
+   script, the event stream is not identical. Measured over five repeats of
+   `scored-run.json`: `protoScore` held a ≈2% band (586.9 / 597.9 / 598.0 /
+   598.8 / 600.5) and so did its inputs (3 airborne kills every time), but
+   **setbacks came out 3 four times and 2 once, THREAT 920 four times and 444
+   once, recatches 2 or 0, hot time 13.8 s or 17.9 s** — while lives spent (0)
+   and final x (89.25) were identical in all five. Score/THREAT numbers from a
+   single run are a band, not a target; structural outcomes (lives, forward
+   progress, terminal state) are the stable evidence. See honesty items 4 and
+   8 for why `--deterministic` cannot close this gap.
 3. **Route coverage/inference is approximate.** The nearest-connector greedy
    matcher in `lib/metrics.mjs` is not a topological solve. (The other half
    of this limitation as originally written — `lib/fixture.mjs` being a
@@ -634,6 +725,20 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    *different* pinned checkout computes route metrics with the running
    tree's fixture, not the served one — pin both to the same commit when
    that distinction matters.)
+   **Second residual caveat, new with `?ribrun=1`** (the authored-slope
+   prototype, `src/pure/ribrun.js`): route coverage, route inference and the
+   dare-pocket columns all read the *lattice* `TRAVERSAL_FIXTURE`, because
+   that is what `lib/fixture.mjs` exports. A `?ribrun=1` run replaces that
+   lattice with one ascending ribline, so those three fields are meaningless
+   for `scripts/ribrun-climb.json` — "route: upper-chimney" and "dare
+   pocket: entered=true" are the matcher recognising x/y ranges that no
+   longer contain those routes. Everything derived from the run itself
+   (outcome, attempts, falls, hp, `airMs`, `stallMs`, vertical range,
+   `minEdgeMargin`, input density) is correct; the reward column is correct
+   by accident, since the rib does field one `H` on its line. Fixing it
+   properly means teaching `lib/fixture.mjs` to resolve the same overlay the
+   game does from the URL — a harness change, deliberately not folded into
+   the game-side task that surfaced it.
 4. **Sampling is polled (~75ms), not event-driven.** A single fast frame at
    the true instantaneous minimum/maximum can be missed by a sample or two —
    e.g. the harness's tracked `minEdgeMargin` and the game's own end-of-run
@@ -659,16 +764,19 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    they were never actually affected by F7 — but any other harness output
    generated before this fix, from any script that died and kept running,
    measured a zombie attempt for everything after the first retry.
-7. **`houndTell`/`houndCharge` (and any future hostile-state predicate) are
-   still sourced from `window.HB`, but the game-side gap is closed.** Hook
-   request #2 below was granted: `?testapi=1`'s snapshot now carries
-   `hostiles[]` (same rows `HB.snapshot()` publishes — `src/main.js`, merged
-   `e7b2952`). The sampler (`lib/sampler.mjs`) still enriches every sample
-   from `window.HB.snapshot()`'s `hostiles` array as of this writing, so the
-   original caveat is narrower but not gone: a build that removed
-   `window.HB` while keeping `testapi` would still make these predicates
-   silently evaluate false, until the small harness-side follow-up (read
-   `hostiles` from the primary channel's own snapshot) lands.
+7. **`houndTell`/`houndCharge` (and any future hostile-state predicate) now
+   read hostiles from the primary channel — the `window.HB` dependency is
+   gone.** Hook request #2 below was granted game-side (`?testapi=1`'s
+   snapshot carries `hostiles[]`, the same rows `HB.snapshot()` publishes —
+   `src/main.js`, merged `e7b2952`), and the harness half landed with T-017:
+   `lib/sampler.mjs` normalizes `hostiles` out of whichever channel is
+   primary and only falls back to `window.HB.snapshot()` when the primary
+   didn't carry them (dom fidelity, or a page with `HB` but no `?testapi=1`).
+   A build that removed `window.HB` while keeping `testapi` no longer makes
+   these predicates silently evaluate false. **What is still `HB`-only:
+   `capsules`** — the frozen channel has no equivalent field, so any future
+   capsule-state predicate would re-acquire exactly the caveat this one just
+   shed, and `--no-testapi` runs still depend on `HB` for everything.
 8. **Deterministic mode fixes one jitter source, not all of them** — see
    "Deterministic injection mode" above. The `t2-transform-seam-rush`
    quantification is the concrete example: don't assume `--deterministic`
@@ -688,23 +796,32 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    (the module split's `src/main.js` publishes it; this harness just needed
    to stop dropping it, fixed above).
 2. ~~Add `hostiles` (with `state`/`dir`) to the `?testapi=1` snapshot~~ —
-   **done game-side** (merged `e7b2952`): `src/main.js`'s `telemetry()` now
-   publishes `hostiles[]` — `{id, kind, state, dir, x, y, hp, materialized}`
-   — as an additive field of the frozen channel, and the root README's
-   "Debug handles" section documents it. The harness-side half is still
-   open: `lib/sampler.mjs` still reads hostiles via its
-   `window.HB.snapshot()` enrichment (see limitation #7), so switching it to
-   the primary channel's own `hostiles` is the remaining, purely
-   harness-local change that would drop the last `window.HB`-specific
-   dependency.
-3. **Land `HB.score.events`/`HB.score.snapshot()`** per A.5 — the surface
-   itself **has landed** with the CHARGE/THREAT prototype (`src/main.js`
-   publishes `HB.score = {enabled, events, snapshot, reset}`; events flow
-   only under `?score=1` and the surface is inert otherwise). Still open on
-   the harness side: `computeAirborneKills`/the `links` proxy in
-   `lib/metrics.mjs` have not been switched over — and can only be for runs
-   that pass `?score=1` — so reported `protoScore` remains proxy-derived
-   until that change lands.
+   **done, both halves.** Game-side (merged `e7b2952`): `src/main.js`'s
+   `telemetry()` publishes `hostiles[]` — `{id, kind, state, dir, x, y, hp,
+   materialized}` — as an additive field of the frozen channel, and the root
+   README's "Debug handles" section documents it. Harness-side (T-017):
+   `lib/sampler.mjs` normalizes those rows from whichever channel is primary,
+   with the old `window.HB.snapshot()` read demoted to a fallback. Verified as
+   a content no-op the direct way, because report-level metrics still carry the
+   residual jitter of limitation #8: reading **both** channels inside a single
+   `page.evaluate` (so sim time cannot advance between them) gave identical
+   hostile rows on 10/10 probes across a live traversal run — which is what
+   `HB.snapshot()` spreading the very `telemetry()` result the primary channel
+   returns predicts. `scripts/mid-route.json --deterministic` also still
+   reports `testapi` fidelity, `completed`, 1 attempt / 0 falls / 0 deaths / 1
+   hit, dare pocket entered, `minEdgeMargin` 35.43→35.44 tiles; its pacing
+   numbers move run to run by more than the change does (three post-change runs
+   spread `airMs` 5245–5656 and `protoScore` 86.7–137.6 among themselves).
+   `capsules` remains `HB`-only; no hook request is open for it because nothing
+   in the harness reads it yet.
+3. ~~Land `HB.score.events`/`HB.score.snapshot()` per A.5~~ — **done**
+   (game-side the surface shipped with the CHARGE prototype in `src/main.js`
+   /`src/sim/score.js`; harness-side consumed as of T-016: the sampler
+   passes the snapshot through as `sample.score` and `lib/metrics.mjs`
+   computes `protoScore` from the real event-derived counts whenever the
+   run has `?score=1` — see "Alignment with the score proposal (A.5)"
+   above. The kills+grounded / route-matcher proxies remain only for
+   flag-off runs).
 4. ~~A fixed-timestep (or seeded-`dt`) simulation mode~~ — **done and
    tested** (`?fixeddt=<ms>`, commit `24ebe3d`). Confirmed genuinely active
    (stable `gameMs`/wall-time ratio across runs) but it did **not** collapse
@@ -749,6 +866,18 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    "additive telemetry fields" comment there), and the policy grammar's
    dotted paths and string equality (`"transform.eventState=='turning'"`)
    consume it as-is.
+9. **Publish `player.lives` (and `player.hp`) on the frozen `?testapi=1`
+   channel.** Filed by T-016's fix cycle, after a gate found the harness had
+   no working death counter for a **default six-face run**: `attempts` is
+   fixture-only, and `lives`/`hp` live on `HB.snapshot()` and the HUD but not
+   on `testapi`'s frozen shape (`telemetry()` in `src/main.js` deliberately
+   omits them). `metrics.lives` closes the gap today by parsing the HUD's
+   `×N` text, which works in every fidelity mode but is a *text* dependency:
+   it breaks silently if the HUD restyles that readout, and it is absent in
+   the traversal slice because that HUD omits it. Two additive fields on the
+   telemetry object would make the failure ladder (setbacks → lives) fully
+   readable from the primary channel. Small ask; not urgent while the HUD
+   parse holds.
 
 ## Known limitations (engineering, not measurement)
 
@@ -785,7 +914,45 @@ tools/playtest/
   scripts/                 example input scripts (incl. retry-recovery.json (F7 proof),
                             policy-pinned-jump.json / policy-hound-reactive.json (closed-loop proof))
   reports/demo/             committed demo run output (json/md only)
+  reports/cp4/              committed CP4 decision-packet evidence + how to
+                            regenerate it (see its README); lives here because
+                            a decision packet must not cite gitignored paths
   runs/                     default ad-hoc output dir (gitignored)
+  viewscale-capture.mjs     dev-only screenshot rig for the ?view= experiment
+  palette-capture.mjs       dev-only screenshot rig for the T-010 palette pass:
+                            same scene in concept (default) vs ?palette=classic
+                            across sixface/traversal/polyp/g1/transform at
+                            ?view=far, plus labeled side-by-side pairs (pass a
+                            tag, e.g. `node palette-capture.mjs polyp-cycle`,
+                            to refresh one scene after a merge). Writes to
+                            artifacts/palette-v1/ at the served repo root (a
+                            worktree serves itself). HONESTY: pairs are matched
+                            by identical input schedules + the seeded sim rng,
+                            not frame-locked replay. Timed captures differ by at
+                            most a frame or two of jitter, but the
+                            traversal-action scene is EVENT-triggered (it polls
+                            for airborne-near-hostile), so its two sides can
+                            fire seconds apart — different sprite positions and
+                            center-HUD hint states are expected there. Judge
+                            palette/composition, not pixel deltas. The
+                            polyp-cycle scene is the exception that earns its
+                            complexity: the emplacement only cycles while RIG
+                            stands in the lane it locks, so the scene replays
+                            scripts/polyp-lane-dodge.json's judged policy
+                            through lib/policy.mjs, keys its two outputs
+                            (polyp-tell, polyp-beam) to the iris state, and
+                            pixel-verifies each frame before keeping it — a
+                            frame that does not carry the warm blink or the
+                            live beam is retried, and the rig throws rather
+                            than write evidence that does not show what its
+                            name claims.
+  juice-stress.mjs         dev-only budget measurement for the T-011 feedback pass:
+                            saturates the projectile + spark pools through the game's
+                            own spawn paths and reads window.HB.perf(). Honesty: rAF
+                            is vsync-locked, so `fps` is capped at the panel refresh
+                            rate and proves only that no frame was late — read
+                            `worstMs` / `over20ms`, and treat the result as evidence
+                            about this dev machine, not a target-device claim.
   transform-capture.mjs    dev-only evidence script for the CP3 transform slice:
                             keyframe screenshots keyed on the ?testapi=1 transform
                             block's ritual clock (run.mjs's fixed sampling cadence
