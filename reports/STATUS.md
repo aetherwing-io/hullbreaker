@@ -7,3 +7,4 @@ One line per merged task, appended by `tools/orch/merge-task.sh`:
 2026-07-31 22:28 | T-002 | 89c6418 | merged task/T-002
 2026-07-31 22:29 | T-005 | 006b0f4 | merged task/T-005 (conflict in playtest README resolved by integrator)
 2026-07-31 23:01 | T-001 | 11e637b | merged task/T-001
+2026-07-31 23:31 | T-007 | 1074740 | merged task/T-007
