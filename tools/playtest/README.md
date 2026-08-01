@@ -781,7 +781,7 @@ tools/playtest/
                             same scene in concept (default) vs ?palette=classic
                             across sixface/traversal/polyp/g1/transform at
                             ?view=far, plus labeled side-by-side pairs (pass a
-                            tag, e.g. `node palette-capture.mjs polyp-trial`,
+                            tag, e.g. `node palette-capture.mjs polyp-cycle`,
                             to refresh one scene after a merge). Writes to
                             artifacts/palette-v1/ at the served repo root (a
                             worktree serves itself). HONESTY: pairs are matched
@@ -792,7 +792,18 @@ tools/playtest/
                             for airborne-near-hostile), so its two sides can
                             fire seconds apart — different sprite positions and
                             center-HUD hint states are expected there. Judge
-                            palette/composition, not pixel deltas.
+                            palette/composition, not pixel deltas. The
+                            polyp-cycle scene is the exception that earns its
+                            complexity: the emplacement only cycles while RIG
+                            stands in the lane it locks, so the scene replays
+                            scripts/polyp-lane-dodge.json's judged policy
+                            through lib/policy.mjs, keys its two outputs
+                            (polyp-tell, polyp-beam) to the iris state, and
+                            pixel-verifies each frame before keeping it — a
+                            frame that does not carry the warm blink or the
+                            live beam is retried, and the rig throws rather
+                            than write evidence that does not show what its
+                            name claims.
   transform-capture.mjs    dev-only evidence script for the CP3 transform slice:
                             keyframe screenshots keyed on the ?testapi=1 transform
                             block's ritual clock (run.mjs's fixed sampling cadence

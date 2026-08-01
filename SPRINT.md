@@ -337,14 +337,22 @@ verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic
   T-003 implements whichever direction wins.
 - **Palette v1 (T-010):** default (concept palette) vs `?palette=classic`, at
   FAR — the six-face run (`/index.html`), `?slice=traversal`,
-  `?slice=traversal&polyp=1` (the enemy-color frame: acid body, warm tell,
-  hot beam in one shot), `?g1=1`, and `?slice=transform`. Side-by-side pairs
-  in `artifacts/palette-v1/` — `sixface-boot/sixface-action`,
-  `traversal-action`, `polyp-trial`, `g1-limb`, `transform-boot`, each
+  `?slice=traversal&polyp=1` (the enemy-color frames), `?g1=1`, and
+  `?slice=transform`. Side-by-side pairs in `artifacts/palette-v1/` —
+  `sixface-boot/sixface-action`, `traversal-action`, `polyp-tell`,
+  `polyp-beam`, `g1-limb`, `transform-boot`, each
   `--classic/--concept/--pair.png` (judge against boards 01/06/10/13). The
   acid-green hostile ecology is LIVE on every enemy mesh this pass, the Iris
   Polyp included; only the tells and the polyp's spent vent stay warm amber,
-  in both modes. Questions: (1) does teal-air/rust-body read as the boards'
+  in both modes. The polyp is TWO stills, not one: a single emplacement wears
+  exactly one emissive per iris state, so `polyp-tell` is the dilating bulb
+  under its warm blink (RIG on the walk, still un-hit) and `polyp-beam` is the
+  committed hot-acid bar 0.8 s later with RIG standing in it. Both are
+  state-triggered and pixel-verified by the rig (measured on the committed
+  frames: tell 542/796 px of warm blink, beam 2497/2650 px of new hot acid,
+  concept/classic); the closed → tell → fire → vent rhythm itself is a moving
+  read and has to be judged live at the URL, not from stills.
+  Questions: (1) does teal-air/rust-body read as the boards'
   Meridian, or does the rust drift toward terracotta? (2) do threats and
   capsules still pop at FAR on the rust deck? (3) is the deck still the
   obvious route surface (brightest large shape)? (4) does the G1 limb
