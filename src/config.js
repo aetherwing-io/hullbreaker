@@ -494,6 +494,68 @@ export const CONFIG = {
 
   edges: { margin: 0.4, killY: -7 },
 
+  juice: {                     // Baseline feedback pass (T-011). ONE block: every
+                               // effect below has its intensity here, so the whole
+                               // pass is retuned (or read) in one place, and
+                               // ?juice=0 makes every one of them inert.
+                               // Math lives in src/pure/juice.js; the sim owns
+                               // hit-stop (it changes gameplay), the renderer owns
+                               // everything else. Restrained by ruling, not taste:
+                               // pillar 5 (chaos stays readable) and the FAR default
+                               // view (decisions.md entry 7) mean RIG is ~3.7% of
+                               // screen height — an effect sized for a big sprite
+                               // becomes a smear here.
+    hitStop: {                 // the one gameplay-affecting effect: the world holds
+                               // still for a beat, expressed as a dt SCALE so gameMs
+                               // deadlines never drift (the CHRONO convention)
+      killMs: 42,              // a kill: shorter than one 60fps frame pair — felt,
+                               //   not waited through, even on a spread volley
+      hurtMs: 90,              // taking damage: the bigger beat, and rare
+      scale: 0.08,             // near-freeze rather than a hard 0: bullets, hostiles
+                               //   and RIG all creep, so nothing reads as a hitch
+      maxMs: 120,              // hard ceiling on a stack: a crowd kill can never
+                               //   stall the run (and the crush plane freezes with
+                               //   the world, so a freeze is never a free reprieve
+                               //   or an unfair shove)
+    },
+    shake: {                   // trauma model: amplitude is trauma SQUARED, so only
+                               // real beats move the frame
+      maxOffset: 0.15,         // world tiles at trauma 1 — ~0.5% of the FAR frame
+      maxRollDeg: 0.55,
+      freqHz: 22, decayPerSec: 2.0,
+      kill: 0.15, hurt: 0.46,  // per-event trauma
+      snap1: 0.24, snap2: 0.32,  // ritual yaw detents (corner + transform)
+      boom: 0.36,              // a face reveals / a band commits
+      rumbleMax: 0.09,         // sustained tremble while a ritual holds the scroll
+    },
+    // Sizes are in TILES and were set against the shipped FAR view, where RIG
+    // is ~3.7% of screen height: anything under ~0.1 tiles is a pixel or two
+    // and reads as noise rather than feedback (measured, see the T-011 report).
+    muzzle: { ms: 80, size: 0.5, offsetTiles: 0.5, volleyGapMs: 55 },
+    impact: { count: 4, speed: 5.5, ms: 240, size: 0.12, gravity: -14, gapMs: 40 },
+    death:  { count: 10, speed: 7.5, ms: 420, size: 0.17, gravity: -16,
+              flashMs: 130, flashSize: 0.95 },
+    hurt:   { count: 9, speed: 6.0, ms: 380, size: 0.16, gravity: -14,
+              flashMs: 150, flashSize: 1.3 },
+    pickup: { count: 7, speed: 3.6, ms: 320, size: 0.13, gravity: -6,
+              flashMs: 190, flashSize: 0.8 },   // measured: bigger than this and
+                               //   the reward flash covers RIG at the FAR view
+    crush: {                   // the pursuing damage plane, made visible before it
+                               // kills — same accelerating-warning grammar as the
+                               // hound tell and the polyp iris
+      startTiles: 3.4,         // margin at which the warning first reads
+      pulseSlowMs: 460, pulseFastMs: 130,
+      maxOpacity: 0.55,        // additive haze: it never hides a deck or a hostile
+      height: 15, width: 0.8, depth: 2.2, y0: -1.5,
+      inset: 1.0,              // the band stands just INSIDE the plane (this
+                               //   fraction of its own width), so it marks the
+                               //   strip about to be swept instead of hanging
+                               //   half off the edge of the screen
+    },
+    pools: { particles: 224, flashes: 20 },   // fixed pools; a full pool drops the
+                                              // newest request rather than allocating
+  },
+
   score: {                     // CHARGE/THREAT prototype — docs/proposals/
                                //   2026-07-score-and-setback.md A.4, opt-in via
                                //   ?score=1. CHARGE is sim state (it gates the

@@ -9,6 +9,7 @@ import { CONFIG } from '../config.js';
 import { mortarArcX, mortarArcY, mortarPulsePeriodMs } from '../pure/mortar.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs } from '../sim/time.js';
+import { PAL } from './palette.js';
 import { scene } from './scene.js';
 import { placeOnTower } from './tower.js';
 
@@ -33,7 +34,7 @@ const mortarTubeGeo = new THREE.ConeGeometry(CONFIG.mortar.size, CONFIG.mortar.s
               constant hot glow: "this is live and it is not steering";
      prowl  — a small stride bob so a patrolling frame still reads as alive.
    One reused object: sync runs per hostile per frame, so no allocation. */
-const HOUND_POSE = { depth: 0, sx: 1, sy: 1, sz: 1, glow: 0x000000 };
+const HOUND_POSE = { depth: 0, sx: 1, sy: 1, sz: 1, glow: PAL.glowOff };
 
 function houndTellU(e) {                 // 0 → 1 across the reaction window
   return 1 - Math.max(0, Math.min(1, (e.stateUntil - gameMs) / CONFIG.hound.tellMs));
@@ -42,7 +43,7 @@ function houndTellU(e) {                 // 0 → 1 across the reaction window
 function houndPose(e) {
   const H = CONFIG.hound;
   const p = HOUND_POSE;
-  p.depth = 0; p.sx = 1; p.sy = 1; p.sz = 1; p.glow = 0x000000;
+  p.depth = 0; p.sx = 1; p.sy = 1; p.sz = 1; p.glow = PAL.glowOff;
   if (e.state === 'tell') {
     const u = houndTellU(e);
     p.depth = H.tellDepth * u;
@@ -52,17 +53,17 @@ function houndPose(e) {
       // the coil: blink resolves into a held glow and the frame drops onto its
       // haunches. This is the "NOW" the player answers — the accelerating blink
       // before it is the "not yet".
-      p.glow = CONFIG.palette.houndTell;
+      p.glow = PAL.houndTell;
       p.sy -= H.tellCoilSquash;
       p.sx += H.tellCoilSquash * 0.5;
     } else {
       const period = H.tellBlinkSlowMs + (H.tellBlinkFastMs - H.tellBlinkSlowMs) * u;
-      if (Math.floor(gameMs / period) % 2 === 0) p.glow = CONFIG.palette.houndTell;
+      if (Math.floor(gameMs / period) % 2 === 0) p.glow = PAL.houndTell;
     }
   } else if (e.state === 'charge') {
     p.sx = 1 + H.chargeStretch;
     p.sy = 1 - H.chargeSquash;
-    p.glow = CONFIG.palette.houndCharge;
+    p.glow = PAL.houndCharge;
   } else if (e.state === 'prowl') {
     p.sy = 1 + Math.sin(e.t * H.gaitFreq) * H.gaitAmp;
   }
@@ -88,40 +89,40 @@ function houndRoll(e) {
      vent   — sags and glows a dim spent warm: the opening, visibly.
    Same reused-object rule as the hound pose: sync runs per hostile per
    frame, so no allocation.                                             */
-const POLYP_POSE = { depth: 0, sx: 1, sy: 1, sz: 1, glow: 0x000000 };
+const POLYP_POSE = { depth: 0, sx: 1, sy: 1, sz: 1, glow: PAL.glowOff };
 
 function polypPose(e) {
   const PP = CONFIG.polyp;
   const p = POLYP_POSE;
-  p.depth = 0; p.sx = 1; p.sy = 1; p.sz = 1; p.glow = 0x000000;
+  p.depth = 0; p.sx = 1; p.sy = 1; p.sz = 1; p.glow = PAL.glowOff;
   if (e.state === 'tell') {
     const u = 1 - Math.max(0, Math.min(1, (e.stateUntil - gameMs) / PP.tellMs));
     p.sy = 1 + PP.tellSwell * u;
     p.sz = 1 + PP.tellSwell * u;
     const period = PP.tellBlinkSlowMs + (PP.tellBlinkFastMs - PP.tellBlinkSlowMs) * u;
-    if (Math.floor(gameMs / period) % 2 === 0) p.glow = CONFIG.palette.polypTell;
+    if (Math.floor(gameMs / period) % 2 === 0) p.glow = PAL.polypTell;
   } else if (e.state === 'fire') {
     p.sy = 1 + PP.tellSwell;
     p.sz = 1 + PP.tellSwell;
-    p.glow = CONFIG.palette.polypBeam;
+    p.glow = PAL.polypBeam;
   } else if (e.state === 'vent') {
     p.sy = 1 - PP.ventSag;
-    p.glow = CONFIG.palette.polypVent;
+    p.glow = PAL.polypVent;
   }
   return p;
 }
 
 // per-kind look, keyed by the same kind rows as ENEMY in src/sim/hostiles.js
 const LOOK = {
-  wasp:    { geo: waspGeo,    color: CONFIG.palette.wasp,
+  wasp:    { geo: waspGeo,    color: PAL.wasp,
              roll: (e) => e.t * 2 },
-  carrier: { geo: carrierGeo, color: CONFIG.palette.carrier,
+  carrier: { geo: carrierGeo, color: PAL.carrier,
              roll: (e) => Math.sin(e.t * CONFIG.carrier.rollFreq) * CONFIG.carrier.rollAmp },
-  hound:   { geo: houndGeo,   color: CONFIG.palette.hound,
+  hound:   { geo: houndGeo,   color: PAL.hound,
              roll: houndRoll, pose: houndPose },
-  polyp:   { geo: polypGeo,   color: CONFIG.palette.polyp,
+  polyp:   { geo: polypGeo,   color: PAL.polyp,
              roll: () => 0,   pose: polypPose },
-  mortar:  { geo: mortarTubeGeo, color: CONFIG.palette.mortar,
+  mortar:  { geo: mortarTubeGeo, color: PAL.mortar,
              roll: mortarRoll, pose: mortarPose },
 };
 const meshes = new Map();                // sim hostile row → { mesh, mat }
@@ -147,7 +148,7 @@ function spawned(e) {
     // the beam is its own scene mesh: it spans the LIVE reach the sim
     // marched this frame, so what the render shows is exactly what damages
     const beamMat = new THREE.MeshBasicMaterial({
-      color: CONFIG.palette.polypBeam, transparent: true, opacity: 0.85,
+      color: PAL.polypBeam, transparent: true, opacity: 0.85,
     });
     const beam = new THREE.Mesh(polypBeamGeo, beamMat);
     beam.visible = false;
@@ -205,12 +206,12 @@ function sync(e) {
   }
   const K = LOOK[e.kind];
   let sx = scale, sy = scale, sz = scale;
-  let glow = gameMs < e.flashUntil ? 0xffffff : 0x000000;
+  let glow = gameMs < e.flashUntil ? PAL.hitFlash : PAL.glowOff;
   if (K.pose) {                          // per-kind state theater over the shared presence
     const p = K.pose(e);
     depth += p.depth;
     sx *= p.sx; sy *= p.sy; sz *= p.sz;
-    if (glow === 0x000000) glow = p.glow;              // a hit flash still wins
+    if (glow === PAL.glowOff) glow = p.glow;              // a hit flash still wins
   }
   v.mat.emissive.setHex(glow);
   placeOnTower(v.mesh, e.x, e.y, depth);
@@ -250,7 +251,7 @@ export function updateCorpses() {
     c.mesh.rotation.z = c.spin + u * 9;           // death tumble
     c.mesh.scale.setScalar(1 + 0.3 * u);
     c.mat.opacity = 1 - u * u;
-    c.mat.emissive.setHex(u < 0.16 ? 0xffffff : 0x000000);   // death pop, then dissolve
+    c.mat.emissive.setHex(u < 0.16 ? PAL.hitFlash : PAL.glowOff);   // death pop, then dissolve
   }
 }
 
@@ -292,24 +293,24 @@ const mortarBlastGeo = new THREE.BoxGeometry(
   M_CFG.blastHalf * 2, M_CFG.blastHeight, M_CFG.blastHalf * 1.1);
 
 // reused pose object, same no-allocation rule as the hound and polyp poses
-const MORTAR_POSE = { depth: 0, sx: 1, sy: 1, sz: 1, glow: 0x000000 };
+const MORTAR_POSE = { depth: 0, sx: 1, sy: 1, sz: 1, glow: PAL.glowOff };
 
 function mortarPose(e) {
   const p = MORTAR_POSE;
-  p.depth = 0; p.sx = 1; p.sy = 1; p.sz = 1; p.glow = 0x000000;
+  p.depth = 0; p.sx = 1; p.sy = 1; p.sz = 1; p.glow = PAL.glowOff;
   if (e.state === 'lob') {
     // the kick: the tube compresses on launch and recovers across the flight
     const settle = 1 - Math.max(0, Math.min(1, e.podU));
     p.sy = 1 - 0.18 * settle;
-    p.glow = CONFIG.palette.mortarTell;
+    p.glow = PAL.mortarTell;
   } else if (e.state === 'fuse') {
     const remain = Math.max(0, e.stateUntil - gameMs);
     const period = mortarPulsePeriodMs(remain, M_CFG.fuseMs,
       M_CFG.markPulseSlowMs, M_CFG.markPulseFastMs);
-    if (Math.floor(gameMs / period) % 2 === 0) p.glow = CONFIG.palette.mortarTell;
+    if (Math.floor(gameMs / period) % 2 === 0) p.glow = PAL.mortarTell;
   } else if (e.state === 'burst') {
     p.sy = 1 + M_CFG.burstSwell;
-    p.glow = CONFIG.palette.mortarBlast;
+    p.glow = PAL.mortarBlast;
   }
   return p;
 }
@@ -328,19 +329,19 @@ function mortarAttach(v, mesh) {
     mesh.add(leg);
   }
   const podMat = new THREE.MeshBasicMaterial({
-    color: CONFIG.palette.mortarPod, transparent: true, opacity: 0.95,
+    color: PAL.mortarPod, transparent: true, opacity: 0.95,
   });
   const pod = new THREE.Mesh(mortarPodGeo, podMat);
   pod.visible = false;
   scene.add(pod);
   const markMat = new THREE.MeshBasicMaterial({
-    color: CONFIG.palette.mortarMark, transparent: true, opacity: 0.8,
+    color: PAL.mortarMark, transparent: true, opacity: 0.8,
   });
   const mark = new THREE.Mesh(mortarMarkGeo, markMat);
   mark.visible = false;
   scene.add(mark);
   const blastMat = new THREE.MeshBasicMaterial({
-    color: CONFIG.palette.mortarBlast, transparent: true, opacity: 0.16,
+    color: PAL.mortarBlast, transparent: true, opacity: 0.16,
   });
   const blast = new THREE.Mesh(mortarBlastGeo, blastMat);
   blast.visible = false;
@@ -386,14 +387,14 @@ function mortarSync(v, e) {
     // confused — while staying behind the play plane, so a body caught in it
     // keeps its silhouette (pillar 5: chaos stays readable)
     const u = Math.max(0, Math.min(1, (e.stateUntil - gameMs) / M_CFG.burstMs));
-    v.blastMat.color.setHex(CONFIG.palette.mortarBlast);
+    v.blastMat.color.setHex(PAL.mortarBlast);
     v.blastMat.opacity = 0.24 + 0.38 * u;
     v.markMat.opacity = 0.95;
     v.blast.scale.set(1 + (1 - u) * 0.12, 1, 1 + (1 - u) * 0.35);
     return;
   }
   v.blast.scale.set(1, 1, 1);
-  v.blastMat.color.setHex(CONFIG.palette.mortarMark);   // warning field, not a detonation
+  v.blastMat.color.setHex(PAL.mortarMark);   // warning field, not a detonation
   v.blastMat.opacity = 0.2;
   if (flying) { v.markMat.opacity = 0.55; return; }
   // fuse: the mark blinks faster the closer the detonation gets

@@ -174,7 +174,7 @@ verify: node tools/pathcheck.mjs; a new full-run playtest script (policy mode)
 notes: biggest task in the queue — split into sub-worktrees if needed;
 sequenced after T-001/T-004 merge to integrate their landings.
 
-## T-010 | art | review | P1
+## T-010 | art | done | P1
 
 goal: palette pass — replace the neutral grey-box palette with DESIGN's ≤8
 color roles (deep teal environment, rust-orange metal, acid-green enemy
@@ -190,7 +190,7 @@ accept:
 owner: asset-artist
 verify: node tools/pathcheck.mjs; tools/playtest screenshots at ?view=far
 
-## T-011 | juice | doing | P1
+## T-011 | juice | done | P1
 
 goal: baseline feedback pass (DESIGN dev-sequence item 4, unlocked by entry
 8): hit-stop, screen shake, muzzle flashes, impact/death particles, pickup
@@ -379,7 +379,34 @@ verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic
   dive into the mouth feel committed-chunky or rushed? (5) At the FAR
   default, do five routes plus hound-low/wasp-apex stay readable through
   the gate window, or is the approach lattice too busy?
-- (new packets append here as tasks land: palette, juice, shell, six-face run)
+- **Palette v1 (T-010):** default (concept palette) vs `?palette=classic`, at
+  FAR — the six-face run (`/index.html`), `?slice=traversal`,
+  `?slice=traversal&polyp=1` (the enemy-color frames), `?g1=1`, and
+  `?slice=transform`. Side-by-side pairs in `artifacts/palette-v1/` —
+  `sixface-boot/sixface-action`, `traversal-action`, `polyp-tell`,
+  `polyp-beam`, `g1-limb`, `transform-boot`, each
+  `--classic/--concept/--pair.png` (judge against boards 01/06/10/13). The
+  acid-green hostile ecology is LIVE on every enemy mesh this pass, the Iris
+  Polyp included; only the tells and the polyp's spent vent stay warm amber,
+  in both modes. The polyp is TWO stills, not one: a single emplacement wears
+  exactly one emissive per iris state, so `polyp-tell` is the dilating bulb
+  under its warm blink (RIG grounded on the walk at x≈54, hp 3, un-hit) and
+  `polyp-beam` is the committed hot-acid bar from the same cycle under a
+  second later (RIG caught in the lane at x≈61, knocked off its feet by the
+  volley, hp 2). Both are state-triggered and pixel-verified by the rig
+  (concept/classic: 542/796 px brightened on the blink — the kept ON frame
+  against the dark half of the same blink, measurable only at capture — and
+  2497/2650 px of hot acid the tell frame does not have, which anyone can
+  recompute from the two committed stills); the closed → tell → fire → vent
+  rhythm itself is a moving read and has to be judged live at the URL, not
+  from stills. Questions: (1) does teal-air/rust-body read as the boards'
+  Meridian, or does the rust drift toward terracotta? (2) do threats and
+  capsules still pop at FAR on the rust deck? (3) is the deck still the
+  obvious route surface (brightest large shape)? (4) does the G1 limb
+  backdrop separate from the facet RIG runs on? (5) at FAR, do the acid
+  bodies and their warm-amber tells stay two separate reads against boards
+  01/06/10 — including the rooted polyp against the flying wasp?
+- (new packets append here as tasks land: juice, shell, six-face run)
 
 ## Inbox (playtester/adversarial file here; integrator triages each cycle)
 
@@ -446,6 +473,17 @@ not yet reach board 01/10's acid intensity, and the "one palette module,
 not scattered hex literals" acceptance is one file short. One-line repoint
 per the palette.js note (tokens already authored and pathcheck-asserted);
 fold into the post-T-004 integration or T-003's FAR-tells pass.
+
+**RESOLVED — closed at the T-010 merge.** The fix-cycle wired
+`src/render/hostiles.js` to the palette tokens (`PAL.wasp/carrier/hound/polyp`
+plus tells, beam and vent), removed the pathcheck exemption, and added a
+structural guard: every kind in the sim `ENEMY` roster must carry a body token
+in **both** tables, so the T-004/T-010 collision cannot recur. The acid ecology
+is live on every enemy mesh, the Iris Polyp included; tells and the spent vent
+stay warm amber in both modes by design. Whether the acid bodies and warm
+tells hold as two separate reads at FAR is now an operator question, answerable
+from `artifacts/palette-v1/polyp-tell--*.png` / `polyp-beam--*.png` (packet
+question 5), not an open defect.
 
 ## I-005 | bug | S3 | repro: on task/T-012 26de15f, boot any URL and evaluate `window.HB.audio`/`audioSnapshot` in the console or a page.evaluate — undefined; grep shows src/ui/audio.js:545 exports it and nothing imports it | evidence: reports/tasks/T-012/playtest.md; tools/playtest/runs/gate-T-012-audio-probe/layer-probe.json
 
@@ -639,6 +677,45 @@ pattern can swallow a whole file between an `import` and an unrelated
 `'assets/…'` string literal and start failing legal runtime code. A bounded
 lookahead (specifier within the next N lines of an `import` with no
 intervening `;`) or a tiny statement-level scan are the sane options.
+
+## I-015 | docs | S3 | repro: read `tools/playtest/palette-capture.mjs:312-341` (verification) against `:440-441` (the `shot()` closure) at `task/T-010 67314a6`, or run `node tools/playtest/palette-capture.mjs polyp-cycle` on a tree where the iris never verifies — `artifacts/palette-v1/polyp-{tell,beam}--<pal>.png` are already overwritten when it throws | evidence: reports/tasks/T-010/playtest.md; reports/tasks/T-010/review.md
+
+Found while gating T-010 (palette pass, PASS): the rig's own prose is one
+notch stronger than its code. `palette-capture.mjs`'s header (lines 22-25) and
+`tools/playtest/README.md` (the `palette-capture.mjs` entry) both say a frame
+that does not carry the warm blink or the live beam "is retried, and the rig
+throws rather than write evidence that does not show what its name claims."
+The `shot()` closure writes each screenshot **straight to its final artifact
+path** and `captureIrisCycle` verifies afterwards, so an unverified frame is
+written first and merely superseded on a retry — and on total failure the rig
+throws loudly with the last unverified frames still on disk (the pair PNG is
+not composed, which is the only on-disk tell). **The committed evidence is
+unaffected**: this gate re-derived the packet's own recomputable claim from
+the committed stills (beam minus tell = 2497 px concept / 2650 px classic,
+exactly as stated, 0 in the tell frames), so what shipped did verify. This is
+about the next run, and about a lane whose two previous cycles failed on
+exactly this class of gap between text and artifact. Cheap fix either way:
+screenshot to a buffer or a `.pending` path and rename on verification, or
+reword both places to "throws rather than *keep*". Also raised as MINOR in
+`reports/tasks/T-010/review.md`; filed here so it survives the merge.
+
+## I-016 | docs | S3 | repro: read `src/render/juice.js:27`, `src/mode.js:110` and `docs/DESIGN.md:461` at `task/T-011 14ade6b`, against the corrected wording in `README.md:36` | evidence: reports/tasks/T-011/playtest.md; reports/tasks/T-011/review.md
+
+Three stale doc strings found while gating T-011 (juice, PASS), all still in
+the tree at the branch head and all already raised as MINOR in T-011's
+review — filed here so they survive the merge. (1) `src/render/juice.js:27`
+still says colours are "role names resolved by fx.js (optional lazy palette
+import)"; the lazy `import('./palette.js')` is exactly what the fix commit
+deleted, so the next agent goes looking for an import that must not come
+back. (2) `src/mode.js:110` and (3) `docs/DESIGN.md:461` both promise
+`?juice=0` gives a "byte-identical pre-juice build", where `README.md:36` was
+corrected to "simulation-identical" — the accurate claim, since `samplePerf`
+still samples every frame and `telemetry()` still carries the added
+`juice`/`perf` keys under the flag. This gate's A/B supports the README's
+wording and not the stronger one: `juice=0` matched pre-juice `main` on
+attempts/falls/hits, `minEdgeMargin` within 0.03 tiles and final x within
+0.02 tiles, which is simulation-identical evidence, not byte-identity. No
+runtime impact; prefer the README's phrasing in all three places.
 
 ---
 

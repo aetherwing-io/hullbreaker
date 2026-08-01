@@ -28,20 +28,18 @@ import { limbBakePlan, limbFacetTone } from '../pure/limb.js';
 import { IS_G1 } from '../mode.js';
 import { groundH } from '../sim/level.js';
 import { scene } from './scene.js';
+import { PAL } from './palette.js';
 
-// Grey-box palette, one value ladder: the deck (CONFIG.palette.ground) stays
-// the brightest thing on screen, and the limb reads as mass around it.
-// Values are chosen against what the renderer actually PRODUCES, not against
-// the hex codes: with this light rig plus ACES tone mapping a lit face lands at
-// roughly 0.45x its albedo, while scene.background/fog is drawn raw. The deck
-// (palette.ground, ~0.48x) has to stay the brightest large surface and the haze
-// (CONFIG.limb.bg) has to sit just above it, so the limb's own armour is
+// One value ladder from the palette module (concept teal/rust by default,
+// grey-box via ?palette=classic): the deck (PAL.ground) stays the brightest
+// thing on screen, and the limb reads as mass around it. Values are chosen
+// against what the renderer actually PRODUCES, not against the hex codes:
+// with this light rig plus ACES tone mapping a lit face lands at roughly
+// 0.45x its albedo, while scene.background/fog is drawn raw. The deck
+// (PAL.ground, ~0.48x) has to stay the brightest large surface and the haze
+// (PAL.limbBg) has to sit just above it, so the limb's own armour is
 // authored a notch under the deck instead of the two notches that read as black.
-const BASE_COLORS = {
-  hull: 0x5f656e, wall: 0x646a73, rib: 0x7b818a, machine: 0x868c95,
-  shadow: 0x4b515a,                      // seam lines: shadow, never structure
-  scute: 0x6a707a, scuteAlt: 0x747a84, skyline: 0x505a67,
-};
+const BASE_COLORS = PAL.limb;
 
 // kind → material. Joint pieces deliberately use the brighter `rib`/`machine`
 // end of the ladder: the joint is the landmark the orbit is about.
@@ -83,8 +81,8 @@ function bakeLimb() {
   // the facet past the joint read as "the limb goes on" instead of "the next
   // level is over there". The band itself is set (and re-set on resize, with
   // the ?view= pull-back folded in) by ./camera.js.
-  scene.background = new THREE.Color(CONFIG.limb.bg);
-  scene.fog.color.setHex(CONFIG.limb.bg);
+  scene.background = new THREE.Color(PAL.limbBg);
+  scene.fog.color.setHex(PAL.limbBg);
 
   const plan = limbBakePlan(CONFIG, groundH);
   const byMaterial = new Map();                // material key → pieces

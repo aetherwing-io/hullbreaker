@@ -908,6 +908,41 @@ tools/playtest/
                             regenerate it (see its README); lives here because
                             a decision packet must not cite gitignored paths
   runs/                     default ad-hoc output dir (gitignored)
+  viewscale-capture.mjs     dev-only screenshot rig for the ?view= experiment
+  palette-capture.mjs       dev-only screenshot rig for the T-010 palette pass:
+                            same scene in concept (default) vs ?palette=classic
+                            across sixface/traversal/polyp/g1/transform at
+                            ?view=far, plus labeled side-by-side pairs (pass a
+                            tag, e.g. `node palette-capture.mjs polyp-cycle`,
+                            to refresh one scene after a merge). Writes to
+                            artifacts/palette-v1/ at the served repo root (a
+                            worktree serves itself). HONESTY: pairs are matched
+                            by identical input schedules + the seeded sim rng,
+                            not frame-locked replay. Timed captures differ by at
+                            most a frame or two of jitter, but the
+                            traversal-action scene is EVENT-triggered (it polls
+                            for airborne-near-hostile), so its two sides can
+                            fire seconds apart — different sprite positions and
+                            center-HUD hint states are expected there. Judge
+                            palette/composition, not pixel deltas. The
+                            polyp-cycle scene is the exception that earns its
+                            complexity: the emplacement only cycles while RIG
+                            stands in the lane it locks, so the scene replays
+                            scripts/polyp-lane-dodge.json's judged policy
+                            through lib/policy.mjs, keys its two outputs
+                            (polyp-tell, polyp-beam) to the iris state, and
+                            pixel-verifies each frame before keeping it — a
+                            frame that does not carry the warm blink or the
+                            live beam is retried, and the rig throws rather
+                            than write evidence that does not show what its
+                            name claims.
+  juice-stress.mjs         dev-only budget measurement for the T-011 feedback pass:
+                            saturates the projectile + spark pools through the game's
+                            own spawn paths and reads window.HB.perf(). Honesty: rAF
+                            is vsync-locked, so `fps` is capped at the panel refresh
+                            rate and proves only that no frame was late — read
+                            `worstMs` / `over20ms`, and treat the result as evidence
+                            about this dev machine, not a target-device claim.
   transform-capture.mjs    dev-only evidence script for the CP3 transform slice:
                             keyframe screenshots keyed on the ?testapi=1 transform
                             block's ritual clock (run.mjs's fixed sampling cadence

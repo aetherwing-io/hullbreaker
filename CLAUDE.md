@@ -24,6 +24,29 @@ escalate to the operator instead of resolving it yourself.
 6. `docs/STORY.md` — narrative canon.
 7. `SPRINT.md` — the live task queue (schema at the bottom of that file).
 
+### three.js skill pack (`.claude/skills/`)
+
+Ten adapted three.js reference skills ship in `.claude/skills/` — fundamentals,
+geometry, materials, lighting, textures, animation, loaders, shaders,
+postprocessing, interaction. Index and risk table: `.claude/skills/README.md`.
+
+Reach for one when writing or reviewing code in `src/render/`, `src/ui/`, or
+`src/main.js` and you need the three.js 0.170.0 API right the first time. Do
+not consult them for `src/pure/` or `src/sim/` work — nothing in them is legal
+there.
+
+**The `## HULLBREAKER guardrails` section at the top of each `SKILL.md` is
+binding and outranks the upstream body below it.** The body is generic
+reference for an app with a build step, a bundler, and no design verdicts; its
+examples routinely violate layer purity, determinism, the import map, and
+operator verdicts, and are annotated inline where they do. Five skills conflict
+outright with recorded verdicts or hard rules (animation vs the static-anatomy
+rule, loaders and textures vs asset independence, postprocessing vs the 60fps
+target, interaction vs the frozen camera) — those need a **new**
+`docs/decisions.md` entry before implementation. A skill describing a technique
+is not an operator decision to use it, and a green pathcheck is not consent.
+Never overwrite these files from upstream: it deletes the guardrails.
+
 ## Commands
 
 - Serve: `python3 -m http.server 8741` → `http://127.0.0.1:8741/index.html`

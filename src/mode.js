@@ -149,6 +149,16 @@ export const MORTAR_TRIAL_STAGE = mortarTrialStage(MORTAR_STAGE);
 export const SLICE_ENEMY_PLAN = mortarComposePlan(
   traversalEnemyPlan(ACTIVE_SLICE, HOUND_STAGE, POLYP_STAGE), MORTAR_STAGE);
 
+// ?juice=0 — the kill flag for the baseline feedback pass (T-011): hit-stop,
+// screen shake, muzzle flashes, impact/death/hurt/pickup particles, and the
+// crush-edge warning all go inert, and the run is byte-identical to the
+// pre-juice game (the sim's dt scale is a constant 1, no fx meshes are built,
+// and no bridge hook is wrapped). Absent — every ordinary URL — the pass is ON:
+// it is baseline feedback for a shipped mechanic, not an unjudged prototype
+// (decisions.md entry 8's delivery mandate), and the operator judges its
+// INTENSITY, which is what the flag exists to A/B against.
+export const JUICE_ENABLED = QUERY.get('juice') !== '0';
+
 // Two independent A/B answers to the operator's 8-way aim gap against low
 // targets. Both are opt-in and orthogonal to everything above, so they can be
 // judged separately or together: ?crouch=1 lowers the firing line from a
