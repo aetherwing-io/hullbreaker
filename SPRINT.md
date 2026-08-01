@@ -346,13 +346,16 @@ verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic
   Polyp included; only the tells and the polyp's spent vent stay warm amber,
   in both modes. The polyp is TWO stills, not one: a single emplacement wears
   exactly one emissive per iris state, so `polyp-tell` is the dilating bulb
-  under its warm blink (RIG on the walk, still un-hit) and `polyp-beam` is the
-  committed hot-acid bar 0.8 s later with RIG standing in it. Both are
-  state-triggered and pixel-verified by the rig (measured on the committed
-  frames: tell 542/796 px of warm blink, beam 2497/2650 px of new hot acid,
-  concept/classic); the closed → tell → fire → vent rhythm itself is a moving
-  read and has to be judged live at the URL, not from stills.
-  Questions: (1) does teal-air/rust-body read as the boards'
+  under its warm blink (RIG grounded on the walk at x≈54, hp 3, un-hit) and
+  `polyp-beam` is the committed hot-acid bar from the same cycle under a
+  second later (RIG caught in the lane at x≈61, knocked off its feet by the
+  volley, hp 2). Both are state-triggered and pixel-verified by the rig
+  (concept/classic: 542/796 px brightened on the blink — the kept ON frame
+  against the dark half of the same blink, measurable only at capture — and
+  2497/2650 px of hot acid the tell frame does not have, which anyone can
+  recompute from the two committed stills); the closed → tell → fire → vent
+  rhythm itself is a moving read and has to be judged live at the URL, not
+  from stills. Questions: (1) does teal-air/rust-body read as the boards'
   Meridian, or does the rust drift toward terracotta? (2) do threats and
   capsules still pop at FAR on the rust deck? (3) is the deck still the
   obvious route surface (brightest large shape)? (4) does the G1 limb
