@@ -122,7 +122,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; named playtest script completing the rib-run
 
-## T-007 | docs | doing | P3
+## T-007 | docs | done | P3
 
 goal: docs drift sweep — `tools/playtest/README.md` still lists "add hostiles
 to ?testapi=1" as an open hook request but the root README documents
@@ -242,7 +242,7 @@ denial per DESIGN's enemy table, teach-then-combine after polyp.
 blocked-by: T-004 (polyp) merged and reading clean solo.
 owner: gameplay-engineer
 
-## T-015 | assets | doing | P2
+## T-015 | assets | done | P2
 
 goal: codex asset pipeline bootstrap — `tools/assets/`: a `codex exec`
 wrapper spec template, SVG→PNG rasterizer using the harness's Chrome
@@ -270,6 +270,22 @@ accept:
 - [ ] CP4 operator packet queued
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; scored-run playtest script
+
+## T-017 | harness | todo | P3
+
+goal: nit-batch cleanup triaged from the Inbox + T-015's review MINOR:
+(1) I-001 — stale hostiles/capsules enrichment comment in
+`tools/playtest/lib/sampler.mjs` (~43-48), plus the harness-side follow-up
+it references (read `hostiles` from the primary testapi channel now that it
+ships there); (2) I-002 — `tools/assets/check.mjs` failure-path info header
+mislabels static imports as runtime references (~186-190); (3) T-015 review
+MINOR — `tools/assets/README.md` honesty item 4 miscounts the 100x100 blend
+census (5 blends, all hot-magenta; #ffdcc5 is below the 0.5% gate).
+accept:
+- [ ] all three fixed; harness demo run unchanged; check.mjs selftest green
+- [ ] I-001/I-002 marked resolved in the Inbox (strike or annotate)
+owner: gameplay-engineer
+verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic; node tools/assets/check.mjs --selftest
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
