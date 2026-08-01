@@ -12,7 +12,7 @@ import { buildSpawnTable } from '../pure/generator.js';
 import { TRANSFORM_FIXTURE } from '../pure/transform.js';
 import { IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, SLICE_ENEMIES_ENABLED } from '../mode.js';
 import { sRightEdge } from './edges.js';
-import { spawnLaneY } from './level.js';
+import { groundTopAt, spawnLaneY } from './level.js';
 import { spawnHostile } from './hostiles.js';
 import { cornerBusy } from './wavegate.js';
 import { transformBusy } from './transform.js';
@@ -42,12 +42,18 @@ export function updateSpawner() {
     if (s.type === 'carrier') {
       spawnHostile(s.x, spawnLaneY(s.x, CONFIG.carrier.laneAbove), 0, 'carrier');
     } else if (s.type === 'hound') {
-      // T-009: authored houndframe station (src/pure/lattice.js). The row
-      // carries the deck it rides, its facing and its patrol span, exactly
-      // like a traversal-fixture hound row, so this branch adds no policy —
-      // it derives the ride height the way the fixture path does and hands
-      // the row through for dir/patrol/gating.
-      spawnHostile(s.x, s.deck + CONFIG.hound.rideY, 0, 'hound', s);
+      // Deck units authored in a table, from two authors and one branch:
+      //  - T-009's six-face lattice stations carry the deck plate they ride
+      //    (src/pure/lattice.js), so the ride height is derived from the row
+      //    the way the traversal enemy plan derives it;
+      //  - a fixture-authored row (the G2 gate) has no deck and rides the
+      //    terrain under its spawn column.
+      // Either way the entry itself is passed as the row, so dir, patrol,
+      // tune and the gating opt-out all ride through unchanged.
+      const rideY = s.deck !== undefined
+        ? s.deck + CONFIG.hound.rideY
+        : groundTopAt(s.x);
+      spawnHostile(s.x, rideY, s.delayMs || 0, 'hound', s);
     } else if (s.lane !== undefined) {          // authored lane (fixture table)
       spawnHostile(s.x, spawnLaneY(s.x, s.lane), 0, 'wasp');
     } else {

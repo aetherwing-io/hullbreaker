@@ -10,6 +10,7 @@ import { installView } from '../sim/bridge.js';
 import { BULLET_MAX } from '../sim/weapons.js';
 import { scene, HIDE } from './scene.js';
 import { towerPose } from './tower.js';
+import { PAL } from './palette.js';
 
 const _pp = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 };   // shared per-frame pose scratch
 
@@ -32,7 +33,7 @@ const slotType = new Array(BULLET_MAX).fill('');         // gate color uploads o
 function slotSpawned(i, type) {
   if (slotType[i] !== type) {
     slotType[i] = type;
-    bulletMesh.setColorAt(i, _shotColor.setHex(CONFIG.palette.shots[type]));
+    bulletMesh.setColorAt(i, _shotColor.setHex(PAL.shots[type]));
     bulletMesh.instanceColor.needsUpdate = true;
   }
 }
@@ -96,7 +97,7 @@ function bendCulled(i, b, fromX) {
     // 7x length would leave a beach ball hanging in the air
     d.scale = Math.min(...def.scale);
     const idx = departing.indexOf(d);
-    departMesh.setColorAt(idx, _shotColor.setHex(CONFIG.palette.shots[b.type]));
+    departMesh.setColorAt(idx, _shotColor.setHex(PAL.shots[b.type]));
     departMesh.instanceColor.needsUpdate = true;
     return;
   }

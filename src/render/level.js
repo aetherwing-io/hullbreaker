@@ -14,6 +14,7 @@ import {
   unbuildFutureFaces,
 } from '../sim/level.js';
 import { scene, HIDE } from './scene.js';
+import { PAL } from './palette.js';
 
 // --- level meshes: baked per-face static geometry ---------------------
 // Tile instances are baked once along the tower polyline with per-column
@@ -101,8 +102,8 @@ if (!IS_TRANSFORM_SLICE) {
   tiles = new THREE.InstancedMesh(tileGeo, tileMat, count);
   tiles.frustumCulled = false;
 
-  const cA = new THREE.Color(CONFIG.palette.ground);
-  const cB = new THREE.Color(CONFIG.palette.groundAlt);
+  const cA = new THREE.Color(PAL.ground);
+  const cB = new THREE.Color(PAL.groundAlt);
   let idx = 0;
   for (let i = 0; i < LEVEL_LEN; i++) {
     const f = faceIndexAt(i, CONFIG);
@@ -125,7 +126,7 @@ if (!IS_TRANSFORM_SLICE) {
   }
   scene.add(tiles);
 
-  const solidMat = new THREE.MeshStandardMaterial({ color: CONFIG.palette.groundAlt, flatShading: true });
+  const solidMat = new THREE.MeshStandardMaterial({ color: PAL.solid, flatShading: true });
   for (const rect of solidRects) {
     const midX = (rect.x0 + rect.x1) / 2;
     const midY = (rect.y0 + rect.y1) / 2;
@@ -141,7 +142,7 @@ if (!IS_TRANSFORM_SLICE) {
     authoredSolidMeshes.push(mesh);
   }
 
-  const walkMat = new THREE.MeshStandardMaterial({ color: CONFIG.palette.catwalk, flatShading: true });
+  const walkMat = new THREE.MeshStandardMaterial({ color: PAL.catwalk, flatShading: true });
   for (const p of platforms) {
     const len = p.x1 - p.x0;
     const mid = (p.x0 + p.x1) / 2;

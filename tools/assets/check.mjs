@@ -170,13 +170,23 @@ function walkJs(dir) {
 function checkGameIndependence(root) {
   const errs = [];
   const info = [];
+  let staticImports = 0;
   const srcDir = join(root, 'src');
-  if (!existsSync(srcDir)) return { errs, info };
+  if (!existsSync(srcDir)) return { errs, info, staticImports };
   const importRe = /^\s*import\s[^\n]*?['"]([^'"]*assets\/[^'"]*)['"]/gm;
   for (const file of walkJs(srcDir)) {
     const text = readFileSync(file, 'utf8');
     const rel = file.slice(root.length + 1);
+    // Line numbers of the static imports, so the info list below can exclude
+    // them: an import is already reported as an error, and listing it a second
+    // time under a "runtime, not imports" header contradicted itself (I-002).
+    const importLines = new Set();
     for (const m of text.matchAll(importRe)) {
+      // from the `import` keyword, not m.index: `^\s*` can swallow blank lines
+      // ahead of the statement, which would blame the wrong line.
+      const kwAt = m.index + Math.max(0, m[0].indexOf('import'));
+      importLines.add(text.slice(0, kwAt).split('\n').length);
+      staticImports++;
       errs.push(
         `${rel}: static import of "${m[1]}" makes an asset a hard dependency — ` +
         'the game must boot with every asset file missing (asset-artist standing orders). ' +
@@ -186,11 +196,11 @@ function checkGameIndependence(root) {
     if (/assets\//.test(text)) {
       const lines = text.split('\n')
         .map((l, i) => ({ l, i: i + 1 }))
-        .filter(({ l }) => /assets\//.test(l) && !/^\s*(\/\/|\*)/.test(l));
+        .filter(({ l, i }) => /assets\//.test(l) && !/^\s*(\/\/|\*)/.test(l) && !importLines.has(i));
       for (const { l, i } of lines) info.push(`${rel}:${i}: runtime asset reference — ${l.trim().slice(0, 90)}`);
     }
   }
-  return { errs, info };
+  return { errs, info, staticImports };
 }
 
 /* --------------------------------------------------------------------- *
@@ -234,7 +244,7 @@ function main() {
     errors: [],
     warnings: [],
     assets: [],
-    gameIndependence: { errors: [], references: [] },
+    gameIndependence: { errors: [], references: [], staticImports: 0 },
   };
 
   report.selftest.failures = runSelftest();
@@ -366,6 +376,7 @@ function main() {
   const indep = checkGameIndependence(args.root);
   report.gameIndependence.errors = indep.errs;
   report.gameIndependence.references = indep.info;
+  report.gameIndependence.staticImports = indep.staticImports;
   report.errors.push(...indep.errs);
 
   if (args.write) {
@@ -396,9 +407,17 @@ function finish(report, args) {
       console.log(`         note: ${u.length} antialias/blend color${u.length === 1 ? '' : 's'} below the ${(report.minCoverage * 100).toFixed(1)}% gate, largest ${u[0].hex} at ${(u[0].coverage * 100).toFixed(2)}%`);
     }
   }
+  // Static imports are errors, listed under "problems" below; this line counts
+  // only the legal runtime references, and says so even when the two coexist
+  // (I-002: imports used to be printed here too, under a header denying it).
+  const rejected = report.gameIndependence.staticImports
+    ? ` (${report.gameIndependence.staticImports} static import${report.gameIndependence.staticImports === 1 ? '' : 's'} rejected below, not counted here)`
+    : '';
   if (report.gameIndependence.references.length) {
-    console.log(`  game references to assets/ (runtime, not imports): ${report.gameIndependence.references.length}`);
+    console.log(`  game references to assets/ (runtime, not imports): ${report.gameIndependence.references.length}${rejected}`);
     for (const r of report.gameIndependence.references) console.log(`    ${r}`);
+  } else if (report.gameIndependence.staticImports) {
+    console.log(`  game independence: src/ has no runtime reference to assets/${rejected}`);
   } else {
     console.log('  game independence: src/ contains no reference to assets/ at all');
   }

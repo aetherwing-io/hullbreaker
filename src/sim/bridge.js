@@ -31,6 +31,12 @@ export const view = {
     frame: noop,                         // per-frame presentation tick (weather)
   },
   hook:     { sync: noop },              // anchor markers + the live tether line
+  // Feedback pass (T-011). The sim owns hit-stop because it is timing the
+  // player feels; this hook only TELLS the renderer a beat landed, so the
+  // shake and the freeze start on the same frame. (kind, ms) — kind is
+  // 'kill' | 'hurt'. Presentation-only like every hook here: an unhandled
+  // juice notification changes nothing about the run.
+  juice:    { hitStop: noop },
 };
 
 // group-wise merge: installView({ player: { sync } }) replaces only that hook

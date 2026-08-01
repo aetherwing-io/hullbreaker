@@ -13,7 +13,8 @@ import {
   TRANSFORM_FIXTURE, TRANSFORM_PATH, transformAltAt, transformBandHeading,
   transformYawDeltaDeg,
 } from '../pure/transform.js';
-import { ACTIVE_FIXTURE, IS_G1, IS_TRANSFORM_SLICE, VIEW_ID } from '../mode.js';
+import { ACTIVE_FIXTURE, IS_G1, IS_TRANSFORM_SLICE, JUICE_ENABLED, VIEW_ID } from '../mode.js';
+import { shakeAt, traumaAdd, traumaAfter } from '../pure/juice.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs, scrollX } from '../sim/time.js';
 import { setEdges } from '../sim/edges.js';
@@ -85,6 +86,35 @@ export function handleResize() {
 let camYaw = 0;                 // render yaw (radians); animated by corner events
 let camYawBase = 0;             // face heading after all completed corners
 const _look = new THREE.Vector3();
+
+/* ------------------------------ shake ------------------------------ *
+ * Trauma (T-011): events add it, it decays, amplitude is trauma squared,
+ * and it is applied LAST — after the pose and the lookAt — as a camera-
+ * local translation plus a roll. Two properties this ordering buys, both
+ * load-bearing:
+ *
+ *   1. The sim never sees it. calibrateEdges() poses its own probe camera
+ *      from CONFIG, so setEdges (the one sanctioned render→sim write) is
+ *      computed from the UNSHAKEN pose and the damage plane cannot be
+ *      moved by an effect. towerPose is likewise untouched.
+ *   2. It is bounded in world tiles, so the FAR default view (decisions.md
+ *      entry 7, RIG ~3.7% of screen height) never smears — CONFIG.juice
+ *      .shake.maxOffset is the whole budget.
+ *
+ * Decay runs on gameMs, which only advances while PLAYING, so a pause
+ * freezes the shake instead of draining it behind the overlay.        */
+const S = CONFIG.juice.shake;
+let trauma = 0;
+let traumaLastMs = 0;
+const _shake = { x: 0, y: 0, roll: 0 };
+
+// the render layer's one juice write surface (src/render/juice.js calls it)
+export function addTrauma(amount) {
+  if (!JUICE_ENABLED || !(amount > 0)) return;
+  trauma = traumaAdd(trauma, amount);
+}
+
+export function cameraTrauma() { return trauma; }
 const _tp = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 };   // transform-slice pose scratch
 
 // Pose from the scroll cursor: the anchor rides the polyline, the yaw is
@@ -127,7 +157,21 @@ export function syncCamera() {
   );
   _look.set(ax + fx * C.lookX, C.lookY + (IS_TRANSFORM_SLICE ? altAhead : alt), az + fz * C.lookX);
   camera.lookAt(_look);
+  if (JUICE_ENABLED) applyShake();
   camera.updateMatrixWorld();
+}
+
+// after the pose, before the world matrix: local translate + roll, so the
+// shake reads the same on every face heading and never rewrites the anchor
+function applyShake() {
+  const dtMs = Math.max(0, Math.min(50, gameMs - traumaLastMs));
+  traumaLastMs = gameMs;
+  if (trauma <= 0) return;
+  trauma = traumaAfter(trauma, dtMs, S.decayPerSec);
+  shakeAt(trauma, gameMs, S, _shake);
+  camera.translateX(_shake.x);
+  camera.translateY(_shake.y);
+  camera.rotateZ(_shake.roll * DEG);
 }
 
 // a completed ritual leaves the camera on the next face's heading
@@ -137,5 +181,10 @@ function cornerFinished() {
 }
 installView({ corner: { finished: cornerFinished } });
 
-// run reset (resetGame in src/main.js): back to the first face's heading
-export function resetCameraYaw() { camYaw = 0; camYawBase = 0; }
+// run reset (resetGame in src/main.js): back to the first face's heading,
+// and no trauma survives a restart — a death shake must not ride into the
+// retry frame, the run has to start still
+export function resetCameraYaw() {
+  camYaw = 0; camYawBase = 0;
+  trauma = 0; traumaLastMs = gameMs;
+}

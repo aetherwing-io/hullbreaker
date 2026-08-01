@@ -26,8 +26,8 @@ import { CONFIG } from '../config.js';
 import { DEG } from '../pure/path.js';
 import {
   TRANSFORM_FIXTURE as FIX, TRANSFORM_PATH as PATH,
-  transformAltAt, transformAtmosphereMix, transformCoverAjar, transformGradeAt,
-  transformPanelState, transformVapor,
+  transformAltAt, transformAtmosphereMix, transformBandIndexAt, transformCoverAjar,
+  transformGradeAt, transformPanelState, transformVapor,
 } from '../pure/transform.js';
 import { IS_TRANSFORM_SLICE } from '../mode.js';
 import { installView } from '../sim/bridge.js';
@@ -35,21 +35,22 @@ import { groundH, platforms } from '../sim/level.js';
 import { scene } from './scene.js';
 import { activeCameraDepth } from './camera.js';
 import { placeSharp } from './tower.js';
+import { PAL, atmosphereBg } from './palette.js';
 
 const T = CONFIG.transform;
-const PAL = CONFIG.palette;
 const VISUAL_DEPTH = 4;                  // tile stack drawn under each surface column
 const DRESS_COLS = 2;                    // columns per dressing segment (chunky steps)
 
 const BASE_COLORS = {
   ground: PAL.ground, groundAlt: PAL.groundAlt, catwalk: PAL.catwalk,
-  hull: 0x494f57, wall: 0x555b64, ceiling: 0x646a73, rib: 0x7b818a,
-  machine: 0x878d96, skyline: 0x333a44, panel: 0x8a9099, accent: PAL.gun,
+  hull: PAL.transform.hull, wall: PAL.transform.wall, ceiling: PAL.transform.ceiling,
+  rib: PAL.transform.rib, machine: PAL.transform.machine,
+  skyline: PAL.transform.skyline, panel: PAL.transform.panel, accent: PAL.gun,
 };
 
 // One material set per stretch, its base colors nudged by that stretch's
-// tone. Still a neutral grey-box palette — the tone is only enough hue walk
-// to make "inside the body" and "high on the body" read differently.
+// tone — only enough hue walk to make "inside the body" and "high on the
+// body" read differently on top of the palette module's ladder.
 function bandMaterials(tone) {
   const out = {};
   const c = new THREE.Color();
@@ -224,7 +225,7 @@ function addWeather(band, M) {
   scene.add(group);
   placeSharp(group, band.s0, 0, 0);       // one straight stretch: one frame is exact
   const geo = new THREE.BoxGeometry(0.07, W.length, 0.07);
-  const mat = new THREE.MeshBasicMaterial({ color: 0x9fb4c6, transparent: true, opacity: 0.34 });
+  const mat = new THREE.MeshBasicMaterial({ color: PAL.rain, transparent: true, opacity: 0.34 });
   const mesh = new THREE.InstancedMesh(geo, mat, W.count);
   mesh.frustumCulled = false;
   group.add(mesh);
@@ -268,7 +269,10 @@ const VAPOR_N = 120;                     // instanced motes; deterministic scatt
 
 function buildCover(ev, M) {
   const ref = groundRefIn(ev.seamS - 2, ev.seamS + 1);
-  const FH = DOOR_H + 1.4;
+  // A gate fixture may declare its plate's size (G2's 10–12-tile access
+  // plate); the v1 demo's covers keep their original door untouched.
+  const H = ev.gate && ev.gate.plate ? ev.gate.plate.tiles : DOOR_H;
+  const FH = H + 1.4;
   const group = new THREE.Group();
   scene.add(group);
   // the mouth of the opening: jambs and a lintel, static
@@ -281,10 +285,10 @@ function buildCover(ev, M) {
   // from the approach instead of meeting it around the bend.
   const dx = ev.seamS - 0.4;
   // the machinery the cover turns on: two heavy bosses and their column
-  boxAt(1.5, DOOR_H + 0.6, 1.5, M.rib, dx, ref + DOOR_H / 2, HINGE_Z, group);
+  boxAt(1.5, H + 0.6, 1.5, M.rib, dx, ref + H / 2, HINGE_Z, group);
   boxAt(2.3, 1.6, 2.3, M.machine, dx, ref + 1.2, HINGE_Z, group);
-  boxAt(2.3, 1.6, 2.3, M.machine, dx, ref + DOOR_H - 1.2, HINGE_Z, group);
-  boxAt(1.2, 1.2, 3.0, M.machine, dx - 1.4, ref + DOOR_H * 0.5, HINGE_Z - 1.2, group);
+  boxAt(2.3, 1.6, 2.3, M.machine, dx, ref + H - 1.2, HINGE_Z, group);
+  boxAt(1.2, 1.2, 3.0, M.machine, dx - 1.4, ref + H * 0.5, HINGE_Z - 1.2, group);
 
   // The cover itself, hinged BEHIND the combat plane so opening it sweeps out
   // of the lane instead of across RIG.
@@ -294,10 +298,10 @@ function buildCover(ev, M) {
   const leaf = new THREE.Group();
   hinge.add(leaf);
   const zc = DOOR_W / 2 + 0.4;
-  box(1.0, DOOR_H, DOOR_W, M.panel, 0, DOOR_H / 2, zc, leaf);
-  box(1.25, 0.7, DOOR_W, M.accent, 0, DOOR_H - 1.6, zc, leaf);
+  box(1.0, H, DOOR_W, M.panel, 0, H / 2, zc, leaf);
+  box(1.25, 0.7, DOOR_W, M.accent, 0, H - 1.6, zc, leaf);
   box(1.25, 0.7, DOOR_W, M.accent, 0, 1.9, zc, leaf);
-  box(1.5, 1.4, 1.4, M.rib, 0, DOOR_H * 0.5, zc + DOOR_W / 2 - 0.7, leaf);
+  box(1.5, 1.4, 1.4, M.rib, 0, H * 0.5, zc + DOOR_W / 2 - 0.7, leaf);
 
   // The breach vents pressure: an instanced mote burst anchored at the mouth.
   // Deterministic seeded scatter (same trick as the weather), so a bot trace
@@ -307,7 +311,7 @@ function buildCover(ev, M) {
   if (ev.kind === 'breach') {
     const geo = new THREE.BoxGeometry(0.42, 0.42, 0.42);
     const mat = new THREE.MeshBasicMaterial({
-      color: 0xaebbc6, transparent: true, opacity: 0, depthWrite: false,
+      color: PAL.vapor, transparent: true, opacity: 0, depthWrite: false,
     });
     const mesh = new THREE.InstancedMesh(geo, mat, VAPOR_N);
     mesh.frustumCulled = false;
@@ -328,7 +332,15 @@ function buildCover(ev, M) {
     vapor = { mesh, motes };
   }
   const stopRad = (ev.kind === 'breach' ? T.cover.breachStopDeg : 90) * DEG;
-  return { hinge, leaf, vapor, armMs: 0, arming: false, kind: ev.kind, stopRad };
+  // G2's "become an interior ramp" beat: a plate that declares `plateRamp`
+  // rakes to the interior climb grade as the relock drives it home, so the
+  // seated plate reads as a ramp up the neck wall. Pure dressing — the
+  // collision it fronts is the static carried deck. v1 events lack the flag
+  // and keep their exact shipped rest pose.
+  const seatRake = ev.plateRamp
+    ? Math.atan(Math.max(0, transformGradeAt(PATH, ev.seamS + T.thresholdTiles + 1)))
+    : 0;
+  return { hinge, leaf, vapor, armMs: 0, arming: false, kind: ev.kind, stopRad, seatRake };
 }
 
 // local-space box for cover parts (children of the hinge, which is posed once)
@@ -351,7 +363,10 @@ function applyAtmosphere(a, b, u) {
   const shift = activeCameraDepth() - CONFIG.camera.z;
   scene.fog.near = a.fogNear + (b.fogNear - a.fogNear) * u + shift;
   scene.fog.far = a.fogFar + (b.fogFar - a.fogFar) * u + shift;
-  scene.fog.color.setHex(a.bg).lerp(_c.setHex(b.bg), u);
+  // The fixture's bg values are pure data; the palette module remaps them
+  // render-side (identity under ?palette=classic). Fog and background stay
+  // the same color by construction.
+  scene.fog.color.setHex(atmosphereBg(a.bg)).lerp(_c.setHex(atmosphereBg(b.bg)), u);
   scene.background.copy(scene.fog.color);
 }
 let atmoRest = null;                     // the band atmosphere the air rests at
@@ -378,11 +393,17 @@ const _vap = { density: 0, reach: 0 };
 const _vm = new THREE.Matrix4();
 
 // One pose rule for both covers: a swing on the hinge, a jolt on the latch.
-// A caught vent cover hangs with a slight sag; a relocked plate sits square.
+// A caught vent cover hangs with a slight sag; a relocked plate sits square —
+// unless it declared the ramp rake, which eases in over the relock drive
+// (open: snapFrac → 1) so the beat still lands ON the hold, before snap 2.
 function applyCover(c, st) {
   c.leaf.rotation.y = st.open * c.stopRad;
   c.leaf.position.x = st.jolt;
-  c.leaf.rotation.z = c.kind === 'breach' ? -0.04 * Math.min(1, st.open) : 0;
+  c.leaf.rotation.z = c.kind === 'breach' ? -0.04 * Math.min(1, st.open)
+    : c.seatRake
+      ? -c.seatRake * Math.min(1, Math.max(0,
+          (st.open - T.cover.snapFrac) / (1 - T.cover.snapFrac)))
+      : 0;
 }
 
 function applyVapor(c, tMs) {
@@ -473,9 +494,25 @@ function reset() {                       // run reset: covers closed, air at the
   applyAtmosphere(atmoRest, atmoRest, 0);
 }
 
+// Authored solid ribs (the G2 twin-rib chimney): collision truth baked as
+// static body anatomy on the combat plane — placed once, never moving. A
+// side flange sits behind the plane so nothing overlaps a surface RIG can
+// stand on. The v1 fixture authors none, so this is a no-op there.
+function buildRibs() {
+  for (const r of FIX.solidRects || []) {
+    const bi = transformBandIndexAt(FIX, r.x0);
+    const M = bands[bi].M;
+    const cx = (r.x0 + r.x1) / 2, cy = (r.y0 + r.y1) / 2;
+    boxAt(r.x1 - r.x0, r.y1 - r.y0, 2.2, M.rib, cx, cy, 0, bands[bi].group);
+    boxAt(r.x1 - r.x0 + 0.6, 0.5, 1.2, M.machine, cx, r.y1 - 0.25, -1.7, bands[bi].group);
+    boxAt(r.x1 - r.x0 + 0.6, 0.9, 1.2, M.machine, cx, r.y0 + 0.45, -1.7, bands[bi].group);
+  }
+}
+
 // Called at the bottom of the module, after every constant it reads exists.
 function buildSlice() {
   for (const band of FIX.bands) bands.push(buildBand(band));
+  buildRibs();
   for (const ev of FIX.events) covers.push(buildCover(ev, bands[ev.fromBand].M));
   installView({ transform: { armed, started, ritual, finished, reset, frame } });
   reset();
