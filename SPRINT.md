@@ -414,7 +414,7 @@ accept:
 owner: lattice-designer
 verify: node tools/pathcheck.mjs; a run that reaches the first gate without losing a life
 
-## T-021 | feature | review | P1
+## T-021 | feature | blocked | P1
 
 goal: the SPLIT DECISION in the SIX-FACE RUN — decisions.md entries 10, 11, 12
 and 13. A fork the player reads and commits to AT SPEED: the rewarding branch
@@ -445,6 +445,42 @@ accept:
 - [ ] docs/proposals/ write-up specifying the mechanic
 owner: lattice-designer
 verify: node tools/pathcheck.mjs; named playtest scripts for all three lines (main / reward / dead end), --deterministic; screenshots at ?view=far
+
+BLOCKED — ESCALATED TO THE OPERATOR (integrator, 2026-08-01). Not dispatching a
+fourth attempt; this is a design contradiction, not an implementation defect.
+
+The gate failed on the deciding test: **the reward is collectable from the main
+line with one jump, on all four forks, with a default verb** — so the fork is
+free. That is the same shape as I-019, third occurrence in this feature area,
+and the lane found it honestly in its own report before the gate did.
+
+WHY IT KEEPS HAPPENING — entries 9 and 11 pull against each other here:
+- Entry 9 made the capsule a FREE plain pickup and closed the height arms race
+  (a reward priced in reach cannot work against a frozen jump envelope).
+- Entry 11 asks the fork's RIGHT branch to carry "challenge AND reward".
+If the reward is a capsule, and capsules are free by law, the reward side of a
+fork cannot carry a stake. Every attempt to give it one has re-run the I-019
+failure.
+
+WHAT DOES WORK, measured and green (pathcheck 1869/0, flag off hash-identical
+to main, ?selftest=1 PASS in all three modes): the WRONG branch is a real
+stake. The dead end costs 9.9 tiles of daylight (30.7 vs 40.6 at the same
+finish line) and roughly doubles contact — 1211 near-hostile frames and 11 hits
+against 639/6 on the main line — and it always escapes with margin, so it is
+punishing without being a trap.
+
+THE OPERATOR'S CALL, three options:
+(a) ACCEPT IT. The decision is "do I risk the dead end?", and the reward is
+    escalation fuel per entry 9. The stake lives entirely in the wrong branch —
+    which is exactly what entry 11 said dead ends are for. Merge as built.
+(b) PRICE THE REWARD IN SOMETHING THAT IS NOT HEIGHT. Entry 9 closed reach;
+    entry 12 says the currency is pressure. A reward that costs exposure rather
+    than altitude has never been tried.
+(c) DROP THE REWARD from the fork. Make the fork purely a risk decision and
+    leave capsules to the pockets.
+The branch is preserved at task/T-021 (bb6bdd1) with all evidence and the
+proposal at docs/proposals/2026-08-split-decision.md.
+
 
 ## T-022 | feature | done | P1
 
@@ -1289,3 +1325,48 @@ falsifying gates — "drive must never exceed 0.30 for a struggling player" — 
 unreadable from a trace. Cheap fix when T-023 lands: publish `momentum: {drive,
 peakDrive, tier}` on `telemetry()` beside `pursuitSpeed`, additive, inert when the
 flag is off.
+
+## I-031 | bug | S1 | repro: `node <gate probe>` driving `.claude/worktrees/T-021/src/sim` with `globalThis.__HB_QUERY__='split=1'` — park RIG on the plate top at quarter-tile steps from `commitX` to `exitX`, hold right at `runSpeed`, ONE jump (air jump never spent), read `currentWeapon` at landing; task/T-021 bb6bdd1 | evidence: reports/tasks/T-021/playtest.md §2; scratchpad `gate-sweep.mjs`/`sweep.json`, `gate-probe.mjs`/`probe.json`
+
+T-021's acceptance box names its own falsifying test — "a policy that always
+takes the main line collects zero rewards" — and the `?split=1` build does not
+meet it. From the last ~1.5 tiles of the plate top (the MAIN LINE), a **single
+jump with the air jump never spent** collects the fork's reward capsule and
+comes down on the deck AHEAD of the fork, which is where the main line lands
+anyway: 7 of 29 swept take-offs on every one of the four forks, weapon letter
+S/L/H/F read off `src/sim/weapons.js` at the finish, peak height 8.61 against a
+span surface at y=9 — RIG never reaches the branch it is supposed to have
+committed to. With the air jump spent it is 28 of 29 take-offs, 8-9 of them
+landing off the span. Independently, a fork-blind runner (hold right + tap jump
+on a fixed 800 ms cadence, the shipped `mid-route` heuristic) walked out
+carrying the letter in **16 of 16 runs** (4 forks x 4 cadence phases). The
+pathcheck assertion that gates this (`main.every(r => r.took === 0 && r.weapon
+=== 'R')`) passes only because that policy never presses jump while on the
+plate — subject = the author's intended route, which is the I-019 failure mode
+CLAUDE.md's "assert against what a PLAYER can do, with every verb on by
+default" rule exists to catch. The tree measures the same thing honestly in a
+pathcheck console note and routes it to the operator as a feel call; the box is
+still unmet, so the gate fails on it. NOT a "raise the capsule" fix — entry 9
+forbids pricing a reward in reach; the measured gap is horizontal (the capsule
+sits inside the plate's own jump arc), so the lane owns where it sits along the
+span. If the operator instead rules that a free capsule one jump off the main
+line is correct (entries 9 and 12 point that way), that needs a new decision
+entry retiring this acceptance box, not a geometry tweak.
+
+## I-032 | art | S3 | repro: open `artifacts/t021-split/face1-approach.png` and `face1-commit.png` (task/T-021 bb6bdd1) at 1440x900, uncropped, and try to locate the sealed cave before reading the JSON beside them | evidence: reports/tasks/T-021/playtest.md §6; artifacts/t021-split/frames.json
+
+Fairness-rider readability, found while gating T-021 (which fails for an
+unrelated reason — I-031). Entry 11 requires the dead end to be legible as a
+risk BEFORE commitment. Cropped 3x on the fork, it is: the deck runs under a
+shelf into a solid vertical block, with the plate top and the span carrying on
+past it — three lanes in one silhouette, exactly as authored. Uncropped at the
+FAR default it is much weaker: the fork is a small rust-brown L among several
+similar rust-brown L-shapes and catwalks, the deck's checkerboard band reads as
+continuous behind it, and I could only find the seal after computing where it
+should be. The magenta capsule marks the REWARD strongly; nothing marks the
+RISK at comparable contrast, and the risk mark is the half the rider actually
+asks for. The `approach` frame (14 tiles out, the frame the rider targets) is
+the weaker of the two. Fold into T-003's FAR-tells readability pass if the fork
+survives I-031 — a darker cave interior, a lip/hazard glyph at the mouth, or a
+seal face in a different material would all be cheap. Not gated here:
+readability is the operator's call, and it is question 1 in T-021's packet.
