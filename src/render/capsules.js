@@ -108,8 +108,10 @@ function faceTexture(text, bg) {
     g.fillRect(0, 0, edge, N);
     g.fillRect(N - edge, 0, edge, N);
     if (text) drawGlyph(g, text, N);
-  } else {
+  } else if (text) {
     // the pre-pass draw, verbatim: ?legibility=0 is the operator's A/B
+    // (the plate-only face is never requested with the pass off — this branch
+    // guards `text` so that stays a call-site invariant, not a crash)
     g.fillStyle = PAL.capsuleInk;
     g.font = 'bold ' + (text.length > 1 ? 30 : 42) + 'px monospace';
     g.textAlign = 'center';
