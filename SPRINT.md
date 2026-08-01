@@ -311,6 +311,33 @@ one-paragraph description; S1 = blocks a checkpoint or corrupts a gate,
 S2 = real defect with workaround, S3 = polish/nit.
 -->
 
+## I-001 | docs | S3 | repro: read tools/playtest/lib/sampler.mjs lines 43-48 at main (post-e7b2952) | evidence: reports/tasks/T-007/playtest.md
+
+Stale code comment found while gating T-007 (docs drift sweep): the
+hostiles/capsules enrichment comment in `tools/playtest/lib/sampler.mjs`
+still says "testapi does not expose hostiles/capsules at all as of this
+writing ... this is currently the only source for them." Half-stale since
+merge `e7b2952`: `?testapi=1`'s `telemetry()` now publishes `hostiles[]`
+(capsules remains HB-only, so that half is still true). T-007's playtest
+README correctly documents the real state and the open harness-side
+follow-up (read hostiles from the primary channel); the comment lives in
+harness *code*, so the docs-only T-007 lane rightly could not touch it.
+Fold the comment fix into that harness-side follow-up when it lands. Nit,
+no behavioral impact — the enrichment still works.
+
+## I-002 | bug | S3 | repro: node tools/assets/check.mjs --root <fixture tree with a static `import ... from "../assets/x.png"` in src/> at task/T-015 28b8ba2 | evidence: reports/tasks/T-015/playtest.md
+
+Cosmetic mislabel on check.mjs's failure path, found while gating T-015:
+`checkGameIndependence` (tools/assets/check.mjs ~lines 186-190) collects
+every `src/` line matching `assets/` into the info list, including lines
+that are static imports — so a static import is correctly raised as a
+problem (exit 1, right message) but is *also* printed under the header
+"game references to assets/ (runtime, not imports)", which contradicts
+itself. Fix is either filtering import-matched lines out of the info list
+or renaming the header ("all references"). Verdict unaffected: errors fire
+and exit codes are correct; the mislabel only appears on trees that are
+already failing.
+
 ---
 
 ## Task schema
