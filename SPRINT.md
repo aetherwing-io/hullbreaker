@@ -173,6 +173,15 @@ owner: lattice-designer
 verify: node tools/pathcheck.mjs; a new full-run playtest script (policy mode)
 notes: biggest task in the queue — split into sub-worktrees if needed;
 sequenced after T-001/T-004 merge to integrate their landings.
+SCOPE SPLIT (integrator, 2026-08-01): stages 1-3 (lattice route density,
+dare pockets, hound stations, static-anatomy corner reveal by default) are
+this task's deliverable. The "full-run script completes start -> summit ->
+victory" box moves to T-018, on evidence: the same six-face-full-run.json
+under the same deterministic policy fails on BOTH trees, and the branch gets
+nearly twice as far as main (main maxX 89.2 / scroll 75 / 8 kills / 27.4s
+play; branch maxX 154.2 / scroll 140 / 11 kills / 48.5s). Runs committed at
+tools/playtest/runs/integ-T009-on-main and integ-T009-on-branch. So the
+lattice is not what stops the bot, and stages 1-3 stand on their own.
 
 ## T-010 | art | done | P1
 
@@ -304,6 +313,30 @@ accept:
 - [ ] I-001/I-002 marked resolved in the Inbox (strike or annotate)
 owner: gameplay-engineer
 verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic; node tools/assets/check.mjs --selftest
+
+## T-018 | harness | todo | P1
+
+goal: make "boot to victory" provable — the delivery target's last unproven
+claim. T-009's six-face-full-run.json clears wave gate 1 and dies in gate 2 on
+every tree tested, including main without the lattice. Decide, with evidence,
+which of these it is and fix that:
+(a) a HARNESS limit — the reflex-rule policy grammar cannot express the gate
+    fight (no dive/lane predicate; holding "up" to aim overshoots at close
+    range), so the bot cannot play a fight a human can. Fix by extending the
+    policy grammar, not by making the game easier.
+(b) a real DIFFICULTY problem — gate 2's wave load is beyond a fair player at
+    that point in the run. That is a feel call: post an operator checkpoint
+    packet, do NOT retune waves autonomously.
+accept:
+- [ ] a written finding naming (a) or (b) with runs on both trees as evidence
+- [ ] if (a): the grammar extension lands, is documented in the playtest
+      README, and the full run reaches VICTORY under --deterministic
+- [ ] if (b): an operator packet with the exact URL, the wave-load numbers,
+      and 3-5 questions; the delivery target's boot-to-victory box is then
+      answered by an operator run, not a bot
+- [ ] never weaken a wave gate or a movement constant to make the bot win
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; six-face-full-run.json --deterministic against a pinned tree
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
