@@ -67,7 +67,11 @@ This is not an artifact of one run or one tree. The integrator's own committed
 A/B — `tools/playtest/runs/integ-T009-on-main/summary.md` and
 `integ-T009-on-branch/summary.md`, same script, same flags, different trees —
 both begin `3 spent (at 3.0s x 31.649→2.51…`. The lattice does not move it,
-because the lattice is not what causes it.
+because the lattice is not what causes it. Re-measured a third time after this
+branch merged `main` (T-003's FAR-readability pass): `3 spent (at 3.0s x
+31.649→2.531, …)`. **Three tree states, one tile, to three decimal places.**
+It is a property of the shipped generator's column layout — worth triaging on
+its own, and nothing to do with the gate fight this task was sent to measure.
 
 The grammar had `pinned` (a wall you are jammed against) and nothing for a
 hole you are about to run into, so the only way to jump a gap was a literal
@@ -177,6 +181,47 @@ non-determinism, not the change: a *same-harness* repeat of `mid-route`
 produced maxX 69.751 and a **different outcome label**, a swing an order of
 magnitude larger than anything old-vs-new showed.
 
+### 4c. Re-measured after merging `main` (T-003)
+
+This branch later merged `main`, which brought in T-003's FAR-view legibility
+pass (`src/render/legibility.js` — render-only). Everything above was re-run
+against the merged tree, pinned and served on `:8763` (`curl` confirms the
+served tree carries `src/render/legibility.js`, i.e. it is the merged one):
+
+- **Exact replay**, now against a pristine `git archive main` copy of the old
+  engine rather than a working checkout: the two committed policy traces plus
+  four freshly captured ones — **528 ticks, 0 decision differences**, identical
+  hold sets, tap edges, per-rule truth values and fire counts on every trace.
+- **End-to-end**, four committed scripts through the old harness and the new
+  one against the same served tree: `mid-route` **completed** both (maxX 72.036
+  / 72.037), `policy-pinned-jump` **not-completed** both (maxX 55.649 both),
+  `policy-hound-reactive` **not-completed** both (2 fires both),
+  `retry-recovery` **died**, **2 attempts** both (minEdgeMargin 0.40 both).
+  Zero console errors, page errors and missing-field warnings throughout.
+  `policy-pinned-jump` fired 13 times under the old harness and 12 under the
+  new — and replaying *each of those two traces* through *both* engines gives
+  13/13 and 12/12, which is the point: the engines agree tick for tick, and the
+  one-fire gap is the harness's documented run-to-run timing drift, not a
+  decision change.
+
+And the finding's own A/B, this time same-tree and same-session — aimless and
+aimed on the merged tree, `--deterministic`, 150 s cap:
+
+| run | kills | scroll | ended | where |
+| --- | --- | --- | --- | --- |
+| aimless (T-009's script, read-only) | 8 | **75** | 27.3 s | died **in gate 1** (`WAVE 1/6`) |
+| aimed, run 1 | 9 | **140** | 47.5 s | cleared gate 1, died **in gate 2** |
+| aimed, run 2 | 12 | **140** | 53.1 s | cleared gate 1, died **in gate 2** |
+
+The aimless row reproduces the integrator's committed `main` measurement to
+within 0.1 s (8 kills, scroll 75, dead in gate 1 at 27.4 s → 27.3 s). The aimed
+rows reach the same gate as the pre-merge `main` measurement (scroll 140, dead
+in gate 2) with a **lower kill count than the 17 recorded pre-merge** — the
+gate-2 fight is chaotic and n is small, so read the *gate reached*, which is
+stable across every run, and treat the kill counts as spread, not signal. The
+load-bearing claim — one gate of progress, from a harness clause, with no game
+file touched — survives the merge on the merged tree.
+
 ## 5. Why this is (a) and not (b)
 
 - The deaths do **not** cluster on one unanswerable pattern. Attributed
@@ -203,10 +248,16 @@ outside a builder's authority to change. They are not bugs and this report is
 not asking for a retune — they are the questions a fun oracle should answer.
 
 1. **Gate 2 was fought as 9 gating bodies, not 5.** The HUD said `WAVE 2/6 —
-   9 HOSTILES`. Wave 2 authors five; the other four were ambient spawns that
-   drifted into the arena before the gate armed (`cornerClearBefore: 10`).
-   Some of them spawn *past the corner pivot* on the not-yet-built face and
-   take 5–8 s to cruise back into reach while the gate holds shut.
+   9 HOSTILES`. Wave 2 authors five (`3 + k`); the other four were ambient
+   spawns that drifted into the arena before the gate armed
+   (`cornerClearBefore: 10`). Some of them spawn *past the corner pivot* on the
+   not-yet-built face and take 5–8 s to cruise back into reach while the gate
+   holds shut. The inflation is not one unlucky run: taking the **peak** HUD
+   count per gate across the three post-merge runs above gives **gate 1: 6–7
+   bodies against 4 authored, gate 2: 8 against 5** — consistently three to
+   four extra. Measurement only; no spawner behaviour was changed here, and the
+   answer (leave it, or extend the corner-clear zone to keep ambients out of a
+   gate arena) is a feel call, not a builder's.
 2. **The wasp is the only hostile with no telegraph.** Hound, polyp and mortar
    all have a `tell` state with a pathcheck-asserted fairness window; the wasp
    goes `cruise → dive` on the same frame, at 10 tiles/s, from up to 9 tiles
@@ -244,8 +295,11 @@ cd tools/playtest
 node run.mjs scripts/six-face-aimed-run.json --base-url http://127.0.0.1:8751 \
   --deterministic --max-runtime-ms 245000 --out /tmp/aimed
 
-# the aimless baseline it is measured against
-node run.mjs scripts/six-face-full-run.json --base-url http://127.0.0.1:8751 \
+# the aimless baseline it is measured against. NOTE: six-face-full-run.json is
+# T-009's script and lives on task/T-009, not on main — this task read it
+# without copying it in, so a re-run needs it extracted first:
+git show task/T-009:tools/playtest/scripts/six-face-full-run.json > /tmp/aimless.json
+node run.mjs /tmp/aimless.json --base-url http://127.0.0.1:8751 \
   --deterministic --max-runtime-ms 150000 --out /tmp/aimless
 ```
 
