@@ -184,12 +184,14 @@ function resetGame() {
   resetTransform();
   resetCameraYaw();
   unbuildFutureFaces();
+  // setback/edge stats reset in EVERY mode now that ?fallback=1 can arm hull
+  // fallback in the default run and the score snapshot reads both (T-016)
+  sliceStats.setbacks = 0;
+  sliceStats.lastSetbackAt = -1e9;
+  sliceStats.minEdgeMargin = Infinity;
   if (ACTIVE_FIXTURE) {
     sliceStats.attempts++;
     sliceStats.airJumps = 0;
-    sliceStats.setbacks = 0;
-    sliceStats.lastSetbackAt = -1e9;
-    sliceStats.minEdgeMargin = Infinity;
     sliceStats.startedAt = gameMs;
   }
   if (ACTIVE_SLICE) {

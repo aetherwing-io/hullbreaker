@@ -63,6 +63,11 @@ export const IS_G1 = ACTIVE_FIXTURE === null && QUERY.get('g1') === '1';
 // ROUTE LOST retry instead of HULL FALLBACK tier 1.
 export const SCORE_ENABLED = QUERY.get('score') === '1';
 export const SLICE_FALLBACK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('fallback') !== '0';
+// CP4 promotion (T-016): ?fallback=1 arms HULL FALLBACK tier 1 in the DEFAULT
+// six-face run too — opt-in and off by default there, unlike the slice's
+// on-by-default arming above. Past its streak ceiling the stock lives path is
+// the next consequence tier (src/sim/player.js loseLife).
+export const RUN_FALLBACK_ENABLED = ACTIVE_FIXTURE === null && QUERY.get('fallback') === '1';
 // ?view=near|mid|far selects a camera pull-back multiplier (CONFIG.viewScales).
 // Operator verdict July 30 ("far feels right", matching concept board 13's
 // 3–5% RIG screen fraction): anything unrecognized — including no flag —
