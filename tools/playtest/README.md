@@ -280,14 +280,18 @@ Two conventions worth internalizing:
 Worked example — the aim + gap reflexes from `scripts/six-face-aimed-run.json`:
 
 ```json
-{ "when": "threat.upDist<13 && threat.upSlope>0.5 && !targetLevel", "do": { "hold": "up" } },
-{ "when": "grounded && terrain.gapDist>3",   "do": { "tap": "jump", "holdMs": 420 } },
-{ "when": "grounded && terrain.gapDist<2.2", "do": { "tap": "jump", "holdMs": 420 } }
+{ "when": "threat.upDist<13 && threat.upSlope>0.5",                  "do": { "hold": "up" } },
+{ "when": "grounded && terrain.gapDist>3 && threat.upDist>3.5",      "do": { "tap": "jump", "holdMs": 420 } },
+{ "when": "grounded && terrain.gapDist<2.2",                         "do": { "tap": "jump", "holdMs": 420 } }
 ```
 
 Read: *tilt the gun up when the nearest thing above my firing line is
-meaningfully above it and I have no level shot; hop freely when the deck runs
-on; and jump at the lip when it doesn't.*
+meaningfully above it; hop freely when the deck runs on and nothing is
+overhead to hop into; and jump at the lip when the deck doesn't.* That middle
+clause is worth dwelling on — before the terrain probe and the up-mark, the
+"hop on every landing" reflex was launching RIG into the lane the swarm
+occupies, and **every** hp loss in the runs behind this section happened while
+airborne.
 
 **Honesty notes.** The corridors are straight lines drawn from the standing
 muzzle point at the current tick — the game spawns a projectile slightly off
@@ -754,7 +758,7 @@ tuning has also moved since — CP1 pace/crush fixes landed in the meantime).
 | `retry-recovery.json` | Holds right only; dies once (`enemies=0`), proves the F7 fix still holds under `--deterministic` | **died**, 1 retry detected, `vx` 0 → 10.8 tiles/s within 75ms of the retry |
 | `policy-pinned-jump.json` | Holds right, **zero timed jumps** — the only jump input is `{when: "pinned", do: {tap: "jump"}}` | **not-completed** (reaches the dare pocket, grabs the reward, jams at the dead-end wall — see "Closed-loop policy mode" above), 13 reactive jumps fired across the whole route |
 | `policy-hound-reactive.json` | Closed-loop rebuild of `hound-jump.json` — zero timed jumps, `pinned` + `houndTell` only, `?hound=1` | **not-completed** (2.4s window by design, mirroring the script it replaces); correctly dodged-attempted on the *second* of three hounds' `tell`, not a fixed clock — see above for the hp-drop caveat |
-| `six-face-aimed-run.json` | The **default six-face run** with the T-018 relative-geometry clauses: tilt the gun up at what is above the firing line, face the side it is on during a gate, jump at the lip of a hole (`--max-runtime-ms 245000`) | **not-completed** — but it clears wave gates 1 *and* 2, which no aimless policy has on any tree, and dies on face 3. Gate ticks with the gun pointing at a hostile: **8.8% → 20–29%** (gate 1) and **12.0% → 27.7%** (gate 2) vs the aimless script. Boot-to-VICTORY remains unproven by a bot — see `docs/playtests/2026-08-gate-fight-harness.md` |
+| `six-face-aimed-run.json` | The **default six-face run** with the T-018 relative-geometry clauses: tilt the gun up at what is above the firing line, face the side it is on during a gate, jump at the lip of a hole (`--max-runtime-ms 245000`) | **not-completed** — but it clears wave gates **1, 2 and 3** (the aimless script clears 1 and dies in 2), reaching scroll **205 of 415** with **22 kills** vs 140 and 14. Gate ticks with the gun pointing at a hostile: **8.8% → 20–29%** (gate 1), **12.0% → 27.7%** (gate 2). Boot-to-VICTORY remains unproven by a bot — see `docs/playtests/2026-08-gate-fight-harness.md` |
 | `transform-slice.json` | Hold right + hold fire + periodic jump, `?slice=transform` — pre-existing smoke script, not authored by this harness | **completed** — proof for the `BREACH CLEAR` outcome-labeling fix below: the trace has 7 samples with `state==='VICTORY'` and `ovTitle==='BREACH CLEAR'`; the pre-fix `ovTitle==='TRAVERSAL CLEAR'`-only check would have returned `victorySeen: false` for this exact run |
 
 **Bug fixed since the previous pass:** `computeOutcome` (and the driver's

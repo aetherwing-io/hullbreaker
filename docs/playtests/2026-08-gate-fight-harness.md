@@ -46,7 +46,11 @@ trips it): wave gate *k* spawns `3 + k` bodies across the lanes in
 7.2** tiles above the deck. A level shot leaves the muzzle at 1.05; the
 highest a *level* shot can ever go is a jump apex above that —
 `jumpVel²/2·gravity = 2.72`, so 3.77. Three of wave 2's five slots sit above
-that line by more than a hit radius. **Without vertical aim, the bot could
+that line by more than a hit radius. (Both heights are measured from the same
+deck; a wasp spawned over a lower column rides proportionally lower, and
+`spawnLaneY` caps the high lane at y = 10 — which is why the trace shows
+high-lane bodies pinned around y 9.5–10.9 while RIG's standing muzzle is at
+about y 4.) **Without vertical aim, the bot could
 only damage them while they were diving into its face** — i.e. it could only
 shoot back at something that was already attacking it.
 
@@ -104,15 +108,41 @@ game changed. Progression across the tuning runs, all on the T-009 tree,
 
 | policy | first life lost | kills | how far |
 | --- | --- | --- | --- |
-| T-009's, aimless (baseline) | 3.0 s, x 31.6 (the hole) | 14 | died in gate 2, maxX 154.3 |
+| T-009's, aimless (baseline) | 3.0 s, x 31.6 (the hole) | 14 | cleared **gate 1**; died in gate 2, maxX 154.3, scroll 140 |
 | + angle-quantized aim | 3.0 s, x 31.6 (the hole) | 17 | died in gate 2 |
 | + terrain probe | 24.8 s, x 79.5 (gate 1 fight) | 15 | died in gate 2 |
-| + don't hop into a hostile | **44.1 s, x 151.7 (gate 2 fight)** | 17 | **cleared gates 1 and 2**, died on face 3 |
+| + don't hop into a hostile | 44.1 s, x 151.7 (gate 2 fight) | 17 | cleared **gates 1–2**, died on face 3 |
+| **the shipped script**, 245 s cap | 28.3 s, x 89.3 (gate 1 fight) | **22** | cleared **gates 1–3**, maxX **219.3**, scroll **205** of 415, died in/after gate 3 at 76.9 s |
 
-Gate 1 goes from "costs a life or two" to "cleared without one". Gate 2 goes
-from "9 gating bodies, 3.8 s survived, never cleared" to cleared. The
+Gate 2 goes from "9 gating bodies, 3.8 s survived, never cleared" to cleared,
+and the shipped script clears gate 3 as well — half the route (scroll 205 of
+415) against the aimless script's 140. Kills go 14 → 22 on the same build. The
 per-tick aim quality moves with it: gate-2 ticks with the gun pointed at a
-hostile go **12.0% → 27.7%**, and gate-1 ticks **8.8% → 20.7–29.3%**.
+hostile go **12.0% → 27.7%**, and gate-1 ticks **8.8% → 20.4–29.3%**.
+
+### The 2×2, on both trees
+
+Same two scripts, same flags, both trees pinned and served locally
+(`--deterministic`, 1440×900; the aimless numbers on `main` are the
+integrator's committed A/B, `tools/playtest/runs/integ-T009-on-main`,
+reproduced here):
+
+| | aimless (`six-face-full-run`) | aimed (`six-face-aimed-run`) |
+| --- | --- | --- |
+| **`main`** (no lattice) | 8 kills, scroll **75**, dead **in gate 1** at 27.4 s | 17 kills, scroll **140**, cleared gate 1, dead in gate 2 at 65.9 s |
+| **`task/T-009`** (lattice) | 14 kills, scroll **140**, cleared gate 1, dead in gate 2 at 50 s | 22 kills, scroll **205**, cleared gates 1–3, dead at 76.9 s |
+
+Read the table both ways. Down a column: the lattice buys about one gate,
+which is what T-009 already reported. Across a row: **the aim clause buys
+about one gate too, on either tree** — and it is pure harness. The two effects
+are independent and neither of them is the wave tuning, which never moved.
+
+**Boot-to-VICTORY is still not proven by a bot.** The best run ends at 76.9 s
+with three lives spent and 210 scroll-tiles to go. That box stays open, and it
+should not be closed by making the game easier: the honest next moves are more
+harness (a `pickup.*` mark so the bot can go get the SPREAD/LASER capsules a
+carrier drops — a 5-shot fan is exactly the answer to 8-way quantization —
+and a dive-dodge clause), or an operator run.
 
 The third row of that table is worth reading twice: the bot's damage log
 showed **every single hp loss happening while airborne**, several of them
@@ -163,7 +193,7 @@ magnitude larger than anything old-vs-new showed.
   is 1 damage every 130 ms, so a five-slot wave is 2.6 s of on-target fire
   against a wave that takes 1.1 s to materialize.
 - And the decisive one: **the same build, same waves, played through the same
-  harness with an aim clause added, clears gates 1 and 2.** Nothing about the
+  harness with an aim clause added, clears gates 1, 2 and 3.** Nothing about the
   game moved.
 
 ## 6. Left for the operator (feel, not fixable here)
