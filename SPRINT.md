@@ -354,6 +354,21 @@ or renaming the header ("all references"). Verdict unaffected: errors fire
 and exit codes are correct; the mislabel only appears on trees that are
 already failing.
 
+## I-003 | art | S3 | repro: polyp-facetank.json variant with durationMs 3300 --tail-ms 100 --deterministic --base-url <pinned task/T-004 32df995>, screenshot at first tell onset | evidence: tools/playtest/runs/gate-T-004-cap-tell-approach/screenshot.png (vs gate-T-004-cap-tell-parked/)
+
+Found while gating T-004 (polyp turret, PASS): the Iris Polyp's tell is a
+two-stage escalation — acid-green bulb dilating to a pale fully-open iris
+— and the pale phase is excellent at the default FAR view (highest-contrast
+object on screen). But the first ~300ms of the ~800ms tell reads as only a
+small notch in the green bulb at FAR; nearly a third of the reaction window
+carries little visual signal at the shipped camera. Not a blocker (the
+pale phase plus the 450ms beam make the cycle readable, and operator
+question 5 in the T-004 evidence packet already asks about silhouette
+legibility) — fold into T-003's FAR-tells readability pass, whose scope
+predates the polyp and currently names only wasp/hound tells and capsule
+glyphs. T-003 is already sequenced after T-004's merge, so this is a
+scope note, not new work.
+
 ---
 
 ## Task schema
