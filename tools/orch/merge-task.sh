@@ -45,11 +45,18 @@ PLAYTEST="$MAIN_ROOT/reports/tasks/$TASK/playtest.md"
 [ -f "$REVIEW" ]   || fail "missing $REVIEW"
 [ -f "$PLAYTEST" ] || fail "missing $PLAYTEST"
 # Verdict = the first bare verdict token in the file's opening lines. Tolerates
-# a leading markdown header, but a REQUEST_CHANGES/FAIL token still wins if it
-# comes first — the token order in the file is what decides.
+# a leading markdown header and surrounding decoration (`## PASS`, `**APPROVE**`,
+# `_FAIL_`), but a REQUEST_CHANGES/FAIL token still wins if it comes first — the
+# token order in the file is what decides.
+#
+# Strip decoration only from the ENDS of the line. Stripping `_` everywhere
+# (as this did until 2026-08-01) turns REQUEST_CHANGES into REQUESTCHANGES,
+# which matches no token: the reject verdict goes unseen and parsing falls
+# through to whatever appears on a later line — an APPROVE below a
+# REQUEST_CHANGES header would have merged a rejected task.
 verdict_of() { # verdict_of <file> <ok-token> <bad-token>
   awk -v ok="$2" -v bad="$3" 'NR<=8 {
-    gsub(/[[:space:]#*_]/, "", $0)
+    gsub(/^[[:space:]#*_`>-]+|[[:space:]#*_`]+$/, "", $0)
     if ($0 == ok || $0 == bad) { print $0; exit }
   }' "$1"
 }
