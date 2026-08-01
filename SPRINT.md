@@ -361,7 +361,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; six-face-full-run.json --deterministic against a pinned tree
 
-## T-019 | harness | todo | P2
+## T-019 | harness | doing | P2
 
 goal: the last unproven delivery box — a bot run that reaches VICTORY. T-018
 established the blocker was the policy grammar (not difficulty, not the
@@ -381,7 +381,7 @@ owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; six-face-aimed-run.json --deterministic against a pinned tree
 blocked-by: T-018 merged (its grammar extension is the foundation)
 
-## T-020 | investigation | todo | P2
+## T-020 | investigation | doing | P2
 
 goal: triage I-021 — every six-face run, on pristine main and on the lattice
 tree alike, spends its first life at ~3.0s falling into the same 3-tile gap at
