@@ -5568,10 +5568,11 @@ const G2GATE = G2E.gate;
     ok(base.rows === g1.rows,
        'both modes simulate the same number of frames (' + base.rows + ' vs ' + g1.rows + ')');
     ok(firstDiff === -1,
-       'every simulated value is identical with ?g1=1: scroll, gate state, ritual ' +
-       'clock, built columns, spawns, hostiles, player' +
+       'every simulated value is identical between ?zip=1 and the default: scroll, ' +
+       'gate state, ritual clock, built columns, spawns, hostiles, player' +
        (firstDiff >= 0 ? ' — first difference at frame ' + firstDiff +
-         '\n  base: ' + base.trace[firstDiff] + '\n  g1:   ' + g1.trace[firstDiff] : ''));
+         '\n  zip:     ' + base.trace[firstDiff] +
+         '\n  default: ' + g1.trace[firstDiff] : ''));
     ok(base.kills === g1.kills && base.state === g1.state &&
        base.scrollX === g1.scrollX,
        'same kills, same end state, same scroll cursor');
@@ -7068,7 +7069,7 @@ const G2GATE = G2E.gate;
  * traversal fixture's is. Everything here reads the SHIPPED build (`LVL`
  * above) through src/pure/lattice.js's own exported functions, so the
  * generator and the harness can never disagree about what "readable route",
- * "reachable", "stranded", or "measured retreat" mean.                    */
+ * "reachable", or "stranded" mean.                                        */
 {
   const LAT = latticeModule;
   const L = LAT.LATTICE;
@@ -7609,27 +7610,29 @@ const G2GATE = G2E.gate;
        'T-009: no authored pocket ever swallows the policy (falls at ' +
        JSON.stringify(run.falls.map((x) => +x.toFixed(1))) + ', in-pocket ' +
        JSON.stringify(inPocket) + ')');
-    /* The pickups, in the shipped sim rather than in arithmetic about it: a
-       'fixed' capsule is only ever removed by being COLLECTED, so the count
-       is load-bearing evidence that the authored geometry sits inside the
-       space the run actually plays through.
+    /* The pickups, in the shipped sim rather than in arithmetic about it.
 
        REMOVED BY decisions.md entry 9, not weakened: the pair of assertions
        that demanded this policy finish holding all six ("a deck-line crosser
        collects NOTHING", and its margin). Their subject was the withdrawn
        wager. Under entry 9 a capsule taken on the way past is a free pickup
        arriving early, which is the thing the operator judges by feel — the
-       harness has no business certifying either answer. What it still proves
-       is that the capsules are live: they spawn per face and the shipped
-       pickup code fires on them in ordinary play. The weapon letter is
-       reported, never asserted, because a death resets it to the rifle. */
+       harness has no business certifying either answer, in EITHER direction.
+       So HOW MANY of the six this particular policy sweeps up is REPORTED
+       below and never asserted: a lattice shift that moves the crossing arc
+       off a capsule is a design change for the operator to look at, not a
+       gate failure. What stays asserted is that the run carries one authored
+       capsule per face; that the capsules are live in the shipped sim is
+       proved by the authored-route child below (all six pay through the real
+       pickup code) and by the four source-drift guards above. The weapon
+       letter is reported, never asserted, because a death resets it to the
+       rifle. */
     ok(run.spawnedRewards === CONFIG.path.faces,
        'T-009: the policy run carries one authored capsule per face, got ' +
        run.spawnedRewards);
-    ok(run.rewardsLeft < run.spawnedRewards,
-       'T-009: the pocket capsules are live in the shipped sim — a hold-right ' +
-       'deck-line crossing collects ' + (run.spawnedRewards - run.rewardsLeft) +
-       ' of ' + run.spawnedRewards + ' (weapon at the end ' + run.weapon +
+    console.log('pathcheck note (reported, not asserted): a hold-right deck-line ' +
+       'crossing collected ' + (run.spawnedRewards - run.rewardsLeft) + ' of ' +
+       run.spawnedRewards + ' pocket capsules (weapon at the end ' + run.weapon +
        ', closest approach ' + run.nearestReward + ' tiles at ' +
        JSON.stringify(run.nearestAt) + ')');
   }
