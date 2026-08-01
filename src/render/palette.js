@@ -76,6 +76,11 @@ export const CLASSIC = {
   polypTell: CONFIG.palette.polypTell,   //   branch forked — see the header note)
   polypBeam: CONFIG.palette.polypBeam,
   polypVent: CONFIG.palette.polypVent,
+  mortar: CONFIG.palette.mortar,         // T-014's Seed-Pod Tripod (same story: it
+  mortarTell: CONFIG.palette.mortarTell, //   landed while this branch was in flight)
+  mortarPod: CONFIG.palette.mortarPod,
+  mortarMark: CONFIG.palette.mortarMark,
+  mortarBlast: CONFIG.palette.mortarBlast,
   capsule: CONFIG.palette.capsule,
   modCapsule: CONFIG.palette.modCapsule,
   capsuleInk: '#14181e',
@@ -138,6 +143,15 @@ export const CONCEPT = {
                                          //   ecology, so "live" never reads as "arming"
   polypVent: CONFIG.palette.polypVent,   // spent ember: warm, dim, and deliberately
                                          //   OUT of the acid family — the opening
+  // Spore Mortar (T-014): the acid ecology's third body. Duller and darker
+  // than the polyp so a LOBBING emplacement reads apart from a locking one at
+  // FAR, where both are rooted silhouettes on the same deck.
+  mortar: 0x8cc23a,
+  mortarTell: CONFIG.palette.mortarTell, // the one warning language again: warm amber
+  mortarPod: 0xe2ff7a,                   // the pod in flight — the brightest acid in
+                                         //   the ecology, because the ARC is the read
+  mortarMark: CONFIG.palette.mortarMark, // the marked patch is a warning, not a body:
+  mortarBlast: CONFIG.palette.mortarBlast, //   warm in both modes, like every tell
   // NOTE: there is no generic "enemyGlow" token. Every emissive a hostile can
   // wear is a named state color (houndTell/houndCharge/polypTell/polypBeam/
   // polypVent, plus the mode-independent glowOff/hitFlash), so a catch-all

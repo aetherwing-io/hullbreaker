@@ -1,6 +1,6 @@
 /* ===================== ENTITIES: HOSTILES ========================= */
-/* Kinds: wasp drone, carrier, houndframe, polyp turret. Roster pass adds
-   the spore mortar as a further ENEMY row + movement branch. */
+/* Kinds: wasp drone, carrier, houndframe, polyp turret, spore mortar —
+   DESIGN's whole enemy-role table, one ENEMY row + one branch each. */
 
 import { CONFIG } from '../config.js';
 import { mulberry32 } from '../pure/rng.js';
@@ -8,6 +8,7 @@ import { BEND_S } from '../pure/path.js';
 import {
   polypBeamHitsRect, polypBeamReach, polypBendClampRange,
 } from '../pure/polyp.js';
+import { mortarArmed, mortarBlastHitsRect } from '../pure/mortar.js';
 import { TRANSFORM_BEND_S } from '../pure/transform.js';
 import { IS_TRANSFORM_SLICE } from '../mode.js';
 import { view } from './bridge.js';
@@ -44,7 +45,16 @@ export const ENEMY = {
   // a rooted polyp parked near a corner must never deadlock the ritual.
   polyp:   { hp: CONFIG.polyp.hp,
              hitR: CONFIG.polyp.hitRadius, gating: false, start: 'closed' },
+  // The other rooted emplacement: a tripod bombarding an authored landing
+  // zone. Non-gating for the same reason the polyp is — it cannot leave a
+  // corner arena, so it must never be able to hold one closed.
+  mortar:  { hp: CONFIG.mortar.hp,
+             hitR: CONFIG.mortar.hitRadius, gating: false, start: 'aim' },
 };
+
+// Rooted kinds: `dir` is a FACING resolved at authoring time, never a patrol
+// heading, so the corner gate's patrol box must never re-aim one.
+const ROOTED = { polyp: true, mortar: true };
 
 // While the iris is shut (closed, and through the dilating tell) shots ping
 // off the armour: hp only moves in the two OPEN states, so the polyp dies to
@@ -92,6 +102,12 @@ export function spawnHostile(x, y, delayMs, kind, row) {
           x + ((row && row.dir) || -1) * CONFIG.polyp.barrelTiles,
           (row && row.dir) || -1, CONFIG.polyp.sightRange, BENDS)
       : 0,
+    // mortar bombardment state: the AUTHORED landing zone it denies (a place,
+    // never a moving target — decisions.md entry 6) and the pod's 0…1 flight
+    // progress, which the render layer replays through the same pure arc.
+    zoneX: row && row.zone ? row.zone.x : 0,
+    zoneY: row && row.zone ? row.zone.y : 0,
+    podU: 0,
     enterUntil: gameMs + (delayMs || 0) + CONFIG.wasp.enterMs,
     flashUntil: 0,
   };
@@ -334,6 +350,83 @@ function updatePolyp(e) {
   }
 }
 
+/* ------------------------ SPORE MORTAR ----------------------------- *
+ * Spatial job: take an intended LANDING ZONE away for a moment, after a
+ * warning long enough to answer. It is rooted and it never aims at the
+ * player — it bombards an authored patch of catwalk — so the whole enemy
+ * is a rhythm over that patch:
+ *
+ *   aim   — inert, tube stowed, the zone free. Arms when the player comes
+ *           within armRange OF THE ZONE (a mortar guards a place, so the
+ *           place is what watches), which is inside the fixture's own
+ *           follow lead: the first lob always happens on screen.
+ *   lob   — the pod is in the air on its authored arc and the zone is
+ *           MARKED from the moment it launches (board 07: "marking the
+ *           intended landing surface"). Commitment is total — nothing
+ *           re-aims a pod — which is exactly what makes redirecting in
+ *           the air a real answer instead of a chase.
+ *   fuse  — the pod is planted on the mark and the warning blink
+ *           accelerates. On its own this window is longer than the
+ *           slowest answer to it (asserted per player tune).
+ *   burst — the denial: the slab standing on the marked surface is live.
+ *           Short enough that a full jump outlasts it, tall enough that
+ *           standing in it is never safe.
+ *   cool  — reloading. The zone is free again and the tripod is just a
+ *           target — one reload window of rifle fire kills it.
+ *
+ * Counterplay is positional and never statistical: land short of the
+ * mark, land long past it, take the tier above (which is where the tripod
+ * itself stands, so going up is also how you shoot back), or take the
+ * floor below — which is precisely what the combination stage's hound
+ * prices. Fairness of the warning versus the player's escape physics is
+ * asserted in tools/pathcheck.mjs.                                      */
+
+function updateMortar(e) {
+  const M = CONFIG.mortar;
+  if (gameMs < e.enterUntil) return;             // materializing: no pod, no blast
+  if (e.state === 'aim') {
+    if (mortarArmed(player.x, e.zoneX, M.armRange)) {
+      e.state = 'lob';
+      e.stateUntil = gameMs + M.lobMs;
+      e.podU = 0;
+    }
+    return;
+  }
+  if (e.state === 'lob') {
+    e.podU = 1 - Math.max(0, (e.stateUntil - gameMs) / M.lobMs);
+    if (gameMs >= e.stateUntil) {
+      e.state = 'fuse';
+      e.stateUntil = gameMs + M.fuseMs;
+      e.podU = 1;                                // planted on the mark
+    }
+    return;
+  }
+  if (e.state === 'fuse') {
+    if (gameMs >= e.stateUntil) {
+      e.state = 'burst';
+      e.stateUntil = gameMs + M.burstMs;
+    }
+    return;
+  }
+  if (e.state === 'burst') {
+    // the one slab predicate, shared with the render mesh and the harness:
+    // what is drawn is what denies
+    if (mortarBlastHitsRect(e.zoneX, e.zoneY, M.blastHalf, M.blastHeight,
+        player.x - player.hw, player.x + player.hw,
+        player.y, player.y + player.h)) {
+      damagePlayer(1, e.zoneX);
+    }
+    if (gameMs >= e.stateUntil) {
+      e.state = 'cool';
+      e.stateUntil = gameMs + M.coolMs;
+      e.podU = 0;
+    }
+    return;
+  }
+  // cool: reloading — the lane is free and the emplacement is a target
+  if (gameMs >= e.stateUntil) e.state = 'aim';
+}
+
 export function updateHostiles(dt) {
   const W = CONFIG.wasp;
   const GW = CONFIG.waves;
@@ -372,7 +465,7 @@ export function updateHostiles(dt) {
       hitHostile(e, i, CONFIG.score.shockDamage, 'shock');
       continue;
     }
-    if (gate && e.kind !== 'polyp' &&                  // a rooted barrel's dir is its FACING:
+    if (gate && !ROOTED[e.kind] &&                    // a rooted barrel's dir is its FACING:
         e.state !== 'charge' && e.state !== 'tumble') {//   the box must never re-aim it
       if (e.x < patrolL) e.dir = 1;                    // patrol box: nobody strands the gate
       else if (e.x > patrolR) e.dir = -1;              //   (a committed charge is exempt)
@@ -381,6 +474,8 @@ export function updateHostiles(dt) {
       updateHound(e, dt);
     } else if (e.kind === 'polyp') {                   // rooted emplacement: sightline denial
       updatePolyp(e);
+    } else if (e.kind === 'mortar') {                  // rooted emplacement: landing denial
+      updateMortar(e);
     } else if (e.kind === 'carrier') {                 // slow hauler: cruise only, never dives
       const C = CONFIG.carrier;
       e.x += e.dir * (e.cruiseSpeed !== undefined ? e.cruiseSpeed : C.speed) * dt;

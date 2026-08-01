@@ -1,0 +1,23 @@
+{
+  "name": "mortar-zone-deny",
+  "description": "ACCEPTANCE, movement answer: run the traversal slice into the Seed-Pod Tripod's marked landing zone (?mortar=1 solo stage) and answer the denial with movement only. Fully closed-loop, zero timed inputs: the approach is the proven polyp skeleton (bunny-hop off each actual landing while x<52.8, air-jump on each falling edge inside the chimney shaft x 38-47 below roof height, pinned-recovery backstop), which climbs onto the shared overhang roof and walks its top to the lip at x=57. The mortar lesson is then exactly three rules: do not COMMIT off the roof lip onto the post-mid strip while the zone is marked (mortarMarked gates that hold, so a lit mark visibly parks the bot at the lip), never STOP inside the strip once committed (the in-strip hold has no gate — crossing a marked patch is always allowed, standing in it is what is denied), and keep running once past it. Every mortar reaction keys off the emplacement's own telemetry state; nothing is timed. Measured 3/3 on this tree: completed (TRAVERSAL CLEAR), 0 kills, hp 3/3, one full lob -> fuse -> burst cycle observed with the bot held at the lip through it and crossing the strip inside the reload window. Regression signals: a stall short of the rejoin, hp < 3 (the bot never stands in the mark, so a hit means the slab denies more than the mark it draws), or a trace with no mortar state change at all (the emplacement never armed).",
+  "url": "index.html?slice=traversal&mortar=1",
+  "viewport": { "width": 1280, "height": 800 },
+  "durationMs": 15000,
+  "moves": [],
+  "policy": {
+    "rules": [
+      { "when": "x<52.8", "do": { "hold": "right" } },
+      { "when": "y>5.8 && x<56.4", "do": { "hold": "right" } },
+      { "when": "y>5.8 && x>56.4 && !mortarMarked", "do": { "hold": "right" } },
+      { "when": "x<57.6 && y>4.6 && y<5.8 && !mortarMarked", "do": { "hold": "right" } },
+      { "when": "x>57.6 && x<61.6 && y>4.6 && y<5.8", "do": { "hold": "right" } },
+      { "when": "x>61.6", "do": { "hold": "right" } },
+      { "when": "y<4.6 && x>46", "do": { "hold": "right" } },
+
+      { "when": "grounded && x<52.8", "do": { "tap": "jump", "holdMs": 380 } },
+      { "when": "airborne && vy<0 && x>38 && x<47 && y<10", "do": { "tap": "jump", "holdMs": 380 } },
+      { "when": "pinned && !mortarMarked", "do": { "tap": "jump", "holdMs": 380 } }
+    ]
+  }
+}

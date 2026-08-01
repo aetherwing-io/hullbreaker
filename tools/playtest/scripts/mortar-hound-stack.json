@@ -1,0 +1,27 @@
+{
+  "name": "mortar-hound-stack",
+  "description": "ACCEPTANCE, two-enemy combination (?mortar=2): DESIGN's own combine column for this enemy — the Seed-Pod Tripod denies the post-mid landing strip and the judged hound-2.5 rejoin beat patrols the floor directly beneath it, so 'hound punishes a panicked return to the floor' is played literally. Same fully closed-loop skeleton as mortar-zone-deny (zero timed inputs), but the policy takes the PANICKED answer on purpose instead of the patient one: it commits off the roof lip while the zone is marked, and the moment it lands on a marked strip it bails through the catwalk (down+jump, the game's own drop-through verb) onto the floor below — where the houndframe lives. The floor half of the run is the proven policy-hound-reactive answer: tap jump whenever a hound telegraphs. The point of the script is that both threats engage on ONE decision, so the trace has to show mortar states cycling AND the hound leaving prowl. Measured on this tree: see the run report — the stack is allowed to cost, and hp/hull-fallback setbacks are reported honestly rather than tuned away. Regression signals: a stall short of the rejoin, or a trace where the hound never leaves prowl (the panicked line stopped meeting it) or the mortar never cycles.",
+  "url": "index.html?slice=traversal&mortar=2",
+  "viewport": { "width": 1280, "height": 800 },
+  "durationMs": 15000,
+  "moves": [],
+  "policy": {
+    "rules": [
+      { "when": "x<52.8", "do": { "hold": "right" } },
+      { "when": "y>5.8 && x<56.4", "do": { "hold": "right" } },
+      { "when": "y>5.8 && x>56.4 && !mortarBurst", "do": { "hold": "right" } },
+      { "when": "x<57.6 && y>4.6 && y<5.8", "do": { "hold": "right" } },
+      { "when": "x>57.6 && x<61.6 && y>4.6 && y<5.8", "do": { "hold": "right" } },
+      { "when": "x>61.6", "do": { "hold": "right" } },
+      { "when": "y<4.6 && x>46", "do": { "hold": "right" } },
+
+      { "when": "grounded && x<52.8", "do": { "tap": "jump", "holdMs": 380 } },
+      { "when": "airborne && vy<0 && x>38 && x<47 && y<10", "do": { "tap": "jump", "holdMs": 380 } },
+
+      { "when": "mortarMarked && grounded && y>4.6 && y<5.8", "do": { "tap": "down", "holdMs": 260 } },
+      { "when": "mortarMarked && grounded && y>4.6 && y<5.8", "do": { "tap": "jump", "holdMs": 80 } },
+      { "when": "houndTell && grounded && y<4.6", "do": { "tap": "jump", "holdMs": 300 } },
+      { "when": "pinned && !houndCharge", "do": { "tap": "jump", "holdMs": 380 } }
+    ]
+  }
+}

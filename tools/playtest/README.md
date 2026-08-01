@@ -150,6 +150,13 @@ parens, and never `eval()`/`new Function()`. Each clause is either:
     vulnerable state (`fire`/`vent`) of the iris cycle
     (closed→tell→fire→vent, same file). Closed/tell shots ping off the
     armour, so `polypOpen` is the "shots count now" signal.
+  - `mortarLob`, `mortarFuse`, `mortarBurst`, `mortarMarked` — any hostile
+    with `kind: 'mortar'` in the pod-in-flight `lob`, the planted-and-
+    counting-down `fuse`, the live-denial `burst`, or any of the three
+    (`mortarMarked`, same file's aim→lob→fuse→burst→cool machine). The
+    landing zone is marked from the moment the pod launches, so
+    `mortarMarked` is the "that patch of floor is spoken for" signal and
+    `mortarBurst` is the only window that actually damages.
   - `victory` — the traversal-slice VICTORY overlay or `state`.
 - a bare sample field, optionally negated, tested for truthiness (e.g. `grounded`, `!grounded`).
 - a numeric comparison against a sample field: `field OP number`, `OP` one of `> >= < <= == !=` (e.g. `x>44`, `hp<=1`).

@@ -558,7 +558,20 @@ entire climb:
    (tell vs the slowest escape, per pace tune) and placement (rooted mount,
    owned connector coverage, clear reroutes above and below) are asserted
    in `tools/pathcheck.mjs`; bot evidence in `reports/tasks/T-004/`.
-   Mortar is not yet started.
+   **Spore Mortar v1 built, unjudged**: the last role in the enemy table,
+   an opt-in trial in the traversal slice (`?mortar=1` solo teach,
+   `?mortar=2` the one two-enemy combination — DESIGN's own combine
+   column, the mortar denying the post-mid landing strip while the judged
+   hound-rejoin beat patrols the floor the panicked answer runs to). It is
+   a rooted Seed-Pod Tripod on the post-high catwalk (boards 06/07):
+   aim→lob→fuse→burst→cool, where the pod's whole flight plus its fuse is
+   the warning, the marked patch is three tiles of an eight-tile catwalk
+   (so landing long, or taking the tier above or below, are all live
+   answers), and the denial itself lasts a fifth of a second — shorter
+   than a jump stays above it. Fairness (warning vs the slowest answer,
+   per pace tune) and placement (mount, marked surface, owned landing,
+   intact reroutes, arc clearance) are asserted in `tools/pathcheck.mjs`;
+   bot evidence in `reports/tasks/T-014/`.
 4. **Baseline feedback now:** add essential hit, hurt, launch, pickup, warning,
    and transformation sounds plus restrained hit-stop, shake, flashes, and
    particles. Full polish can wait; readable timing cannot. **Both halves

@@ -40,6 +40,11 @@ import {
   hitStopArm, hitStopEvent, hitStopMsFor, hitStopScaleAt, particleAlpha,
   particleScale, shakeAt, traumaAdd, traumaAfter, warnPulse,
 } from '../src/pure/juice.js';
+import {
+  MORTAR_TRIAL, mortarArcClearsTerrain, mortarArcX, mortarArcY, mortarArmed,
+  mortarBlastHitsRect, mortarComposePlan, mortarPulsePeriodMs, mortarTrialStage,
+  mortarWarningMs,
+} from '../src/pure/mortar.js';
 import { crouchStance } from '../src/pure/stance.js';
 import { assistDirection, assistVerticalReach } from '../src/pure/assist.js';
 import {
@@ -5477,13 +5482,15 @@ const G2GATE = G2E.gate;
   // the guard certifies the ecology that actually ships, not authored colors
   // no module consumes (that is why there is no generic "enemyGlow" token).
   ok([C.wasp, C.carrier, C.hound, C.houndCharge,
-      C.polyp, C.polypBeam].every(acid),
+      C.polyp, C.polypBeam, C.mortar, C.mortarPod].every(acid),
      'palette: concept enemy tokens are acid green (g dominant)');
   // the roster's ONE warning language: tells (and the polyp's spent-vent
   // ember) stay warm in BOTH modes — a telegraph must never read as a body,
   // so it may not drift into the acid family the way the bodies do.
   ok([C.houndTell, C.polypTell, C.polypVent,
-      PAL_CLASSIC.houndTell, PAL_CLASSIC.polypTell, PAL_CLASSIC.polypVent]
+      C.mortarTell, C.mortarMark, C.mortarBlast,
+      PAL_CLASSIC.houndTell, PAL_CLASSIC.polypTell, PAL_CLASSIC.polypVent,
+      PAL_CLASSIC.mortarTell, PAL_CLASSIC.mortarMark, PAL_CLASSIC.mortarBlast]
        .every((h) => rust(h) && !acid(h)),
      'palette: hostile tells/vent stay warm WARN amber in both modes');
   // Every hostile kind the SIM can spawn needs a body token in both tables.
@@ -5627,6 +5634,304 @@ const G2GATE = G2E.gate;
   ok(wgFinish.indexOf("state = 'done'") >= 0 &&
      wgFinish.indexOf("state = 'done'") < wgFinish.indexOf('view.corner.finished'),
      "T-012: wavegate.finishCorner commits state='done' before corner.finished fires");
+}
+
+/* ================= T-014: SPORE MORTAR (?mortar=) ==================
+ * DESIGN's last enemy role — "denies intended landing zones after a
+ * readable delay" — is legitimate only if (1) the warning is a real
+ * reaction window for the SLOWEST answer at every player tune, not just
+ * the jump; (2) the denial is a MOMENT over a patch of floor, never a
+ * state and never a tier; (3) the marked patch sits on a landing the
+ * player actually wants, with the alternatives DESIGN names (redirect in
+ * the air, or take a different connector) provably intact over the real
+ * fixture terrain; and (4) killing it is a decision about time, never a
+ * damage race. Same contract shape as the houndframe and polyp blocks
+ * above, so a retune has to argue with the same arithmetic.          */
+{
+  const MO = CONFIG.mortar, HD = CONFIG.hound, R = CONFIG.weapons.R;
+  const cycleMs = MO.lobMs + MO.fuseMs + MO.burstMs + MO.coolMs;
+  const warnMs = mortarWarningMs(MO);
+  const latency = (PL.jumpBufferMs + 1000 / 30) / 1000;
+  const solidAtM = function (x, y) { return levelSolidCell(TL, Math.floor(x), Math.floor(y), 8); };
+
+  // -- the sim roster row (the render twin is covered by the ENEMY-table
+  //    sweep in the polyp block, which walks every sim kind) -------------
+  ok(!!simEnemyTable.mortar && simEnemyTable.mortar.gating === false &&
+     simEnemyTable.mortar.start === 'aim' &&
+     simEnemyTable.mortar.hp === MO.hp && simEnemyTable.mortar.hitR === MO.hitRadius,
+     'sim ENEMY table carries the mortar: non-gating, born aiming, CONFIG-matched');
+
+  // -- rhythm: a denial you can wait out, an opening you can spend -------
+  ok(MO.burstMs / cycleMs <= 0.15,
+     'the landing zone is denied for a MOMENT, not held (' +
+     (MO.burstMs / cycleMs * 100).toFixed(1) + '% of the cycle)');
+  ok(warnMs / MO.burstMs >= 5,
+     'the readable warning is at least 5x the denial it announces (' +
+     (warnMs / MO.burstMs).toFixed(1) + 'x)');
+  ok(MO.hp * R.fireRateMs <= MO.coolMs,
+     'one reload window of baseline rifle fire kills the tripod (' +
+     (MO.hp * R.fireRateMs) + ' <= ' + MO.coolMs + ' ms): never a damage race');
+  ok(PL.iframesMs > MO.burstMs,
+     'i-frames outlast one detonation: standing in it costs one point, not a bar');
+  ok(PL.iframesMs < cycleMs,
+     'i-frames expire inside the bombardment cycle: the next shell is not free');
+  ok(MO.hitRadius <= MO.size + 1e-9,
+     'mortar hit circle stays inside its launch-tube silhouette');
+  // the CP2 aim-gap lesson, applied at authoring time: the tube centers on the
+  // standing firing line of its OWN catwalk, so the reroute that answers the
+  // denial (go up) is also the reroute that lets you shoot back
+  ok(Math.abs(PL.muzzleY - MO.bodyY) <= MO.hitRadius / 2,
+     'a standing level shot from the mortar deck center-punches the tube (muzzle ' +
+     PL.muzzleY + ' vs body ' + MO.bodyY + ')');
+
+  // -- escape physics: the warning covers the SLOWEST answer, per tune ---
+  {
+    ok(MO.blastHeight > PL.height,
+       'the slab is taller than a standing body (' + MO.blastHeight + ' > ' +
+       PL.height + '): there is no ducking a spore burst, only leaving');
+    const TUNES = [['normal tune', PL]].concat(
+      TRAVERSAL_PACE_IDS.map(function (id) {
+        return ['pace ' + id, { ...PL, ...resolveTraversalPace(id).movement }];
+      })
+    );
+    for (const [label, T] of TUNES) {
+      const jumpCost = riseTimeTo(T, MO.blastHeight) + latency;
+      // running clear of the patch, charged conservatively at 60% of the run
+      // tune (the standing start is real) — the slowest of the two answers
+      const runCost = (MO.blastHalf + T.width / 2) / (T.runSpeed * 0.6) + latency;
+      const slowest = Math.max(jumpCost, runCost);
+      ok(Number.isFinite(jumpCost) && warnMs / 1000 >= 2 * slowest,
+         'mortar warning is at least twice the cost of the slowest answer (' + label +
+         ': ' + (warnMs / 1000).toFixed(3) + ' s vs ' + slowest.toFixed(3) + ' s)');
+      // the fuse ALONE — the beat after the pod visibly plants, which is the
+      // loudest part of the tell — still covers that answer once over
+      ok(MO.fuseMs / 1000 >= slowest,
+         'the planted fuse alone covers the slowest answer (' + label + ': ' +
+         (MO.fuseMs / 1000).toFixed(3) + ' s vs ' + slowest.toFixed(3) + ' s)');
+      const air = airTimeAbove(T, MO.blastHeight);
+      ok(air > MO.burstMs / 1000,
+         'a full jump stays above the slab longer than the whole detonation (' +
+         label + ': ' + air.toFixed(3) + ' s vs ' + (MO.burstMs / 1000) + ' s)');
+      // pillar 2: crossing the marked patch in the air is always available —
+      // the denial is about STANDING there, never about passage
+      const jumpSpan = T.runSpeed * (2 * T.jumpVel / -T.gravity);
+      ok(jumpSpan > 2 * MO.blastHalf + T.width,
+         'one full jump clears the whole marked patch horizontally (' + label +
+         ': ' + jumpSpan.toFixed(2) + ' vs ' + (2 * MO.blastHalf + T.width).toFixed(2) + ' tiles)');
+    }
+  }
+
+  // -- pure geometry units ---------------------------------------------
+  ok(mortarArcX(10, 20, 0) === 10 && mortarArcX(10, 20, 1) === 20 &&
+     mortarArcX(10, 20, 0.5) === 15,
+     'arc x is a straight, monotone sweep from muzzle to zone');
+  ok(mortarArcY(9, 5, 3, 0) === 9 && mortarArcY(9, 5, 3, 1) === 5 &&
+     Math.abs(mortarArcY(9, 5, 3, 0.5) - (7 + 3)) < 1e-12,
+     'arc y lands exactly on the zone and bulges arcTiles over the chord midpoint');
+  {
+    let above = true;
+    for (let k = 1; k < 40; k++) {
+      const u = k / 40;
+      if (mortarArcY(9, 5, 3, u) <= 9 + (5 - 9) * u) above = false;
+    }
+    ok(above, 'the lob is above its own chord for the whole flight: it throws OVER, never through');
+  }
+  ok(mortarArcClearsTerrain(10, 5, 2, 5, 3, function () { return false; }, 32) &&
+     !mortarArcClearsTerrain(10, 5, 2, 5, 3, function (x, y) { return y > 6; }, 32),
+     'arc clearance marches the flight and reports a ceiling it would pass through');
+  ok(!mortarBlastHitsRect(10, 5, 1.5, 1.8, 12, 13, 5, 6.7),
+     'a body beside the marked patch is safe');
+  ok(mortarBlastHitsRect(10, 5, 1.5, 1.8, 9.6, 10.3, 5, 6.7),
+     'a body standing on the marked patch is inside the slab');
+  ok(!mortarBlastHitsRect(10, 5, 1.5, 1.8, 9.6, 10.3, 6.9, 8.6),
+     'a body jumped above the slab is safe');
+  ok(!mortarBlastHitsRect(10, 5, 1.5, 1.8, 9.6, 10.3, 2, 3.7),
+     'a body on the deck below the marked surface is safe: one landing, never a tier');
+  ok(mortarArmed(48, 59.5, 13) && mortarArmed(70, 59.5, 13) &&
+     !mortarArmed(44, 59.5, 13) && !mortarArmed(75, 59.5, 13),
+     'the ZONE is what watches: arming is a window around the marked place, either side');
+  {
+    const slow = mortarPulsePeriodMs(600, 600, 200, 70);
+    const mid = mortarPulsePeriodMs(300, 600, 200, 70);
+    const fast = mortarPulsePeriodMs(0, 600, 200, 70);
+    ok(slow === 200 && fast === 70 && mid < slow && mid > fast &&
+       mortarPulsePeriodMs(-50, 600, 200, 70) === 70 &&
+       mortarPulsePeriodMs(9999, 600, 200, 70) === 200,
+       'the mark blink accelerates monotonically across the fuse and clamps at both ends');
+  }
+  ok(mortarWarningMs(MO) === MO.lobMs + MO.fuseMs,
+     'the warning is the whole flight plus the fuse: the mark is lit from launch');
+
+  // -- stages and composition -------------------------------------------
+  const MSTAGE_NAMES = ['solo', 'combo'];
+  ok(Object.keys(MORTAR_TRIAL.stages).join(',') === MSTAGE_NAMES.join(','),
+     'the mortar trial is exactly teach (solo) then one two-enemy combination (combo)');
+  ok(MSTAGE_NAMES.every(function (n) { return mortarTrialStage(n) === MORTAR_TRIAL.stages[n]; }) &&
+     mortarTrialStage(null) === null && mortarTrialStage('nope') === null,
+     'mortar stages resolve by name and reject anything else');
+  ok(MORTAR_TRIAL.stages.solo.enemies.length === 1 &&
+     MORTAR_TRIAL.stages.solo.enemies[0].kind === 'mortar',
+     'the teach stage is ONE mortar and nothing else: every point of damage is the blast');
+  {
+    const mortarBefore = JSON.stringify(MORTAR_TRIAL);
+    const HSTAGE_NAMES = [null, 'solo', 'combo', 'squeezePlus', 'mix', 'aim'];
+    const PSTAGE = [null, 'solo', 'combo'];
+    let identity = true, replaced = true, derived = true;
+    for (const id of TRAVERSAL_PACE_IDS) {
+      const F = resolveTraversalPace(id);
+      for (const h of HSTAGE_NAMES) {
+        for (const p of PSTAGE) {
+          const base = traversalEnemyPlan(F, h, p);
+          // no ?mortar= (and any junk value) leaves the plan byte-identical —
+          // the same array reference, so nothing downstream can even copy it
+          if (mortarComposePlan(base, null) !== base ||
+              mortarComposePlan(base, 'nonsense') !== base) identity = false;
+          for (const m of MSTAGE_NAMES) {
+            const stage = MORTAR_TRIAL.stages[m];
+            const plan = mortarComposePlan(base, m);
+            if (plan.length !== stage.enemies.length) { replaced = false; continue; }
+            plan.forEach(function (e, i) {
+              const a = stage.enemies[i];
+              if (e.id !== a.id || e.kind !== a.kind) replaced = false;
+              if (a.deck !== undefined) {
+                const ride = e.kind === 'mortar' ? MO.bodyY : HD.rideY;
+                if (Math.abs(e.y - (a.deck + ride)) > 1e-9) derived = false;
+              }
+            });
+          }
+        }
+      }
+    }
+    ok(identity, 'no ?mortar=: every pace x hound x polyp plan is byte-identical to today');
+    ok(replaced, 'mortar stages field only their own roster, at every pace and prior stage');
+    ok(derived, 'mortar rows plant at deck+bodyY, hound rows ride deck+rideY, in composed plans');
+    ok(JSON.stringify(MORTAR_TRIAL) === mortarBefore,
+       'composing a plan never mutates the mortar trial table');
+  }
+
+  // -- authored placement over the real fixture terrain ------------------
+  for (const name of MSTAGE_NAMES) {
+    const plan = mortarComposePlan(traversalEnemyPlan(TF, null, null), name);
+    const ids = new Set(plan.map(function (e) { return e.id; }));
+    ok(ids.size === plan.length && plan.every(function (e) {
+      return Number.isFinite(e.x) && Number.isFinite(e.y) &&
+        Number.isFinite(e.delayMs) && e.delayMs >= 0 && e.x >= B.x0 && e.x < B.x1;
+    }), name + ' mortar stage authors uniquely named, in-bounds hostiles');
+    const mortars = plan.filter(function (e) { return e.kind === 'mortar'; });
+    ok(mortars.length === 1, name + ' fields exactly one mortar: the lesson stays attributable');
+    for (const m of mortars) {
+      const mount = (m.mount || '').split(':');
+      const plat = TF.platforms.find(function (r) { return r.id === mount[1]; });
+      ok(mount[0] === 'platform' && !!plat && plat.y === m.deck &&
+         m.x >= plat.x0 + 0.5 && m.x <= plat.x1 - 0.5 && Math.abs(m.dir) === 1,
+         name + ' tripod stands on its declared catwalk, inside its extent, facing a declared way');
+      const y = m.deck + MO.bodyY;
+      const zone = m.zone;
+      const surface = (zone.surface || '').split(':');
+      const zonePlat = TF.platforms.find(function (r) { return r.id === surface[1]; });
+      // the marked patch has to be a real LANDING SURFACE, wall to wall — a
+      // mark hanging off the end of a catwalk would be a lie about where the
+      // denial is
+      ok(surface[0] === 'platform' && !!zonePlat && zonePlat.y === zone.y &&
+         zone.x - MO.blastHalf >= zonePlat.x0 && zone.x + MO.blastHalf <= zonePlat.x1,
+         name + ' the marked patch lies wholly on a real authored landing surface');
+      const c = connectorById.get(m.owns);
+      const route = routeById.get(m.contests);
+      ok(!!route && !!c && route.connectorIds.indexOf(m.owns) >= 0,
+         name + ' mortar owns a real connector its assigned route actually walks');
+      ok(mortarBlastHitsRect(zone.x, zone.y, MO.blastHalf, MO.blastHeight,
+           c.x - 0.35, c.x + 0.35, c.y, c.y + PL.height),
+         name + ' the mark covers the authored landing point it claims to deny');
+      // ANSWER 1 — redirect in the air: the catwalk keeps standing room past
+      // the mark, and one full jump from the roof lip the route arrives over
+      // carries the whole patch
+      ok(zonePlat.x1 - (zone.x + MO.blastHalf) >= 2,
+         name + ' the same catwalk keeps a landing strip past the mark (' +
+         (zonePlat.x1 - (zone.x + MO.blastHalf)).toFixed(1) + ' tiles): land long');
+      {
+        const roof = TF.solidRects.find(function (r) { return r.id === 'dare-overhang'; });
+        const span = PL.runSpeed * (2 * PL.jumpVel / -PL.gravity);   // frozen tune: worst case
+        ok(roof.x1 + span > zone.x + MO.blastHalf && roof.x1 < zone.x - MO.blastHalf,
+           name + ' a jump off the shared roof lip clears the entire mark (' +
+           (roof.x1 + span).toFixed(1) + ' past ' + (zone.x + MO.blastHalf) + ')');
+      }
+      // ANSWER 2 — a different connector: the tiers directly above and below
+      // stay clean, and they are real connectors on real routes
+      for (const alt of ['post-high', 'post-low']) {
+        const a = connectorById.get(alt);
+        ok(!!a && !mortarBlastHitsRect(zone.x, zone.y, MO.blastHalf, MO.blastHeight,
+             a.x - 0.35, a.x + 0.35, a.y, a.y + PL.height) &&
+           TF.routes.some(function (r) { return r.connectorIds.indexOf(alt) >= 0; }),
+           name + ' the ' + alt + ' reroute is a real connector and outside the slab');
+      }
+      // the shared overhang segment every route crosses is never denied: the
+      // fork stays chosen in the open (the same rule the polyp station keeps)
+      const shared = connectorById.get('overhang-top');
+      ok(!mortarBlastHitsRect(zone.x, zone.y, MO.blastHalf, MO.blastHeight,
+           shared.x - 0.35, shared.x + 0.35, shared.y, shared.y + PL.height),
+         name + ' the shared overhang-top segment is never inside the denial');
+      // the lob itself: a real flight over the terrain, and both ends of it on
+      // screen together (the fixture's own follow lead is the conservative
+      // bound — the FAR default only ever shows MORE than this)
+      ok(mortarArcClearsTerrain(m.x, y, zone.x, zone.y, MO.arcTiles, solidAtM, 96),
+         name + ' the pod arc clears solid terrain for its whole flight');
+      let apex = -Infinity;
+      for (let k = 0; k <= 100; k++) apex = Math.max(apex, mortarArcY(y, zone.y, MO.arcTiles, k / 100));
+      ok(apex > Math.max(y, zone.y) + 0.5,
+         name + ' the lob visibly arcs (apex ' + apex.toFixed(2) + ' over a ' +
+         y.toFixed(2) + ' → ' + zone.y + ' chord)');
+      ok(Math.abs(m.x - zone.x) >= 2 * MO.blastHalf &&
+         Math.abs(m.x - zone.x) <= TF.run.followLeadTiles,
+         name + ' the tripod stands off from its own zone by at least the width it marks, ' +
+         'and never further than one screen lead (' + Math.abs(m.x - zone.x).toFixed(1) +
+         ' in [' + (2 * MO.blastHalf) + ', ' + TF.run.followLeadTiles + '])');
+      // standing in the marked zone, the emplacement is NOT answerable with a
+      // level shot: you leave the zone to trade, which is the whole point
+      ok(Math.abs(y - (zone.y + PL.muzzleY)) > MO.hitRadius,
+         name + ' a level shot from inside the marked zone cannot reach the tube');
+      ok(!mortarBlastHitsRect(zone.x, zone.y, MO.blastHalf, MO.blastHeight,
+           m.x - MO.size, m.x + MO.size, y - MO.size, y + MO.size),
+         name + ' the tripod never stands in its own blast');
+      ok(TF.connectors.every(function (cc) {
+        return cc.id === m.owns ||
+          !mortarBlastHitsRect(zone.x, zone.y, MO.blastHalf, MO.blastHeight,
+            cc.x - 0.35, cc.x + 0.35, cc.y, cc.y + PL.height);
+      }), name + ' exactly one authored connector is ever inside the denial');
+    }
+  }
+
+  // -- the combination: DESIGN's own combine column ----------------------
+  {
+    const combo = mortarComposePlan(traversalEnemyPlan(TF, null, null), 'combo');
+    ok(combo.length === 2,
+       'the combination stage is exactly two enemies: one new lesson at a time');
+    const m = combo.find(function (e) { return e.kind === 'mortar'; });
+    const h = combo.find(function (e) { return e.kind === 'hound'; });
+    ok(!!m && !!h, 'combo pairs the mortar with a houndframe');
+    const span = h.patrol.x1 - h.patrol.x0;
+    const run = TF.groundRuns.find(function (r) { return h.x >= r.x0 && h.x < r.x1; });
+    const hc = connectorById.get(h.owns);
+    const reachH = HD.chargeSpeed * HD.chargeMs / 1000;
+    ok(!!run && run.y === h.deck && TL.groundH[Math.floor(h.x)] === h.deck &&
+       Math.abs(h.y - (h.deck + HD.rideY)) <= 1e-9 && Math.abs(h.dir) === 1 &&
+       h.x >= h.patrol.x0 && h.x <= h.patrol.x1 &&
+       h.patrol.x0 >= run.x0 + 0.5 && h.patrol.x1 <= run.x1 - 0.5 &&
+       span >= 2.0 && span <= 4.0 &&
+       !!hc && routeById.get(h.contests).connectorIds.indexOf(h.owns) >= 0 &&
+       hc.x >= h.patrol.x0 && hc.x <= h.patrol.x1 && Math.abs(hc.y - h.deck) <= 0.6 &&
+       Math.max(Math.abs(hc.x - h.patrol.x0), Math.abs(hc.x - h.patrol.x1)) <= reachH,
+       'combo hound is the judged rejoin beat: planted, short span, owns a swept connector');
+    // "hound punishes a panicked return to the floor" — literally: its patrol
+    // lies under the marked patch, and the floor it patrols is itself outside
+    // the slab, so the drop is a real answer that now has a price
+    ok(h.patrol.x0 < m.zone.x + MO.blastHalf && h.patrol.x1 > m.zone.x - MO.blastHalf,
+       'the hound patrols the floor directly beneath the marked landing zone');
+    ok(hc.y + PL.height < m.zone.y,
+       'that floor is below the slab: the drop reroute is priced by the hound, not by the blast');
+    ok(h.contests !== m.contests,
+       'the two threats price different routes — reroute vs denial is a real choice, ' +
+       'never double jeopardy on one line');
+  }
 }
 
 /* ================ T-011: juice — the feedback pass ==================== *
