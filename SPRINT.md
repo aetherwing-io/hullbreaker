@@ -590,6 +590,26 @@ the game resolves from the URL; scope will grow as more overlays land (T-008's
 `?g2=1` has the same shape). Filed rather than fixed here: the playtester lane
 does not edit harness `lib/`.
 
+## I-014 | bug | S3 | repro: `node tools/assets/check.mjs --root <tree whose src/ file contains `import {\n x,\n} from '../assets/generated/foo.png';`>` — exits **0**, PASS, and lists the specifier line under "game references to assets/ (runtime, not imports)" | evidence: reports/tasks/T-017/playtest.md; tools/assets/README.md §"Limitation of the import scan, measured"
+
+Found while gating T-017 (harness nit-batch, PASS): `checkGameIndependence`
+only detects a static import when the module specifier sits on the *same line*
+as the `import` keyword. A specifier pushed onto a later line evades the gate
+completely — on a throwaway fixture whose only asset reference is that import,
+`check.mjs` exits 0 and reports the import as a *runtime* reference, so the
+"the game must boot with every asset file missing" invariant would pass while
+being violated. Reproduced identically on `task/T-017 0059363` and on `main
+59a6501`: **pre-existing, not a T-017 regression** — T-017 documented the gap
+honestly in `tools/assets/README.md` and its commit message asked for triage,
+which this files. Nothing in `src/` writes that shape today (every import in
+the tree is single-line), so the exposure is future-shaped, not current. Fix is
+deliberately non-obvious and worth a moment's thought rather than a quick
+regex widen: the README's own note explains that a naive newline-crossing
+pattern can swallow a whole file between an `import` and an unrelated
+`'assets/…'` string literal and start failing legal runtime code. A bounded
+lookahead (specifier within the next N lines of an `import` with no
+intervening `;`) or a tiny statement-level scan are the sane options.
+
 ---
 
 ## Task schema
