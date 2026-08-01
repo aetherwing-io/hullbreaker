@@ -1,0 +1,28 @@
+{
+  "name": "polyp-lane-dodge",
+  "description": "ACCEPTANCE, movement answer: bait the Iris Polyp's beam and dodge every volley (?polyp=1 solo stage). Fully closed-loop — zero timed inputs: the approach is policy too (bunny-hop off each actual landing while x<52.8, air-jump on each falling edge inside the chimney shaft x 38-47 below roof height, pinned-recovery as backstop), which climbs the chimney onto the roof and descends the roof tail onto the span exactly like the old timed hops did, but keyed to the game's own state instead of literal ms values. From the span the funnel walks the bot into the locked post-mid lane only while the iris is quiet, and the moment the iris dilates (polypTell) while the bot stands in the lane it drops through the catwalk (down+jump, the game's own verb) below the band, re-mounting between volleys to re-bait. After 10.5s sim time it exits by vaulting the emplacement from the parked catwalk in a quiet window (a full jump from x<60 clears the bulb's contact circle) and runs out to the rejoin. Every polyp reaction keys off its telemetry state. EXPECTED (measured 8/8 across closed-loop tuning runs): VICTORY, kills 0, hp 3, every parked-cycle volley sweeping an EMPTY lane (bot on the deck below at fire time — the tell -> window -> answer loop). Dispatch quantization still shifts exact contact times by up to one sample tick, but with no timed inputs left there is no arrival-time fork for it to compound through — the old ~1-in-7 approach jam is gone with the timed hops that caused it. A hit DURING a parked cycle, kills>0, or a not-completed run is the regression signal.",
+  "url": "index.html?slice=traversal&polyp=1",
+  "viewport": { "width": 1280, "height": 800 },
+  "durationMs": 15000,
+  "moves": [],
+  "policy": {
+    "rules": [
+      { "when": "x<52.8", "do": { "hold": "right" } },
+      { "when": "y>5.8 && x<58.5", "do": { "hold": "right" } },
+      { "when": "x<59.5 && y<5 && !polypTell && !polypFire", "do": { "hold": "right" } },
+      { "when": "gameMs>10500", "do": { "hold": "right" } },
+
+      { "when": "grounded && x<52.8 && gameMs<10500", "do": { "tap": "jump", "holdMs": 380 } },
+      { "when": "airborne && vy<0 && x>38 && x<47 && y<10 && gameMs<10500", "do": { "tap": "jump", "holdMs": 380 } },
+      { "when": "pinned && !polypTell && !polypFire", "do": { "tap": "jump", "holdMs": 380 } },
+
+      { "when": "polypTell && grounded && y>5 && y<5.5 && gameMs<10500", "do": { "tap": "down", "holdMs": 260 } },
+      { "when": "polypTell && grounded && y>5 && y<5.5 && gameMs<10500", "do": { "tap": "jump", "holdMs": 80 } },
+      { "when": "grounded && y>8 && x>57 && !polypTell && !polypFire", "do": { "tap": "down", "holdMs": 260 } },
+      { "when": "grounded && y>8 && x>57 && !polypTell && !polypFire", "do": { "tap": "jump", "holdMs": 80 } },
+      { "when": "grounded && y<3.5 && x>57 && !polypTell && !polypFire", "do": { "tap": "jump", "holdMs": 380 } },
+
+      { "when": "gameMs>10500 && grounded && y>5 && y<5.5 && !polypTell && !polypFire", "do": { "tap": "jump", "holdMs": 380 } }
+    ]
+  }
+}

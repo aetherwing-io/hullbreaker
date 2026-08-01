@@ -44,9 +44,18 @@ REVIEW="$MAIN_ROOT/reports/tasks/$TASK/review.md"
 PLAYTEST="$MAIN_ROOT/reports/tasks/$TASK/playtest.md"
 [ -f "$REVIEW" ]   || fail "missing $REVIEW"
 [ -f "$PLAYTEST" ] || fail "missing $PLAYTEST"
-[ "$(head -1 "$REVIEW" | tr -d '[:space:]')" = "APPROVE" ] \
+# Verdict = the first bare verdict token in the file's opening lines. Tolerates
+# a leading markdown header, but a REQUEST_CHANGES/FAIL token still wins if it
+# comes first — the token order in the file is what decides.
+verdict_of() { # verdict_of <file> <ok-token> <bad-token>
+  awk -v ok="$2" -v bad="$3" 'NR<=8 {
+    gsub(/[[:space:]#*_]/, "", $0)
+    if ($0 == ok || $0 == bad) { print $0; exit }
+  }' "$1"
+}
+[ "$(verdict_of "$REVIEW" APPROVE REQUEST_CHANGES)" = "APPROVE" ] \
   || fail "reviewer verdict is not APPROVE (see $REVIEW)"
-[ "$(head -1 "$PLAYTEST" | tr -d '[:space:]')" = "PASS" ] \
+[ "$(verdict_of "$PLAYTEST" PASS FAIL)" = "PASS" ] \
   || fail "playtester verdict is not PASS (see $PLAYTEST)"
 
 # --- 5. headless gate in the worktree ---------------------------------------

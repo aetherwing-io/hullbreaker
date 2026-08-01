@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Capsule letter glyph — H</title>
+  <desc>Style study for the weapon-pickup capsule's box face, which src/render/capsules.js
+  currently draws procedurally into a 64px canvas. Palette-locked to three roles: hot-magenta
+  (three shades — chamfer body, lit rim, plate face), ink (the letter), warm-white (rivets).
+  Chunky silhouette with chamfered corners, flat-shaded, no gradients: it has to survive being
+  ~10px tall on screen at the shipped FAR view. Letterforms are rectangles, not text elements,
+  so rasterization does not depend on a font being installed.</desc>
+
+  <rect x="0" y="0" width="128" height="128" fill="#b8309b"/>
+
+  <polygon points="26,6 102,6 122,26 122,102 102,122 26,122 6,102 6,26" fill="#ff4fd8"/>
+
+  <polygon points="26,6 102,6 95,13 33,13 13,33 13,102 6,102 6,26" fill="#ff9adf"/>
+
+  <g fill="#14181e">
+    <rect x="34" y="32" width="16" height="64"/>
+    <rect x="78" y="32" width="16" height="64"/>
+    <rect x="34" y="56" width="60" height="16"/>
+  </g>
+
+  <g fill="#fff0c2">
+    <rect x="20" y="20" width="8" height="8"/>
+    <rect x="100" y="20" width="8" height="8"/>
+    <rect x="20" y="100" width="8" height="8"/>
+    <rect x="100" y="100" width="8" height="8"/>
+  </g>
+</svg>

@@ -73,9 +73,13 @@ accept:
 - [ ] before/after screenshots attached for the operator packet
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; tools/playtest run at ?view=far with screenshots
-notes: sequenced after T-004 merges (both touch render/hostiles).
+notes: sequenced after T-004 merges (both touch render/hostiles). Use
+T-015's scale-true viewer (`tools/assets/view.mjs`) and its measured
+finding (capsule = 9.6px at FAR; see checkpoint queue) as the evidence
+base; the operator's direction pick (world-space scale-up vs HUD read)
+steers the implementation.
 
-## T-004 | feature | doing | P1
+## T-004 | feature | done | P1
 
 goal: polyp turret v1 (Iris Polyp, boards 06/07) — next enemy in DESIGN's
 teach-then-combine order: locks a connector/sightline, creates target
@@ -104,7 +108,7 @@ accept:
 owner: gameplay-engineer
 verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic --out /tmp/t005-check
 
-## T-006 | feature | todo | P3
+## T-006 | feature | doing | P3
 
 goal: rib-run authored-slope movement prototype — the costed-but-unstarted
 movement-lane candidate (decisions.md entry 5): a long diagonal ribline run
@@ -118,7 +122,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; named playtest script completing the rib-run
 
-## T-007 | docs | doing | P3
+## T-007 | docs | done | P3
 
 goal: docs drift sweep — `tools/playtest/README.md` still lists "add hostiles
 to ?testapi=1" as an open hook request but the root README documents
@@ -170,7 +174,7 @@ verify: node tools/pathcheck.mjs; a new full-run playtest script (policy mode)
 notes: biggest task in the queue — split into sub-worktrees if needed;
 sequenced after T-001/T-004 merge to integrate their landings.
 
-## T-010 | art | doing | P1
+## T-010 | art | review | P1
 
 goal: palette pass — replace the neutral grey-box palette with DESIGN's ≤8
 color roles (deep teal environment, rust-orange metal, acid-green enemy
@@ -186,7 +190,7 @@ accept:
 owner: asset-artist
 verify: node tools/pathcheck.mjs; tools/playtest screenshots at ?view=far
 
-## T-011 | juice | todo | P1
+## T-011 | juice | doing | P1
 
 goal: baseline feedback pass (DESIGN dev-sequence item 4, unlocked by entry
 8): hit-stop, screen shake, muzzle flashes, impact/death particles, pickup
@@ -203,7 +207,7 @@ verify: node tools/pathcheck.mjs; smoke suite; fps sampled via ?testapi=1
 notes: DESIGN's caveat stands — after this lands, re-ask any "boring"
 verdicts, since some perceived intensity is feedback.
 
-## T-012 | audio | doing | P2
+## T-012 | audio | done | P2
 
 goal: WebAudio synth layer — procedural SFX (hit, hurt, jump, launch, pickup,
 warning, ritual snaps, weapon-per-type fire) plus wave-layered mechanical
@@ -217,7 +221,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; smoke suite; manual listen note in report
 
-## T-013 | shell | todo | P2
+## T-013 | shell | doing | P2
 
 goal: game shell — start screen (board 05's three directions are unjudged:
 build the middle "The Ship Wakes" composition as default, keep it swappable),
@@ -238,7 +242,7 @@ denial per DESIGN's enemy table, teach-then-combine after polyp.
 blocked-by: T-004 (polyp) merged and reading clean solo.
 owner: gameplay-engineer
 
-## T-015 | assets | doing | P2
+## T-015 | assets | done | P2
 
 goal: codex asset pipeline bootstrap — `tools/assets/`: a `codex exec`
 wrapper spec template, SVG→PNG rasterizer using the harness's Chrome
@@ -253,7 +257,7 @@ accept:
 owner: asset-artist
 verify: node tools/assets/check.mjs; sample round-trip committed as demo
 
-## T-016 | feature | doing | P3
+## T-016 | feature | review | P3
 
 goal: score/setback convergence toward CP4 — promote the CHARGE/THREAT
 prototype (`?score=1`) and Hull Fallback (`?fallback`) from slice prototypes
@@ -266,6 +270,22 @@ accept:
 - [ ] CP4 operator packet queued
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; scored-run playtest script
+
+## T-017 | harness | todo | P3
+
+goal: nit-batch cleanup triaged from the Inbox + T-015's review MINOR:
+(1) I-001 — stale hostiles/capsules enrichment comment in
+`tools/playtest/lib/sampler.mjs` (~43-48), plus the harness-side follow-up
+it references (read `hostiles` from the primary testapi channel now that it
+ships there); (2) I-002 — `tools/assets/check.mjs` failure-path info header
+mislabels static imports as runtime references (~186-190); (3) T-015 review
+MINOR — `tools/assets/README.md` honesty item 4 miscounts the 100x100 blend
+census (5 blends, all hot-magenta; #ffdcc5 is below the 0.5% gate).
+accept:
+- [ ] all three fixed; harness demo run unchanged; check.mjs selftest green
+- [ ] I-001/I-002 marked resolved in the Inbox (strike or annotate)
+owner: gameplay-engineer
+verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic; node tools/assets/check.mjs --selftest
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
@@ -289,6 +309,14 @@ verify: node tools/pathcheck.mjs; scored-run playtest script
   passage read at the right compression now that its fog rides the camera
   pull-back? (5) Does the altitude still feel earned on foot, with the
   breach only *revealing* it?
+- **Glyph scale at FAR (T-015 finding — decide before any glyph batch):**
+  measured at rendered scale, a 0.55-tile capsule is 9.6px tall at the
+  shipped FAR view — chamfers and rivets vanish, the letter survives as a
+  smudge (`tools/assets/reports/demo/capsule-letter-h/viewer-far.png`).
+  This is the concrete evidence for entry 7's accepted readability
+  follow-up. Candidate directions: scale world-space glyphs up, or move
+  the letter read to the HUD. Asset batches are held until this is picked;
+  T-003 implements whichever direction wins.
 - (new packets append here as tasks land: palette, juice, shell, six-face run)
 
 ## Inbox (playtester/adversarial file here; integrator triages each cycle)
@@ -298,6 +326,122 @@ verify: node tools/pathcheck.mjs; scored-run playtest script
 one-paragraph description; S1 = blocks a checkpoint or corrupts a gate,
 S2 = real defect with workaround, S3 = polish/nit.
 -->
+
+## I-001 | docs | S3 | repro: read tools/playtest/lib/sampler.mjs lines 43-48 at main (post-e7b2952) | evidence: reports/tasks/T-007/playtest.md
+
+Stale code comment found while gating T-007 (docs drift sweep): the
+hostiles/capsules enrichment comment in `tools/playtest/lib/sampler.mjs`
+still says "testapi does not expose hostiles/capsules at all as of this
+writing ... this is currently the only source for them." Half-stale since
+merge `e7b2952`: `?testapi=1`'s `telemetry()` now publishes `hostiles[]`
+(capsules remains HB-only, so that half is still true). T-007's playtest
+README correctly documents the real state and the open harness-side
+follow-up (read hostiles from the primary channel); the comment lives in
+harness *code*, so the docs-only T-007 lane rightly could not touch it.
+Fold the comment fix into that harness-side follow-up when it lands. Nit,
+no behavioral impact — the enrichment still works.
+
+## I-002 | bug | S3 | repro: node tools/assets/check.mjs --root <fixture tree with a static `import ... from "../assets/x.png"` in src/> at task/T-015 28b8ba2 | evidence: reports/tasks/T-015/playtest.md
+
+Cosmetic mislabel on check.mjs's failure path, found while gating T-015:
+`checkGameIndependence` (tools/assets/check.mjs ~lines 186-190) collects
+every `src/` line matching `assets/` into the info list, including lines
+that are static imports — so a static import is correctly raised as a
+problem (exit 1, right message) but is *also* printed under the header
+"game references to assets/ (runtime, not imports)", which contradicts
+itself. Fix is either filtering import-matched lines out of the info list
+or renaming the header ("all references"). Verdict unaffected: errors fire
+and exit codes are correct; the mislabel only appears on trees that are
+already failing.
+
+## I-003 | art | S3 | repro: polyp-facetank.json variant with durationMs 3300 --tail-ms 100 --deterministic --base-url <pinned task/T-004 32df995>, screenshot at first tell onset | evidence: tools/playtest/runs/gate-T-004-cap-tell-approach/screenshot.png (vs gate-T-004-cap-tell-parked/)
+
+Found while gating T-004 (polyp turret, PASS): the Iris Polyp's tell is a
+two-stage escalation — acid-green bulb dilating to a pale fully-open iris
+— and the pale phase is excellent at the default FAR view (highest-contrast
+object on screen). But the first ~300ms of the ~800ms tell reads as only a
+small notch in the green bulb at FAR; nearly a third of the reaction window
+carries little visual signal at the shipped camera. Not a blocker (the
+pale phase plus the 450ms beam make the cycle readable, and operator
+question 5 in the T-004 evidence packet already asks about silhouette
+legibility) — fold into T-003's FAR-tells readability pass, whose scope
+predates the polyp and currently names only wasp/hound tells and capsule
+glyphs. T-003 is already sequenced after T-004's merge, so this is a
+scope note, not new work.
+
+## I-004 | art | S3 | repro: any run at default palette on task/T-010 0c4c003; compare src/render/hostiles.js color reads vs src/render/palette.js CONCEPT.wasp/carrier/hound tokens, or board 01's wasps vs artifacts/palette-v1/sixface-action--pair.png | evidence: reports/tasks/T-010/playtest.md; artifacts/palette-v1/sixface-action--pair.png
+
+Found while gating T-010 (palette pass, PASS): the ENEMY acid-green role
+lands only partially — `src/render/hostiles.js` still reads
+`CONFIG.palette.wasp/carrier/hound/houndTell/houndCharge` directly (the
+muted grey-box greens, e.g. wasp 0x7cc47c), not the brighter acid tokens
+palette.js's CONCEPT table authors (wasp 0x9ce23e, enemyGlow 0x9dff3a).
+Deliberate lane fence, documented in palette.js's FOLLOW-UP header note:
+hostiles.js was in-flight under T-004 when T-010 branched, so the repoint
+is deferred to after that merge. Threat readability holds in the FAR
+side-by-sides (green still separates from teal/rust), but the enemies do
+not yet reach board 01/10's acid intensity, and the "one palette module,
+not scattered hex literals" acceptance is one file short. One-line repoint
+per the palette.js note (tokens already authored and pathcheck-asserted);
+fold into the post-T-004 integration or T-003's FAR-tells pass.
+
+## I-005 | bug | S3 | repro: on task/T-012 26de15f, boot any URL and evaluate `window.HB.audio`/`audioSnapshot` in the console or a page.evaluate — undefined; grep shows src/ui/audio.js:545 exports it and nothing imports it | evidence: reports/tasks/T-012/playtest.md; tools/playtest/runs/gate-T-012-audio-probe/layer-probe.json
+
+Found while gating T-012 (WebAudio synth layer, PASS): `audioSnapshot()`
+is exported from `src/ui/audio.js` and its own comment calls it a
+"read-only debug surface (browser console)", but nothing imports it and it
+is never attached to `window`/`HB`. With no build step and ES-module
+scoping, an exported-but-unimported symbol is unreachable from a console
+or a harness probe, so the documented debug surface does not exist in
+practice. Zero player-facing impact; the cost is on QA and on the operator
+debugging ambience — to get the layer count this gate had to wrap
+`AudioParam.prototype.linearRampToValueAtTime` and infer engaged layers
+from ramp batches, evidence that `audioSnapshot()` already computes
+exactly (`enabled/unlocked/contextState/dead/layers/voices`). Fix is one
+line — publish it on the existing debug handle (`HB.audio =
+audioSnapshot`, alongside the other read-only getters in src/main.js) —
+or drop the "browser console" claim from the comment. Prefer publishing:
+it would also let a future harness policy predicate gate on ambience
+state.
+
+## I-006 | bug | S1 | repro: any default-run (non-fixture) playtest trace, e.g. `node run.mjs .../scripts/scored-run-baseline.json --deterministic --base-url <pinned task/T-016 da29e86>` — report says `deaths: 0, attempts: 0` while the run spent 2 stock lives | evidence: tools/playtest/runs/gate-T-016-scored-baseline/{report.json,screenshot.png}; reports/tasks/T-016/playtest.md
+
+Found while gating T-016 (score/setback promotion, FAIL): the harness has
+no working death counter for default six-face runs, and T-016's new
+README honesty note directs readers to the broken one. `metrics.deaths`
+and `outcome.attempts` both derive from `sliceStats.attempts`, which
+`src/main.js:193` increments only inside `if (ACTIVE_FIXTURE)` — so every
+default-run report reads zero regardless of what happened. The note added
+at `tools/playtest/README.md` ("the default run counts `resetGame` calls,
+not deaths — use `metrics.deaths`/`metrics.score.setbacks` for failure
+counts") is wrong on both halves: the run counts nothing, and
+`metrics.deaths` is the same blind counter. Verified against a real trace:
+`gate-T-016-scored-baseline` shows two respawn signatures (t=19080 and
+t=27412 ms, hp 1→3 with x snapping 89.3→51.6, `setbacks` unchanged) and
+ends at HUD `×1` (two of three lives spent), while the report says
+`deaths: 0`. S1 because default-run scripts are new with T-016 and every
+future gate that follows this note will report zero deaths for runs that
+died. Fix: correct the note to say no death counter exists on default-run
+traces, and name what does work — `score.setbacks` on fallback-armed runs,
+or a lives read (`lives` is on `HB.snapshot()` but not on the frozen
+`testapi` channel, so publishing it there is the clean follow-up hook
+request).
+
+## I-007 | docs | S2 | repro: compare `docs/proposals/2026-07-cp4-default-run-score-setback.md` §Evidence baseline row against its own artifact `tools/playtest/runs/scored-run-baseline-1785557898457/` at task/T-016 da29e86 | evidence: reports/tasks/T-016/playtest.md; tools/playtest/runs/gate-T-016-scored-baseline/screenshot.png
+
+Found while gating T-016 (FAIL): the CP4 recommendation's A/B table says
+the flags-off baseline ran "0 setbacks, 4 hits, 0 deaths". It died twice.
+The builder's own committed baseline artifact shows hp 3→2→1→3 twice with
+the position snapping backward each time, and its screenshot ends at HUD
+`RIG ▰▰▰ ×1` — two of three stock lives spent; an independent gate run
+reproduced it exactly. Root cause is I-006 (the report's `deaths` field is
+structurally 0 outside fixtures), so this is a propagation, not an
+invention. The correction makes the packet stronger, not weaker: the real
+contrast is flags-off losing 2 lives and 13.6 tiles of ground (x 89.25 →
+75.65) versus flags-on losing 0 lives and no forward progress (final x =
+max x = 89.25, 3 setbacks absorbed) — which is also concrete evidence for
+the packet's own question 2 about whether a setback that costs no forward
+ground punishes enough.
 
 ---
 

@@ -81,6 +81,7 @@ import './render/mods.js';
 import './render/hook.js';
 import { resetHudMessage, updateHUD } from './ui/hud.js';
 import './ui/overlay.js';
+import './ui/audio.js';
 
 // the sim asks for a restart through this hook (fixture fast retry)
 installHost({ resetGame: () => resetGame() });
@@ -335,9 +336,10 @@ function telemetry() {
     // Additive (adversarial-lane request): the live hostile rows, so a bot
     // policy can read what it is fighting from the frozen channel instead of
     // enriching from window.HB. Same fields and same meaning HB.snapshot()
-    // publishes, including houndframe's prowl/tell/charge/skid/tumble `state`
-    // and the mock-3D `materialized` flag (a hostile still condensing out of
-    // the tower depth has no hitbox).
+    // publishes, including houndframe's prowl/tell/charge/skid/tumble `state`,
+    // the polyp's closed/tell/fire/vent `state`, and the mock-3D
+    // `materialized` flag (a hostile still condensing out of the tower depth
+    // has no hitbox).
     hostiles: hostiles.map((e) => ({
       id: e.id, kind: e.kind, state: e.state, dir: e.dir,
       x: e.x, y: e.y, hp: e.hp, materialized: gameMs >= e.enterUntil,

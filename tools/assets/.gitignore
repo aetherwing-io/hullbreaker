@@ -1,0 +1,6 @@
+# Dev-only deps and ephemeral run artifacts. Unlike tools/playtest, PNGs are
+# NOT blanket-ignored here: the committed demo round-trip under reports/demo/
+# includes its viewer screenshot on purpose — an asset pipeline whose evidence
+# is invisible is not evidence.
+node_modules/
+runs/
