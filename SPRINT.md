@@ -235,7 +235,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; smoke suite; ?selftest=1 via harness
 
-## T-014 | feature | doing | P2
+## T-014 | feature | done | P2
 
 goal: spore mortar (Seed-Pod Tripod, boards 06/07) — delayed landing-zone
 denial per DESIGN's enemy table (line 233: "Denies intended landing zones
