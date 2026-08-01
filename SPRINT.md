@@ -445,6 +445,22 @@ or a lives read (`lives` is on `HB.snapshot()` but not on the frozen
 `testapi` channel, so publishing it there is the clean follow-up hook
 request).
 
+**RESOLVED (harness half) — verified by the T-016 re-gate at `a08753b`.**
+`metrics.lives` now derives stock deaths from the HUD `×N` readout on every
+default-run trace (my fresh baseline run: `deaths: 0` but `lives.spent: 2`,
+losses at 19.1 s / 27.4 s with `x 89.25 → 51.58`), every report carries
+`deathsScope` warning that `deaths`/`outcome.attempts` are fixture-only, and
+the README note now points at `lives.spent` + `score.setbacks` instead of the
+blind counter. Game-side `sliceStats.attempts` is still fixture-only by
+design; publishing `player.lives`/`hp` on the frozen `?testapi` channel is
+filed as playtest README hook request #9. **Residual, S3:** `outcome.result`
+still cannot read `died` on a default-run trace — `computeOutcome`
+(`tools/playtest/lib/metrics.mjs:285`) keys off the same fixture-only
+`attempts`, so a run that spent two lives is labeled `not-completed` on the
+first line of its `summary.md`, and the corrected note does not name
+`outcome.result` among the fixture-only fields. One clause in that note, or
+deriving `died` from `lives.spent` when attempts are unavailable, closes it.
+
 ## I-007 | docs | S2 | repro: compare `docs/proposals/2026-07-cp4-default-run-score-setback.md` §Evidence baseline row against its own artifact `tools/playtest/runs/scored-run-baseline-1785557898457/` at task/T-016 da29e86 | evidence: reports/tasks/T-016/playtest.md; tools/playtest/runs/gate-T-016-scored-baseline/screenshot.png
 
 Found while gating T-016 (FAIL): the CP4 recommendation's A/B table says
@@ -460,6 +476,31 @@ contrast is flags-off losing 2 lives and 13.6 tiles of ground (x 89.25 →
 max x = 89.25, 3 setbacks absorbed) — which is also concrete evidence for
 the packet's own question 2 about whether a setback that costs no forward
 ground punishes enough.
+
+**RESOLVED — verified by the T-016 re-gate at `a08753b`.** The baseline row
+now reads "died twice, 2 of 3 stock lives spent (19.1 s / 27.3 s), each
+respawn snapping x 89.25 → ~51.6, ends HUD ×1, final x 75.48 vs max x 89.25,
+4 hits survived", and a correction box states the cause. I recomputed every
+number in both headline rows straight from the committed traces
+(`tools/playtest/reports/cp4/scored-run{,-baseline}/report.json`) — all agree,
+and both rows now cite committed artifacts instead of gitignored `runs/`
+paths. Reproduced independently: `tools/playtest/runs/gate2-T-016-baseline-wtharness/`.
+
+## I-008 | docs | S3 | repro: compare `docs/proposals/2026-07-cp4-default-run-score-setback.md` §Evidence rows 3–5 against their only committed artifacts (`tools/playtest/reports/cp4/{scored-run-nojump,ceiling-score-only,fallback-only}/summary.md`) at task/T-016 a08753b | evidence: reports/tasks/T-016/playtest.md; tools/playtest/runs/gate2-T-016-nojump/report.json
+
+Found while re-gating T-016 (PASS): rows 1–2 of the CP4 evidence table are
+now fully checkable against committed `report.json` traces, but rows 3–5
+still cite setback timestamps (3.2 / 22.4 / 27.4 / 27.8 s), final x (59.65,
+31.65) and the `GAME_OVER` / "SIGNAL LOST" terminal state, none of which
+appear in the only artifact committed for those runs — their `summary.md`
+carries lives, stall and score lines but neither final x nor setback times,
+and no `report.json` is committed for them. **This is checkability, not
+accuracy:** an independent gate run of row 3's script reproduced it within
+the documented variance (stalled; setbacks 3.2 / 22.4 / 27.1 s; 1 life spent
+at 15.9 s; final x 59.649; protoScore −16.5 real). Committing
+`scored-run-nojump/report.json`, or adding final x + setback times to those
+three summaries, makes the whole table checkable — worth doing before CP4 is
+judged, since evidence honesty is this packet's whole point. Non-blocking.
 
 ---
 
