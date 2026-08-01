@@ -737,6 +737,29 @@ regression signals (stall short of the rejoin, hp < 3, no mortar state change)
 as the actual contract, since those are what held. No runtime impact, no
 change to the policy rules.
 
+## I-018 | bug | S3 | repro: `cd tools/playtest && node run.mjs <any script whose FIRST event is at t>0> --deterministic --max-runtime-ms 9000 --url "http://127.0.0.1:<pinned task/T-013 d3c8d28>/index.html?slice=traversal&shell=title"` — zero events dispatch, `meta.dispatchJitterMsAvg: null`, no `actualDispatchMs` on any event record, every sample `state: "MENU"` with `gameMs: 0`, outcome `not-completed`, exit 0 | evidence: tools/playtest/runs/gate-T-013-title-det-probe/report.json; reports/tasks/T-013/playtest.md
+
+Found while gating T-013 (game shell, PASS — the shell itself is clean: no
+committed script's input is eaten, first-input latency and F7 retry recovery
+are unchanged against a merge-base control). New dead state for
+`--deterministic`: the mode dispatches an event at the first tick where
+`sample.gameMs >= t`, and the shell's `MENU` state holds a built-but-frozen
+run, so `gameMs` stays at 0 until a key starts the run — but the key that
+would start it is itself gated on that clock. A script whose first event is at
+`t = 0` fires on the first tick and everything proceeds normally (proved:
+`mid-route` completes from the title screen, `runs/gate-T-013-mid-fromtitle`),
+so this only bites a script with a non-zero first event. The harness README
+already documents the *benign* half of this behaviour ("an event scheduled
+during a pause/retry freeze correctly waits for gameplay to resume"); MENU is
+the case where waiting never ends. S3, not S2: `?shell=title` is a
+capture-only flag and every committed script autostarts under `?testapi=1`, so
+nothing shipped can reach it — but the failure is quiet (exit 0, plausible-
+looking `not-completed`) and would read as a game bug to the next agent who
+forces the title for a screenshot. Cheapest fixes, for triage: treat a
+`MENU`-state sample as "clock not started" and dispatch the pending head event
+by wall clock, or note the constraint in the harness README's deterministic
+section next to the pause/retry paragraph it already has.
+
 ---
 
 ## Task schema
