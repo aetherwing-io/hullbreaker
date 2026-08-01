@@ -72,9 +72,10 @@ const PREDICATES = {
   grounded(sample) { return sample.grounded === true; },
   // Houndframe telegraph (prowl -> tell -> charge -> skid/tumble,
   // src/sim/hostiles.js): `tell` is the pre-commitment plant, `charge` is
-  // the committed lunge. Requires hostiles telemetry, currently only
-  // carried by window.HB (see lib/sampler.mjs) — testapi doesn't expose
-  // hostiles as of this writing.
+  // the committed lunge. Requires hostiles telemetry, which both channels
+  // now carry: the sampler reads `hostiles` from whichever channel is
+  // primary (testapi included, since e7b2952) and falls back to window.HB
+  // only when the primary didn't have it (see lib/sampler.mjs).
   houndTell(sample) {
     return Array.isArray(sample.hostiles) &&
       sample.hostiles.some((h) => h.kind === 'hound' && h.state === 'tell');

@@ -1,0 +1,22 @@
+{
+  "name": "g2-neck-flip-pressure",
+  "description": "The G2 gate with its authored pressure live (?g2=1, enemies on): the same closed-loop route as g2-neck-flip plus the reflexes a CONTESTED crossing actually needs. Evidence run for the fixture's spawn table — the houndframe must materialize on the low joint-collar floor and pace its authored patrol into the gate, the apex wasp must contest the chimney, and the ritual must still clear the arena and commit. Combat outcome (hits taken, retries) is evidence for the packet, not a gate: the machine only asserts the crossing. Two rules beyond the position windows, both fixed after the integrator's merged-tree run cascaded (9 attempts / 7 falls, every fall at x=101.65). (1) KNOCKBACK RECOVERY, `!grounded && vx<-1`: the wasp authored at x106 lane 4.2 (contesting the r3 scapular plate) has a dive envelope that reaches back across the 100-102 teach gap, which is the wasp's DESIGN job — 'contests open crossings and predictable jump arcs'. When that dive connects mid-arc, CONFIG.player.knockbackX=6 reverses RIG over the pit, and the game's own answer is the one air jump it still holds (airJumps=1) under 1200ms of iframes. This script only ever holds right, so an airborne negative vx IS knockback; without the rule, every contested crossing that lands a hit becomes a fall. (2) `pinned` SCOPED TO THE DARE POCKET, x125.5-130.5: pinned is grounded + |vx|<0.3 + a held direction (lib/policy.mjs), which is also true on the first tick of every respawn — unscoped it fired a jump out of the spawn point on each retry, RIG crossed the x97.2-99.4 window airborne, the first gap jump never fired, and one death became an unrecoverable identical-fall loop. The rule only ever existed as the 126-129 underside-pocket escape (see g2-neck-flip), so it now says so in its own condition.",
+  "url": "index.html?g2=1",
+  "durationMs": 20000,
+  "moves": [
+    { "hold": "right", "fromMs": 0, "toMs": 19800 },
+    { "hold": "fire", "fromMs": 150, "toMs": 19800 }
+  ],
+  "policy": {
+    "rules": [
+      { "when": "grounded && x>97.2 && x<99.4", "do": { "tap": "jump", "holdMs": 280 } },
+      { "when": "grounded && x>107.2 && x<109.4", "do": { "tap": "jump", "holdMs": 280 } },
+      { "when": "grounded && x>117.2 && x<119.4", "do": { "tap": "jump", "holdMs": 280 } },
+      { "when": "grounded && x>123.0 && x<125.4", "do": { "tap": "jump", "holdMs": 300 } },
+      { "when": "grounded && x>175.2 && x<177.4", "do": { "tap": "jump", "holdMs": 280 } },
+      { "when": "!grounded && vx<-1", "do": { "tap": "jump", "holdMs": 240 } },
+      { "when": "houndTell && grounded", "do": { "tap": "jump", "holdMs": 240 } },
+      { "when": "pinned && x>125.5 && x<130.5", "do": { "tap": "jump", "holdMs": 260 } }
+    ]
+  }
+}
