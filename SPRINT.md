@@ -136,7 +136,7 @@ accept:
 owner: docs
 verify: grep the claims against src/main.js telemetry + README
 
-## T-008 | feature | doing | P2
+## T-008 | feature | review | P2
 
 goal: G2 neck access-plate flip gate fixture per the greybox-map proposal
 (`docs/proposals/2026-07-meridian-monster-greybox-map.md` §G2), building on
@@ -190,7 +190,7 @@ accept:
 owner: asset-artist
 verify: node tools/pathcheck.mjs; tools/playtest screenshots at ?view=far
 
-## T-011 | juice | todo | P1
+## T-011 | juice | doing | P1
 
 goal: baseline feedback pass (DESIGN dev-sequence item 4, unlocked by entry
 8): hit-stop, screen shake, muzzle flashes, impact/death particles, pickup
@@ -207,7 +207,7 @@ verify: node tools/pathcheck.mjs; smoke suite; fps sampled via ?testapi=1
 notes: DESIGN's caveat stands — after this lands, re-ask any "boring"
 verdicts, since some perceived intensity is feedback.
 
-## T-012 | audio | doing | P2
+## T-012 | audio | done | P2
 
 goal: WebAudio synth layer — procedural SFX (hit, hurt, jump, launch, pickup,
 warning, ritual snaps, weapon-per-type fire) plus wave-layered mechanical
@@ -221,7 +221,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; smoke suite; manual listen note in report
 
-## T-013 | shell | todo | P2
+## T-013 | shell | doing | P2
 
 goal: game shell — start screen (board 05's three directions are unjudged:
 build the middle "The Ship Wakes" composition as default, keep it swappable),
@@ -257,7 +257,7 @@ accept:
 owner: asset-artist
 verify: node tools/assets/check.mjs; sample round-trip committed as demo
 
-## T-016 | feature | doing | P3
+## T-016 | feature | review | P3
 
 goal: score/setback convergence toward CP4 — promote the CHARGE/THREAT
 prototype (`?score=1`) and Hull Fallback (`?fallback`) from slice prototypes
@@ -394,6 +394,64 @@ not yet reach board 01/10's acid intensity, and the "one palette module,
 not scattered hex literals" acceptance is one file short. One-line repoint
 per the palette.js note (tokens already authored and pathcheck-asserted);
 fold into the post-T-004 integration or T-003's FAR-tells pass.
+
+## I-005 | bug | S3 | repro: on task/T-012 26de15f, boot any URL and evaluate `window.HB.audio`/`audioSnapshot` in the console or a page.evaluate — undefined; grep shows src/ui/audio.js:545 exports it and nothing imports it | evidence: reports/tasks/T-012/playtest.md; tools/playtest/runs/gate-T-012-audio-probe/layer-probe.json
+
+Found while gating T-012 (WebAudio synth layer, PASS): `audioSnapshot()`
+is exported from `src/ui/audio.js` and its own comment calls it a
+"read-only debug surface (browser console)", but nothing imports it and it
+is never attached to `window`/`HB`. With no build step and ES-module
+scoping, an exported-but-unimported symbol is unreachable from a console
+or a harness probe, so the documented debug surface does not exist in
+practice. Zero player-facing impact; the cost is on QA and on the operator
+debugging ambience — to get the layer count this gate had to wrap
+`AudioParam.prototype.linearRampToValueAtTime` and infer engaged layers
+from ramp batches, evidence that `audioSnapshot()` already computes
+exactly (`enabled/unlocked/contextState/dead/layers/voices`). Fix is one
+line — publish it on the existing debug handle (`HB.audio =
+audioSnapshot`, alongside the other read-only getters in src/main.js) —
+or drop the "browser console" claim from the comment. Prefer publishing:
+it would also let a future harness policy predicate gate on ambience
+state.
+
+## I-006 | bug | S1 | repro: any default-run (non-fixture) playtest trace, e.g. `node run.mjs .../scripts/scored-run-baseline.json --deterministic --base-url <pinned task/T-016 da29e86>` — report says `deaths: 0, attempts: 0` while the run spent 2 stock lives | evidence: tools/playtest/runs/gate-T-016-scored-baseline/{report.json,screenshot.png}; reports/tasks/T-016/playtest.md
+
+Found while gating T-016 (score/setback promotion, FAIL): the harness has
+no working death counter for default six-face runs, and T-016's new
+README honesty note directs readers to the broken one. `metrics.deaths`
+and `outcome.attempts` both derive from `sliceStats.attempts`, which
+`src/main.js:193` increments only inside `if (ACTIVE_FIXTURE)` — so every
+default-run report reads zero regardless of what happened. The note added
+at `tools/playtest/README.md` ("the default run counts `resetGame` calls,
+not deaths — use `metrics.deaths`/`metrics.score.setbacks` for failure
+counts") is wrong on both halves: the run counts nothing, and
+`metrics.deaths` is the same blind counter. Verified against a real trace:
+`gate-T-016-scored-baseline` shows two respawn signatures (t=19080 and
+t=27412 ms, hp 1→3 with x snapping 89.3→51.6, `setbacks` unchanged) and
+ends at HUD `×1` (two of three lives spent), while the report says
+`deaths: 0`. S1 because default-run scripts are new with T-016 and every
+future gate that follows this note will report zero deaths for runs that
+died. Fix: correct the note to say no death counter exists on default-run
+traces, and name what does work — `score.setbacks` on fallback-armed runs,
+or a lives read (`lives` is on `HB.snapshot()` but not on the frozen
+`testapi` channel, so publishing it there is the clean follow-up hook
+request).
+
+## I-007 | docs | S2 | repro: compare `docs/proposals/2026-07-cp4-default-run-score-setback.md` §Evidence baseline row against its own artifact `tools/playtest/runs/scored-run-baseline-1785557898457/` at task/T-016 da29e86 | evidence: reports/tasks/T-016/playtest.md; tools/playtest/runs/gate-T-016-scored-baseline/screenshot.png
+
+Found while gating T-016 (FAIL): the CP4 recommendation's A/B table says
+the flags-off baseline ran "0 setbacks, 4 hits, 0 deaths". It died twice.
+The builder's own committed baseline artifact shows hp 3→2→1→3 twice with
+the position snapping backward each time, and its screenshot ends at HUD
+`RIG ▰▰▰ ×1` — two of three stock lives spent; an independent gate run
+reproduced it exactly. Root cause is I-006 (the report's `deaths` field is
+structurally 0 outside fixtures), so this is a propagation, not an
+invention. The correction makes the packet stronger, not weaker: the real
+contrast is flags-off losing 2 lives and 13.6 tiles of ground (x 89.25 →
+75.65) versus flags-on losing 0 lives and no forward progress (final x =
+max x = 89.25, 3 setbacks absorbed) — which is also concrete evidence for
+the packet's own question 2 about whether a setback that costs no forward
+ground punishes enough.
 
 ---
 
