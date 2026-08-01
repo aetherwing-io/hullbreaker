@@ -457,7 +457,11 @@ Shipped by T-009 in `src/pure/lattice.js`, on top of the seeded chunk stream:
   every bob phase, and the walk out to the tip and back costs 0.43s — 1.83
   tiles of edge advance against 14 tiles of authored daylight, leaving 12.17
   where ≥6 is required. The *dare* itself is not cancelled, only unhooked from
-  this pocket: it is parked as its own concept (SPRINT T-021).
+  this pocket: it is unparked as its own concept in `decisions.md` entries 10
+  and 11 (SPRINT T-021). Those entries also aim this shape somewhere else —
+  the main run's optional content is to become a **fork** read at speed, whose
+  rewarding branch rejoins ahead and whose wrong branch dead-ends — so the
+  backward shelf spur described above is what ships today, not the end state.
 - **Houndframe stations** (faces 2+, `decisions.md` entry 6): one per face, a
   3-column patrol on that face's pocket landing, with the pocket's own mid
   lane overhead as the answer. Ambient stations are non-gating — a ground
