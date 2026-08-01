@@ -40,7 +40,8 @@ import {
   releaseAllKeys,
 } from './sim/input.js';
 import {
-  activeScrollEnd, activeScrollSpeed, END_SCROLL, levelData, unbuildFutureFaces,
+  activeScrollEnd, activeScrollSpeed, END_SCROLL, levelData, pockets,
+  unbuildFutureFaces,
 } from './sim/level.js';
 import { setState, state } from './sim/state.js';
 import {
@@ -265,6 +266,12 @@ function resetGame() {
     }
     scoreRunStart(CONFIG.gen.seed, ACTIVE_SLICE.id, ACTIVE_SLICE.pace.id);
   } else {
+    // T-009: the six-face run's authored pickups — one weapon capsule per
+    // face, bobbing over that pocket's shelf tip out across the chasm. Free
+    // (decisions.md entry 9); same 'fixed' capsule contract the traversal
+    // fixture's pocket uses.
+    for (const p of pockets)
+      spawnCapsule(p.reward.kind, p.reward.letter, p.reward.x, p.reward.y, p.reward.mode);
     scoreRunStart(CONFIG.gen.seed, 'six-face', 'normal');
   }
   resetHudMessage();                     // keep the HUD write cache coherent
@@ -542,7 +549,8 @@ window.HB = Object.freeze({
   // view-scale experiment (?view=near|mid|far, CONFIG.viewScales): resolved
   // id/label/depthMult plus the camera depth it actually produced this frame.
   view: () => ({ ...CONFIG.viewScales[VIEW_ID], cameraDepth: activeCameraDepth() }),
-  // ?g1=1 (limb-turn experiment) — render-mode facts only, deliberately OUTSIDE
+  // static-anatomy reveal (default since T-009; ?zip=1 restores the legacy
+  // brick-slam) — render-mode facts only, deliberately OUTSIDE
   // the frozen telemetry channel so a default-vs-g1 testapi trace comparison
   // has nothing mode-dependent in it to explain away.
   g1: IS_G1 ? { pieces: limbPieces, fog: { ...CONFIG.limb.fog } } : null,

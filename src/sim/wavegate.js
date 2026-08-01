@@ -63,7 +63,9 @@ function spawnGateWave(k) {              // deterministic: no rng in wave layout
 // starts on the exact frame the last hostile dies — the snap IS the stinger.
 export function onHostileRemoved() {
   const c = activeCorner();
-  if (c && c.state === 'gate' && !hostiles.some(e => ENEMY[e.kind].gating)) {
+  // `e.gating` is the kind's value unless the spawn row opted out (T-009's
+  // ambient houndframe stations do — see src/sim/hostiles.js).
+  if (c && c.state === 'gate' && !hostiles.some(e => e.gating)) {
     c.state = 'turning';
     c.tStart = gameMs;
   }

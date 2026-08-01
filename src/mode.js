@@ -79,14 +79,28 @@ export const ACTIVE_SLICE = IS_TRAVERSAL_SLICE
 // fixture (its run window, scroll floor, spawn point, fast retry) reads this
 // one, so a second fixture does not have to re-plumb the composition root.
 export const ACTIVE_FIXTURE = IS_TRANSFORM_SLICE ? TRANSFORM_FIXTURE : ACTIVE_SLICE;
-// ?g1=1 — the G1 limb-turn experiment (docs/proposals/
-// 2026-07-meridian-monster-greybox-map.md, "smallest implementation
-// experiment"): the SIX-FACE run, unchanged in every simulated respect, with
-// the corner ritual re-read as a camera orbit around a static faceted leg.
-// Render-only: it selects the limb bake (src/render/limb.js), its atmosphere,
-// and the suppression of the brick-slam zipper's *visuals*. The fixtures own
-// their own transitions, so the flag is a normal-run flag only.
-export const IS_G1 = ACTIVE_FIXTURE === null && QUERY.get('g1') === '1';
+/* The static-anatomy corner reveal — DEFAULT since T-009 (six-face
+   integration). Formerly the opt-in G1 limb-turn experiment (?g1=1,
+   docs/proposals/2026-07-meridian-monster-greybox-map.md): the SIX-FACE run,
+   unchanged in every simulated respect, with the corner ritual re-read as a
+   camera orbit around a static faceted leg. Render-only — it selects the limb
+   bake (src/render/limb.js), its atmosphere, and the suppression of the
+   brick-slam zipper's *visuals*; the sim's inert-until-crossed gating is
+   untouched in both modes.
+
+   decisions.md entry 3 is why it is the default: "the creature's anatomy is
+   monumental and static during a transition — RIG and the camera are what
+   move ... never assembled, slammed, or articulated into place." The zipper
+   is RETIRED FROM THE WORLD, NOT DELETED (that entry's July 30 addendum):
+   ?zip=1 still plays the brick-slam reveal, so the choreography stays
+   playable and extractable for the traps/emplacements lane.
+
+   The constant keeps its old name because five modules import it (three of
+   them owned by other lanes this cycle) — the meaning is in this comment and
+   in the flag, not in the identifier. The fixtures own their own transitions,
+   so this is a normal-run flag only. */
+export const ZIPPER_REVEAL = QUERY.get('zip') === '1' || QUERY.get('g1') === '0';
+export const IS_G1 = ACTIVE_FIXTURE === null && !ZIPPER_REVEAL;
 // ?score=1 arms the CHARGE/THREAT prototype; ?fallback=0 restores the old
 // ROUTE LOST retry instead of HULL FALLBACK tier 1.
 export const SCORE_ENABLED = QUERY.get('score') === '1';

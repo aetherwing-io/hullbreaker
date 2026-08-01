@@ -16,7 +16,7 @@ import { player, P } from '../sim/player.js';
 import { scoreNotchNow, scoreThreat } from '../sim/score.js';
 import { currentWeapon, weaponDef } from '../sim/weapons.js';
 import { mods } from '../sim/mods.js';
-import { hostiles, ENEMY, kills } from '../sim/hostiles.js';
+import { hostiles, kills } from '../sim/hostiles.js';
 import { activeCorner } from '../sim/wavegate.js';
 import { hookSnapshot } from '../sim/hook.js';
 import { flowSnapshot } from '../sim/flow.js';
@@ -137,7 +137,9 @@ export function updateHUD() {
       (SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length + ' HOSTILES' : 'MOVEMENT ONLY');
   } else if (c && c.state === 'gate') {
     let gaters = 0;
-    for (const e of hostiles) if (ENEMY[e.kind].gating) gaters++;
+    // per-body, not per-kind: an ambient station that cannot hold the gate
+    // must not be counted in the number the player is told to clear (T-009)
+    for (const e of hostiles) if (e.gating) gaters++;
     tc = 'WAVE ' + c.k + '/' + CONFIG.path.faces + ' — ' + gaters + ' HOSTILES';
   } else if (c && c.state === 'turning' && gameMs - c.tStart < CONFIG.waves.clearMsgMs) {
     tc = 'CLEAR';
