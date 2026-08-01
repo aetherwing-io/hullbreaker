@@ -167,9 +167,19 @@ parens, and never `eval()`/`new Function()`. Each clause is either:
     landing zone is marked from the moment the pod launches, so
     `mortarMarked` is the "that patch of floor is spoken for" signal and
     `mortarBurst` is the only window that actually damages.
+  - `targetLevel`, `targetDiag`, `targetVert` — **8-way aim, as reflexes**
+    (T-018, `lib/threat.mjs`). True when at least one materialized hostile
+    sits within one hit radius of the ray the gun would fire along if the
+    script held, respectively: nothing vertical (level shot), `up` plus the
+    direction it is already holding (the 45° ray), or `up` alone (straight
+    up). Sugar over `threat.levelN/diagN/vertN` below — write the comparison
+    yourself if you want "two or more".
   - `victory` — the traversal-slice VICTORY overlay or `state`.
 - a bare sample field, optionally negated, tested for truthiness (e.g. `grounded`, `!grounded`).
 - a numeric comparison against a sample field: `field OP number`, `OP` one of `> >= < <= == !=` (e.g. `x>44`, `hp<=1`).
+- a numeric comparison against a **relative-geometry** field: `threat.*`
+  (where a hostile is, relative to RIG's gun) or `terrain.*` (where the floor
+  ends in front of RIG) — both described in the next section.
 
 A field that never appears in any sample (a typo, or a field this
 slice/fidelity doesn't carry) evaluates its clause to `false` rather than
@@ -195,6 +205,101 @@ genuinely ambiguous, same philosophy as the double-edge check on the static
 timeline. (`tap` rules aren't checked against the static list — a momentary
 press coexisting with a static tap on the same code is unusual but not
 structurally ambiguous the same way.)
+
+### Relative geometry: `threat.*` and `terrain.*` (T-018)
+
+Everything above answers "*is* something happening" — is any hound
+telegraphing, is any polyp open. Nothing answered "*where*". `sample.hostiles`
+is an array in spawn order, so the dotted-path lookup could only reach a
+meaningless fixed index (`hostiles.0.state`), and the sample carried no
+terrain at all. Two things fell out of that hole, and the full-run script that
+exposed them (`docs/playtests/2026-08-gate-fight-harness.md`) hit both:
+
+- **The bot could not aim.** The game's aim is 8-way and comes from the held
+  direction keys (`computeAim`, `src/sim/player.js`). Without a way to name
+  where a target is, a policy can only hold `up` always or never — so every
+  policy before this one fired level shots exclusively. Against the shipped
+  wave-gate composition (lanes 2.6 / 4.6 / 7.2 above the deck) a level shot
+  from the standing muzzle (1.05), or even from a jump apex (+2.72), cannot
+  reach the mid or high lane at all: the bot could only shoot back at a wasp
+  that was already diving into its face.
+- **The bot could not see the floor.** `pinned` reports a wall you are jammed
+  against; nothing reported a hole you are about to run into, so a gap could
+  only be jumped by a fixed timestamp — the exact thing policy mode exists to
+  replace.
+
+Both are closed by *projecting the rows the sampler already polls* into scalar
+fields the existing `field OP value` grammar can compare. No new operators, no
+`||`, no parens, no `eval`, no lookahead, no memory between ticks: the reflex
+still has to be spelled out in the script, and every threshold it uses stays
+visible there. (Which is why there is deliberately no `diveIncoming` predicate
+with a baked-in distance — write `threat.diveDist<4` and own the 4.)
+
+`threat.*` — derived once per tick in `lib/threat.mjs`, from the muzzle line
+(`player.y + 1.05`), skipping hostiles still condensing (`materialized:
+false`, which have no hitbox in the sim either):
+
+| field | meaning |
+| --- | --- |
+| `threat.n` | materialized hostiles in the sample, any distance |
+| `threat.dist` / `dx` / `dy` / `adx` | nearest hostile: distance, signed x offset, signed offset from the firing line, `\|dx\|` |
+| `threat.fwd` | that one's `dx` in gun terms: `>0` = in front of the muzzle |
+| `threat.slope` | that one's `dy/\|dx\|` — the **angle**, which is what an 8-way gun actually picks between. ~0 = level, ~1 = the 45° ray, big = overhead (capped at ±9, never `Infinity`) |
+| `threat.kind` / `state` | that one's kind/state, for `==`/`!=` |
+| `threat.levelN` / `diagN` / `vertN` | how many sit on the level / 45° / straight-up ray (the `target*` predicates are `>0` of these) |
+| `threat.aboveN` | how many are above the firing line at all, within range |
+| `threat.upDist` / `upDx` / `upDy` / `upAdx` / `upSlope` | the same numbers for the nearest hostile **above the firing line** — the mark a "tilt the gun up" reflex needs, because the nearest hostile overall is regularly a deck unit standing *under* the muzzle |
+| `threat.diveN` / `diveDist` / `diveDx` / `diveDy` | the wasp `dive` state, and the nearest diving one |
+| `threat.side` | which way the gun points this tick: `1` right, `-1` left |
+
+`terrain.*` — an in-page probe (`lib/sampler.mjs`) of
+`window.HB.levelData.groundH`, the same ground array the **player's own
+collision** reads, bounded to 12 tiles in the walking direction:
+
+| field | meaning |
+| --- | --- |
+| `terrain.gapDist` | tiles from RIG to the near lip of the next hole in the deck |
+| `terrain.gapWidth` | how many columns wide that hole is |
+| `terrain.farY` | ground height of its far lip |
+| `terrain.groundY` | ground height of the column RIG is standing over |
+| `terrain.probeTiles` | the probe window, so a report can say how far it looked |
+
+Two conventions worth internalizing:
+
+- **Sentinels, not missing fields.** With nothing to report, every
+  distance-like field reads `99` and every count reads `0` — so `<` rules and
+  `>0` rules are false on an empty sample, and threat clauses never produce
+  `missingFieldWarnings`. Write threat rules that way round; `threat.dx>2` is
+  *true* when there is no hostile at all, which is a foot-gun, so pair it with
+  `threat.n>0`.
+- **Typos fail at load.** A `threat.` field that `lib/threat.mjs` does not
+  publish throws when the script is compiled, instead of quietly reading false
+  for two minutes. (`terrain.*` keeps the ordinary sample-field behavior: it is
+  `null` without `window.HB`, so it shows up in `missingFieldWarnings`.)
+
+Worked example — the aim + gap reflexes from `scripts/six-face-aimed-run.json`:
+
+```json
+{ "when": "threat.upDist<13 && threat.upSlope>0.5 && !targetLevel", "do": { "hold": "up" } },
+{ "when": "grounded && terrain.gapDist>3",   "do": { "tap": "jump", "holdMs": 420 } },
+{ "when": "grounded && terrain.gapDist<2.2", "do": { "tap": "jump", "holdMs": 420 } }
+```
+
+Read: *tilt the gun up when the nearest thing above my firing line is
+meaningfully above it and I have no level shot; hop freely when the deck runs
+on; and jump at the lip when it doesn't.*
+
+**Honesty notes.** The corridors are straight lines drawn from the standing
+muzzle point at the current tick — the game spawns a projectile slightly off
+that point and it travels while the target moves, so ray occupancy is "a shot
+fired now points at it", not a hit prediction. `lib/threat.mjs` has no bend
+awareness (a shot dies at a facet bend, `decisions.md` entry 7), so a target
+sighted across a corner may be a phantom; inside a corner arena, which ends at
+the pivot, that costs nothing. The two game constants it mirrors (muzzle
+height, hostile hit radius) are *mirrored, not imported* — the harness stays a
+black-box player — and `tools/pathcheck.mjs` asserts they still match `CONFIG`,
+that the grammar still rejects `||`/parens/arithmetic/unknown threat fields,
+and that the game's aim is still 8-way at all.
 
 **Known, accepted limitation** (documented, not engineered around — keeping
 this a dumb reflex layer was the point): rapid re-triggering of the same
@@ -906,8 +1011,9 @@ tools/playtest/
     server.mjs           static file server for the repo root
     compile.mjs           moves/events -> flat time-sorted event list; exports resolveCode (shared with policy.mjs)
     policy.mjs             closed-loop rules: condition grammar, tap/hold actions
+    threat.mjs              per-tick relative geometry (threat.* fields + the 8-way ray predicates)
     driver.mjs            browser launch, input replay (wall-clock or deterministic), policy tick, sampling loop
-    sampler.mjs            in-page probe (testapi / window.HB / DOM fallback)
+    sampler.mjs            in-page probe (testapi / window.HB / DOM fallback), incl. the terrain.* probe
     metrics.mjs            trace -> report metrics, incl. A.5 alignment
     fixture.mjs             re-exports TRAVERSAL_FIXTURE from src/pure/traversal.js
     report.mjs              report.json + summary.md writer

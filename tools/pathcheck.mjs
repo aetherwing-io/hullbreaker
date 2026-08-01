@@ -6597,5 +6597,153 @@ const G2GATE = G2E.gate;
   }
 }
 
+/* ========== T-018: the bot harness's relative-geometry grammar ========== *
+ * tools/playtest/ is dev-only and cannot change the shipped game, so most of
+ * it has no business in this file. Three things do:
+ *
+ *   1. lib/threat.mjs MIRRORS two CONFIG numbers (the muzzle height and the
+ *      hostile hit radius) rather than importing game source — the harness
+ *      stays a black-box player. A CONFIG retune must therefore show up as a
+ *      red pathcheck here, not as a bot report that is quietly wrong about
+ *      where its own gun points.
+ *   2. The grammar's promise is that it stays a DUMB reflex layer: `&&` only,
+ *      no `||`, no parens, never eval()/new Function(). That promise is what
+ *      makes a closed-loop bot run reviewable, so it is asserted behaviorally
+ *      (the compiler must reject the things it says it rejects), not by
+ *      eyeballing the source.
+ *   3. The harness's ray model assumes the game's 8-way aim (computeAim in
+ *      src/sim/player.js). If aiming ever stops being 8-way, every corridor
+ *      predicate below becomes a lie — so the shape of that function is
+ *      guarded too.
+ *
+ * The wave-gate arithmetic at the bottom is the premise of the T-018 finding
+ * (docs/playtests/2026-08-gate-fight-harness.md): two of wave 2's five slots
+ * sit above the highest firing line a level-aiming player can produce, which
+ * is why a bot with no aim predicate could only ever shoot back at something
+ * already diving into its face. Retune lanes or the jump and that finding
+ * needs rewriting — this is the tripwire that says so.                     */
+{
+  const { THREAT_GEOM, THREAT_FIELDS, deriveThreat } =
+    await import('./playtest/lib/threat.mjs');
+  const { compileCondition, compilePolicy, evaluatePolicyTick } =
+    await import('./playtest/lib/policy.mjs');
+
+  // --- 1. mirrored constants -------------------------------------------
+  ok(THREAT_GEOM.muzzleY === CONFIG.player.muzzleY,
+     'T-018: harness muzzle height mirrors CONFIG.player.muzzleY [got ' +
+     THREAT_GEOM.muzzleY + ', want ' + CONFIG.player.muzzleY + ']');
+  ok(THREAT_GEOM.hitR === CONFIG.wasp.contactRadius,
+     'T-018: harness corridor half-width mirrors CONFIG.wasp.contactRadius [got ' +
+     THREAT_GEOM.hitR + ', want ' + CONFIG.wasp.contactRadius + ']');
+  const rifleReach = CONFIG.weapons.R.speed * CONFIG.weapons.R.lifeMs / 1000;
+  ok(THREAT_GEOM.rangeTiles < rifleReach,
+     'T-018: the harness corridor is shorter than a rifle round actually flies (' +
+     THREAT_GEOM.rangeTiles + ' < ' + rifleReach.toFixed(1) + ')');
+
+  // --- 2. the grammar stays dumb ----------------------------------------
+  const rejects = (cond, why) => {
+    let threw = false;
+    try { compileCondition(cond); } catch (e) { threw = true; }
+    ok(threw, 'T-018: grammar rejects ' + why + ' ("' + cond + '")');
+  };
+  rejects('grounded || pinned', 'alternation');
+  rejects('(grounded && pinned)', 'parens');
+  rejects('threat.dist < 3 + 1', 'arithmetic');
+  rejects('threat.nope>1', 'an unknown threat field');
+  rejects("threat.kind>'wasp'", 'ordering against a string');
+  ok(compileCondition('threat.upSlope>0.5 && !targetLevel').raw.length > 0,
+     'T-018: a well-formed threat condition still compiles');
+
+  // --- 3. the game is still 8-way aimed ---------------------------------
+  const playerSrc = stripComments(readFileSync(join(srcDir, 'sim', 'player.js'), 'utf8'));
+  ok(/function computeAim/.test(playerSrc), 'T-018: computeAim still exists');
+  ok(/h === 0 && v === 0/.test(playerSrc) && /h === 0 && v > 0/.test(playerSrc) &&
+     /h === 0 && v < 0/.test(playerSrc),
+     'T-018: aim is still resolved from the discrete h/v key pair (8-way), which is ' +
+     'what the harness ray corridors model');
+  const samplerSrc = readFileSync(join(here, 'playtest', 'lib', 'sampler.mjs'), 'utf8');
+  ok(/HB\.levelData && HB\.levelData\.groundH/.test(samplerSrc),
+     'T-018: the terrain probe reads groundH — the same array the player collides against');
+  ok(/groundH/.test(playerSrc),
+     'T-018: …and the player still collides against groundH, not a built-face variant');
+
+  // --- 4. deriveThreat, on synthetic samples ----------------------------
+  const held = (...codes) => new Set(codes);
+  const empty = deriveThreat({ fidelity: 'dom' }, held('ArrowRight'));
+  ok(empty.n === 0 && empty.dist === THREAT_GEOM.absent && empty.diveDist === THREAT_GEOM.absent,
+     'T-018: a sample with no hostiles telemetry yields counts 0 and absent distances');
+  ok(THREAT_FIELDS.every((f) => empty[f] !== undefined),
+     'T-018: every advertised threat field is always defined (no missing-field warnings)');
+
+  const sample = {
+    x: 10, y: 3, grounded: true,
+    hostiles: [
+      { id: 1, kind: 'wasp', state: 'cruise', x: 14, y: 4.1, materialized: true },  // level ray
+      { id: 2, kind: 'wasp', state: 'cruise', x: 13.5, y: 7.5, materialized: true },// 45° ray
+      { id: 3, kind: 'wasp', state: 'dive', x: 10.2, y: 9.0, materialized: true },  // overhead
+      { id: 4, kind: 'wasp', state: 'cruise', x: 40, y: 4.05, materialized: true }, // out of range
+      { id: 5, kind: 'wasp', state: 'cruise', x: 12, y: 4.05, materialized: false },// condensing
+      { id: 6, kind: 'hound', state: 'prowl', x: 9.5, y: 2.5, materialized: true }, // under the muzzle
+    ],
+  };
+  const t = deriveThreat(sample, held('ArrowRight'));
+  ok(t.n === 5, 'T-018: materializing hostiles are not counted [got ' + t.n + ']');
+  ok(t.levelN === 1 && t.diagN === 1 && t.vertN === 1,
+     'T-018: one hostile on each of the level/45°/vertical rays [got ' +
+     t.levelN + '/' + t.diagN + '/' + t.vertN + ']');
+  ok(t.kind === 'hound' && t.dy < 0,
+     'T-018: the nearest mark is the deck unit under the muzzle…');
+  ok(t.upDy > 0 && t.upDist < 6,
+     '…and the up-mark is the nearest hostile ABOVE the firing line, so a "tilt up" ' +
+     'reflex is not vetoed by something standing under the gun');
+  ok(t.diveN === 1 && Math.abs(t.diveDy - 4.95) < 1e-9,
+     'T-018: the dive mark reports the diving hostile');
+  near(t.slope, (2.5 - 4.05) / 0.5, 1e-9, 'T-018: slope is dy/|dx| of the nearest mark');
+  ok(deriveThreat({ x: 10, y: 3, hostiles: [{ kind: 'wasp', state: 'cruise', x: 10, y: 9, materialized: true }] },
+                  held()).slope === 9,
+     'T-018: a hostile straight overhead reports the finite slope cap, never Infinity');
+
+  const left = deriveThreat(sample, held('ArrowLeft'));
+  ok(left.side === -1 && left.levelN === 0 && left.diagN === 0,
+     'T-018: facing left, the forward corridors empty out — they are gun-relative');
+  ok(left.vertN === 1, 'T-018: …but the vertical corridor does not care which way you face');
+
+  // --- 5. the predicates a script actually writes ------------------------
+  const rules = compilePolicy({
+    rules: [
+      { when: 'targetLevel', do: { hold: 'up' } },
+      { when: 'targetDiag', do: { hold: 'up' } },
+      { when: 'targetVert', do: { hold: 'up' } },
+      { when: 'threat.diveDist<6 && grounded', do: { tap: 'jump' } },
+      { when: 'threat.diveDist<0.5', do: { tap: 'jump' } },
+    ],
+  });
+  const tick = evaluatePolicyTick(rules, sample, held('ArrowRight'));
+  ok(tick.evaluations.slice(0, 4).every((e) => e.result === true),
+     'T-018: the three ray predicates and a threat comparison all read true on the fixture sample');
+  ok(tick.evaluations[4].result === false,
+     'T-018: …and a threshold the geometry does not meet reads false');
+  ok(tick.missingFieldWarnings.length === 0,
+     'T-018: threat clauses never produce missing-field warnings');
+  ok(tick.threat && tick.threat.n === 5,
+     'T-018: the derived view is computed once per tick and handed back for the report');
+
+  // --- 6. the finding's premise -----------------------------------------
+  const apex = CONFIG.player.jumpVel * CONFIG.player.jumpVel / (2 * Math.abs(CONFIG.player.gravity));
+  const highestLevelShot = CONFIG.player.muzzleY + apex;
+  ok(waveSize(2, CONFIG) === 5, 'T-018: wave 2 is five authored slots [got ' + waveSize(2, CONFIG) + ']');
+  const wave2Lanes = [0, 1, 2, 3, 4].map((i) => waveLane(2, i, CONFIG));
+  ok(wave2Lanes.join(',') === '2.6,4.6,2.6,4.6,7.2',
+     'T-018: wave 2 lane mix is low/mid/low/mid/high [got ' + wave2Lanes.join(',') + ']');
+  ok(wave2Lanes.filter((l) => l > highestLevelShot + CONFIG.wasp.contactRadius).length === 3,
+     'T-018: three of wave 2\'s five slots sit above the highest LEVEL shot a player can ' +
+     'produce (muzzle ' + CONFIG.player.muzzleY + ' + apex ' + apex.toFixed(2) + ' = ' +
+     highestLevelShot.toFixed(2) + '): without vertical aim they are only hittable mid-dive');
+  ok(CONFIG.waves.gateDiveCooldownMs < CONFIG.wasp.diveCooldownMs &&
+     CONFIG.waves.gateDiveRange > CONFIG.wasp.diveRange,
+     'T-018: gated hostiles really are hotter than ambient ones (the pressure the ' +
+     'finding measures is authored, not imagined)');
+}
+
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');
 process.exit(fails ? 1 : 0);

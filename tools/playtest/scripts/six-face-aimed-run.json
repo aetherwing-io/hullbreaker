@@ -1,0 +1,78 @@
+{
+  "name": "six-face-aimed-run",
+  "description": "The DEFAULT six-face run in policy mode with the 8-way AIM reflexes (T-018). Same shape as six-face-full-run.json (hold fire, hold right while the world scrolls, hop on every landing, dodge a houndframe's plant) with one thing added: the relative-geometry clauses from lib/threat.mjs, so the bot holds `up` when a hostile sits on its 45-degree or straight-up firing ray and turns to face the side its nearest hostile is on during a wave gate. Nothing about the game changes; this is the same build, played with an aim the old grammar could not express. See docs/playtests/2026-08-gate-fight-harness.md for why the aimless version stalls at wave gate 2.",
+  "url": "index.html",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "durationMs": 240000,
+  "moves": [
+    {
+      "hold": "fire",
+      "fromMs": 400,
+      "toMs": 240000
+    }
+  ],
+  "policy": {
+    "rules": [
+      {
+        "when": "!hudTC",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "hudTC && threat.n>0 && threat.dx>2 && !targetVert",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "hudTC && threat.n>0 && threat.dx<-2 && !targetVert",
+        "do": {
+          "hold": "left"
+        }
+      },
+      {
+        "when": "edgeMargin<8",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "targetDiag",
+        "do": {
+          "hold": "up"
+        }
+      },
+      {
+        "when": "targetVert",
+        "do": {
+          "hold": "up"
+        }
+      },
+      {
+        "when": "pinned",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "houndTell",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "grounded",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      }
+    ]
+  }
+}
