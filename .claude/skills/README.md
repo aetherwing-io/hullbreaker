@@ -87,11 +87,13 @@ Four rules a three.js skill will lead you into breaking, and what enforces each:
    → **`docs/decisions.md`**, plus pose and static-anatomy assertions in
    **`tools/pathcheck.mjs`**. Never re-litigate an entry; propose a new one.
 
-Colors: tokens come from `CONFIG.palette` in `src/config.js` today.
-`src/render/palette.js` and pathcheck's raw-literal guard are **in flight on
-`task/T-010`, not on `main`** — if that module exists in your checkout, import
-`PAL`; otherwise take the value from `CONFIG.palette` and flag it for repoint.
-Either way, author no new hex literal.
+Colors: the render layer's token table is `src/render/palette.js` (merged
+2026-08-01 with T-010) — import `PAL`, or `CLASSIC`/`CONCEPT` for the two
+modes; `CONFIG.palette` in `src/config.js` remains the byte-faithful
+grey-box source the classic table mirrors. pathcheck now rejects raw color
+literals (`0xRRGGBB` and CSS `#rgb`/`rgb()`/`rgba()`) in tokenized render
+files, and every kind in the sim `ENEMY` roster must carry a body token in
+both tables. Author no new hex literal.
 
 Prototypes ship behind a query flag resolved in `src/mode.js`, default off, with
 the shipped URL unchanged.

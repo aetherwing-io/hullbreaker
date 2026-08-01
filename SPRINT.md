@@ -174,7 +174,7 @@ verify: node tools/pathcheck.mjs; a new full-run playtest script (policy mode)
 notes: biggest task in the queue — split into sub-worktrees if needed;
 sequenced after T-001/T-004 merge to integrate their landings.
 
-## T-010 | art | review | P1
+## T-010 | art | done | P1
 
 goal: palette pass — replace the neutral grey-box palette with DESIGN's ≤8
 color roles (deep teal environment, rust-orange metal, acid-green enemy
@@ -473,6 +473,17 @@ not yet reach board 01/10's acid intensity, and the "one palette module,
 not scattered hex literals" acceptance is one file short. One-line repoint
 per the palette.js note (tokens already authored and pathcheck-asserted);
 fold into the post-T-004 integration or T-003's FAR-tells pass.
+
+**RESOLVED — closed at the T-010 merge.** The fix-cycle wired
+`src/render/hostiles.js` to the palette tokens (`PAL.wasp/carrier/hound/polyp`
+plus tells, beam and vent), removed the pathcheck exemption, and added a
+structural guard: every kind in the sim `ENEMY` roster must carry a body token
+in **both** tables, so the T-004/T-010 collision cannot recur. The acid ecology
+is live on every enemy mesh, the Iris Polyp included; tells and the spent vent
+stay warm amber in both modes by design. Whether the acid bodies and warm
+tells hold as two separate reads at FAR is now an operator question, answerable
+from `artifacts/palette-v1/polyp-tell--*.png` / `polyp-beam--*.png` (packet
+question 5), not an open defect.
 
 ## I-005 | bug | S3 | repro: on task/T-012 26de15f, boot any URL and evaluate `window.HB.audio`/`audioSnapshot` in the console or a page.evaluate — undefined; grep shows src/ui/audio.js:545 exports it and nothing imports it | evidence: reports/tasks/T-012/playtest.md; tools/playtest/runs/gate-T-012-audio-probe/layer-probe.json
 

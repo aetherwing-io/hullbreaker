@@ -1,6 +1,6 @@
 ---
 name: threejs-materials
-description: Three.js materials - PBR, basic, phong, shader materials, material properties. Use when styling meshes, working with textures, creating custom shaders, or optimizing material performance. In HULLBREAKER, use it for work in src/render/ and src/main.js only — colors must come from palette tokens, never raw hex (CONFIG.palette in src/config.js today; src/render/palette.js once T-010 merges — check which exists), the house look is flat-shaded MeshStandardMaterial under the fixed scene.js light rig, and textures/env maps/custom shaders are not sanctioned without an operator decision.
+description: Three.js materials - PBR, basic, phong, shader materials, material properties. Use when styling meshes, working with textures, creating custom shaders, or optimizing material performance. In HULLBREAKER, use it for work in src/render/ and src/main.js only — colors must come from src/render/palette.js tokens, never raw hex (pathcheck rejects literals in tokenized render files), the house look is flat-shaded MeshStandardMaterial under the fixed scene.js light rig, and textures/env maps/custom shaders are not sanctioned without an operator decision.
 ---
 
 ## HULLBREAKER guardrails (read before using anything below)
@@ -46,19 +46,16 @@ no legitimate case where sim code names a material.
 
 ### 2. Colors come from tokens — a raw hex literal is a gate failure
 
-Check which of these two states the tree is in before you write a color; both
-forbid new literals, they differ only in where the token lives.
+`src/render/palette.js` is the render layer's color table (merged 2026-08-01
+with T-010). It exports `CLASSIC` (the neutral grey-box, byte-faithful to
+`CONFIG.palette` in `src/config.js`), `CONCEPT` (DESIGN's ≤8 color roles — the
+shipped default), the resolved `PAL` and `PALETTE_ID`, `resolvePaletteId()`,
+and `atmosphereBg()`. `?palette=classic` selects the grey-box baseline.
 
-- **Today on `main`:** `CONFIG.palette` in `src/config.js` is the color source
-  of truth and the render modules read it directly.
-- **Once T-010 merges:** `src/render/palette.js` becomes the render layer's
-  color table, exporting `CLASSIC` (the neutral grey-box, byte-faithful to
-  `CONFIG.palette`), `CONCEPT` (DESIGN's ≤8 color roles — the default), the
-  resolved `PAL` and `PALETTE_ID`, `resolvePaletteId()`, and `atmosphereBg()`,
-  plus a pathcheck guard rejecting raw literals in tokenized render files.
-
-`ls src/render/palette.js` settles it in one command. The rest of this section
-describes the post-T-010 shape.
+pathcheck rejects raw color literals — `0xRRGGBB` and CSS
+`#rgb`/`#rrggbb`/`#rrggbbaa`/`rgb()`/`rgba()` — in tokenized render files, and
+requires every kind in the sim `ENEMY` roster to carry a body token in **both**
+tables.
 `?palette=classic` selects the grey-box baseline for operator side-by-sides;
 everything else resolves to concept.
 
