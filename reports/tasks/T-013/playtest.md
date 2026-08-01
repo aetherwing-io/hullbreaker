@@ -239,6 +239,15 @@ checkpoint queue rather than into the verdict:
   "0 samples carrying `shell`" in these reports is a harness limitation, not
   evidence about the game. The `state` field, which the sampler does carry, is
   what proves no run parked on `MENU`.
+- **The harness itself did not move under this batch, checked rather than
+  assumed.** Main advanced from `832fd43` to `3bcda43` during the gate (T-011
+  and T-014 merged), and that window touched `tools/playtest/lib/policy.mjs`
+  — the one harness file `polyp-lane-dodge` depends on. Its mtime is
+  16:23:20Z; the last paired run (`gate-T-013-CTRL-retry`) started 16:21:08Z
+  and both polyp runs started 16:14:56Z / 16:15:47Z, so every A/B pair here
+  ran on one harness snapshot. (Both polyp runs also report the same 13 tap
+  fires across 13 rules.) Only `gate-T-013-title-det-probe` ran after the
+  change, and it carries no policy rules.
 - The static server on 8805 died once between runs (a `page.goto`
   `ERR_CONNECTION_REFUSED`, loud, no report written) and was restarted; the
   affected probe was re-run. No completed run in this report was served by a
