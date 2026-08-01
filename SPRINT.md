@@ -414,7 +414,7 @@ accept:
 owner: lattice-designer
 verify: node tools/pathcheck.mjs; a run that reaches the first gate without losing a life
 
-## T-021 | feature | doing | P1
+## T-021 | feature | blocked | P1
 
 goal: the SPLIT DECISION in the SIX-FACE RUN — decisions.md entries 10, 11, 12
 and 13. A fork the player reads and commits to AT SPEED: the rewarding branch
@@ -446,7 +446,7 @@ accept:
 owner: lattice-designer
 verify: node tools/pathcheck.mjs; named playtest scripts for all three lines (main / reward / dead end), --deterministic; screenshots at ?view=far
 
-## T-022 | feature | doing | P1
+## T-022 | feature | done | P1
 
 goal: pace escalation coupled to PLAYER MOMENTUM, per decisions.md entry 11 —
 "pace should escalate across the faces, but at the player's momentum. A good
@@ -641,6 +641,19 @@ verify: n/a until dispatched
   still worth ENTERING, or is it now just another hole in the deck? **That
   last answer steers T-021/T-022** — entries 10 and 11 aim this shape at a
   fork, and it tells us whether the shelf survives the rework or is replaced.
+- **T-022 momentum pace (`?momentum=1`, off by default) — a good run vs a
+  struggling run, same URL.** The pursuing edge's speed now rises with how well
+  the run is being played (where RIG sits between the damage plane and the right
+  clamp, plus a decaying kill streak) instead of holding `CONFIG.scrollSpeed`.
+  Gate-measured: the FLOOR holds (a deliberately weak policy is still carried
+  and can still finish — escalation never becomes a death spiral), the CEILING
+  is a hard x1.4 with the frame budget unmoved, and **1.29 t/s of headroom is
+  left above escalation's own ceiling for T-023's boosts**. Play
+  `http://127.0.0.1:8741/index.html?momentum=1` against the plain URL.
+  Questions: (1) does playing well FEEL like it speeds the world up, or does
+  the edge just quietly gain? (2) when you are struggling, does the floor read
+  as mercy or as the game giving up on you? (3) is x1.4 the right top, given
+  boosts are meant to sit above it?
 - (new packets append here as tasks land: juice, shell, six-face run)
 
 ## Inbox (playtester/adversarial file here; integrator triages each cycle)
