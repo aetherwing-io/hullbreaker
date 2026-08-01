@@ -102,6 +102,13 @@ const SCENES = [
     run: (page, path) => driveSchedule(page, jumpCadence(300, 5200), 5600, 4600, path) },
   { tag: 'traversal-action', url: '/index.html?slice=traversal&view=far&testapi=1&enemies=1',
     run: (page, path) => driveTraversal(page, path) },
+  // T-010 fix-cycle: the polyp trial is the enemy-role frame. It is captured
+  // standing still (no schedule) at ~4.6s, deep enough into the solo teach
+  // stage that the emplacement has cycled closed -> tell -> fire at least
+  // once, so the acid body, the warm tell, and the hot beam are all judgeable
+  // in one frame against board 06/07's enemy family.
+  { tag: 'polyp-trial', url: '/index.html?slice=traversal&view=far&polyp=1&testapi=1',
+    run: (page, path) => page.waitForTimeout(4600).then(() => page.screenshot({ path })) },
   { tag: 'g1-limb', url: '/index.html?g1=1&view=far',
     run: (page, path) => driveSchedule(page, jumpCadence(300, 3600), 4200, 3400, path) },
   { tag: 'transform-boot', url: '/index.html?slice=transform&view=far&enemies=0',

@@ -779,8 +779,10 @@ tools/playtest/
   viewscale-capture.mjs     dev-only screenshot rig for the ?view= experiment
   palette-capture.mjs       dev-only screenshot rig for the T-010 palette pass:
                             same scene in concept (default) vs ?palette=classic
-                            across sixface/traversal/g1/transform at ?view=far,
-                            plus labeled side-by-side pairs. Writes to
+                            across sixface/traversal/polyp/g1/transform at
+                            ?view=far, plus labeled side-by-side pairs (pass a
+                            tag, e.g. `node palette-capture.mjs polyp-trial`,
+                            to refresh one scene after a merge). Writes to
                             artifacts/palette-v1/ at the served repo root (a
                             worktree serves itself). HONESTY: pairs are matched
                             by identical input schedules + the seeded sim rng,

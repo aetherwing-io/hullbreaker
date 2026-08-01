@@ -13,10 +13,11 @@ teal environment, rust-orange metal, acid-green enemy glow, hot magenta
 pickups, warm white muzzle light. Flat-shaded low-poly, fog matched to
 background. (Shipped: `src/render/palette.js` centralizes the tokens and
 applies this palette as the render default — teal atmosphere/backdrop, rust
-body and route surfaces per boards 01/10/13; `?palette=classic` restores the
-neutral grey-box baseline for comparison. Enemy meshes still read the
-grey-box table pending a one-line follow-up after the in-flight hostiles
-work merges — the acid-green tokens are already authored and asserted.)
+body and route surfaces per boards 01/10/13, acid-green hostile ecology on
+every enemy mesh including the Iris Polyp, warm-amber tells; `?palette=classic`
+restores the neutral grey-box baseline for comparison and stays byte-faithful
+to `CONFIG.palette`. Every render module except the judged-rejected
+`?hook=1` prototype reads its colors from the palette tokens.)
 
 Visual direction, stage-layout references, and their source prompts live in the
 [`docs/concept-art` reference pack](concept-art/README.md).
