@@ -675,11 +675,16 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    `source` before comparing two runs' `protoScore` — a proxy number and a
    real number are not literally comparable, and the proxy is only
    internally consistent enough to rank policies against each other.
-   Even between two real (`HB.score`) runs of the *same* deterministic
-   script, `protoScore` moves a little run to run (measured spread ≈2% on
-   `scored-run.json`: 586.9 / 597.9 / 600.5, while setbacks, final x and
-   THREAT were stable) — the air/stall clocks accumulate against wall-clock
-   frames. Read it as a band, never as a target to hit.
+   Even between two real (`HB.score`) runs of the *same* `--deterministic`
+   script, the event stream is not identical. Measured over five repeats of
+   `scored-run.json`: `protoScore` held a ≈2% band (586.9 / 597.9 / 598.0 /
+   598.8 / 600.5) and so did its inputs (3 airborne kills every time), but
+   **setbacks came out 3 four times and 2 once, THREAT 920 four times and 444
+   once, recatches 2 or 0, hot time 13.8 s or 17.9 s** — while lives spent (0)
+   and final x (89.25) were identical in all five. Score/THREAT numbers from a
+   single run are a band, not a target; structural outcomes (lives, forward
+   progress, terminal state) are the stable evidence. See honesty items 4 and
+   8 for why `--deterministic` cannot close this gap.
 3. **Route coverage/inference is approximate.** The nearest-connector greedy
    matcher in `lib/metrics.mjs` is not a topological solve. (The other half
    of this limitation as originally written — `lib/fixture.mjs` being a

@@ -115,7 +115,7 @@ document.
 
 | Script | Flags | Result |
 | --- | --- | --- |
-| `scored-run.json` (competent heuristic) | `score=1&fallback=1` | protoScore **598.0 (source: HB.score, real)** — 3 airborne kills, 1 launch kill, 2 recatches, THREAT 920 (OBSERVE), hot 13.8 s of 31.0 s, **3 setbacks absorbed, 0 stock lives spent (HUD ×3 at the end)**, final x = max x = **89.25** (no forward ground lost) |
+| `scored-run.json` (competent heuristic) | `score=1&fallback=1` | protoScore **598.0 (source: HB.score, real)** — 3 airborne kills, 1 launch kill, 2 recatches, THREAT 920 (OBSERVE), hot 13.8 s of 31.0 s, **3 setbacks absorbed** (2 in one of five repeats — see variance below), **0 stock lives spent (HUD ×3 at the end)**, final x = max x = **89.25** (no forward ground lost) |
 | `scored-run-baseline.json` (identical inputs) | none | stock path intact: no score surface, protoScore falls back to the labeled proxy (924.8), 0 setbacks — and it **died twice**: 2 of 3 stock lives spent (t = 19.1 s, 27.3 s), each respawn snapping x **89.25 → ~51.6**; ends at HUD **×1**, final x 75.48 against a max x of 89.25, 4 hits survived |
 | `scored-run-nojump.json` (fall-loop probe) | `score=1&fallback=1` | **dying is not a shortcut**: never jumps, and the ladder came out as setback (3.2 s) → **1 stock life spent** on a hit the fallback refused (15.9 s, HUD ×2) → setback (22.4 s) → setback (27.4 s). Ends *stalled* at x 59.65 (21.9 s of its 30.9 s idle by A.5's stall rule) against the competent run's 89.25; protoScore **−16.5** (stall-dominated); no infinite fall loop. Note the refusal at 15.9 s cannot have been the streak ceiling — only one setback preceded it and `maxConsecutive` is 2 — so it was the sim's other refusal path, "nowhere lower to settle" (`settleFallback` in `src/sim/player.js`) |
 | `scored-run-nojump.json`, ceiling control | `score=1` only (fallback disarmed) | the same never-jumping inputs spend **all three lives by t = 9.8 s** → `GAME_OVER` / "SIGNAL LOST", ending at x 31.65. With the fallback armed the identical script is still playing when the 31 s window closes, at x 59.65, having spent one life. That is what tier 1 stands in front of — and it is also the honest shape of the "does dying still cost anything" question: it costs less, but the run still ends |
@@ -127,16 +127,28 @@ its own tune: the same `mid-route.json` under `?slice=traversal&score=1`
 reports `tune: "slice"` while every default-run row above reports
 `tune: "run"` — the two tunes do not cross-contaminate.
 
-**Run-to-run variance, stated so no number above is read as a target.**
-These are real-Chrome runs on a wall-clock timestep, so the score's air/stall
-clocks move a little between deterministic repeats of the same script. On
-`scored-run.json` the real protoScore measured 586.9 / 597.9 / 598.0 / 600.5
-across four runs (≈2 %) while setbacks (3), lives spent (0), THREAT (920) and
-final x (89.25) were identical every time. On the marginal-outcome scripts the
-score swings much harder — `scored-run-nojump` measured −117.2 and −16.5 on
-two runs, because a single ground kill lands in one and not the other — while
-its structural facts (3 setbacks, 1 life, stalled at x 59.65) held. Read the
-structural facts as evidence; read protoScore as a band.
+**Run-to-run variance, measured, because it is larger than it looks.**
+`--deterministic` pins input to sim time; it does not make real-Chrome runs
+identical (playtest README, honesty items 4 and 8). Across **five** repeats of
+`scored-run.json`:
+
+- **Stable in all five:** 0 stock lives spent, final x = max x = **89.25**,
+  `tune: "run"`, classification OBSERVE, 3 airborne kills, protoScore inside
+  a ≈2 % band (586.9 / 597.9 / 598.0 / 598.8 / 600.5).
+- **Not stable:** setbacks absorbed were **3 in four repeats and 2 in one**;
+  THREAT was 920 in four and 444 in the fifth; recatches 2 or 0; launch kills
+  1 or 2; hot time 13.8 s or 17.9 s. The bot fights the same fight slightly
+  differently each time, and the meter is sensitive to that even when the
+  outcome is not.
+- On a marginal-outcome script the score swings much harder still:
+  `scored-run-nojump` measured −117.2 and −16.5 on two repeats, because a
+  single ground kill lands in one and not the other — while its structural
+  facts (a life spent, 3 setbacks, stalled at x 59.65) held both times.
+
+So: read the **structural** facts (lives, forward ground, terminal state) as
+evidence — those are what the A/B argument above rests on — and read
+protoScore and THREAT as bands, never as targets. Every table row above is
+the committed artifact's own numbers, not a best-of.
 
 ## Recommendation
 
@@ -152,8 +164,8 @@ that verdict plus the run-scale question.
 **The measured A/B, in one sentence.** Same script, same inputs, 31 s:
 flags **off** spends 2 of 3 stock lives and is thrown back from x 89.25 to
 51.6 twice, finishing 13.8 tiles behind its own high-water mark; flags **on**
-spends 0 lives, absorbs 3 setbacks, and never gives up a tile of forward
-ground (final x = max x = 89.25). Momentum is the pillar this is arguing
+spends 0 lives, absorbs 2–3 setbacks depending on the repeat, and never gives
+up a tile of forward ground (final x = max x = 89.25 in every repeat). Momentum is the pillar this is arguing
 about, and that is the whole argument — but it cuts both ways, which is
 exactly what question 2 below is for: a setback that costs altitude and
 CHARGE but *no forward progress* may not read as punishment at run scale.

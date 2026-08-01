@@ -7,7 +7,9 @@ convention: ephemeral scratch runs) — a decision packet must not cite paths
 that disappear with the worktree. Screenshots are gitignored too (`*.png`),
 so these are traces and summaries only.
 
-Regenerate all six from a clean checkout of this branch:
+Regenerate them from a clean checkout of this branch (the same three commands
+run twice give you the `scored-run` / `scored-run-repeat` pair; the repeats
+will not match these numbers exactly — see the variance note at the bottom):
 
 ```sh
 cd tools/playtest
@@ -27,6 +29,7 @@ node run.mjs scripts/mid-route.json --deterministic --max-runtime-ms 15000 \
 | Directory | Run | What it is evidence for |
 | --- | --- | --- |
 | `scored-run/` | `scored-run.json`, `?score=1&fallback=1` | the CP4 candidate: 3 setbacks absorbed, **0 stock lives spent**, final x = max x |
+| `scored-run-repeat/` | `scored-run.json` again, same flags | the disclosed outlier: an identical `--deterministic` repeat that absorbed **2** setbacks with THREAT 444 instead of 3 with 920, while lives spent (0) and final x (89.25) held. Kept so the variance paragraph in the proposal is checkable, not just asserted |
 | `scored-run-baseline/` | `scored-run.json`'s inputs, **no flags** | the shipped path under identical inputs: **2 of 3 stock lives spent**, 13.8 tiles of ground lost |
 | `scored-run-nojump/` | `scored-run-nojump.json`, `?score=1&fallback=1` | "dying is not a shortcut": stalls out at x 59.65 having spent a life and 3 setbacks |
 | `ceiling-score-only/` | same script, `?score=1` only | the control: with the fallback disarmed the same inputs reach `GAME_OVER` in 9.8 s |
@@ -46,3 +49,11 @@ failure counters that do work outside a fixture are the `Stock lives` line
 (HUD `×N`) and, on `?score=1` runs, `setbacks` in the score-snapshot line.
 See `tools/playtest/README.md`, "Honesty note for default-run (non-slice)
 traces".
+
+**Variance.** `--deterministic` pins input to sim time, not the browser's
+frame cadence, so repeats of the same script differ. Measured over five runs
+of `scored-run.json`: lives spent (0) and final x (89.25) identical every
+time, protoScore inside ≈2 % (586.9 / 597.9 / 598.0 / 598.8 / 600.5), but
+setbacks 3 four times and 2 once, THREAT 920 four times and 444 once. Compare
+`scored-run/` against `scored-run-repeat/` to see it. Treat the structural
+outcomes as the evidence and the meter numbers as a band.
