@@ -381,6 +381,30 @@ owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; six-face-aimed-run.json --deterministic against a pinned tree
 blocked-by: T-018 merged (its grammar extension is the foundation)
 
+## T-020 | investigation | todo | P2
+
+goal: triage I-021 — every six-face run, on pristine main and on the lattice
+tree alike, spends its first life at ~3.0s falling into the same 3-tile gap at
+x = 31.649: full hp, no hostile within 14 tiles, before any wave gate. It has
+been silently costing a life in every measurement taken this sprint and was
+invisible until T-018's terrain probe exposed it.
+Answer one question with evidence: is that gap fair?
+- if it is authored to be jumped and only the bot cannot see it, prove a
+  player-reachable crossing exists (the frozen jump constants, from the deck,
+  at scroll speed — RIG crosses ground at 4.3 t/s held-right, not runSpeed
+  9.4, so a held jump travels ~3.0 tiles: a 3-tile gap is exactly marginal)
+- if it is not reliably crossable at that point in the run, it is the very
+  first thing the game teaches and it teaches a death. Fix it in the
+  generator, or move it later, and say which
+accept:
+- [ ] a written finding with the arithmetic and a repro
+- [ ] if the gap stays, a pathcheck assertion proves every generated face-1
+      gap before the first gate is crossable from the deck at scroll speed
+- [ ] if it moves, the generator change ships with that same assertion
+- [ ] never widen the jump constants to make it fit (frozen, entry-asserted)
+owner: lattice-designer
+verify: node tools/pathcheck.mjs; a run that reaches the first gate without losing a life
+
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
 - **G1 limb-turn:** default vs `?g1=1` (and `?g1=1&view=near`) on the six-face
@@ -917,7 +941,7 @@ Status flow: todo → doing → review → done; `operator` parks a task on a fe
 verdict; `blocked` parks it on a dependency or two failed attempts (note
 why). The Stop-hook flywheel only counts todo/doing/review as open work.
 
-## I-021 | bug | S2 | repro: any six-face run on main OR task/T-009, --deterministic, aimless or aimed policy | evidence: docs/playtests/2026-08-gate-fight-harness.md (T-018); tools/playtest/runs/gate-T-009-fullrun-*
+## I-021 | bug | S2 | TRIAGED -> T-020 | repro: any six-face run on main OR task/T-009, --deterministic, aimless or aimed policy | evidence: docs/playtests/2026-08-gate-fight-harness.md (T-018); tools/playtest/runs/gate-T-009-fullrun-*
 
 Found by T-018 while instrumenting the gate fight: **every** run on both trees
 spends its first life at ~3.0s falling into the same 3-tile gap at x = 31.649
