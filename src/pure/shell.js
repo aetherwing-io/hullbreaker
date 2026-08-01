@@ -57,11 +57,14 @@ export const RIG_SCREEN_FRACTION = { min: 3, max: 5 };
    that is how the plate tucks back into the body it hinged out of.
 
    `attach: true` hangs an element off the PREVIOUS one instead of the
-   frame: its x/y are percentages of that parent's box and it inherits
-   the parent's rotation. RIG uses it to stand on a surface (the tilted
-   plate, a gantry) at any aspect ratio, which a frame-relative position
-   cannot do once the surface is rotated. A `rig` sizes itself against
-   frame HEIGHT in both axes, so the silhouette never stretches. */
+   frame: its x/y are percentages of that parent's box and it RIDES the
+   parent's transform (a child of a rotated box is already rotated with
+   it). Its own `rot` is therefore its angle RELATIVE to that surface —
+   absent means "lies flat on it". RIG uses attachment to stand on a
+   surface (the tilted plate, a gantry) at any aspect ratio, which a
+   frame-relative position cannot do once the surface is rotated. A `rig`
+   sizes itself against frame HEIGHT in both axes, so the silhouette
+   never stretches. */
 const TYPES = ['sky', 'mass', 'slab', 'glow', 'lamp', 'beam', 'rig', 'steam', 'bridge',
   'debris', 'haze', 'vignette'];
 export const SHELL_ELEMENT_TYPES = TYPES;
@@ -246,6 +249,40 @@ export function startDirectionAt(index) {
   const n = START_DIRECTIONS.length;
   return START_DIRECTIONS[((index % n) + n) % n];
 }
+
+/* Every custom property the stylesheet reads, resolved for ONE element —
+   defaults included, nothing left out.
+
+   This is not cosmetic tidiness: CSS custom properties INHERIT, so an
+   element that leaves one unset silently picks up its parent's value.
+   For an `attach: true` child that is a rendering bug, because the child
+   is already inside the parent's transform: an unset `--rot` re-applies
+   the parent's rotation ON TOP of it (RIG on the 37° plate rendered at
+   74°, lying across the plate instead of running along it), an unset
+   `--o` multiplies into the parent's opacity, and an unset `--c` paints
+   the child in the parent's tone. src/ui/shell.js writes the whole set
+   on every element, so no value can leak down the tree, and the defaults
+   are pinned here where pathcheck can assert them.
+
+   Values are CSS strings; `w`/`h` carry their unit (a `rig` measures
+   itself against frame HEIGHT in both axes so the silhouette keeps its
+   proportions — and its 3–5% scale — on any aspect ratio). */
+export function elementVars(e) {
+  const unit = e.t === 'rig' ? 'vh' : '%';
+  return {
+    '--x': e.x + '%',
+    '--y': e.y + '%',
+    '--w': e.w + unit,
+    '--h': e.h + unit,
+    '--rot': (e.rot || 0) + 'deg',
+    '--o': String(e.o === undefined ? 1 : e.o),
+    // untoned elements (steam) paint from their own rgba literals and must
+    // not fall back to whatever tone a parent happens to carry
+    '--c': e.tone && SHELL_ROLES[e.tone] ? SHELL_ROLES[e.tone] : 'transparent',
+  };
+}
+
+export const SHELL_ELEMENT_VARS = ['--x', '--y', '--w', '--h', '--rot', '--o', '--c'];
 
 /* Headless conformance check for one composition. Returns a list of human
    readable violations (empty = clean) so pathcheck can assert the board-05

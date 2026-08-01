@@ -20,7 +20,9 @@ import {
   SLICE_ENEMY_PLAN, SLICE_FALLBACK_ENABLED, SLICE_PACE, START_DIRECTION_ID, VIEW_ID,
 } from './mode.js';
 import { HALT_S } from './pure/path.js';
-import { shellKeyIntent } from './pure/shell.js';
+import {
+  RIG_SCREEN_FRACTION, SHELL_ELEMENT_VARS, START_DIRECTION_IDS, shellKeyIntent,
+} from './pure/shell.js';
 import { cornerEventTotalMs } from './pure/waves.js';
 import { transformEventTotalMs } from './pure/transform.js';
 import { traversalCameraDepth } from './pure/traversal.js';
@@ -117,9 +119,10 @@ addEventListener('keydown', (e) => {
      gameplay handling underneath, so a bot script's (or a player's) first
      input is never swallowed. tools/pathcheck.mjs asserts that property
      against this KEYMAP for every state. */
+  let startedFromTitle = false;
   if (SHELL_ENABLED && !e.metaKey && !e.ctrlKey && !e.altKey) {   // leave browser shortcuts alone
     const intent = shellKeyIntent(e.code, state);
-    if (intent === 'start') startRun();                       // fall through
+    if (intent === 'start') { startRun(); startedFromTitle = true; }   // fall through
     else if (intent === 'restart') { e.preventDefault(); if (!e.repeat) resetGame(); return; }
     else if (intent === 'title') { e.preventDefault(); if (!e.repeat) toTitle(); return; }
     else if (intent) { e.preventDefault(); if (!e.repeat) shellApplyIntent(intent); return; }
@@ -129,7 +132,12 @@ addEventListener('keydown', (e) => {
     e.preventDefault();
     return;
   }
-  if (e.code === 'KeyR' &&
+  /* …with one exception to the fall-through: the press that LEFT the title
+     must not also restart the run it just started. R is the traversal
+     slice's unconditional restart key, so without this guard a single R at
+     the title would both start and reset the run and spend an attempt the
+     title view is not supposed to cost (see startRun/toTitle below). */
+  if (e.code === 'KeyR' && !startedFromTitle &&
       (IS_TRAVERSAL_SLICE || state === 'GAME_OVER' || state === 'VICTORY')) {
     e.preventDefault();
     if (!e.repeat) resetGame();
@@ -617,8 +625,47 @@ if (QUERY.has('selftest')) {
       check('title consumes no gameplay key',
         ['ArrowRight', 'Space', 'KeyJ', 'KeyK', 'KeyX', 'ShiftLeft', 'KeyW']
           .every((c) => shellKeyIntent(c, 'MENU') === 'start'));
+      /* RENDER-side composition checks, on every direction. pathcheck can
+         only see the composition DATA — it reads `3.8% of frame height` off
+         src/pure/shell.js and is satisfied — so the two ways the DOM can
+         disagree with that data are checked here, where there is a layout:
+           1. custom properties INHERIT. Every element must write its own
+              copy, or an attached child re-applies its parent's rotation on
+              top of the parent's transform (RIG at 74° on a 37° plate),
+              multiplies its opacity, or borrows its tone;
+           2. the figure that lands on screen is the one the data declares —
+              no rotation of its own beyond the surface it stands on, and a
+              rendered box still inside board 13's 3–5% of frame height. */
+      {
+        const startedOn = shellSnapshot().direction;
+        const leaked = [], tilted = [], scaled = [];
+        for (let i = 0; i < START_DIRECTION_IDS.length; i++) {
+          shellApplyIntent('pick:' + i);
+          const id = START_DIRECTION_IDS[i];
+          for (const el of document.querySelectorAll('#shellArt .sl'))
+            for (const v of SHELL_ELEMENT_VARS)
+              if (el.style.getPropertyValue(v) === '') leaked.push(id + ' ' + el.className + v);
+          const rig = document.querySelector('#shellArt .sl-rig');
+          const t = rig && getComputedStyle(rig).transform;
+          if (!rig || !(t === 'none' || /^matrix\(1,\s*0,\s*0,\s*1[,)]/.test(t)))
+            tilted.push(id + ' ' + t);
+          const pct = rig ? (rig.getBoundingClientRect().height / innerHeight) * 100 : 0;
+          if (!(pct >= RIG_SCREEN_FRACTION.min && pct <= RIG_SCREEN_FRACTION.max))
+            scaled.push(id + ' ' + pct.toFixed(2) + '%');
+        }
+        shellApplyIntent('pick:' + START_DIRECTION_IDS.indexOf(startedOn));
+        check('no composed element inherits a custom property' +
+          (leaked.length ? ' (' + leaked.slice(0, 3).join(', ') + ')' : ''), leaked.length === 0);
+        check('RIG carries no rotation of its own — it stands on its surface' +
+          (tilted.length ? ' (' + tilted.join(', ') + ')' : ''), tilted.length === 0);
+        check('RIG RENDERS at board 13\'s human scale (3–5% of frame height)' +
+          (scaled.length ? ' (' + scaled.join(', ') + ')' : ''), scaled.length === 0);
+      }
       const attemptsAtTitle = sliceStats.attempts;
-      startRun();
+      // a real keypress, not startRun(): R is the traversal slice's restart
+      // key, so this also proves the press that leaves the title does not
+      // fall through into a second, attempt-spending reset
+      dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyR' }));
       check('any key leaves the title into a live run',
         state === 'PLAYING' && !shellSnapshot().atTitle &&
         document.getElementById('shell').classList.contains('on') === false &&

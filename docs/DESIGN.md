@@ -475,8 +475,19 @@ game-specific, **not because a direction has been judged** — that verdict is
 queued for the operator. The compositions obey the same invariants the game
 does: RIG at 3–5% of frame height (board 13), DESIGN's ≤8 colour roles, and
 the static-anatomy rule (nothing on the screen assembles; only light,
-vapour and haze move). Those invariants live as data in `src/pure/shell.js`
-so `tools/pathcheck.mjs` asserts them headlessly.
+vapour and haze move).
+
+Those invariants are checked at two levels, because a green headless gate
+is not proof that a screen looks right. `tools/pathcheck.mjs` asserts the
+composition **data** in `src/pure/shell.js` (the declared figure height,
+the role table, the resolved custom-property set); the **rendered** result
+needs a layout engine, so `?selftest=1` measures the laid-out title itself
+on all three directions — the figure's own rotation and its box against
+board 13's 3–5% band, plus the fact that no element leans on an inherited
+custom property. The first pass shipped a figure whose declared 3.8%
+rendered at 3.45% and 74° (an inherited `--rot` re-rotating RIG on top of
+the plate it stands on) with the data gate green, which is why the second
+level exists.
 
 `?shell=0` restores the pre-shell boot exactly. The harness contract is
 two-layered: `?testapi=1` and `?selftest=1` auto-start past the title, and

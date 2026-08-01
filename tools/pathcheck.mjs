@@ -38,10 +38,10 @@ import {
 import { crouchStance } from '../src/pure/stance.js';
 import {
   DEFAULT_START_DIRECTION, RIG_SCREEN_FRACTION, SHELL_CONSUMING_INTENTS,
-  SHELL_ELEMENT_TYPES, SHELL_ROLES, START_DIRECTIONS, START_DIRECTION_IDS,
-  compositionViolations, formatClock, formatSeconds, killsPerHundredShots,
-  resolveStartDirection, runStatRows, shellKeyIntent, startDirection,
-  startDirectionAt,
+  SHELL_ELEMENT_TYPES, SHELL_ELEMENT_VARS, SHELL_ROLES, START_DIRECTIONS,
+  START_DIRECTION_IDS, compositionViolations, elementVars, formatClock,
+  formatSeconds, killsPerHundredShots, resolveStartDirection, runStatRows,
+  shellKeyIntent, startDirection, startDirectionAt,
 } from '../src/pure/shell.js';
 import { assistDirection, assistVerticalReach } from '../src/pure/assist.js';
 import {
@@ -4486,6 +4486,45 @@ const XL = buildTransformLevel(CONFIG);
     ok(dir.tagline.length > 0 && dir.label.length > 0 && dir.promise.length > 0,
        'T-013: "' + dir.id + '" carries its board-05 brand promise as copy');
   }
+  /* --- the custom-property set (the inheritance trap) -------------------
+     CSS custom properties inherit, so an element that leaves one unset
+     picks up its parent's. For an attached child that is a rendering bug:
+     it already rides the parent's transform, so an inherited --rot applies
+     the parent's rotation twice (RIG at 74° on the 37° plate), an
+     inherited --o multiplies its opacity and an inherited --c paints it in
+     the parent's tone. elementVars() resolves the WHOLE set with defaults;
+     src/ui/shell.js writes all of it on every element. (The rendered
+     result — a laid-out DOM — is checked by ?selftest=1 in src/main.js;
+     these assertions only pin the data and the defaults.)              */
+  {
+    const bare = elementVars({ t: 'mass', x: 1, y: 2, w: 3, h: 4 });
+    ok(Object.keys(bare).join(',') === SHELL_ELEMENT_VARS.join(','),
+       'T-013: elementVars resolves exactly the declared custom-property set');
+    ok(bare['--rot'] === '0deg' && bare['--o'] === '1' && bare['--c'] === 'transparent',
+       'T-013: an element with no rot/opacity/tone gets explicit defaults, never inherits');
+    ok(bare['--x'] === '1%' && bare['--w'] === '3%' && bare['--h'] === '4%',
+       'T-013: frame-relative geometry is written in percent');
+    const rig = elementVars({ t: 'rig', x: 34, y: -37, w: 2.5, h: 3.8, tone: 'warm' });
+    ok(rig['--w'] === '2.5vh' && rig['--h'] === '3.8vh',
+       'T-013: RIG measures itself against frame HEIGHT in both axes (vh), so it never stretches');
+    ok(rig['--rot'] === '0deg',
+       'T-013: an attached RIG carries no rotation of its own — it rides its surface\'s transform');
+    ok(rig['--c'] === SHELL_ROLES.warm && rig['--o'] === '1',
+       'T-013: a tone resolves to its role colour and a missing opacity to 1');
+    const tilted = elementVars({ t: 'slab', x: -8, y: 24, w: 100, h: 11, rot: 37, o: 0.5 });
+    ok(tilted['--rot'] === '37deg' && tilted['--o'] === '0.5',
+       'T-013: a declared rotation and opacity pass through unchanged');
+    for (const dir of START_DIRECTIONS) {
+      const bad = dir.elements.filter((e) => {
+        const v = elementVars(e);
+        return SHELL_ELEMENT_VARS.some((k) => typeof v[k] !== 'string' || v[k] === '' ||
+          /undefined|NaN/.test(v[k]));
+      });
+      ok(bad.length === 0, 'T-013: every element of "' + dir.id +
+         '" resolves a complete custom-property set (' + bad.length + ' incomplete)');
+    }
+  }
+
   // the validator has to actually reject: a hero-scale RIG is the failure
   // mode this guard exists for (concept-art README flags "player drawn too
   // large" as an art defect, decisions.md entry 1)
@@ -4659,6 +4698,19 @@ const XL = buildTransformLevel(CONFIG);
          'T-013: no image assets referenced in ' + label);
     ok(/id="shell"/.test(htmlSrc) && /id="ovPanel"/.test(htmlSrc),
        'T-013: index.html carries the shell root and the overlay panel slot');
+    // the composition root writes the whole var set through elementVars(), so
+    // no property can be left to inherit from an attached element's parent
+    ok(/elementVars\(e\)/.test(shellCode) &&
+       !/setProperty\('--(x|y|w|h|rot|o|c)'/.test(shellCode),
+       'T-013: ui/shell.js writes element vars through elementVars(), never one-off/conditionally');
+    // clip-path clips an element's own pseudo-elements, so the RIG silhouette
+    // lives on ::before — with it on .sl-rig the muzzle flash (::after, which
+    // sits past the box's right edge) is cut away and the "firing" figure
+    // described in the composition data never renders
+    const rigRule = htmlSrc.slice(htmlSrc.indexOf('.sl-rig {'), htmlSrc.indexOf('.sl-rig::after'));
+    ok(rigRule.length > 0 && !/\.sl-rig \{[^}]*clip-path/.test(rigRule) &&
+       /\.sl-rig::before \{[^}]*clip-path/.test(rigRule),
+       'T-013: the RIG silhouette is clipped on ::before, so the muzzle flash is not clipped away');
     ok(htmlSrc.indexOf('id="ovTitle"') < htmlSrc.indexOf('id="ovPanel"') &&
        htmlSrc.indexOf('id="ovPanel"') < htmlSrc.indexOf('id="ovBody"'),
        'T-013: the shell panel sits between the overlay title and body');
@@ -4683,8 +4735,14 @@ const XL = buildTransformLevel(CONFIG);
     const mainCode = stripComments(mainSrc);
     ok(/if \(SHELL_ENABLED && !SHELL_AUTOSTART\) setState\('MENU'\);/.test(mainCode),
        'T-013: main.js parks at the title only when the shell is on and not auto-starting');
-    ok(/if \(intent === 'start'\) startRun\(\);\s*\/\/ fall through/.test(mainSrc),
+    ok(/if \(intent === 'start'\) \{ startRun\(\); startedFromTitle = true; \}\s*\/\/ fall through/
+       .test(mainSrc),
        'T-013: leaving the title does not consume the keypress that did it');
+    // …but the press that left the title must not fall through into the
+    // traversal slice's own R = restart branch: that would start the run AND
+    // reset it, spending an attempt merely for having looked at the title.
+    ok(/if \(e\.code === 'KeyR' && !startedFromTitle &&/.test(mainCode),
+       'T-013: the press that leaves the title never also restarts the run');
     ok(mainCode.indexOf('shellKeyIntent(e.code, state)') > 0 &&
        mainCode.indexOf('shellKeyIntent(e.code, state)') < mainCode.indexOf('const k = KEYMAP[e.code];'),
        'T-013: the shell gets first look, then the ordinary gameplay path runs');

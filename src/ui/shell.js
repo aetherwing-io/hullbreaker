@@ -19,7 +19,10 @@
    - no image assets: every mark is a flat-shaded box, gradient or
      clip-path silhouette (see index.html's #shell CSS);
    - the composition holds concept board 13's scale rule — RIG is 3.8% of
-     frame height on all three directions, asserted in tools/pathcheck.mjs;
+     frame height on all three directions. tools/pathcheck.mjs asserts
+     that on the composition DATA; only a browser can prove the figure
+     RENDERS at that scale and at its surface's angle, so ?selftest=1
+     measures the laid-out element too (src/main.js);
    - motion is limited to light, vapour and haze. decisions.md entry 3's
      static-anatomy rule applies to the title too: the plate is hinged
      open when we arrive, it does not assemble itself for us. */
@@ -30,7 +33,7 @@ import {
 } from '../mode.js';
 import { CONFIG } from '../config.js';
 import {
-  START_DIRECTIONS, SHELL_ROLES, runStatRows, startDirection, startDirectionAt,
+  START_DIRECTIONS, elementVars, runStatRows, startDirection, startDirectionAt,
 } from '../pure/shell.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { player, P } from '../sim/player.js';
@@ -61,19 +64,14 @@ function artFor(dir) {
     const d = document.createElement('div');
     d.className = 'sl sl-' + e.t;
     const s = d.style;
-    s.setProperty('--x', e.x + '%');
-    s.setProperty('--y', e.y + '%');
-    // RIG measures itself against frame HEIGHT in both axes (vh), so the
-    // silhouette keeps its proportions and its 3.8%-of-height scale on any
-    // aspect ratio — a percentage width would stretch it on a wide screen.
-    const unit = e.t === 'rig' ? 'vh' : '%';
-    s.setProperty('--w', e.w + unit);
-    s.setProperty('--h', e.h + unit);
-    if (e.rot) s.setProperty('--rot', e.rot + 'deg');
-    if (e.tone) s.setProperty('--c', SHELL_ROLES[e.tone]);
-    if (e.o !== undefined) s.setProperty('--o', String(e.o));
-    // attached elements ride their parent's box and rotation (RIG on the
-    // tilted plate, RIG on a gantry)
+    // EVERY var, on every element, defaults included — custom properties
+    // inherit, and an attached child that left one unset would re-apply its
+    // parent's value on top of the parent's own transform (see
+    // elementVars() in src/pure/shell.js). Never write these conditionally.
+    const vars = elementVars(e);
+    for (const k of Object.keys(vars)) s.setProperty(k, vars[k]);
+    // attached elements ride their parent's box and transform (RIG stands on
+    // the tilted plate / on a gantry); their own --rot is relative to it
     if (e.attach && last) last.appendChild(d);
     else { frag.appendChild(d); last = d; }
   }

@@ -98,15 +98,23 @@
     background: linear-gradient(180deg, transparent 0%, var(--c) 22%, #fff 52%, var(--c) 78%, transparent 100%);
     box-shadow: 0 0 46px 14px var(--c);
   }
-  /* RIG: one human-scale silhouette, 3.8% of frame height (board 13),
-     dark against the lit surface with a warm rim and a muzzle flash */
-  .sl-rig { background: var(--c); filter: drop-shadow(0 1px 3px rgba(7,19,26,.95));
+  /* RIG: one human-scale silhouette, 3.8% of frame height (board 13), warm
+     against the dark machinery, with a muzzle flash off the barrel.
+     The clip-path lives on ::before, NOT on .sl-rig itself: clip-path clips
+     an element's pseudo-elements too, so a silhouette on the box would cut
+     away the flash beside it (::after sits past the box's right edge) and
+     nothing would render. */
+  .sl-rig { filter: drop-shadow(0 1px 3px rgba(7,19,26,.95)); }
+  .sl-rig::before {
+    content: ''; position: absolute; inset: 0; background: var(--c);
     clip-path: polygon(40% 0%, 68% 9%, 60% 33%, 80% 43%, 62% 58%,
                        86% 100%, 64% 100%, 47% 70%, 30% 100%, 8% 95%,
-                       32% 52%, 18% 27%); }
+                       32% 52%, 18% 27%);
+  }
   .sl-rig::after {
-    content: ''; position: absolute; left: 108%; top: 30%;
-    width: 60%; height: 15%; background: #fff; border-radius: 50%;
+    /* off the barrel: the silhouette's weapon arm reaches x = 80% */
+    content: ''; position: absolute; left: 96%; top: 31%;
+    width: 56%; height: 15%; background: #fff; border-radius: 50%;
     box-shadow: 0 0 10px 4px rgba(255,233,194,.9);
     animation: sl-flash 1.7s steps(1, end) infinite;
   }
