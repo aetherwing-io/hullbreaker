@@ -1,8 +1,9 @@
 /* ========================= LIMB: THE LEG ========================== */
-/* The rendered half of the G1 limb-turn experiment (?g1=1): the six-face
-   tower baked as one static, faceted creature limb — armour skin under the
-   deck, the body rising behind the combat plane, and a tendon joint at
-   every corner.
+/* The six-face tower baked as one static, faceted creature limb — armour
+   skin under the deck, the body rising behind the combat plane, and a tendon
+   joint at every corner. This is the DEFAULT world reveal since T-009
+   (decisions.md entry 3); it began as the G1 limb-turn experiment behind
+   ?g1=1, and ?zip=1 still selects the legacy brick-slam reveal instead.
 
    THE LIMB NEVER MOVES. Every box here is placed once from the pure bake
    plan (../pure/limb.js) along the shipped polyline and is never touched
@@ -113,6 +114,6 @@ function bakeLimb() {
   return plan.length;
 }
 
-// Only ?g1=1 bakes any of this; every other run mode renders the shipped
-// grey-box tower untouched.
+// The six-face run bakes this by default; ?zip=1 (and the fixtures, which
+// author their own transitions) render the grey-box tower untouched.
 export const limbPieces = IS_G1 ? bakeLimb() : 0;

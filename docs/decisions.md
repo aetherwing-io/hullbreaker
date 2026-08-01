@@ -539,3 +539,72 @@ player forward and upward, with face transitions ratcheting and pumping — the
 
 **Source:** operator direction, 2026-08-01, after the integrator asked whether
 the pocket failures were a design problem or unclear direction.
+
+## 12 — 2026-08-01 — Pocket feel verdict: it works, and the price is PRESSURE, not geometry
+
+**Operator verbatim, after playing it:** "feels good to me, i had enough time
+to try and fail and go back and still mess up and then the wasp pressure was
+enough that i abandoned it and continued on"
+
+**Verdict: the pocket is good as it stands.** The arc the operator describes —
+attempt, fail, go back, fail again, then get driven off by enemy pressure and
+continue — is exactly the "do I have time to grab that capsule?" tension
+`DESIGN.md:176` specifies, produced live, with a FREE capsule.
+
+**What this teaches, and it is the correction to three failed cycles.** T-009
+spent three passes trying to make the reward *cost* something by putting it out
+of reach, and every pass failed because RIG's jump envelope is frozen and
+generous. The cost was never supposed to be reach. **The price is the pursuing
+pressure** — the wasps, the closing edge, the seconds spent — and that price
+was already being charged the whole time. Entry 9 removed a requirement that
+was trying to buy something the fight was already selling. The capsule being
+free is not a concession; the *fight* is what makes taking it a decision.
+
+**Consequences for the lanes in flight:**
+- The shelf-and-chasm pocket **stays**. The open question in T-009's packet
+  ("is it still worth entering, or is it now just another hole in the deck")
+  is answered: it is worth entering, and it produced a real try/fail/abandon
+  arc without any geometric wager.
+- **T-021's fork should be priced the same way.** A dead end matters because
+  hostiles are on you while you are in it, not because it is far from
+  anything. Entry 11's fairness rider still holds (legible as a risk before
+  commitment), but the *stake* is pressure, and the design should lean on the
+  enemy roster to charge it rather than on distance or height.
+- This also validates the wasp doing its documented job — contesting open
+  crossings and predictable arcs. It is the wasp that ended the attempt.
+
+**RESOLVED, same session — operator: "index.html was the one i played."** So
+the arc came from the SIX-FACE DEFAULT RUN with the FREE capsule, merged
+minutes earlier. Free + pressure is sufficient: the shelf-and-chasm pocket
+stays as authored, and T-021 keeps that shape rather than replacing it. The
+retreat-priced wager still living in the traversal slice is NOT what produced
+the good arc — see entry 13.
+
+**Source:** operator playtest, 2026-08-01.
+
+## 13 — 2026-08-01 — The traversal slice is too easy to judge difficulty in
+
+**Operator verbatim:** "i just tired the traversal slice and it was too easy"
+
+**Verdict, and it is methodological.** `?slice=traversal` is the bench nearly
+every mechanic in this repo was prototyped and feel-judged on — FLOW, rib-run,
+the hook, the polyp, the mortar, and the original dare pocket. The operator
+reports it plays too easy. **Feel verdicts taken in the slice therefore
+under-read difficulty and do not transfer to the six-face run**, where the
+pursuing edge, the wave gates and the ambient spawn drift are what actually
+price a decision (entry 12: the price is pressure).
+
+**Consequences, binding on how work is dispatched:**
+- A mechanic whose value depends on PRESSURE may not be prototyped in the
+  slice and called judged. Build it where the pressure is, or add the pressure
+  to the bench and say so.
+- T-021 is retargeted from the slice to the six-face run by this entry. The
+  lattice is uncontended now that T-009 has merged.
+- This does not retire the slice. It remains the right bench for isolating a
+  movement verb or a single enemy's read — anything whose question is "does
+  this behave", not "does this cost enough".
+- Existing slice-only verdicts are not invalidated wholesale, but any that
+  turned on difficulty or on a cost being felt should be re-asked in the
+  six-face run before they are treated as settled.
+
+**Source:** operator playtest, 2026-08-01, immediately after entry 12.

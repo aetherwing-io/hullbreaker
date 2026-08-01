@@ -1,0 +1,122 @@
+{
+  "name": "expJ-strafe",
+  "description": "The DEFAULT six-face run in policy mode, with the T-018 relative-geometry clauses. Same shape as six-face-full-run.json (hold fire, hold right while the world scrolls, hop, dodge a houndframe's plant) plus the three things the old grammar could not say: TILT THE GUN UP when the nearest hostile above the firing line is meaningfully above it (the game's aim is 8-way, so a level shot cannot reach the 4.6/7.2 lanes at all — see docs/playtests/2026-08-gate-fight-harness.md); FACE the side that hostile is on during a gate, since facing and moving are the same key; and JUMP AT THE LIP of a hole instead of hopping into it. Note rules 4/5 lean on the documented `99` sentinel on purpose: with nothing above and nothing near, threat.dx>2 reads true, so the bot drifts toward the pivot during the post-clear ritual rather than standing still. MEASURED, NOT ASPIRATIONAL (2026-08-01, task/T-009's tree pinned at 8751, --deterministic, 1440x900, 245 s cap): this policy clears wave gates 1, 2 and 3, reaching maxX 219.3 / scroll 205 of 415 with 22 kills before spending its third life at 76.9 s. The aimless script clears gate 1 and dies in gate 2 at scroll 140 with 14 kills. It does NOT reach VICTORY, and no bot run has. Per-tick aim quality against the same fights: the gun points at a hostile on 20-29% of gate-1 ticks and 28% of gate-2 ticks, against 8.8% / 12.0% for the aimless policy. Run-to-run spread is real (the tuning variants either side of the shipped hop guard stopped at face 3 and gate 2), so read the structural outcomes, not one run's decimals.",
+  "url": "index.html",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "durationMs": 140000,
+  "moves": [
+    {
+      "hold": "fire",
+      "fromMs": 400,
+      "toMs": 140000
+    }
+  ],
+  "policy": {
+    "rules": [
+      {
+        "when": "!hudTC",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "hudTC && threat.upDist<13 && threat.upDx>1 && threat.upSlope<1",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "hudTC && threat.upDist<13 && threat.upDx<-1 && threat.upSlope<1",
+        "do": {
+          "hold": "left"
+        }
+      },
+      {
+        "when": "hudTC && threat.upDist>13 && threat.dx>2",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "hudTC && threat.upDist>13 && threat.dx<-2",
+        "do": {
+          "hold": "left"
+        }
+      },
+      {
+        "when": "edgeMargin<8",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "threat.upDist<13 && threat.upSlope>0.5",
+        "do": {
+          "hold": "up"
+        }
+      },
+      {
+        "when": "pinned",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "houndTell",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "grounded && terrain.gapDist>3 && threat.upDist>3.5",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "grounded && terrain.gapDist<2.2",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "!grounded && vy<0 && terrain.gapDist<1.2",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "hudTC && threat.upDist<13 && threat.upDx>1 && threat.upSlope>1 && threat.upSlope<3 && edgeMargin>6",
+        "do": {
+          "hold": "left"
+        }
+      },
+      {
+        "when": "hudTC && threat.upDist<13 && threat.upDx>1 && threat.upSlope>1 && threat.upSlope<3 && edgeMargin>6",
+        "do": {
+          "hold": "strafe"
+        }
+      },
+      {
+        "when": "hudTC && threat.upDist<13 && threat.upDx<-1 && threat.upSlope>1 && threat.upSlope<3",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "hudTC && threat.upDist<13 && threat.upDx<-1 && threat.upSlope>1 && threat.upSlope<3",
+        "do": {
+          "hold": "strafe"
+        }
+      }
+    ]
+  }
+}

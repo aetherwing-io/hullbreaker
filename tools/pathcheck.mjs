@@ -84,6 +84,9 @@ import {
   solidRectContains, levelSolidCell, buildLevel, buildTraversalLevel,
   buildSpawnTable, GAP,
 } from '../src/pure/generator.js';
+// T-009: the lattice pass is asserted through its own exports (namespace
+// import so the appended section stays one self-contained block).
+import * as latticeModule from '../src/pure/lattice.js';
 import {
   limbBakePlan, limbFacets, limbFacetTone, limbJoints, limbOutwardReach,
   limbPlanViolations, limbSpanHasGap, limbSpansPlayBand,
@@ -749,9 +752,26 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
 }
 
 // --- authored traversal slice ------------------------------------------
-ok(gH.length === 445 && plats.length === 49 && LVL.chunkLog.length === 59,
-   'normal generator shape unchanged (445 columns / 49 platforms / 59 chunks)');
-ok(fingerprint(LVL) === 'cc6afd7c',
+// Re-pinned by T-009 (six-face integration): the lattice pass now carves one
+// pocket per face and repairs route density (src/pure/lattice.js), so the
+// shipped six-face geometry deliberately moved — 49 -> 62 catwalks, and the
+// build result gained its `pockets` / `lattice` report. The chunk stream itself
+// is untouched (59 chunks, same seed, same rng draws): the lattice consumes no
+// randomness. Both values below are regression pins, not targets — if a change
+// moves them again it has to be as deliberate as this one was.
+ok(gH.length === 445 && plats.length === 62 && LVL.chunkLog.length === 59,
+   'normal generator shape pinned (445 columns / 62 platforms / 59 chunks), got ' +
+   gH.length + '/' + plats.length + '/' + LVL.chunkLog.length);
+// Moved three times inside T-009 and then moved BACK. Two passes lifted the
+// capsule out of the deck-line jump arc (rewardRise 0.7 -> 1.75, then a shelf
+// tier of the pocket's own at +4.45) because collecting it was supposed to
+// cost a retreat; decisions.md entry 9 withdrew that requirement, so the
+// pocket is the plain shape again — shelf one generator tier over its mid
+// lane, capsule +0.7 over the tip. The chunk stream never moved at all (same
+// 445 columns, same 59 chunks, same rng draws — the lattice consumes none);
+// what moves with the shelf height is the bands the patch pass reads, and at
+// the plain shape that is one catwalk fewer than the raised tier produced.
+ok(fingerprint(LVL) === 'e715cc38',
    'normal generator fingerprint unchanged, got ' + fingerprint(LVL));
 
 const fixtureBefore = JSON.stringify(TRAVERSAL_FIXTURE);
@@ -5531,8 +5551,14 @@ const G2GATE = G2E.gate;
       return null;
     }
   };
-  const base = runTrace('');
-  const g1 = runTrace('?g1=1');
+  // T-009 flipped which of these two render modes is the default (the static
+  // limb reveal now ships without a flag, decisions.md entry 3), so the pair
+  // under comparison is spelled the other way round — `?zip=1` is the legacy
+  // brick-slam reveal and the empty query is the limb. The claim, the trace,
+  // and the two modes being compared are exactly the same as before; only the
+  // flag that selects them moved.
+  const base = runTrace('?zip=1');
+  const g1 = runTrace('');
   ok(!!base && !!g1, 'the six-face sim runs headlessly in both render modes');
   if (base && g1) {
     ok(base.rows > 1000,
@@ -5548,10 +5574,11 @@ const G2GATE = G2E.gate;
     ok(base.rows === g1.rows,
        'both modes simulate the same number of frames (' + base.rows + ' vs ' + g1.rows + ')');
     ok(firstDiff === -1,
-       'every simulated value is identical with ?g1=1: scroll, gate state, ritual ' +
-       'clock, built columns, spawns, hostiles, player' +
+       'every simulated value is identical between ?zip=1 and the default: scroll, ' +
+       'gate state, ritual clock, built columns, spawns, hostiles, player' +
        (firstDiff >= 0 ? ' — first difference at frame ' + firstDiff +
-         '\n  base: ' + base.trace[firstDiff] + '\n  g1:   ' + g1.trace[firstDiff] : ''));
+         '\n  zip:     ' + base.trace[firstDiff] +
+         '\n  default: ' + g1.trace[firstDiff] : ''));
     ok(base.kills === g1.kills && base.state === g1.state &&
        base.scrollX === g1.scrollX,
        'same kills, same end state, same scroll cursor');
@@ -7043,6 +7070,669 @@ const G2GATE = G2E.gate;
   }
 }
 
+/* ============ T-009: the six-face lattice (route density) ============== *
+ * The default run's own level-construction contract, asserted the way the
+ * traversal fixture's is. Everything here reads the SHIPPED build (`LVL`
+ * above) through src/pure/lattice.js's own exported functions, so the
+ * generator and the harness can never disagree about what "readable route",
+ * "reachable", or "stranded" mean.                                        */
+{
+  const LAT = latticeModule;
+  const L = LAT.LATTICE;
+  const lvl = { groundH: LVL.groundH, platforms: LVL.platforms };
+
+  // --- route density: 3-5 readable routes, every face, every window -----
+  {
+    let thin = 0, busy = 0, worst = 99, most = 0;
+    for (const span of LAT.latticeInterior(CONFIG)) {
+      for (let s = span.a; s <= span.b; s++) {
+        const c = LAT.latticeRouteCount(lvl, s, CONFIG);
+        if (c < L.minRoutes) thin++;
+        if (c > L.maxRoutes) busy++;
+        worst = Math.min(worst, c); most = Math.max(most, c);
+      }
+    }
+    ok(thin === 0, 'T-009: no face window reads fewer than ' + L.minRoutes +
+       ' routes (worst ' + worst + ', ' + thin + ' thin windows)');
+    ok(busy === 0, 'T-009: no face window reads more than ' + L.maxRoutes +
+       ' routes (most ' + most + ', ' + busy + ' busy windows)');
+    ok(LAT.latticeInterior(CONFIG).length === CONFIG.path.faces,
+       'T-009: the density invariant covers all six faces');
+  }
+
+  // --- the lattice pass is a fixpoint, not a schedule -------------------
+  // Re-running both passes on the shipped level must want nothing: if it did,
+  // the level the player gets would depend on where a loop happened to stop.
+  {
+    const copy = { groundH: LVL.groundH, platforms: LVL.platforms.slice() };
+    const add = LAT.latticePatchPass(copy, CONFIG);
+    const cut = LAT.latticeThinPass(copy, CONFIG);
+    ok(add.length === 0 && cut.length === 0,
+       'T-009: the lattice pass converged (' + add.length + ' more patches, ' +
+       cut.length + ' more thins wanted)');
+    const again = buildLevel(CONFIG);
+    ok(fingerprint(again) === fingerprint(LVL),
+       'T-009: the lattice is deterministic across builds');
+  }
+
+  // --- reachability and stranding ---------------------------------------
+  {
+    const bad = LAT.latticeUnreachable(lvl, CONFIG);
+    ok(bad.length === 0, 'T-009: every catwalk (patched or authored) is within ' +
+       'double-jump reach of a support, got ' + bad.length + ' orphans');
+    const stranded = LAT.latticeStranded(lvl, CONFIG);
+    ok(stranded.length === 0, 'T-009: no catwalk strands the player at its ' +
+       'forward end, got ' + JSON.stringify(stranded.slice(0, 3)));
+  }
+
+  // --- pockets: shape, placement, entry, and the measured detour ---------
+  {
+    const pockets = LVL.pockets;
+    const P = L.pocket;
+    ok(pockets.length === CONFIG.path.faces,
+       'T-009: one pocket per face, got ' + pockets.length);
+    // the authored sites and the built terrain agree
+    const sites = LAT.latticePocketSites(CONFIG, LVL.groundH);
+    ok(JSON.stringify(sites) === JSON.stringify(pockets),
+       'T-009: the built pockets are exactly the authored sites');
+
+    let badFace = 0, badArena = 0, badChasm = 0, badDrop = 0, badApron = 0;
+    let badShelf = 0, badMount = 0, badEntry = 0, badReward = 0, badDetour = 0;
+    let badMid = 0;
+    const PJ = CONFIG.player;
+    const apex = (PJ.jumpVel * PJ.jumpVel) / (2 * -PJ.gravity);
+    const doubleApex = apex + (PJ.airJumpVel * PJ.airJumpVel) / (2 * -PJ.gravity);
+    for (const p of pockets) {
+      const face = faceIndexAt(p.x0, CONFIG);
+      if (face !== p.face || faceIndexAt(p.x1 - 1, CONFIG) !== p.face) badFace++;
+      // never inside the wave gate's arena, never in a corner apron
+      if (p.x1 > p.corner - P.cornerClearBefore) badArena++;
+      if (p.x0 < p.corner - CONFIG.path.faceTiles + P.cornerClearAfter) badApron++;
+      // the chasm is exactly the authored hole, with solid runs either side
+      let holes = 0, approachSolid = 0, landingSolid = 0;
+      for (let s = p.x0; s < p.x1; s++) {
+        const g = LVL.groundH[s];
+        if (s >= p.gap.x0 && s < p.gap.x1) { if (g < -100) holes++; continue; }
+        if (g < -100) continue;
+        if (s < p.gap.x0) { if (g === p.deckY) approachSolid++; }
+        else if (g === p.landingY) landingSolid++;
+      }
+      if (holes !== P.gapCols) badChasm++;
+      if (approachSolid !== P.approachCols || landingSolid !== P.landingCols) badDrop++;
+      // the deck steps down by exactly one across the hole: legal for a gap
+      // (<= 1) and worth an extra tile of airtime to a cut jump
+      if (p.deckY - p.landingY !== P.landingDrop &&
+          !(p.landingY === CONFIG.gen.minH && p.deckY === CONFIG.gen.minH)) badDrop++;
+      // the shelf: tip over the void, mount over the landing
+      if (!(p.shelf.x0 === p.gap.x0 && p.shelf.x1 > p.gap.x1)) badShelf++;
+      for (let s = p.gap.x1; s < p.shelf.x1; s++)
+        if (!(LVL.groundH[s] > -100)) badMount++;
+      /* ENTRY CONTRACT — REACHABILITY ONLY (decisions.md entry 9). The mid
+         lane is one grounded jump over the landing, and the shelf is inside
+         a double jump of the mid lane, so the route into the pocket exists
+         with the verbs the run has already taught.
+
+         REMOVED here by entry 9, not weakened: the two checks that required
+         the shelf to be OUT of double-jump reach of the landing and of the
+         approach deck. Their whole subject was pricing the capsule as a
+         wager; the capsule is now a plain pickup, so a shelf a player can
+         reach from the deck line is not a defect to assert against. */
+      if (p.mid.y - p.landingY > apex) badEntry++;
+      if (p.shelf.y - p.mid.y > doubleApex) badEntry++;
+      if (Math.abs((p.shelf.y - p.mid.y) - L.tierRise) > 1e-9) badMid++;
+      // the reward sits over the tip, and no higher than a player STANDING on
+      // that tip can reach: head (shelf + height) + the pickup radius, minus
+      // the bob amplitude that the capsule spends above its authored y. The
+      // exact worst-case distance, over the whole tip column and the whole bob
+      // cycle, is asserted below; this is the cheap bound that keeps an
+      // authored number from ever being obviously uncollectable.
+      if (!(p.reward.x >= p.shelf.x0 && p.reward.x <= p.shelf.x0 + 1)) badReward++;
+      if (!(p.reward.y - p.shelf.y > 0 &&
+            p.reward.y - p.shelf.y <= CONFIG.capsules.pickupRadius + PJ.height -
+                                      CONFIG.capsules.bobAmp * 0.3))
+        badReward++;
+      // the detour out to the tip and back has to leave real daylight, so the
+      // pocket can always be left — the pursuit half of the contract, which
+      // entry 9 keeps
+      const advance = CONFIG.scrollSpeed * p.detour.seconds;
+      if (Math.abs(advance - p.detour.edgeAdvanceTiles) > 1e-9) badDetour++;
+      if (P.timing.entryEdgeMarginTiles - advance < P.timing.minExitMarginTiles) badDetour++;
+      if (p.detour.depthTiles !== P.gapCols) badDetour++;
+    }
+    ok(badFace === 0, 'T-009: every pocket lies wholly inside its own face');
+    ok(badArena === 0, 'T-009: no pocket reaches into the wave gate arena ' +
+       '(>= ' + P.cornerClearBefore + ' tiles clear of the corner)');
+    ok(badApron === 0, 'T-009: no pocket sits on a corner apron exit');
+    ok(badChasm === 0, 'T-009: every pocket chasm is exactly ' + P.gapCols + ' columns');
+    ok(badDrop === 0, 'T-009: every pocket has its authored approach/landing runs, ' +
+       'and the deck steps down exactly ' + P.landingDrop + ' across the hole');
+    ok(badShelf === 0, 'T-009: every shelf tip hangs over the chasm');
+    ok(badMount === 0, 'T-009: every shelf mount sits over solid landing');
+    ok(badEntry === 0, 'T-009: the pocket route exists with taught verbs — mid lane ' +
+       'within one grounded jump (' + apex.toFixed(2) + ') of the landing, shelf ' +
+       'within a double jump (' + doubleApex.toFixed(2) + ') of the mid lane');
+    ok(badMid === 0, 'T-009: shelf sits exactly one generator tier (+' + L.tierRise +
+       ') over its mid lane');
+    ok(badReward === 0, 'T-009: every pocket capsule sits over the shelf tip');
+    ok(badDetour === 0, 'T-009: every pocket detour is measured and fits the ' +
+       'clock (' + P.timing.entryEdgeMarginTiles + ' tiles of daylight in, >= ' +
+       P.timing.minExitMarginTiles + ' out)');
+
+    // the chasm itself, against the frozen jump: a HELD jump clears it with
+    // slack from a launch one tile short of the lip
+    {
+      const airMs = (2 * PJ.jumpVel) / -PJ.gravity;
+      const fall = Math.sqrt((2 * apex) / (-PJ.gravity * PJ.fallGravityMult));
+      const reach = PJ.runSpeed * (airMs / 2 + fall);
+      ok(reach - (P.gapCols + 1.7) > 0.5,
+         'T-009: a held jump clears a pocket chasm with slack (' +
+         reach.toFixed(2) + ' tiles of travel vs ' + (P.gapCols + 1.7).toFixed(2) + ' needed)');
+      ok(P.gapCols <= CONFIG.gen.gapMax,
+         'T-009: the pocket chasm respects the generator gap ceiling');
+    }
+
+    /* --- the capsule is collectable where it hangs -------------------- *
+     * decisions.md entry 9 made the capsule a plain pickup, so the only
+     * question its height still has to answer is the positive one: a player
+     * who is on the shelf gets paid.
+     *
+     * DELETED HERE BY ENTRY 9, not weakened — the swept deck-line jump arc,
+     * the analytic head-reach envelope, the double-jump envelope and its
+     * pinned deck+1-plateau residue. Every one of them asserted that no free
+     * route could touch the reward, which was the withdrawn wager's subject
+     * and nothing else; an assertion certifying a claim the game no longer
+     * makes is worse than no assertion.
+     *
+     * The pickup model mirrors src/sim/capsules.js exactly: the test is
+     * circleHitsPlayer(c.x, c.y, CAP.pickupRadius), i.e. the distance from
+     * the capsule point to the player's AABB, and a 'fixed' capsule bobs
+     * +/- bobAmp*0.3 around its authored y. Both are guarded against drift
+     * at the end of this block, and the behavioural half — the shipped sim,
+     * the shipped pickup code — runs in the children further down.       */
+    {
+      const CAPS = CONFIG.capsules;
+      const RAD = CAPS.pickupRadius;
+      const BOB = CAPS.bobAmp * 0.3;             // 'fixed' mode bob amplitude
+      const hw = PJ.width / 2, ph = PJ.height;
+
+      // the same distance the sim computes, for one capsule position
+      const pointGap = (px, py, rx, ry) => {
+        const cx = Math.max(px - hw, Math.min(rx, px + hw));
+        const cy = Math.max(py, Math.min(ry, py + ph));
+        return Math.hypot(rx - cx, ry - cy);
+      };
+
+      // the capsule PAYS: standing anywhere on the tip column, at any point
+      // of the bob, it is already inside the sphere — taken by walking out
+      // on the spur, never by a precision jump off a two-tile ledge.
+      let unpaid = 0, standWorst = 0;
+      for (const p of pockets) {
+        for (let k = 0; k <= 10; k++) {
+          const px = p.shelf.x0 + k / 10;
+          for (const phase of [-BOB, 0, BOB]) {
+            const d = pointGap(px, p.shelf.y, p.reward.x, p.reward.y + phase);
+            standWorst = Math.max(standWorst, d);
+            if (d >= RAD) unpaid++;
+          }
+        }
+      }
+      ok(unpaid === 0,
+         'T-009: a player standing anywhere on the shelf tip collects the ' +
+         'capsule at every bob phase (worst distance ' + standWorst.toFixed(3) +
+         ' vs radius ' + RAD + ')');
+
+      /* drift guards: this whole block is arithmetic ABOUT src/sim code, so
+         it is only as true as the two lines it mirrors. */
+      const capSrc = stripComments(readFileSync(join(srcDir, 'sim', 'capsules.js'), 'utf8'));
+      ok(/circleHitsPlayer\(c\.x,\s*c\.y,\s*CAP\.pickupRadius\)/.test(capSrc),
+         'T-009: the pickup is still a sphere of CAP.pickupRadius around the capsule');
+      ok(/CAP\.bobAmp\s*\*\s*0\.3/.test(capSrc),
+         'T-009: a fixed capsule still bobs bobAmp*0.3 about its authored y');
+      const plSrc = stripComments(readFileSync(join(srcDir, 'sim', 'player.js'), 'utf8'));
+      ok(/function circleHitsPlayer\([^)]*\)\s*\{[^}]*player\.x - player\.hw[^}]*player\.y,\s*Math\.min\(y,\s*player\.y \+ player\.h\)/
+         .test(plSrc),
+         'T-009: the pickup test still measures to RIG\'s whole body box');
+      const mainSpawn = stripComments(readFileSync(join(srcDir, 'main.js'), 'utf8'));
+      ok(/spawnCapsule\(p\.reward\.kind,\s*p\.reward\.letter,\s*p\.reward\.x,\s*p\.reward\.y,\s*p\.reward\.mode\)/
+         .test(mainSpawn),
+         'T-009: the run still spawns each capsule at the authored pocket geometry');
+    }
+  }
+
+  // --- pockets never leak into the traversal slice ----------------------
+  // The slice overlays its fixture on the same seeded build; face 1's pocket
+  // lands inside those bounds and must be completely overwritten, or the
+  // judged slice would silently change under another lane's feet.
+  {
+    const slice = buildTraversalLevel(CONFIG);
+    const fb = TRAVERSAL_FIXTURE.bounds;
+    let leaked = 0;
+    for (const p of slice.platforms)
+      if (p.pocket && p.x1 > fb.x0 && p.x0 < fb.x1) leaked++;
+    ok(leaked === 0, 'T-009: no pocket catwalk survives inside the traversal fixture band');
+    let groundOk = true;
+    for (const run of TRAVERSAL_FIXTURE.groundRuns)
+      for (let x = run.x0; x < run.x1; x++) if (slice.groundH[x] !== run.y) groundOk = false;
+    ok(groundOk, 'T-009: the fixture band still owns its authored ground runs');
+  }
+}
+
+/* ---- T-009: the static-anatomy reveal is the DEFAULT corner ritual ----- *
+ * decisions.md entry 3 made "the body never assembles" a rule; T-009 makes it
+ * the shipped behaviour of the six-face run instead of an opt-in experiment.
+ * The zipper is retired from the world, NOT deleted (that entry's addendum):
+ * its choreography stays whole, installed, and playable behind ?zip=1 for the
+ * traps/emplacements lane. Both halves are asserted here — the resolution, in
+ * a child process because src/mode.js reads its query once at import; and the
+ * extractability, at the source level.                                    */
+{
+  const modeUrl = 'file://' + join(srcDir, 'mode.js');
+  const probe = (query) => {
+    const src = `
+      globalThis.__HB_QUERY__ = ${JSON.stringify(query)};
+      const M = await import(${JSON.stringify(modeUrl)});
+      console.log(JSON.stringify({ g1: M.IS_G1, zip: M.ZIPPER_REVEAL }));
+    `;
+    try {
+      return JSON.parse(execFileSync(process.execPath,
+        ['--input-type=module', '-e', src], { encoding: 'utf8' }));
+    } catch (e) {
+      console.error('pathcheck: T-009 mode probe failed (' + query + '): ' + e.message);
+      return null;
+    }
+  };
+  const plain = probe('');
+  const zip = probe('?zip=1');
+  const off = probe('?g1=0');
+  const slice = probe('?slice=traversal');
+  ok(plain && plain.g1 === true,
+     'T-009: the default six-face run renders the static limb, no flag needed');
+  ok(zip && zip.g1 === false && zip.zip === true,
+     'T-009: ?zip=1 restores the brick-slam reveal (the choreography is still playable)');
+  ok(off && off.g1 === false,
+     'T-009: ?g1=0 is the same escape hatch, for anyone who knew the old flag');
+  ok(slice && slice.g1 === false,
+     'T-009: the fixtures still own their own transitions (no limb bake there)');
+  {
+    const lvl = stripComments(readFileSync(join(srcDir, 'render', 'level.js'), 'utf8'));
+    ok(/function zipperColumn\(/.test(lvl) && /installView\([^)]*zipperColumn/.test(lvl),
+       'T-009: the zipper hook is still written and still installed (retired, not deleted)');
+    const wg = stripComments(readFileSync(join(srcDir, 'sim', 'wavegate.js'), 'utf8'));
+    ok(/zipperOffset/.test(wg) && /function updateZipper\(/.test(wg),
+       'T-009: the gate runtime still drives the zipper timeline for ?zip=1');
+    const limbSrc = stripComments(readFileSync(join(srcDir, 'render', 'limb.js'), 'utf8'));
+    ok(!/installView|view\./.test(limbSrc) && !/\bgameMs\b|\btMs\b/.test(limbSrc),
+       'T-009: the now-default reveal still cannot be animated (CP3 ruling holds)');
+  }
+  // the ritual itself is untouched: the two-snap detent curve is the camera's,
+  // and it is the same curve at the same times it was before this task
+  {
+    const T = cornerTimeline(CONFIG);
+    ok(cornerYawDeltaDeg(T.t2, CONFIG) === CONFIG.path.turnDeg &&
+       Math.abs(cornerYawDeltaDeg(T.t6, CONFIG) - 2 * CONFIG.path.turnDeg) < 1e-9,
+       'T-009: the corner is still two 30 deg detents, ' + T.t6 + ' ms end to end');
+  }
+}
+
+/* ------ T-009: houndframe stations on the six-face run (faces 2+) ------ *
+ * decisions.md entry 6 as invariants: a station stands ON the thing it owns,
+ * on a plate it can actually charge across, with the answer to it already
+ * built one jump above — and it can never hold a wave gate shut.          */
+{
+  const LAT = latticeModule;
+  const H = LAT.LATTICE.hound;
+  const table = buildSpawnTable(CONFIG, LVL);
+  const stations = table.filter((r) => r.type === 'hound');
+  const PJ = CONFIG.player;
+  const apex = (PJ.jumpVel * PJ.jumpVel) / (2 * -PJ.gravity);
+
+  ok(stations.length === CONFIG.path.faces - (H.firstFace - 1),
+     'T-009: one houndframe station per face from ' + H.firstFace +
+     ' on, got ' + stations.length);
+  {
+    const faces = stations.map((r) => faceIndexAt(r.x, CONFIG)).sort((a, b) => a - b);
+    ok(faces.every((f, i) => f === H.firstFace + i),
+       'T-009: stations sit on consecutive faces ' + H.firstFace + '..' +
+       CONFIG.path.faces + ', got ' + faces.join(','));
+    ok(!faces.includes(1), 'T-009: face 1 teaches the lattice with no floor denial');
+  }
+
+  let badPlate = 0, badSpan = 0, badArena = 0, badRow = 0, badAnswer = 0, badSweep = 0;
+  const sweep = CONFIG.hound.chargeSpeed * (CONFIG.hound.chargeMs / 1000);
+  for (const r of stations) {
+    if (r.patrol.x1 - r.patrol.x0 !== H.patrolCols) badSpan++;
+    if (!(r.x > r.patrol.x0 && r.x < r.patrol.x1)) badSpan++;
+    // the plate: every patrol column solid, one height, and that height is
+    // the deck the row declares (the spawner derives the ride height from it)
+    for (let s = r.patrol.x0; s < r.patrol.x1; s++)
+      if (!(LVL.groundH[s] > -100) || LVL.groundH[s] !== r.deck) badPlate++;
+    // a charge has to be able to sweep what it owns, from either end
+    if (sweep < r.patrol.x1 - r.patrol.x0) badSweep++;
+    // never in a gate arena, never in the ambient corner-clear zones
+    for (const cs of CORNER_S) {
+      if (r.x > cs - H.cornerClearBefore && r.x < cs + CONFIG.spawner.cornerClearAfter) badArena++;
+      if (r.x >= cs - CONFIG.spawner.cornerClearBefore && r.x <= cs + CONFIG.spawner.cornerClearAfter)
+        badArena++;
+    }
+    if (r.gating !== false || r.dir !== -1 || r.kind !== 'hound') badRow++;
+    // THE ANSWER: a catwalk over the plate, inside one jump of it. A hound
+    // denies the floor; if the floor is all there is, it denies the route.
+    const over = LVL.platforms.some((p) =>
+      p.x1 > r.patrol.x0 && p.x0 < r.patrol.x1 &&
+      p.y > r.deck && p.y - r.deck <= apex);
+    if (!over) badAnswer++;
+  }
+  ok(badSpan === 0, 'T-009: every station patrols exactly ' + H.patrolCols +
+     ' columns around its own spawn column');
+  ok(badPlate === 0, 'T-009: every station stands on solid, single-height plate');
+  ok(badSweep === 0, 'T-009: a charge (' + sweep.toFixed(1) +
+     ' tiles) sweeps the whole patrol span');
+  ok(badArena === 0, 'T-009: no station sits in a gate arena or a corner-clear zone');
+  ok(badRow === 0, 'T-009: every station row is a non-gating hound facing back down the lane');
+  ok(badAnswer === 0, 'T-009: every station has a catwalk answer within one jump ' +
+     '(apex ' + apex.toFixed(2) + ') over its plate');
+  // the stations ride the level the RUN is built on, not a second one: the
+  // spawn table is built from src/sim/level.js's own `levelData`, so a deck
+  // height in a station row can never come from a build the player is not
+  // playing (it also drops the ~10 ms throwaway build the default argument
+  // used to pay for at boot)
+  {
+    const spSrc = stripComments(readFileSync(join(srcDir, 'sim', 'spawner.js'), 'utf8'));
+    ok(/buildSpawnTable\(CONFIG,\s*levelData\)/.test(spSrc) &&
+       /import \{[^}]*levelData[^}]*\} from '\.\/level\.js'/.test(spSrc),
+       'T-009: the six-face spawn table is built from the run\'s own level');
+    ok(buildSpawnTable(CONFIG, { groundH: LVL.groundH }).every((r) => r.type !== 'hound'),
+       'T-009: a level with no authored pockets fields no stations (and does not throw)');
+  }
+
+  // the placement contract itself: the owned landing is the pocket's
+  {
+    let owned = 0;
+    for (const r of stations)
+      if (LVL.pockets.some((p) => r.owns === p.id + '-landing' &&
+          r.patrol.x0 === p.gap.x1 && r.deck === p.landingY)) owned++;
+    ok(owned === stations.length,
+       'T-009: every station owns its face pocket landing (' + owned + '/' + stations.length + ')');
+  }
+}
+
+/* ---- T-009: a non-gating station cannot hold a wave gate shut ---------- *
+ * The behavioural half of the row-level `gating` opt-out, driven through the
+ * real gate runtime in a child process: with the wave dead, a corner whose
+ * only survivor is an ambient houndframe must still turn — and the control
+ * (the same body with the kind's own gating value) must still hold it.    */
+{
+  const simBase = 'file://' + join(srcDir, 'sim');
+  const child = `
+    const [T, E, ST, HO, WG] = await Promise.all([
+      import(${JSON.stringify(simBase + '/time.js')}),
+      import(${JSON.stringify(simBase + '/edges.js')}),
+      import(${JSON.stringify(simBase + '/state.js')}),
+      import(${JSON.stringify(simBase + '/hostiles.js')}),
+      import(${JSON.stringify(simBase + '/wavegate.js')}),
+    ]);
+    E.setEdges(-18.9, 26.4);
+    ST.setState('PLAYING');
+    const out = {};
+    const station = { dir: -1, patrol: { x0: 60, x1: 63 }, gating: false };
+    const c0 = WG.cornerEvents[0];
+    WG.armGate(c0);
+    HO.spawnHostile(61.5, 3.45, 0, 'hound', station);
+    for (let i = HO.hostiles.length - 1; i >= 0; i--)
+      if (HO.hostiles[i].kind === 'wasp') HO.removeHostile(i, false);
+    out.nonGating = c0.state;
+    out.houndAlive = HO.hostiles.some((e) => e.kind === 'hound');
+    // control: the same body without the opt-out holds the gate
+    c0.state = 'done';
+    while (HO.hostiles.length) HO.removeHostile(0, false);
+    const c1 = WG.cornerEvents[1];
+    WG.armGate(c1);
+    HO.spawnHostile(126.5, 3.45, 0, 'hound', { dir: -1, patrol: { x0: 125, x1: 128 } });
+    for (let i = HO.hostiles.length - 1; i >= 0; i--)
+      if (HO.hostiles[i].kind === 'wasp') HO.removeHostile(i, false);
+    out.gating = c1.state;
+    console.log(JSON.stringify(out));
+  `;
+  let res = null;
+  try {
+    res = JSON.parse(execFileSync(process.execPath,
+      ['--input-type=module', '-e', child], { encoding: 'utf8' }));
+  } catch (e) {
+    console.error('pathcheck: T-009 gating child failed: ' + e.message);
+  }
+  ok(!!res, 'T-009: the gate runtime runs headlessly for the gating check');
+  if (res) {
+    ok(res.houndAlive === true, 'T-009: the station is still alive when the wave dies');
+    ok(res.nonGating === 'turning',
+       'T-009: a non-gating station does not hold the ritual (state ' + res.nonGating + ')');
+    ok(res.gating === 'gate',
+       'T-009: a gating hound still holds it — the opt-out is what changed things ' +
+       '(state ' + res.gating + ')');
+  }
+}
+
+/* ---- T-009: the whole run is crossable, driven through the REAL sim ---- *
+ * The lattice assertions above are geometry. This one is behaviour: a child
+ * process runs the shipped six-face simulation with a traversal policy — hold
+ * right, and HOLD a jump whenever the deck one tile ahead is a hole or a step
+ * — and the run has to reach the outro without the terrain killing it.
+ *
+ * Two deliberate simplifications, both stated rather than hidden: hostiles are
+ * removed every frame (which also clears each gate the moment it arms), so
+ * this proves the ROUTE and not the fight; and the policy jumps at the LIP
+ * (probe 1.2), because that is what the right-screen clamp demands — a pinned
+ * player crosses ground at scroll speed, so a jump spent 2 tiles early lands
+ * in the hole it was meant to clear. That asymmetry is exactly why a pocket
+ * chasm is two columns wide; see src/pure/lattice.js.
+ *
+ * Measured for the record (terrain-only, same policy): on `main` this policy
+ * falls at x=266 and x=363 and is out of lives at 363; with the lattice it
+ * falls once (x=266.2, a seeded chunk gap that predates this task) and reaches
+ * the scroll end with 2 lives. No fall may land inside an authored pocket.  */
+{
+  const simBase = 'file://' + join(srcDir, 'sim');
+  const child = `
+    const [T, E, LV, SC, PLm, IN, ST, HO, WP, SP, WG, CA] = await Promise.all([
+      import(${JSON.stringify(simBase + '/time.js')}),
+      import(${JSON.stringify(simBase + '/edges.js')}),
+      import(${JSON.stringify(simBase + '/level.js')}),
+      import(${JSON.stringify(simBase + '/scroll.js')}),
+      import(${JSON.stringify(simBase + '/player.js')}),
+      import(${JSON.stringify(simBase + '/input.js')}),
+      import(${JSON.stringify(simBase + '/state.js')}),
+      import(${JSON.stringify(simBase + '/hostiles.js')}),
+      import(${JSON.stringify(simBase + '/weapons.js')}),
+      import(${JSON.stringify(simBase + '/spawner.js')}),
+      import(${JSON.stringify(simBase + '/wavegate.js')}),
+      import(${JSON.stringify(simBase + '/capsules.js')}),
+    ]);
+    E.setEdges(-18.9, 26.4);
+    LV.unbuildFutureFaces();
+    ST.setState('PLAYING');
+    const p = PLm.player;
+    p.x = 6; p.y = 3;
+    IN.keys.right = true;
+    const dt = 1 / 60;
+    let jumpUntil = 0, maxX = 0, falling = false;
+    const falls = [];
+    // the six authored pocket capsules, spawned exactly the way resetGame
+    // does, so this policy plays the run the player plays.
+    for (const q of LV.pockets)
+      CA.spawnCapsule(q.reward.kind, q.reward.letter, q.reward.x, q.reward.y, q.reward.mode);
+    const spawnedRewards = CA.capsules.length;
+    let nearestReward = 99, nearestAt = null;
+    for (let f = 0; f < 20000; f++) {
+      if (p.grounded &&
+          (LV.groundTopAt(p.x + 1.2) < -100 || LV.groundTopAt(p.x + 1.2) > p.y + 0.6)) {
+        IN.bufferJumpUntil(T.gameMs + 120);
+        IN.keys.jump = true;
+        jumpUntil = T.gameMs + 420;          // HOLD it: a committed jump
+      }
+      if (T.gameMs > jumpUntil) IN.keys.jump = false;
+      T.advanceGameMs(dt * 1000);
+      SC.updateScroll(dt);
+      PLm.updatePlayer(dt);
+      maxX = Math.max(maxX, p.x);
+      if (p.y < -6 && !falling) { falls.push(p.x); falling = true; }
+      if (p.y > 0) falling = false;
+      if (ST.state !== 'PLAYING') break;
+      while (HO.hostiles.length) HO.removeHostile(0, false);   // route, not fight
+      HO.updateHostiles(dt);
+      WP.updateBullets(dt);
+      CA.updateCapsules(dt);                                   // the real pickup test
+      for (const c of CA.capsules) {                           // …and how close it came
+        const cx = Math.max(p.x - p.hw, Math.min(c.x, p.x + p.hw));
+        const cy = Math.max(p.y, Math.min(c.y, p.y + p.h));
+        const d = Math.hypot(c.x - cx, c.y - cy);
+        if (d < nearestReward) { nearestReward = d; nearestAt = [+p.x.toFixed(2), +p.y.toFixed(2)]; }
+      }
+      if (T.scrollX >= LV.activeScrollEnd()) break;
+    }
+    console.log(JSON.stringify({
+      x: p.x, maxX, scrollX: T.scrollX, end: LV.activeScrollEnd(),
+      lives: p.lives, hp: p.hp, state: ST.state, falls,
+      spawnedRewards, rewardsLeft: CA.capsules.length, weapon: WP.currentWeapon,
+      nearestReward: +nearestReward.toFixed(3), nearestAt,
+    }));
+  `;
+  let run = null;
+  try {
+    run = JSON.parse(execFileSync(process.execPath,
+      ['--input-type=module', '-e', child], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }));
+  } catch (e) {
+    console.error('pathcheck: T-009 full-run child failed: ' + e.message);
+  }
+  ok(!!run, 'T-009: the six-face run simulates headlessly end to end');
+  if (run) {
+    ok(run.state === 'PLAYING' || run.state === 'VICTORY',
+       'T-009: a held-jump policy survives the whole lattice (state ' + run.state +
+       ', lives ' + run.lives + ')');
+    ok(run.scrollX >= run.end,
+       'T-009: the run reaches the outro scroll end (' + run.scrollX.toFixed(1) +
+       ' of ' + run.end + ', maxX ' + run.maxX.toFixed(1) + ')');
+    const inPocket = run.falls.filter((x) =>
+      LVL.pockets.some((p) => x >= p.x0 - 1 && x < p.x1 + 1));
+    ok(inPocket.length === 0,
+       'T-009: no authored pocket ever swallows the policy (falls at ' +
+       JSON.stringify(run.falls.map((x) => +x.toFixed(1))) + ', in-pocket ' +
+       JSON.stringify(inPocket) + ')');
+    /* The pickups, in the shipped sim rather than in arithmetic about it.
+
+       REMOVED BY decisions.md entry 9, not weakened: the pair of assertions
+       that demanded this policy finish holding all six ("a deck-line crosser
+       collects NOTHING", and its margin). Their subject was the withdrawn
+       wager. Under entry 9 a capsule taken on the way past is a free pickup
+       arriving early, which is the thing the operator judges by feel — the
+       harness has no business certifying either answer, in EITHER direction.
+       So HOW MANY of the six this particular policy sweeps up is REPORTED
+       below and never asserted: a lattice shift that moves the crossing arc
+       off a capsule is a design change for the operator to look at, not a
+       gate failure. What stays asserted is that the run carries one authored
+       capsule per face; that the capsules are live in the shipped sim is
+       proved by the authored-route child below (all six pay through the real
+       pickup code) and by the four source-drift guards above. The weapon
+       letter is reported, never asserted, because a death resets it to the
+       rifle. */
+    ok(run.spawnedRewards === CONFIG.path.faces,
+       'T-009: the policy run carries one authored capsule per face, got ' +
+       run.spawnedRewards);
+    console.log('pathcheck note (reported, not asserted): a hold-right deck-line ' +
+       'crossing collected ' + (run.spawnedRewards - run.rewardsLeft) + ' of ' +
+       run.spawnedRewards + ' pocket capsules (weapon at the end ' + run.weapon +
+       ', closest approach ' + run.nearestReward + ' tiles at ' +
+       JSON.stringify(run.nearestAt) + ')');
+  }
+}
+
+/* ---- T-009: the pocket route works, driven through the REAL sim -------- *
+ * The geometry block says the shelf is inside a double jump of the mid lane.
+ * This says a player can actually get up there and be paid: one pass per
+ * pocket, the scroll parked so the test is about the route and not the clock
+ * — from the landing, jump to the mid lane, jump + air jump onto the shelf,
+ * walk out to the tip. All six must pay, or the capsule is a decoration.
+ *
+ * REMOVED BY decisions.md entry 9, not weakened: the two adversarial runs
+ * this block used to open with — a jump-SPAMMING deck-line crossing and an
+ * apex-timed double jump — plus their assertions that neither could collect
+ * a reward from the deck line. Their entire subject was the withdrawn wager
+ * (a free route must not pay out). Nothing else depended on them, so they
+ * are deleted rather than left certifying a claim the game no longer makes.
+ * The pockets' behavioural coverage that survives is here and in the
+ * full-run child above: the capsules are live, and the authored route pays.
+ */
+{
+  const simBase = 'file://' + join(srcDir, 'sim');
+  const child = `
+    const [T, E, LV, PLm, IN, ST, HO, WG, CA] = await Promise.all([
+      import(${JSON.stringify(simBase + '/time.js')}),
+      import(${JSON.stringify(simBase + '/edges.js')}),
+      import(${JSON.stringify(simBase + '/level.js')}),
+      import(${JSON.stringify(simBase + '/player.js')}),
+      import(${JSON.stringify(simBase + '/input.js')}),
+      import(${JSON.stringify(simBase + '/state.js')}),
+      import(${JSON.stringify(simBase + '/hostiles.js')}),
+      import(${JSON.stringify(simBase + '/wavegate.js')}),
+      import(${JSON.stringify(simBase + '/capsules.js')}),
+    ]);
+    const p = PLm.player;
+    const dt = 1 / 60;
+    E.setEdges(-18.9, 26.4);
+    for (const c of WG.cornerEvents) c.state = 'done';   // faces built, no pivot wall
+    while (HO.hostiles.length) HO.removeHostile(0, false);
+    ST.setState('PLAYING');
+    const climbs = [];
+    for (const q of LV.pockets) {
+      while (CA.capsules.length) CA.removeCapsule(0);
+      CA.spawnCapsule(q.reward.kind, q.reward.letter, q.reward.x, q.reward.y, q.reward.mode);
+      T.setScrollX(q.gap.x0 - 12);
+      p.x = q.gap.x1 + 0.5; p.y = q.landingY; p.vx = 0; p.vy = 0;
+      p.grounded = true; p.airJumpsLeft = 1; p.onOneWay = null; p.lives = 3; p.hp = 3;
+      IN.releaseAllKeys();
+      let phase = 'toMid', jumpUntil = 0, prevVy = 0, frames = 0, airUsed = 0;
+      for (; frames < 600 && CA.capsules.length; frames++) {
+        IN.keys.left = false;
+        const hop = () => { IN.bufferJumpUntil(T.gameMs + 120); IN.keys.jump = true;
+                            jumpUntil = T.gameMs + 420; };
+        if (phase === 'toMid') {
+          if (p.grounded && Math.abs(p.y - q.mid.y) < 1e-6) phase = 'toShelf';
+          else if (p.grounded) hop();
+        }
+        if (phase === 'toShelf') {
+          if (p.grounded && Math.abs(p.y - q.shelf.y) < 1e-6) phase = 'toTip';
+          else if (p.grounded) hop();
+          else if (p.airJumpsLeft > 0 && prevVy > 0 && p.vy <= 0) { hop(); airUsed++; }
+        }
+        if (phase === 'toTip' && p.x > q.reward.x) IN.keys.left = true;
+        prevVy = p.vy;
+        if (T.gameMs > jumpUntil) IN.keys.jump = false;
+        T.advanceGameMs(dt * 1000);
+        PLm.updatePlayer(dt);
+        CA.updateCapsules(dt);
+        if (p.y < q.landingY - 8) break;
+      }
+      climbs.push({ id: q.id, took: CA.capsules.length === 0, airUsed,
+                    seconds: +(frames / 60).toFixed(2), phase,
+                    endY: +p.y.toFixed(2) });
+    }
+    console.log(JSON.stringify({ climbs }));
+  `;
+  let res = null;
+  try {
+    res = JSON.parse(execFileSync(process.execPath,
+      ['--input-type=module', '-e', child], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }));
+  } catch (e) {
+    console.error('pathcheck: T-009 pocket-route child failed: ' + e.message);
+  }
+  ok(!!res, 'T-009: the pocket climb runs simulate headlessly');
+  if (res) {
+    ok(res.climbs.every((c) => c.took),
+       'T-009: the authored pocket route PAYS at every pocket — landing -> ' +
+       'mid -> shelf -> tip, ' + JSON.stringify(res.climbs.map((c) => c.seconds)) +
+       's each, ' + JSON.stringify(res.climbs.filter((c) => !c.took).map((c) => c.id)) +
+       ' failed');
+  }
+}
+
 /* ========== T-018: the bot harness's relative-geometry grammar ========== *
  * tools/playtest/ is dev-only and cannot change the shipped game, so most of
  * it has no business in this file. Three things do:
@@ -7215,6 +7905,126 @@ const G2GATE = G2E.gate;
      CONFIG.waves.gateDiveRange > CONFIG.wasp.diveRange,
      'T-018: gated hostiles really are hotter than ambient ones (the pressure the ' +
      'finding measures is authored, not imagined)');
+
+  /* ===== T-019: the dive mark's angle, and the anti-scripting guard ===== *
+   * T-019 asked whether a reflex policy can finish the whole run. Two things
+   * it added need a tripwire here:
+   *
+   *   1. `threat.diveSlope` / `diveAdx` complete the dive mark with the same
+   *      (adx, slope) pair the nearest mark and the up-mark already carry.
+   *      They are load-bearing because a dive is the one hostile motion the
+   *      sim aims AT the player (hostiles.js sets the heading from
+   *      player.x/player.y+0.9 once, then freezes it) — so the ray that
+   *      answers a dive is the ray that points at the diver, and the whole
+   *      choice between level / 45° / vertical is this one number.
+   *   2. The delivery box T-019 answers is "a bot run reached VICTORY". A
+   *      policy that names a literal x, a scroll distance or a clock time
+   *      would answer it with a scripted win — the exact failure mode
+   *      closed-loop policy mode exists to replace. The six-face run scripts
+   *      are therefore held to relative geometry BY ASSERTION, not by review
+   *      diligence: every clause must be a predicate, a threat/terrain field,
+   *      or one of the small set of body-state fields below.                */
+  {
+    const dive45 = deriveThreat({
+      x: 10, y: 3,
+      hostiles: [{ id: 9, kind: 'wasp', state: 'dive', x: 14, y: 8.05, materialized: true }],
+    }, held('ArrowRight'));
+    near(dive45.diveSlope, 1, 1e-9,
+       'T-019: a diver coming in at 45° reports diveSlope 1 — the 45° ray answers it');
+    near(dive45.diveAdx, 4, 1e-9, 'T-019: …and diveAdx is its horizontal reach');
+    ok(dive45.diagN === 1 && dive45.levelN === 0 && dive45.vertN === 0,
+       'T-019: …and only the 45° corridor is occupied, so the slope band and the ray agree');
+    const diveVert = deriveThreat({
+      x: 10, y: 3,
+      hostiles: [{ id: 9, kind: 'wasp', state: 'dive', x: 10.2, y: 9, materialized: true }],
+    }, held('ArrowRight'));
+    ok(diveVert.diveSlope === 9 && diveVert.vertN === 1,
+       'T-019: a diver straight overhead reports the finite slope cap and occupies the ' +
+       'vertical corridor (which needs NO horizontal key held — that is why the cap is ' +
+       'a number a script can compare against)');
+    ok(t.diveSlope === deriveThreat(sample, held('ArrowLeft')).diveSlope,
+       'T-019: the dive mark\'s angle is world-relative, not gun-relative — turning around ' +
+       'cannot change where the diver is');
+
+    // --- the anti-scripting guard ----------------------------------------
+    // Fields a six-face policy may compare against: relative geometry, the
+    // body's own state, and the HUD strings that name a PHASE (a gate is on /
+    // off) rather than a place. Deliberately NOT allowed: x, scrollX, gameMs,
+    // kills, attempts — every one of which would let a rule fire "at the
+    // third gate" or "at tile 89" instead of "when something is above me".
+    const RELATIVE_OK = new Set([
+      'grounded', 'airborne', 'pinned', 'victory', 'houndTell', 'houndCharge',
+      'polypTell', 'polypFire', 'polypOpen', 'mortarLob', 'mortarFuse',
+      'mortarBurst', 'mortarMarked', 'targetLevel', 'targetDiag', 'targetVert',
+      'hp', 'vx', 'vy', 'edgeMargin', 'hudTC', 'weapon',
+    ]);
+    // A script's static timeline has TWO doors into the driver, and both are
+    // dispatched: `moves` (semantic sugar) and `events` (raw {t, type, code}),
+    // which compileScript concatenates — alongside a policy, not instead of it
+    // (lib/compile.mjs). A guard that read only `moves` would let a fully
+    // scripted timeline back in through the other one, so both are checked
+    // here, and only the FIRE key may appear on a timestamp at all.
+    const { resolveCode } = await import('./playtest/lib/compile.mjs');
+    const FIRE_CODES = new Set(['KeyJ', 'KeyX']);
+    const asCode = (nameOrCode) => {
+      try { return resolveCode(nameOrCode); } catch { return String(nameOrCode); }
+    };
+    // One checker, used twice: on the shipped six-face scripts (must come back
+    // clean) and on a synthetic scripted win (must not) — the guard is
+    // asserted to have teeth rather than trusted to.
+    const scriptViolations = (script) => {
+      const bad = [];
+      const conds = ((script.policy && script.policy.rules) || []).map((r) => r.when);
+      if (!conds.length) bad.push('no policy rules: the run would be driven by a timeline, not by what the bot sees');
+      for (const cond of conds) {
+        for (const clause of String(cond).split('&&').map((c) => c.trim())) {
+          const nameMatch = clause.match(/^!?([\w.]+)/);
+          const field = nameMatch ? nameMatch[1] : '';
+          if (!(field.startsWith('threat.') || field.startsWith('terrain.') || RELATIVE_OK.has(field))) {
+            bad.push('clause "' + clause + '" names something that is not relative geometry or body state');
+          }
+        }
+      }
+      for (const m of script.moves || []) {
+        if (!FIRE_CODES.has(asCode(m.hold)) && !FIRE_CODES.has(asCode(m.tap))) {
+          bad.push('static move ' + JSON.stringify(m) + ' presses something other than fire on a timestamp');
+        }
+      }
+      for (const ev of script.events || []) {
+        if (!FIRE_CODES.has(asCode(ev.code))) {
+          bad.push('raw event ' + JSON.stringify(ev) + ' presses something other than fire on a timestamp');
+        }
+      }
+      return bad;
+    };
+    const scriptsDir = join(here, 'playtest', 'scripts');
+    const sixFace = readdirSync(scriptsDir).filter((f) => /^six-face-.*\.json$/.test(f));
+    ok(sixFace.length > 0, 'T-019: there is at least one six-face run script to hold to the rule');
+    for (const file of sixFace) {
+      const bad = scriptViolations(JSON.parse(readFileSync(join(scriptsDir, file), 'utf8')));
+      ok(bad.length === 0,
+         'T-019: ' + file + ' is driven by relative geometry and body state only — no absolute ' +
+         'position, scroll distance or clock time, and nothing but fire on a timestamp' +
+         (bad.length ? ' [' + bad.join('; ') + ']' : ''));
+    }
+    {
+      // the scripted win the guard exists to reject, in all three of its forms
+      const teeth = scriptViolations({
+        policy: { rules: [{ when: 'grounded && x>140' }] },
+        moves: [{ hold: 'fire', fromMs: 0, toMs: 10 }, { hold: 'right', fromMs: 0, toMs: 10 }],
+        events: [{ t: 900, type: 'keydown', code: 'Space' }],
+      });
+      ok(teeth.some((b) => /x>140/.test(b)),
+         'T-019: the guard catches a clause naming an absolute position');
+      ok(teeth.some((b) => /"hold":"right"/.test(b)),
+         'T-019: …a timed movement `move`');
+      ok(teeth.some((b) => /"code":"Space"/.test(b)),
+         'T-019: …and a timed movement in the RAW `events` timeline, which compile.mjs ' +
+         'dispatches just the same (the door a moves-only guard leaves open)');
+      ok(scriptViolations({ moves: [{ hold: 'fire', fromMs: 0, toMs: 10 }] }).length === 1,
+         'T-019: …and a six-face script with no policy at all is a timeline, and fails');
+    }
+  }
 }
 
 /* ============ MOMENTUM — earned pace escalation (T-022) ================= *

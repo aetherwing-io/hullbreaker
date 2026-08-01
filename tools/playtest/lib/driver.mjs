@@ -25,6 +25,7 @@ export async function runPlaytest({
   victorySettleMs = 400,
   deterministic = false,
   policyRules = null,
+  stopOnGameOver = false,
 }) {
   const browser = await chromium.launch({ channel, headless: !headed });
   const contextOpts = { viewport };
@@ -62,6 +63,7 @@ export async function runPlaytest({
   const achievedSampleIntervalsMs = [];
   let lastSampleAt = null;
   let victorySeenAt = null;
+  let gameOverSeenAt = null;
   let stop = false;
 
   // F7 fix (adversarial report, x4-retry-input-loss): the game's fast retry
@@ -229,6 +231,17 @@ export async function runPlaytest({
       if (sample && isVictorySample(sample) && victorySeenAt === null) {
         victorySeenAt = tMs;
       }
+      // --stop-on-game-over (opt-in, default off): the six-face run's terminal
+      // failure state. Once the last life is spent the game freezes — gameMs
+      // stops advancing, no input changes anything — so every remaining second
+      // of the script window is dead trace. Off by default because a report
+      // whose length no longer matches its script window is a surprise, and
+      // the fixture scripts deliberately keep running through retries; opt in
+      // when iterating on a long policy run, where it turns a 4-minute
+      // post-mortem into nothing.
+      if (stopOnGameOver && sample && sample.state === 'GAME_OVER' && gameOverSeenAt === null) {
+        gameOverSeenAt = tMs;
+      }
       if (sample && typeof sample.attempts === 'number') {
         if (lastAttemptsForRetry !== null && sample.attempts > lastAttemptsForRetry) {
           await reassertHeldKeys(tMs, sample.attempts);
@@ -240,7 +253,8 @@ export async function runPlaytest({
       const timeUp = tMs >= scriptEndMs;
       const hardCap = tMs >= maxRuntimeMs;
       const victoryDone = victorySeenAt !== null && tMs >= victorySeenAt + victorySettleMs;
-      if (timeUp || hardCap || victoryDone) { stop = true; break; }
+      const gameOverDone = gameOverSeenAt !== null && tMs >= gameOverSeenAt + victorySettleMs;
+      if (timeUp || hardCap || victoryDone || gameOverDone) { stop = true; break; }
       const remaining = Math.max(5, sampleMs - (Date.now() - t0 - before));
       await new Promise((r) => setTimeout(r, remaining));
     }

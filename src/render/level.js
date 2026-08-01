@@ -32,11 +32,12 @@ const authoredSolidMeshes = [];                           // traversal-only tagg
 /* THE ZIPPER IS RETIRED FROM THE WORLD, NOT DELETED (docs/decisions.md
    entry 3 + its July 30 addendum): the creature's body may not assemble,
    but things the ship BUILDS may, so this choreography stays whole and
-   callable for the traps/emplacements lane. ?g1=1 reads the same corner as
-   an orbit around a static limb (../render/limb.js), so all three hooks
-   below no-op there and every column stays where the bake put it — the
-   next facet was always there. The sim's build state machine is untouched
-   in both modes; only the story the geometry tells changes.            */
+   callable for the traps/emplacements lane — and still playable, since
+   ?zip=1 selects it. By DEFAULT (T-009) the same corner reads as an orbit
+   around a static limb (../render/limb.js), so all three hooks below no-op
+   and every column stays where the bake put it — the next facet was always
+   there. The sim's build state machine is untouched in both modes; only the
+   story the geometry tells changes.                                    */
 
 function unbuiltHidden() {               // next faces stay unbuilt until their ritual
   if (!tiles || IS_G1) return;           // transformation slice: no tower bake

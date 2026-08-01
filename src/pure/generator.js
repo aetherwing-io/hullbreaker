@@ -11,6 +11,10 @@
 import { mulberry32 } from './rng.js';
 import { cornerSList, faceIndexAt } from './path.js';
 import { TRAVERSAL_FIXTURE } from './traversal.js';
+import {
+  LATTICE, latticeCarvePocket, latticeHoundBeats, latticePatchPass,
+  latticePocketSites, latticeReport, latticeThinPass,
+} from './lattice.js';
 
 export const GAP = -999;
 
@@ -112,6 +116,13 @@ export function buildLevel(cfg) {
   }
   while (x < L) groundH[x++] = 3;
 
+  // pockets (src/pure/lattice.js) are carved into the deck BEFORE the
+  // tier pass, so the catwalk rhythm above them reads the chunk they created
+  // rather than the chunk stream they replaced. Both seams are flat at the
+  // generator's own walk height, so every ground invariant above still holds.
+  const pockets = latticePocketSites(cfg, groundH);
+  for (const site of pockets) latticeCarvePocket(groundH, site, GAP);
+
   // Contra tiers: a near-continuous mid lane (+2.35 over local ground) with
   // high lane stretches (+3 again) above it. All one-way: jump up through
   // them, down+jump drops a tier. Mid needs a committed full-hold jump —
@@ -151,24 +162,61 @@ export function buildLevel(cfg) {
       if (platforms[i].x1 >= cs - 3 && platforms[i].x0 <= cs + 3) platforms.splice(i, 1);
   }
 
+  // the pocket's own two catwalks: the mid lane it is entered from, and the
+  // shelf that reaches back out over the chasm with the reward on its tip.
+  // Anything the tier pass dropped across the chasm would read as a second
+  // free line over the same hole, so the shelf's span is cleared first.
+  for (const site of pockets) {
+    for (let i = platforms.length - 1; i >= 0; i--)
+      if (platforms[i].x1 > site.gap.x0 - 1 && platforms[i].x0 < site.gap.x1 + 1)
+        platforms.splice(i, 1);
+    platforms.push({ ...site.mid }, { ...site.shelf });
+  }
+
   // reachability sweep: the apron pass can orphan a high catwalk whose mid
   // support it deleted — prune anything beyond double-jump reach, repeating
   // until stable (pruning one support can strand another).
-  let pruned = true;
-  while (pruned) {
-    pruned = false;
-    for (let i = platforms.length - 1; i >= 0; i--) {
-      const p = platforms[i];
-      let best = -999;
-      for (let k = Math.max(0, p.x0 - 1); k <= Math.min(L - 1, p.x1 + 1); k++)
-        if (groundH[k] > -100) best = Math.max(best, groundH[k]);
-      for (const q of platforms)
-        if (q !== p && q.y < p.y && q.x1 > p.x0 - 1 && q.x0 < p.x1 + 1) best = Math.max(best, q.y);
-      if (p.y - best > G.maxReach) { platforms.splice(i, 1); pruned = true; }
+  const prune = () => {
+    let pruned = true;
+    while (pruned) {
+      pruned = false;
+      for (let i = platforms.length - 1; i >= 0; i--) {
+        const p = platforms[i];
+        let best = -999;
+        for (let k = Math.max(0, p.x0 - 1); k <= Math.min(L - 1, p.x1 + 1); k++)
+          if (groundH[k] > -100) best = Math.max(best, groundH[k]);
+        for (const q of platforms)
+          if (q !== p && q.y < p.y && q.x1 > p.x0 - 1 && q.x0 < p.x1 + 1) best = Math.max(best, q.y);
+        if (p.y - best > G.maxReach) { platforms.splice(i, 1); pruned = true; }
+      }
     }
+  };
+  prune();
+
+  // route density (src/pure/lattice.js): fill the thin windows, drop the
+  // noisy ones, re-prune, and repeat until the lattice stops moving. Each
+  // pass only ever reads the geometry that exists, so the loop is a fixpoint
+  // search, not a schedule — `patched`/`thinned` going empty is the exit.
+  const level = { groundH, platforms };
+  const patched = [], thinned = [];
+  for (let pass = 0; pass < LATTICE.patch.maxPasses; pass++) {
+    const add = latticePatchPass(level, cfg);
+    const cut = latticeThinPass(level, cfg);
+    prune();
+    patched.push(...add);
+    thinned.push(...cut);
+    if (!add.length && !cut.length) break;
   }
 
-  return { groundH, platforms, chunkLog };
+  return {
+    groundH, platforms, chunkLog, pockets,
+    lattice: {
+      id: LATTICE.id,
+      patched: patched.length,
+      thinned: thinned.length,
+      report: latticeReport(level, cfg),
+    },
+  };
 }
 
 // The fixture argument is the resolved pacing variant (src/mode.js). Every
@@ -193,7 +241,14 @@ export function buildTraversalLevel(cfg, fixture = TRAVERSAL_FIXTURE) {
 // Ambient spawn table: density authored in seconds of scroll so it scales
 // with scrollSpeed, escalating per face; corner-clear zones stay empty —
 // gate waves are authored by the wave system, never by this table.
-export function buildSpawnTable(cfg) {
+//
+// `level` is the built geometry the houndframe stations are placed on
+// (src/pure/lattice.js needs a deck to stand a frame on). The shipped boot
+// passes the level the run is actually played on (src/sim/spawner.js); the
+// default build is the fallback for a caller that has no level in hand, and
+// a level with no authored pockets (a fixture overlay) simply fields no
+// stations rather than throwing.
+export function buildSpawnTable(cfg, level = buildLevel(cfg)) {
   const S = cfg.spawner;
   const corners = cornerSList(cfg);
   const rng = mulberry32(S.seed);
@@ -221,6 +276,15 @@ export function buildSpawnTable(cfg) {
     while (used.has(cx)) cx++;
     if (!nearCorner(cx)) { out.push({ x: cx, type: 'carrier' }); used.add(cx); }
   });
+  // houndframe stations (faces 2+, decisions.md entry 6 — placement, not
+  // stats). Authored on half-columns so they can never collide with the
+  // integer wasp/carrier rows, and skipped wholesale if a station would land
+  // in a corner-clear zone: the ambient table's discipline applies to every
+  // kind in it.
+  for (const beat of latticeHoundBeats(cfg, level.groundH, level.pockets || [])) {
+    if (nearCorner(beat.x) || beat.x < S.startS || beat.x >= end) continue;
+    out.push(beat);
+  }
   out.sort((a, b) => a.x - b.x);
   return out;
 }

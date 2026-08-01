@@ -58,6 +58,22 @@ with rather than replaces), no pool or mesh is built, and no bridge hook is
 wrapped. Every intensity is one block, `CONFIG.juice`, in `src/config.js`.
 `?audio=0` mutes the synth layer the same way.
 
+The six-face corner ritual reads as a **static-anatomy reveal** by default
+(T-009): the camera orbits 60° around a joint of one static faceted creature
+limb and the next facet comes out from behind the joint's mass, rather than
+zippering itself into place. `index.html?zip=1` restores the older brick-slam
+zipper reveal — retired from the world but kept whole and playable per
+`decisions.md` entry 3's addendum, since things the ship *builds* may still
+assemble. (`?g1=0` is the same escape hatch under the flag's old name.)
+
+Both are render-only: the simulation, the ritual's timing, the wave gates, the
+spawn tables and the built-column state machine are identical in both modes,
+byte for byte, which `tools/pathcheck.mjs` proves by running the same scripted
+pass in each and comparing the whole trace. Combine with the view flags
+(`?zip=1&view=near`) as usual. This began as the opt-in G1 limb-turn
+experiment — see `docs/proposals/2026-07-meridian-monster-greybox-map.md`
+(gate G1) for what it set out to prove, `artifacts/g1-limbturn/` for its
+frames, and `artifacts/t009-lattice/` for the default run as it ships now.
 `index.html?momentum=1` arms **earned pace escalation** (`docs/decisions.md`
 entry 11) on the six-face run: the pursuing edge stops being a constant and
 rises with how well the run is being played — how far RIG is riding toward the
@@ -261,9 +277,10 @@ Two read-only channels expose the same sampler, so they cannot drift:
   `HB.kills()`, `HB.shotsFired()`, `HB.edges()`, `HB.view()`,
   `HB.shell()` — the same shell block the telemetry channel publishes),
   plus `HB.g1`
-  (the limb bake's piece count and fog band, or null) — render-mode facts are
-  deliberately kept out of the frozen channel so a default-vs-`?g1=1` trace
-  comparison has nothing mode-dependent in it to explain away.
+  (the limb bake's piece count and fog band on the default static-anatomy
+  reveal, or null under `?zip=1`) — render-mode facts are deliberately kept
+  out of the frozen channel so a default-vs-`?zip=1` trace comparison has
+  nothing mode-dependent in it to explain away.
 
 Both are pure reads. Writing through the live references desynchronizes the
 run — treat them as read-only.

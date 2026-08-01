@@ -219,6 +219,14 @@ weakness that used to be the main gap here:
   13), and projectiles no longer visibly curve around hex-corners or
   transform bends — both shipped as default behavior, no flag
   (`decisions.md` entry 7);
+- the **static-anatomy corner reveal**, promoted from the opt-in G1
+  limb-turn experiment to the six-face run's **default** by T-009: the
+  corner ritual rendered as a camera orbit around a static faceted limb
+  instead of the brick-slam zipper, with the underlying simulation
+  byte-for-byte unchanged (`tools/pathcheck.mjs` proves it by comparing
+  traces). `?zip=1` still plays the zipper. It is the render-side answer to
+  the CP3 static-anatomy ruling and **has still never been operator-judged**
+  — an A/B checkpoint is queued;
 - the **G1 limb-turn experiment** (`?g1=1`) on the normal six-face run: the
   shipped corner ritual re-rendered as a camera orbit around a static
   faceted limb instead of the brick-slam zipper, with the underlying
@@ -300,6 +308,11 @@ are just where to start reading:
   `?slice=transform` (see "What currently works" below).
 - `src/sim/hook.js` (snap hook, rejected v1 — inert, kept extractable),
   `src/sim/flow.js` (momentum spine, unjudged), and `src/sim/pace.js` (the
+  CP1 pacing variants) are the wave-3 movement-verb modules; `src/render/limb.js`
+  is the render-only static-anatomy bake (the default corner reveal since
+  T-009), and `src/pure/lattice.js` is the six-face run's route-density,
+  pocket and hound-station pass (the pocket's weapon capsule is a free
+  pickup — `decisions.md` entry 9).
   CP1 pacing variants, plus T-022's earned escalation behind `?momentum=1`,
   math in `src/pure/momentum.js`) are the wave-3 movement-verb modules; `src/render/limb.js`
   is the G1 limb-turn experiment's render-only static-anatomy bake.
@@ -354,11 +367,12 @@ convergence point once the remaining variants are judged:
    `?slice=transform`) and judged at CP3: directionally right, but the
    operator called the transition choreography choppy and ruled that the
    creature's anatomy must read as static and monumental, revealed by camera
-   movement rather than assembled — see `decisions.md` entry 3. The G1
-   limb-turn experiment (`?g1=1`, `e7b2952`) is a render-only first answer to
-   that rule for the six-face corner ritual specifically, not yet itself
-   judged. A second CP3 pass applying the rule to the transform slice is
-   still expected.
+   movement rather than assembled — see `decisions.md` entry 3. The limb-turn
+   reveal (`e7b2952`, formerly `?g1=1`) is a render-only first answer to that
+   rule for the six-face corner ritual specifically; T-009 promoted it to the
+   default (with `?zip=1` keeping the zipper playable), but it has still not
+   itself been judged. A second CP3 pass applying the rule to the transform
+   slice is still expected.
 2. Add houndframe, polyp, and mortar one at a time, proving each movement answer
    and then one useful combination. **Houndframe merged and judged at CP2**
    ("those feel much better," iterate from `?hound=2.5`) and its CP2.5

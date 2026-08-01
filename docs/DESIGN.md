@@ -395,25 +395,78 @@ tower with corner events** (shipped):
   yaw snap (easeOutBack, slight overshoot) → ratchet hold → second 30° snap
   → settle → scroll eases back in. ~1.1s total; the player keeps full
   control throughout.
-- **Brick-slam zipper**: faces beyond the current corner are unbuilt — void.
-  During the ritual the next face's tile columns drop into place with a
-  heavy ease, staggered near-to-far from the corner, locking before the
-  scroll resumes. Unbuilt terrain is inert: no bullet or enemy collision.
-  **Flagged by the CP3 ruling** (`decisions.md` entry 3): this is exactly the
-  geometry-*assembling* reveal the operator has since ruled against for the
-  creature's own anatomy — it should read as static and monumental, revealed
-  by camera rotation, not built piece-by-piece. Per the same ruling's
-  addendum, the zip-assembly technique itself is not being deleted: it may be
-  repurposed for things the ship *builds* (traps, emplacements, later
-  enemies), just retired from anatomy/world reveals. Still shipped and
-  accurate as written for the corner ritual; not yet reworked, and the code
-  should stay extractable for that future reuse.
+- **Static-anatomy reveal (default)**: faces beyond the current corner are
+  unbuilt in the SIM — inert, no bullet or enemy collision — but the world
+  the player sees was baked once at boot and never moves. A corner is the
+  camera swinging 60° around a joint of a static faceted limb
+  (`src/pure/limb.js` + `src/render/limb.js`) while the next facet comes out
+  from behind the joint's mass and the fog. This is the CP3 ruling
+  (`decisions.md` entry 3) as shipped behaviour since T-009; it was the
+  opt-in `?g1=1` experiment before that.
+- **Brick-slam zipper (retired from the world, still playable at `?zip=1`)**:
+  the previous reveal — the next face's tile columns dropping into place with
+  a heavy ease, staggered near-to-far from the corner, locking before the
+  scroll resumes. Per entry 3's addendum the technique is not deleted: it is
+  retired from anatomy/world reveals and kept whole, installed and reachable
+  so it can be repurposed for things the ship *builds* (traps, emplacements,
+  later enemies).
 - Tiles keep sharp per-face orientation (chunky bricks). Only the camera
   path is chamfered (±3 tiles) around corners; entity yaw blends over
   ±1.5 tiles so characters visibly turn corners.
 - Frustum edges are constant s-offsets calibrated at boot/resize from flat
   camera geometry — no per-frame unprojection; gameplay boundaries remain
   reproducible and aspect-ratio safe.
+
+### The lattice (route density, pockets, hound stations)
+
+Shipped by T-009 in `src/pure/lattice.js`, on top of the seeded chunk stream:
+
+- **Route density**: every face-interior window (12 columns of lookahead,
+  the deck counting as one route) offers 3–5 readable routes. The pass
+  patches thin windows at whichever tier is missing and thins busy ones, then
+  re-prunes, looping to a fixpoint; it consumes no rng, so the chunk stream
+  is unchanged. Measured before → after: 149/246 windows inside [3, 5] →
+  246/246; face 2's average went 2.17 → 3.5.
+- **Pockets**, one per face: a long approach, a two-column chasm, a landing a
+  tile lower, a mid lane, and a SHELF one generator tier above that lane,
+  mounted over the landing and reaching back out across the chasm with a
+  **weapon capsule** over its tip. The shelf points backward on purpose — no
+  free drop off the tip, no forward continuation — so a pocket reads as a
+  side room off the climb rather than a shortcut through it. The chasm is two
+  columns because RIG is clamped to the right of the screen: a player holding
+  right crosses ground at *scroll* speed, and a held jump from the clamp
+  travels ~3.0 tiles.
+  **The capsule is free** (`decisions.md` entry 9). It is a plain pickup, not
+  a dare: it costs nothing, it is collected however the player reaches it —
+  by climbing landing → mid lane → shelf → tip, or by clipping it out of the
+  air while crossing the chasm on the deck line — and the operator's test for
+  it is whether arming up mid-face **escalates the action** on the stretch
+  that follows. Entry 9 is also the record of the alternative being tried and
+  withdrawn: two passes of this task lifted the capsule out of the deck-line
+  jump arc (`rewardRise` 0.7 → 1.75, then a shelf tier of the pocket's own at
+  +4.45) so that taking it would have to be paid for in backtracking, and the
+  operator ruled that pricing a reward in HEIGHT is an arms race against
+  frozen jump constants. The geometry is the plain shape again — shelf at mid + 3, capsule
+  +0.7 over the tip, i.e. deck + 5.05 — which is also the shape that reads
+  best at FAR, because the shelf stays inside the deck's own silhouette band
+  instead of floating a body-height above the lattice.
+  What is still measured and asserted, because it is still true: the pocket is
+  reachable with taught verbs (mid lane within one grounded jump of the
+  landing, shelf within a double jump of the mid lane), nothing in it strands
+  the player, a player standing anywhere on the tip collects the capsule at
+  every bob phase, and the walk out to the tip and back costs 0.43s — 1.83
+  tiles of edge advance against 14 tiles of authored daylight, leaving 12.17
+  where ≥6 is required. The *dare* itself is not cancelled, only unhooked from
+  this pocket: it is unparked as its own concept in `decisions.md` entries 10
+  and 11 (SPRINT T-021). Those entries also aim this shape somewhere else —
+  the main run's optional content is to become a **fork** read at speed, whose
+  rewarding branch rejoins ahead and whose wrong branch dead-ends — so the
+  backward shelf spur described above is what ships today, not the end state.
+- **Houndframe stations** (faces 2+, `decisions.md` entry 6): one per face, a
+  3-column patrol on that face's pocket landing, with the pocket's own mid
+  lane overhead as the answer. Ambient stations are non-gating — a ground
+  unit bounded by terrain cannot fly to a corner arena, so it must not be
+  able to hold a wave gate shut from half a face away.
 
 ### Mock-3D enemy presence
 

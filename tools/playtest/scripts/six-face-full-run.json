@@ -1,0 +1,60 @@
+{
+  "name": "six-face-full-run",
+  "description": "The DEFAULT six-face run in policy mode, with zero timed inputs: hold fire, hold right while the world is scrolling, back off (the scroll is frozen, so retreating is free) while a wave gate's message is up and there is daylight to the damage plane, hop on every landing, and dodge a houndframe the moment it plants for its charge. Everything is position- or state-triggered because a 100+ second run's event times move with every tuning change \u2014 the case the README's policy mode exists for. WHERE IT STOPS, AND WHY \u2014 MEASURED WITH REPEATS, NOT FROM ONE RUN (T-009's playtest gate, 3 runs per side, both trees pinned, 150 s cap, --deterministic, 1440x900; evidence under tools/playtest/runs/gate-T-009-fullrun-{branch,branch-2,branch-3,main,main-2,main-3} and reports/tasks/T-009/playtest.md): task/T-009 reached maxX 89.25 / 89.25 / 110.65 (scroll 75 / 75 / 112) and a pristine snapshot of main reached 89.25 / 89.25 / 89.25 (scroll 75 x3). All six runs ended in GAME_OVER inside a wave gate fight; no run of this script on either tree has ever reached VICTORY. RETRACTED, DO NOT RE-QUOTE: the single-run-per-side A/B this description used to carry (branch maxX 154.3 / scroll 140 / 11 kills / 48.5 s vs main 89.3 / 75 / 8 / 27.1 s, three life losses at x 31.6 / 93.0 / 148.0, 'the lattice tree gets ~1.7x further') did not reproduce and was struck by the integrator as I-020. For scale on the harness noise: the same branch under ?zip=1 \u2014 a render-only flag whose simulation pathcheck proves identical \u2014 produced maxX 154.25 and 113.40, so the whole claimed lattice effect fits inside the spread of a flag that cannot touch the sim (playtest README 'Honesty / limitations' #2 and #8). What survives the repeats: both trees fail, main fails at the identical spot 3 times out of 3, and what stops the bot is the gate FIGHT \u2014 a reflex policy with no aim model against diving wasps in three lanes \u2014 not the geometry. The same policy driven through the sim with hostiles removed (tools/pathcheck.mjs, 'T-009: the run reaches the outro scroll end') crosses every face and every pocket chasm and reaches the outro with 2 lives. Use this script as the traversal+pressure smoke test it is. Proving boot-to-VICTORY is deliberately NOT this script's job and was split out of T-009 into its own task (T-018) by the integrator; do not retune waves or weaken pockets to move this number.",
+  "url": "index.html",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "durationMs": 240000,
+  "moves": [
+    {
+      "hold": "fire",
+      "fromMs": 400,
+      "toMs": 240000
+    }
+  ],
+  "policy": {
+    "rules": [
+      {
+        "when": "!hudTC",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "hudTC && edgeMargin>14",
+        "do": {
+          "hold": "left"
+        }
+      },
+      {
+        "when": "hudTC && edgeMargin<10",
+        "do": {
+          "hold": "right"
+        }
+      },
+      {
+        "when": "pinned",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "houndTell",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      },
+      {
+        "when": "grounded",
+        "do": {
+          "tap": "jump",
+          "holdMs": 420
+        }
+      }
+    ]
+  }
+}

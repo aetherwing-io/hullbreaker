@@ -1,0 +1,51 @@
+# six-face-spaced-run — /tmp/t019/SPACED/report.json
+outcome not-completed · wall 52.7s · kills 10 · lives 3→0 (3 spent)
+reach: maxX 154.3 · scroll 140.0 of 415 · sim clock 52.0s
+time:  playing 51.9s (gated 18.1s, 35%; airborne 42.5s, 82%) · not-playing 0.0s
+
+## life losses
+- 20.5s lives 3→2 at x 85.68 y 3.00 vy 0.0 · GROUNDED · gate 1 (6 bodies) · gapDist 99.0
+    near: wasp/dive dx-1.1 dy1.9 d2.2
+- 27.9s lives 2→1 at x 60.44 y 5.20 vy 5.9 · AIRBORNE · gate 1 (3 bodies) · gapDist 99.0
+    near: wasp/dive dx2.4 dy1.6 d2.9
+- 52.0s lives 1→0 at x 150.65 y 3.00 vy 0.0 · GROUNDED · gate 2 (8 bodies) · gapDist 99.0
+    near: wasp/cruise dx0.8 dy2.1 d2.2 | wasp/cruise dx3.9 dy2.9 d4.9
+
+## hp losses (6)
+- 5.6s hp 3→2 at x 56.59 y 7.47 vy -16.8 · AIRBORNE · open route
+    near: wasp/cruise dx1.2 dy0.1 d1.2
+- 18.9s hp 2→1 at x 88.05 y 3.93 vy 11.3 · AIRBORNE · gate 1 (6 bodies)
+    near: wasp/dive dx-2.2 dy2.4 d3.3
+- 23.1s hp 3→2 at x 58.92 y 3.00 vy 0.0 · GROUNDED · gate 1 (6 bodies)
+    near: wasp/recover dx-3.4 dy1.4 d3.7 | wasp/dive dx-0.9 dy1.6 d1.8
+- 25.0s hp 2→1 at x 58.99 y 5.64 vy -1.5 · AIRBORNE · gate 1 (5 bodies)
+    near: wasp/recover dx0.6 dy-0.7 d0.9 | wasp/dive dx0.1 dy-1.3 d1.4
+- 37.6s hp 3→2 at x 135.22 y 6.62 vy -15.9 · AIRBORNE · open route
+    near: wasp/cruise dx-2.1 dy-0.2 d2.1 | wasp/cruise dx0.8 dy-0.3 d0.9
+- 48.8s hp 2→1 at x 152.10 y 5.25 vy 5.6 · AIRBORNE · gate 2 (9 bodies)
+    near: wasp/dive dx-1.1 dy0.1 d1.1
+airborne share of hp losses: 5/6
+
+## gates
+- wave 1: 17.7s → 31.2s (13.5s held, CLEARED) · peak 6 bodies · kills 3→8 · scroll 75.0
+- wave 2: 47.5s → 52.0s (4.5s held, run ended inside it) · peak 9 bodies · kills 9→10 · scroll 140.0
+
+## aim coverage (ticks with any materialized hostile in the sample)
+- overall: gun on target 8.9% · some 8-way ray had one 12.3% (n=674)
+- inside a gate: 20.9% on target, 28.0% available (n=239)
+- open route:    2.3% on target, 3.7% available (n=435)
+- rules cancelling each other (left AND right held → RIG stands still): 7.1% of PLAYING ticks (7.3% of ticks with a hostile in view)
+
+## dive census (every cruise→dive inside the 14-tile corridor)
+- all: 22 dives · ended in contact 3 (14%) · diver killed 2 (9%) · gun on THAT diver 13% of its dive ticks
+- shallow (slope ≤ 0.5, level ray): 16 dives · ended in contact 2 (13%) · diver killed 1 (6%) · gun on THAT diver 14% of its dive ticks
+- 45°-ish (0.5 < slope ≤ 2.2, diag ray): 5 dives · ended in contact 1 (20%) · diver killed 1 (20%) · gun on THAT diver 12% of its dive ticks
+- steep (slope > 2.2, vertical ray only): 1 dives · ended in contact 0 (0%) · diver killed 0 (0%) · gun on THAT diver 0% of its dive ticks
+
+## policy rule fire counts (tap rules only)
+- [9] pinned && terrain.stepUp>0.5 → 3 fires
+- [10] houndTell → 0 fires
+- [11] grounded && terrain.gapDist>3 && threat.upDist>3.5 → 57 fires
+- [12] grounded && terrain.gapDist<2.2 → 1 fires
+- [13] !grounded && vy<0 && terrain.gapDist<1.2 → 5 fires
+

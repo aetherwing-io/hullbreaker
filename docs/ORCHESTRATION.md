@@ -166,6 +166,30 @@ it holds under and be measured on the tree under test.
 before writing. Do not infer death from quiet; infer it from the whole fleet
 going silent (see the monitor below).
 
+**Before re-dispatching a lane, PROVE the previous dispatch is dead.** A
+retarget mid-flight is normal (operator verdicts land during builds), but a
+`TaskStop` that returns "No task found" means you used the wrong id, NOT that
+the lane is stopped — and re-dispatching on that assumption puts two writers in
+one worktree, which will corrupt the branch. Find the live one before
+launching: list the workflow's agents and read what each is
+(`head -c 3000 agent-*.jsonl | grep -o "BUILD agent for sprint task T-0.."`),
+and remember a workflow may carry SEVERAL lanes — stopping it to kill one lane
+also kills the others' in-flight fix cycles, so weigh that before you do.
+Signals that a lane is genuinely finished: its build result is in
+`journal.jsonl`, and a build that returned `blocked` closes its lane (the
+pipeline spawns no review or playtest behind it). This happened on 2026-08-01
+with T-021 and was caught only because the second builder noticed a commit it
+had not authored and messaged the integrator.
+
+**A probe that releases the jump key measures a game nobody plays.**
+`CONFIG.jumpCutMult` is 0.45 and `src/sim/player.js` applies it on release, so
+a sweep that lets go mid-flight tops out ~0.7 tiles below what a held jump
+actually reaches. That single bug produced a confident, well-evidenced,
+WRONG conclusion about a mechanic's reachability on 2026-08-01 — it was
+retracted only because its author re-checked. Any probe, pathcheck child, or
+bot policy asserting what a player can reach must hold the jump through the
+whole flight, and should say in its output that it did.
+
 ## Watching the fleet (what the integrator's monitor should fire on)
 
 Only two states need the integrator, and a monitor that fires on more than

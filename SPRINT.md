@@ -17,7 +17,12 @@ The default six-face run, start → summit → victory, playable end-to-end with
   SFX + layered ambience — restrained per DESIGN, but present;
 - a game shell: start screen, pause/options, death/restart flow, run stats;
 - 60fps with 200+ projectiles, no console errors, `?selftest=1` green,
-  pathcheck green, smoke suite green, boot-to-victory ≈ 4–5 min;
+  pathcheck green, smoke suite green, boot-to-victory ≈ 4–5 min
+  — **boot-to-victory is OPERATOR-ONLY** (T-019, merged): no reflex policy
+  reaches VICTORY, the wall is wave gate 2, and the gate independently
+  reproduced that rather than taking the builder's word. The harness bends,
+  the game does not, so this box is answered by an operator run — no bot has
+  proved it and the delivery report must not imply one did;
 - operator checkpoint packets posted for every feel question raised en route.
 
 ## Queue
@@ -153,7 +158,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; deterministic playtest script crossing G2
 
-## T-009 | feature | doing | P1
+## T-009 | feature | done | P1
 
 goal: six-face integration — bring the judged grammar into the default run:
 traversal-lattice route density (from the slice's learnings), hound-2.5
@@ -365,7 +370,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; six-face-full-run.json --deterministic against a pinned tree
 
-## T-019 | harness | doing | P2
+## T-019 | harness | done | P2
 
 goal: the last unproven delivery box — a bot run that reaches VICTORY. T-018
 established the blocker was the policy grammar (not difficulty, not the
@@ -411,31 +416,33 @@ verify: node tools/pathcheck.mjs; a run that reaches the first gate without losi
 
 ## T-021 | feature | doing | P1
 
-goal: the SPLIT DECISION — decisions.md entries 10 and 11. A fork the player
-reads and commits to AT SPEED, where the right branch carries challenge AND
-reward (higher, more exposed, it pays, and it rejoins ahead) and the wrong
-branch DEAD-ENDS, costing real time against the pursuing edge. The dead end is
-the stake that makes it a decision; the rejoin is what keeps the run moving
-forward. Both are required.
-Target energy (entry 11, operator): "lots of split decisions, esceleration,
-action, climb, climb climb, keep going faster."
+goal: the SPLIT DECISION in the SIX-FACE RUN — decisions.md entries 10, 11, 12
+and 13. A fork the player reads and commits to AT SPEED: the rewarding branch
+climbs higher, is more exposed, and REJOINS ahead; the wrong branch DEAD-ENDS.
+The stake is PRESSURE — hostiles on you while you are in it and the edge
+closing — not distance or height (entry 12: three passes failed trying to
+price a reward in reach; the fight was already charging the right price).
+Build it in the six-face run, NOT the traversal slice: entry 13 rules the
+slice too easy to judge difficulty in, and a pressure-priced mechanic cannot
+be judged where there is no pressure. The lattice is uncontended now that
+T-009 has merged.
 accept:
-- [ ] prototype in the TRAVERSAL SLICE behind a flag, off by default (the
-      six-face lattice is contended by T-009 — do not touch generator.js or
-      lattice.js)
-- [ ] the rewarding branch is the HIGHER, more exposed one and REJOINS ahead:
-      no reversal to collect, no free drop back to the main line
-- [ ] the wrong branch dead-ends and costs measurable time against the edge
+- [ ] behind a flag in the six-face run, off by default
+- [ ] rewarding branch climbs and REJOINS ahead: no reversal to collect, no
+      free drop back to the main line
+- [ ] wrong branch dead-ends, and what it costs is TIME UNDER PRESSURE —
+      show the hostiles that charge it, not a distance
 - [ ] FAIRNESS RIDER (entry 11): the dead end is legible as a risk BEFORE
-      commitment — a dead end the player could not have read is a memorization
-      trap. Say how it advertises itself and prove it in a FAR screenshot
+      commitment; prove it in a FAR screenshot
 - [ ] readable at speed at the FAR default: committing must not require a stop
-- [ ] CURRENCY + FALSIFYING TEST (entry 10's rule): cost is time-against-the-
-      edge and exposure. Assert: a policy that always takes the main line
-      collects zero rewards; a policy that takes the reward branch still keeps
-      the daylight margin; a policy that takes the dead end measurably loses
-      it. Derive the cost from the shipped sim — do NOT inherit a speed number
-- [ ] docs/proposals/ write-up specifying the mechanic for six-face integration
+- [ ] CURRENCY + FALSIFYING TEST (entry 10's rule): a policy that always takes
+      the main line collects zero rewards; a policy that takes the reward
+      branch still keeps its daylight margin; a policy that takes the dead end
+      measurably loses it. Derive every cost from the shipped sim — inherit no
+      speed number
+- [ ] the existing shelf-and-chasm pocket STAYS (entry 12) — this is added
+      decision density, not a replacement
+- [ ] docs/proposals/ write-up specifying the mechanic
 owner: lattice-designer
 verify: node tools/pathcheck.mjs; named playtest scripts for all three lines (main / reward / dead end), --deterministic; screenshots at ?view=far
 
@@ -576,6 +583,64 @@ verify: n/a until dispatched
   backdrop separate from the facet RIG runs on? (5) at FAR, do the acid
   bodies and their warm-amber tells stay two separate reads against boards
   01/06/10 — including the rooted polyp against the flying wasp?
+- **THE DELIVERY BOX ITSELF (T-019) — the one thing a bot cannot supply.**
+  One operator run of `http://127.0.0.1:8741/index.html` (default six-face run,
+  no flags), played to VICTORY or to wherever it ends, noting **which gate and
+  how many lives were left**. 49 deterministic bot runs across 13 policy
+  variants all wall at wave gate 2 (scroll 140 of 415, ~50 s, three lives);
+  exactly one cleared gate 2 and died heading for gate 3. The harness was
+  extended twice and never weakened the game, so this box is answered by a
+  human run or not at all. Evidence: `docs/playtests/2026-08-victory-box.md`,
+  `tools/playtest/reports/t019/all-runs.md`.
+  Questions that go with the run:
+  (1) Gate 2 is fought as 7-9 bodies where the wave authors 5 — ambient spawns
+  drift in before it arms (gate 1 peaks 5-7 against 4 authored). Does the
+  second gate read as the intended step up from the first, or as a spike?
+  (2) The whole route is 9 hits (3 hp x 3 lives, no heal) against ~50-55
+  gating bodies. How many hits do gates 1 and 2 cost you — and does a six-gate
+  run have the life budget it needs, or does it want a heal or a checkpoint?
+  (3) A corner arena is ~14 tiles wide (crush plane behind, pivot clamp ahead)
+  while 5-9 bodies dive into it at 10 tiles/s. Does that fight have room to
+  move (pillar 2), or is it a box you win by trading hp?
+  (4) The wasp still has no telegraph — cruise to dive on the same frame, from
+  9 tiles while gated, every 1.1 s, while hound/polyp/mortar all have
+  pathcheck-asserted tells. Fair at that range and cadence?
+  (5) Do gates 3-6 assume a weapon? A carrier drop is the only upgrade path
+  and it is incidental — the bot picked up LASER twice in 49 runs, by
+  accident. **Note this now interacts with decisions entry 9:** the pocket
+  pickups you made free are exactly a way for a player to CHOOSE to go get
+  one, so the answer here may already be landing.
+- **T-009 six-face integration — TWO packets, and the first has never been
+  judged at all.**
+  **(a) THE CORNER REVEAL, default vs `?zip=1`.** Serve the repo
+  (`python3 -m http.server 8741`) and play `http://127.0.0.1:8741/index.html`
+  against `http://127.0.0.1:8741/index.html?zip=1` back to back. The two are
+  simulation-identical by construction (pathcheck runs both and compares whole
+  traces); only the reveal differs, and the first corner arrives ~30-60 s in.
+  If the gate fight is in the way, `artifacts/t009-lattice/merged/`
+  `06-ab-gate1-default.png` vs `07-ab-gate1-zip.png` are the same simulated
+  instant in both modes. **G1 has never been operator-judged and this pass
+  makes it the DEFAULT** on the strength of entry 3 — that call is yours to
+  confirm or reverse. Does the default read as RIG running around a
+  monumental leg that was always there, or does the orbit read as the camera
+  sliding past scenery? Under `?zip=1` the world past the corner is literal
+  void and the catwalks float; under the default there is a joint column,
+  armour under the deck, and the next facet already in the haze — is that
+  added mass an improvement in READABILITY as well as fiction, or does the
+  body behind the play plane compete with the enemies you have to track?
+  **(b) THE POCKET PICKUP under entry 9** (`artifacts/t009-lattice/entry9/`):
+  (1) when you take a pocket capsule mid-face, does the stretch after it play
+  HOTTER — more shots you want to take — or does it just change the HUD
+  letter? (2) six capsules per run on top of carrier drops: power rising with
+  pressure (pillar 3), or does having a weapon almost always flatten the drops
+  and make the rifle feel like a bug? (3) at the plain shape the capsule sits
+  deck+5.05, so the mandatory crossing jump can clip it out of the air — a
+  pickup that arrives with no decision: still a reward, or noise? (If it
+  should at least be NOTICED, the cheap lever is presentation, not height —
+  height is the arms race entry 9 closed.) (4) is the shelf-and-chasm pocket
+  still worth ENTERING, or is it now just another hole in the deck? **That
+  last answer steers T-021/T-022** — entries 10 and 11 aim this shape at a
+  fork, and it tells us whether the shelf survives the rework or is replaced.
 - (new packets append here as tasks land: juice, shell, six-face run)
 
 ## Inbox (playtester/adversarial file here; integrator triages each cycle)
@@ -1022,7 +1087,7 @@ Status flow: todo → doing → review → done; `operator` parks a task on a fe
 verdict; `blocked` parks it on a dependency or two failed attempts (note
 why). The Stop-hook flywheel only counts todo/doing/review as open work.
 
-## I-021 | bug | S2 | RESOLVED by T-020 — NOT a defect | repro: any six-face run on main OR task/T-009, --deterministic, aimless or aimed policy | evidence: docs/playtests/2026-08-gate-fight-harness.md (T-018); tools/playtest/runs/gate-T-009-fullrun-*
+## I-021 | bug | S2 | RESOLVED — not a defect (T-020), and not reproducible on main with a terrain-aware policy (T-019) | repro: any six-face run on main OR task/T-009, --deterministic, aimless or aimed policy | evidence: docs/playtests/2026-08-gate-fight-harness.md (T-018); tools/playtest/runs/gate-T-009-fullrun-*
 
 Found by T-018 while instrumenting the gate fight: **every** run on both trees
 spends its first life at ~3.0s falling into the same 3-tile gap at x = 31.649
@@ -1128,3 +1193,86 @@ clamped to screen-right and therefore crosses at scroll speed. That is true
 *once RIG is riding the clamp*, and I applied it at an x where it is not. Any
 future claim about traversal cost must state WHERE the player is relative to
 the clamp, and be measured, not inherited.
+
+---
+
+## I-027 | docs | S3 | repro: `cd <task/T-019 6ad3fc5>/tools/playtest && node run.mjs scripts/six-face-spaced-run.json --deterministic --stop-on-game-over --max-runtime-ms 145000 --base-url <that worktree pinned>` ×3 | evidence: tools/playtest/runs/gate-T-019-spaced-{1,2,3}/analysis.txt; reports/tasks/T-019/playtest.md §2
+
+Found while gating T-019 (PASS). `scripts/six-face-spaced-run.json`'s own
+`description` says the policy "reaches wave gate 2 / scroll 140 of 415 EVERY
+time" and "survives 50.2-55.1 s (median 53.1 over all nine)". Three independent
+runs by this gate, same pinned tree and same flags, produced **58.9 s / scroll
+140**, **54.3 s / scroll 140**, and **38.2 s dying inside wave gate 1 at scroll
+79** — one run outside the band above, one below, and one that never reached the
+gate the description promises. This is the same overstatement the reviewer
+already made the branch correct for `six-face-aimed-run.json` (whose description
+now carries FIXVERIFY-1's gate-1 death); the sibling script kept the absolute
+wording. The finding's own honesty note — "read the gate reached, never one
+run's decimals" — is the right frame, except that here even the gate reached
+varies. Fix is wording only: "usually gate 2, sometimes gate 1" plus a band that
+covers the observed 38–59 s. Nothing about the T-019 conclusion changes; my runs
+support it more strongly than the builder's (zero VICTORY samples in 4/4).
+
+## I-028 | bug | S3 | repro: replay any `six-face-spaced-run.json` trace through `lib/threat.mjs` and count PLAYING ticks with `edgeMargin` in (6,8) AND `threat.dist<2.2` AND `threat.dx>0` — 3 of 777 on gate-T-019-spaced-1, min `edgeMargin` 7.37 | evidence: tools/playtest/runs/gate-T-019-spaced-1/report.json; reports/tasks/T-019/playtest.md §1
+
+Found while gating T-019 (PASS), by trying to construct a case where a new
+policy clause misfires. Two `hold` rules in the shipped six-face policy overlap
+in a window where they command opposite directions: `edgeMargin<8 → hold right`
+(the crush-plane emergency) and the new `threat.dist<2.2 && threat.dx>0 &&
+edgeMargin>6 → hold left` (personal space). Between 6 and 8 tiles of margin both
+fire, `hold` rules OR per key code, `left` and `right` are both down, and
+`computeAim`'s `h = 0` leaves RIG standing still — inside the one window whose
+rule exists precisely to make RIG run. Measured cost is small (3 of 777 PLAYING
+ticks in the sampled run, and no life loss attributable to the crush edge; run
+minimum margin 3.52 tiles), and the finding already reports the general
+rule-cancellation rate honestly (§3.3, 4.8-9.9 % of ticks, 5.3 % measured here).
+Filed because this particular pair is the one where cancelling is worst: raising
+the personal-space guard to `edgeMargin>8` closes it with no other effect. Policy
+script only — no game file involved, and the clause is legitimate relative
+geometry, so the anti-scripting guard is not implicated.
+
+**I-021 follow-up (T-019, 2026-08-01).** Independently of T-020's fairness
+finding, the x=31.649 death does **not** reproduce on `main` with a
+terrain-aware policy: across 9 inspected runs the first life goes at 20.6-28.4 s
+at x 65-89, inside the gate-1 fight, because the terrain probe already clears
+that hole. It reproduces only for policies with no terrain-driven jump — i.e.
+it was a property of the old aimless script, not of the level. A *different*
+3-tile gap around x 47-50 did kill the no-hop variants, reached airborne after
+a 2-tile step-down so the grounded-jump rule never fired; that is why T-019
+added `terrain.landDist` and made `gapDist` read 0 while over a hole. Data for
+the lattice lane, not a defect report.
+
+## I-029 | docs | S3 | repro: `cd tools/playtest && node run.mjs <task/T-022 e6e188a>/tools/playtest/scripts/momentum-{strong,weak}.json --deterministic --max-runtime-ms 62000 --base-url <that worktree pinned on 8998>` ×2 each | evidence: tools/playtest/runs/gate-T-022-{strong-1,strong-2,weak-1,weak-2}; reports/tasks/T-022/playtest.md §4, §10
+
+The two T-022 operator-packet scripts embed "MEASURED, NOT ASPIRATIONAL" bands
+in their own `description` fields, and independent repeats on the same tree land
+outside several of them: `momentum-weak` "above the floor on 11.6 % / 24.2 % of
+PLAYING samples" measured 0.7 % and 11.6 % here, and its "GAME_OVER at 27.5 /
+27.9 s" measured 22.7 / 22.9 s; `momentum-strong`'s "GAME_OVER at 43.9 / 42.7 s"
+measured 34.2 / 46.0 s. Peaks did reproduce closely (strong ×1.265/×1.280 vs
+×1.27 quoted; weak ×1.008/×1.025 vs ×1.02/×1.05), and the **structural** gap the
+descriptions themselves say to read — 12-13x separation in fraction-of-run above
+the shipped pace, ×1.12 bound never crossed by the weak policy — held in every
+pair, so the gate passed on that. Filed only so a later reader does not treat
+those decimals as a regression baseline: two runs per side is a small sample of
+a build whose documented run-to-run spread is wide (harness README, honesty items
+2 and 8). Suggested fix is a one-line hedge in each description pointing at the
+structural gap instead of the sample percentages, or a third run per side folded
+into the quoted range.
+
+## I-030 | docs | S3 | repro: read any `?momentum=1` trace — `report.json` → `trace[].pursuitSpeed` is the only escalation signal present; `grep -n "momentumDrive\|peakDrive" <task/T-022 e6e188a>/src/main.js` returns nothing | evidence: reports/tasks/T-022/playtest.md §3; tools/playtest/runs/gate-T-022-strong-2/report.json
+
+Forward-looking instrumentation gap, not a defect today. T-022's earned drive is
+recoverable from a bot trace only by inverting the pace —
+`drive = (pursuitSpeed/4.3 - 1)/0.4` — which is exactly what both packet scripts
+instruct a reader to do, and it is correct **while escalation is the only source
+feeding that number**. `src/sim/pace.js` already tracks `drive`, `peakDrive` and a
+tier, and `src/pure/momentum.js` exports `momentumTier`/`momentumDriveFromSpeed`,
+but none of them ride the frozen `testapi` channel; only the HUD string carries
+the meter. The moment T-023's boosts push their own speed through the shared
+`momentumClampSpeed` chokepoint (which is the stated design), `pursuitSpeed` stops
+distinguishing "the player earned this" from "a boost is running", and the packet's
+falsifying gates — "drive must never exceed 0.30 for a struggling player" — become
+unreadable from a trace. Cheap fix when T-023 lands: publish `momentum: {drive,
+peakDrive, tier}` on `telemetry()` beside `pursuitSpeed`, additive, inert when the
+flag is off.
