@@ -266,7 +266,19 @@ verify: node tools/pathcheck.mjs; scored-run playtest script
   explanation, and does it serve "every grab wants to become another launch"?
 - **Crouch vs aim-assist:** `?crouch=1` vs `?aim=assist` — keep one, both, or
   neither (decisions.md entry 4's open question).
-- **CP3 re-judgment:** after T-001 merges — post URL + screenshot sequence.
+- **CP3 re-judgment (v3, T-001):** `?slice=transform` (default far view;
+  `&enemies=0` to watch choreography, `&view=near` for the old framing).
+  Frames + webm + equivalence report in `artifacts/cp3-transform-v3/`.
+  Questions: (1) Does the flip now read as running into a pre-existing
+  opening — the plate relocking flush during the hold — rather than
+  geometry arriving? (2) Does the breach read as pressure escaping the
+  body (cover caught on its stop, vapor clearing by the second snap)
+  instead of the cover shattering into debris? (3) Chunkiness now lives
+  only in the camera detents plus the covers clacking with them — still
+  chonky enough, or too smooth? (4) At the far default, does the interior
+  passage read at the right compression now that its fog rides the camera
+  pull-back? (5) Does the altitude still feel earned on foot, with the
+  breach only *revealing* it?
 - (new packets append here as tasks land: palette, juice, shell, six-face run)
 
 ## Inbox (playtester/adversarial file here; integrator triages each cycle)
