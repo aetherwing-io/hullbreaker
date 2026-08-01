@@ -7,8 +7,9 @@
 //
 //   <scene>--far-before-after.png   before | after, both at the FAR default
 //   <scene>--views-after.png        near | mid | far, pass on
-//   <scene>--far-detail.png         the same pair, 2.4x center crop, so a
-//                                   letter or a lamp can be judged at all
+//   <scene>--far-detail.png         the same pair at 2.4x around the scene's
+//                                   focus point, so a letter or a lamp can be
+//                                   judged at all
 //
 // Output goes to artifacts/legibility-v1/ at the repo root the script runs
 // from (the harness's static server serves that root, so a worktree serves
@@ -18,6 +19,8 @@
 //
 //   node legibility-capture.mjs                — every scene
 //   node legibility-capture.mjs hound-tell     — just the named scene(s)
+//   node legibility-capture.mjs --compose      — recompose the panels from the
+//                                                frames already in artifacts/
 //
 // HONESTY NOTES, in the same spirit as palette-capture.mjs:
 //   * The two sides of a pair are two separate runs. They share an input
@@ -34,13 +37,14 @@
 //     first 150ms of an 800ms tell (I-003's dead window) — so its log line
 //     prints the measured ms-into-tell of the frame it kept. Read that
 //     number before trusting the frame.
-//   * The center crop is a fixed rectangle, not a tracked subject. The
-//     camera keeps RIG near frame center, and every scene fires its shutter
-//     with the subject close to RIG, but a crop can still clip a subject
-//     that drifted. The full frame above it is the authority.
+//   * The detail crop is a fixed rectangle around a per-scene focus point,
+//     not a tracked subject. Each scene fires its shutter on a sim state that
+//     happens at a particular place in the fixture, so the point is stable
+//     run to run — but a subject that drifted can still be clipped, and the
+//     full frame above it is the authority.
 
 import { chromium } from 'playwright-core';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startStaticServer } from './lib/server.mjs';
@@ -193,6 +197,7 @@ const rig = (s) => `RIG x${s.x.toFixed(1)} y${s.y.toFixed(1)}` + (s.grounded ? '
 //    exists from the first frame of the run instead of dropping from a kill.
 const capsuleScene = {
   tag: 'capsule-glyph',
+  focus: [0.58, 0.55],
   url: '/index.html?slice=traversal&view=$VIEW&testapi=1$MODE',
   views: ['near', 'mid', 'far'],
   run: (page, tag) => driveUntil(page, 'dare-pocket.json', {
@@ -208,6 +213,7 @@ const capsuleScene = {
 //    window with the warning light in an ON phase.
 const houndScene = {
   tag: 'hound-tell',
+  focus: [0.68, 0.52],
   url: '/index.html?slice=traversal&hound=1&view=$VIEW&testapi=1$MODE',
   views: ['near', 'mid', 'far'],
   run: (page, tag) => driveUntil(page, 'hound-facetank-solo.json', {
@@ -227,6 +233,7 @@ const houndScene = {
 //    800ms tell, which used to be a small dark notch in the bulb.
 const polypOnsetScene = {
   tag: 'polyp-onset',
+  focus: [0.73, 0.47],
   url: '/index.html?slice=traversal&polyp=1&view=$VIEW&testapi=1$MODE',
   views: ['far'],
   run: (page, tag) => driveUntil(page, 'polyp-lane-dodge.json', {
@@ -247,6 +254,7 @@ const polypOnsetScene = {
 //    as the control for scene 3.
 const polypLateScene = {
   tag: 'polyp-late-tell',
+  focus: [0.73, 0.47],
   url: '/index.html?slice=traversal&polyp=1&view=$VIEW&testapi=1$MODE',
   views: ['far'],
   run: (page, tag) => driveUntil(page, 'polyp-lane-dodge.json', {
@@ -267,6 +275,7 @@ const polypLateScene = {
 //    versus the one that is cruising past.
 const waspScene = {
   tag: 'wasp-dive',
+  focus: [0.58, 0.42],
   url: '/index.html?slice=traversal&view=$VIEW&testapi=1$MODE',
   views: ['far'],
   run: (page, tag) => driveUntil(page, 'mid-route.json', {
@@ -285,18 +294,22 @@ const SCENES = [capsuleScene, houndScene, polypOnsetScene, polypLateScene, waspS
 
 const dataUrl = (file) => 'data:image/png;base64,' + readFileSync(resolve(OUT, file)).toString('base64');
 
-async function compose(browser, outName, panels, { crop = 0 } = {}) {
+async function compose(browser, outName, panels, { crop = 0, focus = [0.5, 0.5] } = {}) {
   const w = crop ? 900 : 1288;
   const page = await browser.newPage({
     viewport: { width: panels.length * (w + 10) + 20, height: crop ? 640 : 880 },
   });
+  // the magnified panel is centered on the scene's SUBJECT, not on the frame:
+  // each scene fires its shutter on a sim state that happens at a particular
+  // place in the fixture, so its focus point is stable run to run (the
+  // rectangle is still fixed — see the header's honesty note)
+  const shift = `translate(${((0.5 - focus[0]) * 100).toFixed(2)}%, ${((0.5 - focus[1]) * 100).toFixed(2)}%)`;
   const cell = (p) => crop
-    // a fixed center crop, magnified: the letter/lamp judgment panel
     ? `<figure style="margin:0">
          <figcaption style="padding:6px 10px">${p.label}</figcaption>
          <div style="width:${w}px;height:540px;overflow:hidden;position:relative">
            <img src="${p.src}" style="position:absolute;left:50%;top:50%;
-                transform:translate(-50%,-50%) scale(2.4);image-rendering:pixelated">
+                transform:translate(-50%,-50%) scale(${crop}) ${shift};image-rendering:pixelated">
          </div>
        </figure>`
     : `<figure style="margin:0">
@@ -314,7 +327,9 @@ async function compose(browser, outName, panels, { crop = 0 } = {}) {
 
 /* --------------------------------- driver -------------------------------- */
 
-const only = process.argv.slice(2);
+const argv = process.argv.slice(2);
+const COMPOSE_ONLY = argv.includes('--compose');   // recompose from frames already on disk
+const only = argv.filter((a) => !a.startsWith('--'));
 const picked = only.length ? SCENES.filter((s) => only.includes(s.tag)) : SCENES;
 if (!picked.length) {
   console.error(`no scene matches [${only.join(', ')}]; tags: ${SCENES.map((s) => s.tag).join(', ')}`);
@@ -329,6 +344,7 @@ try {
     for (const view of scene.views) {
       for (const mode of MODES) {
         const tag = `${scene.tag}--${view}-${mode.id}`;
+        if (COMPOSE_ONLY) continue;
         const url = server.baseUrl + scene.url.replace('$VIEW', view).replace('$MODE', mode.qs);
         const context = await browser.newContext({ viewport: VIEWPORT });
         const page = await context.newPage();
@@ -347,14 +363,16 @@ try {
         await context.close();
       }
     }
-    const has = (v, m) => !missed.includes(`${scene.tag}--${v}-${m}`);
+    const has = (v, m) => !missed.includes(`${scene.tag}--${v}-${m}`) &&
+      existsSync(resolve(OUT, `${scene.tag}--${v}-${m}.png`));
     if (has('far', 'before') && has('far', 'after')) {
       const panels = MODES.map((m) => ({
         label: `${scene.tag} — far, ${m.id === 'before' ? '?legibility=0 (before)' : 'shipped default (after)'}`,
         src: dataUrl(`${scene.tag}--far-${m.id}.png`),
       }));
       await compose(browser, `${scene.tag}--far-before-after.png`, panels);
-      await compose(browser, `${scene.tag}--far-detail.png`, panels, { crop: 2.4 });
+      await compose(browser, `${scene.tag}--far-detail.png`, panels,
+        { crop: 2.4, focus: scene.focus });
       console.log(`  pair -> ${scene.tag}--far-before-after.png, ${scene.tag}--far-detail.png`);
     }
     if (scene.views.length > 1 && scene.views.every((v) => has(v, 'after'))) {
