@@ -1,23 +1,104 @@
-REQUEST_CHANGES
+APPROVE
 
-SPRINT.md:322-324 (and tools/playtest/palette-capture.mjs:105-111) — MAJOR: the new polyp-trial evidence does not contain what the packet and the rig say it contains. The packet annotates the URL as "the enemy-color frame: acid body, warm tell, hot beam in one shot", and the rig's own comment claims the capture is taken "deep enough into the solo teach stage that the emplacement has cycled closed -> tell -> fire at least once, so the acid body, the warm tell, and the hot beam are all judgeable in one frame". Both are false, and false by construction: `updatePolyp` (src/sim/hostiles.js:301-309) only leaves `closed` when `polypBeamOnPlayer` is true, and the polyp-trial scene (tools/playtest/palette-capture.mjs:110-111) drives NO input — RIG stands at spawn for the whole 4.6 s and never enters the lane, so the polyp can never tell or fire in that capture. Measured on the committed frames: `artifacts/palette-v1/polyp-trial--concept.png` contains zero emissive-tell and zero beam pixels (the brightest pixel anywhere near the bulb is the rust deck, 178,116,57) and the bulb is plainly a closed acid-green body with a dark barrel; scanning all six `*--concept.png` captures gives acid bodies in five, warm tell in **none**, beam in none. This matters because the fix-cycle's own new operator question 5 ("do the acid bodies and their warm-amber tells stay two separate reads at FAR") and the packet's claim that "only the tells and the polyp's spent vent stay warm amber" are exactly what the committed pairs cannot show — the same defect class as pass-2's MAJOR (packet asserting something the evidence does not carry), re-introduced by the commit that fixed it; the previous gate's suggested remedy was implemented in text but not in the capture. Cheap fix, either: (a) make the capture true — give `polyp-trial` a short schedule that walks RIG into the lane (or fires the screenshot during `tell`/`fire`) and re-run `node palette-capture.mjs polyp-trial`; or (b) make the text true — say the frame shows the closed acid body and that the tell/beam/vent sequence must be judged live at the URL, and drop "in one shot" from both the packet and the rig comment.
+Third gate cycle. All three pass-2 findings are fixed, and every factual claim
+the packet makes about the committed stills was re-derived independently by
+this gate from the PNGs themselves (details under "Verified"). Post-pass-2 the
+only `src/` delta is a comment. Findings are MINOR; none block the merge.
 
-SPRINT.md:388-397 — MINOR: Inbox issue I-004 still reads as live and now cites a token this branch deleted — "palette.js's CONCEPT table authors (wasp 0x9ce23e, enemyGlow 0x9dff3a)". `enemyGlow` is gone (correctly, per pass-2's minor: nothing read it) and the issue itself is resolved by this branch's hostiles wiring, so a resolved issue naming a non-existent token is stale-doc drift the next agent will chase. Close I-004 or annotate it "resolved by T-010 fix-cycle" at merge — integrator bookkeeping, not a runtime defect.
+MINOR — tools/playtest/palette-capture.mjs:440 — the `shot()` closure writes
+each screenshot straight to its final artifact path (`resolve(OUT,
+tag--pal.id.png)`) and verification happens *after* the file is on disk. On a
+run where no iris cycle verifies, the rig does throw (loud, and the pair is not
+composed), but `polyp-tell--<pal>.png` / `polyp-beam--<pal>.png` have already
+been overwritten with the unverified frames — so tools/playtest/README.md:803-806
+and the module header's "the rig throws rather than write evidence that does not
+show what its name claims" are a notch stronger than the code. The committed
+evidence is unaffected (it verified — see below); this is about the next run.
+Cheap fix: screenshot to a buffer or a `.pending` path and rename on
+verification, or reword to "throws rather than *keep*".
 
-src/render/palette.js:195 — MINOR: the comment says the `document.body.style.background` write "keeps the pre-boot flash coherent in both modes", but the write runs at module evaluation, i.e. after index.html:8's CSS has already painted `#232830`. In classic that is an identity; in concept the pre-boot frame is still grey-box and only turns teal once `src/main.js` loads. The write itself is right (post-boot letterboxing matches `PAL.bg`); only the pre-boot claim is inaccurate. Reword, or state the one-frame grey flash explicitly.
+MINOR — tools/playtest/README.md:790 — the honesty note bounds timed pairs at
+"at most a frame or two of jitter". The committed `sixface-action` pair (a timed
+capture, shutter at 4600 ms) shows `2 kills` vs `1 kills` and a visibly
+different hostile roster/placement between the two sides; RIG's own progress
+matches (`21m` both sides), so the divergence is spawn/AI evolution under
+real-time dt, not a couple of frames. The operative instruction ("judge
+palette/composition, not pixel deltas") is right and the pairs remain fit for
+the palette question; only the stated jitter bound understates what seconds of
+un-locked wall-clock driving actually produces.
 
-Pass-2 findings verified addressed:
-- MAJOR (stale operator packet): fixed at 646f11a — SPRINT.md:317-333 now states the acid ecology is LIVE on every enemy mesh including the Iris Polyp, lists `?slice=traversal&polyp=1` and the `polyp-trial` pair, and adds question 5 on body-vs-tell separation at FAR. Correct as to the wiring; the overclaim above is about the captured frame, not the feature.
-- MINOR (unread `enemyGlow`): fixed — token dropped from both tables, its hue assertion dropped, and src/render/palette.js:141-145 documents why there is no catch-all emissive token. `grep -rn enemyGlow src/` returns only that explanatory comment.
-- MINOR (literal guard too narrow): fixed — tools/pathcheck.mjs:4444-4446 now matches `0xRRGGBB` **and** CSS `#rgb`/`#rrggbb`/`#rrggbbaa` plus `rgb()/rgba()`, with `0xffffff` (instance/tint identity base) the only exception, and the guarded file list now includes `hostiles.js`.
+MINOR — SPRINT.md:338 — branch staleness, integrator bookkeeping. `main` has
+advanced ~40 commits since this branch's last sync (ab1b335); pathcheck is
+800/0 here vs 961/0 on `main`. `git merge-tree --write-tree main task/T-010`
+conflicts in **SPRINT.md only** (both sides appended packets/status lines);
+`src/render/transform.js`, `tools/pathcheck.mjs` and `tools/playtest/README.md`
+auto-merge. I checked the merged tree (0da8139) directly: every tokenized
+render file still carries zero `CONFIG.palette` reads and zero non-identity
+color literals, and `main` added no `CONFIG.palette` keys and no new `ENEMY`
+kinds since the merge-base — so the new palette guards (including the
+roster-coverage and byte-fidelity assertions that failed during the T-004
+collision) stay green after the merge. Resolve SPRINT.md by keeping both sides.
 
-Verified clean (rest of the checklist):
-- Accept items 1-6: main is merged (eeddd67, b9e52c2) and `git merge-tree --write-tree main HEAD` is conflict-free against current main HEAD 04b6a65 (whose only delta is SPRINT/reports, no `src/`); `node tools/pathcheck.mjs` in the worktree → **800 passed, 0 failed** against main's 775, with the previously failing "palette: classic table is byte-faithful to CONFIG.palette" now green; the polyp is mapped into the acid ENEMY family (`polyp 0x76bd2c`, `polypBeam 0xd4ff5c`, tell/vent deliberately warm in both modes) and hue-asserted; the hostiles.js wiring landed and its exemption is gone.
-- Test honesty: the pathcheck diff is **150 added, 0 deleted** — nothing weakened, retimed, or removed to get green. The new ENEMY-roster guard reads the real `ENEMY` table from src/sim/hostiles.js (pathcheck.mjs:81), not the palette, so it is not tautological and structurally prevents the T-004/T-010 collision from recurring.
-- Classic byte-identity, checked value-by-value against `git show main:` for everything that was a literal rather than a `CONFIG.palette` read: limb ladder 8/8 (0x5f656e/0x646a73/0x7b818a/0x868c95/0x4b515a/0x6a707a/0x747a84/0x505a67), transform ladder 7/7 (0x494f57/0x555b64/0x646a73/0x7b818a/0x878d96/0x333a44/0x8a9099), `rain 0x9fb4c6`, `vapor 0xaebbc6`, `hemiSky 0xcfd8e3`/`hemiGround 0x3a3f46`/`sun 0xffffff`, `muzzle 0xffffff`, `capsuleInk '#14181e'`, `solid = CONFIG.palette.groundAlt`, `limbBg = CONFIG.limb.bg`. `glowOff`/`hitFlash` are identical across tables (asserted) and `atmosphereBg` is the identity under classic including unknown-value pass-through (asserted), so `?palette=classic` reproduces the merged main's pre-palette look.
-- Layer purity: zero `src/pure/` and `src/sim/` changes; palette.js is render-side, imports only `../config.js` and `../mode.js`, is Node-safe (DOM write guarded by `typeof document`), and remains the one render module the harness imports; no new bridge crossings and no globals smuggled via mode.js.
-- Determinism: no RNG, clock, or 2D-sim surface touched.
-- Verdict compliance: `?hook=1` untouched and still reading `CONFIG.palette.hook*` (entry 5 — correctly the sole exemption); no anatomy assembly (entry 3); frozen jump/movement constants unchanged; every capture at `?view=far` (entry 7); enemy work is color-only, no stat changes (entry 6).
-- Perf: no new per-frame allocations — `HOUND_POSE`/`POLYP_POSE` still reused, instance colors still uploaded only on spawn/type change, `LOOK` colors resolved once at module load, `BASE_COLORS = PAL.limb` is read-only aliasing, `atmosphereBg` is two object lookups per transition frame.
-- Scope/hygiene: no runtime deps (the rig reuses tools/playtest's playwright-core), no build step, the rig has zero effect on the shipped game, README updated, its schedule-matched/not-frame-locked honesty note is accurate (it is the polyp-scene claim above that is not), ~1.8 MB of PNG evidence under the existing `artifacts/` precedent, no OSTK artifacts, no unused imports introduced (limb.js still passes bare `CONFIG` to `limbBakePlan`).
-- Not re-litigated: concept-as-default with `?palette=classic` as the opt-out was approved at pass 1 as documented DESIGN canon under decisions entry 8's delivery mandate; it belongs to the operator packet, not this gate. Feel judgments (does the rust read as the Meridian, do the acid bodies pop at FAR) correctly deferred to the operator.
+Verified (acceptance items, then the rest of the checklist):
+
+- **Accept 1 — the evidence shows what the packet says.** Recomputed the
+  packet's own recomputable claim from the committed stills with the rig's beam
+  predicate (`g>=150 && g-b>=45 && g>=r`): `polyp-beam` minus `polyp-tell` =
+  **2497 px (concept) / 2650 px (classic)** — exactly SPRINT.md:355-357, with
+  the tell frames holding **0** such pixels. HUD pips corroborate the sim-state
+  claims: `polyp-tell` shows three filled hp pips (hp 3, un-hit), `polyp-beam`
+  two filled + one hollow (hp 2). Frame content matches the prose: tell = RIG
+  grounded on a walk with the polyp bulb wearing the warm cream/amber emissive;
+  beam = the hot-acid bar passing through RIG, whose feet are clear of the
+  catwalk slat (knocked airborne), same cycle. The one non-recomputable number
+  (542/796 px of warm blink) is explicitly labelled "measurable only at
+  capture" in the packet, and the OFF reference frame is deliberately not
+  committed (palette-capture.mjs:318) — honest as written. The acid ecology the
+  packet claims is visible in `traversal-action` and `sixface-action` (wasps and
+  a carrier read acid green in concept), the teal-backdrop/rust-facet split in
+  `g1-limb` and `transform-boot`. Packet URLs resolve as written: `?polyp=1` is
+  gated on the traversal slice (src/mode.js:98) and FAR is the shipped default
+  (decisions entry 7), so the operator's URLs land where the packet says
+  without `&view=far`. The 67314a6 rewrite ("RIG caught in the lane at x≈61,
+  knocked off its feet ... hp 2") is the frame's actual state, not a tidier one.
+- **Accept 2 — pathcheck.** Ran `node tools/pathcheck.mjs` in the worktree:
+  **800 passed, 0 failed**, matching the task block. The pathcheck diff over
+  main...HEAD is 150 added / 0 deleted — nothing weakened, retimed or removed.
+- **Accept 3 — no runtime change beyond passes 1-2.** `git diff 646f11a..HEAD
+  -- src/` is 7 insertions / 2 deletions, all inside one comment block in
+  src/render/palette.js:194-200 (the a769a70 pre-boot-flash correction, which
+  is now accurate: index.html's CSS paints the grey-box bg before any module
+  runs, and the write is an identity under classic). The other two third-pass
+  commits touch SPRINT.md, tools/playtest/*, and artifacts only.
+- Layer purity / determinism: `main...HEAD` touches no `src/pure/` or `src/sim/`
+  file at all. palette.js is render-side, imports only `../config.js` and
+  `../mode.js`, guards its one DOM write with `typeof document`, and stays the
+  single render module the harness imports; no new bridge crossings, no globals
+  via mode.js.
+- Verdict compliance: `?hook=1` untouched and still the sole `CONFIG.palette`
+  consumer (src/render/hook.js:32/42/60 — entry 5, correctly exempt); no
+  anatomy assembly (entry 3); no frozen jump/movement constants touched; all
+  captures at FAR (entry 7); enemy work is color-only, no stats (entry 6).
+  Concept-as-default under entry 8's delivery mandate was settled at pass 1 and
+  is the operator packet's question, not this gate's.
+- Classic fidelity spot-check against `git show main:`: `solid` is
+  `CONFIG.palette.groundAlt` (level.js's old value), limb and transform ladders
+  reproduce their prior literals, `rain 0x9fb4c6` / `vapor 0xaebbc6` /
+  `hemiSky 0xcfd8e3` / `hemiGround 0x3a3f46` / `muzzle 0xffffff` /
+  `capsuleInk '#14181e'` are byte-identical, and `atmosphereBg` is the identity
+  under classic — `?palette=classic` reproduces the pre-palette look.
+- The `0xffffff` exception in the literal guard is honest: every remaining
+  occurrence (bullets.js:19/30/72/77, limb.js:98, level.js:100) is the identity
+  base color of an instance-colored material, not a palette choice.
+- Perf: no new per-frame allocations — `HOUND_POSE`/`POLYP_POSE` still reused,
+  `LOOK` colors resolved once at module load, instance colors uploaded only on
+  spawn/type change, `BASE_COLORS = PAL.limb` is read-only aliasing, and
+  `atmosphereBg` is two object lookups per transform-slice frame.
+- Scope/hygiene: no runtime deps (the rig reuses tools/playtest's
+  playwright-core and its own lib/policy.mjs), no build step, zero effect on the
+  shipped game from the rig, README updated with limitations, ~2.1 MB of PNG
+  evidence under the existing `artifacts/` precedent, no OSTK artifacts.
+- Feel questions (does the rust read as the Meridian or drift terracotta; do
+  threats/capsules pop at FAR; is the deck still the brightest route surface;
+  limb backdrop separation; acid body vs warm tell at FAR) are correctly left to
+  the operator packet and are out of this gate's scope.

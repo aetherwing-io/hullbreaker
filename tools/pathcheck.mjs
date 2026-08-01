@@ -38,8 +38,12 @@ import {
 import { crouchStance } from '../src/pure/stance.js';
 import { assistDirection, assistVerticalReach } from '../src/pure/assist.js';
 import {
-  TRAVERSAL_HOOK, TRAVERSAL_FLOW,
+  TRAVERSAL_HOOK, TRAVERSAL_FLOW, traversalGroundYAt, traversalRewardBuried,
 } from '../src/pure/traversal.js';
+import {
+  TRAVERSAL_RIBRUN, ribrunCatchBand, ribrunCatchStep, ribrunClearSpan, ribrunDecks,
+  ribrunFixture, ribrunFlanges, ribrunHopSpan, ribrunJumpArc,
+} from '../src/pure/ribrun.js';
 import {
   hookAnchorReachableFrom, hookArcAccepts, hookHoldPoint, hookLineClear,
   hookWhipDir, hookWhipVelocity, hookZipMarch,
@@ -49,8 +53,8 @@ import {
   flowMult, flowSpeedMult, flowStepState,
 } from '../src/pure/flow.js';
 import {
-  SCORE, scoreNotch, scoreNotchMult, scoreFireRateMult, scoreChargeGain,
-  scoreThreatGain, scoreApplyGain, scoreDrainPerSec, scoreStep,
+  RUN_FALLBACK, SCORE, SCORE_RUN, scoreNotch, scoreNotchMult, scoreFireRateMult,
+  scoreChargeGain, scoreThreatGain, scoreApplyGain, scoreDrainPerSec, scoreStep,
   scoreClassification, scoreNotchGlyphs, scoreConnectorAt, scoreRoutesCompleted,
 } from '../src/pure/score.js';
 import {
@@ -62,11 +66,14 @@ import {
   limbPlanViolations, limbSpanHasGap, limbSpansPlayBand,
 } from '../src/pure/limb.js';
 import {
-  TRANSFORM_BEND_S, TRANSFORM_FIXTURE, TRANSFORM_PATH, bandSlamOffset,
+  TRANSFORM_BEND_S, TRANSFORM_FIXTURE, TRANSFORM_FIXTURES, TRANSFORM_PATH,
+  bandSlamOffset,
   buildTransformLevel,
-  buildTransformPath, transformAltAt, transformAtmosphereMix, transformBandHeading,
-  transformBandIndexAt, transformCoverAjar, transformEventTotalMs, transformFrontierS,
-  transformHaltS,
+  buildTransformPath, selectTransformFixture, transformAltAt,
+  transformAtmosphereMix, transformBandHeading,
+  transformBandIndexAt, transformBendSList, transformCoverAjar,
+  transformEventTotalMs, transformFrontierS,
+  transformGradeAt, transformHaltS,
   transformHeadingAt, transformPanelState, transformPathAt, transformScrollOffset,
   transformVapor,
   transformScrollVel, transformSeamPull, transformSealS, transformTimeline,
@@ -2257,6 +2264,440 @@ const XL = buildTransformLevel(CONFIG);
      'the spawn point stands on authored ground');
 }
 
+/* ================ G2 — neck access-plate flip gate (?g2=1) ============== *
+ * The monster-g2-neck-flip fixture: the greybox proposal's §G2 gate built on
+ * the transform-slice machinery with T-001's landed flip choreography reused
+ * verbatim. These assertions defend, in order: the opt-in selection wiring
+ * (every shipped URL keeps v1 byte-identical), the proposal's own numbers
+ * (halt 140 / pivot 154 / 14-tile apron / 10–12-tile plate / connectors near
+ * y 3-6-9 / five routes / hound low + wasp apex), the static-anatomy rule
+ * (gate overrides are geometry only — the shared curves are untouched), and
+ * the same fixture-validity contract the v1 sections hold themselves to.   */
+const G2F = TRANSFORM_FIXTURES['monster-g2-neck-flip'];
+const G2P = buildTransformPath(G2F, CONFIG);
+const G2L = buildTransformLevel(CONFIG, G2F);
+const G2E = G2F.events[0];
+const G2B = G2F.bounds;
+const G2GATE = G2E.gate;
+
+// --- selection wiring: opt-in, restorable, off by default ---------------
+{
+  ok(TRANSFORM_FIXTURE === XF && XF.id === 'transform-v1',
+     'the live transform fixture defaults to v1 (G2 is opt-in)');
+  ok(Object.keys(TRANSFORM_FIXTURES).sort().join() ===
+     'monster-g2-neck-flip,transform-v1',
+     'exactly two authored transform fixtures');
+  const v1Fix = TRANSFORM_FIXTURE;
+  const v1Path = JSON.stringify(TRANSFORM_PATH);
+  const v1Bends = JSON.stringify(TRANSFORM_BEND_S);
+  const v1Json = JSON.stringify(v1Fix);
+  const sel = selectTransformFixture('monster-g2-neck-flip');
+  ok(sel === G2F && TRANSFORM_FIXTURE === G2F &&
+     TRANSFORM_BEND_S.length === 1 && TRANSFORM_BEND_S[0] === G2E.seamS &&
+     TRANSFORM_PATH.segs.length === 3,
+     'selecting g2 swaps fixture, path and bend list together');
+  ok(JSON.stringify(buildTransformLevel(CONFIG)) === JSON.stringify(G2L),
+     'the default-arg level build follows the live selection');
+  const back = selectTransformFixture('transform-v1');
+  ok(back === v1Fix && TRANSFORM_FIXTURE === v1Fix &&
+     JSON.stringify(TRANSFORM_PATH) === v1Path &&
+     JSON.stringify(TRANSFORM_BEND_S) === v1Bends &&
+     JSON.stringify(TRANSFORM_FIXTURE) === v1Json,
+     'reselecting v1 restores the shipped bindings exactly (selection mutates nothing)');
+  ok(selectTransformFixture('no-such-fixture') === v1Fix,
+     'an unknown fixture id falls back to v1: the flag cannot half-arm');
+}
+
+// --- the proposal's own gate numbers ------------------------------------
+{
+  ok(G2F.id === 'monster-g2-neck-flip' && G2E.kind === 'flip' &&
+     G2F.bands.map((b) => b.kind).join('>') === 'exterior>interior',
+     'G2 is one flip from the haunch exterior into the neck interior');
+  ok(transformHaltS(G2E, CONFIG) === 140 && G2E.seamS === 154,
+     'scroll halt 140 and pivot 154, exactly the proposal P2 numbers (u51/u65)');
+  ok(G2E.seamS - transformHaltS(G2E, CONFIG) === 14,
+     'the gate apron is the proposal 14 tiles');
+  ok(transformHaltS(G2E, CONFIG) >= 119 &&
+     G2E.seamS + XT.thresholdTiles <= 161,
+     'gate arena and threshold stay inside the proposal s119-161 screen window');
+  ok(G2GATE.haltS === transformHaltS(G2E, CONFIG) &&
+     G2GATE.pivotS === G2E.seamS,
+     'the gate declaration matches the computed halt and pivot');
+  // the override mechanism must not leak into the shipped demo
+  ok(XF.events.every((ev) => transformHaltS(ev, CONFIG) === ev.seamS - XT.haltOffset),
+     'v1 events keep the CONFIG halt offset (no override present)');
+  near(transformSeamPull(XTL.t5, CONFIG), XT.seamPullTiles, 1e-9,
+       'seam pull without an event still resolves to the CONFIG tiles');
+  // pull override: same landing invariant as both v1 turns (halt + pull = seam + 2)
+  near(transformSeamPull(XTL.t5, CONFIG, G2E), G2E.seamPullTiles, 1e-9,
+       'the G2 event pull reaches its authored tiles by t5');
+  near(transformSeamPull(XTL.t2, CONFIG, G2E), 0, 1e-9,
+       'the G2 pull still starts on the first detent');
+  ok(transformHaltS(G2E, CONFIG) + G2E.seamPullTiles === G2E.seamS + 2 &&
+     XF.events.every((ev) => transformHaltS(ev, CONFIG) + XT.seamPullTiles === ev.seamS + 2),
+     'every turn, v1 and G2, lands its ritual pull exactly 2 tiles past the pivot');
+  near(transformScrollOffset(XTL.t5, G2F.run.minimumScrollSpeed, CONFIG, G2E),
+       G2E.seamPullTiles, 1e-9,
+       'the ritual scroll offset carries the G2 pull override');
+  // the wider apron still frames the whole ritual
+  const halfW = CC.z * Math.tan(CC.fov / 2 * DEG) * (16 / 9);
+  ok(G2E.haltOffset + XT.thresholdTiles < halfW + CC.x,
+     'the whole G2 threshold is visible from its 14-tile apron halt at 16:9');
+  ok(XT.armLookahead < G2E.haltOffset && XT.pressedOffset < G2E.haltOffset,
+     'arming lookahead and squeeze cap stay inside the G2 apron');
+  let ordered = true;
+  {
+    const halt = transformHaltS(G2E, CONFIG);
+    const trig = transformTriggerS(G2E, CONFIG);
+    const front = transformFrontierS(G2E, CONFIG);
+    const seal = transformSealS(G2E, CONFIG);
+    if (!(halt < G2E.seamS && G2E.seamS < trig && trig < front &&
+          front < G2E.seamS + XT.thresholdTiles && seal < trig && seal > G2E.seamS)) ordered = false;
+    if (G2F.bands[G2E.toBand].s0 !== G2E.seamS ||
+        G2F.bands[G2E.fromBand].s1 !== G2E.seamS) ordered = false;
+  }
+  ok(ordered, 'G2 gate geometry orders halt < seam < seal < trigger < frontier < threshold end');
+  ok(transformTriggerS(G2E, CONFIG) - PL.width / 2 >= G2E.seamS,
+     'RIG is wholly past the G2 seam before the ritual can fire');
+}
+
+// --- one static body: path, bands, climb --------------------------------
+{
+  let valid = G2F.bands[0].s0 === G2B.x0 &&
+    G2F.bands[G2F.bands.length - 1].s1 === G2B.x1;
+  for (let i = 1; i < G2F.bands.length; i++)
+    if (G2F.bands[i - 1].s1 !== G2F.bands[i].s0) valid = false;
+  ok(valid, 'G2 stretches tile the fixture bounds contiguously');
+  ok(JSON.stringify(buildTransformPath(G2F, CONFIG)) === JSON.stringify(G2P),
+     'the G2 path is a pure function of the fixture');
+  ok(G2P.segs.length === 1 + 2 * G2F.events.length,
+     'two bends for the one G2 turn, got ' + G2P.segs.length + ' segments');
+  let bad = 0, cont = true;
+  for (let s = G2B.x0; s < G2B.x1; s++) {
+    const a = transformPathAt(G2P, s), b = transformPathAt(G2P, s + 1);
+    const d = Math.hypot(a.x - b.x, a.z - b.z);
+    if (d > 1 + 1e-9 || d < Math.cos(XT.snapDeg * DEG / 2) - 1e-6) bad++;
+  }
+  for (const g of G2P.segs) {
+    const a = transformPathAt(G2P, g.s0 - 1e-7), b = transformPathAt(G2P, g.s0 + 1e-7);
+    if (Math.hypot(a.x - b.x, a.z - b.z) > 1e-5) cont = false;
+  }
+  ok(bad === 0 && cont, 'the G2 path is continuous with unit steps through its bend');
+  const before = transformHeadingAt(G2P, G2E.seamS - XT.chamferTiles);
+  const after = transformHeadingAt(G2P, G2E.seamS + XT.chamferTiles);
+  ok(Math.abs((after - before) / DEG - 2 * XT.snapDeg) < 1e-9 &&
+     Math.abs(before - transformBandHeading(G2F, 0, CONFIG)) < 1e-9 &&
+     Math.abs(after - transformBandHeading(G2F, 1, CONFIG)) < 1e-9 &&
+     G2F.bands[0].headingDeg === G2GATE.normalBeforeDeg &&
+     G2F.bands[1].headingDeg === G2GATE.normalAfterDeg,
+     'the G2 turn is two snapDeg detents between the declared surface normals');
+  ok(JSON.stringify(transformBendSList(G2F)) === JSON.stringify([G2E.seamS]),
+     'the bullet bend cull boundary sits on the G2 seam');
+  // the climb: earned on the ribline, flat across the whole gate footprint
+  const P = G2P.profile;
+  let monotone = true, maxGrade = 0;
+  for (let i = 1; i < P.length; i++) {
+    if (P[i].alt < P[i - 1].alt - 1e-9 || P[i].s <= P[i - 1].s) monotone = false;
+    maxGrade = Math.max(maxGrade, (P[i].alt - P[i - 1].alt) / (P[i].s - P[i - 1].s));
+  }
+  ok(monotone, 'the G2 altitude profile only ever climbs');
+  ok(maxGrade > 0.2 && maxGrade <= 0.45,
+     'the G2 grade stays readable side-on, got ' + maxGrade.toFixed(2));
+  ok(transformAltAt(G2P, 89) === 12,
+     'P2 starts at the proposal +12 render altitude');
+  ok(transformAltAt(G2P, transformHaltS(G2E, CONFIG)) - transformAltAt(G2P, 89) >= 14,
+     'at least +14 of P2 lift is earned on foot before the halt');
+  let flat = true;
+  for (let s = transformHaltS(G2E, CONFIG); s <= G2E.seamS + XT.thresholdTiles; s++)
+    if (transformAltAt(G2P, s) !== G2GATE.altBefore) flat = false;
+  ok(flat && G2GATE.altBefore === G2GATE.altAfter,
+     'altitude is dead flat across apron, seam and threshold: the ritual grants 0');
+  const climbSeconds = (transformHaltS(G2E, CONFIG) - 89) / PL.runSpeed;
+  ok(climbSeconds > 4, 'the P2 ascent is run, not cut: ' +
+     climbSeconds.toFixed(1) + ' s of ribline');
+}
+
+// --- authored surfaces, gaps, routes ------------------------------------
+{
+  let valid = true;
+  const covered = new Set();
+  for (const run of G2F.groundRuns) {
+    if (!Number.isInteger(run.x0) || !Number.isInteger(run.x1) || run.x0 >= run.x1 ||
+        run.x0 < G2B.x0 || run.x1 > G2B.x1 ||
+        (!run.gap && !Number.isFinite(run.y))) valid = false;
+    for (let x = run.x0; x < run.x1; x++) {
+      if (covered.has(x)) valid = false;
+      if (G2L.groundH[x] !== (run.gap ? GAP : run.y)) valid = false;
+      covered.add(x);
+    }
+  }
+  ok(valid && covered.size === G2B.x1 - G2B.x0,
+     'G2 authored surfaces cover the fixture bounds once and match the built heights');
+  let outsideMatches = true;
+  for (let i = 0; i < CONFIG.levelLength; i++)
+    if ((i < G2B.x0 || i >= G2B.x1) && G2L.groundH[i] !== gH[i]) outsideMatches = false;
+  ok(outsideMatches, 'the seeded layout outside the G2 bounds is untouched');
+  let widest = 0, badLanding = 0;
+  let i = G2B.x0;
+  while (i < G2B.x1) {
+    if (G2L.groundH[i] > -100) { i++; continue; }
+    const start = i;
+    while (i < G2B.x1 && G2L.groundH[i] < -100) i++;
+    widest = Math.max(widest, i - start);
+    let solid = 0;
+    while (i + solid < G2B.x1 && G2L.groundH[i + solid] > -100) solid++;
+    if (solid < GG.landingMin) badLanding++;
+    if (Math.abs(G2L.groundH[start - 1] - G2L.groundH[i]) > 1) badLanding++;
+  }
+  ok(widest > 0 && widest <= GG.gapMax,
+     'G2 gaps stay inside the jumpable band, widest ' + widest);
+  ok(badLanding === 0, 'every G2 gap has a legal landing strip after it');
+  ok(G2F.movement === undefined, 'the G2 fixture overrides no movement constant');
+  // catwalk validity + double-jump reachability (same rule as v1)
+  const ids = new Set();
+  let pvalid = true, reachable = true;
+  for (const p of G2F.platforms) {
+    if (typeof p.id !== 'string' || ids.has(p.id) || p.x0 >= p.x1 ||
+        p.x0 < G2B.x0 || p.x1 > G2B.x1 || !Number.isFinite(p.y)) pvalid = false;
+    ids.add(p.id);
+    let best = -999;
+    for (let k = p.x0 - 1; k <= p.x1 + 1; k++)
+      if (G2L.groundH[k] > -100) best = Math.max(best, G2L.groundH[k]);
+    for (const q of G2F.platforms)
+      if (q !== p && q.y < p.y && q.x1 > p.x0 - 1 && q.x0 < p.x1 + 1) best = Math.max(best, q.y);
+    if (p.y - best > GG.maxReach) reachable = false;
+  }
+  ok(pvalid && ids.size === G2F.platforms.length,
+     'G2 catwalks have unique ids and in-bounds spans');
+  ok(reachable, 'every G2 catwalk is within double-jump reach of a lower surface');
+  // five routes, by name: ridge, chimney, scapular plate, floor, underside
+  ok(['r1-', 'r2-', 'r3-', 'r5-'].every((pre) =>
+       G2F.platforms.some((p) => p.id.startsWith(pre))) &&
+     G2L.groundH[135] === 3,
+     'all five proposal routes are authored (r1 ridge, r2 chimney, r3 plate, low floor, r5 underside)');
+  const plate = G2F.platforms.find((p) => p.id === 'r3-scapular-plate');
+  ok(plate && plate.x1 - plate.x0 >= 10,
+     'the scapular plate is broad: ' + (plate ? plate.x1 - plate.x0 : 0) + ' tiles');
+}
+
+// --- the twin-rib chimney (authored solids) -----------------------------
+{
+  const ribs = G2F.solidRects;
+  ok(ribs.length === 2 && ribs.every((r) =>
+       Number.isInteger(r.x0) && Number.isInteger(r.x1) &&
+       Number.isInteger(r.y0) && Number.isInteger(r.y1) &&
+       r.x0 >= G2B.x0 && r.x1 <= G2B.x1 && r.y1 > r.y0),
+     'the chimney is exactly two in-bounds authored ribs');
+  ok(JSON.stringify(G2L.solidRects.map((r) => ({ ...r }))) === JSON.stringify(ribs.map((r) => ({ ...r }))),
+     'the built level carries the authored ribs');
+  const [ra, rb] = ribs;
+  ok(rb.x0 - ra.x1 >= 3 && rb.x0 - ra.x1 <= 5,
+     'the chimney mouth between the ribs is a jumpable 3-5 tiles, got ' + (rb.x0 - ra.x1));
+  // the low route runs (and a hound paces) beneath both ribs
+  let clearance = true;
+  for (const r of ribs)
+    for (let x = r.x0; x < r.x1; x++)
+      if (r.y0 - G2L.groundH[x] < PL.height + 0.3) clearance = false;
+  ok(clearance, 'both rib undersides clear a running player on the low route');
+  ok(ribs.every((r) => r.x1 <= G2E.seamS - 5 || r.x0 >= G2E.seamS + XT.thresholdTiles),
+     'no rib intrudes on the gate apron or threshold');
+  // solid collision truth: the rib cells really are solid, the mouth is not
+  ok(levelSolidCell(G2L, ra.x0, ra.y0, 8) === true &&
+     levelSolidCell(G2L, ra.x0, ra.y1, 8) === false &&
+     levelSolidCell(G2L, ra.x1, Math.floor((ra.y0 + ra.y1) / 2), 8) === false,
+     'rib collision matches its authored rect (solid inside, open above and beside)');
+  const apex = G2F.platforms.find((p) => p.id === 'r2-apex');
+  ok(apex && apex.x0 >= ra.x0 && apex.x1 <= rb.x1 && apex.y > 10 && apex.y < rb.y1,
+     'the chimney apex catwalk sits between and above the ribs');
+  // a wasp contests the apex hop (proposal: the wall-launch apex)
+  const apexWasp = G2F.spawns.find((s) => s.type === 'wasp' &&
+    s.x >= apex.x0 - 3 && s.x <= apex.x1 + 3);
+  const laneY = apexWasp && Math.min(G2L.groundH[Math.floor(apexWasp.x)] + apexWasp.lane, 10);
+  ok(!!apexWasp && laneY >= apex.y - 1.5 && laneY <= apex.y + 1.5,
+     'a wasp contests the chimney apex at its own height');
+}
+
+// --- the plate, the carry, the connectors -------------------------------
+{
+  ok(G2GATE.plate.tiles >= 10 && G2GATE.plate.tiles <= 12,
+     'the access plate is the proposal 10-12 tiles, got ' + G2GATE.plate.tiles);
+  const carry = G2GATE.carry;
+  ok(carry.s0 === G2E.seamS - 5 && carry.s1 === G2E.seamS + XT.thresholdTiles,
+     'the carried deck spans exactly the ritual footprint (apron mouth through threshold)');
+  ok(carry.s0 < G2E.seamS && carry.s1 > G2E.seamS,
+     'the carried surface exists on BOTH sides of the seam: it is carried, not rebuilt');
+  let flat = true, clean = true;
+  for (let s = carry.s0; s < carry.s1; s++)
+    if (G2L.groundH[s] !== carry.y) flat = false;
+  for (const p of G2F.platforms) if (p.x1 > carry.s0 && p.x0 < carry.s1) clean = false;
+  ok(flat, 'the carried deck is flat and solid at the declared height');
+  ok(clean, 'the G2 apron is platform-free through its threshold');
+  // three continuity connectors near local y 3 / 6 / 9
+  const want = [3, 6, 9];
+  ok(G2GATE.connectors.length === 3 &&
+     G2GATE.connectors.every((c, i) => Math.abs(c.y - want[i]) <= 0.5),
+     'continuity connectors sit near local y 3, 6 and 9');
+  ok(G2GATE.connectors[0].y === carry.y &&
+     G2GATE.connectors[0].during === 'carried',
+     'the low connector IS the carried deck, marked carried during the flip');
+  ok(G2GATE.connectors.every((c) => c.before && c.during && c.after),
+     'every connector declares its before/during/after visibility');
+  // mid and high: a shelf reaches the mouth outside, a catwalk answers inside
+  let linked = true;
+  for (const c of G2GATE.connectors.slice(1)) {
+    const outside = G2F.platforms.some((p) =>
+      p.y === c.y && p.x1 >= carry.s0 && p.x1 <= G2E.seamS);
+    const inside = G2F.platforms.some((p) =>
+      p.y === c.y && p.x0 >= G2E.seamS && p.x0 <= G2E.seamS + 10);
+    if (!outside || !inside) linked = false;
+  }
+  ok(linked, 'mid and high connectors have a shelf to the mouth and a catwalk beyond it');
+  ok(G2GATE.forwardExits.length >= 2 &&
+     G2GATE.forwardExits.every((id) => G2GATE.connectors.some((c) => c.id === id)),
+     'two or more declared forward exits survive the transformation');
+  ok(G2GATE.mechanism === 'access-plate',
+     'the gate declares the plate as its only permitted motion');
+}
+
+// --- the dare pocket (underside hang) -----------------------------------
+{
+  const dp = G2GATE.darePocket;
+  const shelf = G2F.platforms.find((p) => p.id === 'r5-pocket-shelf');
+  let gapAll = true;
+  for (let s = dp.s0; s < dp.s1; s++) if (G2L.groundH[s] > -100) gapAll = false;
+  ok(gapAll && shelf && shelf.x0 <= dp.s0 && shelf.x1 >= dp.s1 && shelf.y === dp.floorY,
+     'the underside pocket is a floor gap with its hang shelf beneath');
+  const deckY = G2L.groundH[dp.s1];
+  const apexRise = PL.jumpVel * PL.jumpVel / (2 * -PL.gravity);
+  ok(dp.floorY + apexRise >= deckY + 0.5,
+     'a single frozen jump escapes the pocket with clearance to spare');
+  // declared retreat timing is honest: at least the physics minimum, still short
+  const rise = deckY - dp.floorY;
+  const disc = Math.sqrt(PL.jumpVel * PL.jumpVel - 2 * -PL.gravity * rise);
+  const riseT = (PL.jumpVel - disc) / -PL.gravity;
+  const minSec = riseT + (dp.rejoinS - dp.s0) / PL.runSpeed;
+  ok(dp.retreatSec >= minSec && dp.retreatSec <= 2,
+     'declared pocket retreat (' + dp.retreatSec + 's) covers the physics minimum (' +
+     minSec.toFixed(2) + 's) and stays a SHORT hang');
+  ok(dp.s1 <= transformHaltS(G2E, CONFIG),
+     'the pocket commits before the gate halt, not inside the arena');
+  const ribA = G2F.solidRects[0];
+  ok(Math.abs(dp.rejoinS - ribA.x0) <= 2,
+     'the underside hang rejoins at the chimney base, per the proposal route 5');
+  // the reward socket hangs in the pocket, in open air
+  const rw = G2GATE.sockets.reward[0];
+  ok(!!rw && rw.x >= dp.s0 && rw.x < dp.s1 && rw.y >= dp.floorY &&
+     !levelSolidCell(G2L, Math.floor(rw.x), Math.floor(rw.y), 8),
+     'the pocket reward socket is declared, inside the pocket, in open air');
+}
+
+// --- authored pressure: hound low, wasps contested ----------------------
+{
+  let sorted = true, clear = true, typed = true;
+  for (let i = 0; i < G2F.spawns.length; i++) {
+    const e = G2F.spawns[i];
+    if (i > 0 && e.x <= G2F.spawns[i - 1].x) sorted = false;
+    if (e.x < G2B.x0 || e.x >= G2B.x1) clear = false;
+    if (e.type === 'wasp') { if (!Number.isFinite(e.lane)) typed = false; }
+    else if (e.type === 'hound') { if (!e.patrol || !Number.isFinite(e.dir)) typed = false; }
+    else typed = false;
+    for (const ev of G2F.events)
+      if (e.x >= ev.seamS - G2F.spawnClear.before && e.x <= ev.seamS + G2F.spawnClear.after) clear = false;
+  }
+  ok(sorted, 'the G2 ambient table is strictly ascending');
+  ok(clear, 'no G2 spawn sits in the seam-clear zone');
+  ok(typed, 'G2 spawns are authored wasps with lanes plus houndframes with patrols');
+  ok(G2F.spawns.length >= 4 && G2F.spawns.length <= 8,
+     'the G2 ecology stays simple, got ' + G2F.spawns.length);
+  const hounds = G2F.spawns.filter((s) => s.type === 'hound');
+  ok(hounds.length === 1, 'exactly one houndframe pressures the gate, got ' + hounds.length);
+  const h = hounds[0];
+  let floorRun = true;
+  for (let s = Math.floor(h.patrol.x0); s <= Math.ceil(h.patrol.x1); s++)
+    if (G2L.groundH[s] !== 3) floorRun = false;
+  ok(floorRun, 'the hound patrol paces a continuous stretch of the low joint-collar floor');
+  ok(h.patrol.x1 - h.patrol.x0 >= 6,
+     'the patrol is a real chokepoint span (entry 6: placement, not stats), got ' +
+     (h.patrol.x1 - h.patrol.x0).toFixed(1) + ' tiles');
+  ok(h.x >= h.patrol.x0 && h.x <= h.patrol.x1 && h.patrol.x1 < G2GATE.carry.s0,
+     'the hound spawns inside its patrol, short of the carried deck');
+}
+
+// --- interior validity + threat sockets (same contract as v1) -----------
+{
+  const IB = G2F.bands[1];
+  const IN = IB.interior;
+  ok(IN.ceilingAbove > PL.height + PL.jumpVel ** 2 / (2 * -PL.gravity) + 1,
+     'the neck interior ceiling clears a full jump');
+  ok(G2F.platforms.filter((p) => p.x0 >= IB.s0 && p.x1 <= IB.s1)
+       .every((p) => p.y + PL.height + 0.5 < G2L.groundH[Math.floor(p.x0)] + IN.ceilingAbove),
+     'interior catwalks keep player headroom under the neck ceiling');
+  const sockets = IB.threatSockets || [];
+  const ids = new Set();
+  let valid = true;
+  for (const so of sockets) {
+    if (typeof so.id !== 'string' || ids.has(so.id) ||
+        !['polyp', 'hazard'].includes(so.kind) ||
+        so.x < IB.s0 + XT.thresholdTiles || so.x >= IB.s1 ||
+        !Number.isFinite(so.y) || so.depth > -1) valid = false;
+    ids.add(so.id);
+    if (levelSolidCell(G2L, Math.floor(so.x), Math.floor(so.y), 8)) valid = false;
+    for (const ev of G2F.events)
+      if (so.x >= ev.seamS - 5 && so.x < ev.seamS + XT.thresholdTiles) valid = false;
+  }
+  ok(sockets.length >= 3 && valid && ids.size === sockets.length,
+     'G2 threat sockets are unique, open, behind the plane and clear of the apron');
+  ok(sockets.some((so) => so.kind === 'polyp') && sockets.some((so) => so.kind === 'hazard'),
+     'the neck interior declares both emplacement and hazard sockets');
+  ok(G2GATE.sockets.enemy.slice().sort().join() ===
+     sockets.map((so) => so.id).sort().join(),
+     'the gate declaration and the band agree on the enemy socket ids');
+}
+
+// --- run window ---------------------------------------------------------
+{
+  const run = G2F.run;
+  const halfWide = CC.z * Math.tan(CC.fov / 2 * DEG) * (16 / 9);
+  ok(run.startScroll + CC.x - halfWide >= G2B.x0,
+     'the G2 opening frame is filled by authored hull, not void');
+  ok(run.endScroll < G2F.finish.x0 && G2F.finish.x1 <= G2B.x1 &&
+     G2F.finish.x0 > G2E.seamS + 20,
+     'the G2 run ends well inside the neck, past the flip');
+  ok(run.minimumScrollSpeed > 0 && run.minimumScrollSpeed < PL.runSpeed,
+     'RIG can outrun the pursuing edge in the G2 fixture');
+  const sprint = (G2F.finish.x0 - run.playerSpawn.x) / PL.runSpeed +
+    transformEventTotalMs(CONFIG) / 1000;
+  ok(sprint >= G2F.targetPlaySeconds.min && sprint <= G2F.targetPlaySeconds.max,
+     'an uninterrupted G2 run plus the ritual fits the target, got ' + sprint.toFixed(1) + ' s');
+  ok(G2L.groundH[Math.floor(run.playerSpawn.x)] <= run.playerSpawn.y,
+     'the G2 spawn point stands on authored ground');
+}
+
+// --- choreography reuse: geometry overrides only ------------------------
+{
+  // The G2 event may add gate GEOMETRY on top of a v1 flip event — never a
+  // second choreography. Whitelist the extra keys so a drive-by curve
+  // override cannot sneak in through the fixture.
+  const baseKeys = new Set(Object.keys(XF.events[0]));
+  const extras = Object.keys(G2E).filter((k) => !baseKeys.has(k)).sort().join();
+  ok(extras === 'gate,haltOffset,plateRamp,seamPullTiles',
+     'G2 event extras are gate geometry + declarations only, got: ' + extras);
+  // and the shared flip curve is bit-identical for both events at every beat
+  let same = true;
+  for (let t = -50; t <= transformEventTotalMs(CONFIG) + 100; t += 10) {
+    const a = transformPanelState(t, XF.events[0], CONFIG);
+    const b = transformPanelState(t, G2E, CONFIG, {});
+    if (a.open !== b.open || a.jolt !== b.jolt || a.seated !== b.seated) same = false;
+  }
+  ok(same, 'the G2 plate runs T-001 flip choreography verbatim (relock on the hold)');
+  // static-anatomy guard: the sim can never read the render-only gate fields
+  for (const file of layerFiles('sim')) {
+    const src = stripComments(readFileSync(file, 'utf8'));
+    ok(!/plateRamp|seatRake|\.gate\./.test(src),
+       file.split('/').pop() + ' never reads the G2 render-only gate fields');
+  }
+}
+
 // --- ledge-probe reach/gap epsilon boundaries --------------------------
 // traversalLedgeProbe's candidate column is cellX = floor(x + side*(hw +
 // ledgeReachX)) -- which already caps gap = cellX - (x+hw) at ledgeReachX by
@@ -3042,6 +3483,400 @@ const XL = buildTransformLevel(CONFIG);
   }
 }
 
+/* ============ THE AUTHORED SLOPE — rib run (?ribrun=1) ============== *
+ * The movement lane's other live candidate next to FLOW (decisions.md entry
+ * 5). src/pure/ribrun.js swaps the fixture's lattice for one long ascending
+ * ribline; what is asserted here is the SLOPE CONTRACT — that the rib is
+ * climbable with the FROZEN jump constants, that its cadence is a property
+ * of the geometry rather than of a retune, and that a mistimed hop is
+ * repaid rather than punished — plus the same structural rules the shipped
+ * fixture's own ground, platforms, connectors and routes are held to.
+ *
+ * Nothing here may pass by changing a movement constant: every number is
+ * derived from the resolved tune, and the tune is asserted frozen next to
+ * the shipped fixture's above.                                          */
+{
+  const RIB = TRAVERSAL_RIBRUN;
+  const RF = ribrunFixture();
+  const RT = { ...PL, ...RF.movement };
+  const decks = ribrunDecks();
+  const flanges = ribrunFlanges();
+  const RL = buildTraversalLevel(CONFIG, RF);
+  const RB = RF.bounds;
+  const solid = function (x, y) { return levelSolidCell(RL, x, y, 8); };
+
+  // --- the flag is genuinely off by default ---------------------------
+  ok(RF !== TRAVERSAL_FIXTURE && RF.id === 'traversal-ribrun-v1' &&
+     JSON.stringify(TRAVERSAL_FIXTURE.groundRuns) !== JSON.stringify(RF.groundRuns) &&
+     JSON.stringify(buildTraversalLevel(CONFIG).groundH) === JSON.stringify(TL.groundH),
+     'the rib run is an overlay: it never touches the shipped fixture or its built level');
+  {
+    // The two rules resolveTraversalPace grew for overlay fixtures must be
+    // no-ops for every shipped URL: same rewards, same rosters, same order.
+    let unchanged = true;
+    for (const id of TRAVERSAL_PACE_IDS) {
+      const F = resolveTraversalPace(id);
+      const pace = TRAVERSAL_PACES[id];
+      const want = [
+        { ...TRAVERSAL_FIXTURE.darePocket.reward, ...(pace.pocketReward || {}) },
+        ...(pace.rewards || []),
+      ];
+      if (JSON.stringify(F.rewards) !== JSON.stringify(want)) unchanged = false;
+      if (JSON.stringify(F.enemies) !==
+          JSON.stringify(pace.enemies || TRAVERSAL_FIXTURE.enemies)) unchanged = false;
+      if (F.rewards.some(function (r) { return traversalRewardBuried(TRAVERSAL_FIXTURE, r); }))
+        unchanged = false;
+    }
+    ok(unchanged,
+       'reward culling and hostile-free resolution are inert for the shipped fixture at every pace');
+    ok(traversalGroundYAt(TRAVERSAL_FIXTURE, 54) === 1 &&
+       traversalGroundYAt(TRAVERSAL_FIXTURE, TRAVERSAL_FIXTURE.bounds.x1) === null &&
+       traversalGroundYAt(null, 54) === null,
+       'the deck lookup reads authored ground runs and stays null outside them');
+  }
+
+  // --- the slope itself ------------------------------------------------
+  {
+    let monotone = true, uniform = true, covered = 0;
+    for (let i = 1; i < decks.length; i++) {
+      if (decks[i].y - decks[i - 1].y !== RIB.riser) monotone = false;
+      if (i < decks.length - 1 && decks[i].x1 - decks[i].x0 !== RIB.tread) uniform = false;
+      if (decks[i].x0 !== decks[i - 1].x1) monotone = false;   // no seam, no gap
+    }
+    for (const d of decks) covered += d.x1 - d.x0;
+    const climb = decks[decks.length - 1].y - decks[0].y;
+    ok(monotone && uniform && decks.length === RIB.steps + 1,
+       'the rib is one contiguous monotone staircase: ' + RIB.steps + ' risers of ' +
+       RIB.riser + ' over treads of ' + RIB.tread);
+    ok(covered === RB.x1 - RB.x0 && decks[0].x0 === RB.x0 &&
+       decks[decks.length - 1].x1 === RB.x1,
+       'rib decks cover the fixture bounds exactly once with no gap column');
+    ok(climb === RIB.steps * RIB.riser && climb >= 12,
+       'the rib climbs ' + climb + ' tiles — a long straight, not a step up');
+    const slope = RIB.riser / RIB.tread;
+    ok(slope > 0.2 && slope < 0.5,
+       'the authored slope reads as a diagonal (' + slope.toFixed(3) +
+       ' = ' + (Math.atan(slope) * 180 / Math.PI).toFixed(1) + ' degrees)');
+  }
+  {
+    // every riser is a real vertical face in the BUILT level, and every deck
+    // is open above: an ascending line must never hide an overhead.
+    let faces = 0, openAbove = true;
+    for (let i = 1; i < decks.length; i++) {
+      const face = decks[i].x0, lower = decks[i - 1].y, upper = decks[i].y;
+      let wall = true;
+      for (let j = lower; j < upper; j++) if (!solid(face, j)) wall = false;
+      if (wall && !solid(face, upper) && !solid(face - 1, lower)) faces++;
+    }
+    const headroom = RIB.riser + ribrunJumpArc(RT).apex + PL.height;
+    for (const d of decks)
+      for (let x = d.x0; x < d.x1; x++)
+        for (let j = d.y; j < d.y + headroom; j++) if (solid(x, j)) openAbove = false;
+    ok(faces === RIB.steps,
+       'every riser is a solid face with an open lip and an open approach, got ' + faces);
+    ok(openAbove,
+       'no rib column hides an overhead inside a full jump over its own deck');
+  }
+
+  // --- the slope contract, against the frozen tune ---------------------
+  {
+    const arc = ribrunJumpArc(RT);
+    const clear = ribrunClearSpan(RT, RIB.riser);
+    const hop = ribrunHopSpan(RT);
+    ok(RT.jumpVel === TRAVERSAL_FIXTURE.movement.jumpVel &&
+       RT.gravity === TRAVERSAL_FIXTURE.movement.gravity &&
+       RT.runSpeed === TRAVERSAL_FIXTURE.movement.runSpeed &&
+       RT.airJumps === PL.airJumps,
+       'the rib run inherits the fixture tune untouched — the slope does the work');
+    ok(arc.apex > RIB.riser + 1,
+       'one grounded jump clears a riser with over a tile of analytic margin (apex ' +
+       arc.apex.toFixed(2) + ' vs riser ' + RIB.riser + ')');
+    ok(clear && clear.width > 4,
+       'the window in which a jump clears the next riser is ' + clear.width.toFixed(2) +
+       ' tiles wide (' + (clear.width / RT.runSpeed * 1000).toFixed(0) + ' ms at run speed)');
+    ok(clear.to < RIB.tread && RIB.tread - clear.to < 1,
+       'a cleared riser lands back on the deck ' + (RIB.tread - clear.to).toFixed(2) +
+       ' tiles before the next one: a real footfall, and a short one');
+    ok(clear.to / RIB.tread > 0.85,
+       'the rib is ' + (100 * clear.to / RIB.tread).toFixed(0) +
+       '% airborne at a constant cadence — the momentum is the geometry');
+    ok(hop > RIB.tread && hop < RIB.tread + 1.5,
+       'one full jump carries ' + hop.toFixed(2) + ' tiles, so the tread of ' + RIB.tread +
+       ' is one hop: a constant cadence is a fixed point of the rib');
+    ok(clear.from < RIB.tread - clear.to + 1,
+       'and the jump that starts that cadence can be made from the footfall itself');
+  }
+  {
+    // Tier 3: the riser face converts a fall into a ledge catch. Proved by
+    // calling the real probe against the real built rib, from the pinned
+    // position the x-collision leaves a body in.
+    const band = ribrunCatchBand(RT, RIB.riser);
+    const step = ribrunCatchStep(RT, RIB.riser, 0.05);
+    ok(band.height > 0.6 && band.lo > 0 && band.hi < RIB.riser,
+       'the catch band is a real ' + band.height.toFixed(2) +
+       '-tile window strictly between the lower deck and the lip');
+    ok(step.step < band.height,
+       'a body pinned to the face cannot step over that band in one clamped frame (' +
+       step.step.toFixed(2) + ' vs ' + band.height.toFixed(2) + ' tiles)');
+    let caught = 0, missedLow = 0;
+    const geo = {
+      isSolid: solid,
+      allowsGrab: function () { return true; },
+      minCellX: 1, maxCellX: CONFIG.levelLength - 1, minPlayerX: -Infinity,
+    };
+    for (let i = 1; i < decks.length; i++) {
+      const face = decks[i].x0, lower = decks[i - 1].y;
+      const pinnedX = face - PL.width / 2 - 0.001;
+      const mid = lower + (band.lo + band.hi) / 2;
+      const hit = traversalLedgeProbe({
+        x: pinnedX, y: mid, hw: PL.width / 2, h: PL.height,
+        vx: RT.runSpeed, vy: -6, grounded: false, down: false, hInput: 1,
+        now: 1000, recatchUntil: 0,
+      }, geo, RT);
+      if (hit && hit.cellX === face && hit.topY === decks[i].y) caught++;
+      const below = traversalLedgeProbe({
+        x: pinnedX, y: lower + 0.02, hw: PL.width / 2, h: PL.height,
+        vx: RT.runSpeed, vy: -6, grounded: false, down: false, hInput: 1,
+        now: 1000, recatchUntil: 0,
+      }, geo, RT);
+      if (below === null) missedLow++;
+    }
+    ok(caught === RIB.steps,
+       'every riser converts a pinned fall inside the band into a ledge catch on its own lip, got ' +
+       caught + '/' + RIB.steps);
+    ok(missedLow === RIB.steps,
+       'and a body already down at deck height is not silently caught — the band is the contract');
+  }
+  {
+    // Tier 2: the flanges, and the pocket they deliberately leave in front
+    // of each face so tier 3 still exists.
+    const band = ribrunCatchBand(RT, RIB.riser);
+    let valid = true, hangsFree = true, tiles = true;
+    for (let i = 0; i < flanges.length; i++) {
+      const f = flanges[i], lower = decks[i].y, upper = decks[i + 1].y;
+      if (f.y !== upper - RIB.flange.drop || f.x1 > f.face - PL.width / 2 - 0.05 ||
+          f.x0 <= decks[i].x0 || f.x1 <= f.x0) valid = false;
+      // a one-way plate must hang in open air over the deck it overlooks
+      for (let x = Math.floor(f.x0); x <= Math.floor(f.x1 - 1e-9); x++)
+        if (solid(x, Math.floor(f.y)) || solid(x, Math.floor(f.y) - 1)) hangsFree = false;
+      // the three repair tiers must leave no hole: catch band, then flange,
+      // then the deck above.
+      if (!(f.y - lower <= band.hi + 1e-9 && f.y - lower > 0 && f.y < upper)) tiles = false;
+    }
+    ok(flanges.length === RIB.steps && valid,
+       'one flange per riser, one tile under its deck, stopping clear of the face');
+    ok(hangsFree, 'every flange hangs in open air over the deck below it');
+    ok(tiles,
+       'the flange picks up exactly where the catch band stops: no miss height falls between the tiers');
+    ok(RIB.flange.gap > PL.width / 2,
+       'the catch pocket in front of each face is wider than a pinned body (' +
+       RIB.flange.gap + ' vs ' + (PL.width / 2) + ' tiles), so tier 3 is reachable');
+    ok(RF.platforms.length === RIB.steps &&
+       RF.platforms.every(function (p, i) {
+         return p.id === flanges[i].id && p.x0 === flanges[i].x0 &&
+           p.x1 === flanges[i].x1 && p.y === flanges[i].y;
+       }) && RF.solidRects.length === 0,
+       'the fixture fields exactly those flanges as one-way plates and no lattice walls');
+  }
+
+  // --- the fixture's own structural rules -----------------------------
+  {
+    const ids = new Set();
+    let integrity = true;
+    for (const c of RF.connectors) {
+      if (typeof c.id !== 'string' || ids.has(c.id) ||
+          !Number.isFinite(c.x) || !Number.isFinite(c.y) ||
+          c.x < RB.x0 || c.x >= RB.x1 || solid(Math.floor(c.x), Math.floor(c.y)))
+        integrity = false;
+      ids.add(c.id);
+    }
+    const known = function (id) { return ids.has(id); };
+    ok(integrity && ids.size === RF.connectors.length &&
+       known(RF.entry) && known(RF.exit),
+       'rib connectors are unique, in bounds, standing in open air, and include entry/exit');
+    ok(RF.edges.every(function (e) { return known(e.from) && known(e.to); }) &&
+       RF.routes.length === 1 &&
+       RF.routes[0].connectorIds.every(known) &&
+       RF.routes[0].connectorIds.length === RF.connectors.length,
+       'the ribline route names every connector once and every edge resolves');
+    const crest = decks[decks.length - 1];
+    ok(RF.rejoin.x0 >= crest.x0 && RF.rejoin.x0 < crest.x1 && RF.rejoin.y === crest.y &&
+       RF.rejoin.x0 === TRAVERSAL_FIXTURE.rejoin.x0,
+       'the victory line sits on the crest at the same x the shipped fixture uses');
+    ok(RF.run.playerSpawn.x === TRAVERSAL_FIXTURE.run.playerSpawn.x &&
+       RF.run.playerSpawn.y === decks[0].y &&
+       RF.run.startScroll === TRAVERSAL_FIXTURE.run.startScroll &&
+       RF.run.endScroll === TRAVERSAL_FIXTURE.run.endScroll,
+       'spawn and run window are the fixture\'s own: only the ground moved');
+    ok(RF.darePocket.bounds.x0 === RF.darePocket.bounds.x1 &&
+       RF.hostileFree === true && RF.enemies.length === 0,
+       'a single line has no dare pocket and fields no lattice-authored hostiles');
+    const rw = RF.darePocket.reward;
+    const deckAt = traversalGroundYAt(RF, rw.x);
+    ok(deckAt !== null && rw.y > deckAt && rw.y - deckAt < PL.height,
+       'the stake rides the line: ' + (rw.y - deckAt).toFixed(2) +
+       ' tiles over the deck at x=' + rw.x + ', grabbed on the way through');
+    let culled = true;
+    for (const id of TRAVERSAL_PACE_IDS) {
+      const F = resolveTraversalPace(id, RF);
+      if (F.enemies.length !== 0) culled = false;
+      for (const r of F.rewards) {
+        const g = traversalGroundYAt(RF, r.x);
+        if (g === null || r.y < g) culled = false;
+      }
+    }
+    ok(culled,
+       'at every pace the rib fields no hostiles and no stake buried inside its own rock');
+  }
+}
+
+/* ------- the rib run, driven through the REAL sim loop ---------------- *
+ * The arithmetic above proves the slope is climbable in principle. This
+ * proves it is climbed — by the unmodified src/sim/player.js, from the
+ * fixture's own spawn, with the fixture's own pursuing edge, under a
+ * two-rule policy that is the whole point of the acceptance test: HOLD
+ * RIGHT, and press JUMP when there is ground (or a lip) under you. No new
+ * key, no anchor, no timing table.
+ *
+ * It runs at three frame times because the discrete jump apex is
+ * frame-rate dependent and the rib's whole claim is that the FROZEN
+ * constants clear it: 60Hz, 30Hz, and src/main.js's own dt clamp
+ * (0.05 s, 20fps-equivalent), which is the worst case a real session can
+ * reach. The repair tiers are load-bearing here, not decorative — the
+ * three frame times land in different phases of the rib and each ends up
+ * using a different one.                                                */
+{
+  const child = `
+    globalThis.__HB_QUERY__ = 'slice=traversal&ribrun=1' + (process.env.HB_EXTRA || '');
+    const base = ${JSON.stringify('file://' + join(srcDir, 'sim'))};
+    const M = await import(${JSON.stringify('file://' + join(srcDir, 'mode.js'))});
+    const E = await import(base + '/edges.js');
+    const T = await import(base + '/time.js');
+    const I = await import(base + '/input.js');
+    const PLm = await import(base + '/player.js');
+    const SC = await import(base + '/scroll.js');
+    const WG = await import(base + '/wavegate.js');
+    const p = PLm.player;
+    const F = M.ACTIVE_SLICE;
+    for (const c of WG.cornerEvents) c.state = 'done';
+    // A calibrated 16:10 frustum, not an infinite one: the pursuing edge and
+    // the crush plane are part of what the rib has to be climbed against.
+    E.setEdges(-9, 17);
+    function run(dt) {
+      p.x = F.run.playerSpawn.x; p.y = F.run.playerSpawn.y;
+      p.vx = 0; p.vy = 0; p.grounded = true; p.onOneWay = null; p.jumpCutDone = true;
+      p.airJumpsLeft = PLm.P.airJumps; p.hp = PLm.P.maxHealth;
+      p.iframesUntil = 0; p.hitstunUntil = 0; p.coyoteUntil = 0; p.dropUntil = 0;
+      p.fallbackStreak = 0; p.fallbackEarnedTiles = 0; p.edgePinnedMs = 0;
+      p.traversalChain = 0; p.traversalChainUntil = 0;
+      PLm.clearPlayerTraversal(0);
+      I.clearJumpBuffer();
+      for (const k in I.keys) I.keys[k] = false;
+      T.setScrollX(F.run.startScroll);
+      T.resetSliceStats && T.resetSliceStats();
+      const t0 = T.gameMs;
+      I.keys.right = true;                       // rule 1: hold right
+      let releaseAt = 0, frames = 0, airborne = 0, slowMs = 0, maxSlowMs = 0;
+      let catches = 0, flanges = 0, walls = 0, lastState = 'free', lastGrounded = true;
+      const flangeY = new Set(F.platforms.map(function (pl) { return pl.y; }));
+      let victoryMs = -1, maxY = p.y, airJumps = 0, prevAirJumpsLeft = p.airJumpsLeft;
+      for (let i = 0; i < 4000; i++) {
+        T.advanceGameMs(dt * 1000);
+        const now = T.gameMs;
+        // rule 2: jump when there is something under you — deck, flange or lip
+        if ((p.grounded || p.traversalState === 'ledge') && now >= releaseAt) {
+          I.bufferJumpUntil(now + PLm.P.jumpBufferMs);
+          I.keys.jump = true;
+          releaseAt = now + 380;
+        }
+        if (now >= releaseAt) I.keys.jump = false;
+        SC.updateScroll(dt);
+        PLm.updatePlayer(dt);
+        frames++;
+        if (!p.grounded) airborne++;
+        // every hold the rib can put on forward motion — a hang, a slide, a
+        // re-acceleration off a stop — measured as one number
+        if (Math.abs(p.vx) < 2) { slowMs += dt * 1000; maxSlowMs = Math.max(maxSlowMs, slowMs); }
+        else slowMs = 0;
+        if (p.airJumpsLeft < prevAirJumpsLeft) airJumps++;
+        prevAirJumpsLeft = p.airJumpsLeft;
+        if (p.traversalState === 'ledge' && lastState !== 'ledge') catches++;
+        if (p.traversalState === 'wall' && lastState !== 'wall') walls++;
+        if (p.grounded && !lastGrounded && flangeY.has(p.y)) flanges++;
+        lastState = p.traversalState; lastGrounded = p.grounded;
+        maxY = Math.max(maxY, p.y);
+        if (p.x >= F.rejoin.x0) { victoryMs = now - t0; break; }
+      }
+      return {
+        dt, victoryMs, x: p.x, y: p.y, maxY, hp: p.hp, airJumps,
+        spawnX: F.run.playerSpawn.x,
+        airborneFrac: airborne / frames, maxSlowMs, catches, flanges, walls,
+        setbacks: T.sliceStats.setbacks, failures: T.sliceStats.failures,
+      };
+    }
+    console.log(JSON.stringify({
+      runs: [run(1 / 60), run(1 / 30), run(0.05)],
+      spawnY: F.run.playerSpawn.y,
+      crestY: F.rejoin.y,
+      targetPlaySeconds: F.targetPlaySeconds,
+    }));
+  `;
+  function ribChild(extra) {
+    try {
+      return JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', child],
+        { encoding: 'utf8', env: { ...process.env, HB_EXTRA: extra || '' } }));
+    } catch (e) {
+      console.error('pathcheck: rib run child failed: ' + e.message);
+      return null;
+    }
+  }
+  const sim = ribChild('');
+  ok(!!sim, 'the rib run steps headlessly through the real sim with no DOM');
+  if (sim) {
+    const cleared = sim.runs.filter(function (r) { return r.victoryMs >= 0; });
+    ok(cleared.length === 3,
+       'hold right + jump on contact climbs the whole rib at 60Hz, 30Hz and the dt clamp, got ' +
+       sim.runs.map(function (r) {
+         return (1 / r.dt).toFixed(0) + 'Hz:' + (r.victoryMs >= 0 ? 'clear' : 'x=' + r.x.toFixed(1));
+       }).join(' '));
+    for (const r of cleared) {
+      const label = (1 / r.dt).toFixed(0) + 'Hz';
+      const seconds = r.victoryMs / 1000;
+      ok(seconds >= sim.targetPlaySeconds.min && seconds <= sim.targetPlaySeconds.max,
+         label + ': the rib is a ' + seconds.toFixed(2) +
+         's pass, inside the fixture\'s own 4-12 s window');
+      ok(r.maxY - sim.spawnY >= 12 && r.y >= sim.crestY,
+         label + ': the run actually ascends ' + (r.maxY - sim.spawnY).toFixed(1) +
+         ' tiles and finishes on the crest');
+      ok(r.airborneFrac > 0.8,
+         label + ': ' + (100 * r.airborneFrac).toFixed(0) +
+         '% of the climb is airborne — sustained, not a stair-stop shuffle');
+      const avg = (r.x - r.spawnX) / seconds;
+      ok(avg > 0.85 * TRAVERSAL_FIXTURE.movement.runSpeed,
+         label + ': the whole climb averages ' + avg.toFixed(1) + ' t/s, ' +
+         (100 * avg / TRAVERSAL_FIXTURE.movement.runSpeed).toFixed(0) +
+         '% of flat-ground run speed with every repair paid for');
+      ok(r.maxSlowMs < 600,
+         label + ': the rib never holds RIG still for long — longest stretch under 2 t/s is ' +
+         r.maxSlowMs.toFixed(0) + ' ms (a hang, a slide, or a re-acceleration off one)');
+      ok(r.setbacks === 0 && r.failures === 0 && r.hp === PL.maxHealth,
+         label + ': the climb costs no hull and takes no fallback');
+      ok(r.airJumps === 0,
+         label + ': the air jump is never spent — the rib is climbed on the ground jump alone');
+    }
+    ok(sim.runs.some(function (r) { return r.catches > 0; }) &&
+       sim.runs.some(function (r) { return r.flanges > 0 || r.walls > 0; }),
+       'across the three frame times the repair tiers are really exercised (catches ' +
+       sim.runs.map(function (r) { return r.catches; }).join('/') + ', flange landings ' +
+       sim.runs.map(function (r) { return r.flanges; }).join('/') + ')');
+  }
+  // FLOW composes rather than competes: same geometry, same policy, and the
+  // momentum spine's auto-launch turns a catch into a launch with no press.
+  const flowed = ribChild('&flow=1');
+  ok(!!flowed && flowed.runs.every(function (r) { return r.victoryMs >= 0; }),
+     'the rib run composes with ?flow=1 at every frame time — the A/B is one URL apart');
+}
+
 /* ------------- headroom over every authored ground run --------------- *
  * A route you can run along must not hide an invisible underside: if the
  * clearance over a ground column is barely the player's height, arriving a
@@ -3301,6 +4136,64 @@ const XL = buildTransformLevel(CONFIG);
      'reclaim/link/launch windows and the A.5 ring buffer match the proposal');
 }
 
+/* ============ CP4 promotion: the full-run tune (T-016) =============== */
+/* The default six-face run prices the same event stream with A.3's
+ * un-doubled table (SCORE_RUN) — A.4 is explicit that the slice's ~6 s
+ * meter horizon "must not carry to the full game". These assertions pin
+ * the intended relationship: everything structural identical, gains and
+ * drain exactly halved. A deliberate run-side retune updates SCORE_RUN in
+ * src/pure/score.js and these lines together.                            */
+{
+  ok(SCORE_RUN !== SCORE && Object.isFrozen(SCORE_RUN) && Object.isFrozen(SCORE_RUN.gain) &&
+     Object.isFrozen(SCORE_RUN.drain),
+     'the run tune is its own frozen table, not an alias of the slice tune');
+  ok(SCORE_RUN.notches === SCORE.notches && SCORE_RUN.notchMult === SCORE.notchMult &&
+     SCORE_RUN.threat === SCORE.threat && SCORE_RUN.warmFireMult === SCORE.warmFireMult &&
+     SCORE_RUN.classification === SCORE.classification && SCORE_RUN.max === SCORE.max &&
+     SCORE_RUN.launchGraceMs === SCORE.launchGraceMs &&
+     SCORE_RUN.stallSpeed === SCORE.stallSpeed && SCORE_RUN.eventCap === SCORE.eventCap,
+     'run and slice tunes share notches, THREAT prices, ladder, windows and caps — ' +
+     'the two event streams stay comparable event-for-event');
+  ok(Object.keys(SCORE_RUN.gain).sort().join(',') === Object.keys(SCORE.gain).sort().join(',') &&
+     Object.keys(SCORE.gain).every(function (k) { return SCORE_RUN.gain[k] * 2 === SCORE.gain[k]; }),
+     'run CHARGE gains are exactly A.3 (the slice table halved), every event');
+  ok(SCORE_RUN.drain.moving * 2 === SCORE.drain.moving &&
+     SCORE_RUN.drain.stopped * 2 === SCORE.drain.stopped &&
+     SCORE_RUN.drain.stopped > SCORE_RUN.drain.moving && SCORE_RUN.drain.moving > 0,
+     'run drain is A.3 (halved) and keeps the floor-cools-you asymmetry');
+  ok(scoreApplyGain(0, 'airborne_kill', SCORE_RUN) === SCORE_RUN.gain.airborne_kill &&
+     scoreDrainPerSec({ grounded: true, traversal: false, launchGrace: false, vx: 0 },
+       SCORE_RUN) === SCORE_RUN.drain.stopped &&
+     scoreDrainPerSec({ grounded: false, traversal: false, launchGrace: false, vx: 0 },
+       SCORE_RUN) === 0,
+     'the pure functions accept the run tune: gains, worst-case drain, free air');
+  ok(scoreThreatGain('airborne_kill', 1, SCORE_RUN) ===
+       scoreThreatGain('airborne_kill', 1, SCORE),
+     'a WARM airborne kill is worth identical THREAT under either tune');
+  // the horizon claim in numbers: from WARM, a dead stop cools to zero in
+  // ~0.9 s under the slice tune and ~1.8 s under the run tune
+  ok(SCORE.notches[0] / SCORE.drain.stopped < 1 &&
+     SCORE_RUN.notches[0] / SCORE_RUN.drain.stopped > 1.5,
+     'the run meter horizon is genuinely slower than the slice meter horizon');
+
+  /* ---- HULL FALLBACK run tune (B.1 tier 1, promoted) ---- */
+  const FBS = TRAVERSAL_FIXTURE.fallback;
+  ok(Object.isFrozen(RUN_FALLBACK) &&
+     Object.keys(RUN_FALLBACK).sort().join(',') === Object.keys(FBS).sort().join(','),
+     'the run fallback tune has exactly the slice fallback field set');
+  ok(Object.keys(FBS).every(function (k) { return RUN_FALLBACK[k] === FBS[k]; }),
+     'run fallback values match the slice values for the first CP4 pass — ' +
+     'one grammar at two timescales, not two grammars (retune = update both)');
+  ok(RUN_FALLBACK.maxConsecutive >= 2 && RUN_FALLBACK.recoverTiles > 0 &&
+     RUN_FALLBACK.minDropTiles > 0 && RUN_FALLBACK.tossVx > 0 && RUN_FALLBACK.tossVy <= 0 &&
+     RUN_FALLBACK.iframesMs > 0 && RUN_FALLBACK.groundKnockTiles > 0,
+     'run fallback: real mercy chain, bounded streak, forward toss, paid ground knock');
+  ok(traversalFallbackTarget([3, 6, 9], 9, RUN_FALLBACK) === 6 &&
+     traversalFallbackTarget([9], 9, RUN_FALLBACK) === null,
+     'the shared fallback-target rule picks the highest genuinely-lower route ' +
+     'under the run tune, and null when nothing is lower');
+}
+
 /* ------------- score wiring at the sim layer (A.1 semantics) --------- *
  * src/sim/score.js resolves ?score=1 at module-init time, so proving its
  * emission rules needs a process whose __HB_QUERY__ is set before any import.
@@ -3337,6 +4230,7 @@ const XL = buildTransformLevel(CONFIG);
       .map((e) => e.type + ':' + e.kind + ':' + e.weapon).join(',');
     out.types = S.scoreEvents.map((e) => e.type).join(',');
     out.envelope = Object.keys(S.scoreEvents.find((e) => e.type === 'airborne_kill')).join(',');
+    out.tune = S.scoreSnapshot().tune;
     S.resetScore();
     out.afterReset = S.scoreSnapshot();
     out.eventsAfterReset = S.scoreEvents.length;
@@ -3376,6 +4270,150 @@ const XL = buildTransformLevel(CONFIG);
     ok(sim.afterReset.charge === 0 && sim.afterReset.threat === 0 &&
        sim.afterReset.counts.link === 0 && sim.eventsAfterReset === 0,
        'HB.score.reset() clears the meter, the score and the ring buffer');
+    ok(sim.tune === 'slice',
+       'a slice run prices its stream with the slice tune and says so');
+  }
+}
+
+/* ------ CP4 promotion wiring: the DEFAULT run, ?score=1&fallback=1 ---- *
+ * Same child-process trick (src/mode.js resolves flags at import time),
+ * driving the unmodified sim with NO slice selected. What is asserted is
+ * exactly what T-016 promoted: the run tune actually prices the stream, a
+ * lethal hit becomes a HULL FALLBACK that keeps lives and control, the
+ * streak ceiling hands over to the stock lives tier instead of retrying,
+ * and with the flags absent the default run is byte-for-byte the shipped
+ * lives path with a fully inert meter.                                   */
+{
+  const simBase = JSON.stringify('file://' + join(srcDir, 'sim'));
+  const childOn = `
+    globalThis.__HB_QUERY__ = 'score=1&fallback=1';
+    const base = ${simBase};
+    const M = await import(${JSON.stringify('file://' + join(srcDir, 'mode.js'))});
+    const T = await import(base + '/time.js');
+    const E = await import(base + '/edges.js');
+    const ST = await import(base + '/state.js');
+    const L = await import(base + '/level.js');
+    const PLm = await import(base + '/player.js');
+    const S = await import(base + '/score.js');
+    const out = {};
+    out.flags = [M.SCORE_ENABLED, M.RUN_FALLBACK_ENABLED,
+      M.ACTIVE_SLICE === null, M.ACTIVE_FIXTURE === null];
+    out.tune = S.scoreSnapshot().tune;
+    S.scoreKill('wasp', 'R', { grounded: false, vy: -2, x: 30, y: 6 });
+    out.chargeAirKill = S.scoreSnapshot().charge;
+    ST.setState('PLAYING');
+    E.setEdges(0, 120);
+    const p = PLm.player;
+    const lives0 = p.lives;
+    // (1) dislodged from an elevated platform: altitude paid, lives kept,
+    // control kept (state stays PLAYING), hp refilled, meter dropped to floor
+    const pl = L.platforms.find((q) => {
+      const mid = (q.x0 + q.x1) / 2;
+      const g = L.groundTopAt(mid);
+      return g > -100 && q.y - g > 1.3 && mid > 6 && mid < 110;
+    });
+    out.foundPlatform = !!pl;
+    T.advanceGameMs(3000);
+    p.x = (pl.x0 + pl.x1) / 2; p.y = pl.y; p.vx = 0; p.vy = 0;
+    p.grounded = true; p.hp = 1; p.iframesUntil = 0; p.hitstunUntil = 0;
+    PLm.damagePlayer(1, p.x - 1);
+    out.fb1 = {
+      livesKept: p.lives === lives0, hpFull: p.hp === PLm.P.maxHealth,
+      dropped: p.y < pl.y, tossed: p.vy === -3 && p.vx > 0,
+      playing: ST.state === 'PLAYING',
+      setbacks: T.sliceStats.setbacks, charge: S.scoreSnapshot().charge,
+    };
+    // (2) second un-recovered fallback on flat ground: the margin knock pays
+    let gi = 8;
+    while (L.groundTopAt(gi) < -100) gi++;
+    T.advanceGameMs(2000);
+    const x2 = gi + 0.5;
+    p.x = x2; p.y = L.groundTopAt(gi); p.vx = 0; p.vy = 0;
+    p.grounded = true; p.hp = 1; p.iframesUntil = 0; p.hitstunUntil = 0;
+    PLm.damagePlayer(1, p.x - 1);
+    out.fb2 = { livesKept: p.lives === lives0, knockedBack: p.x < x2,
+      setbacks: T.sliceStats.setbacks };
+    // (3) the ceiling: a third consecutive un-recovered death escalates to the
+    // stock lives tier (respawn, one life spent) instead of retrying/looping
+    T.advanceGameMs(2000);
+    p.hp = 1; p.iframesUntil = 0; p.hitstunUntil = 0;
+    PLm.damagePlayer(1, p.x - 1);
+    out.ceiling = { lives: p.lives, hpFull: p.hp === PLm.P.maxHealth,
+      setbacks: T.sliceStats.setbacks, playing: ST.state === 'PLAYING' };
+    const sb = S.scoreEvents.filter((e) => e.type === 'setback');
+    out.setbackEvents = sb.length;
+    out.setbackEnvelope = sb.length ? Object.keys(sb[0]).join(',') : '';
+    out.setbackKinds = sb.map((e) => e.kind).join(',');
+    console.log(JSON.stringify(out));
+  `;
+  const childOff = `
+    globalThis.__HB_QUERY__ = '';
+    const base = ${simBase};
+    const M = await import(${JSON.stringify('file://' + join(srcDir, 'mode.js'))});
+    const T = await import(base + '/time.js');
+    const E = await import(base + '/edges.js');
+    const ST = await import(base + '/state.js');
+    const L = await import(base + '/level.js');
+    const PLm = await import(base + '/player.js');
+    const S = await import(base + '/score.js');
+    const out = {};
+    out.armed = [M.SCORE_ENABLED, M.RUN_FALLBACK_ENABLED];
+    S.scoreKill('wasp', 'R', { grounded: false, vy: -2, x: 30, y: 6 });
+    out.meterInert = S.scoreSnapshot().charge === 0 && S.scoreEvents.length === 0;
+    ST.setState('PLAYING');
+    E.setEdges(0, 120);
+    const p = PLm.player;
+    const lives0 = p.lives;
+    let gi = 8;
+    while (L.groundTopAt(gi) < -100) gi++;
+    p.x = gi + 0.5; p.y = L.groundTopAt(gi); p.vx = 0; p.vy = 0;
+    p.grounded = true; p.hp = 1; p.iframesUntil = 0; p.hitstunUntil = 0;
+    PLm.damagePlayer(1, p.x - 1);
+    out.stock = { livesSpent: p.lives === lives0 - 1, hpFull: p.hp === PLm.P.maxHealth,
+      setbacks: T.sliceStats.setbacks, playing: ST.state === 'PLAYING' };
+    console.log(JSON.stringify(out));
+  `;
+  let on = null, off = null;
+  try {
+    on = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', childOn],
+      { encoding: 'utf8' }));
+    off = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', childOff],
+      { encoding: 'utf8' }));
+  } catch (e) {
+    console.error('pathcheck: CP4 promotion child failed: ' + e.message);
+  }
+  ok(!!on && !!off, 'the default-run sim boots headlessly with and without the CP4 flags');
+  if (on) {
+    ok(on.flags.every(Boolean),
+       '?score=1&fallback=1 arms both prototypes in the default run, no slice active');
+    ok(on.tune === 'run' && on.chargeAirKill === SCORE_RUN.gain.airborne_kill,
+       'the default run prices events with the RUN tune (airborne kill +' +
+       SCORE_RUN.gain.airborne_kill + ', not the slice tune +' + SCORE.gain.airborne_kill +
+       '), got +' + on.chargeAirKill);
+    ok(on.foundPlatform === true, 'the seeded six-face level offers an elevated ' +
+       'platform with ground below to prove the dislodge against');
+    ok(on.fb1.livesKept && on.fb1.hpFull && on.fb1.dropped && on.fb1.tossed &&
+       on.fb1.playing && on.fb1.setbacks === 1,
+       'a lethal hit with ?fallback=1 is a HULL FALLBACK: altitude paid, lives ' +
+       'and control kept, hp refilled, play never stops');
+    ok(on.fb1.charge === 0,
+       'the fallback drops CHARGE to the phase floor (B.1: the fall pays nothing)');
+    ok(on.fb2.livesKept && on.fb2.knockedBack && on.fb2.setbacks === 2,
+       'on the lowest route the fallback takes margin instead of altitude — never free');
+    ok(on.ceiling.lives === 2 && on.ceiling.hpFull && on.ceiling.setbacks === 2 &&
+       on.ceiling.playing,
+       'the third consecutive un-recovered death crosses the streak ceiling and ' +
+       'spends a stock life — the run keeps its terminal state, no free fall loop');
+    ok(on.setbackEvents === 2 && on.setbackKinds === 'fallback,ground' &&
+       on.setbackEnvelope === 't,notch,type,kind,phase,y0,y1,x',
+       'the A.5 setback envelope rides the run stream: kinds ' + on.setbackKinds);
+  }
+  if (off) {
+    ok(off.armed.every((f) => f === false) && off.meterInert === true,
+       'with no flags the default-run meter is fully inert (no events, no charge)');
+    ok(off.stock.livesSpent && off.stock.hpFull && off.stock.setbacks === 0 &&
+       off.stock.playing,
+       'with no flags a lethal hit spends a life through the shipped stock path');
   }
 }
 

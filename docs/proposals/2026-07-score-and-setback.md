@@ -362,6 +362,12 @@ Stated explicitly so the adversarial agent has something to break:
 > hypothesis, not a canon decision — see `decisions.md`. Per-weapon hot
 > traits, the three-notch design, and phase floors beyond the slice remain
 > unbuilt.
+>
+> **Update, 2026-07-31 (T-016):** promoted to the DEFAULT six-face run behind
+> the same `?score=1`, priced by A.3's un-doubled table there (`SCORE_RUN` in
+> `src/pure/score.js`, per this section's own "do not carry those numbers to
+> the full game"). Defended for the CP4 verdict in
+> [`2026-07-cp4-default-run-score-setback.md`](2026-07-cp4-default-run-score-setback.md).
 
 Build this in the traversal slice, behind `?score=1`, and change nothing else.
 Target: under a day of work, and a real answer to one question.
@@ -510,6 +516,12 @@ Five criteria for judging the proposals below:
 > `src/sim/player.js`. This tests the hypothesis; it has not been chosen by
 > the operator over B.2–B.6 — see `decisions.md`. Tier 2 (band fallback) is
 > unbuilt.
+>
+> **Update, 2026-07-31 (T-016):** promoted to the DEFAULT six-face run behind
+> `?fallback=1` (off by default there), with the stock lives path as the
+> ceiling tier past `maxConsecutive` un-recovered fallbacks. Defended for the
+> CP4 verdict in
+> [`2026-07-cp4-default-run-score-setback.md`](2026-07-cp4-default-run-score-setback.md).
 
 **Fiction fit.** The ship does not kill an anomaly on the hull; it *dislodges*
 it. A hull ratchet reverses, a plate vents, a service band retracts, and RIG is

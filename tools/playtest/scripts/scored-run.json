@@ -1,0 +1,214 @@
+{
+  "name": "scored-run",
+  "description": "CP4 evidence (T-016): the DEFAULT six-face run with both promoted prototypes armed (?score=1&fallback=1). Same competent heuristic as mid-route (hold right + hold fire + periodic hop + pinned-jump policy), 30 s window. What this measures: the A.5 event stream is real in the default run (protoScore source HB.score, per-event counts, THREAT/classification under the RUN tune), and any lethal hit resolves as a HULL FALLBACK (setbacks > 0 with lives kept) instead of a respawn. Pair with scored-run-baseline (identical inputs, flags off) for the A/B.",
+  "url": "index.html?score=1&fallback=1",
+  "durationMs": 30000,
+  "moves": [
+    {
+      "hold": "right",
+      "fromMs": 0,
+      "toMs": 29800
+    },
+    {
+      "hold": "fire",
+      "fromMs": 100,
+      "toMs": 29800
+    },
+    {
+      "tap": "jump",
+      "atMs": 300,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 1100,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 1900,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 2700,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 3500,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 4300,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 5100,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 5900,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 6700,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 7500,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 8300,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 9100,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 9900,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 10700,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 11500,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 12300,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 13100,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 13900,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 14700,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 15500,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 16300,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 17100,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 17900,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 18700,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 19500,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 20300,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 21100,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 21900,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 22700,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 23500,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 24300,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 25100,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 25900,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 26700,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 27500,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 28300,
+      "holdMs": 380
+    },
+    {
+      "tap": "jump",
+      "atMs": 29100,
+      "holdMs": 380
+    }
+  ],
+  "policy": {
+    "rules": [
+      {
+        "when": "pinned",
+        "do": {
+          "tap": "jump",
+          "holdMs": 90
+        }
+      }
+    ]
+  }
+}
