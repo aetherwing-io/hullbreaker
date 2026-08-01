@@ -14,6 +14,10 @@ import { placeOnTower } from './tower.js';
 const waspGeo = new THREE.OctahedronGeometry(CONFIG.wasp.visualRadius);
 const carrierGeo = new THREE.BoxGeometry(...CONFIG.carrier.size);
 const houndGeo = new THREE.BoxGeometry(...CONFIG.hound.size);
+const polypGeo = new THREE.DodecahedronGeometry(CONFIG.polyp.size);
+const polypBarrelGeo = new THREE.BoxGeometry(...CONFIG.polyp.barrelSize);
+const polypStalkGeo = new THREE.BoxGeometry(0.35, CONFIG.polyp.rootY, 0.35);
+const polypBeamGeo = new THREE.BoxGeometry(1, CONFIG.polyp.beamHalf * 2, CONFIG.polyp.beamHalf * 2);
 
 /* The houndframe's state theater: the shared presence pass below owns
    materialization, depth breathing, and the hit flash for every kind — this
@@ -68,6 +72,40 @@ function houndRoll(e) {
   return Math.sin(e.t * H.gaitFreq) * H.gaitTilt;
 }
 
+/* The polyp's state theater over the same shared presence pass: a rooted
+   bulb whose iris cycle is told in silhouette + the roster's one warning
+   language (accelerating warm blink → commitment).
+     closed — inert bulb; the shared depth breathing keeps it alive.
+     tell   — dilates across the whole reaction window while the warm blink
+              accelerates: "this lane is about to be wrong".
+     fire   — holds the swollen pose and a constant hot glow while the beam
+              mesh (below) spans the live reach: committed, not steering.
+     vent   — sags and glows a dim spent warm: the opening, visibly.
+   Same reused-object rule as the hound pose: sync runs per hostile per
+   frame, so no allocation.                                             */
+const POLYP_POSE = { depth: 0, sx: 1, sy: 1, sz: 1, glow: 0x000000 };
+
+function polypPose(e) {
+  const PP = CONFIG.polyp;
+  const p = POLYP_POSE;
+  p.depth = 0; p.sx = 1; p.sy = 1; p.sz = 1; p.glow = 0x000000;
+  if (e.state === 'tell') {
+    const u = 1 - Math.max(0, Math.min(1, (e.stateUntil - gameMs) / PP.tellMs));
+    p.sy = 1 + PP.tellSwell * u;
+    p.sz = 1 + PP.tellSwell * u;
+    const period = PP.tellBlinkSlowMs + (PP.tellBlinkFastMs - PP.tellBlinkSlowMs) * u;
+    if (Math.floor(gameMs / period) % 2 === 0) p.glow = CONFIG.palette.polypTell;
+  } else if (e.state === 'fire') {
+    p.sy = 1 + PP.tellSwell;
+    p.sz = 1 + PP.tellSwell;
+    p.glow = CONFIG.palette.polypBeam;
+  } else if (e.state === 'vent') {
+    p.sy = 1 - PP.ventSag;
+    p.glow = CONFIG.palette.polypVent;
+  }
+  return p;
+}
+
 // per-kind look, keyed by the same kind rows as ENEMY in src/sim/hostiles.js
 const LOOK = {
   wasp:    { geo: waspGeo,    color: CONFIG.palette.wasp,
@@ -76,6 +114,8 @@ const LOOK = {
              roll: (e) => Math.sin(e.t * CONFIG.carrier.rollFreq) * CONFIG.carrier.rollAmp },
   hound:   { geo: houndGeo,   color: CONFIG.palette.hound,
              roll: houndRoll, pose: houndPose },
+  polyp:   { geo: polypGeo,   color: CONFIG.palette.polyp,
+             roll: () => 0,   pose: polypPose },
 };
 const meshes = new Map();                // sim hostile row → { mesh, mat }
 
@@ -85,15 +125,42 @@ function spawned(e) {
     color: K.color, flatShading: true, transparent: true, opacity: 0,
   });
   const mesh = new THREE.Mesh(K.geo, mat);
+  const v = { mesh, mat };
+  if (e.kind === 'polyp') {
+    // the side-facing barrel (board 07's model note) and the root stalk down
+    // to the mounted surface — children sharing the bulb's material so
+    // materialize/dissolve fades the whole body as one; the barrel offset is
+    // set per frame from the sim row's facing in sync()
+    const barrel = new THREE.Mesh(polypBarrelGeo, mat);
+    mesh.add(barrel);
+    v.barrel = barrel;
+    const stalk = new THREE.Mesh(polypStalkGeo, mat);
+    stalk.position.y = -CONFIG.polyp.rootY / 2;
+    mesh.add(stalk);
+    // the beam is its own scene mesh: it spans the LIVE reach the sim
+    // marched this frame, so what the render shows is exactly what damages
+    const beamMat = new THREE.MeshBasicMaterial({
+      color: CONFIG.palette.polypBeam, transparent: true, opacity: 0.85,
+    });
+    const beam = new THREE.Mesh(polypBeamGeo, beamMat);
+    beam.visible = false;
+    scene.add(beam);
+    v.beam = beam;
+    v.beamMat = beamMat;
+  }
   mesh.visible = false;                    // hidden until its materialization begins
   scene.add(mesh);
-  meshes.set(e, { mesh, mat });
+  meshes.set(e, v);
 }
 
 function removed(e, fade) {
   const v = meshes.get(e);
   if (!v) return;
   meshes.delete(e);
+  if (v.beam) {                          // the beam never outlives its emplacement
+    scene.remove(v.beam);
+    v.beamMat.dispose();
+  }
   if (fade) {                            // hand the mesh to the corpse pass to dissolve
     corpses.push({ mesh: v.mesh, mat: v.mat, s: e.x, y: e.y, spin: e.t, t0: gameMs });
   } else {
@@ -108,6 +175,7 @@ function sync(e) {
   const W = CONFIG.wasp;
   if (gameMs < e.enterUntil - W.enterMs) {            // staged wave slot: still hidden
     v.mesh.visible = false;
+    if (v.beam) v.beam.visible = false;
     return;
   }
   v.mesh.visible = true;
@@ -137,6 +205,22 @@ function sync(e) {
   placeOnTower(v.mesh, e.x, e.y, depth);
   v.mesh.rotation.z = K.roll(e);
   v.mesh.scale.set(sx, sy, sz);
+  if (v.beam) {
+    const PP = CONFIG.polyp;
+    // the barrel points down the authored lane (dir is FACING on a rooted row)
+    v.barrel.position.x = e.dir * PP.barrelTiles * 0.65;
+    const live = e.state === 'fire' && e.beamReach > 0 && gameMs >= e.enterUntil;
+    v.beam.visible = live;
+    if (live) {
+      // span exactly the reach the sim marched this frame, in the combat
+      // plane (depth 0): what is drawn is what damages, wall to barrel
+      placeOnTower(v.beam, e.x + e.dir * (PP.barrelTiles + e.beamReach / 2), e.y, 0);
+      const pulse = 1 + PP.beamPulseAmp *
+        Math.sin(gameMs / 1000 * PP.beamPulseFreq * Math.PI * 2);
+      v.beam.scale.set(e.beamReach, pulse, pulse);
+      v.beamMat.opacity = 0.65 + 0.25 * pulse;
+    }
+  }
 }
 
 installView({ hostiles: { spawned, removed, sync } });

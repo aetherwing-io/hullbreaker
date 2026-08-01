@@ -782,19 +782,94 @@ export function houndTrialStage(name) {
   return (name && HOUND_TRIAL.stages[name]) || null;
 }
 
+/* ===================== IRIS POLYP TRIAL (opt-in) ==================== *
+ * DESIGN's next enemy in the teach-then-combine order, reached only through
+ * ?polyp= and carrying the hound trial's placement contract forward: a polyp
+ * threatens by POSITION on a route the player actually needs (decisions.md
+ * entry 6), never by stats. It is rooted, so `owns` is everything: the beam
+ * has to cover the owned connector, the fixture's own geometry has to clamp
+ * the beam (cover is real), and the tiers above and below the lane have to
+ * stay clean (a sightline locks one band, the reroutes stay visible — board
+ * 07's "locking one connector while alternatives remain visible").
+ *
+ * The chosen station is the RIGHT end of the post-mid catwalk, barrel facing
+ * left down the lane: post-mid is the natural walk-on continuation every
+ * player sees after the shared overhang segment. The beam rides the standing
+ * firing line of that catwalk, its span stops short of the shared
+ * overhang-top CONNECTOR (the fork's decision point stays free — asserted),
+ * post-low runs directly below the lane (drop reroute) and post-high
+ * directly above it (jump reroute) — the alternatives are visible before
+ * the tell ever fires, which is board 07's exact panel. The span's tail
+ * does brush the roof walk behind the pocket wall, deliberately: the roof
+ * freeway pays a toll here, and the answer (hop, or drop into the pocket)
+ * is asserted fair. `deck` is the mounted surface height; the spawn y
+ * derives from CONFIG.polyp.rootY the way a hound's derives from rideY, so
+ * the bulb always sits on its catwalk.                                   */
+const POLYP_POST_BEAT = {
+  id: 'polyp-post', kind: 'polyp', contests: 'mid-catwalk', owns: 'post-mid',
+  mount: 'platform:post-mid', deck: 5.35, x: 63.2, dir: -1, delayMs: 0,
+};
+
+export const POLYP_TRIAL = {
+  id: 'polyp-trial-v1',
+  stages: {
+    // teach: ONE polyp, nothing else. The tell → beam → vent cycle has to be
+    // attributable before anything contests the answers to it, and a solo
+    // roster keeps every point of bot damage explained by the beam.
+    solo: {
+      id: 'solo', label: 'POLYP SOLO', compose: 'replace',
+      enemies: [POLYP_POST_BEAT],
+    },
+    // combine (exactly two bodies): the polyp locks the mid lane and a hound
+    // prices the drop reroute directly below it — DESIGN's "mortar can
+    // pressure the alternate route" combination, played with the enemy that
+    // exists. The hound row is the judged hound-2.5 rejoin beat verbatim
+    // (same station, span, and owned connector), so the combination tests
+    // the POLYP, not a new hound placement.
+    combo: {
+      id: 'combo', label: 'POLYP + HOUND', compose: 'replace',
+      enemies: [
+        POLYP_POST_BEAT,
+        { id: 'hound-rejoin', kind: 'hound', contests: 'lower-service', owns: 'post-low',
+          deck: 3, x: 60.2, dir: -1, delayMs: 400, patrol: { x0: 57.8, x1: 60.6 } },
+      ],
+    },
+  },
+};
+
+export function polypTrialStage(name) {
+  return (name && POLYP_TRIAL.stages[name]) || null;
+}
+
+// One authored stage's rows with spawn heights derived per kind: a hound
+// rides its deck, a polyp is rooted on it. Rows without a deck pass through.
+function stagePlanRows(stage, cfg) {
+  return stage.enemies.map(function (e) {
+    if (e.deck === undefined) return { ...e };
+    const ride = e.kind === 'polyp' ? cfg.polyp.rootY : cfg.hound.rideY;
+    return { ...e, y: e.deck + ride };
+  });
+}
+
+function composeStage(stage, baseRows, cfg) {
+  const authored = stagePlanRows(stage, cfg);
+  return stage.compose === 'add'
+    ? baseRows.map(function (e) { return { ...e }; }).concat(authored)
+    : authored;
+}
+
 // One attempt's authored hostiles, for the pace that resolved. With no trial
 // stage this returns the pace's own list unchanged, so every ordinary URL is
-// byte-identical; a stage either replaces that list or appends to it.
-export function traversalEnemyPlan(fixture, trialName, cfg = CONFIG) {
+// byte-identical; a stage either replaces that list or appends to it. The
+// polyp trial composes AFTER the hound trial (both flags set, the polyp
+// stage's rule reads the hound-composed plan as its base), and with no
+// ?polyp= the result is byte-for-byte the pre-polyp behavior.
+export function traversalEnemyPlan(fixture, trialName, polypName, cfg = CONFIG) {
   if (!fixture) return [];
   const stage = houndTrialStage(trialName);
-  if (!stage) return fixture.enemies;
-  const authored = stage.enemies.map(function (e) {
-    return e.deck === undefined ? { ...e } : { ...e, y: e.deck + cfg.hound.rideY };
-  });
-  return stage.compose === 'add'
-    ? fixture.enemies.map(function (e) { return { ...e }; }).concat(authored)
-    : authored;
+  const base = stage ? composeStage(stage, fixture.enemies, cfg) : fixture.enemies;
+  const polyp = polypTrialStage(polypName);
+  return polyp ? composeStage(polyp, base, cfg) : base;
 }
 
 /* ---------------------- pursuit (the damage edge) -------------------- *

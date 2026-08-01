@@ -221,6 +221,51 @@ export const CONFIG = {
     gaitFreq: 9, gaitAmp: 0.07, gaitTilt: 0.05,        // prowl stride bob
   },
 
+  polyp: {                     // Iris Polyp (boards 06/07): a ROOTED emplacement that
+                               // locks one connector's sightline with a side-facing
+                               // beam. It never moves — placement is the whole threat
+                               // (decisions.md entry 6) — and its iris armour makes
+                               // openings, not hit points, the way it dies (DESIGN's
+                               // "destroy it during an opening"). Presence timings
+                               // (materialize, dissolve, depth breathing) are shared
+                               // with CONFIG.wasp like every kind.
+    hp: 6,                     // dies inside ONE vent window of rifle fire (asserted):
+                               //   the opening is honest, and never a damage race
+    hitRadius: 0.5,            // contact circle, inside the bulb silhouette
+    size: 0.55,                // bulb radius (render); barrel + stalk are theater
+    barrelSize: [0.9, 0.34, 0.34],   // the side-facing barrel, board 07's model note
+    barrelTiles: 0.7,          // beam origin: barrel tip forward of the bulb center
+    rootY: 1.05,               // bulb center above the mounted surface — EXACTLY the
+                               //   standing firing line (player.muzzleY), asserted:
+                               //   a level shot from the polyp's own lane center-
+                               //   punches the bulb, so killing it during an opening
+                               //   never needs the crouch/assist prototypes (the CP2
+                               //   aim-gap lesson, applied at authoring time). The
+                               //   beam rides the same line, so the lane it locks is
+                               //   the lane you would trade from — you leave it or
+                               //   you spend an opening, never duel it
+    sightRange: 9.0,           // max beam reach; terrain and facet bends clamp it
+    beamHalf: 0.32,            // beam band half-height: one lane, never a tier
+    beamStepTiles: 0.35,       // sight march resolution — finer than a 1-tile wall,
+                               //   so a beam can enter a wall face but never cross it
+    tellMs: 800,               // iris dilate: the WHOLE reaction window sits before
+                               //   the beam, and the beam never re-aims (a sightline
+                               //   is answered by leaving it, not by outrunning it).
+                               //   Sized 2x the SLOWEST escape (the drop-through,
+                               //   asserted per player tune), not just the jump
+    beamMs: 450,               // the lock: shorter than a full jump stays above the
+                               //   band, so going over the beam is always an answer
+    ventMs: 900,               // the opening: iris open, spent, vulnerable
+    cooldownMs: 1600,          // iris shut, lane free — the same pant-window rhythm
+                               //   as the hound's charge cycle
+    // pose theater (render-only): the same warning grammar as the hound —
+    // an accelerating warm blink that resolves into commitment.
+    tellBlinkSlowMs: 170, tellBlinkFastMs: 60,
+    tellSwell: 0.3,            // bulb dilates across the tell: silhouette change
+    ventSag: 0.12,             // vent: visibly spent, the "shoot me now" beat
+    beamPulseFreq: 24, beamPulseAmp: 0.25,
+  },
+
   waves: {                     // corner wave gates + snap ritual + brick zipper
     haltOffset: 14,            // scroll halts at cornerS - haltOffset
     baseSize: 3, sizePerWave: 1,               // wave k = baseSize + sizePerWave·k
@@ -424,6 +469,10 @@ export const CONFIG = {
     hound: 0x5f8f3c,                       // same acid-green ecology as the wasp (concept art):
                                            //   heavier value, and the SILHOUETTE carries the read
     houndTell: 0xffd0a0, houndCharge: 0x3d7a1a,   // warm warning blink / lit-up committed glow
+    polyp: 0x74a83b,                       // same acid-green ecology, its own value; the rooted
+                                           //   bulb-and-barrel SILHOUETTE carries the read
+    polypTell: 0xffd0a0,                   // one warning language across the roster: warm blink
+    polypBeam: 0xc6ff4f, polypVent: 0xd9a06a,     // hot acid lock / dim spent "opening" glow
     // snap-hook markers (?hook=1): warm hardware idle, hot when live, pale
     // tether. Never the pickup magenta and never the hostile green — an anchor
     // has to read as grabbable machinery at a glance (DESIGN's aiming rule).
