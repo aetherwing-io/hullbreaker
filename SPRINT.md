@@ -416,31 +416,33 @@ verify: node tools/pathcheck.mjs; a run that reaches the first gate without losi
 
 ## T-021 | feature | doing | P1
 
-goal: the SPLIT DECISION — decisions.md entries 10 and 11. A fork the player
-reads and commits to AT SPEED, where the right branch carries challenge AND
-reward (higher, more exposed, it pays, and it rejoins ahead) and the wrong
-branch DEAD-ENDS, costing real time against the pursuing edge. The dead end is
-the stake that makes it a decision; the rejoin is what keeps the run moving
-forward. Both are required.
-Target energy (entry 11, operator): "lots of split decisions, esceleration,
-action, climb, climb climb, keep going faster."
+goal: the SPLIT DECISION in the SIX-FACE RUN — decisions.md entries 10, 11, 12
+and 13. A fork the player reads and commits to AT SPEED: the rewarding branch
+climbs higher, is more exposed, and REJOINS ahead; the wrong branch DEAD-ENDS.
+The stake is PRESSURE — hostiles on you while you are in it and the edge
+closing — not distance or height (entry 12: three passes failed trying to
+price a reward in reach; the fight was already charging the right price).
+Build it in the six-face run, NOT the traversal slice: entry 13 rules the
+slice too easy to judge difficulty in, and a pressure-priced mechanic cannot
+be judged where there is no pressure. The lattice is uncontended now that
+T-009 has merged.
 accept:
-- [ ] prototype in the TRAVERSAL SLICE behind a flag, off by default (the
-      six-face lattice is contended by T-009 — do not touch generator.js or
-      lattice.js)
-- [ ] the rewarding branch is the HIGHER, more exposed one and REJOINS ahead:
-      no reversal to collect, no free drop back to the main line
-- [ ] the wrong branch dead-ends and costs measurable time against the edge
+- [ ] behind a flag in the six-face run, off by default
+- [ ] rewarding branch climbs and REJOINS ahead: no reversal to collect, no
+      free drop back to the main line
+- [ ] wrong branch dead-ends, and what it costs is TIME UNDER PRESSURE —
+      show the hostiles that charge it, not a distance
 - [ ] FAIRNESS RIDER (entry 11): the dead end is legible as a risk BEFORE
-      commitment — a dead end the player could not have read is a memorization
-      trap. Say how it advertises itself and prove it in a FAR screenshot
+      commitment; prove it in a FAR screenshot
 - [ ] readable at speed at the FAR default: committing must not require a stop
-- [ ] CURRENCY + FALSIFYING TEST (entry 10's rule): cost is time-against-the-
-      edge and exposure. Assert: a policy that always takes the main line
-      collects zero rewards; a policy that takes the reward branch still keeps
-      the daylight margin; a policy that takes the dead end measurably loses
-      it. Derive the cost from the shipped sim — do NOT inherit a speed number
-- [ ] docs/proposals/ write-up specifying the mechanic for six-face integration
+- [ ] CURRENCY + FALSIFYING TEST (entry 10's rule): a policy that always takes
+      the main line collects zero rewards; a policy that takes the reward
+      branch still keeps its daylight margin; a policy that takes the dead end
+      measurably loses it. Derive every cost from the shipped sim — inherit no
+      speed number
+- [ ] the existing shelf-and-chasm pocket STAYS (entry 12) — this is added
+      decision density, not a replacement
+- [ ] docs/proposals/ write-up specifying the mechanic
 owner: lattice-designer
 verify: node tools/pathcheck.mjs; named playtest scripts for all three lines (main / reward / dead end), --deterministic; screenshots at ?view=far
 
