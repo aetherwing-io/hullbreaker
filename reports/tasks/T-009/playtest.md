@@ -1,205 +1,244 @@
-FAIL
+PASS
 
 Gate: playtester, task T-009 (six-face integration — lattice route density,
-dare pockets, hound-2.5 stations, static-anatomy corner reveal as default).
-Worktree `/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-009`
-(branch `task/T-009`, HEAD `770ea6b`; `main` = `16099f6`, which is the branch's
-merge base — the branch contains main's tip). This lane was BLOCKED and never
-had a first gate, so the whole diff was reviewed, not only the merge.
+pockets, hound-2.5 stations, static-anatomy corner reveal as default).
+Worktree `/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-009`,
+branch `task/T-009` HEAD **`72a7db5`** ("T-009 review fixes: scrub the last
+wager wording, stop gating on the count"), which contains `main` via merge
+`a116f59`.
 
-**One defect fails this gate, and it is the task's own headline feature: the
-dare pockets are free.** The authored reward is collected by the deck-line
-crossing jump every player has to make anyway — no climb, no shelf, no
-retreat. Everything else in the task (route density, static-anatomy default,
-`?zip=1` restoration, non-gating stations, 60fps, smoke suite, selftest) is
-green and independently verified below. Not failed for feel, and NOT failed
-for the full-run script not reaching victory (split to T-018 by integrator
-decision) — but the integrator's A/B evidence for that split does not
-reproduce, and that is reported loudly under "A/B" below.
+**This gate applies `docs/decisions.md` entry 9 and supersedes the three
+prior FAIL verdicts on this lane.** Those gates failed T-009 because the
+pocket capsule was collectable from the deck line. The operator has since
+ruled the capsule a plain pickup — that behaviour is now CORRECT, the
+requirement it violated is withdrawn, and I-019 is already closed-as-obsolete
+in `SPRINT.md`. Nothing here re-litigates it.
+
+What this gate actually judged instead: whether the branch's *text* stayed
+inside its *artifact* (the failure class this repo has burned cycles on, now
+in reverse), whether the withdrawn assertions were removed rather than
+weakened into passing vacuously, and whether the pass-2/3 tier-raising was
+reverted for a real reason. All three are clean, with mutation evidence.
+No defects filed; **no new Inbox issues**.
 
 ## Pinning and runs
 
-Worktree served by `python3 -m http.server 8951` with cwd set to the worktree;
-a pristine `git archive main | tar -x` snapshot served on 8952 for the A/B
-(no `git worktree add`, so the main checkout's git state was untouched). All
-runs used the MAIN checkout's harness at
-`/Users/scottmeyer/projects/hullbreaker/tools/playtest`.
+Pinned server (worktree served, curl-proven before any run):
 
 ```sh
-node run.mjs scripts/mid-route.json --deterministic --max-runtime-ms 15000 \
-  --base-url http://127.0.0.1:8951 --out runs/gate-T-009-mid
-node run.mjs scripts/transform-slice.json --deterministic --max-runtime-ms 20000 \
-  --base-url http://127.0.0.1:8951 --out runs/gate-T-009-transform
-# A/B, 3 runs per side, identical flags, both trees pinned:
-node run.mjs <worktree>/tools/playtest/scripts/six-face-full-run.json --deterministic \
-  --max-runtime-ms 150000 --base-url http://127.0.0.1:8951 --out runs/gate-T-009-fullrun-branch[-2,-3]
-node run.mjs <worktree>/tools/playtest/scripts/six-face-full-run.json --deterministic \
-  --max-runtime-ms 150000 --base-url http://127.0.0.1:8952 --out runs/gate-T-009-fullrun-main[-2,-3]
-# ?zip=1 playability (same script, URL override):
-node run.mjs <worktree>/tools/playtest/scripts/six-face-full-run.json --deterministic \
-  --max-runtime-ms 150000 --url "http://127.0.0.1:8951/index.html?zip=1&testapi=1" \
-  --out runs/gate-T-009-zip-[1,2]
-node tools/pathcheck.mjs            # in the worktree: 1448 passed, 0 failed
+cd /Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-009
+python3 -m http.server 8995          # backgrounded; killed at gate end
+curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8995/index.html   # 200
+curl -s http://127.0.0.1:8995/src/pure/lattice.js | head -3               # branch-only file, served
 ```
 
-Required smoke set — both exit 0, `"result": "completed"`, `testapi` fidelity,
-`bootError: null`, zero page/console errors, no retry needed:
+`src/pure/lattice.js` exists only on this branch, so serving it proves the pin
+is the worktree and not the main checkout.
 
-| run | result | notes |
+Harness runs, from the MAIN checkout's `tools/playtest`:
+
+```sh
+cd /Users/scottmeyer/projects/hullbreaker/tools/playtest
+node run.mjs scripts/mid-route.json       --deterministic --max-runtime-ms 15000 \
+  --base-url http://127.0.0.1:8995 --out runs/gate-T-009-mid
+node run.mjs scripts/transform-slice.json --deterministic --max-runtime-ms 20000 \
+  --base-url http://127.0.0.1:8995 --out runs/gate-T-009-transform
+```
+
+| run | result | exit | bootError | console errors | idle | crush margin | falls |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `mid-route` | **completed** | 0 | none | 0 | 0.0s / 4.6s (0%) | 35.41 tiles | 0 |
+| `transform-slice` | **completed** | 0 | none | 0 | 0.0s / 15.7s (0%) | 30.12 tiles | 0 |
+
+Both first-attempt, no retry needed. `testapi` fidelity, `errors: []` and zero
+`type === 'error'` console messages in both `report.json`s. Against the
+committed `mid-route` deterministic baseline in the harness README (crush
+35.44, protoScore 70.2) this run reads 35.41 / 72.0 — inside the documented
+polling caveat (honesty note #4), not a regression.
+
+Evidence:
+- `/Users/scottmeyer/projects/hullbreaker/tools/playtest/runs/gate-T-009-mid/{report.json,summary.md,screenshot.png}`
+- `/Users/scottmeyer/projects/hullbreaker/tools/playtest/runs/gate-T-009-transform/{report.json,summary.md,screenshot.png}`
+
+## 1. Truthfulness — nothing describes the capsule as a cost
+
+Swept the whole `main...HEAD` diff for `dare|wager|gamble|retreat|measured`.
+Every surviving hit is one of three legitimate kinds; **zero** describe the
+six-face capsule as something the player pays:
+
+- **Explicit disclaimers.** `src/pure/lattice.js:~279` — "The detour, measured
+  — *not as a price anybody pays*, but as the proof that the pocket can always
+  be left". `docs/DESIGN.md:439` — "**The capsule is free**… It is a plain
+  pickup, not a dare: it costs nothing, it is collected however the player
+  reaches it".
+- **Recorded history, labelled as withdrawn.** `lattice.js:~145` keeps the
+  `rewardRise 0.7 → 1.75 → +4.45` trail with "Entry 9 withdrew that
+  requirement… so the shape is the plain one again", and states the consequence
+  plainly rather than hiding it: a deck-line crossing "may now clip the capsule
+  out of the air on the way past; that is a free pickup arriving early, which
+  is what entry 9 decided it is."
+- **Untouched traversal-slice code.** `src/sim/score.js`, `src/sim/capsules.js`,
+  `src/sim/scroll.js`, `src/ui/overlay.js` and `hud.js`'s `H WAGER`/`RETREAT
+  LEFT` strings still say wager — all `ACTIVE_SLICE`-gated, none in this diff.
+  Entry 10 explicitly preserves the dead-end form "in the traversal slice", so
+  this is correct, not residue. The only `hud.js` change in the diff is an
+  unrelated per-body gating-count fix.
+
+**Text-vs-artifact check, the thing this lane kept getting wrong.** I recomputed
+every number `DESIGN.md:420-464` asserts, from the shipped config:
+
+| DESIGN claim | computed | |
 | --- | --- | --- |
-| `runs/gate-T-009-mid/report.json` | completed | 1 attempt, 0 falls, 0 deaths, dare pocket entered, protoScore 86.6 (proxy) |
-| `runs/gate-T-009-transform/report.json` | completed | `BREACH CLEAR`, 1 attempt, 0 deaths |
+| detour costs 0.43s | 0.4255s | ok |
+| 1.83 tiles of edge advance | 1.8298 | ok |
+| leaving 12.17 of 14 | 12.1702 | ok |
+| ≥6 required | `minExitMarginTiles` 6 | ok |
+| shelf at mid + 3 | `shelf.y - mid.y` = 3.00 | ok |
+| capsule +0.7 over tip, deck + 5.05 | `rewardRise` 0.7, `reward.y - deckY` 5.05 | ok |
+| 62 platforms | `buildLevel` → 62 | ok |
+| one pocket per face | 6 | ok |
 
-## What I judged
+And the text draws its own boundary correctly: "the backward shelf spur
+described above is what ships today, **not the end state**", pointing at
+entries 10/11's fork. That is a doc describing its artifact and naming its
+plan separately — the opposite of the failure that produced I-020.
 
-**1. Default six-face run boots clean and plays — PASS.** `?selftest=1` on the
-pinned worktree: title `SELFTEST PASS (29 checks)`. Default run boots to
-`PLAYING` with `window.HB` present and no page errors; both smoke scripts
-complete (above); six full-run sessions and two `?zip=1` sessions all booted
-with `bootError: null` and empty `pageErrors`. Pathcheck in the worktree:
-**1448 passed, 0 failed**.
+The retracted single-run A/B is handled the same way: `six-face-full-run.json`'s
+description and the harness README now carry "RETRACTED, DO NOT RE-QUOTE" with
+the I-020 reference and the `?zip=1` noise-floor comparison.
 
-**2. Static-anatomy reveal is genuinely the default; `?zip=1` restores the
-zipper intact and playable — PASS.** At runtime with no flags,
-`window.HB.g1.pieces === 829` (the static limb bake is on, the zipper's three
-render hooks no-op); under `?zip=1`, `HB.g1 === null`. The zipper is not just
-resolvable but *played*: both `?zip=1` full-runs cleared wave gate 1 and ran
-the corner ritual through to the scroll resuming — `gate-T-009-zip-1` reached
-maxX 154.25 / scroll 140 / 10 kills, `gate-T-009-zip-2` maxX 113.40 / scroll 99
-/ 8 kills, no errors either time. On the default side, `gate-T-009-fullrun-
-branch-3` crossed the same corner (maxX 110.65 / scroll 112). Frames judged for
-the rule itself: `artifacts/t009-lattice/merged/02-corner1-static-anatomy.png`
-(mid-ritual, `CLEAR` up) shows the next facet already present in haze behind
-the joint mass — nothing arrives, nothing slams; `.../06-ab-gate1-default.png`
-vs `07-ab-gate1-zip.png` is the same simulated moment with the body present
-vs void. I saw **no assembling anatomy** in any default-mode frame I captured
-or reviewed. (Honesty: a still cannot prove a 1.1 s ritual; the behavioural
-half is pathcheck's whole-trace equivalence between the two modes plus the
-zip/default runs above.)
+## 2. Assertion hygiene — removed, not weakened (mutation-proven)
 
-**3. Do the dare pockets cost a measured retreat? — NO. This is the failure.**
-Detail and repro in I-019 below. Two independent demonstrations:
-- *Shipped sim, headless* (`--input-type=module` child driving
-  `src/sim/*` from the worktree, scratch probe): a pure deck-line policy —
-  hold right, hold one grounded jump whenever the deck 1.2 tiles ahead is a
-  hole or a step, the exact policy pathcheck's own "the run reaches the outro
-  scroll end" assertion uses — collects **all six** pocket rewards, with
-  `airJumpsLeft` never decrementing (zero air jumps, zero climbs, zero
-  leftward movement). Face-1 trace: the crossing jump peaks at y ≈ 5.61 from
-  the deck at y = 3, the capsule sits at y = 8.05 ± 0.15 bob, and RIG is 1.7
-  tall with a 0.95 pickup radius, so the pickup fires at x = 46.07 / y = 5.44
-  while still *ascending*. The geometry is systematic, not seed luck: reward
-  height is always `deckY + 5.05` and a held jump reaches `deckY + 2.72`, i.e.
-  head at `deckY + 4.42` — 0.48 tiles short of the capsule's bob floor, well
-  inside 0.95.
-- *Shipped browser build* (`runs/gate-T-009-fullrun-branch/report.json`): the
-  bot takes pocket 1's `S` at x = 45.94, airborne, moving right, at 7 908 ms —
-  it never turns around.
+`node tools/pathcheck.mjs` in the worktree: **1588 passed, 0 failed** (exit 0).
 
-The wager the design documents (`src/pure/lattice.js` header, `docs/DESIGN.md`
-"The lattice", SPRINT accept box 1) therefore does not exist in play. The
-pathcheck assertions are all true and all miss it: they prove the *shelf* is
-unreachable from the deck (`shelf.y - landingY > doubleApex`) and that the
-reward sits within pickup range *of the shelf*, but never that the reward is
-out of reach of a jump from the deck. `retreat.seconds` is also a lower bound
-(horizontal round trip only, no climb), which was the reviewer's MINOR — that
-is a second, smaller issue and is subsumed by this one.
+The T-009-labelled `ok()` count is 28 both at the pass-3 commit (`149220e`) and
+at HEAD — the count is flat, the *contents* were replaced. Between those two
+commits **17 `ok()` calls were deleted**, of which 13 had the withdrawn wager
+as their entire subject:
 
-**4. Are the hound stations non-gating? — PASS.** Verified independently of
-pathcheck, using the *real* spawn-table rows the shipped run generates: 5
-stations, faces 2–6, one per face, every row `gating: false`, each on its own
-pocket landing (`owns: pocket-fN-landing`, `deck` matching `landingY`). Driven
-through the real gate runtime: with a station alive and the wave killed, corner
-1 goes to `turning`; the kind's own default is `gating: true`, so the opt-out is
-what changed the outcome. `src/ui/hud.js` counts gaters per-body now, so the
-"N HOSTILES" number matches what actually holds the gate. Every hostile in the
-codebase is created through `spawnHostile`, so no body can miss the field.
+- `badEntry` — "a shelf is unreachable from the deck line"
+- `badRetreat` — "every pocket retreat is measured and fits the clock"
+- `sweptMin > RAD` — swept deck-line jump arc misses the reward
+- `envMin > RAD`, `deckMin > RAD`, `hiMin > 0.15`, `badTotal === 0` — the
+  analytic head-reach / double-jump envelopes and the pinned deck+1 residue
+- `run.rewardsLeft === run.spawnedRewards`, `run.nearestReward > pickupRadius`
+- `res.spam.left === res.spam.spawned`, `res.spam.nearest > pickupRadius`
+- `res.apexRun.fromDeck === 0`, `res.climbs.every(c => c.airUsed === 1)`
 
-**5. Does 60 fps hold with instancing intact? — PASS (re-measured, not
-inherited).** Live `window.HB.perf()` on the pinned worktree, default run,
-~35 s of play at 1440×900: **fps 120.2, avgMs 8.32, worstMs 10.4, over20ms 0**
-(worst across all polls: 10.4 ms). `?zip=1` on the same machine: fps 119.9,
-avgMs 8.34, worstMs 10.3, over20ms 0. HONESTY, per the harness README's
-`juice-stress` note: rAF is vsync-locked, so `fps` is capped by this display's
-120 Hz refresh and proves only that no frame was late — the load-bearing
-numbers are `worstMs` 10.4 ms (against a 16.7 ms 60 fps budget) and zero frames
-over 20 ms, on this dev machine, not a target-device claim. Instancing intact:
-tiles, the limb bake (829 instanced pieces), bullets, sparks and flashes are
-all `THREE.InstancedMesh`; the lattice adds 13 catwalks (49 → 62 platforms) to
-the existing tile instance buffer, no new draw path.
+They are deleted with an in-file record of the deletion (`pathcheck.mjs:7169`
+and `:7233`: "REMOVED here by entry 9, not weakened… an assertion certifying a
+claim the game no longer makes is worse than no assertion"). The remaining 4
+deletions are the shape/fingerprint pins (`62 platforms`, `e715cc38`),
+re-pinned rather than dropped, because the geometry legitimately changed.
 
-**Route density (accept box 1's other half) — PASS, and the DESIGN numbers
-check out.** Recomputed both trees myself through the lattice module's own
-exports: branch **246/246** face-interior windows read 3–5 routes (histogram
-3:119, 4:52, 5:75; per-face averages 3.46–4.22); pinned main scores **149/246**
-with face 2 averaging 2.17 (branch 3.46). That matches `docs/DESIGN.md`'s
-"149/246 → 246/246, face 2 2.17 → 3.5" exactly.
+Worth flagging as good practice: the review-fix commit `72a7db5` **removed**
+`ok(run.rewardsLeft < run.spawnedRewards, …)` — an intermediate version had
+*inverted* the old assertion into "the deck-line crossing must collect
+capsules", which would have been a fresh false claim in the other direction.
+It is now a reported note only ("a hold-right deck-line crossing collected 2 of
+6 pocket capsules"), gating on nothing.
 
-## A/B — the integrator's stage-4 claim does NOT reproduce (read this)
+**The survivors are live, not vacuous.** I copied the tree to a sandbox and
+mutated it (the game was never edited):
 
-SPRINT's SCOPE SPLIT and `six-face-full-run.json`'s own `description` record a
-one-run-per-side A/B: branch maxX 154.2 / scroll 140 / 11 kills / 48.5 s vs
-main 89.2 / 75 / 8 / 27.4 s, i.e. "the lattice tree gets ~1.7× further". Three
-runs per side, same script, same flags, both trees pinned:
+| mutation | pathcheck |
+| --- | --- |
+| `rewardRise` 0.7 → 3.7 (capsule off the shelf) | **4 failed** |
+| `tierRise` 3 → 4.45 (pass-3 raised tier restored) | **2 failed** |
+| `entryEdgeMarginTiles` 14 → 2 (daylight gone) | **2 failed** |
+| `latticePatchPass` neutered | **3 failed** — incl. "no face window reads fewer than 3 routes (worst 1, 56 thin windows)" and the fingerprint |
 
-| | maxX | scroll | kills | end |
-| --- | --- | --- | --- | --- |
-| branch | 89.25 / 89.25 / **110.65** | 75 / 75 / 112 | 8 / 5 / 9 | GAME_OVER ×3 |
-| main | 89.25 / 89.25 / 89.25 | 75 / 75 / 75 | 6 / 7 / 7 | GAME_OVER ×3 |
+Non-vacuity is also structural: `pockets.length === CONFIG.path.faces` is
+asserted *before* the per-pocket loops, so they cannot iterate over an empty
+set. All five named survivors are present and biting — reachability
+(`latticeUnreachable`), no stranding (`latticeStranded`), daylight margin
+(`badDetour`), route density (thin/busy over 246 windows), determinism
+(`fingerprint(again) === fingerprint(LVL)`, plus the pass fixpoint).
 
-Both trees fail — that half of the claim holds, and no run of either reached
-VICTORY. But 2 of 3 branch runs land on *exactly* main's number (89.25 / 75,
-dead in wave gate 1), and the branch's best is 1.24×, not 1.7×. For scale on
-the noise: the same branch under `?zip=1` — a render-only flag whose sim
-pathcheck proves identical — produced 154.25 and 113.40, i.e. the whole claimed
-"lattice effect" is inside the spread of a flag that cannot affect the
-simulation. This is the harness's documented multi-modal outcome (README
-"Honesty / limitations" #2 and #8), and a single run per side cannot separate
-it from a real effect.
+## 3. Simplicity — the tier-raising was reverted, with a real FAR argument
 
-The split's *conclusion* survives and is arguably strengthened: both trees die
-in the same wave-gate fight at the same x, so the lattice is not what stops the
-bot, and stages 1–3 do stand on their own. The *numbers* published as evidence
-do not, and they are quoted in a committed script description and in SPRINT.
-Filed as I-020.
+Not kept. `pocket.shelfRise` (4.45) is **gone from the source entirely**; the
+shelf is `midY + L.tierRise`, the plain generator tier, and `plats` went 63 →
+62. So this is the revert entry 9 asked for, not inertia.
 
-## Screenshots judged (FAR default view, 1440×900)
+The reason given is a real readability argument backed by committed frames, not
+an assertion: `artifacts/t009-lattice/entry9/{01-pocket-plain-shape.png,
+02-pocket-raised-tier-withdrawn.png}` — the same moment, same URL, same policy,
+only the pocket geometry differing. I looked at both and the claim holds: in
+`01` the magenta `S` sits on the shelf line inside the catwalk band; in `02` it
+floats clear of every route line with nothing under it. That folder's own
+honesty note correctly scopes the frames to "legibility of the shape, not
+difficulty or whether a free pickup is the right call."
 
-- `artifacts/t009-lattice/merged/01-pocket-face1.png`, `03`, `04`, `05` and my
-  own in-play captures at the face-1 pocket
-  (`<scratch>/shots/play-default-x{44,47,60}.png`,
-  `default-six-face.png`, `zip-six-face.png`).
-- Board 13/14 invariants hold: RIG measures ~30 px in a 900 px frame ≈ 3.3–3.5 %
-  of screen height (board 13's 3–5 %, entry 7's shipped 3.7 % FAR default);
-  surfaces read as one connected hull slab with the joint columns and buttress
-  as anatomy, not scaffolding; the T-010 palette separates rust deck / teal
-  body / acid-green threat / magenta pickup cleanly at distance.
-- Nothing visibly assembles in any default frame.
-- Known-and-already-queued readability cost, not a new defect: catwalk lanes
-  are 2–3 px lines and the capsule glyph is a smudge at FAR — that is the
-  operator-queue "Glyph scale at FAR" item plus I-003/I-004, unchanged by this
-  task. Routed as an operator question, not a gate finding.
+## 4. Boot, selftest, flags
 
-## Feel questions for the operator (never judged here)
+Independently driven (headless Chrome, 1440×900, against the 8995 pin):
 
-1. At FAR, can you *read* the 3–5 route bands as a choice while moving, or do
-   they read as texture? (Lanes are 2–3 px at this camera.)
-2. Does one houndframe per face on the pocket landing read as "coming for me"
-   (entry 6) or as a speed bump, now that it cannot hold a gate?
-3. Wave gate 1 stops a reflex bot on both trees; every run here ended in
-   GAME_OVER inside a gate. Is gate 1's load right for that point in the run?
-   (T-018 owns the harness-vs-difficulty question; the feel call is yours.)
-4. Once the pocket wager actually costs something (I-019), is a two-column
-   chasm plus a backward shelf enough of a dare, or should the tip hang
-   further out?
+| URL | title / state | console errors | page errors |
+| --- | --- | --- | --- |
+| `?selftest=1` | **SELFTEST PASS (29 checks)** | 1 (favicon 404) | 0 |
+| default `index.html` | boots, `MENU`, canvas | 0 | 0 |
+| `?zip=1` | boots, `MENU`, canvas | 0 | 0 |
+| `?slice=transform` | boots, `MENU`, canvas | 0 | 0 |
 
-## Issues filed
+The single console error is `GET /favicon.ico 404` from the static server
+(confirmed in the server log) — not a game asset.
 
-- **I-019 | fairness | S1** — dare-pocket rewards are collected by the
-  mandatory deck-line crossing jump; the measured retreat never happens.
-- **I-020 | docs | S2** — the T-009 → T-018 scope-split A/B does not reproduce
-  (3v3 above); direction holds, magnitude does not.
+## 5. Screenshots
 
-Not filed, already covered elsewhere: the reviewer's `spawner.js`
-double-`buildLevel` MINOR (content-identical, asserted deterministic) and the
-FAR glyph/lane readability cost (existing operator-queue item).
+Judged `artifacts/t009-lattice/merged/` (the set the folder README says to
+judge) plus the entry-9 A/B and both run screenshots.
+
+- **FAR scale**: RIG measures ~28px on a 900px viewport ≈ **3.1%** in
+  `merged/03` and the entry-9 frames — inside board 13's 3–5% band and
+  consistent with entry 7's shipped 3.7% FAR default.
+- **Style vs `docs/concept-art/`**: deep-teal environment, rust-orange armour
+  reading as one connected hull slab, acid-green hostiles, hot-magenta pickup —
+  the T-010 role palette, consistent with boards 10/13. Silhouettes are
+  readable; hulls are connected, not floating scaffolding (board 0b's ruling).
+- **No assembling anatomy**: `merged/02-corner1-static-anatomy.png` shows the
+  joint column and buttress as the pivot with the next facet's deck and
+  catwalks **already present** in the haze to the right — revealed, not
+  assembled (entry 3). The retired zipper survives only under `?zip=1`, whose
+  frame (`merged/07`) correctly shows the same deck in void.
+- No glitches, no z-fighting, no torn geometry in any frame. The
+  transform-slice run screenshot ends on a clean `BREACH CLEAR`, 2/2
+  transformations, 0 falls.
+- The artifacts README discloses its capture aid (HP top-up on `merged/01`–`05`)
+  and that `merged/06`–`07` use none. That disclosure is correct practice and
+  is why those frames are read as composition evidence only.
+
+## Open questions for the operator — feel, not gate items
+
+Routed here rather than judged; none of these is a defect.
+
+1. **Escalation, entry 9's own benefit test.** A pure hold-right deck-line
+   crossing picks up **2 of 6** capsules; the other 4 need the player to enter
+   the pocket. Does arming up mid-face read as escalating the action on the
+   stretch that follows — and is 2-of-6-for-free the right split, or should the
+   passive share be higher or lower?
+2. **Pocket shape vs entries 10/11.** What ships is a backward shelf spur; the
+   entries call for a fork whose rewarding branch rejoins ahead and whose wrong
+   branch dead-ends. Does the spur read acceptably as an interim, or should
+   T-021/T-022 land before this ships to the operator build?
+3. **FAR route legibility.** At the default FAR view the catwalks are 2–3px
+   lines and the capsule glyph is small. This is the readability cost entry 7
+   accepted with a follow-up art pass attached — is it still acceptable now
+   that there are 3–5 routes per window competing for the same pixels?
+4. **Checker tiling busyness** on the armour at FAR, called out by the
+   artifacts README as an open call.
+
+## What this gate does not claim
+
+- Boot-to-VICTORY on the six-face run is **not** proven and was never this
+  gate's scope — split to T-018 by the integrator. The two smoke scripts here
+  are slice runs.
+- Per harness honesty #3, a `--base-url` run computes route metrics against the
+  *running* tree's fixture. Both trees carry the same `src/pure/traversal.js`
+  here, so `mid-route`'s route columns are comparable, but they are still the
+  approximate greedy matcher, not a topological solve.
+- 60fps under 200+ projectiles was not re-measured in this gate; it was covered
+  by the earlier T-009 gate and is unaffected by a harness-only review fix
+  (`72a7db5` touches `tools/` only — zero `src/` files, so the shipped game is
+  byte-identical to the previously-measured build).
+- No fun verdict. The operator is the only fun oracle.
