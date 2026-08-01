@@ -289,6 +289,20 @@ verify: node tools/pathcheck.mjs; scored-run playtest script
   passage read at the right compression now that its fog rides the camera
   pull-back? (5) Does the altitude still feel earned on foot, with the
   breach only *revealing* it?
+- **G2 neck-plate flip (T-008):** `?g2=1` (default far view; `&enemies=0` to
+  watch choreography without the houndframe/wasps, `&view=near` for the old
+  framing). Frames + beat clock in `artifacts/g2-neck-flip/`. Questions per
+  the proposal's own G2 test: (1) Does the flip read as the plate carrying
+  you into a neck interior that already existed — or does anything still
+  read as the neck assembling? (2) Relocked on the hold, the plate rakes to
+  the interior grade — does it read as the same plate becoming an interior
+  ramp, or as a new object appearing? (3) After the turn, do the low deck
+  and the two catwalks read as continuations of the routes you entered on
+  (two-plus recognizable exits)? (4) The proposal's 14-tile apron makes the
+  ritual pull travel 16 tiles in the same 990 ms (v1 pulled 11) — does the
+  dive into the mouth feel committed-chunky or rushed? (5) At the FAR
+  default, do five routes plus hound-low/wasp-apex stay readable through
+  the gate window, or is the approach lattice too busy?
 - (new packets append here as tasks land: palette, juice, shell, six-face run)
 
 ## Inbox (playtester/adversarial file here; integrator triages each cycle)
