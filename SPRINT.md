@@ -322,7 +322,7 @@ accept:
 owner: gameplay-engineer
 verify: cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic; node tools/assets/check.mjs --selftest
 
-## T-018 | harness | doing | P1
+## T-018 | harness | done | P1
 
 RESULT (2026-08-01): the lane answered **(a) a HARNESS limit**, with per-tick
 evidence on both trees, and landed the grammar extension. `sample.hostiles`
