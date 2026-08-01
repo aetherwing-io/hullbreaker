@@ -50,16 +50,22 @@ with rather than replaces), no pool or mesh is built, and no bridge hook is
 wrapped. Every intensity is one block, `CONFIG.juice`, in `src/config.js`.
 `?audio=0` mutes the synth layer the same way.
 
-`index.html?g1=1` is the **G1 limb-turn experiment** on that normal six-face
-run: the same corner ritual, re-read as the camera orbiting 60° around a joint
-of one static faceted creature limb instead of the next face zippering itself
-into place. It is render-only and opt-in — the simulation, the ritual's timing,
-the wave gates, the spawn tables and the built-column state machine are the
-shipped ones, byte for byte, which `tools/pathcheck.mjs` proves by running the
-same scripted pass in both modes and comparing the whole trace. Combine it with
-the view flags (`?g1=1&view=near`) as usual. See
-`docs/proposals/2026-07-meridian-monster-greybox-map.md` (gate G1) for what it
-is trying to prove and `artifacts/g1-limbturn/` for the frames.
+The six-face corner ritual reads as a **static-anatomy reveal** by default
+(T-009): the camera orbits 60° around a joint of one static faceted creature
+limb and the next facet comes out from behind the joint's mass, rather than
+zippering itself into place. `index.html?zip=1` restores the older brick-slam
+zipper reveal — retired from the world but kept whole and playable per
+`decisions.md` entry 3's addendum, since things the ship *builds* may still
+assemble. (`?g1=0` is the same escape hatch under the flag's old name.)
+
+Both are render-only: the simulation, the ritual's timing, the wave gates, the
+spawn tables and the built-column state machine are identical in both modes,
+byte for byte, which `tools/pathcheck.mjs` proves by running the same scripted
+pass in each and comparing the whole trace. Combine with the view flags
+(`?zip=1&view=near`) as usual. This began as the opt-in G1 limb-turn
+experiment — see `docs/proposals/2026-07-meridian-monster-greybox-map.md`
+(gate G1) for what it set out to prove, `artifacts/g1-limbturn/` for its
+frames, and `artifacts/t009-lattice/` for the default run as it ships now.
 
 ## Controls
 
@@ -236,9 +242,10 @@ Two read-only channels expose the same sampler, so they cannot drift:
   `HB.kills()`, `HB.shotsFired()`, `HB.edges()`, `HB.view()`,
   `HB.shell()` — the same shell block the telemetry channel publishes),
   plus `HB.g1`
-  (the limb bake's piece count and fog band, or null) — render-mode facts are
-  deliberately kept out of the frozen channel so a default-vs-`?g1=1` trace
-  comparison has nothing mode-dependent in it to explain away.
+  (the limb bake's piece count and fog band on the default static-anatomy
+  reveal, or null under `?zip=1`) — render-mode facts are deliberately kept
+  out of the frozen channel so a default-vs-`?zip=1` trace comparison has
+  nothing mode-dependent in it to explain away.
 
 Both are pure reads. Writing through the live references desynchronizes the
 run — treat them as read-only.
