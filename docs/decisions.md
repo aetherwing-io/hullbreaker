@@ -431,3 +431,59 @@ game at all, and in what form. Parked as T-021 so the thinking is not lost.
 
 **Source:** operator verdict, 2026-08-01, in response to the integrator's
 escalation after the third failed attempt at I-019.
+
+## 10 — 2026-08-01 — Run-energy verdict: split decisions at speed; the pocket becomes a loop, not a cul-de-sac
+
+**Verdict:** T-021 is **unparked**, and the run's target energy is stated by
+the operator as governing direction for the lattice, pacing and optional
+content:
+
+**Operator verbatim:** "correct, unpark t-021. i want lots of split decisions,
+esceleration, action, climb, climb climb, keep going faster kind of energy for
+the player"
+
+**The tension this creates, named rather than buried.** `docs/DESIGN.md:176`
+defines a dare pocket as a **dead end** — "Do I have time to grab that
+capsule?" — escapable at the current scroll speed (`:284`), advertising its
+reward and retreat path before commitment (`:169`). That mechanic was built
+and playtested in the traversal slice (`:446`, `:565`) and it works. But a
+cul-de-sac is a *decelerating* structure: the decision is instant, the
+execution is a reversal. "Keep going faster" and "climb, climb, climb" argue
+against ever asking the player to turn around in the main run.
+
+**Resolution (integrator design call under this verdict; reverse it if wrong):
+the pocket becomes a LOOP, not a cul-de-sac.** The player commits at a fork,
+takes a longer and more exposed line that **rejoins the route ahead**, and
+pays in time and risk without reversing. This keeps DESIGN's actual question —
+"do I have time to grab that capsule?" — while never breaking forward motion:
+- the DECISION stays split-second, taken at the fork at speed;
+- the COST stays real and measurable in the currency that exists here, time
+  against the pursuing edge plus exposure, not distance travelled backward;
+- the shape serves "climb": the greedy line is the higher, more exposed one.
+
+The dead-end form is **not** deleted — it remains valid in the traversal slice
+and anywhere a deliberate pause is wanted. It is the MAIN RUN that takes the
+loop form, and `DESIGN.md`'s dare-pocket section is to be updated to say so.
+
+**Consequences beyond the pocket** — this verdict governs the lattice, not
+just T-021:
+- **Split decisions** are a density target: forks the player reads and commits
+  to at speed, frequently, not one wager per face.
+- **Escalation** is the benefit test carried over from entry 9: power and
+  pressure rise together (pillar 3); a pickup that feeds the fight is good.
+- **Climb** is the dominant motion; a face that reads as a flat corridor is a
+  defect even if its route count is nominally in range.
+- **"Keep going faster"** puts run TEMPO in scope — whether pace escalates
+  across the six faces is now a live design question rather than a fixed
+  constant. It is NOT authorized as a movement-constant retune (those stay
+  frozen, entry-asserted); it means pacing, spawn cadence and lattice shape.
+
+**Acceptance rule adopted at the same time**, from the three failed passes at
+I-019: a task's acceptance box must name **the currency the player pays in**
+and **the test that would falsify it**. "Measured retreat" is a feeling and
+cannot be gated; "a policy that never leaves the main line collects zero
+rewards" is a gate. Feelings go to the operator; boxes get tests.
+
+**Source:** operator verdict, 2026-08-01, after the integrator surfaced that
+the three failed pocket passes had built a reach puzzle rather than the
+documented time wager.
