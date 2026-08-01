@@ -275,7 +275,7 @@ accept:
 owner: asset-artist
 verify: node tools/assets/check.mjs; sample round-trip committed as demo
 
-## T-016 | feature | review | P3
+## T-016 | feature | done | P3
 
 goal: score/setback convergence toward CP4 — promote the CHARGE/THREAT
 prototype (`?score=1`) and Hull Fallback (`?fallback`) from slice prototypes
