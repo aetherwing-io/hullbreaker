@@ -11,7 +11,12 @@ Crown at the summit to stop that response and fire humanity's last
 transmission home. Tone: 80s action-movie excess. Palette (≤8 colors): deep
 teal environment, rust-orange metal, acid-green enemy glow, hot magenta
 pickups, warm white muzzle light. Flat-shaded low-poly, fog matched to
-background. (Grey-box currently uses a neutral placeholder palette.)
+background. (Shipped: `src/render/palette.js` centralizes the tokens and
+applies this palette as the render default — teal atmosphere/backdrop, rust
+body and route surfaces per boards 01/10/13; `?palette=classic` restores the
+neutral grey-box baseline for comparison. Enemy meshes still read the
+grey-box table pending a one-line follow-up after the in-flight hostiles
+work merges — the acid-green tokens are already authored and asserted.)
 
 Visual direction, stage-layout references, and their source prompts live in the
 [`docs/concept-art` reference pack](concept-art/README.md).

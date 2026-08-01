@@ -267,7 +267,17 @@ verify: node tools/pathcheck.mjs; scored-run playtest script
 - **Crouch vs aim-assist:** `?crouch=1` vs `?aim=assist` — keep one, both, or
   neither (decisions.md entry 4's open question).
 - **CP3 re-judgment:** after T-001 merges — post URL + screenshot sequence.
-- (new packets append here as tasks land: palette, juice, shell, six-face run)
+- **Palette v1 (T-010):** default (concept palette) vs `?palette=classic`, at
+  FAR — the six-face run (`/index.html`), `?slice=traversal`, `?g1=1`, and
+  `?slice=transform`. Side-by-side pairs in `artifacts/palette-v1/` (judge
+  against boards 01/10/13). Questions: (1) does teal-air/rust-body read as
+  the boards' Meridian, or does the rust drift toward terracotta? (2) do
+  threats and capsules still pop at FAR on the rust deck? (3) is the deck
+  still the obvious route surface (brightest large shape)? (4) does the G1
+  limb backdrop separate from the facet RIG runs on? Note: enemy meshes are
+  still grey-box green this pass (acid-green tokens land after the hostiles
+  lane merges).
+- (new packets append here as tasks land: juice, shell, six-face run)
 
 ## Inbox (playtester/adversarial file here; integrator triages each cycle)
 
