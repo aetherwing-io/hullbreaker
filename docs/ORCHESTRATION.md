@@ -145,6 +145,27 @@ the already-landed gate untouched. **No hand-composition, no cycle.** Had
 T-040's assertions pinned the gate's internals, the answer would have been the
 opposite and worth knowing before the merge, not during.
 
+**Never prune a worktree without checking whether something is reading it.**
+On 2026-08-02 the integrator ran `git worktree remove <wt> --force` as routine
+post-merge cleanup and destroyed a 16-round measurement another lane was
+running against that tree; it died at n=7 with "no such file or directory."
+`--force` is precisely the flag that converts git's refusal into a deletion.
+Before any remove:
+
+    find .claude/worktrees/<id> -type f -newermt '-10 minutes' \
+      -not -path '*/.git/*' | head
+
+If that prints anything, wait or ask. Drop `--force` unless it comes back
+empty — the refusal it suppresses is the whole safety mechanism.
+
+**And run long measurements against a scratch COPY, not a live worktree.**
+`git archive <ref> | tar -x -C <scratchdir>` is what T-049's own I-039 control
+trees used, which is why that lane could tell a real result from a tree
+changing underneath it. A measurement reading a tree another agent can edit or
+delete is not measuring what it thinks it is. Related: hash the file under
+test before each run in a repeated experiment — T-049 caught a phantom FAIL
+that way, when a hash moved between runs with no edit of its own.
+
 **Standing rule: when two lanes both need a shared piece of infrastructure,
 branch the consumers off the PRODUCER's branch, not off main.** T-051 and
 T-052 were branched off `task/T-049` for exactly this reason and cost nothing.
