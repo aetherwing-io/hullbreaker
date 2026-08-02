@@ -1076,7 +1076,7 @@ value zones; sim unchanged.
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; FAR capture + 5x crop
 
-## T-041 | art | review | P1
+## T-041 | art | done | P1
 goal: packet item S10 — directional impact and travel language inside the
 existing instanced pools, so hits read as hits. Zero new draw calls.
 accept: pure/juice.js stays deterministic (seeded rng only); 60fps at 200+
