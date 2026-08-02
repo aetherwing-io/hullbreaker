@@ -1219,7 +1219,7 @@ fences: src/render/backdrop.js (new), src/render/scene.js. NOT preload.js
 verify: node tools/pathcheck.mjs; new assertions proven by break/restore;
 on-vs-flat captures at the same camera position and same deterministic moment
 
-## T-052 | art | doing | P1
+## T-052 | art | done | P1
 goal: surface texture on the hull. The four finished tiles in
 assets/generated/textures/ bind to the large surfaces as albedo (+roughness/
 normal where they earn their cost) on the existing MeshStandardMaterials.
