@@ -1009,44 +1009,44 @@ PASS	legibility: the module imports only config and mode — no three.js, no sim
 PASS	legibility: the module is Node-safe, which is why this harness can assert it
 PASS	legibility: no readability gain is ever applied to a damage volume — the polyp beam, the mortar mark and its blast slab keep drawing exactly what the sim marched
 PASS	legibility: the capsule box is still authored at the SIM size and the readability boost is a render-side scale on top of it
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/assist.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/flow.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/generator.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/hook.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/juice.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/lattice.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/limb.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/momentum.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/mortar.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/path.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/polyp.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/ribrun.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/rng.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/score.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/shell.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/stance.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/transform.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/traversal.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/pure/waves.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/bridge.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/capsules.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/edges.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/flow.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/hook.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/hostiles.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/input.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/level.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/mods.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/pace.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/player.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/score.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/scroll.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/spawner.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/state.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/time.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/transform.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/wavegate.js
-PASS	legibility: the sim and pure layers do not know this pass exists: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/weapons.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/assist.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/flow.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/generator.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/hook.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/juice.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/lattice.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/limb.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/momentum.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/mortar.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/path.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/polyp.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/ribrun.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/rng.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/score.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/shell.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/stance.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/transform.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/traversal.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/waves.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/bridge.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/capsules.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/edges.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/flow.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/hook.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/hostiles.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/input.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/level.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/mods.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/pace.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/player.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/score.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/scroll.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/spawner.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/state.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/time.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/transform.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/wavegate.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/weapons.js
 PASS	T-012: audio module declares imports
 PASS	T-012: ui/audio.js imports nothing from the render layer or three.js
 PASS	T-012: audio sim import is a sanctioned read surface: ../sim/bridge.js { view }
@@ -1054,25 +1054,25 @@ PASS	T-012: audio sim import is a sanctioned read surface: ../sim/time.js { game
 PASS	T-012: audio sim import is a sanctioned read surface: ../sim/player.js { player, circleHitsPlayer }
 PASS	T-012: audio sim import is a sanctioned read surface: ../sim/wavegate.js { activeCorner, cornerEvents }
 PASS	T-012: audio sim import is a sanctioned read surface: ../sim/transform.js { transformEvents }
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/bridge.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/capsules.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/edges.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/flow.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/hook.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/hostiles.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/input.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/level.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/mods.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/pace.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/player.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/score.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/scroll.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/spawner.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/state.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/time.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/transform.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/wavegate.js
-PASS	T-012: sim untouched by the audio layer: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/weapons.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/bridge.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/capsules.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/edges.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/flow.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/hook.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/hostiles.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/input.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/level.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/mods.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/pace.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/player.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/score.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/scroll.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/spawner.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/state.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/time.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/transform.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/wavegate.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/weapons.js
 PASS	T-012/T-029: main.js touches the audio module exactly twice — the load-order import and the read-only window.HB publication — and never calls the synth
 PASS	T-012: audio hook wrappers call the prior implementation first
 PASS	T-012: ?audio=0 gates all wiring off
@@ -1218,25 +1218,25 @@ PASS	T-011: the burst hash stays in [0,1)
 PASS	T-011: particles fade out fast and end at zero (no pop)
 PASS	T-011: particle scale interpolates its endpoints
 PASS	T-011: a flash is instant-on, holds briefly, then decays to zero
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/bridge.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/capsules.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/edges.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/flow.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/hook.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/hostiles.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/input.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/level.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/mods.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/pace.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/player.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/score.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/scroll.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/spawner.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/state.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/time.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/transform.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/wavegate.js
-PASS	T-011: sim layer imports no render module: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/weapons.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/bridge.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/capsules.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/edges.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/flow.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/hook.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/hostiles.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/input.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/level.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/mods.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/pace.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/player.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/score.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/scroll.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/spawner.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/state.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/time.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/transform.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/wavegate.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/weapons.js
 PASS	T-011: src/sim/time.js owns the hit-stop decision and notifies the view
 PASS	T-011: no render module can write the hit-stop clock
 PASS	T-011: the bridge declares the juice hook as an inert no-op by default
@@ -1454,25 +1454,25 @@ PASS	T-013: shell sim import is a sanctioned read surface: ../sim/weapons.js { s
 PASS	T-013: shell sim import is a sanctioned read surface: ../sim/score.js { scoreSnapshot }
 PASS	T-013: shell sim import is a sanctioned read surface: ../sim/transform.js { committedBand, transformAltitudeAt }
 PASS	T-013: the shell never drives the run itself (lifecycle stays in src/main.js)
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/bridge.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/capsules.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/edges.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/flow.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/hook.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/hostiles.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/input.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/level.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/mods.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/pace.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/player.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/score.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/scroll.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/spawner.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/state.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/time.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/transform.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/wavegate.js
-PASS	T-013: sim untouched by the shell: /private/var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-ldzA0T/src/sim/weapons.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/bridge.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/capsules.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/edges.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/flow.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/hook.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/hostiles.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/input.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/level.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/mods.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/pace.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/player.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/score.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/scroll.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/spawner.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/state.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/time.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/transform.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/wavegate.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/weapons.js
 PASS	T-013: no image assets referenced in index.html
 PASS	T-013: no image assets referenced in ui/shell.js
 PASS	T-013: no image assets referenced in pure/shell.js

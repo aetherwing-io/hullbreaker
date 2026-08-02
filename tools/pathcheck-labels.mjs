@@ -25,6 +25,11 @@
 // FAIL status, and its ORDER. Two runs whose logs are identical asserted the
 // same things about the same numbers in the same sequence.
 //
+// Some assertion messages embed the absolute path of the file they are about
+// (the layer guards do), which would otherwise differ between two captures for
+// no reason but the scratch directory's name. Both artifacts are normalised:
+// the scratch root — and its /private-prefixed realpath — become `<TREE>`.
+//
 // Honesty / limitations:
 //   * It records `ok()` calls. `near()` funnels into `ok()`, so it is covered;
 //     a future helper that counts a pass WITHOUT calling `ok()` would not be.
@@ -36,7 +41,7 @@
 //     uncommitted edits. --rev sees only committed, tracked files.
 
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { cpSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -166,12 +171,17 @@ function main() {
       console.error(stderr.split('\n').slice(-20).join('\n'));
       process.exit(1);
     }
-    const labels = readFileSync(labelsPath, 'utf8');
+    // Normalise the scratch root out of both artifacts, or every capture would
+    // differ from every other by the mkdtemp suffix alone.
+    const roots = [...new Set([scratch, realpathSync(scratch)])].sort((a, b) => b.length - a.length);
+    const normalise = (text) => roots.reduce((acc, r) => acc.split(r).join('<TREE>'), text);
+
+    const labels = normalise(readFileSync(labelsPath, 'utf8'));
     mkdirSync(dirname(resolve(opts.out)), { recursive: true });
     writeFileSync(resolve(opts.out), labels);
     if (opts.stdout) {
       mkdirSync(dirname(resolve(opts.stdout)), { recursive: true });
-      writeFileSync(resolve(opts.stdout), stdout + stderr);
+      writeFileSync(resolve(opts.stdout), normalise(stdout + stderr));
     }
     const lines = labels.split('\n').filter(Boolean);
     const failed = lines.filter((l) => l.startsWith('FAIL')).length;
