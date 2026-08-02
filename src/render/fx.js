@@ -45,6 +45,7 @@ import { JUICE_ENABLED } from '../mode.js';
 import {
   burstVelocity, clamp01, flashAlpha, particleAlpha, particleScale, travelStretch, warnPulse,
 } from '../pure/juice.js';
+import { postGain } from './post.js';
 import { scene, HIDE } from './scene.js';
 import { towerPose } from './tower.js';
 
@@ -247,11 +248,18 @@ export function fxCrush(intensity, sEdge, tMs) {
  * else. Nothing here reads a wall clock of its own.                    */
 export function updateFx(dtMs) {
   if (!JUICE_ENABLED) return;
-  liveSparks = advance(sparks, sparkMesh, dtMs, particleAlpha, false);
-  liveFlashes = advance(flashes, flashMesh, dtMs, flashAlpha, true);
+  // T-048 (decisions.md entry 18): one read per frame, not per row. A muzzle
+  // flash and an impact burst are light sources; bloom only bleeds what is
+  // above its threshold, and these pools draw at exactly their token color,
+  // which sits under it. postGain() is 1 whenever the bloom pass is not
+  // drawing — ?bloom=0, or a composer that failed to load — so the pools
+  // upload the pre-pass colors, unchanged, on those paths.
+  const gain = postGain();
+  liveSparks = advance(sparks, sparkMesh, dtMs, particleAlpha, false, gain);
+  liveFlashes = advance(flashes, flashMesh, dtMs, flashAlpha, true, gain);
 }
 
-function advance(pool, mesh, dtMs, alphaOf, isFlash) {
+function advance(pool, mesh, dtMs, alphaOf, isFlash, gain) {
   let live = 0, dirty = false;
   const dt = dtMs / 1000;
   const rows = pool.rows;
@@ -304,8 +312,10 @@ function advance(pool, mesh, dtMs, alphaOf, isFlash) {
     }
     mesh.setMatrixAt(i, _m);
     // additive blending: fading the COLOR is the fade, and it keeps the whole
-    // pool on one material (one draw call) instead of a per-row opacity
-    mesh.setColorAt(i, _c.setRGB(row.r * a, row.g * a, row.b * a));
+    // pool on one material (one draw call) instead of a per-row opacity.
+    // `gain` rides the same multiply — free, and it is 1 with the pass off.
+    const ag = a * gain;
+    mesh.setColorAt(i, _c.setRGB(row.r * ag, row.g * ag, row.b * ag));
     dirty = true;
     live++;
   }

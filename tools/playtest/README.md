@@ -1541,6 +1541,52 @@ tools/playtest/
                             those numbers, not the filenames, for beat placement.
 ```
 
+## `post-capture.mjs` — the screen-pass A/B rig (T-048)
+
+Dev-only, not wired into `run.mjs`. It exists because bloom raises two questions
+that a scripted bot run cannot answer: what the SAME frame looks like with the
+pass on and off, and what the pass costs per displayed frame under load.
+
+```
+node post-capture.mjs [outDir] [--scenes a,b] [--scale 1|2]
+node post-capture.mjs --probe                     selftest + offline fallback
+node post-capture.mjs --stress [--unlocked] [--repeats N] [--scale 2]
+```
+
+**Frame-exact pairs.** Both sides run the same fixture with `?fixeddt`, take the
+same input schedule (dispatched in the page and keyed to `gameMs`, never to wall
+clock), and the run FREEZES ITSELF with a pause at a named `gameMs`, so the
+shutter cannot slip a frame. Every pair records the instant it stopped at and
+reports `frameExact` — false means the two sides are not comparable and the
+numbers under them mean nothing. Because the pairs are pixel-aligned they are
+also subtracted: `diff.meanAbs / max / changedPct` is how far the pass's light
+actually reaches. Self-check: run it against a tree where both modes are the
+same build and the diff is exactly 0.
+
+**Honesty / limitations**
+
+1. `--scale 1` renders a 1280x800 drawing buffer; the operator's laptop is
+   retina and `src/render/scene.js` clamps the pixel ratio at 2, so a
+   full-screen pass costs roughly 4x more there than a `--scale 1` reading
+   suggests. Quote `--scale 2` for anything about the frame budget.
+2. rAF is vsync-locked, so `fps` cannot exceed the panel's refresh rate and a
+   pass that fits inside the budget is invisible in it — `over20ms` says "no
+   frame was late", NOT "there is headroom". `--unlocked` launches Chrome with
+   the frame-rate limiter off to get a cost ratio; those numbers are not frame
+   rates any player would see.
+3. `drawMs` is CPU time around the submit path, summed across the dozen
+   `renderer.render()` calls a composed frame makes. WebGL is asynchronous, so
+   it is a FLOOR on the cost, not the cost.
+4. This machine runs other lanes' browsers at the same time. A single pair can
+   be a picture of who else was busy — one contended session here read 46-58 fps
+   for a build that measures 120 fps when the machine is quiet. `--stress`
+   alternates the modes and reports every repeat for exactly that reason.
+5. The scenes hold right, hold fire and hop on landing. That is live combat, not
+   skilled play, and RIG dies in some of them. The frames are for judging LIGHT.
+6. Captures pass `?shell=0` and hide `#overlay` before the shot, because the
+   pause panel dims the whole page and would darken the thing being judged. The
+   canvas underneath is untouched; the HUD stays.
+
 ## Single best next action
 
 ~~Instrument the suspected ritual-arming decision point before building hook
