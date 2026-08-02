@@ -870,7 +870,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; re-read each cited file:line against its issue
 
-## T-032 | feature | doing | P1
+## T-032 | feature | done | P1
 
 goal: a 9-year-old must never meet a blank screen. Today the operator's own
 session rendered a black page with one console SyntaxError and no on-screen
@@ -894,7 +894,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; a deliberately-broken-import boot capture; a headless abuse script
 
-## T-033 | feature | todo | P1
+## T-033 | feature | parked | P3
 
 goal: he will play across days, and there is NO persistence of any kind today
 (zero localStorage in src/). Closing the tab loses everything. Give the run a
@@ -913,7 +913,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; reload/corrupt-save/fresh-boot headless checks
 
-## T-034 | harness | doing | P1
+## T-034 | harness | parked | P3
 
 goal: prepare a static-host bundle the operator can upload to itch.io himself.
 The game has no build step and pulls three.js from a CDN import map, so it is
@@ -977,7 +977,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; paired-population capture comparison at the FAR default
 
-## T-036 | assets | doing | P2
+## T-036 | assets | done | P2
 
 goal: unblock the held asset batch by answering the question that holds it.
 CLAUDE.md and the checkpoint queue both record that glyph work is frozen until
@@ -1005,7 +1005,7 @@ accept:
 owner: asset-artist
 verify: node tools/assets/check.mjs; node tools/pathcheck.mjs; view.mjs crops at 0.55 tiles
 
-## T-037 | harness | todo | P1
+## T-037 | harness | done | P1
 
 goal: make concurrent lanes stop colliding. `tools/pathcheck.mjs` is a
 9,230-line monolith that EVERY task appends assertions to, so with N lanes in
@@ -1040,6 +1040,105 @@ verify: node tools/pathcheck.mjs; label-set diff vs main; three negative control
 SEQUENCING: T-032 (+275 pathcheck lines) and T-035 are in flight and both touch
 pathcheck. Do NOT fight them — build and prove the migration script, and let the
 integrator run it after those merge.
+
+<!-- ===== 2026-08-02 FEEL + RENDERER PUSH (lanes T-042..T-048). Dispatched
+after the operator's "FIX the game" and "what is in the way" messages. Several
+were never given SPRINT entries at dispatch time; recorded here for truth. ===== -->
+
+## T-042 | audio | doing | P1
+goal: make the game SOUND like an action game — weight on impacts, a distinct
+voice per weapon, an audible pressure curve, paired to T-041's directional
+impact language. All synthesized at runtime; no audio files.
+owner: gameplay-engineer
+
+## T-043 | feature | done | P1
+goal: the wasp was the only gating enemy with NO pre-commit telegraph (its own
+render comment said so). Now holds its committed dart pose 220ms before
+launching; squads stagger instead of all committing on one frame. MERGED at
+1853/0.
+owner: gameplay-engineer
+
+## T-044 | lattice | review | P1
+goal: setpiece moments — an ARRIVAL catwalk at the corner reveal and an ARENA
+fighting ground at each wave gate, tiers escalating 13/15/19/21 columns.
+REQUEST_CHANGES: measured 2/3 runs now clear wave gate 2 vs 0/3 on base, so the
+terrain moved outcomes; per entry 19 it must report the DISTRIBUTION (best,
+worst, spread) and route it to the operator, not claim difficulty is unchanged.
+Also fix a new assertion's false "hostiles LIVE" framing.
+owner: lattice-designer
+
+## T-045 | art | doing | P1
+goal: SELL THE SCALE (entry 17) — graded backdrop anatomy tiers, atmospheric
+depth that layers instead of collapsing, and human-scale reference objects
+(rungs, hatches) so the eye can measure the creature against a known size.
+owner: gameplay-engineer
+
+## T-046 | assets | doing | P1
+goal: generate the visual asset set with codex now that entry 16 legalized
+runtime assets — enemy sprites for the five roles (12-24px at the shipped FAR
+view, judged at true on-screen size), backdrop/anatomy scale elements, hull and
+deck surface textures.
+owner: asset-artist
+
+## T-047 | art | doing | P1
+goal: a real light rig — raking key, fill, rim — plus SHADOW MAPS on the play
+band and ACESFilmic tone mapping (entry 18). The whole rig was two lights and
+zero shadows, which is why nothing read as having form.
+accept: 60fps at 200+ live projectiles measured before/after; readability
+outranks beauty; do not re-darken the frame (entry 14).
+owner: gameplay-engineer
+
+## T-048 | art | doing | P1
+goal: EffectComposer with bloom, plus real material properties
+(roughness/metalness, procedural maps) — entry 18. Every material in the game
+was `{color, flatShading:true}` with every map slot unset, and a muzzle flash
+was a bright quad rather than a light source.
+accept: 60fps at 200+ live projectiles measured before/after; bloom must not
+bury a threat; ship on by default with an escape hatch.
+owner: gameplay-engineer
+
+<!-- ===== 2026-08-02 LOOK PUSH. Operator: "quit doing things that don't make
+sense... FIX the game, iterate faster and faster... i don't care about
+reliability or resilience... deployment is so far away in my mind."
+T-033 (save) and T-034 (deploy) parked as a result. T-038..T-041 implement the
+look packet's ship-now items in parallel; specs are in
+docs/proposals/2026-08-look-direction.md §3. Every one of them is judged by the
+operator on his own machine, not by a machine gate. ===== -->
+
+## T-038 | art | doing | P1
+goal: packet item S5 — warm-white seam pips and route-lip lights, the frame's
+ONLY highlights. Measured: 0.0% of playfield pixels exceed luminance 200 in all
+fifteen gameplay captures.
+accept: highlights present at the shipped FAR view; share of pixels above L200
+rises from a measured 0.0%; palette tokens only; draw-call delta reported.
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; FAR captures before/after
+
+## T-039 | art | doing | P1
+goal: packet item S6 — contact shadows as one instanced multiply-blended quad
+pool, so actors sit ON the world. There is no shadow of any kind in the
+renderer today. NOT a shadow map (that needs a decision entry, packet §4.1).
+accept: +1 draw call, not per-object; 60fps with 200+ projectiles held; the
+transform slice's 580-call path not multiplied.
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; frame time under load; FAR captures
+
+## T-040 | art | doing | P1
+goal: packet item S8 — RIG silhouette. He is 230 lit pixels of head sphere plus
+three boxes, sharing a value family with his own bullets. Render-only: hitbox
+and movement are frozen.
+accept: reads at 3.75% screen height (true on-screen size, not zoomed); three
+value zones; sim unchanged.
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; FAR capture + 5x crop
+
+## T-041 | art | done | P1
+goal: packet item S10 — directional impact and travel language inside the
+existing instanced pools, so hits read as hits. Zero new draw calls.
+accept: pure/juice.js stays deterministic (seeded rng only); 60fps at 200+
+projectiles measured, not assumed; no frozen constant moves.
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; frame time at 256 projectiles before/after
 
 <!-- ========== 2026-08-02 OPERATOR GOAL CHANGE (supersedes parts of the
 Delivery target that T-028 just rewrote; that rewrite's evidence-honesty fixes
