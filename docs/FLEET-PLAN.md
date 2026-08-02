@@ -35,6 +35,43 @@ rather than pausing between checkpoint verdicts.
 
 ## Operator decisions on record
 
+### August 1 — the run-energy verdict set, and the rider it puts on every older verdict
+
+Five verdicts landed in one day and are recorded in full as
+[`decisions.md`](decisions.md) entries 9–13; only their headlines and the
+rider that governs this page belong here.
+
+- **Entry 9 — the pocket capsule is a FREE plain pickup.** "Accept it's free
+  and rename it." The requirement that collecting it cost a measured retreat is
+  withdrawn; the dare concept is parked, not cancelled. No code, doc,
+  assertion or packet may describe the capsule as a dare or a wager.
+- **Entry 10 — the run's energy is "lots of split decisions, esceleration,
+  action, climb, climb climb, keep going faster."** Adopted at the same time:
+  an acceptance box must name the currency the player pays in and the test that
+  would falsify it. Feelings go to the operator; boxes get tests.
+- **Entry 11 — a dead end is what a WRONG split decision costs**, with a
+  fairness rider (it must be legible as a risk before commitment); pace
+  escalates at the player's momentum, not on a timer; frozen movement constants
+  stay frozen.
+- **Entry 12 — the pocket works, and the price is PRESSURE, not geometry.**
+  Taken on the six-face default run ("index.html was the one i played").
+- **Entry 13 — the traversal slice is too easy to judge difficulty in.**
+
+**The rider, because it reaches back into the verdicts recorded below.** Entry
+13 is methodological: `?slice=traversal` under-reads difficulty, so a verdict
+whose subject was difficulty, pressure, or a cost being felt **is re-asked in
+the six-face run rather than inherited**. It does not invalidate anything —
+what each verdict *says* stands exactly as recorded on this page and is never
+re-litigated — and it leaves untouched every verdict about whether a thing
+*behaves* (a movement verb's read, one enemy's tell), which is still the
+slice's proper job. Which entries it reaches is checkable rather than a guess:
+every URL they name is slice-gated in `src/mode.js` (`?pace=`, `?hound=`,
+`?polyp=`, `?mortar=`, `?flow=`, `?ribrun=` all require `IS_TRAVERSAL_SLICE`).
+On this page those are the **July 29 "boring"** verdict, **CP1** (the three
+paces "directionally correct"), **CP2** ("those feel much better", hound 2.5)
+and **CP2.5** ("enemies feel like they are coming for me"). The re-ask is
+tracked at the head of `SPRINT.md`'s operator checkpoint queue.
+
 ### July 31 — delivery mandate: autonomous merges, asset lane, loop until delivered
 
 - **Mission:** the target is a playable version of the full run with
