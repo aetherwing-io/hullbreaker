@@ -827,7 +827,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; a ?g2=1 capture of the overlay; a ?momentum=1 trace carrying drive
 
-## T-030 | art | review | P2
+## T-030 | art | done | P2
 
 goal: finish the palette pass's last file and the FAR readability notes it
 left behind (I-004, I-003, I-010). `src/render/hostiles.js` still reads
