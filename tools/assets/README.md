@@ -84,13 +84,14 @@ node tools/assets/probe.mjs docs/concept-art/13-human-scale-monster-climb-gramma
 node tools/assets/probe.mjs docs/concept-art/01-exterior-gameplay.png --min-chroma 35
 ```
 
-The gate can demonstrably reject things. `check.mjs --selftest` runs 23 cases —
-14 colors measured off the boards or lifted from `src/config.js` that must
-classify to a named role, and 9 (pure red, orange-red, pure blue, royal blue,
-violet, sky blue, pure cyan, jade green, and an unparseable string) that must be
-rejected. It runs on **every** invocation, not just under the flag, because a
-band wide enough to accept everything would silently turn the whole check into
-a no-op.
+The gate can demonstrably reject things. `check.mjs --selftest` runs 23 palette
+cases — 14 colors measured off the boards or lifted from `src/config.js` that
+must classify to a named role, and 9 (pure red, orange-red, pure blue, royal
+blue, violet, sky blue, pure cyan, jade green, and an unparseable string) that
+must be rejected — plus 25 import-scan cases (see "Game independence"). Both
+tables run on **every** invocation, not just under the flag, because a band wide
+enough to accept everything would silently turn the whole check into a no-op,
+and so would an import scan that has quietly stopped matching.
 
 ## Manifest schema
 
@@ -276,33 +277,113 @@ silhouette instead of a letter? a HUD-side readout?) is a feel decision.
 `check.mjs` fails if any file under `src/` contains a **static ES import** of an
 `assets/` path, because that would make an asset a hard dependency and the game
 must boot with every asset file missing. Runtime references (a
-`THREE.TextureLoader` URL, a CSS `url()`, an `img.src`) are legal, and every one
-found is listed in the check output so the set stays visible as it grows. Today
-`src/` contains no reference to `assets/` at all.
+`THREE.TextureLoader` URL, a CSS `url()`, an `img.src`, a dynamic `import()`)
+are legal, and every one found is listed in the check output so the set stays
+visible as it grows. Today `src/` contains no reference to `assets/` at all.
 
 The listing counts **runtime references only**: a rejected static import is
-reported as an error and excluded from that line, with the count of rejected
-imports named beside it. (Until I-002 it was printed in both places, under a
-header that said "runtime, not imports".)
+reported as an error and excluded from that line — the whole statement's line
+span, not just the keyword's line — with the count of rejected imports named
+beside it. (Until I-002 it was printed in both places, under a header that said
+"runtime, not imports".)
 
-**Limitation of the import scan, measured:** it matches an `import` statement
-whose module specifier is on the *same line* as the `import` keyword — the form
-every file in `src/` uses. A specifier pushed onto a later line
-(`import {\n x,\n} from '../../assets/…'`) is not detected: on a throwaway
-fixture that shape exits **0** and lands in the runtime-reference listing
-instead. So the gate is a lint over the shape this codebase writes, not a
-parser. Filed for triage rather than widened here, because a lazier
-newline-crossing regex can swallow a whole file between an `import` and an
-unrelated `'assets/…'` string literal and start failing legal runtime code.
+**The scan reads statement grammar, not lines** (`lib/imports.mjs`, T-026). Both
+obvious regexes are wrong, and the tree has now been bitten by one of them:
 
-Proven by fixture rather than asserted: a throwaway tree with an off-palette
+- the old line-anchored pattern saw a specifier only on the keyword's own line,
+  so `import {\n x,\n} from '../assets/x.png'` exited **0** and was filed as a
+  *runtime* reference — the gate reported green while the invariant it exists to
+  protect was violated (I-014);
+- widening it across newlines swallows the file between an `import` and the next
+  unrelated `'assets/…'` literal, and starts failing legal runtime code — the
+  counter-example this README has carried since T-017, and still a live shape:
+  `tools/assets/fixtures/runtime-reference/src/render/textures.js` is exactly it.
+
+So the scanner walks the statement: after the keyword only an import clause may
+appear (identifiers, `*`, `as`, `,`, `{`, `}`, comments, whitespace), the
+specifier is the first string literal, and — except for a side-effect
+`import 'x'` — the word right before it must be `from`. The first character that
+cannot belong to a clause ends the scan, so a statement can never read past its
+own end into the next line. `export … from` counts too: a re-export binds the
+module exactly as hard as an import does.
+
+`check.mjs --selftest` runs 25 import-scan cases beside the palette ones, on
+**every** invocation: 12 shapes that must be rejected (multi-line, four-line,
+namespace, side-effect, re-export, comments inside the clause, one after a regex
+literal holding a quote, one after a template literal quoting a fake import, one
+under a shebang, one after a division) and 13 that must stay legal (the
+counter-example above, dynamic `import()`, a URL constant, `export default '…'`,
+an export clause with no `from`, commented-out and template-quoted imports,
+`import` as a property name).
+
+Two of those must-reject cases are scars, not decoration. The scanner's first
+draft lexed the `#!/usr/bin/env node` shebang as code — `/usr/` reads as a regex
+literal and `node` as the last identifier, so the file's first import looked
+like a property access and was **skipped**. Caught by running the scanner across
+all 105 `.js`/`.mjs` files in `src/` and `tools/` and requiring it to find at
+least what a naive single-line regex finds: it under-counted in 14 files, all of
+them shebanged tools. It now finds 540 static imports there against the naive
+regex's 473 (the difference is multi-line imports, which is the point).
+
+End-to-end, the exit code is proven by two committed fixture trees rather than
+asserted:
+
+```sh
+node tools/assets/check.mjs --root tools/assets/fixtures/multiline-import    # exits 1: 2 hard imports
+node tools/assets/check.mjs --root tools/assets/fixtures/runtime-reference   # exits 0: 3 runtime refs
+node tools/gatecheck.mjs                                                     # runs both, and the pathcheck controls
+```
+
+**Limitations of the scan, stated:** it is a lexer over `src/`, not a JS parser
+and not a bundler.
+
+1. It reads `src/` only. An `assets/` import from `index.html` or a tool is not
+   its business.
+2. A module specifier that is *computed* (`import(base + name)`) cannot be read
+   by any static scan. Dynamic imports are legal here anyway, so this costs the
+   gate nothing — but a composed **runtime** URL only shows up in the reference
+   listing if the literal fragment contains `assets/` (the fixture's
+   `` `${CONFIG.assetsBase}/glyphs/…` `` is listed at its base constant, not at
+   the template). The listing is a ledger, not a gate.
+3. Distinguishing a regex literal from a division needs the preceding token; the
+   scanner uses the standard heuristic and, if a suspected literal has no closing
+   delimiter before the newline, re-reads it as ordinary code. That keeps any
+   mis-lex inside one line instead of blinding the rest of the file, and the two
+   selftest cases with a quote inside a regex and inside a template literal pin
+   it.
+4. An `import` statement written inside a template literal would be reported as
+   a dependency. False positives are loud and fixable; the alternative bias
+   (false negatives) is what I-014 was.
+
+The earlier fixture evidence still holds: a throwaway tree with an off-palette
 SVG, a lying `size`, a non-power-of-two GPU texture, a malformed manifest entry
 and a `src/` file that hard-imports a PNG produces 11 distinct failures and a
 non-zero exit.
 
+## Negative controls — `node tools/gatecheck.mjs`
+
+A gate nobody has watched fail is a rumour, and two of this repo's gates were
+green while the invariant they protect was violated (I-014 here, I-024 in
+pathcheck's fair-gap probe). `tools/gatecheck.mjs` makes both fail on purpose:
+it feeds the two committed fixture trees to `check.mjs`, then mutates
+`tools/pathcheck.mjs` in a scratch copy — screen clamp removed, floor column
+measured at run speed, speed meter stuck — and requires the *named* assertion to
+appear in each mutant's failure list. It asserts the number of textual
+replacements too, so a mutation that stops applying fails loudly instead of
+passing green.
+
+It takes about 15 seconds (it runs pathcheck three times) and is not the
+per-change gate: `node tools/pathcheck.mjs` still is. Run it after touching
+`lib/imports.mjs`, `checkGameIndependence`, or pathcheck's `FAIR-GAP` block.
+Its honesty note is the header of the file: it proves each gate rejects the
+defect it was built for, and cannot prove either gate complete.
+
 ## Files
 
 ```
+tools/
+  gatecheck.mjs          the negative controls: makes check.mjs and pathcheck fail on purpose
+
 tools/assets/
   package.json          dev-only; prefers tools/playtest's playwright-core install
   check.mjs              the gate — manifest, palette, sizes, game independence
@@ -319,7 +400,11 @@ tools/assets/
     svg.mjs              paint-literal and size extraction
     palette.mjs          the eight roles and the classification rule
     manifest.mjs         manifest schema, load/save
+    imports.mjs          the statement-level static-import scan (game independence)
     browser.mjs          playwright-core resolution + Chrome launch + static server
+  fixtures/
+    multiline-import/    a tree check.mjs must REJECT (I-014's shape)
+    runtime-reference/   a tree check.mjs must ACCEPT (the newline-regex counter-example)
   reports/demo/          committed demo evidence (the viewer screenshot)
   runs/                  ad-hoc specs, codex replies, screenshots (gitignored)
 

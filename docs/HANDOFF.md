@@ -106,6 +106,12 @@ through the integrator before touching overlapping runtime areas.
   regex-extracting a pure block from a single file — run it for the current
   assertion count rather than trusting a number in prose; it has grown
   substantially past its 178-at-the-split baseline as CP1/CP3 work landed.
+- The gates' own negative controls:
+  [`tools/gatecheck.mjs`](../tools/gatecheck.mjs) (T-026) makes
+  `tools/assets/check.mjs` and `tools/pathcheck.mjs` fail on purpose — two
+  committed fixture trees for the asset gate, three source mutations for the
+  fair-gap probe — after two gates were found green while the invariant they
+  protect was violated (I-014, I-024). ~15 s; not the per-change gate.
 - A second, independent verification surface now exists:
   [`tools/playtest/`](../tools/playtest/), a dev-only Playwright bot-player
   harness with its own `package.json` that plays the game in a real browser
