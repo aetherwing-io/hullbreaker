@@ -35,7 +35,18 @@
    The gun stays the small 3D box it always was through all five fixes —
    untouched, still swept through 8-way aim every frame below. The sprite's
    own art is deliberately body-only (no weapon drawn), so it never doubles
-   up against the separately-rotating gun mesh. */
+   up against the separately-rotating gun mesh.
+
+   KNOWN LIMITATION, logged after review found it (reports/tasks/T-040/
+   build.md has the full account): `preload.js`'s `awaitPreloads()` was found
+   unsafe for a SECOND module registering after the first snapshots its
+   pending list — a race that needs two callers to exist. This file is
+   currently the ONLY caller of preload.js in this codebase, and 10 fresh
+   trials confirmed RIG's sprite always reaches 'ready', never a false
+   'timeout' — so this single-caller use is not exposed. That is a claim
+   about THIS file's usage, not a certification of preload.js's general
+   multi-caller safety; re-check this note once a second lane also imports
+   preload.js, or once T-049 lands its concurrency fix. */
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';

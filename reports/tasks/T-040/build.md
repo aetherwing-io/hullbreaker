@@ -181,12 +181,54 @@ build — I'm escalating this rather than shipping a unilateral fix. Raw
 scripts/mid-route.json --deterministic --url <url>` against `base`/`hatch`/
 `ship` URLs to regenerate, one run of each per round, interleaved).
 
+### Scoping note added after a hold — `preload.js`'s concurrency bug, and why this lane isn't exposed
+
+After the adoption above was already committed, T-049's own review came back
+REQUEST_CHANGES: `awaitPreloads()` snapshots its pending list and then marks
+every still-`'pending'` entry `'timeout'`, including one a SECOND module
+registers after that snapshot — reproduced by the reviewer across two sibling
+modules, the second one's texture force-marked `'timeout'` in 7 of 10 trials,
+within milliseconds, with a console message falsely claiming the full 2500ms
+budget had elapsed. Team lead's direction: hold off relying on the gate's
+generality until T-049 proves it safe for concurrent callers.
+
+**This lane checked its own exposure rather than just waiting on it.**
+`src/render/player.js` is the ONLY module in this worktree that imports
+`preload.js` (`grep -rn preloadTexture\|awaitPreloads src/` — one call site).
+The reviewer's bug needs a SECOND module registering after the first one's
+`awaitPreloads()` has already snapshotted the pending list; there is no
+second module here to race against. Ran 10 fresh trials (a new browser launch
+each time, reading `window.__HB_PRELOAD()` after load): `rig-marine.png`
+reached `'ready'` in all 10, never a false `'timeout'`. So on the evidence
+available in this lane, single-caller use of `preload.js` is not exposed to
+the specific race T-049's reviewer found — that is a narrower, verified claim
+about THIS lane's own shape, not a certification of the module's general
+multi-caller safety, which is T-049's fix and proof to deliver.
+
+Given that, and given both this lane and T-049's sat idle for two hours
+waiting on each other with no forcing function, the call made here (with the
+team lead's options on the table) is: **keep the current commit as-is** rather
+than revert to a bespoke mechanism and re-adopt again later — reverting now
+would be exactly the churn the "don't invent a second mechanism" instruction
+was meant to prevent, and this lane's own single-caller use already tests as
+safe. What changes: this section makes the scope of that safety claim
+explicit, so a future reader (or a second lane that later imports
+`preload.js` alongside this one) does not read "adopted the shared gate" as
+"the shared gate's multi-caller safety was verified here" — it wasn't; only
+the single-caller case was. Re-verify (pathcheck + this 10-trial ready-check
++ a fresh slice of the interleaved re-gate) once T-049 lands and proves its
+concurrency fix, before this lane is called merge-ready.
+
 ### Housekeeping (repeated request)
 
 `reports/tasks/T-040/review.md` was removed from this worktree in the prior
 round (it cited pathcheck 1767 and the first, box-attempt evidence
 filenames — stale before every rework since). Confirming again: it is gone,
-not merely untracked; there is nothing left to commit or delete.
+not merely untracked; there is nothing left to commit or delete. The two
+untracked files currently showing in `git status` — `reports/tasks/T-040/
+playtest.md` and `reports/tasks/T-040/playtest-evidence/` — are the
+playtester gate's own artifacts (its FAIL verdict from the prior cycle, still
+accurate as history), not this lane's files to alter or commit.
 
 ## PLAYTEST FAIL FIXED — the sprite's async load broke `--deterministic` mode
 
