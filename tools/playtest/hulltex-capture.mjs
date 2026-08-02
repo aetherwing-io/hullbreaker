@@ -7,6 +7,10 @@
 //
 //   node hulltex-capture.mjs shots [--out dir]     paired frames + 3x crops
 //   node hulltex-capture.mjs measure [--out dir]   pixel stats, no browser
+//   node hulltex-capture.mjs crops [--out dir]     re-cut the 3x crops only
+//   node hulltex-capture.mjs bands                 where the pass changes pixels
+//   node hulltex-capture.mjs fallback              entry 16's degrade contract,
+//                                                  proved by aborting every tile
 //
 // Options: --viewport WxH (default 1280x800, the same true on-screen size
 // T-052's evidence used), --out <dir> (default reports/tasks/T-054/evidence).
@@ -69,6 +73,13 @@ const argOf = (name, fallback) => {
 const OUT = resolve(repoRoot, argOf('--out', join('reports', 'tasks', 'T-054', 'evidence')));
 const [vw, vh] = argOf('--viewport', '1280x800').split('x').map(Number);
 const VIEWPORT = { width: vw, height: vh };
+// --dpr 2 captures what a RETINA laptop's renderer actually produces:
+// src/render/scene.js sets pixelRatio to min(devicePixelRatio, 2), so the
+// operator's own screen samples the frame twice as finely as the dpr-1
+// captures every other rig in this directory takes. Measurements stay on
+// dpr 1 (comparable with T-052's evidence and with the integrator's own
+// numbers); the dpr-2 pair is for looking at.
+const DPR = Number(argOf('--dpr', '1')) || 1;
 
 const DRIVE_SCRIPT = resolve(here, 'scripts', 'six-face-spaced-run.json');
 
@@ -88,12 +99,11 @@ const VARIANTS = [
 ];
 
 /* The frozen measurement rectangles, in true-size (1280x800) pixels. Read off
-   the textured-vs-flat row/column difference profile of the near-open pair
-   (`bands` mode below prints it) — `hull` is the largest contiguous run of
-   rows the albedo pass changes, `deck` is the untouched level.js checker
-   directly above it (the control this task compares detail against), `sky` is
-   the fog/backdrop tier that no hull material reaches at all (the second
-   control: it must not move). Each is stated as x,y,w,h. */
+   the textured-vs-flat difference profile of the near-open pair (`bands` mode
+   below prints it per row) — `hull` is the surface the albedo pass actually
+   covers, `deck` is the level.js checker above it (the in-frame anchor for
+   detail that reads), `sky` is the upper frame. Each is stated as x,y,w,h,
+   with what it is and is NOT a control for on its own line below. */
 const BANDS = {
   // 93% of these pixels change when the albedo pass is switched on, and it is
   // the cleanest such rectangle in the frame (fewest geometry edges of its
@@ -101,14 +111,26 @@ const BANDS = {
   // nothing to do with the texture). Chosen by scanning every 300x90 rect
   // below y=500 for coverage >90%, then taking the lowest flat-build `fine`.
   hull: { x: 160, y: 635, w: 300, h: 90 },
-  // the deck checker, level.js's own bake: NOT touched by this pass, and the
-  // in-frame anchor for detail that reads (~19px cells, 15-level step).
+  // the deck checker, level.js's own bake: NOT one of the four buckets this
+  // pass textures, and the in-frame anchor for detail that reads (~19px
+  // cells, a 15-level step). Measured coverage in a textured/flat pair is
+  // 3-20% rather than 0 — that is the deck-edge trim at the band's lower
+  // border plus ordinary bot jitter between the pair's two page loads, not
+  // the checker itself changing.
   deck: { x: 300, y: 462, w: 300, h: 36 },
-  // fog/backdrop tier: no hull material reaches it. It must not move.
+  // upper frame: sky, fog and the backdrop tiers. A control for the SKY (1.8
+  // to 2.6% of its pixels move at near-open) but NOT a clean control at
+  // far-depth, where 26-40% of it moves — limb.js maps the backdrop limb
+  // (bdLimb/bdDrum/bdRing) onto the same hull/wall/scute buckets, so the
+  // distant anatomy wears these tiles too. Reported, not corrected: that is
+  // the thing the operator was comparing against ("the one floating in the
+  // background seems to have more detail").
   sky: { x: 200, y: 120, w: 300, h: 90 },
 };
 
 const lum = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+const scaleRect = (r, k) => (k === 1 ? r
+  : { x: Math.round(r.x * k), y: Math.round(r.y * k), w: Math.round(r.w * k), h: Math.round(r.h * k) });
 
 /* mean / sd / fine / struct over a rectangle (see the header for what each
    one is for). Rows are independent; nothing crosses a row boundary. The
@@ -183,7 +205,7 @@ async function shots() {
   const report = [];
   try {
     for (const v of VARIANTS) {
-      const context = await browser.newContext({ viewport: VIEWPORT });
+      const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: DPR });
       const page = await context.newPage();
       const errors = [];
       page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
@@ -256,12 +278,75 @@ async function makeCrops(browser) {
       g.imageSmoothingEnabled = false;
       g.drawImage(img, rect.x, rect.y, rect.w, rect.h, 0, 0, cv.width, cv.height);
       return cv.toDataURL('image/png');
-    }, { b64, rect: BANDS.hull, scale: 3 });
+    }, { b64, rect: scaleRect(BANDS.hull, DPR), scale: 3 });
     const name = f.replace(/\.png$/, '-hullband-3x.png');
     writeFileSync(join(OUT, name), Buffer.from(out.split(',')[1], 'base64'));
     process.stdout.write('  crop ' + name + '\n');
   }
   await context.close();
+}
+
+/* --------------------------- the degrade check --------------------------- *
+ * decisions.md entry 16's condition, checked by causing the failure rather
+ * than by reading the code that handles it: every tile PNG is aborted at the
+ * network layer, and the page then has to (a) still boot and play, (b) report
+ * zero textured buckets, and (c) leave every hull material's own `color` at
+ * white — the gain a tile pays for may never be applied without that tile.
+ * That last one is the new failure mode T-054 introduces, so it is the one
+ * worth proving: a brightened material with no map is a hull two thirds
+ * lighter than the palette says it should be.                             */
+async function fallbackCheck() {
+  const server = await startStaticServer(repoRoot, { port: 0 });
+  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  const errors = [];
+  try {
+    const context = await browser.newContext({ viewport: VIEWPORT });
+    const page = await context.newPage();
+    page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+    await page.route('**/assets/generated/textures/**', (route) => route.abort());
+    await page.goto(`${server.baseUrl}/index.html?testapi=1`, { waitUntil: 'load' });
+    await page.waitForFunction(() => globalThis.HB && globalThis.HB.state() === 'PLAYING',
+      null, { timeout: 20000 });
+    await page.waitForTimeout(1500);
+    const out = await page.evaluate(async () => {
+      const { scene } = await import('/src/render/scene.js');
+      const colors = [];
+      scene.traverse((o) => {
+        if (o.isInstancedMesh && o.material && o.material.color)
+          colors.push({
+            r: +o.material.color.r.toFixed(3),
+            hasMap: !!o.material.map,
+            count: o.count,
+          });
+      });
+      return {
+        tex: window.__HB_HULL_TEX ? window.__HB_HULL_TEX() : null,
+        state: globalThis.HB.state(),
+        frames: (await import('/src/render/scene.js')).renderer.info.render.frame,
+        brightWithoutMap: colors.filter((c) => !c.hasMap && c.r > 1.001).length,
+        maxColorNoMap: colors.filter((c) => !c.hasMap).reduce((m, c) => Math.max(m, c.r), 0),
+        meshes: colors.length,
+      };
+    });
+    const pass = out.state === 'PLAYING' && out.frames > 0 &&
+      out.tex && out.tex.buckets.length === 0 &&
+      Object.values(out.tex.files).every((v) => v === false) &&
+      out.brightWithoutMap === 0 && errors.length === 0;
+    console.log('[fallback] every tile request aborted at the network layer');
+    console.log('  state ' + out.state + ', frames ' + out.frames +
+      ', textured buckets ' + JSON.stringify(out.tex && out.tex.buckets) +
+      ', files ' + JSON.stringify(out.tex && out.tex.files));
+    console.log('  instanced meshes ' + out.meshes + ', brightened-without-a-map ' +
+      out.brightWithoutMap + ' (max color.r on a map-less material: ' +
+      out.maxColorNoMap + ')');
+    console.log('  page errors: ' + (errors.length ? errors.join(' | ') : 'none'));
+    console.log('[fallback] ' + (pass ? 'PASS' : 'FAIL'));
+    if (!pass) process.exitCode = 1;
+    await context.close();
+  } finally {
+    await browser.close();
+    await server.close();
+  }
 }
 
 /* ------------------------------- measure -------------------------------- */
@@ -276,8 +361,14 @@ function measure() {
   const rows = [];
   for (const f of files) {
     const img = decodePng(join(OUT, f));
+    // A --dpr 2 capture is the same frame at twice the sampling, so the frozen
+    // rectangles are scaled by whatever the file's own width says it is rather
+    // than re-typed. The numbers are then over the same part of the creature,
+    // though NOT directly comparable across dpr — a finer sampling resolves
+    // finer detail, which is the whole point of taking one.
+    const scale = img.width / 1280;
     for (const [name, rect] of Object.entries(BANDS)) {
-      const s = rectStats(img, rect);
+      const s = rectStats(img, scaleRect(rect, scale));
       rows.push({ file: f, band: name, ...s });
       console.log(w(f, 26) + w(name, 8) + w(s.mean.toFixed(2), 9) +
                   w(s.sd.toFixed(2), 9) + w(s.fine.toFixed(3), 9) +
@@ -319,7 +410,16 @@ if (MODE === 'shots') {
   measure();
 } else if (MODE === 'bands') {
   bandProfile();
+} else if (MODE === 'crops') {
+  // re-cut the 3x crops from frames already on disk (no browser run): the
+  // band rectangle is a measurement decision, and moving it must not mean
+  // re-driving the sim and comparing against a different moment
+  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  try { await makeCrops(browser); } finally { await browser.close(); }
+} else if (MODE === 'fallback') {
+  await fallbackCheck();
 } else {
-  console.error('usage: node hulltex-capture.mjs [shots|measure|bands] [--viewport WxH] [--out dir]');
+  console.error('usage: node hulltex-capture.mjs [shots|measure|crops|bands|fallback] ' +
+                '[--viewport WxH] [--dpr n] [--moments a,b] [--extra query] [--out dir]');
   process.exit(2);
 }

@@ -1,0 +1,393 @@
+{
+  "measuredAt": "2026-08-02T16:34:58.657Z",
+  "tool": "tools/playtest/hulltex-stress.mjs",
+  "viewport": "1280x800, headless Chrome (channel: chrome), one browser per reading",
+  "load": "60 projectiles/frame via the game's own fireWeapon(clone=true), right held on the default six-face run",
+  "repeats": 3,
+  "runs": {
+    "flat": [
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 119.9,
+          "avgMs": 8.34,
+          "worstMs": 10.3,
+          "over20ms": 0
+        },
+        "liveProjectiles": 256,
+        "drawCalls": 186,
+        "triangles": 107212,
+        "hullTex": {
+          "on": false,
+          "files": {
+            "hull-panel-tile.png": false,
+            "hull-panel-tile.png?wall": false,
+            "vent-louver-plate.png": false,
+            "weld-seam-strip.png": false,
+            "wear-scuff-overlay.png": false
+          },
+          "buckets": [],
+          "tone": {}
+        },
+        "state": "PLAYING",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 120.1,
+          "avgMs": 8.33,
+          "worstMs": 10.4,
+          "over20ms": 0
+        },
+        "liveProjectiles": 256,
+        "drawCalls": 186,
+        "triangles": 107222,
+        "hullTex": {
+          "on": false,
+          "files": {
+            "hull-panel-tile.png": false,
+            "hull-panel-tile.png?wall": false,
+            "vent-louver-plate.png": false,
+            "weld-seam-strip.png": false,
+            "wear-scuff-overlay.png": false
+          },
+          "buckets": [],
+          "tone": {}
+        },
+        "state": "PLAYING",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 120.1,
+          "avgMs": 8.33,
+          "worstMs": 10.3,
+          "over20ms": 0
+        },
+        "liveProjectiles": 256,
+        "drawCalls": 186,
+        "triangles": 107222,
+        "hullTex": {
+          "on": false,
+          "files": {
+            "hull-panel-tile.png": false,
+            "hull-panel-tile.png?wall": false,
+            "vent-louver-plate.png": false,
+            "weld-seam-strip.png": false,
+            "wear-scuff-overlay.png": false
+          },
+          "buckets": [],
+          "tone": {}
+        },
+        "state": "PLAYING",
+        "errors": []
+      }
+    ],
+    "textured": [
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 120,
+          "avgMs": 8.33,
+          "worstMs": 10.4,
+          "over20ms": 0
+        },
+        "liveProjectiles": 256,
+        "drawCalls": 186,
+        "triangles": 107222,
+        "hullTex": {
+          "on": true,
+          "files": {
+            "hull-panel-tile.png": true,
+            "hull-panel-tile.png?wall": true,
+            "vent-louver-plate.png": true,
+            "weld-seam-strip.png": true,
+            "wear-scuff-overlay.png": true
+          },
+          "buckets": [
+            "hull",
+            "wall",
+            "scute",
+            "shadow"
+          ],
+          "tone": {
+            "hull": {
+              "gain": 1.6079903126491122,
+              "hasMap": true,
+              "repeat": [
+                1.3333333333333333,
+                5.666666666666667
+              ],
+              "bumpScale": 0.035,
+              "canvasPx": 216,
+              "mean": 189.58084705075447,
+              "sd": 43.172035552434394,
+              "contrast": 4,
+              "linMean": 0.5472669785865988,
+              "linRelSd": 0.3003173132017609
+            },
+            "wall": {
+              "gain": 1.6129654830923879,
+              "hasMap": true,
+              "repeat": [
+                1.3333333333333333,
+                2.0833333333333335
+              ],
+              "bumpScale": 0.01,
+              "canvasPx": 216,
+              "mean": 189.36766975308643,
+              "sd": 43.007919933162874,
+              "contrast": 4,
+              "linMean": 0.5455789409162423,
+              "linRelSd": 0.2926284826362543
+            },
+            "scute": {
+              "gain": 1.5445189183186638,
+              "hasMap": true,
+              "repeat": [
+                2.1333333333333333,
+                0.8666666666666667
+              ],
+              "bumpScale": 0.035,
+              "canvasPx": 104,
+              "mean": 190.03920118343194,
+              "sd": 51.98758935548975,
+              "contrast": 1.889373335467217,
+              "linMean": 0.5697566987123425,
+              "linRelSd": 0.5016685062674082
+            },
+            "shadow": {
+              "gain": 1.5435338311472215,
+              "hasMap": true,
+              "repeat": [
+                2,
+                1
+              ],
+              "bumpScale": 0.02,
+              "canvasPx": 128,
+              "mean": 189.993408203125,
+              "sd": 52.01181323808889,
+              "contrast": 1.5815726057090054,
+              "linMean": 0.5701203188698143,
+              "linRelSd": 0.51976704386822
+            }
+          }
+        },
+        "state": "PLAYING",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 119.9,
+          "avgMs": 8.34,
+          "worstMs": 10.4,
+          "over20ms": 0
+        },
+        "liveProjectiles": 256,
+        "drawCalls": 186,
+        "triangles": 107222,
+        "hullTex": {
+          "on": true,
+          "files": {
+            "hull-panel-tile.png": true,
+            "hull-panel-tile.png?wall": true,
+            "vent-louver-plate.png": true,
+            "weld-seam-strip.png": true,
+            "wear-scuff-overlay.png": true
+          },
+          "buckets": [
+            "hull",
+            "wall",
+            "scute",
+            "shadow"
+          ],
+          "tone": {
+            "hull": {
+              "gain": 1.6079903126491122,
+              "hasMap": true,
+              "repeat": [
+                1.3333333333333333,
+                5.666666666666667
+              ],
+              "bumpScale": 0.035,
+              "canvasPx": 216,
+              "mean": 189.58084705075447,
+              "sd": 43.172035552434394,
+              "contrast": 4,
+              "linMean": 0.5472669785865988,
+              "linRelSd": 0.3003173132017609
+            },
+            "wall": {
+              "gain": 1.6129654830923879,
+              "hasMap": true,
+              "repeat": [
+                1.3333333333333333,
+                2.0833333333333335
+              ],
+              "bumpScale": 0.01,
+              "canvasPx": 216,
+              "mean": 189.36766975308643,
+              "sd": 43.007919933162874,
+              "contrast": 4,
+              "linMean": 0.5455789409162423,
+              "linRelSd": 0.2926284826362543
+            },
+            "scute": {
+              "gain": 1.5445189183186638,
+              "hasMap": true,
+              "repeat": [
+                2.1333333333333333,
+                0.8666666666666667
+              ],
+              "bumpScale": 0.035,
+              "canvasPx": 104,
+              "mean": 190.03920118343194,
+              "sd": 51.98758935548975,
+              "contrast": 1.889373335467217,
+              "linMean": 0.5697566987123425,
+              "linRelSd": 0.5016685062674082
+            },
+            "shadow": {
+              "gain": 1.5435338311472215,
+              "hasMap": true,
+              "repeat": [
+                2,
+                1
+              ],
+              "bumpScale": 0.02,
+              "canvasPx": 128,
+              "mean": 189.993408203125,
+              "sd": 52.01181323808889,
+              "contrast": 1.5815726057090054,
+              "linMean": 0.5701203188698143,
+              "linRelSd": 0.51976704386822
+            }
+          }
+        },
+        "state": "PLAYING",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 120.1,
+          "avgMs": 8.33,
+          "worstMs": 10.3,
+          "over20ms": 0
+        },
+        "liveProjectiles": 256,
+        "drawCalls": 186,
+        "triangles": 107222,
+        "hullTex": {
+          "on": true,
+          "files": {
+            "hull-panel-tile.png": true,
+            "hull-panel-tile.png?wall": true,
+            "vent-louver-plate.png": true,
+            "weld-seam-strip.png": true,
+            "wear-scuff-overlay.png": true
+          },
+          "buckets": [
+            "hull",
+            "wall",
+            "scute",
+            "shadow"
+          ],
+          "tone": {
+            "hull": {
+              "gain": 1.6079903126491122,
+              "hasMap": true,
+              "repeat": [
+                1.3333333333333333,
+                5.666666666666667
+              ],
+              "bumpScale": 0.035,
+              "canvasPx": 216,
+              "mean": 189.58084705075447,
+              "sd": 43.172035552434394,
+              "contrast": 4,
+              "linMean": 0.5472669785865988,
+              "linRelSd": 0.3003173132017609
+            },
+            "wall": {
+              "gain": 1.6129654830923879,
+              "hasMap": true,
+              "repeat": [
+                1.3333333333333333,
+                2.0833333333333335
+              ],
+              "bumpScale": 0.01,
+              "canvasPx": 216,
+              "mean": 189.36766975308643,
+              "sd": 43.007919933162874,
+              "contrast": 4,
+              "linMean": 0.5455789409162423,
+              "linRelSd": 0.2926284826362543
+            },
+            "scute": {
+              "gain": 1.5445189183186638,
+              "hasMap": true,
+              "repeat": [
+                2.1333333333333333,
+                0.8666666666666667
+              ],
+              "bumpScale": 0.035,
+              "canvasPx": 104,
+              "mean": 190.03920118343194,
+              "sd": 51.98758935548975,
+              "contrast": 1.889373335467217,
+              "linMean": 0.5697566987123425,
+              "linRelSd": 0.5016685062674082
+            },
+            "shadow": {
+              "gain": 1.5435338311472215,
+              "hasMap": true,
+              "repeat": [
+                2,
+                1
+              ],
+              "bumpScale": 0.02,
+              "canvasPx": 128,
+              "mean": 189.993408203125,
+              "sd": 52.01181323808889,
+              "contrast": 1.5815726057090054,
+              "linMean": 0.5701203188698143,
+              "linRelSd": 0.51976704386822
+            }
+          }
+        },
+        "state": "PLAYING",
+        "errors": []
+      }
+    ]
+  },
+  "summary": {
+    "flat": {
+      "worstMs": [
+        10.3,
+        10.4,
+        10.3
+      ],
+      "over20ms": [
+        0,
+        0,
+        0
+      ]
+    },
+    "textured": {
+      "worstMs": [
+        10.4,
+        10.4,
+        10.3
+      ],
+      "over20ms": [
+        0,
+        0,
+        0
+      ]
+    }
+  }
+}

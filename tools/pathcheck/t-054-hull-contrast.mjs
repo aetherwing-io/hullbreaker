@@ -38,7 +38,7 @@ import { CONFIG } from '../../src/config.js';
 import {
   TEX_LAYOUT, TILE_TONE, TILE_WORLD_SIZE, buildToneCurve, composeHullTile,
   hullTexCanvas, luminanceHistogram, applyToneCurve, resample, screenPxPerWorld,
-  srgbToLinear, worldPerTileCopy,
+  srgbToLinear, tileOver, worldPerTileCopy,
 } from '../../src/render/hulltiles.js';
 import { decodePng } from '../../tools/assets/lib/png.mjs';
 import { ok, near, srcDir } from './_context.mjs';
@@ -106,19 +106,36 @@ export async function run() {
     // THE NUMBER THE WHOLE TASK IS ABOUT. Relative spread in linear light is
     // what survives into the frame: the GPU multiplies this map into the
     // palette token, so a map varying +-X% about its mean moves the surface's
-    // brightness by X%. The shipped pre-T-054 pipeline is measurable for
-    // comparison — brightness-multiply to a mean of 235/255, clipping at
-    // white — and is re-run here on the same buffer rather than quoted.
+    // brightness by X%. The floor is deliberately a floor — 20% is under
+    // every bucket in the tree today (29.3% is the lowest) and is here to
+    // catch a pass that flattens the surface again, not to pin a look.
     ok(c.linRelSd >= 0.20,
        'T-054: the ' + key + ' composite varies at least 20% about its own mean in ' +
        'LINEAR light (got ' + (c.linRelSd * 100).toFixed(1) + '%) — the spread the ' +
        'surface actually modulates by');
 
-    const clipped = clipNormalize(composed.data, 235);
-    ok(c.linRelSd > clipped.linRelSd,
-       'T-054: …and more of it than the clip-to-235 normalization it replaces, run ' +
-       'over the same buffer (' + (c.linRelSd * 100).toFixed(1) + '% vs ' +
-       (clipped.linRelSd * 100).toFixed(1) + '%)');
+    // …and MORE of it than the normalization it replaces, measured by running
+    // both over the same un-normalized composite rather than by quoting a
+    // number: build the raw tiled buffer from the shipped primitives, then
+    // clip-normalize it the way T-052's `brightness()` pass did.
+    const raw = rawComposite(key, file, wear);
+    const clipped = clipNormalize(raw, 235);
+    const gained = buildToneCurve(luminanceHistogram(raw));
+    ok(gained.linRelSd > clipped.linRelSd,
+       'T-054: …and more of it than the clip-to-235 normalization it replaces, both ' +
+       'run over the same un-normalized ' + key + ' composite (' +
+       (gained.linRelSd * 100).toFixed(1) + '% vs ' + (clipped.linRelSd * 100).toFixed(1) +
+       '%, ' + (gained.linRelSd / clipped.linRelSd).toFixed(2) + 'x)');
+    if (key === 'hull')
+      ok(gained.linRelSd / clipped.linRelSd >= 1.25,
+         'T-054: …by at least 1.25x on the `hull` bucket specifically — the large ' +
+         'under-deck surface the operator\'s finding is about (' +
+         (gained.linRelSd / clipped.linRelSd).toFixed(2) + 'x)');
+    ok(clipped.linMean > gained.linMean,
+       'T-054: the pass it replaces really did sit closer to white (linear mean ' +
+       clipped.linMean.toFixed(3) + ' vs ' + gained.linMean.toFixed(3) + ') — which is ' +
+       'where the range went: a mean at 92% of full scale has 8% left to say ' +
+       'anything with');
 
     // the albedo-preserving property: correcting the MEAN is not compressing
     // the RANGE, and this is the arithmetic that separates them
@@ -214,6 +231,24 @@ export async function run() {
      'out at different levels (' + probe[0] + ' vs ' + probe[4] + ')');
 }
 
+}
+
+/* The composite BEFORE any normalization: the same two shipped primitives
+   composeHullTile() itself uses, in the same order, stopping short of the
+   tone curve — so section 2 can run the old and the new normalization over
+   identical pixels. */
+function rawComposite(key, file, wear) {
+  const l = TEX_LAYOUT[key];
+  const layout = hullTexCanvas(CONFIG, key);
+  const base = loadTile(file);
+  const cell = resample(base.data, base.width, base.height, layout.cellPx, layout.cellPx);
+  const buf = new Uint8ClampedArray(layout.canvasPx * layout.canvasPx * 4);
+  tileOver(buf, layout.canvasPx, cell, layout.cellPx, false);
+  if (l.wear > 0) {
+    const wc = resample(wear.data, wear.width, wear.height, layout.wearCellPx, layout.wearCellPx);
+    tileOver(buf, layout.canvasPx, wc, layout.wearCellPx, true);
+  }
+  return buf;
 }
 
 /* The normalization T-054 replaces, re-implemented here for the comparison in
