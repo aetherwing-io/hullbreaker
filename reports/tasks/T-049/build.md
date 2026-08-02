@@ -475,6 +475,49 @@ of the fix in pathcheck (shared promise, single deadline, honest message,
 refusal path) so it cannot be unpicked without the browser tool running; each
 was broken and restored (see the table below, rows 8–11).
 
+### The refusal path had no behavioural cover — the fourth false green, and the first one found by someone else
+
+Review patched a scratch copy so that a registration arriving after the gate
+closed fell through to the normal load path — reintroducing exactly the
+mid-run upload this module exists to prevent — and **pathcheck plus all five
+conditions of `preload-concurrency-check.mjs` stayed green**. The only guard
+was a source-literal `state: 'refused'` match, i.e. an assertion about how the
+code looks; no test ever registered late.
+
+Fixed with a sixth condition and a fixture that registers only after
+`awaitPreloads()` has resolved (`fixtures/preload-concurrency/lane-late.js`,
+requesting a real file nothing else uses, so a broken refusal would visibly
+load something). It asserts the state is `refused`, that no texture comes
+back, that the warning names the file, and that the two on-time lanes are
+unaffected.
+
+**Proved binding**, by deleting the refusal block outright:
+
+```
+  FAIL  the late page finished at all — a post-close registration must not
+        return a promise that never settles — 3 of 3 trials hung waiting for the fixture
+  FAIL  a registration after the gate closed is REFUSED — (no trial completed)
+  FAIL  and no texture is handed back for it — nothing was loaded mid-run — (no trial completed)
+  FAIL  the refusal names the file and says what to do instead — (no trial completed)
+  FAIL  the two on-time lanes are unaffected by the late one — (no trial completed)
+```
+
+The first line is a finding in itself: with the refusal removed, a post-close
+`preloadTexture()` returns a promise **nothing will ever settle** (`settle()`
+has already run and will not run again), so the caller's `await` hangs
+forever. The first version of this condition surfaced that as an uncaught
+exception that killed the tool; it now catches the timeout and reports it as a
+named failure, because a gate that dies is a gate nobody can read.
+
+**Tally: four false greens in this lane's own guards.** The raw-text
+`initTexture` match (matched its own prose), the `warmMs <= costMs` ordering
+check (true either side of the close), eight source-literal shape guards
+(assert appearance, not behaviour), and now the refusal path (no behavioural
+cover at all). Three were caught by breaking things on purpose here; the
+fourth by a reviewer doing the same. The rule that keeps holding: **an
+assertion is worth exactly what its falsification test is worth, and until
+someone breaks the guarded thing, that is zero.**
+
 ### The boot-gate assertions bind — eleven breaks, and one of them was mine
 
 Same discipline as §5: every guard broken on purpose, restored immediately.
@@ -587,25 +630,30 @@ tonemap}.js`, each getting this lane's "a pure module may not name a texture
 loader or a sprite module" pair. That is the guard correctly extending to new
 pure modules, which is what it is for. **2747 passed, 0 failed.**
 
-**Perf re-measured on the merged tree, because the renderer underneath it
-changed** (never inherit a number across a change that could move it):
+**Perf re-measured on the merged tree, twice — because the tree moved twice
+and a measured number may not be carried across a change that could move it.**
+The middle column below was taken against main `2c638aa`; main then took
+T-040 and T-044 and the second merge landed, so it is **stale and kept only as
+a record of that point**. The right-hand column is the current tree.
 
-| reading | pre-merge | merged (with shadows, bloom, surfaces) |
-| --- | --- | --- |
-| roster draw calls, 5 hostiles | 42 → 37 (primitives → sprites) | 79 → **74** |
-| stress draw calls, 256 projectiles | 144 → 133 | 181 → **166** |
-| worst frame | 10.30 ms both | 10.40 / **10.30 ms** |
-| frames over 20 ms | 0 both | **0 both** |
-| triangles | ~50.7k | ~105.4k |
+| reading | pre-merge (own base) | vs main 2c638aa — STALE | vs main 7c5ad31 — CURRENT |
+| --- | --- | --- | --- |
+| roster draw calls, 5 hostiles | 42 → 37 | 79 → 74 | **73 → 68** |
+| stress draw calls, 256 projectiles | 144 → 133 | 181 → 166 | **201 → 183** |
+| worst frame | 10.30 ms both | 10.40 / 10.30 ms | **10.30 ms both** |
+| frames over 20 ms | 0 both | 0 both | **0 both** |
+| triangles | ~50.7k | ~105.4k | ~107.4k |
 
-The sprite path still costs fewer draw calls than the primitives it replaces
-(−5 on a five-hostile roster, −15 under the barrage) and 60 fps still holds
-with 256 live projectiles on the heavier renderer. Evidence:
-`artifacts/sprites-v1/perf/result-merged.json`. The caveat from §3 applies
-with more force now: **main HAS a shadow pass**, and T-047's report states
-`renderer.info` does not account for it, so these are main-pass figures.
+(each pair is primitives → sprites). The conclusion is unchanged and now
+measured on the tree that would actually merge: the sprite path costs **fewer**
+draw calls than the primitives it replaces — 5 fewer on a five-hostile roster,
+18 fewer under the barrage — and 60 fps holds with 256 live projectiles on the
+heavier renderer. Evidence: `artifacts/sprites-v1/perf/result-merged2.json`
+(current) and `result-merged.json` (the stale middle column). Main-pass figures
+only: main has a shadow pass and T-047's report states `renderer.info` does not
+account for it.
 
-Re-run against the merged tree, all green: pathcheck 2747/0, assets check
+Re-run against the merged tree, all green:Re-run against the merged tree, all green: pathcheck 2747/0, assets check
 PASS, gatecheck PASS, `sprite-fallback-check` 9/9, `preload-concurrency-check`
 9/9, `mid-route.json --deterministic` completed / 0 deaths, and the true-size
 capture re-shot (`artifacts/sprites-v1/lineup-true-size.png` is now the

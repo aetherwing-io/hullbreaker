@@ -5,7 +5,7 @@
 // texture was discarded in 7 of 10 trials, within 3-6ms, with a message
 // claiming a 2500ms budget had elapsed.
 //
-//   node preload-concurrency-check.mjs            all three conditions
+//   node preload-concurrency-check.mjs            all six conditions
 //   node preload-concurrency-check.mjs --trials 10
 //
 // The fixture is two INDEPENDENT sibling modules
@@ -14,7 +14,7 @@
 // module scope, then `await awaitPreloads()` at module scope — with no
 // knowledge of each other. That is the shape T-040 was told to adopt.
 //
-// FIVE conditions, because hoping for a race is not testing one:
+// SIX conditions, because hoping for a race is not testing one:
 //   plain          both textures served normally; N trials
 //   slow-second    the second lane's texture is delayed 400ms at the network
 //                  (inside the 2500ms budget). Under the old code this is the
@@ -29,6 +29,11 @@
 //                  not the asset owner's. Before the grace turns existed
 //                  this closed the gate on everyone: both asset lanes
 //                  REFUSED, zero art, 3 trials of 3.
+//   late           a module registers AFTER awaitPreloads() resolved, which
+//                  must be REFUSED. Nothing behavioural covered this until
+//                  review patched a scratch copy to let it fall through and
+//                  watched every check here stay green — the fourth false
+//                  green in this lane, and the first it did not find itself.
 //   warm-up        the GPU warm-up ran, ran while the gate was still shut,
 //                  and ?warm=0 turns it off.
 //
@@ -161,6 +166,59 @@ check(firstAwait.every((r) => r.first.state === 'ready' && r.second.state === 'r
 check(firstAwait.every((r) => r.preload.assets.length === 2),
       'both later registrations still reached the shared registry',
       'entries: ' + firstAwait.map((r) => r.preload.assets.length).join(', '));
+
+/* REGISTERING AFTER THE GATE CLOSED must be refused — and until the reviewer
+   went looking, NOTHING behavioural covered it. The only guard was a
+   source-literal `state: 'refused'` match in pathcheck, so a scratch copy
+   patched to let a post-close registration fall through to the normal load
+   path — reintroducing the mid-run upload this gate exists to prevent — kept
+   pathcheck and all five conditions here green. That is the fourth false
+   green this lane has had, and the first one it did not find itself. */
+console.log('\n=== late: a lane registers AFTER awaitPreloads() resolved ===');
+const LATE_PAGE = '/tools/playtest/fixtures/preload-concurrency/index-late.html';
+const late = [];
+let lateHung = 0;
+for (let i = 0; i < 3; i++) {
+  const page = await browser.newPage({ viewport: { width: 400, height: 300 } });
+  const warns = [];
+  page.on('console', (m) => { if (m.type() === 'warning') warns.push(m.text()); });
+  await page.goto(base + LATE_PAGE, { waitUntil: 'load' });
+  try {
+    await page.waitForFunction(() => window.__T049_DONE === true, { timeout: 15000 });
+  } catch (err) {
+    // A gate that ACCEPTS a post-close registration hands back a promise
+    // nothing will ever settle — settle() has already run and will not run
+    // again — so the fixture's `await` hangs and the page never finishes.
+    // That is a real failure mode with a specific meaning, and it must read
+    // as a FAIL rather than as the tool crashing.
+    lateHung++;
+    await page.close();
+    continue;
+  }
+  const out = await page.evaluate(() => ({
+    late: window.__T049_LATE, first: window.__T049_FIRST,
+    second: window.__T049_SECOND, preload: window.__HB_PRELOAD(),
+  }));
+  out.warns = warns;
+  late.push(out);
+  await page.close();
+}
+check(lateHung === 0,
+      'the late page finished at all — a post-close registration must not ' +
+      'return a promise that never settles',
+      lateHung ? `${lateHung} of 3 trials hung waiting for the fixture` : '3 of 3 finished');
+check(late.length > 0 && late.every((r) => r.late.state === 'refused'),
+      'a registration after the gate closed is REFUSED',
+      late.length ? late.map((r) => r.late.state).join(', ') : '(no trial completed)');
+check(late.length > 0 && late.every((r) => r.late.hasTexture === false),
+      'and no texture is handed back for it — nothing was loaded mid-run',
+      late.length ? late.map((r) => 'hasTexture=' + r.late.hasTexture).join(', ') : '(no trial completed)');
+check(late.length > 0 && late.every((r) => r.warns.some((w) => /registered after the boot gate closed/.test(w))),
+      'the refusal names the file and says what to do instead',
+      late.length ? (late[0].warns.find((w) => /after the boot gate/.test(w)) || '(no warning)').slice(0, 96) : '(no trial completed)');
+check(late.length > 0 && late.every((r) => r.first.state === 'ready' && r.second.state === 'ready'),
+      'the two on-time lanes are unaffected by the late one',
+      late.length ? late.map((r) => `${r.first.state}/${r.second.state}`).join('  ') : '(no trial completed)');
 
 /* The warm-up's ORDERING, as behaviour rather than as a regex over the
    source: if the warm-up ran before the gate opened, its measured cost is
