@@ -8,12 +8,25 @@
    path, not on the art: three deterministic runs of the same script with a
    runtime sprite produced final sim clocks of 6352 / 6864 / 8308 ms and a
    crush-edge approach 2.4 tiles worse on one of them, while the same commit
-   with the load skipped ran 6356 / 6359. This lane reproduced the same class
-   of defect on the enemy sprites — one run in four finished 1036 ms of sim
-   time short of the others (reports/tasks/T-049/build.md). The cause is not
-   the network wait, which the game survives happily; it is that the DECODE
-   and the GPU UPLOAD land inside a frame while the loop is also stepping
-   physics, and a stalled frame is a longer dt for the whole world.
+   with the load skipped ran 6356 / 6359. A 16-round interleaved re-gate put
+   that at 7/16 rounds deviating against a 0/16 control.
+
+   WHAT THE MECHANISM IS NOT. The obvious explanation — the decode and the
+   GPU upload landing inside a frame the loop is also stepping physics
+   through — is DISPROVED on this lane, and the disproof is worth keeping in
+   front of the next reader so it is not re-derived a third time. Loading
+   five textures and never drawing them still deviated 12/12; 25ms of
+   artificial boot latency with no assets at all stayed at the control's
+   baseline; and forcing the upload to completion at boot (the warm-up
+   below) changed nothing. Whatever the perturbation is, it travels with the
+   fetch/decode itself and survives everything this module can do about it.
+   That is why the residual is filed as a harness determinism-mode defect
+   rather than as something this gate can close. Evidence:
+   reports/tasks/T-049/build.md §8, i039-evidence/ (132 runs).
+
+   WHAT THIS MODULE STILL BUYS, on its own merits: nothing fetches, decodes
+   or uploads DURING a run, so no lane can put a stall in front of a player
+   mid-game, and a second lane's asset cannot be starved by the first.
 
    Determinism is what every playtest gate in this repo rests on, and a
    player must not get a materially different run because a texture landed a
@@ -171,16 +184,30 @@ export function preloadTexture(url, opts = {}) {
 }
 
 /* ------------------------- THE GPU WARM-UP (I-039) ---------------------- *
- * Awaiting the load is NOT enough, and this is the measured reason. T-040's
- * 16-round interleaved re-gate (one run of each condition per round, so
- * session load hits all three equally) found the control invariant — 16/16
- * runs dispatched exactly 18 of 26 events — while the shipped sprite build
- * deviated in 7 of 16, worst case 23 dispatched, gameMsMax 8299ms and a
- * crush approach 2.3 tiles worse than every control run, from byte-identical
- * input. A texture whose bytes have arrived and whose upload has been
- * REQUESTED can still have its real work (mipmap generation, the actual
- * texture object upload) deferred by the driver until something forces it —
- * and the first thing that forces it is frame 1, which is a simulated frame.
+ * MEASURED: THIS DOES NOT FIX I-039. Do not read its presence as a solved
+ * determinism bug. On this lane, 16 interleaved rounds: 11/16 rounds
+ * deviating with the warm-up OFF, 14/16 with it ON, against a 1/16 control —
+ * no improvement. Two further controls say why it cannot be the fix: loading
+ * five textures and NEVER DRAWING them still deviated 12/12, and 25ms of
+ * artificial boot latency with no assets at all stayed at the control's
+ * baseline. The trigger is the fetch/decode itself, not a draw-time stall
+ * and not boot latency. Full data: reports/tasks/T-049/build.md §8 and
+ * reports/tasks/T-049/i039-evidence/ (132 runs).
+ *
+ * It is KEPT anyway, and only for this reason: the hazard it addresses is
+ * real and argued independently of I-039 — a texture whose bytes have
+ * arrived and whose upload has been REQUESTED can still have its real work
+ * (mipmap generation, the texture object upload) deferred by the driver
+ * until something forces it, and the first thing that would force it is
+ * frame 1, which is a simulated frame. It costs a measured 8-14ms once, at
+ * boot. If a future measurement shows it buying nothing anywhere, delete it;
+ * ?warm=0 exists so that stays cheap to check.
+ *
+ * The original hypothesis, for the record — T-040's 16-round re-gate found
+ * its control invariant (16/16 runs dispatching 18 of 26 events) while its
+ * shipped sprite build deviated in 7 of 16, worst case gameMsMax 8299ms and
+ * a crush approach 2.3 tiles worse, from byte-identical input. Deferred
+ * upload was the best guess at the time. The controls above disproved it.
  *
  * So the gate ends by drawing every resident texture once into a 4x4
  * offscreen target and then READING ONE PIXEL BACK. The readback is the
@@ -194,6 +221,9 @@ export function preloadTexture(url, opts = {}) {
  * ?warm=0 skips it. That is an A/B for a measurement, not a feature flag:
  * it is what makes the before/after in reports/tasks/T-049/build.md §9 a
  * controlled comparison rather than two different builds.                  */
+// ?warm=0 disables the warm-up above. NB: the warm-up does NOT fix I-039
+// (measured — see the block above and build.md §8); this flag is the A/B
+// that keeps that falsifiable, not a switch for a known-good feature.
 export const WARM_ON = QUERY.get('warm') !== '0';
 const WARM_PX = 4;                       // enough to sample a mip, small enough
                                          //   that the draw itself costs nothing
