@@ -5,10 +5,11 @@
 import { CONFIG } from '../config.js';
 import { TRANSFORM_FIXTURE } from '../pure/transform.js';
 import {
-  ACTIVE_SLICE, AIM_ASSIST_ENABLED, AUTOBOUNCE_ENABLED, CROUCH_ENABLED,
-  FLOW_ENABLED, HOOK_ENABLED, HOOK_INPUT, HOUND_TRIAL_STAGE, IS_TRANSFORM_SLICE,
-  IS_TRAVERSAL_SLICE, MOMENTUM_ENABLED, MORTAR_TRIAL_STAGE, POLYP_TRIAL_STAGE,
-  SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN, VIEW_ID,
+  ACTIVE_FIXTURE, ACTIVE_SLICE, AIM_ASSIST_ENABLED, AUTOBOUNCE_ENABLED,
+  CROUCH_ENABLED, FLOW_ENABLED, HOOK_ENABLED, HOOK_INPUT, HOUND_TRIAL_STAGE,
+  IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, MOMENTUM_ENABLED, MORTAR_TRIAL_STAGE,
+  POLYP_TRIAL_STAGE, SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN,
+  VIEW_ID,
 } from '../mode.js';
 import { momentumMeter } from '../pure/momentum.js';
 import { momentumDrive, momentumScrollSpeed } from '../sim/pace.js';
@@ -30,6 +31,11 @@ const hudTL = document.getElementById('hudTL');
 const hudTC = document.getElementById('hudTC');
 const hudTR = document.getElementById('hudTR');
 const hudBL = document.getElementById('hudBL');
+
+// How many world turns the LOADED fixture actually authors. Hardcoding the v1
+// demo's 2 made the single-event G2 fixture advertise a second transformation
+// that does not exist (SPRINT I-009), on every frame of every G2 capture.
+const TRANSFORM_TURNS = IS_TRANSFORM_SLICE ? ACTIVE_FIXTURE.events.length : 0;
 
 const HOOK_LEGEND = HOOK_ENABLED
   ? (HOOK_INPUT === 'auto'
@@ -113,7 +119,7 @@ export function updateHUD() {
       ` · ${kills} kills`
     : IS_TRANSFORM_SLICE
       ? `ALT ${Math.round(transformAltitudeAt(player.x) + player.y)}m · ` +
-        `${committedBand}/2 TURNS · ${kills} kills`
+        `${committedBand}/${TRANSFORM_TURNS} TURNS · ${kills} kills`
       : Math.floor(scrollX) + 'm  ·  ' + kills + ' kills';
   if (SCORE_ENABLED) tr += ' · THREAT ' + Math.round(scoreThreat());
   // MOMENTUM (?momentum=1): the earned escalation, visible. The operator is

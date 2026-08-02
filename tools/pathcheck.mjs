@@ -6081,11 +6081,19 @@ const G2GATE = G2E.gate;
   for (const f of layerFiles('sim'))
     ok(!stripComments(readFileSync(f, 'utf8')).includes('audio'),
        'T-012: sim untouched by the audio layer: ' + f);
-  // main.js integration is exactly one side-effect import line
+  // main.js integration is one import site plus the read-only debug handle.
+  // T-012 asserted a bare side-effect import here and that shape is what made
+  // audioSnapshot() unreachable (no build step ⇒ an unimported export is
+  // reachable from nothing; SPRINT I-005). The guarantee that mattered —
+  // main.js never DRIVES the synth, the wrappers do — is kept, and stated as
+  // "these two lines and nothing else".
   const mainCode = stripComments(readFileSync(join(srcDir, 'main.js'), 'utf8'));
-  ok((mainCode.match(/audio/g) || []).length === 1 &&
-     mainCode.includes("import './ui/audio.js';"),
-     'T-012: main.js integration is the single side-effect import line');
+  const audioLines = mainCode.split('\n').map((l) => l.trim()).filter((l) => /audio/i.test(l));
+  ok(audioLines.length === 2 &&
+     audioLines[0] === "import { audioSnapshot } from './ui/audio.js';" &&
+     audioLines[1] === 'audio: audioSnapshot,',
+     'T-012/T-029: main.js touches the audio module exactly twice — the load-order ' +
+     'import and the read-only window.HB publication — and never calls the synth');
   // wrappers delegate to the previously-installed hook before any synth work
   ok(/prev\(a, b, c\);/.test(audioCode),
      'T-012: audio hook wrappers call the prior implementation first');
@@ -8298,8 +8306,9 @@ const G2GATE = G2E.gate;
     // already exists (pursuitSpeed), and the HUD meter is banded here.
     ok(sweep.every((d) => Math.abs(
          momentumDriveFromSpeed(momentumSpeed(d, base, MM), base, MM) - d) < 1e-12),
-       'READOUT: drive round-trips through speed, so a bot report reads escalation ' +
-       'off the existing pursuitSpeed field with no new telemetry to keep in sync');
+       'READOUT: drive round-trips through speed — the inversion a T-022 packet ' +
+       'reader performs on pursuitSpeed is exact WHILE escalation is the only ' +
+       'source feeding that field (T-029 publishes drive itself; see I-030)');
     ok(momentumTier(0, MM) === 0 && momentumTier(1, MM) === MM.tiers.length &&
        momentumTier(MM.tiers[0], MM) === 1,
        'READOUT: the tier banding covers empty to full');
@@ -8556,6 +8565,197 @@ const G2GATE = G2E.gate;
        'CEILING/WIRING: the live scroll speed leaves through momentumClampSpeed, so a ' +
        'later source (T-023 boosts) cannot route around the hard ceiling by writing ' +
        'drive or speed somewhere else');
+  }
+}
+
+/* ============ T-029 — runtime truth: three debug/copy surfaces ========== *
+ * Three claims that were all TRUE of the source and FALSE of the running
+ * game, which is the class of defect this section exists to catch:
+ *   I-005  a debug surface that documents itself as console-reachable but is
+ *          exported-and-unimported — with no build step that is reachable
+ *          from nothing, and the T-012 gate had to monkey-patch AudioParam to
+ *          recover a number audioSnapshot() already returns.
+ *   I-009  a turn counter that hardcodes the v1 demo's 2, so the one-event G2
+ *          fixture advertises a transformation that does not exist on every
+ *          frame of every capture, the BREACH CLEAR overlay included.
+ *   I-030  an escalation a trace can only recover by INVERTING pursuitSpeed,
+ *          which stops being a valid inversion the moment a second source
+ *          (T-023's boosts) pushes the same chokepoint.
+ * Everything here is asserted against what a reader/player can actually get
+ * at: the published handle, the loaded fixture's own event count, and the
+ * live sim's drive — not against the author's intent.                     */
+{
+  const mainSrc = readFileSync(join(srcDir, 'main.js'), 'utf8');
+  const mainCode = stripComments(mainSrc);
+  const audioSrc = stripComments(readFileSync(join(srcDir, 'ui', 'audio.js'), 'utf8'));
+
+  // --- I-005: the audio debug surface is reachable ------------------------
+  ok(/export function audioSnapshot\(\)/.test(audioSrc),
+     'T-029/I-005: src/ui/audio.js still exports audioSnapshot()');
+  {
+    // It must land on window.HB — the handle that exists on EVERY URL — and
+    // not inside the ?testapi=1 block, or "reachable from the console on the
+    // shipped URL" is still false.
+    const hb = /window\.HB = Object\.freeze\(\{[^]*?\n\}\);/.exec(mainCode);
+    ok(!!hb && /\baudio: audioSnapshot,/.test(hb[0]),
+       'T-029/I-005: audioSnapshot rides window.HB, the always-present handle — ' +
+       'HB.audio() answers on any URL, no ?testapi and no build step needed');
+    const testapi = /if \(QUERY\.has\('testapi'\)\)[^]*?\n\}/.exec(mainCode);
+    ok(!!testapi && !/audio/i.test(testapi[0]),
+       'T-029/I-005: …and is NOT gated behind ?testapi=1');
+  }
+  {
+    // The fields the T-012 gate had to infer from AudioParam ramp batches are
+    // the fields this function returns; naming them here means a later edit
+    // that drops `layers` fails the gate instead of silently re-creating the
+    // probe.
+    const body = /export function audioSnapshot\(\)[^]*?\n}/.exec(audioSrc);
+    const fields = ['enabled', 'unlocked', 'contextState', 'dead', 'layers', 'voices'];
+    // `dead` and `voices` are shorthand properties, so accept either form
+    ok(!!body && fields.every((f) => new RegExp('\\b' + f + '\\s*[:,]').test(body[0])),
+       'T-029/I-005: the snapshot answers exactly what the gate had to monkey-patch ' +
+       'AudioParam for: ' + fields.join(', '));
+    ok(!!body && /layerTarget\(\)/.test(body[0]),
+       'T-029/I-005: the layer count is the ambience mixer\'s own layerTarget(), not a ' +
+       'second count that can drift from what is audible');
+  }
+
+  // --- I-009: the turn counters read the LOADED fixture -------------------
+  {
+    const hudCode = stripComments(readFileSync(join(srcDir, 'ui', 'hud.js'), 'utf8'));
+    const ovCode = stripComments(readFileSync(join(srcDir, 'ui', 'overlay.js'), 'utf8'));
+    ok(!/\/2 TURNS/.test(hudCode) && /ACTIVE_FIXTURE\.events\.length/.test(hudCode),
+       'T-029/I-009: the HUD turn counter reads ACTIVE_FIXTURE.events.length, not a ' +
+       'hardcoded 2');
+    ok(!/of 2 transformations/.test(ovCode) && /ACTIVE_FIXTURE\.events\.length/.test(ovCode),
+       'T-029/I-009: …and so does the clear overlay\'s transformation count');
+    // The line the operator reads on a fresh G2 capture, reproduced from the
+    // same expression the overlay uses: singular for a one-event fixture.
+    const clearLine = (n, done) =>
+      done + ' of ' + n + ' transformation' + (n === 1 ? '' : 's');
+    ok(clearLine(1, 1) === '1 of 1 transformation' &&
+       clearLine(2, 2) === '2 of 2 transformations',
+       'T-029/I-009: the BREACH CLEAR line pluralizes off the same count it prints');
+  }
+  for (const [id, fx] of Object.entries(TRANSFORM_FIXTURES)) {
+    // committedBand is the numerator on both readouts, so "band index" and
+    // "turns taken" have to be the same number: every fixture's events must
+    // chain 0 → 1 → … → bands-1, one event per band boundary. If a later
+    // fixture ever branches, this fails here rather than lying on screen.
+    ok(fx.bands.length === fx.events.length + 1,
+       'T-029/I-009: fixture ' + id + ' authors one turn per band boundary (' +
+       fx.events.length + ' events, ' + fx.bands.length + ' bands)');
+    ok(fx.events.every((ev, i) => ev.fromBand === i && ev.toBand === i + 1),
+       'T-029/I-009: …and they chain in order, so committedBand IS the count of ' +
+       'turns taken on ' + id);
+  }
+  ok(TRANSFORM_FIXTURES['transform-v1'].events.length === 2 &&
+     TRANSFORM_FIXTURES['monster-g2-neck-flip'].events.length === 1,
+     'T-029/I-009: the v1 demo really does author 2 turns and G2 exactly 1 — the ' +
+     'number the HUD prints on ?g2=1 is 1, which is what I-009 filed');
+
+  // --- I-030: the earned drive rides the frozen channel -------------------
+  {
+    const tele = /function telemetry\(\)[^]*?\n}/.exec(mainCode);
+    ok(!!tele && /momentum: MOMENTUM_ENABLED \?/.test(tele[0]) &&
+       /drive: momentumDrive\(\)/.test(tele[0]) &&
+       /peakDrive: momentumPeakDrive\(\)/.test(tele[0]) &&
+       /tier: momentumTier\(/.test(tele[0]),
+       'T-029/I-030: telemetry() publishes momentum { drive, peakDrive, tier } beside ' +
+       'pursuitSpeed, flag-gated like hook/flow — additive, and undefined without ' +
+       '?momentum=1');
+    ok(!!tele && /pursuitSpeed: activeScrollSpeed\(\)/.test(tele[0]) &&
+       /pursuitPeak: pacePeak\(\)/.test(tele[0]),
+       'T-029/I-030: …and the frozen fields it sits beside are untouched');
+  }
+  {
+    const MM = CONFIG.momentum, base = CONFIG.scrollSpeed;
+    // WHY the field is needed, as arithmetic rather than as a forecast: read
+    // a boost's speed back through the packet's own inversion and it reports
+    // drive the player never earned. Same chokepoint, same number, two
+    // different causes — which is exactly what a trace must distinguish.
+    const boosted = momentumSpeed(0.7, base, MM);          // e.g. a T-023 boost
+    ok(Math.abs(momentumDriveFromSpeed(boosted, base, MM) - 0.7) < 1e-12,
+       'T-029/I-030: inverting pursuitSpeed reports drive 0.70 for a speed a ' +
+       'STRUGGLING player could be riding on a boost — speed alone cannot attribute ' +
+       'escalation once a second source shares momentumClampSpeed');
+    ok(momentumDriveFromSpeed(momentumHardCeiling(base, MM), base, MM) === 1,
+       'T-029/I-030: …and at the hard ceiling the inversion saturates at 1.00 whatever ' +
+       'the real drive was, so the T-022 packet\'s "drive never exceeds 0.30" gate is ' +
+       'unreadable from speed there');
+    // The published tier and the on-screen meter are the same reading, so a
+    // trace field and a screenshot can be checked against each other.
+    for (const d of [0, 0.2, 0.45, 0.8, 1]) {
+      const filled = (momentumMeter(d, MM).match(/▰/g) || []).length;
+      ok(filled === momentumTier(d, MM),
+         'T-029/I-030: the trace tier equals the filled glyphs on the HUD meter at ' +
+         'drive ' + d.toFixed(2) + ' (' + filled + ')');
+    }
+  }
+  {
+    /* The values, MEASURED off the real sim rather than read off the source:
+       boot src/sim with ?momentum=1, hold RIG at the right clamp (a player
+       outrunning the world), and read the exact three getters telemetry()
+       calls. A source regex proves the field is written; this proves it
+       carries a live, non-degenerate number. */
+    const child = `
+      globalThis.__HB_QUERY__ = 'momentum=1';
+      const S = ${JSON.stringify('file://' + join(srcDir) + '/')};
+      const [CF, T, E, LV, PL, SC, WG, PA, MO] = await Promise.all([
+        import(S + 'config.js'), import(S + 'sim/time.js'), import(S + 'sim/edges.js'),
+        import(S + 'sim/level.js'), import(S + 'sim/player.js'), import(S + 'sim/scroll.js'),
+        import(S + 'sim/wavegate.js'), import(S + 'sim/pace.js'),
+        import(S + 'pure/momentum.js'),
+      ]);
+      const C = CF.CONFIG, p = PL.player, hw = C.player.width / 2, M = C.edges.margin;
+      for (const c of WG.cornerEvents) c.state = 'done';
+      E.setEdges(-27.44, 45.73);
+      T.setScrollX(0); PA.resetPace();
+      const dt = 1 / 60;
+      const start = { drive: PA.momentumDrive(), peak: PA.momentumPeakDrive() };
+      for (let i = 0; i < Math.round(12 / dt); i++) {
+        p.x = E.sRightEdge() - M - hw;
+        T.advanceGameMs(dt * 1000);
+        SC.updateScroll(dt);
+      }
+      const top = { drive: PA.momentumDrive(), peak: PA.momentumPeakDrive(),
+                    speed: LV.activeScrollSpeed() };
+      for (let i = 0; i < Math.round(6 / dt); i++) {
+        p.x = E.sLeftEdge() + M + hw;                    // shoved onto the plane
+        T.advanceGameMs(dt * 1000);
+        SC.updateScroll(dt);
+      }
+      const after = { drive: PA.momentumDrive(), peak: PA.momentumPeakDrive() };
+      console.log(JSON.stringify({ start, top, after,
+        tier: MO.momentumTier(top.drive, C.momentum),
+        inverted: MO.momentumDriveFromSpeed(top.speed, C.scrollSpeed, C.momentum) }));
+    `;
+    let m = null;
+    try {
+      m = JSON.parse(execFileSync(process.execPath,
+        ['--input-type=module', '-e', child], { encoding: 'utf8' }));
+    } catch (e) {
+      console.error('pathcheck: T-029 momentum-field child failed: ' + e.message);
+    }
+    ok(!!m && m.start.drive === 0 && m.start.peak === 0,
+       'T-029/I-030: a fresh run publishes drive 0 / peakDrive 0 — the field starts at ' +
+       'the floor, not at whatever the last run left behind');
+    ok(!!m && m.top.drive > 0.3 && m.top.drive <= 1,
+       'T-029/I-030: 12s at the right clamp publishes a live drive of ' +
+       (m ? m.top.drive.toFixed(3) : '?') + ' — the getter telemetry() calls carries a ' +
+       'real, non-degenerate value');
+    ok(!!m && m.tier >= 1 && m.tier <= CONFIG.momentum.tiers.length,
+       'T-029/I-030: …and a tier inside the meter\'s own banding');
+    ok(!!m && m.after.drive < m.top.drive && m.after.peak >= m.top.peak &&
+       Math.abs(m.after.peak - m.top.peak) < 1e-9,
+       'T-029/I-030: peakDrive is the RUN high-water mark, not a copy of drive — it ' +
+       'holds while the live drive collapses on the plane (' +
+       (m ? m.after.drive.toFixed(3) + ' live vs ' + m.after.peak.toFixed(3) + ' peak' : '?') +
+       '), which is what makes an escalation readable after the fact');
+    ok(!!m && Math.abs(m.inverted - m.top.drive) < 1e-9,
+       'T-029/I-030: today the published drive and the packet\'s pursuitSpeed inversion ' +
+       'still agree exactly — the new field is a superset of what a T-022 reader does ' +
+       'by hand, so the packet\'s numbers stay comparable across T-023');
   }
 }
 
