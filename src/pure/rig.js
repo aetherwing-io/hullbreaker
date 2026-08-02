@@ -1,43 +1,42 @@
 /* =========================== RIG (pure) ============================ *
- * RIG's body geometry as data (T-040, look-direction packet §3 item S8):
- * the box table src/render/player.js draws, plus a headless conformance
- * check, so pathcheck gates the ENVELOPE instead of trusting review — same
- * precedent as src/pure/shell.js's compositionViolations.
+ * RIG's silhouette as data (T-040, look-direction packet §3 item S8).
  *
- * The defect this answers: at the shipped FAR default RIG is 230 lit pixels
- * of head sphere + torso box + two leg boxes, with no helmet, pack, or
- * silhouette break, and he shares his value family with his own tracers.
- * The fix is a helmet/visor break and a pack mass, plus three value zones —
- * "about the most a 30 px figure can hold" before it blurs into one blob
- * (board 13's white figure, board 06's value-zone grammar):
+ * REWORKED TWICE. First an operator rejection of the six-box/three-zone
+ * pass: "this is RIG? i was hoping for a much higher quality asset in line
+ * with the concept art." The verdict was the QUALITY BAR, not the
+ * technique — more boxes cannot fix it, because at RIG's frozen on-screen
+ * size (~15x30 px, 3.75% of screen height, decisions.md entry 7) geometric
+ * detail cannot read at all. What reads at 30px is a crafted 30px IMAGE.
+ * Second, a single-polygon silhouette (the shell's own `.sl-rig::before`
+ * clip-path technique, adapted) authored blind, without ever rendering it —
+ * it painted as a thin, illegible ribbon (see reports/tasks/T-040/build.md's
+ * "iteration log"). The fix for THAT mistake was procedural, not artistic:
+ * a throwaway page.evaluate() dump of the exact canvas-drawing code, viewed
+ * as an image, before ever touching the real render path — the same
+ * "judge at true size before you trust it" discipline the operator asked
+ * for, just applied one step earlier (at the texture, before the 3D scene).
  *
- *   bright   head + visor + gun arm   -> PAL.player   (unchanged: the read)
- *   dark     torso + pack             -> PAL.playerDark
- *   mid      legs                     -> PAL.playerMid
+ * So this file now describes RIG as a small set of SIMPLE SHAPES — an
+ * ellipse (helmet), one torso polygon (with a back-side pack bump baked
+ * into its own silhouette), and two independent leg polygons (a real gap
+ * between them, not a notch-in-one-path trick) — rather than one clever
+ * single path. Plain shapes turned out to read as a figure far more
+ * reliably than a hand-plotted complex outline. src/render/player.js
+ * rasterizes this once into a CanvasTexture (sanctioned: `.claude/skills/
+ * threejs-textures/SKILL.md`'s guardrails, precedent at src/render/
+ * capsules.js's `faceTexture`) and maps it onto a single billboard-style
+ * plane. The plane's own footprint is the whole ENVELOPE this file can gate
+ * headlessly (no `document`/canvas exists in this layer or in pathcheck's
+ * plain-Node run — see the honesty note on `spriteViolations` below): bound
+ * the plane inside the frozen collision box and every drawn pixel is bound
+ * with it, by construction — a stronger guarantee than the six-box table's
+ * per-box checks ever were.
  *
- * CORRECTION CARRIED FROM ADVERSARIAL REVIEW — read before touching this
- * file. An earlier draft of this item claimed "the silhouette can never lie
- * about where RIG is." That is false of the ASSEMBLED rig: src/render/
- * player.js's gunGroup rotates a 0.75-long gun box (GUN_BOX below) through
- * the full 8-way aim sweep every frame, and at dead-horizontal aim the gun
- * reaches |x| = 0.825 — more than twice BODY_HALF_WIDTH (0.35, half of the
- * frozen 0.7 collision box). So the envelope property below is asserted
- * over BODY boxes ONLY (RIG_BOXES — never the gun), and the gun's known,
- * already-shipped, WIDER swept reach is named separately as GUN_INNER_X /
- * GUN_OUTER_X so pathcheck documents it rather than silently passing a
- * violated claim. Narrowing the gun sweep is out of scope for this item —
- * it is a rendering fact about the aim pose, not a silhouette defect.
- *
- * Two more limits, named so nobody re-derives them the hard way:
- *   - This table is the REST pose only. src/render/player.js still applies
- *     two shipped per-frame transforms on top of the assembled rig —
- *     `rig.scale.y = squash` (?crouch=1) and `rig.rotation.z = lean`
- *     (?flow=1) — both applied to the whole group, so they scale/rotate
- *     every box's envelope together rather than breaking it; neither is
- *     re-checked here.
- *   - RIG's collision box and movement are FROZEN (CONFIG.player.width/
- *     height). This module reads those constants to bound the render-only
- *     geometry against them; it never feeds anything back into the sim. */
+ * The gun stays exactly what it was: a small 3D box, unrelated to this
+ * silhouette, still swept through 8-way aim every frame by src/render/
+ * player.js's gunGroup. Nothing about the gun changes in this rework, so
+ * its own documented-not-narrowed swept reach (GUN_INNER_X/GUN_OUTER_X)
+ * stays below verbatim.                                                  */
 
 import { CONFIG } from '../config.js';
 
@@ -46,80 +45,191 @@ import { CONFIG } from '../config.js';
 export const BODY_HALF_WIDTH = CONFIG.player.width / 2;   // 0.35
 export const BODY_HEIGHT = CONFIG.player.height;          // 1.7
 
-export const ZONES = ['bright', 'dark', 'mid'];
+/* The billboard plane's own world-unit size. Slimmed under the collision
+   width (same "slimmed ~12% for the pulled-back camera" reasoning the old
+   box list carried) and exactly the collision height, feet at y=0 — so the
+   envelope check below is a single inequality that bounds every pixel the
+   canvas can ever draw, not a per-part table. */
+export const SPRITE_W = 0.60;
+export const SPRITE_H = BODY_HEIGHT;
 
-/* Box table: { id, zone, w, h, d, x, y, z }. w/h/d are FULL extents (the
-   same argument order THREE.BoxGeometry takes); x/y/z is the box CENTER,
-   y measured from the deck RIG stands on (feet at y=0). z is render-only
-   depth — the sim stays strictly 2D in (s,y) and never reads this axis;
-   positive z is the gun-arm side (gunGroup sits at z=0.25), so the pack
-   sits at negative z, "behind the torso" (S8). Torso/head/legs are the
-   shipped geometry, byte-identical to the box list player.js carried
-   before this table existed; visor and pack are the new silhouette break
-   and mass. */
-export const RIG_BOXES = [
-  { id: 'head',  zone: 'bright', w: 0.28, h: 0.30, d: 0.28, x: 0,     y: 1.55, z: 0 },
-  // helmet/visor break: a shallow plate riding the head's front face —
-  // widens the head's read without widening the LATERAL envelope past it
-  { id: 'visor', zone: 'bright', w: 0.30, h: 0.10, d: 0.30, x: 0,     y: 1.52, z: 0.22 },
-  { id: 'torso', zone: 'dark',   w: 0.48, h: 0.85, d: 0.40, x: 0,     y: 0.95, z: 0 },
-  // pack mass: rides the torso's upper back, one zone with the torso so it
-  // reads as the same under-value rather than a fourth floating tone
-  { id: 'pack',  zone: 'dark',   w: 0.22, h: 0.34, d: 0.16, x: 0,     y: 1.05, z: -0.28 },
-  { id: 'legL',  zone: 'mid',    w: 0.16, h: 0.55, d: 0.19, x: -0.12, y: 0.28, z: 0 },
-  { id: 'legR',  zone: 'mid',    w: 0.16, h: 0.55, d: 0.19, x: 0.12,  y: 0.28, z: 0 },
+/* Texture resolution: supersampled a few times over the true on-screen size
+   (~12 x 30 px at the shipped FAR default) so gradients/curves stay smooth
+   once the GPU's own minification (mipmapped, see src/render/player.js)
+   shrinks it back down — authoring AT the final size would fight the
+   operator's "pixel-level intent" note by forcing hard aliasing where a
+   soft falloff reads better; supersampling and letting minification do the
+   downsample is the same trick src/render/legibility.js's glyph fitting
+   already uses (measure-then-fit at a larger size, GLYPH_TEX_PX). Kept a
+   plain multiple of SPRITE_W/SPRITE_H's own ratio so the drawn art never
+   stretches. */
+export const CANVAS_W = 34;
+export const CANVAS_H = 96;
+
+/* Facing convention for every shape below: +x (higher fraction) is FRONT —
+   the side the gun mounts on — so src/render/player.js mirrors the whole
+   plane (scale.x flip) when `player.facing` is negative, the same sign
+   CONFIG.player.aim already uses. Authored leaning into a run: the torso
+   cants forward, one leg reaches down-forward, the other trails, and the
+   torso's own back edge bulges out for the pack — asymmetric on purpose,
+   the thing a symmetric box never had a chance to be. All fractions of the
+   canvas, [0,1], y downward from the top of the plane (SPRITE_H, i.e. the
+   top of RIG's head) to its bottom (the deck, y=0 in world space). */
+
+// Helmet: one ellipse, narrower than the shoulders so the neck reads as a
+// real step down to the torso (the six-box version's head and torso were
+// both the same width — a large part of why it read as a stack of blocks).
+export const HELMET = { x: 0.54, y: 0.10, rx: 0.145, ry: 0.09 };
+
+// Torso: shoulders wide, waist narrower, with the pack riding the BACK
+// (lower-x) edge as its own outward bulge rather than a separate box.
+export const TORSO = [
+  [0.72, 0.18], [0.64, 0.58], [0.34, 0.58], [0.20, 0.38], [0.32, 0.18],
 ];
+
+// Two independent leg polygons — a real transparent gap between them, not
+// a single path with a notch. Front reaches down-forward; back trails.
+export const LEG_FRONT = [[0.60, 0.58], [0.46, 0.58], [0.50, 0.95], [0.70, 0.90]];
+export const LEG_BACK = [[0.52, 0.58], [0.38, 0.58], [0.16, 0.92], [0.40, 0.98]];
+
+// Soft value-lift band across the torso's shoulder area only (fractions of
+// canvas height), blended OVER the base dark fill rather than a hard zone
+// edge — see the header note on why a graduated falloff reads better than
+// flat banding at this size. Helmet tone + this lift + the base dark fill +
+// the visor accent is the packet's "3-4 value steps, one accent."
+export const LIFT_TOP = 0.18;
+export const LIFT_BOTTOM = 0.42;
+
+// Visor accent: a small ellipse on the helmet's front-lower face, the
+// packet's ONE accent — reuses PAL.gun (already the warm muzzle-adjacent
+// gold token everything else uses for RIG's weapon), not a new hue.
+export const VISOR = { x: 0.58, y: 0.12, rx: 0.075, ry: 0.02 };
 
 // The gun mesh's own box, local to gunGroup (see src/render/player.js's
 // gunGroup, offset (0, muzzleY, 0.25) from the rig root and rotated in z
-// every frame for 8-way aim). Kept here — not duplicated as a literal in
-// player.js — so the "swept reach" figures below can never drift from what
-// actually renders.
+// every frame for 8-way aim). Untouched by this rework.
 export const GUN_BOX = { w: 0.75, h: 0.14, d: 0.14, x: 0.45, y: 0, z: 0 };
 
 // The gun's local x-span BEFORE rotation (gunGroup.rotation.z = 0, i.e. aim
 // dead horizontal) — the case that reaches the largest |x|, since the box's
-// own y/z half-extents are small next to its x offset. This is a documented,
-// ALREADY-SHIPPED fact about the assembled rig, not a narrower target: see
-// the header note on why it is asserted separately from rigEnvelopeViolations.
+// own y/z half-extents are small next to its x offset. Documented, not a
+// narrower target: carried forward verbatim from the box-list version of
+// this file (same adversarial-review correction: the assembled rig's
+// silhouette envelope does not bound the gun's own swept reach).
 export function gunLocalXSpan(box = GUN_BOX) {
   return [box.x - box.w / 2, box.x + box.w / 2];
 }
 const [GUN_INNER_X, GUN_OUTER_X] = gunLocalXSpan();
 export { GUN_INNER_X, GUN_OUTER_X };
 
-/* Headless conformance check for the BODY box table (never the gun — see
-   the header correction). Returns a list of human-readable violations
-   (empty = clean), same shape as shell.js's compositionViolations, so
-   pathcheck can assert it the same way: the real table is clean, and a
-   synthetic bad box is caught. */
-export function rigEnvelopeViolations(boxes = RIG_BOXES) {
-  const out = [];
-  for (const b of boxes) {
-    if (!b.id) out.push('box with no id');
-    const at = b.id || '(unnamed)';
-    if (!ZONES.includes(b.zone)) out.push(at + ': zone "' + b.zone + '" is not declared');
-    for (const k of ['w', 'h', 'd'])
-      if (!(b[k] > 0)) out.push(at + ': ' + k + ' must be a positive number');
-    for (const k of ['x', 'y', 'z'])
-      if (!Number.isFinite(b[k])) out.push(at + ': ' + k + ' is not a number');
-    if (!(b.w > 0) || !Number.isFinite(b.x)) continue;   // can't bound a malformed box further
-    const lo = b.x - b.w / 2, hi = b.x + b.w / 2;
-    const reach = Math.max(Math.abs(lo), Math.abs(hi));
-    if (reach > BODY_HALF_WIDTH + 1e-9)
-      out.push(at + ': x-extent [' + lo.toFixed(3) + ',' + hi.toFixed(3) +
-        '] reaches ' + reach.toFixed(3) + ', past the ' + BODY_HALF_WIDTH.toFixed(3) +
-        ' collision half-width');
-    if (b.h > 0 && Number.isFinite(b.y)) {
-      const yLo = b.y - b.h / 2, yHi = b.y + b.h / 2;
-      if (yLo < -1e-9)
-        out.push(at + ': y-extent dips below the deck (' + yLo.toFixed(3) + ')');
-      if (yHi > BODY_HEIGHT + 1e-9)
-        out.push(at + ': y-extent top ' + yHi.toFixed(3) + ' exceeds the ' +
-          BODY_HEIGHT + ' collision height');
-    }
+// Shoelace formula: signed area of an authored polygon. Used only to prove
+// a shape's points are wound so a canvas nonzero fill actually covers it (a
+// self-intersecting or near-zero-area shape would be a silent no-op paint —
+// this catches that class of authoring mistake headlessly).
+function polygonArea(points) {
+  let a = 0;
+  for (let i = 0; i < points.length; i++) {
+    const [x1, y1] = points[i], [x2, y2] = points[(i + 1) % points.length];
+    a += x1 * y2 - x2 * y1;
   }
-  for (const zone of ZONES)
-    if (!boxes.some((b) => b.zone === zone)) out.push('no box carries zone "' + zone + '"');
+  return a / 2;
+}
+
+function polygonBounds(points) {
+  let minX = 1, maxX = 0, minY = 1, maxY = 0;
+  for (const [x, y] of points) {
+    minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+  }
+  return { minX, maxX, minY, maxY };
+}
+
+function checkPolygon(out, label, points, minArea) {
+  if (!Array.isArray(points) || points.length < 3) {
+    out.push(label + ' needs at least 3 points, got ' + (points ? points.length : 0));
+    return;
+  }
+  for (const [x, y] of points)
+    if (!(x >= 0 && x <= 1) || !(y >= 0 && y <= 1))
+      out.push(label + ' point (' + x + ',' + y + ') is outside the [0,1] canvas');
+  const area = Math.abs(polygonArea(points));
+  if (area < minArea)
+    out.push(label + ' polygon area ' + area.toFixed(4) +
+      ' is too small to be a real fill (self-intersecting or degenerate?)');
+}
+
+function checkEllipse(out, label, e) {
+  if (!e || !(e.x >= 0 && e.x <= 1 && e.y >= 0 && e.y <= 1 && e.rx > 0 && e.ry > 0))
+    out.push(label + ' is not a well-formed ellipse inside the canvas');
+}
+
+/* Headless conformance check. Every field is overridable (defaulting to the
+   real shipped data) so pathcheck can construct synthetic bad cases and
+   prove the guard actually rejects them — the same shape as shell.js's
+   compositionViolations and this file's own former rigEnvelopeViolations.
+
+   HONESTY LIMIT, stated plainly because it is easy to miss: this file
+   cannot see the RASTERIZED texture — there is no `document`/canvas in
+   src/pure/ or in pathcheck's plain-Node process, so nothing here proves
+   the drawn pixels look like a marine. What it CAN prove, and does: the
+   plane's own world-unit footprint stays inside the frozen collision box
+   (which bounds every pixel by construction, since nothing can be drawn
+   outside the plane it is textured onto), every authored shape is
+   well-formed and the whole assembly spans head-to-toe, and the canvas
+   resolution is a sane, non-stretching multiple of the plane's own aspect
+   ratio. The qualitative judgment — does it read as RIG — is the
+   operator's, at true on-screen size, same as ever. */
+export function spriteViolations(opts = {}) {
+  const spriteW = opts.spriteW ?? SPRITE_W;
+  const spriteH = opts.spriteH ?? SPRITE_H;
+  const helmet = opts.helmet ?? HELMET;
+  const torso = opts.torso ?? TORSO;
+  const legFront = opts.legFront ?? LEG_FRONT;
+  const legBack = opts.legBack ?? LEG_BACK;
+  const canvasW = opts.canvasW ?? CANVAS_W;
+  const canvasH = opts.canvasH ?? CANVAS_H;
+  const liftTop = opts.liftTop ?? LIFT_TOP;
+  const liftBottom = opts.liftBottom ?? LIFT_BOTTOM;
+  const visor = opts.visor ?? VISOR;
+
+  const out = [];
+  if (!(spriteW > 0) || !(spriteH > 0)) out.push('sprite plane has a non-positive dimension');
+  if (spriteW / 2 > BODY_HALF_WIDTH + 1e-9)
+    out.push('sprite half-width ' + (spriteW / 2).toFixed(3) + ' exceeds the ' +
+      BODY_HALF_WIDTH.toFixed(3) + ' collision half-width');
+  if (spriteH > BODY_HEIGHT + 1e-9)
+    out.push('sprite height ' + spriteH.toFixed(3) + ' exceeds the ' + BODY_HEIGHT + ' collision height');
+
+  checkEllipse(out, 'helmet', helmet);
+  checkPolygon(out, 'torso', torso, 0.03);
+  checkPolygon(out, 'front leg', legFront, 0.015);
+  checkPolygon(out, 'back leg', legBack, 0.015);
+
+  // the whole assembly must span head-to-toe: helmet reaches near the top,
+  // a leg reaches near the bottom
+  if (helmet && helmet.y - helmet.ry > 0.05)
+    out.push('helmet never reaches the top of the canvas (top ' + (helmet.y - helmet.ry).toFixed(3) + ')');
+  if (Array.isArray(legFront) && Array.isArray(legBack)) {
+    const maxLegY = Math.max(polygonBounds(legFront).maxY, polygonBounds(legBack).maxY);
+    if (maxLegY < 0.9)
+      out.push('legs never reach the bottom of the canvas (max y ' + maxLegY.toFixed(3) + ')');
+  }
+  if (Array.isArray(torso)) {
+    const tb = polygonBounds(torso);
+    if (tb.maxX - tb.minX < 0.3)
+      out.push('torso is too narrow to read as shoulders (width ' + (tb.maxX - tb.minX).toFixed(3) + ')');
+  }
+
+  if (!(canvasW > 0 && canvasH > 0)) out.push('canvas has a non-positive dimension');
+  else {
+    const canvasAspect = canvasW / canvasH, planeAspect = spriteW / spriteH;
+    if (Math.abs(canvasAspect - planeAspect) > 0.05)
+      out.push('canvas aspect ' + canvasAspect.toFixed(3) + ' drifted from the plane\'s own ' +
+        planeAspect.toFixed(3) + ' — the drawn art would stretch');
+    if (canvasH < 60) out.push('canvas resolution is not a meaningful supersample of the true on-screen size');
+  }
+  if (!(liftTop > 0 && liftTop < liftBottom && liftBottom < 1))
+    out.push('lift band is not ordered top < bottom inside (0,1)');
+  checkEllipse(out, 'visor accent', visor);
   return out;
 }

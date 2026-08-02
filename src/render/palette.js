@@ -72,9 +72,14 @@ export const CLASSIC = {
    * new hue — CLASSIC stays the byte-faithful grey-box, so these are hand
    * -authored neutral greys, not derived from any CONCEPT role. Luminance
    * ladder (bright > mid > dark) and the minimum separation between all
-   * three are asserted in tools/pathcheck.mjs's T-040 block. */
-  playerDark: 0x797c80,
-  playerMid: 0xacafb3,
+   * three are asserted in tools/pathcheck.mjs's T-040 block. Widened past
+   * that floor on purpose: RIG's sprite is a MeshStandardMaterial (lit, so
+   * playerDark/playerMid land where the rest of the palette was calibrated
+   * to), and ACES tone mapping compresses midtones hard enough that a raw
+   * gap just over the floor read as nearly flat once lit and tone-mapped —
+   * measured on screen, not assumed (reports/tasks/T-040/build.md). */
+  playerDark: 0x5f6266,
+  playerMid: 0xb4b7bb,
   /* ==== end T-040 ==== */
   gun: CONFIG.palette.gun,
   wasp: CONFIG.palette.wasp,
@@ -144,9 +149,13 @@ export const CONCEPT = {
    * muzzle family as `player` (a hue change would be a new color role —
    * decisions.md entry first, per the packet's correction) — low channel
    * spread, r >= g >= b, asserted in tools/pathcheck.mjs's T-040 block
-   * alongside the luminance ladder and minimum separation between zones. */
-  playerDark: 0x787369,
-  playerMid: 0xafaa9b,
+   * alongside the luminance ladder and minimum separation between zones.
+   * Widened past that floor on purpose: see CLASSIC's note above — a lit
+   * MeshStandardMaterial plus ACES tone mapping compresses midtones hard
+   * enough that a raw gap just over the floor read as nearly flat once
+   * lit and tone-mapped, measured on screen. */
+  playerDark: 0x565048,
+  playerMid: 0xc3bead,
   /* ==== end T-040 ==== */
   gun: CONFIG.palette.gun,               // already the warm muzzle family
   // ENEMY acid green — now live on the meshes (src/render/hostiles.js);

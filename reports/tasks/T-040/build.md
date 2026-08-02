@@ -1,8 +1,190 @@
 # T-040 — RIG silhouette: five boxes to a real 30 px outline with three value zones
 
 Worktree `/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-040`,
-branch `task/T-040`. Implements look-direction packet §3 item S8, including
-the "corrections carried from adversarial review" printed in the packet.
+branch `task/T-040`. Implements look-direction packet §3 item S8.
+
+## OPERATOR REJECTION AND REWORK — read this section first
+
+The box/value-zone version below (committed `7a48f27`/`a8e2bc9`, already
+independently reviewed — `reports/tasks/T-040/review.md` — APPROVE) was
+**rejected by the operator** on a screenshot of the shipped FAR view: *"this
+is RIG? i was hoping for a much higher quality asset in line with the
+concept art."* That review is superseded by this rework; do not treat it as
+current. Everything from here through "What changed and why" below is the
+**superseded v1 attempt**, kept as a historical record, not the shipped
+state. The current state is described in this section and verified in
+`## v3 verification` further down.
+
+**The gap, read off the boards.** `docs/concept-art/01-exterior-gameplay.png`
+(cropped/5×'d — see the operator dispatch for the exact crop) shows RIG as a
+compact armored marine: a helmet with a small gold-amber visor glint, a
+gunmetal-grey torso, and a dynamic running/firing pose — nothing like a
+stack of six flat-shaded boxes. Board 13's tiny white silhouette still reads
+as a *figure*, not a primitive, because of pose and outline, not detail (at
+that size detail is invisible regardless).
+
+**Why more boxes cannot fix it.** RIG is frozen at ~15×30 px on screen
+(decisions.md entry 7). At that size, geometric detail (a visor box, a pack
+box) contributes at most a few pixels and cannot read as a shape — the
+six-box version's own evidence showed this. What DOES read at 30 px is a
+*crafted 30 px image*: a deliberate outline, a few broad value regions, one
+accent — a pixel-art-adjacent discipline, not a modelling one.
+
+**The approach:** a small set of plain shapes (`src/pure/rig.js`'s `HELMET`
+ellipse, `TORSO` polygon with its own back-side pack bulge, two independent
+`LEG_FRONT`/`LEG_BACK` polygons) rasterized once into a `CanvasTexture`
+(sanctioned per `.claude/skills/threejs-textures/SKILL.md`'s guardrails,
+precedent at `src/render/capsules.js`'s `faceTexture`) and mapped onto a
+single billboard-style plane, replacing all six boxes. The gun is
+untouched — still the small 3D box it always was, still swept through
+8-way aim every frame.
+
+### Iteration log — three real mistakes, each caught by looking, not by reasoning
+
+This section exists because the operator's instruction was explicit:
+*"judge every iteration at TRUE on-screen size… put the true-size crop
+first in your report, not the zoom."* Two of these three mistakes would
+have shipped invisibly if judged only by a 5× crop or a flat 2D debug dump.
+
+1. **A single hand-plotted silhouette polygon, authored blind.** First
+   instinct: replicate `index.html`'s `.sl-rig::before` clip-path technique
+   (one closed path, a notch pulled up between the feet to imply two legs)
+   as a single 14-point polygon, coordinates picked by reasoning about
+   fractions on paper, never rendered before wiring it into the 3D scene.
+   Result, at true on-screen size:
+   `reports/tasks/T-040/evidence/v3-mistake1-thin-ribbon-5x.png` — an
+   illegible thin ribbon, not a figure. **Fix:** stopped trusting
+   hand-derived coordinates; built a throwaway `page.evaluate()` that
+   recreates the exact canvas-drawing code and dumps the texture alone as a
+   PNG, viewed before touching the 3D scene again. That dump showed the
+   real problem (see item 2's shape) and led to abandoning the "one clever
+   path" idea for a small set of plain shapes (ellipse + polygons), which
+   read as a figure immediately in the same standalone dump.
+2. **Plain shapes, but still paper-thin in the real 3D scene.** The
+   standalone canvas dump of the new plain-shapes design looked correct.
+   Wired into the actual `PlaneGeometry` + `MeshBasicMaterial({alphaTest:
+   0.5})`, the on-screen result was — again — a paper-thin vertical sliver:
+   `reports/tasks/T-040/evidence/v3-mistake2-alphatest-paperthin-5x.png`.
+   Root cause, confirmed empirically (not assumed): at RIG's true ~12 px
+   on-screen width, the GPU's own mipmapping blurs the texture's alpha
+   channel enough that an `alphaTest: 0.5` cutoff discards almost the whole
+   shape, leaving only the highest-alpha center pixels. **Fix:** switched
+   to `transparent: true` alpha *blending* instead of an alphaTest cutout —
+   blending degrades gracefully under mip-blur; a cutoff does not.
+3. **Fixed the thinness, introduced a wash-to-white.** With blending fixed,
+   the shape's outline was correct, but every value zone (dark torso, mid
+   helmet) rendered as near-uniform light grey, at BOTH the shipped FAR
+   distance and a much closer `?view=near` test (which ruled out a
+   minification artifact, since minification would matter less up close,
+   not identically): `reports/tasks/T-040/evidence/v3-mistake3-unlit-
+   washout-5x.png`. Root cause, worked out from `src/render/palette.js`'s
+   own header note ("values are authored against what the renderer
+   PRODUCES… with the light rig + ACES tone mapping") and confirmed by
+   computing the actual ACES Filmic curve against the raw token values:
+   `MeshBasicMaterial` is UNLIT, so it fed the canvas's raw RGB straight
+   into the tone-mapping curve with no light-rig attenuation first: ACES's
+   midtone compression pushes an unlit ~0.47 input to ~0.71-0.75 output
+   for BOTH `playerDark` and `playerMid`, collapsing the two into nearly
+   the same near-white — computed by hand from the Narkowicz ACES
+   approximation three.js uses, and it matched the measured on-screen
+   pixels closely. **Fix:** switched to `MeshStandardMaterial` (lit), the
+   same material every other mesh in the game uses and the material the
+   whole palette was calibrated against — the zones separated again.
+
+A fourth, smaller lesson that did NOT need a mistake screenshot to learn:
+a thin ink outline and a soft gradient lift-band (added for extra polish
+after fix 3) measured as barely-there on screen — any feature narrower than
+roughly a texel or two of the *final* on-screen size (not the supersampled
+canvas) is sub-pixel once minified and blends away rather than reading as a
+separate feature. Dropped both in favor of BROAD, single-flat-color zones,
+which is what actually shows up as distinct regions at this size.
+
+### What ships now
+
+`src/pure/rig.js`: `HELMET` (ellipse), `TORSO` (polygon, pack bulge baked
+into its own edge), `LEG_FRONT`/`LEG_BACK` (independent polygons, a real
+gap between them), `VISOR` (accent ellipse), plus `SPRITE_W`/`SPRITE_H`/
+`CANVAS_W`/`CANVAS_H` and `spriteViolations()` (the envelope gate — every
+field overridable so pathcheck can construct synthetic bad cases). Gun data
+(`GUN_BOX`, `gunLocalXSpan`, `GUN_INNER_X`/`GUN_OUTER_X`) is carried forward
+unchanged.
+
+`src/render/player.js`: `paintRigTexture()` draws `LEG_BACK`/`LEG_FRONT`
+(mid), `TORSO` (dark), `HELMET` (mid), and the visor accent (gun-gold) as
+FLAT fills onto a canvas once at module load; a `PlaneGeometry(SPRITE_W,
+SPRITE_H)` with a `MeshStandardMaterial({map, transparent: true, side:
+DoubleSide})` carries it. `sync()` gained one line: `bodyMesh.scale.x =
+player.facing < 0 ? -1 : 1` — the silhouette is authored facing +x (front/
+gun side), so it mirrors correctly when the sim's own facing flips, using
+the same sign `CONFIG.player.aim` already reads. Everything else in
+`sync()` (crouch squash, flow lean, i-frame blink) is untouched.
+
+`src/render/palette.js`: `playerDark`/`playerMid` widened past their
+original gap (both tables) — the tone-mapping mistake above meant the
+original raw gap, correct in the abstract, read as nearly flat once lit and
+tone-mapped; re-measured on screen before and after, not assumed.
+
+`tools/pathcheck.mjs`: the T-040 block rewritten for the new shape set
+(`spriteViolations` replaces `rigEnvelopeViolations`, one prove-it-rejects
+case per shape kind), draw-call count updated (`RIG` now draws exactly 2
+meshes total — 1 body plane + 1 gun box — down from the rejected version's
+7 and the ORIGINAL 5).
+
+### v3 verification
+
+- **`node tools/pathcheck.mjs`: `1774 passed, 0 failed`.** Broke the
+  envelope guard again on this version (`SPRITE_W` widened to 0.9) and
+  confirmed two independent assertions fail with the exact expected
+  messages, then restored to green with a clean `git status --short`.
+- **Browser `?selftest=1`: `SELFTEST PASS (29 checks)`** — verified against
+  a freshly-confirmed server (checked response `Content-Length`/line count
+  against the actual file before trusting the result; a stray server on a
+  reused port gave a false pass earlier in this same session and was
+  caught the same way).
+- **Bot playtest** (`mid-route.json --deterministic --base-url
+  http://127.0.0.1:8771`, server identity verified first): `outcome:
+  completed`, `deaths: 0`.
+- **Facing flip**: ran left with a fired shot —
+  `reports/tasks/T-040/evidence/v3-facing-left-5x-crop.png` shows the gun
+  and the silhouette both correctly mirrored.
+- **True-size result** (put first, per the operator's instruction):
+  `reports/tasks/T-040/evidence/v3-final-far-default.png` (full frame,
+  shipped default URL) and the native-resolution crop inside it. The 5×
+  crop for detail is `v3-final-5x-crop.png`.
+- **Bullet-family check, re-measured on the final version**:
+  `reports/tasks/T-040/evidence/v3-bullet-family-5x-crop.png` — a fired
+  rifle burst next to RIG. The torso now reads visibly darker than the
+  tracer at native resolution, a real, larger separation than the v1
+  version's head-only bright zone gave (numbers below).
+
+Native-resolution (1×) pixel samples from the final version, sampled
+directly, not estimated:
+- background (laddered default): `(28,53,53)`
+- torso (dark, majority of the figure): roughly `(100-140, 100-140,
+  95-125)` — a real, visible step down from
+- helmet/legs (mid): roughly `(150-160, 148-158, 130-142)`
+- tracer (for comparison, same capture): `(226,222,205)`, still brighter
+  than either RIG zone, but now clearly separated from the torso rather
+  than sharing a value family with the whole figure the way v1's
+  all-bright design did.
+
+**Honest limit, stated plainly:** this is still a small, soft result at
+true size — recognizably a runner with a gun, head/torso/leg value
+separation, an asymmetric pose and a back-side pack bulge, but it is not
+"high detail" in the way the concept art itself is, because 30 px cannot
+carry that much information regardless of technique. If the operator's bar
+requires more than this size can support, the honest next step is the
+escalation the dispatch itself named: propose a RIG-size change against
+decisions.md entry 7, with evidence, rather than keep re-authoring the same
+30 px canvas. That is a decision for the operator, not something to
+silently work around here.
+
+---
+
+## HISTORICAL — v1 attempt (superseded, six boxes/three zones)
+
+Everything from here to "Addendum — recalibrated against the shipped
+half-dose world" is the REJECTED first attempt, kept for the record.
 
 ## What changed and why
 
@@ -280,37 +462,41 @@ own tracers by *existing* documented design intent) rather than deciding
 whether that remainder is a problem — that's a look call for the operator,
 not something a machine gate or I get to resolve by picking a new color.
 
-## Open feel questions for the operator
+## Open feel questions for the operator (v3 — current)
 
 Never judged here — machine gates don't judge fun or look. For the exact
-URL: `index.html` (shipped default, no query flags) at the FAR camera.
+URL: `index.html` (shipped default, no query flags) at the FAR camera. Put
+`v3-final-far-default.png` / the native-resolution crop in front of the
+operator FIRST — the 5× crop (`v3-final-5x-crop.png`) is detail evidence,
+not the thing being judged.
 
-1. Does the three-zone split (bright head/visor/gun, dark torso/pack, mid
-   legs) read as a *figure* at the true on-screen size (~30 px tall), or
-   does it still read as "one blob with a smudge"?
-2. Is the visor/helmet break legible as a helmet, or does it just look like
-   a slightly wider head at this distance?
-3. Does the pack read as a pack (a silhouette bump behind the torso), given
-   it's on the far side of the body from the camera and partially
-   self-occluded at some aim angles?
-4. Is the dark torso value now reading as "armor in shadow" (intended) or as
-   "a hole in the sprite" at a glance?
-5. Should the gun-arm's own bright value be reconsidered given it now sits
-   next to a much darker torso (higher local contrast than before), or does
-   that contrast help the aim-pose read (pillar 2)?
-6. RIG's remaining bright zone (head/visor, ~18% of his silhouette) shares
-   its hue family with his own tracers by existing, documented design intent
-   ("RIG — muzzle family" in `palette.js`'s role table) — measured at
-   sum-653 tracer vs sum-483–508 head, same family, different value. Now
-   that only a minority of RIG carries that family instead of all of him,
-   is the remainder still a problem worth a `decisions.md` entry to break
-   (a hue distinct from MUZZLE), or does the reduced share already read
-   fine at true size?
+1. At true on-screen size, does this read as a *figure* — helmet, torso,
+   legs, gun — or still as an indistinct blob? This is the direct
+   replacement for the rejected six-box version; is it actually better, and
+   is it enough?
+2. Does the asymmetric running pose (front leg reaching down-forward, back
+   leg trailing, a back-side pack bulge) add anything at this size, or does
+   the pose read as noise/blur rather than motion?
+3. The dark torso now visibly separates from the bright rifle tracer
+   (`v3-bullet-family-5x-crop.png`) — is that separation enough, or does
+   RIG still get lost among his own shots in a firefight with several
+   tracers on screen at once?
+4. This build report's own honest limit: is a flat-shape canvas sprite at
+   ~15×30 px capable of the quality bar you want at all, or does closing
+   that gap actually require RIG to be bigger on screen — which would mean
+   revisiting decisions.md entry 7 (the frozen FAR default), a call only
+   you can make?
+5. Is the visor glint (the one accent) visible/legible at this size, or is
+   it too small to register at all?
 
 ## Best next action
 
-Send to review/playtest per the loop protocol (`reports/tasks/T-040/
-review.md`, `reports/tasks/T-040/playtest.md`); if both are green, merge via
-`tools/orch/merge-task.sh T-040` from the main checkout, then route the six
-questions above to the operator's checkpoint queue with the URL above (for
-question 6, also link `bullet-family-5x-crop.png`).
+Send to review/playtest per the loop protocol — the existing `reports/
+tasks/T-040/review.md` is for the SUPERSEDED v1 commit and needs a fresh
+pass against the current `src/pure/rig.js`/`src/render/player.js`/
+`src/render/palette.js`/`tools/pathcheck.mjs`. If both come back green,
+merge via `tools/orch/merge-task.sh T-040` from the main checkout, then
+route the five v3 questions above to the operator's checkpoint queue with
+the URL and evidence paths listed. If the operator's answer to question 4
+is "make him bigger," that is a pillar/decisions-entry-7 conflict per this
+lane's standing instructions — escalate it rather than resolve it here.
