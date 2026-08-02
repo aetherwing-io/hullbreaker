@@ -608,3 +608,177 @@ price a decision (entry 12: the price is pressure).
   six-face run before they are treated as settled.
 
 **Source:** operator playtest, 2026-08-01, immediately after entry 12.
+
+## 14 — 2026-08-02 — Value-ladder dose: half, not full
+
+**Verdict.** Shown the T-035 value ladder A/B on a pinned build — A the shipped
+grey-box, B `?shade=1` (full), C `?shade=0.5` (half) — the operator ruled:
+
+> "C on the ladder feels better, shade=0.5 the other is too dark"
+
+**What this settles.** The ladder itself is ACCEPTED: baking occlusion, top-face
+rake and seeded wear into the existing instance colors is the right fix for the
+measured value collapse (0.0% of playfield pixels above luminance 200 in all
+fifteen audit captures; 99% inside a 45-70 band out of 255;
+`docs/proposals/2026-08-look-direction.md`). What is rejected is the FULL dose,
+not the technique.
+
+**What ships.** The approved half dose becomes the default look, not a query
+flag the operator has to remember. An escape hatch back to the pre-ladder look
+stays available for comparison, and `?palette=classic` remains byte-faithful to
+the pre-T-035 grey-box because the Palette v1 A/B is still unjudged.
+
+**Standing consequence for the look lanes.** Every downstream item in the packet
+— backdrop tiers, seam pips, contact shadows, RIG silhouette, impact language —
+calibrates against the value range the world actually ships with. That range is
+now the HALF dose. Anything tuned against `?shade=1` is tuned against a look the
+operator rejected and must be re-judged at the shipped dose.
+
+**Not settled here:** whether the ladder is *enough*, and the seven decisions
+still open in the packet's §4 (light rig and shadows, gradient sky,
+post-processing, runtime asset loading, tone mapping, teal vs indigo, amber
+work-light). Those remain the operator's.
+
+## 15 — 2026-08-02 — Impact language lands; RIG's fidelity does not; the framing question opens
+
+Three operator verdicts in one session, on builds served from pinned lanes.
+
+**ACCEPTED — directional impact and travel language (T-041, packet item S10).**
+Played on a pinned build, the operator's verdict was:
+
+> "played 8744, that's fun!"
+
+This is the first "fun" this project has earned from the only oracle that
+counts. Impacts stretch along travel direction and bullets orient to velocity
+across every weapon, inside the existing instanced pools — measured at 256 live
+projectiles, worst frame 9.3ms → 9.4ms, zero dropped frames. Keep it. Anything
+that would flatten or genericize impact feedback now has to argue against a
+recorded positive verdict.
+
+**REJECTED — RIG's fidelity (T-040, packet item S8).** Shown the shipped FAR
+view, the operator's verdict was:
+
+> "this is RIG? i was hoping for a much higher quality asset in line with the
+> concept art."
+
+The three-value-zone box figure is not the bar. Rejected on QUALITY, not on
+technique. The legal path to real fidelity is a procedurally-drawn canvas
+texture (sanctioned by the textures guardrail); external image files remain
+forbidden by asset independence, and a runtime loader still needs its own
+decision.
+
+**OPEN, AND IT BLOCKS THE ART DIRECTION — the framing conflict.** The operator
+posted concept board 01 and said *"I'm still waiting for this level."* In that
+board the marine is roughly HALF the frame height. Shipped, RIG is 3.75% —
+about 30 px, ~15x smaller linearly and ~200x in area. No asset looks like board
+01 at 30 px; this is a camera problem wearing an art problem's clothes.
+
+Entry 7 froze FAR as the default so the Meridian reads as continent-sized. That
+verdict bought monumental scale and paid for it with the hero-character fantasy
+— and board 01 IS the hero-character fantasy. Both cannot be the default frame.
+
+**This entry does NOT resolve it.** It records that the conflict is real, that
+it is the operator's to settle, and that it gates the character art direction.
+Options put to him: (a) keep FAR, RIG stays an icon; (b) switch to the existing
+`?view=near`; (c) a dynamic camera — FAR for traversal and scale reveals,
+pushing in for combat; (d) a new middle scale. Until he rules, do NOT re-tune
+RIG's fidelity target and do NOT touch the camera — but muzzle flash, glow and
+impact language are framing-independent and proceed.
+
+## 16 — 2026-08-02 — Rules that blocked the art are retired; the ones that protect it stay
+
+**Operator instruction, verbatim:**
+
+> "remove the rule. review the whole file and remove anything that's preventing
+> us from making this awesome."
+
+Prompted by his own question a moment earlier — *"but are sprites just not a
+thing? i don't understand why we have an asset generate pipeline that could
+produce that quality and not use it"* — which was correct, and which nobody had
+put in front of him plainly.
+
+### RETIRED
+
+**1. Asset independence.** The rule "the game must boot with every file under
+`assets/` missing; nothing in `src/` loads a file at runtime" is gone. It was
+self-imposed, sensible when there were zero assets, and had become the single
+thing forbidding the game from using `tools/assets/` output. **Runtime asset
+loading is authorized. Sprites are authorized.** For a 2.5D game over a 2D sim,
+billboarded sprites are the natural fit and the shortest path from the concept
+boards to the screen.
+
+*What replaces it, and why it is not nothing:* a missing or failed asset must
+degrade visibly and safely — the T-032 failure panel is the surface for that —
+must never wedge the game, and **must never be something the sim branches on**.
+Art may fail to load; gameplay may not change when it does. `tools/assets/check.mjs`'s
+independence gate is superseded and should be re-aimed at this new contract
+rather than deleted.
+
+**2. Blanket off-by-default flags.** "Prototypes ship behind query flags, off by
+default" is retired as a blanket rule. It is the direct reason the operator kept
+seeing a grey-box build: the value ladder, the seam pips and the RIG pass all
+landed invisible behind flags he never typed. Flags are now for **A/B and
+unjudged experiments only**; anything he has approved ships ON by default with
+an escape hatch back. `?hook=1` stays inert (judged and rejected, entry 5).
+
+### KEPT, DELIBERATELY — these protect the work, they do not block it
+
+- **Layer purity** and **determinism.** Neither has ever blocked an art change;
+  both are what make the sim testable headlessly and bugs reproducible. Without
+  determinism every playtest gate silently starts lying, and this project has
+  already lost cycles to gates that reported green while broken.
+- **Frozen movement constants.** They protect feel that was tuned deliberately.
+  Changeable — but as an intentional decision with its assertions updated, not
+  as a side effect of an art task.
+- **Machine gates never judge fun.** The operator is the only oracle. Removing
+  this would let agents mark their own homework.
+- **Worktrees and the merge gate.** These are what allow eight lanes at once.
+- **No build step.** Not a constraint on quality; it is why iteration is fast.
+
+### STILL THE OPERATOR'S, NOT RETIRED HERE
+
+- **Static anatomy (entry 3)** — an art-direction verdict, not a technical
+  blocker. It shapes how reveals read. Reopen it deliberately if wanted.
+- **The FAR camera (entry 7)** — the live framing conflict from entry 15.
+  Board 01's fantasy needs a closer camera; entry 7 froze FAR for monumental
+  scale. Unresolved, and it gates character art direction.
+
+## 17 — 2026-08-02 — FAR stays, and scale is the thing to build well
+
+**Operator, resolving the framing conflict opened in entry 15:**
+
+> "the 'far' camera is meant to make the play feel like the tiny human scaling
+> a giant monster and the idea is to make the player feel the scale of climbing
+> a giant monster, i think we can do it really well if you try hard"
+
+**FAR is CONFIRMED as the default.** Entry 7 stands, and entry 15's open
+question is CLOSED. Do not propose a closer camera, a dynamic push-in, or a new
+middle view scale to solve character fidelity. Concept board 01 is a poster —
+it frames the marine at roughly half the screen — and it is NOT the gameplay
+camera. The gameplay camera exists to make RIG small on purpose.
+
+**What this settles for character art.** RIG is ~15x30 px and stays there. The
+answer to "higher quality asset" (entry 15) is therefore a genuinely well-crafted
+30 px sprite — deliberate silhouette, 3-4 value steps, one accent, pixel-level
+intent — not more geometry, not a bigger character. Runtime sprites are legal as
+of entry 16, so this is now buildable.
+
+**What this makes the priority.** If RIG being tiny is the point, then SELLING
+THE SCALE is the headline art problem, not RIG's pixel count. The player must
+feel the Meridian is continent-sized. Levers that serve it, from the look
+packet: graded backdrop anatomy tiers (S4), atmospheric depth so distance
+separates into layers rather than collapsing, human-scale reference objects
+(rungs, hatches, doors) placed against enormous features, and silhouette
+composition that keeps something vast in frame. The operator's words are the
+bar: *"really well if you try hard."*
+
+**ALSO APPROVED, same session — the five look builds.** Shown five pinned lanes
+(value ladder, impact language, RIG silhouette, seam-pip highlights, contact
+shadows) his verdict was:
+
+> "all of those 5 builds look good to me"
+
+All five are cleared to merge. Note this does NOT reverse entry 15's rejection
+of RIG's *fidelity* — the silhouette pass is an improvement on boxes and ships,
+while the sprite upgrade continues. Approved work ships ON by default per
+entry 16; it must not stay hidden behind flags.

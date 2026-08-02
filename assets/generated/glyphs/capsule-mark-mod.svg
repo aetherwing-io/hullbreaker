@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Capsule shape code — MOD</title>
+  <desc>Direction C, the mod case: a double chevron on the amber mod face. One mark for the whole mod class, which is the honest version of this direction's cost — four weapons plus four mods is eight symbols, and eight topologies that survive 13px is a harder problem than four.</desc>
+
+  <rect x="0" y="0" width="128" height="128" fill="#14181e"/>
+  <rect x="8" y="8" width="112" height="112" fill="#ffd75e"/>
+
+  <g fill="#14181e">
+    <polygon points="64,14 114,58 92,58 64,34 36,58 14,58"/>
+    <polygon points="64,62 114,106 92,106 64,82 36,106 14,106"/>
+  </g>
+</svg>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="64" viewBox="0 0 128 64">
+  <title>HUD weapon chip — S SPREAD</title>
+  <desc>Direction B (move the letter read to the HUD): a chip drawn at a FIXED screen size, so the camera pull-back cannot shrink it and the read never depends on 13 pixels of world space. Warm-white top rule, ink plate, the letter and its shape code side by side — the pairing is what would teach the code the world glyphs then use. Judged at 32 and 44 px tall against the HUD's own 15-18px type, not at a world-tile size.</desc>
+
+  <rect x="0" y="0" width="128" height="64" fill="#14181e"/>
+  <rect x="0" y="0" width="128" height="4" fill="#fff2d8"/>
+  <rect x="14" y="14" width="34" height="10" fill="#ff4fd8"/>
+  <rect x="14" y="14" width="10" height="25" fill="#ff4fd8"/>
+  <rect x="14" y="27" width="34" height="10" fill="#ff4fd8"/>
+  <rect x="38" y="27" width="10" height="25" fill="#ff4fd8"/>
+  <rect x="14" y="42" width="34" height="10" fill="#ff4fd8"/>
+  <g fill="#ff4fd8">
+    <rect x="80" y="18" width="9" height="34"/>
+    <rect x="80" y="18" width="9" height="34" transform="rotate(-30 84 52)"/>
+    <rect x="80" y="18" width="9" height="34" transform="rotate(30 84 52)"/>
+  </g>
+</svg>

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HULLBREAKER asset comparison sheet</title>
+<!--
+  Dev-only comparison sheet, the multi-asset companion to viewer.html. Loads
+  nothing from src/, imports no game module, and is never referenced by
+  index.html.
+
+  Why it exists: viewer.html answers "does THIS asset read at this size"; a
+  direction decision needs "which of these reads, and can they be told apart",
+  which is a question about several assets at ONE true size, side by side. That
+  is what this page draws — every candidate at exactly the pixel height it will
+  have on screen, in one image the operator can judge without re-deriving any
+  arithmetic.
+
+  Scale derivation is viewer.html's, unchanged (both numbers are the game's own):
+    CONFIG.player.height           = 1.7 tiles                     (src/config.js)
+    CONFIG.viewScales far/mid/near -> RIG at 3.7% / 5.0% / 7.0%     (src/config.js comment)
+    => an asset `tiles` tall renders at frac * viewportHeight * tiles / 1.7 px
+
+  Query parameters:
+    spec=<url-encoded JSON>   { assets:[{path,label}], rows:[{px,label}],
+                                bg, title, note, cell }
+  A row may give `px` directly, or `tiles` (+ optional `view`, default far) and
+  be resolved here against the same fractions the viewer uses.
+-->
+<style>
+  :root { --fg: #d9dde2; --dim: #767c85; --warm: #fff0c2; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #232830; color: var(--fg);
+    font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  header { padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.25); }
+  header b { color: var(--warm); font-weight: 600; }
+  header span { color: var(--dim); margin-left: 14px; }
+  table { border-collapse: collapse; margin: 0; }
+  th, td { padding: 0; text-align: center; vertical-align: middle; }
+  th.col { color: var(--warm); font-weight: 600; padding: 8px 6px; white-space: pre; font-size: 11px; }
+  th.row { color: var(--dim); text-align: right; padding: 0 12px 0 16px; white-space: pre; font-size: 11px; }
+  td.cell { border: 1px solid rgba(255,255,255,0.06); }
+  td.cell div { display: flex; align-items: center; justify-content: center; }
+  img { display: block; }
+  footer { padding: 8px 16px; border-top: 1px solid rgba(255,255,255,0.12); color: var(--dim); font-size: 11px; }
+  .err { color: #ff9adf; padding: 24px; }
+</style>
+</head>
+<body>
+<header><b id="title">—</b><span id="sub">—</span></header>
+<div id="stage"></div>
+<footer id="foot">approximation: flat composite at the correct pixel height — no fog, perspective, lighting or mipmapping.</footer>
+<script>
+(() => {
+  const stage = document.getElementById('stage');
+  const VIEW_FRAC = { near: 0.070, mid: 0.050, far: 0.037 };
+  const RIG_TILES = 1.7;                     // CONFIG.player.height
+  const BACKDROPS = { game: '#232830', haze: '#46525f', void: '#0b0e12', ink: '#14181e',
+                      teal: '#143238', deck: '#c8834a', limb: '#2f565e' };
+
+  // URLSearchParams.get() already percent-decodes; decoding a second time
+  // throws on any literal '%' the caller wrote in a label or note (measured:
+  // a note reading "29-34% of the frame" made the whole sheet fail to build).
+  let spec;
+  try { spec = JSON.parse(new URLSearchParams(location.search).get('spec') || ''); }
+  catch (e) { spec = null; }
+  if (!spec || !Array.isArray(spec.assets) || !Array.isArray(spec.rows)) {
+    stage.innerHTML = '<div class="err">no usable ?spec= JSON</div>';
+    document.documentElement.dataset.sheetReady = 'error';
+    return;
+  }
+
+  const vh = spec.viewportH || window.innerHeight;
+  const cell = spec.cell || 128;
+  const bg = BACKDROPS[spec.bg] || spec.bg || BACKDROPS.game;
+  document.body.style.background = bg;
+
+  const rows = spec.rows.map((r) => {
+    const frac = VIEW_FRAC[r.view] || VIEW_FRAC.far;
+    const px = r.px != null ? Number(r.px) : (frac * vh * Number(r.tiles)) / RIG_TILES;
+    return { px, label: r.label || (px.toFixed(1) + 'px') };
+  });
+
+  const table = document.createElement('table');
+  const head = document.createElement('tr');
+  head.appendChild(document.createElement('th'));
+  for (const a of spec.assets) {
+    const th = document.createElement('th');
+    th.className = 'col';
+    th.textContent = a.label || a.path.split('/').pop().replace(/\.[^.]+$/, '');
+    head.appendChild(th);
+  }
+  table.appendChild(head);
+
+  let pending = spec.assets.length * rows.length;
+  const done = () => { if (--pending <= 0) document.documentElement.dataset.sheetReady = '1'; };
+
+  for (const row of rows) {
+    const tr = document.createElement('tr');
+    const rh = document.createElement('th');
+    rh.className = 'row';
+    rh.textContent = row.label;
+    tr.appendChild(rh);
+    for (const a of spec.assets) {
+      const td = document.createElement('td');
+      td.className = 'cell';
+      const box = document.createElement('div');
+      box.style.width = cell + 'px';
+      box.style.height = Math.max(row.px + 14, 26) + 'px';
+      const img = document.createElement('img');
+      img.src = '/' + String(a.path).replace(/^\/+/, '');
+      img.style.height = row.px + 'px';
+      img.style.width = 'auto';
+      img.onload = done;
+      img.onerror = () => { td.classList.add('err'); td.textContent = 'missing'; done(); };
+      box.appendChild(img);
+      td.appendChild(box);
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
+  }
+  stage.appendChild(table);
+
+  document.getElementById('title').textContent = spec.title || 'comparison sheet';
+  document.getElementById('sub').textContent =
+    `${spec.assets.length} assets x ${rows.length} sizes · backdrop ${spec.bg || 'game'} · viewport height ${vh}px`;
+  if (spec.note) document.getElementById('foot').textContent = spec.note + ' — ' +
+    document.getElementById('foot').textContent;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Capsule lit code — SPREAD</title>
+  <desc>Direction D (argued from boards 01 and 07, where the reward pocket reads as a LIT cell, not a printed box): the same shape code as capsule-mark-spread, inverted — warm-white mark on the hot-magenta face inside an ink frame. The audit in docs/proposals/2026-08-look-direction.md measured 0.0% of playfield pixels above luminance 200 in fifteen gameplay captures, so this is the polarity where the pickup owns the only highlight on screen.</desc>
+
+  <rect x="0" y="0" width="128" height="128" fill="#14181e"/>
+  <rect x="8" y="8" width="112" height="112" fill="#ff4fd8"/>
+
+  <g fill="#fff2d8">
+    <rect x="53" y="24" width="22" height="84"/>
+    <rect x="53" y="24" width="22" height="84" transform="rotate(-30 64 108)"/>
+    <rect x="53" y="24" width="22" height="84" transform="rotate(30 64 108)"/>
+  </g>
+</svg>
