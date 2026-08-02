@@ -1991,3 +1991,26 @@ Filed because the error MESSAGE is what the next person debugging a failing
 asset-independence gate will read, and in this shape it points at the wrong line
 and calls an import a re-export. Cheap fix; only worth doing when someone is next
 in that file.
+
+## I-036 | bug | S3 | repro: at `task/T-027 a07e9c4`, `node tools/playtest/analyze-run.mjs --policy tools/playtest/scripts/six-face-spaced-run.json <trace>` over gate-T-019-spaced-1 and -3, and count PLAYING ticks where a gate-servo `hold left` (rules 2 and 4) fires while `edgeMargin < 8` | evidence: reports/tasks/T-027/build.md (§I-028 census); tools/playtest/runs/gate-T-019-spaced-{1,3}/report.json
+
+Second rule-cancellation pair in the same crush window, found by T-027 while
+fixing the first one (I-028) and deliberately left unfixed. T-027 raised the
+personal-space guard to `edgeMargin>8`, which took that pair's conflicts to zero
+on all three measured traces (3→0, 0→0, 19→0). But the two gate-servo `hold left`
+clauses (rules 2 and 4 of `six-face-spaced-run.json`) carry NO margin guard at
+all and still fire inside the crush window: 1 tick at margin 7.51 and 1 at 7.87
+on trace 1, and 7 ticks spanning 6.95-7.75 on trace 3. Same failure shape — the
+crush-plane emergency `hold right` and a `hold left` both down, `computeAim`'s
+h = 0, RIG standing still in the one window whose rule exists to make it run.
+
+The builder's stated reason for not fixing it is sound and worth preserving: the
+one-line-per-rule fix changes the gate-fight POSITIONING policy that T-019
+measured its numbers with, and retuning that silently would invalidate a
+published band without saying so. So this is a deliberate hand-off, not an
+oversight.
+
+Policy-script only; no game file is involved, and the clauses are legitimate
+relative geometry, so the anti-scripting guard is not implicated. Whoever takes
+this must re-measure T-019's affected numbers in the same change, or state
+plainly which published figures it invalidates.
