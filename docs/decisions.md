@@ -782,3 +782,61 @@ All five are cleared to merge. Note this does NOT reverse entry 15's rejection
 of RIG's *fidelity* — the silhouette pass is an improvement on boxes and ships,
 while the sprite upgrade continues. Approved work ships ON by default per
 entry 16; it must not stay hidden behind flags.
+
+## 18 — 2026-08-02 — The renderer gets materials, shadows, tone mapping and bloom
+
+**Operator, after comparing the shipped build to concept board 01:**
+
+> "should we change the size or camera or scale or something to improve the
+> graphics, i looked at those and we're not even remotely close to the concept
+> art. what is in the way that is making this so difficult?"
+
+**The answer is not camera, size or scale.** Entry 17 settled FAR and it stays.
+What is in the way is that the renderer lacks four capabilities, three of them
+switched off by RULE rather than by any technical limit — so the look lanes have
+been tuning value ranges on a renderer that cannot cast a shadow.
+
+Measured state (`docs/proposals/2026-08-look-direction.md`, 31 captures in
+`artifacts/look-v1/`):
+- **No materials.** Every material in the game is `MeshStandardMaterial
+  {color, flatShading:true}`; `roughness`, `metalness` and every map slot are
+  never set anywhere in `src/`. Five textures in the whole scene.
+- **No shadows.** `grep -rn 'castShadow|receiveShadow|shadowMap' src/` returns
+  nothing. The entire rig is `HemisphereLight(1.1)` + `DirectionalLight(1.6)`.
+  Uniform fill is why nothing reads as having form.
+- **No post-processing.** No bloom, no tone mapping, no grade. A muzzle flash
+  is a bright quad rather than a light source.
+- **Geometry is 87 boxes, 4 octahedra, 3 spheres.**
+
+### AUTHORIZED (this supersedes packet §4.1, §4.3, §4.5)
+
+1. **A real light rig, including shadow maps.** Raking key, fill, rim. Shadows
+   on the play band.
+2. **Tone mapping / exposure / colorSpace.** ACESFilmic or equivalent, so
+   highlights roll off instead of clipping.
+3. **Post-processing via EffectComposer — bloom first.** This is what makes
+   muzzle flashes, seam pips and enemy tells read as light rather than as
+   bright paint.
+4. **Materials and textures.** `roughness`/`metalness` and procedural or
+   generated maps. Entry 16 already legalized runtime assets; nothing had used
+   it yet.
+
+### THE CONDITIONS — these are not bureaucracy, they are the reason to say yes
+
+- **60fps with 200+ live projectiles is still the bar**, and it is now the
+  binding constraint rather than a formality: shadow maps and a composer pass
+  both cost real frame time. Every lane measures `worstMs`/`over20ms` under the
+  256-projectile stress path, before and after, and reports both. A lane that
+  cannot hold the budget says so instead of shipping it.
+- **Readability outranks beauty (pillar 5).** Bloom that buries a wasp, or a
+  shadow that hides the deck lip, is a regression no matter how good the still
+  frame looks. RIG is 3.75% of screen height; judge at true size, in motion.
+- **Entry 14 stands:** the operator judged the full value ladder "too dark."
+  Do not re-darken the frame in the name of drama.
+- **Everything ships ON by default** per entry 16, with an escape hatch for A/B.
+
+### STILL NOT AUTHORIZED
+
+The frozen FAR camera (entry 7/17), the static-anatomy rule (entry 3), layer
+purity, determinism, and no-build-step are unchanged. None of them is what is
+standing between this game and the boards.
