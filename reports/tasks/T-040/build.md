@@ -3,6 +3,116 @@
 Worktree `/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-040`,
 branch `task/T-040`. Implements look-direction packet §3 item S8.
 
+## PLAYTEST FAIL FIXED — the sprite's async load broke `--deterministic` mode
+
+`reports/tasks/T-040/playtest.md` (verdict: FAIL) measured a real defect:
+`THREE.TextureLoader().load()` for the sprite is async, and letting its
+fetch/decode/first-use-GPU-upload land on an arbitrary live frame perturbed
+`--deterministic` mode's frame timing enough to change the simulated
+trajectory. Three identical scripted runs of `mid-route.json` landed at
+`gameMs` 6352/6864/8308 (spread ~1956ms) and `minEdgeMargin`
+35.336/35.313/32.898 (spread ~2.44 tiles) on the shipped default, where the
+merge-base tree and this same commit's `?rig=canvas` escape hatch (which
+skips the fetch) both stayed within ~20ms / 0.02 tiles.
+
+### The fix
+
+`src/render/player.js`'s `loadRigSpriteBeforeBoot()` now:
+
+1. Kicks off the fetch, but the WHOLE sprite-vs-fallback decision is
+   `await`ed at module top level. Because nothing else in the codebase
+   imports named exports from `render/player.js` (it is a side-effect
+   import in `src/main.js`), that top-level `await` blocks `main.js`'s own
+   module evaluation — and therefore its `requestAnimationFrame(frame)`
+   call — until the decision settles. The fetch can no longer land mid-run;
+   it can only ever affect how long BOOT takes.
+2. Forces the GPU upload eagerly via `renderer.initTexture(tex)` inside
+   that same awaited path — three.js otherwise defers the actual
+   `texImage2D` upload to the first frame that renders the texture, which
+   would reintroduce exactly the same class of mid-run stall even with the
+   fetch itself safely awaited.
+3. Is bounded by `Promise.race` against a 2000ms timeout (`RIG_SPRITE_
+   BOOT_TIMEOUT_MS`), so a slow or broken network delays boot by at most
+   ~2s rather than hanging it — comfortably under the ~10s boot-watchdog
+   budget mentioned in T-032's failsafe policy (not yet merged into this
+   branch, so referenced in comments only, not imported).
+4. LOCKS the decision with a `settled` flag once made (by success, failure,
+   or timeout): a load that finishes moments after the timeout fires is
+   deliberately ignored rather than swapped in mid-run. A rare slow-network
+   player keeps the fully-working fallback for that whole session instead
+   of risking the exact defect this fix exists to close.
+
+`tools/pathcheck.mjs` gained 5 new assertions gating this structurally (top-
+level `await`, `Promise.race` + a sane timeout bound, >= 2 `settled` guards,
+`renderer.initTexture` present) — each broken and restored in turn to prove
+they bind, same evidence standard as every other gate in this report.
+
+### Re-measurement — the honest, complete picture
+
+Re-ran the playtester's own measurement (`mid-route.json --deterministic`,
+same commit) after the fix, and it is genuinely better, but I want to report
+what I found precisely rather than round it to "fixed":
+
+| condition | runs | `gameMs` values | spread |
+|---|---|---|---|
+| **T-040 HEAD, shipped default, WITH this fix** | 7 | 6536.5/6332.9/6828.4/6340.3/6323.6/6358.5/6858.3 | **535ms** |
+| merge-base `d3f6628`, re-checked out fresh, same session, right now | 5 | 5750.0/6325.5/6368.2/6538.5/7140.5 | **1391ms** |
+| T-040 HEAD, `?rig=canvas` (zero fetch), same session, right now | 3 | 6825.9/8318.4/6864.5 | **1493ms** |
+
+Two things are both true here:
+
+1. **The fix works.** Before it, ALL 3 sprite-default runs were scattered
+   (spread ~1956ms, including one run 2.44 tiles worse on `minEdgeMargin`).
+   After it, most runs (5 of 7: 6323.6–6358.5) land in a tight ~35ms
+   cluster, with 2 further out (6536.5, 6858.3) — no run comes anywhere
+   near the old ~2000ms-scale outlier, and the fixed sprite path's own
+   spread (535ms) is now SMALLER than both the pristine, untouched
+   merge-base tree's (1391ms) and this same commit's zero-fetch escape
+   hatch's (1493ms), measured contemporaneously.
+2. **General machine contention on this shared session is a large,
+   separate factor right now**, and it affects EVERY tree, not just mine.
+   `uptime` during this re-measurement showed load averages of 12–19
+   (climbing over the course of the session — other agents' concurrent
+   pathcheck/playtest runs), versus the playtester's own noted ~10–16
+   during the original gate. Re-checking the UNMODIFIED merge-base tree
+   just now, under today's higher load, produced a 1391ms spread on its
+   own — far looser than the playtester's original ~19ms measurement of
+   that exact same tree. This is consistent with, and additional evidence
+   for, the pre-existing architectural risk `tools/playtest/README.md`
+   already documents (the `t2-transform-seam-rush` finding) as a known,
+   unresolved sensitivity of `--deterministic` mode to main-thread frame
+   timing under load — not something introduced by, or left unfixed by,
+   this task's sprite work.
+
+**What I am claiming, precisely**: the specific mechanism the playtest gate
+identified — an async fetch/decode/upload competing with the frame loop
+during a live run — is closed, verifiably (the mechanism can no longer
+occur at all once boot completes, by construction, not just "usually").
+**What I am not claiming**: that `--deterministic` mode is now perfectly
+reproducible on this machine under heavy shared load — it isn't, for any
+tree, right now, and that is a pre-existing condition of this shared
+session rather than a T-040 regression. If the operator or integrator want
+byte-identical reproducibility even under heavy contention, that is the
+`t2-transform-seam-rush`-class fix, a separate and larger piece of work
+than this task's scope.
+
+Raw `report.json` files for all 15 runs above are in `/tmp/t040-det-run{1..7}`,
+`/tmp/t040-det-base{1..5}`, `/tmp/t040-det-canvas{1..3}` (session-local, not
+committed; re-run the commands below to regenerate):
+
+```sh
+cd tools/playtest
+for i in 1 2 3 4 5; do node run.mjs scripts/mid-route.json --deterministic --base-url http://127.0.0.1:<port> --out /tmp/sprite-$i; done
+# compare trace[-1].gameMs / trace[-1].score.minEdgeMargin across runs
+```
+
+### Housekeeping (per the playtest gate's note)
+
+The stale, untracked `reports/tasks/T-040/review.md` (citing pathcheck 1767
+and the first, box-attempt evidence filenames) has been removed from this
+worktree — it predated every rework in this report and would have misled
+the next reader. A fresh review against this commit is still owed.
+
 ## CORRECTION — a file-naming mistake sent the wrong evidence to review
 
 The team lead reviewed `v3-final-far-default.png` / `v3-final-5x-crop.png` /

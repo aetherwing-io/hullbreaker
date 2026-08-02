@@ -16,7 +16,21 @@
    rendered — nothing here writes back to src/sim/player.js, and the fallback
    is a fully-working render path on its own, not a placeholder.
 
-   The gun stays the small 3D box it always was through all three reworks —
+   FOURTH FIX (playtest FAIL, same session): the async texture fetch, left to
+   land mid-run, measurably broke `--deterministic` mode — three identical
+   scripted runs landed at wildly different `gameMs`/`minEdgeMargin` because
+   the fetch + image decode + first-use GPU upload competed with the frame
+   loop for main-thread time on an unpredictable frame. See
+   `loadRigSpriteBeforeBoot()` below: the whole sprite-vs-fallback decision
+   (including forcing the GPU upload eagerly, not on the first frame that
+   happens to render it) is now AWAITED at module top level, bounded by a
+   hard timeout, and LOCKED once settled — nothing about which plane is
+   showing can change again after that point, so no frame during actual
+   gameplay can ever be perturbed by this asset again. A slow/failed load
+   still degrades to the fallback exactly as before; it just can no longer
+   do so mid-run.
+
+   The gun stays the small 3D box it always was through all four fixes —
    untouched, still swept through 8-way aim every frame below. The sprite's
    own art is deliberately body-only (no weapon drawn), so it never doubles
    up against the separately-rotating gun mesh. */
@@ -32,7 +46,7 @@ import {
   CANVAS_H, CANVAS_W, GUN_BOX, HELMET, LEG_BACK, LEG_FRONT, RIG_SPRITE_H, RIG_SPRITE_PATH,
   RIG_SPRITE_UV, RIG_SPRITE_W, SPRITE_H, SPRITE_W, TORSO, VISOR,
 } from '../pure/rig.js';
-import { scene } from './scene.js';
+import { renderer, scene } from './scene.js';
 import { placeOnTower } from './tower.js';
 import { PAL } from './palette.js';
 
@@ -141,33 +155,80 @@ rig.add(spriteMesh);
 // DEFAULT and this is the opt-out, not the other way around.
 const RIG_FORCE_CANVAS = QUERY.get('rig') === 'canvas';
 
-// Runtime-loads the real sprite (decisions.md entry 16). On success: crop
-// to just the drawn figure (RIG_SPRITE_UV — the source PNG is mostly
-// transparent padding) via texture.offset/repeat, swap the fallback out.
-// On failure: log once and do nothing further — the fallback plane never
-// stopped showing, so the player always sees a complete RIG either way.
+// How long boot may wait on the network fetch + image decode before giving
+// up and locking in the fallback for the whole run. Generous for a
+// same-origin static asset (typically resolves in a few ms), far under
+// src/pure/failsafe.js's FAILSAFE.bootWatchdogMs (10000) so this can never
+// look like a hang to the player-facing boot watchdog.
+const RIG_SPRITE_BOOT_TIMEOUT_MS = 2000;
+
+// Runtime-loads the real sprite (decisions.md entry 16), AWAITED at module
+// top level below before the game's first frame ever runs. On success:
+// crop to just the drawn figure (RIG_SPRITE_UV — the source PNG is mostly
+// transparent padding) via texture.offset/repeat, force the GPU upload NOW
+// via renderer.initTexture (three.js otherwise defers upload to the first
+// frame that actually renders the texture — exactly the mid-run stall this
+// fix exists to prevent), then swap the fallback out. On failure OR on
+// timeout: log once and settle on the fallback, which was already showing.
+//
+// `settled` makes the decision IRREVERSIBLE once made: if the boot timeout
+// wins the race, a load that finishes moments later is intentionally
+// ignored rather than swapped in mid-run. A late, ignored load is a strictly
+// safer outcome than the alternative (measured, not assumed — see the build
+// report's playtest-FAIL history): a rare slow-network player keeps the
+// fully-working fallback for that session instead of risking exactly the
+// determinism break this whole function exists to close.
+//
 // This function is the ONLY place that knows which plane is live; nothing
 // in src/sim/ ever reads it, so the sim cannot branch on an asset's fate.
-function loadRigSprite() {
-  if (RIG_FORCE_CANVAS) return;
+function loadRigSpriteBeforeBoot() {
+  if (RIG_FORCE_CANVAS) return Promise.resolve();
+  let settled = false;
   const url = new URL(RIG_SPRITE_PATH, import.meta.url).href;
-  new THREE.TextureLoader().load(
-    url,
-    (tex) => {
-      tex.offset.set(RIG_SPRITE_UV.u0, RIG_SPRITE_UV.v0);
-      tex.repeat.set(RIG_SPRITE_UV.u1 - RIG_SPRITE_UV.u0, RIG_SPRITE_UV.v1 - RIG_SPRITE_UV.v0);
-      spriteMesh.material.map = tex;
-      spriteMesh.material.needsUpdate = true;
-      spriteMesh.visible = true;
-      fallbackMesh.visible = false;
-    },
-    undefined,
-    (err) => {
-      console.warn('RIG sprite failed to load; showing the procedural fallback instead.', err);
-    },
-  );
+  const loadP = new Promise((resolve) => {
+    new THREE.TextureLoader().load(
+      url,
+      (tex) => {
+        if (settled) return;   // the boot timeout already locked in the fallback
+        settled = true;
+        tex.offset.set(RIG_SPRITE_UV.u0, RIG_SPRITE_UV.v0);
+        tex.repeat.set(RIG_SPRITE_UV.u1 - RIG_SPRITE_UV.u0, RIG_SPRITE_UV.v1 - RIG_SPRITE_UV.v0);
+        spriteMesh.material.map = tex;
+        spriteMesh.material.needsUpdate = true;
+        renderer.initTexture(tex);
+        spriteMesh.visible = true;
+        fallbackMesh.visible = false;
+        resolve();
+      },
+      undefined,
+      (err) => {
+        if (settled) return;
+        settled = true;
+        console.warn('RIG sprite failed to load; showing the procedural fallback instead.', err);
+        resolve();
+      },
+    );
+  });
+  const timeoutP = new Promise((resolve) => {
+    setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      console.warn('RIG sprite load exceeded ' + RIG_SPRITE_BOOT_TIMEOUT_MS + 'ms at boot; ' +
+        'locking in the procedural fallback for this run (a late-arriving load is ignored, ' +
+        'never swapped in mid-run — see src/render/player.js\'s header note on why).');
+      resolve();
+    }, RIG_SPRITE_BOOT_TIMEOUT_MS);
+  });
+  return Promise.race([loadP, timeoutP]);
 }
-loadRigSprite();
+// Top-level await: every module that (transitively) imports this one — in
+// practice src/main.js, via its own side-effect `import './render/player.js'`
+// — does not resume evaluation past that import, and so cannot reach its own
+// `requestAnimationFrame(frame)` call, until this settles. That is what
+// moves the whole sprite-vs-fallback decision to BEFORE the game's first
+// simulated frame, bounded by the timeout above so a slow network delays
+// boot by at most ~2s rather than hanging it.
+await loadRigSpriteBeforeBoot();
 
 const gunGroup = new THREE.Group();
 gunGroup.position.set(0, 1.05, 0.25);
