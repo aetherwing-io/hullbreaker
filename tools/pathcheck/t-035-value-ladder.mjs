@@ -299,10 +299,24 @@ export async function run(SHARED) {
 
   // --- draw calls and instance counts are untouched ---------------------
   {
+    // NOT a pinned piece count any more: T-045's scale pass legitimately took
+    // the plan from 829 to 1633 pieces, and a magic number here would have
+    // gated that lane's geometry instead of this lane's colors. The claim is
+    // "the ladder writes colors, never geometry", so it is checked as such —
+    // one multiplier per piece of WHATEVER plan the flags produced, and no new
+    // material bucket (a new bucket is a new draw call).
     const materials = new Set(plan035.map((p) => MATERIAL_035[p.kind] || 'hull'));
-    ok(plan035.length === 829 && materials.size === 8,
-       'T-035: the bake plan is unchanged — ' + plan035.length + ' pieces in ' +
-       materials.size + ' instanced buckets (the ladder writes colors, never geometry)');
+    const scaleOff = limbBakePlan(CONFIG, gh035, { scale: false });
+    const offMaterials = new Set(scaleOff.map((p) => MATERIAL_035[p.kind] || 'hull'));
+    ok(SH.limbShadePlan(plan035, CONFIG, DOSE).length === plan035.length &&
+       SH.limbShadePlan(scaleOff, CONFIG, DOSE).length === scaleOff.length,
+       'T-035: the ladder returns exactly one multiplier per baked piece on both ' +
+       'plans the flags can produce (' + plan035.length + ' with the scale pass, ' +
+       scaleOff.length + ' with ?scale=0) — it never adds, drops or reorders one');
+    ok(materials.size === 8 && offMaterials.size === 8,
+       'T-035: and both plans still bucket into the same 8 instanced draws (' +
+       [...materials].sort().join(', ') + ') — the ladder adds no material, so it ' +
+       'cannot have moved a draw call');
     const count = (src, re) => (src.match(re) || []).length;
     ok(count(limbSrc035, /new THREE\.InstancedMesh/g) === 1 &&
        count(limbSrc035, /new THREE\.Mesh\b/g) === 0,

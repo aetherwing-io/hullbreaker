@@ -116,10 +116,11 @@ function push(out, kind, facet, s, w, y, h, depth, d) {
   out.push({ kind, facet, s, w, y, h, depth, d });
 }
 
-export function limbBakePlan(cfg, groundH) {
+export function limbBakePlan(cfg, groundH, opts = {}) {
+  const scale = opts.scale !== false;             // T-045; ?scale=0 is the A/B
   const out = [];
   for (const facet of limbFacets(cfg)) {
-    facetPlan(out, facet, cfg, groundH);
+    facetPlan(out, facet, cfg, groundH, scale);
   }
   for (const joint of limbJoints(cfg)) {
     jointPlan(out, joint, cfg, groundH);
@@ -127,7 +128,7 @@ export function limbBakePlan(cfg, groundH) {
   return out;
 }
 
-function facetPlan(out, facet, cfg, groundH) {
+function facetPlan(out, facet, cfg, groundH, scale) {
   const L = cfg.limb;
   const k = facet.k;
   // --- the body under the deck, and the wall of body behind it ---------
@@ -192,11 +193,217 @@ function facetPlan(out, facet, cfg, groundH) {
            depth + 0.2, S.thickness + 0.4);
   }
   // --- distant anatomy: the limb continuing up, and the body beyond ----
-  const len = facet.s1 - facet.s0;
-  for (const sk of L.silhouette) {
-    push(out, 'silhouette', facet.k, facet.s0 + sk.atFrac * len, sk.w,
-         sk.y0 + sk.h / 2, sk.h, sk.depth, sk.thickness);
+  if (!scale) {
+    const len = facet.s1 - facet.s0;
+    for (const sk of L.silhouette) {
+      push(out, 'silhouette', facet.k, facet.s0 + sk.atFrac * len, sk.w,
+           sk.y0 + sk.h / 2, sk.h, sk.depth, sk.thickness);
+    }
+    return;
   }
+  sisterPlan(out, facet, cfg);
+  spinePlan(out, facet, cfg);
+  farPlan(out, facet, cfg);
+  markPlan(out, facet, cfg);
+}
+
+/* ------------------------ the scale pass (T-045) -------------------- *
+ * Three graded tiers of anatomy in the haze band, and one set of
+ * human-scale reference objects emitted at the SAME absolute size on the
+ * limb RIG runs on and on the backdrop limb behind it. Every constant is
+ * in CONFIG.limb.backdrop / CONFIG.limb.mark, with the two derived fences
+ * (the haze ladder and the play-band screen fence) written out there.
+ *
+ * Still a bake: no time argument, no rng, hash-driven variation only, so
+ * the body cannot animate or assemble (entry 3).                       */
+
+// Tier 1 — the sister limb: the played limb's own vocabulary at 2.6x, on a
+// diagonal, so two masses read as one creature instead of as scenery.
+function sisterLayout(facet, cfg) {
+  const S = cfg.limb.backdrop.sister;
+  const len = facet.s1 - facet.s0;
+  const run = len * S.span;
+  const slack = Math.max(0, len - run - len * S.spanAt);
+  const s0 = facet.s0 + len * S.spanAt + jitter(facet.k * 3 + 1, 4) * slack / 4;
+  const segs = Math.max(2, Math.round(run / S.segW));
+  return {
+    s0, segs, step: run / segs,
+    dir: jitter(facet.k * 7 + 3, 2) === 0 ? 1 : -1,     // climbs or descends
+    // the diagonal is centred on `base`, so the LOW end has to start half a
+    // rise above the tier floor. Clamping the low end to the floor instead
+    // (the first pass did) flattens half of every diagonal into a horizontal
+    // edge, which is exactly the shelf/ceiling read this tier must not have.
+    base: S.y0 + S.rise / 2 + jitter(facet.k * 11 + 5, S.ySteps) * S.yStep,
+  };
+}
+
+// bottom of segment `i` on the diagonal — one function, so the marks ride
+// exactly the mass they are supposed to be attached to
+function sisterBottom(i, lay, S) {
+  const t = lay.segs > 1 ? i / (lay.segs - 1) : 0.5;
+  return Math.max(S.y0, lay.base + lay.dir * S.rise * (t - 0.5));
+}
+
+function sisterPlan(out, facet, cfg) {
+  const S = cfg.limb.backdrop.sister;
+  const k = facet.k;
+  const lay = sisterLayout(facet, cfg);
+  const { segs, step } = lay;
+  for (let i = 0; i < segs; i++) {
+    const bottom = sisterBottom(i, lay, S);
+    const s = lay.s0 + (i + 0.5) * step;
+    const w = step + S.overlap;
+    push(out, 'bdLimb', k, s, w, bottom + S.segH / 2, S.segH, S.depth, S.thickness);
+    // the lip along the top: the same bright edge line the deck kerb draws,
+    // one scale up — it is what gives the mass a readable silhouette in haze
+    push(out, 'bdLimbLip', k, s, w, bottom + S.segH - S.lipH / 2, S.lipH,
+         S.depth + S.lipOut, S.thickness);
+    // a raised ring at every few segment joints; it grows UPWARD only, so it
+    // can never drop a piece below the tier's authored floor
+    if (i % S.ringEvery === 0)
+      push(out, 'bdRing', k, s - w / 2, S.ringW, bottom + (S.segH + S.ringOver) / 2,
+           S.segH + S.ringOver, S.depth + S.ringOut, S.thickness);
+  }
+  markSister(out, facet, cfg, lay);
+}
+
+// Tier 2 — vertebral drums: barrels on a shaft, seen edge-on.
+function spinePlan(out, facet, cfg) {
+  const P = cfg.limb.backdrop.spine;
+  const k = facet.k;
+  const len = facet.s1 - facet.s0;
+  const n = Math.max(1, Math.round(len / P.every));
+  const step = len / n;
+  const tops = [];
+  for (let i = 0; i < n; i++) {
+    const s = facet.s0 + (i + 0.5) * step;
+    // a spine UNDULATES; a row of drums at one height is a colonnade, which
+    // is the architecture read the macro form was rejected for
+    const wave = (1 + Math.sin(i * 0.85 + k * 1.7)) / 2;
+    const bottom = P.y0 + wave * P.ySteps * P.yStep;
+    const tall = P.drumH * P.barrel.reduce((a, [, hf]) => a + hf, 0);
+    const mid = bottom + tall / 2;
+    // five chorded slabs, not one box: at 62% haze a chamfered stack and a
+    // real cylinder are the same silhouette, and this one is still a box pool
+    let y = bottom;
+    for (const [wf, hf] of P.barrel) {
+      push(out, 'bdDrum', k, s, P.drumW * wf, y + P.drumH * hf / 2, P.drumH * hf,
+           P.depth, P.thickness);
+      y += P.drumH * hf;
+    }
+    tops.push({ s, mid });
+  }
+  // the shaft between two drums, half a tier further back so it reads as the
+  // thing the drums are threaded onto
+  for (let i = 1; i < n; i++) {
+    const a = tops[i - 1], b = tops[i];
+    push(out, 'bdLink', k, (a.s + b.s) / 2, b.s - a.s + 0.4, (a.mid + b.mid) / 2,
+         P.linkH, P.depth - 0.6, P.thickness);
+  }
+}
+
+// Tier 3 — the far body: one continuous mass with a stepped top edge, plus a
+// crown of spires once per facet. This is the tier that keeps something
+// enormous in frame at every point of the run (asserted in pathcheck).
+function farPlan(out, facet, cfg) {
+  const F = cfg.limb.backdrop.far;
+  const k = facet.k;
+  // It runs a chamfer PAST each end of its facet: at a corner the polyline is
+  // still bending there, so the far body carries around the turn instead of
+  // stopping dead at the seam the way the wall does.
+  const ch = cfg.path.chamferTiles;
+  const a = Math.max(0, facet.s0 - ch);
+  const b = Math.min(cfg.levelLength, facet.s1 + ch);
+  const len = b - a;
+  const n = Math.max(1, Math.round(len / F.segW));
+  const step = len / n;
+  for (let i = 0; i < n; i++) {
+    const top = F.tops[jitter(k * 17 + i * 3, F.tops.length)];
+    push(out, 'bdFar', k, a + (i + 0.5) * step, step + F.overlap,
+         (F.y0 + top) / 2, top - F.y0, F.depth, F.thickness);
+  }
+  // the crown on the horizon (board 14), told as silhouette only: the spires
+  // sit half a tile behind the mass, so they emerge from its top edge
+  const si = Math.min(n - 1, Math.floor(F.spireAt * n));
+  const roof = F.tops[jitter(k * 17 + si * 3, F.tops.length)];
+  const sc = a + (si + 0.5) * step;
+  for (let j = 0; j < F.spires; j++) {
+    const h = F.spireH[jitter(k * 19 + j * 7, F.spireH.length)];
+    push(out, 'bdSpire', k, sc + (j - (F.spires - 1) / 2) * F.spireGap, F.spireW,
+         roof - 1.5 + h / 2, h, F.depth - 0.4, F.thickness * 0.8);
+  }
+}
+
+/* --------------------- human-scale reference objects ---------------- *
+ * One table (CONFIG.limb.mark), two emitters, identical dimensions: the
+ * hull skirt under RIG's feet, and the backdrop sister limb. That pairing
+ * is the whole mechanism — the eye calibrates on the near ladder and then
+ * reads the same ladder, tiny, on something across the sky.            */
+
+function ladderAt(out, kind, k, s, topY, runH, depth, M) {
+  const D = M.ladder;
+  push(out, kind + 'Stile', k, s - D.rungW / 2, D.stileW, topY - runH / 2, runH,
+       depth, M.thickness);
+  push(out, kind + 'Stile', k, s + D.rungW / 2, D.stileW, topY - runH / 2, runH,
+       depth, M.thickness);
+  for (let y = topY - 0.3; y > topY - runH; y -= D.pitch)
+    push(out, kind + 'Rung', k, s, D.rungW, y, D.rungH, depth, M.thickness);
+}
+
+function markPlan(out, facet, cfg) {
+  const M = cfg.limb.mark;
+  const k = facet.k;
+  const depth = M.out;
+  const top = M.band.y0;
+  for (let s = Math.ceil(facet.s0 / M.ladder.every) * M.ladder.every;
+       s < facet.s1 - 1; s += M.ladder.every)
+    ladderAt(out, 'mark', k, s + 0.5, top, M.ladder.runH, depth, M);
+  // Access hatches: a bright rim with a dark cover standing PROUD of it. The
+  // cover has to be the nearer box — a box "frame" behind a box "panel" is
+  // just a box, and the first pass of this shipped exactly that: flat painted
+  // squares with no cover visible at all.
+  const H = M.hatch;
+  for (let s = Math.ceil((facet.s0 + H.every / 2) / H.every) * H.every;
+       s < facet.s1 - 1; s += H.every) {
+    const y = M.band.y0 - 2.6 - jitter(k * 23 + s, 4) * 1.9;
+    push(out, 'markRim', k, s + 0.5, H.rimW, y, H.rimH, depth, M.thickness);
+    push(out, 'markPanel', k, s + 0.5, H.panelW, y, H.panelH, depth + M.proud, M.thickness);
+  }
+  // personnel doors, on their own rhythm and their own (lower) deck line
+  const R = M.door;
+  for (let s = Math.ceil((facet.s0 + R.every / 3) / R.every) * R.every;
+       s < facet.s1 - 1; s += R.every) {
+    const sill = M.band.y0 - 5.0 - jitter(k * 29 + s, 3) * 2.2;
+    push(out, 'markRim', k, s + 0.5, R.rimW, sill + R.rimH / 2, R.rimH, depth, M.thickness);
+    push(out, 'markPanel', k, s + 0.5, R.panelW, sill + R.panelH / 2, R.panelH,
+         depth + M.proud, M.thickness);
+    push(out, 'markRim', k, s + 0.5, R.rimW + 1.6, sill - R.sillH / 2, R.sillH,
+         depth + M.proud, M.thickness);
+  }
+}
+
+// The same objects on the sister limb: one ladder down a segment face and one
+// railed gantry along its top. Sizes come from the SAME table, unscaled.
+function markSister(out, facet, cfg, lay) {
+  const M = cfg.limb.mark;
+  const S = cfg.limb.backdrop.sister;
+  const k = facet.k;
+  const depth = S.depth + S.thickness / 2 + S.lipOut + 0.3;   // proud of the tier's lip
+  const at = (frac) => {
+    const i = Math.min(lay.segs - 1, Math.max(0, Math.round(frac * (lay.segs - 1))));
+    return { s: lay.s0 + (i + 0.5) * lay.step, bottom: sisterBottom(i, lay, S) };
+  };
+  const L = at(M.ladder.at);
+  ladderAt(out, 'mark', k, L.s, L.bottom + S.segH - 0.5, S.segH - 1.4, depth, M);
+  // a railed walkway along the top lip: at this distance a railing is the most
+  // legible human object there is — it is only ever the width of a person
+  const G = M.rail;
+  const W = at(G.at);
+  const railY = W.bottom + S.segH + G.postH;
+  push(out, 'markRail', k, W.s, G.len, railY, G.barH, depth, M.thickness);
+  for (let x = -Math.floor(G.len / 2 / G.postEvery); x <= Math.floor(G.len / 2 / G.postEvery); x++)
+    push(out, 'markPost', k, W.s + x * G.postEvery, G.postW,
+         railY - G.postH / 2, G.postH, depth, M.thickness);
 }
 
 function jointPlan(out, joint, cfg, groundH) {
@@ -253,6 +460,53 @@ export function limbSpansPlayBand(piece, cfg) {
 export function limbInJointApron(piece, cfg) {
   const a = piece.s - piece.w / 2, b = piece.s + piece.w / 2;
   return limbJoints(cfg).some((j) => a >= j.apron0 && b <= j.apron1);
+}
+
+/* ------------------- the scale pass's own audits (T-045) ------------ *
+ * Three claims, each as a function the harness and the reader share:
+ * where a piece lands in the haze ladder, whether it is drawn clear of the
+ * air the fight happens in, and whether the far body is ever absent from
+ * the frame. The arithmetic is written out in CONFIG.limb.backdrop.       */
+
+// Linear fog factor of a depth, 0 = untouched, 1 = drawn as pure haze. The
+// camera pull-back shifts the band by exactly (cameraDepth - camera.z), so
+// the shift cancels and this is the same number at every ?view=.
+export function limbFogFactor(depth, cfg) {
+  const F = cfg.limb.fog;
+  return (Math.abs(depth) + cfg.camera.z - F.near) / (F.far - F.near);
+}
+
+// Everything baked deeper than the body wall is "backdrop" — no kind list to
+// keep in sync, so a new tier is fenced the day it is written.
+export function limbBackdropPieces(plan, cfg) {
+  return plan.filter((p) => p.depth < cfg.limb.wall.depth);
+}
+
+// Does this piece draw entirely ABOVE the protected play band on screen? For
+// a pinhole camera, two points at the same screen x order by elevation ratio
+// (y - camera.y) / distance, so this comparison is exact and needs no
+// projection. `depthMult` is a CONFIG.viewScales entry's pull-back.
+export function limbAbovePlayBand(piece, cfg, depthMult) {
+  const C = cfg.camera;
+  const camZ = C.z * depthMult;
+  const bottom = piece.y - piece.h / 2;
+  return (bottom - C.y) / (camZ + Math.abs(piece.depth)) > (cfg.limb.playBand.y1 - C.y) / camZ;
+}
+
+// Runs of the level where no far-body mass sits within `halfWindow` tiles of
+// the camera's own column. Empty = something enormous is always in frame.
+export function limbBackdropGaps(plan, cfg, halfWindow) {
+  const mass = plan.filter((p) => p.kind === 'bdFar');
+  const gaps = [];
+  let open = null;
+  for (let s = 0; s <= cfg.levelLength; s += 0.5) {
+    const covered = mass.some((p) => p.s - p.w / 2 <= s + halfWindow &&
+                                     p.s + p.w / 2 >= s - halfWindow);
+    if (!covered && open === null) open = s;
+    if (covered && open !== null) { gaps.push([open, s]); open = null; }
+  }
+  if (open !== null) gaps.push([open, cfg.levelLength]);
+  return gaps;
 }
 
 // Every violation of the two rules, as a list (empty = the plan is honest).

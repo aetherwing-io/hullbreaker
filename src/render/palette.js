@@ -122,6 +122,9 @@ export const CLASSIC = {
     machine: 0x878d96, skyline: 0x333a44, panel: 0x8a9099,
   },
   atmos: {},                             // transform atmosphere bgs pass through untouched
+  /* ==== T-039 contact shadows ==== */
+  contactShadow: 0x14171c,               // neutral near-black, grey-box family
+  /* ==== /T-039 contact shadows ==== */
   // T-035 value ladder: EXACT identity, by requirement. gain 0 makes every
   // multiplier src/pure/shade.js returns exactly 1.0, so ?palette=classic is
   // still the byte-faithful grey-box instrument the queued Palette v1 A/B is
@@ -220,10 +223,17 @@ export const CONCEPT = {
     0x241e26: 0x1c332f,                  // interior plum-dark → dark teal-green
     0x2d3a4a: 0x2a525c,                  // high exterior → lighter, colder teal
   },
-  // T-035 value ladder, at full strength when its flag arms it. The concept
-  // table is where the ladder belongs: these tokens were authored to land
-  // LIT (see the 0.45x note above), so the range under them is the missing
-  // half of the same authoring, not a second palette.
+  /* ==== T-039 contact shadows ==== */
+  // A shadow sits ON the lit rust deck, not in the teal atmosphere, so this
+  // stays a warm-dark near-black rather than joining the environment family —
+  // MultiplyBlending darkens toward this token, never tints toward it, so its
+  // hue reads faintly at most even at CONTACT_SHADOW.maxOpacity.
+  contactShadow: 0x1c140f,
+  /* ==== /T-039 contact shadows ==== */
+  // T-035 value ladder, at full weight in the concept table: these tokens were
+  // authored to land LIT (see the 0.45x note above), so the range under them is
+  // the missing half of the same authoring, not a second palette. The DOSE the
+  // operator approved lives in CONFIG.shade.dose, not here.
   shade: { gain: 1 },
 };
 

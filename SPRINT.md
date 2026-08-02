@@ -1067,13 +1067,13 @@ worst, spread) and route it to the operator, not claim difficulty is unchanged.
 Also fix a new assertion's false "hostiles LIVE" framing.
 owner: lattice-designer
 
-## T-045 | art | doing | P1
+## T-045 | art | done | P1
 goal: SELL THE SCALE (entry 17) — graded backdrop anatomy tiers, atmospheric
 depth that layers instead of collapsing, and human-scale reference objects
 (rungs, hatches) so the eye can measure the creature against a known size.
 owner: gameplay-engineer
 
-## T-046 | assets | doing | P1
+## T-046 | assets | done | P1
 goal: generate the visual asset set with codex now that entry 16 legalized
 runtime assets — enemy sprites for the five roles (12-24px at the shipped FAR
 view, judged at true on-screen size), backdrop/anatomy scale elements, hull and
@@ -1114,7 +1114,7 @@ rises from a measured 0.0%; palette tokens only; draw-call delta reported.
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; FAR captures before/after
 
-## T-039 | art | doing | P1
+## T-039 | art | done | P1
 goal: packet item S6 — contact shadows as one instanced multiply-blended quad
 pool, so actors sit ON the world. There is no shadow of any kind in the
 renderer today. NOT a shadow map (that needs a decision entry, packet §4.1).

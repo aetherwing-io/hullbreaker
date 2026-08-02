@@ -519,6 +519,15 @@ export const CONFIG = {
     // Thin plates, not blocks: anything with mass above eye level shows the
     // camera its unlit underside, which is what turns distant anatomy into a
     // ceiling. A slab 2.4 deep reads as a silhouette in the haze instead.
+    //
+    // SUPERSEDED BY `backdrop` BELOW (T-045) AND KEPT AS THE A/B (?scale=0).
+    // Both slabs are authored past the haze band's own far plane: at depth -34
+    // the fog factor is 1.16 — clamped to 100% haze, i.e. drawn in exactly the
+    // background color and INVISIBLE at every shipped view — and at -26 it is
+    // 0.875, so that one carries 12.5% of its contrast. Two pieces of distant
+    // anatomy, one of which cannot be seen at all and one of which is a faint
+    // rectangle: that is the whole population of the fog band, which is why
+    // the band measured as one flat token over 29-34% of the frame.
     silhouette: [
       { atFrac: 0.40, y0: 22, h: 46, w: 40, depth: -34, thickness: 2.4 },
       { atFrac: 0.86, y0: 27, h: 40, w: 24, depth: -26, thickness: 2.4 },
@@ -563,6 +572,136 @@ export const CONFIG = {
     // Asserted in tools/pathcheck.mjs against both bands; `fog` above is the
     // shipped default and is unchanged.
     shadeFog: { near: 26.5, far: 54.5 },
+
+    /* ======================= THE SCALE PASS (T-045) ======================= *
+     * decisions.md entry 17: "the 'far' camera is meant to make the play feel
+     * like the tiny human scaling a giant monster." FAR is permanent and RIG
+     * is 3.74% of frame height on purpose, so the work is not on RIG — it is
+     * on giving the frame something that makes 3.74% read as SMALL. Two
+     * blocks do it, and they are the two halves of one idea:
+     *
+     *   `backdrop` — graded anatomy tiers (packet item S4), so distance
+     *     separates into layers instead of collapsing into one flat token.
+     *   `mark`     — human-scale reference objects (rungs, hatches, doors,
+     *     railings) at ONE absolute size, on the limb RIG runs on AND on the
+     *     backdrop limb behind it. Scale is comparative: without a known-size
+     *     object, big geometry only reads as close geometry.
+     *
+     * Everything here is static anatomy (entry 3): baked once, never touched,
+     * revealed by the camera and never assembled. ?scale=0 restores the
+     * `silhouette` pair above, which is the operator's A/B. NOT to be confused
+     * with ?view=, which is the camera pull-back (CONFIG.viewScales).
+     *
+     * TWO DERIVED FENCES GOVERN EVERY NUMBER BELOW. Both are asserted in
+     * tools/pathcheck.mjs against this table, at every entry of viewScales.
+     *
+     * 1. THE HAZE LADDER. three.js fogs on view-space depth, and camera.js
+     *    shifts the band by (cameraDepth - camera.z), so a piece's fog factor
+     *      f = (|depth| + camera.z - limb.fog.near) / (limb.fog.far - fog.near)
+     *    is the same number at near, mid and far — a tier is authored once and
+     *    grades identically at every view. Occupied depths today: the play
+     *    plane 0.00, the hull 0.00 (clamped), the joint ridge 0.125, the wall
+     *    0.161 … and then NOTHING until the sky at 1.0. The three tiers below
+     *    land at 0.446 / 0.625 / 0.804: four steps of aerial perspective in
+     *    the gap where there was one flat field.
+     * 2. THE PLAY-BAND FENCE. A backdrop piece must appear ON SCREEN entirely
+     *    above the protected play band, at every view scale — for a pinhole
+     *    camera two points at the same screen x order by (y - camera.y) / dist,
+     *    so the test is exactly
+     *      (yBottom - camera.y) / (camera.z*mult + |depth|)
+     *          > (playBand.y1 - camera.y) / (camera.z*mult)
+     *    ?view=near is the binding case (its ratio is the largest): it puts
+     *    the floor at y = 16.58 / 18.00 / 19.43 for depths 14 / 19 / 24.
+     *    Authored floors clear those by ~0.5-1 tile. The consequence is the
+     *    one that matters for pillar 5: no hostile, tracer, capsule or falling
+     *    RIG is EVER drawn against new backdrop mass — the air where the fight
+     *    happens stays exactly as clean as it is today, and the new mass sits
+     *    above it. It is also why nothing here can recreate the interior
+     *    "warehouse" macro read entry 0b rejected: a lid would have to hang
+     *    into the play band to be a lid.                                     */
+    backdrop: {
+      // Tier 1, f = 0.446 — THE SISTER LIMB. Board 10's signature read: a
+      // second arm of the same body crossing behind the one being climbed.
+      // It reuses the played limb's own vocabulary (segmented mass, a lip
+      // along the top, rings at the segment joints) at ~2.6x its scale, which
+      // is what makes two masses read as one CREATURE instead of as scenery —
+      // and it is the only tier close enough to carry `mark` objects, so it
+      // is the piece that says "that thing is a hundred of him".
+      sister: {
+        depth: -14, thickness: 1.5,
+        segW: 6.6, segH: 7.6, overlap: 0.4,   // ~2.6x the played limb's chunkCols rhythm
+        y0: 17.0,                             // floor: clears the near-view fence (16.58)
+        yStep: 2.4, ySteps: 4,                // per-facet base offset, hashed
+        rise: 20.0,                           // climb across the run: a steep diagonal, so
+                                              //   it crosses the frame instead of capping it
+        span: 0.45, spanAt: 0.16,             // it covers PART of a facet and leaves sky:
+                                              //   a mass that spans the frame edge to edge
+                                              //   is a ceiling, which entry 0b rejected
+        lipH: 1.0, lipOut: 0.35,              // the kerb line, one scale up
+        ringEvery: 3, ringW: 1.7, ringOver: 2.4, ringOut: 0.55,
+      },
+      // Tier 2, f = 0.625 — VERTEBRAL DRUMS. A spine seen edge-on: barrels
+      // linked by a shaft. Boxes, not a prism — at 62% haze a chamfered
+      // stack and a 16-gon are the same silhouette, and a box costs no second
+      // geometry and therefore no second draw call.
+      spine: {
+        depth: -19, thickness: 2.2,
+        every: 17, y0: 20.0, yStep: 2.4, ySteps: 3,
+        drumW: 8.4, drumH: 7.8,
+        // barrel profile, bottom to top: [width factor, height factor]. Five
+        // chorded slabs read as a drum; three read as a stepped box.
+        barrel: [[0.62, 0.18], [0.86, 0.20], [1.0, 0.44], [0.86, 0.20], [0.62, 0.18]],
+        linkH: 3.4,                                     // the shaft they thread onto
+      },
+      // Tier 3, f = 0.804 — THE FAR BODY. One continuous mass with a STEPPED
+      // top edge, so something enormous is in frame at every point of the run
+      // (asserted), and a crown of spires once per facet: board 14's horizon,
+      // told as silhouette only. At 80% haze this tier carries ~20% of its own
+      // contrast, which is why it may be continuous without becoming a wall.
+      far: {
+        depth: -24, thickness: 2.0,
+        segW: 21, overlap: 0.6, y0: 20.5,
+        tops: [29.0, 33.5, 30.5, 35.5, 31.5, 28.0],     // hashed per segment: broad
+                                                        //   steps, not a city skyline
+        spireAt: 0.62, spires: 6, spireW: 1.1, spireGap: 2.1,
+        spireH: [8, 14.5, 10, 18, 9.5, 12.5],
+      },
+    },
+    /* Human-scale reference objects. THE SIZES ARE THE POINT: RIG is 1.7 tiles
+     * tall (CONFIG.player.height, the sim's own body constant), so a 2.9-tile
+     * door is 1.7x him, a rung ladder is climbable, a railing is waist-high on
+     * a walkway. The same table is emitted twice — on the hull skirt under
+     * RIG's feet and on the backdrop sister limb — at IDENTICAL absolute
+     * dimensions (asserted), because a reference object that is re-sized to
+     * look good at distance is not a reference object.
+     *
+     * WHERE THEY GO, AND WHY NOT ON THE WALL. The band below the deck lip is
+     * bare hull for ~30 tiles (the scutes stop around y = -6.6) and fills the
+     * bottom third of the frame; it is outside the protected play band, so
+     * detail there cannot compete with a hostile, a tracer or a falling RIG.
+     * The wall directly behind the fight is the one surface these deliberately
+     * do NOT dress.
+     *
+     * ONE HONEST COMPROMISE: rung pitch is 0.62 tiles (~0.65 m — a real ladder
+     * is nearer 0.3) and a rung is 0.2 tall. At the shipped FAR view one tile
+     * is ~2.2% of frame height, so a true-pitch ladder would be a 1 px stripe
+     * that aliases into mush. These are authored to RESOLVE at the view the
+     * game actually ships: a scale cue that cannot be seen is not a cue. */
+    mark: {
+      band: { y0: -7.2, y1: -18.0 },   // hull skirt: below the scutes, above the
+                                       //   bottom of frame (visible to y = -17.9)
+      out: 0.66, thickness: 0.35,      // just proud of the hull face (depth 0.7),
+      proud: 0.12,                     //   and a hatch cover proud of its own rim —
+                                       //   both still reach <= 0, so no mark is ever
+                                       //   outward mass the fall rules have to judge
+      ladder: { every: 22, runH: 10.0, pitch: 0.62, rungW: 1.3, rungH: 0.2,
+                stileW: 0.18, at: 0.35 },
+      hatch: { every: 17, rimW: 2.8, rimH: 2.8, panelW: 2.2, panelH: 2.2 },
+      door: { every: 41, rimW: 1.9, rimH: 2.9, panelW: 1.5, panelH: 2.5,
+              sillH: 0.25 },
+      rail: { len: 13.5, postEvery: 1.7, postH: 1.0, postW: 0.16,
+              barH: 0.18, at: 0.55 },    // gantry railing, sister limb only
+    },
   },
 
   /* ---------------------------- VALUE LADDER ---------------------------- *
