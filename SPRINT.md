@@ -1080,7 +1080,7 @@ view, judged at true on-screen size), backdrop/anatomy scale elements, hull and
 deck surface textures.
 owner: asset-artist
 
-## T-047 | art | doing | P1
+## T-047 | art | done | P1
 goal: a real light rig — raking key, fill, rim — plus SHADOW MAPS on the play
 band and ACESFilmic tone mapping (entry 18). The whole rig was two lights and
 zero shadows, which is why nothing read as having form.
