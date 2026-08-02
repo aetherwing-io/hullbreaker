@@ -1,5 +1,5 @@
 {
-  "measuredAt": "2026-08-02T05:53:13.882Z",
+  "measuredAt": "2026-08-02T06:12:27.842Z",
   "tool": "tools/playtest/lightrig-capture.mjs",
   "tag": "after",
   "servedRoot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-047",
@@ -11,194 +11,194 @@
     "ship": {
       "liveProjectiles": 256,
       "depthPassOn": {
-        "medianMs": 2.328,
-        "medianCalls": 98.8,
+        "medianMs": 1.674,
+        "medianCalls": 97.5,
         "windows": 7
       },
       "depthPassOff": {
-        "medianMs": 1.92,
-        "medianCalls": 98.8,
+        "medianMs": 1.356,
+        "medianCalls": 98.1,
         "windows": 8
       },
-      "depthPassMs": 0.408,
-      "callsDelta": 0,
+      "depthPassMs": 0.318,
+      "callsDelta": -0.6,
       "windows": [
         {
           "depthPass": true,
-          "meanMs": 2.309,
-          "meanCalls": 96.6
+          "meanMs": 1.548,
+          "meanCalls": 100
         },
         {
           "depthPass": false,
-          "meanMs": 1.734,
-          "meanCalls": 96.4
+          "meanMs": 1.36,
+          "meanCalls": 100
         },
         {
           "depthPass": true,
-          "meanMs": 2.268,
-          "meanCalls": 97.2
+          "meanMs": 1.78,
+          "meanCalls": 99.3
         },
         {
           "depthPass": false,
-          "meanMs": 1.976,
+          "meanMs": 1.302,
           "meanCalls": 97.6
         },
         {
           "depthPass": true,
-          "meanMs": 2.338,
-          "meanCalls": 98
+          "meanMs": 1.649,
+          "meanCalls": 96.9
         },
         {
           "depthPass": false,
-          "meanMs": 1.864,
-          "meanCalls": 97.8
+          "meanMs": 1.259,
+          "meanCalls": 95.1
         },
         {
           "depthPass": true,
-          "meanMs": 2.408,
-          "meanCalls": 98.8
+          "meanMs": 1.659,
+          "meanCalls": 95.7
         },
         {
           "depthPass": false,
-          "meanMs": 2.112,
-          "meanCalls": 98.6
-        },
-        {
-          "depthPass": true,
-          "meanMs": 2.328,
-          "meanCalls": 98.1
-        },
-        {
-          "depthPass": false,
-          "meanMs": 1.77,
-          "meanCalls": 98.8
-        },
-        {
-          "depthPass": true,
-          "meanMs": 2.666,
-          "meanCalls": 101.4
-        },
-        {
-          "depthPass": false,
-          "meanMs": 2.088,
-          "meanCalls": 104
-        },
-        {
-          "depthPass": true,
-          "meanMs": 2.16,
-          "meanCalls": 104.8
-        },
-        {
-          "depthPass": false,
-          "meanMs": 1.774,
-          "meanCalls": 105
-        },
-        {
-          "depthPass": true,
-          "meanMs": 1.914,
-          "meanCalls": 105.2
-        },
-        {
-          "depthPass": false,
-          "meanMs": 1.92,
-          "meanCalls": 106
-        }
-      ]
-    },
-    "bright": {
-      "liveProjectiles": 256,
-      "depthPassOn": {
-        "medianMs": 2.293,
-        "medianCalls": 97.9,
-        "windows": 7
-      },
-      "depthPassOff": {
-        "medianMs": 1.863,
-        "medianCalls": 98.9,
-        "windows": 8
-      },
-      "depthPassMs": 0.43,
-      "callsDelta": -1,
-      "windows": [
-        {
-          "depthPass": true,
-          "meanMs": 2.481,
-          "meanCalls": 99
-        },
-        {
-          "depthPass": false,
-          "meanMs": 1.759,
-          "meanCalls": 96.3
-        },
-        {
-          "depthPass": true,
-          "meanMs": 2.529,
-          "meanCalls": 96.8
-        },
-        {
-          "depthPass": false,
-          "meanMs": 1.968,
-          "meanCalls": 96.3
-        },
-        {
-          "depthPass": true,
-          "meanMs": 2.293,
-          "meanCalls": 96.6
-        },
-        {
-          "depthPass": false,
-          "meanMs": 1.863,
+          "meanMs": 1.356,
           "meanCalls": 97.6
         },
         {
           "depthPass": true,
-          "meanMs": 2.329,
-          "meanCalls": 97.8
+          "meanMs": 1.674,
+          "meanCalls": 97.5
         },
         {
           "depthPass": false,
-          "meanMs": 1.954,
+          "meanMs": 1.278,
+          "meanCalls": 96.3
+        },
+        {
+          "depthPass": true,
+          "meanMs": 1.676,
+          "meanCalls": 97.3
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.446,
+          "meanCalls": 99.1
+        },
+        {
+          "depthPass": true,
+          "meanMs": 1.717,
           "meanCalls": 98.7
         },
         {
+          "depthPass": false,
+          "meanMs": 1.356,
+          "meanCalls": 98.1
+        },
+        {
           "depthPass": true,
-          "meanMs": 2.324,
+          "meanMs": 1.674,
           "meanCalls": 97.9
         },
         {
           "depthPass": false,
-          "meanMs": 1.709,
-          "meanCalls": 98.9
-        },
+          "meanMs": 1.327,
+          "meanCalls": 98.6
+        }
+      ]
+    },
+    "transform": {
+      "liveProjectiles": 256,
+      "depthPassOn": {
+        "medianMs": 2.359,
+        "medianCalls": 578,
+        "windows": 7
+      },
+      "depthPassOff": {
+        "medianMs": 1.676,
+        "medianCalls": 578,
+        "windows": 8
+      },
+      "depthPassMs": 0.683,
+      "callsDelta": 0,
+      "windows": [
         {
           "depthPass": true,
-          "meanMs": 2.097,
-          "meanCalls": 98.4
+          "meanMs": 2.133,
+          "meanCalls": 580
         },
         {
           "depthPass": false,
-          "meanMs": 1.837,
-          "meanCalls": 99.7
+          "meanMs": 1.45,
+          "meanCalls": 580
         },
         {
           "depthPass": true,
-          "meanMs": 1.963,
-          "meanCalls": 102.9
+          "meanMs": 2.433,
+          "meanCalls": 580
         },
         {
           "depthPass": false,
-          "meanMs": 1.538,
-          "meanCalls": 104
+          "meanMs": 1.762,
+          "meanCalls": 579.6
         },
         {
           "depthPass": true,
-          "meanMs": 2.108,
-          "meanCalls": 104.3
+          "meanMs": 2.511,
+          "meanCalls": 579
         },
         {
           "depthPass": false,
-          "meanMs": 2.048,
-          "meanCalls": 105
+          "meanMs": 1.578,
+          "meanCalls": 579
+        },
+        {
+          "depthPass": true,
+          "meanMs": 2.211,
+          "meanCalls": 578.3
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.43,
+          "meanCalls": 578
+        },
+        {
+          "depthPass": true,
+          "meanMs": 2.28,
+          "meanCalls": 578
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.85,
+          "meanCalls": 578
+        },
+        {
+          "depthPass": true,
+          "meanMs": 2.256,
+          "meanCalls": 578
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.676,
+          "meanCalls": 578
+        },
+        {
+          "depthPass": true,
+          "meanMs": 2.359,
+          "meanCalls": 578
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.618,
+          "meanCalls": 578
+        },
+        {
+          "depthPass": true,
+          "meanMs": 2.416,
+          "meanCalls": 578
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.874,
+          "meanCalls": 578
         }
       ]
     }

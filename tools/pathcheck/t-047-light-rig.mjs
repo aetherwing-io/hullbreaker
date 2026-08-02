@@ -294,6 +294,12 @@ export async function run(SHARED) {
   ok(/installLightRig\(renderer, scene\)/.test(sceneSrc),
      'T-047: scene.js installs the rig itself — enrollment wraps scene.add, so it ' +
      'has to be in place before any other module can add a mesh');
+  const lightsSrc2 = stripComments(readFileSync(join(srcDir, 'render', 'lights.js'), 'utf8'));
+  ok(/THREE\.Object3D\.prototype\.add\s*=/.test(lightsSrc2) && !/\bscene\.add\s*=/.test(lightsSrc2),
+     'T-047: enrollment hooks Object3D.prototype.add, not scene.add — ' +
+     'src/render/transform.js adds its band group to the scene BEFORE filling ' +
+     'it, and the scene.add-only hook enrolled 5 of 585 meshes in the ' +
+     'transformation slice (measured, artifacts/lightrig/after/smoke.json)');
   const camSrc = stripComments(readFileSync(join(srcDir, 'render', 'camera.js'), 'utf8'));
   ok(/updateLightRig\(_look\.x, _look\.y, _look\.z, camYaw\)/.test(camSrc),
      'T-047: the rig is aimed from the UNSHAKEN look point (camera.js), so screen ' +

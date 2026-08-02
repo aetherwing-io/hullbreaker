@@ -80,6 +80,7 @@ function parseArgs(argv) {
     else if (a === '--root') out.root = argv[++i];
     else if (a === '--perf') out.perf = true;
     else if (a === '--shadowcost') out.shadowcost = true;
+    else if (a === '--smoke') out.smoke = true;
     else if (a === '--variants') out.variants = argv[++i];
     else if (a === '--marks') out.marks = argv[++i].split(',').map(Number);
     else throw new Error('unknown argument: ' + a);
@@ -369,6 +370,71 @@ async function measurePerf(base, variant, stress) {
   return out;
 }
 
+/* ------------------------------ smoke ------------------------------ */
+
+/* Boot every mode the rig has to survive and read back what it actually
+   installed. The rig is global — it wraps scene.add and configures the
+   renderer — so "it looks right on the default run" is not evidence about
+   the traversal slice, the transformation slice, the classic palette or the
+   zipper reveal. Each entry reports the live rig snapshot plus any page or
+   console error, and ?selftest=1 reports the game's own verdict. */
+const SMOKE_URLS = [
+  ['default run', '?testapi=1'],
+  ['zipper reveal', '?testapi=1&zip=1'],
+  ['traversal slice', '?testapi=1&slice=traversal'],
+  ['transform slice', '?testapi=1&slice=transform'],
+  ['G2 neck flip', '?testapi=1&g2=1'],
+  ['classic palette', '?testapi=1&palette=classic'],
+  ['view=near', '?testapi=1&view=near'],
+  ['juice off', '?testapi=1&juice=0'],
+  ['light=flat', '?testapi=1&light=flat'],
+  ['light=noshadow', '?testapi=1&light=noshadow'],
+  ['light=bright', '?testapi=1&light=bright'],
+  ['light=junk (must resolve to the shipped rig)', '?testapi=1&light=junk'],
+  ['selftest', '?selftest=1'],
+];
+
+async function smoke(base) {
+  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  const out = [];
+  for (const [label, query] of SMOKE_URLS) {
+    const context = await browser.newContext({ viewport: VIEWPORT });
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(String((e && e.message) || e)));
+    page.on('console', (m) => {
+      if (m.type() !== 'error') return;
+      const loc = m.location && m.location();
+      if (loc && /\/favicon\.ico$/.test(loc.url || '')) return;
+      errors.push(m.text());
+    });
+    let row = { label, query, errors };
+    try {
+      await page.goto(base + '/index.html' + query, { waitUntil: 'load' });
+      await page.waitForFunction(() => globalThis.HB && globalThis.HB.state(), null, { timeout: 8000 });
+      await page.waitForTimeout(query.includes('selftest') ? 2500 : 900);
+      Object.assign(row, await page.evaluate(async () => {
+        const L = await import('/src/render/lights.js');
+        return { rig: L.lightRigSnapshot(), title: document.title, state: globalThis.HB.state() };
+      }));
+    } catch (e) {
+      row.failed = String((e && e.message) || e);
+    }
+    out.push(row);
+    const r = row.rig;
+    console.log('  ' + label.padEnd(46) +
+      (r ? r.id.padEnd(9) + ' shadows=' + (r.shadows ? 'on ' : 'off') +
+        ' casters=' + String(r.casters).padStart(4) + '/' + String(r.meshes).padStart(4) +
+        ' exposure=' + r.exposure : 'NO RIG') +
+      (row.title && /SELFTEST/.test(row.title) ? '  ' + row.title : '') +
+      (errors.length ? '  ERRORS: ' + errors.join(' | ') : '') +
+      (row.failed ? '  FAILED: ' + row.failed : ''));
+    await context.close();
+  }
+  await browser.close();
+  return out;
+}
+
 /* --------------------------- shadow cost --------------------------- */
 
 /* What the shadow DEPTH PASS costs, measured inside one page.
@@ -476,7 +542,17 @@ async function main() {
       viewport: '1280x800, headless Chrome (channel: chrome)',
       lumaNote: 'L = Rec.709 luma on sRGB bytes; bands are fixed row ranges (HUD strip skipped)',
     };
-    if (args.shadowcost) {
+    if (args.smoke) {
+      result.mode = 'smoke';
+      console.log('smoke: every mode the rig has to survive');
+      result.modes = await smoke(base);
+      const bad = result.modes.filter((m) => m.failed || m.errors.length || !m.rig);
+      result.clean = bad.length === 0;
+      writeFileSync(join(outDir, 'smoke.json'), JSON.stringify(result, null, 2) + '\n');
+      console.log('\n' + (result.clean ? 'all modes booted with a rig and no errors'
+        : bad.length + ' mode(s) with errors or no rig'));
+      console.log('wrote ' + join(outDir, 'smoke.json'));
+    } else if (args.shadowcost) {
       result.mode = 'shadowcost';
       result.note = 'depth-pass cost, measured inside ONE page by alternating ' +
         'renderer.shadowMap.autoUpdate under the 256-projectile load; vsync disabled';

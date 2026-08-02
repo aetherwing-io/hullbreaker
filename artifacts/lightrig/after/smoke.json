@@ -1,0 +1,298 @@
+{
+  "measuredAt": "2026-08-02T06:11:43.300Z",
+  "tool": "tools/playtest/lightrig-capture.mjs",
+  "tag": "after",
+  "servedRoot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-047",
+  "viewport": "1280x800, headless Chrome (channel: chrome)",
+  "lumaNote": "L = Rec.709 luma on sRGB bytes; bands are fixed row ranges (HUD strip skipped)",
+  "mode": "smoke",
+  "modes": [
+    {
+      "label": "default run",
+      "query": "?testapi=1",
+      "errors": [],
+      "rig": {
+        "id": "rig",
+        "label": "RIG",
+        "shadows": true,
+        "exposure": 1.35,
+        "lights": 3,
+        "shadowMapSize": 2048,
+        "shadowBandTiles": [
+          80,
+          56
+        ],
+        "meshes": 92,
+        "casters": 76,
+        "receivers": 78
+      },
+      "title": "HULLBREAKER — grey-box",
+      "state": "PLAYING"
+    },
+    {
+      "label": "zipper reveal",
+      "query": "?testapi=1&zip=1",
+      "errors": [],
+      "rig": {
+        "id": "rig",
+        "label": "RIG",
+        "shadows": true,
+        "exposure": 1.35,
+        "lights": 3,
+        "shadowMapSize": 2048,
+        "shadowBandTiles": [
+          80,
+          56
+        ],
+        "meshes": 84,
+        "casters": 68,
+        "receivers": 70
+      },
+      "title": "HULLBREAKER — grey-box",
+      "state": "PLAYING"
+    },
+    {
+      "label": "traversal slice",
+      "query": "?testapi=1&slice=traversal",
+      "errors": [],
+      "rig": {
+        "id": "rig",
+        "label": "RIG",
+        "shadows": true,
+        "exposure": 1.35,
+        "lights": 3,
+        "shadowMapSize": 2048,
+        "shadowBandTiles": [
+          80,
+          56
+        ],
+        "meshes": 82,
+        "casters": 71,
+        "receivers": 73
+      },
+      "title": "HULLBREAKER — grey-box",
+      "state": "PLAYING"
+    },
+    {
+      "label": "transform slice",
+      "query": "?testapi=1&slice=transform",
+      "errors": [],
+      "rig": {
+        "id": "rig",
+        "label": "RIG",
+        "shadows": true,
+        "exposure": 1.35,
+        "lights": 3,
+        "shadowMapSize": 2048,
+        "shadowBandTiles": [
+          80,
+          56
+        ],
+        "meshes": 585,
+        "casters": 573,
+        "receivers": 575
+      },
+      "title": "HULLBREAKER — grey-box",
+      "state": "PLAYING"
+    },
+    {
+      "label": "G2 neck flip",
+      "query": "?testapi=1&g2=1",
+      "errors": [],
+      "rig": {
+        "id": "rig",
+        "label": "RIG",
+        "shadows": true,
+        "exposure": 1.35,
+        "lights": 3,
+        "shadowMapSize": 2048,
+        "shadowBandTiles": [
+          80,
+          56
+        ],
+        "meshes": 580,
+        "casters": 570,
+        "receivers": 572
+      },
+      "title": "HULLBREAKER — grey-box",
+      "state": "PLAYING"
+    },
+    {
+      "label": "classic palette",
+      "query": "?testapi=1&palette=classic",
+      "errors": [],
+      "rig": {
+        "id": "rig",
+        "label": "RIG",
+        "shadows": true,
+        "exposure": 1.35,
+        "lights": 3,
+        "shadowMapSize": 2048,
+        "shadowBandTiles": [
+          80,
+          56
+        ],
+        "meshes": 92,
+        "casters": 76,
+        "receivers": 78
+      },
+      "title": "HULLBREAKER — grey-box",
+      "state": "PLAYING"
+    },
+    {
+      "label": "view=near",
+      "query": "?testapi=1&view=near",
+      "errors": [],
+      "rig": {
+        "id": "rig",
+        "label": "RIG",
+        "shadows": true,
+        "exposure": 1.35,
+        "lights": 3,
+        "shadowMapSize": 2048,
+        "shadowBandTiles": [
+          80,
+          56
+        ],
+        "meshes": 91,
+        "casters": 76,
+        "receivers": 77
+      },
+      "title": "HULLBREAKER — grey-box",
+      "state": "PLAYING"
+    },
+    {
+      "label": "juice off",
+      "query": "?testapi=1&juice=0",
+      "errors": [],
+      "rig": {
+        "id": "rig",
+        "label": "RIG",
+        "shadows": true,
+        "exposure": 1.35,
+        "lights": 3,
+        "shadowMapSize": 2048,
+        "shadowBandTiles": [
+          80,
+          56
+        ],
+        "meshes": 89,
+        "casters": 76,
+        "receivers": 78
+      },
+      "title": "HULLBREAKER — grey-box",
+      "state": "PLAYING"
+    },
+    {
+      "label": "light=flat",
+      "query": "?testapi=1&light=flat",
+      "errors": [],
+      "rig": {
+        "id": "flat",
+        "label": "FLAT (pre-T-047)",
+        "shadows": false,
+        "exposure": 1,
+        "lights": 2,
+        "shadowMapSize": 0,
+        "shadowBandTiles": [
+          0,
+          0
+        ],
+        "meshes": 92,
+        "casters": 0,
+        "receivers": 0
+      },
+      "title": "HULLBREAKER — grey-box",
+      "state": "PLAYING"
+    },
+    {
+      "label": "light=noshadow",
+      "query": "?testapi=1&light=noshadow",
+      "errors": [],
+      "rig": {
+        "id": "noshadow",
+        "label": "RIG WITHOUT SHADOWS",
+        "shadows": false,
+        "exposure": 1.35,
+        "lights": 3,
+        "shadowMapSize": 0,
+        "shadowBandTiles": [
+          0,
+          0
+        ],
+        "meshes": 92,
+        "casters": 0,
+        "receivers": 0
+      },
+      "title": "HULLBREAKER — grey-box",
+      "state": "PLAYING"
+    },
+    {
+      "label": "light=bright",
+      "query": "?testapi=1&light=bright",
+      "errors": [],
+      "rig": {
+        "id": "bright",
+        "label": "RIG, BRIGHTER DOSE",
+        "shadows": true,
+        "exposure": 1.5,
+        "lights": 3,
+        "shadowMapSize": 2048,
+        "shadowBandTiles": [
+          80,
+          56
+        ],
+        "meshes": 92,
+        "casters": 76,
+        "receivers": 78
+      },
+      "title": "HULLBREAKER — grey-box",
+      "state": "PLAYING"
+    },
+    {
+      "label": "light=junk (must resolve to the shipped rig)",
+      "query": "?testapi=1&light=junk",
+      "errors": [],
+      "rig": {
+        "id": "rig",
+        "label": "RIG",
+        "shadows": true,
+        "exposure": 1.35,
+        "lights": 3,
+        "shadowMapSize": 2048,
+        "shadowBandTiles": [
+          80,
+          56
+        ],
+        "meshes": 92,
+        "casters": 76,
+        "receivers": 78
+      },
+      "title": "HULLBREAKER — grey-box",
+      "state": "PLAYING"
+    },
+    {
+      "label": "selftest",
+      "query": "?selftest=1",
+      "errors": [],
+      "rig": {
+        "id": "rig",
+        "label": "RIG",
+        "shadows": true,
+        "exposure": 1.35,
+        "lights": 3,
+        "shadowMapSize": 2048,
+        "shadowBandTiles": [
+          80,
+          56
+        ],
+        "meshes": 92,
+        "casters": 76,
+        "receivers": 78
+      },
+      "title": "SELFTEST PASS (35 checks)",
+      "state": "PLAYING"
+    }
+  ],
+  "clean": true
+}

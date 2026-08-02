@@ -1,0 +1,320 @@
+{
+  "measuredAt": "2026-08-02T06:12:56.086Z",
+  "tool": "tools/playtest/lightrig-capture.mjs",
+  "tag": "transform",
+  "servedRoot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-047",
+  "viewport": "1280x800, headless Chrome (channel: chrome)",
+  "lumaNote": "L = Rec.709 luma on sRGB bytes; bands are fixed row ranges (HUD strip skipped)",
+  "mode": "frames",
+  "marks": [
+    3000,
+    7000
+  ],
+  "variants": {
+    "ship": {
+      "url": "/index.html?testapi=1&shell=0&fixeddt=16&slice=transform",
+      "frames": [
+        {
+          "mark": 3000,
+          "file": "artifacts/lightrig/transform/ship-3000ms.png",
+          "gameMs": 3008,
+          "scrollX": 35.010967999999906,
+          "player": {
+            "x": 50.8113679999999,
+            "y": 5.6432128
+          },
+          "hostilesLive": 3,
+          "kills": 0,
+          "view": {
+            "id": "far",
+            "label": "FAR",
+            "depthMult": 1.9,
+            "cameraDepth": 42.75
+          },
+          "luma": {
+            "width": 1280,
+            "height": 800,
+            "frame": {
+              "mean": 56.9,
+              "p05": 40.5,
+              "p50": 57.7,
+              "p95": 97.9,
+              "p99": 128.1,
+              "above200": 0.0014,
+              "below40": 0.0495
+            },
+            "sky": {
+              "mean": 50.7,
+              "p05": 23.4,
+              "p50": 44.1,
+              "p95": 90.8,
+              "p99": 93.1,
+              "above200": 0,
+              "below40": 0.0726
+            },
+            "mid": {
+              "mean": 65.2,
+              "p05": 23.4,
+              "p50": 63.7,
+              "p95": 110.8,
+              "p99": 133.8,
+              "above200": 0.0009,
+              "below40": 0.0736
+            },
+            "deck": {
+              "mean": 55.4,
+              "p05": 44.1,
+              "p50": 58.8,
+              "p95": 59.1,
+              "p99": 108.2,
+              "above200": 0,
+              "below40": 0.0181
+            },
+            "aboveSky": 0.5133,
+            "skyMinusDeck": -4.7
+          }
+        },
+        {
+          "mark": 7000,
+          "file": "artifacts/lightrig/transform/ship-7000ms.png",
+          "gameMs": 7008,
+          "scrollX": 65.3151999999999,
+          "player": {
+            "x": 71.00656800000016,
+            "y": 4
+          },
+          "hostilesLive": 1,
+          "kills": 0,
+          "view": {
+            "id": "far",
+            "label": "FAR",
+            "depthMult": 1.9,
+            "cameraDepth": 42.75
+          },
+          "luma": {
+            "width": 1280,
+            "height": 800,
+            "frame": {
+              "mean": 50.7,
+              "p05": 27.9,
+              "p50": 45.8,
+              "p95": 86.1,
+              "p99": 127,
+              "above200": 0.003,
+              "below40": 0.197
+            },
+            "sky": {
+              "mean": 49.4,
+              "p05": 25.8,
+              "p50": 45.8,
+              "p95": 86.1,
+              "p99": 103.7,
+              "above200": 0,
+              "below40": 0.2123
+            },
+            "mid": {
+              "mean": 52.8,
+              "p05": 27.9,
+              "p50": 45.8,
+              "p95": 93.2,
+              "p99": 122.2,
+              "above200": 0.0002,
+              "below40": 0.2418
+            },
+            "deck": {
+              "mean": 48.2,
+              "p05": 27.9,
+              "p50": 45.8,
+              "p95": 85.6,
+              "p99": 110.5,
+              "above200": 0,
+              "below40": 0.1845
+            },
+            "aboveSky": 0.2516,
+            "skyMinusDeck": 1.2
+          }
+        }
+      ],
+      "info": {
+        "calls": 577,
+        "triangles": 30172,
+        "frame": 515,
+        "shadowMapEnabled": true,
+        "toneMapping": 4,
+        "toneMappingExposure": 1.35,
+        "outputColorSpace": "srgb",
+        "lights": [
+          {
+            "type": "HemisphereLight",
+            "intensity": 0.62,
+            "castShadow": false
+          },
+          {
+            "type": "DirectionalLight",
+            "intensity": 2.45,
+            "castShadow": true
+          },
+          {
+            "type": "DirectionalLight",
+            "intensity": 0.75,
+            "castShadow": false
+          }
+        ],
+        "meshes": 584,
+        "casters": 573,
+        "receivers": 574
+      },
+      "errors": []
+    },
+    "flat": {
+      "url": "/index.html?testapi=1&shell=0&fixeddt=16&slice=transform&light=flat",
+      "frames": [
+        {
+          "mark": 3000,
+          "file": "artifacts/lightrig/transform/flat-3000ms.png",
+          "gameMs": 3008,
+          "scrollX": 35.010967999999906,
+          "player": {
+            "x": 50.8113679999999,
+            "y": 5.6432128
+          },
+          "hostilesLive": 3,
+          "kills": 0,
+          "view": {
+            "id": "far",
+            "label": "FAR",
+            "depthMult": 1.9,
+            "cameraDepth": 42.75
+          },
+          "luma": {
+            "width": 1280,
+            "height": 800,
+            "frame": {
+              "mean": 49.3,
+              "p05": 42.4,
+              "p50": 44.6,
+              "p95": 74.5,
+              "p99": 106.3,
+              "above200": 0.0014,
+              "below40": 0.0425
+            },
+            "sky": {
+              "mean": 45.7,
+              "p05": 24.5,
+              "p50": 44.1,
+              "p95": 64.7,
+              "p99": 71.8,
+              "above200": 0,
+              "below40": 0.0954
+            },
+            "mid": {
+              "mean": 55.8,
+              "p05": 44.1,
+              "p50": 48.7,
+              "p95": 89.9,
+              "p99": 106.3,
+              "above200": 0.0008,
+              "below40": 0.0299
+            },
+            "deck": {
+              "mean": 45,
+              "p05": 44.1,
+              "p50": 44.6,
+              "p95": 44.6,
+              "p99": 99,
+              "above200": 0,
+              "below40": 0.0216
+            },
+            "aboveSky": 0.3225,
+            "skyMinusDeck": 0.7
+          }
+        },
+        {
+          "mark": 7000,
+          "file": "artifacts/lightrig/transform/flat-7000ms.png",
+          "gameMs": 7008,
+          "scrollX": 65.3151999999999,
+          "player": {
+            "x": 71.00656800000016,
+            "y": 4
+          },
+          "hostilesLive": 1,
+          "kills": 0,
+          "view": {
+            "id": "far",
+            "label": "FAR",
+            "depthMult": 1.9,
+            "cameraDepth": 42.75
+          },
+          "luma": {
+            "width": 1280,
+            "height": 800,
+            "frame": {
+              "mean": 48.6,
+              "p05": 25.2,
+              "p50": 45.8,
+              "p95": 78.6,
+              "p99": 126.8,
+              "above200": 0.0031,
+              "below40": 0.1262
+            },
+            "sky": {
+              "mean": 47.9,
+              "p05": 22.2,
+              "p50": 45.8,
+              "p95": 69.2,
+              "p99": 86.9,
+              "above200": 0,
+              "below40": 0.0982
+            },
+            "mid": {
+              "mean": 49.1,
+              "p05": 25.2,
+              "p50": 45.8,
+              "p95": 80.7,
+              "p99": 92.5,
+              "above200": 0.0002,
+              "below40": 0.1456
+            },
+            "deck": {
+              "mean": 45.2,
+              "p05": 25.2,
+              "p50": 45.8,
+              "p95": 62.3,
+              "p99": 99.2,
+              "above200": 0,
+              "below40": 0.1563
+            },
+            "aboveSky": 0.1947,
+            "skyMinusDeck": 2.7
+          }
+        }
+      ],
+      "info": {
+        "calls": 577,
+        "triangles": 30172,
+        "frame": 506,
+        "shadowMapEnabled": false,
+        "toneMapping": 4,
+        "toneMappingExposure": 1,
+        "outputColorSpace": "srgb",
+        "lights": [
+          {
+            "type": "HemisphereLight",
+            "intensity": 1.1,
+            "castShadow": false
+          },
+          {
+            "type": "DirectionalLight",
+            "intensity": 1.6,
+            "castShadow": false
+          }
+        ],
+        "meshes": 584,
+        "casters": 0,
+        "receivers": 0
+      },
+      "errors": []
+    }
+  }
+}

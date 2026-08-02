@@ -30,9 +30,15 @@
    light but throws nothing until its lane opts in.
 
    A module that wants a different answer sets `mesh.userData.shadow` to
-   'none' | 'cast' | 'receive' | 'both' before adding it. Objects that gain
-   children AFTER they are added to the scene keep the parent's answer and
-   their late children get none — safe (no shadow) rather than wrong. */
+   'none' | 'cast' | 'receive' | 'both' before adding it.
+
+   The hook is Object3D.prototype.add rather than scene.add, and that is not
+   belt-and-braces: src/render/transform.js adds its band GROUP to the scene
+   first and fills it afterwards, so a scene.add-only hook enrolled 5 of 585
+   meshes in the transformation slice — a mode-dependent hole that no error
+   and no default-run screenshot would have shown. Wrapping add() catches a
+   child whenever it arrives, at its own subtree's cost and once per object
+   (the memo below), with nothing added to the per-frame path. */
 
 import * as THREE from 'three';
 import { CONFIG, LIGHT_RIG } from '../config.js';
@@ -140,9 +146,9 @@ export function installLightRig(renderer, scene) {
      the escape hatch is the old frame, not a near-miss of it. */
   if (rig.shadows) {
     enroll(scene);
-    const add = scene.add.bind(scene);
-    scene.add = function addAndEnroll(...objects) {
-      const out = add(...objects);
+    const add = THREE.Object3D.prototype.add;
+    THREE.Object3D.prototype.add = function addAndEnroll(...objects) {
+      const out = add.apply(this, objects);
       for (const o of objects) if (o && o.traverse) enroll(o);
       return out;
     };
