@@ -190,11 +190,80 @@ never bound to 8741/8742).
    entirely for an airborne actor — too short (blinks out too easily on a
    jump) or too tall (never reads as "off the ground" for a normal hop)?
 
-## 6. Housekeeping
+## 6. Addendum — calibrated against decisions.md entry 14 (half-dose ladder)
 
-- Server: `node tools/serve.mjs 8799 --quiet` against this worktree only,
-  killed after every measurement session (`lsof -ti:8799` empty on exit).
-  8741/8742 never touched.
+**All measurements and captures in §1–3 above predate this addendum and were
+taken against a flat pre-T-035 build (no value ladder at all)** — `task/T-039`
+forked before T-035's palette/limb/level/camera changes existed, and neither
+branch has merged to main yet, so my committed code never saw the ladder.
+The team lead flagged, correctly, that a multiply-blended quad's visible
+strength depends entirely on what it multiplies against, and that the
+shipped default is now `?shade=` at the operator-approved **0.5 dose**
+(entry 14), not the flat build I tuned `PAL.contactShadow`/`maxOpacity`
+against.
+
+**What I did to check this, without touching either branch's committed
+code:** built a throwaway scratch merge (`git worktree add --detach
+task/T-035`, `git checkout -b scratch-combo`, `git merge task/T-039`),
+resolved the two real conflicts by hand for testing purposes only
+(`src/render/palette.js` and `tools/pathcheck.mjs` both append near the
+same spot — concatenating both sides was enough, no logic changes), ran
+`node tools/pathcheck.mjs` on the combined tree (**2060 passed, 0 failed** —
+T-035's 45 new assertions plus my 274, both green together), served it on a
+scratch port, and captured RIG's feet at a **confirmed-grounded** frame
+(polled `HB.player.grounded` rather than a blind wait, after my first
+attempt caught him mid-air over an authored gap) at three points on the
+ladder: `?shade=0` (old flat look), the shipped half-dose default (no flag),
+and `?shade=1` (the rejected full ladder) — each with and without
+`?shadow=1`. The scratch worktree was removed after; nothing from it is
+committed anywhere. Evidence copied into this report:
+`evidence/07-halfdose-crop-no-shadow.png` / `08-...-shadow.png` (crops),
+`11-halfdose-fullframe-no-shadow.png` / `12-...-shadow.png` (full frames),
+`09-fulldose-rejected-crop-no-shadow.png` / `10-...-shadow.png`.
+
+**Finding 1 — no "crush the deck into mud" risk observed.** Frame-wide
+luminance barely moves: mean gray value 63.71 → 63.74 (whole 1280×800 frame,
+`?shadow=1` on vs. off, half-dose default) — a shadow scoped to one actor's
+own footprint radius is a tiny fraction of total frame area, so it cannot
+meaningfully darken the frame even summed across a few live actors. The full
+frame captures (`11`/`12`) show the checker deck still clearly legible with
+the ladder's own per-column darkening visible; contact shadows add one more
+small, localized, correctly-bounded dark patch per actor, not a repaint.
+
+**Finding 2 — at half-dose the cue is still visibly present, if
+restrained.** The 4x crop pair (`07`/`08`) shows a faint but real darkening
+of the checker tile directly under RIG's feet in the `shadow` capture that
+is absent in the `no-shadow` capture. It reads more subtly than it did
+against the flat pre-ladder build in §3, because the ladder has already
+spent some of the same "darks" budget on the per-column deck ramp.
+
+**Finding 3 — at full dose (rejected, `?shade=1`) the cue nearly
+disappears into the ladder's own darkening**, exactly the "too weak" failure
+mode the team lead named. The `09`/`10` crop pair is hard to tell apart —
+the deck top row is already dark enough there that `CONTACT_SHADOW.maxOpacity`
+(0.55) no longer reads as a distinct, separate cue. This is not a live risk
+today (full dose is rejected, not shipped), but it is the concrete evidence
+that S6's constants were tuned against the wrong baseline and would need a
+pass if the dose ever moved back up.
+
+**What I did NOT do:** retune `CONTACT_SHADOW.maxOpacity` / the palette
+token against the half-dose numbers. The scratch merge is not committed
+code, S1/S2 (T-035) has not merged to main, and `src/pure/contactShadow.js`'s
+constants are not a file either branch currently shares — recalibrating now
+against a moving, unmerged target risks tuning against the wrong number
+twice. **Recommendation:** re-check this exact comparison for real once
+T-035 lands on main (or merges into this branch's target), before this
+ships as the judged default — the two sentences above should be treated as
+"proof the interaction was checked," not "proof the numbers are right
+forever."
+
+## 7. Housekeeping
+
+- Server: `node tools/serve.mjs 8799 --quiet` against this worktree only
+  (scratch ports 8801/8810 for the §6 addendum's combined-tree check, after
+  confirming 8801 was already claimed by another concurrent lane), killed
+  after every measurement session (`lsof -ti:<port>` empty on exit).
+  8741/8742/8743 never touched.
 - `git status --short` in this worktree, post-commit: clean.
 - Scratch measurement/capture scripts used to produce the numbers above live
   outside the repo (session scratchpad) — the raw JSON is copied into
