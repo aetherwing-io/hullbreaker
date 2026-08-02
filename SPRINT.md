@@ -736,7 +736,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; re-run gate-T-016-scored-baseline and a ?ribrun=1 script against a pinned tree and diff the corrected fields
 
-## T-026 | harness | review | P1
+## T-026 | harness | done | P1
 
 goal: two static gates pass while the invariant they exist to protect is
 violated (I-014, I-024). `checkGameIndependence` in `tools/assets/check.mjs`
