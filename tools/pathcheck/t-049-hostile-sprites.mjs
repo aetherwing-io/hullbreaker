@@ -121,8 +121,13 @@ export async function run() {
    *
    * So: one loader, in one file, awaited at module scope, uploading during
    * boot, bounded by a budget, and dropping anything that turns up late.  */
-  const preloadSrc = readFileSync(join(srcDir, 'render', 'preload.js'), 'utf8');
-  const spritesSrc = readFileSync(join(srcDir, 'render', 'sprites.js'), 'utf8');
+  // COMMENTS ARE STRIPPED FIRST, and that is not tidiness. The first cut of
+  // assertion (c) below tested the raw file for `renderer.initTexture(` — and
+  // this module's own header comment contains that string, so deleting the
+  // CALL left the gate green. It was caught by breaking it on purpose
+  // (reports/tasks/T-049/build.md §6). Every check here reads code only.
+  const preloadSrc = stripComments(readFileSync(join(srcDir, 'render', 'preload.js'), 'utf8'));
+  const spritesSrc = stripComments(readFileSync(join(srcDir, 'render', 'sprites.js'), 'utf8'));
 
   // (a) ONE loader for the whole game. A lane that hand-rolls a second
   //     TextureLoader has reintroduced the defect in its own corner, so the
@@ -144,7 +149,7 @@ export async function run() {
 
   // (b) the gate is actually awaited where it blocks the boot: a top-level
   //     await in a module src/main.js transitively imports
-  ok(/^await awaitPreloads\(\);$/m.test(stripComments(spritesSrc)),
+  ok(/^await awaitPreloads\(\);$/m.test(spritesSrc),
      'T-049: src/render/sprites.js awaits the preload gate AT MODULE SCOPE — ' +
      'that top-level await is what holds src/main.js, and with it the first ' +
      'simulated frame, until the art is resident');
@@ -155,18 +160,24 @@ export async function run() {
      'a texture that has only arrived still uploads on its first draw, which ' +
      'moves the stall into the run instead of removing it');
 
-  // (d) it cannot hang the boot…
-  ok(/PRELOAD_BUDGET_MS\s*=\s*\d+/.test(preloadSrc) &&
-     PRELOAD_BUDGET_MS > 0 && PRELOAD_BUDGET_MS <= 8000,
-     'T-049: the boot gate has a finite budget (' + PRELOAD_BUDGET_MS + 'ms) and ' +
-     'stays inside the T-032 bootstrap\'s 10s boot watchdog, so a dead network ' +
-     'starts the game with fallbacks instead of painting a panel');
+  // (d) it cannot hang the boot… — the number is read OUT OF THE FILE, not
+  //     trusted from a copy in this harness, so a retune in either place
+  //     that leaves the other behind is a failure rather than a silent drift
+  const budgetMatch = /PRELOAD_BUDGET_MS\s*=\s*(\d+)/.exec(preloadSrc);
+  const budgetMs = budgetMatch ? Number(budgetMatch[1]) : NaN;
+  ok(budgetMs > 0 && budgetMs <= 8000,
+     'T-049: the boot gate declares a finite budget (' + budgetMs + 'ms) inside the ' +
+     'T-032 bootstrap\'s 10s boot watchdog, so a dead network starts the game with ' +
+     'fallbacks instead of painting a panel');
+  ok(budgetMs === PRELOAD_BUDGET_MS,
+     'T-049: the budget this harness reasons about (' + PRELOAD_BUDGET_MS + 'ms) is ' +
+     'the one src/render/preload.js actually ships (' + budgetMs + 'ms)');
 
   // (e) …and a late arrival is thrown away rather than uploaded mid-run
   ok(/if \(closed[^)]*\) \{ tex\.dispose\(\); return; \}/.test(preloadSrc),
      'T-049: a texture that arrives after the gate closed is disposed, never ' +
      'applied — applying it would be the same mid-run upload, just rarer');
-  ok(!/onSpriteReady|listeners\.push/.test(stripComments(spritesSrc)) &&
+  ok(!/onSpriteReady|listeners\.push/.test(spritesSrc) &&
      !/onSpriteReady/.test(stripComments(readFileSync(join(srcDir, 'render', 'hostiles.js'), 'utf8'))),
      'T-049: no "the texture turned up late, swap the body" path survives in the ' +
      'sprite renderer — every kind\'s state is final before the first frame');

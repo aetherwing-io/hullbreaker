@@ -307,7 +307,7 @@ Run from the worktree unless noted.
 
 | command | result |
 | --- | --- |
-| `node tools/pathcheck.mjs` | **2116 passed, 0 failed** (base of this branch: 1853 — +263 from the new domain, including the boot-gate contract in §6) |
+| `node tools/pathcheck.mjs` | **2117 passed, 0 failed** (base of this branch: 1853 — +264 from the new domain, including the boot-gate contract in §6) |
 | `node tools/assets/check.mjs` | **PASS**; `src/render/sprite-table.js:35: runtime asset reference` listed, no static import |
 | `node tools/gatecheck.mjs` | **PASS** — 5 controls red where they must be |
 | `cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic` | `outcome: completed`, deaths 0 |
@@ -402,6 +402,30 @@ condition, fixed 6 s wall window of held input):
 The whole five-texture preload costs **14 ms**, boot to first frame is no
 slower than the base tree, no frame in any condition exceeded 10.4 ms, and in a
 fixed window the sprite build accumulates sim time *more* tightly than base.
+
+### The boot-gate assertions bind — seven breaks, and one of them was mine
+
+Same discipline as §5: every guard broken on purpose, restored immediately.
+
+| what was broken | what pathcheck printed |
+| --- | --- |
+| a second `TextureLoader` in another render module | `FAIL … TextureLoader is constructed in src/render/preload.js and nowhere else … (found: render/fx.js, render/preload.js). Route it through preloadTexture() instead.` |
+| the module-scope `await` removed | `FAIL … sprites.js awaits the preload gate AT MODULE SCOPE — that top-level await is what holds src/main.js` |
+| `renderer.initTexture()` deleted (residency drops to "fetched") | `FAIL … the gate uploads each texture during boot` |
+| budget raised to 60000 ms | `FAIL … declares a finite budget (60000ms) inside the T-032 bootstrap's 10s boot watchdog` + the drift check |
+| budget changed to 1200 ms in the file only | `FAIL … the budget this harness reasons about (2500ms) is the one src/render/preload.js actually ships (1200ms)` |
+| a late arrival applied instead of disposed | `FAIL … a texture that arrives after the gate closed is disposed, never applied` |
+| the mid-run "swap the body" path restored | `FAIL … no "the texture turned up late, swap the body" path survives` |
+
+**The third row failed to fail on the first attempt, and that is the useful
+part of this table.** The `initTexture` assertion tested the *raw* file for
+`renderer.initTexture(`, and this module's own header comment contains that
+string — so deleting the CALL left the gate green. It is exactly the failure
+this repo has a standing rule about (an assertion whose subject is the author's
+prose rather than the observable code), it was invisible until the guard was
+broken on purpose, and it is the reason the rule exists. Fixed by stripping
+comments before every check in the block; the break then printed the line
+above. Assertion count 2116 → 2117 with the added budget-drift check.
 
 ### The measurement the request was based on does not isolate what it looks like
 
