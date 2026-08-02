@@ -46,6 +46,9 @@ import {
   mortarWarningMs,
 } from '../src/pure/mortar.js';
 import {
+  diveLaunched, diveVelocity, squadReady, WASP_DIVE_LOCK_MS, WASP_SQUAD_STAGGER_MS,
+} from '../src/pure/wasp.js';
+import {
   momentumBank, momentumBankSample, momentumClampSpeed, momentumCombatStep,
   momentumDriveFromSpeed, momentumHardCeiling, momentumHeadroom, momentumMeter,
   momentumOnDamage, momentumScreenFrac, momentumSpawnScale, momentumSpeed,
@@ -9223,6 +9226,187 @@ const G2GATE = G2E.gate;
        'T-029/I-030: today the published drive and the packet\'s pursuitSpeed inversion ' +
        'still agree exactly — the new field is a superset of what a T-022 reader does ' +
        'by hand, so the packet\'s numbers stay comparable across T-023');
+  }
+}
+
+/* ============ T-043: wasp aim-lock + squad stagger (enemy aggression) ===
+ * Two fixes to the one enemy the roster's own comments already flagged as
+ * missing a telegraph. src/render/hostiles.js's dive-pose comment says it
+ * outright: "The sim gives it no wind-up state to telegraph — a dive
+ * commits the frame it starts." Every other gating/rooted kind (hound,
+ * polyp, mortar) spends a whole reaction window in a visibly different
+ * WARNING pose before it commits (asserted above, each in its own section);
+ * the wasp had none. src/pure/wasp.js adds:
+ *   WASP_DIVE_LOCK_MS  — the aim-lock beat between commit and actually
+ *                         moving, spent already showing the shipped hot-acid
+ *                         dart pose (no new render code needed — the
+ *                         commitment cue IS the tell now);
+ *   WASP_SQUAD_STAGGER_MS — the minimum gap between two DIFFERENT wasps'
+ *                         first commitments, so a cluster reads as a
+ *                         rotating hunt instead of a simultaneous wall (the
+ *                         "same body repeated" failure mode DESIGN's "chaos
+ *                         stays readable" pillar forbids).
+ * Neither touches a single wasp's own diveCooldownMs, diveRange, diveSpeed,
+ * or diveMs — the roster's validated pressure (decisions.md entry 12: "it is
+ * the wasp that ended the attempt") is unchanged; these two only change WHEN
+ * a commitment is legible and WHEN distinct bodies commit relative to each
+ * other. Assert against the actual behaviour a player faces, not the
+ * intent: pure geometry first, then the live sim driven headlessly.       */
+{
+  // -- pure: the aim is frozen, correct, and never degenerate ------------
+  const v1 = diveVelocity(10, 8, 4, 3.9, 10);
+  ok(Math.abs(Math.hypot(v1.vx, v1.vy) - 10) < 1e-9,
+     'T-043: diveVelocity scales to exactly the requested speed');
+  ok(v1.vx < 0 && v1.vy < 0,
+     'T-043: diveVelocity points from the drone toward the target (down and back here)');
+  const v2 = diveVelocity(5, 5, 5, 5, 7);          // degenerate: target == origin
+  ok(Number.isFinite(v2.vx) && Number.isFinite(v2.vy),
+     'T-043: diveVelocity never produces NaN/Infinity when the target coincides with the origin');
+
+  // -- pure: the lock and stagger thresholds are exact boundaries --------
+  ok(diveLaunched(1000, 1000) === true && diveLaunched(999.999, 1000) === false,
+     'T-043: diveLaunched flips exactly at lockUntil, not before');
+  ok(squadReady(1260, 1000, 260) === true && squadReady(1259.999, 1000, 260) === false,
+     'T-043: squadReady flips exactly at the stagger gap, not before');
+
+  // -- pure: the lock is a REAL reaction window, same standard the hound's
+  // and the polyp's telegraphs are held to above (buffered-jump input
+  // latency: the jump buffer plus one slow frame at 30 fps) -------------
+  const latency = (PL.jumpBufferMs + 1000 / 30) / 1000;
+  ok(WASP_DIVE_LOCK_MS / 1000 >= latency,
+     'T-043: the wasp\'s new aim-lock (' + (WASP_DIVE_LOCK_MS / 1000).toFixed(3) +
+     ' s) covers a buffered jump\'s reaction cost (' + latency.toFixed(3) + ' s) — the ' +
+     'wind-up is a real window, not an ornamental delay');
+  ok(WASP_DIVE_LOCK_MS > 0 && WASP_SQUAD_STAGGER_MS > 0,
+     'T-043: both new constants are strictly positive (a silent retune to 0 would be ' +
+     'today\'s no-telegraph behaviour again)');
+
+  // -- live sim: one wasp — frozen through the whole lock, then launches,
+  // aimed exactly where diveVelocity says it should be -------------------
+  const simBase = 'file://' + join(srcDir, 'sim');
+  const lockChild = `
+    const [T, E, ST, PLm, HO] = await Promise.all([
+      import(${JSON.stringify(simBase + '/time.js')}),
+      import(${JSON.stringify(simBase + '/edges.js')}),
+      import(${JSON.stringify(simBase + '/state.js')}),
+      import(${JSON.stringify(simBase + '/player.js')}),
+      import(${JSON.stringify(simBase + '/hostiles.js')}),
+    ]);
+    E.setEdges(-18.9, 26.4);
+    ST.setState('PLAYING');
+    const p = PLm.player;
+    p.x = 6; p.y = 3; p.vx = 0; p.vy = 0;
+    HO.spawnHostile(9, 8, 0, 'wasp');
+    const dt = 1 / 60;
+    const rows = [];
+    for (let f = 0; f < 240; f++) {
+      T.advanceGameMs(dt * 1000);
+      HO.updateHostiles(dt);
+      const e = HO.hostiles[0];
+      if (!e) break;
+      rows.push({ ms: +T.gameMs.toFixed(3), state: e.state,
+        x: +e.x.toFixed(6), y: +e.y.toFixed(6), vx: +e.vx.toFixed(6), vy: +e.vy.toFixed(6) });
+    }
+    console.log(JSON.stringify({ rows }));
+  `;
+  let lockRes = null;
+  try {
+    lockRes = JSON.parse(execFileSync(process.execPath,
+      ['--input-type=module', '-e', lockChild], { encoding: 'utf8' }));
+  } catch (e) {
+    console.error('pathcheck: T-043 lock child failed: ' + e.message);
+  }
+  ok(!!lockRes, 'T-043: the lock child runs headlessly');
+  if (lockRes) {
+    const rows = lockRes.rows;
+    const commitIdx = rows.findIndex((r) => r.state === 'dive');
+    ok(commitIdx > 0, 'T-043: the wasp reaches materialization and commits to a dive');
+    if (commitIdx > 0) {
+      const commit = rows[commitIdx];
+      const commitMs = commit.ms;
+      // every row through the lock window keeps the commit-frame position —
+      // the dart pose is already live (state === 'dive') but nothing moves
+      const lockRows = rows.filter((r, i) =>
+        i >= commitIdx && r.ms < commitMs + WASP_DIVE_LOCK_MS);
+      const allFrozen = lockRows.every((r) =>
+        r.state === 'dive' && r.x === commit.x && r.y === commit.y);
+      ok(lockRows.length > 1 && allFrozen,
+         'T-043: through the whole ' + WASP_DIVE_LOCK_MS + ' ms lock the drone shows the ' +
+         'committed dive pose (state dive, aimed) but does not move — the pose IS the tell (' +
+         lockRows.length + ' frames checked)');
+      // the first row that actually moved is at/after commit + lock, never before
+      const movedIdx = rows.findIndex((r, i) =>
+        i > commitIdx && (r.x !== commit.x || r.y !== commit.y));
+      ok(movedIdx > commitIdx, 'T-043: the drone does eventually launch');
+      if (movedIdx > commitIdx) {
+        const moved = rows[movedIdx];
+        ok(moved.ms >= commitMs + WASP_DIVE_LOCK_MS - 1,     // -1ms: frame-quantization slack
+           'T-043: it never moves before the lock elapses (moved at +' +
+           (moved.ms - commitMs).toFixed(1) + ' ms, lock is ' + WASP_DIVE_LOCK_MS + ' ms)');
+        // the aim itself: frozen at commit, matching the pure calculation
+        // exactly (player at x=6,y=3 the whole run, so target is (6, 3.9))
+        const want = diveVelocity(commit.x, commit.y, 6, 3.9, CONFIG.wasp.diveSpeed);
+        ok(Math.abs(commit.vx - want.vx) < 1e-6 && Math.abs(commit.vy - want.vy) < 1e-6,
+           'T-043: the committed velocity matches diveVelocity exactly — the sim\'s inline ' +
+           'aim math and the pure helper agree');
+      }
+    }
+  }
+
+  // -- live sim: a cluster of wasps commits in a STAGGERED sequence, never
+  // all on the same frame, and none is starved out of the fight ----------
+  const squadChild = `
+    const [T, E, ST, PLm, HO] = await Promise.all([
+      import(${JSON.stringify(simBase + '/time.js')}),
+      import(${JSON.stringify(simBase + '/edges.js')}),
+      import(${JSON.stringify(simBase + '/state.js')}),
+      import(${JSON.stringify(simBase + '/player.js')}),
+      import(${JSON.stringify(simBase + '/hostiles.js')}),
+    ]);
+    E.setEdges(-18.9, 26.4);
+    ST.setState('PLAYING');
+    const p = PLm.player;
+    p.x = 6; p.y = 3; p.vx = 0; p.vy = 0;
+    // four drones, clustered well within diveRange of each other and of RIG,
+    // all materializing on the same frame (delayMs 0) — the worst case for a
+    // simultaneous wall
+    for (const x of [7, 8, 9, 10]) HO.spawnHostile(x, 8, 0, 'wasp');
+    const dt = 1 / 60;
+    const commitMs = {};
+    for (let f = 0; f < 360; f++) {
+      T.advanceGameMs(dt * 1000);
+      HO.updateHostiles(dt);
+      for (const e of HO.hostiles)
+        if (e.state === 'dive' && !(e.id in commitMs)) commitMs[e.id] = +T.gameMs.toFixed(3);
+      if (Object.keys(commitMs).length === 4) break;
+    }
+    console.log(JSON.stringify({ commitMs, spawned: HO.hostiles.length }));
+  `;
+  let squadRes = null;
+  try {
+    squadRes = JSON.parse(execFileSync(process.execPath,
+      ['--input-type=module', '-e', squadChild], { encoding: 'utf8' }));
+  } catch (e) {
+    console.error('pathcheck: T-043 squad child failed: ' + e.message);
+  }
+  ok(!!squadRes, 'T-043: the squad child runs headlessly');
+  if (squadRes) {
+    const times = Object.values(squadRes.commitMs).sort((a, b) => a - b);
+    ok(squadRes.spawned === 4, 'T-043: all four drones survive to be tested (no cull, no crash)');
+    ok(times.length === 4,
+       'T-043: every drone in the cluster eventually commits — the stagger delays, it never ' +
+       'starves a body out of the fight (' + times.length + '/4 committed within 6 s)');
+    if (times.length === 4) {
+      ok(new Set(times).size > 1,
+         'T-043: the cluster does NOT all commit on the same frame (' + JSON.stringify(times) +
+         ') — the pre-fix behaviour was every eligible wasp diving in the same tick');
+      let minGap = Infinity;
+      for (let i = 1; i < times.length; i++) minGap = Math.min(minGap, times[i] - times[i - 1]);
+      ok(minGap >= WASP_SQUAD_STAGGER_MS - 1,        // -1ms: frame-quantization slack
+         'T-043: consecutive first-commitments are at least ' + WASP_SQUAD_STAGGER_MS +
+         ' ms apart (measured ' + minGap.toFixed(1) + ' ms) — a wave reads as one drone after ' +
+         'another, not a wall');
+    }
   }
 }
 
