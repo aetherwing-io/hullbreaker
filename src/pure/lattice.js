@@ -186,6 +186,96 @@ export const LATTICE = {
     // stand in one of those two zones, and both exist for good reasons.
     cornerClearBefore: 35,          // the gate arena, same figure the pockets use
   },
+
+  /* ------------------- corner reveal set pieces (T-044) -------------- *
+   * Two authored zones flank every corner ritual. Both are catwalk-only —
+   * neither ever writes groundH — so nothing here can violate a ground
+   * invariant (adjacent-step, gap, or landing rule) the chunk stream
+   * already satisfies; both are exempt from the patch/thin fixpoint
+   * (see `arrival`/`arena` flags below and their guard in latticeThinPass),
+   * so they are guaranteed rather than left to that pass's own arithmetic.
+   *
+   *   ARRIVAL — one small catwalk in the few columns between the corner
+   *   apron and that face's own pocket (its earliest x0 is prevCorner+13,
+   *   T-021's pending fork work included: the pocket owns everything from
+   *   there on, so ARRIVAL never reaches past prevCorner+12). The corner
+   *   ritual (camera swing around static anatomy, decisions.md entry 3)
+   *   already reveals the next face; this gives that reveal one concrete,
+   *   guaranteed thing to land on instead of leaving it to whatever the
+   *   chunk stream rolled.
+   *
+   *   ARENA — the wave gate's own fighting ground (the ~23 columns this
+   *   authors, inside the ~33-tile box the gate halt + frustum actually
+   *   fights in, and clear of the 7-column flat apron) is, today, whatever
+   *   the seeded chunk stream and the Contra-tier loop happened to leave
+   *   there — no deliberate composition. This authors one per face,
+   *   escalating face 2 -> 6 so the six-stage ship escalation (STORY.md:
+   *   Observe/Intercept/Contain/Quarantine/Sterilize/Scuttle) reads in the
+   *   battleground's own silhouette. CONFIG.waves (wave size, composition,
+   *   gated-hostile tuning) is untouched by this — nothing here moves a
+   *   difficulty number, only what the fight stands on.
+   *
+   * Every offset below is authored against the SHIPPED seed (cfg.gen.seed
+   * 1337, cfg.gen.tierSeed 777) and verified against the real build, the
+   * same way the pocket fractions are: `back`/`front` column counts are
+   * measured, not derived, and tools/pathcheck.mjs asserts the geometry
+   * they produce (footprint bounds, no apron overlap, no pocket overlap,
+   * reachable, present after prune) so a future generator change that
+   * moves the ground under them fails loudly instead of silently
+   * degrading the escalation.                                            */
+  arrival: {
+    firstFace: 2,        // face 1 has no preceding corner; stays the plain baseline
+    afterApron: 5, len: 7,   // [prevCorner+5, prevCorner+12) — clear of the apron
+                             //   (ends prevCorner+2) and every face's pocket x0
+                             //   (earliest is prevCorner+13, face 4)
+  },
+  arena: {
+    firstFace: 2,
+    back: 30, front: 7,      // outer footprint [corner-30, corner-7): inside the
+                             //   wave gate's own ~33-tile fighting box, clear of
+                             //   the 7-column apron (corner-5..corner+2)
+    // Per-face tier plan. `back`/`front` are column counts before the corner,
+    // measured against the shipped seed (see probe numbers in the T-044
+    // report). Tiers stack the same way the generator's own Contra-tier
+    // ladder does — midRise, then +tierRise per tier up — and each is
+    // skipped (not clamped) if its authored y would cross laneCapY, so a
+    // reseed degrades gracefully instead of shipping an illegal platform;
+    // pathcheck asserts that guard never actually fires for THIS seed.
+    plans: [
+      // face 2 — Intercept: one mid shelf. The gate mechanic itself is
+      // still new; verticality stays modest.
+      { tiers: [{ name: 'mid', back: 24, front: 11 }] },
+      // face 3 — Contain: mid + high, the arena's first real stack.
+      { tiers: [
+        { name: 'mid', back: 26, front: 11 },
+        { name: 'high', back: 22, front: 9 },
+      ] },
+      // face 4 — Quarantine: mid + high widen, plus a short high-ground
+      // PERCH (third-tier height, narrow footprint) rather than a full
+      // third lane — introduces the idea before face 5 commits to it.
+      { tiers: [
+        { name: 'mid', back: 28, front: 9 },
+        { name: 'high', back: 24, front: 9 },
+        { name: 'perch', back: 20, front: 14 },
+      ] },
+      // face 5 — Sterilize: the full three-tier stack, most of the
+      // footprint's width — the "kill lattice... as many as ten total
+      // elevations" phase (DESIGN.md's beat sheet).
+      { tiers: [
+        { name: 'mid', back: 29, front: 8 },
+        { name: 'high', back: 25, front: 8 },
+        { name: 'third', back: 21, front: 8 },
+      ] },
+      // face 6 — Scuttle: the same full stack, widened to the footprint's
+      // own outer bounds — the largest, tallest gate arena in the run,
+      // immediately before the corner into HULLBREAKER.
+      { tiers: [
+        { name: 'mid', back: 30, front: 7 },
+        { name: 'high', back: 27, front: 7 },
+        { name: 'third', back: 23, front: 7 },
+      ] },
+    ],
+  },
 };
 
 /* ------------------------------ geometry --------------------------- */
@@ -348,6 +438,90 @@ export function latticeCarvePocket(groundH, site, GAP) {
   }
 }
 
+/* -------------------- corner reveal set pieces (T-044) --------------- *
+ * ARRIVAL and ARENA (config above). Both read groundH, neither writes it —
+ * so nothing here touches a ground invariant — and both ADD to whatever the
+ * Contra-tier loop already dropped in their footprint rather than clearing
+ * it first. An earlier version of this cleared the footprint before
+ * installing (matching the pocket's own gap-clearing precedent) and that
+ * was the wrong precedent to follow here: the pocket only ever clears its
+ * own two-column CHASM, a span nothing legitimate can be standing over, but
+ * an arena/arrival footprint is 7-23 columns wide and can contain a
+ * procedural catwalk that is the ONLY bridge across a raw ground gap the
+ * chunk stream rolled inside it — measured on face 5, a held-jump policy
+ * that cleared the whole lattice cleanly went GAME_OVER the moment the
+ * clear-then-install version deleted the catwalk at x[319,326) y=4.35
+ * bridging a 5-column gap at x[321,325), because the authored replacement
+ * (arena-f5-mid, y=5.35) sits higher than a jump launched from the
+ * gap-mouth's actual ground height (2, not the tier's own locally-measured
+ * base of 3) can reach. Adding rather than replacing means that bridge, and
+ * anything else the chunk stream depends on, is never at risk — the cost is
+ * an occasional extra band stacked near one of these, which is exactly the
+ * "kill lattice… as many as ten total elevations" density DESIGN already
+ * asks for by face 5, and outside the corner-clear window (faces 2-3) the
+ * per-face tier plans are narrow enough that this rarely fires at all.    */
+
+// The tallest solid column in [x0, x1), or `fallback` when the span is
+// entirely gaps — same shape as the pocket's own `incoming` read, just over
+// a span instead of one column, because a set piece's footprint is wide
+// enough to cross a gap the chunk stream rolled through it.
+export function latticeLocalBase(groundH, x0, x1, fallback) {
+  let base = -999;
+  for (let k = x0; k < x1; k++) if (groundH[k] > -100) base = Math.max(base, groundH[k]);
+  return base > -100 ? base : fallback;
+}
+
+export function latticeInstallSite(platforms, newPlatforms) {
+  for (const p of newPlatforms) platforms.push({ ...p });
+}
+
+// One small guaranteed catwalk per face (2+), in the gap between the corner
+// apron and that face's own pocket approach — the first concrete thing the
+// corner ritual's reveal has to land on, instead of whatever the chunk
+// stream rolled there.
+export function latticeArrivalSites(cfg, groundH, L = LATTICE) {
+  const A = L.arrival;
+  const G = cfg.gen;
+  return latticeFaces(cfg).filter((f) => f.face >= A.firstFace).map((f) => {
+    const x0 = f.prevCorner + A.afterApron;
+    const x1 = x0 + A.len;
+    const base = latticeLocalBase(groundH, x0, x1, G.minH);
+    const y = base + L.midRise;
+    return {
+      face: f.face, corner: f.prevCorner, x0, x1, base,
+      platforms: [{ id: 'arrival-f' + f.face, x0, x1, y, arrival: true }],
+    };
+  });
+}
+
+// The wave gate's own battleground, composed per face rather than left to
+// the chunk stream. Each tier is skipped (not clamped) if its authored y
+// would cross laneCapY, so a future reseed degrades gracefully instead of
+// installing an illegal platform — tools/pathcheck.mjs asserts that guard
+// never actually fires for the shipped seed.
+export function latticeArenaSites(cfg, groundH, L = LATTICE) {
+  const R = L.arena;
+  const G = cfg.gen;
+  return latticeFaces(cfg).filter((f) => f.face >= R.firstFace).map((f) => {
+    const plan = R.plans[f.face - R.firstFace];
+    const x0 = f.corner - R.back, x1 = f.corner - R.front;
+    const platforms = [];
+    const tiers = [];
+    for (const t of plan.tiers) {
+      const tx0 = f.corner - t.back, tx1 = f.corner - t.front;
+      const base = latticeLocalBase(groundH, tx0, tx1, G.minH);
+      const y = t.name === 'mid' ? base + L.midRise
+        : t.name === 'high' ? base + L.midRise + L.tierRise
+        : base + L.midRise + 2 * L.tierRise;                 // 'third' / 'perch'
+      tiers.push({ name: t.name, x0: tx0, x1: tx1, base, y, fits: y <= G.laneCapY });
+      if (y <= G.laneCapY) {
+        platforms.push({ id: 'arena-f' + f.face + '-' + t.name, x0: tx0, x1: tx1, y, arena: true });
+      }
+    }
+    return { face: f.face, corner: f.corner, x0, x1, tiers, platforms };
+  });
+}
+
 /* -------------------- houndframe placement (faces 2+) ----------------- *
  * decisions.md entry 6: placement beats stats. A hound on open plate is
  * scenery — "one hound doesn't pose any threat" — so every station here is a
@@ -494,7 +668,7 @@ export function latticeThinPass(level, cfg, L = LATTICE) {
         const order = [];
         for (let i = 0; i < level.platforms.length; i++) {
           const p = level.platforms[i];
-          if (p.pocket) continue;                     // authored: never thinned
+          if (p.pocket || p.arrival || p.arena) continue;   // authored: never thinned
           if (p.x1 <= s || p.x0 >= end) continue;
           // load-bearing: something above it would be stranded
           const supports = level.platforms.some((q) =>
