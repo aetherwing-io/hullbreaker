@@ -195,6 +195,27 @@ export async function run() {
      'T-049: an asset registered after the gate closed is refused by name, not ' +
      'silently accepted into a gate that will never open');
 
+  // (e-warm) THE GPU WARM-UP (I-039). Awaiting the load is not enough:
+  //      T-040's 16-round interleaved re-gate found the control invariant
+  //      (16/16 runs dispatched 18 of 26 events) while the shipped sprite
+  //      build deviated in 7 of 16, because a driver can defer the real
+  //      upload/mipmap work until something forces it — and the first thing
+  //      that forces it is frame 1. The gate therefore DRAWS every resident
+  //      texture once offscreen and READS A PIXEL BACK, which blocks until
+  //      the GPU has actually done the work.
+  ok(/renderer\.readRenderTargetPixels\(/.test(preloadSrc),
+     'T-049/I-039: the warm-up reads a pixel back — that readback is what ' +
+     'blocks on the GPU; a draw alone can still be queued into frame 1');
+  ok(/renderer\.setRenderTarget\(rt\)/.test(preloadSrc) &&
+     /renderer\.setRenderTarget\(prev\)/.test(preloadSrc),
+     'T-049/I-039: the warm-up draws OFFSCREEN and restores the previous ' +
+     'render target — the visible canvas is never touched by it');
+  ok(/warmResident\([\s\S]{0,200}?\);\s*\n\s*closed = true;/.test(preloadSrc),
+     'T-049/I-039: the warm-up runs BEFORE the gate opens — warming after ' +
+     'closed = true would be warming after frame 1 is already allowed');
+  ok(/QUERY\.get\('warm'\) !== '0'/.test(preloadSrc),
+     'T-049/I-039: ?warm=0 is the A/B control for the warm-up measurement');
+
   // (e) …and a late arrival is thrown away rather than uploaded mid-run
   ok(/if \(closed[^)]*\) \{ tex\.dispose\(\); return; \}/.test(preloadSrc),
      'T-049: a texture that arrives after the gate closed is disposed, never ' +

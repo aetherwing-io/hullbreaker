@@ -49,7 +49,7 @@ them — judge the art, not pixel deltas.
 ### The one measurement that cuts against the sprites
 
 Measured off the committed frames above — the method is two sentences and the
-honesty note in §8 — each body's box against the background it stands on, at
+honesty note in §9 — each body's box against the background it stands on, at
 true size:
 
 | role | mode | drawn px | body mean L | bg L | body p10..p90 | px separated by >=20 L |
@@ -613,7 +613,107 @@ merged renderer: same five bodies, now under the light rig and bloom).
 
 ---
 
-## 8. HONESTY LIMITS
+## 8. I-039: THE GPU WARM-UP IS BUILT, MEASURED — AND IT DOES NOT FIX IT
+
+Asked to add a warm-up render to the shared gate so a driver's deferred upload
+finishes before frame 1, and to prove it with T-040's 16-round interleaved
+design. Built, measured, and **the requested fix does not work on this lane.**
+Reporting that rather than shipping it as though it did. Raw data:
+`reports/tasks/T-049/i039-evidence/` (four CSVs, 132 runs, plus the scripts).
+
+**First, a correction I owe.** My §6 said this metric was "bimodal in every
+condition, including one with no runtime asset at all". That leaned on a
+`?sprites=0` outlier, and `?sprites=0` is **not** a no-asset control — it is
+this lane's code with loading switched off. The true control (a tree without
+the sprite path) never deviated in my data either, 8/8. T-040's 16-round design
+was better than mine and its correction stands.
+
+### What was built
+
+`warmResident()` in `src/render/preload.js`, run inside `settle()` **before**
+the gate opens: every resident texture is drawn once into a 4x4 offscreen
+target, then **one pixel is read back**. The readback is the point —
+`readRenderTargetPixels` blocks until the GPU has executed the queued work, so
+a driver cannot defer mipmap/upload work into frame 1. It restores the previous
+render target (the visible canvas is never touched), swallows every error (a
+warm-up that did not happen is slower, not broken), and costs a measured
+**8 ms**. `?warm=0` is the A/B control. Four static guards, each broken and
+restored: readback present, offscreen + restored, ordered before `closed`, flag
+wired.
+
+### The 16-round interleaved measurement (4 conditions, 64 runs)
+
+Control is **current main** (`2c638aa`) — no sprite path at all. One run of
+each condition per round, so session load hits all four equally.
+
+| condition | deviating rounds | `dispatched` values | `gameMsMax` |
+| --- | --- | --- | --- |
+| main (control) | **1 / 16** | 18, 19 | 6328–6884 |
+| `?sprites=0` (escape hatch) | **1 / 16** | 18, 26 | 6317–9952 |
+| sprites, `?warm=0` | **11 / 16** | 15, 16, 18, 19, 23 | 5298–8274 |
+| sprites, warm-up ON (shipped) | **14 / 16** | 15, 16, 17, 18, 19, 26 | 5353–9940 |
+
+**The warm-up did not reduce the deviation** (11/16 → 14/16; at n=16 that
+difference is not meaningful, but it is certainly not the drop to control level
+that was asked for).
+
+### So I isolated the cause instead — and it is the load, not the draw
+
+Temporary measurement patch (applied, measured, reverted; `git status` clean):
+the gate loads **and warms** all five textures, and `hostiles.js` never uses
+them. 12 rounds, interleaved:
+
+| condition | deviating |
+| --- | --- |
+| main | **0 / 12** |
+| gate loads + warms 5 textures, **never drawn** | **12 / 12** |
+| `?sprites=0` (nothing loaded) | **1 / 12** |
+
+Loading alone reproduces it in full. Drawing adds nothing. That kills my own
+"sprites make frames cheaper" hypothesis and corroborates T-040's direction.
+
+### And it is not boot latency either
+
+A scratch control: **main's code plus 25 ms of artificial boot delay and
+nothing else** — no assets, no gate, no textures. 12 rounds:
+
+| condition | deviating | crush range |
+| --- | --- | --- |
+| main, untouched | 2 / 12 | 35.37–35.42 |
+| main + 25 ms boot delay, no assets | **2 / 12** | 35.39–35.43 |
+| gate loads + warms 5 textures, never drawn | **10 / 12** | **30.85**–35.43 |
+
+Pure latency of the same magnitude the gate costs changes nothing. **Something
+about performing five texture loads — fetch, decode, upload — perturbs the
+early run even when the work provably completed before frame 1 and the result
+is never drawn.** Candidates I have not separated: image-decoder threads
+winding down, GC from decode allocations, or driver-side work a 4x4 readback
+does not drain. Separating fetch from decode from upload is one more
+experiment (~30 runs) and I will run it on request.
+
+`?fixeddt` is **not** a workaround: with the step pinned, all three conditions
+scatter worse, control included (main 2/8 deviating, `gameMsMax` 4533–19683).
+
+### What I recommend, and what I am not claiming
+
+- **I am not claiming the warm-up fixes I-039.** It is kept because the hazard
+  it addresses is real and independently argued (a deferred upload landing in
+  frame 1), it costs 8 ms, and `?warm=0` makes it falsifiable. If the lead
+  would rather not ship an 8 ms mechanism with no demonstrated benefit, say so
+  and I will remove it — I would rather delete it than let it imply a fix.
+- **The next move is a methodology decision, not more code in `preload.js`.**
+  On this evidence no amount of "finish the load earlier" helps, because the
+  load already finishes before frame 1. Comparing an asset-loading build
+  against a non-loading one through `run.mjs`'s sampled dispatch does not
+  isolate a game defect.
+- **What did stay clean under a frame-accurate harness:** the in-page dispatch
+  used by `sprite-fallback-check.mjs` produced sim traces **identical
+  sample-for-sample** between art-loaded and art-blocked runs. That is the
+  measurement I would build the gate on.
+
+---
+
+## 9. HONESTY LIMITS
 
 - **Every capture is one moment of one run.** The three modes are three page
   loads; bodies drift between them. Nothing here is a pixel diff.

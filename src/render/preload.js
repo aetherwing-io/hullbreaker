@@ -46,6 +46,7 @@
    gameplay must not be able to tell whether an asset arrived. */
 
 import * as THREE from 'three';
+import { QUERY } from '../mode.js';
 import { renderer } from './scene.js';
 
 /* One budget for every asset the boot registers. 2500ms is a judgement, not
@@ -62,6 +63,7 @@ let deadlineAt = 0;                      // startedAt + the budget: ONE clock fo
                                          //   every caller, set at first register
 let closedAfterMs = 0;                   // what the gate actually cost the boot
 let gate = null;                         // the ONE in-flight settlement promise
+let warmMs = 0;                          // what the GPU warm-up cost, measured
 
 function nowMs() {
   return typeof performance !== 'undefined' && performance.now
@@ -153,6 +155,67 @@ export function preloadTexture(url, opts = {}) {
   return e.promise;
 }
 
+/* ------------------------- THE GPU WARM-UP (I-039) ---------------------- *
+ * Awaiting the load is NOT enough, and this is the measured reason. T-040's
+ * 16-round interleaved re-gate (one run of each condition per round, so
+ * session load hits all three equally) found the control invariant — 16/16
+ * runs dispatched exactly 18 of 26 events — while the shipped sprite build
+ * deviated in 7 of 16, worst case 23 dispatched, gameMsMax 8299ms and a
+ * crush approach 2.3 tiles worse than every control run, from byte-identical
+ * input. A texture whose bytes have arrived and whose upload has been
+ * REQUESTED can still have its real work (mipmap generation, the actual
+ * texture object upload) deferred by the driver until something forces it —
+ * and the first thing that forces it is frame 1, which is a simulated frame.
+ *
+ * So the gate ends by drawing every resident texture once into a 4x4
+ * offscreen target and then READING ONE PIXEL BACK. The readback is the
+ * whole trick: readRenderTargetPixels blocks until the GPU has actually
+ * executed the queued work, so there is nothing left for frame 1 to absorb.
+ * It is bounded (one tiny draw per texture, one 1px read), offscreen (the
+ * visible canvas is never touched — the previous render target is restored),
+ * and it can never fail the boot: every error here is swallowed, because a
+ * warm-up that did not happen is slower, not broken.
+ *
+ * ?warm=0 skips it. That is an A/B for a measurement, not a feature flag:
+ * it is what makes the before/after in reports/tasks/T-049/build.md §9 a
+ * controlled comparison rather than two different builds.                  */
+export const WARM_ON = QUERY.get('warm') !== '0';
+const WARM_PX = 4;                       // enough to sample a mip, small enough
+                                         //   that the draw itself costs nothing
+
+function warmResident(ready) {
+  if (!WARM_ON || !ready.length) return 0;
+  const started = nowMs();
+  let rt = null, geo = null;
+  const mats = [];
+  try {
+    rt = new THREE.WebGLRenderTarget(WARM_PX, WARM_PX);
+    const warmScene = new THREE.Scene();
+    const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    cam.position.z = 1;
+    geo = new THREE.PlaneGeometry(2, 2);
+    for (const e of ready) {
+      const m = new THREE.MeshBasicMaterial({ map: e.tex, transparent: true });
+      mats.push(m);
+      warmScene.add(new THREE.Mesh(geo, m));
+    }
+    const prev = renderer.getRenderTarget();
+    renderer.setRenderTarget(rt);
+    renderer.render(warmScene, cam);
+    const px = new Uint8Array(4);
+    renderer.readRenderTargetPixels(rt, 0, 0, 1, 1, px);   // blocks on the GPU
+    renderer.setRenderTarget(prev);
+  } catch (err) {
+    console.warn('HULLBREAKER art: the GPU warm-up was skipped — ' +
+      ((err && err.message) || err) + '; the art is loaded either way.');
+  } finally {
+    for (const m of mats) m.dispose();   // the MATERIALS are scratch; the
+    if (geo) geo.dispose();              //   textures they sample are not
+    if (rt) rt.dispose();
+  }
+  return Math.round(nowMs() - started);
+}
+
 /* THE ONE SETTLEMENT ROUTINE. Every caller of awaitPreloads() awaits this
    same promise, and it closes the gate exactly once.
 
@@ -179,6 +242,10 @@ async function settle() {
     ]);
     if (timer !== null) clearTimeout(timer);
   }
+  // force the GPU to finish what it was given BEFORE the gate opens, then
+  // close. Order matters: warming after `closed = true` would be warming
+  // after the first frame is already allowed to run.
+  warmMs = warmResident([...entries.values()].filter((e) => e.state === 'ready'));
   closed = true;
   closedAfterMs = startedAt ? Math.round(nowMs() - startedAt) : 0;
   for (const e of entries.values()) {
@@ -222,6 +289,8 @@ export function preloadSnapshot() {
     // the page loaded" — the first version of this field reported the
     // latter and read like a 6-second stall in a 14ms preload.
     costMs: closedAfterMs,
+    warmOn: WARM_ON,
+    warmMs,
     assets: [...entries.values()].map((e) => ({
       url: e.url, state: e.state, ms: e.ms, error: e.error,
     })),
