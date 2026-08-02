@@ -1114,7 +1114,7 @@ rises from a measured 0.0%; palette tokens only; draw-call delta reported.
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; FAR captures before/after
 
-## T-039 | art | doing | P1
+## T-039 | art | done | P1
 goal: packet item S6 — contact shadows as one instanced multiply-blended quad
 pool, so actors sit ON the world. There is no shadow of any kind in the
 renderer today. NOT a shadow map (that needs a decision entry, packet §4.1).
