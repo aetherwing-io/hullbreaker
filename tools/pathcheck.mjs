@@ -9367,47 +9367,49 @@ import {
      /spriteMesh\.scale\.x/.test(rigSrc),
      'T-040: the asymmetric (front-leg/pack) silhouette is mirrored by the sim\'s own facing sign, ' +
      'on both the fallback and the real sprite plane');
-  ok(/TextureLoader/.test(rigSrc) && /RIG_SPRITE_PATH/.test(rigSrc),
-     'T-040: RIG loads a real runtime sprite (decisions.md entry 16), through THREE.TextureLoader');
+  ok(/preloadTexture/.test(rigSrc) && /RIG_SPRITE_PATH/.test(rigSrc),
+     'T-040: RIG loads a real runtime sprite (decisions.md entry 16), through the shared ' +
+     'src/render/preload.js boot gate (preloadTexture), not a bespoke loader');
   ok(/QUERY\.get\('rig'\)/.test(rigSrc) && /RIG_FORCE_CANVAS/.test(rigSrc),
      'T-040: an escape hatch (?rig=canvas) exists back to the fallback — the sprite ships ON by ' +
      'default per entry 16, not behind a flag the operator has to type');
   ok(/onerror|,\s*\(err\)\s*=>/.test(rigSrc) || /console\.warn/.test(rigSrc),
      'T-040: a failed sprite load is handled (logged), not left to throw or silently hang');
 
-  // --- FOURTH FIX: the sprite-vs-fallback decision happens at BOOT, never
-  // mid-run (playtest FAIL: the async fetch previously landed on a live
-  // frame and broke --deterministic mode — measured ~2s of gameMs drift on
-  // 1 run in 3, see reports/tasks/T-040/playtest.md). Gated structurally so
-  // a future edit cannot silently drop the fix and pass every OTHER check
-  // in this block, which would have happened with the original assertions. --
+  // --- FIFTH FIX: the sprite-vs-fallback decision happens at BOOT, never
+  // mid-run, through the ONE SHARED gate (src/render/preload.js, built by
+  // T-049 after it hit the identical defect loading hostile sprites). The
+  // original fix here was a bespoke per-lane timeout/lock-in
+  // (loadRigSpriteBeforeBoot/Promise.race/RIG_SPRITE_BOOT_TIMEOUT_MS/
+  // `settled`) — playtest FAIL: the async fetch previously landed on a live
+  // frame and broke --deterministic mode, measured ~2s of gameMs drift on 1
+  // run in 3 (reports/tasks/T-040/playtest.md). Team direction after T-049
+  // shipped the shared gate: use it, do not keep a second mechanism. Gated
+  // structurally so a future edit cannot silently reintroduce a bespoke
+  // loader and pass every OTHER check in this block. --
   {
-    ok(/^await\s+loadRigSpriteBeforeBoot\(\)/m.test(rigSrc),
-       'T-040: the sprite load is a top-level `await` — every module that imports ' +
+    ok(/import\s*\{[^}]*preloadTexture[^}]*\}\s*from\s*'\.\/preload\.js'/.test(rigSrc) &&
+       /import\s*\{[^}]*awaitPreloads[^}]*\}\s*from\s*'\.\/preload\.js'/.test(rigSrc),
+       'T-040: player.js registers RIG\'s sprite through the SHARED boot gate ' +
+       '(preloadTexture/awaitPreloads from src/render/preload.js)');
+    ok(/^await\s+awaitPreloads\(\)/m.test(rigSrc),
+       'T-040: the shared gate is awaited at top level — every module that imports ' +
        'player.js (in practice src/main.js) cannot reach its own requestAnimationFrame ' +
-       'call until the sprite-vs-fallback decision is settled, so it can never land mid-run');
-    ok(/Promise\.race/.test(rigSrc) && /RIG_SPRITE_BOOT_TIMEOUT_MS/.test(rigSrc),
-       'T-040: the boot-time wait is bounded by a timeout (Promise.race), so a slow/broken ' +
-       'network delays boot instead of hanging it');
-    const bootTimeoutMatch = rigSrc.match(/RIG_SPRITE_BOOT_TIMEOUT_MS\s*=\s*(\d+)/);
-    ok(!!bootTimeoutMatch && Number(bootTimeoutMatch[1]) > 0 && Number(bootTimeoutMatch[1]) <= 5000,
-       'T-040: the boot timeout is a small positive number of ms (sane, and comfortably under ' +
-       'the ~10s boot watchdog budget), got ' + (bootTimeoutMatch ? bootTimeoutMatch[1] : 'none'));
-    const settledChecks = (rigSrc.match(/if\s*\(\s*settled\s*\)\s*return/g) || []).length;
-    ok(settledChecks >= 2,
-       'T-040: the boot decision is locked once settled — both the load-side callbacks AND the ' +
-       'timeout check for a prior settle before acting, got ' + settledChecks + ' guard(s), need >= 2 ' +
-       '(a late-arriving load after the timeout has fired must never swap in mid-run)');
-    ok(/renderer\.initTexture\(/.test(rigSrc),
-       'T-040: the GPU upload is forced eagerly at boot (renderer.initTexture) — three.js ' +
-       'otherwise defers texture upload to the first frame that actually renders it, which ' +
-       'would reintroduce a mid-run stall even with the fetch itself awaited');
+       'call until every registered asset is resident or the shared budget gives up, so ' +
+       'a texture upload can never land mid-run');
+    ok(!/Promise\.race/.test(rigSrc) && !/RIG_SPRITE_BOOT_TIMEOUT_MS/.test(rigSrc) &&
+       !/renderer\.initTexture\(/.test(rigSrc) && !/\bsettled\b/.test(rigSrc) &&
+       !/loadRigSpriteBeforeBoot/.test(rigSrc),
+       'T-040: player.js carries no second bespoke boot-timeout/lock-in mechanism ' +
+       '(its own Promise.race, timeout constant, manual renderer.initTexture call, or ' +
+       '`settled` flag) now that src/render/preload.js is the one shared gate every lane ' +
+       'registers art with');
   }
   {
     const simPlayerSrc = stripComments(readFileSync(join(srcDir, 'sim', 'player.js'), 'utf8'));
-    ok(!/sprite|fallbackMesh|spriteMesh|TextureLoader/i.test(simPlayerSrc),
-       'T-040: src/sim/player.js carries no reference to the sprite/fallback split — ' +
-       'the sim cannot branch on whether the asset loaded (entry 16\'s one condition)');
+    ok(!/sprite|fallbackMesh|spriteMesh|TextureLoader|preloadTexture|preload\.js/i.test(simPlayerSrc),
+       'T-040: src/sim/player.js carries no reference to the sprite/fallback split or the ' +
+       'preload gate — the sim cannot branch on whether the asset loaded (entry 16\'s one condition)');
   }
 
   // --- palette: the tokens the sprite paints from, in both modes ----------

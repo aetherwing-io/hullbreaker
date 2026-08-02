@@ -20,17 +20,19 @@
    land mid-run, measurably broke `--deterministic` mode — three identical
    scripted runs landed at wildly different `gameMs`/`minEdgeMargin` because
    the fetch + image decode + first-use GPU upload competed with the frame
-   loop for main-thread time on an unpredictable frame. See
-   `loadRigSpriteBeforeBoot()` below: the whole sprite-vs-fallback decision
-   (including forcing the GPU upload eagerly, not on the first frame that
-   happens to render it) is now AWAITED at module top level, bounded by a
-   hard timeout, and LOCKED once settled — nothing about which plane is
-   showing can change again after that point, so no frame during actual
-   gameplay can ever be perturbed by this asset again. A slow/failed load
-   still degrades to the fallback exactly as before; it just can no longer
-   do so mid-run.
+   loop for main-thread time on an unpredictable frame. FIFTH FIX (same
+   session): T-049 hit the identical defect loading its own hostile sprites
+   and built the shared answer, `src/render/preload.js` — one boot gate, one
+   wall-clock budget, every registered texture uploaded during boot or
+   abandoned. This module now registers through THAT gate (`preloadTexture`/
+   `awaitPreloads`) instead of carrying its own bespoke timeout/lock-in
+   machinery, so RIG's sprite and every other lane's runtime art share one
+   contract and one measured cost instead of each lane re-deriving it. See
+   `src/render/preload.js`'s own header for the full reasoning (residency
+   means uploaded, not fetched; a late arrival after the budget closes is
+   dropped, never applied mid-run).
 
-   The gun stays the small 3D box it always was through all four fixes —
+   The gun stays the small 3D box it always was through all five fixes —
    untouched, still swept through 8-way aim every frame below. The sprite's
    own art is deliberately body-only (no weapon drawn), so it never doubles
    up against the separately-rotating gun mesh. */
@@ -46,7 +48,8 @@ import {
   CANVAS_H, CANVAS_W, GUN_BOX, HELMET, LEG_BACK, LEG_FRONT, RIG_SPRITE_H, RIG_SPRITE_PATH,
   RIG_SPRITE_UV, RIG_SPRITE_W, SPRITE_H, SPRITE_W, TORSO, VISOR,
 } from '../pure/rig.js';
-import { renderer, scene } from './scene.js';
+import { awaitPreloads, preloadTexture } from './preload.js';
+import { scene } from './scene.js';
 import { placeOnTower } from './tower.js';
 import { PAL } from './palette.js';
 
@@ -140,7 +143,7 @@ fallbackMesh.position.set(0, SPRITE_H / 2, 0);
 rig.add(fallbackMesh);
 
 // REAL sprite plane: built with no map yet, hidden until (if) the PNG
-// finishes loading — see loadRigSprite() below.
+// finishes loading through the shared boot gate below.
 const spriteMesh = new THREE.Mesh(
   new THREE.PlaneGeometry(RIG_SPRITE_W, RIG_SPRITE_H),
   new THREE.MeshStandardMaterial({ transparent: true, side: THREE.DoubleSide }),
@@ -155,80 +158,47 @@ rig.add(spriteMesh);
 // DEFAULT and this is the opt-out, not the other way around.
 const RIG_FORCE_CANVAS = QUERY.get('rig') === 'canvas';
 
-// How long boot may wait on the network fetch + image decode before giving
-// up and locking in the fallback for the whole run. Generous for a
-// same-origin static asset (typically resolves in a few ms), far under
-// src/pure/failsafe.js's FAILSAFE.bootWatchdogMs (10000) so this can never
-// look like a hang to the player-facing boot watchdog.
-const RIG_SPRITE_BOOT_TIMEOUT_MS = 2000;
-
-// Runtime-loads the real sprite (decisions.md entry 16), AWAITED at module
-// top level below before the game's first frame ever runs. On success:
-// crop to just the drawn figure (RIG_SPRITE_UV — the source PNG is mostly
-// transparent padding) via texture.offset/repeat, force the GPU upload NOW
-// via renderer.initTexture (three.js otherwise defers upload to the first
-// frame that actually renders the texture — exactly the mid-run stall this
-// fix exists to prevent), then swap the fallback out. On failure OR on
-// timeout: log once and settle on the fallback, which was already showing.
+// Runtime-loads the real sprite (decisions.md entry 16) through the SHARED
+// boot gate (src/render/preload.js, built by T-049 after it hit this exact
+// defect loading its own hostile sprites). Registration only queues the
+// fetch; nothing here decides pass/fail until the single `awaitPreloads()`
+// below settles it, which is also what forces the GPU upload during boot
+// instead of on whichever frame first renders the texture.
 //
-// `settled` makes the decision IRREVERSIBLE once made: if the boot timeout
-// wins the race, a load that finishes moments later is intentionally
-// ignored rather than swapped in mid-run. A late, ignored load is a strictly
-// safer outcome than the alternative (measured, not assumed — see the build
-// report's playtest-FAIL history): a rare slow-network player keeps the
-// fully-working fallback for that session instead of risking exactly the
-// determinism break this whole function exists to close.
+// On 'ready': crop to just the drawn figure (RIG_SPRITE_UV — the source PNG
+// is mostly transparent padding) via texture.offset/repeat, then swap the
+// fallback out. On 'failed' or 'timeout': log once and leave the fallback
+// showing, exactly as it has been since module load.
 //
-// This function is the ONLY place that knows which plane is live; nothing
-// in src/sim/ ever reads it, so the sim cannot branch on an asset's fate.
-function loadRigSpriteBeforeBoot() {
-  if (RIG_FORCE_CANVAS) return Promise.resolve();
-  let settled = false;
-  const url = new URL(RIG_SPRITE_PATH, import.meta.url).href;
-  const loadP = new Promise((resolve) => {
-    new THREE.TextureLoader().load(
-      url,
-      (tex) => {
-        if (settled) return;   // the boot timeout already locked in the fallback
-        settled = true;
-        tex.offset.set(RIG_SPRITE_UV.u0, RIG_SPRITE_UV.v0);
-        tex.repeat.set(RIG_SPRITE_UV.u1 - RIG_SPRITE_UV.u0, RIG_SPRITE_UV.v1 - RIG_SPRITE_UV.v0);
-        spriteMesh.material.map = tex;
-        spriteMesh.material.needsUpdate = true;
-        renderer.initTexture(tex);
-        spriteMesh.visible = true;
-        fallbackMesh.visible = false;
-        resolve();
-      },
-      undefined,
-      (err) => {
-        if (settled) return;
-        settled = true;
-        console.warn('RIG sprite failed to load; showing the procedural fallback instead.', err);
-        resolve();
-      },
-    );
+// This callback is the ONLY place that knows which plane is live; nothing in
+// src/sim/ ever reads it, so the sim cannot branch on an asset's fate.
+if (!RIG_FORCE_CANVAS) {
+  preloadTexture(new URL(RIG_SPRITE_PATH, import.meta.url).href).then((entry) => {
+    if (entry.state === 'ready') {
+      const tex = entry.tex;
+      tex.offset.set(RIG_SPRITE_UV.u0, RIG_SPRITE_UV.v0);
+      tex.repeat.set(RIG_SPRITE_UV.u1 - RIG_SPRITE_UV.u0, RIG_SPRITE_UV.v1 - RIG_SPRITE_UV.v0);
+      spriteMesh.material.map = tex;
+      spriteMesh.material.needsUpdate = true;
+      spriteMesh.visible = true;
+      fallbackMesh.visible = false;
+    } else {
+      console.warn('RIG sprite did not load (' + (entry.error || entry.state) +
+        '); showing the procedural fallback instead.');
+    }
   });
-  const timeoutP = new Promise((resolve) => {
-    setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      console.warn('RIG sprite load exceeded ' + RIG_SPRITE_BOOT_TIMEOUT_MS + 'ms at boot; ' +
-        'locking in the procedural fallback for this run (a late-arriving load is ignored, ' +
-        'never swapped in mid-run — see src/render/player.js\'s header note on why).');
-      resolve();
-    }, RIG_SPRITE_BOOT_TIMEOUT_MS);
-  });
-  return Promise.race([loadP, timeoutP]);
 }
-// Top-level await: every module that (transitively) imports this one — in
-// practice src/main.js, via its own side-effect `import './render/player.js'`
-// — does not resume evaluation past that import, and so cannot reach its own
-// `requestAnimationFrame(frame)` call, until this settles. That is what
-// moves the whole sprite-vs-fallback decision to BEFORE the game's first
-// simulated frame, bounded by the timeout above so a slow network delays
-// boot by at most ~2s rather than hanging it.
-await loadRigSpriteBeforeBoot();
+// THE BOOT GATE. Top-level await: every module that (transitively) imports
+// this one — in practice src/main.js, via its own side-effect `import
+// './render/player.js'` — does not resume evaluation past that import, and
+// so cannot reach its own `requestAnimationFrame(frame)` call, until every
+// asset preload.js knows about (RIG's sprite, and whatever else other lanes
+// have registered by this point in the module graph) is resident or the
+// shared budget has given up on it. See src/render/preload.js's header for
+// why this is a shared gate rather than a per-lane timeout: a second bespoke
+// mechanism here would be exactly the thing decisions.md entry 16's
+// playtest FAIL taught this lane not to build twice.
+await awaitPreloads();
 
 const gunGroup = new THREE.Group();
 gunGroup.position.set(0, 1.05, 0.25);

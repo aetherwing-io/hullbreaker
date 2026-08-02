@@ -3,6 +3,191 @@
 Worktree `/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-040`,
 branch `task/T-040`. Implements look-direction packet §3 item S8.
 
+## SHARED PRELOAD GATE ADOPTED — and the interleaved re-gate finds a real, unresolved residual effect
+
+Team lead's direction: use `src/render/preload.js` (built by T-049 after it hit
+the identical mid-run-fetch defect on its own hostile sprites) instead of this
+lane's bespoke `loadRigSpriteBeforeBoot()`/`Promise.race`/`settled`/
+`RIG_SPRITE_BOOT_TIMEOUT_MS` machinery — "do not invent a second mechanism" —
+and re-gate with a better methodology: interleave conditions within each
+round, report the full distribution instead of a 2-3 run spread, and say
+plainly which numbers are bimodal in the control rather than reading a signal
+into scatter (this is the standard the previous FAIL/fix cycle was missing;
+T-049 separately found `gameMsMax` bimodal in *its own* zero-asset control,
+which meant my earlier n=2/n=3 evidence couldn't actually separate "the sprite
+did it" from "the metric is just noisy" — team lead's words, and fair).
+
+### What changed in the code
+
+`src/render/player.js` now imports `preloadTexture`/`awaitPreloads` from
+`./preload.js` and registers RIG's sprite through it exactly like
+`src/render/sprites.js` registers the hostiles: `preloadTexture(url).then(entry
+=> ...)` to apply the UV crop and swap the fallback out on `'ready'`, one
+top-level `await awaitPreloads();` to hold the module graph (and so
+`src/main.js`'s `requestAnimationFrame`) until every registered asset is
+resident or the shared budget gives up. The bespoke timeout constant, the
+`settled` flag, `Promise.race`, and the manual `renderer.initTexture()` call
+are gone — `preload.js` does all of that internally now, once, for every lane.
+
+`tools/pathcheck.mjs`'s T-040 block was rewritten to match: it now asserts
+player.js imports `preloadTexture`/`awaitPreloads` from `./preload.js`, awaits
+`awaitPreloads()` at top level, and carries **no** second bespoke
+timeout/lock-in mechanism (`Promise.race`, `RIG_SPRITE_BOOT_TIMEOUT_MS`,
+`renderer.initTexture(`, a bare `settled` flag, or `loadRigSpriteBeforeBoot`
+itself) — each of the three new assertions broken and restored in turn to
+prove it binds. Net -2 assertions (5 removed, 3 added) — 1789 → 1787 passed,
+0 failed. The sim-purity check on `src/sim/player.js` was extended to also
+reject `preloadTexture`/`preload.js` references, so the sim still cannot
+branch on whether an asset loaded, now covering the new import names too.
+
+Re-verified after the refactor, headless and in-browser (fresh servers on
+ports 8793/8794, identity confirmed against the worktree's own files by line
+count and, for `preload.js`, an MD5 match — I was burned twice earlier this
+session by squatted ports serving stale content, so I check this every time
+now):
+
+- `node tools/pathcheck.mjs` → **1787 passed, 0 failed**.
+- `?selftest=1` → **SELFTEST PASS (29 checks)**, `window.__HB_PRELOAD()` shows
+  `rig-marine.png` reaching `'ready'` in 74ms, well inside the 2500ms shared
+  budget, no `pageErrors`.
+- `?selftest=1&rig=canvas` → still **SELFTEST PASS**; `__HB_PRELOAD()` shows
+  an empty asset list (`costMs: 0`) — confirms the escape hatch never
+  registers with the shared gate at all, exactly as before.
+- Sprite file moved aside and selftest re-run → still **SELFTEST PASS**, no
+  `pageErrors`, console carries exactly one line ("RIG sprite did not load
+  (error); showing the procedural fallback instead."), `__HB_PRELOAD()`
+  reports `state: 'failed'` — the asset-missing degrade-safely path still
+  works unchanged through the shared gate.
+- `tools/playtest/run.mjs scripts/mid-route.json --deterministic` completes
+  (`outcome: completed`) against the refactored tree.
+
+### The re-gate, with the new methodology — and an honest, not-clean result
+
+Three conditions, 16 interleaved rounds (one run of each per round, so
+whatever the shared session's ambient load is doing hits all three equally
+within a round), `mid-route.json --deterministic`, reading
+`meta.deterministicDispatch.gameMsMax` from each `report.json`:
+
+- **base** — pristine `main` (commit `3c1c14e`, pre-T-040, zero runtime asset
+  loading of any kind), served fresh on its own pinned port.
+- **hatch** — this commit, `?rig=canvas` (the escape hatch: never touches
+  `preload.js` at all, same code otherwise).
+- **ship** — this commit, shipped default (RIG's sprite through the shared
+  gate).
+
+| round | base | hatch | ship |
+|---|---|---|---|
+| 1 | 6329.7 | 6329.8 | 6632.5 |
+| 2 | 6331.6 | 6357.9 | 7234.4 |
+| 3 | 6346.0 | 6334.5 | 6833.7 |
+| 4 | 6500.4 | 6348.0 | 7150.5 |
+| 5 | 6333.6 | 6352.8 | 7017.2 |
+| 6 | 6316.1 | 6334.6 | 7152.3 |
+| 7 | 6345.4 | 6333.6 | 5739.8 |
+| 8 | 6326.9 | 6353.3 | 5746.3 |
+| 9 | 6316.6 | 6358.7 | 7674.6 |
+| 10 | 6340.5 | 6369.2 | 6551.6 |
+| 11 | 6335.0 | 6354.3 | 6338.4 |
+| 12 | 6361.4 | 6331.3 | 6345.8 |
+| 13 | 6351.3 | 6336.8 | 6344.5 |
+| 14 | 6349.6 | 6354.7 | 6346.7 |
+| 15 | 6357.4 | 6361.8 | 6342.5 |
+| 16 | 6330.9 | 6352.7 | 5747.4 |
+
+Full distributions (sorted), n=16 each:
+
+| condition | sorted `gameMsMax` (ms) | spread | biggest single gap |
+|---|---|---|---|
+| **base** | 6316.1, 6316.6, 6326.9, 6329.7, 6330.9, 6331.6, 6333.6, 6335.0, 6340.5, 6345.4, 6346.0, 6349.6, 6351.3, 6357.4, 6361.4, **6500.4** | 184ms | 139ms (one mildly-high value, not a second mode) |
+| **hatch** | 6329.8, 6331.3, 6333.6, 6334.5, 6334.6, 6336.8, 6348.0, 6352.7, 6352.8, 6353.3, 6354.3, 6354.7, 6357.9, 6358.7, 6361.8, 6369.2 | 39ms | 11ms — no gap anywhere close to a second mode |
+| **ship** | 5739.8, 5746.3, 5747.4, 6338.4, 6342.5, 6344.5, 6345.8, 6346.7, 6551.6, 6632.5, 6833.7, 7017.2, 7150.5, 7152.3, 7234.4, 7674.6 | **1935ms** | 591ms, between 5747.4 and 6338.4 |
+
+**Saying plainly what the control shows, per the new house rule**: in this
+16-round interleaved sample, **neither control is bimodal**. `base` is a tight
+184ms-spread cluster with one unremarkable high value; `hatch` — same code as
+`ship`, minus which texture is bound — is tighter still, 39ms across all 16
+runs, no gap anywhere near "a second mode." That is a different result than
+T-049 reported for its own zero-asset control (a ~9936ms outlier against a
+6315–6344 cluster across 8 rounds) — I am not disputing that finding, which is
+about a different sprite set on a different lane's code path; I'm reporting
+what *my* controls did, on *this* measurement, honestly, rather than assuming
+the same conclusion transfers.
+
+**`ship` is not bimodal either, more precisely: it's a wide, right-skewed
+spread with three visible clusters** — 3 runs low (~5743ms), 5 in the middle
+(~6343ms, closely matching `hatch`'s own cluster), and 8 stretched across a
+long high tail (6552–7675ms). 13 of 16 `ship` runs land at or above `hatch`'s
+own maximum (6369.2ms); only the 3 low runs and none of the mid-cluster runs
+undercut it. Both controls staying this tight at n=16 is itself evidence: if
+the whole session were simply "getting busier" and hitting every condition
+equally, I'd expect `base`/`hatch` to develop their own outliers by now, and
+they haven't (checked round-by-round above — the rounds where `ship` is most
+extreme, e.g. round 2 at 7234.4 or round 9 at 7674.6, are unremarkable rounds
+for `base`/`hatch`: 6331.6/6357.9 and 6316.6/6358.7). **This is real dispersion
+specific to the condition that actually draws RIG's loaded PNG, not shared
+machine noise landing on everyone alike** — which is a materially different,
+more concerning finding than "the metric is bimodal everywhere, ignore it."
+
+### What I found chasing it, and what I'm not claiming
+
+I do not want to just report the numbers and stop, since they point somewhere
+specific. Comparing a low `ship` run (round 7, final `gameMs` 5739.8) against
+a high one (round 1, final `gameMs` 6632.5) sample-by-sample: the two
+trajectories track within ~10ms of each other for the entire scripted window
+— they are not accumulating drift — until the low run's `deterministicDispatch`
+records `stopReason: 'victory'` at 16/26 scripted events dispatched, while the
+high run keeps going to 18/26 before its own `'victory'`. Both are legitimate
+route completions (`deaths: 0`, `gameOverSeen: false` in both) — the bot
+simply crosses the slice's end trigger at a different point in the scripted
+sequence, which openloop scripts are sensitive to by construction (see
+`tools/playtest/README.md`'s honesty note on why open-loop runs don't finish
+route-identical) — but the SOURCE of that sensitivity, on this evidence,
+correlates with which texture is bound for RIG's mesh, not with anything
+`base`/`hatch` are doing in the same round.
+
+My best-supported (not proven) hypothesis for the mechanism: `renderer.
+initTexture()` — which `preload.js`'s `prepare()` calls during the awaited
+boot phase — does call `gl.texImage2D`/`gl.generateMipmap` synchronously from
+three.js's own source (checked against the exact CDN module, `three@0.170.0`,
+`WebGLTextures.js`'s `uploadTexture`/`generateMipmap`), so the *JS-visible*
+call really does look complete before frame 1. But `rig-marine.png` is a real
+256×256 image with a full 9-level mipmap chain, against the procedural
+fallback's tiny 34×96 canvas — and GPU drivers are well known to queue GL
+commands and defer the actual execution of expensive ones (mipmap generation
+among them) until the driver needs the result, which for a texture is the
+next draw call that actually samples it. If that's what's happening here, the
+cost `preload.js`'s boot gate was built to move off the live frame is still
+landing on frame 1 of real gameplay for the ship condition specifically,
+because the JS call that looks synchronous isn't necessarily synchronous on
+the GPU side. I have not proven this with a GPU trace — I don't have the
+tooling for that in this session — so I'm reporting it as my best-supported
+hypothesis, not a finding.
+
+**What this means for the task, precisely**: the SPECIFIC mechanism the
+original playtest gate caught (an async `fetch`/decode landing mid-run) is
+closed — verified structurally (no code path left that can do it) and
+empirically (`preloadSnapshot` shows `'ready'` at 74ms, long before any
+gameplay frame). But this interleaved re-measurement surfaces a second,
+narrower effect that the shared gate as currently built does not appear to
+close for a real (larger, mipmapped) sprite texture specifically. Since
+`preload.js` is shared with T-049 and any fix belongs at that layer (e.g. an
+explicit warm-up render/`renderer.compile()` pass at the end of the boot gate,
+so the GPU driver is forced to actually finish the deferred work during boot
+rather than on first sample) — not something I should patch privately inside
+`player.js`, which would be exactly the "second mechanism" I was told not to
+build — I'm escalating this rather than shipping a unilateral fix. Raw
+`report.json` files for all 48 runs are in
+`/tmp/t040-regate-runs/` (session-local; re-run via `tools/playtest/run.mjs
+scripts/mid-route.json --deterministic --url <url>` against `base`/`hatch`/
+`ship` URLs to regenerate, one run of each per round, interleaved).
+
+### Housekeeping (repeated request)
+
+`reports/tasks/T-040/review.md` was removed from this worktree in the prior
+round (it cited pathcheck 1767 and the first, box-attempt evidence
+filenames — stale before every rework since). Confirming again: it is gone,
+not merely untracked; there is nothing left to commit or delete.
+
 ## PLAYTEST FAIL FIXED — the sprite's async load broke `--deterministic` mode
 
 `reports/tasks/T-040/playtest.md` (verdict: FAIL) measured a real defect:
