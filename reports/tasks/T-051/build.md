@@ -19,6 +19,85 @@ see below. `src/render/materials.js` and `src/render/limb.js` (T-052's this
 cycle) are untouched. `assets/generated/**` (T-053's this cycle) is
 untouched.
 
+## Asset spec for T-053: what "dissolves into the fog" actually requires
+
+The reviewer's finding is right and my depth retune (below) does not answer
+it: `SPRINT.md`'s accept box asks for the far edge to dissolve into fog,
+proven by capture. My depth fix solves a DIFFERENT problem (this plate
+overlapping `CONFIG.limb.backdrop`'s own box tiles) via the depth buffer,
+which has nothing to do with how a plate's OWN edge reads against whatever
+is actually behind it. **A flat quad's material can only tint a pixel's
+COLOR toward the fog color (`fog: true`, `backdrop.js:121`); it cannot make
+an already-opaque pixel become partially transparent.** Only the texture's
+own alpha channel can do that, and I measured all five shipped plates today:
+
+| plate | canvas | pure-0% | pure-255% | partial% |
+|---|---|---|---|---|
+| `backdrop-colony-cluster.png` | 512x256 | 53.54 | 46.18 | 0.28 |
+| `backdrop-crown-horizon.png` | 1024x256 | 60.51 | 39.19 | 0.31 |
+| `backdrop-gill-cavity.png` | 512x512 | 40.14 | 59.40 | 0.46 |
+| `backdrop-limb-segment.png` | 1024x512 | 50.18 | 49.34 | 0.48 |
+| `backdrop-spine-coil.png` | 512x512 | 52.10 | 46.11 | 1.80 |
+
+Every plate is a near-binary mask (>=98.2% of pixels are exactly fully
+transparent or fully opaque, matching the reviewer's ~99.5%/0.48% finding on
+the limb segment). There is no gradient at any silhouette edge for a
+material to blend against — no depth, fog, or code change on my side can
+produce a dissolve from a hard cutout.
+
+**Two separate properties the assets need, and they are not the same ask:**
+
+1. **A real alpha-cutout silhouette must survive.** Today's ~40-60%
+   transparent coverage per plate is what makes each one read as a
+   creature-part silhouette (a limb segment, a spine, a horizon) floating in
+   the haze, rather than a rectangle. This is a HARD requirement for this
+   task's layering to work at all, and it is currently at risk: T-053's
+   regenerated plates are reported 100% opaque, 0% transparent. If those
+   ship as-is, every quad becomes a fully opaque rectangle — its own canvas
+   bounds, not the painted shape, become the visible edge; each plate then
+   occludes 100% of whatever is behind it (mid/far tiers, and the existing
+   box-tile geometry) everywhere its rectangle overlaps them on screen; and
+   the three-tier depth grading this task builds becomes pointless, because
+   nothing farther than the nearest opaque rectangle at a given screen
+   position can ever be seen. **Do not ship a plate with zero transparency.**
+2. **The transition from opaque to transparent needs a gradient, not a
+   step.** This is the part that actually produces "dissolves into fog."
+   Concretely: at the outer contour of the painted shape (every edge where
+   opaque interior meets the transparent margin — this is not one-sided,
+   the whole silhouette boundary has the same problem), the alpha channel
+   should ramp smoothly from ~255 down to ~0 over a band of pixels, instead
+   of jumping directly. A reasonable, checkable target: **at least 8-12
+   texture pixels of graduated alpha (values meaningfully between roughly 15
+   and 240, not just 0 or 255) across that ramp, at the canvas resolutions
+   above** — derived from this task's own sizing math
+   (`src/render/backdrop-table.js`'s `plateSize()`): at the shipped FAR
+   view and a ~900px-tall reference viewport, the near tier
+   (`limbSegment`, frameFraction 0.28) puts about 2 texture pixels behind
+   every screen pixel, the mid tier (`spineCoil`/`gillCavity`, 0.22) about
+   2.6, the far tier (`colonyCluster`/`crownHorizon`, 0.16) about 1.8 — so
+   an 8-12 texel ramp reads as roughly a 3-6 screen-pixel soft edge at that
+   reference size, comfortably smaller than any painted detail (ladders,
+   hatches, panel seams all run 20+ texels wide) and comfortably larger than
+   a single hard step. **Honesty note: this is a reference-viewport
+   estimate, not a device guarantee** — a much higher-resolution display
+   gets more screen pixels for the same on-screen fraction and would need a
+   wider ramp to look equally soft; if T-053 can parameterize the feather
+   width, err wider (16-24 texels) rather than narrower.
+
+**What does NOT need to change on my side.** `backdrop.js`'s material
+(`transparent: true`, `alphaTest: 0.02`, `fog: true`) already composites a
+graduated alpha ramp correctly: `alphaTest` only discards the
+already-near-zero tail (below 2%) cheaply, it does not clip a ramp that
+runs from ~6% up to 100% over 8+ texels, and standard alpha blending
+naturally softens the edge once the source has partial alpha values to
+blend with. Once the asset provides the ramp, the depth-based fix I
+shipped below and the alpha feathering are complementary, not
+alternatives: depth ordering stops this plate from producing a hard seam
+against `CONFIG.limb.backdrop`'s own geometry; alpha feathering stops this
+plate's own edge from being a hard cutout against anything else (open
+background, or a farther/hazier part of the scene). Both are needed for the
+accept box to read as met; I have shipped the one that is mine to build.
+
 ## What changed, and why
 
 `src/render/scene.js:25` set `scene.background = new THREE.Color(PAL.bg)`, and
