@@ -1041,6 +1041,62 @@ SEQUENCING: T-032 (+275 pathcheck lines) and T-035 are in flight and both touch
 pathcheck. Do NOT fight them — build and prove the migration script, and let the
 integrator run it after those merge.
 
+<!-- ===== 2026-08-02 FEEL + RENDERER PUSH (lanes T-042..T-048). Dispatched
+after the operator's "FIX the game" and "what is in the way" messages. Several
+were never given SPRINT entries at dispatch time; recorded here for truth. ===== -->
+
+## T-042 | audio | doing | P1
+goal: make the game SOUND like an action game — weight on impacts, a distinct
+voice per weapon, an audible pressure curve, paired to T-041's directional
+impact language. All synthesized at runtime; no audio files.
+owner: gameplay-engineer
+
+## T-043 | feature | done | P1
+goal: the wasp was the only gating enemy with NO pre-commit telegraph (its own
+render comment said so). Now holds its committed dart pose 220ms before
+launching; squads stagger instead of all committing on one frame. MERGED at
+1853/0.
+owner: gameplay-engineer
+
+## T-044 | lattice | review | P1
+goal: setpiece moments — an ARRIVAL catwalk at the corner reveal and an ARENA
+fighting ground at each wave gate, tiers escalating 13/15/19/21 columns.
+REQUEST_CHANGES: measured 2/3 runs now clear wave gate 2 vs 0/3 on base, so the
+terrain moved outcomes; per entry 19 it must report the DISTRIBUTION (best,
+worst, spread) and route it to the operator, not claim difficulty is unchanged.
+Also fix a new assertion's false "hostiles LIVE" framing.
+owner: lattice-designer
+
+## T-045 | art | doing | P1
+goal: SELL THE SCALE (entry 17) — graded backdrop anatomy tiers, atmospheric
+depth that layers instead of collapsing, and human-scale reference objects
+(rungs, hatches) so the eye can measure the creature against a known size.
+owner: gameplay-engineer
+
+## T-046 | assets | doing | P1
+goal: generate the visual asset set with codex now that entry 16 legalized
+runtime assets — enemy sprites for the five roles (12-24px at the shipped FAR
+view, judged at true on-screen size), backdrop/anatomy scale elements, hull and
+deck surface textures.
+owner: asset-artist
+
+## T-047 | art | doing | P1
+goal: a real light rig — raking key, fill, rim — plus SHADOW MAPS on the play
+band and ACESFilmic tone mapping (entry 18). The whole rig was two lights and
+zero shadows, which is why nothing read as having form.
+accept: 60fps at 200+ live projectiles measured before/after; readability
+outranks beauty; do not re-darken the frame (entry 14).
+owner: gameplay-engineer
+
+## T-048 | art | doing | P1
+goal: EffectComposer with bloom, plus real material properties
+(roughness/metalness, procedural maps) — entry 18. Every material in the game
+was `{color, flatShading:true}` with every map slot unset, and a muzzle flash
+was a bright quad rather than a light source.
+accept: 60fps at 200+ live projectiles measured before/after; bloom must not
+bury a threat; ship on by default with an escape hatch.
+owner: gameplay-engineer
+
 <!-- ===== 2026-08-02 LOOK PUSH. Operator: "quit doing things that don't make
 sense... FIX the game, iterate faster and faster... i don't care about
 reliability or resilience... deployment is so far away in my mind."
