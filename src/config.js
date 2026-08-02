@@ -1058,3 +1058,111 @@ export const POST_TUNE = {
   emissiveGain: 1.45,                    // flashes/sparks/tell lamps/hit pops
 };
 /* ==== end T-048 post pass ==== */
+
+/* ==== T-051 backdrop layers (decisions.md entries 16/17) ================
+ * Five generated plates (assets/generated/backdrops/) on a small number of
+ * static quads along the six-face route — the counterpart, in TEXTURE, to
+ * CONFIG.limb.backdrop's BOX tiers (T-045): those are procedural mass, these
+ * are art, and the two are independent systems in independent files
+ * (src/render/backdrop.js + src/render/backdrop-table.js only —
+ * src/render/limb.js, T-052's lane this cycle, is untouched).
+ *
+ * WHY THIS READS AS "PARALLAX" WITH NO PER-FRAME CODE. Every quad below is
+ * placed ONCE, at a fixed (s, y, depth) on the same polyline camera.js
+ * already drives the camera along (src/pure/path.js's SEGS) — baked and
+ * never touched again, the same discipline limb.js's own header states ("no
+ * per-frame hook, no ritual hook, and no build hook"). The apparent sliding-
+ * at-different-rates as the camera scrolls and yaws through a corner IS what
+ * "parallax is the camera moving" means: a nearer static plate sweeps the
+ * frame faster than a farther one purely from projection, with zero
+ * simulated motion of its own. Static anatomy (entry 3) end to end.
+ *
+ * THE TWO FENCES (arithmetic in src/render/backdrop-table.js, re-derived
+ * independently — not inherited — in tools/pathcheck/t-051-backdrop.mjs):
+ *
+ * 1. PLAY-BAND CLEARANCE. A plate must render, on screen, entirely above
+ *    CONFIG.limb.playBand.y1 (the one shared "nothing outward of the play
+ *    plane may occlude gameplay" fence CONFIG.limb.backdrop's own tiers
+ *    answer to) at every view scale. `?view=near` is the binding case —
+ *      yMin(mult) = camera.y + ((playBand.y1-camera.y)/(camera.z*mult)) *
+ *                   (camera.z*mult + |depth|)
+ *    is LARGEST at mult=1 and only falls as mult grows (same derivation
+ *    CONFIG.limb.backdrop's own header comment uses for its three tiers).
+ *    Authored floors below clear that near-view minimum by 0.65-0.8 tiles.
+ * 2. FRAME COVERAGE, sized at the shipped FAR default only (near/mid are
+ *    comparison views, not a safety fence): a tier's height subtends
+ *    `frameFraction` of the vertical FOV at its own view-space distance
+ *    (dist = camera.z*viewScales.far.depthMult + |depth|), so a plate reads
+ *    as filling real screen area instead of sitting on it as a sticker.
+ *    Width follows the PNG's own aspect ratio (canvas[0]/canvas[1]) — never
+ *    stretched.
+ *
+ * DEPTHS SIT MEANINGFULLY BEHIND CONFIG.limb.backdrop's own three tiers
+ * (-14/-19/-24), not merely "distinct" from them — an earlier pass here
+ * authored -13/-18/-23 (one tile NEARER than each existing tier) on the
+ * theory that "close but distinct" was enough to keep the two systems
+ * apart. Captured evidence (reports/tasks/T-051/evidence/, and the
+ * integrator's own capture) proved that wrong: at -13 this tier is close
+ * enough to the sister-limb tile's own -14, AND authored to the identical
+ * floor (yBottom 17.0 == sister.y0 17.0), to sit in the SAME screen region
+ * — so this plate's real (non-rectangular) alpha silhouette abutted that
+ * tile's flat-shaded box geometry directly, at a visible seam. Not a
+ * fog-grading gap against open sky; a compositing seam against another
+ * lane's opaque geometry.
+ *
+ * Pushing every tier behind ALL THREE existing ones (-18/-23/-29, tried and
+ * discarded — not shipped) does let the ordinary depth buffer eliminate the
+ * seam outright: a box tile's own opaque, nearer surface then occludes this
+ * plate cleanly wherever the tile has mass. But it also buries the plates
+ * behind that mass almost everywhere reachable, which defeats the point.
+ * -16/-21/-26 (shipped) is the middle ground: each tier sits behind ONLY
+ * its nearest counterpart (sister -14, spine -19, far -24), not all three,
+ * so the worst, most direct co-location is gone and the plates stay visible
+ * in the committed evidence — at the cost of NOT proving zero collisions
+ * everywhere the hashed per-facet placements in limb.js's own bake plan
+ * might still put a tile edge against this plate's edge. That residual, and
+ * whether the two visual LANGUAGES (painted texture vs. flat-shaded box)
+ * read as one body where both remain in frame, is the operator's call, not
+ * a depth number's — see reports/tasks/T-051/build.md. */
+export const BACKDROP_TUNE = {
+  root: '../../assets/generated/backdrops/',
+  // near -> far. depth/yBottom/frameFraction are authored; everything else
+  // (world w/h, world center y, view-space distance) is DERIVED in
+  // src/render/backdrop-table.js — nothing here duplicates a computed number.
+  tiers: {
+    near: { depth: -16, yBottom: 17.9, frameFraction: 0.28, tint: 'backdropNear' },
+    mid:  { depth: -21, yBottom: 19.2, frameFraction: 0.22, tint: 'backdropMid' },
+    far:  { depth: -26, yBottom: 20.8, frameFraction: 0.16, tint: 'backdropFar' },
+  },
+  // `canvas` is MEASURED off the file (tools/assets/lib/png.mjs), not typed —
+  // pathcheck re-measures it, so a regenerated plate whose canvas moved fails
+  // the gate instead of silently mis-scaling (T-053 owns the assets; report a
+  // genuine size change rather than editing this table around it).
+  plates: {
+    limbSegment:   { file: 'backdrop-limb-segment.png',   canvas: [1024, 512] },
+    spineCoil:     { file: 'backdrop-spine-coil.png',     canvas: [512, 512] },
+    gillCavity:    { file: 'backdrop-gill-cavity.png',    canvas: [512, 512] },
+    colonyCluster: { file: 'backdrop-colony-cluster.png', canvas: [512, 256] },
+    crownHorizon:  { file: 'backdrop-crown-horizon.png',  canvas: [1024, 256] },
+  },
+  // Two per facet (a near piece + a farther one) at the facet's own
+  // midpoint s (CONFIG.path.introTiles + faceTiles*(face-1) + faceTiles/2 —
+  // 32.5 tiles clear of either of its bends, well outside any wave-gate halt)
+  // — 12 quads for the whole run, cycling the five plates so no facet
+  // repeats its own pairing.
+  placements: [
+    { face: 1, plate: 'limbSegment',   tier: 'near' },
+    { face: 1, plate: 'crownHorizon',  tier: 'far'  },
+    { face: 2, plate: 'spineCoil',     tier: 'mid'  },
+    { face: 2, plate: 'colonyCluster', tier: 'far'  },
+    { face: 3, plate: 'limbSegment',   tier: 'near' },
+    { face: 3, plate: 'gillCavity',    tier: 'mid'  },
+    { face: 4, plate: 'spineCoil',     tier: 'mid'  },
+    { face: 4, plate: 'crownHorizon',  tier: 'far'  },
+    { face: 5, plate: 'limbSegment',   tier: 'near' },
+    { face: 5, plate: 'colonyCluster', tier: 'far'  },
+    { face: 6, plate: 'gillCavity',    tier: 'mid'  },
+    { face: 6, plate: 'crownHorizon',  tier: 'far'  },
+  ],
+};
+/* ==== end T-051 backdrop layers ==== */
