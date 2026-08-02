@@ -9241,8 +9241,18 @@ const G2GATE = G2E.gate;
  * (2-6) instead of left to whatever the chunk stream and the Contra-tier
  * loop happened to leave there. Neither writes groundH; both compose the
  * escalating "six-stage ship response" (STORY.md) directly into the
- * battleground's own silhouette without moving a single CONFIG.waves
- * number — this is a placement change, not a difficulty one.
+ * battleground's own silhouette. No CONFIG.waves number moves — wave size,
+ * composition, and gated-hostile tuning are byte-identical to main.
+ *
+ * That is NOT the same as "difficulty is unaffected", and this comment
+ * used to claim it was — a review measurement (n=3/side,
+ * scripts/six-face-aimed-run.json --deterministic) found the added terrain
+ * measurably raises face 2's wave-gate clear rate for an identical scripted
+ * policy against an identical wave (2/3 cleared gate 2 here vs 0/3 on the
+ * merge-base). More footing and cover changing how winnable a fight is, is
+ * a real difficulty effect even though no combat NUMBER changed — see
+ * reports/tasks/T-044/build.md for the corrected measurement and the
+ * question this is routed to the operator as, rather than decided here.
  *
  * The regression this task actually found and fixed, so the fix stays
  * fixed: an earlier version of latticeInstallSite cleared each set piece's
@@ -9352,15 +9362,27 @@ const G2GATE = G2E.gate;
        'shipped level, missing ' + JSON.stringify(missing));
   }
 
-  /* --- driven proof: a policy using only already-taught verbs (LANE-BRIEF's
-   * evidence standard — assert against what a PLAYER can do, not authored
-   * geometry) survives the whole six-face lattice AND, without trying to
-   * gain altitude for its own sake, still mounts several of the new
-   * platforms along the way. This is the same held-jump policy the T-009
-   * section drives (hold right; jump on a gap or a denied step ahead), run
-   * to completion here and just watched for which platform ids it lands
-   * on — the exact class of regression this task fixed would show up here
-   * as a GAME_OVER, not merely as a static geometry claim.               */
+  /* --- driven proof: TERRAIN ONLY, same honesty scope as T-009's own test --
+   * a policy using only already-taught verbs (hold right; jump on a gap or a
+   * denied step ahead — the T-009 held-jump policy, run to completion here)
+   * survives the whole six-face lattice AND, without trying to gain altitude
+   * for its own sake, still lands on (`onOneWay`) several of the new
+   * platforms along the way. Hostiles are removed every frame
+   * (`while (HO.hostiles.length) HO.removeHostile(0, false)`), the exact
+   * idiom T-009's own script already uses and labels "route, not fight" —
+   * repeated here rather than reworded, because a hostile destroyed at the
+   * top of the frame after it spawns never reaches CONFIG.wasp.enterMs
+   * (900ms) and can never materialize, contact, dive, fire, or be fired at
+   * (src/sim/hostiles.js, src/sim/weapons.js). So this proves ROUTE
+   * reachability with the new terrain installed, and that four of the new
+   * platforms take genuine physics contact from a real jump arc — it proves
+   * nothing about surviving a wave-gate FIGHT with the new terrain, and
+   * must never be read as "hostiles live" (review finding, T-044 cycle 1:
+   * an earlier version of this comment and its messages claimed exactly
+   * that, which was false — fixed here, assertions unchanged). The
+   * clear-then-install regression this task found and fixed would still
+   * show up here as a GAME_OVER (a fall, not a fight), which is the failure
+   * mode this proof is actually scoped to catch.                          */
   {
     const simBase = 'file://' + join(srcDir, 'sim');
     const child = `
@@ -9419,19 +9441,23 @@ const G2GATE = G2E.gate;
     } catch (e) {
       console.error('pathcheck: T-044 driven-proof child failed: ' + e.message);
     }
-    ok(!!run, 'T-044: the six-face run with ARRIVAL/ARENA installed simulates headlessly end to end');
+    ok(!!run, 'T-044: the six-face run with ARRIVAL/ARENA installed simulates headlessly end ' +
+       'to end (hostiles removed every frame — this is a TERRAIN proof, not a combat one)');
     if (run) {
       ok(run.state === 'PLAYING' || run.state === 'VICTORY',
-         'T-044: the held-jump policy still survives the whole lattice with ARRIVAL/ARENA ' +
+         'T-044: with hostiles removed every frame (route, not fight — same idiom as T-009 ' +
+         'above), the held-jump policy still crosses the whole lattice with ARRIVAL/ARENA ' +
          'installed (state ' + run.state + ', lives ' + run.lives + ') — the exact gate the ' +
-         'clear-then-install regression broke');
+         'clear-then-install regression broke (that bug was a fall, not a fight)');
       ok(run.scrollX >= run.end,
          'T-044: …and still reaches the outro scroll end (' + run.scrollX.toFixed(1) +
          ' of ' + run.end + ')');
       ok(run.mounted.length >= 3,
-         'T-044: a policy that never tries to gain altitude for its own sake still lands on ' +
-         run.mounted.length + ' authored set-piece platforms along the way (' +
-         JSON.stringify(run.mounted) + ') — real contact, not merely reachable on paper');
+         'T-044: a terrain-only policy that never tries to gain altitude for its own sake ' +
+         'still takes genuine onOneWay contact on ' + run.mounted.length + ' authored ' +
+         'set-piece platforms along the way (' + JSON.stringify(run.mounted) + ') — real ' +
+         'physics contact with the new geometry, not merely reachable on paper. This says ' +
+         'nothing about combat: hostiles are removed every frame here (see above)');
     }
   }
 }

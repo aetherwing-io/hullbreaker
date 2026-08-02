@@ -6,6 +6,32 @@
 `src/render/**`, `src/sim/hostiles.js`, `src/ui/**`, `src/main.js`,
 `index.html`, `src/config.js`, `SPRINT.md`, `CLAUDE.md` touched.
 
+## Revision note (review response)
+
+The reviewer's `REQUEST_CHANGES` found two real problems in the first
+version of this report and the pathcheck block it described, both fixed
+below rather than argued with:
+
+1. This report originally claimed "`CONFIG.waves` is untouched... this is
+   a placement change, not a difficulty one." The first half is true; the
+   second half was an unmeasured assertion the reviewer measured and
+   disproved (the terrain measurably raises face 2's wave-gate clear rate
+   for an identical scripted policy). See "Difficulty measurement" below —
+   corrected, and routed to the operator rather than decided here.
+2. The new pathcheck assertion's messages and comments said the held-jump
+   policy "survives... with ARRIVAL/ARENA installed" and did so with
+   "hostiles LIVE." That framing was false: the harness removes every
+   hostile at the top of every frame (`while (HO.hostiles.length)
+   HO.removeHostile(0, false)`), the same idiom the T-009 section already
+   uses and honestly labels "route, not fight" — a hostile destroyed one
+   frame after spawning never reaches `CONFIG.wasp.enterMs` (900ms) and
+   can never materialize or take/deal damage. The assertion itself is
+   still worth having (it proves terrain reachability with the new
+   geometry installed, plus genuine `onOneWay` contact on 4 platforms);
+   only the description was wrong. Fixed in `tools/pathcheck.mjs`'s T-044
+   block — messages and comments now say "terrain only, hostiles removed
+   every frame" throughout, matching what the code actually does.
+
 ## What this is
 
 The ask was setpiece moments — a scale reveal, a near-miss, and a place
@@ -28,10 +54,11 @@ it). Two authored zones now flank every corner ritual, in
   The widest tier per arena also escalates monotonically: **13, 15, 19, 21,
   23 columns**. This reads STORY.md's six-stage escalation
   (Observe→Intercept→Contain→Quarantine→Sterilize→Scuttle) directly into
-  the battleground's own silhouette. **`CONFIG.waves` is untouched** —
-  wave size, composition, and gated-hostile tuning don't move, so this is a
-  placement change, not a difficulty one, per the operator's "make it
-  memorable, not harder" directive.
+  the battleground's own silhouette. **`CONFIG.waves` is untouched** — wave
+  size, composition, and gated-hostile tuning don't move, so no combat
+  NUMBER changed. That is not the same as "difficulty is unaffected" —
+  see "Difficulty measurement" below, which the operator's "make it
+  memorable, not harder" directive means is his call, not mine to assert.
 
 Both zones only ever ADD platforms; neither writes `groundH` or clears
 existing procedural platforms before installing (see below for why that
@@ -85,15 +112,59 @@ Both restores verified byte-identical (`diff` clean) before moving on.
 - **Held-jump policy, full six-face run, hostiles removed (T-009's
   reachability proof, terrain only):** still reaches the outro end with 2
   lives — unchanged from before this task started.
-- **Held-jump policy, full six-face run, hostiles LIVE (this task's new
-  assertion):** state PLAYING/VICTORY at the outro, and — without ever
-  trying to gain altitude for its own sake — naturally mounts 4 of the 17
-  new platforms along the way (`arena-f5-mid`, `arena-f6-mid`,
-  `arrival-f4`, `arrival-f6`), i.e. real contact with real physics, not
-  just "reachable on paper."
+- **Held-jump policy, full six-face run, with ARRIVAL/ARENA installed
+  (this task's new assertion — TERRAIN ONLY, hostiles removed every frame,
+  same idiom T-009 uses):** state PLAYING/VICTORY at the outro, and —
+  without ever trying to gain altitude for its own sake — takes genuine
+  `onOneWay` contact on 4 of the 17 new platforms along the way
+  (`arena-f5-mid`, `arena-f6-mid`, `arrival-f4`, `arrival-f6`). This is a
+  route/reachability fact plus real physics contact with the new
+  geometry; it says nothing about surviving combat with the new terrain —
+  see "Difficulty measurement" below for the number that actually answers
+  that.
 - **Crush-margin / pocket-timing assertions:** untouched, still green
   (nothing here touches `CONFIG.spawner`, pocket timing, or the pursuing
   edge).
+
+## Difficulty measurement — the terrain measurably raises face 2's gate-2 clear rate
+
+The reviewer ran `scripts/six-face-aimed-run.json` (the same policy this
+report's screenshots are captured with — hold right, aim up at an
+elevated target, jump on a gap/hound-tell/pinned) via
+`node run.mjs scripts/six-face-aimed-run.json --deterministic
+--stop-on-game-over --max-runtime-ms 245000`, 3x against this branch and
+3x against the merge-base (`69e1f90`), pinned worktrees, identical
+`node_modules`. Result: **base 0/3 cleared wave gate 2** (all three died
+in WAVE 2/6 at scroll 140m, the documented ceiling); **branch 2/3 cleared
+it** (died in WAVE 3/6 at scroll 205m instead). `CONFIG.waves`,
+`src/sim/hostiles.js`, and `src/sim/weapons.js` are byte-identical between
+the trees (confirmed via `git diff main...HEAD --stat` — this diff touches
+none of them), so the terrain is the only variable.
+
+I reproduced this independently with 2 more samples per side (n=5 each,
+same script/flags/pinned-worktree recipe, `tools/playtest/README.md`'s
+"Pinned-worktree capture"):
+
+| tree | gate-2 clear rate (n=5) | combined with reviewer's n=3 |
+| --- | --- | --- |
+| merge-base (`69e1f90`) | 1/5 (20%) — scroll 140/205/140/140/140 | **1/8 (12.5%)** |
+| this branch (`task/T-044`) | 3/5 (60%) — scroll 205/140/205/166.9/140 | **5/8 (62.5%)** |
+
+(Branch run 5 died at scroll 166.9 with no active wave-clear HUD — past
+corner 2 at 154, so it counts as a clear even though it did not survive
+long enough to engage gate 3.)
+
+n=8/side is still small and this is one scripted policy, not a claim about
+every possible player — but the direction is consistent across two
+independent measurement sessions and the effect size (≈5x the clear rate)
+is large enough that I do not think it is noise. **The added footing and
+cover in the ARENA composition make an identical fight more winnable for
+an identical policy against an identical wave.** That is a real difficulty
+effect even though no combat number moved — I am not asserting otherwise
+anymore, and I am not undoing the terrain to force the old ceiling back
+either (nobody asked for that, and "an arena that gives the player room to
+fight" may be exactly what "make it memorable" was asking for). This is
+the operator's call; see the first open question below.
 
 ## Screenshots — what I judged by, and what I could not get
 
@@ -149,26 +220,41 @@ could to make that merge legible.
 
 ## Open questions for the operator
 
-1. Does the face-2 ARENA screenshot read as "the ship's fighting me here on
+**URL: `index.html` (the default six-face run, no query flags — serve with
+`node tools/serve.mjs <port>`, not python).**
+
+1. **Difficulty, measured, not asserted:** with this branch's terrain, a
+   scripted policy clears face 2's wave gate roughly 5x more often than on
+   `main` (12.5% → 62.5% across 8 runs per side combined — see
+   "Difficulty measurement" above). Nothing in `CONFIG.waves` or the enemy
+   roster changed; the added footing/cover is what moved it. Is that an
+   acceptable, even desirable, side effect of "make it memorable" (an
+   arena that gives the player room to fight, making the fight more
+   winnable), or does it need to hold the pre-existing difficulty floor
+   given "durability outranks difficulty... do not tune the difficulty
+   curve" — and if the latter, should the fix be narrower arena footing,
+   or something else? This is explicitly your call, not mine or the
+   integrator's to make silently.
+2. Does the face-2 ARENA screenshot read as "the ship's fighting me here on
    purpose" rather than just "busier platforms" — does the escalating
    tier stack across faces 2→6 (1→2→3→3→3, widening each time) land as the
    Meridian's response intensifying, per STORY's six-stage ladder?
-2. The ARRIVAL catwalk (first screenshot) sits right where the corner
+3. The ARRIVAL catwalk (first screenshot) sits right where the corner
    ritual's reveal lands — is that beat legible as "the world already
    existed, revealed" rather than just "another platform," at a glance,
    at speed?
-3. Faces 3-6 are unverified by screenshot (see above) — worth a manual
+4. Faces 3-6 are unverified by screenshot (see above) — worth a manual
    playtest pass (or a stronger bot) before judging the full escalation,
    since face 2 alone under-represents the target (the biggest, most
    vertical arena is face 6, which nobody has seen rendered yet)?
-4. Given entries 9-12 (the pocket is a free pickup, priced by pressure not
+5. Given entries 9-12 (the pocket is a free pickup, priced by pressure not
    reach/height), should the ARENA's added verticality also stay entirely
    optional footing (never the only path through a gate), or is some
    arena tier allowed to be the *only* safe ground during a wave — I built
    it as pure additional route choice, never a forced climb, but have not
    separately proven "never the only path" the way the pocket's
    reachability is proven.
-5. Is escalating by structure (tier count, width) rather than raw height
+6. Is escalating by structure (tier count, width) rather than raw height
    the right read? Face 6's peak platform (10.35) is technically LOWER
    than face 5's (11.35) because face 6's local ground happens to sit a
    tile lower in that footprint for this seed — width and tier count both
@@ -188,3 +274,7 @@ could to make that merge legible.
   `node tools/serve.mjs 8799` (not python), port killed after.
 - Real browser playtest evidence gathered on an ephemeral OS-assigned
   port via `tools/playtest`'s own server (never 8741/8742).
+- Difficulty measurement: 5 runs per side (branch served on `127.0.0.1:8750`,
+  merge-base `69e1f90` checked out to a scratch `git worktree` and served on
+  `127.0.0.1:8749`, both via `node tools/serve.mjs`, both ports killed and
+  the scratch worktree removed after) — see "Difficulty measurement" above.
