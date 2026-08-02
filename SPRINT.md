@@ -1201,7 +1201,7 @@ branched off task/T-049, not main, because T-049 carries the shared
 src/render/preload.js texture gate; merge order is T-049 → T-051/T-052.
 ========== -->
 
-## T-051 | art | review | P1
+## T-051 | art | done | P1
 goal: a real backdrop behind the world. The five finished 1024x512 plates in
 assets/generated/backdrops/ go onto parallaxing quads, replacing the flat
 scene.background color as the thing filling 60-80% of the frame. Depth layering
