@@ -1532,6 +1532,18 @@ tools/playtest/
                             frame) but is NOT that pipeline — read its
                             before/after delta, do not compare one of its
                             numbers to one of that table's.
+  verify-served.mjs        dev-only: asks a RUNNING page which build it is, and
+                            fails when that is not the tree you think. Compares
+                            the page's baked limb plan (window.HB.g1.pieces)
+                            against this tree's, re-derives the scale pass in
+                            the page over the real groundH, and separates a
+                            wrong server --root from cached browser bytes
+                            (fetch vs fetch{cache:'reload'}). Written after
+                            I-037 spent a night on a tree that was correct.
+                            HONESTY: a cold profile cannot be stale, so a PASS
+                            without --profile means "this server serves this
+                            tree", not "that browser is clean"; it watches six
+                            files plus the plan length, nothing else.
   transform-capture.mjs    dev-only evidence script for the CP3 transform slice:
                             keyframe screenshots keyed on the ?testapi=1 transform
                             block's ritual clock (run.mjs's fixed sampling cadence
@@ -1586,6 +1598,71 @@ same build and the diff is exactly 0.
 6. Captures pass `?shell=0` and hide `#overlay` before the shot, because the
    pause panel dims the whole page and would darken the thing being judged. The
    canvas underneath is untouched; the HUD stays.
+
+## `verify-served.mjs` — is that URL running this tree? (T-050)
+
+Dev-only, not wired into `run.mjs`. **Run this before editing anything, the
+moment a shipped feature "renders nothing".** I-037 was filed as an S1 code
+defect — T-045's scale pass emitting zero pieces on the shipped default run —
+with a browser console transcript as evidence. The tree was innocent: driven
+from the real level's `groundH`, `limbBakePlan` returns 1633 pieces with 818
+mark/backdrop kinds, and the frame differs from `?scale=0` by 16-40% of its
+pixels at every viewport. The page was executing a **pre-T-045 copy of
+`src/pure/limb.js`**, declared `limbBakePlan(cfg, groundH)` — no third
+parameter, so the options argument is dropped and `{scale:true}` and
+`{scale:false}` both returned the legacy 829. (`Function.length` does not tell
+the two builds apart: it stops at the first defaulted parameter, so the current
+`(cfg, groundH, opts = {})` reports 2 as well. The piece count, the kind set and
+the presence of `silhouette` are the discriminators.)
+
+Every other gate in this repo reads files off disk in Node. This one asks the
+running page.
+
+```sh
+node verify-served.mjs http://127.0.0.1:8749                   # cold profile
+node verify-served.mjs http://127.0.0.1:8749 --tree /tmp/hb-pin
+node verify-served.mjs http://127.0.0.1:8749 --profile ~/warm  # a real browser's cache
+node verify-served.mjs http://127.0.0.1:8749 --json
+```
+
+Like every script here it needs `tools/playtest/node_modules` (one `npm install`
+in this directory), so run it from a checkout that has one and point `--tree` at
+the worktree under test.
+
+It prints `PASS`/`FAIL` on line 1 and exits 0/1. It separates the two
+mechanisms, because they need different fixes:
+
+- **the server is rooted on another tree** — served bytes differ from
+  `--tree`'s. Named with the commit whose copy matches, when git can find one
+  (this repo keeps pinned gate worktrees under `/private/tmp/hb-pin-*`; one of
+  them is `cd37b91`, pre-T-045). Fix: restart the server with the right
+  `--root`.
+- **the browser is executing cached bytes** — `fetch(u)` and
+  `fetch(u, {cache:'reload'})` return different lengths, the merge playbook's
+  own diagnostic. Fix: hard reload, or a cold profile; note that switching the
+  server to `tools/serve.mjs` does **not** dislodge an entry a previous
+  `python3 -m http.server` session already stored (measured in T-050: a
+  `no-store` server on the same port, plain navigation, still ran the 13,326-char
+  cached `limb.js` over the 25,319-char one on the wire).
+
+**Honesty / limitations**
+
+1. It watches six files (`index.html`, `src/main.js`, `src/config.js`,
+   `src/pure/limb.js`, `src/render/limb.js`, `src/sim/level.js`) plus the limb
+   bake-plan length. A stale module outside that list is invisible to the byte
+   checks; the plan-length check (`window.HB.g1.pieces` vs the plan this tree
+   bakes) is the broad net, because most stale render/pure modules move it.
+2. **A cold profile cannot be stale.** A `PASS` without `--profile` means "this
+   server serves this tree", not "the operator's browser is clean". To answer
+   the second question you must point it at the profile that browser uses.
+3. It only knows the limb plan on a URL where `HB.g1` exists — the six-face
+   default. On a fixture URL or `?zip=1` that check is reported as skipped, not
+   as a pass.
+4. Byte counts are JS string lengths (UTF-16 code units) on both sides, never
+   `wc -c`; the two differ wherever a file contains non-ASCII.
+5. `:8741` and `:8742` are the operator's (`docs/LANE-BRIEF.md`). The tool
+   refuses them unless `--operator-port` is passed — that flag is not a
+   permission, it is a speed bump so no agent probes those ports by reflex.
 
 ## Single best next action
 
