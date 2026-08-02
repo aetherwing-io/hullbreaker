@@ -2296,3 +2296,29 @@ feature is missing:
 
 I-037 is closed as NOT A DEFECT. T-050's real deliverable is the gate that
 makes this class self-detecting rather than a fix — see its report.
+
+## I-038 | bug | S2 | repro: `cd tools/playtest && node run.mjs scripts/six-face-full-run.json --deterministic --stop-on-game-over --max-runtime-ms 245000 --base-url <pinned-server>` against merge-base commit `69e1f906262cdebd4bbc7f83f0dd27885e8baa92` (reproduced 3 of 5 tries; also 1 of 5 on `task/T-044` @ `03b775e`, so pre-existing on `main`-equivalent code, not T-044's terrain) | evidence: reports/tasks/T-044/qa-evidence/distribution-repro.md, reports/tasks/T-044/qa-evidence/full-base-{2,3,4}/report.json, reports/tasks/T-044/qa-evidence/full-branch-4/report.json
+
+Found while playtest-gating T-044. The default six-face run's weak
+(no-vertical-aim) reflex policy can get wedged ALIVE at wave gate 1
+(x≈58.9-60.0, `scrollX`=75.0) for 160-200+ seconds of a 245s run with hp and
+lives completely flat and zero forward progress, instead of reaching
+`GAME_OVER` — `meta.stopReason` reads `"script-window"` rather than
+`"game-over"` in the affected runs, and `trace[]` shows the exact same x to
+two decimal places for the entire stall window. This reproduces on the
+**unmodified merge-base** (`69e1f90`), so it is not caused by T-044's
+ARRIVAL/ARENA terrain (which begins well past scrollX 75). Caveat, stated
+plainly: the "weak" policy deliberately has no vertical-aim rule at all
+(that is what makes it a stand-in for a weaker player in this project's own
+difficulty-measurement methodology, per `reports/tasks/T-044/build.md`), so
+a real player — who always has that verb — may not get stuck the same way;
+this is evidence of a possible dead spot at wave gate 1 worth a
+human/stronger-bot check, not proof of a player-reachable softlock. Given
+the PLAYER MODEL block in this file explicitly calls out "a safe spot
+nothing can reach" as a thing to hunt for, this is worth triaging even with
+that caveat. Fix direction: someone with combat/hostiles context (T-043's
+lane, or a future gate-1 AI/composition pass) should drive
+`full-base-3`/`-4`'s exact trace
+(`reports/tasks/T-044/qa-evidence/full-base-3/report.json`) through
+`analyze-run.mjs` to see what's adjacent to RIG during the stall and
+whether a real player's aim would actually break it.
