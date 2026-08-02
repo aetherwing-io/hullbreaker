@@ -57,6 +57,43 @@ or a crash is a P1 defect.
   (entry 7) are law. `docs/decisions.md` verdicts are never re-litigated —
   propose a new decision instead.
 
+## Bound is not visible (art lanes)
+
+**2026-08-02.** The operator looked at the shipped build and said the thing
+floating in the background had more detail than the thing in the foreground.
+He was right, and four gate agents had passed the lane that caused it.
+
+Every gate did its job. They verified the hull texture was **bound** — that the
+maps reached the right material buckets, that a missing tile degraded safely,
+that draw calls and frame time held. All true. **Nobody measured whether it was
+visible.** It was delivering 0.24 luminance levels of surface detail against a
+deck checker beside it delivering ~30. Present in the scene graph, absent to
+the eye.
+
+So: if your lane's output is meant to be *seen*, "it is wired in correctly" is
+not evidence that it works. Measure the thing the operator would actually
+notice:
+
+    fine detail = mean |luminance(x) - luminance(x-1)| along rows,
+                  over a band of the surface, at true on-screen size
+
+Run it on your build **and on your own escape-hatch control** (`?tex=flat`,
+`?backdrop=flat`, whatever yours is). If the two numbers are close, your
+feature is invisible no matter how correctly it is bound, and reporting it as
+done is reporting the wrong thing. Put both numbers in the report.
+
+Two traps this one walked into, both worth knowing:
+
+- **Normalizing a mean is not preserving a range.** Correcting an asset's
+  average brightness with a multiply clips the highlights that carry its
+  detail. Two separate lanes each reduced contrast for a good reason
+  (fixing a darkening; painting a smoother tile) and the product had nothing
+  left to see. Neither lane was wrong alone.
+- **A tiled surface texture and a painted backdrop do not want the same
+  qualities.** More colours and smoother gradients improved the backdrop and
+  hurt the tile: what reads on a tiled surface is local contrast at the
+  tiling frequency, not colour count.
+
 ## Evidence standard
 
 This project's signature failure is **an assertion whose subject is the
