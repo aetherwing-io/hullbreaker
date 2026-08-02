@@ -1088,7 +1088,7 @@ accept: 60fps at 200+ live projectiles measured before/after; readability
 outranks beauty; do not re-darken the frame (entry 14).
 owner: gameplay-engineer
 
-## T-048 | art | doing | P1
+## T-048 | art | done | P1
 goal: EffectComposer with bloom, plus real material properties
 (roughness/metalness, procedural maps) — entry 18. Every material in the game
 was `{color, flatShading:true}` with every map slot unset, and a muzzle flash
