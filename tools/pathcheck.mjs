@@ -9226,5 +9226,122 @@ const G2GATE = G2E.gate;
   }
 }
 
+/* ================= T-040: RIG silhouette (pure + guards) ================ *
+ * look-direction packet §3 item S8. RIG was 230 lit pixels of head sphere +
+ * torso box + two leg boxes, no helmet, no pack, no silhouette break, and
+ * sharing his value family with his own tracers (evidence: artifacts/
+ * look-v1/z01-rig-far-default-5x.png). The fix: a visor break + a pack mass,
+ * and three value zones, all as data in src/pure/rig.js so this block gates
+ * the ENVELOPE headlessly instead of trusting review — same precedent as
+ * T-013's shell.js compositionViolations.
+ *
+ * CORRECTION CARRIED FROM ADVERSARIAL REVIEW: an earlier draft of this item
+ * claimed "the silhouette can never lie about where RIG is." src/render/
+ * player.js's gun sweeps through 8-way aim every frame and already reaches
+ * |x| = 0.825 — more than twice the 0.35 collision half-width — so that
+ * claim is false of the ASSEMBLED rig. The envelope below is asserted over
+ * BODY boxes only; the gun's wider, already-shipped reach is asserted
+ * separately, by name, so this gate documents the true state instead of
+ * passing green over a violated property.                                */
+import {
+  BODY_HALF_WIDTH, BODY_HEIGHT, GUN_BOX, GUN_INNER_X, GUN_OUTER_X, RIG_BOXES,
+  ZONES, gunLocalXSpan, rigEnvelopeViolations,
+} from '../src/pure/rig.js';
+{
+  // --- frozen collision constants this table binds to ---------------------
+  ok(BODY_HALF_WIDTH === CONFIG.player.width / 2 && BODY_HALF_WIDTH === 0.35,
+     'T-040: rig.js\'s body half-width is exactly half the frozen 0.7 collision width');
+  ok(BODY_HEIGHT === CONFIG.player.height && BODY_HEIGHT === 1.7,
+     'T-040: rig.js\'s body height is exactly the frozen collision height');
+
+  // --- the shipped body table is clean -------------------------------------
+  ok(RIG_BOXES.length === 6,
+     'T-040: six body boxes (torso/head/legL/legR were four; visor+pack are new), got ' +
+     RIG_BOXES.length);
+  const shipped = rigEnvelopeViolations(RIG_BOXES);
+  ok(shipped.length === 0,
+     'T-040: the shipped RIG body table is inside its own envelope' +
+     (shipped.length ? ' — ' + shipped.join('; ') : ''));
+  ok(ZONES.every((z) => RIG_BOXES.some((b) => b.zone === z)) &&
+     new Set(RIG_BOXES.map((b) => b.zone)).size === 3,
+     'T-040: all three value zones (bright/dark/mid) are populated');
+  ok(RIG_BOXES.filter((b) => b.zone === 'bright').map((b) => b.id).sort().join(',') === 'head,visor' &&
+     RIG_BOXES.filter((b) => b.zone === 'dark').map((b) => b.id).sort().join(',') === 'pack,torso' &&
+     RIG_BOXES.filter((b) => b.zone === 'mid').map((b) => b.id).sort().join(',') === 'legL,legR',
+     'T-040: zone assignment matches the packet — bright=head/visor, dark=torso/pack, mid=legs');
+
+  // --- prove the guard actually rejects (LANE-BRIEF evidence standard: a
+  // new assertion must be shown to bind by breaking the thing it guards) ---
+  {
+    const wideX = rigEnvelopeViolations(
+      [{ id: 'wide', zone: 'bright', w: 0.1, h: 0.1, d: 0.1, x: 0.5, y: 1, z: 0 }]);
+    ok(wideX.some((m) => /collision half-width/.test(m)),
+       'T-040: the envelope guard rejects a box that escapes the lateral half-width');
+    const tallY = rigEnvelopeViolations(
+      [{ id: 'tall', zone: 'bright', w: 0.1, h: 0.1, d: 0.1, x: 0, y: 2, z: 0 }]);
+    ok(tallY.some((m) => /collision height/.test(m)),
+       'T-040: the envelope guard rejects a box that tops out above the collision height');
+    const badZone = rigEnvelopeViolations(
+      [{ id: 'x', zone: 'ember', w: 0.1, h: 0.1, d: 0.1, x: 0, y: 0.1, z: 0 }]);
+    ok(badZone.some((m) => /not declared/.test(m)),
+       'T-040: the envelope guard rejects a zone outside bright/dark/mid');
+    const oneZone = rigEnvelopeViolations(
+      [{ id: 'x', zone: 'bright', w: 0.1, h: 0.1, d: 0.1, x: 0, y: 0.1, z: 0 }]);
+    ok(oneZone.some((m) => /no box carries zone "dark"/.test(m)) &&
+       oneZone.some((m) => /no box carries zone "mid"/.test(m)),
+       'T-040: the envelope guard flags missing zones, not just malformed boxes');
+  }
+
+  // --- the gun's swept reach: documented, not narrowed ---------------------
+  const [gLo, gHi] = gunLocalXSpan(GUN_BOX);
+  near(gLo, GUN_INNER_X, 1e-9, 'T-040: gun inner x matches the exported constant');
+  near(gHi, GUN_OUTER_X, 1e-9, 'T-040: gun outer x matches the exported constant');
+  near(GUN_OUTER_X, 0.825, 1e-9,
+       'T-040: gun reach at dead-horizontal aim is 0.825 (the packet\'s measured figure)');
+  ok(GUN_OUTER_X > 2 * BODY_HALF_WIDTH,
+     'T-040: the gun\'s swept reach (' + GUN_OUTER_X.toFixed(3) + ') is documented as MORE ' +
+     'than double the body half-width (' + BODY_HALF_WIDTH.toFixed(3) + ') — the "silhouette ' +
+     'never lies" claim is true of the body only, per the adversarial-review correction above');
+
+  // --- player.js is data-driven, not a second copy of the table -----------
+  const rigSrc = stripComments(readFileSync(join(srcDir, 'render', 'player.js'), 'utf8'));
+  ok(/from\s+'\.\.\/pure\/rig\.js'/.test(rigSrc) && /RIG_BOXES/.test(rigSrc) && /GUN_BOX/.test(rigSrc),
+     'T-040: player.js draws RIG from src/pure/rig.js\'s table, not a parallel literal list');
+  ok(!/BoxGeometry\(\s*0\./.test(rigSrc),
+     'T-040: no hardcoded box-dimension literal remains in player.js\'s RIG construction');
+
+  // --- palette: three value zones, in both modes ---------------------------
+  const ch = (h) => [(h >> 16) & 255, (h >> 8) & 255, h & 255];
+  const lum = (h) => { const [r, g, b] = ch(h); return r + g + b; };
+  const GAP = 100;   // floor out of a 765 max sum — big enough that two
+                      // near-identical tones (the packet's "2% apart" failure
+                      // mode) cannot pass this the way a height-only gate would
+  for (const [name, T] of [['classic', PAL_CLASSIC], ['concept', PAL_CONCEPT]]) {
+    ok(T.playerDark !== undefined && T.playerMid !== undefined,
+       'T-040: ' + name + ' table carries playerDark and playerMid');
+    const bright = lum(T.player), mid = lum(T.playerMid), dark = lum(T.playerDark);
+    ok(bright > mid && mid > dark,
+       'T-040: ' + name + ' RIG value ladder is bright > mid > dark (' +
+       bright + ' > ' + mid + ' > ' + dark + ')');
+    ok(bright - mid >= GAP && mid - dark >= GAP,
+       'T-040: ' + name + ' RIG zones clear a ' + GAP + '/765 luminance floor between ' +
+       'every pair (' + (bright - mid) + ', ' + (mid - dark) + ')');
+  }
+  {
+    const C = PAL_CONCEPT;
+    const spread = (h) => { const [r, g, b] = ch(h); return Math.max(r, g, b) - Math.min(r, g, b); };
+    ok([C.player, C.playerDark, C.playerMid].every((h) => spread(h) < 40),
+       'T-040: concept RIG zones stay desaturated — a value ladder inside the existing ' +
+       'muzzle role, not a saturated new hue (a hue change needs a decisions.md entry first)');
+    ok([C.playerDark, C.playerMid].every((h) => { const [r, g, b] = ch(h); return r >= g && g >= b; }),
+       'T-040: concept RIG zones keep the same warm-neutral channel order as PAL.player');
+  }
+
+  // --- draw-call budget: +2 (packet budget) --------------------------------
+  ok(RIG_BOXES.length + 1 === 7,
+     'T-040: RIG now draws 7 meshes (6 body + 1 gun) — was 5 (torso/head/legL/legR/gun), ' +
+     'a +2 draw-call delta matching the packet\'s budget');
+}
+
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');
 process.exit(fails ? 1 : 0);
