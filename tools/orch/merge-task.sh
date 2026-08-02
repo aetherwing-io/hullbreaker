@@ -24,6 +24,12 @@
 #                                   cover; never for unjudged runtime changes)
 set -euo pipefail
 
+# Records any smoke script that needed more than one attempt, so a flaky pass
+# is stated in the merge commit rather than looking identical to a clean one.
+# Declared here, not inside the smoke block: `set -u` would abort on the merge
+# message below when --skip-smoke leaves the block unentered.
+SMOKE_FLAKES=''
+
 TASK="${1:?usage: tools/orch/merge-task.sh <task-id> [--skip-smoke] [--accept-stale-verdicts]}"
 SKIP_SMOKE=0
 ACCEPT_STALE=0
@@ -109,13 +115,43 @@ if [ "$SKIP_SMOKE" = "0" ]; then
     local script="$1" budget="$2"
     local out="$MAIN_ROOT/tools/playtest/runs/merge-$TASK-$(basename "$script" .json)"
     rm -rf "$out"
-    printf '== smoke: %s\n' "$script"
-    (cd "$MAIN_ROOT/tools/playtest" && node run.mjs "scripts/$script" \
-        --deterministic --max-runtime-ms "$budget" \
-        --base-url "http://127.0.0.1:$PORT" --out "$out") \
-      || fail "smoke run errored: $script"
-    grep -q '"result": *"completed"' "$out/report.json" \
-      || fail "smoke did not complete: $script (see $out/report.json)"
+    # Best of three, and SAY SO when it took more than one.
+    #
+    # WHY. The gate used to fail a lane on a single non-completing run. On
+    # 2026-08-02 that refused T-040 — which then completed 5/5 in its own
+    # worktree and 3/3 on main with the identical script. The single run was
+    # harness flake, not a regression, and the refusal cost a cycle.
+    #
+    # That flake is not mysterious: I-040 records that the harness's own
+    # `--deterministic` mode is unsound — pinning the timestep with ?fixeddt
+    # makes even the UNTOUCHED main control scatter (2/8 rounds, gameMsMax
+    # 4533-19683ms from byte-identical input). Gating a merge on one sample
+    # from a known-noisy instrument is a coin flip dressed as a gate.
+    #
+    # This is NOT "retry until green." A real regression fails all three, and
+    # a lane that needs two attempts gets that fact printed and carried into
+    # the merge commit, so nobody can mistake a flaky pass for a clean one.
+    # If you find yourself wanting a fourth attempt, the answer is no — fix
+    # I-040 instead.
+    local attempt result=''
+    for attempt in 1 2 3; do
+      printf '== smoke: %s (attempt %d/3)\n' "$script" "$attempt"
+      if (cd "$MAIN_ROOT/tools/playtest" && node run.mjs "scripts/$script" \
+            --deterministic --max-runtime-ms "$budget" \
+            --base-url "http://127.0.0.1:$PORT" --out "$out") \
+         && grep -q '"result": *"completed"' "$out/report.json"; then
+        result=completed
+        [ "$attempt" -gt 1 ] && {
+          printf '== smoke NOTE: %s completed on attempt %d of 3 — %d earlier run(s) did not.\n' \
+            "$script" "$attempt" "$((attempt - 1))"
+          SMOKE_FLAKES="${SMOKE_FLAKES}${script} passed on attempt ${attempt}/3; "
+        }
+        break
+      fi
+      printf '== smoke: %s did not complete on attempt %d\n' "$script" "$attempt"
+    done
+    [ "$result" = completed ] \
+      || fail "smoke did not complete in 3 attempts: $script (see $out/report.json) — three failures is a regression, not flake"
   }
   smoke mid-route.json 15000
   smoke transform-slice.json 20000
@@ -134,7 +170,13 @@ git diff --quiet && git diff --cached --quiet \
   || fail "main tree went dirty during the gate (a lane filed an issue mid-run) — commit it and re-run"
 
 printf '== merging %s\n' "$BRANCH"
-if ! git merge --no-ff "$BRANCH" -m "Merge $TASK ($BRANCH)"; then
+MERGE_MSG="Merge $TASK ($BRANCH)"
+[ -n "$SMOKE_FLAKES" ] && MERGE_MSG="$MERGE_MSG
+
+Smoke flake (recorded, not hidden): ${SMOKE_FLAKES%; }. A regression fails all
+three attempts; this one did not. See I-040 — the harness's --deterministic
+mode is unsound, which is why the gate samples three times instead of once."
+if ! git merge --no-ff "$BRANCH" -m "$MERGE_MSG"; then
   git merge --abort 2>/dev/null || true
   fail "merge conflict (aborted, main left clean) — resolve manually or rebase the task branch"
 fi

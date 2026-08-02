@@ -1,0 +1,52 @@
+All three break tests below ran against a SCRATCH copy (not the shared
+worktree — see playtest.md's worktree-hygiene note), never against the
+actual task/T-049 worktree.
+
+=== BREAK 1: both hound sprite variant PNGs physically deleted ===
+$ mv assets/generated/sprites/hound-brace-{a,b}.png /elsewhere/
+$ node tools/pathcheck.mjs
+pathcheck note (reported, not asserted): a hold-right deck-line crossing collected 2 of 6 pocket capsules (weapon at the end R, closest approach 0.981 tiles at [46,5.37])
+FAIL T-049: hound/a names an asset that exists (hound-brace-a.png)
+FAIL T-049: hound/b names an asset that exists (hound-brace-b.png)
+pathcheck: 2742 passed, 2 failed
+
+$ node qa-hound-break-probe.mjs http://127.0.0.1:8792   (served the broken copy)
+sprites snapshot: {"enabled":true,"kinds":{"hound":{"state":"failed","variant":"b","file":"hound-brace-b.png","error":"error"},"carrier":{"state":"ready",...},"wasp":{"state":"ready",...},"polyp":{"state":"ready",...},"mortar":{"state":"ready",...}}}
+preload snapshot: {"closed":true,"budgetMs":2500,"costMs":25,"warmOn":true,"warmMs":8,"warmedWhileClosed":true,"assets":[{"url":".../hound-brace-b.png","state":"failed","ms":13,"error":"error"}, ...4 more, all "ready"...]}
+HB.state: PLAYING hostiles: ["wasp","wasp","hound","hound","hound","wasp"]
+failsafe: {"installed":true,"booted":true,"showing":null,"halted":false,"faults":0,"recoveries":0,"beats":407,"uncaught":0,...}
+pageErrors: []
+console lines mentioning hound sprite: ["HULLBREAKER art: hound sprite hound-brace-b.png did not load (error) — drawing the primitive body instead."]
+
+Screenshot: qa-hound-files-removed-fallback.png — three green primitive
+slabs draw where hounds stand (right side of frame); wasps (unaffected
+kind) draw as sprites in the air (top-left, top-right). Nothing blank,
+nothing halted.
+
+=== BREAK 2: wasp sprite response delayed 4000ms via Playwright route
+    interception (no file changes) — past PRELOAD_BUDGET_MS=2500 ===
+$ node qa-slow-sprite-probe.mjs http://127.0.0.1:8790   (unmodified pinned tree)
+wall time to this point (ms): 10182
+sprites snapshot: {..."wasp":{"state":"failed","variant":"b","file":"wasp-drone-b.png","error":"still loading after 2512ms of the 2500ms boot budget"}, other 4 kinds "ready"}
+preload snapshot: {"closed":true,"budgetMs":2500,"costMs":2512,"warmOn":true,"warmMs":10,"warmedWhileClosed":true,"assets":[...,{"url":".../wasp-drone-b.png","state":"timeout","ms":2512,"error":"still loading after 2512ms of the 2500ms boot budget"},...]}
+HB.state: PLAYING hostiles: ["hound","wasp","hound"]
+failsafe: {"installed":true,"booted":true,"showing":null,"halted":false,"faults":0,"recoveries":0,"beats":895,"uncaught":0,...}
+pageErrors: []
+console lines mentioning wasp: ["HULLBREAKER art: http://127.0.0.1:8790/assets/generated/sprites/wasp-drone-b.png — still loading after 2512ms of the 2500ms boot budget; the game is starting without it.","HULLBREAKER art: wasp sprite wasp-drone-b.png did not load (still loading after 2512ms of the 2500ms boot budget) — drawing the primitive body instead."]
+
+The gate closed AT its 2500ms budget (costMs 2512) and did not wait out the
+full 4000ms artificial delay — confirms the "one shared wall-clock budget,
+not a per-asset wait" contract under an actual slow response, not just a
+404. Screenshot: qa-wasp-slow-load-timeout-fallback.png — the wasp (top
+left) draws as the bright primitive diamond while the hound (right) draws
+as its sprite.
+
+=== BREAK 3: preload.js's settle() reverted to a private snapshot raced at
+    entry — the exact pre-review regression the file's own header
+    describes (see qa-preload-concurrency-check.log for the full
+    before/after and restore-diff-clean confirmation) ===
+Summary: 8 of 14 preload-concurrency-check.mjs checks flip to FAIL,
+including the "awaits-first" condition going fully refused/refused/refused
+(3/3) — the module-evaluation-order hazard T-049's fix cycle (task #146)
+built GRACE_TURNS to close. Restored; diffed byte-identical against the
+pre-break file; pathcheck 2748/0 after restore.

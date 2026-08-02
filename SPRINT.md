@@ -1075,7 +1075,7 @@ launching; squads stagger instead of all committing on one frame. MERGED at
 1853/0.
 owner: gameplay-engineer
 
-## T-044 | lattice | review | P1
+## T-044 | lattice | done | P1
 goal: setpiece moments — an ARRIVAL catwalk at the corner reveal and an ARENA
 fighting ground at each wave gate, tiers escalating 13/15/19/21 columns.
 REQUEST_CHANGES: measured 2/3 runs now clear wave gate 2 vs 0/3 on base, so the
@@ -1140,7 +1140,7 @@ transform slice's 580-call path not multiplied.
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; frame time under load; FAR captures
 
-## T-040 | art | doing | P1
+## T-040 | art | done | P1
 goal: packet item S8 — RIG silhouette. He is 230 lit pixels of head sphere plus
 three boxes, sharing a value family with his own bullets. Render-only: hitbox
 and movement are frozen.
@@ -1156,6 +1156,106 @@ accept: pure/juice.js stays deterministic (seeded rng only); 60fps at 200+
 projectiles measured, not assumed; no frozen constant moves.
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; frame time at 256 projectiles before/after
+
+<!-- ========== 2026-08-02 THE GREYBOX DIAGNOSIS (integrator) ==========
+
+The operator asked, after two days of art tasks: "should we change the size or
+camera or scale or something to improve the graphics, i looked at those and
+we're not even remotely close to the concept art. what is in the way that is
+making this so difficult?"
+
+It is not the camera, the size, or the scale. Measured on main at 9cc80f7:
+
+  1. `grep -rn "assets/generated" src/` returns NOTHING. Five finished
+     backdrop plates, four hull tiles and nineteen sprites sit in
+     assets/generated/ and no runtime file references any of them.
+  2. The render layer builds 30 materials — 20 MeshBasicMaterial, 10
+     MeshStandardMaterial — and not one carries an image map. The only `map:`
+     in src/render/ is capsules.js:122-139, a CanvasTexture drawing a LETTER.
+  3. scene.js:25 — `scene.background = new THREE.Color(PAL.bg)`. The sky, and
+     the 60-80% of every concept board that is creature-body-in-haze, is one
+     flat color.
+  4. Geometry: 27 BoxGeometry, 5 Octahedron, 3 Sphere, 1 each Torus/Plane/
+     Dodecahedron/Cone.
+
+So the world is untextured boxes wearing flat palette colors. Every art task
+since T-030 has improved LIGHT AND COLOR ON UNTEXTURED BOXES — palette, value
+ladder (entry 14), fog retune, contact shadows, tone mapping, bloom (entry 18).
+All of it good work; all of it against the ceiling of what flat shading can be.
+That ceiling is what "greybox" MEANS. It is not reachable by more of the same.
+
+WHY IT SAT THERE: "the game must boot with every file under assets/ missing"
+was a hard rule until decisions entry 16 retired it on 2026-08-02. The asset
+pipeline was built (T-036, T-046) and then forbidden from feeding the game.
+
+THIRD FACTOR: tools/assets/gen.mjs asks codex for an SVG (gen.mjs:158-166
+extracts `<svg>...</svg>` from the reply). Codex is a coding agent — images in,
+code out — so an SVG ask yields hand-placed vector rectangles. Even our best
+asset is flat clip-art rather than painted. Codex cannot emit a painting, but
+it CAN write a program that renders one (noise, fbm, grunge, wear masks,
+gradient ramps) — a far higher ceiling that keeps determinism, diffability and
+palette-checkability. That is T-053.
+
+T-051/T-052/T-053 are this diagnosis turned into work. T-051 and T-052 are
+branched off task/T-049, not main, because T-049 carries the shared
+src/render/preload.js texture gate; merge order is T-049 → T-051/T-052.
+========== -->
+
+## T-051 | art | review | P1
+goal: a real backdrop behind the world. The five finished 1024x512 plates in
+assets/generated/backdrops/ go onto parallaxing quads, replacing the flat
+scene.background color as the thing filling 60-80% of the frame. Depth layering
+and atmospheric perspective are the tools for SELLING SCALE, which entry 17
+records as the headline art problem.
+accept: consumes preload.js's shared gate (no second bespoke loader — I-039);
+ships ON by default with a `?backdrop=flat` escape hatch (entry 16); a failed
+plate degrades to today's flat color without wedging the game and without the
+sim branching on it; far edge dissolves into the fog color, proven by capture;
+static-anatomy (entry 3) and the frozen FAR camera (entries 7/17) untouched;
+60fps at 200+ projectiles measured vsync-off, distribution not mean.
+owner: gameplay-engineer (sonnet)
+fences: src/render/backdrop.js (new), src/render/scene.js. NOT preload.js
+(T-049), NOT materials.js/limb.js (T-052).
+verify: node tools/pathcheck.mjs; new assertions proven by break/restore;
+on-vs-flat captures at the same camera position and same deterministic moment
+
+## T-052 | art | done | P1
+goal: surface texture on the hull. The four finished tiles in
+assets/generated/textures/ bind to the large surfaces as albedo (+roughness/
+normal where they earn their cost) on the existing MeshStandardMaterials.
+accept: tiling density judged from captures at TRUE on-screen size with RIG at
+3-5% of screen height, not from arithmetic; texture reinforces limb.js:65-78's
+warm-near/cool-far split rather than flattening it; palette conformance via
+tools/assets/check.mjs (hull-panel-tile currently reads rust-brown); consumes
+preload.js's shared gate; ON by default with a `?tex=flat` hatch; failed tile
+degrades to today's flat material; 60fps at 200+ projectiles vsync-off, with
+texture memory and draw calls before/after and T-047's renderer.info caveat
+restated.
+owner: gameplay-engineer (sonnet)
+fences: src/render/materials.js, src/render/limb.js. NOT preload.js (T-049),
+NOT backdrop.js/scene.js (T-051).
+verify: node tools/pathcheck.mjs; new assertions proven by break/restore;
+textured-vs-flat captures including one near and one far surface
+
+## T-053 | assets | done | P1
+goal: raise the generator's ceiling from vector clip-art to painted raster. Add
+a raster path alongside the SVG one in which codex returns a self-contained
+canvas renderer (value noise, fbm, directional grunge, edge wear, panel-gap AO,
+dithered haze) instead of placed shapes; regenerate the four hull tiles and
+five backdrops through it.
+accept: zero effect on the shipped game, demonstrated not asserted; no new
+runtime dependency (reuse the playtest harness's Chrome); every asset judged at
+true on-screen size; generation reproducible with the seed and exact codex
+invocation recorded in the manifest; check.mjs still PASSES — and if a check
+written for flat vector fills cannot express a procedural asset (noise
+interpolating BETWEEN two palette tokens is legal, a third hue is not), the
+check is rewritten to state the property it actually cares about, loudly, never
+loosened silently.
+owner: asset-artist
+fences: tools/assets/**, assets/generated/**, assets/manifest.json. Existing
+filenames and canvas sizes stay stable — T-051 and T-052 are consuming them.
+verify: node tools/pathcheck.mjs; node tools/assets/check.mjs; old-vs-new
+captures at true size, each against the board it is meant to match
 
 <!-- ========== 2026-08-02 OPERATOR GOAL CHANGE (supersedes parts of the
 Delivery target that T-028 just rewrote; that rewrite's evidence-honesty fixes
@@ -1212,6 +1312,81 @@ would, on purpose, twice.
 ========================================================================== -->
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
+
+### CP — the hull is darker than it was. Is that right? (T-052, merged 2026-08-02)
+
+`http://127.0.0.1:8741/index.html` — compare against `?tex=flat`.
+
+The hull now wears real surface texture for the first time. An albedo map
+multiplies the material colour, so textured surfaces are inherently darker
+than the flat palette token they replace. The lane normalized this at runtime
+and cut the drop a long way, but a residual remains and it is **structural,
+not a bug** — closing it entirely means erasing the detail that makes it a
+texture at all.
+
+Measured, same position (17m marker), mean display luminance:
+
+  lower hull   this morning, untextured .......... 51.0
+               T-052 first version ............... 19.5   (-56% vs its control)
+               T-052 shipped ..................... 29.5   (-33% vs its control)
+  deck              87.0 -> 82.5      sky   62.7 -> 61.8
+
+The lane tried to close the residual further (TARGET_MEAN 210 -> 255) and got
+only 39% -> 35% before it flattened out; it reported that and explicitly
+declined to judge whether the result "reads", on the grounds that the word is
+not a machine's to use. The playtest gate passed readability on its own
+criteria. But value is a look decision and it is yours.
+
+Questions:
+  1. Does the sub-deck structure — panel lines, ladders, hatches — read well
+     enough when you are falling through it, not just standing on it?
+  2. Is the darker hull an improvement (mass, depth, a machine you are inside)
+     or a loss (you want to see what you are climbing)?
+  3. `?tex=flat` is the A/B. Which do you want as the default?
+  4. If darker is right in principle but this is too far, say roughly how far
+     back — the normalization target is one number and cheap to move.
+
+### CP — backdrop depth: visible-but-seamed, or clean-but-buried? (T-051, 2026-08-02)
+
+**This is a real tradeoff with no machine answer, and the lane surfaced it
+honestly rather than picking for you.**
+
+T-051 puts the five generated backdrop plates on twelve quads behind the
+playfield, replacing the flat `scene.background` colour that previously filled
+60-80% of the frame. First build authored the near tier at depth -13, which
+landed almost exactly on top of an existing box tile's own depth (-14) — so
+the plate's alpha silhouette abutted flat-shaded box geometry and produced a
+hard diagonal seam against the sky. The lane traced it, moved the tiers to
+-16/-21/-26 so the depth buffer occludes the plate wherever a box tile has
+mass, and the seam is gone (I re-captured and confirmed).
+
+The cost: **at the new depths the plates are substantially more occluded.** In
+my capture the painted limb structure is visible in the upper right but much
+of it now sits behind the existing box silhouettes. The lane also tried a
+deeper placement that removes the seam outright and reports it "buries the
+plates almost everywhere reachable" — tried, rejected, not shipped, which is
+the right way to report a rejected option.
+
+So there are three positions and the machine cannot choose among them:
+
+  A  -13    plates most visible, hard seam where they meet box geometry
+  B  -16/-21/-26  (SHIPPED) no seam, plates partly occluded
+  C  deeper  no seam, plates mostly buried — lane recommends against
+
+**Questions for the operator** (serve the lane and compare against
+`?backdrop=flat`):
+  1. At the shipped depths, is the painted anatomy doing enough work — does it
+     read as the creature's body receding, or as texture you have to look for?
+  2. Does the seam in option A actually bother you in motion? A still frame
+     exaggerates a hard edge; the camera moves constantly.
+  3. The pre-existing pale grey-teal silhouette boxes and the painted plates
+     are two different visual languages sharing the upper band. Should the
+     plates eventually REPLACE those boxes, or coexist with them?
+  4. Entry 17 records that selling SCALE is the headline art problem. Does this
+     make you feel smaller?
+
+Exact URL comes with the lane's gate report. Not blocking: T-051 gates on
+durability and perf, not on this.
 
 **RIDER — `docs/decisions.md` entry 13 (2026-08-01): a verdict taken in
 `?slice=traversal` is RE-ASKED, not inherited.** The operator played the slice
@@ -2296,3 +2471,332 @@ feature is missing:
 
 I-037 is closed as NOT A DEFECT. T-050's real deliverable is the gate that
 makes this class self-detecting rather than a fix — see its report.
+
+## I-038 | bug | S2 | repro: `cd tools/playtest && node run.mjs scripts/six-face-full-run.json --deterministic --stop-on-game-over --max-runtime-ms 245000 --base-url <pinned-server>` against merge-base commit `69e1f906262cdebd4bbc7f83f0dd27885e8baa92` (reproduced 3 of 5 tries; also 1 of 5 on `task/T-044` @ `03b775e`, so pre-existing on `main`-equivalent code, not T-044's terrain) | evidence: reports/tasks/T-044/qa-evidence/distribution-repro.md, reports/tasks/T-044/qa-evidence/full-base-{2,3,4}/report.json, reports/tasks/T-044/qa-evidence/full-branch-4/report.json
+
+Found while playtest-gating T-044. The default six-face run's weak
+(no-vertical-aim) reflex policy can get wedged ALIVE at wave gate 1
+(x≈58.9-60.0, `scrollX`=75.0) for 160-200+ seconds of a 245s run with hp and
+lives completely flat and zero forward progress, instead of reaching
+`GAME_OVER` — `meta.stopReason` reads `"script-window"` rather than
+`"game-over"` in the affected runs, and `trace[]` shows the exact same x to
+two decimal places for the entire stall window. This reproduces on the
+**unmodified merge-base** (`69e1f90`), so it is not caused by T-044's
+ARRIVAL/ARENA terrain (which begins well past scrollX 75). Caveat, stated
+plainly: the "weak" policy deliberately has no vertical-aim rule at all
+(that is what makes it a stand-in for a weaker player in this project's own
+difficulty-measurement methodology, per `reports/tasks/T-044/build.md`), so
+a real player — who always has that verb — may not get stuck the same way;
+this is evidence of a possible dead spot at wave gate 1 worth a
+human/stronger-bot check, not proof of a player-reachable softlock. Given
+the PLAYER MODEL block in this file explicitly calls out "a safe spot
+nothing can reach" as a thing to hunt for, this is worth triaging even with
+that caveat. Fix direction: someone with combat/hostiles context (T-043's
+lane, or a future gate-1 AI/composition pass) should drive
+`full-base-3`/`-4`'s exact trace
+(`reports/tasks/T-044/qa-evidence/full-base-3/report.json`) through
+`analyze-run.mjs` to see what's adjacent to RIG during the stall and
+whether a real player's aim would actually break it.
+
+## I-039 | bug | S2 | repro: `bash reports/tasks/T-040/playtest-evidence/determinism-regate/regate-repro.sh` against a pinned `task/T-040` worktree (`1bdc750`) served on one port and merge-base `2c638aa` served on another; compare `meta.deterministicDispatch.dispatched` and `metrics.closestCrushApproachTiles` per round | evidence: reports/tasks/T-040/playtest.md §5; reports/tasks/T-040/playtest-evidence/determinism-regate/results-16x3.csv (48 runs)
+
+Found while re-gating T-040 (playtest: FAIL). The original async-fetch
+determinism defect (an earlier FAIL) is confirmed fixed — `src/render/
+player.js` now awaits `preload.js`'s shared gate at module top level, no
+second bespoke timeout/lock-in path. But a second, narrower residual
+reproduces on a properly-interleaved 16-round measurement (one run of
+base/escape-hatch/shipped-default per round, so shared-session load hits
+all three equally): the merge-base tree dispatches exactly 18/26 scripted
+events on `mid-route.json --deterministic` every single time across 16
+rounds (zero deviation), the `?rig=canvas` escape hatch deviates once in
+16, and the shipped sprite default deviates in 7/16 (44%) — with the most
+extreme case (`dispatched=23`, `gameMsMax=8299ms`) producing a
+`minEdgeMargin` of 33.04 tiles against every control run's tight
+35.3-35.4-tile band, a real ~2.3-tile-worse closest crush-edge approach
+from byte-identical input. Both magnitude and frequency are far lower than
+the original defect (then: essentially every run, ~2000ms/2.4-tile; now:
+~1-in-16, similar per-incident magnitude), and it is fully absent in the
+escape hatch — nothing here is a near-miss in absolute terms (33 tiles is
+nowhere near the game's own `edgeMargin<8` emergency threshold), only a
+measurable break in run-to-run reproducibility. `reports/tasks/T-040/
+build.md`'s own account (same branch, written before this re-gate)
+proposes the fix belongs in `src/render/preload.js` (shared with T-049):
+an explicit warm-up render/`renderer.compile()` pass at the end of the
+boot gate, so a GPU driver's deferred mipmap upload actually finishes
+before frame 1 instead of landing on it. Likely systemic to any lane
+registering a large mipmapped texture through the same shared gate, not
+unique to RIG — worth checking against T-049 once it lands.
+
+## I-040 | feel | S3 | repro: `node run.mjs scripts/six-face-spaced-run.json --deterministic --base-url <pinned task/T-040 1bdc750> --video --max-runtime-ms 45000`, extract frames at 300ms spacing through any sustained firefight (this report used t=20.0-23.3s) | evidence: reports/tasks/T-040/playtest-evidence/qa2-t20.9s-rig-clear-4x.png vs qa2-t20.6s-muzzle-flash-obscures-4x.png vs qa2-t21.2s-rig-lowcontrast-dark-panel-4x.png
+
+Found while re-gating T-040 (playtest: FAIL, unrelated to this item).
+Sharper version of the muzzle-occlusion finding the previous T-040 playtest
+gate already filed: because the default rifle fires every 130ms
+(`CONFIG.weapons.R.fireRateMs`) and is held near-continuously in combat,
+the flash/tracer bloom sits on or beside RIG's own position on a
+predictable, recurring cadence during a firefight, not as a one-off. A
+second, independent contrast failure also reproduces: against a darker
+panel/pillar background element (rather than the lighter wall panel most
+prior evidence used), RIG's own dark ink outline blends toward the
+background rather than separating from it. Neither is a new defect class —
+this is a feel/readability item for the operator checkpoint queue, not a
+bug, and did not factor into the FAIL verdict above.
+
+<!-- T-040 BLOCKED NOTE (2026-08-02, integrator). The sprite art has passed
+repeatedly — glance test, tracer separation, asset-missing fallback, and an
+armored-marine read at true 15x30px, which is what the operator asked for after
+rejecting the box version (entry 15). Its original async-load determinism defect
+is CONFIRMED FIXED.
+
+It blocks on I-039 (S2): a residual, measured on a 16-round interleaved design —
+merge-base deviates 0/16, the escape hatch 1/16, the shipped sprite default
+7/16, worst case a ~2.3-tile-worse crush approach from byte-identical input.
+Awaiting the texture load is not sufficient; a GPU driver can still defer the
+mipmap upload onto frame 1. The fix is an explicit warm-up render /
+renderer.compile() at the end of src/render/preload.js — T-049's file, and
+systemic to any lane registering a large mipmapped texture through that gate.
+
+T-040 is deliberately NOT fixing it locally: doing it once in the shared gate
+covers RIG, the five enemy sprites, and every future lane. Unblocks when T-049
+lands the warm-up; then re-run
+reports/tasks/T-040/playtest-evidence/determinism-regate/regate-repro.sh and
+show deviation at the control's level. -->
+
+<!-- ===== T-040 UNBLOCKED — I-039 RECLASSIFIED (2026-08-02, integrator) =====
+
+The warm-up was built, measured with T-040's own 16-round interleaved design,
+and it DOES NOT WORK: 11/16 → 14/16 deviating, no improvement. T-049 reported
+that as a negative result rather than shipping it as a fix, then spent 132
+committed runs isolating the actual cause
+(.../T-049/reports/tasks/T-049/i039-evidence/):
+
+  - gate loads + warms 5 textures, NEVER DRAWN ...... 12/12 deviating
+  - main .......................................... 0/12
+  - ?sprites=0 (nothing loaded) ................... 1/12
+    → LOADING alone reproduces it in full. Drawing adds nothing.
+
+  - main, untouched ............................... 2/12
+  - main + 25ms artificial boot delay, no assets ... 2/12
+    → It is NOT boot latency of the magnitude the gate costs.
+
+  - ?fixeddt: every condition scatters WORSE, control included
+    (main 2/8 deviating, gameMsMax 4533–19683).
+
+RULING. That last row is the one that matters. The harness's --deterministic
+mode is unsound in the presence of runtime asset loading, and — since pinning
+the timestep makes the CONTROL scatter — somewhat unsound generally. I-039 is
+therefore a HARNESS-DETERMINISM finding, not a gameplay defect, and it is
+**demoted S2 → S3 and no longer blocks any lane**. Nothing in it describes
+something a player experiences: perf is clean both ways (120fps, worst 10.30ms,
+over20ms 0, sprites and primitives alike), and decisions entry 19 already
+records that run-to-run variance is this game's FEATURE, with the standing
+discipline being interleaved rounds and reported distributions, never means.
+
+Blocking three art lanes on bot-run reproducibility would have been exactly
+the kind of paperwork the operator told us to remove. T-040 goes to `review`
+and gates on durability and readability, not on reproducing I-039.
+
+The warm-up STAYS (8ms, `?warm=0` A/B, real independently-argued deferred-
+upload hazard) with a one-line comment saying plainly that it is not a fix for
+I-039, so no future reader mistakes it for a solved problem.
+
+The `?fixeddt` result is filed separately as I-040 — the tool we judge
+everything with is unsound in the mode we trust most, and that is worth its
+own task. The fetch/decode/upload separation experiment (~30 runs) was offered
+by T-049 and DECLINED on cost, not on merit. ===== -->
+
+## T-049 | assets | done | P1
+goal: five hostile-kind sprites on the shipped enemies, plus the shared
+src/render/preload.js boot-time texture gate every future asset lane consumes.
+accept: gate is genuinely multi-caller safe (one shared close routine gated on
+"every entry currently in `entries` settled, or the one shared timer fired" —
+not a per-call snapshot); a failed or missing sprite still draws the primitive
+body and never wedges the game; gameplay does not branch on whether an asset
+loaded; 60fps at 200+ projectiles measured vsync-off.
+owner: gameplay-engineer (sonnet)
+verify: node tools/pathcheck.mjs; break/restore on every new assertion; the
+multi-caller race reproduced 10 trials before and after, distribution reported
+note: also carries the I-039 warm-up investigation and its negative result —
+see the T-040 UNBLOCKED block above. The warm-up ships but is NOT a fix.
+
+## I-040 | bug | S2 | repro: `cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic --fixeddt` against unmodified `main`, 8 interleaved rounds; compare `meta.deterministicDispatch.dispatched` and `metrics.gameMsMax` round to round | evidence: .claude/worktrees/T-049/reports/tasks/T-049/i039-evidence/fixeddt-8x3.csv
+
+**The determinism harness is unsound in the mode we trust most.** Pinning the
+timestep with `?fixeddt` — the flag whose entire purpose is to remove
+frame-timing variance — makes every condition scatter WORSE, including the
+untouched-`main` control: 2/8 rounds deviating, `gameMsMax` ranging
+4533–19683ms from byte-identical input. A fixed timestep should make the sim
+reproducible regardless of how frames are delivered; that it does the opposite
+means either the sim is not actually stepping on the pinned dt, or the pin is
+applied somewhere downstream of a path that still reads wall-clock.
+
+Why this matters more than the sprite finding it fell out of: this is the tool
+every lane uses to claim "no behavior change," and `--deterministic` is the
+mode every A/B in this project has been measured in. If it is unsound, some
+prior "no deviation" result is worth less than it looked. It does not affect
+what a player experiences — decisions entry 19 makes run-to-run variance the
+feature — but it degrades our ability to *prove* a change is inert.
+
+Fix direction: find where the sim's step actually comes from under `?fixeddt`
+and confirm it is the pinned value and nothing else; then re-run the control
+and show it flat across 16 rounds before trusting the flag again. Until then,
+every asset-involving A/B uses interleaved rounds and reports distributions,
+never means (entry 19's standing discipline, now load-bearing rather than
+merely good practice).
+
+## I-??? | docs | S3 | repro: `grep -n "^## I-040" SPRINT.md` (two matches) | evidence: this entry; reports/tasks/T-040/playtest-evidence/qa-parallel-1bdc750/
+
+**Two independent QA passes gated `task/T-040` concurrently this session**
+against the same pinned HEAD (`1bdc750`) — a coordination gap worth naming so
+it isn't repeated: the one that landed (`7649e27`, merged) is sound and I
+independently reached the same `PASS` verdict, but my own pass turned up two
+things worth folding in that the merged report doesn't carry, since my copy
+of `reports/tasks/T-040/playtest.md` was overwritten in the shared worktree
+before I could commit it (the worktree was pruned by the merge before I
+noticed).
+
+1. **SPRINT.md's Inbox currently has an ID collision: two unrelated entries
+   are both numbered `I-040`** — the muzzle-flash/dark-panel RIG readability
+   entry above (`feel`/S3) and the `?fixeddt`-scatters-the-control harness
+   entry a few lines below it (`bug`/S2). Whoever triages next should
+   renumber one.
+2. **Strengthened evidence for the muzzle-flash/dark-panel entry** (whichever
+   number it ends up with): a **lossless, non-video** PNG capture (not
+   ffmpeg-extracted, so free of video-compression artifacts) at a **second,
+   different in-level location** — an early, quiet moment with **no combat,
+   no muzzle flash** (x≈11m, 0 kills, an unrelated attempt) — shows RIG
+   blending into the *same* recurring dark hull-pillar architecture piece
+   already seen in the entry's own `t20.6–21.2s` evidence, cropped to its true
+   on-screen scale (140×70px of an 800px-tall viewport). This shows the
+   effect is a genuine value clash between RIG's dark ink outline and that
+   specific hull element, independent of combat VFX timing, and that it
+   recurs at more than one point in the level rather than being a single
+   unlucky frame. Also re-confirmed the same effect at a fresh combat moment
+   (`t≈24.1s`, kills=6/hp=2, a 10fps montage across ~1.3s showing RIG readable
+   for two frames then losing distinctness for roughly a second while
+   passing the pillar). Files: `glance-quiet-{full,crop-6x,crop-1x-true-
+   size}-pillar-recurrence.png`, `glance-t24.1s-{full,crop-4x}-pillar-
+   occlusion.png`, `glance-t25.0-26.3s-montage-pillar-fade.png`, all under
+   the evidence path above. Does not change any verdict — feel/readability,
+   routed to the operator checkpoint queue, not a bug.
+
+## I-041 | docs | S3 | repro: `git stash list` at repo root | evidence: reports/tasks/T-040/playtest.md §I-??? (triaged here)
+
+Six stashes survive from lanes that have all merged and whose worktrees are
+gone: `stash@{0}` (T-040, the uncommitted preload warm-up experiment the
+playtest agent parked in order to gate the actually-committed `1bdc750` tree —
+T-049 later built, measured and shipped that same idea properly), plus WIP
+stashes on T-050, T-042, T-048, T-047 and T-038. Every one of them is inert:
+the corresponding work is in `main`.
+
+Why it is filed rather than swept: `git stash drop` is irreversible, six
+stashes cost nothing, and the T-040 playtester's actual point was not "delete
+these" but that **a worktree directory reused across lanes can present a
+stray diff that a later agent mistakes for part of the branch under test** —
+that agent said it nearly did. That hazard is real and now partly closed
+(merged worktrees are pruned at merge time, so `.claude/worktrees/<id>` no
+longer outlives its task). The stashes are listed here so nobody reads them
+as pending work. If a future cycle wants them gone, that is an operator call,
+not a tidy-up.
+
+## I-042 | docs | S3 | repro: `git merge-base --is-ancestor <T-043 commit a2e6d97> 03b775e` → false, at T-044's HEAD 3cbc015 | evidence: reports/tasks/T-044/playtest.md; reports/tasks/T-044/build.md "Difficulty measurement"
+
+T-044's committed difficulty-distribution numbers (the ceiling/floor read that
+entry 19 routes to the operator) were measured entirely **before** T-043's
+wasp aim-lock + squad-stagger landed in that branch. The base-vs-branch
+terrain comparison itself is not confounded — the playtester confirmed both
+arms predate T-043 — but the tree that actually merged combines T-044 terrain
+WITH T-043 hostile behaviour for the first time, and nobody has
+distribution-tested that combination. The numbers are honest as
+**terrain-only, pre-T-043** evidence and must not be read as describing the
+shipped build.
+
+Fix direction: annotate every difficulty measurement with the hostile-behaviour
+commit it was taken against, per LANE-BRIEF's "never inherit a measured number
+across a change that could move it." Nothing is known broken — the playtester's
+own fresh sanity batch found nothing — this is a provenance label, not a bug.
+
+## I-043 | docs | S3 | repro: read `src/render/level.js:107-114` against `src/render/palette.js:295-307` and `src/config.js:742` on `main` | evidence: this Inbox entry; docs/decisions.md entry 14
+
+`src/render/level.js`'s deck-shade comment is **stale and says the opposite of
+what ships**: it calls the T-035 value ladder "`?shade=`, off by default" and
+claims "SHADE_GAIN 0 makes every factor exactly 1.0, so the shipped build's
+instance colors are unchanged bit for bit." Neither is true since decisions
+entry 14. `CONFIG.shade.dose` is `0.5` and `palette.js:295-307` has it right —
+"(absent) the approved dose", "With the ladder now on by default".
+
+Found while verifying that the operator's own verdict ("C on the ladder feels
+better, shade=0.5 the other is too dark") is actually in the shipped build. **It
+is** — this is a comment defect only, zero runtime effect. Filed rather than
+fixed in place because editing a runtime file outside a lane is against this
+repo's own merge discipline, even for a comment. Fold it into whichever lane
+next touches `level.js`.
+
+## I-044 | bug | S2 | repro: measure the alpha channel of `assets/generated/backdrops/backdrop-limb-segment.png` on `main` vs `task/T-053` — main is 50.2% alpha=0 / 49.3% alpha=255 / 0.48% partial; T-053's is 0.0% / 100.0% / 0.00% | evidence: this entry; reports/tasks/T-051/review.md (root-cause section)
+
+**T-053's regenerated backdrops stopped being cutouts.** The procedural raster
+route bakes the background into the image, so all five plates are now fully
+opaque rectangles where main's were silhouettes with half the image
+transparent.
+
+T-051 places these on **twelve quads at three depth tiers**, two per facet,
+layered for parallax. That design requires transparency: a 100%-opaque plate
+occludes everything behind it, so the mid and far tiers would never be visible
+and every plate would read as a hard rectangle. Merging T-053 as-is silently
+breaks the only lane that consumes its output.
+
+**Why both lanes' gates missed it.** T-053's review APPROVE and playtest PASS
+are both correct — they gated "zero effect on the shipped game," which is true
+of that tree in isolation and stops being true the moment T-051 lands. The
+integrator's brief said keep filenames and canvas dimensions stable and never
+said keep the alpha semantics stable, so nothing was watching the property that
+actually matters to the consumer. **Lesson for future asset lanes: name the
+properties the CONSUMER depends on, not just the ones a file listing shows.**
+
+Related and larger: T-051's reviewer established with PIL that even main's
+plate is too hard-edged — 0.48% partial alpha — and that because the quad is a
+flat camera-facing plane, `fog: true` tints the whole face uniformly rather
+than softening its boundary. **No depth or fog tuning can make a hard alpha
+cutout dissolve**; T-051's depth retune hides the seam behind box geometry
+rather than closing its acceptance box. The dissolve must be authored into the
+asset as a feathered silhouette edge. That is T-053's file, not T-051's, which
+makes this one fix serving two lanes.
+
+Fix direction: T-053 restores cutout alpha for the five backdrop plates with a
+genuinely feathered receding edge (tens of pixels, not a 1px cut); T-051 writes
+the spec for what its layering requires; hull tiles stay fully opaque, they are
+tiled surface textures and want no alpha.
+
+<!-- ===== T-051 BLOCKED ON T-053 (2026-08-02, integrator) =====
+
+Both gates agree and both are right: durability, the asset-failure path and
+perf all PASS; the single failing item is the acceptance box "far edge
+dissolves into the fog color, proven by capture."
+
+It is not fixable in this lane. Three independent measurements say so:
+  - reviewer, via PIL: backdrop-limb-segment.png is ~99.5% pure 0/255 alpha,
+    0.48% partial — an effectively hard cutout.
+  - the lane, across all five plates: every one is >=98.2% exactly 0 or 255.
+  - playtester, at the flagged position: a one-pixel-wide, ZERO-gradient step
+    from plate tone straight to flat sky.
+
+The constraint underneath: **a flat camera-facing quad's material can only
+tint a pixel's COLOR toward the fog — it can never make an already-opaque
+pixel transparent.** No depth, fog or tint tuning produces a dissolve. The
+lane's depth retune (-13 -> -16/-21/-26) is a real improvement and hides the
+seam wherever a box tile has mass, but it occludes rather than dissolves, and
+the lane says so itself rather than claiming the box.
+
+The fix is in the ASSET and belongs to T-053. T-051 has written the spec
+(commit 2e36f90, build.md):
+  1. a real alpha-cutout silhouette must survive — T-053's regenerated plates
+     are currently 100% opaque, which would kill the three-tier layering
+     outright (I-044);
+  2. an 8-12 texel graduated ramp around the whole silhouette contour, sized
+     from this task's own plateSize() math per tier and canvas;
+  3. no render-side change needed — backdrop.js's alphaTest 0.02 + fog: true
+     is already correct once the asset supplies the ramp.
+
+UNBLOCKS when T-053 lands feathered cutout alpha. Then re-run T-051's gates
+against the new plates; the depth retune and the feathering fix two different
+problems and both are wanted. ===== -->

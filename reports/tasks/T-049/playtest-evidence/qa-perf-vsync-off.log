@@ -1,0 +1,56 @@
+$ cd tools/playtest && node qa-perf-vsync-off-probe.mjs http://127.0.0.1:<pinned-port>
+(Chrome launched with --disable-gpu-vsync --disable-frame-rate-limit; raw
+per-frame ms sampled directly via requestAnimationFrame timestamps, NOT the
+game's own aggregated HB.perf(), for an independent reading. 12
+fireWeapon('S', ..., clone=true) calls/frame to saturate the 256-slot bullet
+pool, roster kept topped up to 10 live hostiles — two of each of the 5 kinds.)
+
+=== primitives (?sprites=0) (?slice=traversal&testapi=1&enemies=0&sprites=0) ===
+errors: []
+state: PLAYING  liveProjectiles: 238  liveHostiles: 10
+frames sampled: 3449
+p50: 0.80ms  p90: 3.10ms  p99: 4.20ms  worst: 112.80ms
+frames >16.7ms (missed 60fps): 2 / 3449 (0.1%)
+frames >20ms: 2 / 3449 (0.1%)
+game's own HB.perf(): {"frames":180,"fps":552.7,"avgMs":1.81,"worstMs":6,"over20ms":0}
+
+=== sprites (shipped default) (?slice=traversal&testapi=1&enemies=0) ===
+errors: []
+state: PLAYING  liveProjectiles: 237  liveHostiles: 10
+frames sampled: 3442
+p50: 0.90ms  p90: 3.10ms  p99: 4.40ms  worst: 127.00ms
+frames >16.7ms (missed 60fps): 2 / 3442 (0.1%)
+frames >20ms: 2 / 3442 (0.1%)
+game's own HB.perf(): {"frames":180,"fps":561.8,"avgMs":1.78,"worstMs":5.3,"over20ms":0}
+
+NOTE: each run had exactly ONE single-frame spike (112.80ms primitives,
+127.00ms sprites) not visible in the game's own HB.perf() summary (which
+only aggregates a rolling 180-frame window and did not have that frame in
+range at read time). Present in BOTH conditions at nearly the same
+magnitude — not attributable to the sprite change under test. Not
+re-isolated further (cause unknown: candidates are a one-time GC pause or
+an artifact of the page.evaluate() call that starts the stress loop); see
+playtest.md's perf section for how this was judged.
+
+RE-RUN (independent second pass, same pinned build, same probe, ~2 minutes
+later): the spike reproduced again in BOTH conditions at a near-identical
+magnitude, confirming it is a stable artifact of this measurement's own
+setup rather than a one-off fluke:
+
+=== primitives (?sprites=0) ===
+liveProjectiles: 236  liveHostiles: 10  frames sampled: 3751
+p50: 0.90ms  p90: 3.10ms  p99: 3.70ms  worst: 111.80ms
+frames >16.7ms: 2/3751 (0.1%)   frames >20ms: 2/3751 (0.1%)
+
+=== sprites (shipped default) ===
+liveProjectiles: 219  liveHostiles: 10  frames sampled: 3474
+p50: 0.80ms  p90: 3.10ms  p99: 4.10ms  worst: 132.20ms
+frames >16.7ms: 2/3474 (0.1%)   frames >20ms: 2/3474 (0.1%)
+
+Both re-run readings land within ~1ms of the first pass at every reported
+percentile except the single worst-frame outlier, which moves a bit
+(112.80→111.80 primitives, 127.00→132.20 sprites) but stays in the same
+~110-135ms band on both conditions both times — a single-frame artifact of
+this ad hoc probe's own setup path (most likely the page.evaluate() round
+trip that installs the stress loop), reproducing even at ?sprites=0 with
+zero texture loads, so it is not something T-049 introduced.

@@ -1,0 +1,204 @@
+{
+  "fixedDtMs": 16.6667,
+  "runMs": 12000,
+  "digestEveryMs": 250,
+  "samples": {
+    "art": 48,
+    "noArt": 48
+  },
+  "firstDiff": -1,
+  "sprites": {
+    "art": {
+      "enabled": true,
+      "kinds": {
+        "hound": {
+          "state": "ready",
+          "variant": "b",
+          "file": "hound-brace-b.png",
+          "error": null
+        },
+        "carrier": {
+          "state": "ready",
+          "variant": "b",
+          "file": "carrier-hauler-b.png",
+          "error": null
+        },
+        "wasp": {
+          "state": "ready",
+          "variant": "b",
+          "file": "wasp-drone-b.png",
+          "error": null
+        },
+        "polyp": {
+          "state": "ready",
+          "variant": "b",
+          "file": "polyp-iris-b.png",
+          "error": null
+        },
+        "mortar": {
+          "state": "ready",
+          "variant": "b",
+          "file": "mortar-tripod-b.png",
+          "error": null
+        }
+      }
+    },
+    "noArt": {
+      "enabled": true,
+      "kinds": {
+        "hound": {
+          "state": "failed",
+          "variant": "b",
+          "file": "hound-brace-b.png",
+          "error": "error"
+        },
+        "carrier": {
+          "state": "failed",
+          "variant": "b",
+          "file": "carrier-hauler-b.png",
+          "error": "error"
+        },
+        "wasp": {
+          "state": "failed",
+          "variant": "b",
+          "file": "wasp-drone-b.png",
+          "error": "error"
+        },
+        "polyp": {
+          "state": "failed",
+          "variant": "b",
+          "file": "polyp-iris-b.png",
+          "error": "error"
+        },
+        "mortar": {
+          "state": "failed",
+          "variant": "b",
+          "file": "mortar-tripod-b.png",
+          "error": "error"
+        }
+      }
+    }
+  },
+  "drawn": {
+    "art": [
+      {
+        "kind": "carrier",
+        "sx": 271,
+        "sy": 375,
+        "drawn": 0.7091836734693877
+      },
+      {
+        "kind": "polyp",
+        "sx": 352,
+        "sy": 432,
+        "drawn": 0.9030612244897959
+      },
+      {
+        "kind": "mortar",
+        "sx": 406,
+        "sy": 432,
+        "drawn": 0.9553571428571429
+      },
+      {
+        "kind": "wasp",
+        "sx": 417,
+        "sy": 395,
+        "drawn": 0.5293367346938775
+      },
+      {
+        "kind": "hound",
+        "sx": 441,
+        "sy": 460,
+        "drawn": 0.8278061224489796
+      }
+    ],
+    "noArt": [
+      {
+        "kind": "carrier",
+        "sx": 272,
+        "sy": 375,
+        "drawn": 0.7780612244897959
+      },
+      {
+        "kind": "polyp",
+        "sx": 353,
+        "sy": 432,
+        "drawn": 0.9349489795918368
+      },
+      {
+        "kind": "mortar",
+        "sx": 407,
+        "sy": 432,
+        "drawn": 0.8354591836734694
+      },
+      {
+        "kind": "wasp",
+        "sx": 418,
+        "sy": 395,
+        "drawn": 0.7920918367346939
+      },
+      {
+        "kind": "hound",
+        "sx": 442,
+        "sy": 460,
+        "drawn": 0.7308673469387755
+      }
+    ]
+  },
+  "failsafe": {
+    "art": {
+      "installed": true,
+      "booted": true,
+      "showing": null,
+      "halted": false,
+      "faults": 0,
+      "recoveries": 0,
+      "beats": 720,
+      "uncaught": 0,
+      "lastFault": "",
+      "policy": {
+        "streakWindowMs": 2000,
+        "recoverAfterMs": 500,
+        "minFaults": 5,
+        "maxRecoveries": 2,
+        "bootWatchdogMs": 10000,
+        "freezeStallMs": 4000,
+        "freezeTickMs": 1000,
+        "frameDtMaxMs": 50
+      }
+    },
+    "noArt": {
+      "installed": true,
+      "booted": true,
+      "showing": null,
+      "halted": false,
+      "faults": 0,
+      "recoveries": 0,
+      "beats": 720,
+      "uncaught": 0,
+      "lastFault": "",
+      "policy": {
+        "streakWindowMs": 2000,
+        "recoverAfterMs": 500,
+        "minFaults": 5,
+        "maxRecoveries": 2,
+        "bootWatchdogMs": 10000,
+        "freezeStallMs": 4000,
+        "freezeTickMs": 1000,
+        "frameDtMaxMs": 50
+      }
+    }
+  },
+  "warnings": [
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "HULLBREAKER art: hound sprite hound-brace-b.png did not load (error) — drawing the primitive body instead.",
+    "HULLBREAKER art: carrier sprite carrier-hauler-b.png did not load (error) — drawing the primitive body instead.",
+    "HULLBREAKER art: wasp sprite wasp-drone-b.png did not load (error) — drawing the primitive body instead.",
+    "HULLBREAKER art: polyp sprite polyp-iris-b.png did not load (error) — drawing the primitive body instead.",
+    "HULLBREAKER art: mortar sprite mortar-tripod-b.png did not load (error) — drawing the primitive body instead."
+  ]
+}

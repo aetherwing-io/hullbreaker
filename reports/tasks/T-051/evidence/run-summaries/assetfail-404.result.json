@@ -1,0 +1,183 @@
+{
+  "mode": "404",
+  "bootOk": true,
+  "bootErr": null,
+  "bootMs": 322,
+  "failPanel": {
+    "exists": true,
+    "display": "none",
+    "visibility": "visible",
+    "title": ""
+  },
+  "backdrop": {
+    "on": true,
+    "built": 9,
+    "plates": [
+      {
+        "face": 1,
+        "plate": "limbSegment",
+        "tier": "near",
+        "state": "ready",
+        "error": null
+      },
+      {
+        "face": 1,
+        "plate": "crownHorizon",
+        "tier": "far",
+        "state": "failed",
+        "error": "error"
+      },
+      {
+        "face": 2,
+        "plate": "spineCoil",
+        "tier": "mid",
+        "state": "ready",
+        "error": null
+      },
+      {
+        "face": 2,
+        "plate": "colonyCluster",
+        "tier": "far",
+        "state": "ready",
+        "error": null
+      },
+      {
+        "face": 3,
+        "plate": "limbSegment",
+        "tier": "near",
+        "state": "ready",
+        "error": null
+      },
+      {
+        "face": 3,
+        "plate": "gillCavity",
+        "tier": "mid",
+        "state": "ready",
+        "error": null
+      },
+      {
+        "face": 4,
+        "plate": "spineCoil",
+        "tier": "mid",
+        "state": "ready",
+        "error": null
+      },
+      {
+        "face": 4,
+        "plate": "crownHorizon",
+        "tier": "far",
+        "state": "failed",
+        "error": "error"
+      },
+      {
+        "face": 5,
+        "plate": "limbSegment",
+        "tier": "near",
+        "state": "ready",
+        "error": null
+      },
+      {
+        "face": 5,
+        "plate": "colonyCluster",
+        "tier": "far",
+        "state": "ready",
+        "error": null
+      },
+      {
+        "face": 6,
+        "plate": "gillCavity",
+        "tier": "mid",
+        "state": "ready",
+        "error": null
+      },
+      {
+        "face": 6,
+        "plate": "crownHorizon",
+        "tier": "far",
+        "state": "failed",
+        "error": "error"
+      }
+    ]
+  },
+  "preload": {
+    "closed": true,
+    "budgetMs": 2500,
+    "costMs": 54,
+    "warmOn": true,
+    "warmMs": 10,
+    "warmedWhileClosed": true,
+    "assets": [
+      {
+        "url": "http://127.0.0.1:8761/assets/generated/sprites/hound-brace-b.png",
+        "state": "ready",
+        "ms": 38,
+        "error": null
+      },
+      {
+        "url": "http://127.0.0.1:8761/assets/generated/sprites/carrier-hauler-b.png",
+        "state": "ready",
+        "ms": 38,
+        "error": null
+      },
+      {
+        "url": "http://127.0.0.1:8761/assets/generated/sprites/wasp-drone-b.png",
+        "state": "ready",
+        "ms": 41,
+        "error": null
+      },
+      {
+        "url": "http://127.0.0.1:8761/assets/generated/sprites/polyp-iris-b.png",
+        "state": "ready",
+        "ms": 41,
+        "error": null
+      },
+      {
+        "url": "http://127.0.0.1:8761/assets/generated/sprites/mortar-tripod-b.png",
+        "state": "ready",
+        "ms": 38,
+        "error": null
+      },
+      {
+        "url": "http://127.0.0.1:8761/assets/generated/backdrops/backdrop-limb-segment.png",
+        "state": "ready",
+        "ms": 41,
+        "error": null
+      },
+      {
+        "url": "http://127.0.0.1:8761/assets/generated/backdrops/backdrop-crown-horizon.png",
+        "state": "failed",
+        "ms": 34,
+        "error": "error"
+      },
+      {
+        "url": "http://127.0.0.1:8761/assets/generated/backdrops/backdrop-spine-coil.png",
+        "state": "ready",
+        "ms": 42,
+        "error": null
+      },
+      {
+        "url": "http://127.0.0.1:8761/assets/generated/backdrops/backdrop-colony-cluster.png",
+        "state": "ready",
+        "ms": 41,
+        "error": null
+      },
+      {
+        "url": "http://127.0.0.1:8761/assets/generated/backdrops/backdrop-gill-cavity.png",
+        "state": "ready",
+        "ms": 44,
+        "error": null
+      }
+    ]
+  },
+  "pageErrors": [],
+  "consoleWarningsSample": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "HULLBREAKER art: backdrop crownHorizon (backdrop-crown-horizon.png) did not load (error) — the existing flat/limb backdrop stays up there.",
+    "HULLBREAKER art: backdrop crownHorizon (backdrop-crown-horizon.png) did not load (error) — the existing flat/limb backdrop stays up there.",
+    "HULLBREAKER art: backdrop crownHorizon (backdrop-crown-horizon.png) did not load (error) — the existing flat/limb backdrop stays up there."
+  ],
+  "scrollBefore": 0.32524078559712943,
+  "scrollAfter": 13.409710785597122,
+  "stateAfter": "PLAYING",
+  "screenshot": "/private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/edge-probe/failmode-404.png"
+}

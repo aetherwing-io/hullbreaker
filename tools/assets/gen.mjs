@@ -6,18 +6,32 @@
 //     --brief "an armoured vent cover, four louvres, one broken" \
 //     --roles rust-orange,ink --size 128 --boards 10,13
 //
+//   node tools/assets/gen.mjs ... --mode raster --tiling xy   ask for a PAINTER, not an SVG
 //   node tools/assets/gen.mjs ... --dry-run     write the spec, print the command, stop
 //
-// CODEX IS OPTIONAL, BY DESIGN. The rest of the pipeline (rasterize, check,
-// view) never calls this file and works with codex absent or uninstalled: this
-// is a way to *ask* for an SVG, not a step anything depends on. With codex
-// missing, the spec is still written and the exact command to run later is
-// printed, and the exit code is 3 (distinct from 2 usage / 1 failure) so a
-// caller can tell "unavailable" from "went wrong".
+// TWO MODES, both real:
+//
+//   vector (default) — codex returns one <svg>, rasterize.mjs turns it into a
+//     PNG. Right for glyphs, UI marks and anything whose value is a crisp
+//     silhouette at 16px. Flat fills are a feature there.
+//   raster — codex returns a self-contained ES module that PAINTS the asset
+//     into a canvas (a "recipe"), and render.mjs runs it. Right for surfaces:
+//     hull plates, backdrops, anything whose value is grain, wear, occlusion and
+//     atmosphere. A coding agent cannot emit a painting, but it can write a
+//     program that renders one — and the source still diffs, still has no
+//     dependency, and the pixels are still palette-checked.
+//
+// CODEX IS OPTIONAL, BY DESIGN. The rest of the pipeline (rasterize, render,
+// check, view) never calls this file and works with codex absent or
+// uninstalled: this is a way to *ask* for an asset, not a step anything depends
+// on. With codex missing, the spec is still written and the exact command to run
+// later is printed, and the exit code is 3 (distinct from 2 usage / 1 failure)
+// so a caller can tell "unavailable" from "went wrong".
 //
 // What this does NOT do: judge the art, retry until something passes, or write
-// into assets/approved/. It writes one SVG into assets/generated/<category>/
-// and tells you the two commands that put it through the gate.
+// into assets/approved/. It writes one source file into
+// assets/generated/<category>/ and tells you the commands that put it through
+// the gate.
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
@@ -25,11 +39,16 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { ROLES, CHROMATIC_ROLES, NEUTRAL_MAX_CHROMA } from './lib/palette.mjs';
-import { CATEGORIES } from './lib/manifest.mjs';
+import { CATEGORIES, ALPHA_KINDS } from './lib/manifest.mjs';
+import { extractRecipe, scanRecipe } from './lib/recipe.mjs';
+import { hashString } from './lib/procgen.mjs';
 
 const ASSETS_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(ASSETS_DIR, '../..');
-const TEMPLATE = join(ASSETS_DIR, 'codex', 'spec-template.md');
+const TEMPLATES = {
+  vector: join(ASSETS_DIR, 'codex', 'spec-template.md'),
+  raster: join(ASSETS_DIR, 'codex', 'raster-spec-template.md'),
+};
 
 const RIG_TILES = 1.7;                    // CONFIG.player.height
 const FAR_FRAC = 0.037;                   // RIG's screen-height fraction in the shipped FAR view
@@ -39,6 +58,11 @@ const HELP = `tools/assets/gen.mjs — build a codex spec for one asset, and opt
 
   node tools/assets/gen.mjs --id <kebab-id> --category <${CATEGORIES.join('|')}> --brief "<what to draw>" [options]
 
+  --mode <m>         vector (default, asks for an <svg>) or raster (asks for a canvas recipe)
+  --seed <n>         raster only: meta.seed (default: derived from the id, so it is stable)
+  --alpha <k>        raster only, REQUIRED: cutout | opaque | overlay — the transparency
+                     contract, stated to the generator and checked against the pixels
+  --tiling <t>       raster only: none (default) | x | y | xy — which edges must be seamless
   --roles <a,b>      role ids the asset may use (default: all)
   --size <n|WxH>     canvas, every dimension a power of two (default 128)
   --tiles <h|W,H>    the asset's size in world tiles, for the scale note (default 0.55).
@@ -50,7 +74,7 @@ const HELP = `tools/assets/gen.mjs — build a codex spec for one asset, and opt
   --model <name>     passed through to codex -m
   --dry-run          write the spec and print the command; do not invoke codex
   --spec-out <file>  where to write the resolved spec (default tools/assets/runs/spec-<id>.md)
-  --force            overwrite an existing SVG for this id`;
+  --force            overwrite an existing source file for this id`;
 
 /** "64" -> {w:64,h:64}; "64x32" -> {w:64,h:32}. Null on anything else. */
 export function parseBox(text) {
@@ -72,10 +96,15 @@ function parseArgs(argv) {
   const a = {
     id: null, category: null, brief: null, roles: null, size: '128', tiles: '0.55',
     grid: null, boards: '10,13', model: null, dryRun: false, specOut: null, force: false,
+    mode: 'vector', seed: null, tiling: 'none', alpha: null,
   };
   for (let i = 0; i < argv.length; i++) {
     const t = argv[i];
-    if (t === '--id') a.id = argv[++i];
+    if (t === '--mode') a.mode = argv[++i];
+    else if (t === '--seed') a.seed = Number(argv[++i]);
+    else if (t === '--tiling') a.tiling = argv[++i];
+    else if (t === '--alpha') a.alpha = argv[++i];
+    else if (t === '--id') a.id = argv[++i];
     else if (t === '--category') a.category = argv[++i];
     else if (t === '--brief') a.brief = argv[++i];
     else if (t === '--roles') a.roles = argv[++i];
@@ -141,6 +170,76 @@ function scaleNote(tiles, canvas, grid) {
   return lines.join('\n\n');
 }
 
+/**
+ * The transparency clause, and the most expensive lesson in this file.
+ *
+ * The first painted backdrops came back as fully opaque rectangles with the fog
+ * baked in, replacing plates that were 40-60% transparent cutouts — because the
+ * brief said "behind it, open teal haze" and nothing anywhere said the plate was
+ * a cutout. Every gate was green; the lane layering those plates for parallax
+ * would have found out at merge time. So the ask now states the contract, the
+ * manifest declares it, and check.mjs measures the alpha channel against it.
+ *
+ * `--alpha` is REQUIRED in raster mode. There is no default, deliberately: a
+ * default is how this happened.
+ */
+export function alphaNote(kind, canvas) {
+  if (kind === 'opaque') {
+    return '**Every pixel of this asset is OPAQUE.** Paint the whole canvas; leave no transparency ' +
+      'anywhere, including the edges. It is a surface, not a shape on transparency — anything ' +
+      'composited under it is not its business, and a hole in a tiling material is a bug.';
+  }
+  if (kind === 'overlay') {
+    return '**This asset is an OVERLAY: mostly transparent, nothing fully opaque.** It is a layer ' +
+      'laid over an already-painted surface to modulate it, so at least 40% of the canvas stays ' +
+      'fully transparent and no pixel reaches alpha 255 — an overlay that replaces what is under ' +
+      'it is a texture, not an overlay. Everything it draws is subordinate to the surface below.';
+  }
+  const feather = Math.max(8, Math.round(Math.min(canvas.w, canvas.h) * 0.12));
+  return '**This asset is a CUTOUT: a shape on transparency.** Something composites it over ' +
+    'something else — other plates, fog, the scene behind it — and the transparent region has to ' +
+    'read as ABSENT.\n\n' +
+    '- **Do not paint a background.** No sky, no fog rectangle, no haze wash across the whole ' +
+    'canvas. Whatever is behind this plate is the scene\'s to supply; a painted background here ' +
+    'occludes every layer behind it completely, which is the exact defect this clause exists for.\n' +
+    '- **Feather the silhouette.** A one-pixel alpha cut reads as a cardboard cutout and cannot be ' +
+    'softened downstream — a flat camera-facing plane cannot be made to dissolve by any amount of ' +
+    'fog or depth tuning, so the falloff has to be in the file. Give the whole silhouette a soft ' +
+    'margin of 2-4 pixels.\n' +
+    `- **Dissolve the receding end.** Where the subject recedes into distance, alpha ramps from ` +
+    `full to zero over at least ${feather} pixels (not a hard stop, and not a uniform vignette ` +
+    'either — the near end keeps its edge). Add a per-pixel noise term of a level or two to the ' +
+    'alpha so the ramp dithers instead of banding.\n' +
+    '- The cheapest way to do all three: paint the subject normally, then finish with a single ' +
+    '`env.mask((x, y, u, v) => ...)` pass that returns the alpha multiplier. Alpha threaded ' +
+    'through twelve separate layers goes wrong; one mask pass is readable and checkable.';
+}
+
+/**
+ * The seamless-repeat clause. A tiling texture's defect is a seam, and a
+ * generator that has not been told which edges must meet will happily paint a
+ * vignette. env.noise/env.fbm are periodic, so the instruction is concrete:
+ * sample on a whole-number lattice across the canvas and the field wraps.
+ */
+export function tilingNote(tiling, canvas) {
+  if (tiling === 'none') {
+    return 'This asset does NOT tile: it is one plate, seen whole. Its edges may do whatever the\n' +
+      'composition needs — vignette into the fog, run off the canvas, or stop at a silhouette.';
+  }
+  const axes = { x: 'horizontally', y: 'vertically', xy: 'in both directions' }[tiling];
+  const wrap = tiling === 'x' ? 'left edge meets right edge'
+    : tiling === 'y' ? 'top edge meets bottom edge'
+      : 'left meets right AND top meets bottom';
+  return `**This asset TILES ${axes}.** It is a repeating surface, so the ${wrap} with no visible ` +
+    'seam and no motif the eye can count across a 4x4 repeat.\n\n' +
+    '- Sample noise so it wraps: `env.fbm(u * P, v * P, { period: P })` with a whole-number `P` ' +
+    `(u,v are 0..1 across the ${canvas.w}x${canvas.h} canvas) is periodic and meets itself exactly.\n` +
+    '- Anything drawn with `ctx` that crosses an edge must be drawn twice, once on each side, ' +
+    'offset by the canvas size — a bolt at x=2 also needs drawing at x=' + canvas.w + '+2.\n' +
+    '- No vignette, no overall gradient across the tiling axis, no feature so distinctive that ' +
+    'four copies of it read as wallpaper. Variation must come from the field, not from position.';
+}
+
 function boardFiles(spec) {
   const dir = join(REPO_ROOT, 'docs', 'concept-art');
   const all = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.png')) : [];
@@ -179,6 +278,27 @@ function main() {
     console.error(`--category must be one of ${CATEGORIES.join(', ')}`);
     process.exit(2);
   }
+  if (!TEMPLATES[args.mode]) {
+    console.error(`--mode must be one of ${Object.keys(TEMPLATES).join(', ')}, got ${args.mode}`);
+    process.exit(2);
+  }
+  if (!['none', 'x', 'y', 'xy'].includes(args.tiling)) {
+    console.error(`--tiling must be none, x, y or xy, got ${args.tiling}`);
+    process.exit(2);
+  }
+  if (args.mode === 'raster' && !ALPHA_KINDS.includes(args.alpha)) {
+    console.error(
+      `--alpha is required in raster mode and must be one of ${ALPHA_KINDS.join(', ')}` +
+      (args.alpha ? `, got ${args.alpha}` : '') +
+      '\n  There is no default on purpose: an unstated transparency contract is how five backdrop\n' +
+      '  plates were regenerated as opaque rectangles with every gate green (T-053).'
+    );
+    process.exit(2);
+  }
+  if (args.seed !== null && !Number.isInteger(args.seed)) {
+    console.error(`--seed wants a whole number, got ${args.seed}`);
+    process.exit(2);
+  }
   const canvas = parseBox(args.size);
   if (!canvas || ![canvas.w, canvas.h].every((n) => Number.isInteger(n) && n > 0 && (n & (n - 1)) === 0)) {
     console.error(`--size wants a power of two or WxH of powers of two, got ${args.size}`);
@@ -203,8 +323,13 @@ function main() {
     }
   }
 
+  // A seed nobody chose is a seed nobody can reproduce by accident: derive it
+  // from the id so re-running the same ask twice asks for the same asset, and
+  // record it in the recipe so a regeneration is auditable.
+  const seed = args.seed === null ? hashString(args.id) % 1000000 : args.seed;
+
   const boards = boardFiles(args.boards);
-  const spec = readFileSync(TEMPLATE, 'utf8')
+  const spec = readFileSync(TEMPLATES[args.mode], 'utf8')
     .replace(/<!--[\s\S]*?-->\n?/, '')                    // the template's own authoring notes
     .replaceAll('{{ID}}', args.id)
     .replaceAll('{{CATEGORY}}', args.category)
@@ -216,13 +341,20 @@ function main() {
     .replaceAll('{{ROLES}}', allowed ? allowed.join(', ') : ROLES.map((r) => r.id).join(', '))
     .replaceAll('{{PALETTE}}', paletteTable(allowed))
     .replaceAll('{{BOARDS}}', boards.length ? boards.map((b) => b.slice(REPO_ROOT.length + 1)).join(', ') : 'none attached')
-    .replaceAll('{{SCALE_NOTE}}', scaleNote(tiles, canvas, grid));
+    .replaceAll('{{SCALE_NOTE}}', scaleNote(tiles, canvas, grid))
+    .replaceAll('{{SEED}}', String(seed))
+    .replaceAll('{{TILING}}', tilingNote(args.tiling, canvas))
+    .replaceAll('{{ALPHA}}', args.mode === 'raster' ? alphaNote(args.alpha, canvas) : '');
 
   const specPath = resolve(REPO_ROOT, args.specOut || `tools/assets/runs/spec-${args.id}.md`);
   mkdirSync(dirname(specPath), { recursive: true });
   writeFileSync(specPath, spec, 'utf8');
 
-  const svgPath = resolve(REPO_ROOT, `assets/generated/${args.category}/${args.id}.svg`);
+  const raster = args.mode === 'raster';
+  const outPath = resolve(
+    REPO_ROOT,
+    `assets/generated/${args.category}/${args.id}${raster ? '.recipe.js' : '.svg'}`
+  );
   const lastMsgPath = resolve(REPO_ROOT, `tools/assets/runs/codex-last-${args.id}.md`);
 
   const codexArgs = ['exec', '--skip-git-repo-check', '-s', 'read-only', '-o', lastMsgPath];
@@ -233,12 +365,15 @@ function main() {
   const printable = `codex ${codexArgs.join(' ')} < ${specPath}`;
 
   console.log(`spec written: ${specPath.slice(REPO_ROOT.length + 1)} (${spec.length} bytes)`);
+  console.log(`  mode:            ${args.mode}${raster ? ` (canvas recipe, seed ${seed}, tiling ${args.tiling}, alpha ${args.alpha})` : ' (svg)'}`);
   console.log(`  boards attached: ${boards.length ? boards.map((b) => b.split('/').pop()).join(', ') : 'none'}`);
   console.log(`  roles allowed:   ${allowed ? allowed.join(', ') : 'all 8'}`);
   const screen = screenBox(tiles);
-  console.log(`  target:          ${svgPath.slice(REPO_ROOT.length + 1)} at ${canvas.w}x${canvas.h}`);
-  console.log(`  design grid:     ${grid.w}x${grid.h} viewBox units`
-    + (grid.w === canvas.w && grid.h === canvas.h ? ' (canvas)' : ` (${(canvas.w / grid.w).toFixed(0)}x oversampled)`));
+  console.log(`  target:          ${outPath.slice(REPO_ROOT.length + 1)} at ${canvas.w}x${canvas.h}`);
+  if (!raster) {
+    console.log(`  design grid:     ${grid.w}x${grid.h} viewBox units`
+      + (grid.w === canvas.w && grid.h === canvas.h ? ' (canvas)' : ` (${(canvas.w / grid.w).toFixed(0)}x oversampled)`));
+  }
   console.log(`  on screen (FAR): ${screen.w.toFixed(1)}x${screen.h.toFixed(1)} px from ${tiles.w}x${tiles.h} tiles`);
 
   if (args.dryRun) {
@@ -257,8 +392,8 @@ function main() {
   }
   console.log(`  codex:           ${probe.stdout.trim()}`);
 
-  if (existsSync(svgPath) && !args.force) {
-    console.error(`\n${svgPath.slice(REPO_ROOT.length + 1)} already exists — pass --force to overwrite`);
+  if (existsSync(outPath) && !args.force) {
+    console.error(`\n${outPath.slice(REPO_ROOT.length + 1)} already exists — pass --force to overwrite`);
     process.exit(1);
   }
 
@@ -278,20 +413,43 @@ function main() {
     console.error(`\ncodex wrote no final message to ${lastMsgPath.slice(REPO_ROOT.length + 1)}`);
     process.exit(1);
   }
-  const svg = extractSvg(readFileSync(lastMsgPath, 'utf8'));
-  if (!svg) {
+  const reply = readFileSync(lastMsgPath, 'utf8');
+  const body = raster ? extractRecipe(reply) : extractSvg(reply);
+  if (!body) {
     console.error(
-      `\nno <svg> element in codex's reply — left at ${lastMsgPath.slice(REPO_ROOT.length + 1)} for inspection.\n` +
-      'The spec asks for exactly one fenced svg block; a model that answered in prose needs a re-run, not a parser fix.'
+      `\nno ${raster ? 'js module with an exported render()' : '<svg> element'} in codex's reply — left at ` +
+      `${lastMsgPath.slice(REPO_ROOT.length + 1)} for inspection.\n` +
+      `The spec asks for exactly one fenced ${raster ? 'js' : 'svg'} block; a model that answered in prose needs a ` +
+      're-run, not a parser fix.'
     );
     process.exit(1);
   }
 
-  mkdirSync(dirname(svgPath), { recursive: true });
-  writeFileSync(svgPath, `${svg.trim()}\n`, 'utf8');
-  console.log(`\nwrote ${svgPath.slice(REPO_ROOT.length + 1)} (${svg.length} bytes)`);
+  mkdirSync(dirname(outPath), { recursive: true });
+  writeFileSync(outPath, `${body.trim()}\n`, 'utf8');
+  console.log(`\nwrote ${outPath.slice(REPO_ROOT.length + 1)} (${body.length} bytes)`);
+
+  if (raster) {
+    // The same static scan render.mjs and check.mjs run, applied here so a
+    // recipe that reached for Math.random or an import is named immediately
+    // rather than at render time. Reported, not repaired: this file never
+    // rewrites what a generator wrote.
+    const scan = scanRecipe(body, { label: outPath.slice(REPO_ROOT.length + 1) });
+    if (scan.errors.length) {
+      console.log('\nthe recipe does not satisfy the contract — it will be REJECTED by render.mjs:');
+      for (const e of scan.errors) console.log(`  - ${e}`);
+      console.log('  re-run the ask (the spec states every one of these rules); do not hand-patch the recipe silently.');
+    } else {
+      console.log(`  contract ok: meta.seed ${scan.meta.seed}, roles [${scan.meta.roles.join(', ')}]`);
+    }
+  }
+
   console.log('nothing here judged the art or the palette. Next:');
-  console.log(`  node tools/assets/rasterize.mjs assets/generated/${args.category}/${args.id}.svg --width ${canvas.w} --height ${canvas.h}`);
+  if (raster) {
+    console.log(`  node tools/assets/render.mjs assets/generated/${args.category}/${args.id}.recipe.js`);
+  } else {
+    console.log(`  node tools/assets/rasterize.mjs assets/generated/${args.category}/${args.id}.svg --width ${canvas.w} --height ${canvas.h}`);
+  }
   console.log(`  node tools/assets/check.mjs --write && node tools/assets/check.mjs`);
   console.log(`  node tools/assets/view.mjs assets/generated/${args.category}/${args.id}.png --tiles ${tiles.h}`);
 }

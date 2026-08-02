@@ -58,8 +58,11 @@ import * as d45 from './t-047-light-rig.mjs';
 import * as d46 from './t-048-post-pass.mjs';
 import * as d47 from './t-042-audio-punch.mjs';
 import * as d48 from './t-050-shipped-plan-carries-the-scale-pass.mjs';
-import * as d49 from './t-049-hostile-sprites.mjs';
-import * as d50 from './t-051-backdrop.mjs';
+import * as d49 from './t-040-rig-sprite.mjs';
+import * as d50 from './t-044-corner-setpieces.mjs';
+import * as d51 from './t-049-hostile-sprites.mjs';
+import * as d52 from './t-052-hull-texture.mjs';
+import * as d53 from './t-051-backdrop.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -111,6 +114,9 @@ export const DOMAINS = [
   d46,    // T-048: the screen pass (bloom) + surface families (entry 18)
   d47,    // T-042: audio punch — static + behavioral guards ==========
   d48,    // T-050: the shipped plan carries the scale pass (I-037) ===========
-  d49,    // T-049: runtime hostile sprites + the boot preload gate (entry 16)
-  d50,    // T-051: backdrop layers (graded anatomy plates, entries 16/17) ====
+  d49,    // T-040: RIG as a runtime sprite (S8) ==========================
+  d50,    // T-044: corner reveal set pieces (ARRIVAL + ARENA) ==============
+  d51,    // T-049: runtime hostile sprites + the boot preload gate (entry 16)
+  d52,    // T-052: hull surface textures (four tiles bound, entries 16/18)
+  d53,    // T-051: backdrop layers (graded anatomy plates, entries 16/17) ====
 ];

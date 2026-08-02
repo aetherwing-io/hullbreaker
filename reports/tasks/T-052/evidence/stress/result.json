@@ -1,0 +1,73 @@
+{
+  "measuredAt": "2026-08-02T11:17:42.557Z",
+  "tool": "scratchpad/t052-stress.mjs (modeled on tools/playtest/sprite-stress.mjs)",
+  "viewport": "1280x800, headless Chrome (channel: chrome), one browser per reading",
+  "load": "60 projectiles/frame via fireWeapon(clone=true), one death burst+flash per frame, roster topped up to 10 hostiles, right held on the default six-face run (?g1=1 default)",
+  "textured": {
+    "perf": {
+      "frames": 180,
+      "fps": 120,
+      "avgMs": 8.34,
+      "worstMs": 10.4,
+      "over20ms": 0
+    },
+    "liveProjectiles": 256,
+    "liveHostiles": 11,
+    "drawCalls": 178,
+    "triangles": 105496,
+    "programs": 34,
+    "memory": {
+      "geometries": 78,
+      "textures": 32
+    },
+    "hullTex": {
+      "on": true,
+      "files": {
+        "hull-panel-tile.png": true,
+        "hull-panel-tile.png?wall": true,
+        "vent-louver-plate.png": true,
+        "weld-seam-strip.png": true,
+        "wear-scuff-overlay.png": true
+      },
+      "buckets": [
+        "hull",
+        "wall",
+        "scute",
+        "shadow"
+      ]
+    },
+    "state": "PLAYING",
+    "errors": []
+  },
+  "flat": {
+    "perf": {
+      "frames": 180,
+      "fps": 120,
+      "avgMs": 8.33,
+      "worstMs": 10.3,
+      "over20ms": 0
+    },
+    "liveProjectiles": 256,
+    "liveHostiles": 11,
+    "drawCalls": 178,
+    "triangles": 105496,
+    "programs": 32,
+    "memory": {
+      "geometries": 80,
+      "textures": 25
+    },
+    "hullTex": {
+      "on": false,
+      "files": {
+        "hull-panel-tile.png": false,
+        "hull-panel-tile.png?wall": false,
+        "vent-louver-plate.png": false,
+        "weld-seam-strip.png": false,
+        "wear-scuff-overlay.png": false
+      },
+      "buckets": []
+    },
+    "state": "PLAYING",
+    "errors": []
+  }
+}

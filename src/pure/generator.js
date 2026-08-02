@@ -12,7 +12,8 @@ import { mulberry32 } from './rng.js';
 import { cornerSList, faceIndexAt } from './path.js';
 import { TRAVERSAL_FIXTURE } from './traversal.js';
 import {
-  LATTICE, latticeCarvePocket, latticeHoundBeats, latticePatchPass,
+  LATTICE, latticeArenaSites, latticeArrivalSites, latticeCarvePocket,
+  latticeHoundBeats, latticeInstallSite, latticePatchPass,
   latticePocketSites, latticeReport, latticeThinPass,
 } from './lattice.js';
 
@@ -173,6 +174,19 @@ export function buildLevel(cfg) {
     platforms.push({ ...site.mid }, { ...site.shelf });
   }
 
+  // corner reveal set pieces (T-044, src/pure/lattice.js): ARRIVAL, one
+  // guaranteed catwalk right after each corner ritual's reveal (before that
+  // face's own pocket takes over), and ARENA, the wave gate's own fighting
+  // ground composed on purpose instead of left to the chunk stream. Both are
+  // ADDED to whatever the Contra-tier loop already dropped there — never
+  // cleared first — so an existing procedural catwalk that happens to be the
+  // only bridge across a raw ground gap is never at risk (see the comment on
+  // latticeInstallSite in lattice.js for the regression this replaced).
+  const arrivals = latticeArrivalSites(cfg, groundH);
+  for (const site of arrivals) latticeInstallSite(platforms, site.platforms);
+  const arenas = latticeArenaSites(cfg, groundH);
+  for (const site of arenas) latticeInstallSite(platforms, site.platforms);
+
   // reachability sweep: the apron pass can orphan a high catwalk whose mid
   // support it deleted — prune anything beyond double-jump reach, repeating
   // until stable (pruning one support can strand another).
@@ -209,7 +223,7 @@ export function buildLevel(cfg) {
   }
 
   return {
-    groundH, platforms, chunkLog, pockets,
+    groundH, platforms, chunkLog, pockets, arrivals, arenas,
     lattice: {
       id: LATTICE.id,
       patched: patched.length,

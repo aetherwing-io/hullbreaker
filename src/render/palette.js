@@ -79,6 +79,21 @@ export const CLASSIC = {
   catwalk: CONFIG.palette.catwalk,
   solid: CONFIG.palette.groundAlt,       // authored solid rects shared this
   player: CONFIG.palette.player,
+  /* ==== T-040 RIG silhouette ==== *
+   * Two new value zones for RIG's silhouette (torso+pack, legs), darker
+   * ladder steps off the same neutral CONFIG.palette.player rather than a
+   * new hue — CLASSIC stays the byte-faithful grey-box, so these are hand
+   * -authored neutral greys, not derived from any CONCEPT role. Luminance
+   * ladder (bright > mid > dark) and the minimum separation between all
+   * three are asserted in tools/pathcheck.mjs's T-040 block. Widened past
+   * that floor on purpose: RIG's sprite is a MeshStandardMaterial (lit, so
+   * playerDark/playerMid land where the rest of the palette was calibrated
+   * to), and ACES tone mapping compresses midtones hard enough that a raw
+   * gap just over the floor read as nearly flat once lit and tone-mapped —
+   * measured on screen, not assumed (reports/tasks/T-040/build.md). */
+  playerDark: 0x5f6266,
+  playerMid: 0xb4b7bb,
+  /* ==== end T-040 ==== */
   gun: CONFIG.palette.gun,
   wasp: CONFIG.palette.wasp,
   waspDive: 0xb9f0a8,                    // T-003: the committed dive, in the grey-box's
@@ -149,6 +164,21 @@ export const CONCEPT = {
   catwalk: 0xdf9c50,                     // slats: the bright-orange route lips of board 01
   solid: 0x8a5c38,                       // authored fixtures: darker rust mass
   player: 0xe9e6dd,                      // warm off-white RIG (silhouette first)
+  /* ==== T-040 RIG silhouette ==== *
+   * Three value zones is "about the most a 30 px figure can hold" (S8):
+   * bright (unchanged player, above) for head/visor/gun arm, dark for
+   * torso+pack, mid for legs. Darker steps down the SAME warm-neutral
+   * muzzle family as `player` (a hue change would be a new color role —
+   * decisions.md entry first, per the packet's correction) — low channel
+   * spread, r >= g >= b, asserted in tools/pathcheck.mjs's T-040 block
+   * alongside the luminance ladder and minimum separation between zones.
+   * Widened past that floor on purpose: see CLASSIC's note above — a lit
+   * MeshStandardMaterial plus ACES tone mapping compresses midtones hard
+   * enough that a raw gap just over the floor read as nearly flat once
+   * lit and tone-mapped, measured on screen. */
+  playerDark: 0x565048,
+  playerMid: 0xc3bead,
+  /* ==== end T-040 ==== */
   gun: CONFIG.palette.gun,               // already the warm muzzle family
   // ENEMY acid green — now live on the meshes (src/render/hostiles.js);
   // the tell stays warm amber (a telegraph must not read as a body).

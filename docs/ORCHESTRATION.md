@@ -124,6 +124,54 @@ Keep both. But one side is often *out of date* — e.g. two README items each
 described a different half as "still open" when both halves had landed. Read
 what each side claims, not just where it sits.
 
+**Two lanes can CREATE the same new file independently — check before merging,
+not during.** T-040 and T-049 each added `src/render/preload.js` from a
+merge-base where it did not exist (`git cat-file -e <merge-base>:<path>` says
+so in one command). Composing two independent 171- and 338-line
+implementations of a shared boot gate at conflict-resolution time is how a
+cycle dies. Resolve it as an *ordering* question instead, and answer it by
+asking **what each lane's assertions are actually about**:
+
+    git merge-base task/A task/B                      # does the file exist there?
+    grep -n '^export' <each worktree>/<path>          # same API surface?
+    grep -rn '<path>' <lane>/tools/pathcheck/<lane>.mjs   # what does it assert?
+
+For preload.js the answer was clean: every T-040 assertion was about the
+*consumer* (`player.js` imports `preloadTexture`/`awaitPreloads` from
+`./preload.js`), none about the gate's internals, and both versions export the
+same four names. So T-049's later, fixed 338-line gate satisfies T-040
+wholesale — merge T-049 first, then T-040 keeps its own `player.js` and takes
+the already-landed gate untouched. **No hand-composition, no cycle.** Had
+T-040's assertions pinned the gate's internals, the answer would have been the
+opposite and worth knowing before the merge, not during.
+
+**Never prune a worktree without checking whether something is reading it.**
+On 2026-08-02 the integrator ran `git worktree remove <wt> --force` as routine
+post-merge cleanup and destroyed a 16-round measurement another lane was
+running against that tree; it died at n=7 with "no such file or directory."
+`--force` is precisely the flag that converts git's refusal into a deletion.
+Before any remove:
+
+    find .claude/worktrees/<id> -type f -newermt '-10 minutes' \
+      -not -path '*/.git/*' | head
+
+If that prints anything, wait or ask. Drop `--force` unless it comes back
+empty — the refusal it suppresses is the whole safety mechanism.
+
+**And run long measurements against a scratch COPY, not a live worktree.**
+`git archive <ref> | tar -x -C <scratchdir>` is what T-049's own I-039 control
+trees used, which is why that lane could tell a real result from a tree
+changing underneath it. A measurement reading a tree another agent can edit or
+delete is not measuring what it thinks it is. Related: hash the file under
+test before each run in a repeated experiment — T-049 caught a phantom FAIL
+that way, when a hash moved between runs with no edit of its own.
+
+**Standing rule: when two lanes both need a shared piece of infrastructure,
+branch the consumers off the PRODUCER's branch, not off main.** T-051 and
+T-052 were branched off `task/T-049` for exactly this reason and cost nothing.
+The merge order then falls out of the branch graph instead of being
+reconstructed from memory under conflict pressure.
+
 **`tools/pathcheck.mjs` — never hand-balance braces.** Its assertions embed
 regex literals containing `\{` and `\}`, which defeats brace counting, and its
 section banners contain runs of `=` that a naive `^=======$`-less regex will
@@ -334,3 +382,26 @@ queue, ask what the *operator* would see change.
 **Still serialized, by hard rule:** merges. One runtime change at a time,
 through `tools/orch/merge-task.sh`, from the main checkout. That is the real
 ceiling on lane count, and it is deliberate.
+
+**Gate artifacts go stale the moment the branch moves — check the tree, not the
+verdict.** On 2026-08-02 the integrator's own readiness loop reported `T-044`
+READY because `review.md`/`playtest.md` on `main` both read green. They had been
+copied there *before* an integrator merge brought the branch onto the pathcheck
+module tree, and the branch was actually **red (2497 passed, 2 failed)** — a
+cross-lane collision (`T-039` had hard-coded a platform count that `T-044`'s
+terrain legitimately changed) plus one of the lane's own assertions failing
+against current `main`.
+
+`tools/orch/merge-task.sh` catches this: it requires both verdicts to be NEWER
+than the branch head, which is exactly why that rule exists. Ad-hoc readiness
+polling does not. So:
+
+  * treat a green verdict pair as **necessary, not sufficient**;
+  * before merging, run `node tools/pathcheck.mjs` **in the worktree** and read
+    the count yourself;
+  * after any integrator merge or migration commit on a lane, its prior
+    verdicts are void — re-gate rather than reusing them.
+
+The general shape, which has now bitten three times in one session (a stale
+cached module, a stale pinned worktree, a stale verdict): **an artifact that was
+true when it was written is not evidence about the tree in front of you.**

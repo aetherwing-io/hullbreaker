@@ -31,6 +31,7 @@ import { IS_G1, QUERY } from '../mode.js';
 import { groundH } from '../sim/level.js';
 import { scene } from './scene.js';
 import { PAL, SHADE_GAIN } from './palette.js';
+import { applyHullTexture, applySurface } from './materials.js';
 
 // One value ladder from the palette module (concept teal/rust by default,
 // grey-box via ?palette=classic): the deck (PAL.ground) stays the brightest
@@ -80,6 +81,19 @@ const MATERIAL_FOR = {
   // ladder — a rung that reads as a shadow is not a reference object
   markRung: 'machine', markStile: 'machine', markRail: 'machine', markPost: 'machine',
   markRim: 'rib', markPanel: 'shadow',
+};
+
+/* Material-key -> SURFACE family (T-052, materials.js): reuses the table
+   authored there rather than adding a ninth one. `hull`/`scute` are armour
+   plate, `wall` recedes into the body (the family CONFIG.limb itself is
+   named for — `distant`, roughness 0.92 — already reads "duller, further
+   back"), `rib`/`machine` are the brightest metal in the ladder (joint
+   highlights and human-scale fixtures), `shadow`/`scuteAlt`/`skyline` stay
+   at the same plate/distant response the surface next to them wears; a
+   family switch here is a look call, not a new material shape. */
+const SURFACE_FOR = {
+  hull: 'plate', wall: 'distant', scute: 'plate', scuteAlt: 'plate',
+  shadow: 'distant', rib: 'machine', machine: 'machine', skyline: 'distant',
 };
 
 /* THE SCALE PASS (T-045), ON BY DEFAULT — decisions.md entry 16 ("ship
@@ -145,11 +159,14 @@ function bakeLimb() {
   }
   const geo = new THREE.BoxGeometry(1, 1, 1);
   for (const [key, indices] of byMaterial) {
-    const mesh = new THREE.InstancedMesh(
-      geo,
-      new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true }),
-      indices.length
-    );
+    // T-052: a surface family (roughness/metalness/envMap) plus, for the
+    // buckets a large hull surface actually names, an albedo+bump tile —
+    // both are no-ops (this stays the pre-T-052 flat white material) for
+    // any family or texture that failed to resolve, by construction.
+    const material = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true });
+    applySurface(material, SURFACE_FOR[key] || 'plate');
+    applyHullTexture(material, key);
+    const mesh = new THREE.InstancedMesh(geo, material, indices.length);
     mesh.frustumCulled = false;                // static bake, one upload
     for (let i = 0; i < indices.length; i++) {
       const piece = plan[indices[i]];

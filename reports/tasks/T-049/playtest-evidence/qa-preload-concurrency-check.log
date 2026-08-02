@@ -1,0 +1,66 @@
+$ cd <pinned scratch copy>/tools/playtest && node preload-concurrency-check.mjs
+(re-run BEFORE the break test, restored state)
+
+=== plain: 10 trials, both lanes must end resident ===
+  PASS  both lanes resident in every trial — 10/10; second-lane states: ready
+  PASS  the gate closed inside its budget every time — costMs 10-14ms of 2500
+  PASS  both registrations are visible in one shared registry — entries per trial: 2
+
+=== slow-second: the second lane is 400ms behind (inside the budget) ===
+  PASS  a slower second lane is WAITED FOR, not foreclosed on — ready/ready @414ms  ready/ready @412ms  ready/ready @414ms
+  PASS  the gate really did hold the boot for it — costMs 414, 412, 414
+
+=== over-budget: the second lane is 3200ms behind (past the budget) ===
+  PASS  the first lane still gets its asset — ready
+  PASS  the second lane is timed out rather than waited for forever — timeout
+  PASS  the gate closed at its budget, not before and not much after — costMs 2513 vs budget 2500
+  PASS  the timeout message states the time actually waited — still loading after 2513ms of the 2500ms boot budget
+
+=== awaits-first: a lane awaits before anyone has registered ===
+  PASS  an empty await does not close the gate on the lanes behind it — ready/ready  ready/ready  ready/ready
+  PASS  both later registrations still reached the shared registry — entries: 2, 2, 2
+
+=== the warm-up runs INSIDE the gate, and ?warm=0 turns it off ===
+  PASS  the warm-up ran by default — warmOn=true warmMs=9
+  PASS  it ran while the gate was still SHUT — before any caller was released — warmedWhileClosed=true, warmMs=9 of costMs=13
+  PASS  ?warm=0 skips it, which is what makes the A/B measurable — warmOn=false warmMs=0
+
+[preload-concurrency] all checks passed
+
+=== QA BREAK TEST: settle() reverted to a private snapshot raced at entry
+    (the exact pre-review regression the file's own header documents),
+    same file otherwise byte-identical ===
+
+=== plain: 10 trials, both lanes must end resident ===
+  FAIL  both lanes resident in every trial — 4/10; second-lane states: ready, timeout
+  PASS  the gate closed inside its budget every time — costMs 0-0ms of 2500
+  PASS  both registrations are visible in one shared registry — entries per trial: 2
+
+=== slow-second: the second lane is 400ms behind (inside the budget) ===
+  FAIL  a slower second lane is WAITED FOR, not foreclosed on — ready/timeout @0ms  ready/timeout @0ms  ready/timeout @0ms
+  FAIL  the gate really did hold the boot for it — costMs 0, 0, 0
+
+=== over-budget: the second lane is 3200ms behind (past the budget) ===
+  PASS  the first lane still gets its asset — ready
+  PASS  the second lane is timed out rather than waited for forever — timeout
+  FAIL  the gate closed at its budget, not before and not much after — costMs 0 vs budget 2500
+  FAIL  the timeout message states the time actually waited — QA-forced
+
+=== awaits-first: a lane awaits before anyone has registered ===
+  FAIL  an empty await does not close the gate on the lanes behind it — timeout/timeout  timeout/timeout  timeout/timeout
+  PASS  both later registrations still reached the shared registry — entries: 2, 2, 2
+
+=== the warm-up runs INSIDE the gate, and ?warm=0 turns it off ===
+  FAIL  the warm-up ran by default — warmOn=true warmMs=0
+  FAIL  it ran while the gate was still SHUT — before any caller was released — warmedWhileClosed=false, warmMs=0 of costMs=0
+  PASS  ?warm=0 skips it, which is what makes the A/B measurable — warmOn=false warmMs=0
+
+[preload-concurrency] 8 CHECK(S) FAILED
+
+=== RESTORED (diffed byte-identical against the pre-break file) and re-run ===
+  PASS  the warm-up ran by default — warmOn=true warmMs=7
+  PASS  it ran while the gate was still SHUT — before any caller was released — warmedWhileClosed=true, warmMs=7 of costMs=10
+  PASS  ?warm=0 skips it, which is what makes the A/B measurable — warmOn=false warmMs=0
+[preload-concurrency] all checks passed
+node tools/pathcheck.mjs after restore: pathcheck: 2748 passed, 0 failed
+diff against pre-break backup: no output (byte-identical)

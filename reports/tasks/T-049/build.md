@@ -475,6 +475,49 @@ of the fix in pathcheck (shared promise, single deadline, honest message,
 refusal path) so it cannot be unpicked without the browser tool running; each
 was broken and restored (see the table below, rows 8–11).
 
+### The refusal path had no behavioural cover — the fourth false green, and the first one found by someone else
+
+Review patched a scratch copy so that a registration arriving after the gate
+closed fell through to the normal load path — reintroducing exactly the
+mid-run upload this module exists to prevent — and **pathcheck plus all five
+conditions of `preload-concurrency-check.mjs` stayed green**. The only guard
+was a source-literal `state: 'refused'` match, i.e. an assertion about how the
+code looks; no test ever registered late.
+
+Fixed with a sixth condition and a fixture that registers only after
+`awaitPreloads()` has resolved (`fixtures/preload-concurrency/lane-late.js`,
+requesting a real file nothing else uses, so a broken refusal would visibly
+load something). It asserts the state is `refused`, that no texture comes
+back, that the warning names the file, and that the two on-time lanes are
+unaffected.
+
+**Proved binding**, by deleting the refusal block outright:
+
+```
+  FAIL  the late page finished at all — a post-close registration must not
+        return a promise that never settles — 3 of 3 trials hung waiting for the fixture
+  FAIL  a registration after the gate closed is REFUSED — (no trial completed)
+  FAIL  and no texture is handed back for it — nothing was loaded mid-run — (no trial completed)
+  FAIL  the refusal names the file and says what to do instead — (no trial completed)
+  FAIL  the two on-time lanes are unaffected by the late one — (no trial completed)
+```
+
+The first line is a finding in itself: with the refusal removed, a post-close
+`preloadTexture()` returns a promise **nothing will ever settle** (`settle()`
+has already run and will not run again), so the caller's `await` hangs
+forever. The first version of this condition surfaced that as an uncaught
+exception that killed the tool; it now catches the timeout and reports it as a
+named failure, because a gate that dies is a gate nobody can read.
+
+**Tally: four false greens in this lane's own guards.** The raw-text
+`initTexture` match (matched its own prose), the `warmMs <= costMs` ordering
+check (true either side of the close), eight source-literal shape guards
+(assert appearance, not behaviour), and now the refusal path (no behavioural
+cover at all). Three were caught by breaking things on purpose here; the
+fourth by a reviewer doing the same. The rule that keeps holding: **an
+assertion is worth exactly what its falsification test is worth, and until
+someone breaks the guarded thing, that is zero.**
+
 ### The boot-gate assertions bind — eleven breaks, and one of them was mine
 
 Same discipline as §5: every guard broken on purpose, restored immediately.
@@ -587,25 +630,30 @@ tonemap}.js`, each getting this lane's "a pure module may not name a texture
 loader or a sprite module" pair. That is the guard correctly extending to new
 pure modules, which is what it is for. **2747 passed, 0 failed.**
 
-**Perf re-measured on the merged tree, because the renderer underneath it
-changed** (never inherit a number across a change that could move it):
+**Perf re-measured on the merged tree, twice — because the tree moved twice
+and a measured number may not be carried across a change that could move it.**
+The middle column below was taken against main `2c638aa`; main then took
+T-040 and T-044 and the second merge landed, so it is **stale and kept only as
+a record of that point**. The right-hand column is the current tree.
 
-| reading | pre-merge | merged (with shadows, bloom, surfaces) |
-| --- | --- | --- |
-| roster draw calls, 5 hostiles | 42 → 37 (primitives → sprites) | 79 → **74** |
-| stress draw calls, 256 projectiles | 144 → 133 | 181 → **166** |
-| worst frame | 10.30 ms both | 10.40 / **10.30 ms** |
-| frames over 20 ms | 0 both | **0 both** |
-| triangles | ~50.7k | ~105.4k |
+| reading | pre-merge (own base) | vs main 2c638aa — STALE | vs main 7c5ad31 — CURRENT |
+| --- | --- | --- | --- |
+| roster draw calls, 5 hostiles | 42 → 37 | 79 → 74 | **73 → 68** |
+| stress draw calls, 256 projectiles | 144 → 133 | 181 → 166 | **201 → 183** |
+| worst frame | 10.30 ms both | 10.40 / 10.30 ms | **10.30 ms both** |
+| frames over 20 ms | 0 both | 0 both | **0 both** |
+| triangles | ~50.7k | ~105.4k | ~107.4k |
 
-The sprite path still costs fewer draw calls than the primitives it replaces
-(−5 on a five-hostile roster, −15 under the barrage) and 60 fps still holds
-with 256 live projectiles on the heavier renderer. Evidence:
-`artifacts/sprites-v1/perf/result-merged.json`. The caveat from §3 applies
-with more force now: **main HAS a shadow pass**, and T-047's report states
-`renderer.info` does not account for it, so these are main-pass figures.
+(each pair is primitives → sprites). The conclusion is unchanged and now
+measured on the tree that would actually merge: the sprite path costs **fewer**
+draw calls than the primitives it replaces — 5 fewer on a five-hostile roster,
+18 fewer under the barrage — and 60 fps holds with 256 live projectiles on the
+heavier renderer. Evidence: `artifacts/sprites-v1/perf/result-merged2.json`
+(current) and `result-merged.json` (the stale middle column). Main-pass figures
+only: main has a shadow pass and T-047's report states `renderer.info` does not
+account for it.
 
-Re-run against the merged tree, all green: pathcheck 2747/0, assets check
+Re-run against the merged tree, all green:Re-run against the merged tree, all green: pathcheck 2747/0, assets check
 PASS, gatecheck PASS, `sprite-fallback-check` 9/9, `preload-concurrency-check`
 9/9, `mid-route.json --deterministic` completed / 0 deaths, and the true-size
 capture re-shot (`artifacts/sprites-v1/lineup-true-size.png` is now the
@@ -694,6 +742,26 @@ experiment (~30 runs) and I will run it on request.
 `?fixeddt` is **not** a workaround: with the step pinned, all three conditions
 scatter worse, control included (main 2/8 deviating, `gameMsMax` 4533–19683).
 
+### Scope of the negative result — and the one question left open
+
+Every asset in those 132 runs was a **32–64 px sprite of 0.6–2.9 kB**, i.e. a
+trivial mipmap chain. The negative result is about that class and no other.
+Whether the warm-up earns its 8–14 ms on a LARGE texture — RIG's 256x256, and
+soon T-051's backdrop plates and T-052's hull tiles — is **untested at any
+useful n**, not answered no. T-040 attempted exactly that measurement on
+`rig-marine.png` and got 1/7 with the warm-up against 4/7 without: opposite in
+direction to my numbers, noise at that size, and cut short when their worktree
+was pruned mid-run (§ the proposed inbox issue below). Both of us agreed not to
+let it settle into "measured, doesn't help".
+
+It is roughly 40 minutes to answer properly: `?warm=0` is the A/B, 16
+interleaved rounds is the design, and the run must go against a **scratch copy**
+(`git archive <rev> | tar -x -C <dir>`) rather than a live worktree — which is
+what interfered with the last attempt. The same caveat is now written into
+`src/render/preload.js` beside the disclaimer, because that comment is where a
+future lane will read the conclusion and it should not over-claim its own
+scope.
+
 ### What I recommend, and what I am not claiming
 
 - **I am not claiming the warm-up fixes I-039.** It is kept because the hazard
@@ -710,6 +778,60 @@ scatter worse, control included (main 2/8 deviating, `gameMsMax` 4533–19683).
   used by `sprite-fallback-check.mjs` produced sim traces **identical
   sample-for-sample** between art-loaded and art-blocked runs. That is the
   measurement I would build the gate on.
+
+---
+
+## 9b. SECOND MERGE (main 7c5ad31): two lanes had built the same file
+
+T-040 merged first, and it brought **its own independent `src/render/preload.js`**
+into main — a 171-line implementation, not the gate this lane built. So the
+merge was an add/add conflict between two versions of a shared boot gate,
+which `docs/ORCHESTRATION.md`'s merge playbook names as "how a cycle dies" and
+had already planned for, assuming T-049 merged first. The order came out
+reversed, so I re-ran the playbook's own three checks rather than assume its
+conclusion still held:
+
+| check | result |
+| --- | --- |
+| same API surface? | main's exports `PRELOAD_BUDGET_MS`, `preloadTexture`, `awaitPreloads`, `preloadSnapshot`; mine exports those four **plus** `WARM_ON` — a strict superset |
+| what does the consumer use? | main's `player.js` imports exactly `{ awaitPreloads, preloadTexture }`, and its own comments say it is waiting on "T-049's concurrency fix" |
+| do T-040's assertions pin the gate's internals? | no — every one is against `player.js` / `sim/player.js`, none against the gate |
+
+So the documented answer holds with the order reversed: **T-049's gate
+satisfies T-040 wholesale**, and the conflict resolves by taking this lane's
+version. No hand-composition. `tools/pathcheck/manifest.mjs` composed both
+lanes' domains (52 total, this lane's renumbered `d51`).
+
+**The integration works, and this is the first time both lanes' assets have
+gone through one gate together:**
+
+```
+gate cost 33ms, warm 11ms, 6 assets registered:
+   ready   21ms  hound-brace-b.png     ready   21ms  polyp-iris-b.png
+   ready   21ms  carrier-hauler-b.png  ready   21ms  mortar-tripod-b.png
+   ready   21ms  wasp-drone-b.png      ready   21ms  rig-marine.png
+warnings: none
+```
+
+RIG's 256x256 registers beside the five hostile sprites, from a different
+module, and both lanes get their art. That is precisely the case §9.2's grace
+turns exist for — before them, whichever module awaited first would have
+starved the other.
+
+**One smoke run came back `not-completed`, and it is the known bimodality, not
+a regression.** That run stopped on `script-window` with `dispatched=26/26`,
+`gameMsMax` 9865, crush 30.47 — the same excursion mode documented in §8, seen
+there in `?sprites=0` and in main's own control. Six interleaved rounds
+against current main settled it:
+
+| | rounds reaching victory | crush range |
+| --- | --- | --- |
+| main (7c5ad31) | **6 / 6** | 35.21–35.38 |
+| this branch, merged | **6 / 6** | 35.26–35.43 |
+
+Gates on the merged tree: pathcheck **2829 / 0** (including T-040's own domain
+running against this gate), assets check PASS, gatecheck PASS,
+`preload-concurrency` 14/14, `sprite-fallback` 9/9.
 
 ---
 
@@ -825,6 +947,38 @@ opposite lever).
 ```
 
 ```
+## I-??? | bug | S2 | repro: two agents active in one worktree; or `git worktree remove` while a background measurement runs | evidence: reports/tasks/T-049/build.md §9.1, and T-040's independent sighting from the other side
+```
+A LANE'S WORKTREE IS NOT SAFE TO MEASURE IN WHILE ANOTHER AGENT HOLDS IT, AND
+NOT SAFE TO PRUNE WHILE ONE IS RUNNING. Hit twice this cycle, from both ends,
+and it cost a 16-round experiment.
+
+(a) Two agents editing one worktree. While I ran the gate, another agent was
+running break/restore against src/render/preload.js in the same directory. My
+pathcheck reported one FAIL that five later runs on the identical committed
+tree could not reproduce; hashing the file before each of six consecutive runs
+caught the file changing under me (a24dde225fe4 -> 025e8f555610, no edit of
+mine). T-040 hit the same thing from the other side: their worktree's
+preload.js "silently reverted to the pre-fix version with no edit of mine".
+
+(b) Pruning a worktree with a background run in it. T-040's worktree was
+merged and pruned mid-experiment; their background process started failing
+with "no such file or directory" and the 16-round run died at n=7, which is
+too small to weigh. The work was not recoverable — the directory was gone.
+
+Neither is exotic: this fleet runs several agents at once, gate agents
+routinely read another lane's tree, and the merge step legitimately prunes.
+Fix direction, cheapest first: (1) a lane announces "I am measuring, do not
+touch <path>" and gate agents copy the tree instead of reading it in place —
+`git archive <rev> | tar -x -C <scratch>` is what I used for control trees all
+cycle and it is interference-immune by construction; (2) the merge script
+refuses to prune a worktree whose directory has been written to in the last N
+minutes, or at least prints what it is about to delete; (3) any measurement
+longer than a couple of minutes runs against a scratch copy on principle, not
+against the live lane. The diagnostic that catches (a) in one line is worth
+keeping: hash the file before each run and compare.
+```
+
 ## I-??? | bug | S3 | repro: tools/playtest/sprite-fallback-check.mjs, 11 runs | evidence: reports/tasks/T-049/build.md §2 "One flake"
 One run in eleven of the new fallback check reported 4 failed checks whose
 detail was not captured; the ten others passed, including every run since. Two
