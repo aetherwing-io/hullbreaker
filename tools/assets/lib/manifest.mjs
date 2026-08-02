@@ -14,7 +14,11 @@ export const CATEGORIES = ['glyphs', 'textures', 'sprites', 'ui', 'fx', 'backdro
 
 export const ENTRY_SCHEMA = {
   required: ['id', 'path', 'category', 'size', 'task'],
-  optional: ['source', 'gpu', 'palette', 'notes', 'generator', 'addedOn'],
+  // `seed` is the reproducibility record for a procedurally painted asset: the
+  // recipe named in `source` plus this integer is the whole input to the PNG.
+  // check.mjs recomputes it from the recipe and refuses a mismatch, so it
+  // cannot rot into a number someone typed once.
+  optional: ['source', 'gpu', 'palette', 'notes', 'generator', 'addedOn', 'seed'],
 };
 
 export function loadManifest(root) {
@@ -87,6 +91,12 @@ export function validateEntryShape(entry, index) {
   }
   if (entry.gpu === false && !entry.notes) {
     errs.push(`${where}: gpu:false opts out of the power-of-two rule, so "notes" must say why`);
+  }
+  if (entry.seed !== undefined && !Number.isInteger(entry.seed)) {
+    errs.push(`${where}: seed must be an integer (the recipe's meta.seed), got ${JSON.stringify(entry.seed)}`);
+  }
+  if (entry.seed !== undefined && !/\.(js|mjs)$/.test(entry.source || '')) {
+    errs.push(`${where}: seed is only meaningful with a recipe "source" — a hand-authored SVG has no seed`);
   }
   if (entry.task !== undefined && !/^T-\d+$/.test(entry.task)) {
     errs.push(`${where}: task must look like "T-015", got "${entry.task}"`);
