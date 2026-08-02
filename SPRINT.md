@@ -1201,7 +1201,7 @@ branched off task/T-049, not main, because T-049 carries the shared
 src/render/preload.js texture gate; merge order is T-049 → T-051/T-052.
 ========== -->
 
-## T-051 | art | doing | P1
+## T-051 | art | review | P1
 goal: a real backdrop behind the world. The five finished 1024x512 plates in
 assets/generated/backdrops/ go onto parallaxing quads, replacing the flat
 scene.background color as the thing filling 60-80% of the frame. Depth layering
@@ -1237,7 +1237,7 @@ NOT backdrop.js/scene.js (T-051).
 verify: node tools/pathcheck.mjs; new assertions proven by break/restore;
 textured-vs-flat captures including one near and one far surface
 
-## T-053 | assets | doing | P1
+## T-053 | assets | review | P1
 goal: raise the generator's ceiling from vector clip-art to painted raster. Add
 a raster path alongside the SVG one in which codex returns a self-contained
 canvas renderer (value noise, fbm, directional grunge, edge wear, panel-gap AO,
@@ -2698,3 +2698,38 @@ is** — this is a comment defect only, zero runtime effect. Filed rather than
 fixed in place because editing a runtime file outside a lane is against this
 repo's own merge discipline, even for a comment. Fold it into whichever lane
 next touches `level.js`.
+
+## I-044 | bug | S2 | repro: measure the alpha channel of `assets/generated/backdrops/backdrop-limb-segment.png` on `main` vs `task/T-053` — main is 50.2% alpha=0 / 49.3% alpha=255 / 0.48% partial; T-053's is 0.0% / 100.0% / 0.00% | evidence: this entry; reports/tasks/T-051/review.md (root-cause section)
+
+**T-053's regenerated backdrops stopped being cutouts.** The procedural raster
+route bakes the background into the image, so all five plates are now fully
+opaque rectangles where main's were silhouettes with half the image
+transparent.
+
+T-051 places these on **twelve quads at three depth tiers**, two per facet,
+layered for parallax. That design requires transparency: a 100%-opaque plate
+occludes everything behind it, so the mid and far tiers would never be visible
+and every plate would read as a hard rectangle. Merging T-053 as-is silently
+breaks the only lane that consumes its output.
+
+**Why both lanes' gates missed it.** T-053's review APPROVE and playtest PASS
+are both correct — they gated "zero effect on the shipped game," which is true
+of that tree in isolation and stops being true the moment T-051 lands. The
+integrator's brief said keep filenames and canvas dimensions stable and never
+said keep the alpha semantics stable, so nothing was watching the property that
+actually matters to the consumer. **Lesson for future asset lanes: name the
+properties the CONSUMER depends on, not just the ones a file listing shows.**
+
+Related and larger: T-051's reviewer established with PIL that even main's
+plate is too hard-edged — 0.48% partial alpha — and that because the quad is a
+flat camera-facing plane, `fog: true` tints the whole face uniformly rather
+than softening its boundary. **No depth or fog tuning can make a hard alpha
+cutout dissolve**; T-051's depth retune hides the seam behind box geometry
+rather than closing its acceptance box. The dissolve must be authored into the
+asset as a feathered silhouette edge. That is T-053's file, not T-051's, which
+makes this one fix serving two lanes.
+
+Fix direction: T-053 restores cutout alpha for the five backdrop plates with a
+genuinely feathered receding edge (tens of pixels, not a 1px cut); T-051 writes
+the spec for what its layering requires; hull tiles stay fully opaque, they are
+tiled surface textures and want no alpha.
