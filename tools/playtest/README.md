@@ -1501,6 +1501,37 @@ tools/playtest/
                             rate and proves only that no frame was late — read
                             `worstMs` / `over20ms`, and treat the result as evidence
                             about this dev machine, not a target-device claim.
+  scale-capture.mjs        dev-only evidence rig for the T-045 scale pass (graded
+                            backdrop tiers + human-scale reference objects,
+                            decisions.md entry 17). `shots` captures the same
+                            three moments of the same run twice — shipped default
+                            vs ?scale=0, which restores the pre-T-045 backdrop —
+                            and writes them to artifacts/scale-v1/ at the served
+                            repo root; `measure` re-reads whatever is in that
+                            directory. It also prints REAL GL draw calls per
+                            animation frame, counted by wrapping the WebGL
+                            context in an init script (three.js's renderer.info
+                            is on no global). Driven by the judged
+                            scripts/six-face-spaced-run.json policy through
+                            lib/policy.mjs, so it invents no movement.
+                            HONESTY: (1) pairs are matched on CAMERA and WORLD —
+                            both sides replay the same input schedule against the
+                            same seeded sim and shoot at the same scrollX
+                            threshold — not frame-locked, so hostile positions
+                            differ by a frame or two; judge composition and
+                            depth, never sprite deltas. (2) A fourth moment past
+                            the first joint is deliberately NOT captured: corner
+                            1 is a wave gate that has to be fought open and this
+                            policy died there on every attempt (GAME_OVER at
+                            scroll 88), and a poked CONFIG is not evidence.
+                            (3) `measure` recomputes statistics of the same
+                            KIND as the audit table in
+                            docs/proposals/2026-08-look-direction.md (largest
+                            single exact color and its coverage, distinct
+                            colors, luminance percentiles in the upper 45% of
+                            frame) but is NOT that pipeline — read its
+                            before/after delta, do not compare one of its
+                            numbers to one of that table's.
   transform-capture.mjs    dev-only evidence script for the CP3 transform slice:
                             keyframe screenshots keyed on the ?testapi=1 transform
                             block's ritual clock (run.mjs's fixed sampling cadence

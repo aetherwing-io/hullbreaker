@@ -840,3 +840,47 @@ Measured state (`docs/proposals/2026-08-look-direction.md`, 31 captures in
 The frozen FAR camera (entry 7/17), the static-anatomy rule (entry 3), layer
 purity, determinism, and no-build-step are unchanged. None of them is what is
 standing between this game and the boards.
+
+## 19 — 2026-08-02 — The mastery loop works; run-to-run VARIANCE is the feature
+
+**Operator, unprompted, after playing:**
+
+> "i feel like i can do better each time, that adds the kind of replayability
+> i'm interested in at this point. sometimes i clear two or three faces.
+> sometimes I can't pass the first. that's a good start"
+
+**This is the first validation of the game's core loop from the only oracle.**
+Two things are settled by it.
+
+**1. The mastery curve is real and is the replayability model.** "I can do
+better each time" is the thing to protect. Replayability does NOT need unlocks,
+score systems, procedural shuffling or meta-progression — it is already coming
+from skill expression against a fixed course. Do not add content-based
+replayability systems in the name of retention; that was on an earlier list of
+"shipping requirements" and is hereby dropped.
+
+**2. The run-to-run SPREAD is a feature, not noise to be tuned out.**
+"Sometimes two or three faces, sometimes not past the first" describes a wide
+outcome distribution, and the operator names it as GOOD. So:
+- Do not flatten the distribution. Changes that make outcomes more UNIFORM —
+  in either direction — take away the thing he likes.
+- Do not "balance" the run toward a target clear rate.
+- A change that raises the ceiling (better players get further) while leaving
+  the floor alone is aligned. A change that narrows the gap between a good run
+  and a bad one is not.
+
+**Bearing on T-044 (corner-reveal set pieces), which was escalating exactly
+this.** Its ARENA terrain measurably moved wave-gate-2 outcomes (base tree 0/3
+runs cleared gate 2; with the arena 2/3 cleared and died at wave 3). The review
+correctly refused to let that ship as "a placement change, not a difficulty
+one." Under this entry the question is no longer "did difficulty move" but
+**"did the spread survive."** An arena that gives a skilled player room to earn
+gate 2 while an unskilled one still dies at face 1 RAISES THE CEILING and is
+aligned with this verdict. An arena that makes gate 2 routine for everybody is
+not. T-044 should report the distribution, not just the mean — and the operator
+decides on the distribution.
+
+**Standing instruction for every lane:** difficulty remains not-the-axis
+(entry 15's goal block), but "not the axis" now means *preserve the spread*, not
+*freeze the numbers*. When a change moves outcomes, report the DISTRIBUTION —
+best run, worst run, spread — never a single average.

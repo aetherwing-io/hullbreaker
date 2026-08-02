@@ -82,7 +82,10 @@ export function screenPx(tiles, viewId, viewportH = 800, scales = CONFIG.viewSca
 }
 
 // How much of the pull-back each feature class may undo (see the header).
-export const SHARE = { glyph: 1, cue: 1, pose: 0.6 };
+// `pip` (T-038, S5's seam pips/route-lip lights) joins glyph/cue at full
+// share: a pip is a message about a ledge, not a body, exactly like a cue
+// lamp, so it restores whole.
+export const SHARE = { glyph: 1, cue: 1, pose: 0.6, pip: 1 };
 
 export function legibilityGain(share, viewId, on = true, scales = CONFIG.viewScales) {
   return on ? 1 + (viewDepthMult(viewId, scales) - 1) * share : 1;
@@ -151,3 +154,4 @@ export const LEGIBILITY_ON = resolveLegibility(QUERY.get('legibility'));
 export const GLYPH_GAIN = legibilityGain(SHARE.glyph, VIEW_ID, LEGIBILITY_ON);
 export const CUE_GAIN = legibilityGain(SHARE.cue, VIEW_ID, LEGIBILITY_ON);
 export const POSE_GAIN = legibilityGain(SHARE.pose, VIEW_ID, LEGIBILITY_ON);
+export const PIP_GAIN = legibilityGain(SHARE.pip, VIEW_ID, LEGIBILITY_ON);

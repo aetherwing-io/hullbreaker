@@ -1,0 +1,39 @@
+<svg id="polyp-iris-a" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <title>HULLBREAKER Iris Polyp</title>
+  <desc>Rooted right-facing turret using acid-green bulb facets, an ink stalk and aperture ring, hull base plates, and restrained rust-orange clamps. Its planted vertical silhouette is broken by one horizontal barrel and a hot acid iris.</desc>
+
+  <g id="base">
+    <path fill="#14181e" d="M2 28L5 25L9 24H21L25 25L28 28V31H2Z"/>
+    <path fill="#767c85" d="M4 28L7 26L10 25H20L23 26L26 28V29H4Z"/>
+    <path fill="#9b5c31" d="M5 28L8 26H10V29H5ZM20 26H22L25 28V29H20Z"/>
+    <path fill="#14181e" d="M8 25H22V27H8ZM2 29H28V31H2Z"/>
+    <path fill="#767c85" d="M3 29H7V30H3ZM23 29H27V30H23Z"/>
+    <path fill="#14181e" d="M6 27H8V29H6ZM22 27H24V29H22Z"/>
+  </g>
+
+  <g id="stalk">
+    <path fill="#14181e" d="M10 16H20L21 19L20 23L23 26L21 28H9L7 26L10 23L9 19Z"/>
+    <path fill="#767c85" d="M10 18L12 19L11 24L9 26H8L10 23ZM18 19L20 18V23L22 26H21L19 24Z"/>
+    <path fill="#9b5c31" d="M10 21H20V23H10Z"/>
+    <path fill="#14181e" d="M13 18H17V26H13ZM11 21H13V22H11ZM17 21H19V22H17Z"/>
+    <path fill="#767c85" d="M10 17H20L21 19H9Z"/>
+  </g>
+
+  <g id="bulb">
+    <path fill="#14181e" d="M10 4L14 2L18 3L22 6L24 10V14L22 18L18 21H12L8 18L6 14V9Z"/>
+    <path fill="#596718" d="M8 12H22V15L20 18L17 19H12L9 17L8 14Z"/>
+    <path fill="#7f941f" d="M8 9L11 6L15 5V12L13 14H8Z"/>
+    <path fill="#a8c22a" d="M11 6L14 3L18 4L20 6L15 8Z"/>
+    <path fill="#7f941f" d="M15 8L20 6L22 9V13L17 14L15 12Z"/>
+    <path fill="#7f941f" d="M15 13L22 13L20 17L17 19H15Z"/>
+    <path fill="#14181e" d="M8 13H10V16L12 18H10L8 15ZM12 19H18V21H12Z"/>
+  </g>
+
+  <g id="right-facing-barrel">
+    <path fill="#14181e" d="M20 9H27L30 10L31 12V14L29 16H20Z"/>
+    <path fill="#767c85" d="M21 10H26L28 11V14L26 15H21Z"/>
+    <path fill="#9b5c31" d="M23 10H25V15H23Z"/>
+    <path fill="#14181e" d="M26 9H29L31 11V14L29 16H26L27 14V11Z"/>
+    <path fill="#d8ee4d" d="M28 11H30L31 12V13L30 14H28L27 13V12Z"/>
+  </g>
+</svg>

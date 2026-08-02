@@ -14,10 +14,24 @@ import { applySurface } from './materials.js';
 import { postGain } from './post.js';
 import { scene } from './scene.js';
 import { placeOnTower } from './tower.js';
+import { releaseContactShadow, syncContactShadow } from './contact.js';
 import {
   CUE_GAIN, LAMP_COIL_SWELL, LAMP_OFF_ALPHA, LAMP_OFF_SWELL, LAMP_R, LEGIBILITY_ON, POSE_GAIN,
   POLYP_ONSET_MS, POLYP_SWELL_EASE, WASP_DIVE_NARROW, waspDiveStretch,
 } from './legibility.js';
+
+// T-039 (S6, contact shadows): each kind's own ground-plane footprint, read
+// straight off the same CONFIG sizes LOOK's geometries below are built from
+// — never a number this module invents on its own, so "the shadow can never
+// exceed the actor's own footprint" is true by construction rather than by a
+// second authored table that could drift from the meshes.
+const CONTACT_FOOTPRINT = {
+  wasp: CONFIG.wasp.visualRadius,
+  carrier: Math.max(CONFIG.carrier.size[0], CONFIG.carrier.size[2]) / 2,
+  hound: Math.max(CONFIG.hound.size[0], CONFIG.hound.size[2]) / 2,
+  polyp: CONFIG.polyp.size,
+  mortar: CONFIG.mortar.size,
+};
 
 const waspGeo = new THREE.OctahedronGeometry(CONFIG.wasp.visualRadius);
 const carrierGeo = new THREE.BoxGeometry(...CONFIG.carrier.size);
@@ -390,6 +404,7 @@ function removed(e, fade) {
   const v = meshes.get(e);
   if (!v) return;
   meshes.delete(e);
+  releaseContactShadow(e);               // nor does a corpse cast one
   if (v.beam) {                          // the beam never outlives its emplacement
     scene.remove(v.beam);
     v.beamMat.dispose();
@@ -472,6 +487,7 @@ function sync(e) {
   if (v.pod) mortarSync(v, e);           // pod arc + marked zone + detonation
   // the tell lamp reads the same sim state the pose does, one frame, no memory
   if (v.lamp) LAMP_SYNC[e.kind](v, e);
+  syncContactShadow(e, e.x, e.y, CONTACT_FOOTPRINT[e.kind]);
 }
 
 installView({ hostiles: { spawned, removed, sync } });

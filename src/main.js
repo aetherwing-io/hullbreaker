@@ -87,6 +87,7 @@ import { clearCorpses, updateCorpses } from './render/hostiles.js';
 // imported for their side effects: each builds its meshes and installs its
 // half of the view bridge as it loads, before anything below runs
 import './render/level.js';
+import './render/seams.js';
 import { limbPieces } from './render/limb.js';
 import './render/transform.js';
 import './render/player.js';
