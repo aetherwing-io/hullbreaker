@@ -2897,3 +2897,37 @@ while keeping (or restoring) its own contrast — that is likely the whole fix o
 the render side. On the asset side, the question is whether a tiled surface
 texture wants the same smoothness a painted backdrop wants; the evidence here
 says it does not.
+
+## I-048 | bug | S1 | repro: read `tools/deploy/build-bundle.mjs:86` on `task/T-034` — `git archive --format=zip --output=… <ref> -- index.html src` — then count `git ls-files assets/generated | grep -c '\.png$'` on main (39) | evidence: this entry
+
+**The deploy bundle would ship the game with none of its art, and nothing
+would look wrong.**
+
+`build-bundle.mjs` archives exactly `index.html` + `src/`. That was correct
+when T-034 was written: the game shipped zero binary assets and the hard rule
+was that it must boot with every file under `assets/` missing. Decisions entry
+16 retired that rule on 2026-08-02, and main now loads **39 tracked PNGs** at
+runtime — RIG's sprite, five hostile sprites, four hull tiles, five backdrop
+plates and the rest.
+
+**Why this is S1 and not S3:** entry 16's replacement condition is that a
+failed or missing asset degrades visibly-and-safely and never wedges the game.
+It works. Every asset falls back cleanly — RIG to canvas shapes, hostiles to
+primitives, hull to flat material, backdrop to flat colour. So the uploaded
+build would **run flawlessly and look exactly like the pre-2026-08-02
+grey-box**, with no error, no console warning beyond a per-asset note, and
+nothing for the player or the operator to notice. A silent, total loss of a
+day's art, disguised as a working game. The safety property that makes the
+game durable is precisely what makes this failure invisible.
+
+Fix direction: add `assets` to the archive pathspec, and — this is the part
+that matters — make the bundle's acceptance test *unzip it into a clean
+directory, serve THAT, and assert the art actually renders*, rather than
+asserting the zip contains files. A file-count check would have passed this
+bundle every day since entry 16.
+
+Also stale on that branch and worth correcting in the same pass:
+`tools/deploy/README.md` §3 frames the CDN risk as fully open ("no fallback and
+no visible error state today"), which T-032 closed before it merged — a blocked
+CDN now raises the failure panel within ~250ms rather than showing a silent
+black screen.
