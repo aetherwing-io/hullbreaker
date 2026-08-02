@@ -977,6 +977,34 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; paired-population capture comparison at the FAR default
 
+## T-036 | assets | doing | P2
+
+goal: unblock the held asset batch by answering the question that holds it.
+CLAUDE.md and the checkpoint queue both record that glyph work is frozen until
+the operator picks a direction for FAR readability — measured, a 0.55-tile
+capsule is 9.6px tall at the shipped FAR view, chamfers and rivets vanish, and
+the letter survives only as a smudge
+(`tools/assets/reports/demo/capsule-letter-h/viewer-far.png`). Generate real
+candidates through the existing pipeline and prove each at the size it will
+actually be on screen, so the operator decides from artifacts instead of prose.
+The operator asked for asset generation to run in parallel so output is ready
+when it is time; this is the version of that which is legal today.
+accept:
+- [ ] candidates for each named direction (scale the world-space glyph up; move
+      the letter read to the HUD; a shape/silhouette code instead of a letter;
+      any direction the artist can argue from boards 01/06/07), each rendered
+      through `rasterize.mjs` and judged with `view.mjs` at true on-screen size
+- [ ] `node tools/assets/check.mjs` green: manifest, palette roles, sizes
+- [ ] `node tools/pathcheck.mjs` green, and the game still boots with every
+      file under `assets/` deleted — the independence property is the whole
+      reason this lane is safe to run in parallel
+- [ ] ZERO game effect: no file under `src/` and no `index.html` change
+- [ ] an operator packet: side-by-side crops at true FAR size, 3-5 questions,
+      and an explicit statement of what each direction would COST to adopt
+      (including whether it would need a runtime-loading decision)
+owner: asset-artist
+verify: node tools/assets/check.mjs; node tools/pathcheck.mjs; view.mjs crops at 0.55 tiles
+
 <!-- ========== 2026-08-02 OPERATOR GOAL CHANGE (supersedes parts of the
 Delivery target that T-028 just rewrote; that rewrite's evidence-honesty fixes
 stand, its audience assumption does not) ==========
