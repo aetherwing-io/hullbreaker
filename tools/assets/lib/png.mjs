@@ -137,28 +137,80 @@ export function decodePng(file) {
 }
 
 /**
+ * The alpha channel's shape, as percentages of every pixel in the image.
+ * -> { transparent, partial, opaque, pixels }
+ *
+ * Three numbers, because they answer three different questions and the middle
+ * one is the one that got missed: `transparent` says whether the asset is a
+ * cutout at all, `opaque` says whether anything is solid, and `partial` — pixels
+ * strictly between 0 and 255 — is the only evidence that the silhouette has a
+ * feathered edge rather than a one-pixel cut.
+ */
+export function alphaCensus(file) {
+  const { width, height, rgba } = decodePng(file);
+  let transparent = 0, partial = 0, opaque = 0;
+  for (let i = 3; i < rgba.length; i += 4) {
+    const a = rgba[i];
+    if (a === 0) transparent++;
+    else if (a === 255) opaque++;
+    else partial++;
+  }
+  const n = width * height || 1;
+  return {
+    pixels: width * height,
+    transparent: (transparent / n) * 100,
+    partial: (partial / n) * 100,
+    opaque: (opaque / n) * 100,
+  };
+}
+
+/**
  * Color histogram, alpha-aware.
  * `alphaFloor` (0-255): pixels at or below it are counted as transparent and
  * excluded from coverage entirely — an SVG glyph rasterized on transparency is
  * mostly empty, and counting that emptiness would bury every real color under a
  * 90%-transparent majority.
+ *
+ * `weight`:
+ *   'count' (default) — every non-transparent pixel counts the same.
+ *   'alpha'           — each pixel counts a/255, so coverage is "how much of
+ *                       what you SEE is this color".
+ *
+ * The alpha weighting exists for a measured reason, not a theoretical one. A
+ * canvas stores premultiplied color; a pixel written at alpha 10/255 survives
+ * the round trip through `getImageData` with its channels quantized to
+ * multiples of 25.5, which shifts its HUE by tens of degrees. Measured on
+ * `wear-scuff-overlay`: 14 pixels at alpha 10 read back as `#1a1a33` — CIELCh
+ * hue 295.7, blue-violet, a hue no role owns and nothing in the recipe ever
+ * wrote (every color there is derived from `env.PALETTE`). Counted as whole
+ * pixels those 14 nearly-invisible pixels are 0.7% of the overlay's
+ * non-transparent mass and fail the palette gate; weighted by the color they
+ * actually contribute (10/255 of a pixel each) they are what they look like:
+ * nothing. Opaque pixels are unaffected — weight 1 either way.
  */
-export function histogram(file, { alphaFloor = 8 } = {}) {
+export function histogram(file, { alphaFloor = 8, weight = 'count' } = {}) {
   const { width, height, rgba } = decodePng(file);
   const counts = new Map();
-  let opaque = 0, transparent = 0;
+  const weights = new Map();
+  let opaque = 0, transparent = 0, totalWeight = 0;
   for (let i = 0; i < rgba.length; i += 4) {
     const a = rgba[i + 3];
     if (a <= alphaFloor) { transparent++; continue; }
     opaque++;
+    const w = weight === 'alpha' ? a / 255 : 1;
+    totalWeight += w;
     const key = (rgba[i] << 16) | (rgba[i + 1] << 8) | rgba[i + 2];
     counts.set(key, (counts.get(key) || 0) + 1);
+    weights.set(key, (weights.get(key) || 0) + w);
   }
   const colors = [...counts.entries()]
     .map(([key, count]) => ({
       r: (key >> 16) & 255, g: (key >> 8) & 255, b: key & 255,
-      count, coverage: opaque ? count / opaque : 0,
+      count, weight: weights.get(key), coverage: totalWeight ? weights.get(key) / totalWeight : 0,
     }))
-    .sort((a, b) => b.count - a.count);
-  return { width, height, totalPixels: width * height, opaque, transparent, unique: colors.length, colors };
+    .sort((a, b) => b.coverage - a.coverage);
+  return {
+    width, height, totalPixels: width * height, opaque, transparent,
+    unique: colors.length, weighting: weight, totalWeight, colors,
+  };
 }

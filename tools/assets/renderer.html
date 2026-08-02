@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HULLBREAKER recipe renderer</title>
+<!--
+  renderer.html — the page tools/assets/render.mjs drives to turn a RECIPE into
+  pixels.
+
+  Why a page and not a Node canvas library: the same reason rasterize.mjs uses a
+  browser. tools/playtest already vendors playwright-core and drives installed
+  system Chrome, so a canvas costs this repo zero new dependencies — and it is
+  the same 2D rasterizer that composites the game's own UI.
+
+  The recipe is loaded as a real ES module over the static server (not inlined
+  into this page), so its source is exactly what is committed: no escaping, no
+  wrapper, and a stack trace that points at the recipe's own line numbers.
+
+  Query params:
+    recipe=<repo-relative path>   the module to load
+    w, h                          canvas size in pixels
+    seed                          override meta.seed (auditing/A-B only)
+
+  Contract with the recipe (also stated in codex/raster-spec-template.md):
+    export const meta = { id, size: { w, h }, seed, roles: [...] };
+    export function render(ctx, env) { ... }
+
+  Math.random is removed from this page before the recipe loads. A recipe that
+  wants randomness gets a seeded stream on env; anything else would make the PNG
+  unreproducible, and render.mjs proves reproducibility by rendering twice and
+  comparing the bytes.
+-->
+<style>
+  html, body { margin: 0; background: #101418; }
+  canvas { display: block; image-rendering: pixelated; }
+</style>
+</head>
+<body>
+<script type="module">
+Math.random = () => {
+  throw new Error('Math.random() is not available to a recipe — use env.rng(), env.stream(name), env.noise() or env.fbm()');
+};
+
+import { createEnv } from '/tools/assets/lib/procgen.mjs';
+
+const params = new URLSearchParams(location.search);
+const recipePath = params.get('recipe');
+const seedOverride = params.has('seed') ? Number(params.get('seed')) : null;
+
+const state = { ok: false, error: null, meta: null, png: null, ms: 0 };
+window.__hbRender = state;
+
+function fail(message) {
+  state.error = message;
+  document.documentElement.dataset.renderDone = 'error';
+}
+
+try {
+  if (!recipePath) throw new Error('no ?recipe= given');
+  const mod = await import(new URL(recipePath.replace(/^\/*/, '/'), location.origin).href);
+  if (typeof mod.render !== 'function') throw new Error(`${recipePath} exports no render() function`);
+  const meta = mod.meta || {};
+  const width = Number(params.get('w')) || meta.size?.w;
+  const height = Number(params.get('h')) || meta.size?.h;
+  if (!width || !height) throw new Error('no canvas size: pass ?w=&h= or export meta.size');
+
+  const seed = Number.isFinite(seedOverride) ? seedOverride : Number(meta.seed ?? 1);
+  if (!Number.isFinite(seed)) throw new Error('meta.seed must be a number');
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d', { alpha: true, colorSpace: 'srgb', willReadFrequently: true });
+  if (!ctx) throw new Error('no 2d context');
+
+  const env = createEnv({ ctx, width, height, seed });
+  const t0 = Date.now();
+  await mod.render(ctx, env);
+  state.ms = Date.now() - t0;
+
+  state.meta = { id: meta.id ?? null, seed, roles: meta.roles ?? [], size: { w: width, h: height } };
+  state.png = canvas.toDataURL('image/png');
+  state.ok = true;
+  document.documentElement.dataset.renderDone = 'ok';
+} catch (err) {
+  fail(String(err && err.stack ? err.stack : err));
+}
+</script>
+</body>
+</html>

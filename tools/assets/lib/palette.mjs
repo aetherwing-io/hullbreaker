@@ -175,6 +175,14 @@ export function classify(input) {
  * of non-transparent pixels are gated; the rest are counted and reported as
  * `belowThreshold`. Vector input passes weight 1 per literal and a threshold of
  * 0, since every literal there was typed by someone.
+ *
+ * FOR RASTER INPUT, PREFER `checkRasterColors` BELOW. This function's per-color
+ * threshold is sound for a flat vector fill rasterized with antialiased edges —
+ * a handful of big authored colors, a fringe of blends — and goes vacuous on a
+ * painted one: tens of thousands of unique colors, none of which individually
+ * reaches 0.5%, so `gated` collapses toward 0, `offPalette` empties, and the
+ * check passes while judging nothing. The measured numbers for the assets in
+ * this repo are in tools/assets/README.md § "Palette compliance (raster)".
  */
 export function checkColors(entries, { minCoverage = 0 } = {}) {
   const roles = new Map();
@@ -210,5 +218,298 @@ export function checkColors(entries, { minCoverage = 0 } = {}) {
     gated,
     belowThreshold,
     minCoverage,
+  };
+}
+
+/* ===================================================================== *
+ * THE RASTER RULE
+ *
+ * Why a second rule at all. `checkColors` above judges one color at a time and
+ * exempts anything under a coverage threshold. That is the right shape for a
+ * flat vector fill — a dozen authored colors plus an antialiased fringe — and
+ * the wrong shape for a painted asset built from noise, gradients and dither,
+ * where no single color reaches the threshold and the gate ends up judging
+ * nothing at all. A rule that cannot fail is not a rule.
+ *
+ * So raster assets are judged by MASS, not by per-color coverage, and the
+ * question asked of each color changes from "is this color big enough to
+ * bother with" to "where did this color come from":
+ *
+ *   IN BAND    its hue belongs to a role (or its chroma is below the neutral
+ *              floor). Legal, and it is what most of the image should be.
+ *   BLEND      off band, but it lies on the straight sRGB segment between two
+ *              colors the asset itself uses in quantity. This is the pixel a
+ *              gradient, an antialiased edge or a dither pattern produces, and
+ *              it is legal: interpolating between two palette tokens introduces
+ *              no new hue, it only crosses the gap between two owned ones.
+ *   ALIEN      off band and on no such segment. A hue nobody in this image
+ *              mixed. This is the failure the rule exists to catch, and it
+ *              fails at a mass far below anything a human would notice, because
+ *              an alien hue does not arrive in small quantities by accident.
+ *
+ * Two caps, both reported on every run whether they bind or not:
+ *   alienMass   — the hard one. Off-band mass with no blend explanation.
+ *   offBandMass — the "third hue as a design element" guard. A blend BETWEEN
+ *                 two owned tokens is legal per pixel, but if a tenth of the
+ *                 image is sitting in the gap between two bands then the gap is
+ *                 what the asset is made of, and the palette has grown a color
+ *                 whatever the author intended.
+ *
+ * The numbers below are calibrated against every asset in this repo, both the
+ * flat vector rasterizations and the procedural ones — measured, with the
+ * headroom written down, in tools/assets/README.md § "Palette compliance
+ * (raster)". Changing one is an art decision and belongs in that table.
+ * ===================================================================== */
+
+/**
+ * Alpha below which a pixel's stored color is not evidence of its hue.
+ *
+ * A canvas stores premultiplied 8-bit color: what lands in the PNG is
+ * `round(color * a/255) * 255/a`, so the recovered channel is quantized to
+ * steps of `255/a` levels — 8 levels at alpha 32, 25.5 at alpha 10. On a dark
+ * color that is enough to swing the CIELCh hue by tens of degrees, and it does:
+ * measured on `wear-scuff-overlay`, 70 pixels at alpha 9-10, every color in the
+ * recipe derived from `env.PALETTE`, read back as blue-violets at hue 295-296
+ * that no role owns. Those pixels also contribute at most 4% of a composited
+ * pixel each, so the gate was failing an asset over rounding noise nobody can
+ * see.
+ *
+ * Above this floor the quantization step is <= 8 levels, inside the blend
+ * test's own tolerance. Below it, the pixels are excluded from the hue verdict
+ * and their off-band mass is REPORTED separately — excluded, not hidden.
+ */
+export const ALPHA_HUE_FLOOR = 32;
+
+export const RASTER_LIMITS = {
+  /** Mass of unexplainable off-band pixels that fails the asset. */
+  alienMass: 0.001,
+  /** Mass of off-band pixels — blends included — that fails the asset. */
+  offBandMass: 0.05,
+  /** sRGB distance a color may sit off a blend segment and still count as that blend. */
+  blendEps: 10,
+  /** A color must carry at least this mass to be usable as a blend endpoint. */
+  anchorMinMass: 0.0005,
+  /**
+   * Cap on endpoints considered, for cost: the segment test is O(anchors^2).
+   *
+   * Raised from 48 in T-053's alpha-cutout pass. Cutting a plate's background
+   * to transparency does not touch its RGB, but it does shrink the counted
+   * (non-transparent) pixel mass — so a role that legitimately carries a few
+   * percent of the image can end up split across more than 48 quantized
+   * buckets once the huge, few-bucket flat fill that used to dominate it is
+   * gone, and its own antialiased edge pixels lose their blend endpoint.
+   * Measured on `backdrop-colony-cluster`: masking the teal background left
+   * its surviving pixels spread over 92 buckets above `anchorMinMass`, 11 of
+   * them genuine deep-teal shades ranked 53-91 — all outside the old top-48,
+   * which was filled by the much larger rust/hull/ink noise population. Their
+   * absence turned 0.137% of teal-edge antialiasing "alien" (cap 0.1%) with
+   * zero change to which hues the asset actually uses. 64 anchors covers it
+   * (`alienMass` -> 0% at 64, unchanged at 80/96 — only 92 buckets exist
+   * above the floor); the 38-asset sweep below is unaffected because every
+   * other asset's bucket count already fit in 48.
+   */
+  maxAnchors: 64,
+  /** Endpoints considered for THREE-way blends, where the cost is O(n^3). */
+  maxTriangleAnchors: 12,
+  /** A role must carry at least this mass to be recorded in the manifest. */
+  roleReportMass: 0.005,
+};
+
+/**
+ * Quantized bucket key for anchor clustering — 16 levels per channel.
+ *
+ * The grid size is not free: an anchor is a bucket's weighted mean, so half the
+ * bucket's width is the error between the anchor and the colors it stands for.
+ * At 8 levels per channel (32-wide buckets) that error is up to 16 per channel,
+ * larger than `blendEps` itself, and blends of colors inside one bucket started
+ * reading as alien — measured on `backdrop-crown-horizon`, whose fog lives in
+ * four buckets and whose dither then had nothing legal to sit on. At 16 levels
+ * the half-width is 8, inside the tolerance, and the anchor set stays small.
+ */
+const bucketKey = (r, g, b) => ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+
+/**
+ * Squared distance from p to the TRIANGLE abc, in sRGB — the three-way blend.
+ *
+ * Two layers of paint over a third produce a pixel inside the triangle of the
+ * three colors, not on any edge of it, and a soft fog gradient laid over an
+ * already-graded surface does it constantly: measured on the first painted
+ * `backdrop-crown-horizon`, 0.078% of the plate is teal/haze/ink triple blends
+ * at hues 257-285 that no two-color segment explains. Those are still only
+ * interpolation between colors the asset uses, so they are still blends. Only
+ * the interior is tested here; the edges are the segment test's job and are
+ * already covered.
+ */
+function distSqToTriangle(p, a, b, c) {
+  const e0 = { r: b.r - a.r, g: b.g - a.g, b: b.b - a.b };
+  const e1 = { r: c.r - a.r, g: c.g - a.g, b: c.b - a.b };
+  const d = { r: p.r - a.r, g: p.g - a.g, b: p.b - a.b };
+  const dot = (u, v) => u.r * v.r + u.g * v.g + u.b * v.b;
+  const a00 = dot(e0, e0), a01 = dot(e0, e1), a11 = dot(e1, e1);
+  const det = a00 * a11 - a01 * a01;
+  if (det <= 1e-9) return Infinity;                 // degenerate: the edges cover it
+  const b0 = dot(d, e0), b1 = dot(d, e1);
+  const s = (a11 * b0 - a01 * b1) / det;
+  const t = (a00 * b1 - a01 * b0) / det;
+  if (s < 0 || t < 0 || s + t > 1) return Infinity; // outside: an edge case, literally
+  const q = { r: a.r + e0.r * s + e1.r * t, g: a.g + e0.g * s + e1.g * t, b: a.b + e0.b * s + e1.b * t };
+  return (p.r - q.r) ** 2 + (p.g - q.g) ** 2 + (p.b - q.b) ** 2;
+}
+
+/** Squared distance from point p to the segment ab, in sRGB. */
+function distSqToSegment(p, a, b) {
+  const abx = b.r - a.r, aby = b.g - a.g, abz = b.b - a.b;
+  const apx = p.r - a.r, apy = p.g - a.g, apz = p.b - a.b;
+  const denom = abx * abx + aby * aby + abz * abz;
+  let t = denom > 0 ? (apx * abx + apy * aby + apz * abz) / denom : 0;
+  t = t < 0 ? 0 : t > 1 ? 1 : t;
+  const dx = apx - abx * t, dy = apy - aby * t, dz = apz - abz * t;
+  return dx * dx + dy * dy + dz * dz;
+}
+
+/**
+ * Judge a raster histogram by mass.
+ *
+ * `entries`: [{ color: {r,g,b}, coverage, count }] over non-transparent pixels,
+ * coverage summing to 1 — exactly what lib/png.mjs `histogram()` produces.
+ *
+ * -> {
+ *      ok, roles, alien: { mass, colors[] }, offBand: { mass, clusters[] },
+ *      inBandMass, anchors, unique, limits
+ *    }
+ */
+export function checkRasterColors(entries, limits = {}) {
+  const lim = { ...RASTER_LIMITS, ...limits };
+  const roleMass = new Map();
+  const buckets = new Map();
+  const offBand = [];
+  let inBandMass = 0, offBandMass = 0, unique = 0;
+
+  for (const e of entries) {
+    const coverage = e.coverage ?? 0;
+    const color = e.color ?? e;
+    const res = classify(color);
+    unique++;
+    if (res.ok) {
+      inBandMass += coverage;
+      roleMass.set(res.roleId, (roleMass.get(res.roleId) || 0) + coverage);
+      const rgb = parseColor(color);
+      const key = bucketKey(rgb.r, rgb.g, rgb.b);
+      const b = buckets.get(key) || { r: 0, g: 0, b: 0, mass: 0 };
+      b.r += rgb.r * coverage; b.g += rgb.g * coverage; b.b += rgb.b * coverage; b.mass += coverage;
+      buckets.set(key, b);
+    } else {
+      offBandMass += coverage;
+      offBand.push({ ...res, rgb: parseColor(color), coverage, count: e.count });
+    }
+  }
+
+  // Blend endpoints: the in-band colors this asset actually uses, clustered so
+  // a smooth gradient contributes a handful of representative points rather
+  // than ten thousand near-identical ones.
+  const anchors = [...buckets.values()]
+    .filter((b) => b.mass >= lim.anchorMinMass)
+    .sort((a, b) => b.mass - a.mass)
+    .slice(0, lim.maxAnchors)
+    .map((b) => ({ r: b.r / b.mass, g: b.g / b.mass, b: b.b / b.mass, mass: b.mass }));
+
+  const epsSq = lim.blendEps * lim.blendEps;
+  // Triangles are only tried on colors no segment explains, and only over the
+  // heaviest anchors: the test is O(n^3) and a blend endpoint that carries
+  // almost none of the image is not what a third layer was painted with.
+  const tri = anchors.slice(0, lim.maxTriangleAnchors);
+  const alien = [];
+  let alienMass = 0, blendMass = 0;
+  for (const off of offBand) {
+    let explained = false;
+    for (let i = 0; i < anchors.length && !explained; i++) {
+      for (let j = i; j < anchors.length; j++) {
+        if (distSqToSegment(off.rgb, anchors[i], anchors[j]) <= epsSq) { explained = true; break; }
+      }
+    }
+    for (let i = 0; i < tri.length && !explained; i++) {
+      for (let j = i + 1; j < tri.length && !explained; j++) {
+        for (let k = j + 1; k < tri.length; k++) {
+          if (distSqToTriangle(off.rgb, tri[i], tri[j], tri[k]) <= epsSq) { explained = true; break; }
+        }
+      }
+    }
+    if (explained) { blendMass += off.coverage; continue; }
+    alienMass += off.coverage;
+    off.isAlien = true;
+    alien.push(off);
+  }
+
+  // Off-band hue clusters, for the report: which gaps the blends live in, and
+  // how much sits there. 5-degree bins, contiguous runs merged.
+  const bins = new Map();
+  for (const off of offBand) {
+    const bin = Math.floor(off.lch.h / 5);
+    const b = bins.get(bin) || { mass: 0, alien: 0, example: off.hex, lo: off.lch.h, hi: off.lch.h };
+    b.mass += off.coverage;
+    if (off.isAlien) b.alien += off.coverage;
+    b.lo = Math.min(b.lo, off.lch.h); b.hi = Math.max(b.hi, off.lch.h);
+    if (off.coverage > 0 && off.coverage >= (b.topCoverage || 0)) { b.example = off.hex; b.topCoverage = off.coverage; }
+    bins.set(bin, b);
+  }
+  const clusters = [];
+  for (const bin of [...bins.keys()].sort((a, b) => a - b)) {
+    const b = bins.get(bin);
+    const last = clusters[clusters.length - 1];
+    if (last && bin - last.lastBin <= 1) {
+      last.mass += b.mass; last.alienMass += b.alien;
+      last.hueHi = Math.max(last.hueHi, b.hi); last.lastBin = bin;
+      if (b.topCoverage >= last.topCoverage) { last.example = b.example; last.topCoverage = b.topCoverage; }
+    } else {
+      clusters.push({
+        hueLo: b.lo, hueHi: b.hi, mass: b.mass, alienMass: b.alien,
+        example: b.example, topCoverage: b.topCoverage || 0, lastBin: bin,
+      });
+    }
+  }
+  for (const c of clusters) {
+    delete c.lastBin; delete c.topCoverage;
+    c.hueLo = +c.hueLo.toFixed(1); c.hueHi = +c.hueHi.toFixed(1);
+    c.mass = +c.mass.toFixed(6); c.alienMass = +c.alienMass.toFixed(6);
+  }
+  clusters.sort((a, b) => b.mass - a.mass);
+
+  const failures = [];
+  if (alienMass > lim.alienMass) {
+    failures.push(
+      `alien hue mass ${(alienMass * 100).toFixed(3)}% exceeds ${(lim.alienMass * 100).toFixed(3)}% — ` +
+      `${alien.length} color${alien.length === 1 ? '' : 's'} that are off every role band AND not on a blend ` +
+      'segment between two colors this asset uses'
+    );
+  }
+  if (offBandMass > lim.offBandMass) {
+    failures.push(
+      `off-band mass ${(offBandMass * 100).toFixed(2)}% exceeds ${(lim.offBandMass * 100).toFixed(2)}% — ` +
+      'the gaps between role bands are carrying too much of the image to be edge blends; ' +
+      'that is a third hue, not an interpolation'
+    );
+  }
+
+  return {
+    ok: failures.length === 0,
+    failures,
+    roles: [...roleMass.entries()]
+      .filter(([, mass]) => mass >= lim.roleReportMass)
+      .sort((a, b) => b[1] - a[1])
+      .map(([id, mass]) => ({ id, coverage: +mass.toFixed(4) })),
+    allRoles: [...roleMass.entries()].sort((a, b) => b[1] - a[1]).map(([id, mass]) => ({ id, coverage: +mass.toFixed(6) })),
+    inBandMass: +inBandMass.toFixed(6),
+    offBandMass: +offBandMass.toFixed(6),
+    blendMass: +blendMass.toFixed(6),
+    alienMass: +alienMass.toFixed(6),
+    alien: alien
+      .sort((a, b) => b.coverage - a.coverage)
+      .slice(0, 8)
+      .map((a) => ({ hex: a.hex, hue: a.lch.h, chroma: a.lch.C, coverage: +a.coverage.toFixed(6) })),
+    alienColors: alien.length,
+    clusters: clusters.slice(0, 6),
+    anchors: anchors.length,
+    unique,
+    limits: lim,
   };
 }

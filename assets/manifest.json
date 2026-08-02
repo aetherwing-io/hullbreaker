@@ -697,20 +697,23 @@
         "w": 1024,
         "h": 512
       },
-      "source": "assets/generated/backdrops/backdrop-limb-segment.svg",
+      "source": "assets/generated/backdrops/backdrop-limb-segment.recipe.js",
       "task": "T-046",
-      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs --mode raster; painted by tools/assets/render.mjs (deterministic, seed below)",
       "addedOn": "2026-08-02",
-      "notes": "Distant Meridian limb, banded armour collars, service ladder + hatch as the human-scale mark. Authored for ~60x30 tiles of screen (about 1044x522px at FAR).",
+      "notes": "CUTOUT plate: a colossal armoured limb crossing the frame diagonally on transparency - banded collars, cable bundles, a service ladder and hatch as the human-scale mark. The receding upper-right end DISSOLVES (alpha ramp, dithered) rather than ending at a cut; the plate carries no fog, because src/render/backdrop.js multiplies a per-tier atmospheric tint onto it. Authored for ~60x30 tiles (about 1044x522px at FAR). T-053 second pass: the first painted the fog in and came back fully opaque, which occludes every tier behind it.",
       "palette": {
         "status": "pass",
         "roles": [
-          "deep-teal",
           "haze",
-          "ink"
+          "hull",
+          "ink",
+          "rust-orange"
         ],
         "checkedBy": "tools/assets/check.mjs"
-      }
+      },
+      "seed": 803450,
+      "alpha": "cutout"
     },
     {
       "id": "backdrop-spine-coil",
@@ -720,21 +723,22 @@
         "w": 512,
         "h": 512
       },
-      "source": "assets/generated/backdrops/backdrop-spine-coil.svg",
+      "source": "assets/generated/backdrops/backdrop-spine-coil.recipe.js",
       "task": "T-046",
-      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs --mode raster; painted by tools/assets/render.mjs (deterministic, seed below)",
       "addedOn": "2026-08-02",
-      "notes": "Distant vertebral spine column with rib spurs; maintenance-gallery lights are the human-scale mark. ~30x30 tiles.",
+      "notes": "CUTOUT plate: a vertebral spine column on transparency, rib spurs losing alpha along their length so their tips vanish, top of the column fading out entirely. Lit maintenance gallery as the human-scale mark. ~30x30 tiles. T-053 second pass (the first was an opaque rectangle with the fog painted in).",
       "palette": {
         "status": "pass",
         "roles": [
-          "deep-teal",
           "haze",
           "hull",
           "ink"
         ],
         "checkedBy": "tools/assets/check.mjs"
-      }
+      },
+      "seed": 187307,
+      "alpha": "cutout"
     },
     {
       "id": "backdrop-crown-horizon",
@@ -744,19 +748,21 @@
         "w": 1024,
         "h": 256
       },
-      "source": "assets/generated/backdrops/backdrop-crown-horizon.svg",
+      "source": "assets/generated/backdrops/backdrop-crown-horizon.recipe.js",
       "task": "T-046",
-      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs --mode raster; painted by tools/assets/render.mjs (deterministic, seed below)",
       "addedOn": "2026-08-02",
-      "notes": "The Crown on the horizon: teal spire cluster, magenta only at the tips. ~60x15 tiles. The one hot-magenta landmark in a teal world.",
+      "notes": "CUTOUT plate: the Crown on the far horizon - a low-contrast spire silhouette with hot magenta only at the tips, no pixel fully opaque anywhere (it is the most distant thing in the game). Alpha carries the distance: the mass thins to nothing before both edges and above the tips. ~60x15 tiles. T-053 third pass: pass 1 was opaque, pass 2 failed the palette gate on a hand-tinted blue-violet fog (hue 240-309).",
       "palette": {
         "status": "pass",
         "roles": [
           "deep-teal",
-          "haze"
+          "ink"
         ],
         "checkedBy": "tools/assets/check.mjs"
-      }
+      },
+      "seed": 161447,
+      "alpha": "cutout"
     },
     {
       "id": "backdrop-colony-cluster",
@@ -766,11 +772,11 @@
         "w": 512,
         "h": 256
       },
-      "source": "assets/generated/backdrops/backdrop-colony-cluster.svg",
+      "source": "assets/generated/backdrops/backdrop-colony-cluster.recipe.js",
       "task": "T-046",
-      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs --mode raster; painted by tools/assets/render.mjs (deterministic, seed below)",
       "addedOn": "2026-08-02",
-      "notes": "Inhabited colony clinging to the hull; rows of lit windows ARE the scale unit. ~14x7 tiles.",
+      "notes": "CUTOUT plate: an inhabited colony clinging to the hull, masts and aerials reading against transparency, the hull shelf under it fading out at both ends. Rows of lit windows ARE the scale unit. ~14x7 tiles (243x122px on screen). T-053 second/third pass.",
       "palette": {
         "status": "pass",
         "roles": [
@@ -782,7 +788,9 @@
           "warm-white"
         ],
         "checkedBy": "tools/assets/check.mjs"
-      }
+      },
+      "seed": 597251,
+      "alpha": "cutout"
     },
     {
       "id": "backdrop-gill-cavity",
@@ -792,22 +800,23 @@
         "w": 512,
         "h": 512
       },
-      "source": "assets/generated/backdrops/backdrop-gill-cavity.svg",
+      "source": "assets/generated/backdrops/backdrop-gill-cavity.recipe.js",
       "task": "T-046",
-      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs --mode raster; painted by tools/assets/render.mjs (deterministic, seed below)",
       "addedOn": "2026-08-02",
-      "notes": "Louvered gill cavity with rust lip, ladder and walkway rail. Mid-distance tier, ~24x24 tiles.",
+      "notes": "CUTOUT plate: a louvered gill cavity with a lit rust lip, ladder and walkway rail, set in hull plating whose outer margin fades to nothing on all four sides so the plate has no rectangular edge. Mid-distance tier, ~24x24 tiles. T-053 second pass (the first filled the canvas edge to edge and came back opaque).",
       "palette": {
         "status": "pass",
         "roles": [
-          "deep-teal",
           "haze",
           "hull",
           "ink",
           "rust-orange"
         ],
         "checkedBy": "tools/assets/check.mjs"
-      }
+      },
+      "seed": 64351,
+      "alpha": "cutout"
     },
     {
       "id": "hull-panel-tile",
@@ -817,11 +826,11 @@
         "w": 128,
         "h": 128
       },
-      "source": "assets/generated/textures/hull-panel-tile.svg",
+      "source": "assets/generated/textures/hull-panel-tile.recipe.js",
       "task": "T-046",
-      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs --mode raster; painted by tools/assets/render.mjs (deterministic, seed below)",
       "addedOn": "2026-08-02",
-      "notes": "Seamless rust armour plate: panel lines, bolt rows, one weld bead. Authored for a ~2x2 tile repeat (~35x35px on screen).",
+      "notes": "Seamless armour plate: one straight vertical joint and one horizontal joint with occlusion falloff, a short bolt row, worn corners, directional grain. Authored for a ~2x2 tile repeat (~35x35px on screen). T-053 repainted it through the recipe route; the flat SVG version it replaces is in git at cd37b91.",
       "palette": {
         "status": "pass",
         "roles": [
@@ -829,7 +838,9 @@
           "rust-orange"
         ],
         "checkedBy": "tools/assets/check.mjs"
-      }
+      },
+      "seed": 371232,
+      "alpha": "opaque"
     },
     {
       "id": "weld-seam-strip",
@@ -839,20 +850,24 @@
         "w": 128,
         "h": 32
       },
-      "source": "assets/generated/textures/weld-seam-strip.svg",
+      "source": "assets/generated/textures/weld-seam-strip.recipe.js",
       "task": "T-046",
-      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs --mode raster; painted by tools/assets/render.mjs (deterministic, seed below)",
       "addedOn": "2026-08-02",
-      "notes": "Deck-edge lip strip: lit top chamfer, slat notches, ink shadow band. Tiles horizontally; ~4x1 tiles.",
+      "notes": "Deck-edge lip strip: lit top chamfer, textured face, dark undercut with slat notches. Tiles horizontally; ~4x1 tiles (~70x17px on screen). T-053 repainted it through the recipe route.",
       "palette": {
         "status": "pass",
         "roles": [
+          "haze",
           "hull",
           "ink",
-          "rust-orange"
+          "rust-orange",
+          "warm-white"
         ],
         "checkedBy": "tools/assets/check.mjs"
-      }
+      },
+      "seed": 593809,
+      "alpha": "opaque"
     },
     {
       "id": "vent-louver-plate",
@@ -862,21 +877,24 @@
         "w": 128,
         "h": 128
       },
-      "source": "assets/generated/textures/vent-louver-plate.svg",
+      "source": "assets/generated/textures/vent-louver-plate.recipe.js",
       "task": "T-046",
-      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs --mode raster; painted by tools/assets/render.mjs (deterministic, seed below)",
       "addedOn": "2026-08-02",
-      "notes": "Armoured vent cover, four louvres, one broken open with an acid bloom. ~1.5x1.5 tiles (~26px).",
+      "notes": "Armoured vent cover, four louvres, the lowest broken open with an acid bloom. ~1.5x1.5 tiles (~26px). Does not tile - one plate seen whole. T-053 repainted it through the recipe route.",
       "palette": {
         "status": "pass",
         "roles": [
           "acid-green",
+          "haze",
           "hull",
           "ink",
           "rust-orange"
         ],
         "checkedBy": "tools/assets/check.mjs"
-      }
+      },
+      "seed": 712521,
+      "alpha": "cutout"
     },
     {
       "id": "wear-scuff-overlay",
@@ -886,21 +904,22 @@
         "w": 128,
         "h": 128
       },
-      "source": "assets/generated/textures/wear-scuff-overlay.svg",
+      "source": "assets/generated/textures/wear-scuff-overlay.recipe.js",
       "task": "T-046",
-      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs --mode raster; painted by tools/assets/render.mjs (deterministic, seed below)",
       "addedOn": "2026-08-02",
-      "notes": "Tiling wear overlay: chips, streaks, rust bleeds. ~78% transparent \u2014 deliberately an OVERLAY, so its alpha is authored, not a fog stack.",
+      "notes": "Tiling wear overlay: pitting, chips, scuffs and rust-bleed streaks at three scales, distributed by a wrapping noise field rather than placed, 80% transparent - deliberately an OVERLAY, so its alpha is authored. ~2x2 tiles. T-053 repainted it through the recipe route (second pass: the first broke the palette gate on premultiplied low-alpha pixels and repeated one countable cluster).",
       "palette": {
         "status": "pass",
         "roles": [
           "haze",
-          "hull",
           "ink",
           "rust-orange"
         ],
         "checkedBy": "tools/assets/check.mjs"
-      }
+      },
+      "seed": 883339,
+      "alpha": "overlay"
     },
     {
       "id": "rig-marine",
