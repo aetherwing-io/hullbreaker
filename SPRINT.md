@@ -1073,7 +1073,7 @@ depth that layers instead of collapsing, and human-scale reference objects
 (rungs, hatches) so the eye can measure the creature against a known size.
 owner: gameplay-engineer
 
-## T-046 | assets | doing | P1
+## T-046 | assets | done | P1
 goal: generate the visual asset set with codex now that entry 16 legalized
 runtime assets — enemy sprites for the five roles (12-24px at the shipped FAR
 view, judged at true on-screen size), backdrop/anatomy scale elements, hull and
