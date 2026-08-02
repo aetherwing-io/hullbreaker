@@ -22,7 +22,7 @@ import { basename, dirname, extname, join, resolve } from 'node:path';
 import { launchBrowser, REPO_ROOT } from './lib/browser.mjs';
 import { readSvgSize } from './lib/svg.mjs';
 import { histogram } from './lib/png.mjs';
-import { checkColors } from './lib/palette.mjs';
+import { checkRasterColors, ALPHA_HUE_FLOOR } from './lib/palette.mjs';
 
 const HELP = `tools/assets/rasterize.mjs — render an SVG to PNG at an exact pixel size
 
@@ -120,11 +120,12 @@ export async function rasterize({
 
   // Immediate round-trip proof: decode what was just written and report the
   // palette it actually contains, so a bad render is visible here rather than
-  // three steps later in check.mjs.
-  const hist = histogram(outAbs, { alphaFloor: 8 });
-  const pal = checkColors(
-    hist.colors.map((c) => ({ color: { r: c.r, g: c.g, b: c.b }, coverage: c.coverage, count: c.count })),
-    { minCoverage: 0.005 }
+  // three steps later in check.mjs. Judged by the same rule and the same alpha
+  // floor check.mjs gates on — a round-trip report that disagreed with the gate
+  // would be worse than no report at all.
+  const hist = histogram(outAbs, { alphaFloor: ALPHA_HUE_FLOOR, weight: 'alpha' });
+  const pal = checkRasterColors(
+    hist.colors.map((c) => ({ color: { r: c.r, g: c.g, b: c.b }, coverage: c.coverage, count: c.count }))
   );
 
   return {
@@ -134,7 +135,10 @@ export async function rasterize({
     requested: { w, h },
     bytes: bytes.length,
     browser: { via, source, channel },
-    palette: { ok: pal.ok, roles: pal.roles, offPalette: pal.offPalette },
+    palette: {
+      ok: pal.ok, roles: pal.roles, failures: pal.failures, alien: pal.alien,
+      offBandMass: pal.offBandMass, alienMass: pal.alienMass,
+    },
     coverage: { opaque: hist.opaque, transparent: hist.transparent, unique: hist.unique },
   };
 }
@@ -149,7 +153,9 @@ if (isMain) {
     console.log(`  ${r.size.w}x${r.size.h}, ${(r.bytes / 1024).toFixed(1)}kB, ${r.coverage.unique} unique colors, ${((r.coverage.transparent / (r.coverage.opaque + r.coverage.transparent)) * 100).toFixed(0)}% transparent`);
     console.log(`  browser: ${r.browser.channel} via ${r.browser.via}`);
     console.log(`  palette: ${r.palette.ok ? 'ok' : 'OFF-PALETTE'} — ${r.palette.roles.map((x) => `${x.id} ${(x.coverage * 100).toFixed(0)}%`).join(', ')}`);
-    for (const o of r.palette.offPalette) console.log(`    off-palette ${o.hex} at ${(o.coverage * 100).toFixed(2)}% — ${o.reason}`);
+    console.log(`    off-band ${(r.palette.offBandMass * 100).toFixed(3)}%, alien ${(r.palette.alienMass * 100).toFixed(4)}%`);
+    for (const f of r.palette.failures) console.log(`    ${f}`);
+    for (const a of r.palette.alien.slice(0, 3)) console.log(`    alien ${a.hex} hue ${a.hue} at ${(a.coverage * 100).toFixed(4)}%`);
   }).catch((err) => {
     console.error(`rasterize failed: ${err.message}`);
     process.exit(1);
