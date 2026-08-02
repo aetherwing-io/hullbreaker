@@ -179,29 +179,50 @@ Two caps, both printed on every run whether they bind or not:
 
 **Both numbers are calibrated against every asset in this repo, not chosen.**
 Sweep of all 38 committed assets (29 rasterized from SVG, 9 painted from
-recipes) under the final rule:
+recipes) under the final rule, **re-measured after T-053's alpha-cutout pass**
+(the five backdrop plates went from opaque rectangles to real cutouts, which
+moves these numbers — see below):
 
 | Route | assets | worst off-band | worst alien |
 | --- | --- | --- | --- |
 | vector → raster | 29 | 0.238% (`capsule-lit-spread`) | 0.0000% |
-| painted recipe | 9 | 1.298% (`wear-scuff-overlay`) | 0.0546% (`backdrop-crown-horizon`) |
+| painted recipe | 9 | 1.365% (`backdrop-crown-horizon`) | 0.0457% (`backdrop-crown-horizon`) |
 | **cap** | | **5%** | **0.1%** |
 
-The painted worst case for off-band mass is the wear overlay's rust-bleed
-streaks fading toward ink: 1.3% of it sits at hue 39–47, just under the rust
-band, and every pixel of that is on the line between two colors the overlay
-uses. That is the rule working as intended — a fade between two tokens is a
-blend, and 1.3% is a fade, not a hue.
+The painted worst case for off-band mass is now the horizon fog itself: cutting
+the plate to a cutout shrank the counted (non-transparent) pixel mass, so the
+same fog-dither population that used to be 0.0546% of a much bigger opaque
+image is now a slightly larger share of a smaller one. It is still dither on
+the line between the fog's own colors, not a new hue.
 
-**The alien cap has under 2x headroom on the tightest asset**, and that is worth
+**The alien cap has under 3x headroom on the tightest asset**, and that is worth
 knowing before the next painted backdrop: `backdrop-crown-horizon` is a fog
-gradient dithered per pixel, and its 0.0546% is dither landing a few levels off
+gradient dithered per pixel, and its 0.0457% is dither landing a few levels off
 the line between the four colors its fog is actually made of, not a wrong hue.
 If a future asset fails this cap, read the reported hue clusters first — a real
 violation is one cluster carrying most of the mass at a hue nothing else in the
 image uses; dither noise is a spray of hundreds of colors each at 0.001%.
 Changing either number is an art decision and belongs in this table with its
 evidence.
+
+**`maxAnchors` raised 48 → 64 in the same pass, for the same reason.** Cutting a
+plate's background to transparency doesn't touch its RGB, but it does shrink
+the counted pixel mass — so a role that legitimately carries a few percent of
+the image can end up split across more buckets than fit in the old cap, once
+the huge, few-bucket flat fill that used to dominate it is gone. Measured on
+`backdrop-colony-cluster`: masking its teal background left the surviving teal
+pixels spread over 92 quantized buckets above `anchorMinMass`, 11 of them
+genuine deep-teal shades ranked 53–91 — outside the old top 48, which was full
+of the rust/hull/ink noise that dominates the rest of the plate. Their absence
+turned 0.137% of teal-edge antialiasing "alien" (cap 0.1%) with zero change to
+which hues the asset actually uses; `alienMass` -> 0.0000% at `maxAnchors: 64`
+and does not improve further at 80 or 96 (only 92 buckets exist above the
+floor for this asset). Every other committed asset already reads `alienMass:
+0.0000%` at 64 (several — `backdrop-gill-cavity`, `backdrop-limb-segment`,
+`backdrop-spine-coil`, `vent-louver-plate`, `wear-scuff-overlay` — have more
+raw color diversity than `maxAnchors` allows too, they just did not happen to
+lose an anchor that anything off-band needed), so this widens the pool without
+measurably loosening what counts as a legal blend.
 
 `--min-coverage` still exists and still defaults to 0.005, but it now sets only
 the mass a role needs to be **recorded** in the manifest. It no longer decides

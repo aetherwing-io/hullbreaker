@@ -47,6 +47,116 @@ cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic --base-
 (`reports/tasks/T-053/evidence/playtest-mid-route-summary.md`. Port 8753; 8741
 and 8742 were never touched. The server was stopped after the run.)
 
+## Second pass — restoring cutout alpha (the regression this lane was sent back for)
+
+**What was wrong.** The first painted pass above regenerated all five backdrop
+plates through the recipe route but painted the fog straight into each canvas
+as opaque pixels. Every gate that existed at the time stayed green — palette
+clean, sizes and paths stable, ids unchanged — because nothing in the pipeline
+looked at the alpha channel. The plates the recipes replaced were 40-60%
+transparent cutouts; the repainted ones came back **100% opaque rectangles**.
+An opaque plate occludes every tier composited behind it, which breaks
+T-051/T-052's three-tier parallax layering outright. `reports/tasks/T-053/
+evidence/alpha/gate-catches-the-regression.txt` is the gate re-run against
+that broken state: 10 named failures, one pair per plate (0% transparent, 0%
+partial).
+
+**The fix, in two parts:**
+
+1. `env.mask(fn)` (`tools/assets/lib/procgen.mjs`) — a recipe now paints its
+   subject as before and then states its silhouette and dissolve in one place,
+   multiplying alpha by `fn(x, y, u, v)`. All five recipes call it once, at the
+   end of `render()`, to cut the silhouette and author a real graduated falloff
+   (8-12 texels) at the receding/distant edges rather than a one-pixel hard cut.
+2. An explicit, gated **alpha contract**. `assets/manifest.json` entries now
+   declare `alpha: "cutout" | "opaque" | "overlay"`
+   (`tools/assets/lib/manifest.mjs`, `ALPHA_KINDS`/`ALPHA_RULES`), and
+   `check.mjs` recomputes the real census (`alphaCensus` in `lib/png.mjs`) and
+   fails on disagreement. The declaration is **not** written by `--write` —
+   deriving it from the same pixels it's meant to constrain would rubber-stamp
+   anything, which is exactly how five plates went opaque with every gate
+   green. `tools/assets/alpha.mjs` is a new viewer (over game-teal / hot-magenta
+   / checkerboard / the raw alpha channel) for judging a plate's transparency
+   by eye, the same shape as this directory's other viewers.
+
+**Measured, before -> after** (percent of all pixels; `node tools/assets/alpha.mjs
+<path>` reproduces each):
+
+| plate | alpha=0 (transparent) | alpha=255 (opaque) | partial (the feather) |
+| --- | --- | --- | --- |
+| colony-cluster | 100% (broken) -> 41.3% | 0% (broken) -> 35.2% | 0% (broken) -> 23.51% |
+| crown-horizon | 100% (broken) -> 72.2% | 0% (broken) -> 0.0% | 0% (broken) -> 27.82% |
+| gill-cavity | 100% (broken) -> 6.8% | 0% (broken) -> 58.1% | 0% (broken) -> 35.12% |
+| limb-segment | 100% (broken) -> 59.4% | 0% (broken) -> 26.9% | 0% (broken) -> 13.75% |
+| spine-coil | 100% (broken) -> 49.5% | 0% (broken) -> 30.2% | 0% (broken) -> 20.28% |
+
+For reference, `main`'s pre-T-053 plates sit at ~0.48% partial — a hard cut, not
+a dissolve. Every plate here clears the new gate's `minPartial: 2%` floor by a
+wide margin, so this is a genuine authored falloff, not a token one.
+
+**`backdrop-crown-horizon` reads 0.0% opaque, and that is authored, not a bug.**
+It is the most distant thing in the game (a horizon silhouette seen through
+haze); the recipe's mask ends in `env.clamp(multiplier * 0.94, 0, 0.94)` — a
+flat 0.94 ceiling applied to every surviving pixel, on top of (not instead of)
+the real contour-localized feather at its edges. So the silhouette itself is
+still crisp (confirmed by eye: `node tools/assets/alpha.mjs
+assets/generated/backdrops/backdrop-crown-horizon.png`, the alpha-channel panel
+shows a sharp spire shape, not a smear), it just never quite reaches literal
+255. The manifest's updated note says the same thing in-repo: "no pixel fully
+opaque anywhere (it is the most distant thing in the game)."
+
+**A real second regression turned up chasing this, and got its own fix.**
+`check.mjs` failed after the mask work landed, for two different reasons that
+both trace back to the alpha cutout — neither is a defect in the cutout itself:
+
+- **Manifest role staleness on four plates.** `backdrop-limb-segment`,
+  `backdrop-spine-coil` and `backdrop-gill-cavity`'s manifest entries still
+  claimed a `deep-teal` role that the recomputed palette no longer finds:
+  masking away most of a large, previously near-solid teal background field
+  pushed its remaining share below the 0.5% `roleReportMass` floor. Confirmed,
+  not assumed — `backdrop-colony-cluster` prints `deep-teal 2%` in the current
+  sweep, i.e. still present, just thinner. `backdrop-crown-horizon` gained an
+  `ink` role for the same reason in reverse: cutting away most of its fog field
+  left its ink content as a larger share of a smaller denominator, crossing
+  *above* the floor. Fixed with `node tools/assets/check.mjs --write`, which
+  only touches the recorded `palette` block (verified: the only other diff in
+  `assets/manifest.json` is the `alpha`/`notes` fields already staged by the
+  prior pass).
+- **A real alien-hue cap failure on `backdrop-colony-cluster`, not a manifest
+  staleness issue.** `alienMass` hit 0.137% against the 0.1% cap. Root-caused
+  by instrumenting `checkRasterColors`' anchor selection (reverted before
+  committing — `tools/assets/lib/palette.mjs` carries no debug code): cutting
+  the teal background left its surviving pixels spread over 92 quantized
+  buckets above `anchorMinMass`, 11 of them genuine deep-teal shades ranked
+  53-91 by mass — all outside the old `maxAnchors: 48`, which was filled
+  entirely by the much larger rust/hull/ink noise population that dominates
+  the rest of the plate. Without a teal anchor, the small amount of teal-edge
+  antialiasing this asset always had lost its blend explanation and read as a
+  new hue, though no hue in the image actually changed. Fixed by raising
+  `maxAnchors` to 64 (measured: `alienMass` -> 0.0000% at 64, no further change
+  at 80/96 — only 92 buckets exist above the floor for this asset), documented
+  with its evidence in `tools/assets/README.md` § "Palette compliance
+  (raster)" per that section's own rule that a limit change belongs there.
+  This was foreseen, not coincidental: the pre-existing "PROPOSED INBOX ISSUES"
+  entry below about the alien cap's headroom on dithered content predicted
+  exactly this failure mode, on the wrong plate.
+
+**Gates after both fixes:**
+
+```
+node tools/assets/check.mjs        PASS (38 assets)
+node tools/assets/check.mjs --selftest
+  23 palette + 25 import-scan + 7 raster-mass + 8 alpha-contract + 16 recipe-contract cases
+node tools/pathcheck.mjs           2469 passed, 0 failed
+```
+
+**Provenance note.** `reports/tasks/T-053/evidence/qa/` (four captures, flagged
+in an earlier commit on this branch) and this pass's own
+`reports/tasks/T-053/evidence/alpha/` and `tools/assets/alpha.mjs` are separate
+things: the `qa/` captures are foreign, already noted and left in place; the
+`alpha/` evidence and `alpha.mjs` viewer are this lane's own work, built to
+make the regression above visible and to prove the fix.
+
 ## The gate change, said loudly
 
 **The raster palette check no longer gates on per-color coverage. It judges
@@ -256,6 +366,17 @@ one, and worth settling before more tiles are authored against the wrong
 assumption.
 
 ## I-??? | docs | S3 | repro: `node tools/assets/check.mjs` on any painted backdrop | evidence: tools/assets/README.md § "Palette compliance (raster)"
+**Update, second pass: this predicted failure happened, on a different plate,
+for a related but distinct reason, and is fixed.** Not the dither-headroom
+case predicted below (crown-horizon's alien mass actually *dropped*, 0.0546% ->
+0.0457%, after the alpha-cutout pass) — instead `backdrop-colony-cluster`
+failed at 0.137% because cutting its background thinned the surviving teal
+pixels across more quantized buckets than `maxAnchors: 48` could hold, so its
+own antialiased edges lost their blend endpoint. Fixed by raising `maxAnchors`
+to 64, evidence in the README section named above and in this file's "Second
+pass" section. Leaving the original text below, since the dither-headroom risk
+it names is still real and still unaddressed:
+
 The alien-hue cap (0.1%) has under 2x headroom on `backdrop-crown-horizon`
 (0.0546%), and the mass there is per-pixel dither of a fog gradient rather than a
 wrong hue. The next dithered backdrop may fail the gate for a reason that is not
