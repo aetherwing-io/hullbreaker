@@ -28,10 +28,18 @@
 //
 // HONESTY NOTES, in the order they matter:
 //   * FRAME EXACTNESS. Each frame is captured with the game PAUSED (KeyP)
-//     at a sim-time mark under ?fixeddt=16, so the shutter is not racing the
-//     simulation: the recorded `gameMsAtShot` is the state the pixels show.
-//     Every capture records it, plus the live hostile count, so "during real
-//     combat" is a checkable claim and not a caption.
+//     at a sim-time mark under ?fixeddt=16, and both the jump policy and the
+//     pause are dispatched from inside the page on the game's OWN clock — so
+//     the shutter is not racing the simulation, and the recorded `gameMs` is
+//     the state the pixels show. Every capture records it, plus the live
+//     hostile count, so "during real combat" is checkable and not a caption.
+//   * IT IS NOT BYTE-EXACT, AND THAT IS MEASURED. Two runs of the SAME build
+//     land on the same sim state at a mark but differ in 0.07-0.17% of pixels
+//     (artifacts/lightrig/repeat/): a jump keyup that falls inside a paused
+//     frame is skipped, which shifts particle and animation phase without
+//     moving RIG. So compare STATISTICS across a pair, and read a sub-0.2%
+//     pixel difference as "same look", not as proof of identity. For scale,
+//     the pre-T-047 rig and the shipped one differ in 54-69% of pixels.
 //   * VSYNC. juice-stress.mjs reads a vsync-locked page: on a 120Hz panel a
 //     perfect frame reads 8.33ms no matter how much work it does, so it can
 //     prove "no frame was late" but cannot show a 2ms regression. This
