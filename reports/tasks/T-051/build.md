@@ -3,6 +3,22 @@
 Worktree: `/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-051`
 Branch: `task/T-051`
 
+## Files touched outside the dispatched fence (`backdrop.js`, `scene.js`)
+
+For T-052 merge coordination, named up front:
+
+| File | Why |
+|---|---|
+| `src/config.js` | Appended `BACKDROP_TUNE` as its own top-level export at the end of the file (never touched an existing line) — same out-of-line pattern `LIGHT_RIG`/`POST_TUNE` already use so concurrent look lanes appending to this file don't collide. |
+| `src/render/palette.js` | Appended 6 new tokens (`backdropNear`/`Mid`/`Far` × `CLASSIC`/`CONCEPT`) after the existing T-038 block, dot-assignment style, no existing line touched. |
+| `src/main.js` | One new import line, `import './render/backdrop.js';`, after the existing `scene.js` import. Necessary — see "The wiring problem" below — not a convenience. |
+
+`src/render/scene.js` (the file actually named in the dispatch, alongside
+`backdrop.js`) ends up with **zero diff** — the wiring could not go there;
+see below. `src/render/materials.js` and `src/render/limb.js` (T-052's this
+cycle) are untouched. `assets/generated/**` (T-053's this cycle) is
+untouched.
+
 ## What changed, and why
 
 `src/render/scene.js:25` set `scene.background = new THREE.Color(PAL.bg)`, and
@@ -121,7 +137,12 @@ All of these were broken on real files in this worktree (`src/config.js`,
 `src/render/backdrop.js`, `src/render/scene.js`), not synthetic strings,
 except the sim/pure ban (a throwaway file was added under `src/pure/` to
 prove the regex fires against real code — not a comment, since `stripComments`
-removes those first — then deleted; nothing else was touched).
+removes those first — then deleted; nothing else was touched). These break/
+restore cycles were run against the ORIGINAL `-13/-18/-23` depths, before the
+post-review fix below moved them to `-16/-21/-26` — the exact numbers quoted
+are a snapshot of that moment; the assertions themselves re-derive everything
+from live `CONFIG.BACKDROP_TUNE` each run, so they hold identically against
+the shipped depths (pathcheck was re-run green after the change, see below).
 
 1. **Play-band clearance.** `tiers.near.yBottom` 17.0 -> 14.0 (below the
    computed near-view floor of 16.298):
@@ -199,9 +220,9 @@ variants, frame taken at the same `scrollX` threshold in each pair:
 | moment | scrollX | what changes |
 |---|---|---|
 | `01-early` | ~20 | before facet 1's own plates — reference frame |
-| `02-facet1-plates` | ~56 | facet 1: `limbSegment` (near, depth −13) + `crownHorizon` (far, depth −23) |
+| `02-facet1-plates` | ~56 | facet 1: `limbSegment` (near, depth −16) + `crownHorizon` (far, depth −26) |
 | `03-corner1-approach` | ~84 | facet 1's plates receding as corner 1 fills the frame |
-| `04-facet2-plates` | ~121 | facet 2: `spineCoil` (mid, depth −18) + `colonyCluster` (far, depth −23) |
+| `04-facet2-plates` | ~121 | facet 2: `spineCoil` (mid, depth −21) + `colonyCluster` (far, depth −26) |
 
 Each moment has a `-before.png` (`?backdrop=flat`) and `-after.png` (shipped
 default) pair. `window.__HB_BACKDROP().built` was 12 in every `-after` shot
@@ -214,6 +235,83 @@ gate 2 (scroll ~140-153) and none clears it. Reaching facets 3-6 (s=186.5,
 ships or a poked `CONFIG`, and a poked `CONFIG` is not evidence about the
 shipped build (same call `scale-capture.mjs` made for the same reason).
 
+## Post-review fix: the hard edge (found by the integrator's own capture)
+
+The integrator served this worktree read-only, captured backdrop-on vs
+`?backdrop=flat` at the same in-play position ("17m"), and reported two
+factual observations: (1) a hard rectangular/diagonal edge where the plate
+meets the sky, not a dissolve, and (2) the pre-existing pale silhouette boxes
+and this task's painted plate not reading as one material world. Both turned
+out to be the same root cause, and my first theory for (1) was wrong.
+
+**What I assumed, and why it was wrong.** I first assumed the edge was a
+fog-grading gap: the plate's alpha silhouette is real, correctly-cut art (not
+a geometry bug), and its material blends toward `scene.fog.color` only
+partially (haze fraction 0.41-0.77 at the original depths) — a plate that
+never reaches full haze never converges to the SAME flat color the truly-
+empty background is drawn in, so its silhouette edge would always show some
+contrast. That theory is real and correct as far as it goes, but it predicts
+an edge against *open sky*. I checked the actual pixels at the reported
+location (`?backdrop=flat` at the identical position) and found the
+"before" frame already has the existing `CONFIG.limb.backdrop` sister-limb
+box tile filling that exact region — there was no open sky there to grade
+into. `BACKDROP_TUNE.tiers.near.depth` (originally `-13`) sits almost
+exactly on top of `CONFIG.limb.backdrop.sister.depth` (`-14`), and
+`near.yBottom` (`17.0`) was authored to the identical floor
+(`sister.y0 = 17.0`) — not "close but distinct," directly co-located. The
+hard edge is where this plate's real (non-rectangular) alpha silhouette
+abuts that tile's own flat-shaded box geometry at a near-identical depth and
+height — a **compositing seam between two independently-built layers that
+occupy the same screen region**, not a fog-vs-void gap. That is also
+observation (2): the two "visual languages" are seen side by side because
+they are, literally, occupying the same volume.
+
+**What I changed.** `BACKDROP_TUNE.tiers` moved from `-13/-18/-23` to
+`-16/-21/-26` (`yBottom` raised to match: `17.9/19.2/20.8`, still clearing
+the play-band fence by 0.6-0.8 tiles at every view scale, pathcheck green
+throughout). This is a real fix mechanism, not a fudge: with `depthWrite:
+false` but `depthTest` still on (the default), a plate now sitting
+meaningfully behind the nearest existing box tile is correctly *occluded* by
+that tile's own opaque, nearer surface wherever the tile has mass — no seam,
+because this plate is not drawn there at all — and shows through cleanly (at
+more haze) wherever the tile leaves a gap. I tried the *full* fix first
+(pushing every tier behind ALL three existing tiers, `-18/-23/-29`): it
+does eliminate the seam everywhere I checked, but it also makes the plates
+nearly or fully invisible at every reachable capture point (see history in
+`src/config.js`'s own comment on `BACKDROP_TUNE` — the intermediate value is
+recorded there for whoever revisits this). `-16/-21/-26` is the middle
+ground I shipped: pushed past the *nearest* existing tier's own extent
+rather than past all three, so the plates are still visibly present in the
+committed captures while the worst, most direct co-location is gone.
+
+**What this does NOT fix, stated plainly:**
+- The seam is *reduced*, not eliminated. Two authored layers with no
+  coordination between them (this task cannot touch `src/render/limb.js`,
+  T-052's this cycle) will still collide somewhere the hashed per-facet
+  offsets in `limb.js`'s own bake plan happen to put a tile edge against
+  this plate's edge. I have not proven zero collisions across the whole
+  route, only measured a reduction at the three moments this repo's bot
+  policies can reach.
+- The two visual languages (painted texture vs. flat-shaded box) still read
+  as different materials where both are in frame — moving my depths changes
+  *whether* and *how much* of each is visible at a given moment, not
+  whether they look like the same kind of surface. That is the operator's
+  call, not a depth number's.
+- This was tuned against the CURRENT five plates. The team lead's message
+  also reports T-053 has regenerated all five through a new procedural
+  path — `backdrop-limb-segment.png` alone moved from 660 to 19,305 unique
+  colors and mean luminance 36.3 -> 80.5. A markedly brighter plate needs a
+  HIGHER haze fraction to converge on the same background/tile color at its
+  edge, so these depths will very likely need to move again once T-053
+  lands. Noted as a dependency, not re-tuned against art that isn't in this
+  tree yet (`assets/generated/**` is fenced to T-053; I did not touch it).
+
+Evidence for this fix in `reports/tasks/T-051/evidence/` was recaptured
+after the depth change (same four moments, same policy). `node
+tools/pathcheck.mjs` and `tools/playtest/backdrop-stress.mjs` were re-run
+after the change: 3024/0 and worstMs/over20ms unchanged (see updated numbers
+above, already reflect the shipped depths).
+
 ## Open feel questions for the operator
 
 Never judged here — measurements and captures only.
@@ -222,16 +320,19 @@ Never judged here — measurements and captures only.
    `-before.png`: does the limb-segment plate read as "the creature's own
    anatomy receding into the haze," or does it read as a flat image pasted
    over the sky?
-2. `04-facet2-plates-after.png`: the spine-coil plate is tinted quite dark/
-   cool to sit inside the fog band at that depth (haze fraction ~0.59 under
-   the shipped G1 fog) — is it visible enough to register at all during
-   actual play (moving, under fire), or does it need to sit closer/brighter?
-3. Depths were deliberately chosen close to but distinct from
-   `CONFIG.limb.backdrop`'s own three tiers, so the two systems' geometry
-   doesn't coincide. Serving both at once (visible together in
-   `02-facet1-plates-after.png`'s upper-right, where the existing box-tier
-   sister limb and this task's new plate both sit) — does that read as one
-   coherent creature, or as two unrelated things sharing the sky?
+2. Same frame: even after moving this plate's depth behind the nearest
+   existing box tile (see "Post-review fix" above), the two are still
+   visible together at this moment. Does that read as one coherent creature,
+   or as two unrelated things sharing the sky? If the plate is meant to
+   *replace* what the box tile stands in for, that's worth saying; if
+   they're meant to coexist, that's worth saying too.
+3. `04-facet2-plates-after.png`: the spine-coil plate is now quite faint
+   (depth −21, haze fraction ~0.70 under the shipped G1 fog — recomputed via
+   `backdrop-table.js`'s own `fogFraction()`, not estimated) — visible in
+   this still frame, but is it visible enough to register at all during
+   actual play (moving, under fire)? The alternative (shallower, bolder, but
+   reintroducing more of the seam from observation 2) is a real trade-off,
+   not a solved problem.
 4. Is pairing a near+far plate per facet (rather than one plate per facet,
    or the same plate repeated at every facet) the right density, or does
    cycling through five different plates across six facets read as
