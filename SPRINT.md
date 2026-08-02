@@ -961,6 +961,32 @@ interesting ways without losing his progress." So:
   - Boot-to-victory stays an open box but drops in priority. Beatability is
     explicitly not the bar right now.
   - A blank page, a softlock, a lost save, or a crash is now a P1 defect class.
+
+THE PLAYER MODEL — get this right, the integrator got it wrong first and was
+corrected. Operator: "he's 9, he plays a lot of games, I hope 'kidmash' isn't
+setting a low bar."
+
+He is NOT a button-masher. He is an experienced, systematic, curious player
+with speedrunner instincts he could not yet name. Assume he will:
+  - BACKTRACK — go left when the game wants right; re-enter a cleared area;
+    approach a transition from the far side.
+  - SEQUENCE-BREAK — reach the next area without clearing the wave gate; get
+    on top of geometry never meant to be stood on.
+  - PROBE BOUNDARIES deliberately — walk every wall, seam and edge to learn
+    which are real; try to leave the level; stand where two fixtures meet.
+  - EXPLOIT anything repeatable — a re-triggerable pickup, an infinite jump off
+    one ledge, a safe spot nothing can reach — for twenty minutes straight.
+  - PURSUE INCONSISTENCIES — he would notice the "1/1 TURNS" vs "TURNS 1 / 2"
+    disagreement (I-033) and poke it until something gave.
+  - STRESS THE LIFECYCLE INTENTIONALLY, not randomly — pause exactly during a
+    transition, restart at the instant of death, resize mid-flip.
+
+Consequence for testing: random input is a WEAK fuzzer for softlocks;
+deliberate exploration is a strong one. Aim adversarial effort at where a
+competent curious player gets permanently stuck or loses progress — especially
+where backtracking or sequence-breaking leaves the sim in a state the author
+never considered. "A player would never do that" is not a defence; assume he
+would, on purpose, twice.
 ========================================================================== -->
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
