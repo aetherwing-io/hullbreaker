@@ -886,15 +886,20 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
 }
 
 // --- authored traversal slice ------------------------------------------
-// Re-pinned by T-009 (six-face integration): the lattice pass now carves one
-// pocket per face and repairs route density (src/pure/lattice.js), so the
-// shipped six-face geometry deliberately moved — 49 -> 62 catwalks, and the
-// build result gained its `pockets` / `lattice` report. The chunk stream itself
-// is untouched (59 chunks, same seed, same rng draws): the lattice consumes no
-// randomness. Both values below are regression pins, not targets — if a change
-// moves them again it has to be as deliberate as this one was.
-ok(gH.length === 445 && plats.length === 62 && LVL.chunkLog.length === 59,
-   'normal generator shape pinned (445 columns / 62 platforms / 59 chunks), got ' +
+// Re-pinned by T-044 (corner reveal set pieces): ARRIVAL adds one guaranteed
+// catwalk per face (2-6) and ARENA composes the wave gate's own fighting
+// ground per face instead of leaving it to the chunk stream — 17 new
+// authored platforms (src/pure/lattice.js's arrivalSites/arenaSites,
+// installed by buildLevel). The patch/thin fixpoint then reads the raised
+// local route density and thins 2 procedural catwalks that are no longer
+// needed to hit minRoutes (none of them load-bearing — thinIsSafe still
+// gates every removal), netting 62 -> 77. The chunk stream itself is
+// untouched (59 chunks, same seed, same rng draws — the lattice and this
+// pass both consume none). Both values below are regression pins, not
+// targets — if a change moves them again it has to be as deliberate as this
+// one was.
+ok(gH.length === 445 && plats.length === 77 && LVL.chunkLog.length === 59,
+   'normal generator shape pinned (445 columns / 77 platforms / 59 chunks), got ' +
    gH.length + '/' + plats.length + '/' + LVL.chunkLog.length);
 // Moved three times inside T-009 and then moved BACK. Two passes lifted the
 // capsule out of the deck-line jump arc (rewardRise 0.7 -> 1.75, then a shelf
@@ -905,7 +910,10 @@ ok(gH.length === 445 && plats.length === 62 && LVL.chunkLog.length === 59,
 // 445 columns, same 59 chunks, same rng draws — the lattice consumes none);
 // what moves with the shelf height is the bands the patch pass reads, and at
 // the plain shape that is one catwalk fewer than the raised tier produced.
-ok(fingerprint(LVL) === 'e715cc38',
+// Re-pinned again by T-044 (see above) — the fingerprint hashes groundH and
+// every platform, so the 17 added catwalks move it even though groundH is
+// byte-identical.
+ok(fingerprint(LVL) === '0447885a',
    'normal generator fingerprint unchanged, got ' + fingerprint(LVL));
 
 const fixtureBefore = JSON.stringify(TRAVERSAL_FIXTURE);
@@ -9223,6 +9231,208 @@ const G2GATE = G2E.gate;
        'T-029/I-030: today the published drive and the packet\'s pursuitSpeed inversion ' +
        'still agree exactly — the new field is a superset of what a T-022 reader does ' +
        'by hand, so the packet\'s numbers stay comparable across T-023');
+  }
+}
+
+/* ============ T-044 — corner reveal set pieces (ARRIVAL + ARENA) ========
+ * Two authored zones flank every corner ritual (src/pure/lattice.js): ARRIVAL,
+ * one guaranteed catwalk in the gap between the apron and that face's own
+ * pocket, and ARENA, the wave gate's own fighting ground composed per face
+ * (2-6) instead of left to whatever the chunk stream and the Contra-tier
+ * loop happened to leave there. Neither writes groundH; both compose the
+ * escalating "six-stage ship response" (STORY.md) directly into the
+ * battleground's own silhouette without moving a single CONFIG.waves
+ * number — this is a placement change, not a difficulty one.
+ *
+ * The regression this task actually found and fixed, so the fix stays
+ * fixed: an earlier version of latticeInstallSite cleared each set piece's
+ * whole footprint before installing it (mirroring the pocket's own
+ * gap-clearing precedent). That precedent did not transfer — the pocket
+ * only ever clears its own two-column CHASM, a span nothing legitimate
+ * stands over, but an arena footprint is up to 23 columns wide and can
+ * contain a procedural catwalk that is the ONLY bridge across a raw ground
+ * gap the chunk stream rolled inside it. Driving the shipped sim with the
+ * project's own held-jump policy (every verb this class of bot uses is
+ * already taught: run, jump at a gap or a denied step) went GAME_OVER the
+ * moment that version deleted the catwalk at x[319,326) y=4.35 bridging a
+ * 5-column gap on face 5 — the authored replacement sat too high for a jump
+ * launched from the gap-mouth's actual ground height to reach. The fix
+ * (still in effect below) is to ADD to a footprint rather than clear it
+ * first; the assertions in this block prove the fixed shape, and the first
+ * one below is written to fail loudly if that clearing regressed back in.  */
+{
+  const LAT = latticeModule;
+  const L = LAT.LATTICE;
+  const lvl = { groundH: LVL.groundH, platforms: LVL.platforms };
+
+  // --- the regression's own fingerprint: the face-5 bridge survives ------
+  // Named directly rather than only via the general reachability sweep
+  // below, so a reintroduced clear-before-install regresses here first.
+  {
+    const bridge = LVL.platforms.find((p) => p.x0 === 319 && p.x1 === 326 && Math.abs(p.y - 4.35) < 1e-9);
+    ok(!!bridge, 'T-044: the procedural catwalk bridging face 5\'s x[319,326) gap survives ' +
+       'ARENA installation (regression proof for the clear-then-install bug this task fixed)');
+  }
+
+  // --- structure: one of each per face 2-6, none on face 1 ---------------
+  ok(Array.isArray(LVL.arrivals) && LVL.arrivals.length === 5 &&
+     LVL.arrivals.every((a) => a.face >= 2 && a.face <= 6),
+     'T-044: one ARRIVAL catwalk per face 2-6, none on face 1, got faces ' +
+     JSON.stringify(LVL.arrivals.map((a) => a.face)));
+  ok(Array.isArray(LVL.arenas) && LVL.arenas.length === 5 &&
+     LVL.arenas.every((a) => a.face >= 2 && a.face <= 6),
+     'T-044: one ARENA composition per face 2-6, none on face 1, got faces ' +
+     JSON.stringify(LVL.arenas.map((a) => a.face)));
+
+  // --- footprints stay where DESIGN's other authored content needs them --
+  {
+    const pockets = LAT.latticePocketSites(CONFIG, LVL.groundH);
+    let apronClash = 0, pocketClash = 0;
+    for (const a of LVL.arrivals) {
+      if (a.x0 <= a.corner + 2) apronClash++;             // apron ends prevCorner+2
+      const pocket = pockets.find((p) => p.face === a.face);
+      if (pocket && a.x1 > pocket.x0) pocketClash++;       // T-021's fork territory starts here
+    }
+    ok(apronClash === 0, 'T-044: every ARRIVAL clears its corner apron, ' + apronClash + ' clashes');
+    ok(pocketClash === 0, 'T-044: every ARRIVAL ends before that face\'s own pocket begins ' +
+       '(the fork/dare territory T-021 owns), ' + pocketClash + ' clashes');
+  }
+  {
+    let apronClash = 0, footprintClash = 0;
+    for (const a of LVL.arenas) {
+      if (a.x1 > a.corner - 3) apronClash++;    // the apron's own platform-clear reaches corner-3
+      for (const t of a.tiers) {
+        if (t.x0 < a.corner - L.arena.back || t.x1 > a.corner - L.arena.front) footprintClash++;
+      }
+    }
+    ok(apronClash === 0, 'T-044: every ARENA composition stays clear of its corner apron, ' +
+       apronClash + ' clashes');
+    ok(footprintClash === 0, 'T-044: every ARENA tier stays inside the wave gate\'s own ' +
+       'authored footprint, ' + footprintClash + ' out of bounds');
+  }
+
+  // --- escalation is measured for the shipped seed, not just intended ----
+  {
+    const tierCounts = LVL.arenas.map((a) => a.platforms.length);
+    ok(JSON.stringify(tierCounts) === JSON.stringify([1, 2, 3, 3, 3]),
+       'T-044: arena tier count escalates face 2->6 exactly as authored (1,2,3,3,3), got ' +
+       JSON.stringify(tierCounts));
+    const allFit = LVL.arenas.every((a) => a.tiers.every((t) => t.fits));
+    ok(allFit, 'T-044: every planned tier fits under laneCapY for the shipped seed — none ' +
+       'silently dropped (a future reseed that breaks this must fail here, not ship quietly): ' +
+       JSON.stringify(LVL.arenas.map((a) => a.tiers.map((t) => t.fits))));
+    const widths = LVL.arenas.map((a) => Math.max.apply(null, a.tiers.map((t) => t.x1 - t.x0)));
+    let widthMono = true;
+    for (let i = 1; i < widths.length; i++) if (widths[i] < widths[i - 1] - 0.001) widthMono = false;
+    ok(widthMono, 'T-044: each arena\'s widest tier is no narrower than the previous face\'s, ' +
+       'got widths ' + JSON.stringify(widths));
+    const peakY = LVL.arenas.map((a) => Math.max.apply(null, a.tiers.map((t) => t.y)));
+    ok(peakY[peakY.length - 1] > peakY[0],
+       'T-044: the tallest arena tier (face 6, Scuttle) sits higher than the first arena\'s ' +
+       '(face 2, Intercept) — the "scale lands" claim, measured: ' + JSON.stringify(peakY));
+  }
+
+  // --- reachability: held to the SAME invariant every other catwalk is ---
+  {
+    const bad = LAT.latticeUnreachable(lvl, CONFIG).filter((p) => /^(arrival|arena)-/.test(p.id));
+    ok(bad.length === 0, 'T-044: every ARRIVAL/ARENA platform is within double-jump reach of a ' +
+       'support, got ' + JSON.stringify(bad));
+    const stranded = LAT.latticeStranded(lvl, CONFIG).filter((p) => /^(arrival|arena)-/.test(p.id));
+    ok(stranded.length === 0, 'T-044: no ARRIVAL/ARENA platform strands the player at its ' +
+       'forward end, got ' + JSON.stringify(stranded));
+  }
+
+  // --- every authored platform survives the reachability prune ----------
+  {
+    const ids = new Set(LVL.platforms.map((p) => p.id));
+    const expected = LVL.arrivals.map((a) => a.platforms[0].id)
+      .concat(LVL.arenas.reduce((acc, a) => acc.concat(a.platforms.map((p) => p.id)), []));
+    const missing = expected.filter((id) => !ids.has(id));
+    ok(missing.length === 0, 'T-044: every authored ARRIVAL/ARENA platform survives into the ' +
+       'shipped level, missing ' + JSON.stringify(missing));
+  }
+
+  /* --- driven proof: a policy using only already-taught verbs (LANE-BRIEF's
+   * evidence standard — assert against what a PLAYER can do, not authored
+   * geometry) survives the whole six-face lattice AND, without trying to
+   * gain altitude for its own sake, still mounts several of the new
+   * platforms along the way. This is the same held-jump policy the T-009
+   * section drives (hold right; jump on a gap or a denied step ahead), run
+   * to completion here and just watched for which platform ids it lands
+   * on — the exact class of regression this task fixed would show up here
+   * as a GAME_OVER, not merely as a static geometry claim.               */
+  {
+    const simBase = 'file://' + join(srcDir, 'sim');
+    const child = `
+      const [T, E, LV, SC, PLm, IN, ST, HO, WP, CA] = await Promise.all([
+        import(${JSON.stringify(simBase + '/time.js')}),
+        import(${JSON.stringify(simBase + '/edges.js')}),
+        import(${JSON.stringify(simBase + '/level.js')}),
+        import(${JSON.stringify(simBase + '/scroll.js')}),
+        import(${JSON.stringify(simBase + '/player.js')}),
+        import(${JSON.stringify(simBase + '/input.js')}),
+        import(${JSON.stringify(simBase + '/state.js')}),
+        import(${JSON.stringify(simBase + '/hostiles.js')}),
+        import(${JSON.stringify(simBase + '/weapons.js')}),
+        import(${JSON.stringify(simBase + '/capsules.js')}),
+      ]);
+      E.setEdges(-18.9, 26.4);
+      LV.unbuildFutureFaces();
+      ST.setState('PLAYING');
+      const p = PLm.player;
+      p.x = 6; p.y = 3;
+      IN.keys.right = true;
+      const dt = 1 / 60;
+      let jumpUntil = 0, lastOn = null;
+      const mounted = new Set();
+      for (let f = 0; f < 20000; f++) {
+        if (p.grounded &&
+            (LV.groundTopAt(p.x + 1.2) < -100 || LV.groundTopAt(p.x + 1.2) > p.y + 0.6)) {
+          IN.bufferJumpUntil(T.gameMs + 120);
+          IN.keys.jump = true;
+          jumpUntil = T.gameMs + 420;
+        }
+        if (T.gameMs > jumpUntil) IN.keys.jump = false;
+        T.advanceGameMs(dt * 1000);
+        SC.updateScroll(dt);
+        PLm.updatePlayer(dt);
+        if (p.onOneWay && p.onOneWay.id !== lastOn) {
+          if (/^(arrival|arena)-/.test(p.onOneWay.id)) mounted.add(p.onOneWay.id);
+          lastOn = p.onOneWay.id;
+        }
+        if (ST.state !== 'PLAYING') break;
+        while (HO.hostiles.length) HO.removeHostile(0, false);
+        HO.updateHostiles(dt);
+        WP.updateBullets(dt);
+        CA.updateCapsules(dt);
+        if (T.scrollX >= LV.activeScrollEnd()) break;
+      }
+      console.log(JSON.stringify({
+        state: ST.state, lives: p.lives, x: p.x, scrollX: T.scrollX, end: LV.activeScrollEnd(),
+        mounted: [...mounted].sort(),
+      }));
+    `;
+    let run = null;
+    try {
+      run = JSON.parse(execFileSync(process.execPath,
+        ['--input-type=module', '-e', child], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }));
+    } catch (e) {
+      console.error('pathcheck: T-044 driven-proof child failed: ' + e.message);
+    }
+    ok(!!run, 'T-044: the six-face run with ARRIVAL/ARENA installed simulates headlessly end to end');
+    if (run) {
+      ok(run.state === 'PLAYING' || run.state === 'VICTORY',
+         'T-044: the held-jump policy still survives the whole lattice with ARRIVAL/ARENA ' +
+         'installed (state ' + run.state + ', lives ' + run.lives + ') — the exact gate the ' +
+         'clear-then-install regression broke');
+      ok(run.scrollX >= run.end,
+         'T-044: …and still reaches the outro scroll end (' + run.scrollX.toFixed(1) +
+         ' of ' + run.end + ')');
+      ok(run.mounted.length >= 3,
+         'T-044: a policy that never tries to gain altitude for its own sake still lands on ' +
+         run.mounted.length + ' authored set-piece platforms along the way (' +
+         JSON.stringify(run.mounted) + ') — real contact, not merely reachable on paper');
+    }
   }
 }
 
