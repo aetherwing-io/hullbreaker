@@ -1041,6 +1041,49 @@ SEQUENCING: T-032 (+275 pathcheck lines) and T-035 are in flight and both touch
 pathcheck. Do NOT fight them — build and prove the migration script, and let the
 integrator run it after those merge.
 
+<!-- ===== 2026-08-02 LOOK PUSH. Operator: "quit doing things that don't make
+sense... FIX the game, iterate faster and faster... i don't care about
+reliability or resilience... deployment is so far away in my mind."
+T-033 (save) and T-034 (deploy) parked as a result. T-038..T-041 implement the
+look packet's ship-now items in parallel; specs are in
+docs/proposals/2026-08-look-direction.md §3. Every one of them is judged by the
+operator on his own machine, not by a machine gate. ===== -->
+
+## T-038 | art | doing | P1
+goal: packet item S5 — warm-white seam pips and route-lip lights, the frame's
+ONLY highlights. Measured: 0.0% of playfield pixels exceed luminance 200 in all
+fifteen gameplay captures.
+accept: highlights present at the shipped FAR view; share of pixels above L200
+rises from a measured 0.0%; palette tokens only; draw-call delta reported.
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; FAR captures before/after
+
+## T-039 | art | doing | P1
+goal: packet item S6 — contact shadows as one instanced multiply-blended quad
+pool, so actors sit ON the world. There is no shadow of any kind in the
+renderer today. NOT a shadow map (that needs a decision entry, packet §4.1).
+accept: +1 draw call, not per-object; 60fps with 200+ projectiles held; the
+transform slice's 580-call path not multiplied.
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; frame time under load; FAR captures
+
+## T-040 | art | doing | P1
+goal: packet item S8 — RIG silhouette. He is 230 lit pixels of head sphere plus
+three boxes, sharing a value family with his own bullets. Render-only: hitbox
+and movement are frozen.
+accept: reads at 3.75% screen height (true on-screen size, not zoomed); three
+value zones; sim unchanged.
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; FAR capture + 5x crop
+
+## T-041 | art | doing | P1
+goal: packet item S10 — directional impact and travel language inside the
+existing instanced pools, so hits read as hits. Zero new draw calls.
+accept: pure/juice.js stays deterministic (seeded rng only); 60fps at 200+
+projectiles measured, not assumed; no frozen constant moves.
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; frame time at 256 projectiles before/after
+
 <!-- ========== 2026-08-02 OPERATOR GOAL CHANGE (supersedes parts of the
 Delivery target that T-028 just rewrote; that rewrite's evidence-honesty fixes
 stand, its audience assumption does not) ==========
