@@ -1569,3 +1569,22 @@ the weaker of the two. Fold into T-003's FAR-tells readability pass if the fork
 survives I-031 — a darker cave interior, a lip/hazard glyph at the mouth, or a
 seal face in a different material would all be cheap. Not gated here:
 readability is the operator's call, and it is question 1 in T-021's packet.
+
+## I-033 | bug | S3 | repro: serve any tree at `task/T-029 6ec5b40` or later, open `index.html?g2=1`, complete the neck-plate flip and read the BREACH CLEAR screen — HUD reads "1/1 TURNS", body copy reads "1 of 1 transformation", stats panel reads "TURNS 1 / 2" | evidence: reports/tasks/T-029/evidence/g2-breach-clear.png; reports/tasks/T-029/review.md
+
+Third turn-count location, surfaced by T-029's own committed evidence frame and
+confirmed in review. T-029 fixed I-009 in the two places its task named
+(`src/ui/hud.js`, `src/ui/overlay.js`), both of which now read
+`ACTIVE_FIXTURE.events.length` and display 1 for the single-event G2 fixture.
+`src/pure/shell.js:413` carries a *third* copy of the same v1 demo assumption
+and still renders "TURNS 1 / 2" in the stats panel of the very same frame, so
+one screen now states the transformation count three times and disagrees with
+itself once. Disclosed candidly by the builder (build.md "Open items" #1) and
+correctly left alone: `shell.js` is outside T-029's stated file list, T-013
+owns it and is `done`, and no live lane claims it — so this is filed rather
+than folded in silently. Cosmetic only: no sim, gating or telemetry effect, and
+the count the player acts on (the HUD) is the fixed one. The fix is the same
+one-liner already applied twice, but note `shell.js` lives in `src/pure/`,
+which may not read `ACTIVE_FIXTURE` directly under the layer-purity rule — the
+count likely has to be passed in, which is why this is worth its own task
+rather than a drive-by edit.
