@@ -1,0 +1,23 @@
+[
+  {
+    "variant": "shipped (BEFORE)",
+    "file": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-056/reports/tasks/T-056/evidence/before-shadeFog-shipped-today.png",
+    "scrollX": 44.05675079984571,
+    "died": false,
+    "note": "today's default: CONFIG.limb.shadeFog (26.5/54.5), shifted band — renamed post-capture, filename above is current"
+  },
+  {
+    "variant": "t045band (AFTER)",
+    "file": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-056/reports/tasks/T-056/evidence/after-limbFog-what-now-ships.png",
+    "scrollX": 43.85068747280243,
+    "died": false,
+    "note": "CONFIG.limb.fog (24/52) forced unconditionally, ladder still armed at the default dose — this IS what the shipped default now renders after this task's camera.js fix, renamed post-capture"
+  },
+  {
+    "variant": "approved",
+    "file": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-056/reports/tasks/T-056/evidence/approved.png",
+    "scrollX": 43.65214144000099,
+    "died": false,
+    "note": "the ladder's pre-T-045 reference frame: backdrop tiers off (silhouette pair), band unmodified"
+  }
+]

@@ -330,12 +330,23 @@ export async function run(SHARED) {
        'scratch Color — no new attribute, no allocation per tile');
   }
 
-  // --- S2: the haze band, re-authored against the depth the limb occupies
-  // three.js fogs on VIEW-SPACE depth (fog_vertex.glsl: vFogDepth =
-  // -mvPosition.z), not radial distance, so every number here is a dot with
-  // the camera's forward axis. The probe reproduces src/render/camera.js's
-  // own edge calibration (NDC x = +-1 at y = 0) so the s-window asserted
-  // against is the one the sim is actually calibrated to.
+  /* --- S2, AS RECONCILED WITH T-045 -------------------------------------
+   * T-035 shipped a second haze band (CONFIG.limb.shadeFog) selected while the
+   * ladder was armed. T-045 then populated the same band with graded anatomy
+   * tiers authored against CONFIG.limb.fog, and only one band can be live.
+   * Measured on the merged tree at 1280x800, FAR, 10 s, playfield crop:
+   *   T-045 band   separation -34.7, p5 26, share under L25.5 4.8%
+   *   shifted band separation -34.5, p5 22, share under L25.5 5.8%
+   *   the ladder's own approved reference frame (?scale=0): -35.4 / 25 / 5.0%
+   * The shift buys the ladder nothing — the separation is the baked values'
+   * doing, not the air's — and costs a point of dark share against the frame
+   * decisions.md entry 14 approved. So the band is T-045's, `shadeFog` is
+   * gone, and these assertions exist to keep it that way.
+   *
+   * three.js fogs on VIEW-SPACE depth (fog_vertex.glsl: vFogDepth =
+   * -mvPosition.z), so every number below is a dot with the camera's forward
+   * axis, and the probe reproduces src/render/camera.js's own edge
+   * calibration (NDC x = +-1 at y = 0).                                    */
   {
     const C035 = CONFIG.camera, PB = CONFIG.limb.playBand;
     const norm3 = (v) => { const m = Math.hypot(v[0], v[1], v[2]); return v.map((x) => x / m); };
@@ -362,70 +373,64 @@ export async function run(SHARED) {
       (depth - (band.near + shift)) / (band.far - band.near)));
 
     ok(CONFIG.limb.fog.near === 24 && CONFIG.limb.fog.far === 52,
-       'T-035/S2: the SHIPPED limb haze band is pinned at 24/52 — it had no assertion ' +
-       'at all before this task, so it could be moved silently');
+       'T-035/S2: the limb haze band is pinned at 24/52 — it had no assertion at all ' +
+       'before T-035, so it could be moved silently, and T-045\'s three backdrop tiers ' +
+       'are now authored against exactly these two numbers');
+    ok(CONFIG.limb.shadeFog === undefined,
+       'T-035/S2: there is ONE haze band. The ladder-only band is gone rather than ' +
+       'left inert: a second set of fog numbers that nothing selects is the ' +
+       'green-guard-over-dead-config failure this project keeps paying for');
     {
       const camSrc035 = stripComments(readFileSync(join(srcDir, 'render', 'camera.js'), 'utf8'));
-      ok(/SHADE_GAIN > 0 \? CONFIG\.limb\.shadeFog : CONFIG\.limb\.fog/.test(camSrc035),
-         'T-035/S2: the retuned band is selected ONLY when the ladder is armed, and by ' +
-         'SHADE_GAIN rather than the raw flag, so ?palette=classic keeps the shipped ' +
-         'band even with ?shade=1 on the URL');
-      ok(/scene\.fog\.near = F\.near \+ fogShift/.test(camSrc035),
-         'T-035/S2: …and it still composes with the ?view= pull-back shift, so the ' +
-         'ladder holds its contrast at every view');
+      ok(/const F = IS_G1 \? CONFIG\.limb\.fog : CONFIG\.fog;/.test(camSrc035),
+         'T-035/S2: src/render/camera.js selects the limb band unconditionally under ' +
+         'IS_G1 — the value ladder does not get to move the air T-045 calibrated its ' +
+         'tiers against');
+      ok(!/SHADE_GAIN|shadeFog/.test(camSrc035),
+         'T-035/S2: …and it reads nothing from the ladder at all, so no future dose ' +
+         'change can de-calibrate those tiers by a side effect');
     }
 
-    const SF = CONFIG.limb.shadeFog;
-    let worstPlay = 0, worstWide = 0;
-    for (const view of ['near', 'mid', 'far']) {
-      for (const aspect of [1.6, 1.7778]) {
-        const p = probe(view, aspect);
-        for (const u of p.edges) for (const y of [PB.y0, PB.y1])
-          worstPlay = Math.max(worstPlay, factor(p.depth(u, y, 0), SF, p.shift));
-      }
-      const w = probe(view, 2.4);
-      for (const u of w.edges) for (const y of [PB.y0, PB.y1])
-        worstWide = Math.max(worstWide, factor(w.depth(u, y, 0), SF, w.shift));
-    }
-    ok(worstPlay === 0,
-       'T-035/S2(iii): under the retuned band NO point of the protected play band is ' +
-       'inside the fog ramp at any shipped view, at 16:10 or 16:9 — the worst case is ' +
-       'the screen-EDGE column at playBand.y0, not the plane\'s own depth, which is ' +
-       'the failure src/render/camera.js:64-73 was written about');
-    ok(worstWide <= 0.03,
-       'T-035/S2(iii): …and stays under 3% (measured ' + (100 * worstWide).toFixed(1) +
-       '%) even at an ultrawide 2.40 aspect');
-    ok(Math.abs((SF.far - SF.near) - (CONFIG.limb.fog.far - CONFIG.limb.fog.near)) < 1e-9,
-       'T-035/S2: the retuned band keeps the shipped band\'s WIDTH exactly — ' +
-       'src/main.js\'s selftest asserts \'limb haze armed\' as a width comparison ' +
-       'against CONFIG.limb.fog, so a wider ramp fails ?selftest=1&shade=1 until that ' +
-       'check reads the band camera.js selected. That file is fenced this cycle: the ' +
-       'shift ships, the widening is the recorded follow-up');
+    // The tiers T-045 authored, re-derived HERE against the band the renderer
+    // actually selects — their own domain asserts the same fences against
+    // CONFIG.limb.fog, and these two agreeing is what proves the assertion and
+    // the runtime are talking about the same air.
     {
       const p = probe('far', 1.6);
+      const B = CONFIG.limb.backdrop;
       const tiers = [
-        ['wall', factor(p.depth(C035.x, 6, -6), SF, p.shift)],
-        ['silhouette -26', factor(p.depth(C035.x, 47, -26), SF, p.shift)],
+        ['sister', factor(p.depth(C035.x, B.sister.y0 + 3, B.sister.depth), CONFIG.limb.fog, p.shift)],
+        ['spine', factor(p.depth(C035.x, B.spine.y0 + 4, B.spine.depth), CONFIG.limb.fog, p.shift)],
+        ['far body', factor(p.depth(C035.x, B.far.y0 + 6, B.far.depth), CONFIG.limb.fog, p.shift)],
       ];
       const f = tiers.map((t) => t[1]);
-      const oldTiers = [factor(p.depth(C035.x, 6, -6), CONFIG.limb.fog, p.shift),
-                        factor(p.depth(C035.x, 47, -26), CONFIG.limb.fog, p.shift)];
-      ok(f[0] < f[1] && f[1] - f[0] >= 0.15 && f[0] < oldTiers[0] && f[1] < oldTiers[1],
-         'T-035/S2(i): the retuned band separates the two tiers it can reach at FAR — ' +
-         tiers.map((t) => t[0] + ' ' + t[1].toFixed(2)).join(', ') + ' — and both sit ' +
-         'clearer than on the shipped band (' + oldTiers.map((v) => v.toFixed(2)).join(' / ') +
-         '), so the grading between them is the limb\'s own mass, not haze');
-      // A LIMIT, recorded as a test so no later report can claim otherwise: the
-      // deepest authored slab is erased by the haze under BOTH bands. Bringing
-      // it back is the width change above, and populating that empty band is
-      // packet item S4 — neither is in this task.
-      const deepNew = factor(p.depth(C035.x, 45, -34), SF, p.shift);
-      const deepOld = factor(p.depth(C035.x, 45, -34), CONFIG.limb.fog, p.shift);
-      ok(deepNew >= 1 && deepOld >= 1,
-         'T-035/S2 LIMIT: the silhouette slab at depth -34 is still at fog 1.00 under ' +
-         'the retuned band as well as the shipped one — it IS the backdrop token, which ' +
-         'is part of what the 29-34%-of-screen flat-token finding is made of, and it ' +
-         'stays that way until the band may widen');
+      ok(f[0] < f[1] && f[1] < f[2] && f[1] - f[0] >= 0.15 && f[2] - f[1] >= 0.15,
+         'T-035/S2: under the band the renderer selects, T-045\'s three tiers still ' +
+         'grade apart — ' + tiers.map((t) => t[0] + ' ' + t[1].toFixed(3)).join(', ') +
+         ' — each at least 0.15 clear of the next');
+      ok(f.every((v) => v >= 0.25 && v <= 0.85),
+         'T-035/S2: …and every one of them sits inside T-045\'s own [0.25, 0.85] fence ' +
+         'when computed against the LIVE band, not just against the table');
+    }
+
+    // A LIMIT, recorded as a test rather than left to be rediscovered as a bug:
+    // this is what choosing T-045's band costs the play band.
+    {
+      let worst = 0, at = '';
+      for (const view of ['near', 'mid', 'far']) {
+        const p = probe(view, 1.6);
+        for (const u of p.edges) for (const y of [PB.y0, PB.y1]) {
+          const v = factor(p.depth(u, y, 0), CONFIG.limb.fog, p.shift);
+          if (v > worst) { worst = v; at = view; }
+        }
+      }
+      ok(worst > 0 && worst <= 0.06,
+         'T-035/S2 LIMIT (the price of one band): the protected play band\'s ' +
+         'screen-edge column carries ' + (100 * worst).toFixed(1) + '% haze at its ' +
+         'worst shipped view (' + at + ', 16:10) — a hostile at the extreme frame edge ' +
+         'is washed that far toward the backdrop. The ladder-only band removed it and ' +
+         'de-calibrated T-045\'s tiers to do so; removing it properly means re-deriving ' +
+         'those tier depths, which is that lane\'s calibration to redo');
     }
   }
 }
