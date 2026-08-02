@@ -825,6 +825,38 @@ opposite lever).
 ```
 
 ```
+## I-??? | bug | S2 | repro: two agents active in one worktree; or `git worktree remove` while a background measurement runs | evidence: reports/tasks/T-049/build.md §9.1, and T-040's independent sighting from the other side
+```
+A LANE'S WORKTREE IS NOT SAFE TO MEASURE IN WHILE ANOTHER AGENT HOLDS IT, AND
+NOT SAFE TO PRUNE WHILE ONE IS RUNNING. Hit twice this cycle, from both ends,
+and it cost a 16-round experiment.
+
+(a) Two agents editing one worktree. While I ran the gate, another agent was
+running break/restore against src/render/preload.js in the same directory. My
+pathcheck reported one FAIL that five later runs on the identical committed
+tree could not reproduce; hashing the file before each of six consecutive runs
+caught the file changing under me (a24dde225fe4 -> 025e8f555610, no edit of
+mine). T-040 hit the same thing from the other side: their worktree's
+preload.js "silently reverted to the pre-fix version with no edit of mine".
+
+(b) Pruning a worktree with a background run in it. T-040's worktree was
+merged and pruned mid-experiment; their background process started failing
+with "no such file or directory" and the 16-round run died at n=7, which is
+too small to weigh. The work was not recoverable — the directory was gone.
+
+Neither is exotic: this fleet runs several agents at once, gate agents
+routinely read another lane's tree, and the merge step legitimately prunes.
+Fix direction, cheapest first: (1) a lane announces "I am measuring, do not
+touch <path>" and gate agents copy the tree instead of reading it in place —
+`git archive <rev> | tar -x -C <scratch>` is what I used for control trees all
+cycle and it is interference-immune by construction; (2) the merge script
+refuses to prune a worktree whose directory has been written to in the last N
+minutes, or at least prints what it is about to delete; (3) any measurement
+longer than a couple of minutes runs against a scratch copy on principle, not
+against the live lane. The diagnostic that catches (a) in one line is worth
+keeping: hash the file before each run and compare.
+```
+
 ## I-??? | bug | S3 | repro: tools/playtest/sprite-fallback-check.mjs, 11 runs | evidence: reports/tasks/T-049/build.md §2 "One flake"
 One run in eleven of the new fallback check reported 4 failed checks whose
 detail was not captured; the ten others passed, including every run since. Two
