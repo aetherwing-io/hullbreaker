@@ -56,7 +56,8 @@ import * as d43 from './t-035-value-ladder.mjs';
 import * as d44 from './t-038-seam-pips.mjs';
 import * as d45 from './t-047-light-rig.mjs';
 import * as d46 from './t-048-post-pass.mjs';
-import * as d47 from './t-050-shipped-plan-carries-the-scale-pass.mjs';
+import * as d47 from './t-042-audio-punch.mjs';
+import * as d48 from './t-050-shipped-plan-carries-the-scale-pass.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -106,5 +107,6 @@ export const DOMAINS = [
   d44,    // T-038: warm-white seam pips and route-lip highlights (S5) ========
   d45,    // T-047 light rig, shadows, tone mapping (decisions 18)
   d46,    // T-048: the screen pass (bloom) + surface families (entry 18)
-  d47,    // T-050: the shipped plan carries the scale pass (I-037) ===========
+  d47,    // T-042: audio punch — static + behavioral guards ==========
+  d48,    // T-050: the shipped plan carries the scale pass (I-037) ===========
 ];

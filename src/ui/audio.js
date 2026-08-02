@@ -32,17 +32,46 @@
    Tuning constants live below rather than in src/config.js only because
    the in-flight T-004 lane owns config.js; folding AUDIO into CONFIG once
    that lane lands is suggested to the integrator in the T-012 builder
-   report (reports/tasks/T-012/report.md) — it is not yet a SPRINT task. */
+   report (reports/tasks/T-012/report.md) — it is not yet a SPRINT task.
+
+   T-042 (audio punch) additions, same file, same contract: more low-end and
+   a two-part crunch/tick signature on the highest-frequency impacts (a
+   bullet landing, a kill — the hit tick also scales a little with damage
+   dealt, pairing with T-041's velocity-driven impact stretch: a bigger hit
+   reads bigger on screen AND in the mix, decisions.md entry 15), a
+   dedicated destruction voice for the orbital lance's screen-clear (the one
+   break the throttled hit/kill sounds were flattening into a single tick),
+   an audible pressure curve for the pursuing crush edge (a low rumble plus
+   an accelerating ping sharing the SAME warnPulse()/crushWarnIntensity()
+   pure functions the visual haze uses, src/pure/juice.js — the two effects
+   can never read differently for the same margin), and two readability
+   mechanisms for pillar 5 ("chaos stays readable"): every ordinary one-shot's
+   peak gain shrinks a little per voice already sounding (loadScale()) so a
+   crowd of hits sums toward "louder, still readable" instead of clipped
+   mush, while `prio` cues (hurt, fall, ritual snaps/booms, the lance strike,
+   the crush ping) always cut through; and the ambience bed gets a second,
+   combat-density-driven duck (`heat`/`combatDuck`) on top of the existing
+   state-driven one.
+
+   The pressure curve needed one new sanctioned sim read (`sLeftEdge` from
+   src/sim/edges.js — the live crush margin isn't derivable from anything
+   else on the existing allowlist; `sliceStats.minEdgeMargin` is a running
+   MIN for the whole life, which would pin the alarm near-max forever after
+   one close call). Team lead authorized extending tools/pathcheck.mjs's
+   T-012 sim-read allowlist directly for this (task #50) rather than leaving
+   the feature undone — see reports/tasks/T-042/build.md for the exchange. */
 
 import { CONFIG } from '../config.js';
 import { QUERY } from '../mode.js';
 import { cornerTimeline } from '../pure/waves.js';
 import { transformTimeline } from '../pure/transform.js';
+import { crushWarnIntensity, warnPulse } from '../pure/juice.js';
 import { view } from '../sim/bridge.js';
 import { gameMs } from '../sim/time.js';
 import { player, circleHitsPlayer } from '../sim/player.js';
 import { activeCorner, cornerEvents } from '../sim/wavegate.js';
 import { transformEvents } from '../sim/transform.js';
+import { sLeftEdge } from '../sim/edges.js';
 
 const AUDIO_ON = QUERY.get('audio') !== '0';
 
@@ -62,6 +91,31 @@ const A = {
   jumpVyMin: 4,            // vy threshold that separates jumps/launches from
                            // drop-throughs; hurt knockback frames are excluded
                            // explicitly, not by this threshold
+
+  // --- readability under load (pillar 5: chaos stays readable) ---------
+  // Every ordinary one-shot's peak gain shrinks a little per voice already
+  // sounding, so a crowd of simultaneous hits sums toward "louder, still
+  // readable" instead of stacking toward clipped mush. `prio` callers (hurt,
+  // fall, the ritual snaps/booms, the lance strike) opt out: those cues are
+  // rare and must always cut through regardless of how busy the fight is.
+  loadDuck: 0.055,
+  // A second, slower-moving duck on the ambience BED itself: recent combat
+  // events ("heat") push the machine hum down so weapon/impact sound has
+  // room, then it eases back during a lull. Composes with the existing
+  // state-driven ambDuck (retry/over/victory) rather than replacing it.
+  heatDecayPerSec: 1.0,
+  heatDuck: 0.5,
+  heatTickMs: 140,
+  heat: { hit: 0.12, kill: 0.2, fire: 0.05, lance: 0.75 },
+
+  // --- pursuing-edge pressure curve --------------------------------------
+  // A low rumble under the ambience bed and an accelerating ping, both
+  // driven by the SAME pure functions (crushWarnIntensity/warnPulse,
+  // src/pure/juice.js) that drive the visual crush-warning haze, off the
+  // same live margin — so the ear and the eye can never disagree about how
+  // close the plane is.
+  pressure: 0.3,           // rumble bed's max gain multiplier at intensity 1
+  pressureHz: 42,          // low, felt more than heard, under the ambience bed
 };
 
 /* -------------------------- context state ------------------------- */
@@ -92,7 +146,15 @@ function nowMs() { return ctx ? ctx.currentTime * 1000 : 0; }
 
 function gate(key, ms) {
   const t = nowMs();
-  if (t - (lastAt[key] || -1e9) < ms) return false;
+  // `?? ` not `||`: a key's first-ever fire can land at t===0 (the instant
+  // unlock() builds the context, or — found by T-042's behavioral pathcheck
+  // harness driving a frozen fake clock — any test that never advances
+  // ctx.currentTime), and 0 is a legitimate previous timestamp, not "never
+  // fired". `||` would treat it as falsy and let the very next call refire
+  // immediately, defeating the throttle for exactly one key on exactly one
+  // frame in real play — rare, but a throttle that can silently drop its
+  // own gate is worse than the extra character.
+  if (t - (lastAt[key] ?? -1e9) < ms) return false;
   lastAt[key] = t;
   return true;
 }
@@ -108,8 +170,15 @@ function envGain(t0, attack, peak, dur) {
 
 function voiceDone() { voices = Math.max(0, voices - 1); }
 
-// one-shot oscillator: type, f0 → f1 over dur seconds, at optional delay
-function tone(type, f0, f1, dur, peak, at = 0) {
+// Headroom shrinks as the voice budget fills: 0 live voices scales peak by
+// 1.0, and it eases toward 1/(1+maxVoices*loadDuck) at a full house — never
+// all the way to silence, so a wall of hits still reads as "a wall of hits."
+function loadScale() { return 1 / (1 + voices * A.loadDuck); }
+
+// one-shot oscillator: type, f0 → f1 over dur seconds, at optional delay.
+// `prio` (hurt, fall, ritual snaps/booms, the lance strike) skips the load
+// scaling above — those cues must cut through no matter how busy the mix is.
+function tone(type, f0, f1, dur, peak, at = 0, prio = false) {
   if (!ctx || dead || voices >= A.maxVoices) return;
   voices++;
   const t0 = ctx.currentTime + at;
@@ -117,7 +186,7 @@ function tone(type, f0, f1, dur, peak, at = 0) {
   o.type = type;
   o.frequency.setValueAtTime(f0, t0);
   if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t0 + dur);
-  const g = envGain(t0, 0.005, peak, dur);
+  const g = envGain(t0, 0.005, prio ? peak : peak * loadScale(), dur);
   o.connect(g).connect(sfxBus);
   o.onended = voiceDone;
   o.start(t0);
@@ -125,7 +194,7 @@ function tone(type, f0, f1, dur, peak, at = 0) {
 }
 
 // one-shot filtered noise burst; f1 sweeps the filter when it differs from f0
-function noiseHit(kind, f0, f1, q, dur, peak, at = 0) {
+function noiseHit(kind, f0, f1, q, dur, peak, at = 0, prio = false) {
   if (!ctx || dead || voices >= A.maxVoices) return;
   voices++;
   const t0 = ctx.currentTime + at;
@@ -138,7 +207,7 @@ function noiseHit(kind, f0, f1, q, dur, peak, at = 0) {
   f.Q.value = q;
   f.frequency.setValueAtTime(f0, t0);
   if (f1 !== f0) f.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t0 + dur);
-  const g = envGain(t0, 0.004, peak, dur);
+  const g = envGain(t0, 0.004, prio ? peak : peak * loadScale(), dur);
   src.connect(f).connect(g).connect(sfxBus);
   src.onended = voiceDone;
   src.start(t0, rnd());
@@ -149,35 +218,56 @@ function noiseHit(kind, f0, f1, q, dur, peak, at = 0) {
  * Each recipe is a comment-documented intent so a listener can verify
  * the mix against what the synth was told to sound like.              */
 
-// per-weapon fire — one sound per volley (slotSpawned fires per projectile)
+// per-weapon fire — one sound per volley (slotSpawned fires per projectile).
+// Each recipe now carries a little more of its own physical signature (a
+// rifle cracks, a shotgun thumps, flame crackles) on top of the shape T-012
+// tuned, so five weapons in a row read as five different guns, not one
+// oscillator in five colors.
 const FIRE = {
-  R: () => tone('square', 950, 700, 0.07, 0.14),                    // dry rifle blip
-  S: () => {                                                        // chunky shotgun bark
+  R: () => {                                                        // light snappy bark: the
+    tone('square', 950, 700, 0.06, 0.13);                           // workhorse — quick and
+    noiseHit('highpass', 3800, 3200, 2, 0.025, 0.05);               // small so rapid-fire never
+  },                                                                 // drowns the other four
+  S: () => {                                                        // chunky shotgun bark + sub thump
     tone('sawtooth', 420, 240, 0.12, 0.15);
     noiseHit('lowpass', 900, 500, 1, 0.09, 0.12);
+    tone('sine', 110, 58, 0.09, 0.11);
   },
   L: () => {                                                        // descending zap
     tone('sine', 1500, 240, 0.16, 0.13);
     tone('sine', 2200, 2200, 0.05, 0.05);
   },
   H: () => tone('triangle', 480, 980, 0.11, 0.11),                  // seeking chirp up
-  F: () => noiseHit('lowpass', 650, 320, 1, 0.22, 0.15),            // breathy whoosh
+  F: () => {                                                        // breathy whoosh + crackle
+    noiseHit('lowpass', 650, 320, 1, 0.22, 0.15);
+    noiseHit('bandpass', 2200, 1600, 3, 0.05, 0.05);
+  },
 };
 
-function sfxHit() {                          // bullet lands: bright tick + thunk
-  noiseHit('bandpass', 1900, 1900, 4, 0.07, 0.18);
-  tone('square', 210, 140, 0.07, 0.1);
+// bullet lands: bright tick + a felt sub click — the single most frequent
+// sound in the game, so its weight matters most. `dmg` (the hp actually
+// lost, e.g. 2 for LASER vs 1 for everything else, CONFIG.weapons.*.damage)
+// nudges pitch down and gain up a little: the same pairing T-041 drew
+// between a hit's OWN velocity and how far its spark streaks (decisions.md
+// entry 15) — a harder hit reads a little bigger here too, not just there.
+function sfxHit(dmg = 1) {
+  const w = Math.min(2, Math.max(1, dmg));
+  noiseHit('bandpass', 1900, 1900, 4, 0.07, 0.18 * (0.9 + 0.1 * w));
+  tone('square', 210 / w, 140 / w, 0.07, 0.1 * w);
+  tone('sine', 90 / w, 46 / w, 0.045, 0.09 * w);
 }
-function sfxKill() {                         // hostile dies: deeper mechanical crump
-  tone('square', 130, 55, 0.18, 0.22);
-  noiseHit('lowpass', 520, 240, 1, 0.16, 0.18);
+function sfxKill() {                         // hostile dies: bright crack, then it breaks —
+  noiseHit('highpass', 3200, 2600, 3, 0.03, 0.13);                  // a two-part "crunch, then
+  tone('square', 130, 55, 0.19, 0.25);                              // thud" signature distinct
+  noiseHit('lowpass', 520, 220, 1, 0.18, 0.2);                      // from sfxHit's plain tick
 }
-function sfxHurt() {                         // RIG damaged: harsh descending buzz
-  tone('sawtooth', 320, 80, 0.28, 0.26);
-  noiseHit('bandpass', 700, 350, 2, 0.2, 0.16);
+function sfxHurt() {                         // RIG damaged: harsh descending buzz + gut-punch sub —
+  tone('sawtooth', 320, 80, 0.28, 0.26, 0, true);                   // the highest-stakes cue in
+  noiseHit('bandpass', 700, 350, 2, 0.2, 0.16, 0, true);            // the game always cuts
+  tone('sine', 150, 40, 0.22, 0.24, 0, true);                       // through at full weight
 }
 function sfxFall() {                         // route lost to a fall: longer, hollower
-  tone('sawtooth', 240, 50, 0.4, 0.22);
+  tone('sawtooth', 240, 50, 0.4, 0.22, 0, true);
 }
 function sfxJump() { tone('sine', 240, 480, 0.1, 0.11); }           // soft rising blip
 function sfxAirJump() { tone('sine', 300, 640, 0.1, 0.11); }        // same shape, higher
@@ -195,10 +285,10 @@ function sfxPickup(kind) {
     tone('square', 990, 990, 0.09, 0.13, 0.07);
   }
 }
-function sfxWarn(low) {                      // alarm two-tone; `low` = heavier threat
-  const a = low ? 523 : 880, b = low ? 392 : 620;
-  tone('square', a, a, 0.09, 0.1);
-  tone('square', b, b, 0.09, 0.1, 0.1);
+function sfxWarn(low) {                      // alarm two-tone; `low` = heavier threat —
+  const a = low ? 523 : 880, b = low ? 392 : 620;             // always audible: a warning
+  tone('square', a, a, 0.09, 0.1, 0, true);                   // that gets buried under its
+  tone('square', b, b, 0.09, 0.1, 0.1, true);                 // own chaos has failed its job
 }
 function sfxTell() {                         // houndframe plants: low growl
   noiseHit('bandpass', 300, 180, 2, 0.12, 0.13);
@@ -211,21 +301,35 @@ function sfxWindup() {                       // ritual wind-up: air pulls back
   noiseHit('bandpass', 400, 1600, 1.5, 0.35, 0.11);
   tone('sine', 60, 120, 0.3, 0.09);
 }
-function sfxSnap(second) {                   // yaw snap lands: monumental clunk
-  const f = second ? 65 : 75;
-  tone('sine', f, f * 0.55, 0.22, second ? 0.5 : 0.42);             // seismic thump
-  noiseHit('bandpass', 2600, 2600, 6, 0.05, 0.16);                  // metal ring
-  tone('square', 150, 90, 0.08, 0.16);                              // latch body
+function sfxSnap(second) {                   // yaw snap lands: monumental clunk (pillar 4:
+  const f = second ? 65 : 75;                                       // every break changes the
+  tone('sine', f, f * 0.55, 0.22, second ? 0.5 : 0.42, 0, true);     // game, so the world-scale
+  noiseHit('bandpass', 2600, 2600, 6, 0.05, 0.16, 0, true);          // ones stay full weight
+  tone('square', 150, 90, 0.08, 0.16, 0, true);                      // under any load
 }
 function sfxBoom() {                         // face/band commits: deep settle boom
-  tone('sine', 50, 30, 0.8, 0.4);
-  noiseHit('lowpass', 200, 90, 1, 0.6, 0.2);
+  tone('sine', 50, 30, 0.8, 0.4, 0, true);
+  noiseHit('lowpass', 200, 90, 1, 0.6, 0.2, 0, true);
 }
 function sfxResume() {                       // scroll eases back in: soft hiss
   noiseHit('lowpass', 800, 400, 1, 0.4, 0.05);
 }
+// orbital lance resolves: every hostile on screen dies on one frame, which
+// hitHostile/removeHostile's own throttled sfxHit/sfxKill would flatten into
+// a single tick+thud — exactly the "everything just broke" beat that gets
+// lost. A dedicated, distinctly bigger destruction voice: lower and longer
+// than sfxBoom's settle, a wide crackle standing in for every kill the
+// throttle masks, and a descending metal groan (mechanical, not organic —
+// contrasts with sfxKill's organic-ish crunch). Always full weight: this is
+// the single biggest destruction beat the game has (pillar 4).
+function sfxLanceStrike() {
+  tone('sine', 65, 24, 0.55, 0.5, 0, true);
+  noiseHit('bandpass', 2400, 700, 1.2, 0.3, 0.24, 0, true);
+  tone('sawtooth', 200, 45, 0.4, 0.22, 0, true);
+  noiseHit('lowpass', 260, 90, 1, 0.5, 0.24, 0, true);
+}
 function motif(notes, step, dur, peak) {
-  notes.forEach((f, i) => tone('triangle', f, f, dur, peak, i * step));
+  notes.forEach((f, i) => tone('triangle', f, f, dur, peak, i * step, true));
 }
 
 /* --------------------------- ambience ------------------------------ *
@@ -307,13 +411,99 @@ function applyLayers() {
   });
 }
 
-function duckAmbience(mult) {
-  ambDuck = mult;
+// The ambience bed is ducked by TWO independent multipliers that compose:
+// ambDuck (state-driven — retry/over/victory, existing since T-012) and
+// combatDuck (below — recent hit/kill/fire/lance density, new). Either can
+// change without knowing about the other; both always read the other's
+// CURRENT value, so a retry duck mid-fight and a combat duck easing off a
+// lull never fight each other for the last word on the bus gain.
+function applyAmbienceGain(rampSec) {
   if (!ctx || dead) return;
   const t = ctx.currentTime;
   ambBus.gain.cancelScheduledValues(t);
   ambBus.gain.setValueAtTime(ambBus.gain.value, t);
-  ambBus.gain.linearRampToValueAtTime(A.ambience * mult, t + 0.4);
+  ambBus.gain.linearRampToValueAtTime(A.ambience * ambDuck * combatDuck, t + rampSec);
+}
+
+function duckAmbience(mult) {
+  ambDuck = mult;
+  applyAmbienceGain(0.4);
+}
+
+// combat-density duck: a busy fight (frequent hits/kills/fire/a lance strike)
+// pushes the machine bed down so the foreground weapon/impact sound has
+// headroom; a lull lets it climb back. `heat` decays continuously but the
+// bus gain itself is only recomputed on a throttled cadence (~7/s) — cheap
+// enough to run every frame's onPlayerSync without adding scheduling churn.
+let heat = 0;
+let combatDuck = 1;
+
+function bumpHeat(v) { heat = Math.min(1, heat + v); }
+
+function updateCombatHeat() {
+  if (!ctx || dead) return;
+  if (!gate('heatTick', A.heatTickMs)) return;
+  const t = nowMs();
+  const dtSec = Math.max(0, t - (lastAt.heatClockAt ?? t)) / 1000;
+  lastAt.heatClockAt = t;
+  heat = Math.max(0, heat - A.heatDecayPerSec * dtSec);
+  const next = 1 - A.heatDuck * heat;
+  if (Math.abs(next - combatDuck) > 0.015) {
+    combatDuck = next;
+    applyAmbienceGain(0.25);
+  }
+}
+
+/* ------------------- pursuing-edge pressure (T-042) ----------------- *
+ * The crush plane's own warning grammar, mirrored into sound. `pressureBus`
+ * is a persistent low rumble (built once, alongside the ambience layers —
+ * same "always-live node, gain-zeroed until needed" pattern, not a one-shot)
+ * whose gain tracks crushWarnIntensity(margin, CONFIG.juice.crush) — the
+ * EXACT pure function and the EXACT margin expression (player.x - player.hw
+ * - sLeftEdge()) render/juice.js already drives the visual crush-warning
+ * haze with, so the two can never read differently for the same distance.
+ * A separate ping is edge-detected off warnPulse()'s own continuous wave
+ * (same C.pulseSlowMs/pulseFastMs the visual blink uses) rather than
+ * re-deriving its period formula here, so a retune of the visual cadence
+ * retunes the ping for free and the two cannot drift apart in tuning. */
+let pressureBus = null;
+let prevPulse = 0;
+let lastPressureIntensity = 0;
+
+function buildPressure() {
+  pressureBus = ctx.createGain();
+  pressureBus.gain.value = 0;
+  pressureBus.connect(master);
+  const o = ctx.createOscillator();
+  o.type = 'sine';
+  o.frequency.value = A.pressureHz;
+  const f = ctx.createBiquadFilter();
+  f.type = 'lowpass';
+  f.frequency.value = A.pressureHz * 2;
+  o.connect(f).connect(pressureBus);
+  o.start();
+}
+
+function updatePressure() {
+  if (!ctx || dead) return;
+  const C = CONFIG.juice.crush;
+  const intensity = crushWarnIntensity(player.x - player.hw - sLeftEdge(), C);
+  lastPressureIntensity = intensity;
+  const t = ctx.currentTime;
+  pressureBus.gain.cancelScheduledValues(t);
+  pressureBus.gain.setValueAtTime(pressureBus.gain.value, t);
+  pressureBus.gain.linearRampToValueAtTime(A.pressure * intensity, t + 0.2);
+
+  if (intensity <= 0) { prevPulse = 0; return; }
+  // rising-edge detect: warnPulse's own period shrinks toward pulseFastMs as
+  // intensity climbs, so pings naturally arrive faster as the plane closes —
+  // a proximity-sensor cadence, not a fixed-rate beep.
+  const p = warnPulse(intensity, nowMs(), C);
+  if (p >= 0.5 && prevPulse < 0.5) {
+    const f0 = 200 + 500 * intensity;              // pitch rises with danger too
+    tone('sine', f0, f0 * 0.82, 0.09, 0.05 + 0.09 * intensity, 0, true);
+  }
+  prevPulse = p;
 }
 
 /* ------------------------- context lifecycle ----------------------- */
@@ -331,6 +521,8 @@ function buildContext() {
   ambBus = ctx.createGain();
   ambBus.gain.value = A.ambience * ambDuck;
   ambBus.connect(master);
+
+  buildPressure();
 
   noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);   // 1s seeded noise
   const data = noiseBuf.getChannelData(0);
@@ -378,6 +570,9 @@ const prev = {
 };
 
 function onPlayerSync() {
+  updateCombatHeat();                        // throttled internally; safe every frame
+  updatePressure();                          // per-frame; the ramp/gate calls inside are cheap
+
   const hurt = player.hp < prev.hp;
   if (hurt && gate('hurt', 120)) sfxHurt();
 
@@ -426,7 +621,7 @@ function onHostileSpawned(e) {
 }
 function onHostileSync(e) {
   const hp = hostileHp.get(e.id);
-  if (hp !== undefined && e.hp < hp && gate('hit', A.hitGapMs)) sfxHit();
+  if (hp !== undefined && e.hp < hp && gate('hit', A.hitGapMs)) { sfxHit(hp - e.hp); bumpHeat(A.heat.hit); }
   hostileHp.set(e.id, e.hp);
   if (e.kind === 'hound') {
     const s = hostileState.get(e.id);
@@ -440,7 +635,7 @@ function onHostileSync(e) {
 function onHostileRemoved(e, fade) {
   hostileHp.delete(e.id);
   hostileState.delete(e.id);
-  if (fade && gate('kill', A.hitGapMs)) sfxKill();
+  if (fade && gate('kill', A.hitGapMs)) { sfxKill(); bumpHeat(A.heat.kill); }
 }
 
 // capsules: removal is pickup only under the sim's own catch predicate
@@ -478,13 +673,44 @@ function onTransformReset() { xfSnap.clear(); applyLayers(); }
 function onCornerFinished() { sfxResume(); applyLayers(); }
 function onFaceRevealed() { sfxBoom(); }
 
-function onLanceTelegraph() { if (gate('warn', A.warnGapMs)) sfxWarn(false); }
+// Orbital lance: view.mods.lanceTelegraph(L) fires every frame the strike is
+// armed, INCLUDING the resolving frame (mods.js calls it before nulling
+// mods.lance) — so "gameMs crossed L.at" is the exact frame hitHostile hits
+// everything on screen, detected off the SAME data the bridge already hands
+// this hook plus the gameMs import audio.js already has. No new sim import,
+// no change to the T-012 sanctioned-read allowlist. `lanceStruckAt` guards
+// against firing twice while gameMs stays past L.at on later frames of the
+// same telegraph (there are none — mods.lance goes null the same frame — but
+// a second lance armed with the same `at` by coincidence would collide
+// without it, so the guard is real, not defensive filler).
+let lanceStruckAt = -1;
+function onLanceTelegraph(L) {
+  if (gate('warn', A.warnGapMs)) sfxWarn(false);
+  if (gameMs >= L.at && lanceStruckAt !== L.at) {
+    lanceStruckAt = L.at;
+    sfxLanceStrike();
+    bumpHeat(A.heat.lance);
+  }
+}
 
 function onStateScreen(next) {
   paused = next === 'PAUSED';
   if (!ctx || dead) return;
   if (next === 'PAUSED') { ctx.suspend().catch(() => {}); return; }
   if (ctx.state === 'suspended' && !document.hidden) ctx.resume().catch(() => {});
+  // every state screen ends the live-combat context: a stale heat value
+  // riding into a fresh life/screen would otherwise keep ambience ducked
+  // for up to a second past a fight that just ended
+  heat = 0;
+  combatDuck = 1;
+  // …and a fresh screen is never mid-crush: reset the pressure rumble/ping
+  // clock so a restart never inherits a stale ramp or an early ping
+  prevPulse = 0;
+  lastPressureIntensity = 0;
+  if (pressureBus) {
+    pressureBus.gain.cancelScheduledValues(ctx.currentTime);
+    pressureBus.gain.setValueAtTime(0, ctx.currentTime);
+  }
   if (next === 'PLAYING') {
     // a restart rewound corner/transform state; resync layers and the
     // per-frame caches so stale deltas can't fire ghost sounds
@@ -493,6 +719,7 @@ function onStateScreen(next) {
     hostileHp.clear();
     hostileState.clear();
     xfSnap.clear();
+    lanceStruckAt = -1;
     prev.hp = player.hp;
     prev.airJumpsLeft = player.airJumpsLeft;
     prev.grounded = true;
@@ -520,7 +747,7 @@ if (AUDIO_ON) {
   after('hostiles', 'removed', onHostileRemoved);
   after('capsules', 'removed', onCapsuleRemoved);
   after('bullets', 'slotSpawned', (i, type) => {
-    if (FIRE[type] && gate('fire:' + type, A.fireGapMs)) FIRE[type]();
+    if (FIRE[type] && gate('fire:' + type, A.fireGapMs)) { FIRE[type](); bumpHeat(A.heat.fire); }
   });
   after('mods', 'lanceTelegraph', onLanceTelegraph);
   after('corner', 'finished', onCornerFinished);
@@ -550,5 +777,10 @@ export function audioSnapshot() {
     dead,
     layers: ctx ? layerTarget() : 0,
     voices,
+    maxVoices: A.maxVoices,               // T-042: so a caller can judge `voices` against
+                                           // its own budget instead of hardcoding 14
+    combatDuck,                           // T-042: current ambience multiplier from recent
+    heat,                                 // combat density (both 1/0 when nothing is happening)
+    pressure: lastPressureIntensity,      // T-042: last computed crush-margin 0..1 intensity
   };
 }

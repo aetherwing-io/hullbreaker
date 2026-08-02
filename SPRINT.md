@@ -1041,11 +1041,28 @@ SEQUENCING: T-032 (+275 pathcheck lines) and T-035 are in flight and both touch
 pathcheck. Do NOT fight them — build and prove the migration script, and let the
 integrator run it after those merge.
 
+## T-050 | art | doing | P1
+goal: fix I-037 (S1) — T-045's scale pass emits ZERO pieces on the shipped
+default run. `limbBakePlan(CONFIG, groundH, {scale:true})` and `{scale:false}`
+both return 829 pieces with no mark/backdrop kinds, so the rung ladders,
+hatches, doors, gantry rail and graded backdrop tiers — the whole answer to
+decisions entry 17 — are invisible in play. It merged and was reported to the
+operator as live. Discriminator is `groundH`: a synthetic flat array yields
+delta 804, the real generated level yields 0.
+accept:
+- [ ] root cause found and fixed, not papered over by loosening a guard
+- [ ] a pathcheck assertion built from the REAL level's groundH that FAILS on
+      current main — 2404 assertions were green while the feature emitted
+      nothing, which is the intent-not-observable failure mode again
+- [ ] before/after captures at the shipped FAR default
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; browser plan probe showing a non-zero delta
+
 <!-- ===== 2026-08-02 FEEL + RENDERER PUSH (lanes T-042..T-048). Dispatched
 after the operator's "FIX the game" and "what is in the way" messages. Several
 were never given SPRINT entries at dispatch time; recorded here for truth. ===== -->
 
-## T-042 | audio | doing | P1
+## T-042 | audio | done | P1
 goal: make the game SOUND like an action game — weight on impacts, a distinct
 voice per weapon, an audible pressure curve, paired to T-041's directional
 impact language. All synthesized at runtime; no audio files.
@@ -2249,3 +2266,33 @@ so a bisect between that tree and `main` is the fastest route.
 
 NOT a lighting or bloom problem: `?light=flat` and `?scale=0` all render the same
 absent-marks frame, and the defect is in the PLAN, before any renderer runs.
+
+## I-037 — CORRECTED AND CLOSED (2026-08-02, integrator)
+
+**The conclusion was wrong; the scale pass works.** Verified on `main` in a
+browser after a hard reload, importing with cache-busting query strings:
+
+    withScale 1633 · withoutScale 829 · delta 804 · markPieces 818 · no silhouette
+
+That is T-045 doing exactly what it claims. The rung ladders, hatches, doors,
+gantry rail and graded backdrop tiers all bake and render on the shipped
+default run.
+
+**What actually happened: the integrator's browser was executing a pre-T-045
+copy of `src/pure/limb.js`** — a stale build, reachable either from one of the
+pinned worktrees still on this machine (`/private/tmp/hb-pin-main-cd37b91`,
+`/private/tmp/hb-pin-t009fix`) or from bytes cached before `tools/serve.mjs`
+replaced the caching python server on port 8741 earlier in the same session.
+T-050 reproduced the cache mechanism end to end and showed the two are
+**indistinguishable from a console**.
+
+**This is the T-024 defect class, committed by the person who diagnosed it.**
+The lesson is not "be careful" — it is that a plain fresh navigation is not
+sufficient evidence about which build you are looking at. Before concluding a
+feature is missing:
+  - hard-reload, and import with a cache-busting query string; and
+  - assert a build fingerprint from the page itself (a count, a symbol, a
+    version) rather than trusting the URL to imply the tree.
+
+I-037 is closed as NOT A DEFECT. T-050's real deliverable is the gate that
+makes this class self-detecting rather than a fix — see its report.
