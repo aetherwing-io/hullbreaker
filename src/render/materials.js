@@ -180,9 +180,20 @@ export function applySurface(material, family) {
  * was before this section existed. Nothing here is reachable from src/sim/
  * or src/pure/, and no gameplay value ever depends on whether a tile loaded.
  *
- * ?tex=flat is the A/B and the escape hatch: it skips every registration
- * below (so the boot budget is not spent on textures nobody asked to see)
- * and every bucket falls back to the pre-T-052 flat material, byte-for-byte.
+ * ?tex=flat is the A/B and the escape hatch for the ALBEDO PASS: it skips
+ * every registration below (so the boot budget is not spent on textures
+ * nobody asked to see) and every bucket's `map`/`bumpMap` fall back to
+ * nothing, exactly as they were before this section existed. CORRECTION,
+ * post-review: an earlier version of this comment claimed the flag reverts
+ * a bucket to the pre-T-052 material "byte-for-byte" — that overclaimed.
+ * `applySurface` (roughness/metalness/envMap, entry 18) still runs either
+ * way, because it is limb.js's adoption of the shared SURFACE table this
+ * file already offered every other hull lane, not part of what T-052 added;
+ * gating it behind ?tex= would make the flag a family switch nobody asked
+ * for. Measured (this file's own re-check, controlling for the family
+ * alone with the map off both times): the family assignment's OWN luminance
+ * effect on the lower-hull band is not measurable (40.1 either way) — the
+ * entire darkening this section's next note describes comes from the map.
  *
  * COMPOSITING THE WEAR OVERLAY, AND WHY: wear-scuff-overlay.png is ~78%
  * fully transparent with RGB=0 in the empty area (measured — the file is
@@ -241,11 +252,96 @@ registerRaw('wear-scuff-overlay.png', TEX_DIR + 'wear-scuff-overlay.png');
    costs the boot nothing beyond what T-049's lane already spends waiting. */
 await awaitPreloads();
 
+/* ---------------- luminance normalization (post-review finding) ---------- *
+ * MEASURED (the integrator's capture + this file's own re-check): binding a
+ * tile straight in as `map` on a material whose own `color` is white
+ * (0xffffff, so the INSTANCE color — the actual palette token — is the only
+ * thing that used to set brightness) makes the texture's own absolute mean
+ * value the surface's new brightness ceiling. hull-panel-tile.png's own mean
+ * is ~78.5/255 (~31%), so binding it cut the lower-hull band from a measured
+ * 40.1 to 19.3 — a 52% drop, independently reproduced here and matching the
+ * ~56% the integrator measured at a different capture point. A control with
+ * `applySurface` on and the map off showed no comparable drop (40.1 both
+ * ways), so the ALBEDO MAP is the whole effect, not the roughness/metalness
+ * family assignment next to it.
+ *
+ * The fix keeps the palette token owning VALUE and the tile owning DETAIL
+ * (the integrator's option 1): every base tile is normalized so its OWN mean
+ * luminance renders near-neutral (TARGET_MEAN) before it is drawn into the
+ * composited/repeated canvas, via the same 2D-context `filter` a browser
+ * already implements for free. A brighter or darker source (T-053 is
+ * regenerating these) is renormalized the same way with no per-bucket
+ * number to retune — the scale is computed from whatever image actually
+ * loaded, not typed once and left to drift out of step with the asset. */
+
+const TARGET_MEAN = 235;                  // measured target, not full 255 — see below
+const NORMALIZE_SAMPLE_PX = 24;           // enough to average a tile's own mean;
+                                           //   this is a scale factor, not a look
+
+/* SECOND MEASURED FINDING, same review cycle: `wall` and `shadow` are cool
+   teal palette tokens (PAL.limb.wall 0x44656b, PAL.limb.shadow 0x35504f —
+   B the dominant channel in both), but hull-panel-tile.png is a warm rust
+   texture (R dominant, B near zero). Binding it as a COLORED multiply onto
+   those buckets crushes their blue channel harder than red/green, and the
+   surface visibly shifts hue from teal toward green — reproduced in a live
+   capture (reports/tasks/T-052/evidence/), invisible at first because the
+   pre-normalization darkening (see below) buried it near-black. Grayscale
+   the tile before the brightness pass fixes this everywhere at once: a
+   texture bound this way can only ever modulate VALUE, never HUE, so the
+   instance color (the actual palette token) owns hue on every bucket, warm
+   or cool, exactly as the rest of this codebase's material model assumes. */
+function tileFilter(brightnessPct) {
+  return 'grayscale(100%) brightness(' + brightnessPct + '%)';
+}
+
+// CSS `filter: brightness(S%)` multiplies each 8-bit channel by S and CLIPS
+// at 255 — it does not redistribute the clipped headroom back into the
+// mean. MEASURED: hull-panel-tile.png's raw mean is 78.4/255; a naive
+// `scale = TARGET/rawMean` (≈325%) only pushed the actual full-canvas mean
+// to 201.7, not 255 — a 24-color, high-contrast tile clips its brighter
+// pixels before a linear scale can bring the average that far. So the scale
+// is found by measuring what a trial actually achieves and correcting
+// toward the target — same 24x24 sample canvas reused each pass, three
+// passes converge inside 2% for both this tile and T-053's regenerated one
+// (458 colors, much lower contrast, converges in one pass).
+function meanLuminance(img, brightnessPct) {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = NORMALIZE_SAMPLE_PX;
+  const g = cv.getContext('2d');
+  g.filter = tileFilter(brightnessPct || 100);
+  g.drawImage(img, 0, 0, NORMALIZE_SAMPLE_PX, NORMALIZE_SAMPLE_PX);
+  const data = g.getImageData(0, 0, NORMALIZE_SAMPLE_PX, NORMALIZE_SAMPLE_PX).data;
+  let sum = 0, n = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+    n++;
+  }
+  return n ? sum / n : TARGET_MEAN;
+}
+
+// clamped so a pathologically dark source never gets an absurd multiply —
+// 8x is already far past what either tile in hand needs (hull-panel-tile.png
+// converges around 4.7x, T-053's regenerated one around 2.6x).
+function normalizeScale(img) {
+  const raw = meanLuminance(img);
+  let scale = Math.max(1, Math.min(8, TARGET_MEAN / Math.max(1, raw)));
+  for (let i = 0; i < 3; i++) {
+    const achieved = meanLuminance(img, Math.round(scale * 100));
+    if (achieved <= 0) break;
+    const ratio = TARGET_MEAN / achieved;
+    if (Math.abs(ratio - 1) < 0.02) break;
+    scale = Math.max(1, Math.min(8, scale * ratio));
+  }
+  return scale;
+}
+
 /* ------------------------- the wear composite ---------------------------- *
- * One small canvas per near surface: the base tile, drawn as a flat repeat,
- * then the wear overlay drawn on top at a DIFFERENT cell size with alternate
- * cells mirrored — two independent ways the eye that spots one repeating
- * texture (tools/assets/tile.mjs's whole reason to exist) is denied both. */
+ * One small canvas per near surface: the base tile, brightness-normalized
+ * and drawn as a flat repeat, then the wear overlay (never renormalized —
+ * it is authored grime, not a base albedo) drawn on top at a DIFFERENT cell
+ * size with alternate cells mirrored — two independent ways the eye that
+ * spots one repeating texture (tools/assets/tile.mjs's whole reason to
+ * exist) is denied both. */
 
 function drawTiled(g, img, cellPx, canvasPx, flip) {
   let row = 0;
@@ -261,12 +357,54 @@ function drawTiled(g, img, cellPx, canvasPx, flip) {
   }
 }
 
+// THIRD MEASURED FINDING, same review cycle: with the base tile normalized,
+// re-measuring showed the lower-hull band still 33% darker than `?tex=flat`
+// — removing the wear pass entirely (a one-line A/B, `wear -> null`) dropped
+// that to 8%, so the WEAR OVERLAY, not the base tile, was carrying most of
+// the remaining gap. wear-scuff-overlay.png's opaque texels are their own
+// authored dark grime (measured mean ~62/255) blended in at full alpha, not
+// multiplied — so the base tile's normalization never touched it. It still
+// needs to read as grime (darker than its surroundings), just not so dark
+// it anchors the whole surface's average down again; a flat, un-tuned
+// brightness lift (not the iterative solve `normalizeScale` runs for an
+// albedo base, since this is a small, sparse accent, not the surface's own
+// value) is enough to keep it a visible accent rather than a second cause
+// of the same defect.
+const WEAR_BRIGHTEN_PCT = 340;
+
 function buildWorn(base, wear, canvasPx, baseCellPx, wearCellPx) {
   const cv = document.createElement('canvas');
   cv.width = cv.height = canvasPx;
   const g = cv.getContext('2d');
+  const scale = normalizeScale(base.tex.image);
+  g.filter = tileFilter(Math.round(scale * 100));
   drawTiled(g, base.tex.image, baseCellPx, canvasPx, false);
-  if (wear && wear.ready) drawTiled(g, wear.tex.image, wearCellPx, canvasPx, true);
+  if (wear && wear.ready) {
+    g.filter = 'grayscale(100%) brightness(' + WEAR_BRIGHTEN_PCT + '%)';
+    drawTiled(g, wear.tex.image, wearCellPx, canvasPx, true);
+  }
+  g.filter = 'none';
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  tex.generateMipmaps = true;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.needsUpdate = true;
+  warmTexture(tex);
+  return tex;
+}
+
+// wall/shadow have no wear pass, but they need the SAME brightness
+// normalization — so they now go through a canvas too instead of binding
+// the raw loaded texture directly (the raw texture never had a chance to be
+// darkened OR normalized before this; it was simply used as-is).
+function buildFlatTile(base, canvasPx, baseCellPx) {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = canvasPx;
+  const g = cv.getContext('2d');
+  const scale = normalizeScale(base.tex.image);
+  g.filter = tileFilter(Math.round(scale * 100));
+  drawTiled(g, base.tex.image, baseCellPx, canvasPx, false);
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;
@@ -332,13 +470,24 @@ function finishHullTex() {
     HULL_TEX.hull = { map: buildWorn(hullBase, wear, 384, 128, 250), bumpScale: 0.07, repeat: repeat.hull };
   }
   if (wallBase.ready) {
-    HULL_TEX.wall = { map: wallBase.tex, bumpScale: 0.02, repeat: repeat.wall };
+    HULL_TEX.wall = { map: buildFlatTile(wallBase, 384, 128), bumpScale: 0.02, repeat: repeat.wall };
   }
   if (scuteBase.ready) {
     HULL_TEX.scute = { map: buildWorn(scuteBase, wear, 256, 128, 188), bumpScale: 0.07, repeat: repeat.scute };
   }
   if (shadowBase.ready) {
-    HULL_TEX.shadow = { map: shadowBase.tex, bumpScale: 0.04, repeat: repeat.shadow };
+    HULL_TEX.shadow = { map: buildFlatTile(shadowBase, 128, 128), bumpScale: 0.04, repeat: repeat.shadow };
+  }
+
+  // Every raw loaded texture above was consumed SYNCHRONOUSLY into a canvas
+  // (drawImage reads pixels immediately; nothing here is async) and none of
+  // them is bound as a live material `.map` any more — buildWorn/buildFlatTile
+  // always produce the CanvasTexture actually used. Left resident, they were
+  // dead GPU memory: measured, +2 resident textures (34 vs 32) after wall and
+  // shadow moved off the raw binding they used to have. Disposing here is
+  // safe precisely because nothing after this point still reads `.tex`.
+  for (const slot of [hullBase, wallBase, scuteBase, shadowBase, wear]) {
+    if (slot.ready && slot.tex) slot.tex.dispose();
   }
 }
 finishHullTex();

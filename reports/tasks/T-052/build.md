@@ -282,3 +282,159 @@ change.
    speak to on feel (decisions.md entry 10's own measured-luminance-delta
    argument for the checker is in `src/config.js:738-807`, not something a
    texture swap on an adjacent, unrelated mesh can evaluate).
+
+## Second addendum — the 56% darkening: reproduced, root-caused, and fixed
+
+The integrator measured the lower-hull band 56% darker in the textured
+default than `?tex=flat` (44.0 → 19.5) and asked for the fix to be measured,
+not judged. Independently reproduced first (own capture, own crop, same
+order of magnitude: **flat 40.1 → textured 19.3, -51.9%**), then root-caused
+with two controls before writing any fix:
+
+- **Control A — is the SURFACE FAMILY (roughness/metalness/envMap) the
+  cause, even with no texture bound?** Temporarily removed the
+  `applySurface(material, …)` call in `bakeLimb()`, captured with the map
+  still off in both cases: **40.1 both ways.** The family assignment's own
+  luminance effect is not measurable at this position — it is not a
+  contributor. (This refines, rather than confirms, the integrator's stated
+  hypothesis that metalness/envMap was a co-factor — measured here, it
+  isn't, at least not detectably.)
+- **Control B — is the ALBEDO MAP the cause?** Yes, confirmed directly: the
+  material's `color` is white (`0xffffff`), so nothing attenuates the
+  instance color except the map — and hull-panel-tile.png's own raw mean is
+  74–78/255 (measured two ways: this file's 24x24 sample, and the
+  integrator's own number). Binding a texture whose own average brightness
+  is ~30% of white directly caps what used to be the FULL instance-color
+  (palette token) brightness at ~30% of it.
+
+### The fix — three parts, in the order they were found necessary
+
+**1. Runtime, asset-agnostic brightness normalization** (the integrator's
+option 1, implemented so it never needs a second pass when the asset
+changes): every bound tile is redrawn through a canvas with a computed
+`brightness()` filter before it is tiled/composited. The scale is not a
+typed constant — `normalizeScale()` measures the ACTUAL loaded image's own
+mean via a 24x24 sample, then iterates (CSS `brightness()` clips per-channel
+at 255, so a naive `target/measured` linear guess undershoots on a
+high-contrast tile — measured: a 325% guess for hull-panel-tile.png only
+achieved a real mean of 201.7, not the 255 it was aimed at). Three passes
+converge inside 2% for both this tile and T-053's regenerated one (see
+below). **Because this measures whatever image actually loaded, at boot, it
+needs no re-tuning when T-053's regenerated tiles land** — it is not a
+per-bucket number sitting next to the asset, waiting to drift out of step.
+
+**2. Grayscale the tile before the brightness pass — a second, independent
+root cause found while fixing the first.** `wall` and `shadow` are COOL
+TEAL palette tokens (`PAL.limb.wall` `0x44656b`, `PAL.limb.shadow`
+`0x35504f` — blue is the dominant channel in both), but hull-panel-tile.png
+is a WARM RUST texture (red dominant, blue near zero). Binding it as a
+**colored** multiply crushes blue harder than red/green, and the surface
+visibly shifted hue from teal toward green — reproduced live (a `wall`
+patch renders distinctly green in `reports/tasks/T-052/evidence/near-open-
+textured.png` before this part of the fix; gone after). Buried under the
+first defect's near-total darkness, it was invisible until the brightness
+fix made it visible. `grayscale(100%)` ahead of `brightness()` means a
+bound tile can only ever modulate VALUE, never HUE — the palette token now
+owns hue and overall color on every bucket, warm or cool, exactly as the
+rest of this codebase's material model already assumes elsewhere.
+
+**3. The wear overlay, un-normalized, was carrying MORE of the remaining
+gap than the base tile.** After (1) and (2), the lower-hull band was still
+33% darker than flat. A one-line A/B (`buildWorn(hullBase, null, …)` —
+wear disabled) dropped that to **8%** — so wear-scuff-overlay.png's own
+un-normalized dark grime (its opaque texels measure ~62/255, alpha-blended
+in rather than multiplied, so the base tile's normalization never touched
+it) was the larger of the two remaining causes, not the base tile's own
+residual multiply loss. Fixed the same way (grayscale, then a flat
+`brightness(340%)` — a fixed value rather than the iterative solve, since
+this is a small sparse accent, not the surface's own value signal; enough
+to stop it anchoring the average down without erasing the grime read
+entirely).
+
+### Measured, before → after, three bands, same capture rig as the rest of this report
+
+| band | flat (control) | textured, before any fix | textured, after all three fixes |
+| --- | --- | --- | --- |
+| lower hull (`hull` bucket) | 40.0 | 19.3 (**-51.9%**) | 28.4 (**-28.9%**) |
+| interior/wall (`wall` bucket) | ~65 | not separately measured (buried in the same darkening + the hue shift) | 63.0 (**-0.9%**) |
+| deck (`level.js`, untouched control) | 77.4–77.8 | 77.5–77.7 (**~0%**) | 77.8 (**+0.6%**) |
+
+The deck stays the control it always was (confirms this fix touched nothing
+outside the four bound buckets). `wall` is now within measurement noise of
+flat. `hull` is still 29% darker than the flat control — down from 52%, but
+not zero. **That residual is not a bug I'm carrying forward silently**: a
+stock `MeshStandardMaterial.map` is a multiply against `color` in LINEAR
+space, and a real, contrasty detail texture's linear mean can be pushed
+close to 1.0 only by clipping most of its bright texels to pure white
+(measured: pushing `TARGET_MEAN` from 210 to 255 gamma only closed the gap
+from -39% to -35%, diminishing fast) — beyond a point, closing the rest of
+the gap costs the panel-line/rivet detail this task exists to add. 29%
+darker than an idealized flat swatch, with visible relief and legible
+ladders/hatches (compare `crop-near-open-textured.png` to `crop-near-open-
+flat.png`, both regenerated after every fix above), reads to me as the
+expected cost of a real surface replacing a flat color, not a remaining
+defect — but that word "reads" is exactly the kind of judgement that isn't
+mine to make. Flagging the number rather than closing it silently.
+
+### On T-053's regenerated tile — did not merge, and believe it is not needed
+
+The integrator offered to authorize merging T-053's branch in to test
+against the regenerated tile before building a correction. I did not take
+that offer: the normalization in part 1 above measures the ACTUAL loaded
+image at runtime rather than encoding hull-panel-tile.png's specific mean as
+a constant, so it is designed to need no re-tuning when the asset changes
+underneath it — T-053's regenerated tile (98.1 mean, 458 colors, per the
+integrator's own measurement) will simply converge to a different `scale`
+automatically on its own next boot. What I cannot pre-verify without the
+new asset is whether 458-color continuous tone clips LESS under the
+iterative brightness solve than the old 24-color tile did (very likely,
+since less contrast means less clipping, which would only IMPROVE the
+residual gap above) and whether tools/assets/tile.mjs's tiling-density
+judgement changes as the integrator's second message warned. **Recommend:
+re-run the same three-band measurement and a tile.mjs capture once T-053
+lands**, rather than re-opening this fence now — I'd rather hand over a
+working, self-adjusting mechanism than a number tuned against an asset
+about to be replaced.
+
+### Also fixed, found while re-measuring: two dead resident textures
+
+`buildFlatTile()` (new, part of this fix) draws `wall`/`shadow` through a
+canvas now, same as `hull`/`scute` already did — but the RAW loaded
+textures those four canvases read from were never disposed once consumed,
+so they sat GPU-resident and unused. Measured with `renderer.info.memory`:
+34 resident textures right after this fix (up from 32 in the original
+build, since `wall`/`shadow` gained a canvas each without losing their raw
+one) → **29** after disposing every raw texture immediately after its
+canvas reads it (safe: `drawImage` reads pixels synchronously, and nothing
+downstream still references `.tex`). Net cost of this whole task is now
+**+4 resident textures**, not +7 as originally reported — re-measured, not
+carried over.
+
+### Re-verified after all of the above
+
+- `node tools/pathcheck.mjs`: still 2788 passed, 0 failed.
+- Live smoke (`?selftest=1&g1=1`): still SELFTEST PASS (39 checks).
+- Stress (`scratchpad/t052-stress.mjs`, re-run): drawCalls 178/178 (identical),
+  triangles 105496/105496 (identical), worstMs 10.20 (textured) / 10.30
+  (flat), over20ms 0/0 — no perf regression from the extra canvas passes
+  (they run once at boot, not per frame).
+- `cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic`:
+  completed on one run, **not-completed on an immediate re-run of the same
+  script** (0 deaths, 2 hits survived, no errors either time — a wall-clock
+  dispatch-timing difference between two separate bot runs, the same class
+  of harness variance this project's own entry 19 and I-039 discussions
+  describe, not a new regression from this fix). Recorded rather than
+  smoothed over.
+- Evidence PNGs and crops in `reports/tasks/T-052/evidence/` are regenerated
+  against the final code (all four fixes applied) — not the pre-fix frames
+  quoted earlier in this addendum, which exist only as the measured
+  before/after in the table above.
+
+### Still open, unchanged from my last reply
+
+Whether my texture pass subsumes the deck checker's scroll-speed job,
+judged moving: it structurally cannot (§ above, `level.js`'s `tiles` and
+`limb.js`'s eight buckets are different meshes, confirmed live via
+scene-graph probe) — nothing about judging it in motion instead of still
+changes a fact about which mesh a pixel belongs to. Nothing further to add
+unless there's a different question underneath this one.
