@@ -870,6 +870,34 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; re-read each cited file:line against its issue
 
+<!-- ========== 2026-08-02 OPERATOR GOAL CHANGE (supersedes parts of the
+Delivery target that T-028 just rewrote; that rewrite's evidence-honesty fixes
+stand, its audience assumption does not) ==========
+
+VERBATIM: "give me son fox the game to play and enjoy. something a 9 year old
+boy could play a lot and that he would enjoy."
+
+Operator answers, same session:
+  - Device:     laptop/desktop KEYBOARD. No touch, no gamepad work needed.
+  - Delivery:   a PUBLIC URL (itch.io class). The operator must do the account
+                and upload themselves; an agent may never create accounts or
+                enter credentials. Prepare the bundle, not the upload.
+  - Difficulty: "Not worried about it being beatable yet, just durable to play.
+                he'll enjoy finding and reporting play problems."
+
+WHAT THIS CHANGES. The target is no longer "prove the pillars to an expert."
+It is "a 9-year-old can reach it, play it for a long time, and break it in
+interesting ways without losing his progress." So:
+  - DURABILITY outranks difficulty tuning. Do NOT tune the difficulty curve
+    against this goal; he is fine with hard. He is not fine with broken.
+  - Every recorded difficulty verdict was taken with an expert adult implicitly
+    in the chair. They are not wrong, they answer a different question. Do not
+    re-litigate them and do not "fix" difficulty for him unless he asks.
+  - Boot-to-victory stays an open box but drops in priority. Beatability is
+    explicitly not the bar right now.
+  - A blank page, a softlock, a lost save, or a crash is now a P1 defect class.
+========================================================================== -->
+
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
 **RIDER — `docs/decisions.md` entry 13 (2026-08-01): a verdict taken in
