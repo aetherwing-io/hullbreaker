@@ -977,7 +977,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; paired-population capture comparison at the FAR default
 
-## T-036 | assets | doing | P2
+## T-036 | assets | done | P2
 
 goal: unblock the held asset batch by answering the question that holds it.
 CLAUDE.md and the checkpoint queue both record that glyph work is frozen until
