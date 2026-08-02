@@ -256,6 +256,23 @@ CONCEPT.seamPip = 0xd6ccb4;
 CONCEPT.seamHalo = 0xbeb296;
 /* ==== end T-038 block ===================================================== */
 
+/* ==== T-051 backdrop layers: near/mid/far atmospheric tint ===============
+   Three stops, multiplied onto each plate's own pre-shaded art in
+   src/render/backdrop.js (material.color against a textured map). The same
+   atmospheric-perspective lever CONFIG.limb.backdrop's box tiers already use
+   via PAL.limb's hull->wall->skyline ladder — warm/near, cooling toward the
+   far/skyline family — so a textured plate and a box tier agree on which
+   direction is "away." CONCEPT.backdropFar is deliberately identical to
+   CONCEPT.limb.skyline for that same reason. Read by src/render/backdrop.js
+   only. */
+CLASSIC.backdropNear = 0x6e7480;
+CLASSIC.backdropMid = 0x585e68;
+CLASSIC.backdropFar = 0x454b53;
+CONCEPT.backdropNear = 0xa8764c;
+CONCEPT.backdropMid = 0x5c7a78;
+CONCEPT.backdropFar = 0x2f545c;
+/* ==== end T-051 block ===================================================== */
+
 export const PALETTE_ID = resolvePaletteId(QUERY.get('palette'));
 export const PAL = PALETTE_ID === 'classic' ? CLASSIC : CONCEPT;
 

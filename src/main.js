@@ -86,6 +86,18 @@ import {
 import { clearCorpses, updateCorpses } from './render/hostiles.js';
 // imported for their side effects: each builds its meshes and installs its
 // half of the view bridge as it loads, before anything below runs
+//
+// backdrop.js (T-051) is listed first deliberately: it is reached here, AFTER
+// the scene.js import above, rather than from scene.js itself — it awaits the
+// shared preload gate (src/render/preload.js), which itself needs `renderer`
+// from scene.js, and scene.js's own top-level code cannot finish running
+// until everything it imports has (dependencies always evaluate before the
+// importing module's own body, regardless of source position). Importing
+// backdrop.js from scene.js would therefore be a real cycle — proved three
+// ways to either deadlock the boot or leave `scene`/`renderer` permanently
+// stuck in their temporal dead zone — where importing it here is the same
+// ordinary forward dependency src/render/sprites.js already relies on below.
+import './render/backdrop.js';
 import './render/level.js';
 import './render/seams.js';
 import { limbPieces } from './render/limb.js';
