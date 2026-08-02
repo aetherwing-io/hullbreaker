@@ -1,0 +1,22 @@
+<svg id="hound-brace-a" data-category="sprites" width="64" height="32" viewBox="0 0 32 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+  <title>HULLBREAKER Brace Hound</title>
+  <desc>Side-on ground charger facing right: a low pointed acid-green armoured mass with ink braces and ground seam, plus one rust-orange eye slit.</desc>
+
+  <path fill="#14181e" d="M3 15H31L30 16H4Z"/>
+
+  <path fill="#405318" d="M5 9H11L10 12L8 15H3L4 13L6 11Z"/>
+  <path fill="#14181e" d="M6 10H9L8 12L7 14H4L5 13L7 11Z"/>
+
+  <path fill="#405318" d="M18 9H23L24 11L27 13H30L31 15H25L22 13L21 15H16L17 13L19 11Z"/>
+  <path fill="#14181e" d="M20 10H22L23 12L26 14H29L30 15H26L23 13L22 12L20 14H18L19 13L21 11Z"/>
+
+  <path fill="#819b24" d="M2 8L4 5L8 1H13L17 3L19 4H24L27 6L29 7L31 9V10L29 12L26 13L23 12L21 11H18L16 12H12L10 11H6L3 10L2 9Z"/>
+
+  <path fill="#c6d93b" d="M4 6L8 1H13L17 3L20 4H15L12 3H8L6 6Z"/>
+
+  <path fill="#405318" d="M2 8L6 7H11L15 8L18 7H23L27 8L31 9V10L29 12L26 13L23 12L21 11H18L16 12H12L10 11H6L3 10L2 9Z"/>
+
+  <path fill="#14181e" d="M5 8H11L14 9H18L20 8H24L27 9L26 10H21L19 9H15L13 10H8L6 9H3Z"/>
+
+  <path fill="#d1843f" d="M27 8H30L29 9H27Z"/>
+</svg>

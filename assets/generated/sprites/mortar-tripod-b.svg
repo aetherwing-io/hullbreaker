@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <title>mortar-tripod-b — Seed-Pod Tripod</title>
+  <desc>Side-on organic-machine spore mortar facing right. Acid-green chamber and muzzle, ink struts, hull rims, and small rust-orange armour plates emphasize the swollen belly, raised barrel, and grounded tripod read.</desc>
+
+  <!-- Rear leg and foot -->
+  <path fill="#14181e" d="M9 19L13 21L10 24L8 28L10 29V32H1V29L4 28L6 23Z"/>
+  <path fill="#767c85" d="M8 21L10 22L8 24L6 28H4L6 25Z"/>
+  <path fill="#767c85" d="M2 29H8L10 30H1Z"/>
+
+  <!-- Centre leg and foot -->
+  <path fill="#14181e" d="M13 21H18L17 28L20 29V32H10V29L12 28Z"/>
+  <path fill="#767c85" d="M14 23H16V28L18 29H12L14 28Z"/>
+  <path fill="#767c85" d="M11 29H18L20 30H10Z"/>
+
+  <!-- Front leg and foot -->
+  <path fill="#14181e" d="M18 20L21 19L23 23L25 26L29 28L32 29V32H24L22 28L19 26L16 23Z"/>
+  <path fill="#767c85" d="M20 21H21L23 25L27 28L25 29L21 26Z"/>
+  <path fill="#767c85" d="M26 28H30L32 30H24Z"/>
+
+  <!-- Raised segmented barrel -->
+  <path fill="#14181e" d="M10 15L11 10L14 7L26 2H30L32 4V6L30 8L20 14L18 16Z"/>
+  <path fill="#405012" d="M12 13L13 10L15 8L26 4H29L30 5V7L19 14H13Z"/>
+  <path fill="#71851b" d="M14 10L26 5H29V6L19 12L14 13Z"/>
+  <path fill="#767c85" d="M14 7L26 2H30L29 4H26L15 9L13 11L11 10Z"/>
+  <path fill="#9b5c31" d="M17 6L20 5L21 6L18 8H16Z"/>
+  <path fill="#9b5c31" d="M23 4L26 3H28L27 4L24 5Z"/>
+
+  <!-- Three broad barrel ribs -->
+  <path fill="#14181e" d="M14 8L17 7L18 9L17 14L15 15L14 12Z"/>
+  <path fill="#14181e" d="M20 5L22 4L24 5L23 10L20 11L19 8Z"/>
+  <path fill="#14181e" d="M25 3L28 2L30 4L29 8L27 9L26 6Z"/>
+
+  <!-- Hot muzzle ring -->
+  <path fill="#a8c22a" d="M29 3H31L32 4V6L30 8L28 7L29 5L28 4Z"/>
+  <path fill="#14181e" d="M30 4H32V6L30 7L29 6Z"/>
+
+  <!-- Swollen seed chamber -->
+  <path fill="#14181e" d="M10 11L16 10L20 12L23 16V20L22 22L19 25H11L7 23L6 19V17L8 13Z"/>
+  <path fill="#71851b" d="M10 13L16 12L19 13L21 16V20L18 23L16 24H11L8 22L7 19L8 16Z"/>
+  <path fill="#405012" d="M8 16L11 14L12 15L11 22L13 24H11L8 22L7 19Z"/>
+  <path fill="#405012" d="M11 22L18 21V23L16 24H11Z"/>
+  <path fill="#a8c22a" d="M12 14H17L20 16V20L17 23H12L10 21V17Z"/>
+
+  <!-- Seed cleft -->
+  <path fill="#14181e" d="M14 14H15V23H14Z"/>
+
+  <!-- Chamber armour and lit silhouette rims -->
+  <path fill="#767c85" d="M9 12L11 10H16L20 12L19 14L16 12L11 13L8 15L7 14Z"/>
+  <path fill="#9b5c31" d="M10 12L13 11L14 12L11 13Z"/>
+  <path fill="#9b5c31" d="M16 11L19 12L18 13L15 12Z"/>
+  <path fill="#767c85" d="M7 14L9 15L8 18L9 22L11 24H9L7 22L6 18Z"/>
+  <path fill="#767c85" d="M20 13L22 15L23 18L22 21L20 23L19 22L21 19V16L19 15Z"/>
+
+  <!-- Joint housings -->
+  <path fill="#14181e" d="M5 21L7 20L9 21V23L7 24L5 23Z"/>
+  <path fill="#767c85" d="M6 21H8V23H6Z"/>
+  <path fill="#14181e" d="M20 21L22 20L24 21V23L22 24L20 23Z"/>
+  <path fill="#767c85" d="M21 21H23V23H21Z"/>
+</svg>

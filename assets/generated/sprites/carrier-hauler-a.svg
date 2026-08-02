@@ -1,0 +1,22 @@
+<svg id="carrier-hauler-a" xmlns="http://www.w3.org/2000/svg" width="64" height="32" viewBox="0 0 32 16" shape-rendering="crispEdges">
+  <title>HULLBREAKER carrier hauler A</title>
+  <desc>Acid-green, ink, and hull-neutral roles form a broad symmetric drifting gantry with two hanging clamps and one hot acid core, reading as big, slow, and carrying cargo.</desc>
+
+  <path fill="#14181e" d="M5 7H9V9H8V11L10 13H13V15H9L6 12V9H5ZM27 7H23V9H24V11L22 13H19V15H23L26 12V9H27Z"/>
+  <path fill="#767c85" d="M6 8H7V11L10 13H12V14H10L6 12ZM26 8H25V11L22 13H20V14H22L26 12Z"/>
+
+  <path fill="#14181e" d="M13 7H15V11H13ZM17 7H19V11H17Z"/>
+  <path fill="#767c85" d="M14 8H15V11H14ZM17 8H18V11H17Z"/>
+
+  <path fill="#14181e" d="M13 9H19L20 11V14L19 16H13L12 14V11Z"/>
+  <path fill="#536115" d="M14 10H18L19 11V14H13V11Z"/>
+  <path fill="#767c85" d="M14 9H18V10H14ZM12 11H13V14H12ZM19 11H20V14H19ZM13 14H19V15H13Z"/>
+  <path fill="#d4ee39" d="M15 11H17V14H15Z"/>
+
+  <path fill="#536115" d="M1 3L3 1H8L9 0H23L24 1H29L31 3V7L29 8H3L1 7Z"/>
+  <path fill="#75881d" d="M2 3L4 2H9L10 1H22L23 2H28L30 3V6L28 7H4L2 6Z"/>
+  <path fill="#a8c22a" d="M3 3L4 2H9L10 1H15V3ZM17 1H22L23 2H28L29 3H17Z"/>
+  <path fill="#536115" d="M2 3H6V6L4 7H2ZM30 3H26V6L28 7H30ZM14 4H18V6H14Z"/>
+  <path fill="#14181e" d="M9 3H10V6H9ZM22 3H23V6H22ZM3 7H29V8H3Z"/>
+  <path fill="#767c85" d="M5 7H9V8H5ZM23 7H27V8H23Z"/>
+</svg>

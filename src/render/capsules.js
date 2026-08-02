@@ -29,6 +29,7 @@ import { CAP } from '../sim/capsules.js';
 import { scene } from './scene.js';
 import { placeOnTower } from './tower.js';
 import { PAL } from './palette.js';
+import { releaseContactShadow, syncContactShadow } from './contact.js';
 import {
   CAPSULE_SWEEP_FREQ, CAPSULE_SWEEP_RAD, GLYPH_EDGE, GLYPH_GAIN, GLYPH_INK_FILL,
   GLYPH_SQUEEZE_MIN, GLYPH_TEX_PX, LEGIBILITY_ON,
@@ -152,6 +153,7 @@ function removed(c) {
   const v = meshes.get(c);
   if (!v) return;
   meshes.delete(c);
+  releaseContactShadow(c);
   scene.remove(v.mesh);
   for (const m of v.mats) m.dispose();
 }
@@ -168,6 +170,7 @@ function sync(c) {
   v.mesh.rotation.y += LEGIBILITY_ON
     ? Math.sin(c.t * CAPSULE_SWEEP_FREQ) * CAPSULE_SWEEP_RAD
     : c.t * 2.2;
+  syncContactShadow(c, c.x, c.y, CAP.size / 2);
 }
 
 installView({ capsules: { spawned, removed, sync } });
