@@ -3132,3 +3132,50 @@ NOT a fix: shrinking the tile back down. T-054's density correction is what
 made the texture visible at all (near-hull fine detail 0.416 -> 1.648 vs the
 flat control) and the operator asked for it. Any candidate must hold that
 number while moving the shimmer one. -->
+
+## I-050 | bug | S2 | repro: hold a port with any HTTP server, then run `node tools/deploy/verify-bundle.mjs` on that port — `waitForServer` accepts the 200 and the art checks pass against content the tool never served | evidence: T-055 review
+
+**The bundle verifier can pass against the wrong bytes.** `verify-bundle.mjs`'s
+`waitForServer` only checks that *something* answers 200 on the port — not that
+the responder is the process it just spawned. T-055's reviewer hit this live: a
+scratch port already held by a concurrent agent's server produced a **false
+PASS**. A genuinely free port then reproduced correct red/green both ways, so
+the shipped binding proof is real — but the tool that proves the itch.io bundle
+contains its art can, under port contention, prove it about someone else's
+tree.
+
+This is S2 rather than S3 because of what it guards: I-048 was an S1 whose
+whole signature was *invisible success* — a bundle that runs perfectly while
+missing every asset. The verifier is the only thing standing between that
+failure and an upload, and a false PASS is precisely the failure mode it exists
+to prevent, reproduced one level up.
+
+Fix direction: have the server emit a nonce (a unique token on a known path)
+and have `waitForServer` require that token, not just a status code. Bind to
+port 0 and read back the assigned port rather than guessing one. The same
+pattern is worth auditing in every sibling rig that spawns a server — several
+were written this cycle.
+
+## I-051 | tooling | S3 | repro: `cd tools/playtest && node fogband-capture.mjs shots` on current main | evidence: T-056 playtest
+
+`fogband-capture.mjs` throws immediately on the tree that ships it. Its
+`SHIPPED_LINE` constant is the two-way `shadeFog`/`limb.fog` conditional that
+T-056's own commit deletes from `camera.js`, so the rig cannot regenerate the
+evidence it produced. It fails loudly rather than silently wrong, and has zero
+effect on the shipped game — but a measurement rig that cannot be re-run has
+become a historical artifact rather than a tool, and this project's evidence
+standard leans on being able to re-derive numbers.
+
+## I-052 | docs | S3 | repro: re-derive `probe()`/`factor()` from `t-035-value-ladder.mjs` at aspect 1.7778 vs the asserted 1.6 | evidence: T-056 playtest
+
+T-056's recorded LIMIT — play-band screen-edge haze of 3.31% at FAR / 4.60% at
+`?view=near` — is **16:10-only**. At 16:9 it is 4.21% / 5.60%, about a point
+higher, and 16:9 is reachable: `main.js` tracks `camera.aspect` to the live
+window, so a player's window shape decides which number applies. No visible
+legibility cost was found at either. Either restate the LIMIT as "at 16:10" or
+widen the assertion's aspect loop to match the S2(iii) assertion it replaced.
+
+Related, same report: T-056's `build.md` sky-band table cannot be reproduced by
+a single committed command — the reviewer got the exact numbers by combining
+two committed conventions by hand. The figures are genuine; the citation path
+is not. Worth a `--top` flag next time that method is reused.
