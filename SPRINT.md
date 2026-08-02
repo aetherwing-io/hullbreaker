@@ -1313,6 +1313,39 @@ would, on purpose, twice.
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
+### CP — the hull is darker than it was. Is that right? (T-052, merged 2026-08-02)
+
+`http://127.0.0.1:8741/index.html` — compare against `?tex=flat`.
+
+The hull now wears real surface texture for the first time. An albedo map
+multiplies the material colour, so textured surfaces are inherently darker
+than the flat palette token they replace. The lane normalized this at runtime
+and cut the drop a long way, but a residual remains and it is **structural,
+not a bug** — closing it entirely means erasing the detail that makes it a
+texture at all.
+
+Measured, same position (17m marker), mean display luminance:
+
+  lower hull   this morning, untextured .......... 51.0
+               T-052 first version ............... 19.5   (-56% vs its control)
+               T-052 shipped ..................... 29.5   (-33% vs its control)
+  deck              87.0 -> 82.5      sky   62.7 -> 61.8
+
+The lane tried to close the residual further (TARGET_MEAN 210 -> 255) and got
+only 39% -> 35% before it flattened out; it reported that and explicitly
+declined to judge whether the result "reads", on the grounds that the word is
+not a machine's to use. The playtest gate passed readability on its own
+criteria. But value is a look decision and it is yours.
+
+Questions:
+  1. Does the sub-deck structure — panel lines, ladders, hatches — read well
+     enough when you are falling through it, not just standing on it?
+  2. Is the darker hull an improvement (mass, depth, a machine you are inside)
+     or a loss (you want to see what you are climbing)?
+  3. `?tex=flat` is the A/B. Which do you want as the default?
+  4. If darker is right in principle but this is too far, say roughly how far
+     back — the normalization target is one number and cheap to move.
+
 ### CP — backdrop depth: visible-but-seamed, or clean-but-buried? (T-051, 2026-08-02)
 
 **This is a real tradeoff with no machine answer, and the lane surfaced it
