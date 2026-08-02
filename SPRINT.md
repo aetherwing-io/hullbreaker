@@ -870,6 +870,71 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; re-read each cited file:line against its issue
 
+## T-032 | feature | todo | P1
+
+goal: a 9-year-old must never meet a blank screen. Today the operator's own
+session rendered a black page with one console SyntaxError and no on-screen
+explanation whatsoever (a stale cached module; fixed in T-024) — a player would
+have had no idea the game had failed, or that reloading might help. Any boot
+failure or unhandled runtime exception must surface a readable panel instead of
+a void, and the game must survive the ordinary abuse of a kid: alt-tab, resize,
+a backgrounded tab (Chrome suspends rAF entirely when hidden — this session
+measured zero frames painted), rapid restart, key mashing.
+accept:
+- [ ] an uncaught error at boot renders a legible failure panel naming what
+      broke and offering a reload — verified by deliberately breaking an import
+      and loading the page, with a screenshot committed as evidence
+- [ ] an uncaught error mid-run does not silently freeze the game: it either
+      recovers or fails legibly; a frozen canvas with a live page is a defect
+- [ ] backgrounding the tab for 60s and returning does not corrupt the run
+      (no giant dt catch-up, no physics explosion) — assert the dt clamp
+- [ ] resize during play, pause during a transition, and restart-spam do not
+      throw; drive each headlessly and report console/page errors
+- [ ] pathcheck assertions for any new pure logic; no movement constant moves
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; index.html?selftest=1; a deliberately-broken-import boot capture; a headless abuse script
+
+## T-033 | feature | todo | P1
+
+goal: he will play across days, and there is NO persistence of any kind today
+(zero localStorage in src/). Closing the tab loses everything. Give the run a
+memory: progress survives a closed tab, and a game over does not erase the
+session. This is the single biggest threat to "plays it a lot" — a kid who
+loses everything at a wave gate does not come back.
+accept:
+- [ ] progress persists across a reload and a closed tab, and a corrupted or
+      absent save NEVER blocks boot (fall back to a fresh run, silently)
+- [ ] the save is versioned; an old/unknown schema is discarded safely rather
+      than crashing — prove it by loading a deliberately-corrupt payload
+- [ ] nothing in src/pure/ or src/sim/ touches storage (layer purity: that is
+      a window API); the sim stays deterministic and unaware
+- [ ] a visible way to start over, so he is never trapped in a bad save
+- [ ] pathcheck assertions for the pure serialization logic
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; index.html?selftest=1; reload/corrupt-save/fresh-boot headless checks
+
+## T-034 | harness | todo | P1
+
+goal: prepare a static-host bundle the operator can upload to itch.io himself.
+The game has no build step and pulls three.js from a CDN import map, so it is
+close to deployable already — but nothing has ever verified it runs from a
+static host under a subpath, and ES modules cannot load from file:// at all
+(double-clicking index.html fails today).
+accept:
+- [ ] a verified bundle: served from a static host under a SUBPATH (not just
+      domain root), the game boots and ?selftest=1 passes — every path relative,
+      no absolute-root assumptions
+- [ ] a documented answer on the CDN: state plainly whether the game still
+      boots if the CDN is slow or blocked, and if not, say so as a known risk
+      rather than pretending — do NOT vendor three.js without an operator
+      decision (no-runtime-deps and no-build-step are hard rules)
+- [ ] the exact manual steps the OPERATOR performs to upload, written for
+      someone who has not used itch.io. An agent must never create the account
+      or enter credentials; the bundle and instructions are the deliverable
+- [ ] zero effect on the shipped game's behavior
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; serve the bundle under a subpath and confirm ?selftest=1 PASS
+
 <!-- ========== 2026-08-02 OPERATOR GOAL CHANGE (supersedes parts of the
 Delivery target that T-028 just rewrote; that rewrite's evidence-honesty fixes
 stand, its audience assumption does not) ==========
