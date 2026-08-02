@@ -951,3 +951,79 @@ export const WEAPON_LETTERS = Object.keys(CONFIG.weapons);
 // two apart silently.
 export const BULLET_NOSE_CEILING_TILES = CONFIG.rifle.radius * CONFIG.weapons.L.scale[0];
 /* ==== end T-041 impact language ==== */
+
+/* ==== T-047 light rig ================================================
+ * The numbers behind src/render/lightrig.js (descriptors + math) and
+ * src/render/lights.js (the three.js objects). Authorized by
+ * docs/decisions.md entry 18: "a real light rig, including shadow maps …
+ * raking key, fill, rim. Shadows on the play band," plus tone mapping and
+ * exposure. Colors are NOT here — they stay palette tokens
+ * (src/render/palette.js: sun / hemiSky / hemiGround), by the ruling that
+ * render color lives render-side. Only geometry and dose live here.
+ *
+ * ANGLES ARE VIEW-RELATIVE, not world-fixed. The tower turns 60 degrees at
+ * every corner, so a world-fixed key would light two faces and backlight two
+ * others — the deck would stop being the brightest large surface on a third
+ * of the run, which is exactly the ranking every CONCEPT token was authored
+ * against (src/render/palette.js:28-32). Azimuth is measured in the camera's
+ * own frame: 0 = the direction of travel (screen right), +90 = out of the
+ * screen toward the camera. Elevation is degrees above the horizon.
+ *
+ * WHY THE KEY IS NOT LOWER. A true raking key (elevation < 40) makes the
+ * vertical faces brighter than the horizontal ones, which inverts the deck's
+ * place at the top of the value ladder. 50 degrees keeps tops brightest while
+ * still splitting the two vertical families apart — the ladder is asserted
+ * over these numbers in tools/pathcheck/t-047-light-rig.mjs, so lowering this
+ * without re-authoring the palette turns the gate red rather than the frame
+ * to mud.
+ *
+ * EXPOSURE, AND WHY IT GOES UP RATHER THAN DOWN. decisions.md entry 14: the
+ * operator judged the full value ladder "too dark", so drama here comes from
+ * DIRECTION and CONTRAST, never from lowering the frame. scene.background and
+ * fog are drawn raw (fog is mixed AFTER tone mapping in three.js' fragment
+ * chain), so exposure lifts LIT SURFACES relative to the haze and nothing
+ * else — which is the direct answer to the audit's measured defect that the
+ * backdrop rendered brighter than the deck. */
+export const LIGHT_RIG = {
+  /* THE SHIPPED DOSE. Measured at the 6s combat mark on the default run
+     (artifacts/lightrig/, tools/playtest/lightrig-capture.mjs), against the
+     pre-T-047 rig: frame mean 68.2 -> 72.7 (brighter, per entry 14), p95
+     89.9 -> 110.8, share of frame above the backdrop haze 40.0% -> 62.9%.
+     Two doses either side of it were captured and rejected here rather than
+     shipped: exposure 1.18 held the mean but let the deck fall BELOW the
+     backdrop again, and exposure 1.5 (?light=bright, still selectable) is a
+     dose question only the operator can answer — entry 14 was itself a dose
+     verdict, so this one goes to him with an A/B rather than a claim. */
+  exposure: 1.35,             // ACESFilmic exposure; 1.0 was the shipped default
+  key:  { intensity: 2.45, azimuthDeg: 40, elevationDeg: 50 },   // warm, high-right, front
+  fill: { intensity: 0.62, azimuthDeg: 150, elevationDeg: 78 },  // cool sky/ground wrap, tilted
+  rim:  { intensity: 0.75, azimuthDeg: 214, elevationDeg: 12 },  // cool kicker on the key's dark side
+  // ?light=bright — the next step up the same ladder, unjudged, for the dose
+  // A/B. Angles, rim and shadow are identical; only these two move.
+  bright: { exposure: 1.5, keyIntensity: 2.6 },
+  shadow: {
+    mapSize: 2048,             // one map, one casting light
+    // Half-extents of the ortho shadow camera, in tiles, in light space. The
+    // calibrated visible strip at the FAR default (CONFIG.camera.z *
+    // viewScales.far.depthMult, fov 56, 16:10) is ~36.4 x 22.7 tiles from
+    // center, so these cover the frame with a small margin and stop there:
+    // a frustum spanning a continent-sized creature would be both useless and
+    // slow. Texel footprint = 2*halfWidth/mapSize = 0.039 tiles (~4 cm against
+    // RIG's 1.9-tile height), asserted in pathcheck.
+    halfWidth: 40, halfHeight: 28,
+    distance: 70,              // how far up the key direction the shadow camera sits
+    near: 1, far: 170,         // must clear `distance` plus the limb behind the play plane
+    bias: -0.0006, normalBias: 0.05,   // flat-shaded instanced boxes acne/peter-pan trim
+    // No filter radius: the renderer runs PCFSoftShadowMap, whose kernel is
+    // derived from the map's own texel size, so a `radius` here would be an
+    // inert number that reads like a tuning knob.
+    // The band leads the run rather than centering on the camera's look
+    // point: RIG sits left of frame center and the route arrives from the
+    // right, so the casters that matter are ahead.
+    aheadTiles: 3.0,
+    // Texel snapping quantum comes from mapSize/halfWidth; this only turns it
+    // on. Off, a moving ortho shadow camera crawls along every edge.
+    snapToTexel: true,
+  },
+};
+/* ==== end T-047 light rig ==== */
