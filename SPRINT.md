@@ -2932,7 +2932,7 @@ no visible error state today"), which T-032 closed before it merged — a blocke
 CDN now raises the failure panel within ~250ms rather than showing a silent
 black screen.
 
-## T-055 | harness | doing | P1
+## T-055 | harness | done | P1
 goal: revive T-034's deploy bundle against current main and fix I-048 — the
 bundle omits `assets/`, so uploading it would silently ship a game with none of
 its art. This is the path Fox actually receives the game by, so it is the last
@@ -2984,3 +2984,15 @@ flags one recorded LIMIT: at T-045's band the play band's screen-edge column
 carries 3.3% haze at FAR / 4.6% at `?view=near`.
 verify: node tools/pathcheck.mjs; the three-variant measurement re-run on
 current main; captures at the approved dose
+
+<!-- T-034 RETIRED, SUPERSEDED BY T-055 (2026-08-02, integrator).
+T-034 built the itch.io deploy bundle and never merged; its branch sat unmerged
+long enough that decisions entry 16 invalidated its central premise (the game
+shipped zero binary assets when it was written). T-055 brought tools/deploy/
+onto current main, fixed I-048, and added the falsifying render test T-034 had
+no reason to need.
+
+Its build report is preserved at reports/tasks/T-034/build.md — it carries the
+original subpath-hosting verification and the CDN-behaviour measurements, which
+are real evidence and were not re-derived by T-055. The branch itself is
+retired; nothing else on it is wanted. -->
