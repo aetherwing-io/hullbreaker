@@ -1,0 +1,170 @@
+{
+  "measuredAt": "2026-08-02T09:12:19.526Z",
+  "tool": "tools/playtest/sprite-stress.mjs",
+  "viewport": "1280x800, headless Chrome (channel: chrome), one browser per reading",
+  "load": "60 projectiles/frame via the game's own fireWeapon(clone=true), one death burst + flash per frame, roster topped up to 10 hostiles, right held on the default six-face run",
+  "quiet": {
+    "primitives": {
+      "emptyBoard": {
+        "min": 66,
+        "median": 66,
+        "max": 66
+      },
+      "withLineup": {
+        "min": 78,
+        "median": 79,
+        "max": 79
+      },
+      "lineupCount": 5,
+      "liveAtSample": 5,
+      "perHostileCalls": 2.6
+    },
+    "sprites": {
+      "emptyBoard": {
+        "min": 66,
+        "median": 66,
+        "max": 66
+      },
+      "withLineup": {
+        "min": 73,
+        "median": 74,
+        "max": 74
+      },
+      "lineupCount": 5,
+      "liveAtSample": 5,
+      "perHostileCalls": 1.6
+    }
+  },
+  "primitives": {
+    "perf": {
+      "frames": 180,
+      "fps": 120.7,
+      "avgMs": 8.29,
+      "worstMs": 10.4,
+      "over20ms": 0
+    },
+    "liveProjectiles": 256,
+    "liveHostiles": 11,
+    "drawCalls": 181,
+    "triangles": 105756,
+    "programs": 30,
+    "sprites": {
+      "enabled": false,
+      "kinds": {
+        "hound": {
+          "state": "off",
+          "variant": "b",
+          "file": "hound-brace-b.png",
+          "error": null
+        },
+        "carrier": {
+          "state": "off",
+          "variant": "b",
+          "file": "carrier-hauler-b.png",
+          "error": null
+        },
+        "wasp": {
+          "state": "off",
+          "variant": "b",
+          "file": "wasp-drone-b.png",
+          "error": null
+        },
+        "polyp": {
+          "state": "off",
+          "variant": "b",
+          "file": "polyp-iris-b.png",
+          "error": null
+        },
+        "mortar": {
+          "state": "off",
+          "variant": "b",
+          "file": "mortar-tripod-b.png",
+          "error": null
+        }
+      }
+    },
+    "state": "PLAYING",
+    "errors": [],
+    "quiet": {
+      "emptyBoard": {
+        "min": 66,
+        "median": 66,
+        "max": 66
+      },
+      "withLineup": {
+        "min": 78,
+        "median": 79,
+        "max": 79
+      },
+      "lineupCount": 5,
+      "liveAtSample": 5,
+      "perHostileCalls": 2.6
+    }
+  },
+  "sprites": {
+    "perf": {
+      "frames": 180,
+      "fps": 120,
+      "avgMs": 8.34,
+      "worstMs": 10.3,
+      "over20ms": 0
+    },
+    "liveProjectiles": 256,
+    "liveHostiles": 11,
+    "drawCalls": 166,
+    "triangles": 105352,
+    "programs": 29,
+    "sprites": {
+      "enabled": true,
+      "kinds": {
+        "hound": {
+          "state": "ready",
+          "variant": "b",
+          "file": "hound-brace-b.png",
+          "error": null
+        },
+        "carrier": {
+          "state": "ready",
+          "variant": "b",
+          "file": "carrier-hauler-b.png",
+          "error": null
+        },
+        "wasp": {
+          "state": "ready",
+          "variant": "b",
+          "file": "wasp-drone-b.png",
+          "error": null
+        },
+        "polyp": {
+          "state": "ready",
+          "variant": "b",
+          "file": "polyp-iris-b.png",
+          "error": null
+        },
+        "mortar": {
+          "state": "ready",
+          "variant": "b",
+          "file": "mortar-tripod-b.png",
+          "error": null
+        }
+      }
+    },
+    "state": "PLAYING",
+    "errors": [],
+    "quiet": {
+      "emptyBoard": {
+        "min": 66,
+        "median": 66,
+        "max": 66
+      },
+      "withLineup": {
+        "min": 73,
+        "median": 74,
+        "max": 74
+      },
+      "lineupCount": 5,
+      "liveAtSample": 5,
+      "perHostileCalls": 1.6
+    }
+  }
+}

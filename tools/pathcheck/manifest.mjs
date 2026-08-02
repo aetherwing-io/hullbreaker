@@ -50,7 +50,15 @@ import * as d37 from './t-029-runtime-truth-three-debug.mjs';
 import * as d38 from './pathcheck-suite-2.mjs';
 import * as d39 from './t-041-impact-language.mjs';
 import * as d40 from './t-043-wasp-aim-lock-squad.mjs';
-import * as d41 from './t-049-hostile-sprites.mjs';
+import * as d41 from './t-039-contact-shadows.mjs';
+import * as d42 from './pathcheck-suite-3.mjs';
+import * as d43 from './t-035-value-ladder.mjs';
+import * as d44 from './t-038-seam-pips.mjs';
+import * as d45 from './t-047-light-rig.mjs';
+import * as d46 from './t-048-post-pass.mjs';
+import * as d47 from './t-042-audio-punch.mjs';
+import * as d48 from './t-050-shipped-plan-carries-the-scale-pass.mjs';
+import * as d49 from './t-049-hostile-sprites.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -94,5 +102,13 @@ export const DOMAINS = [
   d38,    // pathcheck suite
   d39,    // T-041 impact language (S10)
   d40,    // T-043: wasp aim-lock + squad stagger (enemy aggression)
-  d41,    // T-049: runtime hostile sprites (decisions.md entry 16)
+  d41,    // T-039: contact shadows (S6) =====================
+  d42,    // pathcheck suite
+  d43,    // T-035 value ladder (S1 + S2) ======================
+  d44,    // T-038: warm-white seam pips and route-lip highlights (S5) ========
+  d45,    // T-047 light rig, shadows, tone mapping (decisions 18)
+  d46,    // T-048: the screen pass (bloom) + surface families (entry 18)
+  d47,    // T-042: audio punch — static + behavioral guards ==========
+  d48,    // T-050: the shipped plan carries the scale pass (I-037) ===========
+  d49,    // T-049: runtime hostile sprites + the boot preload gate (entry 16)
 ];

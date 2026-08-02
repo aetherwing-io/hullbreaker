@@ -49,7 +49,7 @@ them — judge the art, not pixel deltas.
 ### The one measurement that cuts against the sprites
 
 Measured off the committed frames above — the method is two sentences and the
-honesty note in §7 — each body's box against the background it stands on, at
+honesty note in §8 — each body's box against the background it stands on, at
 true size:
 
 | role | mode | drawn px | body mean L | bg L | body p10..p90 | px separated by >=20 L |
@@ -543,7 +543,77 @@ while its siblings stopped on `victory` is a different run, not a slower one.
 
 ---
 
-## 7. HONESTY LIMITS
+## 7. MERGED WITH MAIN (2c638aa) — and re-measured, not inherited
+
+Main moved from `0d98c70` (1853 assertions) to `2c638aa` (2469) while this
+lane was in review: T-039 contact shadows, T-047's light rig, T-048's bloom +
+surface families, T-042 audio, T-050's scale-pass gate. Two conflicts, both in
+files this lane owns or created, both resolved here rather than handed to the
+integrator conflicted:
+
+- **`tools/pathcheck/manifest.mjs`** — the expected both-appended collision.
+  Main's `d41`–`d48` kept as-is; this lane's domain re-numbered to `d49` and
+  appended last. 50 domains, loads clean.
+- **`src/render/hostiles.js`** — a real semantic merge, one hunk in
+  `spawned()`. Main wrapped the body material in `applySurface(…, K.surface)`
+  (T-048's per-kind roughness/metalness); this lane made that material
+  conditional on whether a sprite texture is in hand. **Resolved so either
+  body wears the kind's surface family**: a sprite quad is still a
+  `MeshStandardMaterial` answering the same light rig, so a drone shell keeps
+  responding like a shell whether its pixels come from a texture or a flat
+  token. `applySurface()` only writes roughness/metalness/envMap, so the map,
+  emissiveMap, alphaTest and single-pass transparency from `spriteMaterial()`
+  all survive it. Everything else auto-merged: contact shadows
+  (`syncContactShadow`/`releaseContactShadow`) are keyed on kind and body-
+  agnostic, and `emissiveIntensity = postGain()` sits in the shared part of
+  `sync()` above the sprite/primitive branch, so the sprite's hit flash and
+  state glows get T-048's bloom headroom for free.
+
+**Nothing was dropped, proved as a multiset rather than a count** (the method
+`migrate-lane.mjs` documents, after two hand-merges silently dropped
+assertions while printing green). Ordered label logs captured for base, main,
+lane and merged with `tools/pathcheck-labels.mjs`:
+
+```
+base 1853   main 2469   lane 2121   merged 2747
+expected (main + (lane - base)) = 2737
+MISSING from merged: 0
+EXTRA in merged:    10
+```
+
+All ten extras are the same two assertions applied to five files that did not
+exist at this branch point — `src/pure/{contactShadow,post,seams,shade,
+tonemap}.js`, each getting this lane's "a pure module may not name a texture
+loader or a sprite module" pair. That is the guard correctly extending to new
+pure modules, which is what it is for. **2747 passed, 0 failed.**
+
+**Perf re-measured on the merged tree, because the renderer underneath it
+changed** (never inherit a number across a change that could move it):
+
+| reading | pre-merge | merged (with shadows, bloom, surfaces) |
+| --- | --- | --- |
+| roster draw calls, 5 hostiles | 42 → 37 (primitives → sprites) | 79 → **74** |
+| stress draw calls, 256 projectiles | 144 → 133 | 181 → **166** |
+| worst frame | 10.30 ms both | 10.40 / **10.30 ms** |
+| frames over 20 ms | 0 both | **0 both** |
+| triangles | ~50.7k | ~105.4k |
+
+The sprite path still costs fewer draw calls than the primitives it replaces
+(−5 on a five-hostile roster, −15 under the barrage) and 60 fps still holds
+with 256 live projectiles on the heavier renderer. Evidence:
+`artifacts/sprites-v1/perf/result-merged.json`. The caveat from §3 applies
+with more force now: **main HAS a shadow pass**, and T-047's report states
+`renderer.info` does not account for it, so these are main-pass figures.
+
+Re-run against the merged tree, all green: pathcheck 2747/0, assets check
+PASS, gatecheck PASS, `sprite-fallback-check` 9/9, `preload-concurrency-check`
+9/9, `mid-route.json --deterministic` completed / 0 deaths, and the true-size
+capture re-shot (`artifacts/sprites-v1/lineup-true-size.png` is now the
+merged renderer: same five bodies, now under the light rig and bloom).
+
+---
+
+## 8. HONESTY LIMITS
 
 - **Every capture is one moment of one run.** The three modes are three page
   loads; bodies drift between them. Nothing here is a pixel diff.

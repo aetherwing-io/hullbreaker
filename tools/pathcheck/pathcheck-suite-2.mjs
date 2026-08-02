@@ -245,7 +245,15 @@ export async function run(SHARED) {
       ok(/try \{\s*update\(dt\);\s*\} catch \(err\) \{\s*if \(reportFault\('update', err\) === 'stop'\) return;/
          .test(body),
          'T-032: a simulation fault is caught and handed to the policy');
-      ok(/try \{\s*renderer\.render\(scene, camera\);\s*updateHUD\(\);\s*\} catch \(err\) \{\s*reportFault\('render', err\);/
+      // T-048 changed the SPELLING of the draw, not this property: the frame's
+      // one draw went from `renderer.render(scene, camera)` to `renderFrame()`
+      // (src/render/post.js), which is the composer when it is up and that
+      // exact renderer.render call when it is not. What this assertion is
+      // about — the draw sits in its OWN try/catch, so a step that throws
+      // still paints the frame it broke on — is unchanged and still gated
+      // here. That the draw path cannot lose the picture is asserted in
+      // tools/pathcheck/t-048-post-pass.mjs.
+      ok(/try \{\s*renderFrame\(\);\s*updateHUD\(\);\s*\} catch \(err\) \{\s*reportFault\('render', err\);/
          .test(body),
          'T-032: the draw is caught SEPARATELY, so a broken step still paints the ' +
          'frame it broke on');

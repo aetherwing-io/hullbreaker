@@ -1,0 +1,77 @@
+{
+  "measuredAt": "2026-08-02T05:55:47.488Z",
+  "tool": "tools/playtest/juice-stress.mjs",
+  "viewport": "1280x800, headless Chrome (channel: chrome), one browser per reading",
+  "load": "60 projectiles/frame via the game's own fireWeapon(clone=true) + one death burst and flash per frame, right key held on the default six-face run",
+  "reading": "window.HB.perf() — the in-game wall-clock sampler over the last 180 frames — after 5000ms of sustained load",
+  "caveat": "rAF is vsync-locked: fps cannot exceed the panel refresh rate, so worstMs and over20ms are the load-bearing fields, not fps",
+  "control": {
+    "perf": {
+      "frames": 180,
+      "fps": 121.4,
+      "avgMs": 8.24,
+      "worstMs": 17.5,
+      "over20ms": 0
+    },
+    "juice": {
+      "enabled": true,
+      "trauma": 0,
+      "hitStopMs": 0,
+      "sparks": 0,
+      "flashes": 0,
+      "sparkMax": 224,
+      "flashMax": 20,
+      "crush": 0
+    },
+    "liveProjectiles": 0,
+    "state": "PLAYING",
+    "attempts": 0,
+    "errors": []
+  },
+  "stress": {
+    "perf": {
+      "frames": 180,
+      "fps": 120,
+      "avgMs": 8.33,
+      "worstMs": 16.7,
+      "over20ms": 0
+    },
+    "juice": {
+      "enabled": true,
+      "trauma": 0,
+      "hitStopMs": 0,
+      "sparks": 224,
+      "flashes": 18,
+      "sparkMax": 224,
+      "flashMax": 20,
+      "crush": 0
+    },
+    "liveProjectiles": 256,
+    "state": "PLAYING",
+    "attempts": 0,
+    "errors": []
+  },
+  "stressJuiceOff": {
+    "perf": {
+      "frames": 180,
+      "fps": 121.4,
+      "avgMs": 8.24,
+      "worstMs": 10.6,
+      "over20ms": 0
+    },
+    "juice": {
+      "enabled": false,
+      "trauma": 0,
+      "hitStopMs": 0,
+      "sparks": 0,
+      "flashes": 0,
+      "sparkMax": 224,
+      "flashMax": 20,
+      "crush": 0
+    },
+    "liveProjectiles": 256,
+    "state": "PLAYING",
+    "attempts": 0,
+    "errors": []
+  }
+}

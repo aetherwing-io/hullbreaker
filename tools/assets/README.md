@@ -19,6 +19,7 @@ node tools/assets/check.mjs                       # the gate: manifest + palette
 node tools/assets/rasterize.mjs assets/generated/glyphs/capsule-letter-h.svg --size 128
 node tools/assets/view.mjs assets/generated/glyphs/capsule-letter-h.png --tiles 0.55
 node tools/assets/sheet.mjs --assets a.png,b.png --px 9.6,18.2 --out sheet.png
+node tools/assets/tile.mjs assets/generated/textures/hull-panel-tile.png --tiles 2
 ```
 
 Run everything from the repo root. `check.mjs` needs **no dependency at all** —
@@ -35,7 +36,7 @@ is a fallback, not the expected path: `lib/browser.mjs` resolves
 the same `channel: 'chrome'` choice applies (drives installed system Chrome over
 CDP, no bundled-binary download — that harness's README explains why).
 
-## The six tools
+## The seven tools
 
 | Command | What it does |
 | --- | --- |
@@ -43,6 +44,7 @@ CDP, no bundled-binary download — that harness's README explains why).
 | `rasterize.mjs` | SVG → PNG at an exact pixel size, through Chrome. Transparent by default. Reports the palette of what it just wrote. |
 | `view.mjs` + `viewer.html` | Screenshots an asset at its real on-screen height next to a RIG-height reference bar, plus a 2x/4x/8x/native ramp. |
 | `sheet.mjs` + `sheet.html` | Screenshots *many* assets at their true on-screen sizes in one image — the comparison the viewer cannot make (T-036). |
+| `tile.mjs` | Screenshots one texture **repeated** at true on-screen size. A seam and a countable motif are invisible in a single copy and are the only two ways a tiling texture fails (T-046). |
 | `gen.mjs` + `codex/spec-template.md` | Fills the generation spec from the palette table and the scale arithmetic, then optionally runs `codex exec`. Optional — nothing else depends on it. |
 | `probe.mjs` | Histograms any PNG's hue clusters in CIELCh. This is where the palette numbers below came from. |
 
@@ -177,14 +179,34 @@ tone mapping (see limitation 11 below for how much tone mapping actually moves).
 node tools/assets/gen.mjs --id vent-plate --category textures \
   --brief "an armoured vent cover, four louvres, one broken open" \
   --roles rust-orange,ink --size 128 --tiles 1.2 --boards 10,13 --dry-run
+
+node tools/assets/gen.mjs --id hound-brace-a --category sprites \
+  --brief "a low, wide charging frame, side on, facing right" \
+  --roles acid-green,ink,rust-orange --size 64x32 --grid 32x16 \
+  --tiles 1.7,0.9 --boards 06,07
 ```
 
 The spec is built from `codex/spec-template.md` with the palette table generated
-from `lib/palette.mjs` and the scale note computed for the asset's tile height —
+from `lib/palette.mjs` and the scale note computed for the asset's tile box —
 so the constraints a generator receives and the constraints `check.mjs` enforces
 cannot drift apart. Every resolved spec is written to
 `tools/assets/runs/spec-<id>.md` as the prompt of record. Codex runs with
 `-s read-only`: it proposes an SVG, this wrapper writes the file.
+
+**`--size` takes `WxH`, and `--tiles` takes `W,H`** (T-046). Half this game's
+subjects are not square: a hound is 1.7 x 0.9 tiles and a deck lip strip is 4 x
+1, and a square canvas either wastes half its pixels or invites the generator to
+compose for a box the asset will never occupy. One number still means a square
+canvas and a height in tiles, exactly as before.
+
+**`--grid` is the design grid, and it is the point.** Set it to the asset's true
+on-screen pixel box and the generator draws in units the player will actually
+see: the spec then says "one unit is one pixel, a feature under one unit thick
+does not exist", and the raster is a plain 2x oversample of that grid rather than
+extra resolution to spend on detail that dies. A hound authored on a 32x16 grid
+at a 64x32 canvas keeps every edge on a whole screen pixel. This is the direct
+answer to the defect that opened the readability question in T-036 — art that
+looks finished at 128px and smears at 9.6px — and it costs nothing to use.
 
 **Codex is optional by design.** Nothing else in the pipeline calls `gen.mjs`.
 With the CLI absent it still writes the spec, prints the exact command to run
@@ -326,6 +348,24 @@ the operator's and is still open.**
     direction.md` §6 Q5b) — and this measurement does not apportion blame
     between them. Re-derive it from the committed capture; nothing here is
     modelled.
+12. **A stack of legal colors is not a legal color, and the SVG scanner cannot
+    see it — measured (T-046).** `lib/svg.mjs` reads the file's paint literals;
+    the raster check reads the pixels the browser composited. Those differ the
+    moment an asset builds its value steps out of semi-transparent copies:
+    `backdrop-limb-segment`'s first generation authored **69 literals that are
+    all individually legal** (five base colors at ~40 alpha levels) and
+    composited to `#3c5462` — CIELCh h 245.0, chroma 12.2 — over **1.73%** of the
+    asset, which is off-palette in every band and above the coverage gate, so
+    `check.mjs` failed it while a source-literal scan called it clean. The
+    spec template now forbids alpha-stacked depth outright and the asset was
+    regenerated with opaque steps. Read it as: **the raster check is the gate,
+    the SVG scan is a convenience**, and any asset whose depth comes from
+    transparency has to be judged on its pixels.
+13. **`tile.mjs` is a flat CSS repeat, not a material.** It proves a tile's
+    edges continue and shows whether the eye can count the copies at the real
+    on-screen size. It does not know how the render layer will map UVs, and it
+    has no mipmapping, fog, lighting or perspective — a texture that tiles
+    cleanly here can still seam in the scene if the geometry maps it differently.
 
 ## Game independence
 

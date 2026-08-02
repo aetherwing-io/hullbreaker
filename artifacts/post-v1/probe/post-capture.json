@@ -1,0 +1,77 @@
+{
+  "measuredAt": "2026-08-02T06:21:18.214Z",
+  "tool": "tools/playtest/post-capture.mjs",
+  "viewport": "1280x800 @ deviceScaleFactor 1",
+  "scenes": {},
+  "stress": {},
+  "probe": {
+    "selftest": {
+      "title": "SELFTEST PASS (39 checks)",
+      "post": {
+        "on": true,
+        "status": "active",
+        "strength": 0.62,
+        "radius": 0.3,
+        "threshold": 0.78,
+        "samples": 2,
+        "gain": 1.45,
+        "atmos": "match",
+        "faults": 0,
+        "error": ""
+      },
+      "errors": []
+    },
+    "offline": {
+      "post": {
+        "on": true,
+        "status": "failed",
+        "strength": 0,
+        "radius": 0,
+        "threshold": 0,
+        "samples": 2,
+        "gain": 1,
+        "atmos": "match",
+        "faults": 1,
+        "error": "Failed to fetch dynamically imported module: https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/postprocessing/EffectComposer.js"
+      },
+      "perf": {
+        "frames": 180,
+        "fps": 119.9,
+        "avgMs": 8.34,
+        "worstMs": 10.3,
+        "over20ms": 0
+      },
+      "failsafe": {
+        "installed": true,
+        "booted": true,
+        "showing": null,
+        "halted": false,
+        "faults": 0,
+        "recoveries": 0,
+        "beats": 184,
+        "uncaught": 0,
+        "lastFault": "",
+        "policy": {
+          "streakWindowMs": 2000,
+          "recoverAfterMs": 500,
+          "minFaults": 5,
+          "maxRecoveries": 2,
+          "bootWatchdogMs": 10000,
+          "freezeStallMs": 4000,
+          "freezeTickMs": 1000,
+          "frameDtMaxMs": 50
+        }
+      },
+      "state": "PLAYING",
+      "shot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-048/artifacts/post-v1/probe/offline-fallback.png",
+      "errors": [],
+      "stats": {
+        "mean": 69.25,
+        "skyMean": 72.86,
+        "aboveL200Pct": 0.0812,
+        "aboveL240Pct": 0,
+        "max": 236
+      }
+    }
+  }
+}

@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { SEGS, CORNER_S, polyAt, headingAt, faceIndexAt } from '../pure/path.js';
+import { deckShadePlan } from '../pure/shade.js';
 import { IS_G1, IS_TRANSFORM_SLICE } from '../mode.js';
 import { installView } from '../sim/bridge.js';
 import {
@@ -14,7 +15,7 @@ import {
   unbuildFutureFaces,
 } from '../sim/level.js';
 import { scene, HIDE } from './scene.js';
-import { PAL } from './palette.js';
+import { PAL, SHADE_GAIN } from './palette.js';
 
 // --- level meshes: baked per-face static geometry ---------------------
 // Tile instances are baked once along the tower polyline with per-column
@@ -104,6 +105,16 @@ if (!IS_TRANSFORM_SLICE) {
 
   const cA = new THREE.Color(PAL.ground);
   const cB = new THREE.Color(PAL.groundAlt);
+  // The deck's half of the T-035 value ladder (?shade=, off by default): a
+  // monotone ramp DOWN the four-tile stack — d=1 is the lit lip, d=4 the
+  // bottom — plus the shared stain field per column. The rows already
+  // alternate (j = groundH[i] - d flips (i+j)%2 every row), so what this adds
+  // is a ramp, not a first alternation; the checker keeps its own delta and
+  // its scroll-speed job, and the ramp's top-row-to-row-2 step is the larger
+  // of the two. SHADE_GAIN 0 makes every factor exactly 1.0, so the shipped
+  // build's instance colors are unchanged bit for bit.
+  const deckShade = deckShadePlan(groundH, CONFIG, SHADE_GAIN);
+  const _tile = new THREE.Color();
   let idx = 0;
   for (let i = 0; i < LEVEL_LEN; i++) {
     const f = faceIndexAt(i, CONFIG);
@@ -119,7 +130,9 @@ if (!IS_TRANSFORM_SLICE) {
       m.setPosition(p.x, j + 0.5, p.z);
       tileBaseMats.push(m);
       tiles.setMatrixAt(idx, m);
-      tiles.setColorAt(idx, (i + j) % 2 === 0 ? cA : cB);   // checker = scroll-speed readability
+      const k = deckShade.rows[Math.min(d, deckShade.rows.length) - 1] * deckShade.wear[i];
+      tiles.setColorAt(idx, _tile.copy((i + j) % 2 === 0 ? cA : cB)   // checker = scroll-speed
+        .multiplyScalar(k));                                         //   readability, ramped
       idx++;
     }
     faceRanges[f].inst1 = idx - 1;

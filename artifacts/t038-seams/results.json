@@ -1,0 +1,74 @@
+{
+  "baseline": {
+    "calls": 94,
+    "tris": 50196,
+    "geoms": 58,
+    "textures": 5,
+    "instMeshes": 13,
+    "instances": 2969,
+    "seamsEnabled": false,
+    "seamsStats": {
+      "enabled": false,
+      "pipCount": 0
+    },
+    "lum": {
+      "over": 813,
+      "n": 1024000,
+      "pct": 0.07939453125
+    }
+  },
+  "seams": {
+    "calls": 96,
+    "tris": 56336,
+    "geoms": 60,
+    "textures": 5,
+    "instMeshes": 15,
+    "instances": 3583,
+    "seamsEnabled": true,
+    "seamsStats": {
+      "enabled": true,
+      "pipCount": 307
+    },
+    "lum": {
+      "over": 2311,
+      "n": 1024000,
+      "pct": 0.22568359375
+    }
+  },
+  "gameplay-baseline": {
+    "calls": 97,
+    "tris": 50224,
+    "geoms": 62,
+    "textures": 5,
+    "instMeshes": 13,
+    "instances": 2969,
+    "seamsEnabled": false,
+    "seamsStats": {
+      "enabled": false,
+      "pipCount": 0
+    },
+    "lum": {
+      "over": 989,
+      "n": 1024000,
+      "pct": 0.09658203125
+    }
+  },
+  "gameplay-seams": {
+    "calls": 104,
+    "tris": 56424,
+    "geoms": 66,
+    "textures": 5,
+    "instMeshes": 15,
+    "instances": 3583,
+    "seamsEnabled": true,
+    "seamsStats": {
+      "enabled": true,
+      "pipCount": 307
+    },
+    "lum": {
+      "over": 3210,
+      "n": 1024000,
+      "pct": 0.3134765625
+    }
+  }
+}
