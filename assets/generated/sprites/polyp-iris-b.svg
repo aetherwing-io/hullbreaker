@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="polyp-iris-b" width="64" height="64" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <title>HULLBREAKER Iris Polyp — Petal Variant</title>
+  <desc>Side-facing rooted turret using acid-green petals, ink gaps and shadows, hull facets, and small rust-orange fittings. Four armoured petals frame one hot core while a stubby right-facing barrel establishes the firing lane.</desc>
+
+  <!-- Contact shadow and bolted base -->
+  <path fill="#14181e" d="M3 28H29L31 31H1Z"/>
+  <path fill="#2b3036" d="M5 24H26L30 27L28 30H4L2 27Z"/>
+  <path fill="#767c85" d="M5 24H26L30 27H2Z"/>
+  <path fill="#4a4f56" d="M2 27H30L28 30H4Z"/>
+  <path fill="#9b5c31" d="M5 27H10L9 29H5ZM23 27H28L27 29H23Z"/>
+  <path fill="#14181e" d="M6 27H8V29H6ZM24 27H26V29H24Z"/>
+  <path fill="#767c85" d="M6 27H7V28H6ZM24 27H25V28H24Z"/>
+
+  <!-- Short rooted stalk -->
+  <path fill="#14181e" d="M11 25L12 17H19L21 25Z"/>
+  <path fill="#4a4f56" d="M13 24L14 17H17L19 24Z"/>
+  <path fill="#767c85" d="M14 18H16L15 24H13Z"/>
+  <path fill="#9b5c31" d="M16 20H19L19 22H16Z"/>
+
+  <!-- Two far petals -->
+  <path fill="#14181e" d="M14 12L14 6L17 1L21 2L22 6L19 12L17 14Z"/>
+  <path fill="#4f6518" d="M16 11L16 6L18 3L20 3L20 6L18 11Z"/>
+
+  <path fill="#14181e" d="M15 14L19 16L22 21L20 24L17 24L14 18Z"/>
+  <path fill="#4f6518" d="M17 15L19 17L20 21L19 22L17 21L15 17Z"/>
+
+  <!-- Two near petals -->
+  <path fill="#14181e" d="M15 12L10 11L6 6L8 2L12 3L16 8L18 11Z"/>
+  <path fill="#778c20" d="M14 10L11 9L8 6L9 4L11 4L15 8L16 10Z"/>
+
+  <path fill="#14181e" d="M15 13L10 14L6 19L8 23L12 23L16 19L18 15Z"/>
+  <path fill="#a8c22a" d="M14 15L11 16L8 19L9 21L11 21L15 18L16 16Z"/>
+
+  <!-- Right-facing barrel -->
+  <path fill="#14181e" d="M18 11H27L31 13V16L27 17H18Z"/>
+  <path fill="#767c85" d="M19 12H26L29 13H20Z"/>
+  <path fill="#4a4f56" d="M20 13H29V15L26 16H19Z"/>
+  <path fill="#9b5c31" d="M24 12H26V16H24Z"/>
+  <path fill="#14181e" d="M29 13H31V16H29Z"/>
+  <path fill="#767c85" d="M29 13H30V15H29Z"/>
+
+  <!-- Central acid core -->
+  <path fill="#14181e" d="M13 10L18 9L21 12V15L18 18L13 16L11 13Z"/>
+  <path fill="#778c20" d="M14 11H18L20 13L18 16H14L13 13Z"/>
+  <path fill="#d7ef3c" d="M15 11H18L19 13L18 15H15L14 13Z"/>
+</svg>

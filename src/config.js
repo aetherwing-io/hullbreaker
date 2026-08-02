@@ -519,6 +519,15 @@ export const CONFIG = {
     // Thin plates, not blocks: anything with mass above eye level shows the
     // camera its unlit underside, which is what turns distant anatomy into a
     // ceiling. A slab 2.4 deep reads as a silhouette in the haze instead.
+    //
+    // SUPERSEDED BY `backdrop` BELOW (T-045) AND KEPT AS THE A/B (?scale=0).
+    // Both slabs are authored past the haze band's own far plane: at depth -34
+    // the fog factor is 1.16 — clamped to 100% haze, i.e. drawn in exactly the
+    // background color and INVISIBLE at every shipped view — and at -26 it is
+    // 0.875, so that one carries 12.5% of its contrast. Two pieces of distant
+    // anatomy, one of which cannot be seen at all and one of which is a faint
+    // rectangle: that is the whole population of the fog band, which is why
+    // the band measured as one flat token over 29-34% of the frame.
     silhouette: [
       { atFrac: 0.40, y0: 22, h: 46, w: 40, depth: -34, thickness: 2.4 },
       { atFrac: 0.86, y0: 27, h: 40, w: 24, depth: -26, thickness: 2.4 },
@@ -529,6 +538,274 @@ export const CONFIG = {
       [1.00, 1.00, 1.00], [1.04, 1.02, 0.99], [0.96, 0.98, 1.03], [1.02, 1.00, 0.97],
       [0.97, 1.00, 1.04], [1.03, 1.01, 0.98], [0.98, 0.99, 1.02],
     ],
+    // ?shade= only (T-035, packet item S2): the haze band re-authored around
+    // the depth the limb's mass actually occupies. `fog` above lands at
+    // 44.25/72.25 once the FAR pull-back shift (+20.25) is folded in, while
+    // the camera sits 42.75 from the play plane — the play plane is at the
+    // very START of the ramp, so nothing between RIG's surface and the
+    // backdrop grades, and the distant anatomy at depth -34 sits PAST `far`,
+    // i.e. it is 100% haze and cannot be seen at all. Both numbers are
+    // derived, not taste (three.js fogs on view-space depth, `vFogDepth =
+    // -mvPosition.z`, so these are depths along the camera's forward axis):
+    //   near 26.5 — the worst-case point of the protected play band (the
+    //     screen-edge column at playBand.y0) sits at view depth 45.18 at FAR
+    //     and 25.29 at ?view=near, both UNDER this band's start, so a hostile
+    //     at the frame edge is never hazed: measured 0.0% at every shipped
+    //     view at 16:10 and 16:9, and 0.0-0.3% even at an ultrawide 2.40.
+    //     Today's 24 puts that same corner 3.3-9.3% into the ramp, which is
+    //     what the note at src/render/camera.js:64-73 was written about.
+    //   far 54.5 — a SHIFT, not a stretch: the width stays 28 (see below).
+    //     The wall tier then sits at 0.07 (0.16 today) and the -26 silhouette
+    //     at 0.73 (0.82 today) — the near air is clearer and the far air is
+    //     still air, so what grades between them is the limb's own mass.
+    // WHY THE WIDTH IS PINNED, and the follow-up it owes. src/main.js's
+    // selftest asserts 'limb haze armed' as
+    //   |(scene.fog.far - scene.fog.near) - (limb.fog.far - limb.fog.near)| < 1e-6
+    // i.e. it checks the band's WIDTH against this table. Widening the ramp to
+    // 37.25 (near 25.75 / far 63.0), which is what it takes to bring the
+    // deepest authored slab at depth -34 in at 0.79 instead of the 1.00 —
+    // fully erased — it sits at under BOTH bands today, therefore requires
+    // that check to compare against the band camera.js actually selected.
+    // src/main.js is fenced to another lane this cycle, so the widening is
+    // NOT shipped here and the measured numbers for it are recorded above so
+    // the follow-up does not have to re-derive them.
+    // Asserted in tools/pathcheck.mjs against both bands; `fog` above is the
+    // shipped default and is unchanged.
+    shadeFog: { near: 26.5, far: 54.5 },
+
+    /* ======================= THE SCALE PASS (T-045) ======================= *
+     * decisions.md entry 17: "the 'far' camera is meant to make the play feel
+     * like the tiny human scaling a giant monster." FAR is permanent and RIG
+     * is 3.74% of frame height on purpose, so the work is not on RIG — it is
+     * on giving the frame something that makes 3.74% read as SMALL. Two
+     * blocks do it, and they are the two halves of one idea:
+     *
+     *   `backdrop` — graded anatomy tiers (packet item S4), so distance
+     *     separates into layers instead of collapsing into one flat token.
+     *   `mark`     — human-scale reference objects (rungs, hatches, doors,
+     *     railings) at ONE absolute size, on the limb RIG runs on AND on the
+     *     backdrop limb behind it. Scale is comparative: without a known-size
+     *     object, big geometry only reads as close geometry.
+     *
+     * Everything here is static anatomy (entry 3): baked once, never touched,
+     * revealed by the camera and never assembled. ?scale=0 restores the
+     * `silhouette` pair above, which is the operator's A/B. NOT to be confused
+     * with ?view=, which is the camera pull-back (CONFIG.viewScales).
+     *
+     * TWO DERIVED FENCES GOVERN EVERY NUMBER BELOW. Both are asserted in
+     * tools/pathcheck.mjs against this table, at every entry of viewScales.
+     *
+     * 1. THE HAZE LADDER. three.js fogs on view-space depth, and camera.js
+     *    shifts the band by (cameraDepth - camera.z), so a piece's fog factor
+     *      f = (|depth| + camera.z - limb.fog.near) / (limb.fog.far - fog.near)
+     *    is the same number at near, mid and far — a tier is authored once and
+     *    grades identically at every view. Occupied depths today: the play
+     *    plane 0.00, the hull 0.00 (clamped), the joint ridge 0.125, the wall
+     *    0.161 … and then NOTHING until the sky at 1.0. The three tiers below
+     *    land at 0.446 / 0.625 / 0.804: four steps of aerial perspective in
+     *    the gap where there was one flat field.
+     * 2. THE PLAY-BAND FENCE. A backdrop piece must appear ON SCREEN entirely
+     *    above the protected play band, at every view scale — for a pinhole
+     *    camera two points at the same screen x order by (y - camera.y) / dist,
+     *    so the test is exactly
+     *      (yBottom - camera.y) / (camera.z*mult + |depth|)
+     *          > (playBand.y1 - camera.y) / (camera.z*mult)
+     *    ?view=near is the binding case (its ratio is the largest): it puts
+     *    the floor at y = 16.58 / 18.00 / 19.43 for depths 14 / 19 / 24.
+     *    Authored floors clear those by ~0.5-1 tile. The consequence is the
+     *    one that matters for pillar 5: no hostile, tracer, capsule or falling
+     *    RIG is EVER drawn against new backdrop mass — the air where the fight
+     *    happens stays exactly as clean as it is today, and the new mass sits
+     *    above it. It is also why nothing here can recreate the interior
+     *    "warehouse" macro read entry 0b rejected: a lid would have to hang
+     *    into the play band to be a lid.                                     */
+    backdrop: {
+      // Tier 1, f = 0.446 — THE SISTER LIMB. Board 10's signature read: a
+      // second arm of the same body crossing behind the one being climbed.
+      // It reuses the played limb's own vocabulary (segmented mass, a lip
+      // along the top, rings at the segment joints) at ~2.6x its scale, which
+      // is what makes two masses read as one CREATURE instead of as scenery —
+      // and it is the only tier close enough to carry `mark` objects, so it
+      // is the piece that says "that thing is a hundred of him".
+      sister: {
+        depth: -14, thickness: 1.5,
+        segW: 6.6, segH: 7.6, overlap: 0.4,   // ~2.6x the played limb's chunkCols rhythm
+        y0: 17.0,                             // floor: clears the near-view fence (16.58)
+        yStep: 2.4, ySteps: 4,                // per-facet base offset, hashed
+        rise: 20.0,                           // climb across the run: a steep diagonal, so
+                                              //   it crosses the frame instead of capping it
+        span: 0.45, spanAt: 0.16,             // it covers PART of a facet and leaves sky:
+                                              //   a mass that spans the frame edge to edge
+                                              //   is a ceiling, which entry 0b rejected
+        lipH: 1.0, lipOut: 0.35,              // the kerb line, one scale up
+        ringEvery: 3, ringW: 1.7, ringOver: 2.4, ringOut: 0.55,
+      },
+      // Tier 2, f = 0.625 — VERTEBRAL DRUMS. A spine seen edge-on: barrels
+      // linked by a shaft. Boxes, not a prism — at 62% haze a chamfered
+      // stack and a 16-gon are the same silhouette, and a box costs no second
+      // geometry and therefore no second draw call.
+      spine: {
+        depth: -19, thickness: 2.2,
+        every: 17, y0: 20.0, yStep: 2.4, ySteps: 3,
+        drumW: 8.4, drumH: 7.8,
+        // barrel profile, bottom to top: [width factor, height factor]. Five
+        // chorded slabs read as a drum; three read as a stepped box.
+        barrel: [[0.62, 0.18], [0.86, 0.20], [1.0, 0.44], [0.86, 0.20], [0.62, 0.18]],
+        linkH: 3.4,                                     // the shaft they thread onto
+      },
+      // Tier 3, f = 0.804 — THE FAR BODY. One continuous mass with a STEPPED
+      // top edge, so something enormous is in frame at every point of the run
+      // (asserted), and a crown of spires once per facet: board 14's horizon,
+      // told as silhouette only. At 80% haze this tier carries ~20% of its own
+      // contrast, which is why it may be continuous without becoming a wall.
+      far: {
+        depth: -24, thickness: 2.0,
+        segW: 21, overlap: 0.6, y0: 20.5,
+        tops: [29.0, 33.5, 30.5, 35.5, 31.5, 28.0],     // hashed per segment: broad
+                                                        //   steps, not a city skyline
+        spireAt: 0.62, spires: 6, spireW: 1.1, spireGap: 2.1,
+        spireH: [8, 14.5, 10, 18, 9.5, 12.5],
+      },
+    },
+    /* Human-scale reference objects. THE SIZES ARE THE POINT: RIG is 1.7 tiles
+     * tall (CONFIG.player.height, the sim's own body constant), so a 2.9-tile
+     * door is 1.7x him, a rung ladder is climbable, a railing is waist-high on
+     * a walkway. The same table is emitted twice — on the hull skirt under
+     * RIG's feet and on the backdrop sister limb — at IDENTICAL absolute
+     * dimensions (asserted), because a reference object that is re-sized to
+     * look good at distance is not a reference object.
+     *
+     * WHERE THEY GO, AND WHY NOT ON THE WALL. The band below the deck lip is
+     * bare hull for ~30 tiles (the scutes stop around y = -6.6) and fills the
+     * bottom third of the frame; it is outside the protected play band, so
+     * detail there cannot compete with a hostile, a tracer or a falling RIG.
+     * The wall directly behind the fight is the one surface these deliberately
+     * do NOT dress.
+     *
+     * ONE HONEST COMPROMISE: rung pitch is 0.62 tiles (~0.65 m — a real ladder
+     * is nearer 0.3) and a rung is 0.2 tall. At the shipped FAR view one tile
+     * is ~2.2% of frame height, so a true-pitch ladder would be a 1 px stripe
+     * that aliases into mush. These are authored to RESOLVE at the view the
+     * game actually ships: a scale cue that cannot be seen is not a cue. */
+    mark: {
+      band: { y0: -7.2, y1: -18.0 },   // hull skirt: below the scutes, above the
+                                       //   bottom of frame (visible to y = -17.9)
+      out: 0.66, thickness: 0.35,      // just proud of the hull face (depth 0.7),
+      proud: 0.12,                     //   and a hatch cover proud of its own rim —
+                                       //   both still reach <= 0, so no mark is ever
+                                       //   outward mass the fall rules have to judge
+      ladder: { every: 22, runH: 10.0, pitch: 0.62, rungW: 1.3, rungH: 0.2,
+                stileW: 0.18, at: 0.35 },
+      hatch: { every: 17, rimW: 2.8, rimH: 2.8, panelW: 2.2, panelH: 2.2 },
+      door: { every: 41, rimW: 1.9, rimH: 2.9, panelW: 1.5, panelH: 2.5,
+              sillH: 0.25 },
+      rail: { len: 13.5, postEvery: 1.7, postH: 1.0, postW: 0.16,
+              barH: 0.18, at: 0.55 },    // gantry railing, sister limb only
+    },
+  },
+
+  /* ---------------------------- VALUE LADDER ---------------------------- *
+   * ?shade=<0..1> — T-035, packet item S1 (docs/proposals/2026-08-look-
+   * direction.md). Math in src/pure/shade.js; per-palette gain in
+   * src/render/palette.js; applied to instance colors in src/render/limb.js
+   * and src/render/level.js. OFF by default: the ladder moves value only, and
+   * it has to be judgeable independently of the palette's hue pass (Palette
+   * v1 is still queued and unjudged), so it gets its own flag rather than
+   * riding ?palette=.
+   *
+   * Every number below is a LINEAR multiplier on the instance color, because
+   * that is the space three.js multiplies in (Color.setHex converts sRGB to
+   * the linear working space). Display luminance moves as k^(1/2.2), so the
+   * ladder's endpoints read as: 0.54 -> 76% of the token's display value,
+   * 0.26 -> 53%, 0.115 -> 37%, 0.02 -> 17%. The measured target is board 13's
+   * material ramp (52-81 display levels between a material's lit and
+   * shadowed instances, against 34.0-34.4 measured on the shipped build).  */
+  shade: {
+    // THE SHIPPED DOSE, AND IT IS AN OPERATOR VERDICT (2026-08-02): "C on the
+    // ladder feels better, shade=0.5 the other is too dark." Half strength is
+    // the game's look; full strength is judged and rejected. This is the value
+    // the default URL carries — nobody should have to type a query parameter
+    // to see the approved build — and every multiplier below is interpolated
+    // toward 1.0 by it (1 + dose * (raw - 1)) rather than being folded into
+    // the constants, so the frames he approved reproduce bit for bit and the
+    // rejected full dose stays reachable at ?shade=1 for a re-ask.
+    // ?shade=0 restores the pre-T-035 value range exactly.
+    //
+    // CONSEQUENCE, STATED HERE BECAUSE IT IS EASY TO MISS: two of the packet's
+    // falsifying tests for S1 describe the FULL ladder and are arithmetically
+    // out of reach at this dose — no instance can land below 0.55x its token
+    // above roughly gain 0.75, and the deck's row-1-to-row-2 step no longer
+    // exceeds the checker's own delta. Both are asserted at gain 1 (the model
+    // must still be able to produce that range) and separately recorded at the
+    // shipped dose in tools/pathcheck.mjs. The verdict outranks the threshold;
+    // the numbers are not quietly restated to match.
+    dose: 0.5,
+    seed: 20350801,            // ladder-only seed: it must not perturb the
+                               //   generator's or the spawn tables' streams
+    cell: 1,                   // occupancy cell size in tiles (s, y)
+    tierAt: [-3, -12],         // depth thresholds -> the three authored planes:
+                               //   deck lip/skin, body wall, distant anatomy
+    tierWeight: [1, 0.45, 0.15],  // a neighbour one plane back occludes less
+    ao: { radius: 3, amount: 0.45 },       // ring AO around a piece's footprint
+    sky: { rise: 7, spread: 1, amount: 0.45 },  // mass directly overhead
+    rake: { amount: 0.22 },    // lift for a wide top face under open sky
+    // Key-light survival by depth behind the combat plane. The breakpoints
+    // are the authored tiers: the plane itself (deck lip, scutes, buttress),
+    // the wall at 7, the joint mass, and the two silhouette slabs at 27/35.
+    // The two silhouette values differ on purpose — one flat backdrop value
+    // is exactly the "one token covers a third of the screen" finding.
+    extAt: [[0, 1.0], [7, 0.80], [16, 0.55], [27, 0.30], [35, 0.18]],
+    lit: 0.70,                 // a fully exposed limb face, relative to its token
+    ceil: 0.74,                // …and the hard ceiling with the rake lift folded
+                               //   in. Both sit under the deck: the deck's top
+                               //   row has to stay the brightest baked instance
+                               //   (src/render/palette.js's rule, asserted as
+                               //   arithmetic in pathcheck rather than as prose).
+    floor: 0.02,               // deep anatomy may go nearly black; the fog band
+                               //   above is what lifts it back into the haze
+    facet: [1, 0.96, 1.03, 0.98, 1.02, 0.95, 1.0],  // each facet meets the key
+                               //   light at its own angle — the value version of
+                               //   CONFIG.limb.tone's +-4% hue weathering
+    // Coherent stain field, shared with the deck: bands of ~23 and ~7 tiles,
+    // never per-piece white noise (which reads as dither at 3.7% RIG height).
+    // `contrast` expands the field around its midpoint — a sum of octaves is
+    // bell-shaped, and without this a material whose pieces are geometrically
+    // identical (56 hull slabs, 6 joint ridges) comes out one value again,
+    // which is the defect the pass exists to fix.
+    wear: {
+      amount: 0.68, contrast: 2.4,
+      octaves: [
+        { periodS: 23, periodY: 11, weight: 0.65 },
+        { periodS: 7, periodY: 5, weight: 0.35 },
+      ],
+    },
+    // The deck stack, four tiles deep: d=1 is the lit lip, d=4 the bottom.
+    // The ramp is the ladder; `wear` is the same stain field at an amplitude
+    // deliberately UNDER the checker's own value delta (|lum(ground) -
+    // lum(groundAlt)| = 11.9% of display luminance), because the checker's
+    // job is scroll-speed readability and this may not swamp it. Measured on
+    // the shipped bake: the wear swing is 8.2% against the checker's 11.9%,
+    // while the row-1-to-row-2 step is 19.4 display levels against the
+    // checker's 16.8 — the ramp is the bigger carrier, the checker survives.
+    //
+    // TWO MEASURED CORRECTIONS ARE BAKED INTO THESE FOUR NUMBERS, and both
+    // came out of captures rather than out of taste:
+    //   1. The ramp is NOT linear. One hard step under the lip (the contact
+    //      shadow a deck edge casts on its own face), then a shallow tail. A
+    //      linear ramp to 0.22 was measured first and took the whole deck-face
+    //      population down with it: the captured frame's p95 fell 13% and the
+    //      traversal slice's slabs sank to within 2 luminance levels of their
+    //      own backdrop — a legibility regression, and the "dirty, not lit"
+    //      failure this pass is most at risk of.
+    //   2. The lip is LIFTED, not just the face lowered (1.35, i.e. 1.13x in
+    //      display terms). A ladder that only removes light makes the sky the
+    //      brightest thing in the frame, which is the packet's own "nothing
+    //      reads as lit" finding pointing the other way. Lifting the top row
+    //      keeps the deck the brightest large surface — the rule
+    //      src/render/palette.js states in prose and pathcheck now checks as
+    //      arithmetic — and keeps a 54-level ramp from lip to stack bottom.
+    //      Measured headroom: no channel clips at 1.35 on either checker token.
+    deck: { rows: [1.35, 0.70, 0.62, 0.56], wear: 0.17 },
   },
 
   edges: { margin: 0.4, killY: -7 },

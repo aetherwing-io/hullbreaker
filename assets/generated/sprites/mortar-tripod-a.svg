@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 32 32" role="img" aria-labelledby="title desc">
+  <title id="title">mortar-tripod-a</title>
+  <desc id="desc">Acid-green, ink, and hull roles form a planted seed-pod mortar: a bright charge bulb beneath a thick right-aimed launch tube, with a dark open bore and three widely braced legs.</desc>
+
+  <path fill="#14181e99" d="M1 29H29L32 30L29 31H3L0 30Z"/>
+
+  <path fill="#14181e" d="M13 20H17L17 27L20 29L19 31H10L9 30L11 28L13 27Z"/>
+  <path fill="#4f555b" d="M14 21H16V27L18 29H15L14 27Z"/>
+  <path fill="#767c85" d="M11 29H18L19 30H10Z"/>
+
+  <path fill="#14181e" d="M11 19L14 21L8 28H9L10 30L9 31H1L0 30L2 28H4Z"/>
+  <path fill="#4f555b" d="M11 21L12 22L7 28H5Z"/>
+  <path fill="#30363b" d="M2 28H8L10 30H1Z"/>
+  <path fill="#767c85" d="M3 28H8L9 29H2Z"/>
+
+  <path fill="#14181e" d="M16 19L20 20L23 27H28L31 30L30 31H21L20 29L17 24Z"/>
+  <path fill="#4f555b" d="M18 21H19L22 27H25L24 29H22L21 28Z"/>
+  <path fill="#30363b" d="M23 27H28L31 30H22Z"/>
+  <path fill="#767c85" d="M23 28H28L30 30H22Z"/>
+
+  <path fill="#20252a" d="M9 14L15 13L19 16L20 20L17 25L11 26L7 22V18Z"/>
+  <path fill="#435413" d="M10 15L15 14L18 17V21L16 24H11L9 21V17Z"/>
+  <path fill="#71871c" d="M11 15H15L17 17V20L15 23H12L10 21V17Z"/>
+  <path fill="#394811" d="M9 20H18L16 24H11L9 22Z"/>
+  <path fill="#a8c22a" d="M13 15L16 16L17 19L15 21L13 19Z"/>
+  <path fill="#d8f143" d="M13 17L15 18L14 20L12 19Z"/>
+
+  <path fill="#14181e" d="M8 10L21 1H26L30 4V7L16 18H10L8 15Z"/>
+  <path fill="#405113" d="M9 11L22 2H25L29 4V6L15 17H11L9 14Z"/>
+  <path fill="#70861c" d="M10 11L22 3H25L28 4L15 15H11L9 14Z"/>
+  <path fill="#a8c22a" d="M10 11L22 3H25L26 4L14 13Z"/>
+  <path fill="#3b4b11" d="M11 14L15 15L28 5V7L16 17H11Z"/>
+
+  <path fill="#242a2f" d="M15 7L17 6L21 10L19 12Z"/>
+  <path fill="#767c85" d="M16 7H17L20 10H19Z"/>
+
+  <ellipse cx="26" cy="5" rx="3" ry="4" transform="rotate(-34 26 5)" fill="#8fa821"/>
+  <ellipse cx="26" cy="5" rx="2" ry="3" transform="rotate(-34 26 5)" fill="#14181e"/>
+
+  <path fill="#4f555b" d="M6 19L8 17L11 18L12 20L10 23H7L6 21Z"/>
+  <path fill="#767c85" d="M7 19L8 18L10 19H7Z"/>
+  <path fill="#14181e" d="M8 19H10V21H8Z"/>
+
+  <path fill="#4f555b" d="M17 18H20L22 20L21 23L18 24L16 22Z"/>
+  <path fill="#767c85" d="M18 19H20L21 20H18Z"/>
+  <path fill="#14181e" d="M18 20H20V22H18Z"/>
+</svg>

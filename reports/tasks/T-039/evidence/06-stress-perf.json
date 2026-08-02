@@ -1,0 +1,114 @@
+{
+  "measuredAt": "2026-08-02T04:10:59.636Z",
+  "base": "http://127.0.0.1:8799",
+  "method": "same as tools/playtest/juice-stress.mjs: 60 projectiles/frame via the game's own fireWeapon(clone=true) + one death burst/flash per frame, right key held. idle = 600ms settle, no held key, no injected load. loaded = 1200ms warm-up + 5000ms of the described load, read from the 180-frame window.HB.perf() ring.",
+  "caveat": "headless Chrome, one machine, one run per reading — evidence about this code's per-frame work, not a claim about any particular device. rAF is vsync-locked (120Hz here), so fps cannot exceed the panel rate; avgMs/worstMs/over20ms are the load-bearing fields.",
+  "controlNoShadow": {
+    "idle": {
+      "perf": {
+        "frames": 74,
+        "fps": 107,
+        "avgMs": 9.35,
+        "worstMs": 74,
+        "over20ms": 1
+      },
+      "liveProjectiles": 0,
+      "state": "PLAYING",
+      "drawCalls": 94,
+      "triangles": 50196,
+      "geometries": 58,
+      "textures": 5
+    },
+    "loaded": {
+      "perf": {
+        "frames": 180,
+        "fps": 120.1,
+        "avgMs": 8.33,
+        "worstMs": 9.4,
+        "over20ms": 0
+      },
+      "liveProjectiles": 256,
+      "state": "PLAYING",
+      "drawCalls": 107,
+      "triangles": 50348,
+      "geometries": 70,
+      "textures": 5
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ]
+  },
+  "shadowIdle": {
+    "idle": {
+      "perf": {
+        "frames": 75,
+        "fps": 108.4,
+        "avgMs": 9.23,
+        "worstMs": 75,
+        "over20ms": 1
+      },
+      "liveProjectiles": 0,
+      "state": "PLAYING",
+      "drawCalls": 95,
+      "triangles": 50292,
+      "geometries": 59,
+      "textures": 5
+    },
+    "loaded": {
+      "perf": {
+        "frames": 180,
+        "fps": 120,
+        "avgMs": 8.33,
+        "worstMs": 9.4,
+        "over20ms": 0
+      },
+      "liveProjectiles": 0,
+      "state": "PLAYING",
+      "drawCalls": 110,
+      "triangles": 50460,
+      "geometries": 71,
+      "textures": 5
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ]
+  },
+  "shadowStress": {
+    "idle": {
+      "perf": {
+        "frames": 75,
+        "fps": 101.1,
+        "avgMs": 9.89,
+        "worstMs": 124.54,
+        "over20ms": 1
+      },
+      "liveProjectiles": 0,
+      "state": "PLAYING",
+      "drawCalls": 95,
+      "triangles": 50292,
+      "geometries": 59,
+      "textures": 5
+    },
+    "loaded": {
+      "perf": {
+        "frames": 180,
+        "fps": 120,
+        "avgMs": 8.33,
+        "worstMs": 9.3,
+        "over20ms": 0
+      },
+      "liveProjectiles": 256,
+      "state": "PLAYING",
+      "drawCalls": 108,
+      "triangles": 50444,
+      "geometries": 71,
+      "textures": 5
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ]
+  }
+}

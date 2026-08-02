@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" shape-rendering="crispEdges">
+  <title>wear-scuff-overlay</title>
+  <desc>Sparse seamless hull wear using semi-transparent ink corrosion and scrapes, rust-orange bolt bleeds, and one hull-bright impact lip.</desc>
+
+  <!-- Corrosion crossing the top and bottom seam -->
+  <path fill="#14181e66" d="M52-8 67-10 78-4 76 4 70 10 58 8 49 2Z"/>
+  <path fill="#14181e66" d="M52 120 67 118 78 124 76 132 70 138 58 136 49 130Z"/>
+  <path fill="#14181e99" d="M58-5 67-6 73-2 70 4 61 5 55 1Z"/>
+  <path fill="#14181e99" d="M58 123 67 122 73 126 70 132 61 133 55 129Z"/>
+
+  <!-- Hard-edged corrosion patches -->
+  <path fill="#14181e70" d="M4 85 13 79 26 81 33 89 28 97 15 98 7 94Z"/>
+  <path fill="#14181e99" d="M10 86 17 83 27 86 25 92 17 94 9 91Z"/>
+  <path fill="#14181e70" d="M70 30 80 26 91 30 94 37 87 43 76 41 68 36Z"/>
+  <path fill="#14181e99" d="M76 31 85 30 90 35 86 39 77 38 73 35Z"/>
+
+  <!-- Directional scrape crossing the left and right seam -->
+  <path fill="#14181e66" d="M-10 28 20 37 18 42-12 33Z"/>
+  <path fill="#14181e66" d="M118 28 148 37 146 42 116 33Z"/>
+
+  <!-- Subordinate scrape streaks -->
+  <path fill="#14181e5c" d="M77 13 102 21 100 26 75 18Z"/>
+  <path fill="#14181e5c" d="M39 47 68 56 66 62 37 53Z"/>
+  <path fill="#14181e5c" d="M69 68 92 75 90 80 67 74Z"/>
+  <path fill="#14181e5c" d="M10 106 39 115 37 121 8 112Z"/>
+
+  <!-- Chipped plate-corner gouges -->
+  <path fill="#14181ea6" d="M7 61 24 61 24 66 20 66 20 72 14 72 14 68 7 68Z"/>
+  <path fill="#14181ea6" d="M72 108 89 108 89 113 85 113 85 119 79 119 79 115 72 115Z"/>
+
+  <!-- First bolt and long rust bleed -->
+  <path fill="#14181ed0" d="M28 16 31 13 35 14 38 18 36 22 31 23 27 20Z"/>
+  <path fill="#767c8588" d="M31 17 35 17 35 20 31 20Z"/>
+  <path fill="#9b5c31a6" d="M28 22 36 22 36 32 33 39 35 48 32 63 28 57 30 46 27 37Z"/>
+  <path fill="#9b5c317d" d="M33 27 36 31 34 43 35 51 32 58 31 45Z"/>
+
+  <!-- Second bolt and long rust bleed -->
+  <path fill="#14181ed0" d="M92 53 95 50 100 51 103 55 101 59 96 60 92 57Z"/>
+  <path fill="#767c8588" d="M96 54 100 54 100 57 96 57Z"/>
+  <path fill="#9b5c31a6" d="M93 59 101 59 100 70 103 79 100 91 101 104 97 111 94 101 96 88 93 78 95 68Z"/>
+  <path fill="#9b5c317d" d="M98 64 101 70 99 81 101 89 98 103 96 96 98 84 96 74Z"/>
+
+  <!-- Impact dent crossing the right and left seam -->
+  <path fill="#14181e8f" d="M114 84 121 80 131 82 138 89 136 98 128 104 117 102 110 95Z"/>
+  <path fill="#14181e8f" d="M-14 84-7 80 3 82 10 89 8 98 0 104-11 102-18 95Z"/>
+  <path fill="#14181ed0" d="M118 87 124 84 132 87 135 93 129 100 120 98 115 93Z"/>
+  <path fill="#14181ed0" d="M-10 87-4 84 4 87 7 93 1 100-8 98-13 93Z"/>
+
+  <!-- Single bright impact lip -->
+  <path fill="#767c85dd" d="M112 87 120 80 131 82 133 87 125 85 119 89 115 96 110 95Z"/>
+  <path fill="#767c85dd" d="M-16 87-8 80 3 82 5 87-3 85-9 89-13 96-18 95Z"/>
+</svg>

@@ -36,6 +36,12 @@
 // readability contract it encodes is checkable without a browser. These two
 // are the ONLY render modules this harness imports; everything else
 // render-side stays browser-only.
+//
+// T-039 (S6, contact shadows): namespace import, same precedent as the T-009
+// lattice pass above, so the appended section near the end of this file stays
+// one self-contained block. src/render/contact.js itself is NOT imported here
+// (it needs THREE, which this harness cannot resolve) — everything asserted
+// about it is the pure surface-selection/falloff math in this module instead.
 // ------------------------------------------------------------------------
 
 import { fileURLToPath as __toPath } from 'node:url';
