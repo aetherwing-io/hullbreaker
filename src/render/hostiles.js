@@ -11,6 +11,8 @@ import { installView } from '../sim/bridge.js';
 import { gameMs } from '../sim/time.js';
 import { PAL } from './palette.js';
 import { scene } from './scene.js';
+import { spriteQuad } from './sprite-table.js';
+import { onSpriteReady, spriteTexture, spriteVariantOf } from './sprites.js';
 import { placeOnTower } from './tower.js';
 import {
   CUE_GAIN, LAMP_COIL_SWELL, LAMP_OFF_ALPHA, LAMP_OFF_SWELL, LAMP_R, LEGIBILITY_ON, POSE_GAIN,
@@ -182,6 +184,102 @@ const LOOK = {
              roll: mortarRoll, pose: mortarPose },
 };
 
+/* ===================== THE SPRITE BODY (T-049) ===================== *
+ * decisions.md entry 16 authorized runtime art, and this is where a
+ * hostile stops being a flat-shaded solid and becomes the generated
+ * sprite: one billboarded quad per body, textured with the T-046 art,
+ * sized so the DRAWN INK lands exactly on the box the primitive occupied
+ * (src/render/sprite-table.js owns that arithmetic and pathcheck
+ * re-measures it out of the PNG).
+ *
+ * What "billboarded" means here is deliberately the tower's own facing,
+ * not a camera-tracking billboard: placeOnTower already turns every body
+ * to the face it stands on, and that face is what the FAR camera looks
+ * at. A quad posed that way stays square to the view on the active face
+ * and follows the world around a corner instead of sliding against it —
+ * and it needs no per-frame work beyond the placement every body already
+ * does.
+ *
+ * Everything the state theater above does keeps working, untouched:
+ *   - scale poses (rear-up, dilate, dive dart, burst swell) scale the quad
+ *     around the sim row, exactly as they scaled the solid;
+ *   - the tell lamps are separate meshes and never knew what body they sat
+ *     on;
+ *   - the hit flash still rides `emissive`, which is why the material is
+ *     MeshStandardMaterial with `emissiveMap` set to the art: a flash then
+ *     lights the DRAWN pixels and leaves the transparent margin dark.
+ *     (A MeshBasicMaterial would have thrown that whole language away —
+ *     T-046's integration note called it out as a real decision, and this
+ *     is the answer: keep the language, pay a lit material for it.)
+ *
+ * Three per-kind differences the art forces, all render-only:
+ *   - FACING. Every sprite is authored pointing +x, so a body whose sim row
+ *     faces left is mirrored (scale.x < 0). The roll functions already
+ *     carry the sign of `dir`, so a mirrored lean comes out correct without
+ *     touching them.
+ *   - THE TRIPOD DOES NOT ROLL. mortarRoll() tilts the cone down its line
+ *     of fire; the sprite has that tilt drawn in, so rolling it again would
+ *     aim the tube at the deck.
+ *   - THE DRONE BANKS INSTEAD OF SPINNING. A tumbling octahedron reads as a
+ *     machine; a tumbling picture of a machine reads as a bug. The dive
+ *     still points down the dive vector, which is the cue that matters.  */
+
+const spriteGeos = new Map();            // kind -> PlaneGeometry, built once
+
+function spriteGeo(kind) {
+  let geo = spriteGeos.get(kind);
+  if (geo) return geo;
+  const q = spriteQuad(kind, spriteVariantOf(kind));
+  if (!q) return null;
+  geo = new THREE.PlaneGeometry(q.w, q.h);
+  // the offset is baked into the geometry, not the mesh position, so the
+  // facing mirror flips it with the art and the pose scales still act
+  // around the sim row the way they do on a primitive body
+  geo.translate(q.offX, q.offY, 0);
+  spriteGeos.set(kind, geo);
+  return geo;
+}
+
+function spriteMaterial(tex) {
+  return new THREE.MeshStandardMaterial({
+    map: tex,
+    emissiveMap: tex,                    // the hit flash and every state glow
+    emissive: PAL.glowOff,               //   light the art, never the margin
+    transparent: true,                   // the materialize/dissolve fade
+    opacity: 0,
+    alphaTest: 0.02,                     // discard the empty margin before it
+                                         //   writes depth over what is behind
+    side: THREE.DoubleSide,              // a mirrored quad has flipped winding
+    // …and a double-sided TRANSPARENT material is drawn twice per frame by
+    // default (back faces, then front) to help sorting. Measured: that made
+    // every sprite body cost 2 draw calls where the box it replaced cost 1.
+    // A flat quad cannot overlap itself, so the second pass buys nothing —
+    // src/render/hostiles.js's own trace put the roster back under the
+    // primitive's call count with this on (reports/tasks/T-049/build.md).
+    forceSinglePass: true,
+    depthWrite: true,
+  });
+}
+
+// which way the drawn body points: the sim row's facing, except that a
+// committed dive is steered by velocity and may cross its own facing
+function spriteFaceX(e) {
+  if (e.kind === 'wasp' && waspDiving(e)) return e.vx < 0 ? -1 : 1;
+  return e.dir < 0 ? -1 : 1;
+}
+
+function spriteRoll(e, K) {
+  if (e.kind === 'mortar') return 0;                 // drawn into the art
+  if (e.kind === 'wasp') {
+    if (!waspDiving(e)) return Math.sin(e.t * 1.6) * 0.12;   // a bank, not a spin
+    const a = Math.atan2(e.vy, e.vx);
+    // mirrored, the nose is local -x: rotating by a + PI points it down the
+    // dive vector and keeps the drone's own up-side up
+    return e.vx < 0 ? a + Math.PI : a;
+  }
+  return K.roll(e);
+}
+
 /* ---------------------- THE HIT FLASH (I-010) ----------------------------
  * A hit used to set the body's emissive to PAL.hitFlash — full white — which
  * is a fine pop on a 100px chassis and a readability defect on a 15px one.
@@ -324,22 +422,33 @@ const meshes = new Map();                // sim hostile row → { mesh, mat }
 
 function spawned(e) {
   const K = LOOK[e.kind];
-  const mat = new THREE.MeshStandardMaterial({
+  // The sprite is taken only if its texture is ALREADY in hand. Pending,
+  // failed, missing and ?sprites=0 all fall through to the primitive body
+  // below — which is the pre-T-049 renderer, not a placeholder — so a body
+  // is drawn on the first frame no matter what happened to the art
+  // (decisions.md entry 16's degrade condition).
+  const tex = spriteTexture(e.kind);
+  const geo = tex ? spriteGeo(e.kind) : null;
+  const mat = geo ? spriteMaterial(tex) : new THREE.MeshStandardMaterial({
     color: K.color, flatShading: true, transparent: true, opacity: 0,
   });
-  const mesh = new THREE.Mesh(K.geo, mat);
-  const v = { mesh, mat };
+  const mesh = new THREE.Mesh(geo || K.geo, mat);
+  const v = { mesh, mat, sprite: !!geo };
   if (e.kind === 'polyp') {
     // the side-facing barrel (board 07's model note) and the root stalk down
     // to the mounted surface — children sharing the bulb's material so
     // materialize/dissolve fades the whole body as one; the barrel offset is
-    // set per frame from the sim row's facing in sync()
-    const barrel = new THREE.Mesh(polypBarrelGeo, mat);
-    mesh.add(barrel);
-    v.barrel = barrel;
-    const stalk = new THREE.Mesh(polypStalkGeo, mat);
-    stalk.position.y = -CONFIG.polyp.rootY / 2;
-    mesh.add(stalk);
+    // set per frame from the sim row's facing in sync(). The sprite draws
+    // both into its own art, so it takes neither child (and neither draw
+    // call): one quad is the whole emplacement.
+    if (!v.sprite) {
+      const barrel = new THREE.Mesh(polypBarrelGeo, mat);
+      mesh.add(barrel);
+      v.barrel = barrel;
+      const stalk = new THREE.Mesh(polypStalkGeo, mat);
+      stalk.position.y = -CONFIG.polyp.rootY / 2;
+      mesh.add(stalk);
+    }
     // the beam is its own scene mesh: it spans the LIVE reach the sim
     // marched this frame, so what the render shows is exactly what damages
     const beamMat = new THREE.MeshBasicMaterial({
@@ -353,6 +462,7 @@ function spawned(e) {
   } else if (e.kind === 'mortar') {
     mortarAttach(v, mesh);                 // legs, pod, and the marked-zone props
   }
+  if (v.sprite) mesh.scale.x = spriteFaceX(e);   // authored facing +x
   // the tell lamp (T-003): only the two kinds whose telegraph is a wind-up
   // ON the body, and only while the readability pass is on
   if (LEGIBILITY_ON && LAMP_SYNC[e.kind]) {
@@ -376,8 +486,11 @@ function removed(e, fade) {
   if (fade) {                          // hand the mesh to the corpse pass to dissolve
     // the death pop carries the same tinted flash the living body wore (I-010):
     // the kind is dead, but the frame that says so still says WHICH kind
+    // `face` carries the mirror a sprite body was wearing, so a corpse does
+    // not flip round to face the other way on the frame it dies
     corpses.push({ mesh: v.mesh, mat: v.mat, s: e.x, y: e.y, spin: e.t,
-                   t0: gameMs, flash: FLASH[e.kind] });
+                   t0: gameMs, flash: FLASH[e.kind],
+                   face: v.sprite ? spriteFaceX(e) : 1 });
   } else {
     scene.remove(v.mesh);
     v.mat.dispose();
@@ -421,12 +534,19 @@ function sync(e) {
   }
   v.mat.emissive.setHex(glow);
   placeOnTower(v.mesh, e.x, e.y, depth);
-  v.mesh.rotation.z = K.roll(e);
-  v.mesh.scale.set(sx, sy, sz);
+  if (v.sprite) {
+    // the art is authored facing +x, so facing is a mirror; the roll rules
+    // that differ from the solid's are in spriteRoll() above
+    v.mesh.rotation.z = spriteRoll(e, K);
+    v.mesh.scale.set(sx * spriteFaceX(e), sy, sz);
+  } else {
+    v.mesh.rotation.z = K.roll(e);
+    v.mesh.scale.set(sx, sy, sz);
+  }
   if (v.beam) {
     const PP = CONFIG.polyp;
     // the barrel points down the authored lane (dir is FACING on a rooted row)
-    v.barrel.position.x = e.dir * PP.barrelTiles * 0.65;
+    if (v.barrel) v.barrel.position.x = e.dir * PP.barrelTiles * 0.65;
     const live = e.state === 'fire' && e.beamReach > 0 && gameMs >= e.enterUntil;
     v.beam.visible = live;
     if (live) {
@@ -446,6 +566,22 @@ function sync(e) {
 
 installView({ hostiles: { spawned, removed, sync } });
 
+/* A texture that lands AFTER a hostile of its kind has already spawned
+   rebuilds that body in place — same sim row, same view map, so the run is
+   not interrupted and nothing about the row is read or written here. The
+   window this covers is small (the art is requested at module load, long
+   before the first wave) and it exists so a slow network cannot leave one
+   houndframe a box for the rest of its life. Nothing here can run when the
+   art failed: onSpriteReady only fires on success. */
+onSpriteReady((kind) => {
+  for (const e of [...meshes.keys()]) {
+    const v = meshes.get(e);
+    if (e.kind !== kind || !v || v.sprite) continue;
+    removed(e, false);                   // drop the primitive, no corpse
+    spawned(e);                          // …and build the sprite body
+  }
+});
+
 // Dead hostiles are display-only: no sim, no gate participation (removeHostile
 // already fired onHostileRemoved), just the dissolve back into tower depth.
 const corpses = [];
@@ -458,6 +594,7 @@ export function updateCorpses() {
     placeOnTower(c.mesh, c.s, c.y - 0.6 * u, W.dieDepth * u * u);   // recede into the dark
     c.mesh.rotation.z = c.spin + u * 9;           // death tumble
     c.mesh.scale.setScalar(1 + 0.3 * u);
+    c.mesh.scale.x *= c.face;                     // keep the facing it died with
     c.mat.opacity = 1 - u * u;
     c.mat.emissive.setHex(u < 0.16 ? c.flash : PAL.glowOff);        // death pop, then dissolve
   }
@@ -530,11 +667,15 @@ function mortarRoll(e) {
 
 function mortarAttach(v, mesh) {
   // three legs sharing the body material, so materialize/dissolve fades the
-  // whole tripod as one silhouette
-  for (const [lx, lz] of [[-0.34, 0.22], [0.34, 0.22], [0, -0.34]]) {
-    const leg = new THREE.Mesh(mortarLegGeo, v.mat);
-    leg.position.set(lx, -M_CFG.bodyY / 2, lz);
-    mesh.add(leg);
+  // whole tripod as one silhouette. The sprite has its stance drawn in, so
+  // it skips them — the pod, the mark and the blast slab below are DAMAGE
+  // props and are built for both bodies, unchanged.
+  if (!v.sprite) {
+    for (const [lx, lz] of [[-0.34, 0.22], [0.34, 0.22], [0, -0.34]]) {
+      const leg = new THREE.Mesh(mortarLegGeo, v.mat);
+      leg.position.set(lx, -M_CFG.bodyY / 2, lz);
+      mesh.add(leg);
+    }
   }
   const podMat = new THREE.MeshBasicMaterial({
     color: PAL.mortarPod, transparent: true, opacity: 0.95,

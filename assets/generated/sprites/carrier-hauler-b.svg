@@ -1,0 +1,63 @@
+<svg id="carrier-hauler-b" width="64" height="32" viewBox="0 0 32 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+  <title>Carrier Hauler B</title>
+  <desc>Broad right-facing maintenance carrier with three-step acid-green armour, ink undersides and beam shadow, hull-grey segment collars, and one rust-orange running light.</desc>
+
+  <path fill="#475212" d="M8 4L9 1H13L14 4Z"/>
+  <path fill="#73841d" d="M9 4L10 2H12L13 4Z"/>
+  <rect x="10" y="1" width="3" height="1" fill="#a8c22a"/>
+
+  <path fill="#475212" d="M19 4L20 1H24L25 4Z"/>
+  <path fill="#73841d" d="M20 4L21 2H23L24 4Z"/>
+  <rect x="20" y="1" width="4" height="1" fill="#a8c22a"/>
+
+  <path fill="#475212" d="M2 11L3 10H8L9 11V14L8 16H3L2 15Z"/>
+  <path fill="#73841d" d="M3 11H8V13L7 14H4L3 13Z"/>
+  <path fill="#a8c22a" d="M3 10H8L9 11H3Z"/>
+  <path fill="#14181e" d="M3 13H8L7 15H4L3 14Z"/>
+
+  <path fill="#475212" d="M9 11L10 10H15L16 11V14L15 16H10L9 14Z"/>
+  <path fill="#73841d" d="M10 11H15V13L14 14H10Z"/>
+  <path fill="#a8c22a" d="M10 10H15L16 11H10Z"/>
+  <path fill="#14181e" d="M10 13H15L14 15H11L10 14Z"/>
+
+  <path fill="#475212" d="M16 11L17 10H22L23 11V14L22 16H17L16 14Z"/>
+  <path fill="#73841d" d="M17 11H22V13L21 14H17Z"/>
+  <path fill="#a8c22a" d="M17 10H22L23 11H17Z"/>
+  <path fill="#14181e" d="M17 13H22L21 15H18L17 14Z"/>
+
+  <path fill="#475212" d="M23 11L24 10H29L30 11V14L29 16H24L23 14Z"/>
+  <path fill="#73841d" d="M24 11H29V13L28 14H24Z"/>
+  <path fill="#a8c22a" d="M24 10H29L30 11H24Z"/>
+  <path fill="#14181e" d="M24 13H29L28 15H25L24 14Z"/>
+
+  <rect x="5" y="8" width="1" height="3" fill="#475212"/>
+  <rect x="12" y="8" width="1" height="3" fill="#475212"/>
+  <rect x="19" y="8" width="1" height="3" fill="#475212"/>
+  <rect x="26" y="8" width="1" height="3" fill="#475212"/>
+
+  <path fill="#475212" d="M1 5L2 4H28L30 5L31 6V8L30 9H2L1 8Z"/>
+
+  <path fill="#73841d" d="M2 5H8V7H2Z"/>
+  <path fill="#a8c22a" d="M3 4H8V5H2Z"/>
+
+  <path fill="#73841d" d="M9 5H15V7H9Z"/>
+  <rect x="9" y="4" width="6" height="1" fill="#a8c22a"/>
+
+  <path fill="#73841d" d="M16 5H22V7H16Z"/>
+  <rect x="16" y="4" width="6" height="1" fill="#a8c22a"/>
+
+  <path fill="#73841d" d="M23 5H28L30 6V7H23Z"/>
+  <path fill="#a8c22a" d="M23 4H28L30 5H23Z"/>
+
+  <rect x="2" y="7" width="28" height="1" fill="#14181e"/>
+
+  <rect x="8" y="4" width="1" height="5" fill="#767c85"/>
+  <rect x="15" y="4" width="1" height="5" fill="#767c85"/>
+  <rect x="22" y="4" width="1" height="5" fill="#767c85"/>
+  <rect x="29" y="5" width="1" height="4" fill="#767c85"/>
+
+  <rect x="30" y="6" width="1" height="1" fill="#a8c22a"/>
+  <rect x="30" y="7" width="1" height="1" fill="#73841d"/>
+
+  <rect x="17" y="5" width="2" height="1" fill="#d9954f"/>
+</svg>
