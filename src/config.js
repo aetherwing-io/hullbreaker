@@ -538,40 +538,36 @@ export const CONFIG = {
       [1.00, 1.00, 1.00], [1.04, 1.02, 0.99], [0.96, 0.98, 1.03], [1.02, 1.00, 0.97],
       [0.97, 1.00, 1.04], [1.03, 1.01, 0.98], [0.98, 0.99, 1.02],
     ],
-    // ?shade= only (T-035, packet item S2): the haze band re-authored around
-    // the depth the limb's mass actually occupies. `fog` above lands at
-    // 44.25/72.25 once the FAR pull-back shift (+20.25) is folded in, while
-    // the camera sits 42.75 from the play plane — the play plane is at the
-    // very START of the ramp, so nothing between RIG's surface and the
-    // backdrop grades, and the distant anatomy at depth -34 sits PAST `far`,
-    // i.e. it is 100% haze and cannot be seen at all. Both numbers are
-    // derived, not taste (three.js fogs on view-space depth, `vFogDepth =
-    // -mvPosition.z`, so these are depths along the camera's forward axis):
-    //   near 26.5 — the worst-case point of the protected play band (the
-    //     screen-edge column at playBand.y0) sits at view depth 45.18 at FAR
-    //     and 25.29 at ?view=near, both UNDER this band's start, so a hostile
-    //     at the frame edge is never hazed: measured 0.0% at every shipped
-    //     view at 16:10 and 16:9, and 0.0-0.3% even at an ultrawide 2.40.
-    //     Today's 24 puts that same corner 3.3-9.3% into the ramp, which is
-    //     what the note at src/render/camera.js:64-73 was written about.
-    //   far 54.5 — a SHIFT, not a stretch: the width stays 28 (see below).
-    //     The wall tier then sits at 0.07 (0.16 today) and the -26 silhouette
-    //     at 0.73 (0.82 today) — the near air is clearer and the far air is
-    //     still air, so what grades between them is the limb's own mass.
-    // WHY THE WIDTH IS PINNED, and the follow-up it owes. src/main.js's
-    // selftest asserts 'limb haze armed' as
-    //   |(scene.fog.far - scene.fog.near) - (limb.fog.far - limb.fog.near)| < 1e-6
-    // i.e. it checks the band's WIDTH against this table. Widening the ramp to
-    // 37.25 (near 25.75 / far 63.0), which is what it takes to bring the
-    // deepest authored slab at depth -34 in at 0.79 instead of the 1.00 —
-    // fully erased — it sits at under BOTH bands today, therefore requires
-    // that check to compare against the band camera.js actually selected.
-    // src/main.js is fenced to another lane this cycle, so the widening is
-    // NOT shipped here and the measured numbers for it are recorded above so
-    // the follow-up does not have to re-derive them.
-    // Asserted in tools/pathcheck.mjs against both bands; `fog` above is the
-    // shipped default and is unchanged.
-    shadeFog: { near: 26.5, far: 54.5 },
+    /* THE HAZE BAND IS T-045'S, AND THAT IS A RECONCILIATION, NOT A REVERT.
+       T-035 shipped a second band (`shadeFog` 26.5/54.5, selected whenever the
+       value ladder was armed) because the play plane sat at the very start of
+       the ramp and nothing between RIG's surface and the backdrop graded. T-045
+       then attacked the same defect from the other end and won it outright: it
+       POPULATED the empty band with three graded anatomy tiers, authored
+       against `fog` above at fog factors 0.446 / 0.625 / 0.804.
+
+       Both lanes were solving "distance collapses instead of staging" and only
+       one band can be live. Running the tiers under the shifted band moved each
+       of them ~0.09 lower — the far body carried 31% of its own contrast
+       instead of the ~20% T-045 sized it for, which is the number that decides
+       whether a continuous mass reads as distance or as a wall (entry 0b).
+
+       Measured on the merged tree, 1280x800, FAR default, 10 s, playfield crop
+       (paired-population separation / p5 / share under L25.5):
+         T-045 band  -34.7 / 26 / 4.8%      <- and the ladder's own approved
+         shifted     -34.5 / 22 / 5.8%         reference frame is -35.4/25/5.0%
+       The shift buys the ladder NOTHING (the separation is the same to within
+       0.2 of a level, because that is the baked values' doing, not the air's)
+       and costs a point of dark share against the frame the operator approved
+       under decisions.md entry 14. So the band stays T-045's.
+
+       WHAT IS GIVEN UP, stated so it is not rediscovered as a bug: at this band
+       the protected play band's screen-edge column carries 3.3% haze at FAR and
+       4.6% at ?view=near (0.0% under the shifted band). A hostile at the extreme
+       frame edge is that much washed toward the haze. It is recorded as a limit
+       in tools/pathcheck/t-035-value-ladder.mjs and filed for triage rather than
+       fixed here, because fixing it means re-deriving T-045's tier depths, which
+       is that lane's calibration to redo. */
 
     /* ======================= THE SCALE PASS (T-045) ======================= *
      * decisions.md entry 17: "the 'far' camera is meant to make the play feel
