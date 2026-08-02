@@ -2997,3 +2997,50 @@ Its build report is preserved at reports/tasks/T-034/build.md — it carries the
 original subpath-hosting verification and the CDN-behaviour measurements, which
 are real evidence and were not re-derived by T-055. The branch itself is
 retired; nothing else on it is wanted. -->
+
+## I-049 | bug | S2 | repro: serve main, drive right at constant speed, compare consecutive frames in the lower-hull band (y 620-720) between the default build and `?tex=flat`, counting pixels whose luminance delta REVERSES sign frame-to-frame | evidence: this entry
+
+**OPERATOR-FOUND: "a lot of flicker on the bottom portions."** He is right, it
+is real, and it is texture aliasing rather than fog.
+
+Measured on main at 3195/0, 8 frames captured while scrolling right, counting
+high-amplitude pixels (|delta| > 6) that reverse direction between consecutive
+frames — a pixel that reverses is shimmering, not translating:
+
+    band          textured                    ?tex=flat
+    lower hull    67,502 px  83.7% reversing  10,333 px  54.5%
+    mid           146,537 px 82.6%            79,320 px  71.2%
+
+**6.5x more shimmering pixels in the lower hull**, exactly where the operator
+said. T-054 made the texture visible by correcting its density; the same
+correction put high-frequency authored detail (panel lines, rivets) at a
+minification ratio where it aliases.
+
+MECHANISM, measured not guessed — probed the live scene graph:
+
+    composed hull tile canvases:  104x216 and 104x104   powerOfTwo: FALSE
+    generateMipmaps: true         anisotropy: 8         GPU max anisotropy: 16
+
+Two concrete suspects, both cheap to test:
+
+1. **The composed canvas is non-power-of-two.** A 104px canvas halves to
+   52 -> 26 -> 13 -> 6.5, so the mip chain rounds at every level. The source
+   tile is 128px, meaning the compositor also resamples 128 -> 104 at a
+   non-integer ratio before any mip is built. Composing at a power-of-two size
+   (128/256/512) makes the chain exact.
+2. **Anisotropy is hardcoded to 8 while this GPU reports 16.** The FAR camera
+   views the hull at a grazing angle, which is precisely where anisotropic
+   filtering earns its keep. Read `renderer.capabilities.getMaxAnisotropy()`
+   rather than pinning a constant — and note the backdrop plates and RIG's
+   sprite are running at 4, with one sprite at 1.
+
+**Do not fix this by making the texture invisible again.** T-054's density
+correction is what the operator asked for and it measurably worked (near-hull
+fine detail 0.416 -> 1.648 vs the flat control). The shimmer is a filtering
+problem, not an argument for retreating to a smaller tile.
+
+Note for the gate: the T-054 playtest brief explicitly asked for this — "a
+texture that reads as noise or shimmers while the camera moves is worse than
+flat... judge it moving" — and the gate passed it anyway. A still frame cannot
+show shimmer, so the metric above (sign-reversal rate under motion, against
+the lane's own escape hatch) belongs in the art-lane evidence standard.
