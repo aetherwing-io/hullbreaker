@@ -501,7 +501,17 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
  * weapon state. For every gap it sweeps takeoff positions along the left lip,
  * holds right, presses jump once, and asks whether RIG ends up standing,
  * alive, past the gap — landing on a catwalk that reaches past it counts,
- * because a player standing on one has crossed.                            */
+ * because a player standing on one has crossed.
+ *
+ * T-026 added the probe's own honesty instruments, after I-024 showed the
+ * first ones were too weak. The word "floor" in every number below is a claim
+ * about a SPEED, and until now it was only defended by comparing takeoff
+ * WINDOWS (floor narrower than run) — which a probe that keeps the
+ * scroll-speed start but loses the screen clamp passes while measuring an
+ * almost-free run. So the probe now meters the mean ground speed of every
+ * attempt it makes, and runs one clamp-removed control sweep whose numbers
+ * have to come out wrong. Removing the clamp from either sweep function turns
+ * the suite red; `node tools/gatecheck.mjs` mutates this file and proves it.  */
 {
   // the same gap enumeration the child runs, over this file's own copy of the
   // generated columns — so a probe that silently saw different terrain trips
@@ -544,23 +554,63 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
           gaps.push({ x0: s, x1: i - 1, w: i - s, hL: LV.groundH[s - 1], hR: LV.groundH[i] });
       } }
 
+    // Every attempt runs in one of three modes. \`speed\` sets the takeoff
+    // velocity and whether the scroll plane advances; \`clamp\` sets whether the
+    // right screen edge is pinned to RIG. FLOOR is the shipped measurement —
+    // plane advancing AND clamp holding, which is what makes ground speed
+    // exactly CONFIG.scrollSpeed. CTRL is the honesty control I-024 asked for:
+    // the same scroll-speed start with the clamp gone.
+    const FLOOR = { id: 'floor', speed: 'floor', clamp: true };
+    const RUN   = { id: 'run',   speed: 'run',   clamp: false };
+    const CTRL  = { id: 'ctrl',  speed: 'floor', clamp: false };
+
+    // The speed meter: the fastest GROUND SPEED (tiles/second, averaged from an
+    // attempt's own first frame) seen since the last reset. THIS is what the
+    // "SCROLL speed" label claims, and two nearby quantities are deliberately
+    // not the observable:
+    //
+    //   vx — the right clamp in sim/player.js pins x without touching vx, so a
+    //        correctly pinned RIG still accelerates to runSpeed on paper while
+    //        covering ground at exactly scrollSpeed;
+    //   the per-frame advance — an attempt whose takeoff x sits several tiles
+    //        behind the lip starts inside a step, is ejected by the collision
+    //        resolver, drops BEHIND the plane, and then legitimately accelerates
+    //        to runSpeed catching up to it. Measured: instantaneous 9.4 on a
+    //        properly clamped floor sweep, which would make the guard below
+    //        unassertable noise.
+    //
+    // The average from the attempt's start has neither problem: RIG begins the
+    // attempt exactly at the plane, and the clamp means he can never be ahead
+    // of it, so his mean speed over any prefix of a clamped attempt is
+    // scrollSpeed or less however much he lags and catches up inside it.
+    const SPEED = { max: -Infinity, frames: 0 };
+    let meterX0 = 0, meterFrames = 0;
+    function meterReset() { meterX0 = p.x; meterFrames = 0; }
+    function meter(dt) {
+      meterFrames++;
+      const avg = (p.x - meterX0) / (meterFrames * dt);
+      if (avg > SPEED.max) SPEED.max = avg;
+      SPEED.frames++;
+    }
+
     // One attempt. RIG stands on the left lip at takeoff x0, holds right,
     // presses jump on frame 0 (again at the apex when air=true), and touches
-    // nothing else. floor=true pins him against the right screen clamp, so his
-    // ground speed is exactly CONFIG.scrollSpeed; floor=false lets him run.
-    function cross(g, x0, dt, air, floor) {
+    // nothing else. mode.clamp pins him against the right screen clamp, so his
+    // ground speed is exactly CONFIG.scrollSpeed; RUN lets him run free.
+    function cross(g, x0, dt, air, mode) {
       for (const k in IN.keys) IN.keys[k] = false;
       IN.clearJumpBuffer(); PLm.clearPlayerTraversal(0); T.setScrollX(0);
       p.x = x0; p.y = g.hL;
-      p.vx = floor ? C.scrollSpeed : PL.runSpeed; p.vy = 0;
+      p.vx = mode.speed === 'floor' ? C.scrollSpeed : PL.runSpeed; p.vy = 0;
       p.grounded = true; p.onOneWay = null;
       p.airJumpsLeft = PL.airJumps; p.coyoteUntil = 0; p.dropUntil = 0;
       p.jumpCutDone = true; p.hp = PL.maxHealth; p.lives = PL.lives;
       p.iframesUntil = 0; p.hitstunUntil = 0; p.traversalControlUntil = 0;
-      if (floor) E.setEdges(x0 + hw + M - 200, x0 + hw + M);
+      if (mode.clamp) E.setEdges(x0 + hw + M - 200, x0 + hw + M);
       else E.setEdges(-1000, 1000);
       IN.keys.right = true; IN.keys.jump = true;
       IN.bufferJumpUntil(T.gameMs + PL.jumpBufferMs);
+      meterReset();
       let airLeft = air, prevVy = 0;
       for (let i = 0, n = Math.ceil(4 / dt); i < n; i++) {
         if (airLeft && i > 0 && prevVy > 0 && p.vy <= 0) {
@@ -568,8 +618,9 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
         }
         prevVy = p.vy;
         T.advanceGameMs(dt * 1000);
-        if (floor) T.setScrollX(T.scrollX + C.scrollSpeed * dt);
+        if (mode.speed === 'floor') T.setScrollX(T.scrollX + C.scrollSpeed * dt);
         PLm.updatePlayer(dt);
+        meter(dt);
         // Bail before the kill plane so the probe never runs the death path
         // (loseLife would touch weapons, mods and the score). Gap height
         // deltas are capped at 1 tile, so 2 below the takeoff lip is a fall.
@@ -582,15 +633,15 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
     // The takeoff window: the run of positions on the left lip from which that
     // one press crosses. hi is the last x where RIG is still grounded — the
     // sim's own rule, floor(x - hw + 0.02) still indexing the lip column.
-    function windowFor(g, dt, air, floor) {
+    function windowFor(g, dt, air, mode) {
       const hi = g.x0 + hw - 0.02;
       let lo = null, up = null;
       for (let n = 0; ; n++) {
         const x = g.x0 - 8 + n * 0.02;
         if (x > hi) break;
-        if (cross(g, x, dt, air, floor)) { if (lo === null) lo = x; up = x; }
+        if (cross(g, x, dt, air, mode)) { if (lo === null) lo = x; up = x; }
       }
-      return { lo, up, width: lo === null ? 0 : up - lo, atLip: cross(g, hi, dt, air, floor) };
+      return { lo, up, width: lo === null ? 0 : up - lo, atLip: cross(g, hi, dt, air, mode) };
     }
 
     // Late-press grace: run off the lip at full speed and press jump n frames
@@ -600,25 +651,28 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
     // jump only restores the height it left from, so he arrives at the far
     // wall's FACE instead of its top. With air=true (the real game) the late
     // press spends the air jump instead, and that is what actually forgives it.
-    function graceFrames(g, dt, floor, air) {
+    function graceFrames(g, dt, mode, air) {
       const hi = g.x0 + hw - 0.02;
       let n = 0;
       for (; n < 40; n++) {
         for (const k in IN.keys) IN.keys[k] = false;
         IN.clearJumpBuffer(); PLm.clearPlayerTraversal(0); T.setScrollX(0);
-        p.x = hi; p.y = g.hL; p.vx = floor ? C.scrollSpeed : PL.runSpeed; p.vy = 0;
+        p.x = hi; p.y = g.hL;
+        p.vx = mode.speed === 'floor' ? C.scrollSpeed : PL.runSpeed; p.vy = 0;
         p.grounded = true; p.onOneWay = null; p.coyoteUntil = 0; p.dropUntil = 0;
         p.jumpCutDone = true; p.hp = PL.maxHealth; p.lives = PL.lives;
         p.iframesUntil = 0; p.hitstunUntil = 0; p.traversalControlUntil = 0;
-        if (floor) E.setEdges(hi + hw + M - 200, hi + hw + M); else E.setEdges(-1000, 1000);
+        if (mode.clamp) E.setEdges(hi + hw + M - 200, hi + hw + M); else E.setEdges(-1000, 1000);
         IN.keys.right = true;
+        meterReset();
         let crossed = false, pressed = false;
         for (let i = 0, fr = Math.ceil(4 / dt); i < fr; i++) {
           p.airJumpsLeft = air ? PL.airJumps : 0;
           if (i === n) { IN.keys.jump = true; IN.bufferJumpUntil(T.gameMs + PL.jumpBufferMs); pressed = true; }
           T.advanceGameMs(dt * 1000);
-          if (floor) T.setScrollX(T.scrollX + C.scrollSpeed * dt);
+          if (mode.speed === 'floor') T.setScrollX(T.scrollX + C.scrollSpeed * dt);
           PLm.updatePlayer(dt);
+          meter(dt);
           if (p.y < g.hL - 2) break;
           if (p.grounded && pressed && i > n + 2 && p.x - hw > g.x1 + 0.5) { crossed = true; break; }
         }
@@ -628,17 +682,41 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
     }
 
     const dt = 1 / 60;
-    const out = gaps.map((g) => {
-      const single = windowFor(g, dt, false, true);
-      const dbl = single.lo === null ? windowFor(g, dt, true, true) : single;
-      const run = windowFor(g, dt, false, false);
+    const out = gaps.map((g, gi) => {
+      // Everything labelled "floor" is measured with the meter running, and the
+      // max it saw is reported beside the windows it produced. A floor column
+      // measured at any speed above CONFIG.scrollSpeed is mislabelled, however
+      // plausible its windows look.
+      SPEED.max = -Infinity; SPEED.frames = 0;
+      const single = windowFor(g, dt, false, FLOOR);
+      const dbl = single.lo === null ? windowFor(g, dt, true, FLOOR) : single;
+      const floorGrace = graceFrames(g, dt, FLOOR, true);
+      const floorGraceGround = graceFrames(g, dt, FLOOR, false);
+      const floorAdvance = +SPEED.max.toFixed(6);
+      const floorFrames = SPEED.frames;
+
+      SPEED.max = -Infinity; SPEED.frames = 0;
+      const run = windowFor(g, dt, false, RUN);
+      const runGrace = graceFrames(g, dt, RUN, true);
+      const runAdvance = +SPEED.max.toFixed(6);
+
+      // The clamp-removed control, run on the first gap — the one I-024
+      // measured. Same scroll-speed start, screen clamp gone. If this does not
+      // read faster than the floor and open a wider takeoff window, then the
+      // meter above is stuck and its silence proves nothing.
+      let control = null;
+      if (gi === 0) {
+        SPEED.max = -Infinity; SPEED.frames = 0;
+        const w = windowFor(g, dt, false, CTRL);
+        control = { single: +w.width.toFixed(4), advance: +SPEED.max.toFixed(6), frames: SPEED.frames };
+      }
+
       return { x0: g.x0, x1: g.x1, w: g.w, hL: g.hL, hR: g.hR,
         floorSingle: +single.width.toFixed(4), floorSingleAtLip: single.atLip,
         floorAny: +dbl.width.toFixed(4), needsAirJump: single.lo === null,
         runSingle: +run.width.toFixed(4), runSingleAtLip: run.atLip,
-        floorGrace: graceFrames(g, dt, true, true),
-        runGrace: graceFrames(g, dt, false, true),
-        floorGraceGround: graceFrames(g, dt, true, false) };
+        floorGrace, runGrace, floorGraceGround,
+        floorAdvance, floorFrames, runAdvance, control };
     });
     console.log(JSON.stringify({ gate1: WG.cornerEvents[0].s, gaps: out }));
   `;
@@ -679,6 +757,62 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
       ok(face1.every((g) => g.runSingle > g.floorSingle && g.runSingleAtLip),
          'the same gaps are wider still at run speed, worst window ' + worst.toFixed(2) +
          ' tiles (the probe really is measuring the floor, not a free run)');
+    }
+    {
+      /* I-024: the window comparison above is NOT enough on its own.
+       * It catches a probe started at runSpeed — the builder's own negative
+       * control — but not one that keeps the scroll-speed start and loses the
+       * screen clamp. Measured, that case lets RIG accelerate to runSpeed in
+       * the air: the gap-29-31 "floor" window balloons 0.74 -> 4.12 tiles,
+       * still strictly under the 4.22 run-speed window, so the comparison stays
+       * green while the column labelled SCROLL reports an almost-free run.
+       *
+       * Measured on this tree while wiring the control up: a full clamp removal
+       * DOES also trip the comparison above — but only because face 1's other
+       * gap, 46-47, saturates (floor window 1.96 -> 8.32, exactly its own run
+       * window), not because of any property of the check. On the gap I-024
+       * named it stays green. A guard that catches a defect only when some
+       * unrelated second gap happens to saturate is not a guard.
+       *
+       * The label is a claim about a SPEED, so assert the speed. The three
+       * checks below are one unit: the floor column really ran at the floor,
+       * the meter that says so is not stuck, and the clamp is what holds it.
+       *
+       * Also measured, and worth knowing before editing the probe: forcing the
+       * floor sweep's takeoff velocity to runSpeed while the clamp still holds
+       * changes NOTHING — all 17 gaps report identical windows, graces and mean
+       * speeds. The clamp is what makes the floor a floor; the start velocity
+       * only matters once the clamp is gone. */
+      const EPS = 1e-6;
+      const SS = CONFIG.scrollSpeed;
+      const fastest = Math.max.apply(null, G.map((g) => g.floorAdvance));
+      const fast = G.filter((g) => g.floorAdvance > SS + EPS);
+      ok(fast.length === 0,
+         'every floor-labelled sweep really ran at the scroll floor: fastest mean ground speed ' +
+         fastest.toFixed(4) + ' vs CONFIG.scrollSpeed ' + SS + ' tiles/s, over ' +
+         G.reduce((n, g) => n + g.floorFrames, 0) + ' measured frames' +
+         (fast.length ? ' -- FAILS at ' + fast.map((g) => g.x0 + '-' + g.x1 + ' (' +
+            g.floorAdvance.toFixed(3) + ')').join(', ') : ''));
+      // Non-vacuity, half one: the same meter reads runSpeed on the run column,
+      // so its silence on the floor column is a measurement and not a zero.
+      const slowRun = G.filter((g) => g.runAdvance < SS + 1 || g.runAdvance > PL.runSpeed + EPS);
+      ok(slowRun.length === 0,
+         'the speed meter is live: the run column reads ' +
+         Math.min.apply(null, G.map((g) => g.runAdvance)).toFixed(2) + '-' +
+         Math.max.apply(null, G.map((g) => g.runAdvance)).toFixed(2) +
+         ' tiles/s, between the floor (' + SS + ') and runSpeed (' + PL.runSpeed + ')');
+      // Non-vacuity, half two: I-024's exact mutation, run for real on the first
+      // gap — scroll-speed start kept, screen clamp removed. If the clamp were
+      // not what holds the floor, this control would read the floor too and the
+      // guard above would be protecting nothing.
+      const c = G[0].control;
+      ok(!!c && c.advance > SS + 1 && c.single > G[0].floorSingle,
+         'negative control (scroll-speed start, screen clamp removed) on gap ' +
+         G[0].x0 + '-' + G[0].x1 + ': mean ground speed ' + (c ? c.advance.toFixed(2) : 'n/a') +
+         ' tiles/s and a ' + (c ? c.single.toFixed(2) : 'n/a') + '-tile takeoff window against the ' +
+         'clamped floor\'s ' + G[0].floorSingle.toFixed(2) + ' -- and note it stays under the ' +
+         G[0].runSingle.toFixed(2) + '-tile run-speed window, which is exactly why the ' +
+         'window comparison alone could not see it');
     }
     {
       // The first gap the run presents, named: it is the first thing the game
