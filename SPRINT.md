@@ -3060,3 +3060,48 @@ pathcheck domain appended LAST. NOT `limb.js`, NOT `config.js`/`camera.js`
 (T-056 is in those right now).
 verify: the shimmer metric before/after; the fine-detail metric before/after;
 node tools/pathcheck.mjs; captures judged MOVING, not from stills
+
+## I-049 — CORRECTED MEASUREMENT AND STATUS (2026-08-02, integrator)
+
+**My original figure was a single sample and it was wrong.** I reported 67,502
+shimmering px at 83.7% reversal, a 6.5x gap over `?tex=flat`, from ONE run
+taken while a dozen agents were loading this machine. Decisions entry 19's own
+discipline — report distributions, never a mean, never a single run — is a rule
+I have been enforcing on lanes all day and did not apply to myself.
+
+Re-measured properly, three interleaved rounds on a quiet machine, lower-hull
+band under motion:
+
+    condition            samples (3 rounds)          reversal rate
+    main, textured       40,721 / 40,586 / 41,058    68.0 - 69.1%
+    main, ?tex=flat       9,213 /  9,397 /  9,294    48.2 - 49.2%
+    T-057 (aniso fix)    41,636 / 41,888 / 41,268    68.9 - 70.3%
+
+Spread within a condition is 1-2%, so the metric is sound; it was the *single
+sample* that was not. **The honest gap is 4.4x, not 6.5x.** The operator's
+observation stands unchanged — the flicker is real and large.
+
+**T-057 does not fix it.** Its anisotropy change (hardcoded 8 -> the GPU's
+actual max) is correct on its own merits and costs nothing, but it moves the
+shimmer metric by less than the noise floor, in the wrong direction if
+anything. That lane reported this as a null result rather than claiming a win,
+and it was right to.
+
+**T-057 also killed my hypothesis, with evidence.** I proposed the composited
+canvas being non-power-of-two as the likely mechanism. The lane built and
+measured EIGHT variants of that idea; every one scored equal or worse, none
+shipped. That is a real negative result and it is worth more than my guess was.
+
+**What is still true and still unexplained:** a textured hull shimmers ~4.4x
+more than the same hull flat, concentrated in the lower band, under motion
+only. Fix directions not yet tried, cheapest first:
+  1. **Distance-based texture fade** — attenuate map strength as a surface
+     recedes, so near surfaces carry detail and far ones go flat. This is the
+     standard production answer to minification aliasing, and it would ALSO
+     address the operator's separate observation that the background reads as
+     more detailed than the foreground, since it restores the atmospheric
+     ordering directly.
+  2. Reduce high-frequency content in the tile itself at authoring time — but
+     carefully: this is the lever that, over-applied, produced the original
+     invisibility (T-054).
+  3. An explicit mip LOD bias toward blurrier levels under motion.
