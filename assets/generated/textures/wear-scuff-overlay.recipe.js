@@ -6,352 +6,413 @@ export const meta = {
 };
 
 export function render(ctx, env) {
-  const w = env.width;
-  const h = env.height;
-  const clamp = env.clamp;
-  const lightX = -0.72;
-  const lightY = -0.69;
+  const W = env.width;
+  const H = env.height;
+  const S = env.seed | 0;
+  const TAU = Math.PI * 2;
 
   const ink = env.PALETTE.ink;
   const rust = env.PALETTE['rust-orange'];
   const haze = env.PALETTE.haze;
   const hull = env.PALETTE.hull;
 
-  const grimeRgb = env.hexToRgb(env.mix(haze, ink, 0.42));
-  const rustRgb = env.hexToRgb(env.shade(rust, -0.14));
-  const scratchDarkRgb = env.hexToRgb(env.mix(ink, haze, 0.22));
-  const scratchLightRgb = env.hexToRgb(env.shade(hull, 0.11));
-  const chipRimRgb = env.hexToRgb(env.mix(ink, haze, 0.12));
-  const chipCoreRgb = env.hexToRgb(env.shade(hull, 0.25));
+  const deepInk = env.shade(ink, -0.05);
+  const grime = env.mix(ink, haze, 0.58);
+  const softHull = env.mix(hull, haze, 0.28);
+  const darkRust = env.shade(rust, -0.22);
+  const grimeRgb = env.hexToRgb(grime);
 
-  const wrap = (v, size) => {
-    v %= size;
-    return v < 0 ? v + size : v;
-  };
+  const wrap01 = (value, span) =>
+    (((value % span) + span) % span) / span;
 
-  const delta = (a, b, size) => {
-    let d = a - b;
-    d -= Math.round(d / size) * size;
-    return d;
-  };
-
-  const rgba = (rgb, alpha) => [
-    rgb.r,
-    rgb.g,
-    rgb.b,
-    Math.round(clamp(alpha, 0, 255)),
-  ];
-
-  const zoneRng = env.stream('wear-zones');
-  const directions = [-0.34, 0.53, 1.27];
-  const zones = [];
-
-  for (let i = 0; i < 4; i++) {
-    zones.push({
-      x: zoneRng() * w,
-      y: zoneRng() * h,
-      rx: 12 + zoneRng() * 11,
-      ry: 8 + zoneRng() * 9,
-      angle: directions[i % directions.length],
-    });
-  }
-
-  const scratchRng = env.stream('scuff-scratches');
-  const scratches = [];
-
-  for (let z = 0; z < zones.length; z++) {
-    const zone = zones[z];
-    const count = 4 + Math.floor(scratchRng() * 4);
-
-    for (let i = 0; i < count; i++) {
-      const x = wrap(
-        zone.x + (scratchRng() + scratchRng() - 1) * zone.rx,
-        w,
-      );
-      const y = wrap(
-        zone.y + (scratchRng() + scratchRng() - 1) * zone.ry,
-        h,
-      );
-      const angle =
-        zone.angle + (scratchRng() + scratchRng() - 1) * 0.13;
-      const vx = Math.cos(angle);
-      const vy = Math.sin(angle);
-      let nx = -vy;
-      let ny = vx;
-
-      if (nx * lightX + ny * lightY < 0) {
-        nx = -nx;
-        ny = -ny;
-      }
-
-      scratches.push({
-        x,
-        y,
-        vx,
-        vy,
-        nx,
-        ny,
-        half: 4.5 + scratchRng() * 5.2,
-        outer: 2.15 + scratchRng() * 1.05,
-        core: 1.05 + scratchRng() * 0.55,
-        lipOffset: 0.7 + scratchRng() * 0.45,
-        darkAlpha: 74 + scratchRng() * 56,
-        lightAlpha: 78 + scratchRng() * 70,
-      });
-    }
-  }
-
-  const chipRng = env.stream('metal-chips');
-  const chips = [];
-
-  for (let z = 0; z < zones.length; z++) {
-    const zone = zones[z];
-    const count = 3 + Math.floor(chipRng() * 3);
-
-    for (let i = 0; i < count; i++) {
-      chips.push({
-        x: wrap(
-          zone.x + (chipRng() + chipRng() - 1) * zone.rx * 0.9,
-          w,
-        ),
-        y: wrap(
-          zone.y + (chipRng() + chipRng() - 1) * zone.ry * 0.9,
-          h,
-        ),
-        rx: 2.35 + chipRng() * 1.75,
-        ry: 1.75 + chipRng() * 1.35,
-        rotation: chipRng() * Math.PI,
-        phase: chipRng() * Math.PI * 2,
-        coreScale: 0.59 + chipRng() * 0.09,
-        rimAlpha: 125 + chipRng() * 66,
-        coreAlpha: 145 + chipRng() * 72,
-      });
-    }
-  }
-
-  const bleedRng = env.stream('rust-bleeds');
-  const bleeds = [];
-
-  for (let i = 0; i < chips.length; i++) {
-    if (bleedRng() < 0.56) {
-      const chip = chips[i];
-      bleeds.push({
-        x: wrap(chip.x + (bleedRng() - 0.5) * 1.3, w),
-        y: wrap(chip.y + chip.ry * 0.48, h),
-        length: 6.5 + bleedRng() * 13,
-        width: 1.15 + bleedRng() * 1.25,
-        drift: (bleedRng() - 0.5) * 4.2,
-        phase: bleedRng() * Math.PI * 2,
-        alpha: 185 + bleedRng() * 55,
-      });
-    }
-  }
-
-  const lineDistance = (x, y, scratch, highlighted) => {
-    const offset = highlighted ? scratch.lipOffset : 0;
-    const cx = scratch.x + scratch.nx * offset;
-    const cy = scratch.y + scratch.ny * offset;
-    const dx = delta(x, cx, w);
-    const dy = delta(y, cy, h);
-    const along = dx * scratch.vx + dy * scratch.vy;
-    const side = dx * scratch.nx + dy * scratch.ny;
-    const beyond = Math.max(Math.abs(along) - scratch.half, 0);
-    return Math.hypot(beyond, side);
-  };
-
-  const chipMetric = (x, y, chip, scale, offsetX, offsetY) => {
-    const dx = delta(x, chip.x + offsetX, w);
-    const dy = delta(y, chip.y + offsetY, h);
-    const cs = Math.cos(chip.rotation);
-    const sn = Math.sin(chip.rotation);
-    const lx = dx * cs + dy * sn;
-    const ly = -dx * sn + dy * cs;
-    const angle = Math.atan2(ly, lx);
-    const boundary =
-      1 +
-      0.13 * Math.sin(angle * 3 + chip.phase) +
-      0.08 * Math.sin(angle * 5 - chip.phase * 0.7);
-    const q = Math.hypot(
-      lx / (chip.rx * scale),
-      ly / (chip.ry * scale),
+  const noiseAt = (x, y, period, seed) =>
+    env.noise(
+      wrap01(x, W) * period,
+      wrap01(y, H) * period,
+      { period, seed: S + seed },
     );
-    return q / boundary;
+
+  const fbmAt = (x, y, period, seed, octaves = 4) =>
+    env.fbm(
+      wrap01(x, W) * period,
+      wrap01(y, H) * period,
+      {
+        octaves,
+        gain: 0.52,
+        lacunarity: 2,
+        period,
+        seed: S + seed,
+      },
+    );
+
+  const densityAt = (x, y, layer) => {
+    const broad = fbmAt(x, y, 3, 31, 4);
+    const local = fbmAt(x, y, 7, 71 + layer * 13, 3);
+    return broad * 0.58 + local * 0.42;
   };
+
+  const offsetsX = [-W, 0, W];
+  const offsetsY = [-H, 0, H];
+
+  const makeChip = (x, y, rx, ry, rotation, seed, count) => {
+    const points = [];
+    const cr = Math.cos(rotation);
+    const sr = Math.sin(rotation);
+
+    for (let i = 0; i < count; i += 1) {
+      const wedge = TAU / count;
+      const jitter =
+        (noiseAt(x, y, 23, seed + 20 + i) - 0.5) * wedge * 0.58;
+      const angle = i * wedge + jitter;
+      const radius = 0.67 + noiseAt(x, y, 19, seed + 60 + i) * 0.48;
+      const lx = Math.cos(angle) * rx * radius;
+      const ly = Math.sin(angle) * ry * radius;
+
+      points.push({
+        x: lx * cr - ly * sr,
+        y: lx * sr + ly * cr,
+      });
+    }
+
+    return points;
+  };
+
+  const fillWrapped = (
+    points,
+    x,
+    y,
+    color,
+    alpha,
+    scale = 1,
+    shiftX = 0,
+    shiftY = 0,
+  ) => {
+    ctx.fillStyle = env.rgba(color, alpha);
+
+    for (const oy of offsetsY) {
+      for (const ox of offsetsX) {
+        ctx.beginPath();
+        ctx.moveTo(
+          x + shiftX + ox + points[0].x * scale,
+          y + shiftY + oy + points[0].y * scale,
+        );
+
+        for (let i = 1; i < points.length; i += 1) {
+          ctx.lineTo(
+            x + shiftX + ox + points[i].x * scale,
+            y + shiftY + oy + points[i].y * scale,
+          );
+        }
+
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  };
+
+  const strokeWrapped = ({
+    x,
+    y,
+    angle,
+    length,
+    bend,
+    width,
+    color,
+    alpha,
+    dash,
+    gap,
+    phase,
+    startBias,
+  }) => {
+    const dx = Math.cos(angle);
+    const dy = Math.sin(angle);
+    const nx = -dy;
+    const ny = dx;
+
+    const sx = x + dx * length * startBias;
+    const sy = y + dy * length * startBias;
+    const ex = sx + dx * length;
+    const ey = sy + dy * length;
+    const cx = sx + dx * length * 0.48 + nx * bend;
+    const cy = sy + dy * length * 0.48 + ny * bend;
+
+    ctx.strokeStyle = env.rgba(color, alpha);
+    ctx.lineWidth = width;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.setLineDash(dash > 0 ? [dash, gap] : []);
+    ctx.lineDashOffset = phase;
+
+    for (const oy of offsetsY) {
+      for (const ox of offsetsX) {
+        ctx.beginPath();
+        ctx.moveTo(sx + ox, sy + oy);
+        ctx.quadraticCurveTo(cx + ox, cy + oy, ex + ox, ey + oy);
+        ctx.stroke();
+      }
+    }
+
+    ctx.setLineDash([]);
+    ctx.lineDashOffset = 0;
+  };
+
+  ctx.save();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
 
   env.field(
     (x, y, u, v) => {
-      const pool = env.fbm(u * 3, v * 3, {
+      const broad = env.fbm(u * 4, v * 4, {
         octaves: 4,
-        gain: 0.55,
-        lacunarity: 2,
-        period: 3,
-        seed: meta.seed + 17,
-      });
-      const dragged = env.fbm((u + v) * 5, v * 5, {
-        octaves: 3,
         gain: 0.52,
         lacunarity: 2,
-        period: 5,
-        seed: meta.seed + 41,
+        period: 4,
+        seed: S + 3,
       });
-      const gathered = pool * 0.76 + dragged * 0.24;
+      const dragged = env.fbm(u * 12, v * 3, {
+        octaves: 3,
+        gain: 0.5,
+        lacunarity: 2,
+        period: 3,
+        seed: S + 7,
+      });
+      const grain = env.fbm(u * 21, v * 21, {
+        octaves: 3,
+        gain: 0.5,
+        lacunarity: 2,
+        period: 21,
+        seed: S + 11,
+      });
+      const holes = env.noise(u * 29, v * 29, {
+        period: 29,
+        seed: S + 17,
+      });
 
-      if (gathered <= 0.56) return null;
+      const coverage = broad * 0.48 + dragged * 0.31 + grain * 0.21;
+      if (coverage < 0.58 || holes < 0.43) return null;
 
-      const softness = env.smoothstep(
-        clamp((gathered - 0.56) / 0.18, 0, 1),
+      const strength = env.smoothstep(
+        env.clamp((coverage - 0.58) / 0.18, 0, 1),
       );
-      const grain = env.noise(u * 16, v * 16, {
-        period: 16,
-        seed: meta.seed + 73,
-      });
-      const alpha = (5 + softness * 25) * (0.72 + grain * 0.42);
+      const alpha = Math.round(5 + strength * 23);
 
-      return rgba(grimeRgb, alpha);
+      return [grimeRgb.r, grimeRgb.g, grimeRgb.b, alpha];
     },
     { blend: 'over' },
   );
 
-  env.field(
-    (x, y) => {
-      let bestAlpha = 0;
+  const streakPositions = env.stream('wear-long-streak-positions');
+  for (let i = 0; i < 34; i += 1) {
+    const x = streakPositions() * W;
+    const y = streakPositions() * H;
+    const density = densityAt(x, y, 1);
+    const existence = noiseAt(x, y, 31, 110);
 
-      for (let i = 0; i < bleeds.length; i++) {
-        const bleed = bleeds[i];
-        let down = y - bleed.y;
-        down -= Math.round(down / h) * h;
+    if (existence < 0.86 - density * 0.28) continue;
 
-        if (down < 0 || down > bleed.length) continue;
+    const size = noiseAt(x, y, 9, 121);
+    const widthNoise = noiseAt(x, y, 13, 127);
+    const rotation = noiseAt(x, y, 7, 131);
+    const opacity = noiseAt(x, y, 11, 137);
+    const curve = noiseAt(x, y, 17, 139);
+    const segmentation = noiseAt(x, y, 19, 149);
+    const phaseNoise = noiseAt(x, y, 23, 151);
 
-        const t = down / bleed.length;
-        const wiggle =
-          0.44 *
-          (Math.sin(bleed.phase + t * 5.4) -
-            Math.sin(bleed.phase));
-        const centerX = bleed.x + bleed.drift * t + wiggle;
-        const across = Math.abs(delta(x, centerX, w));
-        const width = bleed.width * (1 - t * 0.36);
+    const length = 12 + size * 15;
+    const width = 2.6 + widthNoise * 2.6;
+    const angle = 1.42 + (rotation - 0.5) * 0.52;
+    const alpha = 0.035 + opacity * 0.075;
+    const bend = (curve - 0.5) * 7;
+    const dash = 3.5 + segmentation * 6;
+    const gap = 1.5 + (1 - segmentation) * 3;
+    const phase = phaseNoise * (dash + gap);
 
-        if (across >= width) continue;
+    strokeWrapped({
+      x,
+      y,
+      angle,
+      length,
+      bend,
+      width: width + 1.6,
+      color: darkRust,
+      alpha: alpha * 0.62,
+      dash,
+      gap,
+      phase,
+      startBias: -0.08,
+    });
 
-        const edge = 1 - env.smoothstep(clamp(across / width, 0, 1));
-        const fade = Math.pow(1 - t, 1.55);
-        const texture =
-          0.88 + 0.12 * Math.cos(bleed.phase + down * 1.7);
-        const alpha = bleed.alpha * edge * fade * texture;
+    strokeWrapped({
+      x: x - 0.45,
+      y: y - 0.35,
+      angle,
+      length: length * 0.93,
+      bend: bend * 0.82,
+      width,
+      color: rust,
+      alpha: alpha * 0.72,
+      dash: dash * 0.84,
+      gap: gap * 1.12,
+      phase,
+      startBias: -0.06,
+    });
+  }
 
-        if (alpha > bestAlpha) bestAlpha = alpha;
-      }
+  const chipPositions = env.stream('wear-mid-chip-positions');
+  for (let i = 0; i < 58; i += 1) {
+    const x = chipPositions() * W;
+    const y = chipPositions() * H;
+    const density = densityAt(x, y, 2);
+    const existence = noiseAt(x, y, 29, 210);
 
-      return bestAlpha > 2 ? rgba(rustRgb, bestAlpha) : null;
-    },
-    { blend: 'over' },
-  );
+    if (existence < 0.87 - density * 0.3) continue;
 
-  env.field(
-    (x, y) => {
-      let bestAlpha = 0;
+    const size = noiseAt(x, y, 8, 221);
+    const aspect = noiseAt(x, y, 12, 223);
+    const rotationNoise = noiseAt(x, y, 7, 227);
+    const opacityNoise = noiseAt(x, y, 10, 229);
+    const vertexNoise = noiseAt(x, y, 17, 233);
+    const rustPresence = noiseAt(x, y, 14, 239);
 
-      for (let i = 0; i < scratches.length; i++) {
-        const scratch = scratches[i];
-        const d = lineDistance(x, y, scratch, false);
+    const rx = 3.2 + size * 3.8;
+    const ry = 1.7 + aspect * 2.8;
+    const rotation = rotationNoise * TAU;
+    const alpha = 0.08 + opacityNoise * 0.14;
+    const count = 5 + Math.floor(vertexNoise * 4);
+    const points = makeChip(x, y, rx, ry, rotation, 250, count);
 
-        if (d >= scratch.outer) continue;
+    if (rustPresence > 0.48) {
+      fillWrapped(
+        points,
+        x,
+        y,
+        rust,
+        alpha * (0.18 + rustPresence * 0.2),
+        1.18 + rustPresence * 0.08,
+        0.45,
+        0.85,
+      );
+    }
 
-        const coverage =
-          1 - env.smoothstep(clamp(d / scratch.outer, 0, 1));
-        bestAlpha = Math.max(
-          bestAlpha,
-          scratch.darkAlpha * coverage,
-        );
-      }
+    fillWrapped(
+      points,
+      x,
+      y,
+      softHull,
+      alpha * 0.54,
+      1.04,
+      -0.72,
+      -0.62,
+    );
+    fillWrapped(points, x, y, deepInk, alpha, 1, 0.18, 0.22);
+  }
 
-      return bestAlpha > 3 ? rgba(scratchDarkRgb, bestAlpha) : null;
-    },
-    { blend: 'over' },
-  );
+  const scratchPositions = env.stream('wear-scuff-scratch-positions');
+  for (let i = 0; i < 64; i += 1) {
+    const x = scratchPositions() * W;
+    const y = scratchPositions() * H;
+    const density = densityAt(x, y, 3);
+    const existence = noiseAt(x, y, 37, 310);
 
-  env.field(
-    (x, y) => {
-      let bestAlpha = 0;
+    if (existence < 0.86 - density * 0.27) continue;
 
-      for (let i = 0; i < chips.length; i++) {
-        const chip = chips[i];
-        const metric = chipMetric(x, y, chip, 1, 0, 0);
+    const size = noiseAt(x, y, 11, 317);
+    const widthNoise = noiseAt(x, y, 16, 319);
+    const rotation = noiseAt(x, y, 8, 323);
+    const opacity = noiseAt(x, y, 13, 331);
+    const curve = noiseAt(x, y, 19, 337);
+    const dashNoise = noiseAt(x, y, 23, 347);
+    const gapNoise = noiseAt(x, y, 17, 349);
+    const phaseNoise = noiseAt(x, y, 29, 353);
 
-        if (metric >= 1) continue;
+    const length = 8 + size * 12;
+    const width = 2.1 + widthNoise * 1.9;
+    const angle = -0.28 + (rotation - 0.5) * 1.05;
+    const alpha = 0.045 + opacity * 0.09;
+    const bend = (curve - 0.5) * 4.8;
+    const dash = 3 + dashNoise * 5;
+    const gap = 1 + gapNoise * 2.7;
+    const phase = phaseNoise * (dash + gap);
 
-        const coverage =
-          metric <= 0.76
-            ? 1
-            : 1 -
-              env.smoothstep(clamp((metric - 0.76) / 0.24, 0, 1));
-        bestAlpha = Math.max(
-          bestAlpha,
-          chip.rimAlpha * coverage,
-        );
-      }
+    strokeWrapped({
+      x: x + 0.6,
+      y: y + 0.65,
+      angle,
+      length,
+      bend,
+      width: width + 1.1,
+      color: deepInk,
+      alpha: alpha * 0.62,
+      dash,
+      gap,
+      phase,
+      startBias: -0.5,
+    });
 
-      return bestAlpha > 3 ? rgba(chipRimRgb, bestAlpha) : null;
-    },
-    { blend: 'over' },
-  );
+    strokeWrapped({
+      x: x - 0.45,
+      y: y - 0.5,
+      angle,
+      length: length * 0.96,
+      bend: bend * 0.9,
+      width,
+      color: softHull,
+      alpha,
+      dash: dash * 0.9,
+      gap: gap * 1.08,
+      phase,
+      startBias: -0.5,
+    });
+  }
 
-  env.field(
-    (x, y) => {
-      let bestAlpha = 0;
+  const pitPositions = env.stream('wear-tiny-pit-positions');
+  for (let i = 0; i < 125; i += 1) {
+    const x = pitPositions() * W;
+    const y = pitPositions() * H;
+    const density = densityAt(x, y, 4);
+    const existence = noiseAt(x, y, 41, 410);
 
-      for (let i = 0; i < scratches.length; i++) {
-        const scratch = scratches[i];
-        const d = lineDistance(x, y, scratch, true);
+    if (existence < 0.8 - density * 0.25) continue;
 
-        if (d >= scratch.core) continue;
+    const size = noiseAt(x, y, 15, 419);
+    const aspect = noiseAt(x, y, 21, 421);
+    const rotationNoise = noiseAt(x, y, 12, 431);
+    const opacityNoise = noiseAt(x, y, 17, 433);
+    const vertexNoise = noiseAt(x, y, 25, 439);
+    const rustPresence = noiseAt(x, y, 19, 443);
 
-        const coverage =
-          1 - env.smoothstep(clamp(d / scratch.core, 0, 1));
-        bestAlpha = Math.max(
-          bestAlpha,
-          scratch.lightAlpha * coverage,
-        );
-      }
+    const rx = 1.6 + size * 1.2;
+    const ry = 1.2 + aspect * 1.1;
+    const rotation = rotationNoise * TAU;
+    const alpha = 0.06 + opacityNoise * 0.12;
+    const count = 5 + Math.floor(vertexNoise * 3);
+    const points = makeChip(x, y, rx, ry, rotation, 460, count);
 
-      return bestAlpha > 3
-        ? rgba(scratchLightRgb, bestAlpha)
-        : null;
-    },
-    { blend: 'over' },
-  );
+    if (rustPresence > 0.6) {
+      fillWrapped(
+        points,
+        x,
+        y,
+        darkRust,
+        alpha * 0.32,
+        1.24,
+        0.28,
+        0.48,
+      );
+    }
 
-  env.field(
-    (x, y) => {
-      let bestAlpha = 0;
+    fillWrapped(
+      points,
+      x,
+      y,
+      softHull,
+      alpha * 0.48,
+      1.04,
+      -0.48,
+      -0.42,
+    );
+    fillWrapped(points, x, y, deepInk, alpha, 1, 0.12, 0.16);
+  }
 
-      for (let i = 0; i < chips.length; i++) {
-        const chip = chips[i];
-        const metric = chipMetric(
-          x,
-          y,
-          chip,
-          chip.coreScale,
-          lightX * 0.52,
-          lightY * 0.52,
-        );
-
-        if (metric >= 1) continue;
-
-        const coverage =
-          metric <= 0.72
-            ? 1
-            : 1 -
-              env.smoothstep(clamp((metric - 0.72) / 0.28, 0, 1));
-        bestAlpha = Math.max(
-          bestAlpha,
-          chip.coreAlpha * coverage,
-        );
-      }
-
-      return bestAlpha > 3 ? rgba(chipCoreRgb, bestAlpha) : null;
-    },
-    { blend: 'over' },
-  );
+  ctx.restore();
 }

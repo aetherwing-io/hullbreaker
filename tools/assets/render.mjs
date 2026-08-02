@@ -35,7 +35,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { launchBrowser, startStaticServer, REPO_ROOT } from './lib/browser.mjs';
 import { scanRecipe } from './lib/recipe.mjs';
 import { histogram } from './lib/png.mjs';
-import { checkRasterColors } from './lib/palette.mjs';
+import { checkRasterColors, ALPHA_HUE_FLOOR } from './lib/palette.mjs';
 
 const HELP = `tools/assets/render.mjs — run a procedural recipe and write its PNG
 
@@ -154,7 +154,10 @@ export async function renderRecipe(opts) {
   writeFileSync(outAbs, bytes);
 
   // Round-trip proof, decoded from the file that was just written.
-  const hist = histogram(outAbs, { alphaFloor: 8, weight: 'alpha' });
+  // The same weighting and the same alpha floor check.mjs uses — a round-trip
+  // report that judged by a different rule than the gate would be worse than no
+  // report at all.
+  const hist = histogram(outAbs, { alphaFloor: ALPHA_HUE_FLOOR, weight: 'alpha' });
   const pal = checkRasterColors(
     hist.colors.map((c) => ({ color: { r: c.r, g: c.g, b: c.b }, coverage: c.coverage, count: c.count }))
   );

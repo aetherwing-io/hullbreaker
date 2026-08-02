@@ -132,14 +132,17 @@ and every one of those is exempt by construction. Measured on the same subject
 drawn both ways (`node tools/assets/check.mjs --json` and the histogram helper in
 "Honesty" #4 reproduce these):
 
-| `hull-panel-tile` | unique colors | colors judged | **pixel mass judged** |
-| --- | --- | --- | --- |
-| flat SVG route (T-046) | 24 | 5 | 99.1% |
-| painted recipe (T-053) | 3,604 | 26 | **46.9%** |
+| Asset | route | unique colors | colors judged | **pixel mass judged** |
+| --- | --- | --- | --- | --- |
+| `hull-panel-tile` | flat SVG (T-046) | 24 | 5 | 99.1% |
+| `hull-panel-tile` | painted recipe | 458 | 27 | 83.1% |
+| `backdrop-gill-cavity` | flat SVG (T-046) | 77 | 6 | 94.4% |
+| `backdrop-gill-cavity` | painted recipe | 19,908 | 4 | **2.8%** |
 
-Over half the painted image was not being looked at, and the fraction gets worse
-the more painted the asset is — the exemption grows with exactly the technique
-this pipeline now uses. So raster assets are judged by
+The exemption grows with exactly the technique this pipeline now uses: the more
+painted the asset, the less of it the old gate looked at, down to 3% of the
+pixels on the most heavily graded plate in the set. So raster assets are judged
+by
 **mass** (`checkRasterColors` in `lib/palette.mjs`). Every non-transparent pixel
 is classified, and the question asked of each is *where did this color come
 from*:
@@ -179,8 +182,14 @@ recipes) under the final rule:
 | Route | assets | worst off-band | worst alien |
 | --- | --- | --- | --- |
 | vector → raster | 29 | 0.238% (`capsule-lit-spread`) | 0.0000% |
-| painted recipe | 9 | 0.137% (`backdrop-crown-horizon`) | 0.0546% (`backdrop-crown-horizon`) |
+| painted recipe | 9 | 1.298% (`wear-scuff-overlay`) | 0.0546% (`backdrop-crown-horizon`) |
 | **cap** | | **5%** | **0.1%** |
+
+The painted worst case for off-band mass is the wear overlay's rust-bleed
+streaks fading toward ink: 1.3% of it sits at hue 39–47, just under the rust
+band, and every pixel of that is on the line between two colors the overlay
+uses. That is the rule working as intended — a fade between two tokens is a
+blend, and 1.3% is a fade, not a hue.
 
 **The alien cap has under 2x headroom on the tightest asset**, and that is worth
 knowing before the next painted backdrop: `backdrop-crown-horizon` is a fog

@@ -902,12 +902,11 @@
       "task": "T-046",
       "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs --mode raster; painted by tools/assets/render.mjs (deterministic, seed below)",
       "addedOn": "2026-08-02",
-      "notes": "Tiling wear overlay: chips, streaks, scuffs, grime, ~86% transparent - deliberately an OVERLAY, so its alpha is authored. ~2x2 tiles. T-053 repainted it through the recipe route.",
+      "notes": "Tiling wear overlay: pitting, chips, scuffs and rust-bleed streaks at three scales, distributed by a wrapping noise field rather than placed, 80% transparent - deliberately an OVERLAY, so its alpha is authored. ~2x2 tiles. T-053 repainted it through the recipe route (second pass: the first broke the palette gate on premultiplied low-alpha pixels and repeated one countable cluster).",
       "palette": {
         "status": "pass",
         "roles": [
           "haze",
-          "hull",
           "ink",
           "rust-orange"
         ],
