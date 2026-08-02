@@ -6,6 +6,7 @@
 
 import { chromium } from 'playwright-core';
 import { sampleState, isReady, isVictorySample } from './sampler.mjs';
+import { probeServedFixture } from './fixture.mjs';
 import { evaluatePolicyTick } from './policy.mjs';
 
 const DEFAULT_VIEWPORT = { width: 1280, height: 800 };
@@ -73,6 +74,26 @@ export async function runPlaytest({
   } catch (err) {
     bootError = 'game did not reach a rendered HUD frame within 8s of load — ' +
       'treating as a boot failure rather than guessing at state';
+  }
+
+  // One-time, before any input: ask the SERVED build which fixture it is
+  // running (lib/fixture.mjs). Every fixture-derived column in the report is
+  // computed against this answer instead of against whatever this checkout's
+  // src/pure/traversal.js happens to say — the I-013 contamination class, where
+  // a ?ribrun=1 run was credited with four lattice routes it had replaced.
+  // Once, not per tick: the connector list is ~20 rows and would bloat every
+  // trace sample; the fixture cannot change mid-run (src/mode.js resolves it at
+  // load), so a single read is the whole truth.
+  let servedFixture = { available: false, reason: 'the page was never probed (boot failure)' };
+  if (!bootError) {
+    try {
+      servedFixture = await page.evaluate(probeServedFixture);
+    } catch (err) {
+      servedFixture = {
+        available: false,
+        reason: `the window.HB fixture probe threw: ${String(err && err.message || err)}`,
+      };
+    }
   }
 
   const trace = [];
@@ -376,6 +397,7 @@ export async function runPlaytest({
 
   return {
     trace,
+    servedFixture,
     achievedSampleIntervalsMs,
     consoleErrors,
     pageErrors,

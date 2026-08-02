@@ -180,6 +180,11 @@ async function main() {
     events: result.dispatchedEvents,
     wallTimeMs: result.wallTimeMs,
     achievedSampleIntervalsMs: result.achievedSampleIntervalsMs,
+    // the URL is evidence too (?enemies=0 is slice-only — SPRINT I-026), and
+    // servedFixture is what every fixture-derived column is computed against
+    // instead of this checkout's own src/pure/traversal.js (SPRINT I-013).
+    url,
+    servedFixture: result.servedFixture,
   });
 
   const jitters = result.dispatchedEvents.filter((e) => typeof e.jitterMs === 'number').map((e) => e.jitterMs);
@@ -265,6 +270,15 @@ async function main() {
   await writeReport(outDir, report);
 
   console.log(`[playtest] outcome: ${metrics.outcome.result} (fidelity: ${metrics.fidelity}${metrics.highFidelityDetected ? '' : ', degraded — no testapi/window.HB'})`);
+  console.log(`[playtest] deaths:  ${metrics.deaths === null ? 'UNAVAILABLE' : metrics.deaths}` +
+    (metrics.deathsSource ? ` (from ${metrics.deathsSource})` : ` — ${metrics.deathsUnavailableReason}`) +
+    `; served build: ${metrics.servedFixture.known ? `${metrics.servedFixture.kind}${metrics.servedFixture.id ? ` (${metrics.servedFixture.id})` : ''}` : 'unknown, fixture columns omitted'}`);
+  // A flag that silently did nothing is the kind of thing a reader trusts
+  // because nothing said otherwise (SPRINT I-026) — so say it, loudly, here as
+  // well as in report.json and summary.md.
+  if (metrics.hostilePresence.enemiesFlag && metrics.hostilePresence.enemiesFlag.honoured === false) {
+    console.error(`[playtest] WARNING: ${metrics.hostilePresence.enemiesFlag.note}`);
+  }
   if (policyRules) {
     const fires = policyRules.reduce((a, r) => a + r.fireCount, 0);
     console.log(`[playtest] policy:  ${fires} tap fire(s) across ${policyRules.length} rule(s)` +

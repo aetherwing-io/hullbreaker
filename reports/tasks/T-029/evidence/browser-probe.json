@@ -1,0 +1,392 @@
+{
+  "selftest": {
+    "title": "SELFTEST PASS (29 checks)",
+    "pageErrors": []
+  },
+  "momentum": {
+    "trace": [
+      {
+        "at": "boot",
+        "gameMs": 30.499999988079082,
+        "state": "PLAYING",
+        "x": 6,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.300593812800258,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.000345240000150204,
+          "tier": 0
+        },
+        "hudTR": "0m  ·  0 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 807.099999988079,
+        "state": "PLAYING",
+        "x": 12.757913960000002,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.300593812800258,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.000345240000150204,
+          "tier": 0
+        },
+        "hudTR": "3m  ·  0 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 1555.399999988079,
+        "state": "PLAYING",
+        "x": 19.791933960000005,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.300593812800258,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.000345240000150204,
+          "tier": 0
+        },
+        "hudTR": "6m  ·  0 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 2305.399999988079,
+        "state": "PLAYING",
+        "x": 26.841933959999988,
+        "pursuitSpeed": 4.458366121098296,
+        "pursuitPeak": 4.458366121098296,
+        "momentum": {
+          "drive": 0.0920733262199397,
+          "peakDrive": 0.0920733262199397,
+          "tier": 0
+        },
+        "hudTR": "10m  ·  0 kills · MOMENTUM ▱▱▱ ×1.04"
+      },
+      {
+        "at": "play",
+        "gameMs": 3063.799999988079,
+        "state": "PLAYING",
+        "x": 31.648999999999997,
+        "pursuitSpeed": 4.522919783869426,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0.12960452550548068,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "13m  ·  0 kills · MOMENTUM ▱▱▱ ×1.05"
+      },
+      {
+        "at": "play",
+        "gameMs": 3815.2999999880785,
+        "state": "PLAYING",
+        "x": 8.240130199999998,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "16m  ·  0 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 4563.899999988079,
+        "state": "PLAYING",
+        "x": 15.276970200000008,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "19m  ·  0 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 5322.699999988079,
+        "state": "PLAYING",
+        "x": 22.409690200000004,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "23m  ·  0 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 6072.2999999880785,
+        "state": "PLAYING",
+        "x": 29.10049739999999,
+        "pursuitSpeed": 4.3490098176,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0.028494079999999894,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "26m  ·  1 kills · MOMENTUM ▱▱▱ ×1.01"
+      },
+      {
+        "at": "play",
+        "gameMs": 6822.7999999880785,
+        "state": "PLAYING",
+        "x": 6.364028679999996,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "29m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 7580.599999988079,
+        "state": "PLAYING",
+        "x": 13.487348679999995,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "32m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 8332.099999988079,
+        "state": "PLAYING",
+        "x": 20.551448679999964,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "36m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 9081.099999988079,
+        "state": "PLAYING",
+        "x": 27.592048679999913,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "39m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 9830.799999988078,
+        "state": "PLAYING",
+        "x": 31.648999999999997,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "42m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 9846.999999988078,
+        "state": "GAME_OVER",
+        "x": 31.648999999999997,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "42m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 9846.999999988078,
+        "state": "GAME_OVER",
+        "x": 31.648999999999997,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "42m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 9846.999999988078,
+        "state": "GAME_OVER",
+        "x": 31.648999999999997,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "42m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 9846.999999988078,
+        "state": "GAME_OVER",
+        "x": 31.648999999999997,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "42m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 9846.999999988078,
+        "state": "GAME_OVER",
+        "x": 31.648999999999997,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "42m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 9846.999999988078,
+        "state": "GAME_OVER",
+        "x": 31.648999999999997,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "42m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 9846.999999988078,
+        "state": "GAME_OVER",
+        "x": 31.648999999999997,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "42m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 9846.999999988078,
+        "state": "GAME_OVER",
+        "x": 31.648999999999997,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "42m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 9846.999999988078,
+        "state": "GAME_OVER",
+        "x": 31.648999999999997,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "42m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 9846.999999988078,
+        "state": "GAME_OVER",
+        "x": 31.648999999999997,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "42m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+      },
+      {
+        "at": "play",
+        "gameMs": 9846.999999988078,
+        "state": "GAME_OVER",
+        "x": 31.648999999999997,
+        "pursuitSpeed": 4.3,
+        "pursuitPeak": 4.570705995137282,
+        "momentum": {
+          "drive": 0,
+          "peakDrive": 0.15738720647516397,
+          "tier": 0
+        },
+        "hudTR": "42m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+      }
+    ],
+    "pageErrors": []
+  },
+  "momentumOff": {
+    "hasKey": true,
+    "json": false
+  },
+  "audio": {
+    "beforeGesture": {
+      "enabled": true,
+      "unlocked": false,
+      "contextState": "none",
+      "dead": false,
+      "layers": 0,
+      "voices": 0
+    },
+    "afterGesture": {
+      "enabled": true,
+      "unlocked": true,
+      "contextState": "running",
+      "dead": false,
+      "layers": 1,
+      "voices": 0
+    },
+    "muted": {
+      "enabled": false,
+      "unlocked": false,
+      "contextState": "none",
+      "dead": false,
+      "layers": 0,
+      "voices": 0
+    },
+    "pageErrors": []
+  }
+}

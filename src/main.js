@@ -15,10 +15,10 @@
 import { CONFIG } from './config.js';
 import {
   ACTIVE_FIXTURE, ACTIVE_SLICE, AUTOBOUNCE_ENABLED, FLOW_ENABLED, HOOK_ENABLED,
-  HOOK_INPUT, IS_G1, IS_G2, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, QUERY,
-  SCORE_ENABLED, SHELL_AUTOSTART, SHELL_ENABLED, SLICE_ENEMIES_ENABLED,
-  SLICE_ENEMY_PLAN, SLICE_FALLBACK_ENABLED, SLICE_PACE, START_DIRECTION_ID,
-  VIEW_ID,
+  HOOK_INPUT, IS_G1, IS_G2, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE,
+  MOMENTUM_ENABLED, QUERY, SCORE_ENABLED, SHELL_AUTOSTART, SHELL_ENABLED,
+  SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN, SLICE_FALLBACK_ENABLED, SLICE_PACE,
+  START_DIRECTION_ID, VIEW_ID,
 } from './mode.js';
 import { HALT_S } from './pure/path.js';
 import {
@@ -29,6 +29,7 @@ import {
   buildTransformPath, transformAltAt, transformEventTotalMs,
 } from './pure/transform.js';
 import { traversalCameraDepth } from './pure/traversal.js';
+import { momentumTier } from './pure/momentum.js';
 import { installHost } from './sim/bridge.js';
 import {
   advanceGameMs, gameMs, hitStopRemainingMs, resetHitStop, scrollX, setScrollX,
@@ -59,7 +60,9 @@ import {
   capsules, removeCapsule, resetCarrierDrops, spawnCapsule, updateCapsules,
 } from './sim/capsules.js';
 import { clearMods, mods, updateMods } from './sim/mods.js';
-import { pacePeak, paceSpeed, resetPace } from './sim/pace.js';
+import {
+  momentumDrive, momentumPeakDrive, pacePeak, paceSpeed, resetPace,
+} from './sim/pace.js';
 import { hookSnapshot, resetHook } from './sim/hook.js';
 import { flowSnapshot, resetFlow } from './sim/flow.js';
 import {
@@ -90,7 +93,12 @@ import './render/hook.js';
 import { resetHudMessage, updateHUD } from './ui/hud.js';
 import './ui/overlay.js';
 import { shellApplyIntent, shellRunStarted, shellSnapshot } from './ui/shell.js';
-import './ui/audio.js';
+// audio also loads after every render/ui module for the bridge-wrapping reason
+// its own header states — the named import changes nothing about that order.
+// audioSnapshot() rides window.HB below: exported-but-unimported is unreachable
+// with no build step, which is what made the documented console surface fiction
+// (SPRINT I-005).
+import { audioSnapshot } from './ui/audio.js';
 // juice loads LAST: like the audio layer it wraps the finished view bridge
 // (each wrapper delegating to the implementation already installed), so it
 // must see every render/ui module's hooks in place first.
@@ -408,6 +416,16 @@ function telemetry() {
       crouched: player.crouched, muzzleY: player.muzzleY,
       traversalState: player.traversalState,
       traversalControlUntil: player.traversalControlUntil,
+      // additive (T-025, SPRINT I-006 / playtest README hook request #9): the
+      // FAILURE LADDER, on the frozen channel. `attempt` below only moves
+      // inside a fixture (resetGame), so a default six-face trace carrying
+      // attempt alone has no way to say a life was spent — the harness was
+      // reduced to counting `▰`/`×N` glyphs out of the HUD, and every gate
+      // that read the attempt counter instead reported `deaths: 0` for a run
+      // that died twice. hp/lives are the numbers the HUD renders, published
+      // where a machine reads them. Read-only, same as everything else here.
+      hp: player.hp,
+      lives: player.lives,
     },
     screenRight: sRightEdge() - CONFIG.edges.margin,
     edgeMargin: player.x - player.hw - sLeftEdge(),
@@ -420,6 +438,21 @@ function telemetry() {
     pace: ACTIVE_SLICE ? ACTIVE_SLICE.pace.id : null,
     pursuitSpeed: activeScrollSpeed(),
     pursuitPeak: pacePeak(),
+    // additive (T-029, SPRINT I-030): the EARNED escalation itself, not a
+    // number a reader has to invert `pursuitSpeed` to recover. That inversion
+    // (momentumDriveFromSpeed) is only valid while escalation is the sole
+    // source feeding the pace; T-023's boosts push their own speed through the
+    // same momentumClampSpeed chokepoint by design, and on that day a trace
+    // that carries speed alone cannot tell "the player earned this" from "a
+    // boost is running". Publishing drive/peakDrive/tier keeps the T-022
+    // packet's falsifying gates ("drive never exceeds 0.30 for a struggling
+    // player") readable from a trace afterwards. Undefined on every URL
+    // without ?momentum=1, exactly like `hook`/`flow` above.
+    momentum: MOMENTUM_ENABLED ? {
+      drive: momentumDrive(),
+      peakDrive: momentumPeakDrive(),
+      tier: momentumTier(momentumDrive(), CONFIG.momentum),
+    } : undefined,
     setbacks: sliceStats.setbacks,
     score: scoreSnapshot(),
     // Additive (adversarial-lane request): the live hostile rows, so a bot
@@ -572,6 +605,13 @@ window.HB = Object.freeze({
   // live hit-stop remainder, and the frame-time sampler beside it
   juice: juiceSnapshot,
   perf: perfSnapshot,
+  // WebAudio layer (?audio=0 disables it): whether a context exists yet, its
+  // lifecycle state, how many ambience layers are engaged and how many voices
+  // are live. Read-only, and the reason it is HERE rather than only inside
+  // src/ui/audio.js: with no build step an exported-but-unimported symbol is
+  // reachable from nothing, so the T-012 gate had to monkey-patch AudioParam
+  // to infer a layer count this function already returns (SPRINT I-005).
+  audio: audioSnapshot,
   hitStopMs: () => hitStopRemainingMs(),
   snapshot: () => {
     const t = telemetry();

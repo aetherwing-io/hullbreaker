@@ -1,0 +1,1251 @@
+{
+  "note": "?momentum=1&testapi=1 read straight off __HULLBREAKER_TEST__.snapshot(); hand policy (hold right+fire, 700ms jump cadence), 250ms sampling",
+  "trace": [
+    {
+      "gameMs": 112.69999999999999,
+      "state": "PLAYING",
+      "x": 6.33162524,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.300498456,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.0002898,
+        "tier": 0
+      },
+      "hudTR": "0m  ·  0 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 369.2,
+      "state": "PLAYING",
+      "x": 8.674856359999998,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.300498456,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.0002898,
+        "tier": 0
+      },
+      "hudTR": "1m  ·  0 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 628.3000000000002,
+      "state": "PLAYING",
+      "x": 11.110396360000003,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.300498456,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.0002898,
+        "tier": 0
+      },
+      "hudTR": "2m  ·  0 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 878,
+      "state": "PLAYING",
+      "x": 13.457576360000001,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.300498456,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.0002898,
+        "tier": 0
+      },
+      "hudTR": "3m  ·  0 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 1127.8000000000002,
+      "state": "PLAYING",
+      "x": 15.805696360000004,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.300498456,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.0002898,
+        "tier": 0
+      },
+      "hudTR": "4m  ·  0 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 1385.9,
+      "state": "PLAYING",
+      "x": 18.231836359999992,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.300498456,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.0002898,
+        "tier": 0
+      },
+      "hudTR": "6m  ·  0 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 1644.4,
+      "state": "PLAYING",
+      "x": 20.661736359999995,
+      "grounded": false,
+      "pursuitSpeed": 4.313075701793954,
+      "pursuitPeak": 4.313075701793954,
+      "momentum": {
+        "drive": 0.007602152205787529,
+        "peakDrive": 0.007602152205787529,
+        "tier": 0
+      },
+      "hudTR": "7m  ·  0 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 1895.4,
+      "state": "PLAYING",
+      "x": 23.02113635999999,
+      "grounded": true,
+      "pursuitSpeed": 4.369618741188029,
+      "pursuitPeak": 4.369618741188029,
+      "momentum": {
+        "drive": 0.0404760123186216,
+        "peakDrive": 0.0404760123186216,
+        "tier": 0
+      },
+      "hudTR": "8m  ·  0 kills · MOMENTUM ▱▱▱ ×1.02"
+    },
+    {
+      "gameMs": 2153.1,
+      "state": "PLAYING",
+      "x": 25.443516359999983,
+      "grounded": false,
+      "pursuitSpeed": 4.426794218410799,
+      "pursuitPeak": 4.426794218410799,
+      "momentum": {
+        "drive": 0.07371756884348742,
+        "peakDrive": 0.07371756884348742,
+        "tier": 0
+      },
+      "hudTR": "9m  ·  0 kills · MOMENTUM ▱▱▱ ×1.03"
+    },
+    {
+      "gameMs": 2402.5,
+      "state": "PLAYING",
+      "x": 27.787876359999977,
+      "grounded": false,
+      "pursuitSpeed": 4.482029534839019,
+      "pursuitPeak": 4.482029534839019,
+      "momentum": {
+        "drive": 0.10583112490640631,
+        "peakDrive": 0.10583112490640631,
+        "tier": 0
+      },
+      "hudTR": "10m  ·  0 kills · MOMENTUM ▱▱▱ ×1.04"
+    },
+    {
+      "gameMs": 2652.5,
+      "state": "PLAYING",
+      "x": 29.721042759999957,
+      "grounded": false,
+      "pursuitSpeed": 4.534103885072049,
+      "pursuitPeak": 4.534103885072049,
+      "momentum": {
+        "drive": 0.13610690992561028,
+        "peakDrive": 0.13610690992561028,
+        "tier": 0
+      },
+      "hudTR": "11m  ·  1 kills · MOMENTUM ▱▱▱ ×1.05"
+    },
+    {
+      "gameMs": 2903.4,
+      "state": "PLAYING",
+      "x": 31.648999999999997,
+      "grounded": false,
+      "pursuitSpeed": 4.60315156507205,
+      "pursuitPeak": 4.60315156507205,
+      "momentum": {
+        "drive": 0.17625090992561027,
+        "peakDrive": 0.17625090992561027,
+        "tier": 0
+      },
+      "hudTR": "12m  ·  1 kills · MOMENTUM ▱▱▱ ×1.07"
+    },
+    {
+      "gameMs": 3160.9,
+      "state": "PLAYING",
+      "x": 31.648999999999997,
+      "grounded": false,
+      "pursuitSpeed": 4.603604705899065,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0.17651436389480535,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "13m  ·  1 kills · MOMENTUM ▱▱▱ ×1.07"
+    },
+    {
+      "gameMs": 3419.3,
+      "state": "PLAYING",
+      "x": 4.152851480000002,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "14m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 3669.1,
+      "state": "PLAYING",
+      "x": 6.500971479999999,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "15m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 3927.6,
+      "state": "PLAYING",
+      "x": 8.930871479999999,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "17m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 4179.2,
+      "state": "PLAYING",
+      "x": 11.295911480000004,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "18m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 4428.299999999999,
+      "state": "PLAYING",
+      "x": 13.637451480000001,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "19m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 4687.4,
+      "state": "PLAYING",
+      "x": 16.072991480000002,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "20m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 4936.099999999999,
+      "state": "PLAYING",
+      "x": 18.41077148,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "21m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 5194.299999999999,
+      "state": "PLAYING",
+      "x": 20.837851479999998,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "22m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 5444.299999999999,
+      "state": "PLAYING",
+      "x": 23.187851480000003,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "23m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 5702.7,
+      "state": "PLAYING",
+      "x": 25.616811480000013,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "24m  ·  1 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 5952.599999999999,
+      "state": "PLAYING",
+      "x": 27.595737080000006,
+      "grounded": true,
+      "pursuitSpeed": 4.3234811648,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0.013651839999999945,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "25m  ·  2 kills · MOMENTUM ▱▱▱ ×1.01"
+    },
+    {
+      "gameMs": 6211.9,
+      "state": "PLAYING",
+      "x": 30.033157080000002,
+      "grounded": false,
+      "pursuitSpeed": 4.394840524799999,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0.055139839999999975,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "26m  ·  2 kills · MOMENTUM ▱▱▱ ×1.02"
+    },
+    {
+      "gameMs": 6460.9,
+      "state": "PLAYING",
+      "x": 32.373757080000004,
+      "grounded": false,
+      "pursuitSpeed": 4.394965557333332,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0.05521253333333336,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "27m  ·  2 kills · MOMENTUM ▱▱▱ ×1.02"
+    },
+    {
+      "gameMs": 6712.099999999999,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": true,
+      "pursuitSpeed": 4.380563424,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0.046839200000000046,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "28m  ·  2 kills · MOMENTUM ▱▱▱ ×1.02"
+    },
+    {
+      "gameMs": 6969.299999999999,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.365817290666667,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0.03826586666666673,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "30m  ·  2 kills · MOMENTUM ▱▱▱ ×1.02"
+    },
+    {
+      "gameMs": 7219.7,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.351461024,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0.029919200000000038,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "31m  ·  2 kills · MOMENTUM ▱▱▱ ×1.01"
+    },
+    {
+      "gameMs": 7478.2,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": true,
+      "pursuitSpeed": 4.336640357333333,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0.021302533333333387,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "32m  ·  2 kills · MOMENTUM ▱▱▱ ×1.01"
+    },
+    {
+      "gameMs": 7727.799999999999,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.322329957333333,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0.012982533333333402,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "33m  ·  2 kills · MOMENTUM ▱▱▱ ×1.01"
+    },
+    {
+      "gameMs": 7987.4,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3074462239999995,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0.004329200000000052,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "34m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 8237.4,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "35m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 8495.3,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "36m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 8746,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "37m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 9002.9,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "38m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 9261.6,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "39m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 9519.5,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "41m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 9770.3,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "42m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 10027.9,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "43m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 10278.3,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "44m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 10528.699999999999,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "45m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 10787,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "46m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 11037.6,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "47m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 11285.9,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "48m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 11545.699999999999,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "49m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 11803.3,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "50m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 12054,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "51m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 12312.1,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "53m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 12560.8,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "54m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 12819.199999999999,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "55m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 13077.9,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "56m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 13328.3,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "57m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 13579,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "58m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 13836.9,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "59m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 14087.5,
+      "state": "PLAYING",
+      "x": 34.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "60m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 14336.9,
+      "state": "PLAYING",
+      "x": 37.501540603904,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "61m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 14594.6,
+      "state": "PLAYING",
+      "x": 39.35967556736002,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "62m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 14845,
+      "state": "PLAYING",
+      "x": 41.71343556736003,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "63m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 15102.699999999999,
+      "state": "PLAYING",
+      "x": 44.13581556736001,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "64m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 15353.4,
+      "state": "PLAYING",
+      "x": 46.49239556736003,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "65m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 15603.199999999999,
+      "state": "PLAYING",
+      "x": 48.840515567360036,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "66m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 15862.699999999999,
+      "state": "PLAYING",
+      "x": 51.27981556736006,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "67m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 16111.699999999999,
+      "state": "PLAYING",
+      "x": 53.620415567360105,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "69m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 16370.199999999999,
+      "state": "PLAYING",
+      "x": 53.649,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "70m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 16619.199999999997,
+      "state": "PLAYING",
+      "x": 54.66051332000001,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "71m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 16879.1,
+      "state": "PLAYING",
+      "x": 57.10357332000008,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "72m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 17127.499999999996,
+      "state": "PLAYING",
+      "x": 59.438533320000126,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "73m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 17385.899999999998,
+      "state": "PLAYING",
+      "x": 60.75384024000002,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "74m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 17637.3,
+      "state": "PLAYING",
+      "x": 63.117000240000095,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 17895.6,
+      "state": "PLAYING",
+      "x": 65.5450202400001,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 18145.8,
+      "state": "PLAYING",
+      "x": 67.89690024000005,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 18402.6,
+      "state": "PLAYING",
+      "x": 70.31082023999996,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 18652.699999999997,
+      "state": "PLAYING",
+      "x": 72.66176023999985,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 18911.6,
+      "state": "PLAYING",
+      "x": 75.09542023999981,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 19169.8,
+      "state": "PLAYING",
+      "x": 75.63268,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 19419.1,
+      "state": "PLAYING",
+      "x": 74.64841696000002,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 19669.499999999996,
+      "state": "PLAYING",
+      "x": 75.649,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 19929.1,
+      "state": "PLAYING",
+      "x": 75.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 20177.899999999998,
+      "state": "PLAYING",
+      "x": 75.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 20435.899999999998,
+      "state": "PLAYING",
+      "x": 75.649,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 20694.699999999997,
+      "state": "PLAYING",
+      "x": 75.649,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 20945.6,
+      "state": "PLAYING",
+      "x": 76.06473687999998,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 21194.399999999998,
+      "state": "PLAYING",
+      "x": 78.39974287999996,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 21453.3,
+      "state": "PLAYING",
+      "x": 80.83340287999991,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 21702.6,
+      "state": "PLAYING",
+      "x": 83.17682287999985,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 21960.899999999998,
+      "state": "PLAYING",
+      "x": 85.60484287999978,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 22211.3,
+      "state": "PLAYING",
+      "x": 87.95860287999977,
+      "grounded": true,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    },
+    {
+      "gameMs": 22320.6,
+      "state": "GAME_OVER",
+      "x": 88.98602287999972,
+      "grounded": false,
+      "pursuitSpeed": 4.3,
+      "pursuitPeak": 4.63730388507205,
+      "momentum": {
+        "drive": 0,
+        "peakDrive": 0.19610690992561022,
+        "tier": 0
+      },
+      "hudTR": "75m  ·  2 kills · MOMENTUM ▱▱▱ ×1.00"
+    }
+  ]
+}

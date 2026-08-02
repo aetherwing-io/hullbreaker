@@ -710,7 +710,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; serve, then confirm `curl -sI` carries no-store and `index.html?selftest=1` reports PASS
 
-## T-025 | harness | todo | P1
+## T-025 | harness | done | P1
 
 goal: three playtest report fields assert things the run did not do (I-006 S1,
 I-013, I-026). A gate that reads them is not evidence. (a) `metrics.deaths` and
@@ -736,7 +736,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; re-run gate-T-016-scored-baseline and a ?ribrun=1 script against a pinned tree and diff the corrected fields
 
-## T-026 | harness | doing | P1
+## T-026 | harness | done | P1
 
 goal: two static gates pass while the invariant they exist to protect is
 violated (I-014, I-024). `checkGameIndependence` in `tools/assets/check.mjs`
@@ -760,7 +760,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; node tools/assets/check.mjs --root <multiline-import fixture> (expect non-zero)
 
-## T-027 | harness | todo | P2
+## T-027 | harness | doing | P2
 
 goal: four harness defects that waste cycles without lying outright (I-011,
 I-018, I-023, I-028). (a) Any deterministic script whose first event is at t>0
@@ -805,7 +805,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs (docs-only lane, must stay green); every cited artifact path resolves
 
-## T-029 | feature | doing | P2
+## T-029 | feature | done | P2
 
 goal: three small runtime truth fixes whose owning files are finally out from
 under the lanes that blocked them (I-005, I-009, I-030). `audioSnapshot()` is
@@ -827,7 +827,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; a ?g2=1 capture of the overlay; a ?momentum=1 trace carrying drive
 
-## T-030 | art | doing | P2
+## T-030 | art | done | P2
 
 goal: finish the palette pass's last file and the FAR readability notes it
 left behind (I-004, I-003, I-010). `src/render/hostiles.js` still reads
@@ -851,7 +851,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; FAR captures at the shipped view
 
-## T-031 | docs | todo | P3
+## T-031 | docs | done | P3
 
 goal: the docs-truth backlog — seven places where a comment, README or design
 line describes behavior the code does not have (I-001 stale sampler comment
@@ -869,6 +869,195 @@ accept:
 - [ ] palette-capture writes artifacts only after verification passes
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; re-read each cited file:line against its issue
+
+## T-032 | feature | doing | P1
+
+goal: a 9-year-old must never meet a blank screen. Today the operator's own
+session rendered a black page with one console SyntaxError and no on-screen
+explanation whatsoever (a stale cached module; fixed in T-024) — a player would
+have had no idea the game had failed, or that reloading might help. Any boot
+failure or unhandled runtime exception must surface a readable panel instead of
+a void, and the game must survive the ordinary abuse of a kid: alt-tab, resize,
+a backgrounded tab (Chrome suspends rAF entirely when hidden — this session
+measured zero frames painted), rapid restart, key mashing.
+accept:
+- [ ] an uncaught error at boot renders a legible failure panel naming what
+      broke and offering a reload — verified by deliberately breaking an import
+      and loading the page, with a screenshot committed as evidence
+- [ ] an uncaught error mid-run does not silently freeze the game: it either
+      recovers or fails legibly; a frozen canvas with a live page is a defect
+- [ ] backgrounding the tab for 60s and returning does not corrupt the run
+      (no giant dt catch-up, no physics explosion) — assert the dt clamp
+- [ ] resize during play, pause during a transition, and restart-spam do not
+      throw; drive each headlessly and report console/page errors
+- [ ] pathcheck assertions for any new pure logic; no movement constant moves
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; index.html?selftest=1; a deliberately-broken-import boot capture; a headless abuse script
+
+## T-033 | feature | todo | P1
+
+goal: he will play across days, and there is NO persistence of any kind today
+(zero localStorage in src/). Closing the tab loses everything. Give the run a
+memory: progress survives a closed tab, and a game over does not erase the
+session. This is the single biggest threat to "plays it a lot" — a kid who
+loses everything at a wave gate does not come back.
+accept:
+- [ ] progress persists across a reload and a closed tab, and a corrupted or
+      absent save NEVER blocks boot (fall back to a fresh run, silently)
+- [ ] the save is versioned; an old/unknown schema is discarded safely rather
+      than crashing — prove it by loading a deliberately-corrupt payload
+- [ ] nothing in src/pure/ or src/sim/ touches storage (layer purity: that is
+      a window API); the sim stays deterministic and unaware
+- [ ] a visible way to start over, so he is never trapped in a bad save
+- [ ] pathcheck assertions for the pure serialization logic
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; index.html?selftest=1; reload/corrupt-save/fresh-boot headless checks
+
+## T-034 | harness | doing | P1
+
+goal: prepare a static-host bundle the operator can upload to itch.io himself.
+The game has no build step and pulls three.js from a CDN import map, so it is
+close to deployable already — but nothing has ever verified it runs from a
+static host under a subpath, and ES modules cannot load from file:// at all
+(double-clicking index.html fails today).
+accept:
+- [ ] a verified bundle: served from a static host under a SUBPATH (not just
+      domain root), the game boots and ?selftest=1 passes — every path relative,
+      no absolute-root assumptions
+- [ ] a documented answer on the CDN: state plainly whether the game still
+      boots if the CDN is slow or blocked, and if not, say so as a known risk
+      rather than pretending — do NOT vendor three.js without an operator
+      decision (no-runtime-deps and no-build-step are hard rules)
+- [ ] the exact manual steps the OPERATOR performs to upload, written for
+      someone who has not used itch.io. An agent must never create the account
+      or enter credentials; the bundle and instructions are the deliverable
+- [ ] zero effect on the shipped game's behavior
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; serve the bundle under a subpath and confirm ?selftest=1 PASS
+
+## T-035 | art | doing | P1
+
+goal: the measured answer to "I've seen a lot of greybox" — it is the VALUE
+range, not the hue. Full evidence and legality review in
+`docs/proposals/2026-08-look-direction.md` (31 captures in `artifacts/look-v1/`):
+0.0% of playfield pixels exceed luminance 200 in all fifteen gameplay captures,
+99% sit in a 45-70 window of 255, one flat token covers 29-34% of the screen,
+and the sky is brighter than the ground so nothing reads as lit. T-010's concept
+palette changed hue over byte-identical geometry, lights and materials (101 vs
+100 draw calls) — it recolored the grey-box. Implement packet items S1 (bake a
+value ladder into the existing instance colors) and S2 (fog-band retune), which
+the packet ranks first and says everything downstream must be calibrated against.
+accept:
+- [ ] new THREE-free `src/pure/shade.js`: occlusion + top-face rake + seeded
+      wear via `src/pure/rng.js` mulberry32 keyed on integer (s,y); a plan-level
+      pass (`limbShadePlan(plan, cfg)`), never per-piece; no Math.random /
+      Date.now / performance.now, and two calls with one seed return identical
+      arrays
+- [ ] >=20% of baked limb instances land below 0.55x their base token luminance
+      AND per-material normalized luminance spread >= 0.45 — arithmetically
+      impossible on current main, so this assertion must fail there
+- [ ] the two checker token values still differ by >= today's |lum(cA)-lum(cB)|,
+      AND the per-column top-row-vs-row-2 delta exceeds the checker delta (the
+      checker's scroll-speed carrier job survives — pillar 1/5)
+- [ ] the deck's top row is the highest-luminance instance in its column and
+      higher than every limb material's brightest instance
+- [ ] draw calls and instance counts unchanged from baseline (101 calls,
+      13 InstancedMesh, 2969 instances)
+- [ ] capture-side check is PAIRED-POPULATION: median luminance of play-plane
+      pixels minus median of backdrop pixels must WIDEN. "share below L40 rises"
+      is forbidden — it is satisfied by uniformly darkening the frame, which is
+      the exact "dirty, not lit" failure this risks
+- [ ] `CLASSIC.shade` is EXACT identity so `?palette=classic` stays a
+      byte-faithful grey-box instrument for the unjudged Palette v1 A/B
+- [ ] ships behind its own off-by-default flag: the palette toggle would
+      otherwise move hue and value together and the ladder could not be judged
+      independently
+- [ ] operator checkpoint packet: exact URLs + 3-5 questions; never a
+      self-declared aesthetic verdict
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; index.html?selftest=1; paired-population capture comparison at the FAR default
+
+## T-036 | assets | doing | P2
+
+goal: unblock the held asset batch by answering the question that holds it.
+CLAUDE.md and the checkpoint queue both record that glyph work is frozen until
+the operator picks a direction for FAR readability — measured, a 0.55-tile
+capsule is 9.6px tall at the shipped FAR view, chamfers and rivets vanish, and
+the letter survives only as a smudge
+(`tools/assets/reports/demo/capsule-letter-h/viewer-far.png`). Generate real
+candidates through the existing pipeline and prove each at the size it will
+actually be on screen, so the operator decides from artifacts instead of prose.
+The operator asked for asset generation to run in parallel so output is ready
+when it is time; this is the version of that which is legal today.
+accept:
+- [ ] candidates for each named direction (scale the world-space glyph up; move
+      the letter read to the HUD; a shape/silhouette code instead of a letter;
+      any direction the artist can argue from boards 01/06/07), each rendered
+      through `rasterize.mjs` and judged with `view.mjs` at true on-screen size
+- [ ] `node tools/assets/check.mjs` green: manifest, palette roles, sizes
+- [ ] `node tools/pathcheck.mjs` green, and the game still boots with every
+      file under `assets/` deleted — the independence property is the whole
+      reason this lane is safe to run in parallel
+- [ ] ZERO game effect: no file under `src/` and no `index.html` change
+- [ ] an operator packet: side-by-side crops at true FAR size, 3-5 questions,
+      and an explicit statement of what each direction would COST to adopt
+      (including whether it would need a runtime-loading decision)
+owner: asset-artist
+verify: node tools/assets/check.mjs; node tools/pathcheck.mjs; view.mjs crops at 0.55 tiles
+
+<!-- ========== 2026-08-02 OPERATOR GOAL CHANGE (supersedes parts of the
+Delivery target that T-028 just rewrote; that rewrite's evidence-honesty fixes
+stand, its audience assumption does not) ==========
+
+VERBATIM: "give me son fox the game to play and enjoy. something a 9 year old
+boy could play a lot and that he would enjoy."
+
+Operator answers, same session:
+  - Device:     laptop/desktop KEYBOARD. No touch, no gamepad work needed.
+  - Delivery:   a PUBLIC URL (itch.io class). The operator must do the account
+                and upload themselves; an agent may never create accounts or
+                enter credentials. Prepare the bundle, not the upload.
+  - Difficulty: "Not worried about it being beatable yet, just durable to play.
+                he'll enjoy finding and reporting play problems."
+
+WHAT THIS CHANGES. The target is no longer "prove the pillars to an expert."
+It is "a 9-year-old can reach it, play it for a long time, and break it in
+interesting ways without losing his progress." So:
+  - DURABILITY outranks difficulty tuning. Do NOT tune the difficulty curve
+    against this goal; he is fine with hard. He is not fine with broken.
+  - Every recorded difficulty verdict was taken with an expert adult implicitly
+    in the chair. They are not wrong, they answer a different question. Do not
+    re-litigate them and do not "fix" difficulty for him unless he asks.
+  - Boot-to-victory stays an open box but drops in priority. Beatability is
+    explicitly not the bar right now.
+  - A blank page, a softlock, a lost save, or a crash is now a P1 defect class.
+
+THE PLAYER MODEL — get this right, the integrator got it wrong first and was
+corrected. Operator: "he's 9, he plays a lot of games, I hope 'kidmash' isn't
+setting a low bar."
+
+He is NOT a button-masher. He is an experienced, systematic, curious player
+with speedrunner instincts he could not yet name. Assume he will:
+  - BACKTRACK — go left when the game wants right; re-enter a cleared area;
+    approach a transition from the far side.
+  - SEQUENCE-BREAK — reach the next area without clearing the wave gate; get
+    on top of geometry never meant to be stood on.
+  - PROBE BOUNDARIES deliberately — walk every wall, seam and edge to learn
+    which are real; try to leave the level; stand where two fixtures meet.
+  - EXPLOIT anything repeatable — a re-triggerable pickup, an infinite jump off
+    one ledge, a safe spot nothing can reach — for twenty minutes straight.
+  - PURSUE INCONSISTENCIES — he would notice the "1/1 TURNS" vs "TURNS 1 / 2"
+    disagreement (I-033) and poke it until something gave.
+  - STRESS THE LIFECYCLE INTENTIONALLY, not randomly — pause exactly during a
+    transition, restart at the instant of death, resize mid-flip.
+
+Consequence for testing: random input is a WEAK fuzzer for softlocks;
+deliberate exploration is a strong one. Aim adversarial effort at where a
+competent curious player gets permanently stuck or loses progress — especially
+where backtracking or sequence-breaking leaves the sim in a state the author
+never considered. "A player would never do that" is not a defence; assume he
+would, on purpose, twice.
+========================================================================== -->
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
@@ -1832,3 +2021,66 @@ one-liner already applied twice, but note `shell.js` lives in `src/pure/`,
 which may not read `ACTIVE_FIXTURE` directly under the layer-purity rule — the
 count likely has to be passed in, which is why this is worth its own task
 rather than a drive-by edit.
+
+## I-035 | docs | S3 | repro: `cd tools/playtest && node run.mjs scripts/momentum-weak.json --deterministic --max-runtime-ms 62000 --base-url <pinned task/T-029 6ec5b40>`, then check any sample in `report.json`'s `trace[]` for a `momentum` key | evidence: tools/playtest/runs/momentum-weak-1785637012980/report.json (0/804 trace samples carry it); tools/playtest/lib/sampler.mjs:120-150
+
+`telemetry()`'s new `momentum: {drive, peakDrive, tier}` (SPRINT I-030 fix,
+T-029) is live and correct on the real channel — confirmed directly in-browser,
+`window.HB.snapshot().momentum` reads `{drive, peakDrive, tier}` under
+`?momentum=1&testapi=1` and is `undefined` (absent from `JSON.stringify`)
+without the flag. But `sampler.mjs`'s `fromTelemetryLike()` (the function that
+builds every `report.json` → `trace[]` row from that same snapshot) whitelists
+fields one at a time and was never given a `momentum` line, so the key never
+reaches a harness report — a future gate reading `report.json` still has to
+invert `pursuitSpeed` to recover drive, the exact readability problem I-030
+was filed to fix. Cosmetic to this run (I verified the live channel directly
+with my own browser probe instead), but it means no *harness-based* gate can
+currently cite momentum from a report without re-deriving it. One-line fix
+(`momentum: s.momentum || null,` beside the other passthrough fields), inside
+`tools/playtest/lib/sampler.mjs`, disclosed by the builder (build.md "Open
+items" #2) and out of T-029's fence (`tools/pathcheck.mjs` was the only
+`tools/` file this lane touched).
+
+## I-034 | bug | S3 | repro: at `task/T-026 13aef89`, run the import scanner over a file containing `export default class Foo {}` immediately followed by `import glyph from '../assets/generated/glyphs/x.png';` — one hit is returned as `{"kind":"export","specifier":"...png","line":1,"endLine":2}` instead of `kind:"import"` at line 2 | evidence: reports/tasks/T-026/review.md (first finding)
+
+Diagnostic-accuracy bug in the new `tools/assets/lib/imports.mjs` scanner, found
+by the T-026 reviewer writing its own adversarial fixtures. When a legal
+`export default class Foo {}` — which needs no terminating semicolon and has no
+`from` — is immediately followed by a real asset import, the scanner merges the
+two statements into one hit and misattributes both the kind (`export` rather
+than `import`) and the line number (the export's, not the import's).
+
+NOT a detection hole, and explicitly not a T-026 blocker: the file is still
+correctly flagged and `check.mjs` still exits non-zero in every variant tried,
+including chains where a non-asset import sits between the two (the merge
+terminates at the first quote, so it never swallows a second independent import
+statement). The acceptance box T-026 had to meet was about exit code, not
+attribution, and it meets it.
+
+Filed because the error MESSAGE is what the next person debugging a failing
+asset-independence gate will read, and in this shape it points at the wrong line
+and calls an import a re-export. Cheap fix; only worth doing when someone is next
+in that file.
+
+## I-036 | bug | S3 | repro: at `task/T-027 a07e9c4`, `node tools/playtest/analyze-run.mjs --policy tools/playtest/scripts/six-face-spaced-run.json <trace>` over gate-T-019-spaced-1 and -3, and count PLAYING ticks where a gate-servo `hold left` (rules 2 and 4) fires while `edgeMargin < 8` | evidence: reports/tasks/T-027/build.md (§I-028 census); tools/playtest/runs/gate-T-019-spaced-{1,3}/report.json
+
+Second rule-cancellation pair in the same crush window, found by T-027 while
+fixing the first one (I-028) and deliberately left unfixed. T-027 raised the
+personal-space guard to `edgeMargin>8`, which took that pair's conflicts to zero
+on all three measured traces (3→0, 0→0, 19→0). But the two gate-servo `hold left`
+clauses (rules 2 and 4 of `six-face-spaced-run.json`) carry NO margin guard at
+all and still fire inside the crush window: 1 tick at margin 7.51 and 1 at 7.87
+on trace 1, and 7 ticks spanning 6.95-7.75 on trace 3. Same failure shape — the
+crush-plane emergency `hold right` and a `hold left` both down, `computeAim`'s
+h = 0, RIG standing still in the one window whose rule exists to make it run.
+
+The builder's stated reason for not fixing it is sound and worth preserving: the
+one-line-per-rule fix changes the gate-fight POSITIONING policy that T-019
+measured its numbers with, and retuning that silently would invalidate a
+published band without saying so. So this is a deliberate hand-off, not an
+oversight.
+
+Policy-script only; no game file is involved, and the clauses are legitimate
+relative geometry, so the anti-scripting guard is not implicated. Whoever takes
+this must re-measure T-019's affected numbers in the same change, or state
+plainly which published figures it invalidates.

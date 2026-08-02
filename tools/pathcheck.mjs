@@ -501,7 +501,17 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
  * weapon state. For every gap it sweeps takeoff positions along the left lip,
  * holds right, presses jump once, and asks whether RIG ends up standing,
  * alive, past the gap — landing on a catwalk that reaches past it counts,
- * because a player standing on one has crossed.                            */
+ * because a player standing on one has crossed.
+ *
+ * T-026 added the probe's own honesty instruments, after I-024 showed the
+ * first ones were too weak. The word "floor" in every number below is a claim
+ * about a SPEED, and until now it was only defended by comparing takeoff
+ * WINDOWS (floor narrower than run) — which a probe that keeps the
+ * scroll-speed start but loses the screen clamp passes while measuring an
+ * almost-free run. So the probe now meters the mean ground speed of every
+ * attempt it makes, and runs one clamp-removed control sweep whose numbers
+ * have to come out wrong. Removing the clamp from either sweep function turns
+ * the suite red; `node tools/gatecheck.mjs` mutates this file and proves it.  */
 {
   // the same gap enumeration the child runs, over this file's own copy of the
   // generated columns — so a probe that silently saw different terrain trips
@@ -544,23 +554,63 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
           gaps.push({ x0: s, x1: i - 1, w: i - s, hL: LV.groundH[s - 1], hR: LV.groundH[i] });
       } }
 
+    // Every attempt runs in one of three modes. \`speed\` sets the takeoff
+    // velocity and whether the scroll plane advances; \`clamp\` sets whether the
+    // right screen edge is pinned to RIG. FLOOR is the shipped measurement —
+    // plane advancing AND clamp holding, which is what makes ground speed
+    // exactly CONFIG.scrollSpeed. CTRL is the honesty control I-024 asked for:
+    // the same scroll-speed start with the clamp gone.
+    const FLOOR = { id: 'floor', speed: 'floor', clamp: true };
+    const RUN   = { id: 'run',   speed: 'run',   clamp: false };
+    const CTRL  = { id: 'ctrl',  speed: 'floor', clamp: false };
+
+    // The speed meter: the fastest GROUND SPEED (tiles/second, averaged from an
+    // attempt's own first frame) seen since the last reset. THIS is what the
+    // "SCROLL speed" label claims, and two nearby quantities are deliberately
+    // not the observable:
+    //
+    //   vx — the right clamp in sim/player.js pins x without touching vx, so a
+    //        correctly pinned RIG still accelerates to runSpeed on paper while
+    //        covering ground at exactly scrollSpeed;
+    //   the per-frame advance — an attempt whose takeoff x sits several tiles
+    //        behind the lip starts inside a step, is ejected by the collision
+    //        resolver, drops BEHIND the plane, and then legitimately accelerates
+    //        to runSpeed catching up to it. Measured: instantaneous 9.4 on a
+    //        properly clamped floor sweep, which would make the guard below
+    //        unassertable noise.
+    //
+    // The average from the attempt's start has neither problem: RIG begins the
+    // attempt exactly at the plane, and the clamp means he can never be ahead
+    // of it, so his mean speed over any prefix of a clamped attempt is
+    // scrollSpeed or less however much he lags and catches up inside it.
+    const SPEED = { max: -Infinity, frames: 0 };
+    let meterX0 = 0, meterFrames = 0;
+    function meterReset() { meterX0 = p.x; meterFrames = 0; }
+    function meter(dt) {
+      meterFrames++;
+      const avg = (p.x - meterX0) / (meterFrames * dt);
+      if (avg > SPEED.max) SPEED.max = avg;
+      SPEED.frames++;
+    }
+
     // One attempt. RIG stands on the left lip at takeoff x0, holds right,
     // presses jump on frame 0 (again at the apex when air=true), and touches
-    // nothing else. floor=true pins him against the right screen clamp, so his
-    // ground speed is exactly CONFIG.scrollSpeed; floor=false lets him run.
-    function cross(g, x0, dt, air, floor) {
+    // nothing else. mode.clamp pins him against the right screen clamp, so his
+    // ground speed is exactly CONFIG.scrollSpeed; RUN lets him run free.
+    function cross(g, x0, dt, air, mode) {
       for (const k in IN.keys) IN.keys[k] = false;
       IN.clearJumpBuffer(); PLm.clearPlayerTraversal(0); T.setScrollX(0);
       p.x = x0; p.y = g.hL;
-      p.vx = floor ? C.scrollSpeed : PL.runSpeed; p.vy = 0;
+      p.vx = mode.speed === 'floor' ? C.scrollSpeed : PL.runSpeed; p.vy = 0;
       p.grounded = true; p.onOneWay = null;
       p.airJumpsLeft = PL.airJumps; p.coyoteUntil = 0; p.dropUntil = 0;
       p.jumpCutDone = true; p.hp = PL.maxHealth; p.lives = PL.lives;
       p.iframesUntil = 0; p.hitstunUntil = 0; p.traversalControlUntil = 0;
-      if (floor) E.setEdges(x0 + hw + M - 200, x0 + hw + M);
+      if (mode.clamp) E.setEdges(x0 + hw + M - 200, x0 + hw + M);
       else E.setEdges(-1000, 1000);
       IN.keys.right = true; IN.keys.jump = true;
       IN.bufferJumpUntil(T.gameMs + PL.jumpBufferMs);
+      meterReset();
       let airLeft = air, prevVy = 0;
       for (let i = 0, n = Math.ceil(4 / dt); i < n; i++) {
         if (airLeft && i > 0 && prevVy > 0 && p.vy <= 0) {
@@ -568,8 +618,9 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
         }
         prevVy = p.vy;
         T.advanceGameMs(dt * 1000);
-        if (floor) T.setScrollX(T.scrollX + C.scrollSpeed * dt);
+        if (mode.speed === 'floor') T.setScrollX(T.scrollX + C.scrollSpeed * dt);
         PLm.updatePlayer(dt);
+        meter(dt);
         // Bail before the kill plane so the probe never runs the death path
         // (loseLife would touch weapons, mods and the score). Gap height
         // deltas are capped at 1 tile, so 2 below the takeoff lip is a fall.
@@ -582,15 +633,15 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
     // The takeoff window: the run of positions on the left lip from which that
     // one press crosses. hi is the last x where RIG is still grounded — the
     // sim's own rule, floor(x - hw + 0.02) still indexing the lip column.
-    function windowFor(g, dt, air, floor) {
+    function windowFor(g, dt, air, mode) {
       const hi = g.x0 + hw - 0.02;
       let lo = null, up = null;
       for (let n = 0; ; n++) {
         const x = g.x0 - 8 + n * 0.02;
         if (x > hi) break;
-        if (cross(g, x, dt, air, floor)) { if (lo === null) lo = x; up = x; }
+        if (cross(g, x, dt, air, mode)) { if (lo === null) lo = x; up = x; }
       }
-      return { lo, up, width: lo === null ? 0 : up - lo, atLip: cross(g, hi, dt, air, floor) };
+      return { lo, up, width: lo === null ? 0 : up - lo, atLip: cross(g, hi, dt, air, mode) };
     }
 
     // Late-press grace: run off the lip at full speed and press jump n frames
@@ -600,25 +651,28 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
     // jump only restores the height it left from, so he arrives at the far
     // wall's FACE instead of its top. With air=true (the real game) the late
     // press spends the air jump instead, and that is what actually forgives it.
-    function graceFrames(g, dt, floor, air) {
+    function graceFrames(g, dt, mode, air) {
       const hi = g.x0 + hw - 0.02;
       let n = 0;
       for (; n < 40; n++) {
         for (const k in IN.keys) IN.keys[k] = false;
         IN.clearJumpBuffer(); PLm.clearPlayerTraversal(0); T.setScrollX(0);
-        p.x = hi; p.y = g.hL; p.vx = floor ? C.scrollSpeed : PL.runSpeed; p.vy = 0;
+        p.x = hi; p.y = g.hL;
+        p.vx = mode.speed === 'floor' ? C.scrollSpeed : PL.runSpeed; p.vy = 0;
         p.grounded = true; p.onOneWay = null; p.coyoteUntil = 0; p.dropUntil = 0;
         p.jumpCutDone = true; p.hp = PL.maxHealth; p.lives = PL.lives;
         p.iframesUntil = 0; p.hitstunUntil = 0; p.traversalControlUntil = 0;
-        if (floor) E.setEdges(hi + hw + M - 200, hi + hw + M); else E.setEdges(-1000, 1000);
+        if (mode.clamp) E.setEdges(hi + hw + M - 200, hi + hw + M); else E.setEdges(-1000, 1000);
         IN.keys.right = true;
+        meterReset();
         let crossed = false, pressed = false;
         for (let i = 0, fr = Math.ceil(4 / dt); i < fr; i++) {
           p.airJumpsLeft = air ? PL.airJumps : 0;
           if (i === n) { IN.keys.jump = true; IN.bufferJumpUntil(T.gameMs + PL.jumpBufferMs); pressed = true; }
           T.advanceGameMs(dt * 1000);
-          if (floor) T.setScrollX(T.scrollX + C.scrollSpeed * dt);
+          if (mode.speed === 'floor') T.setScrollX(T.scrollX + C.scrollSpeed * dt);
           PLm.updatePlayer(dt);
+          meter(dt);
           if (p.y < g.hL - 2) break;
           if (p.grounded && pressed && i > n + 2 && p.x - hw > g.x1 + 0.5) { crossed = true; break; }
         }
@@ -628,17 +682,41 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
     }
 
     const dt = 1 / 60;
-    const out = gaps.map((g) => {
-      const single = windowFor(g, dt, false, true);
-      const dbl = single.lo === null ? windowFor(g, dt, true, true) : single;
-      const run = windowFor(g, dt, false, false);
+    const out = gaps.map((g, gi) => {
+      // Everything labelled "floor" is measured with the meter running, and the
+      // max it saw is reported beside the windows it produced. A floor column
+      // measured at any speed above CONFIG.scrollSpeed is mislabelled, however
+      // plausible its windows look.
+      SPEED.max = -Infinity; SPEED.frames = 0;
+      const single = windowFor(g, dt, false, FLOOR);
+      const dbl = single.lo === null ? windowFor(g, dt, true, FLOOR) : single;
+      const floorGrace = graceFrames(g, dt, FLOOR, true);
+      const floorGraceGround = graceFrames(g, dt, FLOOR, false);
+      const floorAdvance = +SPEED.max.toFixed(6);
+      const floorFrames = SPEED.frames;
+
+      SPEED.max = -Infinity; SPEED.frames = 0;
+      const run = windowFor(g, dt, false, RUN);
+      const runGrace = graceFrames(g, dt, RUN, true);
+      const runAdvance = +SPEED.max.toFixed(6);
+
+      // The clamp-removed control, run on the first gap — the one I-024
+      // measured. Same scroll-speed start, screen clamp gone. If this does not
+      // read faster than the floor and open a wider takeoff window, then the
+      // meter above is stuck and its silence proves nothing.
+      let control = null;
+      if (gi === 0) {
+        SPEED.max = -Infinity; SPEED.frames = 0;
+        const w = windowFor(g, dt, false, CTRL);
+        control = { single: +w.width.toFixed(4), advance: +SPEED.max.toFixed(6), frames: SPEED.frames };
+      }
+
       return { x0: g.x0, x1: g.x1, w: g.w, hL: g.hL, hR: g.hR,
         floorSingle: +single.width.toFixed(4), floorSingleAtLip: single.atLip,
         floorAny: +dbl.width.toFixed(4), needsAirJump: single.lo === null,
         runSingle: +run.width.toFixed(4), runSingleAtLip: run.atLip,
-        floorGrace: graceFrames(g, dt, true, true),
-        runGrace: graceFrames(g, dt, false, true),
-        floorGraceGround: graceFrames(g, dt, true, false) };
+        floorGrace, runGrace, floorGraceGround,
+        floorAdvance, floorFrames, runAdvance, control };
     });
     console.log(JSON.stringify({ gate1: WG.cornerEvents[0].s, gaps: out }));
   `;
@@ -679,6 +757,62 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
       ok(face1.every((g) => g.runSingle > g.floorSingle && g.runSingleAtLip),
          'the same gaps are wider still at run speed, worst window ' + worst.toFixed(2) +
          ' tiles (the probe really is measuring the floor, not a free run)');
+    }
+    {
+      /* I-024: the window comparison above is NOT enough on its own.
+       * It catches a probe started at runSpeed — the builder's own negative
+       * control — but not one that keeps the scroll-speed start and loses the
+       * screen clamp. Measured, that case lets RIG accelerate to runSpeed in
+       * the air: the gap-29-31 "floor" window balloons 0.74 -> 4.12 tiles,
+       * still strictly under the 4.22 run-speed window, so the comparison stays
+       * green while the column labelled SCROLL reports an almost-free run.
+       *
+       * Measured on this tree while wiring the control up: a full clamp removal
+       * DOES also trip the comparison above — but only because face 1's other
+       * gap, 46-47, saturates (floor window 1.96 -> 8.32, exactly its own run
+       * window), not because of any property of the check. On the gap I-024
+       * named it stays green. A guard that catches a defect only when some
+       * unrelated second gap happens to saturate is not a guard.
+       *
+       * The label is a claim about a SPEED, so assert the speed. The three
+       * checks below are one unit: the floor column really ran at the floor,
+       * the meter that says so is not stuck, and the clamp is what holds it.
+       *
+       * Also measured, and worth knowing before editing the probe: forcing the
+       * floor sweep's takeoff velocity to runSpeed while the clamp still holds
+       * changes NOTHING — all 17 gaps report identical windows, graces and mean
+       * speeds. The clamp is what makes the floor a floor; the start velocity
+       * only matters once the clamp is gone. */
+      const EPS = 1e-6;
+      const SS = CONFIG.scrollSpeed;
+      const fastest = Math.max.apply(null, G.map((g) => g.floorAdvance));
+      const fast = G.filter((g) => g.floorAdvance > SS + EPS);
+      ok(fast.length === 0,
+         'every floor-labelled sweep really ran at the scroll floor: fastest mean ground speed ' +
+         fastest.toFixed(4) + ' vs CONFIG.scrollSpeed ' + SS + ' tiles/s, over ' +
+         G.reduce((n, g) => n + g.floorFrames, 0) + ' measured frames' +
+         (fast.length ? ' -- FAILS at ' + fast.map((g) => g.x0 + '-' + g.x1 + ' (' +
+            g.floorAdvance.toFixed(3) + ')').join(', ') : ''));
+      // Non-vacuity, half one: the same meter reads runSpeed on the run column,
+      // so its silence on the floor column is a measurement and not a zero.
+      const slowRun = G.filter((g) => g.runAdvance < SS + 1 || g.runAdvance > PL.runSpeed + EPS);
+      ok(slowRun.length === 0,
+         'the speed meter is live: the run column reads ' +
+         Math.min.apply(null, G.map((g) => g.runAdvance)).toFixed(2) + '-' +
+         Math.max.apply(null, G.map((g) => g.runAdvance)).toFixed(2) +
+         ' tiles/s, between the floor (' + SS + ') and runSpeed (' + PL.runSpeed + ')');
+      // Non-vacuity, half two: I-024's exact mutation, run for real on the first
+      // gap — scroll-speed start kept, screen clamp removed. If the clamp were
+      // not what holds the floor, this control would read the floor too and the
+      // guard above would be protecting nothing.
+      const c = G[0].control;
+      ok(!!c && c.advance > SS + 1 && c.single > G[0].floorSingle,
+         'negative control (scroll-speed start, screen clamp removed) on gap ' +
+         G[0].x0 + '-' + G[0].x1 + ': mean ground speed ' + (c ? c.advance.toFixed(2) : 'n/a') +
+         ' tiles/s and a ' + (c ? c.single.toFixed(2) : 'n/a') + '-tile takeoff window against the ' +
+         'clamped floor\'s ' + G[0].floorSingle.toFixed(2) + ' -- and note it stays under the ' +
+         G[0].runSingle.toFixed(2) + '-tile run-speed window, which is exactly why the ' +
+         'window comparison alone could not see it');
     }
     {
       // The first gap the run presents, named: it is the first thing the game
@@ -6081,11 +6215,19 @@ const G2GATE = G2E.gate;
   for (const f of layerFiles('sim'))
     ok(!stripComments(readFileSync(f, 'utf8')).includes('audio'),
        'T-012: sim untouched by the audio layer: ' + f);
-  // main.js integration is exactly one side-effect import line
+  // main.js integration is one import site plus the read-only debug handle.
+  // T-012 asserted a bare side-effect import here and that shape is what made
+  // audioSnapshot() unreachable (no build step ⇒ an unimported export is
+  // reachable from nothing; SPRINT I-005). The guarantee that mattered —
+  // main.js never DRIVES the synth, the wrappers do — is kept, and stated as
+  // "these two lines and nothing else".
   const mainCode = stripComments(readFileSync(join(srcDir, 'main.js'), 'utf8'));
-  ok((mainCode.match(/audio/g) || []).length === 1 &&
-     mainCode.includes("import './ui/audio.js';"),
-     'T-012: main.js integration is the single side-effect import line');
+  const audioLines = mainCode.split('\n').map((l) => l.trim()).filter((l) => /audio/i.test(l));
+  ok(audioLines.length === 2 &&
+     audioLines[0] === "import { audioSnapshot } from './ui/audio.js';" &&
+     audioLines[1] === 'audio: audioSnapshot,',
+     'T-012/T-029: main.js touches the audio module exactly twice — the load-order ' +
+     'import and the read-only window.HB publication — and never calls the synth');
   // wrappers delegate to the previously-installed hook before any synth work
   ok(/prev\(a, b, c\);/.test(audioCode),
      'T-012: audio hook wrappers call the prior implementation first');
@@ -8175,6 +8317,191 @@ const G2GATE = G2E.gate;
      'separately, so pageErrors still means "the game threw" (I-011)');
 }
 
+/* ===== T-025: the harness may not report what the run did not do ======== *
+ * Three report fields asserted things their runs had not done, and four gates
+ * read them as evidence (SPRINT I-006 / I-013 / I-026). All three failures are
+ * the same shape — a number computed from something OTHER than this run — so
+ * they are guarded the same way: drive lib/metrics.mjs with synthetic traces
+ * plus a synthetic answer from the served page, and assert what a READER of
+ * report.json would conclude.
+ *
+ *   I-006  `deaths`/`outcome.attempts` derive from sliceStats.attempts, which
+ *          src/main.js increments only inside `if (ACTIVE_FIXTURE)` — so every
+ *          default six-face report read `deaths: 0` for a run that spent two
+ *          lives. The fix must never restore a 0 that means "unknown": the
+ *          null-instead-of-zero case is asserted explicitly below.
+ *   I-013  route coverage / dare pocket were computed against THIS checkout's
+ *          lattice fixture whatever the browser was running, so a ?ribrun=1
+ *          run (which replaces the lattice) was credited with four lattice
+ *          routes and a pocket entry. The rib case is asserted against the
+ *          REAL ribrunFixture(TRAVERSAL_FIXTURE), with a trace deliberately
+ *          driven through the lattice pocket's own coordinates.
+ *   I-026  ?enemies=0 is slice-only (src/mode.js SLICE_ENEMIES_ENABLED, read
+ *          only where a fixture spawns its authored list), so a default-run
+ *          trace with the flag still carries live hostiles.
+ *
+ * Plus the one game-side dependency this all rests on: player.hp/lives on the
+ * frozen telemetry channel. If that plumbing is ever removed, the default-run
+ * death counter silently loses its source — so it is a tripwire here.       */
+{
+  const { computeMetrics } = await import('./playtest/lib/metrics.mjs');
+  const { describeServedFixture } = await import('./playtest/lib/fixture.mjs');
+
+  // --- 0. the harness cannot import the game's fixture any more ----------
+  const fixtureSrc = readFileSync(join(here, 'playtest', 'lib', 'fixture.mjs'), 'utf8');
+  ok(!/from\s+'\.\.\/\.\.\/\.\.\/src\//.test(stripComments(fixtureSrc)),
+     'T-025 (I-013): lib/fixture.mjs imports NO game source — a fixture-derived column ' +
+     'is computed against what the browser served, never against this checkout');
+  const metricsSrc = stripComments(readFileSync(join(here, 'playtest', 'lib', 'metrics.mjs'), 'utf8'));
+  ok(!/TRAVERSAL_FIXTURE/.test(metricsSrc),
+     'T-025 (I-013): …and lib/metrics.mjs never names TRAVERSAL_FIXTURE at all');
+  const samplerSrcT25 = stripComments(readFileSync(join(here, 'playtest', 'lib', 'sampler.mjs'), 'utf8'));
+  ok(/momentum:\s*s\.momentum/.test(samplerSrcT25),
+     'T-025 (I-035): the sampler whitelists `momentum`, so ?momentum=1 reaches report.json\'s ' +
+     'trace instead of having to be re-derived by inverting pursuitSpeed');
+  ok(/lives:\s*typeof s\.player\.lives/.test(samplerSrcT25),
+     'T-025 (I-006): …and `lives`, which is the default run\'s only death counter');
+  const mainSrcT25 = stripComments(readFileSync(join(srcDir, 'main.js'), 'utf8'));
+  ok(/hp:\s*player\.hp,/.test(mainSrcT25) && /lives:\s*player\.lives,/.test(mainSrcT25),
+     'T-025 (I-006): src/main.js telemetry() publishes player.hp and player.lives on the ' +
+     'frozen channel — the plumbing the harness\'s default-run death count reads');
+
+  const opts = { events: [], wallTimeMs: 3000, achievedSampleIntervalsMs: [75, 75] };
+  const row = (i, over) => ({
+    tMs: i * 75, nowMs: i * 75, fidelity: 'testapi', gameMs: i * 75, state: 'PLAYING',
+    x: 10, y: 3, vx: 9, vy: 0, grounded: true, traversalState: 'free',
+    hp: 3, lives: 3, attempts: 1, falls: 0, airJumps: 0, edgeMargin: 20,
+    hudTL: 'RIG ▰▰▰  ×3  ·  [R] RIFLE', hudTC: '', hudTR: '0m · 0 kills',
+    weapon: 'R', kills: 0, hostiles: [], setbacks: 0, ...over,
+  });
+  const probeDefault = {
+    available: true, kind: 'default-run', hasActiveFixture: false, query: '',
+    id: null, paceId: null, connectors: null, routes: null, darePocket: null,
+  };
+  const probeOf = (fixture, kind = 'traversal-slice') => ({
+    available: true, kind, hasActiveFixture: true, query: '',
+    id: fixture.id, paceId: fixture.pace ? fixture.pace.id : null,
+    connectors: fixture.connectors.map((c) => ({ id: c.id, kind: c.kind, x: c.x, y: c.y })),
+    routes: fixture.routes.map((r) => ({ id: r.id, connectorIds: r.connectorIds.slice() })),
+    darePocket: {
+      bounds: { ...fixture.darePocket.bounds },
+      rewardLetter: fixture.darePocket.reward.letter,
+    },
+  });
+
+  // --- 1. I-006: a default run that spent two lives -----------------------
+  {
+    // 30 ticks, lives 3 -> 2 -> 1, attempts frozen at 1 the whole way: exactly
+    // the shape of the gate-T-016-scored-baseline trace the issue was filed on.
+    const trace = [];
+    for (let i = 0; i < 30; i++) {
+      const lives = i < 10 ? 3 : i < 20 ? 2 : 1;
+      trace.push(row(i, { lives, hudTL: `RIG ▰▰▰  ×${lives}  ·  [R] RIFLE` }));
+    }
+    const m = computeMetrics(trace, { ...opts, url: 'http://x/index.html?testapi=1', servedFixture: probeDefault });
+    ok(m.deaths === 2 && m.deathsSource === 'lives',
+       'T-025 (I-006): a default-run trace that spent two lives reports deaths 2 from the ' +
+       'lives counter [got ' + m.deaths + ' from ' + m.deathsSource + ']');
+    ok(m.outcome.result === 'died',
+       'T-025 (I-006 residual): …and its outcome reads `died`, not `not-completed` — the ' +
+       'verdict no longer keys off the fixture-only attempt counter [got ' + m.outcome.result + ']');
+    ok(m.outcome.attempts === null && typeof m.outcome.attemptsUnavailableReason === 'string',
+       'T-025 (I-006): …and outcome.attempts is null WITH a reason on a default run, rather ' +
+       'than a 0 that reads like "no retries"');
+    ok(m.lives.crossCheck && m.lives.crossCheck.agrees === true && m.lives.source === 'telemetry',
+       'T-025: …with the telemetry lives count cross-checked against the HUD ×N parse');
+    ok(m.route.routeIds === null && typeof m.route.unavailableReason === 'string' &&
+       m.darePocket.entered === null,
+       'T-025 (I-013): a default six-face run credits no routes and no pocket at all — ' +
+       'there is no authored fixture for either to be about');
+  }
+
+  // --- 2. I-006: the counter that does not exist reads null, never 0 ------
+  {
+    const trace = [row(0), row(1), row(2)];
+    const m = computeMetrics(trace, {
+      ...opts, url: 'http://x/index.html',
+      servedFixture: { available: false, reason: 'window.HB was not present' },
+    });
+    ok(m.deaths === null && m.deathsSource === null &&
+       /cannot be told apart|deliberately null/.test(m.deathsUnavailableReason || ''),
+       'T-025 (I-006): with no way to tell which counter applies and neither counter moving, ' +
+       '`deaths` is null and says why — "no deaths" and "no counter" are not the same claim');
+    ok(m.route.unavailableReason && m.darePocket.unavailableReason,
+       'T-025 (I-013): …and an unprobed page omits the fixture-derived columns rather than ' +
+       'computing them against this checkout');
+  }
+
+  // --- 3. I-013: a rib run credits zero lattice routes --------------------
+  {
+    const rib = ribrunFixture(TRAVERSAL_FIXTURE);
+    const latticeRouteIds = TRAVERSAL_FIXTURE.routes.map((r) => r.id);
+    const pocket = TRAVERSAL_FIXTURE.darePocket.bounds;
+    // A trace driven straight through the LATTICE's own connectors and pocket
+    // — the contaminating path from the issue. Served build: the rib run.
+    const trace = [];
+    let i = 0;
+    for (const c of TRAVERSAL_FIXTURE.connectors) trace.push(row(i++, { x: c.x, y: c.y }));
+    trace.push(row(i++, { x: (pocket.x0 + pocket.x1) / 2, y: pocket.y0 + 0.5, weapon: TRAVERSAL_FIXTURE.darePocket.reward.letter }));
+    const m = computeMetrics(trace, {
+      ...opts, url: 'http://x/index.html?slice=traversal&ribrun=1&testapi=1',
+      servedFixture: probeOf(rib),
+    });
+    ok((m.route.routeIds || []).every((id) => !latticeRouteIds.includes(id)),
+       'T-025 (I-013): a ?ribrun=1 run credits ZERO lattice routes even when its trace walks ' +
+       'every lattice connector [got ' + JSON.stringify(m.route.routeIds) + ']');
+    ok(m.darePocket.entered === null && /zero-width|no dare pocket|collapses/.test(m.darePocket.unavailableReason || ''),
+       'T-025 (I-013): …and zero dare-pocket entries: the rib run collapses the pocket to a ' +
+       'zero-width span, so the column is absent with a reason instead of true');
+    ok(m.servedFixture.id === rib.id && m.route.fixtureId === rib.id,
+       'T-025 (I-013): …and the report names the fixture it was measured against [' +
+       m.servedFixture.id + ']');
+    // …while the SAME trace against the lattice build still reports the lattice
+    // routes: the fix is "measure the served build", not "report less".
+    const mLattice = computeMetrics(trace, {
+      ...opts, url: 'http://x/index.html?slice=traversal&testapi=1',
+      servedFixture: probeOf(resolveTraversalPace('base', TRAVERSAL_FIXTURE, {})),
+    });
+    ok((mLattice.route.routeIds || []).length >= 1 && mLattice.darePocket.entered === true,
+       'T-025 (I-013): …and the same trace on the LATTICE build still credits its routes and ' +
+       'the pocket entry — the fix measures the served build, it does not just report less');
+  }
+
+  // --- 4. I-026: ?enemies=0 on a default run is a no-op, and says so ------
+  {
+    const trace = [];
+    for (let i = 0; i < 10; i++) {
+      trace.push(row(i, {
+        hostiles: i > 2 ? [{ id: 1, kind: 'wasp', state: 'cruise', x: 20, y: 5, materialized: true }] : [],
+      }));
+    }
+    const m = computeMetrics(trace, {
+      ...opts, url: 'http://x/index.html?enemies=0&testapi=1', servedFixture: probeDefault,
+    });
+    ok(m.hostilePresence.enemiesFlag && m.hostilePresence.enemiesFlag.honoured === false &&
+       /SLICE-ONLY|slice-only/i.test(m.hostilePresence.enemiesFlag.note),
+       'T-025 (I-026): a ?enemies=0 run that met hostiles reports the flag as a no-op on this ' +
+       'run, and says the flag is slice-only');
+    const clean = computeMetrics([row(0), row(1)], {
+      ...opts, url: 'http://x/index.html?slice=traversal&enemies=0&testapi=1',
+      servedFixture: probeOf(resolveTraversalPace('base', TRAVERSAL_FIXTURE, {})),
+    });
+    ok(clean.hostilePresence.enemiesFlag.honoured === true,
+       'T-025 (I-026): …and a run where it DID hold reports that, from the same evidence');
+    ok(m.hostilePresence.maxConcurrent === 1 && m.hostilePresence.kindsObserved.join(',') === 'wasp',
+       'T-025 (I-026): …with the roster it actually met, not a claim about the flag');
+  }
+
+  // --- 5. the served-fixture describer's own contract ---------------------
+  {
+    const unknown = describeServedFixture(null);
+    ok(unknown.known === false && unknown.hasRoutes === false && unknown.hasDarePocket === false &&
+       typeof unknown.routeReason === 'string' && typeof unknown.pocketReason === 'string',
+       'T-025: an absent probe describes itself as unknown, with a reason for each column ' +
+       'it cannot support');
+  }
+}
+
 /* ============ MOMENTUM — earned pace escalation (T-022) ================= *
  * decisions.md entry 11: "pace should escalate across the faces, but at the
  * player's momentum. a good player escalates the action to intense levels of
@@ -8446,8 +8773,9 @@ const G2GATE = G2E.gate;
     // already exists (pursuitSpeed), and the HUD meter is banded here.
     ok(sweep.every((d) => Math.abs(
          momentumDriveFromSpeed(momentumSpeed(d, base, MM), base, MM) - d) < 1e-12),
-       'READOUT: drive round-trips through speed, so a bot report reads escalation ' +
-       'off the existing pursuitSpeed field with no new telemetry to keep in sync');
+       'READOUT: drive round-trips through speed — the inversion a T-022 packet ' +
+       'reader performs on pursuitSpeed is exact WHILE escalation is the only ' +
+       'source feeding that field (T-029 publishes drive itself; see I-030)');
     ok(momentumTier(0, MM) === 0 && momentumTier(1, MM) === MM.tiers.length &&
        momentumTier(MM.tiers[0], MM) === 1,
        'READOUT: the tier banding covers empty to full');
@@ -8704,6 +9032,197 @@ const G2GATE = G2E.gate;
        'CEILING/WIRING: the live scroll speed leaves through momentumClampSpeed, so a ' +
        'later source (T-023 boosts) cannot route around the hard ceiling by writing ' +
        'drive or speed somewhere else');
+  }
+}
+
+/* ============ T-029 — runtime truth: three debug/copy surfaces ========== *
+ * Three claims that were all TRUE of the source and FALSE of the running
+ * game, which is the class of defect this section exists to catch:
+ *   I-005  a debug surface that documents itself as console-reachable but is
+ *          exported-and-unimported — with no build step that is reachable
+ *          from nothing, and the T-012 gate had to monkey-patch AudioParam to
+ *          recover a number audioSnapshot() already returns.
+ *   I-009  a turn counter that hardcodes the v1 demo's 2, so the one-event G2
+ *          fixture advertises a transformation that does not exist on every
+ *          frame of every capture, the BREACH CLEAR overlay included.
+ *   I-030  an escalation a trace can only recover by INVERTING pursuitSpeed,
+ *          which stops being a valid inversion the moment a second source
+ *          (T-023's boosts) pushes the same chokepoint.
+ * Everything here is asserted against what a reader/player can actually get
+ * at: the published handle, the loaded fixture's own event count, and the
+ * live sim's drive — not against the author's intent.                     */
+{
+  const mainSrc = readFileSync(join(srcDir, 'main.js'), 'utf8');
+  const mainCode = stripComments(mainSrc);
+  const audioSrc = stripComments(readFileSync(join(srcDir, 'ui', 'audio.js'), 'utf8'));
+
+  // --- I-005: the audio debug surface is reachable ------------------------
+  ok(/export function audioSnapshot\(\)/.test(audioSrc),
+     'T-029/I-005: src/ui/audio.js still exports audioSnapshot()');
+  {
+    // It must land on window.HB — the handle that exists on EVERY URL — and
+    // not inside the ?testapi=1 block, or "reachable from the console on the
+    // shipped URL" is still false.
+    const hb = /window\.HB = Object\.freeze\(\{[^]*?\n\}\);/.exec(mainCode);
+    ok(!!hb && /\baudio: audioSnapshot,/.test(hb[0]),
+       'T-029/I-005: audioSnapshot rides window.HB, the always-present handle — ' +
+       'HB.audio() answers on any URL, no ?testapi and no build step needed');
+    const testapi = /if \(QUERY\.has\('testapi'\)\)[^]*?\n\}/.exec(mainCode);
+    ok(!!testapi && !/audio/i.test(testapi[0]),
+       'T-029/I-005: …and is NOT gated behind ?testapi=1');
+  }
+  {
+    // The fields the T-012 gate had to infer from AudioParam ramp batches are
+    // the fields this function returns; naming them here means a later edit
+    // that drops `layers` fails the gate instead of silently re-creating the
+    // probe.
+    const body = /export function audioSnapshot\(\)[^]*?\n}/.exec(audioSrc);
+    const fields = ['enabled', 'unlocked', 'contextState', 'dead', 'layers', 'voices'];
+    // `dead` and `voices` are shorthand properties, so accept either form
+    ok(!!body && fields.every((f) => new RegExp('\\b' + f + '\\s*[:,]').test(body[0])),
+       'T-029/I-005: the snapshot answers exactly what the gate had to monkey-patch ' +
+       'AudioParam for: ' + fields.join(', '));
+    ok(!!body && /layerTarget\(\)/.test(body[0]),
+       'T-029/I-005: the layer count is the ambience mixer\'s own layerTarget(), not a ' +
+       'second count that can drift from what is audible');
+  }
+
+  // --- I-009: the turn counters read the LOADED fixture -------------------
+  {
+    const hudCode = stripComments(readFileSync(join(srcDir, 'ui', 'hud.js'), 'utf8'));
+    const ovCode = stripComments(readFileSync(join(srcDir, 'ui', 'overlay.js'), 'utf8'));
+    ok(!/\/2 TURNS/.test(hudCode) && /ACTIVE_FIXTURE\.events\.length/.test(hudCode),
+       'T-029/I-009: the HUD turn counter reads ACTIVE_FIXTURE.events.length, not a ' +
+       'hardcoded 2');
+    ok(!/of 2 transformations/.test(ovCode) && /ACTIVE_FIXTURE\.events\.length/.test(ovCode),
+       'T-029/I-009: …and so does the clear overlay\'s transformation count');
+    // The line the operator reads on a fresh G2 capture, reproduced from the
+    // same expression the overlay uses: singular for a one-event fixture.
+    const clearLine = (n, done) =>
+      done + ' of ' + n + ' transformation' + (n === 1 ? '' : 's');
+    ok(clearLine(1, 1) === '1 of 1 transformation' &&
+       clearLine(2, 2) === '2 of 2 transformations',
+       'T-029/I-009: the BREACH CLEAR line pluralizes off the same count it prints');
+  }
+  for (const [id, fx] of Object.entries(TRANSFORM_FIXTURES)) {
+    // committedBand is the numerator on both readouts, so "band index" and
+    // "turns taken" have to be the same number: every fixture's events must
+    // chain 0 → 1 → … → bands-1, one event per band boundary. If a later
+    // fixture ever branches, this fails here rather than lying on screen.
+    ok(fx.bands.length === fx.events.length + 1,
+       'T-029/I-009: fixture ' + id + ' authors one turn per band boundary (' +
+       fx.events.length + ' events, ' + fx.bands.length + ' bands)');
+    ok(fx.events.every((ev, i) => ev.fromBand === i && ev.toBand === i + 1),
+       'T-029/I-009: …and they chain in order, so committedBand IS the count of ' +
+       'turns taken on ' + id);
+  }
+  ok(TRANSFORM_FIXTURES['transform-v1'].events.length === 2 &&
+     TRANSFORM_FIXTURES['monster-g2-neck-flip'].events.length === 1,
+     'T-029/I-009: the v1 demo really does author 2 turns and G2 exactly 1 — the ' +
+     'number the HUD prints on ?g2=1 is 1, which is what I-009 filed');
+
+  // --- I-030: the earned drive rides the frozen channel -------------------
+  {
+    const tele = /function telemetry\(\)[^]*?\n}/.exec(mainCode);
+    ok(!!tele && /momentum: MOMENTUM_ENABLED \?/.test(tele[0]) &&
+       /drive: momentumDrive\(\)/.test(tele[0]) &&
+       /peakDrive: momentumPeakDrive\(\)/.test(tele[0]) &&
+       /tier: momentumTier\(/.test(tele[0]),
+       'T-029/I-030: telemetry() publishes momentum { drive, peakDrive, tier } beside ' +
+       'pursuitSpeed, flag-gated like hook/flow — additive, and undefined without ' +
+       '?momentum=1');
+    ok(!!tele && /pursuitSpeed: activeScrollSpeed\(\)/.test(tele[0]) &&
+       /pursuitPeak: pacePeak\(\)/.test(tele[0]),
+       'T-029/I-030: …and the frozen fields it sits beside are untouched');
+  }
+  {
+    const MM = CONFIG.momentum, base = CONFIG.scrollSpeed;
+    // WHY the field is needed, as arithmetic rather than as a forecast: read
+    // a boost's speed back through the packet's own inversion and it reports
+    // drive the player never earned. Same chokepoint, same number, two
+    // different causes — which is exactly what a trace must distinguish.
+    const boosted = momentumSpeed(0.7, base, MM);          // e.g. a T-023 boost
+    ok(Math.abs(momentumDriveFromSpeed(boosted, base, MM) - 0.7) < 1e-12,
+       'T-029/I-030: inverting pursuitSpeed reports drive 0.70 for a speed a ' +
+       'STRUGGLING player could be riding on a boost — speed alone cannot attribute ' +
+       'escalation once a second source shares momentumClampSpeed');
+    ok(momentumDriveFromSpeed(momentumHardCeiling(base, MM), base, MM) === 1,
+       'T-029/I-030: …and at the hard ceiling the inversion saturates at 1.00 whatever ' +
+       'the real drive was, so the T-022 packet\'s "drive never exceeds 0.30" gate is ' +
+       'unreadable from speed there');
+    // The published tier and the on-screen meter are the same reading, so a
+    // trace field and a screenshot can be checked against each other.
+    for (const d of [0, 0.2, 0.45, 0.8, 1]) {
+      const filled = (momentumMeter(d, MM).match(/▰/g) || []).length;
+      ok(filled === momentumTier(d, MM),
+         'T-029/I-030: the trace tier equals the filled glyphs on the HUD meter at ' +
+         'drive ' + d.toFixed(2) + ' (' + filled + ')');
+    }
+  }
+  {
+    /* The values, MEASURED off the real sim rather than read off the source:
+       boot src/sim with ?momentum=1, hold RIG at the right clamp (a player
+       outrunning the world), and read the exact three getters telemetry()
+       calls. A source regex proves the field is written; this proves it
+       carries a live, non-degenerate number. */
+    const child = `
+      globalThis.__HB_QUERY__ = 'momentum=1';
+      const S = ${JSON.stringify('file://' + join(srcDir) + '/')};
+      const [CF, T, E, LV, PL, SC, WG, PA, MO] = await Promise.all([
+        import(S + 'config.js'), import(S + 'sim/time.js'), import(S + 'sim/edges.js'),
+        import(S + 'sim/level.js'), import(S + 'sim/player.js'), import(S + 'sim/scroll.js'),
+        import(S + 'sim/wavegate.js'), import(S + 'sim/pace.js'),
+        import(S + 'pure/momentum.js'),
+      ]);
+      const C = CF.CONFIG, p = PL.player, hw = C.player.width / 2, M = C.edges.margin;
+      for (const c of WG.cornerEvents) c.state = 'done';
+      E.setEdges(-27.44, 45.73);
+      T.setScrollX(0); PA.resetPace();
+      const dt = 1 / 60;
+      const start = { drive: PA.momentumDrive(), peak: PA.momentumPeakDrive() };
+      for (let i = 0; i < Math.round(12 / dt); i++) {
+        p.x = E.sRightEdge() - M - hw;
+        T.advanceGameMs(dt * 1000);
+        SC.updateScroll(dt);
+      }
+      const top = { drive: PA.momentumDrive(), peak: PA.momentumPeakDrive(),
+                    speed: LV.activeScrollSpeed() };
+      for (let i = 0; i < Math.round(6 / dt); i++) {
+        p.x = E.sLeftEdge() + M + hw;                    // shoved onto the plane
+        T.advanceGameMs(dt * 1000);
+        SC.updateScroll(dt);
+      }
+      const after = { drive: PA.momentumDrive(), peak: PA.momentumPeakDrive() };
+      console.log(JSON.stringify({ start, top, after,
+        tier: MO.momentumTier(top.drive, C.momentum),
+        inverted: MO.momentumDriveFromSpeed(top.speed, C.scrollSpeed, C.momentum) }));
+    `;
+    let m = null;
+    try {
+      m = JSON.parse(execFileSync(process.execPath,
+        ['--input-type=module', '-e', child], { encoding: 'utf8' }));
+    } catch (e) {
+      console.error('pathcheck: T-029 momentum-field child failed: ' + e.message);
+    }
+    ok(!!m && m.start.drive === 0 && m.start.peak === 0,
+       'T-029/I-030: a fresh run publishes drive 0 / peakDrive 0 — the field starts at ' +
+       'the floor, not at whatever the last run left behind');
+    ok(!!m && m.top.drive > 0.3 && m.top.drive <= 1,
+       'T-029/I-030: 12s at the right clamp publishes a live drive of ' +
+       (m ? m.top.drive.toFixed(3) : '?') + ' — the getter telemetry() calls carries a ' +
+       'real, non-degenerate value');
+    ok(!!m && m.tier >= 1 && m.tier <= CONFIG.momentum.tiers.length,
+       'T-029/I-030: …and a tier inside the meter\'s own banding');
+    ok(!!m && m.after.drive < m.top.drive && m.after.peak >= m.top.peak &&
+       Math.abs(m.after.peak - m.top.peak) < 1e-9,
+       'T-029/I-030: peakDrive is the RUN high-water mark, not a copy of drive — it ' +
+       'holds while the live drive collapses on the plane (' +
+       (m ? m.after.drive.toFixed(3) + ' live vs ' + m.after.peak.toFixed(3) + ' peak' : '?') +
+       '), which is what makes an escalation readable after the fact');
+    ok(!!m && Math.abs(m.inverted - m.top.drive) < 1e-9,
+       'T-029/I-030: today the published drive and the packet\'s pursuitSpeed inversion ' +
+       'still agree exactly — the new field is a superset of what a T-022 reader does ' +
+       'by hand, so the packet\'s numbers stay comparable across T-023');
   }
 }
 

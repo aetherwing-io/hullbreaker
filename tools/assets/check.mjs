@@ -7,9 +7,10 @@
 //   node tools/assets/check.mjs --selftest only prove the palette rule can fail, then exit
 //
 // What it enforces, in order:
-//   0. the palette rule is coherent and can actually reject a color (--selftest,
-//      which also runs as part of a normal check — a gate nobody has proven can
-//      fail is not a gate)
+//   0. the palette rule is coherent and can actually reject a color, and the
+//      static-import scan still catches every import shape and still leaves
+//      runtime references alone (--selftest, which also runs as part of a
+//      normal check — a gate nobody has proven can fail is not a gate)
 //   1. the role budget: <= 8 roles, per DESIGN's Concept section
 //   2. manifest schema: required fields, known fields, kebab ids, unique
 //      ids/paths, paths inside their declared category
@@ -28,6 +29,7 @@ import { fileURLToPath } from 'node:url';
 
 import { histogram, readPngSize } from './lib/png.mjs';
 import { extractSvgColors, readSvgSize } from './lib/svg.mjs';
+import { assetImports, maskSource } from './lib/imports.mjs';
 import { ROLES, NEUTRAL_MAX_CHROMA, checkColors, classify } from './lib/palette.mjs';
 import { loadManifest, saveManifest, validateEntryShape, isPowerOfTwo, MANIFEST_PATH } from './lib/manifest.mjs';
 
@@ -85,6 +87,98 @@ function runSelftest() {
   for (const [hex, why] of SELFTEST.fail) {
     const res = classify(hex);
     if (res.ok) failures.push(`selftest: ${hex} (${why}) should be rejected, got role ${res.roleId}`);
+  }
+  return failures;
+}
+
+/* --------------------------------------------------------------------- *
+ * 0b. Self-test: the import scan, both ways.
+ *
+ * Section 6 below is the gate behind "the game boots with every asset file
+ * missing". Until I-014 it was one line-anchored regex, so a specifier pushed
+ * onto the next line evaded it completely and the check exited 0 while the
+ * invariant was violated. Widening the regex across newlines is the other
+ * failure — it swallows the file between an `import` and the next unrelated
+ * 'assets/…' literal and fails legal runtime code, which is why the README has
+ * carried that counter-example since T-017.
+ *
+ * So both directions are pinned here, and (like the palette cases above) this
+ * runs on EVERY invocation: the next editor of lib/imports.mjs cannot quietly
+ * un-bind either half. `detect` cases must be rejected as hard dependencies;
+ * `ignore` cases must stay legal. The end-to-end proof that a real tree exits
+ * non-zero lives in tools/gatecheck.mjs, over the committed fixtures.
+ * --------------------------------------------------------------------- */
+const IMPORT_SELFTEST = {
+  detect: [
+    ["import glyph from '../assets/generated/glyphs/x.png';",
+      'the single-line shape every file in src/ writes'],
+    ["import {\n  glyph,\n} from '../assets/generated/glyphs/x.png';",
+      'I-014: the specifier one line below the keyword'],
+    ["import\n  glyph\n  from\n  \"../assets/generated/glyphs/x.png\";",
+      'keyword, clause and specifier on four separate lines'],
+    ["import * as art from '../../assets/manifest.json';",
+      'namespace import'],
+    ["import '../assets/generated/boot.js';",
+      'side-effect import — no clause at all'],
+    ["export { tex } from '../assets/generated/textures/t.png';",
+      're-export binds the module exactly as hard as an import'],
+    ["export *\n  from '../assets/generated/textures/t.png';",
+      'multi-line star re-export'],
+    ["import /* which */ tex /* from where? */ from '../assets/generated/textures/t.png';",
+      'comments inside the clause do not hide the specifier'],
+    ["const quoteRe = /['\"]/;\nimport {\n  tex,\n} from '../assets/generated/textures/t.png';",
+      'a regex literal holding a quote must not blind the scan that follows it'],
+    ["const help = `\n  import x from \"../assets/nope.png\"\n`;\nimport {\n  tex,\n} from '../assets/generated/textures/t.png';",
+      'a template literal quoting an import must not blind the scan that follows it'],
+    ["#!/usr/bin/env node\nimport tex from '../assets/generated/textures/t.png';",
+      "a shebang is a comment, not code — lexing /usr/ as a regex hid the file's first import"],
+    ["const n = 6;\nconst half = n / 2; import tex from '../assets/generated/textures/t.png';",
+      'a division on the line above must not swallow the statement below it'],
+  ],
+  ignore: [
+    ["import { CONFIG } from '../config.js';\nconst url = 'assets/generated/glyphs/x.png';",
+      "the README's counter-example: a runtime string one line under a legal import"],
+    ["import {\n  CONFIG,\n} from '../config.js';\nconst url = 'assets/generated/glyphs/x.png';",
+      'the same counter-example with the legal import itself multi-line'],
+    ["const mod = await import('../assets/generated/glyphs/x.png');",
+      'a dynamic import is a runtime load, which is the sanctioned path'],
+    ["export const ASSET_URL = 'assets/generated/glyphs/x.png';",
+      'a runtime URL constant'],
+    ["export default 'assets/generated/glyphs/x.png';",
+      'export default of a string is not a re-export'],
+    ["export { ASSET_URL };\nconst u = 'assets/generated/glyphs/x.png';",
+      'an export clause with no "from" binds no module'],
+    ["// import glyph from '../assets/generated/glyphs/x.png';",
+      'a commented-out import is not a dependency'],
+    ["/*\nimport {\n  glyph,\n} from '../assets/generated/glyphs/x.png';\n*/",
+      'a block-commented import is not a dependency'],
+    ["const doc = `\nimport glyph from \"../assets/generated/glyphs/x.png\";\n`;",
+      'an import quoted inside a template literal is text, not a dependency'],
+    ["loader.load('assets/generated/glyphs/x.png');",
+      'a TextureLoader URL is the sanctioned runtime path'],
+    ["const table = { import: 'assets/generated/glyphs/x.png' };",
+      '"import" as a property name'],
+    ["registry.import = 'assets/generated/glyphs/x.png';",
+      '"import" as a member assignment'],
+    ["import { CONFIG } from '../config.js';",
+      'an ordinary non-asset import stays silent'],
+  ],
+};
+
+function runImportSelftest() {
+  const failures = [];
+  const oneLine = (s) => JSON.stringify(s.length > 72 ? `${s.slice(0, 69)}...` : s);
+  for (const [src, why] of IMPORT_SELFTEST.detect) {
+    const hits = assetImports(src);
+    if (hits.length !== 1) {
+      failures.push(`import selftest: ${oneLine(src)} (${why}) must be rejected as a static asset import, got ${hits.length} hit(s)`);
+    }
+  }
+  for (const [src, why] of IMPORT_SELFTEST.ignore) {
+    const hits = assetImports(src);
+    if (hits.length !== 0) {
+      failures.push(`import selftest: ${oneLine(src)} (${why}) must stay legal, got flagged as "${hits[0].specifier}"`);
+    }
   }
   return failures;
 }
@@ -173,31 +267,35 @@ function checkGameIndependence(root) {
   let staticImports = 0;
   const srcDir = join(root, 'src');
   if (!existsSync(srcDir)) return { errs, info, staticImports };
-  const importRe = /^\s*import\s[^\n]*?['"]([^'"]*assets\/[^'"]*)['"]/gm;
   for (const file of walkJs(srcDir)) {
     const text = readFileSync(file, 'utf8');
     const rel = file.slice(root.length + 1);
-    // Line numbers of the static imports, so the info list below can exclude
+    const masks = maskSource(text);
+    // Lines belonging to a rejected import, so the info list below can exclude
     // them: an import is already reported as an error, and listing it a second
     // time under a "runtime, not imports" header contradicted itself (I-002).
+    // The whole statement span is excluded, not just the keyword's line — a
+    // multi-line import carries its specifier on a later one (I-014).
     const importLines = new Set();
-    for (const m of text.matchAll(importRe)) {
-      // from the `import` keyword, not m.index: `^\s*` can swallow blank lines
-      // ahead of the statement, which would blame the wrong line.
-      const kwAt = m.index + Math.max(0, m[0].indexOf('import'));
-      importLines.add(text.slice(0, kwAt).split('\n').length);
+    for (const imp of assetImports(text, masks)) {
+      for (let ln = imp.line; ln <= imp.endLine; ln++) importLines.add(ln);
       staticImports++;
       errs.push(
-        `${rel}: static import of "${m[1]}" makes an asset a hard dependency — ` +
+        `${rel}:${imp.line}: static ${imp.kind === 'export' ? 're-export' : 'import'} of ` +
+        `"${imp.specifier}" makes an asset a hard dependency — ` +
         'the game must boot with every asset file missing (asset-artist standing orders). ' +
         'Load through the render/ui layer at runtime with a fallback instead.'
       );
     }
-    if (/assets\//.test(text)) {
-      const lines = text.split('\n')
-        .map((l, i) => ({ l, i: i + 1 }))
-        .filter(({ l, i }) => /assets\//.test(l) && !/^\s*(\/\/|\*)/.test(l) && !importLines.has(i));
-      for (const { l, i } of lines) info.push(`${rel}:${i}: runtime asset reference — ${l.trim().slice(0, 90)}`);
+    // Comments are masked out of `code`, so prose that merely mentions an
+    // assets/ path is not filed as a reference. The old line filter only
+    // skipped lines starting with `//` or `*`, which listed two lines of
+    // src/render/legibility.js's header comment as "runtime asset references".
+    const codeLines = masks.code.split('\n');
+    const rawLines = text.split('\n');
+    for (let i = 0; i < codeLines.length; i++) {
+      if (!/assets\//.test(codeLines[i]) || importLines.has(i + 1)) continue;
+      info.push(`${rel}:${i + 1}: runtime asset reference — ${rawLines[i].trim().slice(0, 90)}`);
     }
   }
   return { errs, info, staticImports };
@@ -240,20 +338,26 @@ function main() {
     root: args.root,
     minCoverage: args.minCoverage,
     roleBudget: { declared: ROLES.length, budget: ROLE_BUDGET, neutralMaxChroma: NEUTRAL_MAX_CHROMA },
-    selftest: { cases: SELFTEST.pass.length + SELFTEST.fail.length, failures: [] },
+    selftest: {
+      cases: SELFTEST.pass.length + SELFTEST.fail.length,
+      importCases: IMPORT_SELFTEST.detect.length + IMPORT_SELFTEST.ignore.length,
+      failures: [],
+    },
     errors: [],
     warnings: [],
     assets: [],
     gameIndependence: { errors: [], references: [], staticImports: 0 },
   };
 
-  report.selftest.failures = runSelftest();
+  report.selftest.failures = [...runSelftest(), ...runImportSelftest()];
   report.errors.push(...report.selftest.failures);
 
   if (args.selftest) {
     const ok = report.selftest.failures.length === 0;
     console.log(ok
-      ? `selftest PASS — ${report.selftest.cases} palette cases (${SELFTEST.pass.length} must-pass, ${SELFTEST.fail.length} must-fail)`
+      ? `selftest PASS — ${report.selftest.cases} palette cases (${SELFTEST.pass.length} must-pass, ` +
+        `${SELFTEST.fail.length} must-fail) + ${report.selftest.importCases} import-scan cases ` +
+        `(${IMPORT_SELFTEST.detect.length} must-reject, ${IMPORT_SELFTEST.ignore.length} must-allow)`
       : report.selftest.failures.join('\n'));
     process.exit(ok ? 0 : 1);
   }
@@ -395,7 +499,7 @@ function finish(report, args) {
   }
 
   console.log(`asset check — ${report.root}`);
-  console.log(`  palette: ${report.roleBudget.declared}/${report.roleBudget.budget} roles, neutral floor chroma ${report.roleBudget.neutralMaxChroma}, selftest ${report.selftest.cases} cases ${report.selftest.failures.length ? 'FAILED' : 'ok'}`);
+  console.log(`  palette: ${report.roleBudget.declared}/${report.roleBudget.budget} roles, neutral floor chroma ${report.roleBudget.neutralMaxChroma}, selftest ${report.selftest.cases} palette + ${report.selftest.importCases} import-scan cases ${report.selftest.failures.length ? 'FAILED' : 'ok'}`);
   console.log(`  manifest: ${report.assets.length} asset${report.assets.length === 1 ? '' : 's'}`);
   for (const a of report.assets) {
     const size = a.actualSize ? `${a.actualSize.w}x${a.actualSize.h}` : '?';

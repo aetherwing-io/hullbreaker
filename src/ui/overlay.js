@@ -11,7 +11,8 @@
 
 import { CONFIG } from '../config.js';
 import {
-  ACTIVE_SLICE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, SCORE_ENABLED, VIEW_ID,
+  ACTIVE_FIXTURE, ACTIVE_SLICE, IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE,
+  SCORE_ENABLED, VIEW_ID,
 } from '../mode.js';
 import { shellStateChanged } from './shell.js';
 import { installView } from '../sim/bridge.js';
@@ -89,8 +90,14 @@ function drawStateScreen(next) {
       showOverlay('TRAVERSAL CLEAR', lines);
     } else if (IS_TRANSFORM_SLICE) {
       const elapsed = Math.max(0, (gameMs - sliceStats.startedAt) / 1000).toFixed(1);
+      // The loaded fixture's own turn count, never the v1 demo's 2: G2 authors
+      // one event, and this line was telling the operator it had cleared one of
+      // two (SPRINT I-009). #ovTitle is untouched — the harness classifies the
+      // outcome off 'BREACH CLEAR', not off this body copy.
+      const turns = ACTIVE_FIXTURE.events.length;
       const transformLines = [
-        { text: `${elapsed}s · ${committedBand} of 2 transformations · ${kills} kills` },
+        { text: `${elapsed}s · ${committedBand} of ${turns} ` +
+                `transformation${turns === 1 ? '' : 's'} · ${kills} kills` },
         { text: `climbed ${Math.round(transformAltitudeAt(player.x))} tiles of body, on foot` },
         { text: 'flip inward → the passage climbs → breach out, one 2D controller the whole way' },
       ];
