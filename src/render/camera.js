@@ -21,6 +21,7 @@ import { setEdges } from '../sim/edges.js';
 import { activeCorner } from '../sim/wavegate.js';
 import { activeTransformEvent, committedBand } from '../sim/transform.js';
 import { renderer, scene, camera } from './scene.js';
+import { updateLightRig } from './lights.js';
 import { towerPose } from './tower.js';
 
 const _pp = { x: 0, z: 0 };     // polyAt scratch shared by the per-frame call sites
@@ -157,6 +158,12 @@ export function syncCamera() {
   );
   _look.set(ax + fx * C.lookX, C.lookY + (IS_TRANSFORM_SLICE ? altAhead : alt), az + fz * C.lookX);
   camera.lookAt(_look);
+  /* The light rig (./lights.js) is aimed from HERE, with the UNSHAKEN look
+     point and the yaw the ritual has reached — the same two quantities the
+     pose is built from, and for the same two reasons the shake is applied
+     afterwards: a shadow frustum that rode the shake would make every shadow
+     edge jitter under a hit, and the sim must never see the rig at all. */
+  updateLightRig(_look.x, _look.y, _look.z, camYaw);
   if (JUICE_ENABLED) applyShake();
   camera.updateMatrixWorld();
 }

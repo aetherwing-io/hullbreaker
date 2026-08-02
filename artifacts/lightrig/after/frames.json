@@ -1,0 +1,871 @@
+{
+  "measuredAt": "2026-08-02T05:40:37.031Z",
+  "tool": "tools/playtest/lightrig-capture.mjs",
+  "tag": "after",
+  "servedRoot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-047",
+  "viewport": "1280x800, headless Chrome (channel: chrome)",
+  "lumaNote": "L = Rec.709 luma on sRGB bytes; bands are fixed row ranges (HUD strip skipped)",
+  "mode": "frames",
+  "marks": [
+    3000,
+    6000,
+    9000
+  ],
+  "variants": {
+    "ship": {
+      "url": "/index.html?testapi=1&shell=0&fixeddt=16",
+      "frames": [
+        {
+          "mark": 3000,
+          "file": "artifacts/lightrig/after/ship-3000ms.png",
+          "gameMs": 3008,
+          "scrollX": 12.93439999999999,
+          "player": {
+            "x": 31.648999999999997,
+            "y": 0.7495167999999962
+          },
+          "hostilesLive": 4,
+          "kills": 0,
+          "view": {
+            "id": "far",
+            "label": "FAR",
+            "depthMult": 1.9,
+            "cameraDepth": 42.75
+          },
+          "luma": {
+            "width": 1280,
+            "height": 800,
+            "frame": {
+              "mean": 72.9,
+              "p05": 19.8,
+              "p50": 78.3,
+              "p95": 110.4,
+              "p99": 133.8,
+              "above200": 0.0015,
+              "below40": 0.1066
+            },
+            "sky": {
+              "mean": 77.4,
+              "p05": 76.5,
+              "p50": 78.3,
+              "p95": 78.3,
+              "p99": 78.3,
+              "above200": 0,
+              "below40": 0.0041
+            },
+            "mid": {
+              "mean": 72.9,
+              "p05": 19,
+              "p50": 78.3,
+              "p95": 111.3,
+              "p99": 135.8,
+              "above200": 0.0021,
+              "below40": 0.1228
+            },
+            "deck": {
+              "mean": 66.5,
+              "p05": 19.8,
+              "p50": 78.3,
+              "p95": 81.7,
+              "p99": 94.1,
+              "above200": 0,
+              "below40": 0.2266
+            },
+            "aboveSky": 0.6899,
+            "skyMinusDeck": 10.9
+          }
+        },
+        {
+          "mark": 6000,
+          "file": "artifacts/lightrig/after/ship-6000ms.png",
+          "gameMs": 6000,
+          "scrollX": 25.420223999999894,
+          "player": {
+            "x": 23.872160000000044,
+            "y": 4.477159833599998
+          },
+          "hostilesLive": 3,
+          "kills": 2,
+          "view": {
+            "id": "far",
+            "label": "FAR",
+            "depthMult": 1.9,
+            "cameraDepth": 42.75
+          },
+          "luma": {
+            "width": 1280,
+            "height": 800,
+            "frame": {
+              "mean": 72.7,
+              "p05": 19.8,
+              "p50": 78.3,
+              "p95": 110.8,
+              "p99": 134.1,
+              "above200": 0.0017,
+              "below40": 0.1138
+            },
+            "sky": {
+              "mean": 77.4,
+              "p05": 75.5,
+              "p50": 78.3,
+              "p95": 78.3,
+              "p99": 78.3,
+              "above200": 0,
+              "below40": 0.0035
+            },
+            "mid": {
+              "mean": 72.7,
+              "p05": 18,
+              "p50": 72.5,
+              "p95": 111.8,
+              "p99": 144,
+              "above200": 0.0026,
+              "below40": 0.1361
+            },
+            "deck": {
+              "mean": 65.9,
+              "p05": 19.8,
+              "p50": 80.5,
+              "p95": 81.7,
+              "p99": 92,
+              "above200": 0,
+              "below40": 0.2369
+            },
+            "aboveSky": 0.6291,
+            "skyMinusDeck": 11.5
+          }
+        },
+        {
+          "mark": 9000,
+          "file": "artifacts/lightrig/after/ship-9000ms.png",
+          "gameMs": 9008,
+          "scrollX": 38.354624000000136,
+          "player": {
+            "x": 21.023968000000014,
+            "y": 3
+          },
+          "hostilesLive": 4,
+          "kills": 2,
+          "view": {
+            "id": "far",
+            "label": "FAR",
+            "depthMult": 1.9,
+            "cameraDepth": 42.75
+          },
+          "luma": {
+            "width": 1280,
+            "height": 800,
+            "frame": {
+              "mean": 72.6,
+              "p05": 19.8,
+              "p50": 78.3,
+              "p95": 110.8,
+              "p99": 134.1,
+              "above200": 0.0017,
+              "below40": 0.1149
+            },
+            "sky": {
+              "mean": 77.4,
+              "p05": 74.7,
+              "p50": 78.3,
+              "p95": 78.3,
+              "p99": 78.3,
+              "above200": 0,
+              "below40": 0.0028
+            },
+            "mid": {
+              "mean": 71.7,
+              "p05": 17.2,
+              "p50": 71.3,
+              "p95": 117.4,
+              "p99": 145.6,
+              "above200": 0.0026,
+              "below40": 0.1507
+            },
+            "deck": {
+              "mean": 66.7,
+              "p05": 19.8,
+              "p50": 80.5,
+              "p95": 81.7,
+              "p99": 92.1,
+              "above200": 0,
+              "below40": 0.2202
+            },
+            "aboveSky": 0.5912,
+            "skyMinusDeck": 10.7
+          }
+        }
+      ],
+      "info": {
+        "calls": 119,
+        "triangles": 50436,
+        "frame": 588,
+        "shadowMapEnabled": true,
+        "toneMapping": 4,
+        "toneMappingExposure": 1.35,
+        "outputColorSpace": "srgb",
+        "lights": [
+          {
+            "type": "HemisphereLight",
+            "intensity": 0.62,
+            "castShadow": false
+          },
+          {
+            "type": "DirectionalLight",
+            "intensity": 2.45,
+            "castShadow": true
+          },
+          {
+            "type": "DirectionalLight",
+            "intensity": 0.75,
+            "castShadow": false
+          }
+        ],
+        "meshes": 94,
+        "casters": 76,
+        "receivers": 80
+      },
+      "errors": []
+    },
+    "flat": {
+      "url": "/index.html?testapi=1&shell=0&fixeddt=16&light=flat",
+      "frames": [
+        {
+          "mark": 3000,
+          "file": "artifacts/lightrig/after/flat-3000ms.png",
+          "gameMs": 3008,
+          "scrollX": 12.93439999999999,
+          "player": {
+            "x": 31.648999999999997,
+            "y": 0.6850047999999958
+          },
+          "hostilesLive": 4,
+          "kills": 0,
+          "view": {
+            "id": "far",
+            "label": "FAR",
+            "depthMult": 1.9,
+            "cameraDepth": 42.75
+          },
+          "luma": {
+            "width": 1280,
+            "height": 800,
+            "frame": {
+              "mean": 69.8,
+              "p05": 46.9,
+              "p50": 77.5,
+              "p95": 89.5,
+              "p99": 108.6,
+              "above200": 0.0012,
+              "below40": 0.0446
+            },
+            "sky": {
+              "mean": 77.3,
+              "p05": 75.5,
+              "p50": 78.3,
+              "p95": 78.3,
+              "p99": 78.3,
+              "above200": 0,
+              "below40": 0.0074
+            },
+            "mid": {
+              "mean": 67.1,
+              "p05": 33.7,
+              "p50": 74.5,
+              "p95": 89.9,
+              "p99": 111.9,
+              "above200": 0.0011,
+              "below40": 0.0727
+            },
+            "deck": {
+              "mean": 64.3,
+              "p05": 31.8,
+              "p50": 63.3,
+              "p95": 78.3,
+              "p99": 87.6,
+              "above200": 0,
+              "below40": 0.0525
+            },
+            "aboveSky": 0.5028,
+            "skyMinusDeck": 13
+          }
+        },
+        {
+          "mark": 6000,
+          "file": "artifacts/lightrig/after/flat-6000ms.png",
+          "gameMs": 6000,
+          "scrollX": 25.420223999999894,
+          "player": {
+            "x": 23.872160000000044,
+            "y": 4.477159833599998
+          },
+          "hostilesLive": 3,
+          "kills": 2,
+          "view": {
+            "id": "far",
+            "label": "FAR",
+            "depthMult": 1.9,
+            "cameraDepth": 42.75
+          },
+          "luma": {
+            "width": 1280,
+            "height": 800,
+            "frame": {
+              "mean": 68.2,
+              "p05": 46.8,
+              "p50": 71.1,
+              "p95": 89.9,
+              "p99": 111.9,
+              "above200": 0.0015,
+              "below40": 0.0449
+            },
+            "sky": {
+              "mean": 77.3,
+              "p05": 75.4,
+              "p50": 78.3,
+              "p95": 78.3,
+              "p99": 78.3,
+              "above200": 0,
+              "below40": 0.0071
+            },
+            "mid": {
+              "mean": 65.1,
+              "p05": 32.9,
+              "p50": 63.3,
+              "p95": 89.9,
+              "p99": 111.9,
+              "above200": 0.0018,
+              "below40": 0.0774
+            },
+            "deck": {
+              "mean": 61.1,
+              "p05": 49.7,
+              "p50": 63.3,
+              "p95": 64.1,
+              "p99": 81.6,
+              "above200": 0,
+              "below40": 0.0475
+            },
+            "aboveSky": 0.4004,
+            "skyMinusDeck": 16.2
+          }
+        },
+        {
+          "mark": 9000,
+          "file": "artifacts/lightrig/after/flat-9000ms.png",
+          "gameMs": 9008,
+          "scrollX": 38.354624000000136,
+          "player": {
+            "x": 21.023968000000014,
+            "y": 3
+          },
+          "hostilesLive": 4,
+          "kills": 2,
+          "view": {
+            "id": "far",
+            "label": "FAR",
+            "depthMult": 1.9,
+            "cameraDepth": 42.75
+          },
+          "luma": {
+            "width": 1280,
+            "height": 800,
+            "frame": {
+              "mean": 67.5,
+              "p05": 39.5,
+              "p50": 64,
+              "p95": 89.9,
+              "p99": 111.9,
+              "above200": 0.0014,
+              "below40": 0.0503
+            },
+            "sky": {
+              "mean": 77.2,
+              "p05": 74.4,
+              "p50": 78.3,
+              "p95": 78.3,
+              "p99": 78.3,
+              "above200": 0,
+              "below40": 0.0075
+            },
+            "mid": {
+              "mean": 63.6,
+              "p05": 31.9,
+              "p50": 56,
+              "p95": 89.9,
+              "p99": 111.9,
+              "above200": 0.0017,
+              "below40": 0.1001
+            },
+            "deck": {
+              "mean": 60.5,
+              "p05": 49.7,
+              "p50": 63.3,
+              "p95": 64,
+              "p99": 81.9,
+              "above200": 0,
+              "below40": 0.0384
+            },
+            "aboveSky": 0.3781,
+            "skyMinusDeck": 16.7
+          }
+        }
+      ],
+      "info": {
+        "calls": 119,
+        "triangles": 50436,
+        "frame": 585,
+        "shadowMapEnabled": false,
+        "toneMapping": 4,
+        "toneMappingExposure": 1,
+        "outputColorSpace": "srgb",
+        "lights": [
+          {
+            "type": "HemisphereLight",
+            "intensity": 1.1,
+            "castShadow": false
+          },
+          {
+            "type": "DirectionalLight",
+            "intensity": 1.6,
+            "castShadow": false
+          }
+        ],
+        "meshes": 94,
+        "casters": 0,
+        "receivers": 0
+      },
+      "errors": []
+    },
+    "noshadow": {
+      "url": "/index.html?testapi=1&shell=0&fixeddt=16&light=noshadow",
+      "frames": [
+        {
+          "mark": 3000,
+          "file": "artifacts/lightrig/after/noshadow-3000ms.png",
+          "gameMs": 3008,
+          "scrollX": 12.93439999999999,
+          "player": {
+            "x": 31.648999999999997,
+            "y": 0.6850047999999958
+          },
+          "hostilesLive": 4,
+          "kills": 0,
+          "view": {
+            "id": "far",
+            "label": "FAR",
+            "depthMult": 1.9,
+            "cameraDepth": 42.75
+          },
+          "luma": {
+            "width": 1280,
+            "height": 800,
+            "frame": {
+              "mean": 78,
+              "p05": 54.4,
+              "p50": 78.3,
+              "p95": 110.6,
+              "p99": 133.8,
+              "above200": 0.0015,
+              "below40": 0.0217
+            },
+            "sky": {
+              "mean": 77.5,
+              "p05": 76.5,
+              "p50": 78.3,
+              "p95": 78.3,
+              "p99": 78.3,
+              "above200": 0,
+              "below40": 0.0036
+            },
+            "mid": {
+              "mean": 78.8,
+              "p05": 44.3,
+              "p50": 78.3,
+              "p95": 111.8,
+              "p99": 136.2,
+              "above200": 0.002,
+              "below40": 0.0184
+            },
+            "deck": {
+              "mean": 77.3,
+              "p05": 29.2,
+              "p50": 80.5,
+              "p95": 81.7,
+              "p99": 96.1,
+              "above200": 0,
+              "below40": 0.0509
+            },
+            "aboveSky": 0.7427,
+            "skyMinusDeck": 0.2
+          }
+        },
+        {
+          "mark": 6000,
+          "file": "artifacts/lightrig/after/noshadow-6000ms.png",
+          "gameMs": 6000,
+          "scrollX": 25.420223999999894,
+          "player": {
+            "x": 23.872160000000044,
+            "y": 4.477159833599998
+          },
+          "hostilesLive": 3,
+          "kills": 2,
+          "view": {
+            "id": "far",
+            "label": "FAR",
+            "depthMult": 1.9,
+            "cameraDepth": 42.75
+          },
+          "luma": {
+            "width": 1280,
+            "height": 800,
+            "frame": {
+              "mean": 78.6,
+              "p05": 54.6,
+              "p50": 78.3,
+              "p95": 110.8,
+              "p99": 135,
+              "above200": 0.0018,
+              "below40": 0.0188
+            },
+            "sky": {
+              "mean": 77.5,
+              "p05": 75.5,
+              "p50": 78.3,
+              "p95": 78.3,
+              "p99": 78.3,
+              "above200": 0,
+              "below40": 0.0028
+            },
+            "mid": {
+              "mean": 79.9,
+              "p05": 43.4,
+              "p50": 78.3,
+              "p95": 117.2,
+              "p99": 146.8,
+              "above200": 0.0027,
+              "below40": 0.0145
+            },
+            "deck": {
+              "mean": 77.9,
+              "p05": 68.8,
+              "p50": 80.7,
+              "p95": 81.7,
+              "p99": 94.8,
+              "above200": 0,
+              "below40": 0.044
+            },
+            "aboveSky": 0.6997,
+            "skyMinusDeck": -0.4
+          }
+        },
+        {
+          "mark": 9000,
+          "file": "artifacts/lightrig/after/noshadow-9000ms.png",
+          "gameMs": 9008,
+          "scrollX": 38.354624000000136,
+          "player": {
+            "x": 21.023968000000014,
+            "y": 3
+          },
+          "hostilesLive": 4,
+          "kills": 2,
+          "view": {
+            "id": "far",
+            "label": "FAR",
+            "depthMult": 1.9,
+            "cameraDepth": 42.75
+          },
+          "luma": {
+            "width": 1280,
+            "height": 800,
+            "frame": {
+              "mean": 78.5,
+              "p05": 54.8,
+              "p50": 78.3,
+              "p95": 111.1,
+              "p99": 135,
+              "above200": 0.0017,
+              "below40": 0.0185
+            },
+            "sky": {
+              "mean": 77.4,
+              "p05": 75.4,
+              "p50": 78.3,
+              "p95": 78.3,
+              "p99": 78.3,
+              "above200": 0,
+              "below40": 0.0021
+            },
+            "mid": {
+              "mean": 79.6,
+              "p05": 42.5,
+              "p50": 77.3,
+              "p95": 119.8,
+              "p99": 147.7,
+              "above200": 0.0026,
+              "below40": 0.0199
+            },
+            "deck": {
+              "mean": 78.3,
+              "p05": 71.3,
+              "p50": 80.7,
+              "p95": 81.7,
+              "p99": 95.4,
+              "above200": 0,
+              "below40": 0.0361
+            },
+            "aboveSky": 0.665,
+            "skyMinusDeck": -0.9
+          }
+        }
+      ],
+      "info": {
+        "calls": 119,
+        "triangles": 50436,
+        "frame": 585,
+        "shadowMapEnabled": false,
+        "toneMapping": 4,
+        "toneMappingExposure": 1.35,
+        "outputColorSpace": "srgb",
+        "lights": [
+          {
+            "type": "HemisphereLight",
+            "intensity": 0.62,
+            "castShadow": false
+          },
+          {
+            "type": "DirectionalLight",
+            "intensity": 2.45,
+            "castShadow": false
+          },
+          {
+            "type": "DirectionalLight",
+            "intensity": 0.75,
+            "castShadow": false
+          }
+        ],
+        "meshes": 94,
+        "casters": 0,
+        "receivers": 0
+      },
+      "errors": []
+    },
+    "bright": {
+      "url": "/index.html?testapi=1&shell=0&fixeddt=16&light=bright",
+      "frames": [
+        {
+          "mark": 3000,
+          "file": "artifacts/lightrig/after/bright-3000ms.png",
+          "gameMs": 3008,
+          "scrollX": 12.93439999999999,
+          "player": {
+            "x": 31.648999999999997,
+            "y": 0.7495167999999962
+          },
+          "hostilesLive": 4,
+          "kills": 0,
+          "view": {
+            "id": "far",
+            "label": "FAR",
+            "depthMult": 1.9,
+            "cameraDepth": 42.75
+          },
+          "luma": {
+            "width": 1280,
+            "height": 800,
+            "frame": {
+              "mean": 76.6,
+              "p05": 22,
+              "p50": 78.3,
+              "p95": 120.9,
+              "p99": 141.5,
+              "above200": 0.0016,
+              "below40": 0.1035
+            },
+            "sky": {
+              "mean": 77.5,
+              "p05": 76.5,
+              "p50": 78.3,
+              "p95": 78.3,
+              "p99": 78.3,
+              "above200": 0,
+              "below40": 0.004
+            },
+            "mid": {
+              "mean": 78.1,
+              "p05": 20.7,
+              "p50": 78.3,
+              "p95": 122,
+              "p99": 146.2,
+              "above200": 0.0023,
+              "below40": 0.1174
+            },
+            "deck": {
+              "mean": 72.3,
+              "p05": 22,
+              "p50": 80.9,
+              "p95": 91.1,
+              "p99": 102.2,
+              "above200": 0,
+              "below40": 0.2254
+            },
+            "aboveSky": 0.7293,
+            "skyMinusDeck": 5.2
+          }
+        },
+        {
+          "mark": 6000,
+          "file": "artifacts/lightrig/after/bright-6000ms.png",
+          "gameMs": 6000,
+          "scrollX": 25.420223999999894,
+          "player": {
+            "x": 23.872160000000044,
+            "y": 4.477159833599998
+          },
+          "hostilesLive": 3,
+          "kills": 2,
+          "view": {
+            "id": "far",
+            "label": "FAR",
+            "depthMult": 1.9,
+            "cameraDepth": 42.75
+          },
+          "luma": {
+            "width": 1280,
+            "height": 800,
+            "frame": {
+              "mean": 77.3,
+              "p05": 22,
+              "p50": 78.3,
+              "p95": 121.7,
+              "p99": 144.6,
+              "above200": 0.0018,
+              "below40": 0.1105
+            },
+            "sky": {
+              "mean": 77.5,
+              "p05": 75.7,
+              "p50": 78.3,
+              "p95": 78.3,
+              "p99": 78.3,
+              "above200": 0,
+              "below40": 0.0034
+            },
+            "mid": {
+              "mean": 79.2,
+              "p05": 19.7,
+              "p50": 78.3,
+              "p95": 122.8,
+              "p99": 154.4,
+              "above200": 0.0027,
+              "below40": 0.1297
+            },
+            "deck": {
+              "mean": 73.3,
+              "p05": 22,
+              "p50": 89.9,
+              "p95": 91.1,
+              "p99": 100.4,
+              "above200": 0,
+              "below40": 0.2356
+            },
+            "aboveSky": 0.6883,
+            "skyMinusDeck": 4.2
+          }
+        },
+        {
+          "mark": 9000,
+          "file": "artifacts/lightrig/after/bright-9000ms.png",
+          "gameMs": 9008,
+          "scrollX": 38.354624000000136,
+          "player": {
+            "x": 21.023968000000014,
+            "y": 3
+          },
+          "hostilesLive": 4,
+          "kills": 2,
+          "view": {
+            "id": "far",
+            "label": "FAR",
+            "depthMult": 1.9,
+            "cameraDepth": 42.75
+          },
+          "luma": {
+            "width": 1280,
+            "height": 800,
+            "frame": {
+              "mean": 77.5,
+              "p05": 22,
+              "p50": 78.3,
+              "p95": 121.7,
+              "p99": 144.6,
+              "above200": 0.0017,
+              "below40": 0.1118
+            },
+            "sky": {
+              "mean": 77.5,
+              "p05": 75.4,
+              "p50": 78.3,
+              "p95": 78.3,
+              "p99": 78.3,
+              "above200": 0,
+              "below40": 0.0023
+            },
+            "mid": {
+              "mean": 78.7,
+              "p05": 18.7,
+              "p50": 78.3,
+              "p95": 128.3,
+              "p99": 155.9,
+              "above200": 0.0027,
+              "below40": 0.1448
+            },
+            "deck": {
+              "mean": 74.5,
+              "p05": 22,
+              "p50": 89.9,
+              "p95": 91.1,
+              "p99": 100.4,
+              "above200": 0,
+              "below40": 0.2189
+            },
+            "aboveSky": 0.677,
+            "skyMinusDeck": 3
+          }
+        }
+      ],
+      "info": {
+        "calls": 119,
+        "triangles": 50436,
+        "frame": 586,
+        "shadowMapEnabled": true,
+        "toneMapping": 4,
+        "toneMappingExposure": 1.5,
+        "outputColorSpace": "srgb",
+        "lights": [
+          {
+            "type": "HemisphereLight",
+            "intensity": 0.62,
+            "castShadow": false
+          },
+          {
+            "type": "DirectionalLight",
+            "intensity": 2.6,
+            "castShadow": true
+          },
+          {
+            "type": "DirectionalLight",
+            "intensity": 0.75,
+            "castShadow": false
+          }
+        ],
+        "meshes": 94,
+        "casters": 76,
+        "receivers": 80
+      },
+      "errors": []
+    }
+  }
+}
