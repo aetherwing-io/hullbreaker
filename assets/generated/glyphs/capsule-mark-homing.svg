@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Capsule shape code — HOMING</title>
+  <desc>Direction C (a shape code instead of a letter): a ring (HOMING) cut in ink out of the hot-magenta face. Four marks that differ in TOPOLOGY — vertical spray, horizontal bar, ring, solid triangle — because at 13 screen px a letterform differs from another letterform only in stroke detail, and stroke detail is the first thing minification eats.</desc>
+
+  <rect x="0" y="0" width="128" height="128" fill="#14181e"/>
+  <rect x="8" y="8" width="112" height="112" fill="#ff4fd8"/>
+
+  <path fill="#14181e" fill-rule="evenodd" d="M64 20a44 44 0 1 0 0.01 0zM64 42a22 22 0 1 1-0.01 0z"/>
+</svg>
