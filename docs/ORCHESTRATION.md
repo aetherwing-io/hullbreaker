@@ -334,3 +334,26 @@ queue, ask what the *operator* would see change.
 **Still serialized, by hard rule:** merges. One runtime change at a time,
 through `tools/orch/merge-task.sh`, from the main checkout. That is the real
 ceiling on lane count, and it is deliberate.
+
+**Gate artifacts go stale the moment the branch moves — check the tree, not the
+verdict.** On 2026-08-02 the integrator's own readiness loop reported `T-044`
+READY because `review.md`/`playtest.md` on `main` both read green. They had been
+copied there *before* an integrator merge brought the branch onto the pathcheck
+module tree, and the branch was actually **red (2497 passed, 2 failed)** — a
+cross-lane collision (`T-039` had hard-coded a platform count that `T-044`'s
+terrain legitimately changed) plus one of the lane's own assertions failing
+against current `main`.
+
+`tools/orch/merge-task.sh` catches this: it requires both verdicts to be NEWER
+than the branch head, which is exactly why that rule exists. Ad-hoc readiness
+polling does not. So:
+
+  * treat a green verdict pair as **necessary, not sufficient**;
+  * before merging, run `node tools/pathcheck.mjs` **in the worktree** and read
+    the count yourself;
+  * after any integrator merge or migration commit on a lane, its prior
+    verdicts are void — re-gate rather than reusing them.
+
+The general shape, which has now bitten three times in one session (a stale
+cached module, a stale pinned worktree, a stale verdict): **an artifact that was
+true when it was written is not evidence about the tree in front of you.**
