@@ -47,6 +47,7 @@ import * as d34 from './t-027-bot-harness-deterministic-dispatch.mjs';
 import * as d35 from './t-025-harness-may-not-report.mjs';
 import * as d36 from './momentum-earned-pace-escalation.mjs';
 import * as d37 from './t-029-runtime-truth-three-debug.mjs';
+import * as d38 from './pathcheck-suite-2.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -87,4 +88,5 @@ export const DOMAINS = [
   d35,    // T-025: the harness may not report what the run did not do ========
   d36,    // MOMENTUM — earned pace escalation (T-022) =================
   d37,    // T-029 — runtime truth: three debug/copy surfaces ==========
+  d38,    // pathcheck suite
 ];

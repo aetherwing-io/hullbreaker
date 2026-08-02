@@ -870,7 +870,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; re-read each cited file:line against its issue
 
-## T-032 | feature | doing | P1
+## T-032 | feature | done | P1
 
 goal: a 9-year-old must never meet a blank screen. Today the operator's own
 session rendered a black page with one console SyntaxError and no on-screen
@@ -894,7 +894,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; a deliberately-broken-import boot capture; a headless abuse script
 
-## T-033 | feature | todo | P1
+## T-033 | feature | parked | P3
 
 goal: he will play across days, and there is NO persistence of any kind today
 (zero localStorage in src/). Closing the tab loses everything. Give the run a
@@ -913,7 +913,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; reload/corrupt-save/fresh-boot headless checks
 
-## T-034 | harness | doing | P1
+## T-034 | harness | parked | P3
 
 goal: prepare a static-host bundle the operator can upload to itch.io himself.
 The game has no build step and pulls three.js from a CDN import map, so it is
@@ -977,7 +977,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; paired-population capture comparison at the FAR default
 
-## T-036 | assets | doing | P2
+## T-036 | assets | done | P2
 
 goal: unblock the held asset batch by answering the question that holds it.
 CLAUDE.md and the checkpoint queue both record that glyph work is frozen until
@@ -1004,6 +1004,85 @@ accept:
       (including whether it would need a runtime-loading decision)
 owner: asset-artist
 verify: node tools/assets/check.mjs; node tools/pathcheck.mjs; view.mjs crops at 0.55 tiles
+
+## T-037 | harness | todo | P1
+
+goal: make concurrent lanes stop colliding. `tools/pathcheck.mjs` is a
+9,230-line monolith that EVERY task appends assertions to, so with N lanes in
+flight it is an N-way conflict by construction. It has already cost real time:
+on 2026-08-02 the T-025/T-027 merge conflicted there, and the integrator's
+first two resolutions silently DROPPED assertions (1733, then 1739, when the
+correct total was 1741) — caught only because the count failed to reconcile.
+`docs/ORCHESTRATION.md` already records pathcheck splicing as a hard-won
+conflict class. The fix is structural: lanes should add a NEW FILE, because new
+files never conflict.
+accept:
+- [ ] pathcheck's assertions live in per-domain modules that a thin
+      `tools/pathcheck.mjs` discovers and runs; a lane adding assertions
+      creates or edits ONE domain file and never touches the runner
+- [ ] EXACT PRESERVATION, proven mechanically: the set of assertion labels and
+      the total count are identical before and after. Capture the full label
+      list from `main` first, diff it against the refactored run, and commit
+      both lists — a refactor of the gate that silently drops an assertion is
+      the worst possible version of this project's signature failure
+- [ ] the negative controls still bite: pick at least three assertions from
+      different domains, break what each guards, and show the refactored gate
+      go red, then restore
+- [ ] exit code, output format, and the "reported, not asserted" notes behave
+      identically; `tools/orch/merge-task.sh` and every gate agent that shells
+      pathcheck keep working unchanged
+- [ ] zero effect on the shipped game: no file under `src/` changes
+- [ ] the migration is a re-runnable SCRIPT, not a hand edit, so it can be
+      re-applied after in-flight lanes land rather than hand-merged
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; label-set diff vs main; three negative controls
+
+SEQUENCING: T-032 (+275 pathcheck lines) and T-035 are in flight and both touch
+pathcheck. Do NOT fight them — build and prove the migration script, and let the
+integrator run it after those merge.
+
+<!-- ===== 2026-08-02 LOOK PUSH. Operator: "quit doing things that don't make
+sense... FIX the game, iterate faster and faster... i don't care about
+reliability or resilience... deployment is so far away in my mind."
+T-033 (save) and T-034 (deploy) parked as a result. T-038..T-041 implement the
+look packet's ship-now items in parallel; specs are in
+docs/proposals/2026-08-look-direction.md §3. Every one of them is judged by the
+operator on his own machine, not by a machine gate. ===== -->
+
+## T-038 | art | doing | P1
+goal: packet item S5 — warm-white seam pips and route-lip lights, the frame's
+ONLY highlights. Measured: 0.0% of playfield pixels exceed luminance 200 in all
+fifteen gameplay captures.
+accept: highlights present at the shipped FAR view; share of pixels above L200
+rises from a measured 0.0%; palette tokens only; draw-call delta reported.
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; FAR captures before/after
+
+## T-039 | art | doing | P1
+goal: packet item S6 — contact shadows as one instanced multiply-blended quad
+pool, so actors sit ON the world. There is no shadow of any kind in the
+renderer today. NOT a shadow map (that needs a decision entry, packet §4.1).
+accept: +1 draw call, not per-object; 60fps with 200+ projectiles held; the
+transform slice's 580-call path not multiplied.
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; frame time under load; FAR captures
+
+## T-040 | art | doing | P1
+goal: packet item S8 — RIG silhouette. He is 230 lit pixels of head sphere plus
+three boxes, sharing a value family with his own bullets. Render-only: hitbox
+and movement are frozen.
+accept: reads at 3.75% screen height (true on-screen size, not zoomed); three
+value zones; sim unchanged.
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; FAR capture + 5x crop
+
+## T-041 | art | doing | P1
+goal: packet item S10 — directional impact and travel language inside the
+existing instanced pools, so hits read as hits. Zero new draw calls.
+accept: pure/juice.js stays deterministic (seeded rng only); 60fps at 200+
+projectiles measured, not assumed; no frozen constant moves.
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; frame time at 256 projectiles before/after
 
 <!-- ========== 2026-08-02 OPERATOR GOAL CHANGE (supersedes parts of the
 Delivery target that T-028 just rewrote; that rewrite's evidence-honesty fixes

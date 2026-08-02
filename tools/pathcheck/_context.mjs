@@ -18,6 +18,9 @@
 //
 // Run from the repo root:  node tools/pathcheck.mjs
 //
+// T-032: the durability policy — fault-streak decisions and the rule the
+// player-facing failure text has to pass.
+//
 // T-009: the lattice pass is asserted through its own exports (namespace
 // import so the appended section stays one self-contained block).
 //

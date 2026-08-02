@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Capsule shape code — FLAME</title>
+  <desc>Direction C (a shape code instead of a letter): a solid wedge (FLAME) cut in ink out of the hot-magenta face. Four marks that differ in TOPOLOGY — vertical spray, horizontal bar, ring, solid triangle — because at 13 screen px a letterform differs from another letterform only in stroke detail, and stroke detail is the first thing minification eats.</desc>
+
+  <rect x="0" y="0" width="128" height="128" fill="#14181e"/>
+  <rect x="8" y="8" width="112" height="112" fill="#ff4fd8"/>
+
+  <polygon fill="#14181e" points="64,18 110,110 18,110"/>
+</svg>

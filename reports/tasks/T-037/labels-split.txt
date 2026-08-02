@@ -1010,6 +1010,7 @@ PASS	legibility: the module is Node-safe, which is why this harness can assert i
 PASS	legibility: no readability gain is ever applied to a damage volume — the polyp beam, the mortar mark and its blast slab keep drawing exactly what the sim marched
 PASS	legibility: the capsule box is still authored at the SIM size and the readability boost is a render-side scale on top of it
 PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/assist.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/failsafe.js
 PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/flow.js
 PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/generator.js
 PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/hook.js
@@ -1739,3 +1740,73 @@ PASS	T-029/I-030: 12s at the right clamp publishes a live drive of 0.700 — the
 PASS	T-029/I-030: …and a tier inside the meter's own banding
 PASS	T-029/I-030: peakDrive is the RUN high-water mark, not a copy of drive — it holds while the live drive collapses on the plane (0.000 live vs 0.700 peak), which is what makes an escalation readable after the fact
 PASS	T-029/I-030: today the published drive and the packet's pursuitSpeed inversion still agree exactly — the new field is a superset of what a T-022 reader does by hand, so the packet's numbers stay comparable across T-023
+PASS	T-032: a fresh session starts with no faults, no recoveries and no halt
+PASS	T-032: ONE bad frame is a blip — it never costs a run
+PASS	T-032: a fault every 5 s for two minutes never restarts and never halts — faults more than 2000 ms apart are separate incidents
+PASS	T-032: 20 faults inside 100 ms do not restart the run — the trigger is 500 ms of continuous failure
+PASS	T-032: a permanently throwing frame spends exactly 2 restarts and then stops legibly (got 2 restarts, 1 stops)
+PASS	T-032: the first self-repair waits for 500 ms AND 5 faults, got 500 ms / 31 faults
+PASS	T-032: …and the panel is up within 2 s of the first broken frame, got 1517 ms
+PASS	T-032: once the game has stopped it stays stopped — no fault reopens it
+PASS	T-032: a non-finite timestamp cannot trip the policy
+PASS	T-032: index.html carries the failure text as a table pathcheck can read
+PASS	T-032: …and that table is literal data, not code — it parses
+PASS	T-032: the "boot" failure has a title, an explanation and a way back
+PASS	T-032: the "crash" failure has a title, an explanation and a way back
+PASS	T-032: the "frozen" failure has a title, an explanation and a way back
+PASS	T-032: the "slow" failure has a title, an explanation and a way back
+PASS	T-032: player-facing line reads plainly — "The game could not start."
+PASS	T-032: player-facing line reads plainly — "Something inside it broke before it could open. It is not your fault."
+PASS	T-032: player-facing line reads plainly — "Try again"
+PASS	T-032: player-facing line reads plainly — "The game stopped."
+PASS	T-032: player-facing line reads plainly — "Something inside it broke while you were playing. It is not your fault."
+PASS	T-032: player-facing line reads plainly — "Play again"
+PASS	T-032: player-facing line reads plainly — "The game got stuck."
+PASS	T-032: player-facing line reads plainly — "The picture stopped moving, so the game shut itself down. It is not your fault."
+PASS	T-032: player-facing line reads plainly — "Play again"
+PASS	T-032: player-facing line reads plainly — "Still loading."
+PASS	T-032: player-facing line reads plainly — "The game is taking a long time to open. Wait a moment, or start it again."
+PASS	T-032: player-facing line reads plainly — "Try again"
+PASS	T-032: player-facing line reads plainly — "Press R, or click the button, to play again."
+PASS	T-032: player-facing line reads plainly — "If this keeps happening, show this screen to a grown-up."
+PASS	T-032: player-facing line reads plainly — "What broke (for grown-ups)"
+PASS	T-032: the panel names BOTH ways back in (a key and a button), got "Press R, or click the button, to play again."
+PASS	T-032: every failure tells the player it is not their fault (or what to do instead) — the panel is a 9-year-old's only signal, and blame is not a signal
+PASS	T-032: the plain-language rule rejects engineer-speak
+PASS	T-032: …and accepts the words a child can read
+PASS	T-032: the readability bounds stay child-sized
+PASS	T-032: the failure handler is an INLINE classic script — the incident it exists for is a module graph that never ran
+PASS	T-032: …and it imports nothing, so nothing it depends on can fail with the game
+PASS	T-032: the inline handler itself parses (nothing else can report it) 
+PASS	T-032: …and it is installed BEFORE the game module, so a failure to load that module is already covered
+PASS	T-032: the inline watchdog numbers are the policy's (10000/4000/1000 vs 10000/4000/1000) — a copy that is gated is not a second source of truth
+PASS	T-032: the keys that put a player back in the game match the policy, got KeyR,Enter,Space
+PASS	T-032: it listens in the CAPTURE phase for errors (a module that never loaded fires at its element, not at the page) and for rejected work
+PASS	T-032: a boot that never finishes is told to the player, not left as a void
+PASS	T-032: the freeze watchdog knows a backgrounded or suspended page from a stuck one — a hidden tab paints nothing BY DESIGN and must never panel
+PASS	T-032: the panel markup carries #fail, which the bootstrap writes into
+PASS	T-032: the panel markup carries #failTitle, which the bootstrap writes into
+PASS	T-032: the panel markup carries #failBody, which the bootstrap writes into
+PASS	T-032: the panel markup carries #failBtn, which the bootstrap writes into
+PASS	T-032: the panel markup carries #failHint, which the bootstrap writes into
+PASS	T-032: the panel markup carries #failTell, which the bootstrap writes into
+PASS	T-032: the panel markup carries #failMore, which the bootstrap writes into
+PASS	T-032: the panel markup carries #failDetail, which the bootstrap writes into
+PASS	T-032: the failure panel sits above the shell and the state overlay (100 > 30 > 20)
+PASS	T-032: every .fail-plain line lives inside the panel (6 of 6)
+PASS	T-032: the frame loop is where the game either recovers or fails
+PASS	T-032: the halt check is the FIRST thing the loop does — once the panel is up the simulation stops instead of grinding out frames nobody can see
+PASS	T-032: the next frame is requested before any work, so a throw cannot end the loop by accident
+PASS	T-032: the loop beats every frame — that counter is what the freeze watchdog reads
+PASS	T-032: a simulation fault is caught and handed to the policy
+PASS	T-032: the draw is caught SEPARATELY, so a broken step still paints the frame it broke on
+PASS	T-032: the frame loop clamps dt at the policy's 50 ms (got 50) — Chrome suspends rAF in a hidden tab, and the frame that lands on return carries a minute of wall clock
+PASS	T-032: …and one clamped frame still cannot cross a whole tile, so returning from a backgrounded tab cannot teleport RIG through a wall
+PASS	T-032: the one repair the game can make on its own is a full resetGame
+PASS	T-032: a lost drawing surface — nothing thrown, loop still beating — fails legibly instead of leaving a still canvas
+PASS	T-032: window.HB publishes the failsafe state a headless abuse run reads
+PASS	T-032: boot is signalled by the LAST statement in main.js — until it runs, any failure is "the game could not start"
+PASS	T-032: ?selftest=1 paints the real panel and gates the words that RENDERED
+PASS	T-032: the view layer takes its decisions from the pure policy
+PASS	T-032: uncaught errors AND broken frames run through the same fault streak — one policy, so a storm of either is treated the same way
+PASS	T-032: the halt flag and the browser self-check are exported for main.js

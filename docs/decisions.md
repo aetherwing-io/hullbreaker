@@ -608,3 +608,33 @@ price a decision (entry 12: the price is pressure).
   six-face run before they are treated as settled.
 
 **Source:** operator playtest, 2026-08-01, immediately after entry 12.
+
+## 14 — 2026-08-02 — Value-ladder dose: half, not full
+
+**Verdict.** Shown the T-035 value ladder A/B on a pinned build — A the shipped
+grey-box, B `?shade=1` (full), C `?shade=0.5` (half) — the operator ruled:
+
+> "C on the ladder feels better, shade=0.5 the other is too dark"
+
+**What this settles.** The ladder itself is ACCEPTED: baking occlusion, top-face
+rake and seeded wear into the existing instance colors is the right fix for the
+measured value collapse (0.0% of playfield pixels above luminance 200 in all
+fifteen audit captures; 99% inside a 45-70 band out of 255;
+`docs/proposals/2026-08-look-direction.md`). What is rejected is the FULL dose,
+not the technique.
+
+**What ships.** The approved half dose becomes the default look, not a query
+flag the operator has to remember. An escape hatch back to the pre-ladder look
+stays available for comparison, and `?palette=classic` remains byte-faithful to
+the pre-T-035 grey-box because the Palette v1 A/B is still unjudged.
+
+**Standing consequence for the look lanes.** Every downstream item in the packet
+— backdrop tiers, seam pips, contact shadows, RIG silhouette, impact language —
+calibrates against the value range the world actually ships with. That range is
+now the HALF dose. Anything tuned against `?shade=1` is tuned against a look the
+operator rejected and must be re-judged at the shipped dose.
+
+**Not settled here:** whether the ladder is *enough*, and the seven decisions
+still open in the packet's §4 (light rig and shadows, gradient sky,
+post-processing, runtime asset loading, tone mapping, teal vs indigo, amber
+work-light). Those remain the operator's.
