@@ -518,6 +518,205 @@ escalation headroom for this rather than hard-coding a ceiling.
 owner: unassigned
 verify: n/a until dispatched
 
+<!-- ============ 2026-08-02 Inbox triage (integrator) ============
+T-024..T-031 batch the open Inbox. Mapping, so no issue is silently dropped:
+  T-024 new (this session's blank-page incident)  T-025 I-006, I-013, I-026
+  T-026 I-014, I-024                              T-027 I-011, I-018, I-023, I-028
+  T-028 I-007, I-008, I-020, I-029                T-029 I-005, I-009, I-030
+  T-030 I-003, I-004, I-010 (+I-032 iff T-021 lives)
+  T-031 I-001, I-002, I-015, I-016, I-017, I-021, I-027
+Untriaged by design: I-012, I-022, I-025 (feel//fairness — operator queue),
+I-019 + I-031 (closed / escalated with T-021).
+Theme of the P1s: four separate gates report green while the thing they guard
+is violated. That is the I-019/I-031 failure mode — an assertion whose subject
+is the author's intent rather than what actually happened — so it leads.
+============================================================== -->
+
+## T-024 | harness | todo | P1
+
+goal: the dev server must never serve a stale module. On 2026-08-02 the game
+rendered a blank page for the operator: Chrome had heuristically cached a
+pre-T-022 `src/sim/pace.js` (1275 bytes) and ran it against post-T-022
+`src/sim/level.js`, which imports `momentumScrollSpeed` from it — one failed
+ESM import kills the whole graph. Nothing was wrong with the tree (pathcheck
+1674/0, selftest 29/29 after a hard reload). `python3 -m http.server` sends no
+`Cache-Control` at all, so this recurs for any operator whose browser warmed
+its cache during a lane — i.e. every playtest session after an afternoon of
+iteration.
+accept:
+- [ ] a committed no-cache dev server (`no-store` on every response, and
+      conditional requests ignored so a warm cache cannot win a 304), serving
+      the repo root on 8741, dual-stack so `localhost` and `127.0.0.1` both work
+- [ ] `CLAUDE.md` § Commands, `README.md` and `tools/playtest/README.md` name
+      the new command wherever they currently name `python3 -m http.server 8741`
+- [ ] a `docs/ORCHESTRATION.md` § "Merge playbook" entry: the symptom is a
+      blank `#232830` page with ONE console SyntaxError naming a missing
+      export, and the first diagnostic is comparing `fetch(url)` against
+      `fetch(url, {cache:'reload'})` — not editing the module
+- [ ] zero effect on the shipped game: no file under `src/` changes
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; serve, then confirm `curl -sI` carries no-store and `index.html?selftest=1` reports PASS
+
+## T-025 | harness | todo | P1
+
+goal: three playtest report fields assert things the run did not do (I-006 S1,
+I-013, I-026). A gate that reads them is not evidence. (a) `metrics.deaths` and
+`outcome.attempts` both derive from `sliceStats.attempts`, which `src/main.js`
+increments only inside `if (ACTIVE_FIXTURE)` — every default six-face report
+says `deaths: 0`, verified against a trace that visibly spent two lives; the
+`tools/playtest/README.md` note added by T-016 points readers at that broken
+counter and is wrong on both halves. (b) `lib/fixture.mjs` re-exports the
+lattice `TRAVERSAL_FIXTURE` unconditionally, so a `?ribrun=1` run that climbs
+one straight ribline is credited with four lattice routes and a dare-pocket
+entry it never had. (c) `?enemies=0` traces still carry 2-6 live hostiles.
+accept:
+- [ ] a default-run death count that matches a hand-verified trace, or an
+      explicit "no death counter exists on default runs" that the README and
+      every consumer agree on — do not leave a third wrong note
+- [ ] fixture-derived columns are computed against the *served* fixture, or
+      are omitted with a stated reason when the build replaced it; a rib run
+      credits zero lattice routes and zero dare-pocket entries
+- [ ] `?enemies=0` runs report an empty `hostiles[]`, or the flag's real
+      meaning is documented at every place a reader would trust it
+- [ ] each fix names the falsifying trace it was checked against, by path
+- [ ] zero effect on the shipped game beyond the counter's own plumbing
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; re-run gate-T-016-scored-baseline and a ?ribrun=1 script against a pinned tree and diff the corrected fields
+
+## T-026 | harness | todo | P1
+
+goal: two static gates pass while the invariant they exist to protect is
+violated (I-014, I-024). `checkGameIndependence` in `tools/assets/check.mjs`
+only sees a static import when the specifier sits on the same line as the
+`import` keyword — push it to the next line and `check.mjs` exits **0** and
+files the import under "runtime references", so "the game must boot with every
+file under `assets/` missing" would report green while broken. Separately,
+pathcheck's fair-gap honesty guard asserts `runSingle > floorSingle` strictly,
+which catches a probe started at `runSpeed` but not one that keeps the
+scroll-speed start and loses the screen clamp — measured, that case balloons
+the gap-29-31 floor window 0.74 → 4.12 tiles and still passes the guard.
+accept:
+- [ ] a multi-line `import {\n x,\n} from '../assets/x.png'` in a fixture tree
+      makes `check.mjs` exit non-zero; the README's noted counter-example for a
+      naive newline-crossing regex is handled, not re-introduced
+- [ ] the fair-gap guard fails when the screen clamp is removed while the
+      scroll-speed start is kept (build that negative control and show it red,
+      then green with the pin restored)
+- [ ] both fixes come with the negative control committed as a test, so the
+      next editor cannot silently un-bind them
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; node tools/assets/check.mjs --root <multiline-import fixture> (expect non-zero)
+
+## T-027 | harness | todo | P2
+
+goal: four harness defects that waste cycles without lying outright (I-011,
+I-018, I-023, I-028). (a) Any deterministic script whose first event is at t>0
+against `?shell=title` dispatches **zero** events, samples `state: "MENU"`
+forever and still exits 0 — a silent no-op run. (b) A policy run ending at
+`--max-runtime-ms` with a tap in flight adds a `key up failed for Space` page
+error, poisoning the pageErrors gate. (c) `compileCondition('x==3+1')` compiles
+and evaluates false with no warning, so a typo'd clause silently never fires.
+(d) In the 6-8 tile margin window the crush-plane `hold right` and the
+personal-space `hold left` both fire, cancel, and leave RIG standing still in
+the one window whose rule exists to make it run (3 of 777 ticks measured).
+accept:
+- [ ] a t>0 script against `?shell=title` either dispatches its events or exits
+      non-zero with a named reason; never a green zero-event run
+- [ ] the shutdown race no longer emits a page error on a normal timeout
+- [ ] a condition that cannot mean what it says warns or fails to compile
+- [ ] the personal-space guard is raised to `edgeMargin>8` (or equivalent) and
+      the cancellation rate is re-measured on the same trace, before and after
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; the four repro commands quoted in I-011/I-018/I-023/I-028
+
+## T-028 | docs | todo | P1
+
+goal: the Delivery target at the top of this file predates decisions.md entries
+10-13 and now understates what the operator has asked for — rewrite it against
+the current verdicts. Fold in the evidence-honesty issues while in the same
+files: quoted measurements that their own committed artifacts do not support
+(I-007, I-008, I-020) and the T-022 packet scripts' "MEASURED, NOT
+ASPIRATIONAL" bands that independent repeats landed outside of (I-029).
+accept:
+- [ ] every Delivery box names a currency and a falsifying test (entry 10); any
+      box that states a feeling is moved to the operator checkpoint queue
+- [ ] boot-to-victory is recorded as operator-verified-only, with the 49-run
+      bot evidence cited rather than implied
+- [ ] each corrected number in the proposals cites the artifact it was read
+      from, by path; where the artifact is missing, say so instead of restating
+- [ ] the T-022 script descriptions point at the structural gap they actually
+      reproduce, not at sample percentages from two runs
+- [ ] entry 13's rider is recorded where feel verdicts are stored: any older
+      verdict that turned on difficulty predates the "too easy" ruling and is
+      re-asked, not inherited
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs (docs-only lane, must stay green); every cited artifact path resolves
+
+## T-029 | feature | todo | P2
+
+goal: three small runtime truth fixes whose owning files are finally out from
+under the lanes that blocked them (I-005, I-009, I-030). `audioSnapshot()` is
+exported from `src/ui/audio.js`, documents itself as a console debug surface,
+and is imported by nothing — with no build step that makes it unreachable, so
+T-012's gate had to infer layer counts by monkey-patching `AudioParam`.
+`src/ui/hud.js:114` and `src/ui/overlay.js:77` hardcode the v1 demo's two-turn
+copy, so the single-event G2 fixture advertises a transformation that does not
+exist. And the earned momentum drive rides no telemetry channel — a reader
+recovers it only by inverting `pursuitSpeed`, which stops being valid the
+moment T-023's boosts push the same chokepoint.
+accept:
+- [ ] `audioSnapshot()` reachable from the console on the shipped URL
+- [ ] turn counters read `ACTIVE_FIXTURE.events.length`; the G2 fixture reads
+      1, and a fresh capture of the BREACH CLEAR overlay shows it
+- [ ] `drive`/`peakDrive`/tier ride the frozen `testapi` channel so escalation
+      stays distinguishable from a boost after T-023
+- [ ] pathcheck assertions for any new pure logic; no movement constant moves
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; index.html?selftest=1; a ?g2=1 capture of the overlay; a ?momentum=1 trace carrying drive
+
+## T-030 | art | todo | P2
+
+goal: finish the palette pass's last file and the FAR readability notes it
+left behind (I-004, I-003, I-010). `src/render/hostiles.js` still reads
+`CONFIG.palette.wasp/carrier/hound/houndTell/houndCharge` — the muted grey-box
+greens — instead of the acid CONCEPT tokens `palette.js` already authors and
+pathcheck already asserts, so T-010's "one palette module, not scattered hex
+literals" acceptance is one file short and the enemies never reach board 01/10
+intensity. The lane fence that deferred it (T-004 in flight) is gone.
+accept:
+- [ ] hostiles read CONCEPT tokens; no raw hex literal survives in a tokenized
+      render file (pathcheck already rejects these — keep it green)
+- [ ] FAR side-by-sides before/after, judged against boards 01/10 and the
+      visual invariants, not taste; threat still separates from teal/rust
+- [ ] the polyp tell's first ~300ms carries a signal at FAR, or the finding is
+      restated with evidence and handed to the operator as a feel call
+- [ ] committed artifacts that no longer match a fresh capture are re-captured
+      or removed; a stale artifact is worse than none
+- [ ] I-032 (the fork's RISK is unmarked at FAR while its REWARD is loud) is
+      in scope ONLY if T-021 survives the operator's decision — otherwise note
+      it as moot and leave the geometry alone
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; index.html?selftest=1; FAR captures at the shipped view
+
+## T-031 | docs | todo | P3
+
+goal: the docs-truth backlog — seven places where a comment, README or design
+line describes behavior the code does not have (I-001 stale sampler comment
+about testapi not exposing hostiles; I-002 `check.mjs` printing static imports
+under a "runtime, not imports" header on failing trees; I-015 palette-capture
+overwriting committed artifacts before it throws; I-016 juice wording; I-017
+the mortar zone-deny claim the trace contradicts; I-021 the legibility README
+paragraph vs `SHARE = { glyph: 1, cue: 1, pose: 0.6 }`; I-027 spaced-run
+numbers). None affect play; together they are how a future agent gets misled.
+accept:
+- [ ] each of the seven is either corrected against the code or closed with a
+      one-line note saying why it was already right
+- [ ] no fix invents a measurement — where a number is needed, it is read from
+      a committed artifact and cited by path, or the claim is dropped
+- [ ] palette-capture writes artifacts only after verification passes
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; re-read each cited file:line against its issue
+
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
 - **G1 limb-turn:** default vs `?g1=1` (and `?g1=1&view=near`) on the six-face
