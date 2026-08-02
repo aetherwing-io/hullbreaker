@@ -1062,7 +1062,7 @@ verify: node tools/pathcheck.mjs; browser plan probe showing a non-zero delta
 after the operator's "FIX the game" and "what is in the way" messages. Several
 were never given SPRINT entries at dispatch time; recorded here for truth. ===== -->
 
-## T-042 | audio | doing | P1
+## T-042 | audio | done | P1
 goal: make the game SOUND like an action game — weight on impacts, a distinct
 voice per weapon, an audible pressure curve, paired to T-041's directional
 impact language. All synthesized at runtime; no audio files.
