@@ -1105,7 +1105,7 @@ look packet's ship-now items in parallel; specs are in
 docs/proposals/2026-08-look-direction.md §3. Every one of them is judged by the
 operator on his own machine, not by a machine gate. ===== -->
 
-## T-038 | art | doing | P1
+## T-038 | art | done | P1
 goal: packet item S5 — warm-white seam pips and route-lip lights, the frame's
 ONLY highlights. Measured: 0.0% of playfield pixels exceed luminance 200 in all
 fifteen gameplay captures.
