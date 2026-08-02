@@ -1,0 +1,42 @@
+$ cd <pinned scratch copy>/tools/playtest && node sprite-fallback-check.mjs --out .../fallback-check-qa
+
+=== 0. both runs are actually comparable ===
+  PASS  art: the scripted stretch ran start to finish without a death — state=PLAYING attempts=1
+  PASS  no-art: the scripted stretch ran start to finish without a death — state=PLAYING attempts=1
+
+=== 1. the sim must not branch on whether the art loaded ===
+  PASS  both runs produced the scripted 48 samples of 250ms game time — 48 / 48 recorded
+  PASS  the two sim traces are identical, sample for sample — 48 samples compared
+
+=== 2. the art really did fail in the no-art run, and drew in the other ===
+  PASS  every kind loaded its sprite in the control run — hound:ready carrier:ready wasp:ready polyp:ready mortar:ready
+  PASS  every kind reports a FAILED sprite when the art is unreachable — hound:failed carrier:failed wasp:failed polyp:failed mortar:failed
+  PASS  the failure is visible in the console, naming the file — HULLBREAKER art: hound sprite hound-brace-b.png did not load (error) — drawing the primitive body instead.
+
+=== 3. nothing is blank: every body still draws, both ways ===
+  PASS  art: the carrier is inside the frame to be judged — (271,375) in 1280x800
+  PASS  art: a carrier is drawn at (271,375) — 71% of its box differs from the background
+  PASS  art: the polyp is inside the frame to be judged — (352,432) in 1280x800
+  PASS  art: a polyp is drawn at (352,432) — 90% of its box differs from the background
+  PASS  art: the mortar is inside the frame to be judged — (406,432) in 1280x800
+  PASS  art: a mortar is drawn at (406,432) — 96% of its box differs from the background
+  PASS  art: the wasp is inside the frame to be judged — (417,395) in 1280x800
+  PASS  art: a wasp is drawn at (417,395) — 53% of its box differs from the background
+  PASS  art: the hound is inside the frame to be judged — (441,460) in 1280x800
+  PASS  art: a hound is drawn at (441,460) — 83% of its box differs from the background
+  PASS  no-art: the carrier is inside the frame to be judged — (272,375) in 1280x800
+  PASS  no-art: a carrier is drawn at (272,375) — 78% of its box differs from the background
+  PASS  no-art: the polyp is inside the frame to be judged — (353,432) in 1280x800
+  PASS  no-art: a polyp is drawn at (353,432) — 93% of its box differs from the background
+  PASS  no-art: the mortar is inside the frame to be judged — (407,432) in 1280x800
+  PASS  no-art: a mortar is drawn at (407,432) — 84% of its box differs from the background
+  PASS  no-art: the wasp is inside the frame to be judged — (418,395) in 1280x800
+  PASS  no-art: a wasp is drawn at (418,395) — 79% of its box differs from the background
+  PASS  no-art: the hound is inside the frame to be judged — (442,460) in 1280x800
+  PASS  no-art: a hound is drawn at (442,460) — 73% of its box differs from the background
+
+=== 4. it did not wedge ===
+  PASS  art: no failure panel, no fault, the frame loop still beating — showing=null halted=false faults=0 uncaught=0 beats=720
+  PASS  no-art: no failure panel, no fault, the frame loop still beating — showing=null halted=false faults=0 uncaught=0 beats=720
+
+[sprite-fallback] all checks passed

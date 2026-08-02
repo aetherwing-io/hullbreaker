@@ -1,0 +1,76 @@
+$ cd tools/playtest && node qa2-cross-owner-break-probe.mjs http://127.0.0.1:8793
+(pinned scratch copy of task/T-049 @ d41d002, served on 8793; team lead's
+re-target after the merge that put RIG's rig-marine.png sprite (player.js)
+and this lane's 5 hostile sprites (sprites.js, imported via hostiles.js)
+through the ONE shared src/render/preload.js gate)
+
+=== A-baseline (nothing broken) ===
+preload assets: 6/6 ready — hound-brace-b.png(24ms) carrier-hauler-b.png(25ms)
+  wasp-drone-b.png(25ms) polyp-iris-b.png(24ms) mortar-tripod-b.png(25ms)
+  rig-marine.png(25ms)
+preload cost/budget: 37ms of 2500ms
+HB.state: PLAYING  hostiles: [wasp,wasp,hound,hound,hound,wasp]
+failsafe: showing=null halted=false faults=0 uncaught=0 beats=703
+pageErrors: []
+
+=== B-hostiles-aborted (all 5 hostile sprite requests aborted at the
+    network; does RIG's sprite still arrive?) ===
+preload assets: hound/carrier/wasp/polyp/mortar all "failed" (14ms, error);
+  rig-marine.png "ready" (19ms)                                    <-- ANSWER: YES
+preload cost/budget: 28ms of 2500ms
+sprites snapshot: all 5 kinds state:"failed"
+HB.state: PLAYING  hostiles: [wasp,wasp,hound,hound,hound,wasp]  (still spawn, still drawn as primitives)
+failsafe: showing=null halted=false faults=0 uncaught=0 beats=707
+pageErrors: []
+console (every failure named, none silent):
+  "HULLBREAKER art: hound sprite hound-brace-b.png did not load (error) — drawing the primitive body instead."
+  "HULLBREAKER art: carrier sprite carrier-hauler-b.png did not load (error) — drawing the primitive body instead."
+  "HULLBREAKER art: wasp sprite wasp-drone-b.png did not load (error) — drawing the primitive body instead."
+  "HULLBREAKER art: polyp sprite polyp-iris-b.png did not load (error) — drawing the primitive body instead."
+  "HULLBREAKER art: mortar sprite mortar-tripod-b.png did not load (error) — drawing the primitive body instead."
+Screenshot: qa2-cross-owner-B-hostiles-aborted-full.png (RIG draws with its
+  sprite, hostiles draw as green primitive slabs) and the 6x RIG crop
+  qa2-cross-owner-B-hostiles-aborted-rig-6x.png (RIG's detailed marine
+  sprite, helmet+pack+articulated limbs visible).
+
+=== C-rig-aborted (RIG's sprite aborted at the network; do all 5 hostile
+    sprites still arrive?) ===
+preload assets: hound/carrier/wasp/polyp/mortar all "ready" (22ms);
+  rig-marine.png "failed" (16ms, error)                            <-- ANSWER: YES
+preload cost/budget: 32ms of 2500ms
+sprites snapshot: all 5 kinds state:"ready"
+HB.state: PLAYING  hostiles: [wasp,wasp,hound,hound,hound,wasp]  (drawn as sprites)
+failsafe: showing=null halted=false faults=0 uncaught=0 beats=702
+pageErrors: []
+console (named, not silent):
+  "RIG sprite did not load (error); showing the procedural fallback instead."
+Screenshot: qa2-cross-owner-C-rig-aborted-full.png (hostiles now draw as
+  their dark sprites) and the 6x RIG crop
+  qa2-cross-owner-C-rig-aborted-rig-6x.png (RIG's plain flat-shaded
+  procedural fallback body — visibly distinct from B's textured sprite,
+  confirming the swap actually happened, not just the state string).
+
+=== D-mixed-hound-404-rig-slow (hound sprite aborted AND RIG's sprite
+    delayed 4000ms, in the SAME run — the specific silent-starvation shape
+    asked for) ===
+preload assets: hound-brace-b.png "failed" (15ms, error); carrier/wasp/
+  polyp/mortar "ready" (20ms) DESPITE the gate staying open 2513ms for
+  RIG's slow load; rig-marine.png "timeout" (2513ms, "still loading after
+  2513ms of the 2500ms boot budget")
+preload cost/budget: 2513ms of 2500ms  (gate honored its ONE shared budget,
+  did not wait out the full 4000ms artificial delay)
+sprites snapshot: hound "failed", other 4 kinds "ready"
+HB.state: PLAYING  hostiles: [wasp,wasp,hound,hound,hound,wasp]
+failsafe: showing=null halted=false faults=0 uncaught=0 beats=891
+pageErrors: []
+console (every non-ready asset named, none silent):
+  "HULLBREAKER art: hound sprite hound-brace-b.png did not load (error) — drawing the primitive body instead."
+  "HULLBREAKER art: http://127.0.0.1:8793/assets/generated/sprites/rig-marine.png — still loading after 2513ms of the 2500ms boot budget; the game is starting without it."
+  "RIG sprite did not load (still loading after 2513ms of the 2500ms boot budget); showing the procedural fallback instead."
+
+VERDICT ON THE SPECIFIC RISK RAISED: no silent starvation in any direction.
+Breaking one owner's asset never prevented the other owner's asset from
+registering, loading, or timing out on its own merits, and every non-ready
+outcome (failed or timeout) printed a console line naming the exact file
+and the real elapsed time. This holds with the assets failing at different
+speeds in the same run (condition D) as well as one at a time (B, C).

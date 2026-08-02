@@ -1,0 +1,663 @@
+{
+  "measuredAt": "2026-08-02T11:56:07.029Z",
+  "tool": "tools/playtest/backdrop-stress.mjs",
+  "viewport": "1280x800, headless Chrome (channel: chrome), one browser per reading",
+  "load": "60 projectiles/frame via the game's own fireWeapon(clone=true), right held on the default six-face run",
+  "repeats": 3,
+  "runs": {
+    "flat": [
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 120,
+          "avgMs": 8.33,
+          "worstMs": 10.3,
+          "over20ms": 0
+        },
+        "liveProjectiles": 256,
+        "drawCalls": 150,
+        "triangles": 105430,
+        "backdrop": {
+          "on": false,
+          "built": 0,
+          "plates": [
+            {
+              "face": 1,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 1,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 2,
+              "plate": "spineCoil",
+              "tier": "mid",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 2,
+              "plate": "colonyCluster",
+              "tier": "far",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 3,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 3,
+              "plate": "gillCavity",
+              "tier": "mid",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 4,
+              "plate": "spineCoil",
+              "tier": "mid",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 4,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 5,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 5,
+              "plate": "colonyCluster",
+              "tier": "far",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 6,
+              "plate": "gillCavity",
+              "tier": "mid",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 6,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "off",
+              "error": null
+            }
+          ]
+        },
+        "state": "PLAYING",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 120.1,
+          "avgMs": 8.33,
+          "worstMs": 10.3,
+          "over20ms": 0
+        },
+        "liveProjectiles": 256,
+        "drawCalls": 150,
+        "triangles": 105430,
+        "backdrop": {
+          "on": false,
+          "built": 0,
+          "plates": [
+            {
+              "face": 1,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 1,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 2,
+              "plate": "spineCoil",
+              "tier": "mid",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 2,
+              "plate": "colonyCluster",
+              "tier": "far",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 3,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 3,
+              "plate": "gillCavity",
+              "tier": "mid",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 4,
+              "plate": "spineCoil",
+              "tier": "mid",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 4,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 5,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 5,
+              "plate": "colonyCluster",
+              "tier": "far",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 6,
+              "plate": "gillCavity",
+              "tier": "mid",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 6,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "off",
+              "error": null
+            }
+          ]
+        },
+        "state": "PLAYING",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 120.9,
+          "avgMs": 8.27,
+          "worstMs": 10.3,
+          "over20ms": 0
+        },
+        "liveProjectiles": 256,
+        "drawCalls": 149,
+        "triangles": 105418,
+        "backdrop": {
+          "on": false,
+          "built": 0,
+          "plates": [
+            {
+              "face": 1,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 1,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 2,
+              "plate": "spineCoil",
+              "tier": "mid",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 2,
+              "plate": "colonyCluster",
+              "tier": "far",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 3,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 3,
+              "plate": "gillCavity",
+              "tier": "mid",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 4,
+              "plate": "spineCoil",
+              "tier": "mid",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 4,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 5,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 5,
+              "plate": "colonyCluster",
+              "tier": "far",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 6,
+              "plate": "gillCavity",
+              "tier": "mid",
+              "state": "off",
+              "error": null
+            },
+            {
+              "face": 6,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "off",
+              "error": null
+            }
+          ]
+        },
+        "state": "PLAYING",
+        "errors": []
+      }
+    ],
+    "backdrop": [
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 120.3,
+          "avgMs": 8.31,
+          "worstMs": 10.7,
+          "over20ms": 0
+        },
+        "liveProjectiles": 256,
+        "drawCalls": 174,
+        "triangles": 105478,
+        "backdrop": {
+          "on": true,
+          "built": 12,
+          "plates": [
+            {
+              "face": 1,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 1,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 2,
+              "plate": "spineCoil",
+              "tier": "mid",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 2,
+              "plate": "colonyCluster",
+              "tier": "far",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 3,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 3,
+              "plate": "gillCavity",
+              "tier": "mid",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 4,
+              "plate": "spineCoil",
+              "tier": "mid",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 4,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 5,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 5,
+              "plate": "colonyCluster",
+              "tier": "far",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 6,
+              "plate": "gillCavity",
+              "tier": "mid",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 6,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "ready",
+              "error": null
+            }
+          ]
+        },
+        "state": "PLAYING",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 120,
+          "avgMs": 8.34,
+          "worstMs": 10.3,
+          "over20ms": 0
+        },
+        "liveProjectiles": 256,
+        "drawCalls": 174,
+        "triangles": 105478,
+        "backdrop": {
+          "on": true,
+          "built": 12,
+          "plates": [
+            {
+              "face": 1,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 1,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 2,
+              "plate": "spineCoil",
+              "tier": "mid",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 2,
+              "plate": "colonyCluster",
+              "tier": "far",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 3,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 3,
+              "plate": "gillCavity",
+              "tier": "mid",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 4,
+              "plate": "spineCoil",
+              "tier": "mid",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 4,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 5,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 5,
+              "plate": "colonyCluster",
+              "tier": "far",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 6,
+              "plate": "gillCavity",
+              "tier": "mid",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 6,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "ready",
+              "error": null
+            }
+          ]
+        },
+        "state": "PLAYING",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 120.5,
+          "avgMs": 8.3,
+          "worstMs": 10.3,
+          "over20ms": 0
+        },
+        "liveProjectiles": 256,
+        "drawCalls": 174,
+        "triangles": 105478,
+        "backdrop": {
+          "on": true,
+          "built": 12,
+          "plates": [
+            {
+              "face": 1,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 1,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 2,
+              "plate": "spineCoil",
+              "tier": "mid",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 2,
+              "plate": "colonyCluster",
+              "tier": "far",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 3,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 3,
+              "plate": "gillCavity",
+              "tier": "mid",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 4,
+              "plate": "spineCoil",
+              "tier": "mid",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 4,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 5,
+              "plate": "limbSegment",
+              "tier": "near",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 5,
+              "plate": "colonyCluster",
+              "tier": "far",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 6,
+              "plate": "gillCavity",
+              "tier": "mid",
+              "state": "ready",
+              "error": null
+            },
+            {
+              "face": 6,
+              "plate": "crownHorizon",
+              "tier": "far",
+              "state": "ready",
+              "error": null
+            }
+          ]
+        },
+        "state": "PLAYING",
+        "errors": []
+      }
+    ]
+  },
+  "summary": {
+    "flat": {
+      "worstMs": [
+        10.3,
+        10.3,
+        10.3
+      ],
+      "over20ms": [
+        0,
+        0,
+        0
+      ]
+    },
+    "backdrop": {
+      "worstMs": [
+        10.7,
+        10.3,
+        10.3
+      ],
+      "over20ms": [
+        0,
+        0,
+        0
+      ]
+    }
+  }
+}
