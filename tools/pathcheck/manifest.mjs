@@ -52,6 +52,7 @@ import * as d39 from './t-041-impact-language.mjs';
 import * as d40 from './t-043-wasp-aim-lock-squad.mjs';
 import * as d41 from './t-039-contact-shadows.mjs';
 import * as d42 from './pathcheck-suite-3.mjs';
+import * as d43 from './t-035-value-ladder.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -97,4 +98,5 @@ export const DOMAINS = [
   d40,    // T-043: wasp aim-lock + squad stagger (enemy aggression)
   d41,    // T-039: contact shadows (S6) =====================
   d42,    // pathcheck suite
+  d43,    // T-035 value ladder (S1 + S2) ======================
 ];
