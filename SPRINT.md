@@ -2266,3 +2266,33 @@ so a bisect between that tree and `main` is the fastest route.
 
 NOT a lighting or bloom problem: `?light=flat` and `?scale=0` all render the same
 absent-marks frame, and the defect is in the PLAN, before any renderer runs.
+
+## I-037 — CORRECTED AND CLOSED (2026-08-02, integrator)
+
+**The conclusion was wrong; the scale pass works.** Verified on `main` in a
+browser after a hard reload, importing with cache-busting query strings:
+
+    withScale 1633 · withoutScale 829 · delta 804 · markPieces 818 · no silhouette
+
+That is T-045 doing exactly what it claims. The rung ladders, hatches, doors,
+gantry rail and graded backdrop tiers all bake and render on the shipped
+default run.
+
+**What actually happened: the integrator's browser was executing a pre-T-045
+copy of `src/pure/limb.js`** — a stale build, reachable either from one of the
+pinned worktrees still on this machine (`/private/tmp/hb-pin-main-cd37b91`,
+`/private/tmp/hb-pin-t009fix`) or from bytes cached before `tools/serve.mjs`
+replaced the caching python server on port 8741 earlier in the same session.
+T-050 reproduced the cache mechanism end to end and showed the two are
+**indistinguishable from a console**.
+
+**This is the T-024 defect class, committed by the person who diagnosed it.**
+The lesson is not "be careful" — it is that a plain fresh navigation is not
+sufficient evidence about which build you are looking at. Before concluding a
+feature is missing:
+  - hard-reload, and import with a cache-busting query string; and
+  - assert a build fingerprint from the page itself (a count, a symbol, a
+    version) rather than trusting the URL to imply the tree.
+
+I-037 is closed as NOT A DEFECT. T-050's real deliverable is the gate that
+makes this class self-detecting rather than a fix — see its report.
