@@ -870,7 +870,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; re-read each cited file:line against its issue
 
-## T-032 | feature | doing | P1
+## T-032 | feature | done | P1
 
 goal: a 9-year-old must never meet a blank screen. Today the operator's own
 session rendered a black page with one console SyntaxError and no on-screen
