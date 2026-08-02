@@ -230,16 +230,23 @@ export const CONCEPT = {
 export const PALETTE_ID = resolvePaletteId(QUERY.get('palette'));
 export const PAL = PALETTE_ID === 'classic' ? CLASSIC : CONCEPT;
 
-/* The value ladder's own flag (T-035): ?shade=1 full, ?shade=0.5 half,
-   absent/0/junk off — and off is byte-identical to the shipped build,
-   because every shade multiplier is `1 + gain * (raw - 1)` and gain 0 is
-   exactly 1.0. It is deliberately NOT the palette toggle: that would move
-   hue and value together and neither could be judged on its own.
+/* The value ladder's dial (T-035). ON BY DEFAULT at the operator-approved
+   dose (CONFIG.shade.dose = 0.5, verdict 2026-08-02: full strength is too
+   dark, half is the look) — the default URL is the approved build, and the
+   flag exists to compare against it:
 
-   SHADE_GAIN folds in the table's own gain, so ?shade=1&palette=classic is
-   still the untouched grey-box (CLASSIC.shade.gain is 0). The renderers
-   (./limb.js, ./level.js) read this one number and nothing else. */
-export const SHADE_STRENGTH = resolveShadeGain(QUERY.get('shade'));
+     (absent)  the approved dose        ?shade=0  the pre-T-035 range, exactly
+     ?shade=1  the rejected full ladder ?shade=x  anything between
+
+   It is deliberately NOT the palette toggle: that would move hue and value
+   together and neither could be judged on its own. With the ladder now on by
+   default, the HUE-ONLY A/B the queued Palette v1 packet needs is
+   `?palette=classic` against `?shade=0` — both have no ladder, so only the
+   hue differs. `?palette=classic` alone stays byte-faithful to the pre-T-035
+   grey-box whatever ?shade= says, because SHADE_GAIN folds in the table's
+   own gain and CLASSIC.shade.gain is 0. The renderers (./limb.js,
+   ./level.js) and the haze band (./camera.js) read this one number. */
+export const SHADE_STRENGTH = resolveShadeGain(QUERY.get('shade'), CONFIG.shade.dose);
 export const SHADE_GAIN = SHADE_STRENGTH * PAL.shade.gain;
 
 // Transform-slice atmosphere remap (render-side; see CONCEPT.atmos). The

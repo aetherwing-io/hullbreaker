@@ -8932,22 +8932,39 @@ const G2GATE = G2E.gate;
   const bakedLuma = (hex, tone, k) => luma035(
     chan035(hex).map(s2l).map((v, i) => Math.min(1, v * (tone ? tone[i] : 1) * k)).map(l2s));
 
-  // --- the flag: off by default, and off is EXACTLY off ----------------
-  ok(SH.resolveShadeGain('1') === 1 && SH.resolveShadeGain('on') === 1 &&
-     SH.resolveShadeGain('0.5') === 0.5 && SH.resolveShadeGain('2') === 1,
-     'T-035: ?shade= resolves 1/on to full strength, 0.5 to half, and clamps above 1');
-  ok(SH.resolveShadeGain(null) === 0 && SH.resolveShadeGain('') === 0 &&
-     SH.resolveShadeGain('junk') === 0 && SH.resolveShadeGain('0') === 0 &&
-     SH.resolveShadeGain('-1') === 0,
-     'T-035: absent/junk/0/negative ?shade= all resolve to OFF — the ladder is ' +
-     'unjudged look, so every shipped URL keeps the value range it has today');
-  ok(PALMOD.SHADE_STRENGTH === 0 && PALMOD.SHADE_GAIN === 0,
-     'T-035: a headless import with no query lands on gain 0 (off by default)');
+  // --- the dose: an OPERATOR VERDICT, pinned ---------------------------
+  // 2026-08-02: "C on the ladder feels better, shade=0.5 the other is too
+  // dark." The approved dose ships as the default; the flag is the comparison
+  // instrument. Pinning the number here means a later silent retune of the
+  // look he approved fails the gate instead of passing quietly.
+  const DOSE = CONFIG.shade.dose;
+  ok(DOSE === 0.5,
+     'T-035: the shipped dose is the operator-approved 0.5 (verdict 2026-08-02, ' +
+     '"shade=0.5 the other is too dark") — got ' + DOSE);
+  ok(SH.resolveShadeGain('1', DOSE) === 1 && SH.resolveShadeGain('on', DOSE) === 1 &&
+     SH.resolveShadeGain('0.5', DOSE) === 0.5 && SH.resolveShadeGain('2', DOSE) === 1,
+     'T-035: ?shade= resolves 1/on to the rejected full ladder, reads any dose in ' +
+     'between, and clamps above 1');
+  ok(SH.resolveShadeGain('0', DOSE) === 0 && SH.resolveShadeGain('off', DOSE) === 0 &&
+     SH.resolveShadeGain('-1', DOSE) === 0,
+     'T-035: ?shade=0 / off / negative is the escape hatch back to the pre-T-035 ' +
+     'value range, exactly');
+  ok(SH.resolveShadeGain(null, DOSE) === DOSE && SH.resolveShadeGain('', DOSE) === DOSE &&
+     SH.resolveShadeGain('junk', DOSE) === DOSE,
+     'T-035: absent/empty/junk ?shade= all resolve to the APPROVED DOSE, the way ' +
+     'resolvePaletteId resolves them to the concept default — a typo must never ' +
+     'serve a look nobody signed off');
+  ok(PALMOD.SHADE_STRENGTH === DOSE && PALMOD.SHADE_GAIN === DOSE,
+     'T-035: a headless import with no query lands on the approved dose — the ' +
+     'DEFAULT URL is the approved build, nobody has to type a query parameter for it');
   ok(PAL_CLASSIC.shade.gain === 0,
      'T-035: CLASSIC.shade is EXACT identity — ?palette=classic stays the ' +
-     'byte-faithful grey-box instrument the queued Palette v1 A/B is judged against, ' +
-     'even with ?shade=1 also on the URL');
-  ok(PAL_CONCEPT.shade.gain === 1, 'T-035: CONCEPT carries the ladder at full strength');
+     'byte-faithful pre-T-035 grey-box instrument the queued Palette v1 A/B is ' +
+     'judged against, whatever ?shade= says and even with the ladder now on by ' +
+     'default (the hue-only A/B is ?palette=classic against ?shade=0)');
+  ok(PAL_CONCEPT.shade.gain === 1,
+     'T-035: the concept table carries the ladder at full weight; the DOSE, not the ' +
+     'table, is what the operator tuned');
   ok(Object.keys(PAL_CLASSIC.shade).sort().join(',') ===
      Object.keys(PAL_CONCEPT.shade).sort().join(','),
      'T-035: both palette tables carry the same shade key set');
@@ -8973,7 +8990,7 @@ const G2GATE = G2E.gate;
      plan035.length + ' pieces)');
   ok(shadeOff.every((v) => v === 1),
      'T-035: gain 0 is exactly 1.0 for every piece — not nearly, exactly, so ' +
-     'the default bake is bit-identical to the shipped build');
+     '?shade=0 and ?palette=classic reproduce the pre-T-035 bake bit for bit');
   {
     const dOff = SH.deckShadePlan(gh035, CONFIG, 0);
     const dOn = SH.deckShadePlan(gh035, CONFIG, 1);
@@ -9021,20 +9038,62 @@ const G2GATE = G2E.gate;
     }
     return { share: below / plan035.length, worst, worstKey, brightest, buckets };
   }
-  const onStats = bakeStats(1), offStats = bakeStats(0);
+  const onStats = bakeStats(1), offStats = bakeStats(0), doseStats = bakeStats(DOSE);
+
+  // (a) at FULL strength — the packet's falsifying test, kept as a gate on the
+  // MODEL: src/pure/shade.js must still be able to produce a range that is
+  // arithmetically impossible today. ?shade=1 is judged too dark and is not
+  // what ships; that it remains reachable and correct is what makes a later
+  // re-ask cheap.
   ok(onStats.share >= 0.20,
-     'T-035/S1(a): ' + (100 * onStats.share).toFixed(1) + '% of baked limb instances ' +
-     'land below 0.55x their token\'s display luminance (gate: >= 20%)');
+     'T-035/S1(a) at ?shade=1: ' + (100 * onStats.share).toFixed(1) + '% of baked limb ' +
+     'instances land below 0.55x their token\'s display luminance (packet gate: >= 20%)');
   ok(offStats.share === 0,
-     'T-035/S1(a): …and the SAME measurement on the shipped default is ' +
-     (100 * offStats.share).toFixed(1) + '% — this gate is red on current main by ' +
-     'arithmetic, which is the point of writing it');
+     'T-035/S1(a): …and the SAME measurement with the ladder off is ' +
+     (100 * offStats.share).toFixed(1) + '% — the packet\'s gate is red on current main ' +
+     'by arithmetic, which is the point of writing it');
   ok(onStats.worst >= 0.45,
-     'T-035/S1(a): every limb material carries a normalized luminance spread >= 0.45 ' +
-     '(worst: ' + onStats.worstKey + ' at ' + onStats.worst.toFixed(3) + ')');
+     'T-035/S1(a) at ?shade=1: every limb material carries a normalized luminance ' +
+     'spread >= 0.45 (worst: ' + onStats.worstKey + ' at ' + onStats.worst.toFixed(3) + ')');
   ok(offStats.worst < 0.15,
-     'T-035/S1(a): …against ' + offStats.worst.toFixed(3) + ' today, where CONFIG.limb' +
-     '.tone\'s +-4% is a HUE jitter and every instance of a material is one value');
+     'T-035/S1(a): …against ' + offStats.worst.toFixed(3) + ' with the ladder off, where ' +
+     'CONFIG.limb.tone\'s +-4% is a HUE jitter and every instance of a material is one value');
+
+  /* --- WHAT ACTUALLY SHIPS: the same measurements at the approved dose ---
+   * The operator judged ?shade=1 too dark and ?shade=0.5 right, so the two
+   * packet thresholds above describe a look nobody will see. They are NOT
+   * quietly restated to match the dose. Instead: the gates below are the ones
+   * the SHIPPED build must hold, and the two packet thresholds it cannot hold
+   * are recorded as limits, with the gain each becomes reachable at.        */
+  ok(doseStats.share === 0,
+     'T-035/S1 LIMIT at the shipped dose (operator verdict, not a regression): ' +
+     (100 * doseStats.share).toFixed(1) + '% of instances land below 0.55x their token — ' +
+     'the packet\'s 20% gate is out of reach here and stays out of reach below about ' +
+     'gain 0.75 (measured: 0.0% at 0.6, 2.3% at 0.75, 48.3% at 0.9), because every ' +
+     'multiplier is interpolated toward 1.0 by the dose. The verdict outranks the ' +
+     'threshold; ?shade=1 above is where the packet\'s number lives');
+  {
+    // The regression gate that IS meaningful at the shipped dose: every
+    // material's own light-to-shadow ramp must be several times what the
+    // build ships today. Measured 2.7x (skyline) to 7.3x (shadow).
+    let worstRatio = Infinity, worstKey = '', ramps = [];
+    for (const [key, Ls] of doseStats.buckets) {
+      const span = (arr) => Math.max(...arr) - Math.min(...arr);
+      const now = span(Ls), before = span(offStats.buckets.get(key));
+      ramps.push(key + ' ' + now.toFixed(1) + 'v' + before.toFixed(1));
+      const ratio = before > 0.01 ? now / before : Infinity;
+      if (ratio < worstRatio) { worstRatio = ratio; worstKey = key; }
+    }
+    ok(worstRatio >= 2,
+       'T-035/S1(a) AT THE SHIPPED DOSE: every limb material\'s display ramp is at ' +
+       'least 2x the ramp it ships with today (worst: ' + worstKey + ' at ' +
+       worstRatio.toFixed(1) + 'x; levels now-vs-today: ' + ramps.join(', ') + ')');
+    ok(doseStats.worst > 6 * offStats.worst,
+       'T-035/S1(a) AT THE SHIPPED DOSE: worst per-material normalized spread ' +
+       doseStats.worst.toFixed(3) + ' against ' + offStats.worst.toFixed(3) + ' today — ' +
+       'a real range where there was none, and openly a fifth of the packet\'s 0.45, ' +
+       'which is what the operator chose when he called the full dose too dark');
+  }
 
   // --- S1 gate (b): the checker keeps its scroll-speed carrier job ------
   const cA035 = PAL_CONCEPT.ground, cB035 = PAL_CONCEPT.groundAlt;
@@ -9046,42 +9105,64 @@ const G2GATE = G2E.gate;
      'T-035/S1(b): the two checker tokens still differ by ' + checkerDelta.toFixed(4) +
      ' display levels — at or above the delta they carry today (16.7702)');
   {
-    const deck = SH.deckShadePlan(gh035, CONFIG, 1);
-    let minStep = Infinity, notBrightest = 0, minTop = Infinity;
-    let minWear = Infinity, maxWear = -Infinity;
-    for (let i = 0; i < gh035.length; i++) {
-      if (!(gh035[i] > -100)) continue;
-      minWear = Math.min(minWear, deck.wear[i]);
-      maxWear = Math.max(maxWear, deck.wear[i]);
-      const rows = [];
-      for (let d = 1; d <= deck.rows.length; d++) {
-        const j = gh035[i] - d;
-        rows.push(bakedLuma((i + j) % 2 === 0 ? cA035 : cB035, null,
-                            deck.rows[d - 1] * deck.wear[i]));
+    function deckStats(gain) {
+      const deck = SH.deckShadePlan(gh035, CONFIG, gain);
+      let minStep = Infinity, notBrightest = 0, minTop = Infinity;
+      let minWear = Infinity, maxWear = -Infinity;
+      for (let i = 0; i < gh035.length; i++) {
+        if (!(gh035[i] > -100)) continue;
+        minWear = Math.min(minWear, deck.wear[i]);
+        maxWear = Math.max(maxWear, deck.wear[i]);
+        const rows = [];
+        for (let d = 1; d <= deck.rows.length; d++) {
+          const j = gh035[i] - d;
+          rows.push(bakedLuma((i + j) % 2 === 0 ? cA035 : cB035, null,
+                              deck.rows[d - 1] * deck.wear[i]));
+        }
+        minStep = Math.min(minStep, rows[0] - rows[1]);
+        minTop = Math.min(minTop, rows[0]);
+        if (rows[0] <= Math.max(...rows.slice(1))) notBrightest++;
       }
-      minStep = Math.min(minStep, rows[0] - rows[1]);
-      minTop = Math.min(minTop, rows[0]);
-      if (rows[0] <= Math.max(...rows.slice(1))) notBrightest++;
+      const wearSwing = 1 - bakedLuma(cA035, null, minWear) / bakedLuma(cA035, null, maxWear);
+      return { minStep, notBrightest, minTop, wearSwing };
     }
-    ok(minStep > checkerDelta,
-       'T-035/S1(b): the per-column top-row-to-row-2 step (' + minStep.toFixed(1) +
-       ' levels, worst column) exceeds the checker delta (' + checkerDelta.toFixed(1) +
-       ') — the deck lip gains a carrier, the checker does not lose one');
-    const wearSwing = 1 - bakedLuma(cA035, null, minWear) / bakedLuma(cA035, null, maxWear);
-    ok(wearSwing < checkerDelta / tokenLuma(cA035),
-       'T-035/S1(b): the along-s wear swing on the deck is ' + (100 * wearSwing).toFixed(1) +
-       '% of display luminance, under the checker\'s own ' +
+    const deckOn = deckStats(1), deckDose = deckStats(DOSE), deckOff = deckStats(0);
+
+    ok(deckOn.minStep > checkerDelta,
+       'T-035/S1(b) at ?shade=1: the per-column top-row-to-row-2 step (' +
+       deckOn.minStep.toFixed(1) + ' levels, worst column) exceeds the checker delta (' +
+       checkerDelta.toFixed(1) + ') — the packet\'s gate, met by the model');
+    ok(deckDose.minStep > 0 && deckDose.minStep < checkerDelta,
+       'T-035/S1(b) LIMIT at the shipped dose: the step is ' + deckDose.minStep.toFixed(1) +
+       ' levels in the worst column, UNDER the checker\'s ' + checkerDelta.toFixed(1) +
+       ' — so the deck lip is a SECOND, smaller carrier at the approved dose, not the ' +
+       'bigger one. The checker itself is untouched (its tokens and their delta are ' +
+       'unchanged), so no scroll-speed carrier was traded away — that is the half of ' +
+       'the gate that protects a pillar, and it holds');
+    ok(deckDose.wearSwing < checkerDelta / tokenLuma(cA035),
+       'T-035/S1(b): the along-s wear swing on the deck is ' +
+       (100 * deckDose.wearSwing).toFixed(1) + '% of display luminance at the shipped ' +
+       'dose, under the checker\'s own ' +
        (100 * checkerDelta / tokenLuma(cA035)).toFixed(1) + '% — a stain band may ' +
        'modulate the scroll carrier, never replace it');
 
     // --- S1 gate (c): "the deck stays the brightest surface", as arithmetic
-    ok(notBrightest === 0,
-       'T-035/S1(c): the deck\'s top row is the highest-luminance instance in every ' +
-       'one of its columns (' + notBrightest + ' exceptions)');
-    ok(minTop > onStats.brightest,
-       'T-035/S1(c): …and the dimmest deck top row (' + minTop.toFixed(1) + ') still ' +
-       'outranks the brightest instance anywhere in the limb (' +
-       onStats.brightest.toFixed(1) + ') — palette.js\'s prose rule, as a number');
+    // This is the one packet gate the SHIPPED dose meets outright, and the one
+    // the shipped build fails today.
+    ok(deckDose.notBrightest === 0 && deckOn.notBrightest === 0,
+       'T-035/S1(c) AT THE SHIPPED DOSE: the deck\'s top row is the highest-luminance ' +
+       'instance in every one of its columns (' + deckDose.notBrightest + ' exceptions; ' +
+       deckOff.notBrightest + ' columns fail it today)');
+    ok(deckDose.minTop > doseStats.brightest,
+       'T-035/S1(c) AT THE SHIPPED DOSE: the dimmest deck top row (' +
+       deckDose.minTop.toFixed(1) + ') outranks the brightest instance anywhere in the ' +
+       'limb (' + doseStats.brightest.toFixed(1) + ') by ' +
+       (deckDose.minTop - doseStats.brightest).toFixed(1) + ' levels — palette.js\'s ' +
+       'prose rule, as a number, on the build that ships');
+    ok(deckOn.minTop > onStats.brightest,
+       'T-035/S1(c): …and it holds at ?shade=1 too (' + deckOn.minTop.toFixed(1) +
+       ' vs ' + onStats.brightest.toFixed(1) + '), so the dial cannot be turned into ' +
+       'a state where the limb outshines the deck');
     ok(offStats.brightest > bakedLuma(cB035, null, 1),
        'T-035/S1(c): …and it is NOT true on the shipped default, which is why the ' +
        'packet asked for it as arithmetic: there the brightest limb instance is ' +

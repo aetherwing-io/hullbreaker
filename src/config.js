@@ -582,6 +582,25 @@ export const CONFIG = {
    * material ramp (52-81 display levels between a material's lit and
    * shadowed instances, against 34.0-34.4 measured on the shipped build).  */
   shade: {
+    // THE SHIPPED DOSE, AND IT IS AN OPERATOR VERDICT (2026-08-02): "C on the
+    // ladder feels better, shade=0.5 the other is too dark." Half strength is
+    // the game's look; full strength is judged and rejected. This is the value
+    // the default URL carries — nobody should have to type a query parameter
+    // to see the approved build — and every multiplier below is interpolated
+    // toward 1.0 by it (1 + dose * (raw - 1)) rather than being folded into
+    // the constants, so the frames he approved reproduce bit for bit and the
+    // rejected full dose stays reachable at ?shade=1 for a re-ask.
+    // ?shade=0 restores the pre-T-035 value range exactly.
+    //
+    // CONSEQUENCE, STATED HERE BECAUSE IT IS EASY TO MISS: two of the packet's
+    // falsifying tests for S1 describe the FULL ladder and are arithmetically
+    // out of reach at this dose — no instance can land below 0.55x its token
+    // above roughly gain 0.75, and the deck's row-1-to-row-2 step no longer
+    // exceeds the checker's own delta. Both are asserted at gain 1 (the model
+    // must still be able to produce that range) and separately recorded at the
+    // shipped dose in tools/pathcheck.mjs. The verdict outranks the threshold;
+    // the numbers are not quietly restated to match.
+    dose: 0.5,
     seed: 20350801,            // ladder-only seed: it must not perturb the
                                //   generator's or the spawn tables' streams
     cell: 1,                   // occupancy cell size in tiles (s, y)

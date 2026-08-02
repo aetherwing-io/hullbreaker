@@ -49,25 +49,44 @@
 
    GAIN. Every export takes a `gain` in [0, 1] and returns
    `1 + gain * (raw - 1)`, so gain 0 is EXACTLY 1.0 for every piece — not
-   nearly, exactly — which is what lets ?palette=classic stay a byte-
-   faithful grey-box instrument for the still-unjudged Palette v1 A/B, and
-   what makes the ladder's own flag (?shade=, off by default) a true
-   no-op when absent. The ladder must be judgeable independently of hue;
-   if the palette toggle moved value and hue together, it could not be. */
+   nearly, exactly. That is what lets ?palette=classic stay a byte-faithful
+   grey-box instrument for the still-unjudged Palette v1 A/B (CLASSIC's own
+   gain is 0, so the ladder cannot touch it whatever the URL says), and what
+   makes ?shade=0 a true no-op rather than an approximate one.
+
+   The gain is ALSO the shipped dial, not just an on/off. The operator
+   judged full strength too dark and half strength right (see `dose`
+   below), and half strength is the same arithmetic at gain 0.5 — the
+   approved frames reproduce bit for bit rather than being re-authored
+   into the constants, which is the only way a look verdict stays
+   verifiable after the fact. */
 
 import { mulberry32 } from './rng.js';
 
-/* ---------------------------- the flag ---------------------------- *
- * ?shade=1 arms the ladder at full strength; ?shade=0.5 arms it at half,
- * which is a real operator dial (the whole pass is a linear interpolation
- * toward 1.0). Absent, junk, 0 and negatives all resolve to 0 — off, and
- * off is byte-identical to the shipped build. Pure so the harness checks
+/* ---------------------------- the dose ---------------------------- *
+ * OPERATOR VERDICT, 2026-08-02: "C on the ladder feels better, shade=0.5
+ * the other is too dark." Half strength is the game's look; full strength
+ * is rejected. So the shipped default is `dose` (CONFIG.shade.dose = 0.5)
+ * and the URL is a comparison instrument, not the way to get the approved
+ * build:
+ *
+ *   (absent)     the approved dose — what a player gets
+ *   ?shade=0     OFF: the pre-T-035 grey-box value range, for A/B
+ *   ?shade=1     the full ladder the operator judged too dark
+ *   ?shade=0.75  anything between, for a later re-ask
+ *
+ * Absence, '' and junk all resolve to the approved dose, the way
+ * resolvePaletteId resolves them to the concept default: a typo must not
+ * silently serve a look nobody approved. An explicit number is clamped to
+ * [0, 1], so ?shade=0 is reachable and exact. Pure, so the harness checks
  * the resolver instead of the URL.                                     */
-export function resolveShadeGain(value) {
+export function resolveShadeGain(value, dose = 1) {
+  if (value === null || value === undefined || value === '') return dose;
   if (value === 'on') return 1;
+  if (value === 'off') return 0;
   const n = Number(value);
-  if (!Number.isFinite(n) || n <= 0) return 0;
-  return Math.min(1, n);
+  if (!Number.isFinite(n)) return dose;
+  return Math.max(0, Math.min(1, n));
 }
 
 /* ---------------------------- seeded wear -------------------------- */
