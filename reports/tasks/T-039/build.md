@@ -278,3 +278,95 @@ forever."
   outside the repo (session scratchpad) — the raw JSON is copied into
   `reports/tasks/T-039/evidence/06-stress-perf.json` so the numbers in this
   report trace to a committed artifact rather than a transient run.
+
+## 8. Fix cycle — ship ON by default (decisions.md entries 16/17)
+
+**Playtest FAILed** (`reports/tasks/T-039/playtest.md`) on one point, everything
+else in that gate passed: `?shadow=1`-gated, off by default, contradicts
+entries 16 and 17. Entry 16 retired "prototypes ship behind a query flag, off
+by default" as a blanket rule specifically because it kept the operator
+looking at an un-improved build. Entry 17 names contact shadows explicitly as
+one of five look builds he was shown and approved ("all of those 5 builds
+look good to me") and states approved work "must not stay hidden behind
+flags." Both entries landed on `main` before my build/addendum commits
+finished — a timing accident I didn't catch and the playtester correctly
+flagged plainly rather than assigning blame for.
+
+**Sharper reason than compliance, from the team lead directly:** the operator
+was shown this build at its plain URL and told it was the contact-shadows
+build; flagged off, he judged and approved a frame that did not contain them.
+Shipping on by default is what makes that approval mean what it says.
+
+**The fix**, commit `8cd47cf`: `resolveContactShadows(value, transformSlice)`
+now returns `value !== '0' && !transformSlice` (was `value === '1' && ...`) —
+the same `QUERY.get(...) !== '0'` shape `src/mode.js`'s `JUICE_ENABLED`
+already uses, per the playtest report's own recommended fix and entry 16's
+named precedent. `?shadow=0` is the escape hatch; the transformation-slice
+guard is unchanged. Updated `contact.js`'s header rationale (no more "off by
+default" framing) and `tools/pathcheck.mjs`'s static guard: it now checks the
+resolver's actual **comparison operator** (`value !== '0'`), not just that
+the flag is read — a naive "`?shadow=1` arms it" implementation would have
+passed the old assertion while shipping exactly the failure entry 16 exists
+to stop — plus a negative check that no `value === '1'`-shaped opt-in
+comparison survives anywhere in the file.
+
+**Verified, not assumed:**
+- `node tools/pathcheck.mjs`: **2017 passed, 0 failed** (net +2 over the
+  fail-state's 2015: one stale assertion replaced by two). Live negative
+  control: reverting the operator to `value === '1'` turns both new
+  assertions red; restored, back to 2017/0, `git diff` empty on
+  `src/pure/contactShadow.js` (untouched by this fix) confirmed.
+- Real browser, default URL: `CONTACT_SHADOWS_ENABLED === true` with no flag
+  at all. `?shadow=0` → `false`. `?shadow=1` → `true` (redundant with
+  default, harmless — kept only because removing flag support entirely was
+  not asked for). `?slice=transform` → `false` regardless of the flag,
+  unchanged.
+- `index.html?selftest=1` → **SELFTEST PASS (29 checks)**, unaffected.
+- Re-measured performance **under the actual new default** (no flag needed),
+  not inherited from the earlier flag-based numbers:
+
+  | | draw calls | avgMs | worstMs | fps | over20ms |
+  |---|---|---|---|---|---|
+  | default (shadows ON), 256 live projectiles + injected stress | 108 | 8.33 | 9.4 | 120 | 0 |
+  | `?shadow=0` control, same load | 107 | 8.33 | 9.3 | 120 | 0 |
+
+  Matches the numbers already in §1 exactly — this re-confirms them under the
+  shipped default rather than an explicit flag, per the team lead's request.
+  Raw JSON: `evidence/15-stress-v2-defaulton-result.json`.
+
+**Re-checked the darkness interaction under the real combined default**
+(both features on, no flags at all) rather than trusting the §6 addendum's
+scratch-merge numbers, which predated this fix: rebuilt the same throwaway
+`task/T-035` + `task/T-039` scratch merge (never committed, removed after),
+now at this fix's commit. Combined pathcheck: **2062 passed, 0 failed**.
+Captured RIG's feet at a confirmed-grounded frame on the plain default URL
+(both the half-dose ladder and contact shadows active with zero query
+parameters) versus `?shadow=0`:
+`evidence/13-combined-default-shadowson-halfdose.png` vs
+`14-combined-shadow0-halfdose.png` — the same small, correctly-placed dark
+patch under RIG's feet, no spreading into the surrounding deck. Frame-wide
+mean luminance: 63.70 (shadows on) vs 63.74 (off) — the ~0.04 difference is
+noise, not a trend; **no crush-to-mud risk at the real shipped default.**
+
+**On "selling scale" (entry 17's headline art goal, raised as a secondary,
+non-blocking suggestion):** I looked at this rather than skip it, and
+concluded the existing height-based falloff already does most of what was
+asked structurally — `contactShadowFalloff` ties both opacity AND radius to
+height above ground (tight, high-opacity right at RIG's feet; fading toward
+nothing as an actor gets airborne), and radius is already scaled per-kind off
+each actor's own authored footprint (RIG's 0.35 vs. a hound's 0.85), so a
+bigger body already casts a bigger shadow. Camera-distance softening (the
+other half of the suggestion) doesn't map cleanly onto this game's FAR-orbit
+camera, which holds actors at a near-constant depth from the lens — there
+isn't a meaningful "distance from camera" axis to key a softening term off
+without inventing one. I did not retune `CONTACT_SHADOW`'s constants (radius
+curve shape, opacity ceiling, tone) toward a stronger "vast surface" read:
+that is a strength/feel dial, which the playtest report itself already
+routes to the operator checkpoint rather than to a builder's judgment call.
+Deliberately not gold-plated, per the instruction; flagging the two
+structural facts above so the operator checkpoint can ask a sharper question
+than "does it look grounded" if wanted.
+
+**Not touched by this fix cycle:** `src/pure/contactShadow.js` (the falloff
+math and tunables) — zero changes; this was a flag-default fix and a
+strength/feel question left to the operator, not a recalibration.
