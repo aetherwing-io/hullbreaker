@@ -1201,7 +1201,7 @@ branched off task/T-049, not main, because T-049 carries the shared
 src/render/preload.js texture gate; merge order is T-049 → T-051/T-052.
 ========== -->
 
-## T-051 | art | review | P1
+## T-051 | art | blocked | P1
 goal: a real backdrop behind the world. The five finished 1024x512 plates in
 assets/generated/backdrops/ go onto parallaxing quads, replacing the flat
 scene.background color as the thing filling 60-80% of the frame. Depth layering
@@ -2733,3 +2733,37 @@ Fix direction: T-053 restores cutout alpha for the five backdrop plates with a
 genuinely feathered receding edge (tens of pixels, not a 1px cut); T-051 writes
 the spec for what its layering requires; hull tiles stay fully opaque, they are
 tiled surface textures and want no alpha.
+
+<!-- ===== T-051 BLOCKED ON T-053 (2026-08-02, integrator) =====
+
+Both gates agree and both are right: durability, the asset-failure path and
+perf all PASS; the single failing item is the acceptance box "far edge
+dissolves into the fog color, proven by capture."
+
+It is not fixable in this lane. Three independent measurements say so:
+  - reviewer, via PIL: backdrop-limb-segment.png is ~99.5% pure 0/255 alpha,
+    0.48% partial — an effectively hard cutout.
+  - the lane, across all five plates: every one is >=98.2% exactly 0 or 255.
+  - playtester, at the flagged position: a one-pixel-wide, ZERO-gradient step
+    from plate tone straight to flat sky.
+
+The constraint underneath: **a flat camera-facing quad's material can only
+tint a pixel's COLOR toward the fog — it can never make an already-opaque
+pixel transparent.** No depth, fog or tint tuning produces a dissolve. The
+lane's depth retune (-13 -> -16/-21/-26) is a real improvement and hides the
+seam wherever a box tile has mass, but it occludes rather than dissolves, and
+the lane says so itself rather than claiming the box.
+
+The fix is in the ASSET and belongs to T-053. T-051 has written the spec
+(commit 2e36f90, build.md):
+  1. a real alpha-cutout silhouette must survive — T-053's regenerated plates
+     are currently 100% opaque, which would kill the three-tier layering
+     outright (I-044);
+  2. an 8-12 texel graduated ramp around the whole silhouette contour, sized
+     from this task's own plateSize() math per tier and canvas;
+  3. no render-side change needed — backdrop.js's alphaTest 0.02 + fog: true
+     is already correct once the asset supplies the ramp.
+
+UNBLOCKS when T-053 lands feathered cutout alpha. Then re-run T-051's gates
+against the new plates; the depth retune and the feathering fix two different
+problems and both are wanted. ===== -->
