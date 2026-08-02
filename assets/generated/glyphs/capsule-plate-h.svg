@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Capsule letter plate — H (HOMING)</title>
+  <desc>Direction A (scale the world-space glyph up): today's letter language redrawn for minification. Ink border, hot-magenta face, one slab letter at stroke 22/128 (3.1 screen px on the shipped 18.2px face) and cap height 92/128 = GLYPH_INK_FILL 0.72 exactly. No rivets and no chamfer: T-015 measured both gone at FAR. Rectangles, not text, so the raster does not depend on an installed font.</desc>
+
+  <rect x="0" y="0" width="128" height="128" fill="#14181e"/>
+  <rect x="8" y="8" width="112" height="112" fill="#ff4fd8"/>
+
+  <rect x="26" y="18" width="22" height="92" fill="#14181e"/>
+  <rect x="80" y="18" width="22" height="92" fill="#14181e"/>
+  <rect x="26" y="53" width="76" height="22" fill="#14181e"/>
+</svg>
