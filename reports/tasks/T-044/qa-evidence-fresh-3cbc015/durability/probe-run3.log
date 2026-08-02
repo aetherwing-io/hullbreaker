@@ -1,0 +1,18 @@
+
+=== LOG ===
+approach-ARRIVAL: x=96.35 state=PLAYING at t=32587ms (target 96)
+abuse-ARRIVAL before: x=96.35 y=4.00 grounded=true state=PLAYING
+abuse-ARRIVAL after:  x=84.52 y=3.00 grounded=true vx=0.00 vy=0.00 state=PLAYING hp=1 lives=2
+approach-ARENA: x=126.15 state=PLAYING at t=6471ms (target 126)
+abuse-ARENA before: x=126.15 y=8.41 grounded=false state=PLAYING
+abuse-ARENA after:  x=150.62 y=3.00 grounded=true vx=0.00 vy=0.00 state=PLAYING hp=3 lives=1
+post-abuse responsiveness: x 150.62 -> 135.06, state PLAYING -> PLAYING, hp 3 -> 2, lives 1 -> 1
+
+=== ANOMALIES ===
+(none)
+
+=== pageErrors ===
+[]
+
+=== consoleErrors ===
+[]
