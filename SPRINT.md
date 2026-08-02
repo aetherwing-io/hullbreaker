@@ -3045,7 +3045,7 @@ flat... judge it moving" — and the gate passed it anyway. A still frame cannot
 show shimmer, so the metric above (sign-reversal rate under motion, against
 the lane's own escape hatch) belongs in the art-lane evidence standard.
 
-## T-057 | art | todo | P1
+## T-057 | art | doing | P1
 goal: kill the lower-hull shimmer (I-049) WITHOUT undoing T-054's density fix.
 accept: sign-reversal shimmer rate in the lower-hull band (y 620-720), measured
 under motion against the lane's own `?tex=flat` control, falls to near the flat
