@@ -532,7 +532,7 @@ is violated. That is the I-019/I-031 failure mode — an assertion whose subject
 is the author's intent rather than what actually happened — so it leads.
 ============================================================== -->
 
-## T-024 | harness | todo | P1
+## T-024 | harness | doing | P1
 
 goal: the dev server must never serve a stale module. On 2026-08-02 the game
 rendered a blank page for the operator: Chrome had heuristically cached a
@@ -583,7 +583,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; re-run gate-T-016-scored-baseline and a ?ribrun=1 script against a pinned tree and diff the corrected fields
 
-## T-026 | harness | todo | P1
+## T-026 | harness | doing | P1
 
 goal: two static gates pass while the invariant they exist to protect is
 violated (I-014, I-024). `checkGameIndependence` in `tools/assets/check.mjs`
@@ -629,7 +629,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; the four repro commands quoted in I-011/I-018/I-023/I-028
 
-## T-028 | docs | todo | P1
+## T-028 | docs | doing | P1
 
 goal: the Delivery target at the top of this file predates decisions.md entries
 10-13 and now understates what the operator has asked for — rewrite it against
