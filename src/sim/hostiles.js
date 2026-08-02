@@ -9,6 +9,9 @@ import {
   polypBeamHitsRect, polypBeamReach, polypBendClampRange,
 } from '../pure/polyp.js';
 import { mortarArmed, mortarBlastHitsRect } from '../pure/mortar.js';
+import {
+  diveVelocity, diveLaunched, squadReady, WASP_DIVE_LOCK_MS, WASP_SQUAD_STAGGER_MS,
+} from '../pure/wasp.js';
 import { TRANSFORM_BEND_S } from '../pure/transform.js';
 import { IS_TRANSFORM_SLICE } from '../mode.js';
 import { view } from './bridge.js';
@@ -25,6 +28,11 @@ export const hostiles = [];
 export let kills = 0;
 let hostileRng = mulberry32(5150);          // seeded: sim randomness is reproducible
 let nextWaspId = 1;
+// The whole wasp squad's shared "last dive committed" clock (src/pure/wasp.js
+// squadReady) — deliberately NOT per-hostile, so it orders distinct wasps'
+// first commitments into a sequence instead of gating any one drone's own
+// diveCooldownMs. Reset alongside every other piece of hostile state below.
+let lastWaspLockMs = -Infinity;
 
 // Per-kind stats resolved once at spawn — the roster pass adds kinds as rows
 // here, not as ternaries at every use site. `gating: false` kinds never hold
@@ -89,6 +97,10 @@ export function spawnHostile(x, y, delayMs, kind, row) {
     diveCooldownMs: T && T.diveCooldownMs !== undefined ? T.diveCooldownMs : undefined,
     senseRange: T && T.senseRange !== undefined ? T.senseRange : undefined,
     state: K.start || 'cruise', stateUntil: 0, diveCdUntil: 0,
+    // wasp dive aim-lock: the frame a committed dive may actually start
+    // moving (src/pure/wasp.js WASP_DIVE_LOCK_MS). Unused by every other
+    // kind — each keeps its own tell inside its own state machine.
+    lockUntil: 0,
     // Whether this body holds a corner's wave gate closed. Per KIND by
     // default (the table above), but a row may opt out — and the six-face
     // run's ambient houndframe stations do (T-009, src/pure/lattice.js).
@@ -495,17 +507,25 @@ export function updateHostiles(dt) {
       e.x += e.dir * cruiseSpeed * dt;
       e.y = e.baseY + Math.sin(e.t * W.bobFreq) * W.bobAmp;
       if (Math.abs(e.x - player.x) < diveRange && player.y + 1 < e.y &&
-          gameMs > e.diveCdUntil && gameMs >= e.enterUntil) {   // no ghost dives mid-materialize
-        const tx = player.x - e.x, ty = (player.y + 0.9) - e.y;
-        const n = Math.hypot(tx, ty) || 1;
-        e.vx = tx / n * W.diveSpeed; e.vy = ty / n * W.diveSpeed;
+          gameMs > e.diveCdUntil && gameMs >= e.enterUntil &&    // no ghost dives mid-materialize
+          squadReady(gameMs, lastWaspLockMs, WASP_SQUAD_STAGGER_MS)) {
+        // commit now: aim is frozen for the whole dive (never re-aimed, same
+        // doctrine as the hound's charge and the polyp's beam), but movement
+        // is held for WASP_DIVE_LOCK_MS — the aim-lock beat that turns the
+        // already-shipped hot-acid dart pose into a real pre-commit tell
+        // instead of a dive that starts the instant its own warning would.
+        const v = diveVelocity(e.x, e.y, player.x, player.y + 0.9, W.diveSpeed);
+        e.vx = v.vx; e.vy = v.vy;
         e.state = 'dive';
-        e.stateUntil = gameMs + W.diveMs;
+        e.lockUntil = gameMs + WASP_DIVE_LOCK_MS;
+        e.stateUntil = e.lockUntil + W.diveMs;
+        lastWaspLockMs = gameMs;               // squad clock: next commit waits its turn
       }
     } else if (e.state === 'dive') {
-      e.x += e.vx * dt; e.y += e.vy * dt;
+      const launched = diveLaunched(gameMs, e.lockUntil);
+      if (launched) { e.x += e.vx * dt; e.y += e.vy * dt; }
       const floor = builtGroundTopAt(e.x);       // hidden faces have no floor yet
-      if (gameMs > e.stateUntil || e.y < floor + 0.4) {
+      if (gameMs > e.stateUntil || (launched && e.y < floor + 0.4)) {
         e.state = 'recover';
         e.diveCdUntil = gameMs + diveCooldown;
       }
@@ -535,6 +555,7 @@ export function updateHostiles(dt) {
 export function clearHostiles() {
   for (const e of hostiles) view.hostiles.removed(e, false);
   hostiles.length = 0;
+  lastWaspLockMs = -Infinity;         // squad clock: a fresh run owes nothing to the last one
 }
 export function resetKills() { kills = 0; }
 export function resetHostileRng() { hostileRng = mulberry32(5150); }
