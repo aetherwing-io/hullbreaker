@@ -1140,7 +1140,7 @@ transform slice's 580-call path not multiplied.
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; frame time under load; FAR captures
 
-## T-040 | art | blocked | P1
+## T-040 | art | review | P1
 goal: packet item S8 — RIG silhouette. He is 230 lit pixels of head sphere plus
 three boxes, sharing a value family with his own bullets. Render-only: hitbox
 and movement are frozen.
@@ -2486,3 +2486,85 @@ covers RIG, the five enemy sprites, and every future lane. Unblocks when T-049
 lands the warm-up; then re-run
 reports/tasks/T-040/playtest-evidence/determinism-regate/regate-repro.sh and
 show deviation at the control's level. -->
+
+<!-- ===== T-040 UNBLOCKED — I-039 RECLASSIFIED (2026-08-02, integrator) =====
+
+The warm-up was built, measured with T-040's own 16-round interleaved design,
+and it DOES NOT WORK: 11/16 → 14/16 deviating, no improvement. T-049 reported
+that as a negative result rather than shipping it as a fix, then spent 132
+committed runs isolating the actual cause
+(.../T-049/reports/tasks/T-049/i039-evidence/):
+
+  - gate loads + warms 5 textures, NEVER DRAWN ...... 12/12 deviating
+  - main .......................................... 0/12
+  - ?sprites=0 (nothing loaded) ................... 1/12
+    → LOADING alone reproduces it in full. Drawing adds nothing.
+
+  - main, untouched ............................... 2/12
+  - main + 25ms artificial boot delay, no assets ... 2/12
+    → It is NOT boot latency of the magnitude the gate costs.
+
+  - ?fixeddt: every condition scatters WORSE, control included
+    (main 2/8 deviating, gameMsMax 4533–19683).
+
+RULING. That last row is the one that matters. The harness's --deterministic
+mode is unsound in the presence of runtime asset loading, and — since pinning
+the timestep makes the CONTROL scatter — somewhat unsound generally. I-039 is
+therefore a HARNESS-DETERMINISM finding, not a gameplay defect, and it is
+**demoted S2 → S3 and no longer blocks any lane**. Nothing in it describes
+something a player experiences: perf is clean both ways (120fps, worst 10.30ms,
+over20ms 0, sprites and primitives alike), and decisions entry 19 already
+records that run-to-run variance is this game's FEATURE, with the standing
+discipline being interleaved rounds and reported distributions, never means.
+
+Blocking three art lanes on bot-run reproducibility would have been exactly
+the kind of paperwork the operator told us to remove. T-040 goes to `review`
+and gates on durability and readability, not on reproducing I-039.
+
+The warm-up STAYS (8ms, `?warm=0` A/B, real independently-argued deferred-
+upload hazard) with a one-line comment saying plainly that it is not a fix for
+I-039, so no future reader mistakes it for a solved problem.
+
+The `?fixeddt` result is filed separately as I-040 — the tool we judge
+everything with is unsound in the mode we trust most, and that is worth its
+own task. The fetch/decode/upload separation experiment (~30 runs) was offered
+by T-049 and DECLINED on cost, not on merit. ===== -->
+
+## T-049 | assets | review | P1
+goal: five hostile-kind sprites on the shipped enemies, plus the shared
+src/render/preload.js boot-time texture gate every future asset lane consumes.
+accept: gate is genuinely multi-caller safe (one shared close routine gated on
+"every entry currently in `entries` settled, or the one shared timer fired" —
+not a per-call snapshot); a failed or missing sprite still draws the primitive
+body and never wedges the game; gameplay does not branch on whether an asset
+loaded; 60fps at 200+ projectiles measured vsync-off.
+owner: gameplay-engineer (sonnet)
+verify: node tools/pathcheck.mjs; break/restore on every new assertion; the
+multi-caller race reproduced 10 trials before and after, distribution reported
+note: also carries the I-039 warm-up investigation and its negative result —
+see the T-040 UNBLOCKED block above. The warm-up ships but is NOT a fix.
+
+## I-040 | bug | S2 | repro: `cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic --fixeddt` against unmodified `main`, 8 interleaved rounds; compare `meta.deterministicDispatch.dispatched` and `metrics.gameMsMax` round to round | evidence: .claude/worktrees/T-049/reports/tasks/T-049/i039-evidence/fixeddt-8x3.csv
+
+**The determinism harness is unsound in the mode we trust most.** Pinning the
+timestep with `?fixeddt` — the flag whose entire purpose is to remove
+frame-timing variance — makes every condition scatter WORSE, including the
+untouched-`main` control: 2/8 rounds deviating, `gameMsMax` ranging
+4533–19683ms from byte-identical input. A fixed timestep should make the sim
+reproducible regardless of how frames are delivered; that it does the opposite
+means either the sim is not actually stepping on the pinned dt, or the pin is
+applied somewhere downstream of a path that still reads wall-clock.
+
+Why this matters more than the sprite finding it fell out of: this is the tool
+every lane uses to claim "no behavior change," and `--deterministic` is the
+mode every A/B in this project has been measured in. If it is unsound, some
+prior "no deviation" result is worth less than it looked. It does not affect
+what a player experiences — decisions entry 19 makes run-to-run variance the
+feature — but it degrades our ability to *prove* a change is inert.
+
+Fix direction: find where the sim's step actually comes from under `?fixeddt`
+and confirm it is the pinned value and nothing else; then re-run the control
+and show it flat across 16 rounds before trusting the flag again. Until then,
+every asset-involving A/B uses interleaved rounds and reports distributions,
+never means (entry 19's standing discipline, now load-bearing rather than
+merely good practice).
