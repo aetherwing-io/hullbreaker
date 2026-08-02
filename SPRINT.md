@@ -1313,6 +1313,48 @@ would, on purpose, twice.
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
+### CP — backdrop depth: visible-but-seamed, or clean-but-buried? (T-051, 2026-08-02)
+
+**This is a real tradeoff with no machine answer, and the lane surfaced it
+honestly rather than picking for you.**
+
+T-051 puts the five generated backdrop plates on twelve quads behind the
+playfield, replacing the flat `scene.background` colour that previously filled
+60-80% of the frame. First build authored the near tier at depth -13, which
+landed almost exactly on top of an existing box tile's own depth (-14) — so
+the plate's alpha silhouette abutted flat-shaded box geometry and produced a
+hard diagonal seam against the sky. The lane traced it, moved the tiers to
+-16/-21/-26 so the depth buffer occludes the plate wherever a box tile has
+mass, and the seam is gone (I re-captured and confirmed).
+
+The cost: **at the new depths the plates are substantially more occluded.** In
+my capture the painted limb structure is visible in the upper right but much
+of it now sits behind the existing box silhouettes. The lane also tried a
+deeper placement that removes the seam outright and reports it "buries the
+plates almost everywhere reachable" — tried, rejected, not shipped, which is
+the right way to report a rejected option.
+
+So there are three positions and the machine cannot choose among them:
+
+  A  -13    plates most visible, hard seam where they meet box geometry
+  B  -16/-21/-26  (SHIPPED) no seam, plates partly occluded
+  C  deeper  no seam, plates mostly buried — lane recommends against
+
+**Questions for the operator** (serve the lane and compare against
+`?backdrop=flat`):
+  1. At the shipped depths, is the painted anatomy doing enough work — does it
+     read as the creature's body receding, or as texture you have to look for?
+  2. Does the seam in option A actually bother you in motion? A still frame
+     exaggerates a hard edge; the camera moves constantly.
+  3. The pre-existing pale grey-teal silhouette boxes and the painted plates
+     are two different visual languages sharing the upper band. Should the
+     plates eventually REPLACE those boxes, or coexist with them?
+  4. Entry 17 records that selling SCALE is the headline art problem. Does this
+     make you feel smaller?
+
+Exact URL comes with the lane's gate report. Not blocking: T-051 gates on
+durability and perf, not on this.
+
 **RIDER — `docs/decisions.md` entry 13 (2026-08-01): a verdict taken in
 `?slice=traversal` is RE-ASKED, not inherited.** The operator played the slice
 and reported it too easy, which makes it a bench that under-reads difficulty.
