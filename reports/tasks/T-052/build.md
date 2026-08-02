@@ -239,3 +239,46 @@ Send this build (worktree `task/T-052`, `node tools/pathcheck.mjs` green,
 evidence above) to review/playtest gates the same way T-049 went through
 them; the only open items are the four operator feel questions in §"Open
 feel questions" and the one scope note in §4 about `hulltiles.js`.
+
+## Addendum — the deck checker (`src/render/level.js:134`) is untouched, not subsumed
+
+The integrator asked whether this pass makes the walkable deck's two-tone
+scroll-speed checker redundant. **It does not touch it at all**, and it
+cannot have — the checker lives on `level.js`'s own `tiles` InstancedMesh
+(`tileGeo = new THREE.BoxGeometry(1,1,2)`, its own `tileMat`), a completely
+separate mesh from the eight buckets `limb.js` bakes. My four textures are
+bound to the armour mass *below and behind* the deck (`hull`) and the trim
+right at its bottom edge (`shadow`/`hullRib` — "the shadow line right under
+the deck lip"), not to the deck surface itself.
+
+**Verified live, not just read from source** — a screen-space pixel diff
+between `?tex=flat` and default first suggested otherwise (~20% of pixels
+differing in what I initially took for the checker band), but that crop was
+contaminated: the deck recedes at an angle in the FAR camera's perspective,
+so a fixed rectangular screen crop straddles the deck/hull boundary
+differently at different x — part of what I was measuring was already my
+own textured `hull`/`shadow` geometry. The decisive check is a live scene-
+graph probe (`scratchpad/probe-deck.mjs`, one `page.evaluate` importing
+`/src/render/scene.js` and reading every `InstancedMesh.material`'s
+`map`/`roughness`/`metalness`/`color` in both variants): the deck mesh
+(`count: 1616`, `depth: 2`, `roughness: 1, metalness: 0` — i.e. never
+touched by `applySurface` either) reports `hasMap: false` and identical
+`color: "#ffffff"` in BOTH `textured` and `?tex=flat` — byte-identical.
+Exactly four other meshes flip `hasMap` true→false between the two runs,
+and they are precisely `hull`/`wall`/`scute`/`shadow` by their roughness/
+metalness signature (0.62/0.24 x2, 0.92/0 x2) — confirming both halves at
+once: the deck is untouched, and my four buckets are exactly the ones that
+change.
+
+**Answering the three questions directly:**
+1. Does this pass subsume the checker's scroll-speed function? No — there
+   is no shared surface for it to subsume. The two live on different
+   meshes with a shared edge on screen, not one surface.
+2. The checker is untouched — not weakened, not edited. Confirmed above.
+3. `level.js` was not touched. If the checker is to be replaced or retired,
+   that is an edit to `level.js`'s `tileMat` (give it a texture the same
+   way this task gave `limb.js`'s buckets one, or drop the checker for a
+   ramp-only value ladder) — outside this fence, and outside what I can
+   speak to on feel (decisions.md entry 10's own measured-luminance-delta
+   argument for the checker is in `src/config.js:738-807`, not something a
+   texture swap on an adjacent, unrelated mesh can evaluate).
