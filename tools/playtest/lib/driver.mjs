@@ -35,6 +35,22 @@ export async function runPlaytest({
 
   const consoleErrors = [];
   const pageErrors = [];
+  // I-011: `pageErrors` is the channel a gate reads to decide whether the GAME
+  // threw. A policy `tap` releases its key from a fire-and-forget timer (by
+  // design — a tap's hold must never block the sample cadence), so a run that
+  // ends with a tap in flight used to record `key up failed for Space:
+  // ...browser has been closed` in that channel: harness teardown noise sitting
+  // in an error channel, which is exactly where noise is expensive. Teardown
+  // now (a) cancels pending tap releases and releases those keys while the page
+  // is still alive, and (b) buckets anything that still fails against a closing
+  // context here instead, so `pageErrors` stays a game-error channel.
+  const teardownErrors = [];
+  let tearingDown = false;
+  const CLOSED_RE = /has been closed|Target closed|Target page, context or browser/i;
+  function noteKeyError(message) {
+    if (tearingDown || CLOSED_RE.test(message)) teardownErrors.push({ message });
+    else pageErrors.push({ message });
+  }
   page.on('console', (msg) => {
     if (msg.type() !== 'error') return;
     // Chrome auto-requests /favicon.ico for any page; our minimal static
@@ -65,6 +81,9 @@ export async function runPlaytest({
   let victorySeenAt = null;
   let gameOverSeenAt = null;
   let stop = false;
+  // Why the run ended, in the run's own words — a report that says "42 events
+  // pending" is only readable next to the reason sampling stopped.
+  let stopReason = null;
 
   // F7 fix (adversarial report, x4-retry-input-loss): the game's fast retry
   // calls releaseAllKeys() on every SLICE_RETRY -> resetGame() transition, so
@@ -101,7 +120,7 @@ export async function runPlaytest({
     try {
       await page.keyboard.down(code);
     } catch (err) {
-      pageErrors.push({ message: `key down failed for ${code}: ${err.message}` });
+      noteKeyError(`key down failed for ${code}: ${err.message}`);
     }
     heldCodes.add(code);
   }
@@ -109,7 +128,7 @@ export async function runPlaytest({
     try {
       await page.keyboard.up(code);
     } catch (err) {
-      pageErrors.push({ message: `key up failed for ${code}: ${err.message}` });
+      noteKeyError(`key up failed for ${code}: ${err.message}`);
     }
     heldCodes.delete(code);
   }
@@ -121,7 +140,7 @@ export async function runPlaytest({
       try {
         await page.keyboard.down(code);
       } catch (err) {
-        pageErrors.push({ message: `retry re-assertion failed for ${code}: ${err.message}` });
+        noteKeyError(`retry re-assertion failed for ${code}: ${err.message}`);
       }
     }
     retryReassertions.push({ tMs, attempts, codes });
@@ -142,10 +161,36 @@ export async function runPlaytest({
   // testapi/HB (sample.gameMs must be a number) — dom-only fallback cannot
   // support this mode, and the driver reports an error rather than silently
   // behaving like wall-clock mode.
+  //
+  // I-018 — the one state where waiting for the clock never ends. The game
+  // shell (T-013) parks a built-but-FROZEN run behind its title screen: state
+  // is `MENU` and `gameMs` stays at 0 until a key starts the run. In this mode
+  // that key is itself gated on `gameMs`, so a script whose first event is at
+  // t>0 waits forever — zero events dispatched, every sample `MENU`, and a
+  // report that looks like a run that simply didn't get anywhere. The clock
+  // cannot start until an event fires, so while (and only while) the game is
+  // parked at the title, events are dispatched on the WALL clock instead, and
+  // each one is stamped `dispatchedVia: 'wallclock-title'` so no report claims
+  // sim-time quantization it did not have. Every other frozen-clock state
+  // (PAUSED, the retry freeze, GAME_OVER) keeps the old behaviour on purpose —
+  // there the wait DOES end, and waiting is the useful half of this mode.
   let nextDeterministicIdx = 0;
   let deterministicGameMsMissingWarned = false;
+  const titleWallclockDispatches = [];
 
   async function dispatchDueDeterministicEvents(sample, tMs) {
+    if (sample.state === 'MENU') {
+      while (nextDeterministicIdx < events.length && events[nextDeterministicIdx].t <= tMs) {
+        const ev = events[nextDeterministicIdx++];
+        if (ev.type === 'keydown') await pressKey(ev.code); else await releaseKey(ev.code);
+        ev.actualDispatchMs = tMs;
+        ev.jitterMs = tMs - ev.t;
+        ev.dispatchedVia = 'wallclock-title';
+        titleWallclockDispatches.push({ tMs, t: ev.t, type: ev.type, code: ev.code });
+        if (stop) break;
+      }
+      return;
+    }
     if (typeof sample.gameMs !== 'number') {
       if (!deterministicGameMsMissingWarned) {
         pageErrors.push({
@@ -163,6 +208,7 @@ export async function runPlaytest({
       ev.actualDispatchGameMs = sample.gameMs;
       ev.gameMsJitterMs = +(sample.gameMs - ev.t).toFixed(2);
       ev.jitterMs = tMs - ev.t;   // wall-clock figure too, for cross-mode comparison
+      ev.dispatchedVia = 'gameMs';
       if (stop) break;
     }
   }
@@ -183,6 +229,11 @@ export async function runPlaytest({
   const policyHeldCodes = new Set();
   const policyLog = [];
   const policyMissingFieldCounts = new Map();
+  // Every tap release that has been scheduled but not yet fired (I-011). The
+  // run can end at any instant — a hard cap, a victory, a game over — and a
+  // timer that outlives the browser context is both a spurious error and a key
+  // the game was never told about; both are settled at teardown instead.
+  const pendingTapReleases = new Set();
 
   async function runPolicyTick(sample, tMs) {
     const { desiredHolds, tapsToFire, missingFieldWarnings } = evaluatePolicyTick(policyRules, sample, heldCodes);
@@ -207,12 +258,30 @@ export async function runPlaytest({
     for (const t of tapsToFire) {
       await pressKey(t.code);
       policyLog.push({ tMs, action: 'tap-down', code: t.code, rule: t.rule });
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        pendingTapReleases.delete(entry);
         releaseKey(t.code).then(() => {
           policyLog.push({ tMs: elapsed(), action: 'tap-up', code: t.code, rule: t.rule });
         });
       }, t.holdMs);
+      const entry = { timer, code: t.code, rule: t.rule };
+      pendingTapReleases.add(entry);
     }
+  }
+
+  // Settle every tap whose release timer is still pending, while the page is
+  // still open: cancel the timer, release the key for real, and log it as the
+  // teardown release it is (`tap-up-teardown`, never a plain `tap-up` — a
+  // report should not read as though the tap ran its full holdMs).
+  async function flushPendingTapReleases() {
+    const entries = [...pendingTapReleases];
+    pendingTapReleases.clear();
+    for (const e of entries) {
+      clearTimeout(e.timer);
+      await releaseKey(e.code);
+      policyLog.push({ tMs: elapsed(), action: 'tap-up-teardown', code: e.code, rule: e.rule });
+    }
+    return entries.length;
   }
 
   async function sampleLoop() {
@@ -254,7 +323,14 @@ export async function runPlaytest({
       const hardCap = tMs >= maxRuntimeMs;
       const victoryDone = victorySeenAt !== null && tMs >= victorySeenAt + victorySettleMs;
       const gameOverDone = gameOverSeenAt !== null && tMs >= gameOverSeenAt + victorySettleMs;
-      if (timeUp || hardCap || victoryDone || gameOverDone) { stop = true; break; }
+      if (timeUp || hardCap || victoryDone || gameOverDone) {
+        stopReason = victoryDone ? 'victory'
+          : gameOverDone ? 'game-over'
+          : hardCap ? 'max-runtime-ms'
+          : 'script-window';
+        stop = true;
+        break;
+      }
       const remaining = Math.max(5, sampleMs - (Date.now() - t0 - before));
       await new Promise((r) => setTimeout(r, remaining));
     }
@@ -277,6 +353,11 @@ export async function runPlaytest({
     await Promise.all([sampleLoop(), inputLoop()]);
   }
 
+  // Teardown starts here: no more input is scheduled, so any keyboard failure
+  // from this point on is the harness closing up, not the game (I-011).
+  const tapsSettledAtTeardown = await flushPendingTapReleases();
+  tearingDown = true;
+
   let screenshotPath = null;
   try {
     screenshotPath = `${outDir}/screenshot.png`;
@@ -298,6 +379,10 @@ export async function runPlaytest({
     achievedSampleIntervalsMs,
     consoleErrors,
     pageErrors,
+    teardownErrors,
+    tapsSettledAtTeardown,
+    titleWallclockDispatches,
+    stopReason: bootError ? 'boot-error' : stopReason,
     bootError,
     wallTimeMs: elapsed(),
     screenshotPath,

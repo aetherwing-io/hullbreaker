@@ -75,11 +75,37 @@ function renderSummary(report) {
   if (metrics.score) {
     lines.push(`- Score snapshot (final, tune=${metrics.score.tune}): CHARGE ${metrics.score.charge} (notch ${metrics.score.notch} ${metrics.score.notchName}), THREAT **${metrics.score.threat}** → ${metrics.score.classification}; counts ${JSON.stringify(metrics.score.counts)}; hot ${metrics.score.hotMs}ms of ${metrics.score.playMs}ms; setbacks ${metrics.score.setbacks}`);
   }
+  // I-018: a --deterministic run's input is gated on the GAME's clock, so the
+  // ledger of what actually dispatched belongs next to the metrics, not buried
+  // in report.json — a run that fired none of its events measured nothing, and
+  // that has to be readable in the digest a human opens first.
+  const dd = meta.deterministicDispatch;
+  if (dd) {
+    lines.push('## Deterministic dispatch (input keyed to the game\'s own clock)');
+    lines.push(`- Events dispatched: **${dd.dispatched} of ${dd.events}**` +
+      (dd.viaWallclockTitle ? ` (${dd.viaWallclockTitle} on the wall clock at the shell title — MENU freezes gameMs)` : '') +
+      `; sim clock reached ${fmtMs(dd.gameMsMax)} (advanced ${fmtMs(dd.clockAdvancedMs)}); stop reason: ${dd.stopReason ?? 'n/a'}`);
+    if (dd.fatal) lines.push(`- **FAILED (exit 1): ${dd.fatal}**`);
+    if (dd.warning) lines.push(`- WARNING: ${dd.warning}`);
+    if (dd.pending > 0 && dd.pendingExpected) {
+      lines.push(`- ${dd.pending} event(s) left pending, which is expected for a run that stopped ` +
+        `at ${dd.stopReason} — its script window was longer than the run.`);
+    }
+    lines.push('');
+  }
   lines.push('');
   if (report.consoleErrors.length || report.pageErrors.length) {
     lines.push('## Errors observed');
     for (const e of report.pageErrors) lines.push(`- [page error] ${e.message}`);
     for (const e of report.consoleErrors) lines.push(`- [console error] ${e.text}`);
+    lines.push('');
+  }
+  // I-011: kept in their own section, deliberately not under "Errors
+  // observed" — a keyboard call losing a race with the browser context closing
+  // says nothing about the game.
+  if ((report.teardownErrors || []).length) {
+    lines.push('## Harness teardown notes (NOT game errors)');
+    for (const e of report.teardownErrors) lines.push(`- [teardown] ${e.message}`);
     lines.push('');
   }
   if (report.meta.bootError) {

@@ -1,0 +1,18 @@
+{
+  "name": "tap-teardown-probe",
+  "description": "REGRESSION PROBE for I-011 (T-027), not a gameplay script. A policy `tap` releases its key from a fire-and-forget timer, so a run that ends with one in flight used to record `key up failed for Space: ...browser has been closed` in `pageErrors` — the channel a gate reads to decide whether the GAME threw. The original repro depended on a tap happening to land in the teardown window; this makes it deliberate by firing taps with a spread of holdMs values (250/500/900/1400) on every landing, so at least one timer is always pending when --max-runtime-ms cuts the run. Reproduced 2/2 before the fix. Expected now: `pageErrors` empty, `teardownErrors` empty, `tapsSettledAtTeardown` > 0, and the settled taps logged as `tap-up-teardown` (never a plain `tap-up`, which would read as a tap that ran its full holdMs). Run it as: node run.mjs scripts/tap-teardown-probe.json --deterministic --max-runtime-ms 6000.",
+  "url": "index.html?slice=traversal",
+  "durationMs": 20000,
+  "moves": [
+    { "hold": "fire", "fromMs": 200, "toMs": 19000 }
+  ],
+  "policy": {
+    "rules": [
+      { "when": "grounded", "do": { "hold": "right" } },
+      { "when": "grounded", "do": { "tap": "jump", "holdMs": 250 } },
+      { "when": "grounded", "do": { "tap": "jump", "holdMs": 500 } },
+      { "when": "grounded", "do": { "tap": "jump", "holdMs": 900 } },
+      { "when": "grounded", "do": { "tap": "jump", "holdMs": 1400 } }
+    ]
+  }
+}
