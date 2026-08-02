@@ -2800,3 +2800,49 @@ The fix is in the ASSET and belongs to T-053. T-051 has written the spec
 UNBLOCKS when T-053 lands feathered cutout alpha. Then re-run T-051's gates
 against the new plates; the depth retune and the feathering fix two different
 problems and both are wanted. ===== -->
+
+## I-045 | bug | S4 | repro: run `node tools/playtest/backdrop-capture.mjs` twice without `--out` against a tree with committed evidence in `reports/tasks/T-051/evidence/` | evidence: T-051's re-gate playtest report
+
+`backdrop-capture.mjs`'s default `--out` is the shared `evidence/` root, so a
+re-gate run silently overwrites the BUILD's own committed-intent screenshots
+with the gate's fresh ones. It happened during T-051's re-gate: the playtester
+caught it via `git status`, restored with `git checkout --`, and re-ran into
+`evidence/regate/` instead. Nothing was lost.
+
+Filed because the near-miss is the point. Committed evidence is the record of
+what a lane claimed at the moment it claimed it; a tool whose default action
+is to overwrite that record makes "the before/after pair proves X" unfalsifiable
+after any later run. Every sibling capture tool in `tools/playtest/` should be
+audited for the same default, not just this one.
+
+Fix direction: default `--out` to a per-run subdirectory, or refuse to write
+into a directory that has tracked files unless `--force` is passed.
+
+## I-046 | art | S3 | repro: `node tools/assets/view.mjs assets/generated/backdrops/backdrop-crown-horizon.png` at true on-screen size, over the shipped game-teal background | evidence: T-053's re-gate playtest report
+
+At true on-screen width (~1045px) over the actual game background,
+`backdrop-crown-horizon`'s silhouette is legible but **low-contrast** — read
+mainly through about five magenta spire-tip accents rather than through the
+ridge shape itself. Over a magenta/checkerboard test field the same alpha data
+resolves a sharp, detailed crenellated silhouette, so the shape is genuinely
+authored and present; it is the VALUE contrast against the shipped sky that is
+low, by design (the recipe caps every pixel at alpha 0.94 and the manifest note
+says why: "no pixel fully opaque anywhere — it is the most distant thing in the
+game").
+
+So this is not a defect and not a bug: it is a deliberate art choice whose
+result the operator has not seen judged at true size against the real
+background. Routed as a look question, not a fix. It pairs with the backdrop
+depth checkpoint already in the queue — if the plates end up more occluded than
+visible, this plate in particular may never register at all.
+
+## I-047 | docs | S4 | repro: `node tools/assets/check.mjs` and read the alpha census line for `vent-louver-plate` | evidence: T-053's re-gate playtest report
+
+`vent-louver-plate` measures **5.35% transparent against the 5% cutout floor**
+that `check.mjs`'s new alpha contract enforces. It passes, legitimately — but by
+0.35 points, the thinnest margin of any asset in the set.
+
+Recorded so the next regeneration of that plate is not surprised by a gate that
+has always been green. The alpha contract is new (T-053) and this is the one
+asset sitting close enough to its threshold that ordinary variation in a
+repaint could cross it.
