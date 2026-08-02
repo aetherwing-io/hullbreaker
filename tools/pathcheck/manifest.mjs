@@ -50,6 +50,7 @@ import * as d37 from './t-029-runtime-truth-three-debug.mjs';
 import * as d38 from './pathcheck-suite-2.mjs';
 import * as d39 from './t-041-impact-language.mjs';
 import * as d40 from './t-043-wasp-aim-lock-squad.mjs';
+import * as d41 from './t-039-contact-shadows.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -93,4 +94,5 @@ export const DOMAINS = [
   d38,    // pathcheck suite
   d39,    // T-041 impact language (S10)
   d40,    // T-043: wasp aim-lock + squad stagger (enemy aggression)
+  d41,    // T-039: contact shadows (S6) =====================
 ];

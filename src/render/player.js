@@ -11,6 +11,7 @@ import { flowSnapshot } from '../sim/flow.js';
 import { scene } from './scene.js';
 import { placeOnTower } from './tower.js';
 import { PAL } from './palette.js';
+import { syncContactShadow } from './contact.js';
 
 const rig = new THREE.Group();
 {
@@ -38,6 +39,13 @@ gunGroup.add(gun);
 rig.add(gunGroup);
 scene.add(rig);
 
+// T-039 (S6, contact shadows): RIG has exactly one row, for its whole
+// lifetime — never spawned or removed the way a hostile/capsule is — so a
+// stable module-level identity is all `syncContactShadow` needs; there is no
+// matching release call (see src/render/contact.js's header note).
+const RIG_SHADOW_ID = Symbol('rig-contact-shadow');
+const RIG_FOOTPRINT = CONFIG.player.width / 2;
+
 // called at the end of updatePlayer, where the single-file build placed the rig
 function sync() {
   placeOnTower(rig, player.x, player.y, 0);
@@ -54,5 +62,6 @@ function sync() {
   const lean = flowSnapshot().mult - 1;
   rig.rotation.z = lean > 0 ? -Math.sign(player.vx || 1) * lean * 1.4 : 0;
   rig.visible = gameMs >= player.iframesUntil || blink();
+  syncContactShadow(RIG_SHADOW_ID, player.x, player.y, RIG_FOOTPRINT);
 }
 installView({ player: { sync } });
