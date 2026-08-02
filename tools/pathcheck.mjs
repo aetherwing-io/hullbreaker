@@ -147,6 +147,12 @@ import {
   WASP_DIVE_NARROW, legibilityGain, resolveLegibility, rigScreenPct, screenPx,
   waspDiveStretch,
 } from '../src/render/legibility.js';
+// T-039 (S6, contact shadows): namespace import, same precedent as the T-009
+// lattice pass above, so the appended section near the end of this file stays
+// one self-contained block. src/render/contact.js itself is NOT imported here
+// (it needs THREE, which this harness cannot resolve) — everything asserted
+// about it is the pure surface-selection/falloff math in this module instead.
+import * as contactShadowModule from '../src/pure/contactShadow.js';
 
 /* ---------------------- layer guards (static) ------------------------ *
  * The pure layer must stay runnable with zero three.js/DOM surface and must
@@ -9224,6 +9230,182 @@ const G2GATE = G2E.gate;
        'still agree exactly — the new field is a superset of what a T-022 reader does ' +
        'by hand, so the packet\'s numbers stay comparable across T-023');
   }
+}
+
+/* ===================== T-039: contact shadows (S6) ===================== *
+ * docs/proposals/2026-08-look-direction.md §3 S6 — one instanced multiply-
+ * blended quad pool so RIG/hostiles/capsules sit ON the world instead of
+ * floating over it. NOT a shadow map (packet §4.1 stays unopened; checked
+ * below). src/render/contact.js needs THREE and cannot be imported here, so
+ * its two provable properties — surface selection and the height falloff —
+ * live in src/pure/contactShadow.js (imported above as contactShadowModule)
+ * and are driven directly; contact.js's own legality is checked by source
+ * inspection, the same technique src/pure/limb.js's render-side statics
+ * already use for src/render/limb.js.
+ *
+ * Reachability discipline (definitions of done): "the resolved shadow Y is
+ * the surface an actor standing there is ACTUALLY on" is checked against the
+ * shipped six-face level's REAL platform list, not an authored fixture — the
+ * same class of defect three "shelf-reachable" cycles missed lived in
+ * asserting geometry instead of the query a player's position would drive. */
+{
+  const {
+    CONTACT_SHADOW, contactShadowFalloff, contactShadowGroundY, contactShadowPlacement,
+  } = contactShadowModule;
+
+  // --- (a) surface selection, driven against the shipped level's platforms
+  const csLevel = buildLevel(CONFIG);
+  const csGroundH = csLevel.groundH, csPlatforms = csLevel.platforms;
+  const rawGroundTop = (x) => {
+    const g = csGroundH[Math.floor(x)];
+    return g > -100 ? g : -999;
+  };
+
+  ok(csPlatforms.length === 62,
+     'T-039 (a): the shipped six-face level carries 62 platform spans, got ' +
+     csPlatforms.length + ' — the falsifying test names this exact count');
+
+  let differed = 0;
+  for (const pl of csPlatforms) {
+    const x = (pl.x0 + pl.x1) / 2;
+    const gTop = rawGroundTop(x);
+    const resolved = contactShadowGroundY(x, pl.y, gTop, csPlatforms);
+    ok(resolved === pl.y,
+       'T-039 (a): an actor standing on the platform [' + pl.x0 + ',' + pl.x1 + ') at y=' +
+       pl.y + ' casts onto the PLATFORM top (got ' + resolved + '), not groundTopAt (' +
+       gTop + ')');
+    if (gTop !== pl.y) differed++;
+  }
+  ok(differed === csPlatforms.length,
+     'T-039 (a): every one of the ' + csPlatforms.length + ' platforms tested genuinely ' +
+     'differs from plain groundTopAt at its own midpoint (' + differed + '/' +
+     csPlatforms.length + ') — the assertion above is not vacuously true');
+
+  {
+    // a platform crossing a gap column (no deck at all) still resolves to
+    // the platform, and a point with neither ground nor a platform hides
+    let gapPlatform = null;
+    for (const pl of csPlatforms) {
+      const mx = Math.floor((pl.x0 + pl.x1) / 2);
+      if (!(csGroundH[mx] > -100)) { gapPlatform = pl; break; }
+    }
+    if (gapPlatform) {
+      const x = (gapPlatform.x0 + gapPlatform.x1) / 2;
+      ok(contactShadowGroundY(x, gapPlatform.y, -999, csPlatforms) === gapPlatform.y,
+         'T-039 (a): a platform spanning a gap column still resolves to the platform, ' +
+         'not the no-ground sentinel');
+    }
+    ok(contactShadowGroundY(9999, 50, -999, []) <= -900,
+       'T-039 (a): a point with no ground and no platform resolves the -999 sentinel');
+  }
+
+  // --- (b)/(c) the falloff: monotone, [0,1]-bounded, exact zero at the ceiling
+  {
+    const CFG = CONTACT_SHADOW;
+    let prevOp = Infinity, prevR = Infinity, monotone = true;
+    for (let h = -1; h <= CFG.ceiling + 2; h = +(h + 0.1).toFixed(2)) {
+      const { opacity, radiusMult } = contactShadowFalloff(h, CFG);
+      if (opacity > prevOp + 1e-9 || radiusMult > prevR + 1e-9) monotone = false;
+      prevOp = opacity; prevR = radiusMult;
+      ok(radiusMult >= 0 && radiusMult <= 1,
+         'T-039 (b): radiusMult is a [0,1] fraction of the caller\'s OWN footprint at h=' +
+         h + ' — the drawn radius can never exceed what the actor passed in');
+      ok(opacity >= 0 && opacity <= CFG.maxOpacity + 1e-9,
+         'T-039 (c): opacity never exceeds the configured max strength at h=' + h);
+    }
+    ok(monotone,
+       'T-039 (c): opacity and radiusMult are both monotonically non-increasing in height ' +
+       'above ground across the sampled range');
+    const ground = contactShadowFalloff(0, CFG);
+    ok(ground.opacity === CFG.maxOpacity && ground.radiusMult === 1,
+       'T-039 (c): at ground level (height 0) the shadow is at full strength and full radius');
+    ok(contactShadowFalloff(CFG.ceiling, CFG).opacity === 0,
+       'T-039 (c): opacity reaches EXACTLY 0 at the configured ceiling');
+    ok(contactShadowFalloff(CFG.ceiling + 5, CFG).opacity === 0,
+       'T-039 (c): opacity stays at exactly 0 past the ceiling — never negative, never re-rising');
+    ok(contactShadowFalloff(-3, CFG).opacity === CFG.maxOpacity,
+       'T-039 (c): a below-ground height clamps to the ground-level reading, never over-strength');
+  }
+
+  // --- composed placement: ground resolution + falloff, and the outright-hide case
+  {
+    const CFG = CONTACT_SHADOW;
+    const noGround = contactShadowPlacement(9999, 3, -999, [], CFG);
+    ok(noGround.opacity === 0,
+       'T-039: an actor over no ground and no platform draws no shadow at all');
+    const onGround = contactShadowPlacement(5, 4, 4, [], CFG);
+    ok(onGround.groundY === 4 && onGround.opacity === CFG.maxOpacity,
+       'T-039: an actor standing exactly on the deck draws at full strength');
+    const aloft = contactShadowPlacement(5, 4 + CFG.ceiling, 4, [], CFG);
+    ok(aloft.opacity === 0,
+       'T-039: an actor at the configured ceiling above the deck draws no shadow');
+    ok(contactShadowPlacement(5, 4, 4, [], CFG, 0).groundY === 4,
+       'T-039: the eps guard is a parameter, not hidden state — a caller can drive it to 0');
+  }
+
+  // --- src/render/contact.js legality, by source inspection (THREE-free
+  // harness cannot import a module that needs THREE)
+  {
+    const code = stripComments(readFileSync(join(srcDir, 'render', 'contact.js'), 'utf8'));
+    ok(/PlaneGeometry\(1,\s*1\)/.test(code),
+       'T-039: contact.js builds exactly one flat unit PlaneGeometry, per the packet');
+    ok(/MultiplyBlending/.test(code) &&
+       !/shadowMap|castShadow|receiveShadow|DirectionalLight|new THREE\.Light/.test(code),
+       'T-039: contact.js uses MultiplyBlending and touches no shadow-map/light-rig surface ' +
+       '— this is S6, not the fenced §4.1 light-rig decision');
+    ok(/fog:\s*true/.test(code),
+       'T-039: the material keeps fog:true — a multiply quad with fog:false would become ' +
+       'the darkest thing on a far facet (correction carried from review)');
+    ok((code.match(/new THREE\.InstancedMesh/g) || []).length === 1,
+       'T-039: exactly one InstancedMesh — the +1 draw call the packet promises');
+    ok(/PAL\.contactShadow/.test(code),
+       'T-039: the shadow color is read through the palette token, never a literal');
+    const colorLiteral =
+      /0x[0-9a-fA-F]{6}\b|#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b|\brgba?\s*\(/g;
+    const literals = (code.match(colorLiteral) || []).filter((m) => m.toLowerCase() !== '0xffffff');
+    ok(literals.length === 0,
+       'T-039: no raw color literal in contact.js (0xffffff multiply-identity excepted)' +
+       (literals.length ? ' (found: ' + literals.join(', ') + ')' : ''));
+    ok(!/\bMath\.random\b|\bDate\.now\b/.test(code),
+       'T-039: contact.js carries no randomness or wall-clock read of its own');
+    ok(/groundTopAt/.test(code) && !/builtGroundTopAt/.test(code),
+       'T-039: contact.js reads the raw groundTopAt, not the retired zipper build-gating ' +
+       'query — the corrected reasoning in its own header, checked mechanically');
+    ok(/IS_TRANSFORM_SLICE/.test(code),
+       'T-039: contact.js is guarded off under the transformation slice');
+    ok(/QUERY\.get\(.shadow.\)/.test(code),
+       'T-039: the flag is ?shadow=1 — an unjudged pixel change, off by default, not the ' +
+       '?juice=0/?legibility=0 default-ON precedent the packet says does not carry over');
+  }
+
+  // --- every call site the packet names actually wires the module: the
+  // "assert against what a PLAYER can do" rule applied to lane wiring — a
+  // file that imports contact.js but never calls it would pass every guard
+  // above while drawing nothing for that actor.
+  {
+    const playerSrc = stripComments(readFileSync(join(srcDir, 'render', 'player.js'), 'utf8'));
+    ok(/syncContactShadow\(/.test(playerSrc), 'T-039: RIG calls syncContactShadow every sync()');
+
+    const hostilesSrc = stripComments(readFileSync(join(srcDir, 'render', 'hostiles.js'), 'utf8'));
+    ok(/syncContactShadow\(/.test(hostilesSrc) && /releaseContactShadow\(/.test(hostilesSrc),
+       'T-039: hostiles.js both places and releases a contact shadow');
+    const footprintBlock =
+      (hostilesSrc.match(/CONTACT_FOOTPRINT\s*=\s*\{([\s\S]*?)\};/) || [])[1] || '';
+    ok(footprintBlock.length > 0, 'T-039: hostiles.js defines a CONTACT_FOOTPRINT table');
+    ok(Object.keys(simEnemyTable).every((k) => new RegExp('\\b' + k + '\\s*:').test(footprintBlock)),
+       'T-039: every sim ENEMY kind (' + Object.keys(simEnemyTable).join(', ') +
+       ') has an authored footprint radius — a kind added later without one would fail here');
+
+    const capsulesSrc = stripComments(readFileSync(join(srcDir, 'render', 'capsules.js'), 'utf8'));
+    ok(/syncContactShadow\(/.test(capsulesSrc) && /releaseContactShadow\(/.test(capsulesSrc),
+       'T-039: capsules.js both places and releases a contact shadow');
+  }
+
+  // --- palette: both tables carry the token (generic key-shape parity
+  // already asserted above; this names the specific key for a clearer
+  // failure message on this task)
+  ok(PAL_CLASSIC.contactShadow !== undefined && PAL_CONCEPT.contactShadow !== undefined,
+     'T-039: both palette tables carry a contactShadow token');
 }
 
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');

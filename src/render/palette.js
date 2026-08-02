@@ -109,6 +109,9 @@ export const CLASSIC = {
     machine: 0x878d96, skyline: 0x333a44, panel: 0x8a9099,
   },
   atmos: {},                             // transform atmosphere bgs pass through untouched
+  /* ==== T-039 contact shadows ==== */
+  contactShadow: 0x14171c,               // neutral near-black, grey-box family
+  /* ==== /T-039 contact shadows ==== */
 };
 
 /* CONCEPT — DESIGN's palette mapped onto the same token shape, split the way
@@ -201,6 +204,13 @@ export const CONCEPT = {
     0x241e26: 0x1c332f,                  // interior plum-dark → dark teal-green
     0x2d3a4a: 0x2a525c,                  // high exterior → lighter, colder teal
   },
+  /* ==== T-039 contact shadows ==== */
+  // A shadow sits ON the lit rust deck, not in the teal atmosphere, so this
+  // stays a warm-dark near-black rather than joining the environment family —
+  // MultiplyBlending darkens toward this token, never tints toward it, so its
+  // hue reads faintly at most even at CONTACT_SHADOW.maxOpacity.
+  contactShadow: 0x1c140f,
+  /* ==== /T-039 contact shadows ==== */
 };
 
 export const PALETTE_ID = resolvePaletteId(QUERY.get('palette'));
