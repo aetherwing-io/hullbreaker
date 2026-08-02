@@ -1832,3 +1832,24 @@ one-liner already applied twice, but note `shell.js` lives in `src/pure/`,
 which may not read `ACTIVE_FIXTURE` directly under the layer-purity rule — the
 count likely has to be passed in, which is why this is worth its own task
 rather than a drive-by edit.
+
+## I-034 | bug | S3 | repro: at `task/T-026 13aef89`, run the import scanner over a file containing `export default class Foo {}` immediately followed by `import glyph from '../assets/generated/glyphs/x.png';` — one hit is returned as `{"kind":"export","specifier":"...png","line":1,"endLine":2}` instead of `kind:"import"` at line 2 | evidence: reports/tasks/T-026/review.md (first finding)
+
+Diagnostic-accuracy bug in the new `tools/assets/lib/imports.mjs` scanner, found
+by the T-026 reviewer writing its own adversarial fixtures. When a legal
+`export default class Foo {}` — which needs no terminating semicolon and has no
+`from` — is immediately followed by a real asset import, the scanner merges the
+two statements into one hit and misattributes both the kind (`export` rather
+than `import`) and the line number (the export's, not the import's).
+
+NOT a detection hole, and explicitly not a T-026 blocker: the file is still
+correctly flagged and `check.mjs` still exits non-zero in every variant tried,
+including chains where a non-asset import sits between the two (the merge
+terminates at the first quote, so it never swallows a second independent import
+statement). The acceptance box T-026 had to meet was about exit code, not
+attribution, and it meets it.
+
+Filed because the error MESSAGE is what the next person debugging a failing
+asset-independence gate will read, and in this shape it points at the wrong line
+and calls an import a re-export. Cheap fix; only worth doing when someone is next
+in that file.
