@@ -3044,3 +3044,19 @@ texture that reads as noise or shimmers while the camera moves is worse than
 flat... judge it moving" — and the gate passed it anyway. A still frame cannot
 show shimmer, so the metric above (sign-reversal rate under motion, against
 the lane's own escape hatch) belongs in the art-lane evidence standard.
+
+## T-057 | art | todo | P1
+goal: kill the lower-hull shimmer (I-049) WITHOUT undoing T-054's density fix.
+accept: sign-reversal shimmer rate in the lower-hull band (y 620-720), measured
+under motion against the lane's own `?tex=flat` control, falls to near the flat
+build's own level — currently 67,502 changing px at 83.7% reversing vs flat's
+10,333 at 54.5%. Fine detail must STAY at T-054's level (near-hull 1.648 vs
+flat 0.416); a fix that restores calm by making the texture invisible again is
+a regression, not a fix, and the gate must be able to tell those apart.
+Darkening must not return (hull mean within ~1.5% of the flat control).
+owner: gameplay-engineer
+fences: `src/render/hulltiles.js`, `src/render/materials.js`, plus a new
+pathcheck domain appended LAST. NOT `limb.js`, NOT `config.js`/`camera.js`
+(T-056 is in those right now).
+verify: the shimmer metric before/after; the fine-detail metric before/after;
+node tools/pathcheck.mjs; captures judged MOVING, not from stills
