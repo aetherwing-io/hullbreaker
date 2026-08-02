@@ -736,7 +736,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; re-run gate-T-016-scored-baseline and a ?ribrun=1 script against a pinned tree and diff the corrected fields
 
-## T-026 | harness | doing | P1
+## T-026 | harness | review | P1
 
 goal: two static gates pass while the invariant they exist to protect is
 violated (I-014, I-024). `checkGameIndependence` in `tools/assets/check.mjs`
@@ -805,7 +805,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs (docs-only lane, must stay green); every cited artifact path resolves
 
-## T-029 | feature | doing | P2
+## T-029 | feature | review | P2
 
 goal: three small runtime truth fixes whose owning files are finally out from
 under the lanes that blocked them (I-005, I-009, I-030). `audioSnapshot()` is
@@ -827,7 +827,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; a ?g2=1 capture of the overlay; a ?momentum=1 trace carrying drive
 
-## T-030 | art | doing | P2
+## T-030 | art | review | P2
 
 goal: finish the palette pass's last file and the FAR readability notes it
 left behind (I-004, I-003, I-010). `src/render/hostiles.js` still reads
@@ -1832,6 +1832,25 @@ one-liner already applied twice, but note `shell.js` lives in `src/pure/`,
 which may not read `ACTIVE_FIXTURE` directly under the layer-purity rule — the
 count likely has to be passed in, which is why this is worth its own task
 rather than a drive-by edit.
+
+## I-035 | docs | S3 | repro: `cd tools/playtest && node run.mjs scripts/momentum-weak.json --deterministic --max-runtime-ms 62000 --base-url <pinned task/T-029 6ec5b40>`, then check any sample in `report.json`'s `trace[]` for a `momentum` key | evidence: tools/playtest/runs/momentum-weak-1785637012980/report.json (0/804 trace samples carry it); tools/playtest/lib/sampler.mjs:120-150
+
+`telemetry()`'s new `momentum: {drive, peakDrive, tier}` (SPRINT I-030 fix,
+T-029) is live and correct on the real channel — confirmed directly in-browser,
+`window.HB.snapshot().momentum` reads `{drive, peakDrive, tier}` under
+`?momentum=1&testapi=1` and is `undefined` (absent from `JSON.stringify`)
+without the flag. But `sampler.mjs`'s `fromTelemetryLike()` (the function that
+builds every `report.json` → `trace[]` row from that same snapshot) whitelists
+fields one at a time and was never given a `momentum` line, so the key never
+reaches a harness report — a future gate reading `report.json` still has to
+invert `pursuitSpeed` to recover drive, the exact readability problem I-030
+was filed to fix. Cosmetic to this run (I verified the live channel directly
+with my own browser probe instead), but it means no *harness-based* gate can
+currently cite momentum from a report without re-deriving it. One-line fix
+(`momentum: s.momentum || null,` beside the other passthrough fields), inside
+`tools/playtest/lib/sampler.mjs`, disclosed by the builder (build.md "Open
+items" #2) and out of T-029's fence (`tools/pathcheck.mjs` was the only
+`tools/` file this lane touched).
 
 ## I-034 | bug | S3 | repro: at `task/T-026 13aef89`, run the import scanner over a file containing `export default class Foo {}` immediately followed by `import glyph from '../assets/generated/glyphs/x.png';` — one hit is returned as `{"kind":"export","specifier":"...png","line":1,"endLine":2}` instead of `kind:"import"` at line 2 | evidence: reports/tasks/T-026/review.md (first finding)
 
