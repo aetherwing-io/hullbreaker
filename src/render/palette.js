@@ -31,6 +31,18 @@
    original calibration note) — so surfaces are brighter than taste says,
    and the deck stays the brightest large surface in every mode.
 
+   THE 0.45x RULE IS CONFIRMED, AND IT IS ALSO THE PROBLEM (T-035). It was
+   measured again in docs/proposals/2026-08-look-direction.md: PAL.ground's
+   token luminance 141.6 lands at 63 on screen (0.445x), so the calibration
+   above is right. What it did NOT author is a RANGE: because every token is
+   authored to land lit, and every instance of every material is drawn at
+   ~1.0x its token (CONFIG.limb.tone is +-4%), 99% of playfield pixels sit
+   inside a 45-70 window out of 255 and 0.0% exceed 200. The hues here are
+   a palette; the values are one note. `shade` below is the second half of
+   that authoring — how far BELOW its lit value a given instance of the same
+   token sits — and it is a per-table entry precisely because CLASSIC must
+   keep every instance at exactly 1.0x to stay a byte-faithful instrument.
+
    FOLLOW-UP CLOSED (T-010 fix-cycle): src/render/hostiles.js was lane-fenced
    to the in-flight hostiles task; that task (T-004, the Iris Polyp) has now
    merged, so hostiles.js reads PAL.wasp/carrier/hound/houndTell/houndCharge
@@ -49,6 +61,7 @@
 
 import { CONFIG } from '../config.js';
 import { QUERY } from '../mode.js';
+import { resolveShadeGain } from '../pure/shade.js';
 
 // Pure resolver, exported for pathcheck: only the exact opt-out selects the
 // grey-box; absence, junk, and '' all resolve to the concept default.
@@ -109,6 +122,12 @@ export const CLASSIC = {
     machine: 0x878d96, skyline: 0x333a44, panel: 0x8a9099,
   },
   atmos: {},                             // transform atmosphere bgs pass through untouched
+  // T-035 value ladder: EXACT identity, by requirement. gain 0 makes every
+  // multiplier src/pure/shade.js returns exactly 1.0, so ?palette=classic is
+  // still the byte-faithful grey-box instrument the queued Palette v1 A/B is
+  // judged against — even with ?shade=1 also on the URL. If this ever becomes
+  // "nearly" identity, that A/B stops being a controlled comparison.
+  shade: { gain: 0 },
 };
 
 /* CONCEPT — DESIGN's palette mapped onto the same token shape, split the way
@@ -201,10 +220,27 @@ export const CONCEPT = {
     0x241e26: 0x1c332f,                  // interior plum-dark → dark teal-green
     0x2d3a4a: 0x2a525c,                  // high exterior → lighter, colder teal
   },
+  // T-035 value ladder, at full strength when its flag arms it. The concept
+  // table is where the ladder belongs: these tokens were authored to land
+  // LIT (see the 0.45x note above), so the range under them is the missing
+  // half of the same authoring, not a second palette.
+  shade: { gain: 1 },
 };
 
 export const PALETTE_ID = resolvePaletteId(QUERY.get('palette'));
 export const PAL = PALETTE_ID === 'classic' ? CLASSIC : CONCEPT;
+
+/* The value ladder's own flag (T-035): ?shade=1 full, ?shade=0.5 half,
+   absent/0/junk off — and off is byte-identical to the shipped build,
+   because every shade multiplier is `1 + gain * (raw - 1)` and gain 0 is
+   exactly 1.0. It is deliberately NOT the palette toggle: that would move
+   hue and value together and neither could be judged on its own.
+
+   SHADE_GAIN folds in the table's own gain, so ?shade=1&palette=classic is
+   still the untouched grey-box (CLASSIC.shade.gain is 0). The renderers
+   (./limb.js, ./level.js) read this one number and nothing else. */
+export const SHADE_STRENGTH = resolveShadeGain(QUERY.get('shade'));
+export const SHADE_GAIN = SHADE_STRENGTH * PAL.shade.gain;
 
 // Transform-slice atmosphere remap (render-side; see CONCEPT.atmos). The
 // table argument exists for pathcheck, which asserts both modes' behavior.

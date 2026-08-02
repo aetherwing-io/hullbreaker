@@ -26,10 +26,11 @@ import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { SEGS, headingAt, polyAt } from '../pure/path.js';
 import { limbBakePlan, limbFacetTone } from '../pure/limb.js';
+import { limbShadePlan } from '../pure/shade.js';
 import { IS_G1 } from '../mode.js';
 import { groundH } from '../sim/level.js';
 import { scene } from './scene.js';
-import { PAL } from './palette.js';
+import { PAL, SHADE_GAIN } from './palette.js';
 
 // One value ladder from the palette module (concept teal/rust by default,
 // grey-box via ?palette=classic): the deck (PAL.ground) stays the brightest
@@ -40,6 +41,18 @@ import { PAL } from './palette.js';
 // (PAL.ground, ~0.48x) has to stay the brightest large surface and the haze
 // (PAL.limbBg) has to sit just above it, so the limb's own armour is
 // authored a notch under the deck instead of the two notches that read as black.
+//
+// WHAT THAT CALIBRATION LEFT OUT, AND ?shade= SUPPLIES (T-035). The rule
+// above authors where a LIT face lands. It never authored where an occluded
+// one lands, so every one of these ~900 pieces was drawn at ~1.0x its token
+// (CONFIG.limb.tone is +-4% of hue, not of value) and the measured result is
+// a body with no darks at all: 99% of playfield pixels inside a 45-70 window
+// out of 255 (docs/proposals/2026-08-look-direction.md). ../pure/shade.js
+// computes the missing half — occlusion, top-face rake and seeded wear per
+// piece — and it multiplies the SAME tokens, so the palette's hue authoring
+// is untouched and the two can be judged apart. SHADE_GAIN is 0 on every URL
+// that does not ask for it, and 0 means exactly 1.0x: the bake below is then
+// byte-identical to the shipped build.
 const BASE_COLORS = PAL.limb;
 
 // kind → material. Joint pieces deliberately use the brighter `rib`/`machine`
@@ -86,27 +99,34 @@ function bakeLimb() {
   scene.fog.color.setHex(PAL.limbBg);
 
   const plan = limbBakePlan(CONFIG, groundH);
-  const byMaterial = new Map();                // material key → pieces
-  for (const piece of plan) {
-    const key = MATERIAL_FOR[piece.kind] || 'hull';
+  // One plan-level pass, before the buckets: the occlusion term is about what
+  // is AROUND a piece, so it cannot be computed piece by piece. Indices, not
+  // pieces, go into the buckets so every instance keeps its plan-order shade.
+  const shade = limbShadePlan(plan, CONFIG, SHADE_GAIN);
+  const byMaterial = new Map();                // material key → plan indices
+  for (let n = 0; n < plan.length; n++) {
+    const key = MATERIAL_FOR[plan[n].kind] || 'hull';
     if (!byMaterial.has(key)) byMaterial.set(key, []);
-    byMaterial.get(key).push(piece);
+    byMaterial.get(key).push(n);
   }
   const geo = new THREE.BoxGeometry(1, 1, 1);
-  for (const [key, pieces] of byMaterial) {
+  for (const [key, indices] of byMaterial) {
     const mesh = new THREE.InstancedMesh(
       geo,
       new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true }),
-      pieces.length
+      indices.length
     );
     mesh.frustumCulled = false;                // static bake, one upload
-    for (let i = 0; i < pieces.length; i++) {
-      const piece = pieces[i];
+    for (let i = 0; i < indices.length; i++) {
+      const piece = plan[indices[i]];
       mesh.setMatrixAt(i, pieceMatrix(piece));
       const tone = limbFacetTone(piece.facet, CONFIG);
+      const k = shade[indices[i]];             // 1.0 exactly when the flag is off
       _c.setHex(BASE_COLORS[key]);
       mesh.setColorAt(i, _tint.setRGB(
-        Math.min(1, _c.r * tone[0]), Math.min(1, _c.g * tone[1]), Math.min(1, _c.b * tone[2])
+        Math.min(1, _c.r * tone[0] * k),
+        Math.min(1, _c.g * tone[1] * k),
+        Math.min(1, _c.b * tone[2] * k)
       ));
     }
     scene.add(mesh);

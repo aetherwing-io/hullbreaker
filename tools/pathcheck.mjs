@@ -8893,5 +8893,322 @@ const G2GATE = G2E.gate;
   }
 }
 
+/* ==================== T-035 value ladder (S1 + S2) ====================== *
+ * APPENDED AS ONE BLOCK ON PURPOSE: two other lanes are adding assertions to
+ * this file in parallel, and docs/ORCHESTRATION.md records pathcheck splicing
+ * as a conflict class that already cost a cycle. Everything T-035 asserts is
+ * between this banner and the end of the file, and it imports what it needs
+ * dynamically so the shared import header is untouched.
+ *
+ * WHAT IS BEING GATED. docs/proposals/2026-08-look-direction.md measured the
+ * grey-box read as a VALUE range, not a hue: 0.0% of playfield pixels over
+ * luminance 200 in all fifteen gameplay captures, 99% of them inside a 45-70
+ * window out of 255, one flat token over 29-34% of the screen. T-010's
+ * concept palette moved every hue over byte-identical geometry and lights and
+ * did not move that. src/pure/shade.js is the value half; these assertions
+ * are the falsifying tests the packet named for S1 and S2.
+ *
+ * THE SPACE MATTERS, so it is stated once here and used everywhere below:
+ * luminance is Rec.709 over sRGB DISPLAY bytes — the same space every number
+ * in the packet's evidence is measured in — while the multiplier the shade
+ * pass produces acts in the renderer's LINEAR working space (THREE.Color
+ * converts on setHex). So each instance color is taken token -> linear ->
+ * x tone x shade -> back to sRGB -> luma, which is exactly the arithmetic the
+ * GPU will do. A gate stated in multiplier space would have been ~2.2x
+ * weaker and would not have compared to the captures.                     */
+{
+  const SH = await import('../src/pure/shade.js');
+  const PALMOD = await import('../src/render/palette.js');
+  const shadeSrc = stripComments(readFileSync(join(srcDir, 'pure', 'shade.js'), 'utf8'));
+  const limbSrc035 = stripComments(readFileSync(join(srcDir, 'render', 'limb.js'), 'utf8'));
+  const levelSrc035 = stripComments(readFileSync(join(srcDir, 'render', 'level.js'), 'utf8'));
+
+  // --- display-luminance helpers (see the banner) ----------------------
+  const s2l = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  const l2s = (c) => (c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055);
+  const chan035 = (h) => [((h >> 16) & 255) / 255, ((h >> 8) & 255) / 255, (h & 255) / 255];
+  const luma035 = (rgb) => 255 * (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]);
+  const tokenLuma = (hex) => luma035(chan035(hex));
+  const bakedLuma = (hex, tone, k) => luma035(
+    chan035(hex).map(s2l).map((v, i) => Math.min(1, v * (tone ? tone[i] : 1) * k)).map(l2s));
+
+  // --- the flag: off by default, and off is EXACTLY off ----------------
+  ok(SH.resolveShadeGain('1') === 1 && SH.resolveShadeGain('on') === 1 &&
+     SH.resolveShadeGain('0.5') === 0.5 && SH.resolveShadeGain('2') === 1,
+     'T-035: ?shade= resolves 1/on to full strength, 0.5 to half, and clamps above 1');
+  ok(SH.resolveShadeGain(null) === 0 && SH.resolveShadeGain('') === 0 &&
+     SH.resolveShadeGain('junk') === 0 && SH.resolveShadeGain('0') === 0 &&
+     SH.resolveShadeGain('-1') === 0,
+     'T-035: absent/junk/0/negative ?shade= all resolve to OFF — the ladder is ' +
+     'unjudged look, so every shipped URL keeps the value range it has today');
+  ok(PALMOD.SHADE_STRENGTH === 0 && PALMOD.SHADE_GAIN === 0,
+     'T-035: a headless import with no query lands on gain 0 (off by default)');
+  ok(PAL_CLASSIC.shade.gain === 0,
+     'T-035: CLASSIC.shade is EXACT identity — ?palette=classic stays the ' +
+     'byte-faithful grey-box instrument the queued Palette v1 A/B is judged against, ' +
+     'even with ?shade=1 also on the URL');
+  ok(PAL_CONCEPT.shade.gain === 1, 'T-035: CONCEPT carries the ladder at full strength');
+  ok(Object.keys(PAL_CLASSIC.shade).sort().join(',') ===
+     Object.keys(PAL_CONCEPT.shade).sort().join(','),
+     'T-035: both palette tables carry the same shade key set');
+
+  // --- the pure layer's own rules --------------------------------------
+  ok(!/Math\.random|Date\.now|performance\.now/.test(shadeSrc),
+     'T-035: src/pure/shade.js draws randomness only through the seeded rng');
+  ok(!/\bgameMs\b|\btMs\b|\bdt\b/.test(shadeSrc),
+     'T-035: src/pure/shade.js takes no time argument — a shading pass that ' +
+     'cannot read a clock cannot become a light show (decisions.md entry 3)');
+  ok(/from '\.\/rng\.js'/.test(shadeSrc) && /mulberry32/.test(shadeSrc),
+     'T-035: the wear field is seeded from src/pure/rng.js mulberry32');
+
+  const level035 = buildLevel(CONFIG);
+  const gh035 = level035.groundH;
+  const plan035 = limbBakePlan(CONFIG, gh035);
+  const shade035 = SH.limbShadePlan(plan035, CONFIG, 1);
+  const shadeAgain = SH.limbShadePlan(plan035, CONFIG, 1);
+  const shadeOff = SH.limbShadePlan(plan035, CONFIG, 0);
+  ok(shade035.length === plan035.length &&
+     shade035.every((v, i) => v === shadeAgain[i]),
+     'T-035: two calls with the same seed return identical arrays (' +
+     plan035.length + ' pieces)');
+  ok(shadeOff.every((v) => v === 1),
+     'T-035: gain 0 is exactly 1.0 for every piece — not nearly, exactly, so ' +
+     'the default bake is bit-identical to the shipped build');
+  {
+    const dOff = SH.deckShadePlan(gh035, CONFIG, 0);
+    const dOn = SH.deckShadePlan(gh035, CONFIG, 1);
+    const dAgain = SH.deckShadePlan(gh035, CONFIG, 1);
+    ok(dOff.rows.every((r) => r === 1) && dOff.wear.every((w) => w === 1),
+       'T-035: the deck pass is exact identity at gain 0 too');
+    ok(dOn.wear.every((w, i) => w === dAgain.wear[i]) &&
+       dOn.rows.every((r, i) => r === dAgain.rows[i]),
+       'T-035: the deck pass is deterministic too (' + dOn.wear.length + ' columns)');
+    const vd = levelSrc035.match(/const VISUAL_DEPTH = (\d+)/);
+    ok(!!vd && CONFIG.shade.deck.rows.length === Number(vd[1]),
+       'T-035: the row ramp has one entry per deck row (VISUAL_DEPTH = ' +
+       (vd ? vd[1] : '?') + ')');
+  }
+
+  // --- S1 gate (a): the range that is arithmetically impossible today ---
+  // The material map is PARSED from src/render/limb.js rather than copied
+  // here, so a later remap cannot leave this gate certifying a mapping no
+  // mesh reads (the I-019/I-031 dead-token failure mode).
+  const mfBlock = limbSrc035.match(/const MATERIAL_FOR = \{([\s\S]*?)\};/);
+  const MATERIAL_035 = {};
+  if (mfBlock) for (const m of mfBlock[1].matchAll(/(\w+)\s*:\s*'(\w+)'/g)) MATERIAL_035[m[1]] = m[2];
+  ok(Object.keys(MATERIAL_035).length >= 12,
+     'T-035: the limb material map was parsed out of the shipped renderer (' +
+     Object.keys(MATERIAL_035).length + ' kinds), not hand-copied into the harness');
+
+  function bakeStats(gain) {
+    const shade = SH.limbShadePlan(plan035, CONFIG, gain);
+    const buckets = new Map();
+    let below = 0, brightest = -Infinity;
+    for (let i = 0; i < plan035.length; i++) {
+      const key = MATERIAL_035[plan035[i].kind] || 'hull';
+      const hex = PAL_CONCEPT.limb[key];
+      const L = bakedLuma(hex, limbFacetTone(plan035[i].facet, CONFIG), shade[i]);
+      if (L / tokenLuma(hex) < 0.55) below++;
+      if (L > brightest) brightest = L;
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key).push(L);
+    }
+    let worst = 1, worstKey = '';
+    for (const [key, Ls] of buckets) {
+      const mn = Math.min(...Ls), mx = Math.max(...Ls);
+      const spread = mx > 0 ? (mx - mn) / mx : 0;
+      if (spread < worst) { worst = spread; worstKey = key; }
+    }
+    return { share: below / plan035.length, worst, worstKey, brightest, buckets };
+  }
+  const onStats = bakeStats(1), offStats = bakeStats(0);
+  ok(onStats.share >= 0.20,
+     'T-035/S1(a): ' + (100 * onStats.share).toFixed(1) + '% of baked limb instances ' +
+     'land below 0.55x their token\'s display luminance (gate: >= 20%)');
+  ok(offStats.share === 0,
+     'T-035/S1(a): …and the SAME measurement on the shipped default is ' +
+     (100 * offStats.share).toFixed(1) + '% — this gate is red on current main by ' +
+     'arithmetic, which is the point of writing it');
+  ok(onStats.worst >= 0.45,
+     'T-035/S1(a): every limb material carries a normalized luminance spread >= 0.45 ' +
+     '(worst: ' + onStats.worstKey + ' at ' + onStats.worst.toFixed(3) + ')');
+  ok(offStats.worst < 0.15,
+     'T-035/S1(a): …against ' + offStats.worst.toFixed(3) + ' today, where CONFIG.limb' +
+     '.tone\'s +-4% is a HUE jitter and every instance of a material is one value');
+
+  // --- S1 gate (b): the checker keeps its scroll-speed carrier job ------
+  const cA035 = PAL_CONCEPT.ground, cB035 = PAL_CONCEPT.groundAlt;
+  const checkerDelta = Math.abs(tokenLuma(cA035) - tokenLuma(cB035));
+  // 16.7702 is what 0xc8834a vs 0xb27341 carry today (16.77019... exactly):
+  // the gate is "the ladder did not buy its ramp by flattening the checker",
+  // so the number is pinned rather than recomputed from a moving source.
+  ok(checkerDelta >= 16.77,
+     'T-035/S1(b): the two checker tokens still differ by ' + checkerDelta.toFixed(4) +
+     ' display levels — at or above the delta they carry today (16.7702)');
+  {
+    const deck = SH.deckShadePlan(gh035, CONFIG, 1);
+    let minStep = Infinity, notBrightest = 0, minTop = Infinity;
+    let minWear = Infinity, maxWear = -Infinity;
+    for (let i = 0; i < gh035.length; i++) {
+      if (!(gh035[i] > -100)) continue;
+      minWear = Math.min(minWear, deck.wear[i]);
+      maxWear = Math.max(maxWear, deck.wear[i]);
+      const rows = [];
+      for (let d = 1; d <= deck.rows.length; d++) {
+        const j = gh035[i] - d;
+        rows.push(bakedLuma((i + j) % 2 === 0 ? cA035 : cB035, null,
+                            deck.rows[d - 1] * deck.wear[i]));
+      }
+      minStep = Math.min(minStep, rows[0] - rows[1]);
+      minTop = Math.min(minTop, rows[0]);
+      if (rows[0] <= Math.max(...rows.slice(1))) notBrightest++;
+    }
+    ok(minStep > checkerDelta,
+       'T-035/S1(b): the per-column top-row-to-row-2 step (' + minStep.toFixed(1) +
+       ' levels, worst column) exceeds the checker delta (' + checkerDelta.toFixed(1) +
+       ') — the deck lip gains a carrier, the checker does not lose one');
+    const wearSwing = 1 - bakedLuma(cA035, null, minWear) / bakedLuma(cA035, null, maxWear);
+    ok(wearSwing < checkerDelta / tokenLuma(cA035),
+       'T-035/S1(b): the along-s wear swing on the deck is ' + (100 * wearSwing).toFixed(1) +
+       '% of display luminance, under the checker\'s own ' +
+       (100 * checkerDelta / tokenLuma(cA035)).toFixed(1) + '% — a stain band may ' +
+       'modulate the scroll carrier, never replace it');
+
+    // --- S1 gate (c): "the deck stays the brightest surface", as arithmetic
+    ok(notBrightest === 0,
+       'T-035/S1(c): the deck\'s top row is the highest-luminance instance in every ' +
+       'one of its columns (' + notBrightest + ' exceptions)');
+    ok(minTop > onStats.brightest,
+       'T-035/S1(c): …and the dimmest deck top row (' + minTop.toFixed(1) + ') still ' +
+       'outranks the brightest instance anywhere in the limb (' +
+       onStats.brightest.toFixed(1) + ') — palette.js\'s prose rule, as a number');
+    ok(offStats.brightest > bakedLuma(cB035, null, 1),
+       'T-035/S1(c): …and it is NOT true on the shipped default, which is why the ' +
+       'packet asked for it as arithmetic: there the brightest limb instance is ' +
+       offStats.brightest.toFixed(1) + ' against a dimmest deck top row of ' +
+       bakedLuma(cB035, null, 1).toFixed(1) + ' — the kerb already outshines the dark ' +
+       'checker square, so the prose rule has been false in the shipped build');
+  }
+
+  // --- draw calls and instance counts are untouched ---------------------
+  {
+    const materials = new Set(plan035.map((p) => MATERIAL_035[p.kind] || 'hull'));
+    ok(plan035.length === 829 && materials.size === 8,
+       'T-035: the bake plan is unchanged — ' + plan035.length + ' pieces in ' +
+       materials.size + ' instanced buckets (the ladder writes colors, never geometry)');
+    const count = (src, re) => (src.match(re) || []).length;
+    ok(count(limbSrc035, /new THREE\.InstancedMesh/g) === 1 &&
+       count(limbSrc035, /new THREE\.Mesh\b/g) === 0,
+       'T-035: src/render/limb.js still builds exactly one InstancedMesh per material ' +
+       'and no single meshes — draw calls cannot have moved');
+    ok(count(levelSrc035, /new THREE\.InstancedMesh/g) === 1,
+       'T-035: src/render/level.js still builds exactly one tile InstancedMesh');
+    ok(/setColorAt\(idx, _tile\.copy\(/.test(levelSrc035) &&
+       /multiplyScalar\(k\)/.test(levelSrc035),
+       'T-035: the deck ladder rides the existing per-instance color, through a reused ' +
+       'scratch Color — no new attribute, no allocation per tile');
+  }
+
+  // --- S2: the haze band, re-authored against the depth the limb occupies
+  // three.js fogs on VIEW-SPACE depth (fog_vertex.glsl: vFogDepth =
+  // -mvPosition.z), not radial distance, so every number here is a dot with
+  // the camera's forward axis. The probe reproduces src/render/camera.js's
+  // own edge calibration (NDC x = +-1 at y = 0) so the s-window asserted
+  // against is the one the sim is actually calibrated to.
+  {
+    const C035 = CONFIG.camera, PB = CONFIG.limb.playBand;
+    const norm3 = (v) => { const m = Math.hypot(v[0], v[1], v[2]); return v.map((x) => x / m); };
+    const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2],
+                              a[0] * b[1] - a[1] * b[0]];
+    const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    function probe(view, aspect) {
+      const camZ = C035.z * CONFIG.viewScales[view].depthMult;
+      const cam = [C035.x, C035.y, camZ];
+      const fwd = norm3([C035.lookX - C035.x, C035.lookY - C035.y, -camZ]);
+      const right = norm3(cross3(fwd, [0, 1, 0]));
+      const t = Math.tan(C035.fov * Math.PI / 360);
+      const edges = [-1, 1].map((sx) => {
+        const dir = [0, 1, 2].map((i) => fwd[i] + sx * t * aspect * right[i]);
+        const k = -cam[2] / dir[2];
+        return cam[0] + k * dir[0];
+      });
+      return {
+        shift: camZ - C035.z, edges,
+        depth: (u, y, d) => dot3([u - cam[0], y - cam[1], d - cam[2]], fwd),
+      };
+    }
+    const factor = (depth, band, shift) => Math.max(0, Math.min(1,
+      (depth - (band.near + shift)) / (band.far - band.near)));
+
+    ok(CONFIG.limb.fog.near === 24 && CONFIG.limb.fog.far === 52,
+       'T-035/S2: the SHIPPED limb haze band is pinned at 24/52 — it had no assertion ' +
+       'at all before this task, so it could be moved silently');
+    {
+      const camSrc035 = stripComments(readFileSync(join(srcDir, 'render', 'camera.js'), 'utf8'));
+      ok(/SHADE_GAIN > 0 \? CONFIG\.limb\.shadeFog : CONFIG\.limb\.fog/.test(camSrc035),
+         'T-035/S2: the retuned band is selected ONLY when the ladder is armed, and by ' +
+         'SHADE_GAIN rather than the raw flag, so ?palette=classic keeps the shipped ' +
+         'band even with ?shade=1 on the URL');
+      ok(/scene\.fog\.near = F\.near \+ fogShift/.test(camSrc035),
+         'T-035/S2: …and it still composes with the ?view= pull-back shift, so the ' +
+         'ladder holds its contrast at every view');
+    }
+
+    const SF = CONFIG.limb.shadeFog;
+    let worstPlay = 0, worstWide = 0;
+    for (const view of ['near', 'mid', 'far']) {
+      for (const aspect of [1.6, 1.7778]) {
+        const p = probe(view, aspect);
+        for (const u of p.edges) for (const y of [PB.y0, PB.y1])
+          worstPlay = Math.max(worstPlay, factor(p.depth(u, y, 0), SF, p.shift));
+      }
+      const w = probe(view, 2.4);
+      for (const u of w.edges) for (const y of [PB.y0, PB.y1])
+        worstWide = Math.max(worstWide, factor(w.depth(u, y, 0), SF, w.shift));
+    }
+    ok(worstPlay === 0,
+       'T-035/S2(iii): under the retuned band NO point of the protected play band is ' +
+       'inside the fog ramp at any shipped view, at 16:10 or 16:9 — the worst case is ' +
+       'the screen-EDGE column at playBand.y0, not the plane\'s own depth, which is ' +
+       'the failure src/render/camera.js:64-73 was written about');
+    ok(worstWide <= 0.03,
+       'T-035/S2(iii): …and stays under 3% (measured ' + (100 * worstWide).toFixed(1) +
+       '%) even at an ultrawide 2.40 aspect');
+    ok(Math.abs((SF.far - SF.near) - (CONFIG.limb.fog.far - CONFIG.limb.fog.near)) < 1e-9,
+       'T-035/S2: the retuned band keeps the shipped band\'s WIDTH exactly — ' +
+       'src/main.js\'s selftest asserts \'limb haze armed\' as a width comparison ' +
+       'against CONFIG.limb.fog, so a wider ramp fails ?selftest=1&shade=1 until that ' +
+       'check reads the band camera.js selected. That file is fenced this cycle: the ' +
+       'shift ships, the widening is the recorded follow-up');
+    {
+      const p = probe('far', 1.6);
+      const tiers = [
+        ['wall', factor(p.depth(C035.x, 6, -6), SF, p.shift)],
+        ['silhouette -26', factor(p.depth(C035.x, 47, -26), SF, p.shift)],
+      ];
+      const f = tiers.map((t) => t[1]);
+      const oldTiers = [factor(p.depth(C035.x, 6, -6), CONFIG.limb.fog, p.shift),
+                        factor(p.depth(C035.x, 47, -26), CONFIG.limb.fog, p.shift)];
+      ok(f[0] < f[1] && f[1] - f[0] >= 0.15 && f[0] < oldTiers[0] && f[1] < oldTiers[1],
+         'T-035/S2(i): the retuned band separates the two tiers it can reach at FAR — ' +
+         tiers.map((t) => t[0] + ' ' + t[1].toFixed(2)).join(', ') + ' — and both sit ' +
+         'clearer than on the shipped band (' + oldTiers.map((v) => v.toFixed(2)).join(' / ') +
+         '), so the grading between them is the limb\'s own mass, not haze');
+      // A LIMIT, recorded as a test so no later report can claim otherwise: the
+      // deepest authored slab is erased by the haze under BOTH bands. Bringing
+      // it back is the width change above, and populating that empty band is
+      // packet item S4 — neither is in this task.
+      const deepNew = factor(p.depth(C035.x, 45, -34), SF, p.shift);
+      const deepOld = factor(p.depth(C035.x, 45, -34), CONFIG.limb.fog, p.shift);
+      ok(deepNew >= 1 && deepOld >= 1,
+         'T-035/S2 LIMIT: the silhouette slab at depth -34 is still at fog 1.00 under ' +
+         'the retuned band as well as the shipped one — it IS the backdrop token, which ' +
+         'is part of what the 29-34%-of-screen flat-token finding is made of, and it ' +
+         'stays that way until the band may widen');
+    }
+  }
+}
+
+
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');
 process.exit(fails ? 1 : 0);
