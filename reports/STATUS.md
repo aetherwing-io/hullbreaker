@@ -25,3 +25,4 @@ One line per merged task, appended by `tools/orch/merge-task.sh`:
 2026-08-01 15:34 | T-019 | 9b64976 | merged task/T-019
 2026-08-01 15:38 | T-009 | d0a9e72 | merged task/T-009
 2026-08-01 16:37 | T-022 | 2bc919a | merged task/T-022
+2026-08-01 21:09 | T-024 | f4fa005 | merged task/T-024
