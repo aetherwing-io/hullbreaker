@@ -1157,6 +1157,106 @@ projectiles measured, not assumed; no frozen constant moves.
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; frame time at 256 projectiles before/after
 
+<!-- ========== 2026-08-02 THE GREYBOX DIAGNOSIS (integrator) ==========
+
+The operator asked, after two days of art tasks: "should we change the size or
+camera or scale or something to improve the graphics, i looked at those and
+we're not even remotely close to the concept art. what is in the way that is
+making this so difficult?"
+
+It is not the camera, the size, or the scale. Measured on main at 9cc80f7:
+
+  1. `grep -rn "assets/generated" src/` returns NOTHING. Five finished
+     backdrop plates, four hull tiles and nineteen sprites sit in
+     assets/generated/ and no runtime file references any of them.
+  2. The render layer builds 30 materials — 20 MeshBasicMaterial, 10
+     MeshStandardMaterial — and not one carries an image map. The only `map:`
+     in src/render/ is capsules.js:122-139, a CanvasTexture drawing a LETTER.
+  3. scene.js:25 — `scene.background = new THREE.Color(PAL.bg)`. The sky, and
+     the 60-80% of every concept board that is creature-body-in-haze, is one
+     flat color.
+  4. Geometry: 27 BoxGeometry, 5 Octahedron, 3 Sphere, 1 each Torus/Plane/
+     Dodecahedron/Cone.
+
+So the world is untextured boxes wearing flat palette colors. Every art task
+since T-030 has improved LIGHT AND COLOR ON UNTEXTURED BOXES — palette, value
+ladder (entry 14), fog retune, contact shadows, tone mapping, bloom (entry 18).
+All of it good work; all of it against the ceiling of what flat shading can be.
+That ceiling is what "greybox" MEANS. It is not reachable by more of the same.
+
+WHY IT SAT THERE: "the game must boot with every file under assets/ missing"
+was a hard rule until decisions entry 16 retired it on 2026-08-02. The asset
+pipeline was built (T-036, T-046) and then forbidden from feeding the game.
+
+THIRD FACTOR: tools/assets/gen.mjs asks codex for an SVG (gen.mjs:158-166
+extracts `<svg>...</svg>` from the reply). Codex is a coding agent — images in,
+code out — so an SVG ask yields hand-placed vector rectangles. Even our best
+asset is flat clip-art rather than painted. Codex cannot emit a painting, but
+it CAN write a program that renders one (noise, fbm, grunge, wear masks,
+gradient ramps) — a far higher ceiling that keeps determinism, diffability and
+palette-checkability. That is T-053.
+
+T-051/T-052/T-053 are this diagnosis turned into work. T-051 and T-052 are
+branched off task/T-049, not main, because T-049 carries the shared
+src/render/preload.js texture gate; merge order is T-049 → T-051/T-052.
+========== -->
+
+## T-051 | art | doing | P1
+goal: a real backdrop behind the world. The five finished 1024x512 plates in
+assets/generated/backdrops/ go onto parallaxing quads, replacing the flat
+scene.background color as the thing filling 60-80% of the frame. Depth layering
+and atmospheric perspective are the tools for SELLING SCALE, which entry 17
+records as the headline art problem.
+accept: consumes preload.js's shared gate (no second bespoke loader — I-039);
+ships ON by default with a `?backdrop=flat` escape hatch (entry 16); a failed
+plate degrades to today's flat color without wedging the game and without the
+sim branching on it; far edge dissolves into the fog color, proven by capture;
+static-anatomy (entry 3) and the frozen FAR camera (entries 7/17) untouched;
+60fps at 200+ projectiles measured vsync-off, distribution not mean.
+owner: gameplay-engineer (sonnet)
+fences: src/render/backdrop.js (new), src/render/scene.js. NOT preload.js
+(T-049), NOT materials.js/limb.js (T-052).
+verify: node tools/pathcheck.mjs; new assertions proven by break/restore;
+on-vs-flat captures at the same camera position and same deterministic moment
+
+## T-052 | art | doing | P1
+goal: surface texture on the hull. The four finished tiles in
+assets/generated/textures/ bind to the large surfaces as albedo (+roughness/
+normal where they earn their cost) on the existing MeshStandardMaterials.
+accept: tiling density judged from captures at TRUE on-screen size with RIG at
+3-5% of screen height, not from arithmetic; texture reinforces limb.js:65-78's
+warm-near/cool-far split rather than flattening it; palette conformance via
+tools/assets/check.mjs (hull-panel-tile currently reads rust-brown); consumes
+preload.js's shared gate; ON by default with a `?tex=flat` hatch; failed tile
+degrades to today's flat material; 60fps at 200+ projectiles vsync-off, with
+texture memory and draw calls before/after and T-047's renderer.info caveat
+restated.
+owner: gameplay-engineer (sonnet)
+fences: src/render/materials.js, src/render/limb.js. NOT preload.js (T-049),
+NOT backdrop.js/scene.js (T-051).
+verify: node tools/pathcheck.mjs; new assertions proven by break/restore;
+textured-vs-flat captures including one near and one far surface
+
+## T-053 | assets | doing | P1
+goal: raise the generator's ceiling from vector clip-art to painted raster. Add
+a raster path alongside the SVG one in which codex returns a self-contained
+canvas renderer (value noise, fbm, directional grunge, edge wear, panel-gap AO,
+dithered haze) instead of placed shapes; regenerate the four hull tiles and
+five backdrops through it.
+accept: zero effect on the shipped game, demonstrated not asserted; no new
+runtime dependency (reuse the playtest harness's Chrome); every asset judged at
+true on-screen size; generation reproducible with the seed and exact codex
+invocation recorded in the manifest; check.mjs still PASSES — and if a check
+written for flat vector fills cannot express a procedural asset (noise
+interpolating BETWEEN two palette tokens is legal, a third hue is not), the
+check is rewritten to state the property it actually cares about, loudly, never
+loosened silently.
+owner: asset-artist
+fences: tools/assets/**, assets/generated/**, assets/manifest.json. Existing
+filenames and canvas sizes stay stable — T-051 and T-052 are consuming them.
+verify: node tools/pathcheck.mjs; node tools/assets/check.mjs; old-vs-new
+captures at true size, each against the board it is meant to match
+
 <!-- ========== 2026-08-02 OPERATOR GOAL CHANGE (supersedes parts of the
 Delivery target that T-028 just rewrote; that rewrite's evidence-honesty fixes
 stand, its audience assumption does not) ==========
