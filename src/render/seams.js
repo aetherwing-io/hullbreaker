@@ -39,7 +39,7 @@
 
 import * as THREE from 'three';
 import { SEGS, polyAt, headingAt } from '../pure/path.js';
-import { deckSeamRuns, platformSeamRuns, SEAMS, resolveSeams } from '../pure/seams.js';
+import { deckSeamRuns, depthGain, platformSeamRuns, SEAMS, resolveSeams } from '../pure/seams.js';
 import { groundH, platforms } from '../sim/level.js';
 import { QUERY, IS_TRANSFORM_SLICE } from '../mode.js';
 import { PAL } from './palette.js';
@@ -113,11 +113,19 @@ if (SEAMS_ENABLED && !IS_TRANSFORM_SLICE) {
     haloMesh.frustumCulled = false;
     haloMesh.renderOrder = 2;
 
-    const _c = new THREE.Color(PAL.seamHalo);
+    // Bake-time depth attenuation (src/pure/seams.js's depthGain — see the
+    // long comment there): the halo's per-instance color is the token
+    // scaled by how proud of its surface that specific pip sits, so a
+    // shallower-depth tier reads measurably dimmer even before fog ever
+    // applies. `_base` is read once; `_c` is the scratch every instance
+    // reuses (setColorAt copies its value into the buffer immediately).
+    const _base = new THREE.Color(PAL.seamHalo);
+    const _c = new THREE.Color();
     for (let i = 0; i < pipCount; i++) {
       const pip = pips[i];
       pipMesh.setMatrixAt(i, bakeMatrix(pip.s, pip.y, pip.depth, pipSize));
       haloMesh.setMatrixAt(i, bakeMatrix(pip.s, pip.y, pip.depth, haloSize));
+      _c.copy(_base).multiplyScalar(depthGain(pip.depth, SEAMS));
       haloMesh.setColorAt(i, _c);
     }
     pipMesh.instanceMatrix.needsUpdate = true;

@@ -9235,9 +9235,27 @@ const G2GATE = G2E.gate;
  * array runs via its OWN parallel assertion below instead, so two lanes
  * editing that one shared line never collide.                            */
 import {
-  deckEdgeRuns, deckSeamRuns, platformSeamRuns, seamRuns as seamsAllRuns,
+  deckEdgeRuns, deckSeamRuns, depthGain, platformSeamRuns, seamRuns as seamsAllRuns,
   seamPipCount, resolveSeams, SEAMS,
 } from '../src/pure/seams.js';
+
+{
+  // Review finding, addressed: the packet's own risk note for S5 wants
+  // distant pips "pre-attenuated by depth at bake time." depthGain() is
+  // that mechanism — pure, bake-time, deterministic — for the halo's
+  // per-instance color. The shallowest tier this bake uses maps to exactly
+  // the floor, the proudest to exactly 1, and it is monotonic in between
+  // (a piece less proud of its surface never reads brighter than one more
+  // proud of it).
+  ok(depthGain(SEAMS.platformDepth, SEAMS) === SEAMS.depthGainMin,
+     'seams: depthGain floors out at the shallowest tier this bake uses');
+  ok(depthGain(SEAMS.deckDepth, SEAMS) === 1,
+     'seams: depthGain reaches exactly 1 at the proudest tier this bake uses');
+  ok(depthGain(SEAMS.platformDepth, SEAMS) < depthGain(SEAMS.deckDepth, SEAMS),
+     'seams: a shallower pip never reads brighter than a prouder one');
+  ok(depthGain(SEAMS.deckDepth, SEAMS) === depthGain(SEAMS.deckDepth, SEAMS),
+     'seams: depthGain is a pure function of depth (same input, same output)');
+}
 
 {
   // (a) derived, not authored: every deck-edge pip run's [s0,s1) is a real

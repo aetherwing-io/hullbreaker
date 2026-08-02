@@ -53,7 +53,30 @@ export const SEAMS = {
   platformUnder: 0.12,  // pip sits this far below a catwalk slat's top
   deckDepth: 1.12,      // tile half-depth (1.0) + a hair proud
   platformDepth: 0.82,  // slat half-depth (0.7) + a hair proud
+  depthGainMin: 0.72,   // the shallowest tier's floor — see depthGain() below
 };
+
+// Bake-time depth attenuation for the additive halo (review finding on the
+// first version of this pass): a piece sitting less proud of the surface it
+// rides (lower `depth` — closer to the tile/slat face, further from the
+// camera along the outward axis this module's two tiers span) reads
+// dimmer, `depthGainMin` at the shallowest tier this bake uses and 1.0 at
+// the proudest. This is deliberately a SEPARATE, complementary mechanism to
+// `fog:true` on the halo material (src/render/seams.js): fog handles the
+// dominant case for this module's geometry — a pip's distance from the
+// CURRENT camera position varies continuously as the run scrolls past all
+// 445 tiles of it, which cannot be known at bake time — while this handles
+// the literal, bake-time-knowable "depth" the packet's own risk note names,
+// small as that range is for deck/catwalk pips (both sit near the play
+// plane; the ?g1=1 limb backdrop this pass does not cover is where a large
+// depth spread would actually live). Pure, deterministic, no clock.
+export function depthGain(depth, cfg = SEAMS) {
+  const lo = Math.min(cfg.deckDepth, cfg.platformDepth);
+  const hi = Math.max(cfg.deckDepth, cfg.platformDepth);
+  if (hi <= lo) return 1;
+  const u = Math.max(0, Math.min(1, (depth - lo) / (hi - lo)));
+  return cfg.depthGainMin + (1 - cfg.depthGainMin) * u;
+}
 
 // ?seams=0 (or =off) restores the pre-pass look; absence, '' and junk all
 // resolve to ON (decisions.md entry 16 — this pass ships by default, same
