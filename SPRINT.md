@@ -851,7 +851,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; FAR captures at the shipped view
 
-## T-031 | docs | todo | P3
+## T-031 | docs | doing | P3
 
 goal: the docs-truth backlog — seven places where a comment, README or design
 line describes behavior the code does not have (I-001 stale sampler comment
@@ -870,7 +870,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; re-read each cited file:line against its issue
 
-## T-032 | feature | todo | P1
+## T-032 | feature | doing | P1
 
 goal: a 9-year-old must never meet a blank screen. Today the operator's own
 session rendered a black page with one console SyntaxError and no on-screen
@@ -935,7 +935,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; serve the bundle under a subpath and confirm ?selftest=1 PASS
 
-## T-035 | art | todo | P1
+## T-035 | art | doing | P1
 
 goal: the measured answer to "I've seen a lot of greybox" — it is the VALUE
 range, not the hue. Full evidence and legality review in
