@@ -2847,7 +2847,7 @@ has always been green. The alpha contract is new (T-053) and this is the one
 asset sitting close enough to its threshold that ordinary variation in a
 repaint could cross it.
 
-## T-054 | art | doing | P1
+## T-054 | art | done | P1
 goal: the hull texture is invisible in play — make it read. OPERATOR-FOUND, and
 the observation was "the thing floating in the background seems to have more
 detail, while that in the foreground has less." That is exactly backwards from
@@ -2958,12 +2958,13 @@ assets" claims as historical.
 verify: node tools/pathcheck.mjs; build the bundle, unzip to a clean dir, serve
 it, capture the art rendering; report bundle size and file count
 
-## T-056 | art | blocked | P2
-BLOCKED ON T-054, not on the operator. Both lanes reach `src/render/limb.js`
-(T-054 for the hull-texture contrast fix, T-056 for the haze band), and
-dispatching them concurrently buys a merge conflict in the one file neither
-change is really about. Unblocks the moment T-054 merges. Nothing else is
-waiting on it.
+## T-056 | art | todo | P2
+UNBLOCKED 2026-08-02: T-054 merged. Note the collision I blocked this on never
+materialized — T-054's final diff does not touch `src/render/limb.js` at all
+(it landed entirely in `hulltiles.js`/`materials.js`). The block cost nothing
+and was the right call on the information available, but record it: the fence
+list in a dispatch is a PREDICTION of what a lane will touch, not a fact, and
+this one over-predicted.
 goal: land T-035b's fog-band reconciliation. Main ships two lanes' intent and
 one lane's behaviour: `src/render/camera.js:80` selects
 `CONFIG.limb.shadeFog` (26.5/54.5) whenever `SHADE_GAIN > 0`, which is the
