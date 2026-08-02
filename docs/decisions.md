@@ -782,3 +782,105 @@ All five are cleared to merge. Note this does NOT reverse entry 15's rejection
 of RIG's *fidelity* — the silhouette pass is an improvement on boxes and ships,
 while the sprite upgrade continues. Approved work ships ON by default per
 entry 16; it must not stay hidden behind flags.
+
+## 18 — 2026-08-02 — The renderer gets materials, shadows, tone mapping and bloom
+
+**Operator, after comparing the shipped build to concept board 01:**
+
+> "should we change the size or camera or scale or something to improve the
+> graphics, i looked at those and we're not even remotely close to the concept
+> art. what is in the way that is making this so difficult?"
+
+**The answer is not camera, size or scale.** Entry 17 settled FAR and it stays.
+What is in the way is that the renderer lacks four capabilities, three of them
+switched off by RULE rather than by any technical limit — so the look lanes have
+been tuning value ranges on a renderer that cannot cast a shadow.
+
+Measured state (`docs/proposals/2026-08-look-direction.md`, 31 captures in
+`artifacts/look-v1/`):
+- **No materials.** Every material in the game is `MeshStandardMaterial
+  {color, flatShading:true}`; `roughness`, `metalness` and every map slot are
+  never set anywhere in `src/`. Five textures in the whole scene.
+- **No shadows.** `grep -rn 'castShadow|receiveShadow|shadowMap' src/` returns
+  nothing. The entire rig is `HemisphereLight(1.1)` + `DirectionalLight(1.6)`.
+  Uniform fill is why nothing reads as having form.
+- **No post-processing.** No bloom, no tone mapping, no grade. A muzzle flash
+  is a bright quad rather than a light source.
+- **Geometry is 87 boxes, 4 octahedra, 3 spheres.**
+
+### AUTHORIZED (this supersedes packet §4.1, §4.3, §4.5)
+
+1. **A real light rig, including shadow maps.** Raking key, fill, rim. Shadows
+   on the play band.
+2. **Tone mapping / exposure / colorSpace.** ACESFilmic or equivalent, so
+   highlights roll off instead of clipping.
+3. **Post-processing via EffectComposer — bloom first.** This is what makes
+   muzzle flashes, seam pips and enemy tells read as light rather than as
+   bright paint.
+4. **Materials and textures.** `roughness`/`metalness` and procedural or
+   generated maps. Entry 16 already legalized runtime assets; nothing had used
+   it yet.
+
+### THE CONDITIONS — these are not bureaucracy, they are the reason to say yes
+
+- **60fps with 200+ live projectiles is still the bar**, and it is now the
+  binding constraint rather than a formality: shadow maps and a composer pass
+  both cost real frame time. Every lane measures `worstMs`/`over20ms` under the
+  256-projectile stress path, before and after, and reports both. A lane that
+  cannot hold the budget says so instead of shipping it.
+- **Readability outranks beauty (pillar 5).** Bloom that buries a wasp, or a
+  shadow that hides the deck lip, is a regression no matter how good the still
+  frame looks. RIG is 3.75% of screen height; judge at true size, in motion.
+- **Entry 14 stands:** the operator judged the full value ladder "too dark."
+  Do not re-darken the frame in the name of drama.
+- **Everything ships ON by default** per entry 16, with an escape hatch for A/B.
+
+### STILL NOT AUTHORIZED
+
+The frozen FAR camera (entry 7/17), the static-anatomy rule (entry 3), layer
+purity, determinism, and no-build-step are unchanged. None of them is what is
+standing between this game and the boards.
+
+## 19 — 2026-08-02 — The mastery loop works; run-to-run VARIANCE is the feature
+
+**Operator, unprompted, after playing:**
+
+> "i feel like i can do better each time, that adds the kind of replayability
+> i'm interested in at this point. sometimes i clear two or three faces.
+> sometimes I can't pass the first. that's a good start"
+
+**This is the first validation of the game's core loop from the only oracle.**
+Two things are settled by it.
+
+**1. The mastery curve is real and is the replayability model.** "I can do
+better each time" is the thing to protect. Replayability does NOT need unlocks,
+score systems, procedural shuffling or meta-progression — it is already coming
+from skill expression against a fixed course. Do not add content-based
+replayability systems in the name of retention; that was on an earlier list of
+"shipping requirements" and is hereby dropped.
+
+**2. The run-to-run SPREAD is a feature, not noise to be tuned out.**
+"Sometimes two or three faces, sometimes not past the first" describes a wide
+outcome distribution, and the operator names it as GOOD. So:
+- Do not flatten the distribution. Changes that make outcomes more UNIFORM —
+  in either direction — take away the thing he likes.
+- Do not "balance" the run toward a target clear rate.
+- A change that raises the ceiling (better players get further) while leaving
+  the floor alone is aligned. A change that narrows the gap between a good run
+  and a bad one is not.
+
+**Bearing on T-044 (corner-reveal set pieces), which was escalating exactly
+this.** Its ARENA terrain measurably moved wave-gate-2 outcomes (base tree 0/3
+runs cleared gate 2; with the arena 2/3 cleared and died at wave 3). The review
+correctly refused to let that ship as "a placement change, not a difficulty
+one." Under this entry the question is no longer "did difficulty move" but
+**"did the spread survive."** An arena that gives a skilled player room to earn
+gate 2 while an unskilled one still dies at face 1 RAISES THE CEILING and is
+aligned with this verdict. An arena that makes gate 2 routine for everybody is
+not. T-044 should report the distribution, not just the mean — and the operator
+decides on the distribution.
+
+**Standing instruction for every lane:** difficulty remains not-the-axis
+(entry 15's goal block), but "not the axis" now means *preserve the spread*, not
+*freeze the numbers*. When a change moves outcomes, report the DISTRIBUTION —
+best run, worst run, spread — never a single average.

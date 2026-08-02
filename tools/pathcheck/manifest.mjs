@@ -48,7 +48,12 @@ import * as d35 from './t-025-harness-may-not-report.mjs';
 import * as d36 from './momentum-earned-pace-escalation.mjs';
 import * as d37 from './t-029-runtime-truth-three-debug.mjs';
 import * as d38 from './pathcheck-suite-2.mjs';
-import * as d39 from './t-038-seam-pips.mjs';
+import * as d39 from './t-041-impact-language.mjs';
+import * as d40 from './t-043-wasp-aim-lock-squad.mjs';
+import * as d41 from './t-039-contact-shadows.mjs';
+import * as d42 from './pathcheck-suite-3.mjs';
+import * as d43 from './t-035-value-ladder.mjs';
+import * as d44 from './t-038-seam-pips.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -90,5 +95,10 @@ export const DOMAINS = [
   d36,    // MOMENTUM — earned pace escalation (T-022) =================
   d37,    // T-029 — runtime truth: three debug/copy surfaces ==========
   d38,    // pathcheck suite
-  d39,    // T-038: warm-white seam pips and route-lip highlights (S5) ========
+  d39,    // T-041 impact language (S10)
+  d40,    // T-043: wasp aim-lock + squad stagger (enemy aggression)
+  d41,    // T-039: contact shadows (S6) =====================
+  d42,    // pathcheck suite
+  d43,    // T-035 value ladder (S1 + S2) ======================
+  d44,    // T-038: warm-white seam pips and route-lip highlights (S5) ========
 ];
