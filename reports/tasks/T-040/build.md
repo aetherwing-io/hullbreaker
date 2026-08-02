@@ -3,6 +3,205 @@
 Worktree `/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-040`,
 branch `task/T-040`. Implements look-direction packet §3 item S8.
 
+## RULE CHANGE + SPRITE UPGRADE (v3, current) — read this first
+
+`docs/decisions.md` **entries 16 and 17** landed mid-task and reopened, then
+closed, this item's whole approach:
+
+- **Entry 16**: "the game must boot with every file under `assets/`
+  missing" is RETIRED. Runtime asset loading and sprites are AUTHORIZED. The
+  one attached condition: a failed/missing asset must degrade visibly and
+  safely, and **the sim must never branch on whether an asset loaded**.
+  Entry 16 also retired blanket off-by-default flags for approved work —
+  approved work ships ON, with an escape hatch back for comparison.
+- **Entry 17**: the operator confirmed FAR **permanently** — "the idea is to
+  make the player feel the scale of climbing a giant monster... i think we
+  can do it really well if you try hard." RIG stays ~15×30 px. No camera
+  change is coming to rescue character fidelity; the answer is a
+  genuinely-crafted 30 px sprite, not a bigger RIG.
+- Same session: the operator approved the five look-packet builds
+  (including this task's v2 silhouette pass) — "all of those 5 builds look
+  good to me." **That did not reverse the fidelity rejection** — the sprite
+  upgrade is on top of an accepted foundation, not a rescue of a rejected one.
+
+So: RIG is now a **real PNG sprite**, built through `tools/assets/` +
+`codex`, loaded at runtime, with the v2 canvas-shapes version kept as the
+graceful-degradation fallback.
+
+### What changed
+
+- **`assets/generated/sprites/rig-marine.svg`/`.png`** — the new sprite,
+  generated via `tools/assets/gen.mjs` (which drives `codex exec`),
+  rasterized via `tools/assets/rasterize.mjs`. Manifest entry `rig-marine`
+  in `assets/manifest.json`, palette-checked (`hull`/`rust-orange`/`haze`/
+  `ink`, all within `tools/assets/lib/palette.mjs`'s measured bands).
+  Deliberately **body-only, no weapon drawn** — the existing 3D gun box
+  still supplies the 8-way-aim weapon visual, so a baked-in gun would
+  double up against it (this is why the brief explicitly told codex not to
+  draw one).
+- **`src/pure/rig.js`** — gained `RIG_SPRITE_PATH`/`RIG_SPRITE_W`/
+  `RIG_SPRITE_H`/`RIG_SPRITE_UV`/`RIG_SPRITE_MAX_OVERRUN`/
+  `RIG_SPRITE_CONTENT_ASPECT` and `spriteImageViolations()` (same
+  prove-it-rejects shape as the existing `spriteViolations()`). The v2
+  canvas-shapes data (`HELMET`/`TORSO`/`LEG_FRONT`/`LEG_BACK`/`VISOR`/
+  `SPRITE_W`/`SPRITE_H`) is kept, unchanged, as the fallback's own data.
+- **`src/render/player.js`** — now builds TWO body planes: `fallbackMesh`
+  (the v2 canvas sprite, shown immediately, cannot fail) and `spriteMesh`
+  (the real PNG, hidden until `loadRigSprite()`'s `THREE.TextureLoader`
+  call succeeds, at which point it swaps in and hides the fallback). Both
+  mirror on `player.facing` in `sync()`. `?rig=canvas` forces the fallback
+  and skips the network load entirely (the escape hatch entry 16 asks for).
+  On a failed load: `console.warn`, nothing else — the fallback was already
+  showing and keeps showing.
+- **`tools/pathcheck.mjs`** — new assertions for `spriteImageViolations`
+  (shipped-clean + three prove-it-rejects cases), for the loader's presence
+  (`TextureLoader`, `RIG_SPRITE_PATH`, the escape-hatch flag, a failure
+  handler), for the asset file actually existing on disk, and — the entry
+  16 condition, gated directly rather than trusted — that
+  `src/sim/player.js` carries **zero** reference to `sprite`/`fallbackMesh`/
+  `spriteMesh`/`TextureLoader` anywhere in its source.
+
+### Why the sprite is wider than the collision box, on purpose
+
+The generated art's own drawn bounding box (measured from the PNG's alpha
+channel, not guessed) has a width:height of 0.513 — wider than the frozen
+collision box's 0.7/1.7 = 0.412 — because a natural running/walking stance's
+legs spread past the hitbox. This is a **render-only** choice: `CONFIG.
+player.width`/`height` are untouched (verified: `git diff` against
+`src/config.js` is empty), and it is the same documented-not-narrowed
+precedent this file already carries for the gun (`GUN_OUTER_X` exceeds 2×
+the collision half-width) and that `CONFIG.hound` already carries for its
+own 2.4×-width visual silhouette over a tighter hit circle.
+`RIG_SPRITE_MAX_OVERRUN` (1.3×) names the ceiling and `spriteImageViolations`
+gates it, so a future asset swap can't silently grow past what was judged.
+
+### The UV crop, and why it exists
+
+The 256×256 source PNG is 77% transparent padding around the drawn figure
+(codex draws into the square canvas gen.mjs's spec template requires — T-046
+is extending `gen.mjs` for non-square canvases in a separate lane, so this
+task did not touch that file). Mapping the whole square onto a plane sized
+for the drawn content would stretch it; `RIG_SPRITE_UV` names the exact
+crop rectangle (measured from the alpha bounding box) and `src/render/
+player.js` applies it via `texture.offset`/`repeat` rather than editing
+geometry UVs directly.
+
+### Asset-generation iteration log
+
+Three codex passes, each judged before moving on (see `reports/tasks/
+T-040/evidence/`):
+
+1. **`v4-rejected-iter1-with-gun.png`** — first brief asked for a running,
+   firing marine. Read well even at true size
+   (`v4-rejected-iter1-viewer.png`) but drew its own rifle, reaching wide —
+   this would double up against the separately-rotating 3D gun mesh needed
+   for 8-way aim, so it was rejected on a structural (not aesthetic) ground
+   before ever reaching the render layer.
+2. **`v4-rejected-iter2-wide-stance.png`** — regenerated body-only (no
+   weapon, arms tucked), but the stance's feet spread to ~0.61× the
+   figure's own height in width — wider than justified.
+3. **Shipped**: same body-only brief, explicitly asked for a narrower
+   profile ("total width... must not exceed roughly 60 percent of...
+   height"). Bounding-box aspect came back at 0.513 — narrower, still a
+   clear armored read (helmet, chest plate, back-pack bulge, separated
+   legs) at true size (`v4-asset-pipeline-viewer.png`, the `tools/assets/
+   view.mjs` composite — read the 29.6px leftmost figure, not the 8×/native
+   panels to their right).
+
+### Verification
+
+- **`node tools/pathcheck.mjs`: `1784 passed, 0 failed`.**
+- **`node tools/assets/check.mjs`: PASS** — manifest palette-checks both
+  assets; the new runtime reference is listed (`src/pure/rig.js:69`), not
+  rejected, matching the tool's documented runtime-vs-static-import
+  distinction.
+- **Browser `?selftest=1`: `SELFTEST PASS (29 checks)`**, against a
+  server whose freshness was checked (`curl -I` + line-count match) before
+  trusting the result.
+- **Bot playtest** (`mid-route.json --deterministic`, verified server):
+  `outcome: completed`, `deaths: 0`.
+- **Facing flip**: `v4-sprite-facing-left-5x.png` — gun and pack both
+  correctly mirrored running left.
+- **Escape hatch** (`?rig=canvas`): `v4-escape-hatch-canvas-5x.png` — the
+  v2 canvas fallback, confirmed distinct from the sprite.
+- **Failure path, proven, not assumed**: renamed `rig-marine.png` away,
+  recaptured (`v4-missing-asset-fallback-5x.png` — identical to the
+  escape-hatch capture, as expected), and separately captured the page's
+  own console/error stream: **zero `pageerror`s**, one 404 (expected), and
+  my own `console.warn` firing with the exact logged message — then
+  restored the file and reconfirmed `git status --short` clean.
+- **Half-dose world** (decisions.md entry 14): re-verified via the same
+  scratch-composite method as the v2 addendum below (T-035's current
+  worktree, read-only, layered with this branch's files — nothing written
+  back to `.claude/worktrees/T-035`), confirmed `SHADE_STRENGTH === 0.5`,
+  captured `v4-halfdose-5x.png` — the sprite reads clearly against the real
+  shipped background.
+- **True on-screen size, put first per the operator's instruction**:
+  `v4-sprite-far-default.png` (full frame) and `v4-sprite-true-size-crop.png`
+  (native-resolution crop, no magnification) — `v4-sprite-5x-crop.png` is
+  the detail view, not the judged one.
+
+### Honest limits
+
+- **The overrun is real, not hidden.** The sprite's own drawn content is
+  ~25% wider (at its half-width) than the collision box. It is bounded and
+  asserted, and it is the same class of choice this file's gun and
+  `CONFIG.hound` already ship with, but it is a genuine, if small,
+  divergence between what is drawn and where the hitbox actually is.
+- **The crop rectangle is a measured, hand-set constant**, not recomputed
+  live. If `rig-marine.png` is regenerated, `RIG_SPRITE_UV` (and
+  `RIG_SPRITE_CONTENT_ASPECT`) need re-measuring — the one-liner used is in
+  this file's own history (a Python/Pillow alpha-bounding-box scan); there
+  is no automated re-derivation step.
+- **`gen.mjs`'s square-canvas constraint was worked around, not fixed** —
+  T-046 owns extending it for non-square canvases; this task used the
+  square canvas as-is (with padding + a UV crop) rather than touch that
+  file, per lane discipline.
+- **A parallel lane (T-049, visible in the shared task queue) appears to be
+  building a generic runtime sprite-loader module for the five enemy
+  roles.** This task's loader is scoped to RIG only and was not
+  coordinated with that lane (no shared code); flagging it for the
+  integrator as a likely future consolidation point, not a conflict today
+  (different files: `src/render/player.js` vs whatever T-049 introduces).
+- Draw calls: 3 meshes constructed (fallback plane, sprite plane, gun box),
+  but only 2 are ever visible at once — the actual per-frame draw count is
+  unchanged from the v2 rework (2), still down from the rejected v1's 7 and
+  the original 5.
+
+## Open feel questions for the operator (v3 — current)
+
+Never judged here. Exact URL: `index.html` (shipped default, no query
+flags), FAR camera. Evidence: `reports/tasks/T-040/evidence/v4-*.png` (true
+size first, 5× crop for detail).
+
+1. Does the real sprite read as "a much higher quality asset in line with
+   the concept art" — the operator's own bar from the rejection — or is it
+   an incremental improvement that still falls short?
+2. The body-only design (no baked-in weapon) means the gun always reads as
+   a separate object riding alongside RIG rather than integrated into his
+   held pose — is that seam acceptable, or does the weapon need to be part
+   of the sprite itself (which would require per-aim-angle sprite frames,
+   a materially bigger task)?
+3. Is the walking/running stance's asymmetry (front leg forward, back leg
+   trailing, pack bulge on the back) reading as intended, or does it need
+   a different silhouette entirely?
+4. Should more of the packet's other approved sprite-adjacent ideas
+   (backdrop tiers, human-scale reference objects — entry 17's stated
+   priority, "selling the scale") take precedence over further RIG
+   iteration, given RIG already improved twice this session?
+
+## Best next action
+
+Fresh review + playtest pass needed against this commit specifically (not
+the superseded v1/v2 commits) — `reports/tasks/T-040/review.md` predates
+this rework. If green, merge via `tools/orch/merge-task.sh T-040`, then
+route the four v3 questions above to the operator's checkpoint queue.
+Flag the T-049 sprite-loader overlap to the integrator for triage.
+
+---
+
+## HISTORICAL — v2 attempt (canvas-shapes sprite, superseded by the sprite above)
+
 ## OPERATOR REJECTION AND REWORK — read this section first
 
 The box/value-zone version below (committed `7a48f27`/`a8e2bc9`, already
@@ -462,7 +661,7 @@ own tracers by *existing* documented design intent) rather than deciding
 whether that remainder is a problem — that's a look call for the operator,
 not something a machine gate or I get to resolve by picking a new color.
 
-## Open feel questions for the operator (v3 — current)
+## HISTORICAL — v2's own operator questions (superseded by the v3 sprite above; question 4 is answered by entry 17 — FAR stays, do not re-ask)
 
 Never judged here — machine gates don't judge fun or look. For the exact
 URL: `index.html` (shipped default, no query flags) at the FAR camera. Put
@@ -489,7 +688,7 @@ not the thing being judged.
 5. Is the visor glint (the one accent) visible/legible at this size, or is
    it too small to register at all?
 
-## Best next action
+## HISTORICAL — v2's own "next action" (superseded — see the top of this report for the current one)
 
 Send to review/playtest per the loop protocol — the existing `reports/
 tasks/T-040/review.md` is for the SUPERSEDED v1 commit and needs a fresh

@@ -9257,8 +9257,10 @@ const G2GATE = G2E.gate;
  * gun's wider, already-shipped reach is asserted separately, by name.     */
 import {
   BODY_HALF_WIDTH, BODY_HEIGHT, CANVAS_H, CANVAS_W, GUN_BOX, GUN_INNER_X,
-  GUN_OUTER_X, HELMET, LEG_BACK, LEG_FRONT, LIFT_BOTTOM, LIFT_TOP, SPRITE_H,
-  SPRITE_W, TORSO, VISOR, gunLocalXSpan, spriteViolations,
+  GUN_OUTER_X, HELMET, LEG_BACK, LEG_FRONT, LIFT_BOTTOM, LIFT_TOP,
+  RIG_SPRITE_H, RIG_SPRITE_MAX_OVERRUN, RIG_SPRITE_PATH, RIG_SPRITE_UV,
+  RIG_SPRITE_W, SPRITE_H, SPRITE_W, TORSO, VISOR, gunLocalXSpan,
+  spriteImageViolations, spriteViolations,
 } from '../src/pure/rig.js';
 {
   // --- frozen collision constants this table binds to ---------------------
@@ -9326,6 +9328,34 @@ import {
      'than double the body half-width (' + BODY_HALF_WIDTH.toFixed(3) + ') — the plane\'s own ' +
      'envelope guarantee does not extend to the separately-rotating gun mesh');
 
+  // --- the real image sprite: envelope + honesty about the runtime path ---
+  // (T-040 third rework, decisions.md entries 16/17: runtime asset loading
+  // is authorized and FAR stays permanent — see src/pure/rig.js's header)
+  {
+    const shippedImg = spriteImageViolations();
+    ok(shippedImg.length === 0,
+       'T-040: the shipped image-sprite dimensions are inside their documented overrun ceiling' +
+       (shippedImg.length ? ' — ' + shippedImg.join('; ') : ''));
+    const wideImg = spriteImageViolations({ spriteW: 5 });
+    ok(wideImg.some((m) => /collision-half-width ceiling/.test(m)),
+       'T-040: the image-sprite guard rejects a plane past its documented overrun ceiling');
+    const tallImg = spriteImageViolations({ spriteH: 5 });
+    ok(tallImg.some((m) => /collision height/.test(m)),
+       'T-040: the image-sprite guard rejects a plane taller than the collision height');
+    const badUv = spriteImageViolations({ uv: { u0: 0.5, v0: 0.2, u1: 0.3, v1: 0.8 } });
+    ok(badUv.some((m) => /UV crop rectangle/.test(m)),
+       'T-040: the image-sprite guard rejects an inverted/malformed UV crop rectangle');
+    ok(RIG_SPRITE_W / 2 <= BODY_HALF_WIDTH * RIG_SPRITE_MAX_OVERRUN,
+       'T-040: the shipped sprite\'s own half-width clears its documented ' +
+       RIG_SPRITE_MAX_OVERRUN + 'x overrun ceiling with no override');
+    // the referenced PNG has to actually exist — a dangling path would load
+    // silently into the fallback path forever, which is safe but not what
+    // this block should quietly certify as fine
+    const assetPath = join(srcDir, 'render', RIG_SPRITE_PATH);
+    ok(existsSync(assetPath), 'T-040: RIG_SPRITE_PATH resolves to a file that exists on disk (' +
+       RIG_SPRITE_PATH + ')');
+  }
+
   // --- player.js paints from rig.js's data, not a parallel literal list ---
   const rigSrc = stripComments(readFileSync(join(srcDir, 'render', 'player.js'), 'utf8'));
   ok(/from\s+'\.\.\/pure\/rig\.js'/.test(rigSrc) && /TORSO/.test(rigSrc) &&
@@ -9333,8 +9363,23 @@ import {
      'T-040: player.js paints RIG from src/pure/rig.js\'s shape data, not a parallel literal list');
   ok(/CanvasTexture/.test(rigSrc) && /PlaneGeometry/.test(rigSrc),
      'T-040: RIG\'s body is a canvas-textured plane (sanctioned technique), not raw box geometry');
-  ok(/player\.facing/.test(rigSrc) && /bodyMesh\.scale\.x/.test(rigSrc),
-     'T-040: the asymmetric (front-leg/pack) silhouette is mirrored by the sim\'s own facing sign');
+  ok(/player\.facing/.test(rigSrc) && /fallbackMesh\.scale\.x/.test(rigSrc) &&
+     /spriteMesh\.scale\.x/.test(rigSrc),
+     'T-040: the asymmetric (front-leg/pack) silhouette is mirrored by the sim\'s own facing sign, ' +
+     'on both the fallback and the real sprite plane');
+  ok(/TextureLoader/.test(rigSrc) && /RIG_SPRITE_PATH/.test(rigSrc),
+     'T-040: RIG loads a real runtime sprite (decisions.md entry 16), through THREE.TextureLoader');
+  ok(/QUERY\.get\('rig'\)/.test(rigSrc) && /RIG_FORCE_CANVAS/.test(rigSrc),
+     'T-040: an escape hatch (?rig=canvas) exists back to the fallback — the sprite ships ON by ' +
+     'default per entry 16, not behind a flag the operator has to type');
+  ok(/onerror|,\s*\(err\)\s*=>/.test(rigSrc) || /console\.warn/.test(rigSrc),
+     'T-040: a failed sprite load is handled (logged), not left to throw or silently hang');
+  {
+    const simPlayerSrc = stripComments(readFileSync(join(srcDir, 'sim', 'player.js'), 'utf8'));
+    ok(!/sprite|fallbackMesh|spriteMesh|TextureLoader/i.test(simPlayerSrc),
+       'T-040: src/sim/player.js carries no reference to the sprite/fallback split — ' +
+       'the sim cannot branch on whether the asset loaded (entry 16\'s one condition)');
+  }
 
   // --- palette: the tokens the sprite paints from, in both modes ----------
   // (unchanged from the box-list version: playerDark/playerMid still exist,
@@ -9365,15 +9410,16 @@ import {
        'T-040: concept RIG tones keep the same warm-neutral channel order as PAL.player');
   }
 
-  // --- draw-call budget: RIG now draws exactly 2 meshes (one body plane,
-  // one gun box) — down from 7 in the rejected six-box/three-zone pass and
-  // down from the ORIGINAL 5 (torso/head/legL/legR/gun) before T-040 ever
-  // started. Counted structurally (every `new THREE.Mesh(` call inside
-  // player.js), not by a fragile text pattern.
+  // --- draw-call budget: RIG now constructs 3 meshes (the fallback plane,
+  // the real sprite plane, and the gun box) — only 2 are ever VISIBLE at
+  // once (fallback XOR sprite, plus the gun), so the actual per-frame draw
+  // count stays 2, same as the second rework, down from 7 in the rejected
+  // six-box/three-zone pass and the ORIGINAL 5 before T-040 ever started.
+  // Counted structurally (every `new THREE.Mesh(` call), not a text guess.
   const meshCalls = (rigSrc.match(/new THREE\.Mesh\(/g) || []).length;
-  ok(meshCalls === 2,
-     'T-040: player.js constructs exactly 2 meshes (body plane + gun box), got ' + meshCalls +
-     ' — a draw-call REDUCTION from the rejected 7-mesh box/zone pass');
+  ok(meshCalls === 3,
+     'T-040: player.js constructs exactly 3 meshes (fallback plane + sprite plane + gun box), got ' +
+     meshCalls + ' — only 2 are ever visible at once (the two body planes toggle exclusively)');
   ok(/new THREE\.PlaneGeometry\(/.test(rigSrc) &&
      (rigSrc.match(/new THREE\.BoxGeometry\(/g) || []).length === 1,
      'T-040: one PlaneGeometry (the body) and exactly one BoxGeometry (the gun) remain');

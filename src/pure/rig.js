@@ -1,42 +1,46 @@
 /* =========================== RIG (pure) ============================ *
  * RIG's silhouette as data (T-040, look-direction packet §3 item S8).
  *
- * REWORKED TWICE. First an operator rejection of the six-box/three-zone
- * pass: "this is RIG? i was hoping for a much higher quality asset in line
- * with the concept art." The verdict was the QUALITY BAR, not the
+ * REWORKED THREE TIMES. First an operator rejection of the six-box/three-
+ * zone pass: "this is RIG? i was hoping for a much higher quality asset in
+ * line with the concept art." The verdict was the QUALITY BAR, not the
  * technique — more boxes cannot fix it, because at RIG's frozen on-screen
  * size (~15x30 px, 3.75% of screen height, decisions.md entry 7) geometric
- * detail cannot read at all. What reads at 30px is a crafted 30px IMAGE.
- * Second, a single-polygon silhouette (the shell's own `.sl-rig::before`
- * clip-path technique, adapted) authored blind, without ever rendering it —
- * it painted as a thin, illegible ribbon (see reports/tasks/T-040/build.md's
- * "iteration log"). The fix for THAT mistake was procedural, not artistic:
- * a throwaway page.evaluate() dump of the exact canvas-drawing code, viewed
- * as an image, before ever touching the real render path — the same
- * "judge at true size before you trust it" discipline the operator asked
- * for, just applied one step earlier (at the texture, before the 3D scene).
+ * detail cannot read at all. Second, a single-polygon silhouette (the
+ * shell's own `.sl-rig::before` clip-path technique, adapted) authored
+ * blind, without ever rendering it — it painted as a thin, illegible ribbon
+ * (see reports/tasks/T-040/build.md's "iteration log"), replaced by a small
+ * set of plain shapes (helmet ellipse, torso polygon, two leg polygons) that
+ * read reliably instead. Third, decisions.md entries 16/17: runtime asset
+ * loading is now AUTHORIZED (the "boot with assets/ missing" rule is
+ * retired) and FAR is CONFIRMED PERMANENT (no camera change coming to
+ * rescue character fidelity) — so RIG is now a REAL PNG SPRITE
+ * (assets/generated/sprites/rig-marine.png, built through tools/assets/ +
+ * codex, manifest entry `rig-marine`), with the plain-shapes version from
+ * the second rework kept as the FALLBACK if the image ever fails to load
+ * (entry 16's one attached condition: a failed asset must degrade visibly
+ * and safely, and the sim must never branch on it — see src/render/
+ * player.js's `loadRigSprite`).
  *
- * So this file now describes RIG as a small set of SIMPLE SHAPES — an
- * ellipse (helmet), one torso polygon (with a back-side pack bump baked
- * into its own silhouette), and two independent leg polygons (a real gap
- * between them, not a notch-in-one-path trick) — rather than one clever
- * single path. Plain shapes turned out to read as a figure far more
- * reliably than a hand-plotted complex outline. src/render/player.js
- * rasterizes this once into a CanvasTexture (sanctioned: `.claude/skills/
- * threejs-textures/SKILL.md`'s guardrails, precedent at src/render/
- * capsules.js's `faceTexture`) and maps it onto a single billboard-style
- * plane. The plane's own footprint is the whole ENVELOPE this file can gate
- * headlessly (no `document`/canvas exists in this layer or in pathcheck's
- * plain-Node run — see the honesty note on `spriteViolations` below): bound
- * the plane inside the frozen collision box and every drawn pixel is bound
- * with it, by construction — a stronger guarantee than the six-box table's
- * per-box checks ever were.
+ * What this file exports, in two groups:
+ *   - RIG_SPRITE_* — the real sprite's world-unit plane size (measured from
+ *     the PNG's own alpha bounding box, not guessed) and its UV crop
+ *     rectangle (the source PNG is 77% transparent padding around the
+ *     drawn figure; the crop excludes the padding so the plane's geometry
+ *     maps 1:1 onto drawn pixels instead of stretching or wasting a wide
+ *     transparent margin).
+ *   - HELMET/TORSO/LEG_FRONT/LEG_BACK/VISOR/CANVAS_W/CANVAS_H/SPRITE_W/H —
+ *     unchanged from the second rework: the plain-shape data
+ *     src/render/player.js still rasterizes into a CanvasTexture as the
+ *     fallback plane, kept at its OWN narrower proportions (independent
+ *     geometry, not a shared one with the sprite) so neither path distorts
+ *     the other.
  *
- * The gun stays exactly what it was: a small 3D box, unrelated to this
- * silhouette, still swept through 8-way aim every frame by src/render/
- * player.js's gunGroup. Nothing about the gun changes in this rework, so
- * its own documented-not-narrowed swept reach (GUN_INNER_X/GUN_OUTER_X)
- * stays below verbatim.                                                  */
+ * The gun stays exactly what it was through all three reworks: a small 3D
+ * box, unrelated to this file's body shapes, still swept through 8-way aim
+ * every frame by src/render/player.js's gunGroup. The sprite's own brief
+ * deliberately excludes any drawn weapon for exactly this reason — a baked-
+ * in gun shape would double up against the separately-rotating one.       */
 
 import { CONFIG } from '../config.js';
 
@@ -45,11 +49,62 @@ import { CONFIG } from '../config.js';
 export const BODY_HALF_WIDTH = CONFIG.player.width / 2;   // 0.35
 export const BODY_HEIGHT = CONFIG.player.height;          // 1.7
 
-/* The billboard plane's own world-unit size. Slimmed under the collision
-   width (same "slimmed ~12% for the pulled-back camera" reasoning the old
-   box list carried) and exactly the collision height, feet at y=0 — so the
-   envelope check below is a single inequality that bounds every pixel the
-   canvas can ever draw, not a per-part table. */
+/* THE REAL SPRITE (T-040, third rework). Runtime-loaded PNG, not bundled —
+   src/render/player.js fetches it through THREE.TextureLoader; this file
+   only carries the numbers the loader needs and the numbers pathcheck can
+   check without a DOM.
+
+   RIG_SPRITE_CONTENT_ASPECT is MEASURED, not chosen: the alpha channel's
+   own bounding box in the 256x256 source (assets/generated/sprites/
+   rig-marine.png) is x [68,185) y [13,241), width:height 0.513. That is
+   WIDER than the frozen collision box's own 0.7/1.7 = 0.412 ratio, because
+   a running stance's legs spread past the hitbox — a render-only choice.
+   RIG_SPRITE_MAX_OVERRUN names how far that is allowed to go before the
+   guard below refuses it (same documented-not-narrowed precedent as this
+   file's own GUN_OUTER_X and CONFIG.hound's 2.4x visual/hitbox split — the
+   collision box itself never changes). Re-derive the bounding box with:
+     python3 -c "from PIL import Image; im=Image.open('assets/generated/
+     sprites/rig-marine.png').convert('RGBA'); ..." (see reports/tasks/
+     T-040/build.md for the exact one-liner used). */
+export const RIG_SPRITE_PATH = '../../assets/generated/sprites/rig-marine.png';
+export const RIG_SPRITE_CONTENT_ASPECT = 0.513;
+export const RIG_SPRITE_H = BODY_HEIGHT;
+export const RIG_SPRITE_W = RIG_SPRITE_CONTENT_ASPECT * RIG_SPRITE_H;
+export const RIG_SPRITE_MAX_OVERRUN = 1.3;   // sprite half-width may reach up to
+                                              //   this multiple of BODY_HALF_WIDTH
+// UV crop rectangle (0..1, standard GL texture space: v=0 is the BOTTOM of
+// the image) selecting just the drawn figure out of the 256x256 canvas's
+// mostly-transparent padding — see the header note above for how these were
+// measured. src/render/player.js applies them via texture.offset/repeat.
+export const RIG_SPRITE_UV = { u0: 0.265625, v0: 0.05859375, u1: 0.72265625, v1: 0.94921875 };
+
+// Same shape of check as spriteViolations() below, scoped to the real
+// sprite's plane size: proves the documented overrun stays inside its own
+// named ceiling rather than growing silently if the source PNG changes.
+export function spriteImageViolations(opts = {}) {
+  const spriteW = opts.spriteW ?? RIG_SPRITE_W;
+  const spriteH = opts.spriteH ?? RIG_SPRITE_H;
+  const maxOverrun = opts.maxOverrun ?? RIG_SPRITE_MAX_OVERRUN;
+  const uv = opts.uv ?? RIG_SPRITE_UV;
+  const out = [];
+  if (!(spriteW > 0) || !(spriteH > 0)) out.push('image sprite plane has a non-positive dimension');
+  if (spriteW / 2 > BODY_HALF_WIDTH * maxOverrun + 1e-9)
+    out.push('image sprite half-width ' + (spriteW / 2).toFixed(3) + ' exceeds the documented ' +
+      maxOverrun + 'x collision-half-width ceiling (' + (BODY_HALF_WIDTH * maxOverrun).toFixed(3) + ')');
+  if (spriteH > BODY_HEIGHT + 1e-9)
+    out.push('image sprite height ' + spriteH.toFixed(3) + ' exceeds the ' + BODY_HEIGHT + ' collision height');
+  if (!(uv && uv.u0 >= 0 && uv.u1 <= 1 && uv.u0 < uv.u1 && uv.v0 >= 0 && uv.v1 <= 1 && uv.v0 < uv.v1))
+    out.push('UV crop rectangle is not well-formed inside [0,1]');
+  return out;
+}
+
+/* THE FALLBACK PLANE's own world-unit size — a separate, independent plane
+   from RIG_SPRITE_W/H above, shown only while the real sprite is loading or
+   if it fails (see src/render/player.js's `loadRigSprite`). Slimmed under
+   the collision width (same "slimmed ~12% for the pulled-back camera"
+   reasoning the original box list carried) and exactly the collision
+   height, feet at y=0 — so the envelope check below is a single inequality
+   that bounds every pixel the canvas can ever draw, not a per-part table. */
 export const SPRITE_W = 0.60;
 export const SPRITE_H = BODY_HEIGHT;
 

@@ -2,24 +2,35 @@
 /* RIG's body, gun pose, and i-frame flicker. Driven entirely by sim
    fields on the player row — the rig itself carries no gameplay state.
 
-   T-040 REWORK: the operator rejected the six-box/three-zone pass ("this is
-   RIG? i was hoping for a much higher quality asset in line with the
-   concept art") — at RIG's frozen ~30px on-screen height (decisions.md
-   entry 7) more geometry cannot read, so this draws him instead: a small
-   set of plain shapes (src/pure/rig.js's HELMET/TORSO/LEG_FRONT/LEG_BACK)
-   rasterized once into a CanvasTexture (sanctioned technique, precedent at
-   src/render/capsules.js's faceTexture) and mapped onto one billboard-style
-   plane. The gun stays the small 3D box it always was — untouched by this
-   rework, still swept through 8-way aim every frame below. */
+   T-040, THIRD REWORK. First the operator rejected six boxes ("this is RIG?
+   i was hoping for a much higher quality asset in line with the concept
+   art") — at RIG's frozen ~30px on-screen height (decisions.md entry 7)
+   more geometry cannot read. Second, a plain-shapes canvas sprite (still
+   below: HELMET/TORSO/LEG_FRONT/LEG_BACK) replaced the boxes. Third,
+   decisions.md entries 16/17 authorized runtime asset loading and confirmed
+   FAR stays permanent, so RIG is now a REAL PNG SPRITE loaded through
+   THREE.TextureLoader — the plain-shapes canvas version is kept as the
+   FALLBACK plane, shown immediately and left showing if the image never
+   loads. Entry 16's one attached condition: a failed/missing asset must
+   degrade visibly and safely, and the SIM MUST NEVER BRANCH on which one
+   rendered — nothing here writes back to src/sim/player.js, and the fallback
+   is a fully-working render path on its own, not a placeholder.
+
+   The gun stays the small 3D box it always was through all three reworks —
+   untouched, still swept through 8-way aim every frame below. The sprite's
+   own art is deliberately body-only (no weapon drawn), so it never doubles
+   up against the separately-rotating gun mesh. */
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
+import { QUERY } from '../mode.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs, blink } from '../sim/time.js';
 import { player } from '../sim/player.js';
 import { flowSnapshot } from '../sim/flow.js';
 import {
-  CANVAS_H, CANVAS_W, GUN_BOX, HELMET, LEG_BACK, LEG_FRONT, SPRITE_H, SPRITE_W, TORSO, VISOR,
+  CANVAS_H, CANVAS_W, GUN_BOX, HELMET, LEG_BACK, LEG_FRONT, RIG_SPRITE_H, RIG_SPRITE_PATH,
+  RIG_SPRITE_UV, RIG_SPRITE_W, SPRITE_H, SPRITE_W, TORSO, VISOR,
 } from '../pure/rig.js';
 import { scene } from './scene.js';
 import { placeOnTower } from './tower.js';
@@ -90,28 +101,73 @@ function paintRigTexture() {
 }
 
 const rig = new THREE.Group();
-const bodyMesh = new THREE.Mesh(
+
+// MeshStandardMaterial (LIT), not Basic, for BOTH planes below: palette.js's
+// own header note says every token here is authored against what the light
+// rig + ACES tone mapping PRODUCES, not the raw hex — an unlit material
+// feeds a texture's raw RGB straight into that tone curve with no lighting
+// attenuation first, and at these values ACES's midtone compression washed
+// dark and mid almost to the same near-white (measured on screen: confirmed
+// with ?view=near, not just the shipped FAR distance, which ruled out a
+// minification artifact — see reports/tasks/T-040/build.md's iteration
+// log). transparent BLENDING, not an alphaTest cutout: at RIG's tiny
+// on-screen size the GPU's own mipmapping blurs a texture's alpha edges
+// hard enough that a 0.5 cutoff discarded almost the whole shape, leaving a
+// paper-thin sliver (same iteration log).
+
+// FALLBACK plane: the plain-shapes canvas sprite. Built and shown
+// immediately (synchronous, cannot fail) so RIG is never absent for even
+// one frame while the real sprite is still loading.
+const fallbackMesh = new THREE.Mesh(
   new THREE.PlaneGeometry(SPRITE_W, SPRITE_H),
-  // MeshStandardMaterial (LIT), not Basic: palette.js's own header note says
-  // every token here is authored against what the light rig + ACES tone
-  // mapping PRODUCES, not the raw hex — an unlit material feeds the canvas's
-  // raw RGB straight into that tone curve with no lighting attenuation
-  // first, and at these values ACES's midtone compression washes dark and
-  // mid almost to the same near-white (measured on screen: confirmed with
-  // ?view=near, not just the shipped FAR distance, which ruled out a
-  // minification artifact — see reports/tasks/T-040/build.md's iteration
-  // log). MeshStandardMaterial gets the same light-rig attenuation every
-  // other mesh here does, which is exactly what playerDark/playerMid were
-  // calibrated against in the first place.
-  // transparent BLENDING, not an alphaTest cutout: at RIG's tiny on-screen
-  // size the GPU's own mipmapping blurs the texture's alpha edges hard
-  // enough that a 0.5 cutoff discarded almost the whole shape, leaving a
-  // paper-thin sliver (same iteration log).
   new THREE.MeshStandardMaterial({ map: paintRigTexture(), transparent: true, side: THREE.DoubleSide }),
 );
-// feet at y=0 (the deck RIG stands on), matching every other mesh here
-bodyMesh.position.set(0, SPRITE_H / 2, 0);
-rig.add(bodyMesh);
+fallbackMesh.position.set(0, SPRITE_H / 2, 0);
+rig.add(fallbackMesh);
+
+// REAL sprite plane: built with no map yet, hidden until (if) the PNG
+// finishes loading — see loadRigSprite() below.
+const spriteMesh = new THREE.Mesh(
+  new THREE.PlaneGeometry(RIG_SPRITE_W, RIG_SPRITE_H),
+  new THREE.MeshStandardMaterial({ transparent: true, side: THREE.DoubleSide }),
+);
+spriteMesh.position.set(0, RIG_SPRITE_H / 2, 0);
+spriteMesh.visible = false;
+rig.add(spriteMesh);
+
+// ?rig=canvas is the escape hatch BACK to the plain-shapes fallback, for a
+// direct side-by-side comparison — decisions.md entry 16 retired blanket
+// off-by-default flags for approved work, so the sprite is the shipped
+// DEFAULT and this is the opt-out, not the other way around.
+const RIG_FORCE_CANVAS = QUERY.get('rig') === 'canvas';
+
+// Runtime-loads the real sprite (decisions.md entry 16). On success: crop
+// to just the drawn figure (RIG_SPRITE_UV — the source PNG is mostly
+// transparent padding) via texture.offset/repeat, swap the fallback out.
+// On failure: log once and do nothing further — the fallback plane never
+// stopped showing, so the player always sees a complete RIG either way.
+// This function is the ONLY place that knows which plane is live; nothing
+// in src/sim/ ever reads it, so the sim cannot branch on an asset's fate.
+function loadRigSprite() {
+  if (RIG_FORCE_CANVAS) return;
+  const url = new URL(RIG_SPRITE_PATH, import.meta.url).href;
+  new THREE.TextureLoader().load(
+    url,
+    (tex) => {
+      tex.offset.set(RIG_SPRITE_UV.u0, RIG_SPRITE_UV.v0);
+      tex.repeat.set(RIG_SPRITE_UV.u1 - RIG_SPRITE_UV.u0, RIG_SPRITE_UV.v1 - RIG_SPRITE_UV.v0);
+      spriteMesh.material.map = tex;
+      spriteMesh.material.needsUpdate = true;
+      spriteMesh.visible = true;
+      fallbackMesh.visible = false;
+    },
+    undefined,
+    (err) => {
+      console.warn('RIG sprite failed to load; showing the procedural fallback instead.', err);
+    },
+  );
+}
+loadRigSprite();
 
 const gunGroup = new THREE.Group();
 gunGroup.position.set(0, 1.05, 0.25);
@@ -134,11 +190,15 @@ function sync() {
   rig.scale.y = squash;
   gunGroup.position.y = player.muzzleY / squash;    // rig is squashed: undo it here
   gunGroup.rotation.z = Math.atan2(player.aim.y, player.aim.x);
-  // the silhouette is authored facing +x (SILHOUETTE's own convention, see
-  // src/pure/rig.js) — mirror the plane when the sim's own facing flips, the
-  // same sign CONFIG.player.aim already uses, so the drawn pose (front leg,
-  // pack) never points the wrong way while running left
-  bodyMesh.scale.x = player.facing < 0 ? -1 : 1;
+  // both planes are authored facing +x (see src/pure/rig.js) — mirror
+  // whichever is showing when the sim's own facing flips, the same sign
+  // CONFIG.player.aim already uses, so the drawn pose (front leg, pack)
+  // never points the wrong way while running left. Flipping both costs
+  // nothing on the invisible one and means neither plane needs to know
+  // which is currently on screen.
+  const faceX = player.facing < 0 ? -1 : 1;
+  fallbackMesh.scale.x = faceX;
+  spriteMesh.scale.x = faceX;
   // A live momentum chain (?flow=1) leans the body into its own speed: the
   // chain has to be visible in the character, not only in the HUD. Presentation
   // only, and exactly zero without the flag.
