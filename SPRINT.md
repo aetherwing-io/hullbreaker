@@ -652,7 +652,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs (docs-only lane, must stay green); every cited artifact path resolves
 
-## T-029 | feature | todo | P2
+## T-029 | feature | doing | P2
 
 goal: three small runtime truth fixes whose owning files are finally out from
 under the lanes that blocked them (I-005, I-009, I-030). `audioSnapshot()` is
@@ -674,7 +674,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; a ?g2=1 capture of the overlay; a ?momentum=1 trace carrying drive
 
-## T-030 | art | todo | P2
+## T-030 | art | doing | P2
 
 goal: finish the palette pass's last file and the FAR readability notes it
 left behind (I-004, I-003, I-010). `src/render/hostiles.js` still reads
