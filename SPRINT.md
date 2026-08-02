@@ -532,7 +532,7 @@ is violated. That is the I-019/I-031 failure mode — an assertion whose subject
 is the author's intent rather than what actually happened — so it leads.
 ============================================================== -->
 
-## T-024 | harness | doing | P1
+## T-024 | harness | done | P1
 
 goal: the dev server must never serve a stale module. On 2026-08-02 the game
 rendered a blank page for the operator: Chrome had heuristically cached a
