@@ -742,3 +742,43 @@ an escape hatch back. `?hook=1` stays inert (judged and rejected, entry 5).
 - **The FAR camera (entry 7)** — the live framing conflict from entry 15.
   Board 01's fantasy needs a closer camera; entry 7 froze FAR for monumental
   scale. Unresolved, and it gates character art direction.
+
+## 17 — 2026-08-02 — FAR stays, and scale is the thing to build well
+
+**Operator, resolving the framing conflict opened in entry 15:**
+
+> "the 'far' camera is meant to make the play feel like the tiny human scaling
+> a giant monster and the idea is to make the player feel the scale of climbing
+> a giant monster, i think we can do it really well if you try hard"
+
+**FAR is CONFIRMED as the default.** Entry 7 stands, and entry 15's open
+question is CLOSED. Do not propose a closer camera, a dynamic push-in, or a new
+middle view scale to solve character fidelity. Concept board 01 is a poster —
+it frames the marine at roughly half the screen — and it is NOT the gameplay
+camera. The gameplay camera exists to make RIG small on purpose.
+
+**What this settles for character art.** RIG is ~15x30 px and stays there. The
+answer to "higher quality asset" (entry 15) is therefore a genuinely well-crafted
+30 px sprite — deliberate silhouette, 3-4 value steps, one accent, pixel-level
+intent — not more geometry, not a bigger character. Runtime sprites are legal as
+of entry 16, so this is now buildable.
+
+**What this makes the priority.** If RIG being tiny is the point, then SELLING
+THE SCALE is the headline art problem, not RIG's pixel count. The player must
+feel the Meridian is continent-sized. Levers that serve it, from the look
+packet: graded backdrop anatomy tiers (S4), atmospheric depth so distance
+separates into layers rather than collapsing, human-scale reference objects
+(rungs, hatches, doors) placed against enormous features, and silhouette
+composition that keeps something vast in frame. The operator's words are the
+bar: *"really well if you try hard."*
+
+**ALSO APPROVED, same session — the five look builds.** Shown five pinned lanes
+(value ladder, impact language, RIG silhouette, seam-pip highlights, contact
+shadows) his verdict was:
+
+> "all of those 5 builds look good to me"
+
+All five are cleared to merge. Note this does NOT reverse entry 15's rejection
+of RIG's *fidelity* — the silhouette pass is an improvement on boxes and ships,
+while the sprite upgrade continues. Approved work ships ON by default per
+entry 16; it must not stay hidden behind flags.
