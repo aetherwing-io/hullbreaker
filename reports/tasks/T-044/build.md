@@ -158,21 +158,52 @@ next gate armed.
 **Raw values, every run, nothing dropped** (scroll reached, ties to km/m
 readout in-game):
 
-| policy | tree | n | values (scroll) | floor (worst) | ceiling (best) | cleared gate 2 |
+| policy | tree | n | values (scroll), by session | floor (worst) | ceiling (best) | cleared gate 2 |
 | --- | --- | --- | --- | --- | --- | --- |
-| aimed (competent) | base | 5+5+3=13 | 140,205,140,140,140 · 96.9,109.3,99.5,140,140 · 140,140,140 (reviewer, 3 exact values not itemized in the review) | 96.9 | 205 | 1/13 (7.7%) |
-| aimed (competent) | branch | 5+5+3=13 | 205,140,205,166.9,140 · 140,140,140,140,140 · 205,205,140 (reviewer) | 140 | 205 | 5/13 (38.5%) |
-| full-run (weak) | base | 5 | 140,75,75,75,75 | 75 | 140 | 0/5 (0%) |
-| full-run (weak) | branch | 5 | 171.7,75,75,98.2,140 | 75 | 171.7 | 1/5 (20%) |
+| aimed (competent) | base | 5+5+3+5=18 | 140,205,140,140,140 · 96.9,109.3,99.5,140,140 · 140,140,140 (reviewer) · **115.8,119.3,103.6,106.8,205.0 (interleaved)** | 96.9 | 205 | 2/18 (11.1%) |
+| aimed (competent) | branch | 5+5+3+5=18 | 205,140,205,166.9,140 · 140,140,140,140,140 · 205,205,140 (reviewer) · **189.8,107.2,140.0,140.0,140.0 (interleaved)** | 107.2 | 205 | 6/18 (33.3%) |
+| full-run (weak) | base | 5 | 140,75,75,75,75 (not interleaved) | 75 | 140 | 0/5 (0%) |
+| full-run (weak) | branch | 5 | 171.7,75,75,98.2,140 (not interleaved) | 75 | 171.7 | 1/5 (20%) |
 
-Three sessions of aimed-policy data are folded in: the reviewer's original
-n=3, my first reproduction (n=5, reported in the previous revision of this
-report), and a second n=5 batch run for this revision — all real, none
-discarded, because the honest picture is the full spread across sessions,
-not whichever single batch looked best. Run-to-run variance is genuinely
-large (my two aimed-branch batches alone ranged from 3/5 cleared to 0/5
-cleared) — this is not a stable percentage, and I am not presenting it as
-one.
+Four sessions of aimed-policy data are folded into the table above: the
+reviewer's original n=3, my first reproduction (n=5, reported in the
+previous revision of this report), a second n=5 batch (also
+non-interleaved), and the interleaved n=5 batch described next — all real,
+none discarded, because the honest picture is the full spread across
+sessions, not whichever single batch looked best. Run-to-run variance is
+genuinely large (my two non-interleaved aimed-branch batches alone ranged
+from 3/5 cleared to 0/5 cleared) — this is not a stable percentage, and I
+am not presenting it as one.
+
+**Interleaved control (added after a sibling lane found
+`meta.deterministicDispatch.gameMsMax` bimodal in every condition,
+including no-change controls, on a different script — a warning to check
+for order/session effects before attributing anything to the terrain).**
+All three of the batches above ran every sample for one tree, then every
+sample for the other — a real confound if something session-level (harness
+warm-up, machine load, browser state) drifts between batches. So I ran one
+more aimed-policy batch **alternating base/branch every single run** (base,
+branch, base, branch, …, n=5 each), same script/flags/pinned-worktrees:
+
+`base: 115.8, 119.3, 103.6, 106.8, 205.0` (1/5 cleared gate 2, 20%)
+`branch: 189.8, 107.2, 140.0, 140.0, 140.0` (1/5 cleared gate 2, 20%)
+
+**This interleaved batch shows no difference — 1/5 both sides.** That is
+real information, not a null result to bury: it demonstrates the exact
+batch-order noise the sibling lane's warning describes, on my own metric
+(`scrollX` from trace samples, not the `gameMsMax` field they flagged, but
+the same underlying risk). Folding it in rather than discarding it:
+pooling literally every aimed-policy run I have across all four sessions
+(batched ×3 + interleaved ×1, n=18 each side) gives **base 2/18 (11.1%)**
+vs **branch 6/18 (33.3%)** — still favoring the branch by roughly 3x, not
+the ~5x the smaller batched-only samples suggested, and with one full
+batch (this interleaved one) showing no effect at all. I do not think this
+fully resolves whether the terrain effect is real, real-but-smaller-than-
+first-measured, or partly a session artifact — I am reporting the honest
+spread including the batch that complicates the story, not the subset that
+supports it most cleanly. The weak-policy comparison above was NOT run
+interleaved (one batch each side) and carries the same open risk; I did
+not have budget to re-run it interleaved this cycle.
 
 **What the shape actually shows:**
 
@@ -184,19 +215,29 @@ one.
   gate 2's halt, never clears it); branch's best is 171.7 — past corner 2
   (154), a genuine gate-2 clear, something no weak-policy base run did in
   this data. **The ceiling is higher on branch, even for the weak policy.**
-- **Aimed policy:** base's absolute best (205, one run out of 13) ties
-  branch's best (also 205) — the ceiling's ABSOLUTE height is the same —
-  but branch reaches it roughly 5x more often (38.5% vs 7.7% gate-2-clear
-  rate across 13 runs each). Base's floor (96.9) is slightly worse than
-  branch's floor (140) for this policy specifically, so the floor read is
-  less clean here than the weak-policy comparison above — worth flagging
-  rather than smoothing over.
+- **Aimed policy, pooling all 4 sessions including the interleaved
+  control (n=18 each):** base's absolute best (205) ties branch's best
+  (also 205) — the ceiling's ABSOLUTE height is the same — but branch
+  reaches a gate-2 clear roughly 3x more often pooled (33.3% vs 11.1%,
+  down from the ~5x an earlier, smaller, non-interleaved sample showed).
+  The interleaved batch alone showed NO difference (1/5 both sides),
+  which is the honest reason the pooled ratio moved from ~5x to ~3x
+  between the previous revision of this report and this one. Base's floor
+  (96.9, from a non-interleaved batch) is slightly worse than branch's
+  floor (107.2 in the interleaved batch) for this policy specifically, so
+  the floor read is less clean here than the weak-policy comparison above.
 
-Net: the evidence leans toward **"raises the ceiling, mostly holds the
-floor"** — the shape entry 19 said is good — more clearly for the weak
-policy (cleaner floor match) than the aimed one. It is not a clean, fully
-resolved case either way with n this small. I am not undoing the terrain;
-I am presenting the distribution and routing the read to the operator, per
+Net: the pooled evidence still leans toward **"raises the ceiling,
+roughly holds the floor"** — the shape entry 19 said is good — but weaker
+and less certain than the previous revision of this report claimed, now
+that an interleaved control is folded in and shows no effect on its own.
+I am treating "how much of the batched-only effect was session noise" as
+an open, not a closed, question — the honest range, from the data I have,
+runs from "no measurable difference" (interleaved batch alone) to
+"~3-5x more often" (various pooled cuts) depending which sessions are
+included, and I am not picking the cut that tells the cleanest story. I am
+not undoing the terrain; I am presenting the full distribution, including
+the batch that complicates it, and routing the read to the operator, per
 his own standing instruction that this project reports spread, not a
 single average, going forward.
 
@@ -259,18 +300,28 @@ could to make that merge legible.
 
 1. **Ceiling vs. floor (entry 19), measured as a distribution, not a mean:**
    a weak (no-vertical-aim) and a competent (aim-assisted) scripted policy
-   were each run 5-13 times per tree — see "Difficulty measurement" above
-   for every raw value. Shape observed: the WEAK policy's floor is
-   identical on both trees (dies at gate 1, scroll 75, most runs) while its
-   ceiling is higher on this branch (171.7 vs 140 — a genuine gate-2 clear
-   that never happened on `main` in this data); the COMPETENT policy's
-   absolute ceiling ties (205 both trees) but is reached ~5x more often on
-   this branch (38.5% vs 7.7% across 13 runs each), with a noisier floor
-   read. Read together that leans "ceiling raises, floor mostly holds" —
-   the shape you named as good — but it is not a clean, fully resolved
-   case at this sample size. Does this match what you want from "sometimes
-   I clear two or three faces, sometimes I can't pass the first," or does
-   the floor need to be pinned down harder before this is acceptable —
+   were each run 5-18 times per tree, including one batch that
+   ALTERNATED trees every single run rather than running one tree's
+   samples then the other's (a check for session/order noise, prompted by
+   a sibling lane finding a harness dispatch metric bimodal even with no
+   code change) — see "Difficulty measurement" above for every raw value.
+   Shape observed: the WEAK policy's floor is identical on both trees
+   (dies at gate 1, scroll 75, most runs) while its ceiling is higher on
+   this branch (171.7 vs 140 — a genuine gate-2 clear that never happened
+   on `main` in this data, though not checked interleaved); the COMPETENT
+   policy's absolute ceiling ties (205 both trees), and pooling all 18
+   runs per side (including the interleaved batch, which alone showed NO
+   difference — 1/5 both trees) it's reached roughly 3x more often on this
+   branch (33.3% vs 11.1%), down from the ~5x a smaller, non-interleaved
+   sample suggested in the previous revision of this report. Read
+   together that leans "ceiling raises, floor mostly holds" — the shape
+   you named as good — but less certainly than before, and it is not a
+   clean, fully resolved case at this sample size; I'm treating "how much
+   of this is a real terrain effect vs. session noise" as still open
+   rather than picking whichever cut of the data tells the cleanest story.
+   Does this match what you want from "sometimes I clear two or three
+   faces, sometimes I can't pass the first," or does the floor need to be
+   pinned down harder before this is acceptable —
    and if the latter, should the fix be narrower arena footing, or
    something else? This is explicitly your call, not mine or the
    integrator's to make silently.
