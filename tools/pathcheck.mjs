@@ -9373,9 +9373,21 @@ const G2GATE = G2E.gate;
        'query — the corrected reasoning in its own header, checked mechanically');
     ok(/IS_TRANSFORM_SLICE/.test(code),
        'T-039: contact.js is guarded off under the transformation slice');
-    ok(/QUERY\.get\(.shadow.\)/.test(code),
-       'T-039: the flag is ?shadow=1 — an unjudged pixel change, off by default, not the ' +
-       '?juice=0/?legibility=0 default-ON precedent the packet says does not carry over');
+    ok(/QUERY\.get\(.shadow.\)/.test(code), 'T-039: the flag is ?shadow= (QUERY.get(\'shadow\'))');
+    // decisions.md entries 16/17 (both landed before this fix cycle): approved
+    // work ships ON by default with an escape hatch, not behind an opt-in
+    // flag — entry 17 names contact shadows explicitly. The static guard
+    // checks the resolver's actual LOGIC (an observable-behavior property,
+    // not a comment's prose), because a naive "?shadow=1 arms it" ('1' opt-in)
+    // implementation would also match the QUERY.get('shadow') check above
+    // while shipping exactly the failure entry 16 was written to stop.
+    ok(/value\s*!==\s*['"]0['"]/.test(code),
+       'T-039: resolveContactShadows defaults ON — only the literal \'0\' opt-out (or the ' +
+       'transformation slice) disables it, the same shape src/mode.js\'s JUICE_ENABLED uses ' +
+       '(QUERY.get(\'juice\') !== \'0\'), not a ?shadow=1 opt-in');
+    ok(!/value === .1./.test(code),
+       'T-039: no ?shadow=1-shaped opt-in comparison survives anywhere in the resolver — a ' +
+       'stray old branch would silently re-arm the retired off-by-default behavior');
   }
 
   // --- every call site the packet names actually wires the module: the

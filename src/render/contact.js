@@ -11,15 +11,19 @@
  * touches the light-rig guardrail (decisions.md entry 4.1 stays unopened,
  * and pathcheck's new statics below prove that mechanically).
  *
- * ?shadow=1 arms it. Absent — every shipped URL today — this module builds
- * no geometry, no material, no mesh, and every exported function returns
- * immediately: a disabled boot costs the same three.js work as the
- * pre-contact-shadow game, the same contract src/render/fx.js's ?juice=0
- * carries. This is an UNJUDGED pixel change awaiting an operator checkpoint,
- * not baseline feedback for an already-shipped mechanic (the ?juice=0 /
- * ?legibility=0 precedent is explicitly NOT precedent for default-on here —
- * the packet says so for exactly this reason), so CLAUDE.md's rule applies:
- * prototypes ship behind a query flag, off by default.
+ * ON BY DEFAULT (decisions.md entries 16 + 17). Entry 16 retired the blanket
+ * "prototypes ship behind a query flag, off by default" rule specifically
+ * because it kept the operator looking at a grey-box build while approved
+ * work sat invisible behind flags nobody typed; entry 17 names "contact
+ * shadows" as one of the five look builds he was shown and approved
+ * ("all of those 5 builds look good to me") and states plainly that
+ * approved work "must not stay hidden behind flags." `?shadow=0` is the
+ * escape hatch back — the same `?juice=0`/`?legibility=0` idiom entry 16
+ * itself names as the correct precedent for approved, shipped work, not
+ * an exception to it. When disabled (`?shadow=0`, or the transformation
+ * slice below) this module still builds no geometry, no material, no mesh,
+ * and every exported function returns immediately — the same "a disabled
+ * path costs nothing" contract src/render/fx.js's ?juice=0 carries.
  *
  * One row per live actor per frame — RIG (src/render/player.js), each
  * hostile (src/render/hostiles.js) and each capsule (src/render/capsules.js)
@@ -77,8 +81,13 @@ import { PAL } from './palette.js';
 import { scene, HIDE } from './scene.js';
 import { towerPose } from './tower.js';
 
+// On by default (entries 16/17): only the literal opt-out ('0') or the
+// transformation slice's unproven drawn-floor guarantee turn it off.
+// Anything else — absent, '', '1', junk — resolves to armed, the exact
+// shape src/mode.js's own JUICE_ENABLED already uses
+// (`QUERY.get('juice') !== '0'`) for its default-on flag.
 export function resolveContactShadows(value, transformSlice) {
-  return value === '1' && !transformSlice;
+  return value !== '0' && !transformSlice;
 }
 export const CONTACT_SHADOWS_ENABLED =
   resolveContactShadows(QUERY.get('shadow'), IS_TRANSFORM_SLICE);

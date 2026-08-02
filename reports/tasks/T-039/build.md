@@ -1,8 +1,17 @@
 # T-039 build report — contact shadows (packet §3 S6)
 
-**Lane:** `task/T-039`, worktree `.claude/worktrees/T-039`, commit `3c1c14e`.
-**Nothing merged to main.** Ships behind `?shadow=1`, off by default — every
-shipped URL today is byte-identical to before this branch.
+**Lane:** `task/T-039`, worktree `.claude/worktrees/T-039`. **Nothing merged
+to main.**
+
+**UPDATED — see §8.** Sections 1–7 below describe the build as it stood at
+commit `9c6752b`, which shipped `?shadow=1`-gated, off by default, per the
+dispatch's instruction at the time. Playtest FAILed that build: `decisions.md`
+entries 16 and 17 (both landed before the build/addendum commits finished)
+retire the blanket off-by-default rule and name contact shadows explicitly as
+approved work that "must not stay hidden behind flags." **§8 is the fix**:
+shadows now ship ON by default, `?shadow=0` is the escape hatch. Read §8 for
+the current, correct state; §1–7 are kept for the record of what was measured
+against the flat, pre-ladder build and are labelled accordingly.
 
 **Draw-call delta: exactly +1**, idle and under load, measured via
 `renderer.info` in real headless Chrome (not asserted, not assumed):
