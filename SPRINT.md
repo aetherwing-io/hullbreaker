@@ -1201,7 +1201,7 @@ branched off task/T-049, not main, because T-049 carries the shared
 src/render/preload.js texture gate; merge order is T-049 → T-051/T-052.
 ========== -->
 
-## T-051 | art | blocked | P1
+## T-051 | art | review | P1
 goal: a real backdrop behind the world. The five finished 1024x512 plates in
 assets/generated/backdrops/ go onto parallaxing quads, replacing the flat
 scene.background color as the thing filling 60-80% of the frame. Depth layering
@@ -1237,7 +1237,7 @@ NOT backdrop.js/scene.js (T-051).
 verify: node tools/pathcheck.mjs; new assertions proven by break/restore;
 textured-vs-flat captures including one near and one far surface
 
-## T-053 | assets | review | P1
+## T-053 | assets | done | P1
 goal: raise the generator's ceiling from vector clip-art to painted raster. Add
 a raster path alongside the SVG one in which codex returns a self-contained
 canvas renderer (value noise, fbm, directional grunge, edge wear, panel-gap AO,
