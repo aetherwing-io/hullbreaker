@@ -1,16 +1,96 @@
 # T-042 build report — audio punch
 
 Worktree: `/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-042`
-Branch: `task/T-042`, based on `69e1f90` ("SPRINT: T-036 done"). Uncommitted
-working-tree changes.
+Branch: `task/T-042`, originally based on `69e1f90` ("SPRINT: T-036 done").
 
-Files touched: `src/ui/audio.js` and `tools/pathcheck.mjs` only.
+**Addendum, third pass — committed and rebased.**
+- `d3ceac5` — the audio-punch work itself (`src/ui/audio.js` +
+  `tools/pathcheck.mjs` at the time, monolith form).
+- `be9809c` — `Merge main into task/T-042`, rebasing onto six lanes that
+  merged since (`main` at 2251 pathcheck assertions; see "Rebase" below for
+  how the one real conflict — `tools/pathcheck.mjs`, split into
+  `tools/pathcheck/*.mjs` by T-037 while this branch was in flight — was
+  resolved).
+
+Nothing is uncommitted. `git status --short` is clean.
+
+Files touched, final: `src/ui/audio.js` (unchanged by main, no conflict),
+`tools/pathcheck/t-012-audio-layer-static-guards.mjs` (one line — the
+`sLeftEdge` allowlist entry), `tools/pathcheck/manifest.mjs` (one line —
+registers the new domain), and a new `tools/pathcheck/t-042-audio-punch.mjs`
+(this task's whole static+behavioral section, ported from the pre-split
+monolith form verbatim).
+
+## Rebase (T-037's pathcheck split landed mid-flight)
+
+This branch was cut before T-037 split the 9,230-line `tools/pathcheck.mjs`
+monolith into `tools/pathcheck/` (one file per domain, walked by
+`manifest.mjs`) specifically to stop lanes conflicting on that one file —
+exactly the class of pain this rebase would otherwise have hit. `git merge
+main` produced exactly one conflict, on `tools/pathcheck.mjs` itself: main's
+side had rewritten it into a thin runner (`for (const domain of DOMAINS)
+await domain.run(SHARED)`), obsoleting this branch's monolith-append
+entirely. Per `docs/ORCHESTRATION.md`'s merge playbook ("take main's file
+whole and splice the lane's self-contained section into it"), applied at
+the new, coarser grain the split introduces:
+
+1. Took main's `tools/pathcheck.mjs` (and the whole new `tools/pathcheck/`
+   directory it depends on) as-is — `git checkout --theirs`.
+2. Created `tools/pathcheck/t-042-audio-punch.mjs`: this task's entire
+   static+behavioral section, lifted verbatim from the pre-merge monolith
+   (banner comment to closing brace) and wrapped in the new
+   `export async function run(SHARED) { … }` shape every domain module
+   uses, importing `ok`/`srcDir`/`stripComments` from `./_context.mjs`
+   instead of having them in scope from a shared top-level file.
+2. Added the ONE line this task's pressure curve needed to
+   `tools/pathcheck/t-012-audio-layer-static-guards.mjs`'s `audioSimAllow`
+   map (`'../sim/edges.js': ['sLeftEdge']`), with the same authorization
+   comment as before — main's copy of that file is otherwise byte-identical
+   to what this branch already had (audio.js is the one file no other lane
+   touches).
+3. Registered the new module in `tools/pathcheck/manifest.mjs`, appended
+   last — its own header explicitly names this as the right place for "a
+   new, self-contained section."
+4. Verified `node --input-type=module --check < <file>` on all three edited
+   files (ES-module syntax, not CommonJS — the playbook's own warning about
+   `node --check` passing a broken ES module), then `node tools/pathcheck.mjs`:
+   **2295 passed, 0 failed** — exactly main's 2251 plus this task's 44, zero
+   dropped in the split-and-port.
+5. `src/ui/audio.js` needed no rebase work at all: `git diff 69e1f90 main --
+   src/ui/audio.js` is empty — no other lane touches the audio module.
+
+## Async-boot-timing check (the T-040 lesson)
+
+`src/ui/audio.js` contains no `async`, `await`, `fetch(`, `new Promise`,
+`setTimeout`, or `setInterval` anywhere (`grep` confirms zero matches) —
+every WebAudio node this task creates (`buildContext()`/`buildPressure()`)
+is built synchronously on the same call stack as the unlock gesture, so
+structurally it cannot be the class of defect T-040 hit (an async asset
+fetch competing with the frame loop). But per the request, measured rather
+than argued: `mid-route.json --deterministic` ×3 with audio on, ×3 with
+`?audio=0`, same pinned server, comparing the SIM TRAJECTORY metric
+(`closestCrushApproachTiles`, i.e. `sliceStats.minEdgeMargin` — the number
+that actually moves if wall-clock work perturbs a gameMs-keyed run), not an
+average of it:
 
 ```
- src/ui/audio.js     | 316 ++++++++++++++++++++++++++++++-----
- tools/pathcheck.mjs | 461 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 735 insertions(+), 42 deletions(-)
+audio ON:  35.42, 35.40, 35.41   (spread: 0.02 tiles)
+audio OFF: 35.40, 35.40, 35.40   (spread: 0.00 tiles)
 ```
+
+Indistinguishable, and the ON spread (0.02 tiles) is tighter than the
+0.02–2.33-tile jitter T-012's own original gate report accepted as ordinary
+run-to-run noise on this same script (three audio-on runs there read 33.11/
+35.44/35.44). Two other metrics (`idleTimeFraction`, the `protoScore` proxy)
+showed one outlier run in the audio-ON group of three (idle fraction 0
+instead of ~0.024, dragging the proxy score down with it) — I'm naming that
+plainly rather than averaging it away, but it's CDP real-time key-event
+replay jitter (this harness's own documented "deterministic injection keyed
+to gameMs" caveat: the SIM steps are gameMs-driven, the wall-clock delivery
+of the bot's key events is not), not the sim-trajectory metric, and the OFF
+group's three runs (which also replay input over CDP) show no such outlier
+— so it isn't a systematic audio-vs-no-audio difference, it's one run's
+input-delivery timing. Zero console errors in all six runs.
 
 **Addendum, second pass.** The team lead unblocked the pressure curve
 (authorized extending `tools/pathcheck.mjs`'s T-012 sim-read allowlist
@@ -352,7 +432,8 @@ because anything is currently broken.
 
 ## What's left / next action
 
-Nothing blocked. This diff is **uncommitted** in the worktree
-(`git status --short` shows exactly the two files plus this untracked
-report). Single best next action: commit on `task/T-042` and hand to
-review/playtest, or tell me to commit it myself.
+Nothing blocked, nothing uncommitted. Committed at `d3ceac5` (the audio
+work) and `be9809c` (merge main, rebasing onto six lanes / 2251→2295
+assertions) on `task/T-042`. `git status --short` is clean. Single best
+next action: hand to review/playtest, or merge via
+`tools/orch/merge-task.sh` from the main checkout.
