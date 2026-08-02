@@ -760,7 +760,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; node tools/assets/check.mjs --root <multiline-import fixture> (expect non-zero)
 
-## T-027 | harness | doing | P2
+## T-027 | harness | done | P2
 
 goal: four harness defects that waste cycles without lying outright (I-011,
 I-018, I-023, I-028). (a) Any deterministic script whose first event is at t>0
