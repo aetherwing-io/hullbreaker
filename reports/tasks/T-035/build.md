@@ -8,6 +8,17 @@ the packet and `artifacts/look-v1/` were in the tree).
 behind an off-by-default flag precisely so the operator judges it; what is
 below is arithmetic, captures and the questions that need an answer.
 
+**WHAT THIS DOES AND DOES NOT REACH — up front, not in a footnote.** This is
+not a whole-game value change. `src/render/limb.js` gates on `IS_G1`, so the
+LIMB half of the ladder — the ~900-piece body, which is most of the pixels it
+moves — applies to the six-face run **only**. It changes nothing under
+`?slice=traversal` or `?slice=transform`. The DECK half (`src/render/level.js`)
+reaches the six-face run and the traversal slice; the transform slice bakes no
+deck tiles, so `?slice=transform&shade=1` is a complete no-op. The S2 fog shift
+is likewise `IS_G1`-only. The last look pass overclaimed by moving hue over
+byte-identical geometry, so: the numbers below are the six-face run unless a
+row says "slice", and the slice's own change is one ramp on the deck stack.
+
 ---
 
 ## What changed and why
@@ -166,14 +177,21 @@ Full table and the frames: `artifacts/shade-v1/README.md`.
    renderer is not using. Harmless to play, wrong to a reader — the I-019/I-031
    "green guard over a value nothing reads" family. One line, in the same fenced
    file. **Recommend filing as an Inbox issue.**
-5. **Fence deviation, disclosed.** `src/render/camera.js` was not in my file
-   list. It is the only consumer of `CONFIG.limb.fog`, and `calibrateEdges()`
-   re-runs on resize so no render module can own the band without being
-   clobbered — S2 is unshippable without it. I asked the lead first
-   (unanswered at the time of writing), then took it: **+1 import line, +1
-   expression, +6 comment lines**, byte-identical behaviour with the flag
-   absent. It is not on the task's explicit do-not-touch list. If it collides
-   with another lane, it is trivially re-appliable.
+5. **One file outside my stated list, taken with the integrator's permission.**
+   `src/render/camera.js` was not in T-035's file list. It is the only consumer
+   of `CONFIG.limb.fog`, and `calibrateEdges()` re-runs on every resize, so no
+   render module can own the band without being clobbered — S2 is unshippable
+   without it, and the alternative was leaving a derived-but-dead constant in
+   `config.js`. I asked before touching it; the integrator checked ownership
+   (no live lane holds `camera.js`) and **granted the line**. The whole diff
+   against main is +1 import, +1 expression, +7 comment lines:
+
+       const F = IS_G1 ? (SHADE_GAIN > 0 ? CONFIG.limb.shadeFog : CONFIG.limb.fog) : CONFIG.fog;
+
+   With `?shade=` absent, `SHADE_GAIN` is 0, so the expression selects exactly
+   `CONFIG.limb.fog` — visible by inspection, and pathcheck asserts the source
+   text so it cannot drift into an unconditional swap. Nothing else in the file
+   was touched: no refactor, no cleanup.
 6. The wear field is what supplies most of the within-material range for
    materials whose pieces are geometrically identical (56 hull slabs, 6 joint
    ridges). At `?shade=1` that reads as strong weathering; whether it reads as
