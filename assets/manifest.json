@@ -444,6 +444,463 @@
         ],
         "checkedBy": "tools/assets/check.mjs"
       }
+    },
+    {
+      "id": "hound-brace-a",
+      "path": "assets/generated/sprites/hound-brace-a.png",
+      "category": "sprites",
+      "size": {
+        "w": 64,
+        "h": 32
+      },
+      "source": "assets/generated/sprites/hound-brace-a.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Brace Hound, shape-first. Body 1.7x0.9 tiles = 29.6x15.7px at the shipped FAR view; drawn on a 32x16 design grid (2x oversampled). Candidate A of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "hound-brace-b",
+      "path": "assets/generated/sprites/hound-brace-b.png",
+      "category": "sprites",
+      "size": {
+        "w": 64,
+        "h": 32
+      },
+      "source": "assets/generated/sprites/hound-brace-b.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Brace Hound, board-06-faithful. Same 32x16 design grid. Candidate B of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "wasp-drone-a",
+      "path": "assets/generated/sprites/wasp-drone-a.png",
+      "category": "sprites",
+      "size": {
+        "w": 32,
+        "h": 32
+      },
+      "source": "assets/generated/sprites/wasp-drone-a.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Wasp drone, dart read. 1.0x1.0 tiles = 17.4x17.4px at FAR; 16x16 design grid. Candidate A of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "wasp-drone-b",
+      "path": "assets/generated/sprites/wasp-drone-b.png",
+      "category": "sprites",
+      "size": {
+        "w": 32,
+        "h": 32
+      },
+      "source": "assets/generated/sprites/wasp-drone-b.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Wasp drone, insect-mechanical read. 16x16 design grid. Candidate B of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "carrier-hauler-a",
+      "path": "assets/generated/sprites/carrier-hauler-a.png",
+      "category": "sprites",
+      "size": {
+        "w": 64,
+        "h": 32
+      },
+      "source": "assets/generated/sprites/carrier-hauler-a.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Carrier, gantry read (broad, non-predatory). 1.7x0.9 tiles = 29.6x15.7px at FAR; 32x16 grid. Candidate A of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "carrier-hauler-b",
+      "path": "assets/generated/sprites/carrier-hauler-b.png",
+      "category": "sprites",
+      "size": {
+        "w": 64,
+        "h": 32
+      },
+      "source": "assets/generated/sprites/carrier-hauler-b.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Carrier, segmented-spine read. 32x16 grid. Candidate B of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "polyp-iris-a",
+      "path": "assets/generated/sprites/polyp-iris-a.png",
+      "category": "sprites",
+      "size": {
+        "w": 64,
+        "h": 64
+      },
+      "source": "assets/generated/sprites/polyp-iris-a.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Iris Polyp, bulb + side barrel. Full emplacement 1.8x2.15 tiles = 31.3x37.4px at FAR; 32x32 grid. Candidate A of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "polyp-iris-b",
+      "path": "assets/generated/sprites/polyp-iris-b.png",
+      "category": "sprites",
+      "size": {
+        "w": 64,
+        "h": 64
+      },
+      "source": "assets/generated/sprites/polyp-iris-b.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Iris Polyp, four-petal read (board 06 middle row, centre). 32x32 grid. Candidate B of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "mortar-tripod-a",
+      "path": "assets/generated/sprites/mortar-tripod-a.png",
+      "category": "sprites",
+      "size": {
+        "w": 64,
+        "h": 64
+      },
+      "source": "assets/generated/sprites/mortar-tripod-a.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Seed-Pod Tripod, tube-on-tripod read. 1.7x1.73 tiles = 29.6x30.1px at FAR; 32x32 grid. Candidate A of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "mortar-tripod-b",
+      "path": "assets/generated/sprites/mortar-tripod-b.png",
+      "category": "sprites",
+      "size": {
+        "w": 64,
+        "h": 64
+      },
+      "source": "assets/generated/sprites/mortar-tripod-b.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Seed-Pod Tripod, organic-machine read (seed chamber belly). 32x32 grid. Candidate B of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "backdrop-limb-segment",
+      "path": "assets/generated/backdrops/backdrop-limb-segment.png",
+      "category": "backdrops",
+      "size": {
+        "w": 1024,
+        "h": 512
+      },
+      "source": "assets/generated/backdrops/backdrop-limb-segment.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Distant Meridian limb, banded armour collars, service ladder + hatch as the human-scale mark. Authored for ~60x30 tiles of screen (about 1044x522px at FAR).",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "deep-teal",
+          "haze",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "backdrop-spine-coil",
+      "path": "assets/generated/backdrops/backdrop-spine-coil.png",
+      "category": "backdrops",
+      "size": {
+        "w": 512,
+        "h": 512
+      },
+      "source": "assets/generated/backdrops/backdrop-spine-coil.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Distant vertebral spine column with rib spurs; maintenance-gallery lights are the human-scale mark. ~30x30 tiles.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "deep-teal",
+          "haze",
+          "hull",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "backdrop-crown-horizon",
+      "path": "assets/generated/backdrops/backdrop-crown-horizon.png",
+      "category": "backdrops",
+      "size": {
+        "w": 1024,
+        "h": 256
+      },
+      "source": "assets/generated/backdrops/backdrop-crown-horizon.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "The Crown on the horizon: teal spire cluster, magenta only at the tips. ~60x15 tiles. The one hot-magenta landmark in a teal world.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "deep-teal",
+          "haze"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "backdrop-colony-cluster",
+      "path": "assets/generated/backdrops/backdrop-colony-cluster.png",
+      "category": "backdrops",
+      "size": {
+        "w": 512,
+        "h": 256
+      },
+      "source": "assets/generated/backdrops/backdrop-colony-cluster.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Inhabited colony clinging to the hull; rows of lit windows ARE the scale unit. ~14x7 tiles.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "deep-teal",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "backdrop-gill-cavity",
+      "path": "assets/generated/backdrops/backdrop-gill-cavity.png",
+      "category": "backdrops",
+      "size": {
+        "w": 512,
+        "h": 512
+      },
+      "source": "assets/generated/backdrops/backdrop-gill-cavity.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Louvered gill cavity with rust lip, ladder and walkway rail. Mid-distance tier, ~24x24 tiles.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "deep-teal",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "hull-panel-tile",
+      "path": "assets/generated/textures/hull-panel-tile.png",
+      "category": "textures",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/generated/textures/hull-panel-tile.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Seamless rust armour plate: panel lines, bolt rows, one weld bead. Authored for a ~2x2 tile repeat (~35x35px on screen).",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "weld-seam-strip",
+      "path": "assets/generated/textures/weld-seam-strip.png",
+      "category": "textures",
+      "size": {
+        "w": 128,
+        "h": 32
+      },
+      "source": "assets/generated/textures/weld-seam-strip.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Deck-edge lip strip: lit top chamfer, slat notches, ink shadow band. Tiles horizontally; ~4x1 tiles.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "vent-louver-plate",
+      "path": "assets/generated/textures/vent-louver-plate.png",
+      "category": "textures",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/generated/textures/vent-louver-plate.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Armoured vent cover, four louvres, one broken open with an acid bloom. ~1.5x1.5 tiles (~26px).",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "wear-scuff-overlay",
+      "path": "assets/generated/textures/wear-scuff-overlay.png",
+      "category": "textures",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/generated/textures/wear-scuff-overlay.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Tiling wear overlay: chips, streaks, rust bleeds. ~78% transparent — deliberately an OVERLAY, so its alpha is authored, not a fog stack.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
     }
   ]
 }

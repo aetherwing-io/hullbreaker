@@ -1,0 +1,93 @@
+==============================================================
+LANE task/T-032
+fatal: not a valid object name: task/T-032
+/private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/reapply.sh: line 14: /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/reapply/tools/pathcheck.mjs: No such file or directory
+  monolith:  lines (main:     9505 lines)
+fatal: not a valid object name: task/T-032
+node:internal/errors:998
+  const err = new Error(message);
+              ^
+
+Error: Command failed: git -C /Users/scottmeyer/projects/hullbreaker archive --format=tar -o /var/folders/jx/012bmcxd07zfn2x820k3wzlm0000gn/T/hb-labels-fmLXVF/.tree.tar task/T-032
+    at genericNodeError (node:internal/errors:998:15)
+    at wrappedFn (node:internal/errors:543:14)
+    at checkExecSyncError (node:child_process:925:11)
+    at execFileSync (node:child_process:961:15)
+    at materialise (file:///Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-037/tools/pathcheck-labels.mjs:125:5)
+    at main (file:///Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-037/tools/pathcheck-labels.mjs:149:24)
+    at file:///Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-037/tools/pathcheck-labels.mjs:199:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:430:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:639:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  status: 128,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 47435,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v25.8.1
+cp: /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/reapply/tools/pathcheck-split.mjs: No such file or directory
+    node:internal/modules/cjs/loader:1478
+      throw err;
+      ^
+    
+    Node.js v25.8.1
+pathcheck-labels: expected exactly one file defining ok(cond, msg), found 0
+re-aim the instrumentation at the new shape of the harness — do not skip the capture
+  --- label diff (monolith vs split, same lane) ---
+diff: /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/reapply/before.labels: No such file or directory
+    DIFFERS:
+  --- stdout diff ---
+diff: /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/reapply/before.stdout: No such file or directory
+    DIFFERS:
+diff: /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/reapply/before.stdout: No such file or directory
+==============================================================
+LANE task/T-035
+  monolith:     9214 lines (main:     9505 lines)
+    pathcheck-labels: git rev task/T-035 of /Users/scottmeyer/projects/hullbreaker
+      instrumented: tools/pathcheck.mjs
+      exit 0; 1742 assertions (1742 pass, 0 fail)
+      tally line:   pathcheck: 1742 passed, 0 failed
+      labels -> /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/reapply/before.labels
+      stdout -> /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/reapply/before.stdout
+    pathcheck-split: 9215 lines, 272 top-level statements
+      header  33 imports
+      prelude 13 statements -> tools/pathcheck/_context.mjs (exports 9)
+      domains 37
+      wrote 40 files
+    pathcheck-labels: working tree /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/reapply
+      instrumented: tools/pathcheck/_context.mjs
+      exit 0; 1742 assertions (1742 pass, 0 fail)
+      tally line:   pathcheck: 1742 passed, 0 failed
+      labels -> /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/reapply/after.labels
+      stdout -> /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/reapply/after.stdout
+  --- label diff (monolith vs split, same lane) ---
+    IDENTICAL (1742 assertions)
+  --- stdout diff ---
+    IDENTICAL
+==============================================================
+LANE task/T-021
+  monolith:     9984 lines (main:     9505 lines)
+    pathcheck-labels: git rev task/T-021 of /Users/scottmeyer/projects/hullbreaker
+      instrumented: tools/pathcheck.mjs
+      exit 0; 1887 assertions (1887 pass, 0 fail)
+      tally line:   pathcheck: 1887 passed, 0 failed
+      labels -> /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/reapply/before.labels
+      stdout -> /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/reapply/before.stdout
+    pathcheck-split: 9985 lines, 275 top-level statements
+      header  34 imports
+      prelude 13 statements -> tools/pathcheck/_context.mjs (exports 9)
+      domains 38
+      wrote 41 files
+    pathcheck-labels: working tree /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/reapply
+      instrumented: tools/pathcheck/_context.mjs
+      exit 0; 1887 assertions (1887 pass, 0 fail)
+      tally line:   pathcheck: 1887 passed, 0 failed
+      labels -> /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/reapply/after.labels
+      stdout -> /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/reapply/after.stdout
+  --- label diff (monolith vs split, same lane) ---
+    IDENTICAL (1887 assertions)
+  --- stdout diff ---
+    IDENTICAL

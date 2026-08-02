@@ -1,0 +1,13 @@
+{
+  "name": "hullbreaker-durability",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Dev-only abuse harness for HULLBREAKER (T-032). Drives a real browser through the things a 9-year-old does to a game — alt-tab, resize, restart-spam, key-mashing — plus injected failures, and reports what the page did. Not part of the game runtime.",
+  "type": "module",
+  "scripts": {
+    "test": "node abuse.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.48.0"
+  }
+}

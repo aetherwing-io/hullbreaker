@@ -26,10 +26,11 @@ import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { SEGS, headingAt, polyAt } from '../pure/path.js';
 import { limbBakePlan, limbFacetTone } from '../pure/limb.js';
-import { IS_G1 } from '../mode.js';
+import { limbShadePlan } from '../pure/shade.js';
+import { IS_G1, QUERY } from '../mode.js';
 import { groundH } from '../sim/level.js';
 import { scene } from './scene.js';
-import { PAL } from './palette.js';
+import { PAL, SHADE_GAIN } from './palette.js';
 
 // One value ladder from the palette module (concept teal/rust by default,
 // grey-box via ?palette=classic): the deck (PAL.ground) stays the brightest
@@ -40,15 +41,59 @@ import { PAL } from './palette.js';
 // (PAL.ground, ~0.48x) has to stay the brightest large surface and the haze
 // (PAL.limbBg) has to sit just above it, so the limb's own armour is
 // authored a notch under the deck instead of the two notches that read as black.
+//
+// WHAT THAT CALIBRATION LEFT OUT, AND ?shade= SUPPLIES (T-035). The rule
+// above authors where a LIT face lands. It never authored where an occluded
+// one lands, so every one of these ~900 pieces was drawn at ~1.0x its token
+// (CONFIG.limb.tone is +-4% of hue, not of value) and the measured result is
+// a body with no darks at all: 99% of playfield pixels inside a 45-70 window
+// out of 255 (docs/proposals/2026-08-look-direction.md). ../pure/shade.js
+// computes the missing half — occlusion, top-face rake and seeded wear per
+// piece — and it multiplies the SAME tokens, so the palette's hue authoring
+// is untouched and the two can be judged apart. SHADE_GAIN is 0 on every URL
+// that does not ask for it, and 0 means exactly 1.0x: the bake below is then
+// byte-identical to the shipped build.
 const BASE_COLORS = PAL.limb;
 
 // kind → material. Joint pieces deliberately use the brighter `rib`/`machine`
 // end of the ladder: the joint is the landmark the orbit is about.
+//
+// THE SCALE PASS ADDS NO MATERIAL (T-045). Every new kind below maps onto one
+// of the eight keys that were already here, so the limb still bakes in eight
+// instanced draws and the pass costs ZERO draw calls — the budget for it was
+// +1 to +2. What separates the tiers instead is the haze ladder plus the
+// palette's own body/backdrop split: the sister limb wears the RUST body
+// tokens (it is another arm of the same creature, board 10), the drums wear
+// the teal shadow-steel of structure behind the plane, and the far body wears
+// `skyline`. Warm near, cool far, is what atmospheric perspective IS.
 const MATERIAL_FOR = {
   hull: 'hull', hullRib: 'shadow', wall: 'wall', wallSeam: 'shadow', wallCap: 'shadow',
   kerb: 'machine', scute: 'scute', scuteRib: 'scuteAlt', silhouette: 'skyline',
   ridge: 'rib', collar: 'wall', tendon: 'shadow', buttress: 'wall', cup: 'rib',
+  // tier 1: the sister limb, in the body's own rust — but one notch off the
+  // played limb's brightest metal on purpose. `machine` on the lip made the
+  // backdrop limb the brightest edge in the frame, which reads as NEAR.
+  bdLimb: 'hull', bdLimbLip: 'rib', bdRing: 'scute',
+  // tier 2 / tier 3: structure and distance, in teal
+  bdDrum: 'wall', bdLink: 'shadow', bdFar: 'skyline', bdSpire: 'skyline',
+  // human-scale reference objects: fixtures, so the brightest metal in the
+  // ladder — a rung that reads as a shadow is not a reference object
+  markRung: 'machine', markStile: 'machine', markRail: 'machine', markPost: 'machine',
+  markRim: 'rib', markPanel: 'shadow',
 };
+
+/* THE SCALE PASS (T-045), ON BY DEFAULT — decisions.md entry 16 ("ship
+   improvements ON by default once the operator has judged them"; the blanket
+   off-by-default flag rule is retired) plus entry 17, which makes selling the
+   scale of the creature the headline art problem rather than RIG's pixel
+   count. ?scale=0 is the escape hatch and the A/B: it restores the two
+   `CONFIG.limb.silhouette` slabs — the build the operator has been looking
+   at — so a before/after is one URL apart in the same build.
+
+   Deliberately NOT named after ?view=: that flag is the camera pull-back
+   (CONFIG.viewScales), which entry 17 froze at FAR forever. This one is about
+   what the frame around the tiny figure contains. */
+const SCALE_PASS = QUERY.get('scale') !== '0';
 
 /* The whole limb is ONE instanced draw per material: a unit box scaled per
    piece, positioned on the polyline, and tinted by its facet's tone through
@@ -85,28 +130,37 @@ function bakeLimb() {
   scene.background = new THREE.Color(PAL.limbBg);
   scene.fog.color.setHex(PAL.limbBg);
 
-  const plan = limbBakePlan(CONFIG, groundH);
-  const byMaterial = new Map();                // material key → pieces
-  for (const piece of plan) {
-    const key = MATERIAL_FOR[piece.kind] || 'hull';
+  const plan = limbBakePlan(CONFIG, groundH, { scale: SCALE_PASS });
+  // One plan-level pass, before the buckets: the occlusion term is about what
+  // is AROUND a piece, so it cannot be computed piece by piece — and with the
+  // scale pass on, the pieces it is around now include T-045's backdrop tiers,
+  // which is why this runs on whatever plan the flags produced rather than on
+  // a fixed one.
+  const shade = limbShadePlan(plan, CONFIG, SHADE_GAIN);
+  const byMaterial = new Map();                // material key → plan indices
+  for (let n = 0; n < plan.length; n++) {
+    const key = MATERIAL_FOR[plan[n].kind] || 'hull';
     if (!byMaterial.has(key)) byMaterial.set(key, []);
-    byMaterial.get(key).push(piece);
+    byMaterial.get(key).push(n);
   }
   const geo = new THREE.BoxGeometry(1, 1, 1);
-  for (const [key, pieces] of byMaterial) {
+  for (const [key, indices] of byMaterial) {
     const mesh = new THREE.InstancedMesh(
       geo,
       new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true }),
-      pieces.length
+      indices.length
     );
     mesh.frustumCulled = false;                // static bake, one upload
-    for (let i = 0; i < pieces.length; i++) {
-      const piece = pieces[i];
+    for (let i = 0; i < indices.length; i++) {
+      const piece = plan[indices[i]];
       mesh.setMatrixAt(i, pieceMatrix(piece));
       const tone = limbFacetTone(piece.facet, CONFIG);
+      const k = shade[indices[i]];             // 1.0 exactly when the flag is off
       _c.setHex(BASE_COLORS[key]);
       mesh.setColorAt(i, _tint.setRGB(
-        Math.min(1, _c.r * tone[0]), Math.min(1, _c.g * tone[1]), Math.min(1, _c.b * tone[2])
+        Math.min(1, _c.r * tone[0] * k),
+        Math.min(1, _c.g * tone[1] * k),
+        Math.min(1, _c.b * tone[2] * k)
       ));
     }
     scene.add(mesh);
