@@ -39,7 +39,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { ROLES, CHROMATIC_ROLES, NEUTRAL_MAX_CHROMA } from './lib/palette.mjs';
-import { CATEGORIES } from './lib/manifest.mjs';
+import { CATEGORIES, ALPHA_KINDS } from './lib/manifest.mjs';
 import { extractRecipe, scanRecipe } from './lib/recipe.mjs';
 import { hashString } from './lib/procgen.mjs';
 
@@ -60,6 +60,8 @@ const HELP = `tools/assets/gen.mjs — build a codex spec for one asset, and opt
 
   --mode <m>         vector (default, asks for an <svg>) or raster (asks for a canvas recipe)
   --seed <n>         raster only: meta.seed (default: derived from the id, so it is stable)
+  --alpha <k>        raster only, REQUIRED: cutout | opaque | overlay — the transparency
+                     contract, stated to the generator and checked against the pixels
   --tiling <t>       raster only: none (default) | x | y | xy — which edges must be seamless
   --roles <a,b>      role ids the asset may use (default: all)
   --size <n|WxH>     canvas, every dimension a power of two (default 128)
@@ -94,13 +96,14 @@ function parseArgs(argv) {
   const a = {
     id: null, category: null, brief: null, roles: null, size: '128', tiles: '0.55',
     grid: null, boards: '10,13', model: null, dryRun: false, specOut: null, force: false,
-    mode: 'vector', seed: null, tiling: 'none',
+    mode: 'vector', seed: null, tiling: 'none', alpha: null,
   };
   for (let i = 0; i < argv.length; i++) {
     const t = argv[i];
     if (t === '--mode') a.mode = argv[++i];
     else if (t === '--seed') a.seed = Number(argv[++i]);
     else if (t === '--tiling') a.tiling = argv[++i];
+    else if (t === '--alpha') a.alpha = argv[++i];
     else if (t === '--id') a.id = argv[++i];
     else if (t === '--category') a.category = argv[++i];
     else if (t === '--brief') a.brief = argv[++i];
@@ -165,6 +168,51 @@ function scaleNote(tiles, canvas, grid) {
     );
   }
   return lines.join('\n\n');
+}
+
+/**
+ * The transparency clause, and the most expensive lesson in this file.
+ *
+ * The first painted backdrops came back as fully opaque rectangles with the fog
+ * baked in, replacing plates that were 40-60% transparent cutouts — because the
+ * brief said "behind it, open teal haze" and nothing anywhere said the plate was
+ * a cutout. Every gate was green; the lane layering those plates for parallax
+ * would have found out at merge time. So the ask now states the contract, the
+ * manifest declares it, and check.mjs measures the alpha channel against it.
+ *
+ * `--alpha` is REQUIRED in raster mode. There is no default, deliberately: a
+ * default is how this happened.
+ */
+export function alphaNote(kind, canvas) {
+  if (kind === 'opaque') {
+    return '**Every pixel of this asset is OPAQUE.** Paint the whole canvas; leave no transparency ' +
+      'anywhere, including the edges. It is a surface, not a shape on transparency — anything ' +
+      'composited under it is not its business, and a hole in a tiling material is a bug.';
+  }
+  if (kind === 'overlay') {
+    return '**This asset is an OVERLAY: mostly transparent, nothing fully opaque.** It is a layer ' +
+      'laid over an already-painted surface to modulate it, so at least 40% of the canvas stays ' +
+      'fully transparent and no pixel reaches alpha 255 — an overlay that replaces what is under ' +
+      'it is a texture, not an overlay. Everything it draws is subordinate to the surface below.';
+  }
+  const feather = Math.max(8, Math.round(Math.min(canvas.w, canvas.h) * 0.12));
+  return '**This asset is a CUTOUT: a shape on transparency.** Something composites it over ' +
+    'something else — other plates, fog, the scene behind it — and the transparent region has to ' +
+    'read as ABSENT.\n\n' +
+    '- **Do not paint a background.** No sky, no fog rectangle, no haze wash across the whole ' +
+    'canvas. Whatever is behind this plate is the scene\'s to supply; a painted background here ' +
+    'occludes every layer behind it completely, which is the exact defect this clause exists for.\n' +
+    '- **Feather the silhouette.** A one-pixel alpha cut reads as a cardboard cutout and cannot be ' +
+    'softened downstream — a flat camera-facing plane cannot be made to dissolve by any amount of ' +
+    'fog or depth tuning, so the falloff has to be in the file. Give the whole silhouette a soft ' +
+    'margin of 2-4 pixels.\n' +
+    `- **Dissolve the receding end.** Where the subject recedes into distance, alpha ramps from ` +
+    `full to zero over at least ${feather} pixels (not a hard stop, and not a uniform vignette ` +
+    'either — the near end keeps its edge). Add a per-pixel noise term of a level or two to the ' +
+    'alpha so the ramp dithers instead of banding.\n' +
+    '- The cheapest way to do all three: paint the subject normally, then finish with a single ' +
+    '`env.mask((x, y, u, v) => ...)` pass that returns the alpha multiplier. Alpha threaded ' +
+    'through twelve separate layers goes wrong; one mask pass is readable and checkable.';
 }
 
 /**
@@ -238,6 +286,15 @@ function main() {
     console.error(`--tiling must be none, x, y or xy, got ${args.tiling}`);
     process.exit(2);
   }
+  if (args.mode === 'raster' && !ALPHA_KINDS.includes(args.alpha)) {
+    console.error(
+      `--alpha is required in raster mode and must be one of ${ALPHA_KINDS.join(', ')}` +
+      (args.alpha ? `, got ${args.alpha}` : '') +
+      '\n  There is no default on purpose: an unstated transparency contract is how five backdrop\n' +
+      '  plates were regenerated as opaque rectangles with every gate green (T-053).'
+    );
+    process.exit(2);
+  }
   if (args.seed !== null && !Number.isInteger(args.seed)) {
     console.error(`--seed wants a whole number, got ${args.seed}`);
     process.exit(2);
@@ -286,7 +343,8 @@ function main() {
     .replaceAll('{{BOARDS}}', boards.length ? boards.map((b) => b.slice(REPO_ROOT.length + 1)).join(', ') : 'none attached')
     .replaceAll('{{SCALE_NOTE}}', scaleNote(tiles, canvas, grid))
     .replaceAll('{{SEED}}', String(seed))
-    .replaceAll('{{TILING}}', tilingNote(args.tiling, canvas));
+    .replaceAll('{{TILING}}', tilingNote(args.tiling, canvas))
+    .replaceAll('{{ALPHA}}', args.mode === 'raster' ? alphaNote(args.alpha, canvas) : '');
 
   const specPath = resolve(REPO_ROOT, args.specOut || `tools/assets/runs/spec-${args.id}.md`);
   mkdirSync(dirname(specPath), { recursive: true });
@@ -307,7 +365,7 @@ function main() {
   const printable = `codex ${codexArgs.join(' ')} < ${specPath}`;
 
   console.log(`spec written: ${specPath.slice(REPO_ROOT.length + 1)} (${spec.length} bytes)`);
-  console.log(`  mode:            ${args.mode}${raster ? ` (canvas recipe, seed ${seed}, tiling ${args.tiling})` : ' (svg)'}`);
+  console.log(`  mode:            ${args.mode}${raster ? ` (canvas recipe, seed ${seed}, tiling ${args.tiling}, alpha ${args.alpha})` : ' (svg)'}`);
   console.log(`  boards attached: ${boards.length ? boards.map((b) => b.split('/').pop()).join(', ') : 'none'}`);
   console.log(`  roles allowed:   ${allowed ? allowed.join(', ') : 'all 8'}`);
   const screen = screenBox(tiles);

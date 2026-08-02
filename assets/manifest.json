@@ -701,11 +701,10 @@
       "task": "T-046",
       "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs --mode raster; painted by tools/assets/render.mjs (deterministic, seed below)",
       "addedOn": "2026-08-02",
-      "notes": "Distant Meridian limb with banded armour collars, cable bundles, a service ladder and hatch as the human-scale mark, dissolving into fog at the far end. Authored for ~60x30 tiles of screen (about 1044x522px at FAR). T-053 repainted it through the recipe route.",
+      "notes": "CUTOUT plate: a colossal armoured limb crossing the frame diagonally on transparency - banded collars, cable bundles, a service ladder and hatch as the human-scale mark. The receding upper-right end DISSOLVES (alpha ramp, dithered) rather than ending at a cut; the plate carries no fog, because src/render/backdrop.js multiplies a per-tier atmospheric tint onto it. Authored for ~60x30 tiles (about 1044x522px at FAR). T-053 second pass: the first painted the fog in and came back fully opaque, which occludes every tier behind it.",
       "palette": {
         "status": "pass",
         "roles": [
-          "deep-teal",
           "haze",
           "hull",
           "ink",
@@ -713,7 +712,8 @@
         ],
         "checkedBy": "tools/assets/check.mjs"
       },
-      "seed": 803450
+      "seed": 803450,
+      "alpha": "cutout"
     },
     {
       "id": "backdrop-spine-coil",
@@ -727,18 +727,18 @@
       "task": "T-046",
       "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs --mode raster; painted by tools/assets/render.mjs (deterministic, seed below)",
       "addedOn": "2026-08-02",
-      "notes": "Distant vertebral spine column with rib spurs and a lit maintenance gallery; contrast falls off with height and distance. ~30x30 tiles. T-053 repainted it through the recipe route.",
+      "notes": "CUTOUT plate: a vertebral spine column on transparency, rib spurs losing alpha along their length so their tips vanish, top of the column fading out entirely. Lit maintenance gallery as the human-scale mark. ~30x30 tiles. T-053 second pass (the first was an opaque rectangle with the fog painted in).",
       "palette": {
         "status": "pass",
         "roles": [
-          "deep-teal",
           "haze",
           "hull",
           "ink"
         ],
         "checkedBy": "tools/assets/check.mjs"
       },
-      "seed": 187307
+      "seed": 187307,
+      "alpha": "cutout"
     },
     {
       "id": "backdrop-crown-horizon",
@@ -752,15 +752,17 @@
       "task": "T-046",
       "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs --mode raster; painted by tools/assets/render.mjs (deterministic, seed below)",
       "addedOn": "2026-08-02",
-      "notes": "The Crown on the far horizon: layered fog banks, a low-contrast spire silhouette, hot magenta only at the tips. ~60x15 tiles. T-053 repainted it through the recipe route.",
+      "notes": "CUTOUT plate: the Crown on the far horizon - a low-contrast spire silhouette with hot magenta only at the tips, no pixel fully opaque anywhere (it is the most distant thing in the game). Alpha carries the distance: the mass thins to nothing before both edges and above the tips. ~60x15 tiles. T-053 third pass: pass 1 was opaque, pass 2 failed the palette gate on a hand-tinted blue-violet fog (hue 240-309).",
       "palette": {
         "status": "pass",
         "roles": [
-          "deep-teal"
+          "deep-teal",
+          "ink"
         ],
         "checkedBy": "tools/assets/check.mjs"
       },
-      "seed": 161447
+      "seed": 161447,
+      "alpha": "cutout"
     },
     {
       "id": "backdrop-colony-cluster",
@@ -774,7 +776,7 @@
       "task": "T-046",
       "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs --mode raster; painted by tools/assets/render.mjs (deterministic, seed below)",
       "addedOn": "2026-08-02",
-      "notes": "Inhabited colony clinging to the hull; rows of lit windows ARE the scale unit. ~14x7 tiles (243x122px on screen). T-053 repainted it through the recipe route.",
+      "notes": "CUTOUT plate: an inhabited colony clinging to the hull, masts and aerials reading against transparency, the hull shelf under it fading out at both ends. Rows of lit windows ARE the scale unit. ~14x7 tiles (243x122px on screen). T-053 second/third pass.",
       "palette": {
         "status": "pass",
         "roles": [
@@ -787,7 +789,8 @@
         ],
         "checkedBy": "tools/assets/check.mjs"
       },
-      "seed": 597251
+      "seed": 597251,
+      "alpha": "cutout"
     },
     {
       "id": "backdrop-gill-cavity",
@@ -801,11 +804,10 @@
       "task": "T-046",
       "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs --mode raster; painted by tools/assets/render.mjs (deterministic, seed below)",
       "addedOn": "2026-08-02",
-      "notes": "Louvered gill cavity with a lit rust lip, ladder and walkway rail; value falls away into the recess. Mid-distance tier, ~24x24 tiles. T-053 repainted it through the recipe route.",
+      "notes": "CUTOUT plate: a louvered gill cavity with a lit rust lip, ladder and walkway rail, set in hull plating whose outer margin fades to nothing on all four sides so the plate has no rectangular edge. Mid-distance tier, ~24x24 tiles. T-053 second pass (the first filled the canvas edge to edge and came back opaque).",
       "palette": {
         "status": "pass",
         "roles": [
-          "deep-teal",
           "haze",
           "hull",
           "ink",
@@ -813,7 +815,8 @@
         ],
         "checkedBy": "tools/assets/check.mjs"
       },
-      "seed": 64351
+      "seed": 64351,
+      "alpha": "cutout"
     },
     {
       "id": "hull-panel-tile",
@@ -836,7 +839,8 @@
         ],
         "checkedBy": "tools/assets/check.mjs"
       },
-      "seed": 371232
+      "seed": 371232,
+      "alpha": "opaque"
     },
     {
       "id": "weld-seam-strip",
@@ -862,7 +866,8 @@
         ],
         "checkedBy": "tools/assets/check.mjs"
       },
-      "seed": 593809
+      "seed": 593809,
+      "alpha": "opaque"
     },
     {
       "id": "vent-louver-plate",
@@ -888,7 +893,8 @@
         ],
         "checkedBy": "tools/assets/check.mjs"
       },
-      "seed": 712521
+      "seed": 712521,
+      "alpha": "cutout"
     },
     {
       "id": "wear-scuff-overlay",
@@ -912,7 +918,8 @@
         ],
         "checkedBy": "tools/assets/check.mjs"
       },
-      "seed": 883339
+      "seed": 883339,
+      "alpha": "overlay"
     }
   ]
 }

@@ -20,6 +20,7 @@
     {{PALETTE}}     role table, generated from lib/palette.mjs
     {{BOARDS}}      attached reference boards   {{SCALE_NOTE}} the on-screen size this has to survive
     {{TILING}}      the seamless-repeat clause, or a note that this asset does not tile
+    {{ALPHA}}       the transparency contract, from --alpha (required in raster mode)
 
   The palette table is generated from lib/palette.mjs so the spec and the gate
   cannot drift apart. Never hard-code hex values into the rules below.
@@ -71,6 +72,10 @@ step, not across two.
 
 {{TILING}}
 
+## Alpha — what this asset promises about transparency
+
+{{ALPHA}}
+
 ## Palette — hard constraint, machine-checked
 
 {{PALETTE}}
@@ -95,6 +100,17 @@ axis and come back up, the way distance actually works — rather than sliding
 saturated rust straight into saturated teal through the greens in between.
 `env.mix(a, b, t)` blends in sRGB; `env.shade(hex, k)` lightens (k>0) or darkens
 (k<0) while holding hue.
+
+**Derive every color; never hand-build one.** Each color comes from
+`env.PALETTE`, optionally through `env.mix` and `env.shade`. Do not construct or
+adjust an individual r, g or b component, and do not add a per-channel offset for
+noise: a small nudge to make a shadow "cooler" or a fog "bluer" walks the hue off
+its band, and the gate rejects it. Measured twice while this template was being
+written — a fog fade nudged into hue 240–309 blue-violet (largest offender
+`#1b3845` at alpha 122, so authored, not an edge artifact), and a shadow nudged
+into hue 195–199 green-cyan, one degree below the teal band. Both cost a
+regeneration. If you want per-pixel variation, apply it to the **alpha**, or to
+the mix parameter `t`, never to the channels.
 
 ## The module contract
 
@@ -144,6 +160,12 @@ env.field(fn, {blend})                   per-pixel painting. fn(x, y, u, v) retu
                                          blend: 'replace' (default) or 'over'
                                          (composite over what is already there).
 
+env.mask(fn)                             ALPHA-ONLY pass: multiplies each pixel's
+                                         alpha by fn(x, y, u, v) -> 0..1. Use it as
+                                         a final pass to state the silhouette and
+                                         the dissolve in one place instead of
+                                         threading alpha through every layer.
+
 env.mix(hexA, hexB, t)  -> hex           sRGB interpolation
 env.shade(hex, k)       -> hex           k>0 toward white, k<0 toward black; hue held
 env.rgba(hex, alpha)    -> 'rgba(...)'   for ctx.fillStyle / strokeStyle
@@ -190,5 +212,6 @@ like clip-art:
 - `meta.roles` lists the role ids you actually used.
 - Every color literal is `#rrggbb` from a role, or derived from `env.PALETTE`
   with `env.mix` / `env.shade`. No CSS named colors, no `hsl()`.
-- The canvas starts fully transparent. Paint every pixel you want opaque; leave
-  the rest alone if the asset is a cutout rather than a full plate.
+- The canvas starts fully transparent. What you do with that is the alpha
+  contract above, and it is machine-checked: `tools/assets/check.mjs` measures
+  the alpha channel and fails the asset if the pixels do not keep the promise.

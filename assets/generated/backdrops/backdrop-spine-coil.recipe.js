@@ -8,1023 +8,891 @@ export const meta = {
 export function render(ctx, env) {
   const W = env.width;
   const H = env.height;
-  const TAU = Math.PI * 2;
-  const deep = env.PALETTE['deep-teal'];
-  const haze = env.PALETTE.haze;
-  const ink = env.PALETTE.ink;
-  const hull = env.PALETTE.hull;
-  const warm = env.PALETTE['warm-white'];
-  const clamp = env.clamp;
-  const lerp = env.lerp;
+  const P = env.PALETTE;
 
-  ctx.imageSmoothingEnabled = true;
-  ctx.lineJoin = 'round';
+  ctx.clearRect(0, 0, W, H);
   ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
 
-  const bgTop = env.hexToRgb(
-    env.shade(env.mix(deep, haze, 0.58), 0.12)
-  );
-  const bgBottom = env.hexToRgb(
-    env.shade(env.mix(deep, haze, 0.2), -0.2)
-  );
+  const hex = {
+    void: env.shade(P.ink, -0.28),
+    ink: P.ink,
+    joint: env.mix(P.ink, P.haze, 0.18),
+    hazeDark: env.shade(P.haze, -0.27),
+    haze: P.haze,
+    hazeLight: env.shade(P.haze, 0.13),
+    hullDark: env.shade(P.hull, -0.34),
+    hullMid: P.hull,
+    hullLight: env.shade(P.hull, 0.18),
+    hullGlint: env.shade(P.hull, 0.31),
+    fog: env.mix(P['deep-teal'], P.haze, 0.52),
+    fogDeep: env.mix(P['deep-teal'], P.haze, 0.31),
+    warmDim: env.mix(P['warm-white'], P.haze, 0.18),
+    warm: P['warm-white'],
+  };
 
-  env.field((x, y, u, v) => {
-    const broad = env.fbm(x * 0.37, y * 0.31, {
-      octaves: 4,
-      gain: 0.53,
-      lacunarity: 2.03,
-      period: 223,
-      seed: env.seed + 11,
-    });
-    const verticalGrain = env.noise(x * 1.84, y * 0.19, {
-      period: 137,
-      seed: env.seed + 12,
-    });
-    const fine = env.noise(x * 3.1, y * 2.3, {
-      period: 89,
-      seed: env.seed + 13,
-    });
+  const rgb = {};
+  for (const key of Object.keys(hex)) rgb[key] = env.hexToRgb(hex[key]);
 
-    const depth = clamp(
-      env.smoothstep(v) * 0.82 +
-        (broad - 0.5) * 0.17 +
-        (u - 0.5) * 0.055,
-      0,
-      1
-    );
-    const grain = (fine - 0.5) * 2.8 + (verticalGrain - 0.5) * 1.7;
-
-    return [
-      Math.round(clamp(lerp(bgTop.r, bgBottom.r, depth) + grain, 0, 255)),
-      Math.round(clamp(lerp(bgTop.g, bgBottom.g, depth) + grain, 0, 255)),
-      Math.round(clamp(lerp(bgTop.b, bgBottom.b, depth) + grain, 0, 255)),
-      255,
-    ];
-  }, { blend: 'replace' });
-
-  const ghostDark = env.shade(env.mix(deep, haze, 0.61), -0.14);
-  const ghostLight = env.shade(env.mix(deep, haze, 0.72), 0.05);
-
-  ctx.save();
-  ctx.filter = 'blur(2.2px)';
-
-  const ghostArcs = [
-    [-122, 137, 210, 124, 0.23, -1.32, 1.18, 26, 0.1],
-    [-76, 342, 192, 116, -0.18, -1.24, 1.05, 19, 0.08],
-    [624, 158, 224, 137, -0.16, 1.9, 4.36, 28, 0.11],
-    [590, 382, 185, 112, 0.27, 1.82, 4.45, 20, 0.09],
+  const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+  const smooth = (v) => {
+    v = clamp(v);
+    return v * v * (3 - 2 * v);
+  };
+  const mixRgb = (a, b, t) => {
+    t = clamp(t);
+    return {
+      r: a.r + (b.r - a.r) * t,
+      g: a.g + (b.g - a.g) * t,
+      b: a.b + (b.b - a.b) * t,
+    };
+  };
+  const pixel = (c, a = 255) => [
+    Math.round(clamp(c.r, 0, 255)),
+    Math.round(clamp(c.g, 0, 255)),
+    Math.round(clamp(c.b, 0, 255)),
+    Math.round(clamp(a, 0, 255)),
   ];
 
-  for (const arc of ghostArcs) {
-    ctx.beginPath();
-    ctx.ellipse(
-      arc[0], arc[1], arc[2], arc[3],
-      arc[4], arc[5], arc[6]
-    );
-    ctx.lineWidth = arc[7];
-    ctx.strokeStyle = env.rgba(ghostDark, arc[8]);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.ellipse(
-      arc[0] - 2, arc[1] - 3, arc[2], arc[3],
-      arc[4], arc[5], arc[6]
-    );
-    ctx.lineWidth = 2.4;
-    ctx.strokeStyle = env.rgba(ghostLight, arc[8] * 0.72);
-    ctx.stroke();
+  function centerX(y) {
+    return 252 + 16 * Math.sin((y - 30) / 88) + 0.04 * (y - 256);
   }
 
-  const ghostTubes = [
-    [-24, -34, 45, 87, 101, 171, 77, 284, 34, 0.075],
-    [550, -28, 488, 91, 447, 151, 472, 278, 42, 0.07],
-    [91, 540, 132, 447, 130, 391, 92, 324, 28, 0.055],
-    [439, 546, 406, 464, 420, 391, 461, 319, 31, 0.06],
-  ];
-
-  for (const tube of ghostTubes) {
-    ctx.beginPath();
-    ctx.moveTo(tube[0], tube[1]);
-    ctx.bezierCurveTo(
-      tube[2], tube[3], tube[4], tube[5], tube[6], tube[7]
-    );
-    ctx.lineWidth = tube[8];
-    ctx.strokeStyle = env.rgba(ghostDark, tube[9]);
-    ctx.stroke();
-
-    ctx.setLineDash([19, 8]);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = env.rgba(ghostLight, tube[9] * 0.75);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-  ctx.restore();
-
-  const vertebrae = [
-    { cx: 220, cy: 18,  w: 78,  h: 44, depth: 0.12, angle: -0.026 },
-    { cx: 228, cy: 81,  w: 92,  h: 50, depth: 0.24, angle: -0.019 },
-    { cx: 236, cy: 149, w: 108, h: 56, depth: 0.38, angle: -0.009 },
-    { cx: 246, cy: 224, w: 126, h: 62, depth: 0.53, angle: 0.008 },
-    { cx: 258, cy: 306, w: 146, h: 68, depth: 0.68, angle: 0.024 },
-    { cx: 274, cy: 397, w: 166, h: 75, depth: 0.84, angle: 0.04 },
-    { cx: 294, cy: 497, w: 190, h: 86, depth: 0.98, angle: 0.055 },
-  ];
-
-  for (const v of vertebrae) {
-    v.c = Math.cos(v.angle);
-    v.s = Math.sin(v.angle);
-    v.metal = env.mix(haze, hull, 0.1 + v.depth * 0.5);
-    v.light = env.mix(haze, hull, 0.22 + v.depth * 0.56);
-    v.dark = env.mix(haze, ink, 0.12 + v.depth * 0.46);
-    v.midDark = env.shade(v.metal, -0.09);
-  }
-
-  function spineCurve(offsetX = 0) {
-    ctx.beginPath();
-    ctx.moveTo(218 + offsetX, -30);
-    ctx.bezierCurveTo(
-      216 + offsetX, 85,
-      230 + offsetX, 165,
-      244 + offsetX, 236
-    );
-    ctx.bezierCurveTo(
-      257 + offsetX, 310,
-      270 + offsetX, 407,
-      301 + offsetX, 550
+  function roundBoxLocal(lx, ly, hw, hh, r) {
+    const qx = Math.abs(lx) - Math.max(0, hw - r);
+    const qy = Math.abs(ly) - Math.max(0, hh - r);
+    return (
+      Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) +
+      Math.min(Math.max(qx, qy), 0) -
+      r
     );
   }
 
-  ctx.save();
-  const coreOuter = ctx.createLinearGradient(0, 0, 0, H);
-  coreOuter.addColorStop(0, env.rgba(env.mix(haze, ink, 0.24), 0.11));
-  coreOuter.addColorStop(0.5, env.rgba(env.mix(haze, ink, 0.52), 0.42));
-  coreOuter.addColorStop(1, env.rgba(env.mix(haze, ink, 0.72), 0.72));
-  spineCurve();
-  ctx.lineWidth = 58;
-  ctx.strokeStyle = coreOuter;
-  ctx.stroke();
-
-  const coreInner = ctx.createLinearGradient(0, 0, 0, H);
-  coreInner.addColorStop(0, env.rgba(env.mix(haze, hull, 0.08), 0.06));
-  coreInner.addColorStop(0.55, env.rgba(env.mix(haze, hull, 0.18), 0.22));
-  coreInner.addColorStop(1, env.rgba(env.mix(haze, hull, 0.3), 0.34));
-  spineCurve(-5);
-  ctx.lineWidth = 28;
-  ctx.strokeStyle = coreInner;
-  ctx.stroke();
-
-  for (const offset of [-13, 14]) {
-    const cable = ctx.createLinearGradient(0, 0, 0, H);
-    cable.addColorStop(0, env.rgba(haze, 0.04));
-    cable.addColorStop(1, env.rgba(env.mix(haze, hull, 0.35), 0.43));
-    spineCurve(offset);
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = cable;
-    ctx.stroke();
-  }
-  ctx.restore();
-
-  const ribRng = env.stream('backdrop-spine-ribs');
-
-  function drawRib(v, side, reach, sweep) {
-    const bx = v.cx + side * v.w * 0.4;
-    const by = v.cy + v.h * 0.025;
-    const p0 = { x: bx, y: by };
-    const p1 = {
-      x: bx + side * reach * 0.25,
-      y: by + sweep * 0.05 - 7,
-    };
-    const p2 = {
-      x: bx + side * reach * 0.72,
-      y: by + sweep * 0.78,
-    };
-    const p3 = {
-      x: bx + side * reach,
-      y: by + sweep,
-    };
-    const rootThickness = 15 + v.depth * 12;
-    const tipThickness = 3.5;
-    const samples = 26;
-    const top = [];
-    const bottom = [];
-
-    function geometry(t) {
-      const m = 1 - t;
-      const x =
-        m * m * m * p0.x +
-        3 * m * m * t * p1.x +
-        3 * m * t * t * p2.x +
-        t * t * t * p3.x;
-      const y =
-        m * m * m * p0.y +
-        3 * m * m * t * p1.y +
-        3 * m * t * t * p2.y +
-        t * t * t * p3.y;
-      const dx =
-        3 * m * m * (p1.x - p0.x) +
-        6 * m * t * (p2.x - p1.x) +
-        3 * t * t * (p3.x - p2.x);
-      const dy =
-        3 * m * m * (p1.y - p0.y) +
-        6 * m * t * (p2.y - p1.y) +
-        3 * t * t * (p3.y - p2.y);
-      const length = Math.hypot(dx, dy) || 1;
-      let nx = -dy / length;
-      let ny = dx / length;
-
-      if (ny > 0) {
-        nx = -nx;
-        ny = -ny;
-      }
-
-      const taper = Math.pow(t, 0.82);
-      const half = lerp(rootThickness, tipThickness, taper) * 0.5;
-
-      return {
-        x,
-        y,
-        nx,
-        ny,
-        tx: dx / length,
-        ty: dy / length,
-        half,
-      };
-    }
-
-    for (let i = 0; i < samples; i++) {
-      const g = geometry(i / (samples - 1));
-      top.push({
-        x: g.x + g.nx * g.half,
-        y: g.y + g.ny * g.half,
-      });
-      bottom.push({
-        x: g.x - g.nx * g.half,
-        y: g.y - g.ny * g.half,
-      });
-    }
-
-    function ribPath(dx = 0, dy = 0) {
-      ctx.beginPath();
-      ctx.moveTo(top[0].x + dx, top[0].y + dy);
-      for (let i = 1; i < top.length; i++) {
-        ctx.lineTo(top[i].x + dx, top[i].y + dy);
-      }
-      for (let i = bottom.length - 1; i >= 0; i--) {
-        ctx.lineTo(bottom[i].x + dx, bottom[i].y + dy);
-      }
-      ctx.closePath();
-    }
-
-    const tipColor = env.mix(deep, haze, 0.6);
-    const ribBase = env.mix(
-      haze,
-      hull,
-      clamp(0.12 + v.depth * 0.46 + (side < 0 ? 0.04 : 0), 0, 0.75)
-    );
-    const ribMid = env.mix(haze, hull, 0.06 + v.depth * 0.23);
-    const ribDark = env.mix(haze, ink, 0.12 + v.depth * 0.43);
-
-    ctx.save();
-    ribPath(1.5, 4);
-    const shadow = ctx.createLinearGradient(p3.x, p3.y, p0.x, p0.y);
-    shadow.addColorStop(0, env.rgba(tipColor, 0));
-    shadow.addColorStop(0.45, env.rgba(ribDark, 0.06 + v.depth * 0.1));
-    shadow.addColorStop(1, env.rgba(ribDark, 0.28 + v.depth * 0.42));
-    ctx.fillStyle = shadow;
-    ctx.fill();
-
-    ribPath();
-    const body = ctx.createLinearGradient(p3.x, p3.y, p0.x, p0.y);
-    body.addColorStop(0, env.rgba(tipColor, 0.025 + v.depth * 0.018));
-    body.addColorStop(0.26, env.rgba(ribMid, 0.09 + v.depth * 0.16));
-    body.addColorStop(0.68, env.rgba(ribBase, 0.29 + v.depth * 0.38));
-    body.addColorStop(1, env.rgba(ribBase, 0.52 + v.depth * 0.43));
-    ctx.fillStyle = body;
-    ctx.fill();
-
-    const underside = ctx.createLinearGradient(p3.x, p3.y, p0.x, p0.y);
-    underside.addColorStop(0, env.rgba(ribDark, 0));
-    underside.addColorStop(0.55, env.rgba(ribDark, 0.13 + v.depth * 0.16));
-    underside.addColorStop(1, env.rgba(ribDark, 0.44 + v.depth * 0.36));
-    ctx.beginPath();
-    ctx.moveTo(bottom[0].x, bottom[0].y);
-    for (let i = 1; i < bottom.length; i++) {
-      ctx.lineTo(bottom[i].x, bottom[i].y);
-    }
-    ctx.lineWidth = 2.2 + v.depth * 1.8;
-    ctx.strokeStyle = underside;
-    ctx.stroke();
-
-    const edgeLight = ctx.createLinearGradient(p3.x, p3.y, p0.x, p0.y);
-    edgeLight.addColorStop(0, env.rgba(v.light, 0));
-    edgeLight.addColorStop(0.48, env.rgba(v.light, 0.08 + v.depth * 0.12));
-    edgeLight.addColorStop(1, env.rgba(v.light, 0.28 + v.depth * 0.35));
-    ctx.beginPath();
-    ctx.moveTo(top[0].x, top[0].y);
-    for (let i = 1; i < top.length; i++) {
-      ctx.lineTo(top[i].x, top[i].y);
-    }
-    ctx.lineWidth = 1.2 + v.depth * 1.25;
-    ctx.strokeStyle = edgeLight;
-    ctx.stroke();
-
-    for (let seam = 0; seam < 6; seam++) {
-      const t = 0.13 + seam * 0.135;
-      const g = geometry(t);
-      const fade = Math.pow(1 - t, 0.8);
-      const ax = g.x + g.nx * g.half * 0.88;
-      const ay = g.y + g.ny * g.half * 0.88;
-      const bx2 = g.x - g.nx * g.half * 0.88;
-      const by2 = g.y - g.ny * g.half * 0.88;
-
-      ctx.beginPath();
-      ctx.moveTo(ax, ay);
-      ctx.lineTo(bx2, by2);
-      ctx.lineWidth = 1.6 + v.depth * 0.9;
-      ctx.strokeStyle = env.rgba(
-        ribDark,
-        (0.13 + v.depth * 0.34) * fade
-      );
-      ctx.stroke();
-
-      const shift = 1.25;
-      ctx.beginPath();
-      ctx.moveTo(ax - g.tx * shift, ay - g.ty * shift);
-      ctx.lineTo(bx2 - g.tx * shift, by2 - g.ty * shift);
-      ctx.lineWidth = 0.9 + v.depth * 0.55;
-      ctx.strokeStyle = env.rgba(
-        v.light,
-        (0.07 + v.depth * 0.17) * fade
-      );
-      ctx.stroke();
-    }
-
-    const wearCount = 5 + Math.round(v.depth * 8);
-    for (let i = 0; i < wearCount; i++) {
-      const t0 = 0.06 + ribRng() * 0.77;
-      const t1 = Math.min(0.91, t0 + 0.025 + ribRng() * 0.07);
-      const g0 = geometry(t0);
-      const g1 = geometry(t1);
-      const offset = (ribRng() - 0.5) * g0.half * 0.78;
-      const isLight = ribRng() > 0.38;
-
-      ctx.beginPath();
-      ctx.moveTo(
-        g0.x + g0.nx * offset,
-        g0.y + g0.ny * offset
-      );
-      ctx.lineTo(
-        g1.x + g1.nx * offset,
-        g1.y + g1.ny * offset
-      );
-      ctx.lineWidth = 0.7 + ribRng() * 1.1;
-      ctx.strokeStyle = env.rgba(
-        isLight ? v.light : ribDark,
-        (0.045 + v.depth * 0.13) * (1 - t0)
-      );
-      ctx.stroke();
-    }
-
-    const rootShade = ctx.createRadialGradient(
-      p0.x - 3, p0.y - 3, 1,
-      p0.x, p0.y, 31
-    );
-    rootShade.addColorStop(
-      0,
-      env.rgba(ribDark, 0.24 + v.depth * 0.34)
-    );
-    rootShade.addColorStop(0.52, env.rgba(ribDark, 0.11 + v.depth * 0.13));
-    rootShade.addColorStop(1, env.rgba(ribDark, 0));
-    ctx.fillStyle = rootShade;
-    ctx.beginPath();
-    ctx.ellipse(p0.x, p0.y, 32, 17, v.angle, 0, TAU);
-    ctx.fill();
-
-    ctx.restore();
+  function roundBoxD(x, y, cx, cy, hw, hh, r) {
+    return roundBoxLocal(x - cx, y - cy, hw, hh, r);
   }
 
-  for (let i = 1; i < vertebrae.length; i++) {
-    const v = vertebrae[i];
-    const phase = i % 2 ? -1 : 1;
-    drawRib(v, -1, 176 + i * 8, phase * (21 + i * 3));
-    drawRib(v, 1, 220 - i * 7, -phase * (31 + i * 2.2));
-  }
-
-  function drawJoint(v, direction) {
-    const y = direction * (v.h * 0.5 + 4);
-    const alpha = 0.23 + v.depth * 0.63;
-    const jointDark = env.mix(haze, ink, 0.27 + v.depth * 0.55);
-    const jointEdge = env.mix(haze, hull, 0.08 + v.depth * 0.25);
-
-    ctx.save();
-    ctx.translate(v.cx, v.cy);
-    ctx.rotate(v.angle);
-
-    const soft = ctx.createRadialGradient(
-      -v.w * 0.07, y - 3, 1,
-      0, y, v.w * 0.44
-    );
-    soft.addColorStop(0, env.rgba(jointDark, alpha));
-    soft.addColorStop(0.48, env.rgba(jointDark, alpha * 0.78));
-    soft.addColorStop(1, env.rgba(jointDark, 0));
-
-    ctx.fillStyle = soft;
+  function roundedPath(x, y, w, h, r) {
+    r = Math.min(r, w * 0.5, h * 0.5);
     ctx.beginPath();
-    ctx.ellipse(0, y, v.w * 0.43, 14, 0, 0, TAU);
-    ctx.fill();
-
-    ctx.fillStyle = env.rgba(jointDark, alpha * 0.86);
-    ctx.beginPath();
-    ctx.ellipse(0, y, v.w * 0.31, 6.2, 0, 0, TAU);
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.ellipse(0, y - 0.8, v.w * 0.35, 9.2, 0, Math.PI, TAU);
-    ctx.lineWidth = 1.3 + v.depth * 0.9;
-    ctx.strokeStyle = env.rgba(jointEdge, 0.08 + v.depth * 0.22);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.ellipse(0, y + 0.8, v.w * 0.35, 9.2, 0, 0, Math.PI);
-    ctx.lineWidth = 2 + v.depth;
-    ctx.strokeStyle = env.rgba(jointDark, 0.2 + v.depth * 0.4);
-    ctx.stroke();
-
-    ctx.restore();
-  }
-
-  for (const v of vertebrae) {
-    drawJoint(v, -1);
-    drawJoint(v, 1);
-  }
-
-  function bodyPath(v) {
-    const w = v.w;
-    const h = v.h;
-
-    ctx.beginPath();
-    ctx.moveTo(-w * 0.29, -h * 0.5);
-    ctx.bezierCurveTo(
-      -w * 0.42, -h * 0.515,
-      -w * 0.5, -h * 0.4,
-      -w * 0.5, -h * 0.24
-    );
-    ctx.bezierCurveTo(
-      -w * 0.535, -h * 0.08,
-      -w * 0.525, h * 0.14,
-      -w * 0.48, h * 0.3
-    );
-    ctx.bezierCurveTo(
-      -w * 0.44, h * 0.445,
-      -w * 0.35, h * 0.5,
-      -w * 0.27, h * 0.5
-    );
-    ctx.lineTo(w * 0.27, h * 0.5);
-    ctx.bezierCurveTo(
-      w * 0.38, h * 0.49,
-      w * 0.47, h * 0.4,
-      w * 0.49, h * 0.27
-    );
-    ctx.bezierCurveTo(
-      w * 0.53, h * 0.1,
-      w * 0.525, -h * 0.12,
-      w * 0.495, -h * 0.27
-    );
-    ctx.bezierCurveTo(
-      w * 0.47, -h * 0.42,
-      w * 0.39, -h * 0.5,
-      w * 0.29, -h * 0.5
-    );
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
     ctx.closePath();
   }
 
-  function halfWidth(v, localY) {
-    const t = (localY + v.h * 0.5) / v.h;
-    if (t < 0 || t > 1) return 0;
-    return v.w * (
-      0.305 +
-      0.208 * Math.pow(Math.sin(Math.PI * t), 0.62)
-    );
+  const segmentYs = [496, 437, 377, 316, 255, 194, 134, 74, 16];
+  const segments = segmentYs.map((cy, index) => {
+    const angle = 0.038 * Math.sin(cy * 0.031 + 0.6);
+    return {
+      index,
+      cy,
+      cx: centerX(cy),
+      hw: 78 + cy * 0.046,
+      hh: 23 + cy * 0.008,
+      radius: 10 + cy * 0.003,
+      angle,
+      cos: Math.cos(angle),
+      sin: Math.sin(angle),
+    };
+  });
+
+  const geometryRng = env.stream('rib-geometry');
+  const ribs = [];
+
+  for (let si = 1; si <= 7; si++) {
+    const seg = segments[si];
+    for (const side of [-1, 1]) {
+      const localRootX = side * (seg.hw - 8);
+      const rootX = seg.cx + seg.cos * localRootX;
+      const rootY = seg.cy + seg.sin * localRootX;
+      const inset = 8 + geometryRng() * 25;
+      const tipX = side < 0 ? inset : W - inset;
+      const dy = 37 - si * 0.7 + geometryRng() * 10;
+      const bend = -(19 + geometryRng() * 10);
+      const rootWidth = 22 - si * 1.18 + geometryRng() * 1.6;
+      const phase = geometryRng();
+
+      const rib = {
+        side,
+        rootX,
+        rootY,
+        tipX,
+        dy,
+        bend,
+        rootWidth,
+        phase,
+        valid: new Uint8Array(W),
+        tAtX: new Float32Array(W),
+        yAtX: new Float32Array(W),
+        widthAtX: new Float32Array(W),
+        normAtX: new Float32Array(W),
+      };
+
+      const span = tipX - rootX;
+      for (let x = 0; x < W; x++) {
+        const rawT = (x + 0.5 - rootX) / span;
+        if (rawT < 0 || rawT > 1) continue;
+
+        const t = rawT;
+        const cy =
+          rootY +
+          dy * t +
+          bend * Math.sin(Math.PI * t) +
+          2.2 * Math.sin((2 * t + phase) * Math.PI) * t * (1 - t);
+        const dydt =
+          dy +
+          bend * Math.PI * Math.cos(Math.PI * t) +
+          2.2 *
+            (
+              2 * Math.PI * Math.cos((2 * t + phase) * Math.PI) * t * (1 - t) +
+              Math.sin((2 * t + phase) * Math.PI) * (1 - 2 * t)
+            );
+        const slope = dydt / span;
+        const width = Math.max(4.5, rootWidth * (1 - 0.72 * t));
+
+        rib.valid[x] = 1;
+        rib.tAtX[x] = t;
+        rib.yAtX[x] = cy;
+        rib.widthAtX[x] = width;
+        rib.normAtX[x] = Math.sqrt(1 + slope * slope);
+      }
+
+      ribs.push(rib);
+    }
   }
 
-  function drawBodyBase(v) {
-    ctx.save();
-    ctx.translate(v.cx + 3, v.cy + 4);
-    ctx.rotate(v.angle);
-    bodyPath(v);
-    ctx.fillStyle = env.rgba(v.dark, 0.35 + v.depth * 0.55);
-    ctx.fill();
-    ctx.restore();
+  const lowerGallerySegment = segments[2];
+  const upperGallerySegment = segments[5];
+  const galleries = [
+    {
+      x: lowerGallerySegment.cx - 111,
+      y: lowerGallerySegment.cy - lowerGallerySegment.hh - 15,
+      w: 106,
+      h: 29,
+      count: 8,
+    },
+    {
+      x: upperGallerySegment.cx + 8,
+      y: upperGallerySegment.cy - upperGallerySegment.hh - 8,
+      w: 108,
+      h: 28,
+      count: 8,
+    },
+  ];
 
-    ctx.save();
-    ctx.translate(v.cx, v.cy);
-    ctx.rotate(v.angle);
-    bodyPath(v);
+  function subjectAt(x, y) {
+    const xi = Math.max(0, Math.min(W - 1, Math.floor(x)));
+    const coreHalf = 38 + clamp(y, 0, H) * 0.036;
+    const coreD = Math.abs(x - centerX(y)) - coreHalf;
 
-    const metal = ctx.createLinearGradient(
-      -v.w * 0.5, -v.h * 0.52,
-      v.w * 0.5, v.h * 0.52
-    );
-    metal.addColorStop(0, v.light);
-    metal.addColorStop(0.18, v.metal);
-    metal.addColorStop(0.7, v.midDark);
-    metal.addColorStop(1, v.dark);
-    ctx.fillStyle = metal;
-    ctx.fill();
-
-    ctx.save();
-    bodyPath(v);
-    ctx.clip();
-    const undercut = ctx.createLinearGradient(
-      0, -v.h * 0.08,
-      0, v.h * 0.54
-    );
-    undercut.addColorStop(0, env.rgba(v.dark, 0));
-    undercut.addColorStop(
-      0.72,
-      env.rgba(v.dark, 0.08 + v.depth * 0.11)
-    );
-    undercut.addColorStop(
-      1,
-      env.rgba(v.dark, 0.23 + v.depth * 0.25)
-    );
-    ctx.fillStyle = undercut;
-    ctx.fillRect(-v.w, -v.h, v.w * 2, v.h * 2);
-    ctx.restore();
-
-    bodyPath(v);
-    ctx.lineWidth = 1.8 + v.depth * 1.6;
-    ctx.strokeStyle = env.rgba(v.dark, 0.24 + v.depth * 0.5);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  for (const v of vertebrae) {
-    drawBodyBase(v);
-  }
-
-  const textureLight = env.hexToRgb(env.shade(hull, 0.08));
-  const textureDark = env.hexToRgb(env.mix(ink, haze, 0.36));
-
-  env.field((x, y) => {
-    let found = -1;
+    let unionD = coreD;
+    let segmentD = Infinity;
+    let segment = null;
     let localX = 0;
     let localY = 0;
-    let edge = 0;
 
-    for (let i = vertebrae.length - 1; i >= 0; i--) {
-      const v = vertebrae[i];
-      const dx = x - v.cx;
-      const dy = y - v.cy;
-      const lx = v.c * dx + v.s * dy;
-      const ly = -v.s * dx + v.c * dy;
-      const hw = halfWidth(v, ly);
-
-      if (hw > 0 && Math.abs(lx) < hw - 1.3) {
-        found = i;
+    for (const seg of segments) {
+      const dx = x - seg.cx;
+      const dy = y - seg.cy;
+      const lx = dx * seg.cos + dy * seg.sin;
+      const ly = -dx * seg.sin + dy * seg.cos;
+      const d = roundBoxLocal(lx, ly, seg.hw, seg.hh, seg.radius);
+      if (d < segmentD) {
+        segmentD = d;
+        segment = seg;
         localX = lx;
         localY = ly;
-        edge = clamp((hw - Math.abs(lx) - 1.3) / 5, 0, 1);
-        break;
       }
+      if (d < unionD) unionD = d;
     }
 
-    if (found < 0) return null;
+    let ribD = Infinity;
+    let rib = null;
+    let ribT = 0;
+    let ribY = 0;
+    let ribWidth = 1;
+    let ribNorm = 1;
 
-    const v = vertebrae[found];
-    const alongPlate = env.fbm(
-      x * 0.31 + found * 13,
-      y * 2.65,
-      {
-        octaves: 3,
-        gain: 0.5,
-        lacunarity: 2.08,
-        period: 173,
-        seed: env.seed + 271 + found * 17,
+    for (const candidate of ribs) {
+      if (!candidate.valid[xi]) continue;
+      const norm = candidate.normAtX[xi];
+      const d =
+        Math.abs(y - candidate.yAtX[xi]) / norm -
+        candidate.widthAtX[xi];
+
+      if (d < ribD) {
+        ribD = d;
+        rib = candidate;
+        ribT = candidate.tAtX[xi];
+        ribY = candidate.yAtX[xi];
+        ribWidth = candidate.widthAtX[xi];
+        ribNorm = norm;
       }
-    );
-    const fluidLane = env.noise(
-      x * 2.18,
-      y * 0.17 + found * 9,
-      {
-        period: 149,
-        seed: env.seed + 341 + found,
+      if (d < unionD) unionD = d;
+    }
+
+    let galleryD = Infinity;
+    let gallery = null;
+    for (const candidate of galleries) {
+      const d = roundBoxD(
+        x,
+        y,
+        candidate.x + candidate.w * 0.5,
+        candidate.y + candidate.h * 0.5,
+        candidate.w * 0.5,
+        candidate.h * 0.5,
+        5
+      );
+      if (d < galleryD) {
+        galleryD = d;
+        gallery = candidate;
       }
-    );
-    const broadBlotch = env.noise(
-      localX * 0.23,
-      localY * 0.63,
-      {
-        period: 97,
-        seed: env.seed + 419 + found,
-      }
-    );
+      if (d < unionD) unionD = d;
+    }
 
-    const signed =
-      (alongPlate - 0.5) * 0.78 +
-      (fluidLane - 0.5) * 0.31 +
-      (broadBlotch - 0.5) * 0.26;
-    const alpha = Math.round(
-      (3.5 + Math.abs(signed) * 25) *
-      (0.32 + v.depth * 0.68) *
-      env.smoothstep(edge)
-    );
-    const color = signed < 0 ? textureDark : textureLight;
+    let kind;
+    if (galleryD <= 0) kind = 'gallery';
+    else if (segmentD <= 0) kind = 'drum';
+    else if (ribD <= 0) kind = 'rib';
+    else if (coreD <= 0) kind = 'joint';
+    else if (galleryD === unionD) kind = 'gallery';
+    else if (segmentD === unionD) kind = 'drum';
+    else if (ribD === unionD) kind = 'rib';
+    else kind = 'joint';
 
-    return [color.r, color.g, color.b, alpha];
-  }, { blend: 'over' });
-
-  const detailRng = env.stream('backdrop-spine-surface');
-
-  function beltPath(v, y, height) {
-    const hw = Math.max(8, halfWidth(v, y) - 2);
-    ctx.beginPath();
-    ctx.moveTo(-hw, y - height * 0.46);
-    ctx.quadraticCurveTo(0, y - height * 0.63, hw, y - height * 0.46);
-    ctx.lineTo(hw - 1.5, y + height * 0.47);
-    ctx.quadraticCurveTo(0, y + height * 0.62, -hw + 1.5, y + height * 0.47);
-    ctx.closePath();
-    return hw;
+    return {
+      d: unionD,
+      kind,
+      segment,
+      localX,
+      localY,
+      rib,
+      ribT,
+      ribY,
+      ribWidth,
+      ribNorm,
+      gallery,
+    };
   }
 
-  function drawBodyDetails(v) {
-    const d = v.depth;
-
-    ctx.save();
-    ctx.translate(v.cx, v.cy);
-    ctx.rotate(v.angle);
-
-    ctx.save();
-    bodyPath(v);
-    ctx.clip();
-
-    const blotches = 7 + Math.round(v.w * v.h / 520);
-    for (let i = 0; i < blotches; i++) {
-      const x = (detailRng() - 0.5) * v.w * 1.03;
-      const y = (detailRng() - 0.5) * v.h * 0.92;
-      const rx = 4 + detailRng() * 14;
-      const ry = 1.2 + detailRng() * 3.4;
-      const pale = detailRng() > 0.72;
-
-      ctx.fillStyle = env.rgba(
-        pale ? v.light : v.dark,
-        0.018 + detailRng() * (0.035 + d * 0.035)
-      );
-      ctx.beginPath();
-      ctx.ellipse(x, y, rx, ry, detailRng() * 0.12 - 0.06, 0, TAU);
-      ctx.fill();
-    }
-
-    for (const sx of [-v.w * 0.235, v.w * 0.215]) {
-      ctx.beginPath();
-      ctx.moveTo(sx, -v.h * 0.4);
-      ctx.lineTo(sx + v.h * 0.035, v.h * 0.39);
-      ctx.lineWidth = 1.5 + d * 1.35;
-      ctx.strokeStyle = env.rgba(v.dark, 0.18 + d * 0.39);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(sx - 1.5, -v.h * 0.39);
-      ctx.lineTo(sx - 1.5 + v.h * 0.035, v.h * 0.38);
-      ctx.lineWidth = 0.8 + d * 0.6;
-      ctx.strokeStyle = env.rgba(v.light, 0.07 + d * 0.18);
-      ctx.stroke();
-    }
-
-    const belts = [
-      [-v.h * 0.3, 7 + d * 3],
-      [v.h * 0.01, 9 + d * 4],
-      [v.h * 0.31, 7 + d * 3],
-    ];
-
-    for (const belt of belts) {
-      const y = belt[0];
-      const bh = belt[1];
-      const hw = beltPath(v, y, bh);
-      const beltFill = ctx.createLinearGradient(
-        -hw, y - bh,
-        hw, y + bh
-      );
-      beltFill.addColorStop(0, v.light);
-      beltFill.addColorStop(0.45, v.metal);
-      beltFill.addColorStop(1, v.dark);
-      ctx.globalAlpha = 0.2 + d * 0.18;
-      ctx.fillStyle = beltFill;
-      ctx.fill();
-      ctx.globalAlpha = 1;
-
-      ctx.beginPath();
-      ctx.moveTo(-hw + 1, y + bh * 0.46);
-      ctx.quadraticCurveTo(0, y + bh * 0.63, hw - 1, y + bh * 0.46);
-      ctx.lineWidth = 1.8 + d * 1.2;
-      ctx.strokeStyle = env.rgba(v.dark, 0.27 + d * 0.43);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(-hw + 2, y - bh * 0.46);
-      ctx.quadraticCurveTo(0, y - bh * 0.63, hw - 2, y - bh * 0.46);
-      ctx.lineWidth = 1 + d * 0.75;
-      ctx.strokeStyle = env.rgba(v.light, 0.12 + d * 0.31);
-      ctx.stroke();
-    }
-
-    const dripCount = 3 + Math.round(d * 7);
-    for (let i = 0; i < dripCount; i++) {
-      const sourceY = belts[Math.floor(detailRng() * belts.length)][0] + 3;
-      const x = (detailRng() - 0.5) * v.w * 0.72;
-      const length = 7 + detailRng() * (12 + d * 19);
-      const bend = (detailRng() - 0.5) * 2.5;
-
-      ctx.beginPath();
-      ctx.moveTo(x, sourceY);
-      ctx.bezierCurveTo(
-        x + bend * 0.2, sourceY + length * 0.34,
-        x + bend, sourceY + length * 0.7,
-        x + bend * 0.7, sourceY + length
-      );
-      ctx.lineWidth = 1.1 + detailRng() * (1.3 + d);
-      ctx.strokeStyle = env.rgba(
-        v.dark,
-        0.06 + detailRng() * (0.08 + d * 0.12)
-      );
-      ctx.stroke();
-
-      if (detailRng() > 0.62) {
-        ctx.beginPath();
-        ctx.moveTo(x - 0.9, sourceY + 1);
-        ctx.lineTo(x - 0.5, sourceY + length * 0.48);
-        ctx.lineWidth = 0.7;
-        ctx.strokeStyle = env.rgba(v.light, 0.035 + d * 0.06);
-        ctx.stroke();
-      }
-    }
-
-    const scratchCount = 6 + Math.round(v.w / 9);
-    for (let i = 0; i < scratchCount; i++) {
-      const edgeBias = detailRng();
-      const side = detailRng() < 0.5 ? -1 : 1;
-      const x = edgeBias < 0.58
-        ? side * (v.w * (0.25 + detailRng() * 0.22))
-        : (detailRng() - 0.5) * v.w * 0.72;
-      const y = (detailRng() - 0.5) * v.h * 0.82;
-      const length = 4 + detailRng() * (8 + d * 13);
-      const isLight = detailRng() > 0.32;
-
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(
-        x + side * length,
-        y + (detailRng() - 0.5) * 2
-      );
-      ctx.lineWidth = 0.65 + detailRng() * 1.05;
-      ctx.strokeStyle = env.rgba(
-        isLight ? v.light : v.dark,
-        0.055 + detailRng() * (0.08 + d * 0.1)
-      );
-      ctx.stroke();
-    }
-
-    const boltRows = [-v.h * 0.3, v.h * 0.01, v.h * 0.31];
-    for (const y of boltRows) {
-      for (const x of [-v.w * 0.37, v.w * 0.37]) {
-        const radius = 1.7 + d * 0.65;
-        ctx.fillStyle = env.rgba(v.dark, 0.34 + d * 0.48);
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, TAU);
-        ctx.fill();
-
-        ctx.fillStyle = env.rgba(v.light, 0.12 + d * 0.31);
-        ctx.beginPath();
-        ctx.arc(
-          x - radius * 0.3,
-          y - radius * 0.32,
-          radius * 0.34,
-          0,
-          TAU
-        );
-        ctx.fill();
-      }
-    }
-
-    ctx.restore();
-
-    ctx.beginPath();
-    ctx.moveTo(-v.w * 0.29, -v.h * 0.5);
-    ctx.bezierCurveTo(
-      -v.w * 0.42, -v.h * 0.515,
-      -v.w * 0.5, -v.h * 0.4,
-      -v.w * 0.5, -v.h * 0.23
-    );
-    ctx.bezierCurveTo(
-      -v.w * 0.535, -v.h * 0.08,
-      -v.w * 0.52, v.h * 0.12,
-      -v.w * 0.48, v.h * 0.28
-    );
-    ctx.lineWidth = 1.2 + d * 1.2;
-    ctx.strokeStyle = env.rgba(v.light, 0.13 + d * 0.36);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(v.w * 0.29, -v.h * 0.5);
-    ctx.bezierCurveTo(
-      v.w * 0.44, -v.h * 0.47,
-      v.w * 0.515, -v.h * 0.31,
-      v.w * 0.51, -v.h * 0.08
-    );
-    ctx.bezierCurveTo(
-      v.w * 0.52, v.h * 0.18,
-      v.w * 0.43, v.h * 0.46,
-      v.w * 0.27, v.h * 0.5
-    );
-    ctx.lineWidth = 2 + d * 1.45;
-    ctx.strokeStyle = env.rgba(v.dark, 0.25 + d * 0.51);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(-v.w * 0.27, v.h * 0.5);
-    ctx.quadraticCurveTo(0, v.h * 0.54, v.w * 0.27, v.h * 0.5);
-    ctx.lineWidth = 2.2 + d * 1.4;
-    ctx.strokeStyle = env.rgba(v.dark, 0.29 + d * 0.49);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(-v.w * 0.28, -v.h * 0.5);
-    ctx.quadraticCurveTo(0, -v.h * 0.54, v.w * 0.28, -v.h * 0.5);
-    ctx.lineWidth = 1.1 + d;
-    ctx.strokeStyle = env.rgba(v.light, 0.14 + d * 0.31);
-    ctx.stroke();
-
-    ctx.restore();
+  function depthAmount(sample, y) {
+    const topDepth = smooth((176 - y) / 176) * 0.72;
+    const tipDepth =
+      sample.kind === 'rib'
+        ? smooth((sample.ribT - 0.26) / 0.74) * 0.88
+        : 0;
+    return Math.max(topDepth, tipDepth);
   }
-
-  for (const v of vertebrae) {
-    drawBodyDetails(v);
-  }
-
-  const galleryRng = env.stream('backdrop-spine-galleries');
-
-  function drawGallery(v, side) {
-    const p0 = side * v.w * 0.04;
-    const p1 = side * (v.w * 0.56 + 24);
-    const d = v.depth;
-    const galleryDark = env.mix(haze, ink, 0.32 + d * 0.48);
-    const galleryMetal = env.mix(haze, hull, 0.18 + d * 0.48);
-    const galleryLight = env.mix(haze, hull, 0.32 + d * 0.52);
-    const warmDim = env.mix(warm, haze, 0.1);
-
-    function podPath(dy = 0) {
-      ctx.beginPath();
-      ctx.moveTo(p0, -6 + dy);
-      ctx.lineTo(p1, -4 + dy);
-      ctx.lineTo(p1, 7 + dy);
-      ctx.lineTo(p0, 8 + dy);
-      ctx.closePath();
-    }
-
-    ctx.save();
-    ctx.translate(v.cx, v.cy);
-    ctx.rotate(v.angle);
-
-    ctx.strokeStyle = env.rgba(galleryDark, 0.45 + d * 0.42);
-    ctx.lineWidth = 2.2 + d * 0.7;
-    for (const t of [0.22, 0.52, 0.82]) {
-      const x = lerp(p0, p1, t);
-      const attach = clamp(x * 0.72, -v.w * 0.43, v.w * 0.43);
-      ctx.beginPath();
-      ctx.moveTo(x, 7);
-      ctx.lineTo(attach, v.h * 0.35);
-      ctx.stroke();
-    }
-
-    podPath(4);
-    ctx.fillStyle = env.rgba(galleryDark, 0.54 + d * 0.4);
-    ctx.fill();
-
-    podPath();
-    const shell = ctx.createLinearGradient(0, -7, 0, 9);
-    shell.addColorStop(0, galleryLight);
-    shell.addColorStop(0.4, galleryMetal);
-    shell.addColorStop(1, galleryDark);
-    ctx.fillStyle = shell;
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.moveTo(p0, -6);
-    ctx.lineTo(p1, -4);
-    ctx.lineWidth = 1.2 + d * 0.7;
-    ctx.strokeStyle = env.rgba(galleryLight, 0.32 + d * 0.4);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(p0, 8);
-    ctx.lineTo(p1, 7);
-    ctx.lineWidth = 2.1 + d;
-    ctx.strokeStyle = env.rgba(galleryDark, 0.44 + d * 0.44);
-    ctx.stroke();
-
-    for (let i = 0; i < 5; i++) {
-      const start = 0.08 + galleryRng() * 0.55;
-      const length = 0.08 + galleryRng() * 0.2;
-      const y = -2 + galleryRng() * 7;
-      ctx.beginPath();
-      ctx.moveTo(lerp(p0, p1, start), y);
-      ctx.lineTo(lerp(p0, p1, Math.min(0.94, start + length)), y + 0.4);
-      ctx.lineWidth = 0.8 + galleryRng() * 0.8;
-      ctx.strokeStyle = env.rgba(
-        galleryRng() > 0.7 ? galleryLight : galleryDark,
-        0.07 + d * 0.08
-      );
-      ctx.stroke();
-    }
-
-    const count = Math.max(7, Math.floor(Math.abs(p1 - p0) / 10));
-    for (let i = 0; i < count; i++) {
-      const t = (i + 0.72) / (count + 0.45);
-      const x = lerp(p0, p1, t);
-      const y = 1.2 - t * 0.7;
-
-      const glow = ctx.createRadialGradient(x, y, 0.4, x, y, 5.2);
-      glow.addColorStop(0, env.rgba(warm, 0.2 + d * 0.16));
-      glow.addColorStop(1, env.rgba(warm, 0));
-      ctx.fillStyle = glow;
-      ctx.fillRect(x - 6, y - 6, 12, 12);
-
-      ctx.fillStyle = env.rgba(galleryDark, 0.75);
-      ctx.fillRect(x - 2.25, y - 1.8, 4.5, 3.7);
-
-      ctx.fillStyle = env.rgba(
-        i === count - 2 ? warm : warmDim,
-        i === count - 2 ? 0.92 : 0.62 + d * 0.17
-      );
-      ctx.fillRect(x - 1.5, y - 1.15, 3, 2.35);
-    }
-
-    const railY0 = -11.5;
-    const railY1 = -9.5;
-    ctx.beginPath();
-    ctx.moveTo(p0, railY0);
-    ctx.lineTo(p1, railY1);
-    ctx.lineWidth = 1.25 + d * 0.35;
-    ctx.strokeStyle = env.rgba(galleryLight, 0.28 + d * 0.35);
-    ctx.stroke();
-
-    const posts = Math.max(5, Math.floor(Math.abs(p1 - p0) / 17));
-    for (let i = 0; i <= posts; i++) {
-      const t = i / posts;
-      const x = lerp(p0, p1, t);
-      const topY = lerp(railY0, railY1, t);
-      const baseY = lerp(-6, -4, t);
-
-      ctx.beginPath();
-      ctx.moveTo(x, topY);
-      ctx.lineTo(x, baseY);
-      ctx.lineWidth = 1.1 + d * 0.3;
-      ctx.strokeStyle = env.rgba(galleryDark, 0.34 + d * 0.35);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(x - 0.7, topY);
-      ctx.lineTo(x - 0.7, baseY);
-      ctx.lineWidth = 0.65;
-      ctx.strokeStyle = env.rgba(galleryLight, 0.11 + d * 0.16);
-      ctx.stroke();
-    }
-
-    ctx.restore();
-  }
-
-  drawGallery(vertebrae[4], -1);
-  drawGallery(vertebrae[5], 1);
-
-  const atmosphere = env.hexToRgb(env.mix(deep, haze, 0.53));
 
   env.field((x, y, u, v) => {
-    const heightFade = Math.pow(1 - v, 1.35);
-    const cloud = env.fbm(x * 0.48, y * 0.21, {
+    const sample = subjectAt(x + 0.5, y + 0.5);
+    if (sample.d > 0) return null;
+
+    const longGrain = env.fbm(x * 0.072, y * 0.31, {
+      octaves: 3,
+      gain: 0.55,
+      lacunarity: 2,
+      period: 193,
+      seed: meta.seed + 11,
+    });
+    const blotch = env.fbm(x * 0.045, y * 0.052, {
+      octaves: 3,
+      gain: 0.58,
+      lacunarity: 2.05,
+      period: 227,
+      seed: meta.seed + 29,
+    });
+    const run = env.ridge(x * 0.48, y * 0.022, {
+      octaves: 2,
+      gain: 0.55,
+      lacunarity: 2,
+      period: 251,
+      seed: meta.seed + 47,
+    });
+
+    const directionalLight = 0.105 * (1 - u) + 0.035 * (1 - v);
+    let surface;
+
+    if (sample.kind === 'drum') {
+      const seg = sample.segment;
+      const nx = sample.localX / seg.hw;
+      const ny = sample.localY / seg.hh;
+      const sideFalloff = smooth((Math.abs(nx) - 0.67) / 0.33);
+      const lip = smooth((Math.abs(ny) - 0.61) / 0.39);
+      const horizontalBand =
+        1 -
+        smooth(
+          Math.abs(Math.abs(ny) - 0.46) / 0.105
+        );
+
+      const seamStep = 28 + (seg.index % 3) * 3;
+      const seamPhase =
+        (sample.localX + seg.hw + seg.index * 7) / seamStep;
+      const seamFrac = seamPhase - Math.floor(seamPhase);
+      const seam = smooth((0.075 - Math.min(seamFrac, 1 - seamFrac)) / 0.075);
+
+      let tone =
+        0.48 +
+        directionalLight +
+        (longGrain - 0.5) * 0.18 +
+        (blotch - 0.5) * 0.13 -
+        sideFalloff * 0.17 -
+        lip * 0.16 -
+        seam * 0.11;
+
+      tone += ny < 0 ? horizontalBand * 0.08 : -horizontalBand * 0.09;
+      surface = mixRgb(rgb.hullDark, rgb.hullLight, clamp(tone, 0.08, 0.88));
+    } else if (sample.kind === 'rib') {
+      const q =
+        (y + 0.5 - sample.ribY) /
+        Math.max(1, sample.ribWidth * sample.ribNorm);
+      const panelPhase =
+        sample.ribT * (6.1 + sample.rib.phase) + sample.rib.phase;
+      const panelFrac = panelPhase - Math.floor(panelPhase);
+      const seam = smooth(
+        (0.08 - Math.min(panelFrac, 1 - panelFrac)) / 0.08
+      );
+
+      let tone =
+        0.43 +
+        directionalLight +
+        (longGrain - 0.5) * 0.2 +
+        (blotch - 0.5) * 0.1 -
+        clamp(q, -1, 1) * 0.115 -
+        seam * 0.16;
+
+      tone -= smooth((Math.abs(q) - 0.65) / 0.35) * 0.15;
+      surface = mixRgb(rgb.hazeDark, rgb.hullLight, clamp(tone, 0.08, 0.82));
+    } else if (sample.kind === 'gallery') {
+      let tone =
+        0.34 +
+        directionalLight +
+        (longGrain - 0.5) * 0.16 +
+        (blotch - 0.5) * 0.1;
+      surface = mixRgb(rgb.hazeDark, rgb.hullMid, clamp(tone, 0.06, 0.68));
+    } else {
+      const tone =
+        0.2 +
+        directionalLight * 0.4 +
+        (blotch - 0.5) * 0.11;
+      surface = mixRgb(rgb.void, rgb.hazeDark, clamp(tone, 0.05, 0.48));
+    }
+
+    const fluidDarken =
+      smooth((run - 0.55) / 0.35) *
+      (0.05 + 0.08 * smooth((blotch - 0.35) / 0.5));
+    surface = mixRgb(surface, rgb.ink, fluidDarken);
+
+    const depth = depthAmount(sample, y);
+    const fogTarget = mixRgb(rgb.fog, rgb.haze, 0.18 + depth * 0.25);
+    surface = mixRgb(surface, fogTarget, depth * 0.61);
+
+    return pixel(surface);
+  });
+
+  function ribPoint(rib, t, offset = 0) {
+    const x = rib.rootX + (rib.tipX - rib.rootX) * t;
+    const y =
+      rib.rootY +
+      rib.dy * t +
+      rib.bend * Math.sin(Math.PI * t) +
+      2.2 * Math.sin((2 * t + rib.phase) * Math.PI) * t * (1 - t);
+    const width = Math.max(4.5, rib.rootWidth * (1 - 0.72 * t));
+    return { x, y: y + offset * width, width };
+  }
+
+  function traceRib(rib, offset) {
+    ctx.beginPath();
+    for (let i = 0; i <= 30; i++) {
+      const p = ribPoint(rib, i / 30, offset);
+      if (i === 0) ctx.moveTo(p.x, p.y);
+      else ctx.lineTo(p.x, p.y);
+    }
+  }
+
+  for (const rib of ribs) {
+    ctx.save();
+
+    traceRib(rib, 0.72);
+    ctx.strokeStyle = env.rgba(hex.void, 0.78);
+    ctx.lineWidth = 4.2;
+    ctx.stroke();
+
+    traceRib(rib, -0.72);
+    ctx.strokeStyle = env.rgba(hex.hullLight, 0.62);
+    ctx.lineWidth = 2.1;
+    ctx.stroke();
+
+    traceRib(rib, 0.12);
+    ctx.strokeStyle = env.rgba(hex.joint, 0.63);
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+
+    for (const t of [0.16, 0.31, 0.47, 0.63, 0.78]) {
+      const p = ribPoint(rib, t);
+      const dxdt = rib.tipX - rib.rootX;
+      const dydt = rib.dy + rib.bend * Math.PI * Math.cos(Math.PI * t);
+      const length = Math.hypot(dxdt, dydt);
+      const nx = -dydt / length;
+      const ny = dxdt / length;
+      const reach = p.width * 0.82;
+
+      ctx.beginPath();
+      ctx.moveTo(p.x - nx * reach, p.y - ny * reach);
+      ctx.lineTo(p.x + nx * reach, p.y + ny * reach);
+      ctx.strokeStyle = env.rgba(hex.void, 0.62 * (1 - t * 0.5));
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(p.x - nx * reach - 1, p.y - ny * reach - 1);
+      ctx.lineTo(p.x + nx * reach - 1, p.y + ny * reach - 1);
+      ctx.strokeStyle = env.rgba(hex.hullLight, 0.38 * (1 - t * 0.55));
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
+
+    for (const t of [0.21, 0.43, 0.61]) {
+      const p = ribPoint(rib, t, -0.35);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 2.1, 0, Math.PI * 2);
+      ctx.fillStyle = env.rgba(hex.void, 0.76);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(p.x - 0.55, p.y - 0.55, 0.85, 0, Math.PI * 2);
+      ctx.fillStyle = env.rgba(hex.hullGlint, 0.63);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  for (const seg of segments) {
+    ctx.save();
+    ctx.translate(seg.cx, seg.cy);
+    ctx.rotate(seg.angle);
+
+    roundedPath(-seg.hw, -seg.hh, seg.hw * 2, seg.hh * 2, seg.radius);
+    ctx.clip();
+
+    for (const by of [-10, 10]) {
+      ctx.beginPath();
+      ctx.moveTo(-seg.hw + 5, by + 1.5);
+      ctx.lineTo(seg.hw - 5, by + 1.5);
+      ctx.strokeStyle = env.rgba(hex.void, 0.73);
+      ctx.lineWidth = 3.4;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(-seg.hw + 7, by - 1);
+      ctx.lineTo(seg.hw - 7, by - 1);
+      ctx.strokeStyle = env.rgba(hex.hullLight, 0.48);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    const seamStep = 28 + (seg.index % 3) * 3;
+    for (
+      let sx = -seg.hw + 22;
+      sx < seg.hw - 15;
+      sx += seamStep
+    ) {
+      ctx.beginPath();
+      ctx.moveTo(sx + 1.5, -seg.hh + 5);
+      ctx.lineTo(sx + 1.5, seg.hh - 5);
+      ctx.strokeStyle = env.rgba(hex.void, 0.68);
+      ctx.lineWidth = 2.3;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(sx - 0.5, -seg.hh + 6);
+      ctx.lineTo(sx - 0.5, seg.hh - 6);
+      ctx.strokeStyle = env.rgba(hex.hullLight, 0.34);
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+    }
+
+    ctx.beginPath();
+    ctx.ellipse(0, 0, seg.hw * 0.27, seg.hh * 0.36, 0, 0, Math.PI * 2);
+    ctx.fillStyle = env.rgba(hex.joint, 0.3);
+    ctx.fill();
+    ctx.strokeStyle = env.rgba(hex.void, 0.66);
+    ctx.lineWidth = 2.7;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(
+      -1,
+      -1.5,
+      seg.hw * 0.23,
+      seg.hh * 0.27,
+      0,
+      Math.PI,
+      Math.PI * 2
+    );
+    ctx.strokeStyle = env.rgba(hex.hullLight, 0.46);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    for (let b = -3; b <= 3; b++) {
+      const bx = b * (seg.hw * 0.22);
+      for (const by of [-seg.hh + 6, seg.hh - 6]) {
+        ctx.beginPath();
+        ctx.arc(bx, by, 2, 0, Math.PI * 2);
+        ctx.fillStyle = env.rgba(hex.void, 0.8);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(bx - 0.55, by - 0.55, 0.78, 0, Math.PI * 2);
+        ctx.fillStyle = env.rgba(hex.hullGlint, 0.62);
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(seg.cx, seg.cy);
+    ctx.rotate(seg.angle);
+
+    roundedPath(-seg.hw, -seg.hh, seg.hw * 2, seg.hh * 2, seg.radius);
+    ctx.strokeStyle = env.rgba(hex.void, 0.77);
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(-seg.hw + seg.radius, -seg.hh + 2);
+    ctx.lineTo(seg.hw - seg.radius, -seg.hh + 2);
+    ctx.strokeStyle = env.rgba(hex.hullLight, 0.55);
+    ctx.lineWidth = 2.3;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(-seg.hw + seg.radius, seg.hh - 1.5);
+    ctx.lineTo(seg.hw - seg.radius, seg.hh - 1.5);
+    ctx.strokeStyle = env.rgba(hex.void, 0.72);
+    ctx.lineWidth = 3.7;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  for (let i = 0; i < segments.length - 1; i++) {
+    const a = segments[i];
+    const b = segments[i + 1];
+    const y = (a.cy + b.cy) * 0.5;
+    const x = centerX(y);
+    const rx = 41 + y * 0.018;
+    const ry = 6.5 + y * 0.002;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate((a.angle + b.angle) * 0.5);
+
+    ctx.beginPath();
+    ctx.ellipse(0, 1.5, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = env.rgba(hex.void, 0.76);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.ellipse(-1, -1, rx - 3, Math.max(2, ry - 2.5), 0, Math.PI, Math.PI * 2);
+    ctx.strokeStyle = env.rgba(hex.hazeLight, 0.32);
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  for (const g of galleries) {
+    ctx.save();
+
+    roundedPath(g.x + 1, g.y + 9, g.w, g.h - 7, 5);
+    ctx.fillStyle = env.rgba(hex.void, 0.63);
+    ctx.fill();
+
+    const bodyGradient = ctx.createLinearGradient(
+      g.x,
+      g.y + 5,
+      g.x + g.w,
+      g.y + g.h
+    );
+    bodyGradient.addColorStop(0, env.rgba(hex.hullLight, 0.74));
+    bodyGradient.addColorStop(0.42, env.rgba(hex.hazeDark, 0.82));
+    bodyGradient.addColorStop(1, env.rgba(hex.ink, 0.88));
+
+    roundedPath(g.x, g.y + 6, g.w, g.h - 7, 5);
+    ctx.fillStyle = bodyGradient;
+    ctx.fill();
+    ctx.strokeStyle = env.rgba(hex.void, 0.9);
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(g.x + 5, g.y + 4);
+    ctx.lineTo(g.x + g.w - 5, g.y + 4);
+    ctx.strokeStyle = env.rgba(hex.void, 0.86);
+    ctx.lineWidth = 3.2;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(g.x + 6, g.y + 2.5);
+    ctx.lineTo(g.x + g.w - 6, g.y + 2.5);
+    ctx.strokeStyle = env.rgba(hex.hullGlint, 0.68);
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    for (let x = g.x + 10; x < g.x + g.w - 8; x += 13) {
+      ctx.beginPath();
+      ctx.moveTo(x, g.y + 3);
+      ctx.lineTo(x, g.y + 9);
+      ctx.strokeStyle = env.rgba(hex.hullLight, 0.54);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    for (let x = g.x + 22; x < g.x + g.w - 14; x += 27) {
+      ctx.beginPath();
+      ctx.moveTo(x - 5, g.y + g.h - 3);
+      ctx.lineTo(x, g.y + g.h - 10);
+      ctx.lineTo(x + 6, g.y + g.h - 3);
+      ctx.strokeStyle = env.rgba(hex.void, 0.82);
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  env.field((x, y) => {
+    const sample = subjectAt(x + 0.5, y + 0.5);
+    if (sample.d > 0) return null;
+
+    let occlusion = 0;
+
+    if (sample.kind === 'joint') {
+      occlusion += 44;
+    } else if (sample.kind === 'drum') {
+      const ny = Math.abs(sample.localY / sample.segment.hh);
+      const nx = Math.abs(sample.localX / sample.segment.hw);
+      occlusion += 39 * smooth((ny - 0.68) / 0.32);
+      occlusion += 18 * smooth((nx - 0.82) / 0.18);
+    } else if (sample.kind === 'rib') {
+      const q =
+        (y + 0.5 - sample.ribY) /
+        Math.max(1, sample.ribWidth * sample.ribNorm);
+      occlusion += 31 * smooth((q + 0.05) / 0.95);
+      occlusion += 37 * (1 - smooth(sample.ribT / 0.17));
+    } else if (sample.kind === 'gallery') {
+      const g = sample.gallery;
+      occlusion +=
+        34 *
+        smooth(
+          ((y + 0.5 - g.y) / g.h - 0.53) / 0.47
+        );
+    }
+
+    const fluid = env.ridge(x * 0.71, y * 0.024, {
       octaves: 3,
       gain: 0.54,
       lacunarity: 2,
-      period: 211,
-      seed: env.seed + 701,
+      period: 257,
+      seed: meta.seed + 83,
     });
-    const veil = Math.max(0, (cloud - 0.53) / 0.47);
-    const dither = env.noise(x * 4.73, y * 4.17, {
-      period: 127,
-      seed: env.seed + 702,
-    }) - 0.5;
-    const edge =
-      Math.max(0, (Math.abs(u - 0.5) - 0.35) / 0.15);
+    const cluster = env.noise(x * 0.083, y * 0.061, {
+      period: 223,
+      seed: meta.seed + 101,
+    });
+    occlusion +=
+      55 *
+      smooth((fluid - 0.58) / 0.32) *
+      smooth((cluster - 0.31) / 0.56);
 
-    const alpha = Math.round(clamp(
-      7 +
-      72 * heightFade +
-      24 * veil +
-      10 * edge +
-      dither * 4,
-      4,
-      112
-    ));
-
-    return [atmosphere.r, atmosphere.g, atmosphere.b, alpha];
+    if (occlusion < 1) return null;
+    return pixel(rgb.ink, Math.min(105, occlusion));
   }, { blend: 'over' });
+
+  for (const rib of ribs) {
+    const gradient = ctx.createRadialGradient(
+      rib.rootX - 2,
+      rib.rootY + 4,
+      2,
+      rib.rootX,
+      rib.rootY + 4,
+      rib.rootWidth * 1.65
+    );
+    gradient.addColorStop(0, env.rgba(hex.void, 0.72));
+    gradient.addColorStop(0.55, env.rgba(hex.ink, 0.38));
+    gradient.addColorStop(1, env.rgba(hex.ink, 0));
+
+    ctx.beginPath();
+    ctx.ellipse(
+      rib.rootX,
+      rib.rootY + 3,
+      rib.rootWidth * 1.55,
+      rib.rootWidth * 1.1,
+      0,
+      0,
+      Math.PI * 2
+    );
+    ctx.fillStyle = gradient;
+    ctx.fill();
+  }
+
+  const wearRng = env.stream('surface-wear');
+
+  for (const seg of segments) {
+    ctx.save();
+    ctx.translate(seg.cx, seg.cy);
+    ctx.rotate(seg.angle);
+
+    for (let i = 0; i < 6; i++) {
+      const sx = (wearRng() * 2 - 1) * (seg.hw - 15);
+      const sy = (wearRng() * 2 - 1) * (seg.hh - 8);
+      const length = 5 + wearRng() * 13;
+      const drop = 1 + wearRng() * 4;
+
+      ctx.beginPath();
+      ctx.moveTo(sx + 1.5, sy + 2);
+      ctx.lineTo(sx + length + 1.5, sy + drop + 2);
+      ctx.strokeStyle = env.rgba(hex.void, 0.46);
+      ctx.lineWidth = 2.1;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(sx + length, sy + drop);
+      ctx.strokeStyle = env.rgba(hex.hullGlint, 0.34);
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+    }
+
+    for (const side of [-1, 1]) {
+      const chipX = side * (seg.hw - 7);
+      const chipY = -seg.hh + 7 + wearRng() * 8;
+
+      ctx.fillStyle = env.rgba(hex.void, 0.7);
+      ctx.fillRect(chipX - 2, chipY + 2, 5, 3);
+      ctx.fillStyle = env.rgba(hex.hullGlint, 0.53);
+      ctx.fillRect(chipX - 3, chipY, 4, 2);
+    }
+
+    ctx.restore();
+  }
+
+  for (const rib of ribs) {
+    for (let i = 0; i < 3; i++) {
+      const t = 0.09 + wearRng() * 0.56;
+      const p = ribPoint(rib, t, -0.48);
+      const direction = rib.side * (4 + wearRng() * 7);
+
+      ctx.beginPath();
+      ctx.moveTo(p.x + 1, p.y + 2);
+      ctx.lineTo(p.x + direction + 1, p.y + 3);
+      ctx.strokeStyle = env.rgba(hex.void, 0.48);
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x + direction, p.y + 1);
+      ctx.strokeStyle = env.rgba(hex.hullGlint, 0.38);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
+
+  for (const g of galleries) {
+    const usable = g.w - 18;
+    const step = usable / g.count;
+    const wy = g.y + 13;
+
+    for (let i = 0; i < g.count; i++) {
+      const wx = g.x + 9 + i * step + (step - 4) * 0.5;
+
+      if (i === 2 || i === 5) {
+        const glow = ctx.createRadialGradient(
+          wx + 2,
+          wy + 1.5,
+          1,
+          wx + 2,
+          wy + 1.5,
+          8
+        );
+        glow.addColorStop(0, env.rgba(hex.warmDim, 0.25));
+        glow.addColorStop(1, env.rgba(hex.warmDim, 0));
+        ctx.beginPath();
+        ctx.arc(wx + 2, wy + 1.5, 8, 0, Math.PI * 2);
+        ctx.fillStyle = glow;
+        ctx.fill();
+      }
+
+      roundedPath(wx - 1.5, wy - 1.5, 7, 6, 1.5);
+      ctx.fillStyle = env.rgba(hex.void, 0.92);
+      ctx.fill();
+
+      ctx.fillStyle = env.rgba(hex.warmDim, 0.91);
+      ctx.fillRect(wx, wy, 4, 3);
+      ctx.fillStyle = env.rgba(hex.warm, 0.82);
+      ctx.fillRect(wx, wy, 2, 1);
+    }
+  }
+
+  env.field((x, y) => {
+    const sample = subjectAt(x + 0.5, y + 0.5);
+    if (sample.d > 0) return null;
+
+    const depth = depthAmount(sample, y);
+    if (depth < 0.015) return null;
+
+    const fogColor = mixRgb(rgb.fogDeep, rgb.haze, 0.34 + depth * 0.28);
+    return pixel(fogColor, 122 * depth);
+  }, { blend: 'over' });
+
+  env.mask((x, y) => {
+    const sample = subjectAt(x + 0.5, y + 0.5);
+    if (sample.d >= 0) return 0;
+
+    const edge = smooth((-sample.d) / 3.35);
+
+    const rawTop = clamp((y - 5) / 140);
+    let topFade = smooth(rawTop);
+
+    if (rawTop > 0 && rawTop < 1) {
+      const dither =
+        (env.noise(x * 13.17, y * 17.91, {
+          period: 257,
+          seed: meta.seed + 907,
+        }) -
+          0.5) *
+        (2.8 / 255);
+      topFade = clamp(topFade + dither);
+    }
+
+    let tipFade = 1;
+    if (sample.kind === 'rib') {
+      const rawTip = clamp((sample.ribT - 0.55) / 0.43);
+      tipFade = 1 - smooth(rawTip);
+
+      if (rawTip > 0 && rawTip < 1) {
+        const dither =
+          (env.noise(x * 19.23, y * 11.71, {
+            period: 251,
+            seed: meta.seed + 953,
+          }) -
+            0.5) *
+          (2.4 / 255);
+        tipFade = clamp(tipFade + dither);
+      }
+
+      if (sample.ribT >= 0.98) tipFade = 0;
+    }
+
+    return edge * topFade * tipFade;
+  });
 }

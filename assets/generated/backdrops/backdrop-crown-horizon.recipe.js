@@ -8,620 +8,508 @@ export const meta = {
 export function render(ctx, env) {
   const W = env.width;
   const H = env.height;
-  const teal = env.PALETTE['deep-teal'];
-  const haze = env.PALETTE.haze;
-  const ink = env.PALETTE.ink;
-  const magenta = env.PALETTE['hot-magenta'];
 
-  const bgDark = env.mix(env.shade(teal, -0.26), haze, 0.23);
-  const bgLight = env.mix(
-    env.shade(teal, 0.17),
-    env.shade(haze, 0.12),
-    0.46,
-  );
-  const fogLow = env.mix(teal, haze, 0.58);
-  const fogHigh = env.mix(
-    env.shade(teal, 0.22),
-    env.shade(haze, 0.18),
-    0.6,
-  );
-  const towerFar = env.mix(fogLow, ink, 0.12);
-  const towerMid = env.mix(fogLow, ink, 0.22);
-  const towerNear = env.mix(env.mix(teal, haze, 0.56), ink, 0.28);
+  const tealAnchor = env.PALETTE['deep-teal'];
+  const hazeAnchor = env.PALETTE.haze;
+  const inkAnchor = env.PALETTE.ink;
+  const magentaAnchor = env.PALETTE['hot-magenta'];
 
-  const rgb = (hex) => env.hexToRgb(hex);
-  const bgDarkRgb = rgb(bgDark);
-  const bgLightRgb = rgb(bgLight);
-  const fogLowRgb = rgb(fogLow);
-  const fogHighRgb = rgb(fogHigh);
+  const tealDeep = env.shade(tealAnchor, -0.54);
+  const tealDark = env.shade(tealAnchor, -0.42);
+  const tealMid = env.shade(tealAnchor, -0.25);
+  const tealSoft = env.shade(tealAnchor, -0.08);
+  const hazeDark = env.shade(hazeAnchor, -0.22);
+  const hazeMid = env.shade(hazeAnchor, -0.06);
+  const hazeLight = env.shade(hazeAnchor, 0.08);
+  const inkDeep = env.shade(inkAnchor, -0.18);
+  const inkSoft = env.shade(inkAnchor, 0.08);
+  const magentaCore = env.shade(magentaAnchor, 0);
+  const magentaBloom = env.shade(magentaAnchor, 0.08);
 
-  function clamp01(t) {
-    return env.clamp(t, 0, 1);
+  const geom = env.stream('crown-geometry');
+  const texture = env.stream('crown-striation');
+  const wear = env.stream('crown-wear');
+
+  const foundation = [];
+  let fx = 148;
+  let lastFoundationY = 220;
+
+  while (fx < 876) {
+    const center = Math.max(0, 1 - Math.abs(fx - W * 0.5) / 382);
+    const nextY = Math.round(
+      (216 - 30 * Math.pow(center, 1.25) + (geom() - 0.5) * 9) / 4
+    ) * 4;
+    foundation.push({ x: fx, y: lastFoundationY });
+    foundation.push({ x: fx, y: nextY });
+
+    const run = 10 + Math.floor(geom() * 16);
+    fx = Math.min(876, fx + run);
+    foundation.push({ x: fx, y: nextY });
+    lastFoundationY = nextY;
   }
 
-  function smooth(t) {
-    t = clamp01(t);
-    return t * t * (3 - 2 * t);
+  function foundationTopAt(x) {
+    const center = Math.max(0, 1 - Math.abs(x - W * 0.5) / 382);
+    return 216 - 30 * Math.pow(center, 1.25);
   }
 
-  function mixRgb(a, b, t, alpha = 255) {
-    t = clamp01(t);
-    return [
-      Math.round(a.r + (b.r - a.r) * t),
-      Math.round(a.g + (b.g - a.g) * t),
-      Math.round(a.b + (b.b - a.b) * t),
-      Math.round(alpha),
-    ];
-  }
+  function makeTower(x, width, top, base, major, accent) {
+    const ledges = [];
+    const count = major ? 4 : 2 + Math.floor(geom() * 2);
+    const usable = Math.max(24, base - top - 30);
 
-  env.field((x, y, u, v) => {
-    const broad = env.fbm(x * 0.68, y * 0.68, {
-      octaves: 4,
-      gain: 0.52,
-      lacunarity: 2.03,
-      period: 768,
-      seed: meta.seed + 11,
-    });
-    const drift = env.noise(x * 0.19, y * 0.27, {
-      period: 512,
-      seed: meta.seed + 12,
-    });
-    const edge = Math.abs(u - 0.5) * 2;
-    const light = clamp01(
-      0.18 +
-        v * 0.52 +
-        (1 - u) * 0.08 +
-        (broad - 0.5) * 0.2 +
-        (drift - 0.5) * 0.1 -
-        edge * edge * 0.06,
-    );
-    return mixRgb(bgDarkRgb, bgLightRgb, light);
-  });
-
-  env.field(
-    (x, y, u) => {
-      const n = env.fbm(x * 0.42, y * 0.58, {
-        octaves: 3,
-        gain: 0.55,
-        lacunarity: 2,
-        period: 640,
-        seed: meta.seed + 21,
-      });
-      const centerA =
-        76 + (n - 0.5) * 27 + Math.sin(u * Math.PI * 4.2) * 7;
-      const centerB =
-        154 + (n - 0.5) * 39 + Math.sin(u * Math.PI * 2.5 + 0.8) * 10;
-      const bankA = Math.exp(-Math.pow((y - centerA) / 31, 2));
-      const bankB = Math.exp(-Math.pow((y - centerB) / 44, 2));
-      const alpha = (bankA * 15 + bankB * 17) * (0.75 + n * 0.25);
-      if (alpha < 0.45) return null;
-      return mixRgb(fogLowRgb, fogHighRgb, 0.28 + n * 0.34, alpha);
-    },
-    { blend: 'over' },
-  );
-
-  function drawTower(opts) {
-    const {
-      x,
-      base,
-      w,
-      h,
-      color,
-      alpha,
-      blur,
-      detail,
-      r,
-      finials,
-    } = opts;
-
-    const lean =
-      opts.lean !== undefined ? opts.lean : (r() - 0.5) * w * 0.24;
-    const bend = (r() - 0.5) * w * 0.1;
-    const profile = [
-      { f: 0, hw: 0.52 },
-      { f: 0.15, hw: 0.58 },
-      { f: 0.18, hw: 0.46 },
-      { f: 0.36, hw: 0.43 },
-      { f: 0.39, hw: 0.34 },
-      { f: 0.58, hw: 0.31 },
-      { f: 0.61, hw: 0.22 },
-      { f: 0.79, hw: 0.19 },
-      { f: 0.82, hw: 0.11 },
-      { f: 0.94, hw: 0.07 },
-      { f: 1, hw: 0 },
-    ];
-
-    const left = [];
-    const right = [];
-
-    for (const p of profile) {
-      const center =
-        x +
-        lean * p.f +
-        Math.sin(p.f * Math.PI) * bend +
-        (r() - 0.5) * w * 0.025 * (1 - p.f);
-      const asymL = 1 + (r() - 0.5) * 0.09;
-      const asymR = 1 + (r() - 0.5) * 0.09;
-      const py = base - h * p.f;
-      left.push({ x: center - w * p.hw * asymL, y: py });
-      right.push({ x: center + w * p.hw * asymR, y: py });
+    for (let i = 0; i < count; i++) {
+      ledges.push(
+        top + 21 + (i + 1) * usable / (count + 1) + (geom() - 0.5) * 4
+      );
     }
 
-    const trace = () => {
-      ctx.beginPath();
-      ctx.moveTo(left[0].x, left[0].y);
-      for (let i = 1; i < left.length; i++) {
-        ctx.lineTo(left[i].x, left[i].y);
-      }
-      for (let i = right.length - 1; i >= 0; i--) {
-        ctx.lineTo(right[i].x, right[i].y);
-      }
-      ctx.closePath();
-    };
-
-    const light = env.mix(color, fogHigh, 0.36);
-    const dark = env.mix(color, ink, 0.27);
-    const occlusion = env.mix(color, ink, 0.48);
-    const tip = {
-      x: (left[left.length - 1].x + right[right.length - 1].x) * 0.5,
-      y: left[left.length - 1].y,
-    };
-
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.filter = blur > 0 ? `blur(${blur}px)` : 'none';
-    const bodyGradient = ctx.createLinearGradient(
-      x - w * 0.8,
-      base - h,
-      x + w * 0.75,
-      base,
-    );
-    bodyGradient.addColorStop(0, light);
-    bodyGradient.addColorStop(0.42, color);
-    bodyGradient.addColorStop(1, dark);
-    ctx.fillStyle = bodyGradient;
-    trace();
-    ctx.fill();
-    ctx.restore();
-
-    if (detail > 0) {
-      ctx.save();
-      trace();
-      ctx.clip();
-      ctx.filter = blur > 0.8 ? `blur(${blur * 0.24}px)` : 'none';
-
-      let sx = x - w * 0.55 + r() * 3;
-      let stripeIndex = 0;
-      while (sx < x + w * 0.58) {
-        const stripeColor = stripeIndex % 3 === 0 ? light : occlusion;
-        ctx.strokeStyle = env.rgba(
-          stripeColor,
-          alpha * detail * (stripeIndex % 3 === 0 ? 0.13 : 0.09),
-        );
-        ctx.lineWidth = 0.65 + r() * 0.75;
-        ctx.beginPath();
-        ctx.moveTo(sx, base + 2);
-        ctx.lineTo(sx + lean * 0.72 + (r() - 0.5) * 2, base - h * 0.9);
-        ctx.stroke();
-        sx += 3.2 + r() * 4.8;
-        stripeIndex++;
-      }
-
-      const seamIndices = [2, 4, 6, 8];
-      for (const index of seamIndices) {
-        const l = left[index];
-        const rr = right[index];
-
-        ctx.strokeStyle = env.rgba(light, alpha * detail * 0.18);
-        ctx.lineWidth = 0.75;
-        ctx.beginPath();
-        ctx.moveTo(l.x, l.y - 0.55);
-        ctx.lineTo(rr.x, rr.y - 0.55);
-        ctx.stroke();
-
-        ctx.strokeStyle = env.rgba(occlusion, alpha * detail * 0.3);
-        ctx.lineWidth = 1.05;
-        ctx.beginPath();
-        ctx.moveTo(l.x, l.y + 0.8);
-        ctx.lineTo(rr.x, rr.y + 0.8);
-        ctx.stroke();
-      }
-
-      ctx.restore();
-
-      ctx.save();
-      ctx.filter = blur > 1 ? `blur(${blur * 0.18}px)` : 'none';
-      ctx.lineWidth = 0.7 + detail * 0.55;
-
-      ctx.strokeStyle = env.rgba(light, alpha * detail * 0.22);
-      ctx.beginPath();
-      ctx.moveTo(left[0].x, left[0].y);
-      for (let i = 1; i < left.length; i++) {
-        ctx.lineTo(left[i].x, left[i].y);
-      }
-      ctx.stroke();
-
-      ctx.strokeStyle = env.rgba(occlusion, alpha * detail * 0.32);
-      ctx.beginPath();
-      ctx.moveTo(right[0].x, right[0].y);
-      for (let i = 1; i < right.length; i++) {
-        ctx.lineTo(right[i].x, right[i].y);
-      }
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    if (finials) {
-      const capY = tip.y + h * 0.18;
-      ctx.save();
-      ctx.lineCap = 'square';
-      for (let i = -2; i <= 2; i++) {
-        const px = tip.x + i * w * 0.105;
-        const topY = tip.y + 3 + Math.abs(i) * 3.2;
-        ctx.strokeStyle = env.rgba(
-          i < 0 ? light : dark,
-          alpha * (0.27 + detail * 0.2),
-        );
-        ctx.lineWidth = i === 0 ? 1.15 : 0.75;
-        ctx.beginPath();
-        ctx.moveTo(px, capY);
-        ctx.lineTo(px + lean * 0.04, topY);
-        ctx.stroke();
-      }
-      ctx.strokeStyle = env.rgba(occlusion, alpha * 0.3);
-      ctx.lineWidth = 0.9;
-      ctx.beginPath();
-      ctx.moveTo(tip.x - w * 0.25, capY);
-      ctx.lineTo(tip.x + w * 0.25, capY);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    return tip;
+    return { x, width, top, base, major, accent, ledges };
   }
 
-  function drawTowerLayer(config) {
-    const r = env.stream(config.name);
-    for (let i = 0; i < config.count; i++) {
-      const t = (i + 0.5) / config.count;
-      const envelope = Math.pow(Math.sin(Math.PI * t), 0.72);
-      const central = Math.exp(-Math.pow((t - 0.5) / 0.22, 2));
-      const x =
-        config.x0 +
-        (config.x1 - config.x0) * t +
-        (r() - 0.5) * ((config.x1 - config.x0) / config.count) * 0.72;
-      const h =
-        config.minH +
-        envelope * config.span * (0.48 + r() * 0.3) +
-        central * config.span * 0.4;
-      const edgeAlpha = 0.16 + envelope * 0.84;
-      drawTower({
-        x,
-        base: config.base + (r() - 0.5) * 9,
-        w: config.minW + r() * (config.maxW - config.minW),
-        h,
-        color: config.color,
-        alpha: config.alpha * edgeAlpha,
-        blur: config.blur,
-        detail: config.detail,
-        r,
-        finials: config.detail > 0.4 && r() > 0.73,
-      });
-    }
+  const towers = [];
+  let tx = 172;
+
+  while (tx < 858) {
+    const center = Math.max(0, 1 - Math.abs(tx - W * 0.5) / 370);
+    const width = 12 + Math.floor(geom() * 13 + center * 8);
+    const top = 194 - 65 * center - 17 * center * center + (geom() - 0.5) * 17;
+    const base = 238 + Math.floor(geom() * 9);
+
+    towers.push(makeTower(tx, width, top, base, false, false));
+    tx += 15 + geom() * 17;
   }
 
-  drawTowerLayer({
-    name: 'rear-spires',
-    count: 31,
-    x0: 34,
-    x1: 990,
-    base: 197,
-    minH: 17,
-    span: 88,
-    minW: 7,
-    maxW: 18,
-    color: towerFar,
-    alpha: 0.46,
-    blur: 1.75,
-    detail: 0.12,
-  });
-
-  env.field(
-    (x, y, u, v) => {
-      const n = env.fbm(x * 0.5, y * 0.72, {
-        octaves: 3,
-        gain: 0.52,
-        lacunarity: 2.08,
-        period: 512,
-        seed: meta.seed + 31,
-      });
-      const center =
-        143 + (n - 0.5) * 32 + Math.sin(u * Math.PI * 3.1 + 1.7) * 8;
-      const bank = Math.exp(-Math.pow((y - center) / 29, 2));
-      const lower = smooth((v - 0.62) / 0.38);
-      const alpha = bank * (15 + n * 10) + lower * 15;
-      if (alpha < 0.5) return null;
-      return mixRgb(fogLowRgb, fogHighRgb, 0.2 + n * 0.42, alpha);
-    },
-    { blend: 'over' },
-  );
-
-  const massR = env.stream('foundation-mass');
-  const massPoints = [];
-  const massSteps = 74;
-
-  for (let i = 0; i <= massSteps; i++) {
-    const t = i / massSteps;
-    const x = 48 + t * 928;
-    const envelope = Math.pow(Math.sin(Math.PI * t), 0.62);
-    const core = Math.exp(-Math.pow((t - 0.5) / 0.25, 2));
-    const top =
-      234 -
-      envelope * (18 + core * 32 + massR() * 12) -
-      Math.sin(t * Math.PI * 11) * envelope * 2.5;
-    massPoints.push({ x, y: top });
-  }
-
-  const traceMass = () => {
-    ctx.beginPath();
-    ctx.moveTo(massPoints[0].x, massPoints[0].y);
-    for (let i = 1; i < massPoints.length; i++) {
-      ctx.lineTo(massPoints[i].x, massPoints[i].y);
-    }
-    ctx.lineTo(976, H);
-    ctx.lineTo(48, H);
-    ctx.closePath();
-  };
-
-  const massGradient = ctx.createLinearGradient(38, 0, 986, 0);
-  massGradient.addColorStop(0, env.rgba(towerMid, 0));
-  massGradient.addColorStop(0.12, env.rgba(towerMid, 0.28));
-  massGradient.addColorStop(0.32, env.rgba(towerMid, 0.56));
-  massGradient.addColorStop(0.5, env.rgba(towerNear, 0.68));
-  massGradient.addColorStop(0.68, env.rgba(towerMid, 0.56));
-  massGradient.addColorStop(0.88, env.rgba(towerMid, 0.28));
-  massGradient.addColorStop(1, env.rgba(towerMid, 0));
-
-  ctx.fillStyle = massGradient;
-  traceMass();
-  ctx.fill();
-
-  ctx.save();
-  traceMass();
-  ctx.clip();
-  let striationX = 88 + massR() * 5;
-  let striationIndex = 0;
-  while (striationX < 940) {
-    const c =
-      striationIndex % 4 === 0
-        ? env.mix(towerMid, fogHigh, 0.28)
-        : env.mix(towerMid, ink, 0.3);
-    ctx.strokeStyle = env.rgba(c, striationIndex % 4 === 0 ? 0.11 : 0.075);
-    ctx.lineWidth = 0.7 + massR() * 1.1;
-    ctx.beginPath();
-    ctx.moveTo(striationX, 148);
-    ctx.lineTo(striationX + (massR() - 0.5) * 5, H);
-    ctx.stroke();
-    striationX += 5 + massR() * 8;
-    striationIndex++;
-  }
-  ctx.restore();
-
-  const massLight = env.mix(towerMid, fogHigh, 0.34);
-  const massDark = env.mix(towerMid, ink, 0.38);
-
-  ctx.strokeStyle = env.rgba(massLight, 0.24);
-  ctx.lineWidth = 1.05;
-  ctx.beginPath();
-  ctx.moveTo(massPoints[0].x, massPoints[0].y - 0.8);
-  for (let i = 1; i < massPoints.length; i++) {
-    ctx.lineTo(massPoints[i].x, massPoints[i].y - 0.8);
-  }
-  ctx.stroke();
-
-  ctx.strokeStyle = env.rgba(massDark, 0.3);
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(massPoints[0].x, massPoints[0].y + 1.5);
-  for (let i = 1; i < massPoints.length; i++) {
-    ctx.lineTo(massPoints[i].x, massPoints[i].y + 1.5);
-  }
-  ctx.stroke();
-
-  function drawButtress(x0, y0, x1, y1, width, color, alpha) {
-    const dx = x1 - x0;
-    const dy = y1 - y0;
-    const length = Math.max(1, Math.hypot(dx, dy));
-    const nx = (-dy / length) * width * 0.5;
-    const ny = (dx / length) * width * 0.5;
-    const light = env.mix(color, fogHigh, 0.38);
-    const dark = env.mix(color, ink, 0.42);
-
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    const gradient = ctx.createLinearGradient(
-      x0 + nx,
-      y0 + ny,
-      x0 - nx,
-      y0 - ny,
-    );
-    gradient.addColorStop(0, light);
-    gradient.addColorStop(0.45, color);
-    gradient.addColorStop(1, dark);
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.moveTo(x0 + nx, y0 + ny);
-    ctx.lineTo(x1 + nx * 0.68, y1 + ny * 0.68);
-    ctx.lineTo(x1 - nx * 0.68, y1 - ny * 0.68);
-    ctx.lineTo(x0 - nx, y0 - ny);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.strokeStyle = env.rgba(light, 0.34);
-    ctx.lineWidth = 0.9;
-    ctx.beginPath();
-    ctx.moveTo(x0 + nx, y0 + ny);
-    ctx.lineTo(x1 + nx * 0.68, y1 + ny * 0.68);
-    ctx.stroke();
-
-    ctx.strokeStyle = env.rgba(dark, 0.48);
-    ctx.lineWidth = 1.35;
-    ctx.beginPath();
-    ctx.moveTo(x0 - nx, y0 - ny);
-    ctx.lineTo(x1 - nx * 0.68, y1 - ny * 0.68);
-    ctx.stroke();
-
-    ctx.strokeStyle = env.rgba(dark, 0.2);
-    ctx.lineWidth = Math.max(0.8, width * 0.14);
-    ctx.beginPath();
-    ctx.moveTo(x0, y0);
-    ctx.lineTo(x1, y1);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  drawButtress(218, 230, 390, 160, 17, towerMid, 0.46);
-  drawButtress(292, 224, 452, 137, 13, towerMid, 0.48);
-  drawButtress(388, 211, 520, 154, 12, towerNear, 0.38);
-  drawButtress(505, 184, 664, 213, 14, towerNear, 0.36);
-  drawButtress(574, 150, 744, 226, 16, towerMid, 0.46);
-  drawButtress(637, 170, 820, 232, 18, towerMid, 0.36);
-
-  drawTowerLayer({
-    name: 'middle-spires',
-    count: 22,
-    x0: 92,
-    x1: 932,
-    base: 215,
-    minH: 25,
-    span: 96,
-    minW: 11,
-    maxW: 27,
-    color: towerMid,
-    alpha: 0.61,
-    blur: 0.78,
-    detail: 0.35,
-  });
-
-  const landmarkR = env.stream('crown-landmarks');
-  const landmarkSpecs = [
-    { x: 512, base: 222, w: 43, h: 192, lean: 0, alpha: 0.75 },
-    { x: 468, base: 222, w: 35, h: 164, lean: -2, alpha: 0.69 },
-    { x: 557, base: 223, w: 38, h: 171, lean: 2, alpha: 0.71 },
-    { x: 416, base: 224, w: 32, h: 142, lean: -1, alpha: 0.63 },
-    { x: 615, base: 225, w: 34, h: 150, lean: 2, alpha: 0.65 },
-    { x: 360, base: 226, w: 31, h: 116, lean: -2, alpha: 0.57 },
-    { x: 676, base: 227, w: 31, h: 122, lean: 1, alpha: 0.57 },
-    { x: 302, base: 229, w: 28, h: 91, lean: -1, alpha: 0.48 },
-    { x: 730, base: 230, w: 29, h: 95, lean: 2, alpha: 0.48 },
+  const majorSpecs = [
+    [512, 42, 91, 245, true],
+    [476, 32, 105, 243, true],
+    [550, 34, 102, 244, true],
+    [438, 30, 118, 242, true],
+    [589, 29, 116, 243, true],
+    [404, 25, 132, 241, false],
+    [624, 26, 130, 242, false],
   ];
 
-  const accentTips = [];
-
-  for (let i = 0; i < landmarkSpecs.length; i++) {
-    const spec = landmarkSpecs[i];
-    const tip = drawTower({
-      ...spec,
-      color: i < 5 ? towerNear : towerMid,
-      blur: i < 5 ? 0.28 : 0.5,
-      detail: i < 5 ? 0.74 : 0.48,
-      r: landmarkR,
-      finials: i < 7,
-    });
-    if (i < 5) accentTips.push(tip);
+  for (const [x, width, top, base, accent] of majorSpecs) {
+    towers.push(makeTower(x, width, top, base, true, accent));
   }
 
-  drawTowerLayer({
-    name: 'lower-spires',
-    count: 18,
-    x0: 132,
-    x1: 892,
-    base: 241,
-    minH: 14,
-    span: 51,
-    minW: 13,
-    maxW: 29,
-    color: towerNear,
-    alpha: 0.48,
-    blur: 0.18,
-    detail: 0.55,
-  });
+  towers.sort((a, b) => a.x - b.x);
 
-  env.field(
-    (x, y, u, v) => {
-      const n = env.fbm(x * 0.56, y * 0.7, {
-        octaves: 4,
-        gain: 0.51,
-        lacunarity: 2.04,
-        period: 640,
-        seed: meta.seed + 71,
-      });
-      const fine = env.noise(x * 0.92, y * 0.92, {
-        period: 256,
-        seed: meta.seed + 72,
-      });
-      const centerA =
-        137 + (n - 0.5) * 31 + Math.sin(u * Math.PI * 5 + 0.4) * 7;
-      const centerB =
-        202 + (n - 0.5) * 43 + Math.sin(u * Math.PI * 2.2 + 2.1) * 11;
-      const bankA = Math.exp(-Math.pow((y - centerA) / 23, 2));
-      const bankB = Math.exp(-Math.pow((y - centerB) / 32, 2));
-      const lower = smooth((v - 0.72) / 0.28);
-      const edge = Math.pow(Math.abs(u - 0.5) * 2, 2.7);
-      const alpha =
-        bankA * (13 + n * 12) +
-        bankB * (21 + n * 19) +
-        lower * (20 + n * 30) +
-        edge * 9 +
-        (fine - 0.5) * 2.4;
-      if (alpha < 0.55) return null;
-      return mixRgb(
-        fogLowRgb,
-        fogHighRgb,
-        0.34 + n * 0.35,
-        env.clamp(alpha, 0, 78),
+  const buttresses = [];
+
+  for (let i = 1; i < towers.length; i += 3) {
+    const tower = towers[i];
+    const dir = i % 2 === 0 ? -1 : 1;
+    const upperY = tower.top + 45 + geom() * 22;
+    const upperX = tower.x + dir * tower.width * 0.4;
+    const outerX = tower.x + dir * (tower.width * 1.45 + 14 + geom() * 12);
+    const outerY = Math.min(tower.base - 13, upperY + 21 + geom() * 18);
+
+    buttresses.push([
+      { x: upperX, y: upperY },
+      { x: outerX, y: outerY },
+      { x: outerX + dir * 8, y: outerY + 8 },
+      { x: tower.x + dir * (tower.width * 0.78 + 8), y: tower.base },
+      { x: tower.x + dir * tower.width * 0.24, y: tower.base },
+    ]);
+  }
+
+  const bridges = [
+    { x1: 397, x2: 632, y: 157, h: 5 },
+    { x1: 366, x2: 660, y: 181, h: 6 },
+    { x1: 326, x2: 704, y: 204, h: 6 },
+  ];
+
+  const hazeRgb = env.hexToRgb(hazeMid);
+
+  env.field((x, y) => {
+    if (x < 112 || x > 912 || y < 156) return null;
+
+    const horizontal = Math.max(0, 1 - Math.abs(x - W * 0.5) / 426);
+    if (horizontal <= 0) return null;
+
+    const baseNoise = env.noise(x, 0, {
+      period: 173,
+      seed: meta.seed + 29,
+    });
+    const baseY = 231 + (baseNoise - 0.5) * 8;
+    const vertical = y < baseY
+      ? Math.exp(-(baseY - y) / 30)
+      : Math.exp(-(y - baseY) / 18);
+
+    const grain = env.fbm(x, y, {
+      octaves: 3,
+      gain: 0.52,
+      lacunarity: 2,
+      period: 187,
+      seed: meta.seed + 71,
+    });
+
+    const halo = Math.pow(horizontal, 0.72) * vertical * (0.66 + grain * 0.34);
+    const alpha = Math.round(15 * halo);
+
+    if (alpha < 1) return null;
+    return [hazeRgb.r, hazeRgb.g, hazeRgb.b, alpha];
+  }, { blend: 'over' });
+
+  function traceTower(tower) {
+    const x = tower.x;
+    const w = tower.width;
+    const top = tower.top;
+    const base = tower.base;
+    const height = base - top;
+    const lowerShoulder = top + Math.min(42, height * 0.48);
+    const upperShoulder = top + Math.min(23, height * 0.28);
+    const neck = top + Math.min(11, height * 0.14);
+
+    ctx.moveTo(x - w * 0.62, base);
+    ctx.lineTo(x - w * 0.58, lowerShoulder);
+    ctx.lineTo(x - w * 0.44, lowerShoulder);
+    ctx.lineTo(x - w * 0.44, upperShoulder);
+    ctx.lineTo(x - w * 0.29, upperShoulder);
+    ctx.lineTo(x - w * 0.21, neck);
+    ctx.lineTo(x - w * 0.10, neck);
+    ctx.lineTo(x - w * 0.045, top + 5);
+    ctx.lineTo(x, top);
+    ctx.lineTo(x + w * 0.045, top + 5);
+    ctx.lineTo(x + w * 0.10, neck);
+    ctx.lineTo(x + w * 0.21, neck);
+    ctx.lineTo(x + w * 0.29, upperShoulder);
+    ctx.lineTo(x + w * 0.44, upperShoulder);
+    ctx.lineTo(x + w * 0.44, lowerShoulder);
+    ctx.lineTo(x + w * 0.58, lowerShoulder);
+    ctx.lineTo(x + w * 0.62, base);
+    ctx.closePath();
+
+    for (let i = 0; i < tower.ledges.length; i++) {
+      const y = tower.ledges[i];
+      const extension = i % 2 === 0 ? 0.74 : 0.66;
+      ctx.rect(
+        x - w * extension,
+        y,
+        w * extension * 2,
+        3 + (i % 2)
       );
-    },
-    { blend: 'over' },
-  );
-
-  const brightMagenta = env.shade(magenta, 0.08);
+    }
+  }
 
   ctx.save();
-  ctx.globalCompositeOperation = 'source-over';
+  ctx.beginPath();
 
-  for (let i = 0; i < accentTips.length; i++) {
-    const tip = accentTips[i];
-    const radius = i === 0 ? 10 : i < 3 ? 8 : 6.5;
-    const bloom = ctx.createRadialGradient(
-      tip.x,
-      tip.y,
-      0,
-      tip.x,
-      tip.y,
-      radius,
-    );
-    bloom.addColorStop(0, env.rgba(magenta, i === 0 ? 0.31 : 0.23));
-    bloom.addColorStop(0.28, env.rgba(magenta, i === 0 ? 0.16 : 0.11));
-    bloom.addColorStop(0.68, env.rgba(magenta, 0.035));
-    bloom.addColorStop(1, env.rgba(magenta, 0));
-    ctx.fillStyle = bloom;
-    ctx.fillRect(
-      tip.x - radius,
-      tip.y - radius,
-      radius * 2,
-      radius * 2,
-    );
+  ctx.moveTo(foundation[0].x, 247);
+  ctx.lineTo(foundation[0].x, foundation[0].y);
+  for (const point of foundation) ctx.lineTo(point.x, point.y);
+  ctx.lineTo(foundation[foundation.length - 1].x, 247);
+  ctx.closePath();
 
-    const px = Math.round(tip.x);
-    const py = Math.round(tip.y);
-    ctx.fillStyle = env.rgba(magenta, i === 0 ? 0.62 : 0.46);
-    ctx.fillRect(px, py - 3, 1, 7);
-    ctx.fillStyle = brightMagenta;
-    ctx.globalAlpha = i === 0 ? 1 : 0.91;
-    ctx.fillRect(px - 1, py - 1, i === 0 ? 3 : 2, i === 0 ? 3 : 2);
-    ctx.globalAlpha = 1;
+  for (const tower of towers) traceTower(tower);
+
+  for (const buttress of buttresses) {
+    ctx.moveTo(buttress[0].x, buttress[0].y);
+    for (let i = 1; i < buttress.length; i++) {
+      ctx.lineTo(buttress[i].x, buttress[i].y);
+    }
+    ctx.closePath();
+  }
+
+  for (const bridge of bridges) {
+    ctx.rect(bridge.x1, bridge.y, bridge.x2 - bridge.x1, bridge.h);
+    ctx.moveTo(bridge.x1 + 18, bridge.y + bridge.h);
+    ctx.lineTo(bridge.x1 + 34, bridge.y + bridge.h + 12);
+    ctx.lineTo(bridge.x2 - 31, bridge.y + bridge.h + 12);
+    ctx.lineTo(bridge.x2 - 17, bridge.y + bridge.h);
+    ctx.closePath();
+  }
+
+  ctx.fillStyle = env.rgba(tealDeep, 0.335);
+  ctx.shadowColor = env.rgba(tealDark, 0.048);
+  ctx.shadowBlur = 5;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.fill();
+
+  ctx.shadowColor = env.rgba(tealDark, 0);
+  ctx.shadowBlur = 0;
+
+  ctx.save();
+  ctx.clip();
+  ctx.globalCompositeOperation = 'source-atop';
+
+  const lightSweep = ctx.createLinearGradient(175, 92, 850, 246);
+  lightSweep.addColorStop(0, env.rgba(tealSoft, 0.19));
+  lightSweep.addColorStop(0.48, env.rgba(tealMid, 0.065));
+  lightSweep.addColorStop(1, env.rgba(inkSoft, 0.13));
+  ctx.fillStyle = lightSweep;
+  ctx.fillRect(120, 84, 790, 170);
+
+  const baseFog = ctx.createLinearGradient(0, 174, 0, 255);
+  baseFog.addColorStop(0, env.rgba(hazeDark, 0));
+  baseFog.addColorStop(0.62, env.rgba(hazeMid, 0.075));
+  baseFog.addColorStop(1, env.rgba(hazeLight, 0.17));
+  ctx.fillStyle = baseFog;
+  ctx.fillRect(120, 172, 790, 84);
+
+  for (let i = 0; i < 88; i++) {
+    const x = 145 + texture() * 744;
+    const y = 93 + texture() * 116;
+    const width = 2 + texture() * 5;
+    const height = 34 + texture() * 105;
+    const selector = texture();
+    const color = selector < 0.48
+      ? tealSoft
+      : selector < 0.76
+        ? tealDeep
+        : hazeDark;
+    const alpha = 0.014 + texture() * 0.034;
+    const streak = ctx.createLinearGradient(x, y, x, y + height);
+
+    streak.addColorStop(0, env.rgba(color, 0));
+    streak.addColorStop(0.22, env.rgba(color, alpha));
+    streak.addColorStop(0.76, env.rgba(color, alpha * 0.72));
+    streak.addColorStop(1, env.rgba(color, 0));
+
+    ctx.fillStyle = streak;
+    ctx.fillRect(x, y, width, height);
+  }
+
+  for (const tower of towers) {
+    const x = tower.x;
+    const w = tower.width;
+    const top = tower.top;
+    const base = tower.base;
+
+    ctx.beginPath();
+    ctx.moveTo(x - w * 0.48, top + 19);
+    ctx.lineTo(x - w * 0.08, top + 9);
+    ctx.lineTo(x - w * 0.08, base);
+    ctx.lineTo(x - w * 0.48, base);
+    ctx.closePath();
+    ctx.fillStyle = env.rgba(tealSoft, 0.075);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.08, top + 9);
+    ctx.lineTo(x + w * 0.48, top + 19);
+    ctx.lineTo(x + w * 0.48, base);
+    ctx.lineTo(x + w * 0.08, base);
+    ctx.closePath();
+    ctx.fillStyle = env.rgba(inkDeep, 0.055);
+    ctx.fill();
+
+    const stripeCount = tower.major ? 4 : 2;
+    for (let i = 0; i < stripeCount; i++) {
+      const q = (i + 1) / (stripeCount + 1);
+      const sx = x - w * 0.35 + q * w * 0.7;
+
+      ctx.beginPath();
+      ctx.moveTo(sx - 2.2, top + 15);
+      ctx.lineTo(sx - 2.2, base);
+      ctx.strokeStyle = env.rgba(tealSoft, 0.12);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(sx, top + 15);
+      ctx.lineTo(sx, base);
+      ctx.strokeStyle = env.rgba(inkDeep, 0.18);
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    for (const y of tower.ledges) {
+      ctx.beginPath();
+      ctx.moveTo(x - w * 0.72, y);
+      ctx.lineTo(x + w * 0.72, y);
+      ctx.strokeStyle = env.rgba(tealSoft, 0.24);
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x - w * 0.72, y + 3);
+      ctx.lineTo(x + w * 0.72, y + 3);
+      ctx.strokeStyle = env.rgba(inkDeep, 0.34);
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+
+      if (wear() < 0.78) {
+        const wx = x - w * 0.45 + wear() * w * 0.9;
+        const length = 9 + wear() * 25;
+        const bleed = ctx.createLinearGradient(wx, y + 3, wx, y + 3 + length);
+        bleed.addColorStop(0, env.rgba(inkSoft, 0.14));
+        bleed.addColorStop(1, env.rgba(inkSoft, 0));
+        ctx.fillStyle = bleed;
+        ctx.fillRect(wx, y + 3, 2 + wear() * 2, length);
+      }
+
+      if (wear() < 0.55) {
+        const chipX = x - w * 0.52 + wear() * w * 1.04;
+        ctx.beginPath();
+        ctx.moveTo(chipX, y - 1);
+        ctx.lineTo(chipX + 3 + wear() * 5, y - 3);
+        ctx.strokeStyle = env.rgba(hazeLight, 0.2);
+        ctx.lineWidth = 1.7;
+        ctx.stroke();
+      }
+    }
+  }
+
+  for (const buttress of buttresses) {
+    ctx.beginPath();
+    ctx.moveTo(buttress[0].x, buttress[0].y);
+    for (let i = 1; i < buttress.length; i++) {
+      ctx.lineTo(buttress[i].x, buttress[i].y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = env.rgba(tealMid, 0.09);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(buttress[0].x, buttress[0].y);
+    ctx.lineTo(buttress[1].x, buttress[1].y);
+    ctx.lineTo(buttress[2].x, buttress[2].y);
+    ctx.strokeStyle = env.rgba(tealSoft, 0.2);
+    ctx.lineWidth = 1.7;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(buttress[2].x, buttress[2].y);
+    ctx.lineTo(buttress[3].x, buttress[3].y);
+    ctx.lineTo(buttress[4].x, buttress[4].y);
+    ctx.strokeStyle = env.rgba(inkDeep, 0.29);
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+  }
+
+  let panelX = 154;
+  while (panelX < 872) {
+    const panelWidth = 18 + texture() * 30;
+    const panelTop = foundationTopAt(panelX) - 3;
+
+    ctx.fillStyle = env.rgba(
+      texture() < 0.5 ? tealMid : hazeDark,
+      0.035 + texture() * 0.03
+    );
+    ctx.fillRect(panelX, panelTop, panelWidth, 251 - panelTop);
+
+    ctx.beginPath();
+    ctx.moveTo(panelX + 1.5, panelTop);
+    ctx.lineTo(panelX + 1.5, 249);
+    ctx.strokeStyle = env.rgba(tealSoft, 0.14);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(panelX + panelWidth, panelTop);
+    ctx.lineTo(panelX + panelWidth, 249);
+    ctx.strokeStyle = env.rgba(inkDeep, 0.28);
+    ctx.lineWidth = 2.3;
+    ctx.stroke();
+
+    panelX += panelWidth;
+  }
+
+  for (const y of [204, 220, 236]) {
+    let x = 158 + texture() * 17;
+
+    while (x < 864) {
+      const length = 24 + texture() * 52;
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(Math.min(866, x + length), y);
+      ctx.strokeStyle = env.rgba(tealSoft, 0.18);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, y + 3);
+      ctx.lineTo(Math.min(866, x + length), y + 3);
+      ctx.strokeStyle = env.rgba(inkDeep, 0.31);
+      ctx.lineWidth = 2.7;
+      ctx.stroke();
+
+      x += length + 7 + texture() * 17;
+    }
+  }
+
+  for (const bridge of bridges) {
+    ctx.beginPath();
+    ctx.moveTo(bridge.x1, bridge.y);
+    ctx.lineTo(bridge.x2, bridge.y);
+    ctx.strokeStyle = env.rgba(tealSoft, 0.24);
+    ctx.lineWidth = 1.7;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(bridge.x1, bridge.y + bridge.h);
+    ctx.lineTo(bridge.x2, bridge.y + bridge.h);
+    ctx.strokeStyle = env.rgba(inkDeep, 0.4);
+    ctx.lineWidth = 2.8;
+    ctx.stroke();
   }
 
   ctx.restore();
+  ctx.restore();
+
+  const accentedTowers = towers.filter((tower) => tower.accent);
+
+  ctx.globalCompositeOperation = 'source-over';
+
+  for (const tower of accentedTowers) {
+    const cx = tower.x;
+    const cy = tower.top + 5;
+    const radius = tower.x === 512 ? 13 : 10;
+    const bloom = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+
+    bloom.addColorStop(0, env.rgba(magentaBloom, 0.048));
+    bloom.addColorStop(0.34, env.rgba(magentaBloom, 0.026));
+    bloom.addColorStop(1, env.rgba(magentaBloom, 0));
+
+    ctx.fillStyle = bloom;
+    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+  }
+
+  ctx.globalCompositeOperation = 'source-atop';
+
+  for (const tower of accentedTowers) {
+    const cx = tower.x;
+    const cy = tower.top + 5;
+
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 1.8, 2.5, 0, 0, Math.PI * 2);
+    ctx.fillStyle = env.rgba(magentaCore, 1);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + 2);
+    ctx.lineTo(cx, cy + 10);
+    ctx.strokeStyle = env.rgba(magentaCore, 0.55);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  ctx.globalCompositeOperation = 'source-over';
+
+  env.mask((x, y) => {
+    if (x <= 132 || x >= 892 || y < 86 || y >= 255) return 0;
+
+    const left = env.smoothstep(env.clamp((x - 132) / 78, 0, 1));
+    const right = env.smoothstep(env.clamp((892 - x) / 80, 0, 1));
+    const top = env.smoothstep(env.clamp((y - 86) / 16, 0, 1));
+    const bottom = y <= 232
+      ? 1
+      : env.smoothstep(env.clamp((255 - y) / 23, 0, 1));
+
+    let multiplier = left * right * top * bottom;
+    if (multiplier <= 0) return 0;
+
+    const dither = env.noise(x, y, {
+      period: 19,
+      seed: meta.seed + 907,
+    });
+
+    multiplier += (dither - 0.5) * (8 / 255);
+    return env.clamp(multiplier * 0.94, 0, 0.94);
+  });
 }

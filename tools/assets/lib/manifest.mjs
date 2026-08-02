@@ -18,8 +18,100 @@ export const ENTRY_SCHEMA = {
   // recipe named in `source` plus this integer is the whole input to the PNG.
   // check.mjs recomputes it from the recipe and refuses a mismatch, so it
   // cannot rot into a number someone typed once.
-  optional: ['source', 'gpu', 'palette', 'notes', 'generator', 'addedOn', 'seed'],
+  //
+  // `alpha` is the asset's TRANSPARENCY CONTRACT with whatever composites it —
+  // see ALPHA_KINDS below. It is DECLARED, never derived: check.mjs compares it
+  // against the pixels and fails on disagreement, and `--write` deliberately
+  // does not fill it in.
+  optional: ['source', 'gpu', 'palette', 'notes', 'generator', 'addedOn', 'seed', 'alpha'],
 };
+
+/**
+ * What an asset promises about its alpha channel.
+ *
+ * This exists because a regeneration silently turned five backdrop plates from
+ * ~50%-transparent cutouts into fully opaque rectangles with the background
+ * baked in (T-053). Every gate stayed green: the palette was clean, the sizes
+ * matched, the ids and paths were stable, and the game had no effect to show
+ * because nothing loaded them yet. The lane layering those plates for parallax
+ * would have been the thing that found out, at merge time, because an opaque
+ * plate occludes every tier behind it.
+ *
+ * So alpha stops being an accident of how a brief was worded and becomes a
+ * stated property with a falsifying test.
+ *
+ *   cutout  — a shape on transparency. Something composites this over something
+ *             else and the transparent region must READ as absent. Requires a
+ *             real feathered margin, not a one-pixel cut: a hard alpha edge on a
+ *             camera-facing plane cannot be made to dissolve by any amount of
+ *             fog or depth tuning downstream, so the dissolve has to be authored
+ *             here.
+ *   opaque  — every pixel opaque. A tiling surface texture wants this; alpha in
+ *             a repeating material is a bug, not a feature.
+ *   overlay — mostly transparent, nothing fully opaque: a wear/grime layer that
+ *             modulates a surface underneath rather than replacing it.
+ */
+export const ALPHA_KINDS = ['cutout', 'opaque', 'overlay'];
+
+/**
+ * Thresholds for `alpha`, in percent of all pixels. Measured, not chosen — the
+ * numbers each rule had to admit or reject are in tools/assets/README.md
+ * § "Alpha semantics".
+ */
+export const ALPHA_RULES = {
+  cutout: {
+    minTransparent: 5,      // below this it is not a cutout, whatever it claims
+    minPartial: 2,          // the feather: the pre-T-053 plates managed 0.28-1.80% and were judged too hard-edged
+  },
+  opaque: { maxTransparent: 0.5, maxPartial: 0.5 },
+  overlay: { minTransparent: 40, maxOpaque: 5 },
+};
+
+/**
+ * Judge an alpha census against a declared kind.
+ * `census`: { transparent, partial, opaque } as percentages of all pixels.
+ * -> array of failure strings (empty = the pixels keep the promise).
+ */
+export function checkAlphaKind(kind, census) {
+  const errs = [];
+  const r = ALPHA_RULES[kind];
+  if (!r) return [`unknown alpha kind "${kind}" (want ${ALPHA_KINDS.join(', ')})`];
+  const pct = (v) => `${v.toFixed(2)}%`;
+  if (kind === 'cutout') {
+    if (census.transparent < r.minTransparent) {
+      errs.push(
+        `declares alpha "cutout" but only ${pct(census.transparent)} of it is transparent ` +
+        `(need >= ${r.minTransparent}%) — a plate with the background baked in occludes ` +
+        'everything composited behind it'
+      );
+    }
+    if (census.partial < r.minPartial) {
+      errs.push(
+        `declares alpha "cutout" but only ${pct(census.partial)} of it is partially transparent ` +
+        `(need >= ${r.minPartial}%) — that is a hard-edged cut, and a hard alpha edge cannot be ` +
+        'made to dissolve downstream; author the falloff into the asset'
+      );
+    }
+  } else if (kind === 'opaque') {
+    if (census.transparent > r.maxTransparent || census.partial > r.maxPartial) {
+      errs.push(
+        `declares alpha "opaque" but is ${pct(census.transparent)} transparent and ` +
+        `${pct(census.partial)} partial (limits ${r.maxTransparent}% / ${r.maxPartial}%)`
+      );
+    }
+  } else if (kind === 'overlay') {
+    if (census.transparent < r.minTransparent) {
+      errs.push(`declares alpha "overlay" but only ${pct(census.transparent)} of it is transparent (need >= ${r.minTransparent}%)`);
+    }
+    if (census.opaque > r.maxOpaque) {
+      errs.push(
+        `declares alpha "overlay" but ${pct(census.opaque)} of it is fully opaque ` +
+        `(limit ${r.maxOpaque}%) — an overlay modulates what is under it, it does not replace it`
+      );
+    }
+  }
+  return errs;
+}
 
 export function loadManifest(root) {
   const file = `${root}/${MANIFEST_PATH}`;
@@ -91,6 +183,20 @@ export function validateEntryShape(entry, index) {
   }
   if (entry.gpu === false && !entry.notes) {
     errs.push(`${where}: gpu:false opts out of the power-of-two rule, so "notes" must say why`);
+  }
+  if (entry.alpha !== undefined && !ALPHA_KINDS.includes(entry.alpha)) {
+    errs.push(`${where}: alpha must be one of ${ALPHA_KINDS.join(', ')}, got ${JSON.stringify(entry.alpha)}`);
+  }
+  // Backdrops are layered by definition — something composites them over
+  // something else — so the one category whose consumer depends on the alpha
+  // contract has to state it. Everywhere else the field is optional until a
+  // consumer needs it.
+  if (entry.category === 'backdrops' && entry.alpha === undefined) {
+    errs.push(
+      `${where}: a backdrops entry must declare "alpha" (${ALPHA_KINDS.join(' | ')}). ` +
+      'Backdrop plates are composited in depth tiers; whether the plate is a cutout is a ' +
+      'contract with the render layer, and T-053 proved it silently regresses when nobody states it.'
+    );
   }
   if (entry.seed !== undefined && !Number.isInteger(entry.seed)) {
     errs.push(`${where}: seed must be an integer (the recipe's meta.seed), got ${JSON.stringify(entry.seed)}`);

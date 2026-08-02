@@ -289,8 +289,26 @@ export const RASTER_LIMITS = {
   blendEps: 10,
   /** A color must carry at least this mass to be usable as a blend endpoint. */
   anchorMinMass: 0.0005,
-  /** Cap on endpoints considered, for cost: the segment test is O(anchors^2). */
-  maxAnchors: 48,
+  /**
+   * Cap on endpoints considered, for cost: the segment test is O(anchors^2).
+   *
+   * Raised from 48 in T-053's alpha-cutout pass. Cutting a plate's background
+   * to transparency does not touch its RGB, but it does shrink the counted
+   * (non-transparent) pixel mass — so a role that legitimately carries a few
+   * percent of the image can end up split across more than 48 quantized
+   * buckets once the huge, few-bucket flat fill that used to dominate it is
+   * gone, and its own antialiased edge pixels lose their blend endpoint.
+   * Measured on `backdrop-colony-cluster`: masking the teal background left
+   * its surviving pixels spread over 92 buckets above `anchorMinMass`, 11 of
+   * them genuine deep-teal shades ranked 53-91 — all outside the old top-48,
+   * which was filled by the much larger rust/hull/ink noise population. Their
+   * absence turned 0.137% of teal-edge antialiasing "alien" (cap 0.1%) with
+   * zero change to which hues the asset actually uses. 64 anchors covers it
+   * (`alienMass` -> 0% at 64, unchanged at 80/96 — only 92 buckets exist
+   * above the floor); the 38-asset sweep below is unaffected because every
+   * other asset's bucket count already fit in 48.
+   */
+  maxAnchors: 64,
   /** Endpoints considered for THREE-way blends, where the cost is O(n^3). */
   maxTriangleAnchors: 12,
   /** A role must carry at least this mass to be recorded in the manifest. */

@@ -9,902 +9,717 @@ export function render(ctx, env) {
   const W = env.width;
   const H = env.height;
   const P = env.PALETTE;
-  const teal = P['deep-teal'];
-  const haze = P.haze;
-  const hull = P.hull;
-  const ink = P.ink;
-  const rust = P['rust-orange'];
   const clamp = env.clamp;
-  const smooth = env.smoothstep;
+  const rgba = (hex, alpha = 1) => env.rgba(hex, alpha);
+  const rgb = (hex) => env.hexToRgb(hex);
+  const smooth = (t) => env.smoothstep(clamp(t, 0, 1));
 
-  const rgb = (hex) => {
-    const c = env.hexToRgb(hex);
-    return [c.r, c.g, c.b];
+  const C = {
+    inkDeep: env.shade(P.ink, -0.24),
+    inkSoft: env.mix(P.ink, P.haze, 0.22),
+    hazeDark: env.shade(P.haze, -0.28),
+    hazeLight: env.shade(P.haze, 0.12),
+    hullDark: env.shade(P.hull, -0.34),
+    hullLight: env.shade(P.hull, 0.22),
+    rustDeep: env.shade(P['rust-orange'], -0.5),
+    rustDark: env.shade(P['rust-orange'], -0.29),
+    rustLight: env.shade(P['rust-orange'], 0.24),
+    rustPale: env.mix(P['rust-orange'], P.hull, 0.32),
+    tealDeep: env.shade(P['deep-teal'], -0.48),
+    tealDark: env.shade(P['deep-teal'], -0.2),
+    tealFog: env.mix(P['deep-teal'], P.haze, 0.57),
+    tealLight: env.shade(P['deep-teal'], 0.2),
   };
 
-  const blend = (a, b, t) => {
-    const k = clamp(t, 0, 1);
-    return [
-      a[0] + (b[0] - a[0]) * k,
-      a[1] + (b[1] - a[1]) * k,
-      a[2] + (b[2] - a[2]) * k,
-    ];
-  };
-
-  const pixel = (c, a) => {
-    const out = [
-      Math.round(clamp(c[0], 0, 255)),
-      Math.round(clamp(c[1], 0, 255)),
-      Math.round(clamp(c[2], 0, 255)),
-    ];
-    if (a !== undefined) out.push(Math.round(clamp(a, 0, 255)));
-    return out;
-  };
-
-  const trace = (points) => {
+  function trace(points, close = true) {
     ctx.beginPath();
     ctx.moveTo(points[0][0], points[0][1]);
-    for (let i = 1; i < points.length; i++) {
+    for (let i = 1; i < points.length; i += 1) {
       ctx.lineTo(points[i][0], points[i][1]);
     }
-    ctx.closePath();
-  };
+    if (close) ctx.closePath();
+  }
 
-  const fillPoly = (points, fill) => {
+  function fillPoly(points, style) {
     trace(points);
-    ctx.fillStyle = fill;
+    ctx.fillStyle = style;
     ctx.fill();
-  };
+  }
 
-  const strokeLine = (points, stroke, width) => {
-    ctx.beginPath();
-    ctx.moveTo(points[0][0], points[0][1]);
-    for (let i = 1; i < points.length; i++) {
-      ctx.lineTo(points[i][0], points[i][1]);
+  function strokePath(points, style, width, close = false) {
+    trace(points, close);
+    ctx.strokeStyle = style;
+    ctx.lineWidth = width;
+    ctx.stroke();
+  }
+
+  function mixRgb(a, b, t) {
+    return {
+      r: Math.round(env.lerp(a.r, b.r, t)),
+      g: Math.round(env.lerp(a.g, b.g, t)),
+      b: Math.round(env.lerp(a.b, b.b, t)),
+    };
+  }
+
+  function pointAlong(a, b, t) {
+    return [
+      env.lerp(a[0], b[0], t),
+      env.lerp(a[1], b[1], t),
+    ];
+  }
+
+  function insideConvex(x, y, points) {
+    let positive = false;
+    let negative = false;
+    for (let i = 0; i < points.length; i += 1) {
+      const a = points[i];
+      const b = points[(i + 1) % points.length];
+      const cross = (b[0] - a[0]) * (y - a[1]) -
+        (b[1] - a[1]) * (x - a[0]);
+      if (cross > 0.01) positive = true;
+      if (cross < -0.01) negative = true;
+      if (positive && negative) return false;
     }
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = width;
-    ctx.stroke();
-  };
+    return true;
+  }
 
-  const strokePoly = (points, stroke, width) => {
-    trace(points);
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = width;
-    ctx.stroke();
-  };
+  function seam(points, width = 5) {
+    strokePath(points, rgba(C.inkDeep, 0.8), width);
+    strokePath(
+      points.map(([x, y]) => [x - 1.3, y - 1.5]),
+      rgba(C.rustLight, 0.34),
+      Math.max(1.1, width * 0.25),
+    );
+  }
 
+  function bolt(x, y, radius, strength = 1) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = rgba(C.inkDeep, 0.92 * strength);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(
+      x - radius * 0.25,
+      y - radius * 0.28,
+      radius * 0.46,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fillStyle = rgba(C.hullLight, 0.72 * strength);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(x - radius * 0.65, y + radius * 0.08);
+    ctx.lineTo(x + radius * 0.58, y - radius * 0.12);
+    ctx.strokeStyle = rgba(C.inkDeep, 0.88 * strength);
+    ctx.lineWidth = Math.max(1, radius * 0.36);
+    ctx.stroke();
+  }
+
+  ctx.globalCompositeOperation = 'source-over';
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  const metal0 = rgb(env.shade(rust, -0.53));
-  const metal1 = rgb(env.mix(env.shade(rust, -0.31), env.shade(hull, -0.34), 0.34));
-  const metal2 = rgb(env.mix(env.shade(rust, -0.08), env.shade(hull, -0.14), 0.25));
-  const fogNeutral = rgb(env.shade(haze, -0.18));
-  const fogTeal = rgb(env.shade(teal, -0.19));
+  const outerLow = rgb(env.mix(C.inkDeep, C.rustDeep, 0.58));
+  const outerMid = rgb(env.mix(C.hazeDark, P['rust-orange'], 0.67));
+  const outerHigh = rgb(env.mix(P.hull, C.rustLight, 0.56));
 
   env.field((x, y, u, v) => {
     const broad = env.fbm(
-      x * 0.105 + y * 0.013,
-      y * 0.052,
+      x * 0.145 + y * 0.018,
+      y * 0.045,
       {
         octaves: 4,
-        gain: 0.52,
-        lacunarity: 2.03,
-        period: 192,
-        seed: env.seed + 17,
-      }
+        gain: 0.53,
+        lacunarity: 2.04,
+        period: 137,
+        seed: meta.seed + 11,
+      },
     );
-    const striation = env.noise(
-      x * 0.027,
-      y * 0.235 + x * 0.008,
-      { period: 128, seed: env.seed + 31 }
+    const lengthwise = env.noise(
+      x * 0.35 + y * 0.012,
+      y * 0.075,
+      { period: 61, seed: meta.seed + 12 },
     );
-    const directionalLight = (1 - u) * 0.19 + (1 - v) * 0.22;
-    const grime = Math.max(0, striation - 0.62) * 0.25;
-    const t = clamp(0.28 + broad * 0.48 + directionalLight - grime, 0, 1);
-
-    let c = t < 0.5
-      ? blend(metal0, metal1, t * 2)
-      : blend(metal1, metal2, (t - 0.5) * 2);
-
-    const edge = Math.max(Math.abs(u - 0.5) * 2, Math.abs(v - 0.5) * 2);
-    const edgeFog = smooth(clamp((edge - 0.73) / 0.27, 0, 1));
-    if (edgeFog > 0) {
-      c = blend(c, fogNeutral, Math.min(1, edgeFog * 1.35));
-      c = blend(c, fogTeal, Math.max(0, (edgeFog - 0.52) / 0.48) * 0.74);
-    }
-    return pixel(c);
-  }, { blend: 'replace' });
-
-  fillPoly(
-    [[0, 0], [227, 0], [216, 66], [45, 60], [0, 86]],
-    env.rgba(env.shade(rust, -0.24), 0.18)
-  );
-  fillPoly(
-    [[227, 0], [512, 0], [512, 82], [469, 74], [216, 66]],
-    env.rgba(env.shade(haze, -0.27), 0.18)
-  );
-  fillPoly(
-    [[0, 86], [45, 60], [52, 447], [0, 466]],
-    env.rgba(env.shade(rust, -0.42), 0.22)
-  );
-  fillPoly(
-    [[469, 74], [512, 82], [512, 459], [453, 428]],
-    env.rgba(env.shade(haze, -0.34), 0.25)
-  );
-  fillPoly(
-    [[0, 466], [52, 447], [452, 429], [512, 459], [512, 512], [0, 512]],
-    env.rgba(env.shade(rust, -0.39), 0.21)
-  );
-
-  const seam = (points) => {
-    strokeLine(points, env.rgba(env.shade(ink, -0.18), 0.72), 7);
-    const raised = points.map((p) => [p[0] - 1.6, p[1] - 1.6]);
-    strokeLine(raised, env.rgba(env.shade(hull, -0.04), 0.23), 2.2);
-  };
-
-  seam([[0, 84], [46, 60], [216, 66], [227, 0]]);
-  seam([[469, 74], [512, 82]]);
-  seam([[31, 0], [45, 60]]);
-  seam([[478, 0], [469, 74]]);
-  seam([[0, 466], [52, 447]]);
-  seam([[452, 429], [512, 459]]);
-  seam([[22, 213], [48, 218]]);
-  seam([[470, 218], [512, 211]]);
-  seam([[24, 330], [50, 326]]);
-  seam([[456, 323], [512, 333]]);
-
-  const wallRng = env.stream('wall-surface');
-  for (let i = 0; i < 52; i++) {
-    const leftSide = wallRng() < 0.5;
-    const x0 = leftSide ? wallRng() * 76 : 438 + wallRng() * 74;
-    const y0 = 24 + wallRng() * 452;
-    const length = 18 + wallRng() * 74;
-    const tone = wallRng() < 0.58
-      ? env.shade(ink, -0.05)
-      : env.shade(rust, 0.04);
-    strokeLine(
-      [[x0, y0], [x0 + (leftSide ? 1 : -1) * length, y0 + (wallRng() - 0.5) * 5]],
-      env.rgba(tone, 0.05 + wallRng() * 0.11),
-      1.1 + wallRng() * 2.5
+    const key = 0.19 * (1 - u) + 0.21 * (1 - v) - 0.1 * u;
+    const level = clamp(
+      0.34 + (broad - 0.5) * 0.34 +
+      (lengthwise - 0.5) * 0.1 + key,
+      0.06,
+      0.95,
     );
-  }
+    const color = level < 0.58
+      ? mixRgb(outerLow, outerMid, level / 0.58)
+      : mixRgb(outerMid, outerHigh, (level - 0.58) / 0.42);
+    return [color.r, color.g, color.b, 255];
+  });
 
-  const opening = [[91, 111], [433, 116], [417, 385], [98, 393]];
-  const outer = [[43, 66], [468, 79], [451, 426], [49, 445]];
+  fillPoly(
+    [[70, 76], [206, 69], [207, 108], [83, 115]],
+    rgba(C.rustLight, 0.075),
+  );
+  fillPoly(
+    [[207, 69], [336, 72], [431, 67], [443, 102], [207, 108]],
+    rgba(C.inkSoft, 0.1),
+  );
+  fillPoly(
+    [[72, 398], [211, 385], [307, 390], [306, 438], [73, 441]],
+    rgba(C.rustLight, 0.065),
+  );
+  fillPoly(
+    [[307, 390], [440, 381], [441, 428], [306, 438]],
+    rgba(C.inkSoft, 0.11),
+  );
 
-  fillPoly(outer, env.rgba(env.shade(ink, -0.37), 0.93));
-  strokePoly(outer, env.rgba(env.shade(ink, -0.42), 0.66), 15);
-
-  const cross = (a, b, x, y) =>
-    (b[0] - a[0]) * (y - a[1]) - (b[1] - a[1]) * (x - a[0]);
-
-  const insideOpening = (x, y) =>
-    cross(opening[0], opening[1], x, y) >= 0 &&
-    cross(opening[1], opening[2], x, y) >= 0 &&
-    cross(opening[2], opening[3], x, y) >= 0 &&
-    cross(opening[3], opening[0], x, y) >= 0;
-
-  const cavityNear = rgb(env.shade(haze, -0.38));
-  const cavityDeep = rgb(env.shade(ink, -0.58));
-  const cavityCool = rgb(env.shade(teal, -0.48));
-
+  const rustBleed = rgb(C.rustDark);
   env.field((x, y) => {
-    if (!insideOpening(x, y)) return null;
-
-    const nx = clamp((x - 94) / 337, 0, 1);
-    const ny = clamp((y - 112) / 281, 0, 1);
-    const n = env.fbm(
-      x * 0.075,
-      y * 0.083,
+    if (x < 78 || x > 442 || y < 362 || y > 448) return null;
+    const channel = env.ridge(
+      x * 0.22,
+      y * 0.017,
       {
         octaves: 3,
-        gain: 0.5,
-        lacunarity: 2.08,
-        period: 144,
-        seed: env.seed + 103,
-      }
+        gain: 0.56,
+        lacunarity: 2.1,
+        period: 83,
+        seed: meta.seed + 21,
+      },
     );
+    const streak = Math.max(0, (channel - 0.51) / 0.49);
+    const begins = smooth((y - 362) / 18);
+    const tail = 1 - smooth((y - 376) / 72);
+    const side = smooth((x - 78) / 28) * smooth((442 - x) / 28);
+    const alpha = 92 * streak * begins * tail * side;
+    if (alpha < 1) return null;
+    return [rustBleed.r, rustBleed.g, rustBleed.b, alpha];
+  }, { blend: 'over' });
 
-    const depth = clamp(0.12 + nx * 0.55 + ny * 0.26 + (n - 0.5) * 0.16, 0, 1);
-    let c = blend(cavityNear, cavityDeep, depth);
-    c = blend(c, cavityCool, 0.07 + nx * 0.11);
+  seam([[72, 84], [174, 80], [207, 87]], 5);
+  seam([[303, 82], [373, 76], [440, 78]], 5);
+  seam([[73, 425], [173, 418], [244, 424]], 5);
+  seam([[315, 421], [438, 411]], 5);
+  seam([[207, 70], [207, 104]], 4);
+  seam([[336, 73], [337, 99]], 4);
+  seam([[211, 399], [211, 438]], 4);
+  seam([[307, 398], [306, 437]], 4);
 
-    const dustDistance = Math.hypot((x - 340) / 170, (y - 288) / 130);
-    const dust = smooth(clamp(1 - dustDistance, 0, 1));
-    c = blend(c, cavityNear, dust * 0.09);
-    return pixel(c);
-  }, { blend: 'replace' });
+  bolt(207, 84, 2.8, 0.72);
+  bolt(337, 79, 2.8, 0.65);
+  bolt(211, 421, 2.9, 0.7);
+  bolt(307, 420, 2.9, 0.64);
+
+  const outerWear = env.stream('outer-wear');
+  for (let i = 0; i < 34; i += 1) {
+    const upper = i < 17;
+    const x = 80 + outerWear() * 350;
+    const y = upper
+      ? 79 + outerWear() * 17
+      : 405 + outerWear() * 29;
+    const length = 5 + outerWear() * 22;
+    const rise = -0.5 - outerWear() * 1.7;
+    strokePath(
+      [[x, y], [Math.min(442, x + length), y + rise]],
+      rgba(
+        outerWear() > 0.48 ? C.rustLight : C.inkSoft,
+        0.1 + outerWear() * 0.13,
+      ),
+      1 + outerWear() * 1.1,
+    );
+  }
+
+  const outer = [[86, 102], [447, 92], [439, 380], [74, 394]];
+  const opening = [[116, 140], [414, 130], [404, 344], [104, 356]];
+
+  ctx.save();
+  ctx.shadowColor = rgba(C.inkDeep, 0.78);
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetX = 7;
+  ctx.shadowOffsetY = 10;
+  fillPoly(outer, rgba(C.inkDeep, 0.82));
+  ctx.restore();
+
+  const cavityNear = rgb(env.mix(C.tealDark, P.haze, 0.61));
+  const cavityMid = rgb(C.hazeDark);
+  const cavityDeep = rgb(env.mix(C.inkDeep, C.tealDeep, 0.16));
+
+  env.field((x, y) => {
+    if (
+      x < 103 || x > 415 || y < 129 || y > 357 ||
+      !insideConvex(x, y, opening)
+    ) {
+      return null;
+    }
+
+    const nx = clamp((x - 104) / 310, 0, 1);
+    const ny = clamp((356 - y) / 226, 0, 1);
+    const mottle = env.fbm(
+      x * 0.095,
+      y * 0.042,
+      {
+        octaves: 3,
+        gain: 0.55,
+        lacunarity: 2.08,
+        period: 91,
+        seed: meta.seed + 31,
+      },
+    );
+    const longGrain = env.noise(
+      x * 0.23 + y * 0.03,
+      y * 0.065,
+      { period: 47, seed: meta.seed + 32 },
+    );
+    const depth = clamp(
+      smooth(nx * 0.7 + ny * 0.3) +
+      (mottle - 0.5) * 0.15 +
+      (longGrain - 0.5) * 0.06,
+      0,
+      1,
+    );
+    const color = depth < 0.48
+      ? mixRgb(cavityNear, cavityMid, depth / 0.48)
+      : mixRgb(cavityMid, cavityDeep, (depth - 0.48) / 0.52);
+    return [color.r, color.g, color.b, 255];
+  });
 
   ctx.save();
   trace(opening);
   ctx.clip();
 
-  const backRibDark = env.rgba(env.shade(ink, -0.28), 0.58);
-  const backRibLight = env.rgba(env.shade(haze, -0.28), 0.27);
-
-  for (let i = 0; i < 4; i++) {
-    const x = 142 + i * 76;
-    ctx.beginPath();
-    ctx.moveTo(x, 102);
-    ctx.bezierCurveTo(x - 13, 190, x + 20, 287, x - 5, 402);
-    ctx.strokeStyle = backRibDark;
-    ctx.lineWidth = 15;
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(x - 3, 102);
-    ctx.bezierCurveTo(x - 16, 190, x + 17, 287, x - 8, 402);
-    ctx.strokeStyle = backRibLight;
-    ctx.lineWidth = 3;
-    ctx.stroke();
-  }
-
-  for (let i = 0; i < 5; i++) {
-    const y = 147 + i * 51;
-    strokeLine(
-      [[91, y + 12], [433, y - 8]],
-      env.rgba(env.shade(ink, -0.16), 0.34),
-      6
+  for (let i = 0; i < 5; i += 1) {
+    const x0 = 268 + i * 37;
+    strokePath(
+      [[x0, 124], [235 + i * 34, 362]],
+      rgba(C.inkDeep, 0.3),
+      9,
     );
-    strokeLine(
-      [[94, y + 8], [430, y - 12]],
-      env.rgba(env.shade(haze, -0.35), 0.15),
-      2
+    strokePath(
+      [[x0 - 2, 126], [233 + i * 34, 358]],
+      rgba(C.tealDark, 0.14),
+      2,
     );
   }
 
-  const dustGlow = ctx.createRadialGradient(344, 291, 4, 344, 291, 176);
-  dustGlow.addColorStop(0, env.rgba(env.shade(teal, -0.06), 0.16));
-  dustGlow.addColorStop(0.48, env.rgba(env.shade(teal, -0.19), 0.08));
-  dustGlow.addColorStop(1, env.rgba(teal, 0));
-  ctx.fillStyle = dustGlow;
-  ctx.fillRect(80, 100, 370, 300);
+  const dust = ctx.createRadialGradient(342, 188, 8, 342, 188, 156);
+  dust.addColorStop(0, rgba(C.tealFog, 0.28));
+  dust.addColorStop(0.48, rgba(C.hazeLight, 0.105));
+  dust.addColorStop(1, rgba(C.tealFog, 0));
+  ctx.fillStyle = dust;
+  ctx.fillRect(102, 126, 316, 235);
+
+  const dustStream = env.stream('deep-dust');
+  for (let i = 0; i < 18; i += 1) {
+    const x = 230 + dustStream() * 178;
+    const y = 141 + dustStream() * 168;
+    const length = 10 + dustStream() * 38;
+    strokePath(
+      [[x, y], [x + length, y - 4 - dustStream() * 9]],
+      rgba(C.hazeLight, 0.035 + dustStream() * 0.045),
+      2 + dustStream() * 4,
+    );
+  }
+
   ctx.restore();
 
-  const bolt = (x, y, r, warm = true) => {
-    ctx.beginPath();
-    ctx.arc(x + 1.2, y + 1.5, r + 1.1, 0, Math.PI * 2);
-    ctx.fillStyle = env.rgba(env.shade(ink, -0.3), 0.82);
-    ctx.fill();
+  ctx.save();
+  trace(opening);
+  ctx.clip();
 
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fillStyle = warm
-      ? env.mix(env.shade(rust, -0.08), env.shade(hull, -0.16), 0.34)
-      : env.shade(haze, -0.07);
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.arc(x - r * 0.32, y - r * 0.34, Math.max(0.9, r * 0.29), 0, Math.PI * 2);
-    ctx.fillStyle = env.rgba(env.shade(hull, 0.18), 0.62);
-    ctx.fill();
-
-    strokeLine(
-      [[x - r * 0.55, y], [x + r * 0.55, y]],
-      env.rgba(env.shade(ink, -0.12), 0.7),
-      1.2
-    );
-  };
-
-  const vaneRng = env.stream('louvre-surfaces');
-  const vaneCount = 8;
-
-  for (let i = 0; i < vaneCount; i++) {
-    const front = i / (vaneCount - 1);
-    const y = 128 + i * 31;
-    const xl = 108 + front * 7;
-    const xr = 417 - front * 5;
-    const topDrop = -11 + front * 2;
+  const vaneWear = env.stream('vane-wear');
+  for (let i = 6; i >= 0; i -= 1) {
+    const xL = 108 - i * 0.6;
+    const xR = 414 - i * 0.45;
+    const yL = 151 + i * 27.6;
+    const yR = 140 + i * 24.1;
+    const thickL = 16 - i * 0.35;
+    const thickR = 10.5 - i * 0.22;
 
     const shadow = [
-      [xl + 3, y + 19],
-      [xr - 5, y + topDrop + 20],
-      [xr - 8, y + topDrop + 42],
-      [xl + 4, y + 42],
+      [xL, yL + thickL + 5],
+      [xR, yR + thickR + 5],
+      [xR, yR + thickR + 17],
+      [xL, yL + thickL + 19],
     ];
-    const shadowGradient = ctx.createLinearGradient(0, y + 15, 0, y + 45);
-    shadowGradient.addColorStop(0, env.rgba(env.shade(ink, -0.44), 0.86));
-    shadowGradient.addColorStop(0.52, env.rgba(env.shade(ink, -0.28), 0.48));
-    shadowGradient.addColorStop(1, env.rgba(ink, 0));
-    fillPoly(shadow, shadowGradient);
 
-    const underside = [
-      [xl + 5, y + 18],
-      [xr - 6, y + topDrop + 17],
-      [xr - 9, y + topDrop + 28],
-      [xl + 7, y + 29],
-    ];
-    const undersideGradient = ctx.createLinearGradient(xl, y, xr, y);
-    undersideGradient.addColorStop(0, env.shade(rust, -0.48));
-    undersideGradient.addColorStop(0.48, env.shade(haze, -0.43));
-    undersideGradient.addColorStop(1, env.shade(ink, -0.49));
-    fillPoly(underside, undersideGradient);
+    ctx.save();
+    ctx.shadowColor = rgba(C.inkDeep, 0.72);
+    ctx.shadowBlur = 5;
+    ctx.shadowOffsetY = 3;
+    fillPoly(shadow, rgba(C.inkDeep, 0.66));
+    ctx.restore();
 
     const vane = [
-      [xl, y],
-      [xr, y + topDrop],
-      [xr - 6, y + topDrop + 18],
-      [xl + 5, y + 23],
+      [xL, yL],
+      [xR, yR],
+      [xR, yR + thickR],
+      [xL, yL + thickL],
     ];
+    const face = ctx.createLinearGradient(xL, yL, xR, yR);
+    face.addColorStop(0, rgba(C.rustPale, 1));
+    face.addColorStop(0.18, rgba(P['rust-orange'], 1));
+    face.addColorStop(0.61, rgba(C.hazeDark, 1));
+    face.addColorStop(1, rgba(C.tealDeep, 1));
+    fillPoly(vane, face);
 
-    const leftTone = env.mix(
-      env.shade(rust, -0.18 + front * 0.12),
-      env.shade(haze, -0.15),
-      0.36 - front * 0.16
-    );
-    const midTone = env.mix(
-      env.shade(rust, -0.32 + front * 0.08),
-      env.shade(haze, -0.24),
-      0.43
-    );
-    const rightTone = env.mix(
-      env.shade(haze, -0.34),
-      env.shade(ink, -0.22),
-      0.56
+    strokePath(
+      [[xL, yL + thickL], [xR, yR + thickR]],
+      rgba(C.inkDeep, 0.9),
+      4.5,
     );
 
-    const vaneGradient = ctx.createLinearGradient(xl, y, xr, y + topDrop);
-    vaneGradient.addColorStop(0, leftTone);
-    vaneGradient.addColorStop(0.43, midTone);
-    vaneGradient.addColorStop(1, rightTone);
-    fillPoly(vane, vaneGradient);
+    const topLight = ctx.createLinearGradient(xL, yL, xR, yR);
+    topLight.addColorStop(0, rgba(C.rustLight, 0.95));
+    topLight.addColorStop(0.48, rgba(C.hullLight, 0.46));
+    topLight.addColorStop(1, rgba(C.hazeLight, 0.12));
+    strokePath([[xL, yL], [xR, yR]], topLight, 2.7);
 
-    ctx.save();
-    trace(vane);
-    ctx.clip();
-
-    for (let k = 0; k < 11; k++) {
-      const sx = xl - 4 + vaneRng() * 105;
-      const length = 42 + vaneRng() * 170;
-      const ex = Math.min(xr + 8, sx + length);
-      const sy = y - 2 + vaneRng() * 29;
-      const tonePick = vaneRng();
-      const tone = tonePick < 0.48
-        ? env.shade(ink, -0.08)
-        : tonePick < 0.78
-          ? env.shade(rust, 0.07)
-          : env.shade(hull, -0.12);
-      strokeLine(
-        [[sx, sy], [ex, sy - (ex - sx) * 0.031 + (vaneRng() - 0.5) * 2]],
-        env.rgba(tone, 0.06 + vaneRng() * 0.17),
-        0.9 + vaneRng() * 2.5
+    const slope = (yR - yL) / (xR - xL);
+    for (let j = 0; j < 3; j += 1) {
+      const sx = xL + 22 + vaneWear() * (xR - xL - 62);
+      const ex = Math.min(xR - 12, sx + 8 + vaneWear() * 24);
+      const offset = 3 + vaneWear() * Math.max(2, thickL - 7);
+      const sy = yL + slope * (sx - xL) + offset;
+      const ey = yL + slope * (ex - xL) + offset - vaneWear();
+      strokePath(
+        [[sx, sy], [ex, ey]],
+        rgba(
+          vaneWear() > 0.44 ? C.rustLight : C.inkSoft,
+          0.12 + vaneWear() * 0.13,
+        ),
+        1 + vaneWear() * 0.85,
       );
     }
 
-    for (let k = 0; k < 4; k++) {
-      const bx = xl + 18 + vaneRng() * (xr - xl - 45);
-      const by = y + 4 + vaneRng() * 15;
-      ctx.beginPath();
-      ctx.ellipse(
-        bx,
-        by,
-        5 + vaneRng() * 16,
-        1.5 + vaneRng() * 4,
-        -0.04,
-        0,
-        Math.PI * 2
-      );
-      ctx.fillStyle = env.rgba(
-        vaneRng() < 0.62 ? env.shade(ink, -0.1) : env.shade(rust, 0.08),
-        0.04 + vaneRng() * 0.09
-      );
-      ctx.fill();
-    }
-
-    for (let k = 0; k < 4; k++) {
-      const t = 0.08 + vaneRng() * 0.78;
-      const cx = xl + (xr - xl) * t;
-      const cy = y + topDrop * t;
-      ctx.fillStyle = env.rgba(
-        vaneRng() < 0.65 ? env.shade(hull, 0.05) : env.shade(rust, 0.18),
-        0.3 + vaneRng() * 0.24
-      );
-      ctx.fillRect(cx, cy - 0.7, 3 + vaneRng() * 7, 1.7 + vaneRng() * 1.5);
-    }
-    ctx.restore();
-
-    strokeLine(
-      [[xl + 1, y - 0.7], [xr - 1, y + topDrop - 0.7]],
-      env.rgba(
-        env.mix(env.shade(rust, 0.22), env.shade(hull, 0.08), 0.31),
-        0.6 - front * 0.12
-      ),
-      2.4
-    );
-    strokeLine(
-      [[xl + 5, y + 23], [xr - 6, y + topDrop + 18]],
-      env.rgba(env.shade(ink, -0.31), 0.84),
-      3.2
-    );
-
-    bolt(xl + 28 + (i % 3) * 12, y + 9, 2.8, true);
-    if (i % 2 === 1) {
-      const bx = 349 + (i % 3) * 13;
-      const bt = (bx - xl) / (xr - xl);
-      bolt(bx, y + topDrop * bt + 7, 2.5, false);
-    }
+    const boltX = xL + 24;
+    const boltY = yL +
+      (yR - yL) * ((boltX - xL) / (xR - xL)) +
+      thickL * 0.5;
+    bolt(boltX, boltY, 3.1, 0.84);
   }
 
-  const cavityFog = rgb(env.mix(env.shade(teal, -0.24), env.shade(haze, -0.22), 0.55));
+  ctx.restore();
+
+  const topLip = [[86, 102], [447, 92], [414, 130], [116, 140]];
+  const leftLip = [[86, 102], [116, 140], [104, 356], [74, 394]];
+  const rightLip = [[447, 92], [439, 380], [404, 344], [414, 130]];
+  const bottomLip = [[74, 394], [439, 380], [404, 344], [104, 356]];
+
+  const topGradient = ctx.createLinearGradient(86, 102, 447, 92);
+  topGradient.addColorStop(0, rgba(C.rustLight, 1));
+  topGradient.addColorStop(0.42, rgba(P['rust-orange'], 1));
+  topGradient.addColorStop(1, rgba(C.rustDark, 1));
+  fillPoly(topLip, topGradient);
+
+  const leftGradient = ctx.createLinearGradient(86, 102, 76, 394);
+  leftGradient.addColorStop(0, rgba(C.rustLight, 1));
+  leftGradient.addColorStop(0.48, rgba(P['rust-orange'], 1));
+  leftGradient.addColorStop(1, rgba(C.rustDeep, 1));
+  fillPoly(leftLip, leftGradient);
+
+  const rightGradient = ctx.createLinearGradient(414, 130, 447, 92);
+  rightGradient.addColorStop(0, rgba(C.hazeDark, 1));
+  rightGradient.addColorStop(0.48, rgba(C.rustDeep, 1));
+  rightGradient.addColorStop(1, rgba(C.rustDark, 1));
+  fillPoly(rightLip, rightGradient);
+
+  const bottomGradient = ctx.createLinearGradient(74, 394, 439, 380);
+  bottomGradient.addColorStop(0, rgba(C.rustDark, 1));
+  bottomGradient.addColorStop(0.48, rgba(P['rust-orange'], 1));
+  bottomGradient.addColorStop(1, rgba(C.hazeDark, 1));
+  fillPoly(bottomLip, bottomGradient);
+
+  const lipLightRgb = rgb(C.rustLight);
+  const lipDarkRgb = rgb(C.rustDeep);
   env.field((x, y) => {
-    if (!insideOpening(x, y)) return null;
-    const nx = clamp((x - 96) / 335, 0, 1);
-    const depth = smooth(clamp((nx - 0.37) / 0.63, 0, 1));
-    const dust = env.noise(
-      x * 0.055,
-      y * 0.061,
-      { period: 112, seed: env.seed + 307 }
+    if (x < 72 || x > 449 || y < 90 || y > 396) return null;
+    const onLip =
+      insideConvex(x, y, topLip) ||
+      insideConvex(x, y, leftLip) ||
+      insideConvex(x, y, rightLip) ||
+      insideConvex(x, y, bottomLip);
+    if (!onLip) return null;
+
+    const grain = env.fbm(
+      x * 0.24 + y * 0.018,
+      y * 0.064,
+      {
+        octaves: 3,
+        gain: 0.54,
+        lacunarity: 2.06,
+        period: 73,
+        seed: meta.seed + 51,
+      },
     );
-    const alpha = depth * (0.12 + dust * 0.12);
-    return pixel(cavityFog, alpha * 255);
+    const streak = env.noise(
+      x * 0.39,
+      y * 0.07,
+      { period: 37, seed: meta.seed + 52 },
+    );
+    const light = grain > 0.52;
+    const source = light ? lipLightRgb : lipDarkRgb;
+    const alpha = 6 + Math.abs(grain - 0.5) * 30 +
+      Math.abs(streak - 0.5) * 10;
+    return [source.r, source.g, source.b, alpha];
   }, { blend: 'over' });
 
+  strokePath(opening, rgba(C.inkDeep, 0.9), 9, true);
+  strokePath([[86, 102], [447, 92]], rgba(C.rustLight, 0.95), 4);
+  strokePath([[86, 102], [74, 394]], rgba(C.rustLight, 0.62), 3);
+  strokePath([[116, 140], [414, 130]], rgba(C.rustPale, 0.72), 2.2);
+  strokePath([[116, 140], [104, 356]], rgba(C.rustPale, 0.46), 2);
+  strokePath([[74, 394], [439, 380]], rgba(C.inkDeep, 0.86), 5);
+  strokePath([[447, 92], [439, 380]], rgba(C.inkDeep, 0.72), 4);
+
+  for (const t of [0.17, 0.35, 0.55, 0.75]) {
+    const a = pointAlong(topLip[0], topLip[1], t);
+    const b = pointAlong(topLip[3], topLip[2], t);
+    strokePath([a, b], rgba(C.inkDeep, 0.66), 3);
+    strokePath(
+      [[a[0] - 1, a[1] - 1], [b[0] - 1, b[1] - 1]],
+      rgba(C.rustLight, 0.3),
+      1,
+    );
+  }
+
+  for (const t of [0.22, 0.46, 0.7]) {
+    const a = pointAlong(bottomLip[0], bottomLip[1], t);
+    const b = pointAlong(bottomLip[3], bottomLip[2], t);
+    strokePath([a, b], rgba(C.inkDeep, 0.6), 3);
+    strokePath(
+      [[a[0] - 1, a[1] - 1], [b[0] - 1, b[1] - 1]],
+      rgba(C.rustLight, 0.22),
+      1,
+    );
+  }
+
   ctx.save();
-  trace(opening);
+  trace(topLip);
   ctx.clip();
-
-  let occ = ctx.createLinearGradient(0, 108, 0, 158);
-  occ.addColorStop(0, env.rgba(env.shade(ink, -0.36), 0.82));
-  occ.addColorStop(1, env.rgba(ink, 0));
-  ctx.fillStyle = occ;
-  ctx.fillRect(80, 105, 370, 58);
-
-  occ = ctx.createLinearGradient(88, 0, 133, 0);
-  occ.addColorStop(0, env.rgba(env.shade(ink, -0.38), 0.74));
-  occ.addColorStop(1, env.rgba(ink, 0));
-  ctx.fillStyle = occ;
-  ctx.fillRect(86, 105, 52, 292);
-
-  occ = ctx.createLinearGradient(365, 0, 435, 0);
-  occ.addColorStop(0, env.rgba(ink, 0));
-  occ.addColorStop(1, env.rgba(env.shade(ink, -0.46), 0.82));
-  ctx.fillStyle = occ;
-  ctx.fillRect(360, 105, 80, 292);
-
-  occ = ctx.createLinearGradient(0, 347, 0, 394);
-  occ.addColorStop(0, env.rgba(ink, 0));
-  occ.addColorStop(1, env.rgba(env.shade(ink, -0.43), 0.7));
-  ctx.fillStyle = occ;
-  ctx.fillRect(86, 344, 356, 54);
-  ctx.restore();
-
-  const bleedRng = env.stream('rust-bleed');
-  ctx.lineCap = 'round';
-  for (let i = 0; i < 31; i++) {
-    const x = 71 + bleedRng() * 381;
-    const y0 = 397 + bleedRng() * 26;
-    const length = 17 + Math.pow(bleedRng(), 1.7) * 96;
-    const drift = (bleedRng() - 0.5) * 13;
-    const width = 1.4 + bleedRng() * 5.4;
-
-    ctx.beginPath();
-    ctx.moveTo(x, y0);
-    ctx.bezierCurveTo(
-      x + drift * 0.2,
-      y0 + length * 0.32,
-      x + drift,
-      y0 + length * 0.67,
-      x + drift * 0.72,
-      y0 + length
-    );
-    ctx.strokeStyle = env.rgba(
-      bleedRng() < 0.74 ? env.shade(rust, -0.12) : env.shade(ink, -0.05),
-      0.055 + bleedRng() * 0.16
-    );
-    ctx.lineWidth = width;
-    ctx.stroke();
-
-    if (bleedRng() > 0.42) {
-      ctx.strokeStyle = env.rgba(env.shade(rust, 0.11), 0.07 + bleedRng() * 0.12);
-      ctx.lineWidth = Math.max(1, width * 0.25);
-      ctx.stroke();
-    }
-  }
-
-  const topLip = [[43, 66], [468, 79], [433, 117], [91, 111]];
-  const leftLip = [[43, 66], [91, 111], [98, 393], [49, 445]];
-  const rightLip = [[468, 79], [451, 426], [417, 385], [433, 117]];
-  const bottomLip = [[98, 393], [417, 385], [451, 426], [49, 445]];
-
-  let g = ctx.createLinearGradient(45, 65, 454, 120);
-  g.addColorStop(0, env.shade(rust, 0.2));
-  g.addColorStop(0.31, env.shade(rust, -0.02));
-  g.addColorStop(0.73, env.mix(env.shade(rust, -0.19), env.shade(haze, -0.15), 0.28));
-  g.addColorStop(1, env.mix(env.shade(rust, -0.31), env.shade(haze, -0.25), 0.56));
-  fillPoly(topLip, g);
-
-  g = ctx.createLinearGradient(43, 70, 102, 434);
-  g.addColorStop(0, env.shade(rust, 0.12));
-  g.addColorStop(0.43, env.shade(rust, -0.14));
-  g.addColorStop(1, env.mix(env.shade(rust, -0.35), env.shade(haze, -0.25), 0.32));
-  fillPoly(leftLip, g);
-
-  g = ctx.createLinearGradient(430, 100, 454, 426);
-  g.addColorStop(0, env.mix(env.shade(rust, -0.28), env.shade(haze, -0.23), 0.44));
-  g.addColorStop(0.55, env.shade(haze, -0.36));
-  g.addColorStop(1, env.mix(env.shade(haze, -0.42), env.shade(ink, -0.18), 0.35));
-  fillPoly(rightLip, g);
-
-  g = ctx.createLinearGradient(66, 390, 438, 429);
-  g.addColorStop(0, env.shade(rust, -0.08));
-  g.addColorStop(0.43, env.shade(rust, -0.23));
-  g.addColorStop(1, env.mix(env.shade(rust, -0.35), env.shade(haze, -0.29), 0.43));
-  fillPoly(bottomLip, g);
-
-  const frameRng = env.stream('frame-grain');
-  const panelTexture = (points, x0, y0, x1, y1, direction, count) => {
-    ctx.save();
-    trace(points);
-    ctx.clip();
-
-    for (let i = 0; i < count; i++) {
-      const pick = frameRng();
-      const tone = pick < 0.48
-        ? env.shade(ink, -0.06)
-        : pick < 0.82
-          ? env.shade(rust, 0.1)
-          : env.shade(hull, -0.08);
-
-      if (direction === 'horizontal') {
-        const x = x0 + frameRng() * (x1 - x0);
-        const y = y0 + frameRng() * (y1 - y0);
-        const len = 22 + frameRng() * 118;
-        strokeLine(
-          [[x, y], [x + len, y + (frameRng() - 0.5) * 4]],
-          env.rgba(tone, 0.045 + frameRng() * 0.13),
-          0.9 + frameRng() * 2.8
-        );
-      } else {
-        const x = x0 + frameRng() * (x1 - x0);
-        const y = y0 + frameRng() * (y1 - y0);
-        const len = 17 + frameRng() * 88;
-        strokeLine(
-          [[x, y], [x + (frameRng() - 0.5) * 4, y + len]],
-          env.rgba(tone, 0.045 + frameRng() * 0.13),
-          0.9 + frameRng() * 2.8
-        );
-      }
-    }
-
-    for (let i = 0; i < Math.max(4, Math.floor(count / 5)); i++) {
-      const x = x0 + frameRng() * (x1 - x0);
-      const y = y0 + frameRng() * (y1 - y0);
-      ctx.beginPath();
-      ctx.ellipse(
-        x,
-        y,
-        4 + frameRng() * 19,
-        2 + frameRng() * 7,
-        direction === 'horizontal' ? 0 : 1.5,
-        0,
-        Math.PI * 2
-      );
-      ctx.fillStyle = env.rgba(
-        frameRng() < 0.66 ? env.shade(ink, -0.08) : env.shade(rust, 0.09),
-        0.04 + frameRng() * 0.09
-      );
-      ctx.fill();
-    }
-    ctx.restore();
-  };
-
-  panelTexture(topLip, 38, 63, 472, 119, 'horizontal', 34);
-  panelTexture(leftLip, 38, 61, 105, 450, 'vertical', 29);
-  panelTexture(rightLip, 414, 76, 474, 432, 'vertical', 25);
-  panelTexture(bottomLip, 45, 382, 456, 451, 'horizontal', 34);
-
-  fillPoly(
-    [[43, 66], [468, 79], [460, 89], [50, 76]],
-    env.rgba(env.shade(rust, 0.22), 0.36)
-  );
-  fillPoly(
-    [[43, 66], [55, 77], [61, 427], [49, 445]],
-    env.rgba(env.shade(rust, 0.12), 0.28)
-  );
-
-  strokeLine(
-    [[43, 65], [468, 78]],
-    env.rgba(env.mix(env.shade(rust, 0.28), env.shade(hull, 0.12), 0.26), 0.78),
-    4.2
-  );
-  strokeLine(
-    [[91, 112], [433, 117]],
-    env.rgba(env.shade(ink, -0.42), 0.92),
-    8
-  );
-  strokeLine(
-    [[92, 108.5], [433, 113.5]],
-    env.rgba(env.shade(rust, 0.17), 0.6),
-    2.5
-  );
-  strokeLine(
-    [[43, 66], [91, 111], [98, 393]],
-    env.rgba(env.mix(env.shade(rust, 0.22), env.shade(hull, 0.08), 0.3), 0.62),
-    3.2
-  );
-  strokeLine(
-    [[91, 111], [98, 393]],
-    env.rgba(env.shade(ink, -0.39), 0.86),
-    7
-  );
-  strokeLine(
-    [[433, 117], [417, 385]],
-    env.rgba(env.shade(ink, -0.43), 0.9),
-    7
-  );
-  strokeLine(
-    [[98, 393], [417, 385]],
-    env.rgba(env.mix(env.shade(rust, 0.16), env.shade(hull, -0.02), 0.24), 0.7),
-    4
-  );
-  strokeLine(
-    [[49, 445], [451, 426]],
-    env.rgba(env.shade(ink, -0.3), 0.65),
-    5
-  );
-
-  for (let i = 0; i < 9; i++) {
-    const t = (i + 0.55) / 9;
-    bolt(48 + (468 - 48) * t, 70 + 13 * t, 3.2, true);
-  }
-  for (let i = 0; i < 6; i++) {
-    const t = (i + 0.65) / 6;
-    bolt(57 + 35 * t, 77 + 337 * t, 3.3, true);
-  }
-  for (let i = 0; i < 5; i++) {
-    const t = (i + 0.7) / 5;
-    bolt(460 - 33 * t, 101 + 294 * t, 3.1, false);
-  }
-  for (let i = 0; i < 8; i++) {
-    const t = (i + 0.55) / 8;
-    bolt(60 + 382 * t, 432 - 16 * t, 3.3, true);
-  }
-
-  const chipRng = env.stream('lip-wear');
-  for (let i = 0; i < 28; i++) {
-    const onTop = chipRng() < 0.56;
-    if (onTop) {
-      const x = 56 + chipRng() * 392;
-      const y = 72 + (x - 56) * 0.03;
-      strokeLine(
-        [[x, y], [x + 3 + chipRng() * 10, y + (chipRng() - 0.5) * 2]],
-        env.rgba(env.shade(hull, 0.07), 0.24 + chipRng() * 0.3),
-        1.3 + chipRng() * 1.8
-      );
-    } else {
-      const x = 70 + chipRng() * 363;
-      const y = 407 + (chipRng() - 0.5) * 27;
-      strokeLine(
-        [[x, y], [x + 4 + chipRng() * 11, y - chipRng() * 2]],
-        env.rgba(env.shade(rust, 0.19), 0.2 + chipRng() * 0.28),
-        1.2 + chipRng() * 2
-      );
-    }
-  }
-
-  const ladderDark = env.rgba(env.shade(ink, -0.35), 0.9);
-  const ladderMetal = env.mix(
-    env.shade(hull, -0.19),
-    env.shade(rust, -0.16),
-    0.45
-  );
-  const ladderLight = env.mix(
-    env.shade(hull, 0.14),
-    env.shade(rust, 0.15),
-    0.34
-  );
-
-  strokeLine([[148, 278], [141, 423]], ladderDark, 8);
-  strokeLine([[177, 277], [170, 421]], ladderDark, 8);
-  strokeLine([[147, 277], [140, 422]], env.rgba(ladderMetal, 0.96), 4.1);
-  strokeLine([[176, 276], [169, 420]], env.rgba(ladderMetal, 0.96), 4.1);
-  strokeLine([[145.7, 276], [138.7, 421]], env.rgba(ladderLight, 0.52), 1.5);
-  strokeLine([[174.7, 275], [167.7, 419]], env.rgba(ladderLight, 0.52), 1.5);
-
-  for (let y = 289; y <= 410; y += 17) {
-    const t = (y - 278) / 145;
-    const lx = 148 + (141 - 148) * t;
-    const rx = 177 + (170 - 177) * t;
-    strokeLine([[lx, y], [rx, y - 0.5]], ladderDark, 6);
-    strokeLine(
-      [[lx + 0.4, y - 1], [rx - 0.4, y - 1.5]],
-      env.rgba(ladderMetal, 0.98),
-      2.8
-    );
-    strokeLine(
-      [[lx + 1, y - 2], [rx - 1, y - 2.5]],
-      env.rgba(ladderLight, 0.42),
-      1
-    );
-  }
-
-  ctx.beginPath();
-  ctx.moveTo(148, 279);
-  ctx.quadraticCurveTo(146, 270, 154, 267);
-  ctx.strokeStyle = ladderDark;
-  ctx.lineWidth = 7;
-  ctx.stroke();
-  ctx.strokeStyle = env.rgba(ladderMetal, 0.98);
-  ctx.lineWidth = 3.4;
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(177, 278);
-  ctx.quadraticCurveTo(179, 269, 171, 266);
-  ctx.strokeStyle = ladderDark;
-  ctx.lineWidth = 7;
-  ctx.stroke();
-  ctx.strokeStyle = env.rgba(ladderMetal, 0.98);
-  ctx.lineWidth = 3.4;
-  ctx.stroke();
-
-  const deckTopY = (x) => 346 - ((x - 72) / 371) * 9;
-  const deckShadow = [[72, 353], [445, 344], [449, 363], [76, 373]];
-  fillPoly(deckShadow, env.rgba(env.shade(ink, -0.4), 0.92));
-
-  const deck = [[71, 344], [443, 335], [446, 350], [74, 360]];
-  g = ctx.createLinearGradient(70, 340, 445, 350);
-  g.addColorStop(0, env.mix(env.shade(rust, -0.04), env.shade(hull, -0.12), 0.28));
-  g.addColorStop(0.52, env.shade(rust, -0.18));
-  g.addColorStop(1, env.mix(env.shade(rust, -0.34), env.shade(haze, -0.24), 0.43));
-  fillPoly(deck, g);
-
-  const deckRng = env.stream('walkway-grain');
-  ctx.save();
-  trace(deck);
-  ctx.clip();
-  for (let i = 0; i < 27; i++) {
-    const x = 70 + deckRng() * 372;
-    const y = 337 + deckRng() * 24;
-    strokeLine(
-      [[x, y], [x + 18 + deckRng() * 72, y - 1 - deckRng() * 2]],
-      env.rgba(
-        deckRng() < 0.58 ? env.shade(ink, -0.06) : env.shade(hull, 0.06),
-        0.07 + deckRng() * 0.15
+  const lipWear = env.stream('lip-wear');
+  for (let i = 0; i < 38; i += 1) {
+    const x = 98 + lipWear() * 330;
+    const y = 107 + lipWear() * 28 - (x - 98) * 0.027;
+    const length = 5 + lipWear() * 25;
+    strokePath(
+      [[x, y], [x + length, y - 0.6 - lipWear() * 1.2]],
+      rgba(
+        lipWear() > 0.42 ? C.rustPale : C.inkDeep,
+        0.12 + lipWear() * 0.2,
       ),
-      1 + deckRng() * 2.2
+      1 + lipWear() * 1.2,
     );
   }
   ctx.restore();
 
-  strokeLine(
-    [[71, 343.5], [443, 334.5]],
-    env.rgba(env.mix(env.shade(hull, 0.13), env.shade(rust, 0.17), 0.45), 0.78),
-    3.2
-  );
-  strokeLine(
-    [[74, 360], [446, 350]],
-    env.rgba(env.shade(ink, -0.34), 0.86),
-    4.2
-  );
-
-  for (let x = 103; x < 438; x += 48) {
-    const y = deckTopY(x);
-    strokeLine(
-      [[x, y], [x + 1, y + 15]],
-      env.rgba(env.shade(ink, -0.3), 0.78),
-      3.1
-    );
-    strokeLine(
-      [[x - 1, y + 1], [x, y + 13]],
-      env.rgba(env.shade(rust, 0.1), 0.42),
-      1
-    );
-    bolt(x + 5, y + 7, 2.2, true);
-  }
-
-  for (let x = 95; x <= 410; x += 63) {
-    const y = deckTopY(x);
-    strokeLine(
-      [[x, y + 14], [x + 23, y + 34], [x + 42, y + 13]],
-      env.rgba(env.shade(ink, -0.34), 0.78),
-      5
-    );
-    strokeLine(
-      [[x, y + 12], [x + 23, y + 30], [x + 42, y + 11]],
-      env.rgba(env.shade(rust, -0.22), 0.62),
-      2.2
+  for (const t of [0.08, 0.23, 0.4, 0.58, 0.76, 0.92]) {
+    const a = pointAlong(topLip[0], topLip[1], t);
+    const b = pointAlong(topLip[3], topLip[2], t);
+    bolt(
+      (a[0] + b[0]) * 0.5,
+      (a[1] + b[1]) * 0.5,
+      3.8,
+      1 - t * 0.28,
     );
   }
 
-  const railDark = env.rgba(env.shade(ink, -0.38), 0.92);
-  const railMetal = env.mix(
-    env.shade(hull, -0.2),
-    env.shade(rust, -0.17),
-    0.42
-  );
-  const railLight = env.mix(
-    env.shade(hull, 0.14),
-    env.shade(rust, 0.16),
-    0.31
-  );
-
-  const posts = [84, 126, 210, 258, 306, 354, 402, 438];
-  for (const x of posts) {
-    const deckY = deckTopY(x);
-    strokeLine([[x, deckY + 1], [x, deckY - 31]], railDark, 6.5);
-    strokeLine(
-      [[x - 0.8, deckY], [x - 0.8, deckY - 31]],
-      env.rgba(railMetal, 0.98),
-      3.2
+  for (const t of [0.18, 0.43, 0.69, 0.88]) {
+    const a = pointAlong(leftLip[0], leftLip[3], t);
+    const b = pointAlong(leftLip[1], leftLip[2], t);
+    bolt(
+      (a[0] + b[0]) * 0.5,
+      (a[1] + b[1]) * 0.5,
+      3.6,
+      0.94,
     );
-    strokeLine(
-      [[x - 1.7, deckY - 1], [x - 1.7, deckY - 30]],
-      env.rgba(railLight, 0.52),
-      1.1
-    );
-    bolt(x, deckY - 1, 2.4, true);
   }
-
-  const railSegment = (x0, x1, height) => {
-    const y0 = deckTopY(x0) - height;
-    const y1 = deckTopY(x1) - height;
-    strokeLine([[x0, y0], [x1, y1]], railDark, 6.2);
-    strokeLine(
-      [[x0, y0 - 1.2], [x1, y1 - 1.2]],
-      env.rgba(railMetal, 0.98),
-      3
-    );
-    strokeLine(
-      [[x0, y0 - 2.1], [x1, y1 - 2.1]],
-      env.rgba(railLight, 0.58),
-      1.1
-    );
-  };
-
-  railSegment(74, 139, 31);
-  railSegment(192, 444, 31);
-  railSegment(76, 139, 16);
-  railSegment(192, 442, 16);
-
-  const lampX = 402;
-  const lampY = deckTopY(lampX) - 21;
-  const lampGlow = ctx.createRadialGradient(lampX, lampY, 1, lampX, lampY, 28);
-  lampGlow.addColorStop(0, env.rgba(env.shade(rust, 0.27), 0.34));
-  lampGlow.addColorStop(0.45, env.rgba(rust, 0.12));
-  lampGlow.addColorStop(1, env.rgba(rust, 0));
-  ctx.fillStyle = lampGlow;
-  ctx.fillRect(lampX - 30, lampY - 30, 60, 60);
 
   fillPoly(
-    [
-      [lampX - 8, lampY - 10],
-      [lampX + 7, lampY - 10],
-      [lampX + 9, lampY + 10],
-      [lampX - 9, lampY + 10],
-    ],
-    env.shade(ink, -0.2)
+    [[88, 103], [105, 103], [111, 112], [95, 116]],
+    rgba(C.hullLight, 0.42),
   );
-  strokePoly(
-    [
-      [lampX - 8, lampY - 10],
-      [lampX + 7, lampY - 10],
-      [lampX + 9, lampY + 10],
-      [lampX - 9, lampY + 10],
-    ],
-    env.rgba(env.shade(hull, -0.05), 0.62),
-    2
+  fillPoly(
+    [[77, 381], [91, 374], [99, 385], [84, 391]],
+    rgba(C.rustLight, 0.32),
   );
-  ctx.fillStyle = env.shade(rust, 0.31);
-  ctx.fillRect(lampX - 4, lampY - 6, 8, 12);
-  ctx.fillStyle = env.rgba(env.shade(hull, 0.27), 0.72);
-  ctx.fillRect(lampX - 3, lampY - 5, 2.5, 8);
 
-  const finalFog = rgb(env.mix(env.shade(teal, -0.08), env.shade(haze, -0.12), 0.33));
-  env.field((x, y, u, v) => {
-    const edge = Math.max(Math.abs(u - 0.5) * 2, Math.abs(v - 0.5) * 2);
-    const border = smooth(clamp((edge - 0.77) / 0.23, 0, 1));
-    const lowFog = smooth(clamp((v - 0.86) / 0.14, 0, 1)) * 0.1;
-    if (border <= 0 && lowFog <= 0) return null;
+  const ladderLeftTop = [151, 251];
+  const ladderLeftBottom = [145, 357];
+  const ladderRightTop = [172, 250];
+  const ladderRightBottom = [166, 355];
 
-    const dither = env.noise(
-      x * 0.12,
-      y * 0.12,
-      { period: 96, seed: env.seed + 811 }
+  strokePath(
+    [ladderLeftTop, ladderLeftBottom],
+    rgba(C.inkDeep, 0.9),
+    7,
+  );
+  strokePath(
+    [ladderRightTop, ladderRightBottom],
+    rgba(C.inkDeep, 0.9),
+    7,
+  );
+
+  const ladderMetal = ctx.createLinearGradient(150, 250, 146, 357);
+  ladderMetal.addColorStop(0, rgba(C.hullLight, 0.9));
+  ladderMetal.addColorStop(0.55, rgba(C.rustPale, 0.94));
+  ladderMetal.addColorStop(1, rgba(C.rustDark, 0.94));
+  strokePath([ladderLeftTop, ladderLeftBottom], ladderMetal, 3);
+  strokePath([ladderRightTop, ladderRightBottom], ladderMetal, 3);
+
+  for (let y = 260; y <= 348; y += 11) {
+    const t = (y - 251) / 106;
+    const left = pointAlong(ladderLeftTop, ladderLeftBottom, t);
+    const right = pointAlong(ladderRightTop, ladderRightBottom, t);
+    strokePath([left, right], rgba(C.inkDeep, 0.88), 5);
+    strokePath(
+      [[left[0], left[1] - 1], [right[0], right[1] - 1]],
+      rgba(C.hullLight, 0.7),
+      2,
     );
-    const alpha = clamp(border * 0.44 + lowFog + (dither - 0.5) * 0.025, 0, 0.55);
-    return pixel(finalFog, alpha * 255);
+  }
+
+  fillPoly(
+    [[178, 332], [202, 331], [190, 354]],
+    rgba(C.inkDeep, 0.72),
+  );
+  fillPoly(
+    [[285, 328], [311, 327], [298, 349]],
+    rgba(C.inkDeep, 0.68),
+  );
+  fillPoly(
+    [[365, 325], [389, 324], [378, 344]],
+    rgba(C.inkDeep, 0.62),
+  );
+
+  const deck = [[110, 317], [406, 306], [407, 323], [109, 335]];
+  const deckGradient = ctx.createLinearGradient(110, 317, 406, 306);
+  deckGradient.addColorStop(0, rgba(C.rustPale, 1));
+  deckGradient.addColorStop(0.46, rgba(C.hullDark, 1));
+  deckGradient.addColorStop(1, rgba(C.hazeDark, 1));
+
+  fillPoly(
+    [[109, 327], [408, 316], [409, 334], [108, 346]],
+    rgba(C.inkDeep, 0.84),
+  );
+  fillPoly(deck, deckGradient);
+  strokePath(
+    [[110, 317], [406, 306]],
+    rgba(C.hullLight, 0.82),
+    2.5,
+  );
+  strokePath(
+    [[109, 335], [407, 323]],
+    rgba(C.inkDeep, 0.9),
+    4,
+  );
+
+  for (let i = 1; i < 17; i += 1) {
+    const t = i / 17;
+    const top = pointAlong(deck[0], deck[1], t);
+    const bottom = pointAlong(deck[3], deck[2], t);
+    strokePath([top, bottom], rgba(C.inkDeep, 0.54), 2);
+    strokePath(
+      [[top[0] - 1, top[1]], [bottom[0] - 1, bottom[1]]],
+      rgba(C.rustLight, 0.16),
+      1,
+    );
+  }
+
+  const railTop = [[126, 288], [396, 279]];
+  const railMid = [[124, 301], [398, 292]];
+  const postTs = [0.04, 0.24, 0.45, 0.67, 0.9];
+
+  strokePath(railTop, rgba(C.inkDeep, 0.9), 6);
+  strokePath(railMid, rgba(C.inkDeep, 0.82), 5);
+
+  for (const t of postTs) {
+    const top = pointAlong(railTop[0], railTop[1], t);
+    const deckTop = pointAlong(deck[0], deck[1], t);
+    strokePath([top, deckTop], rgba(C.inkDeep, 0.88), 6);
+  }
+
+  const railMetal = ctx.createLinearGradient(126, 288, 396, 279);
+  railMetal.addColorStop(0, rgba(C.hullLight, 0.9));
+  railMetal.addColorStop(0.5, rgba(C.rustPale, 0.88));
+  railMetal.addColorStop(1, rgba(C.hazeLight, 0.62));
+  strokePath(railTop, railMetal, 2.8);
+  strokePath(railMid, railMetal, 2.2);
+
+  for (const t of postTs) {
+    const top = pointAlong(railTop[0], railTop[1], t);
+    const deckTop = pointAlong(deck[0], deck[1], t);
+    strokePath([top, deckTop], railMetal, 2.5);
+    bolt(deckTop[0], deckTop[1], 2.6, 0.82);
+  }
+
+  const lampGlow = ctx.createRadialGradient(173, 274, 1, 173, 274, 17);
+  lampGlow.addColorStop(0, rgba(C.tealLight, 0.46));
+  lampGlow.addColorStop(0.45, rgba(P['deep-teal'], 0.16));
+  lampGlow.addColorStop(1, rgba(C.tealFog, 0));
+  ctx.fillStyle = lampGlow;
+  ctx.fillRect(155, 256, 36, 36);
+
+  ctx.beginPath();
+  ctx.arc(173, 274, 6, 0, Math.PI * 2);
+  ctx.fillStyle = rgba(C.inkDeep, 0.95);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(172.5, 273.5, 3.3, 0, Math.PI * 2);
+  ctx.fillStyle = rgba(C.tealLight, 0.96);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(171.4, 272.2, 1.15, 0, Math.PI * 2);
+  ctx.fillStyle = rgba(C.hullLight, 0.92);
+  ctx.fill();
+
+  const atmosphere = rgb(C.tealFog);
+  env.field((x, y, u, v) => {
+    const distance = clamp(
+      (u - 0.3) * 0.75 + (0.59 - v) * 0.4,
+      0,
+      1,
+    );
+    if (distance <= 0.015) return null;
+    const veil = env.noise(
+      x * 0.055,
+      y * 0.05,
+      { period: 67, seed: meta.seed + 71 },
+    );
+    const alpha = 5 + distance * 20 + (veil - 0.5) * 5;
+    return [atmosphere.r, atmosphere.g, atmosphere.b, alpha];
   }, { blend: 'over' });
+
+  env.mask((x, y) => {
+    const shapeNoise = env.noise(
+      x * 0.037 + 3.4,
+      y * 0.033 + 7.1,
+      { period: 79, seed: meta.seed + 81 },
+    );
+    const edgeShift = (shapeNoise - 0.5) * 5;
+
+    const leftWidth = 52 + shapeNoise * 6;
+    const topWidth = 53 + (1 - shapeNoise) * 7;
+    const rightWidth = 68 + shapeNoise * 2;
+    const bottomWidth = 66 + (1 - shapeNoise) * 4;
+
+    const edgeFade = (distance, width) =>
+      smooth((distance - 5) / (width - 5));
+
+    const left = edgeFade(x + edgeShift, leftWidth);
+    const right = edgeFade((W - 1 - x) - edgeShift, rightWidth);
+    const top = edgeFade(y - edgeShift, topWidth);
+    const bottom = edgeFade((H - 1 - y) + edgeShift, bottomWidth);
+
+    let alpha = left * right * top * bottom;
+    const dither = env.noise(
+      x + 0.37,
+      y + 0.71,
+      { period: 7, seed: meta.seed + 82 },
+    );
+
+    if (alpha < 0.006 + dither * 0.004) return 0;
+    if (alpha < 0.999) {
+      alpha += (dither - 0.5) * (3 / 255);
+    }
+    return clamp(alpha, 0, 1);
+  });
 }

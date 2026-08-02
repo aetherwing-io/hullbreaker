@@ -27,12 +27,15 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { histogram, readPngSize } from './lib/png.mjs';
+import { alphaCensus, histogram, readPngSize } from './lib/png.mjs';
 import { extractSvgColors, readSvgSize } from './lib/svg.mjs';
 import { assetImports, maskSource } from './lib/imports.mjs';
 import { ROLES, NEUTRAL_MAX_CHROMA, checkColors, checkRasterColors, classify, RASTER_LIMITS, ALPHA_HUE_FLOOR } from './lib/palette.mjs';
 import { scanRecipe } from './lib/recipe.mjs';
-import { loadManifest, saveManifest, validateEntryShape, isPowerOfTwo, MANIFEST_PATH } from './lib/manifest.mjs';
+import {
+  loadManifest, saveManifest, validateEntryShape, isPowerOfTwo, MANIFEST_PATH,
+  checkAlphaKind, ALPHA_RULES,
+} from './lib/manifest.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const ROLE_BUDGET = 8;                              // DESIGN: "Palette (<=8 colors)"
@@ -280,6 +283,47 @@ function runRasterSelftest() {
       );
     } else if (c.expect && !res.failures.some((f) => c.expect.test(f))) {
       failures.push(`raster selftest: "${c.why}" failed for the wrong reason — ${res.failures.join('; ')}`);
+    }
+  }
+  return failures;
+}
+
+/* --------------------------------------------------------------------- *
+ * 0c-bis. Self-test: the alpha contract, both ways.
+ *
+ * The case that produced this rule: five backdrop plates regenerated from
+ * ~50%-transparent cutouts into 100% opaque rectangles, with the palette, size,
+ * path and id gates all green, because nothing had ever stated what the alpha
+ * channel was for. The censuses below are the real measurements from before and
+ * after that regression, plus the boundaries of each rule.
+ * --------------------------------------------------------------------- */
+const ALPHA_SELFTEST = {
+  pass: [
+    ['cutout', { transparent: 50.2, partial: 6.0, opaque: 43.8 }, 'a feathered cutout plate'],
+    ['opaque', { transparent: 0, partial: 0, opaque: 100 }, 'a tiling surface texture'],
+    ['overlay', { transparent: 71.3, partial: 28.66, opaque: 0 }, 'the wear overlay as shipped'],
+  ],
+  fail: [
+    ['cutout', { transparent: 0, partial: 0, opaque: 100 }, 'THE REGRESSION: a cutout plate that came back fully opaque', /only 0.00% of it is transparent/],
+    ['cutout', { transparent: 50.2, partial: 0.48, opaque: 49.32 }, 'the pre-T-053 plate: a cutout with a one-pixel hard cut', /partially transparent/],
+    ['opaque', { transparent: 40, partial: 1, opaque: 59 }, 'a "surface texture" full of holes', /declares alpha "opaque"/],
+    ['overlay', { transparent: 60, partial: 10, opaque: 30 }, 'an "overlay" a third of which paints over what it modulates', /fully opaque/],
+    ['sponge', { transparent: 10, partial: 10, opaque: 80 }, 'an alpha kind nobody defined', /unknown alpha kind/],
+  ],
+};
+
+function runAlphaSelftest() {
+  const failures = [];
+  for (const [kind, census, why] of ALPHA_SELFTEST.pass) {
+    const errs = checkAlphaKind(kind, census);
+    if (errs.length) failures.push(`alpha selftest: "${why}" should PASS as ${kind} — ${errs.join('; ')}`);
+  }
+  for (const [kind, census, why, expect] of ALPHA_SELFTEST.fail) {
+    const errs = checkAlphaKind(kind, census);
+    if (!errs.length) {
+      failures.push(`alpha selftest: "${why}" should FAIL as ${kind}, passed`);
+    } else if (expect && !errs.some((e) => expect.test(e))) {
+      failures.push(`alpha selftest: "${why}" failed for the wrong reason — ${errs.join('; ')}`);
     }
   }
   return failures;
@@ -544,6 +588,7 @@ function main() {
       cases: SELFTEST.pass.length + SELFTEST.fail.length,
       importCases: IMPORT_SELFTEST.detect.length + IMPORT_SELFTEST.ignore.length,
       rasterCases: RASTER_SELFTEST.pass.length + RASTER_SELFTEST.fail.length,
+      alphaCases: ALPHA_SELFTEST.pass.length + ALPHA_SELFTEST.fail.length,
       recipeCases: RECIPE_SELFTEST.reject.length + RECIPE_SELFTEST.allow.length,
       failures: [],
     },
@@ -553,7 +598,10 @@ function main() {
     gameIndependence: { errors: [], references: [], staticImports: 0 },
   };
 
-  report.selftest.failures = [...runSelftest(), ...runImportSelftest(), ...runRasterSelftest(), ...runRecipeSelftest()];
+  report.selftest.failures = [
+    ...runSelftest(), ...runImportSelftest(), ...runRasterSelftest(),
+    ...runAlphaSelftest(), ...runRecipeSelftest(),
+  ];
   report.errors.push(...report.selftest.failures);
 
   if (args.selftest) {
@@ -563,7 +611,9 @@ function main() {
         `${SELFTEST.fail.length} must-fail) + ${report.selftest.importCases} import-scan cases ` +
         `(${IMPORT_SELFTEST.detect.length} must-reject, ${IMPORT_SELFTEST.ignore.length} must-allow) + ` +
         `${report.selftest.rasterCases} raster-mass cases (${RASTER_SELFTEST.pass.length} must-pass, ` +
-        `${RASTER_SELFTEST.fail.length} must-fail) + ${report.selftest.recipeCases} recipe-contract cases ` +
+        `${RASTER_SELFTEST.fail.length} must-fail) + ${report.selftest.alphaCases} alpha-contract cases ` +
+        `(${ALPHA_SELFTEST.pass.length} must-pass, ${ALPHA_SELFTEST.fail.length} must-fail) + ` +
+        `${report.selftest.recipeCases} recipe-contract cases ` +
         `(${RECIPE_SELFTEST.reject.length} must-reject, ${RECIPE_SELFTEST.allow.length} must-allow)`
       : report.selftest.failures.join('\n'));
     process.exit(ok ? 0 : 1);
@@ -622,6 +672,27 @@ function main() {
             );
           }
           if (ext === '.png' && actual.bytes) result.bytes = actual.bytes;
+        }
+
+        // --- the alpha contract, recomputed from the alpha channel ---
+        // Deliberately NOT written by --write: a declaration derived from the
+        // file it is meant to constrain would agree with anything, which is how
+        // five cutout plates became opaque rectangles with every gate green.
+        if (ext === '.png') {
+          try {
+            const census = alphaCensus(abs);
+            result.alpha = {
+              declared: entry.alpha ?? null,
+              transparent: +census.transparent.toFixed(2),
+              partial: +census.partial.toFixed(2),
+              opaque: +census.opaque.toFixed(2),
+            };
+            if (entry.alpha) {
+              errs.push(...checkAlphaKind(entry.alpha, census).map((e) => `${entry.id}: ${e}`));
+            }
+          } catch (err) {
+            errs.push(`${entry.id}: cannot read the alpha channel — ${err.message}`);
+          }
         }
 
         // --- palette, recomputed ---
@@ -729,7 +800,7 @@ function finish(report, args) {
   }
 
   console.log(`asset check — ${report.root}`);
-  console.log(`  palette: ${report.roleBudget.declared}/${report.roleBudget.budget} roles, neutral floor chroma ${report.roleBudget.neutralMaxChroma}, selftest ${report.selftest.cases} palette + ${report.selftest.importCases} import-scan + ${report.selftest.rasterCases} raster-mass + ${report.selftest.recipeCases} recipe-contract cases ${report.selftest.failures.length ? 'FAILED' : 'ok'}`);
+  console.log(`  palette: ${report.roleBudget.declared}/${report.roleBudget.budget} roles, neutral floor chroma ${report.roleBudget.neutralMaxChroma}, selftest ${report.selftest.cases} palette + ${report.selftest.importCases} import-scan + ${report.selftest.rasterCases} raster-mass + ${report.selftest.alphaCases} alpha-contract + ${report.selftest.recipeCases} recipe-contract cases ${report.selftest.failures.length ? 'FAILED' : 'ok'}`);
   console.log(`  manifest: ${report.assets.length} asset${report.assets.length === 1 ? '' : 's'}`);
   for (const a of report.assets) {
     const size = a.actualSize ? `${a.actualSize.w}x${a.actualSize.h}` : '?';
@@ -753,6 +824,12 @@ function finish(report, args) {
           `${(p.faint.offBandMass * 100).toFixed(2)}%, alien ${(p.faint.alienMass * 100).toFixed(2)}%`
         );
       }
+    }
+    if (a.alpha) {
+      console.log(
+        `         alpha: ${a.alpha.declared ?? 'undeclared'} — ${a.alpha.transparent}% transparent, ` +
+        `${a.alpha.partial}% partial, ${a.alpha.opaque}% opaque`
+      );
     }
     if (a.recipe) {
       console.log(`         recipe: seed ${a.recipe.seed}, declares roles [${a.recipe.roles.join(', ')}]`);

@@ -1,0 +1,14 @@
+
+10 problems:
+  - backdrop-limb-segment: declares alpha "cutout" but only 0.00% of it is transparent (need >= 5%) — a plate with the background baked in occludes everything composited behind it
+  - backdrop-limb-segment: declares alpha "cutout" but only 0.00% of it is partially transparent (need >= 2%) — that is a hard-edged cut, and a hard alpha edge cannot be made to dissolve downstream; author the falloff into the asset
+  - backdrop-spine-coil: declares alpha "cutout" but only 0.00% of it is transparent (need >= 5%) — a plate with the background baked in occludes everything composited behind it
+  - backdrop-spine-coil: declares alpha "cutout" but only 0.00% of it is partially transparent (need >= 2%) — that is a hard-edged cut, and a hard alpha edge cannot be made to dissolve downstream; author the falloff into the asset
+  - backdrop-crown-horizon: declares alpha "cutout" but only 0.00% of it is transparent (need >= 5%) — a plate with the background baked in occludes everything composited behind it
+  - backdrop-crown-horizon: declares alpha "cutout" but only 0.00% of it is partially transparent (need >= 2%) — that is a hard-edged cut, and a hard alpha edge cannot be made to dissolve downstream; author the falloff into the asset
+  - backdrop-colony-cluster: declares alpha "cutout" but only 0.00% of it is transparent (need >= 5%) — a plate with the background baked in occludes everything composited behind it
+  - backdrop-colony-cluster: declares alpha "cutout" but only 0.00% of it is partially transparent (need >= 2%) — that is a hard-edged cut, and a hard alpha edge cannot be made to dissolve downstream; author the falloff into the asset
+  - backdrop-gill-cavity: declares alpha "cutout" but only 0.00% of it is transparent (need >= 5%) — a plate with the background baked in occludes everything composited behind it
+  - backdrop-gill-cavity: declares alpha "cutout" but only 0.00% of it is partially transparent (need >= 2%) — that is a hard-edged cut, and a hard alpha edge cannot be made to dissolve downstream; author the falloff into the asset
+
+FAIL

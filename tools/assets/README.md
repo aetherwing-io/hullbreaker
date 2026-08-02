@@ -49,7 +49,7 @@ is a fallback, not the expected path: `lib/browser.mjs` resolves
 the same `channel: 'chrome'` choice applies (drives installed system Chrome over
 CDP, no bundled-binary download — that harness's README explains why).
 
-## The nine tools
+## The ten tools
 
 | Command | What it does |
 | --- | --- |
@@ -58,6 +58,7 @@ CDP, no bundled-binary download — that harness's README explains why).
 | `render.mjs` + `renderer.html` | **RECIPE → PNG**: runs a self-contained canvas-painting module in Chrome, twice, and requires the two PNGs to be byte-identical before writing one (T-053). |
 | `view.mjs` + `viewer.html` | Screenshots an asset at its real on-screen height next to a RIG-height reference bar, plus a 2x/4x/8x/native ramp. |
 | `sheet.mjs` + `sheet.html` | Screenshots *many* assets at their true on-screen sizes in one image — the comparison the viewer cannot make (T-036). |
+| `alpha.mjs` | Shows an asset's transparency: over the game teal, over hot magenta, over a checkerboard, and its alpha channel as greyscale, with the census numbers (T-053). |
 | `tile.mjs` | Screenshots one texture **repeated** at true on-screen size. A seam and a countable motif are invisible in a single copy and are the only two ways a tiling texture fails (T-046). |
 | `compare.mjs` | Two assets side by side at true on-screen size, with the concept board they answer to in the same frame — the "is this different from what it replaced, where it matters" shot (T-053). |
 | `gen.mjs` + `codex/*.md` | Fills the generation spec from the palette table and the scale arithmetic, then optionally runs `codex exec`. Two modes: `vector` (asks for an SVG) and `raster` (asks for a recipe). Optional — nothing else depends on it. |
@@ -103,7 +104,7 @@ node tools/assets/probe.mjs docs/concept-art/13-human-scale-monster-climb-gramma
 node tools/assets/probe.mjs docs/concept-art/01-exterior-gameplay.png --min-chroma 35
 ```
 
-The gate can demonstrably reject things. `check.mjs --selftest` runs four tables,
+The gate can demonstrably reject things. `check.mjs --selftest` runs five tables,
 **all of them on every invocation**, not just under the flag — a band wide enough
 to accept everything would silently turn the whole check into a no-op, and so
 would an import scan or a mass rule that has quietly stopped matching:
@@ -113,6 +114,7 @@ would an import scan or a mass rule that has quietly stopped matching:
 | palette | 23 | 14 colors measured off the boards or lifted from `src/config.js` that must classify to a named role; 9 (pure red, orange-red, pure blue, royal blue, violet, sky blue, pure cyan, jade green, an unparseable string) that must be rejected |
 | import scan | 25 | 12 static-import shapes that must be rejected, 13 runtime shapes that must stay legal (see "Game independence") |
 | raster mass | 7 | 3 painted-asset shapes that must pass, 4 off-palette shapes that must fail — each naming *which* cap must catch it (see "Palette compliance (raster)") |
+| alpha contract | 8 | 3 alpha censuses that must pass, 5 that must fail — including the real regression (a cutout that came back 100% opaque) and the real pre-T-053 plate (a cutout with a 0.48% hard cut) |
 | recipe contract | 16 | 11 recipe shapes that must be rejected (`Math.random`, a clock, an import, an external image, network, DOM, a missing export, a computed seed, an off-palette literal), 5 that must stay legal |
 
 ## Palette compliance (raster) — judged by mass, not by coverage
@@ -226,6 +228,49 @@ colors, clustered on a 16-level-per-channel grid and capped at the 48 heaviest
 (12 for triangles, which cost O(n³)) — a color the asset barely uses cannot
 license a hue.
 
+## Alpha semantics — declared, never derived
+
+**An asset's transparency is a contract with whatever composites it, and it is
+now stated in the manifest and checked against the pixels.** This section exists
+because of a live defect, not a hypothetical one: T-053 regenerated five backdrop
+plates from ~50%-transparent cutouts into fully opaque rectangles with the fog
+painted in, and *every gate stayed green* — palette clean, sizes right, ids and
+paths stable, and no effect on the game to detect because nothing loaded them
+yet. The lane layering those plates for parallax would have been the thing that
+found out, at merge, because an opaque plate occludes every tier behind it.
+
+| `alpha` | Means | Checked |
+| --- | --- | --- |
+| `cutout` | a shape on transparency; the transparent region must read as absent | ≥5% fully transparent **and** ≥2% partial — the feather |
+| `opaque` | every pixel opaque; a tiling surface wants no alpha at all | ≤0.5% transparent, ≤0.5% partial |
+| `overlay` | mostly transparent, nothing solid: modulates the surface under it | ≥40% transparent, ≤5% fully opaque |
+
+Three rules that matter more than the numbers:
+
+1. **`--write` does not fill this in.** A declaration derived from the file it is
+   meant to constrain agrees with anything — that is the "assertion whose subject
+   is the author's intent" failure this repo keeps paying for. The field is
+   typed by a person; `check.mjs` only ever disagrees with it.
+2. **A `backdrops` entry must declare it.** That is the one category whose
+   consumer composites in depth tiers, so an undeclared plate is a missing
+   contract, not a default.
+3. **The feather threshold is the interesting one.** A cutout needs partial
+   alpha, because a one-pixel alpha cut on a flat camera-facing plane *cannot be
+   dissolved downstream* — no fog colour, depth offset or material setting will
+   soften an edge that is binary in the file. The plates this pipeline inherited
+   carried 0.28–1.80% partial (antialiasing only) and were judged too hard-edged
+   by the lane consuming them, so the rule asks for 2% and the raster spec asks
+   the generator for a dissolve measured in tens of pixels.
+
+`gen.mjs --mode raster` **requires `--alpha`**; there is no default, because a
+default is how this happened. `tools/assets/alpha.mjs` is the picture that goes
+with the numbers — the plate over the game teal, over hot magenta, over a
+checkerboard, and its alpha channel as greyscale:
+
+```sh
+node tools/assets/alpha.mjs assets/generated/backdrops/backdrop-limb-segment.png
+```
+
 ## Manifest schema
 
 `assets/manifest.json` is `{ "assets": [ ... ] }`. Per entry:
@@ -239,6 +284,7 @@ license a hue.
 | `task` | required | the task that produced it, e.g. `T-015` |
 | `source` | optional | what produced the pixels: an `.svg` original (palette-checked too) or a `.recipe.js` module (contract-checked, never executed) |
 | `seed` | optional | recipe assets only: the recipe's `meta.seed`, recomputed from the source and refused if it disagrees. Recipe + seed is the whole input to the PNG |
+| `alpha` | optional, **required for `backdrops`** | `cutout` \| `opaque` \| `overlay` — the transparency contract, checked against the alpha channel. Never auto-filled (see "Alpha semantics") |
 | `gpu` | optional | defaults `true`; power-of-two enforced. `false` requires a `notes` reason |
 | `palette` | optional | recomputed and compared on every check; `--write` fills it in |
 | `notes`, `generator`, `addedOn` | optional | provenance and caveats |
@@ -754,6 +800,7 @@ tools/assets/
   sheet.html             the sheet page itself (imports nothing from src/)
   tile.mjs               screenshot a texture repeated at true size
   compare.mjs            two assets + a board in one frame, at true size
+  alpha.mjs              an asset's transparency, as four panels and a census
   gen.mjs                codex spec builder + optional invocation (vector | raster)
   probe.mjs              hue-cluster histogram — where the palette numbers came from
   codex/

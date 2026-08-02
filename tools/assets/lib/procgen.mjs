@@ -193,6 +193,44 @@ function makeField(ctx, width, height) {
 }
 
 /**
+ * Alpha-only pass: multiply every pixel's alpha by `fn(x, y, u, v)` (0..1).
+ *
+ * This exists because of a real defect. The first painted backdrops came back
+ * as fully opaque rectangles with the fog baked in, where the plates they
+ * replaced were 40-60% transparent cutouts — which broke the lane layering them
+ * for parallax, since an opaque plate occludes every tier behind it. The cause
+ * was not the route: it was that alpha had to be threaded by hand through every
+ * layer of a 900-line recipe, and a generator does that inconsistently.
+ *
+ * With this, a recipe paints its subject normally and then states its silhouette
+ * and its dissolve in one place:
+ *
+ *     env.mask((x, y, u, v) => env.band(0.85, 0.6, u));   // fade out to the right
+ *
+ * Returning 0 makes a pixel fully transparent; the RGB is left alone, so a
+ * later pass can still read it. Note that a canvas quantizes low alpha (see
+ * ALPHA_HUE_FLOOR in palette.mjs) — a dissolve wants a dither term of a level or
+ * two so it does not band, not smaller alpha steps.
+ */
+function makeMask(ctx, width, height) {
+  return function mask(fn) {
+    const img = ctx.getImageData(0, 0, width, height);
+    const d = img.data;
+    for (let y = 0; y < height; y++) {
+      const v = y / height;
+      for (let x = 0; x < width; x++) {
+        const i = (y * width + x) * 4 + 3;
+        if (d[i] === 0) continue;
+        const k = fn(x, y, x / width, v);
+        if (k === null || k === undefined) continue;
+        d[i] = Math.round(clamp(d[i] * clamp(k, 0, 1), 0, 255));
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  };
+}
+
+/**
  * Build the object a recipe's `render(ctx, env)` receives.
  * Everything on it is deterministic given `seed`.
  */
@@ -213,6 +251,7 @@ export function createEnv({ ctx, width, height, seed = 1 }) {
     fbm: (x, y, opts) => fbm(x, y, { seed, ...opts }),
     ridge: (x, y, opts) => ridge(x, y, { seed, ...opts }),
     field: makeField(ctx, width, height),
+    mask: makeMask(ctx, width, height),
     clamp, lerp, smoothstep, band,
     mix, shade, rgba, hexToRgb, rgbToHex,
     PALETTE,

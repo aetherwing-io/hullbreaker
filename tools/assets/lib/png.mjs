@@ -137,6 +137,34 @@ export function decodePng(file) {
 }
 
 /**
+ * The alpha channel's shape, as percentages of every pixel in the image.
+ * -> { transparent, partial, opaque, pixels }
+ *
+ * Three numbers, because they answer three different questions and the middle
+ * one is the one that got missed: `transparent` says whether the asset is a
+ * cutout at all, `opaque` says whether anything is solid, and `partial` — pixels
+ * strictly between 0 and 255 — is the only evidence that the silhouette has a
+ * feathered edge rather than a one-pixel cut.
+ */
+export function alphaCensus(file) {
+  const { width, height, rgba } = decodePng(file);
+  let transparent = 0, partial = 0, opaque = 0;
+  for (let i = 3; i < rgba.length; i += 4) {
+    const a = rgba[i];
+    if (a === 0) transparent++;
+    else if (a === 255) opaque++;
+    else partial++;
+  }
+  const n = width * height || 1;
+  return {
+    pixels: width * height,
+    transparent: (transparent / n) * 100,
+    partial: (partial / n) * 100,
+    opaque: (opaque / n) * 100,
+  };
+}
+
+/**
  * Color histogram, alpha-aware.
  * `alphaFloor` (0-255): pixels at or below it are counted as transparent and
  * excluded from coverage entirely — an SVG glyph rasterized on transparency is
