@@ -48,6 +48,17 @@ snap-1 clack at the camera detent, relock-and-rake on the hold, snap-2
 commit); `07`–`08` the prebuilt interior with both exit catwalks; `09`
 clear.
 
+**Re-captured 2026-08-02 (T-030).** The committed set had gone stale twice
+over: it was shot before T-010 made the CONCEPT palette the default, so every
+frame was the grey-box, and `00` carried the pre-I-010 hit flash — the
+featureless white quad that cost the T-008 gate real time before it was
+identified as a shot wasp. The frames here are a fresh `node
+tools/playtest/g2-capture.mjs shots` on this tree: same beats (every
+`ritual.state`/`tMs` within 200ms and every `playerX` within 0.35 tiles of the
+old `index.json`), current renderer. RIG blinking through his i-frames
+(`src/render/player.js`) can still make him hard to find in a given frame —
+that half of I-010 is untouched.
+
 ## Honesty notes
 
 - The capture driver is closed-loop (position-window jumps, the same

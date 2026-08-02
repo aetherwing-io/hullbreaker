@@ -1,0 +1,82 @@
+{
+  "tag": "wasp-cruise-hit--far-after",
+  "mode": "after",
+  "extra": "",
+  "fixeddt": 6,
+  "kind": "wasp",
+  "simMsBetween": 12,
+  "moved": 0.0308,
+  "rig": {
+    "x": 29.73,
+    "y": 4.39
+  },
+  "hostile": {
+    "x": 35.81,
+    "y": 9.11,
+    "state": "cruise"
+  },
+  "tries": 1,
+  "stats": {
+    "maskPx": 152,
+    "corePx": 91,
+    "bbox": {
+      "x": 768,
+      "y": 318,
+      "w": 14,
+      "h": 14
+    },
+    "components": 25,
+    "unflashed": {
+      "meanRGB": [
+        47,
+        84,
+        37
+      ],
+      "meanLuma": 72.6,
+      "meanSat": 0.634,
+      "meanHue": 117,
+      "whitePx": 0,
+      "washPx": 0,
+      "washPct": 0
+    },
+    "flashed": {
+      "meanRGB": [
+        134,
+        157,
+        127
+      ],
+      "meanLuma": 150,
+      "meanSat": 0.203,
+      "meanHue": 108,
+      "whitePx": 0,
+      "washPx": 0,
+      "washPct": 0
+    },
+    "unflashedCore": {
+      "meanRGB": [
+        25,
+        62,
+        24
+      ],
+      "meanLuma": 51.4,
+      "meanSat": 0.676,
+      "meanHue": 122,
+      "whitePx": 0,
+      "washPx": 0,
+      "washPct": 0
+    },
+    "flashedCore": {
+      "meanRGB": [
+        140,
+        162,
+        130
+      ],
+      "meanLuma": 155.2,
+      "meanSat": 0.2,
+      "meanHue": 103,
+      "whitePx": 0,
+      "washPx": 0,
+      "washPct": 0
+    }
+  }
+}

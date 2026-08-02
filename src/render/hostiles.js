@@ -182,6 +182,59 @@ const LOOK = {
              roll: mortarRoll, pose: mortarPose },
 };
 
+/* ---------------------- THE HIT FLASH (I-010) ----------------------------
+ * A hit used to set the body's emissive to PAL.hitFlash — full white — which
+ * is a fine pop on a 100px chassis and a readability defect on a 15px one.
+ * At the shipped FAR view it replaced the silhouette instead of lighting it:
+ * the drone lost its facets, its acid hue and its kind, and a screenshot gate
+ * spent real time deciding whether a white quad was a shot wasp or a player
+ * render bug (inbox I-010). Measured on the shipped tree, a cruising wasp's
+ * flashed body core ran saturation 0.67 -> 0.07 and hue 124° -> 181°: the
+ * ecology's color, gone for the 70ms that matter most.
+ *
+ * So the flash now TINTS the body instead of replacing it: hitFlash mixed
+ * toward the kind's own color, once per kind at module load. The mix is 0 at
+ * ?view=near and grows with the pull-back, which is the readability pass's own
+ * rule (src/render/legibility.js) rather than a new one — a message may take
+ * back exactly as much as the camera took, and no more:
+ *
+ *   ?view=near      CUE_GAIN 1    -> tint 0   -> the pre-pass white pop, exactly
+ *   ?legibility=0   CUE_GAIN 1    -> tint 0   -> the operator's A/B, at any view
+ *   ?view=far       CUE_GAIN 1.9  -> tint 0.8 -> the acid survives the pop
+ *
+ * The flash still wins over every state glow in sync() below, and it stays the
+ * same event in both palettes (what differs is the body's own color, which is
+ * what the palette flag is for). What it may never become is a SECOND
+ * commitment cue: it stays PALE where a state glow is saturated, so "I hit it"
+ * cannot be confused with "it is diving at me".
+ *
+ * Measured at the shipped FAR view, 1280x800, concept palette, on a wasp
+ * (artifacts/hitflash-v1/ — the flashed body core's saturation and hue):
+ *   tint 0    (the old white)  sat 0.07, hue 181 — hueless: this is I-010
+ *   tint 0.55                  sat 0.11, hue 132 — still hueless under ACES
+ *   tint 0.8  (shipped)        sat 0.20, hue 103 — acid, and paler than a glow
+ *   tint 1.0  (the body color) sat 0.43, hue  85 — reads like the DIVE cue
+ *
+ * 1.0 is the ceiling for a reason: at full tint the flash renders as the same
+ * hot acid the dive commitment glow wears (measured on the same frame at sat
+ * 0.46 / hue 70), and "I hit it" would start meaning "it is coming for you".
+ * The tune stays deliberately PALE, which is also what keeps a hit readable on
+ * a body that is ALREADY glowing: a diving drone flashes by washing out.
+ * Driving the emissive softer (0.55) does bring back some facet shading, but
+ * it costs exactly that separation — the damped flash measured sat 0.46 on a
+ * diver, indistinguishable from its own dive glow — so it is not the tune.  */
+const HIT_TINT_FAR = 0.8;                // how far toward the body color the flash
+                                         //   mixes at the shipped FAR default
+const HIT_TINT = HIT_TINT_FAR * Math.min(1, Math.max(0,
+  (CUE_GAIN - 1) / (CONFIG.viewScales.far.depthMult - 1)));
+
+// one tinted flash color per kind, resolved at load: the hot loop only reads it
+const FLASH = {};
+for (const kind of Object.keys(LOOK)) {
+  FLASH[kind] = new THREE.Color(PAL.hitFlash)
+    .lerp(new THREE.Color(LOOK[kind].color), HIT_TINT).getHex();
+}
+
 /* ------------------------- THE TELL LAMP (T-003) -------------------------
  * The warning light the houndframe's and the polyp's code comments have
  * always described, given actual geometry so it survives the FAR default
@@ -321,7 +374,10 @@ function removed(e, fade) {
   if (v.pod) mortarDetach(v);            // nor does a pod, a mark, or a blast
   if (v.lamp) lampDetach(v);             // nor a tell lamp: a corpse never warns
   if (fade) {                          // hand the mesh to the corpse pass to dissolve
-    corpses.push({ mesh: v.mesh, mat: v.mat, s: e.x, y: e.y, spin: e.t, t0: gameMs });
+    // the death pop carries the same tinted flash the living body wore (I-010):
+    // the kind is dead, but the frame that says so still says WHICH kind
+    corpses.push({ mesh: v.mesh, mat: v.mat, s: e.x, y: e.y, spin: e.t,
+                   t0: gameMs, flash: FLASH[e.kind] });
   } else {
     scene.remove(v.mesh);
     v.mat.dispose();
@@ -355,7 +411,8 @@ function sync(e) {
   }
   const K = LOOK[e.kind];
   let sx = scale, sy = scale, sz = scale;
-  let glow = gameMs < e.flashUntil ? PAL.hitFlash : PAL.glowOff;
+  const flashing = gameMs < e.flashUntil;
+  let glow = flashing ? FLASH[e.kind] : PAL.glowOff;
   if (K.pose) {                          // per-kind state theater over the shared presence
     const p = K.pose(e);
     depth += p.depth;
@@ -402,7 +459,7 @@ export function updateCorpses() {
     c.mesh.rotation.z = c.spin + u * 9;           // death tumble
     c.mesh.scale.setScalar(1 + 0.3 * u);
     c.mat.opacity = 1 - u * u;
-    c.mat.emissive.setHex(u < 0.16 ? PAL.hitFlash : PAL.glowOff);   // death pop, then dissolve
+    c.mat.emissive.setHex(u < 0.16 ? c.flash : PAL.glowOff);        // death pop, then dissolve
   }
 }
 

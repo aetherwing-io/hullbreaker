@@ -3,7 +3,7 @@
   "taken": [
     {
       "name": "00-approach-ribline",
-      "gameMs": 1217,
+      "gameMs": 1200,
       "ritual": {
         "event": "neck-plate-flip",
         "state": "idle",
@@ -15,19 +15,19 @@
     },
     {
       "name": "01-routes-converge",
-      "gameMs": 6050,
+      "gameMs": 5967,
       "ritual": {
         "event": "neck-plate-flip",
         "state": "idle",
         "tMs": 0
       },
-      "altitude": 23.94,
+      "altitude": 24.01,
       "band": 0,
-      "playerX": 127.04
+      "playerX": 127.27
     },
     {
       "name": "02-plate-armed-ajar",
-      "gameMs": 9683,
+      "gameMs": 9517,
       "ritual": {
         "event": "neck-plate-flip",
         "state": "armed",
@@ -35,39 +35,39 @@
       },
       "altitude": 28,
       "band": 0,
-      "playerX": 155.1
+      "playerX": 155.42
     },
     {
       "name": "03-flip-windup",
-      "gameMs": 9817,
+      "gameMs": 9633,
       "ritual": {
         "event": "neck-plate-flip",
         "state": "turning",
-        "tMs": 50
+        "tMs": 67
       },
       "altitude": 28,
       "band": 0,
-      "playerX": 156.35
+      "playerX": 156.52
     },
     {
       "name": "04-flip-snap1-clack",
+      "gameMs": 9833,
+      "ritual": {
+        "event": "neck-plate-flip",
+        "state": "turning",
+        "tMs": 267
+      },
+      "altitude": 28,
+      "band": 0,
+      "playerX": 158.4
+    },
+    {
+      "name": "05-flip-hold-relock-ramp",
       "gameMs": 10017,
       "ritual": {
         "event": "neck-plate-flip",
         "state": "turning",
-        "tMs": 250
-      },
-      "altitude": 28,
-      "band": 0,
-      "playerX": 158.23
-    },
-    {
-      "name": "05-flip-hold-relock-ramp",
-      "gameMs": 10200,
-      "ritual": {
-        "event": "neck-plate-flip",
-        "state": "turning",
-        "tMs": 433
+        "tMs": 450
       },
       "altitude": 28,
       "band": 0,
@@ -75,11 +75,11 @@
     },
     {
       "name": "06-flip-snap2-committed",
-      "gameMs": 10467,
+      "gameMs": 10283,
       "ritual": {
         "event": "neck-plate-flip",
         "state": "turning",
-        "tMs": 700
+        "tMs": 717
       },
       "altitude": 28,
       "band": 0,
@@ -87,31 +87,31 @@
     },
     {
       "name": "07-interior-exits",
-      "gameMs": 11683,
+      "gameMs": 11467,
       "ritual": {
         "event": null,
         "state": "complete",
         "tMs": 0
       },
-      "altitude": 30.97,
+      "altitude": 30.91,
       "band": 1,
-      "playerX": 167.92
+      "playerX": 167.77
     },
     {
       "name": "08-neck-run-deep",
-      "gameMs": 12250,
+      "gameMs": 12033,
       "ritual": {
         "event": null,
         "state": "complete",
         "tMs": 0
       },
-      "altitude": 32.97,
+      "altitude": 32.91,
       "band": 1,
-      "playerX": 173.25
+      "playerX": 173.09
     },
     {
       "name": "09-neck-clear",
-      "gameMs": 15100,
+      "gameMs": 14900,
       "ritual": {
         "event": null,
         "state": "complete",
