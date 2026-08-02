@@ -14,8 +14,31 @@
 // The layer guards and the ok()/near() helpers live in tools/pathcheck/_context.mjs,
 // which is evaluated before any domain, exactly where it sat in the monolith.
 
+import { readdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import { counts } from './pathcheck/_context.mjs';
 import { DOMAINS } from './pathcheck/manifest.mjs';
+
+// A domain module that exists but is NOT listed in the manifest would run
+// nothing while the gate still printed green — the silent-drop this split
+// exists to prevent, reintroduced by a one-line merge conflict. So the runner
+// refuses to run rather than under-report. (Losing a manifest line is exactly
+// what the T-025/T-027 hand resolutions did to whole blocks of assertions.)
+const MODULE_DIR = new URL('./pathcheck/', import.meta.url);
+{
+  const manifestSrc = readFileSync(fileURLToPath(new URL('manifest.mjs', MODULE_DIR)), 'utf8');
+  const listed = new Set([...manifestSrc.matchAll(/from\s*'\.\/([\w.-]+\.mjs)'/g)].map((m) => m[1]));
+  const unlisted = readdirSync(fileURLToPath(MODULE_DIR))
+    .filter((f) => f.endsWith('.mjs') && f !== 'manifest.mjs' && !f.startsWith('_') && !listed.has(f));
+  if (unlisted.length) {
+    console.error('pathcheck: ' + unlisted.length + ' domain module(s) present but not listed in ' +
+      'manifest.mjs: ' + unlisted.join(', ') + '\n' +
+      'Their assertions would not run and this gate would still print green. ' +
+      'Add them to the manifest in the position they must run.');
+    process.exit(1);
+  }
+}
 
 const SHARED = {};                 // values that travel between domains
 for (const domain of DOMAINS) await domain.run(SHARED);

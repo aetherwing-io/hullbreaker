@@ -54,6 +54,17 @@ it is not a `node --test` suite: per-file process isolation would silently give
 some assertions a different starting state. Directory enumeration order is not
 stable across machines either, which is why nothing here globs.
 
+### …and a module you forget to list makes the gate refuse to run
+
+The manifest is now the one shared append point, so it is the one place a merge
+can still conflict. A dropped entry there would be the old silent-drop bug in
+miniature: measured on this tree, removing one domain's two manifest lines took
+the gate from **1812 passed** to **1705 passed, 0 failed, exit 0** — 107
+assertions gone, still green. So `../pathcheck.mjs` cross-checks the manifest
+against the directory before running anything and exits 1 naming any module that
+is present but unlisted. Resolve a manifest conflict by keeping **both** sides'
+lines; if you drop one, the gate tells you.
+
 ## Regenerating from a monolith
 
 The split was produced by `tools/pathcheck-split.mjs`, which is re-runnable —

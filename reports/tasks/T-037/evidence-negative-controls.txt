@@ -3,7 +3,7 @@ CONTROL: frozen jump constants
   domain guarding it: tools/pathcheck/pathcheck-suite.mjs
   broke: src/config.js   'jumpVel: 14,' -> 'jumpVel: 13.5,'   (sites before/after: 1/0)
   exit code: 1
-  tally: pathcheck: 1736 passed, 5 failed
+  tally: pathcheck: 1807 passed, 5 failed
   failures printed:
     FAIL jump tune frozen
     FAIL full jump at run speed clears the widest gap with margin
@@ -15,7 +15,7 @@ CONTROL: hit-stop policy (juice)
   domain guarding it: tools/pathcheck/t-011-juice-feedback-pass.mjs
   broke: src/pure/juice.js   'if (event === 'kill') return J.killMs;' -> 'if (event === 'kill') return J.hurtMs;'   (sites before/after: 1/0)
   exit code: 1
-  tally: pathcheck: 1739 passed, 2 failed
+  tally: pathcheck: 1810 passed, 2 failed
   failures printed:
     FAIL T-011: freeze duration comes from CONFIG, per event kind
     FAIL T-011: a kill removes killMs*(1-scale) of simulated time at 120/60/30 fps, to within one frame of quantization [got 84.33 / 92.00 / 91.99, want 38.64]
@@ -25,7 +25,7 @@ CONTROL: momentum tier banding
   domain guarding it: tools/pathcheck/momentum-earned-pace-escalation.mjs
   broke: src/pure/momentum.js   'for (const t of cfg.tiers) if (d >= t) tier++;' -> 'for (const t of cfg.tiers) if (d > t) tier++;'   (sites before/after: 1/0)
   exit code: 1
-  tally: pathcheck: 1740 passed, 1 failed
+  tally: pathcheck: 1811 passed, 1 failed
   failures printed:
     FAIL READOUT: the tier banding covers empty to full
   total FAIL lines: 1
