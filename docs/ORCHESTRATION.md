@@ -24,7 +24,8 @@ This repo predates and outclasses parts of the drop-in scaffold this was
 adapted from:
 
 - **No pnpm/TypeScript/build step** — a documented invariant. All commands are
-  `node`/`python3 -m http.server`; dev deps live only under `tools/*/`.
+  `node` (including the dev server, `node tools/serve.mjs`); dev deps live only
+  under `tools/*/`.
 - **No `levels/*.level.json`** — level design is authored fixture + generator
   data in `src/pure/` (hence `lattice-designer`, not `level-designer`).
 - **Asset pipeline / `asset-artist`** — deferred at first scaffold, then
@@ -142,10 +143,32 @@ started from the wrong directory produces exactly the symptom of a boot break
 ("did not reach a rendered HUD frame"). Fetch a file that exists ONLY in the
 tree under test and confirm 200 — then a 404/no-boot means something real.
 
-**Stale `http.server` processes squat gate ports** after a worktree is pruned
-and cause phantom boot failures on a random port draw. `ps aux | grep
-[h]ttp.server`, kill the orphans — but never `:8741`, which is the operator's
-own dev server from `CLAUDE.md`.
+**Stale server processes squat gate ports** after a worktree is pruned
+and cause phantom boot failures on a random port draw. `ps aux | grep -E
+'[h]ttp.server|[s]erve.mjs'`, kill the orphans — but never `:8741`, which is
+the operator's own dev server from `CLAUDE.md`.
+
+**A blank `#232830` page with ONE console SyntaxError naming a missing export
+is a CACHE artifact, not a broken module.** ES-module loading is
+all-or-nothing: one failed import kills the whole graph, so the symptom of a
+stale cached module is a blank page, not a partial one. On 2026-08-02 Chrome
+had heuristically cached a pre-T-022 `src/sim/pace.js` (1275 bytes, no
+`momentumScrollSpeed` export) and ran it against post-T-022 `src/sim/level.js`,
+which imports that symbol — on a tree where pathcheck was 1674/0 and the
+selftest 29/29 after a hard reload. **First diagnostic, before editing
+anything:** in the page's console compare
+`fetch(url).then(r => r.text()).then(t => t.length)` against
+`fetch(url, {cache: 'reload'}).then(r => r.text()).then(t => t.length)` for the
+module the error names. Different byte counts = the cache, and the tree is
+innocent; identical = a real break, go read the module. (In the incident: 1275
+vs 5727.) `python3 -m http.server` sends no `Cache-Control` at all, which is
+what allows this; the fix is to serve with `node tools/serve.mjs` (T-024,
+`no-store` on every response, no validators, conditional requests ignored), and
+to pin gate worktrees with `node <main-checkout>/tools/serve.mjs <port> --root
+<worktree>` — the main checkout's copy, so worktrees branched before T-024
+work too. `tools/orch/merge-task.sh` still pins with `python3 -m http.server`
+for exactly that back-compatibility reason; its Playwright runs get a fresh
+cold profile every time, so it is not exposed.
 
 **The palette collision class.** Any lane that forked before
 `src/render/palette.js` landed may read `CONFIG.palette` or carry raw hex in a

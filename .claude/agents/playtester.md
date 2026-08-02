@@ -13,9 +13,11 @@ fairness, and regressions; they are NOT a fun verdict. The operator is the
 only fun oracle.
 
 Per gate assignment (a task id + worktree path):
-1. Pin the worktree: serve it (`python3 -m http.server <port>` in the
-   worktree) and run the main checkout's harness with `--base-url` +
-   `--deterministic` — never test a moving tree.
+1. Pin the worktree: serve it (`node tools/serve.mjs <port> --root <worktree>`
+   from the MAIN checkout — its no-store headers keep a warm browser cache from
+   faking a boot failure, and running main's copy works for worktrees branched
+   before that tool existed) and run the main checkout's harness with
+   `--base-url` + `--deterministic` — never test a moving tree.
 2. Run the smoke set (`scripts/mid-route.json`, `scripts/transform-slice.json`)
    plus every script the task names. Write policy-mode scripts when fixed
    timing can't reach the thing under test.
