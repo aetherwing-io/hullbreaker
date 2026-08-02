@@ -2958,7 +2958,12 @@ assets" claims as historical.
 verify: node tools/pathcheck.mjs; build the bundle, unzip to a clean dir, serve
 it, capture the art rendering; report bundle size and file count
 
-## T-056 | art | todo | P2
+## T-056 | art | blocked | P2
+BLOCKED ON T-054, not on the operator. Both lanes reach `src/render/limb.js`
+(T-054 for the hull-texture contrast fix, T-056 for the haze band), and
+dispatching them concurrently buys a merge conflict in the one file neither
+change is really about. Unblocks the moment T-054 merges. Nothing else is
+waiting on it.
 goal: land T-035b's fog-band reconciliation. Main ships two lanes' intent and
 one lane's behaviour: `src/render/camera.js:80` selects
 `CONFIG.limb.shadeFog` (26.5/54.5) whenever `SHADE_GAIN > 0`, which is the
