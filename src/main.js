@@ -416,6 +416,16 @@ function telemetry() {
       crouched: player.crouched, muzzleY: player.muzzleY,
       traversalState: player.traversalState,
       traversalControlUntil: player.traversalControlUntil,
+      // additive (T-025, SPRINT I-006 / playtest README hook request #9): the
+      // FAILURE LADDER, on the frozen channel. `attempt` below only moves
+      // inside a fixture (resetGame), so a default six-face trace carrying
+      // attempt alone has no way to say a life was spent — the harness was
+      // reduced to counting `▰`/`×N` glyphs out of the HUD, and every gate
+      // that read the attempt counter instead reported `deaths: 0` for a run
+      // that died twice. hp/lives are the numbers the HUD renders, published
+      // where a machine reads them. Read-only, same as everything else here.
+      hp: player.hp,
+      lives: player.lives,
     },
     screenRight: sRightEdge() - CONFIG.edges.margin,
     edgeMargin: player.x - player.hw - sLeftEdge(),

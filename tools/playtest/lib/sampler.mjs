@@ -19,11 +19,14 @@
 //               handle, always present"). Both channels are built from the
 //               same telemetry() function in src/main.js so their shared
 //               fields (gameMs, state, scrollX, player.{x,y,vx,vy,grounded,
-//               traversalState}, edgeMargin, weapon, attempt, falls,
+//               traversalState,hp,lives}, edgeMargin, weapon, attempt, falls,
 //               airJumps, transform, pace, pursuitSpeed/Peak, setbacks,
-//               hostiles) can't drift apart; HB.snapshot() additionally
-//               carries player.{hp,lives,facing,airJumpsLeft}, kills,
-//               shotsFired, capsules. Note window.HB's *other* top-level
+//               momentum, hostiles) can't drift apart; HB.snapshot()
+//               additionally carries player.{facing,airJumpsLeft}, kills,
+//               shotsFired, capsules. (player.hp/lives moved onto the shared
+//               list in T-025 — see SPRINT I-006: a default-run trace had no
+//               machine-readable failure counter at all before that.)
+//               Note window.HB's *other* top-level
 //               members (HB.state, HB.scrollX, HB.currentWeapon, HB.kills,
 //               …) are getter *functions*, not values — this sampler only
 //               ever reads them through snapshot(), never as bare
@@ -91,7 +94,12 @@ export function sampleState() {
     x: null, y: null, vx: null, vy: null, grounded: null, traversalState: null,
     scrollX: null, gameMs: null, state: null, falls: null, airJumps: null,
     transform: null, pace: null, pursuitSpeed: null, pursuitPeak: null, setbacks: null,
-    score: null, hostiles: null, capsules: null,
+    score: null, hostiles: null, capsules: null, momentum: null,
+    // stock lives, exact, from the telemetry channel (T-025 / SPRINT I-006).
+    // null in dom fidelity — the HUD's own `×N` text is still in `hudTL` on
+    // every sample and lib/metrics.mjs falls back to parsing it there, so a
+    // trace recorded before this field existed still yields a life count.
+    lives: null,
     // window.HB-only enrichment (like `capsules` below): which way the gun
     // points. The frozen testapi shape has no equivalent field, so this is
     // null on a page that publishes testapi without window.HB. The
@@ -138,6 +146,18 @@ export function sampleState() {
       pursuitSpeed: typeof s.pursuitSpeed === 'number' ? s.pursuitSpeed : null,
       pursuitPeak: typeof s.pursuitPeak === 'number' ? s.pursuitPeak : null,
       setbacks: s.setbacks != null ? s.setbacks : null,
+      // EARNED pace escalation (T-029, ?momentum=1): {drive, peakDrive, tier},
+      // absent from the snapshot on every other URL. Whitelisted here because
+      // this function builds every report.json trace row one field at a time —
+      // SPRINT I-035 was exactly this line missing, which left a harness gate
+      // re-deriving drive by inverting pursuitSpeed.
+      momentum: s.momentum || null,
+      // the failure ladder's lower rungs, exact rather than glyph-counted
+      // (src/main.js telemetry(), added by T-025 for SPRINT I-006). `hp` was
+      // already in the trace from the HUD's `▰` pips — prefer the channel's
+      // number when it is there, since the pips are a render of it.
+      hp: typeof s.player.hp === 'number' ? s.player.hp : base.hp,
+      lives: typeof s.player.lives === 'number' ? s.player.lives : null,
       // primary-channel hostiles (both channels publish the same rows); null
       // leaves the window.HB fallback below free to fill it.
       hostiles: Array.isArray(s.hostiles) ? mapHostiles(s.hostiles) : null,
