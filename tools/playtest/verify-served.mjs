@@ -154,7 +154,11 @@ const seen = await page.evaluate(async (watched) => {
     out.planLen = plan.length;
     out.scalePieces = plan.filter((p) => /^(mark|bd)/.test(p.kind)).length;
     out.hasSilhouette = plan.some((p) => p.kind === 'silhouette');
-    out.bakeArity = limbBakePlan.length;
+    // NOT reported: limbBakePlan.length. Function.length stops at the first
+    // defaulted parameter, so `(cfg, groundH, opts = {})` and the pre-T-045
+    // `(cfg, groundH)` both report 2 — measured on both, it discriminates
+    // nothing, and a number that looks like a fingerprint and never fires is
+    // worse than no number (T-050 review).
   } catch (e) { out.importError = String(e); }
   for (const f of watched) {
     const used = await fetch(f).then((r) => r.text()).then((t) => t.length).catch(() => null);
@@ -202,7 +206,7 @@ if (seen.planLen !== undefined) {
   if (seen.scalePieces === 0 || seen.hasSilhouette) {
     problems.push(`the page's own modules emit ${seen.scalePieces} scale-pass pieces` +
       (seen.hasSilhouette ? ' and still carry `silhouette`' : '') +
-      ` (arity ${seen.bakeArity}) — this is the I-037 fingerprint of a pre-T-045 limb.js`);
+      ' — this is the I-037 fingerprint of a pre-T-045 limb.js');
   } else if (seen.scalePieces !== expectedScale) {
     problems.push(`the page emits ${seen.scalePieces} scale-pass pieces; this tree emits ${expectedScale}`);
   } else {

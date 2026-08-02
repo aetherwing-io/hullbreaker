@@ -9,9 +9,12 @@
 // main, the same call returns 1633 with 818 mark/backdrop pieces, and the
 // shipped frame differs from ?scale=0 by 16-40% of its pixels at every viewport
 // (reports/tasks/T-050/build.md). 829/829/silhouette is the exact fingerprint
-// of a PRE-T-045 src/pure/limb.js, whose limbBakePlan has arity 2 and ignores
-// the third argument entirely — and a stale copy of that module was what the
-// page was executing.
+// of a PRE-T-045 src/pure/limb.js, declared limbBakePlan(cfg, groundH) — no
+// third parameter, so the options argument is dropped — and a stale copy of
+// that module was what the page was executing. (Function.length does not tell
+// the builds apart: it stops at the first defaulted parameter, so today's
+// (cfg, groundH, opts = {}) reports 2 as well. The piece count, the kind set
+// and the presence of `silhouette` are what discriminate.)
 //
 // So the gate hole was never in the numbers T-045 asserted. It is that every
 // gate in this repo reads files off disk in Node, and nothing asserted that the

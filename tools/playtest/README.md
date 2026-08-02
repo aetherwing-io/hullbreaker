@@ -1608,8 +1608,12 @@ with a browser console transcript as evidence. The tree was innocent: driven
 from the real level's `groundH`, `limbBakePlan` returns 1633 pieces with 818
 mark/backdrop kinds, and the frame differs from `?scale=0` by 16-40% of its
 pixels at every viewport. The page was executing a **pre-T-045 copy of
-`src/pure/limb.js`**, whose `limbBakePlan` has arity 2 and ignores the third
-argument, so `{scale:true}` and `{scale:false}` both returned the legacy 829.
+`src/pure/limb.js`**, declared `limbBakePlan(cfg, groundH)` — no third
+parameter, so the options argument is dropped and `{scale:true}` and
+`{scale:false}` both returned the legacy 829. (`Function.length` does not tell
+the two builds apart: it stops at the first defaulted parameter, so the current
+`(cfg, groundH, opts = {})` reports 2 as well. The piece count, the kind set and
+the presence of `silhouette` are the discriminators.)
 
 Every other gate in this repo reads files off disk in Node. This one asks the
 running page.

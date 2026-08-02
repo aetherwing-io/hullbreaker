@@ -8,11 +8,12 @@
 
 **I-037's evidence is real and reproducible. Its conclusion is wrong.** The
 shipped default run on `main` bakes the scale pass and renders it. What the
-browser was executing was a **pre-T-045 copy of `src/pure/limb.js`**, in which
-`limbBakePlan` has **arity 2** and ignores its third argument entirely — so
-`{scale:true}` and `{scale:false}` both return the legacy plan, `silhouette` is
-still in it, and there are no `mark*`/`bd*` kinds. That is the whole fingerprint
-I-037 reported, and it is not producible from this tree by any input.
+browser was executing was a **pre-T-045 copy of `src/pure/limb.js`**, declared
+`limbBakePlan(cfg, groundH)` — no third parameter, so the options argument is
+dropped on the floor and `{scale:true}` and `{scale:false}` both return the
+legacy plan, `silhouette` still in it and no `mark*`/`bd*` kinds. That is the
+whole fingerprint I-037 reported, and it is not producible from this tree by any
+input.
 
 Driven from the REAL level's `groundH` (`buildLevel(CONFIG).groundH`, 445
 columns — never a synthetic array):
@@ -24,13 +25,34 @@ columns — never a synthetic array):
 | `limbBakePlan(CONFIG, gH, {scale:false})` | 829 | 829 | 829 |
 | `mark*`/`bd*` pieces | **818** | 0 | 0 |
 | `silhouette` in the default plan | **no** | yes | yes |
-| `limbBakePlan.length` (arity) | 3 | 2 | — |
 
-Two pre-T-045 trees are sitting on this machine right now and reproduce I-037's
-numbers exactly: `/private/tmp/hb-pin-main-cd37b91` (`cd37b91`) and
-`/private/tmp/hb-pin-t009fix` — pinned gate worktrees from earlier in the
-session. Either can reach a browser two ways, and **both mechanisms are
-indistinguishable from a console**:
+**Those five rows are the whole discriminator, and they are unambiguous: the
+piece count, the kind set, and the presence of `silhouette`.**
+
+**`limbBakePlan.length` is NOT a discriminator, and an earlier version of this
+table said it was.** It claimed arity 3 on `main` against 2 pre-T-045. That
+number was reasoned from the signature, not measured, and it is wrong:
+`Function.length` stops counting at the first parameter with a default, so
+`function limbBakePlan(cfg, groundH, opts = {})` reports **2** — identical to
+the pre-T-045 `function limbBakePlan(cfg, groundH)`. Measured on both, side by
+side, by importing the pre-T-045 module out of `git show 36a540c:src/pure/limb.js`:
+`2` and `2`. Caught by the reviewer, in a section headed "every command and its
+result", in the report whose whole subject is a claim that was never checked
+against the thing it described. Nothing in the gate depended on it — no
+assertion reads arity — and `verify-served.mjs` only ever printed it as
+descriptive text next to the piece counts that do the work; **that mention is
+now removed from the tool as well**, along with the field it collected, so no
+future reader can pick it up as a fingerprint that would never fire.
+
+Two pre-T-045 trees were sitting on this machine during the investigation and
+reproduced I-037's numbers exactly: `/private/tmp/hb-pin-main-cd37b91`
+(`cd37b91`) and `/private/tmp/hb-pin-t009fix` — pinned gate worktrees from
+earlier in the session. (The integrator has since deleted both and killed their
+orphaned servers, so that specific hazard is gone; the measurements below were
+taken while they existed, and the FAIL-path re-verification after the review was
+done against a pre-T-045 tree reconstructed from `git show 36a540c` and deleted
+immediately after.) Either could reach a browser two ways, and **both mechanisms
+are indistinguishable from a console**:
 
 1. **the server was rooted on one of them** — every file is self-consistently
    old, so nothing looks wrong; or
@@ -130,6 +152,10 @@ missing from the list, so a dropped line fails loudly rather than silently.
 | `verify-served.mjs` → server rooted at this worktree | **PASS** — plan matches (1633), 818 scale pieces |
 | `verify-served.mjs` → server rooted at the pre-T-045 pin | **FAIL** — I-037 fingerprint + 5 files named with their commits |
 | `verify-served.mjs` → correct server root, poisoned profile | **FAIL** — 4 files "CACHED BYTES", commits named |
+| **after the review fix**, `limbBakePlan.length` measured on both builds side by side (pre-T-045 module imported from `git show 36a540c:src/pure/limb.js`) | **2 and 2** — arity discriminates nothing |
+| **after the review fix**, `node tools/pathcheck.mjs` | 2425 / 0 (unchanged; no assertion touched arity) |
+| **after the review fix**, `verify-served.mjs` → this worktree (port 8943) | **PASS** — live page reports 1633 pieces / 818 scale pieces |
+| **after the review fix**, `verify-served.mjs` → a tree reconstructed at `36a540c` (port 8944, deleted after) | **FAIL** — `0 scale-pass pieces and still carry silhouette`, no arity in the message, 6 files named with their commits |
 
 **On the two six-face numbers.** My branch changes no `src/` file, so the 43.0 s
 vs 51.4 s gap is run-to-run variance in this harness (deterministic input
@@ -139,6 +165,12 @@ game-over at 3 deaths. I did **not** compare either against T-045's documented
 50.2-55.1 s band: that band predates T-043's wasp aim-lock and squad stagger,
 which changes how long this policy survives, and inheriting it across that change
 would be exactly the error the lane brief names.
+
+**One useful thing the post-review FAIL run showed.** `36a540c` predates the
+limb being the default reveal, so `window.HB.g1` is null there and the
+plan-length check reported itself **skipped** rather than passed — the
+module-level check is what fired. That is the degradation the README's limitation
+3 describes, observed rather than assumed.
 
 ### Proving the new assertions bind (break → red → restore)
 
