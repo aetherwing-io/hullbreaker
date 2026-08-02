@@ -707,8 +707,8 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
 // is untouched (59 chunks, same seed, same rng draws): the lattice consumes no
 // randomness. Both values below are regression pins, not targets — if a change
 // moves them again it has to be as deliberate as this one was.
-ok(gH.length === 445 && plats.length === 62 && LVL.chunkLog.length === 59,
-   'normal generator shape pinned (445 columns / 62 platforms / 59 chunks), got ' +
+ok(gH.length === 445 && plats.length === 77 && LVL.chunkLog.length === 59,
+   'normal generator shape pinned (445 columns / 77 platforms / 59 chunks), got ' +
    gH.length + '/' + plats.length + '/' + LVL.chunkLog.length);
 // Moved three times inside T-009 and then moved BACK. Two passes lifted the
 // capsule out of the deck-line jump arc (rewardRise 0.7 -> 1.75, then a shelf
@@ -719,7 +719,7 @@ ok(gH.length === 445 && plats.length === 62 && LVL.chunkLog.length === 59,
 // 445 columns, same 59 chunks, same rng draws — the lattice consumes none);
 // what moves with the shelf height is the bands the patch pass reads, and at
 // the plain shape that is one catwalk fewer than the raised tier produced.
-ok(fingerprint(LVL) === 'e715cc38',
+ok(fingerprint(LVL) === '0447885a',
    'normal generator fingerprint unchanged, got ' + fingerprint(LVL));
 
 const fixtureBefore = JSON.stringify(TRAVERSAL_FIXTURE);

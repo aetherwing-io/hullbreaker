@@ -890,7 +890,32 @@
       "task": "T-046",
       "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
       "addedOn": "2026-08-02",
-      "notes": "Tiling wear overlay: chips, streaks, rust bleeds. ~78% transparent — deliberately an OVERLAY, so its alpha is authored, not a fog stack.",
+      "notes": "Tiling wear overlay: chips, streaks, rust bleeds. ~78% transparent \u2014 deliberately an OVERLAY, so its alpha is authored, not a fog stack.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "rig-marine",
+      "path": "assets/generated/sprites/rig-marine.png",
+      "source": "assets/generated/sprites/rig-marine.svg",
+      "category": "sprites",
+      "size": {
+        "w": 256,
+        "h": 256
+      },
+      "gpu": true,
+      "task": "T-040",
+      "generator": "codex exec via tools/assets/gen.mjs (see tools/assets/runs/spec-rig-marine-body2.md for the prompt of record), rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "RIG's body sprite, loaded at runtime by src/render/player.js on a billboard plane (entry 16 authorizes this; entry 17 confirms FAR/~15x30px stays the target size, not a bigger character). Deliberately BODY-ONLY, no weapon drawn: a separate 3D gun mesh still supplies the 8-way-aim weapon visual, composited on top, so a baked-in gun shape would double up. Two earlier codex passes are kept out of the manifest as rejected iterations (see reports/tasks/T-040/build.md): one drew an extended rifle arm (conflicts with the rotating gun mesh), one had a wider running stance whose feet reached ~0.61x the figure's height in width (this version narrows that to ~0.51x). The drawn content's own width:height (bounding-box, not canvas) is still wider than the frozen 0.7x1.7 collision box's own 0.41 ratio - a render-only overrun on the limbs, same documented-not-narrowed precedent as this file's own gun-sweep and CONFIG.hound's 2.4x visual/hitbox split; the collision box itself is untouched. Falls back to a procedural CanvasTexture (src/pure/rig.js's HELMET/TORSO/LEG_FRONT/LEG_BACK shapes) if the image fails to load - the sim never branches on which one rendered.",
       "palette": {
         "status": "pass",
         "roles": [

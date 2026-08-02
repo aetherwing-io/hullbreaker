@@ -1,0 +1,76 @@
+{
+  "measuredAt": "2026-08-02T10:36:37.708Z",
+  "tool": "tools/playtest/lightrig-capture.mjs",
+  "tag": "qa-t044-perf-2",
+  "servedRoot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-044",
+  "viewport": "1280x800, headless Chrome (channel: chrome)",
+  "lumaNote": "L = Rec.709 luma on sRGB bytes; bands are fixed row ranges (HUD strip skipped)",
+  "mode": "perf",
+  "note": "vsync DISABLED (--disable-gpu-vsync --disable-frame-rate-limit): avgMs is the real cost of a frame, NOT the 60fps gate — juice-stress.mjs is the gate",
+  "readings": {
+    "ship": {
+      "control": {
+        "perf": {
+          "frames": 180,
+          "fps": 675.7,
+          "avgMs": 1.48,
+          "worstMs": 4.1,
+          "over20ms": 0
+        },
+        "liveProjectiles": 0,
+        "draw": {
+          "frames": 3228,
+          "meanCalls": 164,
+          "maxCalls": 173,
+          "meanTriangles": 107224
+        },
+        "rig": {
+          "id": "rig",
+          "label": "RIG",
+          "shadows": true,
+          "exposure": 1.35,
+          "lights": 3,
+          "shadowMapSize": 2048,
+          "shadowBandTiles": [
+            80,
+            56
+          ],
+          "meshes": 114,
+          "casters": 91,
+          "receivers": 97
+        }
+      },
+      "stress": {
+        "perf": {
+          "frames": 180,
+          "fps": 733.5,
+          "avgMs": 1.36,
+          "worstMs": 4.2,
+          "over20ms": 0
+        },
+        "liveProjectiles": 256,
+        "draw": {
+          "frames": 3199,
+          "meanCalls": 161.9,
+          "maxCalls": 169,
+          "meanTriangles": 107206
+        },
+        "rig": {
+          "id": "rig",
+          "label": "RIG",
+          "shadows": true,
+          "exposure": 1.35,
+          "lights": 3,
+          "shadowMapSize": 2048,
+          "shadowBandTiles": [
+            80,
+            56
+          ],
+          "meshes": 111,
+          "casters": 91,
+          "receivers": 94
+        }
+      }
+    }
+  }
+}

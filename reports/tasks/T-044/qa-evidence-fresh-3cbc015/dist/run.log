@@ -1,0 +1,57 @@
+=== aimed run 1 ===
+[playtest] mode:    deterministic injection (keyed to gameMs)
+[playtest] outcome: died (fidelity: testapi)
+[playtest] deaths:  3 (from lives); served build: default-run
+[playtest] policy:  55 tap fire(s) across 12 rule(s)
+[playtest] report:  /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/qa-t044-dist/aimed-1/report.json
+[playtest] summary: /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/qa-t044-dist/aimed-1/summary.md
+=== aimed run 2 ===
+[playtest] mode:    deterministic injection (keyed to gameMs)
+[playtest] outcome: died (fidelity: testapi)
+[playtest] deaths:  3 (from lives); served build: default-run
+[playtest] policy:  88 tap fire(s) across 12 rule(s)
+[playtest] report:  /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/qa-t044-dist/aimed-2/report.json
+[playtest] summary: /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/qa-t044-dist/aimed-2/summary.md
+=== aimed run 3 ===
+[playtest] mode:    deterministic injection (keyed to gameMs)
+[playtest] outcome: died (fidelity: testapi)
+[playtest] deaths:  3 (from lives); served build: default-run
+[playtest] policy:  129 tap fire(s) across 12 rule(s)
+[playtest] report:  /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/qa-t044-dist/aimed-3/report.json
+[playtest] summary: /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/qa-t044-dist/aimed-3/summary.md
+=== aimed run 4 ===
+[playtest] mode:    deterministic injection (keyed to gameMs)
+[playtest] outcome: died (fidelity: testapi)
+[playtest] deaths:  3 (from lives); served build: default-run
+[playtest] policy:  104 tap fire(s) across 12 rule(s)
+[playtest] report:  /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/qa-t044-dist/aimed-4/report.json
+[playtest] summary: /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/qa-t044-dist/aimed-4/summary.md
+=== aimed run 5 ===
+[playtest] mode:    deterministic injection (keyed to gameMs)
+[playtest] outcome: died (fidelity: testapi)
+[playtest] deaths:  3 (from lives); served build: default-run
+[playtest] policy:  140 tap fire(s) across 12 rule(s)
+[playtest] report:  /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/qa-t044-dist/aimed-5/report.json
+[playtest] summary: /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/qa-t044-dist/aimed-5/summary.md
+=== full run 1 ===
+[playtest] mode:    deterministic injection (keyed to gameMs)
+[playtest] outcome: died (fidelity: testapi)
+[playtest] deaths:  3 (from lives); served build: default-run
+[playtest] policy:  51 tap fire(s) across 6 rule(s)
+[playtest] report:  /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/qa-t044-dist/full-1/report.json
+[playtest] summary: /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/qa-t044-dist/full-1/summary.md
+=== full run 2 ===
+[playtest] mode:    deterministic injection (keyed to gameMs)
+[playtest] outcome: died (fidelity: testapi)
+[playtest] deaths:  3 (from lives); served build: default-run
+[playtest] policy:  153 tap fire(s) across 6 rule(s)
+[playtest] report:  /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/qa-t044-dist/full-2/report.json
+[playtest] summary: /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/qa-t044-dist/full-2/summary.md
+=== full run 3 ===
+[playtest] mode:    deterministic injection (keyed to gameMs)
+[playtest] outcome: died (fidelity: testapi)
+[playtest] deaths:  3 (from lives); served build: default-run
+[playtest] policy:  73 tap fire(s) across 6 rule(s)
+[playtest] report:  /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/qa-t044-dist/full-3/report.json
+[playtest] summary: /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/qa-t044-dist/full-3/summary.md
+ALL DONE

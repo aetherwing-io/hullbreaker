@@ -713,6 +713,60 @@ scatter worse, control included (main 2/8 deviating, `gameMsMax` 4533–19683).
 
 ---
 
+## 9b. SECOND MERGE (main 7c5ad31): two lanes had built the same file
+
+T-040 merged first, and it brought **its own independent `src/render/preload.js`**
+into main — a 171-line implementation, not the gate this lane built. So the
+merge was an add/add conflict between two versions of a shared boot gate,
+which `docs/ORCHESTRATION.md`'s merge playbook names as "how a cycle dies" and
+had already planned for, assuming T-049 merged first. The order came out
+reversed, so I re-ran the playbook's own three checks rather than assume its
+conclusion still held:
+
+| check | result |
+| --- | --- |
+| same API surface? | main's exports `PRELOAD_BUDGET_MS`, `preloadTexture`, `awaitPreloads`, `preloadSnapshot`; mine exports those four **plus** `WARM_ON` — a strict superset |
+| what does the consumer use? | main's `player.js` imports exactly `{ awaitPreloads, preloadTexture }`, and its own comments say it is waiting on "T-049's concurrency fix" |
+| do T-040's assertions pin the gate's internals? | no — every one is against `player.js` / `sim/player.js`, none against the gate |
+
+So the documented answer holds with the order reversed: **T-049's gate
+satisfies T-040 wholesale**, and the conflict resolves by taking this lane's
+version. No hand-composition. `tools/pathcheck/manifest.mjs` composed both
+lanes' domains (52 total, this lane's renumbered `d51`).
+
+**The integration works, and this is the first time both lanes' assets have
+gone through one gate together:**
+
+```
+gate cost 33ms, warm 11ms, 6 assets registered:
+   ready   21ms  hound-brace-b.png     ready   21ms  polyp-iris-b.png
+   ready   21ms  carrier-hauler-b.png  ready   21ms  mortar-tripod-b.png
+   ready   21ms  wasp-drone-b.png      ready   21ms  rig-marine.png
+warnings: none
+```
+
+RIG's 256x256 registers beside the five hostile sprites, from a different
+module, and both lanes get their art. That is precisely the case §9.2's grace
+turns exist for — before them, whichever module awaited first would have
+starved the other.
+
+**One smoke run came back `not-completed`, and it is the known bimodality, not
+a regression.** That run stopped on `script-window` with `dispatched=26/26`,
+`gameMsMax` 9865, crush 30.47 — the same excursion mode documented in §8, seen
+there in `?sprites=0` and in main's own control. Six interleaved rounds
+against current main settled it:
+
+| | rounds reaching victory | crush range |
+| --- | --- | --- |
+| main (7c5ad31) | **6 / 6** | 35.21–35.38 |
+| this branch, merged | **6 / 6** | 35.26–35.43 |
+
+Gates on the merged tree: pathcheck **2829 / 0** (including T-040's own domain
+running against this gate), assets check PASS, gatecheck PASS,
+`preload-concurrency` 14/14, `sprite-fallback` 9/9.
+
+---
+
 ## 9. FIX CYCLE (task #146): a second multi-caller race, and brittle guards
 
 Three things came out of the fix cycle. Two were real defects; one was an
