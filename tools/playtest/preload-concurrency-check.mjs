@@ -14,7 +14,7 @@
 // module scope, then `await awaitPreloads()` at module scope — with no
 // knowledge of each other. That is the shape T-040 was told to adopt.
 //
-// Three conditions, because hoping for a race is not testing one:
+// FIVE conditions, because hoping for a race is not testing one:
 //   plain          both textures served normally; N trials
 //   slow-second    the second lane's texture is delayed 400ms at the network
 //                  (inside the 2500ms budget). Under the old code this is the
@@ -24,6 +24,13 @@
 //                  budget). The second MUST be 'timeout', the first MUST be
 //                  'ready', and the timeout message must state the time
 //                  actually waited rather than quoting the budget.
+//   awaits-first   a third module awaits the gate BEFORE anyone registers —
+//                  module evaluation order is the import graph's business,
+//                  not the asset owner's. Before the grace turns existed
+//                  this closed the gate on everyone: both asset lanes
+//                  REFUSED, zero art, 3 trials of 3.
+//   warm-up        the GPU warm-up ran, ran while the gate was still shut,
+//                  and ?warm=0 turns it off.
 //
 // HONESTY NOTES:
 //   * This tests the gate's contract, not the game: the fixture page is not
@@ -31,6 +38,11 @@
 //   * "Resident" here means the gate reported state 'ready' and handed back a
 //     texture object. That the GPU upload happened is asserted separately, by
 //     pathcheck, against the initTexture call site.
+//   * The warm-up's ORDERING is read from a field the module records
+//     (`warmedWhileClosed`), not inferred from timings: the first version of
+//     that check compared warmMs against costMs and passed with the two
+//     lines swapped, which is a false green of exactly the kind this repo
+//     keeps paying for.
 //   * Delays are injected with Playwright request interception, which is a
 //     fair model of a slow network but not of a slow DECODE.
 
@@ -123,6 +135,61 @@ check(/still loading after \d+ms of the \d+ms boot budget/.test(over.second.erro
       Math.abs(Number(/after (\d+)ms/.exec(over.second.error)[1]) - over.preload.costMs) < 100,
       'the timeout message states the time actually waited',
       over.second.error);
+
+/* The case the first concurrency fix did not cover, found while resolving
+   the I-039 fix cycle: a lane that awaits the gate BEFORE anyone has
+   registered. Module evaluation order is decided by the import graph, not by
+   who owns an asset, so this is a normal shape for a shared gate to meet —
+   and before the grace turns existed it closed the gate on everyone, both
+   asset lanes REFUSED, zero art, 3 trials of 3. */
+console.log('\n=== awaits-first: a lane awaits before anyone has registered ===');
+const AWAIT_FIRST = '/tools/playtest/fixtures/preload-concurrency/index-awaits-first.html';
+const firstAwait = [];
+for (let i = 0; i < 3; i++) {
+  const page = await browser.newPage({ viewport: { width: 400, height: 300 } });
+  await page.goto(base + AWAIT_FIRST, { waitUntil: 'load' });
+  await page.waitForFunction(() => window.__T049_DONE === true, { timeout: 30000 });
+  firstAwait.push(await page.evaluate(() => ({
+    first: window.__T049_FIRST, second: window.__T049_SECOND,
+    preload: window.__HB_PRELOAD(),
+  })));
+  await page.close();
+}
+check(firstAwait.every((r) => r.first.state === 'ready' && r.second.state === 'ready'),
+      'an empty await does not close the gate on the lanes behind it',
+      firstAwait.map((r) => `${r.first.state}/${r.second.state}`).join('  '));
+check(firstAwait.every((r) => r.preload.assets.length === 2),
+      'both later registrations still reached the shared registry',
+      'entries: ' + firstAwait.map((r) => r.preload.assets.length).join(', '));
+
+/* The warm-up's ORDERING, as behaviour rather than as a regex over the
+   source: if the warm-up ran before the gate opened, its measured cost is
+   contained inside the gate's own measured cost. (Whether the warm-up helps
+   determinism is a different question, answered — negatively, on this lane —
+   in reports/tasks/T-049/build.md §8. This only checks it happens, and
+   happens in the right place.) */
+console.log('\n=== the warm-up runs INSIDE the gate, and ?warm=0 turns it off ===');
+async function warmProbe(qs) {
+  const page = await browser.newPage({ viewport: { width: 400, height: 300 } });
+  await page.goto(base + PAGE + qs, { waitUntil: 'load' });
+  await page.waitForFunction(() => window.__T049_DONE === true, { timeout: 30000 });
+  const out = await page.evaluate(() => window.__HB_PRELOAD());
+  await page.close();
+  return out;
+}
+const warmOn = await warmProbe('');
+const warmOff = await warmProbe('?warm=0');
+check(warmOn.warmOn === true && warmOn.warmMs > 0,
+      'the warm-up ran by default', `warmOn=${warmOn.warmOn} warmMs=${warmOn.warmMs}`);
+// NOT a timing comparison: `warmMs <= costMs` is true whichever side of
+// `closed = true` the warm-up runs on, so the first version of this check
+// passed with the two lines swapped. The module records the fact instead.
+check(warmOn.warmedWhileClosed === true,
+      'it ran while the gate was still SHUT — before any caller was released',
+      `warmedWhileClosed=${warmOn.warmedWhileClosed}, warmMs=${warmOn.warmMs} of costMs=${warmOn.costMs}`);
+check(warmOff.warmOn === false && warmOff.warmMs === 0,
+      '?warm=0 skips it, which is what makes the A/B measurable',
+      `warmOn=${warmOff.warmOn} warmMs=${warmOff.warmMs}`);
 
 console.log(`\n[preload-concurrency] ${failures ? failures + ' CHECK(S) FAILED' : 'all checks passed'}`);
 await browser.close();

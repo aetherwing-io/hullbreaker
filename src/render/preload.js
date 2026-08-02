@@ -56,6 +56,14 @@ import { renderer } from './scene.js';
    bootstrap's 10s boot watchdog so a slow load never paints a panel. */
 export const PRELOAD_BUDGET_MS = 2500;
 
+/* How many macrotask turns the registry must stay QUIET before the gate
+   counts registration as finished. Two is enough for sibling modules to
+   evaluate and register (module-graph evaluation continues while the first
+   caller's await is suspended) and costs a fraction of a millisecond; it
+   exists because a caller that awaits before anyone registers used to close
+   the gate on every asset-owning lane behind it. */
+const GRACE_TURNS = 2;
+
 const entries = new Map();               // url -> entry (see preloadTexture)
 let closed = false;
 let startedAt = 0;
@@ -64,6 +72,13 @@ let deadlineAt = 0;                      // startedAt + the budget: ONE clock fo
 let closedAfterMs = 0;                   // what the gate actually cost the boot
 let gate = null;                         // the ONE in-flight settlement promise
 let warmMs = 0;                          // what the GPU warm-up cost, measured
+let warmedWhileClosed = false;           // …and whether it ran while the gate was
+                                         //   still shut. Recorded rather than
+                                         //   inferred: a check that the warm-up
+                                         //   happens BEFORE the gate opens cannot
+                                         //   be made from timings alone (the first
+                                         //   attempt passed with the two lines
+                                         //   swapped), so the module states it.
 
 function nowMs() {
   return typeof performance !== 'undefined' && performance.now
@@ -185,6 +200,7 @@ const WARM_PX = 4;                       // enough to sample a mip, small enough
 
 function warmResident(ready) {
   if (!WARM_ON || !ready.length) return 0;
+  warmedWhileClosed = !closed;           // observable ordering; see the field
   const started = nowMs();
   let rt = null, geo = null;
   const mats = [];
@@ -230,9 +246,30 @@ function warmResident(ready) {
    was never given. That was found by review, reproduced 7 times in 10, and
    is what this loop and the single `deadlineAt` exist to prevent. */
 async function settle() {
+  let quiet = 0;
   for (;;) {
     const pending = [...entries.values()].filter((e) => e.state === 'pending');
-    if (!pending.length) break;               // everything registered so far is in
+    if (!pending.length) {
+      /* NOTHING LEFT IN FLIGHT — but that is not the same as "nobody else is
+         coming". Registration happens during module-graph evaluation, which
+         goes on running while this await is suspended, and evaluation ORDER
+         is decided by the import graph rather than by who owns an asset. A
+         lane that awaits the gate before the asset owner's module body has
+         run would otherwise close it on everyone: measured, before this
+         loop existed, as both asset lanes REFUSED and zero art loaded, 3
+         trials of 3 (tools/playtest/fixtures/preload-concurrency/
+         lane-awaits-first.js, and the check that now covers it).
+
+         So the registry has to be QUIET for a couple of macrotask turns
+         before it counts as complete. Two turns is sub-millisecond and it
+         is bounded by the same deadline as everything else. */
+      if (quiet >= GRACE_TURNS) break;
+      if (deadlineAt && nowMs() >= deadlineAt) break;
+      quiet++;
+      await new Promise((r) => setTimeout(r, 0));
+      continue;
+    }
+    quiet = 0;                                // somebody arrived: start over
     const left = deadlineAt - nowMs();
     if (left <= 0) break;                     // the ONE budget, not a fresh one
     let timer = null;
@@ -291,6 +328,7 @@ export function preloadSnapshot() {
     costMs: closedAfterMs,
     warmOn: WARM_ON,
     warmMs,
+    warmedWhileClosed,
     assets: [...entries.values()].map((e) => ({
       url: e.url, state: e.state, ms: e.ms, error: e.error,
     })),

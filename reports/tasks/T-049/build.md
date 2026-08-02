@@ -49,7 +49,7 @@ them — judge the art, not pixel deltas.
 ### The one measurement that cuts against the sprites
 
 Measured off the committed frames above — the method is two sentences and the
-honesty note in §9 — each body's box against the background it stands on, at
+honesty note in §10 — each body's box against the background it stands on, at
 true size:
 
 | role | mode | drawn px | body mean L | bg L | body p10..p90 | px separated by >=20 L |
@@ -713,7 +713,75 @@ scatter worse, control included (main 2/8 deviating, `gameMsMax` 4533–19683).
 
 ---
 
-## 9. HONESTY LIMITS
+## 9. FIX CYCLE (task #146): a second multi-caller race, and brittle guards
+
+Three things came out of the fix cycle. Two were real defects; one was an
+artifact worth naming so nobody chases it again.
+
+### 9.1 The "1 failing assertion" was two processes sharing a worktree
+
+My first pathcheck of the cycle reported `FAIL T-049/I-039: the warm-up reads
+a pixel back`; the next five runs on the identical committed tree reported
+**2748–2751 passed, 0 failed**. A static regex over an unchanged file cannot
+fail intermittently, so I hashed the file before each of six consecutive runs:
+the hash changed between run 1 (`a24dde225fe4`) and run 2 (`025e8f555610`)
+with no edit of mine, and `git diff HEAD` showed one changed line that was
+gone thirty seconds later. Another agent was running break/restore against
+`src/render/preload.js` **in this worktree** while I ran the gate. Flagged to
+`fix-T-049`; not a defect in the tree.
+
+### 9.2 A SECOND multi-caller race — real, and the keystone one
+
+The concurrency fix in §6 handles a sibling registering *while the gate is
+open*. It did **not** handle a caller that awaits the gate *before anyone has
+registered*: `settle()` saw an empty registry, broke immediately, set
+`closed`, and every later registration was refused by name.
+
+That is precisely the keystone shape — T-040, T-051 and T-052 all import this
+gate, and **module evaluation order is decided by the import graph, not by who
+owns an asset**. Measured with a third fixture
+(`fixtures/preload-concurrency/lane-awaits-first.js`, imported first):
+
+| | before | after |
+| --- | --- | --- |
+| lane-first / lane-second | **refused / refused**, 3 of 3 | **ready / ready**, 3 of 3 |
+| gate cost | 0 ms (closed instantly) | 12–19 ms |
+
+Fix: the registry must be **quiet for two macrotask turns** before it counts
+as complete (`GRACE_TURNS`), bounded by the same single deadline. Two turns is
+sub-millisecond. Now a permanent condition in
+`preload-concurrency-check.mjs`; removing the grace turns puts it straight
+back to `refused/refused` 3 of 3.
+
+### 9.3 The guards were asserting appearance, not behaviour
+
+Several boot-gate assertions matched exact source text — `if (!gate) gate =
+settle();`, and worst a whitespace-sensitive 200-character window around
+`warmResident(...)` followed by `closed = true;`. Those fail on a reformat
+that changes nothing and pass on a rewrite that breaks the contract, and three
+lanes are about to edit around this file. They are replaced by behavioural
+checks in the browser tool; what stays static is only what a text scan is the
+right tool for (which file may construct a loader, whether a declared constant
+matches the one the harness reasons about).
+
+**One of the replacements was itself a false green, caught by breaking it.**
+The ordering check first compared `warmMs <= costMs` — which is true whichever
+side of `closed = true` the warm-up runs on, and it duly passed with the two
+lines swapped. The module now records `warmedWhileClosed` and the tool asserts
+that; the same break then prints
+`FAIL … warmedWhileClosed=false`. That is the third false green this lane has
+found in its own gates by breaking them on purpose (§6, §9.3, and the raw-text
+`initTexture` match). The pattern is consistent: **an assertion written from
+the author's mental model passes for the wrong reason until someone breaks the
+thing it guards.**
+
+Assertion count 2751 → 2748: eight source-literal guards removed, five
+behavioural checks added to the browser tool, three formatting-independent
+static ones kept.
+
+---
+
+## 10. HONESTY LIMITS
 
 - **Every capture is one moment of one run.** The three modes are three page
   loads; bodies drift between them. Nothing here is a pixel diff.

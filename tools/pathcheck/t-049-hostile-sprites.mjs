@@ -173,48 +173,58 @@ export async function run() {
      'T-049: the budget this harness reasons about (' + PRELOAD_BUDGET_MS + 'ms) is ' +
      'the one src/render/preload.js actually ships (' + budgetMs + 'ms)');
 
-  // (e0) THE GATE IS SHARED, not per-caller. Review found the first version
-  //      racing a snapshot per call and force-closing on everyone else: a
-  //      second lane's texture was discarded in 7 of 10 trials, in 3-6ms,
-  //      and told it had missed a 2500ms budget. The behavioural proof is
-  //      tools/playtest/preload-concurrency-check.mjs (two independent
-  //      modules, race forced by a delayed response); these three keep the
-  //      SHAPE of the fix from being unpicked without that tool running.
-  ok(/if \(!gate\) gate = settle\(\);/.test(preloadSrc),
-     'T-049: awaitPreloads() hands every caller the SAME in-flight settlement ' +
-     'promise instead of racing a private snapshot of the registry');
-  ok(/deadlineAt = startedAt \+ PRELOAD_BUDGET_MS/.test(preloadSrc) &&
-     /const left = deadlineAt - nowMs\(\)/.test(preloadSrc),
-     'T-049: the gate runs on ONE deadline started at the first registration, so ' +
-     'a second caller cannot be given a fresh budget or robbed of the shared one');
-  ok(!/still loading after the '/.test(preloadSrc) &&
-     /still loading after ' \+ waited \+ 'ms of the '/.test(preloadSrc),
-     'T-049: a timeout reports the time ACTUALLY waited — the reviewed version ' +
-     'quoted the 2500ms budget after discarding an asset in 4ms');
+  /* (e0) THE GATE'S BEHAVIOUR IS PROVED BY A BROWSER TOOL, NOT BY REGEXES.
+   *
+   * Three properties matter and none of them is a text pattern: every caller
+   * shares one settlement; a caller that awaits before anyone registers does
+   * not close the gate on the lanes behind it; and a timeout reports the
+   * time actually waited. All three were BUGS at some point in this lane's
+   * history, all three were found by running the thing rather than reading
+   * it, and all three are asserted for real in
+   * tools/playtest/preload-concurrency-check.mjs (independent sibling
+   * modules, races forced by delayed responses, repeated trials).
+   *
+   * What used to be here instead was a set of source-literal matches —
+   * `if (!gate) gate = settle();`, and worst, a whitespace-sensitive
+   * 200-character window around `warmResident(...)` followed by
+   * `closed = true;`. Those assert that the code LOOKS a certain way. With
+   * T-040, T-051 and T-052 all editing around this gate, they would fail on
+   * a reformat that changes no behaviour, and — being about appearance —
+   * they would keep passing on a rewrite that broke the contract. This
+   * lane already shipped one assertion whose subject was its own prose
+   * (§6); these were the same mistake in a different disguise.
+   *
+   * What stays static below is only what a text scan is genuinely the right
+   * tool for: WHICH FILE may construct a loader, and whether a declared
+   * constant matches the one the harness reasons about. Everything about
+   * ordering, sharing and timing is behavioural and lives in the tool. */
+  ok(/awaitPreloads/.test(preloadSrc) && /settle/.test(preloadSrc),
+     'T-049: src/render/preload.js still exposes the settlement gate the ' +
+     'behavioural check drives (tools/playtest/preload-concurrency-check.mjs)');
   ok(/state: 'refused'/.test(preloadSrc),
-     'T-049: an asset registered after the gate closed is refused by name, not ' +
-     'silently accepted into a gate that will never open');
+     'T-049: the module still distinguishes a REFUSED registration from a ' +
+     'timeout — the two diagnostics mean different things to a lane owner');
 
-  // (e-warm) THE GPU WARM-UP (I-039). Awaiting the load is not enough:
-  //      T-040's 16-round interleaved re-gate found the control invariant
-  //      (16/16 runs dispatched 18 of 26 events) while the shipped sprite
-  //      build deviated in 7 of 16, because a driver can defer the real
-  //      upload/mipmap work until something forces it — and the first thing
-  //      that forces it is frame 1. The gate therefore DRAWS every resident
-  //      texture once offscreen and READS A PIXEL BACK, which blocks until
-  //      the GPU has actually done the work.
-  ok(/renderer\.readRenderTargetPixels\(/.test(preloadSrc),
+  /* (e-warm) THE GPU WARM-UP (I-039). Kept static only where a text scan is
+   * the right tool — the presence of the readback (a draw alone can still be
+   * queued into frame 1), the offscreen target and its restoration, and the
+   * A/B flag. The ORDERING claim ("it runs before the gate opens") used to
+   * be a whitespace-sensitive regex and is now behavioural: the tool checks
+   * that the warm-up's cost is contained inside the gate's own cost, which
+   * can only be true if it ran before close.
+   *
+   * NOTE FOR WHOEVER READS THIS NEXT: the warm-up did NOT fix I-039 on this
+   * lane (16 rounds: 11/16 deviating without it, 14/16 with it, against a
+   * 1/16 control). It is kept for the deferred-upload hazard, not because it
+   * closed that issue. See reports/tasks/T-049/build.md §8. */
+  ok(/readRenderTargetPixels/.test(preloadSrc),
      'T-049/I-039: the warm-up reads a pixel back — that readback is what ' +
      'blocks on the GPU; a draw alone can still be queued into frame 1');
-  ok(/renderer\.setRenderTarget\(rt\)/.test(preloadSrc) &&
-     /renderer\.setRenderTarget\(prev\)/.test(preloadSrc),
-     'T-049/I-039: the warm-up draws OFFSCREEN and restores the previous ' +
-     'render target — the visible canvas is never touched by it');
-  ok(/warmResident\([\s\S]{0,200}?\);\s*\n\s*closed = true;/.test(preloadSrc),
-     'T-049/I-039: the warm-up runs BEFORE the gate opens — warming after ' +
-     'closed = true would be warming after frame 1 is already allowed');
-  ok(/QUERY\.get\('warm'\) !== '0'/.test(preloadSrc),
-     'T-049/I-039: ?warm=0 is the A/B control for the warm-up measurement');
+  ok(/setRenderTarget/.test(preloadSrc) && /getRenderTarget/.test(preloadSrc),
+     'T-049/I-039: the warm-up draws offscreen and restores the render target ' +
+     'it found — the visible canvas is never touched by it');
+  ok(/'warm'/.test(preloadSrc),
+     'T-049/I-039: ?warm=0 still exists as the A/B control for the warm-up');
 
   // (e) …and a late arrival is thrown away rather than uploaded mid-run
   ok(/if \(closed[^)]*\) \{ tex\.dispose\(\); return; \}/.test(preloadSrc),
