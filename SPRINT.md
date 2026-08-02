@@ -3179,3 +3179,36 @@ Related, same report: T-056's `build.md` sky-band table cannot be reproduced by
 a single committed command — the reviewer got the exact numbers by combining
 two committed conventions by hand. The figures are genuine; the citation path
 is not. Worth a `--top` flag next time that method is reused.
+
+## I-049 — A REAL LEAD, UNCHASED (2026-08-02, from T-057's report)
+
+T-057 found one result it could not explain and could not pursue, and it is the
+best lead on the operator's flicker that exists:
+
+**Bumping hull/wall `copies` 3 -> 4 while holding `cellPx` fixed moved the
+shimmer metric substantially worse — 7,804 -> 10,050 changing px — even though
+the on-screen world-space density is provably unchanged** (guaranteed by
+`worldPerTileCopy`'s own invariant, which pathcheck asserts).
+
+Why that matters more than it looks: if the world-space size of a texel on
+screen is identical and the shimmer still moves by 29%, then **the shimmer is
+not purely a minification-ratio problem**. Something about how UVs are
+distributed across instances changed. That points at `src/render/limb.js`'s
+instanced UV assignment — which was fenced from T-057 this cycle, so it went
+uninvestigated rather than unnoticed.
+
+This reframes the fix directions already recorded above. Before reaching for a
+distance-based fade (which treats the symptom), it is worth asking whether
+neighbouring instances are sampling the tile at offsets that beat against each
+other under motion — a per-instance UV or mip-selection artifact rather than a
+filtering one. If so, the fade would mask it rather than fix it, and the real
+repair would be cheaper and more correct.
+
+Whoever takes this: `limb.js` is the file, the invariant to hold is T-054's
+fine-detail gain (near-hull 1.648 vs the flat control's 0.416), and
+`tools/playtest/hulltex-shimmer.mjs` is the rig — with the caveat that it is
+bimodal across cold launches (~0.24% noise floor) and must be run as a
+distribution over separate process launches, never one sample. Its headless
+harness also runs SwiftShader, which reports a generic "WebKit" vendor string
+and probably cannot validate anisotropic filtering at all, so a real-GPU check
+belongs in any conclusion about filtering.
