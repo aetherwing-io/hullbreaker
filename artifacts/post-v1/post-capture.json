@@ -1,0 +1,848 @@
+{
+  "measuredAt": "2026-08-02T06:20:01.391Z",
+  "tool": "tools/playtest/post-capture.mjs",
+  "viewport": "1280x800 @ deviceScaleFactor 1",
+  "scenes": {
+    "far-combat": {
+      "before": {
+        "gameMs": 9000.180000000051,
+        "state": "PAUSED",
+        "scrollX": 38.50297004399974,
+        "player": {
+          "x": 24.83242290779195,
+          "y": 4.6146897198152,
+          "hp": 3,
+          "lives": 2
+        },
+        "hostiles": [
+          {
+            "kind": "wasp",
+            "state": "recover",
+            "x": 5.608797951326153,
+            "y": 8.80563398640953
+          },
+          {
+            "kind": "wasp",
+            "state": "recover",
+            "x": 16.285010823138315,
+            "y": 5.7593580055183375
+          },
+          {
+            "kind": "carrier",
+            "state": "cruise",
+            "x": 45.38711441200022,
+            "y": 6.100074604455461
+          },
+          {
+            "kind": "wasp",
+            "state": "cruise",
+            "x": 50.858463839998926,
+            "y": 6.0483426113766345
+          },
+          {
+            "kind": "wasp",
+            "state": "cruise",
+            "x": 66.99189984000056,
+            "y": 7.663446260231477
+          }
+        ],
+        "kills": 1,
+        "post": {
+          "on": false,
+          "status": "off",
+          "strength": 0,
+          "radius": 0,
+          "threshold": 0,
+          "samples": 2,
+          "gain": 1,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "perf": {
+          "frames": 180,
+          "fps": 120.2,
+          "avgMs": 8.32,
+          "worstMs": 10.3,
+          "over20ms": 0
+        },
+        "juice": {
+          "enabled": true,
+          "trauma": 0,
+          "hitStopMs": 0,
+          "sparks": 0,
+          "flashes": 1,
+          "sparkMax": 224,
+          "flashMax": 20,
+          "crush": 0
+        },
+        "draw": {
+          "calls": 118,
+          "triangles": 50420,
+          "geometries": 73,
+          "textures": 6,
+          "programs": 7
+        },
+        "url": "/index.html?testapi=1&shell=0&fixeddt=16.667&bloom=0",
+        "shot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-048/artifacts/post-v1/far-combat--before.png",
+        "installedAtMs": 83.33500000000001,
+        "stats": {
+          "mean": 66.98,
+          "skyMean": 72.76,
+          "aboveL200Pct": 0.1412,
+          "aboveL240Pct": 0.0064,
+          "max": 255
+        },
+        "errors": []
+      },
+      "after": {
+        "gameMs": 9000.180000000051,
+        "state": "PAUSED",
+        "scrollX": 38.50297004399974,
+        "player": {
+          "x": 24.83242290779195,
+          "y": 4.6146897198152,
+          "hp": 3,
+          "lives": 2
+        },
+        "hostiles": [
+          {
+            "kind": "wasp",
+            "state": "recover",
+            "x": 5.608797951326153,
+            "y": 8.80563398640953
+          },
+          {
+            "kind": "wasp",
+            "state": "recover",
+            "x": 16.285010823138315,
+            "y": 5.7593580055183375
+          },
+          {
+            "kind": "carrier",
+            "state": "cruise",
+            "x": 45.38711441200022,
+            "y": 6.100074604455461
+          },
+          {
+            "kind": "wasp",
+            "state": "cruise",
+            "x": 50.858463839998926,
+            "y": 6.0483426113766345
+          },
+          {
+            "kind": "wasp",
+            "state": "cruise",
+            "x": 66.99189984000056,
+            "y": 7.663446260231477
+          }
+        ],
+        "kills": 1,
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 2,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "perf": {
+          "frames": 180,
+          "fps": 119.9,
+          "avgMs": 8.34,
+          "worstMs": 10.3,
+          "over20ms": 0
+        },
+        "juice": {
+          "enabled": true,
+          "trauma": 0,
+          "hitStopMs": 0,
+          "sparks": 0,
+          "flashes": 1,
+          "sparkMax": 224,
+          "flashMax": 20,
+          "crush": 0
+        },
+        "draw": {
+          "calls": 132,
+          "triangles": 50434,
+          "geometries": 74,
+          "textures": 19,
+          "programs": 23
+        },
+        "url": "/index.html?testapi=1&shell=0&fixeddt=16.667",
+        "shot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-048/artifacts/post-v1/far-combat--after.png",
+        "installedAtMs": 150.00300000000001,
+        "stats": {
+          "mean": 67.83,
+          "skyMean": 73.19,
+          "aboveL200Pct": 0.1593,
+          "aboveL240Pct": 0,
+          "max": 236
+        },
+        "errors": []
+      },
+      "driverInTime": true,
+      "frameExact": true,
+      "diff": {
+        "meanAbs": 0.991,
+        "max": 148,
+        "changedPct": 2.519,
+        "reach": 0.556
+      }
+    },
+    "far-combat-late": {
+      "before": {
+        "gameMs": 17000.33999999986,
+        "state": "PAUSED",
+        "scrollX": 72.44211547999812,
+        "player": {
+          "x": 60.240134755792006,
+          "y": 4.6826882397583995,
+          "hp": 3,
+          "lives": 1
+        },
+        "hostiles": [
+          {
+            "kind": "wasp",
+            "state": "cruise",
+            "x": 46.34715911615717,
+            "y": 8.132408453041508
+          },
+          {
+            "kind": "hound",
+            "state": "prowl",
+            "x": 112.5,
+            "y": 2.45
+          },
+          {
+            "kind": "carrier",
+            "state": "cruise",
+            "x": 114.55999120000001,
+            "y": 6.853129313326634
+          },
+          {
+            "kind": "wasp",
+            "state": "cruise",
+            "x": 115.66666000000004,
+            "y": 6.720554911034327
+          }
+        ],
+        "kills": 1,
+        "post": {
+          "on": false,
+          "status": "off",
+          "strength": 0,
+          "radius": 0,
+          "threshold": 0,
+          "samples": 2,
+          "gain": 1,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "perf": {
+          "frames": 180,
+          "fps": 120,
+          "avgMs": 8.33,
+          "worstMs": 10.4,
+          "over20ms": 0
+        },
+        "juice": {
+          "enabled": true,
+          "trauma": 0,
+          "hitStopMs": 0,
+          "sparks": 0,
+          "flashes": 1,
+          "sparkMax": 224,
+          "flashMax": 20,
+          "crush": 0
+        },
+        "draw": {
+          "calls": 100,
+          "triangles": 50268,
+          "geometries": 77,
+          "textures": 6,
+          "programs": 8
+        },
+        "url": "/index.html?testapi=1&shell=0&fixeddt=16.667&bloom=0",
+        "shot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-048/artifacts/post-v1/far-combat-late--before.png",
+        "installedAtMs": 66.668,
+        "stats": {
+          "mean": 69.03,
+          "skyMean": 72.68,
+          "aboveL200Pct": 0.1456,
+          "aboveL240Pct": 0.0061,
+          "max": 255
+        },
+        "errors": []
+      },
+      "after": {
+        "gameMs": 17000.33999999986,
+        "state": "PAUSED",
+        "scrollX": 72.44211547999812,
+        "player": {
+          "x": 60.240134755792006,
+          "y": 4.6826882397583995,
+          "hp": 3,
+          "lives": 1
+        },
+        "hostiles": [
+          {
+            "kind": "wasp",
+            "state": "cruise",
+            "x": 46.34715911615717,
+            "y": 8.132408453041508
+          },
+          {
+            "kind": "hound",
+            "state": "prowl",
+            "x": 112.5,
+            "y": 2.45
+          },
+          {
+            "kind": "carrier",
+            "state": "cruise",
+            "x": 114.55999120000001,
+            "y": 6.853129313326634
+          },
+          {
+            "kind": "wasp",
+            "state": "cruise",
+            "x": 115.66666000000004,
+            "y": 6.720554911034327
+          }
+        ],
+        "kills": 1,
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 2,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "perf": {
+          "frames": 180,
+          "fps": 120,
+          "avgMs": 8.33,
+          "worstMs": 10.4,
+          "over20ms": 0
+        },
+        "juice": {
+          "enabled": true,
+          "trauma": 0,
+          "hitStopMs": 0,
+          "sparks": 0,
+          "flashes": 1,
+          "sparkMax": 224,
+          "flashMax": 20,
+          "crush": 0
+        },
+        "draw": {
+          "calls": 114,
+          "triangles": 50282,
+          "geometries": 78,
+          "textures": 19,
+          "programs": 23
+        },
+        "url": "/index.html?testapi=1&shell=0&fixeddt=16.667",
+        "shot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-048/artifacts/post-v1/far-combat-late--after.png",
+        "installedAtMs": 283.33900000000006,
+        "stats": {
+          "mean": 70.08,
+          "skyMean": 73.15,
+          "aboveL200Pct": 0.1587,
+          "aboveL240Pct": 0,
+          "max": 236
+        },
+        "errors": []
+      },
+      "driverInTime": true,
+      "frameExact": true,
+      "diff": {
+        "meanAbs": 1.245,
+        "max": 143,
+        "changedPct": 3.561,
+        "reach": 0.375
+      }
+    },
+    "traversal-hunt": {
+      "before": {
+        "gameMs": 8000.1600000000735,
+        "state": "PAUSED",
+        "scrollX": 73,
+        "player": {
+          "x": 65.22269786692797,
+          "y": 6.755023199902,
+          "hp": 3,
+          "lives": 3
+        },
+        "hostiles": [
+          {
+            "kind": "wasp",
+            "state": "cruise",
+            "x": 39.559746792299606,
+            "y": 5.784849311113269
+          },
+          {
+            "kind": "wasp",
+            "state": "cruise",
+            "x": 44.294042972485414,
+            "y": 12.976162462270691
+          }
+        ],
+        "kills": 0,
+        "post": {
+          "on": false,
+          "status": "off",
+          "strength": 0,
+          "radius": 0,
+          "threshold": 0,
+          "samples": 2,
+          "gain": 1,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "perf": {
+          "frames": 180,
+          "fps": 120,
+          "avgMs": 8.34,
+          "worstMs": 10.4,
+          "over20ms": 0
+        },
+        "juice": {
+          "enabled": true,
+          "trauma": 0,
+          "hitStopMs": 0,
+          "sparks": 0,
+          "flashes": 0,
+          "sparkMax": 224,
+          "flashMax": 20,
+          "crush": 0
+        },
+        "draw": {
+          "calls": 26,
+          "triangles": 40016,
+          "geometries": 26,
+          "textures": 3,
+          "programs": 8
+        },
+        "url": "/index.html?testapi=1&shell=0&fixeddt=16.667&slice=traversal&pace=hunt&bloom=0",
+        "shot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-048/artifacts/post-v1/traversal-hunt--before.png",
+        "installedAtMs": 50.001000000000005,
+        "stats": {
+          "mean": 45.69,
+          "skyMean": 43.18,
+          "aboveL200Pct": 0.1906,
+          "aboveL240Pct": 0,
+          "max": 236
+        },
+        "errors": []
+      },
+      "after": {
+        "gameMs": 8000.1600000000735,
+        "state": "PAUSED",
+        "scrollX": 73,
+        "player": {
+          "x": 65.22269786692797,
+          "y": 6.755023199902,
+          "hp": 3,
+          "lives": 3
+        },
+        "hostiles": [
+          {
+            "kind": "wasp",
+            "state": "cruise",
+            "x": 39.559746792299606,
+            "y": 5.784849311113269
+          },
+          {
+            "kind": "wasp",
+            "state": "cruise",
+            "x": 44.294042972485414,
+            "y": 12.976162462270691
+          }
+        ],
+        "kills": 0,
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 2,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "perf": {
+          "frames": 180,
+          "fps": 119.9,
+          "avgMs": 8.34,
+          "worstMs": 10.3,
+          "over20ms": 0
+        },
+        "juice": {
+          "enabled": true,
+          "trauma": 0,
+          "hitStopMs": 0,
+          "sparks": 0,
+          "flashes": 0,
+          "sparkMax": 224,
+          "flashMax": 20,
+          "crush": 0
+        },
+        "draw": {
+          "calls": 40,
+          "triangles": 40030,
+          "geometries": 27,
+          "textures": 16,
+          "programs": 23
+        },
+        "url": "/index.html?testapi=1&shell=0&fixeddt=16.667&slice=traversal&pace=hunt",
+        "shot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-048/artifacts/post-v1/traversal-hunt--after.png",
+        "installedAtMs": 150.00300000000001,
+        "stats": {
+          "mean": 46.57,
+          "skyMean": 43.25,
+          "aboveL200Pct": 0.2123,
+          "aboveL240Pct": 0,
+          "max": 236
+        },
+        "errors": []
+      },
+      "driverInTime": true,
+      "frameExact": true,
+      "diff": {
+        "meanAbs": 0.913,
+        "max": 138,
+        "changedPct": 2.626,
+        "reach": 0.366
+      }
+    },
+    "polyp-tell": {
+      "before": {
+        "gameMs": 7000.140000000051,
+        "state": "PAUSED",
+        "scrollX": 37.20036399999971,
+        "player": {
+          "x": 50.64240626692799,
+          "y": 7.205482368905202,
+          "hp": 3,
+          "lives": 3
+        },
+        "hostiles": [
+          {
+            "kind": "polyp",
+            "state": "closed",
+            "x": 63.2,
+            "y": 6.3999999999999995
+          }
+        ],
+        "kills": 0,
+        "post": {
+          "on": false,
+          "status": "off",
+          "strength": 0,
+          "radius": 0,
+          "threshold": 0,
+          "samples": 2,
+          "gain": 1,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "perf": {
+          "frames": 180,
+          "fps": 120,
+          "avgMs": 8.33,
+          "worstMs": 10.4,
+          "over20ms": 0
+        },
+        "juice": {
+          "enabled": true,
+          "trauma": 0,
+          "hitStopMs": 0,
+          "sparks": 0,
+          "flashes": 1,
+          "sparkMax": 224,
+          "flashMax": 20,
+          "crush": 0
+        },
+        "draw": {
+          "calls": 33,
+          "triangles": 40124,
+          "geometries": 27,
+          "textures": 3,
+          "programs": 7
+        },
+        "url": "/index.html?testapi=1&shell=0&fixeddt=16.667&slice=traversal&polyp=1&bloom=0",
+        "shot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-048/artifacts/post-v1/polyp-tell--before.png",
+        "installedAtMs": 66.668,
+        "stats": {
+          "mean": 47.31,
+          "skyMean": 43.61,
+          "aboveL200Pct": 0.2284,
+          "aboveL240Pct": 0,
+          "max": 236
+        },
+        "errors": []
+      },
+      "after": {
+        "gameMs": 7000.140000000051,
+        "state": "PAUSED",
+        "scrollX": 37.20036399999971,
+        "player": {
+          "x": 50.64240626692799,
+          "y": 7.205482368905202,
+          "hp": 3,
+          "lives": 3
+        },
+        "hostiles": [
+          {
+            "kind": "polyp",
+            "state": "closed",
+            "x": 63.2,
+            "y": 6.3999999999999995
+          }
+        ],
+        "kills": 0,
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 2,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "perf": {
+          "frames": 180,
+          "fps": 120,
+          "avgMs": 8.33,
+          "worstMs": 10.3,
+          "over20ms": 0
+        },
+        "juice": {
+          "enabled": true,
+          "trauma": 0,
+          "hitStopMs": 0,
+          "sparks": 0,
+          "flashes": 1,
+          "sparkMax": 224,
+          "flashMax": 20,
+          "crush": 0
+        },
+        "draw": {
+          "calls": 47,
+          "triangles": 40138,
+          "geometries": 28,
+          "textures": 16,
+          "programs": 23
+        },
+        "url": "/index.html?testapi=1&shell=0&fixeddt=16.667&slice=traversal&polyp=1",
+        "shot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-048/artifacts/post-v1/polyp-tell--after.png",
+        "installedAtMs": 250.00500000000002,
+        "stats": {
+          "mean": 48.22,
+          "skyMean": 43.67,
+          "aboveL200Pct": 0.2495,
+          "aboveL240Pct": 0,
+          "max": 238
+        },
+        "errors": []
+      },
+      "driverInTime": true,
+      "frameExact": true,
+      "diff": {
+        "meanAbs": 1.034,
+        "max": 158,
+        "changedPct": 3.033,
+        "reach": 0.576
+      }
+    },
+    "hound-tell": {
+      "before": {
+        "gameMs": 7000.140000000051,
+        "state": "PAUSED",
+        "scrollX": 36.96115921599973,
+        "player": {
+          "x": 47.719002800028,
+          "y": 6.5500204999300005,
+          "hp": 2,
+          "lives": 3
+        },
+        "hostiles": [
+          {
+            "kind": "hound",
+            "state": "prowl",
+            "x": 37.01702035662069,
+            "y": 2.45
+          },
+          {
+            "kind": "wasp",
+            "state": "cruise",
+            "x": 25.471591192786335,
+            "y": 6.7200941886824985
+          },
+          {
+            "kind": "hound",
+            "state": "prowl",
+            "x": 61.206087456000006,
+            "y": 3.45
+          }
+        ],
+        "kills": 0,
+        "post": {
+          "on": false,
+          "status": "off",
+          "strength": 0,
+          "radius": 0,
+          "threshold": 0,
+          "samples": 2,
+          "gain": 1,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "perf": {
+          "frames": 180,
+          "fps": 120.1,
+          "avgMs": 8.32,
+          "worstMs": 10.3,
+          "over20ms": 0
+        },
+        "juice": {
+          "enabled": true,
+          "trauma": 0,
+          "hitStopMs": 0,
+          "sparks": 0,
+          "flashes": 1,
+          "sparkMax": 224,
+          "flashMax": 20,
+          "crush": 0
+        },
+        "draw": {
+          "calls": 33,
+          "triangles": 40096,
+          "geometries": 27,
+          "textures": 3,
+          "programs": 8
+        },
+        "url": "/index.html?testapi=1&shell=0&fixeddt=16.667&slice=traversal&hound=2&bloom=0",
+        "shot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-048/artifacts/post-v1/hound-tell--before.png",
+        "installedAtMs": 50.001000000000005,
+        "stats": {
+          "mean": 47.1,
+          "skyMean": 42.9,
+          "aboveL200Pct": 0.1255,
+          "aboveL240Pct": 0,
+          "max": 236
+        },
+        "errors": []
+      },
+      "after": {
+        "gameMs": 7000.140000000051,
+        "state": "PAUSED",
+        "scrollX": 36.96115921599973,
+        "player": {
+          "x": 47.719002800028,
+          "y": 6.5500204999300005,
+          "hp": 2,
+          "lives": 3
+        },
+        "hostiles": [
+          {
+            "kind": "hound",
+            "state": "prowl",
+            "x": 37.01702035662069,
+            "y": 2.45
+          },
+          {
+            "kind": "wasp",
+            "state": "cruise",
+            "x": 25.471591192786335,
+            "y": 6.7200941886824985
+          },
+          {
+            "kind": "hound",
+            "state": "prowl",
+            "x": 61.206087456000006,
+            "y": 3.45
+          }
+        ],
+        "kills": 0,
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 2,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "perf": {
+          "frames": 180,
+          "fps": 120,
+          "avgMs": 8.33,
+          "worstMs": 10.3,
+          "over20ms": 0
+        },
+        "juice": {
+          "enabled": true,
+          "trauma": 0,
+          "hitStopMs": 0,
+          "sparks": 0,
+          "flashes": 1,
+          "sparkMax": 224,
+          "flashMax": 20,
+          "crush": 0
+        },
+        "draw": {
+          "calls": 47,
+          "triangles": 40110,
+          "geometries": 28,
+          "textures": 16,
+          "programs": 24
+        },
+        "url": "/index.html?testapi=1&shell=0&fixeddt=16.667&slice=traversal&hound=2",
+        "shot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-048/artifacts/post-v1/hound-tell--after.png",
+        "installedAtMs": 150.00300000000001,
+        "stats": {
+          "mean": 47.39,
+          "skyMean": 42.9,
+          "aboveL200Pct": 0.1323,
+          "aboveL240Pct": 0,
+          "max": 236
+        },
+        "errors": []
+      },
+      "driverInTime": true,
+      "frameExact": true,
+      "diff": {
+        "meanAbs": 0.363,
+        "max": 159,
+        "changedPct": 0.99,
+        "reach": 0.518
+      }
+    }
+  },
+  "stress": {}
+}

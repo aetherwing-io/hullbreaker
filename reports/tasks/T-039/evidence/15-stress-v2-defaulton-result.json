@@ -1,0 +1,69 @@
+{
+  "measuredAt": "2026-08-02T04:51:32.089Z",
+  "base": "http://127.0.0.1:8830",
+  "note": "Re-measured after the entries-16/17 default-on fix: \"default\" now means shadows ON without any flag; \"shadow=0\" is the escape-hatch control.",
+  "default_shadowsOn": {
+    "idle": {
+      "perf": {
+        "frames": 74,
+        "fps": 105.9,
+        "avgMs": 9.45,
+        "worstMs": 82.5,
+        "over20ms": 1
+      },
+      "liveProjectiles": 0,
+      "contactEnabled": true,
+      "drawCalls": 95,
+      "triangles": 50292
+    },
+    "loaded": {
+      "perf": {
+        "frames": 180,
+        "fps": 120,
+        "avgMs": 8.33,
+        "worstMs": 9.4,
+        "over20ms": 0
+      },
+      "liveProjectiles": 256,
+      "contactEnabled": true,
+      "drawCalls": 108,
+      "triangles": 50444
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ]
+  },
+  "shadow0_control": {
+    "idle": {
+      "perf": {
+        "frames": 75,
+        "fps": 107,
+        "avgMs": 9.34,
+        "worstMs": 84,
+        "over20ms": 1
+      },
+      "liveProjectiles": 0,
+      "contactEnabled": false,
+      "drawCalls": 94,
+      "triangles": 50196
+    },
+    "loaded": {
+      "perf": {
+        "frames": 180,
+        "fps": 120,
+        "avgMs": 8.33,
+        "worstMs": 9.3,
+        "over20ms": 0
+      },
+      "liveProjectiles": 256,
+      "contactEnabled": false,
+      "drawCalls": 107,
+      "triangles": 50348
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ]
+  }
+}

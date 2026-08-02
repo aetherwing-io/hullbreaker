@@ -170,6 +170,32 @@ work too. `tools/orch/merge-task.sh` still pins with `python3 -m http.server`
 for exactly that back-compatibility reason; its Playwright runs get a fresh
 cold profile every time, so it is not exposed.
 
+**The SILENT half of that same class: a stale page that boots fine.** The entry
+above is about a stale module that BLANKS the page. The worse case is a stale
+module that runs: on 2026-08-02 a page executing a pre-T-045 `src/pure/limb.js`
+booted, played, and rendered a complete frame with T-045's entire scale pass
+missing, and the session that found it filed an S1 code defect (I-037) against a
+tree where `node tools/pathcheck.mjs` was 2404/0 and the feature was demonstrably
+live. Two mechanisms produce it and they are indistinguishable from a console:
+the browser is running cached bytes, OR the server is rooted on another tree
+(this repo leaves pinned worktrees under `/private/tmp/hb-pin-*`; one of them is
+`cd37b91`, before the scale pass existed). **First move when a shipped feature
+"renders nothing", before reading any source:**
+
+```sh
+node tools/playtest/verify-served.mjs <origin> [--tree <worktree>] [--profile <dir>]
+```
+
+It asks the running page for `window.HB.g1.pieces` — the length of the limb bake
+plan it actually baked — compares it against the plan the tree bakes from the
+real generated level, and separates the two mechanisms by byte count, naming the
+commit the served copy matches. Note what the T-050 measurements settled: a
+plain fresh navigation does NOT clear a poisoned entry (the document itself came
+from cache too, so **nothing shipped inside the page can detect this**), and
+switching that origin to `no-store` `tools/serve.mjs` afterwards does not
+dislodge an entry an earlier python session already stored. Only a hard reload
+or a cold profile does.
+
 **The palette collision class.** Any lane that forked before
 `src/render/palette.js` landed may read `CONFIG.palette` or carry raw hex in a
 tokenized render file; pathcheck now rejects both. Repoint to `PAL`, use

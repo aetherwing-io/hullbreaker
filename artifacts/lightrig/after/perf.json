@@ -1,0 +1,204 @@
+{
+  "measuredAt": "2026-08-02T05:50:29.815Z",
+  "tool": "tools/playtest/lightrig-capture.mjs",
+  "tag": "after",
+  "servedRoot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-047",
+  "viewport": "1280x800, headless Chrome (channel: chrome)",
+  "lumaNote": "L = Rec.709 luma on sRGB bytes; bands are fixed row ranges (HUD strip skipped)",
+  "mode": "perf",
+  "note": "vsync DISABLED (--disable-gpu-vsync --disable-frame-rate-limit): avgMs is the real cost of a frame, NOT the 60fps gate — juice-stress.mjs is the gate",
+  "readings": {
+    "ship": {
+      "control": {
+        "perf": {
+          "frames": 180,
+          "fps": 380.2,
+          "avgMs": 2.63,
+          "worstMs": 10.4,
+          "over20ms": 0
+        },
+        "liveProjectiles": 0,
+        "draw": {
+          "frames": 2359,
+          "meanCalls": 102.3,
+          "maxCalls": 110,
+          "meanTriangles": 50289
+        },
+        "rig": {
+          "id": "rig",
+          "label": "RIG",
+          "shadows": true,
+          "exposure": 1.35,
+          "lights": 3,
+          "shadowMapSize": 2048,
+          "shadowBandTiles": [
+            80,
+            56
+          ],
+          "meshes": 96,
+          "casters": 76,
+          "receivers": 82
+        }
+      },
+      "stress": {
+        "perf": {
+          "frames": 180,
+          "fps": 361.8,
+          "avgMs": 2.76,
+          "worstMs": 107.6,
+          "over20ms": 1
+        },
+        "liveProjectiles": 256,
+        "draw": {
+          "frames": 2409,
+          "meanCalls": 100.3,
+          "maxCalls": 107,
+          "meanTriangles": 50271
+        },
+        "rig": {
+          "id": "rig",
+          "label": "RIG",
+          "shadows": true,
+          "exposure": 1.35,
+          "lights": 3,
+          "shadowMapSize": 2048,
+          "shadowBandTiles": [
+            80,
+            56
+          ],
+          "meshes": 93,
+          "casters": 76,
+          "receivers": 79
+        }
+      }
+    },
+    "noshadow": {
+      "control": {
+        "perf": {
+          "frames": 180,
+          "fps": 612.9,
+          "avgMs": 1.63,
+          "worstMs": 6.2,
+          "over20ms": 0
+        },
+        "liveProjectiles": 0,
+        "draw": {
+          "frames": 3166,
+          "meanCalls": 101.5,
+          "maxCalls": 109,
+          "meanTriangles": 50280
+        },
+        "rig": {
+          "id": "noshadow",
+          "label": "RIG WITHOUT SHADOWS",
+          "shadows": false,
+          "exposure": 1.35,
+          "lights": 3,
+          "shadowMapSize": 0,
+          "shadowBandTiles": [
+            0,
+            0
+          ],
+          "meshes": 96,
+          "casters": 0,
+          "receivers": 0
+        }
+      },
+      "stress": {
+        "perf": {
+          "frames": 180,
+          "fps": 572,
+          "avgMs": 1.75,
+          "worstMs": 7.4,
+          "over20ms": 0
+        },
+        "liveProjectiles": 256,
+        "draw": {
+          "frames": 3099,
+          "meanCalls": 99.9,
+          "maxCalls": 107,
+          "meanTriangles": 50267
+        },
+        "rig": {
+          "id": "noshadow",
+          "label": "RIG WITHOUT SHADOWS",
+          "shadows": false,
+          "exposure": 1.35,
+          "lights": 3,
+          "shadowMapSize": 0,
+          "shadowBandTiles": [
+            0,
+            0
+          ],
+          "meshes": 93,
+          "casters": 0,
+          "receivers": 0
+        }
+      }
+    },
+    "flat": {
+      "control": {
+        "perf": {
+          "frames": 180,
+          "fps": 583.1,
+          "avgMs": 1.71,
+          "worstMs": 7.5,
+          "over20ms": 0
+        },
+        "liveProjectiles": 0,
+        "draw": {
+          "frames": 3180,
+          "meanCalls": 101.8,
+          "maxCalls": 109,
+          "meanTriangles": 50283
+        },
+        "rig": {
+          "id": "flat",
+          "label": "FLAT (pre-T-047)",
+          "shadows": false,
+          "exposure": 1,
+          "lights": 2,
+          "shadowMapSize": 0,
+          "shadowBandTiles": [
+            0,
+            0
+          ],
+          "meshes": 96,
+          "casters": 0,
+          "receivers": 0
+        }
+      },
+      "stress": {
+        "perf": {
+          "frames": 180,
+          "fps": 714.6,
+          "avgMs": 1.4,
+          "worstMs": 7.2,
+          "over20ms": 0
+        },
+        "liveProjectiles": 256,
+        "draw": {
+          "frames": 3093,
+          "meanCalls": 100.4,
+          "maxCalls": 107,
+          "meanTriangles": 50273
+        },
+        "rig": {
+          "id": "flat",
+          "label": "FLAT (pre-T-047)",
+          "shadows": false,
+          "exposure": 1,
+          "lights": 2,
+          "shadowMapSize": 0,
+          "shadowBandTiles": [
+            0,
+            0
+          ],
+          "meshes": 93,
+          "casters": 0,
+          "receivers": 0
+        }
+      }
+    }
+  }
+}

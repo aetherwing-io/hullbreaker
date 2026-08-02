@@ -149,6 +149,40 @@
   #shellFoot .dim, #shellFoot .dim b { opacity: .8; }
   #shellFoot .dim { opacity: .45; }
 
+  /* ---- failsafe panel (T-032) ----
+     The only thing a player ever sees when the game breaks. It sits above
+     the shell (z 30) and the state overlay (z 20) and is opaque, because
+     what it replaces is a black void with an explanation nobody can see.
+     Styled here, beside the markup, so the inline bootstrap below can show
+     it with no stylesheet, font or module of its own to load. */
+  #fail {
+    position: fixed; inset: 0; z-index: 100; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    background: #07131a; color: #e8edf2; text-align: center;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    padding: 24px; box-sizing: border-box; overflow: auto;
+  }
+  #fail.on { display: flex; }
+  #fail .failbox { max-width: min(620px, 92vw); }
+  #fail h2 {
+    margin: 0 0 16px; font-size: clamp(24px, 4.6vw, 42px);
+    letter-spacing: .1em; color: #ffe9c2;
+  }
+  #fail p { margin: 8px 0; font-size: clamp(15px, 2.2vw, 19px); line-height: 1.55; }
+  #failBtn {
+    margin: 24px 0 10px; padding: 14px 32px; font: inherit; font-size: 20px;
+    letter-spacing: .12em; color: #07131a; background: #9ce23e;
+    border: 0; border-radius: 4px; cursor: pointer;
+  }
+  #failBtn:focus-visible { outline: 3px solid #ffe9c2; outline-offset: 3px; }
+  #fail .failhint { font-size: clamp(12px, 1.7vw, 15px); opacity: .72; }
+  #fail details { margin-top: 26px; text-align: left; font-size: 12px; opacity: .5; }
+  #fail summary { cursor: pointer; letter-spacing: .06em; }
+  #fail pre {
+    white-space: pre-wrap; word-break: break-word;
+    max-height: 32vh; overflow: auto; margin: 8px 0 0;
+  }
+
   @media (max-width: 600px) {
     #hudTL { top: 8px; left: 10px; font-size: 12px; line-height: 1.3; }
     #hudTR {
@@ -173,6 +207,214 @@
     #shellFoot { font-size: 9px; line-height: 1.5; }
   }
 </style>
+<!-- ===== FAILSAFE BOOTSTRAP (T-032) ==================================
+     Everything in this block runs before the game and imports nothing.
+     That is the entire point. On 2026-08-02 one stale cached module failed
+     to parse; ES modules are all-or-nothing, so src/main.js never executed
+     and the page was a black void with a single console line. A panel
+     drawn BY main.js cannot report that main.js never ran, so the handler
+     has to live here, in a classic inline script, with no dependency that
+     could fail with it.
+
+     Catches: an uncaught error or a rejected promise before boot (panel:
+     "could not start"), a module or import-map that fails to load, a boot
+     that never finishes (watchdog), a frame loop that stops beating on a
+     visible page (freeze watchdog), and — after boot — whatever
+     src/ui/failsafe.js's policy decides is more than a blip.
+
+     Does NOT catch: this page failing to arrive at all (the browser's own
+     error page), a game that keeps running while quietly doing the wrong
+     thing (nothing throws, so nothing fires here), or a broken frame that
+     src/ui/failsafe.js chooses to ride out.
+
+     The words are a table so tools/pathcheck.mjs can read them out of this
+     file and hold them to src/pure/failsafe.js's plain-language rule: this
+     screen is read by a 9-year-old, and the engineering detail belongs
+     behind the fold, not in his face.
+================================================================== -->
+<script>
+(function () {
+  'use strict';
+
+  var HB_FAIL_TEXT = {
+    "boot": {
+      "t": "The game could not start.",
+      "b": "Something inside it broke before it could open. It is not your fault.",
+      "a": "Try again"
+    },
+    "crash": {
+      "t": "The game stopped.",
+      "b": "Something inside it broke while you were playing. It is not your fault.",
+      "a": "Play again"
+    },
+    "frozen": {
+      "t": "The game got stuck.",
+      "b": "The picture stopped moving, so the game shut itself down. It is not your fault.",
+      "a": "Play again"
+    },
+    "slow": {
+      "t": "Still loading.",
+      "b": "The game is taking a long time to open. Wait a moment, or start it again.",
+      "a": "Try again"
+    },
+    "hint": "Press R, or click the button, to play again.",
+    "tell": "If this keeps happening, show this screen to a grown-up.",
+    "more": "What broke (for grown-ups)"
+  };
+
+  // mirrors FAILSAFE in src/pure/failsafe.js; pathcheck asserts they agree
+  var WATCH = { bootMs: 10000, stallMs: 4000, tickMs: 1000 };
+  var KEYS = ['KeyR', 'Enter', 'Space'];
+  var HARD = { boot: 1, crash: 1, frozen: 1 };     // panels that never downgrade
+
+  var booted = false, showing = null, beats = 0, errors = 0, waiting = false;
+  var notes = [];
+  var now = Date.now();
+  var visibleSince = now, lastBeatAt = now, lastBeats = 0, lastTickAt = now;
+
+  function el(id) { return document.getElementById(id); }
+
+  function note(detail) {
+    if (!detail) return;
+    if (notes.length < 24) notes.push(detail);
+    var pre = el('failDetail');
+    if (pre && showing) pre.textContent = notes.join('\n\n');
+  }
+
+  function paint(kind) {
+    var box = el('fail');
+    if (!box) return false;
+    var text = HB_FAIL_TEXT[kind] || HB_FAIL_TEXT.crash;
+    el('failTitle').textContent = text.t;
+    el('failBody').textContent = text.b;
+    el('failBtn').textContent = text.a;
+    el('failHint').textContent = HB_FAIL_TEXT.hint;
+    el('failTell').textContent = HB_FAIL_TEXT.tell;
+    el('failMore').textContent = HB_FAIL_TEXT.more;
+    el('failDetail').textContent = notes.join('\n\n');
+    box.classList.add('on');
+    try { el('failBtn').focus(); } catch (e) { /* focus is a nicety */ }
+    return true;
+  }
+
+  function show(kind, detail) {
+    note(detail);
+    if (HARD[showing] && !HARD[kind]) return;      // never talk a failure down
+    showing = kind;
+    if (paint(kind) || waiting) return;
+    waiting = true;                                // body not parsed yet
+    document.addEventListener('DOMContentLoaded', function () {
+      if (showing) paint(showing);
+    });
+  }
+
+  function hide() {
+    showing = null;
+    var box = el('fail');
+    if (box) box.classList.remove('on');
+  }
+
+  function again() {
+    try { location.reload(); } catch (e) { location.href = location.href; }
+  }
+
+  function describe(ev) {
+    var when = new Date().toISOString();
+    if (ev && ev.type === 'unhandledrejection') {
+      var r = ev.reason;
+      return when + '  unfinished work failed: ' +
+        ((r && (r.stack || r.message)) || String(r));
+    }
+    if (ev && ev.target && ev.target !== window && (ev.target.src || ev.target.href))
+      return when + '  could not load ' + (ev.target.src || ev.target.href);
+    var where = ev && ev.filename
+      ? ' (' + ev.filename + ':' + ev.lineno + ':' + ev.colno + ')' : '';
+    var stack = ev && ev.error && ev.error.stack
+      ? '\n' + String(ev.error.stack).split('\n').slice(0, 5).join('\n') : '';
+    return when + '  ' + ((ev && ev.message) || 'unknown failure') + where + stack;
+  }
+
+  function caught(ev) {
+    errors++;
+    var detail = describe(ev);
+    var target = ev && ev.target;
+    var resource = target && target !== window && (target.src || target.href);
+    // a picture or a stylesheet that failed to arrive is not a dead game; a
+    // SCRIPT that failed is exactly the incident this handler exists for, and
+    // so is any error with no element behind it
+    var fatal = !resource || String(target.tagName).toUpperCase() === 'SCRIPT';
+    if (!booted && fatal) { show('boot', detail); return; }
+    note(detail);
+    if (typeof API.onUncaught === 'function') {
+      try { API.onUncaught(detail); } catch (e) { /* the policy is optional */ }
+    }
+  }
+
+  addEventListener('error', caught, true);         // capture: also catches a
+  addEventListener('unhandledrejection', caught);  //   script that never loaded
+
+  addEventListener('keydown', function (ev) {
+    if (!showing || KEYS.indexOf(ev.code) < 0) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    again();
+  }, true);
+
+  addEventListener('click', function (ev) {
+    if (showing && ev.target && ev.target.id === 'failBtn') { ev.preventDefault(); again(); }
+  }, true);
+
+  document.addEventListener('visibilitychange', function () {
+    // a hidden tab paints nothing by design: reset every watchdog baseline
+    // so returning from one is never mistaken for a stuck game
+    var t = Date.now();
+    visibleSince = t; lastBeatAt = t; lastTickAt = t;
+  });
+
+  setTimeout(function () { if (!booted) show('slow'); }, WATCH.bootMs);
+
+  setInterval(function () {
+    var t = Date.now();
+    var slept = t - lastTickAt > WATCH.tickMs * 3;  // our own timer was suspended:
+    lastTickAt = t;                                 //   the page was frozen, not stuck
+    if (beats !== lastBeats) { lastBeats = beats; lastBeatAt = t; }
+    if (!booted || showing || slept) return;
+    if (document.visibilityState !== 'visible') { visibleSince = t; lastBeatAt = t; return; }
+    if (t - visibleSince < WATCH.stallMs) return;
+    if (t - lastBeatAt >= WATCH.stallMs)
+      show('frozen', new Date().toISOString() + '  the frame loop stopped ' +
+        Math.round((t - lastBeatAt) / 1000) + 's ago');
+  }, WATCH.tickMs);
+
+  var API = {
+    version: 1,
+    show: show,
+    hide: hide,
+    note: note,
+    again: again,
+    // Reaching this means src/main.js ran to its last line, so the game IS
+    // up: any panel raised on the way in was about something the boot
+    // survived (a slow load, an async failure in a module that still
+    // finished) and must come down. A genuine boot failure never gets here
+    // — that is the whole point of it being the last statement in main.js.
+    booted: function () {
+      booted = true;
+      if (showing === 'slow' || showing === 'boot') hide();
+    },
+    isBooted: function () { return booted; },
+    beat: function () { beats++; },
+    beats: function () { return beats; },
+    errors: function () { return errors; },
+    showing: function () { return showing; },
+    detail: function () { return notes.join('\n\n'); },
+    text: HB_FAIL_TEXT,
+    watch: WATCH,
+    keys: KEYS,
+    onUncaught: null,
+  };
+  window.__HB_FAILSAFE = API;
+})();
+</script>
 <script type="importmap">
 {
   "imports": {
@@ -192,6 +434,26 @@
 <!-- The game shell's start screen (src/ui/shell.js fills it; ?shell=0 boots
      straight into the run and this element is never shown). -->
 <div id="shell"></div>
+
+<!-- Failure panel (T-032). Static markup, filled by the inline bootstrap in
+     the head: a boot failure is the case where no module ever runs, so
+     there is nobody left to build this. Every line a PLAYER reads carries
+     .fail-plain — ?selftest=1 gathers exactly those and holds the rendered
+     words to src/pure/failsafe.js's plain-language rule. The technical
+     detail lives behind the fold, for the operator. -->
+<div id="fail" role="alert" aria-live="assertive">
+  <div class="failbox">
+    <h2 id="failTitle" class="fail-plain"></h2>
+    <p id="failBody" class="fail-plain"></p>
+    <button id="failBtn" class="fail-plain" type="button"></button>
+    <p id="failHint" class="failhint fail-plain"></p>
+    <p id="failTell" class="failhint fail-plain"></p>
+    <details>
+      <summary id="failMore" class="fail-plain"></summary>
+      <pre id="failDetail"></pre>
+    </details>
+  </div>
+</div>
 
 <!-- The game itself is ES modules under src/. Because module scripts are
      fetched with CORS, the page must be served over http (see README) —

@@ -1,0 +1,62 @@
+{
+  "measuredAt": "2026-08-02T05:07:41.483Z",
+  "base": "http://127.0.0.1:8825",
+  "defaultOn": {
+    "perf": {
+      "frames": 180,
+      "fps": 120,
+      "avgMs": 8.33,
+      "worstMs": 9.4,
+      "over20ms": 0
+    },
+    "liveProjectiles": 256,
+    "state": "PLAYING",
+    "contactShadowStats": {
+      "enabled": true,
+      "live": 9,
+      "max": 48
+    },
+    "drawCallsPerFrame": [
+      106,
+      106,
+      106,
+      106,
+      106,
+      106,
+      106,
+      106,
+      106,
+      106
+    ],
+    "errors": []
+  },
+  "shadow0": {
+    "perf": {
+      "frames": 180,
+      "fps": 120,
+      "avgMs": 8.33,
+      "worstMs": 9.4,
+      "over20ms": 0
+    },
+    "liveProjectiles": 256,
+    "state": "PLAYING",
+    "contactShadowStats": {
+      "enabled": false,
+      "live": 0,
+      "max": 48
+    },
+    "drawCallsPerFrame": [
+      105,
+      105,
+      105,
+      105,
+      105,
+      105,
+      105,
+      105,
+      105,
+      105
+    ],
+    "errors": []
+  }
+}
