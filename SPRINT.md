@@ -3045,7 +3045,7 @@ flat... judge it moving" — and the gate passed it anyway. A still frame cannot
 show shimmer, so the metric above (sign-reversal rate under motion, against
 the lane's own escape hatch) belongs in the art-lane evidence standard.
 
-## T-057 | art | doing | P1
+## T-057 | art | done | P1
 goal: kill the lower-hull shimmer (I-049) WITHOUT undoing T-054's density fix.
 accept: sign-reversal shimmer rate in the lower-hull band (y 620-720), measured
 under motion against the lane's own `?tex=flat` control, falls to near the flat
@@ -3105,3 +3105,30 @@ only. Fix directions not yet tried, cheapest first:
      carefully: this is the lever that, over-applied, produced the original
      invisibility (T-054).
   3. An explicit mip LOD bias toward blurrier levels under motion.
+
+<!-- I-049 REMAINS OPEN AFTER T-057 (2026-08-02, integrator).
+
+T-057 shipped a correct anisotropy fix, two real race fixes in its own rig,
+and eight measured-and-rejected variants of my non-power-of-two hypothesis.
+It did NOT reduce the shimmer, and it says so in its own report rather than
+dressing a null result as a win.
+
+The operator's finding therefore stands, with a corrected number: a textured
+hull shimmers ~4.4x more than the same hull flat (40,788 vs 9,301 changing px
+in the lower band under motion; 68% vs 48% direction-reversal rate), three
+interleaved rounds, 1-2% spread within a condition.
+
+Untried, in the order I would try them:
+ 1. DISTANCE-BASED TEXTURE FADE — attenuate map strength as a surface recedes.
+    This is the standard production answer to minification aliasing AND it
+    addresses the operator's separate observation that the background reads as
+    more detailed than the foreground, because it restores the atmospheric
+    ordering directly. One fix, two findings.
+ 2. Lower the tile's high-frequency content at authoring time — with care:
+    over-applied, this is exactly what produced the original invisibility.
+ 3. An explicit mip LOD bias toward blurrier levels under motion.
+
+NOT a fix: shrinking the tile back down. T-054's density correction is what
+made the texture visible at all (near-hull fine detail 0.416 -> 1.648 vs the
+flat control) and the operator asked for it. Any candidate must hold that
+number while moving the shimmer one. -->
