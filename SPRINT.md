@@ -805,7 +805,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs (docs-only lane, must stay green); every cited artifact path resolves
 
-## T-029 | feature | review | P2
+## T-029 | feature | done | P2
 
 goal: three small runtime truth fixes whose owning files are finally out from
 under the lanes that blocked them (I-005, I-009, I-030). `audioSnapshot()` is
