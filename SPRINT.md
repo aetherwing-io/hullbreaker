@@ -2322,3 +2322,47 @@ lane, or a future gate-1 AI/composition pass) should drive
 (`reports/tasks/T-044/qa-evidence/full-base-3/report.json`) through
 `analyze-run.mjs` to see what's adjacent to RIG during the stall and
 whether a real player's aim would actually break it.
+
+## I-??? | bug | S2 | repro: `bash reports/tasks/T-040/playtest-evidence/determinism-regate/regate-repro.sh` against a pinned `task/T-040` worktree (`1bdc750`) served on one port and merge-base `2c638aa` served on another; compare `meta.deterministicDispatch.dispatched` and `metrics.closestCrushApproachTiles` per round | evidence: reports/tasks/T-040/playtest.md §5; reports/tasks/T-040/playtest-evidence/determinism-regate/results-16x3.csv (48 runs)
+
+Found while re-gating T-040 (playtest: FAIL). The original async-fetch
+determinism defect (an earlier FAIL) is confirmed fixed — `src/render/
+player.js` now awaits `preload.js`'s shared gate at module top level, no
+second bespoke timeout/lock-in path. But a second, narrower residual
+reproduces on a properly-interleaved 16-round measurement (one run of
+base/escape-hatch/shipped-default per round, so shared-session load hits
+all three equally): the merge-base tree dispatches exactly 18/26 scripted
+events on `mid-route.json --deterministic` every single time across 16
+rounds (zero deviation), the `?rig=canvas` escape hatch deviates once in
+16, and the shipped sprite default deviates in 7/16 (44%) — with the most
+extreme case (`dispatched=23`, `gameMsMax=8299ms`) producing a
+`minEdgeMargin` of 33.04 tiles against every control run's tight
+35.3-35.4-tile band, a real ~2.3-tile-worse closest crush-edge approach
+from byte-identical input. Both magnitude and frequency are far lower than
+the original defect (then: essentially every run, ~2000ms/2.4-tile; now:
+~1-in-16, similar per-incident magnitude), and it is fully absent in the
+escape hatch — nothing here is a near-miss in absolute terms (33 tiles is
+nowhere near the game's own `edgeMargin<8` emergency threshold), only a
+measurable break in run-to-run reproducibility. `reports/tasks/T-040/
+build.md`'s own account (same branch, written before this re-gate)
+proposes the fix belongs in `src/render/preload.js` (shared with T-049):
+an explicit warm-up render/`renderer.compile()` pass at the end of the
+boot gate, so a GPU driver's deferred mipmap upload actually finishes
+before frame 1 instead of landing on it. Likely systemic to any lane
+registering a large mipmapped texture through the same shared gate, not
+unique to RIG — worth checking against T-049 once it lands.
+
+## I-??? | feel | S3 | repro: `node run.mjs scripts/six-face-spaced-run.json --deterministic --base-url <pinned task/T-040 1bdc750> --video --max-runtime-ms 45000`, extract frames at 300ms spacing through any sustained firefight (this report used t=20.0-23.3s) | evidence: reports/tasks/T-040/playtest-evidence/qa2-t20.9s-rig-clear-4x.png vs qa2-t20.6s-muzzle-flash-obscures-4x.png vs qa2-t21.2s-rig-lowcontrast-dark-panel-4x.png
+
+Found while re-gating T-040 (playtest: FAIL, unrelated to this item).
+Sharper version of the muzzle-occlusion finding the previous T-040 playtest
+gate already filed: because the default rifle fires every 130ms
+(`CONFIG.weapons.R.fireRateMs`) and is held near-continuously in combat,
+the flash/tracer bloom sits on or beside RIG's own position on a
+predictable, recurring cadence during a firefight, not as a one-off. A
+second, independent contrast failure also reproduces: against a darker
+panel/pillar background element (rather than the lighter wall panel most
+prior evidence used), RIG's own dark ink outline blends toward the
+background rather than separating from it. Neither is a new defect class —
+this is a feel/readability item for the operator checkpoint queue, not a
+bug, and did not factor into the FAIL verdict above.
