@@ -1067,7 +1067,7 @@ worst, spread) and route it to the operator, not claim difficulty is unchanged.
 Also fix a new assertion's false "hostiles LIVE" framing.
 owner: lattice-designer
 
-## T-045 | art | doing | P1
+## T-045 | art | done | P1
 goal: SELL THE SCALE (entry 17) — graded backdrop anatomy tiers, atmospheric
 depth that layers instead of collapsing, and human-scale reference objects
 (rungs, hatches) so the eye can measure the creature against a known size.
