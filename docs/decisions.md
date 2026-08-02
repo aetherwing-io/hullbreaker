@@ -638,3 +638,49 @@ operator rejected and must be re-judged at the shipped dose.
 still open in the packet's §4 (light rig and shadows, gradient sky,
 post-processing, runtime asset loading, tone mapping, teal vs indigo, amber
 work-light). Those remain the operator's.
+
+## 15 — 2026-08-02 — Impact language lands; RIG's fidelity does not; the framing question opens
+
+Three operator verdicts in one session, on builds served from pinned lanes.
+
+**ACCEPTED — directional impact and travel language (T-041, packet item S10).**
+Played on a pinned build, the operator's verdict was:
+
+> "played 8744, that's fun!"
+
+This is the first "fun" this project has earned from the only oracle that
+counts. Impacts stretch along travel direction and bullets orient to velocity
+across every weapon, inside the existing instanced pools — measured at 256 live
+projectiles, worst frame 9.3ms → 9.4ms, zero dropped frames. Keep it. Anything
+that would flatten or genericize impact feedback now has to argue against a
+recorded positive verdict.
+
+**REJECTED — RIG's fidelity (T-040, packet item S8).** Shown the shipped FAR
+view, the operator's verdict was:
+
+> "this is RIG? i was hoping for a much higher quality asset in line with the
+> concept art."
+
+The three-value-zone box figure is not the bar. Rejected on QUALITY, not on
+technique. The legal path to real fidelity is a procedurally-drawn canvas
+texture (sanctioned by the textures guardrail); external image files remain
+forbidden by asset independence, and a runtime loader still needs its own
+decision.
+
+**OPEN, AND IT BLOCKS THE ART DIRECTION — the framing conflict.** The operator
+posted concept board 01 and said *"I'm still waiting for this level."* In that
+board the marine is roughly HALF the frame height. Shipped, RIG is 3.75% —
+about 30 px, ~15x smaller linearly and ~200x in area. No asset looks like board
+01 at 30 px; this is a camera problem wearing an art problem's clothes.
+
+Entry 7 froze FAR as the default so the Meridian reads as continent-sized. That
+verdict bought monumental scale and paid for it with the hero-character fantasy
+— and board 01 IS the hero-character fantasy. Both cannot be the default frame.
+
+**This entry does NOT resolve it.** It records that the conflict is real, that
+it is the operator's to settle, and that it gates the character art direction.
+Options put to him: (a) keep FAR, RIG stays an icon; (b) switch to the existing
+`?view=near`; (c) a dynamic camera — FAR for traversal and scale reveals,
+pushing in for combat; (d) a new middle scale. Until he rules, do NOT re-tune
+RIG's fidelity target and do NOT touch the camera — but muzzle flash, glow and
+impact language are framing-independent and proceed.
