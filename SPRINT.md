@@ -1041,6 +1041,23 @@ SEQUENCING: T-032 (+275 pathcheck lines) and T-035 are in flight and both touch
 pathcheck. Do NOT fight them — build and prove the migration script, and let the
 integrator run it after those merge.
 
+## T-050 | art | doing | P1
+goal: fix I-037 (S1) — T-045's scale pass emits ZERO pieces on the shipped
+default run. `limbBakePlan(CONFIG, groundH, {scale:true})` and `{scale:false}`
+both return 829 pieces with no mark/backdrop kinds, so the rung ladders,
+hatches, doors, gantry rail and graded backdrop tiers — the whole answer to
+decisions entry 17 — are invisible in play. It merged and was reported to the
+operator as live. Discriminator is `groundH`: a synthetic flat array yields
+delta 804, the real generated level yields 0.
+accept:
+- [ ] root cause found and fixed, not papered over by loosening a guard
+- [ ] a pathcheck assertion built from the REAL level's groundH that FAILS on
+      current main — 2404 assertions were green while the feature emitted
+      nothing, which is the intent-not-observable failure mode again
+- [ ] before/after captures at the shipped FAR default
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; browser plan probe showing a non-zero delta
+
 <!-- ===== 2026-08-02 FEEL + RENDERER PUSH (lanes T-042..T-048). Dispatched
 after the operator's "FIX the game" and "what is in the way" messages. Several
 were never given SPRINT entries at dispatch time; recorded here for truth. ===== -->
