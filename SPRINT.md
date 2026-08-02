@@ -2931,3 +2931,51 @@ Also stale on that branch and worth correcting in the same pass:
 no visible error state today"), which T-032 closed before it merged — a blocked
 CDN now raises the failure panel within ~250ms rather than showing a silent
 black screen.
+
+## T-055 | harness | todo | P1
+goal: revive T-034's deploy bundle against current main and fix I-048 — the
+bundle omits `assets/`, so uploading it would silently ship a game with none of
+its art. This is the path Fox actually receives the game by, so it is the last
+thing that should be wrong.
+accept: the bundle contains every runtime asset the shipped game loads; **the
+falsifying test unzips the bundle into a clean directory, serves THAT, and
+asserts the art renders** — RIG's sprite present (not the canvas fallback),
+hostile sprites present (not primitives), hull textured, backdrop plates drawn
+— rather than asserting the zip contains N files, which would have passed the
+broken bundle every day since entry 16. Bundle size reported (the backdrops
+alone are ~1.7MB; that is fine for a public URL, but state it). Subpath hosting
+still works (T-034 proved this originally under a synthetic
+`/html/999999/…` path — keep that test). Zero effect on the shipped game.
+`tools/deploy/README.md` §3's CDN framing corrected: T-032 closed the
+silent-blank-screen half before it merged, so a blocked CDN now raises the
+failure panel in ~250ms.
+owner: gameplay-engineer
+note: `task/T-034` is unmerged and based on much older main (it predates every
+art lane). Its three files are `tools/deploy/{README.md,build-bundle.mjs}` +
+its build report, with **no `src/` changes**, so conflict risk is low — but
+re-verify rather than inherit, and treat its "the game ships zero binary
+assets" claims as historical.
+verify: node tools/pathcheck.mjs; build the bundle, unzip to a clean dir, serve
+it, capture the art rendering; report bundle size and file count
+
+## T-056 | art | todo | P2
+goal: land T-035b's fog-band reconciliation. Main ships two lanes' intent and
+one lane's behaviour: `src/render/camera.js:80` selects
+`CONFIG.limb.shadeFog` (26.5/54.5) whenever `SHADE_GAIN > 0`, which is the
+default since the operator's approved dose of 0.5 — while T-045's backdrop
+tiers were authored against `CONFIG.limb.fog` (24/52).
+accept: T-035b measured the three variants on the merged tree and concluded the
+band should be T-045's — the shift buys the ladder nothing (separation -34.5 vs
+-34.7, noise), costs a point of dark share against the frame the operator
+approved (5.8% vs 4.8% under L25.5), and drops each T-045 tier ~0.09 so the far
+body carries 31% of its own contrast instead of the ~20% it was sized for.
+Re-verify that measurement against CURRENT main before landing it — that
+branch predates several merges. The operator's approved dose (0.5) must not
+move; only the haze band does. Retiring `shadeFog` also retires the
+out-of-fence `camera.js` line granted to T-035.
+owner: gameplay-engineer
+note: `task/T-035b` @ 204075b is unmerged, 4 files, 231+/104-. Its own report
+flags one recorded LIMIT: at T-045's band the play band's screen-edge column
+carries 3.3% haze at FAR / 4.6% at `?view=near`.
+verify: node tools/pathcheck.mjs; the three-variant measurement re-run on
+current main; captures at the approved dose
