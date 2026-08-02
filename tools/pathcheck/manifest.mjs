@@ -54,7 +54,9 @@ import * as d41 from './t-039-contact-shadows.mjs';
 import * as d42 from './pathcheck-suite-3.mjs';
 import * as d43 from './t-035-value-ladder.mjs';
 import * as d44 from './t-038-seam-pips.mjs';
-import * as d45 from './t-042-audio-punch.mjs';
+import * as d45 from './t-047-light-rig.mjs';
+import * as d46 from './t-048-post-pass.mjs';
+import * as d47 from './t-042-audio-punch.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -102,5 +104,7 @@ export const DOMAINS = [
   d42,    // pathcheck suite
   d43,    // T-035 value ladder (S1 + S2) ======================
   d44,    // T-038: warm-white seam pips and route-lip highlights (S5) ========
-  d45,    // T-042: audio punch — static + behavioral guards =================
+  d45,    // T-047 light rig, shadows, tone mapping (decisions 18)
+  d46,    // T-048: the screen pass (bloom) + surface families (entry 18)
+  d47,    // T-042: audio punch — static + behavioral guards ==========
 ];

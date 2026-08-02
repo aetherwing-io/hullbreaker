@@ -1,0 +1,206 @@
+{
+  "measuredAt": "2026-08-02T06:12:27.842Z",
+  "tool": "tools/playtest/lightrig-capture.mjs",
+  "tag": "after",
+  "servedRoot": "/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-047",
+  "viewport": "1280x800, headless Chrome (channel: chrome)",
+  "lumaNote": "L = Rec.709 luma on sRGB bytes; bands are fixed row ranges (HUD strip skipped)",
+  "mode": "shadowcost",
+  "note": "depth-pass cost, measured inside ONE page by alternating renderer.shadowMap.autoUpdate under the 256-projectile load; vsync disabled",
+  "readings": {
+    "ship": {
+      "liveProjectiles": 256,
+      "depthPassOn": {
+        "medianMs": 1.674,
+        "medianCalls": 97.5,
+        "windows": 7
+      },
+      "depthPassOff": {
+        "medianMs": 1.356,
+        "medianCalls": 98.1,
+        "windows": 8
+      },
+      "depthPassMs": 0.318,
+      "callsDelta": -0.6,
+      "windows": [
+        {
+          "depthPass": true,
+          "meanMs": 1.548,
+          "meanCalls": 100
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.36,
+          "meanCalls": 100
+        },
+        {
+          "depthPass": true,
+          "meanMs": 1.78,
+          "meanCalls": 99.3
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.302,
+          "meanCalls": 97.6
+        },
+        {
+          "depthPass": true,
+          "meanMs": 1.649,
+          "meanCalls": 96.9
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.259,
+          "meanCalls": 95.1
+        },
+        {
+          "depthPass": true,
+          "meanMs": 1.659,
+          "meanCalls": 95.7
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.356,
+          "meanCalls": 97.6
+        },
+        {
+          "depthPass": true,
+          "meanMs": 1.674,
+          "meanCalls": 97.5
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.278,
+          "meanCalls": 96.3
+        },
+        {
+          "depthPass": true,
+          "meanMs": 1.676,
+          "meanCalls": 97.3
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.446,
+          "meanCalls": 99.1
+        },
+        {
+          "depthPass": true,
+          "meanMs": 1.717,
+          "meanCalls": 98.7
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.356,
+          "meanCalls": 98.1
+        },
+        {
+          "depthPass": true,
+          "meanMs": 1.674,
+          "meanCalls": 97.9
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.327,
+          "meanCalls": 98.6
+        }
+      ]
+    },
+    "transform": {
+      "liveProjectiles": 256,
+      "depthPassOn": {
+        "medianMs": 2.359,
+        "medianCalls": 578,
+        "windows": 7
+      },
+      "depthPassOff": {
+        "medianMs": 1.676,
+        "medianCalls": 578,
+        "windows": 8
+      },
+      "depthPassMs": 0.683,
+      "callsDelta": 0,
+      "windows": [
+        {
+          "depthPass": true,
+          "meanMs": 2.133,
+          "meanCalls": 580
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.45,
+          "meanCalls": 580
+        },
+        {
+          "depthPass": true,
+          "meanMs": 2.433,
+          "meanCalls": 580
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.762,
+          "meanCalls": 579.6
+        },
+        {
+          "depthPass": true,
+          "meanMs": 2.511,
+          "meanCalls": 579
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.578,
+          "meanCalls": 579
+        },
+        {
+          "depthPass": true,
+          "meanMs": 2.211,
+          "meanCalls": 578.3
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.43,
+          "meanCalls": 578
+        },
+        {
+          "depthPass": true,
+          "meanMs": 2.28,
+          "meanCalls": 578
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.85,
+          "meanCalls": 578
+        },
+        {
+          "depthPass": true,
+          "meanMs": 2.256,
+          "meanCalls": 578
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.676,
+          "meanCalls": 578
+        },
+        {
+          "depthPass": true,
+          "meanMs": 2.359,
+          "meanCalls": 578
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.618,
+          "meanCalls": 578
+        },
+        {
+          "depthPass": true,
+          "meanMs": 2.416,
+          "meanCalls": 578
+        },
+        {
+          "depthPass": false,
+          "meanMs": 1.874,
+          "meanCalls": 578
+        }
+      ]
+    }
+  }
+}
