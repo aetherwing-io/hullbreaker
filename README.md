@@ -56,8 +56,11 @@ sits between.
 Because that pull-back is a known scalar, the **FAR readability pass** scales
 the things that carry *information* — capsule letters, the houndframe's and
 the Iris Polyp's warning lamps, tell poses, the diving wasp's commitment cue —
-back up by the same factor, so they land at the screen size the near view
-already read at. RIG, the camera and every hitbox are untouched.
+back up against it: information whole, a pose partly. A letter or a lamp gets
+the full factor, so it lands at the screen size the near view already read at;
+a tell POSE deforms an actual body, so by design it takes only 60% of the
+compensation (`SHARE` in `src/render/legibility.js`) and still lands smaller
+at FAR than it did at near. RIG, the camera and every hitbox are untouched.
 `?legibility=0` turns the whole pass off at any view for an A/B against the
 pre-pass look.
 

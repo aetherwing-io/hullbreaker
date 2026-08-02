@@ -19,17 +19,24 @@
 // not clock-triggered — each side fires on the emplacement's own iris state,
 // so the two sides of a pair can be seconds apart in wall-clock time and
 // their RIG/hostile positions differ accordingly. Each polyp frame is also
-// pixel-VERIFIED before it is kept (see verifyTellFrame/verifyBeamFrame
-// below): if the captured frame does not actually carry the warm tell or the
-// live beam, the rig retries the next iris cycle and finally throws rather
-// than writing a frame that does not show what its name claims.
+// pixel-VERIFIED before it is kept (measure() + captureIrisCycle below): if
+// the captured frame does not actually carry the warm tell or the live beam,
+// the rig retries the next iris cycle and finally throws rather than writing
+// a frame that does not show what its name claims.
+//
+// That last sentence is now literally true of the disk, which it was not
+// before (I-015): `shot()` captures to MEMORY, and a scene's frames are
+// written to artifacts/palette-v1/ only after both of its palette runs have
+// returned. A retried frame therefore never overwrites the committed one on
+// its way to being superseded, and a scene that never verifies leaves the
+// previous evidence exactly where it was.
 //
 //   node palette-capture.mjs                  — all scenes, both palettes, + pairs
 //   node palette-capture.mjs transform-boot   — just the named scene/output tag(s)
 //     (used to refresh one pair after a merge reworks only that slice)
 
 import { chromium } from 'playwright-core';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startStaticServer } from './lib/server.mjs';
@@ -430,19 +437,30 @@ const server = await startStaticServer(repoRoot, { port: 0 });
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 try {
   for (const scene of picked) {
+    // Final artifact path -> the PNG bytes that will land there, both palettes
+    // of this scene. Nothing is written until the loop below finishes, so an
+    // unverified frame cannot be on disk even briefly (I-015).
+    const pending = new Map();
     for (const pal of PALETTES) {
       const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
       const page = await context.newPage();
       await page.goto(`${server.baseUrl}${scene.url}${pal.qs}`, { waitUntil: 'load' });
       await page.waitForTimeout(300);
-      // shot(tag) writes <tag>--<palette>.png and hands the buffer back, so a
-      // scene can verify what it just captured before moving on.
-      const shot = (tag = scene.tag) =>
-        page.screenshot({ path: resolve(OUT, `${tag}--${pal.id}.png`) });
+      // shot(tag) captures <tag>--<palette>.png into `pending` and hands the
+      // buffer back, so a scene can verify what it just captured before moving
+      // on — and a retry simply replaces the buffer.
+      const shot = async (tag = scene.tag) => {
+        const buf = await page.screenshot();
+        pending.set(resolve(OUT, `${tag}--${pal.id}.png`), buf);
+        return buf;
+      };
       await scene.run(page, shot, { browser, palette: pal.id });
       console.log(`captured ${scene.tag} [${pal.id}]`);
       await context.close();
     }
+    // Both palettes ran to completion (a scene that could not verify threw and
+    // never reached here), so every buffer below is a frame its scene kept.
+    for (const [file, buf] of pending) writeFileSync(file, buf);
     for (const tag of outputsOf(scene)) {
       await composePair(browser, tag);
       console.log(`  pair -> ${tag}--pair.png`);
