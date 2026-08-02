@@ -38,6 +38,11 @@ export async function run(SHARED) {
     '../sim/player.js': ['player', 'circleHitsPlayer'],
     '../sim/wavegate.js': ['activeCorner', 'cornerEvents'],
     '../sim/transform.js': ['transformEvents'],
+    // T-042: sLeftEdge is the one read the pursuing-edge pressure curve
+    // needs — a read-only getter, same shape as every entry above. Team
+    // lead authorized extending this allowlist directly (task #50) rather
+    // than leaving the feature undone; see reports/tasks/T-042/build.md.
+    '../sim/edges.js': ['sLeftEdge'],
   };
   for (const im of imports) {
     if (!im.spec.startsWith('../sim/')) continue;
