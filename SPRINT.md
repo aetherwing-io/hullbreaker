@@ -2568,3 +2568,39 @@ and show it flat across 16 rounds before trusting the flag again. Until then,
 every asset-involving A/B uses interleaved rounds and reports distributions,
 never means (entry 19's standing discipline, now load-bearing rather than
 merely good practice).
+
+## I-??? | docs | S3 | repro: `grep -n "^## I-040" SPRINT.md` (two matches) | evidence: this entry; reports/tasks/T-040/playtest-evidence/qa-parallel-1bdc750/
+
+**Two independent QA passes gated `task/T-040` concurrently this session**
+against the same pinned HEAD (`1bdc750`) — a coordination gap worth naming so
+it isn't repeated: the one that landed (`7649e27`, merged) is sound and I
+independently reached the same `PASS` verdict, but my own pass turned up two
+things worth folding in that the merged report doesn't carry, since my copy
+of `reports/tasks/T-040/playtest.md` was overwritten in the shared worktree
+before I could commit it (the worktree was pruned by the merge before I
+noticed).
+
+1. **SPRINT.md's Inbox currently has an ID collision: two unrelated entries
+   are both numbered `I-040`** — the muzzle-flash/dark-panel RIG readability
+   entry above (`feel`/S3) and the `?fixeddt`-scatters-the-control harness
+   entry a few lines below it (`bug`/S2). Whoever triages next should
+   renumber one.
+2. **Strengthened evidence for the muzzle-flash/dark-panel entry** (whichever
+   number it ends up with): a **lossless, non-video** PNG capture (not
+   ffmpeg-extracted, so free of video-compression artifacts) at a **second,
+   different in-level location** — an early, quiet moment with **no combat,
+   no muzzle flash** (x≈11m, 0 kills, an unrelated attempt) — shows RIG
+   blending into the *same* recurring dark hull-pillar architecture piece
+   already seen in the entry's own `t20.6–21.2s` evidence, cropped to its true
+   on-screen scale (140×70px of an 800px-tall viewport). This shows the
+   effect is a genuine value clash between RIG's dark ink outline and that
+   specific hull element, independent of combat VFX timing, and that it
+   recurs at more than one point in the level rather than being a single
+   unlucky frame. Also re-confirmed the same effect at a fresh combat moment
+   (`t≈24.1s`, kills=6/hp=2, a 10fps montage across ~1.3s showing RIG readable
+   for two frames then losing distinctness for roughly a second while
+   passing the pillar). Files: `glance-quiet-{full,crop-6x,crop-1x-true-
+   size}-pillar-recurrence.png`, `glance-t24.1s-{full,crop-4x}-pillar-
+   occlusion.png`, `glance-t25.0-26.3s-montage-pillar-fade.png`, all under
+   the evidence path above. Does not change any verdict — feel/readability,
+   routed to the operator checkpoint queue, not a bug.
