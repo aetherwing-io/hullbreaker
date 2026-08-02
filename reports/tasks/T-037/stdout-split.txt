@@ -1,0 +1,2 @@
+pathcheck note (reported, not asserted): a hold-right deck-line crossing collected 2 of 6 pocket capsules (weapon at the end R, closest approach 0.981 tiles at [46,5.37])
+pathcheck: 1741 passed, 0 failed

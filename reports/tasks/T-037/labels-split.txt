@@ -1,0 +1,1741 @@
+PASS	levelLength = intro + faces*faceTiles + outro
+PASS	cornerS list, got 89,154,219,284,349,414
+PASS	haltS = cornerS - haltOffset, got 75,140,205,270,335,400
+PASS	2 bends per corner -> 13 segments, got 13
+PASS	path starts at origin, heading 0
+PASS	headings complete a 360 deg circuit [got 6.283185307179587, want 6.283185307179586]
+PASS	anchor x at segment 1 [got 89, want 89]
+PASS	anchor z at segment 1 [got 0, want 0]
+PASS	anchor x at segment 2 [got 90.73205080756888, want 90.73205080756888]
+PASS	anchor z at segment 2 [got -0.9999999999999999, want -0.9999999999999999]
+PASS	anchor x at segment 3 [got 122.2320508075689, want 122.2320508075689]
+PASS	anchor z at segment 3 [got -55.55960043841963, want -55.55960043841963]
+PASS	anchor x at segment 4 [got 122.2320508075689, want 122.2320508075689]
+PASS	anchor z at segment 4 [got -57.55960043841963, want -57.55960043841963]
+PASS	anchor x at segment 5 [got 90.73205080756891, want 90.73205080756891]
+PASS	anchor z at segment 5 [got -112.11920087683927, want -112.11920087683927]
+PASS	anchor x at segment 6 [got 89.00000000000003, want 89.00000000000003]
+PASS	anchor z at segment 6 [got -113.11920087683927, want -113.11920087683927]
+PASS	anchor x at segment 7 [got 26.00000000000003, want 26.00000000000003]
+PASS	anchor z at segment 7 [got -113.11920087683932, want -113.11920087683932]
+PASS	anchor x at segment 8 [got 24.26794919243115, want 24.26794919243115]
+PASS	anchor z at segment 8 [got -112.11920087683932, want -112.11920087683932]
+PASS	anchor x at segment 9 [got -7.2320508075688785, want -7.2320508075688785]
+PASS	anchor z at segment 9 [got -57.55960043841969, want -57.55960043841969]
+PASS	anchor x at segment 10 [got -7.2320508075688785, want -7.2320508075688785]
+PASS	anchor z at segment 10 [got -55.55960043841969, want -55.55960043841969]
+PASS	anchor x at segment 11 [got 24.26794919243113, want 24.26794919243113]
+PASS	anchor z at segment 11 [got -1.000000000000064, want -1.000000000000064]
+PASS	anchor x at segment 12 [got 26.000000000000007, want 26.000000000000007]
+PASS	anchor z at segment 12 [got -6.461498003318411e-14, want -6.461498003318411e-14]
+PASS	polyAt continuous at bend 1
+PASS	polyAt continuous at bend 2
+PASS	polyAt continuous at bend 3
+PASS	polyAt continuous at bend 4
+PASS	polyAt continuous at bend 5
+PASS	polyAt continuous at bend 6
+PASS	polyAt continuous at bend 7
+PASS	polyAt continuous at bend 8
+PASS	polyAt continuous at bend 9
+PASS	polyAt continuous at bend 10
+PASS	polyAt continuous at bend 11
+PASS	polyAt continuous at bend 12
+PASS	unit spacing inside a face [got 1, want 1]
+PASS	every unit step length in [cos(15deg), 1]
+PASS	face 1 heading 0 [got 0, want 0]
+PASS	chamfer diagonal heading 30 deg [got 0.5235987755982988, want 0.5235987755982988]
+PASS	face 2 heading 60 deg [got 1.0471975511965976, want 1.0471975511965976]
+PASS	after 4 corners heading 240 deg [got 4.1887902047863905, want 4.1887902047863905]
+PASS	outro heading 360 deg [got 6.283185307179587, want 6.283185307179586]
+PASS	yaw untouched 1 tile before first bend [got 0, want 0]
+PASS	yaw exactly mid-corner at chamfer center [got 0.5235987755982988, want 0.5235987755982988]
+PASS	yaw complete 1 tile after second bend [got 1.0471975511965976, want 1.0471975511965976]
+PASS	yaw equals face heading mid-face [got 1.0471975511965976, want 1.0471975511965976]
+PASS	blend 0 degrades to sharp heading [got 0, want 0]
+PASS	yaw monotone through a corner
+PASS	intro is face 0
+PASS	face 1 spans 24..88
+PASS	corner column belongs to the next face
+PASS	last face column
+PASS	outro is face 7
+PASS	event total 1100 ms, got 1100
+PASS	yawDelta 0 at t=0 [got 0, want 0]
+PASS	yawDelta 0 before event [got 0, want 0]
+PASS	wind-up reaches -1.5 deg [got -1.4999571431632652, want -1.5]
+PASS	snap 1 lands exactly 30 at impact frame [got 30, want 30]
+PASS	ratchet hold flat at 30 [got 30, want 30]
+PASS	snap 2 lands exactly 60 [got 60, want 60]
+PASS	settled at 60 at event end [got 60, want 60]
+PASS	clamped after event [got 60, want 60]
+PASS	wind-up dips to windUpDeg [got -1.5, want -1.5]
+PASS	snap 1: single small overshoot (~1.4 deg), peak 31.408443749999996
+PASS	snap 2: single small overshoot, peak 61.341375
+PASS	holds are dead flat
+PASS	easeOutBack(0) = 0 [got 0, want 0]
+PASS	easeOutBack(1) = 1 [got 1, want 1]
+PASS	easeOutBack overshoot ~5 percent, got 1.0447131471
+PASS	scroll frozen until t=900
+PASS	quadratic ease at resume midpoint [got 1.075, want 1.075]
+PASS	full speed at event end [got 4.3, want 4.3]
+PASS	clamped to full speed after [got 4.3, want 4.3]
+PASS	column 0 hidden before impact frame
+PASS	column 0 starts 2.75 above [got 2.75, want 2.75]
+PASS	gravity ease: u=0.5 -> 75 percent of drop remains [got 2.0625, want 2.0625]
+PASS	column 1 starts exactly 16 ms later
+PASS	one-beat dip after landing
+PASS	column locks to base after dip
+PASS	last slam column lands at 820 ms, before the event ends (820)
+PASS	zipper fully locked (860 ms) before scroll resumes (t5=900)
+PASS	wave sizes 4..9
+PASS	wave comp: sizes match waveSize, lanes valid, altitude mix escalates
+PASS	waveLane maps comp slots to lane heights (wrapping)
+PASS	stage-2 motion retune (4.3 / 9.4 / 120 / 76)
+PASS	jump tune frozen
+PASS	single jump clears +2 lanes, not +3 (apex 2.7222222222222223)
+PASS	double jump clears +3 lanes (apex 5.069444444444445)
+PASS	full jump at run speed clears the widest gap with margin
+PASS	camera pull-back pose
+PASS	player under 9 percent of screen height
+PASS	scroll crosses ~10-12 percent of screen width per second, got 0.10108904751236533
+PASS	fog pushed out with the camera
+PASS	tracer readability radius
+PASS	wasp visual bump stays inside its hitbox
+PASS	groundH spans the level
+PASS	every column defined; solid heights within [minH, maxH]
+PASS	intro and outro tail flat at h=3
+PASS	adjacent solid steps <= 2
+PASS	gap runs <= gapMax
+PASS	every gap has >= landingMin solid columns after it
+PASS	height change across each gap <= 1
+PASS	terrain actually has gaps, got 41 gap columns
+PASS	the gap-crossing probe drives the real player loop headlessly
+PASS	the probe saw every generated gap (17)
+PASS	face 1 has gaps to check before the first wave gate (2 before s=89)
+PASS	every face-1 gap before the first wave gate is crossable from the deck at SCROLL speed with one held jump, window >= one jump buffer (0.52 tiles): 29-31(w3) floor 0.74t/172ms, 46-47(w2) floor 1.96t/456ms
+PASS	the same gaps are wider still at run speed, worst window 4.22 tiles (the probe really is measuring the floor, not a free run)
+PASS	every floor-labelled sweep really ran at the scroll floor: fastest mean ground speed 4.3000 vs CONFIG.scrollSpeed 4.3 tiles/s, over 650761 measured frames
+PASS	the speed meter is live: the run column reads 9.40-9.40 tiles/s, between the floor (4.3) and runSpeed (9.4)
+PASS	negative control (scroll-speed start, screen clamp removed) on gap 29-31: mean ground speed 9.29 tiles/s and a 4.12-tile takeoff window against the clamped floor's 0.74 -- and note it stays under the 4.22-tile run-speed window, which is exactly why the window comparison alone could not see it
+PASS	the first gap is still columns 29-31 at h=2 (29-31(w3) floor 0.74t/172ms)
+PASS	the first gap is jumpable both ways: 0.74 tiles of takeoff at the scroll floor, 4.22 at run speed
+PASS	a press up to 6 frames late (one coyote window) still crosses every face-1 gap at the scroll floor, measured 29-31: 16f floor / 16f run / 0f without the air jump, 46-47: 16f floor / 39f run / 0f without the air jump
+PASS	EVERY generated gap is crossable from the deck at the scroll floor with the taught vocabulary (run, jump, air jump)
+PASS	no gap needing the air jump at the floor speed appears before the first wave gate (air-jump-only: 263-266, 294-297)
+PASS	chunk variety: 8 of 8 kinds used
+PASS	height band fully used (2 and 4 both appear)
+PASS	corner aprons flat and platform-free
+PASS	catwalk lanes generated, got 62
+PASS	catwalks capped at laneCapY
+PASS	every catwalk within double-jump reach
+PASS	normal generator shape pinned (445 columns / 62 platforms / 59 chunks), got 445/62/59
+PASS	normal generator fingerprint unchanged, got e715cc38
+PASS	traversal fixture builds deterministically
+PASS	traversal build does not mutate fixture metadata or CONFIG
+PASS	traversal builds return fresh geometry arrays and solid objects
+PASS	fixture bounds are a valid half-open level interval
+PASS	traversal ground spans the level with finite numeric heights
+PASS	authored ground runs cover fixture bounds once and match built heights
+PASS	authored platforms have unique ids and finite in-bounds spans
+PASS	authored solid rectangles have unique ids and integer in-bounds extents
+PASS	solid rectangle membership is half-open on x and y
+PASS	level solid predicate includes every authored solid rectangle
+PASS	dare dead-end rejects hidden wall adhesion without changing other walls or normal mode
+PASS	fixture declares exactly one tagged overhang
+PASS	overhang is solid while its underside and space above stay open
+PASS	overhang leaves player-height clearance below it
+PASS	level solid predicate preserves half-open ground-top collision
+PASS	connectors are unique, finite, in bounds, open, and include entry/exit
+PASS	every traversal edge names a route, two connectors, and a verb
+PASS	fixture declares six uniquely named traversal routes
+PASS	all six route sequences travel entry to rejoin on consecutive declared edges
+PASS	every declared traversal edge participates in its route sequence
+PASS	graph splits without exceeding the three-choice readability cap
+PASS	declared first fork offers valid bounded route choices
+PASS	alternate routes reconnect through a shared exit
+PASS	connector graph uses at least five distinct elevations
+PASS	route graph exercises both ledge-catch and wall-jump verbs
+PASS	dare reward is optional and confined to its named route
+PASS	dare reward has a directed retreat path back to the declared rejoin
+PASS	slice uninterrupted sprint stays in the fast target range, got 4.12 s
+PASS	dare entry margin covers backtrack plus scroll advance and preserves the exit margin
+PASS	opening sprint stays unpinned for at least half a second, got 0.87 s
+PASS	camera-follow threshold reaches the first authored route choice
+PASS	camera follow is idle inside its lead and tracks beyond authored or narrow-screen leads
+PASS	camera look-ahead exceeds the largest one-frame contextual launch
+PASS	portrait pullback preserves retreat room and preview without shrinking play below half scale
+PASS	at least three named views declared (near/mid/far present), ids self-consistent
+PASS	`near` is depthMult 1 exactly: ?view=near reproduces the pre-view-scale camera (default is far per operator verdict)
+PASS	every view only pulls the camera back (never in), strictly increasing near < mid < far
+PASS	near matches the concept-art invariant (docs/concept-art/README.md: RIG ~7% of screen height), got 7.03%
+PASS	each further view shrinks RIG strictly more than the last, got 7.03% > 4.98% > 3.73%
+PASS	mid/far land near the operator-requested ~5% / ~3.5-4% targets, got 4.98% / 3.73%
+PASS	slice tune is intentionally faster and gives short jump taps more authority
+PASS	slice jump is higher but remains quick, apex 3.24 in 0.70 s
+PASS	contextual launches match the stronger jump and preserve forward authority
+PASS	grab dwell, launch control, and recatch windows stay inside responsive budgets
+PASS	hound telegraph is at least twice the reaction cost of jumping clear (normal tune: tell 0.520 s vs 0.221 s)
+PASS	telegraph stays visible for twice the reaction cost at the fastest approach this pace allows (normal tune: 0.613 s vs 0.221 s, burst 11.80 t/s)
+PASS	a full jump outlasts the charge sweep by 3x (normal tune: air 0.583 s vs sweep 0.099 s)
+PASS	telegraph fires ahead of a sustained sprint (normal tune: 5.66 < 8)
+PASS	charge outruns the sustained drive: retreat is not an answer (normal tune: 15.5 vs 9.40)
+PASS	prowl is slow enough to get behind (normal tune)
+PASS	hound telegraph is at least twice the reaction cost of jumping clear (pace base: tell 0.520 s vs 0.210 s)
+PASS	telegraph stays visible for twice the reaction cost at the fastest approach this pace allows (pace base: 0.536 s vs 0.210 s, burst 13.50 t/s)
+PASS	a full jump outlasts the charge sweep by 3x (pace base: air 0.602 s vs sweep 0.099 s)
+PASS	telegraph fires ahead of a sustained sprint (pace base: 6.39 < 8)
+PASS	charge outruns the sustained drive: retreat is not an answer (pace base: 15.5 vs 10.80)
+PASS	prowl is slow enough to get behind (pace base)
+PASS	hound telegraph is at least twice the reaction cost of jumping clear (pace hunt: tell 0.520 s vs 0.210 s)
+PASS	telegraph stays visible for twice the reaction cost at the fastest approach this pace allows (pace hunt: 0.536 s vs 0.210 s, burst 13.50 t/s)
+PASS	a full jump outlasts the charge sweep by 3x (pace hunt: air 0.602 s vs sweep 0.099 s)
+PASS	telegraph fires ahead of a sustained sprint (pace hunt: 6.39 < 8)
+PASS	charge outruns the sustained drive: retreat is not an answer (pace hunt: 15.5 vs 10.80)
+PASS	prowl is slow enough to get behind (pace hunt)
+PASS	hound telegraph is at least twice the reaction cost of jumping clear (pace swarm: tell 0.520 s vs 0.210 s)
+PASS	telegraph stays visible for twice the reaction cost at the fastest approach this pace allows (pace swarm: 0.536 s vs 0.210 s, burst 13.50 t/s)
+PASS	a full jump outlasts the charge sweep by 3x (pace swarm: air 0.602 s vs sweep 0.099 s)
+PASS	telegraph fires ahead of a sustained sprint (pace swarm: 6.39 < 8)
+PASS	charge outruns the sustained drive: retreat is not an answer (pace swarm: 15.5 vs 10.80)
+PASS	prowl is slow enough to get behind (pace swarm)
+PASS	hound telegraph is at least twice the reaction cost of jumping clear (pace surge: tell 0.520 s vs 0.210 s)
+PASS	telegraph stays visible for twice the reaction cost at the fastest approach this pace allows (pace surge: 0.454 s vs 0.210 s, burst 15.93 t/s)
+PASS	a full jump outlasts the charge sweep by 3x (pace surge: air 0.602 s vs sweep 0.099 s)
+PASS	telegraph fires ahead of a sustained sprint (pace surge: 7.40 < 8)
+PASS	charge outruns the sustained drive: retreat is not an answer (pace surge: 15.5 vs 12.74)
+PASS	prowl is slow enough to get behind (pace surge)
+PASS	an onset jump lands before the charge arrives (0.602 s of air vs 0.630 s to contact): the tell is a commit cue, not a reflex cue
+PASS	the set of jump times that clear the charge spans 0.545 s — well over human timing jitter
+PASS	the commit coil is a distinct final beat of the tell, not the whole tell
+PASS	the coil fires inside the window where jumping actually clears the charge
+PASS	tightest telegraph headroom across all tunes is 2.16x the reaction cost (pace surge)
+PASS	a hound hit spends at most a quarter of any pace crush slack (worst 16%)
+PASS	the charge sweeps at least the ground it threatened (8.7 vs 8 tiles)
+PASS	charge substeps stay under 0.45 tiles at a clamped 50 ms frame (no tunneling)
+PASS	hound hit circle stays inside its silhouette
+PASS	hound dies to under a second of baseline rifle fire: no HP sponge
+PASS	the floor is denied temporarily, not permanently (safe fraction of the cycle)
+PASS	i-frames cover a whole charge sweep: one pass costs one point, not several
+PASS	i-frames expire inside the hound cycle: the next charge is not free (1200 < 2580 ms)
+PASS	facetanking a chokepoint hound spends the whole health bar in under 8 s
+PASS	a full health bar of forward hound knockback banks 3.96 tiles, under the 8-tile mercy threshold: charges cannot buy a fallback
+PASS	farming mercy off hound hits needs 7 charges and costs far more ground than it banks, at every pace
+PASS	lane band reaches a full generator step below the plate: the step down is no loophole
+PASS	lane band stops below the mid catwalk: a hound denies the floor, not the tier above
+PASS	a full generator height step can still stop a charge
+PASS	exactly one stage claims the frozen-baseline exemption, and it is stage 2
+PASS	without an opt-in stage the slice keeps its own composition exactly
+PASS	fixture default composition is still the two authored wasps
+PASS	trial stages resolve by name and reject anything else
+PASS	every stage declares an id, a label, and one of the two composition rules
+PASS	no stage selected: every pace plan is its own authored list, unchanged
+PASS	replace stages field only their own roster at every pace
+PASS	the add stage appends hounds and leaves every pace row byte-identical
+PASS	composed plans have unique ids and always contain a hound, at every pace
+PASS	composing a plan mutates neither the trial table nor the pace table
+PASS	solo stage authors uniquely named, in-bounds hostiles including a hound
+PASS	solo hounds sit on the authored surface they guard, facing a declared way
+PASS	solo hound patrol spans are short and inside one authored surface
+PASS	solo every hound owns a real connector inside its patrol span
+PASS	solo a charge from either end of the span still sweeps what it owns
+PASS	solo stage assigns every hostile to a declared fixture route
+PASS	solo every hound owns a connector its assigned route actually walks
+PASS	combo stage authors uniquely named, in-bounds hostiles including a hound
+PASS	combo hounds sit on the authored surface they guard, facing a declared way
+PASS	combo hound patrol spans are short and inside one authored surface
+PASS	combo every hound owns a real connector inside its patrol span
+PASS	combo a charge from either end of the span still sweeps what it owns
+PASS	combo stage assigns every hostile to a declared fixture route
+PASS	combo every hound owns a connector its assigned route actually walks
+PASS	squeezePlus stage authors uniquely named, in-bounds hostiles including a hound
+PASS	squeezePlus hounds sit on the authored surface they guard, facing a declared way
+PASS	squeezePlus hound patrol spans are short and inside one authored surface
+PASS	squeezePlus every hound owns a real connector inside its patrol span
+PASS	squeezePlus a charge from either end of the span still sweeps what it owns
+PASS	squeezePlus stage assigns every hostile to a declared fixture route
+PASS	squeezePlus every hound owns a connector its assigned route actually walks
+PASS	mix stage authors uniquely named, in-bounds hostiles including a hound
+PASS	mix hounds sit on the authored surface they guard, facing a declared way
+PASS	mix hound patrol spans are short and inside one authored surface
+PASS	mix every hound owns a real connector inside its patrol span
+PASS	mix a charge from either end of the span still sweeps what it owns
+PASS	mix stage assigns every hostile to a declared fixture route
+PASS	mix every hound owns a connector its assigned route actually walks
+PASS	aim stage authors uniquely named, in-bounds hostiles including a hound
+PASS	aim hounds sit on the authored surface they guard, facing a declared way
+PASS	aim hound patrol spans are short and inside one authored surface
+PASS	aim every hound owns a real connector inside its patrol span
+PASS	aim a charge from either end of the span still sweeps what it owns
+PASS	aim stage assigns every hostile to a declared fixture route
+PASS	aim every hound owns a connector its assigned route actually walks
+PASS	solo leaves at least two routes hound-free (4)
+PASS	combo leaves at least two routes hound-free (5)
+PASS	squeezePlus leaves at least two routes hound-free (4)
+PASS	mix leaves at least two routes hound-free (4)
+PASS	every roof hound telegraphs before its span, on a surface with room to dodge
+PASS	combo stage puts a wasp in dive reach of the jump arc over a hound plate
+PASS	the pocket guard owns the mouth without camping the reward, and can be baited out
+PASS	sim ENEMY table carries the polyp: non-gating, born closed, CONFIG-matched
+PASS	every sim ENEMY kind has a LOOK row in render/hostiles.js (polyp included)
+PASS	one vent window of baseline rifle fire kills the polyp (780 <= 900 ms): the opening is honest
+PASS	the lane is locked temporarily, not permanently (closed fraction 0.43 of the cycle)
+PASS	the beam itself holds the lane for at most a fifth of the cycle
+PASS	i-frames outlast one volley: standing in the beam costs one point, not a bar
+PASS	i-frames expire inside the iris cycle: the next volley is not free
+PASS	polyp hit circle stays inside its bulb silhouette
+PASS	sight march is finer than a 1-tile wall and the band is under half a tile tall
+PASS	a standing level shot from the polyp lane center-punches the bulb (muzzle 1.05 vs root 1.05)
+PASS	the band sits low enough that a drop-through can duck it at all
+PASS	polyp tell is at least twice the cost of jumping clear of the band (normal tune: 0.800 s vs 0.268 s)
+PASS	polyp tell is at least twice the cost of dropping below the band (normal tune: vs 0.343 s): the slowest escape still has headroom
+PASS	a full jump stays above the band for longer than the whole volley (normal tune: 0.498 s vs 0.45 s)
+PASS	polyp tell is at least twice the cost of jumping clear of the band (pace base: 0.800 s vs 0.248 s)
+PASS	polyp tell is at least twice the cost of dropping below the band (pace base: vs 0.323 s): the slowest escape still has headroom
+PASS	a full jump stays above the band for longer than the whole volley (pace base: 0.534 s vs 0.45 s)
+PASS	polyp tell is at least twice the cost of jumping clear of the band (pace hunt: 0.800 s vs 0.248 s)
+PASS	polyp tell is at least twice the cost of dropping below the band (pace hunt: vs 0.323 s): the slowest escape still has headroom
+PASS	a full jump stays above the band for longer than the whole volley (pace hunt: 0.534 s vs 0.45 s)
+PASS	polyp tell is at least twice the cost of jumping clear of the band (pace swarm: 0.800 s vs 0.248 s)
+PASS	polyp tell is at least twice the cost of dropping below the band (pace swarm: vs 0.323 s): the slowest escape still has headroom
+PASS	a full jump stays above the band for longer than the whole volley (pace swarm: 0.534 s vs 0.45 s)
+PASS	polyp tell is at least twice the cost of jumping clear of the band (pace surge: 0.800 s vs 0.248 s)
+PASS	polyp tell is at least twice the cost of dropping below the band (pace surge: vs 0.323 s): the slowest escape still has headroom
+PASS	a full jump stays above the band for longer than the whole volley (pace surge: 0.534 s vs 0.45 s)
+PASS	bend clamp: a sightline stops at the first facet bend ahead, ignores bends behind
+PASS	reach march stops within one step of a wall face and never crosses a 1-tile wall
+PASS	reach march runs to the clamped range over open ground
+PASS	a barrel against a wall has no lane at all
+PASS	zero reach hits nothing
+PASS	a body in the lane is hit
+PASS	behind the barrel tip is safe
+PASS	above the band is safe
+PASS	below the band is safe
+PASS	the polyp trial is exactly teach (solo) then one two-enemy combination (combo)
+PASS	polyp stages resolve by name and reject anything else
+PASS	the teach stage is ONE polyp and nothing else: every point of damage is the beam
+PASS	no ?polyp=: every pace x hound-stage plan is byte-identical to today
+PASS	polyp stages field only their own roster, at every pace and hound stage
+PASS	polyp rows root at deck+rootY, hound rows ride deck+rideY, in composed plans
+PASS	composing a plan never mutates the polyp trial table
+PASS	solo polyp stage authors uniquely named, in-bounds hostiles
+PASS	solo fields exactly one polyp: the lesson stays attributable
+PASS	solo polyp is rooted on its declared catwalk, inside its extent, facing a declared way
+PASS	solo polyp owns a real connector its assigned route actually walks
+PASS	solo no facet bend cuts this station (the clamp is armed but idle here)
+PASS	solo beam has a real lane to lock (reach 9.0 tiles)
+PASS	solo beam covers a standing body at the connector it owns
+PASS	solo the shared overhang-top decision point stays outside the lock: the fork is chosen in the open (board 07)
+PASS	solo every deck below the span stays a safe reroute: no standing body in the band
+PASS	solo no higher catwalk inside the span sits in the band: one lane, never a tier
+PASS	solo the bulb (even swollen) clips no neighboring catwalk
+PASS	solo the roof freeway pays a toll at the span tail (declared)
+PASS	combo polyp stage authors uniquely named, in-bounds hostiles
+PASS	combo fields exactly one polyp: the lesson stays attributable
+PASS	combo polyp is rooted on its declared catwalk, inside its extent, facing a declared way
+PASS	combo polyp owns a real connector its assigned route actually walks
+PASS	combo no facet bend cuts this station (the clamp is armed but idle here)
+PASS	combo beam has a real lane to lock (reach 9.0 tiles)
+PASS	combo beam covers a standing body at the connector it owns
+PASS	combo the shared overhang-top decision point stays outside the lock: the fork is chosen in the open (board 07)
+PASS	combo every deck below the span stays a safe reroute: no standing body in the band
+PASS	combo no higher catwalk inside the span sits in the band: one lane, never a tier
+PASS	combo the bulb (even swollen) clips no neighboring catwalk
+PASS	combo the roof freeway pays a toll at the span tail (declared)
+PASS	the combination stage is exactly two enemies: one new lesson at a time
+PASS	combo pairs the polyp with a houndframe
+PASS	combo hound is the judged rejoin beat: planted, short span, owns a swept connector
+PASS	the hound prices the drop reroute directly beneath the locked lane: a vertical stack
+PASS	the two threats price different routes — reroute vs lock is a real choice, never double jeopardy on one line
+PASS	the standing firing line really does pass over a houndframe (1.05 vs 0.87): the aim gap is real
+PASS	the down-diagonal reaches the deck within ~1 tile, so 8-way covers point blank only
+PASS	the crouched firing line lands inside the hound hit circle (0.45)
+PASS	the crouched line sits near the middle of that circle, not on its edge
+PASS	crouching is a real profile change (1 vs 1.7)
+PASS	a crouched player is still inside the charge envelope: crouch is not a dodge
+PASS	crouch engages grounded with down held, and plants the player while it does
+PASS	crouch never engages disabled, airborne, un-held, mid-launch, or on a wall
+PASS	a buffered jump always wins over the stance: ducking cannot eat the tell window
+PASS	assist bounds are light: cone < 45 deg, correction <= 10 deg, cap <= cone
+PASS	assist never reaches past the baseline rifle shot it is correcting
+PASS	assist closes the standing firing-line gap from 5 tiles out (reach 0.70)
+PASS	at maximum range the correction stays inside one lane (1.69 < 2.35 tile tier gap)
+PASS	assist with no targets returns the heading untouched
+PASS	assist ignores targets out of range, behind the player, or outside the cone
+PASS	a correction past the cap is clamped to the cap and stays a unit heading
+PASS	the corrected shot reaches a hound standing 6 tiles away on the same deck
+PASS	assist prefers the smallest angular offset, deterministically
+PASS	the teach and 2.5 stages park wasps above the highest reachable apex (12.59), close enough to dive into it
+PASS	ledge probe catches a falling right-side near miss and returns its snap
+PASS	ledge probe mirrors correctly for a left-side catch
+PASS	non-grabbable dare wall rejects its top ledge catch as well as wall adhesion
+PASS	ledge probe rejects grounded, rising, releasing, recatch, and no-intent states
+PASS	ledge probe rejects missing ledges, blocked tops, and blocked hanging bodies
+PASS	ledge decision holds only inside its short hang window
+PASS	down and timeout release a ledge with recatch protection
+PASS	ledge jump applies its responsive minimum and launches upward along the side
+PASS	ledge release takes priority over a simultaneous buffered jump
+PASS	wall slide caps fast falls without accelerating a slower descent
+PASS	wall jumps launch upward and away from either wall
+PASS	wall jumps apply recatch protection
+PASS	wall decision releases on no wall, landing, down, away input, timeout, or no side
+PASS	stretches tile the fixture bounds contiguously
+PASS	the run goes outside → inside → outside, got exterior>interior>exterior
+PASS	the path is a pure function of the fixture
+PASS	two bends per turn, got 5 segments
+PASS	every unit step along the body stays a unit step (no stretch)
+PASS	the path is continuous through every bend
+PASS	every turn is two snapDeg detents, and stretch headings match the view rest angles
+PASS	the animated view delta lands exactly on the geometric turn
+PASS	the altitude profile only ever climbs
+PASS	the run climbs more than a screen height (20 rendered + 5 jumped)
+PASS	a real part of the climb is jumped, got 5 tiles of deck
+PASS	the grade stays readable side-on, got 0.42 tiles per tile
+PASS	the outer face is flat: nothing is climbed before the way in
+PASS	the high face is flat: the climb finished when RIG came back out
+PASS	the body is climbed from the inside (18.3 of 20 tiles)
+PASS	the ascent is run, not cut: 4.9 s of climbing
+PASS	both outer faces carry background silhouettes
+PASS	low-face silhouettes rise well above the camera eye
+PASS	the same silhouettes sit below the high deck, not above it
+PASS	every below-deck silhouette is in frame under the deck, not off-screen
+PASS	the body encloses RIG low down and opens into towers high up
+PASS	only the high face runs weather, and it spans the whole view
+PASS	the high face hangs a longer wall into the fog than the low one
+PASS	the assembly choreography is retained for later hostile constructs
+PASS	no transition constant drives an assembly, got haltOffset,chamferTiles,thresholdTiles,armLookahead,triggerOffset,armMaxMs,pressedOffset,clampMargin,sealInset,windUpMs,windUpDeg,snap1Ms,holdMs,snap2Ms,settleMs,resumeMs,seamPullTiles,backS,snapDeg,panelJoltTiles,cover,clearMsgMs
+PASS	the reserved assembly curve still settles to its base
+PASS	transformation ritual total 990 ms, got 990
+PASS	ritual stays inside the 0.8-1.2 s transformation budget
+PASS	timeline beats at 90/250/550/690/810, got 90/250/550/690/810
+PASS	ritual yaw 0 at t=0 [got 0, want 0]
+PASS	ritual yaw 0 before the event [got 0, want 0]
+PASS	wind-up reaches the counter-rotation blink [got -2.9999333337037033, want -3]
+PASS	snap 1 lands exactly 45 [got 45, want 45]
+PASS	ratchet hold flat at 45 [got 45, want 45]
+PASS	snap 2 lands exactly 90 [got 90, want 90]
+PASS	yaw clamped after the ritual [got 90, want 90]
+PASS	ritual holds are dead flat (clack … clack, no wobble)
+PASS	snap 1 overshoots once, peak 47.14620214233399
+PASS	snap 2 overshoots once, peak 92.0120625
+PASS	wind-up dips to windUpDeg [got -3, want -3]
+PASS	scroll speed frozen until the settle ends
+PASS	the view holds still through the wind-up and into the first detent
+PASS	the bend is already coming to the player during the ratchet hold
+PASS	the seam pull completes exactly as the settle ends [got 11, want 11]
+PASS	the pull carries the view past the seam it halted before (11 > 9)
+PASS	the ritual never scrolls the world backwards
+PASS	the resume ramp adds exactly its closed-form distance [got 11.192, want 11.192]
+PASS	the ritual hands back to ordinary scrolling at full speed [got 3.1822551440328084, want 3.2]
+PASS	quadratic ease at the resume midpoint [got 0.8, want 0.8]
+PASS	full fixture speed at the ritual end [got 3.2, want 3.2]
+PASS	scroll clamped to full speed after [got 3.2, want 3.2]
+PASS	cover state is hinge-swing only (no blow/spin fields), got jolt,open,seated,visible
+PASS	the plate holds shut through the latch throw
+PASS	the arm swing lands exactly at ajar [got 0.8, want 0.8]
+PASS	and holds there: ajar is a rest state, not a drift [got 0.8, want 0.8]
+PASS	the arm swing overshoots once and settles, peak 0.836
+PASS	ajar clears the combat lane and still visibly owes the relock
+PASS	the arm window outlasts the swing at a sprint (532 > 500 ms)
+PASS	the ritual takes the plate exactly where the arm swing left it [got 0.8, want 0.8]
+PASS	ajar is not seated, and the plate is in the world
+PASS	the plate waits out the wind-up: its next beat is the camera detent
+PASS	snap 1 carries the plate to snapFrac — it clacks with the view [got 0.96, want 0.96]
+PASS	the relock finishes inside the ratchet hold, before snap 2
+PASS	the seat clack lands at t2+relockMs exactly
+PASS	the plate never swings backwards beyond its own snap settle
+PASS	relocked flush and STAYS at t=370: nothing pops out of the world
+PASS	relocked flush and STAYS at t=550: nothing pops out of the world
+PASS	relocked flush and STAYS at t=690: nothing pops out of the world
+PASS	relocked flush and STAYS at t=990: nothing pops out of the world
+PASS	relocked flush and STAYS at t=1000000000: nothing pops out of the world
+PASS	the vent cover starts shut
+PASS	the vent cover only strains through the wind-up — the blow is on the detent
+PASS	the strain jolt peaks as the wind-up ends [got 0.179998, want 0.18]
+PASS	the cover is blown past its stop once and caught, peak 1.23
+PASS	caught ON the first detent: the blow and the view clack together [got 1, want 1]
+PASS	the vent cover hangs on its caught stop at t=550 — no tumble, no vanish
+PASS	the vent cover hangs on its caught stop at t=690 — no tumble, no vanish
+PASS	the vent cover hangs on its caught stop at t=990 — no tumble, no vanish
+PASS	the vent cover hangs on its caught stop at t=1000000000 — no tumble, no vanish
+PASS	no vapor before the blow [got 0, want 0]
+PASS	the burst peaks ON the first detent [got 1, want 1]
+PASS	the sightline is fully clear when snap 2 commits the camera (G4) [got 0, want 0]
+PASS	and stays clear [got 0, want 0]
+PASS	vapor rises to the detent and only clears after it
+PASS	the burst travels outward monotonically and has fully left by commit
+PASS	bulkhead-flip grants at most a stride of altitude across its chamfer, got 1.25
+PASS	breach-return grants at most a stride of altitude across its chamfer, got 1.25
+PASS	bridge.js never reads the cover choreography
+PASS	capsules.js never reads the cover choreography
+PASS	edges.js never reads the cover choreography
+PASS	flow.js never reads the cover choreography
+PASS	hook.js never reads the cover choreography
+PASS	hostiles.js never reads the cover choreography
+PASS	input.js never reads the cover choreography
+PASS	level.js never reads the cover choreography
+PASS	mods.js never reads the cover choreography
+PASS	pace.js never reads the cover choreography
+PASS	player.js never reads the cover choreography
+PASS	score.js never reads the cover choreography
+PASS	scroll.js never reads the cover choreography
+PASS	spawner.js never reads the cover choreography
+PASS	state.js never reads the cover choreography
+PASS	time.js never reads the cover choreography
+PASS	transform.js never reads the cover choreography
+PASS	wavegate.js never reads the cover choreography
+PASS	weapons.js never reads the cover choreography
+PASS	src/render/transform.js never calls assembly choreography
+PASS	no debris system in the transition render: covers stay whole
+PASS	atmosphere starts at the first snap [got 0, want 0]
+PASS	atmosphere completes when the surface does [got 1, want 1]
+PASS	atmosphere mix clamped [got 1, want 1]
+PASS	interior threat sockets are unique, open, behind the plane and clear of the aprons
+PASS	the interior declares both an emplacement and a hazard socket for the roster pass
+PASS	transformation fixture builds deterministically
+PASS	transformation build mutates neither the fixture nor CONFIG
+PASS	transformation builds return fresh geometry and reference their fixture
+PASS	the seeded layout outside the fixture bounds is untouched
+PASS	authored surfaces cover the fixture bounds once and match the built heights
+PASS	every seam apron is flat, solid and platform-free through its threshold
+PASS	gate geometry orders halt < seam < seal < trigger < frontier < threshold end
+PASS	RIG is wholly past the seam before a ritual can fire
+PASS	the whole threshold is visible from the apron halt at 16:9
+PASS	the arming lookahead and the squeeze cap both stay inside the apron
+PASS	even a squeezed dawdler sees the whole ritual on screen
+PASS	authored catwalks have unique ids and in-bounds spans
+PASS	every authored catwalk is within double-jump reach of a lower surface
+PASS	the transformation fixture overrides no movement constant
+PASS	fixture gaps stay inside the jumpable band, widest 2
+PASS	every fixture gap has a legal landing strip after it
+PASS	the frozen jump clears the fixture widest gap with margin
+PASS	the interior ceiling clears a full jump, so the corridor never traps RIG
+PASS	interior catwalks keep player headroom under the ceiling
+PASS	the fixture ambient table is strictly ascending
+PASS	no ambient spawn sits in a seam-clear zone
+PASS	fixture spawns are authored wasps with authored lanes
+PASS	the ecology stays simple: this slice proves the transformation, got 6
+PASS	the opening frame is filled by authored hull, not void off the left edge
+PASS	the run window ends on the far exterior face, past the breach
+PASS	RIG can outrun the pursuing edge in the fixture
+PASS	an uninterrupted run plus both rituals fits the fixture target, got 14.6 s
+PASS	the spawn point stands on authored ground
+PASS	the live transform fixture defaults to v1 (G2 is opt-in)
+PASS	exactly two authored transform fixtures
+PASS	selecting g2 swaps fixture, path and bend list together
+PASS	the default-arg level build follows the live selection
+PASS	reselecting v1 restores the shipped bindings exactly (selection mutates nothing)
+PASS	an unknown fixture id falls back to v1: the flag cannot half-arm
+PASS	G2 is one flip from the haunch exterior into the neck interior
+PASS	scroll halt 140 and pivot 154, exactly the proposal P2 numbers (u51/u65)
+PASS	the gate apron is the proposal 14 tiles
+PASS	gate arena and threshold stay inside the proposal s119-161 screen window
+PASS	the gate declaration matches the computed halt and pivot
+PASS	v1 events keep the CONFIG halt offset (no override present)
+PASS	seam pull without an event still resolves to the CONFIG tiles [got 11, want 11]
+PASS	the G2 event pull reaches its authored tiles by t5 [got 16, want 16]
+PASS	the G2 pull still starts on the first detent [got 0, want 0]
+PASS	every turn, v1 and G2, lands its ritual pull exactly 2 tiles past the pivot
+PASS	the ritual scroll offset carries the G2 pull override [got 16, want 16]
+PASS	the whole G2 threshold is visible from its 14-tile apron halt at 16:9
+PASS	arming lookahead and squeeze cap stay inside the G2 apron
+PASS	G2 gate geometry orders halt < seam < seal < trigger < frontier < threshold end
+PASS	RIG is wholly past the G2 seam before the ritual can fire
+PASS	G2 stretches tile the fixture bounds contiguously
+PASS	the G2 path is a pure function of the fixture
+PASS	two bends for the one G2 turn, got 3 segments
+PASS	the G2 path is continuous with unit steps through its bend
+PASS	the G2 turn is two snapDeg detents between the declared surface normals
+PASS	the bullet bend cull boundary sits on the G2 seam
+PASS	the G2 altitude profile only ever climbs
+PASS	the G2 grade stays readable side-on, got 0.38
+PASS	P2 starts at the proposal +12 render altitude
+PASS	at least +14 of P2 lift is earned on foot before the halt
+PASS	altitude is dead flat across apron, seam and threshold: the ritual grants 0
+PASS	the P2 ascent is run, not cut: 5.4 s of ribline
+PASS	G2 authored surfaces cover the fixture bounds once and match the built heights
+PASS	the seeded layout outside the G2 bounds is untouched
+PASS	G2 gaps stay inside the jumpable band, widest 3
+PASS	every G2 gap has a legal landing strip after it
+PASS	the G2 fixture overrides no movement constant
+PASS	G2 catwalks have unique ids and in-bounds spans
+PASS	every G2 catwalk is within double-jump reach of a lower surface
+PASS	all five proposal routes are authored (r1 ridge, r2 chimney, r3 plate, low floor, r5 underside)
+PASS	the scapular plate is broad: 14 tiles
+PASS	the chimney is exactly two in-bounds authored ribs
+PASS	the built level carries the authored ribs
+PASS	the chimney mouth between the ribs is a jumpable 3-5 tiles, got 4
+PASS	both rib undersides clear a running player on the low route
+PASS	no rib intrudes on the gate apron or threshold
+PASS	rib collision matches its authored rect (solid inside, open above and beside)
+PASS	the chimney apex catwalk sits between and above the ribs
+PASS	a wasp contests the chimney apex at its own height
+PASS	the access plate is the proposal 10-12 tiles, got 11
+PASS	the carried deck spans exactly the ritual footprint (apron mouth through threshold)
+PASS	the carried surface exists on BOTH sides of the seam: it is carried, not rebuilt
+PASS	the carried deck is flat and solid at the declared height
+PASS	the G2 apron is platform-free through its threshold
+PASS	continuity connectors sit near local y 3, 6 and 9
+PASS	the low connector IS the carried deck, marked carried during the flip
+PASS	every connector declares its before/during/after visibility
+PASS	mid and high connectors have a shelf to the mouth and a catwalk beyond it
+PASS	two or more declared forward exits survive the transformation
+PASS	the gate declares the plate as its only permitted motion
+PASS	the underside pocket is a floor gap with its hang shelf beneath
+PASS	a single frozen jump escapes the pocket with clearance to spare
+PASS	declared pocket retreat (0.8s) covers the physics minimum (0.48s) and stays a SHORT hang
+PASS	the pocket commits before the gate halt, not inside the arena
+PASS	the underside hang rejoins at the chimney base, per the proposal route 5
+PASS	the pocket reward socket is declared, inside the pocket, in open air
+PASS	the G2 ambient table is strictly ascending
+PASS	no G2 spawn sits in the seam-clear zone
+PASS	G2 spawns are authored wasps with lanes plus houndframes with patrols
+PASS	the G2 ecology stays simple, got 6
+PASS	exactly one houndframe pressures the gate, got 1
+PASS	the hound patrol paces a continuous stretch of the low joint-collar floor
+PASS	the patrol is a real chokepoint span (entry 6: placement, not stats), got 18.0 tiles
+PASS	the hound spawns inside its patrol, short of the carried deck
+PASS	the neck interior ceiling clears a full jump
+PASS	interior catwalks keep player headroom under the neck ceiling
+PASS	G2 threat sockets are unique, open, behind the plane and clear of the apron
+PASS	the neck interior declares both emplacement and hazard sockets
+PASS	the gate declaration and the band agree on the enemy socket ids
+PASS	the G2 opening frame is filled by authored hull, not void
+PASS	the G2 run ends well inside the neck, past the flip
+PASS	RIG can outrun the pursuing edge in the G2 fixture
+PASS	an uninterrupted G2 run plus the ritual fits the target, got 12.3 s
+PASS	the G2 spawn point stands on authored ground
+PASS	G2 event extras are gate geometry + declarations only, got: gate,haltOffset,plateRamp,seamPullTiles
+PASS	the G2 plate runs T-001 flip choreography verbatim (relock on the hold)
+PASS	bridge.js never reads the G2 render-only gate fields
+PASS	capsules.js never reads the G2 render-only gate fields
+PASS	edges.js never reads the G2 render-only gate fields
+PASS	flow.js never reads the G2 render-only gate fields
+PASS	hook.js never reads the G2 render-only gate fields
+PASS	hostiles.js never reads the G2 render-only gate fields
+PASS	input.js never reads the G2 render-only gate fields
+PASS	level.js never reads the G2 render-only gate fields
+PASS	mods.js never reads the G2 render-only gate fields
+PASS	pace.js never reads the G2 render-only gate fields
+PASS	player.js never reads the G2 render-only gate fields
+PASS	score.js never reads the G2 render-only gate fields
+PASS	scroll.js never reads the G2 render-only gate fields
+PASS	spawner.js never reads the G2 render-only gate fields
+PASS	state.js never reads the G2 render-only gate fields
+PASS	time.js never reads the G2 render-only gate fields
+PASS	transform.js never reads the G2 render-only gate fields
+PASS	wavegate.js never reads the G2 render-only gate fields
+PASS	weapons.js never reads the G2 render-only gate fields
+PASS	a ledge grab right at maximum reach (gap approx ledgeReachX) still catches
+PASS	ledge probe forgives a small overlap inside the -0.03 tolerance (gap approx -0.02)
+PASS	ledge probe rejects overlap deeper than the -0.03 tolerance (gap approx -0.05)
+PASS	ambient table populated, got 43
+PASS	spawn table strictly ascending
+PASS	no ambient spawns inside corner-clear zones
+PASS	spawn positions within authored range
+PASS	one carrier row per face, got 6
+PASS	every weapon letter has a shot color
+PASS	density escalates: face 6 (8) > face 1 (6), all: 6,6,8,8,7,8
+PASS	per-face gap shrinks and pair chance grows
+PASS	hottest face still >= 6 tiles between ambient spawns
+PASS	main.js frame loop clamps dt with the expected Math.min(N, t - last) shape
+PASS	no configured horizontal speed crosses a full tile in one clamped frame (endpoint-only wall check would tunnel), got 0.675 tiles at 13.5 u/s
+PASS	no configured upward speed crosses a full tile in one clamped frame (endpoint-only ceiling check would tunnel), got 0.825 tiles at 16.5 u/s
+PASS	every weapon speed keeps the capped bullet substep under both a 1-wide pillar and the smallest hostile hitbox, worst case 0.500 tiles
+PASS	fast fall at the clamped max frame dt lands exactly on a one-way platform, no tunneling (y=10 at frame 18)
+PASS	rising through a one-way platform passes through instead of snapping to it (y=10.21)
+PASS	300 frames resting on a one-way platform stay pinned with no float-drift chatter (y=10)
+PASS	discrete single-jump apex at 60Hz matches the documented figure [got 2.6066666666666682, want 2.61]
+PASS	discrete single-jump apex at 30Hz matches the documented figure [got 2.4933333333333323, want 2.49]
+PASS	discrete single-jump apex clears the mid-lane +2.35 offset even at the actual dt-clamp floor (20fps), margin 0.030 tiles -- thinner than the documented 30Hz margin, worth a wider buffer if retuned
+PASS	discrete double-jump apex clears the +3 high-lane offset at the dt-clamp floor, margin 1.390 tiles
+PASS	at least three paces declared, base first, got base,hunt,swarm,surge
+PASS	resolving a pace mutates neither the pace table nor the base fixture
+PASS	an unknown ?pace= falls back to base rather than breaking the slice
+PASS	the base pace is the shipped pass unchanged (default behavior preserved)
+PASS	every pace shares one geometry: an A/B compares pacing only
+PASS	every pace shares one route graph, so route metrics stay comparable
+PASS	each pace declares a labelled hypothesis and a bounded, outrunnable pursuit model
+PASS	dare retreat clears its exit margin at the daylight each pace actually grants
+PASS	every seconds-bounded pace makes the pocket a tighter wager than base, got 4.4,3.6,3.4 vs 8.1
+PASS	seconds-bounded paces produce one aspect-invariant clock: hunt=2.6s swarm=4s surge=3.2s
+PASS	every declared crush clock still binds inside the narrowest supported frustum, caps 0.0,9.4,11.6,8.3
+PASS	a seconds-bounded pace also makes the plane lethal, so idling is not a free ride
+PASS	every variant places a hostile above the y=10 roof so the fastest line costs something
+PASS	the pocket dead end never rises above the overhang roof it meets (no held-jump trap)
+PASS	the dead end still seals the pocket for a player standing inside it
+PASS	every pace spawns unique, in-bounds, non-embedded hostiles and fixed rewards
+PASS	the variants differ in kind: no two share a threat layout
+PASS	density spread across paces is real, got 2,4,8,5
+PASS	every pace keeps jump apex, dwell budgets, launch authority and chain gain in range
+PASS	no pace (chain included) crosses a tile in one clamped frame, worst 0.796 tiles in pace surge
+PASS	no pace raises a vertical launch into the endpoint-only ceiling check, worst 0.825 tiles
+PASS	no chain config means no launch amplification anywhere else in the game
+PASS	chain multiplier starts at 1 and clamps at its declared max
+PASS	ledgeAutoLaunch converts dwell expiry into a launch
+PASS	auto-launch still lets down release and an early jump launch first
+PASS	no ?hook / ?flow: every pace resolves exactly as it shipped
+PASS	arming both verbs adds the two tuning tables and exactly one movement override
+PASS	four to six anchors, unique, in bounds, not embedded, and hangable
+PASS	anchors are authored in forward order, so acquisition ties break forward
+PASS	every anchor arc rejects an approach from ahead: a grab is always forward progress
+PASS	every hook anchor is acquirable from at least one authored connector: entry-lift<-entry/low-approach shaft-lift<-chimney-base pocket-span<-chimney-top post-lift<-post-low/post-mid exit-lift<-post-mid/post-high
+PASS	each anchor is acquirable from the connector it claims to teach from
+PASS	the roof (chimney-top) can grab the pocket-span anchor, so leaving the degenerate fast line is an available choice rather than a nerf
+PASS	and that grab is a forward, downward transfer (roof y=10 → hold y=6.40)
+PASS	the tether sight step (0.35) is finer than the thinnest authored wall (1), so it cannot step over one
+PASS	a tether line through a wall is refused
+PASS	a tether line over that same wall is allowed
+PASS	standing in the dare pocket cannot hook out through the overhang — the wager keeps its measured retreat
+PASS	the zip advances at most 0.267 of a tile per substep at the dt clamp (budget 0.3)
+PASS	and a substep is smaller than a wall, so every crossing attempt is tested inside it
+PASS	hook + flow + every pace chain keeps horizontal displacement under a tile per clamped frame, worst 0.824 tiles (16.47 u/s in surge)
+PASS	no verb raises an upward launch into the endpoint-only ceiling check, worst 0.825 tiles
+PASS	the whip has launch authority but never beats a plain jump for height
+PASS	a released anchor stays locked longer than the global cooldown: no instant re-grab
+PASS	the dangle is readable but never a pause, and a zip can never become a ride
+PASS	acquisition has both a floor (no grabbing what you stand under) and a ceiling
+PASS	a whip always throws the way the player travelled through the anchor
+PASS	the whip preserves a fast approach, floors a slow one, and clamps at its ceiling
+PASS	one frame of zip travels exactly speed x dt and no further
+PASS	a zip inside one frame arrives exactly on the anchor
+PASS	a blocked zip stops at the last position that fit and reports it, so it can launch
+PASS	only contact launches build a chain — mashing the air jump pays nothing
+PASS	the chain multiplier starts at 1, rises per link, and clamps at its max
+PASS	composing with a pace chain is capped at maxTotalMult
+PASS	the sustained drive multiplier is capped and neutral at rest
+PASS	with no flow config nothing anywhere is amplified
+PASS	no chain length and no entry speed can push an amplified launch past the ceiling
+PASS	four contact launches fill the chain
+PASS	a bounce through the floor inside the grace keeps every link
+PASS	standing past the grace sheds exactly one link per decay step, got 3
+PASS	a full chain dies on the floor in 780 ms — quickly, but not instantly
+PASS	that lifetime is under a second and its grace is long enough for a real bounce
+PASS	and an airborne chain expires on its own window: a long fall is not a chain
+PASS	inside the window, airborne time costs nothing
+PASS	the rib run is an overlay: it never touches the shipped fixture or its built level
+PASS	reward culling and hostile-free resolution are inert for the shipped fixture at every pace
+PASS	the deck lookup reads authored ground runs and stays null outside them
+PASS	the rib is one contiguous monotone staircase: 6 risers of 2 over treads of 7
+PASS	rib decks cover the fixture bounds exactly once with no gap column
+PASS	the rib climbs 12 tiles — a long straight, not a step up
+PASS	the authored slope reads as a diagonal (0.286 = 15.9 degrees)
+PASS	every riser is a solid face with an open lip and an open approach, got 6
+PASS	no rib column hides an overhead inside a full jump over its own deck
+PASS	the rib run inherits the fixture tune untouched — the slope does the work
+PASS	one grounded jump clears a riser with over a tile of analytic margin (apex 3.24 vs riser 2)
+PASS	the window in which a jump clears the next riser is 4.70 tiles wide (435 ms at run speed)
+PASS	a cleared riser lands back on the deck 0.68 tiles before the next one: a real footfall, and a short one
+PASS	the rib is 90% airborne at a constant cadence — the momentum is the geometry
+PASS	one full jump carries 7.60 tiles, so the tread of 7 is one hop: a constant cadence is a fixed point of the rib
+PASS	and the jump that starts that cadence can be made from the footfall itself
+PASS	the catch band is a real 0.84-tile window strictly between the lower deck and the lip
+PASS	a body pinned to the face cannot step over that band in one clamped frame (0.58 vs 0.84 tiles)
+PASS	every riser converts a pinned fall inside the band into a ledge catch on its own lip, got 6/6
+PASS	and a body already down at deck height is not silently caught — the band is the contract
+PASS	one flange per riser, one tile under its deck, stopping clear of the face
+PASS	every flange hangs in open air over the deck below it
+PASS	the flange picks up exactly where the catch band stops: no miss height falls between the tiers
+PASS	the catch pocket in front of each face is wider than a pinned body (0.8 vs 0.35 tiles), so tier 3 is reachable
+PASS	the fixture fields exactly those flanges as one-way plates and no lattice walls
+PASS	rib connectors are unique, in bounds, standing in open air, and include entry/exit
+PASS	the ribline route names every connector once and every edge resolves
+PASS	the victory line sits on the crest at the same x the shipped fixture uses
+PASS	spawn and run window are the fixture's own: only the ground moved
+PASS	a single line has no dare pocket and fields no lattice-authored hostiles
+PASS	the stake rides the line: 1.20 tiles over the deck at x=55, grabbed on the way through
+PASS	at every pace the rib fields no hostiles and no stake buried inside its own rock
+PASS	the rib run steps headlessly through the real sim with no DOM
+PASS	hold right + jump on contact climbs the whole rib at 60Hz, 30Hz and the dt clamp, got 60Hz:clear 30Hz:clear 20Hz:clear
+PASS	60Hz: the rib is a 4.63s pass, inside the fixture's own 4-12 s window
+PASS	60Hz: the run actually ascends 15.1 tiles and finishes on the crest
+PASS	60Hz: 97% of the climb is airborne — sustained, not a stair-stop shuffle
+PASS	60Hz: the whole climb averages 9.6 t/s, 89% of flat-ground run speed with every repair paid for
+PASS	60Hz: the rib never holds RIG still for long — longest stretch under 2 t/s is 417 ms (a hang, a slide, or a re-acceleration off one)
+PASS	60Hz: the climb costs no hull and takes no fallback
+PASS	60Hz: the air jump is never spent — the rib is climbed on the ground jump alone
+PASS	30Hz: the rib is a 4.30s pass, inside the fixture's own 4-12 s window
+PASS	30Hz: the run actually ascends 14.3 tiles and finishes on the crest
+PASS	30Hz: 95% of the climb is airborne — sustained, not a stair-stop shuffle
+PASS	30Hz: the whole climb averages 10.4 t/s, 96% of flat-ground run speed with every repair paid for
+PASS	30Hz: the rib never holds RIG still for long — longest stretch under 2 t/s is 100 ms (a hang, a slide, or a re-acceleration off one)
+PASS	30Hz: the climb costs no hull and takes no fallback
+PASS	30Hz: the air jump is never spent — the rib is climbed on the ground jump alone
+PASS	20Hz: the rib is a 4.05s pass, inside the fixture's own 4-12 s window
+PASS	20Hz: the run actually ascends 14.5 tiles and finishes on the crest
+PASS	20Hz: 96% of the climb is airborne — sustained, not a stair-stop shuffle
+PASS	20Hz: the whole climb averages 11.1 t/s, 102% of flat-ground run speed with every repair paid for
+PASS	20Hz: the rib never holds RIG still for long — longest stretch under 2 t/s is 50 ms (a hang, a slide, or a re-acceleration off one)
+PASS	20Hz: the climb costs no hull and takes no fallback
+PASS	20Hz: the air jump is never spent — the rib is climbed on the ground jump alone
+PASS	across the three frame times the repair tiers are really exercised (catches 0/0/3, flange landings 0/2/0)
+PASS	the rib run composes with ?flow=1 at every frame time — the A/B is one URL apart
+PASS	every authored ground column clears the player with a tile of slack, worst 3.00 tiles at x=39 (need 2.7)
+PASS	both chimney walls still overlap a player standing on the chimney floor
+PASS	a constant pace is exactly constant
+PASS	hunt charges on banked margin, eases when the player is nearly pinned
+PASS	ramp escalates monotonically from cruise to max and clamps there
+PASS	pursuit speed is rate-limited and reaches its ceiling
+PASS	entering the dare pocket drops the edge to pocketSpeed on the same frame
+PASS	fallback constants are declared and signed correctly
+PASS	fallback picks the highest genuinely lower surface, or nothing
+PASS	a surface inside minDropTiles is not a fallback route
+PASS	every authored platform resolves to a lower route or to the margin knock, got 8/9 with a lower route
+PASS	the score module reads its tune from CONFIG
+PASS	A.4 prototype: two monotone notches, top notch at full charge, one mult/name each
+PASS	notch thresholds are inclusive, ordered, and clamped
+PASS	THREAT multiplier rises with the notch and clamps
+PASS	WARM shortens the fire interval; nothing else is gated by notch 1
+PASS	CHARGE and THREAT tables cover the same event set
+PASS	A.1 event set is priced, and movement kills dominate ground kills
+PASS	drain: zero in the air/traversal/launch window, worst while standing still
+PASS	stall threshold matches A.5 (and therefore the playtest harness) exactly
+PASS	drain never crosses the phase floor and charge never exceeds its max
+PASS	gains clamp at max and unknown events are inert
+PASS	the same event script always produces the same notch timeline
+PASS	the scripted 6-second horizon actually reaches BREAKING, got 0:0.00 0:12.00 1:40.00 0:33.40 1:53.40 1:81.40 1:77.00 1:97.00 2:100.00 0:0.00
+PASS	classification ladder is a monotone step function of THREAT
+PASS	notch glyphs are one per notch and never collide with the hp pips
+PASS	THREAT scales with the notch and stalling never subtracts from it
+PASS	connector visits resolve by nearest inside the radius
+PASS	A.5 route coverage: three connectors, in order, or it does not count
+PASS	BREAKING launch shock kills a wasp on contact without deleting a carrier
+PASS	the pop grace is real but small against the recatch window
+PASS	by the end of the grace the popped capsule has left the player: rise 2.76 vs height 1.7, drift 0.88
+PASS	reclaim/link/launch windows and the A.5 ring buffer match the proposal
+PASS	the run tune is its own frozen table, not an alias of the slice tune
+PASS	run and slice tunes share notches, THREAT prices, ladder, windows and caps — the two event streams stay comparable event-for-event
+PASS	run CHARGE gains are exactly A.3 (the slice table halved), every event
+PASS	run drain is A.3 (halved) and keeps the floor-cools-you asymmetry
+PASS	the pure functions accept the run tune: gains, worst-case drain, free air
+PASS	a WARM airborne kill is worth identical THREAT under either tune
+PASS	the run meter horizon is genuinely slower than the slice meter horizon
+PASS	the run fallback tune has exactly the slice fallback field set
+PASS	run fallback values match the slice values for the first CP4 pass — one grammar at two timescales, not two grammars (retune = update both)
+PASS	run fallback: real mercy chain, bounded streak, forward toss, paid ground knock
+PASS	the shared fallback-target rule picks the highest genuinely-lower route under the run tune, and null when nothing is lower
+PASS	sim/score.js runs headlessly with ?score=1 and no DOM
+PASS	a wall kick that gains 2 tiles links; one that gains 0.6 does not
+PASS	an air jump never links, however high it goes (hopping pays nothing)
+PASS	a launch that drops two tiles still links: elevation *change*, not gain
+PASS	an airborne kill inside the launch window stacks airborne_kill + launch_kill
+PASS	an ORBITAL LANCE kill scores as a ground kill even while airborne
+PASS	the launch shock does not arm below BREAKING
+PASS	a houndframe scores through the same death path, airborne vs grounded, with its kind intact and no special case, got airborne_kill:hound:R,ground_kill:hound:R
+PASS	killing a hound mid-charge while airborne counts as an airborne kill; killing it from the deck counts as a ground kill
+PASS	A.5 envelope shipped verbatim for airborne_kill, got t,notch,type,x,y,kind,weapon,vy
+PASS	HB.score.reset() clears the meter, the score and the ring buffer
+PASS	a slice run prices its stream with the slice tune and says so
+PASS	the default-run sim boots headlessly with and without the CP4 flags
+PASS	?score=1&fallback=1 arms both prototypes in the default run, no slice active
+PASS	the default run prices events with the RUN tune (airborne kill +14, not the slice tune +28), got +14
+PASS	the seeded six-face level offers an elevated platform with ground below to prove the dislodge against
+PASS	a lethal hit with ?fallback=1 is a HULL FALLBACK: altitude paid, lives and control kept, hp refilled, play never stops
+PASS	the fallback drops CHARGE to the phase floor (B.1: the fall pays nothing)
+PASS	on the lowest route the fallback takes margin instead of altitude — never free
+PASS	the third consecutive un-recovered death crosses the streak ceiling and spends a stock life — the run keeps its terminal state, no free fall loop
+PASS	the A.5 setback envelope rides the run stream: kinds fallback,ground
+PASS	with no flags the default-run meter is fully inert (no events, no charge)
+PASS	with no flags a lethal hit spends a life through the shipped stock path
+PASS	sim/hook.js drives the real player loop headlessly with ?hook=1
+PASS	pressing hook at the fixture spawn grabs the anchor that teaches it (got zip/entry-lift)
+PASS	while the tether is taut the player carries no velocity — it owns position, so the normal integrator can never resume holding a zip-speed vector
+PASS	the zip arrives and dangles before it throws (the boards’ dangle)
+PASS	the dangle always converts: one grab, one whip, back to idle
+PASS	the whip throws forward at a bounded speed (12.18 <= 15.9) with the authored lift (vy 13.90 of 14.6)
+PASS	the whip refunds the air jump, so a grab can become another launch
+PASS	the grab gained real altitude: 3.11 tiles
+PASS	the cooldown and the anchor lock refuse an instant re-grab
+PASS	a hook launch is a momentum-chain link
+PASS	the launch that followed the grab pays a CHARGE `link` through the ordinary A.1 path — no scoring special case for the hook
+PASS	and the A.5 event stream carries it, with no stall while the tether ran
+PASS	down releases the tether and drops, exactly like a ledge or a wall
+PASS	a press with no valid anchor is simply a miss: nothing moves, nothing sticks
+PASS	crush case: two contact launches armed a live chain
+PASS	a live chain carried into the plane's wall pocket dies on the crush frame itself (chain at crush 0, tether idle)
+PASS	and no frame left RIG behind the damage plane
+PASS	the crush still resolves in its own frame rather than grinding (1 frame(s) at zero hp)
+PASS	and the sealed pocket stays terminal: the momentum spine cannot buy a rescue the merged fallback rule denies (state SLICE_RETRY)
+PASS	a lethal hit mid-chain also un-earns the chain (2 → 0)
+PASS	and the setback is still a dislodging, not a stop: play continues at full hp on a lower route (y 4.20, setbacks 1)
+PASS	the shipped level contains a player-height step to pin against
+PASS	a plane-pinned player never ends a frame inside terrain, got 0 frames
+PASS	the plane never pushes a player through the wall it is pinned against, got 0 frames
+PASS	being crushed against terrain costs hp instead of being free
+PASS	the six-face pin resolves within an hp bar instead of stranding the player behind the plane, got 2 frames
+PASS	the fixture sim steps headlessly with no input
+PASS	a zero-input fixture run reaches a terminal state: 1 fallbacks then SLICE_RETRY
+PASS	conveyed displacement cannot buy the fallback mercy chain: earned 0.16 of 8 tiles
+PASS	the fixture plane never strands the player behind it, worst margin 0.400
+PASS	a crushed fixture player never ends a frame inside terrain, got 0 frames
+PASS	the fixture sim can be driven through a fallback and a recovery
+PASS	a fallback with a route below it keeps play running, streak 1
+PASS	running forward under your own power is credited: earned 21.45 of 8 tiles
+PASS	the earned mercy forgives the streak instead of tripping the cap: streak 1, state PLAYING
+PASS	the limb bakes a body (829 pieces)
+PASS	the bake plan is deterministic: same config, same body, no rng
+PASS	src/pure/limb.js takes no time or randomness argument: a body that cannot be animated cannot assemble (CP3 ruling)
+PASS	src/render/limb.js installs no view hook at all: no per-frame, ritual or build callback can move the limb
+PASS	one armour facet per straight run of the polyline, got 7
+PASS	the facets cover the whole level, intro to outro
+PASS	consecutive facets are exactly one chamfer apart
+PASS	facet 0 is one flat plane: no bend inside it
+PASS	facet 1 is one flat plane: no bend inside it
+PASS	facet 2 is one flat plane: no bend inside it
+PASS	facet 3 is one flat plane: no bend inside it
+PASS	facet 4 is one flat plane: no bend inside it
+PASS	facet 5 is one flat plane: no bend inside it
+PASS	facet 6 is one flat plane: no bend inside it
+PASS	one joint per shipped corner, at the shipped pivot
+PASS	the joint is centred on the chamfer, so its mass reads as one hinge
+PASS	joint 1 apron is solid ground in every column
+PASS	joint 2 apron is solid ground in every column
+PASS	joint 3 apron is solid ground in every column
+PASS	joint 4 apron is solid ground in every column
+PASS	joint 5 apron is solid ground in every column
+PASS	joint 6 apron is solid ground in every column
+PASS	facet 0 is the untinted reference tone
+PASS	no limb piece breaks the play-band/fall rules
+PASS	the limb HAS outward armour (that is the parallax)
+PASS	not one outward piece except the deck kerb enters y [-1, 12.6]
+PASS	the ramp edge runs every solid column and only those (404 vs 404)
+PASS	every kerb top sits below the deck it edges: it can never occlude RIG
+PASS	no kerb reaches more than 0.4 past the plane
+PASS	the ramp edge is unbroken across a joint apron (8/8 columns)
+PASS	exactly the joint buttress and cup reach far outward, got 12
+PASS	the protected band clears the hostile lane cap (12)
+PASS	the protected band clears the deck stack (4 tiles below ground)
+PASS	a bend boundary sits at every chamfer midpoint, got 90,155,220,285,350,415
+PASS	shipped bend boundaries, got 90,155,220,285,350,415
+PASS	the transformation fixture bends at its seams
+PASS	no bend boundary falls inside the traversal slice: the movement fixture is on one straight facet, so the cull cannot change its gunplay
+PASS	a crossing is caught in both directions: no shooting backwards around a limb
+PASS	a shot that stays on one facet is never culled
+PASS	a projectile already past a boundary is not culled again by it
+PASS	worst substep is 0.500 tiles
+PASS	no max-speed bolt path fired short of a boundary skips it (0 skipped)
+PASS	even a 4-tile-per-substep projectile is caught by the interval test
+PASS	the bullet loop runs headlessly with no renderer
+PASS	one shot fired across a bend, one cull, got 1
+PASS	the bolt dies within half a tile past the boundary, at 90.333
+PASS	the departure tangent is read from BEFORE the boundary (90.000)
+PASS	a hostile 2 tiles past the bend takes no damage: no shooting around the limb
+PASS	CONTROL: the same bolt still kills a hostile on this side of the bend (4 -> 3)
+PASS	a shot fired back toward the previous facet dies at the same boundary, got [{"x":89.79999999999995,"fromX":90.23333333333329}]
+PASS	no culled projectile is left alive in the pool
+PASS	the six-face sim runs headlessly in both render modes
+PASS	the scripted pass is long enough to contain a corner ritual (2400 frames)
+PASS	the compared window contains the turning ritual (133 frames)
+PASS	the compared window contains the next face committing to collision
+PASS	both modes simulate the same number of frames (2400 vs 2400)
+PASS	every simulated value is identical between ?zip=1 and the default: scroll, gate state, ritual clock, built columns, spawns, hostiles, player
+PASS	same kills, same end state, same scroll cursor
+PASS	the transform-slice sim rushes the first seam headlessly
+PASS	the rush completes the first ritual (state done)
+PASS	the decision trace records halt/trigger/arm/start frames
+PASS	trace ordering: armed before started, started after both preconditions
+PASS	a rush is HALT-bound: RIG reaches the trigger 0.97s before the scroll halt — the arming check is not the input knife-edge (T-002)
+PASS	start-frame trigger margin equals the frontier-to-trigger distance (RIG parked at the clamp, position contracted before the start frame) [got 4.5, want 4.5]
+PASS	resetTransform clears the whole decision trace
+PASS	the frame-indexed schedule runs headlessly twice
+PASS	byte-identical frame-scoped input yields a bit-identical simulation trace (73 frames) — t2 nondeterminism is input DELIVERY, not the sim (T-002)
+PASS	same end state and final position across the twin runs
+PASS	palette: ?palette=classic resolves classic
+PASS	palette: absent/junk ?palette resolves to the concept default
+PASS	palette: headless import (no query) lands on the concept default
+PASS	palette: classic and concept tables carry identical token sets
+PASS	palette: nested "limb" token sets match across modes
+PASS	palette: nested "transform" token sets match across modes
+PASS	palette: nested "shots" token sets match across modes
+PASS	palette: nested "tints" token sets match across modes
+PASS	palette: classic table is byte-faithful to CONFIG.palette
+PASS	palette: classic limb haze is CONFIG.limb.bg
+PASS	palette: concept atmosphere/backdrop ladder is deep teal (g,b over r) — weather and breach vapor are atmosphere, so they ride the same family
+PASS	palette: classic weather/vapor stay byte-faithful to the shipped literals
+PASS	palette: concept body/route/mechanism ladder is rust-orange (r>g>b)
+PASS	palette: concept enemy tokens are acid green (g dominant)
+PASS	palette: the wasp dive glow is hotter than the wasp body in both modes
+PASS	palette: hostile tells/vent stay warm WARN amber in both modes
+PASS	palette: every sim ENEMY kind has a body color token in both modes (wasp, carrier, hound, polyp, mortar)
+PASS	palette: glowOff/hitFlash identity tokens are mode-independent
+PASS	palette: concept pickup capsule stays hot magenta
+PASS	palette: concept muzzle/lance is warm white
+PASS	palette: every weapon letter has a shot color in both modes
+PASS	palette: every transform atmosphere bg lands teal under concept
+PASS	palette: classic atmosphere is identity; unknown bgs pass through
+PASS	palette: no scattered CONFIG.palette reads in tokenized render files
+PASS	palette: no raw color literals — 0xRRGGBB or CSS #hex/rgb() — in tokenized render files (0xffffff identity base excepted)
+PASS	palette: scene background and fog are constructed from the same bg token
+PASS	legibility: ?legibility=0|off turns the readability pass off
+PASS	legibility: absent/junk ?legibility leaves the pass on (it is the default)
+PASS	legibility: headless import (no query) has the pass on
+PASS	legibility: every share is a fraction of the pull-back, never more
+PASS	legibility: information (glyph, lamp) is restored whole; a POSE deforms a real body, so it only takes part of the compensation
+PASS	legibility: near view is exactly gain 1 — the near art is untouched
+PASS	legibility: ?legibility=0 is gain 1 at every view
+PASS	legibility: compensation grows with the pull-back
+PASS	legibility: an unknown view id falls back to near (gain 1), never to a boost
+PASS	legibility: near view is exactly gain 1 — the near art is untouched
+PASS	legibility: ?legibility=0 is gain 1 at every view
+PASS	legibility: compensation grows with the pull-back
+PASS	legibility: an unknown view id falls back to near (gain 1), never to a boost
+PASS	legibility: near view is exactly gain 1 — the near art is untouched
+PASS	legibility: ?legibility=0 is gain 1 at every view
+PASS	legibility: compensation grows with the pull-back
+PASS	legibility: an unknown view id falls back to near (gain 1), never to a boost
+PASS	legibility: a glyph takes the whole pull-back back [got 1.9, want 1.9]
+PASS	legibility: the shipped default view (far) resolves the live glyph gain [got 1.9, want 1.9]
+PASS	legibility: the live cue gain matches [got 1.9, want 1.9]
+PASS	legibility: the live pose gain is the partial share, not the whole [got 1.54, want 1.54]
+PASS	legibility: a pose is boosted less than a lamp
+PASS	legibility: near RIG fraction is the measured 7.0% [got 7, want 7]
+PASS	legibility: mid RIG fraction reproduces the measured 5.0% [got 4.929577464788733, want 5]
+PASS	legibility: far RIG fraction reproduces the measured 3.7% [got 3.68421052631579, want 3.7]
+PASS	legibility: the FAR default keeps RIG inside board 13's 3-5% scale invariant (this pass may not move it — entry 7 is law)
+PASS	legibility: the arithmetic reproduces T-015's measured 9.6px FAR capsule [got 9.53560371517028, want 9.6]
+PASS	legibility: THE DEFECT — an uncompensated capsule letter renders under the legibility floor at the shipped default view
+PASS	legibility: THE FIX — the compensated capsule letter clears the floor at every view, including the FAR default
+PASS	legibility: a compensated glyph lands at the SAME screen size at every view — restoring near, never overshooting it
+PASS	legibility: the tell lamp holds at least the legibility floor at every view
+PASS	legibility: the readability pass changed no sim capsule constant
+PASS	legibility: the drawn capsule box stays inside the catch radius — a pickup never looks bigger than the circle that collects it
+PASS	legibility: the dive dart's drawn nose never reaches past the contact circle
+PASS	legibility: the dive cue is a real shape change
+PASS	legibility: a diving wasp keeps its screen footprint — the dart cue may not shrink the body it is trying to make readable [got 0.968]
+PASS	legibility: a boosted houndframe tell still contains its own hit circle at every view
+PASS	legibility: a dilated iris bulb still contains its own hit circle
+PASS	legibility (I-003): the iris onset flash is long enough to be seen and short enough to leave the accelerating blink its job
+PASS	legibility (I-003): at 300ms the front-loaded iris has dilated at least 40% further than the linear curve did
+PASS	legibility (I-003): front-loading re-times the dilation without changing where it starts or ends — the sim's reaction window is untouched
+PASS	legibility: the module imports only config and mode — no three.js, no sim, no render (../config.js, ../mode.js)
+PASS	legibility: the module is Node-safe, which is why this harness can assert it
+PASS	legibility: no readability gain is ever applied to a damage volume — the polyp beam, the mortar mark and its blast slab keep drawing exactly what the sim marched
+PASS	legibility: the capsule box is still authored at the SIM size and the readability boost is a render-side scale on top of it
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/assist.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/flow.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/generator.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/hook.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/juice.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/lattice.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/limb.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/momentum.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/mortar.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/path.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/polyp.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/ribrun.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/rng.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/score.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/shell.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/stance.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/transform.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/traversal.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/waves.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/bridge.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/capsules.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/edges.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/flow.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/hook.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/hostiles.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/input.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/level.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/mods.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/pace.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/player.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/score.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/scroll.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/spawner.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/state.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/time.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/transform.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/wavegate.js
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/sim/weapons.js
+PASS	T-012: audio module declares imports
+PASS	T-012: ui/audio.js imports nothing from the render layer or three.js
+PASS	T-012: audio sim import is a sanctioned read surface: ../sim/bridge.js { view }
+PASS	T-012: audio sim import is a sanctioned read surface: ../sim/time.js { gameMs }
+PASS	T-012: audio sim import is a sanctioned read surface: ../sim/player.js { player, circleHitsPlayer }
+PASS	T-012: audio sim import is a sanctioned read surface: ../sim/wavegate.js { activeCorner, cornerEvents }
+PASS	T-012: audio sim import is a sanctioned read surface: ../sim/transform.js { transformEvents }
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/bridge.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/capsules.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/edges.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/flow.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/hook.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/hostiles.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/input.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/level.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/mods.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/pace.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/player.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/score.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/scroll.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/spawner.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/state.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/time.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/transform.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/wavegate.js
+PASS	T-012: sim untouched by the audio layer: <TREE>/src/sim/weapons.js
+PASS	T-012/T-029: main.js touches the audio module exactly twice — the load-order import and the read-only window.HB publication — and never calls the synth
+PASS	T-012: audio hook wrappers call the prior implementation first
+PASS	T-012: ?audio=0 gates all wiring off
+PASS	T-012: corner snap impact frames (t2, t4) are ordered inside the ritual
+PASS	T-012: transform snap impact frames (t2, t4) are ordered inside the ritual
+PASS	T-012: onCornerFinished recounts ambience layers (post-done hook)
+PASS	T-012: onFaceRevealed does not recount layers (fires pre-done, undercounts)
+PASS	T-012: wavegate.finishCorner commits state='done' before corner.finished fires
+PASS	sim ENEMY table carries the mortar: non-gating, born aiming, CONFIG-matched
+PASS	the landing zone is denied for a MOMENT, not held (6.7% of the cycle)
+PASS	the readable warning is at least 5x the denial it announces (7.0x)
+PASS	one reload window of baseline rifle fire kills the tripod (650 <= 1500 ms): never a damage race
+PASS	i-frames outlast one detonation: standing in it costs one point, not a bar
+PASS	i-frames expire inside the bombardment cycle: the next shell is not free
+PASS	mortar hit circle stays inside its launch-tube silhouette
+PASS	a standing level shot from the mortar deck center-punches the tube (muzzle 1.05 vs body 1.05)
+PASS	the slab is taller than a standing body (1.8 > 1.7): there is no ducking a spore burst, only leaving
+PASS	mortar warning is at least twice the cost of the slowest answer (normal tune: 1.540 s vs 0.481 s)
+PASS	the planted fuse alone covers the slowest answer (normal tune: 0.640 s vs 0.481 s)
+PASS	a full jump stays above the slab longer than the whole detonation (normal tune: 0.411 s vs 0.22 s)
+PASS	one full jump clears the whole marked patch horizontally (normal tune: 7.31 vs 3.70 tiles)
+PASS	mortar warning is at least twice the cost of the slowest answer (pace base: 1.540 s vs 0.439 s)
+PASS	the planted fuse alone covers the slowest answer (pace base: 0.640 s vs 0.439 s)
+PASS	a full jump stays above the slab longer than the whole detonation (pace base: 0.469 s vs 0.22 s)
+PASS	one full jump clears the whole marked patch horizontally (pace base: 8.49 vs 3.70 tiles)
+PASS	mortar warning is at least twice the cost of the slowest answer (pace hunt: 1.540 s vs 0.439 s)
+PASS	the planted fuse alone covers the slowest answer (pace hunt: 0.640 s vs 0.439 s)
+PASS	a full jump stays above the slab longer than the whole detonation (pace hunt: 0.469 s vs 0.22 s)
+PASS	one full jump clears the whole marked patch horizontally (pace hunt: 8.49 vs 3.70 tiles)
+PASS	mortar warning is at least twice the cost of the slowest answer (pace swarm: 1.540 s vs 0.439 s)
+PASS	the planted fuse alone covers the slowest answer (pace swarm: 0.640 s vs 0.439 s)
+PASS	a full jump stays above the slab longer than the whole detonation (pace swarm: 0.469 s vs 0.22 s)
+PASS	one full jump clears the whole marked patch horizontally (pace swarm: 8.49 vs 3.70 tiles)
+PASS	mortar warning is at least twice the cost of the slowest answer (pace surge: 1.540 s vs 0.439 s)
+PASS	the planted fuse alone covers the slowest answer (pace surge: 0.640 s vs 0.439 s)
+PASS	a full jump stays above the slab longer than the whole detonation (pace surge: 0.469 s vs 0.22 s)
+PASS	one full jump clears the whole marked patch horizontally (pace surge: 8.49 vs 3.70 tiles)
+PASS	arc x is a straight, monotone sweep from muzzle to zone
+PASS	arc y lands exactly on the zone and bulges arcTiles over the chord midpoint
+PASS	the lob is above its own chord for the whole flight: it throws OVER, never through
+PASS	arc clearance marches the flight and reports a ceiling it would pass through
+PASS	a body beside the marked patch is safe
+PASS	a body standing on the marked patch is inside the slab
+PASS	a body jumped above the slab is safe
+PASS	a body on the deck below the marked surface is safe: one landing, never a tier
+PASS	the ZONE is what watches: arming is a window around the marked place, either side
+PASS	the mark blink accelerates monotonically across the fuse and clamps at both ends
+PASS	the warning is the whole flight plus the fuse: the mark is lit from launch
+PASS	the mortar trial is exactly teach (solo) then one two-enemy combination (combo)
+PASS	mortar stages resolve by name and reject anything else
+PASS	the teach stage is ONE mortar and nothing else: every point of damage is the blast
+PASS	no ?mortar=: every pace x hound x polyp plan is byte-identical to today
+PASS	mortar stages field only their own roster, at every pace and prior stage
+PASS	mortar rows plant at deck+bodyY, hound rows ride deck+rideY, in composed plans
+PASS	composing a plan never mutates the mortar trial table
+PASS	solo mortar stage authors uniquely named, in-bounds hostiles
+PASS	solo fields exactly one mortar: the lesson stays attributable
+PASS	solo tripod stands on its declared catwalk, inside its extent, facing a declared way
+PASS	solo the marked patch lies wholly on a real authored landing surface
+PASS	solo mortar owns a real connector its assigned route actually walks
+PASS	solo the mark covers the authored landing point it claims to deny
+PASS	solo the same catwalk keeps a landing strip past the mark (4.0 tiles): land long
+PASS	solo a jump off the shared roof lip clears the entire mark (63.3 past 61)
+PASS	solo the post-high reroute is a real connector and outside the slab
+PASS	solo the post-low reroute is a real connector and outside the slab
+PASS	solo the shared overhang-top segment is never inside the denial
+PASS	solo the pod arc clears solid terrain for its whole flight
+PASS	solo the lob visibly arcs (apex 10.37 over a 9.40 → 5.35 chord)
+PASS	solo the tripod stands off from its own zone by at least the width it marks, and never further than one screen lead (5.1 in [3, 16])
+PASS	solo a level shot from inside the marked zone cannot reach the tube
+PASS	solo the tripod never stands in its own blast
+PASS	solo exactly one authored connector is ever inside the denial
+PASS	combo mortar stage authors uniquely named, in-bounds hostiles
+PASS	combo fields exactly one mortar: the lesson stays attributable
+PASS	combo tripod stands on its declared catwalk, inside its extent, facing a declared way
+PASS	combo the marked patch lies wholly on a real authored landing surface
+PASS	combo mortar owns a real connector its assigned route actually walks
+PASS	combo the mark covers the authored landing point it claims to deny
+PASS	combo the same catwalk keeps a landing strip past the mark (4.0 tiles): land long
+PASS	combo a jump off the shared roof lip clears the entire mark (63.3 past 61)
+PASS	combo the post-high reroute is a real connector and outside the slab
+PASS	combo the post-low reroute is a real connector and outside the slab
+PASS	combo the shared overhang-top segment is never inside the denial
+PASS	combo the pod arc clears solid terrain for its whole flight
+PASS	combo the lob visibly arcs (apex 10.37 over a 9.40 → 5.35 chord)
+PASS	combo the tripod stands off from its own zone by at least the width it marks, and never further than one screen lead (5.1 in [3, 16])
+PASS	combo a level shot from inside the marked zone cannot reach the tube
+PASS	combo the tripod never stands in its own blast
+PASS	combo exactly one authored connector is ever inside the denial
+PASS	the combination stage is exactly two enemies: one new lesson at a time
+PASS	combo pairs the mortar with a houndframe
+PASS	combo hound is the judged rejoin beat: planted, short span, owns a swept connector
+PASS	the hound patrols the floor directly beneath the marked landing zone
+PASS	that floor is below the slab: the drop reroute is priced by the hound, not by the blast
+PASS	the two threats price different routes — reroute vs denial is a real choice, never double jeopardy on one line
+PASS	T-011: CONFIG.juice carries one block per effect (hit-stop, shake, muzzle, impact, death, hurt, pickup, crush, pools)
+PASS	T-011: burst spec impact declares count/speed/ms/size/gravity
+PASS	T-011: burst spec death declares count/speed/ms/size/gravity
+PASS	T-011: burst spec hurt declares count/speed/ms/size/gravity
+PASS	T-011: burst spec pickup declares count/speed/ms/size/gravity
+PASS	T-011: fixed pools are sized for a firefight (>= four simultaneous deaths)
+PASS	T-011: hit-stop is a dt SCALE in (0,1] — it can only ever slow the frame, so every tunneling/substep margin asserted above still holds
+PASS	T-011: hurt outlasts a kill, and the stack cap covers the longest single freeze
+PASS	T-011: even a maximally stacked freeze is shorter than the hit-stun it punctuates (the freeze is a beat, never a pause)
+PASS	T-011: a quiet frame arms nothing
+PASS	T-011: a kill arms the kill freeze
+PASS	T-011: damage taken arms the hurt freeze
+PASS	T-011: a kill and a hit on the same frame resolve to the HURT beat
+PASS	T-011: a rewound tally or a healed hp (respawn) arms nothing
+PASS	T-011: freeze duration comes from CONFIG, per event kind
+PASS	T-011: a null event never arms the clock
+PASS	T-011: arming sets the deadline one duration ahead
+PASS	T-011: a shorter freeze never truncates a longer one already running
+PASS	T-011: stacked freezes are capped at maxMs from now — a crowd kill can never stall the run
+PASS	T-011: the scale is live only strictly before the deadline
+PASS	T-011: a kill removes killMs*(1-scale) of simulated time at 120/60/30 fps, to within one frame of quantization [got 46.00 / 46.00 / 61.33, want 38.64]
+PASS	T-011: the freeze is visible at every cadence (never rounded away)
+PASS	T-011: an uneventful frame leaves the world running
+PASS	T-011: damage arms a live freeze bounded by hurtMs
+PASS	T-011: resetHitStop clears the freeze (a retry starts moving)
+PASS	T-011: the first sample after a reset only seeds the baseline
+PASS	T-011: …and the sample after that arms normally
+PASS	T-011: clamp01 bounds the unit interval
+PASS	T-011: trauma accumulates and saturates at 1
+PASS	T-011: trauma decays linearly and never goes negative
+PASS	T-011: full trauma drains in under a second — a shake is a punctuation mark, not a state
+PASS	T-011: no trauma, no shake (the camera is exactly where the pose put it)
+PASS	T-011: shake is bounded by the configured world-tile / degree budget
+PASS	T-011: the shake actually moves (not a flat line)
+PASS	T-011: amplitude is trauma SQUARED — half the trauma is a quarter the shake, so small events barely move the frame (pillar 5) [got 0.03566461936106823, want 0.03566461936106823]
+PASS	T-011: peak shake offset stays under an eighth of RIG's height — at the FAR default (decisions.md entry 7) the frame nudges, it never smears
+PASS	T-011: the crush warning is silent while the margin is safe
+PASS	T-011: …saturates at the plane itself
+PASS	T-011: warning intensity only ever rises as the margin closes
+PASS	T-011: the ramp is eased so the LAST tile carries the warning, not the whole approach
+PASS	T-011: the warning window is wider than RIG and shorter than a second of running — enough to react, not a permanent light
+PASS	T-011: the warning pulse spans 0…1
+PASS	T-011: the pulse accelerates as the margin closes — the same warning grammar as the hound tell and the polyp iris
+PASS	T-011: burst speeds stay inside their configured budget [max 7.87]
+PASS	T-011: a burst fans into distinct directions (no cross, no wheel)
+PASS	T-011: bursts are seeded, not random — the same event always looks the same, and nothing here touches the sim rng stream
+PASS	T-011: the burst hash stays in [0,1)
+PASS	T-011: particles fade out fast and end at zero (no pop)
+PASS	T-011: particle scale interpolates its endpoints
+PASS	T-011: a flash is instant-on, holds briefly, then decays to zero
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/bridge.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/capsules.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/edges.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/flow.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/hook.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/hostiles.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/input.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/level.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/mods.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/pace.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/player.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/score.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/scroll.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/spawner.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/state.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/time.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/transform.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/wavegate.js
+PASS	T-011: sim layer imports no render module: <TREE>/src/sim/weapons.js
+PASS	T-011: src/sim/time.js owns the hit-stop decision and notifies the view
+PASS	T-011: no render module can write the hit-stop clock
+PASS	T-011: the bridge declares the juice hook as an inert no-op by default
+PASS	T-011: the loop samples hit-stop once, before any entity update
+PASS	T-011: hit-stop COMPOSES with CHRONO (wScale = chrono × hit-stop) instead of replacing it
+PASS	T-011: the pursuing scroll and the world still take the CHRONO-scaled dt (now × hit-stop) — CHRONO must keep slowing the scroll it always slowed
+PASS	T-011: RIG and their projectiles take the hit-stop factor ALONE — the freeze is global, and CHRONO still leaves the player at full speed
+PASS	T-011: the effect pools step after RIG and BEFORE the death early-return, so a death frame still draws its own burst
+PASS	T-011: the CHARGE meter still steps on real dt (proposal A.3), unscaled by a freeze
+PASS	T-011: shake is applied after the camera pose, never before it
+PASS	T-011: edge calibration (the one sanctioned render→sim write) is computed from the UNSHAKEN probe pose — an effect can never move the damage plane
+PASS	T-011: the juice modules carry no color literals — roles only
+PASS	T-011: …and every fx role resolves from the render palette module (PAL), not CONFIG.palette — which T-010 forbids in tokenized render files
+PASS	T-011: render/fx.js imports only modules that exist: ../config.js
+PASS	T-011: render/fx.js imports only modules that exist: ./palette.js
+PASS	T-011: render/fx.js imports only modules that exist: ../mode.js
+PASS	T-011: render/fx.js imports only modules that exist: ../pure/juice.js
+PASS	T-011: render/fx.js imports only modules that exist: ./scene.js
+PASS	T-011: render/fx.js imports only modules that exist: ./tower.js
+PASS	T-011: render/juice.js imports only modules that exist: ../config.js
+PASS	T-011: render/juice.js imports only modules that exist: ../mode.js
+PASS	T-011: render/juice.js imports only modules that exist: ../pure/juice.js
+PASS	T-011: render/juice.js imports only modules that exist: ../pure/waves.js
+PASS	T-011: render/juice.js imports only modules that exist: ../pure/transform.js
+PASS	T-011: render/juice.js imports only modules that exist: ../sim/bridge.js
+PASS	T-011: render/juice.js imports only modules that exist: ../sim/time.js
+PASS	T-011: render/juice.js imports only modules that exist: ../sim/edges.js
+PASS	T-011: render/juice.js imports only modules that exist: ../sim/player.js
+PASS	T-011: render/juice.js imports only modules that exist: ../sim/wavegate.js
+PASS	T-011: render/juice.js imports only modules that exist: ../sim/transform.js
+PASS	T-011: render/juice.js imports only modules that exist: ./camera.js
+PASS	T-011: render/juice.js imports only modules that exist: ./fx.js
+PASS	T-011: juice hook wrappers call the prior implementation first
+PASS	T-011: ?juice=0 is the documented kill flag
+PASS	T-011: ?juice=0 gates the wiring, the pools, and the sim scale (a disabled boot is the pre-juice game)
+PASS	T-011: bursts claim from a preallocated pool — the hot loop allocates nothing
+PASS	T-011: claiming a pool row is O(1) — a free-stack pop or one round-robin step, never a scan of the pool
+PASS	T-011: …and a row rejoins the free stack exactly where it dies
+PASS	T-013: board 05 offers three start-screen directions
+PASS	T-013: direction ids are unique
+PASS	T-013: directions are ordered left-to-right as board 05 presents them
+PASS	T-013: the shipped default is board 05's MIDDLE panel ("The Ship Wakes")
+PASS	T-013: the start screen stays inside DESIGN's 8-colour budget, got 8
+PASS	T-013: every colour role is a literal hex
+PASS	T-013: an absent or unrecognised ?title= resolves to the canon default
+PASS	T-013: ?title= accepts the id, the panel, or the board ordinal
+PASS	T-013: startDirection falls back to the default
+PASS	T-013: the 1/2/3 picker wraps in both directions
+PASS	T-013: composition "climb" is conformant
+PASS	T-013: "climb" uses only declared element types
+PASS	T-013: "climb" keeps RIG at human scale (board 13: 3–5% of frame height), got 3.9
+PASS	T-013: "climb" carries its board-05 brand promise as copy
+PASS	T-013: composition "wake" is conformant
+PASS	T-013: "wake" uses only declared element types
+PASS	T-013: "wake" keeps RIG at human scale (board 13: 3–5% of frame height), got 3.8
+PASS	T-013: "wake" carries its board-05 brand promise as copy
+PASS	T-013: composition "crown" is conformant
+PASS	T-013: "crown" uses only declared element types
+PASS	T-013: "crown" keeps RIG at human scale (board 13: 3–5% of frame height), got 3.8
+PASS	T-013: "crown" carries its board-05 brand promise as copy
+PASS	T-013: elementVars resolves exactly the declared custom-property set
+PASS	T-013: an element with no rot/opacity/tone gets explicit defaults, never inherits
+PASS	T-013: frame-relative geometry is written in percent
+PASS	T-013: RIG measures itself against frame HEIGHT in both axes (vh), so it never stretches
+PASS	T-013: an attached RIG carries no rotation of its own — it rides its surface's transform
+PASS	T-013: a tone resolves to its role colour and a missing opacity to 1
+PASS	T-013: a declared rotation and opacity pass through unchanged
+PASS	T-013: every element of "climb" resolves a complete custom-property set (0 incomplete)
+PASS	T-013: every element of "wake" resolves a complete custom-property set (0 incomplete)
+PASS	T-013: every element of "crown" resolves a complete custom-property set (0 incomplete)
+PASS	T-013: the composition guard rejects a hero-scale RIG
+PASS	T-013: the composition guard rejects an element that never touches the frame
+PASS	T-013: the composition guard rejects a colour outside the role table
+PASS	T-013: KEYMAP parsed out of src/main.js (16 codes)
+PASS	T-013: gameplay key ArrowLeft is never consumed by the shell in BOOT (got null)
+PASS	T-013: gameplay key ArrowLeft is never consumed by the shell in MENU (got start)
+PASS	T-013: gameplay key ArrowLeft is never consumed by the shell in PLAYING (got null)
+PASS	T-013: gameplay key ArrowLeft is never consumed by the shell in PAUSED (got null)
+PASS	T-013: gameplay key ArrowLeft is never consumed by the shell in SLICE_RETRY (got null)
+PASS	T-013: gameplay key ArrowLeft is never consumed by the shell in GAME_OVER (got null)
+PASS	T-013: gameplay key ArrowLeft is never consumed by the shell in VICTORY (got null)
+PASS	T-013: gameplay key KeyA is never consumed by the shell in BOOT (got null)
+PASS	T-013: gameplay key KeyA is never consumed by the shell in MENU (got start)
+PASS	T-013: gameplay key KeyA is never consumed by the shell in PLAYING (got null)
+PASS	T-013: gameplay key KeyA is never consumed by the shell in PAUSED (got null)
+PASS	T-013: gameplay key KeyA is never consumed by the shell in SLICE_RETRY (got null)
+PASS	T-013: gameplay key KeyA is never consumed by the shell in GAME_OVER (got null)
+PASS	T-013: gameplay key KeyA is never consumed by the shell in VICTORY (got null)
+PASS	T-013: gameplay key ArrowRight is never consumed by the shell in BOOT (got null)
+PASS	T-013: gameplay key ArrowRight is never consumed by the shell in MENU (got start)
+PASS	T-013: gameplay key ArrowRight is never consumed by the shell in PLAYING (got null)
+PASS	T-013: gameplay key ArrowRight is never consumed by the shell in PAUSED (got null)
+PASS	T-013: gameplay key ArrowRight is never consumed by the shell in SLICE_RETRY (got null)
+PASS	T-013: gameplay key ArrowRight is never consumed by the shell in GAME_OVER (got null)
+PASS	T-013: gameplay key ArrowRight is never consumed by the shell in VICTORY (got null)
+PASS	T-013: gameplay key KeyD is never consumed by the shell in BOOT (got null)
+PASS	T-013: gameplay key KeyD is never consumed by the shell in MENU (got start)
+PASS	T-013: gameplay key KeyD is never consumed by the shell in PLAYING (got null)
+PASS	T-013: gameplay key KeyD is never consumed by the shell in PAUSED (got null)
+PASS	T-013: gameplay key KeyD is never consumed by the shell in SLICE_RETRY (got null)
+PASS	T-013: gameplay key KeyD is never consumed by the shell in GAME_OVER (got null)
+PASS	T-013: gameplay key KeyD is never consumed by the shell in VICTORY (got null)
+PASS	T-013: gameplay key ArrowUp is never consumed by the shell in BOOT (got null)
+PASS	T-013: gameplay key ArrowUp is never consumed by the shell in MENU (got start)
+PASS	T-013: gameplay key ArrowUp is never consumed by the shell in PLAYING (got null)
+PASS	T-013: gameplay key ArrowUp is never consumed by the shell in PAUSED (got null)
+PASS	T-013: gameplay key ArrowUp is never consumed by the shell in SLICE_RETRY (got null)
+PASS	T-013: gameplay key ArrowUp is never consumed by the shell in GAME_OVER (got null)
+PASS	T-013: gameplay key ArrowUp is never consumed by the shell in VICTORY (got null)
+PASS	T-013: gameplay key KeyW is never consumed by the shell in BOOT (got null)
+PASS	T-013: gameplay key KeyW is never consumed by the shell in MENU (got start)
+PASS	T-013: gameplay key KeyW is never consumed by the shell in PLAYING (got null)
+PASS	T-013: gameplay key KeyW is never consumed by the shell in PAUSED (got null)
+PASS	T-013: gameplay key KeyW is never consumed by the shell in SLICE_RETRY (got null)
+PASS	T-013: gameplay key KeyW is never consumed by the shell in GAME_OVER (got null)
+PASS	T-013: gameplay key KeyW is never consumed by the shell in VICTORY (got null)
+PASS	T-013: gameplay key ArrowDown is never consumed by the shell in BOOT (got null)
+PASS	T-013: gameplay key ArrowDown is never consumed by the shell in MENU (got start)
+PASS	T-013: gameplay key ArrowDown is never consumed by the shell in PLAYING (got null)
+PASS	T-013: gameplay key ArrowDown is never consumed by the shell in PAUSED (got null)
+PASS	T-013: gameplay key ArrowDown is never consumed by the shell in SLICE_RETRY (got null)
+PASS	T-013: gameplay key ArrowDown is never consumed by the shell in GAME_OVER (got null)
+PASS	T-013: gameplay key ArrowDown is never consumed by the shell in VICTORY (got null)
+PASS	T-013: gameplay key KeyS is never consumed by the shell in BOOT (got null)
+PASS	T-013: gameplay key KeyS is never consumed by the shell in MENU (got start)
+PASS	T-013: gameplay key KeyS is never consumed by the shell in PLAYING (got null)
+PASS	T-013: gameplay key KeyS is never consumed by the shell in PAUSED (got null)
+PASS	T-013: gameplay key KeyS is never consumed by the shell in SLICE_RETRY (got null)
+PASS	T-013: gameplay key KeyS is never consumed by the shell in GAME_OVER (got null)
+PASS	T-013: gameplay key KeyS is never consumed by the shell in VICTORY (got null)
+PASS	T-013: gameplay key Space is never consumed by the shell in BOOT (got null)
+PASS	T-013: gameplay key Space is never consumed by the shell in MENU (got start)
+PASS	T-013: gameplay key Space is never consumed by the shell in PLAYING (got null)
+PASS	T-013: gameplay key Space is never consumed by the shell in PAUSED (got null)
+PASS	T-013: gameplay key Space is never consumed by the shell in SLICE_RETRY (got null)
+PASS	T-013: gameplay key Space is never consumed by the shell in GAME_OVER (got null)
+PASS	T-013: gameplay key Space is never consumed by the shell in VICTORY (got null)
+PASS	T-013: gameplay key KeyK is never consumed by the shell in BOOT (got null)
+PASS	T-013: gameplay key KeyK is never consumed by the shell in MENU (got start)
+PASS	T-013: gameplay key KeyK is never consumed by the shell in PLAYING (got null)
+PASS	T-013: gameplay key KeyK is never consumed by the shell in PAUSED (got null)
+PASS	T-013: gameplay key KeyK is never consumed by the shell in SLICE_RETRY (got null)
+PASS	T-013: gameplay key KeyK is never consumed by the shell in GAME_OVER (got null)
+PASS	T-013: gameplay key KeyK is never consumed by the shell in VICTORY (got null)
+PASS	T-013: gameplay key KeyJ is never consumed by the shell in BOOT (got null)
+PASS	T-013: gameplay key KeyJ is never consumed by the shell in MENU (got start)
+PASS	T-013: gameplay key KeyJ is never consumed by the shell in PLAYING (got null)
+PASS	T-013: gameplay key KeyJ is never consumed by the shell in PAUSED (got null)
+PASS	T-013: gameplay key KeyJ is never consumed by the shell in SLICE_RETRY (got null)
+PASS	T-013: gameplay key KeyJ is never consumed by the shell in GAME_OVER (got null)
+PASS	T-013: gameplay key KeyJ is never consumed by the shell in VICTORY (got null)
+PASS	T-013: gameplay key KeyX is never consumed by the shell in BOOT (got null)
+PASS	T-013: gameplay key KeyX is never consumed by the shell in MENU (got start)
+PASS	T-013: gameplay key KeyX is never consumed by the shell in PLAYING (got null)
+PASS	T-013: gameplay key KeyX is never consumed by the shell in PAUSED (got null)
+PASS	T-013: gameplay key KeyX is never consumed by the shell in SLICE_RETRY (got null)
+PASS	T-013: gameplay key KeyX is never consumed by the shell in GAME_OVER (got null)
+PASS	T-013: gameplay key KeyX is never consumed by the shell in VICTORY (got null)
+PASS	T-013: gameplay key ShiftLeft is never consumed by the shell in BOOT (got null)
+PASS	T-013: gameplay key ShiftLeft is never consumed by the shell in MENU (got start)
+PASS	T-013: gameplay key ShiftLeft is never consumed by the shell in PLAYING (got null)
+PASS	T-013: gameplay key ShiftLeft is never consumed by the shell in PAUSED (got null)
+PASS	T-013: gameplay key ShiftLeft is never consumed by the shell in SLICE_RETRY (got null)
+PASS	T-013: gameplay key ShiftLeft is never consumed by the shell in GAME_OVER (got null)
+PASS	T-013: gameplay key ShiftLeft is never consumed by the shell in VICTORY (got null)
+PASS	T-013: gameplay key ShiftRight is never consumed by the shell in BOOT (got null)
+PASS	T-013: gameplay key ShiftRight is never consumed by the shell in MENU (got start)
+PASS	T-013: gameplay key ShiftRight is never consumed by the shell in PLAYING (got null)
+PASS	T-013: gameplay key ShiftRight is never consumed by the shell in PAUSED (got null)
+PASS	T-013: gameplay key ShiftRight is never consumed by the shell in SLICE_RETRY (got null)
+PASS	T-013: gameplay key ShiftRight is never consumed by the shell in GAME_OVER (got null)
+PASS	T-013: gameplay key ShiftRight is never consumed by the shell in VICTORY (got null)
+PASS	T-013: gameplay key KeyL is never consumed by the shell in BOOT (got null)
+PASS	T-013: gameplay key KeyL is never consumed by the shell in MENU (got start)
+PASS	T-013: gameplay key KeyL is never consumed by the shell in PLAYING (got null)
+PASS	T-013: gameplay key KeyL is never consumed by the shell in PAUSED (got null)
+PASS	T-013: gameplay key KeyL is never consumed by the shell in SLICE_RETRY (got null)
+PASS	T-013: gameplay key KeyL is never consumed by the shell in GAME_OVER (got null)
+PASS	T-013: gameplay key KeyL is never consumed by the shell in VICTORY (got null)
+PASS	T-013: gameplay key KeyE is never consumed by the shell in BOOT (got null)
+PASS	T-013: gameplay key KeyE is never consumed by the shell in MENU (got start)
+PASS	T-013: gameplay key KeyE is never consumed by the shell in PLAYING (got null)
+PASS	T-013: gameplay key KeyE is never consumed by the shell in PAUSED (got null)
+PASS	T-013: gameplay key KeyE is never consumed by the shell in SLICE_RETRY (got null)
+PASS	T-013: gameplay key KeyE is never consumed by the shell in GAME_OVER (got null)
+PASS	T-013: gameplay key KeyE is never consumed by the shell in VICTORY (got null)
+PASS	T-013: the shell claims no key at all in BOOT
+PASS	T-013: the shell claims no key at all in PLAYING
+PASS	T-013: the shell claims no key at all in SLICE_RETRY
+PASS	T-013: any gameplay key (and Enter) starts the run from the title
+PASS	T-013: pause keys, bare modifiers and browser keys do not start a run
+PASS	T-013: the title screen owns 1/2/3 (direction) and H (HUD) only
+PASS	T-013: the pause screen owns R / Q / H only
+PASS	T-013: the end screens add Q only — R keeps its existing src/main.js branch
+PASS	T-013: every emitted intent is declared (hud, pick:0, pick:1, pick:2, restart, start, title)
+PASS	T-013: a non-string key code yields no intent
+PASS	T-013: the run clock formats m:ss.d and clamps junk to zero
+PASS	T-013: seconds format to one decimal
+PASS	T-013: kills-per-100-shots is null with no shots and rounded to 0.1 otherwise
+PASS	T-013: the six-face stats screen reports time, distance, kills and deaths
+PASS	T-013: time leads the stats screen
+PASS	T-013: no stats row is empty or undefined
+PASS	T-013: the fixture stats screen counts attempts, not metres or lives
+PASS	T-013: the transform stats screen reports altitude climbed and turns taken
+PASS	T-013: the score prototype adds no rows while ?score=1 is off
+PASS	T-013: ?score=1 folds the protoScore fields into the same screen
+PASS	T-013: an empty run still produces a stats screen
+PASS	T-013: hull fallbacks appear only when the run actually took some
+PASS	T-013: the shell module declares imports
+PASS	T-013: ui/shell.js imports nothing from the render layer or three.js
+PASS	T-013: shell sim import is a sanctioned read surface: ../sim/time.js { gameMs, scrollX, sliceStats }
+PASS	T-013: shell sim import is a sanctioned read surface: ../sim/player.js { player, P }
+PASS	T-013: shell sim import is a sanctioned read surface: ../sim/hostiles.js { kills }
+PASS	T-013: shell sim import is a sanctioned read surface: ../sim/weapons.js { shotsFired, weaponDef, weaponKills }
+PASS	T-013: shell sim import is a sanctioned read surface: ../sim/score.js { scoreSnapshot }
+PASS	T-013: shell sim import is a sanctioned read surface: ../sim/transform.js { committedBand, transformAltitudeAt }
+PASS	T-013: the shell never drives the run itself (lifecycle stays in src/main.js)
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/bridge.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/capsules.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/edges.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/flow.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/hook.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/hostiles.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/input.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/level.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/mods.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/pace.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/player.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/score.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/scroll.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/spawner.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/state.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/time.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/transform.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/wavegate.js
+PASS	T-013: sim untouched by the shell: <TREE>/src/sim/weapons.js
+PASS	T-013: no image assets referenced in index.html
+PASS	T-013: no image assets referenced in ui/shell.js
+PASS	T-013: no image assets referenced in pure/shell.js
+PASS	T-013: index.html carries the shell root and the overlay panel slot
+PASS	T-013: ui/shell.js writes element vars through elementVars(), never one-off/conditionally
+PASS	T-013: the RIG silhouette is clipped on ::before, so the muzzle flash is not clipped away
+PASS	T-013: the shell panel sits between the overlay title and body
+PASS	T-013: the overlay draws its own title/body before the shell adds its panel
+PASS	T-013: overlay outcome title still published unchanged: TRAVERSAL CLEAR
+PASS	T-013: overlay outcome title still published unchanged: BREACH CLEAR
+PASS	T-013: overlay outcome title still published unchanged: SECTOR CLEAR
+PASS	T-013: overlay outcome title still published unchanged: SIGNAL LOST
+PASS	T-013: overlay outcome title still published unchanged: ROUTE LOST
+PASS	T-013: overlay outcome title still published unchanged: PAUSED
+PASS	T-013: ?testapi=1 and ?selftest=1 both auto-start past the title screen
+PASS	T-013: ?shell=0 restores the pre-shell boot
+PASS	T-013: main.js parks at the title only when the shell is on and not auto-starting
+PASS	T-013: leaving the title does not consume the keypress that did it
+PASS	T-013: the press that leaves the title never also restarts the run
+PASS	T-013: the shell gets first look, then the ordinary gameplay path runs
+PASS	T-009: no face window reads fewer than 3 routes (worst 3, 0 thin windows)
+PASS	T-009: no face window reads more than 5 routes (most 5, 0 busy windows)
+PASS	T-009: the density invariant covers all six faces
+PASS	T-009: the lattice pass converged (0 more patches, 0 more thins wanted)
+PASS	T-009: the lattice is deterministic across builds
+PASS	T-009: every catwalk (patched or authored) is within double-jump reach of a support, got 0 orphans
+PASS	T-009: no catwalk strands the player at its forward end, got []
+PASS	T-009: one pocket per face, got 6
+PASS	T-009: the built pockets are exactly the authored sites
+PASS	T-009: every pocket lies wholly inside its own face
+PASS	T-009: no pocket reaches into the wave gate arena (>= 35 tiles clear of the corner)
+PASS	T-009: no pocket sits on a corner apron exit
+PASS	T-009: every pocket chasm is exactly 2 columns
+PASS	T-009: every pocket has its authored approach/landing runs, and the deck steps down exactly 1 across the hole
+PASS	T-009: every shelf tip hangs over the chasm
+PASS	T-009: every shelf mount sits over solid landing
+PASS	T-009: the pocket route exists with taught verbs — mid lane within one grounded jump (2.72) of the landing, shelf within a double jump (5.07) of the mid lane
+PASS	T-009: shelf sits exactly one generator tier (+3) over its mid lane
+PASS	T-009: every pocket capsule sits over the shelf tip
+PASS	T-009: every pocket detour is measured and fits the clock (14 tiles of daylight in, >= 6 out)
+PASS	T-009: a held jump clears a pocket chasm with slack (6.64 tiles of travel vs 3.70 needed)
+PASS	T-009: the pocket chasm respects the generator gap ceiling
+PASS	T-009: a player standing anywhere on the shelf tip collects the capsule at every bob phase (worst distance 0.150 vs radius 0.95)
+PASS	T-009: the pickup is still a sphere of CAP.pickupRadius around the capsule
+PASS	T-009: a fixed capsule still bobs bobAmp*0.3 about its authored y
+PASS	T-009: the pickup test still measures to RIG's whole body box
+PASS	T-009: the run still spawns each capsule at the authored pocket geometry
+PASS	T-009: no pocket catwalk survives inside the traversal fixture band
+PASS	T-009: the fixture band still owns its authored ground runs
+PASS	T-009: the default six-face run renders the static limb, no flag needed
+PASS	T-009: ?zip=1 restores the brick-slam reveal (the choreography is still playable)
+PASS	T-009: ?g1=0 is the same escape hatch, for anyone who knew the old flag
+PASS	T-009: the fixtures still own their own transitions (no limb bake there)
+PASS	T-009: the zipper hook is still written and still installed (retired, not deleted)
+PASS	T-009: the gate runtime still drives the zipper timeline for ?zip=1
+PASS	T-009: the now-default reveal still cannot be animated (CP3 ruling holds)
+PASS	T-009: the corner is still two 30 deg detents, 1100 ms end to end
+PASS	T-009: one houndframe station per face from 2 on, got 5
+PASS	T-009: stations sit on consecutive faces 2..6, got 2,3,4,5,6
+PASS	T-009: face 1 teaches the lattice with no floor denial
+PASS	T-009: every station patrols exactly 3 columns around its own spawn column
+PASS	T-009: every station stands on solid, single-height plate
+PASS	T-009: a charge (8.7 tiles) sweeps the whole patrol span
+PASS	T-009: no station sits in a gate arena or a corner-clear zone
+PASS	T-009: every station row is a non-gating hound facing back down the lane
+PASS	T-009: every station has a catwalk answer within one jump (apex 2.72) over its plate
+PASS	T-009: the six-face spawn table is built from the run's own level
+PASS	T-009: a level with no authored pockets fields no stations (and does not throw)
+PASS	T-009: every station owns its face pocket landing (5/5)
+PASS	T-009: the gate runtime runs headlessly for the gating check
+PASS	T-009: the station is still alive when the wave dies
+PASS	T-009: a non-gating station does not hold the ritual (state turning)
+PASS	T-009: a gating hound still holds it — the opt-out is what changed things (state gate)
+PASS	T-009: the six-face run simulates headlessly end to end
+PASS	T-009: a held-jump policy survives the whole lattice (state PLAYING, lives 2)
+PASS	T-009: the run reaches the outro scroll end (415.0 of 415, maxX 440.6)
+PASS	T-009: no authored pocket ever swallows the policy (falls at [266.2], in-pocket [])
+PASS	T-009: the policy run carries one authored capsule per face, got 6
+PASS	T-009: the pocket climb runs simulate headlessly
+PASS	T-009: the authored pocket route PAYS at every pocket — landing -> mid -> shelf -> tip, [1.62,1.62,1.62,1.62,1.62,1.62]s each, [] failed
+PASS	T-018: harness muzzle height mirrors CONFIG.player.muzzleY [got 1.05, want 1.05]
+PASS	T-018: harness corridor half-width mirrors CONFIG.wasp.contactRadius [got 0.55, want 0.55]
+PASS	T-018: the harness corridor is shorter than a rifle round actually flies (14 < 28.6)
+PASS	T-018: grammar rejects alternation ("grounded || pinned")
+PASS	T-018: grammar rejects parens ("(grounded && pinned)")
+PASS	T-018: grammar rejects arithmetic ("threat.dist < 3 + 1")
+PASS	T-018: grammar rejects an unknown threat field ("threat.nope>1")
+PASS	T-018: grammar rejects ordering against a string ("threat.kind>'wasp'")
+PASS	T-018: a well-formed threat condition still compiles
+PASS	T-018: grammar rejects arithmetic behind an EQUALITY operator (I-023) ("x==3+1")
+PASS	T-018: grammar rejects arithmetic behind != ("x!=3+1")
+PASS	T-018: grammar rejects a multiplication that would silently be a string ("threat.dist==2*2")
+PASS	T-027: …but an explicitly QUOTED literal still compiles — the guard is about ambiguity, not about forbidding odd strings
+PASS	T-027: …and the shapes scripts actually write (a bare state word, a quoted one, a negative number) are untouched
+PASS	T-027: …and the rejection NAMES the problem (an unquoted value that is neither a number nor a word), instead of a clause that evaluates false forever in silence
+PASS	T-018: policy.mjs never reaches for eval()/new Function() — conditions are interpreted by the grammar, not executed as JS
+PASS	T-018: policy.mjs declares no module-level mutable state (no cross-tick memory)
+PASS	T-018: threat.mjs never reaches for eval()/new Function() — conditions are interpreted by the grammar, not executed as JS
+PASS	T-018: threat.mjs declares no module-level mutable state (no cross-tick memory)
+PASS	T-018: deriveThreat is a pure function of (sample, heldKeys) — an intervening tick with different geometry cannot change what this tick sees
+PASS	T-018: computeAim still exists
+PASS	T-018: aim is still resolved from the discrete h/v key pair (8-way), which is what the harness ray corridors model
+PASS	T-018: the terrain probe reads groundH — the same array the player collides against
+PASS	T-018: …and the player still collides against groundH, not a built-face variant
+PASS	T-018: a sample with no hostiles telemetry yields counts 0 and absent distances
+PASS	T-018: every advertised threat field is always defined (no missing-field warnings)
+PASS	T-018: materializing hostiles are not counted [got 5]
+PASS	T-018: one hostile on each of the level/45°/vertical rays [got 1/1/1]
+PASS	T-018: the nearest mark is the deck unit under the muzzle…
+PASS	…and the up-mark is the nearest hostile ABOVE the firing line, so a "tilt up" reflex is not vetoed by something standing under the gun
+PASS	T-018: the dive mark reports the diving hostile
+PASS	T-018: slope is dy/|dx| of the nearest mark [got -3.0999999999999996, want -3.0999999999999996]
+PASS	T-018: a hostile straight overhead reports the finite slope cap, never Infinity
+PASS	T-018: facing left, the forward corridors empty out — they are gun-relative
+PASS	T-018: …but the vertical corridor does not care which way you face
+PASS	T-018: the three ray predicates and a threat comparison all read true on the fixture sample
+PASS	T-018: …and a threshold the geometry does not meet reads false
+PASS	T-018: threat clauses never produce missing-field warnings
+PASS	T-018: the derived view is computed once per tick and handed back for the report
+PASS	T-018: wave 2 is five authored slots [got 5]
+PASS	T-018: wave 2 lane mix is low/mid/low/mid/high [got 2.6,4.6,2.6,4.6,7.2]
+PASS	T-018: three of wave 2's five slots sit above the highest LEVEL shot a player can produce (muzzle 1.05 + apex 2.72 = 3.77): without vertical aim they are only hittable mid-dive
+PASS	T-018: gated hostiles really are hotter than ambient ones (the pressure the finding measures is authored, not imagined)
+PASS	T-019: a diver coming in at 45° reports diveSlope 1 — the 45° ray answers it [got 1.0000000000000002, want 1]
+PASS	T-019: …and diveAdx is its horizontal reach [got 4, want 4]
+PASS	T-019: …and only the 45° corridor is occupied, so the slope band and the ray agree
+PASS	T-019: a diver straight overhead reports the finite slope cap and occupies the vertical corridor (which needs NO horizontal key held — that is why the cap is a number a script can compare against)
+PASS	T-019: the dive mark's angle is world-relative, not gun-relative — turning around cannot change where the diver is
+PASS	T-019: there is at least one six-face run script to hold to the rule
+PASS	T-019: six-face-aimed-run.json is driven by relative geometry and body state only — no absolute position, scroll distance or clock time, and nothing but fire on a timestamp
+PASS	T-019: six-face-full-run.json is driven by relative geometry and body state only — no absolute position, scroll distance or clock time, and nothing but fire on a timestamp
+PASS	T-019: six-face-spaced-run.json is driven by relative geometry and body state only — no absolute position, scroll distance or clock time, and nothing but fire on a timestamp
+PASS	T-019: the guard catches a clause naming an absolute position
+PASS	T-019: …a timed movement `move`
+PASS	T-019: …and a timed movement in the RAW `events` timeline, which compile.mjs dispatches just the same (the door a moves-only guard leaves open)
+PASS	T-019: …and a six-face script with no policy at all is a timeline, and fails
+PASS	T-027: six-face-aimed-run.json: no `hold left` rule that names edgeMargin overlaps the crush-plane `hold right` window (edgeMargin<8) — inside it the two cancel and RIG stands still against the plane
+PASS	T-027: six-face-spaced-run.json: no `hold left` rule that names edgeMargin overlaps the crush-plane `hold right` window (edgeMargin<8) — inside it the two cancel and RIG stands still against the plane
+PASS	T-027: a deterministic run with no sim clock in any sample is FATAL, and says so
+PASS	T-027: …a clock that never advanced is FATAL and names the state it was stuck in (the I-018 shape: the reason is the frozen clock, NOT missing telemetry — the old message blamed the wrong thing)
+PASS	T-027: …and a clock that ran but never reached the first event is FATAL too — zero events dispatched is zero measurement, whatever the reason
+PASS	T-027: an ordinary complete run raises nothing
+PASS	T-027: …a run that ended at victory/game-over/the cap with its tail unspent is neither a failure nor a warning — that shape is normal (every long six-face run has it), and a warning that fires every time is how a channel stops being read; the count stays in the ledger
+PASS	T-027: …but a run that played its FULL window and still starved events WARNS, naming the stop reason — that one is a script whose tail never happened
+PASS	T-027: a policy-only script has no timeline to starve and is never faulted for it
+PASS	T-027: the driver still special-cases the shell title screen in deterministic mode, and stamps those events dispatchedVia "wallclock-title" so no report claims sim-time quantization it did not have (I-018)
+PASS	T-027: a tap release racing the browser context closing can no longer land in pageErrors — pending taps are settled at teardown and any residue is bucketed separately, so pageErrors still means "the game threw" (I-011)
+PASS	T-025 (I-013): lib/fixture.mjs imports NO game source — a fixture-derived column is computed against what the browser served, never against this checkout
+PASS	T-025 (I-013): …and lib/metrics.mjs never names TRAVERSAL_FIXTURE at all
+PASS	T-025 (I-035): the sampler whitelists `momentum`, so ?momentum=1 reaches report.json's trace instead of having to be re-derived by inverting pursuitSpeed
+PASS	T-025 (I-006): …and `lives`, which is the default run's only death counter
+PASS	T-025 (I-006): src/main.js telemetry() publishes player.hp and player.lives on the frozen channel — the plumbing the harness's default-run death count reads
+PASS	T-025 (I-006): a default-run trace that spent two lives reports deaths 2 from the lives counter [got 2 from lives]
+PASS	T-025 (I-006 residual): …and its outcome reads `died`, not `not-completed` — the verdict no longer keys off the fixture-only attempt counter [got died]
+PASS	T-025 (I-006): …and outcome.attempts is null WITH a reason on a default run, rather than a 0 that reads like "no retries"
+PASS	T-025: …with the telemetry lives count cross-checked against the HUD ×N parse
+PASS	T-025 (I-013): a default six-face run credits no routes and no pocket at all — there is no authored fixture for either to be about
+PASS	T-025 (I-006): with no way to tell which counter applies and neither counter moving, `deaths` is null and says why — "no deaths" and "no counter" are not the same claim
+PASS	T-025 (I-013): …and an unprobed page omits the fixture-derived columns rather than computing them against this checkout
+PASS	T-025 (I-013): a ?ribrun=1 run credits ZERO lattice routes even when its trace walks every lattice connector [got []]
+PASS	T-025 (I-013): …and zero dare-pocket entries: the rib run collapses the pocket to a zero-width span, so the column is absent with a reason instead of true
+PASS	T-025 (I-013): …and the report names the fixture it was measured against [traversal-ribrun-v1]
+PASS	T-025 (I-013): …and the same trace on the LATTICE build still credits its routes and the pocket entry — the fix measures the served build, it does not just report less
+PASS	T-025 (I-026): a ?enemies=0 run that met hostiles reports the flag as a no-op on this run, and says the flag is slice-only
+PASS	T-025 (I-026): …and a run where it DID hold reports that, from the same evidence
+PASS	T-025 (I-026): …with the roster it actually met, not a claim about the flag
+PASS	T-025: an absent probe describes itself as unknown, with a reason for each column it cannot support
+PASS	momentum: the two earn weights sum to exactly 1, so the drive is a weighted average and its range really is [0,1] [got 1]
+PASS	momentum: the bank ramp is a real interval strictly inside the screen
+PASS	momentum: escalation ceiling is above the floor and below the hard ceiling
+PASS	momentum: drive sheds faster than it earns (0.45/s vs 0.16/s) — relief is immediate, escalation is a climb
+PASS	momentum: a hit caps the drive at a real value and buys a real mercy window
+PASS	momentum: the kill streak saturates at a whole number of kills and decays
+PASS	momentum: the HUD tiers are an ascending band inside (0,1)
+PASS	FLOOR: drive 0 is the shipped scroll speed EXACTLY (4.3 t/s) — a struggling player plays the run the gates already treat as finishable
+PASS	FLOOR: no drive value anywhere in [0,1] produces a speed below the floor
+PASS	FLOOR: the speed curve is monotone non-decreasing in drive
+PASS	FLOOR: every screen position at or behind the bank deadband (0.55 of the strip) earns zero drive — falling behind cannot escalate the run
+PASS	FLOOR: no bank and no kills is a target of zero, not a baseline of some
+PASS	FLOOR: five minutes of being carried at 30% of the strip escalates NOTHING (drive 0) — there is no elapsed-time term to accumulate
+PASS	FLOOR: full drive decays to the floor in 2.23s of falling behind
+PASS	FLOOR: a hit caps drive at 0.35 and never RAISES a lower one
+PASS	FLOOR: inside the mercy window a full-bank target cannot raise the drive
+PASS	FLOOR: mercy blocks the rise only — the drive may still fall
+PASS	FLOOR: even the HARD ceiling (7.31 t/s) leaves RIG 2.09 t/s of run speed to re-bank daylight with — escalation can never outrun the player and become a spiral
+PASS	FLOOR: at escalation's own ceiling (6.02 t/s) RIG still out-runs the plane by 3.38 t/s, so the whole band [4.3, 6.02] stays inside [scrollSpeed, runSpeed] — the two speeds T-020 measured every generated gap crossable at
+PASS	CEILING: full drive is 6.02 t/s (x1.4)
+PASS	CEILING: escalation alone can never exceed its own ceiling
+PASS	CEILING: 1.29 t/s of headroom is left above escalation for T-023 boosts — at least half the escalation range again, so the top of the curve is not hard-coded here
+PASS	CEILING: the hard ceiling is enforced by one function every source shares — a boost pushes speed through momentumClampSpeed, it does not re-tune this module
+PASS	CEILING: that same clamp is also the floor, and passes anything in between
+PASS	CEILING: the hard ceiling is a stated multiple of the shipped scroll speed
+PASS	CEILING: the predicted cadence multiplier is the speed multiplier itself, linear in drive (x1.00 at the floor, x1.4 at the ceiling) — the number the measured spawn counts below have to reproduce
+PASS	CEILING: at full drive the tightest authored ambient gap is still 0.96s of scroll (face 6, 1.35s at the floor) — chaos stays readable at the top of the curve
+PASS	EARNED: the bank signal is RIG's position across the visible strip, 0 at the damage plane and 1 at the right clamp
+PASS	EARNED: that signal clamps rather than running off either end (or dividing by a degenerate strip)
+PASS	EARNED: the same relative screen position reads the same on an 81-tile FAR strip and a 39-tile near one — escalation is not an aspect-ratio setting
+PASS	EARNED: a player pinned to the right clamp reaches full bank even on a strip as narrow as 24 tiles (frac 0.954 vs bankHi 0.92)
+PASS	EARNED: the bank ramp is linear between the deadband and full, not a switch
+PASS	EARNED: more daylight is never worth less drive
+PASS	EARNED: one kill is worth 1/4 of the combat term
+PASS	EARNED: the combat term saturates at 4 kills and clamps there
+PASS	EARNED: an unfed kill streak is empty after 9s
+PASS	EARNED: outrunning the world alone tops out at x1.28 — the ceiling costs BOTH daylight and a fed fight, which is what "explosion AND speed" means
+PASS	FLOOR: a player with zero banked daylight who kills everything in reach still only reaches 4.82 t/s (+0.52 t/s) — feeding the fight is a real answer, but the pressure a struggling player can bring on themselves is bounded
+PASS	EARNED: while the scroll is held the bank keeps its last MOVING reading — reaching a wave gate does not hand anyone the ceiling for standing in it
+PASS	EARNED: …and resumes reading the screen the moment the plane advances again
+PASS	EARNED: a frame of full-target rise moves the drive by exactly risePerSec*dt
+PASS	EARNED: …and a frame of collapse by exactly fallPerSec*dt
+PASS	EARNED: a drive already at its target does not drift
+PASS	EARNED: floor to ceiling takes 6.25s of sustained momentum — long enough to read as earned, short enough to feel inside one face
+PASS	DETERMINISM: the escalation curve is a pure function of its inputs — same inputs, same trajectory, and no hidden state survives a call
+PASS	DETERMINISM: neither the momentum math nor the pace module reads a wall clock or an unseeded random — a --deterministic bot run replays exactly
+PASS	EARNED: the momentum module has no elapsed-time or face-index input at all — it cannot be a scripted per-face ramp even by accident
+PASS	READOUT: drive round-trips through speed — the inversion a T-022 packet reader performs on pursuitSpeed is exact WHILE escalation is the only source feeding that field (T-029 publishes drive itself; see I-030)
+PASS	READOUT: the tier banding covers empty to full
+PASS	READOUT: the HUD meter is one glyph per tier, full at full drive
+PASS	FLAG: momentum is OFF on every URL that does not ask for it
+PASS	FLAG: …and on when it does
+PASS	FLAG: no fixture URL can arm it — the traversal and transformation slices keep the pursuit models they already own
+PASS	the momentum probe drives the real six-face scroll headlessly
+PASS	WIRING: with no flag the six-face run holds 4.3 t/s however it is played — the whole system is opt-in and every shipped URL is unchanged
+PASS	WIRING/FLOOR: a player pinned against the damage plane for 25s is carried at exactly the shipped speed, never faster — the run answers a struggling player with the floor, not with pressure
+PASS	WIRING/FLOOR: a struggling player pinned to the plane who KEEPS KILLING does escalate — to 4.80 t/s — but the daylight deadband holds, so he can never pass the combat term's own bound 4.82 t/s (x1.12): the pressure a losing player can bring on himself is exactly what the fight earned and nothing else
+PASS	WIRING/EARNED: a player riding the right clamp escalates the same build to 5.50 t/s (x1.28) on banked daylight alone
+PASS	WIRING/EARNED: feeding the fight on top of that reaches 5.96 t/s, and nothing crosses the ceiling 6.02
+PASS	WIRING: escalation only ever rises while the player keeps earning it
+PASS	WIRING/FLOOR: a hit at 12s drops the live pace from 5.50 to 4.90 t/s on the frame it lands
+PASS	WIRING/FLOOR: …and cannot climb again for the whole 1500ms mercy window
+PASS	WIRING: standing at the clamp while a wave gate HOLDS the scroll banks nothing — a halted plane is not daylight the player earned
+PASS	DETERMINISM/WIRING: the same run replayed inside the same process produces a byte-identical speed trace
+PASS	DETERMINISM/WIRING: the same play escalates the same at 30Hz and 60Hz (worst gap 4.59e-3 t/s, one coarse frame is 9.17e-3)
+PASS	WIRING/CEILING: nothing the player can do reaches the hard ceiling — the 1.30 t/s above the best measured run is the headroom T-023 spends
+PASS	WIRING/CEILING: with the flag off the ambient table delivers 12 entries in 25 s however the run is played — and a struggling player with the flag ON gets exactly that same cadence, which is the floor stated in enemies
+PASS	WIRING/EARNED: the escalated runs consumed 15 / 13 entries against the floor's 12 in the same 25 s, off 1.33x the distance — pressure rises with the pace the player earned, through no second knob
+PASS	WIRING/CEILING: in every run, flag on and off, the spawner consumed EXACTLY the table prefix its scrolled distance uncovered (x < right edge - 1.5) — escalation adds no entries and skips none, it makes the authored ones arrive sooner, which is why there is one knob and not two
+PASS	WIRING/CEILING: entries per TILE are the authored density either way (0.105 vs 0.112 /tile; the spread is the table's own per-face escalation, not momentum)
+PASS	WIRING/CEILING: …and even the best-fed run's cadence stays inside x1.4 of the shipped table (measured x1.250), so chaos stays readable at the top of the curve
+PASS	CEILING/WIRING: the live scroll speed leaves through momentumClampSpeed, so a later source (T-023 boosts) cannot route around the hard ceiling by writing drive or speed somewhere else
+PASS	T-029/I-005: src/ui/audio.js still exports audioSnapshot()
+PASS	T-029/I-005: audioSnapshot rides window.HB, the always-present handle — HB.audio() answers on any URL, no ?testapi and no build step needed
+PASS	T-029/I-005: …and is NOT gated behind ?testapi=1
+PASS	T-029/I-005: the snapshot answers exactly what the gate had to monkey-patch AudioParam for: enabled, unlocked, contextState, dead, layers, voices
+PASS	T-029/I-005: the layer count is the ambience mixer's own layerTarget(), not a second count that can drift from what is audible
+PASS	T-029/I-009: the HUD turn counter reads ACTIVE_FIXTURE.events.length, not a hardcoded 2
+PASS	T-029/I-009: …and so does the clear overlay's transformation count
+PASS	T-029/I-009: the BREACH CLEAR line pluralizes off the same count it prints
+PASS	T-029/I-009: fixture transform-v1 authors one turn per band boundary (2 events, 3 bands)
+PASS	T-029/I-009: …and they chain in order, so committedBand IS the count of turns taken on transform-v1
+PASS	T-029/I-009: fixture monster-g2-neck-flip authors one turn per band boundary (1 events, 2 bands)
+PASS	T-029/I-009: …and they chain in order, so committedBand IS the count of turns taken on monster-g2-neck-flip
+PASS	T-029/I-009: the v1 demo really does author 2 turns and G2 exactly 1 — the number the HUD prints on ?g2=1 is 1, which is what I-009 filed
+PASS	T-029/I-030: telemetry() publishes momentum { drive, peakDrive, tier } beside pursuitSpeed, flag-gated like hook/flow — additive, and undefined without ?momentum=1
+PASS	T-029/I-030: …and the frozen fields it sits beside are untouched
+PASS	T-029/I-030: inverting pursuitSpeed reports drive 0.70 for a speed a STRUGGLING player could be riding on a boost — speed alone cannot attribute escalation once a second source shares momentumClampSpeed
+PASS	T-029/I-030: …and at the hard ceiling the inversion saturates at 1.00 whatever the real drive was, so the T-022 packet's "drive never exceeds 0.30" gate is unreadable from speed there
+PASS	T-029/I-030: the trace tier equals the filled glyphs on the HUD meter at drive 0.00 (0)
+PASS	T-029/I-030: the trace tier equals the filled glyphs on the HUD meter at drive 0.20 (1)
+PASS	T-029/I-030: the trace tier equals the filled glyphs on the HUD meter at drive 0.45 (1)
+PASS	T-029/I-030: the trace tier equals the filled glyphs on the HUD meter at drive 0.80 (3)
+PASS	T-029/I-030: the trace tier equals the filled glyphs on the HUD meter at drive 1.00 (3)
+PASS	T-029/I-030: a fresh run publishes drive 0 / peakDrive 0 — the field starts at the floor, not at whatever the last run left behind
+PASS	T-029/I-030: 12s at the right clamp publishes a live drive of 0.700 — the getter telemetry() calls carries a real, non-degenerate value
+PASS	T-029/I-030: …and a tier inside the meter's own banding
+PASS	T-029/I-030: peakDrive is the RUN high-water mark, not a copy of drive — it holds while the live drive collapses on the plane (0.000 live vs 0.700 peak), which is what makes an escalation readable after the fact
+PASS	T-029/I-030: today the published drive and the packet's pursuitSpeed inversion still agree exactly — the new field is a superset of what a T-022 reader does by hand, so the packet's numbers stay comparable across T-023
