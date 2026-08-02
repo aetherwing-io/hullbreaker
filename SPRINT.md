@@ -2219,3 +2219,33 @@ Policy-script only; no game file is involved, and the clauses are legitimate
 relative geometry, so the anti-scripting guard is not implicated. Whoever takes
 this must re-measure T-019's affected numbers in the same change, or state
 plainly which published figures it invalidates.
+
+## I-037 | bug | S1 | repro: on `main` (2404/0), in a browser at `index.html?shell=0`, run `limbBakePlan(CONFIG, groundH, {scale:true})` vs `{scale:false}` importing `groundH` from `src/sim/level.js` — both return **829 pieces, zero `mark*`/`bd*` kinds**, and the plan still contains `silhouette` (the `!scale` path's output) | evidence: this session's integrator QA; contrast `node --input-type=module` with a synthetic flat `groundH` which yields 1674 vs 870, delta 804, 818 mark/backdrop pieces
+
+**T-045's scale pass emits nothing on the shipped default run.** The human-scale
+reference objects (rung ladders, hatches, personnel doors, gantry rail) and the
+graded backdrop tiers — the entire answer to decisions entry 17's *"make the
+player feel the scale of climbing a giant monster"* — are absent from the baked
+plan at the default URL. `?scale=0` and the default are byte-identical in piece
+count and kind set, which is the definitive symptom.
+
+The code is present and looks correct: `limbBakePlan` computes
+`scale = opts.scale !== false`, passes it to `facetPlan`, and `facetPlan`'s
+`if (!scale) { …silhouette…; return; }` guard is followed by `sisterPlan`,
+`spinePlan`, `farPlan`, `markPlan`. There is exactly one definition of each — no
+duplicate-definition merge artifact. `src/pure/limb.js` on `main` is byte-equal
+to T-045's own commit `1c6f464` with no later edit.
+
+**The discriminator is `groundH`.** With a synthetic flat array the scale path
+fires (delta 804). With the real generated level's `groundH` (445 entries) it
+produces nothing. So a guard inside the scale path is rejecting the real terrain
+— but silently, and only on the shipped level.
+
+S1 because this is the flagship answer to the operator's headline art request,
+it was merged and reported to him as live, and it is invisible in play. It was
+observably rendering on `task/T-035`'s tree earlier in the session (ladders and a
+large overhead structure were visible in a capture at the same start position),
+so a bisect between that tree and `main` is the fastest route.
+
+NOT a lighting or bloom problem: `?light=flat` and `?scale=0` all render the same
+absent-marks frame, and the defect is in the PLAN, before any renderer runs.
