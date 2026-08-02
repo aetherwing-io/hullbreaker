@@ -53,6 +53,7 @@ import * as d40 from './t-043-wasp-aim-lock-squad.mjs';
 import * as d41 from './t-039-contact-shadows.mjs';
 import * as d42 from './pathcheck-suite-3.mjs';
 import * as d43 from './t-035-value-ladder.mjs';
+import * as d44 from './t-038-seam-pips.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -99,4 +100,5 @@ export const DOMAINS = [
   d41,    // T-039: contact shadows (S6) =====================
   d42,    // pathcheck suite
   d43,    // T-035 value ladder (S1 + S2) ======================
+  d44,    // T-038: warm-white seam pips and route-lip highlights (S5) ========
 ];

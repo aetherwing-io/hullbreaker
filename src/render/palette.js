@@ -237,6 +237,25 @@ export const CONCEPT = {
   shade: { gain: 1 },
 };
 
+/* ==== T-038 seam pips (S5): warm-white route-lip highlights =============
+   Two tokens per table, both MUZZLE-family (role 5) per the packet's carried
+   correction ("drop the amber" — the board canon this cites names warm-
+   WHITE, and amber is the roster's one WARN language already). `seamPip` is
+   the small bright core, `seamHalo` the dimmer additive glow around it.
+   Ordering is asserted structurally, not just by value: a pip must sit
+   below PAL.muzzle and every hostile *Tell* in luminance (it may never
+   outshine the player's own fire or a warning telegraph — pillar 5's
+   salience hierarchy), and outside the amber WARN hue FAMILY by shape (a
+   small channel spread), not merely by differing from one exact hex, or a
+   pip tuned to houndTell's hue at a different value would still pass a
+   naive check. Additive; kept plainly dimmer than the tokens it must not
+   outshine so the halo cannot fake past that ordering at render time. */
+CLASSIC.seamPip = 0xc8c0b0;
+CLASSIC.seamHalo = 0xa89c88;
+CONCEPT.seamPip = 0xd6ccb4;
+CONCEPT.seamHalo = 0xbeb296;
+/* ==== end T-038 block ===================================================== */
+
 export const PALETTE_ID = resolvePaletteId(QUERY.get('palette'));
 export const PAL = PALETTE_ID === 'classic' ? CLASSIC : CONCEPT;
 
