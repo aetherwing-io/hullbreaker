@@ -147,3 +147,37 @@ export function flashAlpha(u) {
   if (t < 0.18) return 1;
   return clamp01((0.82 - (t - 0.18)) / 0.82) ** 1.6;
 }
+
+/* ------------------------- travel stretch (S10) --------------------- *
+ * Directional impact/travel language: a spark or a shot draws a mild
+ * streak along its OWN current velocity instead of a uniform blob, so a
+ * burst or a bolt reads which way it went at the shipped FAR default.
+ *
+ * Bounded by ONE FRAME of the thing's own motion (speed / 60), never by
+ * lifetime travel — the first draft of this pass bounded a spark's streak
+ * by speed * lifetime and produced an 11x elongation (CONFIG.juice.impact:
+ * speed 5.5, ms 240 -> 1.32 tiles, 23 screen px at FAR, a grotesque smear).
+ * One frame of motion is what "moving right now" actually looks like,
+ * whatever the effect's speed or lifetime happen to be, and — because
+ * callers recompute it every frame from the CURRENT velocity, not a
+ * spawn-time snapshot — it shrinks back down for free as gravity or drag
+ * changes that velocity. `speed` and the return value are both in tiles
+ * (respectively tiles/sec and tiles); the function takes no ms/lifetime
+ * parameter by construction, so the rejected bound cannot be reintroduced
+ * through this call site. */
+export function travelStretch(speed) {
+  return speed / 60;
+}
+
+// The nose a travelling shot may draw ahead of its own center, in tiles:
+// its base drawn radius plus one frame of travel stretch, but never past
+// `ceilingTiles`. The sim collides every bullet as a POINT
+// (src/sim/weapons.js) — the drawn shape has no say in what it hits — so a
+// nose beyond the ceiling would draw a reach the sim never gave, exactly
+// the lie waspDiveStretch() (src/render/legibility.js) exists to prevent
+// for hostiles. `ceilingTiles` is passed in (see BULLET_NOSE_CEILING_TILES,
+// src/config.js) rather than hardcoded here, so pathcheck and the renderer
+// share one number and neither can drift from the other.
+export function bulletNoseTiles(baseRadiusTiles, speed, ceilingTiles) {
+  return Math.min(baseRadiusTiles + travelStretch(speed), ceilingTiles);
+}

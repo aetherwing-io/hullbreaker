@@ -870,7 +870,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; re-read each cited file:line against its issue
 
-## T-032 | feature | doing | P1
+## T-032 | feature | done | P1
 
 goal: a 9-year-old must never meet a blank screen. Today the operator's own
 session rendered a black page with one console SyntaxError and no on-screen
@@ -1005,7 +1005,7 @@ accept:
 owner: asset-artist
 verify: node tools/assets/check.mjs; node tools/pathcheck.mjs; view.mjs crops at 0.55 tiles
 
-## T-037 | harness | todo | P1
+## T-037 | harness | done | P1
 
 goal: make concurrent lanes stop colliding. `tools/pathcheck.mjs` is a
 9,230-line monolith that EVERY task appends assertions to, so with N lanes in
@@ -1076,7 +1076,7 @@ value zones; sim unchanged.
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; FAR capture + 5x crop
 
-## T-041 | art | doing | P1
+## T-041 | art | done | P1
 goal: packet item S10 — directional impact and travel language inside the
 existing instanced pools, so hits read as hits. Zero new draw calls.
 accept: pure/juice.js stays deterministic (seeded rng only); 60fps at 200+

@@ -73,13 +73,27 @@ Never overwrite these files from upstream: it deletes the guardrails.
   `Math.random`, `Date.now`, or `performance.now` in `src/pure/` or
   `src/sim/`. The simulation stays 2D `(s, y)`; collision, physics, aiming,
   and spawning never leave it.
-- **No build step, no runtime dependencies.** Dev-only deps are allowed under
-  `tools/*/` with their own `package.json`, never for the game itself.
+- **No build step.** The game runs from source with no compile step; dev-only
+  deps are allowed under `tools/*/` with their own `package.json`, never as an
+  npm dependency of the game itself.
+- **Runtime assets ARE allowed** (`decisions.md` entry 16, 2026-08-02). The old
+  "the game must boot with every file under `assets/` missing" rule is
+  RETIRED — it was self-imposed, and it forbade the game from using the very
+  asset pipeline built to feed it. Sprites, textures and generated art may load
+  at runtime. What replaces it: a failed or missing asset must degrade
+  visibly and safely (the T-032 failure panel exists for this), never wedge the
+  game, and never take the sim down — gameplay must not branch on whether an
+  asset loaded.
 - **Jump/movement constants in `CONFIG` are frozen and asserted.** A retune
   must be intentional: update the physical reasoning and the pathcheck
   assertions together, never silently.
-- **Prototypes ship behind query flags, off by default.** `?hook=1` is
-  judged-and-rejected: keep it inert, invest nothing further in it.
+- **Ship improvements ON by default once the operator has judged them.** The
+  old blanket "prototypes ship behind query flags, off by default" is RETIRED
+  (entry 16): it meant every improvement landed invisible, and the operator
+  went on seeing the grey-box build while good work sat behind flags he never
+  typed. Flags are now for **A/B comparison and unjudged experiments only**,
+  and anything the operator has approved becomes the default with an escape
+  hatch back. `?hook=1` remains judged-and-rejected: keep it inert.
 - **Static-anatomy render rule** (`decisions.md` entry 3): the creature's
   anatomy is monumental and static during turns/transitions — RIG and the
   camera move; the next stretch pre-exists and is *revealed*, never
