@@ -126,45 +126,79 @@ Both restores verified byte-identical (`diff` clean) before moving on.
   (nothing here touches `CONFIG.spawner`, pocket timing, or the pursuing
   edge).
 
-## Difficulty measurement — the terrain measurably raises face 2's gate-2 clear rate
+## Difficulty measurement — distribution, not mean (decisions.md entry 19)
 
-The reviewer ran `scripts/six-face-aimed-run.json` (the same policy this
-report's screenshots are captured with — hold right, aim up at an
-elevated target, jump on a gap/hound-tell/pinned) via
-`node run.mjs scripts/six-face-aimed-run.json --deterministic
---stop-on-game-over --max-runtime-ms 245000`, 3x against this branch and
-3x against the merge-base (`69e1f90`), pinned worktrees, identical
-`node_modules`. Result: **base 0/3 cleared wave gate 2** (all three died
-in WAVE 2/6 at scroll 140m, the documented ceiling); **branch 2/3 cleared
-it** (died in WAVE 3/6 at scroll 205m instead). `CONFIG.waves`,
-`src/sim/hostiles.js`, and `src/sim/weapons.js` are byte-identical between
-the trees (confirmed via `git diff main...HEAD --stat` — this diff touches
-none of them), so the terrain is the only variable.
+Entry 19 (operator, unprompted, after playing): *"i feel like i can do
+better each time... sometimes i clear two or three faces, sometimes I
+can't pass the first — that's a good start."* The wide outcome spread is
+the feature. So the question this section answers is not "did the mean
+move" but **did the ceiling rise while the floor held** (good, matches
+entry 19) **or did the whole distribution shift up together** (bad — that
+flattens the spread he named as good)? A single reflex policy has no skill
+axis, so the reviewer's original 0/3-vs-2/3 comparison can't tell those two
+shapes apart by itself. Two things fix that: more samples, and two
+policies of different strength standing in for a weaker/newer player and a
+more practiced one (`scripts/six-face-full-run.json`, no vertical aim at
+all — level shots only — vs `scripts/six-face-aimed-run.json`, which tilts
+the gun at elevated targets; T-018's own finding is that the aim-less
+policy cannot damage anything above the standing firing line without a
+dive, so it is a genuinely worse player, not just a different script).
 
-I reproduced this independently with 2 more samples per side (n=5 each,
-same script/flags/pinned-worktree recipe, `tools/playtest/README.md`'s
-"Pinned-worktree capture"):
+All runs: `node run.mjs <script> --deterministic --stop-on-game-over
+--max-runtime-ms 245000`, pinned worktrees (`69e1f90` for merge-base, this
+branch for the other side), `tools/playtest/README.md`'s "Pinned-worktree
+capture" recipe, identical `node_modules`. `CONFIG.waves`,
+`src/sim/hostiles.js` and `src/sim/weapons.js` are byte-identical between
+trees (`git diff main...HEAD --stat` touches none of them) — terrain is the
+only variable. Reference marks: a run dying at scroll 75/140/205 died AT
+that gate's halt (failed the wave); a value in between means it cleared
+that gate and died from something else in the face beyond it, before the
+next gate armed.
 
-| tree | gate-2 clear rate (n=5) | combined with reviewer's n=3 |
-| --- | --- | --- |
-| merge-base (`69e1f90`) | 1/5 (20%) — scroll 140/205/140/140/140 | **1/8 (12.5%)** |
-| this branch (`task/T-044`) | 3/5 (60%) — scroll 205/140/205/166.9/140 | **5/8 (62.5%)** |
+**Raw values, every run, nothing dropped** (scroll reached, ties to km/m
+readout in-game):
 
-(Branch run 5 died at scroll 166.9 with no active wave-clear HUD — past
-corner 2 at 154, so it counts as a clear even though it did not survive
-long enough to engage gate 3.)
+| policy | tree | n | values (scroll) | floor (worst) | ceiling (best) | cleared gate 2 |
+| --- | --- | --- | --- | --- | --- | --- |
+| aimed (competent) | base | 5+5+3=13 | 140,205,140,140,140 · 96.9,109.3,99.5,140,140 · 140,140,140 (reviewer, 3 exact values not itemized in the review) | 96.9 | 205 | 1/13 (7.7%) |
+| aimed (competent) | branch | 5+5+3=13 | 205,140,205,166.9,140 · 140,140,140,140,140 · 205,205,140 (reviewer) | 140 | 205 | 5/13 (38.5%) |
+| full-run (weak) | base | 5 | 140,75,75,75,75 | 75 | 140 | 0/5 (0%) |
+| full-run (weak) | branch | 5 | 171.7,75,75,98.2,140 | 75 | 171.7 | 1/5 (20%) |
 
-n=8/side is still small and this is one scripted policy, not a claim about
-every possible player — but the direction is consistent across two
-independent measurement sessions and the effect size (≈5x the clear rate)
-is large enough that I do not think it is noise. **The added footing and
-cover in the ARENA composition make an identical fight more winnable for
-an identical policy against an identical wave.** That is a real difficulty
-effect even though no combat number moved — I am not asserting otherwise
-anymore, and I am not undoing the terrain to force the old ceiling back
-either (nobody asked for that, and "an arena that gives the player room to
-fight" may be exactly what "make it memorable" was asking for). This is
-the operator's call; see the first open question below.
+Three sessions of aimed-policy data are folded in: the reviewer's original
+n=3, my first reproduction (n=5, reported in the previous revision of this
+report), and a second n=5 batch run for this revision — all real, none
+discarded, because the honest picture is the full spread across sessions,
+not whichever single batch looked best. Run-to-run variance is genuinely
+large (my two aimed-branch batches alone ranged from 3/5 cleared to 0/5
+cleared) — this is not a stable percentage, and I am not presenting it as
+one.
+
+**What the shape actually shows:**
+
+- **Floor, weak policy:** both trees bottom out identically at scroll 75 —
+  dying in wave gate 1 — in the majority of runs (4/5 base, 2/5 branch).
+  The worst case is the same on both trees: a weak run still fails at the
+  very first gate. **The floor holds.**
+- **Ceiling, weak policy:** base's best run ever observed is 140 (reaches
+  gate 2's halt, never clears it); branch's best is 171.7 — past corner 2
+  (154), a genuine gate-2 clear, something no weak-policy base run did in
+  this data. **The ceiling is higher on branch, even for the weak policy.**
+- **Aimed policy:** base's absolute best (205, one run out of 13) ties
+  branch's best (also 205) — the ceiling's ABSOLUTE height is the same —
+  but branch reaches it roughly 5x more often (38.5% vs 7.7% gate-2-clear
+  rate across 13 runs each). Base's floor (96.9) is slightly worse than
+  branch's floor (140) for this policy specifically, so the floor read is
+  less clean here than the weak-policy comparison above — worth flagging
+  rather than smoothing over.
+
+Net: the evidence leans toward **"raises the ceiling, mostly holds the
+floor"** — the shape entry 19 said is good — more clearly for the weak
+policy (cleaner floor match) than the aimed one. It is not a clean, fully
+resolved case either way with n this small. I am not undoing the terrain;
+I am presenting the distribution and routing the read to the operator, per
+his own standing instruction that this project reports spread, not a
+single average, going forward.
 
 ## Screenshots — what I judged by, and what I could not get
 
@@ -223,17 +257,22 @@ could to make that merge legible.
 **URL: `index.html` (the default six-face run, no query flags — serve with
 `node tools/serve.mjs <port>`, not python).**
 
-1. **Difficulty, measured, not asserted:** with this branch's terrain, a
-   scripted policy clears face 2's wave gate roughly 5x more often than on
-   `main` (12.5% → 62.5% across 8 runs per side combined — see
-   "Difficulty measurement" above). Nothing in `CONFIG.waves` or the enemy
-   roster changed; the added footing/cover is what moved it. Is that an
-   acceptable, even desirable, side effect of "make it memorable" (an
-   arena that gives the player room to fight, making the fight more
-   winnable), or does it need to hold the pre-existing difficulty floor
-   given "durability outranks difficulty... do not tune the difficulty
-   curve" — and if the latter, should the fix be narrower arena footing,
-   or something else? This is explicitly your call, not mine or the
+1. **Ceiling vs. floor (entry 19), measured as a distribution, not a mean:**
+   a weak (no-vertical-aim) and a competent (aim-assisted) scripted policy
+   were each run 5-13 times per tree — see "Difficulty measurement" above
+   for every raw value. Shape observed: the WEAK policy's floor is
+   identical on both trees (dies at gate 1, scroll 75, most runs) while its
+   ceiling is higher on this branch (171.7 vs 140 — a genuine gate-2 clear
+   that never happened on `main` in this data); the COMPETENT policy's
+   absolute ceiling ties (205 both trees) but is reached ~5x more often on
+   this branch (38.5% vs 7.7% across 13 runs each), with a noisier floor
+   read. Read together that leans "ceiling raises, floor mostly holds" —
+   the shape you named as good — but it is not a clean, fully resolved
+   case at this sample size. Does this match what you want from "sometimes
+   I clear two or three faces, sometimes I can't pass the first," or does
+   the floor need to be pinned down harder before this is acceptable —
+   and if the latter, should the fix be narrower arena footing, or
+   something else? This is explicitly your call, not mine or the
    integrator's to make silently.
 2. Does the face-2 ARENA screenshot read as "the ship's fighting me here on
    purpose" rather than just "busier platforms" — does the escalating
