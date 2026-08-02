@@ -1,14 +1,14 @@
 {
-  "measuredAt": "2026-08-02T12:02:11.705Z",
+  "measuredAt": "2026-08-02T11:17:42.557Z",
   "tool": "scratchpad/t052-stress.mjs (modeled on tools/playtest/sprite-stress.mjs)",
   "viewport": "1280x800, headless Chrome (channel: chrome), one browser per reading",
   "load": "60 projectiles/frame via fireWeapon(clone=true), one death burst+flash per frame, roster topped up to 10 hostiles, right held on the default six-face run (?g1=1 default)",
   "textured": {
     "perf": {
       "frames": 180,
-      "fps": 121.2,
-      "avgMs": 8.25,
-      "worstMs": 10.2,
+      "fps": 120,
+      "avgMs": 8.34,
+      "worstMs": 10.4,
       "over20ms": 0
     },
     "liveProjectiles": 256,
@@ -18,7 +18,7 @@
     "programs": 34,
     "memory": {
       "geometries": 78,
-      "textures": 29
+      "textures": 32
     },
     "hullTex": {
       "on": true,
@@ -42,8 +42,8 @@
   "flat": {
     "perf": {
       "frames": 180,
-      "fps": 121.7,
-      "avgMs": 8.22,
+      "fps": 120,
+      "avgMs": 8.33,
       "worstMs": 10.3,
       "over20ms": 0
     },
@@ -51,9 +51,9 @@
     "liveHostiles": 11,
     "drawCalls": 178,
     "triangles": 105496,
-    "programs": 31,
+    "programs": 32,
     "memory": {
-      "geometries": 78,
+      "geometries": 80,
       "textures": 25
     },
     "hullTex": {

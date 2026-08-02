@@ -61,6 +61,7 @@ import * as d48 from './t-050-shipped-plan-carries-the-scale-pass.mjs';
 import * as d49 from './t-040-rig-sprite.mjs';
 import * as d50 from './t-044-corner-setpieces.mjs';
 import * as d51 from './t-049-hostile-sprites.mjs';
+import * as d52 from './t-052-hull-texture.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -115,4 +116,5 @@ export const DOMAINS = [
   d49,    // T-040: RIG as a runtime sprite (S8) ==========================
   d50,    // T-044: corner reveal set pieces (ARRIVAL + ARENA) ==============
   d51,    // T-049: runtime hostile sprites + the boot preload gate (entry 16)
+  d52,    // T-052: hull surface textures (four tiles bound, entries 16/18)
 ];
