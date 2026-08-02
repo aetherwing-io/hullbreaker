@@ -63,6 +63,7 @@ import * as d50 from './t-044-corner-setpieces.mjs';
 import * as d51 from './t-049-hostile-sprites.mjs';
 import * as d52 from './t-052-hull-texture.mjs';
 import * as d53 from './t-051-backdrop.mjs';
+import * as d54 from './t-054-hull-contrast.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -119,4 +120,5 @@ export const DOMAINS = [
   d51,    // T-049: runtime hostile sprites + the boot preload gate (entry 16)
   d52,    // T-052: hull surface textures (four tiles bound, entries 16/18)
   d53,    // T-051: backdrop layers (graded anatomy plates, entries 16/17) ====
+  d54,    // T-054: hull texture legibility — density + range (entries 16/18) ====
 ];
