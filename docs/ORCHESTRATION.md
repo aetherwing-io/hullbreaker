@@ -124,6 +124,33 @@ Keep both. But one side is often *out of date* — e.g. two README items each
 described a different half as "still open" when both halves had landed. Read
 what each side claims, not just where it sits.
 
+**Two lanes can CREATE the same new file independently — check before merging,
+not during.** T-040 and T-049 each added `src/render/preload.js` from a
+merge-base where it did not exist (`git cat-file -e <merge-base>:<path>` says
+so in one command). Composing two independent 171- and 338-line
+implementations of a shared boot gate at conflict-resolution time is how a
+cycle dies. Resolve it as an *ordering* question instead, and answer it by
+asking **what each lane's assertions are actually about**:
+
+    git merge-base task/A task/B                      # does the file exist there?
+    grep -n '^export' <each worktree>/<path>          # same API surface?
+    grep -rn '<path>' <lane>/tools/pathcheck/<lane>.mjs   # what does it assert?
+
+For preload.js the answer was clean: every T-040 assertion was about the
+*consumer* (`player.js` imports `preloadTexture`/`awaitPreloads` from
+`./preload.js`), none about the gate's internals, and both versions export the
+same four names. So T-049's later, fixed 338-line gate satisfies T-040
+wholesale — merge T-049 first, then T-040 keeps its own `player.js` and takes
+the already-landed gate untouched. **No hand-composition, no cycle.** Had
+T-040's assertions pinned the gate's internals, the answer would have been the
+opposite and worth knowing before the merge, not during.
+
+**Standing rule: when two lanes both need a shared piece of infrastructure,
+branch the consumers off the PRODUCER's branch, not off main.** T-051 and
+T-052 were branched off `task/T-049` for exactly this reason and cost nothing.
+The merge order then falls out of the branch graph instead of being
+reconstructed from memory under conflict pressure.
+
 **`tools/pathcheck.mjs` — never hand-balance braces.** Its assertions embed
 regex literals containing `\{` and `\}`, which defeats brace counting, and its
 section banners contain runs of `=` that a naive `^=======$`-less regex will
