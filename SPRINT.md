@@ -710,7 +710,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; serve, then confirm `curl -sI` carries no-store and `index.html?selftest=1` reports PASS
 
-## T-025 | harness | doing | P1
+## T-025 | harness | done | P1
 
 goal: three playtest report fields assert things the run did not do (I-006 S1,
 I-013, I-026). A gate that reads them is not evidence. (a) `metrics.deaths` and
