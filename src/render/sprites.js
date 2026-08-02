@@ -30,13 +30,21 @@
        out identically either way, which is what the missing-asset trace
        diff in reports/tasks/T-049/ measures rather than assumes.
 
-   Loading is EAGER (all five selected variants at module load) rather than
-   on first spawn: the whole set is ~7 kB, and a lazy load would mean the
-   first houndframe of a run draws as a box for a frame or two and then
-   changes shape mid-charge, which is a worse failure than a slow start. */
+   LOADING FINISHES BEFORE THE SIM'S FIRST FRAME, and that is not a nicety.
+   Measured on this lane: with the five textures fetched in the background,
+   one deterministic run of mid-route.json in four finished 1036ms of sim
+   time short of its siblings, because the decode and the GPU upload landed
+   inside frames the loop was also stepping physics through. Determinism is
+   what every playtest gate rests on. So the five loads go through
+   src/render/preload.js — one boot gate, one wall-clock budget, textures
+   uploaded during boot — and this module AWAITS IT AT MODULE SCOPE. The ES
+   module graph does the rest: src/main.js imports the hostile renderer,
+   which imports this, so the composition root cannot run until the art is
+   resident or abandoned. Nothing in the composition root had to change. */
 
 import * as THREE from 'three';
 import { QUERY } from '../mode.js';
+import { awaitPreloads, preloadTexture } from './preload.js';
 import {
   SPRITE_ART, SPRITE_KINDS, SPRITE_ROOT, resolveSpriteVariants, spritesEnabled,
 } from './sprite-table.js';
@@ -46,8 +54,6 @@ export const SPRITE_VARIANT = resolveSpriteVariants(QUERY.get('spritevar'));
 
 // kind -> { state: 'off'|'pending'|'ready'|'failed', variant, file, tex, error }
 const slots = new Map();
-
-const listeners = [];
 
 // the T-032 bootstrap's note channel: recorded, never a panel (see header)
 function note(line) {
@@ -65,51 +71,9 @@ function fail(kind, slot, why) {
   note(line);
 }
 
-function ready(kind, slot, tex) {
-  // sRGB because the PNGs are authored in sRGB and the renderer's output is
-  // too (src/render/scene.js sets ACES tone mapping over the default sRGB
-  // output space); leaving it unset draws the whole roster washed out.
-  tex.colorSpace = THREE.SRGBColorSpace;
-  // Mipmapped minification, NOT NearestFilter: at the shipped FAR view a
-  // 64px-wide texture is drawn at ~30px, so this is minification, and
-  // nearest sampling on a moving 30px sprite crawls (the texel grid slides
-  // under the pixel grid every frame). anisotropy 4 matches the capsule
-  // glyphs, and is clamped to the device maximum on upload.
-  tex.anisotropy = 4;
-  tex.generateMipmaps = true;
-  tex.minFilter = THREE.LinearMipmapLinearFilter;
-  tex.magFilter = THREE.LinearFilter;
-  tex.needsUpdate = true;
-  slot.tex = tex;
-  slot.state = 'ready';
-  for (const cb of listeners) {
-    try { cb(kind); } catch (e) { /* a listener must not break the loader */ }
-  }
-}
-
-function load(kind) {
-  const slot = slots.get(kind);
-  const url = new URL(SPRITE_ROOT + slot.file, import.meta.url).href;
-  try {
-    new THREE.TextureLoader().load(
-      url,
-      // the success path is guarded too: it runs inside the loader's own
-      // callback, outside the try below, and a throw there would escape into
-      // the page as an uncaught error instead of degrading to the primitive
-      (tex) => {
-        try { ready(kind, slot, tex); } catch (err) {
-          fail(kind, slot, 'the texture arrived but could not be prepared: ' +
-            ((err && err.message) || err));
-        }
-      },
-      undefined,
-      (err) => fail(kind, slot, (err && err.type) || 'load error'),
-    );
-  } catch (err) {                        // a loader that throws synchronously
-    fail(kind, slot, (err && err.message) || 'loader threw');
-  }
-}
-
+/* Registration, then ONE await for the whole set. Everything about the
+   texture itself — sRGB, mipmaps, the GPU upload — happens inside
+   src/render/preload.js, during boot, before the first frame. */
 for (const kind of SPRITE_KINDS) {
   const art = SPRITE_ART[kind][SPRITE_VARIANT[kind]];
   const slot = {
@@ -122,8 +86,21 @@ for (const kind of SPRITE_KINDS) {
   slots.set(kind, slot);
   if (!SPRITES_ON) continue;
   if (!art) { fail(kind, slot, 'no art declared for this kind'); continue; }
-  load(kind);
+  preloadTexture(new URL(SPRITE_ROOT + art.file, import.meta.url).href)
+    .then((entry) => {
+      if (entry.state === 'ready') { slot.tex = entry.tex; slot.state = 'ready'; }
+      else fail(kind, slot, entry.error || entry.state);
+    });
 }
+
+/* THE BOOT GATE. This top-level await is the whole determinism fix: the ES
+   module graph — and with it src/main.js, which imports the hostile renderer,
+   which imports this file — does not finish evaluating until every texture is
+   resident on the GPU or the shared budget has given up on it. There is no
+   window in which a fetch, a decode or an upload can land inside a frame the
+   simulation is stepping. `awaitPreloads()` never rejects and never waits
+   past its budget, so this cannot hang the boot. */
+await awaitPreloads();
 
 /* The texture for a kind, or null — and null is a complete answer, not an
    error: 'off', 'pending' and 'failed' all mean "draw the primitive". */
@@ -137,13 +114,13 @@ export function spriteVariantOf(kind) {
   return slot ? slot.variant : null;
 }
 
-/* Called once per kind when its texture arrives, so a hostile that spawned
-   during the load window can be upgraded in place instead of living out its
-   life as a box. Registration is idempotent-free by design: hostiles.js
-   registers exactly once at module load. */
-export function onSpriteReady(cb) { listeners.push(cb); }
+/* There is deliberately NO "the texture turned up late, upgrade the body"
+   hook here any more. It existed while loading was asynchronous, and it was
+   a way for a GPU upload to land mid-run — the defect this module's boot
+   gate exists to remove. Every state a kind can be in when the first frame
+   runs is final: 'ready', 'failed', 'timeout' (reported as failed) or 'off'.
 
-/* Read surface for the browser console and the headless gates. Deliberately
+   Read surface for the browser console and the headless gates. Deliberately
    here and not on window.HB (src/main.js belongs to another lane, and this
    is render-side state that the sim must not be able to see anyway). */
 export function spriteSnapshot() {

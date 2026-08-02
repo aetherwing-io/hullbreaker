@@ -49,7 +49,7 @@ them — judge the art, not pixel deltas.
 ### The one measurement that cuts against the sprites
 
 Measured off the committed frames above — the method is two sentences and the
-honesty note in §6 — each body's box against the background it stands on, at
+honesty note in §7 — each body's box against the background it stands on, at
 true size:
 
 | role | mode | drawn px | body mean L | bg L | body p10..p90 | px separated by >=20 L |
@@ -307,7 +307,7 @@ Run from the worktree unless noted.
 
 | command | result |
 | --- | --- |
-| `node tools/pathcheck.mjs` | **2110 passed, 0 failed** (base of this branch: 1853 — +257 from the new domain) |
+| `node tools/pathcheck.mjs` | **2116 passed, 0 failed** (base of this branch: 1853 — +263 from the new domain, including the boot-gate contract in §6) |
 | `node tools/assets/check.mjs` | **PASS**; `src/render/sprite-table.js:35: runtime asset reference` listed, no static import |
 | `node tools/gatecheck.mjs` | **PASS** — 5 controls red where they must be |
 | `cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic` | `outcome: completed`, deaths 0 |
@@ -316,6 +316,7 @@ Run from the worktree unless noted.
 | `… node sprite-fallback-check.mjs` | all checks passed (see §2; 10 of 11 runs) |
 | `… node sprite-stress.mjs` | see §3 |
 | `… node sprite-capture.mjs` | 5 bodies per mode, all five `ready` on the default URL |
+| `… node asset-boot-probe.mjs` | boot gate costs 14ms, boot unchanged, zero frames over 20ms (§6) |
 
 ### The new assertions bind — six breaks, each restored
 
@@ -345,7 +346,106 @@ another lane's merged decision without making this contract any safer.
 
 ---
 
-## 6. HONESTY LIMITS
+## 6. THE BOOT GATE — asked for after T-040 failed its gate on the load path
+
+The team lead reported that T-040 (RIG as a runtime sprite) failed its playtest
+gate on the *loading mechanism*, with deterministic runs of `mid-route.json`
+finishing 6352 / 6864 / 8308 ms of sim time apart and one crush-edge approach
+2.4 tiles worse, and asked this lane to (1) make all asset loading finish before
+the sim's first frame, (2) prove it with the same measurement, and (3) build the
+general answer if I could.
+
+**Correction to §2 of this report, first.** The "identical sim traces" evidence
+there ran under `?fixeddt=16.6667`, which pins the sim step. It proves the sim
+does not *branch* on the asset. It is blind by construction to frame-time
+jitter from a load, and I should not have let it stand as the whole determinism
+story.
+
+### What shipped: `src/render/preload.js`
+
+One boot gate any lane can register with.
+
+- `preloadTexture(url)` registers a texture and returns a promise that
+  **never rejects**.
+- Residency means **uploaded**: `renderer.initTexture()` runs during boot,
+  because a texture that has only been fetched still uploads on its first
+  draw — that moves the stall into the run instead of removing it.
+- `awaitPreloads()` resolves when everything is resident **or** one shared
+  wall-clock budget (`PRELOAD_BUDGET_MS = 2500`, inside the T-032 bootstrap's
+  10 s boot watchdog) expires. `src/render/sprites.js` awaits it **at module
+  scope**; the ES module graph holds `src/main.js` — which imports the hostile
+  renderer, which imports the loader — until it settles. No fenced file
+  changed.
+- **A late arrival is disposed, never applied.** Uploading a texture that
+  turned up after the gate closed would be the same defect, rarer. The
+  mid-run "texture arrived late, rebuild the body" path that §4 described has
+  been **deleted** for the same reason: every kind's state is final before the
+  first frame.
+- `preloadSnapshot()` / `window.__HB_PRELOAD()` is the read surface.
+- Pathcheck now enforces the contract, including that **`THREE.TextureLoader`
+  is constructed in `preload.js` and nowhere else under `src/`** — a lane that
+  hand-rolls a second loader trips the gate and gets told to route through
+  `preloadTexture()`. (T-040 will trip this on merge; that is the intended
+  convergence, and the lead has been told.)
+
+### What it costs, measured directly
+
+`node tools/playtest/asset-boot-probe.mjs` (new; five page loads per
+condition, fixed 6 s wall window of held input):
+
+| condition | boot → first PLAYING frame | preload cost | worst frame | over 20 ms | sim ms in a fixed 6 s window |
+| --- | --- | --- | --- | --- | --- |
+| merge-base | 159–169 ms | — | 10.20–10.30 ms | 0 | 6047–6099 (spread **52**) |
+| `?sprites=0` | 158–179 ms | — | 10.30–10.40 ms | 0 | 6044–6057 (spread **13**) |
+| shipped default | 155–165 ms | **14 ms, 5/5 resident** | 10.30–10.40 ms | 0 | 6051–6056 (spread **5**) |
+
+The whole five-texture preload costs **14 ms**, boot to first frame is no
+slower than the base tree, no frame in any condition exceeded 10.4 ms, and in a
+fixed window the sprite build accumulates sim time *more* tightly than base.
+
+### The measurement the request was based on does not isolate what it looks like
+
+I could not honestly report "spread back at base level" using
+`meta.deterministicDispatch.gameMsMax` on `mid-route.json`, because that number
+is bimodal in **every** condition, including one with no runtime asset at all.
+Eight interleaved rounds (one run of each condition per round, so background
+load from the other lanes' browsers hits all three equally):
+
+| condition | runs | gameMsMax | note |
+| --- | --- | --- | --- |
+| merge-base | 8 | 6328.8–6353.7 | all `stop=victory`, `dispatched=18/26` |
+| `?sprites=0` | 8 | 6315.3–6344.2 **plus one 9936.8** | the outlier stopped on `script-window`, never reached victory, `crush=32.490` |
+| shipped default | 8 | two modes: 4 runs 6331.6–6346.0, 4 runs 5765.2–5785.4 | the low mode is `dispatched=16/26`, i.e. victory reached two input events sooner |
+
+Two things follow. First, **the no-asset control produced the largest excursion
+in the set** — a 3.6 s swing and a 2.9-tile-worse crush margin with no texture
+loading anywhere in the build — so an excursion of this kind is not evidence
+about a load path on its own. Second, the shipped default's two modes differ by
+`dispatched` count, not by frame quality: the harness dispatches deterministic
+input on whichever ~13 Hz sample crosses each event's `gameMs`, so a boot that
+lands a few ms differently can shift an input by a whole sample, change a jump,
+and end the run at a different victory moment. `closestCrushApproachTiles` —
+the gameplay-relevant number — was 35.39–35.42 (base), 35.39–35.44 plus the
+32.49 outlier (`sprites=0`), and 35.44–35.46 (shipped, tightest of the three,
+no excursion in 8 runs).
+
+**So I am not claiming the boot gate fixed a `gameMsMax` spread, and I am not
+claiming this lane ever had T-040's defect.** What I can show is that the gate
+is right on the merits, costs 14 ms, and that on the metrics that isolate cause
+— boot time, worst frame, frames over 20 ms, sim time in a fixed window, and
+the `?fixeddt` trace equality in §2 — the sprite build is indistinguishable
+from the base tree or better. The pre-fix run in this section's first draft that finished
+1036 ms short is, on this evidence, the same bimodality, and I am withdrawing it
+as a demonstration that my lane reproduced the defect.
+
+**This matters for T-040's verdict**, and the lead has it: before asking that
+lane to rework on this number, check each run's `meta.stopReason` and
+`meta.deterministicDispatch.dispatched`. A run that stopped on `script-window`
+while its siblings stopped on `victory` is a different run, not a slower one.
+
+---
+
+## 7. HONESTY LIMITS
 
 - **Every capture is one moment of one run.** The three modes are three page
   loads; bodies drift between them. Nothing here is a pixel diff.

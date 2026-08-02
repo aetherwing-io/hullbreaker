@@ -12,7 +12,7 @@ import { gameMs } from '../sim/time.js';
 import { PAL } from './palette.js';
 import { scene } from './scene.js';
 import { spriteQuad } from './sprite-table.js';
-import { onSpriteReady, spriteTexture, spriteVariantOf } from './sprites.js';
+import { spriteTexture, spriteVariantOf } from './sprites.js';
 import { placeOnTower } from './tower.js';
 import {
   CUE_GAIN, LAMP_COIL_SWELL, LAMP_OFF_ALPHA, LAMP_OFF_SWELL, LAMP_R, LEGIBILITY_ON, POSE_GAIN,
@@ -565,22 +565,6 @@ function sync(e) {
 }
 
 installView({ hostiles: { spawned, removed, sync } });
-
-/* A texture that lands AFTER a hostile of its kind has already spawned
-   rebuilds that body in place — same sim row, same view map, so the run is
-   not interrupted and nothing about the row is read or written here. The
-   window this covers is small (the art is requested at module load, long
-   before the first wave) and it exists so a slow network cannot leave one
-   houndframe a box for the rest of its life. Nothing here can run when the
-   art failed: onSpriteReady only fires on success. */
-onSpriteReady((kind) => {
-  for (const e of [...meshes.keys()]) {
-    const v = meshes.get(e);
-    if (e.kind !== kind || !v || v.sprite) continue;
-    removed(e, false);                   // drop the primitive, no corpse
-    spawned(e);                          // …and build the sprite body
-  }
-});
 
 // Dead hostiles are display-only: no sim, no gate participation (removeHostile
 // already fired onHostileRemoved), just the dissolve back into tower depth.

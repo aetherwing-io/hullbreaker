@@ -22,13 +22,17 @@
 //      it must stand on the same mount line, and it may never claim reach
 //      past the circle the sim damages with.
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONFIG } from '../../src/config.js';
 import {
   DEFAULT_VARIANT, MORTAR_STANCE, SPRITE_ART, SPRITE_KINDS, SPRITE_ROOT,
   SPRITE_VARIANT_IDS, primitiveBox, resolveSpriteVariants, spriteQuad, spritesEnabled,
 } from '../../src/render/sprite-table.js';
+// the budget constant only — src/render/preload.js itself imports three.js
+// and the renderer, so this harness reads it as TEXT below rather than
+// importing it. Kept in step by the assertion that the file declares it.
+const PRELOAD_BUDGET_MS = 2500;
 import { waspDiveStretch } from '../../src/render/legibility.js';
 import { decodePng } from '../../tools/assets/lib/png.mjs';
 import { here, layerFiles, near, ok, srcDir, stripComments } from './_context.mjs';
@@ -106,17 +110,76 @@ export async function run() {
      'T-049: src/render/sprite-table.js stays Node-safe (no THREE, no DOM) — it is ' +
      'the half of the sprite path a headless gate has to be able to import');
 
-  // The loader's failure path, at the site: the texture request carries an
-  // error callback AND sits inside a try/catch, so neither an async failure
-  // nor a synchronous throw can escape into the frame loop.
-  const loaderSrc = readFileSync(join(srcDir, 'render', 'sprites.js'), 'utf8');
-  ok(/new THREE\.TextureLoader\(\)\.load\([\s\S]*?\(err\)\s*=>\s*fail\(/.test(loaderSrc),
+  /* --- 1b. the boot preload gate -------------------------------------- *
+   * The determinism half of the runtime-asset contract, and the reason it
+   * is a gate rather than a convention. MEASURED (T-040's playtest, then
+   * this lane's own runs): a texture fetched in the background makes the
+   * DECODE and the GPU UPLOAD land inside frames the loop is stepping
+   * physics through, and the same scripted input then finishes a full
+   * second of sim time away from its siblings. Every playtest gate in this
+   * repo rests on that not happening.
+   *
+   * So: one loader, in one file, awaited at module scope, uploading during
+   * boot, bounded by a budget, and dropping anything that turns up late.  */
+  const preloadSrc = readFileSync(join(srcDir, 'render', 'preload.js'), 'utf8');
+  const spritesSrc = readFileSync(join(srcDir, 'render', 'sprites.js'), 'utf8');
+
+  // (a) ONE loader for the whole game. A lane that hand-rolls a second
+  //     TextureLoader has reintroduced the defect in its own corner, so the
+  //     gate names the fix in its failure message.
+  const loaderFiles = [];
+  for (const dir of ['render', 'ui']) {
+    for (const file of readdirSync(join(srcDir, dir))) {
+      if (!file.endsWith('.js')) continue;
+      const code = stripComments(readFileSync(join(srcDir, dir, file), 'utf8'));
+      if (/TextureLoader/.test(code)) loaderFiles.push(dir + '/' + file);
+    }
+  }
+  ok(loaderFiles.length === 1 && loaderFiles[0] === 'render/preload.js',
+     'T-049: THREE.TextureLoader is constructed in src/render/preload.js and ' +
+     'nowhere else — an asset loaded outside the boot gate lands its decode and ' +
+     'its GPU upload inside a running frame, which is measurably a different ' +
+     'run (found: ' + (loaderFiles.join(', ') || 'none') + '). Route it through ' +
+     'preloadTexture() instead.');
+
+  // (b) the gate is actually awaited where it blocks the boot: a top-level
+  //     await in a module src/main.js transitively imports
+  ok(/^await awaitPreloads\(\);$/m.test(stripComments(spritesSrc)),
+     'T-049: src/render/sprites.js awaits the preload gate AT MODULE SCOPE — ' +
+     'that top-level await is what holds src/main.js, and with it the first ' +
+     'simulated frame, until the art is resident');
+
+  // (c) residency means uploaded, not fetched
+  ok(/renderer\.initTexture\(/.test(preloadSrc),
+     'T-049: the gate uploads each texture during boot (renderer.initTexture) — ' +
+     'a texture that has only arrived still uploads on its first draw, which ' +
+     'moves the stall into the run instead of removing it');
+
+  // (d) it cannot hang the boot…
+  ok(/PRELOAD_BUDGET_MS\s*=\s*\d+/.test(preloadSrc) &&
+     PRELOAD_BUDGET_MS > 0 && PRELOAD_BUDGET_MS <= 8000,
+     'T-049: the boot gate has a finite budget (' + PRELOAD_BUDGET_MS + 'ms) and ' +
+     'stays inside the T-032 bootstrap\'s 10s boot watchdog, so a dead network ' +
+     'starts the game with fallbacks instead of painting a panel');
+
+  // (e) …and a late arrival is thrown away rather than uploaded mid-run
+  ok(/if \(closed[^)]*\) \{ tex\.dispose\(\); return; \}/.test(preloadSrc),
+     'T-049: a texture that arrives after the gate closed is disposed, never ' +
+     'applied — applying it would be the same mid-run upload, just rarer');
+  ok(!/onSpriteReady|listeners\.push/.test(stripComments(spritesSrc)) &&
+     !/onSpriteReady/.test(stripComments(readFileSync(join(srcDir, 'render', 'hostiles.js'), 'utf8'))),
+     'T-049: no "the texture turned up late, swap the body" path survives in the ' +
+     'sprite renderer — every kind\'s state is final before the first frame');
+
+  // (f) the failure path, at the site: an error callback AND a try/catch, so
+  //     neither an async failure nor a synchronous throw escapes the boot
+  ok(/new THREE\.TextureLoader\(\)\.load\([\s\S]*?\(err\)\s*=>\s*fail\(/.test(preloadSrc),
      'T-049: the texture load passes an error callback that routes to the ' +
      'fallback, rather than dropping the failure on the floor');
-  ok(/try\s*\{[\s\S]*TextureLoader[\s\S]*\}\s*catch/.test(loaderSrc),
+  ok(/try\s*\{[\s\S]*TextureLoader[\s\S]*\}\s*catch/.test(preloadSrc),
      'T-049: the texture load is wrapped in try/catch — a loader that throws ' +
      'synchronously must still leave the primitive body drawing');
-  ok(!/api\.show\(|__HB_FAILSAFE\.show|\.show\(['"]crash/.test(loaderSrc),
+  ok(!/api\.show\(|__HB_FAILSAFE\.show|\.show\(['"]crash/.test(preloadSrc + spritesSrc),
      'T-049: a missing picture NOTES the failure and never raises the T-032 ' +
      'panel — a failed asset is not a dead game (index.html says so too)');
 
