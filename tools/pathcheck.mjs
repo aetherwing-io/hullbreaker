@@ -14,7 +14,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { CONFIG } from '../src/config.js';
+import { BULLET_NOSE_CEILING_TILES, CONFIG } from '../src/config.js';
 import {
   DEG, BEND_S, CORNER_S, SEGS, HALT_S, bendSList, crossesBend, polyAt, headingAt,
   yawAt, faceIndexAt,
@@ -36,9 +36,9 @@ import {
   polypBeamHitsRect, polypBeamReach, polypBendClampRange,
 } from '../src/pure/polyp.js';
 import {
-  burstVelocity, clamp01 as juiceClamp01, crushWarnIntensity, flashAlpha, hash01,
-  hitStopArm, hitStopEvent, hitStopMsFor, hitStopScaleAt, particleAlpha,
-  particleScale, shakeAt, traumaAdd, traumaAfter, warnPulse,
+  burstVelocity, bulletNoseTiles, clamp01 as juiceClamp01, crushWarnIntensity, flashAlpha,
+  hash01, hitStopArm, hitStopEvent, hitStopMsFor, hitStopScaleAt, particleAlpha,
+  particleScale, shakeAt, traumaAdd, traumaAfter, travelStretch, warnPulse,
 } from '../src/pure/juice.js';
 import {
   MORTAR_TRIAL, mortarArcClearsTerrain, mortarArcX, mortarArcY, mortarArmed,
@@ -9225,6 +9225,132 @@ const G2GATE = G2E.gate;
        'by hand, so the packet\'s numbers stay comparable across T-023');
   }
 }
+
+/* ==== T-041 impact language (S10) ====================================
+ * Directional impact/travel language for the existing spark and bullet
+ * pools (src/render/fx.js, src/render/bullets.js), math in
+ * src/pure/juice.js. Two corrections carried from adversarial review of
+ * docs/proposals/2026-08-look-direction.md §3 item S10 are gated here:
+ *   1. the spark streak is bounded by ONE FRAME of travel, never lifetime
+ *      distance (a lifetime bound would smear a short, fast burst into a
+ *      grotesque rod — measured 11x on the shipped impact tune);
+ *   2. the bullet nose gate — the load-bearing one. src/sim/weapons.js
+ *      collides every bullet as a POINT, so a drawn nose beyond what the
+ *      shipped laser bolt already draws (7 * rifle.radius = 1.12 tiles) is
+ *      a claimed hit the sim never gave, the same lie waspDiveStretch()
+ *      (src/render/legibility.js) exists to prevent for hostiles. */
+{
+  // --- (1) travel stretch: one frame of motion, never a lifetime bound ---
+  ok(travelStretch.length === 1,
+     'T-041/S10: travelStretch() takes speed only — no ms/lifetime parameter ' +
+     'exists to reintroduce the rejected lifetime-distance bound through this ' +
+     'call site (got arity ' + travelStretch.length + ')');
+  ok(travelStretch(60) === 1 && travelStretch(0) === 0,
+     'T-041/S10: travelStretch() is exactly one frame at 60fps of the given speed');
+
+  // The rejected design bounded a burst's streak by speed * lifetime. Prove
+  // it really was an 11x grotesque smear on the shipped impact tune, and
+  // that what ships instead (one frame of the SAME speed) is nowhere near it.
+  const IJ = CONFIG.juice.impact;
+  const lifetimeBoundTiles = IJ.speed * (IJ.ms / 1000);
+  const shippedStretchTiles = travelStretch(IJ.speed);
+  near(lifetimeBoundTiles, 1.32, 0.01,
+       'T-041/S10: the REJECTED lifetime bound on the shipped impact tune ' +
+       'reproduces the measured 1.32-tile / 23px-at-FAR smear cited against it');
+  ok(lifetimeBoundTiles / IJ.size >= 10,
+     'T-041/S10: …which is the cited 11x-of-size grotesque elongation ' +
+     '(' + (lifetimeBoundTiles / IJ.size).toFixed(1) + 'x)');
+  ok(shippedStretchTiles < IJ.size * 1.5 && shippedStretchTiles < lifetimeBoundTiles / 5,
+     'T-041/S10: the SHIPPED one-frame stretch for the impact burst stays a ' +
+     'mild fraction of the spark\'s own size, nowhere near the rejected bound ' +
+     '(' + shippedStretchTiles.toFixed(3) + ' tiles vs rejected ' +
+     lifetimeBoundTiles.toFixed(3) + ')');
+  // every shipped burst spec (impact/death/hurt/pickup): the worst-case
+  // per-particle speed (burstVelocity's magnitude tops out at 1x spec.speed,
+  // src/pure/juice.js) never stretches past 1.5x the burst's own size —
+  // guards every currently-tuned effect, not just impact, against a future
+  // retune quietly reintroducing the smear.
+  for (const [name, spec] of Object.entries(CONFIG.juice)) {
+    if (!spec || typeof spec.speed !== 'number' || typeof spec.size !== 'number') continue;
+    ok(travelStretch(spec.speed) < spec.size * 1.5,
+       'T-041/S10: CONFIG.juice.' + name + '\'s worst-case spark stretch stays ' +
+       'under 1.5x its own size (' + travelStretch(spec.speed).toFixed(3) +
+       ' vs size ' + spec.size + ')');
+  }
+
+  // --- (2) bullet nose ceiling — LOAD-BEARING: the sim's collision model ---
+  // bulletNoseTiles() must clamp unconditionally: however fast a shot is
+  // drawn moving (today's tune or a future retune), its drawn nose can never
+  // exceed the ceiling. This is the general property that actually protects
+  // the game, independent of any one weapon's current speed.
+  ok(bulletNoseTiles(0, 0, BULLET_NOSE_CEILING_TILES) === 0,
+     'T-041/S10: a stationary, zero-radius shot draws no nose at all');
+  ok(bulletNoseTiles(0, 1e6, BULLET_NOSE_CEILING_TILES) === BULLET_NOSE_CEILING_TILES,
+     'T-041/S10: an absurdly fast shot is clamped to the ceiling, not the ' +
+     'speed it happens to be drawn at — the gate holds for any future retune, ' +
+     'not just today\'s weapon speeds');
+  ok(bulletNoseTiles(BULLET_NOSE_CEILING_TILES * 5, 0, BULLET_NOSE_CEILING_TILES)
+       === BULLET_NOSE_CEILING_TILES,
+     'T-041/S10: an oversized BASE shape alone is clamped too — the ceiling ' +
+     'gates the composed result, not just the added stretch term');
+
+  // Every shipped weapon/state, through the SAME formula src/render/
+  // bullets.js's syncSlot() calls (not a re-derivation): base radius (tiles)
+  // plus one frame of the type's own nominal travel speed, clamped.
+  const bulletCases = [
+    ['R', CONFIG.weapons.R.scale, CONFIG.weapons.R.speed],
+    ['S', CONFIG.weapons.S.scale, CONFIG.weapons.S.speed],
+    ['L', CONFIG.weapons.L.scale, CONFIG.weapons.L.speed],
+    ['H', CONFIG.weapons.H.scale, CONFIG.weapons.H.speed],
+    ['F (flying)', CONFIG.weapons.F.scale, CONFIG.weapons.F.speed],
+    ['F (crawling)', CONFIG.weapons.F.crawlScale, CONFIG.weapons.F.crawlSpeed],
+  ];
+  for (const [label, scale, speed] of bulletCases) {
+    const nose = bulletNoseTiles(scale[0] * CONFIG.rifle.radius, speed, BULLET_NOSE_CEILING_TILES);
+    ok(nose <= BULLET_NOSE_CEILING_TILES + 1e-9,
+       'T-041/S10: ' + label + '\'s drawn nose (' + nose.toFixed(4) + ' tiles) never ' +
+       'reaches further ahead of the bullet\'s center than the sim\'s point-collision ' +
+       'precedent allows (' + BULLET_NOSE_CEILING_TILES.toFixed(4) + ' tiles)');
+  }
+  // L is the existing precedent itself — the pass changes nothing about it:
+  // it was already at the ceiling before this pass, and still is.
+  const lNose = bulletNoseTiles(
+    CONFIG.weapons.L.scale[0] * CONFIG.rifle.radius, CONFIG.weapons.L.speed, BULLET_NOSE_CEILING_TILES);
+  near(lNose, BULLET_NOSE_CEILING_TILES, 1e-9,
+       'T-041/S10: the laser bolt\'s nose is unchanged by this pass — it defines the ' +
+       'ceiling rather than being clamped by it');
+  // R is the fastest non-laser shot: prove the "every shot" claim is not
+  // vacuous by checking it actually stretches meaningfully past its own
+  // unstretched base, rather than the gate happening to pass because
+  // nothing changed.
+  const rBase = CONFIG.weapons.R.scale[0] * CONFIG.rifle.radius;
+  const rNose = bulletNoseTiles(rBase, CONFIG.weapons.R.speed, BULLET_NOSE_CEILING_TILES);
+  ok(rNose > rBase * 1.5,
+     'T-041/S10: the rifle round (previously a plain uniform sphere) now draws a ' +
+     'real travel stretch, not a clamped-to-nothing no-op (' + rBase.toFixed(4) +
+     ' base -> ' + rNose.toFixed(4) + ' tiles)');
+
+  // --- extend the damage-prop GAIN guard's file coverage to bullets.js ---
+  // The legibility pass's own guard (above, in the T-012-adjacent block) only
+  // ever read src/render/hostiles.js, so a damage-carrying prop in
+  // bullets.js was outside its scope entirely. Same scan, same rule, now
+  // covering bullets.js too: no line drawing a bullet may scale a
+  // damage-relevant prop by a readability GAIN constant.
+  {
+    const bulletsCode = stripComments(readFileSync(join(srcDir, 'render', 'bullets.js'), 'utf8'));
+    const damageProp = /\b(beam|blast|mark)\b/;
+    const scaled = bulletsCode.split('\n').filter((l) => damageProp.test(l) && /GAIN/.test(l));
+    ok(scaled.length === 0,
+       'T-041/S10: no readability gain is applied to a bullet\'s damage-relevant ' +
+       'geometry in src/render/bullets.js either' +
+       (scaled.length ? ' (found: ' + scaled.join(' | ') + ')' : ''));
+    ok(!/GLYPH_GAIN|CUE_GAIN|POSE_GAIN/.test(bulletsCode),
+       'T-041/S10: src/render/bullets.js does not import or use the legibility ' +
+       'readability gains at all — the nose stretch is driven by travel speed ' +
+       'only, never by a pull-back readability boost');
+  }
+}
+/* ==== end T-041 impact language (S10) ================================= */
 
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');
 process.exit(fails ? 1 : 0);

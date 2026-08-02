@@ -1,11 +1,19 @@
 /* ======================== BULLET INSTANCES ======================== */
 /* One instanced pool for every letter weapon, addressed by the same slot
-   index as bulletPool in src/sim/weapons.js. R/S/H are uniform-scale
-   spheres, so only L (stretched bolt) and F (flattened crawler) compose
-   an orientation. */
+   index as bulletPool in src/sim/weapons.js. Every type composes an
+   orientation onto its own heading: L (bolt) and F (crawler) already
+   authored an anisotropic base scale, and S10 adds a mild travel stretch
+   on TOP of every type's base scale (including the previously-uniform
+   R/S/H spheres), gated by bulletNoseTiles() so the drawn nose never
+   reaches further ahead of the bullet's center than the shipped laser
+   bolt already does (src/pure/juice.js, src/config.js's
+   BULLET_NOSE_CEILING_TILES) — the sim collides every bullet as a POINT
+   (src/sim/weapons.js), so that gate is the one thing standing between a
+   travel cue and a drawn hit the sim never gave. */
 
 import * as THREE from 'three';
-import { CONFIG } from '../config.js';
+import { CONFIG, BULLET_NOSE_CEILING_TILES } from '../config.js';
+import { bulletNoseTiles } from '../pure/juice.js';
 import { installView } from '../sim/bridge.js';
 import { BULLET_MAX } from '../sim/weapons.js';
 import { scene, HIDE } from './scene.js';
@@ -40,21 +48,26 @@ function slotSpawned(i, type) {
 
 function hideSlot(i) { bulletMesh.setMatrixAt(i, HIDE); }
 
-// map (s,y) onto the tower for one live slot: position + scale only for the
-// uniform spheres, no yaw/quaternion work
+// map (s,y) onto the tower for one live slot: position + a heading-oriented
+// scale for every type. `crawling` is F-only (see spawnProj/updateBullets in
+// src/sim/weapons.js); every other type always takes the flight branch.
 function syncSlot(i, b) {
   const bp = towerPose(b.x, _pp);
   const def = CONFIG.weapons[b.type];
-  if (b.type === 'L' || b.type === 'F') {
-    _bs.fromArray(b.crawling ? def.crawlScale : def.scale);
-    const ang = b.crawling ? 0 : Math.atan2(b.vy, b.vx);
-    _bq.setFromEuler(_be.set(0, bp.yaw, ang, 'YZX'));
-    _bm.compose(_bv.set(bp.x, b.y + bp.alt, bp.z), _bq, _bs);
-  } else {
-    const s = def.scale[0];
-    _bm.makeScale(s, s, s);
-    _bm.setPosition(bp.x, b.y + bp.alt, bp.z);
-  }
+  const crawling = b.type === 'F' && b.crawling;
+  const base = crawling ? def.crawlScale : def.scale;
+  // live speed, not the def's nominal one: a homing shot mid-turn or a
+  // flame arcing under gravity draws the stretch it is ACTUALLY carrying
+  // this frame, same principle as the spark stretch in src/render/fx.js.
+  // The crawler's (vx, vy) go stale the instant it starts hugging terrain
+  // (position advances by dir * crawlSpeed instead, src/sim/weapons.js), so
+  // it reads its own crawl speed instead.
+  const speed = crawling ? CONFIG.weapons.F.crawlSpeed : Math.hypot(b.vx, b.vy);
+  const nose = bulletNoseTiles(base[0] * CONFIG.rifle.radius, speed, BULLET_NOSE_CEILING_TILES);
+  _bs.set(nose / CONFIG.rifle.radius, base[1], base[2]);
+  const ang = crawling ? 0 : Math.atan2(b.vy, b.vx);
+  _bq.setFromEuler(_be.set(0, bp.yaw, ang, 'YZX'));
+  _bm.compose(_bv.set(bp.x, b.y + bp.alt, bp.z), _bq, _bs);
   bulletMesh.setMatrixAt(i, _bm);
 }
 
