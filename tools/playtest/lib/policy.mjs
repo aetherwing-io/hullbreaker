@@ -52,7 +52,10 @@
 // lands) — plain `sample[field]` lookup otherwise, walked one segment at a
 // time. Comparison values are numeric unless quoted (or unquoted but not
 // parseable as a number, e.g. `turning` in the example above) — string
-// comparisons only support ==/!= (no lexicographic ordering).
+// comparisons only support ==/!= (no lexicographic ordering), and an
+// unquoted value that is neither a number nor a plain word is rejected at
+// compile time rather than silently compared as a string (I-023: `x==3+1`
+// used to compile and read false forever).
 //
 // A field that never appears in any sample this run (wrong name, or a field
 // only present in a different slice/fidelity) evaluates its clause to
@@ -151,6 +154,10 @@ const PREDICATES = {
 const COMPARISON_RE = /^([\w.]+)\s*(>=|<=|==|!=|>|<)\s*(.+)$/;
 const BOOLEAN_RE = /^(!)?([\w.]+)$/;
 const NUMBER_RE = /^-?\d+(?:\.\d+)?$/;
+// The only shapes an UNQUOTED comparison value may take: a number, or a plain
+// word (a state/kind token like `turning`, `dive`, `GAME_OVER`). Anything else
+// unquoted is rejected at compile time — see assertMeaningfulRhs.
+const BARE_WORD_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 // Dotted-path lookup (e.g. "transform.eventState") — plain property access
 // one segment at a time, undefined-safe. Single-segment fields (the common
@@ -177,7 +184,30 @@ function parseRhs(raw) {
   const trimmed = raw.trim();
   if (NUMBER_RE.test(trimmed)) return { type: 'number', value: Number(trimmed) };
   const quoted = trimmed.match(/^(['"])(.*)\1$/);
-  return { type: 'string', value: quoted ? quoted[2] : trimmed };
+  return { type: 'string', value: quoted ? quoted[2] : trimmed, quoted: !!quoted, raw: trimmed };
+}
+
+// I-023: `x==3+1` used to compile. There is no arithmetic in this grammar, so
+// `3+1` parsed as the STRING "3+1", compared unequal to every number x ever
+// holds, and the clause read false for the whole run — with no
+// missingFieldWarnings entry, because the field was fine. That is the exact
+// silent-forever failure mode the threat-field validation exists to prevent,
+// and it was only ever caught behind an ORDERING operator (where the string
+// rhs trips the "ordering needs a number" guard), never behind ==/!=.
+//
+// So: an UNQUOTED comparison value must be a number or a plain word (the
+// state/kind tokens scripts actually write — `turning`, `dive`, `GAME_OVER`).
+// Anything else is a clause that cannot mean what it says, and fails at
+// compile time. Quoting stays the escape hatch: `=='3+1'` is an explicit
+// request for that literal string and still compiles, because then the script
+// author has said out loud that they mean a string.
+function assertMeaningfulRhs(rhs, clause, conditionStr) {
+  if (rhs.type !== 'string' || rhs.quoted) return;
+  if (BARE_WORD_RE.test(rhs.value)) return;
+  throw new Error(`"${clause}" (in "${conditionStr}") — an unquoted comparison value must be a ` +
+    `number or a plain word, and "${rhs.raw}" is neither. This grammar has no arithmetic and no ` +
+    'expression evaluation, so it would have been compared as the literal string it looks like ' +
+    `(quote it — =='${rhs.raw}' — if that is genuinely what you meant).`);
 }
 
 function evalComparison(field, op, rhs, sample, threat) {
@@ -232,6 +262,7 @@ export function compileCondition(conditionStr) {
         throw new Error(`"${clause}" (in "${conditionStr}") — ordering operators (> >= < <=) ` +
           'need a numeric value, got a string');
       }
+      assertMeaningfulRhs(rhs, clause, conditionStr);
       assertKnownThreatField(field, clause, conditionStr);
       return { kind: 'cmp', field, op, rhs };
     }

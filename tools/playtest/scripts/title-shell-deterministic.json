@@ -1,0 +1,10 @@
+{
+  "name": "title-shell-deterministic",
+  "description": "REGRESSION PROBE for I-018 (T-027), not a gameplay script. Forces the game shell's title screen (?shell=title), which parks a built-but-FROZEN run in MENU with gameMs pinned at 0, and gives the script a first event at t>0. Under --deterministic that used to dispatch ZERO events and still exit 0: the mode fires an event at the first tick where gameMs has reached its t, and the key that would start the clock was itself gated on that clock. Expected now: 4 of 4 events dispatched, exactly one of them stamped dispatchedVia 'wallclock-title', the sim clock advancing past 6s, and RIG moving right off the spawn point (measured 2026-08-01: x 6 -> 55.65). The run's OUTCOME is `stalled` and that is not the thing under test — seven seconds of hold-right with one jump gets RIG to the step at x~55.6 and jams there, so the idle fraction is ~0.6. What this probe proves is that the input happened at all. Run it as: node run.mjs scripts/title-shell-deterministic.json --deterministic --max-runtime-ms 9000 (add --base-url for a pinned tree).",
+  "url": "index.html?slice=traversal&shell=title",
+  "durationMs": 7000,
+  "moves": [
+    { "hold": "right", "fromMs": 600, "toMs": 6800 },
+    { "tap": "jump", "atMs": 1400, "holdMs": 380 }
+  ]
+}

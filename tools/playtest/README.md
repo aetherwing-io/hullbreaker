@@ -239,13 +239,27 @@ visible there. (Which is why there is deliberately no `diveIncoming` predicate
 with a baked-in distance — write `threat.diveDist<4` and own the 4.)
 
 Those are not promises you have to take on trust. `tools/pathcheck.mjs` asserts
-them: that the compiler *rejects* `||`, parens, arithmetic, unknown fields and
+them: that the compiler *rejects* `||`, parens, arithmetic (behind ordering
+operators **and** behind `==`/`!=` — see the next paragraph), unknown fields and
 string ordering; that neither `policy.mjs` nor `threat.mjs` contains `eval()`
 or `new Function()`, so a condition string is interpreted and never executed as
 JS; that neither declares module-level mutable state; and — behaviorally —
 that `deriveThreat` returns the same view for the same sample even after an
 intervening tick with different geometry. A bot run is only reviewable if the
 policy cannot have been a script in disguise.
+
+**A clause that cannot mean what it says now fails at compile time** (T-027,
+I-023). Until this task, "arithmetic is rejected" was true only *behind an
+ordering operator*, where a string right-hand side trips the "ordering needs a
+number" guard. Behind `==`/`!=` the same text compiled: `x==3+1` parsed `3+1`
+as the **string** `"3+1"`, compared it to a number, and read false for the
+entire run — with no `missingFieldWarnings` entry, because the field was fine.
+That is the silent-forever failure mode the threat-field validation exists to
+prevent, wearing a different hat. So an **unquoted** comparison value must now
+be a number or a plain word (`turning`, `dive`, `GAME_OVER`); anything else
+throws at load with a message naming the problem. Quoting is the escape hatch
+and still compiles — `=='3+1'` is a script author saying out loud that they
+mean a string. Nothing is or ever was evaluated as JS either way.
 
 `threat.*` — derived once per tick in `lib/threat.mjs`, from the muzzle line
 (`player.y + 1.05`), skipping hostiles still condensing (`materialized:
@@ -327,6 +341,25 @@ Not expected to matter for the shipped predicates — a hound's `tell` window
 and a terrain pin don't oscillate faster than one sample interval — but
 worth knowing before adding a new fast-oscillating predicate.
 
+**A tap in flight when the run ends is settled at teardown** (T-027, I-011).
+A run can stop at any instant — the hard cap, a victory, a game over — and a
+release timer that outlives the browser context used to record `key up failed
+for Space: ...browser has been closed` in `pageErrors`, the channel a gate
+reads to decide whether the **game** threw. Teardown now cancels every pending
+tap timer and releases those keys while the page is still open (logged as
+`tap-up-teardown` in `policy.log`, never a plain `tap-up`, so a report never
+reads as though the tap ran its full `holdMs`, and `tapsSettledAtTeardown`
+counts them). Anything that still loses the race lands in a separate
+`teardownErrors` array and its own `summary.md` section, labelled *not* a game
+error. `pageErrors` means the game threw, and only that.
+
+```sh
+node run.mjs scripts/tap-teardown-probe.json --deterministic --max-runtime-ms 6000
+# taps on a spread of holdMs values so one is ALWAYS in flight at the cut.
+# expect: pageErrors [], teardownErrors [], tapsSettledAtTeardown > 0.
+# before the fix, this reproduced the stray `key up failed for Space` 2/2.
+```
+
 **Proof it works, precisely** (`scripts/policy-hound-reactive.json`,
 `?slice=traversal&hound=1`, committed under `reports/demo/policy-hound-reactive/`):
 rebuilds `hound-jump.json` (two fixed taps at 880ms/1330ms) with zero timed
@@ -379,7 +412,9 @@ Three harness pieces came out of it, all useful for any long policy run:
   personal space and the step guard, 9 runs at 50.2–55.1 s (median 53.1)
   against the baseline's 46.2–52.8 s (median 48.7, 8 default-rate runs). It
   still dies in gate 2 every time. Its committed evidence, the baseline's, and
-  the single run in 49 that cleared gate 2 are under `reports/t019/`.
+  the single run in 49 that cleared gate 2 are under `reports/t019/`. Those
+  nine runs predate T-027's `edgeMargin>8` guard change (see the demo table
+  row and the script's own description) — the band is the old file's.
 - `--stop-on-game-over` — end a run at the terminal failure state instead of
   sampling a frozen world for the rest of the script window. Off by default
   (a report whose length no longer matches its script window is a surprise,
@@ -390,6 +425,8 @@ Three harness pieces came out of it, all useful for any long policy run:
 ```sh
 node tools/playtest/analyze-run.mjs /tmp/aimed            # one run, full breakdown
 node tools/playtest/analyze-run.mjs --brief /tmp/run-*    # one markdown row per run
+node tools/playtest/analyze-run.mjs /tmp/aimed --policy scripts/six-face-spaced-run.json
+                                                          # replay a DIFFERENT rule set over that same trace
 ```
 
   It attributes every hp/life loss to what was next to RIG on the sample
@@ -405,6 +442,23 @@ node tools/playtest/analyze-run.mjs --brief /tmp/run-*    # one markdown row per
   body leaving the roster while still inside the corridor, so a cull or a
   despawn at that range reads as a kill, and that aim coverage is not modelled
   for a policy that holds `strafe`, since that freezes the aim vector.
+
+  Two additions from T-027 (I-028), both about pricing a rule change on
+  evidence you already have:
+
+  - the rule-conflict census now names **which two rules** cancelled, how many
+    ticks, and the `edgeMargin` window they did it in. "5.3% of ticks cancel"
+    is a number to argue about; "`[5] edgeMargin<8` (right) vs `[6]` personal
+    space (left), 3 ticks, margin 7.37–7.70" is a number to fix.
+  - `--policy <script.json>` replays a **different** rule set over the recorded
+    trace. **Honesty note, load-bearing:** this answers *"what would these
+    rules have commanded at the states that run actually visited"* — not
+    *"where would this policy have gone"*, which no recording can answer,
+    because two policies diverge into different runs from the first tick they
+    differ. It is a before/after on one trace, not a prediction. Self-check
+    worth repeating when you use it: replaying the run's **own** policy file
+    reproduces the embedded-policy numbers exactly, so any difference you see
+    is the rule change and nothing else.
 
 ## Deterministic injection mode
 
@@ -424,10 +478,59 @@ an event scheduled for `gameMs=1400` fires at the first tick where
 `--sample-ms` for a tighter bound. A useful side effect: an event scheduled
 during a pause/retry freeze (`gameMs` doesn't advance) correctly waits for
 gameplay to resume instead of firing based on real elapsed time regardless.
-Requires `testapi`/`window.HB`; without a number in `sample.gameMs`,
-`run.mjs` prints an error and exits non-zero rather than silently behaving
-like wall-clock mode (this was caught immediately in practice — see
-Honesty/limitations below).
+
+### When the clock never starts, and how you find out (T-027, I-018)
+
+Gating input on the game's clock has one dead state, and it used to be
+silent: **the shell's title screen**. `?shell=title` parks a built-but-frozen
+run in `MENU`, so `gameMs` stays at 0 until a key starts the run — and in this
+mode that key is itself gated on `gameMs`. A script whose first event is at
+`t>0` therefore dispatched **nothing**, sampled `state: "MENU"` forever, and
+wrote a plausible-looking `not-completed` report. (A script whose first event
+is at `t=0` fires on the first tick and never sees this.)
+
+Two changes, in the order they matter:
+
+- **The driver dispatches on the WALL clock while the game is parked at the
+  title.** Only there — every other frozen-clock state (`PAUSED`, the retry
+  freeze, `GAME_OVER`) keeps the old waiting behaviour on purpose, because
+  there the wait ends, and waiting is the useful half of this mode. Events
+  dispatched that way carry `dispatchedVia: "wallclock-title"` in
+  `report.json`'s event records and are counted in the run's console output,
+  so no report claims sim-time quantization it did not have. In practice this
+  is the one keypress that leaves the title; everything after it is gated on
+  `gameMs` from 0 as usual.
+- **Every deterministic run now writes a dispatch ledger and fails loudly if
+  it measured nothing.** `meta.deterministicDispatch` (and a section in
+  `summary.md`) records events dispatched vs pending, how far the sim clock
+  got, how many samples were in which state, and why sampling stopped
+  (`meta.stopReason`: `victory` / `game-over` / `max-runtime-ms` /
+  `script-window` / `boot-error`). `run.mjs` exits **non-zero with a named
+  reason** when the run cannot have measured anything:
+
+  | situation | verdict |
+  | --- | --- |
+  | `sample.gameMs` was never a number (no `testapi`/`HB`) | fatal, exit 1 |
+  | the sim clock never advanced at all (the MENU shape, if the fallback above ever fails to start the run) | fatal, exit 1 — names the state it was stuck in |
+  | the clock ran but never reached the first event's `t` | fatal, exit 1 |
+  | events left pending after a `victory` / `game-over` / `max-runtime-ms` stop | expected, ledger only — no console warning |
+  | events left pending after the run played its **full** script window | warning (the script's tail never happened) |
+
+  The last two rows are the point of the split: every long six-face run ends
+  at `GAME_OVER` with its 240 s `keyup` unspent, and a warning that fires on
+  every run is how a channel stops being read.
+
+The verdict logic is `lib/deterministic.mjs` — a pure function of
+`(result, events)` with no page and no I/O, so `tools/pathcheck.mjs` asserts
+all five verdicts directly on synthetic runs instead of trusting them.
+
+The browser half needs a browser, so the repro is committed as a script:
+
+```sh
+node run.mjs scripts/title-shell-deterministic.json --deterministic --max-runtime-ms 9000
+# expect: 4 of 4 events dispatched, exactly 1 via "wallclock-title", sim clock
+# past 6s, RIG off the spawn point. Before this fix: 0 events, MENU forever.
+```
 
 **Quantified, both directions:**
 
@@ -999,7 +1102,7 @@ tuning has also moved since — CP1 pace/crush fixes landed in the meantime).
 | `policy-hound-reactive.json` | Closed-loop rebuild of `hound-jump.json` — zero timed jumps, `pinned` + `houndTell` only, `?hound=1` | **not-completed** (2.4s window by design, mirroring the script it replaces); correctly dodged-attempted on the *second* of three hounds' `tell`, not a fixed clock — see above for the hp-drop caveat |
 | `six-face-full-run.json` | The **default six-face run** in policy mode with **zero timed inputs**: hold fire; hold right while the world is scrolling; back off while a wave-gate message is up and there is daylight to the damage plane (the scroll is frozen there, so retreating is free); hop on every landing; jump when a houndframe plants for its charge. Position/state-triggered throughout, because a 100+ second run's event times move with every tuning change | **not-completed**, measured with **3 runs per side** (T-009's gate, both trees pinned, `--deterministic`, `--max-runtime-ms 150000`, 1440x900): `task/T-009` reached maxX **89.25 / 89.25 / 110.65**, a pristine `main` **89.25 x3**; all six ended in `GAME_OVER` **inside a wave-gate fight**, and no run of this script on either tree has reached VICTORY. What stops the bot is the gate FIGHT — a reflex policy with no aim model against diving wasps in three lanes — not the geometry: the same policy driven through the sim with hostiles removed (`tools/pathcheck.mjs`, "the run reaches the outro scroll end") crosses every face and pocket chasm. Treat it as the traversal+pressure smoke test it is; boot-to-VICTORY is T-018's job. Run-to-run spread on this script is wide (T-018's later runs of it reach scroll 75–140 on the same trees), so a single run of it is not evidence — see "Honesty / limitations" #2 and #8, and **do not re-quote** the single-run-per-side A/B its own description once carried: struck by the integrator as **I-020**, whose entry in `SPRINT.md`'s Inbox is also the only *committed* record of the 3-runs-per-side numbers quoted above — the `tools/playtest/runs/gate-T-009-fullrun-*` directories they were read from are gitignored and are not in the tree (citation corrected by T-028; this row previously pointed at `docs/playtests/2026-08-gate-fight-harness.md`, which does not discuss I-020) |
 | `six-face-aimed-run.json` | The **default six-face run** with the T-018 relative-geometry clauses: tilt the gun up at what is above the firing line, face the side it is on during a gate, jump at the lip of a hole (`--max-runtime-ms 245000`, or `--stop-on-game-over`). Superseded as the best-measured policy by `six-face-spaced-run.json` below; kept as the baseline that one is measured against | **not-completed** — and its two measurements disagree, so read both. **T-018**, one run against `task/T-009`'s tree pinned at 8751: cleared wave gates **1, 2 and 3**, scroll **205 of 415**, 22 kills, third life at 76.9s; gate ticks with the gun on a hostile 20–29% (gate 1) and 27.7% (gate 2), against 8.8%/12.0% for the aimless script. **T-019**, 11 runs of the same file (8 at the default sample rate + 3 at `--sample-ms 40`): ten die inside wave gate **2** at scroll **140** and the eleventh in gate **1** at scroll 107 — 9–16 kills, 44.1–52.8s, median 48.7 at the default rate. None reached gate 3. Two things moved in between — the tree under test, and this harness's own `terrain.gapDist` (now 0 while RIG is over a hole, which changes when the policy's last rule fires) — and T-019 did not isolate which; it argues from the gate reached across repeats, never from one run's decimals. Boot-to-VICTORY is still unproven by a bot, and the finding argues it is out of reach for this grammar: `docs/playtests/2026-08-victory-box.md` (T-018's own numbers: `docs/playtests/2026-08-gate-fight-harness.md`) |
-| `six-face-spaced-run.json` | The **best-measured reflex policy** (T-019): the aimed policy above plus the two clauses its per-tick forensics justified — step away from the nearest body inside 2.2 tiles, and answer `pinned` with a jump only when `terrain.stepUp>0.5` says it is an actual step. Run it `--deterministic --stop-on-game-over --max-runtime-ms 145000` | **not-completed** — 9 runs at 50.2–55.1s (median **53.1**; 53.6 over the seven in the finding's own table) against the aimed policy's 46.2–52.8s (median 48.7 over 8 default-rate runs), 10–16 kills. All nine die inside wave gate **2** at scroll **140 of 415**: about 10% more survival, the same wall. Evidence under `reports/t019/`, arithmetic in `docs/playtests/2026-08-victory-box.md` |
+| `six-face-spaced-run.json` | The **best-measured reflex policy** (T-019): the aimed policy above plus the two clauses its per-tick forensics justified — step away from the nearest body inside 2.2 tiles, and answer `pinned` with a jump only when `terrain.stepUp>0.5` says it is an actual step. Run it `--deterministic --stop-on-game-over --max-runtime-ms 145000` | **not-completed** — 9 runs at 50.2–55.1s (median **53.1**; 53.6 over the seven in the finding's own table) against the aimed policy's 46.2–52.8s (median 48.7 over 8 default-rate runs), 10–16 kills. All nine die inside wave gate **2** at scroll **140 of 415**: about 10% more survival, the same wall. Evidence under `reports/t019/`, arithmetic in `docs/playtests/2026-08-victory-box.md`. **Changed since those runs (T-027, I-028):** the personal-space clause's guard is now `edgeMargin>8`, not `>6`, so it can no longer cancel the crush-plane rule inside the crush window — replayed over the three committed T-019 traces, that pair cancelled 3/777, 0/717 and 19/501 PLAYING ticks before and 0 on all three after (all-cause cancellation 5.3/4.5/8.4% → 4.9/4.5/4.8%). **The 50.2–55.1 s band above is the pre-change measurement and has not been re-run**; T-027 smoke-ran the changed file twice (42.1 s / 55.8 s, scroll 111 / 140, 7 / 10 kills, both `GAME_OVER`), which is two runs against a nine-run band and settles nothing |
 | `transform-slice.json` | Hold right + hold fire + periodic jump, `?slice=transform` — pre-existing smoke script, not authored by this harness | **completed** — proof for the `BREACH CLEAR` outcome-labeling fix below: the trace has 7 samples with `state==='VICTORY'` and `ovTitle==='BREACH CLEAR'`; the pre-fix `ovTitle==='TRAVERSAL CLEAR'`-only check would have returned `victorySeen: false` for this exact run |
 
 **Bug fixed since the previous pass:** `computeOutcome` (and the driver's
@@ -1155,6 +1258,38 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
     at a camera that shows far more), but it is still knowledge the old
     open-loop scripts did not have: a "policy clears the route" claim after
     T-018 is a claim about a bot that can see holes.
+
+11. **Deterministic mode is not deterministic while the game is parked at the
+    title** (T-027, I-018). The wall-clock fallback described in "Deterministic
+    injection mode" is a real, documented hole in this mode's contract: those
+    events are dispatched on real elapsed time, carry no `gameMsJitterMs`, and
+    are stamped `dispatchedVia: "wallclock-title"` precisely so nobody reads
+    them as sim-time-locked. It is the lesser of two evils — the alternative
+    was a run that dispatches nothing at all — but a `?shell=title` run is
+    therefore *less* reproducible in its first keypress than a normal one, and
+    the rest of the timeline is shifted by however long the harness sat on the
+    title. Prefer `?shell=0` (or the default autostart) for anything you intend
+    to compare across runs; use `?shell=title` for screenshots and title-screen
+    behaviour, where that shift doesn't matter.
+
+12. **The dispatch ledger's fatal cases are about the CLOCK, not about the run
+    being interesting** (T-027). `meta.deterministicDispatch.fatal` and the
+    non-zero exit fire when a deterministic run's input could not have happened
+    — no clock, a frozen clock, or a clock that never reached the first event.
+    They say nothing about whether the run went anywhere: a run that dispatches
+    every event and immediately falls in a hole still exits 0. Read
+    `outcome`/`metrics` for that, as before. The one shape it deliberately does
+    **not** fail is a script whose tail is unspent because the run ended at
+    victory / game over / the cap; those are recorded as `pendingExpected` in
+    the ledger and stay off the console.
+
+13. **`analyze-run.mjs --policy` is a counterfactual on one trace, not a
+    forecast** (T-027, I-028) — the full statement is in the `analyze-run.mjs`
+    bullet above. It is how the I-028 before/after numbers in this README were
+    obtained, and it is exactly as strong as that: the *commands* a rule set
+    would have issued at the states a recorded run visited. It cannot tell you
+    where the changed policy would have ended up, and no number derived from it
+    should be quoted as a survival/gate result.
 
 ## Hook requests for the game/module-split side
 

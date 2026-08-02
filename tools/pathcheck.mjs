@@ -7932,6 +7932,39 @@ const G2GATE = G2E.gate;
   ok(compileCondition('threat.upSlope>0.5 && !targetLevel').raw.length > 0,
      'T-018: a well-formed threat condition still compiles');
 
+  /* T-027 (I-023): "arithmetic is rejected" used to be true only BEHIND AN
+     ORDERING OPERATOR, where a string right-hand side trips the "ordering
+     needs a number" guard — the assertion above passes for that reason and
+     not the one it reads like. Behind ==/!= the same text compiled: `x==3+1`
+     parsed `3+1` as the STRING "3+1", compared it to a number, and read false
+     for the whole run with no missing-field warning. A clause that cannot
+     mean what it says is the silent-forever failure this grammar's other
+     validation exists to prevent, so an unquoted value that is neither a
+     number nor a plain word now fails at compile time — with quoting left as
+     the explicit escape hatch, because `=='3+1'` is someone saying out loud
+     that they mean a string. */
+  rejects('x==3+1', 'arithmetic behind an EQUALITY operator (I-023)');
+  rejects('x!=3+1', 'arithmetic behind !=');
+  rejects('threat.dist==2*2', 'a multiplication that would silently be a string');
+  ok(compileCondition("x=='3+1'").raw.length > 0,
+     'T-027: …but an explicitly QUOTED literal still compiles — the guard is about ' +
+     'ambiguity, not about forbidding odd strings');
+  ok(compileCondition('threat.kind==wasp').raw.length > 0 &&
+     compileCondition("transform.eventState=='turning'").raw.length > 0 &&
+     compileCondition('x==-3.5').raw.length > 0,
+     'T-027: …and the shapes scripts actually write (a bare state word, a quoted one, ' +
+     'a negative number) are untouched');
+  {
+    // The defect's own signature, asserted directly: it was not just that the
+    // clause was wrong, it was that NOTHING said so — the field existed, so
+    // missingFieldWarnings stayed empty and the run looked healthy for 25s.
+    let compiled = true, why = '';
+    try { compileCondition('x==3+1'); } catch (e) { compiled = false; why = e.message; }
+    ok(!compiled && /unquoted comparison value/.test(why),
+       'T-027: …and the rejection NAMES the problem (an unquoted value that is neither a ' +
+       'number nor a word), instead of a clause that evaluates false forever in silence');
+  }
+
   // --- 2b. …and stays an interpreter with no memory ----------------------
   // The three properties a reviewer has to be able to take on faith when they
   // read a bot report: the condition string was INTERPRETED (never handed to
@@ -8166,7 +8199,122 @@ const G2GATE = G2E.gate;
       ok(scriptViolations({ moves: [{ hold: 'fire', fromMs: 0, toMs: 10 }] }).length === 1,
          'T-019: …and a six-face script with no policy at all is a timeline, and fails');
     }
+
+    /* ===== T-027 (I-028): the crush window belongs to the crush rule ===== *
+     * `hold` rules OR per key code and the grammar has no arbitration, so two
+     * that disagree about direction put BOTH direction keys down, and
+     * computeAim's h = 0 leaves RIG standing still. Harmless almost
+     * everywhere; not harmless between the crush plane and RIG, which is the
+     * one window whose rule exists precisely to make RIG run. Measured on the
+     * three committed T-019 traces (analyze-run.mjs --policy, same trace both
+     * ways): the personal-space clause cancelled the crush rule on 3/777,
+     * 0/717 and 19/501 PLAYING ticks with its old `edgeMargin>6` guard, and 0
+     * on all three at `>8`.
+     *
+     * SCOPE, stated plainly: this asserts that no `hold left` rule which
+     * NAMES edgeMargin overlaps the crush rule's window. The two gate-servo
+     * left-holds name no margin at all, so they can still fire there — 1, 0
+     * and 7 ticks on those same traces — and this assertion does not catch
+     * them. That residue is a reported finding, not something this gate
+     * silently claims to have closed.                                       */
+    {
+      const CRUSH_RE = /^edgeMargin<([\d.]+)$/;
+      const MARGIN_GT_RE = /edgeMargin>([\d.]+)/;
+      for (const file of sixFace) {
+        const script = JSON.parse(readFileSync(join(scriptsDir, file), 'utf8'));
+        const rules = ((script.policy && script.policy.rules) || []);
+        const crush = rules.filter((r) => r.do && r.do.hold === 'right' &&
+          CRUSH_RE.test(String(r.when).trim()));
+        if (!crush.length) continue;             // no crush-emergency rule, nothing to overlap
+        const threshold = Math.max(...crush.map((r) => Number(String(r.when).trim().match(CRUSH_RE)[1])));
+        const overlapping = rules.filter((r) => r.do && r.do.hold === 'left')
+          .filter((r) => MARGIN_GT_RE.test(r.when))
+          .filter((r) => Number(r.when.match(MARGIN_GT_RE)[1]) < threshold)
+          .map((r) => r.when);
+        ok(overlapping.length === 0,
+           'T-027: ' + file + ': no `hold left` rule that names edgeMargin overlaps the ' +
+           'crush-plane `hold right` window (edgeMargin<' + threshold + ') — inside it the two ' +
+           'cancel and RIG stands still against the plane' +
+           (overlapping.length ? ' [' + overlapping.join('; ') + ']' : ''));
+      }
+    }
   }
+}
+
+/* ============ T-027: the bot harness's deterministic-dispatch honesty ==== *
+ * lib/deterministic.mjs is the backstop for I-018: a --deterministic run
+ * dispatches each event at the first tick where the GAME's own clock reaches
+ * it, so anything that stops that clock stops the run's input — and the report
+ * that comes out looks like an ordinary run that merely didn't get far (a
+ * plausible `not-completed`, no events, exit 0). Same class as a gate that
+ * reports green because its subject is the author's intent rather than what
+ * happened, so the verdicts are asserted here on synthetic runs rather than
+ * trusted: the module is a pure function of (result, events), no page, no I/O.
+ * The primary fix — dispatching on the wall clock while the game is parked at
+ * the shell title, where gameMs is frozen at 0 and the key that would start it
+ * is itself gated on that clock — is in lib/driver.mjs and needs a browser, so
+ * only its presence is guarded here; the behavioral proof is a run.           */
+{
+  const { diagnoseDeterministicRun } = await import('./playtest/lib/deterministic.mjs');
+  const ev = (t) => ({ t, type: 'keydown', code: 'ArrowRight' });
+  const sent = (t) => ({ ...ev(t), actualDispatchMs: t + 40 });
+
+  const noClock = diagnoseDeterministicRun({ trace: [{ fidelity: 'dom' }, { fidelity: 'dom' }] }, [ev(600)]);
+  ok(noClock.fatal && /gameMs was never a number/.test(noClock.fatal),
+     'T-027: a deterministic run with no sim clock in any sample is FATAL, and says so');
+
+  const frozen = diagnoseDeterministicRun(
+    { trace: [{ state: 'MENU', gameMs: 0 }, { state: 'MENU', gameMs: 0 }] }, [ev(600)]);
+  ok(frozen.fatal && /never advanced/.test(frozen.fatal) && /MENU×2/.test(frozen.fatal),
+     'T-027: …a clock that never advanced is FATAL and names the state it was stuck in ' +
+     '(the I-018 shape: the reason is the frozen clock, NOT missing telemetry — the old ' +
+     'message blamed the wrong thing)');
+
+  const neverDue = diagnoseDeterministicRun(
+    { trace: [{ state: 'PLAYING', gameMs: 0 }, { state: 'PLAYING', gameMs: 900 }] }, [ev(9000)]);
+  ok(neverDue.fatal && /no event ever came due/.test(neverDue.fatal),
+     'T-027: …and a clock that ran but never reached the first event is FATAL too — zero ' +
+     'events dispatched is zero measurement, whatever the reason');
+
+  const healthy = diagnoseDeterministicRun(
+    { trace: [{ state: 'PLAYING', gameMs: 0 }, { state: 'PLAYING', gameMs: 9000 }], stopReason: 'script-window' },
+    [sent(600), sent(4000)]);
+  ok(healthy.fatal === null && healthy.warning === null && healthy.dispatched === 2,
+     'T-027: an ordinary complete run raises nothing');
+
+  const tail = diagnoseDeterministicRun(
+    { trace: [{ state: 'PLAYING', gameMs: 0 }, { state: 'VICTORY', gameMs: 9000 }], stopReason: 'victory' },
+    [sent(600), ev(240000)]);
+  ok(tail.fatal === null && tail.warning === null && tail.pending === 1 && tail.pendingExpected,
+     'T-027: …a run that ended at victory/game-over/the cap with its tail unspent is neither ' +
+     'a failure nor a warning — that shape is normal (every long six-face run has it), and a ' +
+     'warning that fires every time is how a channel stops being read; the count stays in the ledger');
+
+  const starved = diagnoseDeterministicRun(
+    { trace: [{ state: 'PLAYING', gameMs: 0 }, { state: 'PLAYING', gameMs: 4000 }], stopReason: 'script-window' },
+    [sent(600), ev(9000)]);
+  ok(starved.fatal === null && /never dispatched/.test(starved.warning || '') &&
+     /script-window/.test(starved.warning),
+     'T-027: …but a run that played its FULL window and still starved events WARNS, naming ' +
+     'the stop reason — that one is a script whose tail never happened');
+
+  const policyOnly = diagnoseDeterministicRun({ trace: [{ state: 'PLAYING', gameMs: 500 }] }, []);
+  ok(policyOnly.fatal === null && policyOnly.warning === null,
+     'T-027: a policy-only script has no timeline to starve and is never faulted for it');
+
+  // The driver-side half of I-018 and I-011. Static, and labelled as such:
+  // both need a real browser to exercise, so this asserts the mechanisms are
+  // still wired, not that they work — the behavioral evidence is a bot run.
+  const driverSrc = readFileSync(join(here, 'playtest', 'lib', 'driver.mjs'), 'utf8');
+  ok(/state === 'MENU'/.test(driverSrc) && /wallclock-title/.test(driverSrc),
+     'T-027: the driver still special-cases the shell title screen in deterministic mode, and ' +
+     'stamps those events dispatchedVia "wallclock-title" so no report claims sim-time ' +
+     'quantization it did not have (I-018)');
+  ok(/teardownErrors/.test(driverSrc) && /flushPendingTapReleases/.test(driverSrc) &&
+     !/pageErrors\.push\(\{ message: `key (up|down) failed/.test(driverSrc),
+     'T-027: a tap release racing the browser context closing can no longer land in ' +
+     'pageErrors — pending taps are settled at teardown and any residue is bucketed ' +
+     'separately, so pageErrors still means "the game threw" (I-011)');
 }
 
 /* ===== T-025: the harness may not report what the run did not do ======== *
