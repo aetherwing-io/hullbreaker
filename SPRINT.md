@@ -2958,7 +2958,7 @@ assets" claims as historical.
 verify: node tools/pathcheck.mjs; build the bundle, unzip to a clean dir, serve
 it, capture the art rendering; report bundle size and file count
 
-## T-056 | art | todo | P2
+## T-056 | art | doing | P2
 UNBLOCKED 2026-08-02: T-054 merged. Note the collision I blocked this on never
 materialized — T-054's final diff does not touch `src/render/limb.js` at all
 (it landed entirely in `hulltiles.js`/`materials.js`). The block cost nothing
