@@ -9340,16 +9340,30 @@ import {
   ok(literals.length === 0,
      'seams: src/render/seams.js carries no raw color literal' +
      (literals.length ? ' (found: ' + literals.join(', ') + ')' : ''));
+
+  // Review finding: a whole-level static bake with an additive, fog:false
+  // halo never recedes — the packet's own risk note for S5, and the exact
+  // failure a reviewer caught this pass had not actually solved. Neither
+  // material may set `fog: false`, so a pip at the fog-far edge of a
+  // 445-tile level fades exactly like the surface it rides rather than
+  // blazing through the haze alone.
+  ok(!/fog\s*:\s*false/.test(renderSrc),
+     'seams: neither seams.js material sets fog:false — every pip recedes ' +
+     'with distance, unlike fx.js\'s short-lived player-proximate pools');
+  ok((renderSrc.match(/fog\s*:\s*true/g) || []).length === 2,
+     'seams: both the core and halo materials explicitly set fog:true');
 }
 
 {
-  // ?seams= resolver: the same absent/junk/'1' shape every other opt-in
-  // flag resolver in this codebase carries (resolvePaletteId, resolveLegibility).
-  ok(resolveSeams(null) === false && resolveSeams('') === false &&
-     resolveSeams('0') === false && resolveSeams('junk') === false &&
-     resolveSeams('1') === true,
-     'seams: ?seams= resolves off for everything but the exact opt-in \'1\' — ' +
-     'CLAUDE.md\'s "prototypes ship behind query flags, off by default"');
+  // ?seams= resolver: ON by default (decisions.md entry 16 retired the
+  // blanket off-by-default rule, naming seam pips explicitly), the same
+  // absent/''/junk-resolves-on shape resolveLegibility already carries.
+  // '0'/'off' are the escape hatch back to the pre-pass look.
+  ok(resolveSeams(null) === true && resolveSeams('') === true &&
+     resolveSeams('junk') === true && resolveSeams('1') === true &&
+     resolveSeams('0') === false && resolveSeams('off') === false,
+     'seams: ?seams= resolves ON for everything but the escape hatch ' +
+     '(\'0\'/\'off\') — decisions.md entry 16');
 }
 
 {

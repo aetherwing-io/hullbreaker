@@ -10,19 +10,21 @@
    call, no `view.` reference, no gameMs/tMs/dt), which mechanically
    forbids an animated version arriving later by accident.
 
-   Two pools, exactly the merged T-011 idiom src/render/fx.js already
-   ships (src/render/fx.js:106-135), verbatim:
+   Two pools, the merged T-011 idiom src/render/fx.js already ships
+   (src/render/fx.js:106-135), with ONE deliberate deviation — see the
+   halo material below for why:
      - a small opaque box on the pip token (the core)
      - one additive halo pool: AdditiveBlending, depthWrite:false,
-       fog:false, renderOrder 2, no material color (instanceColor IS the
+       fog:true (fx.js's pools use fog:false — this one does not, on
+       purpose), renderOrder 2, no material color (instanceColor IS the
        color, so the pool stays one draw call)
    Both are sized once and never resized: total instance count is exactly
    the pip count src/pure/seams.js computes for the active level, which is
    deterministic for a given CONFIG and slice.
 
-   ?seams=1 arms the pass; absent (every shipped URL today) builds nothing
-   at all, per CLAUDE.md's "prototypes ship behind query flags, off by
-   default" — this has not had an operator checkpoint yet.
+   ON by default (decisions.md entry 16): absent, '' and junk all arm the
+   pass; `?seams=0` is the escape hatch back to the pre-pass look for
+   comparison.
 
    SCOPE: deck-edge and catwalk pips only (src/sim/level.js's groundH and
    platforms, both already read-only exports). The ?g1=1 limb's scute/kerb
@@ -84,9 +86,27 @@ if (SEAMS_ENABLED && !IS_TRANSFORM_SLICE) {
 
     // no material `color` here on purpose: the default white is the
     // identity instanceColor multiplies, so the per-instance role color
-    // IS the color — the exact fx.js idiom (fx.js:105-107).
+    // IS the color — the exact fx.js idiom (fx.js:105-107), with ONE
+    // deliberate deviation from "verbatim": `fog: true`, not `fog: false`.
+    // fx.js's pools are short-lived and player-proximate, so whether they
+    // fade with fog never matters. This pool is the first STATIC,
+    // whole-level bake: 307 pips are scattered across all 445 tiles, and
+    // the run scrolls the camera past every one of them at some point, so
+    // "distance from camera" varies continuously per pip over the course
+    // of a run — there is no fixed depth to pre-attenuate by at bake time
+    // the way the packet's risk note asks for (S5's own risk: "additive
+    // quads with fog:false never recede, so distant pips must be
+    // pre-attenuated by depth at bake time"). `fog: true` is the
+    // mechanically simple, provably-correct answer instead: it fades the
+    // additive contribution toward `scene.fog.color` by the SAME
+    // per-frame distance the deck/limb tiles around it already fade by
+    // (their own materials are `fog: true`, the three.js default), so a
+    // pip at the fog-far edge recedes exactly in lockstep with the
+    // surface it rides rather than blazing through the haze alone — and
+    // it stays correct automatically if the fog band is retuned (S2)
+    // later, where a hand-baked constant would not.
     const haloMat = new THREE.MeshBasicMaterial({
-      transparent: true, opacity: 1, fog: false,
+      transparent: true, opacity: 1, fog: true,
       blending: THREE.AdditiveBlending, depthWrite: false,
     });
     haloMesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.5), haloMat, pipCount);

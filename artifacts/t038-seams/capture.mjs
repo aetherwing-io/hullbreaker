@@ -100,17 +100,20 @@ async function run() {
   const server = await startStaticServer(tmp, { port: 0 });
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   const results = {};
+  // decisions.md entry 16: the pass ships ON by default now, so the
+  // no-pips comparison side is the explicit escape hatch (`&seams=0`), not
+  // an absent flag — absent now means "seams on".
   // Clean pair (no input): the packet's own baseline convention — a
   // draw-call/instance delta with no bullet/hostile-count drift between runs.
-  results.baseline = await shootAndMeasure(browser, server.baseUrl, 'baseline', '', false);
-  results.seams = await shootAndMeasure(browser, server.baseUrl, 'seams', '&seams=1', false);
+  results.baseline = await shootAndMeasure(browser, server.baseUrl, 'baseline', '&seams=0', false);
+  results.seams = await shootAndMeasure(browser, server.baseUrl, 'seams', '', false);
   // Approximate pair (same fixed hold-right schedule both sides): more of
   // the deck lip and a catwalk in frame, for the luminance read. Honesty
   // note: two separate page loads sharing a seed and a script, not a
   // frame-locked replay — hostile/bullet timing can differ by a frame or
   // two (the same caveat tools/playtest/palette-capture.mjs states).
-  results['gameplay-baseline'] = await shootAndMeasure(browser, server.baseUrl, 'gameplay-baseline', '', true);
-  results['gameplay-seams'] = await shootAndMeasure(browser, server.baseUrl, 'gameplay-seams', '&seams=1', true);
+  results['gameplay-baseline'] = await shootAndMeasure(browser, server.baseUrl, 'gameplay-baseline', '&seams=0', true);
+  results['gameplay-seams'] = await shootAndMeasure(browser, server.baseUrl, 'gameplay-seams', '', true);
 
   await browser.close();
   await server.close();

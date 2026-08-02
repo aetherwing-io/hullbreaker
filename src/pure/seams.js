@@ -23,7 +23,15 @@
 
    Kept local rather than in src/config.js (also fenced this cycle) —
    move SEAMS into CONFIG.seams at the next opportunity that touches that
-   file without a lane conflict; nothing here depends on it staying local. */
+   file without a lane conflict; nothing here depends on it staying local.
+
+   ON BY DEFAULT (decisions.md entry 16, 2026-08-02). The blanket "prototypes
+   ship behind query flags, off by default" rule is retired — entry 16 names
+   this exact pass ("the value ladder, the seam pips and the RIG pass all
+   landed invisible behind flags he never typed") as the reason. `?seams=0`
+   is the escape hatch back to the pre-pass look, for comparison; absence,
+   '' and junk all resolve to ON, the same shape `resolveLegibility` already
+   carries for an approved, on-by-default pass. */
 
 // Tuning. `pipEvery`/`edgeMargin` are in tiles (route-space, s). `pipSize`/
 // `haloSize` are near-view world tiles — src/render/legibility.js's PIP_GAIN
@@ -47,11 +55,11 @@ export const SEAMS = {
   platformDepth: 0.82,  // slat half-depth (0.7) + a hair proud
 };
 
-// ?seams=1 arms the pass; absent/off/junk keeps the shipped default OFF —
-// CLAUDE.md's hard rule ("prototypes ship behind query flags, off by
-// default") for a highlight source that has not had an operator checkpoint.
+// ?seams=0 (or =off) restores the pre-pass look; absence, '' and junk all
+// resolve to ON (decisions.md entry 16 — this pass ships by default, same
+// shape as resolveLegibility).
 export function resolveSeams(value) {
-  return value === '1';
+  return !(value === '0' || value === 'off');
 }
 
 /* ------------------------------ deck edge --------------------------- */
