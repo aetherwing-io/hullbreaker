@@ -782,7 +782,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; the four repro commands quoted in I-011/I-018/I-023/I-028
 
-## T-028 | docs | doing | P1
+## T-028 | docs | done | P1
 
 goal: the Delivery target at the top of this file predates decisions.md entries
 10-13 and now understates what the operator has asked for — rewrite it against
