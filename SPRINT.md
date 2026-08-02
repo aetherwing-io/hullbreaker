@@ -894,7 +894,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; a deliberately-broken-import boot capture; a headless abuse script
 
-## T-033 | feature | todo | P1
+## T-033 | feature | parked | P3
 
 goal: he will play across days, and there is NO persistence of any kind today
 (zero localStorage in src/). Closing the tab loses everything. Give the run a
@@ -913,7 +913,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; reload/corrupt-save/fresh-boot headless checks
 
-## T-034 | harness | doing | P1
+## T-034 | harness | parked | P3
 
 goal: prepare a static-host bundle the operator can upload to itch.io himself.
 The game has no build step and pulls three.js from a CDN import map, so it is
