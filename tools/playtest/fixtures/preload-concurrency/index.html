@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>T-049 preload gate — two independent lanes</title>
+<!-- Fixture page, not the game. It loads two INDEPENDENT modules that each
+     adopt src/render/preload.js the way its header prescribes, so the gate's
+     "any lane can register" claim can be tested rather than asserted. Same
+     import map as index.html: three.js from the pinned CDN, no build step. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body style="margin:0;background:#0d1117">
+<script type="module">
+  // Sibling imports, deliberately: with top-level await in each, this is the
+  // exact shape two lanes take when both hang assets off the shared gate.
+  import './lane-first.js';
+  import './lane-second.js';
+  window.__T049_DONE = true;
+</script>
+</body>
+</html>

@@ -1,0 +1,280 @@
+{
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "lineup": [
+    {
+      "kind": "carrier",
+      "dx": -2.5,
+      "dy": 4.2
+    },
+    {
+      "kind": "polyp",
+      "dx": -6,
+      "dy": 1.05,
+      "dir": -1
+    },
+    {
+      "kind": "mortar",
+      "dx": -9.5,
+      "dy": 1.05,
+      "dir": -1
+    },
+    {
+      "kind": "wasp",
+      "dx": -13,
+      "dy": 2.8
+    },
+    {
+      "kind": "hound",
+      "dx": -16.5,
+      "dy": 0.45
+    }
+  ],
+  "modes": {
+    "sprites": {
+      "frame": "frame-sprites.png",
+      "label": "sprites (shipped default)",
+      "sprites": {
+        "enabled": true,
+        "kinds": {
+          "hound": {
+            "state": "ready",
+            "variant": "b",
+            "file": "hound-brace-b.png",
+            "error": null
+          },
+          "carrier": {
+            "state": "ready",
+            "variant": "b",
+            "file": "carrier-hauler-b.png",
+            "error": null
+          },
+          "wasp": {
+            "state": "ready",
+            "variant": "b",
+            "file": "wasp-drone-b.png",
+            "error": null
+          },
+          "polyp": {
+            "state": "ready",
+            "variant": "b",
+            "file": "polyp-iris-b.png",
+            "error": null
+          },
+          "mortar": {
+            "state": "ready",
+            "variant": "b",
+            "file": "mortar-tripod-b.png",
+            "error": null
+          }
+        }
+      },
+      "bodies": [
+        {
+          "kind": "carrier",
+          "x": 23.730160000000023,
+          "y": 6.800361295175947,
+          "state": "cruise",
+          "sx": 471.4982164961169,
+          "sy": 364.7052110355721
+        },
+        {
+          "kind": "polyp",
+          "x": 21.5,
+          "y": 4.05,
+          "state": "closed",
+          "sx": 431.6724946683195,
+          "sy": 413.74235628299436
+        },
+        {
+          "kind": "mortar",
+          "x": 18,
+          "y": 4.05,
+          "state": "aim",
+          "sx": 368.1269206719701,
+          "sy": 413.9212928210709
+        },
+        {
+          "kind": "wasp",
+          "x": 12.191200000000007,
+          "y": 6.515238955402774,
+          "state": "cruise",
+          "sx": 260.6105366887241,
+          "sy": 369.6994473709023
+        },
+        {
+          "kind": "hound",
+          "x": 7.075039999999994,
+          "y": 3.45,
+          "state": "prowl",
+          "sx": 166.12739114437545,
+          "sy": 425.37545791740854
+        }
+      ]
+    },
+    "primitive": {
+      "frame": "frame-primitive.png",
+      "label": "primitives (?sprites=0)",
+      "sprites": {
+        "enabled": false,
+        "kinds": {
+          "hound": {
+            "state": "off",
+            "variant": "b",
+            "file": "hound-brace-b.png",
+            "error": null
+          },
+          "carrier": {
+            "state": "off",
+            "variant": "b",
+            "file": "carrier-hauler-b.png",
+            "error": null
+          },
+          "wasp": {
+            "state": "off",
+            "variant": "b",
+            "file": "wasp-drone-b.png",
+            "error": null
+          },
+          "polyp": {
+            "state": "off",
+            "variant": "b",
+            "file": "polyp-iris-b.png",
+            "error": null
+          },
+          "mortar": {
+            "state": "off",
+            "variant": "b",
+            "file": "mortar-tripod-b.png",
+            "error": null
+          }
+        }
+      },
+      "bodies": [
+        {
+          "kind": "carrier",
+          "x": 23.728180000000005,
+          "y": 6.8004053970659655,
+          "state": "cruise",
+          "sx": 471.2472341853905,
+          "sy": 364.70422710097876
+        },
+        {
+          "kind": "polyp",
+          "x": 21.5,
+          "y": 4.05,
+          "state": "closed",
+          "sx": 431.4563556590151,
+          "sy": 413.7429649039201
+        },
+        {
+          "kind": "mortar",
+          "x": 18,
+          "y": 4.05,
+          "state": "aim",
+          "sx": 367.9087594568827,
+          "sy": 413.9219071362798
+        },
+        {
+          "kind": "wasp",
+          "x": 12.187599999999989,
+          "y": 6.518178481242999,
+          "state": "cruise",
+          "sx": 260.3208080319756,
+          "sy": 369.64613563937337
+        },
+        {
+          "kind": "hound",
+          "x": 7.068920000000006,
+          "y": 3.45,
+          "state": "prowl",
+          "sx": 165.78793595268394,
+          "sy": 425.3766799753496
+        }
+      ]
+    },
+    "variant-a": {
+      "frame": "frame-variant-a.png",
+      "label": "sprites, variant a (?spritevar=a)",
+      "sprites": {
+        "enabled": true,
+        "kinds": {
+          "hound": {
+            "state": "ready",
+            "variant": "a",
+            "file": "hound-brace-a.png",
+            "error": null
+          },
+          "carrier": {
+            "state": "ready",
+            "variant": "a",
+            "file": "carrier-hauler-a.png",
+            "error": null
+          },
+          "wasp": {
+            "state": "ready",
+            "variant": "a",
+            "file": "wasp-drone-a.png",
+            "error": null
+          },
+          "polyp": {
+            "state": "ready",
+            "variant": "a",
+            "file": "polyp-iris-a.png",
+            "error": null
+          },
+          "mortar": {
+            "state": "ready",
+            "variant": "a",
+            "file": "mortar-tripod-a.png",
+            "error": null
+          }
+        }
+      },
+      "bodies": [
+        {
+          "kind": "carrier",
+          "x": 23.734890000000025,
+          "y": 6.800266214019932,
+          "state": "cruise",
+          "sx": 471.99997409981023,
+          "sy": 364.707301245516
+        },
+        {
+          "kind": "polyp",
+          "x": 21.5,
+          "y": 4.05,
+          "state": "closed",
+          "sx": 432.0906571850061,
+          "sy": 413.74117878866423
+        },
+        {
+          "kind": "mortar",
+          "x": 18,
+          "y": 4.05,
+          "state": "aim",
+          "sx": 368.5489954432172,
+          "sy": 413.9201043103119
+        },
+        {
+          "kind": "wasp",
+          "x": 12.19980000000001,
+          "y": 6.508132493642099,
+          "state": "cruise",
+          "sx": 261.2018269951186,
+          "sy": 369.82827699657787
+        },
+        {
+          "kind": "hound",
+          "x": 7.089659999999999,
+          "y": 3.45,
+          "state": "prowl",
+          "sx": 166.8362882711998,
+          "sy": 425.37290584754936
+        }
+      ]
+    }
+  }
+}
