@@ -227,11 +227,37 @@ const TEX_DIR = new URL('../../assets/generated/textures/', import.meta.url).hre
 // means "this bucket stays flat", which is all any caller here needs to know.
 const rawTex = new Map();
 
+// T-057 (I-049 shimmer investigation): this file used to pin anisotropy at 8
+// regardless of what the device could do. The FAR camera views the hull at a
+// grazing angle — exactly where anisotropic filtering earns its keep, by
+// taking more samples along the view-aligned footprint instead of one blurry
+// (or aliased) isotropic one — so under-asking the GPU here throws away
+// filtering quality the hardware already has. `getMaxAnisotropy()` reads the
+// actual device limit once at module scope (the same renderer already
+// resident for the procedural environment above), so a lesser GPU still gets
+// its own real max rather than failing to allocate; nothing here can ask for
+// MORE than the device supports the way a raw constant risked drifting out
+// of date with better hardware.
+//
+// HONESTY (build.md has the full measurement): this rides alone, NOT paired
+// with a canvas-size change — T-057 measured four different composited-canvas
+// resizings (power-of-two cellPx, raised copy count, both together, either
+// alone) against the shipped `hulltiles.js` and every one made the shimmer
+// metric equal or WORSE, never better, so none of them shipped;
+// `hulltiles.js` is byte-identical to main. This anisotropy read is shipped
+// on its own merits (strictly more correct than a hardcoded guess, measured
+// to cause no regression on any metric this task ran) but did NOT measurably
+// move I-049's shimmer number in this project's headless/software-rendered
+// test harness — see build.md for why that result is inconclusive rather
+// than a clean negative, and for the open recommendation to re-check on the
+// operator's own hardware.
+const HULL_MAX_ANISOTROPY = renderer.capabilities.getMaxAnisotropy();
+
 function registerRaw(file, url) {
   const slot = { tex: null, ready: false };
   rawTex.set(file, slot);
   if (!HULL_TEX_ON) return slot;
-  preloadTexture(url, { anisotropy: 8 }).then((entry) => {
+  preloadTexture(url, { anisotropy: HULL_MAX_ANISOTROPY }).then((entry) => {
     if (entry.state === 'ready') { slot.tex = entry.tex; slot.ready = true; }
     else console.warn('HULLBREAKER art: hull texture ' + file + ' did not load (' +
       (entry.error || entry.state) + ') — the flat material stays.');
@@ -332,7 +358,7 @@ function buildTile(key, base, wear) {
   g.putImageData(bytes, 0, 0);
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
+  tex.anisotropy = HULL_MAX_ANISOTROPY;
   tex.generateMipmaps = true;
   tex.minFilter = THREE.LinearMipmapLinearFilter;
   tex.needsUpdate = true;

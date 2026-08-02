@@ -64,6 +64,7 @@ import * as d51 from './t-049-hostile-sprites.mjs';
 import * as d52 from './t-052-hull-texture.mjs';
 import * as d53 from './t-051-backdrop.mjs';
 import * as d54 from './t-054-hull-contrast.mjs';
+import * as d55 from './t-057-hull-shimmer.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -121,4 +122,5 @@ export const DOMAINS = [
   d52,    // T-052: hull surface textures (four tiles bound, entries 16/18)
   d53,    // T-051: backdrop layers (graded anatomy plates, entries 16/17) ====
   d54,    // T-054: hull texture legibility — density + range (entries 16/18) ====
+  d55,    // T-057: I-049 lower-hull shimmer — anisotropy fix + canvas non-regression
 ];
