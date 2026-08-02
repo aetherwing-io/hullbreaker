@@ -145,6 +145,29 @@ the already-landed gate untouched. **No hand-composition, no cycle.** Had
 T-040's assertions pinned the gate's internals, the answer would have been the
 opposite and worth knowing before the merge, not during.
 
+**Merging main into a lane imports main's committed gate artifacts — and they
+can masquerade as fresh verdicts.** On 2026-08-02 the integrator merged main
+into `task/T-051` to pick up T-053's assets, then read
+`reports/tasks/T-051/review.md` in that worktree and nearly acted on a
+REQUEST_CHANGES that was judging the *pre-merge* tree. The artifact had come in
+with the merge; git set its mtime at checkout, seconds before the merge commit.
+
+The usual freshness test — verdict mtime newer than branch HEAD — **cannot see
+this**, because a merge writes the file and then commits. Two tells that caught
+it, and either alone is enough:
+
+  - **Read the numbers, not the verdict.** The review cited `depth: -13` (the
+    lane had moved to -16/-21/-26), `0.48% partial alpha` (the landed plates
+    are 13.75%+), and pathcheck `2748 -> 3024` (the tree was at 3148). A verdict
+    that describes a tree you do not recognise is not about your tree.
+  - **Compare the artifact against DISPATCH time, not HEAD time.** A verdict you
+    asked for cannot predate the request. `stat -f %m <verdict>` against the
+    moment you spawned the gate agent is the test that actually holds.
+
+This is the same class as "gate artifacts go stale the moment the branch moves"
+— check the tree, not the verdict — but it fails in the opposite direction: the
+artifact looks *newer* than it is rather than older.
+
 **Never prune a worktree without checking whether something is reading it.**
 On 2026-08-02 the integrator ran `git worktree remove <wt> --force` as routine
 post-merge cleanup and destroyed a 16-round measurement another lane was
