@@ -115,11 +115,24 @@ document.
 
 | Script | Flags | Result |
 | --- | --- | --- |
-| `scored-run.json` (competent heuristic) | `score=1&fallback=1` | protoScore **598.0 (source: HB.score, real)** — 3 airborne kills, 1 launch kill, 2 recatches, THREAT 920 (OBSERVE), hot 13.8 s of 31.0 s, **3 setbacks absorbed** (2 in one of five repeats — see variance below), **0 stock lives spent (HUD ×3 at the end)**, final x = max x = **89.25** (no forward ground lost) |
-| `scored-run-baseline.json` (identical inputs) | none | stock path intact: no score surface, protoScore falls back to the labeled proxy (924.8), 0 setbacks — and it **died twice**: 2 of 3 stock lives spent (t = 19.1 s, 27.3 s), each respawn snapping x **89.25 → ~51.6**; ends at HUD **×1**, final x 75.48 against a max x of 89.25, 4 hits survived |
-| `scored-run-nojump.json` (fall-loop probe) | `score=1&fallback=1` | **dying is not a shortcut**: never jumps, and the ladder came out as setback (3.2 s) → **1 stock life spent** on a hit the fallback refused (16.0 s, HUD ×2) → setback (22.4 s) → setback (27.4 s). Ends *stalled* at x 59.65 (21.9 s of its 30.9 s idle by A.5's stall rule) against the competent run's 89.25; protoScore **−16.5** (stall-dominated); no infinite fall loop. Note the refusal at 16.0 s cannot have been the streak ceiling — only one setback preceded it and `maxConsecutive` is 2 — so it was the sim's other refusal path, "nowhere lower to settle" (`settleFallback` in `src/sim/player.js`) |
-| `scored-run-nojump.json`, ceiling control | `score=1` only (fallback disarmed) | the same never-jumping inputs spend **all three lives by t = 9.8 s** → `GAME_OVER` / "SIGNAL LOST", ending at x 31.65. With the fallback armed the identical script is still playing when the 31 s window closes, at x 59.65, having spent one life. That is what tier 1 stands in front of — and it is also the honest shape of the "does dying still cost anything" question: it costs less, but the run still ends |
-| `scored-run-nojump.json`, flag isolation | `fallback=1` only | no score block in telemetry at all (correct — the meter is `?score=1`-gated); the same ladder plays out to the same shape (setback 3.2 s, life 16.0 s, setbacks 22.4 s / 27.8 s, final x 59.65), i.e. the fallback tier works with the meter off and the meter does not influence it |
+| `scored-run.json` (competent heuristic) — artifact: `tools/playtest/reports/cp4/scored-run/report.json` | `score=1&fallback=1` | protoScore **598.0 (source: HB.score, real)** — 3 airborne kills, 1 launch kill, 2 recatches, THREAT 920 (OBSERVE), hot 13.8 s of 31.0 s, **3 setbacks absorbed** (2 in one of five repeats — see variance below), **0 stock lives spent (HUD ×3 at the end)**, final x = max x = **89.25** (no forward ground lost) |
+| `scored-run-baseline.json` (identical inputs) — artifact: `tools/playtest/reports/cp4/scored-run-baseline/report.json` | none | stock path intact: no score surface, protoScore falls back to the labeled proxy (924.8), 0 setbacks — and it **died twice**: 2 of 3 stock lives spent (t = 19.1 s, 27.3 s), each respawn snapping x **89.25 → ~51.6**; ends at HUD **×1**, final x 75.48 against a max x of 89.25, 4 hits survived |
+| `scored-run-nojump.json` (fall-loop probe) — artifact: `tools/playtest/reports/cp4/scored-run-nojump/summary.md` | `score=1&fallback=1` | **dying is not a shortcut**: never jumps; ends *stalled* with **3 setbacks absorbed** and **1 stock life spent** on a hit the fallback refused (16.0 s, x 41.662 → 44.685, HUD 3 → 2), **22.0 s of its 30.9 s** PLAYING time idle by A.5's stall rule (fraction 0.712), protoScore **−16.5** (real, `HB.score`, stall-dominated); no infinite fall loop. Note the refusal at 16.0 s cannot have been the streak ceiling — only one setback preceded it and `maxConsecutive` is 2 — so it was the sim's other refusal path, "nowhere lower to settle" (`settleFallback` in `src/sim/player.js`). **Setback timestamps and final x are not in this row's committed artifact** and no `report.json` was committed for it; the only committed record of them is the T-016 gate's independent re-run of the same script (`reports/tasks/T-016/playtest.md` § "rows 3–5": setbacks 3.2 / 22.4 / 27.1 s, life at 15.9 s, final x **59.649**, `stallMs` 21888 of `playMs` 30883, protoScore −16.5) |
+| `scored-run-nojump.json`, ceiling control — artifact: `tools/playtest/reports/cp4/ceiling-score-only/summary.md` | `score=1` only (fallback disarmed) | the same never-jumping inputs spend **all three lives by t = 9.8 s** — losses at 3.2 s, 6.6 s and 9.8 s, each recorded at x **31.649** — and PLAYING time stops there, inside a 31.2 s window. With the fallback armed the identical script is still playing when that window closes, having spent one life (row above). That is what tier 1 stands in front of, and it is the honest shape of "does dying still cost anything": it costs less, but the run still ends. **Dropped, not restated:** this row used to assert the terminal state `GAME_OVER` / "SIGNAL LOST" and a final x — neither is recorded in the committed artifact (its `outcome.result` reads `not-completed`, which on a default run is I-006's structurally-blind label, not a terminal state) |
+| `scored-run-nojump.json`, flag isolation — artifact: `tools/playtest/reports/cp4/fallback-only/summary.md` | `fallback=1` only | no score block in telemetry at all — its protoScore line reads the labelled **proxy** (−15.4) where both `?score=1` rows read REAL — which is correct, the meter is `?score=1`-gated. Where the artifact records the shape it matches row 3: *stalled*, **1 stock life spent at 16.0 s** (x 41.649 → 44.652, HUD 3 → 2), 21.9 s of its 31.0 s idle. So the fallback tier works with the meter off and the meter does not influence it. **Dropped, not restated:** the setback timestamps and final x this row used to quote. With the meter off the run carries no `setbacks` counter at all, so how many setbacks this row absorbed is not recoverable from anything committed |
+
+**Where each row is checkable from, and where it is not** (I-008, closed by
+T-028 2026-08-02). Rows 1–2 are full traces: every number in them was
+recomputed from `report.json` by the T-016 gate
+(`reports/tasks/T-016/playtest.md` § "Defect 1 re-gate", every line "agrees").
+Rows 3–5 have only a `summary.md`, which carries lives, stall and score lines
+but neither final x nor setback times — so the numbers those summaries do not
+contain are now either attributed to the gate's independent re-run (row 3) or
+dropped (rows 4–5). `tools/playtest/runs/` is gitignored and is not present in
+the tree, so nothing under it is citable evidence here; where a number lived
+only there, it has been removed rather than restated. Committing
+`scored-run-nojump/report.json`, or adding final x and setback times to those
+three summaries, would make the whole table checkable in one place.
 
 The slice smokes (`mid-route.json`, `transform-slice.json`) still complete
 (`completed`, 0 errors), and the traversal slice still prices its meter with
@@ -217,9 +230,14 @@ on by default and `?fallback=0` is what disables it (`src/mode.js`).
    before this ships on by default? *Bot evidence:* in the never-jumping
    probe the ladder did **not** come out as the clean fallback → fallback →
    life it is designed as — it ran setback, then a life spent on a hit the
-   fallback could not absorb, then two more setbacks — and the probe spends
-   its last 13.3 s pinned between x 58.2 and 59.6. Whether that reads as the
-   ship escalating or as being stuck is exactly the feel call.
+   fallback could not absorb, then two more setbacks (3 absorbed setbacks and
+   1 life spent at 16.0 s, `tools/playtest/reports/cp4/scored-run-nojump/summary.md`)
+   — and it spends its last stretch pinned near x 59.6 at about 71 % idle (the
+   T-016 gate's independent re-run, `reports/tasks/T-016/playtest.md`; this
+   row's own committed summary carries the idle fraction 0.712 but no
+   positions, so the tighter "13.3 s between x 58.2 and 59.6" this line used to
+   quote is dropped for want of an artifact). Whether that reads as the ship
+   escalating or as being stuck is exactly the feel call.
 4. The meter cools roughly twice as slowly in the run as in the slice
    (A.3 vs A.4 tables). Does WARM feel earned and losable at this
    timescale, or too sticky / too twitchy?

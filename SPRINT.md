@@ -7,23 +7,176 @@ delivered); prior verdicts in entries 1–7 are law. Schema at the bottom.
 
 ## Delivery target (definition of "delivered")
 
-The default six-face run, start → summit → victory, playable end-to-end with:
-- every DESIGN enemy role shipped (wasp ✓, carrier ✓, hound ✓, polyp, mortar)
-  and taught teach-then-combine;
-- transformations obeying the static-anatomy rule (CP3 v2 + G1 grammar);
-- the concept-art palette applied (deep teal / rust-orange / acid-green /
-  hot-magenta / warm-white), fog-matched, FAR-readable tells and glyphs;
-- a full juice pass (hit-stop, shake, flashes, particles) and WebAudio synth
-  SFX + layered ambience — restrained per DESIGN, but present;
-- a game shell: start screen, pause/options, death/restart flow, run stats;
-- 60fps with 200+ projectiles, no console errors, `?selftest=1` green,
-  pathcheck green, smoke suite green, boot-to-victory ≈ 4–5 min
-  — **boot-to-victory is OPERATOR-ONLY** (T-019, merged): no reflex policy
-  reaches VICTORY, the wall is wave gate 2, and the gate independently
-  reproduced that rather than taking the builder's word. The harness bends,
-  the game does not, so this box is answered by an operator run — no bot has
-  proved it and the delivery report must not imply one did;
-- operator checkpoint packets posted for every feel question raised en route.
+Rewritten 2026-08-02 (T-028) against `docs/decisions.md` entries 9–13, all of
+which postdate the previous version. Two rules govern every line below:
+
+- **Entry 10's acceptance rule.** A box names what it is measured in and the
+  test that would falsify it. A box that states a *feeling* is not a box: it
+  is a question in the "Operator checkpoint queue" below. The moves this
+  rewrite made are listed at the end of this section.
+- **Evidence honesty.** A number appears here only if a **committed** artifact
+  carries it, cited by path. Where the artifact is gitignored or missing, the
+  text says so instead of quoting a number.
+
+**The target:** the default six-face run — `http://127.0.0.1:8741/index.html`,
+no flags — start → summit → victory, playable end to end, with:
+
+1. **Every DESIGN enemy role present in the DEFAULT RUN, taught then combined.**
+   In the run today: wasp, carrier, hound. **Not** in the run: polyp (T-004)
+   and mortar (T-014) exist only as `?slice=traversal&polyp=|mortar=` teach
+   stages — `src/mode.js` resolves both params to `null` unless
+   `IS_TRAVERSAL_SLICE`, so the URL above fields neither.
+   *Falsified by:* a `--deterministic` no-flag run whose trace `hostiles[]`
+   never carries a polyp or mortar row; or a role whose first appearance in the
+   run is a combination, with no solo stage before it.
+   *Rider (entry 13):* a teach stage judged only at `?slice=traversal` is not
+   evidence for the run — see box 12.
+
+2. **Transformations obey the static-anatomy rule** (entry 3): the anatomy is
+   monumental and static during a transition; only doors, access plates, vent
+   covers, shutters, traps and Crown mechanisms move.
+   *Falsified by:* one frame in a committed capture sequence where body
+   geometry arrives, slams, or articulates into place during a transition.
+   *Committed sequences today:* `artifacts/cp3-transform-v3/` (transform
+   slice); `artifacts/t009-lattice/merged/06-ab-gate1-default.png` vs
+   `07-ab-gate1-zip.png` (corner reveal, the same simulated instant in both
+   modes).
+   *Not a box:* whether the reveal *reads* as ascent around a static limb —
+   queued (CP3 re-judgment, and the default corner reveal has never been
+   operator-judged at all).
+
+3. **The concept-art palette applied through the token layer** (deep teal /
+   rust-orange / acid-green / hot-magenta / warm-white), fog-matched.
+   *Falsified by:* a raw colour literal in a tokenized render file — pathcheck
+   already rejects these ("palette: no raw color literals … in tokenized render
+   files" — search that string in `tools/pathcheck.mjs`) — or a render file
+   still reading `CONFIG.palette.*` greybox tokens where `src/render/palette.js` authors a
+   CONCEPT token. `src/render/hostiles.js` does today (I-004; open as T-030).
+   *Not a box:* whether tells and glyphs *read* at the shipped FAR view. The
+   measurement exists — a 0.55-tile capsule glyph renders 9.6 px tall beside a
+   29.6 px RIG at the shipped FAR view
+   (`tools/assets/reports/demo/capsule-letter-h/viewer-far.png`, measured and
+   independently re-derived in `reports/tasks/T-015/playtest.md` and
+   `review.md`) — and the verdict is queued ("Glyph scale at FAR").
+
+4. **Juice and audio present and provable, not merely claimed.** Hit-stop,
+   shake, flashes, particles; WebAudio synth SFX plus layered ambience.
+   *Falsified by:* an effect named here that a `?juice=0` A/B cannot show a
+   difference for; or an audio debug surface that is unreachable on the shipped
+   URL (`audioSnapshot()` is exported by `src/ui/audio.js` and imported by
+   nothing today — I-005, open as T-029).
+   *Not a box:* "restrained per DESIGN" — restraint is a feel verdict, queued.
+
+5. **A game shell: start screen, pause/options, death/restart flow, run stats.**
+   *Falsified by:* a scripted session that boots `?shell=title`, starts, pauses,
+   dies, restarts and reads run stats, and cannot complete that sequence.
+   *Known harness hole:* a `--deterministic` script whose first event is at
+   t > 0 against `?shell=title` dispatches **zero** events and still exits 0
+   (I-018, open as T-027). Until that is fixed, a green run of that shape is
+   not evidence for this box.
+
+6. **Frame budget and error budget.** 60 fps with 200+ projectiles; no console
+   or page errors; `index.html?selftest=1` PASS; `node tools/pathcheck.mjs`
+   exit 0; the smoke scripts (`tools/playtest/scripts/mid-route.json`,
+   `transform-slice.json`, `--deterministic`) both `completed`.
+   *Falsified by:* a `?testapi=1` sampled run at a saturated projectile pool
+   whose frame samples fall below DESIGN's 60 fps target (`docs/DESIGN.md`
+   § "Technical acceptance"), or any run reporting a console error, a page
+   error, or a `bootError`.
+
+7. **Boot-to-victory — OPERATOR-VERIFIED ONLY. No bot has ever done it.**
+   The evidence, cited rather than implied: 13 policy variants (plus a latency
+   control) over **49 deterministic runs** all wall at wave **gate 2** — scroll
+   **140 of 415**, ~50 s, three lives spent. Gate 1 was cleared **45 of 49**
+   times; gate 2 **once in 41**, and that one run reached scroll 165 at
+   **64.4 s** before dying the same way; **nothing in the 49 reached gate 3**
+   (`docs/playtests/2026-08-victory-box.md` § 1; per-run table
+   `tools/playtest/reports/t019/all-runs.md`). Nothing was softened to get those
+   runs: that lane's `git diff main...HEAD -- src/` is empty, and pathcheck now
+   asserts the six-face policies carry no absolute position, scroll distance or
+   clock time, so "the bot won" can never quietly mean "the script knew where to
+   jump".
+   *Falsified by:* a delivery report that cites a bot run as evidence of
+   victory, or quotes a boot-to-victory duration with no operator run behind it.
+   *On the duration:* "roughly four-to-five minutes" is DESIGN's **authored
+   target** (`docs/DESIGN.md` § "Technical acceptance"), not a measurement — no
+   run in this repo has reached VICTORY, so no measured boot-to-victory time
+   exists to quote.
+
+8. **Split decisions at speed, at density** (entries 10 and 11): forks the
+   player reads and commits to at speed, *frequently* — "not one wager per
+   face". The rewarding branch climbs, is more exposed, and rejoins ahead; the
+   wrong branch dead-ends and costs real time under pressure.
+   *Currency:* time against the pursuing edge plus exposure — entry 12 is
+   explicit that the price is PRESSURE, never reach or height (entry 9 closed
+   the height arms race).
+   *Falsified by:* a policy that never leaves the main line collecting the
+   branch reward anyway (that is exactly how the T-021 build failed its gate —
+   I-031); or a dead end that is not legible as a risk *before* commitment
+   (entry 11's fairness rider), which a FAR capture has to show.
+   *Status:* the shape of this box follows the operator's **T-021** call — the
+   three options are in the T-021 entry below; it is `blocked`, not dropped.
+
+9. **Climb is the dominant motion** (entry 10): "a face that reads as a flat
+   corridor is a defect even if its route count is nominally in range."
+   *Falsified by:* a face whose authored routes gain no net altitude across the
+   face, computed from the shipped lattice.
+   *Gap, stated plainly:* that assertion **does not exist yet**. Pathcheck
+   asserts per-face route *density* ("no face window reads fewer than N routes")
+   and per-face spawn density escalation ("density escalates: face 6 > face 1"),
+   neither of which is climb — both searchable in `tools/pathcheck.mjs`. This
+   box is un-gated until the assertion is written.
+
+10. **Pace escalates at the player's momentum, not on a timer** (entry 11).
+    Shipped as `?momentum=1` (T-022), off by default, unjudged.
+    *Currency:* banked daylight (where RIG rides between the damage plane and
+    the right clamp) plus a decaying kill streak.
+    *Falsified by:* the code-stated gates the packet scripts already carry —
+    drive above 0.30 (`pursuitSpeed` > 4.82 t/s, ×1.12) for a player who banked
+    nothing; drive above `hitDrive` 0.35 on the frame a hit lands, or rising
+    again inside `hitMercyMs` 1500; a trace not returning to exactly 4.300
+    after a lost life (`src/config.js` § `momentum`).
+    *Measured separation, committed:* `reports/tasks/T-022/playtest.md` § 4 —
+    two strong runs spending 60.8 % / 80.2 % of PLAYING samples above the
+    shipped pace against two weak runs at 0.7 % / 11.6 %, with the weak policy
+    never crossing ×1.12. Two runs per side is a sample, not a baseline (§ 10,
+    I-029).
+    *Not a box:* whether it ships ON in the delivered run — queued with the
+    T-022 packet.
+
+11. **Nothing in the delivered run is priced in reach or height** (entries 9
+    and 12). The pocket capsule is a free plain pickup; the fight is what makes
+    taking it a decision.
+    *Falsified by:* any shipped comment, doc, assertion or operator packet
+    describing a pickup as a dare, a wager or a measured retreat (the sweep is
+    `dare|wager|gamble|retreat|measured` over the diff — T-009's gate ran
+    exactly that, `reports/tasks/T-009/playtest.md` § 1), or by any assertion
+    whose subject is reward-out-of-reach. **Excepted:** the traversal slice's
+    own retained wager strings, which are `ACTIVE_SLICE`-gated and which entry
+    10 deliberately preserves along with the dead-end form there.
+
+12. **Every delivery claim that turns on difficulty, or on a cost being felt,
+    is evidenced in the SIX-FACE RUN** (entry 13: `?slice=traversal` is too easy
+    to judge difficulty in).
+    *Falsified by:* a delivery claim whose only evidence URL contains
+    `slice=traversal`. The slice stays valid evidence for "does this behave" —
+    a movement verb's read, one enemy's tell — never for "does this cost
+    enough".
+
+13. **An operator checkpoint packet for every feel question raised en route**
+    (entry 8: the operator is the only fun oracle, and work never blocks on a
+    packet).
+    *Falsified by:* a merged task whose report names an open feel question that
+    has no entry in the checkpoint queue below carrying an exact URL and its
+    questions.
+
+**What this rewrite moved out, and why.** Entry 10 forbids a box that states a
+feeling, so two came out of the old target and are now queued as questions:
+"restrained per DESIGN" (box 4) and "FAR-readable tells and glyphs" (box 3).
+Three scope questions could not be answered here without inventing a verdict,
+so they are queued rather than decided: whether slice-only teach stages satisfy
+box 1; whether `?momentum=1` ships ON; and whether entry 11's boost work
+(T-023, parked by the operator's own sequencing) is inside the delivery scope.
 
 ## Queue
 
@@ -719,6 +872,54 @@ verify: node tools/pathcheck.mjs; re-read each cited file:line against its issue
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
+**RIDER — `docs/decisions.md` entry 13 (2026-08-01): a verdict taken in
+`?slice=traversal` is RE-ASKED, not inherited.** The operator played the slice
+and reported it too easy, which makes it a bench that under-reads difficulty.
+A verdict whose subject was difficulty, pressure, or a cost being felt does not
+transfer to the six-face run and is re-asked there before it is treated as
+settled; a verdict about whether something *behaves* — a movement verb's read,
+one enemy's tell — still stands as taken. Which recorded verdicts this touches
+is checkable rather than a guess, because every URL they name is slice-gated in
+`src/mode.js` (`?pace=`, `?hound=`, `?polyp=`, `?mortar=`, `?flow=`, `?ribrun=`
+all require `IS_TRAVERSAL_SLICE`):
+
+- **Entries 0a, 2, 4 and 6** — "boring / the intensity is far off"; CP1's three
+  paces all "directionally correct", none crowned; CP2's "those feel much
+  better", iterate from hound 2.5; CP2.5's "enemies feel like they are coming
+  for me" — were taken at slice URLs and all turned on intensity or pressure.
+  **What each verdict says stands as recorded and is never re-litigated**; what
+  is re-asked is whether it transfers to the six-face run.
+- **Entry 12** (the pocket's price is pressure) is unaffected: the operator
+  confirmed in the same session that "index.html was the one i played".
+- Queued packets still benched in the slice — **FLOW** and **RIB RUN vs FLOW** —
+  keep their behaviour questions as written; any answer of theirs about cost or
+  difficulty needs the six-face run, or pressure added to the bench and said so.
+  **Crouch vs aim-assist** is *not* slice-gated (`src/mode.js`'s
+  `CROUCH_ENABLED` / `AIM_ASSIST_ENABLED` read the query on any URL), so it can
+  be asked directly on `index.html?crouch=1` and `index.html?aim=assist`.
+- The transform-slice packets (**CP3 re-judgment**, **G2 neck-plate flip**) ask
+  about choreography reads, not difficulty; entry 13 names `?slice=traversal`
+  specifically.
+
+- **DELIVERY-TARGET FEEL QUESTIONS (T-028).** Moved here out of the delivery
+  boxes, which may not state feelings (entry 10). Play
+  `http://127.0.0.1:8741/index.html` (default, no flags), then
+  `http://127.0.0.1:8741/index.html?juice=0` for the A/B.
+  (1) The juice and audio pass is meant to be "restrained per DESIGN, but
+  present" — at the shipped intensity, does it read as restrained, thin, or too
+  loud? (`?juice=0` is the same run with hit-stop, shake, flashes, particles
+  and the crush warning inert.)
+  (2) At the shipped FAR view, do enemy tells and pickup glyphs carry, or is
+  the answer the one already queued under "Glyph scale at FAR" (move the letter
+  read to the HUD)?
+  (3) Do the polyp and the mortar have to be IN the default run for delivery,
+  or do their `?slice=traversal&polyp=1|mortar=1` teach stages satisfy the
+  "every enemy role shipped" box? Today the run fields neither.
+  (4) Should `?momentum=1` ship ON in the delivered run, or stay a flag? (The
+  T-022 packet below is the A/B.)
+  (5) Is T-023 — boosts and face transitions that rocket the player forward,
+  parked by your own "eventually" — inside the delivery scope or after it?
+
 - **G1 limb-turn:** default vs `?g1=1` (and `?g1=1&view=near`) on the six-face
   run — does the camera-orbit corner read as turning around a static limb?
   Frames in `artifacts/g1-limbturn/`. (Questions per greybox proposal §G1.)
@@ -1050,6 +1251,9 @@ number in both headline rows straight from the committed traces
 (`tools/playtest/reports/cp4/scored-run{,-baseline}/report.json`) — all agree,
 and both rows now cite committed artifacts instead of gitignored `runs/`
 paths. Reproduced independently: `tools/playtest/runs/gate2-T-016-baseline-wtharness/`.
+T-028 (2026-08-02) additionally names the artifact **in each headline row**
+(`tools/playtest/reports/cp4/scored-run{,-baseline}/report.json`), so the
+citation is per-row rather than a folder pointer.
 
 ## I-008 | docs | S3 | repro: compare `docs/proposals/2026-07-cp4-default-run-score-setback.md` §Evidence rows 3–5 against their only committed artifacts (`tools/playtest/reports/cp4/{scored-run-nojump,ceiling-score-only,fallback-only}/summary.md`) at task/T-016 a08753b | evidence: reports/tasks/T-016/playtest.md; tools/playtest/runs/gate2-T-016-nojump/report.json
 
@@ -1066,6 +1270,20 @@ at 15.9 s; final x 59.649; protoScore −16.5 real). Committing
 `scored-run-nojump/report.json`, or adding final x + setback times to those
 three summaries, makes the whole table checkable — worth doing before CP4 is
 judged, since evidence honesty is this packet's whole point. Non-blocking.
+
+**RESOLVED — T-028, 2026-08-02 (docs side; the harness fix is still open).**
+Rows 3–5 now name their artifact by path and say what it does *not* contain.
+Row 3 keeps only what `scored-run-nojump/summary.md` carries (stalled, 3
+setbacks, 1 life at 16.0 s with x 41.662 → 44.685, 22.0 s of 30.9 s idle,
+protoScore −16.5 real) and attributes the setback timestamps and final x to
+this gate's own independent re-run in `reports/tasks/T-016/playtest.md`, the
+only committed record of them. Row 4's `GAME_OVER` / "SIGNAL LOST" terminal
+state and final x are **dropped** (not in the artifact; `outcome.result` reads
+`not-completed`, which is I-006's blind label) and replaced with the three
+recorded life losses at 3.2 / 6.6 / 9.8 s, each at x 31.649. Row 5's setback
+times and final x are dropped, with a note that a `?fallback=1`-only run
+carries no `setbacks` counter at all. Committing `scored-run-nojump/report.json`
+would still be the better fix and remains available to a harness lane.
 
 ## I-009 | bug | S3 | repro: serve task/T-008 66b13d0 and open `index.html?g2=1` — HUD reads "0/2 TURNS" before the flip, "1/2 TURNS" after, and the clear overlay reads "1 of 2 transformations", for a fixture with one event | evidence: reports/tasks/T-008/playtest.md; .claude/worktrees/T-008/tools/playtest/runs/g2-neck-flip/{02-plate-armed-ajar,07-interior-exits,09-neck-clear}.png
 
@@ -1300,6 +1518,18 @@ the published numbers should be restated with repeats, or struck, in both
 places. S2, not S3: it is the evidence a scope split was granted on, and it is
 committed in a script description future agents will cite.
 
+**RESOLVED — T-028, 2026-08-02.** The restatement-with-repeats happened in
+T-009's fix cycle; what T-028 fixed is the *citation*. Both places
+(`tools/playtest/scripts/six-face-full-run.json`'s description and
+`tools/playtest/README.md`'s row for it) attributed the repeat numbers to
+`tools/playtest/runs/gate-T-009-fullrun-*`, which is gitignored and absent from
+the tree, and to `reports/tasks/T-009/playtest.md`, which does not carry them;
+the README also pointed at `docs/playtests/2026-08-gate-fight-harness.md`,
+which does not discuss I-020. Both now say plainly that **this entry is the
+only committed record** of those numbers and that they are the gate's reported
+measurement, not re-checkable from the tree. Committing the six run directories
+(or their `report.json`s) would close it properly.
+
 ## I-021 | docs | S3 | repro: read `README.md`'s new "FAR readability pass" paragraph and `docs/DESIGN.md`'s updated view-scale bullet at `task/T-003 74b7267` against `src/render/legibility.js`'s `SHARE = { glyph: 1, cue: 1, pose: 0.6 }` and pathcheck's `legibility: a pose is boosted less than a lamp` assertion | evidence: reports/tasks/T-003/playtest.md; artifacts/legibility-v1/capsule-glyph--views-after.png
 
 Found while gating T-003 (FAR readability pass, PASS). Both user-facing docs say
@@ -1507,6 +1737,20 @@ a build whose documented run-to-run spread is wide (harness README, honesty item
 2 and 8). Suggested fix is a one-line hedge in each description pointing at the
 structural gap instead of the sample percentages, or a third run per side folded
 into the quoted range.
+
+**RESOLVED — T-028, 2026-08-02.** Both descriptions now lead with the
+structural gap and drop every per-run decimal that had no committed artifact
+behind it (the builder's sample counts, medians, p90s, kill counts, edgeMargin
+medians and GAME_OVER times, plus weak's "11.6 % / 24.2 %"). What they quote
+instead is this repo's only committed measurement of the pair,
+`reports/tasks/T-022/playtest.md` §§ 2 and 4 — 12–13× separation in fraction of
+PLAYING samples above the shipped pace, the weak policy never crossing ×1.12,
+and flag-on/flag-off weak runs identical in reach (`maxX` 59.6, `maxScroll`
+75.0, 3 lives) — each labelled as a two-run sample, with the note that the
+`tools/playtest/runs/gate-T-022-*` directories both sets came from are
+gitignored and absent. `momentum-weak`'s three falsifying gates are unchanged:
+they are stated from `src/config.js`'s momentum constants, which are checkable
+in the tree.
 
 ## I-030 | docs | S3 | repro: read any `?momentum=1` trace — `report.json` → `trace[].pursuitSpeed` is the only escalation signal present; `grep -n "momentumDrive\|peakDrive" <task/T-022 e6e188a>/src/main.js` returns nothing | evidence: reports/tasks/T-022/playtest.md §3; tools/playtest/runs/gate-T-022-strong-2/report.json
 
