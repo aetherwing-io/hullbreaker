@@ -39,7 +39,9 @@ node run.mjs --help                                     # full flag list
 ```
 
 `--url` skips the built-in static server entirely — point it at a
-`python3 -m http.server` instance or anything else already serving the repo.
+`node tools/serve.mjs` instance (the repo's dev server; **not** `python3 -m
+http.server`, which lets Chrome heuristically cache `src/*.js` — see the
+pinned-worktree recipe below) or anything else already serving the repo.
 
 **`--no-testapi` no longer boots straight into the run.** The game shell
 (T-013) parks at its start screen unless the session carries `testapi=1` or
@@ -524,12 +526,21 @@ Recommended recipe for anything longer than a single run:
 
 ```sh
 git worktree add /tmp/hb-pin <sha-or-branch>
-(cd /tmp/hb-pin && python3 -m http.server 8749 &)
+node <main-checkout>/tools/serve.mjs 8749 --root /tmp/hb-pin --quiet &
 node run.mjs scripts/whatever.json --base-url http://127.0.0.1:8749 [--deterministic ...]
 # when done:
-pkill -f "http.server 8749"
+pkill -f "serve.mjs 8749"
 git worktree remove /tmp/hb-pin
 ```
+
+Use the repo's dev server (`tools/serve.mjs`, T-024), not `python3 -m
+http.server`: python sends no `Cache-Control`, so a browser that already warmed
+its cache on another tree can run a stale `src/*.js` against fresh code — one
+failed ES-module import blanks the page, and the resulting `bootError` looks
+exactly like a real regression in the tree under test. `serve.mjs` sends
+`no-store` on everything and never answers 304. Driving it from the **main
+checkout** with `--root` (rather than the pinned worktree's own copy) also
+works for worktrees branched before `tools/serve.mjs` existed.
 
 ## How input is actually delivered
 
@@ -1094,7 +1105,11 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
   the boot-readiness timeout (8s) reported as `meta.bootError` — see
   limitation #9 above for a concrete instance (stacked headless launches).
 - The static server has no directory index handling beyond `/` →
-  `index.html`; fine for this repo's flat layout, not general-purpose.
+  `index.html`; fine for this repo's flat layout, not general-purpose. It now
+  sends `no-store` and ignores conditional requests, matching
+  `tools/serve.mjs` (T-024) — insurance only, since every run launches a fresh
+  Chrome profile with a cold cache. Nothing in the harness measures cache
+  behavior; if you need that, run `node tools/serve.mjs --selftest`.
 - Video recording (`--video`) uses Playwright's built-in per-context
   recorder — reliable, but adds real wall-clock overhead to context
   teardown; left off by default.

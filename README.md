@@ -19,9 +19,21 @@ double-clicking `index.html` no longer works (browsers block module loads from
 CDN (internet required on first load).
 
 ```sh
-python3 -m http.server 8741
+node tools/serve.mjs
 # → http://127.0.0.1:8741/index.html
 ```
+
+`tools/serve.mjs` is the dev server: Node's stdlib only, no dependency and no
+build step, serving the repo root on 8741 (`node tools/serve.mjs 8749 --root
+<dir>` for anything else; `--help` for the rest). **Prefer it over `python3 -m
+http.server`.** Python's server sends no `Cache-Control` header, so Chrome
+applies heuristic freshness to `src/*.js` and can reuse a module from an
+earlier session; on 2026-08-02 that ran a pre-T-022 `src/sim/pace.js` against a
+post-T-022 `src/sim/level.js` that imports `momentumScrollSpeed` from it, and
+one failed ES-module import blanks the whole page — on a tree where pathcheck
+and the selftest were both green. `serve.mjs` sends `no-store` on every
+response, emits no `ETag`/`Last-Modified`, and ignores conditional request
+headers, so it never answers 304 and a warm cache can never win.
 
 The game boots to its **start screen** — a composition study of concept
 board 05's middle direction ("The Ship Wakes"); press any key (or click) to
@@ -235,6 +247,46 @@ or closed-loop keyboard input in real Chrome and reports pacing/fairness
 metrics — and `tools/simlab/` — a headless frame-alignment lab that steps the
 real sim in Node with frame-scoped input, built for the T-002 divergence
 investigation (finding: `docs/playtests/2026-07-t2-frame-alignment.md`).
+
+### `tools/serve.mjs` (the dev server)
+
+```sh
+node tools/serve.mjs            # repo root on 8741, dual-stack, caching off
+node tools/serve.mjs 8749 --root /tmp/hb-pin   # pin another tree for a gate
+node tools/serve.mjs --selftest # 14 checks that the no-cache contract holds
+node tools/serve.mjs --help
+```
+
+`--selftest` boots on an ephemeral port and asserts the properties the tool
+exists for: `no-store` on 200s **and** 404s, no `ETag`/`Last-Modified`, a
+conditional GET carrying `If-Modified-Since`/`If-None-Match` answered 200 with
+a full body rather than 304, working HEAD/range/directory handling, and no
+escape above the served root. It needs no browser and exits non-zero on
+failure.
+
+**Honesty / limitations.** This is a *development* server and nothing more.
+
+- It is not hardened for exposure beyond your machine: it binds all interfaces
+  by default so `localhost` and `127.0.0.1` both work (`--host 127.0.0.1`
+  restricts it), it lists directories that have no `index.html`, and it has
+  exactly one traversal guard (resolve, then require the path stay under the
+  root) rather than a reviewed security posture. Do not serve anything you
+  would not hand to whoever shares your network.
+- `no-store` means the browser refetches everything every load, including the
+  ~35 modules. Locally that is single-digit milliseconds; over a network it
+  would not be. That cost is the point — correctness over warmth for a tree
+  that changes every few minutes.
+- It does not touch the three.js CDN fetch in `index.html`'s import map, which
+  is a cross-origin request the browser still caches normally. A stale
+  *three.js* is not a failure mode this prevents.
+- Range support is single-range only (`bytes=a-b`), enough for scrubbing a
+  `.webm` capture; a multi-range request falls back to a full 200.
+- The `/favicon.ico` 404 in the log is pre-existing and identical under
+  `python3 -m http.server`; the game ships no favicon.
+- The stale-module failure it prevents was reproduced in real Chrome, both
+  ways, before this shipped: with an 8-day-old `mod.js` edited between two
+  loads in one persistent profile, `python3 -m http.server` ran the OLD bytes
+  and `tools/serve.mjs` ran the NEW ones (T-024 build report).
 
 ### Debug handles
 

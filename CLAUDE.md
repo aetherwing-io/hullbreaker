@@ -49,8 +49,11 @@ Never overwrite these files from upstream: it deletes the guardrails.
 
 ## Commands
 
-- Serve: `python3 -m http.server 8741` → `http://127.0.0.1:8741/index.html`
-  (no build step; three.js comes from the CDN import map).
+- Serve: `node tools/serve.mjs` → `http://127.0.0.1:8741/index.html` (no build
+  step; three.js comes from the CDN import map). **Use this, not `python3 -m
+  http.server`** — python sends no `Cache-Control`, and a heuristically cached
+  `src/*.js` running against fresh code renders a blank page (T-024). Serve
+  another tree with `node tools/serve.mjs 8749 --root <worktree>`.
 - Headless gate: `node tools/pathcheck.mjs` — 600+ assertions plus static
   layer-purity guards. Must exit 0. This is the fast per-change check.
 - Browser smoke: open `index.html?selftest=1` (SELFTEST PASS/FAIL in title).
