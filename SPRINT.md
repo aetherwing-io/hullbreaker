@@ -935,7 +935,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; serve the bundle under a subpath and confirm ?selftest=1 PASS
 
-## T-035 | art | doing | P1
+## T-035 | art | done | P1
 
 goal: the measured answer to "I've seen a lot of greybox" — it is the VALUE
 range, not the hue. Full evidence and legality review in
