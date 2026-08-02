@@ -29,3 +29,30 @@ No failed requests, no page errors.
 landed plates. T-051's depth retune and T-053's feathering fix two different
 problems and both are wanted — the depth change stops the plate abutting box
 geometry, the feathering closes the acceptance box.
+
+## T-053 alpha contract — integrator break/restore, 2026-08-02
+
+The fifth gate agent to stall this session was re-reviewing T-053's alpha
+rework, so I ran its load-bearing check myself. Recorded here because a claim
+that a gate works is worthless without the evidence it was tried.
+
+Method: `git archive` of `task/T-053` HEAD into a scratch copy (never the live
+worktree), then flattened `backdrop-limb-segment.png` onto an opaque bed —
+reproducing exactly the I-044 regression, an asset that still declares
+`cutout` while having no transparency at all.
+
+    baseline                          node tools/assets/check.mjs -> PASS
+    after flattening the alpha        node tools/assets/check.mjs -> FAIL
+
+    - backdrop-limb-segment: declares alpha "cutout" but only 0.00% of it is
+      transparent (need >= 5%) — a plate with the background baked in occludes
+      everything composited behind it
+    - backdrop-limb-segment: declares alpha "cutout" but only 0.00% of it is
+      partially transparent (need >= 2%) — that is a hard-edged cut, and a hard
+      alpha edge cannot be made to dissolve downstream; author the falloff into
+      the asset
+
+The gate is real, it names the right failure, and its message tells the next
+author what to do. This is the defect class that shipped green through a
+palette gate, a size gate, a path gate and an id gate because none of them
+had ever stated what the alpha was supposed to be.
