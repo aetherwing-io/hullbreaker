@@ -1005,6 +1005,42 @@ accept:
 owner: asset-artist
 verify: node tools/assets/check.mjs; node tools/pathcheck.mjs; view.mjs crops at 0.55 tiles
 
+## T-037 | harness | todo | P1
+
+goal: make concurrent lanes stop colliding. `tools/pathcheck.mjs` is a
+9,230-line monolith that EVERY task appends assertions to, so with N lanes in
+flight it is an N-way conflict by construction. It has already cost real time:
+on 2026-08-02 the T-025/T-027 merge conflicted there, and the integrator's
+first two resolutions silently DROPPED assertions (1733, then 1739, when the
+correct total was 1741) — caught only because the count failed to reconcile.
+`docs/ORCHESTRATION.md` already records pathcheck splicing as a hard-won
+conflict class. The fix is structural: lanes should add a NEW FILE, because new
+files never conflict.
+accept:
+- [ ] pathcheck's assertions live in per-domain modules that a thin
+      `tools/pathcheck.mjs` discovers and runs; a lane adding assertions
+      creates or edits ONE domain file and never touches the runner
+- [ ] EXACT PRESERVATION, proven mechanically: the set of assertion labels and
+      the total count are identical before and after. Capture the full label
+      list from `main` first, diff it against the refactored run, and commit
+      both lists — a refactor of the gate that silently drops an assertion is
+      the worst possible version of this project's signature failure
+- [ ] the negative controls still bite: pick at least three assertions from
+      different domains, break what each guards, and show the refactored gate
+      go red, then restore
+- [ ] exit code, output format, and the "reported, not asserted" notes behave
+      identically; `tools/orch/merge-task.sh` and every gate agent that shells
+      pathcheck keep working unchanged
+- [ ] zero effect on the shipped game: no file under `src/` changes
+- [ ] the migration is a re-runnable SCRIPT, not a hand edit, so it can be
+      re-applied after in-flight lanes land rather than hand-merged
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; label-set diff vs main; three negative controls
+
+SEQUENCING: T-032 (+275 pathcheck lines) and T-035 are in flight and both touch
+pathcheck. Do NOT fight them — build and prove the migration script, and let the
+integrator run it after those merge.
+
 <!-- ========== 2026-08-02 OPERATOR GOAL CHANGE (supersedes parts of the
 Delivery target that T-028 just rewrote; that rewrite's evidence-honesty fixes
 stand, its audience assumption does not) ==========
