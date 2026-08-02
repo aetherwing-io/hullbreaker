@@ -935,6 +935,48 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; serve the bundle under a subpath and confirm ?selftest=1 PASS
 
+## T-035 | art | todo | P1
+
+goal: the measured answer to "I've seen a lot of greybox" — it is the VALUE
+range, not the hue. Full evidence and legality review in
+`docs/proposals/2026-08-look-direction.md` (31 captures in `artifacts/look-v1/`):
+0.0% of playfield pixels exceed luminance 200 in all fifteen gameplay captures,
+99% sit in a 45-70 window of 255, one flat token covers 29-34% of the screen,
+and the sky is brighter than the ground so nothing reads as lit. T-010's concept
+palette changed hue over byte-identical geometry, lights and materials (101 vs
+100 draw calls) — it recolored the grey-box. Implement packet items S1 (bake a
+value ladder into the existing instance colors) and S2 (fog-band retune), which
+the packet ranks first and says everything downstream must be calibrated against.
+accept:
+- [ ] new THREE-free `src/pure/shade.js`: occlusion + top-face rake + seeded
+      wear via `src/pure/rng.js` mulberry32 keyed on integer (s,y); a plan-level
+      pass (`limbShadePlan(plan, cfg)`), never per-piece; no Math.random /
+      Date.now / performance.now, and two calls with one seed return identical
+      arrays
+- [ ] >=20% of baked limb instances land below 0.55x their base token luminance
+      AND per-material normalized luminance spread >= 0.45 — arithmetically
+      impossible on current main, so this assertion must fail there
+- [ ] the two checker token values still differ by >= today's |lum(cA)-lum(cB)|,
+      AND the per-column top-row-vs-row-2 delta exceeds the checker delta (the
+      checker's scroll-speed carrier job survives — pillar 1/5)
+- [ ] the deck's top row is the highest-luminance instance in its column and
+      higher than every limb material's brightest instance
+- [ ] draw calls and instance counts unchanged from baseline (101 calls,
+      13 InstancedMesh, 2969 instances)
+- [ ] capture-side check is PAIRED-POPULATION: median luminance of play-plane
+      pixels minus median of backdrop pixels must WIDEN. "share below L40 rises"
+      is forbidden — it is satisfied by uniformly darkening the frame, which is
+      the exact "dirty, not lit" failure this risks
+- [ ] `CLASSIC.shade` is EXACT identity so `?palette=classic` stays a
+      byte-faithful grey-box instrument for the unjudged Palette v1 A/B
+- [ ] ships behind its own off-by-default flag: the palette toggle would
+      otherwise move hue and value together and the ladder could not be judged
+      independently
+- [ ] operator checkpoint packet: exact URLs + 3-5 questions; never a
+      self-declared aesthetic verdict
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; index.html?selftest=1; paired-population capture comparison at the FAR default
+
 <!-- ========== 2026-08-02 OPERATOR GOAL CHANGE (supersedes parts of the
 Delivery target that T-028 just rewrote; that rewrite's evidence-honesty fixes
 stand, its audience assumption does not) ==========
