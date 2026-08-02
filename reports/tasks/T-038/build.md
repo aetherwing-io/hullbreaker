@@ -224,3 +224,104 @@ integrator add the one `import './render/seams.js';` line to `src/main.js`
 in the same merge pass — the diff is otherwise inert without it. Then route
 the five questions above to the operator checkpoint queue with the exact
 served URL.
+
+---
+
+## Fix cycle (commit `2bf379d`, after decisions.md entries 14/15/16 and an
+independent review landed)
+
+Three things changed since the report above, in response to real new
+information rather than self-review. Everything above this line describes
+`aa822fe` and is now superseded where it conflicts with this section;
+`artifacts/t038-seams/` was regenerated in place (old frames/numbers not
+kept — see that directory's README for why).
+
+### 1. Recalibrated against decisions.md entry 14 (half-dose value ladder)
+
+The team lead flagged that entry 14 makes T-035's half-dose value ladder
+the shipped default, and that this report's numbers were measured against
+the pre-ladder world. T-035 has not merged to `main` yet, so I built a
+**scratch merge of `task/T-038` + `task/T-035`** (one textual conflict in
+`tools/pathcheck.mjs`, both lanes appending at the same end-of-file
+location — kept both blocks; `palette.js` merged cleanly since both lanes
+used the delimited-block convention) in a throwaway clone, confirmed the
+ladder is genuinely active by a plumbing sanity check (mean frame luma:
+68.29 at `&shade=0`, 58.28 absent/shipped, 46.82 at the rejected `&shade=1`
+— monotonic and clearly separated), then re-ran `capture.mjs` against that
+merge.
+
+**Result: the numbers barely moved** (0.097%→0.333% became 0.097%→0.332%;
+draw calls identical). This is not a wasted re-measurement — it is now a
+verified, not assumed, fact, and it has an explanation: T-035's own ladder
+targets a 52-81 display-level range (crushing shadows/mid-tones), while
+this pass's tokens and the packet's ">L200" metric live entirely above
+that range. The two passes occupy non-overlapping parts of the histogram
+by construction. Full writeup in `artifacts/t038-seams/README.md`'s "Why
+the ladder barely moved the number".
+
+### 2. Shipped ON by default (decisions.md entry 16)
+
+Entry 16, recorded the same day, retires the blanket "prototypes ship
+behind query flags, off by default" rule and **names this exact pass**
+("the value ladder, the seam pips and the RIG pass all landed invisible
+behind flags he never typed") as the motivating example. I did not wait to
+be told to apply it to my own item — `resolveSeams` now resolves ON for
+absent/''/junk; `?seams=0` is the escape hatch, same shape as
+`resolveLegibility`. `tools/pathcheck.mjs`'s resolver assertion updated to
+match. This is a bigger call than the calibration fix (it changes what a
+bare URL renders once wired in), so flagging it explicitly rather than
+folding it in silently: if this was premature or should have been
+sequenced with the other look lanes, it is one line to revert.
+
+### 3. Fixed the halo's fog handling (independent review finding)
+
+A reviewer (`reports/tasks/T-038/review.md`, `REQUEST_CHANGES`) caught a
+real gap in my own risk analysis. I had written off the packet's "distant
+pips must be pre-attenuated by depth at bake time" risk as inapplicable to
+my scope because I was only reasoning about the OUTWARD/depth axis (all my
+pips sit at one of two fixed near-depths). The reviewer's point is sharper:
+this is the first STATIC, whole-level bake using `AdditiveBlending` —
+307 pips scattered across all 445 tiles of `s`, and the camera scrolls
+past every one of them over a run, so distance-from-camera varies
+continuously along the axis I hadn't considered. Copying `fx.js`'s
+`fog:false` verbatim (fx.js's own pools are short-lived and
+player-proximate, so it never mattered there) reintroduced exactly the
+risk the packet named.
+
+**Fix:** both materials now set `fog: true` instead of `fog: false`. A pip
+recedes into the haze in lockstep with the deck/limb surface it rides,
+using the engine's existing fog band rather than a hand-baked constant
+(which would need re-tuning any time S2 retunes the fog band elsewhere).
+New pathcheck assertions (`fog:false` banned in the file; both materials
+must say `fog:true`) proven to bind by break/restore, same as every other
+guard in this pass. `+2` assertions (1770→1772).
+
+### Open question back to the team lead: is `src/main.js` actually fenced?
+
+The reviewer independently checked the three sibling lanes running
+concurrently this cycle (T-039 `c80926c`, T-040 `3c1c14e`/`7a48f27`, T-041
+`0132aa2`) and found none of them touch `src/main.js` either — casting
+doubt on whether it is genuinely contended right now, as opposed to a
+standing caution that has outlived its cause. I have **not** added the
+wiring line myself: the original dispatch was an explicit "do not touch,"
+and I don't have visibility into every other in-flight lane or the
+integrator's own plans for that file, so overriding an explicit
+instruction on my own read of three grep results felt like the wrong kind
+of unilateral call. Asking directly: if `src/main.js` is actually free, I
+can add the one line (`import './render/seams.js';` after
+`import './render/level.js';`) and re-verify in under five minutes: say
+so and I will. Otherwise the integrator adding it at merge stays the plan.
+
+### Verification, this cycle
+
+| command | result |
+|---|---|
+| `node tools/pathcheck.mjs` (real worktree) | **1772 passed, 0 failed** |
+| new `fog:true` guard, broken (`fog: false` reintroduced) then restored | FAILs naming both assertions, then green; `git status --short` empty after |
+| `node tools/pathcheck.mjs` (scratch merge, task/T-038 + task/T-035) | **1817 passed, 0 failed** (1772 + T-035's own 45) |
+| `capture.mjs --root <scratch merge>` | numbers in `artifacts/t038-seams/README.md` and `results.json` |
+| mean-luma sanity check (`&shade=0/absent/1`, same merge) | 68.29 / 58.28 / 46.82 — monotonic, confirms the ladder is live in the merge |
+
+Worktree is clean (`git status --short` empty) after every step; the scratch
+merge clone and its throwaway wired copies live only under the scratchpad
+and were never pushed anywhere.
