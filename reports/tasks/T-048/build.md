@@ -385,3 +385,32 @@ display space. The composer path reproduces this exactly on purpose, but the und
 still there and any lane retuning the fog ladder will meet it. Fix direction: an operator verdict on
 ?atmos=tone, then delete whichever half is wrong.
 ```
+
+---
+
+## 7. Environment notes for whoever picks this up
+
+- **Ports:** every harness run bound an EPHEMERAL port (`startStaticServer(...,
+  { port: 0 })`). 8741-8748 were never touched, probed, or bound.
+- `tools/playtest/node_modules` in this worktree is a **symlink** to the main
+  checkout's (gitignored, so `git status` is clean). Delete it before pruning
+  the worktree if that matters; a reviewer wanting to re-run the rig needs it or
+  an `npm install` in `tools/playtest/`.
+- Reproducing the whole evidence set from this worktree:
+  ```
+  node tools/pathcheck.mjs
+  cd tools/playtest
+  node post-capture.mjs ../../artifacts/post-v1                       # frames + diffs
+  node post-capture.mjs ../../artifacts/post-v1/probe --probe         # selftest + offline
+  node post-capture.mjs ../../artifacts/post-v1/stress-locked-x2   --stress --scale 2 --repeats 3
+  node post-capture.mjs ../../artifacts/post-v1/stress-unlocked-x2 --stress --unlocked --scale 2 --repeats 4
+  node juice-stress.mjs runs/T-048-after
+  ```
+
+## 8. Single best next action
+
+**Put the A/B in front of the operator** at
+`http://127.0.0.1:8750/index.html` vs `?bloom=0` with the five questions in §6,
+and ask specifically about the strength dose — that is the one number most
+likely to change, and it changes in one place. Everything else in this lane is
+gated, measured, and reversible with a single query flag.
