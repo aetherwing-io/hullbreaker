@@ -22,7 +22,9 @@
      1. Everything registered here is awaited AT MODULE SCOPE by its owner,
         which holds the ES module graph — and therefore src/main.js, which
         imports it — until the assets are resident. The sim's first frame
-        cannot run before that.
+        cannot run before that. ANY NUMBER OF MODULES may register and
+        await: they share one settlement and one clock, so a second lane's
+        asset is waited for rather than discarded (see settle()).
      2. Residency means UPLOADED, not fetched: renderer.initTexture() pushes
         the texels to the GPU during boot, because a texture that has only
         arrived still uploads on its first draw, which moves the hitch
@@ -35,6 +37,9 @@
         turned up after the gate closed would put an upload mid-run: the
         exact defect, just rarer and harder to reproduce. It is disposed
         instead, and the owner keeps whatever fallback it already chose.
+     5. EVERY DIAGNOSTIC STATES WHAT HAPPENED. A timeout reports the time
+        actually waited, and an asset registered after the gate closed is
+        refused by name rather than reported as a timeout that never was.
 
    Layer note: this is a render module and knows nothing about the sim. No
    sim or pure module may import it, and nothing here is readable from one —
@@ -53,7 +58,10 @@ export const PRELOAD_BUDGET_MS = 2500;
 const entries = new Map();               // url -> entry (see preloadTexture)
 let closed = false;
 let startedAt = 0;
+let deadlineAt = 0;                      // startedAt + the budget: ONE clock for
+                                         //   every caller, set at first register
 let closedAfterMs = 0;                   // what the gate actually cost the boot
+let gate = null;                         // the ONE in-flight settlement promise
 
 function nowMs() {
   return typeof performance !== 'undefined' && performance.now
@@ -84,7 +92,28 @@ function prepare(tex, opts) {
 export function preloadTexture(url, opts = {}) {
   const existing = entries.get(url);
   if (existing) return existing.promise;
-  if (startedAt === 0) startedAt = nowMs();
+  // Registering after the gate has closed is REFUSED, loudly and honestly.
+  // The alternative — quietly accepting it — would either load during the
+  // run (the defect this module exists to remove) or leave the caller
+  // waiting on a promise nothing will ever settle. It is a caller bug:
+  // register at module scope, then await.
+  if (closed) {
+    const e = {
+      url, state: 'refused', tex: null, ms: 0,
+      error: 'registered after the boot gate closed; nothing was loaded',
+    };
+    e.promise = Promise.resolve(e);
+    entries.set(url, e);
+    const line = 'HULLBREAKER art: ' + url + ' was registered after the boot gate ' +
+      'closed and will NOT be loaded — register it at module scope, before the ' +
+      'first await of awaitPreloads().';
+    console.warn(line);
+    return e.promise;
+  }
+  if (startedAt === 0) {
+    startedAt = nowMs();
+    deadlineAt = startedAt + PRELOAD_BUDGET_MS;
+  }
   const e = { url, state: 'pending', tex: null, error: null, ms: 0 };
   e.promise = new Promise((resolve) => { e.settle = resolve; });
   entries.set(url, e);
@@ -124,18 +153,29 @@ export function preloadTexture(url, opts = {}) {
   return e.promise;
 }
 
-/* Await every registered asset, or the budget, whichever comes first. The
-   owner calls this at MODULE SCOPE (`await awaitPreloads()`), which is what
-   holds the boot. Safe to call more than once and from more than one
-   module: the second caller gets the same closed gate. */
-export async function awaitPreloads() {
-  if (closed) return;
-  const pending = [...entries.values()].map((e) => e.promise);
-  if (pending.length) {
+/* THE ONE SETTLEMENT ROUTINE. Every caller of awaitPreloads() awaits this
+   same promise, and it closes the gate exactly once.
+
+   It re-reads `entries` after every wait instead of racing a snapshot taken
+   at entry, because a SIBLING MODULE registering while this is suspended is
+   the normal case, not an edge one: with top-level await, one module's
+   `await awaitPreloads()` yields and the rest of the module graph goes on
+   evaluating — which is precisely when a second lane's registration lands.
+   The first version of this function raced its own snapshot and then
+   force-marked everything else 'timeout', so a second module's texture was
+   discarded within milliseconds and told it had missed a 2500ms budget it
+   was never given. That was found by review, reproduced 7 times in 10, and
+   is what this loop and the single `deadlineAt` exist to prevent. */
+async function settle() {
+  for (;;) {
+    const pending = [...entries.values()].filter((e) => e.state === 'pending');
+    if (!pending.length) break;               // everything registered so far is in
+    const left = deadlineAt - nowMs();
+    if (left <= 0) break;                     // the ONE budget, not a fresh one
     let timer = null;
     await Promise.race([
-      Promise.all(pending),
-      new Promise((r) => { timer = setTimeout(r, PRELOAD_BUDGET_MS); }),
+      Promise.all(pending.map((e) => e.promise)),
+      new Promise((r) => { timer = setTimeout(r, left); }),
     ]);
     if (timer !== null) clearTimeout(timer);
   }
@@ -143,13 +183,33 @@ export async function awaitPreloads() {
   closedAfterMs = startedAt ? Math.round(nowMs() - startedAt) : 0;
   for (const e of entries.values()) {
     if (e.state !== 'pending') continue;
+    // the message states what actually elapsed. Reporting the budget here
+    // regardless of how long was spent was the other half of the review
+    // finding: a 4ms discard that claimed 2500ms of patience.
+    const waited = Math.round(nowMs() - startedAt);
     e.state = 'timeout';
-    e.ms = Math.round(nowMs() - startedAt);
-    e.error = 'still loading after the ' + PRELOAD_BUDGET_MS + 'ms boot budget';
+    e.ms = waited;
+    e.error = 'still loading after ' + waited + 'ms of the ' +
+      PRELOAD_BUDGET_MS + 'ms boot budget';
     console.warn('HULLBREAKER art: ' + e.url + ' — ' + e.error +
       '; the game is starting without it.');
     e.settle(e);
   }
+}
+
+/* Await every registered asset, or the shared budget, whichever comes
+   first. The owner calls this at MODULE SCOPE (`await awaitPreloads()`),
+   which is what holds the boot.
+
+   Every caller — however many modules, in whatever order — awaits the SAME
+   settlement, on the SAME clock started at the first registration. An asset
+   registered while the gate is open is waited for by all of them; one
+   registered after it has closed is refused by preloadTexture() above
+   rather than silently starved. */
+export function awaitPreloads() {
+  if (closed) return Promise.resolve();
+  if (!gate) gate = settle();
+  return gate;
 }
 
 /* Read surface for the console and the headless gates: what was registered,

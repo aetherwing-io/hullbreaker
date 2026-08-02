@@ -173,6 +173,28 @@ export async function run() {
      'T-049: the budget this harness reasons about (' + PRELOAD_BUDGET_MS + 'ms) is ' +
      'the one src/render/preload.js actually ships (' + budgetMs + 'ms)');
 
+  // (e0) THE GATE IS SHARED, not per-caller. Review found the first version
+  //      racing a snapshot per call and force-closing on everyone else: a
+  //      second lane's texture was discarded in 7 of 10 trials, in 3-6ms,
+  //      and told it had missed a 2500ms budget. The behavioural proof is
+  //      tools/playtest/preload-concurrency-check.mjs (two independent
+  //      modules, race forced by a delayed response); these three keep the
+  //      SHAPE of the fix from being unpicked without that tool running.
+  ok(/if \(!gate\) gate = settle\(\);/.test(preloadSrc),
+     'T-049: awaitPreloads() hands every caller the SAME in-flight settlement ' +
+     'promise instead of racing a private snapshot of the registry');
+  ok(/deadlineAt = startedAt \+ PRELOAD_BUDGET_MS/.test(preloadSrc) &&
+     /const left = deadlineAt - nowMs\(\)/.test(preloadSrc),
+     'T-049: the gate runs on ONE deadline started at the first registration, so ' +
+     'a second caller cannot be given a fresh budget or robbed of the shared one');
+  ok(!/still loading after the '/.test(preloadSrc) &&
+     /still loading after ' \+ waited \+ 'ms of the '/.test(preloadSrc),
+     'T-049: a timeout reports the time ACTUALLY waited — the reviewed version ' +
+     'quoted the 2500ms budget after discarding an asset in 4ms');
+  ok(/state: 'refused'/.test(preloadSrc),
+     'T-049: an asset registered after the gate closed is refused by name, not ' +
+     'silently accepted into a gate that will never open');
+
   // (e) …and a late arrival is thrown away rather than uploaded mid-run
   ok(/if \(closed[^)]*\) \{ tex\.dispose\(\); return; \}/.test(preloadSrc),
      'T-049: a texture that arrives after the gate closed is disposed, never ' +

@@ -35,6 +35,11 @@
 //   5. Draw calls are read at one instant, not averaged. They move with
 //      how many bodies happen to be alive, which is why the hostile count
 //      is reported beside them.
+//   6. WHAT THE DRAW-CALL NUMBER COVERS: this branch has no shadow pass, so
+//      renderer.info.render.calls here is the whole frame. T-047's lane adds
+//      shadow maps and its report notes that renderer.info does not account
+//      for the shadow pass — so do NOT carry a figure from this tool forward
+//      as a shadow-inclusive number once that lane lands. Re-measure.
 
 import { chromium } from 'playwright-core';
 import { mkdirSync, writeFileSync } from 'node:fs';

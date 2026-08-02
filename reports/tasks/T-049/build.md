@@ -186,6 +186,13 @@ readings: `artifacts/sprites-v1/perf/result.json`.
 - The 101-call figure in the dispatch brief is not a number I could reproduce
   in this tree; the baseline I measured (`?sprites=0`, same session, same
   machine) is the one quoted above, and every comparison here is against it.
+- **What these draw-call numbers cover.** This branch has no shadow pass, so
+  `renderer.info.render.calls` is the whole frame here. T-047 adds shadow maps
+  and its report notes that `renderer.info` does not account for the shadow
+  pass — so nobody should carry "133 draw calls" forward as a shadow-inclusive
+  figure once that lane lands. The same note is now in
+  `tools/playtest/sprite-stress.mjs`'s header so the next reader of the tool
+  meets it before the number.
 
 ---
 
@@ -307,7 +314,7 @@ Run from the worktree unless noted.
 
 | command | result |
 | --- | --- |
-| `node tools/pathcheck.mjs` | **2117 passed, 0 failed** (base of this branch: 1853 — +264 from the new domain, including the boot-gate contract in §6) |
+| `node tools/pathcheck.mjs` | **2121 passed, 0 failed** (base of this branch: 1853 — +268 from the new domain, including the boot-gate contract in §6) |
 | `node tools/assets/check.mjs` | **PASS**; `src/render/sprite-table.js:35: runtime asset reference` listed, no static import |
 | `node tools/gatecheck.mjs` | **PASS** — 5 controls red where they must be |
 | `cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic` | `outcome: completed`, deaths 0 |
@@ -317,6 +324,7 @@ Run from the worktree unless noted.
 | `… node sprite-stress.mjs` | see §3 |
 | `… node sprite-capture.mjs` | 5 bodies per mode, all five `ready` on the default URL |
 | `… node asset-boot-probe.mjs` | boot gate costs 14ms, boot unchanged, zero frames over 20ms (§6) |
+| `… node preload-concurrency-check.mjs` | 9/9 checks pass; 5 fail against the reviewed gate (§6) |
 
 ### The new assertions bind — six breaks, each restored
 
@@ -403,7 +411,71 @@ The whole five-texture preload costs **14 ms**, boot to first frame is no
 slower than the base tree, no frame in any condition exceeded 10.4 ms, and in a
 fixed window the sprite build accumulates sim time *more* tightly than base.
 
-### The boot-gate assertions bind — seven breaks, and one of them was mine
+### REWORK after review: the gate was not actually shared
+
+Review found — empirically, not by reading — that the first version of this
+module failed the one property it was built for. `awaitPreloads()` raced a
+**private snapshot** of the registry taken at entry, then set the module-level
+`closed` and force-marked every still-pending entry `'timeout'`. Two
+independent sibling modules doing exactly what the header prescribed lost the
+second module's texture in **7 of 10 trials, within 3–6 ms**, with a console
+line claiming a 2500 ms budget had elapsed. The doc comment ("safe to call…
+from more than one module") was the opposite of the behaviour.
+
+Fixed in three parts:
+
+1. **One settlement, one clock.** `awaitPreloads()` returns a single shared
+   promise; `settle()` re-reads the registry after every wait instead of
+   racing a snapshot, so a sibling registering while the gate is open is
+   waited for. The deadline is `startedAt + PRELOAD_BUDGET_MS`, set once at
+   the first registration — nobody gets a fresh budget and nobody is robbed
+   of the shared one.
+2. **Registering after close is refused by name**, loudly, instead of being
+   accepted into a gate that will never open.
+3. **The diagnostics stopped lying.** A timeout reports the time actually
+   waited (`still loading after 2502ms of the 2500ms boot budget`).
+
+**Proved with the reviewer's test shape, and made deterministic.**
+`node tools/playtest/preload-concurrency-check.mjs` loads two independent
+sibling modules (`tools/playtest/fixtures/preload-concurrency/lane-{first,second}.js`)
+that adopt the gate exactly as documented, in three conditions:
+
+```
+=== plain: 10 trials, both lanes must end resident ===
+  PASS  both lanes resident in every trial — 10/10; second-lane states: ready
+  PASS  the gate closed inside its budget every time — costMs 3-4ms of 2500
+  PASS  both registrations are visible in one shared registry — entries per trial: 2
+
+=== slow-second: the second lane is 400ms behind (inside the budget) ===
+  PASS  a slower second lane is WAITED FOR, not foreclosed on — ready/ready @406ms  ready/ready @404ms  ready/ready @405ms
+  PASS  the gate really did hold the boot for it — costMs 406, 404, 405
+
+=== over-budget: the second lane is 3200ms behind (past the budget) ===
+  PASS  the first lane still gets its asset — ready
+  PASS  the second lane is timed out rather than waited for forever — timeout
+  PASS  the gate closed at its budget, not before and not much after — costMs 2502 vs budget 2500
+  PASS  the timeout message states the time actually waited — still loading after 2502ms of the 2500ms boot budget
+```
+
+**And the test binds.** Restoring the reviewed `awaitPreloads()` verbatim and
+re-running it produces **5 failures**, including the `slow-second` condition
+turning the intermittent defect into a deterministic one:
+
+```
+  FAIL  both lanes resident in every trial — 4/10; second-lane states: timeout, ready
+  FAIL  a slower second lane is WAITED FOR, not foreclosed on — ready/timeout @4ms  ready/timeout @4ms  ready/timeout @3ms
+  FAIL  the gate really did hold the boot for it — costMs 4, 4, 3
+  FAIL  the gate closed at its budget, not before and not much after — costMs 3 vs budget 2500
+  FAIL  the timeout message states the time actually waited — still loading after the 2500ms boot budget
+```
+
+4/10 both-ready against the reviewer's 3/10 — the same defect at the same rate.
+Restored, all nine checks pass again. Four static guards now hold the *shape*
+of the fix in pathcheck (shared promise, single deadline, honest message,
+refusal path) so it cannot be unpicked without the browser tool running; each
+was broken and restored (see the table below, rows 8–11).
+
+### The boot-gate assertions bind — eleven breaks, and one of them was mine
 
 Same discipline as §5: every guard broken on purpose, restored immediately.
 
@@ -416,6 +488,8 @@ Same discipline as §5: every guard broken on purpose, restored immediately.
 | budget changed to 1200 ms in the file only | `FAIL … the budget this harness reasons about (2500ms) is the one src/render/preload.js actually ships (1200ms)` |
 | a late arrival applied instead of disposed | `FAIL … a texture that arrives after the gate closed is disposed, never applied` |
 | the mid-run "swap the body" path restored | `FAIL … no "the texture turned up late, swap the body" path survives` |
+| the reviewed per-call snapshot gate restored | `FAIL … awaitPreloads() hands every caller the SAME in-flight settlement promise` + `FAIL … ONE deadline started at the first registration` + `FAIL … a timeout reports the time ACTUALLY waited` (3 failures) |
+| the post-close refusal path removed | `FAIL … an asset registered after the gate closed is refused by name` |
 
 **The third row failed to fail on the first attempt, and that is the useful
 part of this table.** The `initTexture` assertion tested the *raw* file for
