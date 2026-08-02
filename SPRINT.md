@@ -1041,7 +1041,7 @@ SEQUENCING: T-032 (+275 pathcheck lines) and T-035 are in flight and both touch
 pathcheck. Do NOT fight them — build and prove the migration script, and let the
 integrator run it after those merge.
 
-## T-050 | art | doing | P1
+## T-050 | art | done | P1
 goal: fix I-037 (S1) — T-045's scale pass emits ZERO pieces on the shipped
 default run. `limbBakePlan(CONFIG, groundH, {scale:true})` and `{scale:false}`
 both return 829 pieces with no mark/backdrop kinds, so the rung ladders,
