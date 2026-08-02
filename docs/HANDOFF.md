@@ -64,6 +64,108 @@
 > whether the metric is bimodal in the CONTROL before attributing an effect —
 > one determinism "defect" was attributed to asset loading before the control
 > was found to scatter identically.
+>
+> ---
+>
+> ## STATE AS OF END OF 2026-08-02 — read this part second
+>
+> `main` is at **3200 pathcheck assertions, 0 failed**. The task queue is
+> **empty**; the only non-`done` entry is T-021, `blocked` on an operator
+> decision that predates this push. Working tree clean, all lane worktrees
+> pruned except `T-021`'s.
+>
+> **The headline.** That morning, `src/` referenced **zero** of the 28 finished
+> assets sitting in `assets/generated/`. The world was 27 `BoxGeometry` wearing
+> flat palette colours under very good lighting, and every art task for two days
+> had been improving *light and colour on untextured boxes* — which is what
+> "greybox" means and is not reachable by more of the same. The game now loads
+> **39 runtime PNGs**: RIG's sprite, five hostile sprites, four hull tiles, five
+> backdrop plates across twelve quads.
+>
+> **Ten lanes merged**: T-040 (RIG sprite), T-044 (ARRIVAL/ARENA setpieces),
+> T-049 (hostile sprites + the shared `preload.js` boot gate), T-052 (hull
+> surface textures), T-053 (procedural raster asset pipeline), T-051 (backdrop
+> layers), T-054 (hull texture legibility), T-056 (one haze band), T-055 (deploy
+> bundle), T-057 (anisotropy + a negative result).
+>
+> ### Delivery works now, and it very nearly did not
+>
+>     node tools/deploy/build-bundle.mjs      # 2.1MB, 175 files, 39 PNGs
+>     node tools/deploy/verify-bundle.mjs     # unzips clean, serves, proves the art RENDERS
+>
+> The upload is the operator's, always — no agent creates accounts or uploads.
+>
+> **I-048 was the closest call of the push.** `build-bundle.mjs` archived
+> `index.html` + `src/` only — correct when written, silently wrong the moment
+> entry 16 authorised runtime assets. Because every asset degrades safely, an
+> upload would have **run flawlessly and looked exactly like the pre-art
+> grey-box**, with no error and nothing to notice. The fix that matters is not
+> the pathspec, it is `verify-bundle.mjs`: a file-count check would have passed
+> that bundle every day. **I-050 (S2) is still open on that verifier** — its
+> `waitForServer` accepts any 200 on the port rather than proving the responder
+> is the process it spawned, and a concurrent agent's server produced a real
+> false PASS. Fix it with a nonce before trusting it under load.
+>
+> ### The three lessons that cost real cycles
+>
+> **1. Bound is not visible.** The operator looked at the build and said the
+> background had more detail than the foreground. He was right: the hull texture
+> was delivering 0.24 luminance levels against a deck checker's ~30 — correctly
+> bound, effectively invisible. Four gate agents had passed it, because every
+> gate verified *binding* and none measured *visibility*. The cause was
+> frequency, not contrast: the tile drew at ~12 screen px against the ~35 its
+> manifest authors, because the repeat arithmetic was computed for one copy
+> while the canvas holds `copies × copies`. Fixed in T-054 (near-hull fine
+> detail 0.416 → 1.648 vs the flat control). The rule now lives in
+> `docs/LANE-BRIEF.md` under "Bound is not visible."
+>
+> **2. A single sample is not a measurement, and the integrator broke this
+> rule too.** I reported a 6.5× shimmer gap from one run on a loaded machine;
+> three interleaved rounds gave 4.4×. I also reported an 11× detail gain from a
+> capture where one variant had landed on the *title screen*. Both corrected in
+> the record. Entry 19's discipline — distributions, never a single run — binds
+> the integrator exactly as hard as it binds a lane.
+>
+> **3. Gate artifacts arrive through merges and masquerade as fresh.** Merging
+> `main` into a lane imports `main`'s committed `reports/tasks/**`, whose mtime
+> is then newer than the branch HEAD — so the standard freshness test cannot see
+> it. Twice I nearly acted on a verdict judging a pre-merge tree. Read the
+> *numbers* in a verdict, and compare against **dispatch** time, not HEAD time.
+> Written up in `docs/ORCHESTRATION.md`.
+>
+> ### Open, with the operator
+>
+> - **Backdrop depth.** The plates sit behind the box geometry, so at many
+>   camera positions they are not visible at all. Visible-with-a-seam vs
+>   clean-but-often-hidden is a look call. Checkpoint queued in `SPRINT.md`.
+> - **Hull value.** Now that the texture reads, worth a fresh look.
+> - **I-049 — the flicker, real and unfixed.** A textured hull shimmers ~4.4×
+>   more than the same hull flat under motion (40,788 vs 9,301 changing px in
+>   the lower band; 68% vs 48% direction-reversal), three interleaved rounds,
+>   1-2% spread. T-057 shipped a correct anisotropy fix and **rejected the
+>   integrator's non-power-of-two hypothesis with eight measured variants**, and
+>   reported the null result rather than dressing it as a win.
+>
+>   **The live lead:** bumping hull/wall `copies` 3 → 4 while holding `cellPx`
+>   fixed moved the metric 7,804 → 10,050 **even though world-space density is
+>   provably unchanged**. So this is not purely a minification-ratio problem —
+>   it points at `limb.js`'s instanced UV assignment, which was fenced from
+>   T-057. Chase that before reaching for a distance-based fade, which would
+>   mask a UV artifact rather than fix it.
+>
+> ### Traps specific to the current tooling
+>
+> - `tools/playtest/hulltex-shimmer.mjs` is bit-identical **within** a warm
+>   process and **bimodal across cold launches** (~0.24% noise floor). Run it as
+>   a distribution over separate launches, never one sample.
+> - Its headless harness runs SwiftShader and reports a generic "WebKit" vendor
+>   string — it probably cannot validate anisotropic filtering at all. Any
+>   conclusion about filtering needs a real-GPU check.
+> - `tools/playtest/fogband-capture.mjs` **throws on the tree that ships it**
+>   (I-051): its `SHIPPED_LINE` constant is the conditional T-056 deleted.
+> - **Never prune a worktree without checking for recent writes.** Doing so
+>   killed a lane's 16-round measurement at n=7. `find <wt> -newermt '-10
+>   minutes'` first; drop `--force` unless it comes back empty.
 
 
 Prepared July 29, 2026. This document is the starting brief for a new working
