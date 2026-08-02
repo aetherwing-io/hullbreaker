@@ -684,3 +684,61 @@ Options put to him: (a) keep FAR, RIG stays an icon; (b) switch to the existing
 pushing in for combat; (d) a new middle scale. Until he rules, do NOT re-tune
 RIG's fidelity target and do NOT touch the camera — but muzzle flash, glow and
 impact language are framing-independent and proceed.
+
+## 16 — 2026-08-02 — Rules that blocked the art are retired; the ones that protect it stay
+
+**Operator instruction, verbatim:**
+
+> "remove the rule. review the whole file and remove anything that's preventing
+> us from making this awesome."
+
+Prompted by his own question a moment earlier — *"but are sprites just not a
+thing? i don't understand why we have an asset generate pipeline that could
+produce that quality and not use it"* — which was correct, and which nobody had
+put in front of him plainly.
+
+### RETIRED
+
+**1. Asset independence.** The rule "the game must boot with every file under
+`assets/` missing; nothing in `src/` loads a file at runtime" is gone. It was
+self-imposed, sensible when there were zero assets, and had become the single
+thing forbidding the game from using `tools/assets/` output. **Runtime asset
+loading is authorized. Sprites are authorized.** For a 2.5D game over a 2D sim,
+billboarded sprites are the natural fit and the shortest path from the concept
+boards to the screen.
+
+*What replaces it, and why it is not nothing:* a missing or failed asset must
+degrade visibly and safely — the T-032 failure panel is the surface for that —
+must never wedge the game, and **must never be something the sim branches on**.
+Art may fail to load; gameplay may not change when it does. `tools/assets/check.mjs`'s
+independence gate is superseded and should be re-aimed at this new contract
+rather than deleted.
+
+**2. Blanket off-by-default flags.** "Prototypes ship behind query flags, off by
+default" is retired as a blanket rule. It is the direct reason the operator kept
+seeing a grey-box build: the value ladder, the seam pips and the RIG pass all
+landed invisible behind flags he never typed. Flags are now for **A/B and
+unjudged experiments only**; anything he has approved ships ON by default with
+an escape hatch back. `?hook=1` stays inert (judged and rejected, entry 5).
+
+### KEPT, DELIBERATELY — these protect the work, they do not block it
+
+- **Layer purity** and **determinism.** Neither has ever blocked an art change;
+  both are what make the sim testable headlessly and bugs reproducible. Without
+  determinism every playtest gate silently starts lying, and this project has
+  already lost cycles to gates that reported green while broken.
+- **Frozen movement constants.** They protect feel that was tuned deliberately.
+  Changeable — but as an intentional decision with its assertions updated, not
+  as a side effect of an art task.
+- **Machine gates never judge fun.** The operator is the only oracle. Removing
+  this would let agents mark their own homework.
+- **Worktrees and the merge gate.** These are what allow eight lanes at once.
+- **No build step.** Not a constraint on quality; it is why iteration is fast.
+
+### STILL THE OPERATOR'S, NOT RETIRED HERE
+
+- **Static anatomy (entry 3)** — an art-direction verdict, not a technical
+  blocker. It shapes how reveals read. Reopen it deliberately if wanted.
+- **The FAR camera (entry 7)** — the live framing conflict from entry 15.
+  Board 01's fantasy needs a closer camera; entry 7 froze FAR for monumental
+  scale. Unresolved, and it gates character art direction.
