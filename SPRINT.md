@@ -2604,3 +2604,55 @@ noticed).
    occlusion.png`, `glance-t25.0-26.3s-montage-pillar-fade.png`, all under
    the evidence path above. Does not change any verdict — feel/readability,
    routed to the operator checkpoint queue, not a bug.
+
+## I-041 | docs | S3 | repro: `git stash list` at repo root | evidence: reports/tasks/T-040/playtest.md §I-??? (triaged here)
+
+Six stashes survive from lanes that have all merged and whose worktrees are
+gone: `stash@{0}` (T-040, the uncommitted preload warm-up experiment the
+playtest agent parked in order to gate the actually-committed `1bdc750` tree —
+T-049 later built, measured and shipped that same idea properly), plus WIP
+stashes on T-050, T-042, T-048, T-047 and T-038. Every one of them is inert:
+the corresponding work is in `main`.
+
+Why it is filed rather than swept: `git stash drop` is irreversible, six
+stashes cost nothing, and the T-040 playtester's actual point was not "delete
+these" but that **a worktree directory reused across lanes can present a
+stray diff that a later agent mistakes for part of the branch under test** —
+that agent said it nearly did. That hazard is real and now partly closed
+(merged worktrees are pruned at merge time, so `.claude/worktrees/<id>` no
+longer outlives its task). The stashes are listed here so nobody reads them
+as pending work. If a future cycle wants them gone, that is an operator call,
+not a tidy-up.
+
+## I-042 | docs | S3 | repro: `git merge-base --is-ancestor <T-043 commit a2e6d97> 03b775e` → false, at T-044's HEAD 3cbc015 | evidence: reports/tasks/T-044/playtest.md; reports/tasks/T-044/build.md "Difficulty measurement"
+
+T-044's committed difficulty-distribution numbers (the ceiling/floor read that
+entry 19 routes to the operator) were measured entirely **before** T-043's
+wasp aim-lock + squad-stagger landed in that branch. The base-vs-branch
+terrain comparison itself is not confounded — the playtester confirmed both
+arms predate T-043 — but the tree that actually merged combines T-044 terrain
+WITH T-043 hostile behaviour for the first time, and nobody has
+distribution-tested that combination. The numbers are honest as
+**terrain-only, pre-T-043** evidence and must not be read as describing the
+shipped build.
+
+Fix direction: annotate every difficulty measurement with the hostile-behaviour
+commit it was taken against, per LANE-BRIEF's "never inherit a measured number
+across a change that could move it." Nothing is known broken — the playtester's
+own fresh sanity batch found nothing — this is a provenance label, not a bug.
+
+## I-043 | docs | S3 | repro: read `src/render/level.js:107-114` against `src/render/palette.js:295-307` and `src/config.js:742` on `main` | evidence: this Inbox entry; docs/decisions.md entry 14
+
+`src/render/level.js`'s deck-shade comment is **stale and says the opposite of
+what ships**: it calls the T-035 value ladder "`?shade=`, off by default" and
+claims "SHADE_GAIN 0 makes every factor exactly 1.0, so the shipped build's
+instance colors are unchanged bit for bit." Neither is true since decisions
+entry 14. `CONFIG.shade.dose` is `0.5` and `palette.js:295-307` has it right —
+"(absent) the approved dose", "With the ladder now on by default".
+
+Found while verifying that the operator's own verdict ("C on the ladder feels
+better, shade=0.5 the other is too dark") is actually in the shipped build. **It
+is** — this is a comment defect only, zero runtime effect. Filed rather than
+fixed in place because editing a runtime file outside a lane is against this
+repo's own merge discipline, even for a comment. Fold it into whichever lane
+next touches `level.js`.
