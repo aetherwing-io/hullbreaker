@@ -1,0 +1,10 @@
+646,649c646,649
+< PASS	discrete single-jump apex at 60Hz matches the documented figure [got 2.6066666666666682, want 2.61]
+< PASS	discrete single-jump apex at 30Hz matches the documented figure [got 2.4933333333333323, want 2.49]
+< PASS	discrete single-jump apex clears the mid-lane +2.35 offset even at the actual dt-clamp floor (20fps), margin 0.030 tiles -- thinner than the documented 30Hz margin, worth a wider buffer if retuned
+< PASS	discrete double-jump apex clears the +3 high-lane offset at the dt-clamp floor, margin 1.390 tiles
+---
+> FAIL	discrete single-jump apex at 60Hz matches the documented figure [got 0.22333333333333316, want 2.61]
+> FAIL	discrete single-jump apex at 30Hz matches the documented figure [got 0.42666666666666675, want 2.49]
+> FAIL	discrete single-jump apex clears the mid-lane +2.35 offset even at the actual dt-clamp floor (20fps), margin -1.350 tiles -- thinner than the documented 30Hz margin, worth a wider buffer if retuned
+> FAIL	discrete double-jump apex clears the +3 high-lane offset at the dt-clamp floor, margin -2.000 tiles

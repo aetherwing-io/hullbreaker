@@ -1,0 +1,42 @@
+==============================================================
+CONTROL: frozen jump constants
+  domain guarding it: tools/pathcheck/pathcheck-suite.mjs
+  broke: src/config.js   'jumpVel: 14,' -> 'jumpVel: 13.5,'   (sites before/after: 1/0)
+  exit code: 1
+  tally: pathcheck: 1807 passed, 5 failed
+  failures printed:
+    FAIL jump tune frozen
+    FAIL full jump at run speed clears the widest gap with margin
+    FAIL discrete single-jump apex at 60Hz matches the documented figure [got 2.420000000000001, want 2.61]
+    FAIL discrete single-jump apex at 30Hz matches the documented figure [got 2.3099999999999996, want 2.49]
+  total FAIL lines: 5
+==============================================================
+CONTROL: hit-stop policy (juice)
+  domain guarding it: tools/pathcheck/t-011-juice-feedback-pass.mjs
+  broke: src/pure/juice.js   'if (event === 'kill') return J.killMs;' -> 'if (event === 'kill') return J.hurtMs;'   (sites before/after: 1/0)
+  exit code: 1
+  tally: pathcheck: 1810 passed, 2 failed
+  failures printed:
+    FAIL T-011: freeze duration comes from CONFIG, per event kind
+    FAIL T-011: a kill removes killMs*(1-scale) of simulated time at 120/60/30 fps, to within one frame of quantization [got 84.33 / 92.00 / 91.99, want 38.64]
+  total FAIL lines: 2
+==============================================================
+CONTROL: momentum tier banding
+  domain guarding it: tools/pathcheck/momentum-earned-pace-escalation.mjs
+  broke: src/pure/momentum.js   'for (const t of cfg.tiers) if (d >= t) tier++;' -> 'for (const t of cfg.tiers) if (d > t) tier++;'   (sites before/after: 1/0)
+  exit code: 1
+  tally: pathcheck: 1811 passed, 1 failed
+  failures printed:
+    FAIL READOUT: the tier banding covers empty to full
+  total FAIL lines: 1
+==============================================================
+CONTROL: pure-layer purity guard
+  domain guarding it: tools/pathcheck/_context.mjs (prelude layer guard)
+  broke: src/pure/rng.js   'export function' -> 'export const probe = typeof document;\nexport function'   (sites before/after: 1/1)
+  exit code: 1
+  tally: (no tally line — the run aborted)
+  failures printed:
+    pathcheck: forbidden pure reference in /private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/ctl/src/pure/rng.js: document
+  total FAIL lines: 0
+==============================================================
+scratch mirror removed

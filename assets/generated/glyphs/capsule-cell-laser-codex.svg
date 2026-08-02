@@ -1,0 +1,9 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <title>capsule-cell-laser-codex</title>
+  <desc>Chunky ink-framed alcove with a hot-magenta field, warm-white top-left rim light, and a single ink lance-laser silhouette.</desc>
+  <rect x="0" y="4" width="128" height="120" fill="#14181e"/>
+  <rect x="20" y="24" width="88" height="80" fill="#ff4fd8"/>
+  <rect x="20" y="24" width="88" height="20" fill="#ffe79b"/>
+  <rect x="20" y="24" width="20" height="80" fill="#ffe79b"/>
+  <path d="M28 48H52V56H100V76H52V84H28Z" fill="#14181e"/>
+</svg>
