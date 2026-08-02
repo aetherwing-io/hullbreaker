@@ -30,15 +30,22 @@
 
    ?juice=0 (src/mode.js): no geometry, no material, no mesh is built and
    every entry point returns immediately — a disabled boot costs the same
-   three.js work as the pre-juice game.                                 */
+   three.js work as the pre-juice game.
+
+   S10 (directional impact/travel language): the spark pool no longer draws
+   a uniform-scaled blob. Each row orients onto and stretches along its own
+   live velocity (advance(), below) so a burst carries which way it went.
+   The curve is src/pure/juice.js's travelStretch() — assertable without a
+   browser — and this module still adds no pool, material, or draw call.  */
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { PAL } from './palette.js';
 import { JUICE_ENABLED } from '../mode.js';
 import {
-  burstVelocity, clamp01, flashAlpha, particleAlpha, particleScale, warnPulse,
+  burstVelocity, clamp01, flashAlpha, particleAlpha, particleScale, travelStretch, warnPulse,
 } from '../pure/juice.js';
+import { postGain } from './post.js';
 import { scene, HIDE } from './scene.js';
 import { towerPose } from './tower.js';
 
@@ -68,6 +75,13 @@ const _m = new THREE.Matrix4();
 const _c = new THREE.Color();
 const _pose = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 };
 const _vel = { s: 0, y: 0, d: 0 };
+// S10 spark stretch scratch: local +x is the axis travelStretch() elongates,
+// oriented per-row onto the row's own live velocity (see advance() below).
+const _sq = new THREE.Quaternion();
+const _sAxisX = new THREE.Vector3(1, 0, 0);
+const _sDir = new THREE.Vector3();
+const _sScale = new THREE.Vector3();
+const _sPos = new THREE.Vector3();
 
 const SPARK_MAX = J.pools.particles;
 const FLASH_MAX = J.pools.flashes;
@@ -234,11 +248,18 @@ export function fxCrush(intensity, sEdge, tMs) {
  * else. Nothing here reads a wall clock of its own.                    */
 export function updateFx(dtMs) {
   if (!JUICE_ENABLED) return;
-  liveSparks = advance(sparks, sparkMesh, dtMs, particleAlpha, false);
-  liveFlashes = advance(flashes, flashMesh, dtMs, flashAlpha, true);
+  // T-048 (decisions.md entry 18): one read per frame, not per row. A muzzle
+  // flash and an impact burst are light sources; bloom only bleeds what is
+  // above its threshold, and these pools draw at exactly their token color,
+  // which sits under it. postGain() is 1 whenever the bloom pass is not
+  // drawing — ?bloom=0, or a composer that failed to load — so the pools
+  // upload the pre-pass colors, unchanged, on those paths.
+  const gain = postGain();
+  liveSparks = advance(sparks, sparkMesh, dtMs, particleAlpha, false, gain);
+  liveFlashes = advance(flashes, flashMesh, dtMs, flashAlpha, true, gain);
 }
 
-function advance(pool, mesh, dtMs, alphaOf, isFlash) {
+function advance(pool, mesh, dtMs, alphaOf, isFlash, gain) {
   let live = 0, dirty = false;
   const dt = dtMs / 1000;
   const rows = pool.rows;
@@ -264,12 +285,37 @@ function advance(pool, mesh, dtMs, alphaOf, isFlash) {
     const a = alphaOf(u);
     const s = isFlash ? particleScale(u, row.size, row.size + row.grow)
                       : row.size * (0.6 + 0.4 * (1 - u));
-    _m.makeScale(s, s, s);
-    _m.setPosition(row.x, row.y, row.z);
+    if (isFlash) {
+      _m.makeScale(s, s, s);
+      _m.setPosition(row.x, row.y, row.z);
+    } else {
+      // S10: a mild stretch along the row's OWN current velocity instead of
+      // a uniform scale, so a burst reads which way it went at FAR instead
+      // of smudging into a uniform blob (pillar 2/5). Recomputed every
+      // frame from the live, post-gravity velocity, so the streak's
+      // direction and length track the actual arc rather than a spawn-time
+      // snapshot, and shrink back toward zero for free as the particle
+      // settles. Bounded to one frame of travel (travelStretch, src/pure/
+      // juice.js) — never lifetime distance, which would smear a short,
+      // fast burst into a rod (see that module's header for the measured
+      // 11x case this replaced).
+      const speed = Math.hypot(row.vx, row.vy, row.vz);
+      if (speed > 1e-4) {
+        _sDir.set(row.vx, row.vy, row.vz).multiplyScalar(1 / speed);
+        _sq.setFromUnitVectors(_sAxisX, _sDir);
+      } else {
+        _sq.identity();
+      }
+      _sScale.set(s + travelStretch(speed), s, s);
+      _sPos.set(row.x, row.y, row.z);
+      _m.compose(_sPos, _sq, _sScale);
+    }
     mesh.setMatrixAt(i, _m);
     // additive blending: fading the COLOR is the fade, and it keeps the whole
-    // pool on one material (one draw call) instead of a per-row opacity
-    mesh.setColorAt(i, _c.setRGB(row.r * a, row.g * a, row.b * a));
+    // pool on one material (one draw call) instead of a per-row opacity.
+    // `gain` rides the same multiply — free, and it is 1 with the pass off.
+    const ag = a * gain;
+    mesh.setColorAt(i, _c.setRGB(row.r * ag, row.g * ag, row.b * ag));
     dirty = true;
     live++;
   }

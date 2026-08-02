@@ -1,0 +1,173 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="512" viewBox="0 0 1024 512">
+  <title>HULLBREAKER colossal Meridian backdrop limb segment</title>
+  <desc>A distant lower-left to upper-right arm of banded deep-teal armour, with haze-softened far collars, ink joint recesses, hull maintenance fittings, warm-white seam lights, and tiny rails and ladders establishing human scale.</desc>
+
+  <g transform="rotate(-23 512 256)">
+    <!-- Underslung cable bundles -->
+    <g fill="#16414a">
+      <path d="M-55 344 C18 358 52 400 119 418 C199 440 271 417 326 365 L341 377 C280 441 200 466 111 441 C35 420 4 380 -62 365 Z"/>
+      <path d="M276 359 C343 386 370 429 446 429 C521 429 548 379 594 346 L608 358 C563 401 531 451 446 452 C360 452 325 407 268 379 Z"/>
+      <path d="M603 342 C665 365 692 403 756 403 C817 403 849 359 891 322 L906 333 C862 382 824 425 752 426 C680 425 648 386 596 361 Z"/>
+    </g>
+    <g fill="#315761">
+      <path d="M-39 350 C28 367 61 405 124 423 C198 443 263 418 318 370 L326 378 C268 433 199 454 119 432 C49 412 17 377 -45 360 Z"/>
+      <path d="M288 365 C348 393 378 419 446 419 C511 419 540 377 588 350 L594 358 C548 393 520 438 446 439 C371 439 340 404 282 375 Z"/>
+      <path d="M615 348 C668 371 697 393 756 393 C811 393 840 356 884 327 L891 334 C849 371 817 414 754 415 C689 414 659 379 609 358 Z"/>
+    </g>
+
+    <!-- Continuous machine mass beneath the collars -->
+    <path fill="#16414a" d="M-220 132 L-187 99 L-62 103 L1196 184 L1202 300 L1172 318 L-190 439 L-216 409 Z"/>
+    <path fill="#315761" d="M710 157 L1196 184 L1202 300 L1172 318 L710 341 Z"/>
+
+    <!-- Near armour collars -->
+    <g>
+      <path fill="#0e5f6c" d="M-207 143 L-181 105 L-68 108 L-46 136 L-49 397 L-73 426 L-184 433 L-207 402 Z"/>
+      <path fill="#397581" d="M-181 105 L-68 108 L-46 136 L-52 184 L-197 181 L-207 143 Z"/>
+      <path fill="#16414a" d="M-204 316 L-48 306 L-49 397 L-73 426 L-184 433 L-207 402 Z"/>
+
+      <path fill="#0e5f6c" d="M-46 142 L-22 114 L92 117 L119 142 L116 386 L91 414 L-23 419 L-46 391 Z"/>
+      <path fill="#397581" d="M-22 114 L92 117 L119 142 L113 183 L-39 181 L-46 142 Z"/>
+      <path fill="#16414a" d="M-43 311 L117 302 L116 386 L91 414 L-23 419 L-46 391 Z"/>
+
+      <path fill="#0e5f6c" d="M120 147 L141 124 L250 128 L279 148 L275 370 L250 398 L140 403 L120 377 Z"/>
+      <path fill="#397581" d="M141 124 L250 128 L279 148 L272 185 L125 183 L120 147 Z"/>
+      <path fill="#16414a" d="M122 306 L277 297 L275 370 L250 398 L140 403 L120 377 Z"/>
+
+      <path fill="#0e5f6c" d="M281 151 L302 134 L407 138 L434 156 L430 355 L405 382 L300 387 L280 364 Z"/>
+      <path fill="#397581" d="M302 134 L407 138 L434 156 L427 188 L286 185 L281 151 Z"/>
+      <path fill="#16414a" d="M282 300 L432 292 L430 355 L405 382 L300 387 L280 364 Z"/>
+
+      <path fill="#0e5f6c" d="M436 157 L456 144 L556 148 L583 164 L579 341 L555 365 L455 370 L435 349 Z"/>
+      <path fill="#397581" d="M456 144 L556 148 L583 164 L576 190 L441 187 L436 157 Z"/>
+      <path fill="#16414a" d="M437 294 L581 286 L579 341 L555 365 L455 370 L435 349 Z"/>
+    </g>
+
+    <!-- Mid-distance collars -->
+    <g>
+      <path fill="#315761" d="M585 165 L605 154 L700 158 L728 173 L724 327 L700 349 L605 354 L584 336 Z"/>
+      <path fill="#46525f" d="M605 154 L700 158 L728 173 L721 194 L591 191 L585 165 Z"/>
+      <path fill="#16414a" d="M586 290 L726 281 L724 327 L700 349 L605 354 L584 336 Z"/>
+
+      <path fill="#315761" d="M730 174 L750 163 L839 167 L868 181 L864 314 L840 335 L750 340 L729 324 Z"/>
+      <path fill="#46525f" d="M750 163 L839 167 L868 181 L861 199 L736 196 L730 174 Z"/>
+      <path fill="#16414a" d="M731 285 L866 277 L864 314 L840 335 L750 340 L729 324 Z"/>
+
+      <path fill="#315761" d="M870 182 L890 172 L974 176 L1003 189 L999 302 L975 322 L890 327 L869 312 Z"/>
+      <path fill="#46525f" d="M890 172 L974 176 L1003 189 L996 204 L876 201 L870 182 Z"/>
+      <path fill="#315761" d="M871 279 L1001 271 L999 302 L975 322 L890 327 L869 312 Z"/>
+    </g>
+
+    <!-- Far collars flattened toward haze -->
+    <g>
+      <path fill="#46525f" d="M1005 190 L1025 181 L1104 185 L1133 197 L1129 291 L1105 310 L1025 315 L1004 301 Z"/>
+      <path fill="#46525f" d="M1025 181 L1104 185 L1133 197 L1126 209 L1011 207 L1005 190 Z"/>
+      <path fill="#315761" d="M1006 274 L1131 267 L1129 291 L1105 310 L1025 315 L1004 301 Z"/>
+
+      <path fill="#46525f" d="M1135 198 L1155 190 L1217 193 L1238 204 L1234 282 L1215 299 L1155 303 L1134 291 Z"/>
+      <path fill="#315761" d="M1136 269 L1236 263 L1234 282 L1215 299 L1155 303 L1134 291 Z"/>
+    </g>
+
+    <!-- Recessed joints -->
+    <g fill="#16414a">
+      <path d="M108 137 L127 140 L124 390 L105 397 Z"/>
+      <path d="M265 143 L284 147 L281 373 L262 381 Z"/>
+      <path d="M420 151 L439 155 L436 357 L417 365 Z"/>
+      <path d="M569 160 L588 164 L585 343 L566 350 Z"/>
+      <path d="M714 169 L733 173 L730 329 L711 336 Z"/>
+    </g>
+    <g fill="#14181e">
+      <path d="M115 143 L122 144 L119 384 L112 387 Z"/>
+      <path d="M272 150 L279 151 L276 367 L269 370 Z"/>
+      <path d="M427 158 L434 159 L431 351 L424 354 Z"/>
+      <path d="M576 167 L583 168 L580 337 L573 340 Z"/>
+    </g>
+    <g fill="#315761">
+      <path d="M854 178 L873 182 L870 315 L851 321 Z"/>
+      <path d="M989 187 L1008 190 L1005 303 L986 309 Z"/>
+      <path d="M1119 195 L1138 198 L1135 292 L1116 298 Z"/>
+    </g>
+
+    <!-- Collar locks and silhouette breaks -->
+    <g fill="#397581">
+      <path d="M-128 108 L-119 91 L-91 92 L-82 109 Z"/>
+      <path d="M331 136 L341 117 L368 118 L377 137 Z"/>
+      <path d="M501 146 L511 128 L535 129 L544 148 Z"/>
+    </g>
+    <g fill="#46525f">
+      <path d="M651 156 L660 143 L681 144 L690 158 Z"/>
+      <path d="M793 165 L802 153 L821 154 L830 167 Z"/>
+    </g>
+
+    <!-- Sparse armour-panel recesses -->
+    <g fill="#16414a">
+      <rect x="-155" y="224" width="58" height="8"/>
+      <rect x="-130" y="242" width="34" height="6"/>
+      <rect x="7" y="232" width="47" height="8"/>
+      <rect x="164" y="263" width="58" height="8"/>
+      <rect x="307" y="220" width="42" height="7"/>
+      <rect x="611" y="238" width="54" height="7"/>
+    </g>
+    <g fill="#315761">
+      <rect x="755" y="229" width="51" height="7"/>
+      <rect x="898" y="222" width="43" height="6"/>
+    </g>
+
+    <!-- Dominant maintenance recess -->
+    <path fill="#46525f" d="M478 207 L491 194 L545 194 L558 207 L558 263 L545 276 L491 276 L478 263 Z"/>
+    <path fill="#14181e" d="M488 214 L498 204 L538 204 L548 214 L548 256 L538 266 L498 266 L488 256 Z"/>
+    <path fill="#315761" d="M497 222 L504 215 L532 215 L539 222 L539 248 L532 255 L504 255 L497 248 Z"/>
+    <rect fill="#46525f" x="515" y="217" width="6" height="36"/>
+    <rect fill="#46525f" x="499" y="232" width="38" height="6"/>
+
+    <!-- Human-scale hatch and rung ladder -->
+    <rect fill="#767c85" x="349" y="208" width="16" height="25"/>
+    <rect fill="#14181e" x="352" y="212" width="10" height="18"/>
+    <g fill="#767c85">
+      <rect x="379" y="205" width="2" height="47"/>
+      <rect x="388" y="205" width="2" height="47"/>
+      <rect x="379" y="210" width="11" height="2"/>
+      <rect x="379" y="219" width="11" height="2"/>
+      <rect x="379" y="228" width="11" height="2"/>
+      <rect x="379" y="237" width="11" height="2"/>
+      <rect x="379" y="246" width="11" height="2"/>
+    </g>
+
+    <!-- Tiny maintenance walkway and rail -->
+    <g fill="#767c85">
+      <rect x="158" y="119" width="102" height="4"/>
+      <rect x="165" y="103" width="89" height="2"/>
+      <rect x="165" y="103" width="2" height="18"/>
+      <rect x="187" y="103" width="2" height="18"/>
+      <rect x="209" y="103" width="2" height="18"/>
+      <rect x="231" y="103" width="2" height="18"/>
+      <rect x="252" y="103" width="2" height="18"/>
+      <path d="M165 119 L176 107 L179 107 L168 119 Z"/>
+      <path d="M231 119 L242 107 L245 107 L234 119 Z"/>
+    </g>
+
+    <!-- Cable attachment clamps -->
+    <g fill="#46525f">
+      <path d="M307 350 L326 356 L341 377 L331 388 L312 374 Z"/>
+      <path d="M575 333 L596 340 L608 358 L598 370 L580 352 Z"/>
+      <path d="M875 310 L894 316 L906 333 L897 345 L880 330 Z"/>
+    </g>
+
+    <!-- Warm-white seam lights and tiny window row -->
+    <g fill="#ffe79b">
+      <rect x="-95" y="181" width="3" height="3"/>
+      <rect x="34" y="185" width="3" height="3"/>
+      <rect x="151" y="177" width="3" height="2"/>
+      <rect x="162" y="177" width="3" height="2"/>
+      <rect x="173" y="177" width="3" height="2"/>
+      <rect x="184" y="177" width="3" height="2"/>
+      <rect x="195" y="177" width="3" height="2"/>
+      <rect x="316" y="187" width="3" height="3"/>
+      <rect x="548" y="216" width="6" height="4"/>
+      <rect x="621" y="193" width="3" height="3"/>
+      <rect x="760" y="200" width="3" height="3"/>
+      <rect x="900" y="204" width="3" height="3"/>
+      <rect x="1034" y="211" width="2" height="2"/>
+      <rect x="1158" y="215" width="2" height="2"/>
+    </g>
+  </g>
+</svg>

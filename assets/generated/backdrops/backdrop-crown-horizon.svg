@@ -1,0 +1,210 @@
+<svg id="backdrop-crown-horizon" xmlns="http://www.w3.org/2000/svg" width="1024" height="256" viewBox="0 0 1024 256" role="img" aria-labelledby="crown-title crown-desc" shape-rendering="crispEdges">
+  <title id="crown-title">The Crown on the Meridian horizon</title>
+  <desc id="crown-desc">A distant deep-teal and haze command complex rising from an armoured collar, with tiny hot-magenta transmitter tips and warm-white collar lights.</desc>
+
+  <g fill="#46525f">
+    <path d="M286 190V180H308V163H326V173H341V151H359V165H375V137H393V152H410V124H431V145H450V105H471V135H489V94H510V128H531V112H551V143H570V123H590V150H608V137H627V160H646V149H665V174H684V165H703V180H738V190Z"/>
+    <path d="M317 163L320 133H323V114H327V133H330L333 163Z"/>
+    <rect x="321" y="104" width="5" height="12"/>
+    <rect x="314" y="130" width="21" height="3"/>
+    <path d="M347 151L350 110H353V89H357V110H360L363 151Z"/>
+    <rect x="351" y="80" width="5" height="11"/>
+    <rect x="343" y="108" width="22" height="3"/>
+    <path d="M376 137L379 96H382V76H386V96H390L393 137Z"/>
+    <rect x="381" y="67" width="4" height="11"/>
+    <rect x="373" y="94" width="22" height="3"/>
+    <path d="M410 124L414 78H418V56H423V78H427L431 124Z"/>
+    <rect x="416" y="47" width="5" height="11"/>
+    <rect x="408" y="76" width="25" height="3"/>
+    <path d="M450 106L454 64H458V45H463V64H467L471 106Z"/>
+    <rect x="456" y="37" width="5" height="10"/>
+    <rect x="448" y="62" width="25" height="3"/>
+    <path d="M488 94L492 49H496V28H501V49H506L510 94Z"/>
+    <rect x="494" y="20" width="5" height="10"/>
+    <rect x="486" y="47" width="26" height="3"/>
+    <path d="M531 112L535 61H539V38H544V61H548L551 112Z"/>
+    <rect x="537" y="29" width="5" height="11"/>
+    <rect x="529" y="59" width="24" height="3"/>
+    <path d="M570 123L574 77H578V55H583V77H587L590 123Z"/>
+    <rect x="576" y="46" width="5" height="11"/>
+    <rect x="568" y="75" width="24" height="3"/>
+    <path d="M608 137L612 94H616V72H621V94H624L627 137Z"/>
+    <rect x="614" y="63" width="5" height="11"/>
+    <rect x="606" y="92" width="23" height="3"/>
+    <path d="M646 149L650 116H654V99H659V116H662L665 149Z"/>
+    <rect x="652" y="91" width="5" height="10"/>
+    <rect x="644" y="114" width="23" height="3"/>
+    <path d="M681 165L684 138H688V125H693V138H696L703 165Z"/>
+    <rect x="686" y="118" width="5" height="9"/>
+  </g>
+
+  <g fill="#0e5f6c">
+    <path d="M324 190L327 154L334 146L341 154L345 190Z"/>
+    <rect x="333" y="124" width="4" height="24"/>
+    <rect x="328" y="134" width="14" height="3"/>
+
+    <path d="M352 190L355 128L361 119L368 128L372 190Z"/>
+    <rect x="360" y="92" width="4" height="29"/>
+    <rect x="353" y="105" width="19" height="3"/>
+
+    <path d="M381 190L384 107L391 99L399 107L402 190Z"/>
+    <rect x="390" y="72" width="4" height="29"/>
+    <rect x="383" y="86" width="19" height="3"/>
+
+    <path d="M412 190L416 86L424 77L433 86L437 190Z"/>
+    <rect x="423" y="54" width="4" height="25"/>
+    <rect x="414" y="65" width="22" height="3"/>
+
+    <path d="M447 190L451 72L460 62L470 72L475 190Z"/>
+    <rect x="458" y="35" width="4" height="29"/>
+    <rect x="449" y="48" width="23" height="3"/>
+
+    <path d="M474 190L478 82L485 73L493 82L497 190Z"/>
+    <rect x="484" y="43" width="4" height="32"/>
+    <rect x="477" y="57" width="19" height="3"/>
+
+    <path d="M488 190L492 67L499 57H503V50H522V57H526L531 67L535 190Z"/>
+    <rect x="510" y="20" width="4" height="32"/>
+    <rect x="500" y="39" width="24" height="3"/>
+
+    <path d="M536 190L540 77L548 69L558 77L562 190Z"/>
+    <rect x="555" y="39" width="4" height="32"/>
+    <rect x="541" y="53" width="25" height="3"/>
+
+    <path d="M568 190L572 94L581 85L591 94L595 190Z"/>
+    <rect x="589" y="54" width="4" height="33"/>
+    <rect x="574" y="68" width="25" height="3"/>
+
+    <path d="M601 190L605 119L613 110L622 119L626 190Z"/>
+    <rect x="619" y="78" width="4" height="34"/>
+    <rect x="607" y="92" width="22" height="3"/>
+
+    <path d="M636 190L640 146L648 137L657 146L661 190Z"/>
+    <rect x="655" y="109" width="4" height="30"/>
+    <rect x="642" y="123" width="22" height="3"/>
+
+    <path d="M669 190L672 163L680 155L688 163L692 190Z"/>
+    <rect x="679" y="132" width="4" height="25"/>
+  </g>
+
+  <g fill="#0a4650">
+    <path d="M367 128L372 190H366Z"/>
+    <path d="M397 107L402 190H396Z"/>
+    <path d="M431 86L437 190H430Z"/>
+    <path d="M468 72L475 190H467Z"/>
+    <path d="M491 82L497 190H490Z"/>
+    <path d="M525 58L535 190H524Z"/>
+    <path d="M556 77L562 190H555Z"/>
+    <path d="M589 94L595 190H588Z"/>
+    <path d="M620 119L626 190H619Z"/>
+    <path d="M655 146L661 190H654Z"/>
+
+    <path d="M306 190V181H337V169H365V178H394V160H424V171H453V151H481V163H494V147H530V160H548V153H576V167H607V162H637V176H672V182H704V190Z"/>
+    <path d="M489 132L495 125H529L536 132V147H489Z"/>
+  </g>
+
+  <g fill="#46525f">
+    <rect x="356" y="139" width="14" height="3"/>
+    <rect x="385" y="119" width="16" height="3"/>
+    <rect x="417" y="101" width="19" height="3"/>
+    <rect x="449" y="86" width="24" height="3"/>
+    <rect x="493" y="82" width="40" height="4"/>
+    <rect x="542" y="93" width="19" height="3"/>
+    <rect x="574" y="109" width="20" height="3"/>
+    <rect x="607" y="133" width="18" height="3"/>
+    <path d="M495 125H529L525 129H499Z"/>
+    <path d="M318 181H366L360 185H318Z"/>
+    <path d="M394 160H424L419 164H394Z"/>
+    <path d="M548 153H576L571 157H548Z"/>
+    <path d="M637 176H672L667 180H637Z"/>
+  </g>
+
+  <g fill="#ff4fd8">
+    <rect x="424" y="46" width="2" height="8"/>
+    <rect x="459" y="27" width="2" height="8"/>
+    <rect x="511" y="11" width="2" height="9"/>
+    <rect x="556" y="31" width="2" height="8"/>
+    <rect x="620" y="70" width="2" height="8"/>
+    <rect x="510" y="132" width="4" height="9"/>
+    <rect x="506" y="135" width="2" height="4"/>
+    <rect x="516" y="135" width="2" height="4"/>
+  </g>
+
+  <path fill="#0a4650" d="M0 190H1024V256H0Z"/>
+
+  <g fill="#0e5f6c">
+    <path d="M0 195H118L128 202V216H0Z"/>
+    <path d="M136 195H250L261 201L258 216H142L136 210Z"/>
+    <path d="M269 195H381L392 204V216H268Z"/>
+    <path d="M400 195H506L514 201V216H397Z"/>
+    <path d="M522 195H635L644 204V216H520Z"/>
+    <path d="M653 195H765L775 201V216H650Z"/>
+    <path d="M783 195H898L906 204V216H781Z"/>
+    <path d="M916 195H1024V216H914L909 203Z"/>
+
+    <path d="M14 225H149L160 234V256H8V234Z"/>
+    <path d="M170 225H304L312 232V256H166Z"/>
+    <path d="M322 225H455L466 235V256H318Z"/>
+    <path d="M476 225H609L619 233V256H471Z"/>
+    <path d="M629 225H765L776 235V256H625Z"/>
+    <path d="M786 225H918L928 233V256H781Z"/>
+    <path d="M938 225H1024V256H934V234Z"/>
+  </g>
+
+  <g fill="#46525f">
+    <path d="M0 195H118L112 199H0Z"/>
+    <path d="M136 195H250L244 199H139Z"/>
+    <path d="M269 195H381L374 199H269Z"/>
+    <path d="M400 195H506L500 199H400Z"/>
+    <path d="M522 195H635L628 199H522Z"/>
+    <path d="M653 195H765L759 199H653Z"/>
+    <path d="M783 195H898L891 199H783Z"/>
+    <path d="M916 195H1024V199H922Z"/>
+  </g>
+
+  <g fill="#0a4650">
+    <rect x="46" y="202" width="6" height="10"/>
+    <rect x="57" y="202" width="6" height="10"/>
+    <rect x="68" y="202" width="6" height="10"/>
+
+    <rect x="326" y="202" width="6" height="10"/>
+    <rect x="337" y="202" width="6" height="10"/>
+    <rect x="348" y="202" width="6" height="10"/>
+
+    <rect x="472" y="202" width="6" height="10"/>
+    <rect x="483" y="202" width="6" height="10"/>
+    <rect x="494" y="202" width="6" height="10"/>
+
+    <rect x="697" y="202" width="6" height="10"/>
+    <rect x="708" y="202" width="6" height="10"/>
+    <rect x="719" y="202" width="6" height="10"/>
+
+    <rect x="850" y="202" width="6" height="10"/>
+    <rect x="861" y="202" width="6" height="10"/>
+    <rect x="872" y="202" width="6" height="10"/>
+
+    <path d="M48 231H55L76 256H67Z"/>
+    <path d="M87 231H94L115 256H106Z"/>
+    <path d="M204 231H211L232 256H223Z"/>
+    <path d="M356 231H363L384 256H375Z"/>
+    <path d="M513 231H520L541 256H532Z"/>
+    <path d="M671 231H678L699 256H690Z"/>
+    <path d="M827 231H834L855 256H846Z"/>
+    <path d="M967 231H974L995 256H986Z"/>
+  </g>
+
+  <g fill="#ffe79b">
+    <rect x="82" y="207" width="2" height="2"/>
+    <rect x="183" y="205" width="2" height="2"/>
+    <rect x="286" y="210" width="2" height="2"/>
+    <rect x="378" y="203" width="2" height="2"/>
+    <rect x="451" y="238" width="2" height="2"/>
+    <rect x="560" y="208" width="2" height="2"/>
+    <rect x="668" y="239" width="2" height="2"/>
+    <rect x="754" y="207" width="2" height="2"/>
+    <rect x="824" y="236" width="2" height="2"/>
+    <rect x="936" y="209" width="2" height="2"/>
+    <rect x="143" y="240" width="2" height="2"/>
+    <rect x="984" y="241" width="2" height="2"/>
+  </g>
+</svg>

@@ -1501,6 +1501,49 @@ tools/playtest/
                             rate and proves only that no frame was late — read
                             `worstMs` / `over20ms`, and treat the result as evidence
                             about this dev machine, not a target-device claim.
+  scale-capture.mjs        dev-only evidence rig for the T-045 scale pass (graded
+                            backdrop tiers + human-scale reference objects,
+                            decisions.md entry 17). `shots` captures the same
+                            three moments of the same run twice — shipped default
+                            vs ?scale=0, which restores the pre-T-045 backdrop —
+                            and writes them to artifacts/scale-v1/ at the served
+                            repo root; `measure` re-reads whatever is in that
+                            directory. It also prints REAL GL draw calls per
+                            animation frame, counted by wrapping the WebGL
+                            context in an init script (three.js's renderer.info
+                            is on no global). Driven by the judged
+                            scripts/six-face-spaced-run.json policy through
+                            lib/policy.mjs, so it invents no movement.
+                            HONESTY: (1) pairs are matched on CAMERA and WORLD —
+                            both sides replay the same input schedule against the
+                            same seeded sim and shoot at the same scrollX
+                            threshold — not frame-locked, so hostile positions
+                            differ by a frame or two; judge composition and
+                            depth, never sprite deltas. (2) A fourth moment past
+                            the first joint is deliberately NOT captured: corner
+                            1 is a wave gate that has to be fought open and this
+                            policy died there on every attempt (GAME_OVER at
+                            scroll 88), and a poked CONFIG is not evidence.
+                            (3) `measure` recomputes statistics of the same
+                            KIND as the audit table in
+                            docs/proposals/2026-08-look-direction.md (largest
+                            single exact color and its coverage, distinct
+                            colors, luminance percentiles in the upper 45% of
+                            frame) but is NOT that pipeline — read its
+                            before/after delta, do not compare one of its
+                            numbers to one of that table's.
+  verify-served.mjs        dev-only: asks a RUNNING page which build it is, and
+                            fails when that is not the tree you think. Compares
+                            the page's baked limb plan (window.HB.g1.pieces)
+                            against this tree's, re-derives the scale pass in
+                            the page over the real groundH, and separates a
+                            wrong server --root from cached browser bytes
+                            (fetch vs fetch{cache:'reload'}). Written after
+                            I-037 spent a night on a tree that was correct.
+                            HONESTY: a cold profile cannot be stale, so a PASS
+                            without --profile means "this server serves this
+                            tree", not "that browser is clean"; it watches six
+                            files plus the plan length, nothing else.
   transform-capture.mjs    dev-only evidence script for the CP3 transform slice:
                             keyframe screenshots keyed on the ?testapi=1 transform
                             block's ritual clock (run.mjs's fixed sampling cadence
@@ -1509,6 +1552,117 @@ tools/playtest/
                             frame's true tMs is recorded in index.json — trust
                             those numbers, not the filenames, for beat placement.
 ```
+
+## `post-capture.mjs` — the screen-pass A/B rig (T-048)
+
+Dev-only, not wired into `run.mjs`. It exists because bloom raises two questions
+that a scripted bot run cannot answer: what the SAME frame looks like with the
+pass on and off, and what the pass costs per displayed frame under load.
+
+```
+node post-capture.mjs [outDir] [--scenes a,b] [--scale 1|2]
+node post-capture.mjs --probe                     selftest + offline fallback
+node post-capture.mjs --stress [--unlocked] [--repeats N] [--scale 2]
+```
+
+**Frame-exact pairs.** Both sides run the same fixture with `?fixeddt`, take the
+same input schedule (dispatched in the page and keyed to `gameMs`, never to wall
+clock), and the run FREEZES ITSELF with a pause at a named `gameMs`, so the
+shutter cannot slip a frame. Every pair records the instant it stopped at and
+reports `frameExact` — false means the two sides are not comparable and the
+numbers under them mean nothing. Because the pairs are pixel-aligned they are
+also subtracted: `diff.meanAbs / max / changedPct` is how far the pass's light
+actually reaches. Self-check: run it against a tree where both modes are the
+same build and the diff is exactly 0.
+
+**Honesty / limitations**
+
+1. `--scale 1` renders a 1280x800 drawing buffer; the operator's laptop is
+   retina and `src/render/scene.js` clamps the pixel ratio at 2, so a
+   full-screen pass costs roughly 4x more there than a `--scale 1` reading
+   suggests. Quote `--scale 2` for anything about the frame budget.
+2. rAF is vsync-locked, so `fps` cannot exceed the panel's refresh rate and a
+   pass that fits inside the budget is invisible in it — `over20ms` says "no
+   frame was late", NOT "there is headroom". `--unlocked` launches Chrome with
+   the frame-rate limiter off to get a cost ratio; those numbers are not frame
+   rates any player would see.
+3. `drawMs` is CPU time around the submit path, summed across the dozen
+   `renderer.render()` calls a composed frame makes. WebGL is asynchronous, so
+   it is a FLOOR on the cost, not the cost.
+4. This machine runs other lanes' browsers at the same time. A single pair can
+   be a picture of who else was busy — one contended session here read 46-58 fps
+   for a build that measures 120 fps when the machine is quiet. `--stress`
+   alternates the modes and reports every repeat for exactly that reason.
+5. The scenes hold right, hold fire and hop on landing. That is live combat, not
+   skilled play, and RIG dies in some of them. The frames are for judging LIGHT.
+6. Captures pass `?shell=0` and hide `#overlay` before the shot, because the
+   pause panel dims the whole page and would darken the thing being judged. The
+   canvas underneath is untouched; the HUD stays.
+
+## `verify-served.mjs` — is that URL running this tree? (T-050)
+
+Dev-only, not wired into `run.mjs`. **Run this before editing anything, the
+moment a shipped feature "renders nothing".** I-037 was filed as an S1 code
+defect — T-045's scale pass emitting zero pieces on the shipped default run —
+with a browser console transcript as evidence. The tree was innocent: driven
+from the real level's `groundH`, `limbBakePlan` returns 1633 pieces with 818
+mark/backdrop kinds, and the frame differs from `?scale=0` by 16-40% of its
+pixels at every viewport. The page was executing a **pre-T-045 copy of
+`src/pure/limb.js`**, declared `limbBakePlan(cfg, groundH)` — no third
+parameter, so the options argument is dropped and `{scale:true}` and
+`{scale:false}` both returned the legacy 829. (`Function.length` does not tell
+the two builds apart: it stops at the first defaulted parameter, so the current
+`(cfg, groundH, opts = {})` reports 2 as well. The piece count, the kind set and
+the presence of `silhouette` are the discriminators.)
+
+Every other gate in this repo reads files off disk in Node. This one asks the
+running page.
+
+```sh
+node verify-served.mjs http://127.0.0.1:8749                   # cold profile
+node verify-served.mjs http://127.0.0.1:8749 --tree /tmp/hb-pin
+node verify-served.mjs http://127.0.0.1:8749 --profile ~/warm  # a real browser's cache
+node verify-served.mjs http://127.0.0.1:8749 --json
+```
+
+Like every script here it needs `tools/playtest/node_modules` (one `npm install`
+in this directory), so run it from a checkout that has one and point `--tree` at
+the worktree under test.
+
+It prints `PASS`/`FAIL` on line 1 and exits 0/1. It separates the two
+mechanisms, because they need different fixes:
+
+- **the server is rooted on another tree** — served bytes differ from
+  `--tree`'s. Named with the commit whose copy matches, when git can find one
+  (this repo keeps pinned gate worktrees under `/private/tmp/hb-pin-*`; one of
+  them is `cd37b91`, pre-T-045). Fix: restart the server with the right
+  `--root`.
+- **the browser is executing cached bytes** — `fetch(u)` and
+  `fetch(u, {cache:'reload'})` return different lengths, the merge playbook's
+  own diagnostic. Fix: hard reload, or a cold profile; note that switching the
+  server to `tools/serve.mjs` does **not** dislodge an entry a previous
+  `python3 -m http.server` session already stored (measured in T-050: a
+  `no-store` server on the same port, plain navigation, still ran the 13,326-char
+  cached `limb.js` over the 25,319-char one on the wire).
+
+**Honesty / limitations**
+
+1. It watches six files (`index.html`, `src/main.js`, `src/config.js`,
+   `src/pure/limb.js`, `src/render/limb.js`, `src/sim/level.js`) plus the limb
+   bake-plan length. A stale module outside that list is invisible to the byte
+   checks; the plan-length check (`window.HB.g1.pieces` vs the plan this tree
+   bakes) is the broad net, because most stale render/pure modules move it.
+2. **A cold profile cannot be stale.** A `PASS` without `--profile` means "this
+   server serves this tree", not "the operator's browser is clean". To answer
+   the second question you must point it at the profile that browser uses.
+3. It only knows the limb plan on a URL where `HB.g1` exists — the six-face
+   default. On a fixture URL or `?zip=1` that check is reported as skipped, not
+   as a pass.
+4. Byte counts are JS string lengths (UTF-16 code units) on both sides, never
+   `wc -c`; the two differ wherever a file contains non-ASCII.
+5. `:8741` and `:8742` are the operator's (`docs/LANE-BRIEF.md`). The tool
+   refuses them unless `--operator-port` is passed — that flag is not a
+   permission, it is a speed bump so no agent probes those ports by reflex.
 
 ## Single best next action
 

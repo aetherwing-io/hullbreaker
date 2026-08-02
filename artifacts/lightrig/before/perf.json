@@ -1,0 +1,48 @@
+{
+  "measuredAt": "2026-08-02T05:50:06.123Z",
+  "tool": "tools/playtest/lightrig-capture.mjs",
+  "tag": "before",
+  "servedRoot": "/private/tmp/claude-501/-Users-scottmeyer-projects-hullbreaker/c3d9d3c6-20d5-4194-9407-9c10d4ab6a1e/scratchpad/base-tree",
+  "viewport": "1280x800, headless Chrome (channel: chrome)",
+  "lumaNote": "L = Rec.709 luma on sRGB bytes; bands are fixed row ranges (HUD strip skipped)",
+  "mode": "perf",
+  "note": "vsync DISABLED (--disable-gpu-vsync --disable-frame-rate-limit): avgMs is the real cost of a frame, NOT the 60fps gate — juice-stress.mjs is the gate",
+  "readings": {
+    "ship": {
+      "control": {
+        "perf": {
+          "frames": 180,
+          "fps": 627.4,
+          "avgMs": 1.59,
+          "worstMs": 8.6,
+          "over20ms": 0
+        },
+        "liveProjectiles": 0,
+        "draw": {
+          "frames": 3080,
+          "meanCalls": 102.5,
+          "maxCalls": 110,
+          "meanTriangles": 50291
+        },
+        "rig": null
+      },
+      "stress": {
+        "perf": {
+          "frames": 180,
+          "fps": 608.1,
+          "avgMs": 1.64,
+          "worstMs": 6.5,
+          "over20ms": 0
+        },
+        "liveProjectiles": 256,
+        "draw": {
+          "frames": 3060,
+          "meanCalls": 100.2,
+          "maxCalls": 106,
+          "meanTriangles": 50270
+        },
+        "rig": null
+      }
+    }
+  }
+}

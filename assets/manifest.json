@@ -25,6 +25,884 @@
       }
     },
     {
+      "id": "capsule-plate-s",
+      "path": "assets/generated/glyphs/capsule-plate-s.png",
+      "source": "assets/generated/glyphs/capsule-plate-s.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION A (scale the world-space glyph up): the shipped letter language redrawn for minification - stroke 22/128 = 3.1 screen px on the 18.2px face the legibility pass ships, cap height 92/128 = GLYPH_INK_FILL 0.72 exactly, no rivets and no chamfer (T-015 measured both gone at FAR). Letter S = SPREAD.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hot-magenta",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "capsule-plate-l",
+      "path": "assets/generated/glyphs/capsule-plate-l.png",
+      "source": "assets/generated/glyphs/capsule-plate-l.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION A (scale the world-space glyph up): the shipped letter language redrawn for minification - stroke 22/128 = 3.1 screen px on the 18.2px face the legibility pass ships, cap height 92/128 = GLYPH_INK_FILL 0.72 exactly, no rivets and no chamfer (T-015 measured both gone at FAR). Letter L = LASER.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hot-magenta",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "capsule-plate-h",
+      "path": "assets/generated/glyphs/capsule-plate-h.png",
+      "source": "assets/generated/glyphs/capsule-plate-h.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION A (scale the world-space glyph up): the shipped letter language redrawn for minification - stroke 22/128 = 3.1 screen px on the 18.2px face the legibility pass ships, cap height 92/128 = GLYPH_INK_FILL 0.72 exactly, no rivets and no chamfer (T-015 measured both gone at FAR). Letter H = HOMING.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hot-magenta",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "capsule-plate-f",
+      "path": "assets/generated/glyphs/capsule-plate-f.png",
+      "source": "assets/generated/glyphs/capsule-plate-f.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION A (scale the world-space glyph up): the shipped letter language redrawn for minification - stroke 22/128 = 3.1 screen px on the 18.2px face the legibility pass ships, cap height 92/128 = GLYPH_INK_FILL 0.72 exactly, no rivets and no chamfer (T-015 measured both gone at FAR). Letter F = FLAME.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hot-magenta",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "capsule-plate-mod-rg",
+      "path": "assets/generated/glyphs/capsule-plate-mod-rg.png",
+      "source": "assets/generated/glyphs/capsule-plate-mod-rg.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION A, the hard case: a two-character mod label (the shipped RG/GS/OL/CH drop table) on the amber mod face, stroke 18/128 = 2.6 screen px. Included because a direction that only works for one character does not cover what the game actually drops.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "ink",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "capsule-mark-spread",
+      "path": "assets/generated/glyphs/capsule-mark-spread.png",
+      "source": "assets/generated/glyphs/capsule-mark-spread.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION C (a shape code instead of a letter): a three-barrel spray fan, cut in ink out of the hot-magenta face. The four weapon marks differ in topology, not in stroke detail, because stroke detail is the first thing minification eats.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hot-magenta",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "capsule-mark-laser",
+      "path": "assets/generated/glyphs/capsule-mark-laser.png",
+      "source": "assets/generated/glyphs/capsule-mark-laser.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION C (a shape code instead of a letter): one horizontal lance bar, cut in ink out of the hot-magenta face. The four weapon marks differ in topology, not in stroke detail, because stroke detail is the first thing minification eats.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hot-magenta",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "capsule-mark-homing",
+      "path": "assets/generated/glyphs/capsule-mark-homing.png",
+      "source": "assets/generated/glyphs/capsule-mark-homing.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION C (a shape code instead of a letter): a ring, cut in ink out of the hot-magenta face. The four weapon marks differ in topology, not in stroke detail, because stroke detail is the first thing minification eats.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hot-magenta",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "capsule-mark-flame",
+      "path": "assets/generated/glyphs/capsule-mark-flame.png",
+      "source": "assets/generated/glyphs/capsule-mark-flame.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION C (a shape code instead of a letter): a solid wedge, cut in ink out of the hot-magenta face. The four weapon marks differ in topology, not in stroke detail, because stroke detail is the first thing minification eats.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hot-magenta",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "capsule-mark-mod",
+      "path": "assets/generated/glyphs/capsule-mark-mod.png",
+      "source": "assets/generated/glyphs/capsule-mark-mod.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION C, the mod case: one double chevron for the whole mod class on the amber face. Stated as this direction's cost rather than hidden: the shipped drop table needs 4 weapons + 4 mods = 8 symbols, and eight topologies that survive 13px is a strictly harder problem than four.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "ink",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "capsule-lit-spread",
+      "path": "assets/generated/glyphs/capsule-lit-spread.png",
+      "source": "assets/generated/glyphs/capsule-lit-spread.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION D (argued from boards 01/07, where the reward pocket reads as a LIT cell rather than a printed box): capsule-mark-spread with the polarity inverted - the spray fan in warm-white on the magenta face. docs/proposals/2026-08-look-direction.md measured 0.0% of playfield pixels above luminance 200 in fifteen gameplay captures, so this is the polarity in which the pickup owns the frame's only highlight.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hot-magenta",
+          "ink",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "capsule-lit-laser",
+      "path": "assets/generated/glyphs/capsule-lit-laser.png",
+      "source": "assets/generated/glyphs/capsule-lit-laser.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION D (argued from boards 01/07, where the reward pocket reads as a LIT cell rather than a printed box): capsule-mark-laser with the polarity inverted - the lance bar in warm-white on the magenta face. docs/proposals/2026-08-look-direction.md measured 0.0% of playfield pixels above luminance 200 in fifteen gameplay captures, so this is the polarity in which the pickup owns the frame's only highlight.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hot-magenta",
+          "ink",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "capsule-lit-homing",
+      "path": "assets/generated/glyphs/capsule-lit-homing.png",
+      "source": "assets/generated/glyphs/capsule-lit-homing.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION D (argued from boards 01/07, where the reward pocket reads as a LIT cell rather than a printed box): capsule-mark-homing with the polarity inverted - the ring in warm-white on the magenta face. docs/proposals/2026-08-look-direction.md measured 0.0% of playfield pixels above luminance 200 in fifteen gameplay captures, so this is the polarity in which the pickup owns the frame's only highlight.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hot-magenta",
+          "ink",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "capsule-lit-flame",
+      "path": "assets/generated/glyphs/capsule-lit-flame.png",
+      "source": "assets/generated/glyphs/capsule-lit-flame.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION D (argued from boards 01/07, where the reward pocket reads as a LIT cell rather than a printed box): capsule-mark-flame with the polarity inverted - the wedge in warm-white on the magenta face. docs/proposals/2026-08-look-direction.md measured 0.0% of playfield pixels above luminance 200 in fifteen gameplay captures, so this is the polarity in which the pickup owns the frame's only highlight.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hot-magenta",
+          "ink",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "capsule-cell-laser-codex",
+      "path": "assets/generated/glyphs/capsule-cell-laser-codex.png",
+      "source": "assets/generated/glyphs/capsule-cell-laser-codex.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "codex exec via tools/assets/gen.mjs (spec: tools/assets/runs/spec-capsule-cell-laser-codex.md); rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION D, generated rather than hand-authored - the codex CLI's own answer to the same brief (lit alcove, warm-white rim light along the top and left inside edges, ink lance silhouette). Kept as provenance evidence for the generator path, including its defect: it left 6% of the face transparent (its plate starts at y=4), which a capsule face may not do.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hot-magenta",
+          "ink",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "hud-weapon-chip-spread",
+      "path": "assets/generated/ui/hud-weapon-chip-spread.png",
+      "source": "assets/generated/ui/hud-weapon-chip-spread.svg",
+      "category": "ui",
+      "size": {
+        "w": 128,
+        "h": 64
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION B (move the letter read to the HUD): a chip at a FIXED screen size, so the camera pull-back cannot shrink it. Letter and shape code side by side - the pairing is what would teach a code the world glyphs then use. Judged at 32 and 44 px against the HUD's own 15-18px type, never at a world-tile size.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hot-magenta",
+          "ink",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "hud-weapon-chip-laser",
+      "path": "assets/generated/ui/hud-weapon-chip-laser.png",
+      "source": "assets/generated/ui/hud-weapon-chip-laser.svg",
+      "category": "ui",
+      "size": {
+        "w": 128,
+        "h": 64
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. Judged at true on-screen size in reports/tasks/T-036/. DIRECTION B: the LASER chip, same layout. Two chips are enough to show the direction - fixed-size HUD art has no discrimination problem, which is exactly the point and exactly its cost (it tells the player what they HAVE, never what they are about to touch).",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hot-magenta",
+          "ink",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "capsule-lit-mod",
+      "path": "assets/generated/glyphs/capsule-lit-mod.png",
+      "source": "assets/generated/glyphs/capsule-lit-mod.svg",
+      "category": "glyphs",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "gpu": true,
+      "task": "T-036",
+      "generator": "hand-authored SVG following tools/assets/codex/spec-template.md's rules; rasterized by tools/assets/rasterize.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "T-036 candidate for the held \"Glyph scale at FAR\" decision. NOTHING LOADS IT: staged evidence for an operator direction choice, not a promotion request. DIRECTION D, the mod case, included because it is where D is weakest - a warm-white mark on the amber mod face carries far less value contrast than the same mark on magenta (measured against capsule-mark-mod in reports/tasks/T-036/build.md). Judged at true on-screen size in reports/tasks/T-036/.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "ink",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "hound-brace-a",
+      "path": "assets/generated/sprites/hound-brace-a.png",
+      "category": "sprites",
+      "size": {
+        "w": 64,
+        "h": 32
+      },
+      "source": "assets/generated/sprites/hound-brace-a.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Brace Hound, shape-first. Body 1.7x0.9 tiles = 29.6x15.7px at the shipped FAR view; drawn on a 32x16 design grid (2x oversampled). Candidate A of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "hound-brace-b",
+      "path": "assets/generated/sprites/hound-brace-b.png",
+      "category": "sprites",
+      "size": {
+        "w": 64,
+        "h": 32
+      },
+      "source": "assets/generated/sprites/hound-brace-b.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Brace Hound, board-06-faithful. Same 32x16 design grid. Candidate B of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "wasp-drone-a",
+      "path": "assets/generated/sprites/wasp-drone-a.png",
+      "category": "sprites",
+      "size": {
+        "w": 32,
+        "h": 32
+      },
+      "source": "assets/generated/sprites/wasp-drone-a.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Wasp drone, dart read. 1.0x1.0 tiles = 17.4x17.4px at FAR; 16x16 design grid. Candidate A of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "wasp-drone-b",
+      "path": "assets/generated/sprites/wasp-drone-b.png",
+      "category": "sprites",
+      "size": {
+        "w": 32,
+        "h": 32
+      },
+      "source": "assets/generated/sprites/wasp-drone-b.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Wasp drone, insect-mechanical read. 16x16 design grid. Candidate B of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "carrier-hauler-a",
+      "path": "assets/generated/sprites/carrier-hauler-a.png",
+      "category": "sprites",
+      "size": {
+        "w": 64,
+        "h": 32
+      },
+      "source": "assets/generated/sprites/carrier-hauler-a.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Carrier, gantry read (broad, non-predatory). 1.7x0.9 tiles = 29.6x15.7px at FAR; 32x16 grid. Candidate A of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "carrier-hauler-b",
+      "path": "assets/generated/sprites/carrier-hauler-b.png",
+      "category": "sprites",
+      "size": {
+        "w": 64,
+        "h": 32
+      },
+      "source": "assets/generated/sprites/carrier-hauler-b.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Carrier, segmented-spine read. 32x16 grid. Candidate B of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "polyp-iris-a",
+      "path": "assets/generated/sprites/polyp-iris-a.png",
+      "category": "sprites",
+      "size": {
+        "w": 64,
+        "h": 64
+      },
+      "source": "assets/generated/sprites/polyp-iris-a.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Iris Polyp, bulb + side barrel. Full emplacement 1.8x2.15 tiles = 31.3x37.4px at FAR; 32x32 grid. Candidate A of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "polyp-iris-b",
+      "path": "assets/generated/sprites/polyp-iris-b.png",
+      "category": "sprites",
+      "size": {
+        "w": 64,
+        "h": 64
+      },
+      "source": "assets/generated/sprites/polyp-iris-b.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Iris Polyp, four-petal read (board 06 middle row, centre). 32x32 grid. Candidate B of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "mortar-tripod-a",
+      "path": "assets/generated/sprites/mortar-tripod-a.png",
+      "category": "sprites",
+      "size": {
+        "w": 64,
+        "h": 64
+      },
+      "source": "assets/generated/sprites/mortar-tripod-a.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Seed-Pod Tripod, tube-on-tripod read. 1.7x1.73 tiles = 29.6x30.1px at FAR; 32x32 grid. Candidate A of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "mortar-tripod-b",
+      "path": "assets/generated/sprites/mortar-tripod-b.png",
+      "category": "sprites",
+      "size": {
+        "w": 64,
+        "h": 64
+      },
+      "source": "assets/generated/sprites/mortar-tripod-b.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Seed-Pod Tripod, organic-machine read (seed chamber belly). 32x32 grid. Candidate B of two.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "backdrop-limb-segment",
+      "path": "assets/generated/backdrops/backdrop-limb-segment.png",
+      "category": "backdrops",
+      "size": {
+        "w": 1024,
+        "h": 512
+      },
+      "source": "assets/generated/backdrops/backdrop-limb-segment.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Distant Meridian limb, banded armour collars, service ladder + hatch as the human-scale mark. Authored for ~60x30 tiles of screen (about 1044x522px at FAR).",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "deep-teal",
+          "haze",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "backdrop-spine-coil",
+      "path": "assets/generated/backdrops/backdrop-spine-coil.png",
+      "category": "backdrops",
+      "size": {
+        "w": 512,
+        "h": 512
+      },
+      "source": "assets/generated/backdrops/backdrop-spine-coil.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Distant vertebral spine column with rib spurs; maintenance-gallery lights are the human-scale mark. ~30x30 tiles.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "deep-teal",
+          "haze",
+          "hull",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "backdrop-crown-horizon",
+      "path": "assets/generated/backdrops/backdrop-crown-horizon.png",
+      "category": "backdrops",
+      "size": {
+        "w": 1024,
+        "h": 256
+      },
+      "source": "assets/generated/backdrops/backdrop-crown-horizon.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "The Crown on the horizon: teal spire cluster, magenta only at the tips. ~60x15 tiles. The one hot-magenta landmark in a teal world.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "deep-teal",
+          "haze"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "backdrop-colony-cluster",
+      "path": "assets/generated/backdrops/backdrop-colony-cluster.png",
+      "category": "backdrops",
+      "size": {
+        "w": 512,
+        "h": 256
+      },
+      "source": "assets/generated/backdrops/backdrop-colony-cluster.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Inhabited colony clinging to the hull; rows of lit windows ARE the scale unit. ~14x7 tiles.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "deep-teal",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "backdrop-gill-cavity",
+      "path": "assets/generated/backdrops/backdrop-gill-cavity.png",
+      "category": "backdrops",
+      "size": {
+        "w": 512,
+        "h": 512
+      },
+      "source": "assets/generated/backdrops/backdrop-gill-cavity.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Louvered gill cavity with rust lip, ladder and walkway rail. Mid-distance tier, ~24x24 tiles.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "deep-teal",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "hull-panel-tile",
+      "path": "assets/generated/textures/hull-panel-tile.png",
+      "category": "textures",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/generated/textures/hull-panel-tile.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Seamless rust armour plate: panel lines, bolt rows, one weld bead. Authored for a ~2x2 tile repeat (~35x35px on screen).",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "weld-seam-strip",
+      "path": "assets/generated/textures/weld-seam-strip.png",
+      "category": "textures",
+      "size": {
+        "w": 128,
+        "h": 32
+      },
+      "source": "assets/generated/textures/weld-seam-strip.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Deck-edge lip strip: lit top chamfer, slat notches, ink shadow band. Tiles horizontally; ~4x1 tiles.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "vent-louver-plate",
+      "path": "assets/generated/textures/vent-louver-plate.png",
+      "category": "textures",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/generated/textures/vent-louver-plate.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Armoured vent cover, four louvres, one broken open with an acid bloom. ~1.5x1.5 tiles (~26px).",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "wear-scuff-overlay",
+      "path": "assets/generated/textures/wear-scuff-overlay.png",
+      "category": "textures",
+      "size": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/generated/textures/wear-scuff-overlay.svg",
+      "task": "T-046",
+      "generator": "codex-cli 0.146.0 via tools/assets/gen.mjs",
+      "addedOn": "2026-08-02",
+      "notes": "Tiling wear overlay: chips, streaks, rust bleeds. ~78% transparent \u2014 deliberately an OVERLAY, so its alpha is authored, not a fog stack.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
       "id": "rig-marine",
       "path": "assets/generated/sprites/rig-marine.png",
       "source": "assets/generated/sprites/rig-marine.svg",

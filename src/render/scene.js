@@ -1,15 +1,23 @@
 /* ======================== RENDERER / SCENE ======================== */
-/* The one renderer, scene, camera, and light rig. Every other render
-   module adds meshes to this scene; the simulation never sees it. */
+/* The one renderer, scene, and camera. Every other render module adds meshes
+   to this scene; the simulation never sees it.
+
+   The light rig moved to ./lights.js (+ ./lightrig.js for its descriptors and
+   arithmetic) when decisions.md entry 18 authorized a real one: a key, a
+   fill, a rim, a shadow map fitted to the play band, and exposure. It is
+   still exactly one rig, installed from exactly one place — here, one line
+   after the scene exists, and before any other module can add a mesh, which
+   is what lets it decide what each mesh does with light without reaching
+   into a dozen lane-owned files. ?light=flat restores the pre-T-047 rig. */
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { PAL } from './palette.js';
+import { installLightRig } from './lights.js';
 
 export const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
 document.body.appendChild(renderer.domElement);
 
 export const scene = new THREE.Scene();
@@ -21,8 +29,4 @@ export const camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, innerWidth 
 
 export const HIDE = new THREE.Matrix4().makeScale(0, 0, 0);   // shared "invisible instance" matrix
 
-const hemi = new THREE.HemisphereLight(PAL.hemiSky, PAL.hemiGround, 1.1);
-scene.add(hemi);
-const sun = new THREE.DirectionalLight(PAL.sun, 1.6);
-sun.position.set(6, 12, 8);
-scene.add(sun);
+installLightRig(renderer, scene);

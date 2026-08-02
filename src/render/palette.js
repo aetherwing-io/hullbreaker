@@ -31,6 +31,18 @@
    original calibration note) — so surfaces are brighter than taste says,
    and the deck stays the brightest large surface in every mode.
 
+   THE 0.45x RULE IS CONFIRMED, AND IT IS ALSO THE PROBLEM (T-035). It was
+   measured again in docs/proposals/2026-08-look-direction.md: PAL.ground's
+   token luminance 141.6 lands at 63 on screen (0.445x), so the calibration
+   above is right. What it did NOT author is a RANGE: because every token is
+   authored to land lit, and every instance of every material is drawn at
+   ~1.0x its token (CONFIG.limb.tone is +-4%), 99% of playfield pixels sit
+   inside a 45-70 window out of 255 and 0.0% exceed 200. The hues here are
+   a palette; the values are one note. `shade` below is the second half of
+   that authoring — how far BELOW its lit value a given instance of the same
+   token sits — and it is a per-table entry precisely because CLASSIC must
+   keep every instance at exactly 1.0x to stay a byte-faithful instrument.
+
    FOLLOW-UP CLOSED (T-010 fix-cycle): src/render/hostiles.js was lane-fenced
    to the in-flight hostiles task; that task (T-004, the Iris Polyp) has now
    merged, so hostiles.js reads PAL.wasp/carrier/hound/houndTell/houndCharge
@@ -49,6 +61,7 @@
 
 import { CONFIG } from '../config.js';
 import { QUERY } from '../mode.js';
+import { resolveShadeGain } from '../pure/shade.js';
 
 // Pure resolver, exported for pathcheck: only the exact opt-out selects the
 // grey-box; absence, junk, and '' all resolve to the concept default.
@@ -124,6 +137,15 @@ export const CLASSIC = {
     machine: 0x878d96, skyline: 0x333a44, panel: 0x8a9099,
   },
   atmos: {},                             // transform atmosphere bgs pass through untouched
+  /* ==== T-039 contact shadows ==== */
+  contactShadow: 0x14171c,               // neutral near-black, grey-box family
+  /* ==== /T-039 contact shadows ==== */
+  // T-035 value ladder: EXACT identity, by requirement. gain 0 makes every
+  // multiplier src/pure/shade.js returns exactly 1.0, so ?palette=classic is
+  // still the byte-faithful grey-box instrument the queued Palette v1 A/B is
+  // judged against — even with ?shade=1 also on the URL. If this ever becomes
+  // "nearly" identity, that A/B stops being a controlled comparison.
+  shade: { gain: 0 },
 };
 
 /* CONCEPT — DESIGN's palette mapped onto the same token shape, split the way
@@ -231,10 +253,60 @@ export const CONCEPT = {
     0x241e26: 0x1c332f,                  // interior plum-dark → dark teal-green
     0x2d3a4a: 0x2a525c,                  // high exterior → lighter, colder teal
   },
+  /* ==== T-039 contact shadows ==== */
+  // A shadow sits ON the lit rust deck, not in the teal atmosphere, so this
+  // stays a warm-dark near-black rather than joining the environment family —
+  // MultiplyBlending darkens toward this token, never tints toward it, so its
+  // hue reads faintly at most even at CONTACT_SHADOW.maxOpacity.
+  contactShadow: 0x1c140f,
+  /* ==== /T-039 contact shadows ==== */
+  // T-035 value ladder, at full weight in the concept table: these tokens were
+  // authored to land LIT (see the 0.45x note above), so the range under them is
+  // the missing half of the same authoring, not a second palette. The DOSE the
+  // operator approved lives in CONFIG.shade.dose, not here.
+  shade: { gain: 1 },
 };
+
+/* ==== T-038 seam pips (S5): warm-white route-lip highlights =============
+   Two tokens per table, both MUZZLE-family (role 5) per the packet's carried
+   correction ("drop the amber" — the board canon this cites names warm-
+   WHITE, and amber is the roster's one WARN language already). `seamPip` is
+   the small bright core, `seamHalo` the dimmer additive glow around it.
+   Ordering is asserted structurally, not just by value: a pip must sit
+   below PAL.muzzle and every hostile *Tell* in luminance (it may never
+   outshine the player's own fire or a warning telegraph — pillar 5's
+   salience hierarchy), and outside the amber WARN hue FAMILY by shape (a
+   small channel spread), not merely by differing from one exact hex, or a
+   pip tuned to houndTell's hue at a different value would still pass a
+   naive check. Additive; kept plainly dimmer than the tokens it must not
+   outshine so the halo cannot fake past that ordering at render time. */
+CLASSIC.seamPip = 0xc8c0b0;
+CLASSIC.seamHalo = 0xa89c88;
+CONCEPT.seamPip = 0xd6ccb4;
+CONCEPT.seamHalo = 0xbeb296;
+/* ==== end T-038 block ===================================================== */
 
 export const PALETTE_ID = resolvePaletteId(QUERY.get('palette'));
 export const PAL = PALETTE_ID === 'classic' ? CLASSIC : CONCEPT;
+
+/* The value ladder's dial (T-035). ON BY DEFAULT at the operator-approved
+   dose (CONFIG.shade.dose = 0.5, verdict 2026-08-02: full strength is too
+   dark, half is the look) — the default URL is the approved build, and the
+   flag exists to compare against it:
+
+     (absent)  the approved dose        ?shade=0  the pre-T-035 range, exactly
+     ?shade=1  the rejected full ladder ?shade=x  anything between
+
+   It is deliberately NOT the palette toggle: that would move hue and value
+   together and neither could be judged on its own. With the ladder now on by
+   default, the HUE-ONLY A/B the queued Palette v1 packet needs is
+   `?palette=classic` against `?shade=0` — both have no ladder, so only the
+   hue differs. `?palette=classic` alone stays byte-faithful to the pre-T-035
+   grey-box whatever ?shade= says, because SHADE_GAIN folds in the table's
+   own gain and CLASSIC.shade.gain is 0. The renderers (./limb.js,
+   ./level.js) and the haze band (./camera.js) read this one number. */
+export const SHADE_STRENGTH = resolveShadeGain(QUERY.get('shade'), CONFIG.shade.dose);
+export const SHADE_GAIN = SHADE_STRENGTH * PAL.shade.gain;
 
 // Transform-slice atmosphere remap (render-side; see CONCEPT.atmos). The
 // table argument exists for pathcheck, which asserts both modes' behavior.

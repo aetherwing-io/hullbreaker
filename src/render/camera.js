@@ -21,6 +21,8 @@ import { setEdges } from '../sim/edges.js';
 import { activeCorner } from '../sim/wavegate.js';
 import { activeTransformEvent, committedBand } from '../sim/transform.js';
 import { renderer, scene, camera } from './scene.js';
+import { updateLightRig } from './lights.js';
+import { SHADE_GAIN } from './palette.js';
 import { towerPose } from './tower.js';
 
 const _pp = { x: 0, z: 0 };     // polyAt scratch shared by the per-frame call sites
@@ -67,8 +69,15 @@ function calibrateEdges() {
   // ?g1=1 swaps the band for the limb's tighter haze (CONFIG.limb.fog): the
   // facet past a joint has to wash out. The pull-back shift composes on top,
   // so ?g1=1&view=far keeps the same contrast at its wider radius.
+  // ?shade= (T-035, packet item S2) swaps in CONFIG.limb.shadeFog: the same
+  // band SHIFTED off the play plane, so the protected play band sits fully
+  // outside the ramp at every view and aspect (today its screen-edge column
+  // is 3.3-9.3% into it — the case the note above was written about) and what
+  // grades between RIG's surface and the backdrop is the limb's own baked
+  // value ladder instead of haze. Gated on SHADE_GAIN, not on the raw flag,
+  // so ?palette=classic stays byte-faithful with ?shade=1 also on the URL.
   const fogShift = cameraDepth - C.z;
-  const F = IS_G1 ? CONFIG.limb.fog : CONFIG.fog;
+  const F = IS_G1 ? (SHADE_GAIN > 0 ? CONFIG.limb.shadeFog : CONFIG.limb.fog) : CONFIG.fog;
   scene.fog.near = F.near + fogShift;
   scene.fog.far = F.far + fogShift;
 }
@@ -157,6 +166,12 @@ export function syncCamera() {
   );
   _look.set(ax + fx * C.lookX, C.lookY + (IS_TRANSFORM_SLICE ? altAhead : alt), az + fz * C.lookX);
   camera.lookAt(_look);
+  /* The light rig (./lights.js) is aimed from HERE, with the UNSHAKEN look
+     point and the yaw the ritual has reached — the same two quantities the
+     pose is built from, and for the same two reasons the shake is applied
+     afterwards: a shadow frustum that rode the shake would make every shadow
+     edge jitter under a hit, and the sim must never see the rig at all. */
+  updateLightRig(_look.x, _look.y, _look.z, camYaw);
   if (JUICE_ENABLED) applyShake();
   camera.updateMatrixWorld();
 }

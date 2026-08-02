@@ -19,10 +19,18 @@
 //          balloons 0.74 -> 4.12 tiles and 4.12 < 4.22 still passes.
 //
 // So this tool proves both gates can fail, by making them fail. Two committed
-// fixture trees are fed to check.mjs; pathcheck.mjs is mutated in a scratch
-// copy — with the number of replacements asserted, because a mutation test
-// whose mutation silently stops applying is worse than no test — and the
-// expected assertion must be among the failures it prints.
+// fixture trees are fed to check.mjs; pathcheck is mutated in a scratch copy —
+// with the number of replacements asserted, because a mutation test whose
+// mutation silently stops applying is worse than no test — and the expected
+// assertion must be among the failures it prints.
+//
+// Since T-037 pathcheck is a runner plus tools/pathcheck/*.mjs domain modules,
+// so the scratch copy is a MIRROR of the whole gate (tools/.gatecheck-mutant.mjs
+// + tools/.gatecheck-mutant/), written at the same directory depth so the
+// modules' ../../src imports resolve. The mutation is hunted across every gate
+// file; the occurrence count is still asserted, and the runner's repointing at
+// the mirror is asserted too — a mirror that quietly ran the real modules would
+// report a control as broken, not as passing.
 //
 // It is NOT a fast per-change gate: it runs the whole of pathcheck three times
 // over (once clean, twice mutated), about 15 seconds. `node tools/pathcheck.mjs`
@@ -43,16 +51,19 @@
 //     NAMED assertion in the mutant's failure list, not merely a non-zero exit.
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(here, '..');
 const PATHCHECK = join(here, 'pathcheck.mjs');
+const CHECKS = join(here, 'pathcheck');               // the domain modules (T-037)
 const CHECK = join(here, 'assets', 'check.mjs');
 const MUTANT = join(here, '.gatecheck-mutant.mjs');   // sibling of pathcheck.mjs:
                                                      // its ../src imports must resolve
+const MUTANT_DIR = join(here, '.gatecheck-mutant');   // …and sibling of tools/pathcheck/,
+                                                     // so ../../src resolves for the modules
 const FIXTURES = join(here, 'assets', 'fixtures');
 
 const rel = (p) => relative(ROOT, p);
@@ -113,18 +124,53 @@ function assetRuntimeReference() {
   };
 }
 
-/** Mutate pathcheck.mjs, run it, and require the named assertion to fail. */
+/** Every file the gate is made of: the runner plus its domain modules. Since
+ *  T-037 the assertions live in tools/pathcheck/*.mjs, so a mutation has to be
+ *  hunted across the tree instead of applied to one file. */
+function gateSources() {
+  const files = [PATHCHECK];
+  if (existsSync(CHECKS)) {
+    for (const f of readdirSync(CHECKS).sort()) if (f.endsWith('.mjs')) files.push(join(CHECKS, f));
+  }
+  return files;
+}
+
+/** Mutate the gate, run it, and require the named assertion to fail. */
 function pathcheckMutant({ from, to, expect, wantHits }) {
-  const src = readFileSync(PATHCHECK, 'utf8');
-  const hits = src.split(from).length - 1;
+  const files = gateSources();
+  const hits = files.reduce((n, f) => n + (readFileSync(f, 'utf8').split(from).length - 1), 0);
   if (hits !== wantHits) {
     return {
       ok: false,
-      detail: `mutation did not apply: expected ${wantHits} occurrence(s) of ${JSON.stringify(from)}, found ${hits}. ` +
+      detail: `mutation did not apply: expected ${wantHits} occurrence(s) of ${JSON.stringify(from)}, ` +
+        `found ${hits} across ${files.length} gate file(s). ` +
         're-aim the mutation at the new shape of the code — do not drop the control',
     };
   }
-  writeFileSync(MUTANT, src.split(from).join(to), 'utf8');
+  // Mirror the gate one name over, at the SAME directory depth so its relative
+  // imports still resolve, applying the mutation on the way. Nothing in the
+  // real tree is written to.
+  if (existsSync(CHECKS)) {
+    mkdirSync(MUTANT_DIR, { recursive: true });
+    for (const f of readdirSync(CHECKS)) {
+      if (!f.endsWith('.mjs')) continue;
+      writeFileSync(join(MUTANT_DIR, f), readFileSync(join(CHECKS, f), 'utf8').split(from).join(to), 'utf8');
+    }
+  }
+  let runner = readFileSync(PATHCHECK, 'utf8').split(from).join(to);
+  if (existsSync(CHECKS)) {
+    const repointed = runner.split("'./pathcheck/").join("'./.gatecheck-mutant/");
+    if (repointed === runner) {
+      rmSync(MUTANT_DIR, { recursive: true, force: true });
+      return {
+        ok: false,
+        detail: "the runner does not import './pathcheck/…', so the mirrored copy would " +
+          'run the UNMUTATED modules — re-aim the mirror at the new shape of the runner',
+      };
+    }
+    runner = repointed;
+  }
+  writeFileSync(MUTANT, runner, 'utf8');
   try {
     const res = run(MUTANT, []);
     const fails = failLines(res);
@@ -138,6 +184,7 @@ function pathcheckMutant({ from, to, expect, wantHits }) {
     };
   } finally {
     if (existsSync(MUTANT)) rmSync(MUTANT);
+    if (existsSync(MUTANT_DIR)) rmSync(MUTANT_DIR, { recursive: true, force: true });
   }
 }
 

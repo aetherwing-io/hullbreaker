@@ -76,6 +76,10 @@ import {
 } from './sim/transform.js';
 import { updateScroll } from './sim/scroll.js';
 import { camera, renderer, scene } from './render/scene.js';
+// the one draw of the frame, and the only place the composer is reachable
+// from: renderFrame() is renderer.render() until the bloom pass is up, and
+// falls back to it again the moment the pass misbehaves (src/render/post.js)
+import { POST, postSnapshot, renderFrame } from './render/post.js';
 import {
   activeCameraDepth, calibrateEdges, handleResize, resetCameraYaw, syncCamera,
 } from './render/camera.js';
@@ -83,6 +87,7 @@ import { clearCorpses, updateCorpses } from './render/hostiles.js';
 // imported for their side effects: each builds its meshes and installs its
 // half of the view bridge as it loads, before anything below runs
 import './render/level.js';
+import './render/seams.js';
 import { limbPieces } from './render/limb.js';
 import './render/transform.js';
 import './render/player.js';
@@ -90,6 +95,14 @@ import './render/capsules.js';
 import { clearDepartingTracers } from './render/bullets.js';
 import './render/mods.js';
 import './render/hook.js';
+// durability (T-032): the module half of the failure handling. Its panel and
+// watchdogs are inline in index.html — they have to survive THIS file never
+// executing — and this import only adds what needs a running game.
+import {
+  failsafeBeat, failsafeBooted, failsafeHalted, failsafeSelfCheck,
+  failsafeSnapshot, installFailsafe, reportContextLost, reportFault,
+} from './ui/failsafe.js';
+import { FAILSAFE } from './pure/failsafe.js';
 import { resetHudMessage, updateHUD } from './ui/hud.js';
 import './ui/overlay.js';
 import { shellApplyIntent, shellRunStarted, shellSnapshot } from './ui/shell.js';
@@ -107,7 +120,23 @@ import { juiceSnapshot, updateJuice } from './render/juice.js';
 // the sim asks for a restart through this hook (fixture fast retry)
 installHost({ resetGame: () => resetGame() });
 
+// …and so does the failsafe: a restart is the ONE repair the game can make
+// on its own when a frame keeps throwing (src/pure/failsafe.js decides when
+// it is worth spending, and when to stop and show the panel instead).
+installFailsafe({ restart: () => resetGame() });
+
 addEventListener('resize', handleResize);
+
+/* The drawing surface can vanish under a player with nothing thrown and the
+   loop still beating — a GPU reset, a laptop waking up — and the result is
+   the exact defect this pass exists to remove: a still canvas on a live
+   page. Rebuilding every buffer mid-run is not something to attempt while a
+   9-year-old watches a frozen screen, so this fails legibly instead: the
+   panel, one key, a fresh run. */
+renderer.domElement.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  reportContextLost();
+});
 
 /* ============================= INPUT ============================== */
 
@@ -483,6 +512,12 @@ function telemetry() {
     // intervals, so "60fps with 200+ projectiles" is a reading, not a claim.
     juice: juiceSnapshot(),
     perf: perfSnapshot(),
+    // additive (T-048, decisions.md entry 18): which draw path this frame
+    // took. `status` is the honest one — 'active' only while the composer is
+    // really drawing, 'failed' if it broke and the direct path took over —
+    // so a capture or a perf reading can never be attributed to a pass that
+    // was not running when it was taken.
+    post: postSnapshot(),
   };
 }
 
@@ -545,14 +580,40 @@ const FIXED_DT_MS = (() => {
 })();
 
 let last = performance.now();
+/* The loop is written so that no single throw can leave a live page in
+   front of a dead picture (T-032):
+     - the halt check comes first, so once the failure panel is up the
+       simulation stops rather than grinding out frames nobody can see;
+     - the next frame is requested BEFORE any work, so a throw anywhere
+       below cannot end the loop by accident;
+     - the step and the draw are caught separately: a simulation fault
+       still paints the frame it broke on, which is what keeps the picture
+       honest while src/pure/failsafe.js decides whether this is a blip, a
+       restart, or the end of the run.
+   The dt clamp is unchanged and is the whole answer to a backgrounded tab:
+   Chrome suspends rAF entirely while the tab is hidden, so the frame that
+   lands on return carries a minute of wall clock and advances the
+   simulation by at most 50 ms of it. */
 function frame(t) {
+  if (failsafeHalted()) return;
   requestAnimationFrame(frame);
   samplePerf(t);
+  failsafeBeat();
   const dt = FIXED_DT_MS ? FIXED_DT_MS / 1000 : Math.min(50, t - last) / 1000;
   last = t;
-  if (state === 'PLAYING') update(dt);
-  renderer.render(scene, camera);
-  updateHUD();
+  if (state === 'PLAYING') {
+    try {
+      update(dt);
+    } catch (err) {
+      if (reportFault('update', err) === 'stop') return;
+    }
+  }
+  try {
+    renderFrame();
+    updateHUD();
+  } catch (err) {
+    reportFault('render', err);
+  }
 }
 
 /* Read-only debug handle, always present: a superset of the telemetry channel
@@ -605,6 +666,9 @@ window.HB = Object.freeze({
   // live hit-stop remainder, and the frame-time sampler beside it
   juice: juiceSnapshot,
   perf: perfSnapshot,
+  // the screen pass (?bloom=0 disables): flag, live status, the bloom
+  // parameters actually in effect, and any fault that dropped it
+  post: postSnapshot,
   // WebAudio layer (?audio=0 disables it): whether a context exists yet, its
   // lifecycle state, how many ambience layers are engaged and how many voices
   // are live. Read-only, and the reason it is HERE rather than only inside
@@ -612,6 +676,12 @@ window.HB = Object.freeze({
   // reachable from nothing, so the T-012 gate had to monkey-patch AudioParam
   // to infer a layer count this function already returns (SPRINT I-005).
   audio: audioSnapshot,
+  // durability (T-032): whether the inline bootstrap is installed, whether
+  // the boot completed, the live frame heartbeat, how many faults the policy
+  // has seen and what it did about them. Read-only, and the channel a
+  // headless abuse run reads to prove the game survived what it was put
+  // through (tools/durability/abuse.mjs).
+  failsafe: failsafeSnapshot,
   hitStopMs: () => hitStopRemainingMs(),
   snapshot: () => {
     const t = telemetry();
@@ -834,6 +904,50 @@ if (QUERY.has('selftest')) {
         !j.enabled || (j.sparkMax === CONFIG.juice.pools.particles &&
           j.flashMax === CONFIG.juice.pools.flashes));
     }
+    /* The screen pass (T-048, decisions.md entry 18). pathcheck can see the
+       resolver and the wiring; it cannot see which draw path a live page took,
+       and that is the whole risk here — a composer that quietly replaced the
+       one render call, or one that failed its CDN fetch and left a still
+       canvas. So this checks the three things only a running page knows:
+       the flag and the module agree, the pass never claims to be drawing when
+       it is not, and — the load-bearing one — frames are on screen on
+       whichever path is live. `loading` is a legitimate status at 1.5s: the
+       addons come over the network, and the direct path is drawing until they
+       land, which is exactly the fallback this asserts. */
+    {
+      const p = postSnapshot();
+      const raw = QUERY.get('bloom');
+      check('post flag plumbed', POST.on === (raw !== '0' && raw !== 'off'));
+      check('post status matches the flag (' + p.status + ')',
+        p.on ? ['loading', 'active', 'failed'].includes(p.status) : p.status === 'off');
+      check('bloom parameters are live only while the pass draws',
+        p.status === 'active'
+          ? p.strength > 0 && p.threshold > 0 && p.gain > 1
+          : p.strength === 0 && p.gain === 1);
+      // the fallback contract, stated as the player experiences it
+      check('frames render on whichever path is live', renderer.info.render.frame > 0);
+    }
+    /* Durability (T-032). The failure panel is the only signal a player gets
+       that something broke, so the browser has to prove four things pathcheck
+       cannot: the bootstrap is installed in THIS page, the panel is down
+       during a healthy run, the frame loop is actually beating (the freeze
+       watchdog reads that counter), and the panel — painted for real, then
+       put away — lands on screen with a way back into the game and words a
+       9-year-old can read. */
+    {
+      const fs = failsafeSnapshot();
+      check('failsafe bootstrap installed and boot completed', fs.installed && fs.booted);
+      check('failure panel is down during a healthy run',
+        !fs.showing && !fs.halted && fs.faults === 0);
+      check('frame loop heartbeat is live', fs.beats > 0);
+      check('dt clamp matches the durability policy',
+        FAILSAFE.frameDtMaxMs === 50 && fs.policy.frameDtMaxMs === 50);
+      const panel = failsafeSelfCheck();
+      check('failure panel renders, offers a way back, and reads plainly' +
+        (panel.issues.length ? ' (' + panel.issues.slice(0, 3).join('; ') + ')' : ''),
+        panel.visible && panel.reachableReload && panel.issues.length === 0);
+      check('failure panel puts itself away again', !failsafeSnapshot().showing);
+    }
     const fails = results.filter((r) => !r[1]).map((r) => r[0]);
     const msg = fails.length
       ? 'SELFTEST FAIL: ' + fails.join(', ')
@@ -851,3 +965,9 @@ resetGame();
    even under those flags, which is how the harness screenshots it. */
 if (SHELL_ENABLED && !SHELL_AUTOSTART) setState('MENU');
 requestAnimationFrame(frame);
+/* LAST statement in the file, deliberately: until this runs, the inline
+   bootstrap in index.html treats any uncaught failure as "the game could not
+   start" and shows the boot panel. Reaching here means every module in the
+   graph parsed, every side-effecting import ran, and the first frame is
+   scheduled — the exact thing that was NOT true on 2026-08-02. */
+failsafeBooted();
