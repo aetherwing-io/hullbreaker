@@ -3,7 +3,28 @@
 Worktree `/Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-040`,
 branch `task/T-040`. Implements look-direction packet §3 item S8.
 
-## RULE CHANGE + SPRITE UPGRADE (v3, current) — read this first
+## CORRECTION — a file-naming mistake sent the wrong evidence to review
+
+The team lead reviewed `v3-final-far-default.png` / `v3-final-5x-crop.png` /
+`v3-bullet-family-5x-crop.png` and reported RIG reading WORSE than the
+approved box version: thin, pale, low-contrast against the teal backdrop.
+**Those files are not the current state.** They are this report's SECOND
+attempt — the plain-shapes canvas sprite, superseded by the real PNG sprite
+below — and I labeled this section "v3, current" while naming the sprite's
+own evidence `v4-*`, which is exactly the kind of self-inflicted ambiguity
+that sends a reviewer to stale evidence. That is on me, not the reader.
+
+**The current state's own evidence is entirely under `v4-*.png` and
+`v5-*.png`.** `v3-*` and everything in the "HISTORICAL — v2 attempt"
+section below is superseded and should not be re-judged as-is.
+
+That said, the underlying craft concern — silhouette mass and contrast
+against the world, judged at a glance in a busy frame, not from a careful
+still crop — is a fair test to demand regardless of which file was open,
+so I ran it against the ACTUAL current sprite before replying. See
+"Glance-test re-verification" below, added after the correction above.
+
+## RULE CHANGE + SPRITE UPGRADE (v4, current) — read this first
 
 `docs/decisions.md` **entries 16 and 17** landed mid-task and reopened, then
 closed, this item's whole approach:
@@ -141,8 +162,51 @@ T-040/evidence/`):
   (native-resolution crop, no magnification) — `v4-sprite-5x-crop.png` is
   the detail view, not the judged one.
 
+### Glance-test re-verification (added in response to the team lead's review)
+
+The team lead's test, applied to the actual current sprite rather than the
+stale files: full 1280×800 frames, deck + backdrop + hostiles in view,
+holding right and firing through a live run (`?seed=7`, 10 captures over
+~7s), judged "can I find him instantly" rather than "is the sprite well
+drawn." `reports/tasks/T-040/evidence/v5-glance-test-frame1-full.png` and
+`v5-glance-test-frame2-full.png` are two representative frames (RIG plus
+2-3 hostiles each); `v5-glance-test-frame1-5x-detail.png` is a crop of
+frame 1, included only to show WHY the full-frame read holds up, not as
+the thing being judged.
+
+**Self-assessment, not a verdict — the operator is the only one who judges
+this**: in both frames I could locate RIG within a glance, including in
+frame 1 where he stands against a lighter mid-teal wall panel rather than
+the darker "sky" backdrop my earlier single-figure captures happened to
+use. The rust-orange boots/pack accents and the dark ink outline (40% of
+the sprite's own pixel coverage, per `tools/assets/check.mjs`'s palette
+read) are doing real separation work there. I do not have a captured frame
+where he reads as a "thin pale sliver" the way the STALE v3 evidence does —
+the real sprite has visible torso/leg/helmet mass, not a 1-2px ribbon.
+
+**What I am not claiming**: that this settles the operator's bar ("meet
+the expectations of a little boy's father's game"), that the sprite cannot
+be improved, or that further contrast/darkening would not help. Only that
+the specific regression reported — reading WORSE than the approved box
+version, thin-ribbon-like — does not reproduce against the actual current
+files in the frames I captured. If the operator (or the team lead, on
+these corrected files) still finds it wanting, that is a real, separate
+finding I have not tried to argue away, and the lever most available to
+me without another asset-generation round-trip is a material-level
+tint/darken pass (see "Honest limits" below) rather than a full re-draw.
+
 ### Honest limits
 
+- **A further contrast/darkening pass is possible without a new asset.**
+  `spriteMesh.material` is a `THREE.MeshStandardMaterial` with a `map`; its
+  `color` property multiplies against the texture, so a below-white tint
+  (e.g. darkening toward `PAL.playerDark`) would darken the whole sprite
+  uniformly, or a second lighter accent could be added the same way the
+  fallback's visor accent works. Not done here because the glance-test
+  re-verification above did not reproduce the reported regression against
+  the actual current sprite — if the operator judges the corrected
+  evidence and still wants more contrast, this is the fast lever, not
+  another codex round-trip.
 - **The overrun is real, not hidden.** The sprite's own drawn content is
   ~25% wider (at its half-width) than the collision box. It is bounded and
   asserted, and it is the same class of choice this file's gun and
