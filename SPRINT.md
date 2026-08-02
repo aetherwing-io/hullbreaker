@@ -1005,7 +1005,7 @@ accept:
 owner: asset-artist
 verify: node tools/assets/check.mjs; node tools/pathcheck.mjs; view.mjs crops at 0.55 tiles
 
-## T-037 | harness | todo | P1
+## T-037 | harness | done | P1
 
 goal: make concurrent lanes stop colliding. `tools/pathcheck.mjs` is a
 9,230-line monolith that EVERY task appends assertions to, so with N lanes in
