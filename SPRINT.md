@@ -851,7 +851,7 @@ accept:
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; index.html?selftest=1; FAR captures at the shipped view
 
-## T-031 | docs | doing | P3
+## T-031 | docs | done | P3
 
 goal: the docs-truth backlog — seven places where a comment, README or design
 line describes behavior the code does not have (I-001 stale sampler comment
