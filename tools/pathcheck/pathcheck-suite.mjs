@@ -708,7 +708,7 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
 // randomness. Both values below are regression pins, not targets — if a change
 // moves them again it has to be as deliberate as this one was.
 ok(gH.length === 445 && plats.length === 77 && LVL.chunkLog.length === 59,
-   'normal generator shape pinned (445 columns / 62 platforms / 59 chunks), got ' +
+   'normal generator shape pinned (445 columns / 77 platforms / 59 chunks), got ' +
    gH.length + '/' + plats.length + '/' + LVL.chunkLog.length);
 // Moved three times inside T-009 and then moved BACK. Two passes lifted the
 // capsule out of the deck-line jump arc (rewardRise 0.7 -> 1.75, then a shelf

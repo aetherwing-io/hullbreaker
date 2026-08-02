@@ -4,6 +4,7 @@
 // integrator during the T-044 merge; assertion text and order unchanged.
 // The monolith's implicit shared scope is now explicit imports.
 
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONFIG } from '../../src/config.js';

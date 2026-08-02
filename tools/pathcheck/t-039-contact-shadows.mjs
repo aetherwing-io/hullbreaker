@@ -49,9 +49,22 @@ export async function run(SHARED) {
     return g > -100 ? g : -999;
   };
 
-  ok(csPlatforms.length === 62,
-     'T-039 (a): the shipped six-face level carries 62 platform spans, got ' +
-     csPlatforms.length + ' — the falsifying test names this exact count');
+  // Not pinned to an exact count: this loop's subject is "does contact-
+  // shadow resolution pick the platform, not raw ground, for every real
+  // platform in the shipped level" — the platform COUNT is incidental to
+  // that, and the generator's own regression pin already owns catching an
+  // unintended count change (pathcheck-suite.mjs's "normal generator shape
+  // pinned"). Pinning it a second time here just gives two assertions one
+  // job and a second place to go stale — which is exactly what happened:
+  // T-044's authored ARRIVAL/ARENA terrain legitimately grew the shipped
+  // level from 62 to 77 platforms, and this line failed on a count neither
+  // it nor T-039 has any real stake in. What this loop actually needs is a
+  // non-trivial, non-empty platform list to avoid being vacuously true —
+  // guarded doubly, by the lower bound here and by the "every platform
+  // genuinely differs from groundTopAt" check a few lines down.
+  ok(csPlatforms.length >= 20,
+     'T-039 (a): the shipped six-face level carries a non-trivial platform list to test ' +
+     'contact-shadow resolution against (>= 20, got ' + csPlatforms.length + ')');
 
   let differed = 0;
   for (const pl of csPlatforms) {
