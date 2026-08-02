@@ -21,26 +21,30 @@ superseded, not additional evidence — the difference from the numbers below
 turned out to be negligible (see "Why the ladder barely moved the number"),
 but they were the wrong world to cite and a reviewer correctly flagged that.
 
-## Ships ON by default (decisions.md entry 16, 2026-08-02)
+## Ships ON by default (decisions.md entries 16 and 17, 2026-08-02)
 
-**Changed since the first version of this evidence.** Entry 16 retires the
-blanket "prototypes ship behind query flags, off by default" rule and names
-this exact pass as an example of the harm it caused ("the value ladder, the
-seam pips and the RIG pass all landed invisible behind flags he never
-typed"). `resolveSeams` now resolves ON for absent/''/junk; **`?seams=0`**
-is the escape hatch back to the pre-pass look, matching `resolveLegibility`'s
-shape. The query strings in every scenario below reflect this: the
-"baseline" (no pips) side is now the explicit `&seams=0`, not an absent flag.
+Entry 16 retires the blanket "prototypes ship behind query flags, off by
+default" rule and names this exact pass as an example of the harm it caused
+("the value ladder, the seam pips and the RIG pass all landed invisible
+behind flags he never typed"). Entry 17 goes further: shown five pinned
+lanes including this one, the operator's verdict was *"all of those 5
+builds look good to me"* — seam pips are explicitly one of the approved
+builds, cleared to merge. `resolveSeams` resolves ON for absent/''/junk;
+**`?seams=0`** is the escape hatch back to the pre-pass look, matching
+`resolveLegibility`'s shape. The query strings in every scenario below
+reflect this: the "baseline" (no pips) side is the explicit `&seams=0`, not
+an absent flag.
 
-**`src/render/seams.js` is still not wired into `src/main.js` in the
-committed diff.** A reviewer (`reports/tasks/T-038/review.md`) checked this
-independently and found the three sibling lanes running concurrently
-(T-039/T-040/T-041) do not touch `src/main.js` either, casting doubt on
-whether it is genuinely contended right now. That is now an open question
-back to the team lead rather than something this report asserts — see the
-build report. Every frame and number here was still taken against a
-THROWAWAY temp copy with the one line added (see `capture.mjs`, never
-written back to any real worktree).
+**`src/render/seams.js` is now wired into `src/main.js`.** A reviewer
+(`reports/tasks/T-038/review.md`) first caught that it was not — the team
+lead confirmed the fence on that file (written when T-032 held it) had
+lifted, since T-032 merged before this task finished. `import
+'./render/seams.js';` sits after `import './render/level.js';`. Every
+number and frame below is from the **real, wired worktree** (or a scratch
+merge of it with T-035, see below) — no throwaway copy is needed for this
+purpose any more; `capture.mjs` still uses one internally only because it
+is designed to be pointed at *any* worktree, including ones where the fence
+has not lifted.
 
 ## Files
 
@@ -73,11 +77,14 @@ one catwalk visible), **measured against the T-035-merged world**:
 
 | | pixels > L200 | share |
 |---|---|---|
-| `&seams=0` | 996 / 1,024,000 | 0.097% |
-| default (on) | 3,398 / 1,024,000 | 0.332% |
+| `&seams=0` | 989 / 1,024,000 | 0.097% |
+| default (on) | 3,210 / 1,024,000 | 0.313% |
 
-Roughly a **3.4x** increase — statistically the same delta as the
-pre-recalibration measurement (0.097%→0.333%). See below for why.
+Roughly a **3.2x** increase — statistically the same delta as every earlier
+measurement of this pass (0.097%→0.33% ± a few hundredths of a point run to
+run; this is the final number, post the halo-fog and depth-gain fixes
+below, both of which dim a modest fraction of pips and pull it down
+slightly from 0.33%). See below for why the ladder itself barely moves it.
 
 **Honesty note on the baseline draw-call number.** The packet's own audit
 cites 101 calls / 50,276 tris for the shipped default. This rig's own
@@ -154,27 +161,50 @@ recedes into the haze exactly in lockstep with the deck/limb surface it
 rides, automatically staying correct if the fog band is retuned later
 (S2). Asserted in `tools/pathcheck.mjs` (proven to bind by break/restore).
 
+**Second, complementary mechanism added on top: `depthGain` (bake-time).**
+The team lead pushed back that `fog:true` alone does not literally
+"pre-attenuate by depth at bake time" — fog is a render-time mechanism, not
+a bake-time one. That is correct, and the two are not redundant: fog
+handles the case this module's actual geometry has plenty of (distance
+from the *current* camera position, which changes continuously as the run
+scrolls past all 445 tiles and genuinely cannot be known at bake time),
+while `src/pure/seams.js`'s new `depthGain(depth, cfg)` handles the literal,
+bake-time-knowable quantity the packet's risk note names: how proud a pip
+sits of the surface it rides. The catwalk tier (shallower) now bakes at a
+fixed 0.72x multiplier relative to the deck tier (proudest, 1.0x) on the
+halo's own instance color — small, because this module's two depth tiers
+are genuinely close together (both near the play plane; the ?g1=1 limb
+backdrop this pass does not cover is where a large depth spread would
+actually live), but real, deterministic, and pathcheck-assertable in a way
+runtime fog cannot be.
+
 ## Reproducing
 
-`capture.mjs` in this directory is the rig. It belongs under
-`tools/playtest/`; it is parked here because that directory (and possibly
-`src/main.js` — see the open question above) were lane-fenced to concurrent
-tasks when T-038 ran, matching `artifacts/hitflash-v1/`'s precedent for the
-same situation. It takes the worktree to photograph as an argument, copies
-it to a throwaway temp directory (never writing back to the real
-worktree), serves that copy on an ephemeral port (never 8741/8742), and
-writes only into this directory:
+`capture.mjs` in this directory is the rig. It takes the worktree to
+photograph as an argument, copies it to a throwaway temp directory (never
+writing back to the real worktree — this is still useful for pointing at a
+worktree where `src/render/seams.js` is not yet wired into `src/main.js`),
+serves that copy on an ephemeral port (never 8741/8742), and writes only
+into this directory:
 
 ```
 node artifacts/t038-seams/capture.mjs --root <worktree>
 ```
 
 **To reproduce the recalibrated numbers above** (T-038 + T-035, since T-035
-has not merged to `main`): make a scratch clone of a T-038 worktree, add
-the T-035 worktree as a remote, merge it (one textual conflict in
-`tools/pathcheck.mjs` — both lanes append a block at the same end-of-file
-location; keep both blocks), then run `capture.mjs --root` against that
-merged clone. Never do this merge in either real worktree.
+has not merged to `main` as of this writing): make a scratch clone of a
+T-038 worktree, add the T-035 worktree as a remote, merge it. One conflict:
+`tools/pathcheck.mjs`. Since T-037 (pathcheck's per-domain split, merged to
+`main` mid-cycle) this file is a thin runner, not a monolith — T-035's
+branch predates that split and still appends a raw block to the old
+monolith shape, so resolving the conflict means converting T-035's
+appended block into its own `tools/pathcheck/*.mjs` domain module (static
+imports instead of the block's dynamic `await import()`, wrapped in
+`export async function run(SHARED) {}`, registered in `manifest.mjs`) the
+same way this task's own `t-038-seam-pips.mjs` was written directly against
+the new convention. This conversion is scratch-only scaffolding for taking
+a measurement, not committed anywhere — do this in a throwaway clone, never
+in either real worktree.
 
 It needs `tools/playtest/node_modules` (the harness's own `npm install`, run
 once in that directory) and a local Chrome.

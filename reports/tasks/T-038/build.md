@@ -324,4 +324,137 @@ so and I will. Otherwise the integrator adding it at merge stays the plan.
 
 Worktree is clean (`git status --short` empty) after every step; the scratch
 merge clone and its throwaway wired copies live only under the scratchpad
+directory and were never pushed anywhere.
+
+---
+
+## Second fix cycle (commits `0d3caab` through `80edab5`, after a second
+team-lead message repeating parts of the same review plus decisions.md
+entry 17)
+
+This message arrived citing the same review and asking for three things;
+two of them (default-on, recalibration + a committed build report) had
+already landed in the fix cycle above — I said so plainly in my reply
+rather than silently redoing work, since the message's specific claims
+("`fog:false`, no per-instance attenuation," "`build.md` does not exist")
+did not match the tree at the time it was sent. What follows is what was
+genuinely new.
+
+### `src/main.js` is now wired — the fence lifted
+
+The team lead confirmed T-032 (which held `src/main.js`) had merged, so the
+"do not touch" in the original dispatch no longer applies, and asked me to
+add the import myself. Done: `import './render/seams.js';` sits after
+`import './render/level.js';`. Verified live, in a real browser, against
+the real worktree (no throwaway copy): `seamsStats()` reports
+`{enabled:true, pipCount:307}`, `?selftest=1` reports `SELFTEST PASS (35
+checks)` with zero page errors, and both smoke playtest scripts
+(`mid-route.json`, `six-face-aimed-run.json`) complete with outcomes
+matching the pre-wiring baseline (0 deaths, same tap-fire counts within
+normal run-to-run variance) — the pass changes no sim behavior now that it
+actually renders.
+
+### Depth attenuation, added on top of (not instead of) the fog fix
+
+Re-read carefully: "pre-attenuate by depth at bake time" is a bake-time
+claim; `fog:true` is a render-time mechanism. Both are true, and they are
+not redundant — see `artifacts/t038-seams/README.md`'s new section for the
+full reasoning. Added `src/pure/seams.js`'s `depthGain(depth, cfg)`: pure,
+deterministic, floors at 0.72x for the shallowest depth tier this bake uses
+(the catwalk pips) and reaches exactly 1.0x at the proudest (the deck
+pips), applied to the halo's per-instance color. Four new pathcheck
+assertions (floor/ceiling exact, monotonic, pure), proven to bind by
+break/restore. This is real but modest — the two tiers sit close together
+in outward depth by construction (both near the play plane; a large depth
+spread is the `?g1=1` limb backdrop's territory, out of this pass's scope)
+— stated plainly rather than oversold.
+
+### Rebased onto current `main` (T-032, T-037, decisions 14/16/17)
+
+`main` had moved substantially since this branch's base: T-037 merged,
+splitting the pathcheck monolith into `tools/pathcheck/*.mjs` per-domain
+modules (1812 assertions, "labels identical" per that task's own report).
+Merged `main` into `task/T-038` (not rebase — preserves history for the
+integrator to review; `git merge`, not `git rebase`). One real conflict,
+`tools/pathcheck.mjs`: resolved by taking `main`'s thin-runner content and
+moving this task's assertions into a new `tools/pathcheck/t-038-seam-pips.mjs`
+domain module (static imports instead of the monolith's shared header,
+wrapped in `export async function run(SHARED) {}`), registered in
+`manifest.mjs`. **Caught my own mistake here**: the first merge commit
+added the new module file but committed `manifest.mjs` before my edit
+registering it was re-staged, so the module existed on disk but was not
+listed — verified by `git show HEAD:tools/pathcheck/manifest.mjs | grep
+t-038` coming back empty, not by trusting a passing pathcheck run alone
+(the working tree still had the fix, uncommitted, which is why the run
+passed despite the bad commit). Fixed in a follow-up commit and
+re-verified against a **fresh `git clone` of the branch** (not the working
+tree) to be certain: `1847 passed, 0 failed` (main's 1812 + this task's 35),
+with pathcheck's own new manifest-completeness check confirming nothing is
+silently unlisted.
+
+Everything else merged cleanly: `src/main.js` kept both this task's
+`seams.js` import and whatever else landed there; `CLAUDE.md`/`decisions.md`
+picked up entries 14–17 verbatim (T-032's durability pass, the T-036 sprite
+pipeline, and T-041's approved impact language are all now in the tree,
+none of them touched by this task).
+
+### decisions.md entry 17 — seam pips are one of the five approved builds
+
+Read after the merge (it post-dates the branch's original base). *"All of
+those 5 builds look good to me"* — the five pinned lanes shown were the
+value ladder, impact language, RIG silhouette, **seam-pip highlights**, and
+contact shadows. This is stronger than entry 16's general principle: it is
+a specific verdict on this feature, cited in the resolver's own comment now.
+Entry 17 also names SELLING SCALE as the headline art problem going
+forward (backdrop tiers, atmospheric depth, human-scale reference objects)
+— nothing in this task claims to address that; it is out of scope, flagged
+for whoever picks up S4/backdrop work next.
+
+### Recalibrated numbers, final (post all of the above)
+
+Re-ran the T-035 scratch-merge recalibration against the rebased branch
+(same method as the first fix cycle, updated for the new pathcheck
+structure — see the README's "Reproducing" section for the conversion
+this required). Mean-luma sanity check confirms the ladder is still live
+in this merge: 68.76 at `&shade=0`, 58.80 absent (shipped), 47.50 at
+`&shade=1` — monotonic, consistent with the first check.
+
+| | pixels > L200 | share |
+|---|---|---|
+| `&seams=0` | 989 / 1,024,000 | 0.097% |
+| default (on) | 3,210 / 1,024,000 | 0.313% |
+
+~3.2x, consistent with every prior measurement of this pass within normal
+run-to-run variance (0.33% → 0.31% after the fog and depth-gain fixes each
+dim a fraction of pips — expected, not a regression). Draw-call delta
+unchanged: +2 / +2 InstancedMesh / +614 instances, clean pair.
+
+### Verification, second cycle
+
+| command | result |
+|---|---|
+| `node tools/pathcheck.mjs` (real worktree, post main.js wiring + depthGain) | **1776 passed, 0 failed** |
+| new `depthGain` guards, broken (`return 1` — no attenuation) then restored | 2 FAILs naming the floor/monotonic assertions, then green |
+| `?selftest=1` (real, wired worktree) | **SELFTEST PASS (29 checks)**, then **(35 checks)** post-merge with T-032/T-037; `seamsStats()` live: `{enabled:true, pipCount:307}` |
+| `mid-route.json`, `six-face-aimed-run.json --stop-on-game-over` (real, wired worktree) | both complete; six-face outcome `not-completed`, 0 deaths, 33 tap fires (was 34 pre-merge — normal variance, not attributable to this task's files) |
+| merge main (T-032/T-037/decisions 14-17) | one conflict (`tools/pathcheck.mjs`), resolved; **1847 passed, 0 failed**, re-verified from a fresh `git clone` of the branch |
+| scratch re-merge with T-035, post-rebase | `tools/pathcheck.mjs` conflicted again (T-035 predates the split); converted its block to a domain module, scratch-only; **1892 passed** (1847 + T-035's 45) |
+
+Worktree clean (`git status --short` empty, aside from the reviewer's own
+untracked `review.md`, which this task never edits) after every step.
+
+## Open items carried forward
+
+1. The operator A/B question already flagged (RIG's own body token and the
+   seam pips share the warm-white family) still stands, unanswered — it
+   needs a served URL, which now actually shows the feature.
+2. The five capture-and-report questions from the first version of this
+   report stand, updated implicitly by entry 17's approval — the operator
+   has now seen and approved builds that presumably resemble this one, but
+   this specific wired-in, depth-attenuated, T-035-calibrated build has not
+   itself had a checkpoint. Whether entry 17's "look good" verdict was
+   against exactly this code or an earlier iteration is worth confirming,
+   not assuming.
+3. `?g1=1` limb-seam pips (scute/kerb boundaries) remain out of scope,
+   sequenced behind T-035's ownership of `src/render/limb.js`.
 and were never pushed anywhere.

@@ -30,15 +30,15 @@
       "pipCount": 307
     },
     "lum": {
-      "over": 2451,
+      "over": 2311,
       "n": 1024000,
-      "pct": 0.23935546875
+      "pct": 0.22568359375
     }
   },
   "gameplay-baseline": {
     "calls": 97,
     "tris": 50224,
-    "geoms": 64,
+    "geoms": 62,
     "textures": 5,
     "instMeshes": 13,
     "instances": 2969,
@@ -48,14 +48,14 @@
       "pipCount": 0
     },
     "lum": {
-      "over": 996,
+      "over": 989,
       "n": 1024000,
-      "pct": 0.097265625
+      "pct": 0.09658203125
     }
   },
   "gameplay-seams": {
-    "calls": 99,
-    "tris": 56364,
+    "calls": 104,
+    "tris": 56424,
     "geoms": 66,
     "textures": 5,
     "instMeshes": 15,
@@ -66,9 +66,9 @@
       "pipCount": 307
     },
     "lum": {
-      "over": 3398,
+      "over": 3210,
       "n": 1024000,
-      "pct": 0.3318359375
+      "pct": 0.3134765625
     }
   }
 }
