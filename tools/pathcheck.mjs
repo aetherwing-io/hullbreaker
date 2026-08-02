@@ -9226,5 +9226,153 @@ const G2GATE = G2E.gate;
   }
 }
 
+/* ==== T-038 seam pips (S5): warm-white route-lip highlights ============= *
+ * Appended as one self-contained block (own import, own assertions) at the
+ * end of the file on purpose — several look lanes touch this file this
+ * cycle, and a hand-merge of it already cost a dropped-assertion scare
+ * once. Does not edit the existing tokenized array at :5981-5983 or any
+ * existing section; src/render/seams.js opts into the same checks that
+ * array runs via its OWN parallel assertion below instead, so two lanes
+ * editing that one shared line never collide.                            */
+import {
+  deckEdgeRuns, deckSeamRuns, platformSeamRuns, seamRuns as seamsAllRuns,
+  seamPipCount, resolveSeams, SEAMS,
+} from '../src/pure/seams.js';
+
+{
+  // (a) derived, not authored: every deck-edge pip run's [s0,s1) is a real
+  // contiguous groundH span, and every platform pip run's [s0,s1) is some
+  // platform's own [x0,x1] — never authored, so a pip line can never
+  // advertise a ledge that does not exist.
+  const level = buildLevel(CONFIG);
+  const gh = level.groundH, plats = level.platforms;
+  const deckRuns = deckSeamRuns(gh, SEAMS);
+  const rawRuns = deckEdgeRuns(gh).filter((r) => r.s1 - r.s0 >= SEAMS.minRun);
+  ok(rawRuns.length === deckRuns.length &&
+     rawRuns.every((r, i) => r.s0 === deckRuns[i].s0 && r.s1 === deckRuns[i].s1),
+     'seams: deckSeamRuns\' boundaries equal deckEdgeRuns\' raw spans one-for-one ' +
+     '(' + deckRuns.length + ' runs)');
+  ok(deckRuns.every((r) =>
+       gh[r.s0] > -100 && (r.s0 === 0 || !(gh[r.s0 - 1] > -100)) &&
+       gh[r.s1 - 1] > -100 && (r.s1 >= gh.length || !(gh[r.s1] > -100))),
+     'seams: every deck pip run starts and ends exactly where groundH does ' +
+     '(' + deckRuns.length + ' runs)');
+  const platRuns = platformSeamRuns(plats, SEAMS);
+  ok(platRuns.every((r) => plats.some((p) => p.x0 === r.s0 && p.x1 === r.s1)),
+     'seams: every platform pip run is some platform\'s own [x0,x1) verbatim ' +
+     '(' + platRuns.length + ' runs)');
+  ok(deckRuns.concat(platRuns).every((r) => r.pips.every((p) => p.s >= r.s0 && p.s < r.s1)),
+     'seams: every pip sits inside its own run\'s [s0,s1) — a pip run can never ' +
+     'advertise a ledge that does not exist (' +
+     (seamPipCount(deckRuns) + seamPipCount(platRuns)) + ' pips checked)');
+  ok(JSON.stringify(seamsAllRuns(gh, plats, SEAMS)) === JSON.stringify(deckRuns.concat(platRuns)),
+     'seams: seamRuns() composes deckSeamRuns + platformSeamRuns exactly');
+
+  // determinism: same level, same runs, no rng
+  const again = deckSeamRuns(gh, SEAMS).concat(platformSeamRuns(plats, SEAMS));
+  ok(JSON.stringify(deckRuns.concat(platRuns)) === JSON.stringify(again),
+     'seams: the pip layout is deterministic — same level, same runs, no rng');
+
+  // a clutter ceiling, so "hundreds of specks" stays a stated, checked
+  // number rather than an unbounded side effect of the level's length.
+  // Measured on the shipped 445-tile level at SEAMS.pipEvery=3: 307 pips —
+  // the ceiling below leaves headroom for level-length drift, not slack
+  // to double the density unnoticed.
+  const total = seamPipCount(deckRuns) + seamPipCount(platRuns);
+  ok(total > 0 && total < 400,
+     'seams: the shipped level bakes ' + total + ' pips total — bounded, not unbounded');
+}
+
+{
+  // (b) hue + luminance ordering, both tables, both tokens. Gate the HUE
+  // FAMILY (a small channel spread), not just a value comparison, per the
+  // packet's carried correction — a pip tuned to houndTell's exact hue at
+  // a different luminance would pass a naive check and still read as a
+  // warning telegraph.
+  const ch = (h) => [(h >> 16) & 255, (h >> 8) & 255, h & 255];
+  const lum = (h) => { const [r, g, b] = ch(h); return r + g + b; };
+  const warmWhite = (h) => {
+    const [r, g, b] = ch(h);
+    return r >= g && g >= b && (r - b) <= 60;
+  };
+  const tells = (T) => [T.houndTell, T.polypTell, T.mortarTell];
+  for (const [name, T] of [['classic', PAL_CLASSIC], ['concept', PAL_CONCEPT]]) {
+    ok(warmWhite(T.seamPip) && warmWhite(T.seamHalo),
+       'seams: ' + name + ' seamPip/seamHalo are warm-white by SHAPE (small ' +
+       'channel spread), not amber WARN — a hue check, not just a value check');
+    const cap = Math.min(lum(T.muzzle), ...tells(T).map(lum));
+    ok(lum(T.seamPip) < cap && lum(T.seamHalo) < cap,
+       'seams: ' + name + ' seamPip/seamHalo stay below PAL.muzzle and every ' +
+       'hostile tell in luminance (cap ' + cap + ', pip ' + lum(T.seamPip) +
+       ', halo ' + lum(T.seamHalo) + ')');
+    ok(lum(T.seamHalo) <= lum(T.seamPip),
+       'seams: ' + name + ' the halo is never brighter than the core it surrounds');
+  }
+  ok(Object.keys(PAL_CLASSIC).sort().join() === Object.keys(PAL_CONCEPT).sort().join(),
+     'seams: seamPip/seamHalo keep classic/concept key-shape parity (existing guard, ' +
+     're-confirmed after the new tokens)');
+}
+
+{
+  // (c) static-anatomy guard, mirrored onto BOTH modules — the same
+  // mechanical check src/render/limb.js already carries at :5366-5373, so
+  // an animated version cannot arrive later by accident.
+  const pureSrc = stripComments(readFileSync(join(srcDir, 'pure', 'seams.js'), 'utf8'));
+  ok(!/\bgameMs\b|\btMs\b|\bdt\b|Math\.random/.test(pureSrc),
+     'seams: src/pure/seams.js takes no time or randomness argument — static intensity only');
+  const renderSrc = stripComments(readFileSync(join(srcDir, 'render', 'seams.js'), 'utf8'));
+  ok(!/installView|view\./.test(renderSrc),
+     'seams: src/render/seams.js installs no view hook at all — no per-frame, pulse or ' +
+     'chase can move a pip');
+  ok(!/\bgameMs\b|\btMs\b|requestAnimationFrame/.test(renderSrc),
+     'seams: src/render/seams.js reads no per-frame clock');
+
+  // (e) tokenization: seams.js opts INTO the same raw-literal / scattered-
+  // CONFIG.palette checks the existing tokenized array runs (:5981-5983)
+  // without editing that array — membership is this explicit, separate
+  // assertion, so two lanes editing that shared line never collide.
+  ok(!/CONFIG\.palette|CONFIG\.limb\.bg/.test(renderSrc),
+     'seams: src/render/seams.js has no scattered CONFIG.palette reads');
+  const colorLiteral =
+    /0x[0-9a-fA-F]{6}\b|#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b|\brgba?\s*\(/g;
+  const literals = (renderSrc.match(colorLiteral) || [])
+    .filter((m) => m.toLowerCase() !== '0xffffff');
+  ok(literals.length === 0,
+     'seams: src/render/seams.js carries no raw color literal' +
+     (literals.length ? ' (found: ' + literals.join(', ') + ')' : ''));
+}
+
+{
+  // ?seams= resolver: the same absent/junk/'1' shape every other opt-in
+  // flag resolver in this codebase carries (resolvePaletteId, resolveLegibility).
+  ok(resolveSeams(null) === false && resolveSeams('') === false &&
+     resolveSeams('0') === false && resolveSeams('junk') === false &&
+     resolveSeams('1') === true,
+     'seams: ?seams= resolves off for everything but the exact opt-in \'1\' — ' +
+     'CLAUDE.md\'s "prototypes ship behind query flags, off by default"');
+}
+
+{
+  // projected-pixel floor: a pip under ~1.5px twinkles as the camera
+  // translates (the packet's own risk note) rather than reading as a
+  // light. SHARE.pip = 1 (full compensation) means the gained size
+  // projects to the SAME screen size at every view — the near-view size,
+  // restored — so this is checked at every shipped view id rather than
+  // just the default, so a future SHARE.pip retune cannot silently drop
+  // below the floor at one of them without pathcheck catching it.
+  ok(SEAMS.haloSize > SEAMS.pipSize,
+     'seams: the halo is authored bigger than the core it surrounds (' +
+     SEAMS.haloSize + ' vs ' + SEAMS.pipSize + ')');
+  const MIN_PX = 1.5;
+  for (const id of Object.keys(CONFIG.viewScales)) {
+    const gain = legibilityGain(SHARE.pip, id, true);
+    const px = screenPx(SEAMS.pipSize * gain, id);
+    ok(px >= MIN_PX,
+       'seams: the pip core projects to ' + px.toFixed(2) + 'px at ?view=' + id +
+       ' — at or above the ' + MIN_PX + 'px twinkle floor');
+  }
+}
+/* ==== end T-038 block ===================================================== */
+
 console.log('pathcheck: ' + passes + ' passed, ' + fails + ' failed');
 process.exit(fails ? 1 : 0);
