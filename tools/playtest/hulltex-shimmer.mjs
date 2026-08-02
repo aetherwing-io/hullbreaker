@@ -28,9 +28,17 @@
 // SAME scroll position hulltex-capture.mjs's `near-open`/`far-depth` moments
 // use, so the two rigs' numbers sit over literally the same geometry.
 //
-// TWO THINGS THAT HAD TO BE ENGINEERED IN, both discovered by this rig
-// itself giving a DIFFERENT answer on two consecutive identical-config runs
-// before they were fixed:
+// WHAT THIS RIG'S DETERMINISM ACTUALLY IS, stated precisely after a fix
+// cycle corrected an overclaim: numbers at the `near-open` moment are
+// BIT-IDENTICAL across repeats WITHIN ONE BROWSER PROCESS (proven below with
+// `--repeats`), and are NOT guaranteed identical across separate cold process
+// launches — a reviewer measured 7804/7823/7823 as three genuinely different
+// readings of the SAME shipped code across separate `node ... --repeats 1`
+// invocations, one per fresh browser. See build.md's fix-cycle section for
+// the full finding and for why the FIRST version of this file's claim ("no
+// single-run number is trusted anywhere") was not yet true when it was
+// written. THREE things had to be engineered in, in the order they were
+// found:
 //
 //   1. `?fixeddt=16.67` (src/main.js's existing verification hook — see its
 //      own comment) pins the SIM step to a 60fps-equivalent constant,
@@ -39,7 +47,7 @@
 //      scroll every run depending on how fast the CPU happened to render —
 //      sometimes sub-pixel, sometimes several pixels — which is not
 //      "constant speed" at all.
-//   2. EVERY frame of the run — the ramp to the target scroll position AND
+//   2. EVERY frame of the run — the wait for the target scroll position AND
 //      the 8-frame capture — happens inside ONE `page.evaluate` call, via an
 //      in-page `requestAnimationFrame` loop that reads
 //      `__HULLBREAKER_TEST__.snapshot().scrollX` and grabs the band with a
@@ -55,9 +63,62 @@
 //      over a fixed rectangle of a periodic pattern is not phase-invariant).
 //      Proof this actually mattered: the polling version produced 7842 and
 //      9551-9659 "changing" pixels across supposedly-identical repeated runs
-//      of the SAME code (see build.md); the self-contained version below
-//      reproduces the SAME scrollX (to 4 decimal places) and the SAME pixel
-//      counts on every repeat, checked with `--repeats`.
+//      of the SAME code (see build.md).
+//   3. TWO REMAINING REAL-CLOCK RACES, found by a reviewer re-running this
+//      file unmodified and getting the SAME code to produce both 7804 and
+//      7823, plus an intermittent "no canvas on page" error — #2 above only
+//      removed the jitter INSIDE the capture loop, not around its own start:
+//        a. `waitUntilReady()` replaces a fixed `page.waitForTimeout(400)`
+//           with `page.waitForFunction(state === 'PLAYING')`. A fixed
+//           duration is a guess at how long boot takes; on a cold browser
+//           launch (no JIT warm-up, first-ever asset fetch on this process)
+//           400ms was sometimes not enough for `awaitPreloads()`'s own
+//           real-wall-clock-timed settlement (src/render/preload.js,
+//           PRELOAD_BUDGET_MS) to finish, which is exactly the missing
+//           canvas / undefined test-API race.
+//        b. `finalCapture`'s `keydownCode` param dispatches a SYNTHETIC
+//           `KeyboardEvent` (`window.dispatchEvent`, not
+//           `page.keyboard.down`) on the loop's own first tick, instead of a
+//           separate real CDP key-press issued before entering the loop. A
+//           real CDP-injected key event and the game's already-running rAF
+//           loop are two independently-scheduled browser tasks with no
+//           ordering guarantee between them — the exact "frame-boundary
+//           input-delivery timing" fork T-054's own playtest.md already
+//           documented for full played-out runs (a real key can land one
+//           tick early or late relative to whichever rAF callback happens to
+//           run first), which shifts RIG's whole subsequent trajectory by
+//           one fixed-dt tick and lands the 8-frame capture on a different
+//           sub-texel phase — the same class of bug as #2, just at the
+//           boundary #2 didn't cover. A script-dispatched event's listeners
+//           run SYNCHRONOUSLY inside the dispatching tick, which is what
+//           removes the race rather than narrowing it.
+//      MEASURED RESULT, stated precisely rather than assumed — an A/B of
+//      this exact rig against its own pre-fix (committed) version, 8 cold
+//      process launches each side (see build.md's "Fix cycle" section for
+//      the full table): `near-open` stayed bit-identical across `--repeats`
+//      WITHIN one process both before and after (never in question). ACROSS
+//      separate cold launches, BOTH before and after land on the exact SAME
+//      two discrete `textured` values (7804 and 7823, a 0.24% spread) — only
+//      the frequency of landing on one vs the other moved (7:1 pre-fix,
+//      4:4 post-fix in this sample), which 8 runs cannot distinguish from
+//      chance. `flat`'s spread shrank to zero in this one 8-run sample
+//      (2454/2432 pre-fix -> all-2454 post-fix) but that is one sample, not
+//      a proof either. **I ship both fixes on the MECHANISM, not a measured
+//      reduction**: a fixed real-time wait standing in for "boot finished"
+//      and a real CDP-injected key racing an independently-scheduled browser
+//      task are textbook sources of exactly this bug, and neither fix can
+//      make anything WORSE — but I did not prove, at this sample size, that
+//      they close the remaining 0.24%. A third attempt (also gating the
+//      ready-wait on materials.js's own
+//      `window.__HB_HULL_TEX().buckets.length`, in case hull-texture
+//      compositing lagged `state === 'PLAYING'`) made no measured difference
+//      either and was dropped rather than kept as unproven complexity — see
+//      the function below. 0.24% is far inside the noise floor relative to
+//      the 20-30%+ swings that separate the eight tested variants in
+//      build.md, so it does not threaten any conclusion drawn from this rig
+//      — but it is real and still open, and anyone tightening this further
+//      should start from an honest baseline: this cycle's fixes are
+//      reasoned, not proven, against this specific residual.
 //
 // TWO METRICS, on purpose, not one:
 //
@@ -186,21 +247,41 @@ async function policyTick(page, rules, sample, held, policyHeld) {
 
 /* The self-contained rAF loop: NO Node round trip once this starts (see the
    header's determinism note for why that is load-bearing). Assumes the
-   caller has already gotten the run to (or past) `targetScroll` — this only
-   waits for the NEXT tick that confirms it, then grabs N consecutive frames
-   of the frozen band via a cheap `drawImage` blit (no PNG anywhere in this
-   rig). */
-async function finalCapture(page, targetScroll) {
-  return page.evaluate(({ rect, n, targetScroll }) => new Promise((resolve, reject) => {
+   caller has already gotten the run to (or past) `targetScroll` (or, for
+   `keydownCode`, that the caller wants THIS call to also start holding a key)
+   — this waits for the tick that confirms `targetScroll`, then grabs N
+   consecutive frames of the frozen band via a cheap `drawImage` blit (no PNG
+   anywhere in this rig).
+
+   `keydownCode`, when given, is dispatched as a SYNTHETIC DOM KeyboardEvent
+   (`window.dispatchEvent`, not `page.keyboard.down`) on this call's very
+   FIRST tick — see build.md's fix-cycle note for why: a real CDP-injected key
+   event and the game's own already-running `requestAnimationFrame` loop are
+   two independently-scheduled browser tasks, and Chromium does not guarantee
+   which one a given real-clock keydown lands before or after — exactly the
+   "frame-boundary input-delivery timing" fork T-054's playtest.md already
+   documented for full played-out runs, just showing up here as which tick
+   first sees the key held. A script-dispatched event's listeners
+   (src/main.js's own keydown handler; no `isTrusted` check, confirmed by
+   reading it) run SYNCHRONOUSLY inside this same tick, so "right starts being
+   held" happens at an exact, repeatable tick boundary instead of racing one.
+   `finalCapture` also dispatches the matching keyup once capture is done, so
+   the page is left in a clean released-key state before the context closes. */
+async function finalCapture(page, targetScroll, keydownCode) {
+  return page.evaluate(({ rect, n, targetScroll, keydownCode }) => new Promise((resolve, reject) => {
     const canvas = document.querySelector('canvas');
     if (!canvas) { reject(new Error('no canvas on page')); return; }
     const off = document.createElement('canvas');
     off.width = rect.w; off.height = rect.h;
     const g = off.getContext('2d', { willReadFrequently: true });
     const out = [];
-    let capturing = false, capCount = 0, ticks = 0;
+    let capturing = false, capCount = 0, ticks = 0, keyDispatched = false;
     const MAX_TICKS = 20000; // ~5.5 real minutes of rAF at 60fps-equivalent; a stuck run must not hang the rig forever
     function tick() {
+      if (!keyDispatched && keydownCode) {
+        window.dispatchEvent(new KeyboardEvent('keydown', { code: keydownCode }));
+        keyDispatched = true;
+      }
       if (++ticks > MAX_TICKS) { reject(new Error('stuck before scroll ' + targetScroll)); return; }
       const s = globalThis.__HULLBREAKER_TEST__.snapshot();
       if (!capturing) {
@@ -212,23 +293,16 @@ async function finalCapture(page, targetScroll) {
         const d = g.getImageData(0, 0, rect.w, rect.h).data;
         out.push({ scrollX: s.scrollX, state: s.state, data: Array.from(d) });
         capCount++;
-        if (capCount >= n || s.state === 'GAME_OVER') { resolve(out); return; }
+        if (capCount >= n || s.state === 'GAME_OVER') {
+          if (keydownCode) window.dispatchEvent(new KeyboardEvent('keyup', { code: keydownCode }));
+          resolve(out);
+          return;
+        }
       }
       requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
-  }), { rect: RECT, n: N_FRAMES, targetScroll });
-}
-
-/* `hold-right` ramp: a single keydown, then `finalCapture` does both the wait
-   AND the capture in one self-contained call — nothing here can introduce
-   the Node-round-trip phase jitter the header describes, which is why THIS
-   moment's numbers are bit-identical across `--repeats`. */
-async function rampHoldRight(page) {
-  await page.keyboard.down('KeyD');
-}
-async function unrampHoldRight(page) {
-  await page.keyboard.up('KeyD');
+  }), { rect: RECT, n: N_FRAMES, targetScroll, keydownCode });
 }
 
 /* `policy` ramp: the SAME reflex policy hulltex-capture.mjs's shots() drives
@@ -262,6 +336,36 @@ async function unrampPolicy(page, { policyHeld }) {
   await page.keyboard.up('KeyJ');
 }
 
+/* Waits for a REAL settled signal instead of a fixed real-clock timer — the
+   fix-cycle finding this rig shipped without: a fixed wait is a guess at how
+   long boot takes, and on a cold browser launch (no JIT warm-up yet, first
+   ever asset fetch/decode against this process) it can guess short, which is
+   what produced the intermittent "no canvas on page" BOOT ERROR and — more
+   important — let the deterministic capture below start before
+   awaitPreloads()'s real-wall-clock-timed settlement (src/render/preload.js,
+   PRELOAD_BUDGET_MS) had actually finished, on SOME cold runs and not others.
+   `state === 'PLAYING'` is the one signal that is only true once every
+   module-scope `await` blocking main.js's own evaluation (including
+   materials.js's `await awaitPreloads()`, which finishHullTex() and its
+   GPU-uploading warmTexture() calls run synchronously right after) has
+   already resolved — so waiting for it, rather than a duration, removes the
+   race instead of hoping 400ms was always enough. */
+async function waitUntilReady(page) {
+  await page.waitForFunction(() => {
+    const api = globalThis.__HULLBREAKER_TEST__;
+    if (!api || typeof api.snapshot !== 'function') return false;
+    const s = api.snapshot();
+    return !!s && s.state === 'PLAYING' && !!document.querySelector('canvas');
+  }, null, { timeout: 20000 });
+  // TRIED AND DROPPED: also gating on window.__HB_HULL_TEX().buckets.length
+  // (materials.js's own composited-tile snapshot, not just "the game loop
+  // started") in case hull-texture compositing lagged `state === 'PLAYING'`.
+  // Measured no difference (5 cold launches: 7804/7823/7823/7804/7804,
+  // statistically the same spread as without it) — removed rather than kept
+  // as unproven complexity. See build.md's fix-cycle section for what
+  // remains unexplained.
+}
+
 async function captureMoment(browser, server, query, moment) {
   const context = await browser.newContext({ viewport: VIEWPORT });
   const page = await context.newPage();
@@ -269,9 +373,9 @@ async function captureMoment(browser, server, query, moment) {
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
   await page.goto(`${server.baseUrl}/index.html?testapi=1&fixeddt=${FIXEDDT_MS}${query}`,
     { waitUntil: 'load' });
-  await page.waitForTimeout(400);
   let frames = null, bootError = null, died = false;
   try {
+    await waitUntilReady(page);
     if (moment.ramp === 'policy') {
       const { last, ...rampState } = await rampPolicy(page, moment.scroll);
       if (!last || last.state === 'GAME_OVER' || (last.scrollX || 0) < moment.scroll) {
@@ -282,9 +386,9 @@ async function captureMoment(browser, server, query, moment) {
         await unrampPolicy(page, rampState);
       }
     } else {
-      await rampHoldRight(page);
-      frames = await finalCapture(page, moment.scroll);
-      await unrampHoldRight(page);
+      // No page.keyboard.down here — see finalCapture's own header for why
+      // the keydown is dispatched INSIDE the self-contained loop instead.
+      frames = await finalCapture(page, moment.scroll, 'KeyD');
     }
   } catch (err) {
     bootError = err.message;

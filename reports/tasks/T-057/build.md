@@ -24,6 +24,80 @@ Pinned server for live judgment: `node tools/serve.mjs 8757 --root
 /Users/scottmeyer/projects/hullbreaker/.claude/worktrees/T-057 --quiet` is
 running now at **http://127.0.0.1:8757/index.html** (port 8757, not 8741/8742).
 
+## Fix cycle (review REQUEST_CHANGES, addressed below)
+
+The first pass of this report claimed the rig was "bit-identical across
+repeats" and built its central "+0.24%, no meaningful change" comparison from
+a single baseline reading that was never itself repeat-checked. A reviewer
+re-ran the unmodified rig and got the SAME code to produce **7804, 7823, and
+7823** across three separate cold process launches, plus an intermittent
+`no canvas on page` error on a `--repeats 2` run — genuine cross-process
+nondeterminism the claim didn't disclose, and (worse) the exact pair of
+values the report's headline comparison rested on.
+
+Root cause, found by reading what the rig actually waited on: the capture
+LOOP was self-contained and jitter-free (proven, unchanged from the first
+pass), but getting INTO that loop still depended on (a) a fixed
+`page.waitForTimeout(400)` as a stand-in for "boot finished," which a cold
+browser launch (no JIT warm-up, first-ever asset fetch on the process) could
+outrun — the `PRELOAD_BUDGET_MS`-timed asset gate in
+`src/render/preload.js` is real-wall-clock, not sim-time, and this is the
+literal mechanism of the reviewer's `no canvas on page` error — and (b) a
+real CDP `page.keyboard.down('KeyD')` issued from Node before the loop
+started, racing the game's own already-running `requestAnimationFrame` loop
+with no ordering guarantee between the two independently-scheduled browser
+tasks (the same "frame-boundary input-delivery timing" fork T-054's own
+`playtest.md` already documented for full played-out runs, just showing up
+here as which tick first sees the key held). Both are now fixed in
+`hulltex-shimmer.mjs`: `waitUntilReady()` waits for `state === 'PLAYING'`
+instead of a duration, and the keydown is dispatched as a synthetic
+`KeyboardEvent` from INSIDE the capture loop's own first tick (synchronous,
+no CDP round trip) instead of before it. A third attempt — also gating the
+wait on `window.__HB_HULL_TEX().buckets.length` in case texture compositing
+lagged `state === 'PLAYING'` — measured no further improvement and was
+dropped rather than kept as unproven complexity (see the rig's own comment
+at `waitUntilReady`).
+
+**Measured result — and an honest limit on what it proves.** I A/B'd the
+exact two fixes by reverting `hulltex-shimmer.mjs` to the committed,
+pre-fix version (`git show HEAD:tools/playtest/hulltex-shimmer.mjs`) and
+running 8 cold launches each, then restoring and running 8 more:
+
+```
+                                   textured (8 cold launches)   flat (8 cold launches)
+PRE-FIX  (as reviewed)             7823 x7, 7804 x1              2454 x5, 2432 x3
+POST-FIX (this pass)               7823 x4, 7804 x4              2454 x8
+```
+
+**I cannot honestly claim this measurably shrinks the spread.** Both before
+and after land on the exact SAME two discrete values, 0.24% apart, for
+`textured` — only the frequency of landing on one vs the other moved, which
+an 8-run sample cannot distinguish from chance. `flat`'s spread of {2454,
+2432} shrank to all-2454 in this one 8-run sample, which is suggestive but,
+again, not something I trust from 8 runs alone. I did NOT reproduce the
+reviewer's exact `no canvas on page` error in my own 8-run pre-fix
+re-test either (0/8) — it is evidently rare/load-dependent enough that
+neither its presence nor its absence in a small sample proves much on its
+own. What I ship both fixes ON is the MECHANISM, not a measured reduction:
+a fixed real-time wait standing in for "boot finished" and a real
+CDP-injected key racing an independent task queue are both textbook sources
+of exactly this class of bug, `waitUntilReady()` and the synthetic dispatch
+concretely remove each one, and neither can make anything WORSE (a
+`page.waitForFunction` that resolves faster than 400ms when boot is fast
+costs nothing; a synchronously-dispatched event has no round trip to race
+in the first place). **Corrected claim, stated to match what was actually
+demonstrated:** bit-identical across `--repeats` WITHIN one browser process
+(unchanged, still true, this was never in question); across separate cold
+launches, both before and after this fix cycle, bimodal between two values
+0.24% apart on `textured` — a real, small, still-unresolved residual that
+this cycle's fixes are reasoned to help with but were not proven, by this
+sample size, to reduce. 0.24% is far inside the noise floor relative to the
+20-30%+ swings that separate the eight tested canvas-resize variants below,
+so nothing in this report's conclusions rests on it either way. The
+comparison below is now built from 8-launch distributions on both sides
+(POST-FIX code), not one point each, which is the part of the original
+complaint that actually mattered.
+
 ## What shipped
 
 `src/render/materials.js`: `renderer.capabilities.getMaxAnisotropy()` read
@@ -67,16 +141,24 @@ tools/pathcheck.mjs`: **3201 passed, 0 failed** (3195 + 6 new).
 
 First pass polled `scrollX` from Node with `page.waitForTimeout()` between
 checks. Running the SAME code twice gave **7842** and **9551–9659** "changing"
-pixels — a bigger swing than any of the fixes below produced. The polling
-round-trip competes with the game's own `requestAnimationFrame` callback for
-the same thread, so which exact rendered frame the loop stopped on drifted
-run to run — different runs landed on different sub-texel phases of the same
-periodic panel-line pattern, and a fixed-rectangle metric over a periodic
-pattern is not phase-invariant. Moving the whole "wait for scroll, then
-capture 8 frames" sequence into ONE `page.evaluate` (no Node round-trip once
-it starts) made every number below **bit-identical across repeats** at the
-`near-open` moment (`--repeats`, proven in the log below) — I do not trust a
-single-run number anywhere in this report unless it is at that moment.
+pixels. The polling round-trip competes with the game's own
+`requestAnimationFrame` callback for the same thread, so which exact rendered
+frame the loop stopped on drifted run to run — different runs landed on
+different sub-texel phases of the same periodic panel-line pattern, and a
+fixed-rectangle metric over a periodic pattern is not phase-invariant. Moving
+the whole "wait for scroll, then capture 8 frames" sequence into ONE
+`page.evaluate` (no Node round-trip once it starts) made every number below
+bit-identical across `--repeats` **within one browser process**.
+
+A second, smaller source of the SAME class of jitter — a real CDP keydown and
+a fixed real-time boot wait, both racing the game's own clock — survived that
+fix and was only found and closed in a later review cycle (see "Fix cycle"
+above): near-open is now bimodal across separate COLD process launches (two
+values 0.24% apart, not one), rather than fully identical. Both are far
+inside the noise floor relative to the 20-30%+ swings below, so nothing in
+this report's conclusions rests on the last 0.24%, but I no longer claim
+perfect reproducibility — see "Fix cycle" for the honest version of that
+claim.
 
 `far-depth` (scroll ≥ 62) is NOT reachable with a bare hold-right — RIG runs
 into an obstacle and dies well short of 62 — so that moment uses the SAME
@@ -86,24 +168,29 @@ jitter (T-054's `playtest.md`: "two identically-scripted deterministic runs
 can still fork via frame-boundary input-delivery timing"). Reported as a
 range across repeats, never a single number.
 
-## Measurements — near-open (lower-hull band, deterministic, bit-identical across repeats)
+## Measurements — near-open (lower-hull band), 8 separate cold-launch readings each side
 
 ```
-                          changing  reversing%  residualRMSE   (textured / flat)
+                          changing (8 cold launches)          reversing%    residualRMSE
 baseline (main, no T-057 changes)
-  textured                 7804       46.6         1.8951
-  flat                     2454       34.3         1.6072
+  textured                7823 x5, 7804 x3                    46.5 / 46.6   1.8936 / 1.8688
+  flat                    2454 x7, 2432 x1                    34.3 / 34.4   1.6072 / 1.5774
 
 shipped (this branch: anisotropy fix only, hulltiles.js untouched)
-  textured                 7823       46.5         1.8936
-  flat                     2454       34.3         1.6072
+  textured                7823 x4, 7804 x4                    46.5 / 46.6   1.8936 / 1.8688
+  flat                    2454 x8                              34.3         1.6072
 ```
 
-**Shipped vs baseline: no meaningful change** (+0.24% changing, -0.1pt
-reversing%, -0.08% residual — all inside what I'd call noise if this weren't
-bit-deterministic; it's real but practically negligible). **T-057's
-acceptance box asked for shimmer to fall toward flat's level (2454/34.3). It
-did not move.**
+**Shipped and baseline draw from the exact same pair of values on both
+variants** — the two distributions are not distinguishable from each other;
+they are both the rig's own ~0.24% cross-process noise (see "Fix cycle").
+**Corrected conclusion, on firmer footing than the single-point comparison
+this report shipped with initially: the anisotropy fix produces no
+measurable change to the shimmer metric in this harness, full stop — not
+"a 0.24% change I'd call negligible," there is no change distinguishable
+from noise at all.** T-057's acceptance box asked for shimmer to fall toward
+flat's level (~2454/34.3). It did not move, at any resolution this rig can
+tell apart.
 
 Fine detail (T-054's own metric, `hulltex-capture.mjs measure`, unchanged
 since `hulltiles.js` is untouched, re-measured anyway per the evidence
@@ -128,7 +215,16 @@ frame *t+1* look like frame *t* shifted by the known scroll amount? Both
 metrics moved together on every experiment below, which is why I trust the
 conclusion rather than one number in isolation.
 
-## Everything I tried, in order, all reproducible (near-open, deterministic)
+## Everything I tried, in order (near-open)
+
+Measured in one session, each variant a single reading taken back-to-back
+against the SAME running rig process — comparable to each other on that
+basis, though taken before the cross-process fix in "Fix cycle" above (the
+`baseline` row here, 7804, happens to be the lower of the two values that
+row's OWN 8-launch distribution now shows). None of that changes the
+reading: every swing below is 5-30%, one to two orders of magnitude larger
+than the ~0.24% cross-process noise floor now measured, so every comparison
+in this table is real and none of the conclusions below move.
 
 ```
                                               changing  reversing%  residual
@@ -250,10 +346,15 @@ worth asking given the outcome:
 ```
 node tools/pathcheck.mjs                          → 3201 passed, 0 failed
 node tools/playtest/hulltex-shimmer.mjs measure --repeats 2
-  → near-open textured 7823/46.5/1.8936 (both repeats identical)
-  → near-open flat     2454/34.3/1.6072 (both repeats identical)
+  → near-open textured 7823/46.5/1.8936 (both repeats identical WITHIN this process)
+  → near-open flat     2454/34.3/1.6072 (both repeats identical WITHIN this process)
   → far-depth textured 10693-11652 / 52.5-55.8 / 3.26-3.79 (policy-driven, jitter expected)
   → far-depth flat     3785-4202 / 42.6-44.3 / 1.84-1.89
+for i in 1..8; do node hulltex-shimmer.mjs measure --moments near-open; done   (8 SEPARATE cold launches)
+  → shipped config:  textured 7823 x4, 7804 x4 | flat 2454 x8
+  → baseline config: textured 7823 x5, 7804 x3 | flat 2454 x7, 2432 x1
+  (re-run against `git show HEAD~1:src/render/materials.js` for the baseline config,
+  restore afterward — `git diff HEAD -- src/render/materials.js` empty confirms restored)
 node tools/playtest/hulltex-capture.mjs shots      → near-open hull: textured fine 1.754 vs
                                                       flat 0.428; mean 42.78 vs 43.04 (-0.6%)
 node tools/playtest/hulltex-stress.mjs             → worstMs 9.3-9.4ms both, over20ms 0/0/0,
