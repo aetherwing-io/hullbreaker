@@ -674,3 +674,34 @@ export const WEAPON_LETTERS = Object.keys(CONFIG.weapons);
 // two apart silently.
 export const BULLET_NOSE_CEILING_TILES = CONFIG.rifle.radius * CONFIG.weapons.L.scale[0];
 /* ==== end T-041 impact language ==== */
+
+/* ==== T-048 post pass (docs/decisions.md entry 18) ==== */
+// Tuning for the screen pass in src/render/post.js. Kept OUT of the CONFIG
+// literal above on purpose: four look lanes are appending at once, and a
+// delimited block at the end of the file is a merge the integrator can read.
+//
+// `threshold` is a LINEAR-LIGHT luminance, not an 8-bit value: the pass runs
+// before tone mapping, where the deck's lit rust sits near 0.1 and an unlit
+// warm-white quad sits near 1. Above ~0.7 the only things in frame are the
+// ones that are meant to BE light, which is what keeps bloom off the hull and
+// off enemy bodies (pillar 5 — a bled wasp is a lost wasp).
+//
+// `emissiveGain` is the HDR headroom the emissive families get so they land
+// above that line at all. It applies only while the pass is actually drawing.
+export const POST_TUNE = {
+  bloom: {
+    strength: 0.62,                      // composite gain of the blurred bright pass
+    radius: 0.30,                        // mip spread — how far the bleed reaches
+    threshold: 0.78,                     // linear luminance a pixel must beat to bleed
+    strengthMax: 3,                      // clamp on the ?bloom=<n> override
+  },
+  // MSAA on the composer's scene buffer (0 = none, ?aa=<n> overrides for A/B).
+  // A composer does not inherit the canvas's antialiasing, and RIG is ~30 px
+  // at the frozen view, so buying it back matters. 2 rather than 4 because the
+  // cost was MEASURED at a retina drawing buffer under the 256-projectile
+  // load: +0.7 ms at 0 samples, +1.4 ms at 2, +2.0…4.3 ms at 4. The player's
+  // machine is not this one.
+  samples: 2,
+  emissiveGain: 1.45,                    // flashes/sparks/tell lamps/hit pops
+};
+/* ==== end T-048 post pass ==== */

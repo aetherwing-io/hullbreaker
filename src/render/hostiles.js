@@ -10,6 +10,8 @@ import { mortarArcX, mortarArcY, mortarPulsePeriodMs } from '../pure/mortar.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs } from '../sim/time.js';
 import { PAL } from './palette.js';
+import { applySurface } from './materials.js';
+import { postGain } from './post.js';
 import { scene } from './scene.js';
 import { placeOnTower } from './tower.js';
 import {
@@ -169,16 +171,25 @@ function waspRoll(e) {
 }
 
 // per-kind look, keyed by the same kind rows as ENEMY in src/sim/hostiles.js
+/* `surface` (T-048, decisions.md entry 18) is the material FAMILY the kind's
+   body wears — the roughness/metalness response it answers the light rig
+   with, from the one table in src/render/materials.js. Before this pass every
+   hostile was a matte dielectric at the class defaults, so a drone shell, a
+   running frame and a rooted emplacement all took light identically and only
+   hue and silhouette separated them. The split follows the roster's own
+   fiction: flyers are shells, the houndframe is exposed running gear, the two
+   rooted kinds are grown into the hull. Color, geometry and pose are
+   untouched — this adds a response, it does not restyle anything. */
 const LOOK = {
-  wasp:    { geo: waspGeo,    color: PAL.wasp,
+  wasp:    { geo: waspGeo,    color: PAL.wasp,      surface: 'carapace',
              roll: waspRoll,  pose: waspPose },
-  carrier: { geo: carrierGeo, color: PAL.carrier,
+  carrier: { geo: carrierGeo, color: PAL.carrier,   surface: 'carapace',
              roll: (e) => Math.sin(e.t * CONFIG.carrier.rollFreq) * CONFIG.carrier.rollAmp },
-  hound:   { geo: houndGeo,   color: PAL.hound,
+  hound:   { geo: houndGeo,   color: PAL.hound,     surface: 'chassis',
              roll: houndRoll, pose: houndPose },
-  polyp:   { geo: polypGeo,   color: PAL.polyp,
+  polyp:   { geo: polypGeo,   color: PAL.polyp,     surface: 'emplacement',
              roll: () => 0,   pose: polypPose },
-  mortar:  { geo: mortarTubeGeo, color: PAL.mortar,
+  mortar:  { geo: mortarTubeGeo, color: PAL.mortar, surface: 'emplacement',
              roll: mortarRoll, pose: mortarPose },
 };
 
@@ -261,6 +272,16 @@ const LAMP_DEPTH = 0.35;                 // just proud of the combat plane, towa
                                          //   camera, so the body never eats its own lamp
 const LAMP_ON_ALPHA = 0.95;
 
+/* T-048 (decisions.md entry 18): the emissive families' HDR headroom. A tell
+   lamp, a live beam and a detonation are LIGHT — bloom only bleeds what is
+   above its threshold, and a quad drawn at exactly its token color sits under
+   it. postGain() is 1 whenever the bloom pass is not actually drawing, so
+   ?bloom=0 and a failed composer both give back the pre-pass color exactly.
+   Called per frame on materials whose color is already written per frame. */
+function lit(mat, hex) {
+  mat.color.setHex(hex).multiplyScalar(postGain());
+}
+
 function lampAttach(v, color) {
   const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0 });
   const lamp = new THREE.Mesh(lampGeo, mat);
@@ -268,6 +289,7 @@ function lampAttach(v, color) {
   scene.add(lamp);
   v.lamp = lamp;
   v.lampMat = mat;
+  v.lampColor = color;                   // the token; the drawn color is lit() of it
 }
 
 function lampDetach(v) {
@@ -277,6 +299,7 @@ function lampDetach(v) {
 
 function lampShow(v, e, dx, dy, alpha, swell) {
   v.lamp.visible = true;
+  lit(v.lampMat, v.lampColor);           // a warning light, not a warning decal
   v.lampMat.opacity = alpha;
   v.lamp.scale.setScalar(LAMP_R * CUE_GAIN * swell);
   placeOnTower(v.lamp, e.x + dx, e.y + dy, LAMP_DEPTH);
@@ -324,9 +347,9 @@ const meshes = new Map();                // sim hostile row → { mesh, mat }
 
 function spawned(e) {
   const K = LOOK[e.kind];
-  const mat = new THREE.MeshStandardMaterial({
+  const mat = applySurface(new THREE.MeshStandardMaterial({
     color: K.color, flatShading: true, transparent: true, opacity: 0,
-  });
+  }), K.surface);
   const mesh = new THREE.Mesh(K.geo, mat);
   const v = { mesh, mat };
   if (e.kind === 'polyp') {
@@ -420,6 +443,12 @@ function sync(e) {
     if (glow === PAL.glowOff) glow = p.glow;              // a hit flash still wins
   }
   v.mat.emissive.setHex(glow);
+  // T-048: a hit pop and a committed-state glow are the body EMITTING, so
+  // they get the same headroom the lamps and beams get. Written every frame
+  // next to the emissive it scales; it is 1 (the pre-pass value) whenever the
+  // bloom pass is not drawing, and it is multiplied into a black emissive on
+  // every ordinary frame, which changes nothing.
+  v.mat.emissiveIntensity = postGain();
   placeOnTower(v.mesh, e.x, e.y, depth);
   v.mesh.rotation.z = K.roll(e);
   v.mesh.scale.set(sx, sy, sz);
@@ -436,6 +465,7 @@ function sync(e) {
       const pulse = 1 + PP.beamPulseAmp *
         Math.sin(gameMs / 1000 * PP.beamPulseFreq * Math.PI * 2);
       v.beam.scale.set(e.beamReach, pulse, pulse);
+      lit(v.beamMat, PAL.polypBeam);     // a live beam is the light it damages with
       v.beamMat.opacity = 0.65 + 0.25 * pulse;
     }
   }
@@ -578,6 +608,7 @@ function mortarSync(v, e) {
   const marked = flying || e.state === 'fuse' || e.state === 'burst';
   v.pod.visible = flying;
   if (flying) {
+    lit(v.podMat, PAL.mortarPod);        // the ARC is the read — let it carry light
     // exactly the arc the sim flew: same pure functions, same podU
     placeOnTower(v.pod,
       mortarArcX(e.x, e.zoneX, e.podU),
@@ -595,7 +626,7 @@ function mortarSync(v, e) {
     // confused — while staying behind the play plane, so a body caught in it
     // keeps its silhouette (pillar 5: chaos stays readable)
     const u = Math.max(0, Math.min(1, (e.stateUntil - gameMs) / M_CFG.burstMs));
-    v.blastMat.color.setHex(PAL.mortarBlast);
+    lit(v.blastMat, PAL.mortarBlast);    // the detonation, for the frames it damages
     v.blastMat.opacity = 0.24 + 0.38 * u;
     v.markMat.opacity = 0.95;
     v.blast.scale.set(1 + (1 - u) * 0.12, 1, 1 + (1 - u) * 0.35);

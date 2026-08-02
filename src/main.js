@@ -76,6 +76,10 @@ import {
 } from './sim/transform.js';
 import { updateScroll } from './sim/scroll.js';
 import { camera, renderer, scene } from './render/scene.js';
+// the one draw of the frame, and the only place the composer is reachable
+// from: renderFrame() is renderer.render() until the bloom pass is up, and
+// falls back to it again the moment the pass misbehaves (src/render/post.js)
+import { POST, postSnapshot, renderFrame } from './render/post.js';
 import {
   activeCameraDepth, calibrateEdges, handleResize, resetCameraYaw, syncCamera,
 } from './render/camera.js';
@@ -507,6 +511,12 @@ function telemetry() {
     // intervals, so "60fps with 200+ projectiles" is a reading, not a claim.
     juice: juiceSnapshot(),
     perf: perfSnapshot(),
+    // additive (T-048, decisions.md entry 18): which draw path this frame
+    // took. `status` is the honest one — 'active' only while the composer is
+    // really drawing, 'failed' if it broke and the direct path took over —
+    // so a capture or a perf reading can never be attributed to a pass that
+    // was not running when it was taken.
+    post: postSnapshot(),
   };
 }
 
@@ -598,7 +608,7 @@ function frame(t) {
     }
   }
   try {
-    renderer.render(scene, camera);
+    renderFrame();
     updateHUD();
   } catch (err) {
     reportFault('render', err);
@@ -655,6 +665,9 @@ window.HB = Object.freeze({
   // live hit-stop remainder, and the frame-time sampler beside it
   juice: juiceSnapshot,
   perf: perfSnapshot,
+  // the screen pass (?bloom=0 disables): flag, live status, the bloom
+  // parameters actually in effect, and any fault that dropped it
+  post: postSnapshot,
   // WebAudio layer (?audio=0 disables it): whether a context exists yet, its
   // lifecycle state, how many ambience layers are engaged and how many voices
   // are live. Read-only, and the reason it is HERE rather than only inside
@@ -889,6 +902,29 @@ if (QUERY.has('selftest')) {
       check('juice pools sized from config',
         !j.enabled || (j.sparkMax === CONFIG.juice.pools.particles &&
           j.flashMax === CONFIG.juice.pools.flashes));
+    }
+    /* The screen pass (T-048, decisions.md entry 18). pathcheck can see the
+       resolver and the wiring; it cannot see which draw path a live page took,
+       and that is the whole risk here — a composer that quietly replaced the
+       one render call, or one that failed its CDN fetch and left a still
+       canvas. So this checks the three things only a running page knows:
+       the flag and the module agree, the pass never claims to be drawing when
+       it is not, and — the load-bearing one — frames are on screen on
+       whichever path is live. `loading` is a legitimate status at 1.5s: the
+       addons come over the network, and the direct path is drawing until they
+       land, which is exactly the fallback this asserts. */
+    {
+      const p = postSnapshot();
+      const raw = QUERY.get('bloom');
+      check('post flag plumbed', POST.on === (raw !== '0' && raw !== 'off'));
+      check('post status matches the flag (' + p.status + ')',
+        p.on ? ['loading', 'active', 'failed'].includes(p.status) : p.status === 'off');
+      check('bloom parameters are live only while the pass draws',
+        p.status === 'active'
+          ? p.strength > 0 && p.threshold > 0 && p.gain > 1
+          : p.strength === 0 && p.gain === 1);
+      // the fallback contract, stated as the player experiences it
+      check('frames render on whichever path is live', renderer.info.render.frame > 0);
     }
     /* Durability (T-032). The failure panel is the only signal a player gets
        that something broke, so the browser has to prove four things pathcheck
