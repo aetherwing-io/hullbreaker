@@ -193,6 +193,14 @@ be a picture of nothing.
 | `backdrop-colony-cluster` | 243 x 122 px | `compare-backdrop-colony-cluster.png` |
 | `backdrop-gill-cavity` | 418 x 418 px | `compare-backdrop-gill-cavity.png` |
 
+**Not mine:** four captures under `reports/tasks/T-053/evidence/qa/`
+(`tile-*.png`, `view-*.png`, some with `-shared`/`-pinned` suffixes) appeared in
+this worktree at 06:36–06:37 while I was finishing, and my `git add -A` swept
+them into commit `8e50726`. I did not produce them and I have not judged them —
+another agent was running the asset tools against this tree. They are left in
+place rather than deleted, since deleting another lane's in-flight artifact is
+worse than an unexplained file; their provenance is this paragraph.
+
 **Two of the nine needed a second generation, and both times the capture is what
 caught it** — not the gate:
 
