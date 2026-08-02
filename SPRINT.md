@@ -1075,7 +1075,7 @@ launching; squads stagger instead of all committing on one frame. MERGED at
 1853/0.
 owner: gameplay-engineer
 
-## T-044 | lattice | review | P1
+## T-044 | lattice | done | P1
 goal: setpiece moments — an ARRIVAL catwalk at the corner reveal and an ARENA
 fighting ground at each wave gate, tiers escalating 13/15/19/21 columns.
 REQUEST_CHANGES: measured 2/3 runs now clear wave gate 2 vs 0/3 on base, so the
@@ -1140,7 +1140,7 @@ transform slice's 580-call path not multiplied.
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; frame time under load; FAR captures
 
-## T-040 | art | review | P1
+## T-040 | art | done | P1
 goal: packet item S8 — RIG silhouette. He is 230 lit pixels of head sphere plus
 three boxes, sharing a value family with his own bullets. Render-only: hitbox
 and movement are frozen.
