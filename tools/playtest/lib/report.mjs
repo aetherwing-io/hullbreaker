@@ -21,15 +21,25 @@ function renderSummary(report) {
   lines.push('');
   lines.push('## Outcome');
   lines.push(`- Result: **${metrics.outcome.result}**`);
-  lines.push(`- Attempts: ${metrics.outcome.attempts ?? 'n/a'}, falls (final attempt, only visible on victory): ${metrics.outcome.falls ?? 'n/a'}`);
-  lines.push(`- Kills: ${metrics.finalKills ?? 'n/a'}, attempt-counter deaths (FIXTURE-ONLY, structurally 0 in the default run): ${metrics.deaths}, hits survived: ${metrics.hitsWithoutDeath}`);
+  // What the browser was actually running — the subject of every fixture-derived
+  // line below (SPRINT I-013).
+  lines.push(metrics.servedFixture.known
+    ? `- Served build: **${metrics.servedFixture.kind}**${metrics.servedFixture.id ? ` (fixture \`${metrics.servedFixture.id}\`${metrics.servedFixture.paceId ? `, pace ${metrics.servedFixture.paceId}` : ''})` : ''} — ${metrics.servedFixture.routeCount} authored route(s), dare pocket ${metrics.servedFixture.hasDarePocket ? 'present' : 'absent'}`
+    : `- Served build: **unknown** — ${metrics.servedFixture.unavailableReason}; every fixture-derived line below is omitted`);
+  lines.push(metrics.outcome.attempts === null
+    ? `- Attempts: **n/a** — ${metrics.outcome.attemptsUnavailableReason}`
+    : `- Attempts: ${metrics.outcome.attempts}, falls (final attempt, only visible on victory): ${metrics.outcome.falls ?? 'n/a'}`);
+  lines.push(metrics.deaths === null
+    ? `- Deaths: **unavailable** — ${metrics.deathsUnavailableReason}`
+    : `- Deaths: **${metrics.deaths}** (source: \`${metrics.deathsSource}\` — ${metrics.deathsScope})`);
+  lines.push(`- Kills: ${metrics.finalKills ?? 'n/a'}, hits survived: ${metrics.hitsWithoutDeath}`);
   if (metrics.lives.unavailableReason) {
-    lines.push(`- Stock lives (HUD \`×N\`): **unavailable** — ${metrics.lives.unavailableReason}`);
+    lines.push(`- Stock lives: **unavailable** — ${metrics.lives.unavailableReason}`);
   } else {
-    lines.push(`- Stock lives (HUD \`×N\` — the failure counter that works outside fixtures): ${metrics.lives.start} → ${metrics.lives.end}, **${metrics.lives.spent} spent**${metrics.lives.losses.length ? ` (at ${metrics.lives.losses.map((l) => `${fmtMs(l.gameMs)}${l.xBefore != null && l.x != null ? ` x ${l.xBefore}→${l.x}` : ''}`).join(', ')})` : ''}`);
+    lines.push(`- Stock lives (source: ${metrics.lives.source}): ${metrics.lives.start} → ${metrics.lives.end}, **${metrics.lives.spent} spent**${metrics.lives.losses.length ? ` (at ${metrics.lives.losses.map((l) => `${fmtMs(l.gameMs)}${l.xBefore != null && l.x != null ? ` x ${l.xBefore}→${l.x}` : ''}`).join(', ')})` : ''}${metrics.lives.crossCheck && !metrics.lives.crossCheck.agrees ? ` — **telemetry/HUD disagree**: telemetry ${metrics.lives.crossCheck.telemetrySpent} vs HUD ${metrics.lives.crossCheck.hudSpent}` : ''}`);
   }
   const rr = report.retryReassertions || [];
-  if ((metrics.outcome.attempts ?? 1) > 1) {
+  if ((metrics.outcome.attempts ?? 1) > 1 || rr.length) {
     lines.push(rr.length
       ? `- Retry key re-assertion: ${rr.length} retry transition(s) detected, held keys re-pressed within <=${report.retryDetection.maxLagMs}ms each time (script held: ${[...new Set(rr.flatMap((r) => r.codes))].join(', ') || 'none'}) — see README "Fixed: zombie attempts (F7)"`
       : '- Retry key re-assertion: multiple attempts observed but no held keys needed re-pressing (nothing was down at any retry instant)');
@@ -63,7 +73,14 @@ function renderSummary(report) {
   } else {
     lines.push(`- Air jumps: ${metrics.jumpCounts.finalAttemptAirJumps} final attempt (peak single attempt ${metrics.jumpCounts.peakSingleAttemptAirJumps}; resets every retry)`);
   }
-  lines.push(`- Dare pocket: entered=${metrics.darePocket.entered} (${metrics.darePocket.enteredMethod ?? 'not observed'}), reward taken=${metrics.darePocket.rewardTaken}`);
+  lines.push(metrics.darePocket.unavailableReason
+    ? `- Dare pocket: **unavailable** — ${metrics.darePocket.unavailableReason}`
+    : `- Dare pocket: entered=${metrics.darePocket.entered} (${metrics.darePocket.enteredMethod ?? 'not observed'}), reward taken=${metrics.darePocket.rewardTaken}`);
+  const ef = metrics.hostilePresence.enemiesFlag;
+  if (ef) lines.push(`- \`?enemies=0\`: **${ef.honoured === true ? 'honoured' : ef.honoured === false ? 'NO-OP on this run' : 'unreadable'}** — ${ef.note}`);
+  else if (metrics.hostilePresence.samplesWithHostileRoster > 0) {
+    lines.push(`- Hostiles seen: up to ${metrics.hostilePresence.maxConcurrent} concurrent (${metrics.hostilePresence.kindsObserved.join(', ') || 'none'}) on ${metrics.hostilePresence.samplesWithHostiles}/${metrics.hostilePresence.samplesWithHostileRoster} sampled ticks`);
+  }
   lines.push(`- Input density (A.5: deliberately NOT a score input): ${metrics.input.eventsPerSecond} events/sec (${metrics.input.totalEvents} total: ${metrics.input.keydownCount} down / ${metrics.input.keyupCount} up)`);
   if (metrics.protoScore.unavailableReason) {
     lines.push(`- protoScore (A.5 formula): **unavailable** — ${metrics.protoScore.unavailableReason}`);
@@ -75,11 +92,37 @@ function renderSummary(report) {
   if (metrics.score) {
     lines.push(`- Score snapshot (final, tune=${metrics.score.tune}): CHARGE ${metrics.score.charge} (notch ${metrics.score.notch} ${metrics.score.notchName}), THREAT **${metrics.score.threat}** → ${metrics.score.classification}; counts ${JSON.stringify(metrics.score.counts)}; hot ${metrics.score.hotMs}ms of ${metrics.score.playMs}ms; setbacks ${metrics.score.setbacks}`);
   }
+  // I-018: a --deterministic run's input is gated on the GAME's clock, so the
+  // ledger of what actually dispatched belongs next to the metrics, not buried
+  // in report.json — a run that fired none of its events measured nothing, and
+  // that has to be readable in the digest a human opens first.
+  const dd = meta.deterministicDispatch;
+  if (dd) {
+    lines.push('## Deterministic dispatch (input keyed to the game\'s own clock)');
+    lines.push(`- Events dispatched: **${dd.dispatched} of ${dd.events}**` +
+      (dd.viaWallclockTitle ? ` (${dd.viaWallclockTitle} on the wall clock at the shell title — MENU freezes gameMs)` : '') +
+      `; sim clock reached ${fmtMs(dd.gameMsMax)} (advanced ${fmtMs(dd.clockAdvancedMs)}); stop reason: ${dd.stopReason ?? 'n/a'}`);
+    if (dd.fatal) lines.push(`- **FAILED (exit 1): ${dd.fatal}**`);
+    if (dd.warning) lines.push(`- WARNING: ${dd.warning}`);
+    if (dd.pending > 0 && dd.pendingExpected) {
+      lines.push(`- ${dd.pending} event(s) left pending, which is expected for a run that stopped ` +
+        `at ${dd.stopReason} — its script window was longer than the run.`);
+    }
+    lines.push('');
+  }
   lines.push('');
   if (report.consoleErrors.length || report.pageErrors.length) {
     lines.push('## Errors observed');
     for (const e of report.pageErrors) lines.push(`- [page error] ${e.message}`);
     for (const e of report.consoleErrors) lines.push(`- [console error] ${e.text}`);
+    lines.push('');
+  }
+  // I-011: kept in their own section, deliberately not under "Errors
+  // observed" — a keyboard call losing a race with the browser context closing
+  // says nothing about the game.
+  if ((report.teardownErrors || []).length) {
+    lines.push('## Harness teardown notes (NOT game errors)');
+    for (const e of report.teardownErrors) lines.push(`- [teardown] ${e.message}`);
     lines.push('');
   }
   if (report.meta.bootError) {

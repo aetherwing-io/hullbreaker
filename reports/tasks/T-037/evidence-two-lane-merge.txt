@@ -1,0 +1,23 @@
+==============================================================
+BASE: origin/main   (monolith)
+  files each lane touched:
+    lane A: tools/pathcheck.mjs 
+    lane B: tools/pathcheck.mjs 
+  MERGE: CONFLICT in tools/pathcheck.mjs 
+  conflict hunks: 1
+==============================================================
+BASE: origin/task/T-037   (split)
+  files each lane touched:
+    lane A: tools/pathcheck/lane-a.mjs tools/pathcheck/manifest.mjs 
+    lane B: tools/pathcheck/lane-b.mjs tools/pathcheck/manifest.mjs 
+  MERGE: CONFLICT in tools/pathcheck/manifest.mjs 
+  conflict hunks: 1
+==============================================================
+BASE: origin/task/T-037   (split, two lanes extending DIFFERENT existing domains)
+  files each lane touched:
+    lane C: tools/pathcheck/t-011-juice-feedback-pass.mjs 
+    lane D: tools/pathcheck/momentum-earned-pace-escalation.mjs 
+  MERGE: clean, no conflict
+  gate after the merge: pathcheck: 1814 passed, 0 failed
+==============================================================
+clone removed

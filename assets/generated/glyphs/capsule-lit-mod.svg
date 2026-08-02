@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Capsule lit code — MOD</title>
+  <desc>Direction D, the mod case, included because it is where the direction is weakest: the
+  mod face is the amber WARN/mod color and a warm-white mark on it has far less value contrast
+  than the same mark on magenta. Same double chevron as capsule-mark-mod, inverted polarity, so
+  the pair measures exactly what the mod face costs this direction.</desc>
+
+  <rect x="0" y="0" width="128" height="128" fill="#14181e"/>
+  <rect x="8" y="8" width="112" height="112" fill="#ffd75e"/>
+
+  <g fill="#fff2d8">
+    <polygon points="64,14 114,58 92,58 64,34 36,58 14,58"/>
+    <polygon points="64,62 114,106 92,106 64,82 36,106 14,106"/>
+  </g>
+</svg>

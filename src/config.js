@@ -800,3 +800,15 @@ export const CONFIG = {
 
 // derived rosters: adding a weapon to CONFIG.weapons wires kills + drops
 export const WEAPON_LETTERS = Object.keys(CONFIG.weapons);
+
+/* ==== T-041 impact language ==== */
+// S10: the sim collides every bullet as a POINT (src/sim/weapons.js) — no
+// bullet has a radius in the sim at all — so a drawn nose reaching ahead of
+// that point claims a hit the sim never gave. The shipped laser bolt already
+// draws 7 * rifle.radius = 1.12 tiles of nose with pathcheck green; that is
+// the existing precedent, not a new number, so nothing this pass adds may
+// draw further ahead of a bullet's center than L already does. Derived
+// rather than duplicated so a future retune of either value can't drift the
+// two apart silently.
+export const BULLET_NOSE_CEILING_TILES = CONFIG.rifle.radius * CONFIG.weapons.L.scale[0];
+/* ==== end T-041 impact language ==== */

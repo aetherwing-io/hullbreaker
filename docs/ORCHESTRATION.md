@@ -249,3 +249,62 @@ integrator-dispatched re-gate scoped strictly to the findings.
 - `rm .claude/flywheel.on` — flywheel disarms; session behaves normally.
 - Marking tasks `operator`/`blocked` releases the flywheel legitimately when
   everything open is waiting on a human.
+
+## Operating tempo (2026-08-02 — pace without losing the gates)
+
+The operator's note: *"iterate on the /loop and improve the pace, without
+sacrificing the final quality."* Measured drags from the 2026-08-02 session,
+and what replaced them. None of these weaken a gate; they remove integrator
+overhead and mis-sized ceremony.
+
+**1. Dispatch briefs are now short.** `docs/LANE-BRIEF.md` carries every
+standing rule — fences, ports, hard rules, evidence standard, three-dot diff,
+issue filing. Dispatch prompts carry only the task block plus what is genuinely
+task-specific. Eight consecutive hand-written briefs restated the same fences
+and one of them still got a fact wrong (it claimed a branch had edited
+`SPRINT.md` when the hunks were branch drift), which cost a reviewer round-trip.
+
+**2. Review and playtest run CONCURRENTLY, not sequentially.** The protocol's
+"then" was read as an ordering requirement; the judgments are independent. The
+occasional wasted playtest on a `REQUEST_CHANGES` costs far less than serializing
+every task. Exception: re-gating after a fix cycle stays sequential, because the
+playtest must judge the fixed code.
+
+**3. Gate depth is sized to risk, not applied uniformly.**
+  - *Runtime / look / lattice* — full gates. Review + full playtest with
+    browser evidence. Nothing here changes.
+  - *Harness / tooling* — review + playtest, but the playtest targets the
+    tool's own claims and the smoke suite, not gameplay feel.
+  - *Docs-only* — review + a LIGHT gate: pathcheck green, any edited live
+    script still parses and runs, cited numbers resolve to artifacts. No
+    browser work, no screenshots — they prove nothing about prose. Use
+    `merge-task.sh --skip-smoke`, which exists for exactly this and had never
+    been used.
+
+**4. Model tiering.** Builders default to Sonnet; gates (reviewer, playtester)
+stay on the strongest model. Keep a strong model on the BUILDER when the
+acceptance test is subtle — e.g. T-035's "this assertion must be
+arithmetically impossible on current main," where a weaker model tends to
+produce a plausible-but-hollow gate. Building to a written spec is mechanical;
+adversarial verification is not.
+
+**5. Gate agents compute their own pathcheck base.** Worktrees drift as lanes
+merge, so the correct base differed across concurrent lanes (1674 / 1691 /
+1704 / 1724 in one afternoon). Telling an agent the expected number invites it
+to inherit a wrong one. Have it run pathcheck at `git merge-base main HEAD`
+instead.
+
+**6. Issue numbers are assigned by the integrator, never by agents.** Three
+agents were told "start at I-036" and two collided. Agents now propose issues
+as `I-???` under a `## PROPOSED INBOX ISSUES` heading; the integrator numbers
+them on triage.
+
+**7. Queue selection is the biggest lever, and it is not a mechanical one.**
+The 2026-08-02 batch merged six tasks of harness/docs debt — all correct, all
+invisible to the player — while the stated goal was getting a playable build to
+a 9-year-old. Throughput was never the problem; direction was. Before filling a
+queue, ask what the *operator* would see change.
+
+**Still serialized, by hard rule:** merges. One runtime change at a time,
+through `tools/orch/merge-task.sh`, from the main checkout. That is the real
+ceiling on lane count, and it is deliberate.

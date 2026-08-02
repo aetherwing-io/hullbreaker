@@ -15,6 +15,7 @@ import { startStaticServer } from './lib/server.mjs';
 import { compileScript, scriptEndMs } from './lib/compile.mjs';
 import { compilePolicy } from './lib/policy.mjs';
 import { runPlaytest } from './lib/driver.mjs';
+import { diagnoseDeterministicRun } from './lib/deterministic.mjs';
 import { computeMetrics } from './lib/metrics.mjs';
 import { writeReport } from './lib/report.mjs';
 
@@ -74,7 +75,12 @@ Options:
   --port <n>            Fixed port for the local static server (default: OS-assigned free port).
   --no-testapi          Don't append ?testapi=1 (on by default) — falls back to window.HB, then DOM/HUD parsing.
   --deterministic       Key event dispatch to the game's own gameMs instead of wall-clock (see README "Deterministic injection mode").
-                        Requires testapi or window.HB (sample.gameMs must be a number).
+                        Requires testapi or window.HB (sample.gameMs must be a number). Writes a dispatch
+                        ledger to meta.deterministicDispatch and EXITS NON-ZERO, with a named reason, if the
+                        run's events could never have come due (no clock, a clock that never advanced, or one
+                        that never reached the first event). While the game is parked at the shell title
+                        screen, where gameMs is frozen at 0, events fall back to the wall clock and are
+                        stamped dispatchedVia: "wallclock-title".
   --stop-on-game-over   End the run once the game reaches GAME_OVER (last life spent) instead of sampling a frozen
                         world for the rest of the script window. Off by default; the run's own outcome is unchanged.
 
@@ -174,24 +180,34 @@ async function main() {
     events: result.dispatchedEvents,
     wallTimeMs: result.wallTimeMs,
     achievedSampleIntervalsMs: result.achievedSampleIntervalsMs,
+    // the URL is evidence too (?enemies=0 is slice-only — SPRINT I-026), and
+    // servedFixture is what every fixture-derived column is computed against
+    // instead of this checkout's own src/pure/traversal.js (SPRINT I-013).
+    url,
+    servedFixture: result.servedFixture,
   });
 
   const jitters = result.dispatchedEvents.filter((e) => typeof e.jitterMs === 'number').map((e) => e.jitterMs);
   const avgJitter = jitters.length ? +(jitters.reduce((a, b) => a + Math.abs(b), 0) / jitters.length).toFixed(1) : null;
   const maxJitter = jitters.length ? Math.max(...jitters.map(Math.abs)) : null;
 
-  // Honesty check: --deterministic silently does nothing if gameMs was never
-  // available (dom-only fallback) — every event would just never dispatch.
-  // Surface that loudly rather than let a report quietly show zero events
-  // fired with no explanation.
-  if (args.deterministic && events.length > 0) {
-    const dispatchedCount = result.dispatchedEvents.filter((e) => typeof e.actualDispatchGameMs === 'number').length;
-    if (dispatchedCount === 0) {
-      console.error('[playtest] ERROR: --deterministic requested but no events were dispatched — ' +
-        'sample.gameMs was never a number (needs testapi or window.HB). Check --no-testapi wasn\'t ' +
-        'combined with a build that also lacks window.HB.');
-      process.exitCode = 1;
-    }
+  // Honesty check (I-018): lib/deterministic.mjs holds the verdict logic and
+  // the reasoning. A deterministic run whose events never came due is a no-op
+  // run, and a no-op run that exits 0 is the expensive kind of quiet.
+  const deterministic = args.deterministic
+    ? diagnoseDeterministicRun(result, result.dispatchedEvents)
+    : null;
+  if (deterministic && deterministic.fatal) {
+    console.error(`[playtest] ERROR: --deterministic dispatched ${deterministic.dispatched} of ` +
+      `${deterministic.events} scripted events — ${deterministic.fatal}`);
+    process.exitCode = 1;
+  } else if (deterministic && deterministic.warning) {
+    console.warn(`[playtest] WARNING: ${deterministic.warning}`);
+  }
+  if (deterministic && deterministic.viaWallclockTitle > 0) {
+    console.log(`[playtest] note:    ${deterministic.viaWallclockTitle} event(s) dispatched on the WALL ` +
+      'clock while the game was parked at the shell title screen (MENU freezes gameMs, so the key ' +
+      'that starts the run cannot be gated on it) — they carry dispatchedVia: "wallclock-title".');
   }
 
   // Report paths relative to the repo root / output dir rather than absolute
@@ -205,6 +221,14 @@ async function main() {
       bootError: result.bootError,
       dispatchJitterMsAvg: avgJitter, dispatchJitterMsMax: maxJitter,
       deterministic: result.deterministic,
+      // Why sampling stopped: victory / game-over / max-runtime-ms /
+      // script-window / boot-error. The number of events left pending only
+      // reads correctly next to this.
+      stopReason: result.stopReason,
+      // I-018: the deterministic-dispatch ledger — how many of the script's
+      // events actually fired, how far the game's own clock got, and the named
+      // reason if any of them never came due. `null` on a wall-clock run.
+      deterministicDispatch: deterministic,
     },
     outcome: metrics.outcome,
     metrics,
@@ -231,6 +255,12 @@ async function main() {
     } : null,
     consoleErrors: result.consoleErrors,
     pageErrors: result.pageErrors,
+    // I-011: harness-teardown keyboard failures (a tap release racing the
+    // browser context closing), kept OUT of pageErrors so that channel still
+    // means "the game threw". Normally empty — taps in flight are cancelled and
+    // released at teardown; this is the residue if one still loses the race.
+    teardownErrors: result.teardownErrors,
+    tapsSettledAtTeardown: result.tapsSettledAtTeardown,
     events: result.dispatchedEvents,
     trace: result.trace,
     screenshot: result.screenshotPath && basename(result.screenshotPath),
@@ -240,6 +270,15 @@ async function main() {
   await writeReport(outDir, report);
 
   console.log(`[playtest] outcome: ${metrics.outcome.result} (fidelity: ${metrics.fidelity}${metrics.highFidelityDetected ? '' : ', degraded — no testapi/window.HB'})`);
+  console.log(`[playtest] deaths:  ${metrics.deaths === null ? 'UNAVAILABLE' : metrics.deaths}` +
+    (metrics.deathsSource ? ` (from ${metrics.deathsSource})` : ` — ${metrics.deathsUnavailableReason}`) +
+    `; served build: ${metrics.servedFixture.known ? `${metrics.servedFixture.kind}${metrics.servedFixture.id ? ` (${metrics.servedFixture.id})` : ''}` : 'unknown, fixture columns omitted'}`);
+  // A flag that silently did nothing is the kind of thing a reader trusts
+  // because nothing said otherwise (SPRINT I-026) — so say it, loudly, here as
+  // well as in report.json and summary.md.
+  if (metrics.hostilePresence.enemiesFlag && metrics.hostilePresence.enemiesFlag.honoured === false) {
+    console.error(`[playtest] WARNING: ${metrics.hostilePresence.enemiesFlag.note}`);
+  }
   if (policyRules) {
     const fires = policyRules.reduce((a, r) => a + r.fireCount, 0);
     console.log(`[playtest] policy:  ${fires} tap fire(s) across ${policyRules.length} rule(s)` +

@@ -1,5 +1,6 @@
 .DS_Store
 tools/playtest/node_modules/
+tools/durability/node_modules/
 tools/.gatecheck-mutant.mjs
 .claude/worktrees/
 .claude/flywheel.on

@@ -18,6 +18,7 @@ assuming it (see "Game independence" below).
 node tools/assets/check.mjs                       # the gate: manifest + palette + sizes
 node tools/assets/rasterize.mjs assets/generated/glyphs/capsule-letter-h.svg --size 128
 node tools/assets/view.mjs assets/generated/glyphs/capsule-letter-h.png --tiles 0.55
+node tools/assets/sheet.mjs --assets a.png,b.png --px 9.6,18.2 --out sheet.png
 ```
 
 Run everything from the repo root. `check.mjs` needs **no dependency at all** —
@@ -34,13 +35,14 @@ is a fallback, not the expected path: `lib/browser.mjs` resolves
 the same `channel: 'chrome'` choice applies (drives installed system Chrome over
 CDP, no bundled-binary download — that harness's README explains why).
 
-## The five tools
+## The six tools
 
 | Command | What it does |
 | --- | --- |
 | `check.mjs` | Validates `assets/manifest.json`, palette compliance, power-of-two sizes, and the game's independence from all of it. Exits non-zero on any failure. Zero dependencies. |
 | `rasterize.mjs` | SVG → PNG at an exact pixel size, through Chrome. Transparent by default. Reports the palette of what it just wrote. |
 | `view.mjs` + `viewer.html` | Screenshots an asset at its real on-screen height next to a RIG-height reference bar, plus a 2x/4x/8x/native ramp. |
+| `sheet.mjs` + `sheet.html` | Screenshots *many* assets at their true on-screen sizes in one image — the comparison the viewer cannot make (T-036). |
 | `gen.mjs` + `codex/spec-template.md` | Fills the generation spec from the palette table and the scale arithmetic, then optionally runs `codex exec`. Optional — nothing else depends on it. |
 | `probe.mjs` | Histograms any PNG's hue clusters in CIELCh. This is where the palette numbers below came from. |
 
@@ -145,6 +147,30 @@ node tools/assets/view.mjs <asset> --view near --bg haze --headed    # compare v
 is a static page the playtest harness's static server happens to be able to
 serve.
 
+### Comparing candidates — `sheet.mjs`
+
+The viewer answers "does **this** asset read at this size". Choosing a direction
+asks something the viewer cannot show: *which* of several candidates reads, and
+whether a player can tell them apart. That needs every candidate at one true
+size in one image, so `sheet.mjs` drives `sheet.html` the same way `view.mjs`
+drives `viewer.html` — same server, same Chrome, same scale arithmetic:
+
+```sh
+node tools/assets/sheet.mjs \
+  --assets assets/generated/glyphs/capsule-mark-laser.png,assets/generated/glyphs/capsule-lit-laser.png \
+  --px 9.6,18.2,23.4 --rowlabels "raw,SHIPPED,max" --bg deck \
+  --out reports/tasks/T-036/sheet.png
+```
+
+Rows take either `--tiles` (resolved against the view fractions, like the
+viewer) or `--px` (given directly — then the viewport height does not enter the
+arithmetic at all). `--bg` adds `teal`/`deck`/`limb` to the viewer's backdrops,
+which are `CONCEPT.bg`, the lit rust deck and the six-face haze: a capsule's
+legibility flips with what it is sitting on, so judging on one backdrop is not
+judging. Everything the viewer's honesty note says applies here unchanged — it
+is the same flat composite, with no fog, perspective, lighting, mipmapping or
+tone mapping (see limitation 11 below for how much tone mapping actually moves).
+
 ## Generating with codex
 
 ```sh
@@ -191,6 +217,18 @@ up as an art/readability pass"). **It is a finding for the operator, not
 something this task resolved** — a capsule glyph at the shipped FAR view cannot
 carry a letter at 0.55 tiles, and the fix (bigger capsules? a shape-coded
 silhouette instead of a letter? a HUD-side readout?) is a feel decision.
+
+**T-036 turned that question into artifacts.** Seventeen candidates covering the
+four named directions are staged under `assets/generated/glyphs/` and
+`assets/generated/ui/`, each rasterized here and judged at true on-screen size;
+the side-by-side sheets, the measurements and the operator packet are in
+`reports/tasks/T-036/`. Two numbers from it belong in this file because they
+change how any future glyph is authored: the shipped face is **18.2px**, not
+9.6px (the legibility pass's `GLYPH_GAIN` 1.9 restores it), and going past 1.9
+is not a bigger number but a rule change — `tools/pathcheck.mjs` asserts a
+compensated glyph lands at the *same* screen size at every view, so more scale
+has to come from a sim constant or a new verdict. **The decision itself is still
+the operator's and is still open.**
 
 ## Honesty / limitations — read before trusting a green check
 
@@ -271,6 +309,23 @@ silhouette instead of a letter? a HUD-side readout?) is a feel decision.
     proves properties about them; wiring a texture into the render layer (with
     the required graceful fallback to the procedural look) is a separate,
     unstarted piece of work.
+11. **An authored hex is not the pixel the game draws, and the gap is large —
+    measured.** The shipped capsule face is `PAL.capsule` `#ff4fd8` (luminance
+    126.3, CIELCh chroma ~76) drawn on an *unlit* `MeshBasicMaterial`. In the
+    committed capture `artifacts/look-v1/z04-capsule-letters-4x.png` that same
+    face lands at `rgb(226,167,214)` — **luminance 182.7, chroma 33.2**: it is
+    lifted 56 levels and its chroma is more than halved, which is why the pickup
+    reads on screen as pale lavender rather than hot magenta. The ink letter
+    `#14181e` (L 23.6) lands at `rgb(90,88,107)`, L 89.5. Plate-vs-letter
+    *contrast* survives nearly intact (102.7 authored → 93.2 drawn), so the
+    practical rule is: **trust this pipeline's value relationships, do not trust
+    its hues or absolute levels.** Two known transforms sit between the two
+    numbers — the renderer's ACES tone mapping (`src/render/scene.js`) and the
+    `CanvasTexture` that never sets `colorSpace` (`src/render/capsules.js:121`,
+    already the operator's open question in `docs/proposals/2026-08-look-
+    direction.md` §6 Q5b) — and this measurement does not apportion blame
+    between them. Re-derive it from the committed capture; nothing here is
+    modelled.
 
 ## Game independence
 
@@ -390,6 +445,8 @@ tools/assets/
   rasterize.mjs          SVG -> PNG through Chrome
   view.mjs               screenshot an asset at in-game scale
   viewer.html            the viewer page itself (imports nothing from src/)
+  sheet.mjs              screenshot many assets at true size, side by side
+  sheet.html             the sheet page itself (imports nothing from src/)
   gen.mjs                codex spec builder + optional invocation
   probe.mjs              hue-cluster histogram — where the palette numbers came from
   codex/
@@ -416,12 +473,13 @@ assets/
 
 ## Single best next action
 
-**Take the demo's readability finding to the operator rather than adding more
-assets.** The pipeline works end to end, but it has already produced evidence
-that the thing it would mass-produce next — small world-space glyphs — cannot
-carry detail at the shipped FAR view: a 0.55-tile capsule is 9.6 pixels tall and
-loses everything but its darkest mark. Generating a batch of glyphs before that
-question has an answer means generating a batch at the wrong size. The
-checkpoint packet needs the committed viewer screenshot, the two candidate
-directions (scale the world-space glyphs up, or move the letter read to the
-HUD), and no recommendation from a machine gate.
+**Get a verdict on `reports/tasks/T-036/packet.md`, and produce no further glyph
+batch until there is one.** The previous version of this section asked for the
+readability question to be taken to the operator as prose; T-036 answered it
+with artifacts instead — four directions, seventeen candidates, every one judged
+at the size it will really be on screen, with each direction's adoption cost
+(including whether it needs a runtime-loading decision) stated. What is still
+missing is the only thing a machine here can never supply: the operator's
+choice. Everything downstream — a glyph batch, `src/render/capsules.js`'s draw
+code, whether this pipeline's output ever loads at runtime — sequences behind
+that one answer, and picking it inside a lane would be a machine judging fun.

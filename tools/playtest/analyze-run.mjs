@@ -3,6 +3,10 @@
 //
 //   node tools/playtest/analyze-run.mjs /tmp/aimed/report.json [more/report.json …]
 //   node tools/playtest/analyze-run.mjs /tmp/aimed            (a run dir works too)
+//   node tools/playtest/analyze-run.mjs /tmp/aimed --policy scripts/six-face-spaced-run.json
+//       replay the SAME trace against a different policy file (see the
+//       "--policy" honesty note below) — how a proposed rule change would have
+//       read at the states the recorded run actually visited
 //
 // WHY THIS EXISTS (T-019): the T-018 finding was argued from per-tick
 // evidence — which hostile was where when a life was spent, how often the gun
@@ -47,6 +51,13 @@
 //   - Attribution names what was NEAR the loss, not what caused it. A hound
 //     charging past and a wasp diving in are both listed; the analysis does
 //     not adjudicate between them.
+//   - `--policy` replays a DIFFERENT rule set over a RECORDED trace. It answers
+//     "what would these rules have commanded at the states that run actually
+//     visited" — not "where would this policy have gone", which no recording
+//     can answer, because different commands produce a different run from the
+//     first tick they differ. Use it to price a rule change on evidence already
+//     in hand (T-027 used it for I-028's before/after cancellation count on one
+//     trace); do not read it as a prediction of the next run's outcome.
 //   - "diver killed" in the dive census is inferred the same way: a diver that
 //     leaves the hostile roster while still inside the corridor (14 tiles) is
 //     counted as killed, because the trace carries no death event. A cull or a
@@ -99,14 +110,21 @@ function aimCoverage(threat, held) {
   return { ray, on: onRay > 0, anyAvailable: anyRay > 0 };
 }
 
-function analyze({ path, report }) {
+function analyze({ path, report }, override = null) {
   const trace = report.trace || [];
-  const rules = report.policy ? compilePolicy({ rules: report.policy.rules.map((r) => ({
-    when: r.when,
-    do: r.action.kind === 'hold'
-      ? { hold: r.action.code }
-      : { tap: r.action.code, holdMs: r.action.holdMs },
-  })) }) : null;
+  // The policy under the microscope is normally the one the run was driven by,
+  // rebuilt from the report's own record of it. `--policy` swaps in another
+  // script's rules against the same trace — see the header's honesty note.
+  const rules = override
+    ? compilePolicy(override.policy)
+    : report.policy ? compilePolicy({ rules: report.policy.rules.map((r) => ({
+      when: r.when,
+      do: r.action.kind === 'hold'
+        ? { hold: r.action.code }
+        : { tap: r.action.code, holdMs: r.action.holdMs },
+    })) }) : null;
+  const ruleCode = (i) => (rules && rules[i] ? rules[i].action.code : '?');
+  const ruleWhen = (i) => (rules && rules[i] ? rules[i].when : '?');
 
   const out = [];
   const push = (s) => out.push(s);
@@ -128,6 +146,11 @@ function analyze({ path, report }) {
   // stands still and keeps its old facing). The grammar has no priority and
   // no arbitration, so this is a structural property of a reflex policy, not
   // a tuning mistake — worth counting rather than arguing about.
+  // …and WHICH two rules, because "5.3% of ticks cancel" is a number to argue
+  // about while "[5] the crush-plane rule vs [6] personal space, 3 ticks, all
+  // between 7.4 and 7.9 tiles of margin" is a number to fix (I-028). Keyed by
+  // the pair of rule indices, with the edgeMargin window each pair cancelled in.
+  const conflictPairs = new Map();
   let bothDirs = 0, playingTicks = 0, bothDirsWithThreat = 0;
   const perPhase = { gate: { on: 0, n: 0, any: 0 }, open: { on: 0, n: 0, any: 0 } };
   let airMs = 0, gateMs = 0, playMs = 0, deadMs = 0;
@@ -153,6 +176,22 @@ function analyze({ path, report }) {
       if (tick.desiredHolds.has('ArrowLeft') && tick.desiredHolds.has('ArrowRight')) {
         bothDirs++;
         if (threat.n > 0) bothDirsWithThreat++;
+        const truthy = tick.evaluations.filter((e) => e.result);
+        const lefts = truthy.filter((e) => ruleCode(e.rule) === 'ArrowLeft').map((e) => e.rule);
+        const rights = truthy.filter((e) => ruleCode(e.rule) === 'ArrowRight').map((e) => e.rule);
+        for (const l of lefts) for (const r of rights) {
+          const key = `${r}|${l}`;
+          let rec = conflictPairs.get(key);
+          if (!rec) {
+            rec = { right: r, left: l, ticks: 0, minMargin: Infinity, maxMargin: -Infinity };
+            conflictPairs.set(key, rec);
+          }
+          rec.ticks++;
+          if (typeof s.edgeMargin === 'number') {
+            rec.minMargin = Math.min(rec.minMargin, s.edgeMargin);
+            rec.maxMargin = Math.max(rec.maxMargin, s.edgeMargin);
+          }
+        }
       }
       if (threat.n > 0) {
         ticks++;
@@ -270,6 +309,25 @@ function analyze({ path, report }) {
     `${pct(perPhase.open.any, perPhase.open.n)} available (n=${perPhase.open.n})`);
   push(`- rules cancelling each other (left AND right held → RIG stands still): ` +
     `${pct(bothDirs, playingTicks)} of PLAYING ticks (${pct(bothDirsWithThreat, ticks)} of ticks with a hostile in view)`);
+
+  push('');
+  push('## rule-cancellation census (which two rules, and where)');
+  if (override) {
+    push(`- REPLAYED POLICY: ${override.__path} — these are the commands THAT rule set would have ` +
+      'issued at the states this recorded run visited. Not a prediction of where it would have ' +
+      'gone (see the header note); the trace is the old policy\'s.');
+  }
+  if (!rules) {
+    push('- n/a: no policy to replay.');
+  } else if (!conflictPairs.size) {
+    push(`- no tick had two hold rules commanding opposite directions (n=${playingTicks} PLAYING ticks).`);
+  } else {
+    for (const rec of [...conflictPairs.values()].sort((a, b) => b.ticks - a.ticks)) {
+      push(`- [${rec.right}] "${ruleWhen(rec.right)}" (right) vs [${rec.left}] "${ruleWhen(rec.left)}" (left): ` +
+        `${rec.ticks} tick(s), ${pct(rec.ticks, playingTicks)} of PLAYING` +
+        (rec.minMargin === Infinity ? '' : ` · edgeMargin ${f2(rec.minMargin)}–${f2(rec.maxMargin)}`));
+    }
+  }
 
   // --- dive census --------------------------------------------------------
   // The one hostile beat this game aims AT the player, tracked per event
@@ -409,10 +467,22 @@ function brief({ path, report }) {
 
 const args = process.argv.slice(2);
 const briefMode = args.includes('--brief');
-const targets = args.filter((a) => a !== '--brief');
+const policyIdx = args.indexOf('--policy');
+const policyPath = policyIdx >= 0 ? args[policyIdx + 1] : null;
+const targets = args.filter((a, i) =>
+  a !== '--brief' && (policyIdx < 0 || (i !== policyIdx && i !== policyIdx + 1)));
 if (!targets.length) {
-  console.error('usage: node analyze-run.mjs [--brief] <run-dir-or-report.json> [...]');
+  console.error('usage: node analyze-run.mjs [--brief] [--policy <script.json>] <run-dir-or-report.json> [...]');
   process.exit(1);
+}
+let override = null;
+if (policyPath) {
+  const script = JSON.parse(readFileSync(resolve(policyPath), 'utf8'));
+  if (!script.policy) {
+    console.error(`--policy ${policyPath}: that script has no "policy" block to replay`);
+    process.exit(1);
+  }
+  override = { policy: script.policy, __path: policyPath };
 }
 if (briefMode) {
   console.log('| script | survived | scroll | gates seen | kills | damage events | kills/hit | airborne | gated | run |');
@@ -420,7 +490,7 @@ if (briefMode) {
   for (const a of targets) console.log(brief(loadReport(resolve(a))));
 } else {
   for (const a of targets) {
-    console.log(analyze(loadReport(resolve(a))));
+    console.log(analyze(loadReport(resolve(a)), override));
     console.log('');
   }
 }

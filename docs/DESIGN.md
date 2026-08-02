@@ -332,8 +332,13 @@ Resolve these through small prototypes and playtests rather than assumption:
   entry 7); the tradeoff — smaller RIG reads as more world per screen but
   costs tell/glyph readability at distance — was accepted for now, and the
   follow-up art/readability pass has since shipped (T-003,
-  `src/render/legibility.js`): tells, capsule glyphs and the new tell lamps
-  are scaled back up by the view's own pull-back factor, RIG and the camera
+  `src/render/legibility.js`): capsule glyphs and the new tell lamps are
+  scaled back up by the view's own pull-back factor (gain 1.9 at FAR), and a
+  tell POSE by 60% of it (gain 1.54) because a pose deforms a real body that
+  must keep containing its unchanged hit circle — information whole, a pose
+  partly, so a boosted pose still lands smaller at FAR than at near
+  (`SHARE = { glyph: 1, cue: 1, pose: 0.6 }`, `src/render/legibility.js`;
+  both gains asserted in `tools/pathcheck.mjs`). RIG and the camera
   untouched. `?legibility=0` restores the pre-pass look at any view for
   comparison. Whether the boosted tells read right is still an operator
   question, not a settled one.
@@ -561,9 +566,13 @@ script can lose its first input (both halves asserted in pathcheck).
 ### Feedback pass (juice)
 
 Dev-sequence item 4's visual half (T-011), on by default, `?juice=0` for a
-byte-identical pre-juice build. Every intensity lives in one place —
-`CONFIG.juice` — and the math is `src/pure/juice.js`, so the whole pass is
-retuned or read without touching a renderer.
+*simulation-identical* pre-juice build — the wording `README.md` carries, and
+the one the A/B supports: every dt scale collapses back to the pre-juice one,
+no pool or mesh is built and no bridge hook is wrapped, but `samplePerf` still
+runs and `telemetry()` still carries the added `juice`/`perf` keys, so the
+build is not byte-identical (SPRINT I-016). Every intensity lives in one
+place — `CONFIG.juice` — and the math is `src/pure/juice.js`, so the whole
+pass is retuned or read without touching a renderer.
 
 - **Hit-stop is simulation, not decoration.** A kill freezes the world for
   42ms and taking damage for 90ms (stacking capped at 120ms), applied as a
