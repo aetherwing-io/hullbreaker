@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32" viewBox="0 0 32 16" shape-rendering="crispEdges">
+  <title>hound-brace-b — Brace Hound</title>
+  <desc>Acid-green stepped armour over ink struts, hull-grey joints, and one rust-orange visor slit; a low right-facing four-legged charger.</desc>
+
+  <path fill="#14181e" d="M6 8L9 9L8 10L6 11L5 13L7 14L8 16H1V14L3 12V10Z"/>
+  <path fill="#485312" d="M6 9H8L6 10L4 12H3L4 10Z"/>
+  <path fill="#4f555d" d="M1 14H7L8 16H1Z"/>
+
+  <path fill="#14181e" d="M19 8H22L24 10V12L23 14H26L27 16H20L21 13V11L18 10Z"/>
+  <path fill="#485312" d="M20 9H22L23 10L22 11V13H21V10H19Z"/>
+  <path fill="#4f555d" d="M20 14H26L27 16H20Z"/>
+
+  <path fill="#14181e" d="M18 4L20 1H25L27 2L26 4H22L20 5Z"/>
+  <path fill="#767c85" d="M20 3L22 2H25L26 3H22L20 4Z"/>
+  <path fill="#14181e" d="M25 2H27V3H25Z"/>
+
+  <path fill="#14181e" d="M2 9L3 8L4 6L6 4L10 3L13 2H18L21 3L23 4H27L29 5L30 6L31 7V10L29 11H25L23 10H20L18 11H12L10 10H6L4 11L2 10Z"/>
+
+  <path fill="#14181e" d="M9 8H13L14 10L10 12V14H13L14 16H7L6 14L8 11L7 10Z"/>
+  <path fill="#6a7a1a" d="M9 9H12L10 11H8Z"/>
+  <path fill="#485312" d="M9 11H11L10 14H8Z"/>
+  <path fill="#767c85" d="M7 14H13L14 16H7Z"/>
+
+  <path fill="#14181e" d="M22 8H26L27 10L30 12V14H31V16H27L28 13L25 12L23 11L21 10Z"/>
+  <path fill="#6a7a1a" d="M23 9H25L26 10L29 12L28 13L25 11L22 10Z"/>
+  <path fill="#767c85" d="M27 14H31V16H27Z"/>
+
+  <path fill="#4f555d" d="M9 8H13L14 9L13 10H10L9 9Z"/>
+  <path fill="#4f555d" d="M14 8H18L19 9L18 10H15L14 9Z"/>
+  <path fill="#4f555d" d="M19 8H22L24 9L22 10H20L19 9Z"/>
+
+  <path fill="#485312" d="M3 8L4 6L6 4L10 3L13 4V6L11 8L7 9Z"/>
+  <path fill="#6a7a1a" d="M4 6L6 4L10 3L12 4L8 5Z"/>
+
+  <path fill="#6a7a1a" d="M9 4L12 2H18L21 3V5L19 7L16 8L12 7Z"/>
+  <path fill="#8fa524" d="M12 2H18L20 3H14L11 4Z"/>
+
+  <path fill="#8fa524" d="M17 3L20 2L24 3L27 5L26 7L23 9L19 8V6Z"/>
+  <path fill="#6a7a1a" d="M19 6L26 5V7L23 9L19 8Z"/>
+
+  <path fill="#14181e" d="M11 3L13 4V6L11 8H10L11 6L10 5Z"/>
+  <path fill="#14181e" d="M19 2L21 3V5L19 7L18 6L19 4Z"/>
+
+  <path fill="#485312" d="M23 5H28L30 6L31 7V10L29 11H24L22 9L21 7Z"/>
+  <path fill="#6a7a1a" d="M24 5H28L30 6L29 7H23L22 6Z"/>
+  <path fill="#4f555d" d="M23 9H31V10L29 11H24L22 10Z"/>
+
+  <path fill="#14181e" d="M26 7H31V9H27L26 8Z"/>
+  <path fill="#e29a5c" d="M27 7H31L30 8H27Z"/>
+
+  <path fill="#767c85" d="M7 5H8V6H7Z"/>
+  <path fill="#767c85" d="M15 3H16V4H15Z"/>
+  <path fill="#767c85" d="M22 4H23V5H22Z"/>
+
+  <path fill="#767c85" d="M3 11L4 10L5 11L4 12Z"/>
+  <path fill="#767c85" d="M8 11L9 10L10 11L9 12Z"/>
+  <path fill="#767c85" d="M22 11L23 10L24 11L23 12Z"/>
+  <path fill="#767c85" d="M25 11L26 10L27 11L26 12Z"/>
+</svg>

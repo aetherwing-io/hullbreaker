@@ -1,0 +1,15 @@
+<svg id="wasp-drone-a" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16" shape-rendering="crispEdges">
+  <title>WASP hostile flying drone</title>
+  <desc>Right-facing dart silhouette with two swept hull-rimmed wing blades, three acid-green armour values, an ink belly and intake, and one hot acid-green eye.</desc>
+  <path fill="#767c85" d="M6 7 2 3 5 3 9 7Z"/>
+  <path fill="#14181e" d="M6 6 4 4 5 4 8 7Z"/>
+  <path fill="#767c85" d="M8 7 6 1 9 2 11 7Z"/>
+  <path fill="#14181e" d="M8 6 7 2 9 3 10 7Z"/>
+  <path fill="#767c85" d="M1 8 4 6 9 5 12 6 15 10 11 12 8 13 5 12 3 10 1 10Z"/>
+  <path fill="#4f6015" d="M2 8 5 6 9 6 12 7 14 10 11 11 8 12 5 11 3 10 2 9Z"/>
+  <path fill="#14181e" d="M3 9 6 9 12 10 11 11 8 12 5 11 3 10Z"/>
+  <path fill="#7a8f20" d="M3 8 6 7 10 7 13 9 12 10 6 10 3 9Z"/>
+  <path fill="#a8c22a" d="M5 6 9 6 12 7 13 8 10 8 4 8Z"/>
+  <path fill="#14181e" d="M10 8 14 9 13 10 10 10 9 9Z"/>
+  <path fill="#d5ef35" d="M12 7H13V8H12Z"/>
+</svg>
