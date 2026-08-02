@@ -2846,3 +2846,54 @@ Recorded so the next regeneration of that plate is not surprised by a gate that
 has always been green. The alpha contract is new (T-053) and this is the one
 asset sitting close enough to its threshold that ordinary variation in a
 repaint could cross it.
+
+## T-054 | art | todo | P1
+goal: the hull texture is invisible in play — make it read. OPERATOR-FOUND, and
+the observation was "the thing floating in the background seems to have more
+detail, while that in the foreground has less." That is exactly backwards from
+atmospheric perspective and it is measurably true.
+
+MEASURED (same position, default vs `?tex=flat`, 300x90 hull band, mean
+absolute neighbour-difference along rows = fine surface detail):
+
+    default (textured)   mean 22.8   contrast sd 16.5   fine detail 0.61
+    ?tex=flat            mean 25.4   contrast sd 17.7   fine detail 0.37
+
+The texture delivers **0.24 luminance levels**. The deck checker beside it
+delivers ~30 (`src/config.js:738-807` measures its delta at 11.9% of display
+luminance). At 3x magnification the panel seams are barely present; at true
+size they are gone. The operator could not tell the two builds apart, and
+neither could the integrator without probing the scene graph.
+
+ROOT CAUSE — two independently-correct fixes that cancelled:
+  1. T-052 fixed a real 56% darkening with `grayscale()` then a brightness
+     normalization toward TARGET_MEAN. Grayscale removes hue variation;
+     normalizing the mean upward compresses the tile's range toward white.
+     Both were right for the darkening and both cost contrast.
+  2. T-053's procedural repaint took `hull-panel-tile` from 24 colours at
+     sd 32.4 to 458 colours at sd 17.2 — smoother and better-formed, but
+     lower contrast than the flat-vector tile it replaced.
+Neither lane erred. The product is a texture with nothing left to see.
+
+accept: fine detail in the hull band rises to a stated, measured target well
+above the 0.37 flat-build floor, WITHOUT reintroducing the darkening T-052
+closed (lower-hull mean must stay within ~10% of the `?tex=flat` control, and
+the 3-band measurement — lower hull / deck / sky — goes in the report). The
+hue-preservation property T-052's reviewer proved by construction (grayscale →
+R=G=B → a multiply can only scale, never shift hue) must survive whatever
+replaces it: if grayscale goes, prove hue is still preserved some other way, or
+state plainly that it is not. Judged from captures at TRUE on-screen size and
+at 3x, both committed.
+owner: gameplay-engineer + asset-artist (this spans both layers)
+fences: `src/render/materials.js`, `src/render/hulltiles.js`, `limb.js` for the
+render half; `assets/generated/textures/**` + `tools/assets/**` for the asset
+half. Coordinate — do not have both halves chase the same 0.24 independently.
+verify: node tools/pathcheck.mjs; node tools/assets/check.mjs; the 3-band
+luminance table and the fine-detail metric before/after; captures at true size
+
+NOTE FOR WHOEVER TAKES THIS: normalizing the MEAN is not the same as
+compressing the RANGE. A tile can be brought to the right average brightness
+while keeping (or restoring) its own contrast — that is likely the whole fix on
+the render side. On the asset side, the question is whether a tiled surface
+texture wants the same smoothness a painted backdrop wants; the evidence here
+says it does not.
