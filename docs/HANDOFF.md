@@ -1,5 +1,71 @@
 # HULLBREAKER — next-session handoff
 
+> ## READ THIS FIRST — state as of 2026-08-02 (the look-and-feel push)
+>
+> **Most of the document below predates the night of 2026-08-02 and is stale in
+> its particulars.** The design history and story background remain useful; the
+> "current state" and "next milestone" sections do not. What actually happened:
+>
+> **The goal changed.** The operator redirected the project mid-session: this is
+> now a game for his **9-year-old son**, on a laptop keyboard, and *"it has to
+> meet expectations of a little boy's father's game."* The binding statement of
+> that goal is the `2026-08-02 OPERATOR GOAL CHANGE` block in `SPRINT.md` —
+> read it before doing anything, including the PLAYER MODEL (he is a systematic
+> prober, not a masher) and the standing rule that DURABILITY outranks
+> difficulty tuning.
+>
+> **Six operator decisions landed** (`docs/decisions.md` entries 14-19). They
+> supersede a lot of older doctrine:
+> - **14** — the value ladder ships at the HALF dose. Full was *"too dark."*
+> - **15** — impact language is *"fun"* and stays; RIG's old fidelity was
+>   rejected; the FAR-vs-board-01 framing conflict opened.
+> - **16** — **asset independence is RETIRED. Runtime assets and sprites are
+>   authorized.** Also retired: the blanket "ship behind an off-by-default
+>   flag" rule, which had been landing every improvement invisibly.
+> - **17** — **FAR is confirmed permanently.** RIG is small on purpose; that is
+>   the fantasy. Selling SCALE is therefore the headline art problem, not RIG's
+>   pixel count.
+> - **18** — **shadows, tone mapping, bloom and real materials are AUTHORIZED**,
+>   with 60fps at 200+ live projectiles as the binding condition.
+> - **19** — the mastery loop is validated and **run-to-run VARIANCE is the
+>   feature**. Report distributions, never averages. Do not flatten the spread.
+>
+> **The renderer was rebuilt.** It previously had no materials
+> (`{color, flatShading:true}` everywhere, every map slot unset), no shadows of
+> any kind, no post-processing, and a two-light rig. It now has a raking
+> key/fill/rim rig with play-band shadow maps, ACES tone mapping, an
+> EffectComposer bloom pass thresholded in LINEAR light so it only blooms
+> things meant to BE light, per-family roughness/metalness, a baked value
+> ladder, a retuned fog band, graded backdrop tiers, human-scale reference
+> objects (rungs, hatches, doors sized against `CONFIG.player.height`), contact
+> shadows, and warm-white seam pips. `main` went 1674 → 2404 pathcheck
+> assertions in one session, 22 tasks merged.
+>
+> **`tools/pathcheck.mjs` is no longer a monolith.** It is a 51-line runner over
+> `tools/pathcheck/` — one module per domain plus an ordered `manifest.mjs`.
+> **Add a domain file and one manifest line; never append to a giant file.**
+> Lanes that predate the split are migrated with
+> `scratchpad/migrate-lane.mjs task/T-0NN --commit`, which reconciles label sets
+> and refuses rather than guessing.
+>
+> **`docs/LANE-BRIEF.md` is new and is required reading for every dispatched
+> agent** — standing fences, ports, evidence standard, how to judge a diff, how
+> to file issues. `docs/ORCHESTRATION.md` gained an "Operating tempo" section
+> recording what actually made this session fast.
+>
+> **Serve with `node tools/serve.mjs`, never `python3 -m http.server`** — the
+> latter sends no `Cache-Control`, and a stale cached ES module renders a blank
+> page that looks exactly like a broken build (T-024).
+>
+> **Two methodology lessons worth inheriting.** (1) **vsync masks cost** — two
+> lanes measured "no change" from shadow maps and a composer pass until they
+> re-measured with vsync off (+0.25-0.41ms and +1.32ms respectively). (2) When
+> comparing timing, **interleave conditions within each round** and check
+> whether the metric is bimodal in the CONTROL before attributing an effect —
+> one determinism "defect" was attributed to asset loading before the control
+> was found to scatter identically.
+
+
 Prepared July 29, 2026. This document is the starting brief for a new working
 session. It summarizes decisions already made, current repository state, and the
 smallest next implementation milestone. The deeper design and story documents
