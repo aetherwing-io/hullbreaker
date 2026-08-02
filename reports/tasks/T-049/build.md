@@ -694,6 +694,26 @@ experiment (~30 runs) and I will run it on request.
 `?fixeddt` is **not** a workaround: with the step pinned, all three conditions
 scatter worse, control included (main 2/8 deviating, `gameMsMax` 4533–19683).
 
+### Scope of the negative result — and the one question left open
+
+Every asset in those 132 runs was a **32–64 px sprite of 0.6–2.9 kB**, i.e. a
+trivial mipmap chain. The negative result is about that class and no other.
+Whether the warm-up earns its 8–14 ms on a LARGE texture — RIG's 256x256, and
+soon T-051's backdrop plates and T-052's hull tiles — is **untested at any
+useful n**, not answered no. T-040 attempted exactly that measurement on
+`rig-marine.png` and got 1/7 with the warm-up against 4/7 without: opposite in
+direction to my numbers, noise at that size, and cut short when their worktree
+was pruned mid-run (§ the proposed inbox issue below). Both of us agreed not to
+let it settle into "measured, doesn't help".
+
+It is roughly 40 minutes to answer properly: `?warm=0` is the A/B, 16
+interleaved rounds is the design, and the run must go against a **scratch copy**
+(`git archive <rev> | tar -x -C <dir>`) rather than a live worktree — which is
+what interfered with the last attempt. The same caveat is now written into
+`src/render/preload.js` beside the disclaimer, because that comment is where a
+future lane will read the conclusion and it should not over-claim its own
+scope.
+
 ### What I recommend, and what I am not claiming
 
 - **I am not claiming the warm-up fixes I-039.** It is kept because the hazard

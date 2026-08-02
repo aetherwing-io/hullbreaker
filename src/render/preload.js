@@ -194,6 +194,17 @@ export function preloadTexture(url, opts = {}) {
  * and not boot latency. Full data: reports/tasks/T-049/build.md §8 and
  * reports/tasks/T-049/i039-evidence/ (132 runs).
  *
+ * WHAT THAT MEASUREMENT DOES **NOT** COVER, so nobody inherits a wrong
+ * conclusion from it: every asset in those 132 runs was a 32-64px sprite of
+ * 0.6-2.9 kB — a trivial mipmap chain. Whether this helps a LARGE texture
+ * (RIG's 256x256, a backdrop plate, a hull tile) is untested at any useful
+ * n: T-040 got 1/7 with it against 4/7 without — opposite in direction to
+ * the numbers above and noise at that size — before its worktree was pruned
+ * mid-run. So "does the warm-up earn its 8-14ms on a big asset?" is OPEN,
+ * not answered no. It is ~40 minutes to settle: ?warm=0 for the A/B, and
+ * measure against a scratch copy of the tree (git archive | tar -x) rather
+ * than the live worktree, which is what interfered with the last attempt.
+ *
  * It is KEPT anyway, and only for this reason: the hazard it addresses is
  * real and argued independently of I-039 — a texture whose bytes have
  * arrived and whose upload has been REQUESTED can still have its real work
