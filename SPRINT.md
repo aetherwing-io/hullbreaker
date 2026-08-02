@@ -2847,7 +2847,7 @@ has always been green. The alpha contract is new (T-053) and this is the one
 asset sitting close enough to its threshold that ordinary variation in a
 repaint could cross it.
 
-## T-054 | art | todo | P1
+## T-054 | art | doing | P1
 goal: the hull texture is invisible in play — make it read. OPERATOR-FOUND, and
 the observation was "the thing floating in the background seems to have more
 detail, while that in the foreground has less." That is exactly backwards from
@@ -2932,7 +2932,7 @@ no visible error state today"), which T-032 closed before it merged — a blocke
 CDN now raises the failure panel within ~250ms rather than showing a silent
 black screen.
 
-## T-055 | harness | todo | P1
+## T-055 | harness | doing | P1
 goal: revive T-034's deploy bundle against current main and fix I-048 — the
 bundle omits `assets/`, so uploading it would silently ship a game with none of
 its art. This is the path Fox actually receives the game by, so it is the last
