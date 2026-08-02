@@ -48,6 +48,7 @@ import * as d35 from './t-025-harness-may-not-report.mjs';
 import * as d36 from './momentum-earned-pace-escalation.mjs';
 import * as d37 from './t-029-runtime-truth-three-debug.mjs';
 import * as d38 from './pathcheck-suite-2.mjs';
+import * as d39 from './t-041-impact-language.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -89,4 +90,5 @@ export const DOMAINS = [
   d36,    // MOMENTUM — earned pace escalation (T-022) =================
   d37,    // T-029 — runtime truth: three debug/copy surfaces ==========
   d38,    // pathcheck suite
+  d39,    // T-041 impact language (S10)
 ];
