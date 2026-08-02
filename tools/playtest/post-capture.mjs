@@ -156,7 +156,7 @@ function readFrame() {
     player: { x: hb.player.x, y: hb.player.y, hp: hb.player.hp, lives: hb.player.lives },
     hostiles: hb.hostiles.map((e) => ({ kind: e.kind, state: e.state, x: e.x, y: e.y })),
     kills: hb.kills(),
-    post: hb.post(),
+    post: hb.post ? hb.post() : null,
     perf: hb.perf(),
     juice: hb.juice(),
     draw: info ? {
@@ -271,9 +271,13 @@ async function openPage(browser, base, url) {
   await page.goto(base + url, { waitUntil: 'load' });
   await page.waitForFunction(
     () => globalThis.HB && globalThis.HB.state() === 'PLAYING', null, { timeout: 10000 });
-  // the composer arrives over the network: settle before anything is measured
+  // The composer arrives over the network: settle before anything is measured.
+  // The `HB.post` guard is what lets this rig also run against a tree from
+  // BEFORE the pass existed, which is how "?bloom=0 restores the old look" gets
+  // checked against the actual old look instead of against a claim about it.
   await page.waitForFunction(
-    () => globalThis.HB.post().status !== 'loading', null, { timeout: 10000 });
+    () => !globalThis.HB.post || globalThis.HB.post().status !== 'loading',
+    null, { timeout: 10000 });
   await page.evaluate(() => {
     globalThis.__HB_RENDERER__ = null;
   });
@@ -349,7 +353,7 @@ function readStress() {
   const sorted = [...s].sort((a, b) => a - b);
   return {
     perf: hb.perf(),
-    post: hb.post(),
+    post: hb.post ? hb.post() : null,
     liveProjectiles: live,
     state: hb.state(),
     draw: r ? { calls: r.info.render.calls, triangles: r.info.render.triangles } : null,
@@ -457,7 +461,7 @@ async function probe(base) {
       await page.waitForFunction(() => /SELFTEST/.test(document.title), null, { timeout: 20000 });
       out.selftest = {
         title: await page.title(),
-        post: await page.evaluate(() => globalThis.HB.post()),
+        post: await page.evaluate(() => (globalThis.HB.post ? globalThis.HB.post() : null)),
         errors,
       };
       await context.close();
@@ -475,7 +479,7 @@ async function probe(base) {
         () => globalThis.HB.post().status !== 'loading', null, { timeout: 15000 });
       await page.waitForTimeout(1500);
       out.offline = {
-        post: await page.evaluate(() => globalThis.HB.post()),
+        post: await page.evaluate(() => (globalThis.HB.post ? globalThis.HB.post() : null)),
         perf: await page.evaluate(() => globalThis.HB.perf()),
         failsafe: await page.evaluate(() => globalThis.HB.failsafe()),
         state: await page.evaluate(() => globalThis.HB.state()),
@@ -561,7 +565,7 @@ async function main() {
           'installed=' + pair.before.installedAtMs.toFixed(0) + '/' +
             pair.after.installedAtMs.toFixed(0),
           'gameMs=' + pair.before.gameMs + '/' + pair.after.gameMs,
-          'post=' + pair.after.post.status,
+          'post=' + (pair.after.post ? pair.after.post.status : 'n/a'),
           'calls=' + pair.before.draw.calls + '→' + pair.after.draw.calls,
           'L200%=' + pair.before.stats.aboveL200Pct + '→' + pair.after.stats.aboveL200Pct,
           'sky=' + pair.before.stats.skyMean + '→' + pair.after.stats.skyMean,

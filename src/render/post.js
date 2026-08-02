@@ -39,9 +39,16 @@
 
    FLAG (?bloom=): the escape hatch entry 18 asks for, and an A/B knob.
      absent / junk   the shipped default (ON, CONFIG values)
-     ?bloom=0        OFF — the direct renderer.render path, byte-identical
-                     to the pre-composer game
-     ?bloom=<n>      strength override, clamped, for side-by-sides         */
+     ?bloom=0        OFF — the direct renderer.render path, and every emissive
+                     family back at its token color (postGain() below)
+     ?bloom=<n>      strength override, clamped, for side-by-sides
+
+   What ?bloom=0 is NOT is a time machine: the same task also gave the hostile
+   roster real roughness/metalness (src/render/materials.js), and that ships
+   whether or not the pass is drawing. Measured against a build of the base
+   commit at the same sim instant, ?bloom=0 differs from the pre-task tree by
+   mean 0.008 levels, max 15, over 0.067% of pixels on the six-face combat
+   frame — the enemies' new specular response, and nothing else.            */
 
 import * as THREE from 'three';
 import { POST_TUNE } from '../config.js';

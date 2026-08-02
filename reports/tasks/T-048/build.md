@@ -216,8 +216,18 @@ exactly its token color, which sits under it. `postGain()` (1.45) lifts the
 flash/spark pools (`fx.js`), the tell lamps, the polyp's live beam, the mortar
 pod and detonation, and the hostile body emissive (`hostiles.js`) over the line.
 It returns **1 whenever the composer is not actually drawing** — `?bloom=0`, or a
-failed fetch — so the escape hatch really is the pre-pass look, not a clipped
-version of it. `fx.js` reads it once per frame, not once per particle row.
+failed fetch — so the escape hatch shows the emissive families at their token
+colors, not a clipped version of them. `fx.js` reads it once per frame, not once
+per particle row.
+
+**What `?bloom=0` is not:** a return to the base tree. The surface families ship
+whether or not the pass draws. Measured — a build of the base commit captured at
+the same sim instant against this branch at `?bloom=0` — the difference is mean
+**0.008** levels, max **15**, over **0.067%** of pixels on the six-face combat
+frame, and mean 0.001 / max 2 / 0.000% on the polyp frame. That is the enemies'
+new specular response and nothing else, and it is small because they are 15-30 px
+at the frozen view. The same run also cross-checks the capture rig itself: two
+identical builds produced a diff of exactly **0** on both scenes.
 
 ### 2.5 Tuning I changed after looking at frames
 
@@ -267,6 +277,7 @@ moves by ≤0.5 of a level — the frame is not hazed and it is not darkened.
 | `post-capture.mjs` (5 scenes) | 5/5 `frameExact: true` |
 | `post-capture.mjs --stress --scale 2 --repeats 3` | over20ms 0 on all 12 readings |
 | `post-capture.mjs --stress --unlocked --scale 2 --repeats 4` | +1.32 ms mean vs before |
+| `post-capture.mjs` on a scratch build of `git merge-base main HEAD` | base-vs-`?bloom=0` diff: mean 0.008, max 15, 0.067% of pixels (far-combat); base-vs-base diff: 0 |
 
 ### One existing assertion changed, and why it is not a weakening
 
