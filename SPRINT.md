@@ -2572,7 +2572,7 @@ everything with is unsound in the mode we trust most, and that is worth its
 own task. The fetch/decode/upload separation experiment (~30 runs) was offered
 by T-049 and DECLINED on cost, not on merit. ===== -->
 
-## T-049 | assets | review | P1
+## T-049 | assets | done | P1
 goal: five hostile-kind sprites on the shipped enemies, plus the shared
 src/render/preload.js boot-time texture gate every future asset lane consumes.
 accept: gate is genuinely multi-caller safe (one shared close routine gated on
