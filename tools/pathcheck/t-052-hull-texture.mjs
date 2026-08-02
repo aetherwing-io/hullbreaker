@@ -40,7 +40,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONFIG } from '../../src/config.js';
 import { SURFACE } from '../../src/pure/post.js';
-import { hullPieceDims, hullTexRepeat, resolveHullTexOn, TILE_WORLD_SIZE } from '../../src/render/hulltiles.js';
+import {
+  hullPieceDims, hullTexRepeat, resolveHullTexOn, TEX_LAYOUT, TILE_WORLD_SIZE, worldPerTileCopy,
+} from '../../src/render/hulltiles.js';
 import { decodePng } from '../../tools/assets/lib/png.mjs';
 import { ok, near, srcDir, stripComments } from './_context.mjs';
 
@@ -77,19 +79,36 @@ export async function run() {
      'T-052: the shadow bucket is sized off a chunk-wide seam\'s own (chunkCols, capH)');
 
   const rep = hullTexRepeat(CONFIG);
-  const [hw, hh] = TILE_WORLD_SIZE.hullPanel, [vw, vh] = TILE_WORLD_SIZE.ventLouver,
-        [ww2, wh2] = TILE_WORLD_SIZE.weldSeam;
-  near(rep.hull[0], L.chunkCols / hw, 1e-9, 'T-052: hull repeat.x = chunkCols / hull tile width');
-  near(rep.hull[1], L.hull.drop / hh, 1e-9, 'T-052: hull repeat.y = hull.drop / hull tile height');
-  near(rep.wall[0], L.chunkCols / hw, 1e-9, 'T-052: wall repeat.x = chunkCols / hull tile width');
-  near(rep.wall[1], (L.wall.below + L.wall.above) / hh, 1e-9,
-     'T-052: wall repeat.y = (below+above) / hull tile height');
-  near(rep.scute[0], L.scute.len / vw, 1e-9, 'T-052: scute repeat.x = scute.len / vent tile width');
-  near(rep.scute[1], L.scute.h / vh, 1e-9, 'T-052: scute repeat.y = scute.h / vent tile height');
+  const [ww2] = TILE_WORLD_SIZE.weldSeam;
+  /* T-054 CORRECTED THE SUBJECT OF THIS BLOCK, and that correction is the
+     reason the defect survived a cycle of green gates. What used to be here
+     read `repeat.x === chunkCols / tileWidth` — true of the formula, and
+     silent about what the formula is FOR, because materials.js binds a
+     canvas holding `copies x copies` of the tile, not the tile itself. The
+     claim worth gating is the one each asset's own manifest note makes
+     ("authored for a ~2x2 tile repeat"): how much of the creature ONE
+     authored copy covers. Asserted against that, derived from the shipped
+     repeat, so a canvas-layout change that quietly triples the tiling
+     frequency again cannot pass. */
+  const span = worldPerTileCopy(CONFIG);
+  for (const key of ['hull', 'wall', 'scute']) {
+    const authored = TILE_WORLD_SIZE[TEX_LAYOUT[key].tile];
+    near(span[key][0], authored[0], 1e-9,
+       'T-054: one authored copy of the ' + key + ' bucket\'s tile spans its own ' +
+       'authored world width (' + authored[0] + '), not ' + span[key][0].toFixed(2));
+    near(span[key][1], authored[1], 1e-9,
+       'T-054: …and its authored world height (' + authored[1] + '), not ' +
+       span[key][1].toFixed(2));
+  }
+  near(span.shadow[0], TILE_WORLD_SIZE.weldSeam[0], 1e-9,
+     'T-054: one copy of the weld-seam strip spans its authored world width (4)');
   near(rep.shadow[0], L.chunkCols / ww2, 1e-9, 'T-052: shadow repeat.x = chunkCols / seam tile width');
   ok(rep.shadow[1] === 1,
      'T-052: shadow repeat.y is pinned to one full copy of the strip\'s own height ' +
      '(a value under 1 would crop its shadow band instead of fitting it)');
+  near(span.shadow[1], L.wall.capH, 1e-9,
+     'T-054: …the one deliberate exception to the span rule — the strip is fitted ' +
+     'to the cap height (' + L.wall.capH + '), not tiled at its authored 1');
 
   // A retune has to move the tiling density with it, not silently drift out
   // of step — proved by actually retuning it, not by reading the formula.
@@ -165,13 +184,22 @@ export async function run() {
   const hullTexBlock = materialsSrc.match(/function finishHullTex\(\)\s*\{([\s\S]*?)\n\}/);
   ok(!!hullTexBlock, 'T-052: materials.js declares finishHullTex()');
   const hullTexKeys = hullTexBlock
-    ? [...hullTexBlock[1].matchAll(/HULL_TEX\.([a-zA-Z]+)\s*=/g)].map((m) => m[1])
+    ? [...hullTexBlock[1].matchAll(/bucket\('([a-zA-Z]+)'/g)].map((m) => m[1])
     : [];
   ok(hullTexKeys.length >= 4, 'T-052: finishHullTex populates at least four buckets (' +
      hullTexKeys.length + ')');
   ok(hullTexKeys.every((k) => bucketKeys.has(k)),
      'T-052: every bucket materials.js textures is one limb.js MATERIAL_FOR can emit (' +
      hullTexKeys.filter((k) => !bucketKeys.has(k)).join(', ') + ')');
+  // T-054: the two halves of the pass are now two files, and a bucket that
+  // exists in one and not the other is a silent no-op in either direction —
+  // a canvas layout with nothing to build, or a build with no layout and so
+  // no repeat. Checked against hulltiles.js's REAL table, not a copy.
+  ok(Object.keys(TEX_LAYOUT).every((k) => hullTexKeys.includes(k)) &&
+     hullTexKeys.every((k) => TEX_LAYOUT[k]),
+     'T-054: hulltiles.js\'s TEX_LAYOUT and materials.js\'s finishHullTex name the ' +
+     'same four buckets (' + Object.keys(TEX_LAYOUT).join(',') + ' vs ' +
+     hullTexKeys.join(',') + ')');
 
   // applyHullTexture is actually called from bakeLimb — the wiring T-049's
   // review found missing is exactly "the call was deleted, the comment

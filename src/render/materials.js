@@ -37,7 +37,7 @@ import { renderer } from './scene.js';
 import { CONFIG } from '../config.js';
 import { QUERY } from '../mode.js';
 import { preloadTexture, awaitPreloads } from './preload.js';
-import { hullTexRepeat, resolveHullTexOn } from './hulltiles.js';
+import { hullTexRepeat, resolveHullTexOn, composeHullTile } from './hulltiles.js';
 
 // The family table itself is data, so it lives in src/pure/post.js where
 // tools/pathcheck.mjs can read it — and where the guard that every family a
@@ -252,138 +252,84 @@ registerRaw('wear-scuff-overlay.png', TEX_DIR + 'wear-scuff-overlay.png');
    costs the boot nothing beyond what T-049's lane already spends waiting. */
 await awaitPreloads();
 
-/* ---------------- luminance normalization (post-review finding) ---------- *
- * MEASURED (the integrator's capture + this file's own re-check): binding a
- * tile straight in as `map` on a material whose own `color` is white
- * (0xffffff, so the INSTANCE color — the actual palette token — is the only
- * thing that used to set brightness) makes the texture's own absolute mean
- * value the surface's new brightness ceiling. hull-panel-tile.png's own mean
- * is ~78.5/255 (~31%), so binding it cut the lower-hull band from a measured
- * 40.1 to 19.3 — a 52% drop, independently reproduced here and matching the
- * ~56% the integrator measured at a different capture point. A control with
- * `applySurface` on and the map off showed no comparable drop (40.1 both
- * ways), so the ALBEDO MAP is the whole effect, not the roughness/metalness
- * family assignment next to it.
+/* ------- value and detail, after T-054's two measured defects ------------- *
+ * THE DEFECT THIS SECTION NOW ANSWERS. T-052 closed a real 56% darkening
+ * (binding a tile whose own mean is ~31% as `map` on a white-`color`
+ * material makes that mean the surface's new brightness ceiling) by
+ * multiplying every tile's brightness until its mean reached 235/255. That
+ * removed the darkening and it also removed the reason to have a texture:
+ * measured in play, at the same position, one URL apart —
  *
- * The fix keeps the palette token owning VALUE and the tile owning DETAIL
- * (the integrator's option 1): every base tile is normalized so its OWN mean
- * luminance renders near-neutral (TARGET_MEAN) before it is drawn into the
- * composited/repeated canvas, via the same 2D-context `filter` a browser
- * already implements for free. A brighter or darker source (T-053 is
- * regenerating these) is renormalized the same way with no per-bucket
- * number to retune — the scale is computed from whatever image actually
- * loaded, not typed once and left to drift out of step with the asset. */
+ *     ?tex=flat   lower-hull band  mean 43.05  sd 6.57  fine 0.417
+ *     default     lower-hull band  mean 39.90  sd 5.80  fine 0.694
+ *
+ * — the textured build carried LESS structure at the scale the eye reads
+ * (the 2-20px band: 3.02 against flat's 3.82) than the untextured one. The
+ * operator saw it before any of this was measured: "the one floating in the
+ * background seems to have more detail, while that in the foreground has
+ * less."
+ *
+ * TWO CAUSES, BOTH ARITHMETIC, NEITHER ANYONE'S MISJUDGEMENT:
+ *   1. FREQUENCY. The composited canvas holds 3x3 copies of the tile and was
+ *      bound with a repeat computed for ONE — so an authored copy spanned
+ *      0.67 world units, ~12 screen px, against the ~35px hull-panel-tile
+ *      .png's own manifest note authors it for. A 128px panel design
+ *      minified 11:1 has no panel lines left after the mip chain. Fixed in
+ *      hulltiles.js's `hullTexRepeat`, which now divides by the copy count.
+ *   2. RANGE. Pushing a tile's mean to 92% of full scale leaves 8% of the
+ *      range to carry every panel line, and clips whatever sat above it into
+ *      flat white. Fixed by hulltiles.js's `buildToneCurve`: the tile is
+ *      solved to a target mean AND spread well below white, and the
+ *      brightness that costs is paid back by `gain` — a SCALAR multiplied
+ *      into the material's own color, so mean(map) * gain == 1 in linear
+ *      light and the average surface brightness is exactly the flat build's.
+ *      Normalizing the mean and compressing the range are not the same
+ *      operation, and only the first one was ever wanted.
+ *
+ * WHY THE PIXEL WORK LIVES IN hulltiles.js AND NOT HERE: this file cannot be
+ * imported by a headless gate (three.js + a live renderer at module scope),
+ * so anything expressed here can only ever be checked as source text — and
+ * both defects above sat under a green gate for a cycle for exactly that
+ * reason. hulltiles.js is Node-safe, so tools/pathcheck runs the real
+ * transform over the real PNG and asserts on the output pixels. What is left
+ * here is the browser-only half: decode → hand the bytes over → upload.
+ *
+ * HUE PRESERVATION, the property T-052's reviewer proved by construction and
+ * this may not lose: `applyToneCurve` writes R = G = B at every texel (the
+ * same guarantee `grayscale(100%)` gave), and `gain` is a scalar applied to
+ * all three channels of `material.color`. Neither multiply can shift the
+ * palette token's hue — warm rust tile on the cool teal `wall`/`shadow`
+ * tokens included. Asserted over the composited buffer in pathcheck.       */
 
-const TARGET_MEAN = 235;                  // measured target, not full 255 — see below
-const NORMALIZE_SAMPLE_PX = 24;           // enough to average a tile's own mean;
-                                           //   this is a scale factor, not a look
-
-/* SECOND MEASURED FINDING, same review cycle: `wall` and `shadow` are cool
-   teal palette tokens (PAL.limb.wall 0x44656b, PAL.limb.shadow 0x35504f —
-   B the dominant channel in both), but hull-panel-tile.png is a warm rust
-   texture (R dominant, B near zero). Binding it as a COLORED multiply onto
-   those buckets crushes their blue channel harder than red/green, and the
-   surface visibly shifts hue from teal toward green — reproduced in a live
-   capture (reports/tasks/T-052/evidence/), invisible at first because the
-   pre-normalization darkening (see below) buried it near-black. Grayscale
-   the tile before the brightness pass fixes this everywhere at once: a
-   texture bound this way can only ever modulate VALUE, never HUE, so the
-   instance color (the actual palette token) owns hue on every bucket, warm
-   or cool, exactly as the rest of this codebase's material model assumes. */
-function tileFilter(brightnessPct) {
-  return 'grayscale(100%) brightness(' + brightnessPct + '%)';
-}
-
-// CSS `filter: brightness(S%)` multiplies each 8-bit channel by S and CLIPS
-// at 255 — it does not redistribute the clipped headroom back into the
-// mean. MEASURED: hull-panel-tile.png's raw mean is 78.4/255; a naive
-// `scale = TARGET/rawMean` (≈325%) only pushed the actual full-canvas mean
-// to 201.7, not 255 — a 24-color, high-contrast tile clips its brighter
-// pixels before a linear scale can bring the average that far. So the scale
-// is found by measuring what a trial actually achieves and correcting
-// toward the target — same 24x24 sample canvas reused each pass, three
-// passes converge inside 2% for both this tile and T-053's regenerated one
-// (458 colors, much lower contrast, converges in one pass).
-function meanLuminance(img, brightnessPct) {
+// Decode an already-loaded texture's image into raw RGBA at its natural size.
+// The one thing that genuinely needs a DOM here: everything downstream is
+// plain arithmetic on these bytes.
+function imageBytes(img) {
   const cv = document.createElement('canvas');
-  cv.width = cv.height = NORMALIZE_SAMPLE_PX;
-  const g = cv.getContext('2d');
-  g.filter = tileFilter(brightnessPct || 100);
-  g.drawImage(img, 0, 0, NORMALIZE_SAMPLE_PX, NORMALIZE_SAMPLE_PX);
-  const data = g.getImageData(0, 0, NORMALIZE_SAMPLE_PX, NORMALIZE_SAMPLE_PX).data;
-  let sum = 0, n = 0;
-  for (let i = 0; i < data.length; i += 4) {
-    sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-    n++;
-  }
-  return n ? sum / n : TARGET_MEAN;
+  cv.width = img.naturalWidth || img.width;
+  cv.height = img.naturalHeight || img.height;
+  const g = cv.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, 0, 0);
+  const d = g.getImageData(0, 0, cv.width, cv.height);
+  return { data: d.data, width: cv.width, height: cv.height };
 }
 
-// clamped so a pathologically dark source never gets an absurd multiply —
-// 8x is already far past what either tile in hand needs (hull-panel-tile.png
-// converges around 4.7x, T-053's regenerated one around 2.6x).
-function normalizeScale(img) {
-  const raw = meanLuminance(img);
-  let scale = Math.max(1, Math.min(8, TARGET_MEAN / Math.max(1, raw)));
-  for (let i = 0; i < 3; i++) {
-    const achieved = meanLuminance(img, Math.round(scale * 100));
-    if (achieved <= 0) break;
-    const ratio = TARGET_MEAN / achieved;
-    if (Math.abs(ratio - 1) < 0.02) break;
-    scale = Math.max(1, Math.min(8, scale * ratio));
-  }
-  return scale;
-}
-
-/* ------------------------- the wear composite ---------------------------- *
- * One small canvas per near surface: the base tile, brightness-normalized
- * and drawn as a flat repeat, then the wear overlay (never renormalized —
- * it is authored grime, not a base albedo) drawn on top at a DIFFERENT cell
- * size with alternate cells mirrored — two independent ways the eye that
- * spots one repeating texture (tools/assets/tile.mjs's whole reason to
- * exist) is denied both. */
-
-function drawTiled(g, img, cellPx, canvasPx, flip) {
-  let row = 0;
-  for (let y = 0; y < canvasPx; y += cellPx, row++) {
-    let col = row;
-    for (let x = 0; x < canvasPx; x += cellPx, col++) {
-      g.save();
-      g.translate(x + cellPx / 2, y + cellPx / 2);
-      if (flip) g.scale(col % 2 ? -1 : 1, row % 2 ? -1 : 1);
-      g.drawImage(img, -cellPx / 2, -cellPx / 2, cellPx, cellPx);
-      g.restore();
-    }
-  }
-}
-
-// THIRD MEASURED FINDING, same review cycle: with the base tile normalized,
-// re-measuring showed the lower-hull band still 33% darker than `?tex=flat`
-// — removing the wear pass entirely (a one-line A/B, `wear -> null`) dropped
-// that to 8%, so the WEAR OVERLAY, not the base tile, was carrying most of
-// the remaining gap. wear-scuff-overlay.png's opaque texels are their own
-// authored dark grime (measured mean ~62/255) blended in at full alpha, not
-// multiplied — so the base tile's normalization never touched it. It still
-// needs to read as grime (darker than its surroundings), just not so dark
-// it anchors the whole surface's average down again; a flat, un-tuned
-// brightness lift (not the iterative solve `normalizeScale` runs for an
-// albedo base, since this is a small, sparse accent, not the surface's own
-// value) is enough to keep it a visible accent rather than a second cause
-// of the same defect.
-const WEAR_BRIGHTEN_PCT = 340;
-
-function buildWorn(base, wear, canvasPx, baseCellPx, wearCellPx) {
+// Compose one bucket's canvas (hulltiles.js does every pixel of it) and hand
+// it to the GPU. Returns null when the base never arrived, which is the
+// caller's cue to leave the material flat — entry 16's degrade contract.
+function buildTile(key, base, wear) {
+  if (!base || !base.ready) return null;
+  const composed = composeHullTile(CONFIG, key,
+    imageBytes(base.tex.image),
+    wear && wear.ready ? imageBytes(wear.tex.image) : null);
+  if (!composed) return null;
   const cv = document.createElement('canvas');
-  cv.width = cv.height = canvasPx;
+  cv.width = composed.width;
+  cv.height = composed.height;
   const g = cv.getContext('2d');
-  const scale = normalizeScale(base.tex.image);
-  g.filter = tileFilter(Math.round(scale * 100));
-  drawTiled(g, base.tex.image, baseCellPx, canvasPx, false);
-  if (wear && wear.ready) {
-    g.filter = 'grayscale(100%) brightness(' + WEAR_BRIGHTEN_PCT + '%)';
-    drawTiled(g, wear.tex.image, wearCellPx, canvasPx, true);
-  }
-  g.filter = 'none';
+  const bytes = g.createImageData(composed.width, composed.height);
+  bytes.data.set(composed.data);
+  g.putImageData(bytes, 0, 0);
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;
@@ -391,28 +337,7 @@ function buildWorn(base, wear, canvasPx, baseCellPx, wearCellPx) {
   tex.minFilter = THREE.LinearMipmapLinearFilter;
   tex.needsUpdate = true;
   warmTexture(tex);
-  return tex;
-}
-
-// wall/shadow have no wear pass, but they need the SAME brightness
-// normalization — so they now go through a canvas too instead of binding
-// the raw loaded texture directly (the raw texture never had a chance to be
-// darkened OR normalized before this; it was simply used as-is).
-function buildFlatTile(base, canvasPx, baseCellPx) {
-  const cv = document.createElement('canvas');
-  cv.width = cv.height = canvasPx;
-  const g = cv.getContext('2d');
-  const scale = normalizeScale(base.tex.image);
-  g.filter = tileFilter(Math.round(scale * 100));
-  drawTiled(g, base.tex.image, baseCellPx, canvasPx, false);
-  const tex = new THREE.CanvasTexture(cv);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
-  tex.generateMipmaps = true;
-  tex.minFilter = THREE.LinearMipmapLinearFilter;
-  tex.needsUpdate = true;
-  warmTexture(tex);
-  return tex;
+  return { tex, curve: composed.curve, layout: composed.layout };
 }
 
 // preload.js's warm-up trick, repeated for a texture THIS file derives after
@@ -447,15 +372,17 @@ function warmTexture(tex) {
   }
 }
 
-/* key -> { map, bumpScale, repeat: [x, y] }. `repeat` comes from
-   hulltiles.js's hullTexRepeat(CONFIG) — piece size / each tile's own
-   authored world-tile size, computed against the DOMINANT kind in that
+/* key -> { map, bumpScale, repeat: [x, y], gain }. `repeat` comes from
+   hulltiles.js's hullTexRepeat(CONFIG) — piece size / the world span of the
+   COMPOSITED CANVAS (T-054: the copy count inside it is what T-052's version
+   of this arithmetic missed), computed against the DOMINANT kind in that
    bucket (see that file's header). A bucket's smaller co-tenants (bdLimb
    inside `hull`, bdDrum inside `wall`, bdRing inside `scute`) share the same
    per-unit density and so show a proportionally different tile count on
    their own, smaller faces — a known, reported approximation (see
    build.md); true per-instance density needs a per-instance UV scale this
-   pass does not add. */
+   pass does not add. `gain` travels WITH the map, in the same record, so a
+   bucket can never end up brightened by a texture that failed to load. */
 const HULL_TEX = {};
 
 function finishHullTex() {
@@ -466,23 +393,33 @@ function finishHullTex() {
   const wear = rawTex.get('wear-scuff-overlay.png');
   const repeat = hullTexRepeat(CONFIG);
 
-  if (hullBase.ready) {
-    HULL_TEX.hull = { map: buildWorn(hullBase, wear, 384, 128, 250), bumpScale: 0.07, repeat: repeat.hull };
-  }
-  if (wallBase.ready) {
-    HULL_TEX.wall = { map: buildFlatTile(wallBase, 384, 128), bumpScale: 0.02, repeat: repeat.wall };
-  }
-  if (scuteBase.ready) {
-    HULL_TEX.scute = { map: buildWorn(scuteBase, wear, 256, 128, 188), bumpScale: 0.07, repeat: repeat.scute };
-  }
-  if (shadowBase.ready) {
-    HULL_TEX.shadow = { map: buildFlatTile(shadowBase, 128, 128), bumpScale: 0.04, repeat: repeat.shadow };
-  }
+  // bumpScale, per bucket: `hull`/`scute` are the near armour RIG stands
+  // beside, `wall` is a tier back (less relief is less contrast under the
+  // same key light — the material half of atmospheric perspective), `shadow`
+  // is thin deck-edge trim. HALVED against T-052's numbers because the tone
+  // curve above hands the bump map ~3x the luminance slope it used to see:
+  // bump reads the map's own gradient, so restoring contrast in the albedo
+  // silently multiplies the relief by the same factor.
+  const bucket = (key, base, wearFor) => {
+    const built = buildTile(key, base, wearFor);
+    if (!built) return;
+    HULL_TEX[key] = {
+      map: built.tex,
+      bumpScale: { hull: 0.035, wall: 0.01, scute: 0.035, shadow: 0.02 }[key],
+      repeat: repeat[key],
+      gain: built.curve.gain,
+      curve: built.curve,
+    };
+  };
+  bucket('hull', hullBase, wear);
+  bucket('wall', wallBase, null);
+  bucket('scute', scuteBase, wear);
+  bucket('shadow', shadowBase, null);
 
   // Every raw loaded texture above was consumed SYNCHRONOUSLY into a canvas
   // (drawImage reads pixels immediately; nothing here is async) and none of
-  // them is bound as a live material `.map` any more — buildWorn/buildFlatTile
-  // always produce the CanvasTexture actually used. Left resident, they were
+  // them is bound as a live material `.map` any more — buildTile always
+  // produces the CanvasTexture actually used. Left resident, they were
   // dead GPU memory: measured, +2 resident textures (34 vs 32) after wall and
   // shadow moved off the raw binding they used to have. Disposing here is
   // safe precisely because nothing after this point still reads `.tex`.
@@ -494,7 +431,13 @@ finishHullTex();
 
 /* Give a material the texture bound to a limb.js material key. A no-op for a
    key with no entry (see the list above) or one whose texture never arrived
-   — the material is left exactly as `applySurface` alone would leave it. */
+   — the material is left exactly as `applySurface` alone would leave it.
+   `color` carries the tone curve's `gain` and is set in the SAME statement
+   list as the map, from the same record: there is no path through this
+   function that brightens a material without also giving it the map that
+   gain compensates for. Written in the working (linear) color space, which
+   is where the shader multiplies it, and equal on all three channels so the
+   instance color — the palette token — keeps its hue exactly. */
 export function applyHullTexture(material, key) {
   const t = HULL_TEX[key];
   if (!t || !material) return material;
@@ -503,6 +446,7 @@ export function applyHullTexture(material, key) {
   material.map = t.map;
   material.bumpMap = t.map;
   material.bumpScale = t.bumpScale;
+  material.color.setRGB(t.gain, t.gain, t.gain, THREE.LinearSRGBColorSpace);
   material.needsUpdate = true;
   return material;
 }
@@ -511,10 +455,22 @@ export function applyHullTexture(material, key) {
    texture, and (indirectly, via `rawTex`) whether the underlying loads
    themselves succeeded — the two are kept separate because a bucket can be
    texture-less on purpose (`rib`, `machine`, `skyline`, `scuteAlt`) even when
-   every file loaded cleanly. */
+   every file loaded cleanly. T-054 adds the per-bucket tone curve, so a live
+   page can be asked what contrast and what gain it actually built — the
+   capture rig (tools/playtest/hulltex-capture.mjs) asserts the gain/map
+   pairing against this rather than against the source text of the function
+   above. */
 export function hullTextureSnapshot() {
   const files = {};
   for (const [file, slot] of rawTex) files[file] = slot.ready;
-  return { on: HULL_TEX_ON, files, buckets: Object.keys(HULL_TEX) };
+  const tone = {};
+  for (const [key, t] of Object.entries(HULL_TEX))
+    tone[key] = {
+      gain: t.gain, hasMap: !!t.map, repeat: t.repeat, bumpScale: t.bumpScale,
+      canvasPx: t.map && t.map.image ? t.map.image.width : 0,
+      mean: t.curve.mean, sd: t.curve.sd, contrast: t.curve.contrast,
+      linMean: t.curve.linMean, linRelSd: t.curve.linRelSd,
+    };
+  return { on: HULL_TEX_ON, files, buckets: Object.keys(HULL_TEX), tone };
 }
 if (typeof window !== 'undefined') window.__HB_HULL_TEX = hullTextureSnapshot;
