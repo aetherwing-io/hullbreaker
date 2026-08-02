@@ -1140,7 +1140,7 @@ transform slice's 580-call path not multiplied.
 owner: gameplay-engineer
 verify: node tools/pathcheck.mjs; frame time under load; FAR captures
 
-## T-040 | art | doing | P1
+## T-040 | art | blocked | P1
 goal: packet item S8 — RIG silhouette. He is 230 lit pixels of head sphere plus
 three boxes, sharing a value family with his own bullets. Render-only: hitbox
 and movement are frozen.
@@ -2366,3 +2366,23 @@ prior evidence used), RIG's own dark ink outline blends toward the
 background rather than separating from it. Neither is a new defect class —
 this is a feel/readability item for the operator checkpoint queue, not a
 bug, and did not factor into the FAIL verdict above.
+
+<!-- T-040 BLOCKED NOTE (2026-08-02, integrator). The sprite art has passed
+repeatedly — glance test, tracer separation, asset-missing fallback, and an
+armored-marine read at true 15x30px, which is what the operator asked for after
+rejecting the box version (entry 15). Its original async-load determinism defect
+is CONFIRMED FIXED.
+
+It blocks on I-039 (S2): a residual, measured on a 16-round interleaved design —
+merge-base deviates 0/16, the escape hatch 1/16, the shipped sprite default
+7/16, worst case a ~2.3-tile-worse crush approach from byte-identical input.
+Awaiting the texture load is not sufficient; a GPU driver can still defer the
+mipmap upload onto frame 1. The fix is an explicit warm-up render /
+renderer.compile() at the end of src/render/preload.js — T-049's file, and
+systemic to any lane registering a large mipmapped texture through that gate.
+
+T-040 is deliberately NOT fixing it locally: doing it once in the shared gate
+covers RIG, the five enemy sprites, and every future lane. Unblocks when T-049
+lands the warm-up; then re-run
+reports/tasks/T-040/playtest-evidence/determinism-regate/regate-repro.sh and
+show deviation at the control's level. -->
