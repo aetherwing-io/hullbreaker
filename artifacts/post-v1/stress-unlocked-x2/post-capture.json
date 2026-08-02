@@ -1,0 +1,576 @@
+{
+  "measuredAt": "2026-08-02T06:08:25.609Z",
+  "tool": "tools/playtest/post-capture.mjs",
+  "viewport": "1280x800 @ deviceScaleFactor 2",
+  "scenes": {},
+  "stress": {
+    "before": [
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 580.6,
+          "avgMs": 1.72,
+          "worstMs": 3.8,
+          "over20ms": 0
+        },
+        "post": {
+          "on": false,
+          "status": "off",
+          "strength": 0,
+          "radius": 0,
+          "threshold": 0,
+          "samples": 2,
+          "gain": 1,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "liveProjectiles": 256,
+        "state": "PLAYING",
+        "draw": {
+          "calls": 106,
+          "triangles": 50340
+        },
+        "drawMs": {
+          "n": 600,
+          "median": 1.2,
+          "p95": 2.7,
+          "worst": 3.2
+        },
+        "url": "/index.html?testapi=1&shell=0&bloom=0",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 588.2,
+          "avgMs": 1.7,
+          "worstMs": 4.7,
+          "over20ms": 0
+        },
+        "post": {
+          "on": false,
+          "status": "off",
+          "strength": 0,
+          "radius": 0,
+          "threshold": 0,
+          "samples": 2,
+          "gain": 1,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "liveProjectiles": 256,
+        "state": "PLAYING",
+        "draw": {
+          "calls": 106,
+          "triangles": 50340
+        },
+        "drawMs": {
+          "n": 600,
+          "median": 0.5,
+          "p95": 2.7,
+          "worst": 4.1
+        },
+        "url": "/index.html?testapi=1&shell=0&bloom=0",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 614.1,
+          "avgMs": 1.63,
+          "worstMs": 5.2,
+          "over20ms": 0
+        },
+        "post": {
+          "on": false,
+          "status": "off",
+          "strength": 0,
+          "radius": 0,
+          "threshold": 0,
+          "samples": 2,
+          "gain": 1,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "liveProjectiles": 256,
+        "state": "PLAYING",
+        "draw": {
+          "calls": 106,
+          "triangles": 50340
+        },
+        "drawMs": {
+          "n": 600,
+          "median": 0.7,
+          "p95": 2.7,
+          "worst": 10.4
+        },
+        "url": "/index.html?testapi=1&shell=0&bloom=0",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 624.3,
+          "avgMs": 1.6,
+          "worstMs": 3.6,
+          "over20ms": 0
+        },
+        "post": {
+          "on": false,
+          "status": "off",
+          "strength": 0,
+          "radius": 0,
+          "threshold": 0,
+          "samples": 2,
+          "gain": 1,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "liveProjectiles": 256,
+        "state": "PLAYING",
+        "draw": {
+          "calls": 106,
+          "triangles": 50340
+        },
+        "drawMs": {
+          "n": 600,
+          "median": 0.6,
+          "p95": 2.5,
+          "worst": 3.5
+        },
+        "url": "/index.html?testapi=1&shell=0&bloom=0",
+        "errors": []
+      }
+    ],
+    "after": [
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 275.8,
+          "avgMs": 3.63,
+          "worstMs": 9.4,
+          "over20ms": 0
+        },
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 2,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "liveProjectiles": 256,
+        "state": "PLAYING",
+        "draw": {
+          "calls": 120,
+          "triangles": 50354
+        },
+        "drawMs": {
+          "n": 600,
+          "median": 3,
+          "p95": 6.8,
+          "worst": 11.7
+        },
+        "url": "/index.html?testapi=1&shell=0",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 324.3,
+          "avgMs": 3.08,
+          "worstMs": 7.2,
+          "over20ms": 0
+        },
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 2,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "liveProjectiles": 256,
+        "state": "PLAYING",
+        "draw": {
+          "calls": 120,
+          "triangles": 50354
+        },
+        "drawMs": {
+          "n": 600,
+          "median": 2.6,
+          "p95": 5.3,
+          "worst": 7.8
+        },
+        "url": "/index.html?testapi=1&shell=0",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 416.2,
+          "avgMs": 2.4,
+          "worstMs": 7.3,
+          "over20ms": 0
+        },
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 2,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "liveProjectiles": 256,
+        "state": "PLAYING",
+        "draw": {
+          "calls": 120,
+          "triangles": 50354
+        },
+        "drawMs": {
+          "n": 600,
+          "median": 1.5,
+          "p95": 4.2,
+          "worst": 7.9
+        },
+        "url": "/index.html?testapi=1&shell=0",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 354.5,
+          "avgMs": 2.82,
+          "worstMs": 6.3,
+          "over20ms": 0
+        },
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 2,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "liveProjectiles": 256,
+        "state": "PLAYING",
+        "draw": {
+          "calls": 120,
+          "triangles": 50354
+        },
+        "drawMs": {
+          "n": 600,
+          "median": 2.1,
+          "p95": 4.7,
+          "worst": 6.8
+        },
+        "url": "/index.html?testapi=1&shell=0",
+        "errors": []
+      }
+    ],
+    "after-aa2": [
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 312.3,
+          "avgMs": 3.2,
+          "worstMs": 11.5,
+          "over20ms": 0
+        },
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 2,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "liveProjectiles": 256,
+        "state": "PLAYING",
+        "draw": {
+          "calls": 120,
+          "triangles": 50354
+        },
+        "drawMs": {
+          "n": 600,
+          "median": 2.5,
+          "p95": 5.3,
+          "worst": 7.4
+        },
+        "url": "/index.html?testapi=1&shell=0&aa=2",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 343.7,
+          "avgMs": 2.91,
+          "worstMs": 9.5,
+          "over20ms": 0
+        },
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 2,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "liveProjectiles": 256,
+        "state": "PLAYING",
+        "draw": {
+          "calls": 120,
+          "triangles": 50354
+        },
+        "drawMs": {
+          "n": 600,
+          "median": 1.9,
+          "p95": 4.6,
+          "worst": 8.2
+        },
+        "url": "/index.html?testapi=1&shell=0&aa=2",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 352.8,
+          "avgMs": 2.83,
+          "worstMs": 9.4,
+          "over20ms": 0
+        },
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 2,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "liveProjectiles": 256,
+        "state": "PLAYING",
+        "draw": {
+          "calls": 120,
+          "triangles": 50354
+        },
+        "drawMs": {
+          "n": 600,
+          "median": 1.3,
+          "p95": 4.5,
+          "worst": 10.2
+        },
+        "url": "/index.html?testapi=1&shell=0&aa=2",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 358.5,
+          "avgMs": 2.79,
+          "worstMs": 9.1,
+          "over20ms": 0
+        },
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 2,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "liveProjectiles": 256,
+        "state": "PLAYING",
+        "draw": {
+          "calls": 120,
+          "triangles": 50354
+        },
+        "drawMs": {
+          "n": 600,
+          "median": 1.6,
+          "p95": 4.2,
+          "worst": 9.4
+        },
+        "url": "/index.html?testapi=1&shell=0&aa=2",
+        "errors": []
+      }
+    ],
+    "after-noaa": [
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 452.6,
+          "avgMs": 2.21,
+          "worstMs": 7.2,
+          "over20ms": 0
+        },
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 0,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "liveProjectiles": 256,
+        "state": "PLAYING",
+        "draw": {
+          "calls": 120,
+          "triangles": 50354
+        },
+        "drawMs": {
+          "n": 600,
+          "median": 1.1,
+          "p95": 3.5,
+          "worst": 9.3
+        },
+        "url": "/index.html?testapi=1&shell=0&aa=0",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 454.7,
+          "avgMs": 2.2,
+          "worstMs": 8.7,
+          "over20ms": 0
+        },
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 0,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "liveProjectiles": 256,
+        "state": "PLAYING",
+        "draw": {
+          "calls": 120,
+          "triangles": 50354
+        },
+        "drawMs": {
+          "n": 600,
+          "median": 1.1,
+          "p95": 3.2,
+          "worst": 9.2
+        },
+        "url": "/index.html?testapi=1&shell=0&aa=0",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 450.1,
+          "avgMs": 2.22,
+          "worstMs": 8.3,
+          "over20ms": 0
+        },
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 0,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "liveProjectiles": 256,
+        "state": "PLAYING",
+        "draw": {
+          "calls": 120,
+          "triangles": 50354
+        },
+        "drawMs": {
+          "n": 600,
+          "median": 1.1,
+          "p95": 3.1,
+          "worst": 7.6
+        },
+        "url": "/index.html?testapi=1&shell=0&aa=0",
+        "errors": []
+      },
+      {
+        "perf": {
+          "frames": 180,
+          "fps": 437.6,
+          "avgMs": 2.29,
+          "worstMs": 7.5,
+          "over20ms": 0
+        },
+        "post": {
+          "on": true,
+          "status": "active",
+          "strength": 0.62,
+          "radius": 0.3,
+          "threshold": 0.78,
+          "samples": 0,
+          "gain": 1.45,
+          "atmos": "match",
+          "faults": 0,
+          "error": ""
+        },
+        "liveProjectiles": 256,
+        "state": "PLAYING",
+        "draw": {
+          "calls": 120,
+          "triangles": 50354
+        },
+        "drawMs": {
+          "n": 600,
+          "median": 1,
+          "p95": 3.5,
+          "worst": 6.7
+        },
+        "url": "/index.html?testapi=1&shell=0&aa=0",
+        "errors": []
+      }
+    ]
+  }
+}

@@ -209,6 +209,52 @@ function frameStats(file) {
   };
 }
 
+/* The pair is frame-exact, so the two images can be SUBTRACTED — which is the
+   only honest way to answer "how far does the bleed reach". `changedPct` is
+   the share of pixels the pass moved by more than 8 levels (a step a player
+   can see); `spread` is how far from the brightest source those pixels are
+   found, as a fraction of the frame's diagonal. A pass that turns emissives
+   into light shows a large delta over a small area near the sources; a pass
+   that hazes the frame shows a small delta everywhere. */
+function pairDiff(beforePng, afterPng) {
+  const a = decodePng(beforePng);
+  const b = decodePng(afterPng);
+  if (a.width !== b.width || a.height !== b.height) return null;
+  const n = a.width * a.height;
+  let sum = 0, max = 0, changed = 0, farthest = 0;
+  let cx = 0, cy = 0, w = 0;
+  const lum = (px, i) => 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+  for (let y = 0; y < a.height; y++) {
+    for (let x = 0; x < a.width; x++) {
+      const i = (y * a.width + x) * 4;
+      const d = lum(b.rgba, i) - lum(a.rgba, i);
+      const ad = Math.abs(d);
+      sum += ad;
+      if (ad > max) max = ad;
+      if (ad > 8) { changed++; cx += x * ad; cy += y * ad; w += ad; }
+    }
+  }
+  if (w > 0) {
+    cx /= w; cy /= w;
+    for (let y = 0; y < a.height; y++) {
+      for (let x = 0; x < a.width; x++) {
+        const i = (y * a.width + x) * 4;
+        if (Math.abs(lum(b.rgba, i) - lum(a.rgba, i)) > 8) {
+          const r = Math.hypot(x - cx, y - cy);
+          if (r > farthest) farthest = r;
+        }
+      }
+    }
+  }
+  const diag = Math.hypot(a.width, a.height);
+  return {
+    meanAbs: +(sum / n).toFixed(3),
+    max: Math.round(max),
+    changedPct: +((changed / n) * 100).toFixed(3),
+    reach: +(farthest / diag).toFixed(3),
+  };
+}
+
 /* -------------------------------- driver -------------------------------- */
 
 async function openPage(browser, base, url) {
@@ -387,6 +433,65 @@ async function stress(base, mode) {
   }
 }
 
+/* --------------------------------- probe --------------------------------- *
+ * The two things only a real page can answer, and the second one is the whole
+ * reason the composer loads the way it does:
+ *
+ *   selftest   ?selftest=1 must still print PASS with the pass wired in.
+ *   offline    with every three/addons request ABORTED — the CDN down, a
+ *              school firewall, a flaky hotspot — the game must still boot,
+ *              still render frames, and say so through post().status. A blank
+ *              page is a P1 defect in this project; a game without bloom is
+ *              not a defect at all.
+ */
+async function probe(base) {
+  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  const out = {};
+  try {
+    {
+      const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: SCALE });
+      const page = await context.newPage();
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(String((e && e.message) || e)));
+      await page.goto(base + '/index.html?selftest=1', { waitUntil: 'load' });
+      await page.waitForFunction(() => /SELFTEST/.test(document.title), null, { timeout: 20000 });
+      out.selftest = {
+        title: await page.title(),
+        post: await page.evaluate(() => globalThis.HB.post()),
+        errors,
+      };
+      await context.close();
+    }
+    {
+      const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: SCALE });
+      const page = await context.newPage();
+      const errors = [];
+      page.on('pageerror', (e) => errors.push(String((e && e.message) || e)));
+      await context.route('**/examples/jsm/**', (route) => route.abort());
+      await page.goto(base + '/index.html?testapi=1&shell=0', { waitUntil: 'load' });
+      await page.waitForFunction(
+        () => globalThis.HB && globalThis.HB.state() === 'PLAYING', null, { timeout: 15000 });
+      await page.waitForFunction(
+        () => globalThis.HB.post().status !== 'loading', null, { timeout: 15000 });
+      await page.waitForTimeout(1500);
+      out.offline = {
+        post: await page.evaluate(() => globalThis.HB.post()),
+        perf: await page.evaluate(() => globalThis.HB.perf()),
+        failsafe: await page.evaluate(() => globalThis.HB.failsafe()),
+        state: await page.evaluate(() => globalThis.HB.state()),
+        shot: join(OUT, 'offline-fallback.png'),
+        errors,
+      };
+      await page.screenshot({ path: out.offline.shot });
+      out.offline.stats = frameStats(out.offline.shot);
+      await context.close();
+    }
+  } finally {
+    await browser.close();
+  }
+  return out;
+}
+
 /* --------------------------------- main --------------------------------- */
 
 async function main() {
@@ -402,6 +507,17 @@ async function main() {
     stress: {},
   };
   try {
+    if (flag('--probe') || flag('--all')) {
+      result.probe = await probe(base);
+      console.log('probe selftest:', result.probe.selftest.title);
+      console.log('probe offline :', 'status=' + result.probe.offline.post.status,
+        'state=' + result.probe.offline.state,
+        'frames=' + result.probe.offline.perf.frames,
+        'worstMs=' + result.probe.offline.perf.worstMs,
+        'faults=' + result.probe.offline.failsafe.faults,
+        'panel=' + result.probe.offline.failsafe.showing,
+        'meanL=' + result.probe.offline.stats.mean);
+    }
     if (flag('--stress') || flag('--all')) {
       // Alternated repeats, not one reading per side: this machine runs other
       // lanes' browsers at the same time, and a single pair can be a picture
@@ -422,7 +538,7 @@ async function main() {
         }
       }
     }
-    if (!flag('--stress')) {
+    if (!flag('--stress') && !flag('--probe')) {
       const want = opt('--scenes', '');
       const list = want ? SCENES.filter((s) => want.split(',').includes(s.id)) : SCENES;
       for (const scene of list) {
@@ -438,6 +554,7 @@ async function main() {
           pair.before.player.x === pair.after.player.x &&
           pair.before.player.y === pair.after.player.y &&
           pair.before.kills === pair.after.kills;
+        pair.diff = pair.frameExact ? pairDiff(pair.before.shot, pair.after.shot) : null;
         result.scenes[scene.id] = pair;
         console.log(scene.id,
           'frameExact=' + pair.frameExact,
@@ -449,6 +566,8 @@ async function main() {
           'L200%=' + pair.before.stats.aboveL200Pct + '→' + pair.after.stats.aboveL200Pct,
           'sky=' + pair.before.stats.skyMean + '→' + pair.after.stats.skyMean,
           'mean=' + pair.before.stats.mean + '→' + pair.after.stats.mean,
+          'diff=' + (pair.diff ? pair.diff.meanAbs + '/' + pair.diff.max +
+            ' changed=' + pair.diff.changedPct + '% reach=' + pair.diff.reach : 'n/a'),
           'hostiles=' + pair.after.hostiles.length);
       }
     }
