@@ -186,7 +186,10 @@ export function updateLightRig(lookX, lookY, lookZ, yawRad) {
   const tx = Math.cos(yawRad), tz = -Math.sin(yawRad);      // travel = screen right
   _focus.set(lookX + tx * ahead, lookY, lookZ + tz * ahead);
 
-  for (const { desc, light, target } of viewLights) {
+  // indexed loop, not for-of: this runs once a frame beside the camera pose,
+  // and the hot path allocates nothing (not even an iterator)
+  for (let i = 0; i < viewLights.length; i++) {
+    const desc = viewLights[i].desc, light = viewLights[i].light, target = viewLights[i].target;
     lightVector(desc, yawRad, _dir);
     if (desc.type === 'hemisphere') {
       // a hemisphere light's gradient axis IS its world position vector, so
