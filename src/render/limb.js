@@ -25,14 +25,16 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { normalAscentAltAt } from '../pure/ascent.js';
-import { SEGS, headingAt, polyAt } from '../pure/path.js';
+import { SEGS, cornerSList, headingAt, polyAt } from '../pure/path.js';
 import { limbBakePlan, limbFacetTone } from '../pure/limb.js';
 import { limbShadePlan } from '../pure/shade.js';
 import { IS_G1, QUERY } from '../mode.js';
 import { groundH } from '../sim/level.js';
-import { scene } from './scene.js';
+import { scrollX } from '../sim/time.js';
+import { HIDE, scene } from './scene.js';
 import { PAL, SHADE_GAIN } from './palette.js';
-import { applyHullTexture, applySurface } from './materials.js';
+import { applyHullTexture, applySurface, varyHullTexture } from './materials.js';
+import { cameraFacingFacet } from './camera.js';
 
 // One value ladder from the palette module (concept teal/rust by default,
 // grey-box via ?palette=classic): the deck (PAL.ground) stays the brightest
@@ -57,8 +59,11 @@ import { applyHullTexture, applySurface } from './materials.js';
 // byte-identical to the shipped build.
 const BASE_COLORS = PAL.limb;
 
-// kind → material. Joint pieces deliberately use the brighter `rib`/`machine`
-// end of the ladder: the joint is the landmark the orbit is about.
+// kind → material. Joint perimeter hardware uses the brighter `rib`/`machine`
+// end of the ladder: the joint is the landmark the orbit is about. Its huge
+// vertical ridge is the exception — a bright face there reads as a blank
+// billboard before every corner, so the pivot mass stays in shadow-steel
+// while the collar, kerb and deck lights outline it.
 //
 // THE SCALE PASS ADDS NO MATERIAL (T-045). Every new kind below maps onto one
 // of the eight keys that were already here. The silhouette pass below splits
@@ -75,7 +80,7 @@ const MATERIAL_FOR = {
   // of every frame read as a brown building façade no matter what sat on it.
   hull: 'wall', hullRib: 'shadow', wall: 'wall', wallSeam: 'shadow', wallCap: 'shadow',
   kerb: 'rib', lipScute: 'rib', scute: 'scute', scuteRib: 'scuteAlt', silhouette: 'skyline',
-  ridge: 'rib', collar: 'wall', tendon: 'shadow', buttress: 'wall', cup: 'hull',
+  ridge: 'shadow', collar: 'wall', tendon: 'shadow', buttress: 'wall', cup: 'hull',
   gill: 'shadow', bodyRib: 'hull', flankTendon: 'machine',
   // tier 1: the sister limb, in the body's own rust — but one notch off the
   // played limb's brightest metal on purpose. `machine` on the lip made the
@@ -125,6 +130,85 @@ const SURFACE_FOR = {
    (CONFIG.viewScales), whose shipped setting is now MID. This one is about
    what the frame around the tiny figure contains. */
 const SCALE_PASS = QUERY.get('scale') !== '0';
+
+/* The six-face ascent closes over its own X/Z footprint one full coil higher.
+   Euclidean depth alone cannot self-occlude that helix: at the opening camera,
+   the Crown facet's under-deck roots are physically in front of the distant
+   haze and project as a false ceiling (and can cover RIG during a turn).
+
+   Keep the body itself completely static, but cull near-field armour outside
+   the current/adjacent route facets exactly as a sectorized megastructure
+   renderer would. Within those candidates, only the camera-facing facet owns
+   proud anatomy; the next deck's kerb/lip alone remains present for the corner
+   reveal. Distant `bd*` anatomy and scale marks retain authored world-space
+   transforms but cannot recur after the helix folds over itself. The update
+   runs every frame but uploads matrices only at a route boundary or the final
+   camera-detent handoff. */
+const FOLD_CULL_KINDS = new Set([
+  'hull', 'hullRib', 'wall', 'gill', 'bodyRib', 'flankTendon',
+  'kerb', 'lipScute', 'scute', 'scuteRib',
+  'ridge', 'collar', 'tendon', 'buttress', 'cup',
+  // Scale anatomy still belongs to a facet. Letting the opening face's
+  // sister limb survive all the way around the closed coil projected its
+  // rings as detached charcoal/rust pillars behind the Crown.
+  'bdLimb', 'bdLimbLip', 'bdRing', 'bdDrum', 'bdLink', 'bdFar', 'bdSpire',
+  'markRung', 'markStile', 'markRail', 'markPost', 'markRim', 'markPanel',
+]);
+// These two thin bands describe the route continuing around the corner. They
+// may bridge camera sectors. Everything proud of/below that edge belongs to
+// exactly one face: keeping next-face hull/scutes/joint slabs alive through
+// the 30-degree hold exposed their backs and made RIG appear behind the fold.
+const FOLD_BRIDGE_KINDS = new Set(['kerb', 'lipScute']);
+const FACET_THRESHOLDS = cornerSList(CONFIG).map((s) => s + CONFIG.path.chamferTiles / 2);
+const foldCullPools = [];
+let foldCullFacet = -1;
+let foldCullCameraFacet = -1;
+let foldCullHidden = 0;
+
+function routeFacetAt(s) {
+  let facet = 0;
+  while (facet < FACET_THRESHOLDS.length && s >= FACET_THRESHOLDS[facet]) facet++;
+  return facet;
+}
+
+export function updateLimbFoldCull() {
+  if (!IS_G1 || !foldCullPools.length) return;
+  const active = routeFacetAt(scrollX);
+  const cameraFacet = cameraFacingFacet();
+  if (active === foldCullFacet && cameraFacet === foldCullCameraFacet) return;
+  foldCullFacet = active;
+  foldCullCameraFacet = cameraFacet;
+  foldCullHidden = 0;
+  for (const pool of foldCullPools) {
+    for (const row of pool.rows) {
+      const piece = row.piece;
+      const nearField = FOLD_CULL_KINDS.has(piece.kind);
+      // Once the last bend has handed us to the outro, there is no next
+      // corner that needs a three-facet overlap. Retaining facet 5 here lets
+      // its under-deck/backdrop pools project above the Crown as detached
+      // ceiling slabs. The final joint is facet 6 and remains intact.
+      const terminalOutro = active === CONFIG.path.faces;
+      const remote = nearField && (terminalOutro
+        ? piece.facet !== active
+        : Math.abs(piece.facet - active) > 1);
+      const behindFold = nearField && !FOLD_BRIDGE_KINDS.has(piece.kind) &&
+        piece.facet !== cameraFacet;
+      const hidden = remote || behindFold;
+      pool.mesh.setMatrixAt(row.instance, hidden ? HIDE : pieceMatrix(piece));
+      if (hidden) foldCullHidden++;
+    }
+    pool.mesh.instanceMatrix.needsUpdate = true;
+  }
+}
+
+export function limbFoldCullSnapshot() {
+  return {
+    facet: foldCullFacet,
+    cameraFacet: foldCullCameraFacet,
+    hidden: foldCullHidden,
+    pools: foldCullPools.length,
+  };
+}
 
 /* The whole limb is a small, fixed set of instanced material/primitive pools:
    each piece is positioned on the polyline and tinted by its facet's tone
@@ -178,9 +262,26 @@ function bakeLimb() {
   const byBucket = new Map();                  // material/primitive → plan indices
   for (let n = 0; n < plan.length; n++) {
     const materialKey = MATERIAL_FOR[plan[n].kind] || 'hull';
-    const shape = plan[n].shape || SHAPE_FOR[plan[n].kind] || 'box';
-    const bucketKey = materialKey + '/' + shape;
-    if (!byBucket.has(bucketKey)) byBucket.set(bucketKey, { materialKey, shape, indices: [] });
+    // Only the played limb's large foreground shingles get the six-sided
+    // closure below. Distant `bd*` masses retain their established four-face
+    // silhouette; sharing the new geometry there exposed enormous remote
+    // wedges at the top of the Crown frame.
+    const shape = plan[n].kind === 'scute'
+      ? 'armor'
+      : plan[n].shape || SHAPE_FOR[plan[n].kind] || 'box';
+    // Three deterministic crops/orientations across only the broad painted
+    // armour families. The production source spans a whole machine section;
+    // decorrelating by route chunk/facet prevents its strong central service
+    // bay from recurring in lockstep while keeping the fixed pool count tiny
+    // (+6 draws over the former one-bucket-per-family path).
+    const painted = materialKey === 'hull' || materialKey === 'wall' || materialKey === 'scute';
+    const textureVariant = painted
+      ? Math.abs(Math.floor(plan[n].s / CONFIG.limb.scute.every) + plan[n].facet * 2) % 3
+      : 0;
+    const bucketKey = materialKey + '/' + shape + '/' + textureVariant;
+    if (!byBucket.has(bucketKey)) byBucket.set(bucketKey, {
+      materialKey, shape, textureVariant, indices: [],
+    });
     byBucket.get(bucketKey).indices.push(n);
   }
   const geometry = {
@@ -191,14 +292,16 @@ function bakeLimb() {
     // Cylinder height is local Y: different top/bottom radii make an armour
     // shingle with a broad root and clipped nose instead of another crate.
     scute: new THREE.CylinderGeometry(0.58, 0.42, 1, 4, 1, false),
+    armor: new THREE.CylinderGeometry(0.58, 0.44, 1, 6, 1, false),
     rib: new THREE.CylinderGeometry(0.5, 0.5, 1, 6, 1, false),
     cable: new THREE.CylinderGeometry(0.5, 0.5, 1, 6, 1, false),
   };
   geometry.scute.rotateY(Math.PI / 4);
+  geometry.armor.rotateY(Math.PI / 6);
   geometry.body.rotateY(Math.PI / 6);
   geometry.rib.rotateY(Math.PI / 6);
   geometry.cable.rotateZ(Math.PI / 2);          // cable length follows local s / X
-  for (const { materialKey: key, shape, indices } of byBucket.values()) {
+  for (const { materialKey: key, shape, textureVariant, indices } of byBucket.values()) {
     // T-052: a surface family (roughness/metalness/envMap) plus, for the
     // buckets a large hull surface actually names, an albedo+bump tile —
     // both are no-ops (this stays the pre-T-052 flat white material) for
@@ -206,6 +309,7 @@ function bakeLimb() {
     const material = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true });
     applySurface(material, SURFACE_FOR[key] || 'plate');
     applyHullTexture(material, key);
+    varyHullTexture(material, textureVariant);
     // The route scutes sit flush with the collision tile face by design (they
     // must not claim extra depth). A tiny raster offset prevents coplanar
     // flicker without moving the geometry into the protected play volume.
@@ -215,6 +319,11 @@ function bakeLimb() {
       material.polygonOffsetUnits = -1;
     }
     const mesh = new THREE.InstancedMesh(geometry[shape], material, indices.length);
+    mesh.name = `Meridian limb ${key}/${shape}/v${textureVariant}`;
+    mesh.userData.environmentRole = 'limb-anatomy';
+    mesh.userData.limbBucket = key;
+    mesh.userData.limbShape = shape;
+    mesh.userData.textureVariant = textureVariant;
     mesh.frustumCulled = false;                // static bake, one upload
     for (let i = 0; i < indices.length; i++) {
       const piece = plan[indices[i]];
@@ -228,8 +337,16 @@ function bakeLimb() {
         Math.min(1, _c.b * tone[2] * k)
       ));
     }
+    foldCullPools.push({
+      mesh,
+      rows: indices.map((planIndex, instance) => ({ instance, piece: plan[planIndex] })),
+    });
+    // Keeps direct browser inspection/teleport captures honest even while the
+    // sim is paused (the production loop also calls the same idempotent gate).
+    mesh.onBeforeRender = updateLimbFoldCull;
     scene.add(mesh);
   }
+  updateLimbFoldCull();
   return plan.length;
 }
 

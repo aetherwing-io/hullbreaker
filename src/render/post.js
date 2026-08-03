@@ -216,9 +216,9 @@ function drawComposed() {
 }
 
 /* The composer's own buffers are sized in DRAWING BUFFER pixels, so they
-   inherit scene.js's devicePixelRatio clamp — a retina panel pays 4x the
-   fill of this measurement rig's 1x buffer, which is why the report quotes
-   both. `samples` keeps the MSAA that a composer otherwise silently drops
+   inherit scene.js's bounded supersampled pixel ratio. A retina panel still
+   pays materially more fill than this measurement rig's 1x buffer, which is
+   why the report quotes both. `samples` keeps the MSAA that a composer otherwise silently drops
    (scene.js constructs the renderer with antialias:true, which only ever
    applied to the canvas): at FAR, RIG is ~30px and its silhouette is the
    read, so losing edge antialiasing is a readability regression, not a
@@ -269,11 +269,19 @@ if (POST.on) {
   });
 
   /* Sized off the same globals src/render/camera.js's handleResize reads, so
-     the order the two listeners run in cannot matter. Registered here rather
-     than in camera.js because that file belongs to the light-rig lane. */
-  addEventListener('resize', () => {
-    if (composer) composer.setSize(innerWidth, innerHeight);
-  });
+     the order the two listeners run in cannot matter. EffectComposer caches
+     the renderer's pixel ratio at construction, however, so a display/zoom/
+     orientation DPR change needs BOTH calls: adopt scene.js's freshly
+     resolved ratio, then size from the current CSS viewport. Registered here
+     rather than in camera.js because that file owns projection, not buffers. */
+  addEventListener('resize', () => syncPostSize());
+}
+
+export function syncPostSize(width = innerWidth, height = innerHeight) {
+  if (!composer) return false;
+  composer.setPixelRatio(renderer.getPixelRatio());
+  composer.setSize(width, height);
+  return true;
 }
 
 /* The emissive families' HDR headroom. Bloom bleeds what is ABOVE the
@@ -291,6 +299,8 @@ export function postActive() { return status === 'active'; }
 
 // read-only surface for ?testapi=1 / window.HB / the browser self-test
 export function postSnapshot() {
+  const draw = renderer.getDrawingBufferSize(new THREE.Vector2());
+  const target = composer ? composer.renderTarget1 : null;
   return {
     on: POST.on,
     status,
@@ -298,6 +308,9 @@ export function postSnapshot() {
     radius: bloomPass ? bloomPass.radius : 0,
     threshold: bloomPass ? bloomPass.threshold : 0,
     samples: POST_SAMPLES,
+    pixelRatio: renderer.getPixelRatio(),
+    drawingBuffer: { width: draw.x, height: draw.y },
+    composerBuffer: target ? { width: target.width, height: target.height } : null,
     gain: postGain(),
     // 'match'     the shipped atmosphere is being reproduced exactly
     // 'tone'      ?atmos=tone — sky and haze go through the tone map

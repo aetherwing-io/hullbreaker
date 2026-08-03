@@ -230,18 +230,20 @@ export async function run(SHARED) {
   }
 
   // --- draw-call budget: RIG now constructs 3 meshes (the fallback plane,
-  // the real sprite plane, and the gun box) — only 2 are ever VISIBLE at
+  // the real sprite plane, and the gun silhouette) — only 2 are ever VISIBLE at
   // once (fallback XOR sprite, plus the gun), so the actual per-frame draw
   // count stays 2, same as the second rework, down from 7 in the rejected
   // six-box/three-zone pass and the ORIGINAL 5 before T-040 ever started.
   // Counted structurally (every `new THREE.Mesh(` call), not a text guess.
   const meshCalls = (rigSrc.match(/new THREE\.Mesh\(/g) || []).length;
   ok(meshCalls === 3,
-     'T-040: player.js constructs exactly 3 meshes (fallback plane + sprite plane + gun box), got ' +
+     'T-040: player.js constructs exactly 3 meshes (fallback plane + sprite plane + gun silhouette), got ' +
      meshCalls + ' — only 2 are ever visible at once (the two body planes toggle exclusively)');
   ok(/new THREE\.PlaneGeometry\(/.test(rigSrc) &&
-     (rigSrc.match(/new THREE\.BoxGeometry\(/g) || []).length === 1,
-     'T-040: one PlaneGeometry (the body) and exactly one BoxGeometry (the gun) remain');
+     (rigSrc.match(/new THREE\.BoxGeometry\(/g) || []).length === 0 &&
+     /fallbackGunGeo\s*=\s*GUN_GEOMETRIES\.R/.test(rigSrc),
+     'T-040: RIG uses textured/body planes and an authored RIVET silhouette fallback; ' +
+     'no featureless rectangular gun path remains');
   ok(CANVAS_W > 0 && CANVAS_H > 0 && LIFT_TOP < LIFT_BOTTOM && VISOR.rx > 0,
      'T-040: sprite data (canvas size, lift bands, visor) is present and sane for player.js to paint from');
 }

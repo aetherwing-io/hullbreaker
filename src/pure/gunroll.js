@@ -157,11 +157,25 @@ export function compileGunDef(gun, baseDef) {
   const baseCount = base.count || 1;
   const count = baseCount + forked;
   const turnRate = base.turnRate
-    ? base.turnRate * (1 + seeker * 0.28)
-    : seeker ? 5.5 + seeker * 1.25 : 0;
+    ? base.turnRate * (1 + seeker * 0.22)
+    : seeker ? 5.0 + seeker * 1.1 : 0;
   const seekRange = seeker
     ? Math.max((base.seekRange || 0) + seeker * 2.5, 11 + seeker * 2.5)
     : base.seekRange || 0;
+  // Guidance is a finite behavior, not perfect aim for the projectile's
+  // entire life. A chassis seeker gets one committed lock; SEEKER stacks add
+  // fuel, widen acquisition and buy explicit re-locks when a target dies.
+  // This preserves H's fire-while-traversing fantasy without letting two
+  // darts circle the arena and erase whatever spawns next.
+  const seekFuelMs = turnRate > 0
+    ? (base.seekFuelMs || 760) + seeker * 280
+    : 0;
+  const seekConeDeg = turnRate > 0
+    ? Math.min(178, (base.seekConeDeg || (base.turnRate ? 132 : 104)) + seeker * 16)
+    : 0;
+  const seekRetargets = turnRate > 0
+    ? (base.seekRetargets || 0) + seeker
+    : 0;
   // Existing L/F penetration remains their chassis promise (three bodies
   // total). PHASE is deliberately not dead on them: every stack adds two more
   // bodies AND 18% flight time, while granting the same finite budget to any
@@ -178,8 +192,21 @@ export function compileGunDef(gun, baseDef) {
     splayDeg: count > 1 ? (base.splayDeg || 6 + forked * 2) : 0,
     turnRate,
     seekRange,
+    seekFuelMs,
+    seekConeDeg,
+    seekRetargets,
+    seekLead: turnRate > 0 ? 0.72 + seeker * 0.08 : 0,
     pierce: pierceBudget > 0,
     pierceBudget,
+    // PHASE now changes route behavior as well as body penetration. The
+    // budget is measured in solid tiles, so one stack slips a thin plate but
+    // cannot ghost through an entire limb or ever cross a facet bend.
+    terrainPhaseTiles: phase ? 0.65 + phase * 0.65 : 0,
+    // HEAVY has a physical combat identity: surviving mobile bodies recoil
+    // and lose a short beat. Rooted threats and committed charges keep their
+    // authored spatial promises; the live sim applies these two values.
+    heavyImpulse: heavy ? 2.5 + heavy * 1.35 : 0,
+    heavyStunMs: heavy ? 45 + heavy * 35 : 0,
     volatileRadius: volatile ? 0.8 + (volatile - 1) * 0.25 : 0,
     volatileDamage: volatile ? 1 + (volatile >= 3 ? 1 : 0) : 0,
     crawlSpeed: base.crawlSpeed ? base.crawlSpeed * heavySpeedMult : 0,

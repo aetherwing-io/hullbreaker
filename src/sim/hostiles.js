@@ -4,7 +4,8 @@
 
 import { CONFIG } from '../config.js';
 import { mulberry32 } from '../pure/rng.js';
-import { BEND_S } from '../pure/path.js';
+import { genomeHas, rollEnemyGenome } from '../pure/genome.js';
+import { BEND_S, crossesBend } from '../pure/path.js';
 import {
   polypBeamHitsRect, polypBeamReach, polypBendClampRange,
 } from '../pure/polyp.js';
@@ -19,7 +20,7 @@ import { gameMs, approach } from './time.js';
 import { sLeftEdge, sRightEdge } from './edges.js';
 import { builtGroundTopAt, builtSolidAt } from './level.js';
 import { player, circleHitsPlayer, damagePlayer } from './player.js';
-import { weaponKills } from './weapons.js';
+import { currentGun, weaponKills } from './weapons.js';
 import { dropFromCarrier } from './capsules.js';
 import { consumeLaunchShock, scoreKill } from './score.js';
 import { activeCorner, gateActive, onHostileRemoved } from './wavegate.js';
@@ -28,6 +29,8 @@ export const hostiles = [];
 export let kills = 0;
 let hostileRng = mulberry32(5150);          // seeded: sim randomness is reproducible
 let nextWaspId = 1;
+let evolutionSerial = 0;                    // alternating pincer side; reset with each roster
+let genomeSerial = 0;                       // deterministic spawn identity; reset with each roster
 // The whole wasp squad's shared "last dive committed" clock (src/pure/wasp.js
 // squadReady) — deliberately NOT per-hostile, so it orders distinct wasps'
 // first commitments into a sequence instead of gating any one drone's own
@@ -63,11 +66,16 @@ export const ENEMY = {
   // corner arena, so it must never be able to hold one closed.
   mortar:  { hp: CONFIG.mortar.hp,
              hitR: CONFIG.mortar.hitRadius, gating: false, start: 'aim' },
+  // Summit-only Crown machinery. It is rooted to the apron and never holds
+  // an ordinary corner gate; finale.js owns whether its destruction clears
+  // the encounter.
+  warden:  { hp: CONFIG.warden.hp,
+             hitR: CONFIG.warden.hitRadius, gating: false, start: 'sealed' },
 };
 
 // Rooted kinds: `dir` is a FACING resolved at authoring time, never a patrol
 // heading, so the corner gate's patrol box must never re-aim one.
-const ROOTED = { polyp: true, mortar: true };
+const ROOTED = { polyp: true, mortar: true, warden: true };
 
 // While the iris is shut (closed, and through the dilating tell) shots ping
 // off the armour: hp only moves in the two OPEN states, so the polyp dies to
@@ -78,6 +86,19 @@ const POLYP_OPEN = { fire: true, vent: true };
 // A sightline may never cross a facet bend (decisions.md entry 7, the same
 // rule projectiles carry) — same source list weapons.js uses.
 const BENDS = IS_TRANSFORM_SLICE ? TRANSFORM_BEND_S : BEND_S;
+
+const EVOLUTION_MOBILE = Object.freeze({ wasp: true, hound: true });
+
+// Spawn-site classification keeps escalation deterministic without teaching
+// the spawner a second enemy table. Finale support rows opt out: the Warden is
+// already that encounter's evolution system and must keep its authored read.
+function evolutionFaceAt(x, row) {
+  if (row && row.finaleWave !== undefined) return 0;
+  if (row && row.gateWave !== undefined) return Number(row.gateWave) || 0;
+  const P = CONFIG.path;
+  return Math.max(1, Math.min(P.faces,
+    1 + Math.floor(Math.max(0, x - P.introTiles) / P.faceTiles)));
+}
 
 // `row` is the optional authored spawn row this hostile came from. Placement
 // and encounter-specific behavior ride on it, and nothing else in the sim
@@ -93,16 +114,76 @@ export function spawnHostile(x, y, delayMs, kind, row) {
   const K = ENEMY[kind];
   const T = (row && row.tune) || null;
   const patrol = (row && row.patrol) || null;
+  const evolutionFace = kind === 'warden' ? 0 : evolutionFaceAt(x, row);
+  const serial = genomeSerial++;
+  const genome = kind === 'warden' ? null : rollEnemyGenome({
+    kind,
+    face: evolutionFace,
+    serial,
+    spawnKey: row?.id || `${kind}:${x.toFixed(2)}:${serial}`,
+    cohortKey: row?.cohortKey,
+    cohortSlot: row?.cohortSlot,
+    cohortPhase: row?.cohortPhase,
+    hpRatio: player.hp / Math.max(1, CONFIG.player.maxHealth),
+    gunTier: currentGun?.tier || 0,
+    kills,
+    pressure: !!row?.pressureSpawn,
+    clearEmaMs: row?.pressureClearEmaMs || 0,
+  }, CONFIG.genome.seed);
+  const aegis = genomeHas(genome, 'AEGIS');
+  const pincer = genomeHas(genome, 'PINCER');
+  const formationOrder = pincer ? evolutionSerial++ : 0;
+  const formationSide = pincer ? (formationOrder % 2 ? 1 : -1) : 0;
+  const formationBand = pincer ? Math.floor(formationOrder / 2) % 3 : 0;
   const e = {
     id: nextWaspId++, kind,
     x, y, baseY: y, vx: 0, vy: 0, dir: (row && row.dir) || -1, t: hostileRng() * 6,
     hp: T && T.hp !== undefined ? T.hp : K.hp, hitR: K.hitR,
+    maxHp: T && T.hp !== undefined ? T.hp : K.hp,
+    genome,
+    genomeId: genome?.id || '',
+    genomeLabel: genome?.label || kind.toUpperCase(),
+    strainId: genome?.strain?.id || '',
+    genomeBudget: genome?.expressedBudget || 0,
+    wardPolicy: genome?.alleles?.wardPolicy || 'ANCHOR',
+    salvoPattern: genome?.alleles?.salvoPattern || 'LEAD',
+    bulwark: genomeHas(genome, 'BULWARK'),
+    bulwarkOpenUntil: 0,
+    bulwarkPingUntil: 0,
+    twinstrike: genomeHas(genome, 'TWINSTRIKE'),
+    twinPassesLeft: 0,
+    vault: genomeHas(genome, 'VAULT'),
+    salvo: genomeHas(genome, 'SALVO'),
+    salvoShotsRemaining: 0,
+    relay: genomeHas(genome, 'RELAY'),
+    relayCycles: 0,
+    relayFromDir: (row && row.dir) || -1,
+    backlash: genomeHas(genome, 'BACKLASH'),
+    backlashUntil: 0,
+    backlashCoolUntil: 0,
+    backlashBurstUntil: 0,
     cruiseSpeed: T && T.cruiseSpeed !== undefined ? T.cruiseSpeed : undefined,
     diveRange: T && T.diveRange !== undefined ? T.diveRange : undefined,
     diveCooldownMs: T && T.diveCooldownMs !== undefined ? T.diveCooldownMs : undefined,
     senseRange: T && T.senseRange !== undefined ? T.senseRange : undefined,
     state: K.start || 'cruise', stateUntil: 0, diveCdUntil: 0,
     tellLocked: false,
+    // Late-route traits stack on the ordinary body and never modify HP.
+    // A pincer wasp may also be linked to an Aegis projector; these fields
+    // are the complete sim→render/debug contract for that composition.
+    evolutionFace,
+    aegis,
+    aegisActive: false,
+    aegisPingUntil: 0,
+    pincer,
+    formationSide,
+    formationBand,
+    formationReady: !pincer,
+    wardedBy: 0,
+    wardSourceX: 0,
+    wardSourceY: 0,
+    wardPingUntil: 0,
+    blockedHits: 0,
     // wasp dive aim-lock: the frame a committed dive may actually start
     // moving (src/pure/wasp.js WASP_DIVE_LOCK_MS). Unused by every other
     // kind — each keeps its own tell inside its own state machine.
@@ -140,17 +221,133 @@ export function spawnHostile(x, y, delayMs, kind, row) {
           x + ((row && row.dir) || -1) * CONFIG.polyp.barrelTiles,
           (row && row.dir) || -1, CONFIG.polyp.sightRange, BENDS)
       : 0,
+    // A Relay iris alternates between two authored straight sightlines. Both
+    // bend clamps are resolved at spawn; the barrel still never sees or fires
+    // around a corner, whichever direction its visible hinge selects.
+    sightClampNeg: kind === 'polyp'
+      ? polypBendClampRange(x - CONFIG.polyp.barrelTiles,
+          -1, CONFIG.polyp.sightRange, BENDS)
+      : 0,
+    sightClampPos: kind === 'polyp'
+      ? polypBendClampRange(x + CONFIG.polyp.barrelTiles,
+          1, CONFIG.polyp.sightRange, BENDS)
+      : 0,
     // mortar bombardment state: the AUTHORED landing zone it denies (a place,
     // never a moving target — decisions.md entry 6) and the pod's 0…1 flight
     // progress, which the render layer replays through the same pure arc.
     zoneX: row && row.zone ? row.zone.x : 0,
     zoneY: row && row.zone ? row.zone.y : 0,
+    zoneHomeX: row && row.zone ? row.zone.x : 0,
+    zoneHomeY: row && row.zone ? row.zone.y : 0,
     podU: 0,
+    // Crown Warden state. Kept on every row so the hot update/render paths
+    // remain shape-stable; only kind=warden reads these values.
+    wardenCycle: 0,
+    windowDamage: 0,
+    earnedDamage: 0,
+    openedAt: 0,
+    combo: false,
+    armorPingUntil: 0,
+    coreHitUntil: 0,
+    arenaX0: row && row.arena ? row.arena.x0 : 0,
+    arenaX1: row && row.arena ? row.arena.x1 : 0,
+    // Projectile traits may punch a surviving mobile body briefly out of its
+    // authored rhythm. These are separate from vx/vy: a wasp's committed aim
+    // vector and a hound's charge velocity must remain immutable promises.
+    staggerUntil: 0,
+    recoilVx: 0,
+    recoilVy: 0,
     enterUntil: gameMs + (delayMs || 0) + CONFIG.wasp.enterMs,
     flashUntil: 0,
   };
   hostiles.push(e);
   view.hostiles.spawned(e);      // render: mesh, hidden until materialization begins
+}
+
+function aegisOnline(e) {
+  if (!e.aegis || gameMs < e.enterUntil || e.gateBreakExit) return false;
+  const age = Math.max(0, gameMs - e.enterUntil);
+  return age % CONFIG.evolution.aegisCycleMs < CONFIG.evolution.aegisActiveMs;
+}
+
+// Every policy operates inside the same visible radius and link cap. The
+// painted projector and its live packet line expose the result before a shot
+// is blocked: strains change squad topology, never shield strength.
+function wardCandidateScore(anchor, candidate, slot, anchorD2) {
+  if (anchor.wardPolicy === 'SPEAR') {
+    const dx = candidate.x - player.x;
+    const dy = candidate.y - (player.y + player.h * 0.5);
+    return dx * dx + dy * dy + anchorD2 * 0.04;
+  }
+  if (anchor.wardPolicy === 'ECHELON') {
+    // Low / high / middle claims make a visible ladder rather than three
+    // overlapping rings. Distance remains the tie-break and radius fence.
+    const band = slot === 0 ? player.y + 1.1
+      : slot === 1 ? player.y + 6.2 : player.y + 3.6;
+    const dy = candidate.y - band;
+    return dy * dy + anchorD2 * 0.04;
+  }
+  return anchorD2; // BASTION: tight shell around the priority source
+}
+
+// Each active projector claims at most three mobile bodies on its own facet.
+// No allocation and no global damage multiplier: destroy the clearly marked
+// projector, wait for its recharge gap, or prioritize an unlinked threat.
+// Multiple projectors never pile onto the same target.
+function syncEvolutionLinks() {
+  for (const e of hostiles) {
+    e.wardedBy = 0;
+    e.aegisActive = aegisOnline(e);
+  }
+  const E = CONFIG.evolution;
+  const radius2 = E.aegisRadius * E.aegisRadius;
+  for (const anchor of hostiles) {
+    if (!anchor.aegisActive) continue;
+    for (let slot = 0; slot < E.aegisMaxLinks; slot++) {
+      let best = null;
+      let bestScore = Infinity;
+      for (const candidate of hostiles) {
+        if (candidate === anchor || candidate.wardedBy || !EVOLUTION_MOBILE[candidate.kind] ||
+            gameMs < candidate.enterUntil || candidate.gateBreakExit ||
+            crossesBend(BENDS, anchor.x, candidate.x)) continue;
+        const dx = candidate.x - anchor.x;
+        const dy = candidate.y - anchor.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 > radius2) continue;
+        const score = wardCandidateScore(anchor, candidate, slot, d2);
+        if (score >= bestScore) continue;
+        best = candidate;
+        bestScore = score;
+      }
+      if (!best) break;
+      best.wardedBy = anchor.id;
+      best.wardSourceX = anchor.x;
+      best.wardSourceY = anchor.y;
+    }
+  }
+}
+
+function activeWardAnchor(e) {
+  if (!e?.wardedBy) return null;
+  const anchor = hostiles.find((other) => other.id === e.wardedBy);
+  if (!anchor || !anchor.aegisActive || crossesBend(BENDS, anchor.x, e.x)) return null;
+  const dx = e.x - anchor.x;
+  const dy = e.y - anchor.y;
+  return dx * dx + dy * dy <= CONFIG.evolution.aegisRadius ** 2 ? anchor : null;
+}
+
+function bulwarkFacesImpact(e, approachX) {
+  // Projectiles pay the plate they ACTUALLY approach. This matters for a
+  // homing dart that loops behind its target and for a phase/fork shot fired
+  // while RIG has already crossed past: using player.x made the shield block
+  // from the wrong side. Non-projectile damage keeps the prior player-facing
+  // answer; a truly vertical projectile bypasses a horizontal face plate.
+  const projectile = Number.isFinite(approachX);
+  const incomingSide = projectile
+    ? -Math.sign(approachX)
+    : (Math.sign(player.x - e.x) || -e.dir);
+  if (!incomingSide) return false;
+  return incomingSide === e.dir;
 }
 
 export function removeHostile(idx, fade) {  // single removal path: gates count every exit
@@ -160,26 +357,123 @@ export function removeHostile(idx, fade) {  // single removal path: gates count 
   onHostileRemoved();
 }
 
-export function hitHostile(e, idx, damage, weapon) {
+function destroyHostile(e, idx, weapon) {
+  kills++;
+  if (weaponKills[weapon] !== undefined) weaponKills[weapon]++;
+  // the one death path, so one score event per death however it died
+  scoreKill(e.kind, weapon, {
+    grounded: player.grounded, vy: player.vy, x: e.x, y: e.y,
+  });
+  if (e.kind === 'carrier') dropFromCarrier(e.x, e.y, e.drop);
+  removeHostile(idx, true);
+}
+
+export function hitHostile(e, idx, damage, weapon, approachX = null) {
+  // Crown Aegis is a relationship, not bonus HP. The target's own body does
+  // not flash as if wounded; its local shield and the source projector flare
+  // together, teaching target priority with one honest spatial sentence.
+  const ward = activeWardAnchor(e);
+  if (ward) {
+    e.wardPingUntil = gameMs + CONFIG.evolution.wardPingMs;
+    ward.aegisPingUntil = gameMs + CONFIG.evolution.wardPingMs;
+    e.blockedHits++;
+    return false;
+  }
+  // A Bulwark is a facing decision, not armour points. The first frontal
+  // impact kicks its visible plates apart for a generous opening; crossing
+  // behind it avoids the block entirely. An Aegis source can never also roll
+  // Bulwark (pure/genome.js), so target-priority answers stay immediate.
+  if (e.bulwark && gameMs >= e.bulwarkOpenUntil && bulwarkFacesImpact(e, approachX)) {
+    e.bulwarkOpenUntil = gameMs + CONFIG.genome.bulwarkOpenMs;
+    e.bulwarkPingUntil = gameMs + CONFIG.genome.bulwarkPingMs;
+    e.blockedHits++;
+    return false;
+  }
   // Iris armour: every damage path (bullets, launch shock, whatever comes
   // later) flows through here, so every one of them respects the shell. The
   // short ping flash is the feedback that a shot bounced rather than wounded.
-  if (e.kind === 'polyp' && !POLYP_OPEN[e.state]) {
+  // An online Aegis source must remain the immediate answer to the shields it
+  // is projecting. The projector forces a Polyp's iris open while online;
+  // otherwise the ordinary closed/tell shell would make the priority source
+  // invulnerable for most of the same window in which it protects the squad.
+  // Its normal armour returns during the Aegis recharge gap.
+  if (e.kind === 'polyp' && !POLYP_OPEN[e.state] && !e.aegisActive) {
     e.flashUntil = gameMs + 40;
-    return;
+    return false;
   }
-  e.hp -= damage;
-  e.flashUntil = gameMs + 70;
+  // The Warden's shutters are spatial attack beats, not an invisible damage
+  // reduction. Closed hits spark only at the iris; open hits drain one armour
+  // seal, capped so a screenful of homing darts cannot skip the next pattern.
+  if (e.kind === 'warden') {
+    if (e.state !== 'exposed') {
+      e.armorPingUntil = gameMs + 85;
+      return false;
+    }
+    const room = Math.max(0, CONFIG.warden.windowDamage - e.windowDamage);
+    const dealt = Math.min(Math.max(0, damage), room, e.hp);
+    if (dealt <= 0) {
+      e.armorPingUntil = gameMs + 65;
+      return false;
+    }
+    e.hp -= dealt;
+    e.windowDamage += dealt;
+    e.earnedDamage += dealt;
+    e.coreHitUntil = gameMs + 90;         // local iris pop; the body never strobes
+  } else {
+    e.hp -= damage;
+    e.flashUntil = gameMs + 70;
+  }
+  if (e.hp > 0 && e.backlash && !e.backlashUntil && gameMs >= e.backlashCoolUntil) {
+    e.backlashUntil = gameMs + CONFIG.genome.backlashTellMs;
+    e.backlashCoolUntil = e.backlashUntil + CONFIG.genome.backlashCooldownMs;
+  }
   if (e.hp <= 0) {
-    kills++;
-    if (weaponKills[weapon] !== undefined) weaponKills[weapon]++;
-    // the one death path, so one score event per death however it died
-    scoreKill(e.kind, weapon, {
-      grounded: player.grounded, vy: player.vy, x: e.x, y: e.y,
-    });
-    if (e.kind === 'carrier') dropFromCarrier(e.x, e.y, e.drop);
-    removeHostile(idx, true);
+    destroyHostile(e, idx, weapon);
   }
+  return true;
+}
+
+// Child-friendly finale release. The timeout still breaks the SAME target
+// through the SAME death path before transmission; it never awards a weapon
+// favorite and can never turn survival time directly into victory.
+export function forceBreakHostile(e, weapon = 'CROWN') {
+  const idx = hostiles.indexOf(e);
+  if (idx < 0) return false;
+  e.hp = 0;
+  e.coreHitUntil = gameMs + 90;
+  destroyHostile(e, idx, weapon);
+  return true;
+}
+
+export function wardenStage(e) {
+  if (!e || e.kind !== 'warden') return 0;
+  const spent = Math.max(0, e.maxHp - e.hp);
+  return Math.min(3, 1 + Math.floor(spent / (e.maxHp / 3)));
+}
+
+// HEAVY rounds and VOLATILE shockwaves use one bounded physical response.
+// Rooted denial pieces never slide off their authored lane, and a launched
+// dive/charge never loses its commitment. Everything else can be knocked a
+// fraction of a tile and held for a readable beat, giving rolled guns a
+// mechanical identity without turning common bodies into ragdolls.
+export function staggerHostile(e, dirX, dirY, force, stunMs) {
+  if (!e || ROOTED[e.kind] || gameMs < e.enterUntil || force <= 0 || stunMs <= 0)
+    return false;
+  if (activeWardAnchor(e)) return false;
+  if ((e.kind === 'hound' && (e.state === 'charge' || e.state === 'vault' || e.state === 'tumble')) ||
+      (e.kind === 'wasp' && e.state === 'dive' && gameMs >= e.lockUntil))
+    return false;
+  const n = Math.hypot(dirX, dirY) || 1;
+  const cap = 7.5;
+  e.recoilVx = Math.max(-cap, Math.min(cap, e.recoilVx + dirX / n * force));
+  e.recoilVy = e.kind === 'hound'
+    ? 0
+    : Math.max(-cap, Math.min(cap, e.recoilVy + dirY / n * force * 0.65));
+  const prior = Math.max(gameMs, e.staggerUntil);
+  const next = Math.min(gameMs + 180, prior + stunMs);
+  if (e.kind === 'hound' && e.stateUntil > gameMs) e.stateUntil += next - prior;
+  e.staggerUntil = next;
+  return true;
 }
 
 /* ------------------------- HOUNDFRAME ------------------------------ *
@@ -243,6 +537,7 @@ function houndSkid(e, H, intoWall) {
 
 function updateHound(e, dt) {
   const H = CONFIG.hound;
+  const G = CONFIG.genome;
 
   if (e.state === 'tumble') {                    // committed off an edge: no steering
     e.vy = Math.max(H.fallTerminal, e.vy + H.fallGravity * dt);
@@ -254,6 +549,39 @@ function updateHound(e, dt) {
       e.vy = 0;
       e.deckY = undefined;
       houndSkid(e, H, true);                     // picks itself up on the lower deck
+    }
+    return;
+  }
+
+  if (e.state === 'vault') {                    // infected locomotion: one frozen arc
+    const steps = Math.min(H.substeps, Math.max(1,
+      Math.ceil(Math.hypot(e.vx, e.vy) * dt / 0.45)));
+    const sdt = dt / steps;
+    for (let k = 0; k < steps; k++) {
+      e.vy += G.vaultGravity * sdt;
+      e.x += e.vx * sdt;
+      e.y += e.vy * sdt;
+      if (gameMs >= e.enterUntil && circleHitsPlayer(e.x, e.y, e.hitR))
+        damagePlayer(1, e.x);
+      if (builtSolidAt(e.x + e.dir * H.probeX * 0.35, e.y)) {
+        houndSkid(e, H, true);
+        return;
+      }
+      let landing = houndDeckAt(e, e.x);
+      if (landing < -100) {
+        e.deckY = undefined;
+        landing = builtGroundTopAt(e.x);
+      }
+      if (e.vy <= 0 && landing > -100 && e.y <= landing + H.rideY) {
+        e.y = landing + H.rideY;
+        e.vy = 0;
+        houndSkid(e, H, false);
+        return;
+      }
+    }
+    if (gameMs >= e.stateUntil) {
+      e.state = 'tumble'; // an absent landing makes the committed vault cost
+      e.diveCdUntil = gameMs + H.chargeCooldownMs;
     }
     return;
   }
@@ -294,9 +622,16 @@ function updateHound(e, dt) {
     }
     e.x -= e.dir * (H.tellBackTiles / (H.tellMs / 1000)) * dt;   // rears back, visibly
     if (gameMs >= e.stateUntil) {
-      e.state = 'charge';
-      e.stateUntil = gameMs + H.chargeMs;
-      e.vx = e.dir * H.chargeSpeed;              // locked here: a charge never re-aims
+      if (e.vault) {
+        e.state = 'vault';
+        e.stateUntil = gameMs + G.vaultMs;
+        e.vx = e.dir * G.vaultSpeed;
+        e.vy = G.vaultLift;                       // locked here: one ballistic arc
+      } else {
+        e.state = 'charge';
+        e.stateUntil = gameMs + H.chargeMs;
+        e.vx = e.dir * H.chargeSpeed;             // locked here: a charge never re-aims
+      }
     }
     return;
   }
@@ -378,6 +713,16 @@ function polypBeamOnProjectedPlayer(e, PP, reach) {
 function updatePolyp(e) {
   const PP = CONFIG.polyp;
   if (gameMs < e.enterUntil) return;             // materializing: no senses, no beam
+  if (e.state === 'relay') {
+    if (gameMs >= e.stateUntil) {
+      e.dir = -e.relayFromDir;
+      e.sightClamp = e.dir < 0 ? e.sightClampNeg : e.sightClampPos;
+      e.relayCycles++;
+      e.state = 'closed';
+      e.diveCdUntil = gameMs + PP.cooldownMs;
+    }
+    return;
+  }
   if (e.state === 'closed') {
     if (gameMs < e.diveCdUntil) return;          // shared cooldown field: iris rearming
     const reach = polypReachNow(e, PP);
@@ -407,8 +752,18 @@ function updatePolyp(e) {
   }
   // vent: the opening — open, vulnerable, not firing
   if (gameMs >= e.stateUntil) {
-    e.state = 'closed';
-    e.diveCdUntil = gameMs + PP.cooldownMs;
+    if (e.relay) {
+      // The renderer turns the painted iris through this harmless state.
+      // Direction changes only when the hinge finishes; cooldown and the
+      // ordinary full tell are still owed. It alternates, never tracks.
+      e.relayFromDir = e.dir;
+      e.state = 'relay';
+      e.stateUntil = gameMs + CONFIG.genome.relayHingeMs;
+      e.beamReach = 0;
+    } else {
+      e.state = 'closed';
+      e.diveCdUntil = gameMs + PP.cooldownMs;
+    }
   }
 }
 
@@ -448,6 +803,9 @@ function updateMortar(e) {
   if (gameMs < e.enterUntil) return;             // materializing: no pod, no blast
   if (e.state === 'aim') {
     if (mortarArmed(player.x, e.zoneX, M.armRange)) {
+      e.salvoShotsRemaining = e.salvo ? 2 : 1;
+      e.zoneX = e.zoneHomeX;
+      e.zoneY = e.zoneHomeY;
       e.state = 'lob';
       e.stateUntil = gameMs + M.lobMs;
       e.podU = 0;
@@ -479,6 +837,30 @@ function updateMortar(e) {
       damagePlayer(1, e.zoneX);
     }
     if (gameMs >= e.stateUntil) {
+      if (e.salvo && e.salvoShotsRemaining > 1) {
+        e.salvoShotsRemaining--;
+        const travelSide = Math.sign(player.vx) || -e.dir || 1;
+        const hand = e.genome?.phenotype?.handedness || 1;
+        let zoneX = e.salvoPattern === 'BRACKET'
+          ? e.zoneHomeX + hand * CONFIG.genome.salvoOffset
+          : e.salvoPattern === 'CUTBACK'
+            ? player.x - travelSide * CONFIG.genome.salvoOffset
+            : player.x + travelSide * CONFIG.genome.salvoOffset;
+        let zoneY = builtGroundTopAt(zoneX);
+        if (zoneY < -100 || crossesBend(BENDS, e.x, zoneX)) {
+          zoneX = e.zoneHomeX;
+          zoneY = e.zoneHomeY;
+        }
+        e.zoneX = zoneX;
+        e.zoneY = zoneY;
+        e.state = 'lob';                 // a whole second arc+fuse, never a surprise burst
+        e.stateUntil = gameMs + M.lobMs;
+        e.podU = 0;
+        return;
+      }
+      e.salvoShotsRemaining = 0;
+      e.zoneX = e.zoneHomeX;
+      e.zoneY = e.zoneHomeY;
       e.state = 'cool';
       e.stateUntil = gameMs + M.coolMs;
       e.podU = 0;
@@ -487,6 +869,139 @@ function updateMortar(e) {
   }
   // cool: reloading — the lane is free and the emplacement is a target
   if (gameMs >= e.stateUntil) e.state = 'aim';
+}
+
+/* ------------------------ CROWN WARDEN ----------------------------- *
+ * The Crown itself pushes one armored interlock into the combat plane. Its
+ * broad legs/racks are presentation; the central iris is the honest target.
+ *
+ *   sweepTell -> sweepFire -> exposed
+ *   barrageTell -> barrageBurst -> exposed
+ *   late seals chain sweep + barrage before opening
+ *
+ * Nothing tracks after commitment. The sweep names one horizontal lane and
+ * is answered by leaving it; the barrage locks one predicted landing patch
+ * and is answered by redirecting. The body never blinks as a warning.       */
+
+function clampWardenZone(e, x) {
+  return Math.max(e.arenaX0, Math.min(e.arenaX1, x));
+}
+
+function beginWardenBarrage(e) {
+  const W = CONFIG.warden;
+  const lead = clampLead(player.vx * W.predictMs / 1000, W.predictXCap);
+  e.zoneX = clampWardenZone(e, player.x + lead);
+  e.zoneY = builtGroundTopAt(e.zoneX);
+  e.state = 'barrageTell';
+  e.stateUntil = gameMs + W.barrageTellMs;
+}
+
+function beginWardenAttack(e) {
+  const W = CONFIG.warden;
+  // Seal 2 introduces the rack alone; later seals combine both learned
+  // answers. Deterministic ordering makes the first read teachable.
+  if (e.wardenCycle === 1) {
+    e.combo = false;
+    beginWardenBarrage(e);
+  } else {
+    e.combo = e.wardenCycle >= 2;
+    e.state = 'sweepTell';
+    e.stateUntil = gameMs + W.sweepTellMs;
+  }
+}
+
+function exposeWarden(e) {
+  e.state = 'exposed';
+  e.openedAt = gameMs;
+  e.stateUntil = gameMs + CONFIG.warden.exposedMs;
+  e.windowDamage = 0;
+  e.beamReach = 0;
+}
+
+function wardenSweepHitsPlayer(e, W) {
+  const muzzle = e.x + e.dir * W.emitterTiles;
+  const x0 = Math.min(muzzle, muzzle + e.dir * W.beamReach);
+  const x1 = Math.max(muzzle, muzzle + e.dir * W.beamReach);
+  return player.x + player.hw >= x0 && player.x - player.hw <= x1 &&
+    player.y + player.h >= e.y - W.beamHalf && player.y <= e.y + W.beamHalf;
+}
+
+function wardenBarrageHitsPlayer(e, W) {
+  return player.x + player.hw >= e.zoneX - W.barrageHalf &&
+    player.x - player.hw <= e.zoneX + W.barrageHalf &&
+    player.y + player.h >= e.zoneY && player.y <= e.zoneY + W.barrageHeight;
+}
+
+function updateWarden(e) {
+  const W = CONFIG.warden;
+  if (gameMs < e.enterUntil) return;
+  if (e.state === 'sealed') { beginWardenAttack(e); return; }
+
+  if (e.state === 'sweepTell') {
+    if (gameMs >= e.stateUntil) {
+      e.state = 'sweepFire';
+      e.stateUntil = gameMs + W.sweepMs;
+      e.beamReach = W.beamReach;
+    }
+    return;
+  }
+  if (e.state === 'sweepFire') {
+    if (wardenSweepHitsPlayer(e, W)) damagePlayer(1, e.x);
+    if (gameMs >= e.stateUntil) {
+      e.beamReach = 0;
+      if (e.combo) beginWardenBarrage(e); else exposeWarden(e);
+    }
+    return;
+  }
+  if (e.state === 'barrageTell') {
+    if (gameMs >= e.stateUntil) {
+      e.state = 'barrageBurst';
+      e.stateUntil = gameMs + W.barrageMs;
+    }
+    return;
+  }
+  if (e.state === 'barrageBurst') {
+    if (wardenBarrageHitsPlayer(e, W)) damagePlayer(1, e.zoneX);
+    if (gameMs >= e.stateUntil) exposeWarden(e);
+    return;
+  }
+
+  // exposed: the iris is open. A strong roll may spend the whole seal, but
+  // the minimum opening holds long enough to make that power legible.
+  const minimumRead = gameMs - e.openedAt >= W.exposedMinMs;
+  const sealSpent = e.windowDamage >= W.windowDamage;
+  if (gameMs >= e.stateUntil || (minimumRead && sealSpent)) {
+    e.wardenCycle++;
+    beginWardenAttack(e);
+  }
+}
+
+// Evolved wasps do not gain a faster or homing attack. They spend their
+// cruise beat visibly taking alternating stations around RIG, then use the
+// exact same 190 ms lock and frozen predictive dive as the base drone. The
+// answer remains movement, but a single dodge direction no longer solves the
+// whole late swarm.
+function stagePincer(e, dt, gate, patrolL, patrolR) {
+  const E = CONFIG.evolution;
+  let targetX = player.x + e.formationSide * E.flankOffsetX;
+  if (gate) targetX = Math.max(patrolL + 0.4, Math.min(patrolR - 0.4, targetX));
+  const floor = builtGroundTopAt(e.x);
+  const safeY = floor > -100 ? floor + E.flankHeight : player.y + E.flankHeight;
+  const targetY = Math.max(player.y + E.flankHeight, safeY) +
+    e.formationBand * E.flankBandHeight;
+  e.x = approach(e.x, targetX, E.flankSpeed * dt);
+  e.baseY = approach(e.baseY, targetY, E.flankVerticalSpeed * dt);
+  e.dir = Math.sign(player.x - e.x) || e.dir;
+  e.formationReady = Math.abs(e.x - targetX) <= E.flankReadyTiles &&
+    Math.abs(e.baseY - targetY) <= E.flankReadyTiles;
+}
+
+function updateBacklash(e) {
+  if (!e.backlashUntil || gameMs < e.backlashUntil) return;
+  if (circleHitsPlayer(e.x, e.y, CONFIG.genome.backlashRadius))
+    damagePlayer(1, e.x);
+  e.backlashUntil = 0;
+  e.backlashBurstUntil = gameMs + CONFIG.genome.backlashBurstMs;
 }
 
 export function updateHostiles(dt) {
@@ -506,6 +1021,36 @@ export function updateHostiles(dt) {
   // built yet.
   const patrolR = gate ? Math.min(sRightEdge() - 2, activeCorner().s - 1.5) : 0;
   const patrolL = gate ? sLeftEdge() + 2 : 0;
+
+  // Elastic gate score: the authored delays establish entrance order and the
+  // intended overlap for an ordinary fight. If a high-output build deletes
+  // every body that has begun materializing, keeping the untouched absolute
+  // clock creates the exact dead-air failure the combat director exists to
+  // avoid. Pull the whole remaining score forward by one delta so ordering
+  // and spacing stay intact, while the next body's honest depth-condense tell
+  // begins after a 90ms breath. This never adds a body, changes a cooldown, or
+  // skips the unshootable entrance; it only removes time in which no threat is
+  // present and no decision is possible.
+  if (gate && hostiles.length) {
+    let active = false;
+    let nextEnterUntil = Infinity;
+    for (const e of hostiles) {
+      if (e.gateBreakExit) continue;
+      if (gameMs >= e.enterUntil - W.enterMs) active = true;
+      else if (e.enterUntil < nextEnterUntil) nextEnterUntil = e.enterUntil;
+    }
+    if (!active && Number.isFinite(nextEnterUntil)) {
+      const desiredNext = gameMs + W.enterMs + GW.emptyAdvanceMs;
+      const pullMs = Math.max(0, nextEnterUntil - desiredNext);
+      if (pullMs > 0) {
+        for (const e of hostiles) {
+          if (!e.gateBreakExit && gameMs < e.enterUntil - W.enterMs)
+            e.enterUntil -= pullMs;
+        }
+      }
+    }
+  }
+  syncEvolutionLinks();
   for (let i = hostiles.length - 1; i >= 0; i--) {
     const e = hostiles[i];
     // A gate break may be triggered from inside the projectile collision
@@ -517,6 +1062,7 @@ export function updateHostiles(dt) {
       continue;
     }
     e.t += dt;
+    updateBacklash(e);
     // gated hostiles press harder; otherwise a variant's per-enemy tune wins
     const diveRange = gate ? GW.gateDiveRange
       : (e.diveRange !== undefined ? e.diveRange : W.diveRange);
@@ -533,24 +1079,48 @@ export function updateHostiles(dt) {
       continue;
     }
     if (gate && !ROOTED[e.kind] &&                    // a rooted barrel's dir is its FACING:
-        e.state !== 'charge' && e.state !== 'tumble') {//   the box must never re-aim it
+        e.state !== 'charge' && e.state !== 'vault' && e.state !== 'tumble') {//   the box must never re-aim it
       if (e.x < patrolL) e.dir = 1;                    // patrol box: nobody strands the gate
       else if (e.x > patrolR) e.dir = -1;              //   (a committed charge is exempt)
     }
-    if (e.kind === 'hound') {                          // deck unit: floor denial, see above
+    const staggered = gameMs < e.staggerUntil && !ROOTED[e.kind];
+    if (staggered) {                                   // trait impact: short, bounded recoil
+      e.x += e.recoilVx * dt;
+      e.y += e.recoilVy * dt;
+      if (e.kind === 'wasp' || e.kind === 'carrier') e.baseY += e.recoilVy * dt;
+      const damp = Math.exp(-10 * dt);
+      e.recoilVx *= damp;
+      e.recoilVy *= damp;
+    } else {
+      // Do not bank a stale impulse forever and add it to some later hit.
+      e.recoilVx = 0;
+      e.recoilVy = 0;
+    }
+    if (staggered) {
+      // The recoil itself consumed this body's AI beat; the common cull and
+      // render sync below still run, but it cannot attack through hit-stun.
+    } else if (e.kind === 'warden') {                  // Crown interlock: authored finale target
+      updateWarden(e);
+    } else if (e.kind === 'hound') {                   // deck unit: floor denial, see above
       updateHound(e, dt);
     } else if (e.kind === 'polyp') {                   // rooted emplacement: sightline denial
       updatePolyp(e);
     } else if (e.kind === 'mortar') {                  // rooted emplacement: landing denial
       updateMortar(e);
-    } else if (e.kind === 'carrier') {                 // slow hauler: cruise only, never dives
+    } else if (e.kind === 'carrier') {                 // loot/support body; never dives
       const C = CONFIG.carrier;
-      e.x += e.dir * (e.cruiseSpeed !== undefined ? e.cruiseSpeed : C.speed) * dt;
+      // PINCER reuses the wasp's already-readable split station as support
+      // ecology. The carrier never inherits the dive; it simply exposes its
+      // loot/projector on a flank instead of drifting through as a clone.
+      if (e.pincer) stagePincer(e, dt, gate, patrolL, patrolR);
+      else e.x += e.dir * (e.cruiseSpeed !== undefined ? e.cruiseSpeed : C.speed) * dt;
       e.y = e.baseY + Math.sin(e.t * C.bobFreq) * C.bobAmp;
     } else if (e.state === 'cruise') {
-      e.x += e.dir * cruiseSpeed * dt;
+      if (e.pincer) stagePincer(e, dt, gate, patrolL, patrolR);
+      else e.x += e.dir * cruiseSpeed * dt;
       e.y = e.baseY + Math.sin(e.t * W.bobFreq) * W.bobAmp;
-      if (Math.abs(e.x - player.x) < diveRange && player.y + 1 < e.y &&
+      if ((!e.pincer || e.formationReady) &&
+          Math.abs(e.x - player.x) < diveRange && player.y + 1 < e.y &&
           gameMs > e.diveCdUntil && gameMs >= e.enterUntil &&    // no ghost dives mid-materialize
           squadReady(gameMs, lastWaspLockMs, squadStagger)) {
         // commit now: aim is frozen for the whole dive (never re-aimed, same
@@ -567,6 +1137,7 @@ export function updateHostiles(dt) {
         const v = diveVelocity(e.x, e.y, targetX, targetY, W.diveSpeed);
         e.vx = v.vx; e.vy = v.vy;
         e.state = 'dive';
+        if (e.twinstrike && e.twinPassesLeft <= 0) e.twinPassesLeft = 2;
         e.lockUntil = gameMs + WASP_DIVE_LOCK_MS;
         e.stateUntil = e.lockUntil + W.diveMs;
         lastWaspLockMs = gameMs;               // squad clock: next commit waits its turn
@@ -577,12 +1148,24 @@ export function updateHostiles(dt) {
       const floor = builtGroundTopAt(e.x);       // hidden faces have no floor yet
       if (gameMs > e.stateUntil || (launched && e.y < floor + 0.4)) {
         e.state = 'recover';
-        e.diveCdUntil = gameMs + diveCooldown;
+        if (e.twinstrike && e.twinPassesLeft > 1) {
+          e.twinPassesLeft--;
+          if (e.formationSide) e.formationSide = -e.formationSide;
+          e.diveCdUntil = gameMs + CONFIG.genome.twinGapMs;
+        } else {
+          e.twinPassesLeft = 0;
+          e.diveCdUntil = gameMs + diveCooldown;
+        }
       }
     } else {                                             // recover: climb back up
-      e.x -= 1.2 * dt;
-      if (gate) e.x = Math.max(e.x, sLeftEdge() + 1);    // no drifting out of the fight
-      e.y = approach(e.y, e.baseY, (gate ? GW.gateRecoverRate : 5) * dt);
+      if (e.pincer) stagePincer(e, dt, gate, patrolL, patrolR);
+      else {
+        e.x -= 1.2 * dt;
+        if (gate) e.x = Math.max(e.x, sLeftEdge() + 1);  // no drifting out of the fight
+      }
+      const recoverRate = e.pincer ? CONFIG.evolution.flankRecoverRate
+        : (gate ? GW.gateRecoverRate : 5);
+      e.y = approach(e.y, e.baseY, recoverRate * dt);
       if (Math.abs(e.y - e.baseY) < 0.05) { e.state = 'cruise'; e.t = 0; }
     }
 
@@ -592,7 +1175,8 @@ export function updateHostiles(dt) {
     }
 
     // contact damage — only once fully materialized (hitR doubles as contact radius)
-    if (gameMs >= e.enterUntil && circleHitsPlayer(e.x, e.y, e.hitR)) damagePlayer(1, e.x);
+    if (!staggered && gameMs >= e.enterUntil && circleHitsPlayer(e.x, e.y, e.hitR))
+      damagePlayer(1, e.x);
 
     // mock-3D presence (materialize in from tower depth, breathe while alive,
     // hit flash) is derived entirely from these sim fields by the render layer
@@ -606,6 +1190,73 @@ export function clearHostiles() {
   for (const e of hostiles) view.hostiles.removed(e, false);
   hostiles.length = 0;
   lastWaspLockMs = -Infinity;         // squad clock: a fresh run owes nothing to the last one
+  evolutionSerial = 0;
+  genomeSerial = 0;
 }
 export function resetKills() { kills = 0; }
 export function resetHostileRng() { hostileRng = mulberry32(5150); }
+
+export function hostileEvolutionSnapshot() {
+  const rows = hostiles
+    .filter((e) => e.aegis || e.pincer || e.wardedBy)
+    .map((e) => ({
+      id: e.id,
+      kind: e.kind,
+      face: e.evolutionFace,
+      hp: e.hp,
+      aegis: e.aegis,
+      online: e.aegisActive,
+      pincer: e.pincer,
+      side: e.formationSide,
+      band: e.formationBand,
+      ready: e.formationReady,
+      wardedBy: e.wardedBy,
+      blockedHits: e.blockedHits,
+      x: Number(e.x.toFixed(2)),
+      y: Number(e.y.toFixed(2)),
+      state: e.state,
+    }));
+  return {
+    firstFace: CONFIG.evolution.firstFace,
+    anchors: rows.filter((e) => e.aegis).length,
+    online: rows.filter((e) => e.aegis && e.online).length,
+    pincers: rows.filter((e) => e.pincer).length,
+    linked: rows.filter((e) => e.wardedBy).length,
+    blockedHits: rows.reduce((n, e) => n + e.blockedHits, 0),
+    rows,
+  };
+}
+
+export function hostileGenomeSnapshot() {
+  const rows = hostiles.filter((e) => e.genome?.mutated).map((e) => ({
+    id: e.id,
+    kind: e.kind,
+    identity: e.genomeId,
+    label: e.genomeLabel,
+    response: e.genome.response,
+    budget: e.genome.budget,
+    expressedBudget: e.genome.expressedBudget,
+    strain: e.genome.strain.id,
+    wardPolicy: e.wardPolicy,
+    salvoPattern: e.salvoPattern,
+    genes: [...e.genome.genes],
+    state: e.state,
+    hp: e.hp,
+    x: Number(e.x.toFixed(2)),
+    y: Number(e.y.toFixed(2)),
+    bulwarkOpen: e.bulwark && gameMs < e.bulwarkOpenUntil,
+    twinPassesLeft: e.twinPassesLeft,
+    salvoShotsRemaining: e.salvoShotsRemaining,
+    relayCycles: e.relayCycles,
+    backlashArmed: !!e.backlashUntil,
+    wardedBy: e.wardedBy,
+    blockedHits: e.blockedHits,
+  }));
+  return {
+    seed: CONFIG.genome.seed,
+    mutated: rows.length,
+    byResponse: Object.fromEntries([...new Set(rows.map((e) => e.response))]
+      .map((response) => [response, rows.filter((e) => e.response === response).length])),
+    rows,
+  };
+}

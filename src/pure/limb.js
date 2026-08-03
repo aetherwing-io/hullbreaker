@@ -246,8 +246,14 @@ function anatomyPlan(out, facet, cfg, groundH) {
   const gillRoll = G.tiltDeg * Math.PI / 180;
   const ribRoll = -R.tiltDeg * Math.PI / 180;
   const tendonRoll = T.tiltDeg * Math.PI / 180;
+  // The last approach and outro sit under the authored Crown plate.  A gill
+  // organ's 13.5-tile load rib is useful macro anatomy on the open faces, but
+  // at the summit it projects through the citadel as a cropped wooden bar.
+  // Clear only that overlap band; the preceding face keeps its full anatomy.
+  const crownClearS = cfg.levelLength - cfg.path.outroTiles - 16;
 
   for (let s = facet.s0 + 10; s < facet.s1 - 4; s += G.every) {
+    if (s >= crownClearS) continue;
     const ref = limbGroundRef(groundH, s - G.slitW / 2, s + G.slitW / 2);
     const offset = (jitter(Math.floor(s) + k * 13, 3) - 1) * 0.5;
     const organH = G.pitch * (G.slits - 1) + 3.2;
@@ -488,17 +494,30 @@ function jointPlan(out, joint, cfg, groundH) {
   const k = joint.k;                            // joint k sits between facets
   const ref = limbGroundRef(groundH, joint.apron0, joint.apron1);
   const s = joint.sMid;
+  // The final hinge terminates inside the Crown's authored silhouette.  The
+  // normal tall ridge/tendons read correctly at an exposed turn, but here they
+  // pierced the citadel art as four cropped rectangular towers.  Keep the
+  // hinge's low collar, kerb and under-deck anatomy, while handing the summit
+  // skyline entirely to the Crown.
+  const crownJoint = joint.k === cfg.path.faces;
   // The ridge where two armour facets meet, behind the plane: the vertical
   // line the camera orbits, and the thing that visibly separates the facet
   // RIG is on from the facet beyond it.
-  const ridgeH = J.ridgeBelow + J.ridgeAbove;
+  const ridgeAbove = crownJoint ? 0.2 : J.ridgeAbove;
+  const ridgeH = J.ridgeBelow + ridgeAbove;
   push(out, 'ridge', k, s, J.ridgeW, ref - J.ridgeBelow + ridgeH / 2, ridgeH,
        J.ridgeDepth, J.ridgeThickness);
-  // the collar swelling at deck height: a hinge, not a pillar
-  push(out, 'collar', k, s, J.collarW, ref + J.collarAt, J.collarH,
-       J.collarDepth, J.collarThickness);
-  push(out, 'tendon', k, s - 1.6, J.tendonW, ref + 4, 14, J.tendonDepth, J.tendonThickness);
-  push(out, 'tendon', k, s + 1.6, J.tendonW, ref + 4, 14, J.tendonDepth, J.tendonThickness);
+  // The exposed joints swell at deck height. The summit joint deliberately
+  // omits that box as well: the Crown's painted foundation is its cowl.
+  if (!crownJoint)
+    push(out, 'collar', k, s, J.collarW, ref + J.collarAt, J.collarH,
+         J.collarDepth, J.collarThickness);
+  if (!crownJoint) {
+    push(out, 'tendon', k, s - 1.6, J.tendonW, ref + 4, 14,
+         J.tendonDepth, J.tendonThickness);
+    push(out, 'tendon', k, s + 1.6, J.tendonW, ref + 4, 14,
+         J.tendonDepth, J.tendonThickness);
+  }
   // The ramp edge continues THROUGH the chamfer: the two columns that belong to
   // no facet are exactly the ones where the route has to read as continuing
   // around the limb rather than stopping at a new face (concept board 14).

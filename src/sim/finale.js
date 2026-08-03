@@ -9,7 +9,8 @@ import { view } from './bridge.js';
 import { gameMs } from './time.js';
 import { END_SCROLL, groundTopAt, spawnLaneY } from './level.js';
 import {
-  clearHostiles, hostiles, kills, removeHostile, spawnHostile,
+  clearHostiles, forceBreakHostile, hostiles, kills, removeHostile,
+  spawnHostile, wardenStage,
 } from './hostiles.js';
 
 export const FINALE_TIMING = Object.freeze({
@@ -30,8 +31,8 @@ export const FINALE_PACKETS = Object.freeze([
   Object.freeze({
     atMs: FINALE_TIMING.armingMs,
     entries: Object.freeze([
-      Object.freeze({ kind: 'hound', x: END_SCROLL + 13, delayMs: 0, dir: -1,
-        patrol: Object.freeze({ x0: END_SCROLL + 9, x1: END_SCROLL + 17 }) }),
+      Object.freeze({ kind: 'hound', x: END_SCROLL + 17, delayMs: 0, dir: -1,
+        patrol: Object.freeze({ x0: END_SCROLL + 13, x1: END_SCROLL + 21 }) }),
       Object.freeze({ kind: 'wasp', x: END_SCROLL + 18, lane: 4.8, delayMs: 140 }),
       Object.freeze({ kind: 'wasp', x: END_SCROLL + 22, lane: 7.0, delayMs: 340 }),
     ]),
@@ -66,6 +67,10 @@ let phaseAt = 0;
 let baselineKills = 0;
 let creditedKills = 0;
 let wave = 0;
+let wardenId = 0;
+let wardenBroken = false;
+let wardenEarnedDamage = 0;
+let mercyBreak = false;
 
 function elapsed() {
   return phase === 'dormant' ? 0 : Math.max(0, gameMs - startedAt);
@@ -77,14 +82,51 @@ function earnedKills() {
     : creditedKills;
 }
 
+function liveWarden() {
+  return wardenId ? hostiles.find((e) => e.id === wardenId) || null : null;
+}
+
+function wardenSnapshot() {
+  const e = liveWarden();
+  if (e) {
+    wardenEarnedDamage = Math.max(wardenEarnedDamage, e.earnedDamage || 0);
+    return {
+      present: true,
+      defeated: false,
+      hp: Math.max(0, e.hp),
+      maxHp: e.maxHp,
+      health: Math.max(0, e.hp / e.maxHp),
+      damage: wardenEarnedDamage,
+      stage: wardenStage(e),
+      seal: Math.min(4, 1 + Math.floor((e.maxHp - e.hp) / CONFIG.warden.windowDamage)),
+      shielded: e.state !== 'exposed',
+      attack: e.state,
+      mercy: false,
+    };
+  }
+  return {
+    present: false,
+    defeated: wardenBroken,
+    hp: 0,
+    maxHp: CONFIG.warden.hp,
+    health: 0,
+    damage: wardenBroken && !mercyBreak ? CONFIG.warden.hp : wardenEarnedDamage,
+    stage: 3,
+    seal: 4,
+    shielded: false,
+    attack: wardenBroken ? 'broken' : 'dormant',
+    mercy: mercyBreak,
+  };
+}
+
 function phaseProgress() {
   const t = elapsed();
   if (phase === 'dormant') return 0;
   if (phase === 'arming') return Math.min(1, t / FINALE_TIMING.armingMs);
   if (phase === 'defend') {
     const timeProgress = Math.min(1, (gameMs - phaseAt) / FINALE_TIMING.minDefendMs);
-    const killProgress = Math.min(1, earnedKills() / FINALE_TIMING.quota);
-    return Math.min(timeProgress, killProgress);
+    const bossProgress = 1 - wardenSnapshot().health;
+    return Math.min(timeProgress, bossProgress);
   }
   if (phase === 'transmit')
     return Math.min(1, (gameMs - phaseAt) / FINALE_TIMING.transmitMs);
@@ -101,6 +143,7 @@ export function finaleSnapshot() {
     quota: FINALE_TIMING.quota,
     progress: phaseProgress(),
     wave,
+    warden: wardenSnapshot(),
   };
 }
 
@@ -149,10 +192,29 @@ export function startFinale() {
   startedAt = phaseAt = gameMs;
   wave = 0;
   creditedKills = 0;
+  wardenBroken = false;
+  wardenEarnedDamage = 0;
+  mercyBreak = false;
   // The arena owns its roster.  A late ambient straggler cannot silently
   // inflate the quota or distract aim assist from the authored first packet.
   clearHostiles();
   baselineKills = kills;
+  // The Warden is the Crown's forward interlock, deliberately close enough
+  // to remain a centerpiece in a portrait viewport. Its broad art is fused
+  // to the apron; only the central iris carries collision.
+  // Camera look-ahead centers the held arena near END_SCROLL+7.4. Mount the
+  // interlock ahead of RIG on that shoulder, not behind the player at the
+  // scroll cursor; the 1.45x presentation body then fills the right half of
+  // the Crown composition while its iris remains only a few shots away.
+  const bossX = END_SCROLL + 11.4;
+  const bossY = groundTopAt(bossX) + CONFIG.warden.bodyY;
+  spawnHostile(bossX, bossY, 0, 'warden', {
+    finaleWave: 0,
+    gating: false,
+    dir: -1,
+    arena: { x0: END_SCROLL + 2.0, x1: END_SCROLL + 10.0 },
+  });
+  wardenId = hostiles[hostiles.length - 1]?.id || 0;
   view.finale.started(finaleSnapshot());
   return true;
 }
@@ -170,11 +232,32 @@ export function updateFinale() {
     spawnDuePackets(t);
     creditedKills = earnedKills();
     const k = creditedKills;
+    const warden = liveWarden();
+    if (warden) wardenEarnedDamage = Math.max(wardenEarnedDamage, warden.earnedDamage || 0);
+    else if (wardenId) {
+      wardenBroken = true;
+      // Natural removal can happen inside the bullet loop before this module
+      // gets another read of the row. A non-mercy break necessarily spent the
+      // final seal, so retain the earned full-health total in telemetry.
+      if (!mercyBreak) wardenEarnedDamage = CONFIG.warden.hp;
+    }
     const heldLongEnough = gameMs - phaseAt >= FINALE_TIMING.minDefendMs;
-    const earnedClear = heldLongEnough && k >= FINALE_TIMING.quota;
-    const mercyClear = t >= FINALE_TIMING.mercyAtMs && k >= FINALE_TIMING.mercyKills;
-    const hardClear = t >= FINALE_TIMING.hardMaxMs;
-    if (earnedClear || mercyClear || hardClear) beginTransmit();
+    const earnedClear = heldLongEnough && wardenBroken;
+
+    // A child who has engaged with either the centerpiece or its support
+    // wave gets a late Crown-overload assist. The absolute timeout is the
+    // final anti-lock: both paths physically break the target first.
+    const mercyReady = t >= FINALE_TIMING.mercyAtMs &&
+      (wardenEarnedDamage >= 12 || k >= FINALE_TIMING.mercyKills);
+    const hardReady = t >= FINALE_TIMING.hardMaxMs;
+    if (!wardenBroken && warden && (mercyReady || hardReady)) {
+      mercyBreak = true;
+      forceBreakHostile(warden, 'CROWN');
+      wardenBroken = true;
+      creditedKills = earnedKills();
+    }
+    if (earnedClear || (heldLongEnough && wardenBroken && (mercyReady || hardReady)))
+      beginTransmit();
   } else if (phase === 'transmit' && gameMs - phaseAt >= FINALE_TIMING.transmitMs) {
     phase = 'complete';
     phaseAt = gameMs;
@@ -194,5 +277,9 @@ export function resetFinale() {
   baselineKills = 0;
   creditedKills = 0;
   wave = 0;
+  wardenId = 0;
+  wardenBroken = false;
+  wardenEarnedDamage = 0;
+  mercyBreak = false;
   view.finale.reset();
 }

@@ -278,10 +278,35 @@ function sfxHit(dmg = 1) {
   tone('square', 210 / w, 140 / w, 0.07, 0.1 * w);
   tone('sine', 90 / w, 46 / w, 0.045, 0.09 * w);
 }
-function sfxKill() {                         // hostile dies: bright crack, then it breaks —
-  noiseHit('highpass', 3800, 2100, 3, 0.045, 0.17);                 // a two-part "crunch, then
-  tone('square', 145, 46, 0.23, 0.3);                               // thud" signature distinct
-  noiseHit('lowpass', 620, 160, 1, 0.22, 0.25);                     // from sfxHit's plain tick
+function sfxKill(kind, mutated = false) {
+  // Three bounded voices per role, shaped like the construction that is
+  // visibly failing. Crowd throttling remains at the caller, so variety does
+  // not increase simultaneous voice count versus the old universal crunch.
+  if (kind === 'wasp') {
+    noiseHit('highpass', 4300, 1700, 3.2, 0.09, 0.16);
+    tone('triangle', mutated ? 760 : 610, 92, 0.22, 0.18);
+    noiseHit('bandpass', 820, 240, 1.5, 0.16, 0.13);
+  } else if (kind === 'hound') {
+    noiseHit('bandpass', 980, 210, 1.8, 0.20, 0.23);
+    tone('square', mutated ? 132 : 112, 38, 0.24, 0.24);
+    noiseHit('lowpass', 420, 120, 1.0, 0.25, 0.19);
+  } else if (kind === 'polyp') {
+    noiseHit('bandpass', 1450, 190, 1.3, 0.26, 0.19);
+    tone('sine', mutated ? 226 : 184, 34, 0.24, 0.20);
+    noiseHit('lowpass', 540, 100, 0.8, 0.20, 0.15);
+  } else if (kind === 'mortar') {
+    noiseHit('lowpass', 1040, 130, 1.1, 0.24, 0.22);
+    tone('sine', mutated ? 104 : 86, 29, 0.28, 0.24);
+    noiseHit('bandpass', 2600, 760, 4.0, 0.08, 0.12, 0.025);
+  } else if (kind === 'carrier') {
+    noiseHit('bandpass', 2400, 360, 1.4, 0.27, 0.21);
+    tone('sine', mutated ? 124 : 102, 25, 0.34, 0.27);
+    tone('square', 285, 58, 0.19, 0.14, 0.025);
+  } else {
+    noiseHit('highpass', 3800, 2100, 3, 0.045, 0.17);
+    tone('square', 145, 46, 0.23, 0.3);
+    noiseHit('lowpass', 620, 160, 1, 0.22, 0.25);
+  }
 }
 function sfxChainBreak(chain) {              // third rapid kill: the hull answers with one
   const lift = 1 + Math.min(2, chain - 3) * 0.12;                    // bounded celebratory blast
@@ -312,6 +337,55 @@ function sfxPickup(kind) {
     tone('square', 660, 660, 0.06, 0.13);
     tone('square', 990, 990, 0.09, 0.13, 0.07);
   }
+}
+
+// Rolled guns get a rarity cadence instead of the old one-size weapon chime.
+// Tier I is a compact confirm, tier II adds a third harmonic and low detent,
+// and tier III earns one short mechanical impact plus a warm rising carrier.
+// A recatch is deliberately shorter: satisfying under pressure, but it never
+// replays the full relic fanfare every time damage knocks the same gun loose.
+function sfxWeaponLoot(gun, detail) {
+  const tier = Math.max(1, Math.min(3, gun?.tier || 1));
+  if (detail?.recatch) {
+    tone('square', 510, 760, 0.12, 0.12, 0, true);
+    tone('sine', 108, 62, 0.16, 0.10, 0, true);
+    return;
+  }
+  if (tier === 1) {
+    tone('square', 660, 660, 0.06, 0.13);
+    tone('square', 990, 990, 0.09, 0.13, 0.07);
+    return;
+  }
+  if (tier === 2) {
+    tone('sine', 82, 48, 0.20, 0.13, 0, true);
+    tone('triangle', 523, 523, 0.09, 0.11, 0.015);
+    tone('triangle', 784, 784, 0.10, 0.11, 0.09);
+    tone('triangle', 1047, 1047, 0.13, 0.10, 0.17);
+    return;
+  }
+  noiseHit('lowpass', 520, 140, 1.2, 0.18, 0.16, 0, true);
+  tone('sine', 72, 34, 0.34, 0.19, 0, true);
+  tone('triangle', 392, 392, 0.12, 0.11, 0.035, true);
+  tone('triangle', 587, 587, 0.14, 0.11, 0.12, true);
+  tone('triangle', 784, 784, 0.18, 0.12, 0.21, true);
+  padTone('sine', 196, 198, 0.62, 0.032, 0.08, 0.09);
+  padTone('sine', 294, 296, 0.58, 0.026, 0.11, 0.10);
+}
+
+// VOLATILE pays off at the exact detonation edge (direct hit, terrain stop,
+// or fuel expiry). A compact sub-body gives the blast weight, a filtered
+// crack separates it from the ordinary hit tick, and stacked rolls lower the
+// body slightly instead of adding unbounded voices. The caller globally
+// throttles this recipe so a forked/rapid cluster becomes a rhythmic chain of
+// charges, not six identical explosions clipping on the same frame.
+function sfxVolatileImpact(stack = 1) {
+  const power = Math.max(1, Math.min(3, Number(stack) || 1));
+  noiseHit('lowpass', 980 + power * 120, 180, 1.25, 0.17,
+    0.18 + power * 0.025);
+  tone('sine', 104 - power * 9, 31, 0.25 + power * 0.025,
+    0.19 + power * 0.035);
+  noiseHit('bandpass', 2600, 720, 2.1, 0.105, 0.09 + power * 0.018,
+    0.018);
 }
 function sfxWarn(low) {                      // alarm two-tone; `low` = heavier threat —
   const a = low ? 523 : 880, b = low ? 392 : 620;             // always audible: a warning
@@ -381,6 +455,39 @@ function sfxFinaleHold(progress = 0) {
   const p = Math.max(0, Math.min(1, progress));
   const root = 82 + p * 55;
   tone('sine', root, root * 1.06, 0.18, 0.045, 0, true);
+}
+
+// The Warden speaks through the part that is arming. These short mechanical
+// signatures mirror its two visual verbs: an accelerating rail charge for
+// the sweep, a descending three-detent rack for the marked barrage, and an
+// open harmonic when the iris can finally be damaged. No generic alarm loop
+// and no full-body blink are needed to explain the encounter.
+function sfxWardenState(state) {
+  if (state === 'sweepTell') {
+    tone('sawtooth', 82, 310, 0.42, 0.11, 0, true);
+    noiseHit('bandpass', 520, 1300, 2.5, 0.26, 0.08, 0.04, true);
+  } else if (state === 'sweepFire') {
+    noiseHit('bandpass', 2100, 620, 1.3, 0.34, 0.18, 0, true);
+    tone('square', 190, 72, 0.30, 0.15, 0, true);
+  } else if (state === 'barrageTell') {
+    tone('square', 294, 294, 0.07, 0.10, 0, true);
+    tone('square', 220, 220, 0.07, 0.11, 0.11, true);
+    tone('square', 147, 147, 0.10, 0.13, 0.22, true);
+  } else if (state === 'barrageBurst') {
+    noiseHit('lowpass', 520, 92, 1.1, 0.34, 0.20, 0, true);
+    tone('sine', 74, 31, 0.36, 0.25, 0, true);
+  } else if (state === 'exposed') {
+    tone('triangle', 392, 392, 0.10, 0.11, 0, true);
+    tone('triangle', 588, 588, 0.12, 0.11, 0.08, true);
+    tone('sine', 784, 792, 0.25, 0.08, 0.15, true);
+  }
+}
+
+function sfxWardenBreak() {
+  noiseHit('bandpass', 2600, 210, 1.0, 0.48, 0.28, 0, true);
+  noiseHit('lowpass', 360, 58, 1.2, 0.68, 0.32, 0.02, true);
+  tone('sine', 66, 22, 0.78, 0.46, 0, true);
+  tone('sawtooth', 170, 38, 0.54, 0.16, 0.04, true);
 }
 
 function sfxFinaleTransmit() {
@@ -706,7 +813,10 @@ function onHostileRemoved(e, fade) {
   if (!fade) return;
   killChain = gameMs - lastKillAt <= 780 ? Math.min(5, killChain + 1) : 1;
   lastKillAt = gameMs;
-  if (gate('kill', A.hitGapMs)) { sfxKill(); bumpHeat(A.heat.kill); }
+  if (gate('kill', A.hitGapMs)) {
+    sfxKill(e.kind, !!e.genome?.mutated);
+    bumpHeat(A.heat.kill);
+  }
   // A fast triple kill is the earned spectacle beat. It has its own throttle
   // and still obeys the global voice cap/load scaling, so crowd kills become
   // one memorable detonation instead of an unbounded pile of identical thuds.
@@ -720,10 +830,25 @@ function onHostileRemoved(e, fade) {
 // Accepted edge: a resetGame teardown removal on the exact frame a catchable
 // capsule overlaps RIG would still chime once, under the retry/over duck.
 function onCapsuleRemoved(c) {
+  // Letter pickups announce on view.loot.acquired, where their exact tier is
+  // available. This removal hook remains the mod-pickup edge only.
+  if (c.kind === 'letter') return;
   if (c.mode === 'pop' && (c.y < CONFIG.edges.killY || gameMs > c.dieAt)) return;
   if (gameMs >= c.noCatchUntil &&
       circleHitsPlayer(c.x, c.y, CONFIG.capsules.pickupRadius) && gate('pickup', 80))
     sfxPickup(c.kind);
+}
+
+function onLootAcquired(gun, def, detail) {
+  if (gate('loot', 80)) sfxWeaponLoot(gun, detail);
+}
+
+function onVolatileImpact(b, radius, stack) {
+  // One cue per 105ms is enough to articulate a detonation chain while
+  // bounding a RAPID + FORKED + VOLATILE relic to under ten cues/second.
+  if (!gate('volatile:impact', 105)) return;
+  sfxVolatileImpact(stack);
+  bumpHeat(0.20 + Math.min(3, Number(stack) || 1) * 0.05);
 }
 
 // transform rituals mirror the corner: armed → warning, started → wind-up,
@@ -771,16 +896,29 @@ function onLanceTelegraph(L) {
 let finaleAudioPhase = 'dormant';
 let finaleAudioWave = 0;
 let finaleTransmitPlayed = false;
+let finaleWardenAttack = 'dormant';
+let finaleWardenDefeated = false;
 
 function onFinaleStarted(snapshot) {
   finaleAudioPhase = snapshot?.phase || 'arming';
   finaleAudioWave = snapshot?.wave || 0;
   finaleTransmitPlayed = false;
+  finaleWardenAttack = snapshot?.warden?.attack || 'dormant';
+  finaleWardenDefeated = !!snapshot?.warden?.defeated;
   if (gate('finale:arm', 520)) sfxFinaleArm(snapshot?.progress || 0);
 }
 
 function onFinaleSync(snapshot) {
   if (!snapshot) return;
+  const attack = snapshot.warden?.attack || 'dormant';
+  if (snapshot.warden?.present && attack !== finaleWardenAttack &&
+      gate(`warden:${attack}`, 120)) sfxWardenState(attack);
+  if (snapshot.warden?.defeated && !finaleWardenDefeated) {
+    sfxWardenBreak();
+    bumpHeat(0.78);
+  }
+  finaleWardenAttack = attack;
+  finaleWardenDefeated = !!snapshot.warden?.defeated;
   if (snapshot.phase === 'arming' && gate('finale:arm', 640))
     sfxFinaleArm(snapshot.progress);
   if (snapshot.phase === 'defend') {
@@ -806,6 +944,8 @@ function onFinaleReset() {
   finaleAudioPhase = 'dormant';
   finaleAudioWave = 0;
   finaleTransmitPlayed = false;
+  finaleWardenAttack = 'dormant';
+  finaleWardenDefeated = false;
   delete lastAt['finale:arm'];
   delete lastAt['finale:hold'];
 }
@@ -869,9 +1009,11 @@ if (AUDIO_ON) {
   after('hostiles', 'sync', onHostileSync);
   after('hostiles', 'removed', onHostileRemoved);
   after('capsules', 'removed', onCapsuleRemoved);
+  after('loot', 'acquired', onLootAcquired);
   after('bullets', 'slotSpawned', (i, type) => {
     if (FIRE[type] && gate('fire:' + type, A.fireGapMs)) { FIRE[type](); bumpHeat(A.heat.fire); }
   });
+  after('bullets', 'volatileImpact', onVolatileImpact);
   after('mods', 'lanceTelegraph', onLanceTelegraph);
   after('finale', 'started', onFinaleStarted);
   after('finale', 'sync', onFinaleSync);

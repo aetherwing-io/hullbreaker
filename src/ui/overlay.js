@@ -28,12 +28,24 @@ const ovBody = document.getElementById('ovBody');
 
 function showOverlay(title, lines) {
   ovTitle.textContent = title;
-  ovBody.innerHTML = lines.map(l => `<p${l.dim ? ' class="dim"' : ''}>${l.text}</p>`).join('');
+  ovBody.innerHTML = lines.map((l) => {
+    const classes = [l.dim ? 'dim' : '', l.className || ''].filter(Boolean).join(' ');
+    return `<p${classes ? ` class="${classes}"` : ''}>${l.text}</p>`;
+  }).join('');
   overlay.style.display = 'flex';
 }
 function hideOverlay() { overlay.style.display = 'none'; }
 
 function showStateScreen(next) {
+  const cinematicVictory = next === 'VICTORY' && !ACTIVE_FIXTURE;
+  const modalState = next === 'PAUSED' || next === 'GAME_OVER' || next === 'SLICE_RETRY';
+  overlay.classList.toggle('victory', cinematicVictory);
+  // The summit result is a clean cinematic state.  Keep the live HUD, finale
+  // objective and a just-fired loot card from ghosting above it simply because
+  // those presentation layers have higher z-indices during play.
+  document.body.classList.toggle('at-victory', cinematicVictory);
+  document.body.classList.toggle('at-modal', modalState);
+  overlay.dataset.state = String(next || '').toLowerCase();
   drawStateScreen(next);
   // the shell draws its panel into #ovPanel AFTER the body above, so the
   // scraped overlay text is exactly what it was before the shell existed
@@ -102,9 +114,9 @@ function drawStateScreen(next) {
       showOverlay('BREACH CLEAR', transformLines);
     } else {
       showOverlay('SIGNAL SENT', [
-        { text: 'CROWN UPLINK HELD. TRANSMISSION COMPLETE.' },
-        { text: 'RIG: “HOME, THIS IS MERIDIAN COLONY. WE SURVIVED.”' },
-        { text: 'EARTH: “MERIDIAN COLONY … WE HEAR YOU.”' },
+        { text: 'CROWN BROKEN // EARTH ANSWERED', className: 'victory-kicker' },
+        { text: 'RIG: “HOME, THIS IS MERIDIAN COLONY. WE SURVIVED.”', className: 'victory-rig' },
+        { text: 'EARTH: “MERIDIAN COLONY … WE HEAR YOU.”', className: 'victory-reply' },
         { text: 'r to climb again', dim: true },
       ]);
     }

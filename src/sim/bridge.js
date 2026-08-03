@@ -21,8 +21,12 @@ export const view = {
   player:   { sync: noop },              // rig transform, gun pose, i-frame flicker
   hostiles: { spawned: noop, removed: noop, sync: noop },
   capsules: { spawned: noop, removed: noop, sync: noop },
+  // A letter capsule has become the held gun. The immutable recipe and its
+  // compiled stats are handed outward once so UI/audio can celebrate the
+  // roll without polling or reaching back into simulation state.
+  loot:     { acquired: noop },          // (gun, compiledDef, { recatch })
   bullets:  { slotSpawned: noop, hideSlot: noop, syncSlot: noop, flush: noop,
-              bendCulled: noop },
+              bendCulled: noop, volatileImpact: noop },
   mods:     { sync: noop, cleared: noop, lanceTelegraph: noop },
   level:    { unbuiltHidden: noop, zipperColumn: noop, faceRevealed: noop },
   corner:   { finished: noop },

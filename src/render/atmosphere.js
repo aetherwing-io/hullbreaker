@@ -19,7 +19,8 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { normalAscentAltAt } from '../pure/ascent.js';
-import { SEGS, headingAt, polyAt } from '../pure/path.js';
+import { SEGS, faceIndexAt, headingAt, polyAt } from '../pure/path.js';
+import { scrollX } from '../sim/time.js';
 import { PAL } from './palette.js';
 import { faceMidS } from './backdrop-table.js';
 
@@ -33,6 +34,68 @@ const VEIL_H = 62;
 // sides so a corner never exposes a rectangular transparency edge.
 const VEIL_W = CONFIG.path.faceTiles * 1.72;
 const VEIL_BASE_Y = 10;
+
+// A portrait frustum intersects several overlapping facet shells at once.
+// At desktop width their feathered sides occupy different screen regions; at
+// phone width those same transparent layers stack across almost every pixel
+// and previously washed the world toward pale grey.  Attenuate only that
+// overlap case, continuously by the live camera aspect, so rotating a device
+// cannot pop between two authored opacities.
+function veilAspectGain(aspect) {
+  if (aspect >= 0.90) return 1;
+  if (aspect <= 0.55) return 0.30;
+  const u = (aspect - 0.55) / 0.35;
+  return 0.30 + 0.70 * u * u * (3 - 2 * u);
+}
+
+// A facet's storm belongs to that facet in world space. During a corner the
+// departing bank must hand the frame to the arriving one; otherwise two large
+// transparent shells continue to read as one screen-aligned sheet. Camera
+// back is projected onto the horizontal plane so pitch/shake cannot pulse the
+// weather. The eighth-power shoulder gives both faces a useful cross-dissolve
+// at the 30-degree midpoint, then removes the old face by the settled detent.
+const _cameraForward = new THREE.Vector3();
+function veilAngleGain(camera, facetYaw) {
+  camera.getWorldDirection(_cameraForward);
+  const len = Math.hypot(_cameraForward.x, _cameraForward.z) || 1;
+  const backX = -_cameraForward.x / len;
+  const backZ = -_cameraForward.z / len;
+  const facing = Math.max(0,
+    Math.sin(facetYaw) * backX + Math.cos(facetYaw) * backZ);
+  return facing ** 8;
+}
+
+// Direction alone is insufficient on a closed helix: after six turns the
+// Crown camera faces the same heading as face 1, so opening-face fog would
+// reappear through the creature. Keep the active and adjacent route facets —
+// both halves of a corner — and reject every behind-the-fold recurrence.
+function facetVisibilityGain(face) {
+  const active = faceIndexAt(scrollX, CONFIG);
+  // The outro has no next corner. Once it owns the view, the departing bank
+  // must be gone completely; even its tiny grazing-angle remnant exposes the
+  // rectangular edge of the old facet across the Crown sky.
+  if (active === CONFIG.path.faces + 1) return face === active ? 1 : 0;
+  return Math.abs(face - active) <= 1 ? 1 : 0;
+}
+
+// `faceMidS()` intentionally describes only the six full tower facets. The
+// post-sixth-corner run is a shorter, seventh visual facet: without its own
+// shell the camera completes the 360-degree orbit and looks through an empty
+// teal stage toward face 1. Keep that final heading authored at the midpoint
+// of the actual outro, not a fictitious seventh 65-tile span.
+function atmosphereFaceS(face) {
+  if (face <= CONFIG.path.faces) return faceMidS(face, CONFIG);
+  return CONFIG.path.introTiles + CONFIG.path.faceTiles * CONFIG.path.faces +
+    CONFIG.path.outroTiles / 2;
+}
+
+function atmosphereFaceRange(face) {
+  const start = CONFIG.path.introTiles + (face - 1) * CONFIG.path.faceTiles;
+  return {
+    start,
+    length: face <= CONFIG.path.faces ? CONFIG.path.faceTiles : CONFIG.path.outroTiles,
+  };
+}
 
 function rgba(token, alpha) {
   const n = typeof token === 'number'
@@ -97,6 +160,29 @@ function paintStormTexture(stage, macroTexture, layer) {
     const drawW = drawH * (macro.width / macro.height);
     const travel = Math.max(0, drawW - TEX_W);
     const x = -travel * (0.18 + stage * 0.31);
+    // A broad, edgeless body shadow also fills the largest negative-space
+    // windows. The source silhouette is intentionally open, but at this
+    // scale an untouched bright storm wash behind one opening looked like a
+    // pasted rectangular crop rather than sky seen through anatomy.
+    cloudBank(g, TEX_W * 0.56, TEX_H * 0.38,
+      TEX_W * 0.68, TEX_H * 0.52, PAL.bg, 0.60 + stage * 0.025);
+    // The painted coil has real alpha cutouts. At enormous Crown scale, one
+    // wide negative-space opening could expose the brighter base wash as a
+    // pale rectangle and read as a bad crop. Put a blurred silhouette of the
+    // SAME alpha underneath it: holes remain atmospheric depth, but their
+    // borders dissolve into body shadow instead of advertising the source
+    // canvas. This is generated once at boot with the other veil textures.
+    const shadowCv = document.createElement('canvas');
+    shadowCv.width = TEX_W;
+    shadowCv.height = TEX_H;
+    const shadow = shadowCv.getContext('2d');
+    shadow.filter = 'blur(72px)';
+    shadow.globalAlpha = 0.46 + stage * 0.035;
+    shadow.drawImage(macro, x, -TEX_H * 0.015, drawW, drawH);
+    shadow.globalCompositeOperation = 'source-in';
+    shadow.fillStyle = rgba(PAL.bg, 0.94);
+    shadow.fillRect(0, 0, TEX_W, TEX_H);
+    g.drawImage(shadowCv, 0, 0);
     g.save();
     g.globalAlpha = 0.22 + stage * 0.035;
     g.drawImage(macro, x, -TEX_H * 0.015, drawW, drawH);
@@ -231,45 +317,90 @@ function paintCloudPuffTexture() {
   return tex;
 }
 
+// Three intersecting quads in ONE geometry: unlike THREE.Sprite they remain
+// fixed in world space while the camera rounds a facet, so a bank has actual
+// thickness/parallax instead of obediently rotating as a 2D card. Keeping the
+// three sheets in one mesh also preserves the old one-draw-per-puff budget.
+function crossedPuffGeometry() {
+  const positions = [];
+  const uvs = [];
+  const indices = [];
+  const corners = [
+    [-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5],
+  ];
+  for (let plane = 0; plane < 3; plane++) {
+    const angle = plane * Math.PI / 3;
+    const c = Math.cos(angle), s = Math.sin(angle);
+    const base = positions.length / 3;
+    for (const [x, y] of corners) positions.push(x * c, y, -x * s);
+    uvs.push(0, 0, 1, 0, 1, 1, 0, 1);
+    indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(indices);
+  geo.computeBoundingSphere();
+  return geo;
+}
+
 function buildWorldFog(scene) {
   const texture = paintCloudPuffTexture();
-  const materials = [0.10, 0.075, 0.055].map((opacity) => new THREE.SpriteMaterial({
-    map: texture,
-    color: PAL.vapor,
-    transparent: true,
-    opacity,
-    depthWrite: false,
-    depthTest: true,
-    fog: true,
-    toneMapped: false,
-  }));
+  const geometry = crossedPuffGeometry();
+  // Each center is crossed by up to three translucent sheets, so these are
+  // intentionally lower than the old single-sprite values. Their combined
+  // optical density is similar; only the view-dependent card read is gone.
+  const materials = [0.070, 0.052, 0.040].map((opacity) => {
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      color: PAL.vapor,
+      transparent: true,
+      opacity,
+      depthWrite: false,
+      depthTest: true,
+      fog: true,
+      toneMapped: false,
+      side: THREE.DoubleSide,
+    });
+    material.userData.baseStormOpacity = opacity;
+    return material;
+  });
   const sprites = [];
   const p = { x: 0, z: 0 };
 
-  for (let face = 1; face <= CONFIG.path.faces; face++) {
+  for (let face = 1; face <= CONFIG.path.faces + 1; face++) {
     const rand = rngFor(0x4d455249 + face * 0x51f1);
-    const faceStart = CONFIG.path.introTiles + (face - 1) * CONFIG.path.faceTiles;
-    for (let i = 0; i < 7; i++) {
-      const s = faceStart + 4 + rand() * (CONFIG.path.faceTiles - 8);
+    const range = atmosphereFaceRange(face);
+    const count = face <= CONFIG.path.faces ? 7 : 4;
+    for (let i = 0; i < count; i++) {
+      const s = range.start + 4 + rand() * (range.length - 8);
       const yaw = headingAt(SEGS, s);
       polyAt(SEGS, s, p);
       const depth = -2.3 - rand() * 11.5;
-      const puff = new THREE.Sprite(materials[i % materials.length]);
+      const puff = new THREE.Mesh(geometry, materials[i % materials.length]);
       puff.name = `Meridian fog volume F${face}.${i + 1}`;
       puff.userData.environmentRole = 'storm-volume';
+      puff.userData.backdropFace = face;
+      puff.userData.facetYaw = yaw;
       puff.position.set(
         p.x + Math.sin(yaw) * depth,
         5 + rand() * 52 + normalAscentAltAt(s, CONFIG.levelLength),
         p.z + Math.cos(yaw) * depth,
       );
       const w = 5.5 + rand() * 10;
-      puff.scale.set(w, w * (0.34 + rand() * 0.18), 1);
+      puff.rotation.y = yaw + rand() * Math.PI;
+      puff.scale.set(w, w * (0.34 + rand() * 0.18), w * 0.58);
       puff.renderOrder = -39;
+      puff.onBeforeRender = (_renderer, _scene, camera, _geometry, material) => {
+        material.opacity = material.userData.baseStormOpacity * veilAspectGain(camera.aspect) *
+          veilAngleGain(camera, puff.userData.facetYaw) *
+          facetVisibilityGain(puff.userData.backdropFace);
+      };
       scene.add(puff);
       sprites.push(puff);
     }
   }
-  return { sprites, texture, materials };
+  return { sprites, texture, materials, geometry };
 }
 
 export function buildMeridianAtmosphere(scene, macroTexture = null) {
@@ -280,18 +411,19 @@ export function buildMeridianAtmosphere(scene, macroTexture = null) {
   const meshes = [];
   const euler = new THREE.Euler();
 
-  for (let face = 1; face <= CONFIG.path.faces; face++) {
+  for (let face = 1; face <= CONFIG.path.faces + 1; face++) {
     const stage = Math.min(2, Math.floor((face - 1) / 2));
-    const s = faceMidS(face, CONFIG);
+    const s = atmosphereFaceS(face);
     const yaw = headingAt(SEGS, s);
     const p = polyAt(SEGS, s);
     for (let layer = VEIL_DEPTHS.length - 1; layer >= 0; layer--) {
       const depth = VEIL_DEPTHS[layer];
+      const baseOpacity = VEIL_OPACITY[layer] + stage * 0.012;
       const mat = new THREE.MeshBasicMaterial({
         map: textures[layer][stage],
         color: 0xffffff,
         transparent: true,
-        opacity: VEIL_OPACITY[layer] + stage * 0.012,
+        opacity: baseOpacity,
         depthWrite: false,
         depthTest: true,
         side: THREE.FrontSide,
@@ -303,6 +435,9 @@ export function buildMeridianAtmosphere(scene, macroTexture = null) {
       mesh.userData.environmentRole = 'storm-veil';
       mesh.userData.escalationStage = stage;
       mesh.userData.depthLayer = layer;
+      mesh.userData.backdropFace = face;
+      mesh.userData.baseStormOpacity = baseOpacity;
+      mesh.userData.facetYaw = yaw;
       mesh.quaternion.setFromEuler(euler.set(0, yaw, 0));
       mesh.position.set(
         p.x + Math.sin(yaw) * depth,
@@ -312,6 +447,11 @@ export function buildMeridianAtmosphere(scene, macroTexture = null) {
       mesh.frustumCulled = true;
       // Farthest layer first; all atmosphere still precedes gameplay glow.
       mesh.renderOrder = -48 - layer * 2;
+      mesh.onBeforeRender = (_renderer, _scene, camera, _geometry, material) => {
+        material.opacity = mesh.userData.baseStormOpacity * veilAspectGain(camera.aspect) *
+          veilAngleGain(camera, mesh.userData.facetYaw) *
+          facetVisibilityGain(mesh.userData.backdropFace);
+      };
       scene.add(mesh);
       meshes.push(mesh);
     }

@@ -46,7 +46,7 @@ import * as THREE from 'three';
 import { QUERY } from '../mode.js';
 import { awaitPreloads, preloadTexture } from './preload.js';
 import {
-  SPRITE_ACTION_ART, SPRITE_ART, SPRITE_KINDS, SPRITE_ROOT,
+  SPRITE_ACTION_ART, SPRITE_ART, SPRITE_FLAP_ART, SPRITE_KINDS, SPRITE_ROOT,
   resolveSpriteVariants, spritesEnabled,
 } from './sprite-table.js';
 
@@ -56,6 +56,7 @@ export const SPRITE_VARIANT = resolveSpriteVariants(QUERY.get('spritevar'));
 // kind -> { state: 'off'|'pending'|'ready'|'failed', variant, file, tex, error }
 const slots = new Map();
 const actionSlots = new Map();
+const flapSlots = new Map();
 
 // the T-032 bootstrap's note channel: recorded, never a panel (see header)
 function note(line) {
@@ -92,6 +93,23 @@ for (const kind of SPRITE_KINDS) {
     .then((entry) => {
       if (entry.state === 'ready') { slot.tex = entry.tex; slot.state = 'ready'; }
       else fail(kind, slot, entry.error || entry.state);
+    });
+}
+
+// Persistent painted animation phases are their own slots. In particular,
+// the wasp downstroke must never replace its committed-dive action painting.
+for (const kind of SPRITE_KINDS) {
+  const art = SPRITE_FLAP_ART[kind];
+  const slot = {
+    state: SPRITES_ON && art ? 'pending' : 'off',
+    variant: 'flap', file: art ? art.file : null, tex: null, error: null,
+  };
+  flapSlots.set(kind, slot);
+  if (!SPRITES_ON || !art) continue;
+  preloadTexture(new URL(SPRITE_ROOT + art.file, import.meta.url).href)
+    .then((entry) => {
+      if (entry.state === 'ready') { slot.tex = entry.tex; slot.state = 'ready'; }
+      else fail(kind + ' flap', slot, entry.error || entry.state);
     });
 }
 
@@ -134,6 +152,11 @@ export function spriteActionTexture(kind) {
   return slot && slot.state === 'ready' ? slot.tex : null;
 }
 
+export function spriteFlapTexture(kind) {
+  const slot = flapSlots.get(kind);
+  return slot && slot.state === 'ready' ? slot.tex : null;
+}
+
 export function spriteVariantOf(kind) {
   const slot = slots.get(kind);
   return slot ? slot.variant : null;
@@ -157,6 +180,11 @@ export function spriteSnapshot() {
         state: actionSlots.get(kind).state,
         file: actionSlots.get(kind).file,
         error: actionSlots.get(kind).error,
+      } : null,
+      flap: flapSlots.has(kind) ? {
+        state: flapSlots.get(kind).state,
+        file: flapSlots.get(kind).file,
+        error: flapSlots.get(kind).error,
       } : null,
     };
   }

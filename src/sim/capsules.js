@@ -103,7 +103,10 @@ export function updateCapsules(dt) {
 
     if (gameMs >= c.noCatchUntil && circleHitsPlayer(c.x, c.y, CAP.pickupRadius)) {
       if (c.kind === 'mod') applyMod(c.letter);
-      else setGun(c.gun);
+      else {
+        const def = setGun(c.gun);
+        view.loot.acquired(c.gun, def, { recatch: c.mode === 'pop' });
+      }
       // scoring: an authored reward starts a wager, a 'pop' recatch closes the
       // classic panic beat (proposal A.1) — both are pickups that already exist
       if (c.mode === 'fixed') scoreRewardTaken(c.letter, c.x, c.y);

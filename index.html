@@ -28,13 +28,13 @@
      defense telegraph remain visible while the player holds the signal. */
   #finale {
     position: fixed; z-index: 12; top: 52px; left: 50%;
-    width: min(470px, calc(100vw - 32px)); box-sizing: border-box;
-    padding: 8px 11px 9px; pointer-events: none; opacity: 0;
+    width: min(520px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 13px 10px; pointer-events: none; opacity: 0;
     transform: translate(-50%, -7px) scale(.985);
     border: 1px solid rgba(255,79,216,.42);
     background: rgba(7,19,26,.86);
     box-shadow: 0 0 0 1px rgba(7,19,26,.82), 0 0 18px rgba(255,79,216,.12);
-    color: #fff2d8; font: 700 11px/1.25 ui-monospace, Menlo, Consolas, monospace;
+    color: #fff2d8; font: 800 12px/1.25 ui-monospace, Menlo, Consolas, monospace;
     letter-spacing: .095em; text-align: center;
     transition: opacity 180ms ease, transform 180ms ease, border-color 180ms ease;
   }
@@ -42,7 +42,7 @@
   #finale.transmit { border-color: rgba(255,242,216,.72); }
   body.at-title #finale { display: none; }
   #finaleTitle { white-space: nowrap; }
-  #finaleMeta { margin-top: 4px; color: rgba(232,237,242,.72); font-size: 9px; }
+  #finaleMeta { margin-top: 4px; color: rgba(232,237,242,.82); font-size: 9px; }
   #finaleProgress {
     height: 4px; margin-top: 7px; overflow: hidden;
     background: rgba(232,237,242,.12);
@@ -63,6 +63,196 @@
   #overlay h1 { margin: 0 0 14px; font-size: 44px; letter-spacing: .22em; font-weight: 700; }
   #overlay p  { margin: 5px 0; font-size: 15px; opacity: .85; letter-spacing: .05em; }
   #overlay .dim { opacity: .5; margin-top: 18px; }
+
+  /* The summit result is a transmission tableau, not a centered spreadsheet.
+     The Crown stays visible on the right while the debrief locks to the dark
+     left third; a restrained carrier sweep keeps the frozen result alive. */
+  #overlay.victory {
+    box-sizing: border-box; align-items: flex-start; justify-content: center;
+    padding: 7vh 5vw 5vh; overflow-x: hidden; overflow-y: auto;
+    isolation: isolate; text-align: left;
+    background: transparent;
+  }
+  body.at-victory .hud, body.at-victory #finale {
+    opacity: 0; transition: none;
+  }
+  body.at-modal .hud, body.at-modal #finale {
+    opacity: 0; transition: none;
+  }
+
+  /* Pause and defeat are authored instrument states, not generic modal text.
+     They preserve the frozen Crown as context while quieting every live HUD
+     layer and giving each outcome its own unmistakable signal language. */
+  #overlay[data-state="paused"],
+  #overlay[data-state="game_over"],
+  #overlay[data-state="slice_retry"] {
+    isolation: isolate; overflow: hidden;
+  }
+  #overlay[data-state="paused"] {
+    background:
+      radial-gradient(ellipse at 50% 46%, rgba(7,19,26,.28) 0 24%, rgba(7,19,26,.78) 76%),
+      linear-gradient(108deg, rgba(7,19,26,.88), rgba(7,19,26,.38) 54%, rgba(7,19,26,.82));
+  }
+  #overlay[data-state="game_over"], #overlay[data-state="slice_retry"] {
+    background:
+      radial-gradient(ellipse at 58% 44%, rgba(94,20,40,.12) 0 22%, rgba(7,19,26,.86) 74%),
+      linear-gradient(108deg, rgba(7,19,26,.94), rgba(7,19,26,.52) 58%, rgba(7,19,26,.9));
+  }
+  #overlay[data-state="paused"]::before,
+  #overlay[data-state="game_over"]::before,
+  #overlay[data-state="slice_retry"]::before {
+    content: ''; position: absolute; z-index: -1; top: -18%; left: 50%; width: 2px; height: 136%;
+    transform: rotate(7deg); pointer-events: none;
+  }
+  #overlay[data-state="paused"]::before {
+    background: linear-gradient(transparent, #e8edf2 25%, #9ce23e 52%, transparent 82%);
+    box-shadow: 0 0 18px rgba(156,226,62,.28), 0 0 76px rgba(156,226,62,.12);
+    opacity: .58;
+  }
+  #overlay[data-state="game_over"]::before,
+  #overlay[data-state="slice_retry"]::before {
+    background: linear-gradient(transparent, #fff2d8 24%, #ff4fd8 53%, transparent 84%);
+    box-shadow: 0 0 18px rgba(255,79,216,.3), 0 0 86px rgba(255,79,216,.12);
+    opacity: .48;
+  }
+  #overlay[data-state="paused"]::after,
+  #overlay[data-state="game_over"]::after,
+  #overlay[data-state="slice_retry"]::after {
+    content: ''; position: absolute; z-index: -1; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(232,237,242,.035) 3px 4px);
+  }
+  #overlay[data-state="paused"] > *,
+  #overlay[data-state="game_over"] > *,
+  #overlay[data-state="slice_retry"] > * { position: relative; z-index: 1; }
+  #overlay[data-state="paused"] h1,
+  #overlay[data-state="game_over"] h1,
+  #overlay[data-state="slice_retry"] h1 {
+    color: #fff2d8; font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-size: clamp(44px, 5.2vw, 74px); line-height: .9; font-weight: 900;
+    text-shadow: 0 3px 0 rgba(7,19,26,.95), 0 0 28px rgba(255,79,216,.14);
+  }
+  #overlay[data-state="paused"] h1::before,
+  #overlay[data-state="game_over"] h1::before,
+  #overlay[data-state="slice_retry"] h1::before {
+    display: block; margin: 0 0 9px; font: 800 9px/1.2 ui-monospace, Menlo, Consolas, monospace;
+    letter-spacing: .22em; text-shadow: none;
+  }
+  #overlay[data-state="paused"] h1::before { content: 'MERIDIAN RIG // LOCAL HOLD'; color: #9ce23e; }
+  #overlay[data-state="game_over"] h1::before { content: 'CARRIER COLLAPSED // LINK SEVERED'; color: #ff79df; }
+  #overlay[data-state="slice_retry"] h1::before { content: 'ROUTE SAFETY // RECALLING RIG'; color: #ff79df; }
+  #overlay[data-state="paused"] #ovPanel .panel,
+  #overlay[data-state="game_over"] #ovPanel .panel {
+    border-color: rgba(255,242,216,.2);
+    background: linear-gradient(118deg, rgba(7,19,26,.94), rgba(7,19,26,.7));
+    box-shadow: 0 18px 54px rgba(0,0,0,.28);
+  }
+  #overlay[data-state="paused"] #ovPanel .panel { box-shadow: inset 3px 0 0 #9ce23e, 0 18px 54px rgba(0,0,0,.28); }
+  #overlay[data-state="game_over"] #ovPanel .panel { box-shadow: inset 3px 0 0 #ff4fd8, 0 18px 54px rgba(0,0,0,.28); }
+  #overlay.victory::before {
+    content: ''; position: absolute; z-index: 0; top: -24%; left: 72%;
+    width: 3px; height: 150%; transform: rotate(-6deg);
+    background: linear-gradient(180deg, transparent, #fff2d8 28%, #ff4fd8 62%, transparent 100%);
+    box-shadow: 0 0 18px 5px rgba(255,242,216,.45), 0 0 72px 24px rgba(255,79,216,.24);
+    pointer-events: none;
+    animation: victory-carrier-launch 1.2s cubic-bezier(.12,.72,.2,1) both,
+      victory-carrier 4.8s 1.2s ease-in-out infinite;
+  }
+  #overlay.victory::after {
+    content: ''; position: absolute; z-index: -1; inset: 0; opacity: 0;
+    background:
+      repeating-linear-gradient(0deg, transparent 0 3px, rgba(232,237,242,.08) 3px 4px),
+      radial-gradient(ellipse at 76% 35%, rgba(255,79,216,.05) 0 18%, rgba(7,19,26,.08) 48%, transparent 68%),
+      linear-gradient(90deg, rgba(5,15,22,.97) 0%, rgba(5,15,22,.91) 37%, rgba(5,15,22,.44) 61%, rgba(5,15,22,.18) 100%);
+    pointer-events: none;
+    animation: victory-debrief-backdrop 620ms 1.56s cubic-bezier(.2,.7,.2,1) both;
+  }
+  #overlay.victory > * { position: relative; z-index: 1; width: min(620px, 52vw); }
+  #overlay.victory #ovTitle {
+    order: 1; margin: 0 0 11px; color: #fff2d8;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-size: clamp(56px, 7.8vw, 108px); line-height: .82; font-weight: 900;
+    letter-spacing: .115em; text-shadow: 0 4px 0 rgba(7,19,26,.9), 0 0 38px rgba(255,79,216,.22);
+    animation: victory-title 680ms 1.72s cubic-bezier(.16,.82,.2,1) both;
+  }
+  #overlay.victory #ovTitle::before {
+    content: 'MERIDIAN CROWN // LINK SECURED'; display: block; margin: 0 0 12px;
+    color: #ff79df; font: 700 10px/1.2 ui-monospace, Menlo, Consolas, monospace;
+    letter-spacing: .24em; text-shadow: none;
+  }
+  #overlay.victory #ovBody { order: 2; margin: 0 0 15px; }
+  #overlay.victory #ovBody::before {
+    content: 'EARTH: \201C WE HEAR YOU.\201D';
+    position: fixed; z-index: 4; top: 50%; left: 50%; width: min(920px, 90vw);
+    color: #fff2d8; font: 900 clamp(28px, 4.6vw, 68px)/1.05 Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    letter-spacing: .105em; text-align: center; text-shadow:
+      0 3px 0 rgba(7,19,26,.95), 0 0 24px rgba(7,19,26,1), 0 0 48px rgba(255,79,216,.42);
+    pointer-events: none;
+    animation: victory-reply-beat 1.18s .62s cubic-bezier(.16,.82,.2,1) both;
+  }
+  #overlay.victory #ovBody p { max-width: none; }
+  #overlay.victory #ovBody .victory-kicker {
+    margin: 0 0 12px; color: #ff79df; font-size: 13px; font-weight: 800; letter-spacing: .16em;
+    animation: victory-copy 460ms 1.9s ease-out both;
+  }
+  #overlay.victory #ovBody .victory-rig {
+    margin: 2px 0; opacity: .62; font-size: 12px;
+    animation: victory-copy-muted 460ms 2.0s ease-out both;
+  }
+  #overlay.victory #ovBody .victory-reply {
+    margin: 7px 0 0; color: #fff2d8; opacity: 1; font-size: clamp(15px, 1.5vw, 20px);
+    line-height: 1.45; font-weight: 700;
+    animation: victory-copy 460ms 2.08s ease-out both;
+  }
+  #overlay.victory #ovBody .dim { display: none; }
+  #overlay.victory #ovPanel { order: 3; margin: 0; }
+  #overlay.victory #ovPanel .result-panel {
+    display: grid; grid-template-columns: 106px minmax(0, 1fr); gap: 9px 15px;
+    box-sizing: border-box; min-width: 0; max-width: 620px; padding: 13px 15px 11px;
+    border-color: rgba(255,121,223,.38);
+    background: linear-gradient(120deg, rgba(7,19,26,.90), rgba(7,19,26,.62));
+    box-shadow: inset 3px 0 0 #ff4fd8, 0 18px 50px rgba(0,0,0,.22);
+    animation: victory-panel 620ms 1.88s cubic-bezier(.16,.82,.2,1) both;
+  }
+  .result-rank {
+    grid-row: 1 / span 3; display: grid; align-content: center; justify-items: center;
+    border-right: 1px solid rgba(255,242,216,.16); padding-right: 14px;
+  }
+  .result-rank span { color: rgba(232,237,242,.64); font-size: 9px; letter-spacing: .16em; }
+  .result-rank strong {
+    margin: 1px 0 -3px; color: #fff2d8; font: 900 70px/.9 Impact, Haettenschweiler, sans-serif;
+    text-shadow: 0 0 25px rgba(255,79,216,.36);
+  }
+  .result-rank em { color: #ff79df; font-size: 10px; font-style: normal; letter-spacing: .12em; }
+  .result-weapon { min-width: 0; }
+  .result-weapon span { display: block; color: rgba(232,237,242,.58); font-size: 9px; letter-spacing: .14em; }
+  .result-weapon b {
+    display: block; overflow: hidden; margin-top: 3px; color: #fff2d8;
+    font-size: 13px; letter-spacing: .06em; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .result-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+  .result-strip span { border-top: 1px solid rgba(255,242,216,.12); padding-top: 7px; }
+  .result-strip b { display: block; color: #fff2d8; font-size: 19px; line-height: 1; }
+  .result-strip small { display: block; margin-top: 4px; color: rgba(232,237,242,.46); font-size: 7px; letter-spacing: .12em; }
+  .result-details { font-size: 9px; color: rgba(232,237,242,.56); }
+  .result-details summary { cursor: pointer; color: rgba(232,237,242,.54); letter-spacing: .12em; }
+  .result-details .statgrid { margin-top: 7px; max-height: 150px; overflow: auto; font-size: 9px !important; }
+  #overlay.victory .result-panel > .keys { grid-column: 2; margin: 0; text-align: left; font-size: 11px; }
+  @keyframes victory-debrief-backdrop { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes victory-carrier-launch {
+    from { opacity: 0; filter: brightness(2); transform: translateY(38%) rotate(-6deg) scaleY(.2); }
+    35% { opacity: 1; }
+    to { opacity: .52; filter: brightness(1.05); transform: translateY(0) rotate(-6deg) scaleY(1); }
+  }
+  @keyframes victory-reply-beat {
+    0% { opacity: 0; transform: translate(-50%, -42%) scale(.94); letter-spacing: .16em; }
+    17%, 72% { opacity: 1; transform: translate(-50%, -50%) scale(1); letter-spacing: .105em; }
+    100% { opacity: 0; transform: translate(-50%, -54%) scale(1.035); letter-spacing: .105em; }
+  }
+  @keyframes victory-title { from { opacity: 0; transform: translateX(-32px) scale(.96); } to { opacity: 1; transform: none; } }
+  @keyframes victory-panel { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+  @keyframes victory-copy { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes victory-copy-muted { from { opacity: 0; transform: translateY(8px); } to { opacity: .62; transform: none; } }
+  @keyframes victory-carrier { 0%,100% { opacity: .38; filter: brightness(.8); } 50% { opacity: .88; filter: brightness(1.35); } }
 
   /* ---- game shell: stats / options panel + start screen ---- */
   #ovPanel { display: none; margin: 4px 0 16px; }
@@ -178,6 +368,12 @@
   @media (prefers-reduced-motion: reduce) {
     .sl-steam, .sl-rig::after, #shellArt { animation: none; }
     #finale { transition: none; }
+    #overlay.victory, #overlay.victory::before, #overlay.victory::after,
+    #overlay.victory #ovTitle, #overlay.victory #ovBody p,
+    #overlay.victory #ovPanel .result-panel { animation: none; }
+    #overlay.victory::before { opacity: .55; transform: rotate(-6deg); }
+    #overlay.victory::after { opacity: 1; }
+    #overlay.victory #ovBody::before { display: none; }
   }
   #shellText {
     position: absolute; left: var(--tx); top: var(--ty); width: var(--tw);
@@ -244,13 +440,16 @@
   }
 
   @media (max-width: 600px) {
-    #hudTL { top: 8px; left: 10px; font-size: 12px; line-height: 1.3; }
+    #hudTL {
+      top: 8px; left: 10px; width: calc(100% - 20px);
+      font-size: 11px; line-height: 1.3;
+    }
     #hudTR {
-      top: 29px; right: auto; left: 10px;
+      top: 43px; right: auto; left: 10px;
       font-size: 11px; line-height: 1.3; text-align: left;
     }
     #hudTC {
-      top: 49px; left: 10px; width: calc(100% - 20px); transform: none;
+      top: 62px; left: 10px; width: calc(100% - 20px); transform: none;
       font-size: 12px; line-height: 1.3; text-align: left;
     }
     #hudBL {
@@ -258,12 +457,45 @@
       font-size: 9px; line-height: 1.35;
     }
     #finale {
-      top: 72px; width: calc(100% - 20px); padding: 7px 8px 8px;
+      top: 82px; width: calc(100% - 20px); padding: 7px 8px 8px;
       font-size: 9px; letter-spacing: .065em;
     }
+    body:has(#finale.on) #hudTC { opacity: 0; }
     #finaleMeta { font-size: 8px; letter-spacing: .045em; }
     #overlay h1 { font-size: 28px; letter-spacing: .14em; }
     #overlay p { max-width: calc(100% - 30px); font-size: 12px; }
+    #overlay.victory {
+      align-items: stretch; justify-content: flex-start; padding: 12vh 16px 18px;
+      background: transparent;
+    }
+    #overlay.victory::after {
+      background:
+        repeating-linear-gradient(0deg, transparent 0 3px, rgba(232,237,242,.07) 3px 4px),
+        linear-gradient(180deg, rgba(5,15,22,.82), rgba(5,15,22,.96));
+    }
+    #overlay.victory::before { left: 82%; opacity: .55; }
+    #overlay.victory > * { width: 100%; }
+    #overlay.victory #ovTitle { font-size: clamp(46px, 15vw, 68px); margin-bottom: 9px; }
+    #overlay.victory #ovTitle::before { font-size: 8px; letter-spacing: .16em; }
+    #overlay.victory #ovBody .victory-kicker { font-size: 10px; }
+    #overlay.victory #ovBody .victory-rig { display: none; }
+    #overlay.victory #ovBody .victory-reply { font-size: 14px; }
+    #overlay.victory #ovBody::before {
+      width: calc(100vw - 30px); font-size: clamp(25px, 8vw, 40px); letter-spacing: .075em;
+    }
+    #overlay.victory #ovPanel .result-panel {
+      grid-template-columns: 74px minmax(0, 1fr); gap: 8px 10px; width: 100%; padding: 10px;
+    }
+    .result-rank { padding-right: 8px; }
+    .result-rank strong { font-size: 52px; }
+    .result-weapon b {
+      display: -webkit-box; overflow: hidden; white-space: normal;
+      font-size: 11px; line-height: 1.18; overflow-wrap: anywhere;
+      -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    }
+    .result-strip b { font-size: 15px; }
+    .result-details { display: none; }
+    #overlay.victory .result-panel > .keys { font-size: 9px; }
     #ovPanel .panel { min-width: 0; padding: 9px 11px 8px; }
     #ovPanel .statgrid { gap: 1px 12px; font-size: 11px; }
     #ovPanel .keys { font-size: 10px; }

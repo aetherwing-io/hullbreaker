@@ -117,10 +117,10 @@ export function worldPerTileCopy(cfg) {
  * pick a texel budget, where a few percent cannot matter — never to place
  * anything.                                                                */
 
-// 800 CSS px tall is the viewport every capture rig in tools/playtest uses;
-// renderer.setPixelRatio(min(devicePixelRatio, 2)) means a retina laptop —
-// the operator's — renders that at 1600 device px, the higher of the two
-// samplings the shipped build can produce. Budget for the sharper one.
+// 800 CSS px tall is the viewport every capture rig in tools/playtest uses.
+// Keep a stable 2x / 1600px calibration reference even though scene.js now
+// applies a bounded presentation supersample: texture authoring should not
+// chase every display ratio, while the final downsample can still smooth it.
 export const REFERENCE_FRAME = { viewportPx: 1600, note: '800 CSS px at devicePixelRatio 2' };
 
 export function screenPxPerWorld(cfg, viewportPx = REFERENCE_FRAME.viewportPx) {
@@ -302,6 +302,64 @@ export const SCUTE_TILE_TONE = Object.freeze({
   gainTrim: 0.98,
 });
 
+/* The route deck uses a different source and a different sampling contract
+   from the limb buckets above. `hull-panel-tile-v2.png` is a 512px painted
+   machine section, not a little one-unit brick. One copy spans twelve world
+   units and the GPU mirrors the source at the boundary, so its pipes and
+   access panels cross the 1x1 collision-tile grid instead of restarting on
+   every orange box. Keeping this outside TEX_LAYOUT is intentional: that
+   table is the limb material contract asserted by T-052/T-054. */
+export const DECK_PANEL = Object.freeze({
+  worldSpan: 12,
+  sourcePx: 512,
+  minPx: 192,
+  maxPx: 448,
+});
+
+// The painted source is already richly modelled. A restrained curve keeps
+// its large pipes and recessed bays while preventing the walkable lip from
+// turning into noisy black/orange camouflage at mobile scale.
+export const DECK_PANEL_TONE = Object.freeze({
+  ...TILE_TONE,
+  targetMean: 192,
+  targetSd: 28,
+  maxContrast: 2.25,
+  gainTrim: 0.92,
+});
+
+// Facets deliberately sample different regions/orientations of the large
+// painting. The source is bound with MirroredRepeatWrapping in materials.js,
+// so negative/flipped coordinates and every integer boundary remain exact.
+// A complete mirrored kaleidoscope is never exposed as one visible square.
+const DECK_PANEL_FACETS = Object.freeze([
+  [0.07, 0.11, 1.00,  1,  1, 0],
+  [0.43, 0.19, 0.92, -1,  1, 1],
+  [0.18, 0.57, 1.08,  1, -1, 0],
+  [0.71, 0.31, 0.96,  1,  1, 1],
+  [0.36, 0.79, 1.05, -1, -1, 0],
+  [0.83, 0.53, 0.90,  1, -1, 1],
+  [0.24, 0.67, 1.02, -1,  1, 0],
+]);
+
+export function deckPanelUv(facet, a, b) {
+  const row = DECK_PANEL_FACETS[Math.abs(facet | 0) % DECK_PANEL_FACETS.length];
+  let u = a / DECK_PANEL.worldSpan;
+  let v = b / DECK_PANEL.worldSpan;
+  if (row[5]) [u, v] = [v, u];
+  return [row[0] + u * row[2] * row[3], row[1] + v * row[2] * row[4]];
+}
+
+// Value separation is geometry-facing, so texture detail cannot erase the
+// collision silhouette: top is the brightest plane, front is the readable
+// armour face, side/back recede, and the underside becomes a true undercut.
+export function deckPanelFaceGain(nx, ny, nz) {
+  if (ny > 0.55) return 1.14;
+  if (ny < -0.55) return 0.48;
+  if (nz > 0.55) return 0.88;
+  if (nz < -0.55) return 0.68;
+  return 0.76;
+}
+
 export function luminanceHistogram(rgba) {
   const h = new Float64Array(256);
   for (let i = 0; i < rgba.length; i += 4)
@@ -408,6 +466,33 @@ export function composeHullTile(cfg, key, base, wear, tone = TILE_TONE) {
   if (!curve) return null;
   applyToneCurve(buf, curve.lut);
   return { data: buf, width: px, height: px, curve, layout };
+}
+
+/* Production route-panel source -> one GPU tile. Unlike composeHullTile this
+   does not bake copies into the canvas: level.js authors continuous UVs in
+   route space, and MirroredRepeatWrapping supplies the mathematically exact
+   continuation. Downsample only to the detail the fixed camera can resolve,
+   then neutralize hue so PAL.ground/PAL.solid/PAL.catwalk remain the single
+   source of the game's warm-near/cool-far value language. */
+export function composeDeckPanel(cfg, base, tone = DECK_PANEL_TONE) {
+  if (!base || !base.data) return null;
+  const wanted = DECK_PANEL.worldSpan * screenPxPerWorld(cfg);
+  const px = Math.max(DECK_PANEL.minPx, Math.min(
+    DECK_PANEL.sourcePx,
+    DECK_PANEL.maxPx,
+    Math.round(wanted / 16) * 16,
+  ));
+  const buf = resample(base.data, base.width, base.height, px, px);
+  const curve = buildToneCurve(luminanceHistogram(buf), tone);
+  if (!curve) return null;
+  applyToneCurve(buf, curve.lut);
+  return {
+    data: buf,
+    width: px,
+    height: px,
+    curve,
+    layout: { canvasPx: px, cellPx: px, copies: 1, worldSpan: DECK_PANEL.worldSpan },
+  };
 }
 
 // ?tex=flat is the only thing that turns the pass off (decisions.md entry

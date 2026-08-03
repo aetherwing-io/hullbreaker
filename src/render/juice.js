@@ -134,12 +134,72 @@ function onHostileRemoved(e, fade) {
   const enemyColor = fxHostileColor(e.kind);
   const shotColor = fxShotColor(gameMs - recentShotAt <= 700 ? recentShotType : 'R');
 
-  // Two-color punctuation: acid ecology flies apart, then the weapon's own
-  // color cuts a clean shock front through it. The center stays readable.
-  fxBurst(J.death, e.x, e.y, enemyColor, chainScale);
-  fxBurst(J.impact, e.x, e.y, shotColor, 1.15 * chainScale);
-  fxFlash(J.death.flashMs, J.death.flashSize * chainScale, e.x, e.y, enemyColor);
-  fxRing(J.death.flashMs * 1.7, 1.8 * chainScale, e.x, e.y, shotColor, 0.04);
+  // The weapon owns one compact impact flash; construction owns everything
+  // after it. Directional pooled fragments echo the corpse choreography:
+  // flyers shed thrust/wing energy, hounds scrape the deck, and emplacements
+  // vent through their mount. There is deliberately no universal radial
+  // burst or expanding perfect ring hiding the species sentence.
+  const dir = Math.sign(e.vx) || e.dir || -1;
+  fxFlash(J.death.flashMs, J.death.flashSize * Math.min(1.5, chainScale),
+    e.x, e.y, shotColor);
+  if (e.kind === 'wasp') {
+    fxDirectedBurst(J.death, e.x, e.y, enemyColor, dir, -0.46, 0.74,
+      0.82 * chainScale);
+    fxDirectedBurst(J.impact, e.x, e.y, shotColor, -dir, 0.62, 0.52,
+      0.66 * chainScale);
+  } else if (e.kind === 'hound') {
+    fxDirectedBurst(J.death, e.x, e.y - 0.10, enemyColor, dir, 0.10, 0.34,
+      0.90 * chainScale);
+    fxDirectedBurst(J.impact, e.x, e.y, shotColor, -dir, 0.18, 0.30,
+      0.58 * chainScale);
+  } else if (e.kind === 'polyp') {
+    fxDirectedBurst(J.death, e.x, e.y, enemyColor, 0, 1, 0.34,
+      0.76 * chainScale);
+    fxDirectedBurst(J.impact, e.x, e.y - 0.18, shotColor, 0, -1, 0.26,
+      0.48 * chainScale);
+  } else if (e.kind === 'mortar') {
+    fxDirectedBurst(J.death, e.x, e.y, enemyColor, -dir, 0.72, 0.48,
+      0.80 * chainScale);
+    fxDirectedBurst(J.impact, e.x, e.y - 0.12, shotColor, 0, -1, 0.34,
+      0.54 * chainScale);
+  } else if (e.kind === 'carrier') {
+    fxDirectedBurst(J.death, e.x, e.y, enemyColor, -1, 0.34, 0.40,
+      0.76 * chainScale);
+    fxDirectedBurst(J.death, e.x, e.y, enemyColor, 1, 0.34, 0.40,
+      0.76 * chainScale);
+    fxDirectedBurst(J.impact, e.x, e.y - 0.12, shotColor, 0, -1, 0.28,
+      0.58 * chainScale);
+  } else {
+    fxDirectedBurst(J.death, e.x, e.y, enemyColor, 0, 1, 1.20,
+      chainScale);
+    fxBurst(J.impact, e.x, e.y, shotColor, 0.72 * chainScale);
+  }
+
+  // Mutation hardware shuts off in its own signal colour. These are compact
+  // inward/falling cues paired with hostiles.js's contracting Aegis crown and
+  // clamping Backlash shoes — never a blast that implies their hazard fired.
+  if (e.aegis) {
+    fxDirectedBurst(J.impact, e.x, e.y + 0.45, fxRole('capsule'), 0, -1,
+      0.22, 0.62);
+  } else if (e.backlash) {
+    fxDirectedBurst(J.impact, e.x, e.y, fxRole('capsule'), -dir, 0.18,
+      0.42, 0.48);
+  }
+
+  // The six-tile Warden cannot die with the one-tile hostile punctuation.
+  // Its body animation still owns the broad buckle; this is the matching
+  // Crown rupture: two bounded fronts, upward plate energy and one deep
+  // camera impulse. It runs once on removal and uses the existing fixed pools.
+  if (e.kind === 'warden') {
+    const signal = fxRole('capsule');
+    const carrier = fxRole('muzzle');
+    fxDirectedBurst(J.death, e.x, e.y, signal, 0, 1, 1.75, 3.0);
+    fxDirectedBurst(J.impact, e.x, e.y, carrier, 0, 1, 0.82, 2.25);
+    fxDirectedBurst(J.death, e.x, e.y, enemyColor, -1, 0.35, 0.54, 1.7);
+    fxDirectedBurst(J.death, e.x, e.y, enemyColor, 1, 0.35, 0.54, 1.7);
+    fxFlash(280, 2.45, e.x, e.y, carrier, 0.08);
+    addTrauma(S.boom * 1.45);
+  }
 
   // The first machine RIG breaks teaches the reward language loudly: an
   // upward shrapnel fan and two expanding fronts. It happens naturally in
@@ -148,20 +208,19 @@ function onHostileRemoved(e, fade) {
   if (!firstBreakDone) {
     firstBreakDone = true;
     fxDirectedBurst(J.death, e.x, e.y, shotColor, 0, 1, 1.9, 1.8);
-    fxBurst(J.death, e.x, e.y, enemyColor, 1.65);
+    fxDirectedBurst(J.death, e.x, e.y, enemyColor, dir, 0.34, 0.92, 1.15);
     fxFlash(210, 1.55, e.x, e.y, shotColor, 0.04);
-    fxRing(360, 3.15, e.x, e.y, shotColor, 0.05);
-    fxRing(520, 4.45, e.x, e.y, enemyColor, 0.02);
     addTrauma(S.boom * 0.8);
   }
 
   // Three fast kills earn the one larger beat. It is capped to a 3.8-tile
   // ring and a 600ms gate: spectacular in a crowd, never a screen-white spam.
   if (deathChain >= 3 && gate('chainBlast', 600)) {
-    const payoff = Math.min(3.8, 3.1 + (deathChain - 3) * 0.35);
-    fxBurst(J.death, e.x, e.y, shotColor, 1.85);
+    const payoff = Math.min(1.65, 1.25 + (deathChain - 3) * 0.14);
+    fxDirectedBurst(J.death, e.x, e.y, shotColor, -dir, 0.56, 0.66, payoff);
+    fxDirectedBurst(J.death, e.x, e.y, enemyColor, dir, 0.28, 0.58,
+      payoff * 0.72);
     fxFlash(180, 1.75, e.x, e.y, shotColor, 0.06);
-    fxRing(310, payoff, e.x, e.y, enemyColor, 0.05);
     addTrauma(S.kill * 0.65);
   }
 }

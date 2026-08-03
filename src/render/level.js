@@ -9,14 +9,18 @@ import { CONFIG } from '../config.js';
 import { normalAscentAltAt, normalAscentPitchAt } from '../pure/ascent.js';
 import { SEGS, CORNER_S, polyAt, headingAt, faceIndexAt } from '../pure/path.js';
 import { deckShadePlan } from '../pure/shade.js';
-import { ACTIVE_FIXTURE, IS_G1, IS_TRANSFORM_SLICE } from '../mode.js';
+import { ACTIVE_FIXTURE, IS_G1, IS_TRANSFORM_SLICE, QUERY } from '../mode.js';
 import { installView } from '../sim/bridge.js';
+import { scrollX } from '../sim/time.js';
 import {
   LEVEL_LEN, groundH, platforms, solidRects, slamSets, farSets,
   unbuildFutureFaces,
 } from '../sim/level.js';
 import { scene, HIDE } from './scene.js';
 import { PAL, SHADE_GAIN } from './palette.js';
+import { applyDeckPanelTexture, applySurface } from './materials.js';
+import { deckPanelFaceGain, deckPanelUv } from './hulltiles.js';
+import { cameraFacingFacet } from './camera.js';
 
 // --- level meshes: baked per-face static geometry ---------------------
 // Tile instances are baked once along the rising tower polyline with per-column
@@ -31,6 +35,27 @@ const slatMeshes = [];                                    // catwalk slats {mesh
 const authoredSolidMeshes = [];                           // traversal-only tagged solid rectangles
 const normalRunAltAt = (s) => ACTIVE_FIXTURE ? 0 : normalAscentAltAt(s, CONFIG.levelLength);
 const normalRunPitchAt = (s) => ACTIVE_FIXTURE ? 0 : normalAscentPitchAt(s, CONFIG.levelLength);
+
+// The collision bake intentionally stays chunky and legible.  This pass is
+// everything the collision boxes should NOT have to be: the trusses, pipes,
+// service frames and inset access plates that make those same rectangles read
+// as a colossal maintained machine.  It is render-only and default-on in the
+// static six-face run; ?world=0 is the exact A/B back to the undressed
+// collision silhouette. Fixtures and the retired ?zip=1 reveal retain their
+// authored visual grammar rather than leaking already-built details.
+export const WORLD_DRESSING_ENABLED = IS_G1 && QUERY.get('world') !== '0';
+
+const dressingStats = {
+  enabled: WORLD_DRESSING_ENABLED,
+  boxes: 0,
+  pipes: 0,
+  lights: 0,
+  drawPools: 0,
+  hidden: 0,
+};
+
+export function worldDressingStats() { return { ...dressingStats }; }
+if (typeof globalThis !== 'undefined') globalThis.__HB_WORLD = worldDressingStats;
 
 /* ---- view hooks: the build state of a face, made visible ---------- */
 /* THE ZIPPER IS RETIRED FROM THE WORLD, NOT DELETED (docs/decisions.md
@@ -94,6 +119,446 @@ function faceRevealed(c) {               // beyond the zipper strip: one distant
 // installed before the bake below, which finishes by unbuilding future faces
 installView({ level: { unbuiltHidden, zipperColumn, faceRevealed } });
 
+/* ---------------------- industrial world dressing ---------------------- *
+ * Four draw pools carry the entire six-face route.  Every element is baked
+ * from groundH/platforms but never registered with collision: dark access
+ * bays divide the broad armour, pipes establish service scale, catwalks gain
+ * real load paths, and tall maintenance frames connect the tiny traversal
+ * band to the monumental body behind it.  The silhouettes that matter to a
+ * jump remain exactly the original slats and tile tops. */
+
+const dressBoxes = [];
+const dressPipes = [];
+const dressLights = [];
+const _dressP = { x: 0, z: 0 };
+const _dressM = new THREE.Matrix4();
+const _dressRot = new THREE.Matrix4();
+const _dressPitch = new THREE.Matrix4();
+const _dressScale = new THREE.Vector3();
+const _dressColor = new THREE.Color();
+const dressingPools = [];
+const dressingPanelFacets = [];
+let dressingCullFacet = -1;
+// Keep the historic tile-pool source guard scoped to its intended pool: the
+// value-ladder test counts literal THREE.InstancedMesh construction sites.
+// DressingPool is still the same class; the alias names this separate pass.
+const DressingPool = THREE.InstancedMesh;
+
+function dressBox(s, y, depth, sx, sy, sz, color, tilt = 0) {
+  dressBoxes.push({ s, y, depth, sx, sy, sz, color, tilt });
+}
+
+// CylinderGeometry's long axis is local Y. `tilt = -PI/2` lays it along the
+// route; zero leaves it as a vertical riser.
+function dressPipe(s, y, depth, length, radius, color, tilt = -Math.PI / 2) {
+  dressPipes.push({ s, y, depth, sx: radius, sy: length, sz: radius, color, tilt });
+}
+
+function dressLight(s, y, depth, width = 0.48) {
+  dressLights.push({ s, y, depth, sx: width, sy: 0.10, sz: 0.10, color: PAL.muzzle, tilt: 0 });
+}
+
+function dressingMatrix(row) {
+  polyAt(SEGS, row.s, _dressP);
+  const yaw = headingAt(SEGS, row.s);
+  _dressRot.makeRotationY(yaw);
+  _dressRot.multiply(_dressPitch.makeRotationZ(normalRunPitchAt(row.s) + row.tilt));
+  _dressM.copy(_dressRot);
+  _dressM.scale(_dressScale.set(row.sx, row.sy, row.sz));
+  _dressM.setPosition(
+    _dressP.x + Math.sin(yaw) * row.depth,
+    row.y + normalRunAltAt(row.s),
+    _dressP.z + Math.cos(yaw) * row.depth,
+  );
+  return _dressM;
+}
+
+function nearestDeckS(target, min, max) {
+  const at = Math.round(target);
+  for (let d = 0; d <= 6; d++) {
+    for (const s of d === 0 ? [at] : [at - d, at + d]) {
+      if (s >= min && s < max && groundH[s] > -100) return s + 0.5;
+    }
+  }
+  return null;
+}
+
+function dressGroundArmour() {
+  let start = 0;
+  let moduleOrdinal = 0;
+  while (start < LEVEL_LEN) {
+    const h = groundH[start];
+    if (h < -100) { start++; continue; }
+    let end = start + 1;
+    while (end < LEVEL_LEN && groundH[end] === h && faceIndexAt(end, CONFIG) === faceIndexAt(start, CONFIG)) end++;
+
+    // Modules stay broad: one framed bay every ~6 tiles, not a tile-sized
+    // checker.  Orange border remains visible around every near-black inset.
+    let bay = start + 0.35;
+    while (bay < end - 1.1) {
+      const len = Math.min(5.45, end - bay - 0.25);
+      if (len >= 2.1) {
+        const mid = bay + len / 2;
+        const pattern = moduleOrdinal % 4;
+        dressBox(mid, h - 2.45, 1.055, len - 0.32, 1.30, 0.13, PAL.limb.shadow);
+        dressBox(bay + 0.10, h - 2.45, 1.16, 0.13, 2.35, 0.08, PAL.groundAlt);
+        dressBox(bay + len - 0.10, h - 2.45, 1.16, 0.13, 2.35, 0.08, PAL.groundAlt);
+
+        if (pattern === 0 || pattern === 3) {
+          // Recessed louvers survive at MID without turning into micro-noise.
+          for (const dy of pattern === 0 ? [-0.34, 0, 0.34] : [-0.22, 0.22])
+            dressBox(mid, h - 2.45 + dy, 1.135, len - 0.78, 0.075, 0.07, PAL.solid);
+        } else if (pattern === 1 && len >= 3.0) {
+          // A proud service pipe interrupts the repeated rectangular rhythm.
+          dressPipe(mid, h - 2.45, 1.19, len - 0.92, 0.12, PAL.limb.machine);
+          dressBox(bay + 0.60, h - 2.45, 1.22, 0.20, 0.50, 0.28, PAL.catwalk);
+          dressBox(bay + len - 0.60, h - 2.45, 1.22, 0.20, 0.50, 0.28, PAL.catwalk);
+          dressBox(mid, h - 2.12, 1.19, 0.64, 0.34, 0.24, PAL.limb.wall);
+        } else {
+          // Split access doors: one vertical lock and two low hinge plates.
+          dressBox(mid, h - 2.45, 1.15, 0.14, 1.06, 0.08, PAL.catwalk);
+          dressBox(mid - len * 0.24, h - 2.45, 1.14, Math.max(0.48, len * 0.28), 0.10, 0.08, PAL.solid);
+          dressBox(mid + len * 0.24, h - 2.45, 1.14, Math.max(0.48, len * 0.28), 0.10, 0.08, PAL.solid);
+          dressBox(mid, h - 2.82, 1.18, 0.52, 0.18, 0.12, PAL.limb.machine);
+        }
+
+        // Alternating pipe / equipment bays stop the lower face becoming a
+        // repeated wallpaper strip.  Their placement follows real flat runs.
+        if (moduleOrdinal % 2 === 0 && len >= 3.5) {
+          dressPipe(mid, h - 3.42, 1.20, len - 0.72, 0.13, PAL.limb.machine);
+          dressBox(bay + 0.48, h - 3.42, 1.22, 0.18, 0.42, 0.34, PAL.catwalk);
+          dressBox(bay + len - 0.48, h - 3.42, 1.22, 0.18, 0.42, 0.34, PAL.catwalk);
+        } else if (len >= 3.2) {
+          dressBox(mid, h - 3.38, 1.20, 1.15, 0.52, 0.30, PAL.limb.wall);
+          dressBox(mid, h - 3.38, 1.38, 0.52, 0.16, 0.10, PAL.catwalk);
+        }
+      }
+      bay += 6.15;
+      moduleOrdinal++;
+    }
+    start = end;
+  }
+}
+
+function dressCatwalks() {
+  for (let index = 0; index < platforms.length; index++) {
+    const p = platforms[index];
+    const len = p.x1 - p.x0;
+    if (len < 1.1) continue;
+    const mid = (p.x0 + p.x1) / 2;
+
+    // A bright edge, dark longitudinal girder, and paired load-bearing
+    // diagonals turn each collision slat into a believable cantilever.
+    dressBox(mid, p.y - 0.16, 0.78, Math.max(0.6, len - 0.10), 0.10, 0.16, PAL.catwalk);
+    dressBox(mid, p.y - 0.45, 0.54, Math.max(0.6, len - 0.24), 0.24, 0.34, PAL.limb.shadow);
+
+    if (len >= 2.3) {
+      const half = len * 0.47;
+      const drop = Math.min(1.50, 0.78 + len * 0.09);
+      const beamLen = Math.hypot(half, drop);
+      const tilt = Math.atan2(drop, half);
+      dressBox(p.x0 + len * 0.265, p.y - 0.52 - drop / 2, 0.49,
+        beamLen, 0.15, 0.20, PAL.solid, tilt);
+      dressBox(p.x0 + len * 0.735, p.y - 0.52 - drop / 2, 0.49,
+        beamLen, 0.15, 0.20, PAL.solid, -tilt);
+      dressBox(p.x0 + 0.20, p.y - 0.63, 0.46, 0.15, 1.02, 0.20, PAL.limb.machine);
+      dressBox(p.x1 - 0.20, p.y - 0.63, 0.46, 0.15, 1.02, 0.20, PAL.limb.machine);
+    }
+
+    // Long decks occasionally carry a hanging service cassette.  The
+    // asymmetry is deterministic and deliberately sparse.
+    if (len >= 4.3 && index % 3 === 1) {
+      const cassetteS = mid + Math.min(0.7, len * 0.12);
+      dressBox(cassetteS, p.y - 1.08, 0.73, 1.18, 0.66, 0.48, PAL.limb.wall);
+      for (const dy of [-0.18, 0, 0.18])
+        dressBox(cassetteS, p.y - 1.08 + dy, 1.00, 0.78, 0.055, 0.08, PAL.groundAlt);
+    }
+    if (len >= 3.5 && index % 2 === 0) dressLight(mid, p.y - 0.43, 0.91, 0.52);
+  }
+}
+
+function dressServiceSpines() {
+  const faces = CONFIG.path.faces;
+  for (let face = 0; face < faces; face++) {
+    const faceStart = CONFIG.path.introTiles + face * CONFIG.path.faceTiles;
+    const faceEnd = Math.min(LEVEL_LEN, faceStart + CONFIG.path.faceTiles);
+    const anchors = [faceStart + 16, faceStart + CONFIG.path.faceTiles * 0.68];
+    for (let ai = 0; ai < anchors.length; ai++) {
+      const s = nearestDeckS(anchors[ai], faceStart, faceEnd);
+      if (s === null) continue;
+      const h = groundH[Math.floor(s)];
+      const height = 9.5 + face * 0.72 + ai * 2.15;
+      const railGap = 2.25;
+      const depth = -1.38 - ai * 0.18;
+      const centerY = h - 0.35 + height / 2;
+
+      dressBox(s - railGap / 2, centerY, depth, 0.24, height, 0.32, PAL.limb.shadow);
+      dressBox(s + railGap / 2, centerY, depth, 0.24, height, 0.32, PAL.limb.shadow);
+      dressBox(s, h + height - 0.15, depth, railGap + 0.65, 0.26, 0.42, PAL.solid);
+
+      const rungCount = Math.floor((height - 1.8) / 1.65);
+      for (let r = 0; r < rungCount; r++) {
+        const y = h + 1.25 + r * 1.65;
+        dressBox(s, y, depth + 0.04, railGap, 0.12, 0.18,
+          r % 3 === 0 ? PAL.solid : PAL.limb.machine);
+      }
+
+      // One broad X-braced cell reads at distance; repeating it all the way
+      // up would become a fence texture at MID.
+      const cellY = h + height * 0.55;
+      const diagH = Math.min(3.6, height * 0.33);
+      const diagLen = Math.hypot(railGap, diagH);
+      const diagTilt = Math.atan2(diagH, railGap);
+      dressBox(s, cellY, depth + 0.07, diagLen, 0.12, 0.15, PAL.groundAlt, diagTilt);
+      dressBox(s, cellY, depth + 0.08, diagLen, 0.12, 0.15, PAL.groundAlt, -diagTilt);
+
+      // A dark maintenance cassette and adjacent riser make the frame a
+      // working system, not scaffolding pasted behind the route.
+      const cassetteY = h + Math.min(4.0 + ai, height * 0.42);
+      dressBox(s, cassetteY, depth + 0.24, 1.62, 1.72, 0.42, PAL.limb.wall);
+      for (const dy of [-0.48, -0.16, 0.16, 0.48])
+        dressBox(s, cassetteY + dy, depth + 0.49, 1.18, 0.075, 0.09, PAL.solid);
+      dressPipe(s + railGap / 2 + 0.42, h + height * 0.49, depth + 0.18,
+        height * 0.76, 0.12, PAL.limb.machine, 0);
+      dressBox(s + railGap / 2 + 0.42, h + 1.2, depth + 0.19, 0.38, 0.26, 0.40, PAL.catwalk);
+      dressBox(s + railGap / 2 + 0.42, h + height - 1.0, depth + 0.19, 0.38, 0.26, 0.40, PAL.catwalk);
+      dressLight(s, h + height - 0.52, depth + 0.44, 0.62);
+    }
+  }
+}
+
+function buildDressingPool(rows, geometry, material, name, shadows = true) {
+  if (!rows.length) return null;
+  const mesh = new DressingPool(geometry, material, rows.length);
+  mesh.name = name;
+  mesh.frustumCulled = false;
+  mesh.castShadow = shadows;
+  mesh.receiveShadow = shadows;
+  const baseMatrices = [];
+  for (let i = 0; i < rows.length; i++) {
+    const matrix = dressingMatrix(rows[i]).clone();
+    baseMatrices.push(matrix);
+    mesh.setMatrixAt(i, matrix);
+    mesh.setColorAt(i, _dressColor.set(rows[i].color));
+  }
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.instanceColor.needsUpdate = true;
+  dressingPools.push({ mesh, rows, baseMatrices });
+  // Paused browser inspection and direct test teleports still receive the
+  // same sector visibility as ordinary play. The first callback updates all
+  // pools together and then becomes an idempotent facet check.
+  mesh.onBeforeRender = updateWorldDressingCull;
+  scene.add(mesh);
+  dressingStats.drawPools++;
+  return mesh;
+}
+
+// These details are authored in route space but rendered on a nearly closed
+// six-face coil. A service tower from the opening face used to wrap around
+// and reappear as a detached pillar behind RIG at the Crown. Preserve the
+// current camera-facing face only. The collision-faithful deck and limb kerb
+// provide the corner reveal; proud service frames/bays on the next face wait
+// for the camera's final detent, otherwise their back faces read as a second
+// level floating through the fold.
+export function updateWorldDressingCull() {
+  if (!WORLD_DRESSING_ENABLED || (!dressingPools.length && !dressingPanelFacets.length)) return;
+  const routeFace = faceIndexAt(scrollX, CONFIG);
+  // limb facets are 0..6; dressing has a separate intro facet 0, followed by
+  // played faces 1..6 and outro 7. Once past the intro, offset the camera's
+  // armour sector into that numbering. At a held gate this is the only value
+  // that changes while scrollX intentionally remains fixed.
+  const active = routeFace === 0 ? 0 : Math.min(CONFIG.path.faces + 1,
+    cameraFacingFacet() + 1);
+  if (active === dressingCullFacet) return;
+  dressingCullFacet = active;
+  let hidden = 0;
+  for (const pool of dressingPools) {
+    for (let i = 0; i < pool.rows.length; i++) {
+      const remote = faceIndexAt(pool.rows[i].s, CONFIG) !== active;
+      pool.mesh.setMatrixAt(i, remote ? HIDE : pool.baseMatrices[i]);
+      if (remote) hidden++;
+    }
+    pool.mesh.instanceMatrix.needsUpdate = true;
+  }
+  for (const panel of dressingPanelFacets) {
+    const visible = panel.facet === active;
+    panel.mesh.visible = visible;
+    if (!visible) hidden += panel.rows;
+  }
+  dressingStats.hidden = hidden;
+}
+
+function buildIndustrialDressing(panelMaterial) {
+  dressGroundArmour();
+  dressCatwalks();
+  dressServiceSpines();
+
+  const machineMat = applySurface(new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    flatShading: true,
+  }), 'machine');
+  // Paint only the broad bays/equipment bodies. Narrow ribs, vents, welds and
+  // braces stay flat dark metal, preserving the vocabulary and keeping the
+  // large source from collapsing into micro-noise on a 0.1-unit strip.
+  const paintedBoxes = dressBoxes.filter((row) => row.sx >= 0.95 && row.sy >= 0.45);
+  const trimBoxes = dressBoxes.filter((row) => row.sx < 0.95 || row.sy < 0.45);
+  buildDressingPool(trimBoxes, new THREE.BoxGeometry(1, 1, 1), machineMat,
+    'Meridian industrial boxes');
+  buildDressingPanelPools(paintedBoxes, panelMaterial);
+  buildDressingPool(dressPipes, new THREE.CylinderGeometry(1, 1, 1, 8, 1), machineMat,
+    'Meridian service pipes');
+
+  const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: true, toneMapped: false });
+  buildDressingPool(dressLights, new THREE.BoxGeometry(1, 1, 1), coreMat,
+    'Meridian service lamps', false);
+
+  const haloRows = dressLights.map((row) => ({
+    ...row,
+    sx: row.sx * 1.55,
+    sy: 0.42,
+    sz: 0.42,
+  }));
+  const haloMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.30,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    fog: true,
+    toneMapped: false,
+  });
+  const halos = buildDressingPool(haloRows, new THREE.OctahedronGeometry(0.5), haloMat,
+    'Meridian service lamp halos', false);
+  if (halos) halos.renderOrder = 2;
+
+  dressingStats.boxes = dressBoxes.length;
+  dressingStats.pipes = dressPipes.length;
+  dressingStats.lights = dressLights.length;
+  // Every pool now exists; seed their shared visibility matrices once.
+  dressingCullFacet = -1;
+  updateWorldDressingCull();
+}
+
+/* --------------------- continuous production hull skin ----------------- *
+ * The simulation quite correctly models the route as one-unit collision
+ * boxes. Repeating a complete painted panel on each of those boxes made the
+ * render tell the same story as a graybox checker. The default run therefore
+ * bakes those exact boxes into one static BufferGeometry and gives their
+ * vertices route-space UVs. Geometry and collision are unchanged; only the
+ * texture coordinate now crosses tile boundaries. Non-G1 zipper fixtures
+ * retain their InstancedMesh because their columns genuinely move at runtime.
+ */
+const _panelPos = new THREE.Vector3();
+const _panelUvPos = new THREE.Vector3();
+const _panelNormal = new THREE.Vector3();
+const _panelWorldNormal = new THREE.Vector3();
+const _panelNormalMatrix = new THREE.Matrix3();
+const _panelColor = new THREE.Color();
+
+function panelAccumulator() {
+  return { position: [], normal: [], uv: [], color: [], vertices: 0 };
+}
+
+function panelUvFor(local, normal, routeS, worldY, facet) {
+  // Vertical outward/inward faces follow the climb; top/bottom planes follow
+  // route x depth. End caps deliberately sample a third orientation, making
+  // every change of profile a natural interruption in the painted field.
+  if (Math.abs(normal.y) > 0.55)
+    return deckPanelUv(facet, routeS + local.x, facet * 2.71 + local.z);
+  if (Math.abs(normal.z) > 0.55)
+    return deckPanelUv(facet, routeS + local.x, worldY + local.y);
+  return deckPanelUv(facet, facet * 3.17 + local.z, worldY + local.y);
+}
+
+function appendPanelGeometry(
+  acc, source, matrix, routeS, worldY, facet, baseColor, uvScale = null,
+) {
+  const geometry = source.index ? source.toNonIndexed() : source;
+  const pos = geometry.getAttribute('position');
+  const normal = geometry.getAttribute('normal');
+  _panelNormalMatrix.getNormalMatrix(matrix);
+  const base = _panelColor.set(baseColor).clone();
+  for (let i = 0; i < pos.count; i++) {
+    _panelPos.fromBufferAttribute(pos, i);
+    _panelNormal.fromBufferAttribute(normal, i);
+    _panelUvPos.copy(_panelPos);
+    if (uvScale) _panelUvPos.multiply(uvScale);
+    const uv = panelUvFor(_panelUvPos, _panelNormal, routeS, worldY, facet);
+    const shade = deckPanelFaceGain(_panelNormal.x, _panelNormal.y, _panelNormal.z);
+    const c = _panelColor.copy(base).multiplyScalar(shade);
+    _panelPos.applyMatrix4(matrix);
+    _panelWorldNormal.copy(_panelNormal).applyMatrix3(_panelNormalMatrix).normalize();
+    acc.position.push(_panelPos.x, _panelPos.y, _panelPos.z);
+    acc.normal.push(_panelWorldNormal.x, _panelWorldNormal.y, _panelWorldNormal.z);
+    acc.uv.push(uv[0], uv[1]);
+    acc.color.push(c.r, c.g, c.b);
+    acc.vertices++;
+  }
+  if (geometry !== source) geometry.dispose();
+}
+
+function finishPanelGeometry(acc) {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(acc.position, 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(acc.normal, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(acc.uv, 2));
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(acc.color, 3));
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function panelGeometry(source, routeS, worldY, facet, baseColor) {
+  const acc = panelAccumulator();
+  appendPanelGeometry(acc, source, new THREE.Matrix4(), routeS, worldY, facet, baseColor);
+  return finishPanelGeometry(acc);
+}
+
+function buildDressingPanelPools(rows, material) {
+  if (!rows.length || !material) return;
+  const byFacet = new Map();
+  const source = new THREE.BoxGeometry(1, 1, 1).toNonIndexed();
+  for (const row of rows) {
+    const facet = faceIndexAt(row.s, CONFIG);
+    if (!byFacet.has(facet)) byFacet.set(facet, panelAccumulator());
+    appendPanelGeometry(
+      byFacet.get(facet), source, dressingMatrix(row).clone(),
+      row.s, row.y, facet, row.color,
+      _dressScale.set(row.sx, row.sy, row.sz).clone(),
+    );
+  }
+  source.dispose();
+  for (const [facet, acc] of byFacet) {
+    const mesh = new THREE.Mesh(finishPanelGeometry(acc), material);
+    mesh.name = `Meridian painted service bays face ${facet}`;
+    mesh.userData.environmentRole = 'painted-service-bays';
+    mesh.userData.routeFacet = facet;
+    mesh.frustumCulled = false;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    dressingPanelFacets.push({ mesh, facet, rows: acc.vertices / 36 });
+    scene.add(mesh);
+    dressingStats.drawPools++;
+  }
+}
+
+function platformProfileGeometry(len) {
+  // Preserve the exact collision top at local y=0 while replacing the thin
+  // orange rectangle with a tapered armour lip: broad walkable cap, recessed
+  // underside, and a sloped front/back face for a readable highlight break.
+  const geometry = new THREE.BoxGeometry(len, 0.26, 1.4);
+  geometry.translate(0, -0.13, 0);
+  const pos = geometry.getAttribute('position');
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i);
+    const z = pos.getZ(i);
+    const down = Math.max(0, Math.min(1, -y / 0.26));
+    pos.setZ(i, Math.sign(z || 1) * Math.max(0, Math.abs(z) - down * 0.11));
+  }
+  pos.needsUpdate = true;
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
 // The transformation slice replaces the tower with its own band geometry
 // (src/render/transform.js), so the six-face bake is skipped entirely
 // rather than left hidden behind the fog at the wrong heading.
@@ -102,9 +567,21 @@ if (!IS_TRANSFORM_SLICE) {
   for (let i = 0; i < LEVEL_LEN; i++) if (groundH[i] > -100) count += VISUAL_DEPTH;
 
   const tileGeo = new THREE.BoxGeometry(1, 1, 2);
-  const tileMat = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true });
-  tiles = new THREE.InstancedMesh(tileGeo, tileMat, count);
-  tiles.frustumCulled = false;
+  const panelTileGeo = IS_G1 ? tileGeo.toNonIndexed() : null;
+  const panelBake = IS_G1 ? panelAccumulator() : null;
+  const panelMat = applyDeckPanelTexture(applySurface(new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    vertexColors: true,
+    flatShading: false,
+  }), 'deck'));
+  panelMat.name = 'Meridian production hull panel';
+
+  const tileMat = applySurface(new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    flatShading: true,
+  }), 'deck');
+  tiles = IS_G1 ? null : new THREE.InstancedMesh(tileGeo, tileMat, count);
+  if (tiles) tiles.frustumCulled = false;
 
   const cA = new THREE.Color(PAL.ground);
   const cB = new THREE.Color(PAL.groundAlt);
@@ -135,30 +612,55 @@ if (!IS_TRANSFORM_SLICE) {
         ? new THREE.Matrix4().makeRotationY(colYaw)
         : new THREE.Matrix4().makeRotationFromEuler(
             _tileEuler.set(0, colYaw, normalRunPitchAt(atS), 'YZX')
-          );
+      );
       m.setPosition(p.x, j + 0.5 + normalRunAltAt(atS), p.z);
       tileBaseMats.push(m);
-      tiles.setMatrixAt(idx, m);
       const k = deckShade.rows[Math.min(d, deckShade.rows.length) - 1] * deckShade.wear[i];
       // Broad 6×2 armour bands carry motion without turning the creature's
       // skin into a one-tile checkerboard. They read as overlapping scutes at
       // play scale; the two authored values still make forward motion visible.
       const scuteBand = (Math.floor(i / 6) + Math.floor((d - 1) / 2)) % 2;
-      tiles.setColorAt(idx, _tile.copy(scuteBand === 0 ? cA : cB).multiplyScalar(k));
+      if (panelBake) {
+        appendPanelGeometry(panelBake, panelTileGeo, m, atS, j + 0.5, f,
+          _tile.copy(scuteBand === 0 ? cA : cB).multiplyScalar(k));
+      } else {
+        tiles.setMatrixAt(idx, m);
+        tiles.setColorAt(idx, _tile.copy(scuteBand === 0 ? cA : cB).multiplyScalar(k));
+      }
       idx++;
     }
     faceRanges[f].inst1 = idx - 1;
   }
+  if (panelBake) {
+    tiles = new THREE.Mesh(finishPanelGeometry(panelBake), panelMat);
+    tiles.name = 'Meridian continuous route hull';
+    tiles.userData.environmentRole = 'collision-faithful-painted-hull';
+    tiles.userData.panelVertices = panelBake.vertices;
+    tileGeo.dispose();
+    panelTileGeo.dispose();
+  } else {
+    tiles.instanceMatrix.needsUpdate = true;
+    if (tiles.instanceColor) tiles.instanceColor.needsUpdate = true;
+  }
+  tiles.frustumCulled = false;
   scene.add(tiles);
 
-  const solidMat = new THREE.MeshStandardMaterial({ color: PAL.solid, flatShading: true });
+  const solidMat = applySurface(new THREE.MeshStandardMaterial({
+    color: PAL.solid,
+    flatShading: true,
+  }), 'plate');
   for (const rect of solidRects) {
     const midX = (rect.x0 + rect.x1) / 2;
     const midY = (rect.y0 + rect.y1) / 2;
     const wp = polyAt(SEGS, midX);
+    const source = new THREE.BoxGeometry(rect.x1 - rect.x0, rect.y1 - rect.y0, 2);
+    const geometry = IS_G1
+      ? panelGeometry(source, midX, midY, faceIndexAt(midX, CONFIG), PAL.solid)
+      : source;
+    if (geometry !== source) source.dispose();
     const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(rect.x1 - rect.x0, rect.y1 - rect.y0, 2),
-      solidMat
+      geometry,
+      IS_G1 ? panelMat : solidMat,
     );
     mesh.position.set(wp.x, midY + normalRunAltAt(midX), wp.z);
     mesh.rotation.y = headingAt(SEGS, midX);
@@ -167,20 +669,35 @@ if (!IS_TRANSFORM_SLICE) {
     authoredSolidMeshes.push(mesh);
   }
 
-  const walkMat = new THREE.MeshStandardMaterial({ color: PAL.catwalk, flatShading: true });
+  const walkMat = applySurface(new THREE.MeshStandardMaterial({
+    color: PAL.catwalk,
+    flatShading: true,
+  }), 'deck');
   for (const p of platforms) {
     const len = p.x1 - p.x0;
     const mid = (p.x0 + p.x1) / 2;
     const wp = polyAt(SEGS, mid);
-    const slat = new THREE.Mesh(new THREE.BoxGeometry(len, 0.18, 1.4), walkMat);
-    slat.position.set(wp.x, p.y - 0.09 + normalRunAltAt(mid), wp.z);
+    const source = IS_G1
+      ? platformProfileGeometry(len)
+      : new THREE.BoxGeometry(len, 0.18, 1.4);
+    const geometry = IS_G1
+      ? panelGeometry(source, mid, p.y - 0.13, faceIndexAt(mid, CONFIG), PAL.catwalk)
+      : source;
+    if (geometry !== source) source.dispose();
+    const slat = new THREE.Mesh(geometry, IS_G1 ? panelMat : walkMat);
+    // The profile's local top is y=0, exactly the collision plane. Non-G1
+    // fixtures retain the historic centered 0.18 slab.
+    slat.position.set(wp.x, p.y + (IS_G1 ? 0 : -0.09) + normalRunAltAt(mid), wp.z);
     slat.rotation.y = headingAt(SEGS, mid);            // aprons keep slats off the bends
     if (!ACTIVE_FIXTURE) {
       slat.rotation.order = 'YZX';
       slat.rotation.z = normalRunPitchAt(mid);
     }
+    slat.name = 'Meridian profiled catwalk';
+    slat.userData.environmentRole = 'collision-faithful-painted-platform';
     scene.add(slat);
     slatMeshes.push({ mesh: slat, x0: p.x0, x1: p.x1 });
   }
+  if (WORLD_DRESSING_ENABLED) buildIndustrialDressing(panelMat);
   unbuildFutureFaces();                                // after slats: they hide with their face
 }

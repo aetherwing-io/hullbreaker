@@ -4,20 +4,21 @@
    and catch rule: this module only maps { kind, letter } to pixels, places
    those pixels at the sim row, and gives them a restrained pickup collar.
 
-   Source PNGs are intentionally allowed to have generous transparent
-   margins. Their alpha is measured once at boot, the texture UVs are cropped
-   to that ink (plus a small breathing pad), and the resulting aspect is fit
-   into one presentation envelope. That keeps a 70-100px source legible at
-   its real world size without turning the pickup into a screen-sized bloom.
+   The eight source paintings are packed pixel-for-pixel into one padded RGBA
+   atlas. Measured source bounds live beside the atlas coordinates below, so
+   boot does no canvas allocation or full-image alpha scan. Per-cell UVs live
+   on eight tiny shared geometries; the atlas texture itself is never cloned.
 
-   All eight files go through the shared preload gate. A missing, late, or
+   The one atlas goes through the shared preload gate. A missing, late, or
    unreadable image never changes gameplay and never leaves a blank pickup:
-   the old magenta/gold box and its fitted glyph draw instead.               */
+   the old magenta/gold box and its fitted glyph draw instead. `?capsules=0`
+   exercises that complete fallback without issuing an art request.         */
 
 import * as THREE from 'three';
 import { installView } from '../sim/bridge.js';
 import { gameMs, blink } from '../sim/time.js';
 import { CAP } from '../sim/capsules.js';
+import { QUERY } from '../mode.js';
 import { scene } from './scene.js';
 import { placeOnTower } from './tower.js';
 import { PAL } from './palette.js';
@@ -29,28 +30,47 @@ import {
 } from './legibility.js';
 
 const ART_ROOT = '../../assets/generated/capsules/';
+const ATLAS_FILE = 'capsule-pickups-atlas-v1.png';
+const ATLAS_SIZE = Object.freeze([2048, 640]);
+const WEAPON_CELL = Object.freeze({ S: 0, L: 1, H: 2, F: 3 });
+const ATLAS_CELL = Object.freeze([512, 320]);
+const CAPSULE_ART_ON = !['0', 'off'].includes((QUERY.get('capsules') || '').toLowerCase());
+
+/* Coordinates are source-top atlas pixels. Each padded rect is a lossless
+   composition of its named source PNG; `ink` is the alpha>8 extent measured when the
+   atlas was packed. Keeping both here makes crop drift inspectable without a
+   runtime readback. Four weapon silhouettes occupy row 0 and four modifiers
+   occupy row 1, with at least 36px of transparent atlas gutter between art. */
 const ART_TABLE = Object.freeze({
-  'letter:S':  { file: 'weapon-spread-v3.png', name: 'Spread weapon' },
-  'letter:L':  { file: 'weapon-laser-v3.png',  name: 'Laser weapon' },
-  'letter:H':  { file: 'weapon-homing-v3.png', name: 'Homing weapon' },
-  'letter:F':  { file: 'weapon-flame-v3.png',  name: 'Flame weapon' },
-  'mod:RG':     { file: 'mod-rage-v3.png',      name: 'Rage modifier' },
-  'mod:GS':     { file: 'mod-ghost-v3.png',     name: 'Ghost modifier' },
-  'mod:CH':     { file: 'mod-chrono-v3.png',    name: 'Chrono modifier' },
-  'mod:OL':     { file: 'mod-orbital-v3.png',   name: 'Orbital modifier' },
+  'letter:S': { sourceFile: 'weapon-spread-v3.png', name: 'Spread weapon',
+    atlas: [18, 28, 475, 263], ink: [12, 12, 451, 239] },
+  'letter:L': { sourceFile: 'weapon-laser-v3.png', name: 'Laser weapon',
+    atlas: [530, 29, 476, 262], ink: [12, 12, 452, 239] },
+  'letter:H': { sourceFile: 'weapon-homing-v3.png', name: 'Homing weapon',
+    atlas: [1042, 28, 475, 263], ink: [12, 11, 451, 240] },
+  'letter:F': { sourceFile: 'weapon-flame-v3.png', name: 'Flame weapon',
+    atlas: [1554, 28, 475, 263], ink: [12, 12, 451, 239] },
+  'mod:RG': { sourceFile: 'mod-rage-v3.png', name: 'Rage modifier',
+    atlas: [18, 348, 476, 264], ink: [12, 12, 452, 240] },
+  'mod:GS': { sourceFile: 'mod-ghost-v3.png', name: 'Ghost modifier',
+    atlas: [530, 348, 475, 264], ink: [12, 12, 452, 240] },
+  'mod:CH': { sourceFile: 'mod-chrono-v3.png', name: 'Chrono modifier',
+    atlas: [1042, 347, 476, 265], ink: [12, 12, 452, 241] },
+  'mod:OL': { sourceFile: 'mod-orbital-v3.png', name: 'Orbital modifier',
+    atlas: [1554, 348, 476, 264], ink: [12, 12, 452, 241] },
 });
 
-/* A cropped cutout fits inside this presentation envelope. At MID this is
-   roughly 25-34 CSS px depending on aspect: enough to preserve a bold icon,
-   still comfortably inside CAP.pickupRadius's unchanged catch diameter. */
-const ART_MAX_W = 1.46;
-const ART_MAX_H = 1.34;
+/* A cropped cutout fits inside this presentation envelope. The generated
+   capsules contain real casing detail, so they need to survive MID/FAR as a
+   reward rather than a 25px fleck. This remains inside CAP.pickupRadius's
+   unchanged 2.3-tile catch diameter and therefore never lies about contact. */
+const ART_MAX_W = 1.82;
+const ART_MAX_H = 1.58;
 const ART_SURFACE_DEPTH = 1.18;
 const ART_SWAY_RAD = 0.075;
-const ART_ALPHA_FLOOR = 8;
-const ART_CROP_PAD_FRAC = 0.045;
-const COLLAR_PAD = 1.12;
-const COLLAR_BASE_ALPHA = 0.22;
+const COLLAR_PAD = 1.17;
+const BRACKET_PAD = 1.31;
+const COLLAR_BASE_ALPHA = 0.28;
 const TIER_MAX = 3;
 const TIER_PIP_W = 0.09;
 const TIER_PIP_H = 0.09;
@@ -58,102 +78,104 @@ const TIER_PIP_GAP = 0.11;
 const TIER_COLLAR_GAIN = Object.freeze([1, 1, 1.28, 1.58]);
 const TIER_PIP_ALPHA = Object.freeze([0, 0.64, 0.78, 0.92]);
 
-const artSlots = new Map();
-for (const [key, spec] of Object.entries(ART_TABLE)) {
-  const slot = {
-    key, file: spec.file, name: spec.name,
-    state: 'pending', tex: null, error: null,
-    source: null, ink: null, crop: null, world: null,
-  };
-  slot.entry = preloadTexture(new URL(ART_ROOT + spec.file, import.meta.url).href);
-  artSlots.set(key, slot);
-}
+const atlasEntry = CAPSULE_ART_ON
+  ? preloadTexture(new URL(ART_ROOT + ATLAS_FILE, import.meta.url).href)
+  : Promise.resolve({ state: 'disabled', tex: null, error: 'disabled by ?capsules=0' });
 
-// Hold the module graph until every image is resident or permanently failed.
+const artSlots = new Map(Object.entries(ART_TABLE).map(([key, spec]) => [key, {
+  key, name: spec.name, sourceFile: spec.sourceFile,
+  state: 'pending', tex: null, geometry: null, error: null,
+  source: spec.atlas.slice(2), ink: spec.ink, crop: spec.atlas,
+  world: null,
+}]));
+
+// Hold the module graph until the one atlas is resident or permanently failed.
 await awaitPreloads();
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
-/* Return the non-transparent source bounds and crop the already-resident
-   texture by UV transform. No replacement CanvasTexture is created here,
-   so measuring alpha does not sneak a new GPU upload past the boot gate. */
-function measureAndCrop(tex) {
-  const image = tex && tex.image;
-  const w = image && (image.naturalWidth || image.videoWidth || image.width);
-  const h = image && (image.naturalHeight || image.videoHeight || image.height);
-  if (!w || !h) throw new Error('decoded image has no dimensions');
-
-  const cv = document.createElement('canvas');
-  cv.width = w;
-  cv.height = h;
-  const g = cv.getContext('2d', { willReadFrequently: true });
-  if (!g) throw new Error('Canvas2D is unavailable for alpha crop');
-  g.drawImage(image, 0, 0, w, h);
-  const rgba = g.getImageData(0, 0, w, h).data;
-
-  let x0 = w, y0 = h, x1 = -1, y1 = -1;
-  for (let y = 0, p = 3; y < h; y++) {
-    for (let x = 0; x < w; x++, p += 4) {
-      if (rgba[p] <= ART_ALPHA_FLOOR) continue;
-      if (x < x0) x0 = x;
-      if (x > x1) x1 = x;
-      if (y < y0) y0 = y;
-      if (y > y1) y1 = y;
-    }
+function atlasGeometry(rect) {
+  const [x, y, w, h] = rect;
+  const [atlasW, atlasH] = ATLAS_SIZE;
+  const u0 = x / atlasW, u1 = (x + w) / atlasW;
+  // TextureLoader flips browser images for WebGL, so source-top y maps to
+  // the upper UV bound and source-bottom maps to the lower bound.
+  const v0 = 1 - (y + h) / atlasH, v1 = 1 - y / atlasH;
+  const geo = new THREE.PlaneGeometry(1, 1);
+  const uv = geo.attributes.uv;
+  for (let i = 0; i < uv.count; i++) {
+    uv.setXY(i,
+      u0 + uv.getX(i) * (u1 - u0),
+      v0 + uv.getY(i) * (v1 - v0));
   }
-  if (x1 < x0 || y1 < y0) throw new Error('image contains no visible alpha');
+  uv.needsUpdate = true;
+  return geo;
+}
 
-  const inkW = x1 - x0 + 1;
-  const inkH = y1 - y0 + 1;
-  const pad = Math.max(2, Math.ceil(Math.max(inkW, inkH) * ART_CROP_PAD_FRAC));
-  const cx0 = clamp(x0 - pad, 0, w);
-  const cy0 = clamp(y0 - pad, 0, h);
-  const cx1 = clamp(x1 + 1 + pad, 0, w);
-  const cy1 = clamp(y1 + 1 + pad, 0, h);
-  const cropW = cx1 - cx0;
-  const cropH = cy1 - cy0;
-
-  // TextureLoader flips browser images for WebGL, so source-top y becomes
-  // the upper end of the UV range and source-bottom becomes the lower end.
-  tex.offset.set(cx0 / w, 1 - cy1 / h);
-  tex.repeat.set(cropW / w, cropH / h);
-  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.needsUpdate = true;
-
-  const aspect = cropW / cropH;
+function worldSize(rect) {
+  const aspect = rect[2] / rect[3];
   const worldH = Math.min(ART_MAX_H, ART_MAX_W / aspect);
+  return [worldH * aspect, worldH];
+}
+
+const settledAtlas = await atlasEntry;
+if (settledAtlas.state === 'ready') {
+  const image = settledAtlas.tex && settledAtlas.tex.image;
+  const atlasW = image && (image.naturalWidth || image.videoWidth || image.width);
+  const atlasH = image && (image.naturalHeight || image.videoHeight || image.height);
+  if (atlasW === ATLAS_SIZE[0] && atlasH === ATLAS_SIZE[1]) {
+    settledAtlas.tex.wrapS = settledAtlas.tex.wrapT = THREE.ClampToEdgeWrapping;
+    settledAtlas.tex.needsUpdate = true;
+    for (const slot of artSlots.values()) {
+      slot.tex = settledAtlas.tex;
+      slot.geometry = atlasGeometry(slot.crop);
+      slot.world = worldSize(slot.crop);
+      slot.state = 'ready';
+    }
+  } else {
+    const error = `atlas dimensions ${atlasW || 0}x${atlasH || 0}; expected ${ATLAS_SIZE.join('x')}`;
+    for (const slot of artSlots.values()) {
+      slot.state = 'failed';
+      slot.error = error;
+    }
+    console.warn('HULLBREAKER art: capsule atlas is invalid (' + error +
+      ') — drawing the lettered fallback instead.');
+  }
+} else {
+  for (const slot of artSlots.values()) {
+    slot.state = 'failed';
+    slot.error = settledAtlas.error || settledAtlas.state;
+  }
+  if (CAPSULE_ART_ON) console.warn('HULLBREAKER art: capsule atlas did not load (' +
+    (settledAtlas.error || settledAtlas.state) + ') — drawing the lettered fallback instead.');
+}
+
+/* The one-shot loot card uses the exact browser image already resident behind
+   the WebGL texture. Returning source coordinates rather than another URL is
+   the sharing contract: reward UI may copy one cell into its own tiny canvas,
+   but it can never issue a second atlas transfer. */
+export function capsuleAtlasWeaponCell(letter) {
+  const column = WEAPON_CELL[letter];
+  const image = CAPSULE_ART_ON && settledAtlas.state === 'ready'
+    ? settledAtlas.tex?.image
+    : null;
+  if (column === undefined || !image) return null;
+  const width = image.naturalWidth || image.videoWidth || image.width;
+  const height = image.naturalHeight || image.videoHeight || image.height;
+  if (width !== ATLAS_SIZE[0] || height !== ATLAS_SIZE[1]) return null;
   return {
-    source: [w, h],
-    ink: [x0, y0, inkW, inkH],
-    crop: [cx0, cy0, cropW, cropH],
-    world: [worldH * aspect, worldH],
+    image,
+    sx: column * ATLAS_CELL[0], sy: 0,
+    sw: ATLAS_CELL[0], sh: ATLAS_CELL[1],
   };
 }
 
-for (const slot of artSlots.values()) {
-  const entry = await slot.entry;
-  if (entry.state !== 'ready') {
-    slot.state = 'failed';
-    slot.error = entry.error || entry.state;
-    console.warn('HULLBREAKER art: capsule ' + slot.file + ' did not load (' +
-      slot.error + ') — drawing the lettered fallback instead.');
-    continue;
-  }
-  try {
-    const measured = measureAndCrop(entry.tex);
-    Object.assign(slot, measured);
-    slot.tex = entry.tex;
-    slot.state = 'ready';
-  } catch (err) {
-    slot.state = 'failed';
-    slot.error = String((err && err.message) || err);
-    console.warn('HULLBREAKER art: capsule ' + slot.file + ' could not be cropped (' +
-      slot.error + ') — drawing the lettered fallback instead.');
-  }
-}
-
-const artGeo = new THREE.PlaneGeometry(1, 1);             // shared: never disposed
+const artGeo = new THREE.PlaneGeometry(1, 1);             // pips: never disposed
 const collarGeo = new THREE.RingGeometry(0.36, 0.5, 28); // shared: never disposed
+// Two opposing partial rings make a machine-readable acquisition bracket.
+// Unlike one big additive halo, the broken contour stays crisp on mobile and
+// leaves the generated capsule casing unobscured.
+const bracketGeo = new THREE.RingGeometry(0.43, 0.49, 24, 1, -0.72, 1.44);
 
 function artKey(c) { return (c.kind === 'mod' ? 'mod' : 'letter') + ':' + c.letter; }
 
@@ -201,8 +223,19 @@ function productionPickup(c, slot) {
   collar.renderOrder = 2;
   root.add(collar);
 
+  const bracketRoot = new THREE.Group();
+  bracketRoot.position.z = -0.012;
+  bracketRoot.scale.set(slot.world[0] * BRACKET_PAD, slot.world[1] * BRACKET_PAD, 1);
+  for (let i = 0; i < 2; i++) {
+    const bracket = new THREE.Mesh(bracketGeo, collarMat);
+    bracket.rotation.z = i * Math.PI;
+    bracket.renderOrder = 2;
+    bracketRoot.add(bracket);
+  }
+  root.add(bracketRoot);
+
   const mat = artMaterial(slot.tex);
-  const art = new THREE.Mesh(artGeo, mat);
+  const art = new THREE.Mesh(slot.geometry, mat);
   art.scale.set(slot.world[0], slot.world[1], 1);
   art.renderOrder = 3;
   root.add(art);
@@ -245,6 +278,7 @@ function productionPickup(c, slot) {
     production: true,
     art,
     collar,
+    bracketRoot,
     collarMat,
     collarBaseAlpha: COLLAR_BASE_ALPHA * TIER_COLLAR_GAIN[tier],
     collarScale: [slot.world[0] * COLLAR_PAD, slot.world[1] * COLLAR_PAD],
@@ -373,22 +407,30 @@ function sync(c) {
   // Expiring pop-capsules blink through their last stretch, regardless of
   // whether pixels or fallback geometry are drawing them.
   v.mesh.visible = c.mode !== 'pop' || c.dieAt - gameMs > CAP.blinkLastMs || blink();
-  placeOnTower(v.mesh, c.x, c.y, v.production ? ART_SURFACE_DEPTH : 0);
+  const towerYaw = placeOnTower(
+    v.mesh, c.x, c.y, v.production ? ART_SURFACE_DEPTH : 0,
+  );
 
   if (v.production) {
     // A small badge-like sway keeps the illustrated face readable. The old
     // full spin is deliberately not applied to a flat cutout: no edge-on art.
     const sway = Math.sin(c.t * CAPSULE_SWEEP_FREQ);
-    v.mesh.rotation.y += sway * ART_SWAY_RAD;
+    v.mesh.rotation.y = towerYaw + sway * ART_SWAY_RAD;
     v.art.rotation.z = sway * ART_SWAY_RAD;
     const pulse = 1 + Math.sin(c.t * 3.1 + 0.7) * 0.035;
     v.collar.scale.set(v.collarScale[0] * pulse, v.collarScale[1] * pulse, 1);
+    v.bracketRoot.rotation.z = c.t * (0.31 + v.tier * 0.035);
+    v.bracketRoot.scale.set(
+      v.slot.world[0] * BRACKET_PAD * (2 - pulse),
+      v.slot.world[1] * BRACKET_PAD * (2 - pulse),
+      1,
+    );
     v.collarMat.opacity = v.collarBaseAlpha * (0.86 + 0.14 * pulse);
     if (v.pipMat) v.pipMat.opacity = v.pipBaseAlpha * (0.90 + 0.10 * pulse);
   } else {
-    v.mesh.rotation.y += LEGIBILITY_ON
+    v.mesh.rotation.y = towerYaw + (LEGIBILITY_ON
       ? Math.sin(c.t * CAPSULE_SWEEP_FREQ) * CAPSULE_SWEEP_RAD
-      : c.t * 2.2;
+      : c.t * 2.2);
   }
   syncContactShadow(c, c.x, c.y, CAP.size / 2);
 }
@@ -398,11 +440,12 @@ export function capsuleArtSnapshot() {
   for (const [key, slot] of artSlots) {
     assets[key] = {
       state: slot.state,
-      file: slot.file,
+      file: ATLAS_FILE,
+      sourceFile: slot.sourceFile,
       error: slot.error,
       sourcePx: slot.source,
       inkPx: slot.ink,
-      cropPx: slot.crop,
+      atlasCropPx: slot.crop,
       worldTiles: slot.world,
     };
   }
@@ -414,7 +457,11 @@ export function capsuleArtSnapshot() {
       tiers[v.tier || 0]++;
     } else fallback++;
   }
-  return { assets, live: { production, fallback, tiers } };
+  return {
+    atlas: { file: ATLAS_FILE, sizePx: ATLAS_SIZE, enabled: CAPSULE_ART_ON },
+    assets,
+    live: { production, fallback, tiers },
+  };
 }
 
 if (typeof window !== 'undefined') window.__HB_CAPSULE_ART = capsuleArtSnapshot;

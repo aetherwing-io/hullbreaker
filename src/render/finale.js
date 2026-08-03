@@ -30,6 +30,79 @@ const bannerMeta = document.getElementById('finaleMeta');
 const bannerFill = document.getElementById('finaleFill');
 const bannerProgress = document.getElementById('finaleProgress');
 
+// Four persistent seal cells make the Warden's damage windows readable as a
+// boss phase, rather than asking the player to decode a changing HP fraction
+// inside the instruction copy. They share the compact objective panel and do
+// not claim another screen-space lane on portrait displays.
+const sealRail = document.createElement('div');
+sealRail.id = 'finaleSeals';
+sealRail.setAttribute('aria-hidden', 'true');
+const sealCells = [];
+for (let i = 0; i < 4; i++) {
+  const cell = document.createElement('i');
+  cell.setAttribute('data-seal', String(i + 1));
+  sealRail.append(cell);
+  sealCells.push(cell);
+}
+if (bannerProgress?.parentNode) bannerProgress.parentNode.insertBefore(sealRail, bannerProgress);
+
+const finaleUiStyle = document.createElement('style');
+finaleUiStyle.textContent = `
+#finaleSeals {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  height: 4px;
+  margin-top: 7px;
+}
+#finaleSeals i {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border: 1px solid rgba(255,242,216,.17);
+  background: rgba(232,237,242,.07);
+  box-shadow: inset 0 0 0 1px rgba(7,19,26,.58);
+}
+#finaleSeals i::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #ff4fd8;
+  box-shadow: 0 0 7px rgba(255,79,216,.72);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 130ms ease, background 130ms ease, opacity 130ms ease;
+}
+#finaleSeals i.sealed::after { transform: scaleX(.18); opacity: .48; }
+#finaleSeals i.current::after {
+  transform: scaleX(1);
+  opacity: 1;
+  animation: finale-seal-live 760ms ease-in-out infinite alternate;
+}
+#finaleSeals i.broken::after {
+  transform: scaleX(1);
+  background: rgba(255,242,216,.30);
+  opacity: .42;
+}
+#finaleSeals i.linked::after {
+  transform: scaleX(1);
+  background: #fff2d8;
+  opacity: .92;
+}
+#finale.core-open { border-color: rgba(255,242,216,.74); }
+#finale.core-open #finaleTitle { text-shadow: 0 0 10px rgba(255,79,216,.48); }
+#finale.attack-live { box-shadow: 0 0 0 1px rgba(7,19,26,.82), 0 0 22px rgba(255,157,69,.18); }
+#finaleProgress { margin-top: 4px; }
+@keyframes finale-seal-live { from { filter: brightness(.78); } to { filter: brightness(1.5); } }
+@media (max-width: 600px) {
+  #finaleSeals { gap: 3px; height: 3px; margin-top: 5px; }
+  #finaleProgress { margin-top: 3px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #finaleSeals i.current::after { animation: none; }
+}`;
+document.head.append(finaleUiStyle);
+
 const LIVE = !!crownRoot;
 const _pose = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 };
 const MAGENTA = new THREE.Color(PAL.capsule);
@@ -185,6 +258,25 @@ for (let i = 0; i < 3; i++) {
   shockRings.push({ ring, mat });
 }
 
+// The carrier cannot become a frozen white pole the moment the results card
+// arrives. Small packets continue climbing the beam after contact, giving the
+// settled scene a readable direction and a quiet sense that Earth is still on
+// the other end. These are real world-space objects, so they stay attached to
+// the Crown through route rotation instead of behaving like a screen overlay.
+const carrierMoteGeo = new THREE.OctahedronGeometry(0.052, 0);
+const carrierMotes = [];
+if (LIVE) {
+  for (let i = 0; i < 14; i++) {
+    const mat = signalMaterial(i % 4 === 0 ? PAL.muzzle : PAL.capsule);
+    const mote = new THREE.Mesh(carrierMoteGeo, mat);
+    mote.name = 'Earthbound carrier packet';
+    mote.visible = false;
+    mote.renderOrder = 4;
+    beamRoot.add(mote);
+    carrierMotes.push({ mote, mat, seed: (i * 0.61803398875) % 1 });
+  }
+}
+
 /* -------------------------- state projection ------------------------ */
 let current = {
   phase: 'dormant', elapsedMs: 0, kills: 0, quota: 0, progress: 0, wave: 0,
@@ -194,24 +286,132 @@ let lastWave = 0;
 let waveKick = 0;
 let transmitting = false;
 
+function animateSettledCarrier(now = 0) {
+  if (typeof requestAnimationFrame !== 'undefined') {
+    requestAnimationFrame(animateSettledCarrier);
+  }
+  if (!LIVE) return;
+
+  const live = current.phase === 'transmit' || current.phase === 'complete';
+  const settled = current.phase === 'complete';
+  const seconds = now / 1000;
+  for (let i = 0; i < carrierMotes.length; i++) {
+    const packet = carrierMotes[i];
+    packet.mote.visible = live;
+    if (!live) continue;
+
+    const laps = seconds * (settled ? 0.075 : 0.16) + packet.seed;
+    const u = laps - Math.floor(laps);
+    // Once Earth answers, every fifth packet descends against the outbound
+    // helix in warm ivory. The carrier is visibly two-way instead of a beam
+    // that merely froze when the score card appeared.
+    const returning = settled && i % 5 === 0;
+    const travel = returning ? 1 - u : u;
+    const turn = travel * Math.PI * 3.2 + i * 2.17;
+    const radius = (settled ? 0.105 : 0.15) + (i % 3) * 0.024;
+    packet.mote.position.set(
+      Math.cos(turn) * radius,
+      0.7 + travel * 48.2,
+      Math.sin(turn) * radius,
+    );
+    const edgeFade = smooth(Math.min(u / 0.08, (1 - u) / 0.12));
+    const beat = 0.68 + 0.32 * Math.sin(seconds * 4.2 + i * 1.7);
+    packet.mote.scale.setScalar((returning ? 1.14 : settled ? 0.72 : 0.9) + beat * 0.3);
+    packet.mote.rotation.y = turn;
+    driveMaterial(packet.mat, returning || i % 4 === 0 ? IVORY : MAGENTA,
+      returning ? 0.82 : settled ? 0.48 : 0.88,
+      edgeFade * (returning ? 0.72 : settled ? 0.42 : 0.7));
+  }
+
+  // Simulation snapshots stop advancing once VICTORY is reached. Keep only
+  // the transmitter's presentation clock alive so the payoff does not read as
+  // a paused game. Combat and run telemetry remain fully deterministic.
+  if (settled && finaleRoot.visible) {
+    const pulse = 0.5 + 0.5 * Math.sin(seconds * 2.35);
+    beamSheath.scale.x = beamSheath.scale.z = 0.135 + pulse * 0.035;
+    beamCore.scale.x = beamCore.scale.z = 0.038 + pulse * 0.014;
+    driveMaterial(beamSheathMat, MAGENTA, 0.28 + pulse * 0.2, 0.055 + pulse * 0.035);
+    driveMaterial(beamCoreMat, IVORY, 0.34 + pulse * 0.28, 0.13 + pulse * 0.09);
+    uplinkCore.rotation.y = seconds * 0.48;
+    uplinkCore.rotation.z = seconds * -0.31;
+    uplinkCore.scale.setScalar(1.22 + pulse * 0.11);
+    driveMaterial(uplinkCoreMat, IVORY, 0.58 + pulse * 0.22, 0.58 + pulse * 0.18);
+    for (let i = 0; i < chargeRings.length; i++) {
+      const { ring, mat } = chargeRings[i];
+      ring.visible = true;
+      ring.rotation.z = seconds * (i % 2 ? -0.3 : 0.36) + i * 0.65;
+      driveMaterial(mat, i === 2 ? GOLD : MAGENTA,
+        0.38 + pulse * 0.2, 0.09 + pulse * 0.08);
+    }
+  }
+}
+
+if (LIVE && typeof requestAnimationFrame !== 'undefined') {
+  requestAnimationFrame(animateSettledCarrier);
+}
+
 function setBanner(snapshot) {
   if (!banner) return;
   const phase = snapshot.phase;
   const show = phase === 'arming' || phase === 'defend' || phase === 'transmit';
   banner.classList.toggle('on', show);
   banner.classList.toggle('transmit', phase === 'transmit');
+  banner.dataset.phase = phase;
   banner.setAttribute('aria-hidden', show ? 'false' : 'true');
   if (!show) return;
 
-  bannerTitle.textContent = 'CROWN UPLINK // HOLD THE SIGNAL';
   const carrier = carrierProgress(snapshot);
   const pct = Math.round(carrier * 100);
   if (phase === 'arming') {
-    bannerMeta.textContent = `ARMING BATTERED ARRAY · CARRIER ${pct}%`;
+    bannerTitle.textContent = snapshot.warden?.present
+      ? 'CROWN WARDEN // INTERLOCK DESCENDING'
+      : 'CROWN UPLINK // HOLD THE SIGNAL';
+    bannerMeta.textContent = snapshot.warden?.present
+      ? 'BREAK FOUR SEALS · FIRE WHEN THE CENTRAL IRIS OPENS'
+      : `ARMING BATTERED ARRAY · CARRIER ${pct}%`;
   } else if (phase === 'defend') {
-    bannerMeta.textContent = `DEFENSE ${snapshot.wave}/3 · ${snapshot.kills}/${snapshot.quota} CLEARED · LINK ${pct}%`;
+    const warden = snapshot.warden;
+    if (warden?.present) {
+      bannerTitle.textContent = 'CROWN WARDEN // BREAK THE INTERLOCK';
+      const seal = Math.max(1, Math.min(4, Number(warden.seal) || 1));
+      const hp = `${Math.max(0, Math.ceil(warden.hp))}/${warden.maxHp}`;
+      const attack = warden.attack;
+      if (attack === 'exposed') {
+        bannerMeta.textContent = `SEAL ${seal}/4 · CORE OPEN — FIRE NOW · ${hp}`;
+      } else if (attack === 'sweepTell') {
+        bannerMeta.textContent = `SEAL ${seal}/4 · BEAM CHARGING — LEAVE ITS LANE · CORE LOCKED`;
+      } else if (attack === 'sweepFire') {
+        bannerMeta.textContent = `SEAL ${seal}/4 · SWEEP LIVE — MOVE · CORE LOCKED`;
+      } else if (attack === 'barrageTell') {
+        bannerMeta.textContent = `SEAL ${seal}/4 · IMPACT ZONE MARKED — REDIRECT · CORE LOCKED`;
+      } else if (attack === 'barrageBurst') {
+        bannerMeta.textContent = `SEAL ${seal}/4 · BARRAGE LIVE — CLEAR THE MARK · CORE LOCKED`;
+      } else {
+        bannerMeta.textContent = `SEAL ${seal}/4 · CORE ${hp} · WAIT FOR THE OPENING`;
+      }
+    } else {
+      bannerTitle.textContent = 'CROWN WARDEN // INTERLOCK BROKEN';
+      bannerMeta.textContent = `TARGET DOWN · ${snapshot.kills} SUPPORT HOSTILES CLEARED · LINK ${pct}%`;
+    }
   } else {
+    bannerTitle.textContent = 'CROWN UPLINK // EARTHBOUND CARRIER';
     bannerMeta.textContent = `TRANSMITTING MERIDIAN → EARTH · ${pct}%`;
+  }
+
+  const attack = snapshot.warden?.attack || '';
+  banner.classList.toggle('core-open', attack === 'exposed' || phase === 'transmit');
+  banner.classList.toggle('attack-live', attack === 'sweepFire' || attack === 'barrageBurst');
+  const currentSeal = Math.max(1, Math.min(4, Number(snapshot.warden?.seal) || 1));
+  for (let i = 0; i < sealCells.length; i++) {
+    const cell = sealCells[i];
+    cell.className = '';
+    if (phase === 'transmit') cell.classList.add('linked');
+    else if (snapshot.warden?.defeated || !snapshot.warden?.present && phase === 'defend')
+      cell.classList.add('broken');
+    else if (phase === 'arming') cell.classList.add(i === 0 ? 'current' : 'sealed');
+    else if (i < currentSeal - 1) cell.classList.add('broken');
+    else if (i === currentSeal - 1) cell.classList.add('current');
+    else cell.classList.add('sealed');
   }
   bannerFill.style.transform = `scaleX(${carrier})`;
   bannerProgress.setAttribute('aria-valuenow', String(pct));

@@ -56,9 +56,20 @@ function gateArenaPlatforms(k) {
   return arena ? arena.platforms : [];
 }
 
-function spawnGateRole(kind, k, sx, lane, delayMs, pivot) {
+function spawnGateRole(kind, k, slot, sx, lane, delayMs, pivot) {
+  // Gate recipes are keyed to authored wave+slot, independent of how many
+  // adaptive ambient bodies the player provoked beforehand. Phase zero gives
+  // each consecutive trio HUNTER → BASTION → WEAVER, making the late ecology
+  // replayable while still combining differently across species.
+  const genomeRow = {
+    id: `gate-${k}-${slot}-${kind}`,
+    gateWave: k,
+    cohortKey: `gate:${k}`,
+    cohortSlot: slot,
+    cohortPhase: 0,
+  };
   if (kind === 'wasp') {
-    spawnHostile(sx, spawnLaneY(sx, lane), delayMs, 'wasp', { gateWave: k });
+    spawnHostile(sx, spawnLaneY(sx, lane), delayMs, 'wasp', genomeRow);
     return;
   }
 
@@ -69,6 +80,7 @@ function spawnGateRole(kind, k, sx, lane, delayMs, pivot) {
     const x = pivot - 4.65;
     const deck = groundTopAt(x);
     const row = {
+      ...genomeRow,
       kind, deck, dir: 1,
       // The first two appearances teach and test the charge without letting
       // a floor-bound patrol become the last mandatory target.  It stays in
@@ -101,7 +113,9 @@ function spawnGateRole(kind, k, sx, lane, delayMs, pivot) {
     // CONTAIN makes the first iris a mandatory target-priority test. In the
     // later remix it remains a live connector hazard, but mobile bodies own
     // the gate so cleanup never becomes "find the turret" after the action.
-    const row = { kind, deck, dir: -1, gating: k === 3, autoCycle: true };
+    const row = {
+      ...genomeRow, kind, deck, dir: -1, gating: k === 3, autoCycle: true,
+    };
     spawnHostile(x, deck + CONFIG.polyp.rootY, delayMs, kind, row);
     return;
   }
@@ -122,14 +136,17 @@ function spawnGateRole(kind, k, sx, lane, delayMs, pivot) {
     // A mortar's job is to redirect the next landing, not become a stationary
     // mandatory cleanup target on a remote perch. Mobile bodies hold the gate;
     // the tripod and its marked zone disappear with the break below.
-    const row = { kind, deck, dir: -1, gating: false, zone: { x: zoneX, y: zoneY } };
+    const row = {
+      ...genomeRow, kind, deck, dir: -1, gating: false,
+      zone: { x: zoneX, y: zoneY },
+    };
     spawnHostile(x, deck + CONFIG.mortar.bodyY, delayMs, kind, row);
     return;
   }
 
   // Defensive fallback for a mistyped/future roster entry: keep the gate
   // playable and visible instead of throwing halfway through a run.
-  spawnHostile(sx, spawnLaneY(sx, lane), delayMs, 'wasp');
+  spawnHostile(sx, spawnLaneY(sx, lane), delayMs, 'wasp', genomeRow);
 }
 
 function spawnGateWave(k) {              // deterministic: no rng in wave layout
@@ -149,7 +166,7 @@ function spawnGateWave(k) {              // deterministic: no rng in wave layout
     const sx = right - f * span;
     const lane = waveLane(k, i, CONFIG);       // authored altitude mix per wave
     const kind = waveKind(k, i, CONFIG);       // authored role mix per story phase
-    spawnGateRole(kind, k, sx, lane, waveSpawnDelay(k, i, CONFIG), pivot);
+    spawnGateRole(kind, k, i, sx, lane, waveSpawnDelay(k, i, CONFIG), pivot);
   }
 }
 

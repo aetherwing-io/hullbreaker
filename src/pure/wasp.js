@@ -44,7 +44,10 @@ export function diveVelocity(ex, ey, tx, ty, speed) {
 // hot-glowing dart already pointed at you reads as "about to launch," and
 // gives a beat where a shot or a step answers it instead of the dive being
 // simultaneous with its own reaction window.
-export const WASP_DIVE_LOCK_MS = 220;
+// 190 ms remains above buffered-jump latency at the slow 30 fps contract,
+// while removing the extra "I already dodged this" pause players felt after
+// the pose had clearly committed.
+export const WASP_DIVE_LOCK_MS = 190;
 
 // True once the lock beat has elapsed and the dive may actually move.
 export function diveLaunched(nowMs, lockUntilMs) {

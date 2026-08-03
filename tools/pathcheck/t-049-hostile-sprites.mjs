@@ -16,11 +16,10 @@
 //      Every one of them is re-derived here straight out of the file with
 //      tools/assets/lib/png.mjs, so a regenerated asset whose art moved
 //      cannot silently keep the old quad.
-//   3. THE SIZING RULE ITSELF. A sprite may never draw a body SMALLER than
-//      the primitive it replaces (that is the defect T-046 measured — a
-//      canvas-sized quad drew the wasp at 88% x 75% of its own hit box),
-//      it must stand on the same mount line, and it may never claim reach
-//      past the circle the sim damages with.
+//   3. THE SIZING RULE ITSELF. A sprite is sized from its measured ink,
+//      uniformly contained without deforming the painting, grounded on the
+//      same mount line, and bounded by the presentation envelope rather than
+//      by whatever transparent margin happened to ship in the canvas.
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -281,8 +280,10 @@ export async function run() {
   }
 
   /* --- 3. the sizing rule --------------------------------------------- *
-   * The rule, in one line: the sprite's INK occupies exactly the box the
-   * primitive mesh drew. Everything else follows from it.               */
+   * The sprite's ink is uniformly contained by the old primitive envelope:
+   * one axis fits exactly, the other may be smaller, and the authored aspect
+   * ratio is never distorted. Grounded roles keep their feet on the old
+   * mount line; flyers stay centred.                                    */
   for (const kind of SPRITE_KINDS) {
     const box = primitiveBox(kind);
     for (const variant of SPRITE_VARIANT_IDS) {
@@ -290,16 +291,16 @@ export async function run() {
       const art = SPRITE_ART[kind][variant];
       const tag = 'T-049: ' + kind + '/' + variant + ': ';
 
-      near(q.inkW, box.w, 1e-9, tag + 'drawn ink width is the primitive box width');
-      near(q.inkH, box.h, 1e-9, tag + 'drawn ink height is the primitive box height');
-      ok(q.w >= box.w - 1e-9 && q.h >= box.h - 1e-9,
-         tag + 'the quad is at least the primitive box on both axes — a sprite may ' +
-         'never draw a body smaller than the solid it replaces (T-046 measured ' +
-         'exactly that on a canvas-sized quad)');
+      ok(q.inkW <= box.w + 1e-9 && q.inkH <= box.h + 1e-9,
+         tag + 'drawn ink stays inside the primitive presentation envelope');
+      ok(Math.abs(q.inkW - box.w) <= 1e-9 || Math.abs(q.inkH - box.h) <= 1e-9,
+         tag + 'one drawn-ink axis fits the primitive envelope exactly');
+      near(q.inkW / q.inkH, art.ink[2] / art.ink[3], 1e-9,
+           tag + 'drawn ink preserves the authored aspect ratio (no stretch)');
       // the margin is the transparent padding and nothing else
-      near(q.w / box.w, art.canvas[0] / art.ink[2], 1e-9,
+      near(q.w / q.inkW, art.canvas[0] / art.ink[2], 1e-9,
            tag + 'the quad exceeds the ink by exactly the PNG\'s transparent margin (x)');
-      near(q.h / box.h, art.canvas[1] / art.ink[3], 1e-9,
+      near(q.h / q.inkH, art.canvas[1] / art.ink[3], 1e-9,
            tag + 'the quad exceeds the ink by exactly the PNG\'s transparent margin (y)');
 
       // …and it lands where the primitive stood: recompute the ink centre in
@@ -307,7 +308,12 @@ export async function run() {
       const inkCx = ((art.ink[0] + art.ink[2] / 2) / art.canvas[0] - 0.5) * q.w + q.offX;
       const inkCy = (0.5 - (art.ink[1] + art.ink[3] / 2) / art.canvas[1]) * q.h + q.offY;
       near(inkCx, box.cx, 1e-9, tag + 'the drawn ink is centred where the primitive was (x)');
-      near(inkCy, box.cy, 1e-9, tag + 'the drawn ink is centred where the primitive was (y)');
+      if (['hound', 'polyp', 'mortar', 'warden'].includes(kind)) {
+        near(inkCy - q.inkH / 2, box.cy - box.h / 2, 1e-9,
+             tag + 'the drawn feet remain on the primitive mount line');
+      } else {
+        near(inkCy, box.cy, 1e-9, tag + 'the flying ink remains centred on the primitive');
+      }
     }
   }
 
@@ -325,11 +331,11 @@ export async function run() {
      The drone is the case that matters — its dive stretches the quad — and
      the ink half-width is exactly visualRadius, so waspDiveStretch()'s
      existing clamp still lands on contactRadius and not past it. */
-  const waspInk = primitiveBox('wasp');
-  near(waspInk.w / 2, CONFIG.wasp.visualRadius, 1e-9,
+  const waspInk = spriteQuad('wasp');
+  near(waspInk.inkW / 2, CONFIG.wasp.visualRadius, 1e-9,
        'T-049: the drone sprite\'s drawn half-width is visualRadius exactly, so the ' +
        'dive clamp in src/render/legibility.js still means what it says');
-  ok((waspInk.w / 2) * (1 + waspDiveStretch()) <= CONFIG.wasp.contactRadius + 1e-9,
+  ok((waspInk.inkW / 2) * (1 + waspDiveStretch()) <= CONFIG.wasp.contactRadius + 1e-9,
      'T-049: a fully stretched dive sprite\'s nose still stops at contactRadius — ' +
      'the drawn body never claims reach the sim did not give it');
 

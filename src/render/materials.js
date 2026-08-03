@@ -38,7 +38,8 @@ import { CONFIG } from '../config.js';
 import { QUERY } from '../mode.js';
 import { preloadTexture, awaitPreloads } from './preload.js';
 import {
-  hullTexRepeat, resolveHullTexOn, composeHullTile, TILE_TONE, SCUTE_TILE_TONE,
+  hullPieceDims, hullTexRepeat, resolveHullTexOn, composeHullTile, composeDeckPanel,
+  DECK_PANEL, TILE_TONE, SCUTE_TILE_TONE,
 } from './hulltiles.js';
 
 // The family table itself is data, so it lives in src/pure/post.js where
@@ -267,16 +268,11 @@ function registerRaw(file, url) {
   return slot;
 }
 
-// One coherent production scute material now serves the three large armour
-// buckets. Independent texture objects are still required because repeat and
-// wrap live on the texture, not the material. The old panel/louver paintings
-// remain in the asset pack as comparison sources; they no longer make the
-// creature read as a wall full of square vents.
-registerRaw('hull-scute-tile-v2.png', TEX_DIR + 'hull-scute-tile-v2.png');
-registerRaw('hull-scute-tile-v2.png?wall', TEX_DIR + 'hull-scute-tile-v2.png?wall');
-registerRaw('hull-scute-tile-v2.png?scute', TEX_DIR + 'hull-scute-tile-v2.png?scute');
+// One large production panel source now serves route and limb. Bucket- and
+// facet-specific Texture descriptors are derived after decode, so this is one
+// network/preload request rather than query-string copies of identical bytes.
+registerRaw('hull-panel-tile-v2.png', TEX_DIR + 'hull-panel-tile-v2.png');
 registerRaw('weld-seam-strip.png', TEX_DIR + 'weld-seam-strip.png');
-registerRaw('wear-scuff-overlay.png', TEX_DIR + 'wear-scuff-overlay.png');
 
 /* THE BOOT GATE. Same shared settlement T-049's sprite loader and this
    module's own procedural environment share nothing with — this is a
@@ -347,15 +343,10 @@ function imageBytes(img) {
   return { data: d.data, width: cv.width, height: cv.height };
 }
 
-// Compose one bucket's canvas (hulltiles.js does every pixel of it) and hand
-// it to the GPU. Returns null when the base never arrived, which is the
-// caller's cue to leave the material flat — entry 16's degrade contract.
-function buildTile(key, base, wear, tone = TILE_TONE) {
-  if (!base || !base.ready) return null;
-  const composed = composeHullTile(CONFIG, key,
-    imageBytes(base.tex.image),
-    wear && wear.ready ? imageBytes(wear.tex.image) : null,
-    tone);
+// Hand a Node-safe composition to the GPU. Hull and deck sources both pass
+// through this exact upload/warm path, so adding the large route painting
+// costs one preload and one resident canvas texture — never a first-use hitch.
+function uploadComposed(composed) {
   if (!composed) return null;
   const cv = document.createElement('canvas');
   cv.width = composed.width;
@@ -372,6 +363,22 @@ function buildTile(key, base, wear, tone = TILE_TONE) {
   tex.needsUpdate = true;
   warmTexture(tex);
   return { tex, curve: composed.curve, layout: composed.layout };
+}
+
+// Compose one limb bucket's canvas (hulltiles.js does every pixel of it) and
+// hand it to the GPU. Returns null when the base never arrived, which is the
+// caller's cue to leave the material flat — entry 16's degrade contract.
+function buildTile(key, base, wear, tone = TILE_TONE) {
+  if (!base || !base.ready) return null;
+  return uploadComposed(composeHullTile(CONFIG, key,
+    imageBytes(base.tex.image),
+    wear && wear.ready ? imageBytes(wear.tex.image) : null,
+    tone));
+}
+
+function buildDeckPanel(base) {
+  if (!base || !base.ready) return null;
+  return uploadComposed(composeDeckPanel(CONFIG, imageBytes(base.tex.image)));
 }
 
 // preload.js's warm-up trick, repeated for a texture THIS file derives after
@@ -425,11 +432,7 @@ const HULL_TEX = {};
 // stripe. Retain enough range to read the scutes, recover the old 12% trim,
 // and leave the weld strip on its original sharp tune.
 function finishHullTex() {
-  const hullBase = rawTex.get('hull-scute-tile-v2.png');
-  const wallBase = rawTex.get('hull-scute-tile-v2.png?wall');
-  const scuteBase = rawTex.get('hull-scute-tile-v2.png?scute');
   const shadowBase = rawTex.get('weld-seam-strip.png');
-  const wear = rawTex.get('wear-scuff-overlay.png');
   const repeat = hullTexRepeat(CONFIG);
 
   // bumpScale, per bucket: `hull`/`scute` are the near armour RIG stands
@@ -451,11 +454,12 @@ function finishHullTex() {
       curve: built.curve,
     };
   };
-  // The v2 source already carries restrained broad wear. Layering the old
-  // high-frequency scuff sprite over it would undo the readability gain.
-  bucket('hull', hullBase, null);
-  bucket('wall', wallBase, null);
-  bucket('scute', scuteBase, null);
+  // The broad buckets are installed from the production route painting below
+  // after its one shared composition is ready. Keep these literal bucket
+  // declarations as the degrade contract: a missing panel leaves them flat.
+  bucket('hull', null, null);
+  bucket('wall', null, null);
+  bucket('scute', null, null);
   bucket('shadow', shadowBase, null);
 
   // Every raw loaded texture above was consumed SYNCHRONOUSLY into a canvas
@@ -465,11 +469,93 @@ function finishHullTex() {
   // dead GPU memory: measured, +2 resident textures (34 vs 32) after wall and
   // shadow moved off the raw binding they used to have. Disposing here is
   // safe precisely because nothing after this point still reads `.tex`.
-  for (const slot of [hullBase, wallBase, scuteBase, shadowBase, wear]) {
-    if (slot.ready && slot.tex) slot.tex.dispose();
+  for (const slot of [shadowBase]) {
+    if (slot && slot.ready && slot.tex) slot.tex.dispose();
   }
 }
 finishHullTex();
+
+// One continuous route-space painting for level.js. The original 512px crop
+// is used rather than the pre-kaleidoscoped mirror proof: MirroredRepeatWrapping
+// makes the boundary exact on the GPU while level.js's facet UV transforms
+// keep the strong centre motif from recurring in lockstep.
+let DECK_PANEL_TEX = null;
+function finishDeckPanelTex() {
+  const base = rawTex.get('hull-panel-tile-v2.png');
+  const built = buildDeckPanel(base);
+  if (built) {
+    built.tex.wrapS = built.tex.wrapT = THREE.MirroredRepeatWrapping;
+    built.tex.repeat.set(1, 1);
+    built.tex.offset.set(0, 0);
+    built.tex.needsUpdate = true;
+    DECK_PANEL_TEX = {
+      map: built.tex,
+      bumpScale: 0.012,
+      gain: built.curve.gain,
+      curve: built.curve,
+      layout: built.layout,
+    };
+  }
+  if (base && base.ready && base.tex) base.tex.dispose();
+}
+finishDeckPanelTex();
+
+function installProductionLimbPanels() {
+  if (!DECK_PANEL_TEX) return;
+  const dims = hullPieceDims(CONFIG);
+  const bumpScale = { hull: 0.008, wall: 0.003, scute: 0.012 };
+  for (const key of ['hull', 'wall', 'scute']) {
+    const map = DECK_PANEL_TEX.map.clone();
+    map.wrapS = map.wrapT = THREE.MirroredRepeatWrapping;
+    map.repeat.set(
+      dims[key][0] / DECK_PANEL.worldSpan,
+      dims[key][1] / DECK_PANEL.worldSpan,
+    );
+    map.center.set(0.5, 0.5);
+    map.needsUpdate = true;
+    warmTexture(map);
+    HULL_TEX[key] = {
+      map,
+      bumpScale: bumpScale[key],
+      repeat: [map.repeat.x, map.repeat.y],
+      gain: DECK_PANEL_TEX.gain,
+      curve: DECK_PANEL_TEX.curve,
+      wrapping: 'mirrored-repeat',
+    };
+  }
+}
+installProductionLimbPanels();
+
+/* Bind the painted route panel without deciding where it lands. level.js
+   authors UVs in route space, so one source crosses dozens of collision
+   tiles and platform faces without restarting. Palette hue remains in vertex
+   colors because the uploaded map is grayscale by construction. */
+export function applyDeckPanelTexture(material) {
+  const t = DECK_PANEL_TEX;
+  if (!t || !material) return material;
+  material.map = t.map;
+  material.bumpMap = t.map;
+  material.bumpScale = t.bumpScale;
+  material.color.setRGB(t.gain, t.gain, t.gain, THREE.LinearSRGBColorSpace);
+  material.needsUpdate = true;
+  return material;
+}
+
+export function deckPanelTextureSnapshot() {
+  const t = DECK_PANEL_TEX;
+  return {
+    ready: !!t,
+    sourceReady: !!rawTex.get('hull-panel-tile-v2.png')?.ready,
+    wrapping: t ? 'mirrored-repeat' : 'flat-fallback',
+    canvasPx: t ? t.layout.canvasPx : 0,
+    worldSpan: t ? t.layout.worldSpan : 0,
+    gain: t ? t.gain : 1,
+    mean: t ? t.curve.mean : 0,
+    sd: t ? t.curve.sd : 0,
+    bumpScale: t ? t.bumpScale : 0,
+  };
+}
+if (typeof window !== 'undefined') window.__HB_DECK_PANEL = deckPanelTextureSnapshot;
 
 /* Give a material the texture bound to a limb.js material key. A no-op for a
    key with no entry (see the list above) or one whose texture never arrived
@@ -483,12 +569,40 @@ finishHullTex();
 export function applyHullTexture(material, key) {
   const t = HULL_TEX[key];
   if (!t || !material) return material;
-  t.map.wrapS = t.map.wrapT = THREE.RepeatWrapping;
+  t.map.wrapS = t.map.wrapT = t.wrapping === 'mirrored-repeat'
+    ? THREE.MirroredRepeatWrapping
+    : THREE.RepeatWrapping;
   t.map.repeat.set(t.repeat[0], t.repeat[1]);
   material.map = t.map;
   material.bumpMap = t.map;
   material.bumpScale = t.bumpScale;
   material.color.setRGB(t.gain, t.gain, t.gain, THREE.LinearSRGBColorSpace);
+  material.needsUpdate = true;
+  return material;
+}
+
+// Instanced armour normally shares one UV origin, which made every enormous
+// foreground scute repeat the exact same dark channel in lockstep. A second
+// bucket may cheaply decorrelate that origin: clone only the tiny texture
+// descriptor/image binding, retain the exact density/tone/bump calibration,
+// and offset within its existing repeat. Variant zero remains byte-for-byte
+// the original material path.
+export function varyHullTexture(material, variant = 0) {
+  if (!(variant > 0) || !material || !material.map) return material;
+  const transforms = [
+    [0, 0, 0],
+    [0.37, 0.19, Math.PI / 2],
+    [0.68, 0.47, Math.PI],
+  ];
+  const tr = transforms[variant % transforms.length];
+  const tex = material.map.clone();
+  tex.center.set(0.5, 0.5);
+  tex.offset.set(tr[0], tr[1]);
+  tex.rotation = tr[2];
+  tex.needsUpdate = true;
+  warmTexture(tex);
+  material.map = tex;
+  material.bumpMap = tex;
   material.needsUpdate = true;
   return material;
 }

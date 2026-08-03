@@ -254,7 +254,9 @@ export async function run(SHARED) {
       '../sim/time.js': ['gameMs', 'scrollX', 'sliceStats'],
       '../sim/player.js': ['player', 'P'],
       '../sim/hostiles.js': ['kills'],
-      '../sim/weapons.js': ['shotsFired', 'weaponDef', 'weaponKills'],
+      '../sim/weapons.js': [
+        'currentGun', 'currentGunLabel', 'shotsFired', 'weaponDef', 'weaponKills',
+      ],
       '../sim/score.js': ['scoreSnapshot'],
       '../sim/transform.js': ['committedBand', 'transformAltitudeAt'],
     };

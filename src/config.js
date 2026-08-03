@@ -76,6 +76,50 @@ export const CONFIG = {
       // tell moves on before it arrives; a player who camps gets the remix.
       houndDelayMsByFace: [0, 0, 3600, 3400, 0, 0],
     },
+    // Elastic anti-lull reinforcements. The generated table above remains the
+    // score and every gate keeps its authored roster; this tiny budget only
+    // fills a long EMPTY stretch after the player has already engaged with
+    // that score. Fast clears shorten the inhale and unlock late-run pairs,
+    // but spatial fences in sim/spawner.js keep every body visible, outside
+    // lesson bubbles and off the corner apron. Gate arming clears these
+    // non-gating bodies, so adaptive pressure can never delay a ritual.
+    pressure: {
+      seed: 0x48554c4c,
+      idleMsByFace: [1350, 1200, 1080, 960, 840, 760],
+      minIdleMs: 620,
+      fastIdleBonusMs: 380,
+      fastClearMs: 900,
+      slowClearMs: 3200,
+      mercyClearMs: 4200,
+      clearEmaWeight: 0.35,
+      cooldownMs: 2200,
+      maxBodiesByFace: [3, 4, 5, 6, 8, 8],
+      imminentAuthoredTiles: 4.8,
+      minRemainingTravelTiles: 6.5,
+      spawnInsetTiles: 2.3,
+      minPlayerLeadTiles: 4.4,
+      rearLeadTiles: 5.8,
+      cornerPadTiles: 0.7,
+      pairFromFace: 4,
+      pairClearMs: 1500,
+      pairMinPlayerLeadTiles: 5.2,
+      pairDelayMs: 180,
+      // Reinforcements mutate the ASSAULT, not just the same wasp body.
+      // Faces 1-2 stay aerial-only so the authored hound lesson remains the
+      // first ground-denial read. From face 3 onward the bag opens only to
+      // roles already taught on a prior face. A pair always keeps one wasp
+      // (sim/spawner.js) and spends this bag on its support body, preserving
+      // an immediate mobile answer even when the other role is rooted.
+      roleBagByFace: [
+        ['wasp'],
+        ['wasp'],
+        ['wasp', 'wasp', 'hound'],
+        ['wasp', 'hound', 'hound', 'polyp'],
+        ['wasp', 'hound', 'polyp'],
+        ['wasp', 'hound', 'polyp'],
+      ],
+      groundProbeTiles: 0.55,
+    },
   },
 
   // Earned pace escalation (T-022, decisions.md entry 11 — "pace should
@@ -150,8 +194,14 @@ export const CONFIG = {
          count: 5, splayDeg: 12, scale: [0.8, 0.8, 0.8] },
     L: { name: 'LASER',  fireRateMs: 300, speed: 40, damage: 2, lifeMs: 800,
          pierce: true, scale: [7, 0.45, 0.45] },
-    H: { name: 'HOMING', fireRateMs: 260, speed: 18, damage: 1, lifeMs: 1600,
-         count: 2, splayDeg: 24, turnRate: 7, seekRange: 14, scale: [0.7, 0.7, 0.7] },
+    // H trades perfect-input damage for freedom to traverse while firing.
+    // Its two darts still feel generous, but finite forward locks keep the
+    // chassis from being a permanent arena-wide delete key. SEEKER rolls add
+    // fuel and re-locks through pure/gunroll.js.
+    H: { name: 'HOMING', fireRateMs: 270, speed: 18, damage: 0.75, lifeMs: 1500,
+         count: 2, splayDeg: 24, turnRate: 6.1, seekRange: 12.5,
+         seekFuelMs: 760, seekConeDeg: 132, seekRetargets: 0,
+         scale: [0.7, 0.7, 0.7] },
     F: { name: 'FLAME',  fireRateMs: 300, speed: 13, damage: 1, lifeMs: 1500,
          pierce: true, crawlSpeed: 10, dropAccel: -40,
          lobScaleY: 0.6, lobBias: 0.12,          // aims-to-lob conversion at fire time
@@ -200,8 +250,11 @@ export const CONFIG = {
   },
   wasp: {
     hp: 4, cruiseSpeed: 2.35, bobFreq: 3.0, bobAmp: 0.9,
-    diveRange: 7.2, diveSpeed: 10.1, diveMs: 700, diveCooldownMs: 1450,
-    predictMs: 240, predictXCap: 2.4, predictYCap: 1.25,
+    // The cue stays fair; the committed pass is less leisurely. A reversal or
+    // elevation change still wins, but simply continuing along the same line
+    // after lock now gets intercepted.
+    diveRange: 7.2, diveSpeed: 11.0, diveMs: 642, diveCooldownMs: 1325,
+    predictMs: 270, predictXCap: 2.6, predictYCap: 1.35,
     contactRadius: 0.55, visualRadius: 0.5,  // readability bump; hitbox unchanged
     // mock-3D presence: enemies materialize from tower depth and dissolve back.
     // Purely visual — sim stays 2D; collision only while fully materialized.
@@ -386,6 +439,74 @@ export const CONFIG = {
     burstSwell: 0.35,          // the detonation's own silhouette pop
   },
 
+  // The Crown's forward interlock made shootable. It is fused into the
+  // summit architecture rather than arriving as a detached creature. Four
+  // armour seals make a wild rolled gun feel powerful without allowing one
+  // homing volley to erase the encounter before its weapons are readable.
+  warden: {
+    hp: 72,
+    hitRadius: 1.12,           // central iris only; legs and launch racks are theatre
+    size: [5.8, 3.4, 1.4],
+    bodyY: 1.30,               // feet meet the apron; iris sits near rifle height
+    windowDamage: 18,          // one seal's maximum damage per opening
+    exposedMs: 1500,
+    exposedMinMs: 1200,
+    sweepTellMs: 620,
+    sweepCommitMs: 150,        // only the emitter tip names final commitment
+    sweepMs: 330,
+    emitterTiles: 2.42,
+    beamReach: 12.5,
+    beamHalf: 0.30,
+    barrageTellMs: 700,
+    barrageMs: 240,
+    barrageHalf: 1.55,
+    barrageHeight: 2.05,
+    predictMs: 220,
+    predictXCap: 1.8,
+  },
+
+  // Late-route enemy evolution answers the rolled arsenal with decisions,
+  // not larger health bars. Crown Aegis carriers/tripods link a bounded
+  // number of nearby mobile threats until the projector is destroyed (or its
+  // short recharge gap opens); Pincer wasps form on both sides of RIG before
+  // making the roster's existing honest, committed dive. A shielded pincer
+  // can carry both traits at once, but every body keeps its normal HP.
+  evolution: {
+    firstFace: 5,               // STERILIZE + SCUTTLE only; early lessons stay clean
+    aegisRadius: 7.4,           // same-screen relationship at MID and portrait
+    aegisMaxLinks: 3,           // target priority, never an invulnerable whole wave
+    aegisCycleMs: 1900,
+    aegisActiveMs: 1450,        // brief brute-force opening if the anchor is ignored
+    wardPingMs: 120,
+    flankOffsetX: 3.8,          // paired staging points around RIG
+    flankHeight: 3.2,           // overflight clears the player's standing silhouette
+    flankBandHeight: 0.8,       // second/third pairs form a visible vertical echelon
+    flankSpeed: 6.8,
+    flankVerticalSpeed: 4.6,
+    flankReadyTiles: 1.1,
+    flankRecoverRate: 7.2,
+  },
+
+  // Meridian infection response. pure/genome.js owns which seeded genes may
+  // combine; these are only the fair spatial/timing envelopes those behaviors
+  // execute inside. No mutation changes a base body's HP or hit radius.
+  genome: {
+    seed: 0x4d455249,
+    bulwarkOpenMs: 620,          // one blocked frontal shot exposes the plate
+    bulwarkPingMs: 110,
+    twinGapMs: 230,              // pincer station is re-earned before pass two
+    vaultSpeed: 10.8,
+    vaultLift: 12.8,
+    vaultGravity: -34,
+    vaultMs: 760,
+    salvoOffset: 2.4,            // second fully-telegraphed landing patch
+    relayHingeMs: 320,           // rooted iris visibly turns while its lane is harmless
+    backlashTellMs: 480,
+    backlashBurstMs: 120,
+    backlashCooldownMs: 1700,
+    backlashRadius: 1.65,
+  },
+
   waves: {                     // corner wave gates + snap ritual + brick zipper
     haltOffset: 14,            // scroll halts at cornerS - haltOffset
     baseSize: 3, sizePerWave: 1,               // wave k = baseSize + sizePerWave·k
@@ -427,9 +548,11 @@ export const CONFIG = {
       [2, 0, 2, 0, 2, 1, 1, 0],
       [2, 1, 2, 1, 0, 2, 1, 2, 2],
     ],
-    gateDiveCooldownMs: 850, gateDiveRange: 9.5,    // repeated committed passes while gated
+    gateDiveCooldownMs: 740, gateDiveRange: 9.5,    // repeated committed passes while gated
     gateCruiseSpeed: 5.6, gateRecoverRate: 7.5,     // fights, not drift-watching
-    gateSquadStaggerMs: 180,                       // overlap decisions without a same-frame wall
+    gateSquadStaggerMs: 150,                       // overlapping locks, never a same-frame wall
+    emptyAdvanceMs: 90,             // if a squad is erased early, next materialization starts
+                                    // after one tiny breath instead of honoring dead score time
     windUpMs: 70, windUpDeg: -1.5,             // counter-rotation blink
     snap1Ms: 150, holdMs: 420, snap2Ms: 130, settleMs: 130, resumeMs: 200,
                                // hold 420: zipper locks (860 ms) before scroll
@@ -1000,6 +1123,7 @@ export const CONFIG = {
     mortarPod: 0xd8ff7a,                   // the spore pod in flight — the arc has to be the
                                            //   most legible thing on screen while it flies
     mortarMark: 0xffa64d, mortarBlast: 0xffe08a,  // the marked landing patch / the detonation
+    warden: 0x8f725d,                      // Crown mechanism: warm iron, not acid ecology
     // snap-hook markers (?hook=1): warm hardware idle, hot when live, pale
     // tether. Never the pickup magenta and never the hostile green — an anchor
     // has to read as grabbable machinery at a glance (DESIGN's aiming rule).

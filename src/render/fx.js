@@ -74,6 +74,7 @@ const HOSTILE_ROLE = {
   hound: PAL.hound,
   polyp: PAL.polyp,
   mortar: PAL.mortar,
+  warden: PAL.warden,
 };
 
 export function fxRole(name) { return ROLE[name]; }

@@ -36,11 +36,9 @@
  *     geometry, not a shared one with the sprite) so neither path distorts
  *     the other.
  *
- * The gun stays exactly what it was through all three reworks: a small 3D
- * box, unrelated to this file's body shapes, still swept through 8-way aim
- * every frame by src/render/player.js's gunGroup. The sprite's own brief
- * deliberately excludes any drawn weapon for exactly this reason — a baked-
- * in gun shape would double up against the separately-rotating one.       */
+ * The shipped body atlas is gunless and mounts one of five painted chassis
+ * at the simulation's real muzzle. A failed atlas selects the synchronous
+ * canvas silhouette, never the older horizontal-rifle cutout.               */
 
 import { CONFIG } from '../config.js';
 
@@ -87,6 +85,134 @@ export const RIG_ACTION_SPRITE_W = (488 / 334) * RIG_ACTION_SPRITE_H;
 export const RIG_ACTION_SPRITE_UV = {
   u0: 24 / 536, v0: 24 / 382, u1: 512 / 536, v1: 358 / 382,
 };
+
+// Gunless production locomotion frames. Their transparent guards were
+// measured rather than guessed, and `handX` is the shared forward-hand
+// anchor inside that trimmed content. player.js translates each plane so
+// the hand stays at one local x while the very different running silhouettes
+// change around it; feet remain on y=0, preserving the deck contact.
+export const RIG_RUN_HAND_X = 0.20;
+// Render-only silhouette height. The collision body remains BODY_HEIGHT=1.7;
+// a modest armour/helmet overrun keeps RIG readable at the shipped camera and
+// matches the planted scale shared by the four aim paintings.
+export const RIG_BODY_VISUAL_H = 2.0;
+export const RIG_BODY_ATLAS_PATH = '../../assets/generated/sprites/rig-body-atlas-v1.png';
+export const RIG_BODY_ATLAS_W = 2048;
+export const RIG_BODY_ATLAS_H = 2048;
+export const RIG_IDLE_GUNLESS = Object.freeze({
+  sourcePath: '../../assets/generated/sprites/rig-idle-gunless-v1.png',
+  atlasX: 0, atlasY: 0,
+  canvasW: 743, canvasH: 701, trimX: 20, trimY: 20, trimW: 703, trimH: 661,
+  handX: 590,
+});
+export const RIG_RUN_FRAMES = Object.freeze({
+  contact: Object.freeze({
+    sourcePath: '../../assets/generated/sprites/rig-run-contact-v1.png',
+    atlasX: 775, atlasY: 0,
+    canvasW: 488, canvasH: 445, trimX: 18, trimY: 18, trimW: 452, trimH: 409,
+    handX: 362,
+  }),
+  pass: Object.freeze({
+    sourcePath: '../../assets/generated/sprites/rig-run-pass-v1.png',
+    atlasX: 1295, atlasY: 0,
+    canvasW: 340, canvasH: 431, trimX: 18, trimY: 18, trimW: 304, trimH: 395,
+    handX: 252,
+  }),
+  flight: Object.freeze({
+    sourcePath: '../../assets/generated/sprites/rig-run-flight-v1.png',
+    atlasX: 775, atlasY: 477,
+    canvasW: 496, canvasH: 407, trimX: 18, trimY: 18, trimW: 460, trimH: 371,
+    handX: 382,
+  }),
+});
+
+// Stationary aim poses keep the unarmed body anatomically connected to the
+// independently rotating gun. Right-facing art covers the four authored arm
+// elevations; player.js mirrors it for left aim without another texture or
+// network request. Exact down uses the down-right brace nearest to vertical.
+export const RIG_AIM_FRAMES = Object.freeze({
+  right: Object.freeze({
+    sourcePath: '../../assets/generated/sprites/rig-aim-right-v1.png',
+    atlasX: 0, atlasY: 1024,
+    canvasW: 446, canvasH: 389, trimX: 18, trimY: 18, trimW: 410, trimH: 353,
+    anchorX: 212,
+  }),
+  'up-right': Object.freeze({
+    sourcePath: '../../assets/generated/sprites/rig-aim-up-right-v1.png',
+    atlasX: 478, atlasY: 1024,
+    canvasW: 414, canvasH: 408, trimX: 18, trimY: 18, trimW: 378, trimH: 372,
+    anchorX: 195,
+  }),
+  up: Object.freeze({
+    sourcePath: '../../assets/generated/sprites/rig-aim-up-v1.png',
+    atlasX: 924, atlasY: 1024,
+    canvasW: 392, canvasH: 495, trimX: 18, trimY: 18, trimW: 356, trimH: 459,
+    anchorX: 185,
+  }),
+  'down-right': Object.freeze({
+    sourcePath: '../../assets/generated/sprites/rig-aim-down-right-v1.png',
+    atlasX: 1348, atlasY: 1024,
+    canvasW: 421, canvasH: 380, trimX: 18, trimY: 18, trimW: 385, trimH: 344,
+    anchorX: 194,
+  }),
+});
+export const RIG_AIM_WORLD_PER_PIXEL = RIG_BODY_VISUAL_H / RIG_AIM_FRAMES.right.trimH;
+
+// Render-only presentation cadence. Three high-quality poses describe planted,
+// passing and airborne strides with one bounded cycle; swapping them at shot
+// rate produced jitter, while never swapping made RIG skate.
+export const RIG_RUN_CYCLE_MS = 300;
+export const RIG_RUN_ACTION_FROM = 0.24;
+export const RIG_RUN_ACTION_TO = 0.72;
+export const RIG_RECOIL_MS = 105;
+export const RIG_RECOIL_TILES = 0.095;
+
+// Painted held-weapon cutouts. All five sources share 16px of transparent
+// safety padding; the renderer crops that padding in UV space and sizes each
+// plane in world units here. `muzzleY` is measured from the trimmed image's
+// top edge, so player.js can put the visible bore on the simulation aim axis
+// instead of merely centering five differently-shaped canvases.
+export const RIG_WEAPON_ATLAS_PATH = '../../assets/generated/weapons/rig-weapons-atlas-v1.png';
+export const RIG_WEAPON_ATLAS_W = 2048;
+export const RIG_WEAPON_ATLAS_H = 256;
+export const RIG_WEAPON_ART = Object.freeze({
+  R: Object.freeze({
+    sourcePath: '../../assets/generated/weapons/rig-rivetgun-v1.png',
+    atlasX: 0, atlasY: 0,
+    canvasW: 420, canvasH: 215, trimX: 16, trimY: 16, trimW: 388, trimH: 183,
+    worldW: 1.16, muzzleY: 82,
+  }),
+  S: Object.freeze({
+    sourcePath: '../../assets/generated/weapons/rig-scatter-v1.png',
+    atlasX: 452, atlasY: 0,
+    canvasW: 355, canvasH: 213, trimX: 16, trimY: 16, trimW: 323, trimH: 181,
+    worldW: 1.05, muzzleY: 103,
+  }),
+  L: Object.freeze({
+    sourcePath: '../../assets/generated/weapons/rig-sunspear-v1.png',
+    atlasX: 839, atlasY: 0,
+    canvasW: 390, canvasH: 201, trimX: 16, trimY: 16, trimW: 358, trimH: 169,
+    worldW: 1.18, muzzleY: 82,
+  }),
+  H: Object.freeze({
+    sourcePath: '../../assets/generated/weapons/rig-hunger-v1.png',
+    atlasX: 1261, atlasY: 0,
+    canvasW: 331, canvasH: 218, trimX: 16, trimY: 16, trimW: 299, trimH: 186,
+    worldW: 1.02, muzzleY: 95,
+  }),
+  F: Object.freeze({
+    sourcePath: '../../assets/generated/weapons/rig-cindermouth-v1.png',
+    atlasX: 1624, atlasY: 0,
+    canvasW: 368, canvasH: 220, trimX: 16, trimY: 16, trimW: 336, trimH: 188,
+    worldW: 1.08, muzzleY: 95,
+  }),
+});
+
+// Every painted cutout and procedural fallback ends at this exact local x.
+// player.js offsets the group so this point coincides with sim/player.js's
+// elliptical spawn offset for all eight directions; changing the silhouette
+// never changes gameplay.
+export const RIG_GUN_MUZZLE_X = 0.82;
 
 // Same shape of check as spriteViolations() below, scoped to the real
 // sprite's plane size: proves the documented overrun stays inside its own

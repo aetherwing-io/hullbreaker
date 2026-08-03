@@ -100,7 +100,7 @@ import { clearCorpses, updateCorpses } from './render/hostiles.js';
 import './render/backdrop.js';
 import './render/level.js';
 import './render/seams.js';
-import { limbPieces } from './render/limb.js';
+import { limbPieces, updateLimbFoldCull } from './render/limb.js';
 import './render/crown.js';
 import './render/finale.js';
 import './render/transform.js';
@@ -358,6 +358,7 @@ function update(dt) {
   const wScale = (gameMs < mods.chronoUntil ? CONFIG.mods.chronoScale : 1) * hScale;
   updateScroll(dt * wScale);             // sim half of the old updateCamera
   syncCamera();                          // render half, same point in the frame
+  updateLimbFoldCull();                   // sector self-occlusion; uploads only on facet changes
   updateSpawner();
   updatePlayer(dt * hScale);
   /* render: effect pools + crush warning. It sits BEFORE the death return on
@@ -514,6 +515,7 @@ function telemetry() {
     hostiles: hostiles.map((e) => ({
       id: e.id, kind: e.kind, state: e.state, dir: e.dir,
       x: e.x, y: e.y, hp: e.hp, materialized: gameMs >= e.enterUntil,
+      staggered: gameMs < e.staggerUntil,
     })),
     // movement-verb prototypes, additive and inert when their flags are off:
     // the tether's phase/anchor and the momentum chain's live multiplier, so a
@@ -610,13 +612,17 @@ let last = performance.now();
        still paints the frame it broke on, which is what keeps the picture
        honest while src/pure/failsafe.js decides whether this is a blip, a
        restart, or the end of the run.
-   The dt clamp is unchanged and is the whole answer to a backgrounded tab:
-   Chrome suspends rAF entirely while the tab is hidden, so the frame that
-   lands on return carries a minute of wall clock and advances the
-   simulation by at most 50 ms of it. */
+   A hidden page explicitly skips sim and GPU work because extension/CDP
+   sessions are not always throttled like ordinary background tabs. The dt
+   clamp remains the return-path guard: the first visible frame advances the
+   simulation by at most 50 ms of missed wall time. */
 function frame(t) {
   if (failsafeHalted()) return;
   requestAnimationFrame(frame);
+  // Chrome normally throttles a hidden tab, but extension/CDP-controlled QA
+  // pages can remain eligible for full-rate WebGL. Keep the loop recoverable
+  // while doing no simulation, HUD, or GPU work until the page is visible.
+  if (document.hidden) { last = t; return; }
   samplePerf(t);
   failsafeBeat();
   const dt = FIXED_DT_MS ? FIXED_DT_MS / 1000 : Math.min(50, t - last) / 1000;
@@ -667,7 +673,11 @@ window.HB = Object.freeze({
       stats: {
         fireRateMs: def.fireRateMs, damage: def.damage, speed: def.speed,
         count: def.count, pierceBudget: def.pierceBudget,
-        seekRange: def.seekRange, volatileRadius: def.volatileRadius,
+        seekRange: def.seekRange, seekFuelMs: def.seekFuelMs,
+        seekRetargets: def.seekRetargets,
+        terrainPhaseTiles: def.terrainPhaseTiles,
+        heavyImpulse: def.heavyImpulse, heavyStunMs: def.heavyStunMs,
+        volatileRadius: def.volatileRadius,
       },
     };
   },

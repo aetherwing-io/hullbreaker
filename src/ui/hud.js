@@ -28,6 +28,10 @@ import { flowSnapshot } from '../sim/flow.js';
 import {
   activeTransformEvent, committedBand, lastCommit, transformAltitudeAt, transformBandLabel,
 } from '../sim/transform.js';
+// Installs the non-blocking rolled-weapon reveal on the presentation bridge.
+// Kept as a side-effect import here so the composition root's HUD import is
+// still the sole UI entrypoint and audio (loaded last) can wrap the hook.
+import './loot.js';
 
 const hudTL = document.getElementById('hudTL');
 const hudTC = document.getElementById('hudTC');
@@ -99,15 +103,17 @@ export function updateHUD() {
   const gunName = currentGunLabel(currentGun.tier > 1 || mobileHud);
   let tl = 'RIG ' + '▰'.repeat(hp) + '▱'.repeat(P.maxHealth - hp) +
            (IS_TRAVERSAL_SLICE ? '' : '  ×' + Math.max(0, player.lives)) +
-           (mobileHud ? '  ·  ' : '\n') +
+           // A relic name can be a full trait stack.  Two authored phone rows
+           // are steadier than letting that stack wrap into the altitude row.
+           '\n' +
            '[' + currentWeapon + gunTier + '] ' + gunName;
   // OVERDRIVE is welded to the weapon readout: it is an earned combat power,
   // not a developer score. The name makes the faster fire / launch shock
   // promise legible the first time a player sees the meter fill.
   if (SCORE_ENABLED) {
     const notch = scoreNotchNow();
-    tl += ' · OVERDRIVE ' + scoreNotchGlyphs(notch) +
-      (notch >= CONFIG.score.notches.length ? ' HULLBREAK' : '');
+    tl += (mobileHud ? ' · OD ' : ' · OVERDRIVE ') + scoreNotchGlyphs(notch) +
+      (notch >= CONFIG.score.notches.length ? (mobileHud ? ' BREAK' : ' HULLBREAK') : '');
   }
   // FLOW rides the same readout for the same reason: the player's eye is
   // already there, and the chain has to be visible while it builds and bleeds.
@@ -124,8 +130,9 @@ export function updateHUD() {
     else if (hk.acquirable) tl += ' · HOOK';
   }
   for (const [f, label] of MOD_LABELS)
-    if (gameMs < mods[f]) tl += ' · ' + label + ' ' + Math.ceil((mods[f] - gameMs) / 1000) + 's';
-  if (mods.lance) tl += ' · LANCE ARMING';
+    if (gameMs < mods[f]) tl += ' · ' + (mobileHud ? label.slice(0, 3) : label) + ' ' +
+      Math.ceil((mods[f] - gameMs) / 1000) + 's';
+  if (mods.lance) tl += mobileHud ? ' · LANCE' : ' · LANCE ARMING';
   if (tl !== hudTLLast) { hudTLLast = tl; hudTL.textContent = tl; }
   const edge = Number.isFinite(sliceStats.minEdgeMargin)
     ? Math.max(0, sliceStats.minEdgeMargin).toFixed(1)

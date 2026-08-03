@@ -124,6 +124,46 @@ let camYaw = 0;                 // render yaw (radians); animated by corner even
 let camYawBase = 0;             // face heading after all completed corners
 const _look = new THREE.Vector3();
 
+/* Proud world geometry cannot use scrollX as its visibility clock during a
+   corner: the gate deliberately freezes scroll fourteen tiles before the
+   bend while this camera traverses the whole 60-degree ritual.  Expose the
+   camera-facing armour sector as a render-only primitive so the static limb
+   and its service dressing can agree on which side of the fold is actually
+   readable.
+
+   Do not hand the sector over at the 30-degree ratchet hold.  Both broad
+   faces are edge-on there, which is exactly where showing the next face's
+   buttress/ridge produced the freestanding cream slab.  The deck edge is
+   allowed to bridge the turn in its own renderers; proud anatomy changes
+   owner only just before the final detent, when it is within 2.4 degrees of
+   being seen square-on.  This is a binary instancing cull, so one transition
+   uploads matrices once instead of scaling hundreds of instances per frame. */
+const FOLD_HANDOFF_PROGRESS = 0.96;
+
+export function cameraFacingFacet() {
+  const step = 2 * CONFIG.path.turnDeg * DEG * CONFIG.path.turnSign;
+  if (Math.abs(step) < 1e-6) return 0;
+  const base = Math.round(camYawBase / step);
+  const progress = Math.max(0, Math.min(1, (camYaw - camYawBase) / step));
+  return Math.max(0, Math.min(CONFIG.path.faces,
+    base + (progress >= FOLD_HANDOFF_PROGRESS ? 1 : 0)));
+}
+
+export function cameraFoldSnapshot() {
+  const step = 2 * CONFIG.path.turnDeg * DEG * CONFIG.path.turnSign;
+  const validStep = Math.abs(step) >= 1e-6;
+  const base = validStep ? Math.round(camYawBase / step) : 0;
+  return {
+    yaw: camYaw,
+    baseFacet: base,
+    facingFacet: cameraFacingFacet(),
+    progress: validStep
+      ? Math.max(0, Math.min(1, (camYaw - camYawBase) / step))
+      : 0,
+    handoffProgress: FOLD_HANDOFF_PROGRESS,
+  };
+}
+
 /* ------------------------------ shake ------------------------------ *
  * Trauma (T-011): events add it, it decays, amplitude is trauma squared,
  * and it is applied LAST — after the pose and the lookAt — as a camera-

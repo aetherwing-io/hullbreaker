@@ -111,6 +111,7 @@ export const CLASSIC = {
   mortarPod: CONFIG.palette.mortarPod,
   mortarMark: CONFIG.palette.mortarMark,
   mortarBlast: CONFIG.palette.mortarBlast,
+  warden: CONFIG.palette.warden,
   capsule: CONFIG.palette.capsule,
   modCapsule: CONFIG.palette.modCapsule,
   capsuleInk: '#14181e',
@@ -212,6 +213,9 @@ export const CONCEPT = {
                                          //   the ecology, because the ARC is the read
   mortarMark: CONFIG.palette.mortarMark, // the marked patch is a warning, not a body:
   mortarBlast: CONFIG.palette.mortarBlast, //   warm in both modes, like every tell
+  // A Crown mechanism, not part of the acid-grown hostile ecology. The
+  // generated body supplies its rust/iron detail; this is its quiet light.
+  warden: 0xb66f3d,
   // NOTE: there is no generic "enemyGlow" token. Every emissive a hostile can
   // wear is a named state color (houndTell/houndCharge/polypTell/polypBeam/
   // polypVent, plus the mode-independent glowOff/hitFlash), so a catch-all

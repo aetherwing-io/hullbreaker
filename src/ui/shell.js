@@ -36,7 +36,9 @@ import {
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { player, P } from '../sim/player.js';
 import { kills } from '../sim/hostiles.js';
-import { shotsFired, weaponDef, weaponKills } from '../sim/weapons.js';
+import {
+  currentGun, currentGunLabel, shotsFired, weaponDef, weaponKills,
+} from '../sim/weapons.js';
 import { scoreSnapshot } from '../sim/score.js';
 import { committedBand, transformAltitudeAt } from '../sim/transform.js';
 
@@ -128,7 +130,8 @@ function hideTitle() {
 
 function rowsHtml(rows) {
   return '<div class="statgrid">' + rows.map((r) =>
-    '<span class="k">' + r.label + '</span><span class="v">' + r.value + '</span>').join('') +
+    '<span class="k" data-stat="' + r.label + '">' + r.label + '</span>' +
+    '<span class="v" data-stat="' + r.label + '">' + r.value + '</span>').join('') +
     '</div>';
 }
 
@@ -208,12 +211,35 @@ function statsInput() {
 }
 
 function statsPanel(state) {
-  return '<div class="panel">' +
-    rowsHtml(runStatRows(statsInput())) +
+  const input = statsInput();
+  const rows = runStatRows(input);
+  if (state === 'VICTORY' && MODE === 'six-face') {
+    const threat = Math.max(0, Math.round(Number(input.score?.threat) || 0));
+    const rank = threat >= 9000 ? 'S' : threat >= 6500 ? 'A'
+      : threat >= 4000 ? 'B' : threat >= 1800 ? 'C' : 'D';
+    const value = (label, fallback = '—') =>
+      rows.find((row) => row.label === label)?.value ?? fallback;
+    const tier = currentGun.tier ? `TIER ${['', 'I', 'II', 'III'][currentGun.tier]}` : 'FIELD ISSUE';
+    return '<div class="panel result-panel">' +
+      '<div class="result-rank"><span>THREAT RANK</span><strong>' + rank + '</strong>' +
+        '<em>' + threat + '</em></div>' +
+      '<div class="result-weapon"><span>FINAL ARSENAL · ' + tier + '</span>' +
+        '<b>' + currentGunLabel() + '</b></div>' +
+      '<div class="result-strip">' +
+        '<span><b>' + value('TIME') + '</b><small>TIME</small></span>' +
+        '<span><b>' + value('KILLS', '0') + '</b><small>KILLS</small></span>' +
+        '<span><b>' + value('KILLS / 100 SHOTS', '—') + '</b><small>K / 100</small></span>' +
+        '<span><b>' + value('DEATHS', '0') + '</b><small>DEATHS</small></span>' +
+      '</div>' +
+      '<details class="result-details"><summary>FULL RUN TELEMETRY</summary>' +
+        rowsHtml(rows) + '</details>' +
+      keysHtml([['R', 'break it again'], ['Q', 'start screen']]) +
+      '</div>';
+  }
+  return '<div class="panel">' + rowsHtml(rows) +
     keysHtml(state === 'VICTORY'
       ? [['R', 'run it again'], ['Q', 'start screen']]
-      : [['R', 'restart run'], ['Q', 'start screen']]) +
-    '</div>';
+      : [['R', 'restart run'], ['Q', 'start screen']]) + '</div>';
 }
 
 function setPanel(html) {
