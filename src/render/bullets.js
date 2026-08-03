@@ -1,16 +1,22 @@
 /* ======================== BULLET INSTANCES ======================== */
 /* One fixed pool for every letter weapon, addressed by the same slot index
-   as bulletPool in src/sim/weapons.js. The point-collision projectile remains
-   the bright CORE. Two presentation-only companions make it readable at the
-   true camera scale: a soft halo that grows BACKWARD from the collision nose,
-   and three short history segments that describe its path. The latter is the
-   important weapon-language layer: SPREAD draws a fan, LASER cuts a corridor,
-   HOMING leaves an unmistakable bend, and FLAME drags a crawling wake.
+   as bulletPool in src/sim/weapons.js. Simulation still collides a point.
+   Presentation gives each weapon a different sentence at actual play scale:
+
+     R  a thin, hard rectangular needle with a clipped two-beat tracer
+     S  five compact triangular flechettes; the fan itself is the trail
+     L  a narrow cyan crystal lance plus three separated corridor segments
+     H  a magenta steering dart with a long, visibly bending comet wake
+     F  a broad orange wedge and two broken ember/plasma tongues
+
+   The old shared octahedron + spherical halo made all five read as differently
+   coloured eggs. Cores now use five low-poly geometries, while the soft layer
+   is a tapered plane behind the shot, never an orb. Everything remains fixed
+   capacity, instanced, allocation-free in the hot loop, and render-only.
 
    No companion reaches ahead of the core. `bulletNoseTiles()` still clamps
-   the leading edge to the shipped laser nose; each halo is shifted backward
-   by half of the extra tail it gains. The sim still collides a point, and
-   nothing in this module can damage or steer anything. */
+   the leading edge to the shipped laser nose; every extra tile is shifted
+   behind the sim point. Nothing in this module can damage or steer anything. */
 
 import * as THREE from 'three';
 import { CONFIG, BULLET_NOSE_CEILING_TILES } from '../config.js';
@@ -23,52 +29,79 @@ import { PAL } from './palette.js';
 
 const _pp = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 };   // shared per-frame pose scratch
 
-const bulletMaterial = new THREE.MeshBasicMaterial({
-  // Keep the collision core opaque and saturated. Additive blending belongs
-  // on the aura/trail; using it on the core pushed amber SPREAD shards to
-  // white against the lit hull and erased their faceted silhouette.
+const R = CONFIG.rifle.radius;
+// Dispatch follows the weapon table rather than a five-letter switch. A future
+// procedural/stacked shot gets a safe rifle-form fallback until it supplies a
+// visual row; the renderer does not need another branch in its hot loop.
+const WEAPON_TYPES = Object.keys(CONFIG.weapons);
+const coreMaterial = new THREE.MeshBasicMaterial({
+  // Opaque cores retain their hue against the rust deck. Bloom and additive
+  // energy belong to the wake plane/trails, never to the identity silhouette.
   color: 0xffffff, fog: false, depthWrite: false,
 });
-const bulletMesh = new THREE.InstancedMesh(
-  // A faceted diamond remains a projectile when bloom catches it; the old
-  // stretched sphere turned each SPREAD pellet into a white egg.
-  new THREE.OctahedronGeometry(CONFIG.rifle.radius, 0),
-  bulletMaterial,
-  BULLET_MAX
-);
-bulletMesh.frustumCulled = false;
-bulletMesh.renderOrder = 3;
-scene.add(bulletMesh);
 
-/* Width, aura and wake are presentation units only. The x-axis size of the
-   core is still derived exclusively from bulletNoseTiles() below. Values are
-   intentionally broad at FAR: the smallest live core is roughly a six-pixel
-   mark instead of a sub-pixel bead, while the translucent halo carries shape
-   without hiding a target. */
+// Every geometry spans local -R…+R on x, so the same scale/anchor arithmetic
+// gives it an exact, clamped leading edge. Cross-sections differ deliberately.
+const CORE_GEO = {
+  R: new THREE.BoxGeometry(R * 2, R * 0.34, R * 0.34),
+  S: new THREE.ConeGeometry(R * 0.42, R * 2, 3, 1, false),
+  L: new THREE.CylinderGeometry(R * 0.17, R * 0.17, R * 2, 4, 1, false),
+  H: new THREE.ConeGeometry(R * 0.55, R * 2, 4, 1, false),
+  F: new THREE.ConeGeometry(R * 1.02, R * 2, 3, 1, false),
+};
+for (const type of ['S', 'L', 'H', 'F']) CORE_GEO[type].rotateZ(-Math.PI / 2);
+
+const coreMeshes = {};
+for (const type of WEAPON_TYPES) {
+  const mesh = new THREE.InstancedMesh(CORE_GEO[type] || CORE_GEO.R, coreMaterial, BULLET_MAX);
+  mesh.frustumCulled = false;
+  mesh.renderOrder = 3;
+  scene.add(mesh);
+  coreMeshes[type] = mesh;
+}
+const coreMeshList = WEAPON_TYPES.map((type) => coreMeshes[type]);
+
+/* All distances below are presentation tiles. `front` is a fraction/cap of
+   the clamped bulletNoseTiles result; `tail` may extend backward freely.
+   History count/fill make a hard tracer, an interrupted lance, a curved comet,
+   and broken flame tongues from the same one instanced segment pool. */
 const LOOK = {
-  R: { core: 1.35, halo: 2.35, tail: 0.30, trail: 0.11, pulse: 0.00 },
-  S: { core: 1.35, halo: 1.95, tail: 0.18, trail: 0.075, pulse: 0.00 },
-  L: { core: 2.20, halo: 5.20, tail: 2.10, trail: 0.16, pulse: 0.06 },
-  H: { core: 1.90, halo: 3.90, tail: 0.72, trail: 0.15, pulse: 0.20 },
-  F: { core: 2.10, halo: 4.50, tail: 0.92, trail: 0.18, pulse: 0.28 },
+  R: { front: 1.00, frontCap: Infinity, tail: 0.38, wake: 0.18, wakeW: 0.070,
+       trail: 0.026, segments: 2, fill: 0.72, pulse: 0.00, gain: 0.58 },
+  S: { front: 0.82, frontCap: 0.36, tail: 0.16, wake: 0.08, wakeW: 0.105,
+       trail: 0.024, segments: 1, fill: 0.42, pulse: 0.00, gain: 0.34 },
+  L: { front: 1.00, frontCap: Infinity, tail: 1.28, wake: 0.42, wakeW: 0.105,
+       trail: 0.052, segments: 3, fill: 0.80, pulse: 0.06, gain: 0.82 },
+  H: { front: 0.90, frontCap: 0.36, tail: 0.48, wake: 0.38, wakeW: 0.205,
+       trail: 0.075, segments: 3, fill: 0.90, pulse: 0.18, gain: 0.70 },
+  F: { front: 0.95, frontCap: 0.42, tail: 0.46, wake: 0.62, wakeW: 0.420,
+       trail: 0.140, segments: 2, fill: 0.68, pulse: 0.20, gain: 0.78,
+       coreColor: PAL.muzzle },
 };
 
-// Per-weapon energy in the soft aura. SPREAD already communicates through
-// five physical lanes; giving every pellet a full-power halo merged those
-// lanes into a cluster of white discs around RIG.
-const HALO_GAIN = { R: 0.78, S: 0.42, L: 0.86, H: 0.72, F: 0.68 };
-
-const haloMesh = new THREE.InstancedMesh(
-  new THREE.SphereGeometry(CONFIG.rifle.radius, 6, 6),
+// A pointed, asymmetric ribbon in local XY. Its white vertex colour is only
+// an alpha silhouette; per-shot identity remains instanceColor.
+const wakeGeo = new THREE.BufferGeometry();
+wakeGeo.setAttribute('position', new THREE.Float32BufferAttribute([
+  -0.50,  0.00, 0,
+  -0.30,  0.50, 0,
+   0.50,  0.15, 0,
+   0.50, -0.15, 0,
+  -0.30, -0.50, 0,
+], 3));
+wakeGeo.setIndex([0, 1, 2, 0, 2, 3, 0, 3, 4]);
+wakeGeo.computeVertexNormals();
+const wakeMesh = new THREE.InstancedMesh(
+  wakeGeo,
   new THREE.MeshBasicMaterial({
-    color: 0xffffff, transparent: true, opacity: 0.28, fog: false,
-    blending: THREE.AdditiveBlending, depthWrite: false,
+    color: 0xffffff, transparent: true, opacity: 0.30, fog: false,
+    side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false,
   }),
-  BULLET_MAX
+  BULLET_MAX,
 );
-haloMesh.frustumCulled = false;
-haloMesh.renderOrder = 2;
-scene.add(haloMesh);
+wakeMesh.frustumCulled = false;
+wakeMesh.renderOrder = 2;
+scene.add(wakeMesh);
 
 // Four remembered points make three segments. This is one instanced draw,
 // fixed for the life of the page; a saturated bullet pool allocates nothing.
@@ -77,7 +110,7 @@ const TRAIL_SEGMENTS = TRAIL_POINTS - 1;
 const TRAIL_MAX = BULLET_MAX * TRAIL_SEGMENTS;
 const TRAIL_FADE = [0.72, 0.42, 0.20];
 const trailMesh = new THREE.InstancedMesh(
-  new THREE.BoxGeometry(1, 1, 1),
+  new THREE.BoxGeometry(1, 1, 0.055),
   new THREE.MeshBasicMaterial({
     color: 0xffffff, transparent: true, opacity: 0.68, fog: false,
     blending: THREE.AdditiveBlending, depthWrite: false,
@@ -93,8 +126,9 @@ const _bq = new THREE.Quaternion();
 const _be = new THREE.Euler();
 const _bs = new THREE.Vector3();
 const _bv = new THREE.Vector3();
-const _haloPos = new THREE.Vector3();
-const _haloScale = new THREE.Vector3();
+const _corePos = new THREE.Vector3();
+const _wakePos = new THREE.Vector3();
+const _wakeScale = new THREE.Vector3();
 const _flight = new THREE.Vector3();
 const _trailDir = new THREE.Vector3();
 const _trailMid = new THREE.Vector3();
@@ -102,10 +136,17 @@ const _trailScale = new THREE.Vector3();
 const _axisX = new THREE.Vector3(1, 0, 0);
 const _trailQ = new THREE.Quaternion();
 const _shotColor = new THREE.Color();
-bulletMesh.setColorAt(0, _shotColor.setHex(0xffffff));   // allocates instanceColor up front
-haloMesh.setColorAt(0, _shotColor.setHex(0xffffff));
+const _traitColor = new THREE.Color();
+for (const type of WEAPON_TYPES) {
+  coreMeshes[type].setColorAt(0, _shotColor.setHex(0xffffff));
+  for (let i = 0; i < BULLET_MAX; i++) coreMeshes[type].setMatrixAt(i, HIDE);
+}
+wakeMesh.setColorAt(0, _shotColor.setHex(0xffffff));
+for (let i = 0; i < BULLET_MAX; i++) wakeMesh.setMatrixAt(i, HIDE);
 trailMesh.setColorAt(0, _shotColor.setHex(0xffffff));
+for (let i = 0; i < TRAIL_MAX; i++) trailMesh.setMatrixAt(i, HIDE);
 const slotType = new Array(BULLET_MAX).fill('');         // gate color uploads on change
+const slotVisible = new Uint8Array(BULLET_MAX);
 const historyCount = new Uint8Array(BULLET_MAX);
 const historyX = new Float32Array(BULLET_MAX * TRAIL_POINTS);
 const historyY = new Float32Array(BULLET_MAX * TRAIL_POINTS);
@@ -114,32 +155,46 @@ const historyZ = new Float32Array(BULLET_MAX * TRAIL_POINTS);
 function trailIndex(slot, segment) { return slot * TRAIL_SEGMENTS + segment; }
 function pointIndex(slot, point) { return slot * TRAIL_POINTS + point; }
 
-function slotSpawned(i, type) {
+function slotSpawned(i, type, meta = null) {
   historyCount[i] = 0;
-  if (slotType[i] !== type) {
-    slotType[i] = type;
-    _shotColor.setHex(PAL.shots[type]);
-    bulletMesh.setColorAt(i, _shotColor);
-    _shotColor.setHex(PAL.shots[type]).multiplyScalar(HALO_GAIN[type] || 0.7);
-    haloMesh.setColorAt(i, _shotColor);
-    for (let j = 0; j < TRAIL_SEGMENTS; j++) {
-      _shotColor.setHex(PAL.shots[type]).multiplyScalar(TRAIL_FADE[j]);
-      trailMesh.setColorAt(trailIndex(i, j), _shotColor);
-    }
-    bulletMesh.instanceColor.needsUpdate = true;
-    haloMesh.instanceColor.needsUpdate = true;
-    trailMesh.instanceColor.needsUpdate = true;
+  const visualType = coreMeshes[type] ? type : 'R';
+  const look = LOOK[type] || LOOK.R;
+  const color = PAL.shots[type] || PAL.shots.R;
+  const tier = meta ? meta.tier : 0;
+  const phase = meta ? meta.phase : 0;
+  const volatile = meta ? meta.volatile : 0;
+  if (slotVisible[i] && coreMeshes[slotType[i]]) coreMeshes[slotType[i]].setMatrixAt(i, HIDE);
+  slotType[i] = visualType;
+  slotVisible[i] = 1;
+  _shotColor.setHex(look.coreColor || color);
+  if (tier) _shotColor.lerp(_traitColor.setHex(0xffffff), Math.min(0.30, tier * 0.08));
+  if (phase) _shotColor.lerp(_traitColor.setHex(PAL.shots.L), Math.min(0.30, phase * 0.12));
+  coreMeshes[visualType].setColorAt(i, _shotColor);
+  _shotColor.setHex(color);
+  if (volatile) _shotColor.lerp(_traitColor.setHex(PAL.muzzle), Math.min(0.58, 0.28 + volatile * 0.10));
+  _shotColor.multiplyScalar(look.gain * (1 + tier * 0.07));
+  wakeMesh.setColorAt(i, _shotColor);
+  for (let j = 0; j < TRAIL_SEGMENTS; j++) {
+    _shotColor.setHex(color);
+    if (volatile) _shotColor.lerp(_traitColor.setHex(PAL.muzzle), Math.min(0.48, 0.22 + volatile * 0.08));
+    _shotColor.multiplyScalar(TRAIL_FADE[j] * (1 + tier * 0.05));
+    trailMesh.setColorAt(trailIndex(i, j), _shotColor);
   }
+  coreMeshes[visualType].instanceColor.needsUpdate = true;
+  wakeMesh.instanceColor.needsUpdate = true;
+  trailMesh.instanceColor.needsUpdate = true;
 }
 
 function hideSlot(i) {
-  bulletMesh.setMatrixAt(i, HIDE);
-  haloMesh.setMatrixAt(i, HIDE);
+  if (!slotVisible[i]) return;
+  if (coreMeshes[slotType[i]]) coreMeshes[slotType[i]].setMatrixAt(i, HIDE);
+  wakeMesh.setMatrixAt(i, HIDE);
+  slotVisible[i] = 0;
   historyCount[i] = 0;
   for (let j = 0; j < TRAIL_SEGMENTS; j++) trailMesh.setMatrixAt(trailIndex(i, j), HIDE);
 }
 
-function syncTrail(i, x, y, z, width) {
+function syncTrail(i, x, y, z, look, widthMult) {
   const count = historyCount[i];
   if (count === 0) {
     for (let p = 0; p < TRAIL_POINTS; p++) {
@@ -161,7 +216,10 @@ function syncTrail(i, x, y, z, width) {
 
   for (let j = 0; j < TRAIL_SEGMENTS; j++) {
     const meshI = trailIndex(i, j);
-    if (j + 1 >= historyCount[i]) { trailMesh.setMatrixAt(meshI, HIDE); continue; }
+    if (j >= look.segments || j + 1 >= historyCount[i]) {
+      trailMesh.setMatrixAt(meshI, HIDE);
+      continue;
+    }
     const a = pointIndex(i, j), b = pointIndex(i, j + 1);
     const dx = historyX[a] - historyX[b];
     const dy = historyY[a] - historyY[b];
@@ -170,11 +228,15 @@ function syncTrail(i, x, y, z, width) {
     if (len < 0.01) { trailMesh.setMatrixAt(meshI, HIDE); continue; }
     _trailDir.set(dx / len, dy / len, dz / len);
     _trailQ.setFromUnitVectors(_axisX, _trailDir);
-    _trailMid.set((historyX[a] + historyX[b]) * 0.5,
-      (historyY[a] + historyY[b]) * 0.5,
-      (historyZ[a] + historyZ[b]) * 0.5);
+    const drawLen = len * look.fill;
+    // Start at the newer sample and stop short of the older one. The missing
+    // fraction is a deliberate gap, what makes LASER segmented and FLAME
+    // broken tongues instead of one generic hose.
+    _trailMid.set(historyX[a] - _trailDir.x * drawLen * 0.5,
+      historyY[a] - _trailDir.y * drawLen * 0.5,
+      historyZ[a] - _trailDir.z * drawLen * 0.5);
     const taper = 1 - j * 0.18;
-    _trailScale.set(len, width * taper, width * taper);
+    _trailScale.set(drawLen, look.trail * taper * widthMult, 1);
     _bm.compose(_trailMid, _trailQ, _trailScale);
     trailMesh.setMatrixAt(meshI, _bm);
   }
@@ -185,10 +247,16 @@ function syncTrail(i, x, y, z, width) {
 // src/sim/weapons.js); every other type always takes the flight branch.
 function syncSlot(i, b) {
   const bp = towerPose(b.x, _pp);
-  const def = CONFIG.weapons[b.type];
+  const def = CONFIG.weapons[b.type] || CONFIG.weapons.R;
   const look = LOOK[b.type] || LOOK.R;
+  const visualType = coreMeshes[b.type] ? b.type : 'R';
+  const meta = b.meta;
+  const tier = meta ? meta.tier : 0;
+  const heavy = meta ? meta.heavy : 0;
+  const seeker = meta ? meta.seeker : 0;
+  const volatile = meta ? meta.volatile : 0;
   const crawling = b.type === 'F' && b.crawling;
-  const base = crawling ? def.crawlScale : def.scale;
+  const base = crawling && def.crawlScale ? def.crawlScale : def.scale;
   // live speed, not the def's nominal one: a homing shot mid-turn or a
   // flame arcing under gravity draws the stretch it is ACTUALLY carrying
   // this frame, same principle as the spark stretch in src/render/fx.js.
@@ -200,26 +268,35 @@ function syncSlot(i, b) {
   // Position-driven flicker is deterministic and remains legible during a
   // hit-stop. Only the energy weapons pulse; rifle/spread keep a hard edge.
   const pulse = 1 + look.pulse * Math.sin(b.x * 3.7 + b.y * 2.3 + i * 0.61);
-  _bs.set(nose / CONFIG.rifle.radius, base[1] * look.core * pulse,
-    base[2] * look.core * pulse);
-  const ang = crawling ? 0 : Math.atan2(b.vy, b.vx);
+  const front = Math.min(nose * look.front, look.frontCap);
+  const tail = look.tail * (crawling ? 1.22 : 1);
+  const ang = crawling ? (b.dir < 0 ? Math.PI : 0) : Math.atan2(b.vy, b.vx);
   _bq.setFromEuler(_be.set(0, bp.yaw, ang, 'YZX'));
   _bv.set(bp.x, b.y + bp.alt, bp.z);
-  _bm.compose(_bv, _bq, _bs);
-  bulletMesh.setMatrixAt(i, _bm);
-
-  // Grow the aura behind the collision nose. For an extra tail T, a centred
-  // extent of nose+T/2 shifted backward T/2 has the SAME leading edge (nose)
-  // and spends every added tile behind the sim point.
   const ca = Math.cos(ang), sa = Math.sin(ang);
   _flight.set(Math.cos(bp.yaw) * ca, sa, -Math.sin(bp.yaw) * ca);
-  _haloPos.copy(_bv).addScaledVector(_flight, -look.tail * 0.5);
-  _haloScale.set((nose + look.tail * 0.5) / CONFIG.rifle.radius,
-    base[1] * look.halo * pulse, base[2] * look.halo * pulse);
-  _bm.compose(_haloPos, _bq, _haloScale);
-  haloMesh.setMatrixAt(i, _bm);
+  // The geometry spans -R…+R. Scale to (front + tail), then shift its center
+  // by (front - tail)/2 so its leading tip is exactly +front from the sim
+  // point and every extra bit of spectacle lives behind it.
+  _corePos.copy(_bv).addScaledVector(_flight, (front - tail) * 0.5);
+  // Traits widen the readable energy signature behind/around the point, never
+  // its leading reach. HEAVY gets a denser core, SEEKER a stronger path, and
+  // VOLATILE a broad hot wake; tier supplies a small shared rarity lift.
+  const coreWidth = 1 + tier * 0.05 + heavy * 0.13 + volatile * 0.07;
+  const wakeWidth = 1 + tier * 0.09 + seeker * 0.10 + volatile * 0.24;
+  const trailWidth = 1 + tier * 0.07 + seeker * 0.13 + volatile * 0.14;
+  _bs.set((front + tail) / (R * 2), pulse * coreWidth, pulse * coreWidth);
+  _bm.compose(_corePos, _bq, _bs);
+  coreMeshes[visualType].setMatrixAt(i, _bm);
 
-  syncTrail(i, _bv.x, _bv.y, _bv.z, look.trail * pulse);
+  const wakeFront = front * 0.82;
+  const wakeTail = tail + look.wake;
+  _wakePos.copy(_bv).addScaledVector(_flight, (wakeFront - wakeTail) * 0.5);
+  _wakeScale.set(wakeFront + wakeTail, look.wakeW * pulse * wakeWidth, 1);
+  _bm.compose(_wakePos, _bq, _wakeScale);
+  wakeMesh.setMatrixAt(i, _bm);
+
+  syncTrail(i, _bv.x, _bv.y, _bv.z, look, trailWidth);
 }
 
 /* ------------------- departing tracers (bend cull) ------------------ *
@@ -232,7 +309,9 @@ function syncSlot(i, b) {
 
 const DEPART_MAX = 24, DEPART_MS = 300;
 const departMesh = new THREE.InstancedMesh(
-  new THREE.SphereGeometry(CONFIG.rifle.radius, 6, 6),
+  // A bend-cull echo keeps the projectile's directional grammar. The former
+  // sphere briefly turned every weapon back into an orb at exactly the seam.
+  new THREE.BoxGeometry(1, 0.065, 0.065),
   new THREE.MeshBasicMaterial({
     color: 0xffffff, transparent: true, opacity: 0.85, fog: false,
     blending: THREE.AdditiveBlending, depthWrite: false,
@@ -261,9 +340,9 @@ function bendCulled(i, b, fromX) {
     d.until = DEPART_MS;
     d.x = bp.x; d.y = b.y + bp.alt; d.z = bp.z;
     d.vx = Math.cos(yaw) * vx; d.vy = b.crawling ? 0 : b.vy; d.vz = -Math.sin(yaw) * vx;
-    // uniform sphere: take the SMALLEST axis of the shot's scale, or a laser's
-    // 7x length would leave a beach ball hanging in the air
-    d.scale = Math.min(...def.scale);
+    // Bound the departing needle by the smallest declared axis so LASER does
+    // not leave a seven-tile cosmetic hit claim after the sim has culled it.
+    d.scale = Math.max(0.34, Math.min(...def.scale));
     const idx = departing.indexOf(d);
     departMesh.setColorAt(idx, _shotColor.setHex(PAL.shots[b.type]));
     departMesh.instanceColor.needsUpdate = true;
@@ -283,16 +362,20 @@ function advanceDeparting() {
     const step = dt / 1000;
     d.x += d.vx * step; d.y += d.vy * step; d.z += d.vz * step;
     const s = d.scale * (d.until / DEPART_MS);        // shrink out instead of pop
-    _bm.makeScale(s, s, s);
-    _bm.setPosition(d.x, d.y, d.z);
+    const speed = Math.max(0.001, Math.hypot(d.vx, d.vy, d.vz));
+    _trailDir.set(d.vx / speed, d.vy / speed, d.vz / speed);
+    _trailQ.setFromUnitVectors(_axisX, _trailDir);
+    _trailMid.set(d.x, d.y, d.z);
+    _trailScale.set(s, 1, 1);
+    _bm.compose(_trailMid, _trailQ, _trailScale);
     departMesh.setMatrixAt(i, _bm);
   }
   departMesh.instanceMatrix.needsUpdate = true;
 }
 
 function flush() {
-  bulletMesh.instanceMatrix.needsUpdate = true;
-  haloMesh.instanceMatrix.needsUpdate = true;
+  for (const mesh of coreMeshList) mesh.instanceMatrix.needsUpdate = true;
+  wakeMesh.instanceMatrix.needsUpdate = true;
   trailMesh.instanceMatrix.needsUpdate = true;
   advanceDeparting();
 }
@@ -300,8 +383,8 @@ function flush() {
 // run reset: no tracer survives a restart
 export function clearDepartingTracers() {
   for (let i = 0; i < BULLET_MAX; i++) hideSlot(i);
-  bulletMesh.instanceMatrix.needsUpdate = true;
-  haloMesh.instanceMatrix.needsUpdate = true;
+  for (const mesh of coreMeshList) mesh.instanceMatrix.needsUpdate = true;
+  wakeMesh.instanceMatrix.needsUpdate = true;
   trailMesh.instanceMatrix.needsUpdate = true;
   for (let i = 0; i < DEPART_MAX; i++) {
     departing[i].until = 0;

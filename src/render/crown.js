@@ -16,6 +16,7 @@ import { crownBakePlan } from '../pure/crown.js';
 import { scene } from './scene.js';
 import { PAL } from './palette.js';
 import { applyHullTexture, applySurface } from './materials.js';
+import { postGain } from './post.js';
 import { awaitPreloads, preloadTexture } from './preload.js';
 import { towerPose } from './tower.js';
 
@@ -122,6 +123,20 @@ const MATERIAL = ACTIVE_FIXTURE === null ? Object.freeze({
 
 const _pose = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 };
 
+// Shared landmark coordinates for the finale presentation. The sim only
+// decides when the uplink is live; all signal geometry remains render-side.
+export const crownSignal = Object.freeze({
+  s: CONFIG.levelLength - 11,
+  deckY: 3,
+  coreY: 11.15,
+  depth: -2.28,
+  relays: Object.freeze([
+    Object.freeze({ ds: -2.22, y: 10.35 }),
+    Object.freeze({ ds: 0, y: 12.10 }),
+    Object.freeze({ ds: 2.22, y: 10.35 }),
+  ]),
+});
+
 function place(mesh, p) {
   const at = towerPose(p.s, _pose);
   mesh.position.set(
@@ -169,3 +184,49 @@ function buildCrown() {
 }
 
 export const crownRoot = ACTIVE_FIXTURE === null ? buildCrown() : null;
+
+const CROWN_WHITE = ACTIVE_FIXTURE === null ? new THREE.Color(0xffffff) : null;
+const CROWN_SIGNAL = ACTIVE_FIXTURE === null ? new THREE.Color(PAL.capsule) : null;
+
+function clamp01(v) { return Math.max(0, Math.min(1, Number(v) || 0)); }
+
+/* Animate the existing landmark rather than covering it with a second Crown.
+   `energy` is the sustained uplink charge, `surge` is a short wave/transmit
+   kick, and `recoil` pushes the whole baked structure inward along its own
+   facet normal. Every mutation is reversible through resetCrownPresentation. */
+export function setCrownPresentation({ energy = 0, surge = 0, recoil = 0 } = {}) {
+  if (!crownRoot || !MATERIAL) return;
+  const e = clamp01(energy);
+  const kick = clamp01(surge);
+  const bloom = postGain();
+
+  if (MATERIAL.summitPlate) {
+    MATERIAL.summitPlate.color.copy(CROWN_HAZE_TINT)
+      .lerp(CROWN_WHITE, Math.min(0.78, e * 0.54 + kick * 0.24));
+    MATERIAL.summitPlate.opacity = 0.94 + e * 0.06;
+  }
+
+  // The broad shoulders wake softly; the small machine trim carries most of
+  // the magenta so the Crown remains architecture, not a glowing decal.
+  MATERIAL.foundation.emissive.copy(CROWN_SIGNAL);
+  MATERIAL.foundation.emissiveIntensity = bloom * (e * 0.075 + kick * 0.055);
+  MATERIAL.trim.emissive.copy(CROWN_SIGNAL);
+  MATERIAL.trim.emissiveIntensity = bloom * (e * 0.18 + kick * 0.14);
+
+  const r = Math.max(0, Number(recoil) || 0);
+  const at = towerPose(crownSignal.s, _pose);
+  crownRoot.position.set(-Math.sin(at.yaw) * r, -r * 0.16, -Math.cos(at.yaw) * r);
+}
+
+export function resetCrownPresentation() {
+  if (!crownRoot || !MATERIAL) return;
+  if (MATERIAL.summitPlate) {
+    MATERIAL.summitPlate.color.copy(CROWN_HAZE_TINT);
+    MATERIAL.summitPlate.opacity = 0.94;
+  }
+  MATERIAL.foundation.emissive.setHex(PAL.glowOff);
+  MATERIAL.foundation.emissiveIntensity = 1;
+  MATERIAL.trim.emissive.setHex(PAL.glowOff);
+  MATERIAL.trim.emissiveIntensity = 1;
+  crownRoot.position.set(0, 0, 0);
+}

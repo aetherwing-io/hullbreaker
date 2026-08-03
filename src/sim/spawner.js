@@ -16,6 +16,7 @@ import { groundTopAt, levelData, spawnLaneY } from './level.js';
 import { spawnHostile } from './hostiles.js';
 import { cornerBusy } from './wavegate.js';
 import { transformBusy } from './transform.js';
+import { finaleActive } from './finale.js';
 
 // The transformation fixture authors its ambient table by hand (lanes
 // included, so it consumes none of the seeded lane rng) and keeps every
@@ -36,6 +37,7 @@ let spawnRng = mulberry32(9001);
 
 export function updateSpawner() {
   if (IS_TRAVERSAL_SLICE) return;         // fixture spawns are authored per attempt
+  if (finaleActive()) return;             // the Crown arena owns its three packets
   if (transformBusy()) return;           // nobody arrives through a bulkhead flip
   if (cornerBusy()) return;              // gates author their own waves; on wide
                                          //   aspect ratios the halted look-ahead
@@ -71,11 +73,12 @@ export function updateSpawner() {
       const bodyY = (s.deck !== undefined ? s.deck : groundTopAt(s.x)) + CONFIG.mortar.bodyY;
       spawnHostile(s.x, bodyY, s.delayMs || 0, 'mortar', s);
     } else if (s.lane !== undefined) {          // authored lane (fixture table)
-      spawnHostile(s.x, spawnLaneY(s.x, s.lane), 0, 'wasp');
+      spawnHostile(s.x, spawnLaneY(s.x, s.lane), s.delayMs || 0, 'wasp', s);
     } else {
       const r = spawnRng();
       const lane = r < 0.45 ? 2.6 : r < 0.8 ? 4.6 : 7.2;   // low / mid / high tier
-      spawnHostile(s.x, spawnLaneY(s.x, lane + spawnRng() * 0.8));
+      spawnHostile(s.x, spawnLaneY(s.x, lane + spawnRng() * 0.8),
+        s.delayMs || 0, 'wasp', s);
     }
   }
 }

@@ -19,7 +19,7 @@ import { wavePhase } from '../pure/waves.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { player, P } from '../sim/player.js';
 import { scoreNotchNow } from '../sim/score.js';
-import { currentWeapon, weaponDef } from '../sim/weapons.js';
+import { currentGun, currentGunLabel, currentWeapon } from '../sim/weapons.js';
 import { mods } from '../sim/mods.js';
 import { hostiles, kills } from '../sim/hostiles.js';
 import { activeCorner } from '../sim/wavegate.js';
@@ -33,6 +33,7 @@ const hudTL = document.getElementById('hudTL');
 const hudTC = document.getElementById('hudTC');
 const hudTR = document.getElementById('hudTR');
 const hudBL = document.getElementById('hudBL');
+hudTL.style.whiteSpace = 'pre-line';
 
 // How many world turns the LOADED fixture actually authors. Hardcoding the v1
 // demo's 2 made the single-event G2 fixture advertise a second transformation
@@ -80,6 +81,7 @@ hudBL.innerHTML = IS_TRAVERSAL_SLICE
 // steady state DOM writes drop to near zero.
 let hudTLLast = null, hudTCLast = null, hudTRLast = null, legendHidden = false;
 const MOD_LABELS = [['rageUntil', 'RAGE'], ['ghostUntil', 'GHOST'], ['chronoUntil', 'CHRONO']];
+const GUN_TIER_MARK = ['', 'I', 'II', 'III'];
 
 export function updateHUD() {
   // Teach the core controls, then give the playfield back. Restarting rewinds
@@ -90,9 +92,15 @@ export function updateHUD() {
     hudBL.classList.toggle('gone', hideLegend);
   }
   const hp = Math.max(0, player.hp);
+  const gunTier = currentGun.tier ? '·' + GUN_TIER_MARK[currentGun.tier] : '';
+  // Tier II/III rolls use terse three-letter prefixes. The chassis name stays
+  // whole, but even a three-trait CINDERMOUTH remains inside the mobile line.
+  const mobileHud = globalThis.innerWidth <= 600;
+  const gunName = currentGunLabel(currentGun.tier > 1 || mobileHud);
   let tl = 'RIG ' + '▰'.repeat(hp) + '▱'.repeat(P.maxHealth - hp) +
            (IS_TRAVERSAL_SLICE ? '' : '  ×' + Math.max(0, player.lives)) +
-           '  ·  [' + currentWeapon + '] ' + weaponDef(currentWeapon).name;
+           (mobileHud ? '  ·  ' : '\n') +
+           '[' + currentWeapon + gunTier + '] ' + gunName;
   // OVERDRIVE is welded to the weapon readout: it is an earned combat power,
   // not a developer score. The name makes the faster fire / launch shock
   // promise legible the first time a player sees the meter fill.

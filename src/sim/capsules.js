@@ -5,13 +5,14 @@
    retain the seeded shuffle fallback below.                            */
 
 import { CONFIG, WEAPON_LETTERS } from '../config.js';
+import { rollGun } from '../pure/gunroll.js';
 import { mulberry32 } from '../pure/rng.js';
 import { view } from './bridge.js';
 import { gameMs } from './time.js';
 import { sLeftEdge } from './edges.js';
-import { builtGroundTopAt } from './level.js';
+import { LEVEL_LEN, builtGroundTopAt } from './level.js';
 import { circleHitsPlayer } from './player.js';
-import { setWeapon } from './weapons.js';
+import { setGun } from './weapons.js';
 import { applyMod } from './mods.js';
 import { scoreRecatch, scoreRewardTaken } from './score.js';
 
@@ -22,14 +23,29 @@ export const CAP = CONFIG.capsules;
 // mode 'pop': knocked out of the player, briefly uncatchable so the weapon
 //   actually leaves your hands, lands, expires after the recatch window.
 // mode 'fixed': authored dare-pocket reward; bobs in place until collected.
-export function spawnCapsule(kind, letter, x, y, mode, vx) {
+let gunRollSerial = 0;
+
+export function spawnCapsule(kind, letter, x, y, mode, vx, carriedGun = null) {
+  // A fresh letter capsule rolls exactly once, at spawn. A popped capsule is
+  // handed the immutable held gun object, so movement, expiry blinking, and a
+  // later recatch can never reroll it. Pops do not consume the deterministic
+  // serial either, keeping future carrier/fixed rolls independent of damage.
+  const gun = kind === 'letter'
+    ? carriedGun || rollGun(
+        letter,
+        x / LEVEL_LEN,
+        `${CONFIG.gen.seed}:${gunRollSerial++}:${Math.round(x * 16)}`,
+      )
+    : null;
   const c = {
     kind, letter, x, y, baseY: y, vx: vx || 0, vy: mode === 'pop' ? CAP.popVy : 0,
     mode, dieAt: mode === 'pop' ? gameMs + CAP.recatchMs : 0, t: 0,
     noCatchUntil: mode === 'pop' ? gameMs + CAP.popNoCatchMs : 0,
+    gun,
   };
   capsules.push(c);
   view.capsules.spawned(c);              // render: lettered box in the capsule palette
+  return c;
 }
 
 export function removeCapsule(i) {
@@ -87,7 +103,7 @@ export function updateCapsules(dt) {
 
     if (gameMs >= c.noCatchUntil && circleHitsPlayer(c.x, c.y, CAP.pickupRadius)) {
       if (c.kind === 'mod') applyMod(c.letter);
-      else setWeapon(c.letter);
+      else setGun(c.gun);
       // scoring: an authored reward starts a wager, a 'pop' recatch closes the
       // classic panic beat (proposal A.1) — both are pickups that already exist
       if (c.mode === 'fixed') scoreRewardTaken(c.letter, c.x, c.y);
@@ -103,4 +119,4 @@ export function updateCapsules(dt) {
 }
 
 // run reset (resetGame in src/main.js): the carrier drop order rewinds
-export function resetCarrierDrops() { carrierDropIdx = 0; }
+export function resetCarrierDrops() { carrierDropIdx = 0; gunRollSerial = 0; }

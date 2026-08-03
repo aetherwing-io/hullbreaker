@@ -34,6 +34,10 @@ let nextWaspId = 1;
 // diveCooldownMs. Reset alongside every other piece of hostile state below.
 let lastWaspLockMs = -Infinity;
 
+function clampLead(value, cap) {
+  return Math.max(-cap, Math.min(cap, value));
+}
+
 // Per-kind stats resolved once at spawn — the roster pass adds kinds as rows
 // here, not as ternaries at every use site. `gating: false` kinds never hold
 // a wave gate closed (a slow hauler or future stationary emplacement parked
@@ -98,6 +102,7 @@ export function spawnHostile(x, y, delayMs, kind, row) {
     diveCooldownMs: T && T.diveCooldownMs !== undefined ? T.diveCooldownMs : undefined,
     senseRange: T && T.senseRange !== undefined ? T.senseRange : undefined,
     state: K.start || 'cruise', stateUntil: 0, diveCdUntil: 0,
+    tellLocked: false,
     // wasp dive aim-lock: the frame a committed dive may actually start
     // moving (src/pure/wasp.js WASP_DIVE_LOCK_MS). Unused by every other
     // kind — each keeps its own tell inside its own state machine.
@@ -208,6 +213,11 @@ function houndInLane(e, H) {
     dy > -H.laneBelow && dy < H.laneAbove;
 }
 
+function houndAimDir(e, H) {
+  const lead = clampLead(player.vx * H.predictMs / 1000, H.predictXCap);
+  return Math.sign(player.x + lead - e.x) || e.dir;
+}
+
 // The surface under a hound. Ground runners read the terrain; a raised-surface
 // runner holds its authored plate for exactly as long as there is solid tile
 // beneath it, which is what makes a roof a lane with edges rather than a floor.
@@ -260,19 +270,28 @@ function updateHound(e, dt) {
       e.x += e.dir * H.prowlSpeed * dt;
     }
     if (gameMs >= e.enterUntil && gameMs >= e.diveCdUntil && houndInLane(e, H)) {
-      e.dir = Math.sign(player.x - e.x) || e.dir;
+      e.dir = houndAimDir(e, H);
       // never telegraph nose-to-wall: a charge with nowhere to go would be an
       // unreadable tell-skid stutter, so it keeps pacing and turns instead
       const facing = houndDeckAt(e, e.x + e.dir * H.probeX);
       if (facing > -100 && !houndBlockedAhead(e, H, facing)) {
         e.state = 'tell';
         e.stateUntil = gameMs + H.tellMs;
+        e.tellLocked = false;
       }
     }
     return;
   }
 
   if (e.state === 'tell') {                      // planted: the whole window is pre-commitment
+    // Track the player's projected ground line during the quiet part of the
+    // wind-up, then freeze for the final local coil. Dodging the onset no
+    // longer solves the whole attack, but the committed direction is still
+    // honest before the hitbox starts moving.
+    if (!e.tellLocked) {
+      e.dir = houndAimDir(e, H);
+      if (e.stateUntil - gameMs <= H.aimLockMs) e.tellLocked = true;
+    }
     e.x -= e.dir * (H.tellBackTiles / (H.tellMs / 1000)) * dt;   // rears back, visibly
     if (gameMs >= e.stateUntil) {
       e.state = 'charge';
@@ -347,13 +366,23 @@ function polypBeamOnPlayer(e, PP, reach) {
     player.y, player.y + player.h);
 }
 
+function polypBeamOnProjectedPlayer(e, PP, reach) {
+  const leadSec = PP.anticipateMs / 1000;
+  const dx = clampLead(player.vx * leadSec, PP.predictXCap);
+  const dy = clampLead(player.vy * leadSec, PP.predictYCap);
+  return polypBeamHitsRect(e.x + e.dir * PP.barrelTiles, e.y, e.dir, reach,
+    PP.beamHalf, player.x + dx - player.hw, player.x + dx + player.hw,
+    player.y + dy, player.y + dy + player.h);
+}
+
 function updatePolyp(e) {
   const PP = CONFIG.polyp;
   if (gameMs < e.enterUntil) return;             // materializing: no senses, no beam
   if (e.state === 'closed') {
     if (gameMs < e.diveCdUntil) return;          // shared cooldown field: iris rearming
     const reach = polypReachNow(e, PP);
-    if (e.autoCycle || polypBeamOnPlayer(e, PP, reach)) {
+    if (e.autoCycle || polypBeamOnPlayer(e, PP, reach) ||
+        polypBeamOnProjectedPlayer(e, PP, reach)) {
       e.state = 'tell';
       e.stateUntil = gameMs + PP.tellMs;
     }
@@ -495,6 +524,7 @@ export function updateHostiles(dt) {
       : (e.diveCooldownMs !== undefined ? e.diveCooldownMs : W.diveCooldownMs);
     const cruiseSpeed = gate ? GW.gateCruiseSpeed
       : (e.cruiseSpeed !== undefined ? e.cruiseSpeed : W.cruiseSpeed);
+    const squadStagger = gate ? GW.gateSquadStaggerMs : WASP_SQUAD_STAGGER_MS;
     // BREAKING launch shock is kind-agnostic on purpose: a chained launch that
     // pops a charging houndframe is exactly the fantasy the notch is selling.
     if (shock && gameMs >= e.enterUntil &&
@@ -522,13 +552,19 @@ export function updateHostiles(dt) {
       e.y = e.baseY + Math.sin(e.t * W.bobFreq) * W.bobAmp;
       if (Math.abs(e.x - player.x) < diveRange && player.y + 1 < e.y &&
           gameMs > e.diveCdUntil && gameMs >= e.enterUntil &&    // no ghost dives mid-materialize
-          squadReady(gameMs, lastWaspLockMs, WASP_SQUAD_STAGGER_MS)) {
+          squadReady(gameMs, lastWaspLockMs, squadStagger)) {
         // commit now: aim is frozen for the whole dive (never re-aimed, same
         // doctrine as the hound's charge and the polyp's beam), but movement
         // is held for WASP_DIVE_LOCK_MS — the aim-lock beat that turns the
         // already-shipped hot-acid dart pose into a real pre-commit tell
         // instead of a dive that starts the instant its own warning would.
-        const v = diveVelocity(e.x, e.y, player.x, player.y + 0.9, W.diveSpeed);
+        // Lead current motion, capped to a couple of tiles so a reversal can
+        // still beat the attack. The vector freezes through the aim-lock and
+        // the entire dive: predictive, never homing.
+        const leadSec = W.predictMs / 1000;
+        const targetX = player.x + clampLead(player.vx * leadSec, W.predictXCap);
+        const targetY = player.y + 0.9 + clampLead(player.vy * leadSec, W.predictYCap);
+        const v = diveVelocity(e.x, e.y, targetX, targetY, W.diveSpeed);
         e.vx = v.vx; e.vy = v.vy;
         e.state = 'dive';
         e.lockUntil = gameMs + WASP_DIVE_LOCK_MS;
@@ -546,7 +582,7 @@ export function updateHostiles(dt) {
     } else {                                             // recover: climb back up
       e.x -= 1.2 * dt;
       if (gate) e.x = Math.max(e.x, sLeftEdge() + 1);    // no drifting out of the fight
-      e.y = approach(e.y, e.baseY, 5 * dt);
+      e.y = approach(e.y, e.baseY, (gate ? GW.gateRecoverRate : 5) * dt);
       if (Math.abs(e.y - e.baseY) < 0.05) { e.state = 'cruise'; e.t = 0; }
     }
 

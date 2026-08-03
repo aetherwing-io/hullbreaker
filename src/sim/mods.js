@@ -30,8 +30,14 @@ export function applyMod(code) {
   else if (code === 'OL') mods.lance = { s: player.x, at: gameMs + M.lanceTelegraphMs };
 }
 
-export function logShot(letter, x, y, ax, ay) {
-  shotLog.push({ t: gameMs, letter, x, y, ax, ay, fired: CONFIG.mods.ghostDelayMs.map(() => false) });
+export function logShot(gun, x, y, ax, ay) {
+  // Keep the immutable recipe, not merely its chassis letter. A player may
+  // swap or pop the weapon before a delayed clone fires; GHOST still replays
+  // the exact RAPID/HEAVY/FORKED/etc. trigger pull that was originally logged.
+  shotLog.push({
+    t: gameMs, gun, letter: gun.letter, x, y, ax, ay,
+    fired: CONFIG.mods.ghostDelayMs.map(() => false),
+  });
   if (shotLog.length > 80) shotLog.shift();   // >> ghostMs / min fireRateMs would ever produce
 }
 
@@ -62,7 +68,7 @@ export function updateMods() {
       for (const s of shotLog) {
         if (!s.fired[d] && gameMs >= s.t + delay) {
           s.fired[d] = true;
-          fireWeapon(s.letter, s.x, s.y, s.ax, s.ay, true);
+          fireWeapon(s.letter, s.x, s.y, s.ax, s.ay, true, s.gun);
         }
       }
       let p = posLog[0];

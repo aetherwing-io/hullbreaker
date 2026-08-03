@@ -102,8 +102,9 @@ function drawStateScreen(next) {
       showOverlay('BREACH CLEAR', transformLines);
     } else {
       showOverlay('SIGNAL SENT', [
-        { text: 'THE CROWN IS OPEN. EARTH CAN HEAR US.' },
-        { text: '“WE HEAR YOU.”' },
+        { text: 'CROWN UPLINK HELD. TRANSMISSION COMPLETE.' },
+        { text: 'RIG: “HOME, THIS IS MERIDIAN COLONY. WE SURVIVED.”' },
+        { text: 'EARTH: “MERIDIAN COLONY … WE HEAR YOU.”' },
         { text: 'r to climb again', dim: true },
       ]);
     }

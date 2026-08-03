@@ -54,7 +54,7 @@ export const CONFIG = {
 
   spawner: {                   // ambient spawn director (gate waves live in waves)
     startS: 28, endFromEnd: 40, seed: 4242,
-    faceGapSec: [2.3, 2.0, 1.8, 1.6, 1.45, 1.35],  // gap between spawns in SECONDS of
+    faceGapSec: [2.15, 1.85, 1.65, 1.48, 1.32, 1.28],  // gap between spawns in SECONDS of
     jitterSec: 0.6,                              //   scroll — density scales with speed
     pairChance: [0.15, 0.25, 0.35, 0.45, 0.55, 0.65],  // trailing wingman odds per face
     pairGapTiles: 2,
@@ -70,11 +70,11 @@ export const CONFIG = {
     // keeps unrelated ambient bodies out of its first few reaction windows.
     lesson: {
       kindByFace: [null, 'hound', 'polyp', 'mortar', null, null],
-      clearTiles: 8,
+      clearTiles: 6,
       // On the polyp/mortar teaching faces the already-authored hound station
       // enters as a late reinforcement. A player who understands the new
       // tell moves on before it arrives; a player who camps gets the remix.
-      houndDelayMsByFace: [0, 0, 5200, 5200, 0, 0],
+      houndDelayMsByFace: [0, 0, 3600, 3400, 0, 0],
     },
   },
 
@@ -199,13 +199,14 @@ export const CONFIG = {
     lanceTelegraphMs: 1000, lanceFlashMs: 280,   // OL: telegraph, then screen clear
   },
   wasp: {
-    hp: 4, cruiseSpeed: 2.0, bobFreq: 3.0, bobAmp: 0.9,
-    diveRange: 6.5, diveSpeed: 10, diveMs: 700, diveCooldownMs: 1800,
+    hp: 4, cruiseSpeed: 2.35, bobFreq: 3.0, bobAmp: 0.9,
+    diveRange: 7.2, diveSpeed: 10.1, diveMs: 700, diveCooldownMs: 1450,
+    predictMs: 240, predictXCap: 2.4, predictYCap: 1.25,
     contactRadius: 0.55, visualRadius: 0.5,  // readability bump; hitbox unchanged
     // mock-3D presence: enemies materialize from tower depth and dissolve back.
     // Purely visual — sim stays 2D; collision only while fully materialized.
     enterMs: 900, enterDepth: -12,           // condense in from the foggy interior
-    dieMs: 500, dieDepth: -7,                // death: flash, tumble, recede, fade
+    dieMs: 360, dieDepth: -3.2,              // death: hit-punch, role rupture, short fall
     wobbleAmp: 0.4, wobbleFreq: 2.2,         // alive: depth breathing
   },
 
@@ -249,8 +250,8 @@ export const CONFIG = {
     rideY: 0.45,               // body center over the deck it walks (chassis sits on the plate)
     fallGravity: -46, fallTerminal: -30,       // only while tumbling off a committed charge
 
-    prowlSpeed: 3.4,           // ~1/3 of the run: the player can always get behind it
-    senseRange: 8.0,           // tell trigger distance, either side. Tuned against the
+    prowlSpeed: 3.9,           // active patrol, still well below half the player's run
+    senseRange: 8.6,           // tell trigger distance, either side. Tuned against the
                                //   sweep below: threaten only ground a charge can actually
                                //   cover, so the frame stays near the plate it guards
                                //   instead of running off down the level after every dodge.
@@ -259,12 +260,14 @@ export const CONFIG = {
                                //   below its plate is not a loophole — a charge pours down
                                //   steps. Above stops short of the +2.35 mid catwalk: a
                                //   hound denies the floor, never the tier above it.
-    tellMs: 520,               // the whole reaction window sits BEFORE commitment
+    tellMs: 460,               // compact reaction window; the final local coil is the lock
     tellBackTiles: 0.5,        // visible rear-back across the tell (motion tell at sprint)
-    chargeSpeed: 15.5,         // faster than any run tune: retreat is not an answer
-    chargeMs: 560,             // 8.7-tile sweep > senseRange: the charge lands where it aimed
-    chargeCooldownMs: 1500,    // pant window — the lane goes safe again, rhythmically
-    skidMs: 420,
+    predictMs: 180, predictXCap: 1.8, // tracks projected ground motion until the final lock
+    aimLockMs: 130,            // facing freezes here: short cue, then a committed straight run
+    chargeSpeed: 16.5,         // faster than any run tune: retreat is not an answer
+    chargeMs: 560,             // 9.2-tile sweep > senseRange: the charge lands where it aimed
+    chargeCooldownMs: 1100,    // a real pant window, without losing the combat pulse
+    skidMs: 330,
     stepUpTiles: 1.0,          // decks it can mount; a taller wall ends a charge in a skid
     probeX: 0.75, wallProbeY: 0.5,             // deck/wall look-ahead from the body center;
                                //   the wall probe is mid-chassis, so this low frame walks
@@ -275,10 +278,9 @@ export const CONFIG = {
     tellDepth: 1.3,            // presence: leans out of the plane winding up, snaps back
     tellRise: 0.45, tellNarrow: 0.18, tellRear: 0.42,  // rear-up on a low body: big silhouette
                                //   change, which is what stays readable at full sprint
-    tellBlinkSlowMs: 170, tellBlinkFastMs: 60,         // warning light, accelerating
-    tellCoilMs: 120,           // the COMMIT cue: the last stretch of the tell stops
-                               //   blinking and goes solid while the frame coils hard.
-                               //   A ramp alone reads as "go"; a ramp that resolves into
+    tellCoilMs: 110,           // the COMMIT cue: the last stretch of the tell goes solid
+                               //   while the frame coils hard. A ramp alone reads as "go";
+                               //   a ramp that resolves into
                                //   a held glow reads "not yet… NOW", which is the
                                //   difference between a reflex cue and a commit cue —
                                //   and the charge is answered on the commit, not the
@@ -315,19 +317,19 @@ export const CONFIG = {
     beamHalf: 0.32,            // beam band half-height: one lane, never a tier
     beamStepTiles: 0.35,       // sight march resolution — finer than a 1-tile wall,
                                //   so a beam can enter a wall face but never cross it
-    tellMs: 800,               // iris dilate: the WHOLE reaction window sits before
-                               //   the beam, and the beam never re-aims (a sightline
+    tellMs: 700,               // iris dilate: enough for the slow drop, but no dead-air beat;
+                               //   the beam never re-aims (a sightline
                                //   is answered by leaving it, not by outrunning it).
                                //   Sized 2x the SLOWEST escape (the drop-through,
                                //   asserted per player tune), not just the jump
     beamMs: 450,               // the lock: shorter than a full jump stays above the
                                //   band, so going over the beam is always an answer
     ventMs: 900,               // the opening: iris open, spent, vulnerable
-    cooldownMs: 1600,          // iris shut, lane free — the same pant-window rhythm
-                               //   as the hound's charge cycle
-    // pose theater (render-only): the same warning grammar as the hound —
-    // an accelerating warm blink that resolves into commitment.
-    tellBlinkSlowMs: 170, tellBlinkFastMs: 60,
+    cooldownMs: 1400,          // iris shut, lane free — brief enough for cross-role pressure
+                               //   while retaining a real safe beat
+    // pose theater (render-only): iris charge resolves into a short commitment cue.
+    commitCueMs: 120,
+    anticipateMs: 240, predictXCap: 2.2, predictYCap: 1.0,
     tellSwell: 0.3,            // bulb dilates across the tell: silhouette change
     ventSag: 0.12,             // vent: visibly spent, the "shoot me now" beat
     beamPulseFreq: 24, beamPulseAmp: 0.25,
@@ -359,17 +361,16 @@ export const CONFIG = {
                                //   (asserted), so the first lob always happens on
                                //   screen — the mechanic teaches itself before the
                                //   player has to stand in it
-    lobMs: 900,                // pod flight, muzzle → marked zone. The mark appears at
-                               //   launch, so this is the FIRST half of the warning
+    lobMs: 580,                // quick readable arc; the surface mark appears at launch,
+                               //   so this is the FIRST half of the warning
     arcTiles: 2.6,             // parabolic bulge over the muzzle→zone chord: a mortar
                                //   throws OVER things (the readable difference from the
                                //   polyp's sightline)
-    fuseMs: 640,               // the planted pod: the second half of the warning, and
+    fuseMs: 520,               // planted pod: still covers the slowest grounded answer
                                //   on its own longer than the slowest answer to it
     burstMs: 220,              // the denial itself — a moment, never a state. Shorter
                                //   than a full jump stays above the slab (asserted)
-    coolMs: 1500,              // reload: the zone is free and the tripod is a target,
-                               //   the same pant-window rhythm as the hound's charge
+    coolMs: 1050,              // reload: a punish window without dropping all pressure
     blastHalf: 1.5,            // marked patch half-width: 3 tiles of an 8-tile catwalk,
                                //   so landing short or long is always available
     blastHeight: 1.8,          // slab height over the marked surface: taller than a
@@ -377,9 +378,7 @@ export const CONFIG = {
                                //   any jump apex (going over it is always an answer)
     podRadius: 0.36,         // the pod in flight has to read at the FAR default, so it
                                //   is drawn larger than a bullet and lit its own color
-    // pose theater (render-only): the same warning grammar as the rest of the
-    // roster — an accelerating warm blink that resolves into commitment.
-    markPulseSlowMs: 200, markPulseFastMs: 70,
+    // pose theater (render-only): the landing patch gathers, then bursts.
     markThickness: 0.18,       // the surface pad: the loudest element at the FAR default
     warnDepth: -0.55,          // the denial volume sits just BEHIND the combat plane, so a
                                //   body standing in it keeps its silhouette (pillar 5)
@@ -411,12 +410,12 @@ export const CONFIG = {
     // reaction window alone, then add the counter-pressure that tests the
     // lesson. Phase 6 arrives as three rapid squads with half-second inhales.
     spawnDelaysMs: [
-      [0, 220, 680, 900],
-      [0, 520, 900, 1260, 1600],
-      [0, 850, 1100, 1450, 1720, 1990],
-      [0, 900, 1180, 1460, 1740, 2020, 2300],
-      [0, 240, 520, 760, 1040, 1280, 1520, 1760],
-      [0, 180, 360, 900, 1080, 1260, 1800, 1980, 2160],
+      [0, 180, 460, 680],
+      [0, 320, 600, 850, 1100],
+      [0, 520, 760, 1010, 1240, 1470],
+      [0, 580, 820, 1060, 1300, 1540, 1780],
+      [0, 180, 390, 590, 800, 1010, 1220, 1430],
+      [0, 150, 300, 720, 870, 1020, 1440, 1590, 1740],
     ],
     comp: [                                    // lane index per slot per wave —
       [0, 0, 1, 0],                            //   altitude mix escalates with k;
@@ -428,8 +427,9 @@ export const CONFIG = {
       [2, 0, 2, 0, 2, 1, 1, 0],
       [2, 1, 2, 1, 0, 2, 1, 2, 2],
     ],
-    gateDiveCooldownMs: 1100, gateDiveRange: 9.0,   // hotter hostiles while gated
-    gateCruiseSpeed: 5.0,      // gated approach speed — fights, not drift-watching
+    gateDiveCooldownMs: 850, gateDiveRange: 9.5,    // repeated committed passes while gated
+    gateCruiseSpeed: 5.6, gateRecoverRate: 7.5,     // fights, not drift-watching
+    gateSquadStaggerMs: 180,                       // overlap decisions without a same-frame wall
     windUpMs: 70, windUpDeg: -1.5,             // counter-rotation blink
     snap1Ms: 150, holdMs: 420, snap2Ms: 130, settleMs: 130, resumeMs: 200,
                                // hold 420: zipper locks (860 ms) before scroll

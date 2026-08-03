@@ -23,6 +23,37 @@
     transition: opacity 1.2s ease;
   }
   #hudBL.gone { opacity: 0; }
+  /* Crown finale objective: one compact instrument panel, below the normal
+     HUD and above the playfield. It never becomes a modal; RIG and every
+     defense telegraph remain visible while the player holds the signal. */
+  #finale {
+    position: fixed; z-index: 12; top: 52px; left: 50%;
+    width: min(470px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 8px 11px 9px; pointer-events: none; opacity: 0;
+    transform: translate(-50%, -7px) scale(.985);
+    border: 1px solid rgba(255,79,216,.42);
+    background: rgba(7,19,26,.86);
+    box-shadow: 0 0 0 1px rgba(7,19,26,.82), 0 0 18px rgba(255,79,216,.12);
+    color: #fff2d8; font: 700 11px/1.25 ui-monospace, Menlo, Consolas, monospace;
+    letter-spacing: .095em; text-align: center;
+    transition: opacity 180ms ease, transform 180ms ease, border-color 180ms ease;
+  }
+  #finale.on { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  #finale.transmit { border-color: rgba(255,242,216,.72); }
+  body.at-title #finale { display: none; }
+  #finaleTitle { white-space: nowrap; }
+  #finaleMeta { margin-top: 4px; color: rgba(232,237,242,.72); font-size: 9px; }
+  #finaleProgress {
+    height: 4px; margin-top: 7px; overflow: hidden;
+    background: rgba(232,237,242,.12);
+    box-shadow: inset 0 0 0 1px rgba(7,19,26,.72);
+  }
+  #finaleFill {
+    display: block; width: 100%; height: 100%; transform: scaleX(0);
+    transform-origin: 0 50%;
+    background: linear-gradient(90deg, #ff4fd8 0%, #ff9be9 62%, #fff2d8 100%);
+    box-shadow: 0 0 8px rgba(255,79,216,.55);
+  }
   #overlay {
     position: fixed; inset: 0; z-index: 20; display: none;
     flex-direction: column; align-items: center; justify-content: center;
@@ -146,6 +177,7 @@
   @keyframes sl-flash { 0%, 12% { opacity: 1; } 13%, 100% { opacity: 0; } }
   @media (prefers-reduced-motion: reduce) {
     .sl-steam, .sl-rig::after, #shellArt { animation: none; }
+    #finale { transition: none; }
   }
   #shellText {
     position: absolute; left: var(--tx); top: var(--ty); width: var(--tw);
@@ -225,6 +257,11 @@
       right: 10px; bottom: 8px; left: 10px;
       font-size: 9px; line-height: 1.35;
     }
+    #finale {
+      top: 72px; width: calc(100% - 20px); padding: 7px 8px 8px;
+      font-size: 9px; letter-spacing: .065em;
+    }
+    #finaleMeta { font-size: 8px; letter-spacing: .045em; }
     #overlay h1 { font-size: 28px; letter-spacing: .14em; }
     #overlay p { max-width: calc(100% - 30px); font-size: 12px; }
     #ovPanel .panel { min-width: 0; padding: 9px 11px 8px; }
@@ -469,6 +506,13 @@
 <div id="hudTC" class="hud"></div>
 <div id="hudTR" class="hud"></div>
 <div id="hudBL" class="hud"></div>
+<div id="finale" aria-hidden="true" aria-live="polite" role="status">
+  <div id="finaleTitle">CROWN UPLINK // HOLD THE SIGNAL</div>
+  <div id="finaleMeta">ARMING BATTERED ARRAY</div>
+  <div id="finaleProgress" role="progressbar" aria-label="Crown uplink" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+    <span id="finaleFill"></span>
+  </div>
+</div>
 <div id="overlay"><h1 id="ovTitle"></h1><div id="ovPanel"></div><div id="ovBody"></div></div>
 <!-- The game shell's start screen (src/ui/shell.js fills it; ?shell=0 boots
      straight into the run and this element is never shown). -->

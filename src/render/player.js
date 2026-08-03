@@ -62,7 +62,7 @@ import {
   SPRITE_H, SPRITE_W, TORSO, VISOR,
 } from '../pure/rig.js';
 import { awaitPreloads, preloadTexture } from './preload.js';
-import { scene } from './scene.js';
+import { camera, scene } from './scene.js';
 import { placeOnTower } from './tower.js';
 import { PAL } from './palette.js';
 import { syncContactShadow } from './contact.js';
@@ -175,7 +175,7 @@ const fallbackMesh = new THREE.Mesh(
   new THREE.PlaneGeometry(SPRITE_W, SPRITE_H),
   new THREE.MeshStandardMaterial({
     map: fallbackTexture, emissive: PAL.player, emissiveMap: fallbackTexture,
-    emissiveIntensity: 0.44, transparent: true, side: THREE.DoubleSide, fog: false,
+    emissiveIntensity: 0.44, transparent: true, side: THREE.FrontSide, fog: false,
   }),
 );
 fallbackMesh.position.set(0, SPRITE_H / 2, 0);
@@ -194,7 +194,7 @@ const spriteMesh = new THREE.Mesh(
   baseSpriteGeo,
   new THREE.MeshStandardMaterial({
     emissive: PAL.player, emissiveIntensity: 0.44,
-    transparent: true, alphaTest: 0.015, side: THREE.DoubleSide,
+    transparent: true, alphaTest: 0.015, side: THREE.FrontSide,
     forceSinglePass: true, fog: false,
   }),
 );
@@ -325,16 +325,44 @@ const RIG_FOOTPRINT = CONFIG.player.width / 2;
 const RIG_SURFACE_DEPTH = 1.15;
 const PORTRAIT_ASPECT = 0.72;
 const ACTION_HOLD_MS = 105;
+const FOLD_HIDE_DOT = 0.88;  // hidden once camera and hull normals differ ~28°
+const FOLD_FULL_DOT = 0.97;  // completely readable again inside ~14°
 let seenNextFireAt = 0;
 let lastShotAt = -1e9;
+const _cameraForward = new THREE.Vector3();
 
 function portraitReadability() {
   return innerWidth / Math.max(1, innerHeight) < PORTRAIT_ASPECT;
 }
 
+function smoothstep01(t) {
+  const u = Math.max(0, Math.min(1, t));
+  return u * u * (3 - 2 * u);
+}
+
+// A sprite plane is a convincing character only from the outward side of its
+// hull facet. During a corner ritual the camera can briefly move past that
+// plane before the blended actor yaw catches up; DoubleSide used to reveal a
+// mirrored paper figure (and its billboard halo) behind the fold. Measure the
+// surface normal against the live camera and let the hull rim occlude RIG as a
+// single silhouette. The short soft band prevents a one-frame pop, while the
+// strict zero on the rear hemisphere makes the topology honest.
+function foldVisibility(surfaceYaw) {
+  camera.getWorldDirection(_cameraForward);
+  const invLen = 1 / Math.max(0.0001, Math.hypot(_cameraForward.x, _cameraForward.z));
+  // Camera forward points inward; negate it to recover the face normal the
+  // current view is composed around. Unlike camera→RIG position, this stays
+  // stable when RIG runs toward a screen edge and changes only during a turn.
+  const cameraOutX = -_cameraForward.x * invLen;
+  const cameraOutZ = -_cameraForward.z * invLen;
+  const viewDot = Math.sin(surfaceYaw) * cameraOutX + Math.cos(surfaceYaw) * cameraOutZ;
+  return smoothstep01((viewDot - FOLD_HIDE_DOT) / (FOLD_FULL_DOT - FOLD_HIDE_DOT));
+}
+
 // called at the end of updatePlayer, where the single-file build placed the rig
 function sync() {
-  placeOnTower(rig, player.x, player.y, RIG_SURFACE_DEPTH);
+  const surfaceYaw = placeOnTower(rig, player.x, player.y, RIG_SURFACE_DEPTH);
+  const foldGain = foldVisibility(surfaceYaw);
   // crouch (?crouch=1) has to be visible or the lowered firing line is a
   // mystery: the body squashes to the crouched collision height and the gun
   // drops with the muzzle the sim is actually firing from.
@@ -361,7 +389,10 @@ function sync() {
     spriteMesh.material.emissiveMap = tex;
     spriteMesh.material.emissiveIntensity = actionOn ? 0.48 : 0.44;
   }
-  spriteMesh.visible = spriteReady;
+  spriteMesh.visible = spriteReady && foldGain > 0.01;
+  fallbackMesh.material.opacity = foldGain;
+  spriteMesh.material.opacity = foldGain;
+  gunGroup.visible = foldGain > 0.14;
   gunGroup.position.y = player.muzzleY / squash + stepBob; // rig squash is undone here
   gunGroup.rotation.z = Math.atan2(player.aim.y, player.aim.x);
   // both planes are authored facing +x (see src/pure/rig.js) — mirror
@@ -411,13 +442,18 @@ function sync() {
   rigGlow.scale.set(2.80 * pulse * haloGain, 2.45 * pulse * haloGain, 1);
   const baseHalo = gameMs < player.iframesUntil ? 0.36 : (portrait ? 0.27 : 0.18);
   rigGlow.material.opacity = Math.min(0.48, baseHalo +
-    (notch >= 2 ? 0.10 + breakingPulse * 0.07 : (notch === 1 ? 0.055 : 0)));
+    (notch >= 2 ? 0.10 + breakingPulse * 0.07 : (notch === 1 ? 0.055 : 0))) * foldGain;
   jumpFlare.visible = !player.grounded && Math.abs(player.vy) > 0.8;
   if (jumpFlare.visible) {
     jumpFlare.scale.y = 0.75 + Math.min(0.8, Math.abs(player.vy) * 0.045);
-    jumpFlare.material.opacity = player.vy > 0 ? 0.82 : 0.48;
+    jumpFlare.material.opacity = (player.vy > 0 ? 0.82 : 0.48) * foldGain;
   }
-  rig.visible = gameMs >= player.iframesUntil || blink();
-  syncContactShadow(RIG_SHADOW_ID, player.x, player.y, RIG_FOOTPRINT);
+  rig.visible = foldGain > 0.01 && (gameMs >= player.iframesUntil || blink());
+  rig.userData.foldVisibility = foldGain;
+  // The contact shadow is a separate instanced mesh, so hiding only `rig`
+  // can leave a little disembodied mark on the old facet. Scale its footprint
+  // through the same fold gain; at the hidden midpoint its matrix has zero
+  // area, and it grows back with the actor instead of arriving a frame early.
+  syncContactShadow(RIG_SHADOW_ID, player.x, player.y, RIG_FOOTPRINT * foldGain);
 }
 installView({ player: { sync } });

@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-import { mortarArcX, mortarArcY, mortarPulsePeriodMs } from '../pure/mortar.js';
+import { mortarArcX, mortarArcY } from '../pure/mortar.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs } from '../sim/time.js';
 import { PAL } from './palette.js';
@@ -18,7 +18,7 @@ import { spriteActionTexture, spriteTexture, spriteVariantOf } from './sprites.j
 import { placeOnTower } from './tower.js';
 import { releaseContactShadow, syncContactShadow } from './contact.js';
 import {
-  CUE_GAIN, LAMP_COIL_SWELL, LAMP_OFF_ALPHA, LAMP_OFF_SWELL, LAMP_R, LEGIBILITY_ON, POSE_GAIN,
+  CUE_GAIN, LAMP_COIL_SWELL, LAMP_R, LEGIBILITY_ON, POSE_GAIN,
   POLYP_ONSET_MS, POLYP_SWELL_EASE, WASP_DIVE_NARROW, waspDiveStretch,
 } from './legibility.js';
 
@@ -140,8 +140,7 @@ function signalMaterial(color, map = null) {
 /* The houndframe's state theater: the shared presence pass below owns
    materialization, depth breathing, and the hit flash for every kind — this
    only adds the pose that makes its charge readable at full sprint.
-     tell   — rears back and up, narrows, leans OUT of the combat plane, and
-              blinks a warning light that accelerates as commitment nears;
+     tell   — rears back and up while a small head coil gathers locally;
      charge — snaps back into the plane, stretches along the run, holds a
               constant hot glow: "this is live and it is not steering";
      prowl  — a small stride bob so a patrolling frame still reads as alive.
@@ -165,15 +164,10 @@ function houndPose(e) {
     p.sy = 1 + H.tellRise * POSE_GAIN * u;
     p.sx = 1 - H.tellNarrow * POSE_GAIN * u;
     if (e.stateUntil - gameMs <= H.tellCoilMs) {
-      // the coil: blink resolves into a held glow and the frame drops onto its
-      // haunches. This is the "NOW" the player answers — the accelerating blink
-      // before it is the "not yet".
-      p.glow = PAL.houndTell;
+      // The frame drops onto its haunches for the final local lock. Warning
+      // light lives on the head lamp, not across the whole body.
       p.sy -= H.tellCoilSquash * POSE_GAIN;
       p.sx += H.tellCoilSquash * POSE_GAIN * 0.5;
-    } else {
-      const period = H.tellBlinkSlowMs + (H.tellBlinkFastMs - H.tellBlinkSlowMs) * u;
-      if (Math.floor(gameMs / period) % 2 === 0) p.glow = PAL.houndTell;
     }
   } else if (e.state === 'charge') {
     p.sx = 1 + H.chargeStretch;
@@ -194,11 +188,9 @@ function houndRoll(e) {
 }
 
 /* The polyp's state theater over the same shared presence pass: a rooted
-   bulb whose iris cycle is told in silhouette + the roster's one warning
-   language (accelerating warm blink → commitment).
+   bulb whose iris cycle is told in silhouette + one local aperture light.
      closed — inert bulb; the shared depth breathing keeps it alive.
-     tell   — dilates across the whole reaction window while the warm blink
-              accelerates: "this lane is about to be wrong".
+     tell   — dilates while the aperture gathers: "this lane is arming".
      fire   — holds the swollen pose and a constant hot glow while the beam
               mesh (below) spans the live reach: committed, not steering.
      vent   — sags and glows a dim spent warm: the opening, visibly.
@@ -213,7 +205,7 @@ function polypPose(e) {
   if (e.state === 'tell') {
     const u = 1 - Math.max(0, Math.min(1, (e.stateUntil - gameMs) / PP.tellMs));
     // I-003 (playtest inbox): at the shipped FAR view the first ~300ms of the
-    // 800ms iris tell read as a small dark notch in the bulb, so nearly a
+    // previous iris tell read as a small dark notch in the bulb, so nearly a
     // third of the reaction window carried almost no signal. Two fixes, both
     // render-only and both vanishing under ?legibility=0: the dilation is
     // FRONT-LOADED (u ** 0.55 — most of the silhouette change happens in the
@@ -223,8 +215,6 @@ function polypPose(e) {
     const swellU = LEGIBILITY_ON ? u ** POLYP_SWELL_EASE : u;
     p.sy = 1 + PP.tellSwell * POSE_GAIN * swellU;
     p.sz = 1 + PP.tellSwell * POSE_GAIN * swellU;
-    const period = PP.tellBlinkSlowMs + (PP.tellBlinkFastMs - PP.tellBlinkSlowMs) * u;
-    if (Math.floor(gameMs / period) % 2 === 0) p.glow = PAL.polypTell;
   } else if (e.state === 'fire') {
     p.sy = 1 + PP.tellSwell * POSE_GAIN;
     p.sz = 1 + PP.tellSwell * POSE_GAIN;
@@ -255,6 +245,10 @@ function waspDiving(e) {
   return LEGIBILITY_ON && e.state === 'dive';
 }
 
+function waspLaunched(e) {
+  return waspDiving(e) && gameMs >= e.lockUntil;
+}
+
 function waspPose(e) {
   const p = WASP_POSE;
   p.depth = 0; p.sx = 1; p.sy = 1; p.sz = 1; p.glow = PAL.glowOff;
@@ -266,7 +260,9 @@ function waspPose(e) {
     p.sx = grow;
     p.sy = grow * (1 - WASP_DIVE_NARROW);
     p.sz = grow * (1 - WASP_DIVE_NARROW);
-    p.glow = PAL.waspDive;
+    // The lock pose points locally at its answer; the full acid body is the
+    // committed danger moment and only ignites when movement starts.
+    if (waspLaunched(e)) p.glow = PAL.waspDive;
   }
   return p;
 }
@@ -493,10 +489,8 @@ for (const kind of Object.keys(LOOK)) {
 /* ------------------------- THE TELL LAMP (T-003) -------------------------
  * The warning light the houndframe's and the polyp's code comments have
  * always described, given actual geometry so it survives the FAR default
- * view. Until now the "blink" was an emissive tint on the body: at ~15px of
- * chassis that is a color flicker competing with the deck behind it, which
- * is what the operator accepted as a cost in decisions.md entry 7 and asked
- * to fix here.
+ * view. A body-wide warning tint became an automatic dodge instruction at
+ * play scale; the signal now stays on the arming part itself.
  *
  * It is a LAMP, not a HUD marker — a small light on the machine, sized in
  * world tiles and placed on the part of the body that is arming (the
@@ -514,7 +508,6 @@ for (const kind of Object.keys(LOOK)) {
 const lampGeo = new THREE.OctahedronGeometry(1);   // unit radius: scaled per frame
 const LAMP_DEPTH = 0.35;                 // just proud of the combat plane, toward the
                                          //   camera, so the body never eats its own lamp
-const LAMP_ON_ALPHA = 0.95;
 
 /* T-048 (decisions.md entry 18): the emissive families' HDR headroom. A tell
    lamp, a live beam and a detonation are LIGHT — bloom only bleeds what is
@@ -549,9 +542,8 @@ function lampShow(v, e, dx, dy, alpha, swell) {
   placeOnTower(v.lamp, e.x + dx, e.y + dy, LAMP_DEPTH);
 }
 
-// houndframe: the lamp rides the head it rears back on, blinks in the same
-// accelerating period the pose blinks in, and goes solid and big on the coil
-// — the "not yet… NOW" the charge is answered on.
+// Houndframe: a small charge lamp rides the head it rears back on, gathers
+// intensity, then goes solid and big on the final locked coil.
 function houndLamp(v, e) {
   const H = CONFIG.hound;
   if (!LEGIBILITY_ON || e.state !== 'tell') { v.lamp.visible = false; return; }
@@ -561,28 +553,24 @@ function houndLamp(v, e) {
     return;
   }
   const u = houndTellU(e);
-  const period = H.tellBlinkSlowMs + (H.tellBlinkFastMs - H.tellBlinkSlowMs) * u;
-  const on = Math.floor(gameMs / period) % 2 === 0;
-  lampShow(v, e, dx, dy, on ? LAMP_ON_ALPHA : LAMP_OFF_ALPHA, on ? 1 : LAMP_OFF_SWELL);
+  lampShow(v, e, dx, dy, 0.30 + u * 0.48, 0.68 + u * 0.28);
 }
 
 // Iris Polyp: the lamp IS the iris, at the aperture the beam will leave
-// from. I-003's fix lives in its first beat — POLYP_ONSET_MS of held,
-// full-size light at the very start of the tell, before the accelerating
-// blink begins, so the opening of the reaction window is not a dark notch.
+// from. It breathes steadily while arming and snaps bright only for the final
+// frozen commitment, keeping the signal local instead of flashing the bulb.
 function polypLamp(v, e) {
   const PP = CONFIG.polyp;
   if (!LEGIBILITY_ON || e.state !== 'tell') { v.lamp.visible = false; return; }
   const dx = e.dir * PP.barrelTiles, dy = 0;
   const left = Math.max(0, e.stateUntil - gameMs);
-  if (PP.tellMs - left <= POLYP_ONSET_MS) {     // the onset flash
+  if (left <= PP.commitCueMs) {
     lampShow(v, e, dx, dy, 1, LAMP_COIL_SWELL);
     return;
   }
   const u = 1 - Math.max(0, Math.min(1, left / PP.tellMs));
-  const period = PP.tellBlinkSlowMs + (PP.tellBlinkFastMs - PP.tellBlinkSlowMs) * u;
-  const on = Math.floor(gameMs / period) % 2 === 0;
-  lampShow(v, e, dx, dy, on ? LAMP_ON_ALPHA : LAMP_OFF_ALPHA, on ? 1 : LAMP_OFF_SWELL);
+  const onset = PP.tellMs - left <= POLYP_ONSET_MS ? 0.12 : 0;
+  lampShow(v, e, dx, dy, 0.26 + onset + u * 0.50, 0.70 + u * 0.26);
 }
 
 const LAMP_SYNC = { hound: houndLamp, polyp: polypLamp };
@@ -678,26 +666,29 @@ function syncAttackRead(v, e) {
   if (e.kind === 'wasp' && v.attackWake && waspDiving(e)) {
     const speed = Math.max(0.001, Math.hypot(e.vx, e.vy));
     const ux = e.vx / speed, uy = e.vy / speed;
-    const length = 1.65;
+    const launched = waspLaunched(e);
+    const length = launched ? 1.65 : 0.72;
     v.attackWake.visible = true;
     placeOnTower(v.attackWake, e.x - ux * length * 0.43, e.y - uy * length * 0.43, -0.06);
     v.attackWake.rotation.z = Math.atan2(e.vy, e.vx);
-    v.attackWake.scale.set(length, 0.34, 1);
+    v.attackWake.scale.set(length, launched ? 0.34 : 0.18, 1);
     lit(v.attackWakeMat, PAL.waspDive);
-    v.attackWakeMat.opacity = 0.52;
+    v.attackWakeMat.opacity = launched ? 0.52 : 0.24;
     return;
   }
 
   if (e.kind === 'hound') {
     const H = CONFIG.hound;
     if (e.state === 'tell' && v.tellLane) {
-      const u = houndTellU(e);
-      const reach = H.chargeSpeed * H.chargeMs / 1000;
+      const left = e.stateUntil - gameMs;
+      if (left > H.tellCoilMs) return;
+      const u = 1 - Math.max(0, left / H.tellCoilMs);
+      const reach = 1.35;
       v.tellLane.visible = true;
       placeOnTower(v.tellLane, e.x + e.dir * reach / 2, e.y - H.rideY + 0.11, -0.05);
-      v.tellLane.scale.set(e.dir * reach, 0.42 + 0.08 * u, 1);
+      v.tellLane.scale.set(e.dir * reach, 0.24 + 0.08 * u, 1);
       lit(v.tellLaneMat, PAL.houndTell);
-      v.tellLaneMat.opacity = 0.16 + 0.34 * u;
+      v.tellLaneMat.opacity = 0.20 + 0.30 * u;
     } else if (e.state === 'charge' && v.attackWake) {
       const length = 2.35;
       v.attackWake.visible = true;
@@ -712,16 +703,17 @@ function syncAttackRead(v, e) {
   if (e.kind === 'polyp' && e.state === 'tell' && v.tellLane) {
     const PP = CONFIG.polyp;
     const left = Math.max(0, e.stateUntil - gameMs);
-    const u = 1 - Math.max(0, Math.min(1, left / PP.tellMs));
-    // A short preview names DIRECTION without pretending to know how far
-    // this frame's terrain-clamped beam will reach when it actually fires.
-    const preview = Math.min(3.6, PP.sightRange);
+    if (left > PP.commitCueMs) return;
+    const u = 1 - Math.max(0, Math.min(1, left / PP.commitCueMs));
+    // Only the barrel's final charge ray names direction. The eventual beam
+    // volume is withheld until it is live.
+    const preview = 1.25;
     v.tellLane.visible = true;
     placeOnTower(v.tellLane,
       e.x + e.dir * (PP.barrelTiles + preview / 2), e.y, -0.04);
-    v.tellLane.scale.set(e.dir * preview, 0.32 + u * 0.14, 1);
+    v.tellLane.scale.set(e.dir * preview, 0.16 + u * 0.10, 1);
     lit(v.tellLaneMat, PAL.polypTell);
-    v.tellLaneMat.opacity = 0.13 + 0.38 * u;
+    v.tellLaneMat.opacity = 0.22 + 0.36 * u;
   }
 }
 
@@ -826,6 +818,44 @@ function spawned(e) {
   meshes.set(e, v);
 }
 
+// Death is an impact sentence, not a second movement mode. Every role holds
+// its readable silhouette for one hit-punch, then resolves in the way its
+// construction suggests: flyers break and fall, the frame buckles forward,
+// rooted growths snap into their mount. None spins through a full turn.
+const DEATH_ROLE = Object.freeze({
+  wasp:    { fall: 1.45, drift: 0.72, depth: -0.55, tilt: 0.82, sx: 0.72, sy: 0.45, debris: 3, shardSpeed: 2.8 },
+  carrier: { fall: 2.05, drift: 0.50, depth: -0.75, tilt: 0.42, sx: 0.88, sy: 0.42, debris: 5, shardSpeed: 3.0 },
+  hound:   { fall: 0.42, drift: 0.34, depth: -0.20, tilt: 0.20, sx: 1.08, sy: 0.24, debris: 4, shardSpeed: 2.5 },
+  polyp:   { fall: 0.34, drift: 0.08, depth: -0.14, tilt: 0.28, sx: 1.02, sy: 0.16, debris: 4, shardSpeed: 2.2 },
+  mortar:  { fall: 0.46, drift: 0.12, depth: -0.16, tilt: 0.24, sx: 0.90, sy: 0.12, debris: 4, shardSpeed: 2.4 },
+});
+const DEATH_PUNCH_MS = 70;
+const deathShardGeo = new THREE.TetrahedronGeometry(0.12, 0);
+
+function deathDebris(e, kind, spec) {
+  const mat = new THREE.MeshBasicMaterial({
+    color: LOOK[kind].color, transparent: true, opacity: 0, fog: false,
+  });
+  const shards = [];
+  const bias = Math.sign(e.vx) || e.dir || -1;
+  for (let n = 0; n < spec.debris; n++) {
+    const mesh = new THREE.Mesh(deathShardGeo, mat);
+    mesh.visible = false;
+    scene.add(mesh);
+    const side = n % 2 ? -1 : 1;
+    const spread = 0.45 + (n % 3) * 0.22;
+    shards.push({
+      mesh,
+      vx: (bias * 0.45 + side * spread) * spec.shardSpeed,
+      vy: spec.shardSpeed * (0.75 + (n % 3) * 0.25),
+      depthV: ((n % 3) - 1) * 0.55,
+      spin: side * (5 + n),
+      scale: 0.76 + (n % 2) * 0.34,
+    });
+  }
+  return { shards, mat };
+}
+
 function removed(e, fade) {
   const v = meshes.get(e);
   if (!v) return;
@@ -841,15 +871,17 @@ function removed(e, fade) {
   if (v.lamp) lampDetach(v);             // nor a tell lamp: a corpse never warns
   readabilityDetach(v);                  // warning props never dissolve as corpses
   if (fade) {                          // hand the mesh to the corpse pass to dissolve
-    // the death pop carries the same tinted flash the living body wore (I-010):
-    // the kind is dead, but the frame that says so still says WHICH kind
-    // `face` carries the mirror a sprite body was wearing, so a corpse does
-    // not flip round to face the other way on the frame it dies
+    const spec = DEATH_ROLE[e.kind];
+    const debris = deathDebris(e, e.kind, spec);
     corpses.push({ mesh: v.mesh, mat: v.mat, s: e.x,
-                   y: e.y + v.presentationLift, spin: e.t,
+                   y: e.y + v.presentationLift, baseRoll: v.mesh.rotation.z,
                    t0: gameMs, flash: FLASH[e.kind],
-                   face: v.sprite ? spriteFaceX(e) : 1,
-                   presentationScale: v.presentationScale });
+                   breakDir: Math.sign(e.vx) || e.dir || -1,
+                   baseScaleX: Math.abs(v.mesh.scale.x),
+                   baseScaleY: Math.abs(v.mesh.scale.y),
+                   baseScaleZ: Math.abs(v.mesh.scale.z),
+                   face: Math.sign(v.mesh.scale.x) || 1,
+                   spec, shards: debris.shards, shardMat: debris.mat });
   } else {
     scene.remove(v.mesh);
     v.mat.dispose();
@@ -951,26 +983,68 @@ function sync(e) {
 installView({ hostiles: { spawned, removed, sync } });
 
 // Dead hostiles are display-only: no sim, no gate participation (removeHostile
-// already fired onHostileRemoved), just the dissolve back into tower depth.
+// already fired onHostileRemoved), just a short role-shaped rupture.
 const corpses = [];
+
+function releaseCorpse(c) {
+  scene.remove(c.mesh);
+  c.mat.dispose();
+  for (const shard of c.shards) scene.remove(shard.mesh);
+  c.shardMat.dispose();
+}
+
 export function updateCorpses() {
   const W = CONFIG.wasp;
   for (let i = corpses.length - 1; i >= 0; i--) {
     const c = corpses[i];
-    const u = (gameMs - c.t0) / W.dieMs;
-    if (u >= 1) { scene.remove(c.mesh); c.mat.dispose(); corpses.splice(i, 1); continue; }
-    placeOnTower(c.mesh, c.s, c.y - 0.6 * u, W.dieDepth * u * u);   // recede into the dark
-    c.mesh.rotation.z = c.spin + u * 9;           // death tumble
-    c.mesh.scale.setScalar(c.presentationScale * (1 + 0.3 * u));
-    c.mesh.scale.x *= c.face;                     // keep the facing it died with
-    c.mat.opacity = 1 - u * u;
-    c.mat.emissive.setHex(u < 0.16 ? c.flash : PAL.glowOff);        // death pop, then dissolve
+    const elapsed = gameMs - c.t0;
+    const u = elapsed / W.dieMs;
+    if (u >= 1) { releaseCorpse(c); corpses.splice(i, 1); continue; }
+
+    if (elapsed < DEATH_PUNCH_MS) {
+      const q = elapsed / DEATH_PUNCH_MS;
+      const punch = Math.sin(q * Math.PI);
+      placeOnTower(c.mesh, c.s - c.breakDir * 0.08 * punch, c.y, -0.12 * punch);
+      c.mesh.rotation.z = c.baseRoll + c.breakDir * 0.08 * q;
+      const swell = 1 + punch * 0.16;
+      c.mesh.scale.set(c.baseScaleX * c.face * swell,
+        c.baseScaleY * swell, c.baseScaleZ * swell);
+      c.mat.opacity = 1;
+      c.mat.emissive.setHex(c.flash);
+      continue;
+    }
+
+    const r = Math.min(1, (elapsed - DEATH_PUNCH_MS) / (W.dieMs - DEATH_PUNCH_MS));
+    const snap = 1 - (1 - r) ** 3;
+    placeOnTower(c.mesh,
+      c.s + c.breakDir * c.spec.drift * r,
+      c.y - c.spec.fall * r * r,
+      c.spec.depth * r);
+    c.mesh.rotation.z = c.baseRoll + c.breakDir * c.spec.tilt * snap;
+    c.mesh.scale.set(
+      c.baseScaleX * c.face * (1 + (c.spec.sx - 1) * snap),
+      c.baseScaleY * (1 + (c.spec.sy - 1) * snap),
+      c.baseScaleZ * (1 - 0.28 * snap));
+    c.mat.opacity = 1 - r ** 1.35;
+    c.mat.emissive.setHex(r < 0.12 ? c.flash : PAL.glowOff);
+
+    const t = (elapsed - DEATH_PUNCH_MS) / 1000;
+    c.shardMat.opacity = Math.max(0, 0.92 * (1 - r));
+    for (const shard of c.shards) {
+      shard.mesh.visible = true;
+      placeOnTower(shard.mesh,
+        c.s + shard.vx * t,
+        c.y + shard.vy * t - 10 * t * t,
+        -0.04 + shard.depthV * t);
+      shard.mesh.rotation.z = shard.spin * t;
+      shard.mesh.scale.setScalar(shard.scale * (1 - r * 0.45));
+    }
   }
 }
 
 // run reset (resetGame in src/main.js): drop any dissolving corpses
 export function clearCorpses() {
-  for (const c of corpses) { scene.remove(c.mesh); c.mat.dispose(); }
+  for (const c of corpses) releaseCorpse(c);
   corpses.length = 0;
 }
 
@@ -983,17 +1057,14 @@ export function clearCorpses() {
  *
  *   pod   — the seed pod in flight, replayed from the sim's podU through
  *           the pure arc. Visible only while the tube is lobbing.
- *   mark  — the pad on the marked landing surface, lit from the moment
- *           the pod launches (board 07: "marking the intended landing
- *           surface") and blinking faster as the fuse runs down, in the
- *           roster's one warning language.
- *   blast — the denial volume itself: a translucent column standing on
- *           the mark, faint while it is only a warning and a full-opacity
- *           flash for exactly the frames the sim is dealing damage.
+ *   mark  — the pad on the marked landing surface, lit from launch and
+ *           gathering continuously as the planted fuse runs down.
+ *   blast — the denial volume itself, visible only for the frames in which
+ *           the sim is dealing damage.
  *
  * The tube's own theater is the pose function above the LOOK table: it
- * kicks back on launch and settles across the flight, holds a warm glow
- * through the fuse, and pops on detonation. Static-anatomy rule (entry 3)
+ * kicks back on launch, settles across the flight, and pops on detonation.
+ * Static-anatomy rule (entry 3)
  * is untouched — a mortar is something the SHIP builds, and none of this
  * moves the creature's own geometry.                                    */
 
@@ -1015,12 +1086,6 @@ function mortarPose(e) {
     // the kick: the tube compresses on launch and recovers across the flight
     const settle = 1 - Math.max(0, Math.min(1, e.podU));
     p.sy = 1 - 0.18 * settle;
-    p.glow = PAL.mortarTell;
-  } else if (e.state === 'fuse') {
-    const remain = Math.max(0, e.stateUntil - gameMs);
-    const period = mortarPulsePeriodMs(remain, M_CFG.fuseMs,
-      M_CFG.markPulseSlowMs, M_CFG.markPulseFastMs);
-    if (Math.floor(gameMs / period) % 2 === 0) p.glow = PAL.mortarTell;
   } else if (e.state === 'burst') {
     p.sy = 1 + M_CFG.burstSwell;
     p.glow = PAL.mortarBlast;
@@ -1095,7 +1160,10 @@ function mortarSync(v, e) {
     v.pod.rotation.z = e.podU * 7;
   }
   v.mark.visible = marked;
-  v.blast.visible = marked;
+  // Before detonation only the authored landing patch is marked. Drawing the
+  // whole eventual slab during the warning made the answer trivial and made
+  // safe actors disappear behind a volume that was not dangerous yet.
+  v.blast.visible = e.state === 'burst';
   if (!marked) return;
   placeOnTower(v.mark, e.zoneX, e.zoneY + M_CFG.markThickness / 2, 0);
   placeOnTower(v.blast, e.zoneX, e.zoneY + M_CFG.blastHeight / 2, M_CFG.warnDepth);
@@ -1112,12 +1180,10 @@ function mortarSync(v, e) {
     return;
   }
   v.blast.scale.set(1, 1, 1);
-  v.blastMat.color.setHex(PAL.mortarMark);   // warning field, not a detonation
-  v.blastMat.opacity = 0.2;
-  if (flying) { v.markMat.opacity = 0.55; return; }
-  // fuse: the mark blinks faster the closer the detonation gets
+  if (flying) { v.markMat.opacity = 0.48 + e.podU * 0.12; return; }
+  // Fuse gathers continuously at the landing patch; no whole-body or binary
+  // flashing. The burst itself remains the unmistakable committed moment.
   const remain = Math.max(0, e.stateUntil - gameMs);
-  const period = mortarPulsePeriodMs(remain, M_CFG.fuseMs,
-    M_CFG.markPulseSlowMs, M_CFG.markPulseFastMs);
-  v.markMat.opacity = Math.floor(gameMs / period) % 2 === 0 ? 0.95 : 0.45;
+  const armed = 1 - Math.max(0, Math.min(1, remain / M_CFG.fuseMs));
+  v.markMat.opacity = 0.56 + armed * 0.38;
 }

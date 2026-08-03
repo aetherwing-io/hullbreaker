@@ -46,8 +46,8 @@ import {
   cancelSliceRetry, clearPlayerTraversal, P, player, updatePlayer,
 } from './sim/player.js';
 import {
-  clearBullets, currentWeapon, resetShotsFired, resetWeaponKills, setWeapon,
-  shotsFired, updateBullets,
+  clearBullets, currentGun, currentGunDef, currentGunLabel, currentWeapon,
+  resetShotsFired, resetWeaponKills, setWeapon, shotsFired, updateBullets,
 } from './sim/weapons.js';
 import {
   clearHostiles, hostiles, kills, resetHostileRng, resetKills, spawnHostile,
@@ -66,6 +66,9 @@ import {
   resetScore, scoreEvents, scoreRunEnd, scoreRunStart, scoreSnapshot, updateScore,
 } from './sim/score.js';
 import { resetSpawner, updateSpawner } from './sim/spawner.js';
+import {
+  finaleActive, finaleComplete, finaleSnapshot, resetFinale, startFinale, updateFinale,
+} from './sim/finale.js';
 import { activeCorner, resetCornerEvents } from './sim/wavegate.js';
 import {
   activeTransformEvent, committedBand, resetTransform, transformAltitudeAt,
@@ -99,6 +102,7 @@ import './render/level.js';
 import './render/seams.js';
 import { limbPieces } from './render/limb.js';
 import './render/crown.js';
+import './render/finale.js';
 import './render/transform.js';
 import './render/player.js';
 import './render/capsules.js';
@@ -263,6 +267,7 @@ function resetGame() {
   resetPace();
   resetScore();
   resetSpawner();
+  resetFinale();
   resetHostileRng();
   resetKills(); resetShotsFired();
   player.x = ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.playerSpawn.x : 6;
@@ -381,9 +386,13 @@ function update(dt) {
     if (player.x >= ACTIVE_SLICE.rejoin.x0) { scoreRunEnd('clear'); setState('VICTORY'); }
   } else if (IS_TRANSFORM_SLICE) {
     if (player.x >= ACTIVE_FIXTURE.finish.x0) { scoreRunEnd('clear'); setState('VICTORY'); }
-  } else if (scrollX >= END_SCROLL) {
-    scoreRunEnd('clear');
-    setState('VICTORY');
+  } else {
+    if (scrollX >= END_SCROLL && !finaleActive()) startFinale();
+    updateFinale();
+    if (finaleComplete()) {
+      scoreRunEnd('clear');
+      setState('VICTORY');
+    }
   }
 }
 
@@ -445,6 +454,7 @@ function telemetry() {
     gameMs, state, scrollX,
     transform: IS_TRANSFORM_SLICE ? transformTelemetry() : undefined,
     corner: ACTIVE_FIXTURE ? undefined : cornerTelemetry(),
+    finale: ACTIVE_FIXTURE ? undefined : finaleSnapshot(),
     // unchanged semantics: the fixture's declared scroll floor. The live
     // pursuit speed a pacing variant is commanding is `pursuitSpeed` below.
     minimumScrollSpeed: ACTIVE_FIXTURE
@@ -646,6 +656,21 @@ window.HB = Object.freeze({
   scrollX: () => scrollX,
   gameMs: () => gameMs,
   currentWeapon: () => currentWeapon,
+  currentGun: () => {
+    const def = currentGunDef();
+    return {
+      id: currentGun.id,
+      letter: currentGun.letter,
+      tier: currentGun.tier,
+      traits: [...currentGun.traits],
+      label: currentGunLabel(),
+      stats: {
+        fireRateMs: def.fireRateMs, damage: def.damage, speed: def.speed,
+        count: def.count, pierceBudget: def.pierceBudget,
+        seekRange: def.seekRange, volatileRadius: def.volatileRadius,
+      },
+    };
+  },
   kills: () => kills,
   shotsFired: () => shotsFired,
   edges: () => ({ left: sLeftEdge(), right: sRightEdge() }),
@@ -670,6 +695,7 @@ window.HB = Object.freeze({
   // movement-verb prototypes: read surfaces only (the verbs live in the sim)
   hook: { enabled: HOOK_ENABLED, input: HOOK_INPUT, snapshot: hookSnapshot },
   flow: { enabled: FLOW_ENABLED, snapshot: flowSnapshot },
+  finale: { snapshot: finaleSnapshot },
   // the game shell (title / pause-options / run stats), read surface only
   shell: shellSnapshot,
   // baseline feedback pass (?juice=0 disables): effect counters + the sim's
@@ -703,11 +729,15 @@ window.HB = Object.freeze({
         hp: player.hp, lives: player.lives, facing: player.facing,
         airJumpsLeft: player.airJumpsLeft,
       },
-      currentWeapon, kills, shotsFired,
+      currentWeapon, currentGun: window.HB.currentGun(), kills, shotsFired,
       // `hostiles` now comes from telemetry() itself (the frozen channel
       // publishes it too), so the two channels cannot drift on the field set.
       capsules: capsules.map((c) => ({
         kind: c.kind, letter: c.letter, x: c.x, y: c.y, mode: c.mode,
+        gun: c.gun ? {
+          id: c.gun.id, tier: c.gun.tier, traits: [...c.gun.traits],
+          label: c.gun.label,
+        } : null,
       })),
       edgeLeft: sLeftEdge(),
       edgeRight: t.screenRight,

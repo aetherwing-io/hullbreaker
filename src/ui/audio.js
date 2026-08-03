@@ -193,6 +193,24 @@ function tone(type, f0, f1, dur, peak, at = 0, prio = false) {
   o.stop(t0 + dur + 0.05);
 }
 
+// A gentler oscillator envelope for the Crown's choir-like transmission
+// stack. It shares the same voice cap, SFX bus and compressor as every other
+// cue; only the attack differs, so a harmonic pad blooms instead of clicking.
+function padTone(type, f0, f1, dur, peak, at = 0, attack = 0.16) {
+  if (!ctx || dead || voices >= A.maxVoices) return;
+  voices++;
+  const t0 = ctx.currentTime + at;
+  const o = ctx.createOscillator();
+  o.type = type;
+  o.frequency.setValueAtTime(f0, t0);
+  if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t0 + dur);
+  const g = envGain(t0, attack, peak, dur);
+  o.connect(g).connect(sfxBus);
+  o.onended = voiceDone;
+  o.start(t0);
+  o.stop(t0 + dur + 0.05);
+}
+
 // one-shot filtered noise burst; f1 sweeps the filter when it differs from f0
 function noiseHit(kind, f0, f1, q, dur, peak, at = 0, prio = false) {
   if (!ctx || dead || voices >= A.maxVoices) return;
@@ -337,6 +355,44 @@ function sfxLanceStrike() {
   noiseHit('bandpass', 2400, 700, 1.2, 0.3, 0.24, 0, true);
   tone('sawtooth', 200, 45, 0.4, 0.22, 0, true);
   noiseHit('lowpass', 260, 90, 1, 0.5, 0.24, 0, true);
+}
+
+// Crown uplink: low and sparse while arming, a rising tonal detent for each
+// defense packet, then a launch voice built from impact + carrier + a quiet
+// harmonic stack. Frequencies stay out of the piercing top octave and every
+// peak is below the established lance/ritual cues; weight comes from shape,
+// not from making the finale tiring for a child to replay.
+function sfxFinaleArm(progress = 0) {
+  const p = Math.max(0, Math.min(1, progress));
+  const root = 58 + p * 30;
+  tone('sine', root, root * 1.18, 0.28, 0.075, 0, true);
+  noiseHit('lowpass', 190 + p * 90, 110, 1, 0.22, 0.045);
+}
+
+function sfxFinalePacket(wave) {
+  const step = Math.max(1, Math.min(3, wave));
+  const root = [0, 146.8, 174.6, 220][step];
+  tone('triangle', root, root * 1.5, 0.34, 0.105, 0, true);
+  tone('sine', root * 0.5, root * 0.5, 0.42, 0.11, 0, true);
+  tone('sine', root * 2, root * 2, 0.18, 0.045, 0.075);
+}
+
+function sfxFinaleHold(progress = 0) {
+  const p = Math.max(0, Math.min(1, progress));
+  const root = 82 + p * 55;
+  tone('sine', root, root * 1.06, 0.18, 0.045, 0, true);
+}
+
+function sfxFinaleTransmit() {
+  // The mechanical launch arrives first.
+  tone('sine', 58, 24, 0.72, 0.43, 0, true);
+  noiseHit('lowpass', 260, 72, 1, 0.62, 0.20, 0, true);
+  tone('sawtooth', 96, 760, 1.05, 0.12, 0.035, true);
+  // Then the carrier resolves into a restrained open-fifth/upper-octave pad.
+  padTone('sine', 196, 198, 1.65, 0.052, 0.08, 0.18);
+  padTone('sine', 294, 296, 1.62, 0.043, 0.10, 0.20);
+  padTone('triangle', 392, 396, 1.58, 0.034, 0.12, 0.22);
+  padTone('sine', 588, 592, 1.50, 0.025, 0.15, 0.24);
 }
 function motif(notes, step, dur, peak) {
   notes.forEach((f, i) => tone('triangle', f, f, dur, peak, i * step, true));
@@ -712,6 +768,48 @@ function onLanceTelegraph(L) {
   }
 }
 
+let finaleAudioPhase = 'dormant';
+let finaleAudioWave = 0;
+let finaleTransmitPlayed = false;
+
+function onFinaleStarted(snapshot) {
+  finaleAudioPhase = snapshot?.phase || 'arming';
+  finaleAudioWave = snapshot?.wave || 0;
+  finaleTransmitPlayed = false;
+  if (gate('finale:arm', 520)) sfxFinaleArm(snapshot?.progress || 0);
+}
+
+function onFinaleSync(snapshot) {
+  if (!snapshot) return;
+  if (snapshot.phase === 'arming' && gate('finale:arm', 640))
+    sfxFinaleArm(snapshot.progress);
+  if (snapshot.phase === 'defend') {
+    if (snapshot.wave > finaleAudioWave) {
+      for (let wave = finaleAudioWave + 1; wave <= snapshot.wave; wave++) sfxFinalePacket(wave);
+    } else if (gate('finale:hold', 1080)) {
+      sfxFinaleHold(snapshot.progress);
+    }
+  }
+  finaleAudioWave = Math.max(finaleAudioWave, snapshot.wave || 0);
+  finaleAudioPhase = snapshot.phase;
+}
+
+function onFinaleTransmit(snapshot) {
+  if (finaleTransmitPlayed) return;
+  finaleTransmitPlayed = true;
+  finaleAudioPhase = snapshot?.phase || 'transmit';
+  sfxFinaleTransmit();
+  bumpHeat(0.9);
+}
+
+function onFinaleReset() {
+  finaleAudioPhase = 'dormant';
+  finaleAudioWave = 0;
+  finaleTransmitPlayed = false;
+  delete lastAt['finale:arm'];
+  delete lastAt['finale:hold'];
+}
+
 function onStateScreen(next) {
   paused = next === 'PAUSED';
   if (!ctx || dead) return;
@@ -756,7 +854,11 @@ function onStateScreen(next) {
     motif([392, 311, 233, 155], 0.16, 0.22, 0.14);
   } else if (next === 'VICTORY') {
     duckAmbience(A.duck.victory);
-    motif([523, 659, 784, 1047], 0.12, 0.18, 0.14);
+    // The Crown already spent the mix's largest voice on transmission. Let
+    // the results screen answer it with a smaller, warmer reply instead of
+    // stacking the generic victory fanfare over the still-ringing carrier.
+    if (finaleAudioPhase === 'complete') motif([659, 784, 1047], 0.15, 0.24, 0.085);
+    else motif([523, 659, 784, 1047], 0.12, 0.18, 0.14);
   }
 }
 
@@ -771,6 +873,10 @@ if (AUDIO_ON) {
     if (FIRE[type] && gate('fire:' + type, A.fireGapMs)) { FIRE[type](); bumpHeat(A.heat.fire); }
   });
   after('mods', 'lanceTelegraph', onLanceTelegraph);
+  after('finale', 'started', onFinaleStarted);
+  after('finale', 'sync', onFinaleSync);
+  after('finale', 'transmit', onFinaleTransmit);
+  after('finale', 'reset', onFinaleReset);
   after('corner', 'finished', onCornerFinished);
   after('level', 'faceRevealed', onFaceRevealed);
   after('transform', 'armed', onTransformArmed);
@@ -803,5 +909,7 @@ export function audioSnapshot() {
     combatDuck,                           // T-042: current ambience multiplier from recent
     heat,                                 // combat density (both 1/0 when nothing is happening)
     pressure: lastPressureIntensity,      // T-042: last computed crush-margin 0..1 intensity
+    finale: { phase: finaleAudioPhase, wave: finaleAudioWave,
+               transmitPlayed: finaleTransmitPlayed },
   };
 }
