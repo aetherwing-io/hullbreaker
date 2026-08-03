@@ -57,7 +57,7 @@ export function plateSize(tier, plate, cfg) {
   const halfH = dist * Math.tan((cfg.camera.fov / 2) * DEG);
   const h = tier.frameFraction * 2 * halfH;
   const w = h * (plate.canvas[0] / plate.canvas[1]);
-  const cy = tier.yBottom + h / 2;
+  const cy = tier.yBottom + h / 2 + (plate.yLift || 0);
   return { w, h, cy, dist };
 }
 

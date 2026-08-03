@@ -1,10 +1,7 @@
 /* ================================================================== *
- *  HULLBREAKER — grey-box pass
- *  Scope: player controller, forced scroll, one enemy (wasp), shooting,
- *  polygonal tower (polyline rendering, wave gates, corner ritual).
- *  Later passes: retune, layout richness, weapons, enemy roster, boss,
- *  flight segment, juice, menus, audio. The modules under src/ receive
- *  them — one lane per file.
+ *  HULLBREAKER — production run
+ *  Six escalating defense phases, traversal combat, earned overdrive,
+ *  creature-body ascent, the Meridian Crown, and the signal-home payoff.
  * ================================================================== */
 /* This module is the composition root: it wires input, the frame loop, the
    run lifecycle (resetGame), the browser self-test, and the read-only
@@ -101,6 +98,7 @@ import './render/backdrop.js';
 import './render/level.js';
 import './render/seams.js';
 import { limbPieces } from './render/limb.js';
+import './render/crown.js';
 import './render/transform.js';
 import './render/player.js';
 import './render/capsules.js';
@@ -743,7 +741,7 @@ if (QUERY.has('selftest')) {
     dispatchEvent(new Event('resize'));
     check('resize handled', Math.abs(camera.aspect - innerWidth / innerHeight) < 1e-6);
     // view scales: any ?view= must resolve to a declared entry (default is
-    // `far` per the July 30 operator verdict); when `near` IS selected it must
+    // `mid` for shipped sprite readability); when `near` IS selected it must
     // reproduce the pre-view-scale camera depth exactly — checked against
     // ACTIVE_FIXTURE (mode-agnostic: traversal or transform), the same
     // thing activeCameraDepth() itself reads, so this holds at any aspect.

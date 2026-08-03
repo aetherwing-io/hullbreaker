@@ -270,13 +270,15 @@ export async function run(SHARED) {
     for (const f of layerFiles('sim'))
       ok(!/\bshell\b/.test(stripComments(readFileSync(f, 'utf8'))),
          'T-013: sim untouched by the shell: ' + f);
-    // no image assets anywhere in the shell: the composition is flat-shaded
-    // CSS (task constraint, and it keeps the no-build-step rule)
+    // Production key art now carries the player-facing promise; the original
+    // data-backed composition remains code-native underneath for conformance.
     const htmlSrc = readFileSync(join(here, '..', 'index.html'), 'utf8');
-    for (const [label, src] of [['index.html', htmlSrc], ['ui/shell.js', shellSrc],
+    ok(/title-meridian-ascent-v1\.png/.test(htmlSrc),
+       'T-013: the title references the concept-aligned production key art');
+    for (const [label, src] of [['ui/shell.js', shellSrc],
                                 ['pure/shell.js', readFileSync(join(srcDir, 'pure', 'shell.js'), 'utf8')]])
-      ok(!/\burl\(|<img|\.png|\.jpg|\.svg|background-image/i.test(src),
-         'T-013: no image assets referenced in ' + label);
+      ok(!/<img|background-image/i.test(src),
+         'T-013: shell behavior/data stays independent of image markup in ' + label);
     ok(/id="shell"/.test(htmlSrc) && /id="ovPanel"/.test(htmlSrc),
        'T-013: index.html carries the shell root and the overlay panel slot');
     // the composition root writes the whole var set through elementVars(), so
@@ -301,7 +303,7 @@ export async function run(SHARED) {
     const overlaySrc = stripComments(readFileSync(join(srcDir, 'ui', 'overlay.js'), 'utf8'));
     ok(overlaySrc.indexOf('drawStateScreen(next)') < overlaySrc.indexOf('shellStateChanged(next)'),
        'T-013: the overlay draws its own title/body before the shell adds its panel');
-    for (const title of ['TRAVERSAL CLEAR', 'BREACH CLEAR', 'SECTOR CLEAR', 'SIGNAL LOST',
+    for (const title of ['TRAVERSAL CLEAR', 'BREACH CLEAR', 'SIGNAL SENT', 'SIGNAL LOST',
                          'ROUTE LOST', 'PAUSED'])
       ok(overlaySrc.includes("'" + title + "'"),
          'T-013: overlay outcome title still published unchanged: ' + title);

@@ -21,7 +21,7 @@ import {
   LEVEL_LEN, groundH, groundTopAt, platforms, isSolid, activeScrollSpeed,
 } from './level.js';
 import { state, setState } from './state.js';
-import { currentWeapon, setWeapon, weaponDef, fireWeapon } from './weapons.js';
+import { currentWeapon, setWeapon, weaponDef, fireWeapon, weaponHeldSince } from './weapons.js';
 import { mods, clearMods } from './mods.js';
 import { CAP, spawnCapsule } from './capsules.js';
 import {
@@ -532,7 +532,8 @@ export function damagePlayer(amount, fromX) {
   player.grounded = false;
   // classic tension: the weapon capsule pops out toward the threat —
   // recatch it within the window or fall back to the rifle
-  if (currentWeapon !== 'R' && player.hp > 0) {
+  if (currentWeapon !== 'R' && player.hp > 0 &&
+      gameMs - weaponHeldSince >= CAP.pickupGraceMs) {
     spawnCapsule('letter', currentWeapon, player.x, player.y + 1.2, 'pop', -away * CAP.popVx);
     setWeapon('R');
   }

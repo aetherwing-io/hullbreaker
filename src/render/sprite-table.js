@@ -20,9 +20,10 @@
    replaces, which is a readability pass making things worse (T-046 measured
    exactly that: wasp-drone-a on a canvas-sized quad draws 15.2 x 13.1 px
    against the shipped octahedron's 17.4 x 17.4). So the quad is sized from
-   the INK: the opaque bounding box of the art is scaled to the box the
-   primitive drew, and the quad is whatever is bigger than that. The drawn
-   body then matches the old silhouette's extents on both axes, and the
+   the INK: the opaque bounding box of the art is first fitted to the box the
+   primitive drew, and the quad is whatever is bigger than that. The render
+   layer may then apply one explicit presentation-only scale to the complete
+   cutout; collision and every number returned here remain unchanged. The
    transparent margin costs nothing but a few texels of fill.             */
 
 import { CONFIG } from '../config.js';
@@ -46,24 +47,37 @@ export const SPRITE_ROOT = '../../assets/generated/sprites/';
 export const SPRITE_ART = {
   hound: {
     a: { file: 'hound-brace-a.png', canvas: [64, 32], ink: [4, 2, 58, 30] },
-    b: { file: 'hound-brace-b.png', canvas: [64, 32], ink: [2, 2, 60, 30] },
+    b: { file: 'houndframe-v2.png', canvas: [590, 313], ink: [24, 24, 542, 265] },
   },
   carrier: {
     a: { file: 'carrier-hauler-a.png', canvas: [64, 32], ink: [2, 0, 60, 32] },
-    b: { file: 'carrier-hauler-b.png', canvas: [64, 32], ink: [2, 2, 60, 30] },
+    b: { file: 'carrier-hauler-v2.png', canvas: [586, 368], ink: [24, 24, 538, 320] },
   },
   wasp: {
     a: { file: 'wasp-drone-a.png', canvas: [32, 32], ink: [2, 2, 28, 24] },
-    b: { file: 'wasp-drone-b.png', canvas: [32, 32], ink: [2, 2, 30, 28] },
+    b: { file: 'wasp-drone-v2.png', canvas: [460, 395], ink: [24, 24, 412, 347] },
   },
   polyp: {
     a: { file: 'polyp-iris-a.png', canvas: [64, 64], ink: [4, 4, 58, 58] },
-    b: { file: 'polyp-iris-b.png', canvas: [64, 64], ink: [2, 2, 60, 60] },
+    b: { file: 'iris-polyp-v2.png', canvas: [429, 410], ink: [24, 24, 381, 362] },
   },
   mortar: {
     a: { file: 'mortar-tripod-a.png', canvas: [64, 64], ink: [0, 2, 64, 60] },
-    b: { file: 'mortar-tripod-b.png', canvas: [64, 64], ink: [2, 4, 62, 60] },
+    b: { file: 'spore-mortar-v2.png', canvas: [498, 458], ink: [24, 24, 450, 410] },
   },
+};
+
+// A second authored pose for each production role. These are never selected
+// by a timer on their own: hostiles.js swaps them only while the matching sim
+// state is true (dive, charge, tell/arming, or the carrier's actual bob phase).
+// The geometry is measured independently because an action silhouette is not
+// forced through the idle crop's aspect ratio.
+export const SPRITE_ACTION_ART = {
+  hound:  { file: 'houndframe-action-v2.png', canvas: [666, 302], ink: [24, 24, 618, 254] },
+  carrier:{ file: 'carrier-hauler-action-v2.png', canvas: [590, 397], ink: [24, 24, 542, 349] },
+  wasp:   { file: 'wasp-drone-action-v2.png', canvas: [486, 301], ink: [24, 24, 438, 253] },
+  polyp:  { file: 'iris-polyp-action-v2.png', canvas: [421, 399], ink: [24, 24, 373, 351] },
+  mortar: { file: 'spore-mortar-action-v2.png', canvas: [499, 449], ink: [24, 24, 451, 401] },
 };
 
 export const SPRITE_KINDS = Object.keys(SPRITE_ART);
@@ -135,6 +149,23 @@ export function spriteQuad(kind, variant = DEFAULT_VARIANT, C = CONFIG) {
   const w = box.w * cw / iw;                       // grow the quad by exactly the
   const h = box.h * ch / ih;                       //   transparent margin
   // where the ink's center sits inside the quad, in tiles (canvas y is down)
+  const inkCx = ((ix + iw / 2) / cw - 0.5) * w;
+  const inkCy = (0.5 - (iy + ih / 2) / ch) * h;
+  return {
+    w, h,
+    offX: box.cx - inkCx, offY: box.cy - inkCy,
+    inkW: box.w, inkH: box.h,
+  };
+}
+
+export function spriteActionQuad(kind, C = CONFIG) {
+  const art = SPRITE_ACTION_ART[kind];
+  const box = primitiveBox(kind, C);
+  if (!art || !box) return null;
+  const [cw, ch] = art.canvas;
+  const [ix, iy, iw, ih] = art.ink;
+  const w = box.w * cw / iw;
+  const h = box.h * ch / ih;
   const inkCx = ((ix + iw / 2) / cw - 0.5) * w;
   const inkCy = (0.5 - (iy + ih / 2) / ch) * h;
   return {

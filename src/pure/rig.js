@@ -66,17 +66,27 @@ export const BODY_HEIGHT = CONFIG.player.height;          // 1.7
      python3 -c "from PIL import Image; im=Image.open('assets/generated/
      sprites/rig-marine.png').convert('RGBA'); ..." (see reports/tasks/
      T-040/build.md for the exact one-liner used). */
-export const RIG_SPRITE_PATH = '../../assets/generated/sprites/rig-marine.png';
-export const RIG_SPRITE_CONTENT_ASPECT = 0.513;
+export const RIG_SPRITE_PATH = '../../assets/generated/sprites/rig-marine-v2.png';
+// Measured from the production cutout's alpha box: 419 x 327 pixels. The
+// width includes RIG's rifle and backpack; the collision body remains the
+// narrow CONFIG.player box, just as the separately swept gun always did.
+export const RIG_SPRITE_CONTENT_ASPECT = 419 / 327;
 export const RIG_SPRITE_H = BODY_HEIGHT;
 export const RIG_SPRITE_W = RIG_SPRITE_CONTENT_ASPECT * RIG_SPRITE_H;
-export const RIG_SPRITE_MAX_OVERRUN = 1.3;   // sprite half-width may reach up to
+export const RIG_SPRITE_MAX_OVERRUN = 3.7;   // full rifle/backpack/action silhouette may reach up to
                                               //   this multiple of BODY_HALF_WIDTH
 // UV crop rectangle (0..1, standard GL texture space: v=0 is the BOTTOM of
 // the image) selecting just the drawn figure out of the 256x256 canvas's
 // mostly-transparent padding — see the header note above for how these were
 // measured. src/render/player.js applies them via texture.offset/repeat.
-export const RIG_SPRITE_UV = { u0: 0.265625, v0: 0.05859375, u1: 0.72265625, v1: 0.94921875 };
+export const RIG_SPRITE_UV = { u0: 24 / 467, v0: 24 / 375, u1: 443 / 467, v1: 351 / 375 };
+
+export const RIG_ACTION_SPRITE_PATH = '../../assets/generated/sprites/rig-marine-action-v2.png';
+export const RIG_ACTION_SPRITE_H = BODY_HEIGHT;
+export const RIG_ACTION_SPRITE_W = (488 / 334) * RIG_ACTION_SPRITE_H;
+export const RIG_ACTION_SPRITE_UV = {
+  u0: 24 / 536, v0: 24 / 382, u1: 512 / 536, v1: 358 / 382,
+};
 
 // Same shape of check as spriteViolations() below, scoped to the real
 // sprite's plane size: proves the documented overrun stays inside its own

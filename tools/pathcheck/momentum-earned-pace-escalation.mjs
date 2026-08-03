@@ -403,8 +403,8 @@ export async function run(SHARED) {
     }
   }
   {
-    // Flag scoping, read straight from the composition root: absent → off,
-    // and a fixture URL never arms it however it is spelled, because the
+    // Flag scoping, read straight from the composition root: absent → on for
+    // the normal run, explicit 0 → off, and a fixture URL never arms it because the
     // traversal and transformation fixtures own their own pursuit models.
     const modeChild = `
       const urls = ['', 'momentum=1', 'momentum=0', 'slice=traversal&momentum=1',
@@ -425,8 +425,8 @@ export async function run(SHARED) {
     } catch (e) {
       console.error('pathcheck: momentum flag child failed: ' + e.message);
     }
-    ok(!!flags && flags['(none)'] === false && flags['momentum=0'] === false,
-       'FLAG: momentum is OFF on every URL that does not ask for it');
+    ok(!!flags && flags['(none)'] === true && flags['momentum=0'] === false,
+       'FLAG: momentum is baseline in the normal run and ?momentum=0 opts out');
     ok(!!flags && flags['momentum=1'] === true,
        'FLAG: …and on when it does');
     ok(!!flags && flags['slice=traversal&momentum=1'] === false &&
@@ -434,13 +434,12 @@ export async function run(SHARED) {
        'FLAG: no fixture URL can arm it — the traversal and transformation slices ' +
        'keep the pursuit models they already own');
   }
-  const off = momentumProbe('');
-  const on = momentumProbe('momentum=1');
+  const off = momentumProbe('momentum=0');
+  const on = momentumProbe('');
   ok(!!off && !!on, 'the momentum probe drives the real six-face scroll headlessly');
   if (off && on) {
     ok(off.strong.every((s) => s === base) && off.weak.every((s) => s === base),
-       'WIRING: with no flag the six-face run holds ' + base + ' t/s however it is ' +
-       'played — the whole system is opt-in and every shipped URL is unchanged');
+       'WIRING: with ?momentum=0 the six-face run holds ' + base + ' t/s however it is played');
     ok(on.weak.every((s) => s === base),
        'WIRING/FLOOR: a player pinned against the damage plane for 25s is carried at ' +
        'exactly the shipped speed, never faster — the run answers a struggling player ' +
@@ -514,7 +513,7 @@ export async function run(SHARED) {
          cadence and there is nothing to drift out of sync. */
       const sOff = off.spawns, sOn = on.spawns, dOn = on.scrolled;
       ok(sOff.weak > 8 && sOff.strong === sOff.weak && sOn.weak === sOff.weak,
-         'WIRING/CEILING: with the flag off the ambient table delivers ' + sOff.weak +
+         'WIRING/CEILING: with ?momentum=0 the ambient table delivers ' + sOff.weak +
          ' entries in 25 s however the run is played — and a struggling player with the ' +
          'flag ON gets exactly that same cadence, which is the floor stated in enemies');
       ok(sOn.fed > sOn.weak && sOn.strong > sOn.weak && dOn.fed / dOn.weak > 1.2,

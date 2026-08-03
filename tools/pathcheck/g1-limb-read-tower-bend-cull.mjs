@@ -93,8 +93,9 @@ export async function run(SHARED) {
     // the deck kerb is the one documented exception (its top is below the deck,
     // so a camera looking down at the deck cannot have it occlude anything on
     // the deck) and carries its own two rules, checked by limbPlanViolations
-    ok(outward.every((p) => p.kind === 'kerb' || !limbSpansPlayBand(p, CONFIG)),
-       'not one outward piece except the deck kerb enters y [' +
+    ok(outward.every((p) => p.kind === 'kerb' || p.kind === 'lipScute' ||
+                                  !limbSpansPlayBand(p, CONFIG)),
+       'not one outward piece except the below-deck edge armour enters y [' +
        L.playBand.y0 + ', ' + L.playBand.y1 + ']');
     {
       const kerbs = plan.filter((p) => p.kind === 'kerb');

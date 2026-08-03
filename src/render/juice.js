@@ -36,15 +36,31 @@ import { view } from '../sim/bridge.js';
 import { gameMs, hitStopRemainingMs } from '../sim/time.js';
 import { sLeftEdge } from '../sim/edges.js';
 import { player } from '../sim/player.js';
+import { scoreNotchNow } from '../sim/score.js';
 import { activeCorner } from '../sim/wavegate.js';
 import { activeTransformEvent } from '../sim/transform.js';
 import { addTrauma, cameraTrauma } from './camera.js';
-import { fxBurst, fxCrush, fxFlash, fxRole, fxStats, resetFx, updateFx } from './fx.js';
+import {
+  fxBurst, fxCrush, fxDirectedBurst, fxFlash, fxHostileColor, fxRing, fxRole,
+  fxShotColor, fxStats, resetFx, updateFx,
+} from './fx.js';
 
 const J = CONFIG.juice;
 const S = J.shake;
 const CT = cornerTimeline(CONFIG);
 const TT = transformTimeline(CONFIG);
+
+// Presentation multipliers only: simulation fire rate, projectile size and
+// point collision stay in CONFIG.weapons. These describe the silhouette of a
+// trigger pull at the camera: rifle crack, spread fan, laser corridor, homing
+// petals, and flame rake.
+const WEAPON_FX = {
+  R: { flash: 1.25, fan: 0.75, spread: 0.10, hit: 1.00, ring: 0.00 },
+  S: { flash: 1.30, fan: 1.00, spread: 0.72, hit: 1.15, ring: 0.00 },
+  L: { flash: 1.65, fan: 0.50, spread: 0.04, hit: 1.75, ring: 1.30 },
+  H: { flash: 1.45, fan: 0.50, spread: 0.58, hit: 1.25, ring: 0.85 },
+  F: { flash: 1.90, fan: 1.50, spread: 0.46, hit: 1.50, ring: 1.10 },
+};
 
 /* ---------------------------- throttles --------------------------- *
  * A spread volley is five slots and a pierce laser is many hits per
@@ -64,15 +80,25 @@ function onHitStop(kind) {
   addTrauma(kind === 'hurt' ? S.hurt : S.kill);
 }
 
-// muzzle flash: one per volley, at the firing line along the aim
-function onShotSpawned() {
+let recentShotType = 'R';
+let recentShotAt = -1e9;
+
+// Muzzle theater: one event per volley, at the actual firing line along the
+// aim. The fan is visible immediately, before the projectiles have had a frame
+// to separate; laser/homing/flame also stamp a small launch ring.
+function onShotSpawned(_i, type) {
+  recentShotType = WEAPON_FX[type] ? type : 'R';
+  recentShotAt = gameMs;
   if (!gate('muzzle', J.muzzle.volleyGapMs)) return;
   const M = J.muzzle;
+  const W = WEAPON_FX[recentShotType];
   const ax = player.aim.x, ay = player.aim.y;
-  fxFlash(M.ms, M.size,
-    player.x + ax * M.offsetTiles,
-    player.y + player.muzzleY + ay * M.offsetTiles,
-    fxRole('muzzle'));
+  const x = player.x + ax * M.offsetTiles;
+  const y = player.y + player.muzzleY + ay * M.offsetTiles;
+  const color = fxShotColor(recentShotType);
+  fxFlash(M.ms, M.size * W.flash, x, y, color);
+  fxDirectedBurst(J.impact, x, y, color, ax, ay, W.spread, W.fan);
+  if (W.ring > 0) fxRing(M.ms * 1.8, M.size * W.ring, x, y, color, 0.02);
 }
 
 // hostiles: an hp drop is an impact (armour pings do not drop hp, so an
@@ -84,16 +110,60 @@ function onHostileSpawned(e) { hostileHp.set(e.id, e.hp); }
 
 function onHostileSync(e) {
   const hp = hostileHp.get(e.id);
-  if (hp !== undefined && e.hp < hp && gate('impact', J.impact.gapMs))
-    fxBurst(J.impact, e.x, e.y, fxRole('muzzle'));
+  if (hp !== undefined && e.hp < hp && gate('impact', J.impact.gapMs)) {
+    const type = gameMs - recentShotAt <= 650 ? recentShotType : 'R';
+    const W = WEAPON_FX[type];
+    const weight = Math.min(2.1, W.hit * (1 + Math.max(0, hp - e.hp - 1) * 0.22));
+    const color = fxShotColor(type);
+    fxBurst(J.impact, e.x, e.y, color, weight);
+    if (W.ring > 0) fxRing(120, 0.72 * W.ring, e.x, e.y, color, 0.03);
+  }
   hostileHp.set(e.id, e.hp);
 }
+
+let deathChain = 0;
+let lastDeathAt = -1e9;
+let firstBreakDone = false;
 
 function onHostileRemoved(e, fade) {
   hostileHp.delete(e.id);
   if (!fade) return;                     // teardown/cull: no death, no debris
-  fxBurst(J.death, e.x, e.y, fxRole('enemyGlow'));
-  fxFlash(J.death.flashMs, J.death.flashSize, e.x, e.y, fxRole('enemyGlow'));
+  deathChain = gameMs - lastDeathAt <= 780 ? Math.min(5, deathChain + 1) : 1;
+  lastDeathAt = gameMs;
+  const chainScale = 1 + (deathChain - 1) * 0.18;
+  const enemyColor = fxHostileColor(e.kind);
+  const shotColor = fxShotColor(gameMs - recentShotAt <= 700 ? recentShotType : 'R');
+
+  // Two-color punctuation: acid ecology flies apart, then the weapon's own
+  // color cuts a clean shock front through it. The center stays readable.
+  fxBurst(J.death, e.x, e.y, enemyColor, chainScale);
+  fxBurst(J.impact, e.x, e.y, shotColor, 1.15 * chainScale);
+  fxFlash(J.death.flashMs, J.death.flashSize * chainScale, e.x, e.y, enemyColor);
+  fxRing(J.death.flashMs * 1.7, 1.8 * chainScale, e.x, e.y, shotColor, 0.04);
+
+  // The first machine RIG breaks teaches the reward language loudly: an
+  // upward shrapnel fan and two expanding fronts. It happens naturally in
+  // the opening fight, costs no rule/state change, and gives the first minute
+  // one authored "whoa" beat instead of waiting for a late-game weapon drop.
+  if (!firstBreakDone) {
+    firstBreakDone = true;
+    fxDirectedBurst(J.death, e.x, e.y, shotColor, 0, 1, 1.9, 1.8);
+    fxBurst(J.death, e.x, e.y, enemyColor, 1.65);
+    fxFlash(210, 1.55, e.x, e.y, shotColor, 0.04);
+    fxRing(360, 3.15, e.x, e.y, shotColor, 0.05);
+    fxRing(520, 4.45, e.x, e.y, enemyColor, 0.02);
+    addTrauma(S.boom * 0.8);
+  }
+
+  // Three fast kills earn the one larger beat. It is capped to a 3.8-tile
+  // ring and a 600ms gate: spectacular in a crowd, never a screen-white spam.
+  if (deathChain >= 3 && gate('chainBlast', 600)) {
+    const payoff = Math.min(3.8, 3.1 + (deathChain - 3) * 0.35);
+    fxBurst(J.death, e.x, e.y, shotColor, 1.85);
+    fxFlash(180, 1.75, e.x, e.y, shotColor, 0.06);
+    fxRing(310, payoff, e.x, e.y, enemyColor, 0.05);
+    addTrauma(S.kill * 0.65);
+  }
 }
 
 // capsules: removal is a pickup only under the sim's own catch predicate.
@@ -105,8 +175,10 @@ function onCapsuleRemoved(c) {
   if (gameMs < c.noCatchUntil) return;
   if (!circleOverlapsPlayer(c.x, c.y, CONFIG.capsules.pickupRadius)) return;
   const color = fxRole(c.kind === 'mod' ? 'modCapsule' : 'capsule');
-  fxBurst(J.pickup, c.x, c.y, color);
-  fxFlash(J.pickup.flashMs, J.pickup.flashSize, c.x, c.y, color);
+  fxBurst(J.pickup, c.x, c.y, color, 1.35);
+  fxDirectedBurst(J.pickup, c.x, c.y, color, 0, 1, 1.65, 1.25);
+  fxFlash(J.pickup.flashMs * 1.25, J.pickup.flashSize * 1.15, c.x, c.y, color);
+  fxRing(280, c.kind === 'mod' ? 2.35 : 1.85, c.x, c.y, color, 0.05);
 }
 
 // local copy of the sim's circle-vs-AABB test: reading it would be fine,
@@ -122,6 +194,7 @@ function circleOverlapsPlayer(x, y, r) {
    have no hook of their own on the six-face run. */
 const prev = {
   hp: player.hp,
+  airJumpsLeft: player.airJumpsLeft, traversalState: player.traversalState,
   cornerK: 0, cornerState: 'idle', snap1: false, snap2: false,
   xfIndex: -1, xfState: 'idle', xfSnap1: false, xfSnap2: false,
 };
@@ -133,6 +206,28 @@ function onPlayerSync() {
       fxRole('rig'));
   }
   prev.hp = player.hp;
+
+  // BREAKING turns a real traversal launch into a close-range shock weapon.
+  // Detect the same two state edges scoreLaunch() can arm: an air-jump spends
+  // a charge, while a ledge/wall launch exits its held traversal state upward.
+  // A normal ground jump matches neither edge and therefore cannot lie.
+  const airLaunch = !player.grounded && player.airJumpsLeft < prev.airJumpsLeft;
+  const contactLaunch = prev.traversalState !== 'free' &&
+    player.traversalState === 'free' && player.vy > 0.5;
+  if (scoreNotchNow() >= CONFIG.score.notches.length && (airLaunch || contactLaunch)) {
+    const x = player.x, y = player.y + player.h * 0.52;
+    const color = fxShotColor(recentShotType);
+    const radius = CONFIG.score.shockRadius;
+    fxDirectedBurst(J.death, x, y, color, 0, 1, 2.45, 1.45);
+    fxFlash(190, 1.75, x, y, color, 0.08);
+    // fxRing's unit torus has radius 0.5; diameter 2r draws the true damage
+    // radius before the second, looser echo expands beyond it and disappears.
+    fxRing(320, radius * 2, x, y, color, 0.10);
+    fxRing(510, radius * 2.55, x, y, fxRole('warn'), 0.04);
+    addTrauma(S.boom * 0.72);
+  }
+  prev.airJumpsLeft = player.airJumpsLeft;
+  prev.traversalState = player.traversalState;
 
   const c = activeCorner();
   if (c) {
@@ -161,7 +256,18 @@ function onTransformRitual(ev, t) {
   if (!prev.xfSnap2 && t >= TT.t4) { prev.xfSnap2 = true; addTrauma(S.snap2); }
 }
 
-function onBoom() { addTrauma(S.boom); }
+function onBoom() {
+  addTrauma(S.boom);
+  // Clearing a face is the climb's exclamation mark: the route opens with a
+  // compact vertical ignition around RIG, rather than only a camera tremor.
+  const y = player.y + player.h * 0.55;
+  const shot = fxShotColor(recentShotType);
+  const warn = fxRole('warn');
+  fxDirectedBurst(J.death, player.x, y, warn, 0, 1, 1.35, 1.45);
+  fxFlash(220, 1.65, player.x, y, shot, 0.04);
+  fxRing(390, 4.1, player.x, y, shot, 0.05);
+  fxRing(570, 6.0, player.x, y, warn, 0.02);
+}
 
 function onTransformReset() {
   prev.xfIndex = -1;
@@ -175,7 +281,12 @@ function onStateScreen(next) {
   // the first frame of the retry inherits the last frame of the attempt
   resetFx();
   hostileHp.clear();
+  recentShotType = 'R'; recentShotAt = -1e9;
+  deathChain = 0; lastDeathAt = -1e9;
+  firstBreakDone = false;
   prev.hp = player.hp;
+  prev.airJumpsLeft = player.airJumpsLeft;
+  prev.traversalState = player.traversalState;
   prev.cornerK = 0; prev.cornerState = 'idle';
   prev.snap1 = false; prev.snap2 = false;
   onTransformReset();

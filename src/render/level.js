@@ -6,9 +6,10 @@
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
+import { normalAscentAltAt, normalAscentPitchAt } from '../pure/ascent.js';
 import { SEGS, CORNER_S, polyAt, headingAt, faceIndexAt } from '../pure/path.js';
 import { deckShadePlan } from '../pure/shade.js';
-import { IS_G1, IS_TRANSFORM_SLICE } from '../mode.js';
+import { ACTIVE_FIXTURE, IS_G1, IS_TRANSFORM_SLICE } from '../mode.js';
 import { installView } from '../sim/bridge.js';
 import {
   LEVEL_LEN, groundH, platforms, solidRects, slamSets, farSets,
@@ -18,7 +19,7 @@ import { scene, HIDE } from './scene.js';
 import { PAL, SHADE_GAIN } from './palette.js';
 
 // --- level meshes: baked per-face static geometry ---------------------
-// Tile instances are baked once along the tower polyline with per-column
+// Tile instances are baked once along the rising tower polyline with per-column
 // instance ranges + base matrices (and per-face ranges for later passes),
 // so the corner ritual can slam columns in without a rebuild.
 const VISUAL_DEPTH = 4;
@@ -28,6 +29,8 @@ const columnInstances = new Array(LEVEL_LEN).fill(null);  // col → {start, cou
 const faceRanges = [];                                    // face → {col0, col1, inst0, inst1}
 const slatMeshes = [];                                    // catwalk slats {mesh, x0, x1}
 const authoredSolidMeshes = [];                           // traversal-only tagged solid rectangles
+const normalRunAltAt = (s) => ACTIVE_FIXTURE ? 0 : normalAscentAltAt(s, CONFIG.levelLength);
+const normalRunPitchAt = (s) => ACTIVE_FIXTURE ? 0 : normalAscentPitchAt(s, CONFIG.levelLength);
 
 /* ---- view hooks: the build state of a face, made visible ---------- */
 /* THE ZIPPER IS RETIRED FROM THE WORLD, NOT DELETED (docs/decisions.md
@@ -115,6 +118,7 @@ if (!IS_TRANSFORM_SLICE) {
   // build's instance colors are unchanged bit for bit.
   const deckShade = deckShadePlan(groundH, CONFIG, SHADE_GAIN);
   const _tile = new THREE.Color();
+  const _tileEuler = new THREE.Euler(0, 0, 0, 'YZX');
   let idx = 0;
   for (let i = 0; i < LEVEL_LEN; i++) {
     const f = faceIndexAt(i, CONFIG);
@@ -126,13 +130,21 @@ if (!IS_TRANSFORM_SLICE) {
     columnInstances[i] = { start: idx, count: VISUAL_DEPTH, settled: true };
     for (let d = 1; d <= VISUAL_DEPTH; d++) {
       const j = groundH[i] - d;
-      const m = new THREE.Matrix4().makeRotationY(colYaw);
-      m.setPosition(p.x, j + 0.5, p.z);
+      const atS = i + 0.5;
+      const m = ACTIVE_FIXTURE
+        ? new THREE.Matrix4().makeRotationY(colYaw)
+        : new THREE.Matrix4().makeRotationFromEuler(
+            _tileEuler.set(0, colYaw, normalRunPitchAt(atS), 'YZX')
+          );
+      m.setPosition(p.x, j + 0.5 + normalRunAltAt(atS), p.z);
       tileBaseMats.push(m);
       tiles.setMatrixAt(idx, m);
       const k = deckShade.rows[Math.min(d, deckShade.rows.length) - 1] * deckShade.wear[i];
-      tiles.setColorAt(idx, _tile.copy((i + j) % 2 === 0 ? cA : cB)   // checker = scroll-speed
-        .multiplyScalar(k));                                         //   readability, ramped
+      // Broad 6×2 armour bands carry motion without turning the creature's
+      // skin into a one-tile checkerboard. They read as overlapping scutes at
+      // play scale; the two authored values still make forward motion visible.
+      const scuteBand = (Math.floor(i / 6) + Math.floor((d - 1) / 2)) % 2;
+      tiles.setColorAt(idx, _tile.copy(scuteBand === 0 ? cA : cB).multiplyScalar(k));
       idx++;
     }
     faceRanges[f].inst1 = idx - 1;
@@ -148,7 +160,7 @@ if (!IS_TRANSFORM_SLICE) {
       new THREE.BoxGeometry(rect.x1 - rect.x0, rect.y1 - rect.y0, 2),
       solidMat
     );
-    mesh.position.set(wp.x, midY, wp.z);
+    mesh.position.set(wp.x, midY + normalRunAltAt(midX), wp.z);
     mesh.rotation.y = headingAt(SEGS, midX);
     mesh.userData.fixtureSolidId = rect.id;
     scene.add(mesh);
@@ -161,8 +173,12 @@ if (!IS_TRANSFORM_SLICE) {
     const mid = (p.x0 + p.x1) / 2;
     const wp = polyAt(SEGS, mid);
     const slat = new THREE.Mesh(new THREE.BoxGeometry(len, 0.18, 1.4), walkMat);
-    slat.position.set(wp.x, p.y - 0.09, wp.z);
+    slat.position.set(wp.x, p.y - 0.09 + normalRunAltAt(mid), wp.z);
     slat.rotation.y = headingAt(SEGS, mid);            // aprons keep slats off the bends
+    if (!ACTIVE_FIXTURE) {
+      slat.rotation.order = 'YZX';
+      slat.rotation.z = normalRunPitchAt(mid);
+    }
     scene.add(slat);
     slatMeshes.push({ mesh: slat, x0: p.x0, x1: p.x1 });
   }

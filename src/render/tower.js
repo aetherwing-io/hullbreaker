@@ -3,17 +3,19 @@
    2D ribbon onto the hexagonal tower through the pure polyline. Every
    dynamic entity's mesh places through here.
 
-   The transformation fixture swaps the tower polyline for its own static
-   path — the same kind of thing with one extra term: the altitude the body
-   has climbed by that point. Nothing in this mapping is animated. During a
-   transition only the CAMERA's yaw moves (src/render/camera.js); the world
-   RIG runs on stays exactly where it was baked, which is what makes a turn
-   read as RIG rounding a limb instead of the world rearranging itself. */
+   The normal six-face path also rises through pure/ascent.js, turning its
+   closed-looking hex circuit into a helix. Transformation fixtures swap in
+   their own authored path and altitude profile. Nothing in either mapping is
+   animated. During a transition only the CAMERA's yaw moves
+   (src/render/camera.js); the world RIG runs on stays exactly where it was
+   baked, which is what makes a turn read as RIG rounding a limb instead of
+   the world rearranging itself. */
 
 import { CONFIG } from '../config.js';
+import { normalAscentAltAt } from '../pure/ascent.js';
 import { SEGS, polyAt, yawAt } from '../pure/path.js';
 import { TRANSFORM_PATH, transformPathAt, transformYawAt } from '../pure/transform.js';
-import { IS_TRANSFORM_SLICE } from '../mode.js';
+import { ACTIVE_FIXTURE, IS_TRANSFORM_SLICE } from '../mode.js';
 
 const _pp = { x: 0, z: 0 };     // polyAt scratch shared by the per-frame call sites
 
@@ -29,7 +31,9 @@ export function towerPose(s, out = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 }) {
   }
   polyAt(SEGS, s, out);
   out.yaw = yawAt(SEGS, s, CONFIG.path.yawBlendTiles);
-  out.alt = 0;
+  // Authored fixtures own their geometry and keep their prior mapping. The
+  // helix is presentation for the default six-face run only.
+  out.alt = ACTIVE_FIXTURE ? 0 : normalAscentAltAt(s, CONFIG.levelLength);
   return out;
 }
 

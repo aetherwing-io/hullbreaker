@@ -133,7 +133,8 @@ export async function run() {
     ok(w > 0 && h > 0 && Number.isFinite(w) && Number.isFinite(h), tag + 'positive finite size');
     near(w / h, plate.canvas[0] / plate.canvas[1], 1e-9,
          tag + 'the quad preserves the PNG\'s own aspect ratio (never stretched)');
-    near(cy, tier.yBottom + h / 2, 1e-9, tag + 'center y is derived from yBottom + half height');
+    near(cy, tier.yBottom + h / 2 + (plate.yLift || 0), 1e-9,
+         tag + 'center y is derived from yBottom + half height + authored landmark lift');
     near(dist, viewDist(tier.depth, farMult, CONFIG), 1e-9, tag + 'view-space distance matches viewDist()');
   }
 

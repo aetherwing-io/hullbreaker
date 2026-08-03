@@ -13,11 +13,9 @@
      overlay text the playtest harness scrapes (`ovTitle`, `ovBody`) is
      byte-identical to the pre-shell build and the shell's panel is an
      added sibling in #ovPanel;
-   - the start screen is a CSS composition of concept board 05's middle
-     panel ("The Ship Wakes"), with the other two directions reachable
-     with 1/2/3 or ?title= — the operator has not judged which is canon;
-   - no image assets: every mark is a flat-shaded box, gradient or
-     clip-path silhouette (see index.html's #shell CSS);
+   - the start screen uses production key art derived from concept boards
+     09 and 14. The original data-backed board-05 composition remains in
+     layout underneath it so its sizing/input contracts stay measurable;
    - the composition holds concept board 13's scale rule — RIG is 3.8% of
      frame height on all three directions. tools/pathcheck.mjs asserts
      that on the composition DATA; only a browser can prove the figure
@@ -89,10 +87,13 @@ function renderTitle() {
 
   const text = document.createElement('div');
   text.id = 'shellText';
-  text.style.setProperty('--tx', dir.titleBox.x + '%');
-  text.style.setProperty('--ty', dir.titleBox.y + '%');
-  text.style.setProperty('--tw', dir.titleBox.w + '%');
-  text.style.textAlign = dir.titleBox.align;
+  // The production key art reserves the dark left side deliberately. Keep
+  // the brand lockup there for every hidden board-direction A/B so selecting
+  // 1/2/3 can never put copy over the Crown or RIG.
+  text.style.setProperty('--tx', '5%');
+  text.style.setProperty('--ty', '24%');
+  text.style.setProperty('--tw', '47%');
+  text.style.textAlign = 'left';
   text.innerHTML =
     '<h1>HULLBREAKER</h1>' +
     '<p class="tag">' + dir.tagline + '</p>' +
@@ -102,12 +103,9 @@ function renderTitle() {
   const foot = document.createElement('div');
   foot.id = 'shellFoot';
   foot.innerHTML =
-    '<p>START-SCREEN DIRECTION ' + dir.n + '/3 &mdash; ' + dir.label +
-    ' <span class="dim">(concept board 05, ' + dir.panel + ': ' + dir.promise + ')</span></p>' +
-    '<p class="dim">' + START_DIRECTIONS.map((d) =>
-      (d.id === dir.id ? '<b>[' + d.n + '] ' + d.label + '</b>' : '[' + d.n + '] ' + d.label)
-    ).join(' &nbsp; ') + ' &nbsp;&middot;&nbsp; H hide HUD &nbsp;&middot;&nbsp; ' +
-    '?shell=0 boots straight into the run</p>';
+    '<p><b>MOVE</b> WASD / ARROWS &nbsp;&middot;&nbsp; <b>JUMP</b> SPACE &nbsp;&middot;&nbsp; ' +
+    '<b>FIRE</b> J / X &nbsp;&middot;&nbsp; <b>PAUSE</b> P / ESC</p>' +
+    '<p class="dim">CLIMB THE MERIDIAN &nbsp;&middot;&nbsp; BREAK THE CROWN &nbsp;&middot;&nbsp; SEND THE SIGNAL</p>';
   shellEl.appendChild(foot);
 }
 

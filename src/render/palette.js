@@ -233,7 +233,7 @@ export const CONCEPT = {
     // body mass = rust; backdrop/seams/distance = teal. The wall is the body
     // rising BEHIND the combat plane — teal shadow-steel, so the rust facet
     // RIG runs on separates from it the way board 13's limbs separate.
-    hull: 0x9a6a42, scute: 0x8f6240, scuteAlt: 0x9c6c46,
+    hull: 0x68452f, scute: 0x9b6840, scuteAlt: 0xae7548,
     rib: 0xb07c4e, machine: 0xbc8654,    // joints/kerb: the landmarks the orbit is about
     wall: 0x44656b, shadow: 0x35504f, skyline: 0x2f545c,
   },

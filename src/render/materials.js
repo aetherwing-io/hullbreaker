@@ -37,7 +37,9 @@ import { renderer } from './scene.js';
 import { CONFIG } from '../config.js';
 import { QUERY } from '../mode.js';
 import { preloadTexture, awaitPreloads } from './preload.js';
-import { hullTexRepeat, resolveHullTexOn, composeHullTile } from './hulltiles.js';
+import {
+  hullTexRepeat, resolveHullTexOn, composeHullTile, TILE_TONE, SCUTE_TILE_TONE,
+} from './hulltiles.js';
 
 // The family table itself is data, so it lives in src/pure/post.js where
 // tools/pathcheck.mjs can read it — and where the guard that every family a
@@ -265,9 +267,14 @@ function registerRaw(file, url) {
   return slot;
 }
 
-registerRaw('hull-panel-tile.png', TEX_DIR + 'hull-panel-tile.png');
-registerRaw('hull-panel-tile.png?wall', TEX_DIR + 'hull-panel-tile.png?wall');
-registerRaw('vent-louver-plate.png', TEX_DIR + 'vent-louver-plate.png');
+// One coherent production scute material now serves the three large armour
+// buckets. Independent texture objects are still required because repeat and
+// wrap live on the texture, not the material. The old panel/louver paintings
+// remain in the asset pack as comparison sources; they no longer make the
+// creature read as a wall full of square vents.
+registerRaw('hull-scute-tile-v2.png', TEX_DIR + 'hull-scute-tile-v2.png');
+registerRaw('hull-scute-tile-v2.png?wall', TEX_DIR + 'hull-scute-tile-v2.png?wall');
+registerRaw('hull-scute-tile-v2.png?scute', TEX_DIR + 'hull-scute-tile-v2.png?scute');
 registerRaw('weld-seam-strip.png', TEX_DIR + 'weld-seam-strip.png');
 registerRaw('wear-scuff-overlay.png', TEX_DIR + 'wear-scuff-overlay.png');
 
@@ -343,11 +350,12 @@ function imageBytes(img) {
 // Compose one bucket's canvas (hulltiles.js does every pixel of it) and hand
 // it to the GPU. Returns null when the base never arrived, which is the
 // caller's cue to leave the material flat — entry 16's degrade contract.
-function buildTile(key, base, wear) {
+function buildTile(key, base, wear, tone = TILE_TONE) {
   if (!base || !base.ready) return null;
   const composed = composeHullTile(CONFIG, key,
     imageBytes(base.tex.image),
-    wear && wear.ready ? imageBytes(wear.tex.image) : null);
+    wear && wear.ready ? imageBytes(wear.tex.image) : null,
+    tone);
   if (!composed) return null;
   const cv = document.createElement('canvas');
   cv.width = composed.width;
@@ -411,10 +419,15 @@ function warmTexture(tex) {
    bucket can never end up brightened by a texture that failed to load. */
 const HULL_TEX = {};
 
+// The v2 painting already has broad value structure. The legacy tone solve
+// was designed to recover contrast from four nearly-flat placeholder lines;
+// applying its 52-SD target to this source made every tendon channel a black
+// stripe. Retain enough range to read the scutes, recover the old 12% trim,
+// and leave the weld strip on its original sharp tune.
 function finishHullTex() {
-  const hullBase = rawTex.get('hull-panel-tile.png');
-  const wallBase = rawTex.get('hull-panel-tile.png?wall');
-  const scuteBase = rawTex.get('vent-louver-plate.png');
+  const hullBase = rawTex.get('hull-scute-tile-v2.png');
+  const wallBase = rawTex.get('hull-scute-tile-v2.png?wall');
+  const scuteBase = rawTex.get('hull-scute-tile-v2.png?scute');
   const shadowBase = rawTex.get('weld-seam-strip.png');
   const wear = rawTex.get('wear-scuff-overlay.png');
   const repeat = hullTexRepeat(CONFIG);
@@ -427,19 +440,22 @@ function finishHullTex() {
   // bump reads the map's own gradient, so restoring contrast in the albedo
   // silently multiplies the relief by the same factor.
   const bucket = (key, base, wearFor) => {
-    const built = buildTile(key, base, wearFor);
+    const built = buildTile(key, base, wearFor,
+      key === 'shadow' ? TILE_TONE : SCUTE_TILE_TONE);
     if (!built) return;
     HULL_TEX[key] = {
       map: built.tex,
-      bumpScale: { hull: 0.035, wall: 0.01, scute: 0.035, shadow: 0.02 }[key],
+      bumpScale: { hull: 0.015, wall: 0.004, scute: 0.02, shadow: 0.02 }[key],
       repeat: repeat[key],
       gain: built.curve.gain,
       curve: built.curve,
     };
   };
-  bucket('hull', hullBase, wear);
+  // The v2 source already carries restrained broad wear. Layering the old
+  // high-frequency scuff sprite over it would undo the readability gain.
+  bucket('hull', hullBase, null);
   bucket('wall', wallBase, null);
-  bucket('scute', scuteBase, wear);
+  bucket('scute', scuteBase, null);
   bucket('shadow', shadowBase, null);
 
   // Every raw loaded texture above was consumed SYNCHRONOUSLY into a canvas

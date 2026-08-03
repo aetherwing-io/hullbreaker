@@ -1,6 +1,6 @@
 // sprite-capture.mjs — dev-only evidence rig for the hostile sprite path
 // (T-049). It answers one question and refuses to answer any other: at the
-// size the shipped FAR camera really draws them, what does each of the five
+// size the shipped default camera really draws them, what does each of the five
 // hostile roles look like as a generated sprite, next to the primitive body
 // it replaces?
 //
@@ -72,8 +72,12 @@ const LINEUP = [
   { kind: 'carrier', dx: -2.5, dy: 4.2 },
   { kind: 'polyp', dx: -6.0, dy: 1.05, dir: -1 },
   { kind: 'mortar', dx: -9.5, dy: 1.05, dir: -1 },
-  { kind: 'wasp', dx: -13.0, dy: 2.8 },
-  { kind: 'hound', dx: -16.5, dy: 0.45 },
+  // The hound prowls another ~4 tiles during SHOW_MS. Keep its spawn inside
+  // the lineup instead of letting the real-scale crop catch only a nose at
+  // the viewport edge; the wasp can sit farther left because its higher lane
+  // keeps the two silhouettes separate.
+  { kind: 'wasp', dx: -16.0, dy: 3.2 },
+  { kind: 'hound', dx: -12.5, dy: 0.45 },
 ];
 
 /* ------------------------------ page work -------------------------------- */

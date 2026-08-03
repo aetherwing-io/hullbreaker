@@ -24,6 +24,7 @@
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
+import { normalAscentAltAt } from '../pure/ascent.js';
 import { SEGS, headingAt, polyAt } from '../pure/path.js';
 import { limbBakePlan, limbFacetTone } from '../pure/limb.js';
 import { limbShadePlan } from '../pure/shade.js';
@@ -60,27 +61,43 @@ const BASE_COLORS = PAL.limb;
 // end of the ladder: the joint is the landmark the orbit is about.
 //
 // THE SCALE PASS ADDS NO MATERIAL (T-045). Every new kind below maps onto one
-// of the eight keys that were already here, so the limb still bakes in eight
-// instanced draws and the pass costs ZERO draw calls — the budget for it was
-// +1 to +2. What separates the tiers instead is the haze ladder plus the
+// of the eight keys that were already here. The silhouette pass below splits
+// those keys into a small fixed set of primitive/material pools, but default
+// and ?scale=0 use the same set: the scale pass still costs ZERO draw calls.
+// What separates the tiers instead is the haze ladder plus the
 // palette's own body/backdrop split: the sister limb wears the RUST body
 // tokens (it is another arm of the same creature, board 10), the drums wear
 // the teal shadow-steel of structure behind the plane, and the far body wears
 // `skyline`. Warm near, cool far, is what atmospheric perspective IS.
 const MATERIAL_FOR = {
-  hull: 'hull', hullRib: 'shadow', wall: 'wall', wallSeam: 'shadow', wallCap: 'shadow',
-  kerb: 'machine', scute: 'scute', scuteRib: 'scuteAlt', silhouette: 'skyline',
-  ridge: 'rib', collar: 'wall', tendon: 'shadow', buttress: 'wall', cup: 'rib',
+  // Exposed armour is rust; the substrate under it is teal shadow-steel.
+  // Keeping the old uninterrupted hull in the rust bucket made the lower half
+  // of every frame read as a brown building façade no matter what sat on it.
+  hull: 'wall', hullRib: 'shadow', wall: 'wall', wallSeam: 'shadow', wallCap: 'shadow',
+  kerb: 'rib', lipScute: 'rib', scute: 'scute', scuteRib: 'scuteAlt', silhouette: 'skyline',
+  ridge: 'rib', collar: 'wall', tendon: 'shadow', buttress: 'wall', cup: 'hull',
+  gill: 'shadow', bodyRib: 'hull', flankTendon: 'machine',
   // tier 1: the sister limb, in the body's own rust — but one notch off the
   // played limb's brightest metal on purpose. `machine` on the lip made the
   // backdrop limb the brightest edge in the frame, which reads as NEAR.
-  bdLimb: 'hull', bdLimbLip: 'rib', bdRing: 'scute',
+  bdLimb: 'wall', bdLimbLip: 'shadow', bdRing: 'skyline',
   // tier 2 / tier 3: structure and distance, in teal
-  bdDrum: 'wall', bdLink: 'shadow', bdFar: 'skyline', bdSpire: 'skyline',
+  bdDrum: 'shadow', bdLink: 'shadow', bdFar: 'wall', bdSpire: 'skyline',
   // human-scale reference objects: fixtures, so the brightest metal in the
   // ladder — a rung that reads as a shadow is not a reference object
-  markRung: 'machine', markStile: 'machine', markRail: 'machine', markPost: 'machine',
-  markRim: 'rib', markPanel: 'shadow',
+  markRung: 'shadow', markStile: 'shadow', markRail: 'shadow', markPost: 'shadow',
+  markRim: 'machine', markPanel: 'shadow',
+};
+
+// A few faceted primitive families buy the silhouette change that boxes alone
+// cannot. They remain fixed InstancedMeshes, baked once: tapered four-sided
+// scutes, hex ribs and hex cable bundles add only three static geometry pools
+// while removing the shipping-container read from the large forms.
+const SHAPE_FOR = {
+  hull: 'body', wall: 'scute',
+  scute: 'scute', lipScute: 'scute', bdLimb: 'scute', bdFar: 'scute',
+  scuteRib: 'rib', bodyRib: 'rib', ridge: 'rib', tendon: 'rib', bdDrum: 'rib',
+  flankTendon: 'cable', markRim: 'cable',
 };
 
 /* Material-key -> SURFACE family (T-052, materials.js): reuses the table
@@ -105,16 +122,16 @@ const SURFACE_FOR = {
    at — so a before/after is one URL apart in the same build.
 
    Deliberately NOT named after ?view=: that flag is the camera pull-back
-   (CONFIG.viewScales), which entry 17 froze at FAR forever. This one is about
+   (CONFIG.viewScales), whose shipped setting is now MID. This one is about
    what the frame around the tiny figure contains. */
 const SCALE_PASS = QUERY.get('scale') !== '0';
 
-/* The whole limb is ONE instanced draw per material: a unit box scaled per
-   piece, positioned on the polyline, and tinted by its facet's tone through
-   the instance color (the same trick the tile bake uses for its checker). ~800
-   armour pieces would otherwise be ~800 draw calls, which is free on a GPU and
-   very much not free on a software rasteriser — and it buys the property that
-   matters here anyway: the limb is uploaded once and never touched again. */
+/* The whole limb is a small, fixed set of instanced material/primitive pools:
+   each piece is positioned on the polyline and tinted by its facet's tone
+   through the instance color (the same trick the tile bake uses for its
+   checker). Hundreds of armour pieces would otherwise become hundreds of draw
+   calls. The important property remains unchanged: the limb is uploaded once
+   and never touched again. */
 
 const _m = new THREE.Matrix4();
 const _q = new THREE.Quaternion();
@@ -125,14 +142,21 @@ const _c = new THREE.Color();
 const _tint = new THREE.Color();
 
 // (s, y, depth) → world, with the SHARP heading of the facet (or, for a joint
-// piece, of the chamfer that bisects it). Same mapping the tile bake uses, so
-// the armour and the deck are the same body.
+// piece, of the chamfer that bisects it) and the shared normal-run altitude.
+// Same mapping the tile bake uses, so the armour and the deck are one rising
+// body. Anatomy stays plumb; only floor-like geometry pitches with the grade.
 function pieceMatrix(piece) {
   const p = polyAt(SEGS, piece.s);
   const yaw = headingAt(SEGS, piece.s);
-  _q.setFromEuler(_e.set(0, yaw, 0));
+  // Local Z roll is a rake in the path's (s,y) plane. This is how a static
+  // scute/tendon points uphill even while the camera follows the helix grade.
+  _q.setFromEuler(_e.set(0, yaw, piece.roll || 0, 'YZX'));
   _s.set(piece.w, piece.h, piece.d);
-  _v.set(p.x + Math.sin(yaw) * piece.depth, piece.y, p.z + Math.cos(yaw) * piece.depth);
+  _v.set(
+    p.x + Math.sin(yaw) * piece.depth,
+    piece.y + normalAscentAltAt(piece.s, CONFIG.levelLength),
+    p.z + Math.cos(yaw) * piece.depth
+  );
   return _m.compose(_v, _q, _s);
 }
 
@@ -151,14 +175,30 @@ function bakeLimb() {
   // which is why this runs on whatever plan the flags produced rather than on
   // a fixed one.
   const shade = limbShadePlan(plan, CONFIG, SHADE_GAIN);
-  const byMaterial = new Map();                // material key → plan indices
+  const byBucket = new Map();                  // material/primitive → plan indices
   for (let n = 0; n < plan.length; n++) {
-    const key = MATERIAL_FOR[plan[n].kind] || 'hull';
-    if (!byMaterial.has(key)) byMaterial.set(key, []);
-    byMaterial.get(key).push(n);
+    const materialKey = MATERIAL_FOR[plan[n].kind] || 'hull';
+    const shape = plan[n].shape || SHAPE_FOR[plan[n].kind] || 'box';
+    const bucketKey = materialKey + '/' + shape;
+    if (!byBucket.has(bucketKey)) byBucket.set(bucketKey, { materialKey, shape, indices: [] });
+    byBucket.get(bucketKey).indices.push(n);
   }
-  const geo = new THREE.BoxGeometry(1, 1, 1);
-  for (const [key, indices] of byMaterial) {
+  const geometry = {
+    box: new THREE.BoxGeometry(1, 1, 1),
+    // Broad at the deck root and tapering into the body: successive chunks
+    // overlap like underside armour instead of joining into one flat façade.
+    body: new THREE.CylinderGeometry(0.60, 0.40, 1, 6, 1, false),
+    // Cylinder height is local Y: different top/bottom radii make an armour
+    // shingle with a broad root and clipped nose instead of another crate.
+    scute: new THREE.CylinderGeometry(0.58, 0.42, 1, 4, 1, false),
+    rib: new THREE.CylinderGeometry(0.5, 0.5, 1, 6, 1, false),
+    cable: new THREE.CylinderGeometry(0.5, 0.5, 1, 6, 1, false),
+  };
+  geometry.scute.rotateY(Math.PI / 4);
+  geometry.body.rotateY(Math.PI / 6);
+  geometry.rib.rotateY(Math.PI / 6);
+  geometry.cable.rotateZ(Math.PI / 2);          // cable length follows local s / X
+  for (const { materialKey: key, shape, indices } of byBucket.values()) {
     // T-052: a surface family (roughness/metalness/envMap) plus, for the
     // buckets a large hull surface actually names, an albedo+bump tile —
     // both are no-ops (this stays the pre-T-052 flat white material) for
@@ -166,7 +206,15 @@ function bakeLimb() {
     const material = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true });
     applySurface(material, SURFACE_FOR[key] || 'plate');
     applyHullTexture(material, key);
-    const mesh = new THREE.InstancedMesh(geo, material, indices.length);
+    // The route scutes sit flush with the collision tile face by design (they
+    // must not claim extra depth). A tiny raster offset prevents coplanar
+    // flicker without moving the geometry into the protected play volume.
+    if (shape === 'scute') {
+      material.polygonOffset = true;
+      material.polygonOffsetFactor = -1;
+      material.polygonOffsetUnits = -1;
+    }
+    const mesh = new THREE.InstancedMesh(geometry[shape], material, indices.length);
     mesh.frustumCulled = false;                // static bake, one upload
     for (let i = 0; i < indices.length; i++) {
       const piece = plan[indices[i]];

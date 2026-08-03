@@ -49,8 +49,9 @@ export const ENEMY = {
   // terrain and its authored patrol span.
   hound:   { hp: CONFIG.hound.hp,
              hitR: CONFIG.hound.hitRadius, gating: true, start: 'prowl' },
-  // The stationary emplacement the gating comment above always anticipated:
-  // a rooted polyp parked near a corner must never deadlock the ritual.
+  // Ambient rooted emplacements are non-gating: one left behind may never
+  // deadlock a later ritual. Gate-authored copies opt in per row and cycle
+  // automatically so their vulnerable opening is always available.
   polyp:   { hp: CONFIG.polyp.hp,
              hitR: CONFIG.polyp.hitRadius, gating: false, start: 'closed' },
   // The other rooted emplacement: a tripod bombarding an authored landing
@@ -74,15 +75,15 @@ const POLYP_OPEN = { fire: true, vent: true };
 // rule projectiles carry) — same source list weapons.js uses.
 const BENDS = IS_TRANSFORM_SLICE ? TRANSFORM_BEND_S : BEND_S;
 
-// `row` is the optional authored spawn row this hostile came from. Two things
-// ride on it, and nothing else in the sim needs to know which:
+// `row` is the optional authored spawn row this hostile came from. Placement
+// and encounter-specific behavior ride on it, and nothing else in the sim
+// needs to know which:
 //   tune — per-spawn stat overrides (hp, cruiseSpeed, diveRange,
 //          diveCooldownMs) authored by a traversal pacing variant, so the same
 //          kinds can hold a station, guard a pocket mouth, or press a line
 //          without new kinds or new branches;
 //   dir / patrol — a houndframe's facing and the ground run it paces.
-// Absent for the shipped six-face spawner and gate waves, whose rows then
-// reproduce the CONFIG.wasp behavior exactly.
+// Wasp rows remain absent and reproduce CONFIG.wasp behavior exactly.
 export function spawnHostile(x, y, delayMs, kind, row) {
   kind = kind || 'wasp';
   const K = ENEMY[kind];
@@ -109,9 +110,18 @@ export function spawnHostile(x, y, delayMs, kind, row) {
     // if it can actually join the fight. A wasp always flies to you; a
     // ground unit bounded by terrain and a 3-column patrol cannot, so a
     // station left alive half a face back would hold the ritual shut with
-    // nothing on screen to shoot. Gate waves and every fixture row keep the
-    // kind's own value, so nothing judged changes.
+    // nothing on screen to shoot. Authored gate rows opt in only for bodies
+    // deliberately placed inside the held arena; fixture rows stay unchanged.
     gating: row && row.gating !== undefined ? row.gating : K.gating,
+    // Gate-authored polyps cycle their warning even if RIG entered above or
+    // behind the barrel. Ambient/fixture polyps keep the sightline-triggered
+    // behavior; this flag exists only to guarantee a vent opening for a body
+    // deliberately allowed to hold a corner ritual shut.
+    autoCycle: !!(row && row.autoCycle),
+    gateBreakExit: false,
+    // Campaign carriers carry a phase-authored reward. Keeping the payload on
+    // the body means missing one hauler cannot shift every later face's drop.
+    drop: row && row.drop ? { ...row.drop } : null,
     patrolX0: patrol ? patrol.x0 : -Infinity,
     patrolX1: patrol ? patrol.x1 : Infinity,
     // a raised-surface hound rides the top of an authored solid instead of the
@@ -162,7 +172,7 @@ export function hitHostile(e, idx, damage, weapon) {
     scoreKill(e.kind, weapon, {
       grounded: player.grounded, vy: player.vy, x: e.x, y: e.y,
     });
-    if (e.kind === 'carrier') dropFromCarrier(e.x, e.y);
+    if (e.kind === 'carrier') dropFromCarrier(e.x, e.y, e.drop);
     removeHostile(idx, true);
   }
 }
@@ -343,7 +353,7 @@ function updatePolyp(e) {
   if (e.state === 'closed') {
     if (gameMs < e.diveCdUntil) return;          // shared cooldown field: iris rearming
     const reach = polypReachNow(e, PP);
-    if (polypBeamOnPlayer(e, PP, reach)) {
+    if (e.autoCycle || polypBeamOnPlayer(e, PP, reach)) {
       e.state = 'tell';
       e.stateUntil = gameMs + PP.tellMs;
     }
@@ -469,6 +479,10 @@ export function updateHostiles(dt) {
   const patrolL = gate ? sLeftEdge() + 2 : 0;
   for (let i = hostiles.length - 1; i >= 0; i--) {
     const e = hostiles[i];
+    // A gate break may be triggered from inside the projectile collision
+    // loop. It marks denial hazards there and removes them here, one frame
+    // later, so no caller has the hostile array shortened under its iterator.
+    if (e.gateBreakExit) { removeHostile(i); continue; }
     if (gameMs < e.enterUntil - W.enterMs) {           // staged wave slot: not yet condensing
       view.hostiles.sync(e);                           //   render keeps it hidden
       continue;

@@ -112,8 +112,14 @@ function jitter(i, n) { return ((i * 2654435761) >>> 0) % n; }
  * `pathS` is where the piece is placed on the polyline; for joint pieces that
  * is the chamfer midpoint, whose sharp heading bisects the two facets.       */
 
-function push(out, kind, facet, s, w, y, h, depth, d) {
-  out.push({ kind, facet, s, w, y, h, depth, d });
+function push(out, kind, facet, s, w, y, h, depth, d, roll = 0, shape = null) {
+  const piece = { kind, facet, s, w, y, h, depth, d };
+  // `roll` is a render-only rake in the local (s,y) plane. Keeping it on the
+  // bake piece makes the anatomy deterministic and lets the renderer retain
+  // one static instanced upload rather than posing ribs or tendons per frame.
+  if (roll) piece.roll = roll;
+  if (shape) piece.shape = shape;
+  out.push(piece);
 }
 
 export function limbBakePlan(cfg, groundH, opts = {}) {
@@ -131,7 +137,7 @@ export function limbBakePlan(cfg, groundH, opts = {}) {
 function facetPlan(out, facet, cfg, groundH, scale) {
   const L = cfg.limb;
   const k = facet.k;
-  // --- the body under the deck, and the wall of body behind it ---------
+  // --- the body under the deck -----------------------------------------
   for (const [a, b] of limbChunkRanges(facet.s0, facet.s1, L.chunkCols)) {
     const ref = limbGroundRef(groundH, a, b);
     const span = b - a;
@@ -139,27 +145,17 @@ function facetPlan(out, facet, cfg, groundH, scale) {
     const deckBottom = ref - 4;                 // the tile stack is 4 deep
     // hull: mass running off the bottom of frame — the leg continues below
     push(out, 'hull', k, mid, span, deckBottom - L.hull.drop / 2, L.hull.drop,
-         L.hull.depth, L.hull.thickness);
+         L.hull.depth, L.hull.thickness, L.hull.tiltDeg * Math.PI / 180);
     // the shadow line right under the deck lip
     push(out, 'hullRib', k, mid, span, deckBottom - L.hull.ribH / 2, L.hull.ribH,
          L.hull.depth - 0.5, L.hull.ribThickness);
-    // wall: the body rising behind the combat plane, plated in horizontal
-    // seams and then stepping backwards tier by tier. This is what turns the
-    // deck into a ledge on something enormous, what the joint ridge
-    // interrupts, and — because each tier is further into the fog — what
-    // makes the body read as curving away rather than as a flat backdrop.
-    // Everything here is BEHIND the plane, so none of it can ever occlude the
-    // lane RIG fights in.
-    const W = L.wall;
-    const wallH = W.below + W.above;
-    push(out, 'wall', k, mid, span, ref - W.below + wallH / 2, wallH,
-         W.depth, W.thickness);
-    push(out, 'wallCap', k, mid, span, ref + W.above + W.capH / 2, W.capH,
-         W.depth + W.capDepth, W.capThickness);
-    for (const at of W.seamAt)
-      push(out, 'wallSeam', k, mid, span, ref + at, W.seamH,
-           W.depth + 0.6, W.seamThickness);
   }
+
+  // No continuous wall here. With the normal-run helix, a later coil's wall
+  // becomes an enormous hanging rectangle over the current one—the exact
+  // warehouse read this file is meant to avoid. anatomyPlan emits sparse,
+  // tapered backing lobes only where a gill organ needs body mass.
+  anatomyPlan(out, facet, cfg, groundH);
   // --- the ramp edge: one unbroken kerb along the deck's outer lip -----
   // Per column, at that column's own deck height, so the line follows every
   // step and breaks only where the route itself does (a gap is a gap). It is
@@ -171,6 +167,28 @@ function facetPlan(out, facet, cfg, groundH, scale) {
     if (!(groundH[s] > -100)) continue;
     push(out, 'kerb', k, s + 0.5, 1 + K.overlap, groundH[s] - K.under - K.h / 2, K.h,
          kerbDepth, K.thickness);
+  }
+  // One larger armour language sits just under the exact collision lip. The
+  // original four-row tile face remains the gameplay truth, but overlapping
+  // tapered plates cover its warehouse-like rectangle and point consistently
+  // uphill. Any group containing a gap is skipped, so the silhouette never
+  // advertises floor where the simulation has none.
+  const LS = L.lipScute;
+  const lipRoll = LS.tiltDeg * Math.PI / 180;
+  for (let a = facet.s0; a < facet.s1; a += LS.every) {
+    const b = Math.min(a + LS.every, facet.s1);
+    let minDeck = Infinity, solid = true;
+    for (let s = Math.floor(a); s < Math.ceil(b); s++) {
+      if (!(groundH[s] > -100)) { solid = false; break; }
+      minDeck = Math.min(minDeck, groundH[s]);
+    }
+    if (!solid || b - a < 2) continue;
+    const len = Math.min(LS.len, b - a + 0.7);
+    const halfY = Math.abs(Math.cos(lipRoll)) * LS.h / 2 +
+      Math.abs(Math.sin(lipRoll)) * len / 2;
+    const top = minDeck - LS.under;
+    push(out, 'lipScute', k, (a + b) / 2, len, top - halfY, LS.h,
+         LS.depth, LS.thickness, lipRoll, 'scute');
   }
   // --- the skin: overlapping scutes below the deck --------------------
   const S = L.scute;
@@ -186,11 +204,19 @@ function facetPlan(out, facet, cfg, groundH, scale) {
     // deck above them is wide open.
     const top = ref - 4 - S.under - (v === 1 ? S.stagger : 0);
     const depth = S.depth - (v === 2 ? S.stagger : 0);
-    push(out, 'scute', facet.k, a + len / 2 - 0.2, len, top - S.h / 2, S.h,
-         depth, S.thickness);
-    if ((a / S.every) % S.ribEvery === 0)
-      push(out, 'scuteRib', facet.k, a + 0.5, S.ribW, top - S.ribH / 2, S.ribH,
-           depth + 0.2, S.thickness + 0.4);
+    const roll = S.tiltDeg * Math.PI / 180;
+    // Keep the rotated plate's highest corner at `top`: the visible rake is
+    // allowed to say UPHILL, but never to poke anatomy into the play band.
+    const halfY = Math.abs(Math.cos(roll)) * S.h / 2 + Math.abs(Math.sin(roll)) * len / 2;
+    push(out, 'scute', facet.k, a + len / 2 - 0.2, len, top - halfY, S.h,
+         depth, S.thickness, roll);
+    if ((a / S.every) % S.ribEvery === 0) {
+      const ribRoll = -roll * 0.55;
+      const ribHalfY = Math.abs(Math.cos(ribRoll)) * S.ribH / 2 +
+        Math.abs(Math.sin(ribRoll)) * S.ribW / 2;
+      push(out, 'scuteRib', facet.k, a + 0.5, S.ribW, top - ribHalfY, S.ribH,
+           depth + 0.2, S.thickness + 0.4, ribRoll);
+    }
   }
   // --- distant anatomy: the limb continuing up, and the body beyond ----
   if (!scale) {
@@ -205,6 +231,49 @@ function facetPlan(out, facet, cfg, groundH, scale) {
   spinePlan(out, facet, cfg);
   farPlan(out, facet, cfg);
   markPlan(out, facet, cfg);
+}
+
+// Gill stacks, ribs and tendon cables: sparse, oversized, and directional.
+// The function consumes only config + the baked level heights, so it has the
+// same static-anatomy contract as the rest of this module.
+function anatomyPlan(out, facet, cfg, groundH) {
+  const A = cfg.limb.anatomy;
+  const W = cfg.limb.wall;
+  const G = A.gill;
+  const R = A.rib;
+  const T = A.tendon;
+  const k = facet.k;
+  const gillRoll = G.tiltDeg * Math.PI / 180;
+  const ribRoll = -R.tiltDeg * Math.PI / 180;
+  const tendonRoll = T.tiltDeg * Math.PI / 180;
+
+  for (let s = facet.s0 + 10; s < facet.s1 - 4; s += G.every) {
+    const ref = limbGroundRef(groundH, s - G.slitW / 2, s + G.slitW / 2);
+    const offset = (jitter(Math.floor(s) + k * 13, 3) - 1) * 0.5;
+    const organH = G.pitch * (G.slits - 1) + 3.2;
+    push(out, 'wall', k, s, G.slitW + 3.2, ref + 0.6 + offset, organH,
+         W.depth, W.thickness, gillRoll * 0.45);
+    for (let i = 0; i < G.slits; i++) {
+      const w = G.slitW - i * 0.72;
+      push(out, 'gill', k, s + i * 0.22, w, ref - 0.8 + offset + i * G.pitch,
+           G.slitH, G.depth, G.thickness, gillRoll);
+    }
+    // One asymmetrical load-bearing rib is enough to turn the slits into an
+    // organ. A complete rectangular frame would turn them straight back into
+    // windows, the visual failure this pass is removing.
+    push(out, 'bodyRib', k, s - G.slitW * 0.56, R.w, ref + 1.7, R.h,
+         R.depth, R.thickness, ribRoll);
+  }
+
+  for (let s = facet.s0 + 12; s < facet.s1 - 5; s += T.every) {
+    const ref = limbGroundRef(groundH, s - T.w / 2, s + T.w / 2);
+    const halfY = Math.abs(Math.cos(tendonRoll)) * T.h / 2 +
+      Math.abs(Math.sin(tendonRoll)) * T.w / 2;
+    const top = ref - 5.25;
+    for (let i = 0; i < T.bands; i++)
+      push(out, 'flankTendon', k, s, T.w, top - halfY - i * T.gap, T.h,
+           T.depth, T.thickness, tendonRoll);
+  }
 }
 
 /* ------------------------ the scale pass (T-045) -------------------- *
@@ -249,19 +318,26 @@ function sisterPlan(out, facet, cfg) {
   const k = facet.k;
   const lay = sisterLayout(facet, cfg);
   const { segs, step } = lay;
+  // Follow the macro diagonal with the plates themselves. Previously their
+  // centres climbed but every segment stayed plumb, producing a staircase of
+  // vertical wall bays. The rake turns the same chain into one huge armoured
+  // limb. rakeLift keeps the rotated lower corners above the play-band fence.
+  const roll = lay.dir * Math.atan2(S.rise, segs * step) * S.rake;
   for (let i = 0; i < segs; i++) {
     const bottom = sisterBottom(i, lay, S);
     const s = lay.s0 + (i + 0.5) * step;
     const w = step + S.overlap;
-    push(out, 'bdLimb', k, s, w, bottom + S.segH / 2, S.segH, S.depth, S.thickness);
+    push(out, 'bdLimb', k, s, w, bottom + S.segH / 2 + S.rakeLift, S.segH,
+         S.depth, S.thickness, roll);
     // the lip along the top: the same bright edge line the deck kerb draws,
     // one scale up — it is what gives the mass a readable silhouette in haze
-    push(out, 'bdLimbLip', k, s, w, bottom + S.segH - S.lipH / 2, S.lipH,
-         S.depth + S.lipOut, S.thickness);
+    push(out, 'bdLimbLip', k, s, w, bottom + S.segH - S.lipH / 2 + S.rakeLift, S.lipH,
+         S.depth + S.lipOut, S.thickness, roll);
     // a raised ring at every few segment joints; it grows UPWARD only, so it
     // can never drop a piece below the tier's authored floor
     if (i % S.ringEvery === 0)
-      push(out, 'bdRing', k, s - w / 2, S.ringW, bottom + (S.segH + S.ringOver) / 2,
+      push(out, 'bdRing', k, s - w / 2, S.ringW,
+           bottom + (S.segH + S.ringOver) / 2 + S.rakeLift,
            S.segH + S.ringOver, S.depth + S.ringOut, S.thickness);
   }
   markSister(out, facet, cfg, lay);
@@ -365,7 +441,7 @@ function markPlan(out, facet, cfg) {
   const H = M.hatch;
   for (let s = Math.ceil((facet.s0 + H.every / 2) / H.every) * H.every;
        s < facet.s1 - 1; s += H.every) {
-    const y = M.band.y0 - 2.6 - jitter(k * 23 + s, 4) * 1.9;
+    const y = M.band.y0 - H.rimH / 2 - 0.8 - jitter(k * 23 + s, 4) * 1.2;
     push(out, 'markRim', k, s + 0.5, H.rimW, y, H.rimH, depth, M.thickness);
     push(out, 'markPanel', k, s + 0.5, H.panelW, y, H.panelH, depth + M.proud, M.thickness);
   }
@@ -373,7 +449,7 @@ function markPlan(out, facet, cfg) {
   const R = M.door;
   for (let s = Math.ceil((facet.s0 + R.every / 3) / R.every) * R.every;
        s < facet.s1 - 1; s += R.every) {
-    const sill = M.band.y0 - 5.0 - jitter(k * 29 + s, 3) * 2.2;
+    const sill = M.band.y1 + 0.35 + jitter(k * 29 + s, 3) * 1.05;
     push(out, 'markRim', k, s + 0.5, R.rimW, sill + R.rimH / 2, R.rimH, depth, M.thickness);
     push(out, 'markPanel', k, s + 0.5, R.panelW, sill + R.panelH / 2, R.panelH,
          depth + M.proud, M.thickness);
@@ -394,12 +470,13 @@ function markSister(out, facet, cfg, lay) {
     return { s: lay.s0 + (i + 0.5) * lay.step, bottom: sisterBottom(i, lay, S) };
   };
   const L = at(M.ladder.at);
-  ladderAt(out, 'mark', k, L.s, L.bottom + S.segH - 0.5, S.segH - 1.4, depth, M);
+  ladderAt(out, 'mark', k, L.s, L.bottom + S.segH - 0.5 + S.rakeLift,
+           S.segH - 1.4, depth, M);
   // a railed walkway along the top lip: at this distance a railing is the most
   // legible human object there is — it is only ever the width of a person
   const G = M.rail;
   const W = at(G.at);
-  const railY = W.bottom + S.segH + G.postH;
+  const railY = W.bottom + S.segH + S.rakeLift + G.postH;
   push(out, 'markRail', k, W.s, G.len, railY, G.barH, depth, M.thickness);
   for (let x = -Math.floor(G.len / 2 / G.postEvery); x <= Math.floor(G.len / 2 / G.postEvery); x++)
     push(out, 'markPost', k, W.s + x * G.postEvery, G.postW,
@@ -516,7 +593,7 @@ export function limbPlanViolations(plan, cfg, groundH) {
   for (const p of plan) {
     const reach = limbOutwardReach(p, cfg);
     if (reach <= 0) continue;                   // behind the plane: always fine
-    if (p.kind === 'kerb') {
+    if (p.kind === 'kerb' || p.kind === 'lipScute') {
       // the deck lip: exempt from the play band, held to its own two rules
       const deck = groundH[Math.floor(p.s)];
       if (!(p.y + p.h / 2 <= deck + 1e-9))

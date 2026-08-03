@@ -10,6 +10,26 @@ export function waveLane(k, i, cfg) {                   // per-wave altitude com
   return cfg.waves.laneHeights[comp[i % comp.length]];
 }
 
+// The six-face run used to leave kind blank here, which made every one of
+// its 39 gate slots silently fall back to `wasp`. Keeping the roster in the
+// same pure choreography table as altitude makes each story phase authored
+// and lets headless callers inspect it without importing the simulation.
+export function waveKind(k, i, cfg) {
+  const roster = cfg.waves.roster && cfg.waves.roster[k - 1];
+  return roster && roster.length ? roster[i % roster.length] : 'wasp';
+}
+
+// Authored materialization score. The fallback preserves the original simple
+// stagger contract for fixtures or stripped-down configs that do not carry it.
+export function waveSpawnDelay(k, i, cfg) {
+  const score = cfg.waves.spawnDelaysMs && cfg.waves.spawnDelaysMs[k - 1];
+  return score && score[i] !== undefined ? score[i] : i * cfg.waves.staggerMs;
+}
+
+export function wavePhase(k, cfg) {
+  return (cfg.waves.phases && cfg.waves.phases[k - 1]) || ('WAVE ' + k);
+}
+
 export function easeOutBack(u, s) {
   const v = u - 1;
   return 1 + (s + 1) * v * v * v + s * v * v;

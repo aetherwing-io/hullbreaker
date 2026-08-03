@@ -46,7 +46,8 @@ import * as THREE from 'three';
 import { QUERY } from '../mode.js';
 import { awaitPreloads, preloadTexture } from './preload.js';
 import {
-  SPRITE_ART, SPRITE_KINDS, SPRITE_ROOT, resolveSpriteVariants, spritesEnabled,
+  SPRITE_ACTION_ART, SPRITE_ART, SPRITE_KINDS, SPRITE_ROOT,
+  resolveSpriteVariants, spritesEnabled,
 } from './sprite-table.js';
 
 export const SPRITES_ON = spritesEnabled(QUERY.get('sprites'));
@@ -54,6 +55,7 @@ export const SPRITE_VARIANT = resolveSpriteVariants(QUERY.get('spritevar'));
 
 // kind -> { state: 'off'|'pending'|'ready'|'failed', variant, file, tex, error }
 const slots = new Map();
+const actionSlots = new Map();
 
 // the T-032 bootstrap's note channel: recorded, never a panel (see header)
 function note(line) {
@@ -93,6 +95,24 @@ for (const kind of SPRITE_KINDS) {
     });
 }
 
+// Production action poses share the same boot contract as the idle bodies.
+// A failed action pose simply leaves the idle cutout on screen; it can never
+// remove a hostile or delay a swap into the middle of play.
+for (const kind of SPRITE_KINDS) {
+  const art = SPRITE_ACTION_ART[kind];
+  const slot = {
+    state: SPRITES_ON && art ? 'pending' : 'off',
+    variant: 'action', file: art ? art.file : null, tex: null, error: null,
+  };
+  actionSlots.set(kind, slot);
+  if (!SPRITES_ON || !art) continue;
+  preloadTexture(new URL(SPRITE_ROOT + art.file, import.meta.url).href)
+    .then((entry) => {
+      if (entry.state === 'ready') { slot.tex = entry.tex; slot.state = 'ready'; }
+      else fail(kind + ' action', slot, entry.error || entry.state);
+    });
+}
+
 /* THE BOOT GATE. This top-level await is the whole determinism fix: the ES
    module graph — and with it src/main.js, which imports the hostile renderer,
    which imports this file — does not finish evaluating until every texture is
@@ -106,6 +126,11 @@ await awaitPreloads();
    error: 'off', 'pending' and 'failed' all mean "draw the primitive". */
 export function spriteTexture(kind) {
   const slot = slots.get(kind);
+  return slot && slot.state === 'ready' ? slot.tex : null;
+}
+
+export function spriteActionTexture(kind) {
+  const slot = actionSlots.get(kind);
   return slot && slot.state === 'ready' ? slot.tex : null;
 }
 
@@ -128,6 +153,11 @@ export function spriteSnapshot() {
   for (const [kind, slot] of slots) {
     out.kinds[kind] = {
       state: slot.state, variant: slot.variant, file: slot.file, error: slot.error,
+      action: actionSlots.has(kind) ? {
+        state: actionSlots.get(kind).state,
+        file: actionSlots.get(kind).file,
+        error: actionSlots.get(kind).error,
+      } : null,
     };
   }
   return out;

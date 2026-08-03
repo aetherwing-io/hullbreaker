@@ -1,7 +1,8 @@
 /* ================= ENTITIES: CAPSULES (PICKUPS) =================== */
 /* Letter capsules drift from destroyed carriers; on taking a hit the
-   current weapon pops out and can be recaught for ~2.2s before it burns
-   away. Modifier capsules (gold) are rare late-run carrier drops.      */
+   current weapon pops out and can be recaught before it burns away.
+   Normal-run carriers carry authored phase rewards; fixture/legacy rows
+   retain the seeded shuffle fallback below.                            */
 
 import { CONFIG, WEAPON_LETTERS } from '../config.js';
 import { mulberry32 } from '../pure/rng.js';
@@ -52,7 +53,11 @@ const letterDrops = shuffled(WEAPON_LETTERS.filter(k => k !== 'R'), capsuleRng);
 const modDrops = shuffled(['RG', 'GS', 'OL', 'CH'], capsuleRng);
 let carrierDropIdx = 0;
 
-export function dropFromCarrier(x, y) {
+export function dropFromCarrier(x, y, authored = null) {
+  if (authored && authored.kind && authored.letter) {
+    spawnCapsule(authored.kind, authored.letter, x, y, 'drift');
+    return;
+  }
   const i = carrierDropIdx++;
   if (i < letterDrops.length) spawnCapsule('letter', letterDrops[i], x, y, 'drift');
   else spawnCapsule('mod', modDrops[(i - letterDrops.length) % modDrops.length], x, y, 'drift');

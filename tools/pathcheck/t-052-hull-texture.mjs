@@ -1,6 +1,6 @@
-// Domain: T-052 — hull surface textures (four generated tiles bound to the
-// limb's material buckets: hull-panel-tile, weld-seam-strip, vent-louver-
-// plate, wear-scuff-overlay; decisions.md entries 16/18).
+// Domain: T-052 — hull surface textures bound to the limb's material buckets:
+// the broad production scute painting plus the narrow weld-seam strip
+// (decisions.md entries 16/18).
 //
 // src/render/materials.js and src/render/limb.js both import `three` and
 // reach a live WebGLRenderer at module scope (the procedural environment,
@@ -50,8 +50,8 @@ export const title = 'T-052 hull surface textures (four tiles, entries 16/18)';
 
 const TEX_DIR = join(srcDir, '..', 'assets', 'generated', 'textures');
 const FILE_FOR = {
-  hullPanel: 'hull-panel-tile.png',
-  ventLouver: 'vent-louver-plate.png',
+  hullPanel: 'hull-scute-tile-v2.png',
+  ventLouver: 'hull-scute-tile-v2.png',
   weldSeam: 'weld-seam-strip.png',
 };
 

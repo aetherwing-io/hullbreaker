@@ -16,9 +16,8 @@ import {
 } from '../mode.js';
 import { shellStateChanged } from './shell.js';
 import { installView } from '../sim/bridge.js';
-import { gameMs, scrollX, sliceStats } from '../sim/time.js';
+import { gameMs, sliceStats } from '../sim/time.js';
 import { scoreSnapshot } from '../sim/score.js';
-import { weaponDef, weaponKills, shotsFired } from '../sim/weapons.js';
 import { kills } from '../sim/hostiles.js';
 import { player } from '../sim/player.js';
 import { committedBand, transformAltitudeAt } from '../sim/transform.js';
@@ -26,12 +25,6 @@ import { committedBand, transformAltitudeAt } from '../sim/transform.js';
 const overlay = document.getElementById('overlay');
 const ovTitle = document.getElementById('ovTitle');
 const ovBody = document.getElementById('ovBody');
-
-function favoriteWeaponLine() {
-  let best = 'R';
-  for (const k of Object.keys(weaponKills)) if (weaponKills[k] > weaponKills[best]) best = k;
-  return `favorite weapon: ${weaponDef(best).name} (${weaponKills[best]} kills)`;
-}
 
 function showOverlay(title, lines) {
   ovTitle.textContent = title;
@@ -57,9 +50,9 @@ function drawStateScreen(next) {
     { text: 'r to retry now', dim: true },
   ]);
   else if (next === 'GAME_OVER') showOverlay('SIGNAL LOST', [
-    { text: `${Math.floor(scrollX)}m · ${kills} kills · ${shotsFired} shots` },
-    { text: favoriteWeaponLine() },
-    { text: 'r to restart', dim: true },
+    { text: 'MERIDIAN CUT THE TRANSMISSION.' },
+    { text: 'GET BACK UP THERE.' },
+    { text: 'r to climb again', dim: true },
   ]);
   else if (next === 'VICTORY') {
     if (IS_TRAVERSAL_SLICE) {
@@ -81,9 +74,9 @@ function drawStateScreen(next) {
                            `${(sc.playMs / 1000).toFixed(1)}s` });
       }
       lines.push({ text: `pace: ${ACTIVE_SLICE.pace.label}`, dim: true });
-      // far (default) is silent: the VICTORY overlay only self-labels when a
+      // mid (default) is silent: the VICTORY overlay only self-labels when a
       // non-default view was selected, same rule as the transient HUD tag.
-      if (VIEW_ID !== 'far') {
+      if (VIEW_ID !== 'mid') {
         lines.push({ text: `view: ${CONFIG.viewScales[VIEW_ID].label}`, dim: true });
       }
       lines.push({ text: 'r to replay', dim: true });
@@ -102,17 +95,16 @@ function drawStateScreen(next) {
         { text: 'flip inward → the passage climbs → breach out, one 2D controller the whole way' },
       ];
       // Same self-labeling rule as TRAVERSAL CLEAR: non-default views only.
-      if (VIEW_ID !== 'far') {
+      if (VIEW_ID !== 'mid') {
         transformLines.push({ text: `view: ${CONFIG.viewScales[VIEW_ID].label}`, dim: true });
       }
       transformLines.push({ text: 'r to replay', dim: true });
       showOverlay('BREACH CLEAR', transformLines);
     } else {
-      showOverlay('SECTOR CLEAR', [
-        { text: 'grey-box complete' },
-        { text: `${Math.floor(scrollX)}m · ${kills} kills · ${shotsFired} shots` },
-        { text: favoriteWeaponLine() },
-        { text: 'r to restart', dim: true },
+      showOverlay('SIGNAL SENT', [
+        { text: 'THE CROWN IS OPEN. EARTH CAN HEAR US.' },
+        { text: '“WE HEAR YOU.”' },
+        { text: 'r to climb again', dim: true },
       ]);
     }
   }

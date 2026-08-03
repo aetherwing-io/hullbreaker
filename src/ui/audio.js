@@ -225,22 +225,26 @@ function noiseHit(kind, f0, f1, q, dur, peak, at = 0, prio = false) {
 // oscillator in five colors.
 const FIRE = {
   R: () => {                                                        // light snappy bark: the
-    tone('square', 950, 700, 0.06, 0.13);                           // workhorse — quick and
-    noiseHit('highpass', 3800, 3200, 2, 0.025, 0.05);               // small so rapid-fire never
+    tone('square', 1100, 520, 0.07, 0.16);                          // workhorse — quick and
+    noiseHit('highpass', 4200, 2800, 2, 0.03, 0.07);                // small so rapid-fire never
   },                                                                 // drowns the other four
   S: () => {                                                        // chunky shotgun bark + sub thump
-    tone('sawtooth', 420, 240, 0.12, 0.15);
-    noiseHit('lowpass', 900, 500, 1, 0.09, 0.12);
-    tone('sine', 110, 58, 0.09, 0.11);
+    tone('sawtooth', 480, 190, 0.14, 0.2);
+    noiseHit('lowpass', 1100, 380, 1, 0.11, 0.17);
+    tone('sine', 120, 48, 0.12, 0.16);
   },
   L: () => {                                                        // descending zap
-    tone('sine', 1500, 240, 0.16, 0.13);
-    tone('sine', 2200, 2200, 0.05, 0.05);
+    tone('sawtooth', 1900, 210, 0.2, 0.17);
+    tone('sine', 2800, 1200, 0.08, 0.08);
   },
-  H: () => tone('triangle', 480, 980, 0.11, 0.11),                  // seeking chirp up
+  H: () => {                                                        // twin seeking chirps arc upward
+    tone('triangle', 440, 1120, 0.13, 0.13);
+    tone('sine', 880, 1760, 0.08, 0.06, 0.045);
+  },
   F: () => {                                                        // breathy whoosh + crackle
-    noiseHit('lowpass', 650, 320, 1, 0.22, 0.15);
-    noiseHit('bandpass', 2200, 1600, 3, 0.05, 0.05);
+    noiseHit('lowpass', 760, 240, 1, 0.25, 0.19);
+    noiseHit('bandpass', 2600, 1200, 3, 0.07, 0.08);
+    tone('sine', 86, 42, 0.18, 0.1);
   },
 };
 
@@ -257,9 +261,15 @@ function sfxHit(dmg = 1) {
   tone('sine', 90 / w, 46 / w, 0.045, 0.09 * w);
 }
 function sfxKill() {                         // hostile dies: bright crack, then it breaks —
-  noiseHit('highpass', 3200, 2600, 3, 0.03, 0.13);                  // a two-part "crunch, then
-  tone('square', 130, 55, 0.19, 0.25);                              // thud" signature distinct
-  noiseHit('lowpass', 520, 220, 1, 0.18, 0.2);                      // from sfxHit's plain tick
+  noiseHit('highpass', 3800, 2100, 3, 0.045, 0.17);                 // a two-part "crunch, then
+  tone('square', 145, 46, 0.23, 0.3);                               // thud" signature distinct
+  noiseHit('lowpass', 620, 160, 1, 0.22, 0.25);                     // from sfxHit's plain tick
+}
+function sfxChainBreak(chain) {              // third rapid kill: the hull answers with one
+  const lift = 1 + Math.min(2, chain - 3) * 0.12;                    // bounded celebratory blast
+  tone('sine', 82 * lift, 28, 0.38, 0.34);
+  noiseHit('bandpass', 2800, 480, 1.4, 0.2, 0.2);
+  tone('square', 220 * lift, 70, 0.16, 0.14, 0.025);
 }
 function sfxHurt() {                         // RIG damaged: harsh descending buzz + gut-punch sub —
   tone('sawtooth', 320, 80, 0.28, 0.26, 0, true);                   // the highest-stakes cue in
@@ -614,6 +624,8 @@ function onPlayerSync() {
 // houndframe state transitions give the tell/charge warnings
 const hostileHp = new Map();
 const hostileState = new Map();
+let killChain = 0;
+let lastKillAt = -1e9;
 
 function onHostileSpawned(e) {
   hostileHp.set(e.id, e.hp);
@@ -635,7 +647,14 @@ function onHostileSync(e) {
 function onHostileRemoved(e, fade) {
   hostileHp.delete(e.id);
   hostileState.delete(e.id);
-  if (fade && gate('kill', A.hitGapMs)) { sfxKill(); bumpHeat(A.heat.kill); }
+  if (!fade) return;
+  killChain = gameMs - lastKillAt <= 780 ? Math.min(5, killChain + 1) : 1;
+  lastKillAt = gameMs;
+  if (gate('kill', A.hitGapMs)) { sfxKill(); bumpHeat(A.heat.kill); }
+  // A fast triple kill is the earned spectacle beat. It has its own throttle
+  // and still obeys the global voice cap/load scaling, so crowd kills become
+  // one memorable detonation instead of an unbounded pile of identical thuds.
+  if (killChain >= 3 && gate('chainBreak', 600)) sfxChainBreak(killChain);
 }
 
 // capsules: removal is pickup only under the sim's own catch predicate
@@ -718,6 +737,8 @@ function onStateScreen(next) {
     applyLayers();
     hostileHp.clear();
     hostileState.clear();
+    killChain = 0;
+    lastKillAt = -1e9;
     xfSnap.clear();
     lanceStruckAt = -1;
     prev.hp = player.hp;

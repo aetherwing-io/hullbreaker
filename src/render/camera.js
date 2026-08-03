@@ -6,6 +6,7 @@
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
+import { normalAscentAltAt } from '../pure/ascent.js';
 import { DEG, SEGS, polyAt } from '../pure/path.js';
 import { cornerYawDeltaDeg } from '../pure/waves.js';
 import { traversalCameraDepth } from '../pure/traversal.js';
@@ -33,6 +34,31 @@ function probeXAtNdc(ndcX) {
   return _probe.position.x + _edgeV.x * (-_probe.position.z / _edgeV.z);
 }
 
+/* Portrait action-safe framing. The normal run's camera keeps a fixed
+   vertical FOV, so at 390x844 one logical tile is about 25 CSS px wide while
+   the right clamp leaves RIG only CONFIG.edges.margin (0.4 tile / ~10 px)
+   inside the glass. The sprite and its readability halo are wider than that.
+
+   Calibrate the normal run's RIGHT gameplay edge against an inset NDC line on
+   portrait screens. The renderer, FOV, world, movement tune and left damage
+   edge do not move; only the existing camera-derived safe clamp comes inward.
+   Landscape is exactly 1, authored fixtures retain their own portrait camera
+   correction, and the inset eases in so tablet rotation cannot pop framing. */
+const PORTRAIT_SAFE = Object.freeze({ startAspect: 0.9, fullAspect: 0.46, maxInsetPx: 64 });
+
+export function portraitRightNdc(width, height) {
+  const w = Number.isFinite(width) && width > 0 ? width : 1;
+  const h = Number.isFinite(height) && height > 0 ? height : 1;
+  const aspect = w / h;
+  if (aspect >= PORTRAIT_SAFE.startAspect) return 1;
+  const u = Math.min(1, Math.max(0,
+    (PORTRAIT_SAFE.startAspect - aspect) /
+    (PORTRAIT_SAFE.startAspect - PORTRAIT_SAFE.fullAspect)
+  ));
+  const insetPx = Math.min(w * 0.18, PORTRAIT_SAFE.maxInsetPx * u);
+  return 1 - 2 * insetPx / w;
+}
+
 // ?view=<id> (CONFIG.viewScales) pulls the camera straight back along its
 // depth axis only, independent of the traversal-slice portrait correction
 // above: near is depthMult 1 (exact, so `near`/absent is byte-identical to
@@ -58,7 +84,8 @@ function calibrateEdges() {
   _probe.lookAt(C.lookX, C.lookY, 0);
   _probe.updateProjectionMatrix();
   _probe.updateMatrixWorld(true);
-  setEdges(probeXAtNdc(-1), probeXAtNdc(1));
+  const rightNdc = ACTIVE_FIXTURE ? 1 : portraitRightNdc(innerWidth, innerHeight);
+  setEdges(probeXAtNdc(-1), probeXAtNdc(rightNdc));
   // The transformation slice's atmosphere is a per-band cue owned by
   // src/render/transform.js (interior compresses it, altitude opens it up).
   if (IS_TRANSFORM_SLICE) return;
@@ -156,16 +183,23 @@ export function syncCamera() {
     camYaw = c && c.state === 'turning'
       ? camYawBase + cornerYawDeltaDeg(gameMs - c.tStart, CONFIG) * DEG * CONFIG.path.turnSign
       : camYawBase;
-    // chamfered camera path: anchor rides the polyline; yaw is ritual-driven
+    // Chamfered helix: x/z ride the polyline, y rides the same pure ascent
+    // every world bake uses, and yaw remains ritual-driven. Looking up the
+    // local grade keeps RIG centred instead of letting the climb drift high.
     const a = polyAt(SEGS, scrollX, _pp);
     ax = a.x; az = a.z;
+    if (!ACTIVE_FIXTURE) {
+      alt = normalAscentAltAt(scrollX, CONFIG.levelLength);
+      altAhead = normalAscentAltAt(scrollX + C.lookX, CONFIG.levelLength);
+      slope = (altAhead - alt) / C.lookX;
+    }
   }
   const fx = Math.cos(camYaw), fz = -Math.sin(camYaw);   // fwd along the face
   const rx = -fz, rz = fx;                               // right = fwd × up
   camera.position.set(
     ax + fx * C.x + rx * cameraDepth, C.y + alt + slope * C.x, az + fz * C.x + rz * cameraDepth
   );
-  _look.set(ax + fx * C.lookX, C.lookY + (IS_TRANSFORM_SLICE ? altAhead : alt), az + fz * C.lookX);
+  _look.set(ax + fx * C.lookX, C.lookY + altAhead, az + fz * C.lookX);
   camera.lookAt(_look);
   /* The light rig (./lights.js) is aimed from HERE, with the UNSHAKEN look
      point and the yaw the ritual has reached — the same two quantities the

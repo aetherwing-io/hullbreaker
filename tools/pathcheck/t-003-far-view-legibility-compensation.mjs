@@ -70,10 +70,10 @@ export async function run(SHARED) {
   }
   near(legibilityGain(SHARE.glyph, 'far'), VS.far.depthMult, 1e-12,
      'legibility: a glyph takes the whole pull-back back');
-  near(LEG_GLYPH_GAIN, VS.far.depthMult, 1e-12,
-     'legibility: the shipped default view (far) resolves the live glyph gain');
-  near(LEG_CUE_GAIN, VS.far.depthMult, 1e-12, 'legibility: the live cue gain matches');
-  near(LEG_POSE_GAIN, 1 + (VS.far.depthMult - 1) * SHARE.pose, 1e-12,
+  near(LEG_GLYPH_GAIN, VS.mid.depthMult, 1e-12,
+     'legibility: the shipped default view (mid) resolves the live glyph gain');
+  near(LEG_CUE_GAIN, VS.mid.depthMult, 1e-12, 'legibility: the live cue gain matches');
+  near(LEG_POSE_GAIN, 1 + (VS.mid.depthMult - 1) * SHARE.pose, 1e-12,
      'legibility: the live pose gain is the partial share, not the whole');
   ok(LEG_POSE_GAIN < LEG_CUE_GAIN, 'legibility: a pose is boosted less than a lamp');
 
@@ -106,8 +106,8 @@ export async function run(SHARED) {
      'legibility: the tell lamp holds at least the legibility floor at every view');
 
   // (3) hitbox honesty — the sim is untouched and no drawn cue lies about it
-  ok(CAPS.size === 0.55 && CAPS.pickupRadius === 0.95,
-     'legibility: the readability pass changed no sim capsule constant');
+  ok(CAPS.size === 0.55 && CAPS.pickupRadius === 1.15,
+     'legibility: the drawn capsule keeps its authored size inside the generous catch radius');
   ok(CAPS.size * LEG_GLYPH_GAIN / 2 <= CAPS.pickupRadius,
      'legibility: the drawn capsule box stays inside the catch radius — a pickup ' +
      'never looks bigger than the circle that collects it');

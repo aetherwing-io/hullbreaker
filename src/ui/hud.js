@@ -8,15 +8,17 @@ import {
   ACTIVE_FIXTURE, ACTIVE_SLICE, AIM_ASSIST_ENABLED, AUTOBOUNCE_ENABLED,
   CROUCH_ENABLED, FLOW_ENABLED, HOOK_ENABLED, HOOK_INPUT, HOUND_TRIAL_STAGE,
   IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, MOMENTUM_ENABLED, MORTAR_TRIAL_STAGE,
-  POLYP_TRIAL_STAGE, SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN,
+  POLYP_TRIAL_STAGE, RUN_FALLBACK_ENABLED, SCORE_ENABLED, SLICE_ENEMIES_ENABLED, SLICE_ENEMY_PLAN,
   VIEW_ID,
 } from '../mode.js';
 import { momentumMeter } from '../pure/momentum.js';
-import { momentumDrive, momentumScrollSpeed } from '../sim/pace.js';
+import { normalAscentAltAt } from '../pure/ascent.js';
+import { momentumDrive } from '../sim/pace.js';
 import { scoreNotchGlyphs } from '../pure/score.js';
+import { wavePhase } from '../pure/waves.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { player, P } from '../sim/player.js';
-import { scoreNotchNow, scoreThreat } from '../sim/score.js';
+import { scoreNotchNow } from '../sim/score.js';
 import { currentWeapon, weaponDef } from '../sim/weapons.js';
 import { mods } from '../sim/mods.js';
 import { hostiles, kills } from '../sim/hostiles.js';
@@ -69,28 +71,35 @@ hudBL.innerHTML = IS_TRAVERSAL_SLICE
       'TRANSFORMATION SLICE &nbsp;&middot;&nbsp; run into the open panel, then into the one ahead: ' +
       'the ship turns the world, you keep the same controls<br>' +
       'ALT is the rendered altitude of the surface you are standing on &nbsp;&middot;&nbsp; PAUSE p/esc'
-    : 'MOVE wasd/arrows &nbsp; JUMP space (hold = higher, again in air = double) &nbsp; FIRE j or x<br>' +
-      'AIM 8-way via move keys &nbsp; STRAFE-LOCK shift &nbsp; DROP down+jump on catwalks<br>' +
-      'CAPSULES swap weapons &middot; hit = weapon pops out, recatch it fast &nbsp;&middot;&nbsp; PAUSE p/esc';
+    : 'MOVE wasd/arrows &nbsp;&middot;&nbsp; JUMP space ×2 &nbsp;&middot;&nbsp; FIRE j/x &nbsp;&middot;&nbsp; AIM with move &nbsp;&middot;&nbsp; PAUSE p/esc<br>' +
+      'MAGENTA CAPSULES = BIG WEAPONS &nbsp;&middot;&nbsp; SHIFT = strafe aim &nbsp;&middot;&nbsp; DOWN+JUMP = drop';
 
 // updateHUD runs every rAF frame; assigning textContent replaces the text
 // node even when identical, dirtying layout for three fixed elements 60x/s.
 // Cache the last-written string per element and write only on change — in
 // steady state DOM writes drop to near zero.
-let hudTLLast = null, hudTCLast = null, hudTRLast = null;
+let hudTLLast = null, hudTCLast = null, hudTRLast = null, legendHidden = false;
 const MOD_LABELS = [['rageUntil', 'RAGE'], ['ghostUntil', 'GHOST'], ['chronoUntil', 'CHRONO']];
 
 export function updateHUD() {
+  // Teach the core controls, then give the playfield back. Restarting rewinds
+  // scrollX, so the legend naturally returns for a fresh climb.
+  const hideLegend = !ACTIVE_FIXTURE && scrollX > 30;
+  if (hideLegend !== legendHidden) {
+    legendHidden = hideLegend;
+    hudBL.classList.toggle('gone', hideLegend);
+  }
   const hp = Math.max(0, player.hp);
   let tl = 'RIG ' + '▰'.repeat(hp) + '▱'.repeat(P.maxHealth - hp) +
            (IS_TRAVERSAL_SLICE ? '' : '  ×' + Math.max(0, player.lives)) +
            '  ·  [' + currentWeapon + '] ' + weaponDef(currentWeapon).name;
-  // CHARGE notches are welded to the weapon readout, not given their own bar:
-  // the player reads "how hot is my gun", in the place their eye already goes.
+  // OVERDRIVE is welded to the weapon readout: it is an earned combat power,
+  // not a developer score. The name makes the faster fire / launch shock
+  // promise legible the first time a player sees the meter fill.
   if (SCORE_ENABLED) {
     const notch = scoreNotchNow();
-    tl += ' ' + scoreNotchGlyphs(notch) +
-      (notch >= CONFIG.score.notches.length ? ' BREAKING' : '');
+    tl += ' · OVERDRIVE ' + scoreNotchGlyphs(notch) +
+      (notch >= CONFIG.score.notches.length ? ' HULLBREAK' : '');
   }
   // FLOW rides the same readout for the same reason: the player's eye is
   // already there, and the chain has to be visible while it builds and bleeds.
@@ -120,21 +129,21 @@ export function updateHUD() {
     : IS_TRANSFORM_SLICE
       ? `ALT ${Math.round(transformAltitudeAt(player.x) + player.y)}m · ` +
         `${committedBand}/${TRANSFORM_TURNS} TURNS · ${kills} kills`
-      : Math.floor(scrollX) + 'm  ·  ' + kills + ' kills';
-  if (SCORE_ENABLED) tr += ' · THREAT ' + Math.round(scoreThreat());
-  // MOMENTUM (?momentum=1): the earned escalation, visible. The operator is
-  // judging whether the run answers how well it is being played, which is
-  // unjudgeable if the answer is invisible — so the meter and the live pace
-  // multiplier ride the existing readout. Silent on every other URL.
+      : `ALT ${Math.round(normalAscentAltAt(player.x, CONFIG.levelLength) + player.y)}m · ` +
+        `${Math.floor(scrollX)}m FORWARD · ${kills} KILLS`;
+  // THREAT remains in the run summary/telemetry; the live HUD spends that
+  // space on actionable information instead of an unexplained debug number.
+  // RUSH is the visible earned pace escalation. Keep the compact three-pip
+  // read on the crowded top edge; the exact multiplier remains in telemetry.
   if (MOMENTUM_ENABLED) {
-    tr += ' · MOMENTUM ' + momentumMeter(momentumDrive(), CONFIG.momentum) +
-      ' ×' + (momentumScrollSpeed() / CONFIG.scrollSpeed).toFixed(2);
+    tr += ' · RUSH ' + momentumMeter(momentumDrive(), CONFIG.momentum);
   }
   if (tr !== hudTRLast) { hudTRLast = tr; hudTR.textContent = tr; }
   const c = activeCorner();
   let tc = transformMessage();
   const pocket = ACTIVE_SLICE && ACTIVE_SLICE.darePocket.bounds;
-  if (ACTIVE_SLICE && gameMs - sliceStats.lastSetbackAt < ACTIVE_SLICE.fallback.messageMs) {
+  if ((ACTIVE_SLICE || RUN_FALLBACK_ENABLED) && gameMs - sliceStats.lastSetbackAt <
+      (ACTIVE_SLICE ? ACTIVE_SLICE.fallback.messageMs : 1800)) {
     // HULL FALLBACK has to be explainable (pillar 5) — one line, existing slot
     tc = 'HULL FALLBACK · LOWER ROUTE · KEEP MOVING →';
   } else if (pocket && player.x >= pocket.x0 && player.x < pocket.x1) {
@@ -145,20 +154,24 @@ export function updateHUD() {
     // view-scale experiment: self-documents on screenshots so a variant is
     // identifiable without cross-referencing the URL (near is the shipped
     // camera and stays silent to keep that overlay unchanged by default).
-    const viewTag = VIEW_ID === 'far' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
+    const viewTag = VIEW_ID === 'mid' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
     tc = 'TRAVERSAL SLICE · ' + ACTIVE_SLICE.pace.label +
       (HOUND_TRIAL_STAGE ? ' + ' + HOUND_TRIAL_STAGE.label : '') +
       (POLYP_TRIAL_STAGE ? ' + ' + POLYP_TRIAL_STAGE.label : '') +
       (MORTAR_TRIAL_STAGE ? ' + ' + MORTAR_TRIAL_STAGE.label : '') + viewTag + ' · ' +
       (SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length + ' HOSTILES' : 'MOVEMENT ONLY');
+  } else if (!ACTIVE_FIXTURE && c && c.state === 'idle' && scrollX < 14) {
+    tc = c.phase + ' · MERIDIAN HAS SEEN YOU';
   } else if (c && c.state === 'gate') {
     let gaters = 0;
     // per-body, not per-kind: an ambient station that cannot hold the gate
     // must not be counted in the number the player is told to clear (T-009)
     for (const e of hostiles) if (e.gating) gaters++;
-    tc = 'WAVE ' + c.k + '/' + CONFIG.path.faces + ' — ' + gaters + ' HOSTILES';
+    tc = c.phase + ' · ' + gaters + ' HOSTILES';
   } else if (c && c.state === 'turning' && gameMs - c.tStart < CONFIG.waves.clearMsgMs) {
-    tc = 'CLEAR';
+    tc = c.k < CONFIG.path.faces
+      ? c.phase + ' BROKEN · ' + wavePhase(c.k + 1, CONFIG)
+      : 'SCUTTLE COMPLETE · CROWN ACCESS OPEN';
   }
   if (tc !== hudTCLast) { hudTCLast = tc; hudTC.textContent = tc; }
 }
@@ -174,7 +187,7 @@ function transformMessage() {
   if (lastCommit && gameMs - lastCommit.at < CONFIG.transform.clearMsgMs)
     return `${lastCommit.ev.label} — ${transformBandLabel()} · MERIDIAN: ${transformShipState()}`;
   if (gameMs - sliceStats.startedAt < 2400) {
-    const viewTag = VIEW_ID === 'far' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
+    const viewTag = VIEW_ID === 'mid' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
     return 'TRANSFORMATION SLICE · ' + transformBandLabel() + viewTag;
   }
   return '';

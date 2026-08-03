@@ -33,7 +33,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONFIG } from '../../src/config.js';
-import { TEX_LAYOUT, hullTexCanvas } from '../../src/render/hulltiles.js';
+import { TEX_LAYOUT, TILE_WORLD_SIZE, hullTexCanvas } from '../../src/render/hulltiles.js';
 import { ok, srcDir, stripComments } from './_context.mjs';
 
 export const title = 'T-057 lower-hull shimmer (I-049): anisotropy fix + canvas-resize non-regression';
@@ -80,7 +80,7 @@ export async function run() {
   // power of two. Re-derived from the same inputs hulltiles.js itself reads,
   // not a frozen magic number, so a legitimate CONFIG/camera retune moves
   // this alongside it automatically.
-  const worldW = 2; // hull-panel-tile.png's own TILE_WORLD_SIZE[0] (T-054's manifest claim)
+  const worldW = TILE_WORLD_SIZE.hullPanel[0];
   const cssPxPerWorld = 1600 / (2 * Math.tan((CONFIG.camera.fov * Math.PI / 180) / 2) *
     CONFIG.camera.z * CONFIG.viewScales.far.depthMult);
   const wanted = worldW * cssPxPerWorld;

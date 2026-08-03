@@ -13,8 +13,8 @@ import { PAL } from './palette.js';
 import { applySurface } from './materials.js';
 import { postGain } from './post.js';
 import { scene } from './scene.js';
-import { spriteQuad } from './sprite-table.js';
-import { spriteTexture, spriteVariantOf } from './sprites.js';
+import { primitiveBox, spriteActionQuad, spriteQuad } from './sprite-table.js';
+import { spriteActionTexture, spriteTexture, spriteVariantOf } from './sprites.js';
 import { placeOnTower } from './tower.js';
 import { releaseContactShadow, syncContactShadow } from './contact.js';
 import {
@@ -42,10 +42,100 @@ const polypGeo = new THREE.DodecahedronGeometry(CONFIG.polyp.size);
 const polypBarrelGeo = new THREE.BoxGeometry(...CONFIG.polyp.barrelSize);
 const polypStalkGeo = new THREE.BoxGeometry(0.35, CONFIG.polyp.rootY, 0.35);
 const polypBeamGeo = new THREE.BoxGeometry(1, CONFIG.polyp.beamHalf * 2, CONFIG.polyp.beamHalf * 2);
+const polypBeamCoreGeo = new THREE.BoxGeometry(1, 0.10, 0.10);
 // Seed-Pod Tripod: a squat three-sided launch tube on three legs (the leg
 // meshes and the bombardment props are built in the mortar block at the end
 // of this file, which owns everything else about this kind).
 const mortarTubeGeo = new THREE.ConeGeometry(CONFIG.mortar.size, CONFIG.mortar.size * 2.2, 3);
+
+/* Production cutouts need enough pixels to carry the design that is painted
+   into them. At the shipped MID view, fitting a wasp to its one-tile legacy
+   octahedron produced only ~18 CSS pixels of ink; the 400px source became an
+   expensive green speck. These are PRESENTATION scales only. The sim rows,
+   contact radii, target tests, projectiles and shadows stay unchanged. Rooted
+   and deck-bound roles are lifted by the corresponding amount below so their
+   feet remain on the exact same authored surface. */
+const SPRITE_BODY_SCALE = Object.freeze({
+  wasp: 1.55,
+  carrier: 1.30,
+  hound: 1.35,
+  polyp: 1.30,
+  mortar: 1.25,
+});
+
+function spriteAnchorLift(kind, presentationScale) {
+  if (kind === 'wasp' || kind === 'carrier' || presentationScale === 1) return 0;
+  const box = primitiveBox(kind);
+  if (!box) return 0;
+  const bottom = box.cy - box.h / 2;
+  return bottom * (1 - presentationScale);
+}
+
+/* ------------------- combat-plane readability props ------------------- *
+ * Collision stays world-sized and untouched. Production cutouts receive the
+ * presentation-only scale above; these small props carry INFORMATION that
+ * must survive the MID camera: a restrained ecology
+ * glow behind each silhouette, and a different motion sentence for each
+ * committed threat. They are intentionally unlit/fog-free; a warning is a
+ * message about the machine, not another piece of distant architecture. */
+function paintRadialTexture() {
+  const cv = document.createElement('canvas');
+  cv.width = 64; cv.height = 64;
+  const g = cv.getContext('2d');
+  const grad = g.createRadialGradient(32, 32, 3, 32, 32, 32);
+  grad.addColorStop(0, 'white');
+  grad.addColorStop(0.34, 'white');
+  grad.addColorStop(1, 'transparent');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(cv);
+}
+
+function paintStreakTexture() {
+  const cv = document.createElement('canvas');
+  cv.width = 128; cv.height = 32;
+  const g = cv.getContext('2d');
+  const grad = g.createLinearGradient(0, 0, 128, 0);
+  grad.addColorStop(0, 'transparent');
+  grad.addColorStop(0.50, 'transparent');
+  grad.addColorStop(0.82, 'white');
+  grad.addColorStop(1, 'transparent');
+  g.fillStyle = grad;
+  g.beginPath();
+  g.moveTo(0, 16); g.lineTo(116, 4); g.lineTo(128, 16);
+  g.lineTo(116, 28); g.closePath(); g.fill();
+  return new THREE.CanvasTexture(cv);
+}
+
+function paintChevronTexture() {
+  const cv = document.createElement('canvas');
+  cv.width = 256; cv.height = 48;
+  const g = cv.getContext('2d');
+  g.strokeStyle = 'white';
+  g.lineWidth = 7;
+  g.lineJoin = 'miter';
+  for (let x = 32; x < 244; x += 52) {
+    g.beginPath();
+    g.moveTo(x - 15, 8); g.lineTo(x + 7, 24); g.lineTo(x - 15, 40);
+    g.stroke();
+  }
+  return new THREE.CanvasTexture(cv);
+}
+
+const actorGlowTex = paintRadialTexture();
+const streakTex = paintStreakTexture();
+const chevronTex = paintChevronTexture();
+const actorGlowGeo = new THREE.PlaneGeometry(1, 1);
+const streakGeo = new THREE.PlaneGeometry(1, 1);
+const laneGeo = new THREE.PlaneGeometry(1, 1);
+const zoneRingGeo = new THREE.RingGeometry(0.34, 0.5, 24);
+
+function signalMaterial(color, map = null) {
+  return new THREE.MeshBasicMaterial({
+    color, map, transparent: true, opacity: 0, fog: false,
+    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+  });
+}
 
 /* The houndframe's state theater: the shared presence pass below owns
    materialization, depth breathing, and the hit flash for every kind — this
@@ -250,6 +340,7 @@ const LOOK = {
  *     still points down the dive vector, which is the cue that matters.  */
 
 const spriteGeos = new Map();            // kind -> PlaneGeometry, built once
+const actionSpriteGeos = new Map();
 
 function spriteGeo(kind) {
   let geo = spriteGeos.get(kind);
@@ -263,6 +354,39 @@ function spriteGeo(kind) {
   geo.translate(q.offX, q.offY, 0);
   spriteGeos.set(kind, geo);
   return geo;
+}
+
+function actionSpriteGeo(kind) {
+  let geo = actionSpriteGeos.get(kind);
+  if (geo) return geo;
+  const q = spriteActionQuad(kind);
+  if (!q) return null;
+  geo = new THREE.PlaneGeometry(q.w, q.h);
+  geo.translate(q.offX, q.offY, 0);
+  actionSpriteGeos.set(kind, geo);
+  return geo;
+}
+
+function actionPoseActive(e) {
+  if (e.kind === 'wasp') return e.state === 'dive';
+  if (e.kind === 'hound') return e.state === 'charge';
+  if (e.kind === 'polyp') return e.state === 'tell';
+  if (e.kind === 'mortar') return e.state === 'lob' || e.state === 'fuse' || e.state === 'burst';
+  // The carrier has no attack state; its second pose follows its authored
+  // flight bob phase. This is a two-pose hover cycle, not an arbitrary strobe.
+  if (e.kind === 'carrier') return Math.sin(e.t * CONFIG.carrier.bobFreq) > 0.15;
+  return false;
+}
+
+function syncSpritePose(v, e) {
+  if (!v.sprite || !v.actionTex || !v.actionGeo) return;
+  const action = actionPoseActive(e);
+  if (action === v.actionActive) return;
+  v.actionActive = action;
+  v.mesh.geometry = action ? v.actionGeo : v.baseGeo;
+  const tex = action ? v.actionTex : v.baseTex;
+  v.mat.map = tex;
+  v.mat.emissiveMap = tex;
 }
 
 function spriteMaterial(tex) {
@@ -283,14 +407,22 @@ function spriteMaterial(tex) {
     // primitive's call count with this on (reports/tasks/T-049/build.md).
     forceSinglePass: true,
     depthWrite: true,
+    fog: false,                            // actors remain foreground-readable in the teal depth fog
   });
 }
 
 // which way the drawn body points: the sim row's facing, except that a
 // committed dive is steered by velocity and may cross its own facing
 function spriteFaceX(e) {
-  if (e.kind === 'wasp' && waspDiving(e)) return e.vx < 0 ? -1 : 1;
-  return e.dir < 0 ? -1 : 1;
+  const desired = e.kind === 'wasp' && waspDiving(e)
+    ? (e.vx < 0 ? -1 : 1)
+    : (e.dir < 0 ? -1 : 1);
+  // The production atlas is painted facing left; the retained A/B sprites
+  // face right. Bake that authoring convention into the mirror once so every
+  // state pose and action cutout follows the sim's direction.
+  const productionLeft = e.kind === 'wasp' || e.kind === 'hound' || e.kind === 'mortar';
+  const authored = spriteVariantOf(e.kind) === 'b' && productionLeft ? -1 : 1;
+  return desired * authored;
 }
 
 function spriteRoll(e, K) {
@@ -455,6 +587,159 @@ function polypLamp(v, e) {
 
 const LAMP_SYNC = { hound: houndLamp, polyp: polypLamp };
 
+/* Every hostile gets one quiet halo sized from the primitive box its art
+ * replaces. The brighter props are kind-specific and only exist while the
+ * matching sim state is live, so the vocabulary stays learnable:
+ *
+ *   amber chevrons  = this lane is about to be occupied
+ *   acid wake       = this body is committed and moving now
+ *   amber ring      = this landing point is counting down
+ */
+function readabilityAttach(v, e, K) {
+  const box = primitiveBox(e.kind);
+  const glowMat = signalMaterial(K.color, actorGlowTex);
+  const glow = new THREE.Mesh(actorGlowGeo, glowMat);
+  glow.renderOrder = 0;
+  scene.add(glow);
+  v.actorGlow = glow;
+  v.actorGlowMat = glowMat;
+  v.actorBox = box;
+
+  if (e.kind === 'wasp' || e.kind === 'hound') {
+    const wakeMat = signalMaterial(e.kind === 'wasp' ? PAL.waspDive : PAL.houndCharge, streakTex);
+    const wake = new THREE.Mesh(streakGeo, wakeMat);
+    wake.visible = false;
+    wake.renderOrder = 1;
+    scene.add(wake);
+    v.attackWake = wake;
+    v.attackWakeMat = wakeMat;
+  }
+
+  if (e.kind === 'hound' || e.kind === 'polyp') {
+    const laneColor = e.kind === 'hound' ? PAL.houndTell : PAL.polypTell;
+    const laneMat = signalMaterial(laneColor, chevronTex);
+    const lane = new THREE.Mesh(laneGeo, laneMat);
+    lane.visible = false;
+    lane.renderOrder = 1;
+    scene.add(lane);
+    v.tellLane = lane;
+    v.tellLaneMat = laneMat;
+  }
+
+  if (e.kind === 'mortar') {
+    const ringMat = signalMaterial(PAL.mortarMark);
+    const ring = new THREE.Mesh(zoneRingGeo, ringMat);
+    ring.visible = false;
+    ring.renderOrder = 1;
+    scene.add(ring);
+    v.zoneRing = ring;
+    v.zoneRingMat = ringMat;
+  }
+}
+
+function readabilityDetach(v) {
+  for (const [mesh, mat] of [
+    [v.actorGlow, v.actorGlowMat], [v.attackWake, v.attackWakeMat],
+    [v.tellLane, v.tellLaneMat], [v.zoneRing, v.zoneRingMat],
+  ]) {
+    if (!mesh) continue;
+    scene.remove(mesh);
+    mat.dispose();
+  }
+}
+
+function readabilityHide(v) {
+  if (v.actorGlow) v.actorGlow.visible = false;
+  if (v.attackWake) v.attackWake.visible = false;
+  if (v.tellLane) v.tellLane.visible = false;
+  if (v.zoneRing) v.zoneRing.visible = false;
+}
+
+function syncActorGlow(v, e, K, sx, sy, signaling) {
+  const b = v.actorBox;
+  if (!b) return;
+  const face = spriteFaceX(e);
+  const pulse = 0.96 + Math.sin(gameMs * 0.009 + e.id * 0.71) * 0.04;
+  v.actorGlow.visible = true;
+  placeOnTower(v.actorGlow,
+    e.x + b.cx * face * v.presentationScale,
+    e.y + v.presentationLift + b.cy * v.presentationScale,
+    -0.10);
+  v.actorGlow.rotation.z = v.sprite ? spriteRoll(e, K) : K.roll(e);
+  v.actorGlow.scale.set(b.w * sx * 1.48 * pulse, b.h * sy * 1.62 * pulse, 1);
+  v.actorGlowMat.color.setHex(signaling ? (K.pose ? K.pose(e).glow || K.color : K.color) : K.color);
+  v.actorGlowMat.opacity = v.mat.opacity * (signaling ? 0.25 : 0.11);
+}
+
+function syncAttackRead(v, e) {
+  if (v.attackWake) v.attackWake.visible = false;
+  if (v.tellLane) v.tellLane.visible = false;
+
+  if (e.kind === 'wasp' && v.attackWake && waspDiving(e)) {
+    const speed = Math.max(0.001, Math.hypot(e.vx, e.vy));
+    const ux = e.vx / speed, uy = e.vy / speed;
+    const length = 1.65;
+    v.attackWake.visible = true;
+    placeOnTower(v.attackWake, e.x - ux * length * 0.43, e.y - uy * length * 0.43, -0.06);
+    v.attackWake.rotation.z = Math.atan2(e.vy, e.vx);
+    v.attackWake.scale.set(length, 0.34, 1);
+    lit(v.attackWakeMat, PAL.waspDive);
+    v.attackWakeMat.opacity = 0.52;
+    return;
+  }
+
+  if (e.kind === 'hound') {
+    const H = CONFIG.hound;
+    if (e.state === 'tell' && v.tellLane) {
+      const u = houndTellU(e);
+      const reach = H.chargeSpeed * H.chargeMs / 1000;
+      v.tellLane.visible = true;
+      placeOnTower(v.tellLane, e.x + e.dir * reach / 2, e.y - H.rideY + 0.11, -0.05);
+      v.tellLane.scale.set(e.dir * reach, 0.42 + 0.08 * u, 1);
+      lit(v.tellLaneMat, PAL.houndTell);
+      v.tellLaneMat.opacity = 0.16 + 0.34 * u;
+    } else if (e.state === 'charge' && v.attackWake) {
+      const length = 2.35;
+      v.attackWake.visible = true;
+      placeOnTower(v.attackWake, e.x - e.dir * length * 0.42, e.y, -0.06);
+      v.attackWake.scale.set(e.dir * length, 0.56, 1);
+      lit(v.attackWakeMat, PAL.houndCharge);
+      v.attackWakeMat.opacity = 0.58;
+    }
+    return;
+  }
+
+  if (e.kind === 'polyp' && e.state === 'tell' && v.tellLane) {
+    const PP = CONFIG.polyp;
+    const left = Math.max(0, e.stateUntil - gameMs);
+    const u = 1 - Math.max(0, Math.min(1, left / PP.tellMs));
+    // A short preview names DIRECTION without pretending to know how far
+    // this frame's terrain-clamped beam will reach when it actually fires.
+    const preview = Math.min(3.6, PP.sightRange);
+    v.tellLane.visible = true;
+    placeOnTower(v.tellLane,
+      e.x + e.dir * (PP.barrelTiles + preview / 2), e.y, -0.04);
+    v.tellLane.scale.set(e.dir * preview, 0.32 + u * 0.14, 1);
+    lit(v.tellLaneMat, PAL.polypTell);
+    v.tellLaneMat.opacity = 0.13 + 0.38 * u;
+  }
+}
+
+function syncMortarBeacon(v, e) {
+  if (!v.zoneRing) return;
+  const marked = e.state === 'lob' || e.state === 'fuse' || e.state === 'burst';
+  v.zoneRing.visible = marked;
+  if (!marked) return;
+  const M = CONFIG.mortar;
+  const pulse = 0.5 + 0.5 * Math.sin(gameMs * (e.state === 'fuse' ? 0.028 : 0.014));
+  const burst = e.state === 'burst';
+  placeOnTower(v.zoneRing, e.zoneX, e.zoneY + 0.74, -0.08);
+  const size = M.blastHalf * (burst ? 1.18 : 0.72 + pulse * 0.12);
+  v.zoneRing.scale.set(size, size * 0.72, 1);
+  lit(v.zoneRingMat, burst ? PAL.mortarBlast : PAL.mortarMark);
+  v.zoneRingMat.opacity = burst ? 0.88 : 0.34 + pulse * 0.28;
+}
+
 const meshes = new Map();                // sim hostile row → { mesh, mat }
 
 function spawned(e) {
@@ -474,10 +759,20 @@ function spawned(e) {
   const tex = spriteTexture(e.kind);
   const geo = tex ? spriteGeo(e.kind) : null;
   const mat = applySurface(geo ? spriteMaterial(tex) : new THREE.MeshStandardMaterial({
-    color: K.color, flatShading: true, transparent: true, opacity: 0,
+    color: K.color, flatShading: true, transparent: true, opacity: 0, fog: false,
   }), K.surface);
   const mesh = new THREE.Mesh(geo || K.geo, mat);
-  const v = { mesh, mat, sprite: !!geo };
+  const actionTex = geo ? spriteActionTexture(e.kind) : null;
+  const v = {
+    mesh, mat, sprite: !!geo,
+    baseGeo: geo, baseTex: tex,
+    actionGeo: actionTex ? actionSpriteGeo(e.kind) : null,
+    actionTex, actionActive: false,
+    presentationScale: geo ? (SPRITE_BODY_SCALE[e.kind] || 1) : 1,
+    presentationLift: 0,
+  };
+  v.presentationLift = geo ? spriteAnchorLift(e.kind, v.presentationScale) : 0;
+  readabilityAttach(v, e, K);
   if (e.kind === 'polyp') {
     // the side-facing barrel (board 07's model note) and the root stalk down
     // to the mounted surface — children sharing the bulb's material so
@@ -495,14 +790,28 @@ function spawned(e) {
     }
     // the beam is its own scene mesh: it spans the LIVE reach the sim
     // marched this frame, so what the render shows is exactly what damages
+    // The full damage band stays visible, but as a translucent acid field;
+    // a separate narrow core carries direction. The old single HDR slab
+    // bloomed into an opaque white-green rectangle and erased the combatants
+    // it was supposed to warn about.
     const beamMat = new THREE.MeshBasicMaterial({
-      color: PAL.polypBeam, transparent: true, opacity: 0.85,
+      color: PAL.polyp, transparent: true, opacity: 0.28,
+      depthWrite: false,
     });
     const beam = new THREE.Mesh(polypBeamGeo, beamMat);
     beam.visible = false;
     scene.add(beam);
     v.beam = beam;
     v.beamMat = beamMat;
+    const beamCoreMat = new THREE.MeshBasicMaterial({
+      color: PAL.polypBeam, transparent: true, opacity: 0.72,
+      depthWrite: false,
+    });
+    const beamCore = new THREE.Mesh(polypBeamCoreGeo, beamCoreMat);
+    beamCore.visible = false;
+    scene.add(beamCore);
+    v.beamCore = beamCore;
+    v.beamCoreMat = beamCoreMat;
   } else if (e.kind === 'mortar') {
     mortarAttach(v, mesh);                 // legs, pod, and the marked-zone props
   }
@@ -525,17 +834,22 @@ function removed(e, fade) {
   if (v.beam) {                          // the beam never outlives its emplacement
     scene.remove(v.beam);
     v.beamMat.dispose();
+    scene.remove(v.beamCore);
+    v.beamCoreMat.dispose();
   }
   if (v.pod) mortarDetach(v);            // nor does a pod, a mark, or a blast
   if (v.lamp) lampDetach(v);             // nor a tell lamp: a corpse never warns
+  readabilityDetach(v);                  // warning props never dissolve as corpses
   if (fade) {                          // hand the mesh to the corpse pass to dissolve
     // the death pop carries the same tinted flash the living body wore (I-010):
     // the kind is dead, but the frame that says so still says WHICH kind
     // `face` carries the mirror a sprite body was wearing, so a corpse does
     // not flip round to face the other way on the frame it dies
-    corpses.push({ mesh: v.mesh, mat: v.mat, s: e.x, y: e.y, spin: e.t,
+    corpses.push({ mesh: v.mesh, mat: v.mat, s: e.x,
+                   y: e.y + v.presentationLift, spin: e.t,
                    t0: gameMs, flash: FLASH[e.kind],
-                   face: v.sprite ? spriteFaceX(e) : 1 });
+                   face: v.sprite ? spriteFaceX(e) : 1,
+                   presentationScale: v.presentationScale });
   } else {
     scene.remove(v.mesh);
     v.mat.dispose();
@@ -549,11 +863,14 @@ function sync(e) {
   if (gameMs < e.enterUntil - W.enterMs) {            // staged wave slot: still hidden
     v.mesh.visible = false;
     if (v.beam) v.beam.visible = false;
+    if (v.beamCore) v.beamCore.visible = false;
     if (v.pod) mortarHide(v);
     if (v.lamp) v.lamp.visible = false;
+    readabilityHide(v);
     return;
   }
   v.mesh.visible = true;
+  syncSpritePose(v, e);
   // mock-3D presence: materialize in from tower depth, breathe while alive
   let depth, scale;
   if (gameMs < e.enterUntil) {
@@ -577,14 +894,20 @@ function sync(e) {
     sx *= p.sx; sy *= p.sy; sz *= p.sz;
     if (glow === PAL.glowOff) glow = p.glow;              // a hit flash still wins
   }
-  v.mat.emissive.setHex(glow);
-  // T-048: a hit pop and a committed-state glow are the body EMITTING, so
-  // they get the same headroom the lamps and beams get. Written every frame
-  // next to the emissive it scales; it is 1 (the pre-pass value) whenever the
-  // bloom pass is not drawing, and it is multiplied into a black emissive on
-  // every ordinary frame, which changes nothing.
-  v.mat.emissiveIntensity = postGain();
-  placeOnTower(v.mesh, e.x, e.y, depth);
+  sx *= v.presentationScale;
+  sy *= v.presentationScale;
+  sz *= v.presentationScale;
+  // Keep the generated ink alive in the fog. At play scale a fully dark
+  // emissive map made the wasp and hound detail collapse into the hull even
+  // though their silhouettes were technically present. A quiet kind-colour
+  // lift preserves that ink; tells, hits and committed attacks still jump to
+  // full authored emissive, so this cannot masquerade as a warning state.
+  const signaling = glow !== PAL.glowOff;
+  v.mat.emissive.setHex(signaling ? glow : K.color);
+  // T-048: active state light gets the same headroom as lamps and beams.
+  // Ordinary bodies receive only a restrained fraction of it for legibility.
+  v.mat.emissiveIntensity = postGain() * (signaling ? 1 : 0.30);
+  placeOnTower(v.mesh, e.x, e.y + v.presentationLift, depth);
   if (v.sprite) {
     // the art is authored facing +x, so facing is a mirror; the roll rules
     // that differ from the solid's are in spriteRoll() above
@@ -600,20 +923,28 @@ function sync(e) {
     if (v.barrel) v.barrel.position.x = e.dir * PP.barrelTiles * 0.65;
     const live = e.state === 'fire' && e.beamReach > 0 && gameMs >= e.enterUntil;
     v.beam.visible = live;
+    v.beamCore.visible = live;
     if (live) {
       // span exactly the reach the sim marched this frame, in the combat
       // plane (depth 0): what is drawn is what damages, wall to barrel
       placeOnTower(v.beam, e.x + e.dir * (PP.barrelTiles + e.beamReach / 2), e.y, 0);
+      placeOnTower(v.beamCore, e.x + e.dir * (PP.barrelTiles + e.beamReach / 2), e.y, 0.03);
       const pulse = 1 + PP.beamPulseAmp *
         Math.sin(gameMs / 1000 * PP.beamPulseFreq * Math.PI * 2);
       v.beam.scale.set(e.beamReach, pulse, pulse);
-      lit(v.beamMat, PAL.polypBeam);     // a live beam is the light it damages with
-      v.beamMat.opacity = 0.65 + 0.25 * pulse;
+      v.beamCore.scale.set(e.beamReach, 0.9 + pulse * 0.1, 0.9 + pulse * 0.1);
+      v.beamMat.color.setHex(PAL.polyp); // hazard volume, readable through rather than white
+      v.beamMat.opacity = 0.22 + 0.08 * pulse;
+      v.beamCoreMat.color.setHex(PAL.polypBeam);
+      v.beamCoreMat.opacity = 0.58 + 0.12 * pulse;
     }
   }
   if (v.pod) mortarSync(v, e);           // pod arc + marked zone + detonation
   // the tell lamp reads the same sim state the pose does, one frame, no memory
   if (v.lamp) LAMP_SYNC[e.kind](v, e);
+  syncActorGlow(v, e, K, sx, sy, signaling);
+  syncAttackRead(v, e);
+  syncMortarBeacon(v, e);
   syncContactShadow(e, e.x, e.y, CONTACT_FOOTPRINT[e.kind]);
 }
 
@@ -630,7 +961,7 @@ export function updateCorpses() {
     if (u >= 1) { scene.remove(c.mesh); c.mat.dispose(); corpses.splice(i, 1); continue; }
     placeOnTower(c.mesh, c.s, c.y - 0.6 * u, W.dieDepth * u * u);   // recede into the dark
     c.mesh.rotation.z = c.spin + u * 9;           // death tumble
-    c.mesh.scale.setScalar(1 + 0.3 * u);
+    c.mesh.scale.setScalar(c.presentationScale * (1 + 0.3 * u));
     c.mesh.scale.x *= c.face;                     // keep the facing it died with
     c.mat.opacity = 1 - u * u;
     c.mat.emissive.setHex(u < 0.16 ? c.flash : PAL.glowOff);        // death pop, then dissolve

@@ -27,6 +27,7 @@ for (let i = 0; i < BULLET_MAX; i++) bulletPool.push({
 
 export let shotsFired = 0;
 export let currentWeapon = 'R';
+export let weaponHeldSince = 0;
 export const weaponKills = Object.fromEntries(WEAPON_LETTERS.map(k => [k, 0]));
 
 export function weaponDef(letter) { return CONFIG.weapons[letter]; }
@@ -175,6 +176,9 @@ export function updateBullets(dt) {
 /* run reset (resetGame in src/main.js) — the pool empties, the arsenal
    falls back to the rifle, and the per-weapon tallies zero out. */
 export function clearBullets() { for (const b of bulletPool) b.alive = false; }
-export function setWeapon(letter) { currentWeapon = letter; }
+export function setWeapon(letter) {
+  currentWeapon = letter;
+  weaponHeldSince = gameMs;
+}
 export function resetWeaponKills() { for (const k of Object.keys(weaponKills)) weaponKills[k] = 0; }
 export function resetShotsFired() { shotsFired = 0; }

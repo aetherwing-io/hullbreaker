@@ -719,7 +719,11 @@ ok(gH.length === 445 && plats.length === 77 && LVL.chunkLog.length === 59,
 // 445 columns, same 59 chunks, same rng draws — the lattice consumes none);
 // what moves with the shelf height is the bands the patch pass reads, and at
 // the plain shape that is one catwalk fewer than the raised tier produced.
-ok(fingerprint(LVL) === '0447885a',
+// Re-pinned after the live encounter-choreography pass authored the six fixed
+// reward letters around their phase lessons (S,S,L,H,F,H). Geometry, chunk
+// count, platform count and seeds above are unchanged; the fingerprint also
+// covers the pocket reward metadata, which is the intentional delta here.
+ok(fingerprint(LVL) === '9a206b73',
    'normal generator fingerprint unchanged, got ' + fingerprint(LVL));
 
 const fixtureBefore = JSON.stringify(TRAVERSAL_FIXTURE);

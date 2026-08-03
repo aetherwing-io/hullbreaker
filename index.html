@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>HULLBREAKER — grey-box</title>
+<title>HULLBREAKER</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preload" as="image" href="assets/generated/ui/title-meridian-ascent-v1.png">
+<link rel="icon" href="assets/ui/favicon.svg" type="image/svg+xml">
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #232830; }
   canvas { display: block; }
@@ -15,7 +17,12 @@
   #hudTL { top: 14px; left: 18px;  font-size: 16px; line-height: 1.55; letter-spacing: .06em; }
   #hudTC { top: 14px; left: 50%; transform: translateX(-50%); font-size: 18px; letter-spacing: .08em; }
   #hudTR { top: 14px; right: 18px; font-size: 15px; line-height: 1.55; text-align: right; }
-  #hudBL { bottom: 12px; left: 18px; font-size: 12px; line-height: 1.5; opacity: .5; }
+  #hudBL {
+    bottom: 12px; left: 18px; max-width: min(760px, calc(100vw - 36px));
+    font-size: 12px; line-height: 1.5; opacity: .42;
+    transition: opacity 1.2s ease;
+  }
+  #hudBL.gone { opacity: 0; }
   #overlay {
     position: fixed; inset: 0; z-index: 20; display: none;
     flex-direction: column; align-items: center; justify-content: center;
@@ -26,10 +33,7 @@
   #overlay p  { margin: 5px 0; font-size: 15px; opacity: .85; letter-spacing: .05em; }
   #overlay .dim { opacity: .5; margin-top: 18px; }
 
-  /* ---- game shell (T-013): stats / options panel + start screen ----
-     Flat-shaded CSS only: no image assets, no external fonts. The start
-     screen composes concept board 05's directions out of boxes,
-     gradients and one clip-path silhouette. */
+  /* ---- game shell: stats / options panel + start screen ---- */
   #ovPanel { display: none; margin: 4px 0 16px; }
   #ovPanel .panel {
     min-width: 320px; max-width: min(560px, 88vw); margin: 0 auto;
@@ -57,7 +61,26 @@
   }
   #shell.on { display: block; }
   body.at-title .hud, body.nohud .hud { opacity: 0; }
-  #shellArt { position: absolute; inset: 0; overflow: hidden; }
+  #shellArt {
+    position: absolute; inset: -1.5%; overflow: hidden;
+    background: #07131a url('assets/generated/ui/title-meridian-ascent-v1.png') 50% 50% / cover no-repeat;
+    animation: title-breathe 13s ease-in-out infinite alternate;
+  }
+  #shellArt::after {
+    content: ''; position: absolute; inset: 0;
+    background:
+      linear-gradient(90deg, rgba(7,19,26,.95) 0%, rgba(7,19,26,.72) 30%, rgba(7,19,26,.12) 64%, rgba(7,19,26,.18) 100%),
+      linear-gradient(0deg, rgba(7,19,26,.62) 0%, transparent 32%, rgba(7,19,26,.14) 100%),
+      radial-gradient(ellipse at 68% 43%, transparent 34%, rgba(7,19,26,.42) 100%);
+  }
+  /* Keep the data-backed composition in the layout for the existing shell
+     contract and browser self-check, but let the production key art carry
+     the player-facing screen. */
+  #shellArt .sl { visibility: hidden; }
+  @keyframes title-breathe {
+    from { transform: scale(1.015) translate3d(-.25%, .2%, 0); }
+    to   { transform: scale(1.055) translate3d(.35%, -.35%, 0); }
+  }
   #shellArt .sl {
     position: absolute; left: var(--x); top: var(--y);
     width: var(--w); height: var(--h); opacity: var(--o, 1);
@@ -122,26 +145,31 @@
                         to   { transform: translate3d(2%, -6%, 0) scale(1.25); opacity: .9; } }
   @keyframes sl-flash { 0%, 12% { opacity: 1; } 13%, 100% { opacity: 0; } }
   @media (prefers-reduced-motion: reduce) {
-    .sl-steam, .sl-rig::after { animation: none; }
+    .sl-steam, .sl-rig::after, #shellArt { animation: none; }
   }
   #shellText {
     position: absolute; left: var(--tx); top: var(--ty); width: var(--tw);
-    min-width: 260px; text-shadow: 0 2px 18px rgba(7,19,26,.95);
+    z-index: 2; min-width: 260px;
+    text-shadow: 0 2px 18px rgba(7,19,26,.95), 0 0 42px rgba(7,19,26,.9);
   }
   #shellText h1 {
-    margin: 0; font-size: clamp(30px, 5.4vw, 68px); letter-spacing: .18em;
-    font-weight: 700; color: #ffe9c2;
+    margin: 0; font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-size: clamp(42px, 7vw, 94px); line-height: .9; letter-spacing: .115em;
+    font-weight: 900; color: #ffe9c2;
   }
-  #shellText .tag { margin: 10px 0 0; font-size: 13px; letter-spacing: .16em; opacity: .72; }
+  #shellText .tag {
+    max-width: 520px; margin: 15px 0 0; font-size: clamp(11px, 1.15vw, 15px);
+    line-height: 1.55; letter-spacing: .16em; color: #e8edf2; opacity: .82;
+  }
   #shellText .prompt {
-    margin: 26px 0 0; font-size: 15px; letter-spacing: .3em; color: #9ce23e;
+    margin: 29px 0 0; font-size: 15px; letter-spacing: .3em; color: #9ce23e;
     animation: sl-pulse 2.4s ease-in-out infinite;
   }
   @keyframes sl-pulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { #shellText .prompt { animation: none; } }
   #shellFoot {
-    position: absolute; right: 16px; bottom: 12px; left: 16px;
-    font-size: 11px; line-height: 1.7; letter-spacing: .06em; text-align: right;
+    position: absolute; z-index: 2; right: auto; bottom: 4.5%; left: 5%; width: min(620px, 70vw);
+    font-size: 11px; line-height: 1.8; letter-spacing: .08em; text-align: left;
     text-shadow: 0 1px 8px #07131a, 0 0 18px #07131a;
   }
   #shellFoot p { margin: 0; opacity: .75; }
@@ -202,9 +230,20 @@
     #ovPanel .panel { min-width: 0; padding: 9px 11px 8px; }
     #ovPanel .statgrid { gap: 1px 12px; font-size: 11px; }
     #ovPanel .keys { font-size: 10px; }
-    #shellText { left: 5%; width: 90%; text-align: left; }
+    #shellArt {
+      /* Pull the summit/RIG cluster away from the right crop. The left-side
+         copy remains over the art's authored dark sky. */
+      background-position: 76% 50%;
+    }
+    #shellArt::after {
+      background: linear-gradient(90deg, rgba(7,19,26,.9), rgba(7,19,26,.28)),
+                  linear-gradient(0deg, rgba(7,19,26,.72), transparent 48%);
+    }
+    #shellText { left: 6%; top: 16%; width: 88%; min-width: 0; text-align: left; }
+    #shellText h1 { font-size: clamp(38px, 13vw, 62px); }
     #shellText .tag { font-size: 11px; letter-spacing: .1em; }
-    #shellFoot { font-size: 9px; line-height: 1.5; }
+    #shellFoot { left: 6%; bottom: 2.5%; width: 88%; font-size: 10px; line-height: 1.6; }
+    #shellFoot .dim { display: none; }
   }
 </style>
 <!-- ===== FAILSAFE BOOTSTRAP (T-032) ==================================

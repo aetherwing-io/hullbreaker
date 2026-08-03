@@ -12,7 +12,7 @@ export const CONFIG = {
                                              // to jump/dodge/shoot; player ~7% of screen height
   fog: { near: 30, far: 74 },  // pushed out with the camera
 
-  // View-scale experiment (wave 3, viewscale lane): ?view=near|mid|far pulls
+  // View-scale selector: ?view=near|mid|far pulls
   // the camera straight back along its depth axis ONLY — x, y, lookX, lookY
   // (and fov) are untouched — which leaves the anchor's angular position in
   // frame unchanged (composition/follow behavior is preserved to a fraction
@@ -24,8 +24,9 @@ export const CONFIG = {
   // already read — so this table is the only new surface, and the seconds-
   // bounded pursuit clock (src/pure/traversal.js) never has to know views
   // exist, because it never reads EDGE_L/EDGE_R (see traversalMarginCapScroll).
-  // Measured RIG screen-height fraction at each (docs/concept-art's "~7%"
-  // invariant is `near`): near 7.0%, mid 5.0%, far 3.7%.
+  // Measured RIG screen-height fraction: near 7.0%, shipped MID 5.0%, far
+  // 3.7%. MID keeps the impossible scale without throwing sprite readability
+  // away; the other two remain accessibility/cinematic options.
   viewScales: {
     near: { id: 'near', label: 'NEAR',  depthMult: 1 },
     mid:  { id: 'mid',  label: 'MID',   depthMult: 1.42 },
@@ -63,6 +64,18 @@ export const CONFIG = {
                                                  //   corner holds the scroll, so no aspect
                                                  //   ratio can leak ambient spawns onto
                                                  //   the unbuilt face during a gate
+    // The first ordinary-world appearance of each movement-denial role gets
+    // a readable bubble before the generic wasp stream closes back in. The
+    // role itself still stands on the authored pocket geometry; this only
+    // keeps unrelated ambient bodies out of its first few reaction windows.
+    lesson: {
+      kindByFace: [null, 'hound', 'polyp', 'mortar', null, null],
+      clearTiles: 8,
+      // On the polyp/mortar teaching faces the already-authored hound station
+      // enters as a late reinforcement. A player who understands the new
+      // tell moves on before it arrives; a player who camps gets the remix.
+      houndDelayMsByFace: [0, 0, 5200, 5200, 0, 0],
+    },
   },
 
   // Earned pace escalation (T-022, decisions.md entry 11 — "pace should
@@ -148,20 +161,35 @@ export const CONFIG = {
 
   capsules: {                  // pickups: letters (magenta) + rare modifiers (gold)
     driftSpeed: 1.6, sinkSpeed: 0.35, bobAmp: 0.5, bobFreq: 2.0, size: 0.55,
-    recatchMs: 2200, blinkLastMs: 800,           // dropped-on-hit recatch timer
-    popNoCatchMs: 250,           // …during which the pop cannot be re-caught. The
+    recatchMs: 4200, blinkLastMs: 1100,          // a sharp recovery chase, not an
+                                                // instant erasure of the fun weapon
+    pickupGraceMs: 2500,         // a fresh toy survives the first chaotic beat
+    popNoCatchMs: 180,           // …during which the pop cannot be re-caught. The
                                  //   capsule spawns inside the player's own AABB,
                                  //   so without this the "recatch it fast" panic
                                  //   DESIGN describes never happened: the same
                                  //   frame's pickup test handed the weapon back.
-    popVx: 3.5, popVy: 9, gravity: -22,
-    pickupRadius: 0.95,
+    popVx: 2.8, popVy: 7, gravity: -22,
+    pickupRadius: 1.15,
   },
 
   carrier: {                   // capsule delivery drone
     hp: 10, speed: 1.1, bobAmp: 0.4, bobFreq: 1.4, hitRadius: 1.0, laneAbove: 4.5,
     rollFreq: 1.3, rollAmp: 0.08, size: [1.7, 0.9, 0.9],
-    perFaceFrac: [0.45, 0.4, 0.5, 0.42, 0.55, 0.38],   // one per face, mid-face
+    // The first hauler enters before the guaranteed face-1 shelf pickup: a
+    // sharp player earns SPREAD in ~4 s, everyone else walks into it by ~7 s.
+    // Later haulers sit after each role's clean teaching pocket.
+    perFaceFrac: [0.2, 0.58, 0.66, 0.60, 0.55, 0.55],
+    // Authored campaign order, not a shuffle: each face's delivery reinforces
+    // that phase's lesson. Fixed shelf capsules remain the guaranteed backup.
+    drops: [
+      { kind: 'letter', letter: 'S' },
+      { kind: 'mod', letter: 'RG' },
+      { kind: 'letter', letter: 'L' },
+      { kind: 'letter', letter: 'H' },
+      { kind: 'letter', letter: 'F' },
+      { kind: 'mod', letter: 'OL' },
+    ],
   },
 
   mods: {                      // rare stackable modifiers (carrier drops 5+)
@@ -363,13 +391,41 @@ export const CONFIG = {
     haltOffset: 14,            // scroll halts at cornerS - haltOffset
     baseSize: 3, sizePerWave: 1,               // wave k = baseSize + sizePerWave·k
     laneHeights: [2.6, 4.6, 7.2],
-    staggerMs: 220,            // gate wave materializes one presence at a time
+    staggerMs: 220,            // fallback for callers/configs without the authored score
+    phases: [                  // STORY's six ship-response beats, now gameplay roles
+      'OBSERVE', 'INTERCEPT', 'CONTAIN',
+      'QUARANTINE', 'STERILIZE', 'SCUTTLE',
+    ],
+    // Kind per authored slot. The first slot of phases 2–4 is the movement
+    // question that phase owns: floor denial, connector lock, landing denial.
+    // Later slots test it with air pressure; phases 5/6 remix the full roster.
+    roster: [
+      ['wasp', 'wasp', 'wasp', 'wasp'],
+      ['hound', 'wasp', 'wasp', 'wasp', 'wasp'],
+      ['polyp', 'wasp', 'wasp', 'hound', 'wasp', 'wasp'],
+      ['mortar', 'wasp', 'hound', 'wasp', 'wasp', 'wasp', 'wasp'],
+      ['hound', 'wasp', 'polyp', 'wasp', 'mortar', 'wasp', 'wasp', 'wasp'],
+      ['wasp', 'wasp', 'wasp', 'hound', 'polyp', 'wasp', 'mortar', 'wasp', 'wasp'],
+    ],
+    // Event-local entrance score. Phases 2–4 give the new role most of a
+    // reaction window alone, then add the counter-pressure that tests the
+    // lesson. Phase 6 arrives as three rapid squads with half-second inhales.
+    spawnDelaysMs: [
+      [0, 220, 680, 900],
+      [0, 520, 900, 1260, 1600],
+      [0, 850, 1100, 1450, 1720, 1990],
+      [0, 900, 1180, 1460, 1740, 2020, 2300],
+      [0, 240, 520, 760, 1040, 1280, 1520, 1760],
+      [0, 180, 360, 900, 1080, 1260, 1800, 1980, 2160],
+    ],
     comp: [                                    // lane index per slot per wave —
       [0, 0, 1, 0],                            //   altitude mix escalates with k;
       [0, 1, 0, 1, 2],                         //   every wave keeps a low target
       [0, 1, 2, 1, 0, 2],
       [1, 0, 2, 1, 2, 0, 1],
-      [1, 2, 1, 0, 2, 1, 2, 0],
+      // STERILIZE hands RIG FLAME: denial roles occupy the high indices while
+      // its five flying gate targets stay low/mid, inside the weapon's lob.
+      [2, 0, 2, 0, 2, 1, 1, 0],
       [2, 1, 2, 1, 0, 2, 1, 2, 2],
     ],
     gateDiveCooldownMs: 1100, gateDiveRange: 9.0,   // hotter hostiles while gated
@@ -476,25 +532,43 @@ export const CONFIG = {
     kerbOutwardMax: 0.4,
     jointOutwardMax: 7.5,      // …and over a joint apron, where the generator
                                //   guarantees flat solid ground (no fall to hide)
-    chunkCols: 8,              // dressing granularity along a facet (deck ref step)
+    chunkCols: 16,             // a few colossal armour roots, not repeating wall bays
     // the mass under the deck: armour skin, then the body running off frame
-    hull: { drop: 34, depth: -1.1, thickness: 3.6, ribH: 0.5, ribThickness: 4.6 },
+    hull: { drop: 14, depth: -1.1, thickness: 3.6, ribH: 0.5, ribThickness: 4.6,
+            tiltDeg: 4 },
     // overlapping scutes: the limb's skin. They read as shingles at the grazing
     // angle a facet is seen at once it is 20+ tiles away, which is what makes the
     // stretch past the joint read as armour instead of as the next level.
-    scute: { every: 5, len: 6.4, h: 2.6, thickness: 1.3, depth: 1.5,
-             under: 1.6, stagger: 0.42, ribEvery: 3, ribW: 0.7, ribH: 3.4 },
-    // The body rising behind the combat plane, told in HORIZONTAL plate seams
-    // and two receding tiers. Nothing vertical: a colonnade of ribs reads as
-    // architecture (the macro form the operator rejected in boards 1-5), while
-    // stacked plates stepping backwards read as a body curving away.
-    // Above the wall's shoulder there is nothing but haze: stacked tiers and
-    // light horizontal caps read as ceiling beams and shelves (and compete
-    // with the catwalks RIG actually stands on), so the only lines here are
-    // DARK seams — shadow, not structure.
-    wall: { depth: -6.0, below: 6, above: 6.5, thickness: 0.9,
-            capH: 0.5, capThickness: 1.1, capDepth: 0.1,
-            seamAt: [2.2], seamH: 0.35, seamThickness: 0.6 },
+    scute: { every: 7, len: 9.2, h: 3.1, thickness: 1.4, depth: 1.25,
+             under: 2.15, stagger: 0.55, ribEvery: 2, ribW: 0.9, ribH: 4.2,
+             tiltDeg: 8 },
+    lipScute: { every: 5, len: 5.7, h: 1.65, depth: 0.72, thickness: 0.96,
+                under: 0.2, tiltDeg: 6 },
+    // Sparse backing lobes behind gill clusters. The original continuous wall
+    // has been retired: later turns of the helix made those slabs appear above
+    // the player as a literal warehouse. The legacy span fields stay in the
+    // calibration table, while the bake now places mass only where anatomy
+    // needs backing.
+    wall: { depth: -6.0, below: 5.5, above: 5.8, thickness: 0.9,
+            spanCols: 18, overlap: 0.6, capH: 0.5 },
+    // Bold biological-mechanical punctuation on that shadow body. These are
+    // all static boxes/prisms in the limb bake: clustered gill slits break the
+    // old continuous warehouse wall, ribs cross them at an irregular rake,
+    // and the three-cable tendon bundles under the route point uphill. Their
+    // scale is deliberately much larger than a tile so they survive MID.
+    anatomy: {
+      gill: {
+        every: 24, slits: 4, slitW: 9.2, slitH: 0.48, pitch: 0.92,
+        depth: -4.95, thickness: 1.15, tiltDeg: 5,
+      },
+      rib: {
+        w: 1.35, h: 13.5, depth: -4.35, thickness: 1.45, tiltDeg: 11,
+      },
+      tendon: {
+        every: 30, bands: 3, w: 17.5, h: 0.48, gap: 0.82,
+        depth: 0.55, thickness: 0.55, tiltDeg: 13,
+      },
+    },
     // the joint: what the camera orbits. A ridge where two armour facets meet, a
     // tendon-anchor buttress under the deck (outward, so it sweeps the frame in
     // parallax), and a cowl plate over the top of the joint.
@@ -625,16 +699,17 @@ export const CONFIG = {
       // is the piece that says "that thing is a hundred of him".
       sister: {
         depth: -14, thickness: 1.5,
-        segW: 6.6, segH: 7.6, overlap: 0.4,   // ~2.6x the played limb's chunkCols rhythm
+        segW: 9.4, segH: 5.8, overlap: 1.0,   // a few colossal tapered scutes, not wall bays
         y0: 17.0,                             // floor: clears the near-view fence (16.58)
         yStep: 2.4, ySteps: 4,                // per-facet base offset, hashed
-        rise: 20.0,                           // climb across the run: a steep diagonal, so
+        rise: 24.0,                           // climb across the run: a steep diagonal, so
                                               //   it crosses the frame instead of capping it
         span: 0.45, spanAt: 0.16,             // it covers PART of a facet and leaves sky:
                                               //   a mass that spans the frame edge to edge
                                               //   is a ceiling, which entry 0b rejected
+        rake: 0.55, rakeLift: 1.7,            // follow that diagonal without dropping into play
         lipH: 1.0, lipOut: 0.35,              // the kerb line, one scale up
-        ringEvery: 3, ringW: 1.7, ringOver: 2.4, ringOut: 0.55,
+        ringEvery: 2, ringW: 2.1, ringOver: 2.4, ringOut: 0.55,
       },
       // Tier 2, f = 0.625 — VERTEBRAL DRUMS. A spine seen edge-on: barrels
       // linked by a shaft. Boxes, not a prism — at 62% haze a chamfered
@@ -678,22 +753,22 @@ export const CONFIG = {
      * The wall directly behind the fight is the one surface these deliberately
      * do NOT dress.
      *
-     * ONE HONEST COMPROMISE: rung pitch is 0.62 tiles (~0.65 m — a real ladder
-     * is nearer 0.3) and a rung is 0.2 tall. At the shipped FAR view one tile
-     * is ~2.2% of frame height, so a true-pitch ladder would be a 1 px stripe
-     * that aliases into mush. These are authored to RESOLVE at the view the
-     * game actually ships: a scale cue that cannot be seen is not a cue. */
+     * ONE HONEST COMPROMISE: rung pitch is 0.84 tiles (~0.9 m — a real ladder
+     * is nearer 0.3) and a rung is 0.14 tall. At the shipped MID view a
+     * true-pitch ladder would be a 1 px stripe that aliases into mush. These
+     * are authored to RESOLVE at the view the game actually ships: a scale cue
+     * that cannot be seen is not a cue. */
     mark: {
-      band: { y0: -7.2, y1: -18.0 },   // hull skirt: below the scutes, above the
+      band: { y0: -4.6, y1: -12.8 },   // hull skirt: below the scutes, above the
                                        //   bottom of frame (visible to y = -17.9)
       out: 0.66, thickness: 0.35,      // just proud of the hull face (depth 0.7),
       proud: 0.12,                     //   and a hatch cover proud of its own rim —
                                        //   both still reach <= 0, so no mark is ever
                                        //   outward mass the fall rules have to judge
-      ladder: { every: 22, runH: 10.0, pitch: 0.62, rungW: 1.3, rungH: 0.2,
-                stileW: 0.18, at: 0.35 },
-      hatch: { every: 17, rimW: 2.8, rimH: 2.8, panelW: 2.2, panelH: 2.2 },
-      door: { every: 41, rimW: 1.9, rimH: 2.9, panelW: 1.5, panelH: 2.5,
+      ladder: { every: 48, runH: 6.8, pitch: 0.84, rungW: 0.76, rungH: 0.14,
+                stileW: 0.11, at: 0.35 },
+      hatch: { every: 33, rimW: 2.0, rimH: 2.0, panelW: 1.45, panelH: 1.45 },
+      door: { every: 70, rimW: 1.9, rimH: 2.9, panelW: 1.5, panelH: 2.5,
               sillH: 0.25 },
       rail: { len: 13.5, postEvery: 1.7, postH: 1.0, postW: 0.16,
               barH: 0.18, at: 0.55 },    // gantry railing, sister limb only
@@ -868,10 +943,11 @@ export const CONFIG = {
                                               // newest request rather than allocating
   },
 
-  score: {                     // CHARGE/THREAT prototype — docs/proposals/
-                               //   2026-07-score-and-setback.md A.4, opt-in via
-                               //   ?score=1. CHARGE is sim state (it gates the
-                               //   weapon), THREAT is display only.
+  score: {                     // OVERDRIVE/THREAT system — docs/proposals/
+                               //   2026-07-score-and-setback.md A.4. OVERDRIVE
+                               //   is CHARGE promoted into the normal run: it
+                               //   gates weapon heat and launch shocks;
+                               //   THREAT remains a run-summary story score.
     max: 100,
     notches: [40, 100],        // A.4 cuts A.3's three-notch ladder to two:
     notchNames: ['COLD', 'WARM', 'BREAKING'],   //   WARM 40, BREAKING 100
@@ -928,7 +1004,7 @@ export const CONFIG = {
     // tether. Never the pickup magenta and never the hostile green — an anchor
     // has to read as grabbable machinery at a glance (DESIGN's aiming rule).
     hookAnchor: 0xc8a04a, hookLive: 0xffd166, hookTether: 0xfff0c2,
-    shots: { R: 0xfff0c2, S: 0xffc76a, L: 0x9ff7ff, H: 0xff9adf, F: 0xff8a4a },
+    shots: { R: 0xfff0c2, S: 0xffa12f, L: 0x9ff7ff, H: 0xff9adf, F: 0xff8a4a },
     tints: { lance: 'rgba(255,255,255,0.5)', rage: 'rgba(255,50,50,0.14)', chrono: 'rgba(90,200,255,0.12)' },
   },
 };
@@ -1135,11 +1211,16 @@ export const BACKDROP_TUNE = {
   // the gate instead of silently mis-scaling (T-053 owns the assets; report a
   // genuine size change rather than editing this table around it).
   plates: {
-    limbSegment:   { file: 'backdrop-limb-segment.png',   canvas: [1024, 512] },
-    spineCoil:     { file: 'backdrop-spine-coil.png',     canvas: [512, 512] },
-    gillCavity:    { file: 'backdrop-gill-cavity.png',    canvas: [512, 512] },
-    colonyCluster: { file: 'backdrop-colony-cluster.png', canvas: [512, 256] },
-    crownHorizon:  { file: 'backdrop-crown-horizon.png',  canvas: [1024, 256] },
+    // The older painted plates carry useful macro silhouettes but also a lot
+    // of panel/ladder ink. Let them sit as atmospheric suggestions behind the
+    // new procedural anatomy rather than reading as a second playable wall.
+    limbSegment:   { file: 'backdrop-limb-segment.png',   canvas: [1024, 512], opacity: 0.42 },
+    spineCoil:     { file: 'backdrop-spine-coil.png',     canvas: [512, 512], opacity: 0.58 },
+    gillCavity:    { file: 'backdrop-gill-cavity.png',    canvas: [512, 512], opacity: 0.46 },
+    colonyCluster: { file: 'backdrop-colony-cluster.png', canvas: [512, 256], opacity: 0.34 },
+    crownHorizon:  {
+      file: 'backdrop-crown-summit-v2.png', canvas: [1983, 793], yLift: 16,
+    },
   },
   // Two per facet (a near piece + a farther one) at the facet's own
   // midpoint s (CONFIG.path.introTiles + faceTiles*(face-1) + faceTiles/2 —

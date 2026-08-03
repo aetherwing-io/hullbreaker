@@ -156,7 +156,10 @@ export const LATTICE = {
     // The pickup itself: each pocket pays a weapon, and the later faces pay
     // the ones that answer the later threats — entry 9's benefit test is
     // escalation of the action, so this table climbs with the run.
-    rewardLetters: ['S', 'H', 'L', 'F', 'H', 'L'],
+    // Authored around the movement lesson, not shuffled: SPREAD gets all of
+    // phase 2, LASER owns the phase-3 sightlines, HOMING frees aim during the
+    // mortar redirect, and FLAME arrives for the mixed lower-route lattice.
+    rewardLetters: ['S', 'S', 'L', 'H', 'F', 'H'],
     // 35 tiles clear of the pivot is the wave gate's whole ARENA: the scroll
     // halts at cornerS - 14 and the left frustum edge sits ~19 tiles behind
     // that, so a chasm at cornerS - 35 is outside the box the player fights
@@ -185,6 +188,18 @@ export const LATTICE = {
     // occupies most of what is left. A second ambient station would have to
     // stand in one of those two zones, and both exist for good reasons.
     cornerClearBefore: 35,          // the gate arena, same figure the pockets use
+  },
+
+  /* ---------------- rooted emplacement progression ------------------ *
+   * These use the pocket's guaranteed connector geometry instead of a
+   * random column. Face 3 introduces the sightline polyp on the mid route;
+   * face 4 introduces the mortar over the committed landing; faces 5/6
+   * combine both with the hound already stationed on that landing.       */
+  emplacement: {
+    polypFirstFace: 3,
+    mortarFirstFace: 4,
+    mountInset: 0.75,              // half-column authored sites, clear of row collisions
+    zoneIntoLanding: 2.5,          // centre of the five-column pocket landing
   },
 
   /* ------------------- corner reveal set pieces (T-044) -------------- *
@@ -565,6 +580,52 @@ export function latticeHoundBeats(cfg, groundH, pockets, L = LATTICE) {
         deck: groundH[a0], dir: -1, gating: false,
         contests: 'deck-line', owns: p.id + '-landing',
         patrol: { x0: a0, x1: a0 + H.patrolCols },
+      });
+    }
+  }
+  return out;
+}
+
+/* ---------------- rooted emplacement placement (faces 3+) ------------ *
+ * A rooted enemy without an authored surface is decoration at best and an
+ * invisible hazard at worst. These rows borrow the pocket chunk's strongest
+ * guarantees: the mid connector always exists, the five-column landing is
+ * flat, and the shelf overhang provides a readable elevated launch point.
+ *
+ *  POLYP  plants at the far end of `mid`, facing back across the connector.
+ *         The deck and shelf remain two immediate ways out of its beam.
+ *  MORTAR plants where the shelf mounts over the landing and marks its
+ *         centre. The player can land short/long, take mid above, or stay
+ *         on deck below.
+ *
+ * Both are ambient and explicitly non-gating: leaving one behind must never
+ * hold a later corner ritual shut. Gate-authored copies override that flag
+ * in src/sim/wavegate.js because they materialize inside the held arena.    */
+export function latticeEmplacementBeats(cfg, pockets, L = LATTICE) {
+  const E = L.emplacement;
+  const out = [];
+  for (const p of pockets || []) {
+    if (p.face >= E.polypFirstFace) {
+      out.push({
+        id: 'polyp-' + p.id,
+        x: p.mid.x1 - E.mountInset,
+        type: 'polyp', kind: 'polyp', deck: p.mid.y,
+        dir: -1, gating: false,
+        contests: 'mid-connector', owns: p.mid.id,
+      });
+    }
+    if (p.face >= E.mortarFirstFace) {
+      out.push({
+        id: 'mortar-' + p.id,
+        x: p.gap.x1 + E.mountInset,
+        type: 'mortar', kind: 'mortar', deck: p.shelf.y,
+        dir: 1, gating: false,
+        contests: 'pocket-landing', owns: p.id + '-landing',
+        zone: {
+          x: p.gap.x1 + E.zoneIntoLanding,
+          y: p.landingY,
+          surface: p.id + '-landing',
+        },
       });
     }
   }

@@ -20,8 +20,12 @@
 // the strip is 128x32px, a 4:1 strip, authored to tile along its length and
 // show its whole cross-section once across the height.
 export const TILE_WORLD_SIZE = {
-  hullPanel: [2, 2],
-  ventLouver: [1.5, 1.5],
+  // The production v2 source is one large anatomy patch, not a small panel or
+  // vent icon. At the old 1.5-2 tile spans its dark tendon channels repeated
+  // six to nine times on a single scute/wall and became corrugated bands.
+  // One authored copy now spans a genuinely large armour scale.
+  hullPanel: [5.5, 5.5],
+  ventLouver: [4.5, 4.5],
   weldSeam: [4, 1],
 };
 
@@ -285,6 +289,18 @@ export const TILE_TONE = {
      the tone curve caused, and may never brighten a surface on its own. */
   gainTrim: 0.88,
 };
+
+// The production armour painting already carries broad value structure. The
+// original curve above was authored to recover definition from the nearly
+// flat placeholder tiles; driving the new scutes to the same 52-SD target
+// turns their tendon channels into black corrugations. Keep this runtime tune
+// beside the transform it controls so the renderer and Node-safe visual gates
+// exercise the exact same curve.
+export const SCUTE_TILE_TONE = Object.freeze({
+  ...TILE_TONE,
+  targetSd: 30,
+  gainTrim: 0.98,
+});
 
 export function luminanceHistogram(rgba) {
   const h = new Float64Array(256);

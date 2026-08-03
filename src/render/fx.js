@@ -1,10 +1,11 @@
 /* ================================ FX ============================== */
 /* The render half of the baseline feedback pass (T-011): the pools that
-   actually draw it. Three additions to the scene, all additive and all
+   actually draw it. Four additions to the scene, all additive and all
    fixed-size:
 
      sparks   — impact / death / hurt / pickup particle bursts
      flashes  — muzzle flash, kill pop, pickup pop (expanding, fading)
+     rings    — face-hugging weapon / destruction shock fronts
      crush    — the pursuing damage plane's warning haze
 
    WHAT THIS MODULE IS NOT: it decides nothing. `src/render/juice.js` owns
@@ -67,7 +68,17 @@ const ROLE = {
   rig: PAL.player,            // RIG's own off-white
 };
 
+const HOSTILE_ROLE = {
+  wasp: PAL.wasp,
+  carrier: PAL.carrier,
+  hound: PAL.hound,
+  polyp: PAL.polyp,
+  mortar: PAL.mortar,
+};
+
 export function fxRole(name) { return ROLE[name]; }
+export function fxShotColor(type) { return PAL.shots[type] || PAL.shots.R; }
+export function fxHostileColor(kind) { return HOSTILE_ROLE[kind] || PAL.wasp; }
 
 /* ------------------------------ pools ----------------------------- */
 
@@ -82,15 +93,17 @@ const _sAxisX = new THREE.Vector3(1, 0, 0);
 const _sDir = new THREE.Vector3();
 const _sScale = new THREE.Vector3();
 const _sPos = new THREE.Vector3();
+const _ringScale = new THREE.Vector3();
 
 const SPARK_MAX = J.pools.particles;
 const FLASH_MAX = J.pools.flashes;
+const RING_MAX = 24;
 
 // row shape shared by both pools; `ttl <= 0` means free
 function makeRow() {
   return {
     t: 0, ttl: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0,
-    gravity: 0, size: 0, grow: 0, r: 0, g: 0, b: 0,
+    gravity: 0, size: 0, grow: 0, yaw: 0, r: 0, g: 0, b: 0,
   };
 }
 
@@ -107,14 +120,15 @@ function makePool(n) {
   return { rows, free, top: n, cursor: 0 };
 }
 
-let sparks = null, flashes = null;
-let sparkMesh = null, flashMesh = null, crushMesh = null, crushMat = null;
+let sparks = null, flashes = null, rings = null;
+let sparkMesh = null, flashMesh = null, ringMesh = null, crushMesh = null, crushMat = null;
 let seed = 1;                            // burst-shape seed, bumped per burst
-let liveSparks = 0, liveFlashes = 0;
+let liveSparks = 0, liveFlashes = 0, liveRings = 0;
 
 if (JUICE_ENABLED) {
   sparks = makePool(SPARK_MAX);
   flashes = makePool(FLASH_MAX);
+  rings = makePool(RING_MAX);
 
   // no `color` here on purpose: the material's default white is the identity
   // that instanceColor multiplies, so the per-row role color IS the color and
@@ -140,6 +154,20 @@ if (JUICE_ENABLED) {
   flashMesh.setColorAt(0, _c.setRGB(1, 1, 1));
   for (let i = 0; i < FLASH_MAX; i++) flashMesh.setMatrixAt(i, HIDE);
   scene.add(flashMesh);
+
+  // TorusGeometry lies in local XY; rotating it by the facet yaw makes the
+  // shock front hug the same (s,y) combat plane as its victim. One fixed pool
+  // makes large kills read as a ring, rather than merely a larger fuzzy ball.
+  const ringMat = new THREE.MeshBasicMaterial({
+    transparent: true, opacity: 1, fog: false, side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  ringMesh = new THREE.InstancedMesh(new THREE.TorusGeometry(0.5, 0.07, 5, 18), ringMat, RING_MAX);
+  ringMesh.frustumCulled = false;
+  ringMesh.renderOrder = 3;
+  ringMesh.setColorAt(0, _c.setRGB(1, 1, 1));
+  for (let i = 0; i < RING_MAX; i++) ringMesh.setMatrixAt(i, HIDE);
+  scene.add(ringMesh);
 
   // the crush warning: one thin, tall slab standing ON the damage plane, in
   // the play plane's depth. Additive and capped well under 1, so it tints the
@@ -209,6 +237,34 @@ export function fxBurst(spec, s, y, color, scale = 1) {
   }
 }
 
+/* A clean directional fan for muzzle language. Unlike fxBurst's radial debris,
+   these rows all leave along the aim with a bounded angular spread. SPREAD can
+   therefore announce five lanes before its projectiles separate, while FLAME
+   throws a short rake of hot tongues. It still claims the same spark pool. */
+export function fxDirectedBurst(spec, s, y, color, dirS, dirY, spreadRad, scale = 1) {
+  if (!JUICE_ENABLED) return;
+  const n = Math.max(1, Math.round(spec.count * scale));
+  const baseAngle = Math.atan2(dirY, dirS);
+  for (let i = 0; i < n; i++) {
+    const row = claim(sparks);
+    const yaw = place(row, s, y, 0);
+    const across = n === 1 ? 0 : i / (n - 1) - 0.5;
+    const angle = baseAngle + spreadRad * across;
+    const speed = spec.speed * scale * (0.82 + 0.18 * ((i + seed) % 3) / 2);
+    const localS = Math.cos(angle) * speed;
+    row.vx = Math.cos(yaw) * localS;
+    row.vy = Math.sin(angle) * speed;
+    row.vz = -Math.sin(yaw) * localS + Math.sin((i + seed) * 2.4) * speed * 0.08;
+    row.gravity = spec.gravity;
+    row.t = 0;
+    row.ttl = spec.ms;
+    row.size = spec.size * scale;
+    row.grow = 0;
+    tint(row, color);
+  }
+  seed++;
+}
+
 /* A flash: instant on, short hold, out. `sizeMult` scales the configured
    size (a spread volley's muzzle flash is the same flash, not five). */
 export function fxFlash(ms, size, s, y, color, depth = 0) {
@@ -220,6 +276,20 @@ export function fxFlash(ms, size, s, y, color, depth = 0) {
   row.ttl = ms;
   row.size = size;
   row.grow = size * 0.8;                 // expands as it dies
+  tint(row, color);
+}
+
+/* A bounded shock front in the active facet plane. `size` is its final
+   diameter in tiles; unlike a flash it leaves the center readable. */
+export function fxRing(ms, size, s, y, color, depth = 0) {
+  if (!JUICE_ENABLED) return;
+  const row = claim(rings);
+  row.yaw = place(row, s, y, depth);
+  row.vx = 0; row.vy = 0; row.vz = 0; row.gravity = 0;
+  row.t = 0;
+  row.ttl = ms;
+  row.size = size * 0.28;
+  row.grow = size * 0.72;
   tint(row, color);
 }
 
@@ -257,6 +327,7 @@ export function updateFx(dtMs) {
   const gain = postGain();
   liveSparks = advance(sparks, sparkMesh, dtMs, particleAlpha, false, gain);
   liveFlashes = advance(flashes, flashMesh, dtMs, flashAlpha, true, gain);
+  liveRings = advanceRings(dtMs, gain);
 }
 
 function advance(pool, mesh, dtMs, alphaOf, isFlash, gain) {
@@ -326,12 +397,47 @@ function advance(pool, mesh, dtMs, alphaOf, isFlash, gain) {
   return live;
 }
 
+function advanceRings(dtMs, gain) {
+  let live = 0, dirty = false;
+  const rows = rings.rows;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (row.ttl <= 0) continue;
+    row.t += dtMs;
+    if (row.t >= row.ttl) {
+      row.ttl = 0;
+      rings.free[rings.top++] = i;
+      ringMesh.setMatrixAt(i, HIDE);
+      ringMesh.setColorAt(i, _c.setRGB(0, 0, 0));
+      dirty = true;
+      continue;
+    }
+    const u = row.t / row.ttl;
+    const a = flashAlpha(u);
+    const s = particleScale(u, row.size, row.size + row.grow);
+    _m.makeRotationY(row.yaw);
+    _m.scale(_ringScale.set(s, s, s));
+    _m.setPosition(row.x, row.y, row.z);
+    ringMesh.setMatrixAt(i, _m);
+    const ag = a * gain;
+    ringMesh.setColorAt(i, _c.setRGB(row.r * ag, row.g * ag, row.b * ag));
+    dirty = true;
+    live++;
+  }
+  if (dirty) {
+    ringMesh.instanceMatrix.needsUpdate = true;
+    ringMesh.instanceColor.needsUpdate = true;
+  }
+  return live;
+}
+
 /* run reset (resetGame in src/main.js): nothing survives a restart */
 export function resetFx() {
   if (!JUICE_ENABLED) return;
   clearPool(sparks, sparkMesh);
   clearPool(flashes, flashMesh);
-  liveSparks = 0; liveFlashes = 0;
+  clearPool(rings, ringMesh);
+  liveSparks = 0; liveFlashes = 0; liveRings = 0;
   if (crushMesh) { crushMesh.visible = false; crushMat.opacity = 0; }
 }
 
@@ -353,8 +459,8 @@ function clearPool(pool, mesh) {
 // read-only debug/telemetry surface (see window.HB.juice and ?testapi=1)
 export function fxStats() {
   return {
-    sparks: liveSparks, flashes: liveFlashes,
-    sparkMax: SPARK_MAX, flashMax: FLASH_MAX,
+    sparks: liveSparks, flashes: liveFlashes, rings: liveRings,
+    sparkMax: SPARK_MAX, flashMax: FLASH_MAX, ringMax: RING_MAX,
     crush: crushMat ? clamp01(crushMat.opacity / J.crush.maxOpacity) : 0,
   };
 }

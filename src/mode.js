@@ -102,7 +102,7 @@ export const ACTIVE_FIXTURE = IS_TRANSFORM_SLICE ? TRANSFORM_FIXTURE : ACTIVE_SL
 export const ZIPPER_REVEAL = QUERY.get('zip') === '1' || QUERY.get('g1') === '0';
 export const IS_G1 = ACTIVE_FIXTURE === null && !ZIPPER_REVEAL;
 
-/* ?momentum=1 — EARNED pace escalation (T-022, decisions.md entry 11): the
+/* EARNED pace escalation (T-022, decisions.md entry 11): the
    pursuing edge's speed rises with how well the run is being played (where
    RIG sits between the damage plane and the right clamp, plus a decaying kill
    streak) instead of holding CONFIG.scrollSpeed. Policy lives in
@@ -112,25 +112,33 @@ export const IS_G1 = ACTIVE_FIXTURE === null && !ZIPPER_REVEAL;
    Scoped to the SIX-FACE run (ACTIVE_FIXTURE === null) for the same reason
    ?fallback=1 is: the traversal and transformation fixtures already own their
    pursuit models (the `hunt`/`surge` paces in src/pure/traversal.js), and
-   entry 11 is about the faces. Off by default, so every shipped URL and every
-   fixture URL keeps the constant scroll it has today, byte for byte. */
-export const MOMENTUM_ENABLED = ACTIVE_FIXTURE === null && QUERY.get('momentum') === '1';
-// ?score=1 arms the CHARGE/THREAT prototype; ?fallback=0 restores the old
-// ROUTE LOST retry instead of HULL FALLBACK tier 1.
-export const SCORE_ENABLED = QUERY.get('score') === '1';
+   entry 11 is about the faces. It is now part of the normal run: playing
+   aggressively earns a faster chase while damage sheds it quickly. The
+   authored fixtures keep their frozen pursuit models, and `?momentum=0`
+   remains the clean comparison switch. */
+const MOMENTUM_RAW = QUERY.get('momentum');
+export const MOMENTUM_ENABLED = ACTIVE_FIXTURE === null &&
+  !(MOMENTUM_RAW === '0' || MOMENTUM_RAW === 'off');
+// CHARGE is also baseline in the normal run: movement and airborne kills heat
+// the current weapon, then BREAKING launches discharge a close shock attack.
+// Fixtures remain opt-in (`?score=1`) so their authored comparisons do not
+// silently change; `?score=0` keeps the pre-overdrive normal run available.
+const SCORE_RAW = QUERY.get('score');
+export const SCORE_ENABLED = ACTIVE_FIXTURE === null
+  ? !(SCORE_RAW === '0' || SCORE_RAW === 'off')
+  : SCORE_RAW === '1';
 export const SLICE_FALLBACK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('fallback') !== '0';
-// CP4 promotion (T-016): ?fallback=1 arms HULL FALLBACK tier 1 in the DEFAULT
-// six-face run too — opt-in and off by default there, unlike the slice's
-// on-by-default arming above. Past its streak ceiling the stock lives path is
-// the next consequence tier (src/sim/player.js loseLife).
-export const RUN_FALLBACK_ENABLED = ACTIVE_FIXTURE === null && QUERY.get('fallback') === '1';
+// HULL FALLBACK is baseline mercy in the DEFAULT six-face run: a first lethal
+// mistake drops RIG to a worse route without stopping the action. `?fallback=0`
+// keeps the old stock-only consequence available for direct comparison. Past
+// the streak ceiling the stock lives path is still the next consequence tier.
+export const RUN_FALLBACK_ENABLED = ACTIVE_FIXTURE === null && QUERY.get('fallback') !== '0';
 // ?view=near|mid|far selects a camera pull-back multiplier (CONFIG.viewScales).
-// Operator verdict July 30 ("far feels right", matching concept board 13's
-// 3–5% RIG screen fraction): anything unrecognized — including no flag —
-// resolves to `far`. `?view=near` (depthMult 1 exactly) remains reachable and
-// byte-identical to the pre-view-scale camera for comparison.
+// The shipped view resolves to MID: it holds the concept board's tiny-human
+// scale at 5% while keeping the sprite silhouettes readable in motion. FAR
+// remains available for the monumental-scale A/B, and NEAR for accessibility.
 const VIEW_RAW = QUERY.get('view');
-export const VIEW_ID = CONFIG.viewScales[VIEW_RAW] ? VIEW_RAW : 'far';
+export const VIEW_ID = CONFIG.viewScales[VIEW_RAW] ? VIEW_RAW : 'mid';
 
 // Opt-in houndframe trial (DESIGN: teach → test → remix), orthogonal to the
 // pace: ?hound=1 teaches the charge alone, ?hound=2 adds the wasp that contests
@@ -211,10 +219,13 @@ export const SHELL_AUTOSTART = SHELL_ENABLED && SHELL_RAW !== 'title' &&
   (QUERY.has('testapi') || QUERY.has('selftest'));
 export const START_DIRECTION_ID = resolveStartDirection(QUERY.get('title'));
 
-// Two independent A/B answers to the operator's 8-way aim gap against low
-// targets. Both are opt-in and orthogonal to everything above, so they can be
-// judged separately or together: ?crouch=1 lowers the firing line from a
-// planted stance, ?aim=assist nudges the shot itself. Absent on every ordinary
-// URL, including the six-face run.
+// Two answers to the 8-way aim gap against low targets. Crouch remains an
+// explicit movement A/B. The small fire-time aim nudge is baseline generosity
+// in the normal run (where hounds now arrive in phase two); fixtures keep their
+// frozen input truth unless `?aim=assist` asks for it. `?aim=raw|0|off` is the
+// normal-run escape hatch.
 export const CROUCH_ENABLED = QUERY.get('crouch') === '1';
-export const AIM_ASSIST_ENABLED = QUERY.get('aim') === 'assist';
+const AIM_RAW = QUERY.get('aim');
+export const AIM_ASSIST_ENABLED = ACTIVE_FIXTURE === null
+  ? !(AIM_RAW === 'raw' || AIM_RAW === '0' || AIM_RAW === 'off')
+  : AIM_RAW === 'assist';

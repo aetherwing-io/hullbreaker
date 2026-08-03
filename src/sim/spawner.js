@@ -48,7 +48,9 @@ export function updateSpawner() {
   while (spawnIdx < spawnTable.length && spawnTable[spawnIdx].x < re - 1.5) {
     const s = spawnTable[spawnIdx++];
     if (s.type === 'carrier') {
-      spawnHostile(s.x, spawnLaneY(s.x, CONFIG.carrier.laneAbove), 0, 'carrier');
+      // Normal-run carriers carry their phase-authored drop on the spawn row;
+      // fixture/legacy rows without one keep capsules.js's seeded fallback.
+      spawnHostile(s.x, spawnLaneY(s.x, CONFIG.carrier.laneAbove), 0, 'carrier', s);
     } else if (s.type === 'hound') {
       // Deck units authored in a table, from two authors and one branch:
       //  - T-009's six-face lattice stations carry the deck plate they ride
@@ -62,6 +64,12 @@ export function updateSpawner() {
         ? s.deck + CONFIG.hound.rideY
         : groundTopAt(s.x);
       spawnHostile(s.x, rideY, s.delayMs || 0, 'hound', s);
+    } else if (s.type === 'polyp') {
+      const rootY = (s.deck !== undefined ? s.deck : groundTopAt(s.x)) + CONFIG.polyp.rootY;
+      spawnHostile(s.x, rootY, s.delayMs || 0, 'polyp', s);
+    } else if (s.type === 'mortar') {
+      const bodyY = (s.deck !== undefined ? s.deck : groundTopAt(s.x)) + CONFIG.mortar.bodyY;
+      spawnHostile(s.x, bodyY, s.delayMs || 0, 'mortar', s);
     } else if (s.lane !== undefined) {          // authored lane (fixture table)
       spawnHostile(s.x, spawnLaneY(s.x, s.lane), 0, 'wasp');
     } else {

@@ -13,7 +13,7 @@ import { cornerSList, faceIndexAt } from './path.js';
 import { TRAVERSAL_FIXTURE } from './traversal.js';
 import {
   LATTICE, latticeArenaSites, latticeArrivalSites, latticeCarvePocket,
-  latticeHoundBeats, latticeInstallSite, latticePatchPass,
+  latticeEmplacementBeats, latticeHoundBeats, latticeInstallSite, latticePatchPass,
   latticePocketSites, latticeReport, latticeThinPass,
 } from './lattice.js';
 
@@ -270,12 +270,32 @@ export function buildSpawnTable(cfg, level = buildLevel(cfg)) {
     corners.some((cs) => x >= cs - S.cornerClearBefore && x <= cs + S.cornerClearAfter);
   const out = [];
   const end = cfg.levelLength - S.endFromEnd;
+  // Resolve the authored spatial roles before laying down the generic stream:
+  // their first appearance owns a small bubble in which its tell can be read
+  // without an unrelated wasp already demanding the opposite answer.
+  const houndBeats = latticeHoundBeats(cfg, level.groundH, level.pockets || []);
+  const emplacementBeats = latticeEmplacementBeats(cfg, level.pockets || [])
+    .filter((beat) => {
+      const f = faceIndexAt(beat.x, cfg);
+      const lesson = S.lesson && S.lesson.kindByFace[f - 1];
+      // Faces 3/4 field only their new rooted lesson in ordinary traversal;
+      // faces 5/6 have no lesson owner and remix every rooted role.
+      return !lesson || beat.type === lesson;
+    });
+  const lessonSites = houndBeats.concat(emplacementBeats).filter((beat) => {
+    const f = faceIndexAt(beat.x, cfg);
+    return S.lesson && S.lesson.kindByFace[f - 1] === beat.type;
+  });
+  const inLessonBubble = (sx) => lessonSites.some((beat) =>
+    Math.abs(sx - beat.x) < S.lesson.clearTiles);
+
   let x = S.startS;
   while (x < end) {
     const f = Math.min(cfg.path.faces, Math.max(1, faceIndexAt(x, cfg)));
-    if (!nearCorner(x)) {
+    if (!nearCorner(x) && !inLessonBubble(x)) {
       out.push({ x, type: 'wasp' });
-      if (rng() < S.pairChance[f - 1] && !nearCorner(x + S.pairGapTiles) && x + S.pairGapTiles < end)
+      if (rng() < S.pairChance[f - 1] && !nearCorner(x + S.pairGapTiles) &&
+          !inLessonBubble(x + S.pairGapTiles) && x + S.pairGapTiles < end)
         out.push({ x: x + S.pairGapTiles, type: 'wasp' });
     }
     x += Math.max(2, Math.round((S.faceGapSec[f - 1] + rng() * S.jitterSec) * cfg.scrollSpeed));
@@ -288,14 +308,31 @@ export function buildSpawnTable(cfg, level = buildLevel(cfg)) {
     const start = f === 0 ? cfg.path.introTiles : corners[f - 1];
     let cx = Math.round(start + frac * (corners[f] - start));
     while (used.has(cx)) cx++;
-    if (!nearCorner(cx)) { out.push({ x: cx, type: 'carrier' }); used.add(cx); }
+    if (!nearCorner(cx)) {
+      const drop = cfg.carrier.drops && cfg.carrier.drops[f];
+      out.push({ x: cx, type: 'carrier', ...(drop ? { drop: { ...drop } } : {}) });
+      used.add(cx);
+    }
   });
   // houndframe stations (faces 2+, decisions.md entry 6 — placement, not
   // stats). Authored on half-columns so they can never collide with the
   // integer wasp/carrier rows, and skipped wholesale if a station would land
   // in a corner-clear zone: the ambient table's discipline applies to every
   // kind in it.
-  for (const beat of latticeHoundBeats(cfg, level.groundH, level.pockets || [])) {
+  for (const beat of houndBeats) {
+    if (nearCorner(beat.x) || beat.x < S.startS || beat.x >= end) continue;
+    const f = faceIndexAt(beat.x, cfg);
+    const delayMs = S.lesson && S.lesson.houndDelayMsByFace[f - 1];
+    // A delayed reinforcement enters from the back lip of its owned landing,
+    // rather than popping into the centre after the player has crossed it.
+    out.push(delayMs ? { ...beat, x: beat.patrol.x0 + 0.1, delayMs } : beat);
+  }
+  // Rooted roles join the ordinary six-face run on geometry that explains
+  // them: polyps own pocket mid-connectors from face 3, mortars deny the
+  // committed landing from face 4, and faces 5/6 combine both with the hound
+  // already stationed there. Fixture levels omit pocket metadata and remain
+  // byte-for-byte on their authored spawn paths.
+  for (const beat of emplacementBeats) {
     if (nearCorner(beat.x) || beat.x < S.startS || beat.x >= end) continue;
     out.push(beat);
   }

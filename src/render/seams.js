@@ -38,10 +38,12 @@
    risk advertising a ledge the transform slice never drew. */
 
 import * as THREE from 'three';
+import { CONFIG } from '../config.js';
+import { normalAscentAltAt, normalAscentPitchAt } from '../pure/ascent.js';
 import { SEGS, polyAt, headingAt } from '../pure/path.js';
 import { deckSeamRuns, depthGain, platformSeamRuns, SEAMS, resolveSeams } from '../pure/seams.js';
 import { groundH, platforms } from '../sim/level.js';
-import { QUERY, IS_TRANSFORM_SLICE } from '../mode.js';
+import { ACTIVE_FIXTURE, QUERY, IS_TRANSFORM_SLICE } from '../mode.js';
 import { PAL } from './palette.js';
 import { PIP_GAIN } from './legibility.js';
 import { scene } from './scene.js';
@@ -50,8 +52,12 @@ export const SEAMS_ENABLED = resolveSeams(QUERY.get('seams'));
 
 const _m = new THREE.Matrix4();
 const _rot = new THREE.Matrix4();
+const _pitch = new THREE.Matrix4();
+const normalRunAltAt = (s) => ACTIVE_FIXTURE ? 0 : normalAscentAltAt(s, CONFIG.levelLength);
+const normalRunPitchAt = (s) => ACTIVE_FIXTURE ? 0 : normalAscentPitchAt(s, CONFIG.levelLength);
 
-// One matrix per pip: sharp per-column facing (the world is baked, not
+// One matrix per pip: sharp per-column facing plus the deck's ascent pitch
+// (the world is baked, not
 // posed per frame), same math src/render/level.js's tile bake and
 // src/render/tower.js's placeSharp both use — outward offset rides the
 // heading-rotated local z axis, positive = toward the camera.
@@ -59,9 +65,14 @@ function bakeMatrix(s, y, depth, size) {
   const p = polyAt(SEGS, s);
   const yaw = headingAt(SEGS, s);
   _rot.makeRotationY(yaw);
+  if (!ACTIVE_FIXTURE) _rot.multiply(_pitch.makeRotationZ(normalRunPitchAt(s)));
   _m.copy(_rot);
   _m.scale(new THREE.Vector3(size, size, size));
-  _m.setPosition(p.x + Math.sin(yaw) * depth, y, p.z + Math.cos(yaw) * depth);
+  _m.setPosition(
+    p.x + Math.sin(yaw) * depth,
+    y + normalRunAltAt(s),
+    p.z + Math.cos(yaw) * depth
+  );
   return _m;
 }
 
@@ -106,7 +117,7 @@ if (SEAMS_ENABLED && !IS_TRANSFORM_SLICE) {
     // it stays correct automatically if the fog band is retuned (S2)
     // later, where a hand-baked constant would not.
     const haloMat = new THREE.MeshBasicMaterial({
-      transparent: true, opacity: 1, fog: true,
+      transparent: true, opacity: 0.58, fog: true,
       blending: THREE.AdditiveBlending, depthWrite: false,
     });
     haloMesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.5), haloMat, pipCount);

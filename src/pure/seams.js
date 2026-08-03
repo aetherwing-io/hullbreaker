@@ -45,10 +45,10 @@
 // the surface it rides.
 export const SEAMS = {
   minRun: 3,            // shorter runs are a stub, not a route: skip them
-  pipEvery: 3,          // tiles between pip centres along a run
+  pipEvery: 6,          // sparse navigation punctuation, not a warehouse light grid
   edgeMargin: 0.6,      // first/last pip stays this far inside the run's own ends
   pipSize: 0.11,        // core box, near-view tiles
-  haloSize: 0.34,       // halo box, near-view tiles — bigger, softer, additive
+  haloSize: 0.28,       // restrained halo; actors and weapon tells stay brightest
   deckUnder: 0.2,       // pip sits this far below the deck's top surface
   platformUnder: 0.12,  // pip sits this far below a catwalk slat's top
   deckDepth: 1.12,      // tile half-depth (1.0) + a hair proud

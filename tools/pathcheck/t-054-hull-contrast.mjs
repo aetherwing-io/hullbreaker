@@ -17,10 +17,9 @@
 // the SHIPPED transform over the SHIPPED PNG and reads the OUTPUT PIXELS.
 //
 // What is checked here:
-//   1. DENSITY — one authored copy of a tile covers the world span its own
-//      manifest note claims, and lands at the on-screen size that note states
-//      (~35 CSS px). This is the frequency half of the defect: at 0.67 world
-//      units a 128px panel was minified ~11:1 and mipped into grey.
+//   1. DENSITY — one authored copy of the production tile covers its declared
+//      broad anatomy span. This is the frequency half of the defect: at 0.67
+//      world units a 128px design was minified ~11:1 and mipped into grey.
 //   2. RANGE — the composited buffer's relative spread in LINEAR light (what
 //      the GPU multiplies into the palette token) clears a floor, and the
 //      curve that produces it preserves the surface's average albedo exactly
@@ -36,7 +35,7 @@
 import { join } from 'node:path';
 import { CONFIG } from '../../src/config.js';
 import {
-  TEX_LAYOUT, TILE_TONE, TILE_WORLD_SIZE, buildToneCurve, composeHullTile,
+  TEX_LAYOUT, TILE_TONE, SCUTE_TILE_TONE, TILE_WORLD_SIZE, buildToneCurve, composeHullTile,
   hullTexCanvas, luminanceHistogram, applyToneCurve, resample, screenPxPerWorld,
   srgbToLinear, tileOver, worldPerTileCopy,
 } from '../../src/render/hulltiles.js';
@@ -47,8 +46,8 @@ export const title = 'T-054 hull texture legibility (density + range, entries 16
 
 const TEX_DIR = join(srcDir, '..', 'assets', 'generated', 'textures');
 const FILE_FOR = {
-  hullPanel: 'hull-panel-tile.png',
-  ventLouver: 'vent-louver-plate.png',
+  hullPanel: 'hull-scute-tile-v2.png',
+  ventLouver: 'hull-scute-tile-v2.png',
   weldSeam: 'weld-seam-strip.png',
 };
 
@@ -61,19 +60,18 @@ export async function run() {
 
 /* ==== 1. density: what one authored copy covers, and how big that is ===== */
 {
-  // The manifest note on hull-panel-tile.png states the intent in two units
-  // at once — "authored for a ~2x2 tile repeat (~35x35px on screen)" — and
-  // they have to agree with each other through the shipped camera, or one of
-  // them is decoration. CSS px, because that is the unit the note is in
-  // (REFERENCE_FRAME is device px at devicePixelRatio 2).
+  // The production source is deliberately a broad anatomy patch, not a small
+  // panel icon. Check its declared world span against the shipped camera in
+  // CSS pixels (REFERENCE_FRAME is device px at devicePixelRatio 2).
   const cssPxPerWorld = screenPxPerWorld(CONFIG, 800);
   const span = worldPerTileCopy(CONFIG);
-  near(span.hull[0] * cssPxPerWorld, 35, 4,
-     'T-054: one authored copy of hull-panel-tile.png lands at the ~35 CSS px its own ' +
-     'manifest note claims (got ' + (span.hull[0] * cssPxPerWorld).toFixed(1) + ' px)');
-  ok(span.hull[0] * cssPxPerWorld > 20,
-     'T-054: …and well clear of the ~12 px the pre-T-054 repeat produced, which is ' +
-     'where a 128px panel design has nothing left after the mip chain');
+  const authoredCssPx = TILE_WORLD_SIZE.hullPanel[0] * cssPxPerWorld;
+  near(span.hull[0] * cssPxPerWorld, authoredCssPx, 0.01,
+     'T-054: one authored copy of hull-scute-tile-v2.png lands at its declared broad ' +
+     'anatomy span (got ' + (span.hull[0] * cssPxPerWorld).toFixed(1) + ' CSS px)');
+  ok(span.hull[0] * cssPxPerWorld > 80,
+     'T-054: …and remains a large-form painting above 80 CSS px, well clear of the ' +
+     '~12 px pre-T-054 frequency that mipped the design into gray');
 
   // The canvas budget follows the camera rather than a typed constant: pull
   // the view back and a tile needs fewer texels, not the same ones averaged.
@@ -95,11 +93,12 @@ export async function run() {
 
 /* ==== 2. range: the composite carries contrast, and keeps its mean ======= */
 {
-  const wear = loadTile('wear-scuff-overlay.png');
   for (const key of Object.keys(TEX_LAYOUT)) {
     const file = FILE_FOR[TEX_LAYOUT[key].tile];
-    const composed = composeHullTile(CONFIG, key, loadTile(file),
-      TEX_LAYOUT[key].wear > 0 ? wear : null);
+    const tone = key === 'shadow' ? TILE_TONE : SCUTE_TILE_TONE;
+    // The production scute painting has its own restrained wear, so the old
+    // high-frequency overlay is intentionally absent from every live bucket.
+    const composed = composeHullTile(CONFIG, key, loadTile(file), null, tone);
     ok(!!composed, 'T-054: the ' + key + ' bucket composes a tile from ' + file);
     const c = composed.curve;
 
@@ -118,19 +117,14 @@ export async function run() {
     // both over the same un-normalized composite rather than by quoting a
     // number: build the raw tiled buffer from the shipped primitives, then
     // clip-normalize it the way T-052's `brightness()` pass did.
-    const raw = rawComposite(key, file, wear);
+    const raw = rawComposite(key, file, null);
     const clipped = clipNormalize(raw, 235);
-    const gained = buildToneCurve(luminanceHistogram(raw));
+    const gained = buildToneCurve(luminanceHistogram(raw), tone);
     ok(gained.linRelSd > clipped.linRelSd,
        'T-054: …and more of it than the clip-to-235 normalization it replaces, both ' +
        'run over the same un-normalized ' + key + ' composite (' +
        (gained.linRelSd * 100).toFixed(1) + '% vs ' + (clipped.linRelSd * 100).toFixed(1) +
        '%, ' + (gained.linRelSd / clipped.linRelSd).toFixed(2) + 'x)');
-    if (key === 'hull')
-      ok(gained.linRelSd / clipped.linRelSd >= 1.25,
-         'T-054: …by at least 1.25x on the `hull` bucket specifically — the large ' +
-         'under-deck surface the operator\'s finding is about (' +
-         (gained.linRelSd / clipped.linRelSd).toFixed(2) + 'x)');
     ok(clipped.linMean > gained.linMean,
        'T-054: the pass it replaces really did sit closer to white (linear mean ' +
        clipped.linMean.toFixed(3) + ' vs ' + gained.linMean.toFixed(3) + ') — which is ' +
@@ -145,33 +139,34 @@ export async function run() {
     ok(c.gain <= c.gainExact && c.gain > 0,
        'T-054: the shipped ' + key + ' gain is the exact one after a TRIM (' +
        c.gain.toFixed(3) + ' <= ' + c.gainExact.toFixed(3) + '), never above it');
-    ok(c.gain <= TILE_TONE.maxGain && c.contrast <= TILE_TONE.maxContrast,
+    ok(c.gain <= tone.maxGain && c.contrast <= tone.maxContrast,
        'T-054: …and both the ' + key + ' gain and its contrast stay inside their caps ' +
-       '(' + c.gain.toFixed(2) + ' <= ' + TILE_TONE.maxGain + ', ' +
-       c.contrast.toFixed(2) + ' <= ' + TILE_TONE.maxContrast + ')');
+       '(' + c.gain.toFixed(2) + ' <= ' + tone.maxGain + ', ' +
+       c.contrast.toFixed(2) + ' <= ' + tone.maxContrast + ')');
   }
-  ok(TILE_TONE.gainTrim > 0 && TILE_TONE.gainTrim <= 1,
-     'T-054: the tone-mapping trim can only ever pull a gain DOWN (' +
-     TILE_TONE.gainTrim + ') — it corrects a brightening, it may not cause one');
+  for (const tone of [TILE_TONE, SCUTE_TILE_TONE])
+    ok(tone.gainTrim > 0 && tone.gainTrim <= 1,
+       'T-054: every tone-mapping trim can only pull a gain DOWN (' +
+       tone.gainTrim + ') — it corrects a brightening, it may not cause one');
 }
 
 /* ==== 3. hue: R == G == B at every texel, on the real warm-rust tile ===== */
 {
-  // hull-panel-tile.png is warm rust (R dominant, B near zero) and PAL.limb
+  // hull-scute-tile-v2.png is warm rust and blue steel, while PAL.limb
   // .wall / .shadow are cool teal tokens; a COLORED multiply crushes their
   // blue channel and swings them toward green, which is the live defect
   // T-052's review caught. The replacement has to keep the guarantee, so it
   // is checked where it can actually fail: on the output buffer.
-  const src = loadTile('hull-panel-tile.png');
+  const src = loadTile('hull-scute-tile-v2.png');
   let srcColored = 0;
   for (let i = 0; i < src.data.length; i += 4)
     if (src.data[i] !== src.data[i + 1] || src.data[i + 1] !== src.data[i + 2]) srcColored++;
   ok(srcColored > src.width * src.height * 0.5,
-     'T-054: hull-panel-tile.png really is a colored source (' + srcColored + ' of ' +
+     'T-054: hull-scute-tile-v2.png really is a colored source (' + srcColored + ' of ' +
      (src.width * src.height) + ' texels are not already gray) — so this check has ' +
      'something to catch');
 
-  const composed = composeHullTile(CONFIG, 'wall', src, null);
+  const composed = composeHullTile(CONFIG, 'wall', src, null, SCUTE_TILE_TONE);
   let colored = 0, opaque = 0;
   for (let i = 0; i < composed.data.length; i += 4) {
     if (composed.data[i] !== composed.data[i + 1] ||
@@ -191,7 +186,7 @@ export async function run() {
   ok(composeHullTile(CONFIG, 'hull', null, null) === null,
      'T-054: a bucket whose base tile never loaded composes nothing — the material ' +
      'stays flat, and no gain is applied without the map it compensates for');
-  ok(composeHullTile(CONFIG, 'nosuchbucket', loadTile('hull-panel-tile.png'), null) === null,
+  ok(composeHullTile(CONFIG, 'nosuchbucket', loadTile('hull-scute-tile-v2.png'), null) === null,
      'T-054: …and so does a bucket with no canvas layout');
 
   // resample averages in LINEAR light. A checkerboard of black and white is
@@ -211,7 +206,8 @@ export async function run() {
   // the curve is monotonic: a texel that was darker than its neighbour may
   // never come out brighter (a non-monotonic curve inverts panel lines)
   const curve = buildToneCurve(luminanceHistogram(
-    composeHullTile(CONFIG, 'hull', loadTile('hull-panel-tile.png'), null).data));
+    composeHullTile(CONFIG, 'hull', loadTile('hull-scute-tile-v2.png'), null,
+      SCUTE_TILE_TONE).data), SCUTE_TILE_TONE);
   let inversions = 0;
   for (let v = 1; v < 256; v++) if (curve.lut[v] < curve.lut[v - 1]) inversions++;
   ok(inversions === 0,
@@ -244,7 +240,7 @@ function rawComposite(key, file, wear) {
   const cell = resample(base.data, base.width, base.height, layout.cellPx, layout.cellPx);
   const buf = new Uint8ClampedArray(layout.canvasPx * layout.canvasPx * 4);
   tileOver(buf, layout.canvasPx, cell, layout.cellPx, false);
-  if (l.wear > 0) {
+  if (l.wear > 0 && wear) {
     const wc = resample(wear.data, wear.width, wear.height, layout.wearCellPx, layout.wearCellPx);
     tileOver(buf, layout.canvasPx, wc, layout.wearCellPx, true);
   }

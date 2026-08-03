@@ -56,12 +56,15 @@ import { faceMidS, plateSize, resolveBackdropOn } from './backdrop-table.js';
 import { preloadTexture, awaitPreloads } from './preload.js';
 import { scene } from './scene.js';
 import { PAL } from './palette.js';
+import { buildMeridianAtmosphere } from './atmosphere.js';
 
 export const BACKDROP_ON = resolveBackdropOn(QUERY.get('backdrop'), IS_TRANSFORM_SLICE);
 
 // one slot per placement: { placement, state: 'off'|'pending'|'ready'|'failed', tex, error, mesh }
 const slots = [];
 let built = 0;
+let atmosphere = { built: 0, textureCount: 0, depth: null, stages: [] };
+const macroBody = { state: BACKDROP_ON ? 'pending' : 'off', tex: null, error: null };
 
 /* Everything below is one try/catch, deliberately: an author bug in this
    module's own arithmetic (a bad lookup, a NaN dimension) must degrade the
@@ -85,6 +88,26 @@ try {
       slot.error = entry.error || entry.state;
       console.warn('HULLBREAKER art: backdrop ' + placement.plate + ' (' + plate.file +
         ') did not load (' + slot.error + ') — the existing flat/limb backdrop stays up there.');
+    });
+  }
+
+  // One coherent macro-body image is folded into the procedural storm veil
+  // after preload. It does not become a separate sticker/draw call: the
+  // atmosphere painter composites it into the same canvases it softens.
+  if (BACKDROP_ON) {
+    const macroUrl = new URL(
+      '../../assets/generated/backdrops/backdrop-meridian-coils-v2.png', import.meta.url,
+    ).href;
+    preloadTexture(macroUrl).then((entry) => {
+      if (entry.state === 'ready') {
+        macroBody.tex = entry.tex;
+        macroBody.state = 'ready';
+      } else {
+        macroBody.state = 'failed';
+        macroBody.error = entry.error || entry.state;
+        console.warn('HULLBREAKER art: coherent macro-body plate did not load (' +
+          macroBody.error + ') -- keeping the procedural storm depth layer.');
+      }
     });
   }
 
@@ -112,6 +135,7 @@ try {
         map: slot.tex,
         color: PAL[tier.tint],
         transparent: true,           // the PNG's own alpha cutout
+        opacity: plate.opacity ?? 1, // architectural ink recedes; Crown remains full-strength
         alphaTest: 0.02,             // discard the empty margin before it blends
         depthWrite: false,           // several plates + the limb's own backdrop
                                       //   tiers share this depth range; let THREE's
@@ -133,7 +157,21 @@ try {
     }
   };
 
-  for (const slot of slots) if (slot.state === 'ready') { buildPlate(slot); built++; }
+  const replacedByMacroBody = new Set(['limbSegment', 'spineCoil', 'gillCavity']);
+  for (const slot of slots) {
+    if (slot.state !== 'ready') continue;
+    // The coherent coil plate replaces the three old single-object anatomy
+    // stickers. Colony scale and the Crown remain useful distant landmarks.
+    if (macroBody.tex && replacedByMacroBody.has(slot.placement.plate)) {
+      slot.replaced = true;
+      continue;
+    }
+    buildPlate(slot);
+    built++;
+  }
+  // Fill the otherwise-flat combat-band void with a render-only depth veil.
+  // It shares this module's ?backdrop=flat A/B and failure boundary.
+  if (BACKDROP_ON) atmosphere = buildMeridianAtmosphere(scene, macroBody.tex);
 } catch (err) {
   console.warn('HULLBREAKER art: the backdrop layer failed to build (' +
     ((err && err.message) || err) + ') — the game continues with its existing background.');
@@ -147,9 +185,11 @@ export function backdropSnapshot() {
   return {
     on: BACKDROP_ON,
     built,
+    atmosphere,
+    macroBody: { state: macroBody.state, error: macroBody.error },
     plates: slots.map((s) => ({
       face: s.placement.face, plate: s.placement.plate, tier: s.placement.tier,
-      state: s.state, error: s.error,
+      state: s.state, error: s.error, replaced: s.replaced === true,
     })),
   };
 }
