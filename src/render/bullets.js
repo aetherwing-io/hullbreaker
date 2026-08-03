@@ -20,16 +20,21 @@
 
 import * as THREE from 'three';
 import { CONFIG, BULLET_NOSE_CEILING_TILES } from '../config.js';
-import { QUERY } from '../mode.js';
+import { BEND_S, facetAtBends } from '../pure/path.js';
+import { TRANSFORM_BEND_S } from '../pure/transform.js';
+import { ACTIVE_FIXTURE, IS_TRANSFORM_SLICE, QUERY, VIEW_ID } from '../mode.js';
 import { bulletNoseTiles } from '../pure/juice.js';
 import { installView } from '../sim/bridge.js';
+import { committedBand } from '../sim/transform.js';
 import { BULLET_MAX } from '../sim/weapons.js';
 import { awaitPreloads, preloadTexture } from './preload.js';
+import { cameraFacingFacet } from './camera.js';
 import { scene, HIDE } from './scene.js';
 import { spritesEnabled } from './sprite-table.js';
 import { towerPose } from './tower.js';
 import { PAL } from './palette.js';
 import { fxBurst, fxDirectedBurst, fxFlash } from './fx.js';
+import { routeRenderable } from './route-visibility.js';
 
 /* One painted atlas replaces five generic low-poly cores. It is registered
    with the same boot gate as RIG, hostiles, and the mutation modules: the
@@ -73,6 +78,20 @@ await awaitPreloads();
 const _pp = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 };   // shared per-frame pose scratch
 
 const R = CONFIG.rifle.radius;
+// Dynamic actors live just proud of the painted hull (RIG and hostile bodies
+// both use 1.15). Projectiles previously sat at route depth 0, behind service
+// lips and armour panels; at FAR the painted chassis could be depth-culled
+// while its additive history segment survived as a white needle. Keep the
+// whole projectile sentence on the same combat surface. This is world depth
+// only: simulation x/y, hit tests, nose caps and bend ownership are untouched.
+const PROJECTILE_SURFACE_DEPTH = 1.15;
+
+// Pullback costs perpendicular pixels much faster than directional length.
+// Recover only width at FAR so a rivet remains a rivet instead of becoming a
+// long tracer or a bloated orb. Rolled glyph stations share the same gain;
+// wake and history widths deliberately do not, keeping chassis identity above
+// additive streak brightness.
+const PROJECTILE_WIDTH_GAIN = VIEW_ID === 'far' ? 1.24 : (VIEW_ID === 'mid' ? 1.10 : 1);
 // Dispatch follows the weapon table rather than a five-letter switch. A future
 // procedural/stacked shot gets a safe rifle-form fallback until it supplies a
 // visual row; the renderer does not need another branch in its hot loop.
@@ -112,7 +131,7 @@ const coreMeshList = WEAPON_TYPES.map((type) => coreMeshes[type]);
 // used by the fallback below, so richer art never advertises extra collision.
 const ART_CELL_OCCUPANCY = 230 / 256;
 const ART_LOOK = Object.freeze({
-  // Actual MID-view review put the first atlas pass at only 3-6 pixels of
+  // Actual FAR-view review put the first atlas pass at only 3-6 pixels of
   // painted ink. Grow chiefly backward (unlimited cosmetic history) and in
   // thickness; frontCap remains the collision-honesty authority. The five
   // bodies now occupy roughly 6-11 pixels of distinct silhouette without
@@ -475,6 +494,7 @@ for (const mesh of chassisMeshList)
   for (let i = 0; i < BULLET_MAX; i++) mesh.setMatrixAt(i, HIDE);
 const slotType = new Array(BULLET_MAX).fill('');         // gate color uploads on change
 const slotVisible = new Uint8Array(BULLET_MAX);
+const slotFacetHidden = new Uint8Array(BULLET_MAX);
 const slotMeta = new Array(BULLET_MAX).fill(null);
 const historyCount = new Uint8Array(BULLET_MAX);
 const historyX = new Float32Array(BULLET_MAX * TRAIL_POINTS);
@@ -505,6 +525,7 @@ function slotSpawned(i, type, meta = null) {
   slotType[i] = visualType;
   slotMeta[i] = meta;
   slotVisible[i] = 1;
+  slotFacetHidden[i] = 0;
   _shotColor.setHex(look.coreColor || color);
   // Traits tint toward their own stable colour role rather than toward white.
   // The chassis remains underneath, but a stacked recipe can now be read with
@@ -535,8 +556,7 @@ function slotSpawned(i, type, meta = null) {
   trailMesh.instanceColor.needsUpdate = true;
 }
 
-function hideSlot(i) {
-  if (!slotVisible[i]) return;
+function concealSlotMatrices(i) {
   if (coreMeshes[slotType[i]]) {
     coreMeshes[slotType[i]].setMatrixAt(i, HIDE);
     shellMeshes[slotType[i]].setMatrixAt(i, HIDE);
@@ -547,10 +567,31 @@ function hideSlot(i) {
   wakeMesh.setMatrixAt(i, HIDE);
   for (const mesh of traitMeshList) mesh.setMatrixAt(i, HIDE);
   for (const mesh of stackMeshList) mesh.setMatrixAt(i, HIDE);
-  slotVisible[i] = 0;
-  slotMeta[i] = null;
   historyCount[i] = 0;
   for (let j = 0; j < TRAIL_SEGMENTS; j++) trailMesh.setMatrixAt(trailIndex(i, j), HIDE);
+}
+
+function hideSlot(i) {
+  if (!slotVisible[i]) return;
+  concealSlotMatrices(i);
+  slotVisible[i] = 0;
+  slotFacetHidden[i] = 0;
+  slotMeta[i] = null;
+}
+
+const PROJECTILE_BENDS = IS_TRANSFORM_SLICE ? TRANSFORM_BEND_S : BEND_S;
+
+function visibleProjectileFacet() {
+  return IS_TRANSFORM_SLICE ? committedBand : cameraFacingFacet();
+}
+
+function projectileOnVisibleFacet(s) {
+  // Authored traversal fixtures are planar proofs even when their logical s
+  // happens to overlap a normal-run bend coordinate. Only the default helix
+  // and the explicit multi-band transform fixture own facet visibility.
+  if (ACTIVE_FIXTURE && !IS_TRANSFORM_SLICE) return true;
+  return facetAtBends(s, PROJECTILE_BENDS) === visibleProjectileFacet() &&
+    routeRenderable(s);
 }
 
 function syncTrail(i, x, y, z, look, widthMult) {
@@ -606,7 +647,8 @@ function syncTraitMark(i, key, count, back, sx, sy, pulse) {
   if (!count) { mesh.setMatrixAt(i, HIDE); return; }
   _traitPos.copy(_bv).addScaledVector(_flight, -back);
   const stack = 1 + (count - 1) * 0.11;
-  _traitScale.set(sx * stack, sy * stack * pulse, 1);
+  _traitScale.set(sx * stack,
+    sy * stack * pulse * PROJECTILE_WIDTH_GAIN, 1);
   _bm.compose(_traitPos, _bq, _traitScale);
   mesh.setMatrixAt(i, _bm);
 }
@@ -619,7 +661,8 @@ function syncStackMark(i, key, count, back, sx, sy, pulse) {
   // third object. The authored separation already says “stacked”; this size
   // step says the stack has reached its cap.
   const cap = count >= 3 ? 1.24 : 1;
-  _traitScale.set(sx * cap, sy * cap * (2 - pulse), 1);
+  _traitScale.set(sx * cap,
+    sy * cap * (2 - pulse) * PROJECTILE_WIDTH_GAIN, 1);
   _bm.compose(_traitPos, _bq, _traitScale);
   mesh.setMatrixAt(i, _bm);
 }
@@ -629,7 +672,7 @@ function syncChassisDetail(i, type, pulse) {
   if (!mesh) return;
   const look = CHASSIS_LOOK[type];
   _traitPos.copy(_bv).addScaledVector(_flight, -look.back);
-  _traitScale.set(look.sx, look.sy * pulse, 1);
+  _traitScale.set(look.sx, look.sy * pulse * PROJECTILE_WIDTH_GAIN, 1);
   _bm.compose(_traitPos, _bq, _traitScale);
   mesh.setMatrixAt(i, _bm);
 }
@@ -662,6 +705,18 @@ function volatileImpact(b, radius, stack = 1) {
 // scale for every type. `crawling` is F-only (see spawnProj/updateBullets in
 // src/sim/weapons.js); every other type always takes the flight branch.
 function syncSlot(i, b) {
+  // A corner camera commits before RIG has physically crossed the chamfer.
+  // Logical shots may still exist on that old surface, but drawing them from
+  // its far edge makes the new face look like it is firing at the player.
+  // Conceal every companion matrix together while retaining the live sim row;
+  // if a valid fixture/camera ever faces the facet again, the next sync can
+  // rebuild it without changing damage, lifetime, or trajectory.
+  if (!projectileOnVisibleFacet(b.x)) {
+    concealSlotMatrices(i);
+    slotFacetHidden[i] = 1;
+    return;
+  }
+  slotFacetHidden[i] = 0;
   const bp = towerPose(b.x, _pp);
   const def = CONFIG.weapons[b.type] || CONFIG.weapons.R;
   const look = LOOK[b.type] || LOOK.R;
@@ -693,7 +748,11 @@ function syncSlot(i, b) {
   const tail = look.tail * (crawling ? 1.22 : 1);
   const ang = crawling ? (b.dir < 0 ? Math.PI : 0) : Math.atan2(b.vy, b.vx);
   _bq.setFromEuler(_be.set(0, bp.yaw, ang, 'YZX'));
-  _bv.set(bp.x, b.y + bp.alt, bp.z);
+  _bv.set(
+    bp.x + Math.sin(bp.yaw) * PROJECTILE_SURFACE_DEPTH,
+    b.y + bp.alt,
+    bp.z + Math.cos(bp.yaw) * PROJECTILE_SURFACE_DEPTH,
+  );
   const ca = Math.cos(ang), sa = Math.sin(ang);
   _flight.set(Math.cos(bp.yaw) * ca, sa, -Math.sin(bp.yaw) * ca);
   // The geometry spans -R…+R. Scale to (front + tail), then shift its center
@@ -722,9 +781,11 @@ function syncSlot(i, b) {
     const artTail = artLook.tail * (crawling ? 1.12 : 1);
     const artLen = artFront + artTail;
     const planeLen = artLen / ART_CELL_OCCUPANCY;
-    const traitBulk = 1 + Math.min(0.16, heavy * 0.045 + volatile * 0.035);
+    const traitBulk = 1 + Math.min(0.26,
+      tier * 0.035 + heavy * 0.045 + seeker * 0.025 + volatile * 0.035);
     _artPos.copy(_bv).addScaledVector(_flight, (artFront - artTail) * 0.5);
-    _artScale.set(planeLen, planeLen * artLook.thickness * traitBulk, 1);
+    _artScale.set(planeLen,
+      planeLen * artLook.thickness * traitBulk * PROJECTILE_WIDTH_GAIN, 1);
     _bm.compose(_artPos, _bq, _artScale);
     artMesh.setMatrixAt(i, _bm);
 
@@ -736,7 +797,9 @@ function syncSlot(i, b) {
     tipMesh.setMatrixAt(i, HIDE);
     if (chassisMeshes[visualType]) chassisMeshes[visualType].setMatrixAt(i, HIDE);
   } else {
-    _bs.set((front + tail) / (R * 2), pulse * coreWidth, pulse * coreWidth);
+    _bs.set((front + tail) / (R * 2),
+      pulse * coreWidth * PROJECTILE_WIDTH_GAIN,
+      pulse * coreWidth * PROJECTILE_WIDTH_GAIN);
     _shellScale.set(_bs.x * 1.025, _bs.y * 1.46, _bs.z * 1.46);
     _bm.compose(_corePos, _bq, _shellScale);
     shellMeshes[visualType].setMatrixAt(i, _bm);
@@ -747,7 +810,8 @@ function syncSlot(i, b) {
     // stops exactly at its front edge. No trait or pulse can push it farther.
     const tipLen = Math.max(0.045, Math.min(0.14, front * 0.42));
     _tipPos.copy(_bv).addScaledVector(_flight, front - tipLen);
-    const tipWidth = (0.065 + Math.min(0.035, heavy * 0.012)) * pulse;
+    const tipWidth = (0.065 + Math.min(0.035, heavy * 0.012)) *
+      pulse * PROJECTILE_WIDTH_GAIN;
     _tipScale.set(tipLen, tipWidth, tipWidth);
     _bm.compose(_tipPos, _bq, _tipScale);
     tipMesh.setMatrixAt(i, _bm);
@@ -811,11 +875,23 @@ const departing = [];
 for (let i = 0; i < DEPART_MAX; i++)
   departing.push({ until: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, scale: 1 });
 let departLast = 0;
+let departFacet = visibleProjectileFacet();
+
+function clearDepartingPool() {
+  for (let i = 0; i < DEPART_MAX; i++) {
+    departing[i].until = 0;
+    departMesh.setMatrixAt(i, HIDE);
+  }
+  departMesh.instanceMatrix.needsUpdate = true;
+}
 
 // (i, b, fromX): the slot, the projectile row, and the s it entered the
 // crossing substep at — the tangent to leave on is the heading THERE, which is
 // the facet the shot was actually fired along.
 function bendCulled(i, b, fromX) {
+  // A hidden old-facet shot must not manufacture a visible farewell streak
+  // from behind the fold when it eventually reaches the bend in simulation.
+  if (!projectileOnVisibleFacet(fromX)) return;
   const bp = towerPose(fromX, _pp);
   const yaw = bp.yaw;
   const def = CONFIG.weapons[b.type];
@@ -823,7 +899,9 @@ function bendCulled(i, b, fromX) {
   for (const d of departing) {
     if (d.until > 0) continue;
     d.until = DEPART_MS;
-    d.x = bp.x; d.y = b.y + bp.alt; d.z = bp.z;
+    d.x = bp.x + Math.sin(yaw) * PROJECTILE_SURFACE_DEPTH;
+    d.y = b.y + bp.alt;
+    d.z = bp.z + Math.cos(yaw) * PROJECTILE_SURFACE_DEPTH;
     d.vx = Math.cos(yaw) * vx; d.vy = b.crawling ? 0 : b.vy; d.vz = -Math.sin(yaw) * vx;
     // Bound the departing needle by the smallest declared axis so LASER does
     // not leave a seven-tile cosmetic hit claim after the sim has culled it.
@@ -837,6 +915,11 @@ function bendCulled(i, b, fromX) {
 
 function advanceDeparting() {
   const now = performance.now();
+  const facing = visibleProjectileFacet();
+  if (facing !== departFacet) {
+    clearDepartingPool();
+    departFacet = facing;
+  }
   const dt = departLast ? Math.min(50, now - departLast) : 0;
   departLast = now;
   for (let i = 0; i < DEPART_MAX; i++) {
@@ -883,18 +966,15 @@ export function clearDepartingTracers() {
   trailMesh.instanceMatrix.needsUpdate = true;
   for (const mesh of traitMeshList) mesh.instanceMatrix.needsUpdate = true;
   for (const mesh of stackMeshList) mesh.instanceMatrix.needsUpdate = true;
-  for (let i = 0; i < DEPART_MAX; i++) {
-    departing[i].until = 0;
-    departMesh.setMatrixAt(i, HIDE);
-  }
-  departMesh.instanceMatrix.needsUpdate = true;
+  clearDepartingPool();
+  departFacet = visibleProjectileFacet();
 }
 
 export function bulletTraitVisualSnapshot() {
   const live = { rapid: 0, heavy: 0, forked: 0, seeker: 0, phase: 0, volatile: 0 };
   let slots = 0;
   for (let i = 0; i < BULLET_MAX; i++) {
-    if (!slotVisible[i]) continue;
+    if (!slotVisible[i] || slotFacetHidden[i]) continue;
     slots++;
     const meta = slotMeta[i];
     if (!meta) continue;
@@ -912,6 +992,11 @@ export function bulletTraitVisualSnapshot() {
       error: artSlot.error,
       preloadMs: artReadyAt == null ? null :
         Math.round((artReadyAt - artStartedAt) * 10) / 10,
+    },
+    productionPlacement: {
+      surfaceDepth: PROJECTILE_SURFACE_DEPTH,
+      widthGain: PROJECTILE_WIDTH_GAIN,
+      view: VIEW_ID,
     },
     traitPools: TRAIT_KEYS.length,
     stackPools: stackMeshList.length,

@@ -61,11 +61,11 @@ export function portraitRightNdc(width, height) {
 
 // ?view=<id> (CONFIG.viewScales) pulls the camera straight back along its
 // depth axis only, independent of the traversal-slice portrait correction
-// above: near is depthMult 1 (exact, so `near`/absent is byte-identical to
-// the pre-view-scale camera), mid/far shrink RIG's screen fraction and widen
+// above: near is depthMult 1 (exact, so explicit `near` is byte-identical to
+// the pre-view-scale camera); absent selects FAR, while mid/far shrink RIG's screen fraction and widen
 // the calibrated s-strip by the same factor. See CONFIG.viewScales' comment.
 function activeViewDepthMult() {
-  return (CONFIG.viewScales[VIEW_ID] || CONFIG.viewScales.near).depthMult;
+  return (CONFIG.viewScales[VIEW_ID] || CONFIG.viewScales.far).depthMult;
 }
 
 export function activeCameraDepth() {
@@ -162,6 +162,29 @@ export function cameraFoldSnapshot() {
       : 0,
     handoffProgress: FOLD_HANDOFF_PROGRESS,
   };
+}
+
+function foldSmoothstep(a, b, value) {
+  const u = Math.max(0, Math.min(1, (value - a) / (b - a)));
+  return u * u * (3 - 2 * u);
+}
+
+/* One-based world-face gain for broad atmospheric shells. Unlike proud
+   geometry, air needs an overlap while the camera is actually orbiting or a
+   teal hole opens between two curved veils. The arriving face begins only
+   after the ritual moves, reaches full strength before the 0.96 topology
+   handoff, and the departing face is exactly gone at that handoff. At every
+   settled/gate frame only the current face is nonzero, so a wide desktop view
+   cannot see the next plate early or retain the previous one after commit. */
+export function cameraFaceBlendGain(face) {
+  const fold = cameraFoldSnapshot();
+  const departing = fold.baseFacet + 1;
+  const arriving = departing + 1;
+  if (face === departing)
+    return 1 - foldSmoothstep(0.50, FOLD_HANDOFF_PROGRESS, fold.progress);
+  if (face === arriving)
+    return foldSmoothstep(0.08, 0.88, fold.progress);
+  return 0;
 }
 
 /* ------------------------------ shake ------------------------------ *

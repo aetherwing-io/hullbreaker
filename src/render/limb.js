@@ -25,8 +25,8 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { normalAscentAltAt } from '../pure/ascent.js';
-import { SEGS, cornerSList, headingAt, polyAt } from '../pure/path.js';
-import { limbBakePlan, limbFacetTone } from '../pure/limb.js';
+import { BEND_S, SEGS, facetAtBends, headingAt, polyAt } from '../pure/path.js';
+import { limbBakePlan, limbFacetTone, limbFoldBridgeVisible } from '../pure/limb.js';
 import { limbShadePlan } from '../pure/shade.js';
 import { IS_G1, QUERY } from '../mode.js';
 import { groundH } from '../sim/level.js';
@@ -127,7 +127,7 @@ const SURFACE_FOR = {
    at — so a before/after is one URL apart in the same build.
 
    Deliberately NOT named after ?view=: that flag is the camera pull-back
-   (CONFIG.viewScales), whose shipped setting is now MID. This one is about
+   (CONFIG.viewScales), whose shipped setting is now FAR. This one is about
    what the frame around the tiny figure contains. */
 const SCALE_PASS = QUERY.get('scale') !== '0';
 
@@ -139,8 +139,9 @@ const SCALE_PASS = QUERY.get('scale') !== '0';
    Keep the body itself completely static, but cull near-field armour outside
    the current/adjacent route facets exactly as a sectorized megastructure
    renderer would. Within those candidates, only the camera-facing facet owns
-   proud anatomy; the next deck's kerb/lip alone remains present for the corner
-   reveal. Distant `bd*` anatomy and scale marks retain authored world-space
+   proud anatomy; only kerb/lip pieces whose own span touches the shared
+   chamfer may bridge into an adjacent facet for the corner reveal. Distant
+   `bd*` anatomy and scale marks retain authored world-space
    transforms but cannot recur after the helix folds over itself. The update
    runs every frame but uploads matrices only at a route boundary or the final
    camera-detent handoff. */
@@ -154,21 +155,19 @@ const FOLD_CULL_KINDS = new Set([
   'bdLimb', 'bdLimbLip', 'bdRing', 'bdDrum', 'bdLink', 'bdFar', 'bdSpire',
   'markRung', 'markStile', 'markRail', 'markPost', 'markRim', 'markPanel',
 ]);
-// These two thin bands describe the route continuing around the corner. They
-// may bridge camera sectors. Everything proud of/below that edge belongs to
-// exactly one face: keeping next-face hull/scutes/joint slabs alive through
-// the 30-degree hold exposed their backs and made RIG appear behind the fold.
+// These two thin bands describe the route continuing around the corner. A
+// piece may bridge camera sectors only when its own s-span intersects their
+// shared chamfer; the rest of either band belongs to exactly one face. Keeping
+// whole next-face bands (or hull/scutes/joint slabs) alive through the
+// 30-degree hold exposed their backs and made RIG appear behind the fold.
 const FOLD_BRIDGE_KINDS = new Set(['kerb', 'lipScute']);
-const FACET_THRESHOLDS = cornerSList(CONFIG).map((s) => s + CONFIG.path.chamferTiles / 2);
 const foldCullPools = [];
 let foldCullFacet = -1;
 let foldCullCameraFacet = -1;
 let foldCullHidden = 0;
 
 function routeFacetAt(s) {
-  let facet = 0;
-  while (facet < FACET_THRESHOLDS.length && s >= FACET_THRESHOLDS[facet]) facet++;
-  return facet;
+  return facetAtBends(s, BEND_S);
 }
 
 export function updateLimbFoldCull() {
@@ -191,8 +190,9 @@ export function updateLimbFoldCull() {
       const remote = nearField && (terminalOutro
         ? piece.facet !== active
         : Math.abs(piece.facet - active) > 1);
-      const behindFold = nearField && !FOLD_BRIDGE_KINDS.has(piece.kind) &&
-        piece.facet !== cameraFacet;
+      const bridgeVisible = FOLD_BRIDGE_KINDS.has(piece.kind) &&
+        limbFoldBridgeVisible(piece, cameraFacet, BEND_S, CONFIG.path.chamferTiles);
+      const behindFold = nearField && piece.facet !== cameraFacet && !bridgeVisible;
       const hidden = remote || behindFold;
       pool.mesh.setMatrixAt(row.instance, hidden ? HIDE : pieceMatrix(piece));
       if (hidden) foldCullHidden++;
@@ -224,6 +224,47 @@ const _s = new THREE.Vector3();
 const _v = new THREE.Vector3();
 const _c = new THREE.Color();
 const _tint = new THREE.Color();
+
+/* A scute is an armour casting, not a stretched hexagonal log. The former
+   CylinderGeometry gave every plate the same six corners and let its pale
+   side faces occupy a large part of the silhouette, which is the cardboard
+   row visible across the lower foreground. These three low-poly extrusions
+   share the exact unit footprint/anchor but vary the clipped leading edge.
+   Their vertex value is deliberately darkest on the back and bevels, so an
+   overlap reads as a deep mechanical seam without another material or draw. */
+const ARMOUR_OUTLINES = Object.freeze([
+  [[-0.50, 0.46], [0.42, 0.50], [0.50, 0.30], [0.43, -0.48], [-0.40, -0.50], [-0.50, -0.26]],
+  [[-0.47, 0.50], [0.48, 0.42], [0.50, 0.20], [0.36, -0.50], [-0.48, -0.42], [-0.52, -0.12]],
+  [[-0.50, 0.36], [-0.43, 0.50], [0.50, 0.48], [0.46, -0.34], [0.34, -0.50], [-0.46, -0.44]],
+]);
+
+function armourPlateGeometry(variant) {
+  const outline = ARMOUR_OUTLINES[variant % ARMOUR_OUTLINES.length];
+  const shape = new THREE.Shape();
+  shape.moveTo(outline[0][0], outline[0][1]);
+  for (let i = 1; i < outline.length; i++) shape.lineTo(outline[i][0], outline[i][1]);
+  shape.closePath();
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: 1,
+    steps: 1,
+    curveSegments: 1,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: 0.035,
+    bevelThickness: 0.045,
+  });
+  geometry.translate(0, 0, -0.5);
+  const normal = geometry.getAttribute('normal');
+  const colors = new Float32Array(normal.count * 3);
+  for (let i = 0; i < normal.count; i++) {
+    const nz = normal.getZ(i), ny = normal.getY(i);
+    const gain = nz > 0.72 ? 1 : (nz < -0.72 ? 0.24 : (ny > 0.42 ? 0.72 : 0.46));
+    colors[i * 3] = colors[i * 3 + 1] = colors[i * 3 + 2] = gain;
+  }
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geometry.computeBoundingSphere();
+  return geometry;
+}
 
 // (s, y, depth) → world, with the SHARP heading of the facet (or, for a joint
 // piece, of the chamfer that bisects it) and the shared normal-run altitude.
@@ -262,22 +303,21 @@ function bakeLimb() {
   const byBucket = new Map();                  // material/primitive → plan indices
   for (let n = 0; n < plan.length; n++) {
     const materialKey = MATERIAL_FOR[plan[n].kind] || 'hull';
-    // Only the played limb's large foreground shingles get the six-sided
-    // closure below. Distant `bd*` masses retain their established four-face
-    // silhouette; sharing the new geometry there exposed enormous remote
-    // wedges at the top of the Crown frame.
-    const shape = plan[n].kind === 'scute'
-      ? 'armor'
-      : plan[n].shape || SHAPE_FOR[plan[n].kind] || 'box';
-    // Three deterministic crops/orientations across only the broad painted
-    // armour families. The production source spans a whole machine section;
-    // decorrelating by route chunk/facet prevents its strong central service
-    // bay from recurring in lockstep while keeping the fixed pool count tiny
-    // (+6 draws over the former one-bucket-per-family path).
+    // Deterministic crops/orientations across only the broad painted armour
+    // families. Foreground scutes get five crop phases because they form the
+    // longest uninterrupted row in the frame; other families retain three.
+    // The phase also selects one of three clipped scute outlines, so variety
+    // costs only two draws over the prior three-pool scute path.
     const painted = materialKey === 'hull' || materialKey === 'wall' || materialKey === 'scute';
+    const variantCount = materialKey === 'scute' ? 5 : 3;
     const textureVariant = painted
-      ? Math.abs(Math.floor(plan[n].s / CONFIG.limb.scute.every) + plan[n].facet * 2) % 3
+      ? Math.abs(Math.floor(plan[n].s / CONFIG.limb.scute.every) + plan[n].facet * 2) % variantCount
       : 0;
+    // Only the played limb's large foreground shingles get these castings.
+    // Distant `bd*` masses retain their established low-detail silhouette.
+    const shape = plan[n].kind === 'scute'
+      ? `armor${textureVariant % ARMOUR_OUTLINES.length}`
+      : plan[n].shape || SHAPE_FOR[plan[n].kind] || 'box';
     const bucketKey = materialKey + '/' + shape + '/' + textureVariant;
     if (!byBucket.has(bucketKey)) byBucket.set(bucketKey, {
       materialKey, shape, textureVariant, indices: [],
@@ -286,18 +326,20 @@ function bakeLimb() {
   }
   const geometry = {
     box: new THREE.BoxGeometry(1, 1, 1),
-    // Broad at the deck root and tapering into the body: successive chunks
-    // overlap like underside armour instead of joining into one flat façade.
-    body: new THREE.CylinderGeometry(0.60, 0.40, 1, 6, 1, false),
+    // Successive chunks remain faceted, but the lower radius now meets the
+    // next chunk instead of shrinking to 80% of its spacing and exposing a
+    // regular sky wedge through what should be one colossal limb.
+    body: new THREE.CylinderGeometry(0.57, 0.51, 1, 6, 1, false),
     // Cylinder height is local Y: different top/bottom radii make an armour
     // shingle with a broad root and clipped nose instead of another crate.
     scute: new THREE.CylinderGeometry(0.58, 0.42, 1, 4, 1, false),
-    armor: new THREE.CylinderGeometry(0.58, 0.44, 1, 6, 1, false),
+    armor0: armourPlateGeometry(0),
+    armor1: armourPlateGeometry(1),
+    armor2: armourPlateGeometry(2),
     rib: new THREE.CylinderGeometry(0.5, 0.5, 1, 6, 1, false),
     cable: new THREE.CylinderGeometry(0.5, 0.5, 1, 6, 1, false),
   };
   geometry.scute.rotateY(Math.PI / 4);
-  geometry.armor.rotateY(Math.PI / 6);
   geometry.body.rotateY(Math.PI / 6);
   geometry.rib.rotateY(Math.PI / 6);
   geometry.cable.rotateZ(Math.PI / 2);          // cable length follows local s / X
@@ -306,7 +348,12 @@ function bakeLimb() {
     // buckets a large hull surface actually names, an albedo+bump tile —
     // both are no-ops (this stays the pre-T-052 flat white material) for
     // any family or texture that failed to resolve, by construction.
-    const material = new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true });
+    const armourCasting = shape.startsWith('armor');
+    const material = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      flatShading: true,
+      vertexColors: armourCasting,
+    });
     applySurface(material, SURFACE_FOR[key] || 'plate');
     applyHullTexture(material, key);
     varyHullTexture(material, textureVariant);

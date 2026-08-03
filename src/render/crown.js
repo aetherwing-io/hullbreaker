@@ -17,8 +17,9 @@ import { scene } from './scene.js';
 import { PAL } from './palette.js';
 import { applyHullTexture, applySurface } from './materials.js';
 import { postGain } from './post.js';
-import { awaitPreloads, preloadTexture } from './preload.js';
+import { awaitPreloads, preloadTexture, warmDerivedTextures } from './preload.js';
 import { towerPose } from './tower.js';
+import { routeRenderable, routeVisibilityStamp } from './route-visibility.js';
 
 const SUMMIT_PLATE_URL = new URL(
   '../../assets/generated/backdrops/backdrop-crown-summit-v2.png', import.meta.url
@@ -79,10 +80,46 @@ function insetSummitAlpha(source) {
 }
 
 const crownPlateTexture = summitTexture ? insetSummitAlpha(summitTexture) : null;
+// Alpha inset creates a new CanvasTexture after the source PNG has cleared
+// the URL gate. Keep the Crown geometry hidden until its authored reveal, but
+// make its texels resident now so that reveal cannot trigger an upload hitch.
+if (crownPlateTexture && crownPlateTexture !== summitTexture)
+  warmDerivedTextures([crownPlateTexture]);
+
+function crownCastingGeometry(outline, bevelSize = 0.025) {
+  const shape = new THREE.Shape();
+  shape.moveTo(outline[0][0], outline[0][1]);
+  for (let i = 1; i < outline.length; i++) shape.lineTo(outline[i][0], outline[i][1]);
+  shape.closePath();
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: 1,
+    steps: 1,
+    curveSegments: 1,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize,
+    bevelThickness: bevelSize,
+  });
+  geometry.translate(0, 0, -0.5);
+  geometry.computeBoundingSphere();
+  return geometry;
+}
 
 const UNIT = ACTIVE_FIXTURE === null ? Object.freeze({
   box: new THREE.BoxGeometry(1, 1, 1),
   plate: new THREE.PlaneGeometry(1, 1),
+  // Broad clipped shoulder castings retain the bake plan's exact bounds but
+  // lose the three stacked shoebox silhouettes visible behind the Warden.
+  shoulder: crownCastingGeometry([
+    [-0.50, 0.18], [-0.45, 0.50], [0.39, 0.50], [0.50, 0.22],
+    [0.44, -0.50], [-0.40, -0.50],
+  ], 0.035),
+  // A capped cable race: the bright carrier becomes a narrow inset below,
+  // while this darker casing supplies readable ends and a physical edge.
+  conduit: crownCastingGeometry([
+    [-0.50, 0], [-0.465, 0.50], [0.465, 0.50], [0.50, 0],
+    [0.465, -0.50], [-0.465, -0.50],
+  ], 0.045),
 }) : null;
 
 function lit(color, family) {
@@ -118,7 +155,11 @@ const MATERIAL = ACTIVE_FIXTURE === null ? Object.freeze({
     fog: true,
   }) : null,
   foundation: hullLit(PAL.limb.wall, 'plate', 'wall'),
-  trim: hullLit(PAL.limb.machine, 'machine', 'scute'),
+  conduitCasing: hullLit(PAL.limb.shadow, 'distant', 'shadow'),
+  // Only this thin inset wakes magenta during the finale. The surrounding
+  // capped casing remains physical hull, preventing three neon planks from
+  // replacing the summit apron when presentation energy rises.
+  trim: lit(PAL.limb.machine, 'machine'),
 }) : null;
 
 const _pose = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 };
@@ -159,7 +200,37 @@ function buildCrown() {
   const plan = crownBakePlan(CONFIG);
 
   for (const p of plan) {
-    const geometry = UNIT[p.shape];
+    if (p.kind === 'trim') {
+      const conduit = new THREE.Group();
+      conduit.name = 'Crown embedded signal conduit';
+      conduit.userData.crownRole = p.kind;
+      conduit.userData.crownS = p.s;
+
+      const casing = new THREE.Mesh(UNIT.conduit, MATERIAL.conduitCasing);
+      casing.name = 'Crown conduit casing';
+      conduit.add(casing);
+
+      const core = new THREE.Mesh(UNIT.conduit, MATERIAL.trim);
+      core.name = 'Crown recessed signal carrier';
+      core.scale.set(0.91, 0.22, 0.10);
+      core.position.z = 0.535;
+      conduit.add(core);
+
+      // Two dark clamp bands interrupt the remaining straight run and make
+      // the inset look serviced/embedded rather than painted over the art.
+      for (const x of [-0.31, 0.31]) {
+        const clamp = new THREE.Mesh(UNIT.box, MATERIAL.conduitCasing);
+        clamp.name = 'Crown conduit clamp';
+        clamp.scale.set(0.025, 0.78, 0.075);
+        clamp.position.set(x, 0, 0.545);
+        conduit.add(clamp);
+      }
+      place(conduit, p);
+      root.add(conduit);
+      continue;
+    }
+
+    const geometry = p.kind === 'foundation' ? UNIT.shoulder : UNIT[p.shape];
     const material = MATERIAL[p.kind];
     if (!geometry || !material) continue;
     const mesh = new THREE.Mesh(geometry, material);
@@ -184,6 +255,20 @@ function buildCrown() {
 }
 
 export const crownRoot = ACTIVE_FIXTURE === null ? buildCrown() : null;
+let crownCullStamp = '';
+
+// The summit is generated and texture-resident at boot, but it is not a
+// backdrop visible through the closed coil. It belongs to the built outro
+// facet exactly like the deck and machinery supporting it.
+export function updateCrownFacetCull() {
+  if (!crownRoot) return;
+  const stamp = routeVisibilityStamp();
+  if (stamp === crownCullStamp) return;
+  crownCullStamp = stamp;
+  crownRoot.visible = routeRenderable(crownSignal.s);
+}
+
+updateCrownFacetCull();
 
 const CROWN_WHITE = ACTIVE_FIXTURE === null ? new THREE.Color(0xffffff) : null;
 const CROWN_SIGNAL = ACTIVE_FIXTURE === null ? new THREE.Color(PAL.capsule) : null;
@@ -209,9 +294,9 @@ export function setCrownPresentation({ energy = 0, surge = 0, recoil = 0 } = {})
   // The broad shoulders wake softly; the small machine trim carries most of
   // the magenta so the Crown remains architecture, not a glowing decal.
   MATERIAL.foundation.emissive.copy(CROWN_SIGNAL);
-  MATERIAL.foundation.emissiveIntensity = bloom * (e * 0.075 + kick * 0.055);
+  MATERIAL.foundation.emissiveIntensity = bloom * (e * 0.025 + kick * 0.018);
   MATERIAL.trim.emissive.copy(CROWN_SIGNAL);
-  MATERIAL.trim.emissiveIntensity = bloom * (e * 0.18 + kick * 0.14);
+  MATERIAL.trim.emissiveIntensity = bloom * (e * 0.28 + kick * 0.20);
 
   const r = Math.max(0, Number(recoil) || 0);
   const at = towerPose(crownSignal.s, _pose);

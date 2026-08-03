@@ -5,6 +5,7 @@
    Crown wake, progress, and signal surge. */
 
 import { CONFIG } from '../config.js';
+import { finaleEarnedClear, finalePacketDue } from '../pure/finale.js';
 import { view } from './bridge.js';
 import { gameMs } from './time.js';
 import { END_SCROLL, groundTopAt, spawnLaneY } from './level.js';
@@ -16,6 +17,7 @@ import {
 export const FINALE_TIMING = Object.freeze({
   armingMs: 1050,
   minDefendMs: 11000,
+  earnedMinMs: 6500,
   mercyAtMs: 16800,
   mercyKills: 3,
   hardMaxMs: 20500,
@@ -124,9 +126,10 @@ function phaseProgress() {
   if (phase === 'dormant') return 0;
   if (phase === 'arming') return Math.min(1, t / FINALE_TIMING.armingMs);
   if (phase === 'defend') {
-    const timeProgress = Math.min(1, (gameMs - phaseAt) / FINALE_TIMING.minDefendMs);
+    const timeProgress = Math.min(1, (gameMs - phaseAt) / FINALE_TIMING.earnedMinMs);
     const bossProgress = 1 - wardenSnapshot().health;
-    return Math.min(timeProgress, bossProgress);
+    const packetProgress = wave / FINALE_PACKETS.length;
+    return Math.min(timeProgress, bossProgress * 0.75 + packetProgress * 0.25);
   }
   if (phase === 'transmit')
     return Math.min(1, (gameMs - phaseAt) / FINALE_TIMING.transmitMs);
@@ -169,10 +172,25 @@ function spawnEntry(entry) {
 }
 
 function spawnDuePackets(t) {
-  while (wave < FINALE_PACKETS.length && t >= FINALE_PACKETS[wave].atMs) {
+  while (finalePacketDue({
+    wave,
+    elapsedMs: t,
+    earnedDamage: wardenEarnedDamage,
+    packets: FINALE_PACKETS,
+    windowDamage: CONFIG.warden.windowDamage,
+  })) {
     wave++;
     for (const entry of FINALE_PACKETS[wave - 1].entries) spawnEntry(entry);
   }
+}
+
+function supportThreatCount() {
+  let count = 0;
+  for (const e of hostiles) {
+    if (e.id === wardenId || e.gateBreakExit) continue;
+    count++;
+  }
+  return count;
 }
 
 function beginTransmit() {
@@ -229,9 +247,6 @@ export function updateFinale() {
   }
 
   if (phase === 'defend') {
-    spawnDuePackets(t);
-    creditedKills = earnedKills();
-    const k = creditedKills;
     const warden = liveWarden();
     if (warden) wardenEarnedDamage = Math.max(wardenEarnedDamage, warden.earnedDamage || 0);
     else if (wardenId) {
@@ -241,8 +256,21 @@ export function updateFinale() {
       // final seal, so retain the earned full-health total in telemetry.
       if (!mercyBreak) wardenEarnedDamage = CONFIG.warden.hp;
     }
+    // Refresh earned damage before scoring packet edges. A seal broken by the
+    // previous frame's volley can therefore wake its answer immediately; the
+    // support bodies still owe their full visible materialization tell.
+    spawnDuePackets(t);
+    creditedKills = earnedKills();
+    const k = creditedKills;
     const heldLongEnough = gameMs - phaseAt >= FINALE_TIMING.minDefendMs;
-    const earnedClear = heldLongEnough && wardenBroken;
+    const earnedClear = finaleEarnedClear({
+      defendElapsedMs: gameMs - phaseAt,
+      minEarnedMs: FINALE_TIMING.earnedMinMs,
+      wave,
+      packetCount: FINALE_PACKETS.length,
+      wardenBroken,
+      supportThreats: supportThreatCount(),
+    });
 
     // A child who has engaged with either the centerpiece or its support
     // wave gets a late Crown-overload assist. The absolute timeout is the

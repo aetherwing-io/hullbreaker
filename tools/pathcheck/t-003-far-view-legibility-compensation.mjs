@@ -70,10 +70,10 @@ export async function run(SHARED) {
   }
   near(legibilityGain(SHARE.glyph, 'far'), VS.far.depthMult, 1e-12,
      'legibility: a glyph takes the whole pull-back back');
-  near(LEG_GLYPH_GAIN, VS.mid.depthMult, 1e-12,
-     'legibility: the shipped default view (mid) resolves the live glyph gain');
-  near(LEG_CUE_GAIN, VS.mid.depthMult, 1e-12, 'legibility: the live cue gain matches');
-  near(LEG_POSE_GAIN, 1 + (VS.mid.depthMult - 1) * SHARE.pose, 1e-12,
+  near(LEG_GLYPH_GAIN, VS.far.depthMult, 1e-12,
+     'legibility: the shipped default view (far) resolves the live glyph gain');
+  near(LEG_CUE_GAIN, VS.far.depthMult, 1e-12, 'legibility: the live cue gain matches');
+  near(LEG_POSE_GAIN, 1 + (VS.far.depthMult - 1) * SHARE.pose, 1e-12,
      'legibility: the live pose gain is the partial share, not the whole');
   ok(LEG_POSE_GAIN < LEG_CUE_GAIN, 'legibility: a pose is boosted less than a lamp');
 

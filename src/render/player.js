@@ -41,9 +41,11 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { QUERY } from '../mode.js';
+import { BEND_S, facetAtBends } from '../pure/path.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs, blink } from '../sim/time.js';
 import { player } from '../sim/player.js';
+import { turningCornerOwnsJoint } from '../sim/wavegate.js';
 import { currentGun, currentWeapon } from '../sim/weapons.js';
 import { flowSnapshot } from '../sim/flow.js';
 import { scoreNotchNow } from '../sim/score.js';
@@ -58,7 +60,8 @@ import {
   SPRITE_H, SPRITE_W, TORSO, VISOR,
 } from '../pure/rig.js';
 import { awaitPreloads, preloadTexture } from './preload.js';
-import { camera, scene } from './scene.js';
+import { scene } from './scene.js';
+import { cameraFacingFacet } from './camera.js';
 import { placeOnTower } from './tower.js';
 import { PAL } from './palette.js';
 import { syncContactShadow } from './contact.js';
@@ -129,7 +132,7 @@ function paintRigTexture() {
 
 // A soft, palette-tinted readability field. It is not a second silhouette:
 // the white canvas only supplies alpha and the material supplies the authored
-// player/muzzle role. At the shipped MID camera this survives minification as
+// player/muzzle role. At the shipped FAR camera this survives minification as
 // one quiet halo while the sprite still carries the actual body shape.
 function paintGlowTexture() {
   const cv = document.createElement('canvas');
@@ -158,6 +161,14 @@ const AIM_MASK_DIRECTIONS = Object.freeze({
   up: [0, 1],
   'down-right': [Math.SQRT1_2, -Math.SQRT1_2],
 });
+
+// Shared by the boot-time aim-mask painter. Keep this module-scope definition
+// independent of the live fold-visibility path: both are pure easing math,
+// but removing one visual consumer must never make the asset gate fail boot.
+function smoothstep01(t) {
+  const u = Math.max(0, Math.min(1, t));
+  return u * u * (3 - 2 * u);
+}
 
 // The gunless aim paintings deliberately include complete open hands so the
 // source art remains reusable. In-game the simulation muzzle is closer to the
@@ -540,8 +551,6 @@ const RIG_FOOTPRINT = CONFIG.player.width / 2;
 // the readable face of the hull.
 const RIG_SURFACE_DEPTH = 1.15;
 const PORTRAIT_ASPECT = 0.72;
-const FOLD_HIDE_DOT = 0.88;  // hidden once camera and hull normals differ ~28°
-const FOLD_FULL_DOT = 0.97;  // completely readable again inside ~14°
 let seenNextFireAt = 0;
 let lastShotAt = -1e9;
 let lastVisualMs = 0;
@@ -555,7 +564,6 @@ let gunWidthGain = 1;
 let gunUsesArt = false;
 let lastAimAngle = 0;
 let lastRecoil = 0;
-const _cameraForward = new THREE.Vector3();
 const _rollTint = new THREE.Color(0xffffff);
 const _gunDisplayTint = new THREE.Color(0xffffff);
 const _gunTraitColor = new THREE.Color();
@@ -611,11 +619,6 @@ function portraitReadability() {
   return innerWidth / Math.max(1, innerHeight) < PORTRAIT_ASPECT;
 }
 
-function smoothstep01(t) {
-  const u = Math.max(0, Math.min(1, t));
-  return u * u * (3 - 2 * u);
-}
-
 function stationaryAimFrame() {
   const ax = Math.abs(player.aim.x), ay = player.aim.y;
   if (ay > 0.82) return 'aim-up';
@@ -624,29 +627,26 @@ function stationaryAimFrame() {
   return 'aim-right';
 }
 
-// A sprite plane is a convincing character only from the outward side of its
-// hull facet. During a corner ritual the camera can briefly move past that
-// plane before the blended actor yaw catches up; DoubleSide used to reveal a
-// mirrored paper figure (and its billboard halo) behind the fold. Measure the
-// surface normal against the live camera and let the hull rim occlude RIG as a
-// single silhouette. The short soft band prevents a one-frame pop, while the
-// strict zero on the rear hemisphere makes the topology honest.
-function foldVisibility(surfaceYaw) {
-  camera.getWorldDirection(_cameraForward);
-  const invLen = 1 / Math.max(0.0001, Math.hypot(_cameraForward.x, _cameraForward.z));
-  // Camera forward points inward; negate it to recover the face normal the
-  // current view is composed around. Unlike camera→RIG position, this stays
-  // stable when RIG runs toward a screen edge and changes only during a turn.
-  const cameraOutX = -_cameraForward.x * invLen;
-  const cameraOutZ = -_cameraForward.z * invLen;
-  const viewDot = Math.sin(surfaceYaw) * cameraOutX + Math.cos(surfaceYaw) * cameraOutZ;
-  return smoothstep01((viewDot - FOLD_HIDE_DOT) / (FOLD_FULL_DOT - FOLD_HIDE_DOT));
+// Camera direction is not a facet test: its lookX offset mixes a large route
+// tangent into the view vector, so an old-face RIG could remain readable after
+// the camera had committed to the next detent. Both sides now use the same
+// topological boundary as projectile bend culling: the midpoint of the
+// two-step chamfer. There is exactly one owner at every frame and no mirrored
+// paper actor can fire visibly through the back of the fold.
+function foldVisibility() {
+  // The ritual starts with RIG centred on the 30-degree chamfer, the one
+  // physical surface shared by the departing and arriving camera detents.
+  // Keeping that exact joint visible throughout the orbit is topologically
+  // honest; extending the exception to any old-facet position would restore
+  // the behind-the-fold ghost this cull exists to remove.
+  if (turningCornerOwnsJoint(player.x)) return 1;
+  return facetAtBends(player.x, BEND_S) === cameraFacingFacet() ? 1 : 0;
 }
 
 // called at the end of updatePlayer, where the single-file build placed the rig
 function sync() {
-  const surfaceYaw = placeOnTower(rig, player.x, player.y, RIG_SURFACE_DEPTH);
-  const foldGain = foldVisibility(surfaceYaw);
+  placeOnTower(rig, player.x, player.y, RIG_SURFACE_DEPTH);
+  const foldGain = foldVisibility();
   // crouch (?crouch=1) has to be visible or the lowered firing line is a
   // mystery: the body squashes to the crouched collision height and the gun
   // drops with the muzzle the sim is actually firing from.

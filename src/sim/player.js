@@ -29,7 +29,9 @@ import { CAP, spawnCapsule } from './capsules.js';
 import {
   scoreContact, scoreFireMult, scoreLaunch, scoreRunEnd, scoreSetback,
 } from './score.js';
-import { activeCorner, cornerBusy } from './wavegate.js';
+import {
+  advanceCornerApproach, cornerBusy, cornerPlayerRouteWindow,
+} from './wavegate.js';
 import { transformBusy, transformFrontierX, transformSealX } from './transform.js';
 // Movement-verb prototypes (?hook=1 / ?flow=1). Both modules are inert without
 // their flag, and every call below is an identity operation when they are off.
@@ -465,15 +467,20 @@ export function updatePlayer(dt) {
   //    pivot is the wall — the screen edge must not let the player walk
   //    onto hidden slam terrain (invisible floors and gaps past the corner).
   //    A pending transformation seam applies the same rule at its threshold.
-  const ac = activeCorner();
+  let cornerWindow = cornerPlayerRouteWindow(player.hw);
   let re = sRightEdge() - CONFIG.edges.margin;
-  if (ac) re = Math.min(re, ac.s + 1 - CONFIG.edges.margin);
+  re = Math.min(re, cornerWindow.frontierRight);
   re = Math.min(re, transformFrontierX());
   if (player.x + player.hw > re) player.x = re - player.hw;
-  //    Left clamp: a committed transformation sealed its panel behind RIG.
-  //    The surface they came from is no longer rendered under their feet, so
-  //    walking back through the seam is not a route.
-  const seal = transformSealX();
+  // Reaching the chamfer is the only operation that may start a cleared
+  // corner ritual. Re-read the window because that transition makes the
+  // joint a left seal on this same frame; no input or knockback substep gets
+  // one frame to retreat onto the departing facet before the camera moves.
+  if (advanceCornerApproach(player.x)) cornerWindow = cornerPlayerRouteWindow(player.hw);
+  //    Left clamp: a committed transformation or hull corner sealed its panel
+  //    behind RIG. Those surfaces are no longer rendered under their feet, so
+  //    walking back through either seam is not a route.
+  const seal = Math.max(transformSealX(), cornerWindow.sealLeft);
   if (player.x - player.hw < seal) { player.x = seal + player.hw; player.vx = Math.max(player.vx, 0); }
 
   // Closest crush approach, every mode (was fixture-only): the score snapshot

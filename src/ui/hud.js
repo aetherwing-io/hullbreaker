@@ -167,9 +167,9 @@ export function updateHUD() {
       : 'H WAGER → · EXIT LEFT ←';
   } else if (IS_TRAVERSAL_SLICE && gameMs - sliceStats.startedAt < 2400) {
     // view-scale experiment: self-documents on screenshots so a variant is
-    // identifiable without cross-referencing the URL (near is the shipped
+    // identifiable without cross-referencing the URL (FAR is the shipped
     // camera and stays silent to keep that overlay unchanged by default).
-    const viewTag = VIEW_ID === 'mid' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
+    const viewTag = VIEW_ID === 'far' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
     tc = 'TRAVERSAL SLICE · ' + ACTIVE_SLICE.pace.label +
       (HOUND_TRIAL_STAGE ? ' + ' + HOUND_TRIAL_STAGE.label : '') +
       (POLYP_TRIAL_STAGE ? ' + ' + POLYP_TRIAL_STAGE.label : '') +
@@ -202,7 +202,7 @@ function transformMessage() {
   if (lastCommit && gameMs - lastCommit.at < CONFIG.transform.clearMsgMs)
     return `${lastCommit.ev.label} — ${transformBandLabel()} · MERIDIAN: ${transformShipState()}`;
   if (gameMs - sliceStats.startedAt < 2400) {
-    const viewTag = VIEW_ID === 'mid' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
+    const viewTag = VIEW_ID === 'far' ? '' : ' · VIEW ' + CONFIG.viewScales[VIEW_ID].label;
     return 'TRANSFORMATION SLICE · ' + transformBandLabel() + viewTag;
   }
   return '';

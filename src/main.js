@@ -98,10 +98,10 @@ import { clearCorpses, updateCorpses } from './render/hostiles.js';
 // stuck in their temporal dead zone — where importing it here is the same
 // ordinary forward dependency src/render/sprites.js already relies on below.
 import './render/backdrop.js';
-import './render/level.js';
-import './render/seams.js';
+import { updateWorldDressingCull } from './render/level.js';
+import { updateSeamFoldCull } from './render/seams.js';
 import { limbPieces, updateLimbFoldCull } from './render/limb.js';
-import './render/crown.js';
+import { updateCrownFacetCull } from './render/crown.js';
 import './render/finale.js';
 import './render/transform.js';
 import './render/player.js';
@@ -358,6 +358,9 @@ function update(dt) {
   const wScale = (gameMs < mods.chronoUntil ? CONFIG.mods.chronoScale : 1) * hScale;
   updateScroll(dt * wScale);             // sim half of the old updateCamera
   syncCamera();                          // render half, same point in the frame
+  updateWorldDressingCull();             // strict camera-facet ownership for props/lights
+  updateSeamFoldCull();                  // static pips exist only on the built camera facet
+  updateCrownFacetCull();                // the resident summit waits for its built outro facet
   updateLimbFoldCull();                   // sector self-occlusion; uploads only on facet changes
   updateSpawner();
   updatePlayer(dt * hScale);
@@ -781,7 +784,7 @@ if (QUERY.has('selftest')) {
     dispatchEvent(new Event('resize'));
     check('resize handled', Math.abs(camera.aspect - innerWidth / innerHeight) < 1e-6);
     // view scales: any ?view= must resolve to a declared entry (default is
-    // `mid` for shipped sprite readability); when `near` IS selected it must
+    // `far` for the shipped impossible-scale frame); when `near` IS selected it must
     // reproduce the pre-view-scale camera depth exactly — checked against
     // ACTIVE_FIXTURE (mode-agnostic: traversal or transform), the same
     // thing activeCameraDepth() itself reads, so this holds at any aspect.

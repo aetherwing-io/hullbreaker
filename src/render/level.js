@@ -7,11 +7,12 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { normalAscentAltAt, normalAscentPitchAt } from '../pure/ascent.js';
-import { SEGS, CORNER_S, polyAt, headingAt, faceIndexAt } from '../pure/path.js';
+import {
+  SEGS, CORNER_S, polyAt, headingAt, faceIndexAt,
+} from '../pure/path.js';
 import { deckShadePlan } from '../pure/shade.js';
 import { ACTIVE_FIXTURE, IS_G1, IS_TRANSFORM_SLICE, QUERY } from '../mode.js';
 import { installView } from '../sim/bridge.js';
-import { scrollX } from '../sim/time.js';
 import {
   LEVEL_LEN, groundH, platforms, solidRects, slamSets, farSets,
   unbuildFutureFaces,
@@ -20,7 +21,9 @@ import { scene, HIDE } from './scene.js';
 import { PAL, SHADE_GAIN } from './palette.js';
 import { applyDeckPanelTexture, applySurface } from './materials.js';
 import { deckPanelFaceGain, deckPanelUv } from './hulltiles.js';
-import { cameraFacingFacet } from './camera.js';
+import {
+  currentWorldFacet, routeRenderable, routeVisibilityStamp, routeWorldFacet,
+} from './route-visibility.js';
 
 // --- level meshes: baked per-face static geometry ---------------------
 // Tile instances are baked once along the rising tower polyline with per-column
@@ -31,8 +34,9 @@ let tiles;
 const tileBaseMats = [];                                  // final matrix per instance
 const columnInstances = new Array(LEVEL_LEN).fill(null);  // col → {start, count, settled}
 const faceRanges = [];                                    // face → {col0, col1, inst0, inst1}
-const slatMeshes = [];                                    // catwalk slats {mesh, x0, x1}
-const authoredSolidMeshes = [];                           // traversal-only tagged solid rectangles
+const slatMeshes = [];                    // catwalk panels {mesh, x0, x1, facet, samples}
+const authoredSolidMeshes = [];           // tagged solid rectangles {mesh, facet}
+const routeHullFacets = [];                // continuous hull split for strict face ownership
 const normalRunAltAt = (s) => ACTIVE_FIXTURE ? 0 : normalAscentAltAt(s, CONFIG.levelLength);
 const normalRunPitchAt = (s) => ACTIVE_FIXTURE ? 0 : normalAscentPitchAt(s, CONFIG.levelLength);
 
@@ -138,7 +142,7 @@ const _dressScale = new THREE.Vector3();
 const _dressColor = new THREE.Color();
 const dressingPools = [];
 const dressingPanelFacets = [];
-let dressingCullFacet = -1;
+let dressingCullStamp = '';
 // Keep the historic tile-pool source guard scoped to its intended pool: the
 // value-ladder test counts literal THREE.InstancedMesh construction sites.
 // DressingPool is still the same class; the alias names this separate pass.
@@ -192,34 +196,48 @@ function dressGroundArmour() {
     let end = start + 1;
     while (end < LEVEL_LEN && groundH[end] === h && faceIndexAt(end, CONFIG) === faceIndexAt(start, CONFIG)) end++;
 
-    // Modules stay broad: one framed bay every ~6 tiles, not a tile-sized
-    // checker.  Orange border remains visible around every near-black inset.
+    // Modules stay broad, but their spans follow a five-beat machine phrase
+    // rather than a metronomic six-tile repeat. The collision boxes and the
+    // continuous panel beneath are untouched; this only prevents identical
+    // orange frames from reading as wallpaper over the creature's skin.
+    const moduleSpans = [7.15, 5.85, 8.05, 6.45, 7.55];
     let bay = start + 0.35;
     while (bay < end - 1.1) {
-      const len = Math.min(5.45, end - bay - 0.25);
+      const span = moduleSpans[moduleOrdinal % moduleSpans.length];
+      const len = Math.min(span - 0.58, end - bay - 0.25);
       if (len >= 2.1) {
         const mid = bay + len / 2;
-        const pattern = moduleOrdinal % 4;
-        dressBox(mid, h - 2.45, 1.055, len - 0.32, 1.30, 0.13, PAL.limb.shadow);
-        dressBox(bay + 0.10, h - 2.45, 1.16, 0.13, 2.35, 0.08, PAL.groundAlt);
-        dressBox(bay + len - 0.10, h - 2.45, 1.16, 0.13, 2.35, 0.08, PAL.groundAlt);
+        const pattern = moduleOrdinal % 5;
+        const bayY = h - [2.34, 2.52, 2.42, 2.58, 2.38][pattern];
+        const bayH = [1.12, 1.42, 1.26, 1.50, 1.20][pattern];
+        dressBox(mid, bayY, 1.055, len - 0.32, bayH, 0.13, PAL.limb.shadow);
+        dressBox(bay + 0.10, bayY, 1.16, 0.13, bayH + 0.94, 0.08, PAL.groundAlt);
+        dressBox(bay + len - 0.10, bayY, 1.16, 0.13, bayH + 0.94, 0.08, PAL.groundAlt);
 
         if (pattern === 0 || pattern === 3) {
           // Recessed louvers survive at MID without turning into micro-noise.
-          for (const dy of pattern === 0 ? [-0.34, 0, 0.34] : [-0.22, 0.22])
-            dressBox(mid, h - 2.45 + dy, 1.135, len - 0.78, 0.075, 0.07, PAL.solid);
+          for (const dy of pattern === 0 ? [-0.30, 0, 0.30] : [-0.26, 0.26])
+            dressBox(mid, bayY + dy, 1.135, len - 0.78, 0.075, 0.07, PAL.solid);
         } else if (pattern === 1 && len >= 3.0) {
           // A proud service pipe interrupts the repeated rectangular rhythm.
-          dressPipe(mid, h - 2.45, 1.19, len - 0.92, 0.12, PAL.limb.machine);
-          dressBox(bay + 0.60, h - 2.45, 1.22, 0.20, 0.50, 0.28, PAL.catwalk);
-          dressBox(bay + len - 0.60, h - 2.45, 1.22, 0.20, 0.50, 0.28, PAL.catwalk);
-          dressBox(mid, h - 2.12, 1.19, 0.64, 0.34, 0.24, PAL.limb.wall);
+          dressPipe(mid, bayY, 1.19, len - 0.92, 0.12, PAL.limb.machine);
+          dressBox(bay + 0.60, bayY, 1.22, 0.20, 0.50, 0.28, PAL.catwalk);
+          dressBox(bay + len - 0.60, bayY, 1.22, 0.20, 0.50, 0.28, PAL.catwalk);
+          dressBox(mid, bayY + 0.33, 1.19, 0.64, 0.34, 0.24, PAL.limb.wall);
+        } else if (pattern === 4 && len >= 3.4) {
+          // Offset paired conduits make a readable large asymmetry without
+          // another tiny louver texture.
+          dressPipe(mid - len * 0.13, bayY, 1.19, len * 0.54, 0.10, PAL.limb.machine);
+          dressBox(mid + len * 0.27, bayY + 0.08, 1.19,
+            Math.max(0.58, len * 0.22), 0.62, 0.24, PAL.limb.wall);
+          dressBox(mid + len * 0.27, bayY + 0.08, 1.34,
+            Math.max(0.30, len * 0.10), 0.16, 0.08, PAL.catwalk);
         } else {
           // Split access doors: one vertical lock and two low hinge plates.
-          dressBox(mid, h - 2.45, 1.15, 0.14, 1.06, 0.08, PAL.catwalk);
-          dressBox(mid - len * 0.24, h - 2.45, 1.14, Math.max(0.48, len * 0.28), 0.10, 0.08, PAL.solid);
-          dressBox(mid + len * 0.24, h - 2.45, 1.14, Math.max(0.48, len * 0.28), 0.10, 0.08, PAL.solid);
-          dressBox(mid, h - 2.82, 1.18, 0.52, 0.18, 0.12, PAL.limb.machine);
+          dressBox(mid, bayY, 1.15, 0.14, Math.min(1.16, bayH * 0.84), 0.08, PAL.catwalk);
+          dressBox(mid - len * 0.24, bayY, 1.14, Math.max(0.48, len * 0.28), 0.10, 0.08, PAL.solid);
+          dressBox(mid + len * 0.24, bayY, 1.14, Math.max(0.48, len * 0.28), 0.10, 0.08, PAL.solid);
+          dressBox(mid, bayY - bayH * 0.29, 1.18, 0.52, 0.18, 0.12, PAL.limb.machine);
         }
 
         // Alternating pipe / equipment bays stop the lower face becoming a
@@ -233,7 +251,7 @@ function dressGroundArmour() {
           dressBox(mid, h - 3.38, 1.38, 0.52, 0.16, 0.10, PAL.catwalk);
         }
       }
-      bay += 6.15;
+      bay += span;
       moduleOrdinal++;
     }
     start = end;
@@ -361,30 +379,43 @@ function buildDressingPool(rows, geometry, material, name, shadows = true) {
 // for the camera's final detent, otherwise their back faces read as a second
 // level floating through the fold.
 export function updateWorldDressingCull() {
-  if (!WORLD_DRESSING_ENABLED || (!dressingPools.length && !dressingPanelFacets.length)) return;
-  const routeFace = faceIndexAt(scrollX, CONFIG);
-  // limb facets are 0..6; dressing has a separate intro facet 0, followed by
-  // played faces 1..6 and outro 7. Once past the intro, offset the camera's
-  // armour sector into that numbering. At a held gate this is the only value
-  // that changes while scrollX intentionally remains fixed.
-  const active = routeFace === 0 ? 0 : Math.min(CONFIG.path.faces + 1,
-    cameraFacingFacet() + 1);
-  if (active === dressingCullFacet) return;
-  dressingCullFacet = active;
+  if (!IS_G1) return;
+  const stamp = routeVisibilityStamp();
+  if (stamp === dressingCullStamp) return;
+  dressingCullStamp = stamp;
+  const active = currentWorldFacet();
   let hidden = 0;
   for (const pool of dressingPools) {
     for (let i = 0; i < pool.rows.length; i++) {
-      const remote = faceIndexAt(pool.rows[i].s, CONFIG) !== active;
+      const remote = !routeRenderable(pool.rows[i].s);
       pool.mesh.setMatrixAt(i, remote ? HIDE : pool.baseMatrices[i]);
       if (remote) hidden++;
     }
     pool.mesh.instanceMatrix.needsUpdate = true;
   }
   for (const panel of dressingPanelFacets) {
-    const visible = panel.facet === active;
-    panel.mesh.visible = visible;
-    if (!visible) hidden += panel.rows;
+    hidden += updateRoutePanelDrawRange(panel, active);
   }
+  // The production hull used to be one all-route BufferGeometry. No amount
+  // of prop culling could stop its remote deck slabs recurring through the
+  // closed coil. It is now one static mesh per phase/facet and obeys the same
+  // camera + build contract as the details mounted on it.
+  for (const panel of routeHullFacets) {
+    hidden += updateRoutePanelDrawRange(panel, active);
+  }
+  // Collision remains continuous in the simulation. These proud authored
+  // shapes are presentation lips/solids, however, and showing the next
+  // facet's versions before the orbit was the remaining source of lamps and
+  // platform silhouettes peeking around a wide desktop frame.
+  for (const row of authoredSolidMeshes) {
+    row.mesh.visible = row.facet === active && routeRenderable(row.s);
+    if (!row.mesh.visible) hidden++;
+  }
+  // Long catwalks can cross the exact construction frontier. Their
+  // geometry is appended one route column at a time, so the shared prefix
+  // gate reveals the built landing strip without leaking its unbuilt tail.
+  for (const panel of slatMeshes)
+    hidden += updateRoutePanelDrawRange(panel, active);
   dressingStats.hidden = hidden;
 }
 
@@ -435,7 +466,7 @@ function buildIndustrialDressing(panelMaterial) {
   dressingStats.pipes = dressPipes.length;
   dressingStats.lights = dressLights.length;
   // Every pool now exists; seed their shared visibility matrices once.
-  dressingCullFacet = -1;
+  dressingCullStamp = '';
   updateWorldDressingCull();
 }
 
@@ -507,6 +538,33 @@ function finishPanelGeometry(acc) {
   return geometry;
 }
 
+/* A merged route panel may straddle two construction beats: the near zipper
+   columns lock one at a time, while the far body commits together only when
+   the corner ritual finishes. Hiding the WHOLE mesh until `samples.every(...)`
+   was true erased already-built hull for the 410 ms between the camera's 0.96
+   facet handoff and finishCorner().
+
+   Construction advances monotonically along s, and both panel builders append
+   their rows in that same order. Keep one draw call per facet but reveal only
+   the contiguous built prefix with BufferGeometry.drawRange. The first
+   unbuilt row therefore remains a hard visual frontier: no future playable
+   column can leak, while the nineteen locked arrival columns present at the
+   first handoff frame continue supporting RIG. Monumental limb anatomy is a
+   separate camera-owned bake in render/limb.js and does not read this build
+   gate; collision-faithful hull, bays, lights and actors still do. */
+function updateRoutePanelDrawRange(panel, active) {
+  let drawCount = 0;
+  if (panel.facet === active) {
+    for (const sample of panel.samples) {
+      if (!routeRenderable(sample.s)) break;
+      drawCount = sample.vertexEnd;
+    }
+  }
+  panel.mesh.geometry.setDrawRange(0, drawCount);
+  panel.mesh.visible = drawCount > 0;
+  return Math.max(0, panel.rows - drawCount / 36);
+}
+
 function panelGeometry(source, routeS, worldY, facet, baseColor) {
   const acc = panelAccumulator();
   appendPanelGeometry(acc, source, new THREE.Matrix4(), routeS, worldY, facet, baseColor);
@@ -515,30 +573,44 @@ function panelGeometry(source, routeS, worldY, facet, baseColor) {
 
 function buildDressingPanelPools(rows, material) {
   if (!rows.length || !material) return;
-  const byFacet = new Map();
+  const byOwnership = new Map();
   const source = new THREE.BoxGeometry(1, 1, 1).toNonIndexed();
   for (const row of rows) {
-    const facet = faceIndexAt(row.s, CONFIG);
-    if (!byFacet.has(facet)) byFacet.set(facet, panelAccumulator());
-    appendPanelGeometry(
-      byFacet.get(facet), source, dressingMatrix(row).clone(),
-      row.s, row.y, facet, row.color,
-      _dressScale.set(row.sx, row.sy, row.sz).clone(),
-    );
+    const facet = routeWorldFacet(row.s);
+    const phase = faceIndexAt(row.s, CONFIG);
+    const key = `${facet}:${phase}`;
+    if (!byOwnership.has(key)) byOwnership.set(key, {
+      rows: [], facet, phase,
+    });
+    byOwnership.get(key).rows.push(row);
   }
-  source.dispose();
-  for (const [facet, acc] of byFacet) {
+  for (const bucket of byOwnership.values()) {
+    const { facet, phase } = bucket;
+    const acc = panelAccumulator();
+    const samples = [];
+    // Build state is a route prefix. Sorting once at bake time makes drawRange
+    // the exact same prefix even though dressing authoring emits rows by role.
+    bucket.rows.sort((a, b) => a.s - b.s);
+    for (const row of bucket.rows) {
+      appendPanelGeometry(
+        acc, source, dressingMatrix(row).clone(),
+        row.s, row.y, facet, row.color,
+        _dressScale.set(row.sx, row.sy, row.sz).clone(),
+      );
+      samples.push({ s: row.s, vertexEnd: acc.vertices });
+    }
     const mesh = new THREE.Mesh(finishPanelGeometry(acc), material);
-    mesh.name = `Meridian painted service bays face ${facet}`;
+    mesh.name = `Meridian painted service bays face ${facet} phase ${phase}`;
     mesh.userData.environmentRole = 'painted-service-bays';
     mesh.userData.routeFacet = facet;
     mesh.frustumCulled = false;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    dressingPanelFacets.push({ mesh, facet, rows: acc.vertices / 36 });
+    dressingPanelFacets.push({ mesh, facet, rows: acc.vertices / 36, samples });
     scene.add(mesh);
     dressingStats.drawPools++;
   }
+  source.dispose();
 }
 
 function platformProfileGeometry(len) {
@@ -559,6 +631,47 @@ function platformProfileGeometry(len) {
   return geometry;
 }
 
+// Split a platform only at simulation-column boundaries. Construction owns
+// those same half-open [column,column+1) intervals, so a sample at each
+// segment midpoint answers for every triangle in that segment. Fractional
+// authored ends remain exact and adjacent segments share an edge — no visual
+// shortening, overlap, or collision change.
+function platformBuildSegments(x0, x1) {
+  const segments = [];
+  let cursor = x0;
+  while (cursor < x1) {
+    const columnEnd = Math.floor(cursor) + 1;
+    const end = Math.min(x1, columnEnd);
+    segments.push({ x0: cursor, x1: end, s: (cursor + end) * 0.5 });
+    cursor = end;
+  }
+  return segments;
+}
+
+// One mesh/draw call per authored catwalk, but triangles are ordered from its
+// route start to its route end. updateRoutePanelDrawRange can therefore clip
+// at the first unbuilt column exactly as it does for the continuous hull. Each
+// segment retains the profiled cap geometry, so a temporarily exposed build
+// frontier remains a finished mechanical edge rather than an open shell.
+function platformPrefixGeometry(p, mid, facet) {
+  const acc = panelAccumulator();
+  const samples = [];
+  for (const segment of platformBuildSegments(p.x0, p.x1)) {
+    const source = platformProfileGeometry(segment.x1 - segment.x0);
+    const localOffset = new THREE.Matrix4().makeTranslation(segment.s - mid, 0, 0);
+    appendPanelGeometry(
+      acc, source, localOffset, segment.s, p.y - 0.13, facet, PAL.catwalk,
+    );
+    source.dispose();
+    samples.push({ s: segment.s, vertexEnd: acc.vertices });
+  }
+  return {
+    geometry: finishPanelGeometry(acc),
+    rows: acc.vertices / 36,
+    samples,
+  };
+}
+
 // The transformation slice replaces the tower with its own band geometry
 // (src/render/transform.js), so the six-face bake is skipped entirely
 // rather than left hidden behind the fog at the wrong heading.
@@ -568,7 +681,7 @@ if (!IS_TRANSFORM_SLICE) {
 
   const tileGeo = new THREE.BoxGeometry(1, 1, 2);
   const panelTileGeo = IS_G1 ? tileGeo.toNonIndexed() : null;
-  const panelBake = IS_G1 ? panelAccumulator() : null;
+  const panelBakes = IS_G1 ? new Map() : null;
   const panelMat = applyDeckPanelTexture(applySurface(new THREE.MeshStandardMaterial({
     color: 0xffffff,
     vertexColors: true,
@@ -620,9 +733,16 @@ if (!IS_TRANSFORM_SLICE) {
       // skin into a one-tile checkerboard. They read as overlapping scutes at
       // play scale; the two authored values still make forward motion visible.
       const scuteBand = (Math.floor(i / 6) + Math.floor((d - 1) / 2)) % 2;
-      if (panelBake) {
-        appendPanelGeometry(panelBake, panelTileGeo, m, atS, j + 0.5, f,
+      if (panelBakes) {
+        const facet = routeWorldFacet(atS);
+        const ownershipKey = `${facet}:${f}`;
+        if (!panelBakes.has(ownershipKey)) panelBakes.set(ownershipKey, {
+          acc: panelAccumulator(), columnEnds: new Map(), facet, phase: f,
+        });
+        const bucket = panelBakes.get(ownershipKey);
+        appendPanelGeometry(bucket.acc, panelTileGeo, m, atS, j + 0.5, f,
           _tile.copy(scuteBand === 0 ? cA : cB).multiplyScalar(k));
+        bucket.columnEnds.set(i, bucket.acc.vertices);
       } else {
         tiles.setMatrixAt(idx, m);
         tiles.setColorAt(idx, _tile.copy(scuteBand === 0 ? cA : cB).multiplyScalar(k));
@@ -631,11 +751,28 @@ if (!IS_TRANSFORM_SLICE) {
     }
     faceRanges[f].inst1 = idx - 1;
   }
-  if (panelBake) {
-    tiles = new THREE.Mesh(finishPanelGeometry(panelBake), panelMat);
+  if (panelBakes) {
+    tiles = new THREE.Group();
     tiles.name = 'Meridian continuous route hull';
     tiles.userData.environmentRole = 'collision-faithful-painted-hull';
-    tiles.userData.panelVertices = panelBake.vertices;
+    let panelVertices = 0;
+    for (const bucket of panelBakes.values()) {
+      const { facet, phase } = bucket;
+      const mesh = new THREE.Mesh(finishPanelGeometry(bucket.acc), panelMat);
+      mesh.name = `Meridian continuous route hull face ${facet} phase ${phase}`;
+      mesh.userData.environmentRole = 'collision-faithful-painted-hull-facet';
+      mesh.userData.routeFacet = facet;
+      mesh.frustumCulled = false;
+      const samples = [...bucket.columnEnds].map(([column, vertexEnd]) => ({
+        s: column + 0.5, vertexEnd,
+      }));
+      routeHullFacets.push({
+        mesh, facet, phase, samples, rows: bucket.acc.vertices / 36,
+      });
+      tiles.add(mesh);
+      panelVertices += bucket.acc.vertices;
+    }
+    tiles.userData.panelVertices = panelVertices;
     tileGeo.dispose();
     panelTileGeo.dispose();
   } else {
@@ -666,7 +803,7 @@ if (!IS_TRANSFORM_SLICE) {
     mesh.rotation.y = headingAt(SEGS, midX);
     mesh.userData.fixtureSolidId = rect.id;
     scene.add(mesh);
-    authoredSolidMeshes.push(mesh);
+    authoredSolidMeshes.push({ mesh, facet: routeWorldFacet(midX), s: midX });
   }
 
   const walkMat = applySurface(new THREE.MeshStandardMaterial({
@@ -677,13 +814,11 @@ if (!IS_TRANSFORM_SLICE) {
     const len = p.x1 - p.x0;
     const mid = (p.x0 + p.x1) / 2;
     const wp = polyAt(SEGS, mid);
-    const source = IS_G1
-      ? platformProfileGeometry(len)
+    const facet = routeWorldFacet(mid);
+    const prefix = IS_G1 ? platformPrefixGeometry(p, mid, facet) : null;
+    const geometry = prefix
+      ? prefix.geometry
       : new THREE.BoxGeometry(len, 0.18, 1.4);
-    const geometry = IS_G1
-      ? panelGeometry(source, mid, p.y - 0.13, faceIndexAt(mid, CONFIG), PAL.catwalk)
-      : source;
-    if (geometry !== source) source.dispose();
     const slat = new THREE.Mesh(geometry, IS_G1 ? panelMat : walkMat);
     // The profile's local top is y=0, exactly the collision plane. Non-G1
     // fixtures retain the historic centered 0.18 slab.
@@ -696,8 +831,19 @@ if (!IS_TRANSFORM_SLICE) {
     slat.name = 'Meridian profiled catwalk';
     slat.userData.environmentRole = 'collision-faithful-painted-platform';
     scene.add(slat);
-    slatMeshes.push({ mesh: slat, x0: p.x0, x1: p.x1 });
+    slatMeshes.push({
+      mesh: slat, x0: p.x0, x1: p.x1, facet, s: mid,
+      rows: prefix ? prefix.rows : 1,
+      samples: prefix ? prefix.samples : [
+        { s: mid, vertexEnd: geometry.getAttribute('position').count },
+      ],
+    });
   }
   if (WORLD_DRESSING_ENABLED) buildIndustrialDressing(panelMat);
   unbuildFutureFaces();                                // after slats: they hide with their face
+  // MENU renders before the first simulation update. Seed route ownership
+  // after the build reset even under ?world=0, where no dressing pool exists
+  // to invoke this through onBeforeRender.
+  dressingCullStamp = '';
+  updateWorldDressingCull();
 }

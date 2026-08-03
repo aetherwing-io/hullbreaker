@@ -134,11 +134,11 @@ export const SLICE_FALLBACK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('fallback'
 // the streak ceiling the stock lives path is still the next consequence tier.
 export const RUN_FALLBACK_ENABLED = ACTIVE_FIXTURE === null && QUERY.get('fallback') !== '0';
 // ?view=near|mid|far selects a camera pull-back multiplier (CONFIG.viewScales).
-// The shipped view resolves to MID: it holds the concept board's tiny-human
-// scale at 5% while keeping the sprite silhouettes readable in motion. FAR
-// remains available for the monumental-scale A/B, and NEAR for accessibility.
+// FAR is the normal-run composition: RIG occupies about 3.7% of the frame,
+// matching the supplied climb boards and leaving real maneuvering air around
+// actors. MID and NEAR remain explicit accessibility/comparison views.
 const VIEW_RAW = QUERY.get('view');
-export const VIEW_ID = CONFIG.viewScales[VIEW_RAW] ? VIEW_RAW : 'mid';
+export const VIEW_ID = CONFIG.viewScales[VIEW_RAW] ? VIEW_RAW : 'far';
 
 // Opt-in houndframe trial (DESIGN: teach → test → remix), orthogonal to the
 // pace: ?hound=1 teaches the charge alone, ?hound=2 adds the wasp that contests

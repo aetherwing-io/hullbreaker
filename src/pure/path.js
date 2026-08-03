@@ -87,6 +87,40 @@ export function bendSList(cfg) {
   return cornerSList(cfg).map((cs) => cs + cfg.path.chamferTiles / 2);
 }
 
+// Which broad hull facet owns a logical route position. Unlike faceIndexAt(),
+// ownership changes at the MIDDLE of the two-step chamfer: everything before
+// that fold still belongs to the departing face, and everything after it to
+// the arriving face. Renderers use this to prevent an actor/effect parked on
+// the far half of the coil from being visible through the turn. `bends` is an
+// argument (normally BEND_S) so hot render paths do not rebuild the list.
+export function facetAtBends(s, bends) {
+  let facet = 0;
+  while (facet < bends.length && s >= bends[facet]) facet++;
+  return facet;
+}
+
+// Static route art needs a slightly finer owner than facetAtBends(): the
+// straight intro and the first tower face share a heading, but they are
+// separate reveal phases.  Keeping this arithmetic pure gives every render
+// lane (hull, props, pickups and actors) one definition of "future face".
+export function worldFacetAt(s, cfg, bends) {
+  if (faceIndexAt(s, cfg) === 0) return 0;
+  return facetAtBends(s, bends) + 1;
+}
+
+export function activeWorldFacet(scroll, cameraFacet, cfg) {
+  if (faceIndexAt(scroll, cfg) === 0) return 0;
+  return Math.min(cfg.path.faces + 1, cameraFacet + 1);
+}
+
+// `built` is deliberately supplied by the caller: path.js remains pure and
+// the simulation keeps sole ownership of face construction.  A route-bound
+// renderable exists only when both topology and construction agree.
+export function routeRenderOwned(s, built, scroll, cameraFacet, cfg, bends) {
+  return !!built &&
+    worldFacetAt(s, cfg, bends) === activeWorldFacet(scroll, cameraFacet, cfg);
+}
+
 // Interval test, deliberately not an endpoint test: a substep that leaps over
 // a boundary still crosses it, so no projectile speed or frame time can skip
 // the cull. Half-open (lo, hi] so a projectile already sitting exactly on a

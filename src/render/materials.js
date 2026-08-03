@@ -582,17 +582,19 @@ export function applyHullTexture(material, key) {
 }
 
 // Instanced armour normally shares one UV origin, which made every enormous
-// foreground scute repeat the exact same dark channel in lockstep. A second
-// bucket may cheaply decorrelate that origin: clone only the tiny texture
-// descriptor/image binding, retain the exact density/tone/bump calibration,
-// and offset within its existing repeat. Variant zero remains byte-for-byte
-// the original material path.
+// foreground scute repeat the exact same dark channel in lockstep. A small
+// fixed family of buckets cheaply decorrelates that origin: clone only the
+// texture descriptor/image binding, retain the exact density/tone/bump
+// calibration, and offset within its existing repeat. Variant zero remains
+// byte-for-byte the original material path.
 export function varyHullTexture(material, variant = 0) {
   if (!(variant > 0) || !material || !material.map) return material;
   const transforms = [
     [0, 0, 0],
-    [0.37, 0.19, Math.PI / 2],
+    [0.37, 0.19, 0],
     [0.68, 0.47, Math.PI],
+    [0.13, 0.71, Math.PI],
+    [0.82, 0.29, 0],
   ];
   const tr = transforms[variant % transforms.length];
   const tex = material.map.clone();

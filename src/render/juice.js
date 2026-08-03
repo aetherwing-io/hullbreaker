@@ -41,8 +41,8 @@ import { activeCorner } from '../sim/wavegate.js';
 import { activeTransformEvent } from '../sim/transform.js';
 import { addTrauma, cameraTrauma } from './camera.js';
 import {
-  fxBurst, fxCrush, fxDirectedBurst, fxFlash, fxHostileColor, fxRing, fxRole,
-  fxShotColor, fxStats, resetFx, updateFx,
+  fxBurst, fxCrush, fxDirectedBurst, fxFlash, fxHostileColor, fxImplode,
+  fxRing, fxRole, fxShotColor, fxStats, resetFx, updateFx,
 } from './fx.js';
 
 const J = CONFIG.juice;
@@ -55,11 +55,11 @@ const TT = transformTimeline(CONFIG);
 // trigger pull at the camera: rifle crack, spread fan, laser corridor, homing
 // petals, and flame rake.
 const WEAPON_FX = {
-  R: { flash: 1.25, fan: 0.75, spread: 0.10, hit: 1.00, ring: 0.00 },
-  S: { flash: 1.30, fan: 1.00, spread: 0.72, hit: 1.15, ring: 0.00 },
-  L: { flash: 1.65, fan: 0.50, spread: 0.04, hit: 1.75, ring: 1.30 },
-  H: { flash: 1.45, fan: 0.50, spread: 0.58, hit: 1.25, ring: 0.85 },
-  F: { flash: 1.90, fan: 1.50, spread: 0.46, hit: 1.50, ring: 1.10 },
+  R: { flash: 1.25, fan: 0.75, spread: 0.10, hit: 1.00, hitSpread: 0.42, breach: 0.00 },
+  S: { flash: 1.30, fan: 1.00, spread: 0.72, hit: 1.15, hitSpread: 0.78, breach: 0.00 },
+  L: { flash: 1.65, fan: 0.50, spread: 0.04, hit: 1.75, hitSpread: 0.12, breach: 1.30 },
+  H: { flash: 1.45, fan: 0.50, spread: 0.58, hit: 1.25, hitSpread: 0.34, breach: 0.85 },
+  F: { flash: 1.90, fan: 1.50, spread: 0.46, hit: 1.50, hitSpread: 0.62, breach: 1.10 },
 };
 
 /* ---------------------------- throttles --------------------------- *
@@ -85,7 +85,7 @@ let recentShotAt = -1e9;
 
 // Muzzle theater: one event per volley, at the actual firing line along the
 // aim. The fan is visible immediately, before the projectiles have had a frame
-// to separate; laser/homing/flame also stamp a small launch ring.
+// to separate; laser/homing/flame also kick apart a small launch shutter.
 function onShotSpawned(_i, type) {
   recentShotType = WEAPON_FX[type] ? type : 'R';
   recentShotAt = gameMs;
@@ -98,7 +98,7 @@ function onShotSpawned(_i, type) {
   const color = fxShotColor(recentShotType);
   fxFlash(M.ms, M.size * W.flash, x, y, color);
   fxDirectedBurst(J.impact, x, y, color, ax, ay, W.spread, W.fan);
-  if (W.ring > 0) fxRing(M.ms * 1.8, M.size * W.ring, x, y, color, 0.02);
+  if (W.breach > 0) fxRing(M.ms * 1.8, M.size * W.breach, x, y, color, 0.02);
 }
 
 // hostiles: an hp drop is an impact (armour pings do not drop hp, so an
@@ -115,8 +115,17 @@ function onHostileSync(e) {
     const W = WEAPON_FX[type];
     const weight = Math.min(2.1, W.hit * (1 + Math.max(0, hp - e.hp - 1) * 0.22));
     const color = fxShotColor(type);
-    fxBurst(J.impact, e.x, e.y, color, weight);
-    if (W.ring > 0) fxRing(120, 0.72 * W.ring, e.x, e.y, color, 0.03);
+    // Continue the projectile's sentence through the struck body. A radial
+    // wheel made every weapon feel like the same grenade and obscured which
+    // direction the hit arrived from; this fan inherits the muzzle→target
+    // vector and only its spread/weight vary by chassis.
+    const dx = e.x - player.x;
+    const dy = e.y - (player.y + player.muzzleY);
+    const inv = 1 / Math.max(0.001, Math.hypot(dx, dy));
+    fxDirectedBurst(J.impact, e.x, e.y, color,
+      dx * inv, dy * inv, W.hitSpread, weight);
+    fxFlash(Math.min(120, J.impact.ms * 0.48), 0.24 + W.hit * 0.17,
+      e.x, e.y, color, 0.03);
   }
   hostileHp.set(e.id, e.hp);
 }
@@ -124,6 +133,76 @@ function onHostileSync(e) {
 let deathChain = 0;
 let lastDeathAt = -1e9;
 let firstBreakDone = false;
+
+// One Warden can own the Crown encounter. Its destruction therefore gets a
+// tiny fixed sequencer rather than spending all of its punctuation on the
+// removal frame: outer hardpoints eject, the exposed signal is pulled inward,
+// then the core cracks into the mount. This is render state only—no timer or
+// finale rule reads it—and every stage claims from the existing FX pools.
+const wardenRupture = {
+  active: false, t0: 0, stage: 0, x: 0, y: 0, dir: 1,
+  signal: 0, carrier: 0, enemy: 0,
+};
+
+function armWardenRupture(e, signal, carrier, enemy) {
+  wardenRupture.active = true;
+  wardenRupture.t0 = gameMs;
+  wardenRupture.stage = 0;
+  wardenRupture.x = e.x;
+  wardenRupture.y = e.y;
+  wardenRupture.dir = Math.sign(e.vx) || e.dir || 1;
+  wardenRupture.signal = signal;
+  wardenRupture.carrier = carrier;
+  wardenRupture.enemy = enemy;
+}
+
+function updateWardenRupture() {
+  if (!wardenRupture.active) return;
+  const w = wardenRupture;
+  const elapsed = gameMs - w.t0;
+
+  if (w.stage === 0 && elapsed >= 240) {
+    w.stage = 1;
+    // Weapon shoulders clear the silhouette in opposite directions. Two
+    // local fans read as heavy assemblies leaving their rails, not confetti.
+    fxDirectedBurst(J.death, w.x - 1.55, w.y + 0.10, w.enemy,
+      -1, 0.24, 0.28, 1.55);
+    fxDirectedBurst(J.death, w.x + 1.55, w.y + 0.10, w.enemy,
+      1, 0.24, 0.28, 1.55);
+    fxFlash(155, 0.92, w.x, w.y + 0.18, w.carrier, 0.08);
+    addTrauma(S.boom * 0.42);
+    return;
+  }
+
+  if (w.stage === 1 && elapsed >= 650) {
+    w.stage = 2;
+    // Signal packets run back along the severed rails while the aperture
+    // physically closes. fxImplode is the same jagged pooled glyph as an
+    // impact flash, but its scale sentence is inward.
+    fxDirectedBurst(J.impact, w.x - 1.48, w.y + 0.04, w.signal,
+      1, 0, 0.18, 1.35);
+    fxDirectedBurst(J.impact, w.x + 1.48, w.y + 0.04, w.signal,
+      -1, 0, 0.18, 1.35);
+    fxImplode(360, 2.75, w.x, w.y + 0.02, w.signal, 0.12);
+    addTrauma(S.boom * 0.62);
+    return;
+  }
+
+  if (w.stage === 2 && elapsed >= 1010) {
+    w.stage = 3;
+    // The last beat goes INTO the Crown mount and vents one compact plume.
+    // No expanding circle or screen-wide white slab stands in for the core.
+    fxDirectedBurst(J.death, w.x, w.y - 0.04, w.carrier,
+      0, -1, 0.34, 1.25);
+    fxDirectedBurst(J.impact, w.x, w.y + 0.08, w.signal,
+      0, 1, 0.46, 1.05);
+    fxFlash(165, 0.78, w.x, w.y, w.carrier, 0.10);
+    addTrauma(S.boom * 0.78);
+    return;
+  }
+
+  if (w.stage === 3 && elapsed >= 1260) w.active = false;
+}
 
 function onHostileRemoved(e, fade) {
   hostileHp.delete(e.id);
@@ -140,7 +219,8 @@ function onHostileRemoved(e, fade) {
   // vent through their mount. There is deliberately no universal radial
   // burst or expanding perfect ring hiding the species sentence.
   const dir = Math.sign(e.vx) || e.dir || -1;
-  fxFlash(J.death.flashMs, J.death.flashSize * Math.min(1.5, chainScale),
+  const flashScale = e.kind === 'warden' ? 2.15 : Math.min(1.5, chainScale);
+  fxFlash(J.death.flashMs, J.death.flashSize * flashScale,
     e.x, e.y, shotColor);
   if (e.kind === 'wasp') {
     fxDirectedBurst(J.death, e.x, e.y, enemyColor, dir, -0.46, 0.74,
@@ -169,6 +249,10 @@ function onHostileRemoved(e, fade) {
       0.76 * chainScale);
     fxDirectedBurst(J.impact, e.x, e.y - 0.12, shotColor, 0, -1, 0.28,
       0.58 * chainScale);
+  } else if (e.kind === 'warden') {
+    fxDirectedBurst(J.death, e.x, e.y, enemyColor, -1, 0.28, 0.34, 1.35);
+    fxDirectedBurst(J.death, e.x, e.y, enemyColor, 1, 0.28, 0.34, 1.35);
+    fxDirectedBurst(J.impact, e.x, e.y + 0.08, shotColor, 0, 1, 0.52, 1.4);
   } else {
     fxDirectedBurst(J.death, e.x, e.y, enemyColor, 0, 1, 1.20,
       chainScale);
@@ -186,18 +270,13 @@ function onHostileRemoved(e, fade) {
       0.42, 0.48);
   }
 
-  // The six-tile Warden cannot die with the one-tile hostile punctuation.
-  // Its body animation still owns the broad buckle; this is the matching
-  // Crown rupture: two bounded fronts, upward plate energy and one deep
-  // camera impulse. It runs once on removal and uses the existing fixed pools.
+  // The six-tile Warden cannot die with one-tile punctuation. Arm the fixed
+  // three-stage sequencer; the corpse renderer owns the matching physical
+  // limb/core motion while this layer contributes only light and fragments.
   if (e.kind === 'warden') {
     const signal = fxRole('capsule');
     const carrier = fxRole('muzzle');
-    fxDirectedBurst(J.death, e.x, e.y, signal, 0, 1, 1.75, 3.0);
-    fxDirectedBurst(J.impact, e.x, e.y, carrier, 0, 1, 0.82, 2.25);
-    fxDirectedBurst(J.death, e.x, e.y, enemyColor, -1, 0.35, 0.54, 1.7);
-    fxDirectedBurst(J.death, e.x, e.y, enemyColor, 1, 0.35, 0.54, 1.7);
-    fxFlash(280, 2.45, e.x, e.y, carrier, 0.08);
+    armWardenRupture(e, signal, carrier, enemyColor);
     addTrauma(S.boom * 1.45);
   }
 
@@ -213,8 +292,8 @@ function onHostileRemoved(e, fade) {
     addTrauma(S.boom * 0.8);
   }
 
-  // Three fast kills earn the one larger beat. It is capped to a 3.8-tile
-  // ring and a 600ms gate: spectacular in a crowd, never a screen-white spam.
+  // Three fast kills earn the one larger beat. It is capped and gated at
+  // 600ms: spectacular in a crowd, never screen-white spam.
   if (deathChain >= 3 && gate('chainBlast', 600)) {
     const payoff = Math.min(1.65, 1.25 + (deathChain - 3) * 0.14);
     fxDirectedBurst(J.death, e.x, e.y, shotColor, -dir, 0.56, 0.66, payoff);
@@ -279,8 +358,8 @@ function onPlayerSync() {
     const radius = CONFIG.score.shockRadius;
     fxDirectedBurst(J.death, x, y, color, 0, 1, 2.45, 1.45);
     fxFlash(190, 1.75, x, y, color, 0.08);
-    // fxRing's unit torus has radius 0.5; diameter 2r draws the true damage
-    // radius before the second, looser echo expands beyond it and disappears.
+    // The first broken shutter reaches the true damage diameter; the second
+    // is a looser mechanical echo. Open gaps keep RIG and the route readable.
     fxRing(320, radius * 2, x, y, color, 0.10);
     fxRing(510, radius * 2.55, x, y, fxRole('warn'), 0.04);
     addTrauma(S.boom * 0.72);
@@ -343,6 +422,8 @@ function onStateScreen(next) {
   recentShotType = 'R'; recentShotAt = -1e9;
   deathChain = 0; lastDeathAt = -1e9;
   firstBreakDone = false;
+  wardenRupture.active = false;
+  wardenRupture.stage = 0;
   prev.hp = player.hp;
   prev.airJumpsLeft = player.airJumpsLeft;
   prev.traversalState = player.traversalState;
@@ -376,6 +457,7 @@ export function updateJuice() {
     (xf && xf.state === 'turning');
   if (ritual) addTrauma(S.rumbleMax * S.decayPerSec * (dtMs / 1000));
 
+  updateWardenRupture();
   updateFx(dtMs);
 
   // crush-edge warning: the pursuing damage plane, intensifying as RIG's
@@ -391,6 +473,7 @@ export function juiceSnapshot() {
     enabled: JUICE_ENABLED,
     trauma: JUICE_ENABLED ? +cameraTrauma().toFixed(4) : 0,
     hitStopMs: JUICE_ENABLED ? +hitStopRemainingMs().toFixed(2) : 0,
+    wardenRupture: wardenRupture.active ? wardenRupture.stage : -1,
     ...fx,
   };
 }

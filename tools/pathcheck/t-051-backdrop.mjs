@@ -168,7 +168,12 @@ export async function run() {
 
   /* --- 8. the loader contract (same shape as T-049's own gate) ---------- */
   const backdropSrc = stripComments(readFileSync(join(srcDir, 'render', 'backdrop.js'), 'utf8'));
+  const preloadSrc = stripComments(readFileSync(join(srcDir, 'render', 'preload.js'), 'utf8'));
   const mainSrc = stripComments(readFileSync(join(srcDir, 'main.js'), 'utf8'));
+  const deployVerifierSrc = stripComments(readFileSync(
+    join(here, '..', 'tools', 'deploy', 'verify-bundle.mjs'), 'utf8',
+  ));
+  const assetManifest = JSON.parse(readFileSync(join(here, '..', 'assets', 'manifest.json'), 'utf8'));
 
   ok(!/new THREE\.TextureLoader/.test(backdropSrc),
      'T-051: src/render/backdrop.js constructs no loader of its own — T-049\'s own gate ' +
@@ -187,6 +192,20 @@ export async function run() {
   ok(!/api\.show\(|__HB_FAILSAFE\.show|\.show\(['"]crash/.test(backdropSrc),
      'T-051: a missing or broken plate NOTES the failure and never raises the T-032 ' +
      'panel — a failed asset is not a dead game');
+  const anatomyAsset = assetManifest.assets.find((a) => a.id === 'backdrop-meridian-anatomy-v1');
+  ok(anatomyAsset?.path === 'assets/generated/backdrops/backdrop-meridian-anatomy-v1.png' &&
+     anatomyAsset?.gpu === false,
+     'T-051: the connected anatomy source is a declared CPU-only bundle asset — it ' +
+     'cannot disappear from a git-archive deploy while the procedural fallback masks it');
+  ok(/preloadTexture\(anatomyUrl, \{ cpuOnly: true \}\)/.test(backdropSrc) &&
+     /ready\.filter\(\(e\) => !e\.cpuOnly\)/.test(preloadSrc),
+     'T-051: the anatomy painting is decoded for canvas composition but excluded ' +
+     'from the shared GPU warm-up; only its derived curved-shell textures are uploaded');
+  ok(/anatomyBody/.test(deployVerifierSrc) &&
+     /atmosphere\?\.anatomy/.test(deployVerifierSrc) &&
+     /composited\s*===\s*true/.test(deployVerifierSrc),
+     'T-051: the clean-bundle verifier requires both anatomy source residency and ' +
+     'successful curved-shell composition, rather than accepting the fallback as final art');
 
   // src/main.js reaches backdrop.js directly (not counting on some other
   // module to drag it in as a side effect)

@@ -65,6 +65,11 @@ import * as d52 from './t-052-hull-texture.mjs';
 import * as d53 from './t-051-backdrop.mjs';
 import * as d54 from './t-054-hull-contrast.mjs';
 import * as d55 from './t-057-hull-shimmer.mjs';
+import * as d56 from './fold-handoff-player-ownership.mjs';
+import * as d57 from './future-facet-render-ownership.mjs';
+import * as d58 from './mod-route-visibility.mjs';
+import * as d59 from './limb-fold-bridge-locality.mjs';
+import * as d60 from './catwalk-built-prefix-visibility.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -123,4 +128,9 @@ export const DOMAINS = [
   d53,    // T-051: backdrop layers (graded anatomy plates, entries 16/17) ====
   d54,    // T-054: hull texture legibility — density + range (entries 16/18) ====
   d55,    // T-057: I-049 lower-hull shimmer — anisotropy fix + canvas non-regression
+  d56,    // fold handoff: player ownership without old-facet leaks
+  d57,    // future-face render ownership: generated is not visible
+  d58,    // modifier echoes and telegraphs obey route visibility
+  d59,    // limb fold bridge is local to the shared chamfer
+  d60,    // long catwalks expose only their built route prefix
 ];

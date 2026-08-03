@@ -819,6 +819,34 @@
       "alpha": "cutout"
     },
     {
+      "id": "backdrop-meridian-anatomy-v1",
+      "path": "assets/generated/backdrops/backdrop-meridian-anatomy-v1.png",
+      "category": "backdrops",
+      "size": {
+        "w": 1672,
+        "h": 941
+      },
+      "source": "assets/generated/backdrops/backdrop-meridian-anatomy-v1.prompt.md",
+      "gpu": false,
+      "task": "T-051",
+      "generator": "OpenAI built-in ImageGen; complete generation prompt and concept-art references are preserved in the declared source file",
+      "addedOn": "2026-08-03",
+      "notes": "OPAQUE source painting for the connected Meridian anatomy pass. It is decoded CPU-only by preloadTexture({ cpuOnly: true }), cover-fitted into the curved 1024x512 storm canvases, combat-band attenuated, then edge-feathered with those canvases; this NPOT source is never mapped or uploaded directly. The derived CanvasTextures are the GPU-resident assets. Missing source pixels are a manifest/deploy-verifier failure, while runtime still retains the procedural storm fallback.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "deep-teal",
+          "haze",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      },
+      "alpha": "opaque"
+    },
+    {
       "id": "hull-panel-tile",
       "path": "assets/generated/textures/hull-panel-tile.png",
       "category": "textures",

@@ -3,10 +3,10 @@
    actually draw it. Four additions to the scene, all additive and all
    fixed-size:
 
-     sparks   — impact / death / hurt / pickup particle bursts
-     flashes  — muzzle flash, kill pop, pickup pop (expanding, fading)
-     rings    — face-hugging weapon / destruction shock fronts
-     crush    — the pursuing damage plane's warning haze
+     sparks    — impact / death / hurt / pickup machined fragments
+     flashes   — jagged muzzle / impact apertures (expanding, fading)
+     breaches  — separated face-hugging destruction shutters
+     crush     — the pursuing damage plane's warning haze
 
    WHAT THIS MODULE IS NOT: it decides nothing. `src/render/juice.js` owns
    the event vocabulary (what a kill looks like), `src/pure/juice.js` owns
@@ -95,6 +95,8 @@ const _sDir = new THREE.Vector3();
 const _sScale = new THREE.Vector3();
 const _sPos = new THREE.Vector3();
 const _ringScale = new THREE.Vector3();
+const _flashRot = new THREE.Matrix4();
+const _ringRot = new THREE.Matrix4();
 
 const SPARK_MAX = J.pools.particles;
 const FLASH_MAX = J.pools.flashes;
@@ -126,6 +128,154 @@ let sparkMesh = null, flashMesh = null, ringMesh = null, crushMesh = null, crush
 let seed = 1;                            // burst-shape seed, bumped per burst
 let liveSparks = 0, liveFlashes = 0, liveRings = 0;
 
+/* These three silhouettes replace the primitive debug vocabulary this pool
+ * originally shipped with (octahedron particles, sphere flashes and a
+ * mathematically perfect torus). They are built once at boot, still render
+ * through the same three fixed instanced pools, and allocate nothing when a
+ * shot or death happens.
+ *
+ * Local +x is the travel axis for a shard. Four deliberately unequal faces
+ * give it a nose, shoulder and torn tail, so velocity stretch reads as metal
+ * or shell casing rather than a glowing diamond. */
+function machinedShardGeometry() {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute([
+     0.55,  0.00,  0.00,
+    -0.08,  0.22,  0.08,
+    -0.08, -0.18,  0.10,
+    -0.50,  0.04, -0.06,
+  ], 3));
+  geo.setIndex([
+    0, 1, 2,
+    0, 3, 1,
+    0, 2, 3,
+    1, 3, 2,
+  ]);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+// A compact, asymmetric aperture plus disconnected tapered rays. Its broken
+// outline remains readable at FAR without becoming the old fuzzy light ball.
+function impactFlashGeometry() {
+  const positions = [];
+  const indices = [];
+  const hub = [
+    [0.21, 0.02], [0.10, 0.20], [-0.12, 0.17],
+    [-0.22, -0.03], [-0.07, -0.19], [0.15, -0.14],
+  ];
+  positions.push(0, 0, 0);
+  for (const p of hub) positions.push(p[0], p[1], 0);
+  for (let i = 0; i < hub.length; i++)
+    indices.push(0, 1 + i, 1 + ((i + 1) % hub.length));
+
+  // angle, inner radius, outer radius, half-width at the root. Unequal gaps
+  // prevent the glyph from resolving into a starburst wheel.
+  const rays = [
+    [0.02, 0.19, 0.56, 0.055],
+    [0.84, 0.23, 0.45, 0.048],
+    [1.76, 0.18, 0.62, 0.060],
+    [2.70, 0.22, 0.48, 0.052],
+    [3.58, 0.19, 0.58, 0.068],
+    [4.84, 0.21, 0.50, 0.050],
+    [5.56, 0.20, 0.42, 0.043],
+  ];
+  for (const [angle, inner, outer, half] of rays) {
+    const base = positions.length / 3;
+    const ca = Math.cos(angle), sa = Math.sin(angle);
+    const tx = -sa * half, ty = ca * half;
+    positions.push(
+      ca * inner + tx, sa * inner + ty, 0,
+      ca * outer, sa * outer, 0,
+      ca * inner - tx, sa * inner - ty, 0,
+    );
+    indices.push(base, base + 1, base + 2);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setIndex(indices);
+  return geo;
+}
+
+// Five separated trapezoidal iris plates: an opening/breaking mechanism, not
+// a complete circle. fxRing keeps its old exported name for callers and
+// telemetry compatibility, but no ring geometry exists in this effect pool.
+function breachFrontGeometry() {
+  const positions = [];
+  const indices = [];
+  const plates = [
+    [0.08, 0.30, 0.53, 0.115, 0.045],
+    [1.18, 0.34, 0.48, 0.095, 0.060],
+    [2.24, 0.28, 0.51, 0.125, 0.052],
+    [3.34, 0.35, 0.55, 0.090, 0.050],
+    [4.61, 0.29, 0.49, 0.120, 0.066],
+  ];
+  for (const [angle, inner, outer, halfInner, halfOuter] of plates) {
+    const base = positions.length / 3;
+    const ca = Math.cos(angle), sa = Math.sin(angle);
+    const tx = -sa, ty = ca;
+    positions.push(
+      ca * inner + tx * halfInner, sa * inner + ty * halfInner, 0,
+      ca * outer + tx * halfOuter, sa * outer + ty * halfOuter, 0,
+      ca * outer - tx * halfOuter, sa * outer - ty * halfOuter, 0,
+      ca * inner - tx * halfInner, sa * inner - ty * halfInner, 0,
+    );
+    indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setIndex(indices);
+  return geo;
+}
+
+// The pursuing boundary is a gameplay plane, not a wall in the world.  Its
+// old 0.8 x 15 x 2.2 box could fill a cropped screen edge with one continuous
+// additive face whenever the camera caught it obliquely.  These disconnected
+// chevrons keep the same one-mesh budget and the same full-height warning
+// reach, but leave more air than metal at every height.  Local +x points from
+// the pursuing edge into the playable route, so every mark says "move".
+function crushBoundaryGeometry() {
+  const positions = [];
+  const indices = [];
+
+  function bar(x0, y0, x1, y1, thickness) {
+    const base = positions.length / 3;
+    const dx = x1 - x0, dy = y1 - y0;
+    const invLength = 1 / Math.max(1e-6, Math.hypot(dx, dy));
+    const nx = -dy * invLength * thickness * 0.5;
+    const ny = dx * invLength * thickness * 0.5;
+    positions.push(
+      x0 + nx, y0 + ny, 0,
+      x1 + nx, y1 + ny, 0,
+      x1 - nx, y1 - ny, 0,
+      x0 - nx, y0 - ny, 0,
+    );
+    indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  }
+
+  const count = 8;
+  const step = J.crush.height / count;
+  const chevronHeight = Math.min(1.08, step * 0.58);
+  const halfWidth = J.crush.width * 0.39;
+  const thickness = Math.max(0.085, J.crush.width * 0.13);
+  for (let i = 0; i < count; i++) {
+    // A restrained alternating set-back breaks the UI-perfect ladder while
+    // preserving an unmistakable, repeated direction of travel.
+    const cx = (i % 2 ? -0.045 : 0.035) * J.crush.width;
+    const cy = -J.crush.height * 0.5 + step * (i + 0.5);
+    const left = cx - halfWidth;
+    const tip = cx + halfWidth;
+    bar(left, cy + chevronHeight * 0.5, tip, cy, thickness);
+    bar(tip, cy, left, cy - chevronHeight * 0.5, thickness);
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setIndex(indices);
+  geo.computeBoundingSphere();
+  return geo;
+}
+
 if (JUICE_ENABLED) {
   sparks = makePool(SPARK_MAX);
   flashes = makePool(FLASH_MAX);
@@ -136,9 +286,9 @@ if (JUICE_ENABLED) {
   // this module never names one of its own
   const sparkMat = new THREE.MeshBasicMaterial({
     transparent: true, opacity: 1, fog: false,
-    blending: THREE.AdditiveBlending, depthWrite: false,
+    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
   });
-  sparkMesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.5), sparkMat, SPARK_MAX);
+  sparkMesh = new THREE.InstancedMesh(machinedShardGeometry(), sparkMat, SPARK_MAX);
   sparkMesh.frustumCulled = false;
   sparkMesh.renderOrder = 2;
   sparkMesh.setColorAt(0, _c.setRGB(1, 1, 1));       // allocate instanceColor up front
@@ -147,38 +297,40 @@ if (JUICE_ENABLED) {
 
   const flashMat = new THREE.MeshBasicMaterial({
     transparent: true, opacity: 1, fog: false,
-    blending: THREE.AdditiveBlending, depthWrite: false,
+    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
   });
-  flashMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.5, 8, 6), flashMat, FLASH_MAX);
+  flashMesh = new THREE.InstancedMesh(impactFlashGeometry(), flashMat, FLASH_MAX);
   flashMesh.frustumCulled = false;
   flashMesh.renderOrder = 2;
   flashMesh.setColorAt(0, _c.setRGB(1, 1, 1));
   for (let i = 0; i < FLASH_MAX; i++) flashMesh.setMatrixAt(i, HIDE);
   scene.add(flashMesh);
 
-  // TorusGeometry lies in local XY; rotating it by the facet yaw makes the
-  // shock front hug the same (s,y) combat plane as its victim. One fixed pool
-  // makes large kills read as a ring, rather than merely a larger fuzzy ball.
+  // The separated iris plates lie in local XY; facet yaw makes the breach hug
+  // the same (s,y) combat plane as its victim. One fixed pool makes a large
+  // break read as manufactured shutters ejecting, never a debug radius.
   const ringMat = new THREE.MeshBasicMaterial({
     transparent: true, opacity: 1, fog: false, side: THREE.DoubleSide,
     blending: THREE.AdditiveBlending, depthWrite: false,
   });
-  ringMesh = new THREE.InstancedMesh(new THREE.TorusGeometry(0.5, 0.07, 5, 18), ringMat, RING_MAX);
+  ringMesh = new THREE.InstancedMesh(breachFrontGeometry(), ringMat, RING_MAX);
   ringMesh.frustumCulled = false;
   ringMesh.renderOrder = 3;
   ringMesh.setColorAt(0, _c.setRGB(1, 1, 1));
   for (let i = 0; i < RING_MAX; i++) ringMesh.setMatrixAt(i, HIDE);
   scene.add(ringMesh);
 
-  // the crush warning: one thin, tall slab standing ON the damage plane, in
-  // the play plane's depth. Additive and capped well under 1, so it tints the
-  // air the plane is about to sweep instead of masking what stands in it.
+  // One sparse mechanical boundary marker, still one mesh and one material.
+  // It rides the actor/deck surface instead of occupying a deep volume, so an
+  // oblique facet or a screen crop can reveal chevrons but never a solid wall.
   crushMat = new THREE.MeshBasicMaterial({
-    color: ROLE.warn, transparent: true, opacity: 0, fog: false,
-    blending: THREE.AdditiveBlending, depthWrite: false,
+    color: ROLE.warn, transparent: true, opacity: 0, fog: true,
+    blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true,
+    side: THREE.DoubleSide,
   });
-  crushMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(J.crush.width, J.crush.height, J.crush.depth), crushMat);
+  crushMesh = new THREE.Mesh(crushBoundaryGeometry(), crushMat);
+  crushMesh.name = 'Pursuit boundary hazard chevrons';
+  crushMesh.userData.environmentRole = 'crush-warning';
   crushMesh.frustumCulled = false;
   crushMesh.visible = false;
   crushMesh.renderOrder = 1;
@@ -266,27 +418,46 @@ export function fxDirectedBurst(spec, s, y, color, dirS, dirY, spreadRad, scale 
   seed++;
 }
 
+function spawnFlash(ms, fromSize, toSize, s, y, color, depth) {
+  const row = claim(flashes);
+  row.yaw = place(row, s, y, depth);
+  // Local roll changes the broken aperture without changing its facet. It is
+  // deterministic and stored on the existing row; no random stream or event
+  // allocation enters the render layer.
+  row.vx = ((seed++ % 17) - 8) * 0.13;
+  row.vy = 0; row.vz = 0; row.gravity = 0;
+  row.t = 0;
+  row.ttl = ms;
+  row.size = fromSize;
+  row.grow = toSize - fromSize;
+  tint(row, color);
+}
+
 /* A flash: instant on, short hold, out. `sizeMult` scales the configured
    size (a spread volley's muzzle flash is the same flash, not five). */
 export function fxFlash(ms, size, s, y, color, depth = 0) {
   if (!JUICE_ENABLED) return;
-  const row = claim(flashes);
-  place(row, s, y, depth);
-  row.vx = 0; row.vy = 0; row.vz = 0; row.gravity = 0;
-  row.t = 0;
-  row.ttl = ms;
-  row.size = size;
-  row.grow = size * 0.8;                 // expands as it dies
-  tint(row, color);
+  spawnFlash(ms, size, size * 1.8, s, y, color, depth);
 }
 
-/* A bounded shock front in the active facet plane. `size` is its final
-   diameter in tiles; unlike a flash it leaves the center readable. */
+// Boss machinery sometimes fails inward. Same aperture, same fixed flash
+// pool, inverse scale sentence: it closes onto the core instead of pretending
+// another explosion happened. The small positive end avoids a zero matrix.
+export function fxImplode(ms, size, s, y, color, depth = 0) {
+  if (!JUICE_ENABLED) return;
+  spawnFlash(ms, size, size * 0.08, s, y, color, depth);
+}
+
+/* A bounded broken-shutter front in the active facet plane. `size` is its
+   final diameter in tiles; unlike a flash it leaves the center readable.
+   The old name is API compatibility, not a promise of circular geometry. */
 export function fxRing(ms, size, s, y, color, depth = 0) {
   if (!JUICE_ENABLED) return;
   const row = claim(rings);
   row.yaw = place(row, s, y, depth);
-  row.vx = 0; row.vy = 0; row.vz = 0; row.gravity = 0;
+  row.vx = ((seed++ % 13) - 6) * 0.10;  // initial local shutter orientation
+  row.vy = (seed & 1 ? 1 : -1) * 0.30;  // restrained counter-rotation
+  row.vz = 0; row.gravity = 0;
   row.t = 0;
   row.ttl = ms;
   row.size = size * 0.28;
@@ -305,7 +476,15 @@ export function fxCrush(intensity, sEdge, tMs) {
   // stand the band just INSIDE the plane: centred on the plane itself, half of
   // it hangs off the edge of the frame and the cue is half as readable
   const p = towerPose(sEdge + C.width * C.inset, _pose);
-  crushMesh.position.set(p.x, C.y0 + C.height / 2 + p.alt, p.z);
+  // Dynamic actors live at route depth 1.15.  Put the warning just proud of
+  // that same painted combat surface: deck and hostiles can occlude it, fog
+  // can recede it, and it cannot expose a box side during a facet transition.
+  const surfaceDepth = 1.16;
+  crushMesh.position.set(
+    p.x + Math.sin(p.yaw) * surfaceDepth,
+    C.y0 + C.height / 2 + p.alt,
+    p.z + Math.cos(p.yaw) * surfaceDepth,
+  );
   crushMesh.rotation.y = p.yaw;
   crushMesh.visible = true;
   // the pulse rides ON the intensity ramp: it never fully blinks out once the
@@ -358,7 +537,9 @@ function advance(pool, mesh, dtMs, alphaOf, isFlash, gain) {
     const s = isFlash ? particleScale(u, row.size, row.size + row.grow)
                       : row.size * (0.6 + 0.4 * (1 - u));
     if (isFlash) {
-      _m.makeScale(s, s, s);
+      _m.makeRotationY(row.yaw);
+      _m.multiply(_flashRot.makeRotationZ(row.vx));
+      _m.scale(_sScale.set(s, s, s));
       _m.setPosition(row.x, row.y, row.z);
     } else {
       // S10: a mild stretch along the row's OWN current velocity instead of
@@ -417,6 +598,7 @@ function advanceRings(dtMs, gain) {
     const a = flashAlpha(u);
     const s = particleScale(u, row.size, row.size + row.grow);
     _m.makeRotationY(row.yaw);
+    _m.multiply(_ringRot.makeRotationZ(row.vx + row.vy * u));
     _m.scale(_ringScale.set(s, s, s));
     _m.setPosition(row.x, row.y, row.z);
     ringMesh.setMatrixAt(i, _m);

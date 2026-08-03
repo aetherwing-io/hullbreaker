@@ -17,16 +17,16 @@ export const CONFIG = {
   // (and fov) are untouched — which leaves the anchor's angular position in
   // frame unchanged (composition/follow behavior is preserved to a fraction
   // of a degree) while shrinking RIG's screen-height fraction and widening
-  // the calibrated s-strip proportionally. `near` (default/absent) is
-  // depthMult 1, i.e. byte-identical to the shipped camera. Applied in
+  // the calibrated s-strip proportionally. `near` is depthMult 1, i.e.
+  // byte-identical to the original close camera; absent selects FAR. Applied in
   // src/render/camera.js's activeCameraDepth(), which is the single function
   // both syncCamera (camera pose) and calibrateEdges (setEdges → sim/edges.js)
   // already read — so this table is the only new surface, and the seconds-
   // bounded pursuit clock (src/pure/traversal.js) never has to know views
   // exist, because it never reads EDGE_L/EDGE_R (see traversalMarginCapScroll).
-  // Measured RIG screen-height fraction: near 7.0%, shipped MID 5.0%, far
-  // 3.7%. MID keeps the impossible scale without throwing sprite readability
-  // away; the other two remain accessibility/cinematic options.
+  // Measured RIG screen-height fraction: near 7.0%, mid 5.0%, shipped FAR
+  // 3.7%. FAR carries the impossible scale; the nearer two remain explicit
+  // accessibility/comparison options.
   viewScales: {
     near: { id: 'near', label: 'NEAR',  depthMult: 1 },
     mid:  { id: 'mid',  label: 'MID',   depthMult: 1.42 },
@@ -93,14 +93,26 @@ export const CONFIG = {
       mercyClearMs: 4200,
       clearEmaWeight: 0.35,
       cooldownMs: 2200,
-      maxBodiesByFace: [3, 4, 5, 6, 8, 8],
+      maxBodiesByFace: [3, 4, 8, 10, 12, 14],
       imminentAuthoredTiles: 4.8,
       minRemainingTravelTiles: 6.5,
+      // From CONTAIN onward, a sub-1.6s clear proves the rolled weapon has
+      // outgrown the ordinary score. The response spends a larger bounded
+      // body budget and begins its next ON-SCREEN condensation almost at
+      // once. It may overlap an authored arrival at 2.35 tiles, but never
+      // spawns offscreen, inside a lesson, or after the gate safety fence.
+      // The player bought density, not hidden HP or faster attacks.
+      responseFromFace: 3,
+      responseClearMs: 1600,
+      responseIdleMs: 100,
+      responseCooldownMs: 1050,
+      responseImminentAuthoredTiles: 2.35,
+      responseMinRemainingTravelTiles: 3.4,
       spawnInsetTiles: 2.3,
       minPlayerLeadTiles: 4.4,
       rearLeadTiles: 5.8,
       cornerPadTiles: 0.7,
-      pairFromFace: 4,
+      pairFromFace: 3,
       pairClearMs: 1500,
       pairMinPlayerLeadTiles: 5.2,
       pairDelayMs: 180,
@@ -113,8 +125,8 @@ export const CONFIG = {
       roleBagByFace: [
         ['wasp'],
         ['wasp'],
-        ['wasp', 'wasp', 'hound'],
-        ['wasp', 'hound', 'hound', 'polyp'],
+        ['wasp', 'hound'],
+        ['wasp', 'hound', 'polyp'],
         ['wasp', 'hound', 'polyp'],
         ['wasp', 'hound', 'polyp'],
       ],
@@ -473,7 +485,7 @@ export const CONFIG = {
   // can carry both traits at once, but every body keeps its normal HP.
   evolution: {
     firstFace: 5,               // STERILIZE + SCUTTLE only; early lessons stay clean
-    aegisRadius: 7.4,           // same-screen relationship at MID and portrait
+    aegisRadius: 7.4,           // same-screen relationship at FAR and portrait
     aegisMaxLinks: 3,           // target priority, never an invulnerable whole wave
     aegisCycleMs: 1900,
     aegisActiveMs: 1450,        // brief brute-force opening if the anchor is ignored
@@ -678,7 +690,7 @@ export const CONFIG = {
     // all static boxes/prisms in the limb bake: clustered gill slits break the
     // old continuous warehouse wall, ribs cross them at an irregular rake,
     // and the three-cable tendon bundles under the route point uphill. Their
-    // scale is deliberately much larger than a tile so they survive MID.
+    // scale is deliberately much larger than a tile so they survive FAR.
     anatomy: {
       gill: {
         every: 24, slits: 4, slitW: 9.2, slitH: 0.48, pitch: 0.92,
@@ -877,7 +889,7 @@ export const CONFIG = {
      * do NOT dress.
      *
      * ONE HONEST COMPROMISE: rung pitch is 0.84 tiles (~0.9 m — a real ladder
-     * is nearer 0.3) and a rung is 0.14 tall. At the shipped MID view a
+     * is nearer 0.3) and a rung is 0.14 tall. At the shipped FAR view a
      * true-pitch ladder would be a 1 px stripe that aliases into mush. These
      * are authored to RESOLVE at the view the game actually ships: a scale cue
      * that cannot be seen is not a cue. */

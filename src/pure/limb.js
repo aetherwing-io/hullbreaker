@@ -92,6 +92,23 @@ export function limbChunkRanges(s0, s1, cols) {
   return out;
 }
 
+// Proud route-edge armour belongs to the camera-owned facet. The only
+// adjacent-facet exception is geometry whose own longitudinal footprint
+// overlaps the chamfer shared by the two facets: that small set keeps the
+// physical lip continuous through a camera handoff without revealing the
+// rest of the next face. `bends[i]` separates facets i and i+1.
+export function limbFoldBridgeVisible(piece, cameraFacet, bends, chamferTiles) {
+  if (piece.facet === cameraFacet) return true;
+  if (Math.abs(piece.facet - cameraFacet) !== 1) return false;
+  const bend = bends[Math.min(piece.facet, cameraFacet)];
+  if (!Number.isFinite(bend)) return false;
+  const halfChamfer = chamferTiles / 2;
+  const pieceLo = piece.s - piece.w / 2;
+  const pieceHi = piece.s + piece.w / 2;
+  return pieceHi >= bend - halfChamfer - 1e-9 &&
+    pieceLo <= bend + halfChamfer + 1e-9;
+}
+
 // Is any column in [a, b) possibly a gap RIG can fall through? Outward mass
 // over one of those would hide the fall, so the plan may not reach far there.
 export function limbSpanHasGap(groundH, a, b) {

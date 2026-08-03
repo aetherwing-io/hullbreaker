@@ -90,10 +90,12 @@ const BENDS = IS_TRANSFORM_SLICE ? TRANSFORM_BEND_S : BEND_S;
 const EVOLUTION_MOBILE = Object.freeze({ wasp: true, hound: true });
 
 // Spawn-site classification keeps escalation deterministic without teaching
-// the spawner a second enemy table. Finale support rows opt out: the Warden is
-// already that encounter's evolution system and must keep its authored read.
+// the spawner a second enemy table. Finale packets replay the learned response
+// ladder (faces 4/5/6) beside the Warden: familiar genes in new combinations,
+// never extra HP, and the player's current hull still trims the genome budget.
 function evolutionFaceAt(x, row) {
-  if (row && row.finaleWave !== undefined) return 0;
+  if (row && row.finaleWave !== undefined)
+    return Math.max(4, Math.min(6, 3 + (Number(row.finaleWave) || 1)));
   if (row && row.gateWave !== undefined) return Number(row.gateWave) || 0;
   const P = CONFIG.path;
   return Math.max(1, Math.min(P.faces,

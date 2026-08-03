@@ -70,17 +70,18 @@ function visibleThreatCount(left, right) {
    waiting against the unbuilt corner wall, use a clearly visible rear flank
    instead. Rear bodies face forward and still owe the full 900 ms presence
    tell, so this closes the pre-gate lull without an offscreen ambush. */
-function pressureSpawnPoint(corner, left, right) {
+function pressureSpawnSites(corner, left, right) {
   const D = CONFIG.spawner.pressure;
   const safeMax = corner.s - CONFIG.spawner.cornerClearBefore - D.cornerPadTiles;
   const front = Math.min(right - D.spawnInsetTiles, safeMax);
-  if (front - player.x >= D.minPlayerLeadTiles)
-    return { x: front, dir: -1, room: front - player.x };
-
   const rear = Math.min(player.x - D.rearLeadTiles, safeMax);
-  if (rear >= left + D.spawnInsetTiles && player.x - rear >= D.minPlayerLeadTiles)
-    return { x: rear, dir: 1, room: player.x - rear };
-  return null;
+  const sites = {
+    front: front - player.x >= D.minPlayerLeadTiles
+      ? { x: front, dir: -1, room: front - player.x } : null,
+    rear: rear >= left + D.spawnInsetTiles && player.x - rear >= D.minPlayerLeadTiles
+      ? { x: rear, dir: 1, room: player.x - rear } : null,
+  };
+  return sites.front || sites.rear ? sites : null;
 }
 
 // Grounded/rooted pressure roles are allowed only on a short continuous deck
@@ -109,24 +110,41 @@ function pressureKind(face, count, slot, roll, grounded) {
   return bag[Math.min(bag.length - 1, Math.floor(roll * bag.length))] || 'wasp';
 }
 
-function spawnPressureBodies(point, count, face) {
+function formationPoint(sites, count, slot, serial) {
+  if (!sites.front) return sites.rear;
+  if (!sites.rear) return sites.front;
+  // Singles occasionally answer from behind instead of becoming an endless
+  // right-edge conveyor. Pairs always split across both visible sides, and
+  // rotate which altitude owns which side so the learned answer is movement
+  // through the arena rather than one repeated vertical jump.
+  if (count === 1) return serial % 3 === 2 ? sites.rear : sites.front;
+  return (slot + serial) % 2 === 0 ? sites.front : sites.rear;
+}
+
+function spawnPressureBodies(sites, count, face) {
   const D = CONFIG.spawner.pressure;
-  const cohortKey = `pressure:${face}:${pressureCohortSerial++}`;
-  const ground = pressureGroundSite(point.x);
+  const serial = pressureCohortSerial++;
+  const cohortKey = `pressure:${face}:${serial}`;
   for (let i = 0; i < count; i++) {
+    const point = formationPoint(sites, count, i, serial);
+    const ground = pressureGroundSite(point.x);
     // A fixed two samples/body makes the role sequence invariant to which
     // branch its previous sibling took. Replays and retries therefore express
     // the same evolving assault exactly.
     const roleRoll = pressureRng();
     const laneRoll = pressureRng();
-    const kind = pressureKind(face, count, i, roleRoll, ground);
+    let kind = pressureKind(face, count, i, roleRoll, ground);
+    // A rooted rear emplacement would simply scroll out while asking the
+    // player to turn around. Rear stations stay mobile; the same deterministic
+    // roll becomes an aerial flanker instead. Hounds may use either side.
+    if (point.dir > 0 && kind === 'polyp') kind = 'wasp';
     // Mixed pairs bracket the movement band: the mandatory wasp owns the high
     // route while the learned support role owns deck/sightline pressure.
     const lane = count > 1
       ? (i === 0 ? 6.7 + laneRoll * 0.8 : 2.8 + laneRoll * 0.6)
       : (laneRoll < 0.44 ? 2.7 : laneRoll < 0.82 ? 4.8 : 7.1) + roleRoll * 0.55;
     const y = kind === 'hound'
-      ? ground.y
+      ? ground.y + CONFIG.hound.rideY
       : kind === 'polyp'
         ? ground.y + CONFIG.polyp.rootY
         : spawnLaneY(point.x, lane);
@@ -154,8 +172,8 @@ function updatePressureDirector(right) {
   const D = CONFIG.spawner.pressure;
   const corner = activeCorner();
   const left = sLeftEdge();
-  const point = corner && corner.state === 'idle'
-    ? pressureSpawnPoint(corner, left, right)
+  const sites = corner && corner.state === 'idle'
+    ? pressureSpawnSites(corner, left, right)
     : null;
   const face = corner ? corner.k : 0;
   const remaining = corner
@@ -164,8 +182,10 @@ function updatePressureDirector(right) {
   const nextTiles = spawnIdx < spawnTable.length
     ? Math.max(0, spawnTable[spawnIdx].x - (right - 1.5))
     : Infinity;
-  const protectedLesson = !!point &&
-    (insideLessonBubble(point.x) || insideLessonBubble(player.x));
+  if (sites?.front && insideLessonBubble(sites.front.x)) sites.front = null;
+  if (sites?.rear && insideLessonBubble(sites.rear.x)) sites.rear = null;
+  const point = sites && (sites.front || sites.rear);
+  const protectedLesson = !!point && insideLessonBubble(player.x);
   const alive = visibleThreatCount(left, right);
   const bodies = stepPressureDirector(pressureState, {
     nowMs: gameMs,
@@ -179,7 +199,7 @@ function updatePressureDirector(right) {
     remainingTravelTiles: remaining,
     spawnRoomTiles: point ? point.room : 0,
   }, D);
-  if (bodies && point) spawnPressureBodies(point, bodies, face);
+  if (bodies && point) spawnPressureBodies(sites, bodies, face);
 }
 
 export function updateSpawner() {

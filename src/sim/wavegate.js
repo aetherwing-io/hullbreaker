@@ -5,8 +5,9 @@
    scroll eases back in. Byte-identical at all six corners. */
 
 import { CONFIG } from '../config.js';
-import { CORNER_S } from '../pure/path.js';
+import { BEND_S, CORNER_S } from '../pure/path.js';
 import {
+  cornerApproachReady, cornerJointRule,
   waveSize, waveKind, waveLane, wavePhase, waveSpawnDelay, zipperOffset,
 } from '../pure/waves.js';
 import { ACTIVE_FIXTURE } from '../mode.js';
@@ -21,6 +22,7 @@ import { hostiles, clearHostiles, spawnHostile } from './hostiles.js';
 
 export const cornerEvents = CORNER_S.map((s, i) => ({
   s, k: i + 1, phase: wavePhase(i + 1, CONFIG), state: 'idle', tStart: 0,
+  sealed: false,
 }));
 
 export function activeCorner() {         // first corner not yet completed
@@ -34,9 +36,63 @@ export function gateActive() {
   return !!c && c.state === 'gate';
 }
 
-export function cornerBusy() {           // gate fight or turning: scroll is held
+export function cornerBusy() {           // fight, joint approach, or turn: scroll is held
   const c = activeCorner();
-  return !!c && (c.state === 'gate' || c.state === 'turning');
+  return !!c && (c.state === 'gate' || c.state === 'approach' || c.state === 'turning');
+}
+
+// The route window is the sim half of the fold-ownership contract. Before a
+// clear, the existing pivot wall protects unbuilt terrain. After the clear it
+// opens only as far as the physical chamfer midpoint. The ritual pins RIG at
+// that midpoint, then leaves the completed fold sealed behind them; there is
+// never a frame where the camera owns one facet while collision lets RIG walk
+// freely on the other.
+export function cornerPlayerRouteWindow(playerHalfWidth) {
+  // Authored fixtures own their own seam/frontier systems. Several headless
+  // fixture proofs deliberately mark the default cornerEvents done; those
+  // bookkeeping rows must never become collision seals outside the six-face
+  // run.
+  if (ACTIVE_FIXTURE) return { frontierRight: Infinity, sealLeft: -Infinity };
+  const c = activeCorner();
+  let frontierRight = Infinity;
+  if (c) {
+    frontierRight = cornerJointRule(
+      c.state, c.s, BEND_S[c.k - 1], playerHalfWidth, CONFIG.edges.margin,
+    ).frontierRight;
+  }
+
+  let sealLeft = -Infinity;
+  for (const ev of cornerEvents) {
+    // `sealed` records the physical transition, independently of `state`.
+    // Headless fixtures often mark the default events done merely to disable
+    // gates; that test bookkeeping must not impersonate six completed folds.
+    if (!ev.sealed) continue;
+    const rule = cornerJointRule(
+      ev.state, ev.s, BEND_S[ev.k - 1], playerHalfWidth, CONFIG.edges.margin,
+    );
+    sealLeft = Math.max(sealLeft, rule.sealLeft);
+  }
+  return { frontierRight, sealLeft };
+}
+
+// Called after player collision and edge clamping. Waiting at the old halt is
+// stable forever; only a real traversal to BEND_S starts the camera ritual.
+export function advanceCornerApproach(playerX) {
+  const c = activeCorner();
+  if (!c || !cornerApproachReady(c.state, playerX, BEND_S[c.k - 1])) return false;
+  c.state = 'turning';
+  c.tStart = gameMs;
+  c.sealed = true;
+  return true;
+}
+
+// At the exact chamfer midpoint the 30-degree surface belongs to both camera
+// detents during the orbit. Render/player uses this narrow exception instead
+// of showing any actor or effect parked elsewhere on the departing facet.
+export function turningCornerOwnsJoint(playerX) {
+  const c = activeCorner();
+  return !!c && c.state === 'turning' &&
+    Math.abs(playerX - BEND_S[c.k - 1]) <= 1e-5;
 }
 
 export function armGate(c) {
@@ -170,8 +226,10 @@ function spawnGateWave(k) {              // deterministic: no rng in wave layout
   }
 }
 
-// Event-driven clear: called from every wasp removal path, so the ritual
-// starts on the exact frame the last hostile dies — the snap IS the stinger.
+// Event-driven clear: called from every hostile removal path. The kill opens
+// a short player-driven run to the physical joint; the ritual starts only when
+// RIG arrives there, so a player left in the arena can never disappear when
+// the camera commits the next facet.
 export function onHostileRemoved() {
   const c = activeCorner();
   // `e.gating` is the kind's value unless the spawn row opted out (T-009's
@@ -183,8 +241,8 @@ export function onHostileRemoved() {
     // deferred to updateHostiles: this callback can run inside updateBullets,
     // whose reverse iterator must not have the whole array cleared under it.
     for (const e of hostiles) e.gateBreakExit = true;
-    c.state = 'turning';
-    c.tStart = gameMs;
+    c.state = 'approach';
+    c.tStart = 0;
   }
 }
 
@@ -217,5 +275,5 @@ export function updateZipper(c, tMs) {   // near-to-far brick slam of the next f
 
 // run reset (resetGame in src/main.js): every corner is armed again
 export function resetCornerEvents() {
-  for (const c of cornerEvents) { c.state = 'idle'; c.tStart = 0; }
+  for (const c of cornerEvents) { c.state = 'idle'; c.tStart = 0; c.sealed = false; }
 }

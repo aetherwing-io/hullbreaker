@@ -2,7 +2,9 @@
 /* Runtime assets are authorized (decisions.md entry 16) and this is the
    module that makes them safe to have: every asset the game loads becomes
    RESIDENT BEFORE THE SIMULATION'S FIRST FRAME, or it is abandoned.
-   Nothing fetches, decodes or uploads mid-run.
+   Drawn textures are uploaded; compositor-only sources are decoded on the
+   CPU and their derived CanvasTextures are uploaded. Nothing fetches,
+   decodes or uploads mid-run.
 
    WHY THIS EXISTS, MEASURED. T-040's playtest gate failed on the loading
    path, not on the art: three deterministic runs of the same script with a
@@ -38,10 +40,12 @@
         cannot run before that. ANY NUMBER OF MODULES may register and
         await: they share one settlement and one clock, so a second lane's
         asset is waited for rather than discarded (see settle()).
-     2. Residency means UPLOADED, not fetched: renderer.initTexture() pushes
-        the texels to the GPU during boot, because a texture that has only
-        arrived still uploads on its first draw, which moves the hitch
-        rather than removing it.
+     2. Residency means UPLOADED, not merely fetched, for every texture that
+        will be drawn: renderer.initTexture() pushes its texels during boot,
+        because a texture that has only arrived still uploads on first draw.
+        A source marked cpuOnly is never drawn; it is decoded for a boot-time
+        canvas compositor and excluded from this upload pass. The compositor's
+        derived CanvasTextures are warmed explicitly before frame one.
      3. There is ONE wall-clock budget for the whole boot. When it expires,
         everything still in flight is abandoned and its owner falls back —
         a slow network delays the game, it never wedges it. The budget is
@@ -107,6 +111,16 @@ function nowMs() {
      - initTexture(), which is the whole point: the upload happens here. */
 function prepare(tex, opts) {
   tex.colorSpace = THREE.SRGBColorSpace;
+  // A source plate used only by a boot-time canvas compositor needs decoded
+  // pixels, not its own WebGL allocation. The derived CanvasTextures are
+  // warmed separately after composition; uploading this often-NPOT source as
+  // well wastes memory and makes the manifest's `gpu:false` record dishonest.
+  if (opts.cpuOnly) {
+    tex.generateMipmaps = false;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = opts.magFilter || THREE.LinearFilter;
+    return;
+  }
   tex.anisotropy = opts.anisotropy || 4;
   tex.generateMipmaps = true;
   tex.minFilter = THREE.LinearMipmapLinearFilter;
@@ -144,7 +158,10 @@ export function preloadTexture(url, opts = {}) {
     startedAt = nowMs();
     deadlineAt = startedAt + PRELOAD_BUDGET_MS;
   }
-  const e = { url, state: 'pending', tex: null, error: null, ms: 0 };
+  const e = {
+    url, state: 'pending', tex: null, error: null, ms: 0,
+    cpuOnly: opts.cpuOnly === true,
+  };
   e.promise = new Promise((resolve) => { e.settle = resolve; });
   entries.set(url, e);
 
@@ -239,9 +256,7 @@ export const WARM_ON = QUERY.get('warm') !== '0';
 const WARM_PX = 4;                       // enough to sample a mip, small enough
                                          //   that the draw itself costs nothing
 
-function warmResident(ready) {
-  if (!WARM_ON || !ready.length) return 0;
-  warmedWhileClosed = !closed;           // observable ordering; see the field
+function forceTextureBatch(textures) {
   const started = nowMs();
   let rt = null, geo = null;
   const mats = [];
@@ -251,8 +266,12 @@ function warmResident(ready) {
     const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 10);
     cam.position.z = 1;
     geo = new THREE.PlaneGeometry(2, 2);
-    for (const e of ready) {
-      const m = new THREE.MeshBasicMaterial({ map: e.tex, transparent: true });
+    for (const tex of textures) {
+      // Canvas/composite textures are created only after their decoded source
+      // images settle, so they cannot join the URL registry above. They still
+      // need the same explicit upload before main.js can enter PLAYING.
+      if (typeof renderer.initTexture === 'function') renderer.initTexture(tex);
+      const m = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
       mats.push(m);
       warmScene.add(new THREE.Mesh(geo, m));
     }
@@ -271,6 +290,32 @@ function warmResident(ready) {
     if (rt) rt.dispose();
   }
   return Math.round(nowMs() - started);
+}
+
+function warmResident(ready) {
+  // Decoded compositor inputs are never mapped. Uploading them here would
+  // undo prepare(..., { cpuOnly:true }) and allocate a duplicate NPOT GPU
+  // texture immediately before the derived canvas is warmed.
+  const drawable = ready.filter((e) => !e.cpuOnly);
+  if (!WARM_ON || !drawable.length) return 0;
+  warmedWhileClosed = !closed;           // observable ordering; see the field
+  return forceTextureBatch(drawable.map((e) => e.tex));
+}
+
+/* Derived CanvasTextures cannot be registered until their decoded source
+   images exist, which is after the shared URL gate has settled. Their owner
+   still evaluates before main.js starts its first frame, so it can use this
+   small companion to force upload/readback in that remaining boot window.
+   This does not reopen the gate, fetch an asset, or change visibility. */
+export function warmDerivedTextures(textures) {
+  const unique = [...new Set(textures)].filter((tex) => tex && tex.isTexture);
+  if (!WARM_ON || !unique.length)
+    return { requested: unique.length, warmed: 0, ms: 0 };
+  return {
+    requested: unique.length,
+    warmed: unique.length,
+    ms: forceTextureBatch(unique),
+  };
 }
 
 /* THE ONE SETTLEMENT ROUTINE. Every caller of awaitPreloads() awaits this
@@ -372,6 +417,7 @@ export function preloadSnapshot() {
     warmedWhileClosed,
     assets: [...entries.values()].map((e) => ({
       url: e.url, state: e.state, ms: e.ms, error: e.error,
+      residency: e.cpuOnly ? 'cpu' : 'gpu',
     })),
   };
 }

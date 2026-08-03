@@ -22,7 +22,8 @@
  *   5. asserts the art actually rendered: RIG's real sprite (not the canvas
  *      fallback), every hostile's sprite (not its primitive body), the hull
  *      textures (not the flat material), and the backdrop plates (not the
- *      pre-T-046 empty background) — read straight from the game's own
+ *      pre-T-046 empty background), including the connected Meridian anatomy
+ *      source actually composited into its curved storm shell — read straight from the game's own
  *      diagnostic surfaces (window.__HB_PRELOAD / __HB_SPRITES /
  *      __HB_HULL_TEX / __HB_BACKDROP), which is what "rendered" MEANS at
  *      the code level: the asset reached 'ready', not 'failed' or 'off'.
@@ -242,6 +243,23 @@ function judgeArt(snap) {
         detail: `state=${p.state}${p.error ? ' (' + p.error + ')' : ''}`,
       });
     }
+    const anatomy = snap.backdrop.anatomyBody;
+    out.push({
+      name: 'connected Meridian anatomy source',
+      pass: anatomy?.state === 'ready',
+      detail: anatomy
+        ? `state=${anatomy.state}${anatomy.error ? ' (' + anatomy.error + ')' : ''}`
+        : 'no anatomyBody diagnostic',
+    });
+    const composite = snap.backdrop.atmosphere?.anatomy;
+    out.push({
+      name: 'connected Meridian anatomy composited into curved atmosphere',
+      pass: composite?.composited === true,
+      detail: composite
+        ? `composited=${composite.composited} source=${composite.source?.join('x') || 'none'} ` +
+          `stagePasses=${composite.stagePasses ?? 0}`
+        : 'no atmosphere.anatomy diagnostic',
+    });
   }
   return out;
 }

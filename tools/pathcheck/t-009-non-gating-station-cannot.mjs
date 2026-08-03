@@ -16,8 +16,9 @@ export async function run(SHARED) {
 /* ---- T-009: a non-gating station cannot hold a wave gate shut ---------- *
  * The behavioural half of the row-level `gating` opt-out, driven through the
  * real gate runtime in a child process: with the wave dead, a corner whose
- * only survivor is an ambient houndframe must still turn — and the control
- * (the same body with the kind's own gating value) must still hold it.    */
+ * only survivor is an ambient houndframe must still clear into the joint
+ * approach — and the control (the same body with the kind's own gating value)
+ * must still hold it.                                                     */
 {
   const simBase = 'file://' + join(srcDir, 'sim');
   const child = `
@@ -60,8 +61,9 @@ export async function run(SHARED) {
   ok(!!res, 'T-009: the gate runtime runs headlessly for the gating check');
   if (res) {
     ok(res.houndAlive === true, 'T-009: the station is still alive when the wave dies');
-    ok(res.nonGating === 'turning',
-       'T-009: a non-gating station does not hold the ritual (state ' + res.nonGating + ')');
+    ok(res.nonGating === 'approach',
+       'T-009: a non-gating station does not hold the cleared approach ' +
+       '(state ' + res.nonGating + ')');
     ok(res.gating === 'gate',
        'T-009: a gating hound still holds it — the opt-out is what changed things ' +
        '(state ' + res.gating + ')');

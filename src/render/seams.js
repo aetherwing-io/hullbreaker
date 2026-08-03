@@ -1,14 +1,14 @@
 /* ============================== SEAMS ============================== */
 /* The render half of the seam-pip pass (S5, docs/proposals/2026-08-look-
    direction.md §3): two fixed InstancedMeshes baked ONCE from the runs
-   src/pure/seams.js derives, and never touched again.
+   src/pure/seams.js derives. Their intensity never animates; only render
+   ownership swaps base matrices for HIDE when a route face is not current.
 
    STATIC INTENSITY ONLY — no travel, no pulse, no chase, per the packet's
-   own correction. There is no update function in this file and none is
-   wired anywhere: pathcheck mirrors the same static-anatomy guard it
-   already runs on src/render/limb.js onto this module (no `installView`
-   call, no `view.` reference, no gameMs/tMs/dt), which mechanically
-   forbids an animated version arriving later by accident.
+   own correction. The ownership update below reads no clock and changes no
+   colour/intensity: pathcheck retains the static-anatomy guard (no
+   `installView` call, no `view.` reference, no gameMs/tMs/dt), which
+   mechanically forbids an animated version arriving later by accident.
 
    Two pools, the merged T-011 idiom src/render/fx.js already ships
    (src/render/fx.js:106-135), with ONE deliberate deviation — see the
@@ -46,7 +46,8 @@ import { groundH, platforms } from '../sim/level.js';
 import { ACTIVE_FIXTURE, QUERY, IS_TRANSFORM_SLICE } from '../mode.js';
 import { PAL } from './palette.js';
 import { PIP_GAIN } from './legibility.js';
-import { scene } from './scene.js';
+import { scene, HIDE } from './scene.js';
+import { routeRenderable, routeVisibilityStamp } from './route-visibility.js';
 
 export const SEAMS_ENABLED = resolveSeams(QUERY.get('seams'));
 
@@ -77,6 +78,30 @@ function bakeMatrix(s, y, depth, size) {
 }
 
 let pipMesh = null, haloMesh = null, pipCount = 0;
+let pipRows = [];
+const pipBaseMatrices = [];
+const haloBaseMatrices = [];
+let seamCullStamp = '';
+let seamHidden = 0;
+
+// The all-route seam pools stay allocated and resident, but a future-face
+// pip has a zero matrix until both its column and camera facet are committed.
+// No pulse/time input enters this pass; the seam language remains static.
+export function updateSeamFoldCull() {
+  if (!pipMesh || !haloMesh) return;
+  const stamp = routeVisibilityStamp();
+  if (stamp === seamCullStamp) return;
+  seamCullStamp = stamp;
+  seamHidden = 0;
+  for (let i = 0; i < pipRows.length; i++) {
+    const visible = routeRenderable(pipRows[i].s);
+    pipMesh.setMatrixAt(i, visible ? pipBaseMatrices[i] : HIDE);
+    haloMesh.setMatrixAt(i, visible ? haloBaseMatrices[i] : HIDE);
+    if (!visible) seamHidden++;
+  }
+  pipMesh.instanceMatrix.needsUpdate = true;
+  haloMesh.instanceMatrix.needsUpdate = true;
+}
 
 if (SEAMS_ENABLED && !IS_TRANSFORM_SLICE) {
   const runs = deckSeamRuns(groundH, SEAMS).concat(platformSeamRuns(platforms, SEAMS));
@@ -86,6 +111,7 @@ if (SEAMS_ENABLED && !IS_TRANSFORM_SLICE) {
     for (const pip of run.pips) pips.push({ s: pip.s, y: pip.y, depth });
   }
   pipCount = pips.length;
+  pipRows = pips;
 
   if (pipCount > 0) {
     const pipSize = SEAMS.pipSize * PIP_GAIN;
@@ -134,8 +160,12 @@ if (SEAMS_ENABLED && !IS_TRANSFORM_SLICE) {
     const _c = new THREE.Color();
     for (let i = 0; i < pipCount; i++) {
       const pip = pips[i];
-      pipMesh.setMatrixAt(i, bakeMatrix(pip.s, pip.y, pip.depth, pipSize));
-      haloMesh.setMatrixAt(i, bakeMatrix(pip.s, pip.y, pip.depth, haloSize));
+      const pipMatrix = bakeMatrix(pip.s, pip.y, pip.depth, pipSize).clone();
+      const haloMatrix = bakeMatrix(pip.s, pip.y, pip.depth, haloSize).clone();
+      pipBaseMatrices.push(pipMatrix);
+      haloBaseMatrices.push(haloMatrix);
+      pipMesh.setMatrixAt(i, pipMatrix);
+      haloMesh.setMatrixAt(i, haloMatrix);
       _c.copy(_base).multiplyScalar(depthGain(pip.depth, SEAMS));
       haloMesh.setColorAt(i, _c);
     }
@@ -144,10 +174,11 @@ if (SEAMS_ENABLED && !IS_TRANSFORM_SLICE) {
     haloMesh.instanceColor.needsUpdate = true;
     scene.add(pipMesh);
     scene.add(haloMesh);
+    updateSeamFoldCull();
   }
 }
 
 // read-only debug/telemetry surface (see window.HB and ?testapi=1)
 export function seamsStats() {
-  return { enabled: SEAMS_ENABLED, pipCount };
+  return { enabled: SEAMS_ENABLED, pipCount, hidden: seamHidden };
 }

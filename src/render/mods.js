@@ -12,6 +12,7 @@ import { resetTint, setTint } from '../ui/tint.js';
 import { scene } from './scene.js';
 import { placeOnTower } from './tower.js';
 import { PAL } from './palette.js';
+import { routeRenderable } from './route-visibility.js';
 
 const cloneMeshes = CONFIG.mods.ghostDelayMs.map(() => {
   const m = new THREE.Mesh(
@@ -35,8 +36,9 @@ function sync() {
   if (mods.clonesVisible) {
     for (let d = 0; d < cloneMeshes.length; d++) {
       const p = mods.cloneTrail[d];
-      if (!p) continue;
       const cm = cloneMeshes[d];
+      cm.visible = false;
+      if (!p || !routeRenderable(p.x)) continue;
       cm.visible = true;
       placeOnTower(cm, p.x, p.y + 0.85, 0);
     }
@@ -60,7 +62,8 @@ function sync() {
 // orbital lance telegraph: called while the lance is armed, at the same point
 // in the frame the single-file build drew it
 function lanceTelegraph(L) {
-  lanceBeam.visible = true;
+  lanceBeam.visible = routeRenderable(L.s);
+  if (!lanceBeam.visible) return;
   placeOnTower(lanceBeam, L.s, 8, 0);
   lanceBeam.material.opacity = 0.25 + 0.35 * (0.5 + 0.5 * Math.sin(gameMs / 40));
 }

@@ -19,10 +19,11 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { normalAscentAltAt } from '../pure/ascent.js';
-import { SEGS, faceIndexAt, headingAt, polyAt } from '../pure/path.js';
-import { scrollX } from '../sim/time.js';
+import { SEGS, headingAt, polyAt } from '../pure/path.js';
 import { PAL } from './palette.js';
 import { faceMidS } from './backdrop-table.js';
+import { cameraFaceBlendGain } from './camera.js';
+import { warmDerivedTextures } from './preload.js';
 
 const TEX_W = 1024;
 const TEX_H = 512;
@@ -30,9 +31,18 @@ const VEIL_DEPTHS = Object.freeze([-3.75, -7.25, -11.5]);
 const VEIL_OPACITY = Object.freeze([0.58, 0.34, 0.22]);
 const VEIL_CURVE = Object.freeze([0.9, 2.2, 4.1]);
 const VEIL_H = 62;
+// The connected anatomy plate belongs inside the middle storm shell.  Putting
+// it on layer zero would sit it in front of too much air; putting it on the
+// far layer would reduce its painted joints to noise.  These are compositing
+// controls, not another mesh/material/render lane.
+const ANATOMY_LAYER = 1;
+const ANATOMY_OPACITY = 0.62;
+const ANATOMY_COMBAT_GAIN = 0.54;
+const PORTRAIT_VEIL_GAIN = 0.30;
+const PORTRAIT_ANATOMY_GAIN = 0.62;
 // Adjacent facet veils overlap generously; the texture itself feathers at the
 // sides so a corner never exposes a rectangular transparency edge.
-const VEIL_W = CONFIG.path.faceTiles * 1.72;
+const VEIL_W = CONFIG.path.faceTiles * 2.0;
 const VEIL_BASE_Y = 10;
 
 // A portrait frustum intersects several overlapping facet shells at once.
@@ -41,11 +51,11 @@ const VEIL_BASE_Y = 10;
 // and previously washed the world toward pale grey.  Attenuate only that
 // overlap case, continuously by the live camera aspect, so rotating a device
 // cannot pop between two authored opacities.
-function veilAspectGain(aspect) {
+function veilAspectGain(aspect, portraitFloor = PORTRAIT_VEIL_GAIN) {
   if (aspect >= 0.90) return 1;
-  if (aspect <= 0.55) return 0.30;
+  if (aspect <= 0.55) return portraitFloor;
   const u = (aspect - 0.55) / 0.35;
-  return 0.30 + 0.70 * u * u * (3 - 2 * u);
+  return portraitFloor + (1 - portraitFloor) * u * u * (3 - 2 * u);
 }
 
 // A facet's storm belongs to that facet in world space. During a corner the
@@ -63,19 +73,6 @@ function veilAngleGain(camera, facetYaw) {
   const facing = Math.max(0,
     Math.sin(facetYaw) * backX + Math.cos(facetYaw) * backZ);
   return facing ** 8;
-}
-
-// Direction alone is insufficient on a closed helix: after six turns the
-// Crown camera faces the same heading as face 1, so opening-face fog would
-// reappear through the creature. Keep the active and adjacent route facets —
-// both halves of a corner — and reject every behind-the-fold recurrence.
-function facetVisibilityGain(face) {
-  const active = faceIndexAt(scrollX, CONFIG);
-  // The outro has no next corner. Once it owns the view, the departing bank
-  // must be gone completely; even its tiny grazing-angle remnant exposes the
-  // rectangular edge of the old facet across the Crown sky.
-  if (active === CONFIG.path.faces + 1) return face === active ? 1 : 0;
-  return Math.abs(face - active) <= 1 ? 1 : 0;
 }
 
 // `faceMidS()` intentionally describes only the six full tower facets. The
@@ -132,7 +129,59 @@ function cloudBank(g, x, y, rx, ry, token, alpha) {
   g.restore();
 }
 
-function paintStormTexture(stage, macroTexture, layer) {
+function compositeAnatomy(g, anatomyTexture, stage, layer) {
+  const anatomy = anatomyTexture?.image;
+  if (layer !== ANATOMY_LAYER || !anatomy || anatomy.width <= 0 || anatomy.height <= 0)
+    return false;
+
+  // Build this mask once per escalation-stage texture at boot.  The source is
+  // cover-fit so no unpainted edge can enter a facet during rotation, then its
+  // middle/lower combat horizon is thinned before the result joins the storm.
+  // That keeps feet, bullets and tells readable while the connected ribs and
+  // scutes remain strong above and below the route.
+  const anatomyCv = document.createElement('canvas');
+  anatomyCv.width = TEX_W;
+  anatomyCv.height = TEX_H;
+  const a = anatomyCv.getContext('2d');
+  const sourceAspect = anatomy.width / anatomy.height;
+  const targetAspect = TEX_W / TEX_H;
+  let drawW = TEX_W;
+  let drawH = TEX_W / sourceAspect;
+  if (sourceAspect > targetAspect) {
+    drawH = TEX_H;
+    drawW = TEX_H * sourceAspect;
+  }
+  const x = (TEX_W - drawW) / 2;
+  const y = (TEX_H - drawH) / 2;
+  a.filter = 'saturate(0.68) brightness(0.75) contrast(1.04)';
+  a.drawImage(anatomy, x, y, drawW, drawH);
+  a.filter = 'none';
+
+  // CanvasTexture flips canvas Y into UV space. The climb's action horizon
+  // therefore lands across roughly 47-69% of this canvas, not at its visual
+  // top.  Attenuate alpha there rather than painting a flat teal cover over
+  // the source; atmosphere and feathers can still show through naturally.
+  a.globalCompositeOperation = 'destination-in';
+  const combatMask = a.createLinearGradient(0, 0, 0, TEX_H);
+  combatMask.addColorStop(0, rgba(PAL.bg, 1));
+  combatMask.addColorStop(0.43, rgba(PAL.bg, 1));
+  combatMask.addColorStop(0.49, rgba(PAL.bg, ANATOMY_COMBAT_GAIN));
+  combatMask.addColorStop(0.68, rgba(PAL.bg, ANATOMY_COMBAT_GAIN));
+  combatMask.addColorStop(0.75, rgba(PAL.bg, 1));
+  combatMask.addColorStop(1, rgba(PAL.bg, 1));
+  a.fillStyle = combatMask;
+  a.fillRect(0, 0, TEX_W, TEX_H);
+
+  g.save();
+  // Later facets become slightly clearer without changing hue or introducing
+  // a timed state. This matches the existing three authored storm stages.
+  g.globalAlpha = ANATOMY_OPACITY + stage * 0.018;
+  g.drawImage(anatomyCv, 0, 0);
+  g.restore();
+  return true;
+}
+
+function paintStormTexture(stage, macroTexture, anatomyTexture, layer) {
   const cv = document.createElement('canvas');
   cv.width = TEX_W;
   cv.height = TEX_H;
@@ -188,6 +237,10 @@ function paintStormTexture(stage, macroTexture, layer) {
     g.drawImage(macro, x, -TEX_H * 0.015, drawW, drawH);
     g.restore();
   }
+
+  // The coherent body atlas is part of this curved, feathered texture.  It
+  // deliberately creates no standalone plane, material or draw call.
+  compositeAnatomy(g, anatomyTexture, stage, layer);
 
   // Two enormous curved shadows imply another coil/body mass passing through
   // the haze. Their scale is intentionally much broader than a platform bay.
@@ -255,8 +308,8 @@ function paintStormTexture(stage, macroTexture, layer) {
   g.globalCompositeOperation = 'destination-in';
   const edge = g.createLinearGradient(0, 0, TEX_W, 0);
   edge.addColorStop(0, 'rgba(255,255,255,0)');
-  edge.addColorStop(0.18, 'rgba(255,255,255,1)');
-  edge.addColorStop(0.82, 'rgba(255,255,255,1)');
+  edge.addColorStop(0.10, 'rgba(255,255,255,1)');
+  edge.addColorStop(0.90, 'rgba(255,255,255,1)');
   edge.addColorStop(1, 'rgba(255,255,255,0)');
   g.fillStyle = edge;
   g.fillRect(0, 0, TEX_W, TEX_H);
@@ -394,7 +447,7 @@ function buildWorldFog(scene) {
       puff.onBeforeRender = (_renderer, _scene, camera, _geometry, material) => {
         material.opacity = material.userData.baseStormOpacity * veilAspectGain(camera.aspect) *
           veilAngleGain(camera, puff.userData.facetYaw) *
-          facetVisibilityGain(puff.userData.backdropFace);
+          cameraFaceBlendGain(puff.userData.backdropFace);
       };
       scene.add(puff);
       sprites.push(puff);
@@ -403,9 +456,12 @@ function buildWorldFog(scene) {
   return { sprites, texture, materials, geometry };
 }
 
-export function buildMeridianAtmosphere(scene, macroTexture = null) {
+export function buildMeridianAtmosphere(scene, macroTexture = null, anatomyTexture = null) {
+  const anatomyImage = anatomyTexture?.image;
+  const anatomyReady = Boolean(anatomyImage?.width > 0 && anatomyImage?.height > 0);
   const textures = VEIL_DEPTHS.map((_, layer) =>
-    [0, 1, 2].map((stage) => paintStormTexture(stage, macroTexture, layer))
+    [0, 1, 2].map((stage) =>
+      paintStormTexture(stage, macroTexture, anatomyTexture, layer))
   );
   const geometries = VEIL_CURVE.map((curve) => curvedVeilGeometry(curve));
   const meshes = [];
@@ -448,9 +504,13 @@ export function buildMeridianAtmosphere(scene, macroTexture = null) {
       // Farthest layer first; all atmosphere still precedes gameplay glow.
       mesh.renderOrder = -48 - layer * 2;
       mesh.onBeforeRender = (_renderer, _scene, camera, _geometry, material) => {
-        material.opacity = mesh.userData.baseStormOpacity * veilAspectGain(camera.aspect) *
+        const portraitFloor = mesh.userData.depthLayer === ANATOMY_LAYER
+          ? PORTRAIT_ANATOMY_GAIN
+          : PORTRAIT_VEIL_GAIN;
+        material.opacity = mesh.userData.baseStormOpacity *
+          veilAspectGain(camera.aspect, portraitFloor) *
           veilAngleGain(camera, mesh.userData.facetYaw) *
-          facetVisibilityGain(mesh.userData.backdropFace);
+          cameraFaceBlendGain(mesh.userData.backdropFace);
       };
       scene.add(mesh);
       meshes.push(mesh);
@@ -458,13 +518,33 @@ export function buildMeridianAtmosphere(scene, macroTexture = null) {
   }
 
   const worldFog = buildWorldFog(scene);
+  // These ten textures are boot-time composites, not new URL requests, so
+  // they are born after the decoded anatomy/backdrop sources clear the shared
+  // gate. Force their GPU upload now while main.js is still evaluating; the
+  // first visible facet must never be the thing that makes them resident.
+  const textureResidency = warmDerivedTextures([
+    ...textures.flat(), worldFog.texture,
+  ]);
 
   return {
     built: meshes.length,
     textureCount: textures.flat().length + 1,
+    textureResidency,
     depth: VEIL_DEPTHS[0],
     depths: [...VEIL_DEPTHS],
     volumeCount: worldFog.sprites.length,
     stages: meshes.map((m) => m.userData.escalationStage),
+    anatomy: {
+      composited: anatomyReady,
+      source: anatomyReady ? [anatomyImage.width, anatomyImage.height] : null,
+      layer: ANATOMY_LAYER,
+      depth: VEIL_DEPTHS[ANATOMY_LAYER],
+      opacity: ANATOMY_OPACITY,
+      combatBandGain: ANATOMY_COMBAT_GAIN,
+      stagePasses: anatomyReady ? 3 : 0,
+      facets: CONFIG.path.faces + 1,
+      meshDelta: 0,
+      inheritsCurveAndFeather: true,
+    },
   };
 }

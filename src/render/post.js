@@ -27,15 +27,16 @@
    calibration note in src/render/palette.js) and a second tone-map here
    would double it. A pixel no bloom touched is the same pixel it was.
 
-   WHY THE ADDONS LOAD DYNAMICALLY: `three/addons/*` is four more modules
-   fetched from the CDN at boot. A static import would put the whole game
-   behind that fetch — one 404 or one offline boot and the module graph
-   never evaluates, which is a blank page, which is the P1 defect class this
-   project treats as worse than any missing effect. So the composer is built
-   AFTER the first frames are already on screen, and any failure — fetch,
-   construction, or a throw inside composer.render() — falls back to the
-   direct draw permanently and reports itself through postSnapshot(). The
-   game renders in every one of those cases.
+   WHY THE ADDONS LOAD DYNAMICALLY, BUT SETTLE DURING BOOT: `three/addons/*`
+   is four more modules fetched from the CDN. A static import would make one
+   404 reject the whole module graph — a blank page, the P1 defect class this
+   project treats as worse than any missing effect. An un-awaited dynamic
+   import had the opposite defect: the first direct-rendered frames were on
+   screen before bloom suddenly activated, which looked exactly like the art
+   was taking time to arrive. The bounded boot settlement below chooses one
+   final path before main.js can enter PLAYING: a prewarmed composer, or the
+   permanent direct renderer. Fetch, construction, warm-up and render faults
+   all retain the complete direct-draw fallback.
 
    FLAG (?bloom=): the escape hatch entry 18 asks for, and an A/B knob.
      absent / junk   the shipped default (ON, CONFIG values)
@@ -61,10 +62,12 @@ import { camera, renderer, scene } from './scene.js';
 // can prove a flag exists, only a call proves junk resolves to the default.
 export const POST = resolvePost(QUERY.get('bloom'), POST_TUNE);
 export const POST_SAMPLES = resolveSamples(QUERY.get('aa'), POST_TUNE);
+const POST_BOOT_BUDGET_MS = 1200;
+const POST_REPORT = QUERY.get('postreport') === '1';
 
 /* status is the honest state of the pass, not the intent:
      'off'      the flag says no — nothing was loaded, nothing was built
-     'loading'  the addon fetch is in flight; the direct path is drawing
+     'loading'  the bounded addon settlement is holding the boot
      'active'   the composer is drawing
      'failed'   it broke and the direct path took over for good            */
 let status = POST.on ? 'loading' : 'off';
@@ -72,6 +75,11 @@ let composer = null;
 let bloomPass = null;
 let faults = 0;
 let lastError = '';
+let bootMs = 0;
+let prewarmed = false;
+let presentedFrames = 0;
+let firstFrameStatus = null;
+let tenthFrameStatus = null;
 
 /* Draw-call accounting. A composer calls renderer.render() several times per
    displayed frame, and every one of those resets renderer.info while
@@ -81,11 +89,28 @@ let lastError = '';
    composer passes included, in both paths. */
 renderer.info.autoReset = false;
 
+function recordPresentedFrame() {
+  presentedFrames++;
+  if (presentedFrames === 1) firstFrameStatus = status;
+  if (presentedFrames !== 10) return;
+  tenthFrameStatus = status;
+  // A tiny opt-in boot report for the real-browser gate. It observes the
+  // draw path rather than inferring readiness from a resolved import.
+  if (POST_REPORT) console.info('HULLBREAKER post boot report ' + JSON.stringify({
+    firstFrameStatus,
+    tenthFrameStatus,
+    stable: firstFrameStatus === tenthFrameStatus,
+    prewarmed,
+    bootMs,
+  }));
+}
+
 export function renderFrame() {
   renderer.info.reset();
   if (composer) {
     try {
       drawComposed();
+      recordPresentedFrame();
       return;
     } catch (err) {
       // one throw is enough: keep the picture, lose the effect, say so
@@ -97,6 +122,7 @@ export function renderFrame() {
     }
   }
   renderer.render(scene, camera);
+  recordPresentedFrame();
 }
 
 /* ===================== ATMOSPHERE COMPENSATION ====================== *
@@ -254,19 +280,77 @@ function build(EffectComposer, RenderPass, UnrealBloomPass, OutputPass) {
   status = 'active';
 }
 
-if (POST.on) {
-  Promise.all([
+function nowMs() {
+  return typeof performance !== 'undefined' && performance.now
+    ? performance.now() : Date.now();
+}
+
+function retirePost(err) {
+  faults++;
+  lastError = String((err && err.message) || err);
+  status = 'failed';
+  composer = null;
+  bloomPass = null;
+}
+
+function prewarmComposer() {
+  try {
+    // Build render targets, compile every post shader and execute one complete
+    // chain while the module graph is still holding main.js. `finish()` is a
+    // one-time boot fence: no queued compile/upload can spill into frame one.
+    drawComposed();
+    const gl = renderer.getContext();
+    if (gl && typeof gl.finish === 'function') gl.finish();
+    renderer.info.reset();
+    prewarmed = true;
+  } catch (err) {
+    retirePost(err);
+  }
+}
+
+async function settlePostAtBoot() {
+  const started = nowMs();
+  let timer = null;
+  const imports = Promise.all([
     import('three/addons/postprocessing/EffectComposer.js'),
     import('three/addons/postprocessing/RenderPass.js'),
     import('three/addons/postprocessing/UnrealBloomPass.js'),
     import('three/addons/postprocessing/OutputPass.js'),
-  ]).then(([ec, rp, ub, op]) => {
-    build(ec.EffectComposer, rp.RenderPass, ub.UnrealBloomPass, op.OutputPass);
-  }).catch((err) => {
-    faults++;
-    lastError = String((err && err.message) || err);
-    status = 'failed';
+  ]).then(
+    (modules) => ({ kind: 'ready', modules }),
+    (error) => ({ kind: 'failed', error }),
+  );
+  const timeout = new Promise((resolve) => {
+    timer = setTimeout(() => resolve({ kind: 'timeout' }), POST_BOOT_BUDGET_MS);
   });
+  const result = await Promise.race([imports, timeout]);
+  if (timer !== null) clearTimeout(timer);
+  bootMs = Math.round(nowMs() - started);
+
+  if (result.kind === 'timeout') {
+    // The import promise is already rejection-handled above. If it completes
+    // later its value is deliberately ignored: no mid-run visual upgrade.
+    retirePost('post-processing was not ready inside the ' +
+      POST_BOOT_BUDGET_MS + 'ms boot budget; direct rendering retained');
+    return;
+  }
+  if (result.kind === 'failed') {
+    retirePost(result.error);
+    return;
+  }
+  try {
+    const [ec, rp, ub, op] = result.modules;
+    build(ec.EffectComposer, rp.RenderPass, ub.UnrealBloomPass, op.OutputPass);
+    prewarmComposer();
+  } catch (err) {
+    retirePost(err);
+  }
+}
+
+if (POST.on) {
+  // Top-level await is intentional: main.js cannot schedule frame one until
+  // this bounded decision has reached its final active/failed state.
+  await settlePostAtBoot();
 
   /* Sized off the same globals src/render/camera.js's handleResize reads, so
      the order the two listeners run in cannot matter. EffectComposer caches
@@ -312,6 +396,16 @@ export function postSnapshot() {
     drawingBuffer: { width: draw.x, height: draw.y },
     composerBuffer: target ? { width: target.width, height: target.height } : null,
     gain: postGain(),
+    boot: {
+      budgetMs: POST_BOOT_BUDGET_MS,
+      costMs: bootMs,
+      prewarmed,
+      presentedFrames,
+      firstFrameStatus,
+      tenthFrameStatus,
+      stableThroughTen: firstFrameStatus !== null &&
+        tenthFrameStatus !== null && firstFrameStatus === tenthFrameStatus,
+    },
     // 'match'     the shipped atmosphere is being reproduced exactly
     // 'tone'      ?atmos=tone — sky and haze go through the tone map
     // 'unmatched' the tone map is not the one the inverse was solved for, so

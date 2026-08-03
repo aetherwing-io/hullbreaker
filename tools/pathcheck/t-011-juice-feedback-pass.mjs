@@ -266,6 +266,33 @@ export async function run(SHARED) {
   const camCode = stripComments(readFileSync(join(srcDir, 'render', 'camera.js'), 'utf8'));
   const mainSrc = stripComments(readFileSync(join(srcDir, 'main.js'), 'utf8'));
 
+  // The pursuing warning is sparse surface signage, never a volumetric slab.
+  // A deep box here can present one of its 15-tile side faces to an oblique
+  // camera and turn a screen crop into an apparently opaque rectangle.
+  {
+    const crushGeometry = fxCode.slice(fxCode.indexOf('function crushBoundaryGeometry()'),
+      fxCode.indexOf('if (JUICE_ENABLED)'));
+    const crushSetup = fxCode.slice(fxCode.indexOf('crushMat ='),
+      fxCode.indexOf('function claim(pool)'));
+    const crushUpdate = fxCode.slice(fxCode.indexOf('export function fxCrush'),
+      fxCode.indexOf('export function updateFx'));
+    ok(/function crushBoundaryGeometry\(\)/.test(crushGeometry) &&
+       /new THREE\.Mesh\(crushBoundaryGeometry\(\), crushMat\)/.test(crushSetup) &&
+       !/BoxGeometry/.test(crushSetup),
+       'T-011: the crush boundary is one pooled sparse-chevron mesh, never a ' +
+       'deep BoxGeometry whose cropped side can become a screen-edge slab');
+    ok(/fog:\s*true/.test(crushSetup) && /depthTest:\s*true/.test(crushSetup) &&
+       /depthWrite:\s*false/.test(crushSetup) &&
+       /environmentRole = ['"]crush-warning['"]/.test(crushSetup),
+       'T-011: the crush chevrons are named, fogged, depth-tested surface marks ' +
+       '(and still do not write depth)');
+    ok(/surfaceDepth = 1\.16/.test(crushUpdate) &&
+       /Math\.sin\(p\.yaw\) \* surfaceDepth/.test(crushUpdate) &&
+       /Math\.cos\(p\.yaw\) \* surfaceDepth/.test(crushUpdate),
+       'T-011: the crush warning rides just proud of the combat surface instead ' +
+       'of occupying the route-depth volume');
+  }
+
   // the sim never imports the render layer (guardLayer already enforces the
   // general rule; this names the juice case so a future shortcut is loud)
   for (const f of layerFiles('sim'))

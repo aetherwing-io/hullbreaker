@@ -24,6 +24,7 @@ import { placeOnTower } from './tower.js';
 import { PAL } from './palette.js';
 import { awaitPreloads, preloadTexture } from './preload.js';
 import { releaseContactShadow, syncContactShadow } from './contact.js';
+import { routeRenderable } from './route-visibility.js';
 import {
   CAPSULE_SWEEP_FREQ, CAPSULE_SWEEP_RAD, GLYPH_EDGE, GLYPH_GAIN, GLYPH_INK_FILL,
   GLYPH_SQUEEZE_MIN, GLYPH_TEX_PX, LEGIBILITY_ON,
@@ -124,8 +125,12 @@ if (settledAtlas.state === 'ready') {
   const atlasW = image && (image.naturalWidth || image.videoWidth || image.width);
   const atlasH = image && (image.naturalHeight || image.videoHeight || image.height);
   if (atlasW === ATLAS_SIZE[0] && atlasH === ATLAS_SIZE[1]) {
+    // TextureLoader already supplies ClampToEdge wrapping, and preload.js has
+    // uploaded this exact texture before releasing the boot gate. Reasserting
+    // the default is harmless; marking it dirty here was not — `needsUpdate`
+    // invalidated that residency and deferred a second atlas upload until the
+    // first production pickup appeared during play.
     settledAtlas.tex.wrapS = settledAtlas.tex.wrapT = THREE.ClampToEdgeWrapping;
-    settledAtlas.tex.needsUpdate = true;
     for (const slot of artSlots.values()) {
       slot.tex = settledAtlas.tex;
       slot.geometry = atlasGeometry(slot.crop);
@@ -404,6 +409,14 @@ function removed(c) {
 function sync(c) {
   const v = meshes.get(c);
   if (!v) return;
+  // Capsules may be generated for the whole climb, but rewards on an
+  // unbuilt/future fold do not exist visually yet. Keep the sim row alive;
+  // only its pixels and contact shadow are withheld until ownership commits.
+  if (!routeRenderable(c.x)) {
+    v.mesh.visible = false;
+    releaseContactShadow(c);
+    return;
+  }
   // Expiring pop-capsules blink through their last stretch, regardless of
   // whether pixels or fallback geometry are drawing them.
   v.mesh.visible = c.mode !== 'pop' || c.dieAt - gameMs > CAP.blinkLastMs || blink();

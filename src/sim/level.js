@@ -74,10 +74,16 @@ for (const cs of CORNER_S) {
 // Gap columns are never marked (nothing to build), and their queries are
 // identical either way because groundH already reports them empty.
 const built = new Uint8Array(LEVEL_LEN).fill(1);
+let buildRevision = 0;
 
 export function columnHasGround(s) { return groundH[s] > -100; }
 export function columnBuilt(s) { return built[s] === 1; }
-export function settleColumn(s) { built[s] = 1; }
+export function levelBuildRevision() { return buildRevision; }
+export function settleColumn(s) {
+  if (built[s] === 1) return;
+  built[s] = 1;
+  buildRevision++;
+}
 
 // next faces stay unbuilt until their ritual (was hideAllSlamColumns)
 export function unbuildFutureFaces() {
@@ -85,9 +91,14 @@ export function unbuildFutureFaces() {
   // owns their build state (src/sim/transform.js), so the six-face corner
   // sets must not mark its columns inert.
   if (IS_TRANSFORM_SLICE) return;
+  let changed = false;
   for (const sets of [slamSets, farSets])
     for (const cols of sets)
-      for (const s of cols) if (columnHasGround(s)) built[s] = 0;
+      for (const s of cols) if (columnHasGround(s) && built[s] !== 0) {
+        built[s] = 0;
+        changed = true;
+      }
+  if (changed) buildRevision++;
   view.level.unbuiltHidden();            // render: hide those tiles and their catwalks
 }
 

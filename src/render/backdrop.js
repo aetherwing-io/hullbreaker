@@ -50,11 +50,11 @@
 
 import * as THREE from 'three';
 import { BACKDROP_TUNE, CONFIG } from '../config.js';
-import { SEGS, faceIndexAt, headingAt, polyAt } from '../pure/path.js';
+import { SEGS, headingAt, polyAt } from '../pure/path.js';
 import { IS_TRANSFORM_SLICE, QUERY } from '../mode.js';
-import { scrollX } from '../sim/time.js';
 import { faceMidS, plateSize, resolveBackdropOn } from './backdrop-table.js';
-import { preloadTexture, awaitPreloads } from './preload.js';
+import { cameraFaceBlendGain } from './camera.js';
+import { preloadTexture, awaitPreloads, warmDerivedTextures } from './preload.js';
 import { scene } from './scene.js';
 import { PAL } from './palette.js';
 import { buildMeridianAtmosphere } from './atmosphere.js';
@@ -66,7 +66,9 @@ const slots = [];
 let built = 0;
 let atmosphere = { built: 0, textureCount: 0, depth: null, stages: [] };
 let depthMattesBuilt = 0;
+let depthMatteResidency = { requested: 0, warmed: 0, ms: 0 };
 const macroBody = { state: BACKDROP_ON ? 'pending' : 'off', tex: null, error: null };
+const anatomyBody = { state: BACKDROP_ON ? 'pending' : 'off', tex: null, error: null };
 
 /* Everything below is one try/catch, deliberately: an author bug in this
    module's own arithmetic (a bad lookup, a NaN dimension) must degrade the
@@ -109,6 +111,25 @@ try {
         macroBody.error = entry.error || entry.state;
         console.warn('HULLBREAKER art: coherent macro-body plate did not load (' +
           macroBody.error + ') -- keeping the procedural storm depth layer.');
+      }
+    });
+
+    // A connected Meridian anatomy painting is consumed by atmosphere.js as
+    // pixels in its existing curved middle shell. Register it on the same boot
+    // gate as every other backdrop texture; it never becomes a standalone
+    // plate or late-loading draw call.
+    const anatomyUrl = new URL(
+      '../../assets/generated/backdrops/backdrop-meridian-anatomy-v1.png', import.meta.url,
+    ).href;
+    preloadTexture(anatomyUrl, { cpuOnly: true }).then((entry) => {
+      if (entry.state === 'ready') {
+        anatomyBody.tex = entry.tex;
+        anatomyBody.state = 'ready';
+      } else {
+        anatomyBody.state = 'failed';
+        anatomyBody.error = entry.error || entry.state;
+        console.warn('HULLBREAKER art: connected anatomy plate did not load (' +
+          anatomyBody.error + ') -- keeping the existing curved storm shell.');
       }
     });
   }
@@ -212,11 +233,6 @@ try {
   };
 
   const _cameraForward = new THREE.Vector3();
-  const backdropFacetGain = (face) => {
-    const active = faceIndexAt(scrollX, CONFIG);
-    if (active === CONFIG.path.faces + 1) return face === active ? 1 : 0;
-    return Math.abs(face - active) <= 1 ? 1 : 0;
-  };
   const matteFacingGain = (camera, yaw) => {
     camera.getWorldDirection(_cameraForward);
     const len = Math.hypot(_cameraForward.x, _cameraForward.z) || 1;
@@ -227,6 +243,10 @@ try {
 
   const buildDepthMattes = () => {
     const texture = paintDepthMatte();
+    // The matte is painted only after its production sources settle. Upload
+    // it during the same module-evaluation boot window rather than on the
+    // first facet that happens to draw it.
+    depthMatteResidency = warmDerivedTextures([texture]);
     const geometry = depthMatteGeometry();
     for (let face = 1; face <= CONFIG.path.faces + 1; face++) {
       // The Crown/outro is the short seventh visual facet. Giving its final
@@ -268,7 +288,7 @@ try {
       mesh.onBeforeRender = (_renderer, _scene, camera, _geometry, material) => {
         material.opacity = material.userData.baseBackdropMatteOpacity *
           matteFacingGain(camera, mesh.userData.facetYaw) *
-          backdropFacetGain(mesh.userData.backdropFace);
+          cameraFaceBlendGain(mesh.userData.backdropFace);
       };
       scene.add(mesh);
       depthMattesBuilt++;
@@ -322,7 +342,7 @@ try {
       mesh.renderOrder = -64;
       mesh.onBeforeRender = (_renderer, _scene, _camera, _geometry, material) => {
         material.opacity = mesh.userData.baseBackdropOpacity *
-          backdropFacetGain(mesh.userData.backdropFace);
+          cameraFaceBlendGain(mesh.userData.backdropFace);
       };
       scene.add(mesh);
       slot.mesh = mesh;
@@ -348,7 +368,7 @@ try {
   // It shares this module's ?backdrop=flat A/B and failure boundary.
   if (BACKDROP_ON) {
     buildDepthMattes();
-    atmosphere = buildMeridianAtmosphere(scene, macroBody.tex);
+    atmosphere = buildMeridianAtmosphere(scene, macroBody.tex, anatomyBody.tex);
   }
 } catch (err) {
   console.warn('HULLBREAKER art: the backdrop layer failed to build (' +
@@ -364,8 +384,10 @@ export function backdropSnapshot() {
     on: BACKDROP_ON,
     built,
     depthMattesBuilt,
+    depthMatteResidency,
     atmosphere,
     macroBody: { state: macroBody.state, error: macroBody.error },
+    anatomyBody: { state: anatomyBody.state, error: anatomyBody.error },
     plates: slots.map((s) => ({
       face: s.placement.face, plate: s.placement.plate, tier: s.placement.tier,
       state: s.state, error: s.error, replaced: s.replaced === true,

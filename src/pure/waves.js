@@ -69,6 +69,33 @@ export function cornerScrollVel(tMs, cfg) {
   return cfg.scrollSpeed * u * u;
 }
 
+/* The camera ritual may only take ownership of the arriving facet after RIG
+ * physically reaches the middle of the chamfer. `approach` is the cleared,
+ * held arena state: it opens the route to the joint but cannot begin the turn
+ * on elapsed time alone. During `turning` the joint is a one-body-wide lock;
+ * this keeps RIG on the surface both camera detents share without teleporting
+ * them out of the arena. The completed joint then becomes a one-way seal.
+ *
+ * Coordinates are expressed as player edges because sim/player.js already
+ * composes its camera and transformation constraints in those terms. */
+export function cornerJointRule(state, cornerS, bendS, playerHalfWidth, edgeMargin) {
+  const atJoint = state === 'approach' || state === 'turning';
+  return {
+    turnReadyX: state === 'approach' ? bendS : Infinity,
+    frontierRight: atJoint
+      ? bendS + playerHalfWidth
+      : cornerS + 1 - edgeMargin,
+    sealLeft: state === 'turning' || state === 'done'
+      ? bendS - playerHalfWidth
+      : -Infinity,
+    jointOwned: state === 'turning',
+  };
+}
+
+export function cornerApproachReady(state, playerX, bendS) {
+  return state === 'approach' && playerX >= bendS - 1e-6;
+}
+
 // brick-slam zipper: column j (0-based within the slam set) drops from
 // zipDropTiles above with gravity ease, dips one beat, then locks.
 export function zipperOffset(tMs, colIdx, cfg) {

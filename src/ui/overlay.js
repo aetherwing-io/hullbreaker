@@ -86,9 +86,9 @@ function drawStateScreen(next) {
                            `${(sc.playMs / 1000).toFixed(1)}s` });
       }
       lines.push({ text: `pace: ${ACTIVE_SLICE.pace.label}`, dim: true });
-      // mid (default) is silent: the VICTORY overlay only self-labels when a
+      // FAR (default) is silent: the VICTORY overlay only self-labels when a
       // non-default view was selected, same rule as the transient HUD tag.
-      if (VIEW_ID !== 'mid') {
+      if (VIEW_ID !== 'far') {
         lines.push({ text: `view: ${CONFIG.viewScales[VIEW_ID].label}`, dim: true });
       }
       lines.push({ text: 'r to replay', dim: true });
@@ -107,7 +107,7 @@ function drawStateScreen(next) {
         { text: 'flip inward → the passage climbs → breach out, one 2D controller the whole way' },
       ];
       // Same self-labeling rule as TRAVERSAL CLEAR: non-default views only.
-      if (VIEW_ID !== 'mid') {
+      if (VIEW_ID !== 'far') {
         transformLines.push({ text: `view: ${CONFIG.viewScales[VIEW_ID].label}`, dim: true });
       }
       transformLines.push({ text: 'r to replay', dim: true });

@@ -24,6 +24,7 @@ import {
 } from './sprites.js';
 import { placeOnTower } from './tower.js';
 import { releaseContactShadow, syncContactShadow } from './contact.js';
+import { routeRenderable } from './route-visibility.js';
 import {
   CUE_GAIN, LAMP_COIL_SWELL, LAMP_R, LEGIBILITY_ON, POSE_GAIN,
   POLYP_ONSET_MS, POLYP_SWELL_EASE, WASP_DIVE_NARROW, waspDiveStretch,
@@ -58,7 +59,7 @@ const mortarTubeGeo = new THREE.ConeGeometry(CONFIG.mortar.size, CONFIG.mortar.s
 const wardenGeo = new THREE.BoxGeometry(...CONFIG.warden.size);
 
 /* Production cutouts need enough pixels to carry the design that is painted
-   into them. At the shipped MID view, fitting a wasp to its one-tile legacy
+   into them. At the shipped FAR view, fitting a wasp to its one-tile legacy
    octahedron produced only ~18 CSS pixels of ink; the 400px source became an
    expensive green speck. These are PRESENTATION scales only. The sim rows,
    contact radii, target tests, projectiles and shadows stay unchanged. Rooted
@@ -78,6 +79,15 @@ const SPRITE_BODY_SCALE = Object.freeze({
   warden: 1.45,
 });
 
+// Collision-faithful platforms occupy depth -0.70..+0.70. Hostiles used to
+// breathe around depth zero, so even a flying wasp was depth-tested behind the
+// platform fascia whenever their silhouettes overlapped. Lift presentation
+// onto the same readable outer skin as RIG; entrance motion still begins deep
+// inside Meridian because its authored -12-tile emergence composes first.
+// Simulation positions, beams, marked zones, hitboxes and shadows remain on
+// the exact combat plane.
+export const HOSTILE_SURFACE_DEPTH = 1.15;
+
 function spriteAnchorLift(kind, presentationScale) {
   if (kind === 'wasp' || kind === 'carrier' || presentationScale === 1) return 0;
   const box = primitiveBox(kind);
@@ -89,7 +99,7 @@ function spriteAnchorLift(kind, presentationScale) {
 /* ------------------- combat-plane readability props ------------------- *
  * Collision stays world-sized and untouched. Production cutouts receive the
  * presentation-only scale above; these small props carry INFORMATION that
- * must survive the MID camera: a restrained ecology
+ * must survive the FAR camera: a restrained ecology
  * glow behind each silhouette, and a different motion sentence for each
  * committed threat. They are intentionally unlit/fog-free; a warning is a
  * message about the machine, not another piece of distant architecture. */
@@ -304,6 +314,66 @@ function houndRoll(e) {
   return Math.sin(e.t * H.gaitFreq) * H.gaitTilt;
 }
 
+/* The Warden is a summit-scale machine, so its animation is weight transfer,
+   not idle bobbing.  The painted cutout stays recognisable while the chassis
+   braces into each weapon and mechanically unloads when the iris opens.  All
+   values are presentation-only and derived from the already committed sim
+   state; no extra warning or timing contract is introduced here. */
+const WARDEN_POSE = { depth: 0, sx: 1, sy: 1, sz: 1, glow: PAL.glowOff };
+
+function wardenStateU(e, duration) {
+  return 1 - Math.max(0, Math.min(1, (e.stateUntil - gameMs) / duration));
+}
+
+function wardenPose(e) {
+  const W = CONFIG.warden;
+  const p = WARDEN_POSE;
+  p.depth = 0; p.sx = 1; p.sy = 1; p.sz = 1; p.glow = PAL.glowOff;
+  if (e.state === 'sweepTell') {
+    const brace = wardenStateU(e, W.sweepTellMs);
+    p.sx = 1 + brace * 0.018;
+    p.sy = 1 - brace * 0.016;
+    p.depth = -brace * 0.035;
+  } else if (e.state === 'sweepFire') {
+    const kick = Math.sin(Math.PI * wardenStateU(e, W.sweepMs));
+    p.sx = 1 + kick * 0.030;
+    p.sy = 0.984 - kick * 0.012;
+    p.depth = -0.045 - kick * 0.065;
+  } else if (e.state === 'barrageTell') {
+    const load = wardenStateU(e, W.barrageTellMs);
+    p.sx = 1 - load * 0.010;
+    p.sy = 1 - load * 0.024;
+    p.depth = -load * 0.025;
+  } else if (e.state === 'barrageBurst') {
+    const kick = Math.sin(Math.PI * wardenStateU(e, W.barrageMs));
+    p.sx = 1 + kick * 0.018;
+    p.sy = 0.976 - kick * 0.030;
+    p.depth = -0.035 - kick * 0.080;
+  } else if (e.state === 'exposed') {
+    // Shutters release and the loaded suspension settles into a vulnerable
+    // stance.  This is deliberately not emissive: only the local iris says
+    // "shoot now".
+    const settle = Math.min(1, Math.max(0, (gameMs - e.openedAt) / 180));
+    p.sx = 1 + settle * 0.012;
+    p.sy = 1 - settle * 0.018;
+    p.depth = -settle * 0.025;
+  }
+  return p;
+}
+
+function wardenRoll(e) {
+  const W = CONFIG.warden;
+  if (e.state === 'sweepTell')
+    return -e.dir * wardenStateU(e, W.sweepTellMs) * 0.012;
+  if (e.state === 'sweepFire')
+    return -e.dir * Math.sin(Math.PI * wardenStateU(e, W.sweepMs)) * 0.030;
+  if (e.state === 'barrageTell')
+    return e.dir * wardenStateU(e, W.barrageTellMs) * 0.010;
+  if (e.state === 'barrageBurst')
+    return e.dir * Math.sin(Math.PI * wardenStateU(e, W.barrageMs)) * 0.022;
+  return 0;
+}
+
 /* The polyp's state theater over the same shared presence pass: a rooted
    bulb whose iris cycle is told in silhouette + one local aperture light.
      closed — inert bulb; the shared depth breathing keeps it alive.
@@ -411,7 +481,7 @@ const LOOK = {
   mortar:  { geo: mortarTubeGeo, color: PAL.mortar, surface: 'emplacement',
              roll: mortarRoll, pose: mortarPose },
   warden:  { geo: wardenGeo, color: PAL.warden, surface: 'chassis',
-             roll: () => 0 },
+             roll: wardenRoll, pose: wardenPose },
 };
 
 /* ===================== THE SPRITE BODY (T-049) ===================== *
@@ -458,6 +528,50 @@ const spriteGeos = new Map();            // kind -> PlaneGeometry, built once
 const actionSpriteGeos = new Map();
 const flapSpriteGeos = new Map();
 
+/* Some independently painted poses preserve the role's full horizontal ink
+ * but become dramatically shorter vertically: at FAR the wasp downstroke was
+ * only 52% of its cruise height and the hound charge 84% of idle.  That reads
+ * as the enemy shrinking when it attacks. Normalize only the PlaneGeometry's
+ * Y axis, once at construction. Width, mesh scale, collision, shadow, target
+ * tests and every sim-owned position/state remain exactly as authored.
+ *
+ * Wasp poses retain real silhouette change rather than being forced to the
+ * same height. The hound returns to full standing ink before its existing
+ * charge-pose squash is applied, so that behavioral compression still reads. */
+const POSE_HEIGHT_SHARE = Object.freeze({
+  wasp: Object.freeze({ action: 0.85, flap: 0.78 }),
+  hound: Object.freeze({ action: 1.00 }),
+});
+
+function poseHeightGain(kind, pose, q) {
+  const share = POSE_HEIGHT_SHARE[kind]?.[pose];
+  const base = spriteQuad(kind, spriteVariantOf(kind));
+  if (!share || !base || !q?.inkH) return 1;
+  return Math.max(1, base.inkH * share / q.inkH);
+}
+
+function poseHeightAnchor(kind) {
+  // Grounded ink is fitted to this exact mount line in sprite-table.js. Scale
+  // about it so the hound gains leg/chassis height upward, never floating feet.
+  if (kind === 'hound') {
+    const box = primitiveBox(kind);
+    return box ? box.cy - box.h / 2 : 0;
+  }
+  return 0;
+}
+
+function normalizePoseHeight(geo, kind, pose, q) {
+  const gain = poseHeightGain(kind, pose, q);
+  if (gain === 1) return geo;
+  const anchor = poseHeightAnchor(kind);
+  geo.translate(0, -anchor, 0);
+  geo.scale(1, gain, 1);
+  geo.translate(0, anchor, 0);
+  geo.userData.poseHeightGain = gain;
+  geo.userData.poseHeightAnchor = anchor;
+  return geo;
+}
+
 function spriteGeo(kind) {
   let geo = spriteGeos.get(kind);
   if (geo) return geo;
@@ -479,6 +593,7 @@ function actionSpriteGeo(kind) {
   if (!q) return null;
   geo = new THREE.PlaneGeometry(q.w, q.h);
   geo.translate(q.offX, q.offY, 0);
+  normalizePoseHeight(geo, kind, 'action', q);
   actionSpriteGeos.set(kind, geo);
   return geo;
 }
@@ -490,8 +605,32 @@ function flapSpriteGeo(kind) {
   if (!q) return null;
   geo = new THREE.PlaneGeometry(q.w, q.h);
   geo.translate(q.offX, q.offY, 0);
+  normalizePoseHeight(geo, kind, 'flap', q);
   flapSpriteGeos.set(kind, geo);
   return geo;
+}
+
+function poseNormalizationSnapshot() {
+  const rows = [
+    ['wasp', 'action', spriteActionQuad('wasp')],
+    ['wasp', 'flap', spriteFlapQuad('wasp')],
+    ['hound', 'action', spriteActionQuad('hound')],
+  ];
+  return rows.map(([kind, pose, q]) => {
+    const base = spriteQuad(kind, spriteVariantOf(kind));
+    const gain = poseHeightGain(kind, pose, q);
+    return {
+      kind, pose,
+      targetShare: POSE_HEIGHT_SHARE[kind][pose],
+      gain: Number(gain.toFixed(3)),
+      widthGain: 1,
+      opaqueHeightBefore: Number(q.inkH.toFixed(3)),
+      opaqueHeightAfter: Number((q.inkH * gain).toFixed(3)),
+      baseOpaqueHeight: Number(base.inkH.toFixed(3)),
+      anchorY: Number(poseHeightAnchor(kind).toFixed(3)),
+      collisionChanged: false,
+    };
+  });
 }
 
 function actionPoseActive(e) {
@@ -1472,9 +1611,10 @@ function spawned(e) {
 // construction suggests. Painted bodies are cut into a small, authored set
 // of texture-backed pieces: the actual wasp wing, hound armour, polyp iris,
 // mortar tube and carrier cargo rupture instead of being replaced by generic
-// triangles. All motion is bounded below one turn and every row retires in
-// under 600ms. These are render-only corpses: removal, score and drops have
-// already happened in the sim before this choreography begins.
+// triangles. All motion is bounded below one turn; ordinary rows retire in
+// under 600ms while the unique Crown centerpiece holds for 1.32 seconds to
+// bridge its final kill into uplink. These are render-only corpses: removal,
+// score and drops have already happened in the sim before choreography begins.
 const DEATH_ROLE = Object.freeze({
   // thrust dies first; the fuselage keeps its shot momentum while the two
   // painted wing banks shear upward, then every part drops below the route.
@@ -1493,10 +1633,12 @@ const DEATH_ROLE = Object.freeze({
              tilt: 0.08, sx: 0.58, sy: 0.50 },
   mortar:  { ms: 470, punchMs: 66, fall: 0.36, drift: 0.08, depth: -0.42,
              tilt: 0.12, sx: 0.72, sy: 0.44 },
-  // A six-tile Crown mechanism buckles into its mount and sheds plates. It
-  // never spins or shrinks into a point, preserving the massive silhouette.
-  warden:  { ms: 580, punchMs: 82, fall: 0.72, drift: 0.12, depth: -0.90,
-             tilt: 0.08, sx: 1.03, sy: 0.28 },
+  // A six-tile Crown mechanism gets an earned three-stage failure: weapon
+  // limbs clear their rails, the crown settles, then its iris implodes into
+  // the mount. The long hold bridges the final kill to uplink instead of
+  // letting the centerpiece silently disappear after half a second.
+  warden:  { ms: 1320, punchMs: 105, fall: 0.16, drift: 0.04, depth: -0.38,
+             tilt: 0.025, sx: 1.00, sy: 0.92 },
 });
 
 /* Rectangles are [u0,u1,v0,v1] in the production cutout. They partition the
@@ -1540,17 +1682,38 @@ const DEATH_PIECES = Object.freeze({
     { tag: 'starboard rotor shoulder', rect: [0.66, 1.00, 0.48, 1.00], x: 0.58, lift: 0.52, drop: 0.72, tilt: 0.58, depth: 0.15, shrink: 0.18 },
     { tag: 'cargo containment belly', rect: [0.00, 1.00, 0.00, 0.48], x: 0, lift: 0.04, drop: 1.14, tilt: -0.06, depth: -0.20, shrink: 0.28 },
   ]),
+  // Unlike the small roles, Warden parts carry a stage. The rectangles are
+  // disjoint masks over the actual painted fortress: recognisable cannon,
+  // missile rack, antenna crown, iris vault and two leg banks remain on
+  // screen throughout the sentence instead of generic debris replacing it.
+  warden: Object.freeze([
+    { tag: 'port cannon limb', stage: 'hardpoint', rect: [0.00, 0.30, 0.30, 0.70], x: -1.52, lift: 0.48, drop: 0.58, tilt: -0.26, depth: 0.18, shrink: 0.12 },
+    { tag: 'antenna crown', stage: 'crown', rect: [0.30, 0.70, 0.64, 1.00], x: -0.10, lift: 0.72, drop: 0.66, tilt: -0.09, depth: -0.18, shrink: 0.18 },
+    { tag: 'starboard missile limb', stage: 'hardpoint', rect: [0.70, 1.00, 0.30, 0.70], x: 1.58, lift: 0.42, drop: 0.62, tilt: 0.24, depth: 0.16, shrink: 0.12 },
+    { tag: 'signal iris vault', stage: 'core', rect: [0.30, 0.70, 0.30, 0.64], x: 0, lift: 0, drop: 0.18, tilt: 0, depth: -0.82, shrink: 0.92 },
+    { tag: 'port leg bank', stage: 'mount', rect: [0.00, 0.50, 0.00, 0.30], x: -0.42, lift: 0.06, drop: 0.82, tilt: -0.17, depth: -0.08, shrink: 0.22 },
+    { tag: 'starboard leg bank', stage: 'mount', rect: [0.50, 1.00, 0.00, 0.30], x: 0.42, lift: 0.04, drop: 0.84, tilt: 0.16, depth: -0.10, shrink: 0.22 },
+  ]),
 });
 
 // Twelve concurrent painted ruptures cover the director's maximum readable
 // combat crowd. A thirteenth retires the oldest corpse rather than allocating
-// through a chain kill. Rigs are lazy and reused for the rest of the session:
-// at most 12 materials and 60 small planes exist, with zero per-frame objects.
+// through a chain kill. Rigs are lazy and reused for the rest of the session.
+// One separately capped Warden slot is reserved: without it, the many common
+// species/pose keys encountered on the climb could exhaust the lazy cap before
+// the only boss ever asked for its staged rig. Hard maximum: 13 materials and
+// 66 small planes, with zero per-frame objects.
 const MAX_ACTIVE_CORPSES = 12;
-const MAX_DEATH_RIGS = 12;
+const MAX_COMMON_DEATH_RIGS = 12;
+const MAX_WARDEN_DEATH_RIGS = 1;
+const MAX_DEATH_RIGS = MAX_COMMON_DEATH_RIGS + MAX_WARDEN_DEATH_RIGS;
+const MAX_DEATH_PLANES = MAX_COMMON_DEATH_RIGS * 5 + MAX_WARDEN_DEATH_RIGS * 6;
 const deathPieceGeos = new Map();
 const deathRigPools = new Map();
 let deathRigCount = 0;
+let deathPlaneCount = 0;
+let commonDeathRigCount = 0;
+let wardenDeathRigCount = 0;
 
 function deathPieceGeo(key, q, rect, index) {
   const id = `${key}:${index}`;
@@ -1578,7 +1741,10 @@ function claimDeathRig(v, e) {
   let pool = deathRigPools.get(key);
   if (!pool) { pool = []; deathRigPools.set(key, pool); }
   let rig = pool.find((candidate) => !candidate.inUse);
-  if (!rig && deathRigCount < MAX_DEATH_RIGS) {
+  const canAllocate = e.kind === 'warden'
+    ? wardenDeathRigCount < MAX_WARDEN_DEATH_RIGS
+    : commonDeathRigCount < MAX_COMMON_DEATH_RIGS;
+  if (!rig && canAllocate) {
     const q = action ? spriteActionQuad(e.kind) : spriteQuad(e.kind, spriteVariantOf(e.kind));
     const tex = action ? v.actionTex : v.baseTex;
     if (!q || !tex) return null;
@@ -1594,6 +1760,9 @@ function claimDeathRig(v, e) {
     rig = { key, mat, pieces, inUse: false };
     pool.push(rig);
     deathRigCount++;
+    deathPlaneCount += pieces.length;
+    if (e.kind === 'warden') wardenDeathRigCount++;
+    else commonDeathRigCount++;
   }
   if (!rig) return null; // bounded overload: the intact role-collapse remains
   rig.inUse = true;
@@ -1700,20 +1869,29 @@ function removed(e, fade) {
   }
 }
 
+function hideHostileVisual(v, e) {
+  v.mesh.visible = false;
+  if (v.beam) v.beam.visible = false;
+  if (v.beamCore) v.beamCore.visible = false;
+  if (v.pod) mortarHide(v);
+  if (v.wardenCore) wardenHide(v);
+  if (v.lamp) v.lamp.visible = false;
+  paintedWaspFlapHide(v);
+  readabilityHide(v);
+  evolutionHide(v);
+  releaseContactShadow(e);
+}
+
 function sync(e) {
   const v = meshes.get(e);
   if (!v) return;
   const W = CONFIG.wasp;
+  if (!routeRenderable(e.x)) {
+    hideHostileVisual(v, e);
+    return;
+  }
   if (gameMs < e.enterUntil - W.enterMs) {            // staged wave slot: still hidden
-    v.mesh.visible = false;
-    if (v.beam) v.beam.visible = false;
-    if (v.beamCore) v.beamCore.visible = false;
-    if (v.pod) mortarHide(v);
-    if (v.wardenCore) wardenHide(v);
-    if (v.lamp) v.lamp.visible = false;
-    paintedWaspFlapHide(v);
-    readabilityHide(v);
-    evolutionHide(v);
+    hideHostileVisual(v, e);
     return;
   }
   v.mesh.visible = true;
@@ -1741,6 +1919,7 @@ function sync(e) {
     sx *= p.sx; sy *= p.sy; sz *= p.sz;
     if (glow === PAL.glowOff) glow = p.glow;              // a hit flash still wins
   }
+  depth += HOSTILE_SURFACE_DEPTH;
   sx *= v.presentationScale;
   sy *= v.presentationScale;
   sz *= v.presentationScale;
@@ -1864,6 +2043,7 @@ export function hostileEvolutionVisualSnapshot() {
     bulwarks, vaults, attackRacks, backlashes,
     paintedParts, paintedByGene,
     atlas: genomePartSnapshot(),
+    poseNormalization: poseNormalizationSnapshot(),
     genomes, flapSample,
   };
 }
@@ -1898,7 +2078,7 @@ function syncDeathSystems(c, r) {
       placeOnTower(system.mesh,
         c.s + c.breakDir * (core ? 0.13 : 0.04) * ease,
         c.y + system.yOffset + kick - (core ? 0.34 : 0.54) * r * r,
-        0.22 - 0.40 * r);
+        HOSTILE_SURFACE_DEPTH + 0.22 - 0.40 * r);
       system.mesh.rotation.z = system.rotation + c.breakDir *
         (core ? 0.42 : 0.68) * ease;
       const contract = Math.max(0.08, 1 - (core ? 0.78 : 0.88) * ease);
@@ -1910,7 +2090,7 @@ function syncDeathSystems(c, r) {
       placeOnTower(system.mesh,
         c.s + side * 0.05 * c.face * ease,
         c.y - 0.18 * r * r,
-        0.19 - 0.24 * r);
+        HOSTILE_SURFACE_DEPTH + 0.19 - 0.24 * r);
       system.mesh.rotation.z = system.rotation + (painted
         ? c.breakDir * 0.14 : -side * 0.22) * ease;
       const clamp = Math.max(painted ? 0.10 : 0.16,
@@ -1922,18 +2102,34 @@ function syncDeathSystems(c, r) {
   }
 }
 
+function wardenPartProgress(stage, r) {
+  let start = 0.02, span = 0.36;
+  if (stage === 'crown') { start = 0.10; span = 0.48; }
+  else if (stage === 'mount') { start = 0.04; span = 0.62; }
+  else if (stage === 'core') { start = 0.44; span = 0.38; }
+  const u = (r - start) / span;
+  return u <= 0 ? 0 : u >= 1 ? 1 : u;
+}
+
 export function updateCorpses() {
   for (let i = corpses.length - 1; i >= 0; i--) {
     const c = corpses[i];
     const elapsed = gameMs - c.t0;
     const u = elapsed / c.spec.ms;
     if (u >= 1) { releaseCorpse(c); corpses.splice(i, 1); continue; }
+    if (!routeRenderable(c.s)) {
+      c.mesh.visible = false;
+      if (c.rig) for (const part of c.rig.pieces) part.mesh.visible = false;
+      for (const system of c.systems) system.mesh.visible = false;
+      continue;
+    }
 
     if (elapsed < c.spec.punchMs) {
       const q = elapsed / c.spec.punchMs;
       const punch = Math.sin(q * Math.PI);
       c.mesh.visible = true;
-      placeOnTower(c.mesh, c.s - c.breakDir * 0.08 * punch, c.y, -0.12 * punch);
+      placeOnTower(c.mesh, c.s - c.breakDir * 0.08 * punch, c.y,
+        HOSTILE_SURFACE_DEPTH - 0.12 * punch);
       c.mesh.rotation.z = c.baseRoll + c.breakDir * 0.08 * q;
       const swell = 1 + punch * 0.16;
       c.mesh.scale.set(c.baseScaleX * c.face * swell,
@@ -1952,14 +2148,22 @@ export function updateCorpses() {
     const r = Math.min(1,
       (elapsed - c.spec.punchMs) / (c.spec.ms - c.spec.punchMs));
     const snap = 1 - (1 - r) ** 3;
-    const bodyS = c.s + c.breakDir * c.spec.drift * r;
+    const isWarden = c.kind === 'warden';
+    // The Crown is bolted into an apron: keep its centre planted while its
+    // actual painted assemblies do the moving. Lesser roles retain their
+    // compact whole-body carry/skid before their pieces resolve.
+    const bodyS = c.s + c.breakDir * c.spec.drift * (isWarden ? r * r : r);
     const bodyY = c.y - c.spec.fall * r * r;
-    const bodyDepth = c.spec.depth * r;
+    const bodyDepth = HOSTILE_SURFACE_DEPTH + c.spec.depth * r;
     const bodyRoll = c.baseRoll + c.breakDir * c.spec.tilt * snap;
     const bodyScaleX = 1 + (c.spec.sx - 1) * snap;
     const bodyScaleY = 1 + (c.spec.sy - 1) * snap;
     const bodyScaleZ = 1 - 0.28 * snap;
-    const fade = Math.max(0, 1 - r ** 1.45);
+    // Warden holds readable metal through both hardpoint ejections and only
+    // dissolves once the delayed core implosion is underway.
+    const fade = isWarden
+      ? (r < 0.72 ? 1 : Math.max(0, (1 - r) / 0.28) ** 1.25)
+      : Math.max(0, 1 - r ** 1.45);
 
     if (c.rig) {
       // At r===0 these masked planes reconstruct the exact live painting,
@@ -1971,13 +2175,15 @@ export function updateCorpses() {
       c.rig.mat.emissiveIntensity = postGain() * (r < 0.12 ? 0.86 : 0.16);
       for (const part of c.rig.pieces) {
         const p = part.def;
+        const partR = isWarden ? wardenPartProgress(p.stage, r) : r;
+        const partSnap = isWarden ? 1 - (1 - partR) ** 3 : snap;
         part.mesh.visible = fade > 0.01;
-        const localScale = Math.max(0.12, 1 - p.shrink * snap);
+        const localScale = Math.max(0.08, 1 - p.shrink * partSnap);
         placeOnTower(part.mesh,
-          bodyS + p.x * c.face * snap,
-          bodyY + p.lift * Math.sin(Math.PI * r) - p.drop * r * r,
-          bodyDepth + p.depth * snap);
-        part.mesh.rotation.z = bodyRoll + p.tilt * c.face * snap;
+          bodyS + p.x * c.face * partSnap,
+          bodyY + p.lift * Math.sin(Math.PI * partR) - p.drop * partR * partR,
+          bodyDepth + p.depth * partSnap);
+        part.mesh.rotation.z = bodyRoll + p.tilt * c.face * partSnap;
         part.mesh.scale.set(c.baseScaleX * c.face * bodyScaleX * localScale,
           c.baseScaleY * bodyScaleY * localScale,
           c.baseScaleZ * bodyScaleZ * localScale);
@@ -2014,12 +2220,17 @@ export function hostileDeathVisualSnapshot() {
   return {
     active: corpses.length,
     pool: { rigs: deathRigCount, activeRigs, maxRigs: MAX_DEATH_RIGS,
+      commonRigs: commonDeathRigCount, wardenRigs: wardenDeathRigCount,
+      planes: deathPlaneCount, maxPlanes: MAX_DEATH_PLANES,
       maxCorpses: MAX_ACTIVE_CORPSES },
     rows: corpses.map((c) => ({
       kind: c.kind,
       ageMs: Math.max(0, Math.round(gameMs - c.t0)),
       lifetimeMs: c.spec.ms,
-      phase: gameMs - c.t0 < c.spec.punchMs ? 'impact' : 'rupture',
+      phase: gameMs - c.t0 < c.spec.punchMs ? 'impact'
+        : c.kind !== 'warden' ? 'rupture'
+        : gameMs - c.t0 < 650 ? 'hardpoint-eject'
+        : gameMs - c.t0 < 1010 ? 'core-implosion' : 'signal-collapse',
       paintedPieces: c.rig ? c.rig.pieces.length : 0,
       pieceTags: c.rig ? c.rig.pieces.map((part) => part.def.tag) : [],
       systems: c.systems.map((system) => system.type),
@@ -2182,14 +2393,75 @@ const wardenCoreGeo = new THREE.RingGeometry(0.34, 0.53, 24);
 const wardenShieldGeo = new THREE.RingGeometry(0.57, 0.70, 8);
 const wardenEmitterGeo = new THREE.OctahedronGeometry(0.20, 0);
 const wardenSealGeo = new THREE.OctahedronGeometry(0.10, 0);
-const wardenBeamGeo = new THREE.BoxGeometry(1, WARDEN_CFG.beamHalf * 2, 0.28);
-const wardenBeamCoreGeo = new THREE.BoxGeometry(1, 0.09, 0.10);
+// A mapped plane keeps the sweep in the combat plane without the bright top
+// and side faces of the old additive box.  That box tone-mapped into a solid
+// white-green slab and hid both combatants at the exact dodge moment.
+const wardenBeamGeo = new THREE.PlaneGeometry(1, WARDEN_CFG.beamHalf * 2.2);
+const wardenBeamCoreGeo = new THREE.PlaneGeometry(1, 0.12);
 const wardenMarkGeo = new THREE.RingGeometry(0.72, 1, 28);
 const wardenBlastGeo = new THREE.BoxGeometry(
   WARDEN_CFG.barrageHalf * 2, WARDEN_CFG.barrageHeight, 0.85);
 
-function wardenProp(geo, color) {
-  const mat = signalMaterial(color);
+function paintWardenBeamTexture(core = false) {
+  const cv = document.createElement('canvas');
+  cv.width = 256; cv.height = 64;
+  const g = cv.getContext('2d');
+  // CSS colors are derived from the palette token.  The final two hex digits
+  // are canvas alpha, keeping this procedural mask inside the same palette
+  // contract as every material it modulates.
+  const alphaColor = (hex, alpha) => {
+    const rgb = new THREE.Color(hex).getHexString(THREE.SRGBColorSpace);
+    const a = Math.round(Math.max(0, Math.min(1, alpha)) * 255)
+      .toString(16).padStart(2, '0');
+    return `#${rgb}${a}`;
+  };
+  const vertical = g.createLinearGradient(0, 0, 0, 64);
+  if (core) {
+    vertical.addColorStop(0, 'transparent');
+    vertical.addColorStop(0.18, 'transparent');
+    vertical.addColorStop(0.32, alphaColor(PAL.muzzle, 0.92));
+    vertical.addColorStop(0.68, alphaColor(PAL.muzzle, 0.92));
+    vertical.addColorStop(0.82, 'transparent');
+    vertical.addColorStop(1, 'transparent');
+  } else {
+    vertical.addColorStop(0, 'transparent');
+    vertical.addColorStop(0.12, alphaColor(PAL.muzzle, 0.20));
+    vertical.addColorStop(0.34, alphaColor(PAL.muzzle, 0.78));
+    vertical.addColorStop(0.50, 'white');
+    vertical.addColorStop(0.66, alphaColor(PAL.muzzle, 0.78));
+    vertical.addColorStop(0.88, alphaColor(PAL.muzzle, 0.20));
+    vertical.addColorStop(1, 'transparent');
+  }
+  g.fillStyle = vertical;
+  g.fillRect(0, 0, 256, 64);
+  // Taper both ends so scaling the mesh never exposes a ruler-straight cap.
+  g.globalCompositeOperation = 'destination-in';
+  const taper = g.createLinearGradient(0, 0, 256, 0);
+  taper.addColorStop(0, 'transparent');
+  taper.addColorStop(0.025, alphaColor(PAL.muzzle, 0.72));
+  taper.addColorStop(0.08, 'white');
+  taper.addColorStop(0.91, 'white');
+  taper.addColorStop(1, 'transparent');
+  g.fillStyle = taper;
+  g.fillRect(0, 0, 256, 64);
+  // Small interrupter gaps make the core read as a Crown energy train rather
+  // than another player projectile or an untextured debug rectangle.
+  if (core) {
+    g.globalCompositeOperation = 'destination-out';
+    for (let x = 42; x < 232; x += 47) g.fillRect(x, 27, 3, 10);
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = false;
+  return tex;
+}
+
+const wardenBeamTex = paintWardenBeamTexture(false);
+const wardenBeamCoreTex = paintWardenBeamTexture(true);
+
+function wardenProp(geo, color, map = null) {
+  const mat = signalMaterial(color, map);
   const mesh = new THREE.Mesh(geo, mat);
   mesh.visible = false;
   mesh.renderOrder = 4;
@@ -2202,8 +2474,11 @@ function wardenAttach(v) {
   const shield = wardenProp(wardenShieldGeo, PAL.modCapsule);
   const emitter = wardenProp(wardenEmitterGeo, PAL.modCapsule);
   const rack = wardenProp(wardenEmitterGeo, PAL.modCapsule);
-  const beam = wardenProp(wardenBeamGeo, PAL.polypBeam);
-  const beamCore = wardenProp(wardenBeamCoreGeo, PAL.muzzle);
+  const beam = wardenProp(wardenBeamGeo, PAL.capsule, wardenBeamTex);
+  const beamCore = wardenProp(wardenBeamCoreGeo, PAL.mortarBlast, wardenBeamCoreTex);
+  // The sheath describes occupied space without additive HDR stacking; the
+  // much thinner filament alone receives bloom.
+  beam.mat.blending = THREE.NormalBlending;
   const mark = wardenProp(wardenMarkGeo, PAL.mortarMark);
   const blast = wardenProp(wardenBlastGeo, PAL.mortarBlast);
   Object.assign(v, {
@@ -2308,12 +2583,12 @@ function wardenSync(v, e) {
     const mid = muzzleX + e.dir * rayLength / 2;
     placeOnTower(v.wardenBeam, mid, e.y, -0.12);
     placeOnTower(v.wardenBeamCore, mid, e.y, 0.02);
-    v.wardenBeam.scale.set(rayLength, sweepLive ? 1 : 0.52, 1);
+    v.wardenBeam.scale.set(rayLength, sweepLive ? 1 : 0.48, 1);
     v.wardenBeamCore.scale.set(rayLength, 1, 1);
-    lit(v.wardenBeamMat, sweepLive ? PAL.polypBeam : PAL.mortarMark);
-    lit(v.wardenBeamCoreMat, sweepLive ? PAL.muzzle : PAL.mortarBlast);
-    v.wardenBeamMat.opacity = sweepLive ? 0.30 : 0.22;
-    v.wardenBeamCoreMat.opacity = sweepLive ? 0.84 : 0.52;
+    lit(v.wardenBeamMat, sweepLive ? PAL.capsule : PAL.mortarMark);
+    lit(v.wardenBeamCoreMat, PAL.mortarBlast);
+    v.wardenBeamMat.opacity = sweepLive ? 0.66 : 0.28;
+    v.wardenBeamCoreMat.opacity = sweepLive ? 0.76 : 0.46;
   }
 
   const barrageTell = e.state === 'barrageTell';
