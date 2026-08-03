@@ -146,6 +146,9 @@ export async function run(SHARED) {
 
   // --- player.js paints from rig.js's data, not a parallel literal list ---
   const rigSrc = stripComments(readFileSync(join(srcDir, 'render', 'player.js'), 'utf8'));
+  const deployVerifierSrc = stripComments(readFileSync(
+    join(srcDir, '..', 'tools', 'deploy', 'verify-bundle.mjs'), 'utf8',
+  ));
   ok(/from\s+'\.\.\/pure\/rig\.js'/.test(rigSrc) && /TORSO/.test(rigSrc) &&
      /LEG_FRONT/.test(rigSrc) && /LEG_BACK/.test(rigSrc) && /HELMET/.test(rigSrc) && /GUN_BOX/.test(rigSrc),
      'T-040: player.js paints RIG from src/pure/rig.js\'s shape data, not a parallel literal list');
@@ -163,6 +166,14 @@ export async function run(SHARED) {
      'default per entry 16, not behind a flag the operator has to type');
   ok(/onerror|,\s*\(err\)\s*=>/.test(rigSrc) || /console\.warn/.test(rigSrc),
      'T-040: a failed sprite load is handled (logged), not left to throw or silently hang');
+  ok(/__HB_RIG_VISUAL/.test(deployVerifierSrc) &&
+     /rig-body-atlas-v1\.png/.test(deployVerifierSrc) &&
+     /rig-weapons-atlas-v1\.png/.test(deployVerifierSrc) &&
+     /spriteReady/.test(deployVerifierSrc) && /idleGunlessReady/.test(deployVerifierSrc) &&
+     /canvasFallback\s*===\s*false/.test(deployVerifierSrc) &&
+     !/includes\(['"]rig-marine\.png['"]\)/.test(deployVerifierSrc),
+     'T-040: the clean-bundle verifier checks the production RIG atlases and live ' +
+     'visual readiness, never the retired rig-marine.png registration');
 
   // --- FIFTH FIX: the sprite-vs-fallback decision happens at BOOT, never
   // mid-run, through the ONE SHARED gate (src/render/preload.js, built by

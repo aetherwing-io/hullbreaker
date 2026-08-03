@@ -206,6 +206,11 @@ export async function run() {
      /composited\s*===\s*true/.test(deployVerifierSrc),
      'T-051: the clean-bundle verifier requires both anatomy source residency and ' +
      'successful curved-shell composition, rather than accepting the fallback as final art');
+  ok(/\.built\s*\+\s*replaced\s*===\s*snap\.backdrop\.plates\.length/.test(deployVerifierSrc) &&
+     /p\.replaced\s*===\s*true/.test(deployVerifierSrc) &&
+     !/snap\.backdrop\.built\s*===\s*snap\.backdrop\.plates\.length/.test(deployVerifierSrc),
+     'T-051: the clean-bundle verifier counts macro-body replacements as intentional ' +
+     'slot fulfillment while still requiring every source slot to be ready');
 
   // src/main.js reaches backdrop.js directly (not counting on some other
   // module to drag it in as a side effect)

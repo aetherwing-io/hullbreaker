@@ -86,7 +86,7 @@ reached the screen rather than its fallback:
 
 | what | read from | fallback if it had failed |
 | --- | --- | --- |
-| RIG's real sprite | `window.__HB_PRELOAD()` (entry for `rig-marine.png`, `state === 'ready'`) | procedural canvas shapes |
+| RIG's production body and weapon art | `window.__HB_PRELOAD()` (body/weapon atlas entries ready) plus `window.__HB_RIG_VISUAL()` (body and gun art ready, no canvas fallback) | procedural canvas body / geometry gun |
 | every hostile's sprite (both `?spritevar=` candidates) | `window.__HB_SPRITES()` | the primitive body mesh |
 | the 4 hull texture files | `window.__HB_HULL_TEX()` | flat material, no bump |
 | the 5 backdrop plates (12 placements) | `window.__HB_BACKDROP()` | the existing flat/limb background |

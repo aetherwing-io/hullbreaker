@@ -19,12 +19,12 @@
  *   4. drives a real headless Chrome (playwright-core, resolved from a
  *      handful of candidate installs — see loadChromium below; nothing new
  *      to install if tools/playtest or tools/durability already are), and
- *   5. asserts the art actually rendered: RIG's real sprite (not the canvas
- *      fallback), every hostile's sprite (not its primitive body), the hull
+ *   5. asserts the art actually rendered: RIG's production body/weapon atlases
+ *      (not the canvas/geometry fallbacks), every hostile's sprite (not its primitive body), the hull
  *      textures (not the flat material), and the backdrop plates (not the
  *      pre-T-046 empty background), including the connected Meridian anatomy
  *      source actually composited into its curved storm shell — read straight from the game's own
- *      diagnostic surfaces (window.__HB_PRELOAD / __HB_SPRITES /
+ *      diagnostic surfaces (window.__HB_PRELOAD / __HB_RIG_VISUAL / __HB_SPRITES /
  *      __HB_HULL_TEX / __HB_BACKDROP), which is what "rendered" MEANS at
  *      the code level: the asset reached 'ready', not 'failed' or 'off'.
  *
@@ -190,6 +190,7 @@ function stopServer(child) {
 const READ_ART = () => ({
   booted: !!(window.__HB_FAILSAFE && window.__HB_FAILSAFE.isBooted()),
   preload: typeof window.__HB_PRELOAD === 'function' ? window.__HB_PRELOAD() : null,
+  rigVisual: typeof window.__HB_RIG_VISUAL === 'function' ? window.__HB_RIG_VISUAL() : null,
   sprites: typeof window.__HB_SPRITES === 'function' ? window.__HB_SPRITES() : null,
   hullTex: typeof window.__HB_HULL_TEX === 'function' ? window.__HB_HULL_TEX() : null,
   backdrop: typeof window.__HB_BACKDROP === 'function' ? window.__HB_BACKDROP() : null,
@@ -198,11 +199,26 @@ const READ_ART = () => ({
 // Turn one READ_ART() result into a list of { name, pass, detail } checks.
 function judgeArt(snap) {
   const out = [];
-  const rig = snap.preload && snap.preload.assets.find((a) => a.url.includes('rig-marine.png'));
+  const bodyAtlas = snap.preload && snap.preload.assets.find((a) =>
+    a.url.includes('rig-body-atlas-v1.png'));
+  const weaponAtlas = snap.preload && snap.preload.assets.find((a) =>
+    a.url.includes('rig-weapons-atlas-v1.png'));
+  const rig = snap.rigVisual;
   out.push({
-    name: 'RIG sprite (not canvas fallback)',
-    pass: !!rig && rig.state === 'ready',
-    detail: rig ? `state=${rig.state}${rig.error ? ' (' + rig.error + ')' : ''}` : 'not registered',
+    name: 'RIG production body atlas (not canvas fallback)',
+    pass: bodyAtlas?.state === 'ready' && rig?.spriteReady === true &&
+      rig?.idleGunlessReady === true && rig?.canvasFallback === false,
+    detail: `atlas=${bodyAtlas?.state || 'not registered'} ` +
+      `spriteReady=${rig?.spriteReady ?? false} idleReady=${rig?.idleGunlessReady ?? false} ` +
+      `canvasFallback=${rig?.canvasFallback ?? true}`,
+  });
+  const gunStates = rig ? Object.values(rig.artReady || {}) : [];
+  out.push({
+    name: 'RIG production weapon atlas (not geometry fallback)',
+    pass: weaponAtlas?.state === 'ready' && gunStates.length > 0 &&
+      gunStates.every((ready) => ready === true),
+    detail: `atlas=${weaponAtlas?.state || 'not registered'} ` +
+      `guns=${gunStates.filter(Boolean).length}/${gunStates.length}`,
   });
 
   const kinds = snap.sprites ? Object.keys(snap.sprites.kinds) : [];
@@ -231,10 +247,13 @@ function judgeArt(snap) {
   if (!snap.backdrop) {
     out.push({ name: 'backdrop plates (not empty background)', pass: false, detail: 'no __HB_BACKDROP' });
   } else {
+    const replaced = snap.backdrop.plates.filter((p) => p.replaced === true).length;
     out.push({
-      name: 'backdrop plates built',
-      pass: snap.backdrop.built > 0 && snap.backdrop.built === snap.backdrop.plates.length,
-      detail: `built=${snap.backdrop.built}/${snap.backdrop.plates.length}`,
+      name: 'backdrop slots drawn or intentionally replaced',
+      pass: snap.backdrop.built > 0 &&
+        snap.backdrop.built + replaced === snap.backdrop.plates.length,
+      detail: `built=${snap.backdrop.built} replaced=${replaced} ` +
+        `total=${snap.backdrop.plates.length}`,
     });
     for (const p of snap.backdrop.plates) {
       out.push({
