@@ -6,6 +6,7 @@
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
+import { enemyEcologyCondensationStarted } from '../pure/enemy-ecology.js';
 import { mortarArcX, mortarArcY } from '../pure/mortar.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs } from '../sim/time.js';
@@ -15,9 +16,10 @@ import {
   genomePartSnapshot, paintedGenomePart, paintedGenomePartMaterial,
 } from './genome-parts.js';
 import { postGain } from './post.js';
-import { scene } from './scene.js';
+import { camera, renderer, scene } from './scene.js';
 import {
-  primitiveBox, spriteActionQuad, spriteFlapQuad, spriteQuad,
+  primitiveBox, SPRITE_MOTION_ART, spriteActionQuad, spriteFlapQuad,
+  spriteMotionFrame, spriteQuad,
 } from './sprite-table.js';
 import {
   spriteActionTexture, spriteFlapTexture, spriteTexture, spriteVariantOf,
@@ -26,9 +28,37 @@ import { placeOnTower } from './tower.js';
 import { releaseContactShadow, syncContactShadow } from './contact.js';
 import { routeRenderable } from './route-visibility.js';
 import {
+  actorMotionBundle, actorMotionRuntimeSnapshot, actorMotionSocket,
+  selectActorMotion, selectActorMotionClip,
+} from './actor-motion.js';
+import { waspModularBundle, waspModularRuntimeSnapshot } from './wasp-modular.js';
+import {
+  selectWaspBodyState, selectWaspWingPhase, WASP_BODY,
+} from './wasp-modular-select.js';
+import {
+  enemyEcologyAttackSocketWorld, enemyEcologyBundle, enemyEcologyRuntimeSnapshot,
+  freezeEnemyEcologyBreakup, syncEnemyEcologyVisual,
+} from './enemy-ecology.js';
+import {
+  attachEnemyEcologyTactics, detachEnemyEcologyTactics,
+  enemyEcologyTacticRuntimeSnapshot, enemyEcologyTacticVisualSnapshot,
+  enemyOwnsSweepfanBeam, hideEnemyEcologyTactics, isSweepfanBeam,
+  syncEnemyEcologyTactics,
+} from './enemy-ecology-tactics.js';
+import {
   CUE_GAIN, LAMP_COIL_SWELL, LAMP_R, LEGIBILITY_ON, POSE_GAIN,
   POLYP_ONSET_MS, POLYP_SWELL_EASE, WASP_DIVE_NARROW, waspDiveStretch,
 } from './legibility.js';
+
+/* sprites.js owns the one boot gate. Its auxiliary-animation slots point at
+   these atlases in sprite-table.js, so locomotion settles with every existing
+   body/action texture rather than trying to register after another render
+   dependency has closed the gate. */
+const motionTextures = new Map();
+for (const kind of Object.keys(SPRITE_MOTION_ART)) {
+  const tex = spriteFlapTexture(kind);
+  if (tex) motionTextures.set(kind, tex);
+}
 
 // T-039 (S6, contact shadows): each kind's own ground-plane footprint, read
 // straight off the same CONFIG sizes LOOK's geometries below are built from
@@ -79,6 +109,37 @@ const SPRITE_BODY_SCALE = Object.freeze({
   warden: 1.45,
 });
 
+/* The ecology atlas is authored as a 64-state UNION, so its fixed fit must
+   leave room for the widest attack and tallest breakup even while a live
+   idle/prowl cell uses much less of that box. Reusing the legacy single-pose
+   multiplier therefore made shipped idle ink 18--30px at FAR: enough texels,
+   but not enough silhouette to separate Railfang's legs or Crosswind's wing
+   banks. These larger values are presentation only and apply only to the
+   reviewed two-layer atlas. Root compensation below preserves the exact
+   authored surface; hit circles, target tests, attack sockets and sim rows do
+   not read this table. */
+const ENEMY_ECOLOGY_PRESENTATION_SCALE = Object.freeze({
+  wasp: 2.30,
+  hound: 2.45,
+  polyp: 1.80,
+  mortar: 1.75,
+});
+
+// Multiplies atlas albedo on the unlit card; it adds no light. Dark chassis
+// paint needs more preservation than the already-ivory aerial bank. Values
+// stay bounded below 1.7 so the source's tiny hot rivets do not become a halo.
+const ENEMY_ECOLOGY_PAINT_GAIN = Object.freeze({
+  wasp: 1.00,
+  hound: 1.65,
+  polyp: 1.18,
+  mortar: 1.18,
+});
+
+function enemyEcologyPresentationScale(kind) {
+  return ENEMY_ECOLOGY_PRESENTATION_SCALE[kind] ||
+    SPRITE_BODY_SCALE[kind] || 1;
+}
+
 // Collision-faithful platforms occupy depth -0.70..+0.70. Hostiles used to
 // breathe around depth zero, so even a flying wasp was depth-tested behind the
 // platform fascia whenever their silhouettes overlapped. Lift presentation
@@ -99,10 +160,9 @@ function spriteAnchorLift(kind, presentationScale) {
 /* ------------------- combat-plane readability props ------------------- *
  * Collision stays world-sized and untouched. Production cutouts receive the
  * presentation-only scale above; these small props carry INFORMATION that
- * must survive the FAR camera: a restrained ecology
- * glow behind each silhouette, and a different motion sentence for each
- * committed threat. They are intentionally unlit/fog-free; a warning is a
- * message about the machine, not another piece of distant architecture. */
+ * must survive the FAR camera: a grounded contact read and a different
+ * motion sentence for each committed threat. Idle silhouettes own no halo;
+ * a warning is a message about the machine, not ambient decoration. */
 function paintRadialTexture() {
   const cv = document.createElement('canvas');
   cv.width = 64; cv.height = 64;
@@ -527,6 +587,37 @@ const LOOK = {
 const spriteGeos = new Map();            // kind -> PlaneGeometry, built once
 const actionSpriteGeos = new Map();
 const flapSpriteGeos = new Map();
+const motionSpriteGeos = new Map();      // kind -> one fixed UV geometry per atlas cell
+
+function motionSpriteFrames(kind) {
+  let frames = motionSpriteGeos.get(kind);
+  if (frames) return frames;
+  const art = SPRITE_MOTION_ART[kind];
+  if (!art) return null;
+  frames = art.frames.map((unused, index) => {
+    const q = spriteMotionFrame(kind, index);
+    const geo = new THREE.PlaneGeometry(q.w, q.h);
+    geo.translate(q.offX, q.offY, 0);
+    // Select the cell in geometry, never by mutating the shared texture.
+    // Different enemies may therefore occupy different gait frames while
+    // every material still points at one resident atlas texture.
+    const uv = geo.attributes.uv;
+    for (let i = 0; i < uv.count; i++) {
+      const u = uv.getX(i), v = uv.getY(i);
+      uv.setXY(i,
+        q.uv.u0 + u * (q.uv.u1 - q.uv.u0),
+        q.uv.v0 + v * (q.uv.v1 - q.uv.v0));
+    }
+    uv.needsUpdate = true;
+    geo.userData.motionKind = kind;
+    geo.userData.motionFrame = index;
+    geo.userData.anchorWorldX = q.anchorWorldX;
+    geo.userData.anchorWorldY = q.anchorWorldY;
+    return geo;
+  });
+  motionSpriteGeos.set(kind, frames);
+  return frames;
+}
 
 /* Some independently painted poses preserve the role's full horizontal ink
  * but become dramatically shorter vertically: at FAR the wasp downstroke was
@@ -647,15 +738,191 @@ function actionPoseActive(e) {
   return false;
 }
 
+const WASP_FLIGHT_CYCLES_PER_SECOND = 3.25;
+const HOUND_GAIT_STRIDE_TILES = 1.55;
+const HOUND_RUN_FRAME_COUNT = 4;
+
+/* The bottom row is not a decorative alternate loop. It names actual hound
+ * mechanics: load while the tell is planted, launch at commitment, airborne
+ * reach through the vault, and a compressed landing/skid. A normal charge
+ * returns to the four distance-driven run phases after its launch beat. */
+function houndActionMotionFrame(e, frameCount) {
+  if (frameCount < 8) return -1;
+  if (e.state === 'tell') return 4;
+  if (e.state === 'charge') {
+    const elapsed = CONFIG.hound.chargeMs - Math.max(0, e.stateUntil - gameMs);
+    return elapsed < 110 ? 5 : -1;
+  }
+  if (e.state === 'vault') {
+    if (e.vy > CONFIG.genome.vaultLift * 0.45) return 5;
+    if (e.vy > -CONFIG.genome.vaultLift * 0.35) return 6;
+    return 7;
+  }
+  if (e.state === 'tumble') return e.vy > -8 ? 6 : 7;
+  if (e.state === 'skid') return 7;
+  return -1;
+}
+
+function locomotionFrame(v, e) {
+  const n = v.motionGeos?.length || 0;
+  if (!n) return -1;
+  if (e.kind === 'wasp') {
+    const cycle = e.t * WASP_FLIGHT_CYCLES_PER_SECOND + e.id * 0.173;
+    return Math.floor((cycle - Math.floor(cycle)) * n) % n;
+  }
+  if (e.kind === 'hound') {
+    const dx = Math.abs(e.x - v.motionLastX);
+    v.motionLastX = e.x;
+    // A fold handoff, fixture relocation, or reset is not a stride. Ordinary
+    // travel advances by distance so a blocked hound's feet stop with it.
+    if (dx <= 0.75) v.motionPhase = (v.motionPhase + dx / HOUND_GAIT_STRIDE_TILES) % 1;
+    else v.motionPhase = 0;
+    const actionFrame = houndActionMotionFrame(e, n);
+    if (actionFrame >= 0) return actionFrame;
+    const runFrames = Math.min(HOUND_RUN_FRAME_COUNT, n);
+    return Math.min(runFrames - 1, Math.floor(v.motionPhase * runFrames));
+  }
+  return -1;
+}
+
+const WASP_MODULAR_TURN_HOLD_MS = 120;
+
+function syncModularWaspBody(v, e) {
+  const bundle = v.waspModular;
+  if (!bundle) return false;
+  let dx = e.x - v.waspLastX;
+  let dy = e.y - v.waspLastY;
+  // Route folds and resets are placement hand-offs, not an animation impulse.
+  if (Math.abs(dx) > 0.75 || Math.abs(dy) > 0.75) { dx = 0; dy = 0; }
+  const face = Math.sign(spriteFaceX(e, `waspmod:${v.waspBodyState}`)) || 1;
+  if (face !== v.waspLastFace) v.waspTurnUntil = gameMs + WASP_MODULAR_TURN_HOLD_MS;
+  v.waspMotion.turning = gameMs < v.waspTurnUntil;
+  v.waspMotion.dx = dx;
+  v.waspMotion.dy = dy;
+  const frame = selectWaspBodyState(e, gameMs, v.waspMotion);
+  v.waspLastX = e.x;
+  v.waspLastY = e.y;
+  v.waspLastFace = face;
+  v.actionActive = false;
+  v.motionSource = 'wasp-modular';
+  v.motionFrame = frame;
+  v.actorMotionFrame = null;
+  if (frame === v.waspBodyState && v.poseKey === `waspmod:${frame}`) return true;
+  v.waspBodyState = frame;
+  v.poseKey = `waspmod:${frame}`;
+  v.mesh.geometry = bundle.body[frame].geo;
+  v.mat.map = bundle.tex;
+  v.mat.emissiveMap = bundle.tex;
+  return true;
+}
+
 function syncSpritePose(v, e) {
-  if (!v.sprite || !v.actionTex || !v.actionGeo) return;
-  const action = actionPoseActive(e);
-  if (action === v.actionActive) return;
-  v.actionActive = action;
-  v.mesh.geometry = action ? v.actionGeo : v.baseGeo;
-  const tex = action ? v.actionTex : v.baseTex;
+  if (!v.sprite) return;
+  if (syncEnemyEcologyVisual(v, e, gameMs)) return;
+  if (syncModularWaspBody(v, e)) return;
+  // The Warden's arrival is a renderer-owned lifecycle beat: its sim remains
+  // sealed and inert until enterUntil, while resident painted poses deploy
+  // around the same planted contact.  It never needs a synthetic sim state or
+  // a temporary row object in this hot path.
+  const deployingWarden = e.kind === 'warden' && !!v.actorMotionBundle &&
+    gameMs < e.enterUntil;
+  const deploymentProgress = deployingWarden
+    ? 1 - Math.max(0, Math.min(1,
+      (e.enterUntil - gameMs) / CONFIG.wasp.enterMs)) : 0;
+  const authored = deployingWarden
+    ? selectActorMotionClip(v.actorMotionBundle, 'deployment', deploymentProgress)
+    : selectActorMotion(v.actorMotionBundle, e, gameMs);
+  const motionFrame = locomotionFrame(v, e);
+  // The v2 hound atlas owns its real tell/vault/skid states. Keep the older
+  // charge painting only as a boot-safe fallback when that atlas is absent.
+  const houndAtlas = e.kind === 'hound' && !!v.motionTex &&
+    (v.motionGeos?.length || 0) >= 8;
+  const action = (!houndAtlas || e.kind !== 'hound') && actionPoseActive(e) &&
+    !!v.actionTex && !!v.actionGeo;
+  let key = 'base', geo = v.baseGeo, tex = v.baseTex;
+  v.motionSource = '';
+  v.actorMotionFrame = null;
+  if (authored) {
+    key = `actor:${authored.frame.index}`;
+    geo = authored.frame.geo;
+    tex = v.actorMotionBundle.tex;
+    v.motionSource = 'actor';
+    v.actorMotionFrame = authored.frame;
+    v.actorMotionClip = authored.clip;
+    v.actorMotionMarker = authored.marker;
+    v.actorMotionEvent = authored.event;
+    v.actorMotionProgress = authored.progress;
+  } else if (action) {
+    key = 'action'; geo = v.actionGeo; tex = v.actionTex;
+  } else if (motionFrame >= 0 && v.motionTex) {
+    key = `motion:${motionFrame}`;
+    geo = v.motionGeos[motionFrame];
+    tex = v.motionTex;
+    v.motionSource = 'locomotion';
+  }
+  v.actionActive = !authored && action;
+  v.motionFrame = authored ? authored.frame.index : action ? -1 : motionFrame;
+  if (key === v.poseKey) return;
+  v.poseKey = key;
+  v.mesh.geometry = geo;
   v.mat.map = tex;
   v.mat.emissiveMap = tex;
+}
+
+// A motion pose is more than a frame number: the body geometry owns the atlas
+// cell and the material owns the shared sheet. Keep this one predicate as the
+// live/death hand-off contract so an interrupted state swap can never claim a
+// stale cell. It allocates nothing and is also cheap enough for the live hound
+// pose pass below.
+function currentMotionFrame(v) {
+  const frame = v.motionFrame;
+  if (!Number.isInteger(frame) || frame < 0) return -1;
+  if (v.motionSource === 'actor') {
+    if (v.poseKey !== `actor:${frame}` || !v.actorMotionFrame ||
+        v.actorMotionFrame.index !== frame ||
+        v.actorMotionFrame.geo !== v.mesh.geometry ||
+        v.mat.map !== v.actorMotionBundle.tex ||
+        v.mat.emissiveMap !== v.actorMotionBundle.tex) return -1;
+  } else if (v.motionSource === 'locomotion') {
+    if (v.poseKey !== `motion:${frame}` || !v.motionTex ||
+        v.motionGeos?.[frame] !== v.mesh.geometry ||
+        v.mat.map !== v.motionTex || v.mat.emissiveMap !== v.motionTex) return -1;
+  } else if (v.motionSource === 'wasp-modular') {
+    if (v.poseKey !== `waspmod:${frame}` || !v.waspModular ||
+        v.waspModular.body[frame]?.geo !== v.mesh.geometry ||
+        v.mat.map !== v.waspModular.tex ||
+        v.mat.emissiveMap !== v.waspModular.tex) return -1;
+  } else return -1;
+  return frame;
+}
+
+function houndMotionOwnsSilhouette(v, e) {
+  return e.kind === 'hound' && (v.motionGeos?.length || 0) >= 8 &&
+    currentMotionFrame(v) >= 0;
+}
+
+function actorMotionOwnsSilhouette(v) {
+  return v.motionSource === 'actor' && currentMotionFrame(v) >= 0;
+}
+
+function waspModularOwnsSilhouette(v) {
+  return v.motionSource === 'wasp-modular' && currentMotionFrame(v) >= 0;
+}
+
+// Scratch outputs are shared because every caller consumes them immediately.
+// No socket lookup or world projection allocates in the render loop.
+const MOTION_SOCKET = { s: 0, y: 0 };
+const MUTATION_SOCKET = { s: 0, y: 0 };
+
+function motionSocketWorld(v, e, name, out = MOTION_SOCKET) {
+  if (v.ecology && name === 'muzzle')
+    return enemyEcologyAttackSocketWorld(v, e, out);
+  if (!actorMotionOwnsSilhouette(v)) return false;
+  const local = actorMotionSocket(v.actorMotionBundle, v.motionFrame, name);
+  if (!local) return false;
+  out.s = e.x + local.x * v.mesh.scale.x;
+  out.y = e.y + v.presentationLift + local.y * v.mesh.scale.y;
+  return true;
 }
 
 function spriteMaterial(tex) {
@@ -680,7 +947,108 @@ function spriteMaterial(tex) {
   });
 }
 
-/* Painted wasp articulation. Both production cuts were measured through the
+function enemyEcologyMaterial(tex, kind) {
+  /* The atlas already contains painted key/fill/rim and material response.
+     Running that illustration through the world PBR rig a second time
+     crushed its small dark chassis into black. An unlit alpha-tested card
+     preserves the authored value exactly while remaining NON-emissive: it
+     has no emissive map/property or separate luminous field. The bounded
+     per-family albedo multiplier above restores dark ink without a halo in
+     the shipped desktop/portrait proofs. State paint and physical tactic VFX
+     remain the only active signals. */
+  const mat = new THREE.MeshBasicMaterial({
+    map: tex,
+    transparent: true,
+    opacity: 0,
+    alphaTest: 0.035,
+    side: THREE.DoubleSide,
+    forceSinglePass: true,
+    depthWrite: true,
+    fog: false,
+  });
+  const gain = ENEMY_ECOLOGY_PAINT_GAIN[kind] || 1;
+  mat.color.setRGB(gain, gain, gain, THREE.LinearSRGBColorSpace);
+  return mat;
+}
+
+const WASP_WING_DEPTH_BIAS = 0.015;
+const PLATFORM_OUTER_DEPTH = 0.70;
+
+function modularWaspWingAttach(v, e, K) {
+  if (!v.waspModular || e.kind !== 'wasp') return;
+  const mat = applySurface(spriteMaterial(v.waspModular.tex), K.surface);
+  // The wing painting itself carries its membrane and spars. Idle flight gets
+  // no emissive bloom, and phase changes never modulate opacity.
+  mat.emissive.setHex(PAL.glowOff);
+  mat.emissiveIntensity = 0;
+  const mesh = new THREE.Mesh(v.waspModular.wings[0].geo, mat);
+  mesh.name = 'Wasp modular hinged wing bank';
+  mesh.visible = false;
+  mesh.renderOrder = 1;
+  v.mesh.renderOrder = 2;
+  scene.add(mesh);
+  v.waspWingMesh = mesh;
+  v.waspWingMat = mat;
+  v.waspWingPhase = 0;
+  v.waspBodyDepth = -Infinity;
+  v.waspWingDepth = -Infinity;
+}
+
+function modularWaspWingHide(v) {
+  if (v.waspWingMesh) v.waspWingMesh.visible = false;
+}
+
+function syncModularWaspWing(v, e, depth, signaling) {
+  if (!v.waspWingMesh) return;
+  const phase = selectWaspWingPhase(e);
+  if (phase !== v.waspWingPhase) {
+    v.waspWingPhase = phase;
+    v.waspWingMesh.geometry = v.waspModular.wings[phase].geo;
+  }
+  const wingDepth = depth - WASP_WING_DEPTH_BIAS;
+  v.waspBodyDepth = depth;
+  v.waspWingDepth = wingDepth;
+  v.waspWingMesh.visible = v.mesh.visible && v.mat.opacity > 0.001;
+  placeOnTower(v.waspWingMesh, e.x, e.y + v.presentationLift, wingDepth);
+  // A single transform owns the whole assembly. Mirroring, bank, scale and
+  // anchoring can never disagree between body and wing-root.
+  v.waspWingMesh.rotation.z = v.mesh.rotation.z;
+  v.waspWingMesh.scale.copy(v.mesh.scale);
+  v.waspWingMat.opacity = v.mat.opacity;
+  if (signaling) v.waspWingMat.emissive.copy(v.mat.emissive);
+  else v.waspWingMat.emissive.setHex(PAL.glowOff);
+  v.waspWingMat.emissiveIntensity = signaling ? v.mat.emissiveIntensity * 0.72 : 0;
+}
+
+function modularWaspWingDetach(v, preserveForDeath = false) {
+  if (!v.waspWingMesh) return null;
+  const mesh = v.waspWingMesh;
+  const mat = v.waspWingMat;
+  v.waspWingMesh = null;
+  v.waspWingMat = null;
+  if (!preserveForDeath) {
+    scene.remove(mesh);
+    mat.dispose();
+    return null;
+  }
+  mesh.visible = true;
+  return {
+    mesh, mat, type: 'wasp-wing-bank', index: 0,
+    rotation: mesh.rotation.z,
+    depth: v.waspWingDepth,
+    face: Math.sign(mesh.scale.x) || 1,
+    sx: Math.abs(mesh.scale.x) || 1,
+    sy: Math.abs(mesh.scale.y) || 1,
+    sz: Math.abs(mesh.scale.z) || 1,
+    opacity: Math.max(0.55, mat.opacity || 0),
+  };
+}
+
+/* Painted wasp articulation FALLBACK. The shipped four-frame atlas uses the
+ * primary body mesh and shows exactly one UV cell. If that atlas fails its
+ * boot gate, these two older production cuts still provide a complete and
+ * visible flight beat rather than falling all the way back to a static body.
+ * Both production cuts were measured through the
  * same primitive envelope in sprite-table.js, so their opaque centres and
  * one-tile body lengths share an anchor. The idle drone crossfades between
  * those complete painted phases while position, facing, bank, scale and
@@ -688,7 +1056,7 @@ function spriteMaterial(tex) {
  * the sim hitbox stays the original 0.55-tile circle. The separate action
  * slot remains reserved for the committed dive silhouette. */
 function paintedWaspFlapAttach(v, e, K) {
-  if (e.kind !== 'wasp' || !v.sprite || !v.flapTex || !v.flapGeo) return;
+  if (e.kind !== 'wasp' || !v.sprite || v.motionTex || !v.flapTex || !v.flapGeo) return;
   const mat = applySurface(spriteMaterial(v.flapTex), K.surface);
   const mesh = new THREE.Mesh(v.flapGeo, mat);
   mesh.name = 'Wasp painted downstroke phase';
@@ -758,7 +1126,7 @@ function relayFacing(e) {
   return e.relayFromDir * Math.cos(Math.PI * u);
 }
 
-function spriteFaceX(e) {
+function spriteFaceX(e, poseKey = 'base') {
   let desired = e.kind === 'wasp' && waspDiving(e)
     ? (e.vx < 0 ? -1 : 1)
     : relayFacing(e);
@@ -769,9 +1137,34 @@ function spriteFaceX(e) {
   // state pose and action cutout follows the sim's direction.
   const productionLeft = e.kind === 'wasp' || e.kind === 'hound' ||
     e.kind === 'mortar' || e.kind === 'warden';
-  const authored = (e.kind === 'warden' || spriteVariantOf(e.kind) === 'b') &&
-    productionLeft ? -1 : 1;
+  // Hound gait v2 is deliberately authored facing right; its retained base
+  // and fallback action paintings face left. Pose-local authoring keeps the
+  // state swap from making the creature reverse direction for one frame.
+  const houndMotionRight = e.kind === 'hound' && poseKey.startsWith('motion:');
+  const modularWaspRight = e.kind === 'wasp' && poseKey.startsWith('waspmod:');
+  const actor = poseKey.startsWith('actor:') ? actorMotionBundle(e.kind) : null;
+  const authored = actor ? actor.spec.authoredFacing :
+    (houndMotionRight || modularWaspRight) ? 1 :
+    (e.kind === 'warden' || spriteVariantOf(e.kind) === 'b') && productionLeft ? -1 : 1;
   return desired * authored;
+}
+
+function enemyEcologyFaceX(e) {
+  const desired = e.kind === 'wasp' && waspDiving(e)
+    ? (e.vx < 0 ? -1 : 1) : relayFacing(e);
+  // Every approved ecology source board points toward local -x. Mirror the
+  // complete parented body/action assembly, never the layers independently.
+  return desired * -1;
+}
+
+function enemyEcologyRoll(e, K) {
+  if (e.kind === 'wasp') return spriteRoll(e, K);
+  if (e.kind === 'hound' &&
+      (e.state === 'vault' || e.state === 'reboundVault' || e.state === 'tumble')) {
+    const travel = Math.sign(e.vx) || e.dir || 1;
+    return Math.atan2(e.vy, Math.max(0.1, Math.abs(e.vx))) * travel * 0.18;
+  }
+  return 0;
 }
 
 function spriteRoll(e, K) {
@@ -928,9 +1321,12 @@ function polypLamp(v, e) {
 
 const LAMP_SYNC = { hound: houndLamp, polyp: polypLamp };
 
-/* Every hostile gets one quiet halo sized from the primitive box its art
- * replaces. The brighter props are kind-specific and only exist while the
- * matching sim state is live, so the vocabulary stays learnable:
+/* Every hostile owns a pooled halo sized from the primitive box its art
+ * replaces, but the halo is visible ONLY while the simulation says the body
+ * is signaling. Resting silhouettes must read through paint, value and contact
+ * shadow; permanent glow turned every actor into a sticker and robbed attacks
+ * of their visual verb. The brighter props are kind-specific and only exist
+ * while the matching sim state is live, so the vocabulary stays learnable:
  *
  *   amber chevrons  = this lane is about to be occupied
  *   acid wake       = this body is committed and moving now
@@ -999,6 +1395,10 @@ function readabilityHide(v) {
 function syncActorGlow(v, e, K, sx, sy, signaling) {
   const b = v.actorBox;
   if (!b) return;
+  if (!signaling) {
+    v.actorGlow.visible = false;
+    return;
+  }
   const face = spriteFaceX(e);
   const pulse = 0.96 + Math.sin(gameMs * 0.009 + e.id * 0.71) * 0.04;
   v.actorGlow.visible = true;
@@ -1008,12 +1408,10 @@ function syncActorGlow(v, e, K, sx, sy, signaling) {
     -0.10);
   v.actorGlow.rotation.z = v.sprite ? spriteRoll(e, K) : K.roll(e);
   v.actorGlow.scale.set(b.w * sx * 1.48 * pulse, b.h * sy * 1.62 * pulse, 1);
-  v.actorGlowMat.color.setHex(signaling ? (K.pose ? K.pose(e).glow || K.color : K.color) : K.color);
-  // The centerpiece keeps a hard warm rim at rest so its black/rust cutout
-  // separates from the Crown plate. Ordinary roles retain the quiet ecology
-  // halo; neither path uses a full-body warning blink.
-  const restAlpha = e.kind === 'warden' ? 0.22 : 0.11;
-  v.actorGlowMat.opacity = v.mat.opacity * (signaling ? 0.25 : restAlpha);
+  v.actorGlowMat.color.setHex(K.pose ? K.pose(e).glow || K.color : K.color);
+  // Action light is restrained enough to preserve the painted body. Impact,
+  // beam and projectile effects provide the hot core at the actual event.
+  v.actorGlowMat.opacity = v.mat.opacity * (e.kind === 'warden' ? 0.20 : 0.17);
 }
 
 function syncAttackRead(v, e) {
@@ -1065,9 +1463,12 @@ function syncAttackRead(v, e) {
     // Only the barrel's final charge ray names direction. The eventual beam
     // volume is withheld until it is live.
     const preview = 1.25;
+    const socketed = motionSocketWorld(v, e, 'muzzle');
+    const muzzleS = socketed ? MOTION_SOCKET.s : e.x + e.dir * PP.barrelTiles;
+    const muzzleY = socketed ? MOTION_SOCKET.y : e.y;
     v.tellLane.visible = true;
     placeOnTower(v.tellLane,
-      e.x + e.dir * (PP.barrelTiles + preview / 2), e.y, -0.04);
+      muzzleS + e.dir * preview / 2, muzzleY, -0.04);
     v.tellLane.scale.set(e.dir * preview, 0.16 + u * 0.10, 1);
     lit(v.tellLaneMat, PAL.polypTell);
     v.tellLaneMat.opacity = 0.22 + 0.36 * u;
@@ -1094,11 +1495,18 @@ function syncMortarBeacon(v, e) {
  * Aegis and pincer are sim traits, so every visual here is a read of fields
  * that collision already used this frame. Magenta is Crown control energy;
  * attack commitments retain the roster's amber/acid vocabulary. */
-function evolutionAttach(v, e) {
+function evolutionAttach(v, e, atlasOwnedMechanics = null) {
   v.evolutionMeshes = [];
   v.evolutionMats = [];
   v.paintedGenes = new Map();
   v.paintedGeneRows = [];
+  const atlasOwns = (id) => !!atlasOwnedMechanics?.includes(id);
+  v.mechanicReadOwnership = Object.create(null);
+  for (const id of e.effectiveMechanics || [])
+    v.mechanicReadOwnership[id] = atlasOwns(id)
+      ? 'atlas body/action vocabulary' : 'existing dynamic hardware';
+  for (const id of e.tactics || [])
+    v.mechanicReadOwnership[id] = 'atlas action + exact tactic VFX';
   const attach = (name, geo, color = PAL.capsule) => {
     const mat = signalMaterial(color);
     const mesh = new THREE.Mesh(geo, mat);
@@ -1153,7 +1561,7 @@ function evolutionAttach(v, e) {
     }
   }
 
-  if (e.aegis) {
+  if (e.aegis && !atlasOwns('AEGIS')) {
     if (!attachPainted('AEGIS')) {
       const ring = attach('Crown Aegis projector crown', aegisRingGeo);
       const core = attach('Crown Aegis projector core', evolutionNodeGeo, PAL.muzzle);
@@ -1164,7 +1572,7 @@ function evolutionAttach(v, e) {
     }
   }
 
-  if (e.pincer) {
+  if (e.pincer && !atlasOwns('PINCER')) {
     if (!attachPainted('PINCER')) {
       const mark = attach('Pincer doctrine split arc', pincerArcGeo);
       v.pincerArc = mark.mesh;
@@ -1172,7 +1580,7 @@ function evolutionAttach(v, e) {
     }
   }
 
-  if (e.bulwark) {
+  if (e.bulwark && !atlasOwns('BULWARK')) {
     if (!attachPainted('BULWARK')) {
       v.bulwarkPlates = [];
       for (let i = 0; i < 3; i++) {
@@ -1183,7 +1591,7 @@ function evolutionAttach(v, e) {
     }
   }
 
-  if (e.vault) {
+  if (e.vault && !atlasOwns('VAULT')) {
     if (!attachPainted('VAULT')) {
       v.vaultCoils = [];
       for (let i = 0; i < 2; i++) {
@@ -1193,8 +1601,11 @@ function evolutionAttach(v, e) {
     }
   }
 
-  if (e.twinstrike || e.salvo || e.relay) {
-    const attackGene = e.salvo ? 'SALVO' : e.relay ? 'RELAY' : 'TWINSTRIKE';
+  const dynamicAttackGene = e.salvo && !atlasOwns('SALVO') ? 'SALVO'
+    : e.relay && !atlasOwns('RELAY') ? 'RELAY'
+      : e.twinstrike && !atlasOwns('TWINSTRIKE') ? 'TWINSTRIKE' : '';
+  if (dynamicAttackGene) {
+    const attackGene = dynamicAttackGene;
     if (!attachPainted(attackGene)) {
       v.attackRails = [];
       for (let i = 0; i < 2; i++) {
@@ -1206,7 +1617,7 @@ function evolutionAttach(v, e) {
     }
   }
 
-  if (e.backlash) {
+  if (e.backlash && !atlasOwns('BACKLASH')) {
     if (!attachPainted('BACKLASH')) {
       v.backlashArcs = [];
       for (let i = 0; i < 3; i++) {
@@ -1249,8 +1660,15 @@ function syncPaintedGenes(v, e, depth, sx, sy, alpha) {
   const direction = Math.sign(desired) || e.dir || 1;
   const bodyW = b.w * Math.abs(sx);
   const bodyH = b.h * Math.abs(sy);
-  const centerS = e.x + b.cx * desired * Math.abs(sx);
-  const centerY = e.y + v.presentationLift + b.cy * Math.abs(sy);
+  let centerS = e.x + b.cx * desired * Math.abs(sx);
+  let centerY = e.y + v.presentationLift + b.cy * Math.abs(sy);
+  // Painted mutation modules bolt to the currently painted chassis, not to
+  // the retired base card. The shared named socket keeps Aegis/Relay/Salvo
+  // hardware coherent while the barrel, breech, or Warden suspension moves.
+  if (motionSocketWorld(v, e, 'mutation', MUTATION_SOCKET)) {
+    centerS = MUTATION_SOCKET.s;
+    centerY = MUTATION_SOCKET.y;
+  }
   const pulse = 0.5 + 0.5 * Math.sin(gameMs * 0.008 + phenotype.pulsePhase);
   const band = (phenotype.platingBand - 1) * bodyH * 0.035;
 
@@ -1514,9 +1932,92 @@ function syncEvolution(v, e, depth, sx, sy) {
 }
 
 const meshes = new Map();                // sim hostile row → { mesh, mat }
+let ecologyPairsSpawned = 0;
+let ecologyBodyMaterialsRetired = 0;
+let ecologyActionMaterialsRetired = 0;
+
+function spawnedEnemyEcology(e, K, ecology) {
+  const mat = enemyEcologyMaterial(ecology.tex, e.kind);
+  const actionMat = enemyEcologyMaterial(ecology.tex, e.kind);
+  const mesh = new THREE.Mesh(ecology.body[0], mat);
+  const actionMesh = new THREE.Mesh(ecology.action[0], actionMat);
+  mesh.name = `Enemy ecology ${ecology.spec.id} body`;
+  actionMesh.name = `Enemy ecology ${ecology.spec.id} action`;
+  mesh.renderOrder = 2;
+  actionMesh.renderOrder = 3;
+  actionMesh.visible = false;
+  mesh.add(actionMesh);
+  const v = {
+    mesh, mat, sprite: true,
+    ecology, ecologyCode: -1, ecologyBodyRow: 0, ecologyActionRow: 0,
+    ecologyActionMesh: actionMesh, ecologyActionMat: actionMat,
+    baseGeo: ecology.body[0], baseTex: ecology.tex,
+    actionGeo: null, actionTex: null, actionActive: false,
+    flapGeo: null, flapTex: null, motionTex: null, motionGeos: null,
+    motionFrame: -1, motionPhase: 0, motionLastX: e.x,
+    motionSource: 'enemy-ecology', poseKey: '',
+    actorMotionBundle: null, actorMotionFrame: null,
+    actorMotionClip: '', actorMotionMarker: '', actorMotionEvent: '',
+    actorMotionProgress: 0,
+    presentationScale: enemyEcologyPresentationScale(e.kind),
+    presentationLift: 0,
+    waspModular: null, waspBodyState: -1, waspWingPhase: 0,
+    waspLastX: e.x, waspLastY: e.y, waspLastFace: Math.sign(e.dir) || 1,
+    waspTurnUntil: 0, waspMotion: { turning: false, dx: 0, dy: 0 },
+    actorBox: ecology.box,
+    evolutionMeshes: [], evolutionMats: [], paintedGenes: new Map(),
+    paintedGeneRows: [],
+  };
+  v.presentationLift = spriteAnchorLift(e.kind, v.presentationScale);
+  syncEnemyEcologyVisual(v, e, gameMs);
+  // Recipe-pinned organs are already painted into this variant's two atlas
+  // layers. Optional compatible rolls keep the existing dynamic hardware so
+  // Aegis, Backlash, etc. never become invisible mechanics.
+  evolutionAttach(v, e, e.ecologyMechanics);
+
+  // Physical attack volumes remain the exact shipped renderer. Static legacy
+  // anatomy does not: the atlas body/action pair already paints barrel, roots,
+  // tube, legs and articulated organs, preventing doubled pedestals.
+  if (e.kind === 'polyp') {
+    const beamMat = new THREE.MeshBasicMaterial({
+      color: PAL.polyp, transparent: true, opacity: 0.28, depthWrite: false,
+    });
+    const beam = new THREE.Mesh(polypBeamGeo, beamMat);
+    beam.visible = false;
+    scene.add(beam);
+    v.beam = beam;
+    v.beamMat = beamMat;
+    const beamCoreMat = new THREE.MeshBasicMaterial({
+      color: PAL.polypBeam, transparent: true, opacity: 0.72, depthWrite: false,
+    });
+    const beamCore = new THREE.Mesh(polypBeamCoreGeo, beamCoreMat);
+    beamCore.visible = false;
+    scene.add(beamCore);
+    v.beamCore = beamCore;
+    v.beamCoreMat = beamCoreMat;
+  } else if (e.kind === 'mortar') {
+    mortarAttach(v, mesh);
+  }
+  attachEnemyEcologyTactics(v, e);
+
+  // Spawns may be authored several beats ahead. Establish the full hidden
+  // invariant immediately instead of waiting for their first sync callback.
+  hideHostileVisual(v, e);
+  scene.add(mesh);
+  meshes.set(e, v);
+  ecologyPairsSpawned++;
+}
 
 function spawned(e) {
   const K = LOOK[e.kind];
+  // Gameplay ecologyId wins exactly. Ordinary Level-1 bodies may carry only
+  // ecologyVisualId, which selects reviewed art without entering any recipe,
+  // tactic, HP, collision or AI path in the simulation.
+  const ecology = enemyEcologyBundle(e.ecologyId || e.ecologyVisualId, e.kind);
+  if (ecology) {
+    spawnedEnemyEcology(e, K, ecology);
+    return;
+  }
   // The sprite is taken only if its texture is ALREADY in hand. Pending,
   // failed, missing and ?sprites=0 all fall through to the primitive body
   // below — which is the pre-T-049 renderer, not a placeholder — so a body
@@ -1531,23 +2032,61 @@ function spawned(e) {
   // single-pass transparency set in spriteMaterial() all survive it.
   const tex = spriteTexture(e.kind);
   const geo = tex ? spriteGeo(e.kind) : null;
-  const mat = applySurface(geo ? spriteMaterial(tex) : new THREE.MeshStandardMaterial({
+  const modularBundle = e.kind === 'wasp' ? waspModularBundle() : null;
+  // Authored actor motion is the production body, not an overlay on the old
+  // card. It wins before the mesh is ever shown; a failed sheet falls through
+  // to the exact base-sprite/primitive path below for the whole run.
+  const actorBundle = actorMotionBundle(e.kind);
+  const actorGeo = actorBundle?.frames[0]?.geo || null;
+  const actorTex = actorBundle?.tex || null;
+  const bodyGeo = modularBundle?.body[WASP_BODY.CRUISE]?.geo || actorGeo || geo;
+  const bodyTex = modularBundle?.tex || actorTex || tex;
+  // Keep the established null-safe base-sprite path literal and lazy. Apart
+  // from documenting the fallback contract for T-049, the closure prevents
+  // allocating a discarded fallback material when an authored actor sheet is
+  // ready at boot.
+  const fallbackMaterial = () => geo ? spriteMaterial(tex) : new THREE.MeshStandardMaterial({
     color: K.color, flatShading: true, transparent: true, opacity: 0, fog: false,
-  }), K.surface);
-  const mesh = new THREE.Mesh(geo || K.geo, mat);
-  const actionTex = geo ? spriteActionTexture(e.kind) : null;
-  const flapTex = geo ? spriteFlapTexture(e.kind) : null;
+  });
+  const mat = applySurface((modularBundle || actorGeo)
+    ? spriteMaterial(bodyTex) : fallbackMaterial(), K.surface);
+  const mesh = new THREE.Mesh(bodyGeo || K.geo, mat);
+  const actionTex = geo && !modularBundle ? spriteActionTexture(e.kind) : null;
+  const flapTex = geo && !modularBundle ? spriteFlapTexture(e.kind) : null;
+  const motionTex = geo && !modularBundle ? motionTextures.get(e.kind) || null : null;
   const v = {
-    mesh, mat, sprite: !!geo,
-    baseGeo: geo, baseTex: tex,
+    mesh, mat, sprite: !!bodyGeo,
+    baseGeo: geo || bodyGeo, baseTex: tex || bodyTex,
     actionGeo: actionTex ? actionSpriteGeo(e.kind) : null,
     actionTex, actionActive: false,
-    flapGeo: flapTex ? flapSpriteGeo(e.kind) : null,
+    flapGeo: flapTex && !motionTex ? flapSpriteGeo(e.kind) : null,
     flapTex,
-    presentationScale: geo ? (SPRITE_BODY_SCALE[e.kind] || 1) : 1,
+    motionTex,
+    motionGeos: motionTex ? motionSpriteFrames(e.kind) : null,
+    motionFrame: modularBundle ? WASP_BODY.CRUISE : -1,
+    motionPhase: 0,
+    motionLastX: e.x,
+    motionSource: modularBundle ? 'wasp-modular' : '',
+    poseKey: modularBundle ? `waspmod:${WASP_BODY.CRUISE}` : '',
+    actorMotionBundle: modularBundle ? null : actorBundle,
+    actorMotionFrame: null,
+    actorMotionClip: '',
+    actorMotionMarker: '',
+    actorMotionEvent: '',
+    actorMotionProgress: 0,
+    presentationScale: bodyGeo ? (SPRITE_BODY_SCALE[e.kind] || 1) : 1,
     presentationLift: 0,
+    waspModular: modularBundle,
+    waspBodyState: modularBundle ? WASP_BODY.CRUISE : -1,
+    waspWingPhase: 0,
+    waspLastX: e.x,
+    waspLastY: e.y,
+    waspLastFace: Math.sign(e.dir) || 1,
+    waspTurnUntil: 0,
+    waspMotion: { turning: false, dx: 0, dy: 0 },
   };
-  v.presentationLift = geo ? spriteAnchorLift(e.kind, v.presentationScale) : 0;
+  v.presentationLift = bodyGeo ? spriteAnchorLift(e.kind, v.presentationScale) : 0;
+  modularWaspWingAttach(v, e, K);
   paintedWaspFlapAttach(v, e, K);
   readabilityAttach(v, e, K);
   evolutionAttach(v, e);
@@ -1595,7 +2134,8 @@ function spawned(e) {
   } else if (e.kind === 'warden') {
     wardenAttach(v);                       // iris, shutters, beam and barrage volume
   }
-  if (v.sprite) mesh.scale.x = spriteFaceX(e);   // authored facing +x
+  attachEnemyEcologyTactics(v, e);         // no-op for every ordinary row
+  if (v.sprite) mesh.scale.x = spriteFaceX(e, v.poseKey); // pose-local authored facing
   // the tell lamp (T-003): only the two kinds whose telegraph is a wind-up
   // ON the body, and only while the readability pass is on
   if (LEGIBILITY_ON && LAMP_SYNC[e.kind]) {
@@ -1734,6 +2274,10 @@ function deathPieceGeo(key, q, rect, index) {
 }
 
 function claimDeathRig(v, e) {
+  // Ecology breakup is already authored as the attached B7/A7 atlas pair.
+  // Fail before touching the legacy rig pools; every ordinary actor continues
+  // through the exact pre-ecology claim path below.
+  if (v.ecology) return null;
   const layout = DEATH_PIECES[e.kind];
   if (!v.sprite || !layout) return null;
   const action = !!(v.actionActive && v.actionTex && v.actionGeo);
@@ -1845,15 +2389,76 @@ function removed(e, fade) {
   if (v.pod) mortarDetach(v);            // nor does a pod, a mark, or a blast
   if (v.wardenCore) wardenDetach(v);     // Crown attack volumes die with the interlock
   if (v.lamp) lampDetach(v);             // nor a tell lamp: a corpse never warns
+  detachEnemyEcologyTactics(v);
   readabilityDetach(v);                  // warning props never dissolve as corpses
   let systems = [];
   if (fade) systems = ruptureEvolution(v, e);
   else evolutionDetach(v);               // teardown has no display-only aftermath
+  if (fade && v.ecology) freezeEnemyEcologyBreakup(v);
+  if (fade && v.waspModular) {
+    // Crack into the authored terminal chassis before the impact punch. The
+    // separate wing bank then tears away through the existing role-shaped
+    // corpse pass; neither layer spirals or fades out as a complete insect.
+    v.waspBodyState = WASP_BODY.DEATH_CRACK;
+    v.motionSource = 'wasp-modular';
+    v.motionFrame = WASP_BODY.DEATH_CRACK;
+    v.poseKey = `waspmod:${WASP_BODY.DEATH_CRACK}`;
+    v.mesh.geometry = v.waspModular.body[WASP_BODY.DEATH_CRACK].geo;
+    v.mat.map = v.waspModular.tex;
+    v.mat.emissiveMap = v.waspModular.tex;
+  }
+  if (fade && e.kind === 'warden' && v.actorMotionBundle) {
+    // Death may interrupt any weapon state. Hand the corpse pass the authored
+    // breached chassis, not a frozen firing card or a procedural scale-down.
+    // Selection and atlas geometry are resident; this allocates nothing.
+    const terminal = selectActorMotionClip(
+      v.actorMotionBundle, 'terminalRupture', 1);
+    if (terminal) {
+      v.motionSource = 'actor';
+      v.motionFrame = terminal.frame.index;
+      v.actorMotionFrame = terminal.frame;
+      v.actorMotionClip = terminal.clip;
+      v.actorMotionMarker = terminal.marker;
+      v.actorMotionEvent = terminal.event;
+      v.actorMotionProgress = terminal.progress;
+      v.poseKey = `actor:${terminal.frame.index}`;
+      v.mesh.geometry = terminal.frame.geo;
+      v.mat.map = v.actorMotionBundle.tex;
+      v.mat.emissiveMap = v.actorMotionBundle.tex;
+      v.mat.emissiveIntensity = 0;
+    }
+  }
+  const wingSystem = modularWaspWingDetach(v, fade);
+  if (wingSystem) systems.push(wingSystem);
   paintedWaspFlapDetach(v);              // a corpse holds one unambiguous painted silhouette
   if (fade) {                          // hand the mesh to the corpse pass to dissolve
     const spec = DEATH_ROLE[e.kind];
     if (corpses.length >= MAX_ACTIVE_CORPSES) releaseCorpse(corpses.shift());
-    const rig = claimDeathRig(v, e);
+    const motionFrame = currentMotionFrame(v);
+    // The live atlas geometry already selects the exact frame UVs. Cutting it
+    // into the base-art death rig would both swap paintings and require one
+    // lazily allocated rig per atlas frame, exhausting the bounded common pool.
+    // Motion bodies therefore keep this same mesh through rupture and use the
+    // existing intact-body buckle below. No geometry, texture, anchor or facing
+    // changes at the hand-off; base/action bodies retain their authored pieces.
+    const rig = motionFrame >= 0 ? null : claimDeathRig(v, e);
+    const face = Math.sign(v.mesh.scale.x) || 1;
+    const frozenMotion = motionFrame >= 0 ? {
+      frame: motionFrame,
+      poseKey: v.poseKey,
+      presentationScale: v.presentationScale,
+      geometry: v.mesh.geometry,
+      map: v.mat.map,
+      emissiveMap: v.mat.emissiveMap,
+      face,
+      rootedTerminal: e.kind === 'warden',
+    } : null;
+    const ecologyDeath = v.ecology ? Object.freeze({
+      id: v.ecology.spec.id,
+      bodyRow: v.ecologyBodyRow,
+      actionRow: v.ecologyActionRow,
+      code: v.ecologyCode,
+    }) : null;
     corpses.push({ mesh: v.mesh, mat: v.mat, s: e.x,
                    y: e.y + v.presentationLift, baseRoll: v.mesh.rotation.z,
                    t0: gameMs, flash: FLASH[e.kind],
@@ -1861,24 +2466,34 @@ function removed(e, fade) {
                    baseScaleX: Math.abs(v.mesh.scale.x),
                    baseScaleY: Math.abs(v.mesh.scale.y),
                    baseScaleZ: Math.abs(v.mesh.scale.z),
-                   face: Math.sign(v.mesh.scale.x) || 1,
-                   kind: e.kind, spec, rig, systems });
+                   face, kind: e.kind, spec, rig, systems, frozenMotion,
+                   ecologyDeath,
+                   ecologyActionMesh: v.ecologyActionMesh || null,
+                   ecologyActionMat: v.ecologyActionMat || null });
   } else {
     scene.remove(v.mesh);
+    if (v.ecologyActionMat) {
+      v.ecologyActionMat.dispose();
+      ecologyActionMaterialsRetired++;
+      ecologyBodyMaterialsRetired++;
+    }
     v.mat.dispose();
   }
 }
 
 function hideHostileVisual(v, e) {
   v.mesh.visible = false;
+  if (v.ecologyActionMesh) v.ecologyActionMesh.visible = false;
   if (v.beam) v.beam.visible = false;
   if (v.beamCore) v.beamCore.visible = false;
   if (v.pod) mortarHide(v);
   if (v.wardenCore) wardenHide(v);
   if (v.lamp) v.lamp.visible = false;
+  modularWaspWingHide(v);
   paintedWaspFlapHide(v);
   readabilityHide(v);
   evolutionHide(v);
+  hideEnemyEcologyTactics(v);
   releaseContactShadow(e);
 }
 
@@ -1890,22 +2505,39 @@ function sync(e) {
     hideHostileVisual(v, e);
     return;
   }
-  if (gameMs < e.enterUntil - W.enterMs) {            // staged wave slot: still hidden
+  if (!enemyEcologyCondensationStarted(e, gameMs, W.enterMs)) {
+    // Staged wave slot: body, child action, exact tactic volumes and every
+    // legacy companion remain hidden until the first condensation frame.
     hideHostileVisual(v, e);
     return;
   }
   v.mesh.visible = true;
   syncSpritePose(v, e);
-  // mock-3D presence: materialize in from tower depth, breathe while alive
+  // Mock-3D presence for ordinary bodies. The authored Warden is a six-tile
+  // Crown interlock bolted to this apron: perspective travel or 0.7 -> 1 body
+  // growth makes it look like a pasted card inflating into existence. Its
+  // resident deployment cells articulate around a constant footprint instead.
+  // Root identity is a species contract, not an atlas-success side effect.
+  // A boot-safe fallback may lose articulation, but it still may not inflate,
+  // drift in perspective, or bob a Crown fixture off its apron.
+  const rootedWarden = e.kind === 'warden';
   let depth, scale;
   if (gameMs < e.enterUntil) {
     const u = 1 - (e.enterUntil - gameMs) / W.enterMs;    // 0 → 1 over the entrance
-    const ease = 1 - (1 - u) ** 3;
-    depth = W.enterDepth * (1 - ease);
-    scale = 0.7 + 0.3 * ease;
-    v.mat.opacity = u;
+    if (rootedWarden) {
+      depth = 0;
+      scale = 1;
+      // A short optical acquisition reveals the sealed machine; all later
+      // change comes from actual painted limbs/racks, never whole-body scale.
+      v.mat.opacity = Math.min(1, Math.max(0, u) / 0.18);
+    } else {
+      const ease = 1 - (1 - u) ** 3;
+      depth = W.enterDepth * (1 - ease);
+      scale = 0.7 + 0.3 * ease;
+      v.mat.opacity = u;
+    }
   } else {
-    depth = Math.sin(e.t * W.wobbleFreq) * W.wobbleAmp;
+    depth = rootedWarden ? 0 : Math.sin(e.t * W.wobbleFreq) * W.wobbleAmp;
     scale = 1;
     v.mat.opacity = 1;
   }
@@ -1913,36 +2545,55 @@ function sync(e) {
   let sx = scale, sy = scale, sz = scale;
   const flashing = gameMs < e.flashUntil;
   let glow = flashing ? FLASH[e.kind] : PAL.glowOff;
-  if (K.pose) {                          // per-kind state theater over the shared presence
+  if (!v.ecology && K.pose) {            // ecology cells own their full silhouette/state
     const p = K.pose(e);
     depth += p.depth;
-    sx *= p.sx; sy *= p.sy; sz *= p.sz;
+    // Hound v2 already paints prowl, load, launch, airborne and landing body
+    // mechanics. Applying the legacy primitive squash/stretch over those cells
+    // warped their torso proportions and pulled planted feet off their authored
+    // anchor. Keep state depth/glow/roll/wake, but let the production atlas own
+    // its silhouette. Primitive and missing-atlas fallbacks keep the old pose.
+    if (!actorMotionOwnsSilhouette(v) && !houndMotionOwnsSilhouette(v, e) &&
+        !waspModularOwnsSilhouette(v)) {
+      sx *= p.sx; sy *= p.sy; sz *= p.sz;
+    }
     if (glow === PAL.glowOff) glow = p.glow;              // a hit flash still wins
   }
   depth += HOSTILE_SURFACE_DEPTH;
+  if (v.ecology) v.ecologyDepth = depth;
   sx *= v.presentationScale;
   sy *= v.presentationScale;
   sz *= v.presentationScale;
-  // Keep the generated ink alive in the fog. At play scale a fully dark
-  // emissive map made the wasp and hound detail collapse into the hull even
-  // though their silhouettes were technically present. A quiet kind-colour
-  // lift preserves that ink; tells, hits and committed attacks still jump to
-  // full authored emissive, so this cannot masquerade as a warning state.
-  const signaling = glow !== PAL.glowOff;
-  v.mat.emissive.setHex(signaling ? glow : K.color);
-  // T-048: active state light gets the same headroom as lamps and beams.
-  // Ordinary bodies receive only a restrained fraction of it for legibility.
-  v.mat.emissiveIntensity = postGain() * (signaling ? 1 : 0.30);
+  // Ecology's bounded unlit card preserves authored ink without any emissive
+  // state; its painted cells and physical tactic VFX carry tells and hits.
+  // Ordinary sprites retain their existing active-emission path below.
+  const signaling = !v.ecology && glow !== PAL.glowOff;
+  if (v.ecology) {
+    v.ecologyActionMat.opacity = v.mat.opacity;
+    v.ecologyActionMesh.visible = true;
+  } else {
+    v.mat.emissive.setHex(signaling ? glow : K.color);
+    // The Warden atlas carries its own painted material response. Its body is
+    // never an idle lamp; only local impact/attack props receive light.
+    v.mat.emissiveIntensity = e.kind === 'warden' ? 0
+      : postGain() * (signaling ? 0.82 : 0.12);
+  }
   placeOnTower(v.mesh, e.x, e.y + v.presentationLift, depth);
-  if (v.sprite) {
+  if (v.ecology) {
+    v.mesh.rotation.z = enemyEcologyRoll(e, K);
+    v.mesh.scale.set(sx * enemyEcologyFaceX(e), sy, sz);
+  } else if (v.sprite) {
     // the art is authored facing +x, so facing is a mirror; the roll rules
     // that differ from the solid's are in spriteRoll() above
-    v.mesh.rotation.z = spriteRoll(e, K);
-    v.mesh.scale.set(sx * spriteFaceX(e), sy, sz);
+    // Every actor-motion cell contains authored hardware articulation. A
+    // second procedural card roll/squash would move feet and weapon sockets.
+    v.mesh.rotation.z = actorMotionOwnsSilhouette(v) ? 0 : spriteRoll(e, K);
+    v.mesh.scale.set(sx * spriteFaceX(e, v.poseKey), sy, sz);
   } else {
     v.mesh.rotation.z = K.roll(e);
     v.mesh.scale.set(sx, sy, sz);
   }
+  syncModularWaspWing(v, e, depth, signaling);
   if (v.beam) {
     const PP = CONFIG.polyp;
     // the barrel points down the authored lane (dir is FACING on a rooted row)
@@ -1951,18 +2602,42 @@ function sync(e) {
       v.barrel.position.x = hinge * PP.barrelTiles * 0.65;
       v.barrel.scale.x = Math.max(0.08, Math.abs(hinge));
     }
-    const live = e.state === 'fire' && e.beamReach > 0 && gameMs >= e.enterUntil;
+    const sweepfanOwner = enemyOwnsSweepfanBeam(e);
+    const sweepfan = isSweepfanBeam(e);
+    // A Sweepfan without its exact bounded vector fails visually closed. It
+    // must never fall through to the old straight Needle beam: that would
+    // communicate a damage lane the simulation does not own.
+    const live = e.state === 'fire' && e.beamReach > 0 && gameMs >= e.enterUntil &&
+      (!sweepfanOwner || sweepfan);
     v.beam.visible = live;
     v.beamCore.visible = live;
     if (live) {
-      // span exactly the reach the sim marched this frame, in the combat
-      // plane (depth 0): what is drawn is what damages, wall to barrel
-      placeOnTower(v.beam, e.x + e.dir * (PP.barrelTiles + e.beamReach / 2), e.y, 0);
-      placeOnTower(v.beamCore, e.x + e.dir * (PP.barrelTiles + e.beamReach / 2), e.y, 0.03);
+      // The far endpoint remains the exact endpoint marched by the sim. The
+      // near endpoint follows the visible painted muzzle, so no beam appears
+      // to leak from the actor's centre when the hardware extends to fire.
+      // Sweepfan is different: its simulation damages one bounded rotated
+      // segment. Render that exact origin/vector/reach, never the legacy
+      // horizontal beam or an art-socket-shortened approximation.
+      const socketed = !sweepfan && motionSocketWorld(v, e, 'muzzle');
+      const startS = sweepfan ? e.x + e.dir * PP.barrelTiles
+        : socketed ? MOTION_SOCKET.s : e.x + e.dir * PP.barrelTiles;
+      const beamY = sweepfan ? e.y : socketed ? MOTION_SOCKET.y : e.y;
+      const endS = sweepfan ? startS + e.tacticBeamX * e.beamReach
+        : e.x + e.dir * (PP.barrelTiles + e.beamReach);
+      const endY = sweepfan ? beamY + e.tacticBeamY * e.beamReach : beamY;
+      const drawReach = Math.max(0.01, Math.hypot(endS - startS, endY - beamY));
+      const midS = (startS + endS) / 2;
+      const midY = (beamY + endY) / 2;
+      placeOnTower(v.beam, midS, midY, sweepfan ? HOSTILE_SURFACE_DEPTH + 0.01 : 0);
+      placeOnTower(v.beamCore, midS, midY,
+        sweepfan ? HOSTILE_SURFACE_DEPTH + 0.04 : 0.03);
+      const beamRoll = sweepfan ? Math.atan2(endY - beamY, endS - startS) : 0;
+      v.beam.rotation.z = beamRoll;
+      v.beamCore.rotation.z = beamRoll;
       const pulse = 1 + PP.beamPulseAmp *
         Math.sin(gameMs / 1000 * PP.beamPulseFreq * Math.PI * 2);
-      v.beam.scale.set(e.beamReach, pulse, pulse);
-      v.beamCore.scale.set(e.beamReach, 0.9 + pulse * 0.1, 0.9 + pulse * 0.1);
+      v.beam.scale.set(drawReach, sweepfan ? 1 : pulse, sweepfan ? 1 : pulse);
+      v.beamCore.scale.set(drawReach, 0.9 + pulse * 0.1, 0.9 + pulse * 0.1);
       v.beamMat.color.setHex(PAL.polyp); // hazard volume, readable through rather than white
       v.beamMat.opacity = 0.22 + 0.08 * pulse;
       v.beamCoreMat.color.setHex(PAL.polypBeam);
@@ -1970,15 +2645,16 @@ function sync(e) {
     }
   }
   if (v.pod) mortarSync(v, e);           // pod arc + marked zone + detonation
+  syncEnemyEcologyTactics(v, e);         // exact fixed Crosswind/Aircomb slots
   if (v.wardenCore) wardenSync(v, e);    // local iris/shutters + exact attack volumes
   // the tell lamp reads the same sim state the pose does, one frame, no memory
   if (v.lamp) LAMP_SYNC[e.kind](v, e);
-  syncActorGlow(v, e, K, sx, sy, signaling);
+  if (!v.ecology) syncActorGlow(v, e, K, sx, sy, signaling);
   syncAttackRead(v, e);
   syncMortarBeacon(v, e);
   syncEvolution(v, e, depth, sx, sy);
-  // Last: it changes only the complementary opacity of the two painted body
-  // phases. Shields/glows above used the stable materialization alpha.
+  // Last: only the missing-atlas fallback changes complementary opacity.
+  // The shipped motion path already selected one main-mesh UV cell above.
   syncPaintedWaspFlap(v, e, depth);
   syncContactShadow(e, e.x, e.y, CONTACT_FOOTPRINT[e.kind]);
 }
@@ -1992,8 +2668,69 @@ export function hostileEvolutionVisualSnapshot() {
   let paintedParts = 0;
   const paintedByGene = {};
   const genomes = [];
+  const motionRows = [];
+  const actorMotionRows = [];
+  const modularWaspRows = [];
+  const motionActive = { wasp: new Set(), hound: new Set() };
   let flapSample = null;
   for (const [e, v] of meshes) {
+    if (motionActive[e.kind] && v.motionFrame >= 0)
+      motionActive[e.kind].add(v.motionFrame);
+    if (v.motionFrame >= 0 && motionRows.length < 16) motionRows.push({
+      kind: e.kind,
+      id: e.id,
+      frame: v.motionFrame,
+      poseKey: v.poseKey,
+      scale: [Math.abs(v.mesh.scale.x), Math.abs(v.mesh.scale.y), Math.abs(v.mesh.scale.z)]
+        .map((value) => Number(value.toFixed(4))),
+      presentationScale: v.presentationScale,
+      atlasOwnsSilhouette: actorMotionOwnsSilhouette(v) ||
+        houndMotionOwnsSilhouette(v, e) || waspModularOwnsSilhouette(v),
+    });
+    if (v.waspModular && modularWaspRows.length < 24) modularWaspRows.push({
+      id: e.id,
+      state: e.state,
+      bodyState: v.waspBodyState,
+      wingPhase: v.waspWingPhase,
+      poseKey: v.poseKey,
+      bodyDepth: Number.isFinite(v.waspBodyDepth)
+        ? Number(v.waspBodyDepth.toFixed(4)) : null,
+      wingDepth: Number.isFinite(v.waspWingDepth)
+        ? Number(v.waspWingDepth.toFixed(4)) : null,
+      platformOuterDepth: PLATFORM_OUTER_DEPTH,
+      fullyOnActionPlane: v.waspWingDepth > PLATFORM_OUTER_DEPTH,
+      rootContinuity: true,
+      mirroredAsAssembly: !!v.waspWingMesh &&
+        Math.sign(v.waspWingMesh.scale.x) === Math.sign(v.mesh.scale.x),
+      opacityMatched: !!v.waspWingMat &&
+        Math.abs(v.waspWingMat.opacity - v.mat.opacity) < 0.0001,
+      idleWingEmissive: v.waspWingMat && e.state === 'cruise'
+        ? Number(v.waspWingMat.emissiveIntensity.toFixed(4)) : null,
+    });
+    if (actorMotionOwnsSilhouette(v) && actorMotionRows.length < 24)
+      actorMotionRows.push({
+        kind: e.kind, id: e.id, state: e.state,
+        frame: v.motionFrame, frameName: v.actorMotionFrame.name,
+        clip: v.actorMotionClip, marker: v.actorMotionMarker,
+        event: v.actorMotionEvent,
+        progress: Number(v.actorMotionProgress.toFixed(3)),
+        poseKey: v.poseKey,
+        bodyMeshes: 1,
+        bodyRotation: Number(v.mesh.rotation.z.toFixed(4)),
+        bodyScale: [Math.abs(v.mesh.scale.x), Math.abs(v.mesh.scale.y),
+          Math.abs(v.mesh.scale.z)].map((value) => Number(value.toFixed(4))),
+        bodyOpacity: Number(v.mat.opacity.toFixed(4)),
+        bodyEmission: Number((v.mat.emissiveIntensity || 0).toFixed(4)),
+        rootedLifecycle: e.kind === 'warden',
+        deployment: v.actorMotionClip === 'deployment',
+        anchorRole: v.actorMotionBundle.spec.anchorRole,
+        visibleAttachments: e.kind === 'warden' ? [
+          v.wardenCore, v.wardenShield, v.wardenEmitter, v.wardenRack,
+          v.wardenBeam, v.wardenBeamCore, v.wardenMark, v.wardenBlast,
+          ...v.wardenSeals.map((seal) => seal.mesh),
+        ].reduce((count, mesh) => count + (mesh?.visible ? 1 : 0), 0) : 0,
+        uniformStateTransform: false,
+      });
     if (v.flapMesh) {
       paintedFlappers++;
       if (v.flapMesh.visible) paintedDownstrokesVisible++;
@@ -2044,7 +2781,34 @@ export function hostileEvolutionVisualSnapshot() {
     paintedParts, paintedByGene,
     atlas: genomePartSnapshot(),
     poseNormalization: poseNormalizationSnapshot(),
-    genomes, flapSample,
+    locomotion: Object.fromEntries(Object.entries(SPRITE_MOTION_ART).map(([kind, art]) => [kind, {
+      ready: motionTextures.has(kind),
+      frameCount: art.frames.length,
+      activeFrames: [...motionActive[kind]].sort((a, b) => a - b),
+      oneBodyMesh: true,
+      crossfade: false,
+    }])),
+    actorMotion: {
+      ...actorMotionRuntimeSnapshot(),
+      liveBodies: actorMotionRows.length,
+      bodyDraws: actorMotionRows.length,
+      fixedFrameGeometries: actorMotionRuntimeSnapshot().geometries,
+      rows: actorMotionRows,
+    },
+    waspModular: {
+      ...waspModularRuntimeSnapshot(),
+      liveBodies: modularWaspRows.length,
+      liveDraws: modularWaspRows.length * 2,
+      rootAnchor: 'reactor-center',
+      independentBodyAndWingSelection: true,
+      opacityStrobe: false,
+      idleWingBloom: false,
+      platformOuterDepth: PLATFORM_OUTER_DEPTH,
+      activeMinimumWingDepth: HOSTILE_SURFACE_DEPTH - CONFIG.wasp.wobbleAmp -
+        WASP_WING_DEPTH_BIAS,
+      rows: modularWaspRows,
+    },
+    genomes, flapSample, motionRows,
   };
 }
 
@@ -2057,6 +2821,11 @@ const corpses = [];
 
 function releaseCorpse(c) {
   scene.remove(c.mesh);
+  if (c.ecologyActionMat) {
+    c.ecologyActionMat.dispose();
+    ecologyActionMaterialsRetired++;
+    ecologyBodyMaterialsRetired++;
+  }
   c.mat.dispose();
   releaseDeathRig(c.rig);
   for (const system of c.systems) {
@@ -2069,7 +2838,21 @@ function syncDeathSystems(c, r) {
   const ease = 1 - (1 - r) ** 3;
   const fade = Math.max(0, 1 - r ** 1.4);
   for (const system of c.systems) {
-    if (system.type.startsWith('aegis')) {
+    if (system.type === 'wasp-wing-bank') {
+      // One bounded hinge failure: the bank shears upward, loses lift, then
+      // drops. Rotation is total tilt (< 0.7 rad), never angular velocity.
+      system.mesh.visible = fade > 0.01;
+      placeOnTower(system.mesh,
+        c.s - c.breakDir * 0.24 * ease,
+        c.y + 0.34 * Math.sin(Math.PI * r) - 1.08 * r * r,
+        system.depth - 0.34 * r);
+      system.mesh.rotation.z = system.rotation - c.breakDir * 0.64 * ease;
+      const fold = Math.max(0.30, 1 - 0.36 * ease);
+      system.mesh.scale.set(system.sx * system.face * fold,
+        system.sy * (1 - 0.18 * ease), system.sz * fold);
+      system.mat.emissive.setHex(r < 0.12 ? c.flash : PAL.glowOff);
+      system.mat.emissiveIntensity = postGain() * (r < 0.12 ? 0.72 : 0);
+    } else if (system.type.startsWith('aegis')) {
       // The projector answer is an inward mechanical failure. The iris core
       // kicks once while the crown contracts; neither grows past its live
       // footprint and both are gone before the body finishes collapsing.
@@ -2127,16 +2910,24 @@ export function updateCorpses() {
     if (elapsed < c.spec.punchMs) {
       const q = elapsed / c.spec.punchMs;
       const punch = Math.sin(q * Math.PI);
+      const rootedTerminal = !!c.frozenMotion?.rootedTerminal;
       c.mesh.visible = true;
-      placeOnTower(c.mesh, c.s - c.breakDir * 0.08 * punch, c.y,
-        HOSTILE_SURFACE_DEPTH - 0.12 * punch);
-      c.mesh.rotation.z = c.baseRoll + c.breakDir * 0.08 * q;
-      const swell = 1 + punch * 0.16;
+      placeOnTower(c.mesh,
+        rootedTerminal ? c.s : c.s - c.breakDir * 0.08 * punch,
+        c.y, HOSTILE_SURFACE_DEPTH - (rootedTerminal ? 0 : 0.12 * punch));
+      c.mesh.rotation.z = rootedTerminal ? 0 : c.baseRoll + c.breakDir * 0.08 * q;
+      const swell = c.ecologyDeath || rootedTerminal ? 1 : 1 + punch * 0.16;
       c.mesh.scale.set(c.baseScaleX * c.face * swell,
         c.baseScaleY * swell, c.baseScaleZ * swell);
       c.mat.opacity = 1;
-      c.mat.emissive.setHex(c.flash);
-      c.mat.emissiveIntensity = postGain();
+      if (c.mat.emissive) {
+        c.mat.emissive.setHex(c.ecologyDeath ? PAL.glowOff : c.flash);
+        c.mat.emissiveIntensity = c.ecologyDeath ? 0 : postGain();
+      }
+      if (c.ecologyActionMat) {
+        c.ecologyActionMesh.visible = true;
+        c.ecologyActionMat.opacity = 1;
+      }
       if (c.rig) {
         c.rig.mat.opacity = 0;
         for (const part of c.rig.pieces) part.mesh.visible = false;
@@ -2149,16 +2940,22 @@ export function updateCorpses() {
       (elapsed - c.spec.punchMs) / (c.spec.ms - c.spec.punchMs));
     const snap = 1 - (1 - r) ** 3;
     const isWarden = c.kind === 'warden';
+    const rootedTerminal = !!c.frozenMotion?.rootedTerminal;
     // The Crown is bolted into an apron: keep its centre planted while its
     // actual painted assemblies do the moving. Lesser roles retain their
     // compact whole-body carry/skid before their pieces resolve.
-    const bodyS = c.s + c.breakDir * c.spec.drift * (isWarden ? r * r : r);
-    const bodyY = c.y - c.spec.fall * r * r;
-    const bodyDepth = HOSTILE_SURFACE_DEPTH + c.spec.depth * r;
-    const bodyRoll = c.baseRoll + c.breakDir * c.spec.tilt * snap;
-    const bodyScaleX = 1 + (c.spec.sx - 1) * snap;
-    const bodyScaleY = 1 + (c.spec.sy - 1) * snap;
-    const bodyScaleZ = 1 - 0.28 * snap;
+    const bodyS = rootedTerminal ? c.s
+      : c.s + c.breakDir * c.spec.drift * (isWarden ? r * r : r);
+    const bodyY = rootedTerminal ? c.y : c.y - c.spec.fall * r * r;
+    const bodyDepth = HOSTILE_SURFACE_DEPTH +
+      (rootedTerminal ? c.spec.depth * Math.max(0, (r - 0.72) / 0.28) : c.spec.depth * r);
+    const bodyRoll = rootedTerminal ? 0
+      : c.baseRoll + c.breakDir * c.spec.tilt * snap;
+    const bodyScaleX = c.ecologyDeath || rootedTerminal ? 1
+      : 1 + (c.spec.sx - 1) * snap;
+    const bodyScaleY = c.ecologyDeath || rootedTerminal ? 1
+      : 1 + (c.spec.sy - 1) * snap;
+    const bodyScaleZ = c.ecologyDeath || rootedTerminal ? 1 : 1 - 0.28 * snap;
     // Warden holds readable metal through both hardpoint ejections and only
     // dissolves once the delayed core implosion is underway.
     const fade = isWarden
@@ -2191,14 +2988,21 @@ export function updateCorpses() {
     } else {
       // Primitive/failsafe path: the same species motion remains, only the
       // painted segmentation is unavailable. It still buckles rather than
-      // shrinking into the old generic spinning point.
       c.mesh.visible = true;
+      if (c.ecologyActionMesh) c.ecologyActionMesh.visible = true;
       placeOnTower(c.mesh, bodyS, bodyY, bodyDepth);
       c.mesh.rotation.z = bodyRoll;
       c.mesh.scale.set(c.baseScaleX * c.face * bodyScaleX,
         c.baseScaleY * bodyScaleY, c.baseScaleZ * bodyScaleZ);
       c.mat.opacity = fade;
-      c.mat.emissive.setHex(r < 0.12 ? c.flash : PAL.glowOff);
+      if (c.mat.emissive) {
+        c.mat.emissive.setHex(c.ecologyDeath ? PAL.glowOff
+          : r < 0.12 ? c.flash : PAL.glowOff);
+        if (c.ecologyDeath) c.mat.emissiveIntensity = 0;
+      }
+    }
+    if (c.ecologyActionMat) {
+      c.ecologyActionMat.opacity = fade;
     }
     syncDeathSystems(c, r);
   }
@@ -2223,23 +3027,186 @@ export function hostileDeathVisualSnapshot() {
       commonRigs: commonDeathRigCount, wardenRigs: wardenDeathRigCount,
       planes: deathPlaneCount, maxPlanes: MAX_DEATH_PLANES,
       maxCorpses: MAX_ACTIVE_CORPSES },
-    rows: corpses.map((c) => ({
-      kind: c.kind,
-      ageMs: Math.max(0, Math.round(gameMs - c.t0)),
-      lifetimeMs: c.spec.ms,
-      phase: gameMs - c.t0 < c.spec.punchMs ? 'impact'
-        : c.kind !== 'warden' ? 'rupture'
-        : gameMs - c.t0 < 650 ? 'hardpoint-eject'
-        : gameMs - c.t0 < 1010 ? 'core-implosion' : 'signal-collapse',
-      paintedPieces: c.rig ? c.rig.pieces.length : 0,
-      pieceTags: c.rig ? c.rig.pieces.map((part) => part.def.tag) : [],
-      systems: c.systems.map((system) => system.type),
-    })),
+    rows: corpses.map((c) => {
+      const frozen = c.frozenMotion;
+      const facingPreserved = !frozen ||
+        (Math.sign(c.mesh.scale.x) || frozen.face) === frozen.face;
+      const posePreserved = !frozen || (
+        c.mesh.geometry === frozen.geometry &&
+        c.mat.map === frozen.map &&
+        c.mat.emissiveMap === frozen.emissiveMap &&
+        facingPreserved
+      );
+      return {
+        kind: c.kind,
+        ageMs: Math.max(0, Math.round(gameMs - c.t0)),
+        lifetimeMs: c.spec.ms,
+        phase: gameMs - c.t0 < c.spec.punchMs ? 'impact'
+          : c.kind !== 'warden' ? 'rupture'
+          : gameMs - c.t0 < 650 ? 'hardpoint-eject'
+          : gameMs - c.t0 < 1010 ? 'core-implosion' : 'signal-collapse',
+        paintedPieces: c.rig ? c.rig.pieces.length : 0,
+        pieceTags: c.rig ? c.rig.pieces.map((part) => part.def.tag) : [],
+        systems: c.systems.map((system) => system.type),
+        ruptureMode: c.ecologyDeath ? 'ecology-b7-a7'
+          : frozen ? 'frozen-motion' : c.rig ? 'painted-pieces' : 'intact-fallback',
+        poseKey: frozen?.poseKey || '',
+        motionFrame: frozen?.frame ?? -1,
+        facingPreserved,
+        posePreserved,
+        deathCrack: c.kind === 'wasp' && frozen?.frame === WASP_BODY.DEATH_CRACK,
+        wingBankDetached: c.systems.some((system) => system.type === 'wasp-wing-bank'),
+        ecologyId: c.ecologyDeath?.id || '',
+        ecologyBodyRow: c.ecologyDeath?.bodyRow ?? -1,
+        ecologyActionRow: c.ecologyDeath?.actionRow ?? -1,
+        ecologyCode: c.ecologyDeath?.code ?? -1,
+        legacyDeathRig: !!c.ecologyDeath && !!c.rig,
+        ecologyLayersAttached: !!c.ecologyDeath &&
+          c.ecologyActionMesh?.parent === c.mesh,
+        ecologyOpacityMatched: !!c.ecologyDeath &&
+          Math.abs(c.mat.opacity - c.ecologyActionMat.opacity) < 0.0001,
+        ecologyScaleFixed: !!c.ecologyDeath,
+        shrink: c.ecologyDeath ? false : undefined,
+        spiral: false,
+        boundedBodyTiltRad: c.spec.tilt,
+        boundedWingTiltRad: c.kind === 'wasp' ? 0.64 : 0,
+      };
+    }),
   };
 }
 
 if (typeof window !== 'undefined')
   window.__HB_HOSTILE_DEATH_VISUAL = hostileDeathVisualSnapshot;
+
+// Reused only by the on-demand QA snapshot; never touches the render loop.
+const ENEMY_ECOLOGY_SCREEN_PROBE = new THREE.Vector3();
+
+export function enemyEcologyVisualSnapshot() {
+  const rows = [];
+  let ordinaryBodies = 0;
+  let visualOnlyBodies = 0;
+  const textures = new Set();
+  for (const [e, v] of meshes) {
+    if (!v.ecology) { ordinaryBodies++; continue; }
+    const visualOnly = !e.ecologyId && !!e.ecologyVisualId;
+    if (visualOnly) visualOnlyBodies++;
+    textures.add(v.mat.map);
+    const settled = gameMs >= e.enterUntil;
+    const condensationStarted = enemyEcologyCondensationStarted(
+      e, gameMs, CONFIG.wasp.enterMs);
+    const tacticVisual = enemyEcologyTacticVisualSnapshot(v, e);
+    const targetRootY = v.ecology.targetRootY;
+    v.mesh.getWorldPosition(ENEMY_ECOLOGY_SCREEN_PROBE);
+    ENEMY_ECOLOGY_SCREEN_PROBE.project(camera);
+    const canvasRect = renderer.domElement.getBoundingClientRect();
+    const screenX = (ENEMY_ECOLOGY_SCREEN_PROBE.x * 0.5 + 0.5) * canvasRect.width;
+    const screenY = (0.5 - ENEMY_ECOLOGY_SCREEN_PROBE.y * 0.5) * canvasRect.height;
+    const rootError = settled
+      ? v.presentationLift + targetRootY * Math.abs(v.mesh.scale.y) - targetRootY
+      : null;
+    rows.push({
+      id: e.id,
+      ecologyId: v.ecology.spec.id,
+      gameplayEcologyId: e.ecologyId || '',
+      ecologyVisualId: e.ecologyVisualId || '',
+      visualOnly,
+      kind: e.kind,
+      state: e.state,
+      tacticState: e.tacticState,
+      tacticPhase: e.tacticPhase,
+      tacticProgress: Number((e.tacticProgress || 0).toFixed(3)),
+      bodyRow: v.ecologyBodyRow,
+      actionRow: v.ecologyActionRow,
+      code: v.ecologyCode,
+      poseKey: v.poseKey,
+      presentationScale: v.presentationScale,
+      screen: {
+        x: Number(screenX.toFixed(1)), y: Number(screenY.toFixed(1)),
+        ndcZ: Number(ENEMY_ECOLOGY_SCREEN_PROBE.z.toFixed(4)),
+        inFrame: Math.abs(ENEMY_ECOLOGY_SCREEN_PROBE.x) <= 1 &&
+          Math.abs(ENEMY_ECOLOGY_SCREEN_PROBE.y) <= 1 &&
+          ENEMY_ECOLOGY_SCREEN_PROBE.z >= -1 && ENEMY_ECOLOGY_SCREEN_PROBE.z <= 1,
+      },
+      quads: 2,
+      actionAttached: v.ecologyActionMesh.parent === v.mesh,
+      actionOpacityMatched:
+        Math.abs(v.ecologyActionMat.opacity - v.mat.opacity) < 0.0001,
+      oneTexture: v.ecologyActionMat.map === v.mat.map,
+      noEmissiveMaps: !v.mat.emissiveMap && !v.ecologyActionMat.emissiveMap,
+      noIdleEmission: !v.mat.emissiveMap && !v.ecologyActionMat.emissiveMap &&
+        !v.mat.emissive && !v.ecologyActionMat.emissive,
+      fullCellUv: !!v.mesh.geometry.userData.fullCellUv &&
+        !!v.ecologyActionMesh.geometry.userData.fullCellUv,
+      sharedMirror: v.ecologyActionMesh.scale.x === 1 &&
+        v.ecologyActionMesh.scale.y === 1,
+      rooted: v.ecology.spec.grounded,
+      condensationStarted,
+      bodyVisible: v.mesh.visible,
+      actionVisible: v.ecologyActionMesh.visible,
+      preCondensationHidden: condensationStarted ||
+        (!v.mesh.visible && !v.ecologyActionMesh.visible &&
+          tacticVisual.visible === 0 && !v.beam?.visible),
+      settled,
+      rootError: rootError === null ? null : Number(rootError.toFixed(6)),
+      bodyDepth: Number((v.ecologyDepth || 0).toFixed(4)),
+      actionDepth: Number(((v.ecologyDepth || 0) +
+        v.ecologyActionMesh.position.z * Math.abs(v.mesh.scale.z)).toFixed(4)),
+      fullyOnActionPlane: (v.ecologyDepth || 0) > PLATFORM_OUTER_DEPTH,
+      noLegacyBodyLayers: !v.actorMotionBundle && !v.waspModular &&
+        !v.flapMesh && !v.lamp && !v.actorGlow,
+      mechanicReadOwnership: { ...v.mechanicReadOwnership },
+      optionalMechanicMeshes: v.evolutionMeshes?.length || 0,
+      tacticVisual,
+      sweepfanNoStraightFallback: !enemyOwnsSweepfanBeam(e) ||
+        !v.beam?.visible || isSweepfanBeam(e),
+      sweepfanExact: !isSweepfanBeam(e) || (!!v.beam?.visible &&
+        Math.abs(v.beam.rotation.z - Math.atan2(e.tacticBeamY, e.tacticBeamX)) < 0.0001 &&
+        Math.abs(v.beam.scale.x - e.beamReach) < 0.0001),
+    });
+  }
+  const deaths = corpses.filter((c) => c.ecologyDeath).map((c) => ({
+    ecologyId: c.ecologyDeath.id,
+    bodyRow: c.ecologyDeath.bodyRow,
+    actionRow: c.ecologyDeath.actionRow,
+    code: c.ecologyDeath.code,
+    legacyRig: !!c.rig,
+    layersAttached: c.ecologyActionMesh?.parent === c.mesh,
+    opacityMatched: Math.abs(c.ecologyActionMat.opacity - c.mat.opacity) < 0.0001,
+    scaleFixed: true,
+    spiral: false,
+    shrink: false,
+  }));
+  return {
+    ...enemyEcologyRuntimeSnapshot(),
+    activation: 'ecologyId mechanics; ecologyVisualId presentation only',
+    ordinaryBodies,
+    visualOnlyBodies,
+    liveBodies: rows.length,
+    liveActorDraws: rows.length * 2,
+    extraDraws: rows.length,
+    liveTextures: textures.size,
+    ordinaryPathFallbacks: 0,
+    tacticRuntime: enemyEcologyTacticRuntimeSnapshot(),
+    materials: {
+      pairsSpawned: ecologyPairsSpawned,
+      bodyRetired: ecologyBodyMaterialsRetired,
+      actionRetired: ecologyActionMaterialsRetired,
+      balancedRetirement: ecologyBodyMaterialsRetired === ecologyActionMaterialsRetired,
+      paintedInkFloor: Object.freeze({
+        mode: 'bounded-unlit-atlas-value',
+        material: 'MeshBasicMaterial',
+        colorGainByKind: { ...ENEMY_ECOLOGY_PAINT_GAIN },
+        emissiveMap: false,
+        idleEmissiveIntensity: 0,
+      }),
+    },
+    deaths,
+    rows,
+  };
+}
+
+if (typeof window !== 'undefined')
+  window.__HB_ENEMY_ECOLOGY_VISUAL = enemyEcologyVisualSnapshot;
 
 /* ==================== SPORE MORTAR (T-014) ========================= *
  * Everything this kind needs beyond the shared presence pass, kept in one
@@ -2346,10 +3313,15 @@ function mortarSync(v, e) {
   v.pod.visible = flying;
   if (flying) {
     lit(v.podMat, PAL.mortarPod);        // the ARC is the read — let it carry light
-    // exactly the arc the sim flew: same pure functions, same podU
+    // The planted zone and timing stay sim-owned; only the visual arc's first
+    // point follows the launch frame's painted bore instead of the old row
+    // centre. The same pure parabola and podU still own every later point.
+    const socketed = motionSocketWorld(v, e, 'muzzle');
+    const muzzleS = socketed ? MOTION_SOCKET.s : e.x;
+    const muzzleY = socketed ? MOTION_SOCKET.y : e.y;
     placeOnTower(v.pod,
-      mortarArcX(e.x, e.zoneX, e.podU),
-      mortarArcY(e.y, e.zoneY, M_CFG.arcTiles, e.podU), 0);
+      mortarArcX(muzzleS, e.zoneX, e.podU),
+      mortarArcY(muzzleY, e.zoneY, M_CFG.arcTiles, e.podU), 0);
     v.pod.rotation.z = e.podU * 7;
   }
   v.mark.visible = marked;
@@ -2481,6 +3453,11 @@ function wardenAttach(v) {
   beam.mat.blending = THREE.NormalBlending;
   const mark = wardenProp(wardenMarkGeo, PAL.mortarMark);
   const blast = wardenProp(wardenBlastGeo, PAL.mortarBlast);
+  // The atlas already paints the dormant iris and shutter hardware. These
+  // rings exist only for impact/exposure feedback and use normal alpha so an
+  // inactive Warden never wears a permanent additive halo.
+  core.mat.blending = THREE.NormalBlending;
+  shield.mat.blending = THREE.NormalBlending;
   Object.assign(v, {
     wardenCore: core.mesh, wardenCoreMat: core.mat,
     wardenShield: shield.mesh, wardenShieldMat: shield.mat,
@@ -2494,6 +3471,7 @@ function wardenAttach(v) {
   });
   for (let i = 0; i < 4; i++) {
     const pip = wardenProp(wardenSealGeo, PAL.modCapsule);
+    pip.mat.blending = THREE.NormalBlending;
     v.wardenSeals.push(pip);
   }
 }
@@ -2521,34 +3499,36 @@ function wardenDetach(v) {
 
 function wardenSync(v, e) {
   const W = WARDEN_CFG;
-  const irisX = e.x - 0.44;
-  const irisY = e.y - 0.10;
+  const coreSocketed = motionSocketWorld(v, e, 'iris');
+  const irisX = coreSocketed ? MOTION_SOCKET.s : e.x - 0.44;
+  const irisY = coreSocketed ? MOTION_SOCKET.y : e.y - 0.10;
   const entering = gameMs < e.enterUntil;
-  if (entering && e.enterUntil - gameMs > CONFIG.wasp.enterMs * 0.42) {
+  if (entering) {
     wardenHide(v);
     return;
   }
 
-  const entryU = entering
-    ? 1 - Math.max(0, (e.enterUntil - gameMs) / (CONFIG.wasp.enterMs * 0.42)) : 1;
   const pulse = 0.5 + Math.sin(gameMs * 0.012) * 0.5;
   const exposed = e.state === 'exposed';
   const ping = gameMs < e.armorPingUntil;
   const hit = gameMs < e.coreHitUntil;
 
-  v.wardenCore.visible = true;
-  placeOnTower(v.wardenCore, irisX, irisY, 0.32);
-  v.wardenCore.scale.setScalar((0.78 + entryU * 0.22) * (1 + (hit ? 0.20 : 0)));
-  lit(v.wardenCoreMat, hit ? PAL.muzzle : exposed ? PAL.capsule : PAL.modCapsule);
-  v.wardenCoreMat.opacity = entryU * (exposed ? 0.88 : 0.42 + pulse * 0.16);
+  v.wardenCore.visible = exposed || ping || hit;
+  if (v.wardenCore.visible) {
+    placeOnTower(v.wardenCore, irisX, irisY, 0.32);
+    v.wardenCore.rotation.z = 0;
+    v.wardenCore.scale.setScalar(1 + (hit ? 0.20 : 0));
+    lit(v.wardenCoreMat, hit ? PAL.muzzle : exposed ? PAL.capsule : PAL.modCapsule);
+    v.wardenCoreMat.opacity = hit ? 1 : exposed ? 0.78 : 0.66;
+  }
 
-  v.wardenShield.visible = !exposed;
-  if (!exposed) {
+  v.wardenShield.visible = ping;
+  if (ping) {
     placeOnTower(v.wardenShield, irisX, irisY, 0.29);
-    v.wardenShield.rotation.z = gameMs * 0.0012;
-    v.wardenShield.scale.setScalar(1 + pulse * 0.05);
-    lit(v.wardenShieldMat, ping ? PAL.muzzle : PAL.modCapsule);
-    v.wardenShieldMat.opacity = entryU * (ping ? 0.94 : 0.34);
+    v.wardenShield.rotation.z = 0;
+    v.wardenShield.scale.setScalar(1);
+    lit(v.wardenShieldMat, PAL.muzzle);
+    v.wardenShieldMat.opacity = 0.86;
   }
 
   // Persistent seal state: these do not refill when another attack begins.
@@ -2556,22 +3536,25 @@ function wardenSync(v, e) {
   const sealPos = [[-0.72, 0.62], [-0.28, 0.82], [0.28, 0.82], [0.72, 0.62]];
   for (let i = 0; i < v.wardenSeals.length; i++) {
     const p = v.wardenSeals[i];
-    p.mesh.visible = i < seals;
+    p.mesh.visible = exposed && i < seals;
     if (!p.mesh.visible) continue;
     placeOnTower(p.mesh, irisX + sealPos[i][0], irisY + sealPos[i][1], 0.27);
-    p.mesh.rotation.z = -gameMs * 0.0015 + i;
-    p.mesh.scale.setScalar(0.78 + pulse * 0.10);
+    p.mesh.rotation.z = i * Math.PI * 0.5;
+    p.mesh.scale.setScalar(0.78);
     lit(p.mat, PAL.modCapsule);
-    p.mat.opacity = 0.72;
+    p.mat.opacity = 0.60;
   }
 
   const sweepTell = e.state === 'sweepTell';
   const sweepLive = e.state === 'sweepFire';
   const commit = sweepTell && e.stateUntil - gameMs <= W.sweepCommitMs;
-  const muzzleX = e.x + e.dir * W.emitterTiles;
+  const simMuzzleX = e.x + e.dir * W.emitterTiles;
+  const muzzleSocketed = motionSocketWorld(v, e, 'muzzle');
+  const muzzleX = muzzleSocketed ? MOTION_SOCKET.s : simMuzzleX;
+  const muzzleY = muzzleSocketed ? MOTION_SOCKET.y : e.y + 0.22;
   v.wardenEmitter.visible = sweepTell || sweepLive;
   if (v.wardenEmitter.visible) {
-    placeOnTower(v.wardenEmitter, muzzleX, e.y + 0.22, 0.30);
+    placeOnTower(v.wardenEmitter, muzzleX, muzzleY, 0.30);
     v.wardenEmitter.scale.setScalar(sweepLive ? 1.28 : 0.72 + pulse * 0.32);
     lit(v.wardenEmitterMat, sweepLive ? PAL.polypBeam : PAL.mortarMark);
     v.wardenEmitterMat.opacity = sweepLive ? 1 : 0.48 + pulse * 0.30;
@@ -2580,11 +3563,13 @@ function wardenSync(v, e) {
   const rayLength = sweepLive ? W.beamReach : commit ? 1.35 : 0;
   for (const mesh of [v.wardenBeam, v.wardenBeamCore]) mesh.visible = rayLength > 0;
   if (rayLength > 0) {
-    const mid = muzzleX + e.dir * rayLength / 2;
-    placeOnTower(v.wardenBeam, mid, e.y, -0.12);
-    placeOnTower(v.wardenBeamCore, mid, e.y, 0.02);
-    v.wardenBeam.scale.set(rayLength, sweepLive ? 1 : 0.48, 1);
-    v.wardenBeamCore.scale.set(rayLength, 1, 1);
+    const endpoint = simMuzzleX + e.dir * rayLength;
+    const visibleLength = Math.max(0.01, Math.abs(endpoint - muzzleX));
+    const mid = (muzzleX + endpoint) / 2;
+    placeOnTower(v.wardenBeam, mid, muzzleY, -0.12);
+    placeOnTower(v.wardenBeamCore, mid, muzzleY, 0.02);
+    v.wardenBeam.scale.set(visibleLength, sweepLive ? 1 : 0.48, 1);
+    v.wardenBeamCore.scale.set(visibleLength, 1, 1);
     lit(v.wardenBeamMat, sweepLive ? PAL.capsule : PAL.mortarMark);
     lit(v.wardenBeamCoreMat, PAL.mortarBlast);
     v.wardenBeamMat.opacity = sweepLive ? 0.66 : 0.28;
@@ -2593,9 +3578,12 @@ function wardenSync(v, e) {
 
   const barrageTell = e.state === 'barrageTell';
   const barrageLive = e.state === 'barrageBurst';
+  const rackSocketed = motionSocketWorld(v, e, 'rack');
+  const rackX = rackSocketed ? MOTION_SOCKET.s : e.x - e.dir * 2.02;
+  const rackY = rackSocketed ? MOTION_SOCKET.y : e.y + 0.42;
   v.wardenRack.visible = barrageTell || barrageLive;
   if (v.wardenRack.visible) {
-    placeOnTower(v.wardenRack, e.x - e.dir * 2.02, e.y + 0.42, 0.28);
+    placeOnTower(v.wardenRack, rackX, rackY, 0.28);
     v.wardenRack.scale.setScalar(barrageLive ? 1.38 : 0.76 + pulse * 0.30);
     lit(v.wardenRackMat, barrageLive ? PAL.mortarBlast : PAL.mortarMark);
     v.wardenRackMat.opacity = barrageLive ? 1 : 0.50 + pulse * 0.28;
@@ -2617,8 +3605,7 @@ function wardenSync(v, e) {
     v.wardenBlastMat.opacity = 0.48;
   }
 
-  // Persistent wear: as seals leave, warm circuitry remains lit through the
-  // stable body. This is a damage state, never a warning flash.
-  const broken = 4 - seals;
-  v.mat.emissiveIntensity = postGain() * (0.28 + broken * 0.055);
+  // Atlas paint carries all persistent wear; keeping body emission at zero
+  // prevents the complete rectangular cutout from blooming at rest.
+  v.mat.emissiveIntensity = 0;
 }

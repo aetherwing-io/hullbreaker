@@ -15,7 +15,7 @@ import { momentumMeter } from '../pure/momentum.js';
 import { normalAscentAltAt } from '../pure/ascent.js';
 import { momentumDrive } from '../sim/pace.js';
 import { scoreNotchGlyphs } from '../pure/score.js';
-import { wavePhase } from '../pure/waves.js';
+import { activeGateThreatCount, wavePhase } from '../pure/waves.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { player, P } from '../sim/player.js';
 import { scoreNotchNow } from '../sim/score.js';
@@ -178,11 +178,13 @@ export function updateHUD() {
   } else if (!ACTIVE_FIXTURE && c && c.state === 'idle' && scrollX < 14) {
     tc = c.phase + ' · MERIDIAN HAS SEEN YOU';
   } else if (c && c.state === 'gate') {
-    let gaters = 0;
-    // per-body, not per-kind: an ambient station that cannot hold the gate
-    // must not be counted in the number the player is told to clear (T-009)
-    for (const e of hostiles) if (e.gating) gaters++;
-    tc = c.phase + ' · ' + gaters + ' HOSTILES';
+    // Count only this encounter's current visible/condensing beat. Later
+    // resident rows are implementation detail, and `gating` describes who
+    // owns the eventual clear rather than which body is threatening RIG now.
+    const threats = activeGateThreatCount(
+      hostiles, c.encounterKey, gameMs, CONFIG.wasp.enterMs,
+    );
+    tc = c.phase + ' · ' + threats + (threats === 1 ? ' HOSTILE' : ' HOSTILES');
   } else if (c && c.state === 'turning' && gameMs - c.tStart < CONFIG.waves.clearMsgMs) {
     tc = c.k < CONFIG.path.faces
       ? c.phase + ' BROKEN · ' + wavePhase(c.k + 1, CONFIG)

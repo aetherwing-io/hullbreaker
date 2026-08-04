@@ -67,6 +67,9 @@ import {
 } from './sim/score.js';
 import { resetSpawner, updateSpawner } from './sim/spawner.js';
 import {
+  meridianDefenseSnapshot, resetMeridianDefense, updateMeridianDefense,
+} from './sim/meridian-defense.js';
+import {
   finaleActive, finaleComplete, finaleSnapshot, resetFinale, startFinale, updateFinale,
 } from './sim/finale.js';
 import { activeCorner, resetCornerEvents } from './sim/wavegate.js';
@@ -76,6 +79,26 @@ import {
 } from './sim/transform.js';
 import { updateScroll } from './sim/scroll.js';
 import { camera, renderer, scene } from './render/scene.js';
+// Register the complete Level 1 ecology atlas before any existing art owner
+// can settle the shared preload gate. Authored rows are still opt-in: this is
+// residency only, and ordinary enemies never enter its renderer branch.
+import './render/enemy-ecology-art.js';
+// The large world-detail atlas must join the boot gate before level.js enters
+// materials.js. Its consumer receives one frozen ready/fallback decision and
+// cannot introduce a late texture pop during the climb.
+import './render/world-detail-art.js';
+import './render/crown-art.js';
+// Dependency-light preload owner: register the projectile atlas before post,
+// hostiles and backdrop can settle the one shared texture gate. bullets.js
+// later consumes its frozen ready/fallback contract without loading anything.
+import './render/projectile-art.js';
+// Rooted enemy hardware uses two immutable production atlases. Register both
+// before post/hostiles can settle the shared gate; the consumer never fetches
+// or swaps artwork after frame one.
+import './render/actor-motion-art.js';
+// One environment-only atlas supplies the six current Meridian response
+// states. It settles before the isolated socket renderer can consume it.
+import './render/defense-vfx-art.js';
 // the one draw of the frame, and the only place the composer is reachable
 // from: renderFrame() is renderer.render() until the bloom pass is up, and
 // falls back to it again the moment the pass misbehaves (src/render/post.js)
@@ -98,7 +121,12 @@ import { clearCorpses, updateCorpses } from './render/hostiles.js';
 // stuck in their temporal dead zone — where importing it here is the same
 // ordinary forward dependency src/render/sprites.js already relies on below.
 import './render/backdrop.js';
+// Kept separate from the direct boot import above: existing deployment gates
+// prove that exact side-effect edge cannot migrate into scene.js, while this
+// binding supplies the post-camera facet traversal refresh.
+import { updateBackdropFacetVisibility } from './render/backdrop.js';
 import { updateWorldDressingCull } from './render/level.js';
+import './render/meridian-defense-vfx.js';
 import { updateSeamFoldCull } from './render/seams.js';
 import { limbPieces, updateLimbFoldCull } from './render/limb.js';
 import { updateCrownFacetCull } from './render/crown.js';
@@ -267,6 +295,7 @@ function resetGame() {
   resetPace();
   resetScore();
   resetSpawner();
+  resetMeridianDefense();
   resetFinale();
   resetHostileRng();
   resetKills(); resetShotsFired();
@@ -330,6 +359,7 @@ function resetGame() {
   shellRunStarted();                     // ui: stamp this attempt's clock origin
   updateScroll(0);                       // was updateCamera(0): scroll, then pose
   syncCamera();
+  updateBackdropFacetVisibility();
   setState('PLAYING');
 }
 
@@ -358,11 +388,13 @@ function update(dt) {
   const wScale = (gameMs < mods.chronoUntil ? CONFIG.mods.chronoScale : 1) * hScale;
   updateScroll(dt * wScale);             // sim half of the old updateCamera
   syncCamera();                          // render half, same point in the frame
+  updateBackdropFacetVisibility();       // exact-zero remote air/plates leave render traversal
   updateWorldDressingCull();             // strict camera-facet ownership for props/lights
   updateSeamFoldCull();                  // static pips exist only on the built camera facet
   updateCrownFacetCull();                // the resident summit waits for its built outro facet
   updateLimbFoldCull();                   // sector self-occlusion; uploads only on facet changes
   updateSpawner();
+  updateMeridianDefense();
   updatePlayer(dt * hScale);
   /* render: effect pools + crush warning. It sits BEFORE the death return on
      purpose — the frame RIG dies is the frame that spawns RIG's own death
@@ -459,6 +491,7 @@ function telemetry() {
     transform: IS_TRANSFORM_SLICE ? transformTelemetry() : undefined,
     corner: ACTIVE_FIXTURE ? undefined : cornerTelemetry(),
     finale: ACTIVE_FIXTURE ? undefined : finaleSnapshot(),
+    meridianDefense: ACTIVE_FIXTURE ? undefined : meridianDefenseSnapshot(),
     // unchanged semantics: the fixture's declared scroll floor. The live
     // pursuit speed a pacing variant is commanding is `pursuitSpeed` below.
     minimumScrollSpeed: ACTIVE_FIXTURE

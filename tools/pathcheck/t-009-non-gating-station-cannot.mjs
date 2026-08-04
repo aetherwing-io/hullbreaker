@@ -45,7 +45,9 @@ export async function run(SHARED) {
     while (HO.hostiles.length) HO.removeHostile(0, false);
     const c1 = WG.cornerEvents[1];
     WG.armGate(c1);
-    HO.spawnHostile(126.5, 3.45, 0, 'hound', { dir: -1, patrol: { x0: 125, x1: 128 } });
+    HO.spawnHostile(126.5, 3.45, 0, 'hound', {
+      dir: -1, patrol: { x0: 125, x1: 128 }, encounterKey: c1.encounterKey,
+    });
     for (let i = HO.hostiles.length - 1; i >= 0; i--)
       if (HO.hostiles[i].kind === 'wasp') HO.removeHostile(i, false);
     out.gating = c1.state;

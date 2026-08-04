@@ -77,14 +77,17 @@ export const CONFIG = {
       houndDelayMsByFace: [0, 0, 3600, 3400, 0, 0],
     },
     // Elastic anti-lull reinforcements. The generated table above remains the
-    // score and every gate keeps its authored roster; this tiny budget only
-    // fills a long EMPTY stretch after the player has already engaged with
-    // that score. Fast clears shorten the inhale and unlock late-run pairs,
-    // but spatial fences in sim/spawner.js keep every body visible, outside
-    // lesson bubbles and off the corner apron. Gate arming clears these
-    // non-gating bodies, so adaptive pressure can never delay a ritual.
+    // score and every gate keeps its authored roster. The immune response owns
+    // a small committed-threat ENVELOPE around players who demonstrate that
+    // the score no longer occupies them. It precommits before the field goes
+    // empty and renews a capped token pool from route progress/fast clears;
+    // unsafe windows discard overflow instead of building spawn debt. Spatial
+    // fences in sim/spawner.js keep every body visible, outside lesson bubbles
+    // and off the corner apron. Every adaptive row is gating:false, and gate
+    // arming still clears ambient carryover, so pressure never delays ritual.
     pressure: {
       seed: 0x48554c4c,
+      maxSampleMs: 100,
       idleMsByFace: [1350, 1200, 1080, 960, 840, 760],
       minIdleMs: 620,
       fastIdleBonusMs: 380,
@@ -92,8 +95,84 @@ export const CONFIG = {
       slowClearMs: 3200,
       mercyClearMs: 4200,
       clearEmaWeight: 0.35,
-      cooldownMs: 2200,
-      maxBodiesByFace: [3, 4, 8, 10, 12, 14],
+      // Demonstrated dominance: lived clear speed, kills, forward progress,
+      // and an intact/no-hit run. Neither the director nor the genome may
+      // inspect a weapon ID, tier, or trait: a lucky roll must prove itself in
+      // play before Meridian changes the assault.
+      killWindowMs: 10000,
+      progressEmaMs: 1800,
+      dominanceEmaMs: 1800,
+      dominantKills10s: 8,
+      dominantProgressTps: 4.8,
+      dominantNoHitMs: 4500,
+      dominanceWeights: { clear: 0.42, kills: 0.26, progress: 0.22, noHit: 0.10 },
+      healthDropEpsilon: 0.015,
+      mercyHealthRatio: 0.42,
+      fullPressureHealthRatio: 0.72,
+      mercyIdleMs: 1400,
+
+      // Pressure grows through an explicit grammar. COMPOSE opens already-
+      // taught roles, EVOLVE opens already-reviewed behavior recipes, and
+      // only SURGE is allowed to raise the live low-water mark or form a pair.
+      // Promotion is deliberately stepped so a single hot sample can never
+      // jump straight from the ordinary score to raw density.
+      responseBandNames: ['CALIBRATE', 'COMPOSE', 'EVOLVE', 'SURGE'],
+      responseBandFrom: [0, 0.28, 0.52, 0.76],
+      responseBandPromotionMs: 450,
+      responseBandHysteresis: 0.055,
+      compositionBand: 1,
+      evolutionBand: 2,
+      densityBand: 3,
+
+      // Damage receives a short single-body inhale; a fall/HULL fallback is
+      // a stronger accessibility signal and drops the response to CALIBRATE.
+      // These are observed outcomes, not guesses about the equipped build.
+      damageBackoffMs: 1800,
+      setbackBackoffMs: 2800,
+      recoveryEmptyBudgetMs: 1700,
+
+      // Every ordinary build gets a real inhale after a clear. Only SURGE
+      // raises low-water to one committed body, allowing a replacement to
+      // condense before a dominant player erases the current target.
+      targetLowByFace: [0, 0, 0, 0, 0, 0],
+      densityTargetBonusByFace: [0, 0, 1, 1, 1, 1],
+      targetMaxByFace: [1, 1, 2, 2, 2, 2],
+      targetBand: 1,
+      dominanceTargetFrom: 0.52, // public compatibility alias: EVOLVE onset
+      // Leave two seats for the next authored pair. Without this reservation,
+      // a still-readable adaptive cohort plus an incoming score row could
+      // briefly create five committed decisions even though the director's
+      // own target band never exceeded four. Later faces escalate through
+      // faster renewal, richer roles, and larger renewable budgets—not by
+      // crowding the authored assault out of its readability envelope.
+      maxAdaptiveOutstandingByFace: [1, 1, 2, 2, 2, 2],
+
+      // Renewable bounded budget. Initial tokens make the first answer prompt;
+      // route/kill gains sustain a dominant climb. Overflow is discarded and
+      // the generous face ceiling remains a last-resort runaway guard, not the
+      // ordinary resource that used to exhaust halfway through a face.
+      initialTokensByFace: [1, 1, 2, 2, 3, 3],
+      tokenCapByFace: [2, 2, 4, 4, 5, 5],
+      routeTilesPerTokenByFace: [18, 16, 8, 7, 6, 5.5],
+      tokenDominanceFrom: 0.45,
+      killTokenBase: 0.12,
+      killTokenDominanceGain: 0.90,
+      environmentTokenGain: 1,
+      environmentResponseHoldMs: 900,
+      maxBodiesByFace: [4, 5, 32, 36, 42, 48],
+
+      // A named maximum empty-field budget replaces arbitrary boss/wave waits.
+      // Ordinary play gets a 1.05s inhale; demonstrated dominance closes it to
+      // 0.5s. A reserve response credit can satisfy this budget when route
+      // tokens have just been spent, but can never raise the live/pending cap.
+      emptyResponseMsByBand: [1050, 850, 650, 500],
+      emptyResponseMs: 1050,
+      hardEmptyBudgetMs: 1150,
+      emptyResponseCooldownMs: 450,
+      precommitMs: 120,
+      precommitCooldownMs: 250,
+      environmentResponseMs: 160,
+      responseLatencyEmaWeight: 0.30,
       imminentAuthoredTiles: 4.8,
       minRemainingTravelTiles: 6.5,
       // From CONTAIN onward, a sub-1.6s clear proves the rolled weapon has
@@ -105,7 +184,6 @@ export const CONFIG = {
       responseFromFace: 3,
       responseClearMs: 1600,
       responseIdleMs: 100,
-      responseCooldownMs: 1050,
       responseImminentAuthoredTiles: 2.35,
       responseMinRemainingTravelTiles: 3.4,
       spawnInsetTiles: 2.3,
@@ -114,6 +192,8 @@ export const CONFIG = {
       cornerPadTiles: 0.7,
       pairFromFace: 3,
       pairClearMs: 1500,
+      pairDominanceFrom: 0.58,
+      pairBandFrom: 3,
       pairMinPlayerLeadTiles: 5.2,
       pairDelayMs: 180,
       // Reinforcements mutate the ASSAULT, not just the same wasp body.
@@ -127,8 +207,8 @@ export const CONFIG = {
         ['wasp'],
         ['wasp', 'hound'],
         ['wasp', 'hound', 'polyp'],
-        ['wasp', 'hound', 'polyp'],
-        ['wasp', 'hound', 'polyp'],
+        ['wasp', 'hound', 'polyp', 'mortar'],
+        ['wasp', 'hound', 'polyp', 'mortar'],
       ],
       groundProbeTiles: 0.55,
     },
@@ -217,7 +297,12 @@ export const CONFIG = {
     F: { name: 'FLAME',  fireRateMs: 300, speed: 13, damage: 1, lifeMs: 1500,
          pierce: true, crawlSpeed: 10, dropAccel: -40,
          lobScaleY: 0.6, lobBias: 0.12,          // aims-to-lob conversion at fire time
-         hugY: 0.35, hugRate: 30, probeX: 0.4, probeY: 0.4,   // deck-hugging crawl
+         // A swept deck/catwalk contact explicitly ignites a short ground-fire
+         // wave. Distance AND time are bounded; upward steps/walls and gaps
+         // extinguish at their exact lip, while modest drops can cascade.
+         hugY: 0.35, hugRate: 30, probeX: 0.4, probeY: 0.4,
+         crawlLifeMs: 680, crawlTiles: 5.5,
+         crawlStepUpMax: 0.18, crawlDropMax: 2.1, phaseSurfaceCost: 0.35,
          scale: [1.1, 1.1, 1.1], crawlScale: [1.5, 0.9, 1.1] },
   },
 
@@ -499,7 +584,8 @@ export const CONFIG = {
     flankRecoverRate: 7.2,
   },
 
-  // Meridian infection response. pure/genome.js owns which seeded genes may
+  // Meridian incursion-defense response. Humans/RIG are the infection;
+  // pure/genome.js owns which seeded genes may
   // combine; these are only the fair spatial/timing envelopes those behaviors
   // execute inside. No mutation changes a base body's HP or hit radius.
   genome: {
@@ -517,6 +603,32 @@ export const CONFIG = {
     backlashBurstMs: 120,
     backlashCooldownMs: 1700,
     backlashRadius: 1.65,
+  },
+
+  // Opt-in Level 1 ecology tactics. Authored rows must name an `ecologyId`;
+  // absent IDs keep the existing genome and per-kind state machines exactly.
+  // These are spatial/timing envelopes only: no recipe changes HP, collision
+  // size, roster count, gate ownership, or the adaptive director's budget.
+  enemyEcology: {
+    maxHazardsPerBody: 3,
+    rebound: {
+      brakeTellMs: 280,          // wall/edge impact settles before the return arc
+      speed: 10.2, lift: 13.6, gravity: -34, vaultMs: 780,
+    },
+    crosswind: {
+      tellMs: 460, burstMs: 360, recoverMs: 440,
+      bodyOffsetY: 1.65, acquireRate: 4.8,
+      strafeSpeed: 6.2, muzzleTiles: 0.62,
+      count: 3, spacing: 0.66, speed: 12.0, radius: 0.20, lifeMs: 540,
+    },
+    sweepfan: {
+      halfAngleRad: 0.56,        // 64 degrees total: broad, never a full-room spin
+      beamStepTiles: 0.28,
+    },
+    aircomb: {
+      count: 3, spacing: 1.20, radius: 0.30,
+      dropHeight: 6.2, dropMs: 520, impactMs: 170,
+    },
   },
 
   waves: {                     // corner wave gates + snap ritual + brick zipper
@@ -668,6 +780,17 @@ export const CONFIG = {
     jointOutwardMax: 7.5,      // …and over a joint apron, where the generator
                                //   guarantees flat solid ground (no fall to hide)
     chunkCols: 16,             // a few colossal armour roots, not repeating wall bays
+    // The playable route begins at s=0, but the FAR camera can see roughly
+    // twenty tiles behind RIG on the opening frame.  Ending the creature at
+    // that same coordinate exposed a third of desktop as a flat blue-grey
+    // void.  This is a render-only shoulder continuing behind the damage
+    // plane: no deck, collision, spawn or route exists there.  Every piece is
+    // recessed behind the combat plane, so it fills the frame with the same
+    // hull/gill/scute vocabulary without creating a false traversable path.
+    entryShoulder: {
+      back: 28, deckY: 3, plateCols: 7, plateH: 4.2,
+      plateDepth: -2.35, plateThickness: 1.25, topInset: 0.18,
+    },
     // the mass under the deck: armour skin, then the body running off frame
     hull: { drop: 14, depth: -1.1, thickness: 3.6, ribH: 0.5, ribThickness: 4.6,
             tiltDeg: 4 },
@@ -1057,6 +1180,17 @@ export const CONFIG = {
     impact: { count: 4, speed: 5.5, ms: 240, size: 0.12, gravity: -14, gapMs: 40 },
     death:  { count: 10, speed: 7.5, ms: 420, size: 0.17, gravity: -16,
               flashMs: 130, flashSize: 0.95 },
+    // Destruction has three bounded physical layers beyond the ordinary
+    // impact sparks: a compact split core, role-shaped fragments, then one
+    // sparse vapor wake. Sizes are tuned at FAR; none declares a gameplay
+    // radius and every row lives in a fixed render pool below.
+    destruction: {
+      core: { ms: 165, size: 0.72 },
+      wing:    { count: 4, speed: 5.2, ms: 430, size: 0.32, gravity: -5,  spread: 1.00 },
+      hound:   { count: 5, speed: 5.6, ms: 470, size: 0.27, gravity: -12, spread: 0.58 },
+      machine: { count: 5, speed: 6.4, ms: 440, size: 0.22, gravity: -15, spread: 0.72 },
+      vapor: { ms: 520, size: 0.62, rise: 1.35, drift: 0.62, opacity: 0.34 },
+    },
     hurt:   { count: 9, speed: 6.0, ms: 380, size: 0.16, gravity: -14,
               flashMs: 150, flashSize: 1.3 },
     pickup: { count: 7, speed: 3.6, ms: 320, size: 0.13, gravity: -6,
@@ -1074,8 +1208,11 @@ export const CONFIG = {
                                //   strip about to be swept instead of hanging
                                //   half off the edge of the screen
     },
-    pools: { particles: 224, flashes: 20 },   // fixed pools; a full pool drops the
-                                              // newest request rather than allocating
+    pools: {
+      particles: 224, flashes: 20,
+      cores: 24, fragments: 72, vapor: 28,
+    },                                        // fixed pools; saturation recycles one
+                                              // old presentation row, never allocates
   },
 
   score: {                     // OVERDRIVE/THREAT system — docs/proposals/

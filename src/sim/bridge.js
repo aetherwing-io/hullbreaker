@@ -26,9 +26,12 @@ export const view = {
   // roll without polling or reaching back into simulation state.
   loot:     { acquired: noop },          // (gun, compiledDef, { recatch })
   bullets:  { slotSpawned: noop, hideSlot: noop, syncSlot: noop, flush: noop,
-              bendCulled: noop, volatileImpact: noop },
+              bendCulled: noop, deckIgnited: noop, volatileImpact: noop },
   mods:     { sync: noop, cleared: noop, lanceTelegraph: noop },
   level:    { unbuiltHidden: noop, zipperColumn: noop, faceRevealed: noop },
+  // Environment-only Meridian defense lifecycle. The sim publishes a frozen
+  // route/state snapshot; presentation may draw it but cannot answer back.
+  meridian: { sync: noop, reset: noop },
   corner:   { finished: noop },
   finale:   { started: noop, sync: noop, transmit: noop, reset: noop },
   transform: {                           // world-transformation rituals (slice-only)

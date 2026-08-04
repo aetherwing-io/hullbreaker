@@ -40,6 +40,16 @@ export async function run(SHARED) {
   // --- the plan is a static bake, not choreography ---------------------
   ok(plan.length > 200, 'the limb bakes a body (' + plan.length + ' pieces)');
   {
+    const entry = plan.filter((p) => p.s < 0);
+    ok(entry.length >= 12 && entry.some((p) => p.kind === 'hull') &&
+       entry.some((p) => p.kind === 'scute') && entry.some((p) => p.kind === 'gill'),
+       'the opening frustum is filled by a connected hull/scute/gill shoulder (' +
+       entry.length + ' recessed pieces), not a flat fog field');
+    ok(entry.every((p) => p.facet === 0 && limbOutwardReach(p, CONFIG) <= 0),
+       'every opening-shoulder piece belongs to facet 0 and stays behind the ' +
+       'combat plane: it cannot become a false route or hide a fall');
+  }
+  {
     const again = limbBakePlan(CONFIG, groundH);
     ok(JSON.stringify(plan) === JSON.stringify(again),
        'the bake plan is deterministic: same config, same body, no rng');

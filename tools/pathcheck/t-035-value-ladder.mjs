@@ -322,8 +322,10 @@ export async function run(SHARED) {
        count(limbSrc035, /new THREE\.Mesh\b/g) === 0,
        'T-035: src/render/limb.js still builds exactly one InstancedMesh per material ' +
        'and no single meshes — draw calls cannot have moved');
-    ok(count(levelSrc035, /new THREE\.InstancedMesh/g) === 1,
-       'T-035: src/render/level.js still builds exactly one tile InstancedMesh');
+    ok(count(levelSrc035,
+       /tiles\s*=\s*IS_G1\s*\?\s*null\s*:\s*new THREE\.InstancedMesh\(tileGeo,\s*tileMat,\s*count\)/g) === 1,
+       'T-035: src/render/level.js still builds exactly one tile InstancedMesh ' +
+       '(traversable ladders own separate fixed pools)');
     ok(/setColorAt\(idx, _tile\.copy\(/.test(levelSrc035) &&
        /multiplyScalar\(k\)/.test(levelSrc035),
        'T-035: the deck ladder rides the existing per-instance color, through a reused ' +

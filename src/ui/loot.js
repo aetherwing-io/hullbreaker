@@ -327,6 +327,10 @@ function rolledName(gun) {
 function statDeltas(gun, def) {
   const base = CONFIG.weapons[gun.letter] || CONFIG.weapons.R;
   const rows = [];
+  // Cindermouth owns a two-state shot. Put the verb on the existing pickup
+  // stat line so its deck transformation is learned as weapon behavior, not
+  // mistaken for a slow projectile getting stuck on collision geometry.
+  if (gun.letter === 'F') rows.push(['DECK HIT → GROUND-FIRE', 'good']);
   const rapid = Math.round((base.fireRateMs / def.fireRateMs - 1) * 100);
   if (rapid > 0) rows.push([`+${rapid}% FIRE RATE`, 'good']);
   const damage = def.damage - base.damage;

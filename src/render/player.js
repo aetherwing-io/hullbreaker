@@ -33,10 +33,11 @@
    dropped, never applied mid-run).
 
    The shipped path now uses one gunless body atlas plus one painted five-gun
-   atlas. If that body atlas is unavailable, the synchronous canvas silhouette
-   takes over; the earlier horizontal-rifle cutout is never allowed back onto
-   the live frame. Every path mounts the eight-way weapon at the simulation's
-   real muzzle. */
+   atlas. If that body atlas is unavailable, a synchronous fixed-geometry
+   silhouette takes over; the earlier horizontal-rifle cutout is never allowed
+   back onto the live frame. Every path mounts the eight-way weapon at the
+   simulation's real muzzle. Atlas frames own immutable geometry UVs: changing
+   pose or chassis never mutates/re-uploads a resident texture. */
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
@@ -47,184 +48,95 @@ import { gameMs, blink } from '../sim/time.js';
 import { player } from '../sim/player.js';
 import { turningCornerOwnsJoint } from '../sim/wavegate.js';
 import { currentGun, currentWeapon } from '../sim/weapons.js';
-import { flowSnapshot } from '../sim/flow.js';
 import { scoreNotchNow } from '../sim/score.js';
 import {
-  CANVAS_H, CANVAS_W, GUN_BOX, HELMET, LEG_BACK, LEG_FRONT,
+  HELMET, LEG_BACK, LEG_FRONT,
   RIG_GUN_MUZZLE_X, RIG_RECOIL_MS, RIG_RECOIL_TILES,
-  RIG_AIM_FRAMES, RIG_AIM_WORLD_PER_PIXEL, RIG_BODY_ATLAS_H,
-  RIG_BODY_ATLAS_PATH, RIG_BODY_ATLAS_W, RIG_BODY_VISUAL_H, RIG_IDLE_GUNLESS,
-  RIG_RUN_CYCLE_MS, RIG_RUN_FRAMES, RIG_RUN_HAND_X,
+  RIG_AIM_ATLAS_H, RIG_AIM_ATLAS_PATH, RIG_AIM_ATLAS_W,
+  RIG_AIM_FRAMES, RIG_AIM_WORLD_PER_PIXEL, RIG_AIR_FRAMES,
+  RIG_BODY_ATLAS_H, RIG_BODY_ATLAS_PATH, RIG_BODY_ATLAS_W,
+  RIG_BODY_VISUAL_H, RIG_BODY_WORLD_PER_PIXEL, RIG_IDLE_GUNLESS,
+  RIG_CLIMB_ATLAS_H, RIG_CLIMB_ATLAS_PATH, RIG_CLIMB_ATLAS_W,
+  RIG_CLIMB_CYCLE_TILES, RIG_CLIMB_FRAMES, RIG_CLIMB_WORLD_PER_PIXEL,
+  RIG_RUN_CYCLE_MS, RIG_RUN_FRAMES,
   RIG_SPRITE_H, RIG_SPRITE_PATH,
   RIG_WEAPON_ART, RIG_WEAPON_ATLAS_H, RIG_WEAPON_ATLAS_PATH, RIG_WEAPON_ATLAS_W,
   SPRITE_H, SPRITE_W, TORSO, VISOR,
 } from '../pure/rig.js';
 import { awaitPreloads, preloadTexture } from './preload.js';
-import { scene } from './scene.js';
+import { camera, renderer, scene } from './scene.js';
 import { cameraFacingFacet } from './camera.js';
 import { placeOnTower } from './tower.js';
 import { PAL } from './palette.js';
 import { syncContactShadow } from './contact.js';
 
-const hex = (n) => '#' + n.toString(16).padStart(6, '0');
-
-// Traces one of src/pure/rig.js's polygons onto the current 2D context,
-// scaled to (w, h). A function rather than a stored path: Canvas2D paths
-// are consumed by fill/clip/stroke in ways that are easiest to reason about
-// by just re-tracing before each use.
-function tracePoly(g, points, w, h) {
-  g.beginPath();
-  g.moveTo(points[0][0] * w, points[0][1] * h);
-  for (let i = 1; i < points.length; i++) g.lineTo(points[i][0] * w, points[i][1] * h);
-  g.closePath();
-}
-
-function traceEllipse(g, e, w, h) {
-  g.beginPath();
-  g.ellipse(e.x * w, e.y * h, e.rx * w, e.ry * h, 0, 0, Math.PI * 2);
-}
-
-/* Rasterizes RIG from src/pure/rig.js's shapes into a canvas: legs (mid),
-   torso (dark, its own back-side pack bulge baked into the shape), helmet
-   (mid), one accent visor. FLAT fills only — an earlier pass here tried a
-   soft value-lift gradient and a thin rim-light/ink-outline stroke, and
-   NEITHER survived the GPU's own minification down to RIG's true ~12px
-   width: a stroke or gradient band that is only a couple of canvas texels
-   wide is already sub-pixel once minified that far, so it blends away to
-   nothing instead of reading as a separate feature (see reports/tasks/
-   T-040/build.md's iteration log — caught by sampling actual on-screen
-   pixels, not by trusting the flat 2D debug dump). What DOES survive
-   minification is a BROAD, single-flat-color region occupying a real
-   fraction of the figure's width — so every zone below is one flat fill,
-   sized generously, and the shape's own silhouette (helmet dome, the
-   pack's back bulge, two independently-posed legs) carries the "crafted"
-   read instead of fine linework. Built once at module load — RIG has
-   exactly one instance for the whole run (T-039's precedent note on
-   src/render/contact.js applies here too), so there is no per-frame or
-   per-instance redraw. */
-function paintRigTexture() {
-  const cv = document.createElement('canvas');
-  cv.width = CANVAS_W;
-  cv.height = CANVAS_H;
-  const g = cv.getContext('2d');
-  const w = CANVAS_W, h = CANVAS_H;
-  const dark = hex(PAL.playerDark), mid = hex(PAL.playerMid), accent = hex(PAL.gun);
-
-  g.fillStyle = mid;
-  tracePoly(g, LEG_BACK, w, h); g.fill();
-  tracePoly(g, LEG_FRONT, w, h); g.fill();
-
-  g.fillStyle = dark;
-  tracePoly(g, TORSO, w, h); g.fill();
-
-  g.fillStyle = mid;
-  traceEllipse(g, HELMET, w, h); g.fill();
-
-  // the one accent: a warm visor glint on the helmet's front-lower face
-  g.fillStyle = accent;
-  g.beginPath();
-  g.ellipse(VISOR.x * w, VISOR.y * h, VISOR.rx * w, VISOR.ry * h, 0, 0, Math.PI * 2);
-  g.fill();
-
-  const tex = new THREE.CanvasTexture(cv);
-  return tex;
-}
-
-// A soft, palette-tinted readability field. It is not a second silhouette:
-// the white canvas only supplies alpha and the material supplies the authored
-// player/muzzle role. At the shipped FAR camera this survives minification as
-// one quiet halo while the sprite still carries the actual body shape.
-function paintGlowTexture() {
-  const cv = document.createElement('canvas');
-  cv.width = 64; cv.height = 64;
-  const g = cv.getContext('2d');
-  const glow = g.createRadialGradient(32, 32, 1, 32, 32, 32);
-  // Tight rim rather than an opaque orb: the production cutout owns the
-  // silhouette and this only separates its edge from rust or teal behind it.
-  glow.addColorStop(0, hex(PAL.muzzle) + '20');
-  glow.addColorStop(0.30, hex(PAL.muzzle) + '70');
-  glow.addColorStop(0.58, hex(PAL.muzzle) + '34');
-  glow.addColorStop(1, hex(PAL.muzzle) + '00');
-  g.fillStyle = glow;
-  g.fillRect(0, 0, 64, 64);
-  return new THREE.CanvasTexture(cv);
-}
-
 const rig = new THREE.Group();
 const bodyGroup = new THREE.Group();
 rig.add(bodyGroup);
-const glowTexture = paintGlowTexture();
 
-const AIM_MASK_DIRECTIONS = Object.freeze({
-  right: [1, 0],
-  'up-right': [Math.SQRT1_2, Math.SQRT1_2],
-  up: [0, 1],
-  'down-right': [Math.SQRT1_2, -Math.SQRT1_2],
-});
-
-// Shared by the boot-time aim-mask painter. Keep this module-scope definition
-// independent of the live fold-visibility path: both are pure easing math,
-// but removing one visual consumer must never make the asset gate fail boot.
-function smoothstep01(t) {
-  const u = Math.max(0, Math.min(1, t));
-  return u * u * (3 - 2 * u);
-}
-
-// The gunless aim paintings deliberately include complete open hands so the
-// source art remains reusable. In-game the simulation muzzle is closer to the
-// torso than those presentation hands. A soft pose-local stencil removes only
-// the limb pixels that would protrude past the real bore; the painted weapon
-// sits in front and supplies the final connected silhouette. Boots, helmet and
-// torso never enter these narrow arm gates.
-function paintAimMaskTexture(name, spec) {
-  const size = 256;
-  const cv = document.createElement('canvas');
-  cv.width = size; cv.height = size;
-  const g = cv.getContext('2d');
-  const image = g.createImageData(size, size);
-  const [ax, ay] = AIM_MASK_DIRECTIONS[name];
-  const tipX = ax * 0.6;
-  const tipY = CONFIG.player.muzzleY + ay * 0.5;
-  const tipAlong = tipX * ax + tipY * ay;
-  const gate = name === 'right'
-    ? { x0: 270, x1: 305, y0: 72, y1: 270 }
-    : name === 'up-right'
-      ? { x0: 235, x1: 270, y0: -20, y1: 235 }
-      : name === 'up'
-        ? { x0: 225, x1: 247, y0: -20, y1: 220 }
-        : { x0: 215, x1: 250, y0: 72, y1: 238 };
-  for (let y = 0; y < size; y++) {
-    const py = (y + 0.5) / size * spec.trimH;
-    const wy = (spec.trimH - py) * RIG_AIM_WORLD_PER_PIXEL;
-    const gy0 = smoothstep01((py - gate.y0) / 14);
-    const gy1 = 1 - smoothstep01((py - gate.y1) / 14);
-    for (let x = 0; x < size; x++) {
-      const px = (x + 0.5) / size * spec.trimW;
-      const wx = (px - spec.anchorX) * RIG_AIM_WORLD_PER_PIXEL;
-      const along = wx * ax + wy * ay;
-      const beyond = smoothstep01((along - (tipAlong - 0.055)) / 0.11);
-      // UP's glove is above the helmet while its forearm runs beside it. Use
-      // a stepped gate so the glove disappears without shaving the helmet.
-      const x0 = name === 'up' && py < 98 ? -100 : gate.x0;
-      const x1 = name === 'up' && py < 98 ? -50 : gate.x1;
-      const gx = smoothstep01((px - x0) / Math.max(1, x1 - x0));
-      const remove = beyond * gx * gy0 * gy1;
-      const c = Math.round(255 * (1 - remove));
-      const k = (y * size + x) * 4;
-      image.data[k] = c; image.data[k + 1] = c; image.data[k + 2] = c; image.data[k + 3] = 255;
+// Build all fallback plates and weapon attachments once. Vertex colours keep
+// the material vocabulary inside one draw per assembly; the live sync path
+// never allocates geometry, canvases, paths, or textures.
+function coloredPartsGeometry(parts) {
+  const positions = [], colors = [], indices = [];
+  const color = new THREE.Color();
+  for (let p = 0; p < parts.length; p++) {
+    const part = parts[p];
+    const first = positions.length / 3;
+    color.set(part.color);
+    const z = p * 0.002;
+    for (const [x, y] of part.points) {
+      positions.push(x, y, z);
+      colors.push(color.r, color.g, color.b);
     }
+    for (let k = 1; k < part.points.length - 1; k++)
+      indices.push(first, first + k, first + k + 1);
   }
-  g.putImageData(image, 0, 0);
-  const tex = new THREE.CanvasTexture(cv);
-  tex.generateMipmaps = true;
-  tex.minFilter = THREE.LinearMipmapLinearFilter;
-  tex.magFilter = THREE.LinearFilter;
-  return tex;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  geo.computeBoundingSphere();
+  return geo;
 }
 
-const aimMaskTextures = Object.freeze(Object.fromEntries(
-  Object.entries(RIG_AIM_FRAMES).map(([name, spec]) => [name, paintAimMaskTexture(name, spec)]),
-));
+function ellipsePoints(e, segments = 14) {
+  const points = [];
+  for (let i = 0; i < segments; i++) {
+    const a = i / segments * Math.PI * 2;
+    points.push([e.x + Math.cos(a) * e.rx, e.y + Math.sin(a) * e.ry]);
+  }
+  return points;
+}
+
+function fallbackPoints(points) {
+  return points.map(([x, y]) => [(x - 0.5) * SPRITE_W, (0.5 - y) * SPRITE_H]);
+}
+
+const fallbackGeometry = coloredPartsGeometry([
+  { color: PAL.playerDark, points: fallbackPoints(LEG_BACK) },
+  { color: PAL.playerMid, points: fallbackPoints(LEG_FRONT) },
+  { color: PAL.playerDark, points: fallbackPoints(TORSO) },
+  { color: PAL.playerMid, points: fallbackPoints(ellipsePoints(HELMET)) },
+  { color: PAL.gun, points: fallbackPoints(ellipsePoints(VISOR, 10)) },
+]);
+
+// Each atlas frame owns a fixed UV rectangle on its own geometry. Textures
+// remain at offset=(0,0), repeat=(1,1) for their entire lifetime, eliminating
+// pose-swap texture-matrix churn and making simultaneous proof views safe.
+function applyAtlasUv(geo, spec, atlasW, atlasH) {
+  const uv = geo.getAttribute('uv');
+  const u0 = (spec.atlasX + spec.trimX) / atlasW;
+  const v0 = (atlasH - spec.atlasY - spec.trimY - spec.trimH) / atlasH;
+  const du = spec.trimW / atlasW;
+  const dv = spec.trimH / atlasH;
+  for (let i = 0; i < uv.count; i++) {
+    uv.setXY(i, u0 + uv.getX(i) * du, v0 + uv.getY(i) * dv);
+  }
+  uv.needsUpdate = true;
+  return geo;
+}
 
 // MeshStandardMaterial (LIT), not Basic, for BOTH planes below: palette.js's
 // own header note says every token here is authored against what the light
@@ -239,33 +151,34 @@ const aimMaskTextures = Object.freeze(Object.fromEntries(
 // hard enough that a 0.5 cutoff discarded almost the whole shape, leaving a
 // paper-thin sliver (same iteration log).
 
-// FALLBACK plane: the plain-shapes canvas sprite. Built and shown
-// immediately (synchronous, cannot fail) so RIG is never absent for even
-// one frame while the real sprite is still loading.
-const fallbackTexture = paintRigTexture();
+// FALLBACK silhouette: fixed vertex-coloured plates, built synchronously so
+// RIG is never absent if an atlas fails. It has no generic gun attached.
 const fallbackMesh = new THREE.Mesh(
-  new THREE.PlaneGeometry(SPRITE_W, SPRITE_H),
+  fallbackGeometry,
   new THREE.MeshStandardMaterial({
-    map: fallbackTexture, emissive: PAL.player, emissiveMap: fallbackTexture,
-    emissiveIntensity: 0.44, transparent: true, alphaTest: 0.015,
-    forceSinglePass: true, depthWrite: false, side: THREE.FrontSide, fog: false,
+    color: 0xffffff, vertexColors: true, emissive: PAL.player,
+    emissiveIntensity: 0, roughness: 0.64, metalness: 0.32,
+    depthWrite: false, side: THREE.DoubleSide, flatShading: true, fog: false,
   }),
 );
 fallbackMesh.position.set(0, SPRITE_H / 2, 0);
 bodyGroup.add(fallbackMesh);
 
 function runSpriteGeometry(spec) {
-  const h = RIG_BODY_VISUAL_H;
-  const w = spec.trimW / spec.trimH * h;
+  const w = spec.trimW * RIG_BODY_WORLD_PER_PIXEL;
+  const h = spec.trimH * RIG_BODY_WORLD_PER_PIXEL;
   const geo = new THREE.PlaneGeometry(w, h);
-  const handX = (spec.handX / spec.trimW - 0.5) * w;
-  geo.translate(RIG_RUN_HAND_X - handX, (h - RIG_SPRITE_H) / 2, 0);
-  return geo;
+  geo.translate((spec.trimW / 2 - spec.anchorX) * RIG_BODY_WORLD_PER_PIXEL,
+    (h - RIG_SPRITE_H) / 2, 0);
+  return applyAtlasUv(geo, spec, RIG_BODY_ATLAS_W, RIG_BODY_ATLAS_H);
 }
 
 const idleGunlessGeometry = runSpriteGeometry(RIG_IDLE_GUNLESS);
 const runFrameGeometry = Object.freeze(Object.fromEntries(
   Object.entries(RIG_RUN_FRAMES).map(([name, spec]) => [name, runSpriteGeometry(spec)]),
+));
+const airFrameGeometry = Object.freeze(Object.fromEntries(
+  Object.entries(RIG_AIR_FRAMES).map(([name, spec]) => [name, runSpriteGeometry(spec)]),
 ));
 
 function aimSpriteGeometry(spec) {
@@ -278,17 +191,27 @@ function aimSpriteGeometry(spec) {
   // row at y=0. This prevents helmet/feet pops while aim selects a new crop.
   geo.translate((spec.trimW / 2 - spec.anchorX) * RIG_AIM_WORLD_PER_PIXEL,
     (h - RIG_SPRITE_H) / 2, 0);
-  return geo;
+  return applyAtlasUv(geo, spec, RIG_AIM_ATLAS_W, RIG_AIM_ATLAS_H);
 }
 
 const aimFrameGeometry = Object.freeze(Object.fromEntries(
   Object.entries(RIG_AIM_FRAMES).map(([name, spec]) => [name, aimSpriteGeometry(spec)]),
 ));
 
+function climbSpriteGeometry(spec) {
+  const w = spec.trimW * RIG_CLIMB_WORLD_PER_PIXEL;
+  const h = spec.trimH * RIG_CLIMB_WORLD_PER_PIXEL;
+  const geo = new THREE.PlaneGeometry(w, h);
+  geo.translate((spec.trimW / 2 - spec.anchorX) * RIG_CLIMB_WORLD_PER_PIXEL,
+    (h - RIG_SPRITE_H) / 2, 0);
+  return applyAtlasUv(geo, spec, RIG_CLIMB_ATLAS_W, RIG_CLIMB_ATLAS_H);
+}
+const climbFrameGeometry = Object.freeze(RIG_CLIMB_FRAMES.map(climbSpriteGeometry));
+
 const spriteMesh = new THREE.Mesh(
   idleGunlessGeometry,
   new THREE.MeshStandardMaterial({
-    emissive: PAL.player, emissiveIntensity: 0.44,
+    emissive: PAL.player, emissiveIntensity: 0,
     transparent: true, alphaTest: 0.015, side: THREE.FrontSide,
     forceSinglePass: true, fog: false,
   }),
@@ -308,40 +231,38 @@ const RETIRED_BAKED_BODY_SOURCE = RIG_SPRITE_PATH;
 let spriteReady = false;
 let actionReady = false;
 let actionShowing = false;
+let aimReady = false;
+let climbReady = false;
+let climbError = null;
 let shownBodyFrame = 'canvas';
 const idleUsesLegacy = false;
 const idleGunlessSlot = { ready: false, tex: null, error: null, spec: RIG_IDLE_GUNLESS };
 const runFrameSlots = Object.fromEntries(Object.entries(RIG_RUN_FRAMES).map(([name, spec]) => [name, {
   ready: false, tex: null, error: null, spec,
 }]));
+const airFrameSlots = Object.fromEntries(Object.entries(RIG_AIR_FRAMES).map(([name, spec]) => [name, {
+  ready: false, tex: null, error: null, spec,
+}]));
 const aimFrameSlots = Object.fromEntries(Object.entries(RIG_AIM_FRAMES).map(([name, spec]) => [name, {
   ready: false, tex: null, error: null, spec,
 }]));
+const climbFrameSlots = RIG_CLIMB_FRAMES.map((spec) => ({
+  ready: false, tex: null, error: null, spec,
+}));
 const weaponArtSlots = Object.fromEntries(Object.entries(RIG_WEAPON_ART).map(([letter, spec]) => [letter, {
   ready: false, tex: null, error: null, spec,
 }]));
-
-function applyAtlasCrop(tex, spec, atlasW, atlasH) {
-  const x = spec.atlasX + spec.trimX;
-  const y = spec.atlasY + spec.trimY;
-  tex.offset.set(x / atlasW, (atlasH - y - spec.trimH) / atlasH);
-  tex.repeat.set(spec.trimW / atlasW, spec.trimH / atlasH);
-  // offset/repeat update the texture matrix automatically. `needsUpdate`
-  // would re-upload the entire atlas every time a stride pose or gun changes.
-}
 
 // Runtime art enters through the shared boot gate. Nothing in src/sim/ reads
 // these slots, so an asset failure can only choose a render fallback; it can
 // never change movement, hitboxes, firing, or deterministic timing.
 if (!RIG_FORCE_CANVAS) {
-  // One lossless atlas request supplies idle, three run poses, and four aim
-  // poses. The source PNGs remain separate on disk; wide transparent gutters
-  // keep mip chains from bleeding into one another.
+  // One lossless atlas request supplies idle, run, and rise/fall silhouettes.
   preloadTexture(new URL(RIG_BODY_ATLAS_PATH, import.meta.url).href).then((entry) => {
     if (entry.state !== 'ready') {
       idleGunlessSlot.error = entry.error || entry.state;
       for (const slot of Object.values(runFrameSlots)) slot.error = idleGunlessSlot.error;
-      for (const slot of Object.values(aimFrameSlots)) slot.error = idleGunlessSlot.error;
+      for (const slot of Object.values(airFrameSlots)) slot.error = idleGunlessSlot.error;
       console.warn('RIG body atlas did not load (' + idleGunlessSlot.error +
         '); showing the procedural fallback instead.');
       return;
@@ -352,17 +273,33 @@ if (!RIG_FORCE_CANVAS) {
       slot.tex = entry.tex;
       slot.ready = true;
     }
-    for (const slot of Object.values(aimFrameSlots)) {
+    for (const slot of Object.values(airFrameSlots)) {
       slot.tex = entry.tex;
       slot.ready = true;
     }
     spriteReady = true;
-    actionReady = true;
+    actionReady = aimReady;
   });
 
-  // A second atlas supplies every gun. Only one gun is visible, so changing
-  // the shared texture transform on pickup is enough; the five source images
-  // neither issue five requests nor allocate five GPU textures.
+  // Aim has its own higher-resolution strip. It shares a measured scale across
+  // all elevations, so raising the gun never shrinks or enlarges the pilot.
+  preloadTexture(new URL(RIG_AIM_ATLAS_PATH, import.meta.url).href).then((entry) => {
+    if (entry.state !== 'ready') {
+      for (const slot of Object.values(aimFrameSlots)) slot.error = entry.error || entry.state;
+      console.warn('RIG aim atlas did not load (' + (entry.error || entry.state) +
+        '); using the production idle body beneath the live gun.');
+      return;
+    }
+    for (const slot of Object.values(aimFrameSlots)) {
+      slot.tex = entry.tex;
+      slot.ready = true;
+    }
+    aimReady = true;
+    actionReady = spriteReady;
+  });
+
+  // A second atlas supplies every gun. Each chassis geometry already owns its
+  // atlas UV rectangle, so pickups only swap one resident geometry.
   preloadTexture(new URL(RIG_WEAPON_ATLAS_PATH, import.meta.url).href).then((entry) => {
     if (entry.state !== 'ready') {
       for (const slot of Object.values(weaponArtSlots))
@@ -373,6 +310,24 @@ if (!RIG_FORCE_CANVAS) {
       slot.tex = entry.tex;
       slot.ready = true;
     }
+  });
+
+  // The climb strip is independent of the locomotion atlas. A failed request
+  // never introduces a geometric placeholder: the existing production body
+  // atlas supplies pass/flight poses while the ladder remains fully playable.
+  preloadTexture(new URL(RIG_CLIMB_ATLAS_PATH, import.meta.url).href).then((entry) => {
+    if (entry.state !== 'ready') {
+      climbError = entry.error || entry.state;
+      for (const slot of climbFrameSlots) slot.error = climbError;
+      console.warn('RIG climb atlas did not load (' + climbError +
+        '); using production locomotion poses on ladders.');
+      return;
+    }
+    for (const slot of climbFrameSlots) {
+      slot.tex = entry.tex;
+      slot.ready = true;
+    }
+    climbReady = true;
   });
 }
 // THE BOOT GATE. Top-level await: every module that (transitively) imports
@@ -398,7 +353,7 @@ function weaponArtGeometry(spec) {
   const geo = new THREE.PlaneGeometry(spec.worldW, h);
   const y = (spec.muzzleY / spec.trimH - 0.5) * h;
   geo.translate(RIG_GUN_MUZZLE_X - spec.worldW / 2, y, 0);
-  return geo;
+  return applyAtlasUv(geo, spec, RIG_WEAPON_ATLAS_W, RIG_WEAPON_ATLAS_H);
 }
 
 const GUN_ART_GEOMETRIES = Object.freeze(Object.fromEntries(
@@ -409,29 +364,7 @@ const GUN_ART_GEOMETRIES = Object.freeze(Object.fromEntries(
 // at RIG's ~30px height, while vertex colours preserve material zones inside
 // the single draw call. Every silhouette points +x and terminates at the same
 // RIG_GUN_MUZZLE_X, so changing chassis never changes the shot origin.
-function gunGeometry(parts) {
-  const positions = [], colors = [], indices = [];
-  const color = new THREE.Color();
-  for (let p = 0; p < parts.length; p++) {
-    const part = parts[p];
-    const first = positions.length / 3;
-    color.set(part.color);
-    const z = p * 0.002;
-    for (const [x, y] of part.points) {
-      positions.push(x, y, z);
-      colors.push(color.r, color.g, color.b);
-    }
-    for (let k = 1; k < part.points.length - 1; k++)
-      indices.push(first, first + k, first + k + 1);
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-  geo.setIndex(indices);
-  geo.computeVertexNormals();
-  geo.computeBoundingSphere();
-  return geo;
-}
+const gunGeometry = coloredPartsGeometry;
 
 const I = PAL.capsuleInk, D = PAL.playerDark, M = PAL.playerMid;
 const A = PAL.gun, W = PAL.muzzle;
@@ -494,14 +427,81 @@ const GUN_GEOMETRIES = {
 // path is allowed to turn the held weapon back into a featureless rectangle.
 const fallbackGunGeo = GUN_GEOMETRIES.R;
 
+// The painted sources were authored as detailed inventory art. At the shipped
+// camera their raw cross-sections collapsed to five nearly identical stubs.
+// These restrained, family-specific bore-axis gains preserve RIG's slender
+// body while making the twin-bore, crystal rail, guided fins, and fuel nozzle
+// distinguishable in motion. X is never scaled: the shared muzzle stays exact.
+const GUN_FAMILY_HEIGHT_GAIN = Object.freeze({
+  R: 1.34, S: 1.62, L: 1.46, H: 1.58, F: 1.66,
+});
+
+// One fixed overlay mesh swaps among five coarse family profiles. The painted
+// atlas keeps all close detail; these broad plates are the few pixels that
+// survive FAR minification and let a player identify a chassis while moving.
+const GUN_FAMILY_ACCENTS = Object.freeze({
+  R: gunGeometry([
+    { color: PAL.muzzle, points: [[0.29,0.11],[0.52,0.12],[0.47,0.20],[0.33,0.19]] },
+    { color: PAL.gun, points: [[mx-0.10,-0.17],[mx,-0.17],[mx,0.17],[mx-0.10,0.17]] },
+  ]),
+  S: gunGeometry([
+    { color: PAL.shots.S, points: [[0.39,0.05],[mx,0.09],[mx,0.23],[0.46,0.18]] },
+    { color: PAL.muzzle, points: [[0.39,-0.05],[0.46,-0.18],[mx,-0.23],[mx,-0.09]] },
+  ]),
+  L: gunGeometry([
+    { color: PAL.shots.L, points: [[0.22,0],[0.55,0.18],[mx,0.02],[mx,-0.02],[0.55,-0.18]] },
+    { color: PAL.muzzle, points: [[0.34,-0.025],[mx,-0.012],[mx,0.012],[0.34,0.025]] },
+  ]),
+  H: gunGeometry([
+    { color: PAL.shots.H, points: [[0.25,0.10],[0.45,0.34],[0.56,0.13],[mx,0.03],[mx,-0.03],[0.56,-0.13],[0.45,-0.34],[0.25,-0.10]] },
+    { color: PAL.muzzle, points: [[0.48,-0.04],[0.67,-0.06],[0.75,0],[0.67,0.06],[0.48,0.04]] },
+  ]),
+  F: gunGeometry([
+    { color: PAL.shots.F, points: [[0.13,-0.10],[0.38,-0.13],[0.48,-0.24],[0.39,-0.35],[0.18,-0.32],[0.10,-0.21]] },
+    { color: PAL.gun, points: [[0.45,0.07],[0.65,0.16],[mx,0.22],[mx,0.10],[0.64,0.07]] },
+    { color: PAL.muzzle, points: [[0.45,-0.07],[0.64,-0.07],[mx,-0.10],[mx,-0.22],[0.65,-0.16]] },
+  ]),
+});
+
+// Rolled traits are physical, not a full-chassis recolour. Six fixed meshes
+// stay resident and toggle on pickup; duplicates enlarge the same attachment
+// modestly instead of adding draw calls. Every part terminates at/before mx.
+const TRAIT_GEOMETRIES = Object.freeze({
+  rapid: gunGeometry([
+    { color: PAL.muzzle, points: [[0.10,0.11],[0.23,0.34],[0.32,0.12]] },
+    { color: PAL.gun, points: [[0.34,0.10],[0.47,0.31],[0.56,0.09]] },
+  ]),
+  heavy: gunGeometry([
+    { color: PAL.playerDark, points: [[0.02,-0.10],[0.54,-0.13],[0.46,-0.38],[0.10,-0.41]] },
+    { color: PAL.modCapsule, points: [[0.15,-0.20],[0.41,-0.21],[0.36,-0.34],[0.18,-0.33]] },
+  ]),
+  forked: gunGeometry([
+    { color: PAL.capsule, points: [[0.45,0.04],[mx,0.12],[mx,0.29],[0.55,0.19]] },
+    { color: PAL.muzzle, points: [[0.45,-0.04],[0.55,-0.19],[mx,-0.29],[mx,-0.12]] },
+  ]),
+  seeker: gunGeometry([
+    { color: PAL.playerDark, points: [[0.19,0.09],[0.43,0.10],[0.51,0.23],[0.29,0.36]] },
+    { color: PAL.shots.H, points: [[0.29,0.17],[0.41,0.18],[0.45,0.24],[0.33,0.30]] },
+  ]),
+  phase: gunGeometry([
+    { color: PAL.shots.L, points: [[0.17,0.10],[0.70,0.07],[mx,0.13],[0.24,0.25]] },
+    { color: PAL.muzzle, points: [[0.17,-0.10],[0.24,-0.25],[mx,-0.13],[0.70,-0.07]] },
+  ]),
+  volatile: gunGeometry([
+    { color: PAL.playerDark, points: [[0.10,-0.09],[0.53,-0.11],[0.60,-0.24],[0.46,-0.40],[0.15,-0.35]] },
+    { color: PAL.shots.F, points: [[0.18,-0.17],[0.44,-0.18],[0.51,-0.26],[0.40,-0.34],[0.20,-0.30]] },
+  ]),
+});
+
 gunGroup.position.set(0, 1.05, 0.25);
+const gunAssembly = new THREE.Group();
 const gun = new THREE.Mesh(
   weaponArtSlots.R.ready ? GUN_ART_GEOMETRIES.R : GUN_GEOMETRIES.R,
   new THREE.MeshStandardMaterial({
     color: W, vertexColors: !weaponArtSlots.R.ready,
     map: weaponArtSlots.R.ready ? weaponArtSlots.R.tex : null,
     emissiveMap: weaponArtSlots.R.ready ? weaponArtSlots.R.tex : null,
-    emissive: PAL.gun, emissiveIntensity: 0.48,
+    emissive: PAL.gun, emissiveIntensity: 0,
     roughness: 0.38, metalness: 0.42,
     transparent: true, alphaTest: 0.018, forceSinglePass: true,
     side: THREE.DoubleSide, flatShading: true, fog: false,
@@ -509,29 +509,31 @@ const gun = new THREE.Mesh(
 );
 gun.position.set(0, 0, 0);
 gun.renderOrder = 4;
-gunGroup.add(gun);
+gunAssembly.add(gun);
+
+const attachmentMaterial = new THREE.MeshStandardMaterial({
+  color: 0xffffff, vertexColors: true, emissive: PAL.glowOff,
+  emissiveIntensity: 0, roughness: 0.36, metalness: 0.40,
+  transparent: false, side: THREE.DoubleSide, flatShading: true, fog: false,
+});
+const familyAccent = new THREE.Mesh(GUN_FAMILY_ACCENTS.R, attachmentMaterial);
+familyAccent.name = 'rig-gun-family-accent';
+familyAccent.position.z = 0.016;
+familyAccent.renderOrder = 5;
+gunAssembly.add(familyAccent);
+const traitMeshes = Object.freeze(Object.fromEntries(
+  Object.entries(TRAIT_GEOMETRIES).map(([trait, geometry]) => {
+    const mesh = new THREE.Mesh(geometry, attachmentMaterial);
+    mesh.name = `rig-gun-trait-${trait}`;
+    mesh.visible = false;
+    mesh.position.z = 0.024;
+    mesh.renderOrder = 6;
+    gunAssembly.add(mesh);
+    return [trait, mesh];
+  }),
+));
+gunGroup.add(gunAssembly);
 rig.add(gunGroup);
-
-const rigGlow = new THREE.Sprite(new THREE.SpriteMaterial({
-  map: glowTexture, color: PAL.player, transparent: true, opacity: 0.20,
-  blending: THREE.AdditiveBlending, depthWrite: false,
-}));
-rigGlow.position.set(0, 0.95, -0.12);
-rigGlow.scale.set(2.80, 2.45, 1);
-rigGlow.renderOrder = 1;
-rig.add(rigGlow);
-
-// The jump flare makes the movement state legible before the viewer resolves
-// the character's tiny legs. It is a short warm-white streak, never a new
-// gameplay object and never a light/hitbox the simulation can observe.
-const jumpFlare = new THREE.Sprite(new THREE.SpriteMaterial({
-  map: glowTexture, color: PAL.muzzle, transparent: true, opacity: 0.72,
-  blending: THREE.AdditiveBlending, depthWrite: false,
-}));
-jumpFlare.position.set(-0.18, 0.08, 0.08);
-jumpFlare.scale.set(0.5, 1.0, 1);
-jumpFlare.renderOrder = 3;
-rig.add(jumpFlare);
 
 scene.add(rig);
 
@@ -550,19 +552,31 @@ const RIG_FOOTPRINT = CONFIG.player.width / 2;
 // contact shadow on their exact (s, y), while lifting only the visual rig onto
 // the readable face of the hull.
 const RIG_SURFACE_DEPTH = 1.15;
-const PORTRAIT_ASPECT = 0.72;
 let seenNextFireAt = 0;
 let lastShotAt = -1e9;
 let lastVisualMs = 0;
 let lastVisualX = player.x;
+let lastVisualY = player.y;
 let lastTravelSpeed = 0;
 let runPhase = 0;
+let climbPhase = 0;
+let climbFrameIndex = 0;
+let wasClimbing = false;
 let wasGrounded = player.grounded;
 let landedAt = -1e9;
-let shownGunKey = '';
-let gunWidthGain = 1;
+let locomotionState = 'idle';
+let shownGunRef = null;
+let shownWeapon = '';
+let gunFamilyHeightGain = GUN_FAMILY_HEIGHT_GAIN.R;
 let gunUsesArt = false;
+let visibleTraitCount = 0;
+let activeTraitSummary = '';
 let lastAimAngle = 0;
+let lastAimX = 1;
+let lastAimY = 0;
+let lastSimMuzzleX = 0.6;
+let lastSimMuzzleY = CONFIG.player.muzzleY;
+let lastPoseFacing = 1;
 let lastRecoil = 0;
 const _rollTint = new THREE.Color(0xffffff);
 const _gunDisplayTint = new THREE.Color(0xffffff);
@@ -575,13 +589,11 @@ const GUN_TRAIT_TINTS = [
 
 function syncGunIdentity() {
   const held = currentGun;
-  const key = `${held?.id || currentWeapon}:${currentWeapon}`;
-  if (key === shownGunKey) return;
-  shownGunKey = key;
+  if (held === shownGunRef && currentWeapon === shownWeapon) return;
+  shownGunRef = held;
+  shownWeapon = currentWeapon;
   const art = weaponArtSlots[currentWeapon];
   gunUsesArt = !!art?.ready;
-  if (gunUsesArt) applyAtlasCrop(art.tex, art.spec,
-    RIG_WEAPON_ATLAS_W, RIG_WEAPON_ATLAS_H);
   const nextMap = gunUsesArt ? art.tex : null;
   const nextVertexColors = !gunUsesArt;
   const shaderModeChanged = !!gun.material.map !== !!nextMap ||
@@ -589,16 +601,30 @@ function syncGunIdentity() {
   gun.geometry = gunUsesArt
     ? GUN_ART_GEOMETRIES[currentWeapon]
     : GUN_GEOMETRIES[currentWeapon] || fallbackGunGeo;
+  familyAccent.geometry = GUN_FAMILY_ACCENTS[currentWeapon] || GUN_FAMILY_ACCENTS.R;
   gun.material.map = nextMap;
   gun.material.emissiveMap = nextMap;
   gun.material.vertexColors = nextVertexColors;
   if (shaderModeChanged) gun.material.needsUpdate = true;
+  gunFamilyHeightGain = GUN_FAMILY_HEIGHT_GAIN[currentWeapon] ||
+    GUN_FAMILY_HEIGHT_GAIN.R;
 
   let total = 0, rr = 0, gg = 0, bb = 0;
   const visual = held?.visual || {};
+  visibleTraitCount = 0;
+  activeTraitSummary = '';
   for (const [trait, colorHex] of GUN_TRAIT_TINTS) {
     const count = Math.max(0, Number(visual[trait]) || 0);
-    if (!count) continue;
+    const attachment = traitMeshes[trait];
+    attachment.visible = count > 0;
+    if (!count) {
+      attachment.scale.set(1, 1, 1);
+      continue;
+    }
+    visibleTraitCount++;
+    activeTraitSummary += (activeTraitSummary ? ',' : '') + `${trait}:${count}`;
+    const stackGain = 1 + Math.min(0.24, (count - 1) * 0.12);
+    attachment.scale.set(stackGain, stackGain, 1);
     _gunTraitColor.set(colorHex);
     rr += _gunTraitColor.r * count;
     gg += _gunTraitColor.g * count;
@@ -608,23 +634,23 @@ function syncGunIdentity() {
   _rollTint.setRGB(1, 1, 1);
   if (total > 0) {
     _gunTraitColor.setRGB(rr / total, gg / total, bb / total);
-    _rollTint.lerp(_gunTraitColor, Math.min(0.62, 0.30 + (held?.tier || 1) * 0.10));
+    _rollTint.lerp(_gunTraitColor, Math.min(0.22, 0.08 + (held?.tier || 1) * 0.045));
   }
-  gunWidthGain = 1 + Math.min(0.28,
-    (visual.heavy || 0) * 0.075 + (visual.volatile || 0) * 0.045 +
-    (visual.forked || 0) * 0.025);
 }
 
-function portraitReadability() {
-  return innerWidth / Math.max(1, innerHeight) < PORTRAIT_ASPECT;
-}
-
-function stationaryAimFrame() {
-  const ax = Math.abs(player.aim.x), ay = player.aim.y;
+function stationaryAimFrame(x = player.aim.x, y = player.aim.y) {
+  const ax = Math.abs(x), ay = y;
   if (ay > 0.82) return 'aim-up';
   if (ay > 0.18) return 'aim-up-right';
   if (ay < -0.18) return 'aim-down-right';
   return 'aim-right';
+}
+
+function eightWayAimSector(x = player.aim.x, y = player.aim.y) {
+  const a = Math.atan2(y, x);
+  const index = (Math.round(a / (Math.PI / 4)) + 8) % 8;
+  return ['right', 'up-right', 'up', 'up-left',
+    'left', 'down-left', 'down', 'down-right'][index];
 }
 
 // Camera direction is not a facet test: its lookX offset mixes a large route
@@ -655,17 +681,24 @@ function sync() {
   rig.rotation.z = 0;
   let dt = lastVisualMs ? gameMs - lastVisualMs : 0;
   let travelled = Math.abs(player.x - lastVisualX);
+  let climbed = Math.abs(player.y - lastVisualY);
+  const climbing = player.traversalState === 'ladder';
+  const wallContact = player.traversalState === 'wall';
   // A restart/fallback can relocate RIG several tiles in one render frame.
   // That is not a stride: discard it instead of flashing through the atlas.
   const plausibleTravel = dt > 0
     ? CONFIG.player.runSpeed * 2.4 * dt / 1000 + 0.05 : 0;
-  if (dt < 0 || dt > 120 || travelled > plausibleTravel) {
+  const plausibleClimb = dt > 0 ? 12 * 2.4 * dt / 1000 + 0.05 : 0;
+  if (dt < 0 || dt > 120 || travelled > plausibleTravel || climbed > plausibleClimb) {
     dt = 0;
     travelled = 0;
+    climbed = 0;
     runPhase = 0;
+    climbPhase = 0;
   }
   lastVisualMs = gameMs;
   lastVisualX = player.x;
+  lastVisualY = player.y;
   lastTravelSpeed = dt > 0 ? travelled / (dt / 1000) : 0;
   // Distance, not wall time, owns the feet. At the advancing right clamp the
   // sim may still carry 9.4t/s velocity while RIG makes only the deck's 4.3t/s
@@ -677,19 +710,27 @@ function sync() {
   const strideTiles = CONFIG.player.runSpeed * RIG_RUN_CYCLE_MS / 1000;
   if (running) runPhase = (runPhase + travelled / strideTiles) % 1;
   else runPhase = 0;
+  if (climbing) {
+    if (!wasClimbing) climbPhase = 0;
+    climbPhase = (climbPhase + climbed / RIG_CLIMB_CYCLE_TILES) % 1;
+    climbFrameIndex = Math.min(3, Math.floor(climbPhase * 4));
+  } else {
+    climbPhase = 0;
+    climbFrameIndex = 0;
+  }
+  wasClimbing = climbing;
   if (player.grounded && !wasGrounded) landedAt = gameMs;
   wasGrounded = player.grounded;
 
-  const strideWave = running ? Math.sin(runPhase * Math.PI * 2) : 0;
-  const stepBob = running ? (0.5 - 0.5 * Math.cos(runPhase * Math.PI * 2)) * 0.055 : 0;
   const landingAge = gameMs - landedAt;
   const landing = landingAge >= 0 && landingAge < 120
     ? 1 - landingAge / 120 : 0;
-  const bodyScaleX = 1 + Math.abs(strideWave) * 0.025 + landing * 0.055;
-  const bodyScaleY = 1 - Math.abs(strideWave) * 0.018 - landing * 0.075 +
-    (!player.grounded ? 0.025 : 0);
-  bodyGroup.scale.set(bodyScaleX, squash * bodyScaleY, 1);
-  bodyGroup.position.set(running ? strideWave * 0.018 : 0, stepBob, 0);
+  // The authored plates already carry stride stretch and landing compression.
+  // Procedurally scaling the whole cutout made RIG pop in size and detached the
+  // independently aimed gun. Only the real crouch height changes presentation.
+  bodyGroup.scale.set(1, squash, 1);
+  bodyGroup.position.set(0, 0, 0);
+  bodyGroup.rotation.z = 0;
   fallbackMesh.position.y = SPRITE_H / 2;
   spriteMesh.position.y = RIG_SPRITE_H / 2;
 
@@ -706,49 +747,94 @@ function sync() {
   // RIG's asymmetric pack/helmet identity tied to facing instead of flipping
   // the whole body independently of travel direction.
   let bodyFrame = stationaryAimFrame();
-  if (running) {
+  if (climbing) {
+    bodyFrame = `climb-${climbFrameIndex}`;
+    locomotionState = 'climb';
+  } else if (wallContact) {
+    // A wall hold uses the authored reach silhouette, facing into the contact,
+    // instead of looking like an ordinary airborne fall frozen beside a wall.
+    bodyFrame = `climb-${player.traversalSide < 0 ? 2 : 0}`;
+    locomotionState = 'wall';
+  } else if (!player.grounded) {
+    // Rise and fall are honest authored silhouettes, not a planted run frame
+    // held in mid-air. The gun remains a sibling on the exact sim axis.
+    bodyFrame = player.vy >= 0 ? 'air-rise' : 'air-fall';
+    locomotionState = player.vy >= 0 ? 'air-rise' : 'air-fall';
+  } else if (landing > 0) {
+    // Flight resolves through the already-authored braced contact pose while
+    // the existing 120ms compression settles, then hands control back to the
+    // idle aim or distance-driven run cadence. No new texture or pose is
+    // introduced and the gun remains on the exact simulation aim axis.
+    bodyFrame = 'contact';
+    locomotionState = 'land-brace';
+  } else if (running) {
     if (runPhase < 0.14 || runPhase >= 0.86) bodyFrame = 'contact';
     else if (runPhase < 0.36 || runPhase >= 0.64) bodyFrame = 'pass';
     else bodyFrame = 'flight';
-  } else if (!player.grounded && player.vy > -1.5) bodyFrame = 'flight';
+    locomotionState = 'run';
+  } else {
+    locomotionState = 'aim-idle';
+  }
 
+  const climbFrameName = bodyFrame.startsWith('climb-') ? bodyFrame.slice(6) : '';
+  const requestedClimbSlot = climbFrameName !== ''
+    ? climbFrameSlots[Number(climbFrameName)] : null;
+  const climbFallbackFrame = climbFrameIndex % 2 === 0 ? 'flight' : 'pass';
+  const airFrameName = bodyFrame.startsWith('air-') ? bodyFrame.slice(4) : '';
+  const airSlot = airFrameName ? airFrameSlots[airFrameName] : null;
   const aimFrameName = bodyFrame.startsWith('aim-') ? bodyFrame.slice(4) : '';
   const aimSlot = aimFrameName ? aimFrameSlots[aimFrameName] : null;
-  const displayBodyFrame = aimFrameName && !aimSlot?.ready
-    ? (idleGunlessSlot.ready ? 'idle' : 'canvas')
-    : bodyFrame;
+  const displayBodyFrame = requestedClimbSlot && !requestedClimbSlot.ready
+    ? (runFrameSlots[climbFallbackFrame]?.ready ? climbFallbackFrame : 'canvas')
+    : (airFrameName && !airSlot?.ready
+        ? (runFrameSlots.flight?.ready ? 'flight' : 'canvas')
+        : (aimFrameName && !aimSlot?.ready
+            ? (idleGunlessSlot.ready ? 'idle' : 'canvas')
+            : bodyFrame));
   const canvasFallback = displayBodyFrame === 'canvas';
+  const shownClimbName = displayBodyFrame.startsWith('climb-')
+    ? displayBodyFrame.slice(6) : '';
   const shownAimName = displayBodyFrame.startsWith('aim-')
     ? displayBodyFrame.slice(4) : '';
-  const nextSlot = aimFrameName
-    ? (aimSlot?.ready
-        ? aimSlot
-        : (idleGunlessSlot.ready
-            ? idleGunlessSlot
-            : { ready: true, tex: null }))
-    : runFrameSlots[bodyFrame];
+  const shownAirName = displayBodyFrame.startsWith('air-')
+    ? displayBodyFrame.slice(4) : '';
+  const nextSlot = shownClimbName !== ''
+    ? climbFrameSlots[Number(shownClimbName)]
+    : (requestedClimbSlot && !requestedClimbSlot.ready
+        ? (runFrameSlots[climbFallbackFrame]?.ready
+            ? runFrameSlots[climbFallbackFrame]
+            : { ready: true, tex: null })
+        : (shownAirName
+            ? airFrameSlots[shownAirName]
+            : (aimFrameName
+                ? (aimSlot?.ready
+                    ? aimSlot
+                    : (idleGunlessSlot.ready
+                        ? idleGunlessSlot
+                        : { ready: true, tex: null }))
+                : runFrameSlots[displayBodyFrame])));
   const bodyFrameReady = canvasFallback || !!nextSlot?.ready;
   if (displayBodyFrame !== shownBodyFrame && bodyFrameReady) {
     shownBodyFrame = displayBodyFrame;
-    if (!canvasFallback) applyAtlasCrop(nextSlot.tex, nextSlot.spec,
-      RIG_BODY_ATLAS_W, RIG_BODY_ATLAS_H);
     if (!canvasFallback) {
-      spriteMesh.geometry = shownAimName
-        ? aimFrameGeometry[shownAimName]
-        : (displayBodyFrame === 'idle'
-            ? idleGunlessGeometry
-            : runFrameGeometry[displayBodyFrame]);
-      const nextAlphaMap = shownAimName ? aimMaskTextures[shownAimName] : null;
-      const shaderModeChanged = !!spriteMesh.material.map !== !!nextSlot.tex ||
-        !!spriteMesh.material.alphaMap !== !!nextAlphaMap;
+      spriteMesh.geometry = shownClimbName !== ''
+        ? climbFrameGeometry[Number(shownClimbName)]
+        : (shownAimName
+            ? aimFrameGeometry[shownAimName]
+            : (shownAirName
+                ? airFrameGeometry[shownAirName]
+                : (displayBodyFrame === 'idle'
+                    ? idleGunlessGeometry
+                    : runFrameGeometry[displayBodyFrame])));
+      const shaderModeChanged = !!spriteMesh.material.map !== !!nextSlot.tex;
       spriteMesh.material.map = nextSlot.tex;
       spriteMesh.material.emissiveMap = nextSlot.tex;
-      spriteMesh.material.alphaMap = nextAlphaMap;
       if (shaderModeChanged) spriteMesh.material.needsUpdate = true;
     }
   }
   actionShowing = shownBodyFrame === 'contact' || shownBodyFrame === 'pass' ||
-    shownBodyFrame === 'flight';
+    shownBodyFrame === 'flight' || shownBodyFrame.startsWith('air-') ||
+    shownBodyFrame.startsWith('climb-');
   spriteMesh.visible = bodyFrameReady && !canvasFallback && foldGain > 0.01;
   fallbackMesh.visible = canvasFallback || !bodyFrameReady;
   fallbackMesh.material.opacity = foldGain;
@@ -760,27 +846,24 @@ function sync() {
   // never points the wrong way while running left. Flipping both costs
   // nothing on the invisible one and means neither plane needs to know
   // which is currently on screen.
-  const faceX = player.facing < 0 ? -1 : 1;
+  const poseFacing = wallContact && player.traversalSide
+    ? player.traversalSide : player.facing;
+  const faceX = poseFacing < 0 ? -1 : 1;
+  lastPoseFacing = faceX;
   fallbackMesh.scale.x = faceX;
   spriteMesh.scale.x = faceX;
 
-  // A live momentum chain (?flow=1) leans the body into its own speed: the
-  // chain has to be visible in the character, not only in the HUD. Presentation
-  // only, and exactly zero without the flag.
-  const lean = flowSnapshot().mult - 1;
-  const travel = Math.sign(player.vx || player.facing || 1);
-  const motionLean = !player.grounded
-    ? (player.vy >= 0 ? -0.105 : 0.055) * travel
-    : (running ? -0.045 * travel : 0);
-  bodyGroup.rotation.z = motionLean + (lean > 0 ? -travel * lean * 1.4 : 0);
-
-  // The gun is a sibling of the leaning/squashed body, so its central axis
+  // The gun is a sibling of the crouch-scaled body, so its central axis
   // remains the exact simulation aim. Offset its root so the shared local
   // muzzle point lands on sim/player.js's actual spawn location for every
   // horizontal, vertical and diagonal direction.
   syncGunIdentity();
   const ax = player.aim.x, ay = player.aim.y;
+  lastAimX = ax;
+  lastAimY = ay;
   lastAimAngle = Math.atan2(ay, ax);
+  lastSimMuzzleX = ax * 0.6;
+  lastSimMuzzleY = player.muzzleY + ay * 0.5;
   gunGroup.visible = foldGain > 0.14;
   gunGroup.position.set(
     ax * 0.6 - ax * RIG_GUN_MUZZLE_X,
@@ -789,15 +872,13 @@ function sync() {
   );
   gunGroup.rotation.z = lastAimAngle;
   const mirrorY = ax < -0.1 || (Math.abs(ax) <= 0.1 && player.facing < 0) ? -1 : 1;
-  gun.scale.set(1, mirrorY * gunWidthGain, 1);
+  gunAssembly.scale.set(1, mirrorY * gunFamilyHeightGain, 1);
   const recoilAge = gameMs - lastShotAt;
   const recoilT = recoilAge >= 0 && recoilAge < RIG_RECOIL_MS
     ? 1 - recoilAge / RIG_RECOIL_MS : 0;
   lastRecoil = RIG_RECOIL_TILES * recoilT * recoilT;
-  gun.position.x = -lastRecoil;
+  gunAssembly.position.x = -lastRecoil;
 
-  const portrait = portraitReadability();
-  const pulse = 0.96 + Math.sin(gameMs * 0.008) * 0.04;
   // OVERDRIVE lives on the machine, not only in a HUD label. WARM heats the
   // painted armour and aim rail; BREAKING adds a breathing white-hot pulse.
   // scoreNotchNow() is a primitive read and is zero whenever the system is
@@ -805,11 +886,11 @@ function sync() {
   const notch = scoreNotchNow();
   const breakingPulse = notch >= 2 ? 0.5 + 0.5 * Math.sin(gameMs * 0.018) : 0;
   const heatColor = notch >= 1 ? PAL.gun : PAL.player;
-  const bodyHeat = notch >= 2 ? 0.78 + breakingPulse * 0.34 : (notch === 1 ? 0.61 : 0.44);
+  const bodyHeat = notch >= 2 ? 0.34 + breakingPulse * 0.14 : (notch === 1 ? 0.16 : 0);
   fallbackMesh.material.emissive.setHex(heatColor);
   fallbackMesh.material.emissiveIntensity = bodyHeat;
   spriteMesh.material.emissive.setHex(heatColor);
-  spriteMesh.material.emissiveIntensity = bodyHeat + (actionShowing ? 0.04 : 0);
+  spriteMesh.material.emissiveIntensity = bodyHeat;
   _gunDisplayTint.copy(_rollTint);
   if (notch >= 2) _gunDisplayTint.lerp(_gunTraitColor.setHex(PAL.muzzle), 0.72);
   else if (notch === 1) _gunDisplayTint.lerp(_gunTraitColor.setHex(PAL.gun), 0.42);
@@ -818,65 +899,88 @@ function sync() {
   else gun.material.color.copy(_gunDisplayTint);
   gun.material.emissive.copy(_gunDisplayTint);
   gun.material.emissiveIntensity = notch >= 2
-    ? 1.05 + breakingPulse * 0.72 + recoilT * 0.28
-    : 0.40 + (currentGun?.tier || 0) * 0.075 + recoilT * 0.52 +
-      (notch === 1 ? 0.34 : 0);
-  rigGlow.material.color.setHex(notch >= 1 ? PAL.gun : PAL.player);
-  rigGlow.position.y = 0.95 * squash + stepBob;
-  // Portrait gets a larger, brighter field because the fixed vertical FOV
-  // preserves body size while the narrow route crop removes surrounding
-  // context. The halo stays presentation-only and never changes aim/hitboxes.
-  const haloGain = portrait ? 1.34 : 1;
-  rigGlow.scale.set(2.80 * pulse * haloGain,
-    2.45 * pulse * haloGain * (player.crouched ? 0.78 : 1), 1);
-  const baseHalo = gameMs < player.iframesUntil ? 0.36 : (portrait ? 0.27 : 0.18);
-  rigGlow.material.opacity = Math.min(0.48, baseHalo +
-    (notch >= 2 ? 0.10 + breakingPulse * 0.07 : (notch === 1 ? 0.055 : 0))) * foldGain;
-  jumpFlare.visible = !player.grounded && Math.abs(player.vy) > 0.8;
-  if (jumpFlare.visible) {
-    jumpFlare.scale.y = 0.75 + Math.min(0.8, Math.abs(player.vy) * 0.045);
-    jumpFlare.material.opacity = (player.vy > 0 ? 0.82 : 0.48) * foldGain;
-  }
+    ? 0.58 + breakingPulse * 0.40 + recoilT * 0.24
+    : recoilT * 0.46 + (notch === 1 ? 0.24 : 0);
   rig.visible = foldGain > 0.01 && (gameMs >= player.iframesUntil || blink());
   rig.userData.foldVisibility = foldGain;
   // The contact shadow is a separate instanced mesh, so hiding only `rig`
   // can leave a little disembodied mark on the old facet. Scale its footprint
   // through the same fold gain; at the hidden midpoint its matrix has zero
   // area, and it grows back with the actor instead of arriving a frame early.
-  syncContactShadow(RIG_SHADOW_ID, player.x, player.y, RIG_FOOTPRINT * foldGain);
+  syncContactShadow(RIG_SHADOW_ID, player.x, player.y,
+    (climbing || wallContact ? 0 : RIG_FOOTPRINT) * foldGain);
 }
 
+const _rigScreenProbe = new THREE.Vector3();
 export function rigVisualSnapshot() {
-  const axisX = Math.cos(lastAimAngle), axisY = Math.sin(lastAimAngle);
+  const axisX = lastAimX, axisY = lastAimY;
   const tip = RIG_GUN_MUZZLE_X - lastRecoil;
+  rig.getWorldPosition(_rigScreenProbe);
+  _rigScreenProbe.project(camera);
+  const rect = renderer.domElement.getBoundingClientRect();
   return {
-    spriteReady, actionReady, actionShowing, bodyFrame: shownBodyFrame,
+    spriteReady, aimReady, actionReady, actionShowing, bodyFrame: shownBodyFrame,
+    rigVisible: rig.visible && foldVisibility() > 0.01,
+    spriteVisible: spriteMesh.visible && spriteMesh.material.opacity > 0.01,
+    climbReady, climbError, climbFrame: climbFrameIndex,
+    climbFallback: player.traversalState === 'ladder' && !climbReady,
     idleGunlessReady: idleGunlessSlot.ready, idleUsesLegacy,
     canvasFallback: shownBodyFrame === 'canvas',
     retiredBakedBodySource: RETIRED_BAKED_BODY_SOURCE,
     runPhase: +runPhase.toFixed(3),
     travelSpeed: +lastTravelSpeed.toFixed(3),
+    locomotionState,
+    airbornePoseContinuous: player.grounded || shownBodyFrame === 'flight' ||
+      shownBodyFrame.startsWith('air-') ||
+      shownBodyFrame.startsWith('climb-'),
+    landingBraceActive: locomotionState === 'land-brace' && shownBodyFrame === 'contact',
     weapon: currentWeapon,
     gunId: currentGun?.id || '',
     gunUsesArt,
     artReady: Object.fromEntries(Object.entries(weaponArtSlots)
       .map(([letter, slot]) => [letter, slot.ready])),
-    aim: { x: player.aim.x, y: player.aim.y, angle: lastAimAngle },
+    aim: { x: lastAimX, y: lastAimY, angle: lastAimAngle },
+    aimSector: eightWayAimSector(lastAimX, lastAimY),
+    poseFacing: lastPoseFacing,
     aimArmPose: shownBodyFrame,
-    aimArmAligned: !!aimFrameSlots[stationaryAimFrame().slice(4)]?.ready &&
-      shownBodyFrame === stationaryAimFrame(),
-    aimLimbMasked: shownBodyFrame.startsWith('aim-') &&
-      spriteMesh.material.alphaMap === aimMaskTextures[shownBodyFrame.slice(4)],
+    aimArmAligned: !!aimFrameSlots[stationaryAimFrame(lastAimX, lastAimY).slice(4)]?.ready &&
+      shownBodyFrame === stationaryAimFrame(lastAimX, lastAimY),
+    aimFixedUv: shownBodyFrame.startsWith('aim-') && !spriteMesh.material.alphaMap,
+    aimLimbMasked: false,
     recoil: lastRecoil,
+    idleEmission: {
+      body: +spriteMesh.material.emissiveIntensity.toFixed(4),
+      gun: +gun.material.emissiveIntensity.toFixed(4),
+    },
+    gunPresentation: {
+      familyHeightGain: gunFamilyHeightGain,
+      visibleTraitCount,
+      traits: activeTraitSummary,
+      fixedUv: !gun.material.map ||
+        (gun.material.map.offset.x === 0 && gun.material.map.offset.y === 0 &&
+         gun.material.map.repeat.x === 1 && gun.material.map.repeat.y === 1),
+    },
+    screen: {
+      x: +(rect.left + (_rigScreenProbe.x + 1) * rect.width / 2).toFixed(2),
+      y: +(rect.top + (1 - _rigScreenProbe.y) * rect.height / 2).toFixed(2),
+    },
     muzzle: {
       drawnX: gunGroup.position.x + axisX * tip,
       drawnY: gunGroup.position.y + axisY * tip,
-      simX: player.aim.x * 0.6,
-      simY: player.muzzleY + player.aim.y * 0.5,
+      simX: lastSimMuzzleX,
+      simY: lastSimMuzzleY,
+    },
+    socket: {
+      x: gunGroup.position.x,
+      y: gunGroup.position.y,
+      barrelTiles: RIG_GUN_MUZZLE_X,
+      followsAim: true,
     },
     bakedGunMasked: false,
     rectangleGunFallback: false,
-    fixedMeshes: 3,
+    jumpExhaust: false,
+    fixedMeshes: 10,
+    maxVisibleDraws: 6,
   };
 }
 

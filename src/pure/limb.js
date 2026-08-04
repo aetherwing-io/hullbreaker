@@ -142,6 +142,7 @@ function push(out, kind, facet, s, w, y, h, depth, d, roll = 0, shape = null) {
 export function limbBakePlan(cfg, groundH, opts = {}) {
   const scale = opts.scale !== false;             // T-045; ?scale=0 is the A/B
   const out = [];
+  entryShoulderPlan(out, cfg, groundH, scale);
   for (const facet of limbFacets(cfg)) {
     facetPlan(out, facet, cfg, groundH, scale);
   }
@@ -149,6 +150,60 @@ export function limbBakePlan(cfg, groundH, opts = {}) {
     jointPlan(out, joint, cfg, groundH);
   }
   return out;
+}
+
+/* The camera starts on the creature, not at the creature's geometric end.
+ * At FAR/desktop the frustum therefore reaches well behind route s=0.  The
+ * simulation correctly has no negative-s columns, but letting the render bake
+ * stop at the same boundary turned the entire trailing third of the opening
+ * frame into one flat fog token.  Continue only the recessed body behind that
+ * boundary: no kerb, deck, platform or outward armour is emitted, so this can
+ * never advertise a path or hide a fall.  It is ordinary immutable facet-0
+ * anatomy and participates in the existing fold cull/material pools. */
+function entryShoulderPlan(out, cfg, groundH, scale) {
+  const L = cfg.limb;
+  const E = L.entryShoulder;
+  if (!E || !(E.back > 0)) return;
+
+  const facet = { k: 0, s0: -E.back, s1: 0 };
+  const deckBottom = E.deckY - 4;
+
+  // Two colossal roots carry the mass off the left/bottom of frame.  These
+  // use the exact shipped hull buckets and stop at the tile-stack underside.
+  for (const [a, b] of limbChunkRanges(facet.s0, facet.s1, L.chunkCols)) {
+    const span = b - a;
+    const mid = (a + b) / 2;
+    push(out, 'hull', 0, mid, span,
+         deckBottom - L.hull.drop / 2, L.hull.drop,
+         L.hull.depth, L.hull.thickness, L.hull.tiltDeg * Math.PI / 180);
+    push(out, 'hullRib', 0, mid, span,
+         deckBottom - L.hull.ribH / 2, L.hull.ribH,
+         L.hull.depth - 0.5, L.hull.ribThickness);
+  }
+
+  // Recessed, overlapping armour closes the four-tile band that would
+  // otherwise reveal the artificial start cut.  The top follows a shallow
+  // irregular rake; it is never a bright horizontal deck edge.
+  for (let a = facet.s0; a < facet.s1; a += E.plateCols) {
+    const b = Math.min(facet.s1, a + E.plateCols);
+    const span = b - a;
+    const variation = jitter(Math.floor(a) + 97, 3);
+    const h = E.plateH - variation * 0.24;
+    const roll = (variation - 1) * 0.055;
+    const halfY = Math.abs(Math.cos(roll)) * h / 2 +
+      Math.abs(Math.sin(roll)) * (span + 0.7) / 2;
+    const top = E.deckY - E.topInset - variation * 0.16;
+    push(out, 'scute', 0, (a + b) / 2, span + 0.7,
+         top - halfY, h, E.plateDepth - variation * 0.12,
+         E.plateThickness, roll);
+  }
+
+  // A single gill/rib organ and tendon bundle give the continuation the same
+  // biological-mechanical punctuation as every playable facet.  Their helper
+  // falls back to the authored deck reference because negative-s columns are
+  // intentionally absent from collision data.
+  anatomyPlan(out, facet, cfg, groundH);
+  if (scale) markPlan(out, facet, cfg);
 }
 
 function facetPlan(out, facet, cfg, groundH, scale) {

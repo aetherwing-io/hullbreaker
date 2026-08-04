@@ -10,7 +10,7 @@ export const GENOME_DIMENSIONS = Object.freeze([
 ]);
 
 export const MERIDIAN_RESPONSES = Object.freeze([
-  'DORMANT', 'MAINTENANCE', 'INTERCEPT', 'CONTAIN', 'QUARANTINE', 'ERADICATE', 'SCUTTLE',
+  'DORMANT', 'OBSERVE', 'INTERCEPT', 'CONTAIN', 'QUARANTINE', 'STERILIZE', 'SCUTTLE',
 ]);
 
 export const ENEMY_GENES = Object.freeze({
@@ -120,17 +120,18 @@ export function enemyGenomeBudget(ctx = {}) {
   if (face < 3) return 0; // DORMANT through INTERCEPT remain clean teaching grammar
   let budget = face < 5 ? 1 : 2;
   const hpRatio = clamp01(ctx.hpRatio === undefined ? 1 : ctx.hpRatio);
-  const gunTier = Math.max(0, ctx.gunTier | 0);
+  const pressureEvolutionTier = Math.max(0, Math.min(2,
+    ctx.pressureEvolutionTier | 0));
   const clearEmaMs = Math.max(0, Number(ctx.clearEmaMs) || 0);
   const killsPerFace = Math.max(0, Number(ctx.kills) || 0) / Math.max(1, face);
 
-  // The response reads demonstrated power, never raw elapsed time. Pressure
-  // reinforcements get one extra mutation only after the director has already
-  // proved a safe empty window in which to materialize them.
-  if (face >= 4 && gunTier >= 2) budget++;
+  // The response reads demonstrated power, never raw elapsed time or equipped
+  // weapon metadata. Adaptive evolution is an observed-play tier emitted by
+  // the pressure director only after COMPOSE has already been expressed.
+  if (face >= 4 && pressureEvolutionTier >= 1) budget++;
+  if (face >= 5 && pressureEvolutionTier >= 2) budget++;
   if (clearEmaMs > 0 && clearEmaMs <= 1600) budget++;
   if (killsPerFace >= 7) budget++;
-  if (ctx.pressure && face >= 4) budget++;
   // Mercy is paid after the response reaches its hard ceiling. Subtracting
   // before the clamp let a saturated power read (budget 5) remain at three
   // organs even when RIG was on the last hull pip: 5 - 1 still clamped to 3.
@@ -183,19 +184,20 @@ function strainFor(ctx, seed, face, serial) {
 
 function expressedGenomeBudget(ctx, seed, spawnKey, face, budget, strain) {
   if (budget <= 0) return 0;
-  // A role's first mutation stays singular even if a skilled player arrived
-  // with a high-tier gun: teaching is never skipped by adaptive pressure.
+  // A role's first mutation stays singular even if observed play is already
+  // dominant: teaching is never skipped by adaptive pressure.
   if (face < 5) return 1;
 
   // Late squads distribute complexity across bodies. Hunter is a two-organ
   // pursuit hybrid; Bastion is a legible priority-source specialist; Weaver
   // grows from a one-organ remix on STERILIZE into a two-organ reaction on
-  // SCUTTLE. A quarter of demonstrated-power SCUTTLE bodies (and pressure
-  // reinforcements born in a proven empty window) may spend the third slot.
+  // SCUTTLE. A quarter of demonstrated-power SCUTTLE bodies (and SURGE-tier
+  // reinforcements) may spend the third slot.
   let cap = strain.id === 'BASTION' ? 1
     : strain.id === 'WEAVER' && face === 5 ? 1 : 2;
   const overexpressed = face >= 6 && budget >= 3 && cap >= 2 &&
-    (ctx.pressure || hash32(`${seed}|${spawnKey}|${strain.id}|overexpress`) % 4 === 0);
+    (ctx.pressureEvolutionTier >= 2 ||
+      hash32(`${seed}|${spawnKey}|${strain.id}|overexpress`) % 4 === 0);
   if (overexpressed) cap++;
   return Math.max(0, Math.min(3, budget, cap));
 }

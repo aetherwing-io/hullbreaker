@@ -827,11 +827,11 @@
         "h": 941
       },
       "source": "assets/generated/backdrops/backdrop-meridian-anatomy-v1.prompt.md",
-      "gpu": false,
+      "gpu": true,
       "task": "T-051",
       "generator": "OpenAI built-in ImageGen; complete generation prompt and concept-art references are preserved in the declared source file",
       "addedOn": "2026-08-03",
-      "notes": "OPAQUE source painting for the connected Meridian anatomy pass. It is decoded CPU-only by preloadTexture({ cpuOnly: true }), cover-fitted into the curved 1024x512 storm canvases, combat-band attenuated, then edge-feathered with those canvases; this NPOT source is never mapped or uploaded directly. The derived CanvasTextures are the GPU-resident assets. Missing source pixels are a manifest/deploy-verifier failure, while runtime still retains the procedural storm fallback.",
+      "notes": "OPAQUE production painting for the far Meridian mass. One shared GPU texture is uploaded by the preload gate and mapped directly onto each facet's bowed world-space shell; there is no runtime canvas, cover crop or derived texture. Missing source pixels remain a manifest/deploy-verifier failure while runtime safely omits only the far depth band.",
       "palette": {
         "status": "pass",
         "roles": [
@@ -950,6 +950,257 @@
       "alpha": "overlay"
     },
     {
+      "id": "crown-command-core-runtime-v2",
+      "path": "assets/generated/environment/crown-command-core-runtime-v2.png",
+      "source": "assets/generated/environment/crown-command-core-v4.prompt.md",
+      "category": "environment",
+      "size": {
+        "w": 1024,
+        "h": 1024
+      },
+      "gpu": true,
+      "task": "T-062",
+      "generator": "OpenAI built-in ImageGen master; chroma extraction and full prompt provenance are preserved in the declared source, then Lanczos-resampled once and deterministically palette-normalized by tools/assets/normalize-painted-palette.mjs",
+      "addedOn": "2026-08-03",
+      "notes": "Production recessed Crown command organ. The 1086x1448 master remains beside this runtime texture; mapping the 1024x1024 pack onto its authored 15x20 world plane restores the original 3:4 geometry. Loaded at the shared boot gate by src/render/crown-art.js, never cropped, decoded, uploaded or swapped during play. Independent opaque shells, iris mechanisms and atlas roots own its boundaries, so this file is not a complete composited landmark.",
+      "alpha": "cutout",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "haze",
+          "hot-magenta",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "crown-command-kit-runtime-v2",
+      "path": "assets/generated/environment/crown-command-kit-runtime-v2.png",
+      "source": "assets/generated/environment/crown-command-kit-v1.prompt.md",
+      "category": "environment",
+      "size": {
+        "w": 1024,
+        "h": 1024
+      },
+      "gpu": true,
+      "task": "T-062",
+      "generator": "OpenAI built-in ImageGen 2x2 modular master; chroma extraction and full prompt provenance are preserved in the declared source, then Lanczos-resampled once and deterministically palette-normalized by tools/assets/normalize-painted-palette.mjs",
+      "addedOn": "2026-08-03",
+      "notes": "Production Crown organ kit in exact 2x2 512px cells: alternate core, antenna cluster, left root and right root. One atlas upload supplies three independently placed production organs with distinct depth and occlusion; the alternate core remains reusable for mutation variants. src/render/crown-art.js records cell rectangles and attachment anchors, and the runtime creates no derived canvases or duplicate textures.",
+      "alpha": "cutout",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "haze",
+          "hot-magenta",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "meridian-detail-atlas-v1",
+      "path": "assets/generated/environment/meridian-detail-atlas-v1.png",
+      "source": "assets/generated/environment/meridian-detail-atlas-v1.prompt.md",
+      "category": "environment",
+      "size": {
+        "w": 2048,
+        "h": 1024
+      },
+      "gpu": true,
+      "task": "T-060",
+      "generator": "OpenAI built-in ImageGen; full generation prompt, chroma extraction correction, resampling, alpha-matte settings, provenance, and per-cell boundary validation are preserved in the declared source file",
+      "addedOn": "2026-08-03",
+      "notes": "Production sparse Meridian fixture atlas loaded once by src/render/world-detail-art.js and consumed by src/render/level.js as six facet-owned merged meshes. Exact 4x2 order: armored gill, pipe spine, maintenance gallery, armor breach, vent bank, sensor cluster, exhaust manifold, containment machinery. Runtime maps each complete 512x512 cell—never a trimmed crop—then normalizes by the measured visible-ink bounds, so cables and anti-aliased edges cannot be shaved. Eighteen deterministic landmarks (three per climb face) share the collision hull's current-facet and complete-build-prefix gate; no fixture changes traversal. A same-alpha recessed copy provides contact occlusion without an opaque backing card. Failure before first RAF selects bounded manufactured primitives for the entire run; no late swap or mid-run allocation is possible.",
+      "palette": {
+        "status": "fail",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hot-magenta",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      },
+      "alpha": "cutout"
+    },
+    {
+      "id": "wasp-flight-atlas-v1",
+      "path": "assets/generated/sprites/wasp-flight-atlas-v1.png",
+      "source": "assets/generated/sprites/wasp-flight-atlas-v1.prompt.md",
+      "category": "sprites",
+      "size": {
+        "w": 2048,
+        "h": 512
+      },
+      "gpu": true,
+      "task": "T-059",
+      "generator": "OpenAI built-in ImageGen; complete generation prompt, locked identity references, chroma-removal settings, and final cell geometry are preserved in the declared source file",
+      "addedOn": "2026-08-03",
+      "notes": "Production normal-flight animation loaded by src/render/hostiles.js: one horizontal row of four 512x512 windows (wings raised, mid-down, lowered/back, and mid-up). Every frame shares a fixed reactor/body anchor; motion cadence selects the frame while committed dive art retains action priority. The atlas drives a single actor mesh rather than layering duplicate bodies.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      },
+      "alpha": "cutout"
+    },
+    {
+      "id": "hound-gait-atlas-v2",
+      "path": "assets/generated/sprites/hound-gait-atlas-v2.png",
+      "source": "assets/generated/sprites/hound-gait-atlas-v2.prompt.md",
+      "category": "sprites",
+      "size": {
+        "w": 2048,
+        "h": 1024
+      },
+      "gpu": true,
+      "task": "T-059",
+      "generator": "OpenAI built-in ImageGen; complete generation prompt, locked identity references, chroma-removal settings, component extraction, right-facing repack, and final GPU geometry are preserved in the declared source file",
+      "addedOn": "2026-08-03",
+      "notes": "Production eight-phase hound motion atlas loaded by src/render/hostiles.js: an exact 4x2 grid of 512x512 runtime cells on a 2048x1024 power-of-two RGBA canvas. The top row carries run contact, passing/tuck, rear-drive/forward-reach, and suspension; the lower row carries deep load, explosive launch, airborne reach/tuck, and hard landing. Runtime distance selects only run cells 0-3 while real tell/vault/skid state selects cells 4-7. Every frame shares the authored torso/deck anchor, drives one body mesh without crossfade, and retains complete primitive/base-action fallbacks.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      },
+      "alpha": "cutout"
+    },
+    {
+      "id": "rig-slender-body-atlas-v2",
+      "path": "assets/generated/sprites/rig-slender-body-atlas-v2.png",
+      "source": "assets/generated/sprites/rig-slender-body-atlas-v2.prompt.md",
+      "category": "sprites",
+      "size": {
+        "w": 2048,
+        "h": 1024
+      },
+      "gpu": true,
+      "task": "T-058",
+      "generator": "OpenAI built-in ImageGen identity board; one-assembly extraction, 1:1 power-of-two repack, palette finishing, exact cell geometry, and rejected-fragment provenance are preserved by tools/assets/repack-rig-slender.mjs and the declared source/layout files",
+      "addedOn": "2026-08-03",
+      "notes": "Production slender RIG body atlas loaded by src/render/player.js. Six honest body-only silhouettes share one character identity: idle, distance-driven run contact/pass/flight, authored rise, and authored fall. Every selected pose is complete and uncropped; the rejected cropped 4x2 candidate is not referenced. Runtime keeps a common pixel-to-world scale, separate simulation-attached weapon, and safe procedural/legacy fallback. The atlas is intentionally sparse, so its connected soft-alpha/24px guard contract is validated per used cell by the repacker instead of applying the manifest's environment-plate alpha census to the whole empty GPU canvas.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hot-magenta",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "rig-slender-aim-atlas-v2",
+      "path": "assets/generated/sprites/rig-slender-aim-atlas-v2.png",
+      "source": "assets/generated/sprites/rig-slender-aim-atlas-v2.prompt.md",
+      "category": "sprites",
+      "size": {
+        "w": 2048,
+        "h": 1024
+      },
+      "gpu": true,
+      "task": "T-058",
+      "generator": "OpenAI built-in ImageGen dedicated aim strip; deterministic chroma removal, one-assembly extraction, 1:1 power-of-two repack and palette finishing by tools/assets/repack-rig-slender.mjs; complete prompt and original-image provenance are preserved in the declared source",
+      "addedOn": "2026-08-03",
+      "notes": "Production four-elevation body-only aim atlas loaded by src/render/player.js: right, up-right, up, and down-right. A world-space arm corridor masks the painted mount beneath the separately rotating held-weapon art, while exact muzzle telemetry remains attached to simulation aim in every direction. The atlas is intentionally sparse, so its connected soft-alpha/24px guard contract is validated per used cell by the repacker rather than by the environment-plate whole-canvas alpha census.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "rig-slender-climb-atlas-v2",
+      "path": "assets/generated/sprites/rig-slender-climb-atlas-v2.png",
+      "source": "assets/generated/sprites/rig-slender-climb-atlas-v2.prompt.md",
+      "category": "sprites",
+      "size": {
+        "w": 2048,
+        "h": 1024
+      },
+      "gpu": true,
+      "task": "T-058",
+      "generator": "OpenAI built-in ImageGen dedicated climb strip; deterministic chroma removal, one-assembly extraction, 1:1 power-of-two repack and palette finishing by tools/assets/repack-rig-slender.mjs; complete prompt and original-image provenance are preserved in the declared source",
+      "addedOn": "2026-08-03",
+      "notes": "Production four-phase slender ladder motion loaded by src/render/player.js: left reach, left drive, right reach, right drive. Physical distance climbed selects the frame; releasing vertical intent freezes the attached pose instead of running a decorative clock. The old bulky v1 strip remains only as provenance and is no longer a runtime dependency. This sparse atlas uses the repacker's per-cell connected soft-alpha/24px guard contract rather than the environment-plate whole-canvas alpha census.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hot-magenta",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "rig-climb-atlas-v1",
+      "path": "assets/generated/sprites/rig-climb-atlas-v1.png",
+      "source": "assets/generated/sprites/rig-climb-atlas-v1.prompt.md",
+      "category": "sprites",
+      "size": {
+        "w": 2048,
+        "h": 1024
+      },
+      "gpu": true,
+      "task": "T-058",
+      "generator": "OpenAI built-in ImageGen; complete generation prompt, identity reference, chroma-removal settings, and final cell geometry are preserved in the declared source file",
+      "addedOn": "2026-08-03",
+      "notes": "Retired bulky-identity ladder predecessor retained for provenance; no runtime module loads it after promotion of rig-slender-climb-atlas-v2. Its four top-aligned 512x724 windows originally proved the distance-driven ladder cadence and remain useful as a historical comparison, not a shipping dependency.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      },
+      "alpha": "cutout"
+    },
+    {
       "id": "rig-marine",
       "path": "assets/generated/sprites/rig-marine.png",
       "source": "assets/generated/sprites/rig-marine.svg",
@@ -973,6 +1224,63 @@
         ],
         "checkedBy": "tools/assets/check.mjs"
       }
+    },
+    {
+      "id": "emplacement-motion-atlas-v2",
+      "path": "assets/generated/sprites/emplacement-motion-atlas-v2.png",
+      "source": "assets/generated/sprites/emplacement-motion-atlas-v2.prompt.md",
+      "category": "sprites",
+      "size": {
+        "w": 2048,
+        "h": 1024
+      },
+      "gpu": true,
+      "task": "T-061",
+      "generator": "OpenAI built-in ImageGen edit; full pose-revision prompts, source chain, chroma extraction, shared-baseline normalization, palette correction, alpha finishing, and validation provenance are preserved in the declared source file",
+      "addedOn": "2026-08-03",
+      "notes": "Production rooted-hardware motion sheet loaded once by src/render/actor-motion-art.js and consumed through the declarative src/render/actor-motion-spec.js pipeline. Exact 4x2 order: polyp sealed/aim/discharge/recover above mortar brace/load/launch-recoil/recover-vent. V2 replaces the subtle v1 cards with whole-body bud/rise/lunge/collapse and brace/load/recoil/vent silhouettes. Every 512px cell retains at least 29px horizontal margin and one shared y=476 deck anchor; named core, muzzle, rack, and mutation sockets keep attack effects and generated genome hardware attached to the visible pose. One exclusive atlas cell drives one painted body mesh, with base sprite and primitive fallback fixed before first RAF.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      },
+      "alpha": "cutout"
+    },
+    {
+      "id": "warden-motion-atlas-v2",
+      "path": "assets/generated/sprites/warden-motion-atlas-v2.png",
+      "source": "assets/generated/sprites/warden-motion-atlas-v2.prompt.md",
+      "category": "sprites",
+      "size": {
+        "w": 2048,
+        "h": 1024
+      },
+      "gpu": true,
+      "task": "T-061",
+      "generator": "OpenAI built-in ImageGen edit; full whole-body motion prompt, source chain, chroma extraction, shared-baseline normalization, palette correction, alpha finishing, and validation provenance are preserved in the declared source file",
+      "addedOn": "2026-08-03",
+      "notes": "Production Crown Warden motion sheet loaded once by src/render/actor-motion-art.js. Exact 4x2 order: sealed, sweep tell, sweep fire, sweep recovery, barrage tell, barrage burst, exposed, damaged exposed. V2 makes chassis lean, suspension brace/recoil, offloaded feet, rack weight transfer, exposed splay, and damaged buckle readable in silhouette. Declarative clips give authored hardware priority over legacy card transforms; the shared y=476 deck anchor and pose sockets keep feet, iris, cannon, missile rack, beam, and target-zone language coherent. Motion-frame identity remains intact into the fixed corpse pool; no gameplay timing, collision, or damage branch reads this asset.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "haze",
+          "hot-magenta",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      },
+      "alpha": "cutout"
     }
   ]
 }

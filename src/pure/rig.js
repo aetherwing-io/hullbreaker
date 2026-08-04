@@ -30,15 +30,13 @@
  *     maps 1:1 onto drawn pixels instead of stretching or wasting a wide
  *     transparent margin).
  *   - HELMET/TORSO/LEG_FRONT/LEG_BACK/VISOR/CANVAS_W/CANVAS_H/SPRITE_W/H —
- *     unchanged from the second rework: the plain-shape data
- *     src/render/player.js still rasterizes into a CanvasTexture as the
- *     fallback plane, kept at its OWN narrower proportions (independent
- *     geometry, not a shared one with the sprite) so neither path distorts
- *     the other.
+ *     unchanged from the second rework: src/render/player.js triangulates the
+ *     plain-shape data once into a vertex-coloured fallback. CANVAS_W/H remain
+ *     source-coordinate provenance only; runtime creates no CanvasTexture.
  *
  * The shipped body atlas is gunless and mounts one of five painted chassis
  * at the simulation's real muzzle. A failed atlas selects the synchronous
- * canvas silhouette, never the older horizontal-rifle cutout.               */
+ * fixed-geometry silhouette, never the older horizontal-rifle cutout.       */
 
 import { CONFIG } from '../config.js';
 
@@ -74,9 +72,10 @@ export const RIG_SPRITE_W = RIG_SPRITE_CONTENT_ASPECT * RIG_SPRITE_H;
 export const RIG_SPRITE_MAX_OVERRUN = 3.7;   // full rifle/backpack/action silhouette may reach up to
                                               //   this multiple of BODY_HALF_WIDTH
 // UV crop rectangle (0..1, standard GL texture space: v=0 is the BOTTOM of
-// the image) selecting just the drawn figure out of the 256x256 canvas's
+// the image) selecting just the drawn figure out of the source image's
 // mostly-transparent padding — see the header note above for how these were
-// measured. src/render/player.js applies them via texture.offset/repeat.
+// measured. Production atlas frames encode crops once in immutable geometry
+// UVs; no resident texture transform changes during play.
 export const RIG_SPRITE_UV = { u0: 24 / 467, v0: 24 / 375, u1: 443 / 467, v1: 351 / 375 };
 
 export const RIG_ACTION_SPRITE_PATH = '../../assets/generated/sprites/rig-marine-action-v2.png';
@@ -96,33 +95,49 @@ export const RIG_RUN_HAND_X = 0.20;
 // a modest armour/helmet overrun keeps RIG readable at the shipped camera and
 // matches the planted scale shared by the four aim paintings.
 export const RIG_BODY_VISUAL_H = 2.0;
-export const RIG_BODY_ATLAS_PATH = '../../assets/generated/sprites/rig-body-atlas-v1.png';
+export const RIG_BODY_ATLAS_PATH = '../../assets/generated/sprites/rig-slender-body-atlas-v2.png';
 export const RIG_BODY_ATLAS_W = 2048;
-export const RIG_BODY_ATLAS_H = 2048;
+export const RIG_BODY_ATLAS_H = 1024;
 export const RIG_IDLE_GUNLESS = Object.freeze({
-  sourcePath: '../../assets/generated/sprites/rig-idle-gunless-v1.png',
+  sourcePath: RIG_BODY_ATLAS_PATH,
   atlasX: 0, atlasY: 0,
-  canvasW: 743, canvasH: 701, trimX: 20, trimY: 20, trimW: 703, trimH: 661,
-  handX: 590,
+  canvasW: 512, canvasH: 512, trimX: 194, trimY: 140, trimW: 123, trimH: 232,
+  anchorX: 66,
 });
+export const RIG_BODY_WORLD_PER_PIXEL = RIG_BODY_VISUAL_H / RIG_IDLE_GUNLESS.trimH;
 export const RIG_RUN_FRAMES = Object.freeze({
   contact: Object.freeze({
-    sourcePath: '../../assets/generated/sprites/rig-run-contact-v1.png',
-    atlasX: 775, atlasY: 0,
-    canvasW: 488, canvasH: 445, trimX: 18, trimY: 18, trimW: 452, trimH: 409,
-    handX: 362,
+    sourcePath: RIG_BODY_ATLAS_PATH,
+    atlasX: 512, atlasY: 0,
+    canvasW: 512, canvasH: 512, trimX: 141, trimY: 148, trimW: 230, trimH: 216,
+    anchorX: 132,
   }),
   pass: Object.freeze({
-    sourcePath: '../../assets/generated/sprites/rig-run-pass-v1.png',
-    atlasX: 1295, atlasY: 0,
-    canvasW: 340, canvasH: 431, trimX: 18, trimY: 18, trimW: 304, trimH: 395,
-    handX: 252,
+    sourcePath: RIG_BODY_ATLAS_PATH,
+    atlasX: 1024, atlasY: 0,
+    canvasW: 512, canvasH: 512, trimX: 188, trimY: 150, trimW: 135, trimH: 212,
+    anchorX: 76,
   }),
   flight: Object.freeze({
-    sourcePath: '../../assets/generated/sprites/rig-run-flight-v1.png',
-    atlasX: 775, atlasY: 477,
-    canvasW: 496, canvasH: 407, trimX: 18, trimY: 18, trimW: 460, trimH: 371,
-    handX: 382,
+    sourcePath: RIG_BODY_ATLAS_PATH,
+    atlasX: 1536, atlasY: 0,
+    canvasW: 512, canvasH: 512, trimX: 156, trimY: 160, trimW: 199, trimH: 191,
+    anchorX: 112,
+  }),
+});
+
+export const RIG_AIR_FRAMES = Object.freeze({
+  rise: Object.freeze({
+    sourcePath: RIG_BODY_ATLAS_PATH,
+    atlasX: 0, atlasY: 512,
+    canvasW: 512, canvasH: 512, trimX: 168, trimY: 147, trimW: 176, trimH: 217,
+    anchorX: 105,
+  }),
+  fall: Object.freeze({
+    sourcePath: RIG_BODY_ATLAS_PATH,
+    atlasX: 512, atlasY: 512,
+    canvasW: 512, canvasH: 512, trimX: 147, trimY: 154, trimW: 218, trimH: 204,
+    anchorX: 119,
   }),
 });
 
@@ -130,33 +145,52 @@ export const RIG_RUN_FRAMES = Object.freeze({
 // independently rotating gun. Right-facing art covers the four authored arm
 // elevations; player.js mirrors it for left aim without another texture or
 // network request. Exact down uses the down-right brace nearest to vertical.
+export const RIG_AIM_ATLAS_PATH = '../../assets/generated/sprites/rig-slender-aim-atlas-v2.png';
+export const RIG_AIM_ATLAS_W = 2048;
+export const RIG_AIM_ATLAS_H = 1024;
 export const RIG_AIM_FRAMES = Object.freeze({
   right: Object.freeze({
-    sourcePath: '../../assets/generated/sprites/rig-aim-right-v1.png',
-    atlasX: 0, atlasY: 1024,
-    canvasW: 446, canvasH: 389, trimX: 18, trimY: 18, trimW: 410, trimH: 353,
-    anchorX: 212,
+    sourcePath: RIG_AIM_ATLAS_PATH,
+    atlasX: 0, atlasY: 0,
+    canvasW: 512, canvasH: 1024, trimX: 132, trimY: 297, trimW: 248, trimH: 429,
+    anchorX: 124,
   }),
   'up-right': Object.freeze({
-    sourcePath: '../../assets/generated/sprites/rig-aim-up-right-v1.png',
-    atlasX: 478, atlasY: 1024,
-    canvasW: 414, canvasH: 408, trimX: 18, trimY: 18, trimW: 378, trimH: 372,
-    anchorX: 195,
+    sourcePath: RIG_AIM_ATLAS_PATH,
+    atlasX: 512, atlasY: 0,
+    canvasW: 512, canvasH: 1024, trimX: 111, trimY: 280, trimW: 290, trimH: 463,
+    anchorX: 145,
   }),
   up: Object.freeze({
-    sourcePath: '../../assets/generated/sprites/rig-aim-up-v1.png',
-    atlasX: 924, atlasY: 1024,
-    canvasW: 392, canvasH: 495, trimX: 18, trimY: 18, trimW: 356, trimH: 459,
-    anchorX: 185,
+    sourcePath: RIG_AIM_ATLAS_PATH,
+    atlasX: 1024, atlasY: 0,
+    canvasW: 512, canvasH: 1024, trimX: 162, trimY: 233, trimW: 188, trimH: 557,
+    anchorX: 94,
   }),
   'down-right': Object.freeze({
-    sourcePath: '../../assets/generated/sprites/rig-aim-down-right-v1.png',
-    atlasX: 1348, atlasY: 1024,
-    canvasW: 421, canvasH: 380, trimX: 18, trimY: 18, trimW: 385, trimH: 344,
-    anchorX: 194,
+    sourcePath: RIG_AIM_ATLAS_PATH,
+    atlasX: 1536, atlasY: 0,
+    canvasW: 512, canvasH: 1024, trimX: 93, trimY: 333, trimW: 326, trimH: 357,
+    anchorX: 163,
   }),
 });
 export const RIG_AIM_WORLD_PER_PIXEL = RIG_BODY_VISUAL_H / RIG_AIM_FRAMES.right.trimH;
+
+export const RIG_CLIMB_ATLAS_PATH = '../../assets/generated/sprites/rig-slender-climb-atlas-v2.png';
+export const RIG_CLIMB_ATLAS_W = 2048;
+export const RIG_CLIMB_ATLAS_H = 1024;
+export const RIG_CLIMB_WORLD_PER_PIXEL = RIG_AIM_WORLD_PER_PIXEL;
+export const RIG_CLIMB_CYCLE_TILES = 2.4;
+export const RIG_CLIMB_FRAMES = Object.freeze([
+  Object.freeze({ name: 'left-reach', atlasX: 0, atlasY: 0,
+    trimX: 196, trimY: 209, trimW: 202, trimH: 532, anchorX: 84 }),
+  Object.freeze({ name: 'left-drive', atlasX: 512, atlasY: 0,
+    trimX: 148, trimY: 275, trimW: 205, trimH: 464, anchorX: 102 }),
+  Object.freeze({ name: 'right-reach', atlasX: 1024, atlasY: 0,
+    trimX: 115, trimY: 216, trimW: 209, trimH: 529, anchorX: 100 }),
+  Object.freeze({ name: 'right-drive', atlasX: 1536, atlasY: 0,
+    trimX: 61, trimY: 281, trimW: 198, trimH: 463, anchorX: 103 }),
+]);
 
 // Render-only presentation cadence. Three high-quality poses describe planted,
 // passing and airborne strides with one bounded cycle; swapping them at shot

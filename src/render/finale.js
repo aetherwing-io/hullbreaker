@@ -20,6 +20,7 @@ import { scene } from './scene.js';
 import { towerPose } from './tower.js';
 import {
   crownRoot, crownSignal, resetCrownPresentation, setCrownPresentation,
+  triggerCrownMechanicalAction,
 } from './crown.js';
 import { addTrauma } from './camera.js';
 import { fxDirectedBurst, fxFlash, fxRing } from './fx.js';
@@ -109,15 +110,10 @@ const MAGENTA = new THREE.Color(PAL.capsule);
 const IVORY = new THREE.Color(PAL.muzzle);
 const GOLD = new THREE.Color(PAL.modCapsule);
 
-// A portrait frustum is only about nine route tiles wide.  The authored
-// transmitter axis is eleven tiles ahead of the final scroll clamp, which
-// makes the entire payoff happen just beyond the right glass on a phone.
-// On that narrow composition, route the carrier through the Crown's forward
-// shoulder relay instead. It remains world geometry, behind the combat plane,
-// and keeps the true summit as its visual source; only the presentation tap is
-// nearer. Landscape retains the authored central transmitter axis exactly.
-const PORTRAIT_CARRIER_SHIFT = innerWidth / innerHeight < 0.66 ? -7.4 : 0;
-const signalS = crownSignal.s + PORTRAIT_CARRIER_SHIFT;
+// The command axis is authored inside the held apron itself. Desktop and
+// portrait therefore share one physical transmitter instead of the old phone
+// workaround which detached the beam from the painted Crown by 7.4 tiles.
+const signalS = crownSignal.s;
 
 const clamp01 = (v) => Math.max(0, Math.min(1, Number(v) || 0));
 const smooth = (v) => { const u = clamp01(v); return u * u * (3 - 2 * u); };
@@ -161,6 +157,7 @@ function carrierProgress(snapshot) {
   if (snapshot.phase === 'arming') return p * 0.12;
   if (snapshot.phase === 'defend') return 0.12 + p * 0.72;
   if (snapshot.phase === 'transmit') return 0.84 + p * 0.16;
+  if (snapshot.phase === 'answer') return 1;
   if (snapshot.phase === 'complete') return 1;
   return 0;
 }
@@ -226,6 +223,23 @@ for (let i = 0; i < 3; i++) {
   chargeRings.push({ ring, mat });
 }
 
+// A fixed ladder of couplers carries charge from the recessed control void
+// toward the upper antenna. These do not scale the landmark into existence:
+// their positions and size are boot-fixed, and energy only changes visibility
+// and emissive intensity along the already-built vertical spine.
+const axisNodeGeo = new THREE.RingGeometry(0.105, 0.165, 10);
+const axisNodes = [];
+for (let i = 0; i < 5; i++) {
+  const mat = signalMaterial(i === 4 ? PAL.modCapsule : PAL.capsule);
+  const node = new THREE.Mesh(axisNodeGeo, mat);
+  node.name = 'Crown command-spine coupler';
+  node.position.set(0, 1.48 + i * 1.46, -0.035);
+  node.visible = false;
+  node.renderOrder = 2;
+  uplinkRoot.add(node);
+  axisNodes.push({ node, mat });
+}
+
 // Unit-height cylinders scale upward from their base during transmission.
 const beamRoot = new THREE.Group();
 beamRoot.name = 'Meridian-to-Earth signal';
@@ -285,15 +299,29 @@ let lastElapsedMs = 0;
 let lastWave = 0;
 let waveKick = 0;
 let transmitting = false;
+let carrierFrame = 0;
+
+function committedWardenAttack(snapshot) {
+  const attack = snapshot?.warden?.attack;
+  return attack === 'sweepFire' || attack === 'barrageBurst';
+}
+
+function wardenRuptured(previous, next) {
+  const before = previous?.warden;
+  const after = next?.warden;
+  return (!before?.defeated && !!after?.defeated) ||
+    (!!before?.present && !after?.present && next?.phase !== 'dormant');
+}
 
 function animateSettledCarrier(now = 0) {
-  if (typeof requestAnimationFrame !== 'undefined') {
-    requestAnimationFrame(animateSettledCarrier);
-  }
-  if (!LIVE) return;
+  carrierFrame = 0;
+  if (!LIVE || !finaleRoot.visible ||
+      (current.phase !== 'transmit' && current.phase !== 'answer' &&
+       current.phase !== 'complete')) return;
 
-  const live = current.phase === 'transmit' || current.phase === 'complete';
-  const settled = current.phase === 'complete';
+  const live = current.phase === 'transmit' || current.phase === 'answer' ||
+    current.phase === 'complete';
+  const settled = current.phase === 'answer' || current.phase === 'complete';
   const seconds = now / 1000;
   for (let i = 0; i < carrierMotes.length; i++) {
     const packet = carrierMotes[i];
@@ -343,19 +371,35 @@ function animateSettledCarrier(now = 0) {
       driveMaterial(mat, i === 2 ? GOLD : MAGENTA,
         0.38 + pulse * 0.2, 0.09 + pulse * 0.08);
     }
+    for (let i = 0; i < axisNodes.length; i++) {
+      const { node, mat } = axisNodes[i];
+      node.visible = true;
+      node.rotation.z = seconds * (i % 2 ? -0.22 : 0.27) + i * 0.38;
+      driveMaterial(mat, i === axisNodes.length - 1 ? GOLD : MAGENTA,
+        0.32 + pulse * 0.18, 0.12 + pulse * 0.10);
+    }
   }
+  carrierFrame = requestAnimationFrame(animateSettledCarrier);
 }
 
-if (LIVE && typeof requestAnimationFrame !== 'undefined') {
-  requestAnimationFrame(animateSettledCarrier);
+function ensureCarrierClock() {
+  if (!LIVE || carrierFrame || typeof requestAnimationFrame === 'undefined') return;
+  carrierFrame = requestAnimationFrame(animateSettledCarrier);
+}
+
+function stopCarrierClock() {
+  if (!carrierFrame || typeof cancelAnimationFrame === 'undefined') return;
+  cancelAnimationFrame(carrierFrame);
+  carrierFrame = 0;
 }
 
 function setBanner(snapshot) {
   if (!banner) return;
   const phase = snapshot.phase;
-  const show = phase === 'arming' || phase === 'defend' || phase === 'transmit';
+  const show = phase === 'arming' || phase === 'defend' ||
+    phase === 'transmit' || phase === 'answer';
   banner.classList.toggle('on', show);
-  banner.classList.toggle('transmit', phase === 'transmit');
+  banner.classList.toggle('transmit', phase === 'transmit' || phase === 'answer');
   banner.dataset.phase = phase;
   banner.setAttribute('aria-hidden', show ? 'false' : 'true');
   if (!show) return;
@@ -372,7 +416,10 @@ function setBanner(snapshot) {
   } else if (phase === 'defend') {
     const warden = snapshot.warden;
     if (warden?.present) {
-      bannerTitle.textContent = 'CROWN WARDEN // BREAK THE INTERLOCK';
+      const stage = snapshot.stage === 'contain' ? 'CONTAIN COUNTERASSAULT'
+        : snapshot.stage === 'scuttle' ? 'SCUTTLE RESPONSE'
+          : 'INTERCEPT PACKET';
+      bannerTitle.textContent = `CROWN WARDEN // ${stage}`;
       const seal = Math.max(1, Math.min(4, Number(warden.seal) || 1));
       const hp = `${Math.max(0, Math.ceil(warden.hp))}/${warden.maxHp}`;
       const attack = warden.attack;
@@ -390,22 +437,28 @@ function setBanner(snapshot) {
         bannerMeta.textContent = `SEAL ${seal}/4 · CORE ${hp} · WAIT FOR THE OPENING`;
       }
     } else {
-      bannerTitle.textContent = 'CROWN WARDEN // INTERLOCK BROKEN';
+      bannerTitle.textContent = 'CROWN WARDEN // RELEASE';
       bannerMeta.textContent = `TARGET DOWN · ${snapshot.kills} SUPPORT HOSTILES CLEARED · LINK ${pct}%`;
     }
-  } else {
+  } else if (phase === 'transmit') {
     bannerTitle.textContent = 'CROWN UPLINK // EARTHBOUND CARRIER';
     bannerMeta.textContent = `TRANSMITTING MERIDIAN → EARTH · ${pct}%`;
+  } else {
+    const remaining = Math.max(0, Number(snapshot.answerRemainingMs) || 0);
+    bannerTitle.textContent = 'CROWN UPLINK // EARTH ANSWERS';
+    bannerMeta.textContent =
+      `LINK CONFIRMED · SURVIVE THE RELEASE · RESULTS IN ${(remaining / 1000).toFixed(1)}s`;
   }
 
   const attack = snapshot.warden?.attack || '';
-  banner.classList.toggle('core-open', attack === 'exposed' || phase === 'transmit');
+  banner.classList.toggle('core-open', attack === 'exposed' ||
+    phase === 'transmit' || phase === 'answer');
   banner.classList.toggle('attack-live', attack === 'sweepFire' || attack === 'barrageBurst');
   const currentSeal = Math.max(1, Math.min(4, Number(snapshot.warden?.seal) || 1));
   for (let i = 0; i < sealCells.length; i++) {
     const cell = sealCells[i];
     cell.className = '';
-    if (phase === 'transmit') cell.classList.add('linked');
+    if (phase === 'transmit' || phase === 'answer') cell.classList.add('linked');
     else if (snapshot.warden?.defeated || !snapshot.warden?.present && phase === 'defend')
       cell.classList.add('broken');
     else if (phase === 'arming') cell.classList.add(i === 0 ? 'current' : 'sealed');
@@ -428,10 +481,15 @@ function triggerDefensePacket(wave) {
   addTrauma(CONFIG.juice.shake.kill * 0.32);
 }
 
-function beginTransmission(snapshot) {
+function beginTransmission(snapshot, ruptureAlreadyTriggered = false) {
   if (transmitting) return;
   transmitting = true;
   waveKick = 1;
+  const now = Math.max(0, Number(snapshot?.elapsedMs) || 0);
+  if (!ruptureAlreadyTriggered && wardenRuptured(current, snapshot))
+    triggerCrownMechanicalAction('rupture', now);
+  triggerCrownMechanicalAction('transmission', now);
+  ensureCarrierClock();
   if (!LIVE) return;
 
   // One authored launch beat: upward shrapnel, two differently timed fronts,
@@ -454,6 +512,7 @@ function beginTransmission(snapshot) {
 function relayEnergy(i, snapshot) {
   if (snapshot.phase === 'arming') return clamp01(snapshot.progress * 3.25 - i);
   if (snapshot.phase === 'defend' || snapshot.phase === 'transmit') return 1;
+  if (snapshot.phase === 'answer') return 0.78;
   if (snapshot.phase === 'complete') return 0.52;
   return 0;
 }
@@ -469,7 +528,7 @@ function syncWorld(snapshot) {
   const t = Math.max(0, Number(snapshot.elapsedMs) || 0) / 1000;
   const defendEnergy = phase === 'arming' ? p * 0.48
     : phase === 'defend' ? 0.48 + p * 0.42
-      : phase === 'transmit' ? 1 : 0.68;
+      : phase === 'transmit' ? 1 : phase === 'answer' ? 0.82 : 0.68;
   const pulse = 0.5 + 0.5 * Math.sin(t * (phase === 'defend' ? 5.2 : 3.1));
 
   for (let i = 0; i < relays.length; i++) {
@@ -495,7 +554,8 @@ function syncWorld(snapshot) {
   for (let i = 0; i < chargeRings.length; i++) {
     const charged = phase === 'arming'
       ? clamp01(p * 3 - i)
-      : clamp01((snapshot.wave || 0) - i + (phase === 'transmit' ? 1 : 0));
+      : clamp01((snapshot.wave || 0) - i +
+        (phase === 'transmit' || phase === 'answer' ? 1 : 0));
     const { ring, mat } = chargeRings[i];
     ring.visible = charged > 0.01;
     ring.rotation.z = t * (i % 2 ? -0.55 : 0.7) + i * 0.65;
@@ -504,7 +564,18 @@ function syncWorld(snapshot) {
       charged * coreBeat, charged * (0.12 + pulse * 0.12 + waveKick * 0.14));
   }
 
-  beamRoot.visible = phase === 'transmit' || phase === 'complete';
+  for (let i = 0; i < axisNodes.length; i++) {
+    const charged = clamp01(defendEnergy * 5.2 - i * 0.72);
+    const { node, mat } = axisNodes[i];
+    node.visible = charged > 0.03;
+    node.rotation.z = t * (i % 2 ? -0.36 : 0.42) + i * 0.38;
+    driveMaterial(mat, i === axisNodes.length - 1 ? GOLD : MAGENTA,
+      charged * coreBeat, charged * (0.10 + pulse * 0.12));
+  }
+
+  beamRoot.visible = phase === 'transmit' || phase === 'answer' ||
+    phase === 'complete';
+  if (beamRoot.visible) ensureCarrierClock();
   if (phase === 'transmit') {
     const rise = smooth(p / 0.16);
     const tail = 1 - smooth((p - 0.72) / 0.28) * 0.72;
@@ -530,12 +601,16 @@ function syncWorld(snapshot) {
       driveMaterial(mat, i === 1 ? IVORY : MAGENTA, 1 - u, (1 - u) * (0.54 - i * 0.06));
     }
 
-    const recoil = p < 0.38 ? Math.sin((p / 0.38) * Math.PI) * 0.46
-      : (1 - p) * 0.055;
-    setCrownPresentation({ energy: 1, surge: Math.max(waveKick, tail * 0.62), recoil });
-  } else {
-    // Results hold on a live-but-settled Crown. The lance remains as a narrow
-    // afterglow behind the overlay, proof that the result followed the event.
+    setCrownPresentation({
+      energy: 1,
+      surge: Math.max(waveKick, tail * 0.62),
+      nowMs: snapshot.elapsedMs,
+      attackCommitted: false,
+    });
+  } else if (phase === 'answer' || phase === 'complete') {
+    // Earth answers in the playable world first; results then hold on the
+    // same live-but-settled Crown. The narrow afterglow proves both followed
+    // the outbound event instead of replacing it with a loading screen.
     beamSheath.scale.set(0.15, 52, 0.15);
     beamSheath.position.y = 26;
     beamCore.scale.set(0.045, 52, 0.045);
@@ -544,13 +619,20 @@ function syncWorld(snapshot) {
     driveMaterial(beamSheathMat, MAGENTA, 0.32, 0.07);
     driveMaterial(beamCoreMat, IVORY, 0.38, 0.16);
     for (const { ring } of shockRings) ring.visible = false;
-    setCrownPresentation({ energy: 0.72, surge: 0, recoil: 0 });
+    setCrownPresentation({
+      energy: 0.72, surge: 0, nowMs: snapshot.elapsedMs, attackCommitted: false,
+    });
   }
 
-  if (phase !== 'transmit' && phase !== 'complete') {
+  if (phase !== 'transmit' && phase !== 'answer' && phase !== 'complete') {
     beamRoot.visible = false;
     for (const { ring } of shockRings) ring.visible = false;
-    setCrownPresentation({ energy: defendEnergy, surge: waveKick, recoil: 0 });
+    setCrownPresentation({
+      energy: defendEnergy,
+      surge: waveKick,
+      nowMs: snapshot.elapsedMs,
+      attackCommitted: committedWardenAttack(snapshot),
+    });
   }
 }
 
@@ -571,9 +653,13 @@ function sync(snapshot) {
   waveKick = Math.max(0, waveKick - dt / 520);
   if (next.phase === 'defend' && next.wave > lastWave) {
     for (let wave = lastWave + 1; wave <= next.wave; wave++) triggerDefensePacket(wave);
+    triggerCrownMechanicalAction('packet', next.elapsedMs);
     waveKick = 1;
   }
-  if (next.phase === 'transmit' && !transmitting) beginTransmission(next);
+  const rupture = wardenRuptured(current, next);
+  if (rupture)
+    triggerCrownMechanicalAction('rupture', next.elapsedMs);
+  if (next.phase === 'transmit' && !transmitting) beginTransmission(next, rupture);
   current = next;
   lastElapsedMs = next.elapsedMs;
   lastWave = Math.max(lastWave, next.wave);
@@ -595,10 +681,12 @@ function reset() {
   lastWave = 0;
   waveKick = 0;
   transmitting = false;
+  stopCarrierClock();
   finaleRoot.visible = false;
   beamRoot.visible = false;
   beamTip.visible = true;
   for (const { ring } of shockRings) ring.visible = false;
+  for (const { node } of axisNodes) node.visible = false;
   resetCrownPresentation();
   setBanner(current);
 }
@@ -615,7 +703,10 @@ export function finalePresentationSnapshot() {
     banner: !!banner?.classList.contains('on'),
     crown: LIVE,
     signalS,
-    portraitCarrier: PORTRAIT_CARRIER_SHIFT !== 0,
+    portraitCarrier: false,
+    canonicalAxis: true,
+    axisCouplers: axisNodes.length,
+    carrierClockActive: carrierFrame !== 0,
   };
 }
 

@@ -4,7 +4,9 @@ import { CONFIG } from '../../src/config.js';
 import {
   BEND_S, DEG, HALT_S, SEGS, facetAtBends, yawAt,
 } from '../../src/pure/path.js';
-import { cornerApproachReady, cornerJointRule } from '../../src/pure/waves.js';
+import {
+  cornerApproachReady, cornerApproachScrollTarget, cornerJointRule,
+} from '../../src/pure/waves.js';
 import { near, ok, srcDir, stripComments } from './_context.mjs';
 
 export const title = 'fold handoff keeps RIG owned without leaking the old facet';
@@ -45,6 +47,29 @@ export async function run() {
      !cornerApproachReady('approach', bendS - 0.001, bendS) &&
      cornerApproachReady('approach', bendS, bendS),
      'the ritual starts on physical arrival, never before it');
+
+  // Regression: the portrait/FAR camera measured a 14.615-tile right offset.
+  // At the old frozen halt that placed the screen clamp before BEND_S, so a
+  // cleared run sat forever with no hostiles and RIG still holding right. The
+  // approach target advances only enough to make the joint reachable, and
+  // leaves every non-approach state at the authored halt.
+  const portraitRightOffset = 14.615;
+  const frozenCenterCap = haltS + portraitRightOffset - CONFIG.edges.margin - halfWidth;
+  const approachScroll = cornerApproachScrollTarget(
+    'approach', haltS, bendS, portraitRightOffset,
+    CONFIG.edges.margin, halfWidth,
+  );
+  ok(frozenCenterCap < bendS,
+     'the regression viewport really does clamp RIG before the first joint at HALT_S');
+  ok(approachScroll > haltS,
+     'a cleared narrow viewport receives a bounded camera dolly toward the joint');
+  near(approachScroll + portraitRightOffset - CONFIG.edges.margin - halfWidth,
+       bendS, 1e-12,
+       'the approach dolly makes the physical turn trigger exactly reachable on-screen');
+  near(cornerApproachScrollTarget(
+    'gate', haltS, bendS, portraitRightOffset, CONFIG.edges.margin, halfWidth,
+  ), haltS, 1e-12,
+  'combat remains frozen at the authored halt; only the cleared approach moves');
 
   // Once physical traversal reaches BEND_S, the joint is a zero-width route
   // lock for the orbit. Forward drive and left input both resolve to the same
@@ -90,6 +115,9 @@ export async function run() {
   ok(/cornerPlayerRouteWindow\(player\.hw\)/.test(simPlayer) &&
      /Math\.max\(transformSealX\(\),\s*cornerWindow\.sealLeft\)/.test(simPlayer),
      'the live player composes the corner frontier/seal with existing route constraints');
+  const simScroll = stripComments(readFileSync(join(srcDir, 'sim', 'scroll.js'), 'utf8'));
+  ok(/cornerApproachScrollTarget\(\s*c\.state,\s*HALT_S\[c\.k\s*-\s*1\],\s*BEND_S\[c\.k\s*-\s*1\]/.test(simScroll),
+     'the live scroll composes the cleared approach target with the measured viewport edge');
   ok(/turningCornerOwnsJoint\(player\.x\)/.test(renderPlayer) &&
      /facetAtBends\(player\.x,\s*BEND_S\)\s*===\s*cameraFacingFacet\(\)/.test(renderPlayer),
      'RIG uses a joint-only exception and strict facet ownership everywhere else');

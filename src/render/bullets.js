@@ -4,7 +4,7 @@
    Presentation gives each weapon a different sentence at actual play scale:
 
      R  a hex rivet-dart with a split sabot and clipped two-beat tracer
-     S  five compact triangular flechettes; the fan itself is the trail
+     S  one narrow manufactured flechette with a restrained axial wake
      L  a narrow cyan crystal lance plus three separated corridor segments
      H  a magenta steering dart with a long, visibly bending comet wake
      F  a broad orange wedge and two broken ember/plasma tongues
@@ -22,18 +22,19 @@ import * as THREE from 'three';
 import { CONFIG, BULLET_NOSE_CEILING_TILES } from '../config.js';
 import { BEND_S, facetAtBends } from '../pure/path.js';
 import { TRANSFORM_BEND_S } from '../pure/transform.js';
-import { ACTIVE_FIXTURE, IS_TRANSFORM_SLICE, QUERY, VIEW_ID } from '../mode.js';
+import { ACTIVE_FIXTURE, IS_TRANSFORM_SLICE, VIEW_ID } from '../mode.js';
 import { bulletNoseTiles } from '../pure/juice.js';
 import { installView } from '../sim/bridge.js';
 import { committedBand } from '../sim/transform.js';
 import { BULLET_MAX } from '../sim/weapons.js';
-import { awaitPreloads, preloadTexture } from './preload.js';
 import { cameraFacingFacet } from './camera.js';
 import { scene, HIDE } from './scene.js';
-import { spritesEnabled } from './sprite-table.js';
+import { PROJECTILE_ART, PROJECTILE_ART_SLOT } from './projectile-art.js';
 import { towerPose } from './tower.js';
 import { PAL } from './palette.js';
-import { fxBurst, fxDirectedBurst, fxFlash } from './fx.js';
+import {
+  fxCoreRupture, fxDirectedBurst, fxFlash, fxRoleFragments, fxVapor,
+} from './fx.js';
 import { routeRenderable } from './route-visibility.js';
 
 /* One painted atlas replaces five generic low-poly cores. It is registered
@@ -41,39 +42,10 @@ import { routeRenderable } from './route-visibility.js';
    image is resident before the first simulated frame or this file keeps the
    complete geometry path below. `?sprites=0` is the explicit fallback proof.
    Nothing in the simulation can observe which path drew. */
-const PROJECTILE_ART = Object.freeze({
-  file: '../../assets/generated/projectiles/projectile-chassis-atlas-v1.png',
-  canvas: Object.freeze([1280, 256]),
-  cell: Object.freeze([256, 256]),
-  order: Object.freeze(['R', 'S', 'L', 'H', 'F']),
-});
-const PROJECTILE_ART_ON = spritesEnabled(QUERY.get('sprites'));
-const artClock = () => globalThis.performance?.now?.() ?? Date.now();
-const artStartedAt = artClock();
-let artReadyAt = null;
-let artRequests = 0;
-const artSlot = {
-  state: PROJECTILE_ART_ON ? 'pending' : 'off', tex: null, error: null,
-};
-
-if (PROJECTILE_ART_ON) {
-  artRequests++;
-  preloadTexture(new URL(PROJECTILE_ART.file, import.meta.url).href)
-    .then((entry) => {
-      artReadyAt = artClock();
-      if (entry.state === 'ready') {
-        artSlot.state = 'ready';
-        artSlot.tex = entry.tex;
-      } else {
-        artSlot.state = 'failed';
-        artSlot.error = entry.error || entry.state;
-        console.warn('HULLBREAKER art: projectile chassis atlas did not load (' +
-          artSlot.error + ') -- drawing manufactured geometry fallbacks.');
-      }
-    });
-}
-
-await awaitPreloads();
+// projectile-art.js is imported early by the composition root. Its frozen
+// slot has already joined and settled the one shared preload gate before this
+// heavier renderer (fx -> post) is allowed to consume it.
+const artSlot = PROJECTILE_ART_SLOT;
 
 const _pp = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 };   // shared per-frame pose scratch
 
@@ -137,10 +109,18 @@ const ART_LOOK = Object.freeze({
   // bodies now occupy roughly 6-11 pixels of distinct silhouette without
   // moving a hit, speed, or point-collision edge.
   R: Object.freeze({ frontCap: Infinity, tail: 0.70, thickness: 1.18 }),
-  S: Object.freeze({ frontCap: Infinity, tail: 0.55, thickness: 1.18 }),
+  // Scatterbloom fires five independent sim pellets, so each slot must read
+  // as ONE piece of ammunition. The replacement alpha is 4.34:1; 0.90 at
+  // FAR's width gain resolves to about 16x4 display pixels instead of the old
+  // fan's enemy-like winged silhouette. Length stays unchanged and collision
+  // remains the point/nose contract below.
+  S: Object.freeze({ frontCap: Infinity, tail: 0.55, thickness: 0.90 }),
   L: Object.freeze({ frontCap: 0.80, tail: 1.10, thickness: 0.82 }),
-  H: Object.freeze({ frontCap: Infinity, tail: 1.02, thickness: 0.92 }),
-  F: Object.freeze({ frontCap: Infinity, tail: 1.05, thickness: 0.90 }),
+  // H/F source cells are naturally the tallest in the atlas. Their former
+  // near-square projection resolved into a magenta/orange orb at FAR; retain
+  // all painted fins/jaws but present them as directional 12px machines.
+  H: Object.freeze({ frontCap: Infinity, tail: 1.02, thickness: 0.64 }),
+  F: Object.freeze({ frontCap: Infinity, tail: 1.05, thickness: 0.68 }),
 });
 
 function projectileArtGeometry(column) {
@@ -218,15 +198,15 @@ scene.add(tipMesh);
    and broken flame tongues from the same one instanced segment pool. */
 const LOOK = {
   R: { front: 1.00, frontCap: Infinity, tail: 0.38, wake: 0.16, wakeW: 0.050,
-       trail: 0.026, segments: 2, fill: 0.72, pulse: 0.00, gain: 0.58 },
-  S: { front: 0.82, frontCap: 0.36, tail: 0.16, wake: 0.07, wakeW: 0.070,
-       trail: 0.024, segments: 1, fill: 0.42, pulse: 0.00, gain: 0.34 },
+       trail: 0.026, segments: 2, fill: 0.72, gain: 0.58 },
+  S: { front: 0.82, frontCap: 0.36, tail: 0.16, wake: 0.05, wakeW: 0.040,
+       trail: 0.016, segments: 1, fill: 0.42, gain: 0.28 },
   L: { front: 1.00, frontCap: Infinity, tail: 1.28, wake: 0.36, wakeW: 0.075,
-       trail: 0.052, segments: 3, fill: 0.80, pulse: 0.06, gain: 0.82 },
+       trail: 0.052, segments: 3, fill: 0.80, gain: 0.82 },
   H: { front: 0.90, frontCap: 0.36, tail: 0.48, wake: 0.34, wakeW: 0.140,
-       trail: 0.075, segments: 3, fill: 0.90, pulse: 0.18, gain: 0.70 },
+       trail: 0.075, segments: 3, fill: 0.90, gain: 0.70 },
   F: { front: 0.95, frontCap: 0.42, tail: 0.46, wake: 0.48, wakeW: 0.235,
-       trail: 0.140, segments: 2, fill: 0.68, pulse: 0.20, gain: 0.78,
+       trail: 0.140, segments: 2, fill: 0.68, gain: 0.78,
        coreColor: PAL.muzzle },
 };
 
@@ -253,6 +233,55 @@ const wakeMesh = new THREE.InstancedMesh(
 wakeMesh.frustumCulled = false;
 wakeMesh.renderOrder = 2;
 scene.add(wakeMesh);
+
+// Cindermouth has two authored bodies, not one shell that mysteriously slides.
+// The airborne atlas chassis ends at deckIgnited(); after that, two fixed
+// instanced flame tongues live wholly BEHIND the simulation point.  A jagged
+// top and flat licking foot make this read as low ground fire at FAR/portrait,
+// while the warm inner tongue separates it from an orange rigid projectile.
+function groundTongueGeometry() {
+  const geo = new THREE.BufferGeometry();
+  const pairs = [
+    [-1.00, -0.24, -0.06],
+    [-0.76, -0.25,  0.14],
+    [-0.49, -0.24,  0.36],
+    [-0.23, -0.20,  0.16],
+    [ 0.00, -0.12, -0.01],
+  ];
+  const v = [];
+  for (let p = 0; p < pairs.length - 1; p++) {
+    const a = pairs[p], b = pairs[p + 1];
+    v.push(a[0],a[1],0, b[0],b[1],0, b[0],b[2],0,
+           a[0],a[1],0, b[0],b[2],0, a[0],a[2],0);
+  }
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+const groundTongueGeo = groundTongueGeometry();
+const groundFireMesh = new THREE.InstancedMesh(
+  groundTongueGeo,
+  new THREE.MeshBasicMaterial({
+    color: PAL.shots.F, transparent: true, opacity: 0.82, fog: false,
+    side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false,
+  }),
+  BULLET_MAX,
+);
+const groundFireCoreMesh = new THREE.InstancedMesh(
+  groundTongueGeo,
+  new THREE.MeshBasicMaterial({
+    color: PAL.muzzle, transparent: true, opacity: 0.94, fog: false,
+    side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false,
+    toneMapped: false,
+  }),
+  BULLET_MAX,
+);
+for (const mesh of [groundFireMesh, groundFireCoreMesh]) {
+  mesh.frustumCulled = false;
+  mesh.renderOrder = mesh === groundFireCoreMesh ? 4.1 : 3.9;
+  scene.add(mesh);
+}
 
 // Four remembered points make three segments. This is one instanced draw,
 // fixed for the life of the page; a saturated bullet pool allocates nothing.
@@ -482,6 +511,10 @@ for (const type of WEAPON_TYPES) {
   }
 }
 for (let i = 0; i < BULLET_MAX; i++) tipMesh.setMatrixAt(i, HIDE);
+for (let i = 0; i < BULLET_MAX; i++) {
+  groundFireMesh.setMatrixAt(i, HIDE);
+  groundFireCoreMesh.setMatrixAt(i, HIDE);
+}
 wakeMesh.setColorAt(0, _shotColor.setHex(0xffffff));
 for (let i = 0; i < BULLET_MAX; i++) wakeMesh.setMatrixAt(i, HIDE);
 trailMesh.setColorAt(0, _shotColor.setHex(0xffffff));
@@ -496,6 +529,18 @@ const slotType = new Array(BULLET_MAX).fill('');         // gate color uploads o
 const slotVisible = new Uint8Array(BULLET_MAX);
 const slotFacetHidden = new Uint8Array(BULLET_MAX);
 const slotMeta = new Array(BULLET_MAX).fill(null);
+const terminalImpactCounts = { R: 0, S: 0, L: 0, H: 0, F: 0 };
+const terminalReasonCounts = {
+  hostile: 0, terrain: 0, lifetime: 0, bend: 0, pool: 0, reset: 0,
+};
+const LIFETIME_SPUTTER = Object.freeze({
+  count: 1, speed: 2.2, ms: 120, size: 0.10, gravity: -6,
+});
+// Mutated in place so the hot path never allocates merely to make diagnostics
+// observable. The debug snapshot is the cold path and may copy it outward.
+const lastEndpoint = { reason: 'none', effect: 'none', s: 0, y: 0, type: '' };
+const lastIgnition = { reason: 'none', s: 0, surfaceY: 0, kind: '' };
+let ignitionCount = 0;
 const historyCount = new Uint8Array(BULLET_MAX);
 const historyX = new Float32Array(BULLET_MAX * TRAIL_POINTS);
 const historyY = new Float32Array(BULLET_MAX * TRAIL_POINTS);
@@ -506,6 +551,8 @@ function pointIndex(slot, point) { return slot * TRAIL_POINTS + point; }
 
 function slotSpawned(i, type, meta = null) {
   historyCount[i] = 0;
+  groundFireMesh.setMatrixAt(i, HIDE);
+  groundFireCoreMesh.setMatrixAt(i, HIDE);
   const visualType = coreMeshes[type] ? type : 'R';
   const look = LOOK[type] || LOOK.R;
   const color = PAL.shots[type] || PAL.shots.R;
@@ -564,6 +611,8 @@ function concealSlotMatrices(i) {
     if (chassisMeshes[slotType[i]]) chassisMeshes[slotType[i]].setMatrixAt(i, HIDE);
   }
   tipMesh.setMatrixAt(i, HIDE);
+  groundFireMesh.setMatrixAt(i, HIDE);
+  groundFireCoreMesh.setMatrixAt(i, HIDE);
   wakeMesh.setMatrixAt(i, HIDE);
   for (const mesh of traitMeshList) mesh.setMatrixAt(i, HIDE);
   for (const mesh of stackMeshList) mesh.setMatrixAt(i, HIDE);
@@ -571,8 +620,114 @@ function concealSlotMatrices(i) {
   for (let j = 0; j < TRAIL_SEGMENTS; j++) trailMesh.setMatrixAt(trailIndex(i, j), HIDE);
 }
 
-function hideSlot(i) {
+// The sim emits this at the swept top-surface contact, before its first
+// ground-fire sync.  Retire the airborne history at that exact point and pay
+// off the transformation with a compact downward ignition + low backwash;
+// no radial badge suggests damage the sim did not grant.
+function deckIgnited(i, b, s, surfaceY, reason = 'deck-ignite', kind = 'deck') {
+  ignitionCount++;
+  lastIgnition.reason = reason;
+  lastIgnition.s = s;
+  lastIgnition.surfaceY = surfaceY;
+  lastIgnition.kind = kind;
+  historyCount[i] = 0;
+  for (let j = 0; j < TRAIL_SEGMENTS; j++)
+    trailMesh.setMatrixAt(trailIndex(i, j), HIDE);
+  if (slotFacetHidden[i] || !projectileOnVisibleFacet(s)) return;
+  const dir = b.dir || Math.sign(b.vx) || 1;
+  const flameY = surfaceY + (b.def?.hugY || CONFIG.weapons.F.hugY) * 0.48;
+  fxFlash(82, 0.30, s, flameY, PAL.muzzle, 0.028);
+  fxCoreRupture(s, flameY, PAL.shots.F, dir, -0.38, 0.34, 0.045);
+  fxDirectedBurst(CONFIG.juice.impact, s, flameY, PAL.shots.F,
+    -dir, 0.62, 0.42, 0.31);
+  fxVapor(s, flameY, PAL.shots.F, -dir, 0.26, 0.018);
+}
+
+// Real hostile/terrain collisions pay off with the chassis' own endpoint
+// sentence. Coordinates and heading come from the terminal sim row, never a
+// prior render sample: a fast shot can now die before its first sync without
+// sparking behind the target. VOLATILE already owns a larger exact-position
+// detonation hook, so it deliberately skips these ordinary effects.
+function terminalImpact(i, b, reason) {
+  const type = slotType[i];
+  terminalImpactCounts[type] = (terminalImpactCounts[type] || 0) + 1;
+  const s = b.x, y = b.y;
+  const speed = Math.max(0.001, Math.hypot(b.vx, b.vy));
+  const ds = b.crawling ? b.dir : b.vx / speed;
+  const dy = b.crawling ? 0 : b.vy / speed;
+  switch (type) {
+    case 'S':
+      // The five-flight fan collapses into a short reverse splinter rake.
+      fxDirectedBurst(CONFIG.juice.impact, s, y, PAL.shots.S,
+        -ds, -dy, 0.92, 0.34);
+      break;
+    case 'L':
+      // Laser terminates as one hard cyan aperture plus a narrow back-scatter.
+      fxFlash(68, 0.25, s, y, PAL.shots.L, 0.025);
+      fxDirectedBurst(CONFIG.juice.impact, s, y, PAL.shots.L,
+        -ds, -dy, 0.16, 0.22);
+      break;
+    case 'H':
+      // Guidance vanes shear sideways when the committed steering dart hits.
+      fxDirectedBurst(CONFIG.juice.impact, s, y, PAL.shots.H,
+        -dy, ds, 0.38, 0.30);
+      break;
+    case 'F':
+      // Flame breaks into gravity-led cinders, never a circular damage badge.
+      fxDirectedBurst(CONFIG.juice.impact, s, y, PAL.shots.F,
+        -ds, Math.max(0.18, -dy), 0.68, 0.22);
+      break;
+    default:
+      // Rivet: the smallest, hardest ricochet in the set.
+      fxDirectedBurst(CONFIG.juice.impact, s, y, PAL.shots.R,
+        -ds, Math.max(0.12, -dy), 0.30, 0.22);
+      break;
+  }
+  if (reason === 'terrain') {
+    // The hull answers a true terrain strike with one compact split seam, two
+    // sheared bracket chips and a thin pressure leak. Every layer is anchored
+    // to the exact sim endpoint above; none expands to imply splash damage.
+    fxCoreRupture(s, y, PAL.muzzle, ds, dy, 0.46, 0.045);
+    fxRoleFragments('machine', s, y, PAL.shots[type] || PAL.shots.R,
+      -ds, -dy, 0.42);
+    fxVapor(s, y, PAL.shots[type] || PAL.shots.R, -ds, 0.36, 0.02);
+  }
+}
+
+// Lifetime is not a hit. A single low-power backward fleck lets fuel visibly
+// run out without lying about contact or drawing a radius-sized flash.
+function terminalSputter(i, b) {
+  const type = slotType[i];
+  const speed = Math.max(0.001, Math.hypot(b.vx, b.vy));
+  const ds = b.crawling ? b.dir : b.vx / speed;
+  const dy = b.crawling ? 0 : b.vy / speed;
+  fxDirectedBurst(LIFETIME_SPUTTER, b.x, b.y,
+    PAL.shots[type] || PAL.shots.R, -ds, -dy, 0.08);
+}
+
+// `(i, b, reason)` is the render-only terminal contract from sim/weapons.js.
+// Unclassified pool cleanup and run reset are concealment only. Bend already
+// owns a tangent tracer, and a shot hidden behind the active facet must never
+// leak an impact around the corner.
+function hideSlot(i, b = null, reason = 'pool') {
   if (!slotVisible[i]) return;
+  if (terminalReasonCounts[reason] !== undefined) terminalReasonCounts[reason]++;
+  lastEndpoint.reason = reason;
+  lastEndpoint.effect = 'none';
+  lastEndpoint.s = b ? b.x : 0;
+  lastEndpoint.y = b ? b.y : 0;
+  lastEndpoint.type = slotType[i];
+  const endpointVisible = b && !slotFacetHidden[i] && projectileOnVisibleFacet(b.x);
+  const volatile = b?.meta?.volatile || slotMeta[i]?.volatile;
+  if (endpointVisible && !volatile) {
+    if (reason === 'hostile' || reason === 'terrain') {
+      terminalImpact(i, b, reason);
+      lastEndpoint.effect = 'impact';
+    } else if (reason === 'lifetime') {
+      terminalSputter(i, b);
+      lastEndpoint.effect = 'sputter';
+    }
+  }
   concealSlotMatrices(i);
   slotVisible[i] = 0;
   slotFacetHidden[i] = 0;
@@ -642,18 +797,17 @@ function syncTrail(i, x, y, z, look, widthMult) {
   }
 }
 
-function syncTraitMark(i, key, count, back, sx, sy, pulse) {
+function syncTraitMark(i, key, count, back, sx, sy) {
   const mesh = traitMeshes[key];
   if (!count) { mesh.setMatrixAt(i, HIDE); return; }
   _traitPos.copy(_bv).addScaledVector(_flight, -back);
   const stack = 1 + (count - 1) * 0.11;
-  _traitScale.set(sx * stack,
-    sy * stack * pulse * PROJECTILE_WIDTH_GAIN, 1);
+  _traitScale.set(sx * stack, sy * stack * PROJECTILE_WIDTH_GAIN, 1);
   _bm.compose(_traitPos, _bq, _traitScale);
   mesh.setMatrixAt(i, _bm);
 }
 
-function syncStackMark(i, key, count, back, sx, sy, pulse) {
+function syncStackMark(i, key, count, back, sx, sy) {
   const mesh = stackMeshes[key];
   if (count < 2) { mesh.setMatrixAt(i, HIDE); return; }
   _traitPos.copy(_bv).addScaledVector(_flight, -back);
@@ -661,37 +815,39 @@ function syncStackMark(i, key, count, back, sx, sy, pulse) {
   // third object. The authored separation already says “stacked”; this size
   // step says the stack has reached its cap.
   const cap = count >= 3 ? 1.24 : 1;
-  _traitScale.set(sx * cap,
-    sy * cap * (2 - pulse) * PROJECTILE_WIDTH_GAIN, 1);
+  _traitScale.set(sx * cap, sy * cap * PROJECTILE_WIDTH_GAIN, 1);
   _bm.compose(_traitPos, _bq, _traitScale);
   mesh.setMatrixAt(i, _bm);
 }
 
-function syncChassisDetail(i, type, pulse) {
+function syncChassisDetail(i, type) {
   const mesh = chassisMeshes[type];
   if (!mesh) return;
   const look = CHASSIS_LOOK[type];
   _traitPos.copy(_bv).addScaledVector(_flight, -look.back);
-  _traitScale.set(look.sx, look.sy * pulse * PROJECTILE_WIDTH_GAIN, 1);
+  _traitScale.set(look.sx, look.sy * PROJECTILE_WIDTH_GAIN, 1);
   _bm.compose(_traitPos, _bq, _traitScale);
   mesh.setMatrixAt(i, _bm);
 }
 
 // VOLATILE needs a landing sentence, not only a larger projectile. This hook
 // is emitted by the exact sim detonation edge, but owns presentation only:
-// bounded pooled flash and directional shrapnel. It deliberately has no
-// circular collision-radius theatre: the caged ember ruptures along its own
-// jagged flight sentence rather than expanding as a debug ring.
+// a split hot core, two kinds of directional shrapnel and a sparse pressure
+// wake. It deliberately has no circular collision-radius theatre: the caged
+// ember ruptures along its own flight sentence rather than expanding as a
+// debug ring.
 function volatileImpact(b, radius, stack = 1) {
   const power = Math.max(1, Math.min(3, Number(stack) || 1));
   const radiusGain = Math.max(0.82, Math.min(1.45, radius / 1.2));
-  fxFlash(115 + power * 18, (0.54 + power * 0.14) * radiusGain,
-    b.x, b.y, PAL.shots.F, 0.035);
-  fxBurst(CONFIG.juice.impact, b.x, b.y, PAL.shots.F,
-    (0.55 + power * 0.14) * radiusGain);
   const speed = Math.max(0.001, Math.hypot(b.vx, b.vy));
   const dirS = b.crawling ? b.dir : b.vx / speed;
   const dirY = b.crawling ? 0.12 : b.vy / speed;
+  fxCoreRupture(b.x, b.y, PAL.muzzle, dirS, dirY,
+    (0.72 + power * 0.13) * radiusGain, 0.055);
+  fxRoleFragments('machine', b.x, b.y, PAL.shots.F,
+    dirS, dirY + 0.18, (0.62 + power * 0.12) * radiusGain);
+  fxVapor(b.x, b.y, PAL.shots.F, -dirS,
+    (0.48 + power * 0.10) * radiusGain, 0.025);
   fxDirectedBurst(CONFIG.juice.impact, b.x, b.y, PAL.shots.F,
     dirS, dirY, 0.92, (0.64 + power * 0.17) * radiusGain);
   if (power >= 2) {
@@ -718,7 +874,7 @@ function syncSlot(i, b) {
   }
   slotFacetHidden[i] = 0;
   const bp = towerPose(b.x, _pp);
-  const def = CONFIG.weapons[b.type] || CONFIG.weapons.R;
+  const def = b.def || CONFIG.weapons[b.type] || CONFIG.weapons.R;
   const look = LOOK[b.type] || LOOK.R;
   const visualType = coreMeshes[b.type] ? b.type : 'R';
   const meta = b.meta;
@@ -737,13 +893,13 @@ function syncSlot(i, b) {
   // The crawler's (vx, vy) go stale the instant it starts hugging terrain
   // (position advances by dir * crawlSpeed instead, src/sim/weapons.js), so
   // it reads its own crawl speed instead.
-  const speed = crawling ? CONFIG.weapons.F.crawlSpeed : Math.hypot(b.vx, b.vy);
+  const speed = crawling ? def.crawlSpeed : Math.hypot(b.vx, b.vy);
   const nose = bulletNoseTiles(base[0] * CONFIG.rifle.radius, speed, BULLET_NOSE_CEILING_TILES);
-  // Position-driven pulse is deterministic and freezes naturally in hit-stop.
-  // Its spatial frequency is deliberately low: the former 3.7/2.3 factors
-  // turned a 26-tile/s shot into ~15–20 Hz edge chatter, which read as jagged
-  // aliasing rather than energy. This lands around four authored beats/s.
-  const pulse = 1 + look.pulse * Math.sin(b.x * 0.78 + b.y * 0.58 + i * 0.61);
+  // A projectile is a manufactured chassis, not a pickup orb: its silhouette
+  // stays rigid from frame to frame. Translation, the segmented history and
+  // H's genuinely curved trajectory supply motion; width pumping at FAR only
+  // made the body alias between two unrelated pixel silhouettes.
+  const pulse = 1;
   const front = Math.min(nose * look.front, look.frontCap);
   const tail = look.tail * (crawling ? 1.22 : 1);
   const ang = crawling ? (b.dir < 0 ? Math.PI : 0) : Math.atan2(b.vy, b.vx);
@@ -768,6 +924,41 @@ function syncSlot(i, b) {
     Math.min(0.88, volatile * 0.29);
   const trailWidth = 1 + tier * 0.04 + Math.min(0.82, seeker * 0.27) +
     Math.min(0.54, phase * 0.13) + Math.min(0.58, volatile * 0.16);
+
+  if (crawling) {
+    // The chassis has opened at deckIgnited(): hide every rigid airborne body
+    // and trait station.  Trait weight now changes the flame sentence itself,
+    // so HEAVY³ reads as a denser low wave rather than a metal slug sliding.
+    coreMeshes[visualType].setMatrixAt(i, HIDE);
+    shellMeshes[visualType].setMatrixAt(i, HIDE);
+    if (artMeshes[visualType]) artMeshes[visualType].setMatrixAt(i, HIDE);
+    if (chassisMeshes[visualType]) chassisMeshes[visualType].setMatrixAt(i, HIDE);
+    tipMesh.setMatrixAt(i, HIDE);
+    for (const mesh of traitMeshList) mesh.setMatrixAt(i, HIDE);
+    for (const mesh of stackMeshList) mesh.setMatrixAt(i, HIDE);
+
+    const flameLen = 1.18 + Math.min(0.42, heavy * 0.11) +
+      Math.min(0.22, volatile * 0.07);
+    _artScale.set(flameLen, (0.92 + heavy * 0.06) * PROJECTILE_WIDTH_GAIN, 1);
+    _bm.compose(_bv, _bq, _artScale);
+    groundFireMesh.setMatrixAt(i, _bm);
+    _artPos.copy(_bv).addScaledVector(_flight, -0.08);
+    _artScale.set(flameLen * 0.72, 0.48 * PROJECTILE_WIDTH_GAIN, 1);
+    _bm.compose(_artPos, _bq, _artScale);
+    groundFireCoreMesh.setMatrixAt(i, _bm);
+
+    // A short low backwash and two broken history tongues finish the state.
+    // Their front remains behind the point, preserving collision honesty.
+    _wakePos.copy(_bv).addScaledVector(_flight, -0.43);
+    _wakeScale.set(0.86 + heavy * 0.06, 0.16 * wakeWidth, 1);
+    _bm.compose(_wakePos, _bq, _wakeScale);
+    wakeMesh.setMatrixAt(i, _bm);
+    syncTrail(i, _bv.x, _bv.y, _bv.z, look, trailWidth * 0.82);
+    return;
+  }
+
+  groundFireMesh.setMatrixAt(i, HIDE);
+  groundFireCoreMesh.setMatrixAt(i, HIDE);
   const artMesh = artMeshes[visualType];
   if (artMesh) {
     // The visible alpha occupies a centered 230/256 of its cell. Scale that
@@ -824,26 +1015,27 @@ function syncSlot(i, b) {
   _bm.compose(_wakePos, _bq, _wakeScale);
   wakeMesh.setMatrixAt(i, _bm);
 
-  // Each signature occupies its own short station BEHIND the collision point.
-  // Tier-two/three stacks also earn one secondary physical station below.
-  const markPulse = 1 + 0.075 * Math.sin(b.x * 0.88 + b.y * 0.64 + i * 0.37);
-  if (!artMesh) syncChassisDetail(i, visualType, markPulse);
-  syncTraitMark(i, 'rapid', rapid, tail + 0.28, 0.54, 0.16, markPulse);
+  // Each signature occupies its own rigid hardware station BEHIND the
+  // collision point. Spread the three body-wrapping traits along the tail;
+  // stacking them at one x made a circular magenta/amber badge that erased
+  // the weapon chassis at precisely the 6-12px play scale.
+  if (!artMesh) syncChassisDetail(i, visualType);
+  syncTraitMark(i, 'rapid', rapid, tail + 0.28, 0.54, 0.16);
   // HEAVY and SEEKER are intentionally a few pixels broader at phone scale.
   // Their stations stay wholly behind the sim point: larger cues never imply
   // extra reach or hide the leading collision tip.
-  syncTraitMark(i, 'heavy', heavy, 0.48, 0.72, 0.58, markPulse);
-  syncTraitMark(i, 'forked', forked, tail + 0.18, 0.58, 0.27, markPulse);
-  syncTraitMark(i, 'seeker', seeker, 0.38, 0.23, 0.27, markPulse);
-  syncTraitMark(i, 'phase', phase, tail + 0.38, 0.92, 0.27, markPulse);
-  syncTraitMark(i, 'volatile', volatile, 0.38, 0.24, 0.25, markPulse);
+  syncTraitMark(i, 'heavy', heavy, 0.64, 0.72, 0.58);
+  syncTraitMark(i, 'forked', forked, tail + 0.18, 0.58, 0.27);
+  syncTraitMark(i, 'seeker', seeker, 0.30, 0.23, 0.27);
+  syncTraitMark(i, 'phase', phase, tail + 0.38, 0.92, 0.27);
+  syncTraitMark(i, 'volatile', volatile, 0.91, 0.24, 0.25);
 
-  syncStackMark(i, 'rapid', rapid, tail + 0.82, 0.54, 0.13, markPulse);
-  syncStackMark(i, 'heavy', heavy, 1.04, 0.60, 0.48, markPulse);
-  syncStackMark(i, 'forked', forked, tail + 0.76, 0.52, 0.22, markPulse);
-  syncStackMark(i, 'seeker', seeker, 0.73, 0.19, 0.23, markPulse);
-  syncStackMark(i, 'phase', phase, tail + 1.12, 0.76, 0.21, markPulse);
-  syncStackMark(i, 'volatile', volatile, 0.70, 0.20, 0.21, markPulse);
+  syncStackMark(i, 'rapid', rapid, tail + 0.82, 0.54, 0.13);
+  syncStackMark(i, 'heavy', heavy, 1.28, 0.60, 0.48);
+  syncStackMark(i, 'forked', forked, tail + 0.76, 0.52, 0.22);
+  syncStackMark(i, 'seeker', seeker, 0.82, 0.19, 0.23);
+  syncStackMark(i, 'phase', phase, tail + 1.12, 0.76, 0.21);
+  syncStackMark(i, 'volatile', volatile, 1.48, 0.20, 0.21);
 
   syncTrail(i, _bv.x, _bv.y, _bv.z, look, trailWidth);
 }
@@ -894,8 +1086,8 @@ function bendCulled(i, b, fromX) {
   if (!projectileOnVisibleFacet(fromX)) return;
   const bp = towerPose(fromX, _pp);
   const yaw = bp.yaw;
-  const def = CONFIG.weapons[b.type];
-  const vx = b.crawling ? b.dir * CONFIG.weapons.F.crawlSpeed : b.vx;
+  const def = b.def || CONFIG.weapons[b.type];
+  const vx = b.crawling ? b.dir * def.crawlSpeed : b.vx;
   for (const d of departing) {
     if (d.until > 0) continue;
     d.until = DEPART_MS;
@@ -947,6 +1139,8 @@ function flush() {
   for (const mesh of shellMeshList) mesh.instanceMatrix.needsUpdate = true;
   for (const mesh of chassisMeshList) mesh.instanceMatrix.needsUpdate = true;
   tipMesh.instanceMatrix.needsUpdate = true;
+  groundFireMesh.instanceMatrix.needsUpdate = true;
+  groundFireCoreMesh.instanceMatrix.needsUpdate = true;
   wakeMesh.instanceMatrix.needsUpdate = true;
   trailMesh.instanceMatrix.needsUpdate = true;
   for (const mesh of traitMeshList) mesh.instanceMatrix.needsUpdate = true;
@@ -956,12 +1150,14 @@ function flush() {
 
 // run reset: no tracer survives a restart
 export function clearDepartingTracers() {
-  for (let i = 0; i < BULLET_MAX; i++) hideSlot(i);
+  for (let i = 0; i < BULLET_MAX; i++) hideSlot(i, null, 'reset');
   for (const mesh of artMeshList) mesh.instanceMatrix.needsUpdate = true;
   for (const mesh of coreMeshList) mesh.instanceMatrix.needsUpdate = true;
   for (const mesh of shellMeshList) mesh.instanceMatrix.needsUpdate = true;
   for (const mesh of chassisMeshList) mesh.instanceMatrix.needsUpdate = true;
   tipMesh.instanceMatrix.needsUpdate = true;
+  groundFireMesh.instanceMatrix.needsUpdate = true;
+  groundFireCoreMesh.instanceMatrix.needsUpdate = true;
   wakeMesh.instanceMatrix.needsUpdate = true;
   trailMesh.instanceMatrix.needsUpdate = true;
   for (const mesh of traitMeshList) mesh.instanceMatrix.needsUpdate = true;
@@ -982,16 +1178,18 @@ export function bulletTraitVisualSnapshot() {
   }
   return {
     fixedPools: artMeshList.length + coreMeshList.length + shellMeshList.length +
-      chassisMeshList.length + traitMeshList.length + stackMeshList.length + 3,
+      chassisMeshList.length + traitMeshList.length + stackMeshList.length + 5,
     projectileArt: {
       state: artSlot.state,
       file: PROJECTILE_ART.file,
-      requests: artRequests,
+      requests: artSlot.requests,
       paintedPools: artMeshList.length,
       paintedVisible: artMeshList.length > 0,
       error: artSlot.error,
-      preloadMs: artReadyAt == null ? null :
-        Math.round((artReadyAt - artStartedAt) * 10) / 10,
+      preloadMs: artSlot.preloadMs,
+      gateMs: artSlot.gateMs,
+      residency: artSlot.residency,
+      settledBeforeConsumer: artSlot.settledBeforeConsumer,
     },
     productionPlacement: {
       surfaceDepth: PROJECTILE_SURFACE_DEPTH,
@@ -1010,11 +1208,29 @@ export function bulletTraitVisualSnapshot() {
       phaseRailsDepthTest: traitMeshes.phase.material.depthTest,
       phaseStackDepthTest: stackMeshes.phase.material.depthTest,
     },
+    endpointLanguage: {
+      pooled: true,
+      circularRings: false,
+      familyCounts: { ...terminalImpactCounts },
+      reasonCounts: { ...terminalReasonCounts },
+      last: { ...lastEndpoint },
+    },
+    groundFire: {
+      pooled: true,
+      pools: 2,
+      capacity: BULLET_MAX,
+      ignitionCount,
+      lastIgnition: { ...lastIgnition },
+      airborneChassisRetired: true,
+      whollyBehindPoint: true,
+    },
   };
 }
 
 if (typeof window !== 'undefined') window.__HB_BULLET_TRAITS = bulletTraitVisualSnapshot;
 
 installView({
-  bullets: { slotSpawned, hideSlot, syncSlot, flush, bendCulled, volatileImpact },
+  bullets: {
+    slotSpawned, hideSlot, syncSlot, flush, bendCulled, deckIgnited, volatileImpact,
+  },
 });

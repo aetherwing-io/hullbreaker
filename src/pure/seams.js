@@ -1,14 +1,13 @@
 /* ============================== SEAMS ============================== */
-/* Warm-white seam pips and route-lip lights (S5, docs/proposals/2026-08-
-   look-direction.md §3): the frame's only highlights. Deterministic,
-   THREE-free — this module only DERIVES pip runs from level data that
+/* Sparse housed route luminaires, derived from real ledges. Deterministic,
+   THREE-free — this module only DERIVES fixture runs from level data that
    already defines a route (groundH's deck-edge runs, the platforms
    array's catwalk spans). src/render/seams.js turns the runs this module
    returns into the InstancedMesh pair that actually draws them.
 
-   THE RULE: a pip run may never advertise a ledge that does not exist.
+   THE RULE: a fixture run may never advertise a ledge that does not exist.
    Every run's [s0, s1) is copied VERBATIM from the route data — never
-   authored, never padded — so a line of pips can never run past where
+   authored, never padded — so a light can never run past where
    its ledge stops (S5 falsifying test (a)). Static intensity only: no
    time argument anywhere in this file (mirrors the CP3 no-animation
    discipline src/pure/limb.js states for the body), and pathcheck's
@@ -33,9 +32,11 @@
    '' and junk all resolve to ON, the same shape `resolveLegibility` already
    carries for an approved, on-by-default pass. */
 
-// Tuning. `pipEvery`/`edgeMargin` are in tiles (route-space, s). `pipSize`/
-// `haloSize` are near-view world tiles — src/render/legibility.js's PIP_GAIN
-// restores them at a pulled-back view exactly like LAMP_R. `deckDepth`/
+// Compatibility note: the public `pip*` property names remain because the
+// original pathcheck and debug API consume them. Runtime no longer draws a
+// point, diamond, pair, or debug-like marker: width/height fields below own a
+// dark metal housing, inset warm slot and restrained rectangular surface
+// spill. `pipEvery`/`edgeMargin` are route-space tile units. `deckDepth`/
 // `platformDepth` follow the same "half the surface's own depth, plus a
 // hair proud" arithmetic src/pure/limb.js's kerb piece already uses
 // (planeHalfDepth + outward - thickness/2): src/render/level.js's tile box
@@ -44,15 +45,25 @@
 // offset, so a pip sitting flush needs at least that half-depth to clear
 // the surface it rides.
 export const SEAMS = {
-  minRun: 3,            // shorter runs are a stub, not a route: skip them
-  pipEvery: 6,          // sparse navigation punctuation, not a warehouse light grid
-  edgeMargin: 0.6,      // first/last pip stays this far inside the run's own ends
-  pipSize: 0.11,        // core box, near-view tiles
-  haloSize: 0.28,       // restrained halo; actors and weapon tells stay brightest
-  deckUnder: 0.2,       // pip sits this far below the deck's top surface
-  platformUnder: 0.12,  // pip sits this far below a catwalk slat's top
-  deckDepth: 1.12,      // tile half-depth (1.0) + a hair proud
-  platformDepth: 0.82,  // slat half-depth (0.7) + a hair proud
+  minRun: 4,            // shorter runs are stubs, not serviceable route spans
+  platformMinRun: 4.6, // tiny catwalks do not each receive their own lamp
+  platformStride: 3,   // one in three eligible catwalks: lighting is authored punctuation
+  pipEvery: 28,        // broad deck spacing, never a dotted ruler
+  clusterGap: 0,       // one installed housing, never a close-pair debug marker
+  edgeMargin: 1.15,
+  pipSize: 0.13,       // retained projected-size compatibility value
+  haloSize: 0.34,
+  housingWidth: 0.62,
+  housingHeight: 0.18,
+  housingDepth: 0.16,
+  coreWidth: 0.22,
+  coreHeight: 0.042,
+  spillWidth: 0.64,
+  spillHeight: 0.20,
+  deckUnder: 0.31,
+  platformUnder: 0.25,
+  deckDepth: 1.10,
+  platformDepth: 0.80,
   depthGainMin: 0.72,   // the shallowest tier's floor — see depthGain() below
 };
 
@@ -106,13 +117,18 @@ export function deckEdgeRuns(groundH) {
 // sits flush with a ledge's own end (it would read as painted past the
 // edge rather than stopping at it). Returns [] for a span too short to
 // hold even one inset pip.
-function pipsAlong(s0, s1, every, margin) {
-  const a = s0 + margin, b = s1 - margin;
+function pipsAlong(s0, s1, every, margin, clusterGap = 0) {
+  const halfCluster = Math.max(0, clusterGap) / 2;
+  const a = s0 + margin + halfCluster, b = s1 - margin - halfCluster;
   if (b <= a) return [];
   const span = b - a;
   const n = Math.max(1, Math.round(span / every) + 1);
   const out = [];
-  for (let i = 0; i < n; i++) out.push(n === 1 ? (a + b) / 2 : a + (span * i) / (n - 1));
+  for (let i = 0; i < n; i++) {
+    const center = n === 1 ? (a + b) / 2 : a + (span * i) / (n - 1);
+    if (halfCluster > 0) out.push(center - halfCluster, center + halfCluster);
+    else out.push(center);
+  }
   return out;
 }
 
@@ -124,7 +140,9 @@ export function deckSeamRuns(groundH, cfg = SEAMS) {
   const out = [];
   for (const run of deckEdgeRuns(groundH)) {
     if (run.s1 - run.s0 < cfg.minRun) continue;
-    const centres = pipsAlong(run.s0, run.s1, cfg.pipEvery, cfg.edgeMargin);
+    const centres = pipsAlong(
+      run.s0, run.s1, cfg.pipEvery, cfg.edgeMargin, cfg.clusterGap || 0,
+    );
     out.push({
       kind: 'deck', s0: run.s0, s1: run.s1,
       pips: centres.map((s) => ({ s, y: groundH[Math.min(groundH.length - 1, Math.floor(s))] - cfg.deckUnder })),
@@ -140,9 +158,13 @@ export function deckSeamRuns(groundH, cfg = SEAMS) {
 // never run past a catwalk's own end.
 export function platformSeamRuns(platforms, cfg = SEAMS) {
   const out = [];
-  for (const p of platforms) {
-    if (p.x1 - p.x0 < cfg.minRun) continue;
-    const centres = pipsAlong(p.x0, p.x1, cfg.pipEvery, cfg.edgeMargin);
+  for (let index = 0; index < platforms.length; index++) {
+    const p = platforms[index];
+    if (p.x1 - p.x0 < (cfg.platformMinRun || cfg.minRun)) continue;
+    if (index % Math.max(1, cfg.platformStride || 1) !== 1) continue;
+    const centres = pipsAlong(
+      p.x0, p.x1, cfg.pipEvery, cfg.edgeMargin, cfg.clusterGap || 0,
+    );
     out.push({
       kind: 'platform', s0: p.x0, s1: p.x1,
       pips: centres.map((s) => ({ s, y: p.y - cfg.platformUnder })),

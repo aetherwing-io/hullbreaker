@@ -5,6 +5,7 @@ import {
   traversalLedgeProbe, traversalLedgeDecision, traversalWallDecision,
   traversalSolidAllowsGrab, traversalChainMult, traversalFallbackTarget,
 } from '../pure/traversal.js';
+import { ladderCandidate, ladderStep } from '../pure/ladder.js';
 import { crouchStance } from '../pure/stance.js';
 import {
   ACTIVE_FIXTURE, ACTIVE_SLICE, AUTOBOUNCE_ENABLED, CROUCH_ENABLED, FLOW_ENABLED,
@@ -18,7 +19,7 @@ import {
   keys, jumpBufferedUntil, bufferJumpUntil, clearJumpBuffer, releaseAllKeys,
 } from './input.js';
 import {
-  LEVEL_LEN, groundH, groundTopAt, platforms, isSolid, activeScrollSpeed,
+  LEVEL_LEN, groundH, groundTopAt, ladders, platforms, isSolid, activeScrollSpeed,
 } from './level.js';
 import { state, setState } from './state.js';
 import {
@@ -60,6 +61,7 @@ export const player = {
   grounded: false, onOneWay: null, airJumpsLeft: P.airJumps,
   coyoteUntil: 0, dropUntil: 0, jumpCutDone: true,
   traversalState: 'free', traversalSide: 0,
+  ladderId: null,
   traversalCellX: 0, traversalTopY: 0,
   traversalSnapX: 0, traversalSnapY: 0,
   traversalUntil: 0, traversalRecatchUntil: 0, traversalEntryVx: 0,
@@ -108,9 +110,19 @@ const playerTraversalGeometry = {
   maxCellX: LEVEL_LEN - 1,
   minPlayerX: -Infinity,
 };
+const ladderById = new Map(ladders.map((row) => [row.id, row]));
+// Simulation capability follows the selected level, never a renderer flag.
+// `?zip=1` changes only the corner reveal and must remain byte-identical to the
+// ordinary six-face controller. Authored fixtures keep their prior domains.
+const TRAVERSAL_CONTACTS_ENABLED = IS_TRAVERSAL_SLICE || ACTIVE_FIXTURE === null;
+const LADDERS_ENABLED = ACTIVE_FIXTURE === null && ladders.length > 0;
+// The authored slice carries this override; the normal run already carries
+// every other contact tune in CONFIG.player and uses the same short handoff.
+const TRAVERSAL_CONTROL_MS = P.traversalLaunchControlMs ?? 100;
 
 export function clearPlayerTraversal(recatchUntil = player.traversalRecatchUntil) {
   player.traversalState = 'free';
+  player.ladderId = null;
   player.traversalSide = 0;
   player.traversalCellX = 0;
   player.traversalTopY = 0;
@@ -162,18 +174,75 @@ export function updatePlayer(dt) {
   if (stance.crouched && CONFIG.crouch.aimLevel) player.aim.set(player.facing, 0);
 
   const h = stance.planted ? 0 : (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+  const v = (keys.up ? 1 : 0) - (keys.down ? 1 : 0);
   let ledgeHanging = false;
   let wallSliding = false;
+  let ladderClimbing = false;
   // SNAP HOOK (?hook=1): runs before the ledge/wall branches so a grab can take
   // over a hang or a slide — every grab wants to become another launch. While
   // the tether is taut it owns position, exactly as a ledge hang does, so the
   // drive, gravity and both integrations below stand down for that frame.
   const hooked = HOOK_ENABLED ? hookUpdate(player, dt, hookApi) : false;
 
+  // A rail is entered only by vertical intent inside its narrow authored
+  // volume. Aim elsewhere remains aim; every rail is optional and the route
+  // stays jumpable. Fixtures have no ladder behavior and retain their exact
+  // traversal domain.
+  if (!TRAVERSAL_CONTACTS_ENABLED && player.traversalState !== 'free')
+    clearPlayerTraversal(0);
+  if (!LADDERS_ENABLED && player.traversalState === 'ladder')
+    clearPlayerTraversal(0);
+  if (LADDERS_ENABLED && player.traversalState === 'free' && !hooked && v &&
+      gameMs >= player.hitstunUntil && gameMs >= player.traversalRecatchUntil) {
+    const row = ladderCandidate(ladders, {
+      x: player.x, y: player.y, h: player.h,
+    }, v);
+    if (row) {
+      player.traversalState = 'ladder';
+      player.ladderId = row.id;
+      player.x = row.x;
+      player.crouched = false;
+      player.h = P.height;
+      player.muzzleY = P.muzzleY;
+      player.grounded = false;
+      player.onOneWay = null;
+      player.coyoteUntil = 0;
+      player.jumpCutDone = true;
+    }
+  }
+
   // Contextual traversal launches happen before the ordinary jump branch so
   // they neither consume nor refill the player's remaining air jump.
-  if (!IS_TRAVERSAL_SLICE && player.traversalState !== 'free') clearPlayerTraversal(0);
-  if (IS_TRAVERSAL_SLICE && player.traversalState === 'ledge') {
+  if (player.traversalState === 'ladder') {
+    const row = ladderById.get(player.ladderId);
+    const action = ladderStep({
+      ladder: row, x: player.x, y: player.y, h: player.h,
+      facing: player.facing, hInput: h, vInput: v,
+      jumpBuffered: jumpBufferedUntil > gameMs,
+      dt,
+    });
+    if (action.kind === 'climb') {
+      player.x = action.x;
+      player.y = action.y;
+      player.vx = action.vx;
+      player.vy = action.vy;
+      player.grounded = false;
+      player.onOneWay = null;
+      player.jumpCutDone = true;
+      ladderClimbing = true;
+    } else {
+      clearPlayerTraversal(gameMs + P.traversalRecatchMs);
+      if (action.kind === 'jump') clearJumpBuffer();
+      if (Number.isFinite(action.y)) player.y = action.y;
+      player.vx = action.vx || 0;
+      player.vy = action.vy || 0;
+      player.grounded = false;
+      player.onOneWay = null;
+      player.jumpCutDone = true;
+      player.coyoteUntil = 0;
+      player.traversalControlUntil = gameMs + TRAVERSAL_CONTROL_MS;
+    }
+  } else if (TRAVERSAL_CONTACTS_ENABLED && player.traversalState === 'ledge') {
     const action = traversalLedgeDecision({
       side: player.traversalSide,
       down: keys.down,
@@ -194,7 +263,7 @@ export function updatePlayer(dt) {
       player.vy = action.vy;
       player.grounded = false; player.onOneWay = null;
       player.coyoteUntil = 0; player.jumpCutDone = true;
-      player.traversalControlUntil = gameMs + P.traversalLaunchControlMs;
+      player.traversalControlUntil = gameMs + TRAVERSAL_CONTROL_MS;
       scoreLaunch('ledge', player.x, player.y);
     } else if (action.kind === 'release') {
       const side = player.traversalSide;
@@ -210,7 +279,7 @@ export function updatePlayer(dt) {
       player.jumpCutDone = true;
       ledgeHanging = true;
     }
-  } else if (IS_TRAVERSAL_SLICE && player.traversalState === 'wall') {
+  } else if (TRAVERSAL_CONTACTS_ENABLED && player.traversalState === 'wall') {
     const action = traversalWallDecision({
       side: player.traversalSide,
       cellX: player.traversalCellX,
@@ -227,7 +296,7 @@ export function updatePlayer(dt) {
       player.vy = action.vy;
       player.grounded = false; player.onOneWay = null;
       player.coyoteUntil = 0; player.jumpCutDone = true;
-      player.traversalControlUntil = gameMs + P.traversalLaunchControlMs;
+      player.traversalControlUntil = gameMs + TRAVERSAL_CONTROL_MS;
       scoreLaunch('wall', player.x, player.y);
     } else if (action.kind === 'release') {
       const side = player.traversalSide;
@@ -244,7 +313,7 @@ export function updatePlayer(dt) {
   //    flowSpeedNow() is exactly 1 unless ?flow=1: a live momentum chain raises
   //    the drive's target so a chained launch keeps its speed instead of being
   //    pulled back to runSpeed within a few frames.
-  if (!ledgeHanging && !wallSliding && !hooked &&
+  if (!ledgeHanging && !wallSliding && !ladderClimbing && !hooked &&
       gameMs >= player.hitstunUntil && gameMs >= player.traversalControlUntil) {
     const accel = player.grounded ? P.accelGround : P.accelAir;
     player.vx = approach(player.vx, h * P.runSpeed * flowSpeedNow(), accel * dt);
@@ -280,7 +349,7 @@ export function updatePlayer(dt) {
   }
 
   // -- gravity (a taut tether suspends it, the way a ledge hang does)
-  if (!ledgeHanging && !hooked) {
+  if (!ledgeHanging && !ladderClimbing && !hooked) {
     const g = P.gravity * (player.vy < 0 ? P.fallGravityMult : 1);
     player.vy = Math.max(P.terminalVel, player.vy + g * dt);
     if (wallSliding) player.vy = Math.max(player.vy, -P.wallSlideSpeed);
@@ -289,7 +358,7 @@ export function updatePlayer(dt) {
   // -- integrate X, resolve against solids (dt clamp keeps moves < 1 tile)
   let wallHit = null;
   const collisionVx = player.vx;
-  if (!ledgeHanging && !wallSliding && !hooked) {
+  if (!ledgeHanging && !wallSliding && !ladderClimbing && !hooked) {
     player.x += player.vx * dt;
     if (player.vx > 0) {
       const ci = Math.floor(player.x + player.hw);
@@ -315,7 +384,7 @@ export function updatePlayer(dt) {
   // -- integrate Y, resolve against solids + one-way catwalks
   const prevY = player.y;
   const wasGrounded = player.grounded;
-  if (!ledgeHanging && !hooked) {
+  if (!ledgeHanging && !ladderClimbing && !hooked) {
     player.y += player.vy * dt;
     player.grounded = false;
     player.onOneWay = null;
@@ -366,8 +435,8 @@ export function updatePlayer(dt) {
 
   // Falling near a real solid top catches before a lower wall slide. One-way
   // catwalks are intentionally absent because the probe only uses isSolid.
-  if (IS_TRAVERSAL_SLICE && player.traversalState === 'free' && !hooked &&
-      !player.grounded && player.vy < 0) {
+  if (TRAVERSAL_CONTACTS_ENABLED && player.traversalState === 'free' && !hooked &&
+      !keys.jump && !player.grounded && player.vy < 0) {
     playerTraversalGeometry.minPlayerX =
       sLeftEdge() + CONFIG.edges.margin + P.traversalEdgeGuard;
     const catchState = traversalLedgeProbe({

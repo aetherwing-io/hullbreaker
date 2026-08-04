@@ -70,6 +70,14 @@ import * as d57 from './future-facet-render-ownership.mjs';
 import * as d58 from './mod-route-visibility.mjs';
 import * as d59 from './limb-fold-bridge-locality.mjs';
 import * as d60 from './catwalk-built-prefix-visibility.mjs';
+import * as d61 from './vertical-assault-geometry.mjs';
+import * as d62 from './gate-prelude-runtime.mjs';
+import * as d63 from './capsule-reliquary-contract.mjs';
+import * as d64 from './projectile-presentation-contract.mjs';
+import * as d65 from './limb-silhouette-production.mjs';
+import * as d66 from './actor-motion-contract.mjs';
+import * as d67 from './crown-command-architecture.mjs';
+import * as d68 from './enemy-ecology-render-contract.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -133,4 +141,12 @@ export const DOMAINS = [
   d58,    // modifier echoes and telegraphs obey route visibility
   d59,    // limb fold bridge is local to the shared chamfer
   d60,    // long catwalks expose only their built route prefix
+  d61,    // Vertical Assault: deterministic, maneuverable six-face geometry
+  d62,    // gate cohorts enter during movement instead of after the halt
+  d63,    // production capsule reliquary presentation contract
+  d64,    // five-family projectile presentation contract
+  d65,    // production limb silhouette: connected macro anatomy
+  d66,    // declarative polyp, mortar, and Crown Warden actor motion
+  d67,    // Crown finale: rooted vertical command architecture
+  d68,    // Level 1 enemy ecology: one-atlas two-layer presentation
 ];

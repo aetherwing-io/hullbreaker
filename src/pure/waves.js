@@ -3,6 +3,51 @@
    yaw-snap timeline, the scroll resume curve, and the brick zipper.
    All timings are event-local ms (t = gameMs - tStart). */
 
+// Gate rosters begin materializing while the climb is still moving. Eight
+// tiles is 1.86 s at the shipped pursuit floor: enough for the first body's
+// honest 900 ms depth entrance to read before the halt, without reaching back
+// into the preceding pocket or changing any wave composition. This is a pure
+// route threshold rather than CONFIG because the prelude is encounter
+// choreography, not a tunable stat multiplier.
+export const GATE_PRELUDE_TILES = 8;
+
+// A cohort is visible and shootable as soon as each body finishes its ordinary
+// materialization, but its attack state machine waits this additional local
+// beat. Rotating a three-step score prevents a whole formation from entering
+// its warning pose together while retaining the roster's existing tell windows.
+export const GATE_ATTACK_READY_MS = Object.freeze([0, 180, 420]);
+
+export function gatePreludeS(haltS) {
+  return haltS - GATE_PRELUDE_TILES;
+}
+
+export function gatePreludeReady(state, primed, scroll, haltS) {
+  return state === 'idle' && !primed && scroll >= gatePreludeS(haltS) - 1e-6;
+}
+
+export function gateAttackReadyDelay(slot) {
+  const i = Math.max(0, slot | 0) % GATE_ATTACK_READY_MS.length;
+  return GATE_ATTACK_READY_MS[i];
+}
+
+/* The gate HUD describes what the player can currently see and answer, not
+ * every body allocated to a multi-beat encounter. A row owns the current
+ * beat once its ordinary depth-condensation begins; later resident rows stay
+ * out of the count until their own entrance window opens. `gating` is
+ * deliberately irrelevant here: a Railfang teaching beat is still the live
+ * threat even when later mobile bodies own the eventual gate clear. */
+export function activeGateThreatCount(rows, encounterKey, nowMs, enterMs) {
+  if (!Array.isArray(rows) || !encounterKey || !Number.isFinite(nowMs) ||
+      !Number.isFinite(enterMs) || enterMs < 0) return 0;
+  let count = 0;
+  for (const row of rows) {
+    if (!row || row.encounterKey !== encounterKey || row.gateBreakExit ||
+        !Number.isFinite(row.enterUntil)) continue;
+    if (nowMs >= row.enterUntil - enterMs) count++;
+  }
+  return count;
+}
+
 export function waveSize(k, cfg) { return cfg.waves.baseSize + cfg.waves.sizePerWave * k; }
 
 export function waveLane(k, i, cfg) {                   // per-wave altitude composition
@@ -94,6 +139,19 @@ export function cornerJointRule(state, cornerS, bendS, playerHalfWidth, edgeMarg
 
 export function cornerApproachReady(state, playerX, bendS) {
   return state === 'approach' && playerX >= bendS - 1e-6;
+}
+
+/* A held gate normally freezes the pursuit plane at HALT_S. Once the gate is
+ * clear, however, RIG must physically reach the chamfer midpoint before the
+ * turn can own them. Narrow/tall viewports can put that midpoint just beyond
+ * their frozen right clamp. Advance the plane only far enough that the
+ * player's right edge can reach the joint while remaining on-screen; wide
+ * views already satisfy the equation and keep the original halt exactly. */
+export function cornerApproachScrollTarget(
+    state, haltS, bendS, rightEdgeOffset, edgeMargin, playerHalfWidth) {
+  if (state !== 'approach') return haltS;
+  const jointVisibleScroll = bendS + playerHalfWidth + edgeMargin - rightEdgeOffset;
+  return Math.max(haltS, jointVisibleScroll);
 }
 
 // brick-slam zipper: column j (0-based within the slam set) drops from

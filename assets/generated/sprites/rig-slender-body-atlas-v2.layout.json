@@ -1,0 +1,191 @@
+{
+  "id": "rig-slender-body-atlas-v2",
+  "source": "assets/generated/sprites/rig-slender-core-palette-v2.png",
+  "output": "assets/generated/sprites/rig-slender-body-atlas-v2.png",
+  "sourceSize": [
+    1449,
+    1086
+  ],
+  "outputSize": [
+    2048,
+    1024
+  ],
+  "outputCell": [
+    512,
+    512
+  ],
+  "method": "connected assembly extraction + 1:1 integer repack",
+  "resampled": false,
+  "guard": 24,
+  "alphaFloor": 8,
+  "componentFloor": 40,
+  "paletteFinish": {
+    "alphaFloor": 32,
+    "changedPixels": 4372,
+    "changedColors": 4119,
+    "changedShare": 0.002085,
+    "meanNeutralization": 0.3642
+  },
+  "poses": [
+    {
+      "name": "idle",
+      "sourceCell": 0,
+      "outputCell": 0,
+      "sourceRect": {
+        "x": 0,
+        "y": 0,
+        "w": 362,
+        "h": 272
+      },
+      "alpha": {
+        "x": 194,
+        "y": 140,
+        "w": 123,
+        "h": 232
+      },
+      "guard": {
+        "left": 194,
+        "top": 140,
+        "right": 195,
+        "bottom": 140
+      },
+      "paintedPixels": 11914,
+      "partialPixels": 2369,
+      "rejectedComponents": []
+    },
+    {
+      "name": "contact",
+      "sourceCell": 1,
+      "outputCell": 1,
+      "sourceRect": {
+        "x": 362,
+        "y": 0,
+        "w": 363,
+        "h": 272
+      },
+      "alpha": {
+        "x": 653,
+        "y": 148,
+        "w": 230,
+        "h": 216
+      },
+      "guard": {
+        "left": 141,
+        "top": 148,
+        "right": 141,
+        "bottom": 148
+      },
+      "paintedPixels": 11914,
+      "partialPixels": 2578,
+      "rejectedComponents": []
+    },
+    {
+      "name": "pass",
+      "sourceCell": 2,
+      "outputCell": 2,
+      "sourceRect": {
+        "x": 725,
+        "y": 0,
+        "w": 362,
+        "h": 272
+      },
+      "alpha": {
+        "x": 1212,
+        "y": 150,
+        "w": 135,
+        "h": 212
+      },
+      "guard": {
+        "left": 188,
+        "top": 150,
+        "right": 189,
+        "bottom": 150
+      },
+      "paintedPixels": 10667,
+      "partialPixels": 2286,
+      "rejectedComponents": []
+    },
+    {
+      "name": "flight",
+      "sourceCell": 3,
+      "outputCell": 3,
+      "sourceRect": {
+        "x": 1087,
+        "y": 0,
+        "w": 362,
+        "h": 272
+      },
+      "alpha": {
+        "x": 1692,
+        "y": 160,
+        "w": 199,
+        "h": 191
+      },
+      "guard": {
+        "left": 156,
+        "top": 160,
+        "right": 157,
+        "bottom": 161
+      },
+      "paintedPixels": 12108,
+      "partialPixels": 2685,
+      "rejectedComponents": []
+    },
+    {
+      "name": "air-rise",
+      "sourceCell": 4,
+      "outputCell": 4,
+      "sourceRect": {
+        "x": 0,
+        "y": 272,
+        "w": 362,
+        "h": 271
+      },
+      "alpha": {
+        "x": 168,
+        "y": 659,
+        "w": 176,
+        "h": 217
+      },
+      "guard": {
+        "left": 168,
+        "top": 147,
+        "right": 168,
+        "bottom": 148
+      },
+      "paintedPixels": 11377,
+      "partialPixels": 2665,
+      "rejectedComponents": [
+        73,
+        43,
+        11
+      ]
+    },
+    {
+      "name": "air-fall",
+      "sourceCell": 5,
+      "outputCell": 5,
+      "sourceRect": {
+        "x": 362,
+        "y": 272,
+        "w": 363,
+        "h": 271
+      },
+      "alpha": {
+        "x": 659,
+        "y": 666,
+        "w": 218,
+        "h": 204
+      },
+      "guard": {
+        "left": 147,
+        "top": 154,
+        "right": 147,
+        "bottom": 154
+      },
+      "paintedPixels": 11209,
+      "partialPixels": 2278,
+      "rejectedComponents": []
+    }
+  ]
+}

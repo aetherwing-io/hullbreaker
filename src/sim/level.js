@@ -40,6 +40,10 @@ export const levelData = IS_TRAVERSAL_SLICE
   : IS_TRANSFORM_SLICE ? buildTransformLevel(CONFIG) : buildLevel(CONFIG);
 export const { groundH, platforms } = levelData;
 export const solidRects = levelData.solidRects || [];
+// Traversable route rails are authored by the level generator in the same
+// logical (s,y) space as platforms. Empty in fixtures and legacy layouts, so
+// ladder movement is an optional capability rather than a new requirement.
+export const ladders = levelData.ladders || [];
 // T-009: the six-face run's authored pockets (src/pure/lattice.js) — geometry
 // is already in groundH/platforms; this is the metadata the run reset reads to
 // place each pocket's weapon capsule over its shelf tip. Empty for the

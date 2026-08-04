@@ -7,6 +7,20 @@ is loaded once and each projectile pool selects its cell with geometry UVs.
 `projectile-chassis-atlas-chroma-v1.png` is the untouched built-in ImageGen
 source. It is retained for provenance and future repacking.
 
+The `S` cell was replaced on 2026-08-04 with one narrow manufactured
+flechette selected from
+`projectile-scatterbloom-flechette-candidates-v1.png`. Scatterbloom already
+creates five independent simulation pellets; drawing five darts inside every
+pellet made a volley resemble a flock of small enemies. The replacement is a
+single 230×53 px alpha silhouette (4.34:1) centered in the same 256 px cell.
+At the shipped FAR view it resolves to roughly 16×4 display pixels. No
+simulation count, collision, damage, speed, atlas dimensions, cell order, or
+pixels in the `R`, `L`, `H`, and `F` cells changed.
+
+`projectile-scatterbloom-flechette-provenance-v1.json` records the built-in
+ImageGen output identity, the non-verbatim candidate prompt summary, selected
+grid cell, chroma-removal settings, packing geometry, and decoded RGBA hashes.
+
 ## Final ImageGen prompt
 
 ```text
@@ -42,3 +56,15 @@ five connected subjects were cropped independently, resized inside 230×230
 bounds, centered in 256×256 transparent cells, and packed in the runtime
 order above. A detached seven-pixel source fragment beside Scatter was
 explicitly rejected before the final pack.
+
+## Scatterbloom replacement extraction
+
+The 4×4 candidate board used a flat green background. Candidate 15 (bottom
+right, zero-based) was selected because its charcoal exhaust collar, copper
+retainer, ivory penetrator, and continuous pointed axis remain distinct at 6,
+10, and 20 px while never forming wings, claws, a thorax, or a multi-dart fan.
+The installed ImageGen chroma helper sampled `#09f90f` from the board border
+and removed it with soft matte, despill, and a one-pixel edge contraction. The
+candidate's 254×58 alpha bounds were Lanczos-resized into 230×53 bounds,
+centered at `(13, 101)` in the existing `S` cell, and packed without touching
+the other four decoded cells.

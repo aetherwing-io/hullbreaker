@@ -5,7 +5,11 @@
    Crown wake, progress, and signal surge. */
 
 import { CONFIG } from '../config.js';
-import { finaleEarnedClear, finalePacketDue } from '../pure/finale.js';
+import { neutralEnemyEcologyVisualId } from '../pure/enemy-ecology.js';
+import {
+  finaleEarnedClear, finalePacketDue, finalePowerBand, finalePressurePlan,
+  finaleStage,
+} from '../pure/finale.js';
 import { view } from './bridge.js';
 import { gameMs } from './time.js';
 import { END_SCROLL, groundTopAt, spawnLaneY } from './level.js';
@@ -22,7 +26,19 @@ export const FINALE_TIMING = Object.freeze({
   mercyKills: 3,
   hardMaxMs: 20500,
   transmitMs: 1150,
+  answerMs: 2500,
   quota: 8,
+});
+
+export const FINALE_PRESSURE = Object.freeze({
+  maxSupport: 4,
+  targetSupport: Object.freeze([2, 3, 3, 4]),
+  spawnGapMs: Object.freeze([560, 460, 380, 320]),
+  refillDelayMs: Object.freeze([620, 440, 300, 180]),
+  packetCadenceMs: Object.freeze([1050, 880, 700, 560]),
+  adaptiveCap: 6,
+  clearEmaWeight: 0.42,
+  clearSampleFloorMs: 220,
 });
 
 // Three deliberate packets, all inside the flat Crown apron.  `atMs` is
@@ -63,6 +79,27 @@ export const FINALE_PACKETS = Object.freeze([
   }),
 ]);
 
+// A bounded deterministic refill deck. These select reviewed Level 1 forms
+// as presentation only: no hidden ecology tactic, genome, HP, or projectile
+// enters the finale through this table. The authored packets remain the score;
+// these six bodies merely prevent a dominant build from creating dead air.
+export const FINALE_REFILLS = Object.freeze([
+  Object.freeze({ kind: 'wasp', ecologyVisualId: 'wasp-crosswind',
+    x: END_SCROLL + 12, lane: 6.8, dir: 1 }),
+  Object.freeze({ kind: 'hound', ecologyVisualId: 'hound-vaultjaw',
+    x: END_SCROLL + 21, dir: -1,
+    patrol: Object.freeze({ x0: END_SCROLL + 13, x1: END_SCROLL + 23 }) }),
+  Object.freeze({ kind: 'polyp', ecologyVisualId: 'polyp-sweepfan',
+    x: END_SCROLL + 25, dir: -1, autoCycle: true }),
+  Object.freeze({ kind: 'wasp', ecologyVisualId: 'wasp-pincer',
+    x: END_SCROLL + 23, lane: 4.4, dir: -1 }),
+  Object.freeze({ kind: 'mortar', ecologyVisualId: 'mortar-bracketpod',
+    x: END_SCROLL + 27, dir: -1, zoneX: END_SCROLL + 17 }),
+  Object.freeze({ kind: 'hound', ecologyVisualId: 'hound-rebound',
+    x: END_SCROLL + 15, dir: 1,
+    patrol: Object.freeze({ x0: END_SCROLL + 12, x1: END_SCROLL + 22 }) }),
+]);
+
 let phase = 'dormant';
 let startedAt = 0;
 let phaseAt = 0;
@@ -73,6 +110,18 @@ let wardenId = 0;
 let wardenBroken = false;
 let wardenEarnedDamage = 0;
 let mercyBreak = false;
+let pendingSupport = [];
+let nextPacketReadyElapsedMs = 0;
+let lastSupportSpawnAtMs = -1e9;
+let emptySinceMs = -1;
+let supportEngagedAtMs = -1;
+let lastSupportClearAtMs = -1;
+let previousSupportCount = 0;
+let clearEmaMs = 0;
+let powerBand = 0;
+let adaptiveSpawned = 0;
+let totalSupportSpawned = 0;
+let maxLiveSupport = 0;
 
 function elapsed() {
   return phase === 'dormant' ? 0 : Math.max(0, gameMs - startedAt);
@@ -136,9 +185,24 @@ function phaseProgress() {
   return 1;
 }
 
-// Fresh and structured-cloneable on every read.  The six keys are the stable
-// contract shared by render/finale.js, telemetry, and headless proof scripts.
+function answerRemainingMs() {
+  return phase === 'answer'
+    ? Math.max(0, FINALE_TIMING.answerMs - (gameMs - phaseAt))
+    : 0;
+}
+
+function refillRemainingMs() {
+  if (phase !== 'defend' || emptySinceMs < 0 ||
+      adaptiveSpawned >= FINALE_PRESSURE.adaptiveCap) return 0;
+  const delay = FINALE_PRESSURE.refillDelayMs[powerBand] || 0;
+  return Math.max(0, delay - (gameMs - emptySinceMs));
+}
+
+// Fresh and structured-cloneable on every read. Additive stage/pressure rows
+// make the summit's bounded response observable without exposing mutable
+// queue entries or renderer-owned state.
 export function finaleSnapshot() {
+  const warden = wardenSnapshot();
   return {
     phase,
     elapsedMs: elapsed(),
@@ -146,42 +210,54 @@ export function finaleSnapshot() {
     quota: FINALE_TIMING.quota,
     progress: phaseProgress(),
     wave,
-    warden: wardenSnapshot(),
+    stage: finaleStage({ phase, wave, wardenBroken }),
+    answerRemainingMs: answerRemainingMs(),
+    controlRetained: phase === 'answer',
+    pressure: {
+      live: supportThreatCount(),
+      queued: pendingSupport.length,
+      cap: FINALE_PRESSURE.maxSupport,
+      target: FINALE_PRESSURE.targetSupport[powerBand],
+      powerBand,
+      clearEmaMs,
+      adaptiveSpawned,
+      adaptiveCap: FINALE_PRESSURE.adaptiveCap,
+      totalSpawned: totalSupportSpawned,
+      maxLive: maxLiveSupport,
+      nextRefillMs: refillRemainingMs(),
+    },
+    warden,
   };
 }
 
-function spawnEntry(entry) {
+function spawnEntry(entry, entryWave = wave, source = 'packet', delayMs = 0) {
   const deck = groundTopAt(entry.x);
+  const ecologyVisualId = entry.ecologyVisualId ||
+    neutralEnemyEcologyVisualId(entry.kind);
   const row = {
-    finaleWave: wave,
+    finaleWave: entryWave,
+    finaleSource: source,
     gating: false,
     dir: entry.dir,
     autoCycle: entry.autoCycle,
     patrol: entry.patrol,
   };
   if (entry.kind === 'hound') {
-    spawnHostile(entry.x, deck + CONFIG.hound.rideY, entry.delayMs, 'hound', row);
+    spawnHostile(entry.x, deck + CONFIG.hound.rideY, delayMs, 'hound', row,
+      ecologyVisualId);
   } else if (entry.kind === 'polyp') {
-    spawnHostile(entry.x, deck + CONFIG.polyp.rootY, entry.delayMs, 'polyp', row);
+    spawnHostile(entry.x, deck + CONFIG.polyp.rootY, delayMs, 'polyp', row,
+      ecologyVisualId);
   } else if (entry.kind === 'mortar') {
     row.zone = { x: entry.zoneX, y: groundTopAt(entry.zoneX) };
-    spawnHostile(entry.x, deck + CONFIG.mortar.bodyY, entry.delayMs, 'mortar', row);
+    spawnHostile(entry.x, deck + CONFIG.mortar.bodyY, delayMs, 'mortar', row,
+      ecologyVisualId);
   } else {
-    spawnHostile(entry.x, spawnLaneY(entry.x, entry.lane), entry.delayMs, 'wasp', row);
+    spawnHostile(entry.x, spawnLaneY(entry.x, entry.lane), delayMs, 'wasp', row,
+      ecologyVisualId);
   }
-}
-
-function spawnDuePackets(t) {
-  while (finalePacketDue({
-    wave,
-    elapsedMs: t,
-    earnedDamage: wardenEarnedDamage,
-    packets: FINALE_PACKETS,
-    windowDamage: CONFIG.warden.windowDamage,
-  })) {
-    wave++;
-    for (const entry of FINALE_PACKETS[wave - 1].entries) spawnEntry(entry);
-  }
+  totalSupportSpawned++;
+  lastSupportSpawnAtMs = gameMs;
 }
 
 function supportThreatCount() {
@@ -193,10 +269,121 @@ function supportThreatCount() {
   return count;
 }
 
+function rememberSupportCount(live) {
+  previousSupportCount = live;
+  maxLiveSupport = Math.max(maxLiveSupport, live);
+  if (live > 0) {
+    if (supportEngagedAtMs < 0) supportEngagedAtMs = gameMs;
+    if (lastSupportClearAtMs < 0) lastSupportClearAtMs = gameMs;
+    emptySinceMs = -1;
+  } else {
+    if (emptySinceMs < 0) emptySinceMs = gameMs;
+    supportEngagedAtMs = -1;
+    lastSupportClearAtMs = -1;
+  }
+}
+
+function observeSupportClear(live) {
+  const cleared = Math.max(0, previousSupportCount - live);
+  if (cleared > 0) {
+    const since = lastSupportClearAtMs >= 0
+      ? gameMs - lastSupportClearAtMs
+      : supportEngagedAtMs >= 0 ? gameMs - supportEngagedAtMs : 0;
+    const sample = Math.max(
+      FINALE_PRESSURE.clearSampleFloorMs,
+      since / cleared,
+    );
+    clearEmaMs = clearEmaMs > 0
+      ? clearEmaMs * (1 - FINALE_PRESSURE.clearEmaWeight) +
+        sample * FINALE_PRESSURE.clearEmaWeight
+      : sample;
+    lastSupportClearAtMs = gameMs;
+  }
+  rememberSupportCount(live);
+}
+
+function refreshPowerBand() {
+  const observed = finalePowerBand({
+    clearEmaMs,
+    kills: earnedKills(),
+    earnedDamage: wardenEarnedDamage,
+    defendElapsedMs: Math.max(0, gameMs - phaseAt),
+  });
+  // Meridian remembers what it has already observed; a longer fight cannot
+  // make a previously demonstrated weapon suddenly look weaker.
+  powerBand = Math.max(powerBand, observed);
+}
+
+function activateDuePacket(t, liveSupport) {
+  if (pendingSupport.length > 0 || !finalePacketDue({
+    wave,
+    elapsedMs: t,
+    earnedDamage: wardenEarnedDamage,
+    packets: FINALE_PACKETS,
+    windowDamage: CONFIG.warden.windowDamage,
+    readyElapsedMs: nextPacketReadyElapsedMs,
+    powerBand,
+    supportThreats: liveSupport,
+    queuedSupport: pendingSupport.length,
+    clearEmaMs,
+  })) return false;
+
+  const packet = FINALE_PACKETS[wave];
+  const packetWave = wave + 1;
+  wave = packetWave;
+  nextPacketReadyElapsedMs = t +
+    FINALE_PRESSURE.packetCadenceMs[powerBand];
+
+  if (packetWave === 1) {
+    // The authored opening cell is one readable trio and remains identical to
+    // the reviewed ecology fixture. Later answers enter through the cap below.
+    for (const entry of packet.entries)
+      spawnEntry(entry, packetWave, 'packet', Math.max(0, entry.delayMs || 0));
+  } else {
+    for (const entry of packet.entries)
+      pendingSupport.push({ entry, wave: packetWave, source: 'packet' });
+  }
+  return true;
+}
+
+function allowAdaptiveRefill(defendElapsedMs) {
+  // Once the player has honestly met every completion condition, the quiet is
+  // earned and transmission wins this update. Before then, a fast build gets
+  // at most the six reviewed refills above—never spawn debt.
+  return !(wardenBroken && wave >= FINALE_PACKETS.length &&
+    pendingSupport.length <= 0 && defendElapsedMs >= FINALE_TIMING.earnedMinMs);
+}
+
+function applyPressureSpawn(defendElapsedMs) {
+  const live = supportThreatCount();
+  const plan = finalePressurePlan({
+    nowMs: gameMs,
+    liveSupport: live,
+    queuedSupport: pendingSupport.length,
+    powerBand,
+    lastSpawnAtMs: lastSupportSpawnAtMs,
+    emptySinceMs,
+    adaptiveSpawned,
+    adaptiveCap: FINALE_PRESSURE.adaptiveCap,
+    allowAdaptive: allowAdaptiveRefill(defendElapsedMs),
+  }, FINALE_PRESSURE);
+  if (plan.spawn === 'queued') {
+    const queued = pendingSupport.shift();
+    spawnEntry(queued.entry, queued.wave, queued.source, 0);
+  } else if (plan.spawn === 'adaptive') {
+    const entry = FINALE_REFILLS[adaptiveSpawned % FINALE_REFILLS.length];
+    adaptiveSpawned++;
+    spawnEntry(entry, wave, 'adaptive', 0);
+  }
+  rememberSupportCount(supportThreatCount());
+  return plan;
+}
+
 function beginTransmit() {
   creditedKills = earnedKills();
   phase = 'transmit';
   phaseAt = gameMs;
+  pendingSupport.length = 0;
   // Survivors rupture through the ordinary role-aware death presentation.
   // removeHostile deliberately does not award kills: the snapshot remains a
   // record of what the player earned before the Crown answered.
@@ -213,6 +400,18 @@ export function startFinale() {
   wardenBroken = false;
   wardenEarnedDamage = 0;
   mercyBreak = false;
+  pendingSupport.length = 0;
+  nextPacketReadyElapsedMs = FINALE_TIMING.armingMs;
+  lastSupportSpawnAtMs = gameMs - 1e9;
+  emptySinceMs = -1;
+  supportEngagedAtMs = -1;
+  lastSupportClearAtMs = -1;
+  previousSupportCount = 0;
+  clearEmaMs = 0;
+  powerBand = 0;
+  adaptiveSpawned = 0;
+  totalSupportSpawned = 0;
+  maxLiveSupport = 0;
   // The arena owns its roster.  A late ambient straggler cannot silently
   // inflate the quota or distract aim assist from the authored first packet.
   clearHostiles();
@@ -256,20 +455,30 @@ export function updateFinale() {
       // final seal, so retain the earned full-health total in telemetry.
       if (!mercyBreak) wardenEarnedDamage = CONFIG.warden.hp;
     }
-    // Refresh earned damage before scoring packet edges. A seal broken by the
-    // previous frame's volley can therefore wake its answer immediately; the
-    // support bodies still owe their full visible materialization tell.
-    spawnDuePackets(t);
+
+    let liveSupport = supportThreatCount();
+    observeSupportClear(liveSupport);
     creditedKills = earnedKills();
+    refreshPowerBand();
+
+    // At most one authored packet becomes active per update. Packet one is
+    // its reviewed opening trio; every later body drains through the shared
+    // four-threat pressure cap instead of materializing as an unavoidable
+    // whole-wave flood.
+    activateDuePacket(t, liveSupport);
+    const defendElapsedMs = gameMs - phaseAt;
+    applyPressureSpawn(defendElapsedMs);
+    liveSupport = supportThreatCount();
     const k = creditedKills;
-    const heldLongEnough = gameMs - phaseAt >= FINALE_TIMING.minDefendMs;
-    const earnedClear = finaleEarnedClear({
-      defendElapsedMs: gameMs - phaseAt,
+    const heldLongEnough = defendElapsedMs >= FINALE_TIMING.minDefendMs;
+    let earnedClear = finaleEarnedClear({
+      defendElapsedMs,
       minEarnedMs: FINALE_TIMING.earnedMinMs,
       wave,
       packetCount: FINALE_PACKETS.length,
       wardenBroken,
-      supportThreats: supportThreatCount(),
+      supportThreats: liveSupport,
+      queuedSupport: pendingSupport.length,
     });
 
     // A child who has engaged with either the centerpiece or its support
@@ -283,10 +492,26 @@ export function updateFinale() {
       forceBreakHostile(warden, 'CROWN');
       wardenBroken = true;
       creditedKills = earnedKills();
+      liveSupport = supportThreatCount();
+      earnedClear = finaleEarnedClear({
+        defendElapsedMs,
+        minEarnedMs: FINALE_TIMING.earnedMinMs,
+        wave,
+        packetCount: FINALE_PACKETS.length,
+        wardenBroken,
+        supportThreats: liveSupport,
+        queuedSupport: pendingSupport.length,
+      });
     }
     if (earnedClear || (heldLongEnough && wardenBroken && (mercyReady || hardReady)))
       beginTransmit();
   } else if (phase === 'transmit' && gameMs - phaseAt >= FINALE_TIMING.transmitMs) {
+    // Keep the world playable after contact. The carrier is visibly two-way,
+    // RIG retains control, and only this honest 2.5s release beat may reveal
+    // the score card—never a fake loading hold.
+    phase = 'answer';
+    phaseAt = gameMs;
+  } else if (phase === 'answer' && gameMs - phaseAt >= FINALE_TIMING.answerMs) {
     phase = 'complete';
     phaseAt = gameMs;
   }
@@ -309,5 +534,17 @@ export function resetFinale() {
   wardenBroken = false;
   wardenEarnedDamage = 0;
   mercyBreak = false;
+  pendingSupport.length = 0;
+  nextPacketReadyElapsedMs = 0;
+  lastSupportSpawnAtMs = -1e9;
+  emptySinceMs = -1;
+  supportEngagedAtMs = -1;
+  lastSupportClearAtMs = -1;
+  previousSupportCount = 0;
+  clearEmaMs = 0;
+  powerBand = 0;
+  adaptiveSpawned = 0;
+  totalSupportSpawned = 0;
+  maxLiveSupport = 0;
   view.finale.reset();
 }

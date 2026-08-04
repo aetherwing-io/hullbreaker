@@ -12,10 +12,18 @@
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
+import { QUERY } from '../mode.js';
+import { resolveRenderPixelRatio } from '../pure/render-budget.js';
 import { PAL } from './palette.js';
 import { installLightRig } from './lights.js';
 
 export const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+// `?renderbudget=legacy` is a measurement escape hatch for the previous DPR
+// policy. It is intentionally not a quality setting in the UI: the bounded
+// path preserves the same ratio on ordinary screens and only reins in very
+// large Retina backing stores where the old "budget" was not actually a cap.
+export const RENDER_BUDGETED = QUERY.get('renderbudget') !== 'legacy';
 
 // Preserve the authored camera scale while buying actual sub-pixel coverage.
 // Making every sprite/world unit larger and pulling the camera back by the
@@ -27,19 +35,9 @@ export function renderPixelRatio(
   dpr = devicePixelRatio,
   width = innerWidth,
   height = innerHeight,
+  budgeted = RENDER_BUDGETED,
 ) {
-  const compact = Math.min(width, height) < 600;
-  const supersample = compact ? 1.10 : 1.25;
-  const cap = compact ? 2.20 : 2.25;
-  const base = Math.min(Math.max(1, dpr), 2);
-  const target = Math.min(Math.max(1, dpr) * supersample, cap);
-  // Supersampling is optional detail above the old <=2 DPR policy, so it may
-  // spend only a bounded backing-store budget. On an already enormous/retina
-  // viewport this naturally falls back to `base` instead of multiplying an
-  // 8-12Mpx frame again; it never renders below the previous policy.
-  const pixelBudget = compact ? 2_000_000 : 6_600_000;
-  const budgetRatio = Math.sqrt(pixelBudget / Math.max(1, width * height));
-  return Math.max(base, Math.min(target, budgetRatio));
+  return resolveRenderPixelRatio(dpr, width, height, budgeted);
 }
 
 // DPR can change without a reload (dragging between displays, browser zoom,
@@ -74,5 +72,36 @@ scene.fog = new THREE.Fog(PAL.bg, CONFIG.fog.near, CONFIG.fog.far);
 export const camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, innerWidth / innerHeight, 0.1, 200);
 
 export const HIDE = new THREE.Matrix4().makeScale(0, 0, 0);   // shared "invisible instance" matrix
+
+// Read-only, allocation-only-when-requested telemetry. Captures and perf
+// probes use this instead of each publishing their own renderer globals.
+// The vectors are retained so repeated snapshots do not manufacture THREE
+// objects; returned plain objects are structured-cloneable.
+const resourceCssSize = new THREE.Vector2();
+const resourceDrawSize = new THREE.Vector2();
+
+export function rendererResourceSnapshot() {
+  renderer.getSize(resourceCssSize);
+  renderer.getDrawingBufferSize(resourceDrawSize);
+  const info = renderer.info;
+  return {
+    policy: RENDER_BUDGETED ? 'bounded' : 'legacy',
+    pixelRatio: renderer.getPixelRatio(),
+    css: { width: resourceCssSize.x, height: resourceCssSize.y },
+    drawingBuffer: { width: resourceDrawSize.x, height: resourceDrawSize.y },
+    drawingPixels: resourceDrawSize.x * resourceDrawSize.y,
+    draw: {
+      calls: info.render.calls,
+      triangles: info.render.triangles,
+      points: info.render.points,
+      lines: info.render.lines,
+    },
+    memory: {
+      geometries: info.memory.geometries,
+      textures: info.memory.textures,
+      programs: Array.isArray(info.programs) ? info.programs.length : 0,
+    },
+  };
+}
 
 installLightRig(renderer, scene);

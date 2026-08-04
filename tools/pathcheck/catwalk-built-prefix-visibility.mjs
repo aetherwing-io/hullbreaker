@@ -32,13 +32,15 @@ export async function run() {
   );
   const splitPlatform = extractedFunction(level, 'platformBuildSegments');
 
-  // This is the shipped failure case: the last arena catwalk is longer than
-  // the zipper prefix available at camera handoff.
+  // The widest Crown-root casting exercises the exact route-ordered
+  // segmentation used by authored and procedural catwalks without pinning a
+  // retired face-6 coordinate.
   const shipped = buildLevel(CONFIG);
   const arena = shipped.platforms.find((p) => p.id === 'arena-f6-mid');
   const segments = splitPlatform(arena.x0, arena.x1);
-  ok(arena.x0 === 384 && arena.x1 === 407 && segments.length === 23,
-     'regression drives the shipped 23-tile face-6 arena catwalk');
+  ok(arena.assault && arena.face === 6 && arena.x1 - arena.x0 === 13 &&
+     segments.length === 13,
+     'regression drives the shipped thirteen-tile face-6 Crown-root casting');
   ok(segments.every((segment, i) =>
     segment.x0 === arena.x0 + i && segment.x1 === arena.x0 + i + 1 &&
     segment.s === arena.x0 + i + 0.5),
@@ -87,7 +89,7 @@ export async function run() {
 
   ok(/appendPanelGeometry\([\s\S]*segment\.s/.test(prefixBuilder) &&
      /samples\.push\(\{ s: segment\.s, vertexEnd: acc\.vertices \}\)/.test(prefixBuilder) &&
-     /rows:\s*acc\.vertices\s*\/\s*36/.test(prefixBuilder),
+     /rows:\s*samples\.length/.test(prefixBuilder),
   'each route segment appends one ordered geometry row and records its exact draw-range end');
   ok(/for\s*\(const panel of slatMeshes\)\s*hidden \+= updateRoutePanelDrawRange\(panel, active\)/
        .test(slatCull) &&

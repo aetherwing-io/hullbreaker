@@ -84,21 +84,60 @@ export const SPRITE_ACTION_ART = {
   mortar: { file: 'spore-mortar-action-v2.png', canvas: [499, 449], ink: [24, 24, 451, 401] },
 };
 
-// A third, independently painted phase for persistent flight animation.
-// It is deliberately separate from SPRITE_ACTION_ART: the action wasp is a
-// committed dive silhouette, while this low-wing phase only crossfades with
-// idle/cruise. The same measured-fit path below keeps body length stable.
+// Auxiliary animation plates loaded by sprites.js through the original boot
+// gate. Hostiles uses their measured per-cell contract in SPRITE_MOTION_ART
+// below; `ink` is the union alpha box and remains here for generic asset
+// validation/backward-compatible spriteFlapQuad diagnostics. Action paintings
+// stay separate: committed dive/charge/vault always override locomotion.
 export const SPRITE_FLAP_ART = {
   wasp: {
-    file: 'wasp-drone-downstroke-v1.png',
-    canvas: [512, 235], ink: [9, 9, 494, 217],
-    // Reactor centres measured at (205,163) in the base and (203,74) here.
-    // After each full-body cutout is uniformly fit by ink width, this small
-    // correction makes the reactor—not the changing wing envelope—the
-    // crossfade anchor. Presentation scale then moves both as one body.
-    align: [0.045, -0.005],
+    file: 'wasp-flight-atlas-v1.png',
+    canvas: [2048, 512], ink: [40, 63, 1948, 350],
+  },
+  hound: {
+    file: 'hound-gait-atlas-v2.png',
+    canvas: [2048, 1024], ink: [48, 180, 1956, 740],
   },
 };
+
+/* Production locomotion atlases. Unlike the legacy two-pose wasp crossfade,
+   each entry below is a complete opaque sentence shown by itself. `cell` and
+   `anchor` are source pixels, top-left origin. The anchor is a rigid feature:
+   the wasp's round reactor and the hound's orange shoulder mass / planted-foot
+   baseline. Geometry bakes the inverse offset, so swapping UV cells cannot
+   move that feature even though ImageGen placed each cutout differently.
+
+   `referenceInkWidth` maps source pixels through the exact width scale already
+   used by the shipped production body. It preserves painted proportions—no
+   atlas frame is independently stretched to fill a collision box. */
+export const SPRITE_MOTION_ART = Object.freeze({
+  wasp: Object.freeze({
+    file: 'wasp-flight-atlas-v1.png', canvas: Object.freeze([2048, 512]),
+    referenceInkWidth: 412, anchorRole: 'reactor', grounded: false,
+    frames: Object.freeze([
+      Object.freeze({ cell: Object.freeze([0, 0, 512, 512]), anchor: Object.freeze([223, 284]) }),
+      Object.freeze({ cell: Object.freeze([512, 0, 512, 512]), anchor: Object.freeze([193, 283]) }),
+      Object.freeze({ cell: Object.freeze([1024, 0, 512, 512]), anchor: Object.freeze([169, 283]) }),
+      Object.freeze({ cell: Object.freeze([1536, 0, 512, 512]), anchor: Object.freeze([189, 287]) }),
+    ]),
+  }),
+  hound: Object.freeze({
+    file: 'hound-gait-atlas-v2.png', canvas: Object.freeze([2048, 1024]),
+    referenceInkWidth: 472, anchorRole: 'orange-shoulder+deck-line', grounded: true,
+    frames: Object.freeze([
+      // Run: front contact, passing/tuck, rear drive/reach, suspension.
+      Object.freeze({ cell: Object.freeze([0, 0, 512, 512]), anchor: Object.freeze([272, 408]) }),
+      Object.freeze({ cell: Object.freeze([512, 0, 512, 512]), anchor: Object.freeze([275, 408]) }),
+      Object.freeze({ cell: Object.freeze([1024, 0, 512, 512]), anchor: Object.freeze([275, 408]) }),
+      Object.freeze({ cell: Object.freeze([1536, 0, 512, 512]), anchor: Object.freeze([287, 408]) }),
+      // Action: deep load, launch, airborne reach/tuck, hard landing.
+      Object.freeze({ cell: Object.freeze([0, 512, 512, 512]), anchor: Object.freeze([290, 408]) }),
+      Object.freeze({ cell: Object.freeze([512, 512, 512, 512]), anchor: Object.freeze([282, 408]) }),
+      Object.freeze({ cell: Object.freeze([1024, 512, 512, 512]), anchor: Object.freeze([288, 408]) }),
+      Object.freeze({ cell: Object.freeze([1536, 512, 512, 512]), anchor: Object.freeze([272, 408]) }),
+    ]),
+  }),
+});
 
 export const SPRITE_KINDS = Object.keys(SPRITE_ART);
 export const SPRITE_VARIANT_IDS = ['a', 'b'];
@@ -212,6 +251,41 @@ export function spriteActionQuad(kind, C = CONFIG) {
 export function spriteFlapQuad(kind, C = CONFIG) {
   const art = SPRITE_FLAP_ART[kind];
   return fittedSpriteQuad(kind, art, C);
+}
+
+/* One locomotion frame as world geometry + atlas UV bounds. The atlas uses
+   top-left pixel coordinates while Three's plane UVs use bottom-left, hence
+   the explicit v inversion. `offX/offY` place the rigid source anchor at the
+   same primitive-space point in every frame. Hound's y anchor is its planted
+   foot line; the existing presentation lift then preserves the authored deck
+   contact after uniform presentation scaling. */
+export function spriteMotionFrame(kind, index, C = CONFIG) {
+  const art = SPRITE_MOTION_ART[kind];
+  const box = primitiveBox(kind, C);
+  if (!art || !box || !art.frames.length) return null;
+  const n = art.frames.length;
+  const frame = art.frames[((index % n) + n) % n];
+  const [atlasW, atlasH] = art.canvas;
+  const [x, y, cw, ch] = frame.cell;
+  const [anchorX, anchorY] = frame.anchor;
+  const scale = box.w / art.referenceInkWidth;
+  const w = cw * scale, h = ch * scale;
+  const anchorLocalX = (anchorX - cw / 2) * scale;
+  const anchorLocalY = (ch / 2 - anchorY) * scale;
+  const targetY = art.grounded ? box.cy - box.h / 2 : box.cy;
+  return {
+    kind, index: ((index % n) + n) % n,
+    w, h,
+    offX: box.cx - anchorLocalX,
+    offY: targetY - anchorLocalY,
+    anchorX, anchorY,
+    anchorWorldX: box.cx,
+    anchorWorldY: targetY,
+    uv: {
+      u0: x / atlasW, u1: (x + cw) / atlasW,
+      v0: 1 - (y + ch) / atlasH, v1: 1 - y / atlasH,
+    },
+  };
 }
 
 /* ?sprites=0 (or =off) is the escape hatch back to the primitive bodies —

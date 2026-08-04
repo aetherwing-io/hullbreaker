@@ -54,14 +54,26 @@
 import * as THREE from 'three';
 import { POST_TUNE } from '../config.js';
 import { QUERY } from '../mode.js';
-import { resolvePost, resolveSamples } from '../pure/post.js';
+import {
+  POST_MSAA_PIXEL_CEILING, resolvePost, resolveRuntimeSamples, resolveSamples,
+} from '../pure/post.js';
 import { inverseAcesFilmic } from '../pure/tonemap.js';
-import { camera, renderer, scene } from './scene.js';
+import { camera, renderer, rendererResourceSnapshot, scene } from './scene.js';
 
 // Both resolvers live in src/pure/post.js so the gate can CALL them — a regex
 // can prove a flag exists, only a call proves junk resolves to the default.
 export const POST = resolvePost(QUERY.get('bloom'), POST_TUNE);
-export const POST_SAMPLES = resolveSamples(QUERY.get('aa'), POST_TUNE);
+const AA_QUERY = QUERY.get('aa');
+const postDrawSize = new THREE.Vector2();
+
+function projectedDrawingPixels(width = innerWidth, height = innerHeight) {
+  const ratio = renderer.getPixelRatio();
+  return Math.max(1, width) * Math.max(1, height) * ratio * ratio;
+}
+
+export let POST_SAMPLES = resolveRuntimeSamples(
+  AA_QUERY, POST_TUNE, projectedDrawingPixels(),
+);
 const POST_BOOT_BUDGET_MS = 1200;
 const POST_REPORT = QUERY.get('postreport') === '1';
 
@@ -244,11 +256,12 @@ function drawComposed() {
 /* The composer's own buffers are sized in DRAWING BUFFER pixels, so they
    inherit scene.js's bounded supersampled pixel ratio. A retina panel still
    pays materially more fill than this measurement rig's 1x buffer, which is
-   why the report quotes both. `samples` keeps the MSAA that a composer otherwise silently drops
-   (scene.js constructs the renderer with antialias:true, which only ever
-   applied to the canvas): at FAR, RIG is ~30px and its silhouette is the
-   read, so losing edge antialiasing is a readability regression, not a
-   cosmetic one. */
+   why the report quotes both. `samples` keeps the MSAA that a composer
+   otherwise silently drops (scene.js constructs the renderer with
+   antialias:true, which only ever applied to the canvas): at FAR, RIG is
+   ~30px and its silhouette is the read. Above 6M drawing pixels the default
+   samples stand down because the scene is already heavily sampled and the
+   half-float resolve becomes the larger cost; an explicit ?aa= still wins. */
 function build(EffectComposer, RenderPass, UnrealBloomPass, OutputPass) {
   const size = renderer.getDrawingBufferSize(new THREE.Vector2());
   const target = new THREE.WebGLRenderTarget(size.x, size.y, {
@@ -362,6 +375,20 @@ if (POST.on) {
 }
 
 export function syncPostSize(width = innerWidth, height = innerHeight) {
+  const nextSamples = resolveRuntimeSamples(
+    AA_QUERY, POST_TUNE, projectedDrawingPixels(width, height),
+  );
+  if (nextSamples !== POST_SAMPLES) {
+    POST_SAMPLES = nextSamples;
+    if (composer) {
+      // Changing samples affects framebuffer allocation rather than texture
+      // dimensions. Dispose only this reusable target so Three rebuilds its
+      // GPU storage on the next composer draw; resize events are infrequent.
+      composer.renderTarget1.samples = POST_SAMPLES;
+      composer.renderTarget1.dispose();
+      composer.renderTarget2.samples = 0;
+    }
+  }
   if (!composer) return false;
   composer.setPixelRatio(renderer.getPixelRatio());
   composer.setSize(width, height);
@@ -383,7 +410,7 @@ export function postActive() { return status === 'active'; }
 
 // read-only surface for ?testapi=1 / window.HB / the browser self-test
 export function postSnapshot() {
-  const draw = renderer.getDrawingBufferSize(new THREE.Vector2());
+  const draw = renderer.getDrawingBufferSize(postDrawSize);
   const target = composer ? composer.renderTarget1 : null;
   return {
     on: POST.on,
@@ -392,9 +419,12 @@ export function postSnapshot() {
     radius: bloomPass ? bloomPass.radius : 0,
     threshold: bloomPass ? bloomPass.threshold : 0,
     samples: POST_SAMPLES,
+    samplesRequested: resolveSamples(AA_QUERY, POST_TUNE),
+    samplePixelCeiling: POST_MSAA_PIXEL_CEILING,
     pixelRatio: renderer.getPixelRatio(),
     drawingBuffer: { width: draw.x, height: draw.y },
     composerBuffer: target ? { width: target.width, height: target.height } : null,
+    resources: rendererResourceSnapshot(),
     gain: postGain(),
     boot: {
       budgetMs: POST_BOOT_BUDGET_MS,

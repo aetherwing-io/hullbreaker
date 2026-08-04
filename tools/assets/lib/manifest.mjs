@@ -10,7 +10,9 @@ import { readFileSync, writeFileSync } from 'node:fs';
 export const MANIFEST_PATH = 'assets/manifest.json';
 
 /** Categories are directory names under assets/generated/ — one per asset kind. */
-export const CATEGORIES = ['glyphs', 'textures', 'sprites', 'ui', 'fx', 'backdrops'];
+export const CATEGORIES = [
+  'glyphs', 'textures', 'sprites', 'ui', 'fx', 'backdrops', 'environment',
+];
 
 export const ENTRY_SCHEMA = {
   required: ['id', 'path', 'category', 'size', 'task'],

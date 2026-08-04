@@ -1,0 +1,2330 @@
+{
+  "ok": true,
+  "context": "current-production six-face Level 1; old traversal fixture excluded",
+  "browser": {
+    "channel": "chrome",
+    "via": "tools/playtest/node_modules"
+  },
+  "captures": [
+    {
+      "id": "desktop-face1",
+      "file": "/Users/scottmeyer/projects/hullbreaker/artifacts/wasp-modular-v2/production/desktop-face1-live.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scroll": 44,
+      "corners": 0,
+      "runtime": {
+        "state": "PAUSED",
+        "world": {
+          "enabled": true,
+          "boxes": 1720,
+          "pipes": 50,
+          "gussets": 168,
+          "lights": 0,
+          "drawPools": 30,
+          "hidden": 2860,
+          "detailState": "off",
+          "detailFixtures": 0,
+          "detailVisible": 0,
+          "detailHidden": 0,
+          "detailDrawPools": 0,
+          "detailVertices": 0,
+          "detailTriangles": 0,
+          "detailFallbacks": 0,
+          "detailRoles": {},
+          "packState": "ready",
+          "packChoices": 64,
+          "packRequests": 1,
+          "packGpuTextures": 1,
+          "packEmissive": false,
+          "packPlacements": 174,
+          "packDrawPools": 8,
+          "packCellsUsed": 38,
+          "componentCatalog": {
+            "total": 97,
+            "atlas": 64,
+            "cutout": 32,
+            "procedural": 1,
+            "categories": {
+              "material-fill": 12,
+              "material-wear": 4,
+              "service-organ": 18,
+              "structural-socket": 4,
+              "traversal-socket": 4,
+              "conduit-resource": 4,
+              "service-resource": 4,
+              "defense-state": 24,
+              "scuttle-damage": 9,
+              "trim-cap": 2,
+              "beam-brace": 3,
+              "ladder-rail": 3,
+              "pipe-conduit": 4,
+              "near-silhouette": 2
+            },
+            "emissiveDefaults": 0
+          },
+          "componentPlacements": 552,
+          "componentArtState": "ready",
+          "componentArtRequests": 1,
+          "componentArtGpuTextures": 1,
+          "componentArtEmissive": false,
+          "componentDrawPools": 9,
+          "componentUnique": 61,
+          "componentCategories": {
+            "material-fill": 55,
+            "service-organ": 126,
+            "conduit-resource": 4,
+            "material-wear": 28,
+            "service-resource": 4,
+            "structural-socket": 14,
+            "traversal-socket": 52,
+            "pipe-conduit": 68,
+            "trim-cap": 66,
+            "defense-state": 13,
+            "beam-brace": 34,
+            "near-silhouette": 16,
+            "scuttle-damage": 5,
+            "ladder-rail": 67
+          },
+          "responseSockets": 18,
+          "responseSocketKinds": {
+            "spawn": 2,
+            "clamp": 1,
+            "interlock": 2,
+            "vent": 2,
+            "defense": 6,
+            "rupture": 5
+          },
+          "responseStates": {
+            "observe": 2,
+            "intercept": 1,
+            "contain": 2,
+            "quarantine": 2,
+            "sterilize": 3,
+            "scuttle": 8
+          },
+          "detailPreload": {
+            "state": "off",
+            "requests": 0,
+            "preloadMs": null,
+            "gateMs": null,
+            "residency": "off",
+            "settledBeforeConsumer": true
+          }
+        },
+        "components": {
+          "state": "ready",
+          "error": null,
+          "requests": 1,
+          "gpuTextures": 1,
+          "components": 32,
+          "emissive": false,
+          "preloadMs": 489.9,
+          "gateMs": 196,
+          "settledBeforeConsumer": true,
+          "atlas": {
+            "file": "../../assets/generated/environment/meridian-component-atlas-v1.png",
+            "canvas": [
+              2048,
+              1024
+            ],
+            "gpuTextures": 1,
+            "emissive": false,
+            "alphaTest": 0.035
+          }
+        },
+        "hostiles": {
+          "paintedFlappers": 0,
+          "paintedDownstrokesVisible": 0,
+          "anchors": 0,
+          "shielded": 0,
+          "pincers": 0,
+          "bulwarks": 0,
+          "vaults": 0,
+          "attackRacks": 0,
+          "backlashes": 0,
+          "paintedParts": 0,
+          "paintedByGene": {},
+          "atlas": {
+            "state": "ready",
+            "file": "../../assets/generated/enemy-parts/meridian-mutation-atlas-v1.png",
+            "error": null,
+            "cells": [
+              "BULWARK",
+              "VAULT",
+              "TWINSTRIKE",
+              "SALVO",
+              "RELAY",
+              "PINCER",
+              "AEGIS",
+              "BACKLASH"
+            ],
+            "rects": {
+              "BULWARK": [
+                33,
+                40,
+                182,
+                192
+              ],
+              "VAULT": [
+                262,
+                38,
+                198,
+                192
+              ],
+              "TWINSTRIKE": [
+                503,
+                61,
+                253,
+                161
+              ],
+              "SALVO": [
+                782,
+                39,
+                216,
+                194
+              ],
+              "RELAY": [
+                29,
+                282,
+                175,
+                192
+              ],
+              "PINCER": [
+                258,
+                274,
+                233,
+                196
+              ],
+              "AEGIS": [
+                531,
+                281,
+                183,
+                197
+              ],
+              "BACKLASH": [
+                773,
+                288,
+                217,
+                176
+              ]
+            },
+            "requests": 1,
+            "preloadMs": 46.3
+          },
+          "poseNormalization": [
+            {
+              "kind": "wasp",
+              "pose": "action",
+              "targetShare": 0.85,
+              "gain": 1.239,
+              "widthGain": 1,
+              "opaqueHeightBefore": 0.578,
+              "opaqueHeightAfter": 0.716,
+              "baseOpaqueHeight": 0.842,
+              "anchorY": 0,
+              "collisionChanged": false
+            },
+            {
+              "kind": "wasp",
+              "pose": "flap",
+              "targetShare": 0.78,
+              "gain": 3.656,
+              "widthGain": 1,
+              "opaqueHeightBefore": 0.18,
+              "opaqueHeightAfter": 0.657,
+              "baseOpaqueHeight": 0.842,
+              "anchorY": 0,
+              "collisionChanged": false
+            },
+            {
+              "kind": "hound",
+              "pose": "action",
+              "targetShare": 1,
+              "gain": 1.19,
+              "widthGain": 1,
+              "opaqueHeightBefore": 0.699,
+              "opaqueHeightAfter": 0.831,
+              "baseOpaqueHeight": 0.831,
+              "anchorY": -0.45,
+              "collisionChanged": false
+            }
+          ],
+          "locomotion": {
+            "wasp": {
+              "ready": true,
+              "frameCount": 4,
+              "activeFrames": [
+                0,
+                3,
+                4,
+                5,
+                6
+              ],
+              "oneBodyMesh": true,
+              "crossfade": false
+            },
+            "hound": {
+              "ready": true,
+              "frameCount": 8,
+              "activeFrames": [],
+              "oneBodyMesh": true,
+              "crossfade": false
+            }
+          },
+          "actorMotion": {
+            "kinds": {
+              "polyp": {
+                "ready": true,
+                "atlas": "emplacement",
+                "frames": 4,
+                "onePaintedBodyMesh": true,
+                "immutablePreload": true,
+                "fallback": "base/primitive"
+              },
+              "mortar": {
+                "ready": true,
+                "atlas": "emplacement",
+                "frames": 4,
+                "onePaintedBodyMesh": true,
+                "immutablePreload": true,
+                "fallback": "base/primitive"
+              },
+              "warden": {
+                "ready": true,
+                "atlas": "warden",
+                "frames": 8,
+                "onePaintedBodyMesh": true,
+                "immutablePreload": true,
+                "fallback": "base/primitive"
+              }
+            },
+            "geometries": 16,
+            "textures": 2,
+            "liveBodies": 0,
+            "bodyDraws": 0,
+            "fixedFrameGeometries": 16,
+            "rows": []
+          },
+          "waspModular": {
+            "ready": true,
+            "bodyStates": 8,
+            "wingPhases": 8,
+            "combinations": 64,
+            "sharedGeometries": 16,
+            "meshesPerWasp": 2,
+            "drawCallsPerWasp": 2,
+            "addedDrawCallsPerWasp": 1,
+            "textureCount": 1,
+            "estimatedGpuBytes": 2097152,
+            "collisionChanged": false,
+            "simChanged": false,
+            "crossfade": false,
+            "liveBodies": 5,
+            "liveDraws": 10,
+            "rootAnchor": "reactor-center",
+            "independentBodyAndWingSelection": true,
+            "opacityStrobe": false,
+            "idleWingBloom": false,
+            "platformOuterDepth": 0.7,
+            "activeMinimumWingDepth": 0.7349999999999999,
+            "rows": [
+              {
+                "id": 4,
+                "state": "cruise",
+                "bodyState": 0,
+                "wingPhase": 0,
+                "poseKey": "waspmod:0",
+                "bodyDepth": 1.488,
+                "wingDepth": 1.473,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": 0
+              },
+              {
+                "id": 5,
+                "state": "dive",
+                "bodyState": 3,
+                "wingPhase": 1,
+                "poseKey": "waspmod:3",
+                "bodyDepth": 1.4809,
+                "wingDepth": 1.4659,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": null
+              },
+              {
+                "id": 6,
+                "state": "dive",
+                "bodyState": 4,
+                "wingPhase": 2,
+                "poseKey": "waspmod:4",
+                "bodyDepth": 1.4734,
+                "wingDepth": 1.4584,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": null
+              },
+              {
+                "id": 7,
+                "state": "cruise",
+                "bodyState": 5,
+                "wingPhase": 3,
+                "poseKey": "waspmod:5",
+                "bodyDepth": 1.4656,
+                "wingDepth": 1.4506,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": 0
+              },
+              {
+                "id": 8,
+                "state": "recover",
+                "bodyState": 6,
+                "wingPhase": 4,
+                "poseKey": "waspmod:6",
+                "bodyDepth": 1.4574,
+                "wingDepth": 1.4424,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": null
+              }
+            ]
+          },
+          "genomes": [],
+          "flapSample": null,
+          "motionRows": [
+            {
+              "kind": "wasp",
+              "id": 4,
+              "frame": 0,
+              "poseKey": "waspmod:0",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            },
+            {
+              "kind": "wasp",
+              "id": 5,
+              "frame": 3,
+              "poseKey": "waspmod:3",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            },
+            {
+              "kind": "wasp",
+              "id": 6,
+              "frame": 4,
+              "poseKey": "waspmod:4",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            },
+            {
+              "kind": "wasp",
+              "id": 7,
+              "frame": 5,
+              "poseKey": "waspmod:5",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            },
+            {
+              "kind": "wasp",
+              "id": 8,
+              "frame": 6,
+              "poseKey": "waspmod:6",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            }
+          ]
+        },
+        "currentFacet": 1,
+        "render": {
+          "frame": 871,
+          "calls": 280,
+          "triangles": 212594,
+          "points": 0,
+          "lines": 0
+        },
+        "resources": {
+          "policy": "bounded",
+          "pixelRatio": 1.25,
+          "css": {
+            "width": 1440,
+            "height": 900
+          },
+          "drawingBuffer": {
+            "width": 1800,
+            "height": 1125
+          },
+          "drawingPixels": 2025000,
+          "draw": {
+            "calls": 280,
+            "triangles": 212594,
+            "points": 0,
+            "lines": 0
+          },
+          "memory": {
+            "geometries": 101,
+            "textures": 65,
+            "programs": 49
+          }
+        }
+      }
+    },
+    {
+      "id": "desktop-mid",
+      "file": "/Users/scottmeyer/projects/hullbreaker/artifacts/wasp-modular-v2/production/desktop-mid-live.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scroll": 174,
+      "corners": 2,
+      "runtime": {
+        "state": "PAUSED",
+        "world": {
+          "enabled": true,
+          "boxes": 1720,
+          "pipes": 50,
+          "gussets": 168,
+          "lights": 0,
+          "drawPools": 30,
+          "hidden": 2810,
+          "detailState": "off",
+          "detailFixtures": 0,
+          "detailVisible": 0,
+          "detailHidden": 0,
+          "detailDrawPools": 0,
+          "detailVertices": 0,
+          "detailTriangles": 0,
+          "detailFallbacks": 0,
+          "detailRoles": {},
+          "packState": "ready",
+          "packChoices": 64,
+          "packRequests": 1,
+          "packGpuTextures": 1,
+          "packEmissive": false,
+          "packPlacements": 174,
+          "packDrawPools": 8,
+          "packCellsUsed": 38,
+          "componentCatalog": {
+            "total": 97,
+            "atlas": 64,
+            "cutout": 32,
+            "procedural": 1,
+            "categories": {
+              "material-fill": 12,
+              "material-wear": 4,
+              "service-organ": 18,
+              "structural-socket": 4,
+              "traversal-socket": 4,
+              "conduit-resource": 4,
+              "service-resource": 4,
+              "defense-state": 24,
+              "scuttle-damage": 9,
+              "trim-cap": 2,
+              "beam-brace": 3,
+              "ladder-rail": 3,
+              "pipe-conduit": 4,
+              "near-silhouette": 2
+            },
+            "emissiveDefaults": 0
+          },
+          "componentPlacements": 552,
+          "componentArtState": "ready",
+          "componentArtRequests": 1,
+          "componentArtGpuTextures": 1,
+          "componentArtEmissive": false,
+          "componentDrawPools": 9,
+          "componentUnique": 61,
+          "componentCategories": {
+            "material-fill": 55,
+            "service-organ": 126,
+            "conduit-resource": 4,
+            "material-wear": 28,
+            "service-resource": 4,
+            "structural-socket": 14,
+            "traversal-socket": 52,
+            "pipe-conduit": 68,
+            "trim-cap": 66,
+            "defense-state": 13,
+            "beam-brace": 34,
+            "near-silhouette": 16,
+            "scuttle-damage": 5,
+            "ladder-rail": 67
+          },
+          "responseSockets": 18,
+          "responseSocketKinds": {
+            "spawn": 2,
+            "clamp": 1,
+            "interlock": 2,
+            "vent": 2,
+            "defense": 6,
+            "rupture": 5
+          },
+          "responseStates": {
+            "observe": 2,
+            "intercept": 1,
+            "contain": 2,
+            "quarantine": 2,
+            "sterilize": 3,
+            "scuttle": 8
+          },
+          "detailPreload": {
+            "state": "off",
+            "requests": 0,
+            "preloadMs": null,
+            "gateMs": null,
+            "residency": "off",
+            "settledBeforeConsumer": true
+          }
+        },
+        "components": {
+          "state": "ready",
+          "error": null,
+          "requests": 1,
+          "gpuTextures": 1,
+          "components": 32,
+          "emissive": false,
+          "preloadMs": 513.8,
+          "gateMs": 212,
+          "settledBeforeConsumer": true,
+          "atlas": {
+            "file": "../../assets/generated/environment/meridian-component-atlas-v1.png",
+            "canvas": [
+              2048,
+              1024
+            ],
+            "gpuTextures": 1,
+            "emissive": false,
+            "alphaTest": 0.035
+          }
+        },
+        "hostiles": {
+          "paintedFlappers": 0,
+          "paintedDownstrokesVisible": 0,
+          "anchors": 0,
+          "shielded": 0,
+          "pincers": 0,
+          "bulwarks": 5,
+          "vaults": 0,
+          "attackRacks": 0,
+          "backlashes": 0,
+          "paintedParts": 5,
+          "paintedByGene": {
+            "BULWARK": 5
+          },
+          "atlas": {
+            "state": "ready",
+            "file": "../../assets/generated/enemy-parts/meridian-mutation-atlas-v1.png",
+            "error": null,
+            "cells": [
+              "BULWARK",
+              "VAULT",
+              "TWINSTRIKE",
+              "SALVO",
+              "RELAY",
+              "PINCER",
+              "AEGIS",
+              "BACKLASH"
+            ],
+            "rects": {
+              "BULWARK": [
+                33,
+                40,
+                182,
+                192
+              ],
+              "VAULT": [
+                262,
+                38,
+                198,
+                192
+              ],
+              "TWINSTRIKE": [
+                503,
+                61,
+                253,
+                161
+              ],
+              "SALVO": [
+                782,
+                39,
+                216,
+                194
+              ],
+              "RELAY": [
+                29,
+                282,
+                175,
+                192
+              ],
+              "PINCER": [
+                258,
+                274,
+                233,
+                196
+              ],
+              "AEGIS": [
+                531,
+                281,
+                183,
+                197
+              ],
+              "BACKLASH": [
+                773,
+                288,
+                217,
+                176
+              ]
+            },
+            "requests": 1,
+            "preloadMs": 66.9
+          },
+          "poseNormalization": [
+            {
+              "kind": "wasp",
+              "pose": "action",
+              "targetShare": 0.85,
+              "gain": 1.239,
+              "widthGain": 1,
+              "opaqueHeightBefore": 0.578,
+              "opaqueHeightAfter": 0.716,
+              "baseOpaqueHeight": 0.842,
+              "anchorY": 0,
+              "collisionChanged": false
+            },
+            {
+              "kind": "wasp",
+              "pose": "flap",
+              "targetShare": 0.78,
+              "gain": 3.656,
+              "widthGain": 1,
+              "opaqueHeightBefore": 0.18,
+              "opaqueHeightAfter": 0.657,
+              "baseOpaqueHeight": 0.842,
+              "anchorY": 0,
+              "collisionChanged": false
+            },
+            {
+              "kind": "hound",
+              "pose": "action",
+              "targetShare": 1,
+              "gain": 1.19,
+              "widthGain": 1,
+              "opaqueHeightBefore": 0.699,
+              "opaqueHeightAfter": 0.831,
+              "baseOpaqueHeight": 0.831,
+              "anchorY": -0.45,
+              "collisionChanged": false
+            }
+          ],
+          "locomotion": {
+            "wasp": {
+              "ready": true,
+              "frameCount": 4,
+              "activeFrames": [
+                0,
+                3,
+                4,
+                5,
+                6
+              ],
+              "oneBodyMesh": true,
+              "crossfade": false
+            },
+            "hound": {
+              "ready": true,
+              "frameCount": 8,
+              "activeFrames": [],
+              "oneBodyMesh": true,
+              "crossfade": false
+            }
+          },
+          "actorMotion": {
+            "kinds": {
+              "polyp": {
+                "ready": true,
+                "atlas": "emplacement",
+                "frames": 4,
+                "onePaintedBodyMesh": true,
+                "immutablePreload": true,
+                "fallback": "base/primitive"
+              },
+              "mortar": {
+                "ready": true,
+                "atlas": "emplacement",
+                "frames": 4,
+                "onePaintedBodyMesh": true,
+                "immutablePreload": true,
+                "fallback": "base/primitive"
+              },
+              "warden": {
+                "ready": true,
+                "atlas": "warden",
+                "frames": 8,
+                "onePaintedBodyMesh": true,
+                "immutablePreload": true,
+                "fallback": "base/primitive"
+              }
+            },
+            "geometries": 16,
+            "textures": 2,
+            "liveBodies": 0,
+            "bodyDraws": 0,
+            "fixedFrameGeometries": 16,
+            "rows": []
+          },
+          "waspModular": {
+            "ready": true,
+            "bodyStates": 8,
+            "wingPhases": 8,
+            "combinations": 64,
+            "sharedGeometries": 16,
+            "meshesPerWasp": 2,
+            "drawCallsPerWasp": 2,
+            "addedDrawCallsPerWasp": 1,
+            "textureCount": 1,
+            "estimatedGpuBytes": 2097152,
+            "collisionChanged": false,
+            "simChanged": false,
+            "crossfade": false,
+            "liveBodies": 5,
+            "liveDraws": 10,
+            "rootAnchor": "reactor-center",
+            "independentBodyAndWingSelection": true,
+            "opacityStrobe": false,
+            "idleWingBloom": false,
+            "platformOuterDepth": 0.7,
+            "activeMinimumWingDepth": 0.7349999999999999,
+            "rows": [
+              {
+                "id": 4,
+                "state": "cruise",
+                "bodyState": 0,
+                "wingPhase": 0,
+                "poseKey": "waspmod:0",
+                "bodyDepth": 1.488,
+                "wingDepth": 1.473,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": 0
+              },
+              {
+                "id": 5,
+                "state": "dive",
+                "bodyState": 3,
+                "wingPhase": 1,
+                "poseKey": "waspmod:3",
+                "bodyDepth": 1.4809,
+                "wingDepth": 1.4659,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": null
+              },
+              {
+                "id": 6,
+                "state": "dive",
+                "bodyState": 4,
+                "wingPhase": 2,
+                "poseKey": "waspmod:4",
+                "bodyDepth": 1.4734,
+                "wingDepth": 1.4584,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": null
+              },
+              {
+                "id": 7,
+                "state": "cruise",
+                "bodyState": 5,
+                "wingPhase": 3,
+                "poseKey": "waspmod:5",
+                "bodyDepth": 1.4656,
+                "wingDepth": 1.4506,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": 0
+              },
+              {
+                "id": 8,
+                "state": "recover",
+                "bodyState": 6,
+                "wingPhase": 4,
+                "poseKey": "waspmod:6",
+                "bodyDepth": 1.4574,
+                "wingDepth": 1.4424,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": null
+              }
+            ]
+          },
+          "genomes": [
+            {
+              "id": 4,
+              "label": "CONTAIN WVR BLW WASP",
+              "strain": "WEAVER",
+              "expressedBudget": 1,
+              "wardPolicy": "ECHELON",
+              "salvoPattern": "CUTBACK",
+              "genes": [
+                "BULWARK"
+              ],
+              "painted": [
+                {
+                  "gene": "BULWARK",
+                  "visible": true,
+                  "worldSize": 1.082
+                }
+              ],
+              "state": "cruise",
+              "bulwarkOpen": false,
+              "backlashArmed": false
+            },
+            {
+              "id": 5,
+              "label": "CONTAIN HNT BLW WASP",
+              "strain": "HUNTER",
+              "expressedBudget": 1,
+              "wardPolicy": "SPEAR",
+              "salvoPattern": "LEAD",
+              "genes": [
+                "BULWARK"
+              ],
+              "painted": [
+                {
+                  "gene": "BULWARK",
+                  "visible": true,
+                  "worldSize": 1.02
+                }
+              ],
+              "state": "dive",
+              "bulwarkOpen": false,
+              "backlashArmed": false
+            },
+            {
+              "id": 6,
+              "label": "CONTAIN BST BLW WASP",
+              "strain": "BASTION",
+              "expressedBudget": 1,
+              "wardPolicy": "ANCHOR",
+              "salvoPattern": "BRACKET",
+              "genes": [
+                "BULWARK"
+              ],
+              "painted": [
+                {
+                  "gene": "BULWARK",
+                  "visible": true,
+                  "worldSize": 1.052
+                }
+              ],
+              "state": "dive",
+              "bulwarkOpen": false,
+              "backlashArmed": false
+            },
+            {
+              "id": 7,
+              "label": "CONTAIN HNT BLW WASP",
+              "strain": "HUNTER",
+              "expressedBudget": 1,
+              "wardPolicy": "SPEAR",
+              "salvoPattern": "LEAD",
+              "genes": [
+                "BULWARK"
+              ],
+              "painted": [
+                {
+                  "gene": "BULWARK",
+                  "visible": true,
+                  "worldSize": 1.057
+                }
+              ],
+              "state": "cruise",
+              "bulwarkOpen": false,
+              "backlashArmed": false
+            },
+            {
+              "id": 8,
+              "label": "CONTAIN BST BLW WASP",
+              "strain": "BASTION",
+              "expressedBudget": 1,
+              "wardPolicy": "ANCHOR",
+              "salvoPattern": "BRACKET",
+              "genes": [
+                "BULWARK"
+              ],
+              "painted": [
+                {
+                  "gene": "BULWARK",
+                  "visible": true,
+                  "worldSize": 1.1
+                }
+              ],
+              "state": "recover",
+              "bulwarkOpen": false,
+              "backlashArmed": false
+            }
+          ],
+          "flapSample": null,
+          "motionRows": [
+            {
+              "kind": "wasp",
+              "id": 4,
+              "frame": 0,
+              "poseKey": "waspmod:0",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            },
+            {
+              "kind": "wasp",
+              "id": 5,
+              "frame": 3,
+              "poseKey": "waspmod:3",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            },
+            {
+              "kind": "wasp",
+              "id": 6,
+              "frame": 4,
+              "poseKey": "waspmod:4",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            },
+            {
+              "kind": "wasp",
+              "id": 7,
+              "frame": 5,
+              "poseKey": "waspmod:5",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            },
+            {
+              "kind": "wasp",
+              "id": 8,
+              "frame": 6,
+              "poseKey": "waspmod:6",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            }
+          ]
+        },
+        "currentFacet": 3,
+        "render": {
+          "frame": 841,
+          "calls": 306,
+          "triangles": 213406,
+          "points": 0,
+          "lines": 0
+        },
+        "resources": {
+          "policy": "bounded",
+          "pixelRatio": 1.25,
+          "css": {
+            "width": 1440,
+            "height": 900
+          },
+          "drawingBuffer": {
+            "width": 1800,
+            "height": 1125
+          },
+          "drawingPixels": 2025000,
+          "draw": {
+            "calls": 306,
+            "triangles": 213406,
+            "points": 0,
+            "lines": 0
+          },
+          "memory": {
+            "geometries": 104,
+            "textures": 65,
+            "programs": 50
+          }
+        }
+      }
+    },
+    {
+      "id": "portrait-face1",
+      "file": "/Users/scottmeyer/projects/hullbreaker/artifacts/wasp-modular-v2/production/portrait-face1-live.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scroll": 44,
+      "corners": 0,
+      "runtime": {
+        "state": "PAUSED",
+        "world": {
+          "enabled": true,
+          "boxes": 1720,
+          "pipes": 50,
+          "gussets": 168,
+          "lights": 0,
+          "drawPools": 30,
+          "hidden": 2860,
+          "detailState": "off",
+          "detailFixtures": 0,
+          "detailVisible": 0,
+          "detailHidden": 0,
+          "detailDrawPools": 0,
+          "detailVertices": 0,
+          "detailTriangles": 0,
+          "detailFallbacks": 0,
+          "detailRoles": {},
+          "packState": "ready",
+          "packChoices": 64,
+          "packRequests": 1,
+          "packGpuTextures": 1,
+          "packEmissive": false,
+          "packPlacements": 174,
+          "packDrawPools": 8,
+          "packCellsUsed": 38,
+          "componentCatalog": {
+            "total": 97,
+            "atlas": 64,
+            "cutout": 32,
+            "procedural": 1,
+            "categories": {
+              "material-fill": 12,
+              "material-wear": 4,
+              "service-organ": 18,
+              "structural-socket": 4,
+              "traversal-socket": 4,
+              "conduit-resource": 4,
+              "service-resource": 4,
+              "defense-state": 24,
+              "scuttle-damage": 9,
+              "trim-cap": 2,
+              "beam-brace": 3,
+              "ladder-rail": 3,
+              "pipe-conduit": 4,
+              "near-silhouette": 2
+            },
+            "emissiveDefaults": 0
+          },
+          "componentPlacements": 552,
+          "componentArtState": "ready",
+          "componentArtRequests": 1,
+          "componentArtGpuTextures": 1,
+          "componentArtEmissive": false,
+          "componentDrawPools": 9,
+          "componentUnique": 61,
+          "componentCategories": {
+            "material-fill": 55,
+            "service-organ": 126,
+            "conduit-resource": 4,
+            "material-wear": 28,
+            "service-resource": 4,
+            "structural-socket": 14,
+            "traversal-socket": 52,
+            "pipe-conduit": 68,
+            "trim-cap": 66,
+            "defense-state": 13,
+            "beam-brace": 34,
+            "near-silhouette": 16,
+            "scuttle-damage": 5,
+            "ladder-rail": 67
+          },
+          "responseSockets": 18,
+          "responseSocketKinds": {
+            "spawn": 2,
+            "clamp": 1,
+            "interlock": 2,
+            "vent": 2,
+            "defense": 6,
+            "rupture": 5
+          },
+          "responseStates": {
+            "observe": 2,
+            "intercept": 1,
+            "contain": 2,
+            "quarantine": 2,
+            "sterilize": 3,
+            "scuttle": 8
+          },
+          "detailPreload": {
+            "state": "off",
+            "requests": 0,
+            "preloadMs": null,
+            "gateMs": null,
+            "residency": "off",
+            "settledBeforeConsumer": true
+          }
+        },
+        "components": {
+          "state": "ready",
+          "error": null,
+          "requests": 1,
+          "gpuTextures": 1,
+          "components": 32,
+          "emissive": false,
+          "preloadMs": 482.8,
+          "gateMs": 234,
+          "settledBeforeConsumer": true,
+          "atlas": {
+            "file": "../../assets/generated/environment/meridian-component-atlas-v1.png",
+            "canvas": [
+              2048,
+              1024
+            ],
+            "gpuTextures": 1,
+            "emissive": false,
+            "alphaTest": 0.035
+          }
+        },
+        "hostiles": {
+          "paintedFlappers": 0,
+          "paintedDownstrokesVisible": 0,
+          "anchors": 0,
+          "shielded": 0,
+          "pincers": 0,
+          "bulwarks": 0,
+          "vaults": 0,
+          "attackRacks": 0,
+          "backlashes": 0,
+          "paintedParts": 0,
+          "paintedByGene": {},
+          "atlas": {
+            "state": "ready",
+            "file": "../../assets/generated/enemy-parts/meridian-mutation-atlas-v1.png",
+            "error": null,
+            "cells": [
+              "BULWARK",
+              "VAULT",
+              "TWINSTRIKE",
+              "SALVO",
+              "RELAY",
+              "PINCER",
+              "AEGIS",
+              "BACKLASH"
+            ],
+            "rects": {
+              "BULWARK": [
+                33,
+                40,
+                182,
+                192
+              ],
+              "VAULT": [
+                262,
+                38,
+                198,
+                192
+              ],
+              "TWINSTRIKE": [
+                503,
+                61,
+                253,
+                161
+              ],
+              "SALVO": [
+                782,
+                39,
+                216,
+                194
+              ],
+              "RELAY": [
+                29,
+                282,
+                175,
+                192
+              ],
+              "PINCER": [
+                258,
+                274,
+                233,
+                196
+              ],
+              "AEGIS": [
+                531,
+                281,
+                183,
+                197
+              ],
+              "BACKLASH": [
+                773,
+                288,
+                217,
+                176
+              ]
+            },
+            "requests": 1,
+            "preloadMs": 78.7
+          },
+          "poseNormalization": [
+            {
+              "kind": "wasp",
+              "pose": "action",
+              "targetShare": 0.85,
+              "gain": 1.239,
+              "widthGain": 1,
+              "opaqueHeightBefore": 0.578,
+              "opaqueHeightAfter": 0.716,
+              "baseOpaqueHeight": 0.842,
+              "anchorY": 0,
+              "collisionChanged": false
+            },
+            {
+              "kind": "wasp",
+              "pose": "flap",
+              "targetShare": 0.78,
+              "gain": 3.656,
+              "widthGain": 1,
+              "opaqueHeightBefore": 0.18,
+              "opaqueHeightAfter": 0.657,
+              "baseOpaqueHeight": 0.842,
+              "anchorY": 0,
+              "collisionChanged": false
+            },
+            {
+              "kind": "hound",
+              "pose": "action",
+              "targetShare": 1,
+              "gain": 1.19,
+              "widthGain": 1,
+              "opaqueHeightBefore": 0.699,
+              "opaqueHeightAfter": 0.831,
+              "baseOpaqueHeight": 0.831,
+              "anchorY": -0.45,
+              "collisionChanged": false
+            }
+          ],
+          "locomotion": {
+            "wasp": {
+              "ready": true,
+              "frameCount": 4,
+              "activeFrames": [
+                0,
+                3,
+                4,
+                5,
+                6
+              ],
+              "oneBodyMesh": true,
+              "crossfade": false
+            },
+            "hound": {
+              "ready": true,
+              "frameCount": 8,
+              "activeFrames": [],
+              "oneBodyMesh": true,
+              "crossfade": false
+            }
+          },
+          "actorMotion": {
+            "kinds": {
+              "polyp": {
+                "ready": true,
+                "atlas": "emplacement",
+                "frames": 4,
+                "onePaintedBodyMesh": true,
+                "immutablePreload": true,
+                "fallback": "base/primitive"
+              },
+              "mortar": {
+                "ready": true,
+                "atlas": "emplacement",
+                "frames": 4,
+                "onePaintedBodyMesh": true,
+                "immutablePreload": true,
+                "fallback": "base/primitive"
+              },
+              "warden": {
+                "ready": true,
+                "atlas": "warden",
+                "frames": 8,
+                "onePaintedBodyMesh": true,
+                "immutablePreload": true,
+                "fallback": "base/primitive"
+              }
+            },
+            "geometries": 16,
+            "textures": 2,
+            "liveBodies": 0,
+            "bodyDraws": 0,
+            "fixedFrameGeometries": 16,
+            "rows": []
+          },
+          "waspModular": {
+            "ready": true,
+            "bodyStates": 8,
+            "wingPhases": 8,
+            "combinations": 64,
+            "sharedGeometries": 16,
+            "meshesPerWasp": 2,
+            "drawCallsPerWasp": 2,
+            "addedDrawCallsPerWasp": 1,
+            "textureCount": 1,
+            "estimatedGpuBytes": 2097152,
+            "collisionChanged": false,
+            "simChanged": false,
+            "crossfade": false,
+            "liveBodies": 5,
+            "liveDraws": 10,
+            "rootAnchor": "reactor-center",
+            "independentBodyAndWingSelection": true,
+            "opacityStrobe": false,
+            "idleWingBloom": false,
+            "platformOuterDepth": 0.7,
+            "activeMinimumWingDepth": 0.7349999999999999,
+            "rows": [
+              {
+                "id": 1,
+                "state": "cruise",
+                "bodyState": 0,
+                "wingPhase": 0,
+                "poseKey": "waspmod:0",
+                "bodyDepth": 1.541,
+                "wingDepth": 1.526,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": 0
+              },
+              {
+                "id": 2,
+                "state": "dive",
+                "bodyState": 3,
+                "wingPhase": 1,
+                "poseKey": "waspmod:3",
+                "bodyDepth": 1.538,
+                "wingDepth": 1.523,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": null
+              },
+              {
+                "id": 3,
+                "state": "dive",
+                "bodyState": 4,
+                "wingPhase": 2,
+                "poseKey": "waspmod:4",
+                "bodyDepth": 1.5347,
+                "wingDepth": 1.5197,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": null
+              },
+              {
+                "id": 4,
+                "state": "cruise",
+                "bodyState": 5,
+                "wingPhase": 3,
+                "poseKey": "waspmod:5",
+                "bodyDepth": 1.5309,
+                "wingDepth": 1.5159,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": 0
+              },
+              {
+                "id": 5,
+                "state": "recover",
+                "bodyState": 6,
+                "wingPhase": 4,
+                "poseKey": "waspmod:6",
+                "bodyDepth": 1.5267,
+                "wingDepth": 1.5117,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": null
+              }
+            ]
+          },
+          "genomes": [],
+          "flapSample": null,
+          "motionRows": [
+            {
+              "kind": "wasp",
+              "id": 1,
+              "frame": 0,
+              "poseKey": "waspmod:0",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            },
+            {
+              "kind": "wasp",
+              "id": 2,
+              "frame": 3,
+              "poseKey": "waspmod:3",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            },
+            {
+              "kind": "wasp",
+              "id": 3,
+              "frame": 4,
+              "poseKey": "waspmod:4",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            },
+            {
+              "kind": "wasp",
+              "id": 4,
+              "frame": 5,
+              "poseKey": "waspmod:5",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            },
+            {
+              "kind": "wasp",
+              "id": 5,
+              "frame": 6,
+              "poseKey": "waspmod:6",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            }
+          ]
+        },
+        "currentFacet": 1,
+        "render": {
+          "frame": 826,
+          "calls": 256,
+          "triangles": 210832,
+          "points": 0,
+          "lines": 0
+        },
+        "resources": {
+          "policy": "bounded",
+          "pixelRatio": 1.1,
+          "css": {
+            "width": 390,
+            "height": 844
+          },
+          "drawingBuffer": {
+            "width": 429,
+            "height": 928
+          },
+          "drawingPixels": 398112,
+          "draw": {
+            "calls": 256,
+            "triangles": 210832,
+            "points": 0,
+            "lines": 0
+          },
+          "memory": {
+            "geometries": 102,
+            "textures": 66,
+            "programs": 49
+          }
+        }
+      }
+    },
+    {
+      "id": "portrait-mid",
+      "file": "/Users/scottmeyer/projects/hullbreaker/artifacts/wasp-modular-v2/production/portrait-mid-live.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scroll": 174,
+      "corners": 2,
+      "runtime": {
+        "state": "PAUSED",
+        "world": {
+          "enabled": true,
+          "boxes": 1720,
+          "pipes": 50,
+          "gussets": 168,
+          "lights": 0,
+          "drawPools": 30,
+          "hidden": 2810,
+          "detailState": "off",
+          "detailFixtures": 0,
+          "detailVisible": 0,
+          "detailHidden": 0,
+          "detailDrawPools": 0,
+          "detailVertices": 0,
+          "detailTriangles": 0,
+          "detailFallbacks": 0,
+          "detailRoles": {},
+          "packState": "ready",
+          "packChoices": 64,
+          "packRequests": 1,
+          "packGpuTextures": 1,
+          "packEmissive": false,
+          "packPlacements": 174,
+          "packDrawPools": 8,
+          "packCellsUsed": 38,
+          "componentCatalog": {
+            "total": 97,
+            "atlas": 64,
+            "cutout": 32,
+            "procedural": 1,
+            "categories": {
+              "material-fill": 12,
+              "material-wear": 4,
+              "service-organ": 18,
+              "structural-socket": 4,
+              "traversal-socket": 4,
+              "conduit-resource": 4,
+              "service-resource": 4,
+              "defense-state": 24,
+              "scuttle-damage": 9,
+              "trim-cap": 2,
+              "beam-brace": 3,
+              "ladder-rail": 3,
+              "pipe-conduit": 4,
+              "near-silhouette": 2
+            },
+            "emissiveDefaults": 0
+          },
+          "componentPlacements": 552,
+          "componentArtState": "ready",
+          "componentArtRequests": 1,
+          "componentArtGpuTextures": 1,
+          "componentArtEmissive": false,
+          "componentDrawPools": 9,
+          "componentUnique": 61,
+          "componentCategories": {
+            "material-fill": 55,
+            "service-organ": 126,
+            "conduit-resource": 4,
+            "material-wear": 28,
+            "service-resource": 4,
+            "structural-socket": 14,
+            "traversal-socket": 52,
+            "pipe-conduit": 68,
+            "trim-cap": 66,
+            "defense-state": 13,
+            "beam-brace": 34,
+            "near-silhouette": 16,
+            "scuttle-damage": 5,
+            "ladder-rail": 67
+          },
+          "responseSockets": 18,
+          "responseSocketKinds": {
+            "spawn": 2,
+            "clamp": 1,
+            "interlock": 2,
+            "vent": 2,
+            "defense": 6,
+            "rupture": 5
+          },
+          "responseStates": {
+            "observe": 2,
+            "intercept": 1,
+            "contain": 2,
+            "quarantine": 2,
+            "sterilize": 3,
+            "scuttle": 8
+          },
+          "detailPreload": {
+            "state": "off",
+            "requests": 0,
+            "preloadMs": null,
+            "gateMs": null,
+            "residency": "off",
+            "settledBeforeConsumer": true
+          }
+        },
+        "components": {
+          "state": "ready",
+          "error": null,
+          "requests": 1,
+          "gpuTextures": 1,
+          "components": 32,
+          "emissive": false,
+          "preloadMs": 466,
+          "gateMs": 222,
+          "settledBeforeConsumer": true,
+          "atlas": {
+            "file": "../../assets/generated/environment/meridian-component-atlas-v1.png",
+            "canvas": [
+              2048,
+              1024
+            ],
+            "gpuTextures": 1,
+            "emissive": false,
+            "alphaTest": 0.035
+          }
+        },
+        "hostiles": {
+          "paintedFlappers": 0,
+          "paintedDownstrokesVisible": 0,
+          "anchors": 0,
+          "shielded": 0,
+          "pincers": 0,
+          "bulwarks": 5,
+          "vaults": 0,
+          "attackRacks": 0,
+          "backlashes": 0,
+          "paintedParts": 5,
+          "paintedByGene": {
+            "BULWARK": 5
+          },
+          "atlas": {
+            "state": "ready",
+            "file": "../../assets/generated/enemy-parts/meridian-mutation-atlas-v1.png",
+            "error": null,
+            "cells": [
+              "BULWARK",
+              "VAULT",
+              "TWINSTRIKE",
+              "SALVO",
+              "RELAY",
+              "PINCER",
+              "AEGIS",
+              "BACKLASH"
+            ],
+            "rects": {
+              "BULWARK": [
+                33,
+                40,
+                182,
+                192
+              ],
+              "VAULT": [
+                262,
+                38,
+                198,
+                192
+              ],
+              "TWINSTRIKE": [
+                503,
+                61,
+                253,
+                161
+              ],
+              "SALVO": [
+                782,
+                39,
+                216,
+                194
+              ],
+              "RELAY": [
+                29,
+                282,
+                175,
+                192
+              ],
+              "PINCER": [
+                258,
+                274,
+                233,
+                196
+              ],
+              "AEGIS": [
+                531,
+                281,
+                183,
+                197
+              ],
+              "BACKLASH": [
+                773,
+                288,
+                217,
+                176
+              ]
+            },
+            "requests": 1,
+            "preloadMs": 68.8
+          },
+          "poseNormalization": [
+            {
+              "kind": "wasp",
+              "pose": "action",
+              "targetShare": 0.85,
+              "gain": 1.239,
+              "widthGain": 1,
+              "opaqueHeightBefore": 0.578,
+              "opaqueHeightAfter": 0.716,
+              "baseOpaqueHeight": 0.842,
+              "anchorY": 0,
+              "collisionChanged": false
+            },
+            {
+              "kind": "wasp",
+              "pose": "flap",
+              "targetShare": 0.78,
+              "gain": 3.656,
+              "widthGain": 1,
+              "opaqueHeightBefore": 0.18,
+              "opaqueHeightAfter": 0.657,
+              "baseOpaqueHeight": 0.842,
+              "anchorY": 0,
+              "collisionChanged": false
+            },
+            {
+              "kind": "hound",
+              "pose": "action",
+              "targetShare": 1,
+              "gain": 1.19,
+              "widthGain": 1,
+              "opaqueHeightBefore": 0.699,
+              "opaqueHeightAfter": 0.831,
+              "baseOpaqueHeight": 0.831,
+              "anchorY": -0.45,
+              "collisionChanged": false
+            }
+          ],
+          "locomotion": {
+            "wasp": {
+              "ready": true,
+              "frameCount": 4,
+              "activeFrames": [
+                0,
+                3,
+                4,
+                5,
+                6
+              ],
+              "oneBodyMesh": true,
+              "crossfade": false
+            },
+            "hound": {
+              "ready": true,
+              "frameCount": 8,
+              "activeFrames": [],
+              "oneBodyMesh": true,
+              "crossfade": false
+            }
+          },
+          "actorMotion": {
+            "kinds": {
+              "polyp": {
+                "ready": true,
+                "atlas": "emplacement",
+                "frames": 4,
+                "onePaintedBodyMesh": true,
+                "immutablePreload": true,
+                "fallback": "base/primitive"
+              },
+              "mortar": {
+                "ready": true,
+                "atlas": "emplacement",
+                "frames": 4,
+                "onePaintedBodyMesh": true,
+                "immutablePreload": true,
+                "fallback": "base/primitive"
+              },
+              "warden": {
+                "ready": true,
+                "atlas": "warden",
+                "frames": 8,
+                "onePaintedBodyMesh": true,
+                "immutablePreload": true,
+                "fallback": "base/primitive"
+              }
+            },
+            "geometries": 16,
+            "textures": 2,
+            "liveBodies": 0,
+            "bodyDraws": 0,
+            "fixedFrameGeometries": 16,
+            "rows": []
+          },
+          "waspModular": {
+            "ready": true,
+            "bodyStates": 8,
+            "wingPhases": 8,
+            "combinations": 64,
+            "sharedGeometries": 16,
+            "meshesPerWasp": 2,
+            "drawCallsPerWasp": 2,
+            "addedDrawCallsPerWasp": 1,
+            "textureCount": 1,
+            "estimatedGpuBytes": 2097152,
+            "collisionChanged": false,
+            "simChanged": false,
+            "crossfade": false,
+            "liveBodies": 5,
+            "liveDraws": 10,
+            "rootAnchor": "reactor-center",
+            "independentBodyAndWingSelection": true,
+            "opacityStrobe": false,
+            "idleWingBloom": false,
+            "platformOuterDepth": 0.7,
+            "activeMinimumWingDepth": 0.7349999999999999,
+            "rows": [
+              {
+                "id": 1,
+                "state": "cruise",
+                "bodyState": 0,
+                "wingPhase": 0,
+                "poseKey": "waspmod:0",
+                "bodyDepth": 1.541,
+                "wingDepth": 1.526,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": 0
+              },
+              {
+                "id": 2,
+                "state": "dive",
+                "bodyState": 3,
+                "wingPhase": 1,
+                "poseKey": "waspmod:3",
+                "bodyDepth": 1.538,
+                "wingDepth": 1.523,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": null
+              },
+              {
+                "id": 3,
+                "state": "dive",
+                "bodyState": 4,
+                "wingPhase": 2,
+                "poseKey": "waspmod:4",
+                "bodyDepth": 1.5347,
+                "wingDepth": 1.5197,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": null
+              },
+              {
+                "id": 4,
+                "state": "cruise",
+                "bodyState": 5,
+                "wingPhase": 3,
+                "poseKey": "waspmod:5",
+                "bodyDepth": 1.5309,
+                "wingDepth": 1.5159,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": 0
+              },
+              {
+                "id": 5,
+                "state": "recover",
+                "bodyState": 6,
+                "wingPhase": 4,
+                "poseKey": "waspmod:6",
+                "bodyDepth": 1.5267,
+                "wingDepth": 1.5117,
+                "platformOuterDepth": 0.7,
+                "fullyOnActionPlane": true,
+                "rootContinuity": true,
+                "mirroredAsAssembly": true,
+                "opacityMatched": true,
+                "idleWingEmissive": null
+              }
+            ]
+          },
+          "genomes": [
+            {
+              "id": 1,
+              "label": "CONTAIN WVR BLW WASP",
+              "strain": "WEAVER",
+              "expressedBudget": 1,
+              "wardPolicy": "ECHELON",
+              "salvoPattern": "CUTBACK",
+              "genes": [
+                "BULWARK"
+              ],
+              "painted": [
+                {
+                  "gene": "BULWARK",
+                  "visible": true,
+                  "worldSize": 1.097
+                }
+              ],
+              "state": "cruise",
+              "bulwarkOpen": false,
+              "backlashArmed": false
+            },
+            {
+              "id": 2,
+              "label": "CONTAIN HNT BLW WASP",
+              "strain": "HUNTER",
+              "expressedBudget": 1,
+              "wardPolicy": "SPEAR",
+              "salvoPattern": "LEAD",
+              "genes": [
+                "BULWARK"
+              ],
+              "painted": [
+                {
+                  "gene": "BULWARK",
+                  "visible": true,
+                  "worldSize": 1.032
+                }
+              ],
+              "state": "dive",
+              "bulwarkOpen": false,
+              "backlashArmed": false
+            },
+            {
+              "id": 3,
+              "label": "CONTAIN BST BLW WASP",
+              "strain": "BASTION",
+              "expressedBudget": 1,
+              "wardPolicy": "ANCHOR",
+              "salvoPattern": "BRACKET",
+              "genes": [
+                "BULWARK"
+              ],
+              "painted": [
+                {
+                  "gene": "BULWARK",
+                  "visible": true,
+                  "worldSize": 1.088
+                }
+              ],
+              "state": "dive",
+              "bulwarkOpen": false,
+              "backlashArmed": false
+            },
+            {
+              "id": 4,
+              "label": "CONTAIN HNT BLW WASP",
+              "strain": "HUNTER",
+              "expressedBudget": 1,
+              "wardPolicy": "SPEAR",
+              "salvoPattern": "LEAD",
+              "genes": [
+                "BULWARK"
+              ],
+              "painted": [
+                {
+                  "gene": "BULWARK",
+                  "visible": true,
+                  "worldSize": 1.133
+                }
+              ],
+              "state": "cruise",
+              "bulwarkOpen": false,
+              "backlashArmed": false
+            },
+            {
+              "id": 5,
+              "label": "CONTAIN BST BLW WASP",
+              "strain": "BASTION",
+              "expressedBudget": 1,
+              "wardPolicy": "ANCHOR",
+              "salvoPattern": "BRACKET",
+              "genes": [
+                "BULWARK"
+              ],
+              "painted": [
+                {
+                  "gene": "BULWARK",
+                  "visible": true,
+                  "worldSize": 1.039
+                }
+              ],
+              "state": "recover",
+              "bulwarkOpen": false,
+              "backlashArmed": false
+            }
+          ],
+          "flapSample": null,
+          "motionRows": [
+            {
+              "kind": "wasp",
+              "id": 1,
+              "frame": 0,
+              "poseKey": "waspmod:0",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            },
+            {
+              "kind": "wasp",
+              "id": 2,
+              "frame": 3,
+              "poseKey": "waspmod:3",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            },
+            {
+              "kind": "wasp",
+              "id": 3,
+              "frame": 4,
+              "poseKey": "waspmod:4",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            },
+            {
+              "kind": "wasp",
+              "id": 4,
+              "frame": 5,
+              "poseKey": "waspmod:5",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            },
+            {
+              "kind": "wasp",
+              "id": 5,
+              "frame": 6,
+              "poseKey": "waspmod:6",
+              "scale": [
+                1.55,
+                1.55,
+                1.55
+              ],
+              "presentationScale": 1.55,
+              "atlasOwnsSilhouette": true
+            }
+          ]
+        },
+        "currentFacet": 3,
+        "render": {
+          "frame": 856,
+          "calls": 272,
+          "triangles": 211288,
+          "points": 0,
+          "lines": 0
+        },
+        "resources": {
+          "policy": "bounded",
+          "pixelRatio": 1.1,
+          "css": {
+            "width": 390,
+            "height": 844
+          },
+          "drawingBuffer": {
+            "width": 429,
+            "height": 928
+          },
+          "drawingPixels": 398112,
+          "draw": {
+            "calls": 272,
+            "triangles": 211288,
+            "points": 0,
+            "lines": 0
+          },
+          "memory": {
+            "geometries": 105,
+            "textures": 66,
+            "programs": 50
+          }
+        }
+      }
+    }
+  ],
+  "deaths": [
+    {
+      "id": "desktop-mid",
+      "impactFile": "/Users/scottmeyer/projects/hullbreaker/artifacts/wasp-modular-v2/production/desktop-mid-death-impact.png",
+      "ruptureFile": "/Users/scottmeyer/projects/hullbreaker/artifacts/wasp-modular-v2/production/desktop-mid-death-rupture.png",
+      "impact": {
+        "active": 1,
+        "pool": {
+          "rigs": 0,
+          "activeRigs": 0,
+          "maxRigs": 13,
+          "commonRigs": 0,
+          "wardenRigs": 0,
+          "planes": 0,
+          "maxPlanes": 66,
+          "maxCorpses": 12
+        },
+        "rows": [
+          {
+            "kind": "wasp",
+            "ageMs": 0,
+            "lifetimeMs": 520,
+            "phase": "impact",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          }
+        ]
+      },
+      "rupture": {
+        "active": 1,
+        "pool": {
+          "rigs": 0,
+          "activeRigs": 0,
+          "maxRigs": 13,
+          "commonRigs": 0,
+          "wardenRigs": 0,
+          "planes": 0,
+          "maxPlanes": 66,
+          "maxCorpses": 12
+        },
+        "rows": [
+          {
+            "kind": "wasp",
+            "ageMs": 167,
+            "lifetimeMs": 520,
+            "phase": "rupture",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          }
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

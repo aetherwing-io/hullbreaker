@@ -249,17 +249,19 @@ function judgeArt(snap) {
   } else {
     const replaced = snap.backdrop.plates.filter((p) => p.replaced === true).length;
     out.push({
-      name: 'backdrop slots drawn or intentionally replaced',
-      pass: snap.backdrop.built > 0 &&
-        snap.backdrop.built + replaced === snap.backdrop.plates.length,
-      detail: `built=${snap.backdrop.built} replaced=${replaced} ` +
-        `total=${snap.backdrop.plates.length}`,
+      name: 'legacy backdrop slots retired into the facet depth volume',
+      pass: snap.backdrop.legacyPlateMeshes === 0 &&
+        replaced === snap.backdrop.plates.length &&
+        snap.backdrop.plates.every((p) => p.state === 'retired'),
+      detail: `legacyMeshes=${snap.backdrop.legacyPlateMeshes ?? 'n/a'} ` +
+        `replaced=${replaced} total=${snap.backdrop.plates.length}`,
     });
     for (const p of snap.backdrop.plates) {
       out.push({
-        name: `backdrop plate: ${p.plate} (${p.face})`,
-        pass: p.state === 'ready',
-        detail: `state=${p.state}${p.error ? ' (' + p.error + ')' : ''}`,
+        name: `retired backdrop plate: ${p.plate} (${p.face})`,
+        pass: p.state === 'retired' && p.replaced === true &&
+          p.replacement === 'facet-anatomy-volume',
+        detail: `state=${p.state} replacement=${p.replacement || 'none'}`,
       });
     }
     const anatomy = snap.backdrop.anatomyBody;
@@ -272,12 +274,25 @@ function judgeArt(snap) {
     });
     const composite = snap.backdrop.atmosphere?.anatomy;
     out.push({
-      name: 'connected Meridian anatomy composited into curved atmosphere',
-      pass: composite?.composited === true,
+      name: 'connected Meridian anatomy direct-mapped onto curved world shell',
+      pass: composite?.directMapped === true && composite?.gpuTextures === 1 &&
+        composite?.runtimeCrop === false,
       detail: composite
-        ? `composited=${composite.composited} source=${composite.source?.join('x') || 'none'} ` +
-          `stagePasses=${composite.stagePasses ?? 0}`
+        ? `directMapped=${composite.directMapped} source=${composite.source?.join('x') || 'none'} ` +
+          `gpuTextures=${composite.gpuTextures ?? 0} runtimeCrop=${composite.runtimeCrop}`
         : 'no atmosphere.anatomy diagnostic',
+    });
+    const depth = snap.backdrop.atmosphere;
+    out.push({
+      name: 'facet depth volume uses fixed direct-resident pools',
+      pass: depth?.composition === 'facet-anatomy-volume' &&
+        depth?.fixedPool?.settledDrawCalls === 4 && depth?.fixedPool?.turnDrawCalls === 8 &&
+        depth?.runtimeCanvases === 0 && depth?.runtimeCrops === 0,
+      detail: depth
+        ? `composition=${depth.composition} settled=${depth.fixedPool?.settledDrawCalls} ` +
+          `turn=${depth.fixedPool?.turnDrawCalls} canvas=${depth.runtimeCanvases} ` +
+          `crops=${depth.runtimeCrops}`
+        : 'no atmosphere diagnostic',
     });
   }
   return out;

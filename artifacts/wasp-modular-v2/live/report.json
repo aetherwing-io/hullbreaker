@@ -1,0 +1,707 @@
+{
+  "ok": true,
+  "out": "/Users/scottmeyer/projects/hullbreaker/artifacts/wasp-modular-v2/live",
+  "launch": {
+    "channel": "chrome",
+    "via": "tools/playtest/node_modules",
+    "source": "/Users/scottmeyer/projects/hullbreaker/tools/playtest/node_modules/playwright-core/index.js"
+  },
+  "runs": [
+    {
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "live": {
+        "ready": true,
+        "bodyStates": 8,
+        "wingPhases": 8,
+        "combinations": 64,
+        "sharedGeometries": 16,
+        "meshesPerWasp": 2,
+        "drawCallsPerWasp": 2,
+        "addedDrawCallsPerWasp": 1,
+        "textureCount": 1,
+        "estimatedGpuBytes": 2097152,
+        "collisionChanged": false,
+        "simChanged": false,
+        "crossfade": false,
+        "liveBodies": 5,
+        "liveDraws": 10,
+        "rootAnchor": "reactor-center",
+        "independentBodyAndWingSelection": true,
+        "opacityStrobe": false,
+        "idleWingBloom": false,
+        "platformOuterDepth": 0.7,
+        "activeMinimumWingDepth": 0.7349999999999999,
+        "rows": [
+          {
+            "id": 1,
+            "state": "cruise",
+            "bodyState": 0,
+            "wingPhase": 0,
+            "poseKey": "waspmod:0",
+            "bodyDepth": 0.9803,
+            "wingDepth": 0.9653,
+            "platformOuterDepth": 0.7,
+            "fullyOnActionPlane": true,
+            "rootContinuity": true,
+            "mirroredAsAssembly": true,
+            "opacityMatched": true,
+            "idleWingEmissive": 0
+          },
+          {
+            "id": 2,
+            "state": "dive",
+            "bodyState": 3,
+            "wingPhase": 1,
+            "poseKey": "waspmod:3",
+            "bodyDepth": 0.9922,
+            "wingDepth": 0.9772,
+            "platformOuterDepth": 0.7,
+            "fullyOnActionPlane": true,
+            "rootContinuity": true,
+            "mirroredAsAssembly": true,
+            "opacityMatched": true,
+            "idleWingEmissive": null
+          },
+          {
+            "id": 3,
+            "state": "dive",
+            "bodyState": 4,
+            "wingPhase": 2,
+            "poseKey": "waspmod:4",
+            "bodyDepth": 1.0042,
+            "wingDepth": 0.9892,
+            "platformOuterDepth": 0.7,
+            "fullyOnActionPlane": true,
+            "rootContinuity": true,
+            "mirroredAsAssembly": true,
+            "opacityMatched": true,
+            "idleWingEmissive": null
+          },
+          {
+            "id": 4,
+            "state": "cruise",
+            "bodyState": 5,
+            "wingPhase": 3,
+            "poseKey": "waspmod:5",
+            "bodyDepth": 1.0164,
+            "wingDepth": 1.0014,
+            "platformOuterDepth": 0.7,
+            "fullyOnActionPlane": true,
+            "rootContinuity": true,
+            "mirroredAsAssembly": true,
+            "opacityMatched": true,
+            "idleWingEmissive": 0
+          },
+          {
+            "id": 5,
+            "state": "recover",
+            "bodyState": 6,
+            "wingPhase": 4,
+            "poseKey": "waspmod:6",
+            "bodyDepth": 1.0287,
+            "wingDepth": 1.0137,
+            "platformOuterDepth": 0.7,
+            "fullyOnActionPlane": true,
+            "rootContinuity": true,
+            "mirroredAsAssembly": true,
+            "opacityMatched": true,
+            "idleWingEmissive": null
+          }
+        ]
+      },
+      "impact": {
+        "active": 5,
+        "pool": {
+          "rigs": 0,
+          "activeRigs": 0,
+          "maxRigs": 13,
+          "commonRigs": 0,
+          "wardenRigs": 0,
+          "planes": 0,
+          "maxPlanes": 66,
+          "maxCorpses": 12
+        },
+        "rows": [
+          {
+            "kind": "wasp",
+            "ageMs": 0,
+            "lifetimeMs": 520,
+            "phase": "impact",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          },
+          {
+            "kind": "wasp",
+            "ageMs": 0,
+            "lifetimeMs": 520,
+            "phase": "impact",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          },
+          {
+            "kind": "wasp",
+            "ageMs": 0,
+            "lifetimeMs": 520,
+            "phase": "impact",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          },
+          {
+            "kind": "wasp",
+            "ageMs": 0,
+            "lifetimeMs": 520,
+            "phase": "impact",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          },
+          {
+            "kind": "wasp",
+            "ageMs": 0,
+            "lifetimeMs": 520,
+            "phase": "impact",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          }
+        ]
+      },
+      "rupture": {
+        "active": 5,
+        "pool": {
+          "rigs": 0,
+          "activeRigs": 0,
+          "maxRigs": 13,
+          "commonRigs": 0,
+          "wardenRigs": 0,
+          "planes": 0,
+          "maxPlanes": 66,
+          "maxCorpses": 12
+        },
+        "rows": [
+          {
+            "kind": "wasp",
+            "ageMs": 167,
+            "lifetimeMs": 520,
+            "phase": "rupture",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          },
+          {
+            "kind": "wasp",
+            "ageMs": 167,
+            "lifetimeMs": 520,
+            "phase": "rupture",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          },
+          {
+            "kind": "wasp",
+            "ageMs": 167,
+            "lifetimeMs": 520,
+            "phase": "rupture",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          },
+          {
+            "kind": "wasp",
+            "ageMs": 167,
+            "lifetimeMs": 520,
+            "phase": "rupture",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          },
+          {
+            "kind": "wasp",
+            "ageMs": 167,
+            "lifetimeMs": 520,
+            "phase": "rupture",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          }
+        ]
+      }
+    },
+    {
+      "viewport": {
+        "name": "portrait",
+        "width": 720,
+        "height": 1280
+      },
+      "live": {
+        "ready": true,
+        "bodyStates": 8,
+        "wingPhases": 8,
+        "combinations": 64,
+        "sharedGeometries": 16,
+        "meshesPerWasp": 2,
+        "drawCallsPerWasp": 2,
+        "addedDrawCallsPerWasp": 1,
+        "textureCount": 1,
+        "estimatedGpuBytes": 2097152,
+        "collisionChanged": false,
+        "simChanged": false,
+        "crossfade": false,
+        "liveBodies": 5,
+        "liveDraws": 10,
+        "rootAnchor": "reactor-center",
+        "independentBodyAndWingSelection": true,
+        "opacityStrobe": false,
+        "idleWingBloom": false,
+        "platformOuterDepth": 0.7,
+        "activeMinimumWingDepth": 0.7349999999999999,
+        "rows": [
+          {
+            "id": 1,
+            "state": "cruise",
+            "bodyState": 0,
+            "wingPhase": 0,
+            "poseKey": "waspmod:0",
+            "bodyDepth": 0.9803,
+            "wingDepth": 0.9653,
+            "platformOuterDepth": 0.7,
+            "fullyOnActionPlane": true,
+            "rootContinuity": true,
+            "mirroredAsAssembly": true,
+            "opacityMatched": true,
+            "idleWingEmissive": 0
+          },
+          {
+            "id": 2,
+            "state": "dive",
+            "bodyState": 3,
+            "wingPhase": 1,
+            "poseKey": "waspmod:3",
+            "bodyDepth": 0.9922,
+            "wingDepth": 0.9772,
+            "platformOuterDepth": 0.7,
+            "fullyOnActionPlane": true,
+            "rootContinuity": true,
+            "mirroredAsAssembly": true,
+            "opacityMatched": true,
+            "idleWingEmissive": null
+          },
+          {
+            "id": 3,
+            "state": "dive",
+            "bodyState": 4,
+            "wingPhase": 2,
+            "poseKey": "waspmod:4",
+            "bodyDepth": 1.0042,
+            "wingDepth": 0.9892,
+            "platformOuterDepth": 0.7,
+            "fullyOnActionPlane": true,
+            "rootContinuity": true,
+            "mirroredAsAssembly": true,
+            "opacityMatched": true,
+            "idleWingEmissive": null
+          },
+          {
+            "id": 4,
+            "state": "cruise",
+            "bodyState": 5,
+            "wingPhase": 3,
+            "poseKey": "waspmod:5",
+            "bodyDepth": 1.0164,
+            "wingDepth": 1.0014,
+            "platformOuterDepth": 0.7,
+            "fullyOnActionPlane": true,
+            "rootContinuity": true,
+            "mirroredAsAssembly": true,
+            "opacityMatched": true,
+            "idleWingEmissive": 0
+          },
+          {
+            "id": 5,
+            "state": "recover",
+            "bodyState": 6,
+            "wingPhase": 4,
+            "poseKey": "waspmod:6",
+            "bodyDepth": 1.0287,
+            "wingDepth": 1.0137,
+            "platformOuterDepth": 0.7,
+            "fullyOnActionPlane": true,
+            "rootContinuity": true,
+            "mirroredAsAssembly": true,
+            "opacityMatched": true,
+            "idleWingEmissive": null
+          }
+        ]
+      },
+      "impact": {
+        "active": 5,
+        "pool": {
+          "rigs": 0,
+          "activeRigs": 0,
+          "maxRigs": 13,
+          "commonRigs": 0,
+          "wardenRigs": 0,
+          "planes": 0,
+          "maxPlanes": 66,
+          "maxCorpses": 12
+        },
+        "rows": [
+          {
+            "kind": "wasp",
+            "ageMs": 0,
+            "lifetimeMs": 520,
+            "phase": "impact",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          },
+          {
+            "kind": "wasp",
+            "ageMs": 0,
+            "lifetimeMs": 520,
+            "phase": "impact",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          },
+          {
+            "kind": "wasp",
+            "ageMs": 0,
+            "lifetimeMs": 520,
+            "phase": "impact",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          },
+          {
+            "kind": "wasp",
+            "ageMs": 0,
+            "lifetimeMs": 520,
+            "phase": "impact",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          },
+          {
+            "kind": "wasp",
+            "ageMs": 0,
+            "lifetimeMs": 520,
+            "phase": "impact",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          }
+        ]
+      },
+      "rupture": {
+        "active": 5,
+        "pool": {
+          "rigs": 0,
+          "activeRigs": 0,
+          "maxRigs": 13,
+          "commonRigs": 0,
+          "wardenRigs": 0,
+          "planes": 0,
+          "maxPlanes": 66,
+          "maxCorpses": 12
+        },
+        "rows": [
+          {
+            "kind": "wasp",
+            "ageMs": 167,
+            "lifetimeMs": 520,
+            "phase": "rupture",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          },
+          {
+            "kind": "wasp",
+            "ageMs": 167,
+            "lifetimeMs": 520,
+            "phase": "rupture",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          },
+          {
+            "kind": "wasp",
+            "ageMs": 167,
+            "lifetimeMs": 520,
+            "phase": "rupture",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          },
+          {
+            "kind": "wasp",
+            "ageMs": 167,
+            "lifetimeMs": 520,
+            "phase": "rupture",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          },
+          {
+            "kind": "wasp",
+            "ageMs": 167,
+            "lifetimeMs": 520,
+            "phase": "rupture",
+            "paintedPieces": 0,
+            "pieceTags": [],
+            "systems": [
+              "wasp-wing-bank"
+            ],
+            "ruptureMode": "frozen-motion",
+            "poseKey": "waspmod:7",
+            "motionFrame": 7,
+            "facingPreserved": true,
+            "posePreserved": true,
+            "deathCrack": true,
+            "wingBankDetached": true,
+            "spiral": false,
+            "boundedBodyTiltRad": 0.76,
+            "boundedWingTiltRad": 0.64
+          }
+        ]
+      }
+    }
+  ],
+  "faults": [],
+  "ownFaults": []
+}

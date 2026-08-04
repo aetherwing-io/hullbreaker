@@ -5,7 +5,7 @@
 
 import { CONFIG } from '../config.js';
 import { BEND_S, activeWorldFacet, routeRenderOwned, worldFacetAt } from '../pure/path.js';
-import { IS_G1 } from '../mode.js';
+import { ACTIVE_FIXTURE } from '../mode.js';
 import { LEVEL_LEN, columnBuilt, levelBuildRevision } from '../sim/level.js';
 import { scrollX } from '../sim/time.js';
 import { cameraFacingFacet } from './camera.js';
@@ -24,7 +24,10 @@ export function routeWorldFacet(s) {
 }
 
 export function routeRenderable(s) {
-  if (!IS_G1) return true;
+  // Corner presentation is render-only. The default static anatomy and the
+  // retired ?zip=1 brick reveal therefore share identical route ownership;
+  // only authored fixtures opt out because their geometry owns another path.
+  if (ACTIVE_FIXTURE !== null) return true;
   return routeRenderOwned(
     s, routeColumnBuilt(s), scrollX, cameraFacingFacet(), CONFIG, BEND_S,
   );
@@ -33,6 +36,6 @@ export function routeRenderable(s) {
 // A cheap cache key for static instance pools. It changes only at an intro /
 // camera-facet handoff or whenever the sim commits another construction row.
 export function routeVisibilityStamp() {
-  if (!IS_G1) return 'fixture';
+  if (ACTIVE_FIXTURE !== null) return 'fixture';
   return `${currentWorldFacet()}:${levelBuildRevision()}`;
 }

@@ -16,7 +16,7 @@ import { CLASSIC as PAL_CLASSIC, CONCEPT as PAL_CONCEPT } from '../../src/render
 import { SHARE, legibilityGain, screenPx } from '../../src/render/legibility.js';
 import { ok, srcDir, stripComments } from './_context.mjs';
 
-export const title = 'T-038: warm-white seam pips and route-lip highlights (S5)';
+export const title = 'T-038: sparse housed route luminaires';
 
 export async function run(SHARED) {
 
@@ -72,14 +72,11 @@ export async function run(SHARED) {
   ok(JSON.stringify(deckRuns.concat(platRuns)) === JSON.stringify(again),
      'seams: the pip layout is deterministic — same level, same runs, no rng');
 
-  // a clutter ceiling, so "hundreds of specks" stays a stated, checked
-  // number rather than an unbounded side effect of the level's length.
-  // Measured on the shipped 445-tile level at SEAMS.pipEvery=3: 307 pips —
-  // the ceiling below leaves headroom for level-length drift, not slack
-  // to double the density unnoticed.
+  // A strict clutter ceiling: production is authored punctuation, never a
+  // field of debug vertices. The current climb owns 54 installed fixtures.
   const total = seamPipCount(deckRuns) + seamPipCount(platRuns);
-  ok(total > 0 && total < 400,
-     'seams: the shipped level bakes ' + total + ' pips total — bounded, not unbounded');
+  ok(total > 0 && total <= 60,
+     'seams: the shipped level bakes ' + total + ' housed fixtures total — sparse and bounded');
 }
 
 {
@@ -150,8 +147,14 @@ export async function run(SHARED) {
   ok(!/fog\s*:\s*false/.test(renderSrc),
      'seams: neither seams.js material sets fog:false — every pip recedes ' +
      'with distance, unlike fx.js\'s short-lived player-proximate pools');
-  ok((renderSrc.match(/fog\s*:\s*true/g) || []).length === 2,
-     'seams: both the core and halo materials explicitly set fog:true');
+  ok((renderSrc.match(/fog\s*:\s*true/g) || []).length === 3,
+     'seams: housing, core and spill materials explicitly set fog:true');
+  ok(/housed route luminaires/.test(renderSrc) && /route luminaire slots/.test(renderSrc) &&
+     /surface spill/.test(renderSrc),
+     'seams: three fixed pools name the structural housing, inset slot and local spill');
+  ok(!/OctahedronGeometry|AdditiveBlending/.test(renderSrc) &&
+     /NormalBlending/.test(renderSrc),
+     'seams: no diamond/star or additive editor-marker language remains');
 }
 
 {
@@ -175,13 +178,14 @@ export async function run(SHARED) {
   // restored — so this is checked at every shipped view id rather than
   // just the default, so a future SHARE.pip retune cannot silently drop
   // below the floor at one of them without pathcheck catching it.
-  ok(SEAMS.haloSize > SEAMS.pipSize,
-     'seams: the halo is authored bigger than the core it surrounds (' +
-     SEAMS.haloSize + ' vs ' + SEAMS.pipSize + ')');
+  ok(SEAMS.housingWidth > SEAMS.coreWidth &&
+     SEAMS.spillWidth > SEAMS.housingWidth,
+     'seams: inset slot < metal housing < restrained local surface spill');
   const MIN_PX = 1.5;
   for (const id of Object.keys(CONFIG.viewScales)) {
-    const gain = legibilityGain(SHARE.pip, id, true);
-    const px = screenPx(SEAMS.pipSize * gain, id);
+    const cueGain = legibilityGain(SHARE.pip, id, true);
+    const fixtureGain = 1 + (cueGain - 1) * 0.32;
+    const px = screenPx(SEAMS.coreWidth * fixtureGain, id);
     ok(px >= MIN_PX,
        'seams: the pip core projects to ' + px.toFixed(2) + 'px at ?view=' + id +
        ' — at or above the ' + MIN_PX + 'px twinkle floor');

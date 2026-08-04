@@ -1,21 +1,21 @@
 // Domain: T-051 backdrop layers
 //
-// Five generated plates (assets/generated/backdrops/) on twelve static quads
-// along the six-face route, replacing the flat scene.background/limbBg color
-// with actual creature anatomy. Three things are checkable without a
-// browser:
+// Production now uses one shared resident anatomy map, one transparent coil
+// map, world-space condensation geometry and one sparse component-atlas draw
+// per active facet. The old five-plate placement table remains only as
+// provenance/retirement metadata; no static route-like plate quad is built.
+// Three things are checkable without a browser:
 //
 //   1. THE DATA IS INTERNALLY CONSISTENT AND SAFE. The two derived fences
 //      (play-band clearance, FAR-view frame coverage) are re-computed here
 //      from src/render/backdrop-table.js's own exported arithmetic — the
-//      same functions src/render/backdrop.js builds meshes from — never
-//      re-typed by hand, so a retuned depth/yBottom/frameFraction that
-//      breaks either fence fails the gate instead of silently drawing a
-//      plate into the play band.
+//      same functions that authored the retired metadata — never re-typed by
+//      hand, so that compatibility data cannot silently rot while it remains
+//      in CONFIG.
 //   2. THE RECORDED ART MATCHES THE FILES. canvas dims are MEASURED off the
 //      PNGs (tools/assets/lib/png.mjs), not typed, so a T-053 regeneration
 //      that moves a canvas fails here rather than silently mis-scaling.
-//   3. THE LOADER CONTRACT. Same shape as T-049's own gate (which already
+//   3. THE RESIDENT LOADER CONTRACT. Same shape as T-049's own gate (which already
 //      asserts, across every file in src/render/ + src/ui/, that
 //      src/render/preload.js is the only THREE.TextureLoader in the tree):
 //      this module additionally proves src/render/backdrop.js itself awaits
@@ -23,7 +23,8 @@
 //      load/build failure to a console note rather than a thrown error or a
 //      T-032 panel. The sim/pure ban on naming this feature is the same
 //      belt-and-suspenders class T-049 added, scoped to this feature's own
-//      strings.
+//      strings. The live browser lane separately proves four settled/eight
+//      turning calls, direct shared maps, real parallax and no future props.
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -186,31 +187,35 @@ export async function run() {
      'T-051: the await sits at module scope (not inside a function nobody calls) — that ' +
      'top-level await is what holds src/main.js, and with it the sim\'s first frame, ' +
      'until the backdrop\'s own textures are resident or abandoned');
-  ok(/catch \(err\)/.test(backdropSrc) && (backdropSrc.match(/try \{/g) || []).length >= 2,
-     'T-051: registration+build and each individual plate build sit behind their own ' +
-     'try/catch — an author bug degrades the same way a network failure does');
+  ok(/catch \(error\)/.test(backdropSrc) && /entry\.state === ['"]ready['"]/.test(backdropSrc) &&
+     /that depth band stays empty; play continues/.test(backdropSrc),
+     'T-051: each direct source records its own ready/failed state and the fixed-pool ' +
+     'build remains behind a top-level catch — one missing band never costs the game');
   ok(!/api\.show\(|__HB_FAILSAFE\.show|\.show\(['"]crash/.test(backdropSrc),
      'T-051: a missing or broken plate NOTES the failure and never raises the T-032 ' +
      'panel — a failed asset is not a dead game');
   const anatomyAsset = assetManifest.assets.find((a) => a.id === 'backdrop-meridian-anatomy-v1');
   ok(anatomyAsset?.path === 'assets/generated/backdrops/backdrop-meridian-anatomy-v1.png' &&
-     anatomyAsset?.gpu === false,
-     'T-051: the connected anatomy source is a declared CPU-only bundle asset — it ' +
-     'cannot disappear from a git-archive deploy while the procedural fallback masks it');
-  ok(/preloadTexture\(anatomyUrl, \{ cpuOnly: true \}\)/.test(backdropSrc) &&
+     anatomyAsset?.gpu === true,
+     'T-051: the connected anatomy source is a declared GPU bundle asset — it cannot ' +
+     'disappear from a git-archive deploy while a fallback masks the missing far body');
+  ok(/registerSource\(farBody, MERIDIAN_DEPTH_SOURCES\.far, \{ anisotropy: 6 \}\)/
+       .test(backdropSrc) &&
+     !/cpuOnly:\s*true|CanvasTexture|createElement\(['"]canvas['"]\)/.test(backdropSrc) &&
      /ready\.filter\(\(e\) => !e\.cpuOnly\)/.test(preloadSrc),
-     'T-051: the anatomy painting is decoded for canvas composition but excluded ' +
-     'from the shared GPU warm-up; only its derived curved-shell textures are uploaded');
+     'T-051: the anatomy painting joins the ordinary GPU warm-up once and is never ' +
+     'fed through a runtime canvas, cover crop or derived texture');
   ok(/anatomyBody/.test(deployVerifierSrc) &&
      /atmosphere\?\.anatomy/.test(deployVerifierSrc) &&
-     /composited\s*===\s*true/.test(deployVerifierSrc),
-     'T-051: the clean-bundle verifier requires both anatomy source residency and ' +
-     'successful curved-shell composition, rather than accepting the fallback as final art');
-  ok(/\.built\s*\+\s*replaced\s*===\s*snap\.backdrop\.plates\.length/.test(deployVerifierSrc) &&
-     /p\.replaced\s*===\s*true/.test(deployVerifierSrc) &&
-     !/snap\.backdrop\.built\s*===\s*snap\.backdrop\.plates\.length/.test(deployVerifierSrc),
-     'T-051: the clean-bundle verifier counts macro-body replacements as intentional ' +
-     'slot fulfillment while still requiring every source slot to be ready');
+     /directMapped\s*===\s*true/.test(deployVerifierSrc) &&
+     /runtimeCrop\s*===\s*false/.test(deployVerifierSrc),
+     'T-051: the clean-bundle verifier requires anatomy source residency and the ' +
+     'direct curved-shell map, rather than accepting a flat fallback as final art');
+  ok(/legacyPlateMeshes\s*===\s*0/.test(deployVerifierSrc) &&
+     /p\.state\s*===\s*['"]retired['"]/.test(deployVerifierSrc) &&
+     /p\.replacement\s*===\s*['"]facet-anatomy-volume['"]/.test(deployVerifierSrc),
+     'T-051: the clean-bundle verifier requires every dated illustrated plate to be ' +
+     'retired into the facet depth volume instead of loading its route-like silhouettes');
 
   // src/main.js reaches backdrop.js directly (not counting on some other
   // module to drag it in as a side effect)

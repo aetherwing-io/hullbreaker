@@ -94,16 +94,65 @@ const MATERIAL_FOR = {
   markRim: 'machine', markPanel: 'shadow',
 };
 
-// A few faceted primitive families buy the silhouette change that boxes alone
-// cannot. They remain fixed InstancedMeshes, baked once: tapered four-sided
-// scutes, hex ribs and hex cable bundles add only three static geometry pools
-// while removing the shipping-container read from the large forms.
-const SHAPE_FOR = {
+/* Production macro anatomy.  The original scale pass had the right spatial
+   idea, but its vocabulary was still boxes plus stretched cylinders: sister
+   limbs looked like hanging cards, vertebral links like floating girders and
+   the far body like checkerboard slabs.  Keep the exact same static plan and
+   transforms, but route those pieces through a tiny fixed primitive family:
+
+     body   — a broad, overlapping under-deck muscle casting
+     scute  — an asymmetric armoured lobe with a dark contact bevel
+     rib    — a six-sided hardpoint / vertebra
+     cable  — a six-sided connector whose axis follows local path-s
+
+   No mesh is created after boot and no callback poses anatomy.  `?limbs=legacy`
+   is a matched visual A/B in the same build; it restores the former primitive
+   routing and geometry without changing one bake-plan piece. */
+const LIMB_SILHOUETTE_PASS = QUERY.get('limbs') !== 'legacy';
+
+const LEGACY_SHAPE_FOR = Object.freeze({
   hull: 'body', wall: 'scute',
   scute: 'scute', lipScute: 'scute', bdLimb: 'scute', bdFar: 'scute',
   scuteRib: 'rib', bodyRib: 'rib', ridge: 'rib', tendon: 'rib', bdDrum: 'rib',
   flankTendon: 'cable', markRim: 'cable',
-};
+});
+
+const PRODUCTION_SHAPE_FOR = Object.freeze({
+  hull: 'body', hullRib: 'cable', wall: 'scute',
+  scute: 'scute', lipScute: 'scute',
+  bdLimb: 'body', bdLimbLip: 'cable', bdRing: 'rib',
+  bdDrum: 'rib', bdLink: 'cable', bdFar: 'body', bdSpire: 'rib',
+  scuteRib: 'rib', bodyRib: 'rib', ridge: 'rib', collar: 'rib',
+  tendon: 'rib', buttress: 'body', cup: 'rib',
+  flankTendon: 'cable', markRim: 'cable',
+});
+
+const SHAPE_FOR = LIMB_SILHOUETTE_PASS ? PRODUCTION_SHAPE_FOR : LEGACY_SHAPE_FOR;
+
+/* The three-band backdrop now owns colossal distance.  Retaining the older
+   scale-pass cards on top of it produced exactly the duplicate language the
+   production composition was built to remove: a sister limb as tilted dark
+   rectangles, vertebrae as a floating bar, and a far body as pale slabs.
+   Likewise, the painted route fascia already has bevels, seams and lights;
+   the old proud lip scute merely covered it with a second brown strip and
+   became a paddle at a grazing turn.
+
+   Omit only those redundant PRESENTATION pieces from the production upload.
+   They remain in the immutable pure bake plan (and in ?limbs=legacy), so plan
+   length, fold ownership, collision, build prefix and the controlled A/B all
+   retain their exact authored truth. Far-side scale marks leave with the
+   sister limb they were attached to; near-limb ladders/hatches remain. */
+const PRODUCTION_OMIT_KINDS = new Set([
+  'lipScute',
+  'bdLimb', 'bdLimbLip', 'bdRing',
+  'bdDrum', 'bdLink', 'bdFar', 'bdSpire',
+]);
+
+function omitProductionPiece(piece) {
+  return LIMB_SILHOUETTE_PASS &&
+    (PRODUCTION_OMIT_KINDS.has(piece.kind) ||
+      (piece.depth < 0 && piece.kind.startsWith('mark')));
+}
 
 /* Material-key -> SURFACE family (T-052, materials.js): reuses the table
    authored there rather than adding a ninth one. `hull`/`scute` are armour
@@ -233,9 +282,24 @@ const _tint = new THREE.Color();
    Their vertex value is deliberately darkest on the back and bevels, so an
    overlap reads as a deep mechanical seam without another material or draw. */
 const ARMOUR_OUTLINES = Object.freeze([
-  [[-0.50, 0.46], [0.42, 0.50], [0.50, 0.30], [0.43, -0.48], [-0.40, -0.50], [-0.50, -0.26]],
-  [[-0.47, 0.50], [0.48, 0.42], [0.50, 0.20], [0.36, -0.50], [-0.48, -0.42], [-0.52, -0.12]],
-  [[-0.50, 0.36], [-0.43, 0.50], [0.50, 0.48], [0.46, -0.34], [0.34, -0.50], [-0.46, -0.44]],
+  // The upper shoulder stays broad enough to overlap its neighbour; the
+  // lower edge breaks into a keel/notch rhythm so the chain cannot resolve
+  // into one ruler-straight fascia band.
+  Object.freeze([
+    [-0.52, 0.43], [-0.31, 0.50], [0.16, 0.46], [0.44, 0.50],
+    [0.52, 0.28], [0.46, -0.18], [0.29, -0.42], [0.08, -0.50],
+    [-0.09, -0.29], [-0.38, -0.48], [-0.52, -0.18],
+  ]),
+  Object.freeze([
+    [-0.50, 0.31], [-0.42, 0.50], [-0.02, 0.45], [0.28, 0.50],
+    [0.51, 0.34], [0.48, -0.09], [0.34, -0.48], [0.03, -0.39],
+    [-0.18, -0.50], [-0.31, -0.27], [-0.50, -0.42],
+  ]),
+  Object.freeze([
+    [-0.51, 0.38], [-0.30, 0.49], [0.02, 0.42], [0.40, 0.50],
+    [0.52, 0.23], [0.43, -0.32], [0.23, -0.50], [-0.02, -0.31],
+    [-0.25, -0.48], [-0.47, -0.34],
+  ]),
 ]);
 
 function armourPlateGeometry(variant) {
@@ -255,16 +319,106 @@ function armourPlateGeometry(variant) {
   });
   geometry.translate(0, 0, -0.5);
   const normal = geometry.getAttribute('normal');
+  const position = geometry.getAttribute('position');
   const colors = new Float32Array(normal.count * 3);
   for (let i = 0; i < normal.count; i++) {
     const nz = normal.getZ(i), ny = normal.getY(i);
-    const gain = nz > 0.72 ? 1 : (nz < -0.72 ? 0.24 : (ny > 0.42 ? 0.72 : 0.46));
+    const x = position.getX(i), y = position.getY(i);
+    // A fixed upper-shoulder/lower-keel value split gives each casting its
+    // own occlusion lip.  It is vertex paint on one boot-time geometry—not a
+    // decal, runtime crop, transparent card or additional draw.
+    const shoulder = Math.max(0, Math.min(1, (y + 0.46) / 0.92));
+    const front = (0.70 + shoulder * 0.30) * (x < -0.12 ? 0.93 : 1);
+    const gain = nz > 0.72 ? front
+      : (nz < -0.72 ? 0.20 : (ny > 0.42 ? 0.68 : 0.38));
     colors[i * 3] = colors[i * 3 + 1] = colors[i * 3 + 2] = gain;
   }
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geometry.computeBoundingSphere();
   return geometry;
 }
+
+/* A large casting needs an outline in the screen plane, not the regular
+   silhouette of a stretched cylinder.  Extruding one deterministic polygon
+   gives the front an uninterrupted textured surface while the bevel supplies
+   dark contact occlusion at overlaps.  The extremes remain wider than the
+   nominal unit footprint, so adjacent hull chunks overlap instead of opening
+   sky cracks when the camera reaches a grazing angle. */
+function mechanicalLobeGeometry(outline, bevelSize, bevelThickness, rootFade = false) {
+  const shape = new THREE.Shape();
+  shape.moveTo(outline[0][0], outline[0][1]);
+  for (let i = 1; i < outline.length; i++) shape.lineTo(outline[i][0], outline[i][1]);
+  shape.closePath();
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: 1,
+    steps: 1,
+    curveSegments: 1,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize,
+    bevelThickness,
+  });
+  geometry.translate(0, 0, -0.5);
+  const normal = geometry.getAttribute('normal');
+  const position = geometry.getAttribute('position');
+  const colors = new Float32Array(normal.count * 3);
+  for (let i = 0; i < normal.count; i++) {
+    const nz = normal.getZ(i);
+    const ny = normal.getY(i);
+    const x = position.getX(i);
+    const y = position.getY(i);
+    // Front armour remains readable; back/side bevels become the contact seam.
+    // A subtle left/right value split prevents a whole chain of lobes reading
+    // as one flat wallpaper strip without adding a material or texture sample.
+    let faceGain = nz > 0.72 ? (x < -0.05 ? 0.90 : 1.0)
+      : (nz < -0.72 ? 0.20 : (ny > 0.42 ? 0.70 : 0.42));
+    // Colossal under-deck hull lobes used to end in one ruler-straight black
+    // cutout. Their roots now taper below the nominal footprint and grade
+    // toward the blue-black body value before the viewport crops them. This
+    // is fixed vertex paint on fixed geometry — no transparent sort, shader
+    // branch, animation, or per-frame work.
+    if (rootFade) {
+      const root = Math.max(0, Math.min(1, (y + 0.72) / 0.78));
+      faceGain *= 0.48 + root * 0.52;
+    }
+    colors[i * 3] = colors[i * 3 + 1] = colors[i * 3 + 2] = faceGain;
+  }
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geometry.computeVertexNormals();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+// Three roots share an overlapping upper casting but break and taper below
+// it at different positions. Hull chunks were already split into three
+// texture buckets, so routing those existing buckets through three outlines
+// adds no draw call and keeps the static instancing contract intact.
+const BODY_OUTLINES = Object.freeze([
+  Object.freeze([
+    [-0.58, 0.28], [-0.54, 0.49], [-0.20, 0.54], [0.08, 0.49],
+    [0.50, 0.54], [0.58, 0.29], [0.57, -0.30], [0.48, -0.52],
+    [0.24, -0.59], [0.08, -0.76], [-0.12, -0.62], [-0.34, -0.82],
+    [-0.55, -0.48], [-0.58, -0.28],
+  ]),
+  Object.freeze([
+    [-0.59, 0.24], [-0.53, 0.50], [-0.12, 0.55], [0.14, 0.47],
+    [0.49, 0.53], [0.59, 0.25], [0.56, -0.36], [0.42, -0.66],
+    [0.18, -0.56], [-0.02, -0.84], [-0.24, -0.66], [-0.45, -0.72],
+    [-0.57, -0.43],
+  ]),
+  Object.freeze([
+    [-0.58, 0.30], [-0.55, 0.48], [-0.30, 0.55], [0.05, 0.48],
+    [0.45, 0.54], [0.59, 0.30], [0.55, -0.42], [0.35, -0.75],
+    [0.11, -0.64], [-0.10, -0.78], [-0.31, -0.57], [-0.52, -0.73],
+    [-0.58, -0.31],
+  ]),
+]);
+
+const MACRO_SCUTE_OUTLINE = Object.freeze([
+  [-0.55, 0.14], [-0.47, 0.43], [-0.20, 0.52], [0.06, 0.45],
+  [0.34, 0.52], [0.54, 0.28], [0.49, -0.10], [0.31, -0.46],
+  [0.02, -0.52], [-0.18, -0.43], [-0.45, -0.50], [-0.56, -0.20],
+]);
 
 // (s, y, depth) → world, with the SHARP heading of the facet (or, for a joint
 // piece, of the chamfer that bisects it) and the shared normal-run altitude.
@@ -301,23 +455,53 @@ function bakeLimb() {
   // a fixed one.
   const shade = limbShadePlan(plan, CONFIG, SHADE_GAIN);
   const byBucket = new Map();                  // material/primitive → plan indices
+  // A five-scute phrase uses the same five fixed pools the texture-variation
+  // pass already required.  Two oxidized plates mark route direction; three
+  // shadow-steel plates expose the underlying Meridian body.  Selecting the
+  // material from the existing texture phase therefore breaks the pasted-on
+  // brown belt without adding a mesh, texture, random source or per-frame
+  // branch. Legacy remains byte-for-byte on MATERIAL_FOR.
+  const SCUTE_MATERIAL_PHRASE = Object.freeze([
+    'wall', 'scute', 'wall', 'wall', 'scute',
+  ]);
+  const PRODUCTION_SUBSTRATE_MATERIAL = Object.freeze({
+    // Warm paint on these 13-tile ribs and 17-tile tendons turned them into
+    // detached wooden planks laid over the creature. They now share the
+    // existing shadow-steel hardpoint/cable pools; selected armour and the
+    // route cap retain the oxidized navigation color.
+    scuteRib: 'shadow', bodyRib: 'shadow', flankTendon: 'shadow',
+  });
   for (let n = 0; n < plan.length; n++) {
-    const materialKey = MATERIAL_FOR[plan[n].kind] || 'hull';
+    if (omitProductionPiece(plan[n])) continue;
+    const piece = plan[n];
+    const scutePhase = Math.abs(
+      Math.floor(piece.s / CONFIG.limb.scute.every) + piece.facet * 2,
+    ) % SCUTE_MATERIAL_PHRASE.length;
+    const materialKey = LIMB_SILHOUETTE_PASS && piece.kind === 'scute'
+      ? SCUTE_MATERIAL_PHRASE[scutePhase]
+      : LIMB_SILHOUETTE_PASS && PRODUCTION_SUBSTRATE_MATERIAL[piece.kind]
+        ? PRODUCTION_SUBSTRATE_MATERIAL[piece.kind]
+        : MATERIAL_FOR[piece.kind] || 'hull';
     // Deterministic crops/orientations across only the broad painted armour
     // families. Foreground scutes get five crop phases because they form the
     // longest uninterrupted row in the frame; other families retain three.
     // The phase also selects one of three clipped scute outlines, so variety
     // costs only two draws over the prior three-pool scute path.
     const painted = materialKey === 'hull' || materialKey === 'wall' || materialKey === 'scute';
-    const variantCount = materialKey === 'scute' ? 5 : 3;
+    const variantCount = piece.kind === 'scute' ? 5 : 3;
     const textureVariant = painted
-      ? Math.abs(Math.floor(plan[n].s / CONFIG.limb.scute.every) + plan[n].facet * 2) % variantCount
+      ? Math.abs(Math.floor(piece.s / CONFIG.limb.scute.every) + piece.facet * 2) % variantCount
       : 0;
     // Only the played limb's large foreground shingles get these castings.
     // Distant `bd*` masses retain their established low-detail silhouette.
-    const shape = plan[n].kind === 'scute'
+    const plannedShape = piece.kind === 'scute'
       ? `armor${textureVariant % ARMOUR_OUTLINES.length}`
-      : plan[n].shape || SHAPE_FOR[plan[n].kind] || 'box';
+      : LIMB_SILHOUETTE_PASS
+        ? SHAPE_FOR[piece.kind] || piece.shape || 'box'
+        : piece.shape || SHAPE_FOR[piece.kind] || 'box';
+    const shape = LIMB_SILHOUETTE_PASS && plannedShape === 'body'
+      ? `body${textureVariant % BODY_OUTLINES.length}`
+      : plannedShape;
     const bucketKey = materialKey + '/' + shape + '/' + textureVariant;
     if (!byBucket.has(bucketKey)) byBucket.set(bucketKey, {
       materialKey, shape, textureVariant, indices: [],
@@ -330,17 +514,24 @@ function bakeLimb() {
     // next chunk instead of shrinking to 80% of its spacing and exposing a
     // regular sky wedge through what should be one colossal limb.
     body: new THREE.CylinderGeometry(0.57, 0.51, 1, 6, 1, false),
+    body0: mechanicalLobeGeometry(BODY_OUTLINES[0], 0.022, 0.035, true),
+    body1: mechanicalLobeGeometry(BODY_OUTLINES[1], 0.022, 0.035, true),
+    body2: mechanicalLobeGeometry(BODY_OUTLINES[2], 0.022, 0.035, true),
     // Cylinder height is local Y: different top/bottom radii make an armour
     // shingle with a broad root and clipped nose instead of another crate.
-    scute: new THREE.CylinderGeometry(0.58, 0.42, 1, 4, 1, false),
+    scute: LIMB_SILHOUETTE_PASS
+      ? mechanicalLobeGeometry(MACRO_SCUTE_OUTLINE, 0.030, 0.042)
+      : new THREE.CylinderGeometry(0.58, 0.42, 1, 4, 1, false),
     armor0: armourPlateGeometry(0),
     armor1: armourPlateGeometry(1),
     armor2: armourPlateGeometry(2),
     rib: new THREE.CylinderGeometry(0.5, 0.5, 1, 6, 1, false),
     cable: new THREE.CylinderGeometry(0.5, 0.5, 1, 6, 1, false),
   };
-  geometry.scute.rotateY(Math.PI / 4);
-  geometry.body.rotateY(Math.PI / 6);
+  if (!LIMB_SILHOUETTE_PASS) {
+    geometry.scute.rotateY(Math.PI / 4);
+    geometry.body.rotateY(Math.PI / 6);
+  }
   geometry.rib.rotateY(Math.PI / 6);
   geometry.cable.rotateZ(Math.PI / 2);          // cable length follows local s / X
   for (const { materialKey: key, shape, textureVariant, indices } of byBucket.values()) {
@@ -348,7 +539,8 @@ function bakeLimb() {
     // buckets a large hull surface actually names, an albedo+bump tile —
     // both are no-ops (this stays the pre-T-052 flat white material) for
     // any family or texture that failed to resolve, by construction.
-    const armourCasting = shape.startsWith('armor');
+    const armourCasting = shape.startsWith('armor') ||
+      (LIMB_SILHOUETTE_PASS && (shape.startsWith('body') || shape === 'scute'));
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       flatShading: true,
@@ -371,6 +563,7 @@ function bakeLimb() {
     mesh.userData.limbBucket = key;
     mesh.userData.limbShape = shape;
     mesh.userData.textureVariant = textureVariant;
+    mesh.userData.limbSilhouette = LIMB_SILHOUETTE_PASS ? 'production' : 'legacy';
     mesh.frustumCulled = false;                // static bake, one upload
     for (let i = 0; i < indices.length; i++) {
       const piece = plan[indices[i]];

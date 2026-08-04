@@ -149,11 +149,16 @@ export async function run(SHARED) {
   const deployVerifierSrc = stripComments(readFileSync(
     join(srcDir, '..', 'tools', 'deploy', 'verify-bundle.mjs'), 'utf8',
   ));
-  ok(/from\s+'\.\.\/pure\/rig\.js'/.test(rigSrc) && /TORSO/.test(rigSrc) &&
-     /LEG_FRONT/.test(rigSrc) && /LEG_BACK/.test(rigSrc) && /HELMET/.test(rigSrc) && /GUN_BOX/.test(rigSrc),
-     'T-040: player.js paints RIG from src/pure/rig.js\'s shape data, not a parallel literal list');
-  ok(/CanvasTexture/.test(rigSrc) && /PlaneGeometry/.test(rigSrc),
-     'T-040: RIG\'s body is a canvas-textured plane (sanctioned technique), not raw box geometry');
+  ok(/from\s+'\.\.\/pure\/rig\.js'/.test(rigSrc) && /RIG_RUN_FRAMES/.test(rigSrc) &&
+     /RIG_AIM_FRAMES/.test(rigSrc) && /RIG_CLIMB_FRAMES/.test(rigSrc) &&
+     /RIG_WEAPON_ART/.test(rigSrc),
+     'T-040: player.js consumes the authored body, aim, climb, and weapon tables from ' +
+     'src/pure/rig.js instead of carrying a parallel frame list');
+  ok(!/CanvasTexture|document\.createElement\(['"]canvas['"]\)/.test(rigSrc) &&
+     /function applyAtlasUv\(/.test(rigSrc) && /runFrameGeometry/.test(rigSrc) &&
+     /aimFrameGeometry/.test(rigSrc) && /climbFrameGeometry/.test(rigSrc),
+     'T-040: RIG uses immutable atlas-UV planes plus the fixed-geometry fallback, ' +
+     'with no runtime canvas or crop path');
   ok(/player\.facing/.test(rigSrc) && /fallbackMesh\.scale\.x/.test(rigSrc) &&
      /spriteMesh\.scale\.x/.test(rigSrc),
      'T-040: the asymmetric (front-leg/pack) silhouette is mirrored by the sim\'s own facing sign, ' +
@@ -240,16 +245,17 @@ export async function run(SHARED) {
        'T-040: concept RIG tones keep the same warm-neutral channel order as PAL.player');
   }
 
-  // --- draw-call budget: RIG now constructs 3 meshes (the fallback plane,
-  // the real sprite plane, and the gun silhouette) — only 2 are ever VISIBLE at
-  // once (fallback XOR sprite, plus the gun), so the actual per-frame draw
-  // count stays 2, same as the second rework, down from 7 in the rejected
-  // six-box/three-zone pass and the ORIGINAL 5 before T-040 ever started.
-  // Counted structurally (every `new THREE.Mesh(` call), not a text guess.
+  // --- draw-call budget: the production RIG owns five fixed construction
+  // sites. One site expands the six immutable trait attachments at boot, for
+  // ten resident meshes total; pickup state only toggles them. The body planes
+  // remain mutually exclusive and the shipped roll ceiling keeps the live
+  // budget to six draws. Count both the source construction sites and the
+  // runtime telemetry contract so a renamed mesh cannot quietly grow either.
   const meshCalls = (rigSrc.match(/new THREE\.Mesh\(/g) || []).length;
-  ok(meshCalls === 3,
-     'T-040: player.js constructs exactly 3 meshes (fallback plane + sprite plane + gun silhouette), got ' +
-     meshCalls + ' — only 2 are ever visible at once (the two body planes toggle exclusively)');
+  ok(meshCalls === 5 && /fixedMeshes:\s*10/.test(rigSrc) && /maxVisibleDraws:\s*6/.test(rigSrc) &&
+     /attachment\.visible\s*=\s*count\s*>\s*0/.test(rigSrc),
+     'T-040: player.js keeps five fixed construction sites, ten resident meshes, ' +
+     'and at most six visible draws (got ' + meshCalls + ' construction sites)');
   ok(/new THREE\.PlaneGeometry\(/.test(rigSrc) &&
      (rigSrc.match(/new THREE\.BoxGeometry\(/g) || []).length === 0 &&
      /fallbackGunGeo\s*=\s*GUN_GEOMETRIES\.R/.test(rigSrc),

@@ -32,6 +32,29 @@ export function resolveSamples(value, tune) {
     Number.isInteger(n) && n >= 0 && n <= 4 ? n : tune.samples;
 }
 
+// A full-resolution half-float composer target becomes a larger cost than its
+// edge improvement once the scene buffer is already near the renderer's hard
+// desktop ceiling. Keep default MSAA for the small/ordinary screens where RIG
+// needs it most; the existing ?aa= measurement override remains authoritative.
+export const POST_MSAA_PIXEL_CEILING = 6_000_000;
+
+export function resolveRuntimeSamples(
+  value,
+  tune,
+  drawingPixels,
+  pixelCeiling = POST_MSAA_PIXEL_CEILING,
+) {
+  const n = Number(value);
+  const explicit = value !== null && value !== undefined && value !== '' &&
+    Number.isInteger(n) && n >= 0 && n <= 4;
+  const requested = resolveSamples(value, tune);
+  if (explicit) return requested;
+  const pixels = Number.isFinite(drawingPixels) && drawingPixels >= 0
+    ? drawingPixels
+    : 0;
+  return pixels > pixelCeiling ? 0 : requested;
+}
+
 /* Surface families: the roughness/metalness response a material answers the
    light rig with, plus how much of the procedural environment it picks up.
 

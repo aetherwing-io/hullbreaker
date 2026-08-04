@@ -22,7 +22,8 @@
 //   node tools/serve.mjs 8749            # another port (gate pins, captures)
 //   node tools/serve.mjs --root /tmp/hb-pin --port 8749
 //   node tools/serve.mjs --host 127.0.0.1    # IPv4 only, if you need it
-//   node tools/serve.mjs --quiet         # no per-request log lines
+//   node tools/serve.mjs --quiet         # no request logs; exits if its launcher dies
+//   node tools/serve.mjs --quiet --keep-orphan # explicit persistent quiet server
 //   node tools/serve.mjs --selftest      # prove the no-cache contract, exit 0/1
 //
 // The default root is the repo this file lives in, resolved from the script
@@ -275,11 +276,16 @@ export function startServer({ root = REPO_ROOT, port = DEFAULT_PORT, host, quiet
 }
 
 function parseArgs(argv) {
-  const opts = { root: REPO_ROOT, port: DEFAULT_PORT, host: undefined, quiet: false, selftest: false };
+  const opts = {
+    root: REPO_ROOT, port: DEFAULT_PORT, host: undefined, quiet: false,
+    selftest: false, orphanExit: undefined,
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     if (a === '--help' || a === '-h') opts.help = true;
     else if (a === '--quiet' || a === '-q') opts.quiet = true;
+    else if (a === '--orphan-exit') opts.orphanExit = true;
+    else if (a === '--keep-orphan') opts.orphanExit = false;
     else if (a === '--selftest') opts.selftest = true;
     else if (a === '--port' || a === '-p') opts.port = Number(argv[++i]);
     else if (a.startsWith('--port=')) opts.port = Number(a.slice(7));
@@ -293,19 +299,55 @@ function parseArgs(argv) {
   if (!Number.isInteger(opts.port) || opts.port < 0 || opts.port > 65535) {
     throw new Error(`bad port: ${opts.port}`);
   }
+  // Quiet servers are capture/agent infrastructure in this repository. Give
+  // those an ownership lease by default so a killed agent cannot leave a
+  // listener around for days. A human can make persistence explicit.
+  if (opts.orphanExit === undefined) opts.orphanExit = opts.quiet;
   return opts;
 }
 
 const HELP = `HULLBREAKER dev server — static files, caching off.
 
   node tools/serve.mjs [port] [--port N] [--root DIR] [--host H] [--quiet]
+                       [--orphan-exit | --keep-orphan]
   node tools/serve.mjs --selftest
 
 Defaults: port ${DEFAULT_PORT}, root = the repo this script lives in, dual-stack
 (127.0.0.1 and localhost both work). Every response carries no-store and no
 validator, and conditional request headers are ignored, so a warm browser cache
-can never serve a stale ES module against fresh code.
+can never serve a stale ES module against fresh code. Quiet servers are leased
+to their launching process and exit if it disappears; use --keep-orphan only
+when a persistent background listener is intentional.
 `;
+
+function installCliLease(srv, enabled) {
+  if (!enabled || process.ppid <= 1) return;
+  const ownerPid = process.ppid;
+  let closing = false;
+  let timer;
+
+  const close = (exitCode, reason) => {
+    if (closing) return;
+    closing = true;
+    clearInterval(timer);
+    if (reason) process.stderr.write(reason + '\n');
+    // Closing the only listener lets Node exit naturally after in-flight file
+    // streams finish. This is deliberately graceful: an interrupted capture
+    // may complete its current response, but cannot create a week-long orphan.
+    srv.close().finally(() => { process.exitCode = exitCode; });
+  };
+
+  timer = setInterval(() => {
+    if (process.ppid === 1) {
+      close(0, `launcher ${ownerPid} disappeared; closing leased Hullbreaker server`);
+    }
+  }, 2000);
+  timer.unref();
+
+  process.once('SIGINT', () => close(130));
+  process.once('SIGTERM', () => close(143));
+  process.once('SIGHUP', () => close(129));
+}
 
 // --selftest: boot on an ephemeral port and prove the contract that this tool
 // exists for. Machine-checkable, no browser, ~200ms.
@@ -391,6 +433,7 @@ if (invokedDirectly) {
         + `  http://localhost:${srv.port}/index.html\n`
         + 'caching: no-store, no validators, conditional requests ignored\n',
       );
+      installCliLease(srv, opts.orphanExit);
     } catch (err) {
       if (err.code === 'EADDRINUSE') {
         process.stderr.write(

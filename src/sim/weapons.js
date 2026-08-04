@@ -11,7 +11,9 @@ import { TRANSFORM_BEND_S } from '../pure/transform.js';
 import { AIM_ASSIST_ENABLED, IS_TRANSFORM_SLICE } from '../mode.js';
 import { view } from './bridge.js';
 import { gameMs, approach } from './time.js';
-import { builtSolidAt, builtGroundTopAt } from './level.js';
+import {
+  builtSolidAt, columnBuilt, groundH, platforms, solidRects,
+} from './level.js';
 import { player } from './player.js';
 import { hostiles, hitHostile, staggerHostile } from './hostiles.js';
 import { mods, logShot } from './mods.js';
@@ -25,6 +27,7 @@ for (let i = 0; i < BULLET_MAX; i++) bulletPool.push({
   alive: false, x: 0, y: 0, vx: 0, vy: 0, dieAt: 0,
   type: 'R', damage: 1, pierce: false, pierceLeft: 0,
   crawling: false, dir: 1, hitSet: new Set(),
+  crawlUntil: 0, crawlTilesLeft: 0, crawlSurfaceY: -999,
   seekTargetId: 0, seekLocksLeft: 0, seekUntil: 0,
   phaseTilesLeft: 0,
   def: null, gun: null, meta: null,
@@ -76,6 +79,9 @@ function spawnProj(type, x, y, dx, dy, def, gun) {
     b.damage = def.damage; b.pierce = !!def.pierce; b.pierceLeft = def.pierceBudget || 0;
     b.dieAt = gameMs + def.lifeMs;
     b.crawling = false;
+    b.crawlUntil = 0;
+    b.crawlTilesLeft = 0;
+    b.crawlSurfaceY = -999;
     b.dir = Math.sign(dx) || player.facing;
     b.seekTargetId = 0;
     b.seekLocksLeft = def.turnRate > 0 ? 1 + (def.seekRetargets || 0) : 0;
@@ -137,7 +143,15 @@ export function fireWeapon(letter, x, y, ax, ay, clone, gunOverride = null) {
   }
 }
 
-function killBullet(b, i) { b.alive = false; view.bullets.hideSlot(i); }
+// Terminal presentation receives the exact row at the exact substep that
+// ended it, plus a small closed reason vocabulary. Rendering may celebrate a
+// real collision or let spent fuel sputter, but it never has to infer either
+// from its previous-frame transform. This hook remains presentation-only:
+// collision, lifetime and pool ownership are still decided entirely here.
+function killBullet(b, i, reason) {
+  b.alive = false;
+  view.bullets.hideSlot(i, b, reason);
+}
 
 // VOLATILE is deliberately a small local blast, not a screen-clear. It flows
 // through the ordinary hostile damage path so armour, kills, score, carrier
@@ -208,6 +222,120 @@ function seekerTarget(b, def) {
   return best;
 }
 
+/* ------------------- Cindermouth surface ownership ------------------- *
+ * F is allowed to become ground fire; no other projectile is.  The old
+ * implementation sampled only groundH at the END of a substep, then silently
+ * changed the still-rigid shell into a crawler.  Besides looking like a bug,
+ * that skipped one-way catwalk tops and could teleport a slow HEAVY glob onto
+ * the top of a step it had actually struck from the side.
+ *
+ * These queries sweep the projectile point down onto every authored top
+ * surface: built hull columns, solid-rect roofs, and one-way catwalks.  They
+ * use caller-owned scratch rows, so the projectile hot path remains allocation
+ * free.  Ground columns keep their runtime build bit; a shot never ignites on
+ * an invisible future face.                                                   */
+const AIR_HIT = { hit: false, t: 2, x: 0, top: -999, kind: '' };
+const CRAWL_HERE = { top: -999, x0: 0, x1: 0, kind: '' };
+const CRAWL_NEXT = { top: -999, x0: 0, x1: 0, kind: '' };
+const SURFACE_EPS = 1e-7;
+
+function chooseSurface(out, top, x0, x1, kind, referenceTop) {
+  const distance = Math.abs(top - referenceTop);
+  const prior = out.top > -100 ? Math.abs(out.top - referenceTop) : Infinity;
+  if (distance >= prior) return;
+  out.top = top; out.x0 = x0; out.x1 = x1; out.kind = kind;
+}
+
+// Surface nearest the crawler's current deck plane.  A catwalk over hull must
+// not suddenly snap flame down to the hull, and a roof runner must not select
+// the ground several tiles below it.
+function crawlSurfaceAt(x, referenceTop, out) {
+  out.top = -999; out.x0 = 0; out.x1 = 0; out.kind = '';
+  const i = Math.floor(x);
+  const builtHere = i < 0 || i >= groundH.length ||
+    groundH[i] <= -100 || columnBuilt(i);
+  if (i >= 0 && i < groundH.length && groundH[i] > -100 && columnBuilt(i))
+    chooseSurface(out, groundH[i], i, i + 1, 'deck', referenceTop);
+  for (let r = 0; builtHere && r < solidRects.length; r++) {
+    const rect = solidRects[r];
+    if (x >= rect.x0 && x < rect.x1)
+      chooseSurface(out, rect.y1, rect.x0, rect.x1, 'roof', referenceTop);
+  }
+  for (let p = 0; builtHere && p < platforms.length; p++) {
+    const pl = platforms[p];
+    if (x >= pl.x0 && x < pl.x1)
+      chooseSurface(out, pl.y, pl.x0, pl.x1, 'platform', referenceTop);
+  }
+  return out.top > -100;
+}
+
+function considerAirSurface(out, x0, y0, x1, y1, clearance,
+  top, span0, span1, kind) {
+  const fall = y0 - y1;
+  if (!(fall > 0)) return;
+  const t = (y0 - (top + clearance)) / fall;
+  if (t < -SURFACE_EPS || t > 1 + SURFACE_EPS || t >= out.t) return;
+  const x = x0 + (x1 - x0) * Math.max(0, Math.min(1, t));
+  if (x < span0 - SURFACE_EPS || x > span1 + SURFACE_EPS) return;
+  const column = Math.floor(x);
+  if (column >= 0 && column < groundH.length && groundH[column] > -100 &&
+      !columnBuilt(column)) return;
+  out.hit = true; out.t = Math.max(0, Math.min(1, t));
+  out.x = x; out.top = top; out.kind = kind;
+}
+
+function sweptAirSurface(x0, y0, x1, y1, clearance, out) {
+  out.hit = false; out.t = 2; out.x = x1; out.top = -999; out.kind = '';
+  if (!(y1 < y0)) return false;
+  const lo = Math.max(0, Math.floor(Math.min(x0, x1)) - 1);
+  const hi = Math.min(groundH.length - 1, Math.floor(Math.max(x0, x1)) + 1);
+  for (let i = lo; i <= hi; i++) {
+    if (groundH[i] > -100 && columnBuilt(i))
+      considerAirSurface(out, x0, y0, x1, y1, clearance,
+        groundH[i], i, i + 1, 'deck');
+  }
+  for (let r = 0; r < solidRects.length; r++) {
+    const rect = solidRects[r];
+    considerAirSurface(out, x0, y0, x1, y1, clearance,
+      rect.y1, rect.x0, rect.x1, 'roof');
+  }
+  for (let p = 0; p < platforms.length; p++) {
+    const pl = platforms[p];
+    considerAirSurface(out, x0, y0, x1, y1, clearance,
+      pl.y, pl.x0, pl.x1, 'platform');
+  }
+  return out.hit;
+}
+
+// When the next sample has no usable support (gap), rises into a wall, or is
+// physically inside a wall, terminate at the FIRST authored x boundary rather
+// than up to one integration substep beyond it.
+function firstSurfaceBoundary(x0, x1, fallback) {
+  const dir = Math.sign(x1 - x0) || 1;
+  let best = fallback;
+  const ilo = Math.floor(Math.min(x0, x1));
+  const ihi = Math.ceil(Math.max(x0, x1));
+  for (let i = ilo; i <= ihi; i++) best = nearerBoundary(i, x0, x1, dir, best);
+  for (let p = 0; p < platforms.length; p++) {
+    best = nearerBoundary(platforms[p].x0, x0, x1, dir, best);
+    best = nearerBoundary(platforms[p].x1, x0, x1, dir, best);
+  }
+  for (let r = 0; r < solidRects.length; r++) {
+    best = nearerBoundary(solidRects[r].x0, x0, x1, dir, best);
+    best = nearerBoundary(solidRects[r].x1, x0, x1, dir, best);
+  }
+  return best;
+}
+
+function nearerBoundary(x, x0, x1, dir, best) {
+  if (dir > 0) {
+    if (x > x0 + SURFACE_EPS && x <= x1 + SURFACE_EPS && x < best) return x;
+  } else if (x < x0 - SURFACE_EPS && x >= x1 - SURFACE_EPS && x > best) {
+    return x;
+  }
+  return best;
+}
+
 export function updateBullets(dt) {
   for (let i = 0; i < BULLET_MAX; i++) {
     const b = bulletPool[i];
@@ -246,17 +374,31 @@ export function updateBullets(dt) {
     let goneReason = '';
     for (let k = 0; k < steps && !gone; k++) {
       const x0 = b.x;                                    // substep start, for the bend test
+      let deckIgnition = false;
+      let crawlStep = false;
       if (b.type === 'F' && !b.crawling) {               // arc down to the deck…
-        b.x += b.vx * sdt; b.y += b.vy * sdt;
-        const g = builtGroundTopAt(b.x);
-        if (g > -100 && b.y <= g + def.hugY && b.vy <= 0) {
-          b.crawling = true; b.y = g + def.hugY;
+        const nx = b.x + b.vx * sdt, ny = b.y + b.vy * sdt;
+        if (sweptAirSurface(b.x, b.y, nx, ny, def.hugY, AIR_HIT)) {
+          // PHASE explicitly buys passage through a zero-thickness catwalk.
+          // Ordinary F (including HEAVY-only rolls) must ignite on its top.
+          const phaseCost = def.phaseSurfaceCost || 0.35;
+          if (AIR_HIT.kind === 'platform' && b.phaseTilesLeft >= phaseCost) {
+            b.phaseTilesLeft -= phaseCost;
+            b.x = nx; b.y = ny;
+          } else {
+            b.x = AIR_HIT.x;
+            b.y = AIR_HIT.top + def.hugY;
+            deckIgnition = true;
+          }
+        } else {
+          b.x = nx; b.y = ny;
         }
       } else if (b.type === 'F') {                       // …then crawl, hugging terrain
+        if (gameMs >= b.crawlUntil || b.crawlTilesLeft <= 0) {
+          gone = true; goneReason = 'lifetime'; break;
+        }
         b.x += b.dir * def.crawlSpeed * sdt;
-        const g = builtGroundTopAt(b.x);
-        if (g > -100) b.y = approach(b.y, g + def.hugY, def.hugRate * sdt);
-        else { gone = true; goneReason = 'terrain'; break; } // gap: flame bursts out
+        crawlStep = true;
       } else {
         b.x += b.vx * sdt; b.y += b.vy * sdt;
       }
@@ -272,13 +414,52 @@ export function updateBullets(dt) {
         break;
       }
 
+      if (deckIgnition) {
+        b.crawling = true;
+        b.crawlSurfaceY = AIR_HIT.top;
+        b.crawlUntil = Math.min(b.dieAt, gameMs + def.crawlLifeMs);
+        b.crawlTilesLeft = def.crawlTiles;
+        // Exact contact coordinates and a closed reason reach presentation
+        // before the first ground-fire sync.  This is the missing authored
+        // transformation that made the former rigid floor-slide read broken.
+        view.bullets.deckIgnited(
+          i, b, AIR_HIT.x, AIR_HIT.top, 'deck-ignite', AIR_HIT.kind,
+        );
+      }
+
+      if (crawlStep) {
+        // Query one epsilon behind the old point and one ahead of the new one,
+        // so a point exactly on a platform/column lip keeps directionally
+        // stable ownership instead of flickering between the two surfaces.
+        const hereX = x0 - b.dir * 1e-6;
+        const nextX = b.x + b.dir * 1e-6;
+        const hasHere = crawlSurfaceAt(hereX, b.crawlSurfaceY, CRAWL_HERE);
+        const hasNext = crawlSurfaceAt(nextX, b.crawlSurfaceY, CRAWL_NEXT);
+        const rise = hasNext ? CRAWL_NEXT.top - b.crawlSurfaceY : Infinity;
+        const drop = hasNext ? b.crawlSurfaceY - CRAWL_NEXT.top : Infinity;
+        const blocked = builtSolidAt(b.x, b.y + def.probeY);
+        if (!hasHere || !hasNext || rise > def.crawlStepUpMax ||
+            drop > def.crawlDropMax || blocked) {
+          const fallback = b.dir > 0
+            ? (hasHere ? CRAWL_HERE.x1 : b.x)
+            : (hasHere ? CRAWL_HERE.x0 : b.x);
+          b.x = firstSurfaceBoundary(x0, b.x, fallback);
+          b.y = b.crawlSurfaceY + def.hugY;
+          gone = true; goneReason = 'terrain'; break;
+        }
+        const travelled = Math.abs(b.x - x0);
+        b.crawlTilesLeft -= travelled;
+        b.crawlSurfaceY = CRAWL_NEXT.top;
+        b.y = CRAWL_NEXT.top + def.hugY;
+      }
+
       const inSolid = b.crawling
-          ? builtSolidAt(b.x + b.dir * def.probeX, b.y + def.probeY)   // crawler: tall walls only
-          : builtSolidAt(b.x, b.y);
+        ? builtSolidAt(b.x, b.y + def.probeY)          // point contact; no fake look-ahead radius
+        : builtSolidAt(b.x, b.y);
       if (inSolid) {
         // PHASE spends a measured distance budget while inside solids. Bends
         // were already culled above, and a thick body still exhausts the roll.
-        if (b.phaseTilesLeft > 0) {
+        if (!b.crawling && b.phaseTilesLeft > 0) {
           b.phaseTilesLeft -= Math.max(0.01, spd * sdt);
           if (b.phaseTilesLeft < 0) {
             gone = true;
@@ -322,7 +503,10 @@ export function updateBullets(dt) {
     // facet. Terrain and fuel/lifetime expiry produce the promised blast.
     if (def.volatileRadius > 0 && (goneReason === 'terrain' || (!gone && expired)))
       volatileBlast(b, 0, def);
-    if (gone || expired) { killBullet(b, i); continue; }
+    if (gone || expired) {
+      killBullet(b, i, gone ? goneReason : 'lifetime');
+      continue;
+    }
 
     view.bullets.syncSlot(i, b);          // render: (s,y) → tower, per-type shape
   }

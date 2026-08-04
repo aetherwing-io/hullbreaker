@@ -30,21 +30,27 @@ export async function run(SHARED) {
   const L = LAT.LATTICE;
   const lvl = { groundH: LVL.groundH, platforms: LVL.platforms };
 
-  // --- route density: 3-5 readable routes, every face, every window -----
+  // --- route density: 3-5 readable immediate routes including the deck ---
+  // Vertical Assault v2 owns the complete authored strip, so there is no
+  // longer a procedural-plus-one exception: the combined playfield itself is
+  // the thing held to the readability band.
   {
-    let thin = 0, busy = 0, worst = 99, most = 0;
+    let thin = 0, over = 0, worst = 99, most = 0;
+    const overRows = [];
     for (const span of LAT.latticeInterior(CONFIG)) {
       for (let s = span.a; s <= span.b; s++) {
         const c = LAT.latticeRouteCount(lvl, s, CONFIG);
         if (c < L.minRoutes) thin++;
-        if (c > L.maxRoutes) busy++;
+        if (c > L.maxRoutes) { over++; overRows.push(`${s}:${c}`); }
         worst = Math.min(worst, c); most = Math.max(most, c);
       }
     }
     ok(thin === 0, 'T-009: no face window reads fewer than ' + L.minRoutes +
        ' routes (worst ' + worst + ', ' + thin + ' thin windows)');
-    ok(busy === 0, 'T-009: no face window reads more than ' + L.maxRoutes +
-       ' routes (most ' + most + ', ' + busy + ' busy windows)');
+    ok(over === 0 && most === L.maxRoutes,
+       'T-009: the authored Level 1 strips stay at or below ' + L.maxRoutes +
+       ' readable routes (most ' + most + ', ' + over + ' over cap' +
+       (overRows.length ? ' at ' + overRows.join(', ') : '') + ')');
     ok(LAT.latticeInterior(CONFIG).length === CONFIG.path.faces,
        'T-009: the density invariant covers all six faces');
   }

@@ -1,0 +1,31 @@
+{
+  "version": 2,
+  "identity": "meridian-mechanical-wasp",
+  "authoredFacing": 1,
+  "anchorRole": "reactor-center",
+  "wingRootRole": "reactor-center-behind-body",
+  "sources": {
+    "body": "assets/generated/sprites/wasp-modular-v2/source-sheets/wasp-body-candidates-v3-alpha.png",
+    "wing": "assets/generated/sprites/wasp-modular-v2/source-sheets/wasp-wing-cycles-v2-alpha.png"
+  },
+  "bodyStates": [
+    { "id": "cruise-level", "sourceIndex": 0, "role": "idle-flight", "emissive": "quiet" },
+    { "id": "pitch-up", "sourceIndex": 2, "role": "ascending-flight", "emissive": "quiet" },
+    { "id": "turn-bank", "sourceIndex": 4, "role": "turn-or-descend", "emissive": "quiet" },
+    { "id": "dive-lock", "sourceIndex": 6, "role": "existing-lock-tell", "emissive": "tell" },
+    { "id": "dive-attack", "sourceIndex": 8, "role": "committed-dive", "emissive": "attack" },
+    { "id": "hit-recoil", "sourceIndex": 11, "role": "existing-hit-stagger", "emissive": "hit" },
+    { "id": "recover-brake", "sourceIndex": 12, "role": "recover-climb", "emissive": "quiet" },
+    { "id": "death-crack", "sourceIndex": 15, "role": "death-handoff", "emissive": "death" }
+  ],
+  "wingPhases": [
+    { "id": "raised", "sourceIndex": 0, "phase": 0 },
+    { "id": "raised-mid-down", "sourceIndex": 1, "phase": 1 },
+    { "id": "forward-horizontal", "sourceIndex": 2, "phase": 2 },
+    { "id": "down-forward", "sourceIndex": 3, "phase": 3 },
+    { "id": "lowered-back", "sourceIndex": 4, "phase": 4 },
+    { "id": "lower-mid-up", "sourceIndex": 5, "phase": 5 },
+    { "id": "rear-horizontal", "sourceIndex": 6, "phase": 6 },
+    { "id": "raised-mid-return", "sourceIndex": 7, "phase": 7 }
+  ]
+}

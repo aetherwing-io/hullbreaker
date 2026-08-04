@@ -286,8 +286,8 @@ export const CONCEPT = {
    outshine so the halo cannot fake past that ordering at render time. */
 CLASSIC.seamPip = 0xc8c0b0;
 CLASSIC.seamHalo = 0xa89c88;
-CONCEPT.seamPip = 0xd6ccb4;
-CONCEPT.seamHalo = 0xbeb296;
+CONCEPT.seamPip = 0xa99b82;
+CONCEPT.seamHalo = 0x887d6b;
 /* ==== end T-038 block ===================================================== */
 
 /* ==== T-051 backdrop layers: near/mid/far atmospheric tint ===============

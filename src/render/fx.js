@@ -1,11 +1,14 @@
 /* ================================ FX ============================== */
 /* The render half of the baseline feedback pass (T-011): the pools that
-   actually draw it. Four additions to the scene, all additive and all
-   fixed-size:
+   actually draw it. Every addition is fixed-size; combat never constructs
+   geometry or grows an array:
 
      sparks    — impact / death / hurt / pickup machined fragments
      flashes   — jagged muzzle / impact apertures (expanding, fading)
      breaches  — separated face-hugging destruction shutters
+     cores     — compact split-hot machinery at a true terminal point
+     fragments — wing, hound and machine silhouettes in one shared row pool
+     vapor     — sparse rising aftermath, never a smoke disk
      crush     — the pursuing damage plane's warning haze
 
    WHAT THIS MODULE IS NOT: it decides nothing. `src/render/juice.js` owns
@@ -97,16 +100,26 @@ const _sPos = new THREE.Vector3();
 const _ringScale = new THREE.Vector3();
 const _flashRot = new THREE.Matrix4();
 const _ringRot = new THREE.Matrix4();
+const _fragmentRot = new THREE.Quaternion();
+const _fragmentQ = new THREE.Quaternion();
+const _vaporScale = new THREE.Vector3();
+const _vaporRot = new THREE.Matrix4();
 
 const SPARK_MAX = J.pools.particles;
 const FLASH_MAX = J.pools.flashes;
 const RING_MAX = 24;
+const CORE_MAX = J.pools.cores;
+const FRAGMENT_MAX = J.pools.fragments;
+const VAPOR_MAX = J.pools.vapor;
+const D = J.destruction;
 
 // row shape shared by both pools; `ttl <= 0` means free
-function makeRow() {
+function makeRow(index) {
   return {
+    index, kind: 0,
     t: 0, ttl: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0,
-    gravity: 0, size: 0, grow: 0, yaw: 0, r: 0, g: 0, b: 0,
+    gravity: 0, size: 0, grow: 0, yaw: 0, spin: 0, roll: 0,
+    r: 0, g: 0, b: 0,
   };
 }
 
@@ -119,14 +132,16 @@ function makeRow() {
 function makePool(n) {
   const rows = new Array(n);
   const free = new Int32Array(n);
-  for (let i = 0; i < n; i++) { rows[i] = makeRow(); free[i] = i; }
-  return { rows, free, top: n, cursor: 0 };
+  for (let i = 0; i < n; i++) { rows[i] = makeRow(i); free[i] = i; }
+  return { rows, free, top: n, cursor: 0, claims: 0, recycles: 0 };
 }
 
-let sparks = null, flashes = null, rings = null;
-let sparkMesh = null, flashMesh = null, ringMesh = null, crushMesh = null, crushMat = null;
+let sparks = null, flashes = null, rings = null, cores = null, fragments = null, vapors = null;
+let sparkMesh = null, flashMesh = null, ringMesh = null, coreMesh = null;
+let fragmentMeshes = null, vaporMesh = null, crushMesh = null, crushMat = null;
 let seed = 1;                            // burst-shape seed, bumped per burst
-let liveSparks = 0, liveFlashes = 0, liveRings = 0;
+let liveSparks = 0, liveFlashes = 0, liveRings = 0, liveCores = 0;
+let liveFragments = 0, liveVapors = 0;
 
 /* These three silhouettes replace the primitive debug vocabulary this pool
  * originally shipped with (octahedron particles, sphere flashes and a
@@ -228,6 +243,74 @@ function breachFrontGeometry() {
   return geo;
 }
 
+// A core rupture is two torn machine halves and two severed bus bars around a
+// dark seam. Local +x is aligned to the incoming strike. It opens laterally;
+// there is no closed contour that could be mistaken for a collision radius.
+function rupturedCoreGeometry() {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute([
+    -0.08, 0.36,0, -0.48, 0.16,0, -0.36,-0.25,0,
+    -0.08, 0.36,0, -0.36,-0.25,0, -0.10,-0.12,0,
+     0.08, 0.31,0,  0.12,-0.14,0,  0.43,-0.22,0,
+     0.08, 0.31,0,  0.43,-0.22,0,  0.50, 0.12,0,
+    -0.32, 0.08,0, -0.72, 0.02,0, -0.32,-0.05,0,
+     0.30, 0.06,0,  0.74,-0.03,0,  0.30,-0.08,0,
+  ], 3));
+  return geo;
+}
+
+// Three physical debris alphabets. Each is deliberately asymmetric and open:
+// wasp vanes flutter as a split membrane, hounds shed one armour scute plus a
+// tendon strip, and machinery ejects a bracket and a sheared tooth. They share
+// one row pool but retain separate fixed meshes, so role never becomes colour
+// alone at the 3–7px FAR silhouette.
+function wingFragmentGeometry() {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute([
+     0.56, 0.00,0, -0.20, 0.25,0, -0.48, 0.06,0,
+     0.36,-0.04,0, -0.12,-0.09,0, -0.38,-0.31,0,
+  ], 3));
+  return geo;
+}
+
+function houndFragmentGeometry() {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute([
+     0.52, 0.04,0,  0.12, 0.26,0, -0.46, 0.15,0,
+     0.52, 0.04,0, -0.46, 0.15,0, -0.30,-0.18,0,
+     0.28,-0.10,0, -0.10,-0.16,0, -0.50,-0.30,0,
+  ], 3));
+  return geo;
+}
+
+function machineFragmentGeometry() {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute([
+    -0.50,-0.24,0,  0.18,-0.24,0,  0.18,-0.08,0,
+    -0.50,-0.24,0,  0.18,-0.08,0, -0.32,-0.08,0,
+    -0.50,-0.08,0, -0.32,-0.08,0, -0.32, 0.28,0,
+    -0.50,-0.08,0, -0.32, 0.28,0, -0.50, 0.18,0,
+     0.28, 0.04,0,  0.54, 0.13,0,  0.31, 0.24,0,
+  ], 3));
+  return geo;
+}
+
+// A pressure wake made from three disconnected tapered streams, weighted
+// upward. Scaling stretches their gaps as well as their ink, so aftermath
+// dissipates into air instead of becoming a translucent circle or cloud card.
+function vaporAftermathGeometry() {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute([
+    -0.34,-0.18,0, -0.18,-0.02,0, -0.24, 0.58,0,
+    -0.34,-0.18,0, -0.24, 0.58,0, -0.39, 0.28,0,
+    -0.05,-0.24,0,  0.09,-0.02,0,  0.02, 0.74,0,
+    -0.05,-0.24,0,  0.02, 0.74,0, -0.11, 0.32,0,
+     0.25,-0.17,0,  0.38, 0.03,0,  0.31, 0.50,0,
+     0.25,-0.17,0,  0.31, 0.50,0,  0.19, 0.22,0,
+  ], 3));
+  return geo;
+}
+
 // The pursuing boundary is a gameplay plane, not a wall in the world.  Its
 // old 0.8 x 15 x 2.2 box could fill a cropped screen edge with one continuous
 // additive face whenever the camera caught it obliquely.  These disconnected
@@ -280,6 +363,9 @@ if (JUICE_ENABLED) {
   sparks = makePool(SPARK_MAX);
   flashes = makePool(FLASH_MAX);
   rings = makePool(RING_MAX);
+  cores = makePool(CORE_MAX);
+  fragments = makePool(FRAGMENT_MAX);
+  vapors = makePool(VAPOR_MAX);
 
   // no `color` here on purpose: the material's default white is the identity
   // that instanceColor multiplies, so the per-row role color IS the color and
@@ -320,6 +406,45 @@ if (JUICE_ENABLED) {
   for (let i = 0; i < RING_MAX; i++) ringMesh.setMatrixAt(i, HIDE);
   scene.add(ringMesh);
 
+  const coreMat = new THREE.MeshBasicMaterial({
+    transparent: true, opacity: 1, fog: false, side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  coreMesh = new THREE.InstancedMesh(rupturedCoreGeometry(), coreMat, CORE_MAX);
+  coreMesh.frustumCulled = false;
+  coreMesh.renderOrder = 3.2;
+  coreMesh.setColorAt(0, _c.setRGB(1, 1, 1));
+  for (let i = 0; i < CORE_MAX; i++) coreMesh.setMatrixAt(i, HIDE);
+  scene.add(coreMesh);
+
+  const fragmentMat = new THREE.MeshBasicMaterial({
+    transparent: true, opacity: 0.86, fog: true, side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true,
+  });
+  fragmentMeshes = [
+    new THREE.InstancedMesh(wingFragmentGeometry(), fragmentMat, FRAGMENT_MAX),
+    new THREE.InstancedMesh(houndFragmentGeometry(), fragmentMat, FRAGMENT_MAX),
+    new THREE.InstancedMesh(machineFragmentGeometry(), fragmentMat, FRAGMENT_MAX),
+  ];
+  for (const mesh of fragmentMeshes) {
+    mesh.frustumCulled = false;
+    mesh.renderOrder = 2.15;
+    mesh.setColorAt(0, _c.setRGB(1, 1, 1));
+    for (let i = 0; i < FRAGMENT_MAX; i++) mesh.setMatrixAt(i, HIDE);
+    scene.add(mesh);
+  }
+
+  const vaporMat = new THREE.MeshBasicMaterial({
+    transparent: true, opacity: 0.72, fog: true, side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true,
+  });
+  vaporMesh = new THREE.InstancedMesh(vaporAftermathGeometry(), vaporMat, VAPOR_MAX);
+  vaporMesh.frustumCulled = false;
+  vaporMesh.renderOrder = 1.8;
+  vaporMesh.setColorAt(0, _c.setRGB(1, 1, 1));
+  for (let i = 0; i < VAPOR_MAX; i++) vaporMesh.setMatrixAt(i, HIDE);
+  scene.add(vaporMesh);
+
   // One sparse mechanical boundary marker, still one mesh and one material.
   // It rides the actor/deck surface instead of occupying a deep volume, so an
   // oblique facet or a screen crop can reveal chevrons but never a solid wall.
@@ -349,7 +474,9 @@ function claim(pool) {
   // instead of being dropped. Both branches are O(1) and allocation-free —
   // a saturated pool must not make the spawn path cost more, which is
   // exactly when the frame budget is tightest.
+  pool.claims++;
   if (pool.top > 0) return pool.rows[pool.free[--pool.top]];
+  pool.recycles++;
   const row = pool.rows[pool.cursor];
   pool.cursor = (pool.cursor + 1) % pool.rows.length;
   return row;
@@ -416,6 +543,86 @@ export function fxDirectedBurst(spec, s, y, color, dirS, dirY, spreadRad, scale 
     tint(row, color);
   }
   seed++;
+}
+
+// The hot split left at a TRUE terminal point. Unlike fxFlash it has a dark
+// central seam and a preferred strike axis; unlike a breach it never expands
+// to advertise a radius. The row uses the fixed core pool and the ordinary
+// flash lifetime curve.
+export function fxCoreRupture(s, y, color, dirS, dirY, scale = 1, depth = 0.04) {
+  if (!JUICE_ENABLED) return;
+  const row = claim(cores);
+  row.yaw = place(row, s, y, depth);
+  row.vx = Math.atan2(dirY, dirS);
+  row.vy = 0; row.vz = 0; row.gravity = 0;
+  row.t = 0;
+  row.ttl = D.core.ms;
+  row.size = D.core.size * scale * 0.48;
+  row.grow = D.core.size * scale * 0.62;
+  tint(row, color);
+}
+
+// One shared row pool, three physical meshes. `role` selects silhouette only;
+// velocity remains tied to the incoming shot/body direction supplied by the
+// caller. Saturation recycles a fixed row and clears its previous role mesh,
+// so an intense chain can never allocate or leave a stale wing in the air.
+export function fxRoleFragments(role, s, y, color, dirS, dirY, scale = 1) {
+  if (!JUICE_ENABLED) return;
+  let kind = 2, spec = D.machine;
+  if (role === 'wing') { kind = 0; spec = D.wing; }
+  else if (role === 'hound') { kind = 1; spec = D.hound; }
+  const n = Math.min(8, Math.max(1, Math.round(spec.count * scale)));
+  const baseAngle = Math.atan2(dirY, dirS);
+  const burstSeed = seed++;
+  for (let i = 0; i < n; i++) {
+    const row = claim(fragments);
+    for (let m = 0; m < 3; m++) fragmentMeshes[m].setMatrixAt(row.index, HIDE);
+    const yaw = place(row, s, y, 0.035);
+    const across = n === 1 ? 0 : i / (n - 1) - 0.5;
+    const jitter = (((i + burstSeed) % 3) - 1) * 0.075;
+    const angle = baseAngle + spec.spread * across + jitter;
+    const speed = spec.speed * Math.min(1.35, 0.82 + scale * 0.18) *
+      (0.84 + 0.08 * ((i + burstSeed) % 3));
+    const localS = Math.cos(angle) * speed;
+    row.vx = Math.cos(yaw) * localS;
+    row.vy = Math.sin(angle) * speed;
+    row.vz = -Math.sin(yaw) * localS +
+      Math.sin((i + burstSeed) * 1.7) * speed * 0.10;
+    row.gravity = spec.gravity;
+    row.t = 0;
+    row.ttl = spec.ms;
+    row.size = spec.size * Math.min(1.45, scale);
+    row.grow = 0;
+    row.kind = kind;
+    row.roll = ((i + burstSeed) % 7) * 0.61;
+    row.spin = (((i + burstSeed) % 5) - 2) * 4.2;
+    tint(row, color);
+  }
+  // A saturated row can change role (wing -> hound, etc.). Upload all three
+  // HIDE writes now; advanceFragments only dirties the row's NEW mesh, so
+  // deferring this would leave the recycled old silhouette stranded onscreen.
+  for (let m = 0; m < 3; m++) fragmentMeshes[m].instanceMatrix.needsUpdate = true;
+}
+
+// One short sparse pressure wake. It rises and opens its internal gaps; there
+// is no opaque smoke card, closed cloud outline or collision-sized front.
+export function fxVapor(s, y, color, driftS = 0, scale = 1, depth = 0.015) {
+  if (!JUICE_ENABLED) return;
+  const row = claim(vapors);
+  const yaw = place(row, s, y, depth);
+  const localS = Math.max(-1, Math.min(1, driftS)) * D.vapor.drift * scale;
+  row.vx = Math.cos(yaw) * localS;
+  row.vy = D.vapor.rise * (0.86 + (seed % 3) * 0.08) * scale;
+  row.vz = -Math.sin(yaw) * localS;
+  row.gravity = 0;
+  row.t = 0;
+  row.ttl = D.vapor.ms;
+  row.size = D.vapor.size * Math.min(1.35, scale);
+  row.grow = 0;
+  row.yaw = yaw;
+  row.roll = ((seed % 7) - 3) * 0.11;
+  row.spin = (seed++ & 1 ? 1 : -1) * 0.24;
+  tint(row, color);
 }
 
 function spawnFlash(ms, fromSize, toSize, s, y, color, depth) {
@@ -508,6 +715,9 @@ export function updateFx(dtMs) {
   liveSparks = advance(sparks, sparkMesh, dtMs, particleAlpha, false, gain);
   liveFlashes = advance(flashes, flashMesh, dtMs, flashAlpha, true, gain);
   liveRings = advanceRings(dtMs, gain);
+  liveCores = advance(cores, coreMesh, dtMs, flashAlpha, true, gain);
+  liveFragments = advanceFragments(dtMs, gain);
+  liveVapors = advanceVapors(dtMs, gain);
 }
 
 function advance(pool, mesh, dtMs, alphaOf, isFlash, gain) {
@@ -614,13 +824,118 @@ function advanceRings(dtMs, gain) {
   return live;
 }
 
+function advanceFragments(dtMs, gain) {
+  let live = 0;
+  let dirty0 = false, dirty1 = false, dirty2 = false;
+  const dt = dtMs / 1000;
+  const rows = fragments.rows;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (row.ttl <= 0) continue;
+    const mesh = fragmentMeshes[row.kind];
+    row.t += dtMs;
+    if (row.t >= row.ttl) {
+      row.ttl = 0;
+      fragments.free[fragments.top++] = i;
+      mesh.setMatrixAt(i, HIDE);
+      mesh.setColorAt(i, _c.setRGB(0, 0, 0));
+      if (row.kind === 0) dirty0 = true;
+      else if (row.kind === 1) dirty1 = true;
+      else dirty2 = true;
+      continue;
+    }
+    row.vy += row.gravity * dt;
+    row.x += row.vx * dt;
+    row.y += row.vy * dt;
+    row.z += row.vz * dt;
+    const u = row.t / row.ttl;
+    const speed = Math.max(0.0001, Math.hypot(row.vx, row.vy, row.vz));
+    _sDir.set(row.vx, row.vy, row.vz).multiplyScalar(1 / speed);
+    _sq.setFromUnitVectors(_sAxisX, _sDir);
+    _fragmentRot.setFromAxisAngle(_sAxisX, row.roll + row.spin * u);
+    _fragmentQ.copy(_sq).multiply(_fragmentRot);
+    const s = row.size * (1 - u * 0.24);
+    _sScale.set(s, s, s);
+    _sPos.set(row.x, row.y, row.z);
+    _m.compose(_sPos, _fragmentQ, _sScale);
+    mesh.setMatrixAt(i, _m);
+    const ag = particleAlpha(u) * gain;
+    mesh.setColorAt(i, _c.setRGB(row.r * ag, row.g * ag, row.b * ag));
+    if (row.kind === 0) dirty0 = true;
+    else if (row.kind === 1) dirty1 = true;
+    else dirty2 = true;
+    live++;
+  }
+  if (dirty0) {
+    fragmentMeshes[0].instanceMatrix.needsUpdate = true;
+    fragmentMeshes[0].instanceColor.needsUpdate = true;
+  }
+  if (dirty1) {
+    fragmentMeshes[1].instanceMatrix.needsUpdate = true;
+    fragmentMeshes[1].instanceColor.needsUpdate = true;
+  }
+  if (dirty2) {
+    fragmentMeshes[2].instanceMatrix.needsUpdate = true;
+    fragmentMeshes[2].instanceColor.needsUpdate = true;
+  }
+  return live;
+}
+
+function advanceVapors(dtMs, gain) {
+  let live = 0, dirty = false;
+  const dt = dtMs / 1000;
+  const rows = vapors.rows;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (row.ttl <= 0) continue;
+    row.t += dtMs;
+    if (row.t >= row.ttl) {
+      row.ttl = 0;
+      vapors.free[vapors.top++] = i;
+      vaporMesh.setMatrixAt(i, HIDE);
+      vaporMesh.setColorAt(i, _c.setRGB(0, 0, 0));
+      dirty = true;
+      continue;
+    }
+    row.x += row.vx * dt;
+    row.y += row.vy * dt;
+    row.z += row.vz * dt;
+    const u = row.t / row.ttl;
+    // Brief pressure appears quickly, then the disconnected wisps spend most
+    // of their life fading. This avoids a long luminous fog layer in crowds.
+    const a = Math.min(1, u * 6) * (1 - u) * (1 - u) * D.vapor.opacity;
+    _m.makeRotationY(row.yaw);
+    _m.multiply(_vaporRot.makeRotationZ(row.roll + row.spin * u));
+    _m.scale(_vaporScale.set(
+      row.size * (0.70 + u * 0.82),
+      row.size * (0.56 + u * 1.34),
+      1,
+    ));
+    _m.setPosition(row.x, row.y, row.z);
+    vaporMesh.setMatrixAt(i, _m);
+    const ag = a * gain;
+    vaporMesh.setColorAt(i, _c.setRGB(row.r * ag, row.g * ag, row.b * ag));
+    dirty = true;
+    live++;
+  }
+  if (dirty) {
+    vaporMesh.instanceMatrix.needsUpdate = true;
+    vaporMesh.instanceColor.needsUpdate = true;
+  }
+  return live;
+}
+
 /* run reset (resetGame in src/main.js): nothing survives a restart */
 export function resetFx() {
   if (!JUICE_ENABLED) return;
   clearPool(sparks, sparkMesh);
   clearPool(flashes, flashMesh);
   clearPool(rings, ringMesh);
-  liveSparks = 0; liveFlashes = 0; liveRings = 0;
+  clearPool(cores, coreMesh);
+  clearFragmentPool();
+  clearPool(vapors, vaporMesh);
+  liveSparks = 0; liveFlashes = 0; liveRings = 0; liveCores = 0;
+  liveFragments = 0; liveVapors = 0;
   if (crushMesh) { crushMesh.visible = false; crushMat.opacity = 0; }
 }
 
@@ -636,14 +951,39 @@ function clearPool(pool, mesh) {
   }
   pool.top = rows.length;
   pool.cursor = 0;
+  pool.claims = 0;
+  pool.recycles = 0;
   mesh.instanceMatrix.needsUpdate = true;
+}
+
+function clearFragmentPool() {
+  const rows = fragments.rows;
+  for (let i = 0; i < rows.length; i++) {
+    rows[i].ttl = 0;
+    fragments.free[i] = i;
+    for (let m = 0; m < 3; m++) fragmentMeshes[m].setMatrixAt(i, HIDE);
+  }
+  fragments.top = rows.length;
+  fragments.cursor = 0;
+  fragments.claims = 0;
+  fragments.recycles = 0;
+  for (let m = 0; m < 3; m++) fragmentMeshes[m].instanceMatrix.needsUpdate = true;
 }
 
 // read-only debug/telemetry surface (see window.HB.juice and ?testapi=1)
 export function fxStats() {
   return {
     sparks: liveSparks, flashes: liveFlashes, rings: liveRings,
+    cores: liveCores, fragments: liveFragments, vapor: liveVapors,
     sparkMax: SPARK_MAX, flashMax: FLASH_MAX, ringMax: RING_MAX,
+    coreMax: CORE_MAX, fragmentMax: FRAGMENT_MAX, vaporMax: VAPOR_MAX,
+    fixedRows: SPARK_MAX + FLASH_MAX + RING_MAX + CORE_MAX + FRAGMENT_MAX + VAPOR_MAX,
+    fixedDrawPools: 8,
+    recycles: {
+      sparks: sparks?.recycles || 0, flashes: flashes?.recycles || 0,
+      rings: rings?.recycles || 0, cores: cores?.recycles || 0,
+      fragments: fragments?.recycles || 0, vapor: vapors?.recycles || 0,
+    },
     crush: crushMat ? clamp01(crushMat.opacity / J.crush.maxOpacity) : 0,
   };
 }

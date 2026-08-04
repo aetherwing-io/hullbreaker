@@ -16,6 +16,7 @@ import {
   latticeEmplacementBeats, latticeHoundBeats, latticeInstallSite, latticePatchPass,
   latticePocketSites, latticeReport, latticeThinPass,
 } from './lattice.js';
+import { installVerticalAssault, verticalAssaultReport } from './vertical-assault.js';
 
 export const GAP = -999;
 
@@ -187,6 +188,15 @@ export function buildLevel(cfg) {
   const arenas = latticeArenaSites(cfg, groundH);
   for (const site of arenas) latticeInstallSite(platforms, site.platforms);
 
+  // Vertical Assault v2 authors the playable strip of all six Level 1 faces,
+  // retaining public arena/arrival/pocket IDs and the safe low bridges over
+  // real seed gaps while replacing anonymous catwalk carpet with deliberate
+  // split/rejoin routes. Its ladders, ribs, recovery lanes and staging sockets
+  // are data from this point onward; sim and render consume the same topology.
+  const assault = installVerticalAssault(cfg, groundH, platforms, {
+    pockets, arrivals, arenas,
+  });
+
   // reachability sweep: the apron pass can orphan a high catwalk whose mid
   // support it deleted — prune anything beyond double-jump reach, repeating
   // until stable (pruning one support can strand another).
@@ -211,7 +221,12 @@ export function buildLevel(cfg) {
   // noisy ones, re-prune, and repeat until the lattice stops moving. Each
   // pass only ever reads the geometry that exists, so the loop is a fixpoint
   // search, not a schedule — `patched`/`thinned` going empty is the exit.
-  const level = { groundH, platforms };
+  const level = {
+    groundH, platforms,
+    solidRects: assault.solidRects,
+    ladders: assault.ladders,
+    assaults: assault.chunks,
+  };
   const patched = [], thinned = [];
   for (let pass = 0; pass < LATTICE.patch.maxPasses; pass++) {
     const add = latticePatchPass(level, cfg);
@@ -223,7 +238,16 @@ export function buildLevel(cfg) {
   }
 
   return {
-    groundH, platforms, chunkLog, pockets, arrivals, arenas,
+    groundH, platforms,
+    solidRects: assault.solidRects,
+    ladders: assault.ladders,
+    chunkLog, pockets, arrivals,
+    arenas: assault.arenas,
+    assaults: assault.chunks,
+    verticalAssault: {
+      id: assault.id,
+      report: verticalAssaultReport(level, cfg),
+    },
     lattice: {
       id: LATTICE.id,
       patched: patched.length,

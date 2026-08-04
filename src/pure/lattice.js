@@ -729,7 +729,9 @@ export function latticeThinPass(level, cfg, L = LATTICE) {
         const order = [];
         for (let i = 0; i < level.platforms.length; i++) {
           const p = level.platforms[i];
-          if (p.pocket || p.arrival || p.arena) continue;   // authored: never thinned
+          if (p.pocket || p.arrival || p.arena || p.assault || p.routeBridge) continue;
+          // Authored platforms and generated bridges over real deck gaps are
+          // structural route grammar, never density noise.
           if (p.x1 <= s || p.x0 >= end) continue;
           // load-bearing: something above it would be stranded
           const supports = level.platforms.some((q) =>

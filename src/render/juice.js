@@ -41,8 +41,9 @@ import { activeCorner } from '../sim/wavegate.js';
 import { activeTransformEvent } from '../sim/transform.js';
 import { addTrauma, cameraTrauma } from './camera.js';
 import {
-  fxBurst, fxCrush, fxDirectedBurst, fxFlash, fxHostileColor, fxImplode,
-  fxRing, fxRole, fxShotColor, fxStats, resetFx, updateFx,
+  fxBurst, fxCoreRupture, fxCrush, fxDirectedBurst, fxFlash, fxHostileColor,
+  fxImplode, fxRing, fxRole, fxRoleFragments, fxShotColor, fxStats, fxVapor,
+  resetFx, updateFx,
 } from './fx.js';
 
 const J = CONFIG.juice;
@@ -55,12 +56,160 @@ const TT = transformTimeline(CONFIG);
 // trigger pull at the camera: rifle crack, spread fan, laser corridor, homing
 // petals, and flame rake.
 const WEAPON_FX = {
-  R: { flash: 1.25, fan: 0.75, spread: 0.10, hit: 1.00, hitSpread: 0.42, breach: 0.00 },
-  S: { flash: 1.30, fan: 1.00, spread: 0.72, hit: 1.15, hitSpread: 0.78, breach: 0.00 },
-  L: { flash: 1.65, fan: 0.50, spread: 0.04, hit: 1.75, hitSpread: 0.12, breach: 1.30 },
-  H: { flash: 1.45, fan: 0.50, spread: 0.58, hit: 1.25, hitSpread: 0.34, breach: 0.85 },
-  F: { flash: 1.90, fan: 1.50, spread: 0.46, hit: 1.50, hitSpread: 0.62, breach: 1.10 },
+  R: { flash: 1.25, fan: 0.75, spread: 0.10, hit: 1.00, hitSpread: 0.42,
+    breach: 0.00, beat1: 42, beat2: 96 },
+  S: { flash: 1.30, fan: 1.00, spread: 0.72, hit: 1.15, hitSpread: 0.78,
+    breach: 0.00, beat1: 48, beat2: 112 },
+  L: { flash: 1.65, fan: 0.50, spread: 0.04, hit: 1.75, hitSpread: 0.12,
+    breach: 1.30, beat1: 34, beat2: 78 },
+  H: { flash: 1.45, fan: 0.50, spread: 0.58, hit: 1.25, hitSpread: 0.34,
+    breach: 0.85, beat1: 44, beat2: 104 },
+  F: { flash: 1.90, fan: 1.50, spread: 0.46, hit: 1.50, hitSpread: 0.62,
+    breach: 1.10, beat1: 58, beat2: 138 },
 };
+
+/* ----------------------- action impact beats --------------------- *
+ * A projectile endpoint already draws the exact collision point in bullets.js.
+ * This tiny render-only sequencer pays off the struck BODY over the next two
+ * beats: armour first, then the weapon's residue. It is sixteen preallocated
+ * numeric rows and claims round-robin, so a screenful of pierce hits cannot
+ * allocate, grow, or add a draw call. The existing eight FX pools remain the
+ * only geometry owners; an inactive row draws literally nothing. */
+const ACTION_IMPACT_MAX = 16;
+const actionImpacts = Array.from({ length: ACTION_IMPACT_MAX }, () => ({
+  active: false, t0: 0, stage: 0, type: 'R', x: 0, y: 0,
+  ds: 1, dy: 0, scale: 1, color: 0, enemy: 0,
+  role: 'machine', warden: false,
+}));
+let actionImpactCursor = 0;
+let actionImpactLive = 0;
+let actionImpactRecycles = 0;
+
+function hostileFragmentRole(kind) {
+  return kind === 'wasp' ? 'wing' : (kind === 'hound' ? 'hound' : 'machine');
+}
+
+function emitActionImpact(row, stage) {
+  const { x, y, ds, dy, scale: k, color, enemy, role } = row;
+  const px = -dy, py = ds;              // tangent to the incoming shot
+  const armour = row.warden ? 1.18 : 1;
+
+  if (row.type === 'S') {
+    if (stage === 0) {
+      // Scatterbloom arrives as a clipped rake, not five overlapping lamps.
+      fxFlash(48, 0.16 * k, x, y, color, 0.035);
+      fxDirectedBurst(J.impact, x, y, color, ds, dy, 1.02, 0.42 * k);
+    } else if (stage === 1) {
+      fxRoleFragments(role, x, y, enemy, ds, dy + 0.12, 0.36 * k * armour);
+    } else {
+      fxDirectedBurst(J.impact, x - ds * 0.08, y - dy * 0.08, color,
+        -ds, -dy, 0.84, 0.24 * k);
+    }
+    return;
+  }
+
+  if (row.type === 'L') {
+    if (stage === 0) {
+      // Lance opens one narrow seam. Its echo closes back onto that same axis.
+      fxFlash(54, 0.26 * k, x, y, color, 0.045);
+      fxCoreRupture(x, y, color, ds, dy, 0.52 * k, 0.05);
+    } else if (stage === 1) {
+      fxDirectedBurst(J.impact, x, y, color, ds, dy, 0.08, 0.34 * k);
+    } else {
+      fxImplode(92, 0.42 * k, x - ds * 0.10, y - dy * 0.10,
+        color, 0.035);
+    }
+    return;
+  }
+
+  if (row.type === 'H') {
+    if (stage === 0) {
+      // Homing guidance vanes shear across the flight line in two beats.
+      fxFlash(50, 0.19 * k, x, y, color, 0.035);
+      fxDirectedBurst(J.impact, x, y, color, px, py, 0.22, 0.28 * k);
+    } else if (stage === 1) {
+      fxDirectedBurst(J.impact, x, y, color, -px, -py, 0.22, 0.24 * k);
+      fxCoreRupture(x, y, color, ds, dy, 0.38 * k, 0.045);
+    } else {
+      fxRoleFragments(role, x, y, enemy, px, py + 0.08, 0.30 * k * armour);
+    }
+    return;
+  }
+
+  if (row.type === 'F') {
+    if (stage === 0) {
+      // Cindermouth bites once, then sheds hot solids, then pressure—not glow.
+      fxFlash(62, 0.24 * k, x, y, color, 0.04);
+      fxCoreRupture(x, y, color, ds, dy, 0.46 * k, 0.05);
+    } else if (stage === 1) {
+      fxDirectedBurst(J.impact, x, y, color, ds, Math.min(-0.18, dy),
+        0.66, 0.34 * k);
+      fxRoleFragments(role, x, y, enemy, ds, -0.28, 0.30 * k * armour);
+    } else {
+      fxVapor(x - ds * 0.08, y, enemy, -ds, 0.42 * k, 0.025);
+    }
+    return;
+  }
+
+  // Rivet: a hard pin, one displaced chip, then silence. Its short residue is
+  // the baseline that makes the other four families feel extravagant.
+  if (stage === 0) {
+    fxFlash(44, 0.15 * k, x, y, color, 0.035);
+    fxDirectedBurst(J.impact, x, y, color, ds, dy, 0.24, 0.24 * k);
+  } else if (stage === 1) {
+    fxCoreRupture(x, y, color, ds, dy, 0.34 * k, 0.04);
+  } else {
+    fxRoleFragments(role, x, y, enemy, -ds, Math.max(0.14, -dy),
+      0.22 * k * armour);
+  }
+}
+
+function armActionImpact(e, type, ds, dy, scale) {
+  const row = actionImpacts[actionImpactCursor];
+  actionImpactCursor = (actionImpactCursor + 1) % ACTION_IMPACT_MAX;
+  if (row.active) actionImpactRecycles++;
+  else actionImpactLive++;
+  row.active = true;
+  row.t0 = gameMs;
+  row.stage = 0;
+  row.type = type;
+  row.x = e.x;
+  row.y = e.y;
+  row.ds = ds;
+  row.dy = dy;
+  row.scale = scale;
+  row.color = fxShotColor(type);
+  row.enemy = fxHostileColor(e.kind);
+  row.role = hostileFragmentRole(e.kind);
+  row.warden = e.kind === 'warden';
+  emitActionImpact(row, 0);
+}
+
+function updateActionImpacts() {
+  for (let i = 0; i < ACTION_IMPACT_MAX; i++) {
+    const row = actionImpacts[i];
+    if (!row.active) continue;
+    const W = WEAPON_FX[row.type];
+    const elapsed = gameMs - row.t0;
+    if (row.stage === 0 && elapsed >= W.beat1) {
+      row.stage = 1;
+      emitActionImpact(row, 1);
+    }
+    if (row.stage === 1 && elapsed >= W.beat2) {
+      row.stage = 2;
+      emitActionImpact(row, 2);
+      row.active = false;
+      actionImpactLive--;
+    }
+  }
+}
+
+function resetActionImpacts() {
+  for (let i = 0; i < ACTION_IMPACT_MAX; i++) actionImpacts[i].active = false;
+  actionImpactCursor = 0;
+  actionImpactLive = 0;
+  actionImpactRecycles = 0;
+}
 
 /* ---------------------------- throttles --------------------------- *
  * A spread volley is five slots and a pierce laser is many hits per
@@ -113,19 +262,16 @@ function onHostileSync(e) {
   if (hp !== undefined && e.hp < hp && gate('impact', J.impact.gapMs)) {
     const type = gameMs - recentShotAt <= 650 ? recentShotType : 'R';
     const W = WEAPON_FX[type];
-    const weight = Math.min(2.1, W.hit * (1 + Math.max(0, hp - e.hp - 1) * 0.22));
-    const color = fxShotColor(type);
-    // Continue the projectile's sentence through the struck body. A radial
-    // wheel made every weapon feel like the same grenade and obscured which
-    // direction the hit arrived from; this fan inherits the muzzle→target
-    // vector and only its spread/weight vary by chassis.
+    const weight = Math.min(1.46,
+      (0.74 + W.hit * 0.16) * (1 + Math.max(0, hp - e.hp - 1) * 0.12));
+    // Continue the projectile's sentence through the struck body, then stage
+    // physical armour/residue without holding a glowing badge over the actor.
+    // The endpoint renderer owns contact; this row owns the target's answer.
     const dx = e.x - player.x;
     const dy = e.y - (player.y + player.muzzleY);
     const inv = 1 / Math.max(0.001, Math.hypot(dx, dy));
-    fxDirectedBurst(J.impact, e.x, e.y, color,
-      dx * inv, dy * inv, W.hitSpread, weight);
-    fxFlash(Math.min(120, J.impact.ms * 0.48), 0.24 + W.hit * 0.17,
-      e.x, e.y, color, 0.03);
+    armActionImpact(e, type, dx * inv, dy * inv,
+      weight * (e.kind === 'warden' ? 1.16 : 1));
   }
   hostileHp.set(e.id, e.hp);
 }
@@ -169,6 +315,10 @@ function updateWardenRupture() {
       -1, 0.24, 0.28, 1.55);
     fxDirectedBurst(J.death, w.x + 1.55, w.y + 0.10, w.enemy,
       1, 0.24, 0.28, 1.55);
+    fxRoleFragments('machine', w.x - 1.55, w.y + 0.10, w.enemy,
+      -1, 0.18, 0.78);
+    fxRoleFragments('machine', w.x + 1.55, w.y + 0.10, w.enemy,
+      1, 0.18, 0.78);
     fxFlash(155, 0.92, w.x, w.y + 0.18, w.carrier, 0.08);
     addTrauma(S.boom * 0.42);
     return;
@@ -196,6 +346,8 @@ function updateWardenRupture() {
       0, -1, 0.34, 1.25);
     fxDirectedBurst(J.impact, w.x, w.y + 0.08, w.signal,
       0, 1, 0.46, 1.05);
+    fxCoreRupture(w.x, w.y, w.carrier, 0, -1, 1.28, 0.10);
+    fxVapor(w.x, w.y - 0.12, w.enemy, 0, 1.05, 0.06);
     fxFlash(165, 0.78, w.x, w.y, w.carrier, 0.10);
     addTrauma(S.boom * 0.78);
     return;
@@ -219,9 +371,35 @@ function onHostileRemoved(e, fade) {
   // vent through their mount. There is deliberately no universal radial
   // burst or expanding perfect ring hiding the species sentence.
   const dir = Math.sign(e.vx) || e.dir || -1;
+  const impactS = e.x - player.x;
+  const impactY = e.y - (player.y + player.muzzleY);
+  const impactInv = 1 / Math.max(0.001, Math.hypot(impactS, impactY));
+  const incomingS = impactS * impactInv;
+  const incomingY = impactY * impactInv;
   const flashScale = e.kind === 'warden' ? 2.15 : Math.min(1.5, chainScale);
   fxFlash(J.death.flashMs, J.death.flashSize * flashScale,
     e.x, e.y, shotColor);
+
+  // Three-phase physical punctuation at the exact corpse point: a compact
+  // hot seam aligned to the incoming shot, role-shaped solid fragments, then
+  // one sparse wake drifting back through the hole. These are presentation
+  // rows only—no collision radius, damage or corpse/atlas state reads them.
+  const fragmentRole = e.kind === 'wasp' ? 'wing' :
+    (e.kind === 'hound' ? 'hound' : 'machine');
+  const bodyScale = e.kind === 'warden' ? 1.65 :
+    (e.kind === 'carrier' ? 1.18 : (e.kind === 'wasp' ? 0.76 : 0.96));
+  const fragmentScale = e.kind === 'warden' ? 1.42 :
+    (e.kind === 'carrier' ? 1.12 : (e.kind === 'wasp' ? 0.88 : 1.0));
+  const vaporScale = e.kind === 'warden' ? 1.25 :
+    (e.kind === 'wasp' ? 0.58 : (e.kind === 'hound' ? 0.68 : 0.82));
+  fxCoreRupture(e.x, e.y, fxRole('muzzle'), incomingS, incomingY,
+    bodyScale * Math.min(1.18, chainScale));
+  fxRoleFragments(fragmentRole, e.x, e.y, enemyColor,
+    incomingS + dir * 0.22, incomingY + (e.kind === 'wasp' ? -0.18 : 0.12),
+    fragmentScale * Math.min(1.15, chainScale));
+  fxVapor(e.x, e.y - (e.kind === 'hound' ? 0.12 : 0), enemyColor,
+    -incomingS, vaporScale);
+
   if (e.kind === 'wasp') {
     fxDirectedBurst(J.death, e.x, e.y, enemyColor, dir, -0.46, 0.74,
       0.82 * chainScale);
@@ -256,7 +434,8 @@ function onHostileRemoved(e, fade) {
   } else {
     fxDirectedBurst(J.death, e.x, e.y, enemyColor, 0, 1, 1.20,
       chainScale);
-    fxBurst(J.impact, e.x, e.y, shotColor, 0.72 * chainScale);
+    fxDirectedBurst(J.impact, e.x, e.y, shotColor,
+      incomingS, incomingY, 0.46, 0.72 * chainScale);
   }
 
   // Mutation hardware shuts off in its own signal colour. These are compact
@@ -422,6 +601,7 @@ function onStateScreen(next) {
   recentShotType = 'R'; recentShotAt = -1e9;
   deathChain = 0; lastDeathAt = -1e9;
   firstBreakDone = false;
+  resetActionImpacts();
   wardenRupture.active = false;
   wardenRupture.stage = 0;
   prev.hp = player.hp;
@@ -457,6 +637,7 @@ export function updateJuice() {
     (xf && xf.state === 'turning');
   if (ritual) addTrauma(S.rumbleMax * S.decayPerSec * (dtMs / 1000));
 
+  updateActionImpacts();
   updateWardenRupture();
   updateFx(dtMs);
 
@@ -473,6 +654,11 @@ export function juiceSnapshot() {
     enabled: JUICE_ENABLED,
     trauma: JUICE_ENABLED ? +cameraTrauma().toFixed(4) : 0,
     hitStopMs: JUICE_ENABLED ? +hitStopRemainingMs().toFixed(2) : 0,
+    actionImpacts: {
+      active: actionImpactLive, max: ACTION_IMPACT_MAX,
+      cursor: actionImpactCursor, recycles: actionImpactRecycles,
+      drawPoolsAdded: 0,
+    },
     wardenRupture: wardenRupture.active ? wardenRupture.stage : -1,
     ...fx,
   };

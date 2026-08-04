@@ -1,0 +1,39 @@
+{
+  "ok": true,
+  "file": "artifacts/wasp-modular-v2/wasp-8x8-game-scale.png",
+  "dimensions": "704x512",
+  "combinations": 64,
+  "order": "rows=body states 0..7, columns=wing phases 0..7",
+  "runtimeEquivalent": true,
+  "sourceTextures": 1,
+  "runtimeMeshesPerWasp": 2,
+  "gameScale": 0.3,
+  "cell": [
+    88,
+    64
+  ],
+  "anchor": [
+    44,
+    32
+  ],
+  "bodyStates": [
+    "cruise-level",
+    "pitch-up",
+    "turn-bank",
+    "dive-lock",
+    "dive-attack",
+    "hit-recoil",
+    "recover-brake",
+    "death-crack"
+  ],
+  "wingPhases": [
+    "raised",
+    "raised-mid-down",
+    "forward-horizontal",
+    "down-forward",
+    "lowered-back",
+    "lower-mid-up",
+    "rear-horizontal",
+    "raised-mid-return"
+  ]
+}

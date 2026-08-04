@@ -22,6 +22,7 @@ import {
 import {
   solidRectContains, levelSolidCell, buildLevel, buildTraversalLevel, GAP,
 } from '../../src/pure/generator.js';
+import { VERTICAL_ASSAULT } from '../../src/pure/vertical-assault.js';
 import { PP, WW, fingerprint, near, ok, srcDir } from './_context.mjs';
 
 export const title = 'pathcheck suite';
@@ -397,13 +398,35 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
     // attempt exactly at the plane, and the clamp means he can never be ahead
     // of it, so his mean speed over any prefix of a clamped attempt is
     // scrollSpeed or less however much he lags and catches up inside it.
-    const SPEED = { max: -Infinity, frames: 0 };
-    let meterX0 = 0, meterFrames = 0;
-    function meterReset() { meterX0 = p.x; meterFrames = 0; }
-    function meter(dt) {
+    const SPEED = {
+      max: -Infinity, freeMax: -Infinity, traversalVx: 0,
+      frames: 0, traversalFrames: 0,
+    };
+    let meterX0 = 0, meterFrames = 0, meterTraversalSeen = false;
+    function speedReset() {
+      SPEED.max = -Infinity;
+      SPEED.freeMax = -Infinity;
+      SPEED.traversalVx = 0;
+      SPEED.frames = 0;
+      SPEED.traversalFrames = 0;
+    }
+    function meterReset() {
+      meterX0 = p.x;
+      meterFrames = 0;
+      meterTraversalSeen = false;
+    }
+    function meter(dt, traversalBefore) {
       meterFrames++;
       const avg = (p.x - meterX0) / (meterFrames * dt);
       if (avg > SPEED.max) SPEED.max = avg;
+      const contextual = traversalBefore !== 'free' || p.traversalState !== 'free' ||
+        p.traversalControlUntil > T.gameMs;
+      if (contextual) {
+        meterTraversalSeen = true;
+        SPEED.traversalFrames++;
+        SPEED.traversalVx = Math.max(SPEED.traversalVx, Math.abs(p.vx));
+      }
+      if (!meterTraversalSeen && avg > SPEED.freeMax) SPEED.freeMax = avg;
       SPEED.frames++;
     }
 
@@ -433,8 +456,9 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
         prevVy = p.vy;
         T.advanceGameMs(dt * 1000);
         if (mode.speed === 'floor') T.setScrollX(T.scrollX + C.scrollSpeed * dt);
+        const traversalBefore = p.traversalState;
         PLm.updatePlayer(dt);
-        meter(dt);
+        meter(dt, traversalBefore);
         // Bail before the kill plane so the probe never runs the death path
         // (loseLife would touch weapons, mods and the score). Gap height
         // deltas are capped at 1 tile, so 2 below the takeoff lip is a fall.
@@ -485,8 +509,9 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
           if (i === n) { IN.keys.jump = true; IN.bufferJumpUntil(T.gameMs + PL.jumpBufferMs); pressed = true; }
           T.advanceGameMs(dt * 1000);
           if (mode.speed === 'floor') T.setScrollX(T.scrollX + C.scrollSpeed * dt);
+          const traversalBefore = p.traversalState;
           PLm.updatePlayer(dt);
-          meter(dt);
+          meter(dt, traversalBefore);
           if (p.y < g.hL - 2) break;
           if (p.grounded && pressed && i > n + 2 && p.x - hw > g.x1 + 0.5) { crossed = true; break; }
         }
@@ -501,7 +526,7 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
       // max it saw is reported beside the windows it produced. A floor column
       // measured at any speed above CONFIG.scrollSpeed is mislabelled, however
       // plausible its windows look.
-      SPEED.max = -Infinity; SPEED.frames = 0;
+      speedReset();
       const single = windowFor(g, dt, false, FLOOR);
       const dbl = single.lo === null ? windowFor(g, dt, true, FLOOR) : single;
       const floorGrace = graceFrames(g, dt, FLOOR, true);
@@ -509,10 +534,13 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
       const floorAdvance = +SPEED.max.toFixed(6);
       const floorFrames = SPEED.frames;
 
-      SPEED.max = -Infinity; SPEED.frames = 0;
+      speedReset();
       const run = windowFor(g, dt, false, RUN);
       const runGrace = graceFrames(g, dt, RUN, true);
       const runAdvance = +SPEED.max.toFixed(6);
+      const runFreeAdvance = +SPEED.freeMax.toFixed(6);
+      const runTraversalVx = +SPEED.traversalVx.toFixed(6);
+      const runTraversalFrames = SPEED.traversalFrames;
 
       // The clamp-removed control, run on the first gap — the one I-024
       // measured. Same scroll-speed start, screen clamp gone. If this does not
@@ -520,7 +548,7 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
       // meter above is stuck and its silence proves nothing.
       let control = null;
       if (gi === 0) {
-        SPEED.max = -Infinity; SPEED.frames = 0;
+        speedReset();
         const w = windowFor(g, dt, false, CTRL);
         control = { single: +w.width.toFixed(4), advance: +SPEED.max.toFixed(6), frames: SPEED.frames };
       }
@@ -530,7 +558,8 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
         floorAny: +dbl.width.toFixed(4), needsAirJump: single.lo === null,
         runSingle: +run.width.toFixed(4), runSingleAtLip: run.atLip,
         floorGrace, runGrace, floorGraceGround,
-        floorAdvance, floorFrames, runAdvance, control };
+        floorAdvance, floorFrames, runAdvance,
+        runFreeAdvance, runTraversalVx, runTraversalFrames, control };
     });
     console.log(JSON.stringify({ gate1: WG.cornerEvents[0].s, gaps: out }));
   `;
@@ -607,14 +636,27 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
          G.reduce((n, g) => n + g.floorFrames, 0) + ' measured frames' +
          (fast.length ? ' -- FAILS at ' + fast.map((g) => g.x0 + '-' + g.x1 + ' (' +
             g.floorAdvance.toFixed(3) + ')').join(', ') : ''));
-      // Non-vacuity, half one: the same meter reads runSpeed on the run column,
-      // so its silence on the floor column is a measurement and not a zero.
-      const slowRun = G.filter((g) => g.runAdvance < SS + 1 || g.runAdvance > PL.runSpeed + EPS);
+      // Non-vacuity, half one: ordinary, unassisted approach frames still read
+      // runSpeed. Normal-run ledge/wall contacts are intentional verbs; their
+      // mantle snap is contextual displacement, not ground acceleration, and
+      // their handoff velocity has its own configured bound below.
+      const slowRun = G.filter((g) =>
+        g.runFreeAdvance < SS + 1 || g.runFreeAdvance > PL.runSpeed + EPS);
       ok(slowRun.length === 0,
-         'the speed meter is live: the run column reads ' +
-         Math.min.apply(null, G.map((g) => g.runAdvance)).toFixed(2) + '-' +
-         Math.max.apply(null, G.map((g) => g.runAdvance)).toFixed(2) +
-         ' tiles/s, between the floor (' + SS + ') and runSpeed (' + PL.runSpeed + ')');
+         'the speed meter is live: unassisted run approach reads ' +
+         Math.min.apply(null, G.map((g) => g.runFreeAdvance)).toFixed(2) + '-' +
+         Math.max.apply(null, G.map((g) => g.runFreeAdvance)).toFixed(2) +
+         ' tiles/s, between the floor (' + SS + ') and runSpeed (' + PL.runSpeed + ')' +
+         (slowRun.length ? ' -- FAILS at ' + slowRun.map((g) =>
+           g.x0 + '-' + g.x1 + ' (' + g.runFreeAdvance.toFixed(3) + ')').join(', ') : ''));
+      const contextual = G.filter((g) => g.runAdvance > PL.runSpeed + EPS);
+      const traversalBound = Math.max(PL.runSpeed, PL.ledgeLaunchX, PL.wallJumpX);
+      ok(contextual.length > 0 && contextual.every((g) =>
+           g.runTraversalFrames > 0 && g.runTraversalVx <= traversalBound + EPS),
+         'contextual ledge/wall displacement is classified separately: ' +
+         contextual.map((g) => g.x0 + '-' + g.x1 + ' mean ' +
+           g.runAdvance.toFixed(3) + ', traversal vx ' + g.runTraversalVx.toFixed(3)).join('; ') +
+         ' (configured horizontal launch bound ' + traversalBound.toFixed(2) + ')');
       // Non-vacuity, half two: I-024's exact mutation, run for real on the first
       // gap — scroll-speed start kept, screen clamp removed. If the clamp were
       // not what holds the floor, this control would read the floor too and the
@@ -685,9 +727,13 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
 }
 {
   ok(plats.length >= 20, 'catwalk lanes generated, got ' + plats.length);
-  let badY = 0, unreachable = 0;
+  let badProceduralY = 0, badAssaultY = 0, assaultPeak = -Infinity, unreachable = 0;
+  const assaultCapY = GG.minH + VERTICAL_ASSAULT.spans.at(-1);
   for (const p of plats) {
-    if (p.y > GG.laneCapY) badY++;
+    if (p.assault) {
+      assaultPeak = Math.max(assaultPeak, p.y);
+      if (p.y > assaultCapY) badAssaultY++;
+    } else if (p.y > GG.laneCapY) badProceduralY++;
     let best = -999;
     for (let k = Math.max(0, p.x0 - 1); k <= Math.min(gH.length - 1, p.x1 + 1); k++)
       if (gH[k] > -100) best = Math.max(best, gH[k]);
@@ -695,20 +741,21 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
       if (q !== p && q.y < p.y && q.x1 > p.x0 - 1 && q.x0 < p.x1 + 1) best = Math.max(best, q.y);
     if (p.y - best > GG.maxReach) { unreachable++; console.error('  unreachable catwalk ' + JSON.stringify(p)); }
   }
-  ok(badY === 0, 'catwalks capped at laneCapY');
+  ok(badProceduralY === 0,
+     'procedural catwalks remain capped at laneCapY');
+  ok(badAssaultY === 0 && assaultPeak === 17 && assaultCapY === 17,
+     'authored Vertical Assault alone may exceed laneCapY, with its final apex pinned at 17');
   ok(unreachable === 0, 'every catwalk within double-jump reach');
 }
 
 // --- authored traversal slice ------------------------------------------
-// Re-pinned by T-009 (six-face integration): the lattice pass now carves one
-// pocket per face and repairs route density (src/pure/lattice.js), so the
-// shipped six-face geometry deliberately moved — 49 -> 62 catwalks, and the
-// build result gained its `pockets` / `lattice` report. The chunk stream itself
-// is untouched (59 chunks, same seed, same rng draws): the lattice consumes no
-// randomness. Both values below are regression pins, not targets — if a change
-// moves them again it has to be as deliberate as this one was.
-ok(gH.length === 445 && plats.length === 77 && LVL.chunkLog.length === 59,
-   'normal generator shape pinned (445 columns / 77 platforms / 59 chunks), got ' +
+// Re-pinned for Vertical Assault v2: each face now owns a distinct authored
+// split/rejoin silhouette and anonymous procedural catwalk carpet is removed
+// from its play strip. The same six pockets, public arena/arrival IDs, safe
+// seed bridges and 59-chunk deck remain; 73 intentional surfaces replace the
+// old 87-bar composition. The chunk stream is untouched (same seed/rng draws).
+ok(gH.length === 445 && plats.length === 73 && LVL.chunkLog.length === 59,
+   'normal generator shape pinned (445 columns / 73 platforms / 59 chunks), got ' +
    gH.length + '/' + plats.length + '/' + LVL.chunkLog.length);
 // Moved three times inside T-009 and then moved BACK. Two passes lifted the
 // capsule out of the deck-line jump arc (rewardRise 0.7 -> 1.75, then a shelf
@@ -719,11 +766,11 @@ ok(gH.length === 445 && plats.length === 77 && LVL.chunkLog.length === 59,
 // 445 columns, same 59 chunks, same rng draws — the lattice consumes none);
 // what moves with the shelf height is the bands the patch pass reads, and at
 // the plain shape that is one catwalk fewer than the raised tier produced.
-// Re-pinned after the live encounter-choreography pass authored the six fixed
-// reward letters around their phase lessons (S,S,L,H,F,H). Geometry, chunk
-// count, platform count and seeds above are unchanged; the fingerprint also
-// covers the pocket reward metadata, which is the intentional delta here.
-ok(fingerprint(LVL) === '9a206b73',
+// Re-pinned with the six face-specific support families. Geometry and the
+// fixed rewards are unchanged; the fingerprint now also covers the authored
+// rib/service/cavity/vent/braid/root presentation metadata consumed by the
+// production dressing pass.
+ok(fingerprint(LVL) === '7428339f',
    'normal generator fingerprint unchanged, got ' + fingerprint(LVL));
 
 const fixtureBefore = JSON.stringify(TRAVERSAL_FIXTURE);

@@ -20,10 +20,18 @@ import { gameMs, approach } from './time.js';
 import { sLeftEdge, sRightEdge } from './edges.js';
 import { builtGroundTopAt, builtSolidAt } from './level.js';
 import { player, circleHitsPlayer, damagePlayer } from './player.js';
-import { currentGun, weaponKills } from './weapons.js';
+import { weaponKills } from './weapons.js';
 import { dropFromCarrier } from './capsules.js';
 import { consumeLaunchShock, scoreKill } from './score.js';
 import { activeCorner, gateActive, onHostileRemoved } from './wavegate.js';
+import {
+  beginCrosswind, beginRebound, ecologyMechanic, enemyHasTactic,
+  makeEnemyEcologyFields, markReboundCharge, markReboundRecovery,
+  resetReboundCycle, settleRebound,
+  updateAircomb, updateCrosswind, updateEnemyTacticHazards, updateRebound,
+  updateSweepfan,
+} from './ecology-tactics.js';
+import { ENEMY_TACTICS, resolveEnemyEcology } from '../pure/enemy-ecology.js';
 
 export const hostiles = [];
 export let kills = 0;
@@ -36,6 +44,14 @@ let genomeSerial = 0;                       // deterministic spawn identity; res
 // first commitments into a sequence instead of gating any one drone's own
 // diveCooldownMs. Reset alongside every other piece of hostile state below.
 let lastWaspLockMs = -Infinity;
+
+// Gate-prelude cohorts may finish materializing before every member is free
+// to arm its attack. The delay is relative to `enterUntil`, so the elastic
+// gate-score pull keeps entrance and readiness together without a second
+// mutable deadline. A staged body is still an ordinary shootable hostile.
+export function hostileAttackReady(e, nowMs = gameMs) {
+  return nowMs >= e.enterUntil + (e.attackReadyDelayMs || 0);
+}
 
 function clampLead(value, cap) {
   return Math.max(-cap, Math.min(cap, value));
@@ -111,7 +127,7 @@ function evolutionFaceAt(x, row) {
 //          without new kinds or new branches;
 //   dir / patrol — a houndframe's facing and the ground run it paces.
 // Wasp rows remain absent and reproduce CONFIG.wasp behavior exactly.
-export function spawnHostile(x, y, delayMs, kind, row) {
+export function spawnHostile(x, y, delayMs, kind, row, visualId = '') {
   kind = kind || 'wasp';
   const K = ENEMY[kind];
   const T = (row && row.tune) || null;
@@ -127,13 +143,21 @@ export function spawnHostile(x, y, delayMs, kind, row) {
     cohortSlot: row?.cohortSlot,
     cohortPhase: row?.cohortPhase,
     hpRatio: player.hp / Math.max(1, CONFIG.player.maxHealth),
-    gunTier: currentGun?.tier || 0,
     kills,
-    pressure: !!row?.pressureSpawn,
     clearEmaMs: row?.pressureClearEmaMs || 0,
+    pressureEvolutionTier: row?.pressureEvolutionTier || 0,
   }, CONFIG.genome.seed);
-  const aegis = genomeHas(genome, 'AEGIS');
-  const pincer = genomeHas(genome, 'PINCER');
+  const ecologyFields = makeEnemyEcologyFields(kind, row, y, genome);
+  // A reviewed body may be selected without buying its recipe. An explicit
+  // gameplay ecologyId always owns presentation too (and an invalid one fails
+  // closed); otherwise callers may request a kind-checked visual-only body.
+  // This string is never read by mechanics, tactics, HP, collision or AI.
+  const requestedVisualId = row?.ecologyId
+    ? ecologyFields.ecologyId : row?.ecologyVisualId || visualId;
+  const ecologyVisualId = resolveEnemyEcology(requestedVisualId, kind)?.id || '';
+  const hasMechanic = (id) => genomeHas(genome, id) || ecologyMechanic(ecologyFields, id);
+  const aegis = hasMechanic('AEGIS');
+  const pincer = hasMechanic('PINCER');
   const formationOrder = pincer ? evolutionSerial++ : 0;
   const formationSide = pincer ? (formationOrder % 2 ? 1 : -1) : 0;
   const formationBand = pincer ? Math.floor(formationOrder / 2) % 3 : 0;
@@ -148,19 +172,23 @@ export function spawnHostile(x, y, delayMs, kind, row) {
     strainId: genome?.strain?.id || '',
     genomeBudget: genome?.expressedBudget || 0,
     wardPolicy: genome?.alleles?.wardPolicy || 'ANCHOR',
-    salvoPattern: genome?.alleles?.salvoPattern || 'LEAD',
-    bulwark: genomeHas(genome, 'BULWARK'),
+    salvoPattern: ecologyFields.ecology?.salvoPattern || genome?.alleles?.salvoPattern || 'LEAD',
+    bulwark: hasMechanic('BULWARK'),
     bulwarkOpenUntil: 0,
     bulwarkPingUntil: 0,
-    twinstrike: genomeHas(genome, 'TWINSTRIKE'),
+    twinstrike: hasMechanic('TWINSTRIKE'),
     twinPassesLeft: 0,
-    vault: genomeHas(genome, 'VAULT'),
-    salvo: genomeHas(genome, 'SALVO'),
+    // Rebound is itself the locomotion decision. A late genome may still
+    // carry defense/reactive organs, but VAULT may not silently replace the
+    // forward charge whose wall/edge commitment earns the reverse arc.
+    vault: hasMechanic('VAULT') &&
+      !enemyHasTactic(ecologyFields, ENEMY_TACTICS.REVERSE_VAULT),
+    salvo: hasMechanic('SALVO'),
     salvoShotsRemaining: 0,
-    relay: genomeHas(genome, 'RELAY'),
+    relay: hasMechanic('RELAY'),
     relayCycles: 0,
     relayFromDir: (row && row.dir) || -1,
-    backlash: genomeHas(genome, 'BACKLASH'),
+    backlash: hasMechanic('BACKLASH'),
     backlashUntil: 0,
     backlashCoolUntil: 0,
     backlashBurstUntil: 0,
@@ -169,6 +197,19 @@ export function spawnHostile(x, y, delayMs, kind, row) {
     diveCooldownMs: T && T.diveCooldownMs !== undefined ? T.diveCooldownMs : undefined,
     senseRange: T && T.senseRange !== undefined ? T.senseRange : undefined,
     state: K.start || 'cruise', stateUntil: 0, diveCdUntil: 0,
+    // Encounter identity is runtime bookkeeping only. It lets a pre-positioned
+    // gate retain its own survivors at the halt while stale ambient bodies are
+    // retired, and gives deterministic proofs one stable ownership key.
+    encounterKey: row?.encounterKey || '',
+    ecologyBeat: Number.isFinite(row?.ecologyBeat) ? row.ecologyBeat : -1,
+    ecologyBeatSlot: Number.isFinite(row?.ecologyBeatSlot) ? row.ecologyBeatSlot : -1,
+    ecologyStageRole: row?.ecologyStageRole || '',
+    ecologyMode: row?.ecologyMode || '',
+    ecologyStageResolved: !!row?.ecologyStageResolved,
+    ecologyPlacementFallback: !!row?.ecologyPlacementFallback,
+    ecologyVisualId,
+    attackReadyDelayMs: Math.max(0, Number(row?.attackReadyDelayMs) || 0),
+    ...ecologyFields,
     tellLocked: false,
     // Late-route traits stack on the ordinary body and never modify HP.
     // A pincer wasp may also be linked to an Aegis projector; these fields
@@ -267,7 +308,7 @@ export function spawnHostile(x, y, delayMs, kind, row) {
 }
 
 function aegisOnline(e) {
-  if (!e.aegis || gameMs < e.enterUntil || e.gateBreakExit) return false;
+  if (!e.aegis || !hostileAttackReady(e) || e.gateBreakExit) return false;
   const age = Math.max(0, gameMs - e.enterUntil);
   return age % CONFIG.evolution.aegisCycleMs < CONFIG.evolution.aegisActiveMs;
 }
@@ -425,7 +466,8 @@ export function hitHostile(e, idx, damage, weapon, approachX = null) {
     e.hp -= damage;
     e.flashUntil = gameMs + 70;
   }
-  if (e.hp > 0 && e.backlash && !e.backlashUntil && gameMs >= e.backlashCoolUntil) {
+  if (e.hp > 0 && e.backlash && hostileAttackReady(e) &&
+      !e.backlashUntil && gameMs >= e.backlashCoolUntil) {
     e.backlashUntil = gameMs + CONFIG.genome.backlashTellMs;
     e.backlashCoolUntil = e.backlashUntil + CONFIG.genome.backlashCooldownMs;
   }
@@ -462,8 +504,10 @@ export function staggerHostile(e, dirX, dirY, force, stunMs) {
   if (!e || ROOTED[e.kind] || gameMs < e.enterUntil || force <= 0 || stunMs <= 0)
     return false;
   if (activeWardAnchor(e)) return false;
-  if ((e.kind === 'hound' && (e.state === 'charge' || e.state === 'vault' || e.state === 'tumble')) ||
-      (e.kind === 'wasp' && e.state === 'dive' && gameMs >= e.lockUntil))
+  if ((e.kind === 'hound' && (e.state === 'charge' || e.state === 'vault' ||
+        e.state === 'tumble' || e.state === 'reboundTell' || e.state === 'reboundVault')) ||
+      (e.kind === 'wasp' && ((e.state === 'dive' && gameMs >= e.lockUntil) ||
+        e.state === 'crosswindBurst')))
     return false;
   const n = Math.hypot(dirX, dirY) || 1;
   const cap = 7.5;
@@ -473,7 +517,12 @@ export function staggerHostile(e, dirX, dirY, force, stunMs) {
     : Math.max(-cap, Math.min(cap, e.recoilVy + dirY / n * force * 0.65));
   const prior = Math.max(gameMs, e.staggerUntil);
   const next = Math.min(gameMs + 180, prior + stunMs);
-  if (e.kind === 'hound' && e.stateUntil > gameMs) e.stateUntil += next - prior;
+  if ((e.kind === 'hound' || e.state === 'crosswindTell' || e.state === 'crosswindRecover') &&
+      e.stateUntil > gameMs) {
+    const extension = next - prior;
+    e.stateUntil += extension;
+    if (e.tacticUntil > gameMs) e.tacticUntil += extension;
+  }
   e.staggerUntil = next;
   return true;
 }
@@ -535,6 +584,7 @@ function houndSkid(e, H, intoWall) {
   e.diveCdUntil = gameMs + H.chargeCooldownMs;   // shared cooldown field: pant window
   if (intoWall) { e.vx = 0; e.dir = -e.dir; }    // impact: stop dead, turn around
   else e.vx = e.dir * H.chargeSpeed;             // run-out: slide to a stop
+  markReboundRecovery(e, intoWall ? 'wall-recover' : 'landing-recover');
 }
 
 function updateHound(e, dt) {
@@ -551,6 +601,20 @@ function updateHound(e, dt) {
       e.vy = 0;
       e.deckY = undefined;
       houndSkid(e, H, true);                     // picks itself up on the lower deck
+    }
+    return;
+  }
+
+  // Rebound pays for its return arc with an ordinary committed charge into a
+  // real edge/wall. The new states are opt-in; every unlabelled hound skips
+  // this helper and stays on the exact shipped branch below.
+  const rebound = updateRebound(e, dt);
+  if (rebound) {
+    if (rebound === 'wall') houndSkid(e, H, true);
+    else if (rebound === 'land') houndSkid(e, H, false);
+    else if (rebound === 'tumble') {
+      e.state = 'tumble';
+      e.diveCdUntil = gameMs + H.chargeCooldownMs;
     }
     return;
   }
@@ -599,7 +663,7 @@ function updateHound(e, dt) {
     } else {
       e.x += e.dir * H.prowlSpeed * dt;
     }
-    if (gameMs >= e.enterUntil && gameMs >= e.diveCdUntil && houndInLane(e, H)) {
+    if (hostileAttackReady(e) && gameMs >= e.diveCdUntil && houndInLane(e, H)) {
       e.dir = houndAimDir(e, H);
       // never telegraph nose-to-wall: a charge with nowhere to go would be an
       // unreadable tell-skid stutter, so it keeps pacing and turns instead
@@ -608,6 +672,7 @@ function updateHound(e, dt) {
         e.state = 'tell';
         e.stateUntil = gameMs + H.tellMs;
         e.tellLocked = false;
+        resetReboundCycle(e);
       }
     }
     return;
@@ -633,6 +698,7 @@ function updateHound(e, dt) {
         e.state = 'charge';
         e.stateUntil = gameMs + H.chargeMs;
         e.vx = e.dir * H.chargeSpeed;             // locked here: a charge never re-aims
+        markReboundCharge(e);
       }
     }
     return;
@@ -645,18 +711,23 @@ function updateHound(e, dt) {
     const steps = Math.min(H.substeps, Math.max(1, Math.ceil(Math.abs(e.vx) * dt / 0.45)));
     const sdt = dt / steps;
     for (let k = 0; k < steps; k++) {
+      const priorX = e.x;
       e.x += e.vx * sdt;
       const under = houndDeckAt(e, e.x);
       if (under > -100) e.y = approach(e.y, under + H.rideY, H.hugRate * sdt);
       if (gameMs >= e.enterUntil && circleHitsPlayer(e.x, e.y, e.hitR)) damagePlayer(1, e.x);
       const deckAhead = houndDeckAt(e, e.x + e.dir * H.probeX);
       if (deckAhead < -100) {                    // ran out of deck — commitment costs
+        if (beginRebound(e)) { e.x = priorX; return; }
         e.state = 'tumble';
         e.vy = 0;
         e.diveCdUntil = gameMs + H.chargeCooldownMs;
         return;
       }
-      if (houndBlockedAhead(e, H, deckAhead)) { houndSkid(e, H, true); return; }
+      if (houndBlockedAhead(e, H, deckAhead)) {
+        if (!beginRebound(e)) houndSkid(e, H, true);
+        return;
+      }
     }
     if (gameMs >= e.stateUntil) houndSkid(e, H, false);
     return;
@@ -664,7 +735,10 @@ function updateHound(e, dt) {
 
   e.vx = approach(e.vx, 0, H.chargeSpeed * 4 * dt);   // skid: the lane is briefly safe
   e.x += e.vx * dt;
-  if (gameMs >= e.stateUntil) { e.state = 'prowl'; e.vx = 0; }
+  if (gameMs >= e.stateUntil) {
+    e.state = 'prowl'; e.vx = 0;
+    settleRebound(e);
+  }
 }
 
 /* ------------------------- IRIS POLYP ------------------------------ *
@@ -715,6 +789,7 @@ function polypBeamOnProjectedPlayer(e, PP, reach) {
 function updatePolyp(e) {
   const PP = CONFIG.polyp;
   if (gameMs < e.enterUntil) return;             // materializing: no senses, no beam
+  if (updateSweepfan(e, hostileAttackReady(e))) return;
   if (e.state === 'relay') {
     if (gameMs >= e.stateUntil) {
       e.dir = -e.relayFromDir;
@@ -726,7 +801,8 @@ function updatePolyp(e) {
     return;
   }
   if (e.state === 'closed') {
-    if (gameMs < e.diveCdUntil) return;          // shared cooldown field: iris rearming
+    if (!hostileAttackReady(e) || gameMs < e.diveCdUntil) return;
+                                                // shared cooldown field: iris rearming
     const reach = polypReachNow(e, PP);
     if (e.autoCycle || polypBeamOnPlayer(e, PP, reach) ||
         polypBeamOnProjectedPlayer(e, PP, reach)) {
@@ -800,11 +876,12 @@ function updatePolyp(e) {
  * prices. Fairness of the warning versus the player's escape physics is
  * asserted in tools/pathcheck.mjs.                                      */
 
-function updateMortar(e) {
+function updateMortar(e, boundLeft, boundRight) {
   const M = CONFIG.mortar;
   if (gameMs < e.enterUntil) return;             // materializing: no pod, no blast
+  if (updateAircomb(e, hostileAttackReady(e), boundLeft, boundRight)) return;
   if (e.state === 'aim') {
-    if (mortarArmed(player.x, e.zoneX, M.armRange)) {
+    if (hostileAttackReady(e) && mortarArmed(player.x, e.zoneX, M.armRange)) {
       e.salvoShotsRemaining = e.salvo ? 2 : 1;
       e.zoneX = e.zoneHomeX;
       e.zoneY = e.zoneHomeY;
@@ -1023,6 +1100,11 @@ export function updateHostiles(dt) {
   // built yet.
   const patrolR = gate ? Math.min(sRightEdge() - 2, activeCorner().s - 1.5) : 0;
   const patrolL = gate ? sLeftEdge() + 2 : 0;
+  // New projectile-like ecology hazards are owner-local and stay on the
+  // visible current facet. Gate arenas use their stricter patrol box; the
+  // ordinary run gets one tile of presentation run-out before hard expiry.
+  const tacticBoundL = gate ? patrolL : sLeftEdge() - 1;
+  const tacticBoundR = gate ? patrolR : sRightEdge() + 1;
 
   // Elastic gate score: the authored delays establish entrance order and the
   // intended overlap for an ordinary fight. If a high-output build deletes
@@ -1034,10 +1116,11 @@ export function updateHostiles(dt) {
   // skips the unshootable entrance; it only removes time in which no threat is
   // present and no decision is possible.
   if (gate && hostiles.length) {
+    const gateEncounterKey = activeCorner()?.encounterKey || '';
     let active = false;
     let nextEnterUntil = Infinity;
     for (const e of hostiles) {
-      if (e.gateBreakExit) continue;
+      if (e.gateBreakExit || e.encounterKey !== gateEncounterKey) continue;
       if (gameMs >= e.enterUntil - W.enterMs) active = true;
       else if (e.enterUntil < nextEnterUntil) nextEnterUntil = e.enterUntil;
     }
@@ -1046,7 +1129,8 @@ export function updateHostiles(dt) {
       const pullMs = Math.max(0, nextEnterUntil - desiredNext);
       if (pullMs > 0) {
         for (const e of hostiles) {
-          if (!e.gateBreakExit && gameMs < e.enterUntil - W.enterMs)
+          if (!e.gateBreakExit && e.encounterKey === gateEncounterKey &&
+              gameMs < e.enterUntil - W.enterMs)
             e.enterUntil -= pullMs;
         }
       }
@@ -1064,6 +1148,7 @@ export function updateHostiles(dt) {
       continue;
     }
     e.t += dt;
+    updateEnemyTacticHazards(e, dt, tacticBoundL, tacticBoundR);
     updateBacklash(e);
     // gated hostiles press harder; otherwise a variant's per-enemy tune wins
     const diveRange = gate ? GW.gateDiveRange
@@ -1081,7 +1166,10 @@ export function updateHostiles(dt) {
       continue;
     }
     if (gate && !ROOTED[e.kind] &&                    // a rooted barrel's dir is its FACING:
-        e.state !== 'charge' && e.state !== 'vault' && e.state !== 'tumble') {//   the box must never re-aim it
+        e.state !== 'charge' && e.state !== 'vault' && e.state !== 'tumble' &&
+        e.state !== 'reboundTell' && e.state !== 'reboundVault' &&
+        e.state !== 'crosswindTell' && e.state !== 'crosswindBurst' &&
+        e.state !== 'crosswindRecover') {//   the box must never re-aim a commitment
       if (e.x < patrolL) e.dir = 1;                    // patrol box: nobody strands the gate
       else if (e.x > patrolR) e.dir = -1;              //   (a committed charge is exempt)
     }
@@ -1108,7 +1196,10 @@ export function updateHostiles(dt) {
     } else if (e.kind === 'polyp') {                   // rooted emplacement: sightline denial
       updatePolyp(e);
     } else if (e.kind === 'mortar') {                  // rooted emplacement: landing denial
-      updateMortar(e);
+      updateMortar(e, tacticBoundL, tacticBoundR);
+    } else if (updateCrosswind(e, dt, tacticBoundL, tacticBoundR)) {
+      // Opt-in aerial release owns this beat; ordinary wasps never enter one
+      // of its three named states, so their branch remains immediately below.
     } else if (e.kind === 'carrier') {                 // loot/support body; never dives
       const C = CONFIG.carrier;
       // PINCER reuses the wasp's already-readable split station as support
@@ -1121,9 +1212,14 @@ export function updateHostiles(dt) {
       if (e.pincer) stagePincer(e, dt, gate, patrolL, patrolR);
       else e.x += e.dir * cruiseSpeed * dt;
       e.y = e.baseY + Math.sin(e.t * W.bobFreq) * W.bobAmp;
-      if ((!e.pincer || e.formationReady) &&
+      const crosswindReady = hostileAttackReady(e) &&
+        squadReady(gameMs, lastWaspLockMs, squadStagger);
+      if (enemyHasTactic(e, ENEMY_TACTICS.HORIZONTAL_BURST)) {
+        if (beginCrosswind(e, diveRange, diveCooldown, crosswindReady))
+          lastWaspLockMs = gameMs;
+      } else if ((!e.pincer || e.formationReady) &&
           Math.abs(e.x - player.x) < diveRange && player.y + 1 < e.y &&
-          gameMs > e.diveCdUntil && gameMs >= e.enterUntil &&    // no ghost dives mid-materialize
+          gameMs > e.diveCdUntil && hostileAttackReady(e) &&
           squadReady(gameMs, lastWaspLockMs, squadStagger)) {
         // commit now: aim is frozen for the whole dive (never re-aimed, same
         // doctrine as the hound's charge and the polyp's beam), but movement
@@ -1225,6 +1321,47 @@ export function hostileEvolutionSnapshot() {
     pincers: rows.filter((e) => e.pincer).length,
     linked: rows.filter((e) => e.wardedBy).length,
     blockedHits: rows.reduce((n, e) => n + e.blockedHits, 0),
+    rows,
+  };
+}
+
+export function hostileEcologySnapshot() {
+  const rows = hostiles.filter((e) => e.ecologyId).map((e) => ({
+    id: e.id,
+    ecologyId: e.ecologyId,
+    family: e.ecologyFamily,
+    kind: e.kind,
+    face: e.evolutionFace,
+    encounterKey: e.encounterKey,
+    beat: e.ecologyBeat,
+    beatSlot: e.ecologyBeatSlot,
+    stageRole: e.ecologyStageRole,
+    mode: e.ecologyMode,
+    stageResolved: e.ecologyStageResolved,
+    placementFallback: e.ecologyPlacementFallback,
+    baseMechanics: [...e.ecologyMechanics],
+    mechanics: [...e.effectiveMechanics],
+    tactics: [...e.tactics],
+    state: e.state,
+    tacticState: e.tacticState,
+    tacticPhase: e.tacticPhase,
+    tacticProgress: Number(e.tacticProgress.toFixed(3)),
+    hazards: e.tacticHazards ? e.tacticHazards.filter((h) => h.active).map((h) => ({
+      kind: h.kind,
+      x: Number(h.x.toFixed(2)),
+      y: Number(h.y.toFixed(2)),
+      radius: h.radius,
+    })) : [],
+    hp: e.hp,
+    gating: e.gating,
+    x: Number(e.x.toFixed(2)),
+    y: Number(e.y.toFixed(2)),
+  }));
+  return {
+    bodiesAdded: 0,
+    maxHazardsPerBody: CONFIG.enemyEcology.maxHazardsPerBody,
+    bodies: rows.length,
+    hazards: rows.reduce((count, row) => count + row.hazards.length, 0),
     rows,
   };
 }

@@ -6,8 +6,10 @@
    from the same corner events, so the sim owns scroll and only scroll. */
 
 import { CONFIG } from '../config.js';
-import { HALT_S } from '../pure/path.js';
-import { cornerScrollVel, cornerEventTotalMs } from '../pure/waves.js';
+import { BEND_S, HALT_S } from '../pure/path.js';
+import {
+  cornerApproachScrollTarget, cornerScrollVel, cornerEventTotalMs, gatePreludeReady,
+} from '../pure/waves.js';
 import {
   traversalFollowTarget, traversalMarginCapScroll,
 } from '../pure/traversal.js';
@@ -18,7 +20,9 @@ import { activeScrollEnd, activeScrollSpeed } from './level.js';
 import { hostiles, kills, removeHostile } from './hostiles.js';
 import { updateMomentum, updatePace } from './pace.js';
 import { player } from './player.js';
-import { activeCorner, armGate, cornerBusy, finishCorner, updateZipper } from './wavegate.js';
+import {
+  activeCorner, armGate, cornerBusy, finishCorner, primeGateWave, updateZipper,
+} from './wavegate.js';
 import { updateTransformScroll } from './transform.js';
 
 export function updateScroll(dt) {
@@ -74,7 +78,18 @@ export function updateScroll(dt) {
     if (t >= cornerEventTotalMs(CONFIG)) finishCorner(c);
   } else {
     let target = activeScrollEnd();                     // wave-gate / fixture clamp
-    if (c) target = Math.min(target, HALT_S[c.k - 1]);
+    if (c) {
+      // Gate combat still freezes at HALT_S. After the clear, give the camera
+      // the smallest forward dolly that keeps RIG visible while their centre
+      // physically reaches BEND_S. Without this composition a portrait/FAR
+      // frustum could clamp the right edge more than a tile before the joint,
+      // leaving the run permanently in `approach` with no enemies remaining.
+      const cornerTarget = cornerApproachScrollTarget(
+        c.state, HALT_S[c.k - 1], BEND_S[c.k - 1], EDGE_R,
+        CONFIG.edges.margin, player.hw,
+      );
+      target = Math.min(target, cornerTarget);
+    }
     let nextScroll = scrollX + activeScrollSpeed() * dt;
     if (ACTIVE_FIXTURE) {
       // The fixture's lead is a camera-follow offset, not an invisible player
@@ -104,6 +119,8 @@ export function updateScroll(dt) {
       }
     }
     setScrollX(Math.min(nextScroll, target));
+    if (c && gatePreludeReady(c.state, c.primed, scrollX, HALT_S[c.k - 1]))
+      primeGateWave(c);
     if (c && c.state === 'idle' && scrollX >= HALT_S[c.k - 1] - 1e-6) armGate(c);
   }
 }

@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import { CONFIG } from '../../src/config.js';
 import * as latticeModule from '../../src/pure/lattice.js';
 import { buildLevel } from '../../src/pure/generator.js';
+import { VERTICAL_ASSAULT } from '../../src/pure/vertical-assault.js';
 import { near, ok, srcDir, stripComments } from './_context.mjs';
 
 export const title = 'T-044 — corner reveal set pieces (ARRIVAL + ARENA)';
@@ -93,14 +94,16 @@ export async function run(SHARED) {
     let apronClash = 0, footprintClash = 0;
     for (const a of LVL.arenas) {
       if (a.x1 > a.corner - 3) apronClash++;    // the apron's own platform-clear reaches corner-3
+      const faceStart = CONFIG.path.introTiles + (a.face - 1) * CONFIG.path.faceTiles;
       for (const t of a.tiers) {
-        if (t.x0 < a.corner - L.arena.back || t.x1 > a.corner - L.arena.front) footprintClash++;
+        if (t.x0 < faceStart + VERTICAL_ASSAULT.authoredStart ||
+            t.x1 > a.corner - VERTICAL_ASSAULT.gateApron) footprintClash++;
       }
     }
     ok(apronClash === 0, 'T-044: every ARENA composition stays clear of its corner apron, ' +
        apronClash + ' clashes');
-    ok(footprintClash === 0, 'T-044: every ARENA tier stays inside the wave gate\'s own ' +
-       'authored footprint, ' + footprintClash + ' out of bounds');
+    ok(footprintClash === 0, 'T-044: every ARENA tier stays inside its face-authored ' +
+       'play strip and outside the clean gate apron, ' + footprintClash + ' out of bounds');
   }
 
   // --- escalation is measured for the shipped seed, not just intended ----
@@ -114,10 +117,9 @@ export async function run(SHARED) {
        'silently dropped (a future reseed that breaks this must fail here, not ship quietly): ' +
        JSON.stringify(LVL.arenas.map((a) => a.tiers.map((t) => t.fits))));
     const widths = LVL.arenas.map((a) => Math.max.apply(null, a.tiers.map((t) => t.x1 - t.x0)));
-    let widthMono = true;
-    for (let i = 1; i < widths.length; i++) if (widths[i] < widths[i - 1] - 0.001) widthMono = false;
-    ok(widthMono, 'T-044: each arena\'s widest tier is no narrower than the previous face\'s, ' +
-       'got widths ' + JSON.stringify(widths));
+    ok(widths.every((w) => w >= 7 && w <= VERTICAL_ASSAULT.maxPlatformLen),
+       'T-044: arena tiers remain local maneuver castings (7-' +
+       VERTICAL_ASSAULT.maxPlatformLen + ' tiles), got widths ' + JSON.stringify(widths));
     const peakY = LVL.arenas.map((a) => Math.max.apply(null, a.tiers.map((t) => t.y)));
     ok(peakY[peakY.length - 1] > peakY[0],
        'T-044: the tallest arena tier (face 6, Scuttle) sits higher than the first arena\'s ' +
@@ -234,12 +236,12 @@ export async function run(SHARED) {
       ok(run.scrollX >= run.end,
          'T-044: …and still reaches the outro scroll end (' + run.scrollX.toFixed(1) +
          ' of ' + run.end + ')');
-      ok(run.mounted.length >= 3,
-         'T-044: a terrain-only policy that never tries to gain altitude for its own sake ' +
-         'still takes genuine onOneWay contact on ' + run.mounted.length + ' authored ' +
-         'set-piece platforms along the way (' + JSON.stringify(run.mounted) + ') — real ' +
-         'physics contact with the new geometry, not merely reachable on paper. This says ' +
-         'nothing about combat: hostiles are removed every frame here (see above)');
+      // V2 deliberately keeps the deck as a complete recovery route. A policy
+      // that never asks for altitude is therefore allowed to touch zero
+      // elevated set pieces; forcing three contacts would turn route choice
+      // back into compulsory staircase traversal. `mounted` remains reported
+      // by this child for review, while reachability of every authored tier is
+      // gated arithmetically above and by the dedicated Vertical Assault test.
     }
   }
 }

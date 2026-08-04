@@ -300,7 +300,7 @@ node tools/assets/alpha.mjs assets/generated/backdrops/backdrop-limb-segment.png
 | --- | --- | --- |
 | `id` | required | kebab-case, unique |
 | `path` | required | repo-relative, under `assets/generated/` or `assets/approved/`, inside its category directory |
-| `category` | required | `glyphs` \| `textures` \| `sprites` \| `ui` \| `fx` \| `backdrops` |
+| `category` | required | `glyphs` \| `textures` \| `sprites` \| `ui` \| `fx` \| `backdrops` \| `environment` |
 | `size` | required | `{ "w": n, "h": n }` — checked against the file's own header, not trusted |
 | `task` | required | the task that produced it, e.g. `T-015` |
 | `source` | optional | what produced the pixels: an `.svg` original (palette-checked too) or a `.recipe.js` module (contract-checked, never executed) |
