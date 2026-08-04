@@ -200,7 +200,7 @@ const READ_ART = () => ({
 function judgeArt(snap) {
   const out = [];
   const bodyAtlas = snap.preload && snap.preload.assets.find((a) =>
-    a.url.includes('rig-body-atlas-v1.png'));
+    a.url.includes('rig-slender-body-atlas-v2.png'));
   const weaponAtlas = snap.preload && snap.preload.assets.find((a) =>
     a.url.includes('rig-weapons-atlas-v1.png'));
   const rig = snap.rigVisual;

@@ -172,7 +172,7 @@ export async function run(SHARED) {
   ok(/onerror|,\s*\(err\)\s*=>/.test(rigSrc) || /console\.warn/.test(rigSrc),
      'T-040: a failed sprite load is handled (logged), not left to throw or silently hang');
   ok(/__HB_RIG_VISUAL/.test(deployVerifierSrc) &&
-     /rig-body-atlas-v1\.png/.test(deployVerifierSrc) &&
+     /rig-slender-body-atlas-v2\.png/.test(deployVerifierSrc) &&
      /rig-weapons-atlas-v1\.png/.test(deployVerifierSrc) &&
      /spriteReady/.test(deployVerifierSrc) && /idleGunlessReady/.test(deployVerifierSrc) &&
      /canvasFallback\s*===\s*false/.test(deployVerifierSrc) &&
