@@ -548,7 +548,13 @@ function reset() {
   hide();
 }
 
-installView({ meridian: { sync, reset } });
+let meridianViewInstalled = false;
+export function initMeridianView() {
+  if (meridianViewInstalled) return false;
+  installView({ meridian: { sync, reset } });
+  meridianViewInstalled = true;
+  return true;
+}
 
 export function meridianDefenseVfxSnapshot() {
   return {

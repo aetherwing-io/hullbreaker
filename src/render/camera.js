@@ -292,7 +292,13 @@ function cornerFinished() {
   camYawBase += 2 * CONFIG.path.turnDeg * DEG * CONFIG.path.turnSign;
   camYaw = camYawBase;
 }
-installView({ corner: { finished: cornerFinished } });
+let cameraViewInstalled = false;
+export function initCameraView() {
+  if (cameraViewInstalled) return false;
+  installView({ corner: { finished: cornerFinished } });
+  cameraViewInstalled = true;
+  return true;
+}
 
 // run reset (resetGame in src/main.js): back to the first face's heading,
 // and no trauma survives a restart — a death shake must not ride into the

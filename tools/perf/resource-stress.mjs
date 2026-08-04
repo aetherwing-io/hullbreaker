@@ -109,6 +109,9 @@ async function measure(owner, baseUrl, profile, variant) {
         state: window.HB.state(),
         perf: window.HB.perf(),
         post: window.HB.post(),
+        viewInit: window.HB.viewInit(),
+        resetRegistry: window.HB.resetRegistry(),
+        adaptiveFidelity: window.HB.adaptiveFidelity(),
         resources: rendererResourceSnapshot(),
         liveProjectiles,
         heap,
@@ -195,7 +198,17 @@ for (const [profileId, profile] of Object.entries(result.profiles)) {
     if (reading.liveProjectiles < TARGET_PROJECTILES) {
       failures.push(`${profileId}/${variantId}: only ${reading.liveProjectiles} live projectiles`);
     }
-    if (reading.post.status !== 'active') failures.push(`${profileId}/${variantId}: bloom not active`);
+    if (!['active', 'adaptive-bypass'].includes(reading.post.status))
+      failures.push(`${profileId}/${variantId}: post path unavailable (${reading.post.status})`);
+    const missingViews = reading.viewInit.base
+      .filter((entry) => !entry.optional && !entry.installed)
+      .map((entry) => entry.id);
+    if (!reading.viewInit.initialized || missingViews.length)
+      failures.push(`${profileId}/${variantId}: view init missing ${missingViews.join(',')}`);
+    if (reading.resetRegistry.runs < 1 || reading.resetRegistry.last.length !== 30)
+      failures.push(`${profileId}/${variantId}: reset registry did not complete all owners`);
+    if (reading.post.boot.programWarmCount !== 1 || reading.post.boot.programsAfterWarm < 1)
+      failures.push(`${profileId}/${variantId}: representative program warmup did not complete`);
     if (!Number.isFinite(reading.resources.memory.textures) ||
         !Number.isFinite(reading.resources.memory.geometries)) {
       failures.push(`${profileId}/${variantId}: renderer memory counters unavailable`);

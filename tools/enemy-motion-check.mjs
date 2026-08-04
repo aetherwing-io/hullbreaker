@@ -208,13 +208,15 @@ for (const [kind, art] of Object.entries(SPRITE_MOTION_ART)) {
 }
 
 const source = readFileSync(resolve(ROOT, 'src/render/hostiles.js'), 'utf8');
-assert.match(source, /key = `motion:\$\{motionFrame\}`/,
+const spritePresenter = readFileSync(
+  resolve(ROOT, 'src/render/hostile-presenters/sprite.js'), 'utf8');
+assert.match(spritePresenter, /key = `motion:\$\{motionFrame\}`/,
   'runtime selects an individual motion frame');
-assert.match(source, /v\.mesh\.geometry = geo/,
+assert.match(spritePresenter, /v\.mesh\.geometry = geo/,
   'runtime reuses the one actor body mesh');
 assert.match(source, /crossfade: false/,
   'runtime snapshot declares the exclusive-frame contract');
-assert.match(source, /actionPoseActive\(e\).*v\.actionTex/s,
+assert.match(spritePresenter, /actionPoseActive\(e\).*v\.actionTex/s,
   'committed action art retains priority over locomotion');
 assert.match(source, /HOUND_RUN_FRAME_COUNT = 4/,
   'hound locomotion cycles only the four run frames');
@@ -234,8 +236,11 @@ assert.match(source,
   /const frozenMotion = motionFrame >= 0 \? \{[\s\S]*rootedTerminal: e\.kind === 'warden'/,
   'the frozen motion record marks only Warden as a rooted terminal handoff');
 assert.match(source,
-  /if \(!actorMotionOwnsSilhouette\(v\) && !houndMotionOwnsSilhouette\(v, e\)[\s\S]{0,120}\) \{\s*sx \*= p\.sx; sy \*= p\.sy; sz \*= p\.sz;/,
-  'hound v2 cells bypass legacy primitive squash and stretch');
+  /if \(!presenterOwnsSilhouette\(v, e\)\) \{\s*sx \*= p\.sx; sy \*= p\.sy; sz \*= p\.sz;/,
+  'presenter-owned cells bypass legacy primitive squash and stretch');
+assert.match(spritePresenter,
+  /e\.kind === 'hound'[\s\S]*v\.motionGeos\?\.length[\s\S]*api\.currentMotionFrame\(v\) >= 0/,
+  'the sprite presenter gives the complete hound atlas silhouette ownership');
 assert.match(source,
   /ruptureMode: c\.ecologyDeath \? 'ecology-b7-a7'[\s\S]*c\.kind === 'warden' && c\.rig \? 'rooted-terminal-pieces'[\s\S]*: frozen \? 'frozen-motion'/,
   'the death proof names Warden terminal pieces before the retained non-Warden frozen-motion mode');

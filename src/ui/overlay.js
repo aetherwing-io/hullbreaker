@@ -123,4 +123,10 @@ function drawStateScreen(next) {
   }
 }
 
-installView({ stateScreen: showStateScreen });
+let overlayViewInstalled = false;
+export function initOverlayView() {
+  if (overlayViewInstalled) return false;
+  installView({ stateScreen: showStateScreen });
+  overlayViewInstalled = true;
+  return true;
+}

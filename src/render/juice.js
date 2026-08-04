@@ -937,11 +937,8 @@ const JUICE_OBSERVER = Symbol.for('hullbreaker.juiceObserver');
 const JUICE_PREVIOUS = Symbol.for('hullbreaker.previousBridge');
 let hostileBridgeInstalls = 0;
 
-// Hostile art contains top-level async settlement. Its final bridge owner can
-// therefore resume after static module evaluation and replace the early juice
-// wrappers. main.js calls this idempotent fence after *all* imports settle and
-// immediately before the action-atlas observer. Keeping the early call below
-// preserves standalone/module-fixture behaviour; markers prevent duplicates.
+// Base view owners are installed first by boot/view-init.js. This idempotent
+// observer is then layered over the finished hostile presenter exactly once.
 export function installJuiceHostileBridge() {
   if (!JUICE_ENABLED) return false;
   let installed = false;
@@ -958,7 +955,9 @@ function warnDead(e) {
   dead = true;
 }
 
-if (JUICE_ENABLED) {
+let juiceViewsInstalled = false;
+export function initJuiceViewObservers() {
+  if (!JUICE_ENABLED || juiceViewsInstalled) return false;
   after('juice', 'hitStop', onHitStop);
   after('player', 'sync', onPlayerSync);
   installJuiceHostileBridge();
@@ -970,4 +969,6 @@ if (JUICE_ENABLED) {
   after('transform', 'reset', onTransformReset);
   after('level', 'faceRevealed', onBoom);
   after(null, 'stateScreen', onStateScreen);
+  juiceViewsInstalled = true;
+  return true;
 }

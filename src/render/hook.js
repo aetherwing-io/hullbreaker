@@ -77,4 +77,10 @@ function sync() {
   tether.visible = true;
 }
 
-installView({ hook: { sync } });
+let hookViewInstalled = false;
+export function initHookView() {
+  if (hookViewInstalled) return false;
+  installView({ hook: { sync } });
+  hookViewInstalled = true;
+  return true;
+}

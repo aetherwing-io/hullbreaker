@@ -78,6 +78,9 @@ import * as d65 from './limb-silhouette-production.mjs';
 import * as d66 from './actor-motion-contract.mjs';
 import * as d67 from './crown-command-architecture.mjs';
 import * as d68 from './enemy-ecology-render-contract.mjs';
+import * as d69 from './hostile-presenter-contract.mjs';
+import * as d70 from './boot-registry-contract.mjs';
+import * as d71 from './adaptive-fidelity-contract.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -149,4 +152,7 @@ export const DOMAINS = [
   d66,    // declarative polyp, mortar, and Crown Warden actor motion
   d67,    // Crown finale: rooted vertical command architecture
   d68,    // Level 1 enemy ecology: one-atlas two-layer presentation
+  d69,    // spawn-time hostile presenter registry
+  d70,    // explicit view and run-reset registries
+  d71,    // sustained-frame adaptive fidelity ladder
 ];

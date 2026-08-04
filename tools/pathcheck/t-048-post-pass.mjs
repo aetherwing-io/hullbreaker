@@ -215,7 +215,7 @@ export async function run() {
 
   /* ---- the emissive gain is tied to the pass, not to the flag ----------- */
   {
-    ok(/status === 'active' \? POST_TUNE\.emissiveGain : 1/.test(POST_SRC),
+    ok(/status === 'active' && adaptiveBloomEnabled \? POST_TUNE\.emissiveGain : 1/.test(POST_SRC),
        'T-048: postGain() is the gain only while the composer is ACTUALLY ' +
        'drawing — with no bloom to catch it, an above-1 color is just a ' +
        'clipped white blob, so ?bloom=0 and a failed fetch both give back the ' +

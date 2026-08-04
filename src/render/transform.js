@@ -514,10 +514,22 @@ function buildSlice() {
   for (const band of FIX.bands) bands.push(buildBand(band));
   buildRibs();
   for (const ev of FIX.events) covers.push(buildCover(ev, bands[ev.fromBand].M));
-  installView({ transform: { armed, started, ritual, finished, reset, frame } });
   reset();
 }
 
+let transformViewInstalled = false;
+let transformSliceBuilt = false;
+
 // Only ?slice=transform builds any of this: every other run mode leaves the
-// view hooks as the no-ops src/sim/bridge.js installs.
-if (IS_TRANSFORM_SLICE) buildSlice();
+// view hooks as the no-ops src/sim/bridge.js installs. The composition root
+// calls this from its declared manifest after all ordinary view owners exist.
+export function initTransformView() {
+  if (!IS_TRANSFORM_SLICE || transformViewInstalled) return false;
+  if (!transformSliceBuilt) {
+    buildSlice();
+    transformSliceBuilt = true;
+  }
+  installView({ transform: { armed, started, ritual, finished, reset, frame } });
+  transformViewInstalled = true;
+  return true;
+}

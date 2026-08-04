@@ -995,4 +995,10 @@ export function rigVisualSnapshot() {
 }
 
 if (typeof window !== 'undefined') window.__HB_RIG_VISUAL = rigVisualSnapshot;
-installView({ player: { sync } });
+let playerViewInstalled = false;
+export function initPlayerView() {
+  if (playerViewInstalled) return false;
+  installView({ player: { sync } });
+  playerViewInstalled = true;
+  return true;
+}

@@ -191,7 +191,13 @@ function faceRevealed(c) {               // beyond the zipper strip: one distant
 }
 
 // installed before the bake below, which finishes by unbuilding future faces
-installView({ level: { unbuiltHidden, zipperColumn, faceRevealed } });
+let levelViewInstalled = false;
+export function initLevelView() {
+  if (levelViewInstalled) return false;
+  installView({ level: { unbuiltHidden, zipperColumn, faceRevealed } });
+  levelViewInstalled = true;
+  return true;
+}
 
 /* ---------------------- industrial world dressing ---------------------- *
  * Four draw pools carry the entire six-face route.  Every element is baked

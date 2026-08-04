@@ -892,4 +892,10 @@ export function capsuleArtSnapshot() {
 
 if (typeof window !== 'undefined') window.__HB_CAPSULE_ART = capsuleArtSnapshot;
 
-installView({ capsules: { spawned, removed, sync } });
+let capsuleViewInstalled = false;
+export function initCapsuleView() {
+  if (capsuleViewInstalled) return false;
+  installView({ capsules: { spawned, removed, sync } });
+  capsuleViewInstalled = true;
+  return true;
+}

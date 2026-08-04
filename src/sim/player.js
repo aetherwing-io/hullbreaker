@@ -649,6 +649,27 @@ export function cancelSliceRetry() {
   }
 }
 
+// One canonical fresh-run pose. Respawn and fallback intentionally preserve
+// different pieces of run state; only the composition-root reset registry
+// calls this complete reset.
+export function resetPlayerForRun(x = 6, y = 3) {
+  player.x = x;
+  player.y = y;
+  player.vx = 0; player.vy = 0;
+  player.hp = P.maxHealth; player.lives = P.lives;
+  player.facing = 1; player.aim.set(1, 0);
+  player.iframesUntil = 0; player.hitstunUntil = 0;
+  player.coyoteUntil = 0; player.dropUntil = 0; player.nextFireAt = 0;
+  player.grounded = false; player.onOneWay = null; player.jumpCutDone = true;
+  player.airJumpsLeft = P.airJumps;
+  player.traversalChain = 0; player.traversalChainUntil = 0;
+  player.fallbackStreak = 0; player.fallbackEarnedTiles = 0;
+  player.edgePinnedMs = 0;
+  clearPlayerTraversal(0);
+  player.traversalControlUntil = 0;
+  clearJumpBuffer();
+}
+
 /* --------------------- HULL FALLBACK tier 1 (B.1) -------------------- *
  * The ship does not delete an anomaly on its hull, it dislodges one. Losing
  * costs altitude, CHARGE and a couple of seconds of position — never control,

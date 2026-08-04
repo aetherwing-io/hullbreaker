@@ -138,6 +138,8 @@ const main = readFileSync(resolve(ROOT, 'src/main.js'), 'utf8');
 const runtime = readFileSync(resolve(ROOT, 'src/render/actor-motion.js'), 'utf8');
 const owner = readFileSync(resolve(ROOT, 'src/render/actor-motion-art.js'), 'utf8');
 const hostiles = readFileSync(resolve(ROOT, 'src/render/hostiles.js'), 'utf8');
+const actorPresenter = readFileSync(
+  resolve(ROOT, 'src/render/hostile-presenters/actor.js'), 'utf8');
 const sim = readFileSync(resolve(ROOT, 'src/sim/hostiles.js'), 'utf8');
 
 check(main.indexOf("import './render/actor-motion-art.js'") >= 0 &&
@@ -145,10 +147,11 @@ check(main.indexOf("import './render/actor-motion-art.js'") >= 0 &&
 'both atlases register before post and the hostile consumer settle the boot gate');
 check(/preloadTexture[\s\S]*await awaitPreloads\(\)[\s\S]*Object\.freeze/.test(owner),
   'the preload owner freezes one early ready/fallback decision');
-check(/const authored = deployingWarden[\s\S]*selectActorMotion\(v\.actorMotionBundle, e, gameMs\)[\s\S]*if \(authored\)[\s\S]*else if \(action\)/.test(hostiles),
+check(/function syncActorPose[\s\S]*const authored = deployingWarden[\s\S]*selectActorMotion\(v\.actorMotionBundle, e, gameMs\)[\s\S]*if \(!authored\)[\s\S]*api\.syncSpritePose[\s\S]*v\.motionSource = 'actor'/.test(actorPresenter),
   'authored actor frames have priority over legacy action cards');
-check(/!actorMotionOwnsSilhouette\(v\) && !houndMotionOwnsSilhouette/.test(hostiles) &&
-  /actorMotionOwnsSilhouette\(v\) \? 0 : spriteRoll/.test(hostiles),
+check(/!presenterOwnsSilhouette\(v, e\)/.test(hostiles) &&
+  /presenterOwnsSilhouette\(v, e\) \? 0 : spriteRoll/.test(hostiles) &&
+  /v\.motionSource === 'actor'[\s\S]*api\.currentMotionFrame\(v\) >= 0/.test(actorPresenter),
   'atlas actors bypass legacy whole-card squash, growth, and rotation');
 check(/actorMotionFrame\.geo !== v\.mesh\.geometry[\s\S]*emissiveMap !== v\.actorMotionBundle\.tex/.test(hostiles) &&
   /const rig = e\.kind === 'warden'[\s\S]{0,180}claimDeathRig\(v, e\)[\s\S]{0,100}motionFrame >= 0 \? null/.test(hostiles) &&
@@ -168,10 +171,10 @@ check(/function selectClip[\s\S]*export function selectActorMotionClip/.test(run
 check(/const rootedWarden = e\.kind === 'warden';[\s\S]{0,320}if \(rootedWarden\) \{[\s\S]{0,120}depth = 0;[\s\S]{0,80}scale = 1;/.test(hostiles) &&
   /depth = rootedWarden \? 0 :/.test(hostiles),
   'Warden arrival and idle keep constant whole-body scale and deck depth');
-check(/selectActorMotionClip\([\s\S]{0,120}'terminalRupture', 1\)/.test(hostiles) &&
+check(/selectActorMotionClip\([\s\S]{0,120}'terminalRupture', 1\)/.test(actorPresenter) &&
   /rootedTerminal: e\.kind === 'warden'/.test(hostiles),
   'Warden removal swaps to terminal art and preserves the planted lifecycle root');
-check(/v\.mat\.emissiveIntensity = e\.kind === 'warden' \? 0/.test(hostiles) &&
+check(/v\.mat\.emissiveIntensity = v\.kind === 'warden' \? 0/.test(hostiles) &&
   /v\.wardenCore\.visible = exposed \|\| ping \|\| hit/.test(hostiles) &&
   /v\.wardenShield\.visible = ping/.test(hostiles),
   'Warden body and idle attachments emit no resting glow');

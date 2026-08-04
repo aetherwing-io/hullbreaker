@@ -1288,8 +1288,14 @@ export function bulletTraitVisualSnapshot() {
 
 if (typeof window !== 'undefined') window.__HB_BULLET_TRAITS = bulletTraitVisualSnapshot;
 
-installView({
-  bullets: {
-    slotSpawned, hideSlot, syncSlot, flush, bendCulled, deckIgnited, volatileImpact,
-  },
-});
+let bulletViewInstalled = false;
+export function initBulletView() {
+  if (bulletViewInstalled) return false;
+  installView({
+    bullets: {
+      slotSpawned, hideSlot, syncSlot, flush, bendCulled, deckIgnited, volatileImpact,
+    },
+  });
+  bulletViewInstalled = true;
+  return true;
+}

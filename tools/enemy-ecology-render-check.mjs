@@ -210,6 +210,7 @@ const runtime = source('src/render/enemy-ecology.js');
 const selector = source('src/render/enemy-ecology-select.js');
 const tactic = source('src/render/enemy-ecology-tactics.js');
 const hostiles = source('src/render/hostiles.js');
+const ecologyPresenter = source('src/render/hostile-presenters/ecology.js');
 const simHostiles = source('src/sim/hostiles.js');
 const simTactics = source('src/sim/ecology-tactics.js');
 const spawner = source('src/sim/spawner.js');
@@ -248,7 +249,9 @@ assert(runtime.includes('componentGeometries: bundles.size * 16') &&
   runtime.includes('quadsPerLiveEnemy: 2') && runtime.includes('crossfade: false'),
   'two-layer/192-geometry/768-state runtime budget changed');
 assert(hostiles.includes('enemyEcologyBundle(e.ecologyId || e.ecologyVisualId, e.kind)') &&
-  hostiles.includes('spawnedEnemyEcology(e, K, ecology);') &&
+  hostiles.includes('presenter.spawn(PRESENTER_API, { e, K, assets, presenter });') &&
+  ecologyPresenter.includes("id: 'ecology'") &&
+  ecologyPresenter.includes('spawn: (api, context) => api.spawnEcology(context)') &&
   hostiles.includes('attachEnemyEcologyTactics(v, e);         // no-op for every ordinary row'),
   'gameplay-first/visual-only ecology branch or ordinary fallback seam changed');
 assert(simHostiles.includes("row?.ecologyId\n    ? ecologyFields.ecologyId : row?.ecologyVisualId || visualId") &&
@@ -271,7 +274,7 @@ assert(hostiles.includes('actionMesh.visible = false;') &&
   liveSync.slice(condensationGuard, liveSync.indexOf('v.mesh.visible = true;'))
     .includes('hideHostileVisual(v, e);'),
   'pre-condensation ecology body/action/tactic visibility no longer fails fully closed');
-assert(hostiles.includes('freezeEnemyEcologyBreakup(v)') &&
+assert(ecologyPresenter.includes('freezeEnemyEcologyBreakup(v)') &&
   hostiles.includes('if (v.ecology) return null;') &&
   /const rig = e\.kind === 'warden'\s*\? claimDeathRig\(v, e\)\s*:\s*motionFrame >= 0 \? null : claimDeathRig\(v, e\)/.test(hostiles) &&
   /const frozenMotion = motionFrame >= 0 \? \{[\s\S]*rootedTerminal: e\.kind === 'warden'/.test(hostiles) &&

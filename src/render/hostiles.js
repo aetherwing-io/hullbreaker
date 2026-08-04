@@ -30,15 +30,14 @@ import { routeRenderable } from './route-visibility.js';
 import { applySpriteUnderside } from './sprite-grounding.js';
 import {
   actorMotionBundle, actorMotionRuntimeSnapshot, actorMotionSocket,
-  selectActorMotion, selectActorMotionClip,
 } from './actor-motion.js';
 import { waspModularBundle, waspModularRuntimeSnapshot } from './wasp-modular.js';
 import {
-  selectWaspBodyState, selectWaspWingPhase, WASP_BODY,
+  selectWaspWingPhase, WASP_BODY,
 } from './wasp-modular-select.js';
 import {
   enemyEcologyAttackSocketWorld, enemyEcologyBundle, enemyEcologyRuntimeSnapshot,
-  freezeEnemyEcologyBreakup, syncEnemyEcologyVisual,
+  syncEnemyEcologyVisual,
 } from './enemy-ecology.js';
 import {
   attachEnemyEcologyTactics, detachEnemyEcologyTactics,
@@ -50,6 +49,7 @@ import {
   CUE_GAIN, LAMP_COIL_SWELL, LAMP_R, LEGIBILITY_ON, POSE_GAIN,
   POLYP_ONSET_MS, POLYP_SWELL_EASE, WASP_DIVE_NARROW, waspDiveStretch,
 } from './legibility.js';
+import { HOSTILE_PRESENTERS } from './hostile-presenters/index.js';
 
 /* sprites.js owns the one boot gate. Its auxiliary-animation slots point at
    these atlases in sprite-table.js, so locomotion settles with every existing
@@ -849,90 +849,6 @@ function locomotionFrame(v, e) {
   return -1;
 }
 
-const WASP_MODULAR_TURN_HOLD_MS = 120;
-
-function syncModularWaspBody(v, e) {
-  const bundle = v.waspModular;
-  if (!bundle) return false;
-  let dx = e.x - v.waspLastX;
-  let dy = e.y - v.waspLastY;
-  // Route folds and resets are placement hand-offs, not an animation impulse.
-  if (Math.abs(dx) > 0.75 || Math.abs(dy) > 0.75) { dx = 0; dy = 0; }
-  const face = Math.sign(spriteFaceX(e, `waspmod:${v.waspBodyState}`)) || 1;
-  if (face !== v.waspLastFace) v.waspTurnUntil = gameMs + WASP_MODULAR_TURN_HOLD_MS;
-  v.waspMotion.turning = gameMs < v.waspTurnUntil;
-  v.waspMotion.dx = dx;
-  v.waspMotion.dy = dy;
-  const frame = selectWaspBodyState(e, gameMs, v.waspMotion);
-  v.waspLastX = e.x;
-  v.waspLastY = e.y;
-  v.waspLastFace = face;
-  v.actionActive = false;
-  v.motionSource = 'wasp-modular';
-  v.motionFrame = frame;
-  v.actorMotionFrame = null;
-  if (frame === v.waspBodyState && v.poseKey === `waspmod:${frame}`) return true;
-  v.waspBodyState = frame;
-  v.poseKey = `waspmod:${frame}`;
-  v.mesh.geometry = bundle.body[frame].geo;
-  v.mat.map = bundle.tex;
-  v.mat.emissiveMap = bundle.tex;
-  return true;
-}
-
-function syncSpritePose(v, e) {
-  if (!v.sprite) return;
-  if (syncEnemyEcologyVisual(v, e, gameMs)) return;
-  if (syncModularWaspBody(v, e)) return;
-  // The Warden's arrival is a renderer-owned lifecycle beat: its sim remains
-  // sealed and inert until enterUntil, while resident painted poses deploy
-  // around the same planted contact.  It never needs a synthetic sim state or
-  // a temporary row object in this hot path.
-  const deployingWarden = e.kind === 'warden' && !!v.actorMotionBundle &&
-    gameMs < e.enterUntil;
-  const deploymentProgress = deployingWarden
-    ? 1 - Math.max(0, Math.min(1,
-      (e.enterUntil - gameMs) / CONFIG.wasp.enterMs)) : 0;
-  const authored = deployingWarden
-    ? selectActorMotionClip(v.actorMotionBundle, 'deployment', deploymentProgress)
-    : selectActorMotion(v.actorMotionBundle, e, gameMs);
-  const motionFrame = locomotionFrame(v, e);
-  // The v2 hound atlas owns its real tell/vault/skid states. Keep the older
-  // charge painting only as a boot-safe fallback when that atlas is absent.
-  const houndAtlas = e.kind === 'hound' && !!v.motionTex &&
-    (v.motionGeos?.length || 0) >= 8;
-  const action = (!houndAtlas || e.kind !== 'hound') && actionPoseActive(e) &&
-    !!v.actionTex && !!v.actionGeo;
-  let key = 'base', geo = v.baseGeo, tex = v.baseTex;
-  v.motionSource = '';
-  v.actorMotionFrame = null;
-  if (authored) {
-    key = `actor:${authored.frame.index}`;
-    geo = authored.frame.geo;
-    tex = v.actorMotionBundle.tex;
-    v.motionSource = 'actor';
-    v.actorMotionFrame = authored.frame;
-    v.actorMotionClip = authored.clip;
-    v.actorMotionMarker = authored.marker;
-    v.actorMotionEvent = authored.event;
-    v.actorMotionProgress = authored.progress;
-  } else if (action) {
-    key = 'action'; geo = v.actionGeo; tex = v.actionTex;
-  } else if (motionFrame >= 0 && v.motionTex) {
-    key = `motion:${motionFrame}`;
-    geo = v.motionGeos[motionFrame];
-    tex = v.motionTex;
-    v.motionSource = 'locomotion';
-  }
-  v.actionActive = !authored && action;
-  v.motionFrame = authored ? authored.frame.index : action ? -1 : motionFrame;
-  if (key === v.poseKey) return;
-  v.poseKey = key;
-  v.mesh.geometry = geo;
-  v.mat.map = tex;
-  v.mat.emissiveMap = tex;
-}
-
 // A motion pose is more than a frame number: the body geometry owns the atlas
 // cell and the material owns the shared sheet. Keep this one predicate as the
 // live/death hand-off contract so an interrupted state swap can never claim a
@@ -960,17 +876,8 @@ function currentMotionFrame(v) {
   return frame;
 }
 
-function houndMotionOwnsSilhouette(v, e) {
-  return e.kind === 'hound' && (v.motionGeos?.length || 0) >= 8 &&
-    currentMotionFrame(v) >= 0;
-}
-
-function actorMotionOwnsSilhouette(v) {
-  return v.motionSource === 'actor' && currentMotionFrame(v) >= 0;
-}
-
-function waspModularOwnsSilhouette(v) {
-  return v.motionSource === 'wasp-modular' && currentMotionFrame(v) >= 0;
+function presenterOwnsSilhouette(v, e) {
+  return v.presenter.ownsSilhouette(PRESENTER_API, v, e);
 }
 
 // Scratch outputs are shared because every caller consumes them immediately.
@@ -981,7 +888,7 @@ const MUTATION_SOCKET = { s: 0, y: 0 };
 function motionSocketWorld(v, e, name, out = MOTION_SOCKET) {
   if (v.ecology && name === 'muzzle')
     return enemyEcologyAttackSocketWorld(v, e, out);
-  if (!actorMotionOwnsSilhouette(v)) return false;
+  if (v.presenter.id !== 'actor' || !presenterOwnsSilhouette(v, e)) return false;
   const local = actorMotionSocket(v.actorMotionBundle, v.motionFrame, name);
   if (!local) return false;
   out.s = e.x + local.x * v.mesh.scale.x;
@@ -2002,7 +1909,8 @@ let ecologyPairsSpawned = 0;
 let ecologyBodyMaterialsRetired = 0;
 let ecologyActionMaterialsRetired = 0;
 
-function spawnedEnemyEcology(e, K, ecology) {
+function spawnedEnemyEcology({ e, K, assets, presenter }) {
+  const { ecology } = assets;
   const mat = enemyEcologyMaterial(ecology.tex, e.kind);
   const actionMat = enemyEcologyMaterial(ecology.tex, e.kind);
   const mesh = new THREE.Mesh(ecology.body[0], mat);
@@ -2014,7 +1922,7 @@ function spawnedEnemyEcology(e, K, ecology) {
   actionMesh.visible = false;
   mesh.add(actionMesh);
   const v = {
-    mesh, mat, sprite: true,
+    mesh, mat, kind: e.kind, sprite: true, presenter,
     ecology, ecologyCode: -1, ecologyBodyRow: 0, ecologyActionRow: 0,
     ecologyActionMesh: actionMesh, ecologyActionMat: actionMat,
     baseGeo: ecology.body[0], baseTex: ecology.tex,
@@ -2076,16 +1984,7 @@ function spawnedEnemyEcology(e, K, ecology) {
   ecologyPairsSpawned++;
 }
 
-function spawned(e) {
-  const K = LOOK[e.kind];
-  // Gameplay ecologyId wins exactly. Ordinary Level-1 bodies may carry only
-  // ecologyVisualId, which selects reviewed art without entering any recipe,
-  // tactic, HP, collision or AI path in the simulation.
-  const ecology = enemyEcologyBundle(e.ecologyId || e.ecologyVisualId, e.kind);
-  if (ecology) {
-    spawnedEnemyEcology(e, K, ecology);
-    return;
-  }
+function spawnedStandard({ e, K, assets, presenter }) {
   // The sprite is taken only if its texture is ALREADY in hand. Pending,
   // failed, missing and ?sprites=0 all fall through to the primitive body
   // below — which is the pre-T-049 renderer, not a placeholder — so a body
@@ -2098,13 +1997,10 @@ function spawned(e) {
   // from a texture or from a flat token. applySurface() only writes
   // roughness/metalness/envMap, so the map, emissiveMap, alphaTest and
   // single-pass transparency set in spriteMaterial() all survive it.
-  const tex = spriteTexture(e.kind);
-  const geo = tex ? spriteGeo(e.kind) : null;
-  const modularBundle = e.kind === 'wasp' ? waspModularBundle() : null;
+  const { tex, geo, modularBundle, actorBundle } = assets;
   // Authored actor motion is the production body, not an overlay on the old
   // card. It wins before the mesh is ever shown; a failed sheet falls through
   // to the exact base-sprite/primitive path below for the whole run.
-  const actorBundle = actorMotionBundle(e.kind);
   const actorGeo = actorBundle?.frames[0]?.geo || null;
   const actorTex = actorBundle?.tex || null;
   const bodyGeo = modularBundle?.body[WASP_BODY.CRUISE]?.geo || actorGeo || geo;
@@ -2123,7 +2019,7 @@ function spawned(e) {
   const flapTex = geo && !modularBundle ? spriteFlapTexture(e.kind) : null;
   const motionTex = geo && !modularBundle ? motionTextures.get(e.kind) || null : null;
   const v = {
-    mesh, mat, sprite: !!bodyGeo,
+    mesh, mat, kind: e.kind, sprite: !!bodyGeo, presenter,
     baseGeo: geo || bodyGeo, baseTex: tex || bodyTex,
     actionGeo: actionTex ? actionSpriteGeo(e.kind) : null,
     actionTex, actionActive: false,
@@ -2212,6 +2108,32 @@ function spawned(e) {
   mesh.visible = false;                    // hidden until its materialization begins
   scene.add(mesh);
   meshes.set(e, v);
+}
+
+function spawned(e) {
+  const K = LOOK[e.kind];
+  // Gameplay ecologyId wins exactly. Ordinary Level-1 bodies may carry only
+  // ecologyVisualId, which selects reviewed art without entering any recipe,
+  // tactic, HP, collision or AI path in the simulation. Presenter priority is
+  // centralized in hostile-presenters/index.js rather than repeated here and
+  // again in sync().
+  const ecology = enemyEcologyBundle(e.ecologyId || e.ecologyVisualId, e.kind);
+  if (ecology) {
+    const assets = { ecology, modularBundle: null, actorBundle: null, spriteGeo: null };
+    const presenter = HOSTILE_PRESENTERS.select(assets);
+    presenter.spawn(PRESENTER_API, { e, K, assets, presenter });
+    return;
+  }
+
+  const tex = spriteTexture(e.kind);
+  const geo = tex ? spriteGeo(e.kind) : null;
+  const modularBundle = e.kind === 'wasp' ? waspModularBundle() : null;
+  const actorBundle = actorMotionBundle(e.kind);
+  const assets = {
+    ecology: null, tex, geo, spriteGeo: geo, modularBundle, actorBundle,
+  };
+  const presenter = HOSTILE_PRESENTERS.select(assets);
+  presenter.spawn(PRESENTER_API, { e, K, assets, presenter });
 }
 
 // Death is an impact sentence, not a second movement mode. Every role holds
@@ -2538,42 +2460,7 @@ function removed(e, fade) {
   let systems = [];
   if (fade) systems = ruptureEvolution(v, e);
   else evolutionDetach(v);               // teardown has no display-only aftermath
-  if (fade && v.ecology) freezeEnemyEcologyBreakup(v);
-  if (fade && v.waspModular) {
-    // Crack into the authored terminal chassis before the impact punch. The
-    // separate wing bank then tears away through the existing role-shaped
-    // corpse pass; neither layer spirals or fades out as a complete insect.
-    v.waspBodyState = WASP_BODY.DEATH_CRACK;
-    v.motionSource = 'wasp-modular';
-    v.motionFrame = WASP_BODY.DEATH_CRACK;
-    v.poseKey = `waspmod:${WASP_BODY.DEATH_CRACK}`;
-    v.mesh.geometry = v.waspModular.body[WASP_BODY.DEATH_CRACK].geo;
-    v.mat.map = v.waspModular.tex;
-    v.mat.emissiveMap = v.waspModular.tex;
-  }
-  if (fade && e.kind === 'warden' && v.actorMotionBundle) {
-    // Death may interrupt any weapon state. Hand the corpse pass the authored
-    // breached chassis, not a frozen firing card or a procedural scale-down.
-    // Selection and atlas geometry are resident; this allocates nothing.
-    const terminal = selectActorMotionClip(
-      v.actorMotionBundle, 'terminalRupture', 1);
-    if (terminal) {
-      v.motionSource = 'actor';
-      v.motionFrame = terminal.frame.index;
-      v.actorMotionFrame = terminal.frame;
-      v.actorMotionClip = terminal.clip;
-      v.actorMotionMarker = terminal.marker;
-      v.actorMotionEvent = terminal.event;
-      v.actorMotionProgress = terminal.progress;
-      v.poseKey = `actor:${terminal.frame.index}`;
-      v.mesh.geometry = terminal.frame.geo;
-      v.mat.map = v.actorMotionBundle.tex;
-      v.mat.emissiveMap = v.actorMotionBundle.tex;
-      v.mat.emissiveIntensity = 0;
-    }
-  }
-  const wingSystem = modularWaspWingDetach(v, fade);
-  if (wingSystem) systems.push(wingSystem);
+  systems.push(...v.presenter.prepareRemoval(PRESENTER_API, v, e, fade));
   paintedWaspFlapDetach(v);              // a corpse holds one unambiguous painted silhouette
   if (fade) {                          // hand the mesh to the corpse pass to dissolve
     const spec = DEATH_ROLE[e.kind];
@@ -2647,6 +2534,58 @@ function hideHostileVisual(v, e) {
   releaseContactShadow(e);
 }
 
+// Presenter hooks receive one reused frame record. Dispatch is immediate and
+// no presenter retains it, so the hostile hot path remains allocation-free.
+const PRESENTER_FRAME = {
+  K: null, depth: 0, sx: 1, sy: 1, sz: 1, glow: 0, signaling: false,
+};
+
+function syncEcologyMaterial(v) {
+  v.ecologyActionMat.opacity = v.mat.opacity;
+  v.ecologyActionMesh.visible = true;
+}
+
+function syncPaintedMaterial(v, frame) {
+  v.mat.emissive.setHex(frame.signaling ? frame.glow : frame.K.color);
+  // The Warden atlas carries its own painted response. Its body is never an
+  // idle lamp; only local impact/attack props receive light.
+  v.mat.emissiveIntensity = v.kind === 'warden' ? 0
+    : postGain() * (frame.signaling ? 0.82 : 0.12);
+}
+
+function syncEcologyTransform(v, e, frame) {
+  v.mesh.rotation.z = enemyEcologyRoll(e, frame.K);
+  v.mesh.scale.set(frame.sx * enemyEcologyFaceX(e), frame.sy, frame.sz);
+}
+
+function syncPaintedTransform(v, e, frame) {
+  // Actor atlases own hardware articulation. A second procedural card roll
+  // would move planted feet and weapon sockets.
+  v.mesh.rotation.z = presenterOwnsSilhouette(v, e) ? 0 : spriteRoll(e, frame.K);
+  v.mesh.scale.set(frame.sx * spriteFaceX(e, v.poseKey), frame.sy, frame.sz);
+}
+
+function syncPrimitiveTransform(v, e, frame) {
+  v.mesh.rotation.z = frame.K.roll(e);
+  v.mesh.scale.set(frame.sx, frame.sy, frame.sz);
+}
+
+const PRESENTER_API = Object.freeze({
+  spawnEcology: spawnedEnemyEcology,
+  spawnStandard: spawnedStandard,
+  syncSpritePose: (v, e) => HOSTILE_PRESENTERS.get('sprite').syncPose(PRESENTER_API, v, e),
+  currentMotionFrame,
+  spriteFaceX,
+  locomotionFrame,
+  actionPoseActive,
+  detachModularWaspWing: modularWaspWingDetach,
+  syncEcologyMaterial,
+  syncPaintedMaterial,
+  syncEcologyTransform,
+  syncPaintedTransform,
+  syncPrimitiveTransform,
+});
+
 function sync(e) {
   const v = meshes.get(e);
   if (!v) return;
@@ -2662,7 +2601,7 @@ function sync(e) {
     return;
   }
   v.mesh.visible = true;
-  syncSpritePose(v, e);
+  v.presenter.syncPose(PRESENTER_API, v, e);
   // Mock-3D presence for ordinary bodies. The authored Warden is a six-tile
   // Crown interlock bolted to this apron: perspective travel or 0.7 -> 1 body
   // growth makes it look like a pasted card inflating into existence. Its
@@ -2695,7 +2634,7 @@ function sync(e) {
   let sx = scale, sy = scale, sz = scale;
   const flashing = gameMs < e.flashUntil;
   let glow = flashing ? FLASH[e.kind] : PAL.glowOff;
-  if (!v.ecology && K.pose) {            // ecology cells own their full silhouette/state
+  if (K.pose && v.presenter.usesLegacyPose(PRESENTER_API, v, e)) {
     const p = K.pose(e);
     depth += p.depth;
     // Hound v2 already paints prowl, load, launch, airborne and landing body
@@ -2703,46 +2642,30 @@ function sync(e) {
     // warped their torso proportions and pulled planted feet off their authored
     // anchor. Keep state depth/glow/roll/wake, but let the production atlas own
     // its silhouette. Primitive and missing-atlas fallbacks keep the old pose.
-    if (!actorMotionOwnsSilhouette(v) && !houndMotionOwnsSilhouette(v, e) &&
-        !waspModularOwnsSilhouette(v)) {
+    if (!presenterOwnsSilhouette(v, e)) {
       sx *= p.sx; sy *= p.sy; sz *= p.sz;
     }
     if (glow === PAL.glowOff) glow = p.glow;              // a hit flash still wins
   }
   depth += HOSTILE_SURFACE_DEPTH;
-  if (v.ecology) v.ecologyDepth = depth;
+  if (v.presenter.id === 'ecology') v.ecologyDepth = depth;
   sx *= v.presentationScale;
   sy *= v.presentationScale;
   sz *= v.presentationScale;
   // Ecology's bounded unlit card preserves authored ink without any emissive
   // state; its painted cells and physical tactic VFX carry tells and hits.
   // Ordinary sprites retain their existing active-emission path below.
-  const signaling = !v.ecology && glow !== PAL.glowOff;
-  if (v.ecology) {
-    v.ecologyActionMat.opacity = v.mat.opacity;
-    v.ecologyActionMesh.visible = true;
-  } else {
-    v.mat.emissive.setHex(signaling ? glow : K.color);
-    // The Warden atlas carries its own painted material response. Its body is
-    // never an idle lamp; only local impact/attack props receive light.
-    v.mat.emissiveIntensity = e.kind === 'warden' ? 0
-      : postGain() * (signaling ? 0.82 : 0.12);
-  }
+  const signaling = v.presenter.id !== 'ecology' && glow !== PAL.glowOff;
+  PRESENTER_FRAME.K = K;
+  PRESENTER_FRAME.depth = depth;
+  PRESENTER_FRAME.sx = sx;
+  PRESENTER_FRAME.sy = sy;
+  PRESENTER_FRAME.sz = sz;
+  PRESENTER_FRAME.glow = glow;
+  PRESENTER_FRAME.signaling = signaling;
+  v.presenter.syncMaterial(PRESENTER_API, v, PRESENTER_FRAME);
   placeOnTower(v.mesh, e.x, e.y + v.presentationLift, depth);
-  if (v.ecology) {
-    v.mesh.rotation.z = enemyEcologyRoll(e, K);
-    v.mesh.scale.set(sx * enemyEcologyFaceX(e), sy, sz);
-  } else if (v.sprite) {
-    // the art is authored facing +x, so facing is a mirror; the roll rules
-    // that differ from the solid's are in spriteRoll() above
-    // Every actor-motion cell contains authored hardware articulation. A
-    // second procedural card roll/squash would move feet and weapon sockets.
-    v.mesh.rotation.z = actorMotionOwnsSilhouette(v) ? 0 : spriteRoll(e, K);
-    v.mesh.scale.set(sx * spriteFaceX(e, v.poseKey), sy, sz);
-  } else {
-    v.mesh.rotation.z = K.roll(e);
-    v.mesh.scale.set(sx, sy, sz);
-  }
+  v.presenter.syncTransform(PRESENTER_API, v, e, PRESENTER_FRAME);
   syncModularWaspWing(v, e, depth, signaling);
   if (v.beam) {
     const PP = CONFIG.polyp;
@@ -2801,7 +2724,7 @@ function sync(e) {
   if (v.wardenCore) wardenSync(v, e);    // local iris/shutters + exact attack volumes
   // the tell lamp reads the same sim state the pose does, one frame, no memory
   if (v.lamp) LAMP_SYNC[e.kind](v, e);
-  if (!v.ecology) syncActorGlow(v, e, K, sx, sy, signaling);
+  if (v.presenter.id !== 'ecology') syncActorGlow(v, e, K, sx, sy, signaling);
   syncAttackRead(v, e);
   syncMortarBeacon(v, e);
   syncEvolution(v, e, depth, sx, sy);
@@ -2811,7 +2734,13 @@ function sync(e) {
   syncContactShadow(e, e.x, e.y, CONTACT_FOOTPRINT[e.kind]);
 }
 
-installView({ hostiles: { spawned, removed, sync } });
+let hostileViewInstalled = false;
+export function initHostileView() {
+  if (hostileViewInstalled) return false;
+  installView({ hostiles: { spawned, removed, sync } });
+  hostileViewInstalled = true;
+  return true;
+}
 
 export function hostileEvolutionVisualSnapshot() {
   let paintedFlappers = 0, paintedDownstrokesVisible = 0;
@@ -2836,8 +2765,8 @@ export function hostileEvolutionVisualSnapshot() {
       scale: [Math.abs(v.mesh.scale.x), Math.abs(v.mesh.scale.y), Math.abs(v.mesh.scale.z)]
         .map((value) => Number(value.toFixed(4))),
       presentationScale: v.presentationScale,
-      atlasOwnsSilhouette: actorMotionOwnsSilhouette(v) ||
-        houndMotionOwnsSilhouette(v, e) || waspModularOwnsSilhouette(v),
+      atlasOwnsSilhouette: presenterOwnsSilhouette(v, e),
+      presenter: v.presenter.id,
     });
     if (v.waspModular && modularWaspRows.length < 24) modularWaspRows.push({
       id: e.id,
@@ -2859,7 +2788,8 @@ export function hostileEvolutionVisualSnapshot() {
       idleWingEmissive: v.waspWingMat && e.state === 'cruise'
         ? Number(v.waspWingMat.emissiveIntensity.toFixed(4)) : null,
     });
-    if (actorMotionOwnsSilhouette(v) && actorMotionRows.length < 24)
+    if (v.presenter.id === 'actor' && presenterOwnsSilhouette(v, e) &&
+        actorMotionRows.length < 24)
       actorMotionRows.push({
         kind: e.kind, id: e.id, state: e.state,
         frame: v.motionFrame, frameName: v.actorMotionFrame.name,

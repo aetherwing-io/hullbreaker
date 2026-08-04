@@ -75,4 +75,10 @@ function cleared() {
   resetTint();
 }
 
-installView({ mods: { sync, cleared, lanceTelegraph } });
+let modsViewInstalled = false;
+export function initModsView() {
+  if (modsViewInstalled) return false;
+  installView({ mods: { sync, cleared, lanceTelegraph } });
+  modsViewInstalled = true;
+  return true;
+}

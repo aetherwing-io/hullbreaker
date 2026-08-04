@@ -902,7 +902,13 @@ function reset() {
 }
 
 reset();
-installView({ finale: { started, sync, transmit, reset } });
+let finaleViewInstalled = false;
+export function initFinaleView() {
+  if (finaleViewInstalled) return false;
+  installView({ finale: { started, sync, transmit, reset } });
+  finaleViewInstalled = true;
+  return true;
+}
 
 export function finalePresentationSnapshot() {
   return {

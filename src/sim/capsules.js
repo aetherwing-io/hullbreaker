@@ -54,6 +54,10 @@ export function removeCapsule(i) {
   capsules.splice(i, 1);
 }
 
+export function clearCapsules() {
+  for (let i = capsules.length - 1; i >= 0; i--) removeCapsule(i);
+}
+
 // Carrier drop order: seeded shuffle of the four letters, then rare
 // modifiers. Deterministic run to run.
 const capsuleRng = mulberry32(2600);

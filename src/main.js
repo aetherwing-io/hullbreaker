@@ -29,53 +29,40 @@ import { traversalCameraDepth } from './pure/traversal.js';
 import { momentumTier } from './pure/momentum.js';
 import { installHost } from './sim/bridge.js';
 import {
-  advanceGameMs, gameMs, hitStopRemainingMs, resetHitStop, scrollX, setScrollX,
-  sliceStats, stepHitStop,
+  advanceGameMs, gameMs, hitStopRemainingMs, scrollX, sliceStats, stepHitStop,
 } from './sim/time.js';
 import { sLeftEdge, sRightEdge } from './sim/edges.js';
 import {
-  bufferHookUntil, bufferJumpUntil, clearHookBuffer, clearJumpBuffer, keys,
-  releaseAllKeys,
+  bufferHookUntil, bufferJumpUntil, keys, releaseAllKeys,
 } from './sim/input.js';
 import {
   activeScrollEnd, activeScrollSpeed, END_SCROLL, levelData, pockets,
-  unbuildFutureFaces,
 } from './sim/level.js';
 import { setState, state } from './sim/state.js';
+import { P, player, updatePlayer } from './sim/player.js';
 import {
-  cancelSliceRetry, clearPlayerTraversal, P, player, updatePlayer,
-} from './sim/player.js';
-import {
-  clearBullets, currentGun, currentGunDef, currentGunLabel, currentWeapon,
-  resetShotsFired, resetWeaponKills, setWeapon, shotsFired, updateBullets,
+  currentGun, currentGunDef, currentGunLabel, currentWeapon, shotsFired, updateBullets,
 } from './sim/weapons.js';
 import {
-  clearHostiles, hostiles, kills, resetHostileRng, resetKills, spawnHostile,
-  updateHostiles,
+  hostiles, kills, spawnHostile, updateHostiles,
 } from './sim/hostiles.js';
-import {
-  capsules, removeCapsule, resetCarrierDrops, spawnCapsule, updateCapsules,
-} from './sim/capsules.js';
-import { clearMods, mods, updateMods } from './sim/mods.js';
-import {
-  momentumDrive, momentumPeakDrive, pacePeak, paceSpeed, resetPace,
-} from './sim/pace.js';
-import { hookSnapshot, resetHook } from './sim/hook.js';
-import { flowSnapshot, resetFlow } from './sim/flow.js';
+import { capsules, spawnCapsule, updateCapsules } from './sim/capsules.js';
+import { mods, updateMods } from './sim/mods.js';
+import { momentumDrive, momentumPeakDrive, pacePeak, paceSpeed } from './sim/pace.js';
+import { hookSnapshot } from './sim/hook.js';
+import { flowSnapshot } from './sim/flow.js';
 import {
   resetScore, scoreEvents, scoreRunEnd, scoreRunStart, scoreSnapshot, updateScore,
 } from './sim/score.js';
-import { resetSpawner, updateSpawner } from './sim/spawner.js';
+import { updateSpawner } from './sim/spawner.js';
+import { meridianDefenseSnapshot, updateMeridianDefense } from './sim/meridian-defense.js';
 import {
-  meridianDefenseSnapshot, resetMeridianDefense, updateMeridianDefense,
-} from './sim/meridian-defense.js';
-import {
-  finaleActive, finaleComplete, finaleSnapshot, resetFinale, startFinale, updateFinale,
+  finaleActive, finaleComplete, finaleSnapshot, startFinale, updateFinale,
 } from './sim/finale.js';
-import { activeCorner, resetCornerEvents } from './sim/wavegate.js';
+import { activeCorner } from './sim/wavegate.js';
 import {
-  activeTransformEvent, committedBand, resetTransform, transformAltitudeAt,
-  transformDecisionTrace, transformFrontierX, transformSealX,
+  activeTransformEvent, committedBand, transformAltitudeAt, transformDecisionTrace,
+  transformFrontierX, transformSealX,
 } from './sim/transform.js';
 import { updateScroll } from './sim/scroll.js';
 import { camera, renderer, scene } from './render/scene.js';
@@ -105,15 +92,12 @@ import './render/defense-vfx-art.js';
 // the one draw of the frame, and the only place the composer is reachable
 // from: renderFrame() is renderer.render() until the bloom pass is up, and
 // falls back to it again the moment the pass misbehaves (src/render/post.js)
-import { POST, postSnapshot, renderFrame } from './render/post.js';
+import { POST, postSnapshot, renderFrame, warmScenePrograms } from './render/post.js';
 import {
-  activeCameraDepth, calibrateEdges, handleResize, resetCameraYaw, syncCamera,
+  activeCameraDepth, calibrateEdges, handleResize, syncCamera,
 } from './render/camera.js';
-import { clearCorpses, updateCorpses } from './render/hostiles.js';
-// imported for their side effects: each builds its meshes and installs its
-// half of the view bridge as it loads, before anything below runs
-//
-// backdrop.js (T-051) is listed first deliberately: it is reached here, AFTER
+import { updateCorpses } from './render/hostiles.js';
+// backdrop.js (T-051) is reached here, AFTER
 // the scene.js import above, rather than from scene.js itself — it awaits the
 // shared preload gate (src/render/preload.js), which itself needs `renderer`
 // from scene.js, and scene.js's own top-level code cannot finish running
@@ -129,17 +113,9 @@ import './render/backdrop.js';
 // binding supplies the post-camera facet traversal refresh.
 import { updateBackdropFacetVisibility } from './render/backdrop.js';
 import { updateWorldDressingCull } from './render/level.js';
-import './render/meridian-defense-vfx.js';
 import { updateSeamFoldCull } from './render/seams.js';
 import { limbPieces, updateLimbFoldCull } from './render/limb.js';
 import { updateCrownFacetCull } from './render/crown.js';
-import './render/finale.js';
-import './render/transform.js';
-import './render/player.js';
-import './render/capsules.js';
-import { clearDepartingTracers } from './render/bullets.js';
-import './render/mods.js';
-import './render/hook.js';
 // durability (T-032): the module half of the failure handling. Its panel and
 // watchdogs are inline in index.html — they have to survive THIS file never
 // executing — and this import only adds what needs a running game.
@@ -149,7 +125,6 @@ import {
 } from './ui/failsafe.js';
 import { FAILSAFE } from './pure/failsafe.js';
 import { resetHudMessage, updateHUD } from './ui/hud.js';
-import './ui/overlay.js';
 import { shellApplyIntent, shellRunStarted, shellSnapshot } from './ui/shell.js';
 // audio also loads after every render/ui module for the bridge-wrapping reason
 // its own header states — the named import changes nothing about that order.
@@ -160,19 +135,17 @@ import { audioSnapshot } from './ui/audio.js';
 // Juice loads after the full render/UI bridge. The action-paint observer is
 // deliberately the only wrapper outside it: action VFX delegates to this
 // finished juice chain first and can never replace or short-circuit it.
+import { juiceSnapshot, updateJuice } from './render/juice.js';
+import { actionVfxSnapshot, updateActionVfx } from './render/action-vfx-runtime.js';
+import { initializeViewRegistry, viewInitSnapshot } from './boot/view-init.js';
+import { resetRunState, runResetSnapshot } from './boot/run-reset.js';
 import {
-  installJuiceHostileBridge, juiceSnapshot, updateJuice,
-} from './render/juice.js';
-import {
-  actionVfxSnapshot, installActionVfxObservers, updateActionVfx,
-} from './render/action-vfx-runtime.js';
+  adaptiveFidelitySnapshot, sampleAdaptiveFidelity,
+} from './render/adaptive-fidelity.js';
 
-// Executed in the composition-root body, after every async module dependency
-// has settled. This is the only reliable point at which a bridge observer can
-// wrap the finished renderer chain; static import order alone is insufficient
-// when an earlier art owner resumes from top-level await.
-installJuiceHostileBridge();
-installActionVfxObservers();
+// One explicit base-owner manifest, then one observer manifest. Imports may
+// allocate fixed render resources; only this call mutates sim/bridge.
+initializeViewRegistry();
 
 // the sim asks for a restart through this hook (fixture fast retry)
 installHost({ resetGame: () => resetGame() });
@@ -295,59 +268,7 @@ function toTitle() {
 }
 
 function resetGame() {
-  cancelSliceRetry();
-  releaseAllKeys();
-  clearHostiles();
-  clearCorpses();
-  clearBullets();
-  clearDepartingTracers();               // render: no bend-cull tracer outlives a run
-  for (let i = capsules.length - 1; i >= 0; i--) removeCapsule(i);
-  setWeapon('R');
-  resetWeaponKills();
-  clearMods();
-  resetCarrierDrops();
-  setScrollX(ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.startScroll : 0);
-  resetPace();
-  resetScore();
-  resetSpawner();
-  resetMeridianDefense();
-  resetFinale();
-  resetHostileRng();
-  resetKills(); resetShotsFired();
-  player.x = ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.playerSpawn.x : 6;
-  player.y = ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.playerSpawn.y : 3;
-  player.vx = 0; player.vy = 0;
-  player.hp = P.maxHealth; player.lives = P.lives;
-  player.facing = 1; player.aim.set(1, 0);
-  player.iframesUntil = 0; player.hitstunUntil = 0;
-  player.coyoteUntil = 0; player.dropUntil = 0; player.nextFireAt = 0;
-  player.grounded = false; player.onOneWay = null; player.jumpCutDone = true;
-  player.airJumpsLeft = P.airJumps;
-  player.traversalChain = 0; player.traversalChainUntil = 0;
-  player.fallbackStreak = 0; player.fallbackEarnedTiles = 0;
-  player.edgePinnedMs = 0;
-  clearPlayerTraversal(0);
-  player.traversalControlUntil = 0;
-  clearJumpBuffer();
-  clearHookBuffer();
-  resetHook();                           // no-ops unless ?hook=1 / ?flow=1
-  resetFlow();
-  resetCornerEvents();
-  resetTransform();
-  resetHitStop();                        // no freeze (and no stale kill/hp
-                                         //   baseline) survives a restart
-  resetCameraYaw();                      // …and no camera trauma either
-  unbuildFutureFaces();
-  // setback/edge stats reset in EVERY mode now that ?fallback=1 can arm hull
-  // fallback in the default run and the score snapshot reads both (T-016)
-  sliceStats.setbacks = 0;
-  sliceStats.lastSetbackAt = -1e9;
-  sliceStats.minEdgeMargin = Infinity;
-  if (ACTIVE_FIXTURE) {
-    sliceStats.attempts++;
-    sliceStats.airJumps = 0;
-    sliceStats.startedAt = gameMs;
-  }
+  resetRunState();
   if (ACTIVE_SLICE) {
     // route stakes: `rewards` is the pocket capsule plus whatever the active
     // pacing variant parks on its harder lines
@@ -588,6 +509,9 @@ function telemetry() {
     // intervals, so "60fps with 200+ projectiles" is a reading, not a claim.
     juice: juiceSnapshot(),
     actionVfx: actionVfxSnapshot(),
+    viewInit: viewInitSnapshot(),
+    resetRegistry: runResetSnapshot(),
+    adaptiveFidelity: adaptiveFidelitySnapshot(),
     perf: perfSnapshot(),
     // additive (T-048, decisions.md entry 18): which draw path this frame
     // took. `status` is the honest one — 'active' only while the composer is
@@ -609,9 +533,11 @@ let perfCount = 0, perfIdx = 0, perfLast = 0;
 
 function samplePerf(t) {
   if (perfLast > 0) {
-    perfRing[perfIdx] = t - perfLast;
+    const frameMs = t - perfLast;
+    perfRing[perfIdx] = frameMs;
     perfIdx = (perfIdx + 1) % PERF_N;
     if (perfCount < PERF_N) perfCount++;
+    sampleAdaptiveFidelity(frameMs);
   }
   perfLast = t;
 }
@@ -769,6 +695,9 @@ window.HB = Object.freeze({
   // One-atlas, fixed-row painted impact/death punctuation. Read-only.
   actionVfx: actionVfxSnapshot,
   perf: perfSnapshot,
+  viewInit: viewInitSnapshot,
+  resetRegistry: runResetSnapshot,
+  adaptiveFidelity: adaptiveFidelitySnapshot,
   // the screen pass (?bloom=0 disables): flag, live status, the bloom
   // parameters actually in effect, and any fault that dropped it
   post: postSnapshot,
@@ -1065,6 +994,7 @@ if (QUERY.has('selftest')) {
 }
 
 resetGame();
+warmScenePrograms();
 /* The shell boots to its title screen with the run built but frozen (MENU).
    An automated session — ?testapi=1 (every bot playtest) or ?selftest=1 —
    skips it, so every committed script keeps the exact boot it had before

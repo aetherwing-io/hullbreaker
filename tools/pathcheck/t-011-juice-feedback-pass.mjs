@@ -370,7 +370,8 @@ export async function run(SHARED) {
   ok(/QUERY\.get\('juice'\) !== '0'/.test(
        stripComments(readFileSync(join(srcDir, 'mode.js'), 'utf8'))),
      'T-011: ?juice=0 is the documented kill flag');
-  ok(/if \(JUICE_ENABLED\)/.test(juiceCode) && /if \(!JUICE_ENABLED\)/.test(fxCode) &&
+  ok(/if \(!JUICE_ENABLED \|\| juiceViewsInstalled\) return false;/.test(juiceCode) &&
+     /if \(!JUICE_ENABLED\)/.test(fxCode) &&
      /if \(!JUICE_ENABLED\) return 1;/.test(timeCode),
      'T-011: ?juice=0 gates the wiring, the pools, and the sim scale (a disabled ' +
      'boot is the pre-juice game)');

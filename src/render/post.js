@@ -85,6 +85,7 @@ const POST_REPORT = QUERY.get('postreport') === '1';
 let status = POST.on ? 'loading' : 'off';
 let composer = null;
 let bloomPass = null;
+let adaptiveBloomEnabled = true;
 let faults = 0;
 let lastError = '';
 let bootMs = 0;
@@ -92,6 +93,9 @@ let prewarmed = false;
 let presentedFrames = 0;
 let firstFrameStatus = null;
 let tenthFrameStatus = null;
+let programWarmMs = 0;
+let programWarmCount = 0;
+let programsAfterWarm = 0;
 
 /* Draw-call accounting. A composer calls renderer.render() several times per
    displayed frame, and every one of those resets renderer.info while
@@ -119,7 +123,7 @@ function recordPresentedFrame() {
 
 export function renderFrame() {
   renderer.info.reset();
-  if (composer) {
+  if (composer && adaptiveBloomEnabled) {
     try {
       drawComposed();
       recordPresentedFrame();
@@ -403,10 +407,51 @@ export function syncPostSize(width = innerWidth, height = innerHeight) {
    actually drawing: with no bloom to catch it, an above-1 color is just a
    clipped white blob, and ?bloom=0 has to return the pre-pass look. */
 export function postGain() {
-  return status === 'active' ? POST_TUNE.emissiveGain : 1;
+  return status === 'active' && adaptiveBloomEnabled ? POST_TUNE.emissiveGain : 1;
 }
 
-export function postActive() { return status === 'active'; }
+export function postActive() { return status === 'active' && adaptiveBloomEnabled; }
+
+function reportedStatus() {
+  return status === 'active' && !adaptiveBloomEnabled ? 'adaptive-bypass' : status;
+}
+
+export function setAdaptiveBloomEnabled(enabled) {
+  const next = enabled !== false;
+  if (next === adaptiveBloomEnabled) return false;
+  adaptiveBloomEnabled = next;
+  return true;
+}
+
+// Texture residency is handled by preload.js. This second fence runs after
+// the composition root has constructed every fixed view and reset the first
+// run. renderer.compile() skips invisible subtrees, so visibility is borrowed
+// and restored around the compile; nothing is drawn or simulated.
+export function warmScenePrograms() {
+  const started = nowMs();
+  const visibility = [];
+  try {
+    scene.traverse((object) => {
+      visibility.push([object, object.visible]);
+      object.visible = true;
+    });
+    renderer.compile(scene, camera);
+    const gl = renderer.getContext();
+    if (gl && typeof gl.finish === 'function') gl.finish();
+    programWarmCount++;
+    programsAfterWarm = Array.isArray(renderer.info.programs)
+      ? renderer.info.programs.length : 0;
+    return true;
+  } catch (error) {
+    console.warn('HULLBREAKER shaders: representative boot compile skipped — ' +
+      ((error && error.message) || error));
+    return false;
+  } finally {
+    for (let i = 0; i < visibility.length; i++)
+      visibility[i][0].visible = visibility[i][1];
+    programWarmMs = Math.round((nowMs() - started) * 10) / 10;
+  }
+}
 
 // read-only surface for ?testapi=1 / window.HB / the browser self-test
 export function postSnapshot() {
@@ -414,10 +459,12 @@ export function postSnapshot() {
   const target = composer ? composer.renderTarget1 : null;
   return {
     on: POST.on,
-    status,
-    strength: bloomPass ? bloomPass.strength : 0,
-    radius: bloomPass ? bloomPass.radius : 0,
-    threshold: bloomPass ? bloomPass.threshold : 0,
+    status: reportedStatus(),
+    readyStatus: status,
+    adaptiveBloomEnabled,
+    strength: postActive() && bloomPass ? bloomPass.strength : 0,
+    radius: postActive() && bloomPass ? bloomPass.radius : 0,
+    threshold: postActive() && bloomPass ? bloomPass.threshold : 0,
     samples: POST_SAMPLES,
     samplesRequested: resolveSamples(AA_QUERY, POST_TUNE),
     samplePixelCeiling: POST_MSAA_PIXEL_CEILING,
@@ -435,6 +482,9 @@ export function postSnapshot() {
       tenthFrameStatus,
       stableThroughTen: firstFrameStatus !== null &&
         tenthFrameStatus !== null && firstFrameStatus === tenthFrameStatus,
+      programWarmMs,
+      programWarmCount,
+      programsAfterWarm,
     },
     // 'match'     the shipped atmosphere is being reproduced exactly
     // 'tone'      ?atmos=tone — sky and haze go through the tone map

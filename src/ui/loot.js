@@ -415,4 +415,10 @@ export function lootRevealSnapshot() {
 }
 
 if (typeof window !== 'undefined') window.__HB_LOOT_REVEAL = lootRevealSnapshot;
-installView({ loot: { acquired } });
+let lootViewInstalled = false;
+export function initLootView() {
+  if (lootViewInstalled) return false;
+  installView({ loot: { acquired } });
+  lootViewInstalled = true;
+  return true;
+}

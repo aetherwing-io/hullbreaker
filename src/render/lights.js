@@ -55,6 +55,8 @@ const NON_CASTER_DISTANCE = 50;
 let keyLight = null;                 // the one shadow caster, if the rig has one
 let viewLights = [];                 // [{ desc, light, target }] re-aimed per frame
 let installedScene = null;
+let runtimeShadowMapSize = S.mapSize;
+const runtimeShadowTune = { ...S };
 
 /* ------------------------- shadow enrollment ----------------------- */
 
@@ -126,7 +128,7 @@ export function installLightRig(renderer, scene) {
     if (target) light.target = target;
     if (rig.shadows && desc.casts) {
       light.castShadow = true;
-      light.shadow.mapSize.set(S.mapSize, S.mapSize);
+      light.shadow.mapSize.set(runtimeShadowMapSize, runtimeShadowMapSize);
       light.shadow.bias = S.bias;
       light.shadow.normalBias = S.normalBias;
       const c = light.shadow.camera;
@@ -203,8 +205,9 @@ export function updateLightRig(lookX, lookY, lookZ, yawRad) {
     if (light === keyLight && S.snapToTexel) {
       _right.crossVectors(_lightDir, _WORLD_UP).normalize();
       _up.crossVectors(_right, _lightDir).normalize();
-      const texelX = shadowTexelTiles(S);
-      const texelY = 2 * S.halfHeight / S.mapSize;
+      runtimeShadowTune.mapSize = runtimeShadowMapSize;
+      const texelX = shadowTexelTiles(runtimeShadowTune);
+      const texelY = 2 * S.halfHeight / runtimeShadowMapSize;
       _aim.copy(_lightDir).multiplyScalar(_focus.dot(_lightDir))
         .addScaledVector(_right, snapToTexel(_focus.dot(_right), texelX))
         .addScaledVector(_up, snapToTexel(_focus.dot(_up), texelY));
@@ -214,6 +217,20 @@ export function updateLightRig(lookX, lookY, lookZ, yawRad) {
     light.position.copy(_aim).addScaledVector(_lightDir, dist);
     light.updateMatrixWorld();
   }
+}
+
+export function setAdaptiveShadowMapSize(size) {
+  if (!keyLight || !ACTIVE_RIG.shadows) return false;
+  const next = Math.max(512, Math.min(S.mapSize, Math.round(size)));
+  if (next === runtimeShadowMapSize) return false;
+  runtimeShadowMapSize = next;
+  keyLight.shadow.mapSize.set(next, next);
+  if (keyLight.shadow.map) {
+    keyLight.shadow.map.dispose();
+    keyLight.shadow.map = null;
+  }
+  keyLight.shadow.needsUpdate = true;
+  return true;
 }
 
 /* Read surface for the browser smoke test and the capture rig: which rig is
@@ -235,7 +252,7 @@ export function lightRigSnapshot() {
     shadows: ACTIVE_RIG.shadows,
     exposure: ACTIVE_RIG.exposure,
     lights: ACTIVE_RIG.lights.length,
-    shadowMapSize: ACTIVE_RIG.shadows ? S.mapSize : 0,
+    shadowMapSize: ACTIVE_RIG.shadows ? runtimeShadowMapSize : 0,
     shadowBandTiles: ACTIVE_RIG.shadows ? [2 * S.halfWidth, 2 * S.halfHeight] : [0, 0],
     meshes, casters, receivers,
   };

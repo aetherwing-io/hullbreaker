@@ -24,6 +24,7 @@ export const renderer = new THREE.WebGLRenderer({ antialias: true });
 // path preserves the same ratio on ordinary screens and only reins in very
 // large Retina backing stores where the old "budget" was not actually a cap.
 export const RENDER_BUDGETED = QUERY.get('renderbudget') !== 'legacy';
+let adaptiveRenderScale = 1;
 
 // Preserve the authored camera scale while buying actual sub-pixel coverage.
 // Making every sprite/world unit larger and pulling the camera back by the
@@ -37,7 +38,7 @@ export function renderPixelRatio(
   height = innerHeight,
   budgeted = RENDER_BUDGETED,
 ) {
-  return resolveRenderPixelRatio(dpr, width, height, budgeted);
+  return resolveRenderPixelRatio(dpr, width, height, budgeted) * adaptiveRenderScale;
 }
 
 // DPR can change without a reload (dragging between displays, browser zoom,
@@ -53,6 +54,15 @@ export function syncRenderPixelRatio(
   const ratio = renderPixelRatio(dpr, width, height);
   if (renderer.getPixelRatio() !== ratio) renderer.setPixelRatio(ratio);
   return ratio;
+}
+
+export function setAdaptiveRenderScale(scale) {
+  const next = Math.max(0.6, Math.min(1, Number.isFinite(scale) ? scale : 1));
+  if (next === adaptiveRenderScale) return false;
+  adaptiveRenderScale = next;
+  syncRenderPixelRatio();
+  renderer.setSize(innerWidth, innerHeight, false);
+  return true;
 }
 
 syncRenderPixelRatio();
@@ -86,6 +96,7 @@ export function rendererResourceSnapshot() {
   const info = renderer.info;
   return {
     policy: RENDER_BUDGETED ? 'bounded' : 'legacy',
+    adaptiveScale: adaptiveRenderScale,
     pixelRatio: renderer.getPixelRatio(),
     css: { width: resourceCssSize.x, height: resourceCssSize.y },
     drawingBuffer: { width: resourceDrawSize.x, height: resourceDrawSize.y },
