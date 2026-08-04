@@ -79,9 +79,12 @@ export async function run() {
   ok(roots.some((p) => p.s < core && p.y - p.h / 2 < CROWN_APPROACH.deckY) &&
     roots.some((p) => p.s > core && p.y - p.h / 2 < CROWN_APPROACH.deckY),
   'painted roots emerge from both sides and continue below the summit deck');
-  ok(byKind('foundation').every((p) => p.y - p.h / 2 < CROWN_APPROACH.deckY) &&
+  ok(byKind('foundation').every((p) => p.y - p.h / 2 < CROWN_APPROACH.deckY &&
+      p.y + p.h / 2 <= CROWN_APPROACH.deckY + 0.20) &&
     byKind('foundation').some((p) => p.s - p.w / 2 < core && p.s + p.w / 2 > core),
-  'five opaque foundation roots bury art seams and physically overlap the command axis');
+  'five opaque foundation roots bury art seams without rising into a graybox deck plinth');
+  ok(byKind('backplane').every((p) => p.w <= 9 && p.h <= 10.5),
+    'opaque recess metal supports only the iris and cannot become a rectangular art backing card');
   ok(new Set(plan.filter((p) => /^signal[0-2]$/.test(p.kind)).map((p) => p.stage)).size === 3,
     'five bowed carriers own three distinct root-to-iris-to-antenna energy stages');
   ok(byKind('void').length === 1 && byKind('damage').length === 1 &&
@@ -116,7 +119,7 @@ export async function run() {
     render.indexOf('export function resetCrownPresentation'));
   const forbiddenGlowOwners = [
     'foundationWarm', 'foundationDark', 'shellWarm', 'shellDark', 'shellIvory',
-    'coreArt', 'atlasArt', 'backplane', 'hardware', 'antenna',
+    'coreArt', 'atlasArt', 'antennaArt', 'backplane', 'hardware', 'antenna',
   ];
   ok(forbiddenGlowOwners.every((name) => !presentation.includes(`MATERIAL.${name}`)) &&
     /glow\(MATERIAL\.signal0/.test(presentation) && /glow\(MATERIAL\.signal1/.test(presentation) &&

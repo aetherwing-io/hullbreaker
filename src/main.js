@@ -92,6 +92,9 @@ import './render/crown-art.js';
 // hostiles and backdrop can settle the one shared texture gate. bullets.js
 // later consumes its frozen ready/fallback contract without loading anything.
 import './render/projectile-art.js';
+// One approved 1024px action-paint atlas joins the same boot settlement.
+// Its consumer is imported only after juice has wrapped the bridge, below.
+import './render/action-vfx-art.js';
 // Rooted enemy hardware uses two immutable production atlases. Register both
 // before post/hostiles can settle the shared gate; the consumer never fetches
 // or swaps artwork after frame one.
@@ -154,10 +157,22 @@ import { shellApplyIntent, shellRunStarted, shellSnapshot } from './ui/shell.js'
 // with no build step, which is what made the documented console surface fiction
 // (SPRINT I-005).
 import { audioSnapshot } from './ui/audio.js';
-// juice loads LAST: like the audio layer it wraps the finished view bridge
-// (each wrapper delegating to the implementation already installed), so it
-// must see every render/ui module's hooks in place first.
-import { juiceSnapshot, updateJuice } from './render/juice.js';
+// Juice loads after the full render/UI bridge. The action-paint observer is
+// deliberately the only wrapper outside it: action VFX delegates to this
+// finished juice chain first and can never replace or short-circuit it.
+import {
+  installJuiceHostileBridge, juiceSnapshot, updateJuice,
+} from './render/juice.js';
+import {
+  actionVfxSnapshot, installActionVfxObservers, updateActionVfx,
+} from './render/action-vfx-runtime.js';
+
+// Executed in the composition-root body, after every async module dependency
+// has settled. This is the only reliable point at which a bridge observer can
+// wrap the finished renderer chain; static import order alone is insufficient
+// when an earlier art owner resumes from top-level await.
+installJuiceHostileBridge();
+installActionVfxObservers();
 
 // the sim asks for a restart through this hook (fixture fast retry)
 installHost({ resetGame: () => resetGame() });
@@ -411,6 +426,9 @@ function update(dt) {
   updateCapsules(dt * wScale);
   updateMods();
   updateBullets(dt * hScale);
+  // Damage/death hooks above arm exact endpoints; step after bullets so a
+  // contact paints on the collision frame rather than one frame later.
+  updateActionVfx();
   // CHARGE steps on real dt: CHRONO must not inflate the meter (proposal A.3)
   updateScore(dt, {
     grounded: player.grounded, vx: player.vx,
@@ -569,6 +587,7 @@ function telemetry() {
     // the sim's own hit-stop remainder; `perf` is measured wall-clock frame
     // intervals, so "60fps with 200+ projectiles" is a reading, not a claim.
     juice: juiceSnapshot(),
+    actionVfx: actionVfxSnapshot(),
     perf: perfSnapshot(),
     // additive (T-048, decisions.md entry 18): which draw path this frame
     // took. `status` is the honest one — 'active' only while the composer is
@@ -747,6 +766,8 @@ window.HB = Object.freeze({
   // baseline feedback pass (?juice=0 disables): effect counters + the sim's
   // live hit-stop remainder, and the frame-time sampler beside it
   juice: juiceSnapshot,
+  // One-atlas, fixed-row painted impact/death punctuation. Read-only.
+  actionVfx: actionVfxSnapshot,
   perf: perfSnapshot,
   // the screen pass (?bloom=0 disables): flag, live status, the bloom
   // parameters actually in effect, and any fault that dropped it

@@ -15,10 +15,12 @@ import { awaitPreloads, preloadTexture } from './preload.js';
 import { spritesEnabled } from './sprite-table.js';
 
 export const PROJECTILE_ART = Object.freeze({
-  file: '../../assets/generated/projectiles/projectile-chassis-atlas-v1.png',
-  canvas: Object.freeze([1280, 256]),
+  file: '../../assets/generated/projectiles/projectile-chassis-atlas-v2.png',
+  canvas: Object.freeze([1536, 256]),
   cell: Object.freeze([256, 256]),
-  order: Object.freeze(['R', 'S', 'L', 'H', 'F']),
+  // G is Cindermouth after deck ignition: the same one resident texture owns
+  // both its airborne furnace chassis and its crawling combustion body.
+  order: Object.freeze(['R', 'S', 'L', 'H', 'F', 'G']),
 });
 
 export const PROJECTILE_ART_ON = spritesEnabled(QUERY.get('sprites'));
@@ -49,4 +51,3 @@ export const PROJECTILE_ART_SLOT = Object.freeze({
   residency: ready ? 'gpu' : 'fallback',
   settledBeforeConsumer: true,
 });
-

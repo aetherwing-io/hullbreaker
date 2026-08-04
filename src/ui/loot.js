@@ -41,21 +41,22 @@ style.textContent = `
   grid-template-columns: minmax(0, 1fr) 142px;
   gap: 0 10px;
   min-height: 154px;
-  padding: 13px 13px 13px 19px;
+  padding: 13px 13px 13px 18px;
   overflow: hidden;
   color: #f7ead6;
   background:
-    linear-gradient(115deg, transparent 0 56%, color-mix(in srgb, var(--loot-accent) 9%, transparent) 56% 58%, transparent 58%),
-    repeating-linear-gradient(136deg, transparent 0 16px, rgba(255,255,255,.014) 16px 17px),
-    linear-gradient(100deg, rgba(10,24,27,.98) 0%, rgba(13,29,31,.94) 72%, rgba(16,38,40,.86) 100%);
-  border: 1px solid color-mix(in srgb, var(--loot-accent) 70%, white 30%);
-  border-left: 5px solid var(--loot-accent);
-  box-shadow: 0 12px 38px rgba(0,0,0,.42), inset 0 0 28px rgba(255,79,216,.055);
+    linear-gradient(112deg, transparent 0 55%, rgba(207,137,75,.07) 55% 56%, transparent 56%),
+    repeating-linear-gradient(136deg, transparent 0 18px, rgba(255,255,255,.012) 18px 19px),
+    linear-gradient(100deg, rgba(12,25,27,.985) 0%, rgba(23,34,34,.97) 70%, rgba(45,38,31,.94) 100%);
+  border: 1px solid rgba(194,139,82,.58);
+  border-left: 4px solid color-mix(in srgb, var(--loot-accent) 62%, #a9693d 38%);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  box-shadow: 0 12px 34px rgba(0,0,0,.46), inset 0 1px rgba(255,234,203,.06);
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   text-transform: uppercase;
   pointer-events: none;
   opacity: 0;
-  transform: translate3d(-112%,0,0) skewX(-2deg);
+  transform: translate3d(-112%,0,0);
   contain: layout paint style;
 }
 #lootReveal::after {
@@ -63,24 +64,21 @@ style.textContent = `
   position: absolute;
   left: 0; right: 0; top: 0;
   height: 2px;
-  background: linear-gradient(90deg, var(--loot-accent), var(--loot-hot), transparent 88%);
-  opacity: .88;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--loot-accent) 72%, #b96d3d), rgba(225,172,103,.55), transparent 82%);
+  opacity: .72;
 }
 #lootReveal::before {
   content: "";
   position: absolute;
   z-index: 0;
-  right: 9px; bottom: 9px;
-  width: 118px; height: 68px;
+  right: 11px; bottom: 10px;
+  width: 116px; height: 66px;
   background:
-    linear-gradient(var(--loot-accent), var(--loot-accent)) right top / 43px 1px no-repeat,
-    linear-gradient(var(--loot-accent), var(--loot-accent)) right top / 1px 23px no-repeat,
-    linear-gradient(var(--loot-accent), var(--loot-accent)) left bottom / 31px 1px no-repeat,
-    linear-gradient(var(--loot-accent), var(--loot-accent)) left bottom / 1px 17px no-repeat,
-    repeating-linear-gradient(135deg, transparent 0 14px,
-      color-mix(in srgb, var(--loot-accent) 22%, transparent) 14px 15px,
-      transparent 15px 27px);
-  opacity: .46;
+    radial-gradient(circle, rgba(225,174,112,.72) 0 1px, transparent 2px) right 3px top 3px / 6px 6px no-repeat,
+    radial-gradient(circle, rgba(225,174,112,.52) 0 1px, transparent 2px) left 3px bottom 3px / 6px 6px no-repeat,
+    linear-gradient(rgba(181,120,66,.42), rgba(181,120,66,.42)) right top / 48px 1px no-repeat,
+    linear-gradient(rgba(181,120,66,.28), rgba(181,120,66,.28)) left bottom / 35px 1px no-repeat;
+  opacity: .58;
 }
 #lootReveal.is-live { animation: loot-reveal 3.25s cubic-bezier(.18,.78,.2,1) both; }
 #lootReveal.tier-1 { --loot-accent: #ff55dc; }
@@ -88,11 +86,10 @@ style.textContent = `
 #lootReveal.tier-3 {
   --loot-accent: #ffd77a;
   --loot-hot: #fffaf0;
-  border-width: 1px 2px 1px 6px;
+  border-width: 1px 2px 1px 5px;
   background:
-    linear-gradient(105deg, rgba(19,24,24,.98), rgba(55,30,43,.92) 64%, rgba(88,52,27,.76));
-  box-shadow: 0 14px 52px rgba(0,0,0,.52), 0 0 26px rgba(255,196,82,.22),
-              inset 0 0 34px rgba(255,79,216,.11);
+    linear-gradient(105deg, rgba(14,25,25,.99), rgba(39,37,32,.97) 64%, rgba(73,48,29,.92));
+  box-shadow: 0 14px 42px rgba(0,0,0,.54), inset 0 1px rgba(255,236,201,.08);
 }
 #lootReveal.tier-3.is-live { animation-duration: 3.85s; }
 /* State screens are a different composition, not another combat layer.  A
@@ -114,7 +111,6 @@ body:has(#finale.on) #lootReveal { top: 124px; }
   line-height: 1.02;
   font-weight: 950;
   letter-spacing: .035em;
-  text-shadow: 0 0 15px color-mix(in srgb, var(--loot-accent) 38%, transparent);
 }
 .loot-chassis { margin-top: 4px; color: rgba(225,226,214,.72); font-size: 10px; letter-spacing: .15em; }
 .loot-traits, .loot-stats { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -123,8 +119,8 @@ body:has(#finale.on) #lootReveal { top: 124px; }
 .loot-chip {
   padding: 3px 6px 3px 7px;
   color: #fff7e7;
-  background: color-mix(in srgb, var(--loot-accent) 17%, rgba(8,20,23,.88));
-  border: 1px solid color-mix(in srgb, var(--loot-accent) 58%, transparent);
+  background: linear-gradient(180deg, rgba(115,78,48,.36), rgba(8,20,23,.72));
+  border: 1px solid color-mix(in srgb, var(--loot-accent) 38%, #765137 62%);
   font-size: 10px;
   line-height: 1;
   font-weight: 800;
@@ -141,10 +137,10 @@ body:has(#finale.on) #lootReveal { top: 124px; }
   align-self: stretch;
   min-width: 0;
   margin: -3px -2px -3px 0;
-  border-left: 1px solid color-mix(in srgb, var(--loot-accent) 26%, transparent);
+  border-left: 1px solid rgba(180,122,70,.26);
   background:
-    radial-gradient(circle at 53% 48%, color-mix(in srgb, var(--loot-accent) 16%, transparent), transparent 58%),
-    linear-gradient(90deg, rgba(7,19,26,.18), rgba(7,19,26,.48));
+    repeating-linear-gradient(90deg, transparent 0 23px, rgba(201,139,81,.025) 23px 24px),
+    linear-gradient(90deg, rgba(7,19,22,.22), rgba(28,30,28,.62));
 }
 .loot-art::before,
 .loot-art::after {
@@ -154,27 +150,23 @@ body:has(#finale.on) #lootReveal { top: 124px; }
   pointer-events: none;
 }
 .loot-art::before {
-  width: 112px; height: 82px;
+  width: 116px; height: 78px;
   background:
-    linear-gradient(var(--loot-accent), var(--loot-accent)) left top / 29px 2px no-repeat,
-    linear-gradient(var(--loot-accent), var(--loot-accent)) left top / 2px 22px no-repeat,
-    linear-gradient(var(--loot-accent), var(--loot-accent)) right top / 29px 2px no-repeat,
-    linear-gradient(var(--loot-accent), var(--loot-accent)) right top / 2px 22px no-repeat,
-    linear-gradient(var(--loot-accent), var(--loot-accent)) left bottom / 29px 2px no-repeat,
-    linear-gradient(var(--loot-accent), var(--loot-accent)) left bottom / 2px 22px no-repeat,
-    linear-gradient(var(--loot-accent), var(--loot-accent)) right bottom / 29px 2px no-repeat,
-    linear-gradient(var(--loot-accent), var(--loot-accent)) right bottom / 2px 22px no-repeat;
+    radial-gradient(circle, #d8a461 0 2px, #503622 2px 4px, transparent 4px) left 2px top 8px / 8px 8px no-repeat,
+    radial-gradient(circle, #d8a461 0 2px, #503622 2px 4px, transparent 4px) right 2px top 8px / 8px 8px no-repeat,
+    linear-gradient(#8d5b37, #8d5b37) center top 11px / calc(100% - 15px) 3px no-repeat,
+    linear-gradient(#5a3c2a, #5a3c2a) center bottom 9px / calc(100% - 25px) 5px no-repeat;
   transform: translate(-50%, -50%);
-  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--loot-accent) 24%, transparent));
-  opacity: .66;
+  filter: drop-shadow(0 3px 2px rgba(0,0,0,.48));
+  opacity: .78;
 }
 .loot-art::after {
-  width: 76px; height: 3px;
-  top: calc(50% + 48px);
-  transform: translate(-50%, -50%) skewX(-28deg);
-  background: repeating-linear-gradient(90deg,
-    transparent 0 7px, var(--loot-accent) 7px 19px, transparent 19px 28px);
-  opacity: .50;
+  width: 74px; height: 5px;
+  top: calc(50% + 38px);
+  transform: translate(-50%, -50%) skewX(-18deg);
+  background: repeating-linear-gradient(90deg, #4a3022 0 15px, #9b663d 15px 19px);
+  box-shadow: 0 3px 3px rgba(0,0,0,.5);
+  opacity: .82;
 }
 .loot-atlas-clip {
   position: relative;
@@ -184,9 +176,8 @@ body:has(#finale.on) #lootReveal { top: 124px; }
   max-width: 98%;
   aspect-ratio: 8 / 5;
   overflow: hidden;
-  filter: drop-shadow(0 7px 8px rgba(0,0,0,.5))
-          drop-shadow(0 0 10px color-mix(in srgb, var(--loot-accent) 24%, transparent));
-  transform: rotate(-4deg);
+  filter: drop-shadow(0 7px 7px rgba(0,0,0,.62));
+  transform: rotate(-2deg);
 }
 .loot-atlas-clip canvas {
   display: block;
@@ -202,7 +193,6 @@ body:has(#finale.on) #lootReveal { top: 124px; }
   font-size: 62px;
   line-height: 1;
   font-weight: 950;
-  text-shadow: 0 0 18px color-mix(in srgb, var(--loot-accent) 44%, transparent);
 }
 .loot-art.no-art .loot-art-glyph { display: block; }
 .loot-art-mark {
@@ -225,7 +215,6 @@ body:has(#finale.on) #lootReveal { top: 124px; }
   display: block;
   width: 14px; height: 3px;
   background: var(--loot-hot);
-  box-shadow: 0 0 7px color-mix(in srgb, var(--loot-accent) 62%, transparent);
 }
 .loot-scan {
   position: absolute;
@@ -241,11 +230,11 @@ body:has(#finale.on) #lootReveal { top: 124px; }
 #lootReveal.is-live .loot-scan { animation: loot-scan 760ms 90ms ease-out both; }
 #lootReveal.is-live .loot-atlas-clip { animation: loot-art-lock 520ms 130ms cubic-bezier(.18,.78,.2,1) both; }
 @keyframes loot-reveal {
-  0%   { opacity: 0; transform: translate3d(-112%,0,0) skewX(-2deg); filter: brightness(1.8); }
-  7%   { opacity: 1; transform: translate3d(8px,0,0) skewX(-2deg); }
-  12%  { transform: translate3d(0,0,0) skewX(-2deg); filter: brightness(1); }
-  80%  { opacity: 1; transform: translate3d(0,0,0) skewX(-2deg); }
-  100% { opacity: 0; transform: translate3d(0,-8px,0) skewX(-2deg) scale(.985); }
+  0%   { opacity: 0; transform: translate3d(-112%,0,0); filter: brightness(1.3); }
+  7%   { opacity: 1; transform: translate3d(8px,0,0); }
+  12%  { transform: translate3d(0,0,0); filter: brightness(1); }
+  80%  { opacity: 1; transform: translate3d(0,0,0); }
+  100% { opacity: 0; transform: translate3d(0,-8px,0) scale(.985); }
 }
 @keyframes loot-scan {
   0% { opacity: 0; transform: translateX(0) rotate(13deg); }
@@ -253,8 +242,8 @@ body:has(#finale.on) #lootReveal { top: 124px; }
   100% { opacity: 0; transform: translateX(500px) rotate(13deg); }
 }
 @keyframes loot-art-lock {
-  from { opacity: 0; transform: translateX(18px) rotate(-9deg) scale(.82); filter: brightness(2); }
-  to { opacity: 1; transform: rotate(-4deg) scale(1); }
+  from { opacity: 0; transform: translateX(18px) rotate(-7deg) scale(.82); filter: brightness(1.35); }
+  to { opacity: 1; transform: rotate(-2deg) scale(1); }
 }
 @media (max-width: 600px) {
   #lootReveal {
@@ -285,8 +274,8 @@ body:has(#finale.on) #lootReveal { top: 124px; }
 @media (prefers-reduced-motion: reduce) {
   #lootReveal.is-live { animation: loot-reveal-reduced 3.25s ease both; }
   @keyframes loot-reveal-reduced {
-    0%, 100% { opacity: 0; transform: translate3d(0,0,0) skewX(-2deg); }
-    8%, 82% { opacity: 1; transform: translate3d(0,0,0) skewX(-2deg); }
+    0%, 100% { opacity: 0; transform: translate3d(0,0,0); }
+    8%, 82% { opacity: 1; transform: translate3d(0,0,0); }
   }
 }`;
 document.head.append(style);

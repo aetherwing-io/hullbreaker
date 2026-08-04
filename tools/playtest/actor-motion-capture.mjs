@@ -30,9 +30,10 @@ let browser;
 
 const STATES = [
   { kind: 'polyp', tag: 'polyp-0-sealed', state: 'closed', frame: 0, progress: 1 },
-  { kind: 'polyp', tag: 'polyp-1-aim', state: 'tell', frame: 1, progress: 0.5 },
-  { kind: 'polyp', tag: 'polyp-2-discharge', state: 'fire', frame: 2, progress: 0.5 },
-  { kind: 'polyp', tag: 'polyp-3-recover', state: 'vent', frame: 3, progress: 0.5 },
+  { kind: 'polyp', tag: 'polyp-1-shutter-flare', state: 'tell', frame: 3, progress: 0.12 },
+  { kind: 'polyp', tag: 'polyp-2-aim-lock', state: 'tell', frame: 1, progress: 0.5 },
+  { kind: 'polyp', tag: 'polyp-3-discharge', state: 'fire', frame: 2, progress: 0.5 },
+  { kind: 'polyp', tag: 'polyp-4-recover', state: 'vent', frame: 3, progress: 0.5 },
   { kind: 'mortar', tag: 'mortar-0-brace', state: 'cool', frame: 4, progress: 0.8 },
   { kind: 'mortar', tag: 'mortar-1-load', state: 'aim', frame: 5, progress: 1 },
   { kind: 'mortar', tag: 'mortar-2-launch', state: 'lob', frame: 6, progress: 0.12 },
@@ -47,8 +48,8 @@ const STATES = [
   { kind: 'warden', tag: 'warden-7-damaged', state: 'exposed', frame: 7, progress: 0.55, damaged: true },
 ];
 
-const BEFORE_STATES = [STATES[1], STATES[6], STATES[10]];
-const DEATH_STATES = [STATES[2], STATES[6], STATES[15]];
+const BEFORE_STATES = [STATES[2], STATES[7], STATES[11]];
+const DEATH_STATES = [STATES[3], STATES[7], STATES[16]];
 
 async function stage(page, entry) {
   return page.evaluate(async (row) => {
@@ -79,7 +80,10 @@ async function stage(page, entry) {
       barrageBurst: C.warden.barrageMs, exposed: C.warden.exposedMs,
     };
     const duration = durations[row.state] || 0;
-    e.enterUntil = 0; e.flashUntil = 0; e.state = row.state;
+    // A fresh page may still have a negative deterministic clock while its
+    // warmup frame settles. Anchor against that clock so the Warden is never
+    // mistaken for an in-progress deployment in portrait.
+    e.enterUntil = T.gameMs - 1; e.flashUntil = 0; e.state = row.state;
     e.stateUntil = duration ? T.gameMs + duration * (1 - row.progress) : Infinity;
     e.openedAt = T.gameMs - C.warden.exposedMs * row.progress;
     e.beamReach = row.state === 'fire' ? 6
@@ -111,7 +115,9 @@ async function captureDeathContinuity(page, dir, name) {
       H.removeHostile(0, true);
       return window.__HB_HOSTILE_DEATH_VISUAL().rows[0];
     });
-    assert.equal(death.ruptureMode, 'frozen-motion', `${name}/${entry.tag}: frozen motion corpse`);
+    assert.equal(death.ruptureMode,
+      entry.kind === 'warden' ? 'rooted-terminal-pieces' : 'frozen-motion',
+      `${name}/${entry.tag}: authored terminal presentation`);
     assert.equal(death.motionFrame, entry.frame, `${name}/${entry.tag}: death retains attack frame`);
     assert.equal(death.posePreserved, true, `${name}/${entry.tag}: death retains geometry and map`);
     const path = resolve(dir, `${entry.tag}-death-continuity.png`);

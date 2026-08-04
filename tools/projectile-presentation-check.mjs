@@ -143,9 +143,9 @@ ok(/state:\s*PROJECTILE_ART_ON\s*\?\s*\(ready\s*\?\s*'ready'\s*:\s*'failed'\)/.t
    /if\s*\(artSlot\.state\s*===\s*'ready'\s*&&\s*artSlot\.tex\)/.test(bullets),
   'failed or disabled art selects the complete geometry fallback before pools build');
 
-ok(/canvas:\s*Object\.freeze\(\[1280,\s*256\]\)/.test(boot) &&
-   /order:\s*Object\.freeze\(\['R',\s*'S',\s*'L',\s*'H',\s*'F'\]\)/.test(boot),
-  'the production atlas exposes five fixed 256px chassis cells in weapon order');
+ok(/canvas:\s*Object\.freeze\(\[1536,\s*256\]\)/.test(boot) &&
+   /order:\s*Object\.freeze\(\['R',\s*'S',\s*'L',\s*'H',\s*'F',\s*'G'\]\)/.test(boot),
+  'one production atlas exposes five chassis plus Cindermouth ground fire');
 ok(occurrences(bullets, /new THREE\.InstancedMesh\s*\(/g) >= 8 &&
    /const historyX = new Float32Array/.test(bullets) &&
    /const terminalReasonCounts = \{/.test(bullets) &&
@@ -188,11 +188,11 @@ ok(/projectileOnVisibleFacet\(b\.x\)/.test(bullets) &&
   'fold, bend, pool replacement, and reset paths conceal without false hits');
 
 const png = readFileSync(join(root,
-  'assets/generated/projectiles/projectile-chassis-atlas-v1.png'));
-ok(png.readUInt32BE(16) === 1280 && png.readUInt32BE(20) === 256,
-  'the shipped atlas binary matches its 1280x256 runtime contract');
+  'assets/generated/projectiles/projectile-chassis-atlas-v2.png'));
+ok(png.readUInt32BE(16) === 1536 && png.readUInt32BE(20) === 256,
+  'the shipped atlas binary matches its 1536x256 runtime contract');
 
-const atlasPath = join(root, 'assets/generated/projectiles/projectile-chassis-atlas-v1.png');
+const atlasPath = join(root, 'assets/generated/projectiles/projectile-chassis-atlas-v2.png');
 const decoded = decodePng(atlasPath);
 const expectedCells = [
   '766890aed993ed9ad95ddfbf76968c8b766e8ccd15d95db9a87e054f07f72a9a',
@@ -200,10 +200,24 @@ const expectedCells = [
   'ec75b00bd5e52e09a1666dfdb534b69fa0cc42136c681b07aae6c9fd7785b77c',
   'c9ceef8facf45816ba145feed6e0284bdf8f8266835f93a60a9423fc879f81f1',
   '80939cd0872e55aca5435ee2c3ce24ec16c2811ce6bead51d5855d065adc398b',
+  '2f47851ef8157714bd62009b5fc04b2697a27b7c00e922bd411ca05cea5c4fa8',
 ];
 const actualCells = expectedCells.map((_, column) => rgbaCellSha(decoded, column));
 ok(actualCells.every((hash, column) => hash === expectedCells[column]),
-  'decoded RGBA locks the new S cell while R/L/H/F remain pixel-identical');
+  'decoded RGBA locks five proven chassis plus the painted ground-fire wave');
+
+const groundBounds = cellAlphaBounds(decoded, 5);
+const groundComponents = cellComponents(decoded, 5);
+ok(groundBounds.x === 13 && groundBounds.y === 109 &&
+   groundBounds.width === 230 && groundBounds.height === 37 &&
+   groundBounds.width / groundBounds.height >= 6 &&
+   groundBounds.partial >= 900 && groundComponents.greenLeak === 0,
+  'ground fire is a narrow antialiased 230x37 painted wave with no key fringe');
+ok(/const groundArtMesh = artMeshes\.G \|\| null/.test(bullets) &&
+   /groundArtMesh\.setMatrixAt\(i, _bm\)/.test(bullets) &&
+   /paintedWave:\s*!!groundArtMesh/.test(bullets) &&
+   /groundFireMesh\.setMatrixAt\(i, HIDE\)/.test(bullets),
+  'deck ignition swaps the rigid chassis for one pooled painted ground wave');
 
 const scatterBounds = cellAlphaBounds(decoded, 1);
 ok(scatterBounds.x === 13 && scatterBounds.y === 101 &&
@@ -230,7 +244,11 @@ ok(/S:\s*Object\.freeze\(\{\s*frontCap:\s*Infinity,\s*tail:\s*0\.55,\s*thickness
   'Scatterbloom keeps a 14-18x3-5px FAR chassis; wake and RAPID ticks stay sub-body');
 
 const provenance = JSON.parse(read('assets/generated/projectiles/projectile-scatterbloom-flechette-provenance-v1.json'));
-const atlasSha = createHash('sha256').update(png).digest('hex');
+// Scatterbloom's provenance remains a truthful record of the v1 five-cell
+// packing operation. The v2 check above independently proves that exact cell
+// survived unchanged when the sixth ground-fire column was appended.
+const atlasSha = createHash('sha256').update(readFileSync(join(root,
+  'assets/generated/projectiles/projectile-chassis-atlas-v1.png'))).digest('hex');
 const farPxPerTile = ((7 / CONFIG.viewScales.far.depthMult) / 100) * 800 /
   CONFIG.player.height;
 const scatterArtLength = 0.36 + 0.55;

@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { primitiveBox } from './sprite-table.js';
 import { actorMotionTexture } from './actor-motion-art.js';
+import { applySpriteUnderside } from './sprite-grounding.js';
 import {
   ACTOR_MOTION_ATLASES, ACTOR_MOTION_KINDS, ACTOR_MOTION_SPEC,
 } from './actor-motion-spec.js';
@@ -61,6 +62,10 @@ function buildBundle(kind) {
     const col = def.index % atlas.grid[0];
     const row = Math.floor(def.index / atlas.grid[0]);
     const geo = uvGeometry(q, [col * cellW, row * cellH, cellW, cellH], atlas.canvas);
+    // Crown owns its own presentation lane.  It receives a white identity
+    // attribute only because the shared sprite material supports vertex color;
+    // the ordinary Hound alone receives the underside ramp.
+    applySpriteUnderside(geo, kind === 'warden' ? 1 : 0.79);
     geo.userData.actorMotionKind = kind;
     geo.userData.actorMotionFrame = def.index;
     const localSockets = Object.create(null);

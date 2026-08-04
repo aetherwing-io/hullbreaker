@@ -353,11 +353,17 @@ export function deckPanelUv(facet, a, b) {
 // collision silhouette: top is the brightest plane, front is the readable
 // armour face, side/back recede, and the underside becomes a true undercut.
 export function deckPanelFaceGain(nx, ny, nz) {
-  if (ny > 0.55) return 1.14;
-  if (ny < -0.55) return 0.48;
-  if (nz > 0.55) return 0.88;
-  if (nz < -0.55) return 0.68;
-  return 0.76;
+  // The painted Meridian is the value anchor: one restrained camera-side
+  // plane, a readable top, then decisive recess.  The former 1.14/0.88 pair
+  // lifted every broad deck top and outward face together, turning the warm
+  // vertex token into a flat orange slab before the texture could model it.
+  // This keeps the same material and UVs while restoring a physically useful
+  // top -> outward face -> side -> back -> underside ladder.
+  if (ny > 0.55) return 1.08;
+  if (ny < -0.55) return 0.42;
+  if (nz > 0.55) return 0.84;
+  if (nz < -0.55) return 0.61;
+  return 0.70;
 }
 
 export function luminanceHistogram(rgba) {

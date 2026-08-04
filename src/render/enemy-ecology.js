@@ -7,6 +7,7 @@
 
 import * as THREE from 'three';
 import { primitiveBox } from './sprite-table.js';
+import { applySpriteUnderside } from './sprite-grounding.js';
 import { enemyEcologyArtSnapshot, enemyEcologyTexture } from './enemy-ecology-art.js';
 import {
   ENEMY_ECOLOGY_ATLAS, ENEMY_ECOLOGY_VARIANTS, enemyEcologyVariant,
@@ -39,7 +40,9 @@ function cellGeometry(column, row, worldPerPx, offX, offY, axis, variantId) {
   geo.userData.axis = axis;
   geo.userData.index = row;
   geo.userData.fullCellUv = true;
-  return geo;
+  // Body plates carry the grounded value ramp; independent weapon/wing banks
+  // retain nearly all authored value so a tell never becomes muddy.
+  return applySpriteUnderside(geo, axis === 'body' ? 0.78 : 0.92);
 }
 
 function buildBundle(spec, tex) {

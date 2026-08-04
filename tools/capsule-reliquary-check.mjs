@@ -9,6 +9,7 @@ import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '..');
 const file = resolve(root, 'src/render/capsules.js');
 const src = readFileSync(file, 'utf8');
+const lootSrc = readFileSync(resolve(root, 'src/ui/loot.js'), 'utf8');
 let passed = 0;
 
 function ok(condition, message) {
@@ -93,6 +94,25 @@ ok(!/\.scale\.set/.test(syncBody),
   'sync never pumps visual scale');
 ok(/scanner\.position\.x/.test(syncBody) && /signalMat\.opacity/.test(syncBody),
   'animation is rigid scanner translation plus bounded light output');
+
+const idleAlpha = numberConst('RELIQUARY_SIGNAL_ALPHA');
+const scannerAlpha = numberConst('RELIQUARY_SCANNER_ALPHA');
+ok(idleAlpha <= 0.32 && scannerAlpha > idleAlpha,
+  `idle signal alpha ${idleAlpha} stays quiet beneath the moving scanner ${scannerAlpha}`);
+const signalMaterialBody = functionBody('signalMaterial', 'scannerMaterial');
+const scannerMaterialBody = functionBody('scannerMaterial', 'pickupTier');
+ok(/THREE\.NormalBlending/.test(signalMaterialBody) &&
+   /THREE\.AdditiveBlending/.test(scannerMaterialBody),
+  'only the moving scanner is additive; the idle casing signal is normal-blended');
+const artMaterialBody = functionBody('artMaterial', 'staticMaterial');
+ok(/fog: true/.test(artMaterialBody) && /toneMapped: true/.test(artMaterialBody),
+  'painted capsule cells participate in the shipped atmosphere and tone map');
+ok(/v\.assembly\.rotation\.z = profileKey === 'mod' \? Math\.PI \* 0\.5 : 0/.test(src),
+  'modifier cartridges use a rigid vertical silhouette distinct from weapon reliquaries');
+ok(/clip-path: polygon/.test(lootSrc) &&
+   /linear-gradient\(#8d5b37, #8d5b37\).*calc\(100% - 15px\) 3px/.test(lootSrc) &&
+   !/0 0 26px rgba\(255,196,82/.test(lootSrc),
+  'recovery card uses a chamfered physical rail bay without an idle rarity halo');
 
 ok(/function transformedGeometryRadius\(geometry/.test(src) &&
    /for \(const x of \[-RELIQUARY_CASE_W \* 0\.22, RELIQUARY_CASE_W \* 0\.22\]\)/.test(src) &&

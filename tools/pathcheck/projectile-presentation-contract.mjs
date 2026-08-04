@@ -23,8 +23,8 @@ export async function run() {
   }
   ok(result.status === 0,
     'the projectile presentation focused production contract executes successfully');
-  ok(/PROJECTILE PRESENTATION: 23\/23 contracts passed/.test(result.stdout || ''),
-    'all twenty-three projectile presentation contracts remain registered');
+  ok(/PROJECTILE PRESENTATION: 25\/25 contracts passed/.test(result.stdout || ''),
+    'all twenty-five projectile presentation contracts remain registered');
 
   const terminal = spawnSync(process.execPath, [terminalChecker], { encoding: 'utf8' });
   if (terminal.status !== 0) {

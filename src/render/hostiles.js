@@ -27,6 +27,7 @@ import {
 import { placeOnTower } from './tower.js';
 import { releaseContactShadow, syncContactShadow } from './contact.js';
 import { routeRenderable } from './route-visibility.js';
+import { applySpriteUnderside } from './sprite-grounding.js';
 import {
   actorMotionBundle, actorMotionRuntimeSnapshot, actorMotionSocket,
   selectActorMotion, selectActorMotionClip,
@@ -60,19 +61,28 @@ for (const kind of Object.keys(SPRITE_MOTION_ART)) {
   if (tex) motionTextures.set(kind, tex);
 }
 
-// T-039 (S6, contact shadows): each kind's own ground-plane footprint, read
-// straight off the same CONFIG sizes LOOK's geometries below are built from
-// — never a number this module invents on its own, so "the shadow can never
-// exceed the actor's own footprint" is true by construction rather than by a
-// second authored table that could drift from the meshes.
-const CONTACT_FOOTPRINT = {
-  wasp: CONFIG.wasp.visualRadius,
-  carrier: Math.max(CONFIG.carrier.size[0], CONFIG.carrier.size[2]) / 2,
-  hound: Math.max(CONFIG.hound.size[0], CONFIG.hound.size[2]) / 2,
-  polyp: CONFIG.polyp.size,
-  mortar: CONFIG.mortar.size,
-  warden: CONFIG.warden.size[0] / 2,
-};
+// T-039 (S6, contact shadows): the outer radius still comes straight from the
+// same CONFIG envelope as the body, while depthRatio describes the underside
+// that can actually touch one deck.  These immutable profiles keep painted
+// actors grounded without reinstating the old same-size square card under
+// every silhouette.  `strength` only reduces CONTACT_SHADOW.maxOpacity.
+const contactProfile = (key, radius, depthRadius, strength) => Object.freeze({
+  key, radius, depthRatio: Math.min(1, depthRadius / radius), strength,
+});
+const CONTACT_FOOTPRINT = Object.freeze({
+  wasp: contactProfile('wasp', CONFIG.wasp.visualRadius,
+    CONFIG.wasp.visualRadius * 0.42, 0.42),
+  carrier: contactProfile('carrier',
+    Math.max(CONFIG.carrier.size[0], CONFIG.carrier.size[2]) / 2,
+    CONFIG.carrier.size[2] / 2, 0.64),
+  hound: contactProfile('hound',
+    Math.max(CONFIG.hound.size[0], CONFIG.hound.size[2]) / 2,
+    CONFIG.hound.size[2] / 2, 0.82),
+  polyp: contactProfile('polyp', CONFIG.polyp.size, CONFIG.polyp.size * 0.62, 0.78),
+  mortar: contactProfile('mortar', CONFIG.mortar.size, CONFIG.mortar.size * 0.66, 0.82),
+  warden: contactProfile('warden', CONFIG.warden.size[0] / 2,
+    CONFIG.warden.size[2] / 2, 0.86),
+});
 
 const waspGeo = new THREE.OctahedronGeometry(CONFIG.wasp.visualRadius);
 const carrierGeo = new THREE.BoxGeometry(...CONFIG.carrier.size);
@@ -80,8 +90,59 @@ const houndGeo = new THREE.BoxGeometry(...CONFIG.hound.size);
 const polypGeo = new THREE.DodecahedronGeometry(CONFIG.polyp.size);
 const polypBarrelGeo = new THREE.BoxGeometry(...CONFIG.polyp.barrelSize);
 const polypStalkGeo = new THREE.BoxGeometry(0.35, CONFIG.polyp.rootY, 0.35);
-const polypBeamGeo = new THREE.BoxGeometry(1, CONFIG.polyp.beamHalf * 2, CONFIG.polyp.beamHalf * 2);
-const polypBeamCoreGeo = new THREE.BoxGeometry(1, 0.10, 0.10);
+
+// A live Polyp lane used to be two scaled boxes: at FAR their broad faces
+// collapsed into one neon rectangle. Keep the exact normalized -0.5..+0.5
+// reach, but cut that volume into a few tapered, interrupted conductor seams.
+// The immutable geometry is built once at module boot; attack frames only
+// change transform and material scalars already owned by the hostile view.
+function polypConductorGeometry(halfHeight, core) {
+  const spans = core ? [
+    [-0.50, -0.24, 0.16, 0.12],
+    [-0.20,  0.03, 0.12, 0.16],
+    [ 0.07,  0.28, 0.15, 0.10],
+    [ 0.32,  0.50, 0.11, 0.00],
+  ] : [
+    [-0.50, -0.34, 0.48, 0.88],
+    [-0.30, -0.11, 0.72, 0.42],
+    [-0.07,  0.11, 0.44, 0.70],
+    [ 0.15,  0.31, 0.60, 0.34],
+    [ 0.35,  0.50, 0.42, 0.00],
+  ];
+  const position = [];
+  for (let i = 0; i < spans.length; i++) {
+    const [x0, x1, h0, h1] = spans[i];
+    // Alternating bias makes a torn mechanical seam, while every vertex
+    // remains inside the real beam band and never invents splash/reach.
+    const bias = core ? 0 : (i & 1 ? -0.08 : 0.07) * halfHeight;
+    const h = Math.max(h0, h1) * halfHeight;
+    if (core) {
+      // A row of narrow darts carries the hot direction; no broad face exists
+      // for bloom to turn back into the old rectangle.
+      position.push(x0, bias + h, 0, x0, bias - h, 0, x1, bias, 0);
+    } else {
+      // Cold sheath pieces are asymmetric kites around that core. Their
+      // pointed ends keep every interruption readable at FAR.
+      const mid = x0 + (x1 - x0) * 0.58;
+      position.push(
+        x0, bias, 0, mid, bias + h, 0, x1, bias, 0,
+        x0, bias, 0, mid, bias - h * 0.72, 0, x1, bias, 0,
+      );
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
+  geometry.computeVertexNormals();
+  geometry.computeBoundingSphere();
+  geometry.userData.actionLanguage = core
+    ? 'polyp-conductor-core' : 'polyp-broken-sheath';
+  geometry.userData.normalizedReach = Object.freeze([-0.5, 0.5]);
+  geometry.userData.maxHalfHeight = halfHeight;
+  return geometry;
+}
+
+const polypBeamGeo = polypConductorGeometry(CONFIG.polyp.beamHalf, false);
+const polypBeamCoreGeo = polypConductorGeometry(0.13, true);
 // Seed-Pod Tripod: a squat three-sided launch tube on three legs (the leg
 // meshes and the bombardment props are built in the mortar block at the end
 // of this file, which owns everything else about this kind).
@@ -613,7 +674,7 @@ function motionSpriteFrames(kind) {
     geo.userData.motionFrame = index;
     geo.userData.anchorWorldX = q.anchorWorldX;
     geo.userData.anchorWorldY = q.anchorWorldY;
-    return geo;
+    return applySpriteUnderside(geo, kind === 'wasp' ? 0.84 : 0.79);
   });
   motionSpriteGeos.set(kind, frames);
   return frames;
@@ -673,6 +734,7 @@ function spriteGeo(kind) {
   // facing mirror flips it with the art and the pose scales still act
   // around the sim row the way they do on a primitive body
   geo.translate(q.offX, q.offY, 0);
+  applySpriteUnderside(geo, kind === 'wasp' ? 0.84 : 0.79);
   spriteGeos.set(kind, geo);
   return geo;
 }
@@ -685,6 +747,7 @@ function actionSpriteGeo(kind) {
   geo = new THREE.PlaneGeometry(q.w, q.h);
   geo.translate(q.offX, q.offY, 0);
   normalizePoseHeight(geo, kind, 'action', q);
+  applySpriteUnderside(geo, kind === 'wasp' ? 0.86 : 0.80);
   actionSpriteGeos.set(kind, geo);
   return geo;
 }
@@ -697,6 +760,7 @@ function flapSpriteGeo(kind) {
   geo = new THREE.PlaneGeometry(q.w, q.h);
   geo.translate(q.offX, q.offY, 0);
   normalizePoseHeight(geo, kind, 'flap', q);
+  applySpriteUnderside(geo, 0.94);
   flapSpriteGeos.set(kind, geo);
   return geo;
 }
@@ -928,6 +992,7 @@ function motionSocketWorld(v, e, name, out = MOTION_SOCKET) {
 function spriteMaterial(tex) {
   return new THREE.MeshStandardMaterial({
     map: tex,
+    vertexColors: true,
     emissiveMap: tex,                    // the hit flash and every state glow
     emissive: PAL.glowOff,               //   light the art, never the margin
     transparent: true,                   // the materialize/dissolve fade
@@ -958,6 +1023,7 @@ function enemyEcologyMaterial(tex, kind) {
      remain the only active signals. */
   const mat = new THREE.MeshBasicMaterial({
     map: tex,
+    vertexColors: true,
     transparent: true,
     opacity: 0,
     alphaTest: 0.035,
@@ -1981,6 +2047,7 @@ function spawnedEnemyEcology(e, K, ecology) {
   if (e.kind === 'polyp') {
     const beamMat = new THREE.MeshBasicMaterial({
       color: PAL.polyp, transparent: true, opacity: 0.28, depthWrite: false,
+      side: THREE.DoubleSide, toneMapped: true,
     });
     const beam = new THREE.Mesh(polypBeamGeo, beamMat);
     beam.visible = false;
@@ -1989,6 +2056,7 @@ function spawnedEnemyEcology(e, K, ecology) {
     v.beamMat = beamMat;
     const beamCoreMat = new THREE.MeshBasicMaterial({
       color: PAL.polypBeam, transparent: true, opacity: 0.72, depthWrite: false,
+      side: THREE.DoubleSide, toneMapped: true,
     });
     const beamCore = new THREE.Mesh(polypBeamCoreGeo, beamCoreMat);
     beamCore.visible = false;
@@ -2113,7 +2181,7 @@ function spawned(e) {
     // it was supposed to warn about.
     const beamMat = new THREE.MeshBasicMaterial({
       color: PAL.polyp, transparent: true, opacity: 0.28,
-      depthWrite: false,
+      depthWrite: false, side: THREE.DoubleSide, toneMapped: true,
     });
     const beam = new THREE.Mesh(polypBeamGeo, beamMat);
     beam.visible = false;
@@ -2122,7 +2190,7 @@ function spawned(e) {
     v.beamMat = beamMat;
     const beamCoreMat = new THREE.MeshBasicMaterial({
       color: PAL.polypBeam, transparent: true, opacity: 0.72,
-      depthWrite: false,
+      depthWrite: false, side: THREE.DoubleSide, toneMapped: true,
     });
     const beamCore = new THREE.Mesh(polypBeamCoreGeo, beamCoreMat);
     beamCore.visible = false;
@@ -2269,9 +2337,82 @@ function deathPieceGeo(key, q, rect, index) {
       v0 + uv.getY(n) * (v1 - v0));
   }
   uv.needsUpdate = true;
+  // Fragment materials share the live sprite shader. Preserve their authored
+  // painting with a white identity attribute rather than letting a missing
+  // color attribute resolve to black on the GPU.
+  applySpriteUnderside(geo, 1);
   deathPieceGeos.set(id, geo);
   return geo;
 }
+
+// The Warden is always rendered from the resident actor-motion atlas.  Its
+// terminal frame therefore needs pieces cut from that frame's baked UV cell,
+// not from the obsolete base sprite.  Build those six immutable planes once
+// at module boot; the kill merely claims and animates them.
+function actorDeathPieceGeo(key, frame, rect, index) {
+  const id = `${key}:${index}`;
+  let geo = deathPieceGeos.get(id);
+  if (geo) return geo;
+  frame.geo.computeBoundingBox();
+  const box = frame.geo.boundingBox;
+  const width = box.max.x - box.min.x;
+  const height = box.max.y - box.min.y;
+  const offX = (box.min.x + box.max.x) / 2;
+  const offY = (box.min.y + box.max.y) / 2;
+  const sourceUv = frame.geo.attributes.uv;
+  let sourceU0 = Infinity, sourceU1 = -Infinity;
+  let sourceV0 = Infinity, sourceV1 = -Infinity;
+  for (let i = 0; i < sourceUv.count; i++) {
+    sourceU0 = Math.min(sourceU0, sourceUv.getX(i));
+    sourceU1 = Math.max(sourceU1, sourceUv.getX(i));
+    sourceV0 = Math.min(sourceV0, sourceUv.getY(i));
+    sourceV1 = Math.max(sourceV1, sourceUv.getY(i));
+  }
+  const [u0, u1, v0, v1] = rect;
+  geo = new THREE.PlaneGeometry(width * (u1 - u0), height * (v1 - v0));
+  geo.translate(offX + (u0 + u1 - 1) * width / 2,
+    offY + (v0 + v1 - 1) * height / 2, 0);
+  const uv = geo.attributes.uv;
+  for (let i = 0; i < uv.count; i++) {
+    const localU = u0 + uv.getX(i) * (u1 - u0);
+    const localV = v0 + uv.getY(i) * (v1 - v0);
+    uv.setXY(i,
+      sourceU0 + localU * (sourceU1 - sourceU0),
+      sourceV0 + localV * (sourceV1 - sourceV0));
+  }
+  uv.needsUpdate = true;
+  geo.userData.actorMotionKind = 'warden';
+  geo.userData.actorMotionFrame = frame.index;
+  geo.userData.deathPiece = index;
+  applySpriteUnderside(geo, 1);
+  deathPieceGeos.set(id, geo);
+  return geo;
+}
+
+function buildFixedWardenDeathRig() {
+  const bundle = actorMotionBundle('warden');
+  const frame = bundle?.frameByName?.['damaged-exposed'];
+  const layout = DEATH_PIECES.warden;
+  if (!bundle || !frame || !layout) return null;
+  const key = 'warden:actor-terminal';
+  const mat = applySurface(spriteMaterial(bundle.tex), LOOK.warden.surface);
+  const pieces = layout.map((def, index) => {
+    const mesh = new THREE.Mesh(actorDeathPieceGeo(key, frame, def.rect, index), mat);
+    mesh.name = `warden death ${def.tag}`;
+    mesh.visible = false;
+    mesh.renderOrder = 2;
+    scene.add(mesh);
+    return { mesh, def };
+  });
+  const rig = { key, mat, pieces, inUse: false, fixedAtBoot: true };
+  deathRigPools.set(key, [rig]);
+  deathRigCount++;
+  deathPlaneCount += pieces.length;
+  wardenDeathRigCount++;
+  return rig;
+}
+
+const fixedWardenDeathRig = buildFixedWardenDeathRig();
 
 function claimDeathRig(v, e) {
   // Ecology breakup is already authored as the attached B7/A7 atlas pair.
@@ -2280,33 +2421,36 @@ function claimDeathRig(v, e) {
   if (v.ecology) return null;
   const layout = DEATH_PIECES[e.kind];
   if (!v.sprite || !layout) return null;
-  const action = !!(v.actionActive && v.actionTex && v.actionGeo);
-  const key = `${e.kind}:${spriteVariantOf(e.kind)}:${action ? 'action' : 'base'}`;
-  let pool = deathRigPools.get(key);
-  if (!pool) { pool = []; deathRigPools.set(key, pool); }
-  let rig = pool.find((candidate) => !candidate.inUse);
-  const canAllocate = e.kind === 'warden'
-    ? wardenDeathRigCount < MAX_WARDEN_DEATH_RIGS
-    : commonDeathRigCount < MAX_COMMON_DEATH_RIGS;
-  if (!rig && canAllocate) {
-    const q = action ? spriteActionQuad(e.kind) : spriteQuad(e.kind, spriteVariantOf(e.kind));
-    const tex = action ? v.actionTex : v.baseTex;
-    if (!q || !tex) return null;
-    const mat = applySurface(spriteMaterial(tex), LOOK[e.kind].surface);
-    const pieces = layout.map((def, index) => {
-      const mesh = new THREE.Mesh(deathPieceGeo(key, q, def.rect, index), mat);
-      mesh.name = `${e.kind} death ${def.tag}`;
-      mesh.visible = false;
-      mesh.renderOrder = 2;
-      scene.add(mesh);
-      return { mesh, def };
-    });
-    rig = { key, mat, pieces, inUse: false };
-    pool.push(rig);
-    deathRigCount++;
-    deathPlaneCount += pieces.length;
-    if (e.kind === 'warden') wardenDeathRigCount++;
-    else commonDeathRigCount++;
+  let rig = null;
+  if (e.kind === 'warden') {
+    // One centerpiece can exist.  Never allocate or recrop its atlas on kill.
+    if (fixedWardenDeathRig && !fixedWardenDeathRig.inUse)
+      rig = fixedWardenDeathRig;
+  } else {
+    const action = !!(v.actionActive && v.actionTex && v.actionGeo);
+    const key = `${e.kind}:${spriteVariantOf(e.kind)}:${action ? 'action' : 'base'}`;
+    let pool = deathRigPools.get(key);
+    if (!pool) { pool = []; deathRigPools.set(key, pool); }
+    rig = pool.find((candidate) => !candidate.inUse);
+    if (!rig && commonDeathRigCount < MAX_COMMON_DEATH_RIGS) {
+      const q = action ? spriteActionQuad(e.kind) : spriteQuad(e.kind, spriteVariantOf(e.kind));
+      const tex = action ? v.actionTex : v.baseTex;
+      if (!q || !tex) return null;
+      const mat = applySurface(spriteMaterial(tex), LOOK[e.kind].surface);
+      const pieces = layout.map((def, index) => {
+        const mesh = new THREE.Mesh(deathPieceGeo(key, q, def.rect, index), mat);
+        mesh.name = `${e.kind} death ${def.tag}`;
+        mesh.visible = false;
+        mesh.renderOrder = 2;
+        scene.add(mesh);
+        return { mesh, def };
+      });
+      rig = { key, mat, pieces, inUse: false, fixedAtBoot: false };
+      pool.push(rig);
+      deathRigCount++;
+      deathPlaneCount += pieces.length;
+      commonDeathRigCount++;
+    }
   }
   if (!rig) return null; // bounded overload: the intact role-collapse remains
   rig.inUse = true;
@@ -2441,7 +2585,13 @@ function removed(e, fade) {
     // Motion bodies therefore keep this same mesh through rupture and use the
     // existing intact-body buckle below. No geometry, texture, anchor or facing
     // changes at the hand-off; base/action bodies retain their authored pieces.
-    const rig = motionFrame >= 0 ? null : claimDeathRig(v, e);
+    // Ordinary motion atlases keep their current intact pose because the
+    // shared base-art masks would swap paintings.  The unique Warden has a
+    // boot-resident terminal-frame rig, so it alone can hand off from the
+    // exact breached card into six independently moving assemblies.
+    const rig = e.kind === 'warden'
+      ? claimDeathRig(v, e)
+      : motionFrame >= 0 ? null : claimDeathRig(v, e);
     const face = Math.sign(v.mesh.scale.x) || 1;
     const frozenMotion = motionFrame >= 0 ? {
       frame: motionFrame,
@@ -2631,7 +2781,9 @@ function sync(e) {
       placeOnTower(v.beam, midS, midY, sweepfan ? HOSTILE_SURFACE_DEPTH + 0.01 : 0);
       placeOnTower(v.beamCore, midS, midY,
         sweepfan ? HOSTILE_SURFACE_DEPTH + 0.04 : 0.03);
-      const beamRoll = sweepfan ? Math.atan2(endY - beamY, endS - startS) : 0;
+      // The new seam owns a directional tip. Point it down the exact segment
+      // for both ordinary left/right lanes and rotated Sweepfan vectors.
+      const beamRoll = Math.atan2(endY - beamY, endS - startS);
       v.beam.rotation.z = beamRoll;
       v.beamCore.rotation.z = beamRoll;
       const pulse = 1 + PP.beamPulseAmp *
@@ -2639,9 +2791,9 @@ function sync(e) {
       v.beam.scale.set(drawReach, sweepfan ? 1 : pulse, sweepfan ? 1 : pulse);
       v.beamCore.scale.set(drawReach, 0.9 + pulse * 0.1, 0.9 + pulse * 0.1);
       v.beamMat.color.setHex(PAL.polyp); // hazard volume, readable through rather than white
-      v.beamMat.opacity = 0.22 + 0.08 * pulse;
+      v.beamMat.opacity = 0.16 + 0.06 * pulse;
       v.beamCoreMat.color.setHex(PAL.polypBeam);
-      v.beamCoreMat.opacity = 0.58 + 0.12 * pulse;
+      v.beamCoreMat.opacity = 0.66 + 0.10 * pulse;
     }
   }
   if (v.pod) mortarSync(v, e);           // pod arc + marked zone + detonation
@@ -3049,6 +3201,7 @@ export function hostileDeathVisualSnapshot() {
         pieceTags: c.rig ? c.rig.pieces.map((part) => part.def.tag) : [],
         systems: c.systems.map((system) => system.type),
         ruptureMode: c.ecologyDeath ? 'ecology-b7-a7'
+          : c.kind === 'warden' && c.rig ? 'rooted-terminal-pieces'
           : frozen ? 'frozen-motion' : c.rig ? 'painted-pieces' : 'intact-fallback',
         poseKey: frozen?.poseKey || '',
         motionFrame: frozen?.frame ?? -1,
@@ -3156,6 +3309,15 @@ export function enemyEcologyVisualSnapshot() {
         !v.flapMesh && !v.lamp && !v.actorGlow,
       mechanicReadOwnership: { ...v.mechanicReadOwnership },
       optionalMechanicMeshes: v.evolutionMeshes?.length || 0,
+      actionPresentation: {
+        beamVisible: !!v.beam?.visible,
+        beamLanguage: v.beam?.geometry.userData.actionLanguage || '',
+        beamCoreLanguage: v.beamCore?.geometry.userData.actionLanguage || '',
+        beamReach: v.beam?.visible ? Number(v.beam.scale.x.toFixed(4)) : 0,
+        podVisible: !!v.pod?.visible,
+        podLanguage: v.pod?.geometry.userData.actionLanguage || '',
+        podEmission: v.podMat?.emissiveIntensity || 0,
+      },
       tacticVisual,
       sweepfanNoStraightFallback: !enemyOwnsSweepfanBeam(e) ||
         !v.beam?.visible || isSweepfanBeam(e),
@@ -3230,7 +3392,52 @@ if (typeof window !== 'undefined')
 
 const M_CFG = CONFIG.mortar;
 const mortarLegGeo = new THREE.BoxGeometry(...M_CFG.legSize);
-const mortarPodGeo = new THREE.OctahedronGeometry(M_CFG.podRadius);
+
+// One low-poly mechanical seed, pointed along the real parabola. The previous
+// spinning octahedron exposed a square face to the FAR camera and bloom read
+// it as a white block. This fixed boot geometry has a clipped rear collar,
+// broad fin shoulder and narrow nose; no particle, card, or texture is added.
+function mortarSeedGeometry(radius) {
+  const sides = 6;
+  const rings = [
+    [-0.50, 0.34], [-0.31, 0.96], [0.12, 0.60], [0.50, 0.07],
+  ];
+  const position = [];
+  const index = [];
+  for (let r = 0; r < rings.length; r++) {
+    const [x, scale] = rings[r];
+    for (let side = 0; side < sides; side++) {
+      const a = side / sides * Math.PI * 2;
+      position.push(x * radius * 2.35,
+        Math.cos(a) * radius * scale,
+        Math.sin(a) * radius * scale);
+    }
+  }
+  for (let r = 0; r < rings.length - 1; r++) {
+    const a0 = r * sides, b0 = (r + 1) * sides;
+    for (let side = 0; side < sides; side++) {
+      const next = (side + 1) % sides;
+      index.push(a0 + side, b0 + side, b0 + next,
+        a0 + side, b0 + next, a0 + next);
+    }
+  }
+  // Close the clipped rear. The nose ring remains tiny rather than becoming
+  // a mathematically sharp, shimmer-prone point at the pulled-back camera.
+  const rear = position.length / 3;
+  position.push(-0.50 * radius * 2.35, 0, 0);
+  for (let side = 0; side < sides; side++)
+    index.push(rear, (side + 1) % sides, side);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
+  geometry.setIndex(index);
+  geometry.computeVertexNormals();
+  geometry.computeBoundingSphere();
+  geometry.userData.actionLanguage = 'mortar-faceted-seed-dart';
+  geometry.userData.forwardAxis = '+x';
+  return geometry;
+}
+
+const mortarPodGeo = mortarSeedGeometry(M_CFG.podRadius);
 const mortarMarkGeo = new THREE.BoxGeometry(
   M_CFG.blastHalf * 2, M_CFG.markThickness, M_CFG.blastHalf * 1.1);
 const mortarBlastGeo = new THREE.BoxGeometry(
@@ -3270,8 +3477,10 @@ function mortarAttach(v, mesh) {
       mesh.add(leg);
     }
   }
-  const podMat = new THREE.MeshBasicMaterial({
-    color: PAL.mortarPod, transparent: true, opacity: 0.95,
+  const podMat = new THREE.MeshStandardMaterial({
+    color: PAL.mortar, emissive: PAL.mortarPod, emissiveIntensity: 0,
+    roughness: 0.52, metalness: 0.34, flatShading: true,
+    transparent: true, opacity: 0.98, depthWrite: true,
   });
   const pod = new THREE.Mesh(mortarPodGeo, podMat);
   pod.visible = false;
@@ -3302,6 +3511,7 @@ function mortarDetach(v) {
 
 function mortarHide(v) {
   v.pod.visible = false;
+  if (v.podMat.emissive) v.podMat.emissiveIntensity = 0;
   v.mark.visible = false;
   v.blast.visible = false;
 }
@@ -3311,8 +3521,15 @@ function mortarSync(v, e) {
   const flying = e.state === 'lob';
   const marked = flying || e.state === 'fuse' || e.state === 'burst';
   v.pod.visible = flying;
+  if (!flying) v.podMat.emissiveIntensity = 0;
   if (flying) {
-    lit(v.podMat, PAL.mortarPod);        // the ARC is the read — let it carry light
+    // Dark acid shell, with a brief launch-hot core that cools along the arc.
+    // Emission exists only while the sim owns a flying pod and stays bounded
+    // below the value that previously blew its square face to white.
+    const launch = 1 - Math.max(0, Math.min(1, e.podU / 0.22));
+    v.podMat.color.setHex(PAL.mortar);
+    v.podMat.emissive.setHex(PAL.mortarPod);
+    v.podMat.emissiveIntensity = 0.10 + launch * 0.24;
     // The planted zone and timing stay sim-owned; only the visual arc's first
     // point follows the launch frame's painted bore instead of the old row
     // centre. The same pure parabola and podU still own every later point.
@@ -3322,7 +3539,13 @@ function mortarSync(v, e) {
     placeOnTower(v.pod,
       mortarArcX(muzzleS, e.zoneX, e.podU),
       mortarArcY(muzzleY, e.zoneY, M_CFG.arcTiles, e.podU), 0);
-    v.pod.rotation.z = e.podU * 7;
+    // Analytic tangent of the exact pure parabola. The pointed seed therefore
+    // communicates its real committed direction instead of tumbling like a
+    // pickup; no endpoint, arc height, or flight timing is approximated.
+    const tangentX = e.zoneX - muzzleS;
+    const tangentY = e.zoneY - muzzleY +
+      4 * M_CFG.arcTiles * (1 - 2 * e.podU);
+    v.pod.rotation.z = Math.atan2(tangentY, tangentX);
   }
   v.mark.visible = marked;
   // Before detonation only the authored landing patch is marked. Drawing the
@@ -3361,76 +3584,97 @@ function mortarSync(v, e) {
  * disappear as armour is broken, so damage changes the machine permanently.
  */
 const WARDEN_CFG = CONFIG.warden;
-const wardenCoreGeo = new THREE.RingGeometry(0.34, 0.53, 24);
-const wardenShieldGeo = new THREE.RingGeometry(0.57, 0.70, 8);
-const wardenEmitterGeo = new THREE.OctahedronGeometry(0.20, 0);
-const wardenSealGeo = new THREE.OctahedronGeometry(0.10, 0);
-// A mapped plane keeps the sweep in the combat plane without the bright top
-// and side faces of the old additive box.  That box tone-mapped into a solid
-// white-green slab and hid both combatants at the exact dodge moment.
-const wardenBeamGeo = new THREE.PlaneGeometry(1, WARDEN_CFG.beamHalf * 2.2);
-const wardenBeamCoreGeo = new THREE.PlaneGeometry(1, 0.12);
-const wardenMarkGeo = new THREE.RingGeometry(0.72, 1, 28);
-const wardenBlastGeo = new THREE.BoxGeometry(
-  WARDEN_CFG.barrageHalf * 2, WARDEN_CFG.barrageHeight, 0.85);
-
-function paintWardenBeamTexture(core = false) {
-  const cv = document.createElement('canvas');
-  cv.width = 256; cv.height = 64;
-  const g = cv.getContext('2d');
-  // CSS colors are derived from the palette token.  The final two hex digits
-  // are canvas alpha, keeping this procedural mask inside the same palette
-  // contract as every material it modulates.
-  const alphaColor = (hex, alpha) => {
-    const rgb = new THREE.Color(hex).getHexString(THREE.SRGBColorSpace);
-    const a = Math.round(Math.max(0, Math.min(1, alpha)) * 255)
-      .toString(16).padStart(2, '0');
-    return `#${rgb}${a}`;
-  };
-  const vertical = g.createLinearGradient(0, 0, 0, 64);
-  if (core) {
-    vertical.addColorStop(0, 'transparent');
-    vertical.addColorStop(0.18, 'transparent');
-    vertical.addColorStop(0.32, alphaColor(PAL.muzzle, 0.92));
-    vertical.addColorStop(0.68, alphaColor(PAL.muzzle, 0.92));
-    vertical.addColorStop(0.82, 'transparent');
-    vertical.addColorStop(1, 'transparent');
-  } else {
-    vertical.addColorStop(0, 'transparent');
-    vertical.addColorStop(0.12, alphaColor(PAL.muzzle, 0.20));
-    vertical.addColorStop(0.34, alphaColor(PAL.muzzle, 0.78));
-    vertical.addColorStop(0.50, 'white');
-    vertical.addColorStop(0.66, alphaColor(PAL.muzzle, 0.78));
-    vertical.addColorStop(0.88, alphaColor(PAL.muzzle, 0.20));
-    vertical.addColorStop(1, 'transparent');
+// The Crown's attack language is mounted machinery, never UI drawn over the
+// actor.  Each iris below is a handful of disconnected trapezoidal shoes: the
+// open gaps preserve the painted shutter underneath and keep even a bright hit
+// from resolving into a perfect debug ring at the pulled-back camera.
+function wardenIrisGeometry(inner, outer, shoes, shoeShare, phase = 0) {
+  const positions = [];
+  for (let i = 0; i < shoes; i++) {
+    const centre = phase + i * Math.PI * 2 / shoes;
+    const half = Math.PI / shoes * shoeShare;
+    const a0 = centre - half, a1 = centre + half;
+    const bevel = half * 0.16;
+    const corners = [
+      [Math.cos(a0 + bevel) * inner, Math.sin(a0 + bevel) * inner],
+      [Math.cos(a0) * outer, Math.sin(a0) * outer],
+      [Math.cos(a1) * outer, Math.sin(a1) * outer],
+      [Math.cos(a1 - bevel) * inner, Math.sin(a1 - bevel) * inner],
+    ];
+    positions.push(
+      ...corners[0], 0, ...corners[1], 0, ...corners[2], 0,
+      ...corners[0], 0, ...corners[2], 0, ...corners[3], 0,
+    );
   }
-  g.fillStyle = vertical;
-  g.fillRect(0, 0, 256, 64);
-  // Taper both ends so scaling the mesh never exposes a ruler-straight cap.
-  g.globalCompositeOperation = 'destination-in';
-  const taper = g.createLinearGradient(0, 0, 256, 0);
-  taper.addColorStop(0, 'transparent');
-  taper.addColorStop(0.025, alphaColor(PAL.muzzle, 0.72));
-  taper.addColorStop(0.08, 'white');
-  taper.addColorStop(0.91, 'white');
-  taper.addColorStop(1, 'transparent');
-  g.fillStyle = taper;
-  g.fillRect(0, 0, 256, 64);
-  // Small interrupter gaps make the core read as a Crown energy train rather
-  // than another player projectile or an untextured debug rectangle.
-  if (core) {
-    g.globalCompositeOperation = 'destination-out';
-    for (let x = 42; x < 232; x += 47) g.fillRect(x, 27, 3, 10);
-  }
-  const tex = new THREE.CanvasTexture(cv);
-  tex.minFilter = THREE.LinearFilter;
-  tex.magFilter = THREE.LinearFilter;
-  tex.generateMipmaps = false;
-  return tex;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.computeVertexNormals();
+  return geo;
 }
 
-const wardenBeamTex = paintWardenBeamTexture(false);
-const wardenBeamCoreTex = paintWardenBeamTexture(true);
+// One fixed draw per beam layer.  The interruption gaps and alternating
+// shoulders are baked into geometry, so there is no runtime canvas, cloned
+// texture or stretched glowing rectangle when the sweep reaches full length.
+function wardenBeamTrainGeometry(core = false) {
+  const positions = [];
+  const count = core ? 9 : 7;
+  for (let i = 0; i < count; i++) {
+    const cell = 1 / count;
+    const x0 = -0.5 + i * cell + cell * (core ? 0.13 : 0.09);
+    const x1 = -0.5 + (i + 1) * cell - cell * (core ? 0.16 : 0.12);
+    const taper = i === 0 || i === count - 1 ? 0.66 : 1;
+    const half = (core ? 0.045 : WARDEN_CFG.beamHalf * (i % 2 ? 0.78 : 1.02)) * taper;
+    const nip = Math.min((x1 - x0) * 0.16, 0.018);
+    positions.push(
+      x0 + nip, -half, 0, x1 - nip, -half, 0, x1, 0, 0,
+      x0 + nip, -half, 0, x1, 0, 0, x0, 0, 0,
+      x0, 0, 0, x1, 0, 0, x1 - nip, half, 0,
+      x0, 0, 0, x1 - nip, half, 0, x0 + nip, half, 0,
+    );
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+const wardenCoreGeo = wardenIrisGeometry(0.31, 0.55, 6, 0.56, Math.PI / 6);
+const wardenShieldGeo = wardenIrisGeometry(0.57, 0.74, 4, 0.38, Math.PI / 4);
+const wardenEmitterGeo = new THREE.CylinderGeometry(0.10, 0.19, 0.38, 5);
+wardenEmitterGeo.rotateZ(Math.PI / 2);
+const wardenRackGeo = new THREE.BoxGeometry(0.38, 0.16, 0.14);
+const wardenSealGeo = new THREE.OctahedronGeometry(0.10, 0);
+const wardenBeamGeo = wardenBeamTrainGeometry(false);
+const wardenBeamCoreGeo = wardenBeamTrainGeometry(true);
+// Barrage ownership uses the same inward-facing deck clamps as ordinary
+// mortar danger.  Sharing immutable geometry keeps this readable vocabulary
+// cheap and removes the last perfect target ring from the boss.
+const wardenMarkGeo = zoneClampGeo;
+function wardenBarrageRuptureGeometry() {
+  const positions = [];
+  const width = WARDEN_CFG.barrageHalf * 2;
+  const height = WARDEN_CFG.barrageHeight;
+  const base = -height / 2;
+  const tips = [0.62, 0.88, 0.70, 1.00, 0.76, 0.92, 0.58];
+  for (let i = 0; i < tips.length; i++) {
+    const cell = width / tips.length;
+    const x0 = -width / 2 + cell * (i + 0.10);
+    const x1 = -width / 2 + cell * (i + 0.88);
+    const peakX = (x0 + x1) / 2 + (i % 2 ? -1 : 1) * cell * 0.10;
+    const shoulder = base + height * (0.16 + (i % 3) * 0.035);
+    const peakY = base + height * tips[i];
+    positions.push(
+      x0, base, 0, x1, base, 0, x1 - cell * 0.12, shoulder, 0,
+      x0, base, 0, x1 - cell * 0.12, shoulder, 0, peakX, peakY, 0,
+      x0, base, 0, peakX, peakY, 0, x0 + cell * 0.13, shoulder, 0,
+    );
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.computeVertexNormals();
+  return geo;
+}
+const wardenBlastGeo = wardenBarrageRuptureGeometry();
 
 function wardenProp(geo, color, map = null) {
   const mat = signalMaterial(color, map);
@@ -3445,9 +3689,9 @@ function wardenAttach(v) {
   const core = wardenProp(wardenCoreGeo, PAL.capsule);
   const shield = wardenProp(wardenShieldGeo, PAL.modCapsule);
   const emitter = wardenProp(wardenEmitterGeo, PAL.modCapsule);
-  const rack = wardenProp(wardenEmitterGeo, PAL.modCapsule);
-  const beam = wardenProp(wardenBeamGeo, PAL.capsule, wardenBeamTex);
-  const beamCore = wardenProp(wardenBeamCoreGeo, PAL.mortarBlast, wardenBeamCoreTex);
+  const rack = wardenProp(wardenRackGeo, PAL.modCapsule);
+  const beam = wardenProp(wardenBeamGeo, PAL.capsule);
+  const beamCore = wardenProp(wardenBeamCoreGeo, PAL.mortarBlast);
   // The sheath describes occupied space without additive HDR stacking; the
   // much thinner filament alone receives bloom.
   beam.mat.blending = THREE.NormalBlending;
@@ -3458,6 +3702,7 @@ function wardenAttach(v) {
   // inactive Warden never wears a permanent additive halo.
   core.mat.blending = THREE.NormalBlending;
   shield.mat.blending = THREE.NormalBlending;
+  blast.mat.blending = THREE.NormalBlending;
   Object.assign(v, {
     wardenCore: core.mesh, wardenCoreMat: core.mat,
     wardenShield: shield.mesh, wardenShieldMat: shield.mat,
@@ -3602,7 +3847,7 @@ function wardenSync(v, e) {
   if (barrageLive) {
     placeOnTower(v.wardenBlast, e.zoneX, e.zoneY + W.barrageHeight / 2, -0.52);
     lit(v.wardenBlastMat, PAL.mortarBlast);
-    v.wardenBlastMat.opacity = 0.48;
+    v.wardenBlastMat.opacity = 0.38;
   }
 
   // Atlas paint carries all persistent wear; keeping body emission at zero

@@ -60,7 +60,13 @@ export const ACTOR_MOTION_SPEC = Object.freeze({
     ]),
     clips: Object.freeze({
       closed: clip('safe:sealed', 0, beat('sealed', 1, 'shutter-sealed')),
-      tell: clip('tell:hardware-aim', 700, beat('aim', 1, 'iris-aim')),
+      // The old tell jumped straight from sealed to the final aim painting and
+      // then held that one card for all 700ms. At FAR it read as a static
+      // starfish with a warning lamp. Reuse the resident recovery silhouette
+      // as a short shutter flare before the barrel locks: three strong poses
+      // (sealed state -> flare -> aim), one immutable root, no tweened card.
+      tell: clip('tell:hardware-aim', 700,
+        beat('recover', 0.24, 'shutter-flare'), beat('aim', 1, 'iris-aim')),
       fire: clip('fire:beam-live', 450, beat('discharge', 1, 'muzzle-live')),
       vent: clip('recover:vent-open', 900, beat('recover', 1, 'iris-vulnerable')),
       relay: clip('recover:relay-hinge', 320, beat('recover', 1, 'barrel-hinge')),

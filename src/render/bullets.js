@@ -33,7 +33,8 @@ import { PROJECTILE_ART, PROJECTILE_ART_SLOT } from './projectile-art.js';
 import { towerPose } from './tower.js';
 import { PAL } from './palette.js';
 import {
-  fxCoreRupture, fxDirectedBurst, fxFlash, fxRoleFragments, fxVapor,
+  fxCoreRupture, fxDirectedBurst, fxDirectionalFlash, fxFlash,
+  fxRoleFragments, fxVapor,
 } from './fx.js';
 import { routeRenderable } from './route-visibility.js';
 
@@ -157,6 +158,7 @@ if (artSlot.state === 'ready' && artSlot.tex) {
   }
 }
 const artMeshList = Object.values(artMeshes);
+const groundArtMesh = artMeshes.G || null;
 
 // A dark hard-silhouette pass makes each tiny chassis hold its shape against
 // both the ivory deck and teal sky. It reuses the exact core geometry and a
@@ -176,6 +178,8 @@ for (const type of WEAPON_TYPES) {
   scene.add(mesh);
   shellMeshes[type] = mesh;
 }
+if (groundArtMesh)
+  for (let i = 0; i < BULLET_MAX; i++) groundArtMesh.setMatrixAt(i, HIDE);
 const shellMeshList = WEAPON_TYPES.map((type) => shellMeshes[type]);
 
 // The warm impact jewel occupies only the frontmost portion of the sanctioned
@@ -239,41 +243,52 @@ scene.add(wakeMesh);
 // instanced flame tongues live wholly BEHIND the simulation point.  A jagged
 // top and flat licking foot make this read as low ground fire at FAR/portrait,
 // while the warm inner tongue separates it from an orange rigid projectile.
-function groundTongueGeometry() {
+function groundTongueGeometry(core = false) {
   const geo = new THREE.BufferGeometry();
-  const pairs = [
-    [-1.00, -0.24, -0.06],
-    [-0.76, -0.25,  0.14],
-    [-0.49, -0.24,  0.36],
-    [-0.23, -0.20,  0.16],
-    [ 0.00, -0.12, -0.01],
+  // Three separated teeth retain one-pixel negative gaps at FAR instead of
+  // minifying a continuous flame outline into a generic mound. The compact
+  // inner temperature row is independently authored, so it cannot overpaint
+  // the entire orange silhouette back to a single bright shape.
+  const tongues = core ? [
+    [-0.91, -0.17, -0.75, -0.17, -0.82, 0.00],
+    [-0.58, -0.17, -0.40, -0.17, -0.49, 0.22],
+    [-0.23, -0.17, -0.05, -0.17, -0.13, 0.08],
+  ] : [
+    [-1.00, -0.23, -0.70, -0.23, -0.82, 0.08],
+    [-0.66, -0.23, -0.33, -0.23, -0.49, 0.42],
+    [-0.30, -0.23,  0.00, -0.23, -0.13, 0.22],
   ];
   const v = [];
-  for (let p = 0; p < pairs.length - 1; p++) {
-    const a = pairs[p], b = pairs[p + 1];
-    v.push(a[0],a[1],0, b[0],b[1],0, b[0],b[2],0,
-           a[0],a[1],0, b[0],b[2],0, a[0],a[2],0);
-  }
+  for (const t of tongues)
+    v.push(t[0],t[1],0, t[2],t[3],0, t[4],t[5],0);
   geo.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
   geo.computeVertexNormals();
   return geo;
 }
 
 const groundTongueGeo = groundTongueGeometry();
+const groundCoreTongueGeo = groundTongueGeometry(true);
 const groundFireMesh = new THREE.InstancedMesh(
   groundTongueGeo,
   new THREE.MeshBasicMaterial({
-    color: PAL.shots.F, transparent: true, opacity: 0.82, fog: false,
-    side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false,
+    // Persistent ground fire is hot material, not a permanent muzzle flash.
+    // Normal blending preserves the orange saw-tooth silhouette against both
+    // pale deck lips and dark hull recesses; additive orange + additive white
+    // previously clipped into the same anonymous white diamond that the rigid
+    // sliding projectile had been replaced to eliminate.
+    color: PAL.shots.F, transparent: true, opacity: 0.90, fog: false,
+    side: THREE.DoubleSide, blending: THREE.NormalBlending, depthWrite: false,
   }),
   BULLET_MAX,
 );
 const groundFireCoreMesh = new THREE.InstancedMesh(
-  groundTongueGeo,
+  groundCoreTongueGeo,
   new THREE.MeshBasicMaterial({
-    color: PAL.muzzle, transparent: true, opacity: 0.94, fog: false,
-    side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false,
-    toneMapped: false,
+    // Amber stays inside the same established shot palette while retaining a
+    // readable temperature step. White belongs to the 82 ms ignition beat;
+    // keeping the crawler white made every later frame look like impact bloom.
+    color: PAL.shots.S, transparent: true, opacity: 0.86, fog: false,
+    side: THREE.DoubleSide, blending: THREE.NormalBlending, depthWrite: false,
   }),
   BULLET_MAX,
 );
@@ -551,6 +566,7 @@ function pointIndex(slot, point) { return slot * TRAIL_POINTS + point; }
 
 function slotSpawned(i, type, meta = null) {
   historyCount[i] = 0;
+  if (groundArtMesh) groundArtMesh.setMatrixAt(i, HIDE);
   groundFireMesh.setMatrixAt(i, HIDE);
   groundFireCoreMesh.setMatrixAt(i, HIDE);
   const visualType = coreMeshes[type] ? type : 'R';
@@ -611,6 +627,7 @@ function concealSlotMatrices(i) {
     if (chassisMeshes[slotType[i]]) chassisMeshes[slotType[i]].setMatrixAt(i, HIDE);
   }
   tipMesh.setMatrixAt(i, HIDE);
+  if (groundArtMesh) groundArtMesh.setMatrixAt(i, HIDE);
   groundFireMesh.setMatrixAt(i, HIDE);
   groundFireCoreMesh.setMatrixAt(i, HIDE);
   wakeMesh.setMatrixAt(i, HIDE);
@@ -655,42 +672,61 @@ function terminalImpact(i, b, reason) {
   const speed = Math.max(0.001, Math.hypot(b.vx, b.vy));
   const ds = b.crawling ? b.dir : b.vx / speed;
   const dy = b.crawling ? 0 : b.vy / speed;
+  const px = -dy, py = ds;
   switch (type) {
     case 'S':
-      // The five-flight fan collapses into a short reverse splinter rake.
+      // Five flechettes resolve as one clipped rake ACROSS the flight line.
+      fxDirectionalFlash(72, 0.76, 0.14, s, y, PAL.shots.S,
+        px, py, 0.04);
       fxDirectedBurst(CONFIG.juice.impact, s, y, PAL.shots.S,
-        -ds, -dy, 0.92, 0.34);
+        -ds, -dy, 0.92, 0.48);
       break;
     case 'L':
-      // Laser terminates as one hard cyan aperture plus a narrow back-scatter.
-      fxFlash(68, 0.25, s, y, PAL.shots.L, 0.025);
+      // Laser owns the longest, thinnest axis seam in the set.
+      fxDirectionalFlash(64, 0.86, 0.075, s, y, PAL.shots.L,
+        ds, dy, 0.05);
       fxDirectedBurst(CONFIG.juice.impact, s, y, PAL.shots.L,
-        -ds, -dy, 0.16, 0.22);
+        -ds, -dy, 0.10, 0.34);
       break;
     case 'H':
       // Guidance vanes shear sideways when the committed steering dart hits.
+      fxDirectionalFlash(74, 0.64, 0.105, s, y, PAL.shots.H,
+        px, py, 0.045);
       fxDirectedBurst(CONFIG.juice.impact, s, y, PAL.shots.H,
-        -dy, ds, 0.38, 0.30);
+        px, py, 0.32, 0.44);
       break;
     case 'F':
-      // Flame breaks into gravity-led cinders, never a circular damage badge.
-      fxDirectedBurst(CONFIG.juice.impact, s, y, PAL.shots.F,
-        -ds, Math.max(0.18, -dy), 0.68, 0.22);
+      // Exact hostileImpact owns Cindermouth's bite because its first contacts
+      // pierce and never reach this terminal hook. When the last pierce is
+      // spent, do not paint the same contact twice; terrain still gets the
+      // ordinary terminal bite plus its physical hull response below.
+      if (reason !== 'hostile') {
+        fxDirectionalFlash(86, 0.84, 0.22, s, y, PAL.shots.F,
+          ds, dy, 0.05);
+        fxDirectedBurst(CONFIG.juice.impact, s, y, PAL.shots.F,
+          -ds, Math.max(0.18, -dy), 0.68, 0.38);
+      }
       break;
     default:
-      // Rivet: the smallest, hardest ricochet in the set.
+      // Rivet: the smallest, hardest longitudinal pin in the set.
+      fxDirectionalFlash(68, 0.58, 0.12, s, y, PAL.shots.R,
+        ds, dy, 0.045);
       fxDirectedBurst(CONFIG.juice.impact, s, y, PAL.shots.R,
-        -ds, Math.max(0.12, -dy), 0.30, 0.22);
+        -ds, Math.max(0.12, -dy), 0.26, 0.34);
       break;
   }
   if (reason === 'terrain') {
     // The hull answers a true terrain strike with one compact split seam, two
     // sheared bracket chips and a thin pressure leak. Every layer is anchored
     // to the exact sim endpoint above; none expands to imply splash damage.
-    fxCoreRupture(s, y, PAL.muzzle, ds, dy, 0.46, 0.045);
+    const coreScale = type === 'L' ? 0.56 : type === 'F' ? 0.64 : 0.48;
+    const coreAspect = type === 'L' ? 2.25 : type === 'R' ? 1.60 : 1.15;
+    fxCoreRupture(s, y, PAL.muzzle, ds, dy, coreScale, 0.045, coreAspect);
     fxRoleFragments('machine', s, y, PAL.shots[type] || PAL.shots.R,
-      -ds, -dy, 0.42);
-    fxVapor(s, y, PAL.shots[type] || PAL.shots.R, -ds, 0.36, 0.02);
+      -ds, -dy, type === 'F' ? 0.58 : 0.46);
+    // Only combustion leaves a pressure wake. A rivet/laser/homing impact
+    // smoking like a shell made all five terminals read as the same event.
+    if (type === 'F') fxVapor(s, y, PAL.shots.F, -ds, 0.52, 0.02);
   }
 }
 
@@ -937,15 +973,36 @@ function syncSlot(i, b) {
     for (const mesh of traitMeshList) mesh.setMatrixAt(i, HIDE);
     for (const mesh of stackMeshList) mesh.setMatrixAt(i, HIDE);
 
-    const flameLen = 1.18 + Math.min(0.42, heavy * 0.11) +
+    const flameLen = 1.95 + Math.min(0.42, heavy * 0.11) +
       Math.min(0.22, volatile * 0.07);
-    _artScale.set(flameLen, (0.92 + heavy * 0.06) * PROJECTILE_WIDTH_GAIN, 1);
-    _bm.compose(_bv, _bq, _artScale);
-    groundFireMesh.setMatrixAt(i, _bm);
-    _artPos.copy(_bv).addScaledVector(_flight, -0.08);
-    _artScale.set(flameLen * 0.72, 0.48 * PROJECTILE_WIDTH_GAIN, 1);
-    _bm.compose(_artPos, _bq, _artScale);
-    groundFireCoreMesh.setMatrixAt(i, _bm);
+    if (groundArtMesh) {
+      // The packed alpha spans 230x37 inside its 256 cell. Its sharp leading
+      // lick lands exactly on the live sim point; all forged debris and flame
+      // mass extends backward. Vertical scale is derived from that occupied
+      // aspect and planted on crawlSurfaceY, never inferred from screen space.
+      const planeLen = flameLen / ART_CELL_OCCUPANCY;
+      _artPos.copy(_bv).addScaledVector(_flight, -flameLen * 0.5);
+      _artPos.y -= 0.08;
+      _artScale.set(planeLen,
+        planeLen * (1.40 + heavy * 0.035) * PROJECTILE_WIDTH_GAIN, 1);
+      _bm.compose(_artPos, _bq, _artScale);
+      groundArtMesh.setMatrixAt(i, _bm);
+      groundFireMesh.setMatrixAt(i, HIDE);
+      groundFireCoreMesh.setMatrixAt(i, HIDE);
+    } else {
+      // Complete deterministic fallback for ?sprites=0 or a failed boot load.
+      // The lowest authored point is planted on the contacted surface.
+      _artPos.copy(_bv);
+      _artPos.y -= 0.10 * PROJECTILE_WIDTH_GAIN;
+      _artScale.set(flameLen, (0.92 + heavy * 0.06) * PROJECTILE_WIDTH_GAIN, 1);
+      _bm.compose(_artPos, _bq, _artScale);
+      groundFireMesh.setMatrixAt(i, _bm);
+      _artPos.copy(_bv).addScaledVector(_flight, -0.04);
+      _artPos.y -= 0.10 * PROJECTILE_WIDTH_GAIN;
+      _artScale.set(flameLen, 0.92 * PROJECTILE_WIDTH_GAIN, 1);
+      _bm.compose(_artPos, _bq, _artScale);
+      groundFireCoreMesh.setMatrixAt(i, _bm);
+    }
 
     // A short low backwash and two broken history tongues finish the state.
     // Their front remains behind the point, preserving collision honesty.
@@ -957,6 +1014,7 @@ function syncSlot(i, b) {
     return;
   }
 
+  if (groundArtMesh) groundArtMesh.setMatrixAt(i, HIDE);
   groundFireMesh.setMatrixAt(i, HIDE);
   groundFireCoreMesh.setMatrixAt(i, HIDE);
   const artMesh = artMeshes[visualType];
@@ -1217,11 +1275,12 @@ export function bulletTraitVisualSnapshot() {
     },
     groundFire: {
       pooled: true,
-      pools: 2,
+      pools: groundArtMesh ? 3 : 2,
       capacity: BULLET_MAX,
       ignitionCount,
       lastIgnition: { ...lastIgnition },
       airborneChassisRetired: true,
+      paintedWave: !!groundArtMesh,
       whollyBehindPoint: true,
     },
   };

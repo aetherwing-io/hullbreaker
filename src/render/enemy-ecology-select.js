@@ -144,8 +144,15 @@ function waspCode(row, nowMs) {
 
 function polypCode(row, nowMs) {
   switch (row.state) {
-    case 'tell':
-      return enemyEcologyVisualCode(ECOLOGY_BODY.ACQUIRE, ECOLOGY_ACTION.TELL);
+    case 'tell': {
+      // The reviewed ecology pack separates acquisition hardware from the
+      // final tell pose. Spend the opening quarter on A1, then lock A2 for the
+      // remaining telegraph. This is the same sealed -> flare -> aim sentence
+      // as the actor-motion fallback and changes no simulation timing.
+      const p = timedProgress(row, nowMs, CONFIG.polyp.tellMs);
+      const action = p < 0.24 ? ECOLOGY_ACTION.ACQUIRE : ECOLOGY_ACTION.TELL;
+      return enemyEcologyVisualCode(ECOLOGY_BODY.ACQUIRE, action);
+    }
     case 'fire':
       return enemyEcologyVisualCode(ECOLOGY_BODY.COMMIT,
         staged(timedProgress(row, nowMs, CONFIG.polyp.beamMs), 0.5));
@@ -200,4 +207,3 @@ export function selectEnemyEcologyVisual(row, nowMs) {
     body = ECOLOGY_BODY.CRITICAL;
   return enemyEcologyVisualCode(body, action);
 }
-

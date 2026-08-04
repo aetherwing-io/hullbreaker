@@ -140,6 +140,14 @@ const UNIT = ACTIVE_FIXTURE === null ? Object.freeze({
   turbineVane: crownCastingGeometry([
     [-0.48, -0.16], [0.50, -0.05], [0.37, 0.20], [-0.36, 0.34],
   ], 0.008),
+  interlockShoe: crownCastingGeometry([
+    [-0.50, -0.28], [-0.36, -0.50], [0.18, -0.43], [0.50, -0.12],
+    [0.39, 0.34], [0.08, 0.50], [-0.31, 0.38],
+  ], 0.018),
+  ventLouvre: crownCastingGeometry([
+    [-0.50, -0.18], [-0.38, -0.42], [0.31, -0.50], [0.50, -0.16],
+    [0.36, 0.22], [-0.22, 0.50], [-0.46, 0.24],
+  ], 0.012),
   apertureFill: new THREE.CircleGeometry(1, 32),
   apertureRingWide: new THREE.RingGeometry(0.68, 1.0, 32),
   apertureRingMid: new THREE.RingGeometry(0.51, 0.64, 28),
@@ -164,8 +172,9 @@ function hullLit(color, family, bucket) {
   return material;
 }
 
-function artMaterial(texture, opacity = 1) {
-  return texture ? new THREE.MeshBasicMaterial({
+function artMaterial(texture, opacity = 1, albedoGain = 1) {
+  if (!texture) return null;
+  const material = new THREE.MeshBasicMaterial({
     map: texture,
     color: 0xffffff,
     transparent: true,
@@ -174,13 +183,21 @@ function artMaterial(texture, opacity = 1) {
     depthWrite: true,
     side: THREE.FrontSide,
     fog: true,
-  }) : null;
+  });
+  // Painted organs are authored brighter than the playfield's restrained
+  // metal. Grade them once at boot so white antenna bulbs do not read as
+  // permanent VFX; physical conductors below own all action-state emission.
+  material.color.setRGB(
+    albedoGain, albedoGain, albedoGain, THREE.LinearSRGBColorSpace,
+  );
+  return material;
 }
 
 const MATERIAL = ACTIVE_FIXTURE === null ? Object.freeze({
   summitPlate: artMaterial(legacyTexture, 0.86),
-  coreArt: artMaterial(coreTexture, 0.98),
-  atlasArt: artMaterial(kitTexture, 0.97),
+  coreArt: artMaterial(coreTexture, 0.98, 0.70),
+  atlasArt: artMaterial(kitTexture, 0.97, 0.86),
+  antennaArt: artMaterial(kitTexture, 0.97, 0.52),
   backplane: hullLit(PAL.limb.shadow, 'distant', 'wall'),
   foundationWarm: hullLit(PAL.limb.hull, 'plate', 'hull'),
   foundationDark: hullLit(PAL.limb.wall, 'machine', 'wall'),
@@ -290,6 +307,7 @@ function artGeometry(p) {
 function artMaterialFor(p) {
   if (p.kind === 'summitPlate') return MATERIAL.summitPlate;
   if (p.asset === 'core') return MATERIAL.coreArt;
+  if (p.asset === 'antenna') return MATERIAL.antennaArt;
   return MATERIAL.atlasArt;
 }
 
@@ -297,6 +315,10 @@ const apertureRig = {
   shutters: [],
   lens: null,
   rings: [],
+  open: 0,
+  interlockShoes: null,
+  ventLouvres: null,
+  radius: 0,
 };
 const ruptureRig = {
   mesh: null,
@@ -366,6 +388,66 @@ function groupForPart(groups, p) {
   if (p.kind === 'coreArt' || p.kind === 'backplane' || p.kind === 'hardware' ||
       p.kind === 'summitPlate' || p.kind === 'void') return groups.core;
   return null;
+}
+
+const INTERLOCK_ANGLES = Object.freeze([-2.58, -0.66, 0.47, 2.31]);
+const VENT_X = Object.freeze([-1.28, -0.78, -0.31, 0.20, 0.70, 1.18]);
+
+function setApertureInstance(pool, index, x, y, z, sx, sy, sz, rz) {
+  _local.position.set(x, y, z);
+  _local.rotation.set(0, 0, rz);
+  _local.scale.set(sx, sy, sz);
+  _local.updateMatrix();
+  pool.setMatrixAt(index, _local.matrix);
+}
+
+// The painted iris now owns real load-bearing hardware. Four shoes retract
+// unevenly from the aperture while six louvres dump pressure below it. Packet
+// compression, Warden rupture and launch recoil all articulate these same
+// fixed pools; there is no second card, uniform scale-up or perfect ring.
+function applyApertureMechanisms(openAmount = 0, pose = mechanicalState.pose) {
+  const shoes = apertureRig.interlockShoes;
+  const vents = apertureRig.ventLouvres;
+  const radius = apertureRig.radius;
+  if (!shoes || !vents || !radius) return;
+  const open = clamp01(openAmount);
+  const packet = clamp01(pose?.rootCompression);
+  const recoil = clamp01(pose?.transmissionRecoil);
+  const coreKick = clamp01(pose?.coreKick);
+
+  for (let i = 0; i < INTERLOCK_ANGLES.length; i++) {
+    const angle = INTERLOCK_ANGLES[i];
+    const side = i % 2 ? -1 : 1;
+    const stagger = i === 2 ? 0.12 : i === 0 ? -0.08 : 0;
+    const travel = radius * (0.72 + open * (0.18 + i * 0.018)) +
+      recoil * (0.22 + i * 0.025);
+    setApertureInstance(shoes, i,
+      Math.cos(angle) * travel + side * recoil * 0.10,
+      Math.sin(angle) * travel + stagger + packet * (i < 2 ? -0.07 : 0.05),
+      0.052 + i * 0.004,
+      radius * (0.31 + (i % 2) * 0.025),
+      radius * (0.16 + (i === 3 ? 0.025 : 0)),
+      0.10,
+      angle + Math.PI * 0.5 + side * open * 0.22 + recoil * side * 0.10);
+  }
+  shoes.instanceMatrix.needsUpdate = true;
+
+  for (let i = 0; i < VENT_X.length; i++) {
+    const side = i < 3 ? -1 : 1;
+    const row = i % 3;
+    const stagger = row * 0.13;
+    setApertureInstance(vents, i,
+      VENT_X[i] * radius * 0.72 + side * recoil * (0.09 + row * 0.025),
+      -radius * (0.57 + row * 0.075) - open * (0.08 + row * 0.025) +
+        coreKick * 0.06,
+      -0.018 - row * 0.006,
+      radius * (0.25 + row * 0.018),
+      radius * 0.085,
+      0.075,
+      side * (0.10 + open * (0.22 + row * 0.035)) +
+        recoil * side * (0.07 + row * 0.018) + stagger * 0.10);
+  }
+  vents.instanceMatrix.needsUpdate = true;
 }
 
 function buildAperture(root, p) {
@@ -442,12 +524,32 @@ function buildAperture(root, p) {
     });
   }
 
+  const interlockShoes = new THREE.InstancedMesh(
+    UNIT.interlockShoe, MATERIAL.apertureShutter, 4);
+  interlockShoes.name = 'Crown iris four-shoe mechanical interlock';
+  interlockShoes.userData.crownRole = 'aperture-interlock-shoes';
+  interlockShoes.frustumCulled = false;
+  interlockShoes.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  group.add(interlockShoes);
+  apertureRig.interlockShoes = interlockShoes;
+
+  const ventLouvres = new THREE.InstancedMesh(
+    UNIT.ventLouvre, MATERIAL.apertureMachine, 6);
+  ventLouvres.name = 'Crown iris pressure vent louvres';
+  ventLouvres.userData.crownRole = 'aperture-pressure-vents';
+  ventLouvres.frustumCulled = false;
+  ventLouvres.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  group.add(ventLouvres);
+  apertureRig.ventLouvres = ventLouvres;
+  apertureRig.radius = radius;
+
   const lens = new THREE.Mesh(UNIT.apertureLens, MATERIAL.apertureLens);
   lens.name = 'Crown command lens';
   lens.scale.setScalar(radius * 0.22);
   lens.position.z = 0.075;
   group.add(lens);
   apertureRig.lens = lens;
+  applyApertureMechanisms(0, mechanicalState.pose);
   return group;
 }
 
@@ -467,6 +569,7 @@ function buildRupture(root, p) {
 
 function applyApertureOpen(amount = 0) {
   const open = Math.max(0, Math.min(1, amount));
+  apertureRig.open = open;
   for (let i = 0; i < apertureRig.shutters.length; i++) {
     const row = apertureRig.shutters[i];
     const travel = row.radius + open * 0.48;
@@ -480,6 +583,7 @@ function applyApertureOpen(amount = 0) {
     ruptureRig.mesh.position.z = open * 0.065;
     ruptureRig.mesh.rotation.z = open * 0.18;
   }
+  applyApertureMechanisms(open, mechanicalState.pose);
 }
 
 function buildCrown() {
@@ -578,6 +682,8 @@ function buildCrown() {
     modularArt: !LEGACY_CROWN,
     stagedConductors: LEGACY_CROWN ? 0 : signalRows.filter((rows) => rows.length).length,
     physicalShutters: apertureRig.shutters.length,
+    interlockShoes: apertureRig.interlockShoes?.count || 0,
+    pressureVents: apertureRig.ventLouvres?.count || 0,
     hingedRupture: !!ruptureRig.mesh,
     mechanicalGroups: Object.keys(motionGroups),
     turbineGroup: !!mechanicalRig.turbine,
@@ -665,6 +771,7 @@ function applyMechanicalPose(pose, turbineAngle) {
     CROWN_MECHANICAL_LIMITS.shellRecoilRadians;
 
   if (mechanicalRig.turbine) mechanicalRig.turbine.rotation.z = turbineAngle;
+  applyApertureMechanisms(apertureRig.open, pose);
 }
 
 export function triggerCrownMechanicalAction(action, nowMs = 0) {
@@ -714,12 +821,25 @@ export function setCrownPresentation({
   const s0 = stageEnergy(e, 0, kick);
   const s1 = stageEnergy(e, 1, kick);
   const s2 = stageEnergy(e, 2, kick);
+  const clock = Math.max(0, Number(nowMs) || 0) / 1000;
+  const action = Math.max(kick, attackCommitted ? 0.70 : 0);
+  const rootWalk = 0.42 + 0.58 * Math.max(0, Math.sin(clock * 5.2));
+  const irisWalk = 0.38 + 0.62 * Math.max(0, Math.sin(clock * 5.2 - 1.6));
+  const antennaWalk = 0.34 + 0.66 * Math.max(0, Math.sin(clock * 5.2 - 3.1));
 
-  glow(MATERIAL.signal0, CROWN_SIGNAL, s0 * 0.46 + kick * 0.10);
-  glow(MATERIAL.signal1, CROWN_SIGNAL, s1 * 0.58 + kick * 0.12);
-  glow(MATERIAL.signal2, CROWN_WARM, s2 * 0.72 + kick * 0.14);
-  glow(MATERIAL.apertureRim, CROWN_SIGNAL, s1 * 0.38 + s2 * 0.20);
-  glow(MATERIAL.apertureLens, CROWN_WARM, s1 * 0.30 + s2 * 0.70 + kick * 0.18);
+  // Occupation leaves only a dim circuit state. A packet, committed weapon
+  // attack or launch drives a bright pulse up the three physical conductor
+  // stages; the shell and painted organs remain ordinary metal throughout.
+  glow(MATERIAL.signal0, CROWN_SIGNAL,
+    s0 * (0.08 + rootWalk * 0.08) + action * 0.30);
+  glow(MATERIAL.signal1, CROWN_SIGNAL,
+    s1 * (0.08 + irisWalk * 0.10) + action * 0.38);
+  glow(MATERIAL.signal2, CROWN_WARM,
+    s2 * (0.10 + antennaWalk * 0.12) + action * 0.48);
+  glow(MATERIAL.apertureRim, CROWN_SIGNAL,
+    s1 * 0.10 + s2 * 0.08 + action * 0.34);
+  glow(MATERIAL.apertureLens, CROWN_WARM,
+    s1 * 0.12 + s2 * 0.20 + action * 0.62);
 
   const opening = clamp01((e - 0.54) / 0.40 + kick * 0.34);
   applyApertureOpen(opening);

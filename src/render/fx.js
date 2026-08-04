@@ -119,6 +119,10 @@ function makeRow(index) {
     index, kind: 0,
     t: 0, ttl: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0,
     gravity: 0, size: 0, grow: 0, yaw: 0, spin: 0, roll: 0,
+    // Fixed shape multipliers. Flash/core rows use these to turn the same
+    // pooled authored glyph into a long punch, a clipped rake, or a crosswise
+    // guidance shear. They are numbers on an existing row, not new geometry.
+    aspectX: 1, aspectY: 1,
     r: 0, g: 0, b: 0,
   };
 }
@@ -142,6 +146,7 @@ let fragmentMeshes = null, vaporMesh = null, crushMesh = null, crushMat = null;
 let seed = 1;                            // burst-shape seed, bumped per burst
 let liveSparks = 0, liveFlashes = 0, liveRings = 0, liveCores = 0;
 let liveFragments = 0, liveVapors = 0;
+let proofVisible = true;
 
 /* These three silhouettes replace the primitive debug vocabulary this pool
  * originally shipped with (octahedron particles, sphere flashes and a
@@ -311,6 +316,34 @@ function vaporAftermathGeometry() {
   return geo;
 }
 
+// Normal-blended instanced matter needs a real per-row alpha; instanceColor
+// carries RGB only. One fixed float attribute per resident row keeps fades
+// honest without allocating materials, cards or geometry during combat.
+function withInstanceOpacity(geometry, count) {
+  const opacity = new THREE.InstancedBufferAttribute(new Float32Array(count), 1);
+  opacity.setUsage(THREE.DynamicDrawUsage);
+  geometry.setAttribute('instanceOpacity', opacity);
+  return geometry;
+}
+
+function installInstanceOpacity(material) {
+  material.customProgramCacheKey = () => 'hullbreaker-instance-opacity-v1';
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\n' +
+        'attribute float instanceOpacity;\n' +
+        'varying float vInstanceOpacity;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\n' +
+        'vInstanceOpacity = instanceOpacity;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\n' +
+        'varying float vInstanceOpacity;')
+      .replace('#include <alphatest_fragment>',
+        'diffuseColor.a *= vInstanceOpacity;\n#include <alphatest_fragment>');
+  };
+  return material;
+}
+
 // The pursuing boundary is a gameplay plane, not a wall in the world.  Its
 // old 0.8 x 15 x 2.2 box could fill a cropped screen edge with one continuous
 // additive face whenever the camera caught it obliquely.  These disconnected
@@ -377,17 +410,28 @@ if (JUICE_ENABLED) {
   sparkMesh = new THREE.InstancedMesh(machinedShardGeometry(), sparkMat, SPARK_MAX);
   sparkMesh.frustumCulled = false;
   sparkMesh.renderOrder = 2;
+  // A fixed pool is a capacity ceiling, not permission to submit an empty
+  // draw forever. updateFx raises count while any row is live and drops it
+  // back to zero once the pool cools, without reallocating the instance data.
+  sparkMesh.count = 0;
   sparkMesh.setColorAt(0, _c.setRGB(1, 1, 1));       // allocate instanceColor up front
   for (let i = 0; i < SPARK_MAX; i++) sparkMesh.setMatrixAt(i, HIDE);
   scene.add(sparkMesh);
 
   const flashMat = new THREE.MeshBasicMaterial({
     transparent: true, opacity: 1, fog: false,
-    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+    // Contact punctuation belongs over the struck painted actor/deck, not
+    // under its alpha-tested card. Event ownership already culls bends and
+    // hidden facets; disabling the local depth test prevents a full-card
+    // actor from erasing the exact collision while renderOrder keeps the
+    // optional painted action-atlas free to finish the composite above it.
+    blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+    side: THREE.DoubleSide,
   });
   flashMesh = new THREE.InstancedMesh(impactFlashGeometry(), flashMat, FLASH_MAX);
   flashMesh.frustumCulled = false;
-  flashMesh.renderOrder = 2;
+  flashMesh.renderOrder = 4.1;
+  flashMesh.count = 0;
   flashMesh.setColorAt(0, _c.setRGB(1, 1, 1));
   for (let i = 0; i < FLASH_MAX; i++) flashMesh.setMatrixAt(i, HIDE);
   scene.add(flashMesh);
@@ -402,47 +446,69 @@ if (JUICE_ENABLED) {
   ringMesh = new THREE.InstancedMesh(breachFrontGeometry(), ringMat, RING_MAX);
   ringMesh.frustumCulled = false;
   ringMesh.renderOrder = 3;
+  ringMesh.count = 0;
   ringMesh.setColorAt(0, _c.setRGB(1, 1, 1));
   for (let i = 0; i < RING_MAX; i++) ringMesh.setMatrixAt(i, HIDE);
   scene.add(ringMesh);
 
   const coreMat = new THREE.MeshBasicMaterial({
     transparent: true, opacity: 1, fog: false, side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending, depthWrite: false,
+    blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
   });
   coreMesh = new THREE.InstancedMesh(rupturedCoreGeometry(), coreMat, CORE_MAX);
   coreMesh.frustumCulled = false;
-  coreMesh.renderOrder = 3.2;
+  coreMesh.renderOrder = 4.2;
+  coreMesh.count = 0;
   coreMesh.setColorAt(0, _c.setRGB(1, 1, 1));
   for (let i = 0; i < CORE_MAX; i++) coreMesh.setMatrixAt(i, HIDE);
   scene.add(coreMesh);
 
-  const fragmentMat = new THREE.MeshBasicMaterial({
-    transparent: true, opacity: 0.86, fog: true, side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true,
-  });
+  const fragmentMat = installInstanceOpacity(new THREE.MeshBasicMaterial({
+    transparent: true, opacity: 0.94, fog: true, side: THREE.DoubleSide,
+    // Shell, scutes and brackets are matter. Additive blending made every
+    // death look like a green/orange energy puff and erased the role shapes
+    // against a bright deck. Normal alpha keeps their authored colour/value.
+    blending: THREE.NormalBlending, depthWrite: false, depthTest: true,
+  }));
   fragmentMeshes = [
-    new THREE.InstancedMesh(wingFragmentGeometry(), fragmentMat, FRAGMENT_MAX),
-    new THREE.InstancedMesh(houndFragmentGeometry(), fragmentMat, FRAGMENT_MAX),
-    new THREE.InstancedMesh(machineFragmentGeometry(), fragmentMat, FRAGMENT_MAX),
+    new THREE.InstancedMesh(withInstanceOpacity(wingFragmentGeometry(), FRAGMENT_MAX),
+      fragmentMat, FRAGMENT_MAX),
+    new THREE.InstancedMesh(withInstanceOpacity(houndFragmentGeometry(), FRAGMENT_MAX),
+      fragmentMat, FRAGMENT_MAX),
+    new THREE.InstancedMesh(withInstanceOpacity(machineFragmentGeometry(), FRAGMENT_MAX),
+      fragmentMat, FRAGMENT_MAX),
   ];
   for (const mesh of fragmentMeshes) {
     mesh.frustumCulled = false;
     mesh.renderOrder = 2.15;
     mesh.setColorAt(0, _c.setRGB(1, 1, 1));
-    for (let i = 0; i < FRAGMENT_MAX; i++) mesh.setMatrixAt(i, HIDE);
+    mesh.count = 0;
+    const opacity = mesh.geometry.getAttribute('instanceOpacity');
+    for (let i = 0; i < FRAGMENT_MAX; i++) {
+      mesh.setMatrixAt(i, HIDE);
+      opacity.setX(i, 0);
+    }
+    opacity.needsUpdate = true;
     scene.add(mesh);
   }
 
-  const vaporMat = new THREE.MeshBasicMaterial({
+  const vaporMat = installInstanceOpacity(new THREE.MeshBasicMaterial({
     transparent: true, opacity: 0.72, fog: true, side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true,
-  });
-  vaporMesh = new THREE.InstancedMesh(vaporAftermathGeometry(), vaporMat, VAPOR_MAX);
+    // After-pressure is a thin stained wake, never a persistent light source.
+    blending: THREE.NormalBlending, depthWrite: false, depthTest: true,
+  }));
+  vaporMesh = new THREE.InstancedMesh(
+    withInstanceOpacity(vaporAftermathGeometry(), VAPOR_MAX), vaporMat, VAPOR_MAX);
   vaporMesh.frustumCulled = false;
   vaporMesh.renderOrder = 1.8;
+  vaporMesh.count = 0;
   vaporMesh.setColorAt(0, _c.setRGB(1, 1, 1));
-  for (let i = 0; i < VAPOR_MAX; i++) vaporMesh.setMatrixAt(i, HIDE);
+  const vaporOpacity = vaporMesh.geometry.getAttribute('instanceOpacity');
+  for (let i = 0; i < VAPOR_MAX; i++) {
+    vaporMesh.setMatrixAt(i, HIDE);
+    vaporOpacity.setX(i, 0);
+  }
+  vaporOpacity.needsUpdate = true;
   scene.add(vaporMesh);
 
   // One sparse mechanical boundary marker, still one mesh and one material.
@@ -482,11 +548,17 @@ function claim(pool) {
   return row;
 }
 
+// RIG, hostiles and live projectiles all inhabit this outward route plane.
+// Effect callers pass only a tiny local bias (0..0.1): treating that value as
+// an absolute depth parked debris behind the deck and made real wing/scute
+// fragments disappear under the corpse they belonged to.
+const FX_SURFACE_DEPTH = 1.15;
 function place(row, s, y, depth) {
   const p = towerPose(s, _pose);
-  row.x = p.x + Math.sin(p.yaw) * depth;
+  const surfaceDepth = FX_SURFACE_DEPTH + depth;
+  row.x = p.x + Math.sin(p.yaw) * surfaceDepth;
   row.y = y + p.alt;
-  row.z = p.z + Math.cos(p.yaw) * depth;
+  row.z = p.z + Math.cos(p.yaw) * surfaceDepth;
   return p.yaw;
 }
 
@@ -513,6 +585,7 @@ export function fxBurst(spec, s, y, color, scale = 1) {
     row.ttl = spec.ms;
     row.size = spec.size * scale;
     row.grow = 0;
+    row.aspectX = 1; row.aspectY = 1;
     tint(row, color);
   }
 }
@@ -540,6 +613,7 @@ export function fxDirectedBurst(spec, s, y, color, dirS, dirY, spreadRad, scale 
     row.ttl = spec.ms;
     row.size = spec.size * scale;
     row.grow = 0;
+    row.aspectX = 1; row.aspectY = 1;
     tint(row, color);
   }
   seed++;
@@ -549,7 +623,9 @@ export function fxDirectedBurst(spec, s, y, color, dirS, dirY, spreadRad, scale 
 // central seam and a preferred strike axis; unlike a breach it never expands
 // to advertise a radius. The row uses the fixed core pool and the ordinary
 // flash lifetime curve.
-export function fxCoreRupture(s, y, color, dirS, dirY, scale = 1, depth = 0.04) {
+export function fxCoreRupture(
+  s, y, color, dirS, dirY, scale = 1, depth = 0.04, aspect = 1,
+) {
   if (!JUICE_ENABLED) return;
   const row = claim(cores);
   row.yaw = place(row, s, y, depth);
@@ -557,8 +633,14 @@ export function fxCoreRupture(s, y, color, dirS, dirY, scale = 1, depth = 0.04) 
   row.vy = 0; row.vz = 0; row.gravity = 0;
   row.t = 0;
   row.ttl = D.core.ms;
-  row.size = D.core.size * scale * 0.48;
-  row.grow = D.core.size * scale * 0.62;
+  // The former coefficient reduced an ordinary seam to two hot pixels at the
+  // shipped camera. It now begins legible and opens for only 165ms. `aspect`
+  // stretches only along the committed strike; the exact sim point remains
+  // the centre and no collision reach changes.
+  row.size = D.core.size * scale * 0.76;
+  row.grow = D.core.size * scale * 0.54;
+  row.aspectX = Math.max(0.55, Math.min(3.8, aspect));
+  row.aspectY = 1;
   tint(row, color);
 }
 
@@ -576,7 +658,10 @@ export function fxRoleFragments(role, s, y, color, dirS, dirY, scale = 1) {
   const burstSeed = seed++;
   for (let i = 0; i < n; i++) {
     const row = claim(fragments);
-    for (let m = 0; m < 3; m++) fragmentMeshes[m].setMatrixAt(row.index, HIDE);
+    for (let m = 0; m < 3; m++) {
+      fragmentMeshes[m].setMatrixAt(row.index, HIDE);
+      fragmentMeshes[m].geometry.getAttribute('instanceOpacity').setX(row.index, 0);
+    }
     const yaw = place(row, s, y, 0.035);
     const across = n === 1 ? 0 : i / (n - 1) - 0.5;
     const jitter = (((i + burstSeed) % 3) - 1) * 0.075;
@@ -591,8 +676,11 @@ export function fxRoleFragments(role, s, y, color, dirS, dirY, scale = 1) {
     row.gravity = spec.gravity;
     row.t = 0;
     row.ttl = spec.ms;
-    row.size = spec.size * Math.min(1.45, scale);
+    // Keep the smallest staged armour chip above minification while retaining
+    // a strong scale step between a hit and a death plate.
+    row.size = spec.size * (0.72 + Math.min(1.55, scale) * 0.90);
     row.grow = 0;
+    row.aspectX = 1; row.aspectY = 1;
     row.kind = kind;
     row.roll = ((i + burstSeed) % 7) * 0.61;
     row.spin = (((i + burstSeed) % 5) - 2) * 4.2;
@@ -601,7 +689,10 @@ export function fxRoleFragments(role, s, y, color, dirS, dirY, scale = 1) {
   // A saturated row can change role (wing -> hound, etc.). Upload all three
   // HIDE writes now; advanceFragments only dirties the row's NEW mesh, so
   // deferring this would leave the recycled old silhouette stranded onscreen.
-  for (let m = 0; m < 3; m++) fragmentMeshes[m].instanceMatrix.needsUpdate = true;
+  for (let m = 0; m < 3; m++) {
+    fragmentMeshes[m].instanceMatrix.needsUpdate = true;
+    fragmentMeshes[m].geometry.getAttribute('instanceOpacity').needsUpdate = true;
+  }
 }
 
 // One short sparse pressure wake. It rises and opens its internal gaps; there
@@ -619,24 +710,28 @@ export function fxVapor(s, y, color, driftS = 0, scale = 1, depth = 0.015) {
   row.ttl = D.vapor.ms;
   row.size = D.vapor.size * Math.min(1.35, scale);
   row.grow = 0;
+  row.aspectX = 1; row.aspectY = 1;
   row.yaw = yaw;
   row.roll = ((seed % 7) - 3) * 0.11;
   row.spin = (seed++ & 1 ? 1 : -1) * 0.24;
   tint(row, color);
 }
 
-function spawnFlash(ms, fromSize, toSize, s, y, color, depth) {
+function spawnFlash(ms, fromSize, toSize, s, y, color, depth,
+  roll = null, aspectX = 1, aspectY = 1) {
   const row = claim(flashes);
   row.yaw = place(row, s, y, depth);
   // Local roll changes the broken aperture without changing its facet. It is
   // deterministic and stored on the existing row; no random stream or event
   // allocation enters the render layer.
-  row.vx = ((seed++ % 17) - 8) * 0.13;
+  row.vx = roll === null ? ((seed++ % 17) - 8) * 0.13 : roll;
   row.vy = 0; row.vz = 0; row.gravity = 0;
   row.t = 0;
   row.ttl = ms;
   row.size = fromSize;
   row.grow = toSize - fromSize;
+  row.aspectX = Math.max(0.35, Math.min(8, aspectX));
+  row.aspectY = Math.max(0.35, Math.min(3, aspectY));
   tint(row, color);
 }
 
@@ -645,6 +740,20 @@ function spawnFlash(ms, fromSize, toSize, s, y, color, depth) {
 export function fxFlash(ms, size, s, y, color, depth = 0) {
   if (!JUICE_ENABLED) return;
   spawnFlash(ms, size, size * 1.8, s, y, color, depth);
+}
+
+/* A rooted directional contact stroke using the existing broken-aperture
+ * pool. The short axis is authored in tiles and `length / width` only changes
+ * the pooled instance matrix. Every family can own a strong silhouette
+ * without adding a material, draw, texture or collision radius. Its centre
+ * remains the exact terminal `(s,y)` and never drifts after contact. */
+export function fxDirectionalFlash(
+  ms, length, width, s, y, color, dirS, dirY, depth = 0.035,
+) {
+  if (!JUICE_ENABLED) return;
+  const safeWidth = Math.max(0.04, width);
+  spawnFlash(ms, safeWidth, safeWidth * 1.22, s, y, color, depth,
+    Math.atan2(dirY, dirS), Math.max(1, length / safeWidth), 1);
 }
 
 // Boss machinery sometimes fails inward. Same aperture, same fixed flash
@@ -718,6 +827,13 @@ export function updateFx(dtMs) {
   liveCores = advance(cores, coreMesh, dtMs, flashAlpha, true, gain);
   liveFragments = advanceFragments(dtMs, gain);
   liveVapors = advanceVapors(dtMs, gain);
+  // Keep all rows and GPU buffers resident, but do not ask either the direct
+  // renderer or bloom pass to submit a pool whose rows have all retired.
+  sparkMesh.count = liveSparks ? SPARK_MAX : 0;
+  flashMesh.count = liveFlashes ? FLASH_MAX : 0;
+  ringMesh.count = liveRings ? RING_MAX : 0;
+  coreMesh.count = liveCores ? CORE_MAX : 0;
+  vaporMesh.count = liveVapors ? VAPOR_MAX : 0;
 }
 
 function advance(pool, mesh, dtMs, alphaOf, isFlash, gain) {
@@ -749,7 +865,7 @@ function advance(pool, mesh, dtMs, alphaOf, isFlash, gain) {
     if (isFlash) {
       _m.makeRotationY(row.yaw);
       _m.multiply(_flashRot.makeRotationZ(row.vx));
-      _m.scale(_sScale.set(s, s, s));
+      _m.scale(_sScale.set(s * row.aspectX, s * row.aspectY, s));
       _m.setPosition(row.x, row.y, row.z);
     } else {
       // S10: a mild stretch along the row's OWN current velocity instead of
@@ -826,6 +942,7 @@ function advanceRings(dtMs, gain) {
 
 function advanceFragments(dtMs, gain) {
   let live = 0;
+  let live0 = 0, live1 = 0, live2 = 0;
   let dirty0 = false, dirty1 = false, dirty2 = false;
   const dt = dtMs / 1000;
   const rows = fragments.rows;
@@ -833,12 +950,14 @@ function advanceFragments(dtMs, gain) {
     const row = rows[i];
     if (row.ttl <= 0) continue;
     const mesh = fragmentMeshes[row.kind];
+    const opacity = mesh.geometry.getAttribute('instanceOpacity');
     row.t += dtMs;
     if (row.t >= row.ttl) {
       row.ttl = 0;
       fragments.free[fragments.top++] = i;
       mesh.setMatrixAt(i, HIDE);
       mesh.setColorAt(i, _c.setRGB(0, 0, 0));
+      opacity.setX(i, 0);
       if (row.kind === 0) dirty0 = true;
       else if (row.kind === 1) dirty1 = true;
       else dirty2 = true;
@@ -854,30 +973,44 @@ function advanceFragments(dtMs, gain) {
     _sq.setFromUnitVectors(_sAxisX, _sDir);
     _fragmentRot.setFromAxisAngle(_sAxisX, row.roll + row.spin * u);
     _fragmentQ.copy(_sq).multiply(_fragmentRot);
-    const s = row.size * (1 - u * 0.24);
+    // Physical wreckage does not shrink out of existence. The fixed instanced
+    // alpha attribute carries retirement while bracket/wing/scute keeps mass.
+    const s = row.size;
     _sScale.set(s, s, s);
     _sPos.set(row.x, row.y, row.z);
     _m.compose(_sPos, _fragmentQ, _sScale);
     mesh.setMatrixAt(i, _m);
-    const ag = particleAlpha(u) * gain;
-    mesh.setColorAt(i, _c.setRGB(row.r * ag, row.g * ag, row.b * ag));
+    // Normal-blended matter must not inherit the post-bloom compensation used
+    // by hot additive glyphs; doing so turns debris back into emissive confetti.
+    const ag = particleAlpha(u);
+    mesh.setColorAt(i, _c.setRGB(row.r, row.g, row.b));
+    opacity.setX(i, ag);
     if (row.kind === 0) dirty0 = true;
     else if (row.kind === 1) dirty1 = true;
     else dirty2 = true;
+    if (row.kind === 0) live0++;
+    else if (row.kind === 1) live1++;
+    else live2++;
     live++;
   }
   if (dirty0) {
     fragmentMeshes[0].instanceMatrix.needsUpdate = true;
     fragmentMeshes[0].instanceColor.needsUpdate = true;
+    fragmentMeshes[0].geometry.getAttribute('instanceOpacity').needsUpdate = true;
   }
   if (dirty1) {
     fragmentMeshes[1].instanceMatrix.needsUpdate = true;
     fragmentMeshes[1].instanceColor.needsUpdate = true;
+    fragmentMeshes[1].geometry.getAttribute('instanceOpacity').needsUpdate = true;
   }
   if (dirty2) {
     fragmentMeshes[2].instanceMatrix.needsUpdate = true;
     fragmentMeshes[2].instanceColor.needsUpdate = true;
+    fragmentMeshes[2].geometry.getAttribute('instanceOpacity').needsUpdate = true;
   }
+  fragmentMeshes[0].count = live0 ? FRAGMENT_MAX : 0;
+  fragmentMeshes[1].count = live1 ? FRAGMENT_MAX : 0;
+  fragmentMeshes[2].count = live2 ? FRAGMENT_MAX : 0;
   return live;
 }
 
@@ -885,6 +1018,7 @@ function advanceVapors(dtMs, gain) {
   let live = 0, dirty = false;
   const dt = dtMs / 1000;
   const rows = vapors.rows;
+  const opacity = vaporMesh.geometry.getAttribute('instanceOpacity');
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     if (row.ttl <= 0) continue;
@@ -894,6 +1028,7 @@ function advanceVapors(dtMs, gain) {
       vapors.free[vapors.top++] = i;
       vaporMesh.setMatrixAt(i, HIDE);
       vaporMesh.setColorAt(i, _c.setRGB(0, 0, 0));
+      opacity.setX(i, 0);
       dirty = true;
       continue;
     }
@@ -913,14 +1048,17 @@ function advanceVapors(dtMs, gain) {
     ));
     _m.setPosition(row.x, row.y, row.z);
     vaporMesh.setMatrixAt(i, _m);
-    const ag = a * gain;
-    vaporMesh.setColorAt(i, _c.setRGB(row.r * ag, row.g * ag, row.b * ag));
+    // Vapor is stained pressure, not a light. Stable RGB plus true instanced
+    // alpha fades transparent instead of darkening into a black card.
+    vaporMesh.setColorAt(i, _c.setRGB(row.r, row.g, row.b));
+    opacity.setX(i, a);
     dirty = true;
     live++;
   }
   if (dirty) {
     vaporMesh.instanceMatrix.needsUpdate = true;
     vaporMesh.instanceColor.needsUpdate = true;
+    opacity.needsUpdate = true;
   }
   return live;
 }
@@ -928,6 +1066,7 @@ function advanceVapors(dtMs, gain) {
 /* run reset (resetGame in src/main.js): nothing survives a restart */
 export function resetFx() {
   if (!JUICE_ENABLED) return;
+  setFxProofVisible(true);
   clearPool(sparks, sparkMesh);
   clearPool(flashes, flashMesh);
   clearPool(rings, ringMesh);
@@ -939,21 +1078,41 @@ export function resetFx() {
   if (crushMesh) { crushMesh.visible = false; crushMat.opacity = 0; }
 }
 
+/* Read-only-capture companion: produce an exact same-frame VFX-on/off pair
+ * without replay drift. The action proof toggles only these already-existing
+ * pool meshes between two screenshots; simulation, camera, actor/corpse pose,
+ * game time and every row remain frozen. Normal runtime never calls this. */
+export function setFxProofVisible(visible) {
+  if (!JUICE_ENABLED) return;
+  proofVisible = !!visible;
+  sparkMesh.visible = proofVisible;
+  flashMesh.visible = proofVisible;
+  ringMesh.visible = proofVisible;
+  coreMesh.visible = proofVisible;
+  for (let i = 0; i < fragmentMeshes.length; i++)
+    fragmentMeshes[i].visible = proofVisible;
+  vaporMesh.visible = proofVisible;
+}
+
 // every row dead, every index back on the stack, cursor rewound: the free
 // stack is rebuilt wholesale here rather than pushed row by row, so a reset
 // can never leave a stale or duplicated index behind
 function clearPool(pool, mesh) {
   const rows = pool.rows;
+  const opacity = mesh.geometry.getAttribute('instanceOpacity');
   for (let i = 0; i < rows.length; i++) {
     rows[i].ttl = 0;
     pool.free[i] = i;
     mesh.setMatrixAt(i, HIDE);
+    if (opacity) opacity.setX(i, 0);
   }
   pool.top = rows.length;
   pool.cursor = 0;
   pool.claims = 0;
   pool.recycles = 0;
   mesh.instanceMatrix.needsUpdate = true;
+  mesh.count = 0;
+  if (opacity) opacity.needsUpdate = true;
 }
 
 function clearFragmentPool() {
@@ -961,17 +1120,28 @@ function clearFragmentPool() {
   for (let i = 0; i < rows.length; i++) {
     rows[i].ttl = 0;
     fragments.free[i] = i;
-    for (let m = 0; m < 3; m++) fragmentMeshes[m].setMatrixAt(i, HIDE);
+    for (let m = 0; m < 3; m++) {
+      fragmentMeshes[m].setMatrixAt(i, HIDE);
+      fragmentMeshes[m].geometry.getAttribute('instanceOpacity').setX(i, 0);
+    }
   }
   fragments.top = rows.length;
   fragments.cursor = 0;
   fragments.claims = 0;
   fragments.recycles = 0;
-  for (let m = 0; m < 3; m++) fragmentMeshes[m].instanceMatrix.needsUpdate = true;
+  for (let m = 0; m < 3; m++) {
+    fragmentMeshes[m].instanceMatrix.needsUpdate = true;
+    fragmentMeshes[m].geometry.getAttribute('instanceOpacity').needsUpdate = true;
+    fragmentMeshes[m].count = 0;
+  }
 }
 
 // read-only debug/telemetry surface (see window.HB.juice and ?testapi=1)
 export function fxStats() {
+  const activeDrawPools = (sparkMesh?.count ? 1 : 0) +
+    (flashMesh?.count ? 1 : 0) + (ringMesh?.count ? 1 : 0) +
+    (coreMesh?.count ? 1 : 0) + (vaporMesh?.count ? 1 : 0) +
+    (fragmentMeshes ? fragmentMeshes.reduce((n, mesh) => n + (mesh.count ? 1 : 0), 0) : 0);
   return {
     sparks: liveSparks, flashes: liveFlashes, rings: liveRings,
     cores: liveCores, fragments: liveFragments, vapor: liveVapors,
@@ -979,6 +1149,9 @@ export function fxStats() {
     coreMax: CORE_MAX, fragmentMax: FRAGMENT_MAX, vaporMax: VAPOR_MAX,
     fixedRows: SPARK_MAX + FLASH_MAX + RING_MAX + CORE_MAX + FRAGMENT_MAX + VAPOR_MAX,
     fixedDrawPools: 8,
+    activeDrawPools,
+    physicalFade: 'fixed-instance-opacity',
+    proofVisible,
     recycles: {
       sparks: sparks?.recycles || 0, flashes: flashes?.recycles || 0,
       rings: rings?.recycles || 0, cores: cores?.recycles || 0,

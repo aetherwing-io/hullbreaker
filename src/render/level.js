@@ -2078,11 +2078,22 @@ function platformProfileGeometry(len) {
 const _platformCold = new THREE.Color(PAL.limb.wall);
 const _platformShadow = new THREE.Color(PAL.limb.shadow);
 const _platformWarm = new THREE.Color(PAL.groundAlt);
+const _platformDeck = new THREE.Color(PAL.limb.machine).lerp(_platformCold, 0.44);
 function platformPanelColor(local, normal, out) {
-  if (normal.y > 0.55) return out.set(PAL.catwalk);
+  if (normal.y > 0.55) {
+    // A deck catches the key on its camera-side edge; its entire two-tile
+    // depth is not an orange lamp. Vertex interpolation supplies the gradient
+    // for free on the existing top quad, and the resident panel map supplies
+    // the fine scutes/pipes beneath it.
+    const edge = Math.max(0, Math.min(1, (local.z + 0.70) / 1.40));
+    return out.copy(_platformDeck).lerp(_platformWarm,
+      0.10 + edge * edge * 0.34);
+  }
   if (normal.y < -0.55) return out.copy(_platformShadow);
   const down = Math.max(0, Math.min(1, -local.y / 0.62));
-  out.copy(_platformWarm).lerp(_platformCold, 0.38 + down * 0.54);
+  const cameraEdge = normal.z > 0.55 ? 0.10 : 0;
+  out.copy(_platformCold).lerp(_platformWarm,
+    0.08 + (1 - down) * 0.14 + cameraEdge);
   return out;
 }
 
@@ -2101,8 +2112,14 @@ function solidProfileGeometry(width, height) {
 
 const _solidBody = new THREE.Color(PAL.limb.wall);
 const _solidEdge = new THREE.Color(PAL.limb.shadow);
+const _solidDeck = new THREE.Color(PAL.limb.machine).lerp(_solidBody, 0.48);
+const _solidWarm = new THREE.Color(PAL.groundAlt);
 function solidPanelColor(local, normal, out) {
-  if (normal.y > 0.55) return out.set(PAL.groundAlt);
+  if (normal.y > 0.55) {
+    const edge = Math.max(0, Math.min(1, (local.z + 1) * 0.5));
+    return out.copy(_solidDeck).lerp(_solidWarm,
+      0.08 + edge * edge * 0.28);
+  }
   if (Math.abs(normal.x) > 0.55) return out.copy(_solidEdge);
   return out.copy(_solidBody);
 }
@@ -2124,14 +2141,23 @@ function bottomArmourGeometry(variant) {
 }
 
 const _routeCapCold = new THREE.Color(PAL.limb.wall);
+const _routeCapKey = new THREE.Color(PAL.limb.machine);
 function routeCapPanelColor(local, normal, out) {
-  if (normal.y > 0.55) return out.set(PAL.catwalk);
+  if (normal.y > 0.55) {
+    const edge = Math.max(0, Math.min(1, (local.z + 1) * 0.5));
+    // Preserve the authored scute family in `out`, seat it in cold hull, then
+    // catch a neutral machine-key on the camera edge. Copper must come from
+    // the selected armour phrase below, not from tinting every exposed quad;
+    // the latter was the remaining orange-checker read at FAR distance.
+    return out.lerp(_routeCapCold, 0.46).lerp(_routeCapKey,
+      0.06 + edge * edge * 0.18);
+  }
   if (normal.y < -0.55) return out.lerp(_routeCapCold, 0.92);
   // Preserve a narrow oxidized navigation lip at the top of the collision
   // row, then hand the face quickly to the cold machine body.  This replaces
   // the full one-tile-high orange brick without moving its collision plane.
   const down = Math.max(0, Math.min(1, 0.5 - local.y));
-  return out.lerp(_routeCapCold, 0.70 + down * 0.26);
+  return out.lerp(_routeCapCold, 0.78 + down * 0.18);
 }
 
 // Split a platform only at simulation-column boundaries. Construction owns
@@ -2189,7 +2215,10 @@ function authoredScuteBand(s, depth, phase) {
     local -= span;
     beat++;
   }
-  return (beat + phase + Math.floor((depth - 1) / 2)) % 2;
+  // Four material phrases, not an alternating checker. Only one carries a
+  // noticeable oxidized edge; the others are blue steel, graphite recess and
+  // service metal. Geometry, collision and the 6-14 tile phrase stay exact.
+  return (beat + phase + Math.floor((depth - 1) / 2)) % 4;
 }
 
 // The transformation slice replaces the tower with its own band geometry
@@ -2228,21 +2257,36 @@ if (!IS_TRANSFORM_SLICE) {
   const rib = new THREE.Color(PAL.limb.rib);
   const shadow = new THREE.Color(PAL.limb.shadow);
   const hull = new THREE.Color(PAL.limb.hull);
-  // Four collision rows become three MATERIAL/DEPTH bands: oxidized route
-  // cap; cool ribbed service fascia; recessed blue-black body + keel.  Each
-  // row still owns the same unit collision interval and build sample.
+  // Four collision rows become four directional SCUTE phrases crossed with
+  // the existing depth ladder. Copper is a restrained edge state rather than
+  // half of an A/B checker; blue steel, graphite recess and service metal
+  // carry the broad area. Each row still owns the same unit collision interval
+  // and build sample.
   const cADepth = [
-    cA,
+    wall.clone().lerp(cA, 0.42),
     wall.clone().lerp(rib, 0.18),
     wall.clone().lerp(shadow, 0.32),
     shadow.clone().lerp(hull, 0.10),
   ];
   const cBDepth = [
-    cB,
+    wall.clone().lerp(rib, 0.12),
     wall.clone().lerp(rib, 0.10),
     wall.clone().lerp(shadow, 0.46),
     shadow.clone().lerp(hull, 0.04),
   ];
+  const cCDepth = [
+    hull.clone().lerp(wall, 0.52),
+    wall.clone().lerp(shadow, 0.24),
+    shadow.clone().lerp(hull, 0.22),
+    shadow.clone().lerp(hull, 0.02),
+  ];
+  const cDDepth = [
+    wall.clone().lerp(cA, 0.10),
+    wall.clone().lerp(rib, 0.28),
+    wall.clone().lerp(shadow, 0.38),
+    shadow.clone().lerp(hull, 0.07),
+  ];
+  const scuteDepthFamilies = [cADepth, cBDepth, cCDepth, cDDepth];
   // The deck's half of the T-035 value ladder (?shade=, off by default): a
   // monotone ramp DOWN the four-tile stack — d=1 is the lit lip, d=4 the
   // bottom — plus the shared stain field per column. The rows already
@@ -2286,7 +2330,7 @@ if (!IS_TRANSFORM_SLICE) {
         });
         const bucket = panelBakes.get(ownershipKey);
         const base = WORLD_DETAIL_ON
-          ? (scuteBand === 0 ? cADepth[d - 1] : cBDepth[d - 1])
+          ? scuteDepthFamilies[scuteBand][d - 1]
           : (scuteBand === 0 ? cA : cB);
         const source = d === VISUAL_DEPTH
           ? bottomPanelGeos[(i + f * 3) % bottomPanelGeos.length]

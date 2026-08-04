@@ -43,14 +43,16 @@ ok(/function rupturedCoreGeometry\(\)/.test(fx) &&
    /function machineFragmentGeometry\(\)/.test(fx) &&
    /function vaporAftermathGeometry\(\)/.test(fx),
   'core, wing, hound, machinery, and vapor own distinct authored silhouettes');
-ok(/fragmentMeshes = \[\s*new THREE\.InstancedMesh\(wingFragmentGeometry/.test(fx) &&
-   /new THREE\.InstancedMesh\(houndFragmentGeometry/.test(fx) &&
-   /new THREE\.InstancedMesh\(machineFragmentGeometry/.test(fx) &&
+ok(['wing', 'hound', 'machine'].every((role) => new RegExp(
+   `new THREE\\.InstancedMesh\\(\\s*withInstanceOpacity\\(${role}FragmentGeometry\\(\\), FRAGMENT_MAX\\),\\s*fragmentMat, FRAGMENT_MAX\\)`,
+   's').test(fx)) &&
    /fragments = makePool\(FRAGMENT_MAX\)/.test(fx),
-  'three role meshes share one fixed fragment row pool instead of tripling live capacity');
-ok(/for \(let m = 0; m < 3; m\+\+\) fragmentMeshes\[m\]\.setMatrixAt\(row\.index, HIDE\)/.test(fx) &&
-   /for \(let m = 0; m < 3; m\+\+\) fragmentMeshes\[m\]\.instanceMatrix\.needsUpdate = true/.test(fx),
-  'a saturated row uploads the old role HIDE before its recycled silhouette can strand onscreen');
+  'three opacity-enabled role meshes share one fixed fragment row pool instead of tripling live capacity');
+const fragmentClaim = fx.slice(
+  fx.indexOf('export function fxRoleFragments'), fx.indexOf('export function fxVapor'));
+ok(/for \(let m = 0; m < 3; m\+\+\) \{[\s\S]*?fragmentMeshes\[m\]\.setMatrixAt\(row\.index, HIDE\);[\s\S]*?instanceOpacity[\s\S]*?\.setX\(row\.index, 0\);[\s\S]*?\}/.test(fragmentClaim) &&
+   /for \(let m = 0; m < 3; m\+\+\) \{[\s\S]*?fragmentMeshes\[m\]\.instanceMatrix\.needsUpdate = true;[\s\S]*?instanceOpacity[\s\S]*?\.needsUpdate = true;[\s\S]*?\}/.test(fragmentClaim),
+  'a saturated row uploads old-role HIDE and alpha zero before its recycled silhouette can strand onscreen');
 
 const geometrySlice = stripComments(fx.slice(
   fx.indexOf('function rupturedCoreGeometry()'),
@@ -80,17 +82,26 @@ const removal = stripComments(juice.slice(
   juice.indexOf('function onHostileRemoved'),
   juice.indexOf('// capsules:'),
 ));
-ok(/fxCoreRupture\(e\.x, e\.y/.test(removal) &&
-   /fragmentRole = e\.kind === 'wasp' \? 'wing'/.test(removal) &&
-   /e\.kind === 'hound' \? 'hound' : 'machine'/.test(removal) &&
-   /fxRoleFragments\(fragmentRole/.test(removal) && /fxVapor\(e\.x, e\.y/.test(removal),
-  'enemy deaths compose hot core, role-shaped fragments, and sparse aftermath');
+const deathSentence = stripComments(juice.slice(
+  juice.indexOf('const DEATH_SENTENCE_MAX'),
+  juice.indexOf('/* ---------------------------- throttles'),
+));
+ok(/const DEATH_SENTENCE_MAX = 12/.test(deathSentence) &&
+   /const deathSentences = Array\.from\(\{ length: DEATH_SENTENCE_MAX \}/.test(deathSentence) &&
+   /function emitDeathSentence\(row, stage\)/.test(deathSentence) &&
+   /fxCoreRupture\(/.test(deathSentence) && /fxRoleFragments\(/.test(deathSentence) &&
+   /fxVapor\(/.test(deathSentence) &&
+   /armDeathSentence\(e, incomingS, incomingY, shotColor, enemyColor/.test(removal) &&
+   /if \(e\.kind !== 'warden'\)/.test(removal),
+  'enemy deaths arm one fixed staged sentence of hot core, role-shaped fragments, and sparse aftermath');
 ok(/incomingS = impactS \* impactInv/.test(removal) &&
    /incomingY = impactY \* impactInv/.test(removal) &&
-   /fxCoreRupture\([^;]*incomingS, incomingY/s.test(removal),
-  'death rupture orientation follows the incoming shot-to-hostile axis');
-ok(!/fxBurst\s*\(/.test(removal) && !/fxRing\s*\(/.test(removal),
-  'enemy death composition uses neither a generic radial burst nor radius front');
+   /armDeathSentence\(e, incomingS, incomingY/.test(removal) &&
+   /incomingS: ds, incomingY: dy/.test(deathSentence) &&
+   /fxCoreRupture\([^;]*ds, dy/s.test(deathSentence),
+  'staged death rupture orientation follows the incoming shot-to-hostile axis');
+ok(!/fxBurst\s*\(/.test(deathSentence) && !/fxRing\s*\(/.test(deathSentence),
+  'staged enemy death composition uses neither a generic radial burst nor radius front');
 
 const volatile = stripComments(bullets.slice(
   bullets.indexOf('function volatileImpact'),

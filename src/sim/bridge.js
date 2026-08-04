@@ -26,7 +26,11 @@ export const view = {
   // roll without polling or reaching back into simulation state.
   loot:     { acquired: noop },          // (gun, compiledDef, { recatch })
   bullets:  { slotSpawned: noop, hideSlot: noop, syncSlot: noop, flush: noop,
-              bendCulled: noop, deckIgnited: noop, volatileImpact: noop },
+              bendCulled: noop, deckIgnited: noop, volatileImpact: noop,
+              // Collision-frame presentation fact, positional to avoid a hot
+              // event allocation: (slot,type,x,y,vx,vy,targetId,targetKind,
+              // damaged,lethal). Observers may draw; they never answer back.
+              hostileImpact: noop },
   mods:     { sync: noop, cleared: noop, lanceTelegraph: noop },
   level:    { unbuiltHidden: noop, zipperColumn: noop, faceRevealed: noop },
   // Environment-only Meridian defense lifecycle. The sim publishes a frozen

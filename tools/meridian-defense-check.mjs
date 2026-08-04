@@ -124,6 +124,12 @@ assert.match(renderer, /!currentSocket && event\.stage === 'tell'/);
 assert.match(renderer, /mesh\.visible = false/);
 assert.equal((renderer.match(/new THREE\.PlaneGeometry\(/g) || []).length, 1);
 assert.equal((renderer.match(/new THREE\.Mesh\(/g) || []).length, 1);
+assert.equal((renderer.match(/new THREE\.InstancedMesh\(/g) || []).length, 2);
+assert.match(renderer, /mechanismParts: DEFENSE_VFX_ART_SLOT\.tex \? 10 : 0/);
+assert.match(renderer, /fixedAtBoot: true/);
+assert.match(renderer, /textureTransforms: false/);
+assert.doesNotMatch(renderer, /CanvasTexture|createElement\(['"]canvas|\.clone\(\)/,
+  'response allocates no runtime canvas, cloned atlas or texture transform');
 assert.doesNotMatch(renderer,
   /from ['"]\.\.\/sim\/(?:player|weapons|hostiles)|\b(?:player|bullet|hostile)\./,
   'renderer source carries no actor/projectile attachment path');
@@ -139,8 +145,10 @@ console.log(JSON.stringify({
   runtime: {
     atlasTextures: manifest.runtime.gpuTextures,
     components: manifest.components.length,
-    geometryPool: 1,
-    maxDrawSlots: 1,
+    geometryPools: 3,
+    atlasDrawSlots: 1,
+    mechanismDrawSlots: 2,
+    mechanismParts: 10,
     directSpawns: 0,
     gatingSpawns: 0,
   },

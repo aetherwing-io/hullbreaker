@@ -41,6 +41,24 @@ let visibleAtmosphereFacets = 0;
 let visibleAtmosphereMeshes = 0;
 let builtTriangles = 0;
 
+// The resident paintings already share the approved Meridian palette.  These
+// are deliberately gentle value-temperature grades, not replacement tints:
+// the far body cools toward atmospheric skyline steel, the mid coil retains
+// more of its rust rake, and the nearest fragments pick up a restrained warm
+// edge.  Constructed once at boot; material callbacks only touch opacity.
+function atmosphereTint(token, amount) {
+  return new THREE.Color(0xffffff).lerp(new THREE.Color(token), amount);
+}
+const DEPTH_TINT = Object.freeze({
+  // The far source was painted with its own teal aerial perspective already;
+  // only a trace of the runtime palette grade is needed.  A stronger multiply
+  // compressed its dark range during the fold and hid the pipe anatomy this
+  // layer exists to reveal.
+  far: atmosphereTint(PAL.backdropFar, 0.02),
+  mid: atmosphereTint(PAL.backdropMid, 0.10),
+  near: atmosphereTint(PAL.backdropNear, 0.18),
+});
+
 function atmosphereFaceS(face) {
   if (face <= CONFIG.path.faces) return faceMidS(face, CONFIG);
   return CONFIG.path.introTiles + CONFIG.path.faceTiles * CONFIG.path.faces +
@@ -140,9 +158,13 @@ function tangentOffset(p, yaw, along, depth, out) {
 
 function installOpacityCallback(mesh, layer) {
   mesh.onBeforeRender = (_renderer, _scene, camera, _geometry, material) => {
-    material.opacity = layer.opacity * mesh.userData.facetGain *
+    const opacity = layer.opacity * mesh.userData.facetGain *
       angleGain(camera, mesh.userData.facetYaw, layer.facingExponent) *
       portraitGain(camera.aspect, layer.portraitGain);
+    material.opacity = opacity;
+    // QA reads the exact value that reached the draw without recomputing the
+    // camera-relative fold math or adding any work to the simulation.
+    mesh.userData.effectiveOpacity = opacity;
   };
 }
 
@@ -177,10 +199,14 @@ function buildDirectLayer(scene, face, plan, source, texture, id, p, yaw, altitu
   const geometry = directPlaneGeometry(source, layer.width, layer.curve, mirror);
   const material = new THREE.MeshBasicMaterial({
     map: texture,
-    color: id === 'far' ? 0xc8cfcc : 0xc2c4b6,
+    color: DEPTH_TINT[id],
     transparent: true,
     opacity: layer.opacity,
     alphaTest: source.alpha ? 0.012 : 0,
+    // These are environment veils behind real world geometry. The far fold
+    // overlap is normalized in updateAtmosphereFacetVisibility(); a
+    // depth-writing translucent shell produces a hard vertical plane
+    // intersection at the detent, so both direct layers stay non-writing.
     depthWrite: false,
     depthTest: true,
     side: THREE.FrontSide,
@@ -197,8 +223,8 @@ function buildDirectLayer(scene, face, plan, source, texture, id, p, yaw, altitu
     sourceId: source.id,
     idleEmissive: false,
   };
-  installDirectEdgeFeather(material, id === 'far' ? 0.12 : 0.09,
-    id === 'far' ? 0.14 : 0.10);
+  installDirectEdgeFeather(material, id === 'far' ? 0.04 : 0.09,
+    id === 'far' ? 0.06 : 0.10);
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = `Meridian ${layer.role} F${face}`;
   mesh.userData.environmentRole = 'meridian-depth-composition';
@@ -274,7 +300,7 @@ function buildNearFragments(scene, face, plan, componentById, texture, p, yaw, a
   const geometry = nearFragmentGeometry(plan, componentById, source.canvas);
   const material = new THREE.MeshBasicMaterial({
     map: texture,
-    color: 0x73827d,
+    color: DEPTH_TINT.near,
     transparent: true,
     opacity: layer.opacity,
     alphaTest: 0.035,
@@ -404,9 +430,11 @@ function buildCondensation(scene, face, rows, p, yaw, altitude) {
   mesh.renderOrder = layer.renderOrder;
   mesh.frustumCulled = true;
   mesh.onBeforeRender = (_renderer, _scene, camera) => {
-    material.uniforms.uOpacity.value = layer.opacity * mesh.userData.facetGain *
+    const opacity = layer.opacity * mesh.userData.facetGain *
       angleGain(camera, mesh.userData.facetYaw, layer.facingExponent) *
       portraitGain(camera.aspect, layer.portraitGain);
+    material.uniforms.uOpacity.value = opacity;
+    mesh.userData.effectiveOpacity = opacity;
   };
   registerAtmosphereFacetMesh(mesh);
   scene.add(mesh);

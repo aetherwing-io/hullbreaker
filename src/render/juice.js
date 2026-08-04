@@ -36,14 +36,15 @@ import { view } from '../sim/bridge.js';
 import { gameMs, hitStopRemainingMs } from '../sim/time.js';
 import { sLeftEdge } from '../sim/edges.js';
 import { player } from '../sim/player.js';
+import { hostiles } from '../sim/hostiles.js';
 import { scoreNotchNow } from '../sim/score.js';
 import { activeCorner } from '../sim/wavegate.js';
 import { activeTransformEvent } from '../sim/transform.js';
 import { addTrauma, cameraTrauma } from './camera.js';
 import {
-  fxBurst, fxCoreRupture, fxCrush, fxDirectedBurst, fxFlash, fxHostileColor,
-  fxImplode, fxRing, fxRole, fxRoleFragments, fxShotColor, fxStats, fxVapor,
-  resetFx, updateFx,
+  fxBurst, fxCoreRupture, fxCrush, fxDirectedBurst, fxDirectionalFlash,
+  fxFlash, fxHostileColor, fxImplode, fxRing, fxRole, fxRoleFragments,
+  fxShotColor, fxStats, fxVapor, resetFx, updateFx,
 } from './fx.js';
 
 const J = CONFIG.juice;
@@ -55,18 +56,39 @@ const TT = transformTimeline(CONFIG);
 // point collision stay in CONFIG.weapons. These describe the silhouette of a
 // trigger pull at the camera: rifle crack, spread fan, laser corridor, homing
 // petals, and flame rake.
-const WEAPON_FX = {
-  R: { flash: 1.25, fan: 0.75, spread: 0.10, hit: 1.00, hitSpread: 0.42,
-    breach: 0.00, beat1: 42, beat2: 96 },
-  S: { flash: 1.30, fan: 1.00, spread: 0.72, hit: 1.15, hitSpread: 0.78,
-    breach: 0.00, beat1: 48, beat2: 112 },
-  L: { flash: 1.65, fan: 0.50, spread: 0.04, hit: 1.75, hitSpread: 0.12,
-    breach: 1.30, beat1: 34, beat2: 78 },
-  H: { flash: 1.45, fan: 0.50, spread: 0.58, hit: 1.25, hitSpread: 0.34,
-    breach: 0.85, beat1: 44, beat2: 104 },
-  F: { flash: 1.90, fan: 1.50, spread: 0.46, hit: 1.50, hitSpread: 0.62,
-    breach: 1.10, beat1: 58, beat2: 138 },
-};
+const WEAPON_FX = Object.freeze({
+  R: Object.freeze({ flash: 1.25, fan: 0.75, spread: 0.10, hit: 1.00,
+    breach: 0.00, beat1: 48, beat2: 104, beat3: 164 }),
+  S: Object.freeze({ flash: 1.30, fan: 1.00, spread: 0.72, hit: 1.15,
+    breach: 0.00, beat1: 44, beat2: 102, beat3: 176 }),
+  L: Object.freeze({ flash: 1.65, fan: 0.50, spread: 0.04, hit: 1.75,
+    breach: 1.30, beat1: 32, beat2: 74, beat3: 132 }),
+  H: Object.freeze({ flash: 1.45, fan: 0.50, spread: 0.58, hit: 1.25,
+    breach: 0.85, beat1: 42, beat2: 96, beat3: 166 }),
+  F: Object.freeze({ flash: 1.90, fan: 1.50, spread: 0.46, hit: 1.50,
+    breach: 1.10, beat1: 54, beat2: 122, beat3: 214 }),
+});
+
+/* Stable semantic hooks for the eventual bitmap VFX atlas. Runtime remains
+ * procedural/pool-backed in this pass; a v2 pack can map these cells onto the
+ * same four beat slots without touching damage, collision, event timing or
+ * the capture contract. Keeping the names here makes art replacement data,
+ * not another weapon switch statement. */
+export const ACTION_VFX_V2_HOOKS = Object.freeze({
+  version: 2,
+  weapons: Object.freeze({
+    R: Object.freeze(['rivet-contact-pin', 'rivet-through-chip', 'rivet-plate-pop', 'rivet-cool-cut']),
+    S: Object.freeze(['scatter-contact-rake', 'scatter-armour-fan', 'scatter-reverse-rake', 'scatter-cross-cut']),
+    L: Object.freeze(['lance-contact-seam', 'lance-throughline', 'lance-collapse', 'lance-cool-needle']),
+    H: Object.freeze(['homing-vane-a', 'homing-vane-b', 'homing-core-shear', 'homing-guidance-debris']),
+    F: Object.freeze(['cinder-contact-bite', 'cinder-hot-solids', 'cinder-backwash', 'cinder-pressure-wake']),
+  }),
+  deaths: Object.freeze({
+    wasp: Object.freeze(['wasp-core-snip', 'wasp-wing-shear', 'wasp-thrust-fall', 'wasp-cooling-wake']),
+    hound: Object.freeze(['hound-spine-break', 'hound-scute-skid', 'hound-deck-scrape', 'hound-cooling-wake']),
+    emplacement: Object.freeze(['mount-contact', 'mount-bracket-eject', 'mount-vent-collapse', 'mount-cooling-wake']),
+  }),
+});
 
 /* ----------------------- action impact beats --------------------- *
  * A projectile endpoint already draws the exact collision point in bullets.js.
@@ -96,75 +118,107 @@ function emitActionImpact(row, stage) {
 
   if (row.type === 'S') {
     if (stage === 0) {
-      // Scatterbloom arrives as a clipped rake, not five overlapping lamps.
-      fxFlash(48, 0.16 * k, x, y, color, 0.035);
-      fxDirectedBurst(J.impact, x, y, color, ds, dy, 1.02, 0.42 * k);
+      // One broad cross-cut says that five manufactured flechettes arrived
+      // together. The projectile endpoint owns the rooted rake; this target
+      // response starts with the clipped armour spray, not a duplicate lamp.
+      fxDirectedBurst(J.impact, x, y, color, ds, dy, 1.06, 0.62 * k);
     } else if (stage === 1) {
-      fxRoleFragments(role, x, y, enemy, ds, dy + 0.12, 0.36 * k * armour);
-    } else {
+      fxRoleFragments(role, x, y, enemy, ds, dy + 0.18,
+        0.56 * k * armour);
+      fxDirectionalFlash(66, 0.62 * k, 0.12 * k, x, y, enemy,
+        px, py, 0.04);
+    } else if (stage === 2) {
       fxDirectedBurst(J.impact, x - ds * 0.08, y - dy * 0.08, color,
-        -ds, -dy, 0.84, 0.24 * k);
+        -ds, -dy, 0.88, 0.44 * k);
+    } else {
+      fxDirectionalFlash(78, 0.48 * k, 0.095 * k, x, y, color,
+        -px, -py, 0.03);
     }
     return;
   }
 
   if (row.type === 'L') {
     if (stage === 0) {
-      // Lance opens one narrow seam. Its echo closes back onto that same axis.
-      fxFlash(54, 0.26 * k, x, y, color, 0.045);
-      fxCoreRupture(x, y, color, ds, dy, 0.52 * k, 0.05);
+      // A long, narrow seam is the only impact that continues through the
+      // body. A split core bloomed into a cyan star once contact punctuation
+      // correctly layered over painted actors; keep the first frame a clipped
+      // through-line and reserve the inward collapse for beat two.
+      fxCoreRupture(x, y, color, ds, dy, 0.10 * k, 0.05, 2.20);
     } else if (stage === 1) {
-      fxDirectedBurst(J.impact, x, y, color, ds, dy, 0.08, 0.34 * k);
-    } else {
-      fxImplode(92, 0.42 * k, x - ds * 0.10, y - dy * 0.10,
+      fxDirectedBurst(J.impact, x, y, color, ds, dy, 0.055, 0.56 * k);
+      fxDirectionalFlash(58, 0.72 * k, 0.075 * k, x, y, color,
+        ds, dy, 0.045);
+    } else if (stage === 2) {
+      fxImplode(96, 0.52 * k, x - ds * 0.08, y - dy * 0.08,
         color, 0.035);
+    } else {
+      fxDirectedBurst(J.impact, x, y, color, -ds, -dy, 0.035, 0.26 * k);
     }
     return;
   }
 
   if (row.type === 'H') {
     if (stage === 0) {
-      // Homing guidance vanes shear across the flight line in two beats.
-      fxFlash(50, 0.19 * k, x, y, color, 0.035);
-      fxDirectedBurst(J.impact, x, y, color, px, py, 0.22, 0.28 * k);
+      // Guidance vanes scissor ACROSS the flight line. The second half arrives
+      // from the opposite side on the next beat. The endpoint owns vane A.
+      fxDirectedBurst(J.impact, x, y, color, px, py, 0.20, 0.46 * k);
     } else if (stage === 1) {
-      fxDirectedBurst(J.impact, x, y, color, -px, -py, 0.22, 0.24 * k);
-      fxCoreRupture(x, y, color, ds, dy, 0.38 * k, 0.045);
+      fxDirectionalFlash(64, 0.66 * k, 0.11 * k, x, y, color,
+        -px, -py, 0.045);
+      fxDirectedBurst(J.impact, x, y, color, -px, -py, 0.20, 0.40 * k);
+    } else if (stage === 2) {
+      fxCoreRupture(x, y, color, ds, dy, 0.52 * k, 0.045, 1.35);
     } else {
-      fxRoleFragments(role, x, y, enemy, px, py + 0.08, 0.30 * k * armour);
+      fxRoleFragments(role, x, y, enemy, px, py + 0.10,
+        0.48 * k * armour);
     }
     return;
   }
 
   if (row.type === 'F') {
     if (stage === 0) {
-      // Cindermouth bites once, then sheds hot solids, then pressure—not glow.
-      fxFlash(62, 0.24 * k, x, y, color, 0.04);
-      fxCoreRupture(x, y, color, ds, dy, 0.46 * k, 0.05);
+      // Cindermouth pierces its first two bodies, so terminal cleanup cannot
+      // own the hit read. The exact hostileImpact fact roots one clipped,
+      // orange bite here on every real damage contact. It is directional and
+      // short-lived—not a radius flash—and bullets.js suppresses only F's
+      // redundant HOSTILE terminal glyph when the final pierce is spent.
+      fxDirectionalFlash(92, 1.82 * k, 0.30 * k, x, y, color,
+        ds, dy, 0.22);
+      // Two torn halves give the bite a connected manufactured jaw at FAR,
+      // with a dark seam through the collision instead of a luminous disk.
+      // This core used to arrive on beat one; moving it here strengthens
+      // contact without increasing the sequence's total effect count.
+      fxCoreRupture(x, y, color, ds, dy, 0.62 * k, 0.225, 1.70);
     } else if (stage === 1) {
       fxDirectedBurst(J.impact, x, y, color, ds, Math.min(-0.18, dy),
-        0.66, 0.34 * k);
-      fxRoleFragments(role, x, y, enemy, ds, -0.28, 0.30 * k * armour);
+        0.68, 0.58 * k);
+      fxRoleFragments(role, x, y, enemy, ds, -0.32,
+        0.52 * k * armour);
+    } else if (stage === 2) {
+      fxDirectedBurst(J.impact, x, y - 0.04, color, -ds, 0.16,
+        0.50, 0.36 * k);
     } else {
-      fxVapor(x - ds * 0.08, y, enemy, -ds, 0.42 * k, 0.025);
+      fxVapor(x - ds * 0.10, y, enemy, -ds, 0.64 * k, 0.025);
     }
     return;
   }
 
-  // Rivet: a hard pin, one displaced chip, then silence. Its short residue is
-  // the baseline that makes the other four families feel extravagant.
+  // Rivet is a hard horizontal pin, one displaced plate, a reverse ricochet,
+  // then silence. It is the compact baseline, but no longer microscopic.
   if (stage === 0) {
-    fxFlash(44, 0.15 * k, x, y, color, 0.035);
-    fxDirectedBurst(J.impact, x, y, color, ds, dy, 0.24, 0.24 * k);
+    fxCoreRupture(x, y, color, ds, dy, 0.36 * k, 0.04, 1.55);
   } else if (stage === 1) {
-    fxCoreRupture(x, y, color, ds, dy, 0.34 * k, 0.04);
-  } else {
+    fxDirectedBurst(J.impact, x, y, color, ds, dy, 0.16, 0.40 * k);
+  } else if (stage === 2) {
     fxRoleFragments(role, x, y, enemy, -ds, Math.max(0.14, -dy),
-      0.22 * k * armour);
+      0.42 * k * armour);
+  } else {
+    fxDirectedBurst(J.impact, x, y, color, -ds, Math.max(0.18, -dy),
+      0.12, 0.22 * k);
   }
 }
 
-function armActionImpact(e, type, ds, dy, scale) {
+function armActionImpact(targetKind, type, x, y, ds, dy, scale) {
   const row = actionImpacts[actionImpactCursor];
   actionImpactCursor = (actionImpactCursor + 1) % ACTION_IMPACT_MAX;
   if (row.active) actionImpactRecycles++;
@@ -173,15 +227,15 @@ function armActionImpact(e, type, ds, dy, scale) {
   row.t0 = gameMs;
   row.stage = 0;
   row.type = type;
-  row.x = e.x;
-  row.y = e.y;
+  row.x = x;
+  row.y = y;
   row.ds = ds;
   row.dy = dy;
   row.scale = scale;
   row.color = fxShotColor(type);
-  row.enemy = fxHostileColor(e.kind);
-  row.role = hostileFragmentRole(e.kind);
-  row.warden = e.kind === 'warden';
+  row.enemy = fxHostileColor(targetKind);
+  row.role = hostileFragmentRole(targetKind);
+  row.warden = targetKind === 'warden';
   emitActionImpact(row, 0);
 }
 
@@ -191,13 +245,18 @@ function updateActionImpacts() {
     if (!row.active) continue;
     const W = WEAPON_FX[row.type];
     const elapsed = gameMs - row.t0;
+    // Chained fixed tests preserve all authored punctuation under a clamped
+    // 50ms frame: a slow device may cross two deadlines, but it may not
+    // silently skip a family beat. Four is a fixed ceiling, never a queue.
     if (row.stage === 0 && elapsed >= W.beat1) {
-      row.stage = 1;
-      emitActionImpact(row, 1);
+      row.stage = 1; emitActionImpact(row, 1);
     }
     if (row.stage === 1 && elapsed >= W.beat2) {
-      row.stage = 2;
-      emitActionImpact(row, 2);
+      row.stage = 2; emitActionImpact(row, 2);
+    }
+    if (row.stage === 2 && elapsed >= W.beat3) {
+      row.stage = 3;
+      emitActionImpact(row, 3);
       row.active = false;
       actionImpactLive--;
     }
@@ -209,6 +268,170 @@ function resetActionImpacts() {
   actionImpactCursor = 0;
   actionImpactLive = 0;
   actionImpactRecycles = 0;
+}
+
+/* --------------------- role destruction sentences ------------------ *
+ * Corpses remain owned by hostiles.js, including their exact final pose and
+ * bounded continuity. This fixed presentation sequencer makes the material
+ * leaving that pose obey the same role: wings shear, scutes skid, mounted
+ * brackets vent, and carrier shells part. No whole body is rotated, scaled or
+ * removed here. The four rows are future atlas slots named above. */
+const DEATH_SENTENCE_MAX = 12;
+const DEATH_BEATS = Object.freeze({
+  wasp: Object.freeze([58, 142, 268]),
+  hound: Object.freeze([72, 176, 318]),
+  polyp: Object.freeze([76, 188, 342]),
+  mortar: Object.freeze([68, 174, 326]),
+  carrier: Object.freeze([84, 206, 368]),
+  machine: Object.freeze([74, 184, 334]),
+});
+const deathSentences = Array.from({ length: DEATH_SENTENCE_MAX }, () => ({
+  active: false, started: false, targetId: 0,
+  t0: 0, stage: 0, kind: 'machine', role: 'machine',
+  x: 0, y: 0, dir: 1, incomingS: 1, incomingY: 0,
+  shot: 0, enemy: 0, scale: 1,
+}));
+let deathSentenceCursor = 0;
+let deathSentenceLive = 0;
+let deathSentenceRecycles = 0;
+
+function emitDeathSentence(row, stage) {
+  const { x, y, dir, incomingS: ds, incomingY: dy, shot, enemy } = row;
+  const k = row.scale;
+
+  if (row.kind === 'wasp') {
+    if (stage === 0) {
+      fxDirectionalFlash(78, 0.78 * k, 0.15 * k, x, y, shot,
+        ds, dy, 0.055);
+      fxCoreRupture(x, y, shot, ds, dy, 0.62 * k, 0.055, 1.55);
+    } else if (stage === 1) {
+      fxRoleFragments('wing', x, y, enemy, dir, -0.38, 1.18 * k);
+      fxDirectedBurst(J.death, x, y, enemy, dir, -0.42, 0.54, 0.78 * k);
+    } else if (stage === 2) {
+      fxDirectedBurst(J.impact, x, y, shot, -dir, 0.58, 0.42, 0.72 * k);
+      fxDirectionalFlash(82, 0.62 * k, 0.10 * k, x, y, enemy,
+        -dir, 0.44, 0.04);
+    } else {
+      fxVapor(x - dir * 0.10, y - 0.06, enemy, -dir, 0.66 * k, 0.025);
+    }
+    return;
+  }
+
+  if (row.kind === 'hound') {
+    if (stage === 0) {
+      fxDirectionalFlash(84, 0.90 * k, 0.17 * k, x, y - 0.04, shot,
+        ds, dy, 0.055);
+      fxCoreRupture(x, y - 0.04, shot, ds, dy, 0.68 * k, 0.05, 1.75);
+    } else if (stage === 1) {
+      fxRoleFragments('hound', x, y - 0.10, enemy, dir, 0.08, 1.16 * k);
+    } else if (stage === 2) {
+      fxDirectedBurst(J.death, x, y - 0.14, enemy, dir, 0.08, 0.30, 0.92 * k);
+      fxDirectedBurst(J.impact, x, y - 0.06, shot, -dir, 0.16, 0.24, 0.68 * k);
+    } else {
+      fxVapor(x - dir * 0.12, y - 0.18, enemy, -dir, 0.58 * k, 0.018);
+    }
+    return;
+  }
+
+  if (row.kind === 'polyp' || row.kind === 'mortar') {
+    const mortar = row.kind === 'mortar';
+    if (stage === 0) {
+      // The root stays; barrel/iris energy is driven into the mount.
+      fxDirectionalFlash(86, (mortar ? 0.82 : 0.92) * k, 0.16 * k,
+        x, y, shot, mortar ? -dir : 0, mortar ? 0.52 : 1, 0.055);
+      fxCoreRupture(x, y, shot, ds, dy, 0.64 * k, 0.05,
+        mortar ? 1.55 : 1.25);
+    } else if (stage === 1) {
+      fxRoleFragments('machine', x, y, enemy,
+        mortar ? -dir : dir, mortar ? 0.62 : 0.78, 1.08 * k);
+    } else if (stage === 2) {
+      fxDirectedBurst(J.death, x, y, enemy, 0, 1, 0.28, 0.86 * k);
+      fxDirectedBurst(J.impact, x, y - 0.12, shot, 0, -1, 0.22, 0.62 * k);
+    } else {
+      fxVapor(x, y - 0.08, enemy, 0, 0.76 * k, 0.024);
+    }
+    return;
+  }
+
+  if (row.kind === 'carrier') {
+    if (stage === 0) {
+      fxDirectionalFlash(94, 1.04 * k, 0.19 * k, x, y, shot,
+        ds, dy, 0.06);
+      fxCoreRupture(x, y, shot, ds, dy, 0.78 * k, 0.06, 1.65);
+    } else if (stage === 1) {
+      fxRoleFragments('machine', x - 0.16, y, enemy, -1, 0.30, 1.20 * k);
+      fxRoleFragments('machine', x + 0.16, y, enemy, 1, 0.30, 1.20 * k);
+    } else if (stage === 2) {
+      fxDirectedBurst(J.death, x, y, enemy, 0, -1, 0.36, 0.92 * k);
+      fxDirectedBurst(J.impact, x, y + 0.05, shot, 0, 1, 0.28, 0.72 * k);
+    } else {
+      fxVapor(x, y - 0.12, enemy, -ds, 0.88 * k, 0.03);
+    }
+    return;
+  }
+
+  // Stable fallback for any later mechanical role: pin, two brackets, vent.
+  if (stage === 0) {
+    fxDirectionalFlash(82, 0.82 * k, 0.16 * k, x, y, shot,
+      ds, dy, 0.05);
+    fxCoreRupture(x, y, shot, ds, dy, 0.64 * k, 0.05, 1.45);
+  } else if (stage === 1) {
+    fxRoleFragments(row.role, x, y, enemy, dir, 0.34, 1.04 * k);
+  } else if (stage === 2) {
+    fxDirectedBurst(J.death, x, y, enemy, dir, 0.34, 0.52, 0.82 * k);
+  } else {
+    fxVapor(x, y, enemy, -ds, 0.68 * k, 0.02);
+  }
+}
+
+function armDeathSentence(e, incomingS, incomingY, shot, enemy, scale) {
+  const row = deathSentences[deathSentenceCursor];
+  deathSentenceCursor = (deathSentenceCursor + 1) % DEATH_SENTENCE_MAX;
+  if (row.active) deathSentenceRecycles++;
+  else deathSentenceLive++;
+  row.active = true;
+  row.started = false;
+  row.targetId = e.id;
+  row.t0 = gameMs;
+  row.stage = 0;
+  row.kind = DEATH_BEATS[e.kind] ? e.kind : 'machine';
+  row.role = hostileFragmentRole(e.kind);
+  row.x = e.x; row.y = e.y;
+  row.dir = Math.sign(e.vx) || e.dir || -1;
+  row.incomingS = incomingS; row.incomingY = incomingY;
+  row.shot = shot; row.enemy = enemy; row.scale = scale;
+}
+
+function updateDeathSentences() {
+  for (let i = 0; i < DEATH_SENTENCE_MAX; i++) {
+    const row = deathSentences[i];
+    if (!row.active) continue;
+    // Removal happens inside hitHostile, before weapons.js publishes the exact
+    // successful terminal fact. Defer beat zero until the render update later
+    // in the same frame so a lethal bullet can replace the body-centre fallback
+    // with its exact collision point, chassis and live travel vector.
+    if (!row.started) { row.started = true; emitDeathSentence(row, 0); }
+    const beats = DEATH_BEATS[row.kind];
+    const elapsed = gameMs - row.t0;
+    if (row.stage === 0 && elapsed >= beats[0]) {
+      row.stage = 1; emitDeathSentence(row, 1);
+    }
+    if (row.stage === 1 && elapsed >= beats[1]) {
+      row.stage = 2; emitDeathSentence(row, 2);
+    }
+    if (row.stage === 2 && elapsed >= beats[2]) {
+      row.stage = 3; emitDeathSentence(row, 3);
+      row.active = false;
+      deathSentenceLive--;
+    }
+  }
+}
+
+function resetDeathSentences() {
+  for (let i = 0; i < DEATH_SENTENCE_MAX; i++) deathSentences[i].active = false;
+  deathSentenceCursor = 0;
+  deathSentenceLive = 0;
+  deathSentenceRecycles = 0;
 }
 
 /* ---------------------------- throttles --------------------------- *
@@ -260,7 +483,10 @@ function onHostileSpawned(e) { hostileHp.set(e.id, e.hp); }
 function onHostileSync(e) {
   const hp = hostileHp.get(e.id);
   if (hp !== undefined && e.hp < hp && gate('impact', J.impact.gapMs)) {
-    const type = gameMs - recentShotAt <= 650 ? recentShotType : 'R';
+    // Non-projectile damage (launch shock / scripted break) has no lettered
+    // chassis. Real bullets advance this hp baseline in their exact terminal
+    // observer below, so this fallback cannot duplicate or mislabel them.
+    const type = 'R';
     const W = WEAPON_FX[type];
     const weight = Math.min(1.46,
       (0.74 + W.hit * 0.16) * (1 + Math.max(0, hp - e.hp - 1) * 0.12));
@@ -270,10 +496,49 @@ function onHostileSync(e) {
     const dx = e.x - player.x;
     const dy = e.y - (player.y + player.muzzleY);
     const inv = 1 / Math.max(0.001, Math.hypot(dx, dy));
-    armActionImpact(e, type, dx * inv, dy * inv,
+    armActionImpact(e.kind, type, e.x, e.y, dx * inv, dy * inv,
       weight * (e.kind === 'warden' ? 1.16 : 1));
   }
   hostileHp.set(e.id, e.hp);
+}
+
+function onBulletHostileImpact(
+  _slot, type, x, y, vx, vy, targetId, targetKind, damaged, lethal,
+) {
+  if (!damaged) return;
+  const inv = 1 / Math.max(0.001, Math.hypot(vx, vy));
+  const ds = vx * inv, dy = vy * inv;
+  const W = WEAPON_FX[type] || WEAPON_FX.R;
+
+  // Advance the hp observer from the already-resolved sim row. This prevents
+  // next frame's ordinary hostile sync from manufacturing a second, late,
+  // player-centred impact for the same projectile fact.
+  if (!lethal) {
+    for (let i = 0; i < hostiles.length; i++) {
+      if (hostiles[i].id !== targetId) continue;
+      hostileHp.set(targetId, hostiles[i].hp);
+      break;
+    }
+  }
+
+  if (gate('impact', J.impact.gapMs)) {
+    const weight = Math.min(1.46, 0.74 + W.hit * 0.16);
+    armActionImpact(targetKind, type, x, y, ds, dy,
+      weight * (targetKind === 'warden' ? 1.16 : 1));
+  }
+
+  if (!lethal) return;
+  // hitHostile removes before returning, so the role sentence already owns a
+  // fixed pending row. Correct it synchronously before updateJuice emits beat
+  // zero later in this same frame. No queue growth and no object event.
+  for (let i = 0; i < DEATH_SENTENCE_MAX; i++) {
+    const row = deathSentences[i];
+    if (!row.active || row.targetId !== targetId) continue;
+    row.x = x; row.y = y;
+    row.incomingS = ds; row.incomingY = dy;
+    row.shot = fxShotColor(type);
+    break;
+  }
 }
 
 let deathChain = 0;
@@ -319,21 +584,25 @@ function updateWardenRupture() {
       -1, 0.18, 0.78);
     fxRoleFragments('machine', w.x + 1.55, w.y + 0.10, w.enemy,
       1, 0.18, 0.78);
-    fxFlash(155, 0.92, w.x, w.y + 0.18, w.carrier, 0.08);
+    fxDirectionalFlash(148, 1.18, 0.12,
+      w.x, w.y + 0.18, w.carrier, w.dir, -0.08, 0.08);
     addTrauma(S.boom * 0.42);
     return;
   }
 
   if (w.stage === 1 && elapsed >= 650) {
     w.stage = 2;
-    // Signal packets run back along the severed rails while the aperture
-    // physically closes. fxImplode is the same jagged pooled glyph as an
-    // impact flash, but its scale sentence is inward.
+    // Signal packets run back along the severed rails. Two offset broken
+    // seams close toward one another; a single giant magenta implode read as
+    // a pasted star over the six-piece mechanical failure.
     fxDirectedBurst(J.impact, w.x - 1.48, w.y + 0.04, w.signal,
       1, 0, 0.18, 1.35);
     fxDirectedBurst(J.impact, w.x + 1.48, w.y + 0.04, w.signal,
       -1, 0, 0.18, 1.35);
-    fxImplode(360, 2.75, w.x, w.y + 0.02, w.signal, 0.12);
+    fxDirectionalFlash(215, 1.04, 0.10,
+      w.x - 0.78, w.y + 0.20, w.signal, 1, -0.18, 0.12);
+    fxDirectionalFlash(235, 0.94, 0.09,
+      w.x + 0.76, w.y - 0.12, w.signal, -1, 0.18, 0.12);
     addTrauma(S.boom * 0.62);
     return;
   }
@@ -341,14 +610,21 @@ function updateWardenRupture() {
   if (w.stage === 2 && elapsed >= 1010) {
     w.stage = 3;
     // The last beat goes INTO the Crown mount and vents one compact plume.
-    // No expanding circle or screen-wide white slab stands in for the core.
-    fxDirectedBurst(J.death, w.x, w.y - 0.04, w.carrier,
-      0, -1, 0.34, 1.25);
-    fxDirectedBurst(J.impact, w.x, w.y + 0.08, w.signal,
-      0, 1, 0.46, 1.05);
-    fxCoreRupture(w.x, w.y, w.carrier, 0, -1, 1.28, 0.10);
+    // A long down-cut and short signal cross-cut expose the dark core seam;
+    // no circular white lamp stands in for the machinery.
+    fxDirectedBurst(J.impact, w.x - 0.40, w.y + 0.02, w.enemy,
+      -0.22, -1, 0.18, 0.72);
+    fxDirectedBurst(J.impact, w.x + 0.40, w.y + 0.02, w.enemy,
+      0.22, -1, 0.18, 0.72);
+    fxDirectedBurst(J.impact, w.x, w.y + 0.10, w.signal,
+      0, 1, 0.24, 0.58);
+    fxDirectionalFlash(150, 1.34, 0.09,
+      w.x - 0.10, w.y + 0.02, w.carrier, 0, -1, 0.10);
+    fxDirectionalFlash(132, 0.92, 0.075,
+      w.x + 0.06, w.y + 0.09, w.signal, 1, 0, 0.105);
+    fxDirectionalFlash(142, 0.76, 0.07,
+      w.x - 0.04, w.y - 0.08, w.enemy, -0.72, -0.38, 0.095);
     fxVapor(w.x, w.y - 0.12, w.enemy, 0, 1.05, 0.06);
-    fxFlash(165, 0.78, w.x, w.y, w.carrier, 0.10);
     addTrauma(S.boom * 0.78);
     return;
   }
@@ -363,80 +639,31 @@ function onHostileRemoved(e, fade) {
   lastDeathAt = gameMs;
   const chainScale = 1 + (deathChain - 1) * 0.18;
   const enemyColor = fxHostileColor(e.kind);
-  const shotColor = fxShotColor(gameMs - recentShotAt <= 700 ? recentShotType : 'R');
+  // A lethal projectile publishes its exact chassis/axis immediately after
+  // this removal callback and corrects the deferred role row before beat zero.
+  // Non-projectile breaks use the dependable neutral R value, never whichever
+  // unrelated muzzle happened to fire most recently.
+  const shotColor = fxShotColor('R');
 
-  // The weapon owns one compact impact flash; construction owns everything
-  // after it. Directional pooled fragments echo the corpse choreography:
-  // flyers shed thrust/wing energy, hounds scrape the deck, and emplacements
-  // vent through their mount. There is deliberately no universal radial
-  // burst or expanding perfect ring hiding the species sentence.
+  // The weapon establishes the incoming axis. The corpse owns its exact final
+  // pose; a fixed four-beat role sentence only sheds construction from it.
+  // Nothing below scales, spins or removes the corpse itself.
   const dir = Math.sign(e.vx) || e.dir || -1;
   const impactS = e.x - player.x;
   const impactY = e.y - (player.y + player.muzzleY);
   const impactInv = 1 / Math.max(0.001, Math.hypot(impactS, impactY));
   const incomingS = impactS * impactInv;
   const incomingY = impactY * impactInv;
-  const flashScale = e.kind === 'warden' ? 2.15 : Math.min(1.5, chainScale);
-  fxFlash(J.death.flashMs, J.death.flashSize * flashScale,
-    e.x, e.y, shotColor);
-
-  // Three-phase physical punctuation at the exact corpse point: a compact
-  // hot seam aligned to the incoming shot, role-shaped solid fragments, then
-  // one sparse wake drifting back through the hole. These are presentation
-  // rows only—no collision radius, damage or corpse/atlas state reads them.
-  const fragmentRole = e.kind === 'wasp' ? 'wing' :
-    (e.kind === 'hound' ? 'hound' : 'machine');
-  const bodyScale = e.kind === 'warden' ? 1.65 :
-    (e.kind === 'carrier' ? 1.18 : (e.kind === 'wasp' ? 0.76 : 0.96));
-  const fragmentScale = e.kind === 'warden' ? 1.42 :
-    (e.kind === 'carrier' ? 1.12 : (e.kind === 'wasp' ? 0.88 : 1.0));
-  const vaporScale = e.kind === 'warden' ? 1.25 :
-    (e.kind === 'wasp' ? 0.58 : (e.kind === 'hound' ? 0.68 : 0.82));
-  fxCoreRupture(e.x, e.y, fxRole('muzzle'), incomingS, incomingY,
-    bodyScale * Math.min(1.18, chainScale));
-  fxRoleFragments(fragmentRole, e.x, e.y, enemyColor,
-    incomingS + dir * 0.22, incomingY + (e.kind === 'wasp' ? -0.18 : 0.12),
-    fragmentScale * Math.min(1.15, chainScale));
-  fxVapor(e.x, e.y - (e.kind === 'hound' ? 0.12 : 0), enemyColor,
-    -incomingS, vaporScale);
-
-  if (e.kind === 'wasp') {
-    fxDirectedBurst(J.death, e.x, e.y, enemyColor, dir, -0.46, 0.74,
-      0.82 * chainScale);
-    fxDirectedBurst(J.impact, e.x, e.y, shotColor, -dir, 0.62, 0.52,
-      0.66 * chainScale);
-  } else if (e.kind === 'hound') {
-    fxDirectedBurst(J.death, e.x, e.y - 0.10, enemyColor, dir, 0.10, 0.34,
-      0.90 * chainScale);
-    fxDirectedBurst(J.impact, e.x, e.y, shotColor, -dir, 0.18, 0.30,
-      0.58 * chainScale);
-  } else if (e.kind === 'polyp') {
-    fxDirectedBurst(J.death, e.x, e.y, enemyColor, 0, 1, 0.34,
-      0.76 * chainScale);
-    fxDirectedBurst(J.impact, e.x, e.y - 0.18, shotColor, 0, -1, 0.26,
-      0.48 * chainScale);
-  } else if (e.kind === 'mortar') {
-    fxDirectedBurst(J.death, e.x, e.y, enemyColor, -dir, 0.72, 0.48,
-      0.80 * chainScale);
-    fxDirectedBurst(J.impact, e.x, e.y - 0.12, shotColor, 0, -1, 0.34,
-      0.54 * chainScale);
-  } else if (e.kind === 'carrier') {
-    fxDirectedBurst(J.death, e.x, e.y, enemyColor, -1, 0.34, 0.40,
-      0.76 * chainScale);
-    fxDirectedBurst(J.death, e.x, e.y, enemyColor, 1, 0.34, 0.40,
-      0.76 * chainScale);
-    fxDirectedBurst(J.impact, e.x, e.y - 0.12, shotColor, 0, -1, 0.28,
-      0.58 * chainScale);
-  } else if (e.kind === 'warden') {
-    fxDirectedBurst(J.death, e.x, e.y, enemyColor, -1, 0.28, 0.34, 1.35);
-    fxDirectedBurst(J.death, e.x, e.y, enemyColor, 1, 0.28, 0.34, 1.35);
-    fxDirectedBurst(J.impact, e.x, e.y + 0.08, shotColor, 0, 1, 0.52, 1.4);
-  } else {
-    fxDirectedBurst(J.death, e.x, e.y, enemyColor, 0, 1, 1.20,
-      chainScale);
-    fxDirectedBurst(J.impact, e.x, e.y, shotColor,
-      incomingS, incomingY, 0.46, 0.72 * chainScale);
+  if (e.kind !== 'warden') {
+    const roleScale = e.kind === 'carrier' ? 1.16 :
+      (e.kind === 'wasp' ? 0.92 : 1.02);
+    armDeathSentence(e, incomingS, incomingY, shotColor, enemyColor,
+      roleScale * Math.min(1.16, chainScale));
   }
+  // Warden contact is deliberately absent here: removal runs inside
+  // hitHostile before the projectile publishes its exact off-centre terminal.
+  // That collision hook owns contact; the fixed Warden sequencer below owns
+  // only later whole-machine failure beats.
 
   // Mutation hardware shuts off in its own signal colour. These are compact
   // inward/falling cues paired with hostiles.js's contracting Aegis crown and
@@ -460,25 +687,31 @@ function onHostileRemoved(e, fade) {
   }
 
   // The first machine RIG breaks teaches the reward language loudly: an
-  // upward shrapnel fan and two expanding fronts. It happens naturally in
+  // upward shrapnel fan and one long fracture stroke. It happens naturally in
   // the opening fight, costs no rule/state change, and gives the first minute
   // one authored "whoa" beat instead of waiting for a late-game weapon drop.
   if (!firstBreakDone) {
     firstBreakDone = true;
-    fxDirectedBurst(J.death, e.x, e.y, shotColor, 0, 1, 1.9, 1.8);
-    fxDirectedBurst(J.death, e.x, e.y, enemyColor, dir, 0.34, 0.92, 1.15);
-    fxFlash(210, 1.55, e.x, e.y, shotColor, 0.04);
-    addTrauma(S.boom * 0.8);
+    // Loud means more construction, not a white lamp. The role's own solid
+    // alphabet remains visible through bloom and leaves the corpse readable.
+    if (e.kind !== 'warden') {
+      fxRoleFragments(hostileFragmentRole(e.kind), e.x, e.y, enemyColor,
+        dir, e.kind === 'wasp' ? -0.28 : 0.26, 1.18);
+      fxDirectedBurst(J.impact, e.x, e.y, fxRole('warn'),
+        -dir, 0.42, 0.44, 0.62);
+      addTrauma(S.boom * 0.8);
+    }
   }
 
   // Three fast kills earn the one larger beat. It is capped and gated at
   // 600ms: spectacular in a crowd, never screen-white spam.
-  if (deathChain >= 3 && gate('chainBlast', 600)) {
+  if (e.kind !== 'warden' && deathChain >= 3 && gate('chainBlast', 600)) {
     const payoff = Math.min(1.65, 1.25 + (deathChain - 3) * 0.14);
-    fxDirectedBurst(J.death, e.x, e.y, shotColor, -dir, 0.56, 0.66, payoff);
+    fxDirectedBurst(J.death, e.x, e.y, fxRole('warn'), -dir, 0.56, 0.66, payoff);
     fxDirectedBurst(J.death, e.x, e.y, enemyColor, dir, 0.28, 0.58,
       payoff * 0.72);
-    fxFlash(180, 1.75, e.x, e.y, shotColor, 0.06);
+    fxDirectionalFlash(155, 1.34, 0.24, e.x, e.y, fxRole('warn'),
+      0, 1, 0.065);
     addTrauma(S.kill * 0.65);
   }
 }
@@ -602,6 +835,7 @@ function onStateScreen(next) {
   deathChain = 0; lastDeathAt = -1e9;
   firstBreakDone = false;
   resetActionImpacts();
+  resetDeathSentences();
   wardenRupture.active = false;
   wardenRupture.stage = 0;
   prev.hp = player.hp;
@@ -638,6 +872,7 @@ export function updateJuice() {
   if (ritual) addTrauma(S.rumbleMax * S.decayPerSec * (dtMs / 1000));
 
   updateActionImpacts();
+  updateDeathSentences();
   updateWardenRupture();
   updateFx(dtMs);
 
@@ -659,6 +894,14 @@ export function juiceSnapshot() {
       cursor: actionImpactCursor, recycles: actionImpactRecycles,
       drawPoolsAdded: 0,
     },
+    deathSentences: {
+      active: deathSentenceLive, max: DEATH_SENTENCE_MAX,
+      cursor: deathSentenceCursor, recycles: deathSentenceRecycles,
+      stages: 4, corpseTransformWrites: 0, drawPoolsAdded: 0,
+    },
+    impactGrammar: { version: ACTION_VFX_V2_HOOKS.version, beats: 4,
+      source: 'procedural-pools' },
+    bridge: { hostileInstalls: hostileBridgeInstalls },
     wardenRupture: wardenRupture.active ? wardenRupture.stage : -1,
     ...fx,
   };
@@ -669,12 +912,44 @@ export function juiceSnapshot() {
  * behaviour is identical even if a juice handler throws.              */
 function after(group, name, fn) {
   const holder = group === null ? view : view[group];
+  const tag = `juice:${group === null ? 'view' : group}.${name}`;
+  // Async atlas modules can resume after this module evaluated and replace a
+  // bridge slot with their finished renderer. Mark our wrapper chain so the
+  // composition root can safely reinstall the observer once every import has
+  // settled, without stacking the same observer twice when it was retained.
+  for (let probe = holder[name]; typeof probe === 'function';
+       probe = probe[JUICE_PREVIOUS]) {
+    if (probe[JUICE_OBSERVER] === tag) return false;
+  }
   const prevImpl = holder[name];
-  holder[name] = (a, b, c) => {
-    prevImpl(a, b, c);
+  const wrapped = (a, b, c, d, e, f, g, h, i, j) => {
+    prevImpl(a, b, c, d, e, f, g, h, i, j);
     if (dead) return;                    // one failure retires the layer, not the run
-    try { fn(a, b, c); } catch (e) { warnDead(e); }
+    try { fn(a, b, c, d, e, f, g, h, i, j); } catch (error) { warnDead(error); }
   };
+  Object.defineProperty(wrapped, JUICE_OBSERVER, { value: tag });
+  Object.defineProperty(wrapped, JUICE_PREVIOUS, { value: prevImpl });
+  holder[name] = wrapped;
+  return true;
+}
+
+const JUICE_OBSERVER = Symbol.for('hullbreaker.juiceObserver');
+const JUICE_PREVIOUS = Symbol.for('hullbreaker.previousBridge');
+let hostileBridgeInstalls = 0;
+
+// Hostile art contains top-level async settlement. Its final bridge owner can
+// therefore resume after static module evaluation and replace the early juice
+// wrappers. main.js calls this idempotent fence after *all* imports settle and
+// immediately before the action-atlas observer. Keeping the early call below
+// preserves standalone/module-fixture behaviour; markers prevent duplicates.
+export function installJuiceHostileBridge() {
+  if (!JUICE_ENABLED) return false;
+  let installed = false;
+  installed = after('hostiles', 'spawned', onHostileSpawned) || installed;
+  installed = after('hostiles', 'sync', onHostileSync) || installed;
+  installed = after('hostiles', 'removed', onHostileRemoved) || installed;
+  if (installed) hostileBridgeInstalls++;
+  return installed;
 }
 
 let dead = false;
@@ -686,11 +961,10 @@ function warnDead(e) {
 if (JUICE_ENABLED) {
   after('juice', 'hitStop', onHitStop);
   after('player', 'sync', onPlayerSync);
-  after('hostiles', 'spawned', onHostileSpawned);
-  after('hostiles', 'sync', onHostileSync);
-  after('hostiles', 'removed', onHostileRemoved);
+  installJuiceHostileBridge();
   after('capsules', 'removed', onCapsuleRemoved);
   after('bullets', 'slotSpawned', onShotSpawned);
+  after('bullets', 'hostileImpact', onBulletHostileImpact);
   after('transform', 'ritual', onTransformRitual);
   after('transform', 'finished', onBoom);
   after('transform', 'reset', onTransformReset);

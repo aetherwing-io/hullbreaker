@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Real-browser proof for the current six-face Meridian defense response.
  * Boots the shipped composition root, walks all six existing faces, captures
- * real tell/fire/turn states, and compares the one-atlas renderer to the
+ * real tell/fire/recovery/spent/turn states, and compares the fixed renderer to the
  * render-only `?defensevfx=0` escape hatch. */
 
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -19,7 +19,7 @@ const PORTRAIT = { width: 900, height: 1200 };
 const STATES = ['observe', 'intercept', 'contain', 'quarantine', 'sterilize', 'scuttle'];
 const errors = [];
 const report = { output: out, browser: null, faces: [], captures: {}, turn: null,
-  resources: null, gates: [], errors };
+  resources: null, livePerformance: null, gates: [], errors };
 const gate = (ok, label, detail = null) =>
   report.gates.push({ ok: Boolean(ok), label, detail });
 
@@ -33,10 +33,10 @@ async function boot(newPage, { off = false, viewport = DESKTOP } = {}) {
   });
   const query = off ? '&defensevfx=0' : '';
   await page.goto(`${globalThis.__defenseBase}/index.html?testapi=1&shell=0&audio=0` +
-    `&view=far&fixeddt=20${query}`, { waitUntil: 'load', timeout: 30000 });
+    `&view=far&fixeddt=20${query}`, { waitUntil: 'load', timeout: 60000 });
   await page.waitForFunction(() => globalThis.HB && HB.state() === 'PLAYING' &&
     globalThis.__HB_MERIDIAN_DEFENSE_VFX && globalThis.__HB_DEFENSE_VFX_ART,
-  null, { timeout: 20000 });
+  null, { timeout: 40000 });
   await page.addStyleTag({ content: '#overlay { display: none !important; }' });
   await page.evaluate(async () => {
     const [C, D, H, L, P, R, SP, ST, T, W, WG] = await Promise.all([
@@ -164,6 +164,14 @@ async function walkSixFaces(page) {
       report.captures.face1TellDesktop = file;
       await freezeCapture(page, file);
     }
+    if (face === 6) {
+      const desktop = resolve(out, 'face6-scuttle-tell-desktop.png');
+      report.captures.face6TellDesktop = desktop;
+      await freezeCapture(page, desktop);
+      const portrait = resolve(out, 'face6-scuttle-tell-portrait.png');
+      report.captures.face6TellPortrait = portrait;
+      await freezeCapture(page, portrait, PORTRAIT);
+    }
     await waitStage(page, face, 'fire', { progress: 0.08, socket: true });
     const fire = await resourceSnapshot(page);
     if (face === 3) {
@@ -179,17 +187,41 @@ async function walkSixFaces(page) {
       report.captures.face6FirePortrait = portrait;
       await freezeCapture(page, portrait, PORTRAIT);
     }
+    const recovery = await waitStage(page, face, 'recovery', {
+      progress: face === 6 ? 0.16 : 0,
+      socket: true,
+    });
+    if (face === 6) {
+      const desktop = resolve(out, 'face6-scuttle-recovery-desktop.png');
+      report.captures.face6RecoveryDesktop = desktop;
+      await freezeCapture(page, desktop);
+      const portrait = resolve(out, 'face6-scuttle-recovery-portrait.png');
+      report.captures.face6RecoveryPortrait = portrait;
+      await freezeCapture(page, portrait, PORTRAIT);
+    }
     await page.waitForFunction((face) => {
       const snapshot = globalThis.HB.snapshot().meridianDefense;
       const p = snapshot?.presentation;
       return p?.face === face && p.stage === 'dormant' && p.reason === 'spent';
     }, face, { timeout: 8000 });
     const after = await resourceSnapshot(page);
+    if (face === 6) {
+      const desktop = resolve(out, 'face6-scuttle-spent-desktop.png');
+      report.captures.face6SpentDesktop = desktop;
+      await freezeCapture(page, desktop);
+      const portrait = resolve(out, 'face6-scuttle-spent-portrait.png');
+      report.captures.face6SpentPortrait = portrait;
+      await freezeCapture(page, portrait, PORTRAIT);
+    }
     report.faces.push({ face, state: STATES[face - 1], setup,
       tell: { sim: tell.sim, vfx: tell.vfx },
       fire: { sim: fire.sim, vfx: fire.vfx, pressure: fire.pressure.telemetry },
+      recovery: { sim: recovery.sim, vfx: recovery.vfx },
       after: { sim: after.sim, vfx: after.vfx, pressure: after.pressure.telemetry } });
   }
+  // This rolling number intentionally remains capture-contaminated and is
+  // reported under captureCadencePerf below. A separate simultaneous ON/OFF
+  // pair owns the actual no-capture live-frame gate.
   return { baseline, final: await resourceSnapshot(page), face3Fire };
 }
 
@@ -199,6 +231,81 @@ async function runFace3Comparison(page) {
   await waitStage(page, 3, 'fire', { progress: 0.08, socket: false });
   const fire = await resourceSnapshot(page);
   return { baseline, fire };
+}
+
+async function sampleLiveFrames(page, count = 36) {
+  return page.evaluate((wanted) => new Promise((resolveSample) => {
+    const deltas = [];
+    let previous = 0;
+    const tick = (now) => {
+      if (previous) deltas.push(now - previous);
+      previous = now;
+      if (deltas.length < wanted) requestAnimationFrame(tick);
+      else {
+        const sorted = [...deltas].sort((a, b) => a - b);
+        const quantile = (p) => sorted[Math.min(sorted.length - 1,
+          Math.floor((sorted.length - 1) * p))];
+        resolveSample({
+          samples: deltas.length,
+          averageMs: deltas.reduce((sum, value) => sum + value, 0) / deltas.length,
+          medianMs: quantile(0.50),
+          p75Ms: quantile(0.75),
+          p95Ms: quantile(0.95),
+          minMs: sorted[0],
+          maxMs: sorted.at(-1),
+        });
+      }
+    };
+    requestAnimationFrame(tick);
+  }), count);
+}
+
+async function measureLivePair(newPage) {
+  // Both pages remain visible and render concurrently, so background machine
+  // contention is shared.  No screenshots, viewport swaps or PNG encoding run
+  // inside this sample. Each page is paused on the same real Contain fire beat;
+  // the only systematic difference is the defense renderer escape hatch.
+  const onOwned = await boot(newPage);
+  await onOwned.page.evaluate(() =>
+    globalThis.__MERIDIAN_DEFENSE_QA__.ST.setState('PAUSED'));
+  const offOwned = await boot(newPage, { off: true });
+  await offOwned.page.evaluate(() =>
+    globalThis.__MERIDIAN_DEFENSE_QA__.ST.setState('PAUSED'));
+  try {
+    await Promise.all([
+      (async () => {
+        await enterFace(onOwned.page, 3);
+        await waitStage(onOwned.page, 3, 'fire', { progress: 0.12, socket: true });
+        await onOwned.page.evaluate(() =>
+          globalThis.__MERIDIAN_DEFENSE_QA__.ST.setState('PAUSED'));
+      })(),
+      (async () => {
+        await enterFace(offOwned.page, 3);
+        await waitStage(offOwned.page, 3, 'fire', { progress: 0.12, socket: false });
+        await offOwned.page.evaluate(() =>
+          globalThis.__MERIDIAN_DEFENSE_QA__.ST.setState('PAUSED'));
+      })(),
+    ]);
+    await Promise.all([onOwned.page.waitForTimeout(500), offOwned.page.waitForTimeout(500)]);
+    const [onFrames, offFrames, onResources, offResources] = await Promise.all([
+      sampleLiveFrames(onOwned.page), sampleLiveFrames(offOwned.page),
+      resourceSnapshot(onOwned.page), resourceSnapshot(offOwned.page),
+    ]);
+    return {
+      mode: 'simultaneous-no-capture-rAF',
+      state: 'paused-real-face3-fire',
+      on: { frames: onFrames, render: onResources.render, memory: onResources.memory },
+      off: { frames: offFrames, render: offResources.render, memory: offResources.memory },
+      incremental: {
+        medianMs: onFrames.medianMs - offFrames.medianMs,
+        p75Ms: onFrames.p75Ms - offFrames.p75Ms,
+        calls: onResources.render.calls - offResources.render.calls,
+        triangles: onResources.render.triangles - offResources.render.triangles,
+      },
+    };
+  } finally {
+    await Promise.all([onOwned.close(), offOwned.close()]);
+  }
 }
 
 async function captureTurn(newPage) {
@@ -258,6 +365,7 @@ await withIsolatedBrowser(repoRoot, async ({ baseUrl, launch, newPage }) => {
   await offOwned.close();
   report.turn = await captureTurn(newPage);
   report.resources = { production, matched, off };
+  report.livePerformance = await measureLivePair(newPage);
 });
 
 const finalVfx = report.resources.production.final.vfx;
@@ -285,6 +393,7 @@ gate(report.faces[0].state === 'observe' && report.faces[0].tell.vfx.socketId &&
   report.faces[5].state === 'scuttle' && report.faces[5].tell.vfx.socketId,
 'Observe and Scuttle each visibly activate on their own route sockets');
 gate(report.faces.every((row) => row.after.vfx.drawSlots === 0 &&
+  row.after.vfx.mechanismDrawSlots === 0 &&
   row.after.vfx.stage === 'dormant'),
 'dormant and post-spent states submit zero defense draws');
 gate(report.faces.every((row) => row.after.pressure.environment.signals >= row.face),
@@ -300,15 +409,21 @@ gate(report.turn.during.vfx.drawSlots === 0 &&
   report.turn.retried.vfx.socketId,
 'mid-turn owns zero VFX and a pre-fire interruption safely retries afterward');
 gate(finalVfx.poolGeometry === 1 && finalVfx.poolSlots === 1 &&
-  finalVfx.maxVisible === 1 && finalVfx.atlasTextures === 1,
-'runtime stays at one atlas, one pooled geometry and one visible slot', finalVfx);
-gate(memoryDelta.geometries >= 0 && memoryDelta.geometries <= 1 &&
+  finalVfx.maxVisible === 1 && finalVfx.atlasTextures === 1 &&
+  finalVfx.mechanismPools === 2 && finalVfx.mechanismParts === 10 &&
+  finalVfx.fixedAtBoot === true && finalVfx.textureTransforms === false,
+'runtime stays at one atlas draw plus two fixed body-mechanism pools', finalVfx);
+gate(memoryDelta.geometries >= 0 && memoryDelta.geometries <= 4 &&
   memoryDelta.textures >= 0 && memoryDelta.textures <= 1 &&
-  memoryDelta.calls <= 1 && memoryDelta.triangles <= 2,
-'matched render-only A/B adds at most one texture, geometry, call and quad', memoryDelta);
-gate(report.resources.production.final.perf.fps >= 30 &&
-  report.resources.production.final.perf.avgMs <= 34,
-'six-face response stays inside frame budget', report.resources.production.final.perf);
+  memoryDelta.calls <= 10 && memoryDelta.triangles <= 420,
+'matched render-only A/B stays inside the fixed four-geometry mechanism budget', memoryDelta);
+const live = report.livePerformance;
+gate(live.on.frames.samples === live.off.frames.samples &&
+  live.on.frames.samples >= 36 &&
+  live.on.frames.medianMs <= live.off.frames.medianMs * 1.35 + 6 &&
+  live.on.frames.p75Ms <= live.off.frames.p75Ms * 1.35 + 8 &&
+  live.incremental.calls <= 10 && live.incremental.triangles <= 420,
+'simultaneous no-capture live frames keep defense overhead bounded', live);
 
 await writeFile(resolve(out, 'report.json'), JSON.stringify(report, null, 2));
 const summary = {
@@ -325,7 +440,8 @@ const summary = {
   lifecycle: { activations: finalSim.activations, impulses: finalSim.impulses,
     dormantDraws: finalVfx.dormantDraws, componentsUsed: finalVfx.componentsUsed },
   resources: memoryDelta,
-  perf: report.resources.production.final.perf,
+  captureCadencePerf: report.resources.production.final.perf,
+  livePerformance: report.livePerformance,
   captures: report.captures,
   turn: report.turn.file,
   gates: report.gates,

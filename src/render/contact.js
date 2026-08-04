@@ -1,5 +1,5 @@
 /* ======================= CONTACT SHADOWS (T-039 / S6) ================== *
- * One instanced pool of flat, multiply-blended quads that reads "this thing
+ * One instanced pool of flat, multiply-blended footprints that reads "this thing
  * sits ON the world" — docs/proposals/2026-08-look-direction.md §3 S6, the
  * cheapest legal source of the missing dark end of the value range (0.0% of
  * playfield pixels exceed luminance 200 in every gameplay capture measured
@@ -94,36 +94,90 @@ export const CONTACT_SHADOWS_ENABLED =
 
 const POOL_MAX = 48;               // see header note: generous headroom, not a hard cap
 const Y_LIFT = 0.02;               // world-Y lift off the surface, beats z-fighting
+const FOOTPRINT_SEGMENTS = 12;     // soft at FAR without paying for a texture or a canvas
 
 let mesh = null;
+let strengthAttribute = null;
 const rowOf = new Map();           // actor id -> pool row index
 const free = [];                   // free row indices (stack)
+const ownerOfRow = new Array(POOL_MAX).fill(null);
+const profileOfRow = new Array(POOL_MAX).fill('');
+const coverage = Object.create(null);
 let cursor = 0;
 
 const _m = new THREE.Matrix4();
 const _scale = new THREE.Vector3();
 const _pose = { x: 0, y: 0, z: 0, yaw: 0, alt: 0 };
-const _white = new THREE.Color(1, 1, 1);
-const _shadowColor = new THREE.Color();
-const _c = new THREE.Color();
 
 if (CONTACT_SHADOWS_ENABLED) {
-  // A flat unit PlaneGeometry, laid onto the XZ plane once at construction
-  // (three.js's own idiom for a "ground" quad) so the per-frame matrix below
-  // only ever composes a yaw rotation, a scale and a translation.
-  const geo = new THREE.PlaneGeometry(1, 1);
+  // A twelve-sided unit footprint, laid onto the XZ plane once at construction.
+  // Radial shade falls from the centre to zero at the perimeter, giving the
+  // painterly cutouts a restrained underside weight without a square card,
+  // runtime canvas, texture, shader clone or additional draw call.  Instance
+  // scale below authors the X/Z aspect per silhouette while this one resident
+  // geometry remains shared by RIG, every hostile and every capsule.
+  const geo = new THREE.CircleGeometry(0.5, FOOTPRINT_SEGMENTS);
+  const radial = new Float32Array(geo.attributes.position.count);
+  radial[0] = 1;
+  geo.setAttribute('shadowRadial', new THREE.Float32BufferAttribute(radial, 1));
+  strengthAttribute = new THREE.InstancedBufferAttribute(new Float32Array(POOL_MAX), 1);
+  geo.setAttribute('shadowStrength', strengthAttribute);
   geo.rotateX(-Math.PI / 2);
-  const mat = new THREE.MeshBasicMaterial({
-    color: PAL.contactShadow, blending: THREE.MultiplyBlending,
+  const mat = new THREE.ShaderMaterial({
+    // ShaderMaterial does not provision the stock fog uniforms merely because
+    // `fog:true` is set. Merge the resident Three uniform block once at boot so
+    // WebGLRenderer.refreshFogUniforms has the values it expects on first draw.
+    uniforms: THREE.UniformsUtils.merge([
+      THREE.UniformsLib.fog,
+      { shadowColor: { value: new THREE.Color(PAL.contactShadow) } },
+    ]),
+    vertexShader: `
+      attribute float shadowRadial;
+      attribute float shadowStrength;
+      varying float vShadow;
+      #include <common>
+      #include <fog_pars_vertex>
+      void main() {
+        vShadow = shadowRadial * shadowStrength;
+        vec3 transformed = position;
+        #include <project_vertex>
+        #include <fog_vertex>
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 shadowColor;
+      varying float vShadow;
+      #include <common>
+      #include <fog_pars_fragment>
+      void main() {
+        float fogGain = 1.0;
+        #ifdef USE_FOG
+          #ifdef FOG_EXP2
+            float fogFactor = 1.0 - exp(-fogDensity * fogDensity * vFogDepth * vFogDepth);
+          #else
+            float fogFactor = smoothstep(fogNear, fogFar, vFogDepth);
+          #endif
+          fogGain = 1.0 - fogFactor;
+        #endif
+        float shade = clamp(vShadow * fogGain, 0.0, 1.0);
+        gl_FragColor = vec4(mix(vec3(1.0), shadowColor, shade), 1.0);
+        #include <colorspace_fragment>
+      }
+    `,
+    blending: THREE.MultiplyBlending,
     transparent: true, depthWrite: false, fog: true,
+    toneMapped: false,
   });
   mesh = new THREE.InstancedMesh(geo, mat, POOL_MAX);
+  mesh.name = 'contact-shadow-footprint-pool';
+  mesh.userData.contactShadowPool = true;
+  mesh.userData.fixedRows = POOL_MAX;
+  mesh.userData.runtimeTextures = 0;
   mesh.frustumCulled = false;
   mesh.renderOrder = 1;
-  _shadowColor.set(PAL.contactShadow);
   for (let i = 0; i < POOL_MAX; i++) {
     mesh.setMatrixAt(i, HIDE);
-    mesh.setColorAt(i, _white);       // white = the multiply identity: no darkening
+    strengthAttribute.setX(i, 0);
     free.push(i);
   }
   scene.add(mesh);
@@ -133,16 +187,24 @@ function claim(id) {
   let i = rowOf.get(id);
   if (i !== undefined) return i;
   if (free.length) i = free.pop();
-  else { i = cursor; cursor = (cursor + 1) % POOL_MAX; }   // saturated: round-robin recycle
+  else {
+    i = cursor;
+    cursor = (cursor + 1) % POOL_MAX;
+    // Saturation is cosmetic, but ownership must stay honest: without deleting
+    // the displaced id, a later sync could write through an old Map entry and
+    // fight the new owner for the same instance row.
+    if (ownerOfRow[i] !== null) rowOf.delete(ownerOfRow[i]);
+  }
   rowOf.set(id, i);
+  ownerOfRow[i] = id;
   return i;
 }
 
 function hide(i) {
   mesh.setMatrixAt(i, HIDE);
-  mesh.setColorAt(i, _white);
+  strengthAttribute.setX(i, 0);
   mesh.instanceMatrix.needsUpdate = true;
-  mesh.instanceColor.needsUpdate = true;
+  strengthAttribute.needsUpdate = true;
 }
 
 // Called once per live actor per frame, from that actor's own render sync():
@@ -153,25 +215,33 @@ function hide(i) {
 // radius is that value times a [0,1] falloff fraction, so it can never
 // exceed the footprint the caller passed in — never a fixed world radius
 // this module invents on its own.
-export function syncContactShadow(id, s, y, footprintRadius) {
+export function syncContactShadow(id, s, y, footprint, gain = 1) {
   if (!CONTACT_SHADOWS_ENABLED) return;
   const gTop = groundTopAt(s);
   const p = contactShadowPlacement(s, y, gTop, platforms, CONTACT_SHADOW);
   const i = claim(id);
-  if (p.opacity <= 0) { hide(i); return; }
+  const scalar = typeof footprint === 'number';
+  const radius = scalar ? footprint : footprint?.radius || 0;
+  const depthRatio = scalar ? 1 : footprint?.depthRatio ?? 1;
+  const strength = scalar ? 0.72 : footprint?.strength ?? 0.72;
+  const profile = scalar ? 'generic' : footprint?.key || 'authored';
+  coverage[profile] = true;
+  profileOfRow[i] = profile;
+  const visibleGain = Math.max(0, Math.min(1, gain));
+  if (p.opacity <= 0 || radius <= 0 || visibleGain <= 0) { hide(i); return; }
   const pose = towerPose(s, _pose);
-  const d = 2 * footprintRadius * p.radiusMult;      // diameter: never past the footprint
+  const d = 2 * radius * p.radiusMult * visibleGain;
   _m.makeRotationY(pose.yaw);
-  _m.scale(_scale.set(d, 1, d));
+  _m.scale(_scale.set(d, 1, d * Math.max(0.18, Math.min(1, depthRatio))));
   _m.setPosition(pose.x, p.groundY + Y_LIFT + pose.alt, pose.z);
   mesh.setMatrixAt(i, _m);
-  // opacity is faked by lerping the instance color toward white (the
-  // multiply identity) rather than toward black (additive's identity) —
-  // this is the multiply-blend analogue of src/render/fx.js's per-instance
-  // alpha trick, so the whole pool stays one draw call regardless of live count
-  mesh.setColorAt(i, _c.copy(_white).lerp(_shadowColor, p.opacity));
+  // The custom instance scalar mixes the shader toward white (multiply's
+  // identity), so height and per-role weight soften both core and feather
+  // without another material, texture or draw.
+  strengthAttribute.setX(i,
+    p.opacity / CONTACT_SHADOW.maxOpacity * strength * visibleGain);
   mesh.instanceMatrix.needsUpdate = true;
-  mesh.instanceColor.needsUpdate = true;
+  strengthAttribute.needsUpdate = true;
 }
 
 // Called from a hostile's/capsule's own removed(): a dead actor's row must
@@ -182,6 +252,8 @@ export function releaseContactShadow(id) {
   const i = rowOf.get(id);
   if (i === undefined) return;
   rowOf.delete(id);
+  ownerOfRow[i] = null;
+  profileOfRow[i] = '';
   hide(i);
   free.push(i);
 }
@@ -200,5 +272,22 @@ export function releaseContactShadow(id) {
 // fxStats() takes (see window.HB.juice) — not wired to window.HB by this
 // task (src/main.js is outside its file scope; see the build report).
 export function contactShadowStats() {
-  return { enabled: CONTACT_SHADOWS_ENABLED, live: rowOf.size, max: POOL_MAX };
+  const liveProfiles = Object.create(null);
+  for (const profile of profileOfRow) if (profile)
+    liveProfiles[profile] = (liveProfiles[profile] || 0) + 1;
+  return {
+    enabled: CONTACT_SHADOWS_ENABLED,
+    live: rowOf.size,
+    max: POOL_MAX,
+    draws: CONTACT_SHADOWS_ENABLED ? 1 : 0,
+    geometry: 'radial-identity-footprint',
+    segments: FOOTPRINT_SEGMENTS,
+    textureCount: 0,
+    runtimeCanvasCount: 0,
+    liveProfiles,
+    coveredProfiles: Object.keys(coverage).sort(),
+  };
 }
+
+if (typeof globalThis !== 'undefined')
+  globalThis.__HB_CONTACT_SHADOWS = contactShadowStats;

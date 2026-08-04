@@ -365,7 +365,7 @@ export async function run(SHARED) {
          'T-011: ' + rel + ' imports only modules that exist: ' + m[1]);
   }
   // wrappers delegate, exactly like the audio layer
-  ok(/prevImpl\(a, b, c\);/.test(juiceCode),
+  ok(/prevImpl\(a, b, c, d, e, f, g, h, i, j\);/.test(juiceCode),
      'T-011: juice hook wrappers call the prior implementation first');
   ok(/QUERY\.get\('juice'\) !== '0'/.test(
        stripComments(readFileSync(join(srcDir, 'mode.js'), 'utf8'))),

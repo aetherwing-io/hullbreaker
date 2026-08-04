@@ -22,7 +22,7 @@ export async function run(SHARED) {
 
 /* ===================== T-039: contact shadows (S6) ===================== *
  * docs/proposals/2026-08-look-direction.md §3 S6 — one instanced multiply-
- * blended quad pool so RIG/hostiles/capsules sit ON the world instead of
+ * blended footprint pool so RIG/hostiles/capsules sit ON the world instead of
  * floating over it. NOT a shadow map (packet §4.1 stays unopened; checked
  * below). src/render/contact.js needs THREE and cannot be imported here, so
  * its two provable properties — surface selection and the height falloff —
@@ -148,17 +148,22 @@ export async function run(SHARED) {
   // harness cannot import a module that needs THREE)
   {
     const code = stripComments(readFileSync(join(srcDir, 'render', 'contact.js'), 'utf8'));
-    ok(/PlaneGeometry\(1,\s*1\)/.test(code),
-       'T-039: contact.js builds exactly one flat unit PlaneGeometry, per the packet');
+    ok(/CircleGeometry\(0\.5,\s*FOOTPRINT_SEGMENTS\)/.test(code) &&
+       /Float32BufferAttribute\(radial,\s*1\)/.test(code) &&
+       /new THREE\.InstancedBufferAttribute/.test(code),
+       'T-039: contact.js builds one bounded radial footprint — no square card');
     ok(/MultiplyBlending/.test(code) &&
        !/shadowMap|castShadow|receiveShadow|DirectionalLight|new THREE\.Light/.test(code),
        'T-039: contact.js uses MultiplyBlending and touches no shadow-map/light-rig surface ' +
        '— this is S6, not the fenced §4.1 light-rig decision');
     ok(/fog:\s*true/.test(code),
-       'T-039: the material keeps fog:true — a multiply quad with fog:false would become ' +
+       'T-039: the material keeps fog:true — a multiply footprint with fog:false would become ' +
        'the darkest thing on a far facet (correction carried from review)');
     ok((code.match(/new THREE\.InstancedMesh/g) || []).length === 1,
        'T-039: exactly one InstancedMesh — the +1 draw call the packet promises');
+    ok(/shadowRadial/.test(code) && /shadowStrength/.test(code) &&
+       !/CanvasTexture|TextureLoader|DataTexture|createElement\(['"]canvas['"]\)/.test(code),
+       'T-039: feathering is fixed vertex/instance data, with no runtime texture or canvas');
     ok(/PAL\.contactShadow/.test(code),
        'T-039: the shadow color is read through the palette token, never a literal');
     const colorLiteral =
@@ -203,7 +208,7 @@ export async function run(SHARED) {
     ok(/syncContactShadow\(/.test(hostilesSrc) && /releaseContactShadow\(/.test(hostilesSrc),
        'T-039: hostiles.js both places and releases a contact shadow');
     const footprintBlock =
-      (hostilesSrc.match(/CONTACT_FOOTPRINT\s*=\s*\{([\s\S]*?)\};/) || [])[1] || '';
+      (hostilesSrc.match(/CONTACT_FOOTPRINT\s*=\s*(?:Object\.freeze\()?\{([\s\S]*?)\}\)?;/) || [])[1] || '';
     ok(footprintBlock.length > 0, 'T-039: hostiles.js defines a CONTACT_FOOTPRINT table');
     ok(Object.keys(simEnemyTable).every((k) => new RegExp('\\b' + k + '\\s*:').test(footprintBlock)),
        'T-039: every sim ENEMY kind (' + Object.keys(simEnemyTable).join(', ') +

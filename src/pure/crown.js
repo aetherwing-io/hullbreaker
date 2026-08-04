@@ -142,22 +142,25 @@ export function crownBakePlan(
     20.0, 12.0, -2.40, 0.04, -0.026, { asset: 'rootRight' }));
   out.push(part('antennaArt', 'plate', core + 3.92, deckY + 15.22,
     11.0, 14.0, -3.34, 0.04, -0.012, { asset: 'antenna' }));
-  out.push(part('backplane', 'recess', core - 0.18, deckY + 9.60,
-    13.6, 17.2, -4.82, 0.56, -0.012));
+  // The painted core already owns the landmark's irregular outer silhouette.
+  // Keep opaque recess metal only behind the working iris: a full-height
+  // rectangle reads as a pasted-on backing card at the shipped FAR camera.
+  out.push(part('backplane', 'recess', core - 0.18, deckY + 9.18,
+    8.8, 10.4, -4.82, 0.56, -0.012));
 
   // Five roots start below the guaranteed outro deck and overlap by several
   // tiles. Their upper arcs break through the summit armor; there is no
   // horizontal plinth, shelf or boxed terminal edge to reveal the landmark.
-  out.push(part('foundation', 'rootLeft', core - 8.10, deckY - 0.86,
-    16.2, 4.2, -2.02, 0.52, 0.030));
-  out.push(part('foundation', 'rootRight', core + 8.05, deckY - 1.00,
-    14.5, 3.8, -2.00, 0.50, -0.050));
-  out.push(part('foundation', 'rootCrown', core - 0.28, deckY - 0.54,
-    11.2, 4.3, -1.99, 0.48, -0.012));
-  out.push(part('foundation', 'rootLeft', core - 14.10, deckY - 1.28,
-    6.9, 3.1, -2.04, 0.46, -0.090));
-  out.push(part('foundation', 'rootRight', core + 14.20, deckY - 1.38,
-    6.25, 2.9, -2.03, 0.44, 0.080));
+  out.push(part('foundation', 'rootLeft', core - 8.10, deckY - 1.42,
+    16.2, 3.1, -2.02, 0.52, 0.030));
+  out.push(part('foundation', 'rootRight', core + 8.05, deckY - 1.48,
+    14.5, 3.0, -2.00, 0.50, -0.050));
+  out.push(part('foundation', 'rootCrown', core - 0.28, deckY - 1.36,
+    11.2, 3.0, -1.99, 0.48, -0.012));
+  out.push(part('foundation', 'rootLeft', core - 14.10, deckY - 1.48,
+    6.9, 2.6, -2.04, 0.46, -0.090));
+  out.push(part('foundation', 'rootRight', core + 14.20, deckY - 1.52,
+    6.25, 2.6, -2.03, 0.44, 0.080));
 
   // Layered asymmetric shells frame, but never cover, the recessed machine.
   // Their long tapered overlaps visually continue the same scute grammar as

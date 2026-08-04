@@ -154,6 +154,7 @@ const consumers = filesBelow(join(root, 'src'))
 const consumerNames = consumers.map((file) => relative(root, file).replaceAll('\\', '/')).sort();
 ok(JSON.stringify(consumerNames) === JSON.stringify([
   'src/render/defense-vfx-art.js',
+  'src/render/finale.js',
   'src/render/meridian-defense-vfx.js',
 ]), 'only the isolated art owner and environment renderer consume the pack', consumerNames);
 

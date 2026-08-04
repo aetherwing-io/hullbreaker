@@ -174,6 +174,7 @@ await withIsolatedBrowser(root, async ({ baseUrl, launch, newPage }) => {
           const objects = [];
           const futureFacetLeaks = [];
           const bannedSemantics = [];
+          const actorImpostors = [];
           const runtimeCanvasMaps = [];
           const idleGlow = [];
           const textureIds = {};
@@ -194,6 +195,7 @@ await withIsolatedBrowser(root, async ({ baseUrl, launch, newPage }) => {
               face,
               visible: object.visible,
               facetGain: object.userData.facetGain,
+              effectiveOpacity: object.userData.effectiveOpacity ?? null,
               authoredDepth: object.userData.authoredDepth ?? null,
               depthRange: object.userData.depthRange || null,
               renderOrder: object.renderOrder,
@@ -204,6 +206,13 @@ await withIsolatedBrowser(root, async ({ baseUrl, launch, newPage }) => {
             const semanticText = `${object.name} ${JSON.stringify(object.userData)}`;
             if (/\b(?:ladder|platform|capsule|pickup|turret|enemy|hostile|spawn|route-light)\b/i
               .test(semanticText)) bannedSemantics.push(object.name);
+            // `playerPlaneDepth` is legitimate metadata on every depth mesh,
+            // so actor semantics inspect only authored names/components. This
+            // catches a future atlas regression without flagging the proof
+            // marker that keeps all environment geometry behind RIG's plane.
+            const appearanceText = `${object.name} ${(object.userData.componentIds || []).join(' ')}`;
+            if (/\b(?:player|rig|actor|humanoid)\b/i.test(appearanceText))
+              actorImpostors.push(object.name);
             const materials = Array.isArray(object.material)
               ? object.material : object.material ? [object.material] : [];
             for (const material of materials) {
@@ -231,6 +240,7 @@ await withIsolatedBrowser(root, async ({ baseUrl, launch, newPage }) => {
             projectedByRole,
             futureFacetLeaks,
             bannedSemantics,
+            actorImpostors,
             runtimeCanvasMaps,
             idleGlow,
             textureIds: Object.fromEntries(
@@ -295,6 +305,8 @@ gate(captures.every((row) => row.runtime.futureFacetLeaks.length === 0),
   captures.map((row) => [row.id, row.runtime.futureFacetLeaks]));
 gate(captures.every((row) => row.runtime.bannedSemantics.length === 0),
   'depth fill contains no future route, ladder, light, pickup or enemy semantics');
+gate(captures.every((row) => row.runtime.actorImpostors.length === 0),
+  'depth fill contains no player, RIG, actor or humanoid atlas semantics');
 gate(captures.every((row) => row.runtime.idleGlow.length === 0),
   'ambient depth sources expose no idle emissive/glow channel');
 gate(settledRows.every((row) => row.runtime.backdrop?.facetVisibility?.visibleFacets === 1 &&
@@ -303,6 +315,17 @@ gate(settledRows.every((row) => row.runtime.backdrop?.facetVisibility?.visibleFa
 gate(duringRows.every((row) => row.runtime.backdrop?.facetVisibility?.visibleFacets === 2 &&
   row.runtime.backdrop?.facetVisibility?.visibleMeshes === 8),
   'turn frames traverse only departing + arriving facets and eight fixed depth draws');
+gate(duringRows.every((row) => row.runtime.objects
+  .filter((object) => object.visible && object.role === 'near-armor-fragments')
+  .every((object) => object.effectiveOpacity != null && object.effectiveOpacity < 0.001) &&
+  row.runtime.objects
+    .filter((object) => object.visible && object.role === 'mid-structural-anatomy')
+    .every((object) => object.effectiveOpacity != null && object.effectiveOpacity < 0.06)),
+  'actor-like near cutouts and pale mid cards park below visible fold opacity',
+  duringRows.map((row) => [row.id, row.runtime.objects
+    .filter((object) => object.visible &&
+      (object.role === 'near-armor-fragments' || object.role === 'mid-structural-anatomy'))
+    .map((object) => [object.role, object.face, object.effectiveOpacity])]));
 gate(captures.every((row) => row.runtime.backdrop?.atmosphere?.fixedPool?.turnTriangles <= 496 &&
   row.runtime.backdrop?.atmosphere?.fixedPool?.turnDrawCalls === 8),
   'lane stays inside the exact 496-triangle / 8-turn-call budget');
@@ -316,9 +339,10 @@ gate(report.parallax.every((row) => {
   return values.every(Number.isFinite) && Math.max(...values) - Math.min(...values) >= 0.015;
 }), 'two independent turns show distinct far/mid/near screen trajectories at both aspects',
 report.parallax);
-gate(duringRows.every((row) => row.image.topCoverage < 0.28 &&
-  row.image.flatTealShare < 0.48 &&
-  row.image.sd > (row.layout === 'desktop' ? 18 : 12)),
+gate(duringRows.every((row) => row.image.topCoverage < 0.03 &&
+  row.image.flatTealShare < 0.12 &&
+  row.image.localContrast > 1.4 &&
+  row.image.uniqueColors > (row.layout === 'desktop' ? 35_000 : 15_000)),
   'the old 80%-flat-teal turn frame is replaced by structured mechanical depth',
   duringRows.map((row) => [row.id, row.image]));
 gate(captures.every((row) => row.runtime.render.calls <= 225 &&

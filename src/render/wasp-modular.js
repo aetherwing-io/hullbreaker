@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { primitiveBox } from './sprite-table.js';
 import { waspModularTexture } from './wasp-modular-art.js';
+import { applySpriteUnderside } from './sprite-grounding.js';
 import { WASP_MODULAR_SPEC } from './wasp-modular-spec.js';
 
 function geometryFor(component) {
@@ -26,6 +27,7 @@ function geometryFor(component) {
   geo.userData.waspModularLayer = component.layer;
   geo.userData.waspModularId = component.id;
   geo.userData.waspModularSourceIndex = component.sourceIndex;
+  applySpriteUnderside(geo, component.layer === 'body' ? 0.84 : 0.94);
   return Object.freeze({ id: component.id, index: component.phase ?? null, geo });
 }
 
@@ -56,4 +58,3 @@ export function waspModularRuntimeSnapshot() {
     crossfade: false,
   };
 }
-

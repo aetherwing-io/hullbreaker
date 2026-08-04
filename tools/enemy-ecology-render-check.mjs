@@ -273,7 +273,8 @@ assert(hostiles.includes('actionMesh.visible = false;') &&
   'pre-condensation ecology body/action/tactic visibility no longer fails fully closed');
 assert(hostiles.includes('freezeEnemyEcologyBreakup(v)') &&
   hostiles.includes('if (v.ecology) return null;') &&
-  hostiles.includes('const rig = motionFrame >= 0 ? null : claimDeathRig(v, e)') &&
+  /const rig = e\.kind === 'warden'\s*\? claimDeathRig\(v, e\)\s*:\s*motionFrame >= 0 \? null : claimDeathRig\(v, e\)/.test(hostiles) &&
+  /const frozenMotion = motionFrame >= 0 \? \{[\s\S]*rootedTerminal: e\.kind === 'warden'/.test(hostiles) &&
   hostiles.includes("ruptureMode: c.ecologyDeath ? 'ecology-b7-a7'") &&
   hostiles.includes('shrink: c.ecologyDeath ? false') &&
   hostiles.includes('spiral: false'),

@@ -18,6 +18,6 @@ export async function run() {
   }
   ok(result.status === 0,
     'the capsule reliquary focused production contract executes successfully');
-  ok(/CAPSULE RELIQUARY PASS: 22 focused contracts/.test(result.stdout || ''),
-    'all twenty-two capsule reliquary presentation contracts remain registered');
+  ok(/CAPSULE RELIQUARY PASS: 27 focused contracts/.test(result.stdout || ''),
+    'all twenty-seven capsule reliquary presentation contracts remain registered');
 }

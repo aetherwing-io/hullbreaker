@@ -34,8 +34,14 @@ export const MERIDIAN_DEPTH_SOURCES = Object.freeze({
 
 export const MERIDIAN_DEPTH_LAYERS = Object.freeze([
   Object.freeze({
-    id: 'far', role: 'far-meridian-mass', depth: -13.8,
-    width: 138, curve: 3.6, opacity: 0.84, facingExponent: 1.6,
+    id: 'far', role: 'far-meridian-mass', depth: -20.0,
+    // Broad enough to stay beyond the frustum while a facet is oblique.  The
+    // old 138-tile shell exposed its feathered rectangular edge during the
+    // fold, which read as a teal screen-space fog card even though the mesh
+    // itself was in world space.  More depth and curvature separate this
+    // colossal body from the mid coil while the wider span keeps the source
+    // boundary outside both shipped aspects.
+    width: 200, curve: 9.0, opacity: 0.98, facingExponent: 1.9,
     // A narrow frustum sees a smaller luminance range from the same shell, so
     // retain more of the authored far plate instead of letting the portrait
     // view collapse into a uniformly dark corridor.
@@ -43,18 +49,23 @@ export const MERIDIAN_DEPTH_LAYERS = Object.freeze([
   }),
   Object.freeze({
     id: 'mid', role: 'mid-structural-anatomy', depth: -8.4,
-    width: 124, curve: 2.1, opacity: 0.90, facingExponent: 2.6,
+    width: 118, curve: 2.7, opacity: 0.78, facingExponent: 24.0,
     portraitGain: 0.86, renderOrder: -56, source: 'mid',
   }),
   Object.freeze({
     id: 'condensation', role: 'world-condensation',
-    depthRange: Object.freeze([-11.8, -5.2]), opacity: 0.022,
+    depthRange: Object.freeze([-17.2, -5.2]), opacity: 0.012,
     facingExponent: 4.0, portraitGain: 0.64, renderOrder: -50,
     ribbonsPerFacet: 5,
   }),
   Object.freeze({
     id: 'near', role: 'near-armor-fragments', depth: -3.8,
-    opacity: 0.34, facingExponent: 5.5, portraitGain: 0.68,
+    // Near cutouts exist for settled-frame edge depth, not for the fold. At
+    // the 30-degree detent even a reviewed shoulder silhouette projected like
+    // a pale duplicate actor behind the corner. A steep facing response parks
+    // these pieces during rotation and returns them only when attached to a
+    // square-on facet edge.
+    opacity: 0.40, facingExponent: 80.0, portraitGain: 0.68,
     renderOrder: -44, source: 'near', fragmentsPerFacet: 4,
   }),
 ]);
@@ -66,14 +77,15 @@ export const MERIDIAN_DEPTH_COMPONENT_IDS = Object.freeze([
 const FAR_OFFSETS = Object.freeze([-6, 5, -3, 7, -5, 4, 0]);
 const MID_OFFSETS = Object.freeze([7, -8, 4, -6, 8, -4, 2]);
 const BASE_FRAGMENTS = Object.freeze([
-  // Edge fins are partial foreground occluders, not free-standing set props.
-  // The two low pieces remain below the route silhouette; the high pair only
-  // brushes the top fringe. This keeps the fold from floating an isolated
-  // atlas component in the middle of the action band.
-  Object.freeze({ id: 'keel-fin', x: -50, y: -27, h: 9.2, angle: -0.20, z: -0.32 }),
-  Object.freeze({ id: 'keel-fin', x: -24, y: 36, h: 6.2, angle: 0.16, z: 0.08 }),
-  Object.freeze({ id: 'keel-fin', x: 29, y: 38, h: 6.6, angle: -0.12, z: -0.18 }),
-  Object.freeze({ id: 'keel-fin', x: 52, y: -27, h: 9.6, angle: 0.22, z: -0.48 }),
+  // The crescent keel-fin silhouette looked uncannily like a second tiny RIG
+  // when a fold projected it upright at the far glass.  Broad shoulder scutes
+  // keep the near tier mechanical and deliberately crop at the frame fringe:
+  // they are attached armour intruding from off-screen, never freestanding
+  // figures or readable future props in the action band.
+  Object.freeze({ id: 'armor-shoulder', x: -54, y: -31, h: 11.2, angle: -0.18, z: -0.32 }),
+  Object.freeze({ id: 'armor-shoulder', x: -28, y: 42, h: 7.0, angle: 0.12, z: 0.08 }),
+  Object.freeze({ id: 'armor-shoulder', x: 31, y: 43, h: 7.4, angle: -0.10, z: -0.18 }),
+  Object.freeze({ id: 'armor-shoulder', x: 55, y: -31, h: 11.6, angle: 0.18, z: -0.48 }),
 ]);
 
 function hashUnit(seed) {

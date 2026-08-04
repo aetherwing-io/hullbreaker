@@ -82,7 +82,11 @@ const RELIQUARY_MAX_W = 2.16;
 const RELIQUARY_MAX_H = 1.34;
 const RELIQUARY_CASE_W = 1.82;
 const RELIQUARY_CASE_H = 1.014;
-const RELIQUARY_SIGNAL_ALPHA = 0.72;
+// A reward must be findable without reading like a permanent muzzle flash.
+// The casing and painted core carry the idle read; only the narrow scanner is
+// additive. Tier changes the number of physical pips, not the amount of bloom.
+const RELIQUARY_SIGNAL_ALPHA = 0.26;
+const RELIQUARY_SCANNER_ALPHA = 0.58;
 // Six authored rewards + six uncollected carrier drops + one popped held gun
 // peak at thirteen in the current campaign. Twenty-four is explicit headroom,
 // not permission to grow: every render object below is built once at boot.
@@ -313,15 +317,22 @@ function buildProfileGeometry(kind) {
   const w = RELIQUARY_CASE_W, h = RELIQUARY_CASE_H;
   const metal = [
     part(shell, 0, 0, RELIQUARY_MAX_W - 0.04, RELIQUARY_MAX_H - 0.10, -0.075),
-    rect(0, h * 0.43, w * 0.70, 0.070, -0.035),
-    rect(0, -h * 0.43, w * 0.70, 0.070, -0.035),
   ];
-  for (const sx of [-1, 1]) for (const sy of [-1, 1])
-    metal.push(rect(sx * w * 0.34, sy * h * 0.46, 0.19, 0.075, 0.018));
   if (weapon) {
+    // An asymmetric launch-cradle silhouette: long lower skid, short top
+    // spine, rear fins and a directional nose. It no longer reads as a UI
+    // rectangle traced around the source painting.
+    metal.push(rect(-w * 0.04, -h * 0.51, w * 0.78, 0.085, -0.030));
+    metal.push(rect(-w * 0.16, h * 0.47, w * 0.46, 0.070, -0.030));
+    metal.push(rect(-w * 0.33, h * 0.43, 0.18, 0.12, 0.018, -0.10));
+    metal.push(rect(w * 0.27, -h * 0.44, 0.20, 0.11, 0.018, 0.10));
     metal.push(part(TAIL_FIN_POINTS, -w * 0.5 - 0.070, h * 0.30, 0.19, 0.20, -0.024));
     metal.push(part(TAIL_FIN_POINTS, -w * 0.5 - 0.070, -h * 0.30, 0.19, 0.20, -0.024));
   } else {
+    // Modifier cartridges hang vertically in play. Broad opposing sockets
+    // make them read as machinery modules rather than smaller weapon cans.
+    metal.push(rect(0, h * 0.46, w * 0.64, 0.075, -0.030));
+    metal.push(rect(0, -h * 0.46, w * 0.64, 0.075, -0.030));
     metal.push(part(DIAMOND_POINTS, 0, h * 0.5 + 0.055, 0.30, 0.18, -0.024));
     metal.push(part(DIAMOND_POINTS, 0, -h * 0.5 - 0.055, 0.30, 0.18, -0.024));
   }
@@ -340,12 +351,12 @@ function buildProfileGeometry(kind) {
   const signal = [];
   if (weapon) {
     signal.push(part(NOSE_POINTS, w * 0.5 + 0.105, 0, 0.082, h * 0.17, 0.035));
+    signal.push(rect(-w * 0.36, h * 0.47, 0.12, 0.030, 0.035, -0.10));
   } else {
     for (const x of [-1, 1])
       signal.push(rect(x * (w * 0.5 + 0.050), 0, 0.032, h * 0.29, 0.035));
+    signal.push(part(DIAMOND_POINTS, 0, h * 0.5 + 0.060, 0.11, 0.075, 0.035));
   }
-  for (const sx of [-1, 1]) for (const sy of [-1, 1])
-    signal.push(rect(sx * (w * 0.5 + 0.060), sy * h * 0.36, 0.055, 0.17, 0.032));
 
   const warm = [];
   const sockets = [];
@@ -389,8 +400,8 @@ function artMaterial(tex) {
     depthWrite: true,
     side: THREE.DoubleSide,
     forceSinglePass: true,
-    fog: false,
-    toneMapped: false,
+    fog: true,
+    toneMapped: true,
   });
 }
 
@@ -403,20 +414,20 @@ function staticMaterial(color, additive = false) {
     depthWrite: !additive,
     depthTest: true,
     side: THREE.DoubleSide,
-    fog: false,
-    toneMapped: false,
+    fog: true,
+    toneMapped: true,
   });
 }
 
 const inkMat = staticMaterial(PAL.capsuleInk);
 const metalMat = staticMaterial(PAL.catwalk);
-const warmMat = staticMaterial(PAL.muzzle, true);
+const warmMat = staticMaterial(PAL.muzzle);
 const traitMats = Object.freeze({
   muzzle: warmMat,
-  modCapsule: staticMaterial(PAL.modCapsule, true),
-  capsule: staticMaterial(PAL.capsule, true),
-  laser: staticMaterial(PAL.shots.L, true),
-  flame: staticMaterial(PAL.shots.F, true),
+  modCapsule: staticMaterial(PAL.modCapsule),
+  capsule: staticMaterial(PAL.capsule),
+  laser: staticMaterial(PAL.shots.L),
+  flame: staticMaterial(PAL.shots.F),
 });
 
 function signalColor(profile) {
@@ -427,13 +438,27 @@ function signalMaterial(profile, tier) {
   return new THREE.MeshBasicMaterial({
     color: signalColor(profile),
     transparent: true,
-    opacity: RELIQUARY_SIGNAL_ALPHA + tier * 0.055,
+    opacity: RELIQUARY_SIGNAL_ALPHA + tier * 0.018,
+    blending: THREE.NormalBlending,
+    depthWrite: false,
+    depthTest: true,
+    side: THREE.DoubleSide,
+    fog: true,
+    toneMapped: true,
+  });
+}
+
+function scannerMaterial(profile) {
+  return new THREE.MeshBasicMaterial({
+    color: signalColor(profile),
+    transparent: true,
+    opacity: RELIQUARY_SCANNER_ALPHA,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     depthTest: true,
     side: THREE.DoubleSide,
-    fog: false,
-    toneMapped: false,
+    fog: true,
+    toneMapped: true,
   });
 }
 
@@ -497,16 +522,19 @@ const CAPSULE_SHADOW_FOOTPRINT = Math.min(
 function createProductionView(rowIndex) {
   const profile = PROFILE_GEOMETRY.letter;
   const signalMat = signalMaterial(RELIQUARY_PROFILE.letter, 0);
+  const scannerMat = scannerMaterial(RELIQUARY_PROFILE.letter);
   const root = new THREE.Group();
   root.name = `Capsule reliquary pool row ${rowIndex}`;
   root.visible = false;
+  const assembly = new THREE.Group();
+  assembly.name = `Capsule reliquary assembly ${rowIndex}`;
 
   const metal = new THREE.Mesh(profile.metal, metalMat);
   const ink = new THREE.Mesh(profile.ink, inkMat);
   const artSlot = artSlots.values().next().value;
   const art = new THREE.Mesh(artSlot?.geometry || panelGeo, artSlot?.material || inkMat);
   const signal = new THREE.Mesh(profile.signal, signalMat);
-  const scanner = new THREE.Mesh(panelGeo, signalMat);
+  const scanner = new THREE.Mesh(panelGeo, scannerMat);
   const warm = new THREE.Mesh(profile.warm[0], warmMat);
   const sockets = new THREE.Mesh(profile.sockets[0], inkMat);
   const hardpoints = [];
@@ -527,10 +555,12 @@ function createProductionView(rowIndex) {
     hardpoint.visible = false;
     hardpoints.push(hardpoint);
   }
-  root.add(metal, ink, art, signal, scanner, warm, sockets, ...hardpoints);
+  assembly.add(metal, ink, art, signal, scanner, warm, sockets, ...hardpoints);
+  root.add(assembly);
   return {
-    rowIndex, root, mesh: root, metal, ink, art, signal, scanner, warm, sockets,
-    hardpoints, signalMat, signalBaseAlpha: RELIQUARY_SIGNAL_ALPHA,
+    rowIndex, root, assembly, mesh: root, metal, ink, art, signal, scanner, warm, sockets,
+    hardpoints, signalMat, scannerMat, signalBaseAlpha: RELIQUARY_SIGNAL_ALPHA,
+    scannerBaseAlpha: RELIQUARY_SCANNER_ALPHA,
     production: true, tier: 0, traits: Object.freeze([]),
     profile: RELIQUARY_PROFILE.letter, slot: artSlot,
   };
@@ -548,14 +578,21 @@ function configureProduction(v, c, slot) {
   v.art.geometry = slot.geometry;
   v.art.material = slot.material;
   v.art.scale.set(slot.world[0], slot.world[1], 1);
+  // Utility modifiers are keyed vertical cartridges; weapon reliquaries stay
+  // horizontal and directional. This single rigid transform gives the two
+  // reward families different FAR silhouettes without another texture.
+  v.assembly.rotation.z = profileKey === 'mod' ? Math.PI * 0.5 : 0;
   v.signal.geometry = geometry.signal;
   v.warm.geometry = geometry.warm[tier];
   v.warm.visible = geometry.warm[tier].userData.partCount > 0;
   v.sockets.geometry = geometry.sockets[tier];
   v.sockets.visible = geometry.sockets[tier].userData.partCount > 0;
   v.signalMat.color.set(signalColor(profile));
-  v.signalBaseAlpha = RELIQUARY_SIGNAL_ALPHA + tier * 0.055;
+  v.scannerMat.color.set(signalColor(profile));
+  v.signalBaseAlpha = RELIQUARY_SIGNAL_ALPHA + tier * 0.018;
   v.signalMat.opacity = v.signalBaseAlpha;
+  v.scannerBaseAlpha = RELIQUARY_SCANNER_ALPHA;
+  v.scannerMat.opacity = v.scannerBaseAlpha;
   for (let i = 0; i < TIER_MAX; i++) {
     const hardpoint = v.hardpoints[i];
     const trait = traits[i];
@@ -778,12 +815,15 @@ function sync(c) {
 
   if (v.production) {
     // The reliquary is rigid machinery. Its only local motion is a constant-
-    // size scanning slit translating inside the contained core; acquisition
-    // seated notches and the armed tip brighten without changing envelope.
+    // size scanning slit translating inside the contained core. The painted
+    // casing and physical tier hardware carry the idle read; only this moving
+    // scan is allowed additive output.
     v.mesh.rotation.y = towerYaw;
     v.scanner.position.x = Math.sin(c.t * 2.65 + 0.35) * v.slot.world[0] * 0.22;
     v.signalMat.opacity = v.signalBaseAlpha *
-      (0.78 + Math.max(0, Math.sin(c.t * 4.1 + 0.8)) * 0.22);
+      (0.92 + Math.max(0, Math.sin(c.t * 4.1 + 0.8)) * 0.08);
+    v.scannerMat.opacity = v.scannerBaseAlpha *
+      (0.72 + Math.max(0, Math.sin(c.t * 4.8 + 0.4)) * 0.28);
   } else {
     v.mesh.rotation.y = towerYaw + (LEGIBILITY_ON
       ? Math.sin(c.t * CAPSULE_SWEEP_FREQ) * CAPSULE_SWEEP_RAD
@@ -820,7 +860,7 @@ export function capsuleArtSnapshot() {
   return {
     atlas: { file: ATLAS_FILE, sizePx: ATLAS_SIZE, enabled: CAPSULE_ART_ON },
     presentation: {
-      style: 'meridian-reliquary',
+      style: 'grounded-meridian-reliquary',
       envelopeTiles: [RELIQUARY_MAX_W, RELIQUARY_MAX_H],
       pickupDiameterTiles: CAP.pickupRadius * 2,
       radialReachTiles: RELIQUARY_RADIAL_REACH,
@@ -836,7 +876,7 @@ export function capsuleArtSnapshot() {
       free: freeRows.length,
       saturations: poolSaturations,
       rowsBuiltAtBoot: poolRows.length,
-      objectsPerRow: 11,
+      objectsPerRow: 12,
       allocationsDuringSpawnAndSync: { geometry: 0, material: 0, mesh: 0 },
       productionDraws: {
         modifier: 5,

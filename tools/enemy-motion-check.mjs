@@ -227,13 +227,18 @@ assert.match(source, /poseKey\.startsWith\('motion:'\)/,
 assert.match(source,
   /function currentMotionFrame\(v\)[\s\S]*v\.motionGeos\?\.\[frame\] !== v\.mesh\.geometry[\s\S]*v\.mat\.map !== v\.motionTex/,
   'motion identity requires the exact live atlas geometry and texture');
-assert.match(source, /const rig = motionFrame >= 0 \? null : claimDeathRig\(v, e\)/,
-  'motion deaths retain the live body instead of swapping to base-art fragments');
+assert.match(source,
+  /const rig = e\.kind === 'warden'\s*\? claimDeathRig\(v, e\)\s*:\s*motionFrame >= 0 \? null : claimDeathRig\(v, e\)/,
+  'non-Warden motion deaths retain the live body while Warden uses its boot-resident terminal rig');
+assert.match(source,
+  /const frozenMotion = motionFrame >= 0 \? \{[\s\S]*rootedTerminal: e\.kind === 'warden'/,
+  'the frozen motion record marks only Warden as a rooted terminal handoff');
 assert.match(source,
   /if \(!actorMotionOwnsSilhouette\(v\) && !houndMotionOwnsSilhouette\(v, e\)[\s\S]{0,120}\) \{\s*sx \*= p\.sx; sy \*= p\.sy; sz \*= p\.sz;/,
   'hound v2 cells bypass legacy primitive squash and stretch');
-assert.match(source, /ruptureMode: frozen \? 'frozen-motion'/,
-  'the death proof surface names frozen motion rupture explicitly');
+assert.match(source,
+  /ruptureMode: c\.ecologyDeath \? 'ecology-b7-a7'[\s\S]*c\.kind === 'warden' && c\.rig \? 'rooted-terminal-pieces'[\s\S]*: frozen \? 'frozen-motion'/,
+  'the death proof names Warden terminal pieces before the retained non-Warden frozen-motion mode');
 assert.match(source, /posePreserved[\s\S]*c\.mesh\.geometry === frozen\.geometry[\s\S]*c\.mat\.map === frozen\.map/,
   'the death proof verifies geometry and texture identity through rupture');
 

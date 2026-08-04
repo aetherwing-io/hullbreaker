@@ -69,6 +69,7 @@ import { cameraFacingFacet } from './camera.js';
 import { placeOnTower } from './tower.js';
 import { PAL } from './palette.js';
 import { syncContactShadow } from './contact.js';
+import { applySpriteUnderside } from './sprite-grounding.js';
 
 const rig = new THREE.Group();
 const bodyGroup = new THREE.Group();
@@ -170,7 +171,8 @@ function runSpriteGeometry(spec) {
   const geo = new THREE.PlaneGeometry(w, h);
   geo.translate((spec.trimW / 2 - spec.anchorX) * RIG_BODY_WORLD_PER_PIXEL,
     (h - RIG_SPRITE_H) / 2, 0);
-  return applyAtlasUv(geo, spec, RIG_BODY_ATLAS_W, RIG_BODY_ATLAS_H);
+  return applySpriteUnderside(
+    applyAtlasUv(geo, spec, RIG_BODY_ATLAS_W, RIG_BODY_ATLAS_H), 0.84);
 }
 
 const idleGunlessGeometry = runSpriteGeometry(RIG_IDLE_GUNLESS);
@@ -191,7 +193,8 @@ function aimSpriteGeometry(spec) {
   // row at y=0. This prevents helmet/feet pops while aim selects a new crop.
   geo.translate((spec.trimW / 2 - spec.anchorX) * RIG_AIM_WORLD_PER_PIXEL,
     (h - RIG_SPRITE_H) / 2, 0);
-  return applyAtlasUv(geo, spec, RIG_AIM_ATLAS_W, RIG_AIM_ATLAS_H);
+  return applySpriteUnderside(
+    applyAtlasUv(geo, spec, RIG_AIM_ATLAS_W, RIG_AIM_ATLAS_H), 0.84);
 }
 
 const aimFrameGeometry = Object.freeze(Object.fromEntries(
@@ -204,7 +207,8 @@ function climbSpriteGeometry(spec) {
   const geo = new THREE.PlaneGeometry(w, h);
   geo.translate((spec.trimW / 2 - spec.anchorX) * RIG_CLIMB_WORLD_PER_PIXEL,
     (h - RIG_SPRITE_H) / 2, 0);
-  return applyAtlasUv(geo, spec, RIG_CLIMB_ATLAS_W, RIG_CLIMB_ATLAS_H);
+  return applySpriteUnderside(
+    applyAtlasUv(geo, spec, RIG_CLIMB_ATLAS_W, RIG_CLIMB_ATLAS_H), 0.88);
 }
 const climbFrameGeometry = Object.freeze(RIG_CLIMB_FRAMES.map(climbSpriteGeometry));
 
@@ -212,6 +216,7 @@ const spriteMesh = new THREE.Mesh(
   idleGunlessGeometry,
   new THREE.MeshStandardMaterial({
     emissive: PAL.player, emissiveIntensity: 0,
+    vertexColors: true,
     transparent: true, alphaTest: 0.015, side: THREE.FrontSide,
     forceSinglePass: true, fog: false,
   }),
@@ -542,7 +547,12 @@ scene.add(rig);
 // stable module-level identity is all `syncContactShadow` needs; there is no
 // matching release call (see src/render/contact.js's header note).
 const RIG_SHADOW_ID = Symbol('rig-contact-shadow');
-const RIG_FOOTPRINT = CONFIG.player.width / 2;
+const RIG_FOOTPRINT = Object.freeze({
+  key: 'rig',
+  radius: CONFIG.player.width / 2,
+  depthRatio: 0.56,
+  strength: 0.82,
+});
 
 // The route's armour and authored solids are boxes centred on the logical
 // play plane, with their camera-facing skin roughly one world unit outward.
@@ -907,8 +917,8 @@ function sync() {
   // can leave a little disembodied mark on the old facet. Scale its footprint
   // through the same fold gain; at the hidden midpoint its matrix has zero
   // area, and it grows back with the actor instead of arriving a frame early.
-  syncContactShadow(RIG_SHADOW_ID, player.x, player.y,
-    (climbing || wallContact ? 0 : RIG_FOOTPRINT) * foldGain);
+  syncContactShadow(RIG_SHADOW_ID, player.x, player.y, RIG_FOOTPRINT,
+    (climbing || wallContact ? 0 : foldGain));
 }
 
 const _rigScreenProbe = new THREE.Vector3();

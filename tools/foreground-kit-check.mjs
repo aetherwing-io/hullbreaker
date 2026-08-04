@@ -36,9 +36,12 @@ function ok(value, message) {
 }
 
 ok(/const cADepth = \[/.test(level) && /const cBDepth = \[/.test(level) &&
+   /const cCDepth = \[/.test(level) && /const cDDepth = \[/.test(level) &&
+   /const scuteDepthFamilies = \[cADepth, cBDepth, cCDepth, cDDepth\]/.test(level) &&
    /\[1\.86, 1\.68\]/.test(level) && /routeCapPanelColor/.test(level) &&
-   /0\.70 \+ down \* 0\.26/.test(level),
-  'warm route cap steps into two recessed service bands and a cold irregular keel');
+   /0\.78 \+ down \* 0\.18/.test(level) &&
+   /edge \* edge \* 0\.18/.test(level) && /const _routeCapKey/.test(level),
+  'four directional scute families keep copper phrase-authored under a neutral camera-edge key, recessed service bands and a cold irregular keel');
 ok(/function extrudedProfile/.test(level) && /function platformProfileGeometry/.test(level) &&
    /function solidProfileGeometry/.test(level) && /function bottomArmourGeometry/.test(level),
   'platforms, solids and the hull underside use profiled silhouettes rather than raw boxes');

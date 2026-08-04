@@ -95,6 +95,16 @@ async function stageTerminal(page) {
   return { before, death };
 }
 
+async function advanceTerminal(page, ms) {
+  return page.evaluate(async (delta) => {
+    const T = await import('/src/sim/time.js');
+    const RH = await import('/src/render/hostiles.js');
+    T.advanceGameMs(delta);
+    RH.updateCorpses();
+    return window.__HB_HOSTILE_DEATH_VISUAL().rows[0];
+  }, ms);
+}
+
 async function captureLayout(newPage, baseUrl, name, viewport) {
   const dir = resolve(OUT, name);
   mkdirSync(dir, { recursive: true });
@@ -141,10 +151,30 @@ async function captureLayout(newPage, baseUrl, name, viewport) {
     assert.equal(terminal.death.motionFrame, 7, `${name}/terminal: breached frame`);
     assert.equal(terminal.death.poseKey, 'actor:7', `${name}/terminal: authored pose`);
     assert.equal(terminal.death.posePreserved, true, `${name}/terminal: atlas continuity`);
-    const terminalPath = resolve(dir, '12-terminal-rupture.png');
+    assert.equal(terminal.death.paintedPieces, 6,
+      `${name}/terminal: six boot-resident Warden assemblies`);
+    assert.equal(terminal.death.ruptureMode, 'rooted-terminal-pieces',
+      `${name}/terminal: terminal atlas splits instead of intact fade`);
+    const terminalPath = resolve(dir, '12-terminal-impact.png');
     await page.waitForTimeout(34);
     await page.screenshot({ path: terminalPath });
     terminal.path = terminalPath;
+    terminal.stages = [];
+    for (const step of [
+      { tag: '13-hardpoint-eject', delta: 300, phase: 'hardpoint-eject' },
+      { tag: '14-core-implosion', delta: 410, phase: 'core-implosion' },
+      { tag: '15-signal-collapse', delta: 390, phase: 'signal-collapse' },
+    ]) {
+      const death = await advanceTerminal(page, step.delta);
+      assert.equal(death.phase, step.phase, `${name}/${step.tag}: staged rupture phase`);
+      assert.equal(death.paintedPieces, 6, `${name}/${step.tag}: pieces persist`);
+      assert.equal(death.ruptureMode, 'rooted-terminal-pieces',
+        `${name}/${step.tag}: no intact fallback`);
+      const path = resolve(dir, `${step.tag}.png`);
+      await page.waitForTimeout(34);
+      await page.screenshot({ path });
+      terminal.stages.push({ ...step, path, death });
+    }
 
     assert.equal(rows[0].runtime.fixedFrameGeometries, 16,
       `${name}: fixed geometry budget`);

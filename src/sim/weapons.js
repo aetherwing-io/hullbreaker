@@ -486,8 +486,21 @@ export function updateBullets(dt) {
           // RIG is still standing in front. Crawling flame advances by dir;
           // its stored vx is intentionally stale once it hugs the deck.
           const impactVx = b.crawling ? b.dir * def.crawlSpeed : b.vx;
-          hitHostile(e, w, b.damage, b.type, impactVx);
-          if (hostiles.includes(e) && def.heavyImpulse > 0)
+          const impactVy = b.crawling ? 0 : b.vy;
+          const targetKind = e.kind;
+          const damaged = hitHostile(e, w, b.damage, b.type, impactVx);
+          // hitHostile may splice the target. Cache the result once: the
+          // presentation fact and heavy-stagger guard need the same answer,
+          // and a crowded piercing shot should not scan hostiles twice.
+          const lethal = !hostiles.includes(e);
+          // One synchronous presentation-only fact from the exact collision
+          // branch. Positional primitives preserve the allocation-free hot
+          // path; damage, removal and projectile ownership remain unchanged.
+          if (damaged) view.bullets.hostileImpact(
+            i, b.type, b.x, b.y, impactVx, impactVy,
+            directId, targetKind, true, lethal,
+          );
+          if (!lethal && def.heavyImpulse > 0)
             staggerHostile(e, b.vx, b.vy, def.heavyImpulse, def.heavyStunMs);
           if (def.volatileRadius > 0) volatileBlast(b, directId, def);
           if (!passesThrough) { gone = true; goneReason = 'hostile'; }

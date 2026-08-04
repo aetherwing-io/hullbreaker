@@ -1,5 +1,5 @@
 /* ================= MERIDIAN DEFENSE RESPONSE VFX ================= */
-/* One atlas, one reusable plane, one draw at most. The simulation publishes
+/* One atlas transient plus two fixed instanced body-mechanism draws. The simulation publishes
  * a renderer-free lifecycle through view.meridian; this module resolves that
  * event onto the already-baked foregroundResponseSockets() records. No mesh
  * follows RIG, a hostile, or a projectile, and no renderer callback can write
@@ -12,6 +12,8 @@ import { installView } from '../sim/bridge.js';
 import { DEFENSE_VFX_ART_SLOT } from './defense-vfx-art.js';
 import { DEFENSE_VFX_PACK } from './defense-vfx-pack.js';
 import { foregroundResponseSockets } from './level.js';
+import { PAL } from './palette.js';
+import { postGain } from './post.js';
 import { scene } from './scene.js';
 
 const sockets = foregroundResponseSockets();
@@ -36,8 +38,12 @@ const stats = {
     .sort().map((kind) => [kind, sockets.filter((row) => row.kind === kind).length])),
   poolGeometry: DEFENSE_VFX_ART_SLOT.tex ? 1 : 0,
   poolSlots: DEFENSE_VFX_ART_SLOT.tex ? 1 : 0,
+  mechanismPools: DEFENSE_VFX_ART_SLOT.tex ? 2 : 0,
+  mechanismParts: DEFENSE_VFX_ART_SLOT.tex ? 10 : 0,
   maxVisible: 0,
   drawSlots: 0,
+  mechanismDrawSlots: 0,
+  readableExtent: 0,
   stage: 'dormant',
   face: 0,
   state: 'observe',
@@ -55,10 +61,43 @@ const faceComponents = Object.create(null);
 let geometry = null;
 let material = null;
 let mesh = null;
+let mechanismRoot = null;
+let scutePool = null;
+let conduitPool = null;
+let scuteMaterial = null;
+let conduitMaterial = null;
+
+function responseScuteGeometry() {
+  // Seven-sided hull casting, triangulated directly instead of asking
+  // ExtrudeGeometry for curves/bevels the shipped camera cannot resolve.
+  // Six instances now cost 144 triangles rather than hundreds of tiny bevel
+  // faces while retaining real thickness and an irregular mechanical edge.
+  const outline = [
+    [-0.50, -0.29], [-0.34, -0.50], [0.22, -0.45],
+    [0.50, -0.16], [0.39, 0.31], [0.10, 0.50], [-0.43, 0.25],
+  ];
+  const positions = [];
+  const push = (point, z) => positions.push(point[0], point[1], z);
+  for (let i = 1; i < outline.length - 1; i++) {
+    push(outline[0], 0.5); push(outline[i], 0.5); push(outline[i + 1], 0.5);
+    push(outline[0], -0.5); push(outline[i + 1], -0.5); push(outline[i], -0.5);
+  }
+  for (let i = 0; i < outline.length; i++) {
+    const a = outline[i], b = outline[(i + 1) % outline.length];
+    push(a, -0.5); push(b, -0.5); push(b, 0.5);
+    push(a, -0.5); push(b, 0.5); push(a, 0.5);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.computeVertexNormals();
+  return geo;
+}
+
 if (DEFENSE_VFX_ART_SLOT.tex) {
   geometry = new THREE.PlaneGeometry(1, 1);
+  geometry.userData.unitUv = Float32Array.from(geometry.attributes.uv.array);
   material = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
+    color: PAL.muzzle,
     map: DEFENSE_VFX_ART_SLOT.tex,
     transparent: true,
     opacity: 0,
@@ -84,6 +123,57 @@ if (DEFENSE_VFX_ART_SLOT.tex) {
   mesh.frustumCulled = true;
   mesh.visible = false;
   scene.add(mesh);
+
+  // The atlas is the transient pressure/spark/debris layer, not the thing
+  // pretending to be Meridian.  A fixed ten-part mechanism lives underneath
+  // it: six armour jaws/louvres and four buried conductor rails.  The same
+  // two instanced pools move from one authored hull socket to the next; no
+  // geometry, material, texture or Object3D is allocated while a run moves.
+  mechanismRoot = new THREE.Group();
+  mechanismRoot.name = 'Meridian defense body-owned mechanism';
+  mechanismRoot.userData.environmentRole = 'meridian-defense-response';
+  mechanismRoot.userData.environmentOnly = true;
+  mechanismRoot.userData.attachments = Object.freeze([]);
+  mechanismRoot.matrixAutoUpdate = false;
+  mechanismRoot.visible = false;
+
+  scuteMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.66,
+    metalness: 0.68,
+    flatShading: true,
+    fog: true,
+  });
+  scuteMaterial.name = 'Meridian defense moving armour';
+  conduitMaterial = new THREE.MeshStandardMaterial({
+    color: PAL.limb.machine,
+    roughness: 0.48,
+    metalness: 0.78,
+    emissive: PAL.glowOff,
+    emissiveIntensity: 0,
+    flatShading: true,
+    fog: true,
+  });
+  conduitMaterial.name = 'Meridian defense buried conductors';
+
+  scutePool = new THREE.InstancedMesh(
+    responseScuteGeometry(), scuteMaterial, 6);
+  scutePool.name = 'Meridian defense shutters clamps and vent louvres';
+  scutePool.frustumCulled = false;
+  scutePool.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  const scuteA = new THREE.Color(PAL.limb.hull);
+  const scuteB = new THREE.Color(PAL.limb.scute);
+  for (let i = 0; i < 6; i++) scutePool.setColorAt(i, i % 3 ? scuteA : scuteB);
+  scutePool.instanceColor.needsUpdate = true;
+  mechanismRoot.add(scutePool);
+
+  conduitPool = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(1, 1, 1), conduitMaterial, 4);
+  conduitPool.name = 'Meridian defense staged conduit rails';
+  conduitPool.frustumCulled = false;
+  conduitPool.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  mechanismRoot.add(conduitPool);
+  scene.add(mechanismRoot);
 }
 
 const _rotation = new THREE.Matrix4();
@@ -92,6 +182,10 @@ const _matrix = new THREE.Matrix4();
 const _scale = new THREE.Vector3();
 const _offset = new THREE.Vector3();
 const _center = new THREE.Vector3();
+const _mechanismMatrix = new THREE.Matrix4();
+const _part = new THREE.Object3D();
+const _partColor = new THREE.Color();
+const _mechanismPose = { open: 0, strike: 0, shear: 0, vent: 0 };
 let eventKey = '';
 let currentSocket = null;
 let currentComponent = null;
@@ -157,10 +251,18 @@ function selectComponent(event, stage) {
 function configureComponent(component) {
   currentComponent = component;
   stats.componentId = component?.id || null;
-  if (!component || !material) return;
+  if (!component || !material || !geometry) return;
   const [u0, top, u1, bottom] = component.uv;
-  material.map.repeat.set(u1 - u0, bottom - top);
-  material.map.offset.set(u0, 1 - bottom);
+  // Bake the selected atlas rectangle into the one resident quad's UVs.
+  // The atlas Texture itself stays immutable: no clone, repeat/offset crop,
+  // canvas pass or upload is introduced when a stage changes.
+  const uv = geometry.attributes.uv;
+  const unit = geometry.userData.unitUv;
+  for (let i = 0; i < uv.count; i++) {
+    const u = unit[i * 2], v = unit[i * 2 + 1];
+    uv.setXY(i, u0 + u * (u1 - u0), 1 - bottom + v * (bottom - top));
+  }
+  uv.needsUpdate = true;
   mesh.renderOrder = component.depth === 'front-particles' ? 14 :
     component.depth === 'action-plane' ? 12 : 10;
   componentsUsed.add(component.id);
@@ -182,7 +284,14 @@ function recordSocket(event) {
 function hide(stage = 'dormant') {
   if (mesh) mesh.visible = false;
   if (material) material.opacity = 0;
+  if (mechanismRoot) mechanismRoot.visible = false;
+  if (conduitMaterial) {
+    conduitMaterial.emissive.setHex(PAL.glowOff);
+    conduitMaterial.emissiveIntensity = 0;
+  }
   stats.drawSlots = 0;
+  stats.mechanismDrawSlots = 0;
+  stats.readableExtent = 0;
   stats.stage = stage;
   if (stage === 'dormant') {
     stats.socketId = null;
@@ -198,10 +307,124 @@ function opacityAt(stage, progress, cap) {
 }
 
 function stageScale(stage, progress) {
-  if (stage === 'tell') return 0.86 + progress * 0.14;
-  if (stage === 'fire') return 0.96 + Math.sin(progress * Math.PI) * 0.10;
-  if (stage === 'recovery') return 1 + progress * 0.07;
-  return 1 + progress * 0.11;
+  if (stage === 'tell') return 0.94 + progress * 0.06;
+  if (stage === 'fire') return 0.98 + Math.sin(progress * Math.PI) * 0.055;
+  if (stage === 'recovery') return 1 + progress * 0.035;
+  return 1;
+}
+
+const STATE_INDEX = Object.freeze({
+  observe: 0, intercept: 1, contain: 2,
+  quarantine: 3, sterilize: 4, scuttle: 5,
+});
+
+function ease(v) {
+  const u = Math.max(0, Math.min(1, Number(v) || 0));
+  return u * u * (3 - 2 * u);
+}
+
+function part(pool, index, x, y, z, sx, sy, sz, rz = 0) {
+  _part.position.set(x, y, z);
+  _part.rotation.set(0, 0, rz);
+  _part.scale.set(sx, sy, sz);
+  _part.updateMatrix();
+  pool.setMatrixAt(index, _part.matrix);
+}
+
+function mechanismPose(stage, progress, stateIndex) {
+  const u = ease(progress);
+  const late = ease((progress - 0.58) / 0.42);
+  if (stage === 'tell') {
+    _mechanismPose.open = 0.18 + u * (0.34 + stateIndex * 0.045);
+    _mechanismPose.strike = 0;
+    _mechanismPose.shear = 0;
+    _mechanismPose.vent = u * (stateIndex >= 2 ? 0.72 : 0.30);
+    return _mechanismPose;
+  }
+  if (stage === 'fire') {
+    const punch = Math.sin(Math.min(1, progress / 0.36) * Math.PI);
+    _mechanismPose.open = stateIndex === 1 || stateIndex === 3
+      ? 0.06 + late * 0.10 : 0.62 + stateIndex * 0.045;
+    _mechanismPose.strike = punch;
+    _mechanismPose.shear = stateIndex === 5 ? ease(progress / 0.66) : 0;
+    _mechanismPose.vent = stateIndex >= 2 ? 1 : 0.42;
+    return _mechanismPose;
+  }
+  if (stage === 'recovery') {
+    _mechanismPose.open = stateIndex === 5 ? 0.82 : 0.56 * (1 - u) + 0.16;
+    _mechanismPose.strike = 0;
+    _mechanismPose.shear = stateIndex === 5 ? 0.82 + u * 0.18 : 0;
+    _mechanismPose.vent = (1 - u) * (stateIndex >= 2 ? 0.72 : 0.26);
+    return _mechanismPose;
+  }
+  _mechanismPose.open = stateIndex === 5 ? 0.95 : 0.08 * (1 - u);
+  _mechanismPose.strike = 0;
+  _mechanismPose.shear = stateIndex === 5 ? 1 : 0;
+  _mechanismPose.vent = 0;
+  return _mechanismPose;
+}
+
+function placeMechanism(event, progress, rotation, yaw) {
+  if (!mechanismRoot || !scutePool || !conduitPool || !currentSocket) return;
+  const stateIndex = STATE_INDEX[event.state] ?? 0;
+  const pose = mechanismPose(event.stage, progress, stateIndex);
+  const extent = 4.6 + stateIndex * 0.58;
+  const split = 0.48 + pose.open * (0.76 + stateIndex * 0.055);
+  const shear = pose.shear * (0.72 + stateIndex * 0.06);
+  const slam = pose.strike * (stateIndex === 1 || stateIndex === 3 ? -0.34 : 0.18);
+  const fan = 0.12 + pose.vent * (0.22 + stateIndex * 0.014);
+  const jawH = 2.16 + stateIndex * 0.13;
+  const jawW = 0.46 + stateIndex * 0.025;
+
+  // Opposed armour jaws. Observe parts, Intercept/Quarantine strike inward,
+  // Contain/Sterilize open into a vent/collimator, and Scuttle tears both
+  // halves away from their fasteners. The six asymmetrical pieces keep the
+  // response from reading as a decal or a perfect icon.
+  part(scutePool, 0, -split - shear, 0.12 + shear * 0.18, 0,
+    jawW, jawH, 0.32, -fan - shear * 0.16 + slam);
+  part(scutePool, 1, split + shear * 0.78, -0.08 - shear * 0.12, 0.01,
+    jawW * 1.08, jawH * 0.91, 0.34, fan + shear * 0.12 - slam);
+  part(scutePool, 2, -0.30 - shear * 0.44, 1.24 + pose.open * 0.30, -0.04,
+    extent * 0.29, 0.28, 0.28, 0.08 + fan * 0.38);
+  part(scutePool, 3, 0.42 + shear * 0.50, -1.18 - pose.open * 0.26, -0.03,
+    extent * 0.32, 0.26, 0.30, -0.06 - fan * 0.46);
+  part(scutePool, 4, -extent * 0.31 - shear * 0.34, 0.64, -0.08,
+    extent * 0.21, 0.20, 0.24, 0.28 + fan + shear * 0.12);
+  part(scutePool, 5, extent * 0.30 + shear * 0.38, -0.58, -0.07,
+    extent * 0.23, 0.22, 0.25, -0.24 - fan - shear * 0.09);
+  scutePool.instanceMatrix.needsUpdate = true;
+
+  const railSpread = 0.33 + pose.open * 0.34;
+  const railLength = extent * (0.42 + stateIndex * 0.018);
+  part(conduitPool, 0, -railSpread, 0.56, -0.13,
+    railLength, 0.085, 0.12, 0.10 + fan * 0.12);
+  part(conduitPool, 1, railSpread, -0.48, -0.12,
+    railLength * 0.94, 0.080, 0.12, -0.09 - fan * 0.10);
+  part(conduitPool, 2, -0.14, 0.16, -0.11,
+    0.10, 1.38 + pose.vent * 0.44, 0.12, fan * 0.36);
+  part(conduitPool, 3, 0.34, -0.10, -0.10,
+    0.10, 1.22 + pose.vent * 0.38, 0.12, -fan * 0.42);
+  conduitPool.instanceMatrix.needsUpdate = true;
+
+  const actionEnergy = event.stage === 'fire'
+    ? 0.42 + pose.strike * 0.58
+    : event.stage === 'tell' ? progress * 0.16
+      : event.stage === 'recovery' ? (1 - progress) * 0.12 : 0;
+  conduitMaterial.emissive.copy(_partColor.setHex(
+    stateIndex >= 4 ? PAL.capsule : PAL.modCapsule));
+  conduitMaterial.emissiveIntensity = postGain() * actionEnergy;
+
+  _mechanismMatrix.copy(rotation);
+  _mechanismMatrix.setPosition(
+    currentSocket.world.x - Math.sin(yaw) * 0.035,
+    currentSocket.world.y,
+    currentSocket.world.z - Math.cos(yaw) * 0.035,
+  );
+  mechanismRoot.matrix.copy(_mechanismMatrix);
+  mechanismRoot.matrixWorldNeedsUpdate = true;
+  mechanismRoot.visible = true;
+  stats.mechanismDrawSlots = 2;
+  stats.readableExtent = Number(extent.toFixed(2));
 }
 
 function place(event) {
@@ -210,13 +433,16 @@ function place(event) {
   const stage = event.stage;
   const progress = Math.max(0, Math.min(1, event.progress || 0));
   const opacity = opacityAt(stage, progress, component.maxOpacity);
-  if (opacity <= 0.002) return hide(stage);
-
-  const baseHeight = stage === 'fire' ? 2.75 : stage === 'tell' ? 2.35 :
-    stage === 'recovery' ? 2.20 : 1.90;
+  const stateIndex = STATE_INDEX[event.state] ?? 0;
+  const baseHeight = stage === 'fire' ? 4.15 + stateIndex * 0.22
+    : stage === 'tell' ? 3.05 + stateIndex * 0.14
+      : stage === 'recovery' ? 3.45 + stateIndex * 0.16
+        : 2.55 + stateIndex * 0.12;
   let height = baseHeight;
   let width = height * component.nativeAspect;
-  const maxWidth = stage === 'fire' ? 9.2 : stage === 'tell' ? 7.8 : 7.0;
+  const maxWidth = stage === 'fire' ? 11.8 + stateIndex * 0.62
+    : stage === 'tell' ? 9.2 + stateIndex * 0.42
+      : 10.2 + stateIndex * 0.46;
   if (width > maxWidth) {
     const fit = maxWidth / width;
     width *= fit;
@@ -230,6 +456,14 @@ function place(event) {
   const pitch = normalAscentPitchAt(currentSocket.route.s, CONFIG.levelLength);
   _rotation.makeRotationY(yaw);
   _rotation.multiply(_pitch.makeRotationZ(pitch));
+  placeMechanism(event, progress, _rotation, yaw);
+  stats.stage = stage;
+  if (opacity <= 0.002) {
+    mesh.visible = false;
+    material.opacity = 0;
+    stats.drawSlots = 0;
+    return;
+  }
   _offset.set(
     -(component.origin[0] - 0.5) * width,
     -(0.5 - component.origin[1]) * height,
@@ -251,7 +485,6 @@ function place(event) {
   mesh.visible = true;
   stats.drawSlots = 1;
   stats.maxVisible = 1;
-  stats.stage = stage;
 }
 
 function sync(event) {
@@ -328,9 +561,14 @@ export function meridianDefenseVfxSnapshot() {
     atlasState: DEFENSE_VFX_ART_SLOT.state,
     atlasTextures: DEFENSE_VFX_ART_SLOT.gpuTextures,
     estimatedGpuBytes: DEFENSE_VFX_ART_SLOT.estimatedGpuBytes,
+    totalDrawSlots: stats.drawSlots + stats.mechanismDrawSlots,
+    fixedAtBoot: true,
+    textureTransforms: false,
     environmentOnly: true,
     attachments: [],
     dormantDraws: stats.stage === 'dormant' ? stats.drawSlots : null,
+    dormantMechanismDraws: stats.stage === 'dormant'
+      ? stats.mechanismDrawSlots : null,
   };
 }
 

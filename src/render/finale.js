@@ -18,12 +18,14 @@ import { PAL } from './palette.js';
 import { postGain } from './post.js';
 import { scene } from './scene.js';
 import { towerPose } from './tower.js';
+import { DEFENSE_VFX_ART_SLOT } from './defense-vfx-art.js';
+import { DEFENSE_VFX_PACK } from './defense-vfx-pack.js';
 import {
   crownRoot, crownSignal, resetCrownPresentation, setCrownPresentation,
   triggerCrownMechanicalAction,
 } from './crown.js';
 import { addTrauma } from './camera.js';
-import { fxDirectedBurst, fxFlash, fxRing } from './fx.js';
+import { fxDirectedBurst } from './fx.js';
 
 const banner = document.getElementById('finale');
 const bannerTitle = document.getElementById('finaleTitle');
@@ -118,6 +120,50 @@ const signalS = crownSignal.s;
 const clamp01 = (v) => Math.max(0, Math.min(1, Number(v) || 0));
 const smooth = (v) => { const u = clamp01(v); return u * u * (3 - 2 * u); };
 
+function brokenArcGeometry(inner = 0.76, outer = 1) {
+  const spans = [
+    [0.18, 0.84], [1.42, 0.62], [2.48, 0.92], [3.88, 0.58], [5.02, 0.72],
+  ];
+  const positions = [];
+  const indices = [];
+  for (const [start, length] of spans) {
+    const steps = Math.max(2, Math.ceil(length / 0.16));
+    const base = positions.length / 3;
+    for (let i = 0; i <= steps; i++) {
+      const a = start + length * i / steps;
+      const c = Math.cos(a), s = Math.sin(a);
+      positions.push(c * inner, s * inner, 0, c * outer, s * outer, 0);
+    }
+    for (let i = 0; i < steps; i++) {
+      const n = base + i * 2;
+      indices.push(n, n + 1, n + 3, n, n + 3, n + 2);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function atlasComponent(id) {
+  return DEFENSE_VFX_PACK.components.find((row) => row.id === id) || null;
+}
+
+function atlasEffectGeometry(component) {
+  if (!component) return null;
+  const geo = new THREE.PlaneGeometry(1, 1);
+  const [u0, top, u1, bottom] = component.uv;
+  const uv = geo.attributes.uv;
+  for (let i = 0; i < uv.count; i++) {
+    const u = uv.getX(i), v = uv.getY(i);
+    uv.setXY(i, u0 + u * (u1 - u0), 1 - bottom + v * (bottom - top));
+  }
+  uv.needsUpdate = true;
+  geo.translate(0.5 - component.origin[0], component.origin[1] - 0.5, 0);
+  return geo;
+}
+
 function signalMaterial(color, opacity = 0) {
   return new THREE.MeshBasicMaterial({
     color,
@@ -169,7 +215,7 @@ finaleRoot.visible = false;
 scene.add(finaleRoot);
 
 const relayGeo = new THREE.OctahedronGeometry(0.18, 0);
-const relayRingGeo = new THREE.RingGeometry(0.23, 0.31, 16);
+const relayRingGeo = brokenArcGeometry(0.74, 1);
 const relayStemGeo = new THREE.BoxGeometry(0.065, 1.0, 0.065);
 const relays = [];
 
@@ -192,12 +238,13 @@ if (LIVE) {
 
     const ringMat = signalMaterial(PAL.capsule);
     const ring = new THREE.Mesh(relayRingGeo, ringMat);
+    ring.scale.setScalar(0.31);
     ring.position.z = -0.015;
     ring.renderOrder = 2;
     root.add(ring);
 
     finaleRoot.add(root);
-    relays.push({ root, stem, stemMat, core, coreMat, ring, ringMat });
+    relays.push({ root, stem, stemMat, core, coreMat, ring, ringMat, baseScale: 0.31 });
   }
 }
 
@@ -213,48 +260,54 @@ uplinkCore.renderOrder = 3;
 uplinkRoot.add(uplinkCore);
 
 const chargeRings = [];
+const chargeArcGeo = brokenArcGeometry(0.82, 1);
 for (let i = 0; i < 3; i++) {
   const mat = signalMaterial(i === 2 ? PAL.modCapsule : PAL.capsule);
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(0.48 + i * 0.22, 0.035 + i * 0.006, 5, 24), mat);
+  const ring = new THREE.Mesh(chargeArcGeo, mat);
+  ring.scale.setScalar(0.48 + i * 0.22);
   ring.position.z = -0.025 - i * 0.008;
   ring.renderOrder = 2;
   uplinkRoot.add(ring);
-  chargeRings.push({ ring, mat });
+  chargeRings.push({ ring, mat, baseScale: 0.48 + i * 0.22 });
 }
 
 // A fixed ladder of couplers carries charge from the recessed control void
 // toward the upper antenna. These do not scale the landmark into existence:
 // their positions and size are boot-fixed, and energy only changes visibility
 // and emissive intensity along the already-built vertical spine.
-const axisNodeGeo = new THREE.RingGeometry(0.105, 0.165, 10);
+const axisNodeGeo = brokenArcGeometry(0.64, 1);
 const axisNodes = [];
 for (let i = 0; i < 5; i++) {
   const mat = signalMaterial(i === 4 ? PAL.modCapsule : PAL.capsule);
   const node = new THREE.Mesh(axisNodeGeo, mat);
   node.name = 'Crown command-spine coupler';
   node.position.set(0, 1.48 + i * 1.46, -0.035);
+  node.scale.setScalar(0.165);
   node.visible = false;
   node.renderOrder = 2;
   uplinkRoot.add(node);
   axisNodes.push({ node, mat });
 }
 
-// Unit-height cylinders scale upward from their base during transmission.
+// The carrier is a broken train of short hexagonal segments, not a frozen
+// glowing pole. Gaps keep the command architecture visible through the event
+// and make direction legible even in a still frame.
 const beamRoot = new THREE.Group();
 beamRoot.name = 'Meridian-to-Earth signal';
 if (LIVE) placeStatic(
   beamRoot, signalS, crownSignal.coreY + 0.08, crownSignal.depth - 0.06);
 finaleRoot.add(beamRoot);
 
-const beamGeo = new THREE.CylinderGeometry(1, 1, 1, 10, 1, true);
+const beamGeo = new THREE.CylinderGeometry(1, 1, 1, 6, 1, true);
 const beamSheathMat = signalMaterial(PAL.capsule);
-const beamSheath = new THREE.Mesh(beamGeo, beamSheathMat);
+const beamSheath = new THREE.InstancedMesh(beamGeo, beamSheathMat, 7);
+beamSheath.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 beamSheath.renderOrder = 2;
 beamRoot.add(beamSheath);
 
 const beamCoreMat = signalMaterial(PAL.muzzle);
-const beamCore = new THREE.Mesh(beamGeo, beamCoreMat);
+const beamCore = new THREE.InstancedMesh(beamGeo, beamCoreMat, 11);
+beamCore.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 beamCore.renderOrder = 3;
 beamRoot.add(beamCore);
 
@@ -264,12 +317,62 @@ beamTip.renderOrder = 3;
 beamRoot.add(beamTip);
 
 const shockRings = [];
+const shockArcGeo = brokenArcGeometry(0.90, 1);
 for (let i = 0; i < 3; i++) {
   const mat = signalMaterial(i === 1 ? PAL.muzzle : PAL.capsule);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.055, 5, 30), mat);
+  const ring = new THREE.Mesh(shockArcGeo, mat);
   ring.renderOrder = 3;
   uplinkRoot.add(ring);
   shockRings.push({ ring, mat });
+}
+
+const returnRailMat = signalMaterial(PAL.muzzle);
+const returnRail = new THREE.InstancedMesh(
+  new THREE.BoxGeometry(1, 1, 0.055), returnRailMat, 5);
+returnRail.name = 'Earth answer descending broken carrier';
+returnRail.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+returnRail.renderOrder = 3;
+returnRail.visible = false;
+uplinkRoot.add(returnRail);
+
+// Crown rupture reuses four reviewed atlas components as action-only surface
+// events. Their UVs and origins are baked once at module evaluation; the
+// shared atlas texture is never cloned, transformed or cropped at runtime.
+const crownAtlasFx = [];
+if (LIVE && DEFENSE_VFX_ART_SLOT.tex) {
+  const specs = [
+    ['pressure-recoil-wisps', 4.6, -0.07],
+    ['armor-plate-shard-fan', 7.4, 0.10],
+    ['scuttle-cable-whip', 6.8, 0.12],
+    ['scuttle-explosive-vent', 8.4, 0.08],
+  ];
+  for (const [id, width, z] of specs) {
+    const component = atlasComponent(id);
+    const geo = atlasEffectGeometry(component);
+    if (!component || !geo) continue;
+    const mat = new THREE.MeshBasicMaterial({
+      color: PAL.muzzle,
+      map: DEFENSE_VFX_ART_SLOT.tex,
+      transparent: true,
+      opacity: 0,
+      alphaTest: 0.018,
+      depthWrite: false,
+      depthTest: true,
+      blending: component.depth === 'front-particles'
+        ? THREE.NormalBlending : THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      fog: false,
+      toneMapped: false,
+    });
+    mat.forceSinglePass = true;
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.name = `Crown action atlas ${id}`;
+    mesh.visible = false;
+    mesh.position.z = z;
+    mesh.renderOrder = component.depth === 'front-particles' ? 5 : 4;
+    uplinkRoot.add(mesh);
+    crownAtlasFx.push({ id, component, mesh, mat, width });
+  }
 }
 
 // The carrier cannot become a frozen white pole the moment the results card
@@ -300,6 +403,94 @@ let lastWave = 0;
 let waveKick = 0;
 let transmitting = false;
 let carrierFrame = 0;
+let packetFxAt = -Infinity;
+let ruptureFxAt = -Infinity;
+let launchFxAt = -Infinity;
+let answerFxAt = -Infinity;
+const _beamPart = new THREE.Object3D();
+const RETURN_RAIL_POINTS = Object.freeze([
+  Object.freeze([-0.04, 8.18]), Object.freeze([0.24, 6.72]),
+  Object.freeze([-0.19, 5.28]), Object.freeze([0.16, 3.86]),
+  Object.freeze([-0.27, 2.47]), Object.freeze([0.02, 1.12]),
+]);
+
+function beamPart(pool, index, x, y, z, sx, sy, sz, rz = 0) {
+  _beamPart.position.set(x, y, z);
+  _beamPart.rotation.set(0, 0, rz);
+  _beamPart.scale.set(sx, sy, sz);
+  _beamPart.updateMatrix();
+  pool.setMatrixAt(index, _beamPart.matrix);
+}
+
+function syncBeamSegments(height, sheathRadius, coreRadius, settled = false) {
+  const h = Math.max(0, Number(height) || 0);
+  beamSheath.visible = h > 0.01 && sheathRadius > 0.001;
+  beamCore.visible = h > 0.01 && coreRadius > 0.001;
+  const sheathStep = h / beamSheath.count;
+  for (let i = 0; i < beamSheath.count; i++) {
+    const segmentH = Math.max(0.001, sheathStep * (settled ? 0.48 : 0.67));
+    const y = (i + 0.5) * sheathStep;
+    const side = Math.sin(i * 2.17) * sheathRadius * 0.34;
+    beamPart(beamSheath, i, side, y, -side * 0.32,
+      sheathRadius * (1 + (i % 3) * 0.06), segmentH,
+      sheathRadius * (0.92 + (i % 2) * 0.08), (i % 2 ? -1 : 1) * 0.018);
+  }
+  beamSheath.instanceMatrix.needsUpdate = true;
+
+  const coreStep = h / beamCore.count;
+  for (let i = 0; i < beamCore.count; i++) {
+    const segmentH = Math.max(0.001, coreStep * (settled ? 0.38 : 0.58));
+    const y = (i + 0.5) * coreStep;
+    const side = Math.cos(i * 1.73) * coreRadius * 0.58;
+    beamPart(beamCore, i, side, y, -side * 0.25,
+      coreRadius, segmentH, coreRadius, (i % 2 ? -1 : 1) * 0.012);
+  }
+  beamCore.instanceMatrix.needsUpdate = true;
+}
+
+function syncReturnRail(energy = 0) {
+  const e = clamp01(energy);
+  returnRail.visible = e > 0.01;
+  for (let i = 0; i < returnRail.count; i++) {
+    const a = RETURN_RAIL_POINTS[i], b = RETURN_RAIL_POINTS[i + 1];
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const length = Math.hypot(dx, dy);
+    beamPart(returnRail, i, (a[0] + b[0]) * 0.5, (a[1] + b[1]) * 0.5,
+      0.038 + i * 0.004, 0.055 + i * 0.004, length * 0.86, 0.055,
+      Math.atan2(-dx, dy));
+  }
+  returnRail.instanceMatrix.needsUpdate = true;
+  driveMaterial(returnRailMat, IVORY, e, e * 0.58);
+}
+
+function setCrownAtlasEffect(row, age, duration, opacity, x, y, driftX = 0) {
+  if (!row) return;
+  const live = age >= 0 && age < duration;
+  row.mesh.visible = live;
+  if (!live) { row.mat.opacity = 0; return; }
+  const u = clamp01(age / duration);
+  const fade = smooth(Math.min(u / 0.10, (1 - u) / 0.26));
+  const width = row.width;
+  const height = width / row.component.nativeAspect;
+  row.mesh.position.x = x + driftX * u;
+  row.mesh.position.y = y + Math.sin(u * Math.PI) * 0.22;
+  row.mesh.rotation.z = (u - 0.5) * (row.id.includes('cable') ? 0.16 : 0.05);
+  row.mesh.scale.set(width * (1 + u * 0.06), height * (1 - u * 0.035), 1);
+  row.mat.opacity = row.component.maxOpacity * opacity * fade;
+}
+
+function syncCrownAtlasFx(nowMs) {
+  if (!crownAtlasFx.length) return;
+  const now = Math.max(0, Number(nowMs) || 0);
+  setCrownAtlasEffect(crownAtlasFx[0], now - packetFxAt, 620,
+    0.78, -0.8, -0.15, -0.26);
+  setCrownAtlasEffect(crownAtlasFx[1], now - ruptureFxAt, 980,
+    0.96, 0.25, 0.35, 1.10);
+  setCrownAtlasEffect(crownAtlasFx[2], now - ruptureFxAt - 55, 920,
+    0.82, 0.65, 0.66, -0.58);
+  setCrownAtlasEffect(crownAtlasFx[3], now - launchFxAt, 940,
+    1.00, -0.10, -0.72, 0.24);
+}
 
 function committedWardenAttack(snapshot) {
   const attack = snapshot?.warden?.attack;
@@ -356,8 +547,8 @@ function animateSettledCarrier(now = 0) {
   // a paused game. Combat and run telemetry remain fully deterministic.
   if (settled && finaleRoot.visible) {
     const pulse = 0.5 + 0.5 * Math.sin(seconds * 2.35);
-    beamSheath.scale.x = beamSheath.scale.z = 0.135 + pulse * 0.035;
-    beamCore.scale.x = beamCore.scale.z = 0.038 + pulse * 0.014;
+    syncBeamSegments(48.2, 0.105 + pulse * 0.022,
+      0.031 + pulse * 0.010, true);
     driveMaterial(beamSheathMat, MAGENTA, 0.28 + pulse * 0.2, 0.055 + pulse * 0.035);
     driveMaterial(beamCoreMat, IVORY, 0.34 + pulse * 0.28, 0.13 + pulse * 0.09);
     uplinkCore.rotation.y = seconds * 0.48;
@@ -365,9 +556,10 @@ function animateSettledCarrier(now = 0) {
     uplinkCore.scale.setScalar(1.22 + pulse * 0.11);
     driveMaterial(uplinkCoreMat, IVORY, 0.58 + pulse * 0.22, 0.58 + pulse * 0.18);
     for (let i = 0; i < chargeRings.length; i++) {
-      const { ring, mat } = chargeRings[i];
+      const { ring, mat, baseScale } = chargeRings[i];
       ring.visible = true;
       ring.rotation.z = seconds * (i % 2 ? -0.3 : 0.36) + i * 0.65;
+      ring.scale.setScalar(baseScale * (0.96 + pulse * 0.04));
       driveMaterial(mat, i === 2 ? GOLD : MAGENTA,
         0.38 + pulse * 0.2, 0.09 + pulse * 0.08);
     }
@@ -378,6 +570,9 @@ function animateSettledCarrier(now = 0) {
       driveMaterial(mat, i === axisNodes.length - 1 ? GOLD : MAGENTA,
         0.32 + pulse * 0.18, 0.12 + pulse * 0.10);
     }
+    const answerAge = Math.max(0, current.elapsedMs - answerFxAt);
+    syncReturnRail((1 - clamp01(answerAge / 1850)) * (0.55 + pulse * 0.28));
+    syncCrownAtlasFx(current.elapsedMs);
   }
   carrierFrame = requestAnimationFrame(animateSettledCarrier);
 }
@@ -471,13 +666,11 @@ function setBanner(snapshot) {
   bannerProgress.setAttribute('aria-valuetext', `${pct}% ${phase}`);
 }
 
-function triggerDefensePacket(wave) {
+function triggerDefensePacket(wave, nowMs) {
   if (!LIVE) return;
-  const size = 2.1 + Math.max(0, wave) * 0.62;
-  fxFlash(145, 0.72 + wave * 0.10,
-    signalS, crownSignal.coreY, PAL.capsule, crownSignal.depth);
-  fxRing(360, size,
-    signalS, crownSignal.coreY, PAL.modCapsule, crownSignal.depth + 0.02);
+  packetFxAt = Math.max(0, Number(nowMs) || 0);
+  // The packet is a mechanical compression and a short pressure wake, not a
+  // generic orb/ring pasted over the command card.
   addTrauma(CONFIG.juice.shake.kill * 0.32);
 }
 
@@ -486,25 +679,21 @@ function beginTransmission(snapshot, ruptureAlreadyTriggered = false) {
   transmitting = true;
   waveKick = 1;
   const now = Math.max(0, Number(snapshot?.elapsedMs) || 0);
-  if (!ruptureAlreadyTriggered && wardenRuptured(current, snapshot))
+  if (!ruptureAlreadyTriggered && wardenRuptured(current, snapshot)) {
+    ruptureFxAt = now;
     triggerCrownMechanicalAction('rupture', now);
+  }
   triggerCrownMechanicalAction('transmission', now);
+  launchFxAt = now;
   ensureCarrierClock();
   if (!LIVE) return;
 
-  // One authored launch beat: upward shrapnel, two differently timed fronts,
-  // and a compact core flash. The tall beam itself is persistent geometry
-  // below, so this cannot turn into OL's flashing slab.
+  // One authored launch beat: upward shrapnel, fixed scute/cable atlas events
+  // and broken face-hugging fronts. There is no full-disc ring or global flash.
   fxDirectedBurst(CONFIG.juice.death,
     signalS, crownSignal.coreY, PAL.capsule, 0, 1, 1.15, 1.35);
   fxDirectedBurst(CONFIG.juice.impact,
     signalS, crownSignal.coreY, PAL.muzzle, 0, 1, 0.72, 1.55);
-  fxFlash(250, 1.45,
-    signalS, crownSignal.coreY, PAL.muzzle, crownSignal.depth + 0.04);
-  fxRing(520, 4.6,
-    signalS, crownSignal.coreY, PAL.capsule, crownSignal.depth + 0.03);
-  fxRing(820, 7.2,
-    signalS, crownSignal.coreY, PAL.muzzle, crownSignal.depth);
   addTrauma(CONFIG.juice.shake.boom * 1.45);
   current = { ...current, ...snapshot };
 }
@@ -538,7 +727,7 @@ function syncWorld(snapshot) {
     if (!relay.root.visible) continue;
     const beat = 0.9 + 0.11 * pulse + waveKick * 0.16;
     relay.core.scale.setScalar(0.8 + e * 0.42 + waveKick * 0.08);
-    relay.ring.scale.setScalar(0.86 + e * 0.22 + pulse * 0.05);
+    relay.ring.scale.setScalar(relay.baseScale * (0.90 + e * 0.14 + pulse * 0.035));
     relay.ring.rotation.z = t * (i % 2 ? -0.75 : 0.75) + i * 0.9;
     driveMaterial(relay.stemMat, MAGENTA, e, e * 0.36);
     driveMaterial(relay.coreMat, IVORY, e * beat, e * 0.78);
@@ -556,10 +745,10 @@ function syncWorld(snapshot) {
       ? clamp01(p * 3 - i)
       : clamp01((snapshot.wave || 0) - i +
         (phase === 'transmit' || phase === 'answer' ? 1 : 0));
-    const { ring, mat } = chargeRings[i];
+    const { ring, mat, baseScale } = chargeRings[i];
     ring.visible = charged > 0.01;
     ring.rotation.z = t * (i % 2 ? -0.55 : 0.7) + i * 0.65;
-    ring.scale.setScalar(0.86 + charged * 0.16 + waveKick * 0.08);
+    ring.scale.setScalar(baseScale * (0.90 + charged * 0.10 + waveKick * 0.045));
     driveMaterial(mat, i === 2 ? GOLD : MAGENTA,
       charged * coreBeat, charged * (0.12 + pulse * 0.12 + waveKick * 0.14));
   }
@@ -580,10 +769,8 @@ function syncWorld(snapshot) {
     const rise = smooth(p / 0.16);
     const tail = 1 - smooth((p - 0.72) / 0.28) * 0.72;
     const height = Math.max(0.01, 52 * rise);
-    beamSheath.scale.set(0.25 + pulse * 0.025, height, 0.25 + pulse * 0.025);
-    beamSheath.position.y = height * 0.5;
-    beamCore.scale.set(0.075 + pulse * 0.009, height, 0.075 + pulse * 0.009);
-    beamCore.position.y = height * 0.5;
+    syncBeamSegments(height, 0.19 + pulse * 0.025,
+      0.054 + pulse * 0.009, false);
     beamTip.position.y = height;
     beamTip.scale.setScalar(0.35 + pulse * 0.14);
     driveMaterial(beamSheathMat, MAGENTA, tail, 0.24 * tail);
@@ -611,14 +798,13 @@ function syncWorld(snapshot) {
     // Earth answers in the playable world first; results then hold on the
     // same live-but-settled Crown. The narrow afterglow proves both followed
     // the outbound event instead of replacing it with a loading screen.
-    beamSheath.scale.set(0.15, 52, 0.15);
-    beamSheath.position.y = 26;
-    beamCore.scale.set(0.045, 52, 0.045);
-    beamCore.position.y = 26;
+    syncBeamSegments(48.2, 0.105, 0.031, true);
     beamTip.visible = false;
     driveMaterial(beamSheathMat, MAGENTA, 0.32, 0.07);
     driveMaterial(beamCoreMat, IVORY, 0.38, 0.16);
     for (const { ring } of shockRings) ring.visible = false;
+    const answerAge = Math.max(0, snapshot.elapsedMs - answerFxAt);
+    syncReturnRail(1 - clamp01(answerAge / 1850));
     setCrownPresentation({
       energy: 0.72, surge: 0, nowMs: snapshot.elapsedMs, attackCommitted: false,
     });
@@ -626,6 +812,9 @@ function syncWorld(snapshot) {
 
   if (phase !== 'transmit' && phase !== 'answer' && phase !== 'complete') {
     beamRoot.visible = false;
+    beamSheath.visible = false;
+    beamCore.visible = false;
+    syncReturnRail(0);
     for (const { ring } of shockRings) ring.visible = false;
     setCrownPresentation({
       energy: defendEnergy,
@@ -634,6 +823,7 @@ function syncWorld(snapshot) {
       attackCommitted: committedWardenAttack(snapshot),
     });
   }
+  syncCrownAtlasFx(snapshot.elapsedMs);
 }
 
 function started(snapshot) {
@@ -642,6 +832,10 @@ function started(snapshot) {
   lastWave = current.wave;
   waveKick = 0;
   transmitting = false;
+  packetFxAt = -Infinity;
+  ruptureFxAt = -Infinity;
+  launchFxAt = -Infinity;
+  answerFxAt = -Infinity;
   beamTip.visible = true;
   setBanner(current);
   syncWorld(current);
@@ -652,13 +846,18 @@ function sync(snapshot) {
   const dt = Math.max(0, Math.min(100, next.elapsedMs - lastElapsedMs));
   waveKick = Math.max(0, waveKick - dt / 520);
   if (next.phase === 'defend' && next.wave > lastWave) {
-    for (let wave = lastWave + 1; wave <= next.wave; wave++) triggerDefensePacket(wave);
+    for (let wave = lastWave + 1; wave <= next.wave; wave++)
+      triggerDefensePacket(wave, next.elapsedMs);
     triggerCrownMechanicalAction('packet', next.elapsedMs);
     waveKick = 1;
   }
   const rupture = wardenRuptured(current, next);
-  if (rupture)
+  if (rupture) {
+    ruptureFxAt = next.elapsedMs;
     triggerCrownMechanicalAction('rupture', next.elapsedMs);
+  }
+  if (next.phase === 'answer' && current.phase !== 'answer')
+    answerFxAt = next.elapsedMs;
   if (next.phase === 'transmit' && !transmitting) beginTransmission(next, rupture);
   current = next;
   lastElapsedMs = next.elapsedMs;
@@ -681,12 +880,23 @@ function reset() {
   lastWave = 0;
   waveKick = 0;
   transmitting = false;
+  packetFxAt = -Infinity;
+  ruptureFxAt = -Infinity;
+  launchFxAt = -Infinity;
+  answerFxAt = -Infinity;
   stopCarrierClock();
   finaleRoot.visible = false;
   beamRoot.visible = false;
+  beamSheath.visible = false;
+  beamCore.visible = false;
   beamTip.visible = true;
   for (const { ring } of shockRings) ring.visible = false;
   for (const { node } of axisNodes) node.visible = false;
+  syncReturnRail(0);
+  for (const row of crownAtlasFx) {
+    row.mesh.visible = false;
+    row.mat.opacity = 0;
+  }
   resetCrownPresentation();
   setBanner(current);
 }
@@ -706,6 +916,11 @@ export function finalePresentationSnapshot() {
     portraitCarrier: false,
     canonicalAxis: true,
     axisCouplers: axisNodes.length,
+    carrierSegments: beamSheath.count + beamCore.count,
+    crownAtlasEffects: crownAtlasFx.length,
+    perfectRings: 0,
+    runtimeTextures: 0,
+    returnRailSegments: returnRail.count,
     carrierClockActive: carrierFrame !== 0,
   };
 }

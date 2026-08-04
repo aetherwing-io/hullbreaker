@@ -151,8 +151,9 @@ check(/!actorMotionOwnsSilhouette\(v\) && !houndMotionOwnsSilhouette/.test(hosti
   /actorMotionOwnsSilhouette\(v\) \? 0 : spriteRoll/.test(hostiles),
   'atlas actors bypass legacy whole-card squash, growth, and rotation');
 check(/actorMotionFrame\.geo !== v\.mesh\.geometry[\s\S]*emissiveMap !== v\.actorMotionBundle\.tex/.test(hostiles) &&
-  /const rig = motionFrame >= 0 \? null : claimDeathRig/.test(hostiles),
-  'death continuity retains the exact authored geometry and texture');
+  /const rig = e\.kind === 'warden'[\s\S]{0,180}claimDeathRig\(v, e\)[\s\S]{0,100}motionFrame >= 0 \? null/.test(hostiles) &&
+  /const fixedWardenDeathRig = buildFixedWardenDeathRig\(\)/.test(hostiles),
+  'motion deaths preserve authored paint while Warden alone claims its boot-fixed terminal pieces');
 check(/motionSocketWorld\(v, e, 'muzzle'\)/.test(hostiles) &&
   /motionSocketWorld\(v, e, 'iris'\)/.test(hostiles) &&
   /motionSocketWorld\(v, e, 'rack'\)/.test(hostiles) &&
