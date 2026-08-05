@@ -70,6 +70,10 @@ import { placeOnTower } from './tower.js';
 import { PAL } from './palette.js';
 import { syncContactShadow } from './contact.js';
 import { applySpriteUnderside } from './sprite-grounding.js';
+import {
+  gildedRigActive, gildedAuraVisible, gildedShimmer, mountGildedAura,
+  syncGildedAura,
+} from './gilded-aura.js';
 
 const rig = new THREE.Group();
 const bodyGroup = new THREE.Group();
@@ -542,6 +546,13 @@ rig.add(gunGroup);
 
 scene.add(rig);
 
+/* GILDED CHASSIS (Konami-code cosmetic): the aura's meshes, canvas texture,
+   and latch live in src/render/gilded-aura.js — T-040 freezes THIS file's
+   construction sites, mesh count, and no-runtime-canvas contract. This
+   file only mounts the group, drives it from sync() below, and warms the
+   emissive tint when the chassis is gold. */
+mountGildedAura(rig, RIG_SPRITE_H);
+
 // T-039 (S6, contact shadows): RIG has exactly one row, for its whole
 // lifetime — never spawned or removed the way a hostile/capsule is — so a
 // stable module-level identity is all `syncContactShadow` needs; there is no
@@ -895,8 +906,16 @@ function sync() {
   // disabled, so this remains presentation-only and allocation-free.
   const notch = scoreNotchNow();
   const breakingPulse = notch >= 2 ? 0.5 + 0.5 * Math.sin(gameMs * 0.018) : 0;
-  const heatColor = notch >= 1 ? PAL.gun : PAL.player;
-  const bodyHeat = notch >= 2 ? 0.34 + breakingPulse * 0.14 : (notch === 1 ? 0.16 : 0);
+  // GILDED CHASSIS warms the whole heat palette: the chassis runs a slow
+  // golden shimmer (same beat as the aura) instead of only the overdrive
+  // warning colours. Cosmetic only; the latch lives in gilded-aura.js.
+  const gildedOn = gildedRigActive();
+  const gildedGlow = gildedOn ? gildedShimmer(gameMs) : 0;
+  const heatColor = gildedOn ? PAL.gildedGold : (notch >= 1 ? PAL.gun : PAL.player);
+  const bodyHeat = gildedOn
+    ? Math.max(notch >= 2 ? 0.34 + breakingPulse * 0.14 : (notch === 1 ? 0.16 : 0),
+        0.24 + gildedGlow * 0.16)
+    : notch >= 2 ? 0.34 + breakingPulse * 0.14 : (notch === 1 ? 0.16 : 0);
   fallbackMesh.material.emissive.setHex(heatColor);
   fallbackMesh.material.emissiveIntensity = bodyHeat;
   spriteMesh.material.emissive.setHex(heatColor);
@@ -904,6 +923,7 @@ function sync() {
   _gunDisplayTint.copy(_rollTint);
   if (notch >= 2) _gunDisplayTint.lerp(_gunTraitColor.setHex(PAL.muzzle), 0.72);
   else if (notch === 1) _gunDisplayTint.lerp(_gunTraitColor.setHex(PAL.gun), 0.42);
+  if (gildedOn) _gunDisplayTint.lerp(_gunTraitColor.setHex(PAL.gildedGold), 0.55);
   if (gunUsesArt) gun.material.color.setHex(0xffffff).lerp(_gunDisplayTint,
     0.08 + Math.min(0.12, (currentGun?.tier || 0) * 0.035));
   else gun.material.color.copy(_gunDisplayTint);
@@ -911,6 +931,12 @@ function sync() {
   gun.material.emissiveIntensity = notch >= 2
     ? 0.58 + breakingPulse * 0.40 + recoilT * 0.24
     : recoilT * 0.46 + (notch === 1 ? 0.24 : 0);
+  if (gildedOn)
+    gun.material.emissiveIntensity = Math.max(gun.material.emissiveIntensity,
+      0.3 + gildedGlow * 0.18);
+  // The gilded aura (mounted above) animates on the same clock and dims
+  // under the same fold occlusion as the body it surrounds.
+  syncGildedAura(gameMs, foldGain);
   rig.visible = foldGain > 0.01 && (gameMs >= player.iframesUntil || blink());
   rig.userData.foldVisibility = foldGain;
   // The contact shadow is a separate instanced mesh, so hiding only `rig`
@@ -930,6 +956,8 @@ export function rigVisualSnapshot() {
   const rect = renderer.domElement.getBoundingClientRect();
   return {
     spriteReady, aimReady, actionReady, actionShowing, bodyFrame: shownBodyFrame,
+    gilded: gildedRigActive(),
+    gildedAuraVisible: gildedAuraVisible(),
     rigVisible: rig.visible && foldVisibility() > 0.01,
     spriteVisible: spriteMesh.visible && spriteMesh.material.opacity > 0.01,
     climbReady, climbError, climbFrame: climbFrameIndex,

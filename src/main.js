@@ -143,6 +143,9 @@ import { juiceSnapshot, updateJuice } from './render/juice.js';
 import { actionVfxSnapshot, updateActionVfx } from './render/action-vfx-runtime.js';
 import { initializeViewRegistry, viewInitSnapshot } from './boot/view-init.js';
 import { resetRunState, runResetSnapshot } from './boot/run-reset.js';
+import { advanceKonami } from './pure/konami.js';
+import { setGildedRig } from './render/gilded-aura.js';
+import { announceGilded } from './ui/gilded.js';
 import {
   adaptiveFidelitySnapshot, sampleAdaptiveFidelity,
 } from './render/adaptive-fidelity.js';
@@ -205,7 +208,26 @@ function applyGameplayKeyEdge(code, type, repeat = false) {
   return true;
 }
 
+/* The gilded-chassis code (src/pure/konami.js) watches EVERY keydown in
+   every state, before the shell or the keymap below can act on it. It never
+   consumes a press: at the title the first arrow still starts the run (the
+   fall-through contract pathcheck asserts), which simply means the rest of
+   the sequence is typed in-game — matching how the code was classically
+   entered on a title screen that also took START. Completion TOGGLES the
+   cosmetic golden chassis; the render layer owns the whole effect. */
+let konamiProgress = 0;
+let gildedChassis = false;
+
 addEventListener('keydown', (e) => {
+  if (!e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey) {
+    const advance = advanceKonami(konamiProgress, e.code);
+    konamiProgress = advance.progress;
+    if (advance.fired) {
+      gildedChassis = !gildedChassis;
+      setGildedRig(gildedChassis);
+      announceGilded(gildedChassis);
+    }
+  }
   /* The game shell gets first look, but only where the simulation is not
      running (MENU / PAUSED / GAME_OVER / VICTORY) and only for keys that
      are not in KEYMAP below. 'start' is the load-bearing case: leaving the
