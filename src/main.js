@@ -888,6 +888,11 @@ if (QUERY.has('selftest')) {
         ? traversalCameraDepth(CONFIG.camera.z, innerWidth / innerHeight, ACTIVE_FIXTURE.run)
         : CONFIG.camera.z)));
     resetGame();
+    // Snapshot the restart boundary now. The self-test intentionally performs
+    // more UI/state choreography below; a slow renderer may legitimately
+    // produce new presentation activity during those later checks, which says
+    // nothing about whether reset itself left the run clean.
+    const restartJuice = juiceSnapshot();
     const expectedScroll = ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run.startScroll : 0;
     const expectedHostiles = SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length : 0;
     // A pace that bounds crush slack in seconds arms its clock on the first
@@ -1044,8 +1049,12 @@ if (QUERY.has('selftest')) {
     {
       const j = juiceSnapshot();
       check('juice flag plumbed', j.enabled === (QUERY.get('juice') !== '0'));
-      check('juice idle after restart',
-        j.hitStopMs === 0 && j.trauma === 0 && j.sparks === 0 && j.flashes === 0);
+      const rj = restartJuice;
+      check('juice idle immediately after restart' +
+        ((rj.hitStopMs || rj.trauma || rj.sparks || rj.flashes)
+          ? ` (hitStop=${rj.hitStopMs}, trauma=${rj.trauma}, sparks=${rj.sparks}, flashes=${rj.flashes})`
+          : ''),
+        rj.hitStopMs === 0 && rj.trauma === 0 && rj.sparks === 0 && rj.flashes === 0);
       check('juice pools sized from config',
         !j.enabled || (j.sparkMax === CONFIG.juice.pools.particles &&
           j.flashMax === CONFIG.juice.pools.flashes));
