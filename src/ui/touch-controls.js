@@ -121,8 +121,12 @@ export function installTouchControls({ applyEdge, canControl, startRun, togglePa
   function showAnchor(x, y) {
     const r = radius();
     const bounds = deck.getBoundingClientRect();
-    anchorX = clamp(x, bounds.left + r * 1.55, bounds.right - r * 1.55);
-    anchorY = clamp(y, bounds.top + r * 1.55, bounds.bottom - r * 1.55);
+    // The visible rail is three radii wide. The old 1.55r clamp left only
+    // two pixels between that dashed circumference and the phone edge, where
+    // it collapsed into a column of stray chevrons. Keep the whole instrument
+    // comfortably inside both the glass and the browser's gesture gutters.
+    anchorX = clamp(x, bounds.left + r * 1.76, bounds.right - r * 1.76);
+    anchorY = clamp(y, bounds.top + r * 1.68, bounds.bottom - r * 1.68);
     stick.style.setProperty('--stick-x', `${anchorX}px`);
     stick.style.setProperty('--stick-y', `${anchorY}px`);
     stick.style.setProperty('--stick-r', `${r}px`);

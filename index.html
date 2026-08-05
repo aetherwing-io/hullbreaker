@@ -33,15 +33,15 @@
      is invisible; the control appears under the thumb, not over the fight. */
   #touchDeck {
     position: fixed; z-index: 16; right: 0; bottom: 0; left: 0;
-    height: 43vh; height: 43dvh;
+    height: 36vh; height: 36dvh;
     box-sizing: border-box; touch-action: none; user-select: none;
     -webkit-user-select: none; -webkit-touch-callout: none;
     font-family: ui-monospace, Menlo, Consolas, monospace;
   }
   #touchDeck[hidden] { display: none; }
   #touchDeck::before {
-    content: ''; position: absolute; inset: 36% 0 0; pointer-events: none;
-    background: linear-gradient(180deg, transparent, rgba(5,15,22,.18) 44%, rgba(5,15,22,.38));
+    content: ''; position: absolute; inset: 22% 0 0; pointer-events: none;
+    background: linear-gradient(180deg, transparent, rgba(5,15,22,.16) 48%, rgba(5,15,22,.34));
   }
   #touchStick {
     --stick-x: 50vw; --stick-y: 80vh; --stick-r: 58px;
@@ -64,8 +64,9 @@
     box-shadow: inset 0 0 0 6px rgba(7,19,26,.18);
   }
   #touchStick::after {
-    inset: 0; border: 2px dashed rgba(255,242,216,.38);
-    box-shadow: inset 0 0 0 2px rgba(7,19,26,.52);
+    inset: 0; border: 2px solid rgba(255,242,216,.30);
+    background: radial-gradient(circle, transparent 60%, rgba(7,19,26,.13) 61% 100%);
+    box-shadow: inset 0 0 0 2px rgba(7,19,26,.46), 0 0 0 1px rgba(7,19,26,.28);
   }
   #touchStick.firing::after {
     border-style: solid; border-color: #fff2d8;
@@ -88,15 +89,15 @@
   }
   .touch-chip {
     position: absolute; bottom: max(38px, calc(env(safe-area-inset-bottom) + 26px));
-    width: 54px; height: 34px; padding: 0;
+    width: 62px; height: 44px; padding: 0;
     border: 2px solid rgba(232,237,242,.38); border-radius: 3px;
     color: #e8edf2; background: rgba(7,19,26,.58);
-    font: 800 9px/1 ui-monospace, Menlo, Consolas, monospace;
+    font: 800 10px/1 ui-monospace, Menlo, Consolas, monospace;
     letter-spacing: .08em; touch-action: manipulation;
   }
   .touch-chip:active { color: #07131a; border-color: #fff2d8; background: #fff2d8; }
   #touchSwap { right: max(18px, env(safe-area-inset-right)); }
-  #touchPause { right: max(80px, calc(env(safe-area-inset-right) + 62px)); }
+  #touchPause { right: max(90px, calc(env(safe-area-inset-right) + 72px)); }
   body.touch-controls #hudBL { display: none; }
   body.at-title #touchDeck, body.at-modal #touchDeck, body.at-victory #touchDeck { opacity: 0; pointer-events: none; }
   @keyframes touch-jump-kick {

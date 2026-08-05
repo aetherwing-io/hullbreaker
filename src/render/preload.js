@@ -66,12 +66,20 @@ import * as THREE from 'three';
 import { QUERY } from '../mode.js';
 import { renderer } from './scene.js';
 
-/* One budget for every asset the boot registers. 2500ms is a judgement, not
-   a measurement: long enough for the whole generated set over a cold local
-   server, short enough that a player on a bad connection gets the game
-   (with primitives) rather than a white page, and far inside the failure
-   bootstrap's 10s boot watchdog so a slow load never paints a panel. */
+/* One budget for every asset the boot registers. Desktop keeps the measured
+   2500ms contract used by the deterministic harness. A touch device gets a
+   wider 6500ms cold-start window: real iPhone/Safari evidence showed the
+   three large Meridian depth sources losing the 2500ms race on GitHub Pages,
+   leaving the technically playable but visually unacceptable primitive
+   fallback for the whole run. Both limits remain inside the bootstrap's 10s
+   loading watchdog, and the gate still closes before simulation frame one. */
 export const PRELOAD_BUDGET_MS = 2500;
+export const MOBILE_PRELOAD_BUDGET_MS = 6500;
+const TOUCH_PRELOAD = typeof navigator !== 'undefined' &&
+  (navigator.maxTouchPoints > 0 ||
+    (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches));
+const activePreloadBudgetMs = TOUCH_PRELOAD
+  ? MOBILE_PRELOAD_BUDGET_MS : PRELOAD_BUDGET_MS;
 
 /* How many macrotask turns the registry must stay QUIET before the gate
    counts registration as finished. Two is enough for sibling modules to
@@ -156,7 +164,7 @@ export function preloadTexture(url, opts = {}) {
   }
   if (startedAt === 0) {
     startedAt = nowMs();
-    deadlineAt = startedAt + PRELOAD_BUDGET_MS;
+    deadlineAt = startedAt + activePreloadBudgetMs;
   }
   const e = {
     url, state: 'pending', tex: null, error: null, ms: 0,
@@ -380,7 +388,7 @@ async function settle() {
     e.state = 'timeout';
     e.ms = waited;
     e.error = 'still loading after ' + waited + 'ms of the ' +
-      PRELOAD_BUDGET_MS + 'ms boot budget';
+      activePreloadBudgetMs + 'ms boot budget';
     console.warn('HULLBREAKER art: ' + e.url + ' — ' + e.error +
       '; the game is starting without it.');
     e.settle(e);
@@ -407,7 +415,10 @@ export function awaitPreloads() {
 export function preloadSnapshot() {
   return {
     closed,
-    budgetMs: PRELOAD_BUDGET_MS,
+    budgetMs: activePreloadBudgetMs,
+    desktopBudgetMs: PRELOAD_BUDGET_MS,
+    mobileBudgetMs: MOBILE_PRELOAD_BUDGET_MS,
+    touchBudget: TOUCH_PRELOAD,
     // what the gate COST THE BOOT: frozen when it closed, not "time since
     // the page loaded" — the first version of this field reported the
     // latter and read like a 6-second stall in a 14ms preload.

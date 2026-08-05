@@ -35,28 +35,45 @@ function probeXAtNdc(ndcX) {
 }
 
 /* Portrait action-safe framing. The normal run's camera keeps a fixed
-   vertical FOV, so at 390x844 one logical tile is about 25 CSS px wide while
-   the right clamp leaves RIG only CONFIG.edges.margin (0.4 tile / ~10 px)
-   inside the glass. The sprite and its readability halo are wider than that.
+   vertical FOV, so at 390x844 RIG used to sit barely 10 CSS px inside the
+   glass while the deck was centred beneath the player's thumb controls.
 
-   Calibrate the normal run's RIGHT gameplay edge against an inset NDC line on
-   portrait screens. The renderer, FOV, world, movement tune and left damage
-   edge do not move; only the existing camera-derived safe clamp comes inward.
-   Landscape is exactly 1, authored fixtures retain their own portrait camera
-   correction, and the inset eases in so tablet rotation cannot pop framing. */
-const PORTRAIT_SAFE = Object.freeze({ startAspect: 0.9, fullAspect: 0.46, maxInsetPx: 64 });
+   Calibrate the normal run against symmetric inset NDC lines and lower its
+   look target so the action strip rises above the touch deck. The renderer,
+   world scale and movement tune remain exact. Landscape is unchanged,
+   authored fixtures retain their own portrait correction, and both changes
+   ease in so tablet rotation cannot pop framing. */
+const PORTRAIT_SAFE = Object.freeze({
+  startAspect: 0.9,
+  fullAspect: 0.56,
+  maxInsetPx: 46,
+  lookDropTiles: 1.55,
+});
 
-export function portraitRightNdc(width, height) {
+function portraitBlend(width, height) {
   const w = Number.isFinite(width) && width > 0 ? width : 1;
   const h = Number.isFinite(height) && height > 0 ? height : 1;
   const aspect = w / h;
-  if (aspect >= PORTRAIT_SAFE.startAspect) return 1;
-  const u = Math.min(1, Math.max(0,
+  if (aspect >= PORTRAIT_SAFE.startAspect) return 0;
+  return Math.min(1, Math.max(0,
     (PORTRAIT_SAFE.startAspect - aspect) /
     (PORTRAIT_SAFE.startAspect - PORTRAIT_SAFE.fullAspect)
   ));
+}
+
+export function portraitRightNdc(width, height) {
+  const w = Number.isFinite(width) && width > 0 ? width : 1;
+  const u = portraitBlend(width, height);
   const insetPx = Math.min(w * 0.18, PORTRAIT_SAFE.maxInsetPx * u);
   return 1 - 2 * insetPx / w;
+}
+
+export function portraitLookDrop(width, height) {
+  return PORTRAIT_SAFE.lookDropTiles * portraitBlend(width, height);
+}
+
+function activePortraitLookDrop() {
+  return ACTIVE_FIXTURE ? 0 : portraitLookDrop(innerWidth, innerHeight);
 }
 
 // ?view=<id> (CONFIG.viewScales) pulls the camera straight back along its
@@ -81,11 +98,14 @@ function calibrateEdges() {
   _probe.fov = C.fov;
   _probe.aspect = innerWidth / innerHeight;
   _probe.position.set(C.x, C.y, cameraDepth);
-  _probe.lookAt(C.lookX, C.lookY, 0);
+  _probe.lookAt(C.lookX, C.lookY - activePortraitLookDrop(), 0);
   _probe.updateProjectionMatrix();
   _probe.updateMatrixWorld(true);
   const rightNdc = ACTIVE_FIXTURE ? 1 : portraitRightNdc(innerWidth, innerHeight);
-  setEdges(probeXAtNdc(-1), probeXAtNdc(rightNdc));
+  // Portrait used to protect only the right pursuit edge. RIG could still be
+  // carried half under the left glass—the exact place a thumb starts—so the
+  // same modest inset now protects both sides of the action strip.
+  setEdges(probeXAtNdc(-rightNdc), probeXAtNdc(rightNdc));
   // The transformation slice's atmosphere is a per-band cue owned by
   // src/render/transform.js (interior compresses it, altitude opens it up).
   if (IS_TRANSFORM_SLICE) return;
@@ -262,7 +282,11 @@ export function syncCamera() {
   camera.position.set(
     ax + fx * C.x + rx * cameraDepth, C.y + alt + slope * C.x, az + fz * C.x + rz * cameraDepth
   );
-  _look.set(ax + fx * C.lookX, C.lookY + altAhead, az + fz * C.lookX);
+  _look.set(
+    ax + fx * C.lookX,
+    C.lookY + altAhead - activePortraitLookDrop(),
+    az + fz * C.lookX,
+  );
   camera.lookAt(_look);
   /* The light rig (./lights.js) is aimed from HERE, with the UNSHAKEN look
      point and the yaw the ritual has reached — the same two quantities the
