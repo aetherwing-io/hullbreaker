@@ -29,6 +29,10 @@ import { releaseContactShadow, syncContactShadow } from './contact.js';
 import { routeRenderable } from './route-visibility.js';
 import { applySpriteUnderside } from './sprite-grounding.js';
 import {
+  mortarBurstCoreGeometry, mortarBurstShellGeometry, mortarMarkGeometry,
+  mortarPodCoreGeometry, mortarPodShellGeometry,
+} from './mortar-vfx.js';
+import {
   actorMotionBundle, actorMotionRuntimeSnapshot, actorMotionSocket,
 } from './actor-motion.js';
 import { waspModularBundle, waspModularRuntimeSnapshot } from './wasp-modular.js';
@@ -2664,6 +2668,12 @@ function sync(e) {
     if (glow === PAL.glowOff) glow = p.glow;              // a hit flash still wins
   }
   depth += HOSTILE_SURFACE_DEPTH;
+  // Once collision is live, the body must remain on the readable side of
+  // traversable ladders and route furniture. Presence may still condense from
+  // deep in the Meridian while it is non-interactive; active depth breathing
+  // is clamped to the combat plane so scenery can never disguise a target or
+  // imply a shot should be blocked when the simulation says it is clear.
+  if (gameMs >= e.enterUntil) depth = Math.max(depth, HOSTILE_SURFACE_DEPTH - 0.02);
   if (v.presenter.id === 'ecology') v.ecologyDepth = depth;
   sx *= v.presentationScale;
   sy *= v.presentationScale;
@@ -3320,7 +3330,13 @@ export function enemyEcologyVisualSnapshot() {
         beamReach: v.beam?.visible ? Number(v.beam.scale.x.toFixed(4)) : 0,
         podVisible: !!v.pod?.visible,
         podLanguage: v.pod?.geometry.userData.actionLanguage || '',
+        podCoreLanguage: v.podCore?.geometry.userData.actionLanguage || '',
         podEmission: v.podMat?.emissiveIntensity || 0,
+        markVisible: !!v.mark?.visible,
+        markLanguage: v.mark?.geometry.userData.actionLanguage || '',
+        blastVisible: !!v.blast?.visible,
+        blastLanguage: v.blast?.geometry.userData.actionLanguage || '',
+        blastCoreLanguage: v.blastCore?.geometry.userData.actionLanguage || '',
       },
       tacticVisual,
       sweepfanNoStraightFallback: !enemyOwnsSweepfanBeam(e) ||
@@ -3382,7 +3398,7 @@ if (typeof window !== 'undefined')
  * is the slab that damages:
  *
  *   pod   — the seed pod in flight, replayed from the sim's podU through
- *           the pure arc. Visible only while the tube is lobbing.
+ *           the pure arc, then physically planted through the whole fuse.
  *   mark  — the pad on the marked landing surface, lit from launch and
  *           gathering continuously as the planted fuse runs down.
  *   blast — the denial volume itself, visible only for the frames in which
@@ -3397,55 +3413,11 @@ if (typeof window !== 'undefined')
 const M_CFG = CONFIG.mortar;
 const mortarLegGeo = new THREE.BoxGeometry(...M_CFG.legSize);
 
-// One low-poly mechanical seed, pointed along the real parabola. The previous
-// spinning octahedron exposed a square face to the FAR camera and bloom read
-// it as a white block. This fixed boot geometry has a clipped rear collar,
-// broad fin shoulder and narrow nose; no particle, card, or texture is added.
-function mortarSeedGeometry(radius) {
-  const sides = 6;
-  const rings = [
-    [-0.50, 0.34], [-0.31, 0.96], [0.12, 0.60], [0.50, 0.07],
-  ];
-  const position = [];
-  const index = [];
-  for (let r = 0; r < rings.length; r++) {
-    const [x, scale] = rings[r];
-    for (let side = 0; side < sides; side++) {
-      const a = side / sides * Math.PI * 2;
-      position.push(x * radius * 2.35,
-        Math.cos(a) * radius * scale,
-        Math.sin(a) * radius * scale);
-    }
-  }
-  for (let r = 0; r < rings.length - 1; r++) {
-    const a0 = r * sides, b0 = (r + 1) * sides;
-    for (let side = 0; side < sides; side++) {
-      const next = (side + 1) % sides;
-      index.push(a0 + side, b0 + side, b0 + next,
-        a0 + side, b0 + next, a0 + next);
-    }
-  }
-  // Close the clipped rear. The nose ring remains tiny rather than becoming
-  // a mathematically sharp, shimmer-prone point at the pulled-back camera.
-  const rear = position.length / 3;
-  position.push(-0.50 * radius * 2.35, 0, 0);
-  for (let side = 0; side < sides; side++)
-    index.push(rear, (side + 1) % sides, side);
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
-  geometry.setIndex(index);
-  geometry.computeVertexNormals();
-  geometry.computeBoundingSphere();
-  geometry.userData.actionLanguage = 'mortar-faceted-seed-dart';
-  geometry.userData.forwardAxis = '+x';
-  return geometry;
-}
-
-const mortarPodGeo = mortarSeedGeometry(M_CFG.podRadius);
-const mortarMarkGeo = new THREE.BoxGeometry(
-  M_CFG.blastHalf * 2, M_CFG.markThickness, M_CFG.blastHalf * 1.1);
-const mortarBlastGeo = new THREE.BoxGeometry(
-  M_CFG.blastHalf * 2, M_CFG.blastHeight, M_CFG.blastHalf * 1.1);
+const mortarPodGeo = mortarPodShellGeometry(M_CFG.podRadius);
+const mortarPodCoreGeo = mortarPodCoreGeometry(M_CFG.podRadius);
+const mortarMarkGeo = mortarMarkGeometry(M_CFG.blastHalf, M_CFG.markThickness);
+const mortarBlastGeo = mortarBurstShellGeometry(M_CFG.blastHalf, M_CFG.blastHeight);
+const mortarBlastCoreGeo = mortarBurstCoreGeometry(M_CFG.blastHalf, M_CFG.blastHeight);
 
 // reused pose object, same no-allocation rule as the hound and polyp poses
 const MORTAR_POSE = { depth: 0, sx: 1, sy: 1, sz: 1, glow: PAL.glowOff };
@@ -3482,35 +3454,61 @@ function mortarAttach(v, mesh) {
     }
   }
   const podMat = new THREE.MeshStandardMaterial({
-    color: PAL.mortar, emissive: PAL.mortarPod, emissiveIntensity: 0,
+    // Near-black chassis + acid inset: the bomb keeps a silhouette against
+    // both the painted Meridian and the bright deck. Green across the entire
+    // shape collapsed the fins and shell into the same small diamond.
+    color: PAL.capsuleInk, emissive: PAL.mortar, emissiveIntensity: 0,
     roughness: 0.52, metalness: 0.34, flatShading: true,
     transparent: true, opacity: 0.98, depthWrite: true,
+    side: THREE.DoubleSide,
   });
   const pod = new THREE.Mesh(mortarPodGeo, podMat);
+  const podCoreMat = new THREE.MeshBasicMaterial({
+    color: PAL.mortarPod, transparent: true, opacity: 0.58,
+    depthWrite: false, toneMapped: false, side: THREE.DoubleSide,
+  });
+  const podCore = new THREE.Mesh(mortarPodCoreGeo, podCoreMat);
+  podCore.position.z = 0.025;
+  pod.add(podCore);
   pod.visible = false;
   scene.add(pod);
   const markMat = new THREE.MeshBasicMaterial({
     color: PAL.mortarMark, transparent: true, opacity: 0.8,
+    depthWrite: false, toneMapped: false, side: THREE.DoubleSide,
   });
   const mark = new THREE.Mesh(mortarMarkGeo, markMat);
   mark.visible = false;
   scene.add(mark);
   const blastMat = new THREE.MeshBasicMaterial({
-    color: PAL.mortarBlast, transparent: true, opacity: 0.16,
+    color: PAL.capsuleInk, transparent: true, opacity: 0.86,
+    depthWrite: false, toneMapped: false, side: THREE.DoubleSide,
   });
   const blast = new THREE.Mesh(mortarBlastGeo, blastMat);
+  const blastCoreMat = new THREE.MeshBasicMaterial({
+    color: PAL.mortarMark, transparent: true, opacity: 0.88,
+    depthWrite: false, toneMapped: false, side: THREE.DoubleSide,
+  });
+  const blastCore = new THREE.Mesh(mortarBlastCoreGeo, blastCoreMat);
+  blastCore.position.z = 0.025;
+  blast.add(blastCore);
   blast.visible = false;
   scene.add(blast);
   v.pod = pod; v.podMat = podMat;
+  v.podCore = podCore; v.podCoreMat = podCoreMat;
   v.mark = mark; v.markMat = markMat;
   v.blast = blast; v.blastMat = blastMat;
+  v.blastCore = blastCore; v.blastCoreMat = blastCoreMat;
 }
 
 function mortarDetach(v) {
-  for (const [mesh, mat] of [[v.pod, v.podMat], [v.mark, v.markMat], [v.blast, v.blastMat]]) {
+  for (const [mesh, mat] of [
+    [v.pod, v.podMat], [v.mark, v.markMat], [v.blast, v.blastMat],
+  ]) {
     scene.remove(mesh);
     mat.dispose();
   }
+  v.podCoreMat.dispose();
+  v.blastCoreMat.dispose();
 }
 
 function mortarHide(v) {
@@ -3523,17 +3521,18 @@ function mortarHide(v) {
 function mortarSync(v, e) {
   if (gameMs < e.enterUntil) { mortarHide(v); return; }   // no props while condensing in
   const flying = e.state === 'lob';
+  const planted = e.state === 'fuse';
   const marked = flying || e.state === 'fuse' || e.state === 'burst';
-  v.pod.visible = flying;
-  if (!flying) v.podMat.emissiveIntensity = 0;
+  v.pod.visible = flying || planted;
+  if (!flying && !planted) v.podMat.emissiveIntensity = 0;
   if (flying) {
     // Dark acid shell, with a brief launch-hot core that cools along the arc.
     // Emission exists only while the sim owns a flying pod and stays bounded
     // below the value that previously blew its square face to white.
     const launch = 1 - Math.max(0, Math.min(1, e.podU / 0.22));
-    v.podMat.color.setHex(PAL.mortar);
-    v.podMat.emissive.setHex(PAL.mortarPod);
-    v.podMat.emissiveIntensity = 0.10 + launch * 0.24;
+    v.podMat.color.set(PAL.capsuleInk);
+    v.podMat.emissive.setHex(PAL.mortar);
+    v.podMat.emissiveIntensity = 0.04 + launch * 0.12;
     // The planted zone and timing stay sim-owned; only the visual arc's first
     // point follows the launch frame's painted bore instead of the old row
     // centre. The same pure parabola and podU still own every later point.
@@ -3550,6 +3549,24 @@ function mortarSync(v, e) {
     const tangentY = e.zoneY - muzzleY +
       4 * M_CFG.arcTiles * (1 - 2 * e.podU);
     v.pod.rotation.z = Math.atan2(tangentY, tangentX);
+    v.pod.scale.set(2.85, 2.85, 2.85);
+    v.podCoreMat.opacity = 0.70 + launch * 0.20;
+  } else if (planted) {
+    // The bomb remains physically present throughout the fuse. Previously it
+    // vanished on touchdown, leaving only a flat cream card at detonation and
+    // making the actual projectile look like an unloaded asset. The planted
+    // shell pulses its inset core while the dark chassis stays still.
+    const remain = Math.max(0, e.stateUntil - gameMs);
+    const armed = 1 - Math.max(0, Math.min(1, remain / M_CFG.fuseMs));
+    const pulse = 0.5 + 0.5 * Math.sin(gameMs * (0.018 + armed * 0.022));
+    placeOnTower(v.pod, e.zoneX,
+      e.zoneY + M_CFG.podRadius * 0.72, M_CFG.warnDepth + 0.12);
+    v.pod.rotation.z = -Math.PI / 2;
+    v.pod.scale.set(3.02 + pulse * 0.12, 3.02 + pulse * 0.12, 3.02);
+    v.podMat.color.set(PAL.capsuleInk);
+    v.podMat.emissive.setHex(PAL.mortar);
+    v.podMat.emissiveIntensity = 0.02 + armed * 0.04;
+    v.podCoreMat.opacity = 0.58 + armed * 0.26 + pulse * 0.10;
   }
   v.mark.visible = marked;
   // Before detonation only the authored landing patch is marked. Drawing the
@@ -3565,10 +3582,16 @@ function mortarSync(v, e) {
     // confused — while staying behind the play plane, so a body caught in it
     // keeps its silhouette (pillar 5: chaos stays readable)
     const u = Math.max(0, Math.min(1, (e.stateUntil - gameMs) / M_CFG.burstMs));
-    lit(v.blastMat, PAL.mortarBlast);    // the detonation, for the frames it damages
-    v.blastMat.opacity = 0.24 + 0.38 * u;
+    // Keep the shell under the bloom threshold. Narrow amber cores carry the
+    // hot impact value; boosting the complete teeth recreated the cream
+    // placeholder card this geometry was built to retire.
+    v.blastMat.color.set(PAL.capsuleInk);
+    v.blastMat.opacity = 0.76 + 0.16 * u;
+    v.blastCoreMat.opacity = 0.68 + 0.24 * u;
     v.markMat.opacity = 0.95;
-    v.blast.scale.set(1 + (1 - u) * 0.12, 1, 1 + (1 - u) * 0.35);
+    // Quantized-looking column punch: wide growth is tiny, vertical collapse
+    // carries the 220 ms impact while every point remains inside the sim slab.
+    v.blast.scale.set(1 + (1 - u) * 0.05, 0.84 + u * 0.16, 1);
     return;
   }
   v.blast.scale.set(1, 1, 1);

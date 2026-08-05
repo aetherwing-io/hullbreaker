@@ -349,9 +349,11 @@ export function buildSpawnTable(cfg, level = buildLevel(cfg)) {
     if (nearCorner(beat.x) || beat.x < S.startS || beat.x >= end) continue;
     const f = faceIndexAt(beat.x, cfg);
     const delayMs = S.lesson && S.lesson.houndDelayMsByFace[f - 1];
-    // A delayed reinforcement enters from the back lip of its owned landing,
+    // A delayed reinforcement enters from the far lip of its owned landing,
     // rather than popping into the centre after the player has crossed it.
-    out.push(delayMs ? { ...beat, x: beat.patrol.x0 + 0.1, delayMs } : beat);
+    // The near lip carries the pocket's climb ladder; spawning there put a
+    // condensing body directly behind the rails before its patrol even began.
+    out.push(delayMs ? { ...beat, x: beat.patrol.x1 - 0.1, delayMs } : beat);
   }
   // Rooted roles join the ordinary six-face run on geometry that explains
   // them: polyps own pocket mid-connectors from face 3, mortars deny the

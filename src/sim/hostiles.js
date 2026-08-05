@@ -1291,7 +1291,18 @@ export function updateHostiles(dt) {
       const launched = diveLaunched(gameMs, e.lockUntil);
       if (launched) { e.x += e.vx * dt; e.y += e.vy * dt; }
       const floor = builtGroundTopAt(e.x);       // hidden faces have no floor yet
-      if (gameMs > e.stateUntil || (launched && e.y < floor + 0.4)) {
+      // The old 0.4 centre clearance allowed most of the wasp's 0.72-tile
+      // shot circle (and its painted wings) below the deck. Terrain is tested
+      // before hostiles in the projectile substep, so that pose was not just
+      // ugly: the visible body could be shielded by the floor. End the dive at
+      // one honest shot radius and clamp out any 50 ms overshoot before the
+      // recover climb begins.
+      const recoveryFloor = floor > -100
+        ? floor + Math.max(0.4, e.shotR || e.hitR)
+        : -Infinity;
+      const struckFloor = launched && e.y < recoveryFloor;
+      if (gameMs > e.stateUntil || struckFloor) {
+        if (struckFloor) e.y = recoveryFloor;
         e.state = 'recover';
         if (e.twinstrike && e.twinPassesLeft > 1) {
           e.twinPassesLeft--;

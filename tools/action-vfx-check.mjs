@@ -162,7 +162,7 @@ ok(/mesh\.userData\.attachments = Object\.freeze\(\[\]\)/.test(defense) &&
   'dormant environment cues attach to nothing and draw no idle glow');
 ok(/poolGeometry: DEFENSE_VFX_ART_SLOT\.tex \? 1 : 0/.test(defense) &&
    /stats\.drawSlots = 1/.test(defense) &&
-   /mechanismPools: DEFENSE_VFX_ART_SLOT\.tex \? 2 : 0/.test(defense) &&
+   /mechanismPools: 2/.test(defense) &&
    /stats\.mechanismDrawSlots = 2/.test(defense) &&
    /textureTransforms: false/.test(defense),
   'environment activation remains one atlas transient plus two fixed body mechanisms');

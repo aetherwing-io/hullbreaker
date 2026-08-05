@@ -1400,12 +1400,15 @@ function buildTraversableLadders() {
     const style = LADDER_STYLE[row.kind] || DEFAULT_LADDER_STYLE;
     const span = row.y1 - row.y0;
     const centerY = (row.y0 + row.y1) / 2;
-    // The rails sit just behind RIG's production sprite (depth 1.15) so the
-    // body remains readable between them; rungs are proud enough to survive
-    // deck occlusion but never cross in front of the actor.
+    // The whole tube, not merely its centre line, sits behind the active actor
+    // plane. The former 1.09/1.105 centres let the cylinders' radii cross
+    // RIG at 1.15 and let a hostile's presence wobble pass behind them. That
+    // produced the worst possible ladder read: a shootable body visually
+    // clipped by non-colliding scenery. Rails remain proud of the deck plane,
+    // but every live actor now wins the depth test cleanly.
     for (const dx of [-style.gap / 2, style.gap / 2]) {
       ladderRailRows.push({
-        s: row.x, y: centerY, dx, depth: 1.09,
+        s: row.x, y: centerY, dx, depth: 0.94,
         length: span + 0.34, radius: style.radius,
         horizontal: false, color: style.rail,
         ladderId: row.id, facet: row.face,
@@ -1416,7 +1419,7 @@ function buildTraversableLadders() {
       const t = count === 1 ? 0.5 : i / (count - 1);
       ladderRungRows.push({
         s: row.x, y: row.y0 + 0.14 + t * Math.max(0, span - 0.28),
-        dx: 0, depth: 1.105,
+        dx: 0, depth: 0.965,
         length: style.gap, radius: style.rungRadius,
         horizontal: true, color: style.rung,
         ladderId: row.id, facet: row.face,

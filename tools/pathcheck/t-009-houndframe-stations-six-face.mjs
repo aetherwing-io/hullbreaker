@@ -94,7 +94,9 @@ export async function run(SHARED) {
     let owned = 0;
     for (const r of stations)
       if (LVL.pockets.some((p) => r.owns === p.id + '-landing' &&
-          r.patrol.x0 === p.gap.x1 && r.deck === p.landingY)) owned++;
+          r.patrol.x0 === p.gap.x1 + (H.ladderClearCols || 0) &&
+          r.patrol.x1 <= p.gap.x1 + LAT.LATTICE.pocket.landingCols &&
+          r.deck === p.landingY)) owned++;
     ok(owned === stations.length,
        'T-009: every station owns its face pocket landing (' + owned + '/' + stations.length + ')');
   }

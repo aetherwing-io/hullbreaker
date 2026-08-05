@@ -27,6 +27,10 @@ const MORTAR = Object.freeze([
   Object.freeze({ tag: 'launch', state: 'lob', podU: 0.04, body: 3, action: 3 }),
   Object.freeze({ tag: 'apex', state: 'lob', podU: 0.50, body: 3, action: 4 }),
   Object.freeze({ tag: 'descent', state: 'lob', podU: 0.84, body: 3, action: 4 }),
+  Object.freeze({ tag: 'planted-fuse', state: 'fuse', progress: 0.65,
+    podU: 1, body: 2, action: 2 }),
+  Object.freeze({ tag: 'burst-teeth', state: 'burst', progress: 0.35,
+    podU: 1, body: 3, action: 5 }),
 ]);
 
 const report = { ok: false, out: OUT, layouts: {}, faults: [], ignoredWarnings: [] };
@@ -152,8 +156,12 @@ async function stage(page, actor, kind, entry) {
       row.beamReach = entry.state === 'fire' ? 4.8 : 0;
     } else {
       row.podU = entry.podU;
-      row.stateUntil = entry.state === 'lob'
-        ? q.T.gameMs + q.C.CONFIG.mortar.lobMs * (1 - entry.podU) : Infinity;
+      const duration = entry.state === 'lob' ? q.C.CONFIG.mortar.lobMs
+        : entry.state === 'fuse' ? q.C.CONFIG.mortar.fuseMs
+          : entry.state === 'burst' ? q.C.CONFIG.mortar.burstMs : 0;
+      const progress = entry.state === 'lob' ? entry.podU : (entry.progress || 0);
+      row.stateUntil = duration
+        ? q.T.gameMs + duration * (1 - progress) : Infinity;
     }
     q.B.view.hostiles.sync(row);
     await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
@@ -245,15 +253,37 @@ await withIsolatedBrowser(ROOT, async ({ baseUrl, newPage, launch }) => {
           if (kind === 'mortar' && entry.state === 'lob') {
             assert.equal(action.podVisible, true,
               `${layout.name}/${entry.tag}: seed pod visible`);
-            assert.equal(action.podLanguage, 'mortar-faceted-seed-dart',
-              `${layout.name}/${entry.tag}: no block projectile`);
-            assert.ok(action.podEmission >= 0.10 && action.podEmission <= 0.34,
+            assert.equal(action.podLanguage, 'mortar-pixel-seed-pod',
+              `${layout.name}/${entry.tag}: pixel shell, no block projectile`);
+            assert.equal(action.podCoreLanguage, 'mortar-pixel-seed-core',
+              `${layout.name}/${entry.tag}: inset core, no whole-body glow`);
+            assert.ok(action.podEmission >= 0.04 && action.podEmission <= 0.16,
               `${layout.name}/${entry.tag}: bounded action-only emission`);
+          } else if (kind === 'mortar' && entry.state === 'fuse') {
+            assert.equal(action.podVisible, true,
+              `${layout.name}/${entry.tag}: bomb remains planted through fuse`);
+            assert.equal(action.podLanguage, 'mortar-pixel-seed-pod',
+              `${layout.name}/${entry.tag}: planted bomb keeps flight identity`);
+            assert.ok(action.podEmission >= 0.02 && action.podEmission <= 0.06,
+              `${layout.name}/${entry.tag}: bounded planted core pulse`);
           } else if (kind === 'mortar') {
             assert.equal(action.podVisible, false,
               `${layout.name}/${entry.tag}: no idle pod`);
             assert.equal(action.podEmission, 0,
               `${layout.name}/${entry.tag}: zero idle pod emission`);
+          }
+          if (kind === 'mortar') {
+            const dangerous = entry.state !== 'aim';
+            assert.equal(action.markVisible, dangerous,
+              `${layout.name}/${entry.tag}: warning jaws follow danger state`);
+            assert.equal(action.blastVisible, entry.state === 'burst',
+              `${layout.name}/${entry.tag}: impact teeth only while damaging`);
+            assert.equal(action.markLanguage, 'mortar-broken-landing-jaws',
+              `${layout.name}/${entry.tag}: warning is interrupted, not a pad`);
+            assert.equal(action.blastLanguage, 'mortar-pixel-burst-teeth',
+              `${layout.name}/${entry.tag}: no rectangular blast card`);
+            assert.equal(action.blastCoreLanguage, 'mortar-pixel-burst-core',
+              `${layout.name}/${entry.tag}: hot value is sparse impact punctuation`);
           }
           const screenshot = resolve(OUT, `${layout.name}-${kind}-${entry.tag}.png`);
           await page.screenshot({ path: screenshot });

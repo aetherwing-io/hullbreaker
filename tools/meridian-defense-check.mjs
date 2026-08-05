@@ -124,8 +124,11 @@ assert.match(renderer, /!currentSocket && event\.stage === 'tell'/);
 assert.match(renderer, /mesh\.visible = false/);
 assert.equal((renderer.match(/new THREE\.PlaneGeometry\(/g) || []).length, 1);
 assert.equal((renderer.match(/new THREE\.Mesh\(/g) || []).length, 1);
-assert.equal((renderer.match(/new THREE\.InstancedMesh\(/g) || []).length, 2);
-assert.match(renderer, /mechanismParts: DEFENSE_VFX_ART_SLOT\.tex \? 10 : 0/);
+assert.equal((renderer.match(/new THREE\.InstancedMesh\(/g) || []).length, 4);
+assert.match(renderer, /mechanismParts: 10/);
+assert.match(renderer, /const AMBIENT_RIGS = 3/);
+assert.match(renderer, /AMBIENT_LIFE_ACTIVE_MS = 2300/);
+assert.match(renderer, /ambientLifeDrawSlots: 0/);
 assert.match(renderer, /fixedAtBoot: true/);
 assert.match(renderer, /textureTransforms: false/);
 assert.doesNotMatch(renderer, /CanvasTexture|createElement\(['"]canvas|\.clone\(\)/,
@@ -145,10 +148,12 @@ console.log(JSON.stringify({
   runtime: {
     atlasTextures: manifest.runtime.gpuTextures,
     components: manifest.components.length,
-    geometryPools: 3,
+    geometryPools: 5,
     atlasDrawSlots: 1,
     mechanismDrawSlots: 2,
     mechanismParts: 10,
+    ambientDrawSlots: 2,
+    ambientParts: 15,
     directSpawns: 0,
     gatingSpawns: 0,
   },

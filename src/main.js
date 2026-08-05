@@ -129,6 +129,7 @@ import {
 import { FAILSAFE } from './pure/failsafe.js';
 import { resetHudMessage, updateHUD } from './ui/hud.js';
 import { shellApplyIntent, shellRunStarted, shellSnapshot } from './ui/shell.js';
+import { installTouchControls } from './ui/touch-controls.js';
 // audio also loads after every render/ui module for the bridge-wrapping reason
 // its own header states — the named import changes nothing about that order.
 // audioSnapshot() rides window.HB below: exported-but-unimported is unreachable
@@ -251,6 +252,17 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) relea
 // visitor has. Nothing else in the game reads the pointer.
 addEventListener('pointerdown', () => { if (SHELL_ENABLED && state === 'MENU') startRun(); });
 
+// Coarse-pointer devices get one input surface, not a simplified simulation.
+// The controller emits this same key-edge path, preserving jump buffers,
+// weapon swaps, ladder intent, deterministic telemetry and every keyboard
+// tuning decision. ?touch=1 exposes it on desktop for visual/playtest review.
+const touchControls = installTouchControls({
+  applyEdge: applyGameplayKeyEdge,
+  canControl: () => state === 'PLAYING',
+  startRun: () => { if (SHELL_ENABLED && state === 'MENU') startRun(); },
+  togglePause,
+});
+
 /* ============================= STATES ============================= */
 
 function togglePause() {
@@ -278,6 +290,9 @@ function toTitle() {
 
 function resetGame() {
   resetRunState();
+  // The registry released the shared input booleans. Forget the touch-side
+  // ownership ledger now so its next gesture can assert fresh edges.
+  touchControls.reset({ release: false });
   // resetRunState intentionally releases every ordinary key. A frame-scoped
   // script owns a longer-lived schedule, so restore only inputs that are still
   // held at this tick. repeat=true preserves real keyboard semantics: a held

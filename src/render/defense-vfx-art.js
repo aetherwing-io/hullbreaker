@@ -30,7 +30,7 @@ const ready = !!entry && entry.state === 'ready' && !!entry.tex && dimensionsRea
 if (entry && !ready) console.warn(
   'HULLBREAKER art: Meridian defense VFX atlas unavailable (' +
   (entry.error || (!dimensionsReady ? `dimensions ${width || 0}x${height || 0}` : entry.state)) +
-  ') -- environment responses remain mechanically silent.',
+  ') -- native shutters remain active; generated pressure/debris punctuation is omitted.',
 );
 if (ready) {
   entry.tex.premultiplyAlpha = false;

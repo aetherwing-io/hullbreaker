@@ -182,6 +182,9 @@ export const LATTICE = {
     patrolCols: 3,                  // the judged hound-2.5 span: tight enough
                                     //   that the frame is always ON the thing
                                     //   it owns, never pacing away from it
+    ladderClearCols: 2,             // keep its patrol off the pocket ladder socket:
+                                    //   the hound contests the landing while the
+                                    //   climb route stays visually readable
     // ONE station per face is not modesty, it is arithmetic: a 65-column
     // face already spends its first 20 columns on the spawner's post-corner
     // breather and its last 35 on the wave gate's arena, and the pocket
@@ -579,9 +582,15 @@ export function latticeHoundBeats(cfg, groundH, pockets, L = LATTICE) {
   const out = [];
   for (const p of pockets) {
     if (p.face < H.firstFace) continue;
-    // beat A: the pocket landing, patrol tight around the touchdown column
-    const a0 = p.gap.x1;
-    if (latticeFlatRunAt(groundH, a0, H.patrolCols + 1)) {
+    // Beat A: the pocket landing. The connector ladder occupies the first
+    // part of that plate; putting the hound at the exact same x made its
+    // silhouette read through the rails and turned a fair shot circle into
+    // visual guesswork. Shift the tight patrol to the far half of the SAME
+    // five-column landing. It still owns the committed touchdown, while the
+    // ladder is now an immediate escape instead of camouflage.
+    const landing0 = p.gap.x1;
+    const a0 = landing0 + (H.ladderClearCols || 0);
+    if (latticeFlatRunAt(groundH, a0, H.patrolCols)) {
       out.push({
         x: a0 + H.patrolCols / 2, type: 'hound', kind: 'hound',
         deck: groundH[a0], dir: -1, gating: false,

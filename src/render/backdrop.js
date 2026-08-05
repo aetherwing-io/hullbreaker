@@ -29,6 +29,13 @@ import {
 
 export const BACKDROP_ON = resolveBackdropOn(QUERY.get('backdrop'), IS_TRANSFORM_SLICE);
 
+// Painted plates are useful reference art, not a permanent dependency. The
+// merged pixel-primitive anatomy automatically replaces any source that misses
+// the boot gate; the explicit flag forces all three bands for direction review
+// without prematurely making the in-progress style probe the mobile default.
+const pixelPreference = QUERY.get('pixelworld');
+export const PIXEL_BACKDROP_ON = pixelPreference === '1';
+
 const retiredPlates = BACKDROP_TUNE.placements.map((placement) => ({
   placement,
   state: 'retired',
@@ -66,9 +73,13 @@ function registerSource(slot, source, options = {}) {
 }
 
 try {
-  registerSource(farBody, MERIDIAN_DEPTH_SOURCES.far, { anisotropy: 6 });
-  registerSource(midBody, MERIDIAN_DEPTH_SOURCES.mid, { anisotropy: 6 });
-  registerSource(fragmentBody, MERIDIAN_DEPTH_SOURCES.near, { anisotropy: 8 });
+  if (!PIXEL_BACKDROP_ON) {
+    registerSource(farBody, MERIDIAN_DEPTH_SOURCES.far, { anisotropy: 6 });
+    registerSource(midBody, MERIDIAN_DEPTH_SOURCES.mid, { anisotropy: 6 });
+    registerSource(fragmentBody, MERIDIAN_DEPTH_SOURCES.near, { anisotropy: 8 });
+  } else {
+    farBody.state = midBody.state = fragmentBody.state = 'pixel-primitive';
+  }
 
   // The single shared gate uploads the three source textures before frame
   // one.  atmosphere.js creates only small BufferGeometry after this point;
@@ -84,6 +95,7 @@ try {
       midTexture: midBody.tex,
       fragmentTexture: fragmentBody.tex,
       fragmentComponents,
+      pixelPrimitives: PIXEL_BACKDROP_ON,
     });
   }
 } catch (error) {
@@ -116,6 +128,8 @@ export function backdropSnapshot() {
     depthComposition: {
       mode: atmosphere.composition,
       directResidentTextures: atmosphere.directResidentTextures || 0,
+      presentation: atmosphere.presentation || 'pending',
+      pixelPrimitiveBands: atmosphere.pixelPrimitiveBands || 0,
       runtimeCanvases: 0,
       runtimeCrops: 0,
     },

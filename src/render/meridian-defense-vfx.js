@@ -1,5 +1,6 @@
 /* ================= MERIDIAN DEFENSE RESPONSE VFX ================= */
-/* One atlas transient plus two fixed instanced body-mechanism draws. The simulation publishes
+/* One optional atlas transient, two fixed body-response draws, and two fixed
+ * pixel-native ambient-life draws. The simulation publishes
  * a renderer-free lifecycle through view.meridian; this module resolves that
  * event onto the already-baked foregroundResponseSockets() records. No mesh
  * follows RIG, a hostile, or a projectile, and no renderer callback can write
@@ -14,7 +15,7 @@ import { DEFENSE_VFX_PACK } from './defense-vfx-pack.js';
 import { foregroundResponseSockets } from './level.js';
 import { PAL } from './palette.js';
 import { postGain } from './post.js';
-import { scene } from './scene.js';
+import { HIDE, scene } from './scene.js';
 
 const sockets = foregroundResponseSockets();
 const socketsByPhase = Array.from({ length: 6 }, () => []);
@@ -38,8 +39,13 @@ const stats = {
     .sort().map((kind) => [kind, sockets.filter((row) => row.kind === kind).length])),
   poolGeometry: DEFENSE_VFX_ART_SLOT.tex ? 1 : 0,
   poolSlots: DEFENSE_VFX_ART_SLOT.tex ? 1 : 0,
-  mechanismPools: DEFENSE_VFX_ART_SLOT.tex ? 2 : 0,
-  mechanismParts: DEFENSE_VFX_ART_SLOT.tex ? 10 : 0,
+  mechanismPools: 2,
+  mechanismParts: 10,
+  ambientLifePools: 0,
+  ambientLifeParts: 0,
+  ambientLifeDrawSlots: 0,
+  ambientLifeVisible: 0,
+  ambientLifeMotions: 0,
   maxVisible: 0,
   drawSlots: 0,
   mechanismDrawSlots: 0,
@@ -67,6 +73,10 @@ let scutePool = null;
 let conduitPool = null;
 let scuteMaterial = null;
 let conduitMaterial = null;
+let ambientShellPool = null;
+let ambientJointPool = null;
+let ambientShellMaterial = null;
+let ambientJointMaterial = null;
 
 function responseScuteGeometry() {
   // Seven-sided hull casting, triangulated directly instead of asking
@@ -125,57 +135,109 @@ if (DEFENSE_VFX_ART_SLOT.tex) {
   mesh.visible = false;
   scene.add(mesh);
 
-  // The atlas is the transient pressure/spark/debris layer, not the thing
-  // pretending to be Meridian.  A fixed ten-part mechanism lives underneath
-  // it: six armour jaws/louvres and four buried conductor rails.  The same
-  // two instanced pools move from one authored hull socket to the next; no
-  // geometry, material, texture or Object3D is allocated while a run moves.
-  mechanismRoot = new THREE.Group();
-  mechanismRoot.name = 'Meridian defense body-owned mechanism';
-  mechanismRoot.userData.environmentRole = 'meridian-defense-response';
-  mechanismRoot.userData.environmentOnly = true;
-  mechanismRoot.userData.attachments = Object.freeze([]);
-  mechanismRoot.matrixAutoUpdate = false;
-  mechanismRoot.visible = false;
-
-  scuteMaterial = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
-    roughness: 0.66,
-    metalness: 0.68,
-    flatShading: true,
-    fog: true,
-  });
-  scuteMaterial.name = 'Meridian defense moving armour';
-  conduitMaterial = new THREE.MeshStandardMaterial({
-    color: PAL.limb.machine,
-    roughness: 0.48,
-    metalness: 0.78,
-    emissive: PAL.glowOff,
-    emissiveIntensity: 0,
-    flatShading: true,
-    fog: true,
-  });
-  conduitMaterial.name = 'Meridian defense buried conductors';
-
-  scutePool = new THREE.InstancedMesh(
-    responseScuteGeometry(), scuteMaterial, 6);
-  scutePool.name = 'Meridian defense shutters clamps and vent louvres';
-  scutePool.frustumCulled = false;
-  scutePool.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  const scuteA = new THREE.Color(PAL.limb.hull);
-  const scuteB = new THREE.Color(PAL.limb.scute);
-  for (let i = 0; i < 6; i++) scutePool.setColorAt(i, i % 3 ? scuteA : scuteB);
-  scutePool.instanceColor.needsUpdate = true;
-  mechanismRoot.add(scutePool);
-
-  conduitPool = new THREE.InstancedMesh(
-    new THREE.BoxGeometry(1, 1, 1), conduitMaterial, 4);
-  conduitPool.name = 'Meridian defense staged conduit rails';
-  conduitPool.frustumCulled = false;
-  conduitPool.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  mechanismRoot.add(conduitPool);
-  scene.add(mechanismRoot);
 }
+
+// The painted sheet is optional punctuation, never the Meridian itself.  Keep
+// the physical ten-part response resident even when that sheet is disabled or
+// misses the boot budget.  This also gives the new pixel/native direction a
+// complete presentation path with zero generated-art dependency.
+mechanismRoot = new THREE.Group();
+mechanismRoot.name = 'Meridian defense body-owned mechanism';
+mechanismRoot.userData.environmentRole = 'meridian-defense-response';
+mechanismRoot.userData.environmentOnly = true;
+mechanismRoot.userData.attachments = Object.freeze([]);
+mechanismRoot.matrixAutoUpdate = false;
+mechanismRoot.visible = false;
+
+scuteMaterial = new THREE.MeshStandardMaterial({
+  color: 0xffffff,
+  roughness: 0.66,
+  metalness: 0.68,
+  flatShading: true,
+  fog: true,
+});
+scuteMaterial.name = 'Meridian defense moving armour';
+conduitMaterial = new THREE.MeshStandardMaterial({
+  color: PAL.limb.machine,
+  roughness: 0.48,
+  metalness: 0.78,
+  emissive: PAL.glowOff,
+  emissiveIntensity: 0,
+  flatShading: true,
+  fog: true,
+});
+conduitMaterial.name = 'Meridian defense buried conductors';
+
+scutePool = new THREE.InstancedMesh(
+  responseScuteGeometry(), scuteMaterial, 6);
+scutePool.name = 'Meridian defense shutters clamps and vent louvres';
+scutePool.frustumCulled = false;
+scutePool.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+const scuteA = new THREE.Color(PAL.limb.hull);
+const scuteB = new THREE.Color(PAL.limb.scute);
+for (let i = 0; i < 6; i++) scutePool.setColorAt(i, i % 3 ? scuteA : scuteB);
+scutePool.instanceColor.needsUpdate = true;
+mechanismRoot.add(scutePool);
+
+conduitPool = new THREE.InstancedMesh(
+  new THREE.BoxGeometry(1, 1, 1), conduitMaterial, 4);
+conduitPool.name = 'Meridian defense staged conduit rails';
+conduitPool.frustumCulled = false;
+conduitPool.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+mechanismRoot.add(conduitPool);
+scene.add(mechanismRoot);
+stats.mechanismPools = 2;
+stats.mechanismParts = 10;
+
+// Three tiny maintenance carriages keep the dormant hull alive between major
+// immune responses.  They are deliberately built from square, low-part-count
+// castings rather than down-scaled illustrations: chassis + opposed ratchets
+// in one pool, two dark joint blocks in another.  All three carriages still
+// cost exactly two draws, allocate nothing per frame, never glow, and occupy
+// only authored off-route response sockets on the current visible face.
+const AMBIENT_RIGS = 3;
+const AMBIENT_SHELLS_PER_RIG = 3;
+const AMBIENT_JOINTS_PER_RIG = 2;
+ambientShellMaterial = new THREE.MeshStandardMaterial({
+  color: 0xffffff,
+  roughness: 0.74,
+  metalness: 0.52,
+  flatShading: true,
+  fog: true,
+});
+ambientShellMaterial.name = 'Meridian pixel-native maintenance castings';
+ambientJointMaterial = new THREE.MeshStandardMaterial({
+  color: PAL.limb.shadow,
+  roughness: 0.84,
+  metalness: 0.34,
+  flatShading: true,
+  fog: true,
+});
+ambientJointMaterial.name = 'Meridian pixel-native maintenance joints';
+ambientShellPool = new THREE.InstancedMesh(
+  new THREE.BoxGeometry(1, 1, 1), ambientShellMaterial,
+  AMBIENT_RIGS * AMBIENT_SHELLS_PER_RIG,
+);
+ambientJointPool = new THREE.InstancedMesh(
+  new THREE.BoxGeometry(1, 1, 1), ambientJointMaterial,
+  AMBIENT_RIGS * AMBIENT_JOINTS_PER_RIG,
+);
+ambientShellPool.name = 'Meridian dormant maintenance carriage shells';
+ambientJointPool.name = 'Meridian dormant maintenance carriage joints';
+for (const pool of [ambientShellPool, ambientJointPool]) {
+  pool.frustumCulled = false;
+  pool.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  pool.userData.environmentRole = 'meridian-ambient-maintenance';
+  pool.userData.environmentOnly = true;
+  scene.add(pool);
+}
+const ambientHull = new THREE.Color(PAL.limb.hull);
+const ambientScute = new THREE.Color(PAL.limb.scute);
+for (let i = 0; i < ambientShellPool.count; i++)
+  ambientShellPool.setColorAt(i, i % 3 ? ambientHull : ambientScute);
+ambientShellPool.instanceColor.needsUpdate = true;
+stats.ambientLifePools = 2;
+stats.ambientLifeParts = ambientShellPool.count + ambientJointPool.count;
 
 const _rotation = new THREE.Matrix4();
 const _pitch = new THREE.Matrix4();
@@ -187,18 +249,29 @@ const _mechanismMatrix = new THREE.Matrix4();
 const _part = new THREE.Object3D();
 const _partColor = new THREE.Color();
 const _mechanismPose = { open: 0, strike: 0, shear: 0, vent: 0 };
+const _ambientBase = new THREE.Matrix4();
+const _ambientTurn = new THREE.Matrix4();
+const _ambientMatrix = new THREE.Matrix4();
+const _ambientScale = new THREE.Vector3();
+const _ambientOffset = new THREE.Vector3();
+const ambientLifeSockets = new Array(AMBIENT_RIGS).fill(null);
 let eventKey = '';
 let currentSocket = null;
 let currentComponent = null;
 let currentStage = 'dormant';
 let ambientCycle = -1;
+let ambientLifeFace = -1;
+let ambientLifeCycle = -1;
+let ambientLifeHidden = false;
 
 // Dormant hull machinery gets a slow, recurring physical breath between the
 // authored immune events. It never draws the action atlas, glows, queues an
 // impulse, or follows an actor; the same fixed shutters simply flex at a
 // current-face response socket often enough to read as Meridian being alive.
-const AMBIENT_PERIOD_MS = 5200;
-const AMBIENT_ACTIVE_MS = 2600;
+const AMBIENT_PERIOD_MS = 3600;
+const AMBIENT_ACTIVE_MS = 3000;
+const AMBIENT_LIFE_PERIOD_MS = 2800;
+const AMBIENT_LIFE_ACTIVE_MS = 2300;
 
 function hashString(text) {
   let value = 2166136261;
@@ -207,6 +280,143 @@ function hashString(text) {
     value = Math.imul(value, 16777619);
   }
   return value >>> 0;
+}
+
+function hideAmbientLife() {
+  if (!ambientShellPool || !ambientJointPool) return;
+  if (!ambientLifeHidden) {
+    for (let i = 0; i < ambientShellPool.count; i++)
+      ambientShellPool.setMatrixAt(i, HIDE);
+    for (let i = 0; i < ambientJointPool.count; i++)
+      ambientJointPool.setMatrixAt(i, HIDE);
+    ambientShellPool.instanceMatrix.needsUpdate = true;
+    ambientJointPool.instanceMatrix.needsUpdate = true;
+    ambientLifeHidden = true;
+  }
+  stats.ambientLifeVisible = 0;
+  stats.ambientLifeMotions = 0;
+  stats.ambientLifeDrawSlots = 0;
+}
+
+// MENU can render before the first simulation tick. Seed every fixed slot to
+// the shared hidden matrix so the pool never flashes as fifteen unit cubes at
+// the world origin during that first frame.
+hideAmbientLife();
+
+function ambientWorldPart(pool, index, socket, pitch,
+  lx, ly, lz, sx, sy, sz, rz = 0) {
+  const yaw = socket.world.yaw;
+  _ambientBase.makeRotationY(yaw);
+  _ambientBase.multiply(_ambientTurn.makeRotationZ(pitch));
+  _ambientMatrix.copy(_ambientBase);
+  if (rz) _ambientMatrix.multiply(_ambientTurn.makeRotationZ(rz));
+  _ambientMatrix.scale(_ambientScale.set(sx, sy, sz));
+  _ambientOffset.set(lx, ly, lz).applyMatrix4(_ambientBase);
+  _ambientMatrix.setPosition(
+    socket.world.x + _ambientOffset.x,
+    socket.world.y + _ambientOffset.y,
+    socket.world.z + _ambientOffset.z,
+  );
+  pool.setMatrixAt(index, _ambientMatrix);
+}
+
+function chooseAmbientLifeSockets(event, cycle) {
+  if (ambientLifeFace === event.face && ambientLifeCycle === cycle) return;
+  ambientLifeFace = event.face;
+  ambientLifeCycle = cycle;
+  ambientLifeSockets.fill(null);
+  const list = socketsByPhase[event.phase] || [];
+  if (!list.length) return;
+  const lo = Math.max(event.playerX - 25, Math.min(event.viewLeft, event.viewRight) - 2);
+  const hi = Math.min(event.playerX + 34, Math.max(event.viewLeft, event.viewRight) + 2,
+    event.cornerLimit);
+  const start = hashString(`ambient-life:${event.face}:${cycle}`) % list.length;
+  let filled = 0;
+  for (let step = 0; step < list.length && filled < AMBIENT_RIGS; step++) {
+    const socket = list[(start + step) % list.length];
+    if (!socket.causeResponse || !socket.route.offRoute ||
+        socket.route.s < lo || socket.route.s > hi ||
+        Math.abs(socket.route.s - event.playerX) < socket.route.safeFromPlayerRadius)
+      continue;
+    let separated = true;
+    for (let i = 0; i < filled; i++) {
+      if (Math.abs(ambientLifeSockets[i].route.s - socket.route.s) < 4.2) {
+        separated = false;
+        break;
+      }
+    }
+    if (separated) ambientLifeSockets[filled++] = socket;
+  }
+  // Sparse faces still get life. Revisit legal sockets and relax only the
+  // visual spacing; player/corner safety and current-face ownership remain.
+  for (let step = 0; step < list.length && filled < AMBIENT_RIGS; step++) {
+    const socket = list[(start + step) % list.length];
+    if (ambientLifeSockets.includes(socket) || !socket.causeResponse ||
+        !socket.route.offRoute || socket.route.s < lo || socket.route.s > hi ||
+        Math.abs(socket.route.s - event.playerX) < socket.route.safeFromPlayerRadius)
+      continue;
+    ambientLifeSockets[filled++] = socket;
+  }
+}
+
+function syncAmbientLife(event) {
+  const allowed = event && event.stage === 'dormant' && event.face > 0 &&
+    (event.reason === 'awaiting-activation' || event.reason === 'spent');
+  if (!allowed) return hideAmbientLife();
+
+  const now = Math.max(0, Number(event.nowMs) || 0);
+  const cycle = Math.floor(now / AMBIENT_LIFE_PERIOD_MS);
+  chooseAmbientLifeSockets(event, cycle);
+  let visible = 0;
+  let moving = 0;
+  for (let rig = 0; rig < AMBIENT_RIGS; rig++) {
+    const socket = ambientLifeSockets[rig];
+    const shellBase = rig * AMBIENT_SHELLS_PER_RIG;
+    const jointBase = rig * AMBIENT_JOINTS_PER_RIG;
+    if (!socket) {
+      for (let partIndex = 0; partIndex < AMBIENT_SHELLS_PER_RIG; partIndex++)
+        ambientShellPool.setMatrixAt(shellBase + partIndex, HIDE);
+      for (let partIndex = 0; partIndex < AMBIENT_JOINTS_PER_RIG; partIndex++)
+        ambientJointPool.setMatrixAt(jointBase + partIndex, HIDE);
+      continue;
+    }
+    const phaseOffset = rig * (AMBIENT_LIFE_PERIOD_MS / AMBIENT_RIGS) +
+      (hashString(socket.id) % 420);
+    const local = (now + phaseOffset) % AMBIENT_LIFE_PERIOD_MS;
+    const active = local < AMBIENT_LIFE_ACTIVE_MS;
+    const raw = active ? local / AMBIENT_LIFE_ACTIVE_MS : 1;
+    // Twelve deliberate route-space detents preserve a clean, authored
+    // pixel-step at FAR rather than sub-pixel mush from a smooth tween.
+    const step = Math.min(11, Math.floor(raw * 12));
+    const stride = step / 11;
+    const direction = (hashString(socket.id) & 1) ? 1 : -1;
+    const travel = direction * (-0.52 + stride * 1.04);
+    const foreLift = active && (step & 1) ? 0.10 : 0;
+    const rearLift = active && !(step & 1) ? 0.10 : 0;
+    const pitch = normalAscentPitchAt(socket.route.s, CONFIG.levelLength);
+    const shiver = active && (step === 4 || step === 9) ? direction * 0.08 : 0;
+
+    ambientWorldPart(ambientShellPool, shellBase, socket, pitch,
+      travel, 0.02, -0.10, 0.54, 0.24, 0.26, shiver);
+    ambientWorldPart(ambientShellPool, shellBase + 1, socket, pitch,
+      travel - 0.24, -0.17 + rearLift, -0.08, 0.20, 0.18, 0.20,
+      -0.20 - rearLift * 0.8);
+    ambientWorldPart(ambientShellPool, shellBase + 2, socket, pitch,
+      travel + 0.24, -0.17 + foreLift, -0.08, 0.20, 0.18, 0.20,
+      0.20 + foreLift * 0.8);
+    ambientWorldPart(ambientJointPool, jointBase, socket, pitch,
+      travel - 0.17, 0.15, -0.07, 0.10, 0.09, 0.29);
+    ambientWorldPart(ambientJointPool, jointBase + 1, socket, pitch,
+      travel + 0.17, 0.15, -0.07, 0.10, 0.09, 0.29);
+    visible++;
+    if (active) moving++;
+  }
+  ambientShellPool.instanceMatrix.needsUpdate = true;
+  ambientJointPool.instanceMatrix.needsUpdate = true;
+  ambientLifeHidden = visible === 0;
+  stats.ambientLifeVisible = visible;
+  stats.ambientLifeMotions = moving;
+  stats.ambientLifeDrawSlots = visible ? 2 : 0;
 }
 
 function stageHook(socket, stage) {
@@ -451,8 +661,10 @@ function syncAmbient(event) {
     (event.reason === 'awaiting-activation' || event.reason === 'spent');
   if (!allowed || !mechanismRoot) {
     ambientCycle = -1;
+    hideAmbientLife();
     return hide();
   }
+  syncAmbientLife(event);
   const shifted = Math.max(0, Number(event.nowMs) || 0) + event.phase * 733;
   const cycle = Math.floor(shifted / AMBIENT_PERIOD_MS);
   const local = shifted - cycle * AMBIENT_PERIOD_MS;
@@ -480,10 +692,25 @@ function syncAmbient(event) {
 }
 
 function place(event) {
-  if (!mesh || !currentSocket || !currentComponent) return hide(event.stage);
+  if (!currentSocket) return hide(event.stage);
   const component = currentComponent;
   const stage = event.stage;
   const progress = Math.max(0, Math.min(1, event.progress || 0));
+  const yaw = currentSocket.world.yaw;
+  const pitch = normalAscentPitchAt(currentSocket.route.s, CONFIG.levelLength);
+  _rotation.makeRotationY(yaw);
+  _rotation.multiply(_pitch.makeRotationZ(pitch));
+  placeMechanism(event, progress, _rotation, yaw);
+  stats.stage = stage;
+  // A missing/retired painted transient must not erase the response. The
+  // native shutters above tell/fire/recover on their own; only the optional
+  // pressure/debris punctuation disappears.
+  if (!mesh || !material || !component) {
+    if (mesh) mesh.visible = false;
+    if (material) material.opacity = 0;
+    stats.drawSlots = 0;
+    return;
+  }
   const opacity = opacityAt(stage, progress, component.maxOpacity);
   const stateIndex = STATE_INDEX[event.state] ?? 0;
   const baseHeight = stage === 'fire' ? 4.15 + stateIndex * 0.22
@@ -504,12 +731,6 @@ function place(event) {
   width *= pulse;
   height *= pulse;
 
-  const yaw = currentSocket.world.yaw;
-  const pitch = normalAscentPitchAt(currentSocket.route.s, CONFIG.levelLength);
-  _rotation.makeRotationY(yaw);
-  _rotation.multiply(_pitch.makeRotationZ(pitch));
-  placeMechanism(event, progress, _rotation, yaw);
-  stats.stage = stage;
   if (opacity <= 0.002) {
     mesh.visible = false;
     material.opacity = 0;
@@ -542,11 +763,12 @@ function place(event) {
 function sync(event) {
   stats.face = event?.face || 0;
   stats.state = event?.state || 'observe';
-  if (!event || !mesh) {
+  if (!event || !mechanismRoot) {
     eventKey = '';
     currentSocket = null;
     currentComponent = null;
     currentStage = 'dormant';
+    hideAmbientLife();
     hide();
     return;
   }
@@ -558,6 +780,7 @@ function sync(event) {
     return;
   }
   ambientCycle = -1;
+  hideAmbientLife();
 
   const nextKey = `${event.face}:${event.startedAtMs}`;
   if (nextKey !== eventKey) {
@@ -596,6 +819,9 @@ function reset() {
   currentComponent = null;
   currentStage = 'dormant';
   ambientCycle = -1;
+  ambientLifeFace = -1;
+  ambientLifeCycle = -1;
+  ambientLifeSockets.fill(null);
   stats.resets++;
   stats.maxVisible = 0;
   stats.stageSwitches = 0;
@@ -607,6 +833,7 @@ function reset() {
   componentsUsed.clear();
   for (const key of Object.keys(faceSockets)) delete faceSockets[key];
   for (const key of Object.keys(faceComponents)) delete faceComponents[key];
+  hideAmbientLife();
   hide();
 }
 
@@ -629,7 +856,8 @@ export function meridianDefenseVfxSnapshot() {
     atlasState: DEFENSE_VFX_ART_SLOT.state,
     atlasTextures: DEFENSE_VFX_ART_SLOT.gpuTextures,
     estimatedGpuBytes: DEFENSE_VFX_ART_SLOT.estimatedGpuBytes,
-    totalDrawSlots: stats.drawSlots + stats.mechanismDrawSlots,
+    totalDrawSlots: stats.drawSlots + stats.mechanismDrawSlots +
+      stats.ambientLifeDrawSlots,
     fixedAtBoot: true,
     textureTransforms: false,
     environmentOnly: true,
