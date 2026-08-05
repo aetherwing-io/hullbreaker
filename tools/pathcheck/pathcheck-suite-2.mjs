@@ -264,6 +264,8 @@ export async function run(SHARED) {
        'T-032: the frame loop clamps dt at the policy\'s ' + FAILSAFE.frameDtMaxMs +
        ' ms (got ' + (clamp ? clamp[1] : 'no clamp') + ') — Chrome suspends rAF in a ' +
        'hidden tab, and the frame that lands on return carries a minute of wall clock');
+    ok(/Math\.max\(\s*0\s*,\s*Math\.min\(\s*50\s*,\s*t\s*-\s*last\s*\)\s*\)/.test(T32_MAIN),
+       'T-032: a stale first rAF timestamp clamps to zero instead of running gameMs backward');
     ok(FAILSAFE.frameDtMaxMs / 1000 * CONFIG.player.runSpeed < 1,
        'T-032: …and one clamped frame still cannot cross a whole tile, so returning ' +
        'from a backgrounded tab cannot teleport RIG through a wall');

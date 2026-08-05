@@ -707,7 +707,12 @@ function frame(t) {
   if (document.hidden) { last = t; return; }
   samplePerf(t);
   failsafeBeat();
-  const dt = FIXED_DT_MS ? FIXED_DT_MS / 1000 : Math.min(50, t - last) / 1000;
+  // A slow boot can finish after the timestamp of the frame that finally
+  // delivers this callback. Clamp both ends: the simulation clock must never
+  // run backward, and a resumed tab must never advance more than 50 ms.
+  const dt = FIXED_DT_MS
+    ? FIXED_DT_MS / 1000
+    : Math.max(0, Math.min(50, t - last)) / 1000;
   last = t;
   if (state === 'PLAYING') {
     // Exact schedules drain immediately before the update they own and freeze

@@ -533,7 +533,7 @@ const G2GATE = G2E.gate;
 }
 
 // --- frame dt clamp vs. collision safety margins (tunneling) -----------
-// src/main.js clamps the frame dt with Math.min(N, t - last) before any sim
+// src/main.js clamps the frame dt with Math.max(0, Math.min(N, t - last)) before any sim
 // step. src/sim/player.js resolves the X-axis wall stop and the Y-axis
 // ceiling stop by checking only the single grid cell at the END of that
 // frame's move (not every cell crossed) -- correct only as long as no
