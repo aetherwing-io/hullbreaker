@@ -1,24 +1,28 @@
-# Deploying HULLBREAKER to itch.io
+# Deploying HULLBREAKER (itch.io zip · GitHub Pages branch)
 
 T-034 built this story; T-055 fixed the one thing in it that was wrong
 (I-048: the bundle omitted `assets/generated/`, so it would have shipped a
-game with none of its art and nothing to notice). This is the whole deploy
-story for a static-host bundle: how to build it, how it is proven to
-actually contain and render the art, the one honest remaining risk (the
-three.js CDN), and the exact steps a first-time itch.io user performs to
-publish it. Nothing here changes the shipped game — `src/`, `index.html`,
-`assets/`, `tools/pathcheck.mjs`, etc. are all untouched by this task.
+game with none of its art and nothing to notice); 2026-08-04 pruned the
+~92 MB of pipeline intermediates the art landings had grown into the bundle
+and added the GitHub Pages recipe (§7). This is the whole deploy story for
+a static-host bundle: how to build it, how it is proven to actually contain
+and render the art, the one honest remaining risk (the three.js CDN), and
+the exact steps to publish it. Nothing here changes the shipped game —
+`src/`, `index.html`, `assets/`, `tools/pathcheck.mjs`, etc. are all
+untouched by the deploy tooling.
 
 ## TL;DR
 
 1. `node tools/deploy/build-bundle.mjs` → writes `hullbreaker-web.zip`
-   (index.html + src/ + assets/generated/, ~2.1 MB — see "Bundle size" below).
+   (index.html + src/ + assets/generated/ minus review/source
+   intermediates, ~75 MiB — see "Bundle size" below).
 2. `node tools/deploy/verify-bundle.mjs` → unzips it into a clean directory
    outside the repo, serves it, and asserts the art actually renders (not
    just that the zip contains files — see "Proving the bundle actually
    works" below). Run this before every upload that matters.
 3. Upload the zip to itch.io as an **HTML** project, check **"This file
-   will be played in the browser,"** set a viewport size, save.
+   will be played in the browser,"** set a viewport size, save. (For
+   GitHub Pages instead, see §7.)
 4. Open the game page and play it. If it doesn't load, see "The CDN risk"
    below before assuming something else is broken.
 
@@ -30,11 +34,13 @@ node tools/deploy/build-bundle.mjs
 
 This writes `hullbreaker-web.zip` in whatever directory you run it from
 (`--out path/to/file.zip` to choose another location). It runs `git archive
---format=zip` against `HEAD`, restricted to `index.html`, `src/`, and
-`assets/generated/` — everything a browser fetches from this host. No
-transformation, no minification, nothing added or removed beyond that path
-filter. `--ref <commit-or-branch>` archives a specific commit instead of your
-current checkout if you ever need to ship an older or pinned build.
+--format=zip` against `HEAD`, restricted to `index.html`, `src/`,
+`assets/ui/favicon.svg`, and `assets/generated/` minus the pruned
+pipeline-intermediate directories described below — everything a browser
+fetches from this host. No transformation, no minification, nothing added
+or removed beyond that path filter. `--ref <commit-or-branch>` archives a
+specific commit instead of your current checkout if you ever need to ship
+an older or pinned build.
 
 The zip has `index.html` sitting at its own root (not inside a subfolder) —
 that's the layout itch.io's uploader expects.
@@ -47,18 +53,28 @@ runtime asset reference in `src/` — grepped across `src/config.js`,
 sprites}/`. Nothing loads `assets/approved/` (the operator's own promotion
 directory; today it holds only a `.gitkeep`) or `assets/manifest.json`
 (asset-pipeline provenance bookkeeping, not fetched by the game), so neither
-ships. The whole `assets/generated/` subtree ships, not a curated list of
-just the files a grep finds referenced today: a per-file allowlist would
-silently drift out of sync with a future asset exactly the way the old
-`index.html`/`src`-only pathspec silently drifted out of sync with
-`decisions.md` entry 16 authorizing runtime assets. The cost of that choice
-is concrete and stated, not hidden: `assets/generated/` also carries the
-`.svg` sources, `.recipe.js` generation recipes, and a handful of
-manifest-only glyph/HUD-chip PNGs that nothing in `src/` loads (staged design
-evidence for still-open operator directions, per `assets/manifest.json`'s own
-notes) — about 284 KB of the bundle's ~2.1 MB is exactly this dead weight, in
-exchange for the bundle never again being the reason a shipped asset is
-missing.
+ships. `assets/ui/favicon.svg` DOES ship, because `index.html` links it.
+The `assets/generated/` subtree ships as a directory-level pathspec, not a
+curated list of just the files a grep finds referenced today: a per-file
+allowlist would silently drift out of sync with a future asset exactly the
+way the old `index.html`/`src`-only pathspec silently drifted out of sync
+with `decisions.md` entry 16 authorizing runtime assets.
+
+**The one prune (2026-08-04, GitHub Pages).** The subtree ships minus one
+naming convention: any path segment starting with `review` or `source`, or
+ending in `-sources`. Those are asset-pipeline intermediates (review boards,
+source sheets, the foreground pack's ~17 MB of sources) that no runtime code
+fetches — 86 tracked files, ~92 MB, more than half the old bundle. All 31
+asset paths referenced from `src/` and `index.html` were checked against the
+convention before it landed; none match. The residual risk — a future
+runtime asset placed in a `source-*` directory silently vanishing from the
+bundle — is exactly what `verify-bundle.mjs` catches, loudly, by booting the
+zipped game. A broader `*contact*` prune was considered and rejected:
+`sprites/rig-run-contact-v1.png` is a real sprite-family file whose name
+matches it, so the ~7 MB `action-vfx-v2` contact sheet still ships, along
+with the `.svg` sources, `.recipe.js` generation recipes, and staged
+glyph/HUD-chip PNGs — the stated, accepted dead weight in exchange for the
+bundle never again being the reason a shipped asset is missing.
 
 ## 2. Proving the bundle actually works (T-055 / I-048)
 
@@ -139,12 +155,11 @@ path reported **`SELFTEST PASS (39 checks)`** (T-034 measured 29; the suite
 has grown with the game since), and the art-render check passed all 24
 assertions at that same nested path.
 
-**One pre-existing, unrelated 404, for the record.** Chrome auto-requests
-`/favicon.ico` at the domain root for every tab; this game ships no
-`favicon.ico` and no `<link rel="icon">`, so that request 404s. Zero effect
-on play, invisible to a player (browser chrome only; itch.io additionally
-iframes the game). Not fixed here — still a someday nice-to-have for
-whoever next touches `index.html`.
+**The favicon 404, for the record: fixed 2026-08-04.** This note used to
+record that the game shipped no icon at all and Chrome's automatic
+`/favicon.ico` request 404'd. `index.html` now has `<link rel="icon"
+href="assets/ui/favicon.svg">` and the favicon is in the bundle pathspec,
+so the icon travels with the game on any static host.
 
 ## 4. The CDN risk — stated plainly, corrected for T-032
 
@@ -214,8 +229,8 @@ section is written for the **operator** to follow by hand.
    zip as a download instead of running it.
 5. Scroll to **"Uploads."** Click **"Upload files"** and choose the zip built
    in step 1 (`hullbreaker-web.zip`). Wait for it to finish uploading (it is
-   ~2.1 MB — see "Bundle size" above — so this should still take seconds on
-   any reasonable connection).
+   ~75 MiB — see "Bundle size" below — so give it a minute or two on a home
+   connection rather than seconds).
 6. Once it's uploaded, a checkbox appears next to that file named **"This
    file will be played in the browser."** Check it. (If you don't see this
    checkbox, go back to step 4 — "Kind of project" almost certainly isn't
@@ -273,15 +288,47 @@ section is written for the **operator** to follow by hand.
   created for either). This is the one part of "does it actually run on
   itch.io" that genuinely needs the operator's own upload to confirm.
 
-## Bundle size (measured, T-055)
+## 7. GitHub Pages (added 2026-08-04)
 
-Built from this task's `HEAD`: **2160.0 KiB (≈2.1 MB), 163 tracked files, 39
-PNGs under `assets/generated/`.** The backdrop plates alone account for
-~1.6 MB of that (five plates, 140 KB–508 KB each) — the biggest single line
-item, and fine for a public URL, but worth knowing rather than discovering
-after an upload. Re-run `node tools/deploy/build-bundle.mjs` to get the exact
-current number; it is printed on every build and will grow as more art
-lands.
+The same zip deploys to GitHub Pages. The `gh-pages` branch is staged from
+the bundle — not pushed from `main` — so the published site carries no
+`reports/`, `tools/`, docs, or git history. Recipe, from the repo root,
+after a green build and verify:
+
+```
+node tools/deploy/build-bundle.mjs --out /tmp/hb-pages/hullbreaker-web.zip
+node tools/deploy/verify-bundle.mjs          # boots the zip; must say PASS
+STAGE=$(mktemp -d)
+unzip -q /tmp/hb-pages/hullbreaker-web.zip -d "$STAGE/site"
+touch "$STAGE/site/.nojekyll"                # skip Pages' Jekyll pass
+export GIT_DIR=$PWD/.git GIT_WORK_TREE=$STAGE/site GIT_INDEX_FILE=$STAGE/index
+git add -A
+TREE=$(git write-tree)
+COMMIT=$(git commit-tree $TREE -m "deploy: Pages site from $(git rev-parse --short HEAD)")
+git update-ref refs/heads/gh-pages $COMMIT
+git push origin gh-pages
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE  # before any normal git work
+```
+
+The `GIT_INDEX_FILE` detour is what keeps this from touching the real
+working tree or index. The site lands at
+`https://<owner>.github.io/hullbreaker/` — a subpath, which the game's
+`import.meta.url`-relative asset loading already handles; verify-bundle's
+subpath check is the same shape and is the proof. Two host facts to know:
+Pages serves a private repo only on a paid plan (on a free org the repo
+must be public), and no single file may exceed 100 MB (the largest shipped
+asset is ~7 MB). Enable or watch the deploy under Settings → Pages.
+
+## Bundle size (measured, 2026-08-04 prune)
+
+Built from `HEAD` after the review/source prune: **74.5 MiB, 349 shipped
+files** (86 review/source intermediates, ~92 MB uncompressed, pruned; 200
+PNGs tracked under `assets/generated/` before the prune). For scale: the
+T-055-era bundle this section first recorded was 2.1 MB / 163 files — the
+art landings since are the difference, and the stale number surviving here
+is exactly the drift this file is supposed to catch. Re-run
+`node tools/deploy/build-bundle.mjs` for the current number; it is printed
+on every build and will grow as more art lands.
 
 ## Files in this directory
 

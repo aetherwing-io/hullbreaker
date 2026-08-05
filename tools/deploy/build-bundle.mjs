@@ -1,16 +1,18 @@
 #!/usr/bin/env node
-// build-bundle.mjs — produce the exact zip to upload to itch.io.
+// build-bundle.mjs — produce the exact zip a static host serves as-is:
+// itch.io's browser-play uploader today, and the GitHub Pages gh-pages
+// branch is staged from this same output.
 //
 // WHAT THIS DOES. HULLBREAKER has no build step: the shipped game is
 // `index.html` + `src/**` + the runtime art under `assets/generated/**`,
 // unmodified, exactly as committed. This script does not transform,
 // minify, or bundle anything — it packages the tracked files a browser
-// actually fetches (index.html, every src/**/*.js the import graph
-// reaches, three.js from the CDN, and the 39 tracked PNGs `src/render/`
-// and `src/pure/rig.js` load from `assets/generated/**` at runtime — see
-// "Why assets/generated/ is in the pathspec" below) into a single zip with
-// `index.html` at the zip's ROOT, which is what itch.io's uploader expects
-// for a "played in browser" project.
+// actually fetches (index.html, the favicon it links, every src/**/*.js
+// the import graph reaches, three.js from the CDN, and the PNGs
+// `src/render/` and `src/pure/rig.js` load from `assets/generated/**` at
+// runtime — see "Why assets/generated/ is in the pathspec" below) into a
+// single zip with `index.html` at the zip's ROOT, which is what itch.io's
+// uploader expects for a "played in browser" project.
 //
 // It shells out to `git archive --format=zip`, so the zip always matches a
 // real commit (never a working-tree file the operator forgot to save) and
@@ -28,15 +30,31 @@
 // operator's own promotion directory (tools/assets/README.md: "nothing here
 // writes to it") and today holds nothing but a `.gitkeep`; `assets/
 // manifest.json` is asset-pipeline provenance bookkeeping that nothing in
-// src/ loads. The whole `assets/generated/` subtree ships — not a curated
-// list of just the files a static grep finds referenced today — because a
-// per-file allowlist here would silently drift out of sync with a future
-// asset exactly the way the old index.html/src-only pathspec silently
-// drifted out of sync with decisions.md entry 16. A directory-level pathspec
-// costs a little dead weight (source .svg files, .recipe.js generation
-// recipes, and a few staged-but-unloaded glyph/HUD PNGs kept as design
-// evidence) in exchange for never being the reason a shipped asset is
-// missing again.
+// src/ loads. The `assets/generated/` subtree ships as a directory-level
+// pathspec — not a curated list of just the files a static grep finds
+// referenced today — because a per-file allowlist would silently drift out
+// of sync with a future asset exactly the way the old index.html/src-only
+// pathspec silently drifted out of sync with decisions.md entry 16.
+//
+// ONE NAMING CONVENTION IS PRUNED (2026-08-04, for the GitHub Pages
+// deploy): any path segment under assets/generated/ that starts with
+// `review` or `source`, or ends with `-sources`. Those directories hold
+// asset-PIPELINE intermediates — enemy-ecology review boards, VFX source
+// sheets, the foreground pack's ~17 MB of sources — that no runtime code
+// fetches; by 2026-08 they were 86 tracked files, ~92 MB, more than half
+// the bundle. The convention is safe because it is a convention, not a
+// guess: that day, all 31 asset paths referenced from src/ and index.html
+// were checked against it and none match. The drift risk now runs the
+// other way — a FUTURE runtime asset dropped into a `source-*` directory
+// would silently vanish from the bundle — and that is exactly what
+// verify-bundle.mjs exists to catch loudly: it boots the zipped game and
+// asserts the art renders. A `*contact*` prune was considered and rejected
+// the same day: sprites/rig-run-contact-v1.png is a real sprite-family
+// file whose name matches it. What still ships as deliberate dead weight:
+// source .svg files, .recipe.js generation recipes, a few
+// staged-but-unloaded glyph/HUD PNGs, and the ~7 MB action-vfx-v2 contact
+// sheet. The cost of the directory-level choice stays concrete and stated,
+// in exchange for never being the reason a shipped asset is missing again.
 //
 // Usage:
 //   node tools/deploy/build-bundle.mjs                # writes ./hullbreaker-web.zip
@@ -57,7 +75,24 @@ const REPO_ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 
 // What a browser actually needs, fetched by git pathspec. Keep this list and
 // the header comment above in sync — this is the one place I-048's fix lives.
-const ARCHIVE_PATHS = ['index.html', 'src', 'assets/generated'];
+// assets/ui/favicon.svg ships because index.html links it (a missing icon is
+// a real 404 on a static host); the rest of assets/ outside generated/ is
+// pipeline bookkeeping nothing fetches.
+const ARCHIVE_PATHS = ['index.html', 'src', 'assets/generated', 'assets/ui/favicon.svg'];
+
+// The pruned pipeline-intermediate directories (see the header comment):
+// path segments that start with `review` or `source`, or end with
+// `-sources`. git ls-tree does NOT support :(exclude) pathspec magic, so the
+// guards below deliberately run against the UNFILTERED list — they verify
+// the ref contains the game at all, and the prune must never be what
+// empties it. EXCLUDE_RE mirrors EXCLUDE_PATHSPECS for the build summary;
+// keep the two in sync.
+const EXCLUDE_PATHSPECS = [
+  ':(exclude)assets/generated/**/review*/**',
+  ':(exclude)assets/generated/**/source*/**',
+  ':(exclude)assets/generated/**/*-sources/**',
+];
+const EXCLUDE_RE = /\/(?:review[^/]*|source[^/]*|[^/]*-sources)\//;
 
 function parseArgs(argv) {
   const opts = { out: 'hullbreaker-web.zip', ref: 'HEAD' };
@@ -73,8 +108,9 @@ function parseArgs(argv) {
   return opts;
 }
 
-const HELP = `Build the itch.io upload zip for HULLBREAKER (index.html + src/ + \
-assets/generated/, verbatim).
+const HELP = `Build the static-host zip for HULLBREAKER (index.html + src/ +
+assets/ui/favicon.svg + assets/generated/ minus review/source pipeline
+intermediates, verbatim).
 
   node tools/deploy/build-bundle.mjs [--out FILE] [--ref REF]
 
@@ -119,12 +155,14 @@ if (assetFiles.length === 0) {
 }
 
 execFileSync(
-  'git', ['archive', '--format=zip', `--output=${outPath}`, opts.ref, '--', ...ARCHIVE_PATHS],
+  'git', ['archive', '--format=zip', `--output=${outPath}`, opts.ref, '--',
+    ...ARCHIVE_PATHS, ...EXCLUDE_PATHSPECS],
   { cwd: REPO_ROOT, stdio: 'inherit' },
 );
 
+const excludedFiles = files.filter((f) => f.startsWith('assets/generated/') && EXCLUDE_RE.test(f));
 const size = existsSync(outPath) ? statSync(outPath).size : 0;
-console.log(`\nWrote ${outPath} (${(size / 1024).toFixed(1)} KiB, ${files.length} tracked files, ` +
-  `${assetFiles.length} PNGs under assets/generated/, ref ${opts.ref}).`);
-console.log('Contents: index.html at the zip root, plus src/** and assets/generated/** verbatim — nothing else.');
-console.log('This zip is the exact file to upload to itch.io. See tools/deploy/README.md.');
+console.log(`\nWrote ${outPath} (${(size / 1048576).toFixed(1)} MiB, ${files.length - excludedFiles.length} shipped files, ` +
+  `${excludedFiles.length} review/source intermediates pruned, ${assetFiles.length} PNGs tracked under assets/generated/, ref ${opts.ref}).`);
+console.log('Contents: index.html at the zip root, plus src/**, assets/ui/favicon.svg, and assets/generated/** minus review/source intermediates.');
+console.log('This zip is the exact file to upload to itch.io, or to unpack onto the gh-pages branch. See tools/deploy/README.md.');
