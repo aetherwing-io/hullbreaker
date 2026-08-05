@@ -41,6 +41,7 @@ import { scoreNotchNow } from '../sim/score.js';
 import { activeCorner } from '../sim/wavegate.js';
 import { activeTransformEvent } from '../sim/transform.js';
 import { addTrauma, cameraTrauma } from './camera.js';
+import { PAL } from './palette.js';
 import {
   fxBurst, fxCoreRupture, fxCrush, fxDirectedBurst, fxDirectionalFlash,
   fxFlash, fxHostileColor, fxImplode, fxRing, fxRole, fxRoleFragments,

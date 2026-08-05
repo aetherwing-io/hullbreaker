@@ -455,7 +455,10 @@ export const CONFIG = {
                                // with CONFIG.wasp like every kind.
     hp: 6,                     // dies inside ONE vent window of rifle fire (asserted):
                                //   the opening is honest, and never a damage race
-    hitRadius: 0.5, shotRadius: 0.68,
+    // The painted stalk/barrel reads wider than the vulnerable bulb at FAR
+    // view. Keep contact on the physical core, but let a visibly intersecting
+    // shot count across the full target silhouette.
+    hitRadius: 0.5, shotRadius: 0.82,
     size: 0.55,                // bulb radius (render); barrel + stalk are theater
     barrelSize: [0.9, 0.34, 0.34],   // the side-facing barrel, board 07's model note
     barrelTiles: 0.7,          // beam origin: barrel tip forward of the bulb center
@@ -502,7 +505,9 @@ export const CONFIG = {
     hp: 5,                     // ~0.65 s of rifle fire — one reload window kills it
                                //   (asserted): destroying it is a decision about time,
                                //   never a damage race
-    hitRadius: 0.5, shotRadius: 0.72,
+    // Tripod legs are presentation, but rounds clipping the visible launch
+    // housing must not disappear beside its half-tile simulation core.
+    hitRadius: 0.5, shotRadius: 0.84,
     size: 0.5,                 // launch-tube radius (render); the legs are theater
     legSize: [0.16, 1.05, 0.16],
     bodyY: 1.05,               // tube center above the mounted surface — EXACTLY the

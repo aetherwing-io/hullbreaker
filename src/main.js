@@ -219,6 +219,12 @@ let konamiProgress = 0;
 let gildedChassis = false;
 
 addEventListener('keydown', (e) => {
+  // Browsers can lose the Shift keyup when focus moves through browser chrome
+  // or an OS shortcut.  Strafe is the one held intent that freezes aim, so a
+  // stale bit made the gun appear permanently locked left/right.  Every later
+  // real keyboard event carries the authoritative modifier state: recover on
+  // the first unshifted press instead of making the player blur/reload the tab.
+  if (!e.shiftKey) keys.strafe = false;
   if (!e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey) {
     const advance = advanceKonami(konamiProgress, e.code);
     konamiProgress = advance.progress;
@@ -264,6 +270,7 @@ addEventListener('keydown', (e) => {
   applyGameplayKeyEdge(e.code, 'keydown', e.repeat);
 });
 addEventListener('keyup', (e) => {
+  if (!e.shiftKey) keys.strafe = false;
   applyGameplayKeyEdge(e.code, 'keyup', e.repeat);
 });
 

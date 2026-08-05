@@ -80,7 +80,11 @@ function computeAim() {
   const h = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
   const v = (keys.up ? 1 : 0) - (keys.down ? 1 : 0);
   if (h !== 0) player.facing = h;
-  if (keys.strafe) return;                        // strafe-lock: aim frozen
+  // Strafe preserves the horizontal firing line while RIG moves, but an
+  // explicit up/down aim must always win. Besides feeling better, this is the
+  // recovery path for a missed browser Shift keyup: the player can immediately
+  // take an elevated target instead of being trapped on a horizontal shot.
+  if (keys.strafe && v === 0) return;
   let ax, ay;
   if (h === 0 && v === 0)      { ax = player.facing; ay = 0; }
   else if (h === 0 && v > 0)   { ax = 0; ay = 1; }

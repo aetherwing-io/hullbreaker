@@ -65,4 +65,9 @@ export async function run() {
   ok(/Object\.freeze\(\{ snapshot: telemetry, inputTimeline: frameInputSnapshot \}\)/.test(main) &&
      !/queueEvent\s*[:=]/.test(main),
      'frame input: testapi exposes read-only evidence, not a mutable input injection API');
+
+  const player = readFileSync(join(here, '..', 'src', 'sim', 'player.js'), 'utf8');
+  ok((main.match(/if \(!e\.shiftKey\) keys\.strafe = false;/g) || []).length === 2 &&
+     /if \(keys\.strafe && v === 0\) return;/.test(player),
+     'frame input: a lost Shift release self-heals and explicit vertical aim always escapes strafe lock');
 }

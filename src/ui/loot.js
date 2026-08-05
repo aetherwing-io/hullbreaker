@@ -33,15 +33,15 @@ style.textContent = `
   --loot-hot: #fff0cf;
   position: fixed;
   z-index: 34;
-  top: clamp(82px, 15vh, 132px);
+  top: clamp(70px, 11vh, 96px);
   left: max(12px, env(safe-area-inset-left));
-  width: min(456px, calc(100vw - 24px));
+  width: min(348px, calc(100vw - 24px));
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 142px;
-  gap: 0 10px;
-  min-height: 154px;
-  padding: 13px 13px 13px 18px;
+  grid-template-columns: minmax(0, 1fr) 82px;
+  gap: 0 7px;
+  min-height: 92px;
+  padding: 9px 9px 9px 13px;
   overflow: hidden;
   color: #f7ead6;
   background:
@@ -80,7 +80,7 @@ style.textContent = `
     linear-gradient(rgba(181,120,66,.28), rgba(181,120,66,.28)) left bottom / 35px 1px no-repeat;
   opacity: .58;
 }
-#lootReveal.is-live { animation: loot-reveal 3.25s cubic-bezier(.18,.78,.2,1) both; }
+#lootReveal.is-live { animation: loot-reveal 2.15s cubic-bezier(.18,.78,.2,1) both; }
 #lootReveal.tier-1 { --loot-accent: #ff55dc; }
 #lootReveal.tier-2 { --loot-accent: #ff9d45; --loot-hot: #fff0ce; }
 #lootReveal.tier-3 {
@@ -91,7 +91,7 @@ style.textContent = `
     linear-gradient(105deg, rgba(14,25,25,.99), rgba(39,37,32,.97) 64%, rgba(73,48,29,.92));
   box-shadow: 0 14px 42px rgba(0,0,0,.54), inset 0 1px rgba(255,236,201,.08);
 }
-#lootReveal.tier-3.is-live { animation-duration: 3.85s; }
+#lootReveal.tier-3.is-live { animation-duration: 2.55s; }
 /* State screens are a different composition, not another combat layer.  A
    pickup immediately before pause/death/victory must never sit over the modal
    copy, and returning to the title must never inherit a stale reward card. */
@@ -101,27 +101,27 @@ body.at-victory #lootReveal,
 #overlay[data-state="game_over"] ~ #lootReveal { visibility: hidden; }
 /* The objective occupies the same upper visual lane.  If a recovered gun
    arrives during the finale, compose beneath it instead of overprinting it. */
-body:has(#finale.on) #lootReveal { top: 124px; }
+body:has(#finale.on) #lootReveal { top: 108px; }
 .loot-copy { position: relative; z-index: 2; min-width: 0; align-self: center; }
-.loot-kicker { color: var(--loot-accent); font-size: 10px; font-weight: 850; letter-spacing: .16em; }
+.loot-kicker { color: var(--loot-accent); font-size: 8px; font-weight: 850; letter-spacing: .13em; }
 .loot-name {
   margin-top: 3px;
   color: var(--loot-hot);
-  font-size: clamp(21px, 2.55vw, 29px);
+  font-size: clamp(16px, 1.8vw, 21px);
   line-height: 1.02;
   font-weight: 950;
   letter-spacing: .035em;
 }
-.loot-chassis { margin-top: 4px; color: rgba(225,226,214,.72); font-size: 10px; letter-spacing: .15em; }
+.loot-chassis { margin-top: 3px; color: rgba(225,226,214,.72); font-size: 8px; letter-spacing: .11em; }
 .loot-traits, .loot-stats { display: flex; flex-wrap: wrap; gap: 5px; }
-.loot-traits { margin-top: 10px; }
-.loot-stats { margin-top: 7px; }
+.loot-traits { margin-top: 6px; }
+.loot-stats { display: none; }
 .loot-chip {
   padding: 3px 6px 3px 7px;
   color: #fff7e7;
   background: linear-gradient(180deg, rgba(115,78,48,.36), rgba(8,20,23,.72));
   border: 1px solid color-mix(in srgb, var(--loot-accent) 38%, #765137 62%);
-  font-size: 10px;
+  font-size: 8px;
   line-height: 1;
   font-weight: 800;
   letter-spacing: .09em;
@@ -150,7 +150,7 @@ body:has(#finale.on) #lootReveal { top: 124px; }
   pointer-events: none;
 }
 .loot-art::before {
-  width: 116px; height: 78px;
+  width: 70px; height: 52px;
   background:
     radial-gradient(circle, #d8a461 0 2px, #503622 2px 4px, transparent 4px) left 2px top 8px / 8px 8px no-repeat,
     radial-gradient(circle, #d8a461 0 2px, #503622 2px 4px, transparent 4px) right 2px top 8px / 8px 8px no-repeat,
@@ -161,8 +161,8 @@ body:has(#finale.on) #lootReveal { top: 124px; }
   opacity: .78;
 }
 .loot-art::after {
-  width: 74px; height: 5px;
-  top: calc(50% + 38px);
+  width: 52px; height: 4px;
+  top: calc(50% + 27px);
   transform: translate(-50%, -50%) skewX(-18deg);
   background: repeating-linear-gradient(90deg, #4a3022 0 15px, #9b663d 15px 19px);
   box-shadow: 0 3px 3px rgba(0,0,0,.5);
@@ -172,7 +172,7 @@ body:has(#finale.on) #lootReveal { top: 124px; }
   position: relative;
   z-index: 2;
   display: block;
-  width: 136px;
+  width: 78px;
   max-width: 98%;
   aspect-ratio: 8 / 5;
   overflow: hidden;
@@ -190,7 +190,7 @@ body:has(#finale.on) #lootReveal { top: 124px; }
   z-index: 2;
   display: none;
   color: var(--loot-hot);
-  font-size: 62px;
+  font-size: 42px;
   line-height: 1;
   font-weight: 950;
 }
@@ -247,32 +247,32 @@ body:has(#finale.on) #lootReveal { top: 124px; }
 }
 @media (max-width: 600px) {
   #lootReveal {
-    top: 96px;
+    top: 82px;
     left: 8px;
     /* Leave room for the entrance's eight-pixel overshoot and skewed edge. */
-    width: calc(100vw - 24px);
-    grid-template-columns: minmax(0, 1fr) 92px;
-    gap: 0 6px;
-    min-height: 128px;
-    padding: 10px 8px 10px 14px;
+    width: min(292px, calc(100vw - 24px));
+    grid-template-columns: minmax(0, 1fr) 68px;
+    gap: 0 5px;
+    min-height: 82px;
+    padding: 8px 7px 8px 11px;
   }
-  .loot-kicker { font-size: 8px; letter-spacing: .12em; }
-  .loot-name { font-size: clamp(17px, 5.1vw, 22px); }
-  .loot-chassis { font-size: 8px; letter-spacing: .1em; }
-  .loot-traits { margin-top: 7px; }
-  .loot-chip { font-size: 9px; padding: 3px 5px; }
+  .loot-kicker { font-size: 7px; letter-spacing: .1em; }
+  .loot-name { font-size: clamp(14px, 4.1vw, 18px); }
+  .loot-chassis { font-size: 7px; letter-spacing: .08em; }
+  .loot-traits { margin-top: 5px; }
+  .loot-chip { font-size: 7px; padding: 2px 4px; }
   .loot-stat { font-size: 8px; }
-  .loot-art::before { width: 78px; height: 60px; }
-  .loot-art::after { width: 58px; top: calc(50% + 35px); }
-  .loot-atlas-clip { width: 88px; }
-  .loot-art-glyph { font-size: 44px; }
+  .loot-art::before { width: 58px; height: 46px; }
+  .loot-art::after { width: 42px; top: calc(50% + 24px); }
+  .loot-atlas-clip { width: 64px; }
+  .loot-art-glyph { font-size: 34px; }
   .loot-art-mark { top: 1px; right: 2px; font-size: 7px; }
   .loot-art-pips { right: 2px; bottom: 2px; }
   .loot-art-pips i { width: 9px; }
-  body:has(#finale.on) #lootReveal { top: 142px; }
+  body:has(#finale.on) #lootReveal { top: 126px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  #lootReveal.is-live { animation: loot-reveal-reduced 3.25s ease both; }
+  #lootReveal.is-live { animation: loot-reveal-reduced 2.15s ease both; }
   @keyframes loot-reveal-reduced {
     0%, 100% { opacity: 0; transform: translate3d(0,0,0); }
     8%, 82% { opacity: 1; transform: translate3d(0,0,0); }
@@ -350,11 +350,16 @@ function acquired(gun, def, detail = null) {
   add(copy, 'loot-name', name);
   add(copy, 'loot-chassis', `[${gun.letter}] ${GUN_CHASSIS_NAMES[gun.letter] || 'RIVETGUN'} CHASSIS`);
 
+  const allTraits = distinctTraits(gun);
   const traits = add(copy, 'loot-traits', '');
-  for (const trait of distinctTraits(gun)) {
+  // This is a combat toast, not an inventory screen. Two signatures identify
+  // the roll without growing a relic card back over the aiming lane; telemetry
+  // and the persistent weapon label retain the complete recipe.
+  for (const trait of allTraits.slice(0, 2)) {
     const n = gun.counts[trait] || 1;
     add(traits, 'loot-chip', `${trait}${n > 1 ? ` ×${n}` : ''}`);
   }
+  if (allTraits.length > 2) add(traits, 'loot-chip', `+${allTraits.length - 2}`);
   const stats = add(copy, 'loot-stats', '');
   const deltas = statDeltas(gun, def);
   for (const [text, tone] of deltas) add(stats, `loot-stat ${tone}`, text);
