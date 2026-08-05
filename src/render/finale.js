@@ -173,6 +173,7 @@ function signalMaterial(color, opacity = 0) {
     depthWrite: false,
     depthTest: true,
     side: THREE.DoubleSide,
+    forceSinglePass: true,
     fog: false,
     toneMapped: false,
   });

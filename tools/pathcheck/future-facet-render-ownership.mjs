@@ -31,8 +31,9 @@ export async function run() {
       if (visible) futureVisible++;
     } else if (owner === active && visible) activeVisible++;
   }
-  ok(active === 1 && futureRows > 300 && activeVisible > 0,
-     'proof spans the generated six-face climb while the first played face remains visible');
+  ok(active === 0 && futureRows > 300 && activeVisible >= CONFIG.path.introTiles +
+      CONFIG.path.faceTiles,
+     'proof spans the climb while frame one owns the coplanar intro and first played face');
   ok(futureVisible === 0,
      `pre-turn render ownership exposes zero future rows (got ${futureVisible})`);
   ok(!routeRenderOwned(BEND_S[0], true, scroll, cameraFacet, CONFIG, BEND_S),
@@ -55,7 +56,7 @@ export async function run() {
   while (cornerYawDeltaDeg(handoffMs, CONFIG) /
       (2 * CONFIG.path.turnDeg) < 0.96) handoffMs++;
   const cornerS = BEND_S[0] - CONFIG.path.chamferTiles / 2;
-  const incomingFacet = 2;
+  const incomingFacet = 1;
 
   function columnBuiltAt(column, tMs) {
     if (column < cornerS) return true;

@@ -96,7 +96,7 @@ import { POST, postSnapshot, renderFrame, warmScenePrograms } from './render/pos
 import {
   activeCameraDepth, calibrateEdges, handleResize, syncCamera,
 } from './render/camera.js';
-import { updateCorpses } from './render/hostiles.js';
+import { mountHostileWarmResources, updateCorpses } from './render/hostiles.js';
 // backdrop.js (T-051) is reached here, AFTER
 // the scene.js import above, rather than from scene.js itself — it awaits the
 // shared preload gate (src/render/preload.js), which itself needs `renderer`
@@ -994,7 +994,11 @@ if (QUERY.has('selftest')) {
 }
 
 resetGame();
-warmScenePrograms();
+{
+  const hostileWarmMount = mountHostileWarmResources();
+  try { warmScenePrograms(); }
+  finally { hostileWarmMount.dispose(); }
+}
 /* The shell boots to its title screen with the run built but frozen (MENU).
    An automated session — ?testapi=1 (every bot playtest) or ?selftest=1 —
    skips it, so every committed script keeps the exact boot it had before

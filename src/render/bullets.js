@@ -144,6 +144,7 @@ if (artSlot.state === 'ready' && artSlot.tex) {
     alphaTest: 0.025,
     depthWrite: false,
     side: THREE.DoubleSide,
+    forceSinglePass: true,
     fog: false,
   });
   for (let column = 0; column < PROJECTILE_ART.order.length; column++) {
@@ -231,6 +232,7 @@ const wakeMesh = new THREE.InstancedMesh(
   new THREE.MeshBasicMaterial({
     color: 0xffffff, transparent: true, opacity: 0.30, fog: false,
     side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false,
+    forceSinglePass: true,
   }),
   BULLET_MAX,
 );
@@ -278,6 +280,7 @@ const groundFireMesh = new THREE.InstancedMesh(
     // sliding projectile had been replaced to eliminate.
     color: PAL.shots.F, transparent: true, opacity: 0.90, fog: false,
     side: THREE.DoubleSide, blending: THREE.NormalBlending, depthWrite: false,
+    forceSinglePass: true,
   }),
   BULLET_MAX,
 );
@@ -289,6 +292,7 @@ const groundFireCoreMesh = new THREE.InstancedMesh(
     // keeping the crawler white made every later frame look like impact bloom.
     color: PAL.shots.S, transparent: true, opacity: 0.86, fog: false,
     side: THREE.DoubleSide, blending: THREE.NormalBlending, depthWrite: false,
+    forceSinglePass: true,
   }),
   BULLET_MAX,
 );
@@ -365,6 +369,7 @@ for (const type of Object.keys(CHASSIS_GEO)) {
     new THREE.MeshBasicMaterial({
       color: CHASSIS_LOOK[type].color, transparent: true, opacity: 0.92,
       fog: false, side: THREE.DoubleSide, depthWrite: false, toneMapped: false,
+      forceSinglePass: true,
     }),
     BULLET_MAX,
   );
@@ -456,6 +461,7 @@ for (const key of TRAIT_KEYS) {
       // marks on top of one another clipped to white and erased the recipe.
       fog: false, side: THREE.DoubleSide, blending: THREE.NormalBlending,
       depthWrite: false, toneMapped: false,
+      forceSinglePass: true,
       // Only PHASE's broken rails ignore the depth buffer. The projectile
       // chassis, wake and history trail still disappear behind the hull, so
       // crossing a solid reads as a cyan phased echo rather than every shot
@@ -484,6 +490,7 @@ for (const key of TRAIT_KEYS) {
       color: style.color, transparent: true, opacity: style.opacity * 0.58,
       fog: false, side: THREE.DoubleSide, blending: THREE.NormalBlending,
       depthWrite: false, toneMapped: false, depthTest: key !== 'phase',
+      forceSinglePass: true,
     }),
     BULLET_MAX,
   );
@@ -538,6 +545,43 @@ for (const mesh of traitMeshList)
   for (let i = 0; i < BULLET_MAX; i++) mesh.setMatrixAt(i, HIDE);
 for (const mesh of stackMeshList)
   for (let i = 0; i < BULLET_MAX; i++) mesh.setMatrixAt(i, HIDE);
+
+// setMatrixAt mutates the CPU array but intentionally does not bump the GPU
+// attribute version. Track only pools actually written since the previous
+// flush; an empty projectile frame now uploads zero instance matrices instead
+// of all fixed capacities (~587KB on the audited scene).
+const dirtyMatrixMeshes = new Set([
+  ...artMeshList, ...coreMeshList, ...shellMeshList, ...chassisMeshList,
+  tipMesh, groundFireMesh, groundFireCoreMesh, wakeMesh, trailMesh,
+  ...traitMeshList, ...stackMeshList,
+]);
+if (groundArtMesh) dirtyMatrixMeshes.add(groundArtMesh);
+
+function markMatrixMesh(mesh) {
+  if (mesh) dirtyMatrixMeshes.add(mesh);
+}
+
+function markSlotMatrixMeshes(type, trails = true) {
+  markMatrixMesh(artMeshes[type]);
+  markMatrixMesh(coreMeshes[type]);
+  markMatrixMesh(shellMeshes[type]);
+  markMatrixMesh(chassisMeshes[type]);
+  markMatrixMesh(tipMesh);
+  markMatrixMesh(groundArtMesh);
+  markMatrixMesh(groundFireMesh);
+  markMatrixMesh(groundFireCoreMesh);
+  markMatrixMesh(wakeMesh);
+  if (trails) markMatrixMesh(trailMesh);
+  for (const mesh of traitMeshList) markMatrixMesh(mesh);
+  for (const mesh of stackMeshList) markMatrixMesh(mesh);
+}
+
+function uploadDirtyMatrices() {
+  for (const mesh of dirtyMatrixMeshes) mesh.instanceMatrix.needsUpdate = true;
+  const uploaded = dirtyMatrixMeshes.size;
+  dirtyMatrixMeshes.clear();
+  return uploaded;
+}
 for (const mesh of chassisMeshList)
   for (let i = 0; i < BULLET_MAX; i++) mesh.setMatrixAt(i, HIDE);
 const slotType = new Array(BULLET_MAX).fill('');         // gate color uploads on change
@@ -565,6 +609,8 @@ function trailIndex(slot, segment) { return slot * TRAIL_SEGMENTS + segment; }
 function pointIndex(slot, point) { return slot * TRAIL_POINTS + point; }
 
 function slotSpawned(i, type, meta = null) {
+  markSlotMatrixMeshes(type);
+  if (slotVisible[i]) markSlotMatrixMeshes(slotType[i]);
   historyCount[i] = 0;
   if (groundArtMesh) groundArtMesh.setMatrixAt(i, HIDE);
   groundFireMesh.setMatrixAt(i, HIDE);
@@ -620,6 +666,7 @@ function slotSpawned(i, type, meta = null) {
 }
 
 function concealSlotMatrices(i) {
+  markSlotMatrixMeshes(slotType[i]);
   if (coreMeshes[slotType[i]]) {
     coreMeshes[slotType[i]].setMatrixAt(i, HIDE);
     shellMeshes[slotType[i]].setMatrixAt(i, HIDE);
@@ -642,6 +689,7 @@ function concealSlotMatrices(i) {
 // off the transformation with a compact downward ignition + low backwash;
 // no radial badge suggests damage the sim did not grant.
 function deckIgnited(i, b, s, surfaceY, reason = 'deck-ignite', kind = 'deck') {
+  markMatrixMesh(trailMesh);
   ignitionCount++;
   lastIgnition.reason = reason;
   lastIgnition.s = s;
@@ -897,6 +945,7 @@ function volatileImpact(b, radius, stack = 1) {
 // scale for every type. `crawling` is F-only (see spawnProj/updateBullets in
 // src/sim/weapons.js); every other type always takes the flight branch.
 function syncSlot(i, b) {
+  markSlotMatrixMeshes(coreMeshes[b.type] ? b.type : 'R');
   // A corner camera commits before RIG has physically crossed the chamfer.
   // Logical shots may still exist on that old surface, but drawing them from
   // its far edge makes the new face look like it is firing at the player.
@@ -1132,7 +1181,7 @@ function clearDepartingPool() {
     departing[i].until = 0;
     departMesh.setMatrixAt(i, HIDE);
   }
-  departMesh.instanceMatrix.needsUpdate = true;
+  markMatrixMesh(departMesh);
 }
 
 // (i, b, fromX): the slot, the projectile row, and the s it entered the
@@ -1172,11 +1221,16 @@ function advanceDeparting() {
   }
   const dt = departLast ? Math.min(50, now - departLast) : 0;
   departLast = now;
+  let dirty = false;
   for (let i = 0; i < DEPART_MAX; i++) {
     const d = departing[i];
-    if (d.until <= 0) { departMesh.setMatrixAt(i, HIDE); continue; }
+    if (d.until <= 0) continue;
     d.until -= dt;
-    if (d.until <= 0) { departMesh.setMatrixAt(i, HIDE); continue; }
+    if (d.until <= 0) {
+      departMesh.setMatrixAt(i, HIDE);
+      dirty = true;
+      continue;
+    }
     const step = dt / 1000;
     d.x += d.vx * step; d.y += d.vy * step; d.z += d.vz * step;
     const s = d.scale * (d.until / DEPART_MS);        // shrink out instead of pop
@@ -1187,40 +1241,21 @@ function advanceDeparting() {
     _trailScale.set(s, 1, 1);
     _bm.compose(_trailMid, _trailQ, _trailScale);
     departMesh.setMatrixAt(i, _bm);
+    dirty = true;
   }
-  departMesh.instanceMatrix.needsUpdate = true;
+  if (dirty) markMatrixMesh(departMesh);
 }
 
 function flush() {
-  for (const mesh of artMeshList) mesh.instanceMatrix.needsUpdate = true;
-  for (const mesh of coreMeshList) mesh.instanceMatrix.needsUpdate = true;
-  for (const mesh of shellMeshList) mesh.instanceMatrix.needsUpdate = true;
-  for (const mesh of chassisMeshList) mesh.instanceMatrix.needsUpdate = true;
-  tipMesh.instanceMatrix.needsUpdate = true;
-  groundFireMesh.instanceMatrix.needsUpdate = true;
-  groundFireCoreMesh.instanceMatrix.needsUpdate = true;
-  wakeMesh.instanceMatrix.needsUpdate = true;
-  trailMesh.instanceMatrix.needsUpdate = true;
-  for (const mesh of traitMeshList) mesh.instanceMatrix.needsUpdate = true;
-  for (const mesh of stackMeshList) mesh.instanceMatrix.needsUpdate = true;
   advanceDeparting();
+  uploadDirtyMatrices();
 }
 
 // run reset: no tracer survives a restart
 export function clearDepartingTracers() {
   for (let i = 0; i < BULLET_MAX; i++) hideSlot(i, null, 'reset');
-  for (const mesh of artMeshList) mesh.instanceMatrix.needsUpdate = true;
-  for (const mesh of coreMeshList) mesh.instanceMatrix.needsUpdate = true;
-  for (const mesh of shellMeshList) mesh.instanceMatrix.needsUpdate = true;
-  for (const mesh of chassisMeshList) mesh.instanceMatrix.needsUpdate = true;
-  tipMesh.instanceMatrix.needsUpdate = true;
-  groundFireMesh.instanceMatrix.needsUpdate = true;
-  groundFireCoreMesh.instanceMatrix.needsUpdate = true;
-  wakeMesh.instanceMatrix.needsUpdate = true;
-  trailMesh.instanceMatrix.needsUpdate = true;
-  for (const mesh of traitMeshList) mesh.instanceMatrix.needsUpdate = true;
-  for (const mesh of stackMeshList) mesh.instanceMatrix.needsUpdate = true;
   clearDepartingPool();
+  uploadDirtyMatrices();
   departFacet = visibleProjectileFacet();
 }
 

@@ -1664,6 +1664,42 @@ mechanisms, because they need different fixes:
    refuses them unless `--operator-port` is passed — that flag is not a
    permission, it is a speed bump so no agent probes those ports by reflex.
 
+## `perf-probe.mjs` — reproducible renderer cost and hitch evidence
+
+This is the permanent replacement for one-off performance scratchpads. It
+starts an isolated Chrome and server, samples the shipped game, and writes a
+structured report without touching an operator preview:
+
+```sh
+node tools/playtest/perf-probe.mjs --seconds 30 --out /private/tmp/hb-perf
+node tools/playtest/perf-probe.mjs --seconds 30 --throttle 6 --profile \
+  --out /private/tmp/hb-perf-6x
+```
+
+It reports correctly bracketed per-frame calls/triangles, GPU-fenced direct,
+composed and shadowless draw costs, once-per-second geometry/program growth,
+instance-matrix upload volume, the live material single-pass audit, and the GL
+renderer. `--width`, `--height`, `--dpr`, `--query`, `--root`, and
+`--draw-samples` make the environment explicit.
+
+**Honesty / limitations**
+
+1. `requestAnimationFrame` is vsync-locked. An `fps` reading cannot exceed the
+   panel and therefore cannot prove headroom; `worstMs`, `over20ms`, and the
+   interval trace are the useful signals.
+2. CDP CPU throttling slows JavaScript; it does **not** throttle the GPU. A 6x
+   run is a CPU stress proxy, not a model of an integrated laptop GPU.
+3. WebGL normally queues work asynchronously. The direct/composed/shadowless
+   timings deliberately use `gl.finish()` fences so they include completion;
+   that fence is probe-only and is never present in the game loop.
+4. `BufferAttribute.needsUpdate` is setter-only. Reading it yields no useful
+   dirty state and can make a broken probe report zero. This rig diffs
+   `instanceMatrix.version` and charges the attribute byte length for each
+   version increment.
+5. The probe's automated movement is ordinary game behavior, not expert play.
+   Use a longer run or a purpose-built finale driver before claiming Crown
+   coverage.
+
 ## Single best next action
 
 ~~Instrument the suspected ritual-arming decision point before building hook

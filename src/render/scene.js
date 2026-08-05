@@ -17,7 +17,16 @@ import { resolveRenderPixelRatio } from '../pure/render-budget.js';
 import { PAL } from './palette.js';
 import { installLightRig } from './lights.js';
 
-export const renderer = new THREE.WebGLRenderer({ antialias: true });
+// The composed path resolves edges in its own multisampled scene target; 4x
+// MSAA on the default framebuffer would only resample OutputPass's full-screen
+// triangle. The direct durability path still needs canvas MSAA, so the one
+// immutable context decision follows the same explicit bloom opt-out as post.
+const bloomQuery = QUERY.get('bloom');
+// `canvasaa=1` is verification-only: it reconstructs the old composer+canvas
+// double-AA path so the matched-frame gate can compare contexts on one tree.
+export const CANVAS_MSAA = QUERY.get('canvasaa') === '1' ||
+  bloomQuery === '0' || bloomQuery === 'off';
+export const renderer = new THREE.WebGLRenderer({ antialias: CANVAS_MSAA });
 
 // `?renderbudget=legacy` is a measurement escape hatch for the previous DPR
 // policy. It is intentionally not a quality setting in the UI: the bounded
@@ -94,6 +103,8 @@ export function rendererResourceSnapshot() {
   renderer.getSize(resourceCssSize);
   renderer.getDrawingBufferSize(resourceDrawSize);
   const info = renderer.info;
+  const gl = renderer.getContext();
+  const attributes = gl.getContextAttributes();
   return {
     policy: RENDER_BUDGETED ? 'bounded' : 'legacy',
     adaptiveScale: adaptiveRenderScale,
@@ -112,6 +123,39 @@ export function rendererResourceSnapshot() {
       textures: info.memory.textures,
       programs: Array.isArray(info.programs) ? info.programs.length : 0,
     },
+    context: {
+      antialias: attributes?.antialias === true,
+      alpha: attributes?.alpha === true,
+      samples: gl.getParameter(gl.SAMPLES),
+    },
+  };
+}
+
+// Runtime truth for T-058: constructor greps cannot see material mutations or
+// arrays attached after boot. Every built scene material is visited once on
+// demand and de-duplicated by identity. A named allowTwoPassTransparent reason
+// is the only accepted exception.
+export function materialSubmissionSnapshot() {
+  const materials = new Set();
+  scene.traverse((object) => {
+    const owned = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of owned) if (material?.isMaterial) materials.add(material);
+  });
+  let transparentDoubleSide = 0;
+  let singlePass = 0;
+  const violations = [];
+  for (const material of materials) {
+    if (!material.transparent || material.side !== THREE.DoubleSide) continue;
+    transparentDoubleSide++;
+    if (material.forceSinglePass) { singlePass++; continue; }
+    const reason = material.userData?.allowTwoPassTransparent;
+    if (!reason) violations.push(material.name || `${material.type}#${material.id}`);
+  }
+  return {
+    materials: materials.size,
+    transparentDoubleSide,
+    singlePass,
+    violations,
   };
 }
 

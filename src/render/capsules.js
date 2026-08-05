@@ -414,6 +414,7 @@ function staticMaterial(color, additive = false) {
     depthWrite: !additive,
     depthTest: true,
     side: THREE.DoubleSide,
+    forceSinglePass: true,
     fog: true,
     toneMapped: true,
   });
@@ -443,6 +444,7 @@ function signalMaterial(profile, tier) {
     depthWrite: false,
     depthTest: true,
     side: THREE.DoubleSide,
+    forceSinglePass: true,
     fog: true,
     toneMapped: true,
   });
@@ -457,6 +459,7 @@ function scannerMaterial(profile) {
     depthWrite: false,
     depthTest: true,
     side: THREE.DoubleSide,
+    forceSinglePass: true,
     fog: true,
     toneMapped: true,
   });

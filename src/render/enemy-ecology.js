@@ -105,6 +105,18 @@ export function enemyEcologyBundle(id, kind = '') {
   return spec ? bundles.get(spec.id) || null : null;
 }
 
+// Boot-only view of the immutable atlas geometry. The renderer warm fence
+// mounts these exact objects for one offscreen draw, then removes its temporary
+// meshes; live actors later reuse the already-uploaded buffers.
+export function enemyEcologyWarmGeometries() {
+  const rows = [];
+  for (const bundle of bundles.values()) {
+    for (const geo of bundle.body) rows.push({ kind: bundle.spec.kind, geo });
+    for (const geo of bundle.action) rows.push({ kind: bundle.spec.kind, geo });
+  }
+  return rows;
+}
+
 function applyCode(view, code) {
   if (!view?.ecology || code === view.ecologyCode) return code;
   const body = enemyEcologyBodyIndex(code);

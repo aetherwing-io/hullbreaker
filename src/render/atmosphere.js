@@ -307,6 +307,7 @@ function buildNearFragments(scene, face, plan, componentById, texture, p, yaw, a
     depthWrite: true,
     depthTest: true,
     side: THREE.DoubleSide,
+    forceSinglePass: true,
     fog: true,
     toneMapped: true,
   });
@@ -411,6 +412,7 @@ function buildCondensation(scene, face, rows, p, yaw, altitude) {
     depthWrite: false,
     depthTest: true,
     side: THREE.DoubleSide,
+    forceSinglePass: true,
     toneMapped: false,
   });
   material.name = 'Meridian world-space condensation ribbons';

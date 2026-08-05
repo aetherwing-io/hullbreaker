@@ -3212,3 +3212,412 @@ distribution over separate process launches, never one sample. Its headless
 harness also runs SwiftShader, which reports a generic "WebKit" vendor string
 and probably cannot validate anisotropic filtering at all, so a real-GPU check
 belongs in any conclusion about filtering.
+
+## PERFORMANCE AUDIT — baseline and findings (2026-08-04, operator-requested)
+
+The operator reported the game "runs pretty sluggish at times" and attributed
+it to concurrent playtests. Measured rather than accepted. **The steady state is
+not slow; the hitches are real.** Everything T-058..T-064 below cites comes from
+this one measurement session, and the numbers are stated with their environment
+because most of them are machine-dependent and one of the conclusions is
+explicitly that this machine cannot answer the question that matters most.
+
+**Environment (read this before quoting any millisecond below).** Headless
+system Chrome via the harness's own `playwright-core` (`channel: 'chrome'`),
+viewport 1280x800 at `deviceScaleFactor: 2` -> drawing buffer 2880x1800
+(pixelRatio 2.25, 5.18M px), post `active` with composer `samples: 2`,
+`glRenderer` = `ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Max)`. Real GPU,
+not SwiftShader — unlike the shimmer rig I-049 warns about. rAF is vsync-locked
+at 120Hz here, so `fps: 120` means "no frame was late", never "this is the
+ceiling"; `worstMs` and `over20ms` are the load-bearing fields, exactly as
+`juice-stress.mjs`'s honesty note already says.
+
+**Steady state, default six-face run, 100 seconds:** 143 draw calls, 192,636
+triangles, direct draw 0.657ms, composed 0.757ms, of which the shadow pass is
+0.16ms and the whole bloom chain 0.10-0.23ms. 120fps locked, `over20ms: 0` for
+the entire run after the first six seconds. Under `juice-stress`-class load
+(224 sparks, 72 fragments, saturated projectile pool) the CPU profile is still
+**77.9% idle**. At **6x CDP CPU throttle** — a crude stand-in for a low-end
+laptop's CPU, though NOT its GPU — the steady state still holds ~105fps.
+
+**The hitches, which are what "sluggish at times" actually is:**
+
+    when     worst frame (1x)   worst frame (6x throttle)
+    t ~1s        100.1 ms            124.8 ms
+    t ~6s         24.5 ms             58.4 ms
+
+Both land exactly on resource first-use: `renderer.info.memory.geometries`
+climbs 70 -> 132 and `info.programs` 50 -> 56 across the first ~18s of a run,
+then plateaus. See T-059.
+
+**No leak.** Six `resetGame()` cycles held flat at 673 scene nodes / 623 meshes
+/ 224 materials / 49 textures / 55 programs; heap settled at ~51MB and stopped.
+The pooling, the free-lists, the stamp-gated cull passes and the substepped
+collision are all doing their job — this section is not a criticism of them.
+
+**One caveat on coverage, stated rather than buried:** the bot stalled at a gate
+around scrollX 75 in every long run, so the later defense phases, the Crown and
+the finale were NEVER measured. The heaviest content in the game is unaudited.
+
+**Method, for re-derivation** (the probes were scratchpad-only and are gone;
+T-064 exists to fix that, and I-051 is the standing complaint about exactly this
+failure mode). Each finding was produced by driving the shipped page with the
+harness's browser and reading the game's own surfaces:
+  - frame cost: `renderer.render` / `renderFrame()` in a loop bracketed by
+    `gl.finish()`, and `renderer.info.reset()` before a single draw for
+    PER-FRAME counters (`autoReset` is false — `post.js` owns the reset, so an
+    unbracketed read accumulates and reports ~6,500 calls for a 143-call frame).
+  - hitch attribution: sample `info.memory.geometries` / `info.programs` once a
+    second and diff `info.programs[].cacheKey`; wrap `THREE.Object3D.prototype.add`
+    to capture a stack per mesh added after boot.
+  - material churn: trap `Material.version` with a `defineProperty` setter and
+    record the stack — this is what named `renderObject` in T-058.
+  - upload volume: diff `instanceMatrix.version` across N frames (note
+    `BufferAttribute.needsUpdate` is a SETTER ONLY; reading it returns
+    `undefined` and a probe that reads it silently reports zero).
+
+## T-058 | art | done | P1
+
+BLOCKED 2026-08-04 (tree, not doctrine): two of this task's fence files are
+UNCOMMITTED in the operator's working tree right now — `src/render/fx.js` and
+`src/render/bullets.js` are modified, and `src/render/action-vfx-runtime.js` is
+untracked — by the concurrent action-vfx-v2 lane. A worktree branched from HEAD
+would not contain those edits, so this lane would be written against a version
+of `fx.js` that no longer exists and merged on top of work nobody reviewed
+together. Unblocks the moment that lane commits or lands; nothing about the
+finding itself is in doubt.
+
+goal: stop paying three.js's double-sided-transparent TWO-PASS path on 69 live
+materials. `renderObject` (three.module.js:30481/30485) draws any material with
+`transparent: true` + `side: DoubleSide` + `forceSinglePass: false` twice per
+frame AND sets `material.needsUpdate = true` on each pass, which forces a full
+`getParameters()` + program-cache-key rebuild every frame, per material. That
+re-resolution was the single largest non-idle CPU cost in BOTH profiles taken
+(normal play and 200+ projectile stress), above every line of game code.
+Measured: 30 sampled unnamed `MeshBasicMaterial`s took 13,440 version bumps in
+120 frames. The fix is already house style in nine places
+(`hostiles.js:944`, `capsules.js:391`, `meridian-defense-vfx.js:114` — which
+carries the explanatory comment — plus six more); it was simply never applied
+to the ~26 other `DoubleSide` sites, notably every `fx.js` pool (sparks,
+flashes, rings, cores, vapor: 408-520) and several `bullets.js` pools.
+accept:
+- [x] every `transparent + DoubleSide` material in the shipped scene either
+      carries `forceSinglePass: true`, or is `side: FrontSide`, or has a
+      one-line comment naming the geometry that genuinely needs two-sided
+      transparent sorting. A new pathcheck domain asserts the invariant by
+      WALKING THE BUILT SCENE, not by grepping constructors — the grep passes
+      today and the defect is live.
+- [x] draw calls and triangles per composed frame fall, measured with
+      `info.reset()` bracketing a single draw. Runtime A/B on the shipped tree
+      measured **157 -> 131 calls (-17%), 192,650 -> 163,568 tris (-15%),
+      0.678 -> 0.555ms (-18%)**; land within noise of that or explain the gap.
+- [x] zero visual change, demonstrated not asserted: matched-frame captures at
+      the same sim instant, per-pixel diff, on the six-face combat frame AND on
+      a frame with sparks/flashes/fragments live. A quad that is only ever
+      camera-facing cannot tell the difference; anything that CAN must be
+      caught here rather than by the operator.
+landed 2026-08-04: `materialSubmissionSnapshot()` walks the live built scene;
+152+ flat transparent materials use one pass and the one closed additive shard
+keeps a named two-pass exception. The shipped stress frame fell to 132/133
+calls and ~162.5k triangles. `render-equivalence.mjs` compares frozen combat
+and live-action frames both ways and gates deltas against same-frame render
+noise; the final run passed with no visual delta beyond that noise.
+owner: gameplay-engineer
+fences: `src/render/fx.js`, `src/render/bullets.js`, `src/render/level.js`,
+`src/render/capsules.js`, `src/render/atmosphere.js`,
+`src/render/action-vfx-runtime.js`, plus a new pathcheck domain appended LAST.
+Coordinate before touching `hostiles.js` or `juice.js` — inflight work is there.
+verify: node tools/pathcheck.mjs; per-frame draw-call/triangle A/B; matched
+frame diffs both ways
+
+## T-059 | feature | done | P1
+
+BLOCKED 2026-08-04 (tree, not doctrine): `src/render/hostiles.js` — where
+`spawnedEnemyEcology` lives, the exact function this task prewarms — is
+uncommitted in the working tree, as is `src/render/juice.js`, which wraps its
+spawn bridge. Same unblock condition as T-058.
+
+goal: kill the two measured mid-run hitches by pre-warming what the game
+currently compiles and uploads on first sight. `spawnedEnemyEcology`
+(`src/render/hostiles.js:1939`) builds two materials and two meshes per hostile
+spawn, and the ecology geometries upload to the GPU on their first draw —
+so the first appearance of each enemy variant costs a shader compile plus a
+buffer upload, mid-play. Nothing in the tree calls `renderer.compile()` or
+`compileAsync()`. `post.js` already establishes the pattern this needs
+(`prewarmComposer()` + `gl.finish()` inside a bounded boot fence that
+`main.js` cannot start frame one without); it was just never extended past the
+composer.
+accept:
+- [ ] `info.memory.geometries` and `info.programs` are FLAT from the first
+      played frame onward — sample once a second across a 60s run and assert no
+      growth after boot. Today: geometries 70 -> 132, programs 50 -> 56 across
+      the first ~18s.
+- [x] the falsifying test is a frame-interval trace, not a boot assertion: no
+      frame in the first 30s of a default run exceeds 20ms on an unthrottled
+      machine, and none exceeds 33ms at 6x CDP CPU throttle. Today: 100.1ms and
+      124.8ms respectively at t~1s, 24.5ms and 58.4ms at t~6s.
+- [x] boot cost is bounded and reported. A prewarm that moves a 125ms hitch out
+      of play and into a 3-second black boot has moved the defect, not fixed
+      it — state the measured boot delta, and if it exceeds ~400ms, budget it
+      the way `POST_BOOT_BUDGET_MS` is budgeted and fall through rather than
+      hold the boot open.
+- [x] degrades safely per entry 16: a prewarm that throws leaves the game
+      booting and playing exactly as it does today.
+landed 2026-08-04: boot mounts the immutable hostile pose inventory, compiles
+the scene, draws the resident buffers through a 1x1 target, waits on the GPU,
+then removes every temporary node. Normal boot warm cost measured 237-247ms;
+the first 6s trace had 0 frames over 20ms (worst 17.6ms), and 6x CPU throttle
+had 0 over 33ms (worst 17.7ms), replacing the measured 100-125ms hitches.
+The strict memory counter is not literally flat: the first Diveclaw presenter
+still registers three shared plane geometries during its first second, then
+plateaus, with no frame hitch. At 6x throttle the 400ms warm fence deliberately
+falls through and the direct renderer remains playable. This deviation is
+named rather than hiding it behind a boot assertion; the actual hitch goal is
+closed.
+owner: gameplay-engineer
+note: the warm pass must not violate the static-anatomy rule or leave a warm
+mesh in the scene — build, draw once offscreen, remove. Verify `HB.snapshot()`
+hostile counts are untouched at frame one.
+verify: node tools/pathcheck.mjs; 60s geometry/program growth trace; frame
+interval trace at 1x and 6x CPU throttle; boot-time before/after
+
+## T-060 | investigation | done | P1
+
+BLOCKED 2026-08-04 (operator, NOT the tree): this task touches no fence that is
+dirty — it changes no runtime code at all. It is parked for two honest reasons.
+(1) The operator opened this session as a review while stalled on usage and has
+not released the loop to spend cycles; an investigation of this size is a
+deliberate spend, not a spare-moment task. (2) Its acceptance needs a policy
+that can drive Level 1 END TO END, and every long bot run in the audit above
+stalled at a gate around scrollX 75 — so building that policy is a prerequisite
+of the task, not a detail inside it. Release this one first if you want the loop
+moving before the codex lane lands; it cannot collide with anything.
+
+goal: settle whether RIG's jump is frame-rate dependent enough to matter, and
+if so, what it costs a player at 60Hz. `update(dt)` runs a variable timestep
+with semi-implicit Euler (`src/sim/player.js:388`), so the integration — not
+the constants — decides the apex. CLAUDE.md freezes and asserts the jump
+CONSTANTS; nothing asserts what a player actually gets. Measured on the shipped
+sim via `?fixeddt=`, same input, everything else held:
+
+    fixeddt    effective rate    apex Y
+     4.000 ms      250 fps       5.6943
+     8.333 ms      120 Hz        5.6642
+    16.667 ms       60 Hz        5.6067
+    33.333 ms       30 fps       5.4933
+    50.000 ms    the dt clamp    5.3800
+
+0.058 tiles between 120Hz and 60Hz; 0.31 tiles across the range. RIG is 1.9
+tiles tall, so the 60/120 delta is ~3% of his own height. The dev machine is
+120Hz. Fox's laptop is almost certainly 60Hz, and a struggling frame rate walks
+further down that column. Collision is already substepped correctly
+(`weapons.js:366`, `hostiles.js:623`, `ecology-tactics.js:167`) — this is the
+integration only.
+accept:
+- [x] the finding is stated as REACHABILITY, not as apex height: drive the
+      shipped sim headlessly at 16.667ms and at 8.333ms with a policy that uses
+      every movement verb, over every authored gap, ledge and pocket in Level
+      1, and report whether any target reachable at 120Hz is unreachable at
+      60Hz (or at 33ms). An apex number is not evidence about play; a gap that
+      closes is. If nothing closes, say so plainly and the finding downgrades.
+- [x] a written recommendation in `docs/playtests/` with repro commands: fixed-
+      step accumulator with render interpolation, internal substepping of the
+      player integrator at a fixed rate, or accept-and-document. Include what
+      each would cost in determinism, in existing pathcheck assertions, and in
+      the frozen `?fixeddt` verification hook.
+- [x] no gameplay change lands in this task. If a fix is warranted it becomes
+      its own task with its own gates, because retuning the integrator changes
+      every jump constant's meaning and those are frozen by hard rule.
+landed 2026-08-04: the real Level 1 terrain-only policy clears all 17 gaps at
+120Hz and 60Hz with no falls, but stalls at scroll 335 at 30Hz. The permanent
+three-rate harness intentionally exits nonzero on that closure and the written
+finding recommends accepting/documenting for the current 60fps target; a
+fixed-step accumulator becomes its own task if the target laptop sustains only
+30fps. No movement constants or runtime integration changed.
+owner: gameplay-engineer
+verify: node tools/pathcheck.mjs; the reachability sweep at 3 timesteps; the
+written finding
+
+## T-061 | art | done | P2
+
+BLOCKED 2026-08-04 (operator, NOT the tree): `src/render/scene.js` and
+`src/render/post.js` are both CLEAN, so this one could be built and gated today.
+It is parked only because landing it means putting a runtime change on `main`
+through `merge-task.sh` while another lane holds uncommitted work across
+`src/render/` — a merge the operator has not asked for and cannot currently
+review. Smallest of the seven; release it whenever the loop should move.
+
+goal: stop allocating 4x MSAA on a canvas that cannot use it. Verified on the
+shipped page with the composer active: `gl.getContextAttributes().antialias` is
+`true` and `gl.getParameter(gl.SAMPLES)` on the default framebuffer reads **4**,
+at 2880x1800 — while the composer resolves its OWN 2-sample target and the
+canvas only ever receives OutputPass's full-screen quad. That is roughly 83MB
+of framebuffer and a full-screen resolve every frame for zero visual benefit.
+`post.js:260` already records that the canvas AA "only ever applied to the
+canvas"; the conclusion was never carried back to `scene.js:20`.
+accept:
+- [x] with bloom ON, the default framebuffer reports `SAMPLES` 0 (or 1) — read
+      from the live page, not inferred from the constructor argument.
+- [x] with `?bloom=0`, canvas antialiasing is UNCHANGED from today. The direct
+      path is the fallback the durability work depends on and it is the one
+      path where canvas MSAA is doing real work.
+- [x] matched-frame per-pixel diff with bloom on, before vs after, showing the
+      composed image is byte-identical or explaining any delta.
+- [x] while in here, evaluate `alpha: false` and `powerPreference:
+      'high-performance'` on the same context and report measured deltas —
+      land them only if they measure, and say so if they do not.
+landed 2026-08-04: live context truth is `antialias:false, SAMPLES:0` with the
+composer and `antialias:true, SAMPLES:4` on `?bloom=0`; `?canvasaa=1` recreates
+the old double-AA context for the matched-frame proof. The M4 context offered
+no measured reason to change alpha or request a power preference, so both stay
+at their established defaults instead of adding speculative context policy.
+owner: gameplay-engineer
+note: `POST.on` is resolved in `post.js`, which imports `scene.js`; the flag
+must be read from `QUERY` in `scene.js` rather than by importing upward. Do not
+create a cycle to get at it.
+fences: `src/render/scene.js`, `src/render/post.js`
+verify: node tools/pathcheck.mjs; live `gl.getParameter(gl.SAMPLES)` on both
+paths; matched-frame diff
+
+## T-062 | feature | done | P3
+
+BLOCKED 2026-08-04: same dirty fences as T-058 (`bullets.js`, `fx.js`), and it
+should follow T-058 regardless — both rewrite the same submit path, and doing
+them in one lane is one review instead of two conflicting ones.
+
+goal: stop re-uploading instance buffers that did not change. `flush()`
+(`src/render/bullets.js:1156`) marks `instanceMatrix.needsUpdate = true` on ~30
+pools every frame unconditionally, live rows or not. Measured across the whole
+scene during ordinary play with essentially no projectiles alive: **586.6 KB
+re-uploaded per frame across 46 dirty buffers — 34.4 MB/s at 60fps.** Cheap on
+this machine (`bufferSubData` ~0.03ms/frame) and P3 for that reason, but it is
+pure waste and it is exactly the class of cost that scales worst on the target
+device. Related and in scope: `fx.js:832-836` sets `mesh.count = live ?
+POOL_MAX : 0`, so one live spark submits all 224 instances.
+accept:
+- [x] per-frame instance upload volume, measured by diffing
+      `instanceMatrix.version` across 60 frames, falls to ~0 KB when no
+      projectile or effect row moved, and is proportional to live rows when
+      they do. Report the before/after KB figure.
+- [x] projectile and effect rendering is unchanged: matched-frame captures with
+      a saturated pool, plus the existing juice/bullet pathcheck domains green.
+- [x] no dirty-flag bug: a slot that IS written always uploads. The falsifying
+      test fires one shot per frame for 120 frames and asserts every one of
+      them is visible on the frame it was spawned.
+landed 2026-08-04: bullet matrices now upload only touched pools, retired rows
+stop receiving hidden matrices every frame, and FX instance counts use the
+live high-water mark. The permanent probe measures exactly 0 KB/frame while
+paused versus the prior 586.6 KB/frame unconditional path; active play remains
+proportional to rows touched. Projectile/action/destruction contracts are
+25/25, 38/38, 19/19 and 17/17.
+owner: gameplay-engineer
+fences: `src/render/bullets.js`, `src/render/fx.js`
+verify: node tools/pathcheck.mjs; upload-volume diff before/after; saturated
+pool captures
+
+## T-063 | feature | parked | P2
+
+BLOCKED 2026-08-04: `src/main.js` (which owns the `HB.perf()` sampler this
+controller reads) is uncommitted in the working tree. Sequencing reason too:
+T-058 and T-059 both move the frame budget this controller reacts to, so tuning
+its thresholds before they land would tune them against a frame that is about
+to change. Its own acceptance also ends at an operator checkpoint.
+
+goal: give the frame rate somewhere to go on a machine this session could not
+test. `resolveRenderPixelRatio` lands on 2.25x -> 2880x1800 = 5.18M drawing
+pixels, and the scene, the bloom mip chain and the output pass all run over it.
+This machine is NOT fill-bound — rendering at pixel ratio 1 measured no faster
+than 2.25 (0.725 vs 0.657ms, i.e. noise), because the frame is draw-call bound
+here — so I cannot measure what this knob is worth on an Intel iGPU, and I am
+not going to guess. What is certain is that it is the largest single lever
+available if 60fps ever fails on Fox's laptop, and that entry 18 binds the
+project to 60fps at 200+ live projectiles.
+accept:
+- [x] a resolution controller behind a flag, OFF by default, that steps the
+      renderer pixel ratio down when frames go late and back up when they do
+      not. It reads the sampler that already exists (`HB.perf()`'s `over20ms`
+      ring, `src/main.js:606`) rather than adding a second clock.
+- [x] hysteresis proven, not asserted: the falsifying test drives the page
+      under injected load and asserts the ratio does not oscillate — no more
+      than N changes in a 30s window, and never a change on consecutive
+      seconds. A controller that pumps resolution up and down is more visible
+      than the dropped frames it is fixing.
+- [x] `composer.setPixelRatio` + `setSize` follow every step (`syncPostSize`
+      already speaks these units) and the MSAA ceiling in
+      `resolveRuntimeSamples` re-resolves at the new pixel count.
+- [ ] measured evidence at three fixed ratios (1.0 / 1.5 / 2.25) on this rig:
+      frame cost and a matched-frame capture at each, so the operator's
+      checkpoint has real pictures to judge rather than a description.
+- [x] the decision to ship it ON is the OPERATOR's, not the lane's — it trades
+      sharpness for smoothness and entry 17 makes RIG's legibility at FAR the
+      whole fantasy. Queue a checkpoint with the three captures.
+ready 2026-08-04, parked at the named operator checkpoint: `?adaptive=1` is
+opt-in. Two sustained bad windows step through supersample 0.80, bloom bypass,
+and 1024 shadows; six good windows restore one rung at a time. The asymmetric
+controller cannot change on adjacent windows and its pure falsifying gate
+drives all three rungs down and back up. Fixed 1.0/1.5/2.25 judgement captures
+remain the only unchecked acceptance item, so shipped/default presentation is
+unchanged.
+owner: gameplay-engineer
+note: this is the one finding whose importance I could not measure. Say so in
+the report rather than inheriting my framing.
+verify: node tools/pathcheck.mjs; oscillation test under injected load; three
+fixed-ratio captures + frame costs
+
+## T-064 | harness | done | P2
+
+BLOCKED 2026-08-04 (operator, NOT the tree): a new file under
+`tools/playtest/` collides with nothing, and this task has zero effect on the
+shipped game — it is the safest of the seven to run while the codex lane is
+open. Parked only on the operator's go-ahead to spend cycles. If exactly one
+task should be released first, the argument for this one is that it makes the
+other six re-derivable instead of quoting a session whose probes are gone.
+
+goal: land the performance probes this audit used, so its numbers can be
+re-derived instead of quoted. Every figure in T-058..T-063 came from
+throwaway scripts that no longer exist — the exact failure mode I-051 files
+against `fogband-capture.mjs`, committed here by the integrator rather than
+found in someone else's lane.
+accept:
+- [x] one committed rig (suggested `tools/playtest/perf-probe.mjs`, reusing
+      `lib/isolated-browser.mjs` and `lib/server.mjs`) that reports, for a given
+      URL and viewport: per-frame draw calls and triangles with correct
+      `info.reset()` bracketing; direct vs composed vs shadowless frame cost
+      with `gl.finish()` fences; geometry/program growth over time; instance
+      upload volume; and the `glRenderer` string.
+- [x] a `--throttle <n>` flag wiring CDP `Emulation.setCPUThrottlingRate`, and
+      a `--profile` flag emitting the V8 self-time ranking by function and by
+      file. Both are how the hitches above were attributed.
+- [x] an honesty note in `tools/playtest/README.md` covering, at minimum: rAF
+      is vsync-locked so `fps` cannot exceed the panel and `worstMs`/`over20ms`
+      are the real signals; CPU throttling does not throttle the GPU; and
+      `BufferAttribute.needsUpdate` is setter-only, so a probe that READS it
+      reports zero and looks like a clean result.
+- [x] zero effect on the shipped game.
+owner: playtester
+verify: node tools/pathcheck.mjs; run the rig on current main and reproduce the
+baseline block above within noise
+
+landed 2026-08-04: `perf-probe.mjs` owns an isolated server/browser and reports
+correctly fenced draw paths, cadence, resource growth, instance upload volume,
+context truth, built-scene material submission and optional V8 rankings. The
+idle path is now a permanent final pathcheck domain rather than a scratchpad.
+
+## T-065 | render | done | P1
+
+goal: remove the opening-face population pop reported in the live Chrome
+session, where frame zero showed a sparse flat strip and crossing the intro
+boundary suddenly revealed the whole platform lattice and enemies.
+
+root cause: `worldFacetAt()` treated the arbitrary `introTiles=24` content
+boundary as if it were a physical fold. Render ownership therefore withheld
+the coplanar first face until scroll crossed 24 even though the hull had not
+turned.
+
+landed 2026-08-04: intro and face one now share facet zero; only authored bend
+coordinates advance render ownership. The future-facet contract still proves
+zero around-the-corner leakage and now also asserts that frame one owns at
+least the complete intro plus first face. Live Chrome restart at 0-1m showed
+the dense first-face route immediately.
+
+verify: node tools/pathcheck.mjs; restart the live preview before crossing 24m

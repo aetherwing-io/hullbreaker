@@ -37,7 +37,7 @@ import {
 } from './wasp-modular-select.js';
 import {
   enemyEcologyAttackSocketWorld, enemyEcologyBundle, enemyEcologyRuntimeSnapshot,
-  syncEnemyEcologyVisual,
+  enemyEcologyWarmGeometries, syncEnemyEcologyVisual,
 } from './enemy-ecology.js';
 import {
   attachEnemyEcologyTactics, detachEnemyEcologyTactics,
@@ -349,6 +349,7 @@ function signalMaterial(color, map = null) {
   return new THREE.MeshBasicMaterial({
     color, map, transparent: true, opacity: 0, fog: false,
     blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+    forceSinglePass: true,
   });
 }
 
@@ -370,6 +371,7 @@ function genomeMaterial(accent) {
     opacity: 0,
     fog: false,
     side: THREE.DoubleSide,
+    forceSinglePass: true,
   });
 }
 
@@ -1955,7 +1957,7 @@ function spawnedEnemyEcology({ e, K, assets, presenter }) {
   if (e.kind === 'polyp') {
     const beamMat = new THREE.MeshBasicMaterial({
       color: PAL.polyp, transparent: true, opacity: 0.28, depthWrite: false,
-      side: THREE.DoubleSide, toneMapped: true,
+      side: THREE.DoubleSide, forceSinglePass: true, toneMapped: true,
     });
     const beam = new THREE.Mesh(polypBeamGeo, beamMat);
     beam.visible = false;
@@ -1964,7 +1966,7 @@ function spawnedEnemyEcology({ e, K, assets, presenter }) {
     v.beamMat = beamMat;
     const beamCoreMat = new THREE.MeshBasicMaterial({
       color: PAL.polypBeam, transparent: true, opacity: 0.72, depthWrite: false,
-      side: THREE.DoubleSide, toneMapped: true,
+      side: THREE.DoubleSide, forceSinglePass: true, toneMapped: true,
     });
     const beamCore = new THREE.Mesh(polypBeamCoreGeo, beamCoreMat);
     beamCore.visible = false;
@@ -2077,7 +2079,7 @@ function spawnedStandard({ e, K, assets, presenter }) {
     // it was supposed to warn about.
     const beamMat = new THREE.MeshBasicMaterial({
       color: PAL.polyp, transparent: true, opacity: 0.28,
-      depthWrite: false, side: THREE.DoubleSide, toneMapped: true,
+      depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true, toneMapped: true,
     });
     const beam = new THREE.Mesh(polypBeamGeo, beamMat);
     beam.visible = false;
@@ -2086,7 +2088,7 @@ function spawnedStandard({ e, K, assets, presenter }) {
     v.beamMat = beamMat;
     const beamCoreMat = new THREE.MeshBasicMaterial({
       color: PAL.polypBeam, transparent: true, opacity: 0.72,
-      depthWrite: false, side: THREE.DoubleSide, toneMapped: true,
+      depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true, toneMapped: true,
     });
     const beamCore = new THREE.Mesh(polypBeamCoreGeo, beamCoreMat);
     beamCore.visible = false;
@@ -2740,6 +2742,64 @@ export function initHostileView() {
   installView({ hostiles: { spawned, removed, sync } });
   hostileViewInstalled = true;
   return true;
+}
+
+// Mount every immutable hostile pose for exactly the representative offscreen
+// warm draw. This closes the mid-run upload gap created by geometry swapping:
+// ecology rows, gait/action cells and modular wing phases exist at boot but
+// are not all attached to a live mesh at once. The returned teardown removes
+// every temporary node and material; the shared production geometries remain
+// resident and no sim row is created or mutated.
+export function mountHostileWarmResources() {
+  const root = new THREE.Group();
+  root.name = 'Boot-only hostile geometry warm mount';
+  const materials = new Map();
+  const mounted = new Set();
+  const materialFor = (kind, tex) => {
+    const key = `${kind}:${tex?.uuid || 'none'}`;
+    let mat = materials.get(key);
+    if (!mat) {
+      mat = tex ? enemyEcologyMaterial(tex, kind)
+        : new THREE.MeshBasicMaterial({ color: 0xffffff });
+      materials.set(key, mat);
+    }
+    return mat;
+  };
+  const add = (geo, kind, tex = null) => {
+    if (!geo || mounted.has(geo)) return;
+    mounted.add(geo);
+    const mesh = new THREE.Mesh(geo, materialFor(kind, tex));
+    mesh.frustumCulled = false;
+    root.add(mesh);
+  };
+
+  for (const row of enemyEcologyWarmGeometries()) {
+    const bundle = enemyEcologyBundle(row.geo.userData.variantId, row.kind);
+    add(row.geo, row.kind, bundle?.tex || null);
+  }
+  for (const kind of Object.keys(LOOK)) {
+    const actor = actorMotionBundle(kind);
+    if (actor) for (const frame of actor.frames) add(frame.geo, kind, actor.tex);
+    add(spriteGeo(kind), kind, spriteTexture(kind));
+    add(actionSpriteGeo(kind), kind, spriteActionTexture(kind));
+    add(flapSpriteGeo(kind), kind, spriteFlapTexture(kind));
+    const motion = motionSpriteFrames(kind);
+    if (motion) for (const geo of motion) add(geo, kind, motionTextures.get(kind));
+  }
+  const modular = waspModularBundle();
+  if (modular) {
+    for (const part of modular.body) add(part.geo, 'wasp', modular.tex);
+    for (const part of modular.wings) add(part.geo, 'wasp', modular.tex);
+  }
+  scene.add(root);
+  return Object.freeze({
+    geometries: mounted.size,
+    dispose() {
+      scene.remove(root);
+      for (const mat of materials.values()) mat.dispose();
+      root.clear();
+    },
+  });
 }
 
 export function hostileEvolutionVisualSnapshot() {

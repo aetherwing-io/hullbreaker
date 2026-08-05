@@ -96,6 +96,10 @@ let tenthFrameStatus = null;
 let programWarmMs = 0;
 let programWarmCount = 0;
 let programsAfterWarm = 0;
+let geometriesAfterWarm = 0;
+let resourceWarmFault = '';
+let resourceWarmOverBudget = false;
+const RESOURCE_WARM_BUDGET_MS = 400;
 
 /* Draw-call accounting. A composer calls renderer.render() several times per
    displayed frame, and every one of those resets renderer.info while
@@ -425,31 +429,83 @@ export function setAdaptiveBloomEnabled(enabled) {
 
 // Texture residency is handled by preload.js. This second fence runs after
 // the composition root has constructed every fixed view and reset the first
-// run. renderer.compile() skips invisible subtrees, so visibility is borrowed
-// and restored around the compile; nothing is drawn or simulated.
+// run. Compile alone does not upload vertex/index buffers, so one 1x1 offscreen
+// draw also visits every resident geometry. Visibility, culling and zero-count
+// pools are borrowed and restored; no warm object enters the sim or survives
+// as an extra scene node. Any fault falls through to normal lazy first use.
 export function warmScenePrograms() {
   const started = nowMs();
   const visibility = [];
+  const culling = [];
+  const counts = [];
+  const previousTarget = renderer.getRenderTarget();
+  const previousShadowAutoUpdate = renderer.shadowMap.autoUpdate;
+  const warmTarget = new THREE.WebGLRenderTarget(1, 1, {
+    depthBuffer: true,
+    stencilBuffer: false,
+  });
   try {
     scene.traverse((object) => {
       visibility.push([object, object.visible]);
       object.visible = true;
+      if (object.isMesh || object.isLine || object.isPoints) {
+        culling.push([object, object.frustumCulled]);
+        object.frustumCulled = false;
+      }
+      if (object.isInstancedMesh && object.count === 0) {
+        counts.push(object);
+        object.count = 1;
+      }
     });
     renderer.compile(scene, camera);
+    if (nowMs() - started > RESOURCE_WARM_BUDGET_MS) {
+      resourceWarmFault = 'scene compile exceeded the resource warm budget; ' +
+        'geometry draw-through skipped';
+      return false;
+    }
+    // compile() has already visited the shadow programs. The geometry fence
+    // below exists only to force resident vertex/index buffers through the
+    // driver; rendering every shadow caster into its production-size map here
+    // turned a 1px warm target into a several-hundred-millisecond boot tax.
+    renderer.shadowMap.autoUpdate = false;
+    renderer.setRenderTarget(warmTarget);
+    renderer.render(scene, camera);
+    // The shipped path renders scene materials into the composer's linear
+    // target, which is a different shader variant from a direct canvas draw.
+    // Warm that exact path at 1x1 too; otherwise the first live frame creates
+    // the remaining render-target/output programs even though compile() and
+    // the direct fence above both succeeded.
+    if (composer && adaptiveBloomEnabled) {
+      renderer.setRenderTarget(previousTarget);
+      composer.setPixelRatio(1);
+      composer.setSize(1, 1);
+      drawComposed();
+    }
     const gl = renderer.getContext();
     if (gl && typeof gl.finish === 'function') gl.finish();
     programWarmCount++;
     programsAfterWarm = Array.isArray(renderer.info.programs)
       ? renderer.info.programs.length : 0;
+    geometriesAfterWarm = renderer.info.memory.geometries;
     return true;
   } catch (error) {
+    resourceWarmFault = String((error && error.message) || error);
     console.warn('HULLBREAKER shaders: representative boot compile skipped — ' +
-      ((error && error.message) || error));
+      resourceWarmFault);
     return false;
   } finally {
+    renderer.setRenderTarget(previousTarget);
+    if (composer) syncPostSize();
+    renderer.shadowMap.autoUpdate = previousShadowAutoUpdate;
+    for (let i = 0; i < counts.length; i++) counts[i].count = 0;
+    for (let i = 0; i < culling.length; i++)
+      culling[i][0].frustumCulled = culling[i][1];
     for (let i = 0; i < visibility.length; i++)
       visibility[i][0].visible = visibility[i][1];
+    warmTarget.dispose();
     programWarmMs = Math.round((nowMs() - started) * 10) / 10;
+    resourceWarmOverBudget = programWarmMs > RESOURCE_WARM_BUDGET_MS;
+    renderer.info.reset();
   }
 }
 
@@ -485,6 +541,10 @@ export function postSnapshot() {
       programWarmMs,
       programWarmCount,
       programsAfterWarm,
+      geometriesAfterWarm,
+      resourceWarmBudgetMs: RESOURCE_WARM_BUDGET_MS,
+      resourceWarmOverBudget,
+      resourceWarmFault,
     },
     // 'match'     the shipped atmosphere is being reproduced exactly
     // 'tone'      ?atmos=tone — sky and haze go through the tone map

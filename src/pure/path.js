@@ -99,18 +99,17 @@ export function facetAtBends(s, bends) {
   return facet;
 }
 
-// Static route art needs a slightly finer owner than facetAtBends(): the
-// straight intro and the first tower face share a heading, but they are
-// separate reveal phases.  Keeping this arithmetic pure gives every render
-// lane (hull, props, pickups and actors) one definition of "future face".
+// Static route art follows the physical fold. The straight intro and first
+// tower face share one heading and therefore one visible plane; treating the
+// authored intro boundary as a second render facet made the already-visible
+// first-face platforms pop into existence several seconds after frame one.
+// Later faces still change owner only at the middle of a real chamfer.
 export function worldFacetAt(s, cfg, bends) {
-  if (faceIndexAt(s, cfg) === 0) return 0;
-  return facetAtBends(s, bends) + 1;
+  return facetAtBends(s, bends);
 }
 
 export function activeWorldFacet(scroll, cameraFacet, cfg) {
-  if (faceIndexAt(scroll, cfg) === 0) return 0;
-  return Math.min(cfg.path.faces + 1, cameraFacet + 1);
+  return Math.min(cfg.path.faces, cameraFacet);
 }
 
 // `built` is deliberately supplied by the caller: path.js remains pure and

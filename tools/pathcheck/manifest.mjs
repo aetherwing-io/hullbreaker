@@ -81,6 +81,7 @@ import * as d68 from './enemy-ecology-render-contract.mjs';
 import * as d69 from './hostile-presenter-contract.mjs';
 import * as d70 from './boot-registry-contract.mjs';
 import * as d71 from './adaptive-fidelity-contract.mjs';
+import * as d72 from './render-submission-contract.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -155,4 +156,5 @@ export const DOMAINS = [
   d69,    // spawn-time hostile presenter registry
   d70,    // explicit view and run-reset registries
   d71,    // sustained-frame adaptive fidelity ladder
+  d72,    // built-scene single-pass, idle upload, and canvas-AA truth
 ];

@@ -1535,6 +1535,7 @@ function buildIndustrialDressing(panelMaterial) {
     depthWrite: true,
     depthTest: true,
     side: THREE.DoubleSide,
+    forceSinglePass: true,
     fog: true,
     flatShading: false,
   }), 'plate') : null;

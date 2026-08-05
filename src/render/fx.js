@@ -136,7 +136,10 @@ function makeRow(index) {
 function makePool(n) {
   const rows = new Array(n);
   const free = new Int32Array(n);
-  for (let i = 0; i < n; i++) { rows[i] = makeRow(i); free[i] = i; }
+  // claim() pops from the end. Reverse the initial stack so ordinary bursts
+  // occupy low contiguous draw slots (0,1,2…) and InstancedMesh.count can be
+  // the active high-water mark instead of the full capacity.
+  for (let i = 0; i < n; i++) { rows[i] = makeRow(i); free[i] = n - 1 - i; }
   return { rows, free, top: n, cursor: 0, claims: 0, recycles: 0 };
 }
 
@@ -407,6 +410,12 @@ if (JUICE_ENABLED) {
     transparent: true, opacity: 1, fog: false,
     blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
   });
+  // Unlike the flat cards below, a spark is a closed four-face shard. Its rear
+  // facets are deliberately visible through the additive shell; forcing the
+  // camera-facing single pass removes that small interior glint during live
+  // impacts. Keep this one measured exception to the scene-wide single-pass
+  // rule so the optimized frame remains pixel-equivalent to shipped art.
+  sparkMat.userData.allowTwoPassTransparent = 'closed additive shard facets';
   sparkMesh = new THREE.InstancedMesh(machinedShardGeometry(), sparkMat, SPARK_MAX);
   sparkMesh.frustumCulled = false;
   sparkMesh.renderOrder = 2;
@@ -427,6 +436,7 @@ if (JUICE_ENABLED) {
     // optional painted action-atlas free to finish the composite above it.
     blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
     side: THREE.DoubleSide,
+    forceSinglePass: true,
   });
   flashMesh = new THREE.InstancedMesh(impactFlashGeometry(), flashMat, FLASH_MAX);
   flashMesh.frustumCulled = false;
@@ -442,6 +452,7 @@ if (JUICE_ENABLED) {
   const ringMat = new THREE.MeshBasicMaterial({
     transparent: true, opacity: 1, fog: false, side: THREE.DoubleSide,
     blending: THREE.AdditiveBlending, depthWrite: false,
+    forceSinglePass: true,
   });
   ringMesh = new THREE.InstancedMesh(breachFrontGeometry(), ringMat, RING_MAX);
   ringMesh.frustumCulled = false;
@@ -454,6 +465,7 @@ if (JUICE_ENABLED) {
   const coreMat = new THREE.MeshBasicMaterial({
     transparent: true, opacity: 1, fog: false, side: THREE.DoubleSide,
     blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+    forceSinglePass: true,
   });
   coreMesh = new THREE.InstancedMesh(rupturedCoreGeometry(), coreMat, CORE_MAX);
   coreMesh.frustumCulled = false;
@@ -465,6 +477,7 @@ if (JUICE_ENABLED) {
 
   const fragmentMat = installInstanceOpacity(new THREE.MeshBasicMaterial({
     transparent: true, opacity: 0.94, fog: true, side: THREE.DoubleSide,
+    forceSinglePass: true,
     // Shell, scutes and brackets are matter. Additive blending made every
     // death look like a green/orange energy puff and erased the role shapes
     // against a bright deck. Normal alpha keeps their authored colour/value.
@@ -494,6 +507,7 @@ if (JUICE_ENABLED) {
 
   const vaporMat = installInstanceOpacity(new THREE.MeshBasicMaterial({
     transparent: true, opacity: 0.72, fog: true, side: THREE.DoubleSide,
+    forceSinglePass: true,
     // After-pressure is a thin stained wake, never a persistent light source.
     blending: THREE.NormalBlending, depthWrite: false, depthTest: true,
   }));
@@ -518,6 +532,7 @@ if (JUICE_ENABLED) {
     color: ROLE.warn, transparent: true, opacity: 0, fog: true,
     blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true,
     side: THREE.DoubleSide,
+    forceSinglePass: true,
   });
   crushMesh = new THREE.Mesh(crushBoundaryGeometry(), crushMat);
   crushMesh.name = 'Pursuit boundary hazard chevrons';
@@ -827,17 +842,10 @@ export function updateFx(dtMs) {
   liveCores = advance(cores, coreMesh, dtMs, flashAlpha, true, gain);
   liveFragments = advanceFragments(dtMs, gain);
   liveVapors = advanceVapors(dtMs, gain);
-  // Keep all rows and GPU buffers resident, but do not ask either the direct
-  // renderer or bloom pass to submit a pool whose rows have all retired.
-  sparkMesh.count = liveSparks ? SPARK_MAX : 0;
-  flashMesh.count = liveFlashes ? FLASH_MAX : 0;
-  ringMesh.count = liveRings ? RING_MAX : 0;
-  coreMesh.count = liveCores ? CORE_MAX : 0;
-  vaporMesh.count = liveVapors ? VAPOR_MAX : 0;
 }
 
 function advance(pool, mesh, dtMs, alphaOf, isFlash, gain) {
-  let live = 0, dirty = false;
+  let live = 0, drawCount = 0, dirty = false;
   const dt = dtMs / 1000;
   const rows = pool.rows;
   for (let i = 0; i < rows.length; i++) {
@@ -897,16 +905,18 @@ function advance(pool, mesh, dtMs, alphaOf, isFlash, gain) {
     mesh.setColorAt(i, _c.setRGB(row.r * ag, row.g * ag, row.b * ag));
     dirty = true;
     live++;
+    drawCount = i + 1;
   }
   if (dirty) {
     mesh.instanceMatrix.needsUpdate = true;
     mesh.instanceColor.needsUpdate = true;
   }
+  mesh.count = drawCount;
   return live;
 }
 
 function advanceRings(dtMs, gain) {
-  let live = 0, dirty = false;
+  let live = 0, drawCount = 0, dirty = false;
   const rows = rings.rows;
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -932,17 +942,20 @@ function advanceRings(dtMs, gain) {
     ringMesh.setColorAt(i, _c.setRGB(row.r * ag, row.g * ag, row.b * ag));
     dirty = true;
     live++;
+    drawCount = i + 1;
   }
   if (dirty) {
     ringMesh.instanceMatrix.needsUpdate = true;
     ringMesh.instanceColor.needsUpdate = true;
   }
+  ringMesh.count = drawCount;
   return live;
 }
 
 function advanceFragments(dtMs, gain) {
   let live = 0;
   let live0 = 0, live1 = 0, live2 = 0;
+  let draw0 = 0, draw1 = 0, draw2 = 0;
   let dirty0 = false, dirty1 = false, dirty2 = false;
   const dt = dtMs / 1000;
   const rows = fragments.rows;
@@ -988,9 +1001,9 @@ function advanceFragments(dtMs, gain) {
     if (row.kind === 0) dirty0 = true;
     else if (row.kind === 1) dirty1 = true;
     else dirty2 = true;
-    if (row.kind === 0) live0++;
-    else if (row.kind === 1) live1++;
-    else live2++;
+    if (row.kind === 0) { live0++; draw0 = i + 1; }
+    else if (row.kind === 1) { live1++; draw1 = i + 1; }
+    else { live2++; draw2 = i + 1; }
     live++;
   }
   if (dirty0) {
@@ -1008,14 +1021,14 @@ function advanceFragments(dtMs, gain) {
     fragmentMeshes[2].instanceColor.needsUpdate = true;
     fragmentMeshes[2].geometry.getAttribute('instanceOpacity').needsUpdate = true;
   }
-  fragmentMeshes[0].count = live0 ? FRAGMENT_MAX : 0;
-  fragmentMeshes[1].count = live1 ? FRAGMENT_MAX : 0;
-  fragmentMeshes[2].count = live2 ? FRAGMENT_MAX : 0;
+  fragmentMeshes[0].count = draw0;
+  fragmentMeshes[1].count = draw1;
+  fragmentMeshes[2].count = draw2;
   return live;
 }
 
 function advanceVapors(dtMs, gain) {
-  let live = 0, dirty = false;
+  let live = 0, drawCount = 0, dirty = false;
   const dt = dtMs / 1000;
   const rows = vapors.rows;
   const opacity = vaporMesh.geometry.getAttribute('instanceOpacity');
@@ -1054,12 +1067,14 @@ function advanceVapors(dtMs, gain) {
     opacity.setX(i, a);
     dirty = true;
     live++;
+    drawCount = i + 1;
   }
   if (dirty) {
     vaporMesh.instanceMatrix.needsUpdate = true;
     vaporMesh.instanceColor.needsUpdate = true;
     opacity.needsUpdate = true;
   }
+  vaporMesh.count = drawCount;
   return live;
 }
 
@@ -1102,7 +1117,7 @@ function clearPool(pool, mesh) {
   const opacity = mesh.geometry.getAttribute('instanceOpacity');
   for (let i = 0; i < rows.length; i++) {
     rows[i].ttl = 0;
-    pool.free[i] = i;
+    pool.free[i] = rows.length - 1 - i;
     mesh.setMatrixAt(i, HIDE);
     if (opacity) opacity.setX(i, 0);
   }
@@ -1119,7 +1134,7 @@ function clearFragmentPool() {
   const rows = fragments.rows;
   for (let i = 0; i < rows.length; i++) {
     rows[i].ttl = 0;
-    fragments.free[i] = i;
+    fragments.free[i] = rows.length - 1 - i;
     for (let m = 0; m < 3; m++) {
       fragmentMeshes[m].setMatrixAt(i, HIDE);
       fragmentMeshes[m].geometry.getAttribute('instanceOpacity').setX(i, 0);

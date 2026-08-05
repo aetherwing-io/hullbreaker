@@ -39,6 +39,7 @@ function hazardMaterial() {
     depthWrite: false,
     fog: false,
     side: THREE.DoubleSide,
+    forceSinglePass: true,
     toneMapped: false,
   });
 }
