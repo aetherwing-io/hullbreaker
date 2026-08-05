@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "date": "2026-08-04",
+  "tool": "OpenAI built-in ImageGen",
+  "useCase": "stylized-concept",
+  "output": {
+    "sessionId": "019fc4d8-9286-7080-8c8a-7edc77ab89ea",
+    "toolOutputId": "exec-2b115998-53dc-478e-86cb-162ae8d6bff9",
+    "originalPath": "/Users/scottmeyer/.codex/generated_images/019fc4d8-9286-7080-8c8a-7edc77ab89ea/exec-2b115998-53dc-478e-86cb-162ae8d6bff9.png",
+    "workspacePath": "assets/generated/projectiles/projectile-scatterbloom-flechette-candidates-v1.png",
+    "sha256": "3ab41ef04a88aa962d8151d88720e8cef6a7f5a7558eb564875da970979d64b0"
+  },
+  "promptSummary": {
+    "verbatim": false,
+    "text": "A 4×4 palette of single narrow right-facing manufactured flechettes in copper, ivory, and charcoal on a flat removable chroma background, matching the existing projectile-atlas material language; explicitly no wings, claws, thorax, or multi-dart cluster."
+  },
+  "selection": {
+    "grid": [4, 4],
+    "index": 15,
+    "indexing": "zero-based, row-major",
+    "sourceCell": [940, 940, 314, 314],
+    "sourceAlphaBounds": [965, 1060, 254, 58],
+    "reason": "The single continuous axial silhouette remains a manufactured flechette at 6, 10, and 20 pixels and cannot be read as an aerial enemy."
+  },
+  "extraction": {
+    "helper": "/Users/scottmeyer/.codex/skills/.system/imagegen/scripts/remove_chroma_key.py",
+    "sampledKey": "#09f90f",
+    "options": [
+      "--auto-key border",
+      "--soft-matte",
+      "--transparent-threshold 12",
+      "--opaque-threshold 220",
+      "--despill",
+      "--edge-contract 1"
+    ]
+  },
+  "packing": {
+    "atlasPath": "assets/generated/projectiles/projectile-chassis-atlas-v1.png",
+    "atlasSize": [1280, 256],
+    "cellOrder": ["R", "S", "L", "H", "F"],
+    "replacedCell": "S",
+    "replacedColumn": 1,
+    "cellSize": [256, 256],
+    "filter": "Lanczos",
+    "packedAlphaBounds": [13, 101, 230, 53],
+    "packedAspect": 4.3396,
+    "atlasSha256": "0c9aa3457b094767511b70dfd906f925f493ca05605e0d0b02a7448343bb2fb3",
+    "decodedRgbaCellSha256": {
+      "R": "766890aed993ed9ad95ddfbf76968c8b766e8ccd15d95db9a87e054f07f72a9a",
+      "S": "5a1153d591bb503ffbc08f6a2e4f5352278298a31f3b2242a441fafe2aa29581",
+      "L": "ec75b00bd5e52e09a1666dfdb534b69fa0cc42136c681b07aae6c9fd7785b77c",
+      "H": "c9ceef8facf45816ba145feed6e0284bdf8f8266835f93a60a9423fc879f81f1",
+      "F": "80939cd0872e55aca5435ee2c3ce24ec16c2811ce6bead51d5855d065adc398b"
+    },
+    "unchangedCells": ["R", "L", "H", "F"]
+  },
+  "runtime": {
+    "artLook": {
+      "frontCap": "Infinity",
+      "tailTiles": 0.55,
+      "thickness": 0.9
+    },
+    "expectedFarDisplayPx": [16, 4],
+    "simulationChanged": false
+  }
+}

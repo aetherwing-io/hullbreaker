@@ -1,0 +1,388 @@
+/* ============================ SPAWNER ============================= */
+/* Spawn director: data array keyed to scroll distance, built by the pure
+   generator — density authored in seconds of scroll (scales with
+   scrollSpeed), escalating per face along with the wingman pair chance.
+   Roster pass extends entries with more types; this is the final
+   mechanism. Corner zones are kept clean — gate waves are authored by
+   the wave system, never by the ambient table. */
+
+import { CONFIG } from '../config.js';
+import { mulberry32 } from '../pure/rng.js';
+import { buildSpawnTable } from '../pure/generator.js';
+import { faceIndexAt } from '../pure/path.js';
+import { neutralEnemyEcologyVisualId } from '../pure/enemy-ecology.js';
+import {
+  newPressureState, pressureTelemetry, stepPressureDirector,
+} from '../pure/pressure.js';
+import { TRANSFORM_FIXTURE } from '../pure/transform.js';
+import { IS_TRANSFORM_SLICE, IS_TRAVERSAL_SLICE, SLICE_ENEMIES_ENABLED } from '../mode.js';
+import { sLeftEdge, sRightEdge } from './edges.js';
+import { groundTopAt, levelData, spawnLaneY } from './level.js';
+import { hostiles, kills, spawnHostile } from './hostiles.js';
+import { player } from './player.js';
+import { gameMs, scrollX, sliceStats } from './time.js';
+import { activeCorner, cornerBusy } from './wavegate.js';
+import { transformBusy } from './transform.js';
+import { finaleActive } from './finale.js';
+
+// The transformation fixture authors its ambient table by hand (lanes
+// included, so it consumes none of the seeded lane rng) and keeps every
+// entry outside its seam-clear zones.
+//
+// The six-face table is built from THIS run's level, not a fresh one: the
+// houndframe stations carry the deck plate they ride (src/pure/lattice.js),
+// and a station derived from a second, discarded build would be riding a
+// level the player never touches. It is the same geometry either way — the
+// build is deterministic and asserted so — but "the same by construction"
+// beats "the same by luck", and it saves the ~10 ms second build the default
+// argument used to pay for at boot.
+export const spawnTable = IS_TRANSFORM_SLICE
+  ? (SLICE_ENEMIES_ENABLED ? TRANSFORM_FIXTURE.spawns : [])
+  : IS_TRAVERSAL_SLICE ? [] : buildSpawnTable(CONFIG, levelData);
+let spawnIdx = 0;
+let spawnRng = mulberry32(9001);
+let pressureRng = mulberry32(CONFIG.spawner.pressure.seed);
+let pressureState = newPressureState(0);
+let pressureCohortSerial = 0;
+let pendingEnvironmentImpulse = 0;
+const PRESSURE_AUDIT_MAX = 64;
+const pressureSpawnAudit = [];
+
+// Adaptive bodies reuse only recipes the preceding gate has already taught.
+// CALIBRATE/COMPOSE keep the neutral reviewed body; EVOLVE may recombine the
+// known answer, and SURGE rotates the same bounded pool while density rises.
+const PRESSURE_ECOLOGY_BY_KIND = Object.freeze({
+  wasp: Object.freeze([
+    Object.freeze({ fromFace: 2, ids: Object.freeze(['wasp-crosswind']) }),
+    Object.freeze({ fromFace: 4, ids: Object.freeze(['wasp-pincer']) }),
+  ]),
+  hound: Object.freeze([
+    Object.freeze({ fromFace: 3, ids: Object.freeze(['hound-vaultjaw']) }),
+    Object.freeze({ fromFace: 5, ids: Object.freeze(['hound-rebound']) }),
+  ]),
+  polyp: Object.freeze([
+    Object.freeze({ fromFace: 4, ids: Object.freeze(['polyp-sweepfan']) }),
+    Object.freeze({ fromFace: 6, ids: Object.freeze(['polyp-gateweaver']) }),
+  ]),
+  mortar: Object.freeze([
+    Object.freeze({ fromFace: 5, ids: Object.freeze(['mortar-bracketpod']) }),
+    Object.freeze({ fromFace: 6, ids: Object.freeze(['mortar-aircomb']) }),
+  ]),
+});
+
+// Renderer/foreground-independent hook for a future interactive Meridian
+// change (ruptured socket, reversed vent, broken interlock). The signal waits
+// through a lesson/gate/unsafe window, then the ordinary spatial fences spend
+// it as one bounded visible response—never a direct spawn from the renderer.
+export function notifyPressureEnvironmentChange(severity = 1) {
+  pendingEnvironmentImpulse = Math.max(pendingEnvironmentImpulse,
+    Math.max(0, Math.min(1, Number(severity) || 0)));
+}
+
+const lessonSites = spawnTable.filter((row) => {
+  const face = faceIndexAt(row.x, CONFIG);
+  return CONFIG.spawner.lesson.kindByFace[face - 1] === row.type;
+});
+
+function insideLessonBubble(x) {
+  return lessonSites.some((row) =>
+    Math.abs(x - row.x) < CONFIG.spawner.lesson.clearTiles);
+}
+
+// Count only bodies that can presently create an on-screen decision. A
+// delayed lesson remix or a rooted emplacement half a face behind RIG must
+// not suppress useful pressure in the visible strip.
+const threatSummary = { active: 0, entering: 0, committed: 0, adaptive: 0 };
+function visibleThreatSummary(left, right) {
+  let active = 0, entering = 0, adaptive = 0;
+  for (const e of hostiles) {
+    if (e.x < left - 1 || e.x > right + 1) continue;
+    // A queued/materializing body is a committed answer even before it can
+    // attack. Counting it prevents the director from stacking another cohort
+    // into the same readable inhale. Active begins only when its authored
+    // presence tell is complete; clear-speed telemetry still catches a kill
+    // that happens during entry through the kill-edge path in pure/pressure.
+    if (gameMs < e.enterUntil) entering++;
+    else active++;
+    if (String(e.encounterKey || '').startsWith('pressure:')) adaptive++;
+  }
+  threatSummary.active = active;
+  threatSummary.entering = entering;
+  threatSummary.committed = active + entering;
+  threatSummary.adaptive = adaptive;
+  return threatSummary;
+}
+
+/* Pick a materialization point that is already visible and never inside the
+   corner apron. Prefer the familiar incoming-right silhouette; if RIG is
+   waiting against the unbuilt corner wall, use a clearly visible rear flank
+   instead. Rear bodies face forward and still owe the full 900 ms presence
+   tell, so this closes the pre-gate lull without an offscreen ambush. */
+function pressureSpawnSites(corner, left, right) {
+  const D = CONFIG.spawner.pressure;
+  const safeMax = corner.s - CONFIG.spawner.cornerClearBefore - D.cornerPadTiles;
+  const front = Math.min(right - D.spawnInsetTiles, safeMax);
+  const rear = Math.min(player.x - D.rearLeadTiles, safeMax);
+  const sites = {
+    front: front - player.x >= D.minPlayerLeadTiles
+      ? { side: 'front', x: front, dir: -1, room: front - player.x } : null,
+    rear: rear >= left + D.spawnInsetTiles && player.x - rear >= D.minPlayerLeadTiles
+      ? { side: 'rear', x: rear, dir: 1, room: player.x - rear } : null,
+  };
+  // Screen-space visibility is not sufficient at a hull fold: a wide camera
+  // can see an already-built point around the previous corner. Current-facet
+  // ownership is therefore a simulation fence, not a renderer convention.
+  const playerFace = faceIndexAt(player.x, CONFIG);
+  if (playerFace !== corner.k) return null;
+  if (sites.front && faceIndexAt(sites.front.x, CONFIG) !== corner.k) sites.front = null;
+  if (sites.rear && faceIndexAt(sites.rear.x, CONFIG) !== corner.k) sites.rear = null;
+  return sites.front || sites.rear ? sites : null;
+}
+
+// Grounded/rooted pressure roles are allowed only on a short continuous deck
+// patch. A gap, cliff lip, or step taller than the hound's already-authored
+// step allowance falls back to a wasp; the director never invents footing or
+// materializes a body into a doomed fall. This is a spawn fence, not a new
+// movement rule.
+function pressureGroundSite(x) {
+  const D = CONFIG.spawner.pressure;
+  const y = groundTopAt(x);
+  const yl = groundTopAt(x - D.groundProbeTiles);
+  const yr = groundTopAt(x + D.groundProbeTiles);
+  if (y <= -100 || yl <= -100 || yr <= -100) return null;
+  const step = CONFIG.hound.stepUpTiles;
+  if (Math.abs(yl - y) > step || Math.abs(yr - y) > step) return null;
+  return { x, y };
+}
+
+function pressureKind(face, responseBand, count, slot, roll, grounded) {
+  // The first body in a pair remains aerial and mobile. Its partner can then
+  // spend the learned-role bag on a floor denial or rooted sightline without
+  // producing a stationary double-emplacement. Singles draw the same bag.
+  if (!grounded || responseBand < CONFIG.spawner.pressure.compositionBand ||
+      (count > 1 && slot === 0)) return 'wasp';
+  const bags = CONFIG.spawner.pressure.roleBagByFace;
+  const bag = bags[Math.max(0, Math.min(bags.length - 1, face - 1))] || ['wasp'];
+  return bag[Math.min(bag.length - 1, Math.floor(roll * bag.length))] || 'wasp';
+}
+
+function pressureEcologyId(kind, face, responseBand, roll) {
+  const D = CONFIG.spawner.pressure;
+  if (responseBand < D.evolutionBand) return '';
+  const ids = [];
+  for (const row of PRESSURE_ECOLOGY_BY_KIND[kind] || []) {
+    if (face >= row.fromFace) ids.push(...row.ids);
+  }
+  if (!ids.length) return '';
+  return ids[Math.min(ids.length - 1, Math.floor(roll * ids.length))];
+}
+
+function formationPoint(sites, count, slot, serial) {
+  if (!sites.front) return sites.rear;
+  if (!sites.rear) return sites.front;
+  // Singles occasionally answer from behind instead of becoming an endless
+  // right-edge conveyor. Pairs always split across both visible sides, and
+  // rotate which altitude owns which side so the learned answer is movement
+  // through the arena rather than one repeated vertical jump.
+  if (count === 1) return serial % 3 === 2 ? sites.rear : sites.front;
+  return (slot + serial) % 2 === 0 ? sites.front : sites.rear;
+}
+
+function spawnPressureBodies(sites, count, face) {
+  const D = CONFIG.spawner.pressure;
+  const serial = pressureCohortSerial++;
+  const cohortKey = `pressure:${face}:${serial}`;
+  const responseBand = pressureState.responseBand;
+  const evolutionTier = Math.max(0, responseBand - D.evolutionBand + 1);
+  for (let i = 0; i < count; i++) {
+    const point = formationPoint(sites, count, i, serial);
+    const ground = pressureGroundSite(point.x);
+    // A fixed three samples/body makes the role sequence invariant to which
+    // branch its previous sibling took. Replays and retries therefore express
+    // the same evolving assault exactly.
+    const roleRoll = pressureRng();
+    const laneRoll = pressureRng();
+    const ecologyRoll = pressureRng();
+    let kind = pressureKind(face, responseBand, count, i, roleRoll, ground);
+    // A rooted rear emplacement would simply scroll out while asking the
+    // player to turn around. Rear stations stay mobile; the same deterministic
+    // roll becomes an aerial flanker instead. Hounds may use either side.
+    if (point.dir > 0 && (kind === 'polyp' || kind === 'mortar')) kind = 'wasp';
+    // Mixed pairs bracket the movement band: the mandatory wasp owns the high
+    // route while the learned support role owns deck/sightline pressure.
+    const lane = count > 1
+      ? (i === 0 ? 6.7 + laneRoll * 0.8 : 2.8 + laneRoll * 0.6)
+      : (laneRoll < 0.44 ? 2.7 : laneRoll < 0.82 ? 4.8 : 7.1) + roleRoll * 0.55;
+    const y = kind === 'hound'
+      ? ground.y + CONFIG.hound.rideY
+      : kind === 'polyp'
+        ? ground.y + CONFIG.polyp.rootY
+        : kind === 'mortar'
+          ? ground.y + CONFIG.mortar.bodyY
+          : spawnLaneY(point.x, lane);
+    const ecologyId = pressureEcologyId(
+      kind, face, responseBand, ecologyRoll,
+    );
+    const id = `${cohortKey}:${i}:${kind}`;
+    const left = sLeftEdge(), right = sRightEdge();
+    const corner = activeCorner();
+    const cornerLimit = corner
+      ? corner.s - CONFIG.spawner.cornerClearBefore - D.cornerPadTiles
+      : Infinity;
+    pressureSpawnAudit.push({
+      id, atMs: gameMs, face, cohortKey, slot: i, kind,
+      responseBand, evolutionTier, ecologyId,
+      site: point.side, x: point.x, y, dir: point.dir, gating: false,
+      playerX: player.x,
+      playerLeadTiles: Math.abs(point.x - player.x),
+      screenLeft: left, screenRight: right,
+      insideScreen: point.x >= left && point.x <= right,
+      cornerLimit,
+      outsideCornerApron: point.x <= cornerLimit + 1e-6,
+      outsideLesson: !insideLessonBubble(point.x) && !insideLessonBubble(player.x),
+      currentFacet: faceIndexAt(point.x, CONFIG) === face &&
+        faceIndexAt(player.x, CONFIG) === face,
+      rootedRouteSafe: !['hound', 'polyp', 'mortar'].includes(kind) || !!ground,
+    });
+    if (pressureSpawnAudit.length > PRESSURE_AUDIT_MAX) pressureSpawnAudit.shift();
+    spawnHostile(
+      point.x,
+      y,
+      i * D.pairDelayMs,
+      kind,
+      {
+        id,
+        encounterKey: cohortKey,
+        dir: point.dir,
+        gating: false,
+        cohortKey,
+        cohortSlot: i,
+        // These are observed-play outputs from the staged director, never a
+        // read of the equipped gun or its rolled traits.
+        pressureClearEmaMs: pressureState.clearEmaMs,
+        pressureResponseBand: responseBand,
+        pressureEvolutionTier: evolutionTier,
+        ecologyId,
+      },
+      neutralEnemyEcologyVisualId(kind),
+    );
+  }
+}
+
+function updatePressureDirector(right) {
+  const D = CONFIG.spawner.pressure;
+  const corner = activeCorner();
+  const left = sLeftEdge();
+  const pressureSuspended = !corner || corner.state !== 'idle' || corner.primed;
+  const sites = !pressureSuspended
+    ? pressureSpawnSites(corner, left, right)
+    : null;
+  const face = corner ? corner.k : 0;
+  const remaining = corner
+    ? corner.s - CONFIG.waves.haltOffset - scrollX
+    : 0;
+  const nextTiles = spawnIdx < spawnTable.length
+    ? Math.max(0, spawnTable[spawnIdx].x - (right - 1.5))
+    : Infinity;
+  if (sites?.front && insideLessonBubble(sites.front.x)) sites.front = null;
+  if (sites?.rear && insideLessonBubble(sites.rear.x)) sites.rear = null;
+  const point = sites && (sites.front || sites.rear);
+  const protectedLesson = !!point && insideLessonBubble(player.x);
+  const threats = visibleThreatSummary(left, right);
+  const safe = !!point && !protectedLesson;
+  const environmentImpulse = safe ? pendingEnvironmentImpulse : 0;
+  const bodies = stepPressureDirector(pressureState, {
+    nowMs: gameMs,
+    face,
+    aliveThreats: threats.active,
+    enteringThreats: threats.entering,
+    committedThreats: threats.committed,
+    adaptiveThreats: threats.adaptive,
+    kills,
+    progressTiles: player.x,
+    healthRatio: player.hp / Math.max(1, CONFIG.player.maxHealth),
+    falls: sliceStats.falls,
+    setbacks: sliceStats.setbacks,
+    authoredStarted: spawnIdx > 0,
+    suspended: pressureSuspended,
+    safe,
+    nextAuthoredTiles: nextTiles,
+    remainingTravelTiles: remaining,
+    spawnRoomTiles: point ? point.room : 0,
+    environmentImpulse,
+  }, D);
+  if (environmentImpulse > 0) pendingEnvironmentImpulse = 0;
+  if (bodies && point) spawnPressureBodies(sites, bodies, face);
+}
+
+export function updateSpawner() {
+  if (IS_TRAVERSAL_SLICE) return;         // fixture spawns are authored per attempt
+  if (finaleActive()) return;             // the Crown arena owns its three packets
+  if (transformBusy()) return;           // nobody arrives through a bulkhead flip
+  if (cornerBusy()) return;              // gates author their own waves; on wide
+                                         //   aspect ratios the halted look-ahead
+                                         //   would otherwise reach past the
+                                         //   corner-clear zone and drop ambient
+                                         //   hostiles onto the unbuilt face
+  // Trigger once the entry sits just INSIDE the view, so its materialization
+  // happens on screen instead of completing past the right edge.
+  const re = sRightEdge();
+  while (spawnIdx < spawnTable.length && spawnTable[spawnIdx].x < re - 1.5) {
+    const s = spawnTable[spawnIdx++];
+    if (s.type === 'carrier') {
+      // Normal-run carriers carry their phase-authored drop on the spawn row;
+      // fixture/legacy rows without one keep capsules.js's seeded fallback.
+      spawnHostile(s.x, spawnLaneY(s.x, CONFIG.carrier.laneAbove), 0, 'carrier', s,
+        neutralEnemyEcologyVisualId('carrier'));
+    } else if (s.type === 'hound') {
+      // Deck units authored in a table, from two authors and one branch:
+      //  - T-009's six-face lattice stations carry the deck plate they ride
+      //    (src/pure/lattice.js), so the ride height is derived from the row
+      //    the way the traversal enemy plan derives it;
+      //  - a fixture-authored row (the G2 gate) has no deck and rides the
+      //    terrain under its spawn column.
+      // Either way the entry itself is passed as the row, so dir, patrol,
+      // tune and the gating opt-out all ride through unchanged.
+      const rideY = s.deck !== undefined
+        ? s.deck + CONFIG.hound.rideY
+        : groundTopAt(s.x);
+      spawnHostile(s.x, rideY, s.delayMs || 0, 'hound', s,
+        neutralEnemyEcologyVisualId('hound'));
+    } else if (s.type === 'polyp') {
+      const rootY = (s.deck !== undefined ? s.deck : groundTopAt(s.x)) + CONFIG.polyp.rootY;
+      spawnHostile(s.x, rootY, s.delayMs || 0, 'polyp', s,
+        neutralEnemyEcologyVisualId('polyp'));
+    } else if (s.type === 'mortar') {
+      const bodyY = (s.deck !== undefined ? s.deck : groundTopAt(s.x)) + CONFIG.mortar.bodyY;
+      spawnHostile(s.x, bodyY, s.delayMs || 0, 'mortar', s,
+        neutralEnemyEcologyVisualId('mortar'));
+    } else if (s.lane !== undefined) {          // authored lane (fixture table)
+      spawnHostile(s.x, spawnLaneY(s.x, s.lane), s.delayMs || 0, 'wasp', s,
+        neutralEnemyEcologyVisualId('wasp'));
+    } else {
+      const r = spawnRng();
+      const lane = r < 0.45 ? 2.6 : r < 0.8 ? 4.6 : 7.2;   // low / mid / high tier
+      spawnHostile(s.x, spawnLaneY(s.x, lane + spawnRng() * 0.8),
+        s.delayMs || 0, 'wasp', s, neutralEnemyEcologyVisualId('wasp'));
+    }
+  }
+  updatePressureDirector(re);
+}
+
+// run reset (resetGame in src/main.js): the ambient table rewinds to its
+// first entry and its seeded lane rng restarts
+export function resetSpawner() {
+  spawnIdx = 0;
+  spawnRng = mulberry32(9001);
+  pressureRng = mulberry32(CONFIG.spawner.pressure.seed);
+  pressureState = newPressureState(gameMs);
+  pressureCohortSerial = 0;
+  pendingEnvironmentImpulse = 0;
+  pressureSpawnAudit.length = 0;
+}
+
+export function pressureDirectorSnapshot() {
+  return { ...pressureState, spawnIdx, pendingEnvironmentImpulse,
+    telemetry: pressureTelemetry(pressureState),
+    spawns: pressureSpawnAudit.map((row) => ({ ...row })) };
+}

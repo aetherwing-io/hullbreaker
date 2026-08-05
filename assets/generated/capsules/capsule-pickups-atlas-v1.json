@@ -1,0 +1,69 @@
+{
+  "schema": "hullbreaker.rgba-atlas.v1",
+  "atlas": {
+    "file": "capsule-pickups-atlas-v1.png",
+    "width": 2048,
+    "height": 640,
+    "sha256": "10dc10f46d91711c846754289cefcffaa771c6f09821fd7e592df6cfb4612a3d",
+    "colorSpace": "sRGB",
+    "alpha": "straight RGBA"
+  },
+  "packing": {
+    "tool": "ImageMagick 7.1.2-12",
+    "method": "Source PNGs composited without resizing into fixed 512x320 cells on a transparent canvas; output metadata stripped.",
+    "alphaInkThreshold": 8,
+    "minimumTransparentRectGutterPx": 36,
+    "minimumVisibleInkGutterPx": 60,
+    "runtimeMetadataLocation": "src/render/capsules.js ART_TABLE"
+  },
+  "cells": {
+    "letter:S": {
+      "source": "weapon-spread-v3.png",
+      "sourceSha256": "95d2acaa6b7955efcf2d76e2cf680b058a958de8383522008ab59ad6560dfe9f",
+      "atlasRect": [18, 28, 475, 263],
+      "inkRectInSource": [12, 12, 451, 239]
+    },
+    "letter:L": {
+      "source": "weapon-laser-v3.png",
+      "sourceSha256": "49c5c3124f4500361a99955cfb7a06ffdf4a7c209f6b35276e3422d109053bde",
+      "atlasRect": [530, 29, 476, 262],
+      "inkRectInSource": [12, 12, 452, 239]
+    },
+    "letter:H": {
+      "source": "weapon-homing-v3.png",
+      "sourceSha256": "0e52c9c999a826e0c7240c27662b9739a406ddf4255788e33e08cee2c0886871",
+      "atlasRect": [1042, 28, 475, 263],
+      "inkRectInSource": [12, 11, 451, 240]
+    },
+    "letter:F": {
+      "source": "weapon-flame-v3.png",
+      "sourceSha256": "113f59e852470bdb19160fc29bd23a40b850d4dc0b79ff6b28a93a29b2665527",
+      "atlasRect": [1554, 28, 475, 263],
+      "inkRectInSource": [12, 12, 451, 239]
+    },
+    "mod:RG": {
+      "source": "mod-rage-v3.png",
+      "sourceSha256": "ed22a9049c7da36d7efb5b02a2939ba94e1d52c94c4e3c9b533b82df21e40357",
+      "atlasRect": [18, 348, 476, 264],
+      "inkRectInSource": [12, 12, 452, 240]
+    },
+    "mod:GS": {
+      "source": "mod-ghost-v3.png",
+      "sourceSha256": "e2aeb84fc6a866063e7d8291a33cbd8eedf50261a8129220be94a2a05b22dd95",
+      "atlasRect": [530, 348, 475, 264],
+      "inkRectInSource": [12, 12, 452, 240]
+    },
+    "mod:CH": {
+      "source": "mod-chrono-v3.png",
+      "sourceSha256": "2b998b689aa203f47bfdd34dceaac1c25d40679c3c2f432d558df3cab9aeef71",
+      "atlasRect": [1042, 347, 476, 265],
+      "inkRectInSource": [12, 12, 452, 241]
+    },
+    "mod:OL": {
+      "source": "mod-orbital-v3.png",
+      "sourceSha256": "1e914dfc49c9da9adb8d36499811e40240f6f2c9f9f6bfbd45eb8338d880f846",
+      "atlasRect": [1554, 348, 476, 264],
+      "inkRectInSource": [12, 12, 452, 241]
+    }
+  }
+}

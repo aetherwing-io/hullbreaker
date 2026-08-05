@@ -1,0 +1,3922 @@
+{
+  "schema": "hullbreaker-action-vfx-v2",
+  "version": 2,
+  "assetOnly": true,
+  "runtimeIntegrated": false,
+  "runtime": {
+    "file": "assets/generated/vfx/action-vfx-v2/action-vfx-atlas-v2.png",
+    "canvas": [
+      1024,
+      1024
+    ],
+    "format": "RGBA8",
+    "layout": [
+      8,
+      8
+    ],
+    "cellPx": [
+      128,
+      128
+    ],
+    "gpuTextures": 1,
+    "estimatedGpuBytes": 4194304,
+    "uvOrigin": "top-left",
+    "independentCellPacking": true,
+    "noRuntimeCrop": true
+  },
+  "paletteIntent": {
+    "baked": [
+      "charcoal iron",
+      "oxidized copper",
+      "warm ivory",
+      "neutral grayscale"
+    ],
+    "runtimeTintOnly": [
+      "hot magenta",
+      "acid green",
+      "cyan",
+      "weapon identity colors"
+    ]
+  },
+  "review": {
+    "status": "visual-approved-asset-only",
+    "productionCount": 59,
+    "rejectedCount": 5,
+    "smallScaleProductionCount": 42,
+    "mediumScaleProductionCount": 17,
+    "productionIds": [
+      "r-rivet-trail",
+      "r-seam-punch",
+      "r-needle-spall",
+      "r-chip-fan",
+      "r-offset-slivers",
+      "r-bore-spall",
+      "r-collapsed-seam",
+      "r-spent-pin",
+      "s-triple-rake",
+      "s-five-splay",
+      "s-step-shear",
+      "s-split-shear",
+      "s-armor-fan",
+      "s-plate-shards",
+      "s-rake-afterimage",
+      "s-spent-splinters",
+      "l-seam-through",
+      "l-clamped-line",
+      "l-convergent-line",
+      "l-plate-pierce",
+      "l-collapsing-echo",
+      "l-broken-afterimage",
+      "l-heated-incision",
+      "l-spent-seam",
+      "h-vane-bracket",
+      "h-rise-shear",
+      "h-fin-slice",
+      "h-opposed-vanes",
+      "h-correction-kink",
+      "h-vane-afterimage",
+      "f-serrated-bite",
+      "f-ground-wedge",
+      "f-pressure-burst",
+      "f-plate-incision",
+      "f-cinder-trail",
+      "f-torn-pressure-ribbon",
+      "f-spent-cinders",
+      "enemy-rotor-rupture",
+      "enemy-scute-rupture",
+      "enemy-iris-failure",
+      "enemy-breech-fracture",
+      "enemy-terminal-debris",
+      "enemy-split-core",
+      "meridian-clamp-snap",
+      "meridian-lock-rails",
+      "meridian-shutter-strike",
+      "meridian-clamp-recoil",
+      "meridian-vent-slat",
+      "meridian-shutter-peel",
+      "meridian-seal-sweep",
+      "meridian-spent-louvers",
+      "crown-command-packet",
+      "crown-packet-arrival",
+      "warden-rack-rupture",
+      "crown-interlock-failure",
+      "crown-uplink-needle",
+      "crown-carrier-release",
+      "crown-housing-shear",
+      "crown-uplink-afterimage"
+    ],
+    "smallScaleProductionIds": [
+      "r-seam-punch",
+      "r-chip-fan",
+      "r-collapsed-seam",
+      "r-spent-pin",
+      "s-five-splay",
+      "s-step-shear",
+      "s-split-shear",
+      "s-armor-fan",
+      "s-plate-shards",
+      "s-spent-splinters",
+      "h-vane-bracket",
+      "h-rise-shear",
+      "h-fin-slice",
+      "h-opposed-vanes",
+      "f-serrated-bite",
+      "f-ground-wedge",
+      "f-pressure-burst",
+      "f-plate-incision",
+      "f-torn-pressure-ribbon",
+      "f-spent-cinders",
+      "enemy-rotor-rupture",
+      "enemy-scute-rupture",
+      "enemy-iris-failure",
+      "enemy-breech-fracture",
+      "enemy-terminal-debris",
+      "enemy-split-core",
+      "meridian-clamp-snap",
+      "meridian-lock-rails",
+      "meridian-shutter-strike",
+      "meridian-clamp-recoil",
+      "meridian-vent-slat",
+      "meridian-shutter-peel",
+      "meridian-seal-sweep",
+      "meridian-spent-louvers",
+      "crown-command-packet",
+      "crown-packet-arrival",
+      "warden-rack-rupture",
+      "crown-interlock-failure",
+      "crown-uplink-needle",
+      "crown-carrier-release",
+      "crown-housing-shear",
+      "crown-uplink-afterimage"
+    ],
+    "mediumScaleProductionIds": [
+      "r-rivet-trail",
+      "r-needle-spall",
+      "r-offset-slivers",
+      "r-bore-spall",
+      "s-triple-rake",
+      "s-rake-afterimage",
+      "l-seam-through",
+      "l-clamped-line",
+      "l-convergent-line",
+      "l-plate-pierce",
+      "l-collapsing-echo",
+      "l-broken-afterimage",
+      "l-heated-incision",
+      "l-spent-seam",
+      "h-correction-kink",
+      "h-vane-afterimage",
+      "f-cinder-trail"
+    ],
+    "rejectedIds": [
+      "h-broken-crosscut",
+      "h-spent-hardware",
+      "f-double-vent-wisp",
+      "enemy-rise-vapor",
+      "enemy-side-vent"
+    ],
+    "rule": "Use smallScaleProductionIds at 12–23px. Fine streaks are legal only at 24–48px. Rejected smoke/prop/cross cells must never be runtime-selected."
+  },
+  "metrics": {
+    "sha256": "5577bc16b4bc9ed52a31605d797d5f50c0f353d37276527197c49efcf9361f85",
+    "alpha": {
+      "pixels": 1048576,
+      "transparent": 77.91357040405273,
+      "partial": 9.612178802490234,
+      "opaque": 12.474250793457031
+    },
+    "minimumTransparentGuardPx": 6,
+    "emptyCells": 0,
+    "projectPalette": {
+      "ok": true,
+      "inBandMass": 1,
+      "offBandMass": 0,
+      "alienMass": 0
+    },
+    "narrowBake": {
+      "coolDominantMass": 0,
+      "greenDominantMass": 0,
+      "magentaDominantMass": 0
+    }
+  },
+  "proofs": {
+    "contactSheet": "assets/generated/vfx/action-vfx-v2/action-vfx-v2-contact-sheet.png",
+    "screen48": "assets/generated/vfx/action-vfx-v2/proofs/action-vfx-v2-48px-proof.png",
+    "screen24": "assets/generated/vfx/action-vfx-v2/proofs/action-vfx-v2-24px-proof.png",
+    "screen12": "assets/generated/vfx/action-vfx-v2/proofs/action-vfx-v2-12px-proof.png"
+  },
+  "components": [
+    {
+      "id": "r-rivet-trail",
+      "label": "Driven rivet and chips",
+      "board": "A",
+      "sourceCell": [
+        0,
+        0
+      ],
+      "atlasCell": [
+        0,
+        0
+      ],
+      "category": "rifle-pin",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "fire",
+        "durationMs": 120,
+        "leadMs": 0,
+        "peakMs": 34,
+        "fadeStartMs": 74
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        4,
+        50,
+        119,
+        28
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.003906,
+        0.048828,
+        0.120117,
+        0.076172
+      ],
+      "cellUv": [
+        0,
+        0,
+        0.125,
+        0.125
+      ],
+      "nativeAspect": 4.25,
+      "alphaCoverage": 0.06366
+    },
+    {
+      "id": "r-seam-punch",
+      "label": "Rivet plate-seam punch",
+      "board": "A",
+      "sourceCell": [
+        1,
+        0
+      ],
+      "atlasCell": [
+        1,
+        0
+      ],
+      "category": "rifle-pin",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 170,
+        "leadMs": 0,
+        "peakMs": 48,
+        "fadeStartMs": 105
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        132,
+        12,
+        119,
+        104
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.128906,
+        0.011719,
+        0.245117,
+        0.113281
+      ],
+      "cellUv": [
+        0.125,
+        0,
+        0.25,
+        0.125
+      ],
+      "nativeAspect": 1.144231,
+      "alphaCoverage": 0.371704
+    },
+    {
+      "id": "r-needle-spall",
+      "label": "Machined needle spall",
+      "board": "A",
+      "sourceCell": [
+        2,
+        0
+      ],
+      "atlasCell": [
+        2,
+        0
+      ],
+      "category": "rifle-pin",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "fire",
+        "durationMs": 110,
+        "leadMs": 0,
+        "peakMs": 31,
+        "fadeStartMs": 68
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        260,
+        48,
+        119,
+        31
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.253906,
+        0.046875,
+        0.370117,
+        0.077148
+      ],
+      "cellUv": [
+        0.25,
+        0,
+        0.375,
+        0.125
+      ],
+      "nativeAspect": 3.83871,
+      "alphaCoverage": 0.067871
+    },
+    {
+      "id": "r-chip-fan",
+      "label": "Ejector chip fan",
+      "board": "A",
+      "sourceCell": [
+        3,
+        0
+      ],
+      "atlasCell": [
+        3,
+        0
+      ],
+      "category": "rifle-pin",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 150,
+        "leadMs": 0,
+        "peakMs": 42,
+        "fadeStartMs": 93
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        389,
+        8,
+        119,
+        112
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.379883,
+        0.007813,
+        0.496094,
+        0.117188
+      ],
+      "cellUv": [
+        0.375,
+        0,
+        0.5,
+        0.125
+      ],
+      "nativeAspect": 1.0625,
+      "alphaCoverage": 0.25824
+    },
+    {
+      "id": "r-offset-slivers",
+      "label": "Offset rifle slivers",
+      "board": "A",
+      "sourceCell": [
+        0,
+        1
+      ],
+      "atlasCell": [
+        0,
+        1
+      ],
+      "category": "rifle-pin",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "fire",
+        "durationMs": 120,
+        "leadMs": 0,
+        "peakMs": 34,
+        "fadeStartMs": 74
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        4,
+        167,
+        120,
+        50
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.003906,
+        0.163086,
+        0.121094,
+        0.211914
+      ],
+      "cellUv": [
+        0,
+        0.125,
+        0.125,
+        0.25
+      ],
+      "nativeAspect": 2.4,
+      "alphaCoverage": 0.141602
+    },
+    {
+      "id": "r-bore-spall",
+      "label": "Bore-spall streak",
+      "board": "A",
+      "sourceCell": [
+        1,
+        1
+      ],
+      "atlasCell": [
+        1,
+        1
+      ],
+      "category": "rifle-pin",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 150,
+        "leadMs": 0,
+        "peakMs": 42,
+        "fadeStartMs": 93
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 7,
+      "packedRectPx": [
+        133,
+        175,
+        115,
+        34
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.129883,
+        0.170898,
+        0.242188,
+        0.204102
+      ],
+      "cellUv": [
+        0.125,
+        0.125,
+        0.25,
+        0.25
+      ],
+      "nativeAspect": 3.382353,
+      "alphaCoverage": 0.085876
+    },
+    {
+      "id": "r-collapsed-seam",
+      "label": "Collapsed impact seam",
+      "board": "A",
+      "sourceCell": [
+        2,
+        1
+      ],
+      "atlasCell": [
+        2,
+        1
+      ],
+      "category": "rifle-pin",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "recovery",
+        "durationMs": 260,
+        "leadMs": 0,
+        "peakMs": 73,
+        "fadeStartMs": 161
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        260,
+        147,
+        120,
+        89
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.253906,
+        0.143555,
+        0.371094,
+        0.230469
+      ],
+      "cellUv": [
+        0.25,
+        0.125,
+        0.375,
+        0.25
+      ],
+      "nativeAspect": 1.348315,
+      "alphaCoverage": 0.191895
+    },
+    {
+      "id": "r-spent-pin",
+      "label": "Spent pin and chips",
+      "board": "A",
+      "sourceCell": [
+        3,
+        1
+      ],
+      "atlasCell": [
+        3,
+        1
+      ],
+      "category": "rifle-pin",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "spent",
+        "durationMs": 620,
+        "leadMs": 0,
+        "peakMs": 50,
+        "fadeStartMs": 341
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": false,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        388,
+        165,
+        120,
+        54
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.378906,
+        0.161133,
+        0.496094,
+        0.213867
+      ],
+      "cellUv": [
+        0.375,
+        0.125,
+        0.5,
+        0.25
+      ],
+      "nativeAspect": 2.222222,
+      "alphaCoverage": 0.115601
+    },
+    {
+      "id": "s-triple-rake",
+      "label": "Triple flechette rake",
+      "board": "A",
+      "sourceCell": [
+        0,
+        2
+      ],
+      "atlasCell": [
+        0,
+        2
+      ],
+      "category": "scatter-rake",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "fire",
+        "durationMs": 130,
+        "leadMs": 0,
+        "peakMs": 36,
+        "fadeStartMs": 81
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        4,
+        283,
+        119,
+        74
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.003906,
+        0.276367,
+        0.120117,
+        0.348633
+      ],
+      "cellUv": [
+        0,
+        0.25,
+        0.125,
+        0.375
+      ],
+      "nativeAspect": 1.608108,
+      "alphaCoverage": 0.140747
+    },
+    {
+      "id": "s-five-splay",
+      "label": "Five-way flechette splay",
+      "board": "A",
+      "sourceCell": [
+        1,
+        2
+      ],
+      "atlasCell": [
+        1,
+        2
+      ],
+      "category": "scatter-rake",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "fire",
+        "durationMs": 140,
+        "leadMs": 0,
+        "peakMs": 39,
+        "fadeStartMs": 87
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        132,
+        273,
+        119,
+        96
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.128906,
+        0.266602,
+        0.245117,
+        0.360352
+      ],
+      "cellUv": [
+        0.125,
+        0.25,
+        0.25,
+        0.375
+      ],
+      "nativeAspect": 1.239583,
+      "alphaCoverage": 0.136475
+    },
+    {
+      "id": "s-step-shear",
+      "label": "Stepped armor rake",
+      "board": "A",
+      "sourceCell": [
+        2,
+        2
+      ],
+      "atlasCell": [
+        2,
+        2
+      ],
+      "category": "scatter-rake",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 180,
+        "leadMs": 0,
+        "peakMs": 50,
+        "fadeStartMs": 112
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        260,
+        269,
+        119,
+        101
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.253906,
+        0.262695,
+        0.370117,
+        0.361328
+      ],
+      "cellUv": [
+        0.25,
+        0.25,
+        0.375,
+        0.375
+      ],
+      "nativeAspect": 1.178218,
+      "alphaCoverage": 0.269104
+    },
+    {
+      "id": "s-split-shear",
+      "label": "Split central strike",
+      "board": "A",
+      "sourceCell": [
+        3,
+        2
+      ],
+      "atlasCell": [
+        3,
+        2
+      ],
+      "category": "scatter-rake",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 170,
+        "leadMs": 0,
+        "peakMs": 48,
+        "fadeStartMs": 105
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        388,
+        276,
+        120,
+        88
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.378906,
+        0.269531,
+        0.496094,
+        0.355469
+      ],
+      "cellUv": [
+        0.375,
+        0.25,
+        0.5,
+        0.375
+      ],
+      "nativeAspect": 1.363636,
+      "alphaCoverage": 0.121948
+    },
+    {
+      "id": "s-armor-fan",
+      "label": "Armor splinter fan",
+      "board": "A",
+      "sourceCell": [
+        0,
+        3
+      ],
+      "atlasCell": [
+        0,
+        3
+      ],
+      "category": "scatter-rake",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 190,
+        "leadMs": 0,
+        "peakMs": 53,
+        "fadeStartMs": 118
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        11,
+        388,
+        105,
+        120
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.010742,
+        0.378906,
+        0.113281,
+        0.496094
+      ],
+      "cellUv": [
+        0,
+        0.375,
+        0.125,
+        0.5
+      ],
+      "nativeAspect": 0.875,
+      "alphaCoverage": 0.239502
+    },
+    {
+      "id": "s-plate-shards",
+      "label": "Torn plate shard burst",
+      "board": "A",
+      "sourceCell": [
+        1,
+        3
+      ],
+      "atlasCell": [
+        1,
+        3
+      ],
+      "category": "scatter-rake",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 190,
+        "leadMs": 0,
+        "peakMs": 53,
+        "fadeStartMs": 118
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        132,
+        412,
+        120,
+        72
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.128906,
+        0.402344,
+        0.246094,
+        0.472656
+      ],
+      "cellUv": [
+        0.125,
+        0.375,
+        0.25,
+        0.5
+      ],
+      "nativeAspect": 1.666667,
+      "alphaCoverage": 0.182007
+    },
+    {
+      "id": "s-rake-afterimage",
+      "label": "Receding rake afterimage",
+      "board": "A",
+      "sourceCell": [
+        2,
+        3
+      ],
+      "atlasCell": [
+        2,
+        3
+      ],
+      "category": "scatter-rake",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "recovery",
+        "durationMs": 250,
+        "leadMs": 0,
+        "peakMs": 70,
+        "fadeStartMs": 155
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        260,
+        419,
+        111,
+        57
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.253906,
+        0.40918,
+        0.362305,
+        0.464844
+      ],
+      "cellUv": [
+        0.25,
+        0.375,
+        0.375,
+        0.5
+      ],
+      "nativeAspect": 1.947368,
+      "alphaCoverage": 0.093689
+    },
+    {
+      "id": "s-spent-splinters",
+      "label": "Spent scatter splinters",
+      "board": "A",
+      "sourceCell": [
+        3,
+        3
+      ],
+      "atlasCell": [
+        3,
+        3
+      ],
+      "category": "scatter-rake",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "spent",
+        "durationMs": 680,
+        "leadMs": 0,
+        "peakMs": 54,
+        "fadeStartMs": 374
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": false,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        388,
+        399,
+        120,
+        98
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.378906,
+        0.389648,
+        0.496094,
+        0.485352
+      ],
+      "cellUv": [
+        0.375,
+        0.375,
+        0.5,
+        0.5
+      ],
+      "nativeAspect": 1.22449,
+      "alphaCoverage": 0.214111
+    },
+    {
+      "id": "l-seam-through",
+      "label": "Hairline armor through-line",
+      "board": "B",
+      "sourceCell": [
+        0,
+        0
+      ],
+      "atlasCell": [
+        4,
+        0
+      ],
+      "category": "laser-seam",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "fire",
+        "durationMs": 100,
+        "leadMs": 0,
+        "peakMs": 28,
+        "fadeStartMs": 62
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 7,
+      "packedRectPx": [
+        517,
+        33,
+        118,
+        62
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.504883,
+        0.032227,
+        0.620117,
+        0.092773
+      ],
+      "cellUv": [
+        0.5,
+        0,
+        0.625,
+        0.125
+      ],
+      "nativeAspect": 1.903226,
+      "alphaCoverage": 0.110718
+    },
+    {
+      "id": "l-clamped-line",
+      "label": "Clamped through-line",
+      "board": "B",
+      "sourceCell": [
+        1,
+        0
+      ],
+      "atlasCell": [
+        5,
+        0
+      ],
+      "category": "laser-seam",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "fire",
+        "durationMs": 120,
+        "leadMs": 0,
+        "peakMs": 34,
+        "fadeStartMs": 74
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 7,
+      "packedRectPx": [
+        645,
+        50,
+        118,
+        28
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.629883,
+        0.048828,
+        0.745117,
+        0.076172
+      ],
+      "cellUv": [
+        0.625,
+        0,
+        0.75,
+        0.125
+      ],
+      "nativeAspect": 4.214286,
+      "alphaCoverage": 0.062256
+    },
+    {
+      "id": "l-convergent-line",
+      "label": "Convergent double line",
+      "board": "B",
+      "sourceCell": [
+        2,
+        0
+      ],
+      "atlasCell": [
+        6,
+        0
+      ],
+      "category": "laser-seam",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "fire",
+        "durationMs": 120,
+        "leadMs": 0,
+        "peakMs": 34,
+        "fadeStartMs": 74
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 7,
+      "packedRectPx": [
+        773,
+        52,
+        116,
+        23
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.754883,
+        0.050781,
+        0.868164,
+        0.073242
+      ],
+      "cellUv": [
+        0.75,
+        0,
+        0.875,
+        0.125
+      ],
+      "nativeAspect": 5.043478,
+      "alphaCoverage": 0.039063
+    },
+    {
+      "id": "l-plate-pierce",
+      "label": "Plate-piercing seam",
+      "board": "B",
+      "sourceCell": [
+        3,
+        0
+      ],
+      "atlasCell": [
+        7,
+        0
+      ],
+      "category": "laser-seam",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 150,
+        "leadMs": 0,
+        "peakMs": 42,
+        "fadeStartMs": 93
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        900,
+        31,
+        119,
+        66
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.878906,
+        0.030273,
+        0.995117,
+        0.094727
+      ],
+      "cellUv": [
+        0.875,
+        0,
+        1,
+        0.125
+      ],
+      "nativeAspect": 1.80303,
+      "alphaCoverage": 0.110596
+    },
+    {
+      "id": "l-collapsing-echo",
+      "label": "Collapsing seam echoes",
+      "board": "B",
+      "sourceCell": [
+        0,
+        1
+      ],
+      "atlasCell": [
+        4,
+        1
+      ],
+      "category": "laser-seam",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "recovery",
+        "durationMs": 230,
+        "leadMs": 0,
+        "peakMs": 64,
+        "fadeStartMs": 143
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 7,
+      "packedRectPx": [
+        517,
+        173,
+        118,
+        38
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.504883,
+        0.168945,
+        0.620117,
+        0.206055
+      ],
+      "cellUv": [
+        0.5,
+        0.125,
+        0.625,
+        0.25
+      ],
+      "nativeAspect": 3.105263,
+      "alphaCoverage": 0.057678
+    },
+    {
+      "id": "l-broken-afterimage",
+      "label": "Broken line afterimage",
+      "board": "B",
+      "sourceCell": [
+        1,
+        1
+      ],
+      "atlasCell": [
+        5,
+        1
+      ],
+      "category": "laser-seam",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "recovery",
+        "durationMs": 230,
+        "leadMs": 0,
+        "peakMs": 64,
+        "fadeStartMs": 143
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 7,
+      "packedRectPx": [
+        645,
+        186,
+        116,
+        12
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.629883,
+        0.181641,
+        0.743164,
+        0.193359
+      ],
+      "cellUv": [
+        0.625,
+        0.125,
+        0.75,
+        0.25
+      ],
+      "nativeAspect": 9.666667,
+      "alphaCoverage": 0.021057
+    },
+    {
+      "id": "l-heated-incision",
+      "label": "Heated plate incision",
+      "board": "B",
+      "sourceCell": [
+        2,
+        1
+      ],
+      "atlasCell": [
+        6,
+        1
+      ],
+      "category": "laser-seam",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 180,
+        "leadMs": 0,
+        "peakMs": 50,
+        "fadeStartMs": 112
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 7,
+      "packedRectPx": [
+        773,
+        171,
+        118,
+        41
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.754883,
+        0.166992,
+        0.870117,
+        0.207031
+      ],
+      "cellUv": [
+        0.75,
+        0.125,
+        0.875,
+        0.25
+      ],
+      "nativeAspect": 2.878049,
+      "alphaCoverage": 0.106995
+    },
+    {
+      "id": "l-spent-seam",
+      "label": "Spent laser seam",
+      "board": "B",
+      "sourceCell": [
+        3,
+        1
+      ],
+      "atlasCell": [
+        7,
+        1
+      ],
+      "category": "laser-seam",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "spent",
+        "durationMs": 460,
+        "leadMs": 0,
+        "peakMs": 37,
+        "fadeStartMs": 253
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": false,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        902,
+        178,
+        118,
+        28
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.880859,
+        0.173828,
+        0.996094,
+        0.201172
+      ],
+      "cellUv": [
+        0.875,
+        0.125,
+        1,
+        0.25
+      ],
+      "nativeAspect": 4.214286,
+      "alphaCoverage": 0.035156
+    },
+    {
+      "id": "h-vane-bracket",
+      "label": "Guidance-vane bracket",
+      "board": "B",
+      "sourceCell": [
+        0,
+        2
+      ],
+      "atlasCell": [
+        4,
+        2
+      ],
+      "category": "homing-shear",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "fire",
+        "durationMs": 130,
+        "leadMs": 0,
+        "peakMs": 36,
+        "fadeStartMs": 81
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        516,
+        288,
+        117,
+        63
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.503906,
+        0.28125,
+        0.618164,
+        0.342773
+      ],
+      "cellUv": [
+        0.5,
+        0.25,
+        0.625,
+        0.375
+      ],
+      "nativeAspect": 1.857143,
+      "alphaCoverage": 0.110046
+    },
+    {
+      "id": "h-rise-shear",
+      "label": "Rising three-vane shear",
+      "board": "B",
+      "sourceCell": [
+        1,
+        2
+      ],
+      "atlasCell": [
+        5,
+        2
+      ],
+      "category": "homing-shear",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "fire",
+        "durationMs": 140,
+        "leadMs": 0,
+        "peakMs": 39,
+        "fadeStartMs": 87
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        644,
+        265,
+        117,
+        110
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.628906,
+        0.258789,
+        0.743164,
+        0.366211
+      ],
+      "cellUv": [
+        0.625,
+        0.25,
+        0.75,
+        0.375
+      ],
+      "nativeAspect": 1.063636,
+      "alphaCoverage": 0.106873
+    },
+    {
+      "id": "h-fin-slice",
+      "label": "Guidance-fin slice",
+      "board": "B",
+      "sourceCell": [
+        2,
+        2
+      ],
+      "atlasCell": [
+        6,
+        2
+      ],
+      "category": "homing-shear",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "fire",
+        "durationMs": 130,
+        "leadMs": 0,
+        "peakMs": 36,
+        "fadeStartMs": 81
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        777,
+        297,
+        115,
+        46
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.758789,
+        0.290039,
+        0.871094,
+        0.334961
+      ],
+      "cellUv": [
+        0.75,
+        0.25,
+        0.875,
+        0.375
+      ],
+      "nativeAspect": 2.5,
+      "alphaCoverage": 0.111694
+    },
+    {
+      "id": "h-opposed-vanes",
+      "label": "Opposed vane snap",
+      "board": "B",
+      "sourceCell": [
+        3,
+        2
+      ],
+      "atlasCell": [
+        7,
+        2
+      ],
+      "category": "homing-shear",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 170,
+        "leadMs": 0,
+        "peakMs": 48,
+        "fadeStartMs": 105
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 7,
+      "packedRectPx": [
+        901,
+        291,
+        118,
+        57
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.879883,
+        0.28418,
+        0.995117,
+        0.339844
+      ],
+      "cellUv": [
+        0.875,
+        0.25,
+        1,
+        0.375
+      ],
+      "nativeAspect": 2.070175,
+      "alphaCoverage": 0.106506
+    },
+    {
+      "id": "h-broken-crosscut",
+      "label": "Broken guidance cross-cut",
+      "board": "B",
+      "sourceCell": [
+        0,
+        3
+      ],
+      "atlasCell": [
+        4,
+        3
+      ],
+      "category": "homing-shear",
+      "reviewStatus": "rejected",
+      "reviewReason": "at 12px the four slashes collapse into the symmetric X/star vocabulary the pack forbids.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 170,
+        "leadMs": 0,
+        "peakMs": 48,
+        "fadeStartMs": 105
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 7,
+      "packedRectPx": [
+        517,
+        406,
+        116,
+        84
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.504883,
+        0.396484,
+        0.618164,
+        0.478516
+      ],
+      "cellUv": [
+        0.5,
+        0.375,
+        0.625,
+        0.5
+      ],
+      "nativeAspect": 1.380952,
+      "alphaCoverage": 0.086609
+    },
+    {
+      "id": "h-correction-kink",
+      "label": "Guidance correction kink",
+      "board": "B",
+      "sourceCell": [
+        1,
+        3
+      ],
+      "atlasCell": [
+        5,
+        3
+      ],
+      "category": "homing-shear",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "fire",
+        "durationMs": 140,
+        "leadMs": 0,
+        "peakMs": 39,
+        "fadeStartMs": 87
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        645,
+        427,
+        119,
+        42
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.629883,
+        0.416992,
+        0.746094,
+        0.458008
+      ],
+      "cellUv": [
+        0.625,
+        0.375,
+        0.75,
+        0.5
+      ],
+      "nativeAspect": 2.833333,
+      "alphaCoverage": 0.053101
+    },
+    {
+      "id": "h-vane-afterimage",
+      "label": "Vane correction afterimage",
+      "board": "B",
+      "sourceCell": [
+        2,
+        3
+      ],
+      "atlasCell": [
+        6,
+        3
+      ],
+      "category": "homing-shear",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "recovery",
+        "durationMs": 240,
+        "leadMs": 0,
+        "peakMs": 67,
+        "fadeStartMs": 149
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 7,
+      "packedRectPx": [
+        773,
+        442,
+        116,
+        11
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.754883,
+        0.431641,
+        0.868164,
+        0.442383
+      ],
+      "cellUv": [
+        0.75,
+        0.375,
+        0.875,
+        0.5
+      ],
+      "nativeAspect": 10.545455,
+      "alphaCoverage": 0.017334
+    },
+    {
+      "id": "h-spent-hardware",
+      "label": "Spent guidance hardware",
+      "board": "B",
+      "sourceCell": [
+        3,
+        3
+      ],
+      "atlasCell": [
+        7,
+        3
+      ],
+      "category": "homing-shear",
+      "reviewStatus": "rejected",
+      "reviewReason": "minification reads as two unrelated props rather than a single action effect.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "spent",
+        "durationMs": 560,
+        "leadMs": 0,
+        "peakMs": 45,
+        "fadeStartMs": 308
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": false,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        900,
+        416,
+        120,
+        63
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.878906,
+        0.40625,
+        0.996094,
+        0.467773
+      ],
+      "cellUv": [
+        0.875,
+        0.375,
+        1,
+        0.5
+      ],
+      "nativeAspect": 1.904762,
+      "alphaCoverage": 0.105652
+    },
+    {
+      "id": "f-serrated-bite",
+      "label": "Serrated combustion bite",
+      "board": "C",
+      "sourceCell": [
+        0,
+        0
+      ],
+      "atlasCell": [
+        0,
+        4
+      ],
+      "category": "combustion-bite",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 180,
+        "leadMs": 0,
+        "peakMs": 50,
+        "fadeStartMs": 112
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        4,
+        540,
+        120,
+        71
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.003906,
+        0.527344,
+        0.121094,
+        0.59668
+      ],
+      "cellUv": [
+        0,
+        0.5,
+        0.125,
+        0.625
+      ],
+      "nativeAspect": 1.690141,
+      "alphaCoverage": 0.258972
+    },
+    {
+      "id": "f-ground-wedge",
+      "label": "Ground-skimming pressure wedge",
+      "board": "C",
+      "sourceCell": [
+        1,
+        0
+      ],
+      "atlasCell": [
+        1,
+        4
+      ],
+      "category": "combustion-bite",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "fire",
+        "durationMs": 160,
+        "leadMs": 0,
+        "peakMs": 45,
+        "fadeStartMs": 99
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        132,
+        547,
+        120,
+        58
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.128906,
+        0.53418,
+        0.246094,
+        0.59082
+      ],
+      "cellUv": [
+        0.125,
+        0.5,
+        0.25,
+        0.625
+      ],
+      "nativeAspect": 2.068966,
+      "alphaCoverage": 0.114319
+    },
+    {
+      "id": "f-pressure-burst",
+      "label": "Sparse pressure burst",
+      "board": "C",
+      "sourceCell": [
+        2,
+        0
+      ],
+      "atlasCell": [
+        2,
+        4
+      ],
+      "category": "combustion-bite",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 170,
+        "leadMs": 0,
+        "peakMs": 48,
+        "fadeStartMs": 105
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        260,
+        537,
+        120,
+        77
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.253906,
+        0.524414,
+        0.371094,
+        0.599609
+      ],
+      "cellUv": [
+        0.25,
+        0.5,
+        0.375,
+        0.625
+      ],
+      "nativeAspect": 1.558442,
+      "alphaCoverage": 0.184265
+    },
+    {
+      "id": "f-plate-incision",
+      "label": "Combustion plate incision",
+      "board": "C",
+      "sourceCell": [
+        3,
+        0
+      ],
+      "atlasCell": [
+        3,
+        4
+      ],
+      "category": "combustion-bite",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 190,
+        "leadMs": 0,
+        "peakMs": 53,
+        "fadeStartMs": 118
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        388,
+        535,
+        120,
+        81
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.378906,
+        0.522461,
+        0.496094,
+        0.601563
+      ],
+      "cellUv": [
+        0.375,
+        0.5,
+        0.5,
+        0.625
+      ],
+      "nativeAspect": 1.481481,
+      "alphaCoverage": 0.234192
+    },
+    {
+      "id": "f-cinder-trail",
+      "label": "Separated directional cinders",
+      "board": "C",
+      "sourceCell": [
+        0,
+        1
+      ],
+      "atlasCell": [
+        0,
+        5
+      ],
+      "category": "combustion-bite",
+      "reviewStatus": "production",
+      "reviewReason": "Reviewed for medium/large punctuation only; retains identity at 24–48px.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "recovery",
+        "durationMs": 260,
+        "leadMs": 0,
+        "peakMs": 73,
+        "fadeStartMs": 161
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        4,
+        674,
+        120,
+        59
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.003906,
+        0.658203,
+        0.121094,
+        0.71582
+      ],
+      "cellUv": [
+        0,
+        0.625,
+        0.125,
+        0.75
+      ],
+      "nativeAspect": 2.033898,
+      "alphaCoverage": 0.054443
+    },
+    {
+      "id": "f-torn-pressure-ribbon",
+      "label": "Perforated pressure ribbon",
+      "board": "C",
+      "sourceCell": [
+        1,
+        1
+      ],
+      "atlasCell": [
+        1,
+        5
+      ],
+      "category": "combustion-bite",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "fire",
+        "durationMs": 160,
+        "leadMs": 0,
+        "peakMs": 45,
+        "fadeStartMs": 99
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        132,
+        681,
+        120,
+        46
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.128906,
+        0.665039,
+        0.246094,
+        0.709961
+      ],
+      "cellUv": [
+        0.125,
+        0.625,
+        0.25,
+        0.75
+      ],
+      "nativeAspect": 2.608696,
+      "alphaCoverage": 0.142822
+    },
+    {
+      "id": "f-double-vent-wisp",
+      "label": "Double gray vent wisp",
+      "board": "C",
+      "sourceCell": [
+        2,
+        1
+      ],
+      "atlasCell": [
+        2,
+        5
+      ],
+      "category": "combustion-bite",
+      "reviewStatus": "rejected",
+      "reviewReason": "obvious smoke wisps reintroduce the soft cloud vocabulary rejected from v1.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "recovery",
+        "durationMs": 330,
+        "leadMs": 0,
+        "peakMs": 92,
+        "fadeStartMs": 205
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 9,
+      "packedRectPx": [
+        264,
+        668,
+        113,
+        70
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.257813,
+        0.652344,
+        0.368164,
+        0.720703
+      ],
+      "cellUv": [
+        0.25,
+        0.625,
+        0.375,
+        0.75
+      ],
+      "nativeAspect": 1.614286,
+      "alphaCoverage": 0.135376
+    },
+    {
+      "id": "f-spent-cinders",
+      "label": "Spent combustion cinders",
+      "board": "C",
+      "sourceCell": [
+        3,
+        1
+      ],
+      "atlasCell": [
+        3,
+        5
+      ],
+      "category": "combustion-bite",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "spent",
+        "durationMs": 620,
+        "leadMs": 0,
+        "peakMs": 50,
+        "fadeStartMs": 341
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": false,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        388,
+        673,
+        120,
+        61
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.378906,
+        0.657227,
+        0.496094,
+        0.716797
+      ],
+      "cellUv": [
+        0.375,
+        0.625,
+        0.5,
+        0.75
+      ],
+      "nativeAspect": 1.967213,
+      "alphaCoverage": 0.123352
+    },
+    {
+      "id": "enemy-rotor-rupture",
+      "label": "Wasp rotor-vane rupture",
+      "board": "C",
+      "sourceCell": [
+        0,
+        2
+      ],
+      "atlasCell": [
+        0,
+        6
+      ],
+      "category": "enemy-rupture",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 220,
+        "leadMs": 0,
+        "peakMs": 62,
+        "fadeStartMs": 136
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        15,
+        772,
+        97,
+        71
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.014648,
+        0.753906,
+        0.109375,
+        0.823242
+      ],
+      "cellUv": [
+        0,
+        0.75,
+        0.125,
+        0.875
+      ],
+      "nativeAspect": 1.366197,
+      "alphaCoverage": 0.100647
+    },
+    {
+      "id": "enemy-scute-rupture",
+      "label": "Hound scute and tendon rupture",
+      "board": "C",
+      "sourceCell": [
+        1,
+        2
+      ],
+      "atlasCell": [
+        1,
+        6
+      ],
+      "category": "enemy-rupture",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 240,
+        "leadMs": 0,
+        "peakMs": 67,
+        "fadeStartMs": 149
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        132,
+        796,
+        120,
+        72
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.128906,
+        0.777344,
+        0.246094,
+        0.847656
+      ],
+      "cellUv": [
+        0.125,
+        0.75,
+        0.25,
+        0.875
+      ],
+      "nativeAspect": 1.666667,
+      "alphaCoverage": 0.239075
+    },
+    {
+      "id": "enemy-iris-failure",
+      "label": "Turret iris-jaw failure",
+      "board": "C",
+      "sourceCell": [
+        2,
+        2
+      ],
+      "atlasCell": [
+        2,
+        6
+      ],
+      "category": "enemy-rupture",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 240,
+        "leadMs": 0,
+        "peakMs": 67,
+        "fadeStartMs": 149
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        260,
+        780,
+        120,
+        103
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.253906,
+        0.761719,
+        0.371094,
+        0.862305
+      ],
+      "cellUv": [
+        0.25,
+        0.75,
+        0.375,
+        0.875
+      ],
+      "nativeAspect": 1.165049,
+      "alphaCoverage": 0.324829
+    },
+    {
+      "id": "enemy-breech-fracture",
+      "label": "Mortar breech fracture",
+      "board": "C",
+      "sourceCell": [
+        3,
+        2
+      ],
+      "atlasCell": [
+        3,
+        6
+      ],
+      "category": "enemy-rupture",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 240,
+        "leadMs": 0,
+        "peakMs": 67,
+        "fadeStartMs": 149
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        388,
+        801,
+        120,
+        61
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.378906,
+        0.782227,
+        0.496094,
+        0.841797
+      ],
+      "cellUv": [
+        0.375,
+        0.75,
+        0.5,
+        0.875
+      ],
+      "nativeAspect": 1.967213,
+      "alphaCoverage": 0.157959
+    },
+    {
+      "id": "enemy-rise-vapor",
+      "label": "Split rising pressure vapor",
+      "board": "C",
+      "sourceCell": [
+        0,
+        3
+      ],
+      "atlasCell": [
+        0,
+        7
+      ],
+      "category": "enemy-rupture",
+      "reviewStatus": "rejected",
+      "reviewReason": "smoke-wisp identity is atmospheric, not a strong mechanical action silhouette.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "recovery",
+        "durationMs": 420,
+        "leadMs": 0,
+        "peakMs": 118,
+        "fadeStartMs": 260
+      },
+      "pivot": [
+        0.5,
+        0.88
+      ],
+      "direction": [
+        0,
+        1
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 7,
+      "packedRectPx": [
+        8,
+        902,
+        115,
+        117
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.007813,
+        0.880859,
+        0.120117,
+        0.995117
+      ],
+      "cellUv": [
+        0,
+        0.875,
+        0.125,
+        1
+      ],
+      "nativeAspect": 0.982906,
+      "alphaCoverage": 0.228699
+    },
+    {
+      "id": "enemy-side-vent",
+      "label": "Sideways vent cough",
+      "board": "C",
+      "sourceCell": [
+        1,
+        3
+      ],
+      "atlasCell": [
+        1,
+        7
+      ],
+      "category": "enemy-rupture",
+      "reviewStatus": "rejected",
+      "reviewReason": "smoke body collapses into a soft puff under minification.",
+      "screenExtentPx": {
+        "min": 24,
+        "max": 48
+      },
+      "timing": {
+        "state": "recovery",
+        "durationMs": 380,
+        "leadMs": 0,
+        "peakMs": 106,
+        "fadeStartMs": 236
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        134,
+        934,
+        118,
+        53
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.130859,
+        0.912109,
+        0.246094,
+        0.963867
+      ],
+      "cellUv": [
+        0.125,
+        0.875,
+        0.25,
+        1
+      ],
+      "nativeAspect": 2.226415,
+      "alphaCoverage": 0.112305
+    },
+    {
+      "id": "enemy-terminal-debris",
+      "label": "Terminal bracket and cable debris",
+      "board": "C",
+      "sourceCell": [
+        2,
+        3
+      ],
+      "atlasCell": [
+        2,
+        7
+      ],
+      "category": "enemy-rupture",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "spent",
+        "durationMs": 760,
+        "leadMs": 0,
+        "peakMs": 61,
+        "fadeStartMs": 418
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": false,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        260,
+        928,
+        120,
+        64
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.253906,
+        0.90625,
+        0.371094,
+        0.96875
+      ],
+      "cellUv": [
+        0.25,
+        0.875,
+        0.375,
+        1
+      ],
+      "nativeAspect": 1.875,
+      "alphaCoverage": 0.118652
+    },
+    {
+      "id": "enemy-split-core",
+      "label": "Split mechanical core",
+      "board": "C",
+      "sourceCell": [
+        3,
+        3
+      ],
+      "atlasCell": [
+        3,
+        7
+      ],
+      "category": "enemy-rupture",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 260,
+        "leadMs": 0,
+        "peakMs": 73,
+        "fadeStartMs": 161
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        388,
+        924,
+        120,
+        72
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.378906,
+        0.902344,
+        0.496094,
+        0.972656
+      ],
+      "cellUv": [
+        0.375,
+        0.875,
+        0.5,
+        1
+      ],
+      "nativeAspect": 1.666667,
+      "alphaCoverage": 0.236816
+    },
+    {
+      "id": "meridian-clamp-snap",
+      "label": "Meridian clamp snap",
+      "board": "D",
+      "sourceCell": [
+        0,
+        0
+      ],
+      "atlasCell": [
+        4,
+        4
+      ],
+      "category": "meridian-response",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 220,
+        "leadMs": 0,
+        "peakMs": 62,
+        "fadeStartMs": 136
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        516,
+        526,
+        120,
+        100
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.503906,
+        0.513672,
+        0.621094,
+        0.611328
+      ],
+      "cellUv": [
+        0.5,
+        0.5,
+        0.625,
+        0.625
+      ],
+      "nativeAspect": 1.2,
+      "alphaCoverage": 0.424377
+    },
+    {
+      "id": "meridian-lock-rails",
+      "label": "Converging locking rails",
+      "board": "D",
+      "sourceCell": [
+        1,
+        0
+      ],
+      "atlasCell": [
+        5,
+        4
+      ],
+      "category": "meridian-response",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "tell",
+        "durationMs": 260,
+        "leadMs": 260,
+        "peakMs": 73,
+        "fadeStartMs": 161
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        644,
+        531,
+        120,
+        89
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.628906,
+        0.518555,
+        0.746094,
+        0.605469
+      ],
+      "cellUv": [
+        0.625,
+        0.5,
+        0.75,
+        0.625
+      ],
+      "nativeAspect": 1.348315,
+      "alphaCoverage": 0.268677
+    },
+    {
+      "id": "meridian-shutter-strike",
+      "label": "Offset shutter strike",
+      "board": "D",
+      "sourceCell": [
+        2,
+        0
+      ],
+      "atlasCell": [
+        6,
+        4
+      ],
+      "category": "meridian-response",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 230,
+        "leadMs": 0,
+        "peakMs": 64,
+        "fadeStartMs": 143
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        772,
+        519,
+        120,
+        113
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.753906,
+        0.506836,
+        0.871094,
+        0.617188
+      ],
+      "cellUv": [
+        0.75,
+        0.5,
+        0.875,
+        0.625
+      ],
+      "nativeAspect": 1.061947,
+      "alphaCoverage": 0.536499
+    },
+    {
+      "id": "meridian-clamp-recoil",
+      "label": "Clamp-jaw recoil",
+      "board": "D",
+      "sourceCell": [
+        3,
+        0
+      ],
+      "atlasCell": [
+        7,
+        4
+      ],
+      "category": "meridian-response",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "recovery",
+        "durationMs": 320,
+        "leadMs": 0,
+        "peakMs": 90,
+        "fadeStartMs": 198
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        908,
+        516,
+        104,
+        120
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.886719,
+        0.503906,
+        0.988281,
+        0.621094
+      ],
+      "cellUv": [
+        0.875,
+        0.5,
+        1,
+        0.625
+      ],
+      "nativeAspect": 0.866667,
+      "alphaCoverage": 0.307434
+    },
+    {
+      "id": "meridian-vent-slat",
+      "label": "Pressure vent through slats",
+      "board": "D",
+      "sourceCell": [
+        0,
+        1
+      ],
+      "atlasCell": [
+        4,
+        5
+      ],
+      "category": "meridian-response",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 220,
+        "leadMs": 0,
+        "peakMs": 62,
+        "fadeStartMs": 136
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        516,
+        664,
+        114,
+        79
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.503906,
+        0.648438,
+        0.615234,
+        0.725586
+      ],
+      "cellUv": [
+        0.5,
+        0.625,
+        0.625,
+        0.75
+      ],
+      "nativeAspect": 1.443038,
+      "alphaCoverage": 0.306702
+    },
+    {
+      "id": "meridian-shutter-peel",
+      "label": "Armor shutters peeling open",
+      "board": "D",
+      "sourceCell": [
+        1,
+        1
+      ],
+      "atlasCell": [
+        5,
+        5
+      ],
+      "category": "meridian-response",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 260,
+        "leadMs": 0,
+        "peakMs": 73,
+        "fadeStartMs": 161
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        670,
+        648,
+        94,
+        111
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.654297,
+        0.632813,
+        0.746094,
+        0.741211
+      ],
+      "cellUv": [
+        0.625,
+        0.625,
+        0.75,
+        0.75
+      ],
+      "nativeAspect": 0.846847,
+      "alphaCoverage": 0.356079
+    },
+    {
+      "id": "meridian-seal-sweep",
+      "label": "Emergency seal sweep",
+      "board": "D",
+      "sourceCell": [
+        2,
+        1
+      ],
+      "atlasCell": [
+        6,
+        5
+      ],
+      "category": "meridian-response",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "tell",
+        "durationMs": 300,
+        "leadMs": 300,
+        "peakMs": 84,
+        "fadeStartMs": 186
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        772,
+        648,
+        120,
+        111
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.753906,
+        0.632813,
+        0.871094,
+        0.741211
+      ],
+      "cellUv": [
+        0.75,
+        0.625,
+        0.875,
+        0.75
+      ],
+      "nativeAspect": 1.081081,
+      "alphaCoverage": 0.390747
+    },
+    {
+      "id": "meridian-spent-louvers",
+      "label": "Spent bent louvers",
+      "board": "D",
+      "sourceCell": [
+        3,
+        1
+      ],
+      "atlasCell": [
+        7,
+        5
+      ],
+      "category": "meridian-response",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "spent",
+        "durationMs": 820,
+        "leadMs": 0,
+        "peakMs": 66,
+        "fadeStartMs": 451
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": false,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        900,
+        655,
+        120,
+        97
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.878906,
+        0.639648,
+        0.996094,
+        0.734375
+      ],
+      "cellUv": [
+        0.875,
+        0.625,
+        1,
+        0.75
+      ],
+      "nativeAspect": 1.237113,
+      "alphaCoverage": 0.375244
+    },
+    {
+      "id": "crown-command-packet",
+      "label": "Crown command packet",
+      "board": "D",
+      "sourceCell": [
+        0,
+        2
+      ],
+      "atlasCell": [
+        4,
+        6
+      ],
+      "category": "crown-uplink",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "fire",
+        "durationMs": 180,
+        "leadMs": 0,
+        "peakMs": 50,
+        "fadeStartMs": 112
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        521,
+        772,
+        110,
+        120
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.508789,
+        0.753906,
+        0.616211,
+        0.871094
+      ],
+      "cellUv": [
+        0.5,
+        0.75,
+        0.625,
+        0.875
+      ],
+      "nativeAspect": 0.916667,
+      "alphaCoverage": 0.199463
+    },
+    {
+      "id": "crown-packet-arrival",
+      "label": "Forked packet arrival",
+      "board": "D",
+      "sourceCell": [
+        1,
+        2
+      ],
+      "atlasCell": [
+        5,
+        6
+      ],
+      "category": "crown-uplink",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 210,
+        "leadMs": 0,
+        "peakMs": 59,
+        "fadeStartMs": 130
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        644,
+        795,
+        120,
+        74
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.628906,
+        0.776367,
+        0.746094,
+        0.848633
+      ],
+      "cellUv": [
+        0.625,
+        0.75,
+        0.75,
+        0.875
+      ],
+      "nativeAspect": 1.621622,
+      "alphaCoverage": 0.18512
+    },
+    {
+      "id": "warden-rack-rupture",
+      "label": "Warden cannon-rack rupture",
+      "board": "D",
+      "sourceCell": [
+        2,
+        2
+      ],
+      "atlasCell": [
+        6,
+        6
+      ],
+      "category": "crown-uplink",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 250,
+        "leadMs": 0,
+        "peakMs": 70,
+        "fadeStartMs": 155
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        772,
+        792,
+        120,
+        79
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.753906,
+        0.773438,
+        0.871094,
+        0.850586
+      ],
+      "cellUv": [
+        0.75,
+        0.75,
+        0.875,
+        0.875
+      ],
+      "nativeAspect": 1.518987,
+      "alphaCoverage": 0.233704
+    },
+    {
+      "id": "crown-interlock-failure",
+      "label": "Crown interlock failure",
+      "board": "D",
+      "sourceCell": [
+        3,
+        2
+      ],
+      "atlasCell": [
+        7,
+        6
+      ],
+      "category": "crown-uplink",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 280,
+        "leadMs": 0,
+        "peakMs": 78,
+        "fadeStartMs": 174
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        905,
+        772,
+        110,
+        120
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.883789,
+        0.753906,
+        0.991211,
+        0.871094
+      ],
+      "cellUv": [
+        0.875,
+        0.75,
+        1,
+        0.875
+      ],
+      "nativeAspect": 0.916667,
+      "alphaCoverage": 0.501648
+    },
+    {
+      "id": "crown-uplink-needle",
+      "label": "Discontinuous vertical uplink",
+      "board": "D",
+      "sourceCell": [
+        0,
+        3
+      ],
+      "atlasCell": [
+        4,
+        7
+      ],
+      "category": "crown-uplink",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "tell",
+        "durationMs": 320,
+        "leadMs": 320,
+        "peakMs": 90,
+        "fadeStartMs": 198
+      },
+      "pivot": [
+        0.5,
+        0.88
+      ],
+      "direction": [
+        0,
+        1
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        553,
+        900,
+        45,
+        120
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.540039,
+        0.878906,
+        0.583984,
+        0.996094
+      ],
+      "cellUv": [
+        0.5,
+        0.875,
+        0.625,
+        1
+      ],
+      "nativeAspect": 0.375,
+      "alphaCoverage": 0.137329
+    },
+    {
+      "id": "crown-carrier-release",
+      "label": "Carrier signal release",
+      "board": "D",
+      "sourceCell": [
+        1,
+        3
+      ],
+      "atlasCell": [
+        5,
+        7
+      ],
+      "category": "crown-uplink",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "fire",
+        "durationMs": 230,
+        "leadMs": 0,
+        "peakMs": 64,
+        "fadeStartMs": 143
+      },
+      "pivot": [
+        0.12,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        645,
+        911,
+        119,
+        97
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.629883,
+        0.889648,
+        0.746094,
+        0.984375
+      ],
+      "cellUv": [
+        0.625,
+        0.875,
+        0.75,
+        1
+      ],
+      "nativeAspect": 1.226804,
+      "alphaCoverage": 0.276855
+    },
+    {
+      "id": "crown-housing-shear",
+      "label": "Transmitter housing shear",
+      "board": "D",
+      "sourceCell": [
+        2,
+        3
+      ],
+      "atlasCell": [
+        6,
+        7
+      ],
+      "category": "crown-uplink",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "impact",
+        "durationMs": 300,
+        "leadMs": 0,
+        "peakMs": 84,
+        "fadeStartMs": 186
+      },
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "direction": [
+        1,
+        0
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        772,
+        900,
+        119,
+        120
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.753906,
+        0.878906,
+        0.870117,
+        0.996094
+      ],
+      "cellUv": [
+        0.75,
+        0.875,
+        0.875,
+        1
+      ],
+      "nativeAspect": 0.991667,
+      "alphaCoverage": 0.539185
+    },
+    {
+      "id": "crown-uplink-afterimage",
+      "label": "Sparse uplink afterimage",
+      "board": "D",
+      "sourceCell": [
+        3,
+        3
+      ],
+      "atlasCell": [
+        7,
+        7
+      ],
+      "category": "crown-uplink",
+      "reviewStatus": "production",
+      "reviewReason": "Strong broad/asymmetric silhouette survives the reviewed 12px proof.",
+      "screenExtentPx": {
+        "min": 12,
+        "max": 48
+      },
+      "timing": {
+        "state": "recovery",
+        "durationMs": 360,
+        "leadMs": 0,
+        "peakMs": 101,
+        "fadeStartMs": 223
+      },
+      "pivot": [
+        0.5,
+        0.88
+      ],
+      "direction": [
+        0,
+        1
+      ],
+      "runtimeTint": true,
+      "sourceGutterPx": 6,
+      "packedRectPx": [
+        929,
+        900,
+        61,
+        120
+      ],
+      "uvOrigin": "top-left",
+      "uv": [
+        0.907227,
+        0.878906,
+        0.966797,
+        0.996094
+      ],
+      "cellUv": [
+        0.875,
+        0.875,
+        1,
+        1
+      ],
+      "nativeAspect": 0.508333,
+      "alphaCoverage": 0.06781
+    }
+  ]
+}

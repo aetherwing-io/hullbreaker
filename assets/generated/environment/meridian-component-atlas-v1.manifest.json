@@ -1,0 +1,2659 @@
+{
+  "version": 1,
+  "runtime": {
+    "file": "assets/generated/environment/meridian-component-atlas-v1.png",
+    "width": 2048,
+    "height": 1024,
+    "grid": [
+      8,
+      4
+    ],
+    "cell": [
+      256,
+      256
+    ],
+    "gpuTextures": 1,
+    "emissive": false,
+    "alphaTest": 0.035,
+    "minFilter": "LinearMipmapLinearFilter"
+  },
+  "review": {
+    "humanApproved": true,
+    "approvedComponents": 32,
+    "rejectedComponents": 0,
+    "alphaCoverage": 0.3154,
+    "greenRemnant": 0,
+    "minifiedGreenRemnant": 0.000134,
+    "alphaEdgeGreenRemnant": 0,
+    "edgeProof": "assets/generated/environment/meridian-component-atlas-v1.edge-proof.png",
+    "nativeBoundsMeasured": true,
+    "nonUniformStretchRestricted": true
+  },
+  "categories": {
+    "trim-cap": 2,
+    "beam-brace": 3,
+    "ladder-rail": 3,
+    "defense-state": 12,
+    "pipe-conduit": 4,
+    "near-silhouette": 2,
+    "service-organ": 1,
+    "scuttle-damage": 5
+  },
+  "sockets": {
+    "traversal": 2,
+    "spawn": 3,
+    "interlock": 4,
+    "clamp": 3,
+    "defense": 3,
+    "pressure": 3,
+    "power": 2,
+    "vent": 2,
+    "rupture": 4
+  },
+  "sources": [
+    {
+      "id": "structure",
+      "file": "meridian-components-structure-pixel-v2.png",
+      "keyMode": "alpha",
+      "width": 1254,
+      "height": 1254,
+      "approvedComponents": 16,
+      "rejectedComponents": []
+    },
+    {
+      "id": "defense",
+      "file": "meridian-components-defense-chroma-v1.png",
+      "keyMode": "green",
+      "width": 1254,
+      "height": 1254,
+      "approvedComponents": 16,
+      "rejectedComponents": []
+    }
+  ],
+  "components": [
+    {
+      "id": "route-cap-long",
+      "category": "trim-cap",
+      "stretchAxes": [
+        "x"
+      ],
+      "rotations": [
+        0,
+        2
+      ],
+      "mirrorX": false,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "route-edge",
+          "x": 0.5,
+          "y": 0.82
+        }
+      ],
+      "sockets": [],
+      "depthBand": "proud",
+      "state": null,
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant"
+      ],
+      "gameplayRole": "structure-read",
+      "emissive": false,
+      "source": "structure",
+      "sourceCell": 0,
+      "sourceRect": {
+        "x": 24,
+        "y": 116,
+        "w": 300,
+        "h": 95
+      },
+      "sourceConnectedArea": 19065,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 288,
+        "h": 83
+      },
+      "nativeAspect": 3.4699,
+      "atlasCell": {
+        "index": 0,
+        "col": 0,
+        "row": 0
+      },
+      "visibleRect": {
+        "x": 18,
+        "y": 97,
+        "w": 220,
+        "h": 61
+      },
+      "uvRect": [
+        0.0087890625,
+        0.0947265625,
+        0.1162109375,
+        0.154296875
+      ],
+      "guard": {
+        "left": 18,
+        "top": 97,
+        "right": 18,
+        "bottom": 98
+      }
+    },
+    {
+      "id": "scute-edge",
+      "category": "trim-cap",
+      "stretchAxes": [
+        "x"
+      ],
+      "rotations": [
+        0,
+        2
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "scute-edge",
+          "x": 0.5,
+          "y": 0.78
+        }
+      ],
+      "sockets": [],
+      "depthBand": "proud",
+      "state": null,
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant"
+      ],
+      "gameplayRole": "structure-read",
+      "emissive": false,
+      "source": "structure",
+      "sourceCell": 1,
+      "sourceRect": {
+        "x": 344,
+        "y": 121,
+        "w": 291,
+        "h": 88
+      },
+      "sourceConnectedArea": 18237,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 279,
+        "h": 76
+      },
+      "nativeAspect": 3.6711,
+      "atlasCell": {
+        "index": 1,
+        "col": 1,
+        "row": 0
+      },
+      "visibleRect": {
+        "x": 274,
+        "y": 99,
+        "w": 220,
+        "h": 58
+      },
+      "uvRect": [
+        0.1337890625,
+        0.0966796875,
+        0.2412109375,
+        0.1533203125
+      ],
+      "guard": {
+        "left": 18,
+        "top": 99,
+        "right": 18,
+        "bottom": 99
+      }
+    },
+    {
+      "id": "i-girder",
+      "category": "beam-brace",
+      "stretchAxes": [
+        "x"
+      ],
+      "rotations": [
+        0,
+        2
+      ],
+      "mirrorX": false,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "load-path",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [],
+      "depthBand": "proud",
+      "state": null,
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant"
+      ],
+      "gameplayRole": "structure-read",
+      "emissive": false,
+      "source": "structure",
+      "sourceCell": 2,
+      "sourceRect": {
+        "x": 663,
+        "y": 105,
+        "w": 262,
+        "h": 119
+      },
+      "sourceConnectedArea": 21909,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 250,
+        "h": 107
+      },
+      "nativeAspect": 2.3364,
+      "atlasCell": {
+        "index": 2,
+        "col": 2,
+        "row": 0
+      },
+      "visibleRect": {
+        "x": 530,
+        "y": 82,
+        "w": 220,
+        "h": 92
+      },
+      "uvRect": [
+        0.2587890625,
+        0.080078125,
+        0.3662109375,
+        0.169921875
+      ],
+      "guard": {
+        "left": 18,
+        "top": 82,
+        "right": 18,
+        "bottom": 82
+      }
+    },
+    {
+      "id": "guard-rail",
+      "category": "ladder-rail",
+      "stretchAxes": [
+        "x"
+      ],
+      "rotations": [
+        0
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.82
+      ],
+      "anchors": [
+        {
+          "name": "deck-edge",
+          "x": 0.5,
+          "y": 0.82
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "traversal",
+          "x": 0.5,
+          "y": 0.82
+        }
+      ],
+      "depthBand": "proud",
+      "state": null,
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant"
+      ],
+      "gameplayRole": "structure-read",
+      "emissive": false,
+      "source": "structure",
+      "sourceCell": 3,
+      "sourceRect": {
+        "x": 956,
+        "y": 104,
+        "w": 276,
+        "h": 123
+      },
+      "sourceConnectedArea": 14029,
+      "sourceConnectedParts": 2,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 264,
+        "h": 111
+      },
+      "nativeAspect": 2.3784,
+      "atlasCell": {
+        "index": 3,
+        "col": 3,
+        "row": 0
+      },
+      "visibleRect": {
+        "x": 786,
+        "y": 82,
+        "w": 220,
+        "h": 92
+      },
+      "uvRect": [
+        0.3837890625,
+        0.080078125,
+        0.4912109375,
+        0.169921875
+      ],
+      "guard": {
+        "left": 18,
+        "top": 82,
+        "right": 18,
+        "bottom": 82
+      }
+    },
+    {
+      "id": "observe-sensor-hood",
+      "category": "defense-state",
+      "stretchAxes": [],
+      "rotations": [
+        0
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "spawn",
+          "x": 0.5,
+          "y": 0.56
+        }
+      ],
+      "depthBand": "proud",
+      "state": "observe",
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant",
+        "armed"
+      ],
+      "gameplayRole": "defense-wake-tell",
+      "emissive": false,
+      "source": "defense",
+      "sourceCell": 0,
+      "sourceRect": {
+        "x": 56,
+        "y": 70,
+        "w": 222,
+        "h": 225
+      },
+      "sourceConnectedArea": 37651,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 210,
+        "h": 213
+      },
+      "nativeAspect": 0.9859,
+      "atlasCell": {
+        "index": 4,
+        "col": 4,
+        "row": 0
+      },
+      "visibleRect": {
+        "x": 1043,
+        "y": 18,
+        "w": 217,
+        "h": 220
+      },
+      "uvRect": [
+        0.50927734375,
+        0.017578125,
+        0.615234375,
+        0.232421875
+      ],
+      "guard": {
+        "left": 19,
+        "top": 18,
+        "right": 20,
+        "bottom": 18
+      }
+    },
+    {
+      "id": "observe-shutter-blade",
+      "category": "defense-state",
+      "stretchAxes": [
+        "x"
+      ],
+      "rotations": [
+        0,
+        2
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "interlock",
+          "x": 0.14,
+          "y": 0.5
+        }
+      ],
+      "depthBand": "proud",
+      "state": "observe",
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant",
+        "armed"
+      ],
+      "gameplayRole": "defense-wake-tell",
+      "emissive": false,
+      "source": "defense",
+      "sourceCell": 1,
+      "sourceRect": {
+        "x": 321,
+        "y": 122,
+        "w": 327,
+        "h": 135
+      },
+      "sourceConnectedArea": 31677,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 315,
+        "h": 123
+      },
+      "nativeAspect": 2.561,
+      "atlasCell": {
+        "index": 5,
+        "col": 5,
+        "row": 0
+      },
+      "visibleRect": {
+        "x": 1298,
+        "y": 85,
+        "w": 220,
+        "h": 85
+      },
+      "uvRect": [
+        0.6337890625,
+        0.0830078125,
+        0.7412109375,
+        0.166015625
+      ],
+      "guard": {
+        "left": 18,
+        "top": 85,
+        "right": 18,
+        "bottom": 86
+      }
+    },
+    {
+      "id": "observe-scan-iris",
+      "category": "defense-state",
+      "stretchAxes": [],
+      "rotations": [
+        0
+      ],
+      "mirrorX": false,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "spawn",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "depthBand": "proud",
+      "state": "observe",
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant",
+        "armed"
+      ],
+      "gameplayRole": "defense-wake-tell",
+      "emissive": false,
+      "source": "defense",
+      "sourceCell": 2,
+      "sourceRect": {
+        "x": 685,
+        "y": 73,
+        "w": 212,
+        "h": 206
+      },
+      "sourceConnectedArea": 22654,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 200,
+        "h": 194
+      },
+      "nativeAspect": 1.0309,
+      "atlasCell": {
+        "index": 6,
+        "col": 6,
+        "row": 0
+      },
+      "visibleRect": {
+        "x": 1554,
+        "y": 21,
+        "w": 220,
+        "h": 214
+      },
+      "uvRect": [
+        0.7587890625,
+        0.0205078125,
+        0.8662109375,
+        0.2294921875
+      ],
+      "guard": {
+        "left": 18,
+        "top": 21,
+        "right": 18,
+        "bottom": 21
+      }
+    },
+    {
+      "id": "observe-wake-relay",
+      "category": "defense-state",
+      "stretchAxes": [],
+      "rotations": [
+        0
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "spawn",
+          "x": 0.5,
+          "y": 0.68
+        }
+      ],
+      "depthBand": "proud",
+      "state": "observe",
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant",
+        "armed"
+      ],
+      "gameplayRole": "defense-wake-tell",
+      "emissive": false,
+      "source": "defense",
+      "sourceCell": 3,
+      "sourceRect": {
+        "x": 952,
+        "y": 77,
+        "w": 254,
+        "h": 216
+      },
+      "sourceConnectedArea": 27577,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 5,
+        "y": 5,
+        "w": 243,
+        "h": 205
+      },
+      "nativeAspect": 1.1854,
+      "atlasCell": {
+        "index": 7,
+        "col": 7,
+        "row": 0
+      },
+      "visibleRect": {
+        "x": 1810,
+        "y": 35,
+        "w": 220,
+        "h": 185
+      },
+      "uvRect": [
+        0.8837890625,
+        0.0341796875,
+        0.9912109375,
+        0.21484375
+      ],
+      "guard": {
+        "left": 18,
+        "top": 35,
+        "right": 18,
+        "bottom": 36
+      }
+    },
+    {
+      "id": "diagonal-brace",
+      "category": "beam-brace",
+      "stretchAxes": [
+        "x"
+      ],
+      "rotations": [
+        0,
+        2
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "bay-corners",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [],
+      "depthBand": "proud",
+      "state": null,
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant"
+      ],
+      "gameplayRole": "structure-read",
+      "emissive": false,
+      "source": "structure",
+      "sourceCell": 4,
+      "sourceRect": {
+        "x": 43,
+        "y": 313,
+        "w": 252,
+        "h": 253
+      },
+      "sourceConnectedArea": 15876,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 240,
+        "h": 241
+      },
+      "nativeAspect": 0.9959,
+      "atlasCell": {
+        "index": 8,
+        "col": 0,
+        "row": 1
+      },
+      "visibleRect": {
+        "x": 18,
+        "y": 274,
+        "w": 219,
+        "h": 220
+      },
+      "uvRect": [
+        0.0087890625,
+        0.267578125,
+        0.11572265625,
+        0.482421875
+      ],
+      "guard": {
+        "left": 18,
+        "top": 18,
+        "right": 19,
+        "bottom": 18
+      }
+    },
+    {
+      "id": "cross-brace",
+      "category": "beam-brace",
+      "stretchAxes": [],
+      "rotations": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "bay-corners",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [],
+      "depthBand": "proud",
+      "state": null,
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 0.8,
+      "stateHooks": [
+        "dormant"
+      ],
+      "gameplayRole": "structure-read",
+      "emissive": false,
+      "source": "structure",
+      "sourceCell": 5,
+      "sourceRect": {
+        "x": 381,
+        "y": 325,
+        "w": 217,
+        "h": 234
+      },
+      "sourceConnectedArea": 32914,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 205,
+        "h": 222
+      },
+      "nativeAspect": 0.9234,
+      "atlasCell": {
+        "index": 9,
+        "col": 1,
+        "row": 1
+      },
+      "visibleRect": {
+        "x": 282,
+        "y": 274,
+        "w": 203,
+        "h": 220
+      },
+      "uvRect": [
+        0.1376953125,
+        0.267578125,
+        0.23681640625,
+        0.482421875
+      ],
+      "guard": {
+        "left": 26,
+        "top": 18,
+        "right": 27,
+        "bottom": 18
+      }
+    },
+    {
+      "id": "ladder-rail",
+      "category": "ladder-rail",
+      "stretchAxes": [
+        "y"
+      ],
+      "rotations": [
+        0,
+        2
+      ],
+      "mirrorX": false,
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "anchors": [
+        {
+          "name": "ladder-base",
+          "x": 0.5,
+          "y": 0.92
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "traversal",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "depthBand": "proud",
+      "state": null,
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant"
+      ],
+      "gameplayRole": "structure-read",
+      "emissive": false,
+      "source": "structure",
+      "sourceCell": 6,
+      "sourceRect": {
+        "x": 697,
+        "y": 300,
+        "w": 139,
+        "h": 288
+      },
+      "sourceConnectedArea": 21638,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 127,
+        "h": 276
+      },
+      "nativeAspect": 0.4601,
+      "atlasCell": {
+        "index": 10,
+        "col": 2,
+        "row": 1
+      },
+      "visibleRect": {
+        "x": 590,
+        "y": 274,
+        "w": 100,
+        "h": 220
+      },
+      "uvRect": [
+        0.2880859375,
+        0.267578125,
+        0.3369140625,
+        0.482421875
+      ],
+      "guard": {
+        "left": 78,
+        "top": 18,
+        "right": 78,
+        "bottom": 18
+      }
+    },
+    {
+      "id": "broken-guard",
+      "category": "ladder-rail",
+      "stretchAxes": [
+        "x"
+      ],
+      "rotations": [
+        0,
+        2
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.82
+      ],
+      "anchors": [
+        {
+          "name": "deck-edge",
+          "x": 0.5,
+          "y": 0.82
+        }
+      ],
+      "sockets": [],
+      "depthBand": "proud",
+      "state": null,
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant"
+      ],
+      "gameplayRole": "structure-read",
+      "emissive": false,
+      "source": "structure",
+      "sourceCell": 7,
+      "sourceRect": {
+        "x": 917,
+        "y": 401,
+        "w": 309,
+        "h": 123
+      },
+      "sourceConnectedArea": 15125,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 297,
+        "h": 112
+      },
+      "nativeAspect": 2.6518,
+      "atlasCell": {
+        "index": 11,
+        "col": 3,
+        "row": 1
+      },
+      "visibleRect": {
+        "x": 786,
+        "y": 343,
+        "w": 220,
+        "h": 81
+      },
+      "uvRect": [
+        0.3837890625,
+        0.3349609375,
+        0.4912109375,
+        0.4140625
+      ],
+      "guard": {
+        "left": 18,
+        "top": 87,
+        "right": 18,
+        "bottom": 88
+      }
+    },
+    {
+      "id": "intercept-route-clamp",
+      "category": "defense-state",
+      "stretchAxes": [],
+      "rotations": [
+        0
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "clamp",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "depthBand": "proud",
+      "state": "intercept",
+      "phaseRange": [
+        1,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant",
+        "armed",
+        "active"
+      ],
+      "gameplayRole": "route-clamp-tell",
+      "emissive": false,
+      "source": "defense",
+      "sourceCell": 4,
+      "sourceRect": {
+        "x": 16,
+        "y": 374,
+        "w": 300,
+        "h": 184
+      },
+      "sourceConnectedArea": 33303,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 5,
+        "w": 288,
+        "h": 173
+      },
+      "nativeAspect": 1.6647,
+      "atlasCell": {
+        "index": 12,
+        "col": 4,
+        "row": 1
+      },
+      "visibleRect": {
+        "x": 1042,
+        "y": 318,
+        "w": 220,
+        "h": 131
+      },
+      "uvRect": [
+        0.5087890625,
+        0.310546875,
+        0.6162109375,
+        0.4384765625
+      ],
+      "guard": {
+        "left": 18,
+        "top": 62,
+        "right": 18,
+        "bottom": 63
+      }
+    },
+    {
+      "id": "intercept-lock-rail",
+      "category": "defense-state",
+      "stretchAxes": [
+        "x"
+      ],
+      "rotations": [
+        0,
+        2
+      ],
+      "mirrorX": false,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "interlock",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "depthBand": "proud",
+      "state": "intercept",
+      "phaseRange": [
+        1,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant",
+        "armed",
+        "active"
+      ],
+      "gameplayRole": "route-lock-tell",
+      "emissive": false,
+      "source": "defense",
+      "sourceCell": 5,
+      "sourceRect": {
+        "x": 333,
+        "y": 419,
+        "w": 328,
+        "h": 100
+      },
+      "sourceConnectedArea": 20913,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 316,
+        "h": 89
+      },
+      "nativeAspect": 3.5506,
+      "atlasCell": {
+        "index": 13,
+        "col": 5,
+        "row": 1
+      },
+      "visibleRect": {
+        "x": 1298,
+        "y": 354,
+        "w": 220,
+        "h": 60
+      },
+      "uvRect": [
+        0.6337890625,
+        0.345703125,
+        0.7412109375,
+        0.404296875
+      ],
+      "guard": {
+        "left": 18,
+        "top": 98,
+        "right": 18,
+        "bottom": 98
+      }
+    },
+    {
+      "id": "contain-pressure-brace",
+      "category": "defense-state",
+      "stretchAxes": [],
+      "rotations": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "interlock",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "depthBand": "proud",
+      "state": "contain",
+      "phaseRange": [
+        2,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant",
+        "armed",
+        "active"
+      ],
+      "gameplayRole": "containment-tell",
+      "emissive": false,
+      "source": "defense",
+      "sourceCell": 6,
+      "sourceRect": {
+        "x": 687,
+        "y": 355,
+        "w": 215,
+        "h": 219
+      },
+      "sourceConnectedArea": 22060,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 5,
+        "w": 203,
+        "h": 208
+      },
+      "nativeAspect": 0.976,
+      "atlasCell": {
+        "index": 14,
+        "col": 6,
+        "row": 1
+      },
+      "visibleRect": {
+        "x": 1556,
+        "y": 274,
+        "w": 216,
+        "h": 220
+      },
+      "uvRect": [
+        0.759765625,
+        0.267578125,
+        0.865234375,
+        0.482421875
+      ],
+      "guard": {
+        "left": 20,
+        "top": 18,
+        "right": 20,
+        "bottom": 18
+      }
+    },
+    {
+      "id": "contain-defense-socket",
+      "category": "defense-state",
+      "stretchAxes": [],
+      "rotations": [
+        0
+      ],
+      "mirrorX": false,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "defense",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "depthBand": "proud",
+      "state": "contain",
+      "phaseRange": [
+        2,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant",
+        "armed",
+        "active"
+      ],
+      "gameplayRole": "defense-deploy-origin",
+      "emissive": false,
+      "source": "defense",
+      "sourceCell": 7,
+      "sourceRect": {
+        "x": 947,
+        "y": 332,
+        "w": 276,
+        "h": 249
+      },
+      "sourceConnectedArea": 35702,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 264,
+        "h": 237
+      },
+      "nativeAspect": 1.1139,
+      "atlasCell": {
+        "index": 15,
+        "col": 7,
+        "row": 1
+      },
+      "visibleRect": {
+        "x": 1810,
+        "y": 285,
+        "w": 220,
+        "h": 197
+      },
+      "uvRect": [
+        0.8837890625,
+        0.2783203125,
+        0.9912109375,
+        0.470703125
+      ],
+      "guard": {
+        "left": 18,
+        "top": 29,
+        "right": 18,
+        "bottom": 30
+      }
+    },
+    {
+      "id": "pressure-pipe",
+      "category": "pipe-conduit",
+      "stretchAxes": [
+        "x"
+      ],
+      "rotations": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "mirrorX": false,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "pressure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "depthBand": "proud",
+      "state": null,
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant"
+      ],
+      "gameplayRole": "structure-read",
+      "emissive": false,
+      "source": "structure",
+      "sourceCell": 8,
+      "sourceRect": {
+        "x": 20,
+        "y": 719,
+        "w": 342,
+        "h": 75
+      },
+      "sourceConnectedArea": 17698,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 330,
+        "h": 63
+      },
+      "nativeAspect": 5.2381,
+      "atlasCell": {
+        "index": 16,
+        "col": 0,
+        "row": 2
+      },
+      "visibleRect": {
+        "x": 18,
+        "y": 619,
+        "w": 220,
+        "h": 41
+      },
+      "uvRect": [
+        0.0087890625,
+        0.6044921875,
+        0.1162109375,
+        0.64453125
+      ],
+      "guard": {
+        "left": 18,
+        "top": 107,
+        "right": 18,
+        "bottom": 108
+      }
+    },
+    {
+      "id": "pipe-elbow",
+      "category": "pipe-conduit",
+      "stretchAxes": [],
+      "rotations": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "pressure",
+          "x": 0.28,
+          "y": 0.72
+        },
+        {
+          "kind": "pressure",
+          "x": 0.72,
+          "y": 0.28
+        }
+      ],
+      "depthBand": "proud",
+      "state": null,
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant"
+      ],
+      "gameplayRole": "structure-read",
+      "emissive": false,
+      "source": "structure",
+      "sourceCell": 9,
+      "sourceRect": {
+        "x": 396,
+        "y": 640,
+        "w": 167,
+        "h": 181
+      },
+      "sourceConnectedArea": 16170,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 5,
+        "w": 155,
+        "h": 170
+      },
+      "nativeAspect": 0.9118,
+      "atlasCell": {
+        "index": 17,
+        "col": 1,
+        "row": 2
+      },
+      "visibleRect": {
+        "x": 283,
+        "y": 530,
+        "w": 202,
+        "h": 220
+      },
+      "uvRect": [
+        0.13818359375,
+        0.517578125,
+        0.23681640625,
+        0.732421875
+      ],
+      "guard": {
+        "left": 27,
+        "top": 18,
+        "right": 27,
+        "bottom": 18
+      }
+    },
+    {
+      "id": "conduit-tee",
+      "category": "pipe-conduit",
+      "stretchAxes": [],
+      "rotations": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "mirrorX": false,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "power",
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "kind": "defense",
+          "x": 0.5,
+          "y": 0.15
+        }
+      ],
+      "depthBand": "proud",
+      "state": null,
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant"
+      ],
+      "gameplayRole": "structure-read",
+      "emissive": false,
+      "source": "structure",
+      "sourceCell": 10,
+      "sourceRect": {
+        "x": 638,
+        "y": 650,
+        "w": 230,
+        "h": 167
+      },
+      "sourceConnectedArea": 20262,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 218,
+        "h": 155
+      },
+      "nativeAspect": 1.4065,
+      "atlasCell": {
+        "index": 18,
+        "col": 2,
+        "row": 2
+      },
+      "visibleRect": {
+        "x": 530,
+        "y": 561,
+        "w": 220,
+        "h": 157
+      },
+      "uvRect": [
+        0.2587890625,
+        0.5478515625,
+        0.3662109375,
+        0.701171875
+      ],
+      "guard": {
+        "left": 18,
+        "top": 49,
+        "right": 18,
+        "bottom": 50
+      }
+    },
+    {
+      "id": "cable-bundle",
+      "category": "pipe-conduit",
+      "stretchAxes": [
+        "x"
+      ],
+      "rotations": [
+        0,
+        2
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "power",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "depthBand": "proud",
+      "state": null,
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant"
+      ],
+      "gameplayRole": "structure-read",
+      "emissive": false,
+      "source": "structure",
+      "sourceCell": 11,
+      "sourceRect": {
+        "x": 913,
+        "y": 698,
+        "w": 311,
+        "h": 109
+      },
+      "sourceConnectedArea": 23956,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 299,
+        "h": 97
+      },
+      "nativeAspect": 3.0825,
+      "atlasCell": {
+        "index": 19,
+        "col": 3,
+        "row": 2
+      },
+      "visibleRect": {
+        "x": 786,
+        "y": 605,
+        "w": 220,
+        "h": 70
+      },
+      "uvRect": [
+        0.3837890625,
+        0.5908203125,
+        0.4912109375,
+        0.6591796875
+      ],
+      "guard": {
+        "left": 18,
+        "top": 93,
+        "right": 18,
+        "bottom": 93
+      }
+    },
+    {
+      "id": "quarantine-bulkhead-seal",
+      "category": "defense-state",
+      "stretchAxes": [
+        "x"
+      ],
+      "rotations": [
+        0,
+        2
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "interlock",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "depthBand": "proud",
+      "state": "quarantine",
+      "phaseRange": [
+        3,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant",
+        "armed",
+        "active"
+      ],
+      "gameplayRole": "bulkhead-seal-tell",
+      "emissive": false,
+      "source": "defense",
+      "sourceCell": 8,
+      "sourceRect": {
+        "x": 14,
+        "y": 688,
+        "w": 298,
+        "h": 140
+      },
+      "sourceConnectedArea": 30322,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 286,
+        "h": 128
+      },
+      "nativeAspect": 2.2344,
+      "atlasCell": {
+        "index": 20,
+        "col": 4,
+        "row": 2
+      },
+      "visibleRect": {
+        "x": 1042,
+        "y": 591,
+        "w": 220,
+        "h": 97
+      },
+      "uvRect": [
+        0.5087890625,
+        0.5771484375,
+        0.6162109375,
+        0.671875
+      ],
+      "guard": {
+        "left": 18,
+        "top": 79,
+        "right": 18,
+        "bottom": 80
+      }
+    },
+    {
+      "id": "quarantine-denial-teeth",
+      "category": "defense-state",
+      "stretchAxes": [
+        "x"
+      ],
+      "rotations": [
+        0,
+        2
+      ],
+      "mirrorX": false,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "clamp",
+          "x": 0.5,
+          "y": 0.34
+        }
+      ],
+      "depthBand": "proud",
+      "state": "quarantine",
+      "phaseRange": [
+        3,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant",
+        "armed",
+        "active"
+      ],
+      "gameplayRole": "landing-denial-tell",
+      "emissive": false,
+      "source": "defense",
+      "sourceCell": 9,
+      "sourceRect": {
+        "x": 329,
+        "y": 675,
+        "w": 308,
+        "h": 134
+      },
+      "sourceConnectedArea": 25769,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 296,
+        "h": 122
+      },
+      "nativeAspect": 2.4262,
+      "atlasCell": {
+        "index": 21,
+        "col": 5,
+        "row": 2
+      },
+      "visibleRect": {
+        "x": 1298,
+        "y": 596,
+        "w": 220,
+        "h": 88
+      },
+      "uvRect": [
+        0.6337890625,
+        0.58203125,
+        0.7412109375,
+        0.66796875
+      ],
+      "guard": {
+        "left": 18,
+        "top": 84,
+        "right": 18,
+        "bottom": 84
+      }
+    },
+    {
+      "id": "quarantine-purge-nozzle",
+      "category": "defense-state",
+      "stretchAxes": [],
+      "rotations": [
+        0
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "vent",
+          "x": 0.24,
+          "y": 0.5
+        }
+      ],
+      "depthBand": "proud",
+      "state": "quarantine",
+      "phaseRange": [
+        3,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant",
+        "armed",
+        "active"
+      ],
+      "gameplayRole": "purge-tell",
+      "emissive": false,
+      "source": "defense",
+      "sourceCell": 10,
+      "sourceRect": {
+        "x": 664,
+        "y": 629,
+        "w": 232,
+        "h": 216
+      },
+      "sourceConnectedArea": 37013,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 220,
+        "h": 204
+      },
+      "nativeAspect": 1.0784,
+      "atlasCell": {
+        "index": 22,
+        "col": 6,
+        "row": 2
+      },
+      "visibleRect": {
+        "x": 1554,
+        "y": 538,
+        "w": 220,
+        "h": 204
+      },
+      "uvRect": [
+        0.7587890625,
+        0.525390625,
+        0.8662109375,
+        0.724609375
+      ],
+      "guard": {
+        "left": 18,
+        "top": 26,
+        "right": 18,
+        "bottom": 26
+      }
+    },
+    {
+      "id": "sterilize-power-junction",
+      "category": "defense-state",
+      "stretchAxes": [],
+      "rotations": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "mirrorX": false,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "defense",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "depthBand": "proud",
+      "state": "sterilize",
+      "phaseRange": [
+        4,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant",
+        "armed",
+        "active"
+      ],
+      "gameplayRole": "kill-lattice-tell",
+      "emissive": false,
+      "source": "defense",
+      "sourceCell": 11,
+      "sourceRect": {
+        "x": 926,
+        "y": 605,
+        "w": 309,
+        "h": 269
+      },
+      "sourceConnectedArea": 28607,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 297,
+        "h": 257
+      },
+      "nativeAspect": 1.1556,
+      "atlasCell": {
+        "index": 23,
+        "col": 7,
+        "row": 2
+      },
+      "visibleRect": {
+        "x": 1810,
+        "y": 545,
+        "w": 220,
+        "h": 190
+      },
+      "uvRect": [
+        0.8837890625,
+        0.5322265625,
+        0.9912109375,
+        0.7177734375
+      ],
+      "guard": {
+        "left": 18,
+        "top": 33,
+        "right": 18,
+        "bottom": 33
+      }
+    },
+    {
+      "id": "keel-fin",
+      "category": "near-silhouette",
+      "stretchAxes": [],
+      "rotations": [
+        0,
+        2
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.94
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [],
+      "depthBand": "near",
+      "state": null,
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 0.7,
+      "stateHooks": [
+        "dormant"
+      ],
+      "gameplayRole": "structure-read",
+      "emissive": false,
+      "source": "structure",
+      "sourceCell": 12,
+      "sourceRect": {
+        "x": 28,
+        "y": 902,
+        "w": 274,
+        "h": 256
+      },
+      "sourceConnectedArea": 30351,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 262,
+        "h": 244
+      },
+      "nativeAspect": 1.0738,
+      "atlasCell": {
+        "index": 24,
+        "col": 0,
+        "row": 3
+      },
+      "visibleRect": {
+        "x": 18,
+        "y": 793,
+        "w": 220,
+        "h": 206
+      },
+      "uvRect": [
+        0.0087890625,
+        0.7744140625,
+        0.1162109375,
+        0.9755859375
+      ],
+      "guard": {
+        "left": 18,
+        "top": 25,
+        "right": 18,
+        "bottom": 25
+      }
+    },
+    {
+      "id": "armor-shoulder",
+      "category": "near-silhouette",
+      "stretchAxes": [],
+      "rotations": [
+        0,
+        2
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.92
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [],
+      "depthBand": "near",
+      "state": null,
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant"
+      ],
+      "gameplayRole": "structure-read",
+      "emissive": false,
+      "source": "structure",
+      "sourceCell": 13,
+      "sourceRect": {
+        "x": 354,
+        "y": 916,
+        "w": 227,
+        "h": 242
+      },
+      "sourceConnectedArea": 36320,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 215,
+        "h": 230
+      },
+      "nativeAspect": 0.9348,
+      "atlasCell": {
+        "index": 25,
+        "col": 1,
+        "row": 3
+      },
+      "visibleRect": {
+        "x": 281,
+        "y": 786,
+        "w": 206,
+        "h": 220
+      },
+      "uvRect": [
+        0.13720703125,
+        0.767578125,
+        0.23779296875,
+        0.982421875
+      ],
+      "guard": {
+        "left": 25,
+        "top": 18,
+        "right": 25,
+        "bottom": 18
+      }
+    },
+    {
+      "id": "vent-hood",
+      "category": "service-organ",
+      "stretchAxes": [],
+      "rotations": [
+        0
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "vent",
+          "x": 0.5,
+          "y": 0.56
+        }
+      ],
+      "depthBand": "near",
+      "state": null,
+      "phaseRange": [
+        0,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "dormant"
+      ],
+      "gameplayRole": "purge-origin",
+      "emissive": false,
+      "source": "structure",
+      "sourceCell": 14,
+      "sourceRect": {
+        "x": 645,
+        "y": 941,
+        "w": 224,
+        "h": 203
+      },
+      "sourceConnectedArea": 31657,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 212,
+        "h": 191
+      },
+      "nativeAspect": 1.1099,
+      "atlasCell": {
+        "index": 26,
+        "col": 2,
+        "row": 3
+      },
+      "visibleRect": {
+        "x": 530,
+        "y": 797,
+        "w": 220,
+        "h": 198
+      },
+      "uvRect": [
+        0.2587890625,
+        0.7783203125,
+        0.3662109375,
+        0.9716796875
+      ],
+      "guard": {
+        "left": 18,
+        "top": 29,
+        "right": 18,
+        "bottom": 29
+      }
+    },
+    {
+      "id": "sheared-scute",
+      "category": "scuttle-damage",
+      "stretchAxes": [],
+      "rotations": [
+        0,
+        2
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "rupture",
+          "x": 0.72,
+          "y": 0.54
+        }
+      ],
+      "depthBand": "proud",
+      "state": "scuttle",
+      "phaseRange": [
+        5,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "active",
+        "spent",
+        "damaged"
+      ],
+      "gameplayRole": "route-damage-read",
+      "emissive": false,
+      "source": "structure",
+      "sourceCell": 15,
+      "sourceRect": {
+        "x": 939,
+        "y": 893,
+        "w": 274,
+        "h": 273
+      },
+      "sourceConnectedArea": 41113,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 263,
+        "h": 261
+      },
+      "nativeAspect": 1.0077,
+      "atlasCell": {
+        "index": 27,
+        "col": 3,
+        "row": 3
+      },
+      "visibleRect": {
+        "x": 786,
+        "y": 786,
+        "w": 220,
+        "h": 219
+      },
+      "uvRect": [
+        0.3837890625,
+        0.767578125,
+        0.4912109375,
+        0.9814453125
+      ],
+      "guard": {
+        "left": 18,
+        "top": 18,
+        "right": 18,
+        "bottom": 19
+      }
+    },
+    {
+      "id": "scuttle-overdriven-clamp",
+      "category": "scuttle-damage",
+      "stretchAxes": [],
+      "rotations": [
+        0,
+        2
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "clamp",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "depthBand": "proud",
+      "state": "scuttle",
+      "phaseRange": [
+        5,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "armed",
+        "active",
+        "spent",
+        "damaged"
+      ],
+      "gameplayRole": "self-damage-tell",
+      "emissive": false,
+      "source": "defense",
+      "sourceCell": 12,
+      "sourceRect": {
+        "x": 46,
+        "y": 881,
+        "w": 201,
+        "h": 295
+      },
+      "sourceConnectedArea": 41105,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 190,
+        "h": 283
+      },
+      "nativeAspect": 0.6714,
+      "atlasCell": {
+        "index": 28,
+        "col": 4,
+        "row": 3
+      },
+      "visibleRect": {
+        "x": 1078,
+        "y": 786,
+        "w": 147,
+        "h": 220
+      },
+      "uvRect": [
+        0.5263671875,
+        0.767578125,
+        0.59814453125,
+        0.982421875
+      ],
+      "guard": {
+        "left": 54,
+        "top": 18,
+        "right": 55,
+        "bottom": 18
+      }
+    },
+    {
+      "id": "scuttle-exposed-ribs",
+      "category": "scuttle-damage",
+      "stretchAxes": [],
+      "rotations": [
+        0,
+        2
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "rupture",
+          "x": 0.72,
+          "y": 0.55
+        }
+      ],
+      "depthBand": "proud",
+      "state": "scuttle",
+      "phaseRange": [
+        5,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "active",
+        "spent",
+        "damaged"
+      ],
+      "gameplayRole": "route-damage-read",
+      "emissive": false,
+      "source": "defense",
+      "sourceCell": 13,
+      "sourceRect": {
+        "x": 320,
+        "y": 909,
+        "w": 303,
+        "h": 249
+      },
+      "sourceConnectedArea": 45688,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 291,
+        "h": 237
+      },
+      "nativeAspect": 1.2278,
+      "atlasCell": {
+        "index": 29,
+        "col": 5,
+        "row": 3
+      },
+      "visibleRect": {
+        "x": 1298,
+        "y": 806,
+        "w": 220,
+        "h": 180
+      },
+      "uvRect": [
+        0.6337890625,
+        0.787109375,
+        0.7412109375,
+        0.962890625
+      ],
+      "guard": {
+        "left": 18,
+        "top": 38,
+        "right": 18,
+        "bottom": 38
+      }
+    },
+    {
+      "id": "scuttle-severed-conduit",
+      "category": "scuttle-damage",
+      "stretchAxes": [],
+      "rotations": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "mirrorX": true,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "rupture",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "depthBand": "proud",
+      "state": "scuttle",
+      "phaseRange": [
+        5,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "active",
+        "spent",
+        "damaged"
+      ],
+      "gameplayRole": "excision-read",
+      "emissive": false,
+      "source": "defense",
+      "sourceCell": 14,
+      "sourceRect": {
+        "x": 655,
+        "y": 882,
+        "w": 272,
+        "h": 296
+      },
+      "sourceConnectedArea": 33434,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 260,
+        "h": 284
+      },
+      "nativeAspect": 0.9155,
+      "atlasCell": {
+        "index": 30,
+        "col": 6,
+        "row": 3
+      },
+      "visibleRect": {
+        "x": 1563,
+        "y": 786,
+        "w": 201,
+        "h": 220
+      },
+      "uvRect": [
+        0.76318359375,
+        0.767578125,
+        0.861328125,
+        0.982421875
+      ],
+      "guard": {
+        "left": 27,
+        "top": 18,
+        "right": 28,
+        "bottom": 18
+      }
+    },
+    {
+      "id": "scuttle-spent-purge-ring",
+      "category": "scuttle-damage",
+      "stretchAxes": [],
+      "rotations": [
+        0
+      ],
+      "mirrorX": false,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "anchors": [
+        {
+          "name": "structure",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "sockets": [
+        {
+          "kind": "rupture",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "depthBand": "proud",
+      "state": "scuttle",
+      "phaseRange": [
+        5,
+        5
+      ],
+      "rarity": 1,
+      "stateHooks": [
+        "active",
+        "spent",
+        "damaged"
+      ],
+      "gameplayRole": "spent-response-read",
+      "emissive": false,
+      "source": "defense",
+      "sourceCell": 15,
+      "sourceRect": {
+        "x": 955,
+        "y": 911,
+        "w": 261,
+        "h": 265
+      },
+      "sourceConnectedArea": 44093,
+      "sourceConnectedParts": 1,
+      "nativeBounds": {
+        "x": 6,
+        "y": 6,
+        "w": 249,
+        "h": 253
+      },
+      "nativeAspect": 0.9842,
+      "atlasCell": {
+        "index": 31,
+        "col": 7,
+        "row": 3
+      },
+      "visibleRect": {
+        "x": 1811,
+        "y": 786,
+        "w": 217,
+        "h": 220
+      },
+      "uvRect": [
+        0.88427734375,
+        0.767578125,
+        0.990234375,
+        0.982421875
+      ],
+      "guard": {
+        "left": 19,
+        "top": 18,
+        "right": 20,
+        "bottom": 18
+      }
+    }
+  ]
+}

@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HULLBREAKER</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preload" as="image" href="assets/generated/ui/title-meridian-ascent-v1.png">
+<link rel="icon" href="assets/ui/favicon.svg" type="image/svg+xml">
+<style>
+  html, body {
+    margin: 0; height: 100%; overflow: hidden; background: #232830;
+    overscroll-behavior: none;
+  }
+  canvas { display: block; }
+  .hud {
+    position: fixed; z-index: 10; user-select: none; pointer-events: none;
+    box-sizing: border-box; font-family: ui-monospace, Menlo, Consolas, monospace;
+    color: #e8edf2; text-shadow: 0 1px 2px rgba(0,0,0,.72);
+  }
+  .hud-legacy { display: none; }
+  .hud-instrument {
+    --hud-accent: #9ce23e;
+    border: 1px solid rgba(232,237,242,.18);
+    border-left: 3px solid var(--hud-accent);
+    background:
+      linear-gradient(105deg, rgba(7,19,26,.91), rgba(12,32,39,.7) 72%, rgba(12,32,39,.42)),
+      repeating-linear-gradient(0deg, transparent 0 3px, rgba(232,237,242,.018) 3px 4px);
+    box-shadow: 0 5px 20px rgba(0,0,0,.2), inset 0 0 0 1px rgba(7,19,26,.62);
+    clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  }
+  .hud-eyebrow {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    color: rgba(232,237,242,.54); font-size: 8px; font-weight: 800;
+    line-height: 1; letter-spacing: .18em; text-transform: uppercase;
+  }
+  .hud-eyebrow::after {
+    content: ''; flex: 1 1 auto; height: 1px;
+    background: linear-gradient(90deg, rgba(156,226,62,.4), transparent);
+  }
+  .hud-label { color: rgba(232,237,242,.48); font-size: 8px; letter-spacing: .13em; }
+  .hud-sr {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+  #hudRigPanel {
+    top: 14px; left: 18px; width: min(326px, calc(42vw - 20px)); min-width: 250px;
+    padding: 9px 12px 10px; font-size: 12px; line-height: 1.15; letter-spacing: .055em;
+  }
+  #hudLives { color: #fff2d8; white-space: nowrap; }
+  .hud-vitals {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 7px;
+    margin-top: 7px;
+  }
+  #hudHealthPips {
+    overflow: hidden; color: #9ce23e; font-size: 15px; line-height: 1;
+    letter-spacing: .11em; white-space: nowrap; text-shadow: 0 0 7px rgba(156,226,62,.24);
+  }
+  #hudHealthPips[data-critical="true"] {
+    color: #ffad5c; text-shadow: 0 0 8px rgba(255,157,69,.32);
+  }
+  #hudHealthValue { color: #fff2d8; font-size: 9px; font-weight: 800; white-space: nowrap; }
+  .hud-weapon {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center;
+    gap: 4px 8px; margin-top: 7px; padding-top: 7px;
+    border-top: 1px solid rgba(232,237,242,.12);
+  }
+  #hudWeaponKey {
+    grid-row: 1 / span 2; min-width: 30px; padding: 5px 4px; box-sizing: border-box;
+    border: 1px solid rgba(255,242,216,.45); color: #fff2d8; background: rgba(255,242,216,.06);
+    font-size: 11px; font-weight: 900; letter-spacing: .04em; text-align: center;
+  }
+  #hudWeaponName {
+    overflow: hidden; color: #fff2d8; font-size: 13px; font-weight: 900;
+    line-height: 1.05; letter-spacing: .055em; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #hudWeaponOther {
+    min-height: 9px; overflow: hidden; color: rgba(232,237,242,.54); font-size: 8px;
+    letter-spacing: .08em; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .hud-power {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 7px;
+    margin-top: 7px; color: rgba(232,237,242,.56); font-size: 8px; letter-spacing: .11em;
+  }
+  .hud-power[hidden], #hudRushRow[hidden] { display: none; }
+  .hud-meter {
+    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 3px; height: 5px;
+  }
+  .hud-meter i { display: block; background: rgba(232,237,242,.12); box-shadow: inset 0 0 0 1px rgba(7,19,26,.42); }
+  .hud-meter i.on { background: var(--hud-accent); box-shadow: 0 0 7px color-mix(in srgb, var(--hud-accent) 44%, transparent); }
+  #hudPowerState { color: #fff2d8; font-weight: 800; white-space: nowrap; }
+  #hudStatus {
+    min-height: 9px; margin-top: 6px; overflow: hidden; color: #ffe0ad; font-size: 8px;
+    letter-spacing: .09em; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #hudObjectivePanel {
+    --hud-accent: #fff2d8; top: 14px; left: 50%; width: min(430px, 36vw);
+    min-height: 42px; padding: 7px 14px 8px; transform: translateX(-50%);
+    border-left-width: 1px; text-align: center;
+    transition: opacity 150ms ease, transform 150ms ease, border-color 150ms ease;
+  }
+  #hudObjectivePanel.empty { opacity: 0; transform: translate(-50%, -5px); }
+  #hudObjectivePanel[data-tone="danger"] { --hud-accent: #ff9d45; border-color: rgba(255,157,69,.48); }
+  #hudObjectivePanel[data-tone="clear"] { --hud-accent: #9ce23e; border-color: rgba(156,226,62,.38); }
+  #hudObjectiveLabel { color: rgba(232,237,242,.48); font-size: 7px; line-height: 1; letter-spacing: .2em; }
+  #hudObjective {
+    margin-top: 5px; overflow: hidden; color: #fff2d8; font-size: 12px; font-weight: 900;
+    line-height: 1.05; letter-spacing: .105em; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #hudRunPanel {
+    --hud-accent: #ce8752; top: 14px; right: 18px; width: min(306px, calc(39vw - 20px));
+    min-width: 244px; padding: 9px 11px 9px; font-size: 11px; line-height: 1.15;
+  }
+  #hudRunMetrics {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+    margin-top: 8px;
+  }
+  .hud-metric { min-width: 0; text-align: right; }
+  .hud-metric b {
+    display: block; overflow: hidden; color: #fff2d8; font-size: 13px; line-height: 1;
+    letter-spacing: .045em; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .hud-metric span { display: block; margin-top: 4px; color: rgba(232,237,242,.43); font-size: 7px; letter-spacing: .13em; }
+  #hudRushRow {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 7px;
+    margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(232,237,242,.1);
+    color: rgba(232,237,242,.5); font-size: 8px; letter-spacing: .11em;
+  }
+  #hudRushPips { color: #9ce23e; font-size: 11px; letter-spacing: .12em; text-align: right; }
+  #hudRunPanel[data-rush="surge"] #hudRushPips {
+    color: #ffad5c; text-shadow: 0 0 7px rgba(255,157,69,.3);
+  }
+  #hudRushState { color: rgba(255,242,216,.68); font-size: 8px; }
+  #hudBL {
+    bottom: 12px; left: 50%; max-width: min(820px, calc(100vw - 36px));
+    padding: 7px 12px 8px; overflow: hidden; transform: translateX(-50%);
+    color: rgba(232,237,242,.72); background: rgba(7,19,26,.72);
+    border: 1px solid rgba(232,237,242,.14); border-left: 3px solid #ce8752;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+    box-shadow: 0 5px 18px rgba(0,0,0,.2); font-size: 9px; font-weight: 700;
+    line-height: 1.35; letter-spacing: .055em; text-align: center; opacity: .82;
+    transition: opacity .7s ease, transform .7s ease;
+  }
+  #hudBL::before {
+    content: 'FIELD BRIEF'; margin-right: 9px; color: #ffbd79;
+    font-size: 7px; letter-spacing: .16em;
+  }
+  #hudBL.gone { opacity: 0; transform: translate(-50%, 5px); }
+
+  /* One-thumb portrait control field. It is deliberately drawn from chunky
+     UI primitives instead of imported art: the interaction survives the
+     pixel-art migration and stays crisp at any device scale. The deck itself
+     is invisible; the control appears under the thumb, not over the fight. */
+  #touchDeck {
+    position: fixed; z-index: 16; right: 0; bottom: 0; left: 0;
+    height: 36vh; height: 36dvh;
+    box-sizing: border-box; touch-action: none; user-select: none;
+    -webkit-user-select: none; -webkit-touch-callout: none;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  #touchDeck[hidden] { display: none; }
+  #touchDeck::before {
+    content: ''; position: absolute; inset: 22% 0 0; pointer-events: none;
+    background: linear-gradient(180deg, transparent, rgba(5,15,22,.16) 48%, rgba(5,15,22,.34));
+  }
+  #touchStick {
+    --stick-x: 50vw; --stick-y: 80vh; --stick-r: 58px;
+    position: fixed; top: var(--stick-y); left: var(--stick-x);
+    width: calc(var(--stick-r) * 3); height: calc(var(--stick-r) * 3);
+    opacity: 0; transform: translate(-50%, -50%) scale(.88); pointer-events: none;
+    transition: opacity 70ms linear, transform 90ms ease-out;
+  }
+  #touchStick.on { opacity: .94; transform: translate(-50%, -50%) scale(1); }
+  #touchStick::before, #touchStick::after {
+    content: ''; position: absolute; border-radius: 50%; box-sizing: border-box;
+  }
+  #touchStick::before {
+    inset: calc(var(--stick-r) * .36);
+    border: 2px solid rgba(232,237,242,.42);
+    background:
+      linear-gradient(90deg, transparent calc(50% - 1px), rgba(232,237,242,.16) 50%, transparent calc(50% + 1px)),
+      linear-gradient(0deg, transparent calc(50% - 1px), rgba(232,237,242,.16) 50%, transparent calc(50% + 1px)),
+      rgba(7,19,26,.35);
+    box-shadow: inset 0 0 0 6px rgba(7,19,26,.18);
+  }
+  #touchStick::after {
+    inset: 0; border: 2px solid rgba(255,242,216,.30);
+    background: radial-gradient(circle, transparent 60%, rgba(7,19,26,.13) 61% 100%);
+    box-shadow: inset 0 0 0 2px rgba(7,19,26,.46), 0 0 0 1px rgba(7,19,26,.28);
+  }
+  #touchStick.firing::after {
+    border-style: solid; border-color: #fff2d8;
+    box-shadow: inset 0 0 0 3px rgba(255,79,216,.62), 0 0 12px rgba(255,79,216,.28);
+  }
+  #touchDeck.clutch #touchStick::before { border-color: #9ce23e; }
+  #touchNub {
+    position: absolute; z-index: 2; top: 50%; left: 50%; width: calc(var(--stick-r) * .62);
+    height: calc(var(--stick-r) * .62); margin: calc(var(--stick-r) * -.31);
+    box-sizing: border-box; border: 2px solid #fff2d8; border-radius: 4px;
+    background: #293d3d; box-shadow: inset 0 0 0 5px #17292c, 3px 4px 0 rgba(5,15,22,.38);
+    transform: translate(0, 0); will-change: transform;
+  }
+  #touchStick.firing #touchNub { background: #9a3d84; }
+  #touchCue {
+    position: absolute; right: max(16px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
+    color: rgba(232,237,242,.66); font-size: 9px; letter-spacing: .08em;
+    text-shadow: 0 1px 2px #07131a; pointer-events: none;
+  }
+  .touch-chip {
+    position: absolute; bottom: max(38px, calc(env(safe-area-inset-bottom) + 26px));
+    width: 62px; height: 44px; padding: 0;
+    border: 2px solid rgba(232,237,242,.38); border-radius: 3px;
+    color: #e8edf2; background: rgba(7,19,26,.58);
+    font: 800 10px/1 ui-monospace, Menlo, Consolas, monospace;
+    letter-spacing: .08em; touch-action: manipulation;
+  }
+  .touch-chip:active { color: #07131a; border-color: #fff2d8; background: #fff2d8; }
+  #touchSwap { right: max(18px, env(safe-area-inset-right)); }
+  #touchPause { right: max(90px, calc(env(safe-area-inset-right) + 72px)); }
+  body.touch-controls #hudBL { display: none; }
+  body.at-title #touchDeck, body.at-modal #touchDeck, body.at-victory #touchDeck { opacity: 0; pointer-events: none; }
+  @keyframes touch-jump-kick {
+    0% { transform: translateY(0); } 45% { transform: translateY(-5px); } 100% { transform: translateY(0); }
+  }
+  #touchDeck.jump .touch-chip { animation: touch-jump-kick 120ms steps(2, end); }
+  /* Crown finale objective: one compact instrument panel, below the normal
+     HUD and above the playfield. It never becomes a modal; RIG and every
+     defense telegraph remain visible while the player holds the signal. */
+  #finale {
+    position: fixed; z-index: 12; top: 52px; left: 50%;
+    width: min(520px, calc(100vw - 32px)); box-sizing: border-box;
+    padding: 9px 13px 10px; pointer-events: none; opacity: 0;
+    transform: translate(-50%, -7px) scale(.985);
+    border: 1px solid rgba(255,79,216,.42);
+    background: rgba(7,19,26,.86);
+    box-shadow: 0 0 0 1px rgba(7,19,26,.82), 0 0 18px rgba(255,79,216,.12);
+    color: #fff2d8; font: 800 12px/1.25 ui-monospace, Menlo, Consolas, monospace;
+    letter-spacing: .095em; text-align: center;
+    transition: opacity 180ms ease, transform 180ms ease, border-color 180ms ease;
+  }
+  #finale.on { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  #finale.transmit { border-color: rgba(255,242,216,.72); }
+  body.at-title #finale { display: none; }
+  #finaleTitle { white-space: nowrap; }
+  #finaleMeta { margin-top: 4px; color: rgba(232,237,242,.82); font-size: 9px; }
+  #finaleProgress {
+    height: 4px; margin-top: 7px; overflow: hidden;
+    background: rgba(232,237,242,.12);
+    box-shadow: inset 0 0 0 1px rgba(7,19,26,.72);
+  }
+  #finaleFill {
+    display: block; width: 100%; height: 100%; transform: scaleX(0);
+    transform-origin: 0 50%;
+    background: linear-gradient(90deg, #ff4fd8 0%, #ff9be9 62%, #fff2d8 100%);
+    box-shadow: 0 0 8px rgba(255,79,216,.55);
+  }
+  #overlay {
+    position: fixed; inset: 0; z-index: 20; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(8, 12, 16, .62);
+    font-family: ui-monospace, Menlo, Consolas, monospace; color: #fff; text-align: center;
+  }
+  #overlay h1 { margin: 0 0 14px; font-size: 44px; letter-spacing: .22em; font-weight: 700; }
+  #overlay p  { margin: 5px 0; font-size: 15px; opacity: .85; letter-spacing: .05em; }
+  #overlay .dim { opacity: .5; margin-top: 18px; }
+
+  /* The summit result is a transmission tableau, not a centered spreadsheet.
+     The Crown stays visible on the right while the debrief locks to the dark
+     left third; a restrained carrier sweep keeps the frozen result alive. */
+  #overlay.victory {
+    box-sizing: border-box; align-items: flex-start; justify-content: center;
+    padding: 7vh 5vw 5vh; overflow-x: hidden; overflow-y: auto;
+    isolation: isolate; text-align: left;
+    background: transparent;
+  }
+  body.at-victory .hud, body.at-victory #finale {
+    opacity: 0; transition: none;
+  }
+  body.at-modal .hud, body.at-modal #finale {
+    opacity: 0; transition: none;
+  }
+
+  /* Pause and defeat are authored instrument states, not generic modal text.
+     They preserve the frozen Crown as context while quieting every live HUD
+     layer and giving each outcome its own unmistakable signal language. */
+  #overlay[data-state="paused"],
+  #overlay[data-state="game_over"],
+  #overlay[data-state="slice_retry"] {
+    isolation: isolate; overflow: hidden;
+  }
+  #overlay[data-state="paused"] {
+    background:
+      radial-gradient(ellipse at 50% 46%, rgba(7,19,26,.28) 0 24%, rgba(7,19,26,.78) 76%),
+      linear-gradient(108deg, rgba(7,19,26,.88), rgba(7,19,26,.38) 54%, rgba(7,19,26,.82));
+  }
+  #overlay[data-state="game_over"], #overlay[data-state="slice_retry"] {
+    background:
+      radial-gradient(ellipse at 58% 44%, rgba(94,20,40,.12) 0 22%, rgba(7,19,26,.86) 74%),
+      linear-gradient(108deg, rgba(7,19,26,.94), rgba(7,19,26,.52) 58%, rgba(7,19,26,.9));
+  }
+  #overlay[data-state="paused"]::before,
+  #overlay[data-state="game_over"]::before,
+  #overlay[data-state="slice_retry"]::before {
+    content: ''; position: absolute; z-index: -1; top: -18%; left: 50%; width: 2px; height: 136%;
+    transform: rotate(7deg); pointer-events: none;
+  }
+  #overlay[data-state="paused"]::before {
+    background: linear-gradient(transparent, #e8edf2 25%, #9ce23e 52%, transparent 82%);
+    box-shadow: 0 0 18px rgba(156,226,62,.28), 0 0 76px rgba(156,226,62,.12);
+    opacity: .58;
+  }
+  #overlay[data-state="game_over"]::before,
+  #overlay[data-state="slice_retry"]::before {
+    background: linear-gradient(transparent, #fff2d8 24%, #ff4fd8 53%, transparent 84%);
+    box-shadow: 0 0 18px rgba(255,79,216,.3), 0 0 86px rgba(255,79,216,.12);
+    opacity: .48;
+  }
+  #overlay[data-state="paused"]::after,
+  #overlay[data-state="game_over"]::after,
+  #overlay[data-state="slice_retry"]::after {
+    content: ''; position: absolute; z-index: -1; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(232,237,242,.035) 3px 4px);
+  }
+  #overlay[data-state="paused"] > *,
+  #overlay[data-state="game_over"] > *,
+  #overlay[data-state="slice_retry"] > * { position: relative; z-index: 1; }
+  #overlay[data-state="paused"] h1,
+  #overlay[data-state="game_over"] h1,
+  #overlay[data-state="slice_retry"] h1 {
+    color: #fff2d8; font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-size: clamp(44px, 5.2vw, 74px); line-height: .9; font-weight: 900;
+    text-shadow: 0 3px 0 rgba(7,19,26,.95), 0 0 28px rgba(255,79,216,.14);
+  }
+  #overlay[data-state="paused"] h1::before,
+  #overlay[data-state="game_over"] h1::before,
+  #overlay[data-state="slice_retry"] h1::before {
+    display: block; margin: 0 0 9px; font: 800 9px/1.2 ui-monospace, Menlo, Consolas, monospace;
+    letter-spacing: .22em; text-shadow: none;
+  }
+  #overlay[data-state="paused"] h1::before { content: 'MERIDIAN RIG // LOCAL HOLD'; color: #9ce23e; }
+  #overlay[data-state="game_over"] h1::before { content: 'CARRIER COLLAPSED // LINK SEVERED'; color: #ff79df; }
+  #overlay[data-state="slice_retry"] h1::before { content: 'ROUTE SAFETY // RECALLING RIG'; color: #ff79df; }
+  #overlay[data-state="paused"] #ovPanel .panel,
+  #overlay[data-state="game_over"] #ovPanel .panel {
+    border-color: rgba(255,242,216,.2);
+    background: linear-gradient(118deg, rgba(7,19,26,.94), rgba(7,19,26,.7));
+    box-shadow: 0 18px 54px rgba(0,0,0,.28);
+  }
+  #overlay[data-state="paused"] #ovPanel .panel { box-shadow: inset 3px 0 0 #9ce23e, 0 18px 54px rgba(0,0,0,.28); }
+  #overlay[data-state="game_over"] #ovPanel .panel { box-shadow: inset 3px 0 0 #ff4fd8, 0 18px 54px rgba(0,0,0,.28); }
+  #overlay.victory::before {
+    content: ''; position: absolute; z-index: 0; top: -24%; left: 72%;
+    width: 3px; height: 150%; transform: rotate(-6deg);
+    background: linear-gradient(180deg, transparent, #fff2d8 28%, #ff4fd8 62%, transparent 100%);
+    box-shadow: 0 0 18px 5px rgba(255,242,216,.45), 0 0 72px 24px rgba(255,79,216,.24);
+    pointer-events: none;
+    animation: victory-carrier-launch 1.2s cubic-bezier(.12,.72,.2,1) both,
+      victory-carrier 4.8s 1.2s ease-in-out infinite;
+  }
+  #overlay.victory::after {
+    content: ''; position: absolute; z-index: -1; inset: 0; opacity: 0;
+    background:
+      repeating-linear-gradient(0deg, transparent 0 3px, rgba(232,237,242,.08) 3px 4px),
+      radial-gradient(ellipse at 76% 35%, rgba(255,79,216,.05) 0 18%, rgba(7,19,26,.08) 48%, transparent 68%),
+      linear-gradient(90deg, rgba(5,15,22,.97) 0%, rgba(5,15,22,.91) 37%, rgba(5,15,22,.44) 61%, rgba(5,15,22,.18) 100%);
+    pointer-events: none;
+    animation: victory-debrief-backdrop 620ms 1.56s cubic-bezier(.2,.7,.2,1) both;
+  }
+  #overlay.victory > * { position: relative; z-index: 1; width: min(620px, 52vw); }
+  #overlay.victory #ovTitle {
+    order: 1; margin: 0 0 11px; color: #fff2d8;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-size: clamp(56px, 7.8vw, 108px); line-height: .82; font-weight: 900;
+    letter-spacing: .115em; text-shadow: 0 4px 0 rgba(7,19,26,.9), 0 0 38px rgba(255,79,216,.22);
+    animation: victory-title 680ms 1.72s cubic-bezier(.16,.82,.2,1) both;
+  }
+  #overlay.victory #ovTitle::before {
+    content: 'MERIDIAN CROWN // LINK SECURED'; display: block; margin: 0 0 12px;
+    color: #ff79df; font: 700 10px/1.2 ui-monospace, Menlo, Consolas, monospace;
+    letter-spacing: .24em; text-shadow: none;
+  }
+  #overlay.victory #ovBody { order: 2; margin: 0 0 15px; }
+  #overlay.victory #ovBody::before {
+    content: 'EARTH: \201C WE HEAR YOU.\201D';
+    position: fixed; z-index: 4; top: 50%; left: 50%; width: min(920px, 90vw);
+    color: #fff2d8; font: 900 clamp(28px, 4.6vw, 68px)/1.05 Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    letter-spacing: .105em; text-align: center; text-shadow:
+      0 3px 0 rgba(7,19,26,.95), 0 0 24px rgba(7,19,26,1), 0 0 48px rgba(255,79,216,.42);
+    pointer-events: none;
+    animation: victory-reply-beat 1.18s .62s cubic-bezier(.16,.82,.2,1) both;
+  }
+  #overlay.victory #ovBody p { max-width: none; }
+  #overlay.victory #ovBody .victory-kicker {
+    margin: 0 0 12px; color: #ff79df; font-size: 13px; font-weight: 800; letter-spacing: .16em;
+    animation: victory-copy 460ms 1.9s ease-out both;
+  }
+  #overlay.victory #ovBody .victory-rig {
+    margin: 2px 0; opacity: .62; font-size: 12px;
+    animation: victory-copy-muted 460ms 2.0s ease-out both;
+  }
+  #overlay.victory #ovBody .victory-reply {
+    margin: 7px 0 0; color: #fff2d8; opacity: 1; font-size: clamp(15px, 1.5vw, 20px);
+    line-height: 1.45; font-weight: 700;
+    animation: victory-copy 460ms 2.08s ease-out both;
+  }
+  #overlay.victory #ovBody .dim { display: none; }
+  #overlay.victory #ovPanel { order: 3; margin: 0; }
+  #overlay.victory #ovPanel .result-panel {
+    display: grid; grid-template-columns: 106px minmax(0, 1fr); gap: 9px 15px;
+    box-sizing: border-box; min-width: 0; max-width: 620px; padding: 13px 15px 11px;
+    border-color: rgba(255,121,223,.38);
+    background: linear-gradient(120deg, rgba(7,19,26,.90), rgba(7,19,26,.62));
+    box-shadow: inset 3px 0 0 #ff4fd8, 0 18px 50px rgba(0,0,0,.22);
+    animation: victory-panel 620ms 1.88s cubic-bezier(.16,.82,.2,1) both;
+  }
+  .result-rank {
+    grid-row: 1 / span 3; display: grid; align-content: center; justify-items: center;
+    border-right: 1px solid rgba(255,242,216,.16); padding-right: 14px;
+  }
+  .result-rank span { color: rgba(232,237,242,.64); font-size: 9px; letter-spacing: .16em; }
+  .result-rank strong {
+    margin: 1px 0 -3px; color: #fff2d8; font: 900 70px/.9 Impact, Haettenschweiler, sans-serif;
+    text-shadow: 0 0 25px rgba(255,79,216,.36);
+  }
+  .result-rank em { color: #ff79df; font-size: 10px; font-style: normal; letter-spacing: .12em; }
+  .result-weapon { min-width: 0; }
+  .result-weapon span { display: block; color: rgba(232,237,242,.58); font-size: 9px; letter-spacing: .14em; }
+  .result-weapon b {
+    display: block; overflow: hidden; margin-top: 3px; color: #fff2d8;
+    font-size: 13px; letter-spacing: .06em; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .result-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+  .result-strip span { border-top: 1px solid rgba(255,242,216,.12); padding-top: 7px; }
+  .result-strip b { display: block; color: #fff2d8; font-size: 19px; line-height: 1; }
+  .result-strip small { display: block; margin-top: 4px; color: rgba(232,237,242,.46); font-size: 7px; letter-spacing: .12em; }
+  .result-details { font-size: 9px; color: rgba(232,237,242,.56); }
+  .result-details summary { cursor: pointer; color: rgba(232,237,242,.54); letter-spacing: .12em; }
+  .result-details .statgrid { margin-top: 7px; max-height: 150px; overflow: auto; font-size: 9px !important; }
+  #overlay.victory .result-panel > .keys { grid-column: 2; margin: 0; text-align: left; font-size: 11px; }
+  @keyframes victory-debrief-backdrop { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes victory-carrier-launch {
+    from { opacity: 0; filter: brightness(2); transform: translateY(38%) rotate(-6deg) scaleY(.2); }
+    35% { opacity: 1; }
+    to { opacity: .52; filter: brightness(1.05); transform: translateY(0) rotate(-6deg) scaleY(1); }
+  }
+  @keyframes victory-reply-beat {
+    0% { opacity: 0; transform: translate(-50%, -42%) scale(.94); letter-spacing: .16em; }
+    17%, 72% { opacity: 1; transform: translate(-50%, -50%) scale(1); letter-spacing: .105em; }
+    100% { opacity: 0; transform: translate(-50%, -54%) scale(1.035); letter-spacing: .105em; }
+  }
+  @keyframes victory-title { from { opacity: 0; transform: translateX(-32px) scale(.96); } to { opacity: 1; transform: none; } }
+  @keyframes victory-panel { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+  @keyframes victory-copy { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes victory-copy-muted { from { opacity: 0; transform: translateY(8px); } to { opacity: .62; transform: none; } }
+  @keyframes victory-carrier { 0%,100% { opacity: .38; filter: brightness(.8); } 50% { opacity: .88; filter: brightness(1.35); } }
+
+  /* ---- game shell: stats / options panel + start screen ---- */
+  #ovPanel { display: none; margin: 4px 0 16px; }
+  #ovPanel .panel {
+    min-width: 320px; max-width: min(560px, 88vw); margin: 0 auto;
+    border: 1px solid rgba(255,233,194,.22); padding: 12px 16px 10px;
+    background: rgba(7,19,26,.55);
+  }
+  #ovPanel .statgrid {
+    display: grid; grid-template-columns: auto auto; gap: 2px 22px;
+    justify-content: space-between; font-size: 13px; letter-spacing: .06em;
+  }
+  #ovPanel .statgrid .k { opacity: .55; text-align: left; }
+  #ovPanel .statgrid .v { text-align: right; color: #ffe9c2; }
+  #ovPanel .statgrid .v a { color: #e8edf2; opacity: .55; text-decoration: none; border-bottom: 1px dotted; }
+  #ovPanel .statgrid .v a:hover { opacity: 1; }
+  #ovPanel .statgrid .v b { color: #9ce23e; font-weight: 700; }
+  #ovPanel .keys { margin: 10px 0 2px; font-size: 12px; opacity: .7; letter-spacing: .06em; }
+  #ovPanel .keys b { color: #ffe9c2; }
+  #ovPanel .note { margin: 8px 0 0; font-size: 11px; }
+
+  #shell {
+    position: fixed; inset: 0; z-index: 30; display: none; overflow: hidden;
+    background: #07131a; color: #e8edf2;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    user-select: none;
+  }
+  #shell.on { display: block; }
+  body.at-title .hud, body.nohud .hud { opacity: 0; }
+  #shellArt {
+    position: absolute; inset: -1.5%; overflow: hidden;
+    background: #07131a url('assets/generated/ui/title-meridian-ascent-v1.png') 50% 50% / cover no-repeat;
+    animation: title-breathe 13s ease-in-out infinite alternate;
+  }
+  #shellArt::after {
+    content: ''; position: absolute; inset: 0;
+    background:
+      linear-gradient(90deg, rgba(7,19,26,.95) 0%, rgba(7,19,26,.72) 30%, rgba(7,19,26,.12) 64%, rgba(7,19,26,.18) 100%),
+      linear-gradient(0deg, rgba(7,19,26,.62) 0%, transparent 32%, rgba(7,19,26,.14) 100%),
+      radial-gradient(ellipse at 68% 43%, transparent 34%, rgba(7,19,26,.42) 100%);
+  }
+  /* Keep the data-backed composition in the layout for the existing shell
+     contract and browser self-check, but let the production key art carry
+     the player-facing screen. */
+  #shellArt .sl { visibility: hidden; }
+  @keyframes title-breathe {
+    from { transform: scale(1.015) translate3d(-.25%, .2%, 0); }
+    to   { transform: scale(1.055) translate3d(.35%, -.35%, 0); }
+  }
+  #shellArt .sl {
+    position: absolute; left: var(--x); top: var(--y);
+    width: var(--w); height: var(--h); opacity: var(--o, 1);
+    transform: rotate(var(--rot, 0deg)); transform-origin: 50% 50%;
+  }
+  /* atmosphere */
+  .sl-sky   { background: linear-gradient(172deg, var(--c) 0%, #07131a 82%); }
+  .sl-glow  { background: radial-gradient(closest-side, var(--c), transparent 100%); }
+  .sl-haze  { background: linear-gradient(180deg, transparent 0%, var(--c) 46%, transparent 100%); }
+  .sl-vignette {
+    background: radial-gradient(ellipse at 50% 44%, transparent 34%, var(--c) 100%);
+  }
+  .sl-steam {
+    background: radial-gradient(closest-side, rgba(232,237,242,.22), transparent 100%);
+    animation: sl-drift 11s ease-in-out infinite alternate;
+  }
+  /* machinery: flat facets, hard shadow side, rivet stripe */
+  .sl-mass {
+    background:
+      repeating-linear-gradient(90deg, rgba(7,19,26,.34) 0 1px, transparent 1px 13px),
+      linear-gradient(101deg, var(--c) 0%, rgba(7,19,26,.94) 74%);
+    box-shadow: inset 0 0 0 1px rgba(7,19,26,.5);
+  }
+  .sl-slab {
+    background:
+      repeating-linear-gradient(90deg, rgba(7,19,26,.20) 0 2px, transparent 2px 46px),
+      linear-gradient(96deg, rgba(7,19,26,.6) 0%, transparent 22%, transparent 74%, rgba(7,19,26,.8) 100%),
+      linear-gradient(186deg, #96502a 0%, var(--c) 20%, #33200f 64%, #150d07 100%);
+    box-shadow: inset 0 1px 0 rgba(255,233,194,.34), inset 0 -2px 0 rgba(7,19,26,.8),
+                0 18px 44px rgba(7,19,26,.85);
+  }
+  .sl-bridge {
+    background: linear-gradient(180deg, rgba(255,233,194,.28) 0 1px, var(--c) 1px, #1a1009 100%);
+  }
+  .sl-debris { background: linear-gradient(120deg, var(--c) 0%, #120b07 100%); }
+  .sl-lamp   { background: var(--c); border-radius: 40%; box-shadow: 0 0 14px 4px var(--c); }
+  .sl-beam   {
+    background: linear-gradient(180deg, transparent 0%, var(--c) 22%, #fff 52%, var(--c) 78%, transparent 100%);
+    box-shadow: 0 0 46px 14px var(--c);
+  }
+  /* RIG: one human-scale silhouette, 3.8% of frame height (board 13), warm
+     against the dark machinery, with a muzzle flash off the barrel.
+     The clip-path lives on ::before, NOT on .sl-rig itself: clip-path clips
+     an element's pseudo-elements too, so a silhouette on the box would cut
+     away the flash beside it (::after sits past the box's right edge) and
+     nothing would render. */
+  .sl-rig { filter: drop-shadow(0 1px 3px rgba(7,19,26,.95)); }
+  .sl-rig::before {
+    content: ''; position: absolute; inset: 0; background: var(--c);
+    clip-path: polygon(40% 0%, 68% 9%, 60% 33%, 80% 43%, 62% 58%,
+                       86% 100%, 64% 100%, 47% 70%, 30% 100%, 8% 95%,
+                       32% 52%, 18% 27%);
+  }
+  .sl-rig::after {
+    /* off the barrel: the silhouette's weapon arm reaches x = 80% */
+    content: ''; position: absolute; left: 96%; top: 31%;
+    width: 56%; height: 15%; background: #fff; border-radius: 50%;
+    box-shadow: 0 0 10px 4px rgba(255,233,194,.9);
+    animation: sl-flash 1.7s steps(1, end) infinite;
+  }
+  @keyframes sl-drift { from { transform: translate3d(0,0,0) scale(1); opacity: .5; }
+                        to   { transform: translate3d(2%, -6%, 0) scale(1.25); opacity: .9; } }
+  @keyframes sl-flash { 0%, 12% { opacity: 1; } 13%, 100% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .sl-steam, .sl-rig::after, #shellArt { animation: none; }
+    #finale { transition: none; }
+    #overlay.victory, #overlay.victory::before, #overlay.victory::after,
+    #overlay.victory #ovTitle, #overlay.victory #ovBody p,
+    #overlay.victory #ovPanel .result-panel { animation: none; }
+    #overlay.victory::before { opacity: .55; transform: rotate(-6deg); }
+    #overlay.victory::after { opacity: 1; }
+    #overlay.victory #ovBody::before { display: none; }
+  }
+  #shellText {
+    position: absolute; left: var(--tx); top: var(--ty); width: var(--tw);
+    z-index: 2; min-width: 260px;
+    text-shadow: 0 2px 18px rgba(7,19,26,.95), 0 0 42px rgba(7,19,26,.9);
+  }
+  #shellText h1 {
+    margin: 0; font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-size: clamp(42px, 7vw, 94px); line-height: .9; letter-spacing: .115em;
+    font-weight: 900; color: #ffe9c2;
+  }
+  #shellText .tag {
+    max-width: 520px; margin: 15px 0 0; font-size: clamp(11px, 1.15vw, 15px);
+    line-height: 1.55; letter-spacing: .16em; color: #e8edf2; opacity: .82;
+  }
+  #shellText .prompt {
+    margin: 29px 0 0; font-size: 15px; letter-spacing: .3em; color: #9ce23e;
+    animation: sl-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes sl-pulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { #shellText .prompt { animation: none; } }
+  #shellFoot {
+    position: absolute; z-index: 2; right: auto; bottom: 4.5%; left: 5%; width: min(620px, 70vw);
+    font-size: 11px; line-height: 1.8; letter-spacing: .08em; text-align: left;
+    text-shadow: 0 1px 8px #07131a, 0 0 18px #07131a;
+  }
+  #shellFoot p { margin: 0; opacity: .75; }
+  #shellFoot b { color: #9ce23e; }
+  #shellFoot .dim, #shellFoot .dim b { opacity: .8; }
+  #shellFoot .dim { opacity: .45; }
+
+  /* ---- failsafe panel (T-032) ----
+     The only thing a player ever sees when the game breaks. It sits above
+     the shell (z 30) and the state overlay (z 20) and is opaque, because
+     what it replaces is a black void with an explanation nobody can see.
+     Styled here, beside the markup, so the inline bootstrap below can show
+     it with no stylesheet, font or module of its own to load. */
+  #fail {
+    position: fixed; inset: 0; z-index: 100; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    background: #07131a; color: #e8edf2; text-align: center;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    padding: 24px; box-sizing: border-box; overflow: auto;
+  }
+  #fail.on { display: flex; }
+  #fail .failbox { max-width: min(620px, 92vw); }
+  #fail h2 {
+    margin: 0 0 16px; font-size: clamp(24px, 4.6vw, 42px);
+    letter-spacing: .1em; color: #ffe9c2;
+  }
+  #fail p { margin: 8px 0; font-size: clamp(15px, 2.2vw, 19px); line-height: 1.55; }
+  #failBtn {
+    margin: 24px 0 10px; padding: 14px 32px; font: inherit; font-size: 20px;
+    letter-spacing: .12em; color: #07131a; background: #9ce23e;
+    border: 0; border-radius: 4px; cursor: pointer;
+  }
+  #failBtn:focus-visible { outline: 3px solid #ffe9c2; outline-offset: 3px; }
+  #fail .failhint { font-size: clamp(12px, 1.7vw, 15px); opacity: .72; }
+  #fail details { margin-top: 26px; text-align: left; font-size: 12px; opacity: .5; }
+  #fail summary { cursor: pointer; letter-spacing: .06em; }
+  #fail pre {
+    white-space: pre-wrap; word-break: break-word;
+    max-height: 32vh; overflow: auto; margin: 8px 0 0;
+  }
+
+  @media (max-width: 600px) {
+    #hudRigPanel {
+      top: max(7px, env(safe-area-inset-top)); left: max(7px, env(safe-area-inset-left));
+      width: calc(61vw - 10px); min-width: 0; padding: 6px 7px 7px;
+    }
+    #hudRunPanel {
+      top: max(7px, env(safe-area-inset-top)); right: max(7px, env(safe-area-inset-right));
+      left: auto; width: calc(39vw - 11px); min-width: 0; padding: 6px 7px 7px;
+    }
+    #hudObjectivePanel {
+      top: calc(max(7px, env(safe-area-inset-top)) + 91px); left: 50%;
+      width: calc(100% - 14px); min-height: 31px; padding: 5px 9px 6px;
+      transform: translateX(-50%);
+    }
+    #hudObjectivePanel.empty { transform: translate(-50%, -4px); }
+    .hud-eyebrow { gap: 5px; font-size: 6px; letter-spacing: .1em; }
+    .hud-vitals { gap: 4px; margin-top: 5px; }
+    #hudHealthPips { font-size: 11px; letter-spacing: .04em; }
+    #hudHealthValue { font-size: 7px; }
+    .hud-weapon { gap: 2px 5px; margin-top: 4px; padding-top: 4px; }
+    #hudWeaponKey { min-width: 24px; padding: 3px 2px; font-size: 8px; }
+    #hudWeaponName { font-size: 9px; letter-spacing: .025em; }
+    #hudWeaponOther { min-height: 7px; font-size: 6px; letter-spacing: .03em; }
+    .hud-power { gap: 4px; margin-top: 4px; font-size: 6px; }
+    .hud-meter { gap: 2px; height: 3px; }
+    #hudPowerState { font-size: 6px; }
+    #hudStatus { display: none; }
+    #hudRunMetrics { gap: 3px; margin-top: 7px; }
+    .hud-metric { text-align: center; }
+    .hud-metric b { font-size: 9px; }
+    .hud-metric span { margin-top: 3px; font-size: 5px; letter-spacing: .045em; }
+    #hudRushRow { gap: 3px; margin-top: 6px; padding-top: 5px; font-size: 6px; }
+    #hudRushPips { font-size: 8px; letter-spacing: .04em; }
+    #hudRushState { display: none; }
+    #hudObjectiveLabel { display: none; }
+    #hudObjective { margin-top: 0; font-size: 9px; letter-spacing: .075em; }
+    #hudBL {
+      right: auto; bottom: 8px; left: 50%; width: calc(100% - 20px);
+      max-width: none; padding: 6px 8px 7px; font-size: 8px; line-height: 1.3;
+    }
+    #finale {
+      top: 82px; width: calc(100% - 20px); padding: 7px 8px 8px;
+      font-size: 9px; letter-spacing: .065em;
+    }
+    body:has(#finale.on) #hudObjectivePanel { opacity: 0; }
+    #finaleMeta { font-size: 8px; letter-spacing: .045em; }
+    #overlay h1 { font-size: 28px; letter-spacing: .14em; }
+    #overlay p { max-width: calc(100% - 30px); font-size: 12px; }
+    #overlay.victory {
+      align-items: stretch; justify-content: flex-start; padding: 12vh 16px 18px;
+      background: transparent;
+    }
+    #overlay.victory::after {
+      background:
+        repeating-linear-gradient(0deg, transparent 0 3px, rgba(232,237,242,.07) 3px 4px),
+        linear-gradient(180deg, rgba(5,15,22,.82), rgba(5,15,22,.96));
+    }
+    #overlay.victory::before { left: 82%; opacity: .55; }
+    #overlay.victory > * { width: 100%; }
+    #overlay.victory #ovTitle { font-size: clamp(46px, 15vw, 68px); margin-bottom: 9px; }
+    #overlay.victory #ovTitle::before { font-size: 8px; letter-spacing: .16em; }
+    #overlay.victory #ovBody .victory-kicker { font-size: 10px; }
+    #overlay.victory #ovBody .victory-rig { display: none; }
+    #overlay.victory #ovBody .victory-reply { font-size: 14px; }
+    #overlay.victory #ovBody::before {
+      width: calc(100vw - 30px); font-size: clamp(25px, 8vw, 40px); letter-spacing: .075em;
+    }
+    #overlay.victory #ovPanel .result-panel {
+      grid-template-columns: 74px minmax(0, 1fr); gap: 8px 10px; width: 100%; padding: 10px;
+    }
+    .result-rank { padding-right: 8px; }
+    .result-rank strong { font-size: 52px; }
+    .result-weapon b {
+      display: -webkit-box; overflow: hidden; white-space: normal;
+      font-size: 11px; line-height: 1.18; overflow-wrap: anywhere;
+      -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    }
+    .result-strip b { font-size: 15px; }
+    .result-details { display: none; }
+    #overlay.victory .result-panel > .keys { font-size: 9px; }
+    #ovPanel .panel { min-width: 0; padding: 9px 11px 8px; }
+    #ovPanel .statgrid { gap: 1px 12px; font-size: 11px; }
+    #ovPanel .keys { font-size: 10px; }
+    #shellArt {
+      /* Pull the summit/RIG cluster away from the right crop. The left-side
+         copy remains over the art's authored dark sky. */
+      background-position: 76% 50%;
+    }
+    #shellArt::after {
+      background: linear-gradient(90deg, rgba(7,19,26,.9), rgba(7,19,26,.28)),
+                  linear-gradient(0deg, rgba(7,19,26,.72), transparent 48%);
+    }
+    #shellText { left: 6%; top: 16%; width: 88%; min-width: 0; text-align: left; }
+    #shellText h1 { font-size: clamp(38px, 13vw, 62px); }
+    #shellText .tag { font-size: 11px; letter-spacing: .1em; }
+    #shellFoot { left: 6%; bottom: 2.5%; width: 88%; font-size: 10px; line-height: 1.6; }
+    #shellFoot .dim { display: none; }
+  }
+
+  /* Phones in landscape are wide but short, so width-only mobile rules never
+     reached them. Keep each instrument in its own row and reserve the lower
+     edge for touch instead of letting three HUD strings collide. */
+  @media (max-height: 520px) and (pointer: coarse),
+         (max-height: 520px) and (max-width: 980px) {
+    #hudRigPanel {
+      top: max(7px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left));
+      width: min(270px, 36vw); min-width: 0; padding: 6px 8px;
+    }
+    #hudRunPanel {
+      top: max(7px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right));
+      left: auto; width: min(260px, 36vw); min-width: 0; padding: 6px 8px;
+    }
+    #hudObjectivePanel {
+      top: max(7px, env(safe-area-inset-top)); left: 50%; width: min(270px, 26vw);
+      min-height: 34px; padding: 5px 7px; transform: translateX(-50%);
+    }
+    #hudWeaponOther, #hudStatus { display: none; }
+    .hud-vitals, .hud-weapon, .hud-power, #hudRunMetrics, #hudRushRow { margin-top: 4px; }
+    #hudRigPanel .hud-eyebrow, #hudRunPanel .hud-eyebrow { display: none; }
+    #hudHealthPips { font-size: 11px; }
+    #hudWeaponName, .hud-metric b { font-size: 9px; }
+    .hud-metric span, #hudObjectiveLabel { font-size: 5px; }
+    #hudObjective { font-size: 8px; }
+    #touchDeck { height: 46vh; height: 46dvh; }
+    .touch-chip { bottom: max(30px, calc(env(safe-area-inset-bottom) + 21px)); }
+    #touchCue { font-size: 8px; }
+  }
+</style>
+<!-- ===== FAILSAFE BOOTSTRAP (T-032) ==================================
+     Everything in this block runs before the game and imports nothing.
+     That is the entire point. On 2026-08-02 one stale cached module failed
+     to parse; ES modules are all-or-nothing, so src/main.js never executed
+     and the page was a black void with a single console line. A panel
+     drawn BY main.js cannot report that main.js never ran, so the handler
+     has to live here, in a classic inline script, with no dependency that
+     could fail with it.
+
+     Catches: an uncaught error or a rejected promise before boot (panel:
+     "could not start"), a module or import-map that fails to load, a boot
+     that never finishes (watchdog), a frame loop that stops beating on a
+     visible page (freeze watchdog), and — after boot — whatever
+     src/ui/failsafe.js's policy decides is more than a blip.
+
+     Does NOT catch: this page failing to arrive at all (the browser's own
+     error page), a game that keeps running while quietly doing the wrong
+     thing (nothing throws, so nothing fires here), or a broken frame that
+     src/ui/failsafe.js chooses to ride out.
+
+     The words are a table so tools/pathcheck.mjs can read them out of this
+     file and hold them to src/pure/failsafe.js's plain-language rule: this
+     screen is read by a 9-year-old, and the engineering detail belongs
+     behind the fold, not in his face.
+================================================================== -->
+<script>
+(function () {
+  'use strict';
+
+  var HB_FAIL_TEXT = {
+    "boot": {
+      "t": "The game could not start.",
+      "b": "Something inside it broke before it could open. It is not your fault.",
+      "a": "Try again"
+    },
+    "crash": {
+      "t": "The game stopped.",
+      "b": "Something inside it broke while you were playing. It is not your fault.",
+      "a": "Play again"
+    },
+    "frozen": {
+      "t": "The game got stuck.",
+      "b": "The picture stopped moving, so the game shut itself down. It is not your fault.",
+      "a": "Play again"
+    },
+    "slow": {
+      "t": "Still loading.",
+      "b": "The game is taking a long time to open. Wait a moment, or start it again.",
+      "a": "Try again"
+    },
+    "hint": "Press R, or click the button, to play again.",
+    "tell": "If this keeps happening, show this screen to a grown-up.",
+    "more": "What broke (for grown-ups)"
+  };
+
+  // mirrors FAILSAFE in src/pure/failsafe.js; pathcheck asserts they agree
+  var WATCH = { bootMs: 10000, stallMs: 4000, tickMs: 1000 };
+  var KEYS = ['KeyR', 'Enter', 'Space'];
+  var HARD = { boot: 1, crash: 1, frozen: 1 };     // panels that never downgrade
+
+  var booted = false, showing = null, beats = 0, errors = 0, waiting = false;
+  var notes = [];
+  var now = Date.now();
+  var visibleSince = now, lastBeatAt = now, lastBeats = 0, lastTickAt = now;
+
+  function el(id) { return document.getElementById(id); }
+
+  function note(detail) {
+    if (!detail) return;
+    if (notes.length < 24) notes.push(detail);
+    var pre = el('failDetail');
+    if (pre && showing) pre.textContent = notes.join('\n\n');
+  }
+
+  function paint(kind) {
+    var box = el('fail');
+    if (!box) return false;
+    var text = HB_FAIL_TEXT[kind] || HB_FAIL_TEXT.crash;
+    el('failTitle').textContent = text.t;
+    el('failBody').textContent = text.b;
+    el('failBtn').textContent = text.a;
+    el('failHint').textContent = HB_FAIL_TEXT.hint;
+    el('failTell').textContent = HB_FAIL_TEXT.tell;
+    el('failMore').textContent = HB_FAIL_TEXT.more;
+    el('failDetail').textContent = notes.join('\n\n');
+    box.classList.add('on');
+    try { el('failBtn').focus(); } catch (e) { /* focus is a nicety */ }
+    return true;
+  }
+
+  function show(kind, detail) {
+    note(detail);
+    if (HARD[showing] && !HARD[kind]) return;      // never talk a failure down
+    showing = kind;
+    if (paint(kind) || waiting) return;
+    waiting = true;                                // body not parsed yet
+    document.addEventListener('DOMContentLoaded', function () {
+      if (showing) paint(showing);
+    });
+  }
+
+  function hide() {
+    showing = null;
+    var box = el('fail');
+    if (box) box.classList.remove('on');
+  }
+
+  function again() {
+    try { location.reload(); } catch (e) { location.href = location.href; }
+  }
+
+  function describe(ev) {
+    var when = new Date().toISOString();
+    if (ev && ev.type === 'unhandledrejection') {
+      var r = ev.reason;
+      return when + '  unfinished work failed: ' +
+        ((r && (r.stack || r.message)) || String(r));
+    }
+    if (ev && ev.target && ev.target !== window && (ev.target.src || ev.target.href))
+      return when + '  could not load ' + (ev.target.src || ev.target.href);
+    var where = ev && ev.filename
+      ? ' (' + ev.filename + ':' + ev.lineno + ':' + ev.colno + ')' : '';
+    var stack = ev && ev.error && ev.error.stack
+      ? '\n' + String(ev.error.stack).split('\n').slice(0, 5).join('\n') : '';
+    return when + '  ' + ((ev && ev.message) || 'unknown failure') + where + stack;
+  }
+
+  function caught(ev) {
+    errors++;
+    var detail = describe(ev);
+    var target = ev && ev.target;
+    var resource = target && target !== window && (target.src || target.href);
+    // a picture or a stylesheet that failed to arrive is not a dead game; a
+    // SCRIPT that failed is exactly the incident this handler exists for, and
+    // so is any error with no element behind it
+    var fatal = !resource || String(target.tagName).toUpperCase() === 'SCRIPT';
+    if (!booted && fatal) { show('boot', detail); return; }
+    note(detail);
+    if (typeof API.onUncaught === 'function') {
+      try { API.onUncaught(detail); } catch (e) { /* the policy is optional */ }
+    }
+  }
+
+  addEventListener('error', caught, true);         // capture: also catches a
+  addEventListener('unhandledrejection', caught);  //   script that never loaded
+
+  addEventListener('keydown', function (ev) {
+    if (!showing || KEYS.indexOf(ev.code) < 0) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    again();
+  }, true);
+
+  addEventListener('click', function (ev) {
+    if (showing && ev.target && ev.target.id === 'failBtn') { ev.preventDefault(); again(); }
+  }, true);
+
+  document.addEventListener('visibilitychange', function () {
+    // a hidden tab paints nothing by design: reset every watchdog baseline
+    // so returning from one is never mistaken for a stuck game
+    var t = Date.now();
+    visibleSince = t; lastBeatAt = t; lastTickAt = t;
+  });
+
+  setTimeout(function () { if (!booted) show('slow'); }, WATCH.bootMs);
+
+  setInterval(function () {
+    var t = Date.now();
+    var slept = t - lastTickAt > WATCH.tickMs * 3;  // our own timer was suspended:
+    lastTickAt = t;                                 //   the page was frozen, not stuck
+    if (beats !== lastBeats) { lastBeats = beats; lastBeatAt = t; }
+    if (!booted || showing || slept) return;
+    if (document.visibilityState !== 'visible') { visibleSince = t; lastBeatAt = t; return; }
+    if (t - visibleSince < WATCH.stallMs) return;
+    if (t - lastBeatAt >= WATCH.stallMs)
+      show('frozen', new Date().toISOString() + '  the frame loop stopped ' +
+        Math.round((t - lastBeatAt) / 1000) + 's ago');
+  }, WATCH.tickMs);
+
+  var API = {
+    version: 1,
+    show: show,
+    hide: hide,
+    note: note,
+    again: again,
+    // Reaching this means src/main.js ran to its last line, so the game IS
+    // up: any panel raised on the way in was about something the boot
+    // survived (a slow load, an async failure in a module that still
+    // finished) and must come down. A genuine boot failure never gets here
+    // — that is the whole point of it being the last statement in main.js.
+    booted: function () {
+      booted = true;
+      if (showing === 'slow' || showing === 'boot') hide();
+    },
+    isBooted: function () { return booted; },
+    beat: function () { beats++; },
+    beats: function () { return beats; },
+    errors: function () { return errors; },
+    showing: function () { return showing; },
+    detail: function () { return notes.join('\n\n'); },
+    text: HB_FAIL_TEXT,
+    watch: WATCH,
+    keys: KEYS,
+    onUncaught: null,
+  };
+  window.__HB_FAILSAFE = API;
+})();
+</script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="tint" style="position:fixed;inset:0;z-index:5;pointer-events:none;background:transparent;"></div>
+<!-- Hidden compatibility channels retain the stable plain-text contract used
+     by deterministic playtest traces. The player-facing instruments below
+     are structured independently, so styling can evolve without corrupting
+     harness parsing. -->
+<div id="hudTL" class="hud-legacy" aria-hidden="true"></div>
+<div id="hudTC" class="hud-legacy" aria-hidden="true"></div>
+<div id="hudTR" class="hud-legacy" aria-hidden="true"></div>
+<div id="hudRigPanel" class="hud hud-instrument" aria-label="RIG health and weapon status">
+  <div class="hud-eyebrow"><span>RIG // VITALS</span><span id="hudLives">×0</span></div>
+  <div class="hud-vitals">
+    <span class="hud-label">HULL</span><span id="hudHealthPips">▱▱▱</span><span id="hudHealthValue">0/3</span>
+  </div>
+  <div class="hud-weapon">
+    <span id="hudWeaponKey">[R]</span><span id="hudWeaponName">RIVETGUN</span>
+    <span id="hudWeaponOther">FIELD RIFLE // PRIMARY</span>
+  </div>
+  <div class="hud-power">
+    <span>OVERDRIVE</span><span id="hudOverdrive" class="hud-meter" aria-label="Overdrive"><i></i><i></i></span>
+    <span id="hudPowerState">COLD</span><span id="hudPowerText" class="hud-sr">OVERDRIVE ▯▯ COLD</span>
+  </div>
+  <div id="hudStatus"></div>
+</div>
+<div id="hudObjectivePanel" class="hud hud-instrument empty" aria-live="polite" role="status">
+  <div id="hudObjectiveLabel">MERIDIAN RESPONSE</div><div id="hudObjective"></div>
+</div>
+<div id="hudRunPanel" class="hud hud-instrument" aria-label="Run progress">
+  <div class="hud-eyebrow"><span id="hudRunLabel">ASCENT // LIVE</span></div>
+  <div id="hudRunMetrics">
+    <div class="hud-metric"><b id="hudMetricA">0m</b><span id="hudMetricALabel">ALT</span></div>
+    <div class="hud-metric"><b id="hudMetricB">0m</b><span id="hudMetricBLabel">FORWARD</span></div>
+    <div class="hud-metric"><b id="hudMetricC">0</b><span id="hudMetricCLabel">KILLS</span></div>
+  </div>
+  <div id="hudRushRow"><span>RUSH</span><span id="hudRushPips">▱▱▱</span><span id="hudRushState">STEADY</span></div>
+</div>
+<div id="hudBL" class="hud"></div>
+<div id="touchDeck" hidden aria-label="Touch controls">
+  <div id="touchStick" aria-hidden="true"><span id="touchNub"></span></div>
+  <button id="touchPause" class="touch-chip" type="button" aria-label="Pause game">II</button>
+  <button id="touchSwap" class="touch-chip" type="button" aria-label="Swap weapon">SWAP</button>
+  <div id="touchCue" aria-hidden="true">DRAG · OUTER RAIL FIRES · TAP JUMPS</div>
+</div>
+<div id="finale" aria-hidden="true" aria-live="polite" role="status">
+  <div id="finaleTitle">CROWN UPLINK // HOLD THE SIGNAL</div>
+  <div id="finaleMeta">ARMING BATTERED ARRAY</div>
+  <div id="finaleProgress" role="progressbar" aria-label="Crown uplink" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+    <span id="finaleFill"></span>
+  </div>
+</div>
+<div id="overlay"><h1 id="ovTitle"></h1><div id="ovPanel"></div><div id="ovBody"></div></div>
+<!-- The game shell's start screen (src/ui/shell.js fills it; ?shell=0 boots
+     straight into the run and this element is never shown). -->
+<div id="shell"></div>
+
+<!-- Failure panel (T-032). Static markup, filled by the inline bootstrap in
+     the head: a boot failure is the case where no module ever runs, so
+     there is nobody left to build this. Every line a PLAYER reads carries
+     .fail-plain — ?selftest=1 gathers exactly those and holds the rendered
+     words to src/pure/failsafe.js's plain-language rule. The technical
+     detail lives behind the fold, for the operator. -->
+<div id="fail" role="alert" aria-live="assertive">
+  <div class="failbox">
+    <h2 id="failTitle" class="fail-plain"></h2>
+    <p id="failBody" class="fail-plain"></p>
+    <button id="failBtn" class="fail-plain" type="button"></button>
+    <p id="failHint" class="failhint fail-plain"></p>
+    <p id="failTell" class="failhint fail-plain"></p>
+    <details>
+      <summary id="failMore" class="fail-plain"></summary>
+      <pre id="failDetail"></pre>
+    </details>
+  </div>
+</div>
+
+<!-- The game itself is ES modules under src/. Because module scripts are
+     fetched with CORS, the page must be served over http (see README) —
+     opening this file straight off disk no longer works. -->
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

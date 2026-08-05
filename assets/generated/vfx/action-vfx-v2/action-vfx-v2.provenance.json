@@ -1,0 +1,239 @@
+{
+  "schema": "hullbreaker-action-vfx-v2-provenance",
+  "generatedOn": "2026-08-04",
+  "generationMode": "OpenAI built-in image generation tool",
+  "useCase": "stylized-concept",
+  "prompts": "assets/generated/vfx/action-vfx-v2/PROMPTS.md",
+  "promptsSha256": "ae77138ad76f58dea3f477d147000e4052eb4be04692f6318f1ffc3037f6a09a",
+  "referencesInspected": [
+    "docs/DESIGN.md",
+    "docs/STORY.md",
+    "docs/concept-art/04-six-phase-escalation.png",
+    "docs/concept-art/06-enemy-form-language.png",
+    "docs/concept-art/10-creature-lattice-chaos.png",
+    "assets/generated/vfx/meridian-defense-vfx-pack-v1.png",
+    "assets/generated/projectiles/projectile-scatterbloom-flechette-candidates-v1.png"
+  ],
+  "backgroundRemoval": {
+    "tool": "/Users/scottmeyer/.codex/skills/.system/imagegen/scripts/remove_chroma_key.py",
+    "args": [
+      "--auto-key",
+      "border",
+      "--soft-matte",
+      "--transparent-threshold",
+      "12",
+      "--opaque-threshold",
+      "220",
+      "--despill"
+    ]
+  },
+  "packing": {
+    "tool": "tools/assets/build-action-vfx-v2.mjs",
+    "policy": "116px maximum fitted content inside each 128px cell",
+    "independentCellPacking": true,
+    "atlasSha256": "5577bc16b4bc9ed52a31605d797d5f50c0f353d37276527197c49efcf9361f85"
+  },
+  "boards": [
+    {
+      "id": "A",
+      "slug": "rifle-scatter",
+      "imagegenOriginal": "/Users/scottmeyer/.codex/generated_images/019fcda2-7c3f-7960-a835-5758a093b96f/exec-b9e310bb-b40c-499e-86d3-9d21eff155dd.png",
+      "chroma": "assets/generated/vfx/action-vfx-v2/source-boards/action-vfx-v2-board-a-rifle-scatter-chroma.png",
+      "chromaSha256": "40e58eb57db3c6f5bea60dcaf3d717a0afa032e3cae334ed0b93b8bc33b80e42",
+      "alpha": "assets/generated/vfx/action-vfx-v2/source-boards/action-vfx-v2-board-a-rifle-scatter-alpha.png",
+      "alphaSha256": "e76b4419ad52014cb5517c6eaba26f5c1ecd3d09401b2c2b3a4f6ad11025739d",
+      "sampledChromaKey": "#12f813",
+      "removalPixels": {
+        "transparent": 1428560,
+        "partial": 20620,
+        "total": 1572516
+      },
+      "alphaCensus": {
+        "pixels": 1572516,
+        "transparent": 90.84549855136609,
+        "partial": 1.3112744162857486,
+        "opaque": 7.84322703234816
+      },
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "cells": [
+        4,
+        4
+      ]
+    },
+    {
+      "id": "B",
+      "slug": "laser-homing",
+      "imagegenOriginal": "/Users/scottmeyer/.codex/generated_images/019fcda2-7c3f-7960-a835-5758a093b96f/exec-d9ddab6b-bc46-4d5a-a2a7-fb5de1985530.png",
+      "chroma": "assets/generated/vfx/action-vfx-v2/source-boards/action-vfx-v2-board-b-laser-homing-chroma.png",
+      "chromaSha256": "257a0f7e3e5202f37ecc5592815d3c03e3d816f18fec5082297088d48cee2f2a",
+      "alpha": "assets/generated/vfx/action-vfx-v2/source-boards/action-vfx-v2-board-b-laser-homing-alpha.png",
+      "alphaSha256": "33e3676ac64aedb1a7ea1dacdd70c7b3d30477b774764d7340206831a0378cfa",
+      "sampledChromaKey": "#0df611",
+      "removalPixels": {
+        "transparent": 1483737,
+        "partial": 23806,
+        "total": 1572516
+      },
+      "alphaCensus": {
+        "pixels": 1572516,
+        "transparent": 94.35433407354837,
+        "partial": 1.5138796679970188,
+        "opaque": 4.131786258454604
+      },
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "cells": [
+        4,
+        4
+      ]
+    },
+    {
+      "id": "C",
+      "slug": "combustion-rupture",
+      "imagegenOriginal": "/Users/scottmeyer/.codex/generated_images/019fcda2-7c3f-7960-a835-5758a093b96f/exec-557dac42-1f4a-4439-8219-1932f28aa237.png",
+      "chroma": "assets/generated/vfx/action-vfx-v2/source-boards/action-vfx-v2-board-c-combustion-rupture-chroma.png",
+      "chromaSha256": "89153f7f2b0c79f96f033a01f3b1c2c7e4a842346296925be00d0f6895f529df",
+      "alpha": "assets/generated/vfx/action-vfx-v2/source-boards/action-vfx-v2-board-c-combustion-rupture-alpha.png",
+      "alphaSha256": "ac8b0cefea6f66dc2dc72df7dd7b9d59fee91cb9538907a489f7d764ba08c121",
+      "sampledChromaKey": "#05f80b",
+      "removalPixels": {
+        "transparent": 1369156,
+        "partial": 48724,
+        "total": 1572516
+      },
+      "alphaCensus": {
+        "pixels": 1572516,
+        "transparent": 87.067858133081,
+        "partial": 3.0984740377840354,
+        "opaque": 9.833667829134967
+      },
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "cells": [
+        4,
+        4
+      ]
+    },
+    {
+      "id": "D",
+      "slug": "meridian-crown",
+      "imagegenOriginal": "/Users/scottmeyer/.codex/generated_images/019fcda2-7c3f-7960-a835-5758a093b96f/exec-f6f49a2a-bad0-4afc-b4ce-9f41ebdf75df.png",
+      "chroma": "assets/generated/vfx/action-vfx-v2/source-boards/action-vfx-v2-board-d-meridian-crown-chroma.png",
+      "chromaSha256": "80a4b1403f986ce4e365c8f3d781cfcadd143f0a8ec14ccd942ea9c003062b4a",
+      "alpha": "assets/generated/vfx/action-vfx-v2/source-boards/action-vfx-v2-board-d-meridian-crown-alpha.png",
+      "alphaSha256": "f8f160f9f17c7ef03cc0386afb9d478892e0db1b598355b8aa0abcd1194975ee",
+      "sampledChromaKey": "#05f909",
+      "removalPixels": {
+        "transparent": 1237028,
+        "partial": 28989,
+        "total": 1572516
+      },
+      "alphaCensus": {
+        "pixels": 1572516,
+        "transparent": 78.66552709161624,
+        "partial": 1.843478858084751,
+        "opaque": 19.49099405029901
+      },
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "cells": [
+        4,
+        4
+      ]
+    }
+  ],
+  "selection": {
+    "selected": [
+      "r-rivet-trail",
+      "r-seam-punch",
+      "r-needle-spall",
+      "r-chip-fan",
+      "r-offset-slivers",
+      "r-bore-spall",
+      "r-collapsed-seam",
+      "r-spent-pin",
+      "s-triple-rake",
+      "s-five-splay",
+      "s-step-shear",
+      "s-split-shear",
+      "s-armor-fan",
+      "s-plate-shards",
+      "s-rake-afterimage",
+      "s-spent-splinters",
+      "l-seam-through",
+      "l-clamped-line",
+      "l-convergent-line",
+      "l-plate-pierce",
+      "l-collapsing-echo",
+      "l-broken-afterimage",
+      "l-heated-incision",
+      "l-spent-seam",
+      "h-vane-bracket",
+      "h-rise-shear",
+      "h-fin-slice",
+      "h-opposed-vanes",
+      "h-correction-kink",
+      "h-vane-afterimage",
+      "f-serrated-bite",
+      "f-ground-wedge",
+      "f-pressure-burst",
+      "f-plate-incision",
+      "f-cinder-trail",
+      "f-torn-pressure-ribbon",
+      "f-spent-cinders",
+      "enemy-rotor-rupture",
+      "enemy-scute-rupture",
+      "enemy-iris-failure",
+      "enemy-breech-fracture",
+      "enemy-terminal-debris",
+      "enemy-split-core",
+      "meridian-clamp-snap",
+      "meridian-lock-rails",
+      "meridian-shutter-strike",
+      "meridian-clamp-recoil",
+      "meridian-vent-slat",
+      "meridian-shutter-peel",
+      "meridian-seal-sweep",
+      "meridian-spent-louvers",
+      "crown-command-packet",
+      "crown-packet-arrival",
+      "warden-rack-rupture",
+      "crown-interlock-failure",
+      "crown-uplink-needle",
+      "crown-carrier-release",
+      "crown-housing-shear",
+      "crown-uplink-afterimage"
+    ],
+    "rejected": [
+      {
+        "id": "h-broken-crosscut",
+        "reason": "at 12px the four slashes collapse into the symmetric X/star vocabulary the pack forbids."
+      },
+      {
+        "id": "h-spent-hardware",
+        "reason": "minification reads as two unrelated props rather than a single action effect."
+      },
+      {
+        "id": "f-double-vent-wisp",
+        "reason": "obvious smoke wisps reintroduce the soft cloud vocabulary rejected from v1."
+      },
+      {
+        "id": "enemy-rise-vapor",
+        "reason": "smoke-wisp identity is atmospheric, not a strong mechanical action silhouette."
+      },
+      {
+        "id": "enemy-side-vent",
+        "reason": "smoke body collapses into a soft puff under minification."
+      }
+    ]
+  }
+}

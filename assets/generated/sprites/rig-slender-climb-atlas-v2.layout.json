@@ -1,0 +1,135 @@
+{
+  "id": "rig-slender-climb-atlas-v2",
+  "source": "assets/generated/sprites/rig-slender-climb-chroma-v2.png",
+  "output": "assets/generated/sprites/rig-slender-climb-atlas-v2.png",
+  "sourceSize": [
+    2064,
+    762
+  ],
+  "outputSize": [
+    2048,
+    1024
+  ],
+  "outputCell": [
+    512,
+    1024
+  ],
+  "method": "connected assembly extraction + 1:1 integer repack",
+  "resampled": false,
+  "guard": 24,
+  "alphaFloor": 8,
+  "componentFloor": 40,
+  "paletteFinish": {
+    "alphaFloor": 32,
+    "changedPixels": 17189,
+    "changedColors": 14222,
+    "changedShare": 0.008196,
+    "meanNeutralization": 0.3971
+  },
+  "poses": [
+    {
+      "name": "left-reach",
+      "sourceCell": 0,
+      "outputCell": 0,
+      "sourceRect": {
+        "x": 0,
+        "y": 0,
+        "w": 516,
+        "h": 762
+      },
+      "alpha": {
+        "x": 196,
+        "y": 209,
+        "w": 202,
+        "h": 532
+      },
+      "guard": {
+        "left": 196,
+        "top": 209,
+        "right": 114,
+        "bottom": 283
+      },
+      "paintedPixels": 43467,
+      "partialPixels": 1604,
+      "rejectedComponents": []
+    },
+    {
+      "name": "left-drive",
+      "sourceCell": 1,
+      "outputCell": 1,
+      "sourceRect": {
+        "x": 516,
+        "y": 0,
+        "w": 516,
+        "h": 762
+      },
+      "alpha": {
+        "x": 660,
+        "y": 275,
+        "w": 205,
+        "h": 464
+      },
+      "guard": {
+        "left": 148,
+        "top": 275,
+        "right": 159,
+        "bottom": 285
+      },
+      "paintedPixels": 39354,
+      "partialPixels": 1434,
+      "rejectedComponents": []
+    },
+    {
+      "name": "right-reach",
+      "sourceCell": 2,
+      "outputCell": 2,
+      "sourceRect": {
+        "x": 1032,
+        "y": 0,
+        "w": 516,
+        "h": 762
+      },
+      "alpha": {
+        "x": 1139,
+        "y": 216,
+        "w": 209,
+        "h": 529
+      },
+      "guard": {
+        "left": 115,
+        "top": 216,
+        "right": 188,
+        "bottom": 279
+      },
+      "paintedPixels": 42853,
+      "partialPixels": 1618,
+      "rejectedComponents": []
+    },
+    {
+      "name": "right-drive",
+      "sourceCell": 3,
+      "outputCell": 3,
+      "sourceRect": {
+        "x": 1548,
+        "y": 0,
+        "w": 516,
+        "h": 762
+      },
+      "alpha": {
+        "x": 1597,
+        "y": 281,
+        "w": 198,
+        "h": 463
+      },
+      "guard": {
+        "left": 61,
+        "top": 281,
+        "right": 253,
+        "bottom": 280
+      },
+      "paintedPixels": 38064,
+      "partialPixels": 1318,
+      "rejectedComponents": []
+    }
+  ]
+}

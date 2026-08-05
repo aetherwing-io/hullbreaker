@@ -1,0 +1,24 @@
+{
+  "asset": "projectile-chassis-atlas-v3.png",
+  "purpose": "Pixel-authored production chassis for six player projectile states at the shipped FAR camera.",
+  "generator": {
+    "mode": "OpenAI built-in image generation",
+    "date": "2026-08-05",
+    "reference": "projectile-chassis-atlas-v2.png",
+    "promptSummary": "One horizontal six-cell atlas of right-facing rivet, single scatter flechette, laser needle, homing micro-missile, armored incendiary packet, and crawling ground-fire tongue; chunky 24-48 pixel detail, hard outline, flat green chroma, no glow, labels, blur, or painterly micro-detail."
+  },
+  "processing": {
+    "sourceCanvas": [2172, 724],
+    "sourceCell": [362, 724],
+    "chromaRule": "alpha 0 when g > 0.15 and g > 1.25*r and g > 1.25*b",
+    "fit": [230, 104],
+    "packedCell": [256, 256],
+    "packedCanvas": [1536, 256],
+    "filter": "point",
+    "order": ["R", "S", "L", "H", "F", "G"]
+  },
+  "sha256": {
+    "source": "a6b4556889083c016e72324204959e3ad9da0c158df9935977fe2a052f35bd0e",
+    "atlas": "1f19740e26a101dccf4cf096c4b6c4d0d1abb28337fec2ff57b35c91de018d29"
+  }
+}

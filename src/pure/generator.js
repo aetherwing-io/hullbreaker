@@ -1,0 +1,369 @@
+/* =========================== GENERATOR ============================ */
+/* Pattern-chunk layout + ambient spawn-director math. Pure: no three.js,
+   no DOM — the harness rebuilds the level and asserts every invariant.
+   Ground is authored as a stream of named chunks (flats, steps, stairs,
+   plateaus, trenches, gap hops, island hops, ridges) instead of a
+   coin-flip walk. Invariants: heights within [minH, maxH]; adjacent
+   solid columns differ by ≤ 2; gap runs ≤ gapMax with ≥ landingMin solid
+   columns after and ≤ 1 height change across; intro + tail flat; corner
+   aprons flat and platform-free; every catwalk within maxReach. */
+
+import { mulberry32 } from './rng.js';
+import { cornerSList, faceIndexAt } from './path.js';
+import { TRAVERSAL_FIXTURE } from './traversal.js';
+import {
+  LATTICE, latticeArenaSites, latticeArrivalSites, latticeCarvePocket,
+  latticeEmplacementBeats, latticeHoundBeats, latticeInstallSite, latticePatchPass,
+  latticePocketSites, latticeReport, latticeThinPass,
+} from './lattice.js';
+import { installVerticalAssault, verticalAssaultReport } from './vertical-assault.js';
+
+export const GAP = -999;
+
+export function solidRectContains(rect, x, y) {
+  return x >= rect.x0 && x < rect.x1 && y >= rect.y0 && y < rect.y1;
+}
+
+export function levelSolidCell(level, i, j, tileDepth) {
+  const g = level.groundH[i];
+  if (g > -100 && j < g && j >= g - tileDepth) return true;
+  for (const rect of level.solidRects || []) if (solidRectContains(rect, i, j)) return true;
+  return false;
+}
+
+function clampH(v, g) { return Math.max(g.minH, Math.min(g.maxH, v)); }
+
+// Each chunk emits {cols, h}: column heights (GAP for gaps) plus the walk
+// height after the chunk. Every chunk's last solid column equals its
+// returned h, so chunk-to-chunk seams can never step more than the
+// chunk's own internal moves (≤ 2).
+const CHUNK_LIB = [
+  ['flat', (rng, h, g) => ({ cols: new Array(4 + Math.floor(rng() * 5)).fill(h), h })],
+  ['step', (rng, h, g) => {                    // single ledge up/down (±1, sometimes ±2)
+    const nh = clampH(h + (rng() < 0.5 ? -1 : 1) * (rng() < 0.3 ? 2 : 1), g);
+    return { cols: new Array(3 + Math.floor(rng() * 4)).fill(nh), h: nh };
+  }],
+  ['stairs', (rng, h, g) => {                  // 2–3 risers with short treads
+    const dir = rng() < 0.5 ? 1 : -1;
+    const cols = [];
+    let hh = h;
+    for (let i = 0, n = 2 + Math.floor(rng() * 2); i < n; i++) {
+      hh = clampH(hh + dir, g);
+      for (let j = 0, run = 2 + Math.floor(rng() * 2); j < run; j++) cols.push(hh);
+    }
+    return { cols, h: hh };
+  }],
+  ['gapHop', (rng, h, g) => {                  // gap + guaranteed landing strip
+    const cols = new Array(2 + Math.floor(rng() * (g.gapMax - 1))).fill(GAP);
+    for (let j = 0; j < g.landingMin; j++) cols.push(h);
+    return { cols, h };
+  }],
+  ['plateau', (rng, h, g) => {                 // raised slab, then back down
+    const cols = new Array(3 + Math.floor(rng() * 3)).fill(clampH(h + 2, g));
+    for (let j = 0, run = 2 + Math.floor(rng() * 2); j < run; j++) cols.push(h);
+    return { cols, h };
+  }],
+  ['trench', (rng, h, g) => {                  // dip to the floor, climb back out
+    const cols = new Array(3 + Math.floor(rng() * 3)).fill(g.minH);
+    for (let j = 0, run = 2 + Math.floor(rng() * 2); j < run; j++) cols.push(h);
+    return { cols, h };
+  }],
+  ['islandHop', (rng, h, g) => {               // gap, 3-tile island, gap, landing
+    const cols = [GAP, GAP, h, h, h, GAP, GAP];
+    for (let j = 0; j < g.landingMin; j++) cols.push(h);
+    return { cols, h };
+  }],
+  ['ridge', (rng, h, g) => {                   // bumpy rhythm of one-tile lips
+    const hi = clampH(h + 1, g);
+    const cols = [];
+    for (let c = 0, n = 2 + Math.floor(rng() * 2); c < n; c++) cols.push(h, h, hi, hi);
+    cols.push(h, h);
+    return { cols, h };
+  }],
+];
+
+function pickChunk(rng, weights) {
+  let total = 0;
+  for (const [name] of CHUNK_LIB) total += weights[name];
+  let r = rng() * total;
+  for (const entry of CHUNK_LIB) {
+    r -= weights[entry[0]];
+    if (r < 0) return entry;
+  }
+  return CHUNK_LIB[0];
+}
+
+export function buildLevel(cfg) {
+  const L = cfg.levelLength;
+  const G = cfg.gen;
+  const corners = cornerSList(cfg);
+  const groundH = new Array(L);
+  const platforms = [];                        // one-way catwalks {x0, x1, y}
+  const chunkLog = [];                         // chunk names, for variety asserts
+  const rng = mulberry32(G.seed);
+
+  // ground: flat intro, chunk stream, flat outro tail
+  let x = 0, h = 3;
+  while (x < cfg.path.introTiles) groundH[x++] = 3;
+  const tail = L - G.tailFlat;
+  while (x < tail) {
+    const picked = pickChunk(rng, G.weights);
+    const c = picked[1](rng, h, G);
+    chunkLog.push(picked[0]);
+    for (const col of c.cols) {
+      if (x >= tail) break;
+      groundH[x++] = col;
+    }
+    h = c.h;
+  }
+  while (x < L) groundH[x++] = 3;
+
+  // pockets (src/pure/lattice.js) are carved into the deck BEFORE the
+  // tier pass, so the catwalk rhythm above them reads the chunk they created
+  // rather than the chunk stream they replaced. Both seams are flat at the
+  // generator's own walk height, so every ground invariant above still holds.
+  const pockets = latticePocketSites(cfg, groundH);
+  for (const site of pockets) latticeCarvePocket(groundH, site, GAP);
+
+  // Contra tiers: a near-continuous mid lane (+2.35 over local ground) with
+  // high lane stretches (+3 again) above it. All one-way: jump up through
+  // them, down+jump drops a tier. Mid needs a committed full-hold jump —
+  // analytic apex is 2.72, but the semi-implicit integrator's discrete apex
+  // is 2.61 @60Hz and 2.49 @30Hz, so +2.35 keeps mounting frame-rate safe
+  // (margins +0.26 / +0.14). High still needs the double jump (mid→high +3).
+  const prng = mulberry32(G.tierSeed);
+  let cx = 26;
+  while (cx < L - 28) {
+    const segLen = 7 + Math.floor(prng() * 6);         // 7–12 column segments: denser rhythm
+    let base = 2;
+    for (let k = cx; k < Math.min(cx + segLen, L); k++)
+      if (groundH[k] > -100) base = Math.max(base, groundH[k]);
+    if (prng() < G.laneChance) {
+      const len = segLen - 2 - Math.floor(prng() * 2); // leaves 2–3 column lane gaps
+      const y = base + 2.35;
+      platforms.push({ x0: cx, x1: cx + len, y });
+      if (y + 3 <= G.laneCapY && prng() < G.hiChance) {
+        const hiLen = Math.max(3, len - 3);
+        const off = 1 + Math.floor(prng() * 2);
+        const yHi = y + 3;
+        platforms.push({ x0: cx + off, x1: cx + off + hiLen, y: yHi });
+        if (yHi + 3 <= G.laneCapY && prng() < G.thirdChance) {   // third tier over low ground
+          platforms.push({ x0: cx + off + 1, x1: cx + off + 1 + Math.max(3, hiLen - 2), y: yHi + 3 });
+        }
+      }
+    }
+    cx += segLen;
+  }
+
+  // Gate arenas are broad maneuver spaces, not random deck traps. The whole
+  // authored 35-tile defense box gets a dependable recovery deck; elevated
+  // routes, ladders and cover supply its topology. This also guarantees that
+  // a last committed flyer can always close on a reachable lane.
+  for (const cs of corners) {
+    for (let s = cs - LATTICE.pocket.cornerClearBefore; s <= cs + 2; s++)
+      groundH[s] = 3;
+    for (let i = platforms.length - 1; i >= 0; i--)
+      if (platforms[i].x1 >= cs - 3 && platforms[i].x0 <= cs + 3) platforms.splice(i, 1);
+  }
+
+  // the pocket's own two catwalks: the mid lane it is entered from, and the
+  // shelf that reaches back out over the chasm with the reward on its tip.
+  // Anything the tier pass dropped across the chasm would read as a second
+  // free line over the same hole, so the shelf's span is cleared first.
+  for (const site of pockets) {
+    for (let i = platforms.length - 1; i >= 0; i--)
+      if (platforms[i].x1 > site.gap.x0 - 1 && platforms[i].x0 < site.gap.x1 + 1)
+        platforms.splice(i, 1);
+    platforms.push({ ...site.mid }, { ...site.shelf });
+  }
+
+  // corner reveal set pieces (T-044, src/pure/lattice.js): ARRIVAL, one
+  // guaranteed catwalk right after each corner ritual's reveal (before that
+  // face's own pocket takes over), and ARENA, the wave gate's own fighting
+  // ground composed on purpose instead of left to the chunk stream. Both are
+  // ADDED to whatever the Contra-tier loop already dropped there — never
+  // cleared first — so an existing procedural catwalk that happens to be the
+  // only bridge across a raw ground gap is never at risk (see the comment on
+  // latticeInstallSite in lattice.js for the regression this replaced).
+  const arrivals = latticeArrivalSites(cfg, groundH);
+  for (const site of arrivals) latticeInstallSite(platforms, site.platforms);
+  const arenas = latticeArenaSites(cfg, groundH);
+  for (const site of arenas) latticeInstallSite(platforms, site.platforms);
+
+  // Vertical Assault v2 authors the playable strip of all six Level 1 faces,
+  // retaining public arena/arrival/pocket IDs and the safe low bridges over
+  // real seed gaps while replacing anonymous catwalk carpet with deliberate
+  // split/rejoin routes. Its ladders, ribs, recovery lanes and staging sockets
+  // are data from this point onward; sim and render consume the same topology.
+  const assault = installVerticalAssault(cfg, groundH, platforms, {
+    pockets, arrivals, arenas,
+  });
+
+  // reachability sweep: the apron pass can orphan a high catwalk whose mid
+  // support it deleted — prune anything beyond double-jump reach, repeating
+  // until stable (pruning one support can strand another).
+  const prune = () => {
+    let pruned = true;
+    while (pruned) {
+      pruned = false;
+      for (let i = platforms.length - 1; i >= 0; i--) {
+        const p = platforms[i];
+        let best = -999;
+        for (let k = Math.max(0, p.x0 - 1); k <= Math.min(L - 1, p.x1 + 1); k++)
+          if (groundH[k] > -100) best = Math.max(best, groundH[k]);
+        for (const q of platforms)
+          if (q !== p && q.y < p.y && q.x1 > p.x0 - 1 && q.x0 < p.x1 + 1) best = Math.max(best, q.y);
+        if (p.y - best > G.maxReach) { platforms.splice(i, 1); pruned = true; }
+      }
+    }
+  };
+  prune();
+
+  // route density (src/pure/lattice.js): fill the thin windows, drop the
+  // noisy ones, re-prune, and repeat until the lattice stops moving. Each
+  // pass only ever reads the geometry that exists, so the loop is a fixpoint
+  // search, not a schedule — `patched`/`thinned` going empty is the exit.
+  const level = {
+    groundH, platforms,
+    solidRects: assault.solidRects,
+    ladders: assault.ladders,
+    assaults: assault.chunks,
+  };
+  const patched = [], thinned = [];
+  for (let pass = 0; pass < LATTICE.patch.maxPasses; pass++) {
+    const add = latticePatchPass(level, cfg);
+    const cut = latticeThinPass(level, cfg);
+    prune();
+    patched.push(...add);
+    thinned.push(...cut);
+    if (!add.length && !cut.length) break;
+  }
+
+  return {
+    groundH, platforms,
+    solidRects: assault.solidRects,
+    ladders: assault.ladders,
+    chunkLog, pockets, arrivals,
+    arenas: assault.arenas,
+    assaults: assault.chunks,
+    verticalAssault: {
+      id: assault.id,
+      report: verticalAssaultReport(level, cfg),
+    },
+    lattice: {
+      id: LATTICE.id,
+      patched: patched.length,
+      thinned: thinned.length,
+      report: latticeReport(level, cfg),
+    },
+  };
+}
+
+// The fixture argument is the resolved pacing variant (src/mode.js). Every
+// pace shares this geometry — only pacing moves — so an A/B between variants
+// compares the same seed, the same lattice, and the same routes.
+export function buildTraversalLevel(cfg, fixture = TRAVERSAL_FIXTURE) {
+  const base = buildLevel(cfg);
+  const B = fixture.bounds;
+  for (const run of fixture.groundRuns)
+    for (let x = run.x0; x < run.x1; x++) base.groundH[x] = run.y;
+  const platforms = base.platforms.filter((p) => p.x1 <= B.x0 || p.x0 >= B.x1);
+  for (const p of fixture.platforms) platforms.push({ ...p });
+  return {
+    groundH: base.groundH,
+    platforms,
+    solidRects: fixture.solidRects.map((r) => ({ ...r })),
+    chunkLog: base.chunkLog.concat(fixture.id),
+    fixture,
+  };
+}
+
+// Ambient spawn table: density authored in seconds of scroll so it scales
+// with scrollSpeed, escalating per face; corner-clear zones stay empty —
+// gate waves are authored by the wave system, never by this table.
+//
+// `level` is the built geometry the houndframe stations are placed on
+// (src/pure/lattice.js needs a deck to stand a frame on). The shipped boot
+// passes the level the run is actually played on (src/sim/spawner.js); the
+// default build is the fallback for a caller that has no level in hand, and
+// a level with no authored pockets (a fixture overlay) simply fields no
+// stations rather than throwing.
+export function buildSpawnTable(cfg, level = buildLevel(cfg)) {
+  const S = cfg.spawner;
+  const corners = cornerSList(cfg);
+  const rng = mulberry32(S.seed);
+  const nearCorner = (x) =>
+    corners.some((cs) => x >= cs - S.cornerClearBefore && x <= cs + S.cornerClearAfter);
+  const out = [];
+  const end = cfg.levelLength - S.endFromEnd;
+  // Resolve the authored spatial roles before laying down the generic stream:
+  // their first appearance owns a small bubble in which its tell can be read
+  // without an unrelated wasp already demanding the opposite answer.
+  const houndBeats = latticeHoundBeats(cfg, level.groundH, level.pockets || []);
+  const emplacementBeats = latticeEmplacementBeats(cfg, level.pockets || [])
+    .filter((beat) => {
+      const f = faceIndexAt(beat.x, cfg);
+      const lesson = S.lesson && S.lesson.kindByFace[f - 1];
+      // Faces 3/4 field only their new rooted lesson in ordinary traversal;
+      // faces 5/6 have no lesson owner and remix every rooted role.
+      return !lesson || beat.type === lesson;
+    });
+  const lessonSites = houndBeats.concat(emplacementBeats).filter((beat) => {
+    const f = faceIndexAt(beat.x, cfg);
+    return S.lesson && S.lesson.kindByFace[f - 1] === beat.type;
+  });
+  const inLessonBubble = (sx) => lessonSites.some((beat) =>
+    Math.abs(sx - beat.x) < S.lesson.clearTiles);
+
+  let x = S.startS;
+  while (x < end) {
+    const f = Math.min(cfg.path.faces, Math.max(1, faceIndexAt(x, cfg)));
+    if (!nearCorner(x) && !inLessonBubble(x)) {
+      out.push({ x, type: 'wasp' });
+      if (rng() < S.pairChance[f - 1] && !nearCorner(x + S.pairGapTiles) &&
+          !inLessonBubble(x + S.pairGapTiles) && x + S.pairGapTiles < end)
+        out.push({ x: x + S.pairGapTiles, type: 'wasp' });
+    }
+    x += Math.max(2, Math.round((S.faceGapSec[f - 1] + rng() * S.jitterSec) * cfg.scrollSpeed));
+  }
+  // one carrier per face at an authored mid-face fraction — same table, same
+  // corner-clear discipline, harness-assertable like every other row. Nudge
+  // off any occupied column: the table stays strictly ascending in x.
+  const used = new Set(out.map((r) => r.x));
+  cfg.carrier.perFaceFrac.forEach((frac, f) => {
+    const start = f === 0 ? cfg.path.introTiles : corners[f - 1];
+    let cx = Math.round(start + frac * (corners[f] - start));
+    while (used.has(cx)) cx++;
+    if (!nearCorner(cx)) {
+      const drop = cfg.carrier.drops && cfg.carrier.drops[f];
+      out.push({ x: cx, type: 'carrier', ...(drop ? { drop: { ...drop } } : {}) });
+      used.add(cx);
+    }
+  });
+  // houndframe stations (faces 2+, decisions.md entry 6 — placement, not
+  // stats). Authored on half-columns so they can never collide with the
+  // integer wasp/carrier rows, and skipped wholesale if a station would land
+  // in a corner-clear zone: the ambient table's discipline applies to every
+  // kind in it.
+  for (const beat of houndBeats) {
+    if (nearCorner(beat.x) || beat.x < S.startS || beat.x >= end) continue;
+    const f = faceIndexAt(beat.x, cfg);
+    const delayMs = S.lesson && S.lesson.houndDelayMsByFace[f - 1];
+    // A delayed reinforcement enters from the far lip of its owned landing,
+    // rather than popping into the centre after the player has crossed it.
+    // The near lip carries the pocket's climb ladder; spawning there put a
+    // condensing body directly behind the rails before its patrol even began.
+    out.push(delayMs ? { ...beat, x: beat.patrol.x1 - 0.1, delayMs } : beat);
+  }
+  // Rooted roles join the ordinary six-face run on geometry that explains
+  // them: polyps own pocket mid-connectors from face 3, mortars deny the
+  // committed landing from face 4, and faces 5/6 combine both with the hound
+  // already stationed there. Fixture levels omit pocket metadata and remain
+  // byte-for-byte on their authored spawn paths.
+  for (const beat of emplacementBeats) {
+    if (nearCorner(beat.x) || beat.x < S.startS || beat.x >= end) continue;
+    out.push(beat);
+  }
+  out.sort((a, b) => a.x - b.x);
+  return out;
+}

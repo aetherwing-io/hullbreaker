@@ -1,0 +1,135 @@
+{
+  "id": "rig-slender-aim-atlas-v2",
+  "source": "assets/generated/sprites/rig-slender-aim-chroma-v2.png",
+  "output": "assets/generated/sprites/rig-slender-aim-atlas-v2.png",
+  "sourceSize": [
+    2067,
+    761
+  ],
+  "outputSize": [
+    2048,
+    1024
+  ],
+  "outputCell": [
+    512,
+    1024
+  ],
+  "method": "connected assembly extraction + 1:1 integer repack",
+  "resampled": false,
+  "guard": 24,
+  "alphaFloor": 8,
+  "componentFloor": 40,
+  "paletteFinish": {
+    "alphaFloor": 32,
+    "changedPixels": 14785,
+    "changedColors": 12108,
+    "changedShare": 0.00705,
+    "meanNeutralization": 0.4066
+  },
+  "poses": [
+    {
+      "name": "right",
+      "sourceCell": 0,
+      "outputCell": 0,
+      "sourceRect": {
+        "x": 0,
+        "y": 0,
+        "w": 517,
+        "h": 761
+      },
+      "alpha": {
+        "x": 132,
+        "y": 297,
+        "w": 248,
+        "h": 429
+      },
+      "guard": {
+        "left": 132,
+        "top": 297,
+        "right": 132,
+        "bottom": 298
+      },
+      "paintedPixels": 42394,
+      "partialPixels": 1474,
+      "rejectedComponents": []
+    },
+    {
+      "name": "up-right",
+      "sourceCell": 1,
+      "outputCell": 1,
+      "sourceRect": {
+        "x": 517,
+        "y": 0,
+        "w": 517,
+        "h": 761
+      },
+      "alpha": {
+        "x": 623,
+        "y": 280,
+        "w": 290,
+        "h": 463
+      },
+      "guard": {
+        "left": 111,
+        "top": 280,
+        "right": 111,
+        "bottom": 281
+      },
+      "paintedPixels": 45825,
+      "partialPixels": 1511,
+      "rejectedComponents": []
+    },
+    {
+      "name": "up",
+      "sourceCell": 2,
+      "outputCell": 2,
+      "sourceRect": {
+        "x": 1034,
+        "y": 0,
+        "w": 516,
+        "h": 761
+      },
+      "alpha": {
+        "x": 1186,
+        "y": 233,
+        "w": 188,
+        "h": 557
+      },
+      "guard": {
+        "left": 162,
+        "top": 233,
+        "right": 162,
+        "bottom": 234
+      },
+      "paintedPixels": 46983,
+      "partialPixels": 1350,
+      "rejectedComponents": []
+    },
+    {
+      "name": "down-right",
+      "sourceCell": 3,
+      "outputCell": 3,
+      "sourceRect": {
+        "x": 1550,
+        "y": 0,
+        "w": 517,
+        "h": 761
+      },
+      "alpha": {
+        "x": 1629,
+        "y": 333,
+        "w": 326,
+        "h": 357
+      },
+      "guard": {
+        "left": 93,
+        "top": 333,
+        "right": 93,
+        "bottom": 334
+      },
+      "paintedPixels": 41088,
+      "partialPixels": 1375,
+      "rejectedComponents": []
+    }
+  ]
+}

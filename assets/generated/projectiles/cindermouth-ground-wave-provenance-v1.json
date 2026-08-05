@@ -1,0 +1,25 @@
+{
+  "asset": "cindermouth-ground-wave-v1.png",
+  "purpose": "Painted persistent deck-fire body for the Cindermouth projectile after exact swept surface ignition.",
+  "generator": {
+    "mode": "OpenAI built-in image generation",
+    "date": "2026-08-04",
+    "reference": "projectile-chassis-atlas-v1.png",
+    "promptSummary": "One low left-to-right industrial combustion wave, rust-dark forged jaws around orange/amber flame, legible near 28x10 pixels, flat #00ff00 key, no glow halo, smoke, floor, text, or circular fireball."
+  },
+  "processing": {
+    "key": "auto sampled border near #03f908",
+    "remove": "remove_chroma_key.py --soft-matte --transparent-threshold 12 --opaque-threshold 220 --despill",
+    "sourceBounds": [171, 292, 1663, 268],
+    "packedCell": [256, 256],
+    "packedAlphaBounds": [13, 109, 230, 37],
+    "atlas": "projectile-chassis-atlas-v2.png",
+    "atlasCell": 5
+  },
+  "sha256": {
+    "chromaSource": "a7e36afeb77e12b158b43f3753c03f2e0afd4dea9990284ad45fcbeaf5863287",
+    "transparentSource": "ddb03c73ba867d5fc5ddd4fcb04d0a857445769fe6f934d664ed3bb513e97a83",
+    "atlas": "9bd1a998e4f10a294e5a269bee33c820563fb8d53bb4256854c41079c7510a04",
+    "atlasCellRgba": "2f47851ef8157714bd62009b5fc04b2697a27b7c00e922bd411ca05cea5c4fa8"
+  }
+}
