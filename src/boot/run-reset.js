@@ -2,6 +2,7 @@ import { ACTIVE_FIXTURE } from '../mode.js';
 import { clearDepartingTracers } from '../render/bullets.js';
 import { resetCameraYaw } from '../render/camera.js';
 import { clearCorpses } from '../render/hostiles.js';
+import { resetJuicePresentation } from '../render/juice.js';
 import { clearCapsules, resetCarrierDrops } from '../sim/capsules.js';
 import { resetFinale } from '../sim/finale.js';
 import { resetFlow } from '../sim/flow.js';
@@ -77,6 +78,9 @@ export const RUN_RESET_REGISTRY = makeResetRegistry([
   { id: 'hit-stop', reset: resetHitStop },
   { id: 'camera-yaw', reset: resetCameraYaw },
   { id: 'future-faces', reset: unbuildFutureFaces },
+  // Presentation teardown belongs to every reset, including PLAYING ->
+  // PLAYING restarts where the state-screen observer receives no edge.
+  { id: 'juice-presentation', reset: resetJuicePresentation },
   { id: 'slice-stats', reset: resetSliceStats },
 ]);
 

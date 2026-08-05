@@ -13,6 +13,6 @@ export async function run() {
   }
   ok(result.status === 0,
     'boot bridge ownership and run teardown are explicit ordered registries');
-  ok(/BOOT REGISTRIES: 13 views, 30 reset owners/.test(result.stdout || ''),
+  ok(/BOOT REGISTRIES: 13 views, 31 reset owners/.test(result.stdout || ''),
     'registry manifests retain every declared owner');
 }

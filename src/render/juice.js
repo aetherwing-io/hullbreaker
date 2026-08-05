@@ -838,8 +838,7 @@ function onTransformReset() {
   prev.xfSnap2 = false;
 }
 
-function onStateScreen(next) {
-  if (next !== 'PLAYING') return;
+export function resetJuicePresentation() {
   // a restart rewound the world: drop live effects and the stale caches, or
   // the first frame of the retry inherits the last frame of the attempt
   resetFx();
@@ -859,6 +858,11 @@ function onStateScreen(next) {
   onTransformReset();
   for (const k of Object.keys(lastAt)) delete lastAt[k];
   lastFrameMs = gameMs;
+}
+
+function onStateScreen(next) {
+  if (next !== 'PLAYING') return;
+  resetJuicePresentation();
 }
 
 /* ---------------------------- per frame --------------------------- *

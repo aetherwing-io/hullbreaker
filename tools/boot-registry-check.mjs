@@ -47,8 +47,10 @@ assert.match(bridge, /export function installView/,
 
 const resetIds = [...runReset.matchAll(/\{ id: '([^']+)', reset:/g)]
   .map((match) => match[1]);
-assert.equal(resetIds.length, 30, 'the full run has thirty named reset owners');
+assert.equal(resetIds.length, 31, 'the full run has thirty-one named reset owners');
 assert.equal(new Set(resetIds).size, resetIds.length, 'reset owner ids are unique');
+assert.ok(resetIds.includes('juice-presentation'),
+  'PLAYING-to-PLAYING restarts explicitly reset presentation juice');
 assert.match(main, /function resetGame\(\) \{\s*resetRunState\(\);/,
   'resetGame delegates teardown to the registry');
 const resetBody = main.slice(main.indexOf('function resetGame()'),
