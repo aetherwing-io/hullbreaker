@@ -39,7 +39,33 @@ const hudTL = document.getElementById('hudTL');
 const hudTC = document.getElementById('hudTC');
 const hudTR = document.getElementById('hudTR');
 const hudBL = document.getElementById('hudBL');
-hudTL.style.whiteSpace = 'pre-line';
+const hudRigPanel = document.getElementById('hudRigPanel');
+const hudObjectivePanel = document.getElementById('hudObjectivePanel');
+const hudRunPanel = document.getElementById('hudRunPanel');
+const hudLives = document.getElementById('hudLives');
+const hudHealthPips = document.getElementById('hudHealthPips');
+const hudHealthValue = document.getElementById('hudHealthValue');
+const hudWeaponKey = document.getElementById('hudWeaponKey');
+const hudWeaponName = document.getElementById('hudWeaponName');
+const hudWeaponOther = document.getElementById('hudWeaponOther');
+const hudPowerRow = document.querySelector('.hud-power');
+const hudOverdrive = document.getElementById('hudOverdrive');
+const hudOverdrivePips = [...hudOverdrive.querySelectorAll('i')];
+const hudPowerState = document.getElementById('hudPowerState');
+const hudPowerText = document.getElementById('hudPowerText');
+const hudStatus = document.getElementById('hudStatus');
+const hudObjectiveLabel = document.getElementById('hudObjectiveLabel');
+const hudObjective = document.getElementById('hudObjective');
+const hudRunLabel = document.getElementById('hudRunLabel');
+const hudMetricA = document.getElementById('hudMetricA');
+const hudMetricALabel = document.getElementById('hudMetricALabel');
+const hudMetricB = document.getElementById('hudMetricB');
+const hudMetricBLabel = document.getElementById('hudMetricBLabel');
+const hudMetricC = document.getElementById('hudMetricC');
+const hudMetricCLabel = document.getElementById('hudMetricCLabel');
+const hudRushRow = document.getElementById('hudRushRow');
+const hudRushPips = document.getElementById('hudRushPips');
+const hudRushState = document.getElementById('hudRushState');
 
 // How many world turns the LOADED fixture actually authors. Hardcoding the v1
 // demo's 2 made the single-event G2 fixture advertise a second transformation
@@ -48,47 +74,50 @@ const TRANSFORM_TURNS = IS_TRANSFORM_SLICE ? ACTIVE_FIXTURE.events.length : 0;
 
 const HOOK_LEGEND = HOOK_ENABLED
   ? (HOOK_INPUT === 'auto'
-    ? '<br>SNAP HOOK auto &mdash; fly near a lit anchor and the tether takes it: ' +
-      'it zips you there and throws you forward (jump = throw early, down = drop off)'
-    : '<br>SNAP HOOK l or e &mdash; grabs the lit anchor ahead, zips you to it, ' +
-      'throws you forward (jump = throw early, down = drop off)')
+    ? ' · HOOK AUTO'
+    : ' · HOOK L/E')
   : '';
 const FLOW_LEGEND = FLOW_ENABLED
-  ? '<br>FLOW: every ledge / wall / hook launch without touching the floor ' +
-    'compounds your speed &mdash; the floor bleeds it back off'
+  ? ' · CHAIN AIR MOVES FOR FLOW'
   : '';
 const BOUNCE_LEGEND = AUTOBOUNCE_ENABLED
-  ? '<br>AUTOBOUNCE: hold jump to keep bouncing &mdash; every landing re-arms it'
+  ? ' · HOLD JUMP TO AUTOBOUNCE'
   : '';
 
 hudBL.innerHTML = IS_TRAVERSAL_SLICE
-  ? 'MOVE wasd/arrows &nbsp; JUMP space &nbsp; FIRE j or x &nbsp; RETRY r<br>' +
-    'LEDGE near-misses catch: jump launches, down releases &nbsp;&middot;&nbsp; WALL contact: jump launches, down releases<br>' +
-    'DROP down+jump &nbsp;&middot;&nbsp; MAGENTA POCKET = take H, retreat left &nbsp;&middot;&nbsp; PAUSE p/esc<br>' +
-    'LOSING HP = HULL FALLBACK: the ship drops you to the route below and play continues' +
+  ? 'MOVE WASD/ARROWS · JUMP SPACE · FIRE J/X · DROP DOWN+JUMP · RETRY R' +
     HOOK_LEGEND + FLOW_LEGEND + BOUNCE_LEGEND +
     // the aim-gap A/B prototypes announce themselves too, or the operator cannot
     // tell which of the answers they are currently feeling
     (CROUCH_ENABLED
-      ? '<br>CROUCH hold down while grounded: low firing line, low profile, no walking'
+      ? ' · CROUCH DOWN'
       : '') +
-    (AIM_ASSIST_ENABLED ? '<br>AIM ASSIST on: shots bend up to 8&deg; toward what you point at' : '')
+    (AIM_ASSIST_ENABLED ? ' · AIM ASSIST ON' : '')
   : IS_TRANSFORM_SLICE
-    ? 'MOVE wasd/arrows &nbsp; JUMP space (hold = higher, again in air = double) &nbsp; FIRE j or x &nbsp; RETRY r<br>' +
-      'TRANSFORMATION SLICE &nbsp;&middot;&nbsp; run into the open panel, then into the one ahead: ' +
-      'the ship turns the world, you keep the same controls<br>' +
-      'ALT is the rendered altitude of the surface you are standing on &nbsp;&middot;&nbsp; PAUSE p/esc'
-    : 'MOVE wasd/arrows &nbsp;&middot;&nbsp; JUMP space ×2 &nbsp;&middot;&nbsp; FIRE j/x &nbsp;&middot;&nbsp; AIM with move &nbsp;&middot;&nbsp; PAUSE p/esc<br>' +
-      'MAGENTA CAPSULES = BIG WEAPONS &nbsp;&middot;&nbsp; C = rifle/carried weapon &nbsp;&middot;&nbsp; ' +
-      'SHIFT = strafe aim &nbsp;&middot;&nbsp; DOWN+JUMP = drop';
+    ? 'MOVE WASD/ARROWS · JUMP SPACE ×2 · FIRE J/X · RUN THROUGH OPEN PANEL · RETRY R'
+    : 'MOVE WASD/ARROWS · JUMP SPACE ×2 · FIRE J/X · AIM WITH MOVE · SWAP C · PAUSE ESC';
 
-// updateHUD runs every rAF frame; assigning textContent replaces the text
-// node even when identical, dirtying layout for three fixed elements 60x/s.
-// Cache the last-written string per element and write only on change — in
-// steady state DOM writes drop to near zero.
+// updateHUD runs every rAF frame. Cache one readable signature per instrument
+// and write its child fields only when that signature changes; the structured
+// HUD stays available to assistive tech and playtest scraping without dirtying
+// the whole panel's layout 60 times per second.
 let hudTLLast = null, hudTCLast = null, hudTRLast = null, legendHidden = false;
 const MOD_LABELS = [['rageUntil', 'RAGE'], ['ghostUntil', 'GHOST'], ['chronoUntil', 'CHRONO']];
 const GUN_TIER_MARK = ['', 'I', 'II', 'III'];
+
+function put(el, value) {
+  const next = String(value);
+  if (el.textContent !== next) el.textContent = next;
+}
+
+function updateMeter(nodes, lit) {
+  for (let i = 0; i < nodes.length; i++) nodes[i].classList.toggle('on', i < lit);
+}
+
+function setMetric(valueEl, labelEl, value, label) {
+  put(valueEl, value);
+  put(labelEl, label);
+}
 
 export function updateHUD() {
   // Teach the core controls, then give the playfield back. Restarting rewinds
@@ -104,63 +133,114 @@ export function updateHUD() {
   // whole, but even a three-trait CINDERMOUTH remains inside the mobile line.
   const mobileHud = globalThis.innerWidth <= 600;
   const gunName = currentGunLabel(currentGun.tier > 1 || mobileHud);
-  let tl = 'RIG ' + '▰'.repeat(hp) + '▱'.repeat(P.maxHealth - hp) +
-           (IS_TRAVERSAL_SLICE ? '' : '  ×' + Math.max(0, player.lives)) +
-           // A relic name can be a full trait stack.  Two authored phone rows
-           // are steadier than letting that stack wrap into the altitude row.
-           '\n' +
-           '[' + currentWeapon + gunTier + '] ' + gunName;
+  const healthGlyphs = '▰'.repeat(hp) + '▱'.repeat(P.maxHealth - hp);
+  const lives = Math.max(0, player.lives);
+  let otherGun = 'FIELD RIFLE // PRIMARY';
+  let legacyOtherGun = '';
   if (carriedGun) {
     const other = currentGun === carriedGun ? 'RIFLE' : carriedGunLabel(true);
-    tl += (mobileHud ? ' · C↔ ' : ' · C SWAP ↔ ') + other;
+    otherGun = (mobileHud ? 'C↔ ' : 'C SWAP // ') + other;
+    legacyOtherGun = (mobileHud ? ' · C↔ ' : ' · C SWAP ↔ ') + other;
   }
   // OVERDRIVE is welded to the weapon readout: it is an earned combat power,
   // not a developer score. The name makes the faster fire / launch shock
   // promise legible the first time a player sees the meter fill.
-  if (SCORE_ENABLED) {
-    const notch = scoreNotchNow();
-    tl += (mobileHud ? ' · OD ' : ' · OVERDRIVE ') + scoreNotchGlyphs(notch) +
-      (notch >= CONFIG.score.notches.length ? (mobileHud ? ' BREAK' : ' HULLBREAK') : '');
-  }
+  const notch = SCORE_ENABLED ? scoreNotchNow() : 0;
+  const powerGlyphs = scoreNotchGlyphs(notch);
+  const powerState = notch >= CONFIG.score.notches.length
+    ? 'HULLBREAK'
+    : notch > 0 ? 'WARM' : 'COLD';
+  const statuses = [];
   // FLOW rides the same readout for the same reason: the player's eye is
   // already there, and the chain has to be visible while it builds and bleeds.
   if (FLOW_ENABLED) {
     const fl = flowSnapshot();
-    tl += ' · FLOW ' + '▮'.repeat(fl.links) + '▯'.repeat(fl.max - fl.links) +
-      (fl.links ? ' ×' + fl.mult.toFixed(2) : '');
+    statuses.push('FLOW ' + '▮'.repeat(fl.links) + '▯'.repeat(fl.max - fl.links) +
+      (fl.links ? ' ×' + fl.mult.toFixed(2) : ''));
   }
   // kept to one short word: this readout sits beside the centered slice banner,
   // and an anchor id here overlapped it (browser screenshot)
   if (HOOK_ENABLED) {
     const hk = hookSnapshot();
-    if (hk.phase !== 'idle') tl += ' · TETHER';
-    else if (hk.acquirable) tl += ' · HOOK';
+    if (hk.phase !== 'idle') statuses.push('TETHER');
+    else if (hk.acquirable) statuses.push('HOOK READY');
   }
   for (const [f, label] of MOD_LABELS)
-    if (gameMs < mods[f]) tl += ' · ' + (mobileHud ? label.slice(0, 3) : label) + ' ' +
-      Math.ceil((mods[f] - gameMs) / 1000) + 's';
-  if (mods.lance) tl += mobileHud ? ' · LANCE' : ' · LANCE ARMING';
-  if (tl !== hudTLLast) { hudTLLast = tl; hudTL.textContent = tl; }
+    if (gameMs < mods[f]) statuses.push((mobileHud ? label.slice(0, 3) : label) + ' ' +
+      Math.ceil((mods[f] - gameMs) / 1000) + 's');
+  if (mods.lance) statuses.push(mobileHud ? 'LANCE' : 'LANCE ARMING');
+  const status = statuses.join(' // ');
+  // Keep the compact string as the cache key and the DOM's textual fallback:
+  // test drivers can still read health pips, ×lives, weapon and readiness
+  // without understanding the presentation markup.
+  let tl = 'RIG ' + healthGlyphs + (IS_TRAVERSAL_SLICE ? '' : ' ×' + lives) +
+    '\n[' + currentWeapon + gunTier + '] ' + gunName + legacyOtherGun;
+  if (SCORE_ENABLED) {
+    tl += (mobileHud ? ' · OD ' : ' · OVERDRIVE ') + powerGlyphs +
+      (notch >= CONFIG.score.notches.length ? (mobileHud ? ' BREAK' : ' HULLBREAK') : '');
+  }
+  for (const item of statuses) tl += ' · ' + item;
+  if (tl !== hudTLLast) {
+    hudTLLast = tl;
+    put(hudTL, tl);
+    put(hudLives, IS_TRAVERSAL_SLICE ? 'RIG' : '×' + lives);
+    put(hudHealthPips, healthGlyphs);
+    hudHealthPips.dataset.critical = hp <= 1 ? 'true' : 'false';
+    hudRigPanel.dataset.health = hp <= 1 ? 'critical' : hp < P.maxHealth ? 'damaged' : 'stable';
+    put(hudHealthValue, hp + '/' + P.maxHealth);
+    put(hudWeaponKey, '[' + currentWeapon + gunTier + ']');
+    put(hudWeaponName, gunName);
+    put(hudWeaponOther, otherGun);
+    hudPowerRow.hidden = !SCORE_ENABLED;
+    updateMeter(hudOverdrivePips, notch);
+    put(hudPowerState, powerState);
+    put(hudPowerText, SCORE_ENABLED ? 'OVERDRIVE ' + powerGlyphs + ' ' + powerState : '');
+    put(hudStatus, status);
+  }
   const edge = Number.isFinite(sliceStats.minEdgeMargin)
     ? Math.max(0, sliceStats.minEdgeMargin).toFixed(1)
     : '—';
+  let runLabel, metricA, metricALabel, metricB, metricBLabel;
+  if (IS_TRAVERSAL_SLICE) {
+    runLabel = 'ROUTE // LIVE';
+    metricA = sliceStats.attempts; metricALabel = 'ATTEMPT';
+    metricB = edge; metricBLabel = sliceStats.setbacks ? `EDGE · ${sliceStats.setbacks} FALLS` : 'EDGE';
+  } else if (IS_TRANSFORM_SLICE) {
+    runLabel = 'BREACH // LIVE';
+    metricA = Math.round(transformAltitudeAt(player.x) + player.y) + 'm'; metricALabel = 'ALT';
+    metricB = committedBand + '/' + TRANSFORM_TURNS; metricBLabel = 'TURNS';
+  } else {
+    runLabel = 'ASCENT // LIVE';
+    metricA = Math.round(normalAscentAltAt(player.x, CONFIG.levelLength) + player.y) + 'm'; metricALabel = 'ALT';
+    metricB = Math.floor(scrollX) + 'm'; metricBLabel = 'FORWARD';
+  }
+  // THREAT remains in the run summary/telemetry; the live HUD spends that
+  // space on actionable information instead of an unexplained debug number.
+  // RUSH is the visible earned pace escalation. Keep the compact three-pip
+  // read on the crowded top edge; the exact multiplier remains in telemetry.
+  const drive = MOMENTUM_ENABLED ? momentumDrive() : 0;
+  const rush = momentumMeter(drive, CONFIG.momentum);
+  const rushState = drive >= .67 ? 'SURGE' : drive >= .3 ? 'RISING' : 'STEADY';
   let tr = IS_TRAVERSAL_SLICE
     ? `ATTEMPT ${sliceStats.attempts} · EDGE ${edge}` +
       (sliceStats.setbacks ? ` · FALLBACK ${sliceStats.setbacks}` : '') +
       ` · ${kills} kills`
     : IS_TRANSFORM_SLICE
-      ? `ALT ${Math.round(transformAltitudeAt(player.x) + player.y)}m · ` +
-        `${committedBand}/${TRANSFORM_TURNS} TURNS · ${kills} kills`
-      : `ALT ${Math.round(normalAscentAltAt(player.x, CONFIG.levelLength) + player.y)}m · ` +
-        `${Math.floor(scrollX)}m FORWARD · ${kills} KILLS`;
-  // THREAT remains in the run summary/telemetry; the live HUD spends that
-  // space on actionable information instead of an unexplained debug number.
-  // RUSH is the visible earned pace escalation. Keep the compact three-pip
-  // read on the crowded top edge; the exact multiplier remains in telemetry.
-  if (MOMENTUM_ENABLED) {
-    tr += ' · RUSH ' + momentumMeter(momentumDrive(), CONFIG.momentum);
+      ? `ALT ${metricA} · ${committedBand}/${TRANSFORM_TURNS} TURNS · ${kills} kills`
+      : `ALT ${metricA} · ${metricB} FORWARD · ${kills} KILLS`;
+  if (MOMENTUM_ENABLED) tr += ' · RUSH ' + rush;
+  if (tr !== hudTRLast) {
+    hudTRLast = tr;
+    put(hudTR, tr);
+    put(hudRunLabel, runLabel);
+    setMetric(hudMetricA, hudMetricALabel, metricA, metricALabel);
+    setMetric(hudMetricB, hudMetricBLabel, metricB, metricBLabel);
+    setMetric(hudMetricC, hudMetricCLabel, kills, 'KILLS');
+    hudRushRow.hidden = !MOMENTUM_ENABLED;
+    put(hudRushPips, rush);
+    put(hudRushState, rushState);
+    hudRunPanel.dataset.rush = rushState.toLowerCase();
   }
-  if (tr !== hudTRLast) { hudTRLast = tr; hudTR.textContent = tr; }
   const c = activeCorner();
   let tc = transformMessage();
   const pocket = ACTIVE_SLICE && ACTIVE_SLICE.darePocket.bounds;
@@ -183,8 +263,11 @@ export function updateHUD() {
       (MORTAR_TRIAL_STAGE ? ' + ' + MORTAR_TRIAL_STAGE.label : '') + viewTag + ' · ' +
       (SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length + ' HOSTILES' : 'MOVEMENT ONLY');
   } else if (!ACTIVE_FIXTURE && c && c.state === 'idle') {
+    const compactLandscape = globalThis.innerHeight <= 520 && globalThis.innerWidth <= 980;
     tc = `WAVE ${c.k}/${CONFIG.path.faces} · ${c.phase}` +
-      (c.primed ? ' · INBOUND' : c.k === 1 && scrollX < 14 ? ' · MERIDIAN HAS SEEN YOU' : '');
+      (c.primed ? ' · INBOUND' : c.k === 1 && scrollX < 14
+        ? compactLandscape ? ' · CONTACT' : ' · MERIDIAN HAS SEEN YOU'
+        : '');
   } else if (c && c.state === 'gate') {
     // Count only this encounter's current visible/condensing beat. Later
     // resident rows are implementation detail, and `gating` describes who
@@ -201,7 +284,19 @@ export function updateHUD() {
       ? c.phase + ' BROKEN · ' + wavePhase(c.k + 1, CONFIG)
       : 'SCUTTLE COMPLETE · CROWN ACCESS OPEN';
   }
-  if (tc !== hudTCLast) { hudTCLast = tc; hudTC.textContent = tc; }
+  if (tc !== hudTCLast) {
+    hudTCLast = tc;
+    put(hudObjective, tc);
+    const upper = tc.toUpperCase();
+    const danger = /FALLBACK|HOSTILE|INBOUND|WAGER|LOST/.test(upper);
+    const clear = /BROKEN|COMPLETE|OPEN|ACQUIRED/.test(upper);
+    put(hudTC, tc);
+    hudObjectivePanel.dataset.tone = danger ? 'danger' : clear ? 'clear' : 'steady';
+    put(hudObjectiveLabel, /TRANSFORM|BREACH|TURN/.test(upper)
+      ? 'HULL GEOMETRY'
+      : /FALLBACK|ROUTE/.test(upper) ? 'ROUTE STATUS' : 'MERIDIAN RESPONSE');
+    hudObjectivePanel.classList.toggle('empty', !tc);
+  }
 }
 
 /* The transformation slice's centre callout: the ship opening a way in, the
@@ -228,5 +323,7 @@ function transformShipState() {
 // resetGame clears the corner message and keeps the write cache coherent
 export function resetHudMessage() {
   hudTC.textContent = '';
+  hudObjective.textContent = '';
+  hudObjectivePanel.classList.add('empty');
   hudTCLast = '';
 }

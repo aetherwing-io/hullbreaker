@@ -33,15 +33,15 @@ style.textContent = `
   --loot-hot: #fff0cf;
   position: fixed;
   z-index: 34;
-  top: clamp(70px, 11vh, 96px);
-  left: max(12px, env(safe-area-inset-left));
-  width: min(348px, calc(100vw - 24px));
+  top: clamp(78px, 10.5vh, 96px);
+  left: 50%;
+  width: min(310px, calc(100vw - 28px));
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 82px;
-  gap: 0 7px;
-  min-height: 92px;
-  padding: 9px 9px 9px 13px;
+  grid-template-columns: minmax(0, 1fr) 72px;
+  gap: 0 6px;
+  min-height: 78px;
+  padding: 8px 8px 8px 12px;
   overflow: hidden;
   color: #f7ead6;
   background:
@@ -56,7 +56,7 @@ style.textContent = `
   text-transform: uppercase;
   pointer-events: none;
   opacity: 0;
-  transform: translate3d(-112%,0,0);
+  transform: translate3d(-50%,-10px,0) scale(.96);
   contain: layout paint style;
 }
 #lootReveal::after {
@@ -80,7 +80,7 @@ style.textContent = `
     linear-gradient(rgba(181,120,66,.28), rgba(181,120,66,.28)) left bottom / 35px 1px no-repeat;
   opacity: .58;
 }
-#lootReveal.is-live { animation: loot-reveal 2.15s cubic-bezier(.18,.78,.2,1) both; }
+#lootReveal.is-live { animation: loot-reveal 1.65s cubic-bezier(.18,.78,.2,1) both; }
 #lootReveal.tier-1 { --loot-accent: #ff55dc; }
 #lootReveal.tier-2 { --loot-accent: #ff9d45; --loot-hot: #fff0ce; }
 #lootReveal.tier-3 {
@@ -91,7 +91,10 @@ style.textContent = `
     linear-gradient(105deg, rgba(14,25,25,.99), rgba(39,37,32,.97) 64%, rgba(73,48,29,.92));
   box-shadow: 0 14px 42px rgba(0,0,0,.54), inset 0 1px rgba(255,236,201,.08);
 }
-#lootReveal.tier-3.is-live { animation-duration: 2.55s; }
+#lootReveal.tier-3.is-live { animation-duration: 1.9s; }
+/* A re-catch restores a known tool during live combat. Confirm it crisply, but
+   surrender the aiming lane sooner than a genuinely new roll. */
+#lootReveal.is-recatch.is-live { animation-duration: 1.25s; }
 /* State screens are a different composition, not another combat layer.  A
    pickup immediately before pause/death/victory must never sit over the modal
    copy, and returning to the title must never inherit a stale reward card. */
@@ -107,7 +110,7 @@ body:has(#finale.on) #lootReveal { top: 108px; }
 .loot-name {
   margin-top: 3px;
   color: var(--loot-hot);
-  font-size: clamp(16px, 1.8vw, 21px);
+  font-size: clamp(15px, 1.55vw, 19px);
   line-height: 1.02;
   font-weight: 950;
   letter-spacing: .035em;
@@ -172,7 +175,7 @@ body:has(#finale.on) #lootReveal { top: 108px; }
   position: relative;
   z-index: 2;
   display: block;
-  width: 78px;
+  width: 68px;
   max-width: 98%;
   aspect-ratio: 8 / 5;
   overflow: hidden;
@@ -230,11 +233,11 @@ body:has(#finale.on) #lootReveal { top: 108px; }
 #lootReveal.is-live .loot-scan { animation: loot-scan 760ms 90ms ease-out both; }
 #lootReveal.is-live .loot-atlas-clip { animation: loot-art-lock 520ms 130ms cubic-bezier(.18,.78,.2,1) both; }
 @keyframes loot-reveal {
-  0%   { opacity: 0; transform: translate3d(-112%,0,0); filter: brightness(1.3); }
-  7%   { opacity: 1; transform: translate3d(8px,0,0); }
-  12%  { transform: translate3d(0,0,0); filter: brightness(1); }
-  80%  { opacity: 1; transform: translate3d(0,0,0); }
-  100% { opacity: 0; transform: translate3d(0,-8px,0) scale(.985); }
+  0%   { opacity: 0; transform: translate3d(-50%,-12px,0) scale(.94); filter: brightness(1.3); }
+  8%   { opacity: 1; transform: translate3d(-50%,3px,0) scale(1.01); }
+  14%  { transform: translate3d(-50%,0,0) scale(1); filter: brightness(1); }
+  72%  { opacity: 1; transform: translate3d(-50%,0,0) scale(1); }
+  100% { opacity: 0; transform: translate3d(-50%,-8px,0) scale(.985); }
 }
 @keyframes loot-scan {
   0% { opacity: 0; transform: translateX(0) rotate(13deg); }
@@ -246,25 +249,30 @@ body:has(#finale.on) #lootReveal { top: 108px; }
   to { opacity: 1; transform: rotate(-2deg) scale(1); }
 }
 @media (max-width: 600px) {
+  /* Portrait has one central message lane. The reward pulse carries the more
+     important new information for its brief lifetime, so do not stack the
+     wave ribbon behind it and obscure both. */
+  body:has(#lootReveal.is-live) #hudObjectivePanel {
+    opacity: 0;
+    transform: translate(-50%, -4px);
+  }
   #lootReveal {
-    top: 82px;
-    left: 8px;
-    /* Leave room for the entrance's eight-pixel overshoot and skewed edge. */
-    width: min(292px, calc(100vw - 24px));
-    grid-template-columns: minmax(0, 1fr) 68px;
-    gap: 0 5px;
-    min-height: 82px;
-    padding: 8px 7px 8px 11px;
+    top: clamp(82px, 11vh, 104px);
+    width: min(270px, calc(100vw - 28px));
+    grid-template-columns: minmax(0, 1fr) 60px;
+    gap: 0 4px;
+    min-height: 72px;
+    padding: 7px 6px 7px 10px;
   }
   .loot-kicker { font-size: 7px; letter-spacing: .1em; }
-  .loot-name { font-size: clamp(14px, 4.1vw, 18px); }
+  .loot-name { font-size: clamp(13px, 3.8vw, 16px); }
   .loot-chassis { font-size: 7px; letter-spacing: .08em; }
   .loot-traits { margin-top: 5px; }
   .loot-chip { font-size: 7px; padding: 2px 4px; }
   .loot-stat { font-size: 8px; }
   .loot-art::before { width: 58px; height: 46px; }
   .loot-art::after { width: 42px; top: calc(50% + 24px); }
-  .loot-atlas-clip { width: 64px; }
+  .loot-atlas-clip { width: 56px; }
   .loot-art-glyph { font-size: 34px; }
   .loot-art-mark { top: 1px; right: 2px; font-size: 7px; }
   .loot-art-pips { right: 2px; bottom: 2px; }
@@ -272,10 +280,10 @@ body:has(#finale.on) #lootReveal { top: 108px; }
   body:has(#finale.on) #lootReveal { top: 126px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  #lootReveal.is-live { animation: loot-reveal-reduced 2.15s ease both; }
+  #lootReveal.is-live { animation-name: loot-reveal-reduced; animation-timing-function: ease; }
   @keyframes loot-reveal-reduced {
-    0%, 100% { opacity: 0; transform: translate3d(0,0,0); }
-    8%, 82% { opacity: 1; transform: translate3d(0,0,0); }
+    0%, 100% { opacity: 0; transform: translate3d(-50%,0,0); }
+    8%, 72% { opacity: 1; transform: translate3d(-50%,0,0); }
   }
 }`;
 document.head.append(style);
@@ -342,7 +350,7 @@ function acquired(gun, def, detail = null) {
   if (!gun || !def || !gun.tier) return;
   const tier = Math.max(1, Math.min(3, gun.tier));
   root.replaceChildren();
-  root.className = `tier-${tier}`;
+  root.className = `tier-${tier}${detail?.recatch ? ' is-recatch' : ''}`;
   const copy = add(root, 'loot-copy', '');
   add(copy, 'loot-kicker',
     `${detail?.recatch ? 'WEAPON RECOVERED' : 'WEAPON ACQUIRED'}  //  MARK ${ROMAN[tier]} · ${TIER_WORD[tier]}`);
