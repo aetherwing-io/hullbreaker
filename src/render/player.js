@@ -48,7 +48,8 @@ import { gameMs, blink } from '../sim/time.js';
 import { player } from '../sim/player.js';
 import { turningCornerOwnsJoint } from '../sim/wavegate.js';
 import { currentGun, currentWeapon } from '../sim/weapons.js';
-import { scoreNotchNow } from '../sim/score.js';
+import { scoreCharge, scoreNotchNow } from '../sim/score.js';
+import { mods } from '../sim/mods.js';
 import {
   HELMET, LEG_BACK, LEG_FRONT,
   RIG_GUN_MUZZLE_X, RIG_RECOIL_MS, RIG_RECOIL_TILES,
@@ -74,6 +75,12 @@ import {
   gildedRigActive, gildedAuraVisible, gildedShimmer, mountGildedAura,
   syncGildedAura,
 } from './gilded-aura.js';
+import {
+  normalizedOverdriveCharge, overdriveBreath, rageStaccato,
+} from './power-feedback.js';
+import {
+  mountPowerAura, powerAuraSnapshot, syncPowerAura,
+} from './power-aura.js';
 
 const rig = new THREE.Group();
 const bodyGroup = new THREE.Group();
@@ -552,6 +559,10 @@ scene.add(rig);
    file only mounts the group, drives it from sync() below, and warms the
    emissive tint when the chassis is gold. */
 mountGildedAura(rig, RIG_SPRITE_H);
+// OVERDRIVE uses one compact fixed bracket mesh in its own module so the
+// frozen RIG construction sites stay frozen and the gold cheat aura keeps a
+// separate silhouette/cadence.
+mountPowerAura(rig, RIG_SPRITE_H);
 
 // T-039 (S6, contact shadows): RIG has exactly one row, for its whole
 // lifetime — never spawned or removed the way a hostile/capsule is — so a
@@ -588,6 +599,10 @@ let landedAt = -1e9;
 let locomotionState = 'idle';
 let shownGunRef = null;
 let shownWeapon = '';
+let lastPowerCharge = 0;
+let lastPowerNotch = 0;
+let lastRageActive = false;
+let lastRagePulse = 0;
 let gunFamilyHeightGain = GUN_FAMILY_HEIGHT_GAIN.R;
 let gunUsesArt = false;
 let visibleTraitCount = 0;
@@ -900,22 +915,34 @@ function sync() {
   lastRecoil = RIG_RECOIL_TILES * recoilT * recoilT;
   gunAssembly.position.x = -lastRecoil;
 
-  // OVERDRIVE lives on the machine, not only in a HUD label. WARM heats the
-  // painted armour and aim rail; BREAKING adds a breathing white-hot pulse.
-  // scoreNotchNow() is a primitive read and is zero whenever the system is
-  // disabled, so this remains presentation-only and allocation-free.
+  // OVERDRIVE lives on the machine, not only in a HUD label. Charge first
+  // warms the chassis locally, WARM holds a low mechanical glow, and BREAKING
+  // breathes hotter. RAGE is a separate, narrow red-magenta staccato. None of
+  // these reads can write back to the sim or change a hitbox.
   const notch = scoreNotchNow();
-  const breakingPulse = notch >= 2 ? 0.5 + 0.5 * Math.sin(gameMs * 0.018) : 0;
+  const charge01 = normalizedOverdriveCharge(scoreCharge(), CONFIG.score.max);
+  const breakingPulse = notch >= 2 ? overdriveBreath(gameMs) : 0;
+  const rageOn = gameMs < mods.rageUntil;
+  const ragePulse = rageOn ? rageStaccato(gameMs) : 0;
+  lastPowerCharge = charge01;
+  lastPowerNotch = notch;
+  lastRageActive = rageOn;
+  lastRagePulse = ragePulse;
   // GILDED CHASSIS warms the whole heat palette: the chassis runs a slow
   // golden shimmer (same beat as the aura) instead of only the overdrive
   // warning colours. Cosmetic only; the latch lives in gilded-aura.js.
   const gildedOn = gildedRigActive();
   const gildedGlow = gildedOn ? gildedShimmer(gameMs) : 0;
-  const heatColor = gildedOn ? PAL.gildedGold : (notch >= 1 ? PAL.gun : PAL.player);
-  const bodyHeat = gildedOn
-    ? Math.max(notch >= 2 ? 0.34 + breakingPulse * 0.14 : (notch === 1 ? 0.16 : 0),
-        0.24 + gildedGlow * 0.16)
-    : notch >= 2 ? 0.34 + breakingPulse * 0.14 : (notch === 1 ? 0.16 : 0);
+  const heatColor = gildedOn ? PAL.gildedGold
+    : rageOn ? PAL.ragePower
+      : notch >= 1 ? PAL.muzzle : PAL.player;
+  let bodyHeat = notch >= 2
+    ? 0.28 + breakingPulse * 0.18
+    : notch === 1
+      ? 0.10 + charge01 * 0.07
+      : Math.max(0, charge01 - 0.20) * 0.05;
+  if (rageOn && !gildedOn) bodyHeat = Math.max(bodyHeat, 0.14 + ragePulse * 0.28);
+  if (gildedOn) bodyHeat = Math.max(bodyHeat, 0.24 + gildedGlow * 0.16);
   fallbackMesh.material.emissive.setHex(heatColor);
   fallbackMesh.material.emissiveIntensity = bodyHeat;
   spriteMesh.material.emissive.setHex(heatColor);
@@ -923,19 +950,26 @@ function sync() {
   _gunDisplayTint.copy(_rollTint);
   if (notch >= 2) _gunDisplayTint.lerp(_gunTraitColor.setHex(PAL.muzzle), 0.72);
   else if (notch === 1) _gunDisplayTint.lerp(_gunTraitColor.setHex(PAL.gun), 0.42);
+  if (rageOn) _gunDisplayTint.lerp(_gunTraitColor.setHex(PAL.ragePower),
+    0.42 + ragePulse * 0.22);
   if (gildedOn) _gunDisplayTint.lerp(_gunTraitColor.setHex(PAL.gildedGold), 0.55);
   if (gunUsesArt) gun.material.color.setHex(0xffffff).lerp(_gunDisplayTint,
     0.08 + Math.min(0.12, (currentGun?.tier || 0) * 0.035));
   else gun.material.color.copy(_gunDisplayTint);
   gun.material.emissive.copy(_gunDisplayTint);
   gun.material.emissiveIntensity = notch >= 2
-    ? 0.58 + breakingPulse * 0.40 + recoilT * 0.24
-    : recoilT * 0.46 + (notch === 1 ? 0.24 : 0);
+    ? 0.50 + breakingPulse * 0.32 + recoilT * 0.24
+    : recoilT * 0.46 + (notch === 1 ? 0.20 + charge01 * 0.06 : 0);
+  if (rageOn)
+    gun.material.emissiveIntensity = Math.max(gun.material.emissiveIntensity,
+      0.30 + ragePulse * 0.50 + recoilT * 0.18);
   if (gildedOn)
     gun.material.emissiveIntensity = Math.max(gun.material.emissiveIntensity,
       0.3 + gildedGlow * 0.18);
-  // The gilded aura (mounted above) animates on the same clock and dims
-  // under the same fold occlusion as the body it surrounds.
+  // The compact power brackets and large gilded aura animate on the same
+  // simulation clock and inherit the body's fold occlusion. Gold suppresses
+  // only the brackets, not OVERDRIVE's functional chassis heat.
+  syncPowerAura(gameMs, foldGain, charge01, notch, gildedOn);
   syncGildedAura(gameMs, foldGain);
   rig.visible = foldGain > 0.01 && (gameMs >= player.iframesUntil || blink());
   rig.userData.foldVisibility = foldGain;
@@ -954,6 +988,17 @@ export function rigVisualSnapshot() {
   rig.getWorldPosition(_rigScreenProbe);
   _rigScreenProbe.project(camera);
   const rect = renderer.domElement.getBoundingClientRect();
+  const gildedLayer = gildedRigActive();
+  const overdriveLayer = lastPowerNotch >= 1;
+  const activePowerLayers = [];
+  if (overdriveLayer) activePowerLayers.push('OVERDRIVE_WARM');
+  if (lastRageActive) activePowerLayers.push('RAGE_RED_MAGENTA');
+  if (gildedLayer) activePowerLayers.push('GILDED_GOLD');
+  const dominantPowerPalette = gildedLayer
+    ? 'GILDED_GOLD'
+    : lastRageActive
+      ? 'RAGE_RED_MAGENTA'
+      : overdriveLayer ? 'OVERDRIVE_WARM' : 'NONE';
   return {
     spriteReady, aimReady, actionReady, actionShowing, bodyFrame: shownBodyFrame,
     gilded: gildedRigActive(),
@@ -989,6 +1034,18 @@ export function rigVisualSnapshot() {
     idleEmission: {
       body: +spriteMesh.material.emissiveIntensity.toFixed(4),
       gun: +gun.material.emissiveIntensity.toFixed(4),
+    },
+    powerPresentation: {
+      charge: +lastPowerCharge.toFixed(3),
+      notch: lastPowerNotch,
+      overdrive: ['COLD', 'WARM', 'BREAKING'][lastPowerNotch] || 'COLD',
+      rage: lastRageActive,
+      ragePulse: +lastRagePulse.toFixed(3),
+      gilded: gildedLayer,
+      aura: powerAuraSnapshot(),
+      activeLayers: activePowerLayers,
+      dominantPalette: dominantPowerPalette,
+      layerPrecedence: ['GILDED_GOLD', 'RAGE_RED_MAGENTA', 'OVERDRIVE_WARM'],
     },
     gunPresentation: {
       familyHeightGain: gunFamilyHeightGain,

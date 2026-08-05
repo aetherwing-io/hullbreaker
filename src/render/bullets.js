@@ -27,6 +27,9 @@ import { bulletNoseTiles } from '../pure/juice.js';
 import { installView } from '../sim/bridge.js';
 import { committedBand } from '../sim/transform.js';
 import { BULLET_MAX } from '../sim/weapons.js';
+import { scoreCharge, scoreNotchNow } from '../sim/score.js';
+import { mods } from '../sim/mods.js';
+import { gameMs } from '../sim/time.js';
 import { cameraFacingFacet } from './camera.js';
 import { scene, HIDE } from './scene.js';
 import { PROJECTILE_ART, PROJECTILE_ART_SLOT } from './projectile-art.js';
@@ -37,6 +40,9 @@ import {
   fxRoleFragments, fxVapor,
 } from './fx.js';
 import { routeRenderable } from './route-visibility.js';
+import {
+  normalizedOverdriveCharge, overdriveProjectileGain, rageStaccato,
+} from './power-feedback.js';
 
 /* One painted atlas replaces five generic low-poly cores. It is registered
    with the same boot gate as RIG, hostiles, and the mutation modules: the
@@ -520,6 +526,12 @@ const _axisX = new THREE.Vector3(1, 0, 0);
 const _trailQ = new THREE.Quaternion();
 const _shotColor = new THREE.Color();
 const _traitColor = new THREE.Color();
+const _powerColor = new THREE.Color();
+for (const mesh of artMeshList) {
+  for (let i = 0; i < BULLET_MAX; i++)
+    mesh.setColorAt(i, _shotColor.setHex(0xffffff));
+  mesh.instanceColor.needsUpdate = true;
+}
 for (const type of WEAPON_TYPES) {
   coreMeshes[type].setColorAt(0, _shotColor.setHex(0xffffff));
   for (let i = 0; i < BULLET_MAX; i++) {
@@ -584,6 +596,11 @@ const slotType = new Array(BULLET_MAX).fill('');         // gate color uploads o
 const slotVisible = new Uint8Array(BULLET_MAX);
 const slotFacetHidden = new Uint8Array(BULLET_MAX);
 const slotMeta = new Array(BULLET_MAX).fill(null);
+// Firing-state presentation is sampled once at spawn. The short-lived shot
+// therefore keeps a coherent sentence without recoloring every live instance
+// every frame or changing any matrix/hitbox as the meter later drains.
+const slotPowerState = new Uint8Array(BULLET_MAX); // 0 cold, 1 warm, 2 breaking, 3 rage
+const slotPowerGain = new Float32Array(BULLET_MAX);
 const terminalImpactCounts = { R: 0, S: 0, L: 0, H: 0, F: 0 };
 const terminalReasonCounts = {
   hostile: 0, terrain: 0, lifetime: 0, bend: 0, pool: 0, reset: 0,
@@ -621,6 +638,13 @@ function slotSpawned(i, type, meta = null) {
   const seeker = meta ? meta.seeker : 0;
   const phase = meta ? meta.phase : 0;
   const volatile = meta ? meta.volatile : 0;
+  const powerNotch = scoreNotchNow();
+  const powerCharge = normalizedOverdriveCharge(scoreCharge(), CONFIG.score.max);
+  const rageOn = gameMs < mods.rageUntil;
+  const powerGain = rageOn
+    ? 0.16 + rageStaccato(gameMs) * 0.10
+    : overdriveProjectileGain(powerNotch, powerCharge);
+  const powerColor = rageOn ? PAL.ragePower : PAL.muzzle;
   if (slotVisible[i] && coreMeshes[slotType[i]]) {
     coreMeshes[slotType[i]].setMatrixAt(i, HIDE);
     shellMeshes[slotType[i]].setMatrixAt(i, HIDE);
@@ -629,6 +653,8 @@ function slotSpawned(i, type, meta = null) {
   }
   slotType[i] = visualType;
   slotMeta[i] = meta;
+  slotPowerState[i] = rageOn ? 3 : powerNotch;
+  slotPowerGain[i] = powerGain;
   slotVisible[i] = 1;
   slotFacetHidden[i] = 0;
   _shotColor.setHex(look.coreColor || color);
@@ -641,22 +667,33 @@ function slotSpawned(i, type, meta = null) {
   if (seeker) _shotColor.lerp(_traitColor.setHex(PAL.capsule), Math.min(0.58, seeker * 0.22));
   if (phase) _shotColor.lerp(_traitColor.setHex(PAL.shots.L), Math.min(0.64, phase * 0.24));
   if (volatile) _shotColor.lerp(_traitColor.setHex(PAL.shots.F), Math.min(0.68, volatile * 0.26));
+  if (powerGain) _shotColor.lerp(_powerColor.setHex(powerColor), powerGain * 0.62);
   coreMeshes[visualType].setColorAt(i, _shotColor);
+  if (artMeshes[visualType]) {
+    _shotColor.setHex(0xffffff);
+    if (powerGain) _shotColor.lerp(_powerColor.setHex(powerColor), powerGain * 0.28);
+    _shotColor.multiplyScalar(1 + powerGain * 0.16);
+    artMeshes[visualType].setColorAt(i, _shotColor);
+  }
   _shotColor.setHex(color);
   if (seeker) _shotColor.lerp(_traitColor.setHex(PAL.capsule), Math.min(0.66, 0.24 + seeker * 0.13));
   if (phase) _shotColor.lerp(_traitColor.setHex(PAL.shots.L), Math.min(0.64, 0.22 + phase * 0.14));
   if (volatile) _shotColor.lerp(_traitColor.setHex(PAL.shots.F), Math.min(0.72, 0.28 + volatile * 0.14));
-  _shotColor.multiplyScalar(look.gain * (1 + tier * 0.035));
+  if (powerGain) _shotColor.lerp(_powerColor.setHex(powerColor), powerGain);
+  _shotColor.multiplyScalar(look.gain * (1 + tier * 0.035) * (1 + powerGain * 0.42));
   wakeMesh.setColorAt(i, _shotColor);
   for (let j = 0; j < TRAIL_SEGMENTS; j++) {
     _shotColor.setHex(color);
     if (seeker) _shotColor.lerp(_traitColor.setHex(PAL.capsule), Math.min(0.72, 0.28 + seeker * 0.15));
     if (phase) _shotColor.lerp(_traitColor.setHex(PAL.shots.L), Math.min(0.66, 0.24 + phase * 0.14));
     if (volatile) _shotColor.lerp(_traitColor.setHex(PAL.shots.F), Math.min(0.72, 0.26 + volatile * 0.15));
-    _shotColor.multiplyScalar(TRAIL_FADE[j] * (1 + tier * 0.025));
+    if (powerGain) _shotColor.lerp(_powerColor.setHex(powerColor), powerGain * 0.78);
+    _shotColor.multiplyScalar(TRAIL_FADE[j] * (1 + tier * 0.025) *
+      (1 + powerGain * 0.30));
     trailMesh.setColorAt(trailIndex(i, j), _shotColor);
   }
   coreMeshes[visualType].instanceColor.needsUpdate = true;
+  if (artMeshes[visualType]) artMeshes[visualType].instanceColor.needsUpdate = true;
   wakeMesh.instanceColor.needsUpdate = true;
   trailMesh.instanceColor.needsUpdate = true;
 }
@@ -812,6 +849,8 @@ function hideSlot(i, b = null, reason = 'pool') {
   slotVisible[i] = 0;
   slotFacetHidden[i] = 0;
   slotMeta[i] = null;
+  slotPowerState[i] = 0;
+  slotPowerGain[i] = 0;
 }
 
 const PROJECTILE_BENDS = IS_TRANSFORM_SLICE ? TRANSFORM_BEND_S : BEND_S;
@@ -1258,9 +1297,14 @@ export function clearDepartingTracers() {
 export function bulletTraitVisualSnapshot() {
   const live = { rapid: 0, heavy: 0, forked: 0, seeker: 0, phase: 0, volatile: 0 };
   let slots = 0;
+  const power = { cold: 0, warm: 0, breaking: 0, rage: 0 };
+  let maxPowerGain = 0;
   for (let i = 0; i < BULLET_MAX; i++) {
     if (!slotVisible[i] || slotFacetHidden[i]) continue;
     slots++;
+    const powerKey = ['cold', 'warm', 'breaking', 'rage'][slotPowerState[i]] || 'cold';
+    power[powerKey]++;
+    maxPowerGain = Math.max(maxPowerGain, slotPowerGain[i]);
     const meta = slotMeta[i];
     if (!meta) continue;
     for (const key of TRAIT_KEYS) if (meta[key]) live[key]++;
@@ -1290,6 +1334,14 @@ export function bulletTraitVisualSnapshot() {
     capacityPerTrait: BULLET_MAX,
     liveSlots: slots,
     live,
+    powerLanguage: {
+      sampledAtSpawn: true,
+      changesCollisionReach: false,
+      fixedStateArrays: true,
+      live: power,
+      maxGain: +maxPowerGain.toFixed(3),
+      colors: { overdrive: 'WARM_MUZZLE', rage: 'RED_MAGENTA' },
+    },
     occlusion: {
       chassisDepthTest: coreMaterial.depthTest,
       wakeDepthTest: wakeMesh.material.depthTest,

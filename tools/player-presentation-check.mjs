@@ -122,10 +122,19 @@ ok(syncSection.length > 0 && !/new THREE\.|new (?:Mesh|Material|Geometry|Texture
 ok(/fixedMeshes: 10/.test(playerSrc) && /maxVisibleDraws: 6/.test(playerSrc) &&
    /rectangleGunFallback: false/.test(playerSrc),
   'runtime snapshot exposes the fixed ten-mesh/six-draw/no-rectangle budget');
-ok(/emissiveIntensity: 0/.test(playerSrc) &&
-   /const bodyHeat = notch >= 2[\s\S]*\(notch === 1 \? 0\.16 : 0\)/.test(playerSrc) &&
-   /: recoilT \* 0\.46 \+ \(notch === 1 \? 0\.24 : 0\)/.test(playerSrc),
-  'body and held chassis have zero idle emission; only action/overdrive energizes them');
+ok(/normalizedOverdriveCharge\(scoreCharge\(\), CONFIG\.score\.max\)/.test(syncSection) &&
+   /Math\.max\(0, charge01 - 0\.20\) \* 0\.05/.test(syncSection) &&
+   /notch === 1[\s\S]*0\.10 \+ charge01 \* 0\.07/.test(syncSection) &&
+   /notch >= 2[\s\S]*0\.28 \+ breakingPulse \* 0\.18/.test(syncSection) &&
+   /syncPowerAura\(gameMs, foldGain, charge01, notch, gildedOn\)/.test(syncSection) &&
+   /rageStaccato\(gameMs\)/.test(syncSection) &&
+   !/setTint|document\.|style\./.test(syncSection),
+  'continuous charge, WARM/BREAKING, and RAGE energize RIG locally without a screen wash');
+ok(/powerPresentation:\s*\{/.test(playerSrc) &&
+   /activeLayers:\s*activePowerLayers/.test(playerSrc) &&
+   /dominantPalette:\s*dominantPowerPalette/.test(playerSrc) &&
+   /layerPrecedence:\s*\['GILDED_GOLD', 'RAGE_RED_MAGENTA', 'OVERDRIVE_WARM'\]/.test(playerSrc),
+  'runtime diagnostics expose stacked power layers and their explicit visual precedence');
 ok(!/jumpFlare|jumpExhaust\s*:\s*true|jetExhaust/.test(playerSrc),
   'RIG has no out-of-place jump propulsion visual');
 

@@ -128,6 +128,9 @@ export const CLASSIC = {
      identity color, not a scene palette choice, and must read as the same
      warm gold no matter which mode the URL picks. */
   gildedGold: 0xffc45e,
+  // RAGE is a rare modifier identity, not a global scene grade.  Its local
+  // chassis/projectile staccato keeps the same red-magenta in both palettes.
+  ragePower: 0xff365f,
   shots: CONFIG.palette.shots,
   tints: CONFIG.palette.tints,
   rain: 0x9fb4c6,
@@ -232,6 +235,7 @@ export const CONCEPT = {
   muzzle: 0xfff2d8,                      // warm white: lance beam + flash family
   glowOff: 0x000000, hitFlash: 0xffffff, // identity tokens — see CLASSIC's note
   gildedGold: 0xffc45e,                  // identity reward gold — see CLASSIC's note
+  ragePower: 0xff365f,                   // local RAGE modifier identity — see CLASSIC
   shots: CONFIG.palette.shots,           // R is already warm white; letters keep identity
   tints: CONFIG.palette.tints,
   rain: 0xa9cfc8,                        // weather leans teal-white, not steel blue

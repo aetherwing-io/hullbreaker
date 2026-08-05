@@ -7,6 +7,15 @@
 <link rel="preload" as="image" href="assets/generated/ui/title-meridian-ascent-v1.png">
 <link rel="icon" href="assets/ui/favicon.svg" type="image/svg+xml">
 <style>
+  :root {
+    /* Browser-safe defaults stay production-owned by env(). HUD probes can
+       override these four variables to exercise notched layouts in desktop
+       Chromium, where the safe-area env values are otherwise always zero. */
+    --hud-safe-top: env(safe-area-inset-top, 0px);
+    --hud-safe-right: env(safe-area-inset-right, 0px);
+    --hud-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --hud-safe-left: env(safe-area-inset-left, 0px);
+  }
   html, body {
     margin: 0; height: 100%; overflow: hidden; background: #232830;
     overscroll-behavior: none;
@@ -78,15 +87,25 @@
     letter-spacing: .08em; text-overflow: ellipsis; white-space: nowrap;
   }
   .hud-power {
-    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 7px;
+    display: grid; grid-template-columns: auto minmax(52px, 1fr) auto; align-items: center; gap: 7px;
     margin-top: 7px; color: rgba(232,237,242,.56); font-size: 8px; letter-spacing: .11em;
   }
   .hud-power[hidden], #hudRushRow[hidden] { display: none; }
-  .hud-meter {
-    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 3px; height: 5px;
+  .hud-track {
+    --meter: 0; position: relative; display: block; height: 5px; overflow: hidden;
+    background: rgba(232,237,242,.1); box-shadow: inset 0 0 0 1px rgba(7,19,26,.55);
   }
-  .hud-meter i { display: block; background: rgba(232,237,242,.12); box-shadow: inset 0 0 0 1px rgba(7,19,26,.42); }
-  .hud-meter i.on { background: var(--hud-accent); box-shadow: 0 0 7px color-mix(in srgb, var(--hud-accent) 44%, transparent); }
+  .hud-track::after {
+    content: ''; position: absolute; top: 0; bottom: 0; left: 40%; width: 1px;
+    background: rgba(255,242,216,.36);
+  }
+  .hud-track-fill {
+    position: absolute; inset: 0; transform: scaleX(var(--meter)); transform-origin: 0 50%;
+    background: linear-gradient(90deg, #ce8752, #ffbd79 72%, #fff2d8);
+    box-shadow: 0 0 7px rgba(255,189,121,.28); will-change: transform;
+  }
+  .hud-track[data-stage="cold"] .hud-track-fill { box-shadow: none; }
+  .hud-track[data-stage="breaking"] .hud-track-fill { background: #fff2d8; }
   #hudPowerState { color: #fff2d8; font-weight: 800; white-space: nowrap; }
   #hudStatus {
     min-height: 9px; margin-top: 6px; overflow: hidden; color: #ffe0ad; font-size: 8px;
@@ -107,29 +126,37 @@
     line-height: 1.05; letter-spacing: .105em; text-overflow: ellipsis; white-space: nowrap;
   }
   #hudRunPanel {
-    --hud-accent: #ce8752; top: 14px; right: 18px; width: min(306px, calc(39vw - 20px));
-    min-width: 244px; padding: 9px 11px 9px; font-size: 11px; line-height: 1.15;
+    --rush-accent: #7dd7c4; margin-top: 7px; padding-top: 7px;
+    border-top: 1px solid rgba(232,237,242,.13); font-size: 9px; line-height: 1.1;
   }
   #hudRunMetrics {
-    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
-    margin-top: 8px;
+    display: grid; grid-template-columns: auto repeat(3, minmax(0, 1fr));
+    align-items: end; gap: 7px;
+  }
+  #hudRunLabel {
+    align-self: center; color: rgba(232,237,242,.45); font-size: 7px; font-weight: 800;
+    letter-spacing: .14em; white-space: nowrap;
   }
   .hud-metric { min-width: 0; text-align: right; }
   .hud-metric b {
-    display: block; overflow: hidden; color: #fff2d8; font-size: 13px; line-height: 1;
+    display: block; overflow: hidden; color: #fff2d8; font-size: 10px; line-height: 1;
     letter-spacing: .045em; text-overflow: ellipsis; white-space: nowrap;
   }
-  .hud-metric span { display: block; margin-top: 4px; color: rgba(232,237,242,.43); font-size: 7px; letter-spacing: .13em; }
+  .hud-metric span { display: block; margin-top: 2px; color: rgba(232,237,242,.43); font-size: 6px; letter-spacing: .1em; }
   #hudRushRow {
-    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 7px;
-    margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(232,237,242,.1);
-    color: rgba(232,237,242,.5); font-size: 8px; letter-spacing: .11em;
+    display: grid; grid-template-columns: auto minmax(52px, 1fr) 42px; align-items: center; gap: 7px;
+    margin-top: 5px; color: rgba(232,237,242,.5); font-size: 7px; letter-spacing: .11em;
   }
-  #hudRushPips { color: #9ce23e; font-size: 11px; letter-spacing: .12em; text-align: right; }
-  #hudRunPanel[data-rush="surge"] #hudRushPips {
-    color: #ffad5c; text-shadow: 0 0 7px rgba(255,157,69,.3);
+  #hudRushTrack::after { display: none; }
+  #hudRushFill {
+    background: linear-gradient(90deg, #668f79, #9ce23e 52%, var(--rush-accent));
+    box-shadow: 0 0 6px rgba(125,215,196,.24);
   }
-  #hudRushState { color: rgba(255,242,216,.68); font-size: 8px; }
+  #hudRunPanel[data-rush="surge"] #hudRushFill {
+    background: linear-gradient(90deg, #9ce23e, #7dd7c4 68%, #c8fff4);
+    box-shadow: 0 0 7px rgba(125,215,196,.38);
+  }
+  #hudRushState { overflow: hidden; color: #aee9dd; font-size: 7px; text-align: right; white-space: nowrap; }
   #hudBL {
     bottom: 12px; left: 50%; max-width: min(820px, calc(100vw - 36px));
     padding: 7px 12px 8px; overflow: hidden; transform: translateX(-50%);
@@ -641,19 +668,16 @@
 
   @media (max-width: 600px) {
     #hudRigPanel {
-      top: max(7px, env(safe-area-inset-top)); left: max(7px, env(safe-area-inset-left));
-      width: calc(61vw - 10px); min-width: 0; padding: 6px 7px 7px;
-    }
-    #hudRunPanel {
-      top: max(7px, env(safe-area-inset-top)); right: max(7px, env(safe-area-inset-right));
-      left: auto; width: calc(39vw - 11px); min-width: 0; padding: 6px 7px 7px;
+      top: max(7px, var(--hud-safe-top)); right: max(7px, var(--hud-safe-right));
+      left: max(7px, var(--hud-safe-left)); width: auto; max-width: 390px;
+      min-width: 0; padding: 6px 7px 7px;
     }
     #hudObjectivePanel {
-      top: calc(max(7px, env(safe-area-inset-top)) + 91px); left: 50%;
-      width: calc(100% - 14px); min-height: 31px; padding: 5px 9px 6px;
-      transform: translateX(-50%);
+      top: calc(max(7px, var(--hud-safe-top)) + 129px);
+      right: max(7px, var(--hud-safe-right)); left: max(7px, var(--hud-safe-left));
+      width: auto; min-height: 31px; padding: 5px 9px 6px; transform: none;
     }
-    #hudObjectivePanel.empty { transform: translate(-50%, -4px); }
+    #hudObjectivePanel.empty { transform: translateY(-4px); }
     .hud-eyebrow { gap: 5px; font-size: 6px; letter-spacing: .1em; }
     .hud-vitals { gap: 4px; margin-top: 5px; }
     #hudHealthPips { font-size: 11px; letter-spacing: .04em; }
@@ -663,16 +687,17 @@
     #hudWeaponName { font-size: 9px; letter-spacing: .025em; }
     #hudWeaponOther { min-height: 7px; font-size: 6px; letter-spacing: .03em; }
     .hud-power { gap: 4px; margin-top: 4px; font-size: 6px; }
-    .hud-meter { gap: 2px; height: 3px; }
+    .hud-track { height: 3px; }
     #hudPowerState { font-size: 6px; }
     #hudStatus { display: none; }
-    #hudRunMetrics { gap: 3px; margin-top: 7px; }
+    #hudRunPanel { margin-top: 4px; padding-top: 4px; }
+    #hudRunMetrics { gap: 4px; }
+    #hudRunLabel { font-size: 5px; letter-spacing: .08em; }
     .hud-metric { text-align: center; }
     .hud-metric b { font-size: 9px; }
-    .hud-metric span { margin-top: 3px; font-size: 5px; letter-spacing: .045em; }
-    #hudRushRow { gap: 3px; margin-top: 6px; padding-top: 5px; font-size: 6px; }
-    #hudRushPips { font-size: 8px; letter-spacing: .04em; }
-    #hudRushState { display: none; }
+    .hud-metric span { margin-top: 2px; font-size: 5px; letter-spacing: .045em; }
+    #hudRushRow { grid-template-columns: auto 1fr 34px; gap: 4px; margin-top: 4px; font-size: 5px; }
+    #hudRushState { font-size: 5px; }
     #hudObjectiveLabel { display: none; }
     #hudObjective { margin-top: 0; font-size: 9px; letter-spacing: .075em; }
     #hudBL {
@@ -744,20 +769,19 @@
   @media (max-height: 520px) and (pointer: coarse),
          (max-height: 520px) and (max-width: 980px) {
     #hudRigPanel {
-      top: max(7px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left));
-      width: min(270px, 36vw); min-width: 0; padding: 6px 8px;
-    }
-    #hudRunPanel {
-      top: max(7px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right));
-      left: auto; width: min(260px, 36vw); min-width: 0; padding: 6px 8px;
+      top: max(7px, var(--hud-safe-top)); left: max(10px, var(--hud-safe-left));
+      width: min(300px, 36vw); min-width: 0; padding: 6px 8px;
     }
     #hudObjectivePanel {
-      top: max(7px, env(safe-area-inset-top)); left: 50%; width: min(270px, 26vw);
-      min-height: 34px; padding: 5px 7px; transform: translateX(-50%);
+      top: max(7px, var(--hud-safe-top)); right: max(10px, var(--hud-safe-right));
+      left: auto; width: min(320px, 38vw); min-height: 34px; padding: 5px 7px;
+      transform: none;
     }
+    #hudObjectivePanel.empty { transform: translateY(-4px); }
     #hudWeaponOther, #hudStatus { display: none; }
-    .hud-vitals, .hud-weapon, .hud-power, #hudRunMetrics, #hudRushRow { margin-top: 4px; }
-    #hudRigPanel .hud-eyebrow, #hudRunPanel .hud-eyebrow { display: none; }
+    .hud-vitals, .hud-weapon, .hud-power, #hudRushRow { margin-top: 4px; }
+    #hudRunPanel { margin-top: 4px; padding-top: 4px; }
+    #hudRigPanel .hud-eyebrow { display: none; }
     #hudHealthPips { font-size: 11px; }
     #hudWeaponName, .hud-metric b { font-size: 9px; }
     .hud-metric span, #hudObjectiveLabel { font-size: 5px; }
@@ -993,7 +1017,7 @@
 <div id="hudTL" class="hud-legacy" aria-hidden="true"></div>
 <div id="hudTC" class="hud-legacy" aria-hidden="true"></div>
 <div id="hudTR" class="hud-legacy" aria-hidden="true"></div>
-<div id="hudRigPanel" class="hud hud-instrument" aria-label="RIG health and weapon status">
+<div id="hudRigPanel" class="hud hud-instrument" aria-label="RIG health, weapon, and ascent status">
   <div class="hud-eyebrow"><span>RIG // VITALS</span><span id="hudLives">×0</span></div>
   <div class="hud-vitals">
     <span class="hud-label">HULL</span><span id="hudHealthPips">▱▱▱</span><span id="hudHealthValue">0/3</span>
@@ -1003,22 +1027,22 @@
     <span id="hudWeaponOther">FIELD RIFLE // PRIMARY</span>
   </div>
   <div class="hud-power">
-    <span>OVERDRIVE</span><span id="hudOverdrive" class="hud-meter" aria-label="Overdrive"><i></i><i></i></span>
+    <span>OVERDRIVE</span><span id="hudOverdrive" class="hud-track" role="progressbar" aria-label="Overdrive charge" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-stage="cold"><span id="hudOverdriveFill" class="hud-track-fill"></span></span>
     <span id="hudPowerState">COLD</span><span id="hudPowerText" class="hud-sr">OVERDRIVE ▯▯ COLD</span>
   </div>
   <div id="hudStatus"></div>
+  <div id="hudRunPanel" aria-label="Run progress">
+    <div id="hudRunMetrics">
+      <span id="hudRunLabel">ASCENT</span>
+      <div class="hud-metric"><b id="hudMetricA">0m</b><span id="hudMetricALabel">ALT</span></div>
+      <div class="hud-metric"><b id="hudMetricB">1/6</b><span id="hudMetricBLabel">WAVE</span></div>
+      <div class="hud-metric"><b id="hudMetricC">0m</b><span id="hudMetricCLabel">FORWARD</span></div>
+    </div>
+    <div id="hudRushRow"><span>RUSH</span><span id="hudRushTrack" class="hud-track" role="progressbar" aria-label="Rush drive" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="hudRushFill" class="hud-track-fill"></span></span><span id="hudRushState"></span><span id="hudRushText" class="hud-sr">RUSH 0%</span></div>
+  </div>
 </div>
 <div id="hudObjectivePanel" class="hud hud-instrument empty" aria-live="polite" role="status">
   <div id="hudObjectiveLabel">MERIDIAN RESPONSE</div><div id="hudObjective"></div>
-</div>
-<div id="hudRunPanel" class="hud hud-instrument" aria-label="Run progress">
-  <div class="hud-eyebrow"><span id="hudRunLabel">ASCENT // LIVE</span></div>
-  <div id="hudRunMetrics">
-    <div class="hud-metric"><b id="hudMetricA">0m</b><span id="hudMetricALabel">ALT</span></div>
-    <div class="hud-metric"><b id="hudMetricB">0m</b><span id="hudMetricBLabel">FORWARD</span></div>
-    <div class="hud-metric"><b id="hudMetricC">0</b><span id="hudMetricCLabel">KILLS</span></div>
-  </div>
-  <div id="hudRushRow"><span>RUSH</span><span id="hudRushPips">▱▱▱</span><span id="hudRushState">STEADY</span></div>
 </div>
 <div id="hudBL" class="hud"></div>
 <div id="touchDeck" hidden aria-label="Touch controls">

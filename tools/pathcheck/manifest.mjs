@@ -84,6 +84,7 @@ import * as d71 from './adaptive-fidelity-contract.mjs';
 import * as d72 from './render-submission-contract.mjs';
 import * as d73 from './frame-input-contract.mjs';
 import * as d74 from './gilded-chassis.mjs';
+import * as d75 from './power-feedback-contract.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -161,4 +162,5 @@ export const DOMAINS = [
   d72,    // built-scene single-pass, idle upload, and canvas-AA truth
   d73,    // frame-scoped deterministic input and exact sim stop
   d74,    // gilded chassis: Konami detector + presentation-only wiring
+  d75,    // localized OVERDRIVE / RAGE feedback, no global wash
 ];

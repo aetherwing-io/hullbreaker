@@ -18,7 +18,7 @@ import { scoreNotchGlyphs } from '../pure/score.js';
 import { activeGateThreatCount, wavePhase } from '../pure/waves.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { player, P } from '../sim/player.js';
-import { scoreNotchNow } from '../sim/score.js';
+import { scoreCharge, scoreNotchNow } from '../sim/score.js';
 import {
   carriedGun, carriedGunLabel, currentGun, currentGunLabel, currentWeapon,
 } from '../sim/weapons.js';
@@ -50,7 +50,6 @@ const hudWeaponName = document.getElementById('hudWeaponName');
 const hudWeaponOther = document.getElementById('hudWeaponOther');
 const hudPowerRow = document.querySelector('.hud-power');
 const hudOverdrive = document.getElementById('hudOverdrive');
-const hudOverdrivePips = [...hudOverdrive.querySelectorAll('i')];
 const hudPowerState = document.getElementById('hudPowerState');
 const hudPowerText = document.getElementById('hudPowerText');
 const hudStatus = document.getElementById('hudStatus');
@@ -64,8 +63,9 @@ const hudMetricBLabel = document.getElementById('hudMetricBLabel');
 const hudMetricC = document.getElementById('hudMetricC');
 const hudMetricCLabel = document.getElementById('hudMetricCLabel');
 const hudRushRow = document.getElementById('hudRushRow');
-const hudRushPips = document.getElementById('hudRushPips');
+const hudRushTrack = document.getElementById('hudRushTrack');
 const hudRushState = document.getElementById('hudRushState');
+const hudRushText = document.getElementById('hudRushText');
 
 // How many world turns the LOADED fixture actually authors. Hardcoding the v1
 // demo's 2 made the single-event G2 fixture advertise a second transformation
@@ -110,8 +110,10 @@ function put(el, value) {
   if (el.textContent !== next) el.textContent = next;
 }
 
-function updateMeter(nodes, lit) {
-  for (let i = 0; i < nodes.length; i++) nodes[i].classList.toggle('on', i < lit);
+function updateContinuousMeter(el, percent, state) {
+  el.style.setProperty('--meter', String(percent / 100));
+  el.setAttribute('aria-valuenow', String(percent));
+  el.setAttribute('aria-valuetext', `${percent}%${state ? ' · ' + state : ''}`);
 }
 
 function setMetric(valueEl, labelEl, value, label) {
@@ -146,9 +148,15 @@ export function updateHUD() {
   // not a developer score. The name makes the faster fire / launch shock
   // promise legible the first time a player sees the meter fill.
   const notch = SCORE_ENABLED ? scoreNotchNow() : 0;
+  // The meter is continuous even though its gameplay rewards are stepped.
+  // Integer percent is deliberate: updateHUD runs every rAF, and the player
+  // cannot read sub-percent churn while it would dirty the DOM every frame.
+  const chargePct = SCORE_ENABLED
+    ? Math.max(0, Math.min(100, Math.round(scoreCharge() / CONFIG.score.max * 100)))
+    : 0;
   const powerGlyphs = scoreNotchGlyphs(notch);
   const powerState = notch >= CONFIG.score.notches.length
-    ? 'HULLBREAK'
+    ? 'BREAKING'
     : notch > 0 ? 'WARM' : 'COLD';
   const statuses = [];
   // FLOW rides the same readout for the same reason: the player's eye is
@@ -177,11 +185,12 @@ export function updateHUD() {
     '\n[' + currentWeapon + gunTier + '] ' + gunName + legacyOtherGun;
   if (SCORE_ENABLED) {
     tl += (mobileHud ? ' · OD ' : ' · OVERDRIVE ') + powerGlyphs +
-      (notch >= CONFIG.score.notches.length ? (mobileHud ? ' BREAK' : ' HULLBREAK') : '');
+      (notch >= CONFIG.score.notches.length ? (mobileHud ? ' BREAK' : ' BREAKING') : '');
   }
   for (const item of statuses) tl += ' · ' + item;
-  if (tl !== hudTLLast) {
-    hudTLLast = tl;
+  const rigSig = `${tl}\u0000${chargePct}\u0000${powerState}`;
+  if (rigSig !== hudTLLast) {
+    hudTLLast = rigSig;
     put(hudTL, tl);
     put(hudLives, IS_TRAVERSAL_SLICE ? 'RIG' : '×' + lives);
     put(hudHealthPips, healthGlyphs);
@@ -192,56 +201,71 @@ export function updateHUD() {
     put(hudWeaponName, gunName);
     put(hudWeaponOther, otherGun);
     hudPowerRow.hidden = !SCORE_ENABLED;
-    updateMeter(hudOverdrivePips, notch);
+    updateContinuousMeter(hudOverdrive, chargePct, powerState);
+    hudOverdrive.dataset.stage = powerState.toLowerCase();
+    hudRigPanel.dataset.overdrive = String(chargePct);
+    hudRigPanel.dataset.overdriveState = powerState.toLowerCase();
     put(hudPowerState, powerState);
-    put(hudPowerText, SCORE_ENABLED ? 'OVERDRIVE ' + powerGlyphs + ' ' + powerState : '');
+    put(hudPowerText, SCORE_ENABLED
+      ? `OVERDRIVE ${chargePct}% ${powerGlyphs} ${powerState}`
+      : '');
     put(hudStatus, status);
   }
+  const c = activeCorner();
   const edge = Number.isFinite(sliceStats.minEdgeMargin)
     ? Math.max(0, sliceStats.minEdgeMargin).toFixed(1)
     : '—';
-  let runLabel, metricA, metricALabel, metricB, metricBLabel;
+  let runLabel, metricA, metricALabel, metricB, metricBLabel, metricC, metricCLabel;
   if (IS_TRAVERSAL_SLICE) {
-    runLabel = 'ROUTE // LIVE';
+    runLabel = 'ROUTE';
     metricA = sliceStats.attempts; metricALabel = 'ATTEMPT';
     metricB = edge; metricBLabel = sliceStats.setbacks ? `EDGE · ${sliceStats.setbacks} FALLS` : 'EDGE';
+    metricC = kills; metricCLabel = 'KILLS';
   } else if (IS_TRANSFORM_SLICE) {
-    runLabel = 'BREACH // LIVE';
+    runLabel = 'BREACH';
     metricA = Math.round(transformAltitudeAt(player.x) + player.y) + 'm'; metricALabel = 'ALT';
     metricB = committedBand + '/' + TRANSFORM_TURNS; metricBLabel = 'TURNS';
+    metricC = kills; metricCLabel = 'KILLS';
   } else {
-    runLabel = 'ASCENT // LIVE';
+    runLabel = 'ASCENT';
     metricA = Math.round(normalAscentAltAt(player.x, CONFIG.levelLength) + player.y) + 'm'; metricALabel = 'ALT';
-    metricB = Math.floor(scrollX) + 'm'; metricBLabel = 'FORWARD';
+    metricB = c ? `${c.k}/${CONFIG.path.faces}` : 'CROWN'; metricBLabel = 'WAVE';
+    metricC = Math.floor(scrollX) + 'm'; metricCLabel = 'FORWARD';
   }
   // THREAT remains in the run summary/telemetry; the live HUD spends that
   // space on actionable information instead of an unexplained debug number.
-  // RUSH is the visible earned pace escalation. Keep the compact three-pip
-  // read on the crowded top edge; the exact multiplier remains in telemetry.
+  // RUSH is the visible earned pace escalation. The continuous strip shares
+  // the quantized 0..100 read with telemetry while the old tier glyphs remain
+  // only in the hidden compatibility string used by trace parsers.
   const drive = MOMENTUM_ENABLED ? momentumDrive() : 0;
+  const rushPct = Math.max(0, Math.min(100, Math.round(drive * 100)));
   const rush = momentumMeter(drive, CONFIG.momentum);
-  const rushState = drive >= .67 ? 'SURGE' : drive >= .3 ? 'RISING' : 'STEADY';
+  const rushState = drive >= CONFIG.momentum.tiers[CONFIG.momentum.tiers.length - 1]
+    ? 'SURGE'
+    : drive >= CONFIG.momentum.tiers[0] ? 'RISING' : 'STEADY';
   let tr = IS_TRAVERSAL_SLICE
     ? `ATTEMPT ${sliceStats.attempts} · EDGE ${edge}` +
       (sliceStats.setbacks ? ` · FALLBACK ${sliceStats.setbacks}` : '') +
       ` · ${kills} kills`
     : IS_TRANSFORM_SLICE
       ? `ALT ${metricA} · ${committedBand}/${TRANSFORM_TURNS} TURNS · ${kills} kills`
-      : `ALT ${metricA} · ${metricB} FORWARD · ${kills} KILLS`;
+      : `WAVE ${metricB} · ALT ${metricA} · ${metricC} FORWARD · ${kills} KILLS`;
   if (MOMENTUM_ENABLED) tr += ' · RUSH ' + rush;
-  if (tr !== hudTRLast) {
-    hudTRLast = tr;
+  const runSig = `${tr}\u0000${rushPct}\u0000${rushState}`;
+  if (runSig !== hudTRLast) {
+    hudTRLast = runSig;
     put(hudTR, tr);
     put(hudRunLabel, runLabel);
     setMetric(hudMetricA, hudMetricALabel, metricA, metricALabel);
     setMetric(hudMetricB, hudMetricBLabel, metricB, metricBLabel);
-    setMetric(hudMetricC, hudMetricCLabel, kills, 'KILLS');
+    setMetric(hudMetricC, hudMetricCLabel, metricC, metricCLabel);
     hudRushRow.hidden = !MOMENTUM_ENABLED;
-    put(hudRushPips, rush);
-    put(hudRushState, rushState);
+    updateContinuousMeter(hudRushTrack, rushPct, rushState);
+    put(hudRushState, rushState === 'STEADY' ? '' : rushState);
+    put(hudRushText, MOMENTUM_ENABLED ? `RUSH ${rushPct}% ${rushState}` : '');
     hudRunPanel.dataset.rush = rushState.toLowerCase();
+    hudRunPanel.dataset.rushValue = String(rushPct);
   }
-  const c = activeCorner();
   let tc = transformMessage();
   const pocket = ACTIVE_SLICE && ACTIVE_SLICE.darePocket.bounds;
   if ((ACTIVE_SLICE || RUN_FALLBACK_ENABLED) && gameMs - sliceStats.lastSetbackAt <

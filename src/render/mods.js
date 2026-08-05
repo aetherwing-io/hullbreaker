@@ -1,6 +1,6 @@
 /* ==================== MODIFIER PRESENTATION ======================= */
-/* GHOST SQUAD clones, the ORBITAL LANCE telegraph beam, and the screen
-   tint. All three are read models: the sim resolves which trail sample a
+/* GHOST SQUAD clones, the ORBITAL LANCE telegraph beam, and global event
+   tints. All three are read models: the sim resolves which trail sample a
    clone stands on and when the strike lands, this module draws it. */
 
 import * as THREE from 'three';
@@ -50,11 +50,13 @@ function sync() {
   // armed; once the strike lands (or a teardown clears it) the beam goes away
   if (!mods.lance) lanceBeam.visible = false;
 
-  // screen tint: lance flash > rage red > chrono blue
+  // Global tint is reserved for genuinely world-scale events. RAGE used to
+  // paint the whole screen red for its entire timer; that confused the rare
+  // fire-rate modifier with OVERDRIVE and flattened every scene value. RAGE
+  // now lives locally on RIG, gun, and shots (player.js / bullets.js).
   const T = PAL.tints;
   let tint = 'transparent';
   if (gameMs < mods.lanceFlashUntil) tint = T.lance;
-  else if (gameMs < mods.rageUntil) tint = T.rage;
   else if (gameMs < mods.chronoUntil) tint = T.chrono;
   setTint(tint);
 }
