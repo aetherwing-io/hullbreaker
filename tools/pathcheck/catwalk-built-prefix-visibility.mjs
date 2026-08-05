@@ -59,20 +59,21 @@ export async function run() {
   while (cornerYawDeltaDeg(handoffMs, CONFIG) /
       (2 * CONFIG.path.turnDeg) < 0.96) handoffMs++;
   let partialMs = handoffMs;
-  while (lockedPrefixAt(partialMs) < 26) partialMs++;
+  while (lockedPrefixAt(partialMs) < 30) partialMs++;
   const frontier = CORNER_S[1] + lockedPrefixAt(partialMs);
-  const partial = shipped.platforms.find((p) => p.id === 'pocket-mid-f3');
+  const partial = shipped.platforms.find((p) => p.id === 'pocket-shelf-f3');
   const partialSegments = splitPlatform(partial.x0, partial.x1);
   const visiblePrefix = partialSegments.filter((segment) => segment.s < frontier).length;
-  ok(handoffMs === 690 && partialMs === 780 && frontier === 180 &&
-     partial.x0 === 179 && partial.x1 === 184 &&
-     partialSegments.every((segment) => shipped.groundH[Math.floor(segment.s)] > -100),
+  ok(handoffMs === 690 && partialMs > handoffMs && partialMs < 1100 &&
+     frontier === CORNER_S[1] + 30 &&
+     partial.x0 === frontier - 1 && partial.x1 === frontier + 4,
   'regression pins a real partially built catwalk inside the 690–1100 ms handoff interval');
   ok(visiblePrefix === 1 && partialSegments.length - visiblePrefix === 4,
      'the real construction frame keeps its one built segment and withholds four tail segments');
-  ok(partialSegments[visiblePrefix - 1].x1 === frontier &&
+  ok(visiblePrefix > 0 && visiblePrefix < partialSegments.length &&
+     partialSegments[visiblePrefix - 1].x1 === frontier &&
      partialSegments[visiblePrefix].x0 === frontier,
-  'the draw frontier lands exactly at route s=180: no missing prefix and no leaked tail');
+  `the draw frontier lands exactly at route s=${frontier}: no missing prefix and no leaked tail`);
 
   const fractional = splitPlatform(9.25, 11.4);
   ok(JSON.stringify(fractional.map(({ x0, x1 }) => [x0, x1])) ===

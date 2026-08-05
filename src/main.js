@@ -36,7 +36,7 @@ import {
 } from './sim/time.js';
 import { sLeftEdge, sRightEdge } from './sim/edges.js';
 import {
-  bufferHookUntil, bufferJumpUntil, keys, releaseAllKeys,
+  bufferHookUntil, bufferJumpUntil, bufferSwapUntil, keys, releaseAllKeys,
 } from './sim/input.js';
 import {
   activeScrollEnd, activeScrollSpeed, END_SCROLL, levelData, pockets,
@@ -197,6 +197,7 @@ function applyGameplayKeyEdge(code, type, repeat = false) {
   }
   if (type !== 'keydown') return false;
   if (k === 'jump' && !repeat) bufferJumpUntil(gameMs + CONFIG.player.jumpBufferMs);
+  if (k === 'swap' && !repeat) bufferSwapUntil(gameMs + 140);
   if (k === 'hook' && !repeat && ACTIVE_SLICE && ACTIVE_SLICE.hook)
     bufferHookUntil(gameMs + ACTIVE_SLICE.hook.bufferMs);
   keys[k] = true;

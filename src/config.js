@@ -6,7 +6,7 @@
 
 export const CONFIG = {
   scrollSpeed: 4.3,            // camera advance, units/sec (~10%/s of the wider screen)
-  levelLength: 445,            // tiles = 24 intro + 6 faces × 65 + 31 outro
+  levelLength: 583,            // tiles = 24 intro + 6 faces × 88 + 31 outro
 
   camera: { fov: 56, x: 5.0, y: 6.2, z: 22.5, lookX: 7.4, lookY: 4.8 }, // pulled back further: more room
                                              // to jump/dodge/shoot; player ~7% of screen height
@@ -34,7 +34,7 @@ export const CONFIG = {
   },
 
   path: {                      // hexagonal tower circuit; sim stays in (s, y)
-    faces: 6, faceTiles: 65, introTiles: 24, outroTiles: 31,
+    faces: 6, faceTiles: 88, introTiles: 24, outroTiles: 31,
     chamferTiles: 2,           // two bends per corner, this many tiles apart
     turnDeg: 30,               // per bend; one corner turns 2 × turnDeg
     turnSign: 1,               // +1 bends toward -z, keeping the camera exterior
@@ -294,9 +294,13 @@ export const CONFIG = {
          count: 2, splayDeg: 24, turnRate: 6.1, seekRange: 12.5,
          seekFuelMs: 760, seekConeDeg: 132, seekRetargets: 0,
          scale: [0.7, 0.7, 0.7] },
-    F: { name: 'FLAME',  fireRateMs: 300, speed: 13, damage: 1, lifeMs: 1500,
+    F: { name: 'FLAME',  fireRateMs: 300, speed: 14.5, damage: 1, lifeMs: 1650,
          pierce: true, crawlSpeed: 10, dropAccel: -40,
-         lobScaleY: 0.6, lobBias: 0.12,          // aims-to-lob conversion at fire time
+         // Cindermouth leaves the muzzle on the player's chosen line first,
+         // so it can contest a flyer.  If it misses, gravity takes over and
+         // preserves the chassis' deck-control identity.
+         dropDelayMs: 280, hitRadius: 0.32,
+         lobScaleY: 0.92, lobBias: 0.06,
          // A swept deck/catwalk contact explicitly ignites a short ground-fire
          // wave. Distance AND time are bounded; upward steps/walls and gaps
          // extinguish at their exact lip, while modest drops can cascade.
@@ -311,11 +315,10 @@ export const CONFIG = {
     recatchMs: 4200, blinkLastMs: 1100,          // a sharp recovery chase, not an
                                                 // instant erasure of the fun weapon
     pickupGraceMs: 2500,         // a fresh toy survives the first chaotic beat
-    popNoCatchMs: 180,           // …during which the pop cannot be re-caught. The
-                                 //   capsule spawns inside the player's own AABB,
-                                 //   so without this the "recatch it fast" panic
-                                 //   DESIGN describes never happened: the same
-                                 //   frame's pickup test handed the weapon back.
+    popNoCatchMs: 180,           // time is only the first lock. A popped weapon
+                                 //   must also leave RIG's pickup volume once;
+                                 //   recatching therefore requires a deliberate
+                                 //   chase rather than the damage frame handing it back.
     popVx: 2.8, popVy: 7, gravity: -22,
     pickupRadius: 1.15,
   },
@@ -352,7 +355,9 @@ export const CONFIG = {
     // after lock now gets intercepted.
     diveRange: 7.2, diveSpeed: 11.0, diveMs: 642, diveCooldownMs: 1325,
     predictMs: 270, predictXCap: 2.6, predictYCap: 1.35,
-    contactRadius: 0.55, visualRadius: 0.5,  // readability bump; hitbox unchanged
+    contactRadius: 0.55, shotRadius: 0.72, visualRadius: 0.5,
+                               // projectile target follows the painted silhouette;
+                               // contact damage keeps the smaller fair body circle
     // mock-3D presence: enemies materialize from tower depth and dissolve back.
     // Purely visual — sim stays 2D; collision only while fully materialized.
     enterMs: 900, enterDepth: -12,           // condense in from the foggy interior
@@ -391,7 +396,7 @@ export const CONFIG = {
                                // are deliberately shared with CONFIG.wasp — that grammar is
                                // global, only the pose theater below is per-kind.
     hp: 6,                     // ~0.8 s of rifle fire; a sponge would punish the wrong thing
-    hitRadius: 0.42,           // contact circle, sized to the frame's HEIGHT so it stays
+    hitRadius: 0.42, shotRadius: 0.72,
                                //   inside the silhouette: the wide front and back of the
                                //   chassis are theater, and a hit is always explicable
     size: [1.7, 0.9, 1.0],     // low, wide, 2.4x the player's width and half their height —
@@ -450,7 +455,7 @@ export const CONFIG = {
                                // with CONFIG.wasp like every kind.
     hp: 6,                     // dies inside ONE vent window of rifle fire (asserted):
                                //   the opening is honest, and never a damage race
-    hitRadius: 0.5,            // contact circle, inside the bulb silhouette
+    hitRadius: 0.5, shotRadius: 0.68,
     size: 0.55,                // bulb radius (render); barrel + stalk are theater
     barrelSize: [0.9, 0.34, 0.34],   // the side-facing barrel, board 07's model note
     barrelTiles: 0.7,          // beam origin: barrel tip forward of the bulb center
@@ -497,7 +502,7 @@ export const CONFIG = {
     hp: 5,                     // ~0.65 s of rifle fire — one reload window kills it
                                //   (asserted): destroying it is a decision about time,
                                //   never a damage race
-    hitRadius: 0.5,            // contact circle, inside the tube silhouette
+    hitRadius: 0.5, shotRadius: 0.72,
     size: 0.5,                 // launch-tube radius (render); the legs are theater
     legSize: [0.16, 1.05, 0.16],
     bodyY: 1.05,               // tube center above the mounted surface — EXACTLY the
@@ -675,6 +680,11 @@ export const CONFIG = {
     gateDiveCooldownMs: 740, gateDiveRange: 9.5,    // repeated committed passes while gated
     gateCruiseSpeed: 5.6, gateRecoverRate: 7.5,     // fights, not drift-watching
     gateSquadStaggerMs: 150,                       // overlapping locks, never a same-frame wall
+    // Once one mobile gate holder remains, it stops orbiting at the edge and
+    // closes into a shootable attack lane. The player still has to beat it;
+    // the director only removes hide-and-seek from the end of the wave.
+    stragglerCommitMs: 700, stragglerCruiseSpeed: 8.4,
+    stragglerDiveRange: 13, stragglerHeight: 2.7,
     emptyAdvanceMs: 90,             // if a squad is erased early, next materialization starts
                                     // after one tiny breath instead of honoring dead score time
     windUpMs: 70, windUpDeg: -1.5,             // counter-rotation blink

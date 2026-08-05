@@ -2119,7 +2119,15 @@ function spawned(e) {
   // tactic, HP, collision or AI path in the simulation. Presenter priority is
   // centralized in hostile-presenters/index.js rather than repeated here and
   // again in sync().
-  const ecology = enemyEcologyBundle(e.ecologyId || e.ecologyVisualId, e.kind);
+  // Diveclaw is the neutral aerial sentence. Its 160px two-layer cutout lost
+  // its body at FAR and read as two pale pincers, so that one visual identity
+  // now takes the compact complete-body sheet below. Crosswind and Pincer
+  // remain distinct ecology presenters and keep all 64 authored combinations.
+  const pixelNeutralWasp = e.kind === 'wasp' &&
+    (e.ecologyVisualId === 'wasp-diveclaw' ||
+      (!e.ecologyId && !e.ecologyVisualId));
+  const ecology = pixelNeutralWasp ? null
+    : enemyEcologyBundle(e.ecologyId || e.ecologyVisualId, e.kind);
   if (ecology) {
     const assets = { ecology, modularBundle: null, actorBundle: null, spriteGeo: null };
     const presenter = HOSTILE_PRESENTERS.select(assets);
@@ -2635,6 +2643,12 @@ function sync(e) {
   const K = LOOK[e.kind];
   let sx = scale, sy = scale, sz = scale;
   const flashing = gameMs < e.flashUntil;
+  if (flashing) {
+    // A short silhouette punch survives FAR-view minification better than a
+    // colour-only blink. It is isotropic, so feet/aim sockets do not shear.
+    const hitPunch = 1 + 0.08 * Math.min(1, (e.flashUntil - gameMs) / 90);
+    sx *= hitPunch; sy *= hitPunch; sz *= hitPunch;
+  }
   let glow = flashing ? FLASH[e.kind] : PAL.glowOff;
   if (K.pose && v.presenter.usesLegacyPose(PRESENTER_API, v, e)) {
     const p = K.pose(e);

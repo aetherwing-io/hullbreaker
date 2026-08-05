@@ -44,6 +44,8 @@ let genomeSerial = 0;                       // deterministic spawn identity; res
 // first commitments into a sequence instead of gating any one drone's own
 // diveCooldownMs. Reset alongside every other piece of hostile state below.
 let lastWaspLockMs = -Infinity;
+let gateSoloId = 0;
+let gateSoloSince = -Infinity;
 
 // Gate-prelude cohorts may finish materializing before every member is free
 // to arm its attack. The delay is relative to `enterUntil`, so the elastic
@@ -64,29 +66,33 @@ function clampLead(value, cap) {
 // colors are a render table in src/render/hostiles.js, keyed by the same kind.
 export const ENEMY = {
   wasp:    { hp: CONFIG.wasp.hp,
-             hitR: CONFIG.wasp.contactRadius, gating: true },
+             hitR: CONFIG.wasp.contactRadius, shotR: CONFIG.wasp.shotRadius, gating: true },
   carrier: { hp: CONFIG.carrier.hp,
-             hitR: CONFIG.carrier.hitRadius, gating: false },
+             hitR: CONFIG.carrier.hitRadius, shotR: CONFIG.carrier.hitRadius, gating: false },
   // A deck unit inside a corner arena is a legitimate gate holder: unlike a
   // slow hauler it cannot drift out of the fight — its prowl is bounded by
   // terrain and its authored patrol span.
   hound:   { hp: CONFIG.hound.hp,
-             hitR: CONFIG.hound.hitRadius, gating: true, start: 'prowl' },
+             hitR: CONFIG.hound.hitRadius, shotR: CONFIG.hound.shotRadius,
+             gating: true, start: 'prowl' },
   // Ambient rooted emplacements are non-gating: one left behind may never
   // deadlock a later ritual. Gate-authored copies opt in per row and cycle
   // automatically so their vulnerable opening is always available.
   polyp:   { hp: CONFIG.polyp.hp,
-             hitR: CONFIG.polyp.hitRadius, gating: false, start: 'closed' },
+             hitR: CONFIG.polyp.hitRadius, shotR: CONFIG.polyp.shotRadius,
+             gating: false, start: 'closed' },
   // The other rooted emplacement: a tripod bombarding an authored landing
   // zone. Non-gating for the same reason the polyp is — it cannot leave a
   // corner arena, so it must never be able to hold one closed.
   mortar:  { hp: CONFIG.mortar.hp,
-             hitR: CONFIG.mortar.hitRadius, gating: false, start: 'aim' },
+             hitR: CONFIG.mortar.hitRadius, shotR: CONFIG.mortar.shotRadius,
+             gating: false, start: 'aim' },
   // Summit-only Crown machinery. It is rooted to the apron and never holds
   // an ordinary corner gate; finale.js owns whether its destruction clears
   // the encounter.
   warden:  { hp: CONFIG.warden.hp,
-             hitR: CONFIG.warden.hitRadius, gating: false, start: 'sealed' },
+             hitR: CONFIG.warden.hitRadius, shotR: CONFIG.warden.hitRadius,
+             gating: false, start: 'sealed' },
 };
 
 // Rooted kinds: `dir` is a FACING resolved at authoring time, never a patrol
@@ -164,7 +170,7 @@ export function spawnHostile(x, y, delayMs, kind, row, visualId = '') {
   const e = {
     id: nextWaspId++, kind,
     x, y, baseY: y, vx: 0, vy: 0, dir: (row && row.dir) || -1, t: hostileRng() * 6,
-    hp: T && T.hp !== undefined ? T.hp : K.hp, hitR: K.hitR,
+    hp: T && T.hp !== undefined ? T.hp : K.hp, hitR: K.hitR, shotR: K.shotR || K.hitR,
     maxHp: T && T.hp !== undefined ? T.hp : K.hp,
     genome,
     genomeId: genome?.id || '',
@@ -248,6 +254,7 @@ export function spawnHostile(x, y, delayMs, kind, row, visualId = '') {
     // deliberately allowed to hold a corner ritual shut.
     autoCycle: !!(row && row.autoCycle),
     gateBreakExit: false,
+    gateClosing: false,
     // Campaign carriers carry a phase-authored reward. Keeping the payload on
     // the body means missing one hauler cannot shift every later face's drop.
     drop: row && row.drop ? { ...row.drop } : null,
@@ -464,7 +471,7 @@ export function hitHostile(e, idx, damage, weapon, approachX = null) {
     e.coreHitUntil = gameMs + 90;         // local iris pop; the body never strobes
   } else {
     e.hp -= damage;
-    e.flashUntil = gameMs + 70;
+    e.flashUntil = gameMs + 120;
   }
   if (e.hp > 0 && e.backlash && hostileAttackReady(e) &&
       !e.backlashUntil && gameMs >= e.backlashCoolUntil) {
@@ -1106,6 +1113,36 @@ export function updateHostiles(dt) {
   const tacticBoundL = gate ? patrolL : sLeftEdge() - 1;
   const tacticBoundR = gate ? patrolR : sRightEdge() + 1;
 
+  // A wave's last mobile holder must become a duel, never a search. After one
+  // short breath it abandons its wide orbit, enters RIG's firing band, and
+  // commits another ordinary (still frozen-aim) attack. No HP or damage is
+  // changed, and rooted target-priority pieces keep their authored rhythm.
+  let solo = null;
+  if (gate) {
+    const key = activeCorner()?.encounterKey || '';
+    let count = 0;
+    for (const row of hostiles) {
+      // Condensing rows still count. Otherwise the first visible body could
+      // be misclassified as the last straggler while the rest of its authored
+      // formation was only a few frames from materializing.
+      if (row.gateBreakExit || row.encounterKey !== key || !row.gating) continue;
+      solo = row;
+      count++;
+      if (count > 1) break;
+    }
+    if (count !== 1 || !solo || ROOTED[solo.kind]) solo = null;
+  }
+  if (!solo) {
+    gateSoloId = 0;
+    gateSoloSince = -Infinity;
+  } else if (solo.id !== gateSoloId) {
+    gateSoloId = solo.id;
+    gateSoloSince = gameMs;
+  } else if (gameMs - gateSoloSince >= GW.stragglerCommitMs && !solo.gateClosing) {
+    solo.gateClosing = true;
+    solo.diveCdUntil = Math.min(solo.diveCdUntil, gameMs + 120);
+  }
+
   // Elastic gate score: the authored delays establish entrance order and the
   // intended overlap for an ordinary fight. If a high-output build deletes
   // every body that has begun materializing, keeping the untouched absolute
@@ -1151,7 +1188,7 @@ export function updateHostiles(dt) {
     updateEnemyTacticHazards(e, dt, tacticBoundL, tacticBoundR);
     updateBacklash(e);
     // gated hostiles press harder; otherwise a variant's per-enemy tune wins
-    const diveRange = gate ? GW.gateDiveRange
+    const diveRange = gate ? (e.gateClosing ? GW.stragglerDiveRange : GW.gateDiveRange)
       : (e.diveRange !== undefined ? e.diveRange : W.diveRange);
     const diveCooldown = gate ? GW.gateDiveCooldownMs
       : (e.diveCooldownMs !== undefined ? e.diveCooldownMs : W.diveCooldownMs);
@@ -1209,7 +1246,17 @@ export function updateHostiles(dt) {
       else e.x += e.dir * (e.cruiseSpeed !== undefined ? e.cruiseSpeed : C.speed) * dt;
       e.y = e.baseY + Math.sin(e.t * C.bobFreq) * C.bobAmp;
     } else if (e.state === 'cruise') {
-      if (e.pincer) stagePincer(e, dt, gate, patrolL, patrolR);
+      if (gate && e.gateClosing && e.kind === 'wasp') {
+        const side = Math.sign(e.x - player.x) || 1;
+        const targetX = Math.max(patrolL + 0.5,
+          Math.min(patrolR - 0.5, player.x + side * 3.2));
+        const floor = builtGroundTopAt(targetX);
+        const targetY = Math.max(player.y + GW.stragglerHeight,
+          (floor > -100 ? floor : player.y) + 2.0);
+        e.x = approach(e.x, targetX, GW.stragglerCruiseSpeed * dt);
+        e.baseY = approach(e.baseY, targetY, GW.gateRecoverRate * dt);
+        e.dir = Math.sign(player.x - e.x) || e.dir;
+      } else if (e.pincer) stagePincer(e, dt, gate, patrolL, patrolR);
       else e.x += e.dir * cruiseSpeed * dt;
       e.y = e.baseY + Math.sin(e.t * W.bobFreq) * W.bobAmp;
       const crosswindReady = hostileAttackReady(e) &&
@@ -1288,6 +1335,8 @@ export function clearHostiles() {
   for (const e of hostiles) view.hostiles.removed(e, false);
   hostiles.length = 0;
   lastWaspLockMs = -Infinity;         // squad clock: a fresh run owes nothing to the last one
+  gateSoloId = 0;
+  gateSoloSince = -Infinity;
   evolutionSerial = 0;
   genomeSerial = 0;
 }

@@ -51,6 +51,7 @@ const stats = {
   componentId: null,
   stageSwitches: 0,
   activations: 0,
+  ambientCycles: 0,
   missedSocketEvents: 0,
   resets: 0,
 };
@@ -190,6 +191,14 @@ let eventKey = '';
 let currentSocket = null;
 let currentComponent = null;
 let currentStage = 'dormant';
+let ambientCycle = -1;
+
+// Dormant hull machinery gets a slow, recurring physical breath between the
+// authored immune events. It never draws the action atlas, glows, queues an
+// impulse, or follows an actor; the same fixed shutters simply flex at a
+// current-face response socket often enough to read as Meridian being alive.
+const AMBIENT_PERIOD_MS = 5200;
+const AMBIENT_ACTIVE_MS = 2600;
 
 function hashString(text) {
   let value = 2166136261;
@@ -334,6 +343,14 @@ function part(pool, index, x, y, z, sx, sy, sz, rz = 0) {
 function mechanismPose(stage, progress, stateIndex) {
   const u = ease(progress);
   const late = ease((progress - 0.58) / 0.42);
+  if (stage === 'ambient') {
+    const breath = Math.sin(progress * Math.PI);
+    _mechanismPose.open = 0.08 + breath * (0.13 + stateIndex * 0.008);
+    _mechanismPose.strike = 0;
+    _mechanismPose.shear = 0;
+    _mechanismPose.vent = 0.08 + breath * 0.18;
+    return _mechanismPose;
+  }
   if (stage === 'tell') {
     _mechanismPose.open = 0.18 + u * (0.34 + stateIndex * 0.045);
     _mechanismPose.strike = 0;
@@ -364,17 +381,19 @@ function mechanismPose(stage, progress, stateIndex) {
   return _mechanismPose;
 }
 
-function placeMechanism(event, progress, rotation, yaw) {
+function placeMechanism(event, progress, rotation, yaw, stageOverride = null) {
   if (!mechanismRoot || !scutePool || !conduitPool || !currentSocket) return;
   const stateIndex = STATE_INDEX[event.state] ?? 0;
-  const pose = mechanismPose(event.stage, progress, stateIndex);
-  const extent = 4.6 + stateIndex * 0.58;
+  const stage = stageOverride || event.stage;
+  const ambient = stage === 'ambient';
+  const pose = mechanismPose(stage, progress, stateIndex);
+  const extent = (4.6 + stateIndex * 0.58) * (ambient ? 0.62 : 1);
   const split = 0.48 + pose.open * (0.76 + stateIndex * 0.055);
   const shear = pose.shear * (0.72 + stateIndex * 0.06);
   const slam = pose.strike * (stateIndex === 1 || stateIndex === 3 ? -0.34 : 0.18);
   const fan = 0.12 + pose.vent * (0.22 + stateIndex * 0.014);
-  const jawH = 2.16 + stateIndex * 0.13;
-  const jawW = 0.46 + stateIndex * 0.025;
+  const jawH = (2.16 + stateIndex * 0.13) * (ambient ? 0.70 : 1);
+  const jawW = (0.46 + stateIndex * 0.025) * (ambient ? 0.86 : 1);
 
   // Opposed armour jaws. Observe parts, Intercept/Quarantine strike inward,
   // Contain/Sterilize open into a vent/collimator, and Scuttle tears both
@@ -406,10 +425,10 @@ function placeMechanism(event, progress, rotation, yaw) {
     0.10, 1.22 + pose.vent * 0.38, 0.12, -fan * 0.42);
   conduitPool.instanceMatrix.needsUpdate = true;
 
-  const actionEnergy = event.stage === 'fire'
+  const actionEnergy = stage === 'fire'
     ? 0.42 + pose.strike * 0.58
-    : event.stage === 'tell' ? progress * 0.16
-      : event.stage === 'recovery' ? (1 - progress) * 0.12 : 0;
+    : stage === 'tell' ? progress * 0.16
+      : stage === 'recovery' ? (1 - progress) * 0.12 : 0;
   conduitMaterial.emissive.copy(_partColor.setHex(
     stateIndex >= 4 ? PAL.capsule : PAL.modCapsule));
   conduitMaterial.emissiveIntensity = postGain() * actionEnergy;
@@ -425,6 +444,39 @@ function placeMechanism(event, progress, rotation, yaw) {
   mechanismRoot.visible = true;
   stats.mechanismDrawSlots = 2;
   stats.readableExtent = Number(extent.toFixed(2));
+}
+
+function syncAmbient(event) {
+  const allowed = event.face > 0 &&
+    (event.reason === 'awaiting-activation' || event.reason === 'spent');
+  if (!allowed || !mechanismRoot) {
+    ambientCycle = -1;
+    return hide();
+  }
+  const shifted = Math.max(0, Number(event.nowMs) || 0) + event.phase * 733;
+  const cycle = Math.floor(shifted / AMBIENT_PERIOD_MS);
+  const local = shifted - cycle * AMBIENT_PERIOD_MS;
+  if (local >= AMBIENT_ACTIVE_MS) return hide();
+
+  if (cycle !== ambientCycle || !currentSocket ||
+      currentSocket.phase !== event.phase ||
+      currentSocket.route.s > event.cornerLimit) {
+    ambientCycle = cycle;
+    currentSocket = selectSocket(event);
+    if (currentSocket) stats.ambientCycles++;
+  }
+  if (!currentSocket) return hide();
+
+  const progress = local / AMBIENT_ACTIVE_MS;
+  const yaw = currentSocket.world.yaw;
+  const pitch = normalAscentPitchAt(currentSocket.route.s, CONFIG.levelLength);
+  _rotation.makeRotationY(yaw);
+  _rotation.multiply(_pitch.makeRotationZ(pitch));
+  placeMechanism(event, progress, _rotation, yaw, 'ambient');
+  if (mesh) mesh.visible = false;
+  if (material) material.opacity = 0;
+  stats.drawSlots = 0;
+  stats.stage = 'ambient';
 }
 
 function place(event) {
@@ -490,7 +542,7 @@ function place(event) {
 function sync(event) {
   stats.face = event?.face || 0;
   stats.state = event?.state || 'observe';
-  if (!event || event.stage === 'dormant' || !mesh) {
+  if (!event || !mesh) {
     eventKey = '';
     currentSocket = null;
     currentComponent = null;
@@ -498,6 +550,14 @@ function sync(event) {
     hide();
     return;
   }
+  if (event.stage === 'dormant') {
+    eventKey = '';
+    currentComponent = null;
+    currentStage = 'dormant';
+    syncAmbient(event);
+    return;
+  }
+  ambientCycle = -1;
 
   const nextKey = `${event.face}:${event.startedAtMs}`;
   if (nextKey !== eventKey) {
@@ -535,10 +595,12 @@ function reset() {
   currentSocket = null;
   currentComponent = null;
   currentStage = 'dormant';
+  ambientCycle = -1;
   stats.resets++;
   stats.maxVisible = 0;
   stats.stageSwitches = 0;
   stats.activations = 0;
+  stats.ambientCycles = 0;
   stats.missedSocketEvents = 0;
   stats.face = 0;
   stats.state = 'observe';

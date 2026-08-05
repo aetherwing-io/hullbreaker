@@ -40,8 +40,8 @@ export async function run() {
      'the exact bend is not a generic future-face exception; only RIG owns the turning joint');
   ok(!routeRenderOwned(scroll + 1, false, scroll, cameraFacet, CONFIG, BEND_S),
      'an unbuilt row is invisible even on the camera-owned face');
-  ok(routeRenderOwned(88.5, true, 64, cameraFacet, CONFIG, BEND_S) &&
-     !routeRenderOwned(89.5, false, 64, cameraFacet, CONFIG, BEND_S),
+  ok(routeRenderOwned(BEND_S[0] - 1.5, true, HALT_S[0] - 11, cameraFacet, CONFIG, BEND_S) &&
+     !routeRenderOwned(BEND_S[0] - 0.5, false, HALT_S[0] - 11, cameraFacet, CONFIG, BEND_S),
      'the built current hull survives while the pre-bend construction edge stays hidden');
 
   // Transition-gap regression. Camera ownership changes on the first integer
@@ -50,7 +50,7 @@ export async function run() {
   // therefore erased the already locked arrival deck for this whole interval.
   // Reproduce the real first-corner score: at t=690, exactly nineteen arrival
   // columns form a contiguous built prefix and no later row is visible; at
-  // t=1100, the finish commit exposes all sixty-five rows.
+  // t=1100, the finish commit exposes every configured row of the face.
   const timeline = cornerTimeline(CONFIG);
   let handoffMs = 0;
   while (cornerYawDeltaDeg(handoffMs, CONFIG) /
@@ -89,8 +89,9 @@ export async function run() {
   ok(atHandoff.prefix === 19 && atHandoff.laterVisible === 0,
      'handoff frame retains its 19 built arrival columns and leaks zero future rows ' +
      `(got ${atHandoff.prefix} prefix, ${atHandoff.laterVisible} later)`);
-  ok(atFinish.prefix === 65 && atFinish.total === 65 && atFinish.laterVisible === 0,
-     'finish frame expands the same draw prefix to all 65 arrival rows without a hole');
+  ok(atFinish.prefix === CONFIG.path.faceTiles &&
+     atFinish.total === CONFIG.path.faceTiles && atFinish.laterVisible === 0,
+     `finish frame expands the same draw prefix to all ${CONFIG.path.faceTiles} arrival rows without a hole`);
 
   const render = (file) => stripComments(
     readFileSync(join(srcDir, 'render', file), 'utf8'),

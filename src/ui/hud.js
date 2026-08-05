@@ -19,7 +19,9 @@ import { activeGateThreatCount, wavePhase } from '../pure/waves.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { player, P } from '../sim/player.js';
 import { scoreNotchNow } from '../sim/score.js';
-import { currentGun, currentGunLabel, currentWeapon } from '../sim/weapons.js';
+import {
+  carriedGun, carriedGunLabel, currentGun, currentGunLabel, currentWeapon,
+} from '../sim/weapons.js';
 import { mods } from '../sim/mods.js';
 import { hostiles, kills } from '../sim/hostiles.js';
 import { activeCorner } from '../sim/wavegate.js';
@@ -77,7 +79,8 @@ hudBL.innerHTML = IS_TRAVERSAL_SLICE
       'the ship turns the world, you keep the same controls<br>' +
       'ALT is the rendered altitude of the surface you are standing on &nbsp;&middot;&nbsp; PAUSE p/esc'
     : 'MOVE wasd/arrows &nbsp;&middot;&nbsp; JUMP space ×2 &nbsp;&middot;&nbsp; FIRE j/x &nbsp;&middot;&nbsp; AIM with move &nbsp;&middot;&nbsp; PAUSE p/esc<br>' +
-      'MAGENTA CAPSULES = BIG WEAPONS &nbsp;&middot;&nbsp; SHIFT = strafe aim &nbsp;&middot;&nbsp; DOWN+JUMP = drop';
+      'MAGENTA CAPSULES = BIG WEAPONS &nbsp;&middot;&nbsp; C = rifle/carried weapon &nbsp;&middot;&nbsp; ' +
+      'SHIFT = strafe aim &nbsp;&middot;&nbsp; DOWN+JUMP = drop';
 
 // updateHUD runs every rAF frame; assigning textContent replaces the text
 // node even when identical, dirtying layout for three fixed elements 60x/s.
@@ -107,6 +110,10 @@ export function updateHUD() {
            // are steadier than letting that stack wrap into the altitude row.
            '\n' +
            '[' + currentWeapon + gunTier + '] ' + gunName;
+  if (carriedGun) {
+    const other = currentGun === carriedGun ? 'RIFLE' : carriedGunLabel(true);
+    tl += (mobileHud ? ' · C↔ ' : ' · C SWAP ↔ ') + other;
+  }
   // OVERDRIVE is welded to the weapon readout: it is an earned combat power,
   // not a developer score. The name makes the faster fire / launch shock
   // promise legible the first time a player sees the meter fill.
@@ -175,8 +182,9 @@ export function updateHUD() {
       (POLYP_TRIAL_STAGE ? ' + ' + POLYP_TRIAL_STAGE.label : '') +
       (MORTAR_TRIAL_STAGE ? ' + ' + MORTAR_TRIAL_STAGE.label : '') + viewTag + ' · ' +
       (SLICE_ENEMIES_ENABLED ? SLICE_ENEMY_PLAN.length + ' HOSTILES' : 'MOVEMENT ONLY');
-  } else if (!ACTIVE_FIXTURE && c && c.state === 'idle' && scrollX < 14) {
-    tc = c.phase + ' · MERIDIAN HAS SEEN YOU';
+  } else if (!ACTIVE_FIXTURE && c && c.state === 'idle') {
+    tc = `WAVE ${c.k}/${CONFIG.path.faces} · ${c.phase}` +
+      (c.primed ? ' · INBOUND' : c.k === 1 && scrollX < 14 ? ' · MERIDIAN HAS SEEN YOU' : '');
   } else if (c && c.state === 'gate') {
     // Count only this encounter's current visible/condensing beat. Later
     // resident rows are implementation detail, and `gating` describes who
@@ -184,7 +192,10 @@ export function updateHUD() {
     const threats = activeGateThreatCount(
       hostiles, c.encounterKey, gameMs, CONFIG.wasp.enterMs,
     );
-    tc = c.phase + ' · ' + threats + (threats === 1 ? ' HOSTILE' : ' HOSTILES');
+    tc = `WAVE ${c.k}/${CONFIG.path.faces} · ${c.phase} · ` +
+      (threats === 1 ? 'LAST SIGNAL · CLOSING' : `${threats} HOSTILES`);
+  } else if (c && c.state === 'approach') {
+    tc = `WAVE ${c.k}/${CONFIG.path.faces} BROKEN · RUN TO THE TURN →`;
   } else if (c && c.state === 'turning' && gameMs - c.tStart < CONFIG.waves.clearMsgMs) {
     tc = c.k < CONFIG.path.faces
       ? c.phase + ' BROKEN · ' + wavePhase(c.k + 1, CONFIG)

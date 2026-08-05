@@ -65,7 +65,7 @@ export async function run(SHARED) {
       CA.spawnCapsule(q.reward.kind, q.reward.letter, q.reward.x, q.reward.y, q.reward.mode);
     const spawnedRewards = CA.capsules.length;
     let nearestReward = 99, nearestAt = null;
-    for (let f = 0; f < 20000; f++) {
+    for (let f = 0; f < 24000; f++) {
       if (p.grounded &&
           (LV.groundTopAt(p.x + 1.2) < -100 || LV.groundTopAt(p.x + 1.2) > p.y + 0.6)) {
         IN.bufferJumpUntil(T.gameMs + 120);

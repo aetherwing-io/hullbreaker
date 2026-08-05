@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "identity": "meridian-pixel-wasp",
+  "source": "wasp-pixel-pack-v1-source.png",
+  "runtimeAtlas": "wasp-pixel-atlas-v1.png",
+  "canvas": [512, 256],
+  "grid": [4, 2],
+  "cell": [128, 128],
+  "runtime": {
+    "idle": "wasp-pixel-idle-v1.png",
+    "flight": "wasp-pixel-flight-v1.png",
+    "dive": "wasp-pixel-dive-v1.png",
+    "gpuTextures": 3,
+    "estimatedGpuBytes": 393216
+  },
+  "poses": [
+    "wing-up",
+    "wing-level",
+    "wing-down",
+    "bank",
+    "dive-lock",
+    "dive-attack",
+    "recover-brake",
+    "hit-recoil"
+  ],
+  "backgroundRemoval": {
+    "method": "green dominance matte",
+    "rule": "g > 0.45 && g > r * 1.55 && g > b * 1.55",
+    "hardAlpha": true
+  },
+  "reviewScale": "24-42 display pixels",
+  "simulationChanges": false
+}

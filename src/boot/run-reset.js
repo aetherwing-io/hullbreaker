@@ -7,7 +7,7 @@ import { resetFinale } from '../sim/finale.js';
 import { resetFlow } from '../sim/flow.js';
 import { clearHostiles, resetHostileRng, resetKills } from '../sim/hostiles.js';
 import { resetHook } from '../sim/hook.js';
-import { clearHookBuffer, releaseAllKeys } from '../sim/input.js';
+import { clearHookBuffer, clearSwapBuffer, releaseAllKeys } from '../sim/input.js';
 import { unbuildFutureFaces } from '../sim/level.js';
 import { clearMods } from '../sim/mods.js';
 import { resetPace } from '../sim/pace.js';
@@ -49,7 +49,7 @@ function resetSliceStats() {
 
 export const RUN_RESET_REGISTRY = makeResetRegistry([
   { id: 'slice-retry', reset: cancelSliceRetry },
-  { id: 'input-keys', reset: releaseAllKeys },
+  { id: 'input-keys', reset: () => { releaseAllKeys(); clearSwapBuffer(); } },
   { id: 'hostiles', reset: clearHostiles },
   { id: 'corpses', reset: clearCorpses },
   { id: 'projectiles', reset: clearBullets },

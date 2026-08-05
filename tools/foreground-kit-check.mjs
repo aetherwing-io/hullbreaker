@@ -136,8 +136,8 @@ const built = buildLevel(CONFIG);
 const deck = deckSeamRuns(built.groundH, SEAMS);
 const platforms = platformSeamRuns(built.platforms, SEAMS);
 const fixtures = seamPipCount(deck) + seamPipCount(platforms);
-ok(fixtures > 0 && fixtures <= 60,
-  `full 445-tile climb owns ${fixtures} housed luminaires (bounded at 60)`);
+ok(fixtures > 0 && fixtures <= 64,
+  `full ${CONFIG.levelLength}-tile climb owns ${fixtures} housed luminaires (bounded at 64)`);
 ok(platforms.every((run) => built.platforms.some((p) =>
   p.x0 === run.s0 && p.x1 === run.s1)),
   'every catwalk luminaire remains inside a real collision-authored platform');

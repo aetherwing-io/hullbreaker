@@ -130,7 +130,7 @@ export function crossesBend(bends, x0, x1) {
   return false;
 }
 
-export const CORNER_S = cornerSList(CONFIG);            // [89, 154, 219, 284, 349, 414]
-export const BEND_S = bendSList(CONFIG);                // [90, 155, 220, 285, 350, 415]
+export const CORNER_S = cornerSList(CONFIG);            // [112, 200, 288, 376, 464, 552]
+export const BEND_S = bendSList(CONFIG);                // [113, 201, 289, 377, 465, 553]
 export const SEGS = buildSegments(CONFIG);
 export const HALT_S = CORNER_S.map((cs) => haltSFor(cs, CONFIG));

@@ -1,4 +1,17 @@
-# Hullbreaker projectile chassis atlas v1
+# Hullbreaker projectile chassis atlases
+
+`projectile-chassis-atlas-v3.png` is the production 1536×256 alpha atlas.
+Its six 256×256 cells are ordered `R`, `S`, `L`, `H`, `F`, `G`. Version 3
+re-authors all six bodies as compact pixel sprites with hard ink silhouettes,
+minimal interior shading, and one consistent muzzle axis. They are designed
+for the 12–22 px size actually produced by the FAR camera, rather than as
+large illustrations later reduced by more than 10:1. `pixel-v1/` retains the
+untouched six-cell ImageGen source and the independently reusable cells.
+
+`pixel-v1/projectile-pixel-pack-v1.json` records the source, chroma rule,
+packing geometry, order, and hashes.
+
+## Earlier painted atlas
 
 `projectile-chassis-atlas-v1.png` is the runtime 1280×256 alpha atlas. Its
 five 256×256 cells are ordered `R`, `S`, `L`, `H`, `F`. The production atlas
@@ -16,6 +29,8 @@ single 230×53 px alpha silhouette (4.34:1) centered in the same 256 px cell.
 At the shipped FAR view it resolves to roughly 16×4 display pixels. No
 simulation count, collision, damage, speed, atlas dimensions, cell order, or
 pixels in the `R`, `L`, `H`, and `F` cells changed.
+
+Version 2 added the `G` ground-fire cell and remains as the painted A/B source.
 
 `projectile-scatterbloom-flechette-provenance-v1.json` records the built-in
 ImageGen output identity, the non-verbatim candidate prompt summary, selected

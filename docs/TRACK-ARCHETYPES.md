@@ -104,14 +104,14 @@ whether a safe live socket should emit anything.
 ### WORM — exact shipped baseline
 
 WORM is the reversible control. It reproduces today's regular Spine-Serpent
-cadence: six 65-tile faces, each ending in one semantic 60-degree turn made of
+cadence: six 88-tile faces, each ending in one semantic 60-degree turn made of
 two 30-degree bends separated by a 2-tile chamfer. Each physical face maps to
 one defense phase.
 
 The compatibility report proves:
 
-- `24` intro tiles + `6 × 65` face tiles + `31` outro tiles = `445` total;
-- corner positions are exactly `89, 154, 219, 284, 349, 414`;
+- `24` intro tiles + `6 × 88` face tiles + `31` outro tiles = `583` total;
+- corner positions are exactly `112, 200, 288, 376, 464, 552`;
 - bend starts are exactly `corner` and `corner + 2`;
 - six semantic turns total `360` degrees; and
 - all six response phases occur once, in order.

@@ -143,18 +143,22 @@ export async function run(SHARED) {
     ok(bends.length === CORNER_S.length &&
        bends.every((b, i) => b === CORNER_S[i] + CONFIG.path.chamferTiles / 2),
        'a bend boundary sits at every chamfer midpoint, got ' + bends.join());
-    ok(BEND_S.join() === '90,155,220,285,350,415',
-       'shipped bend boundaries, got ' + BEND_S.join());
+    ok(BEND_S.every((bend, i) =>
+      bend === CORNER_S[i] + CONFIG.path.chamferTiles / 2),
+      'shipped bend boundaries derive from configured corners, got ' + BEND_S.join());
     ok(TRANSFORM_BEND_S.join() === TRANSFORM_FIXTURE.events.map((e) => e.seamS).join(),
        'the transformation fixture bends at its seams');
     ok(bends.every((b) => b < TRAVERSAL_FIXTURE.bounds.x0 || b > TRAVERSAL_FIXTURE.bounds.x1),
        'no bend boundary falls inside the traversal slice: the movement fixture ' +
        'is on one straight facet, so the cull cannot change its gunplay');
-    ok(crossesBend(bends, 89.5, 90.5) && crossesBend(bends, 90.5, 89.5),
+    const firstBend = bends[0];
+    ok(crossesBend(bends, firstBend - 0.5, firstBend + 0.5) &&
+       crossesBend(bends, firstBend + 0.5, firstBend - 0.5),
        'a crossing is caught in both directions: no shooting backwards around a limb');
-    ok(!crossesBend(bends, 80, 89.9) && !crossesBend(bends, 90.1, 99),
+    ok(!crossesBend(bends, firstBend - 10, firstBend - 0.1) &&
+       !crossesBend(bends, firstBend + 0.1, firstBend + 9),
        'a shot that stays on one facet is never culled');
-    ok(!crossesBend(bends, 90, 91),
+    ok(!crossesBend(bends, firstBend, firstBend + 1),
        'a projectile already past a boundary is not culled again by it');
     // Tunneling: the test is over the whole substep interval, so the fastest
     // bolt at the worst clamped frame cannot skip a boundary. Prove it with the
@@ -166,7 +170,7 @@ export async function run(SHARED) {
       const perStep = fastest * dt / steps;
       ok(perStep <= 0.5, 'worst substep is ' + perStep.toFixed(3) + ' tiles');
       let skipped = 0;
-      for (let start = 85; start < 89.999; start += perStep / 3) {
+      for (let start = firstBend - 5; start < firstBend - 0.001; start += perStep / 3) {
         let x = start, hit = false;
         for (let k = 0; k < 40 && !hit; k++) {
           const x0 = x; x += perStep;
@@ -179,7 +183,9 @@ export async function run(SHARED) {
       // and a 10x-over-speed projectile, in case a later weapon outruns the
       // substep budget: the interval test still catches it
       let hitBig = false;
-      for (let x = 80, k = 0; k < 5; k++) { const x0 = x; x += 4; if (crossesBend(bends, x0, x)) hitBig = true; }
+      for (let x = firstBend - 10, k = 0; k < 5; k++) {
+        const x0 = x; x += 4; if (crossesBend(bends, x0, x)) hitBig = true;
+      }
       ok(hitBig, 'even a 4-tile-per-substep projectile is caught by the interval test');
     }
   }

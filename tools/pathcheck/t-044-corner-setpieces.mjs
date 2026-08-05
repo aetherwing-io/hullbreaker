@@ -58,13 +58,19 @@ export async function run(SHARED) {
   const L = LAT.LATTICE;
   const lvl = { groundH: LVL.groundH, platforms: LVL.platforms };
 
-  // --- the regression's own fingerprint: the face-5 bridge survives ------
-  // Named directly rather than only via the general reachability sweep
-  // below, so a reintroduced clear-before-install regresses here first.
+  // --- every gate owns a dependable recovery deck ------------------------
+  // The expanded route no longer asks a random procedural bridge to rescue a
+  // five-column arena hole. The entire authored defense box is solid deck and
+  // the elevated tiers add maneuver choices above it. Assert the stronger
+  // production contract directly: no arena clear/install ordering can reopen
+  // a chasm under the final mandatory target.
   {
-    const bridge = LVL.platforms.find((p) => p.x0 === 319 && p.x1 === 326 && Math.abs(p.y - 4.35) < 1e-9);
-    ok(!!bridge, 'T-044: the procedural catwalk bridging face 5\'s x[319,326) gap survives ' +
-       'ARENA installation (regression proof for the clear-then-install bug this task fixed)');
+    let holes = 0;
+    for (const corner of LVL.arenas.map((arena) => arena.corner))
+      for (let s = corner - L.pocket.cornerClearBefore; s <= corner + 2; s++)
+        if (LVL.groundH[s] < -100) holes++;
+    ok(holes === 0,
+       'T-044: every authored gate defense box has a continuous recovery deck');
   }
 
   // --- structure: one of each per face 2-6, none on face 1 ---------------
@@ -191,7 +197,7 @@ export async function run(SHARED) {
       const dt = 1 / 60;
       let jumpUntil = 0, lastOn = null;
       const mounted = new Set();
-      for (let f = 0; f < 20000; f++) {
+      for (let f = 0; f < 24000; f++) {
         if (p.grounded &&
             (LV.groundTopAt(p.x + 1.2) < -100 || LV.groundTopAt(p.x + 1.2) > p.y + 0.6)) {
           IN.bufferJumpUntil(T.gameMs + 120);

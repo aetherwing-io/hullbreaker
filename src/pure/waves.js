@@ -3,13 +3,12 @@
    yaw-snap timeline, the scroll resume curve, and the brick zipper.
    All timings are event-local ms (t = gameMs - tStart). */
 
-// Gate rosters begin materializing while the climb is still moving. Eight
-// tiles is 1.86 s at the shipped pursuit floor: enough for the first body's
-// honest 900 ms depth entrance to read before the halt, without reaching back
-// into the preceding pocket or changing any wave composition. This is a pure
-// route threshold rather than CONFIG because the prelude is encounter
-// choreography, not a tunable stat multiplier.
-export const GATE_PRELUDE_TILES = 8;
+// Start the defense score while the route is still moving. Eighteen tiles is
+// roughly four seconds at the pursuit floor: enough room to fight across the
+// authored ladders and split routes instead of reaching a clamp, deleting a
+// tiny room, then waiting for its final flyer. This is pure encounter
+// choreography rather than a tunable stat multiplier.
+export const GATE_PRELUDE_TILES = 18;
 
 // A cohort is visible and shootable as soon as each body finishes its ordinary
 // materialization, but its attack state machine waits this additional local

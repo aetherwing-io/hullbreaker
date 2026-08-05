@@ -15,7 +15,7 @@ import { awaitPreloads, preloadTexture } from './preload.js';
 import { spritesEnabled } from './sprite-table.js';
 
 export const PROJECTILE_ART = Object.freeze({
-  file: '../../assets/generated/projectiles/projectile-chassis-atlas-v2.png',
+  file: '../../assets/generated/projectiles/projectile-chassis-atlas-v3.png',
   canvas: Object.freeze([1536, 256]),
   cell: Object.freeze([256, 256]),
   // G is Cindermouth after deck ignition: the same one resident texture owns

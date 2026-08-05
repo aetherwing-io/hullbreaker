@@ -28,6 +28,7 @@ for (let i = 0; i < BULLET_MAX; i++) bulletPool.push({
   type: 'R', damage: 1, pierce: false, pierceLeft: 0,
   crawling: false, dir: 1, hitSet: new Set(),
   crawlUntil: 0, crawlTilesLeft: 0, crawlSurfaceY: -999,
+  gravityAt: 0,
   seekTargetId: 0, seekLocksLeft: 0, seekUntil: 0,
   phaseTilesLeft: 0,
   def: null, gun: null, meta: null,
@@ -61,10 +62,18 @@ function compiledGunDef(gun) {
   return def;
 }
 export let currentGun = STARTER_GUN;
+// Slot zero is the dependable field rifle. Slot one is the rolled weapon the
+// run is currently carrying. Only one is active, but the player can answer a
+// second enemy role without throwing away the interesting pickup.
+export let carriedGun = null;
+let usingCarriedGun = false;
 let activeGunDef = compiledGunDef(currentGun);
 
 export function currentGunDef() { return activeGunDef; }
 export function currentGunLabel(compact = false) { return gunLabel(currentGun, compact); }
+export function carriedGunLabel(compact = false) {
+  return carriedGun ? gunLabel(carriedGun, compact) : '';
+}
 
 // Where the ribbon changes facet on the active path. A projectile dies here
 // rather than steering around the body with it (../pure/path.js's header).
@@ -82,6 +91,7 @@ function spawnProj(type, x, y, dx, dy, def, gun) {
     b.crawlUntil = 0;
     b.crawlTilesLeft = 0;
     b.crawlSurfaceY = -999;
+    b.gravityAt = gameMs + (def.dropDelayMs || 0);
     b.dir = Math.sign(dx) || player.facing;
     b.seekTargetId = 0;
     b.seekLocksLeft = def.turnRate > 0 ? 1 + (def.seekRetargets || 0) : 0;
@@ -359,7 +369,7 @@ export function updateBullets(dt) {
         b.vx = Math.cos(a) * def.speed; b.vy = Math.sin(a) * def.speed;
       }                                                  // integration happens in substeps below
     }
-    if (b.type === 'F' && !b.crawling) {
+    if (b.type === 'F' && !b.crawling && gameMs >= b.gravityAt) {
       b.vy += def.dropAccel * dt;                        // gravity once per frame
     }
 
@@ -477,7 +487,9 @@ export function updateBullets(dt) {
         const e = hostiles[w];
         if (gameMs < e.enterUntil) continue;             // still materializing: no hitbox
         if (b.hitSet.has(e.id)) continue;
-        if ((b.x - e.x) ** 2 + (b.y - e.y) ** 2 < e.hitR * e.hitR) {
+        const reach = (e.shotR || e.hitR) +
+          (b.crawling ? (def.crawlHitRadius || 0) : (def.hitRadius || 0));
+        if ((b.x - e.x) ** 2 + (b.y - e.y) ** 2 < reach * reach) {
           const directId = e.id;
           const passesThrough = b.pierceLeft > 0;
           if (passesThrough) { b.hitSet.add(directId); b.pierceLeft--; }
@@ -496,9 +508,12 @@ export function updateBullets(dt) {
           // One synchronous presentation-only fact from the exact collision
           // branch. Positional primitives preserve the allocation-free hot
           // path; damage, removal and projectile ownership remain unchanged.
-          if (damaged) view.bullets.hostileImpact(
+          // A blocked shot is still a collision fact. Presentation gives it
+          // a ricochet/shield answer instead of letting the round disappear
+          // ambiguously; only `damaged` controls wound effects.
+          view.bullets.hostileImpact(
             i, b.type, b.x, b.y, impactVx, impactVy,
-            directId, targetKind, true, lethal,
+            directId, targetKind, damaged, lethal,
           );
           if (!lethal && def.heavyImpulse > 0)
             staggerHostile(e, b.vx, b.vy, def.heavyImpulse, def.heavyStunMs);
@@ -529,16 +544,48 @@ export function updateBullets(dt) {
 /* run reset (resetGame in src/main.js) — the pool empties, the arsenal
    falls back to the rifle, and the per-weapon tallies zero out. */
 export function clearBullets() { for (const b of bulletPool) b.alive = false; }
+function activateGun(gun, carried) {
+  currentGun = gun;
+  currentWeapon = gun.letter;
+  usingCarriedGun = carried;
+  activeGunDef = compiledGunDef(gun);
+  return activeGunDef;
+}
+
 export function setGun(gun) {
   const next = gun && CONFIG.weapons[gun.letter] ? gun : STARTER_GUN;
-  currentGun = next;
-  currentWeapon = next.letter;
-  activeGunDef = compiledGunDef(next);
+  // Any non-starter recipe occupies the second slot, including a rolled R.
+  // The field-issue rifle remains available independently in slot zero.
+  if (next.starter) {
+    carriedGun = null;
+    activateGun(STARTER_GUN, false);
+  } else {
+    carriedGun = next;
+    activateGun(next, true);
+  }
   weaponHeldSince = gameMs;
   return activeGunDef;
 }
 export function setWeapon(letter) {
   setGun(letter === 'R' ? STARTER_GUN : PLAIN_GUNS[letter] || STARTER_GUN);
+}
+
+export function swapWeapon() {
+  if (!carriedGun) return false;
+  if (usingCarriedGun) activateGun(STARTER_GUN, false);
+  else activateGun(carriedGun, true);
+  return true;
+}
+
+// Damage ejects the carried recipe even when the player happened to have the
+// fallback rifle active. This keeps weapon loss meaningful without making the
+// second slot an immunity exploit.
+export function dropCarriedGun() {
+  const dropped = carriedGun;
+  if (!dropped) return null;
+  carriedGun = null;
+  activateGun(STARTER_GUN, false);
+  return dropped;
 }
 export function resetWeaponKills() { for (const k of Object.keys(weaponKills)) weaponKills[k] = 0; }
 export function resetShotsFired() { shotsFired = 0; }

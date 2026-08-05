@@ -75,7 +75,7 @@ export async function run(SHARED) {
   // A strict clutter ceiling: production is authored punctuation, never a
   // field of debug vertices. The current climb owns 54 installed fixtures.
   const total = seamPipCount(deckRuns) + seamPipCount(platRuns);
-  ok(total > 0 && total <= 60,
+  ok(total > 0 && total / CONFIG.levelLength <= 0.13,
      'seams: the shipped level bakes ' + total + ' housed fixtures total — sparse and bounded');
 }
 
@@ -142,7 +142,7 @@ export async function run(SHARED) {
   // halo never recedes — the packet's own risk note for S5, and the exact
   // failure a reviewer caught this pass had not actually solved. Neither
   // material may set `fog: false`, so a pip at the fog-far edge of a
-  // 445-tile level fades exactly like the surface it rides rather than
+  // full route fades exactly like the surface it rides rather than
   // blazing through the haze alone.
   ok(!/fog\s*:\s*false/.test(renderSrc),
      'seams: neither seams.js material sets fog:false — every pip recedes ' +

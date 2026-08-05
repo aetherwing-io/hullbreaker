@@ -20,6 +20,7 @@ export const GAMEPLAY_KEYMAP = Object.freeze({
   ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down',
   Space: 'jump', KeyK: 'jump', KeyJ: 'fire', KeyX: 'fire',
   ShiftLeft: 'strafe', ShiftRight: 'strafe',
+  KeyC: 'swap',
   KeyL: 'hook', KeyE: 'hook',
 });
 

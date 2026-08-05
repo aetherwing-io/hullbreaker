@@ -557,7 +557,7 @@ function nearestDeckS(target, min, max) {
 }
 
 /* ------------------- sparse authored Meridian fixtures ------------------ *
- * Three large landmarks per 65-tile face replace per-tile visual wallpaper.
+ * Three large landmarks per route face replace per-tile visual wallpaper.
  * The grammar is deterministic, terrain-aware only at bake time, and never
  * enters collision. A row records the far edge of its FULL transparent cell,
  * not merely its anchor, so construction cannot reveal half a fixture. */
@@ -1263,6 +1263,14 @@ function dressServiceSpines() {
           dx < 0 ? -0.055 : 0.055, gate);
       dressMachineBox(row.x + (i % 2 ? -0.18 : 0.18), y, 1.08,
         0.58, 0.16, 0.16, PAL.groundAlt, 0, gate);
+      // A navigation lens lives inside the dark end socket. It is a cut-in,
+      // not a floating bulb: ordinary lit material, no emissive or halo, and
+      // only real climbable ladders receive one. At FAR this small warm mark
+      // makes the traversal verb discoverable without turning the hull into
+      // a runway of ambient glow.
+      const lensSide = end ? -1 : 1;
+      dressMachineBox(row.x + lensSide * 0.24, y + (end ? -0.01 : 0.01), 1.115,
+        0.17, 0.11, 0.055, PAL.seamPip, 0, gate, 'recessed-navigation-lens');
     }
   }
 }
@@ -1301,21 +1309,21 @@ function buildDressingPool(rows, geometry, material, name, shadows = true) {
  * as platforms, enemies, and projectiles. */
 const LADDER_STYLE = Object.freeze({
   rib: Object.freeze({
-    rail: PAL.limb.wall, rung: WORLD_DETAIL_ON ? PAL.groundAlt : PAL.limb.rib,
+    rail: PAL.limb.rib, rung: PAL.catwalk,
     gap: WORLD_DETAIL_ON ? 0.90 : 0.86,
     radius: WORLD_DETAIL_ON ? 0.105 : 0.075,
     rungRadius: WORLD_DETAIL_ON ? 0.088 : 0.065, pitch: 0.66,
   }),
   service: Object.freeze({
-    rail: PAL.limb.wall,
-    rung: WORLD_DETAIL_ON ? PAL.limb.machine : PAL.groundAlt,
+    rail: PAL.limb.machine,
+    rung: PAL.catwalk,
     gap: WORLD_DETAIL_ON ? 0.84 : 0.78,
     radius: WORLD_DETAIL_ON ? 0.098 : 0.064,
     rungRadius: WORLD_DETAIL_ON ? 0.084 : 0.056, pitch: 0.61,
   }),
   organic: Object.freeze({
-    rail: PAL.limb.shadow,
-    rung: WORLD_DETAIL_ON ? PAL.groundAlt : PAL.limb.machine,
+    rail: PAL.limb.rib,
+    rung: PAL.catwalk,
     gap: WORLD_DETAIL_ON ? 0.94 : 0.90,
     radius: WORLD_DETAIL_ON ? 0.112 : 0.082,
     rungRadius: WORLD_DETAIL_ON ? 0.094 : 0.069, pitch: 0.72,
@@ -2209,7 +2217,9 @@ function platformPrefixGeometry(p, mid, facet) {
   };
 }
 
-const SCUTE_PHRASE = Object.freeze([9, 6, 11, 7, 8, 10, 14]); // exactly 65 tiles
+// An intentionally non-divisible armour phrase; it rolls through the longer
+// faces without restarting a visible wallpaper pattern at every gate.
+const SCUTE_PHRASE = Object.freeze([9, 6, 11, 7, 8, 10, 14]);
 function authoredScuteBand(s, depth, phase) {
   if (!WORLD_DETAIL_ON) return (Math.floor(s / 6) + Math.floor((depth - 1) / 2)) % 2;
   const start = s < CONFIG.path.introTiles

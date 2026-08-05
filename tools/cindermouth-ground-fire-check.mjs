@@ -5,7 +5,7 @@
 
 globalThis.__HB_QUERY__ = '';
 
-const [W, H, B, T, C, G, L] = await Promise.all([
+const [W, H, B, T, C, G, L, P] = await Promise.all([
   import('../src/sim/weapons.js'),
   import('../src/sim/hostiles.js'),
   import('../src/sim/bridge.js'),
@@ -13,6 +13,7 @@ const [W, H, B, T, C, G, L] = await Promise.all([
   import('../src/config.js'),
   import('../src/pure/gunroll.js'),
   import('../src/sim/level.js'),
+  import('../src/pure/path.js'),
 ]);
 
 let passed = 0;
@@ -209,7 +210,8 @@ ok(terminals.at(-1)?.reason === 'terrain',
 near(terminals.at(-1).x, platformEdge, 1e-12,
   'catwalk termination is exact at the platform lip');
 
-armCrawler(89.82, L.groundH[89]);
+const firstBend = P.BEND_S[0];
+armCrawler(firstBend - 0.18, L.groundH[Math.floor(firstBend - 0.18)]);
 step(0.05);
 ok(terminals.at(-1)?.reason === 'bend' && bends.length === 1,
   'ground fire cannot crawl around a facet turn');

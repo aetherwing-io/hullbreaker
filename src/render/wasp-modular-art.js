@@ -4,8 +4,13 @@ import { QUERY } from '../mode.js';
 import { awaitPreloads, preloadTexture } from './preload.js';
 import { WASP_MODULAR_SPEC } from './wasp-modular-spec.js';
 
+// The old modular sheet remains a useful A/B and a complete fallback, but its
+// independently painted pieces collapse into a pale claw at shipped scale.
+// The pixel-authored complete-body loop is production; request modular art
+// explicitly with ?waspmod=1 when comparing the two systems.
 export const WASP_MODULAR_ON = QUERY.get('sprites') !== '0' &&
-  QUERY.get('sprites') !== 'off' && QUERY.get('waspmod') !== '0';
+  QUERY.get('sprites') !== 'off' &&
+  (QUERY.get('waspmod') === '1' || QUERY.get('waspmod') === 'on');
 
 const request = WASP_MODULAR_ON
   ? preloadTexture(new URL(WASP_MODULAR_SPEC.runtime.file, import.meta.url).href,
@@ -43,4 +48,3 @@ export function waspModularArtSnapshot() {
 
 if (typeof globalThis !== 'undefined')
   globalThis.__HB_WASP_MODULAR_ART = waspModularArtSnapshot;
-

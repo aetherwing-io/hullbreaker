@@ -31,8 +31,9 @@ export async function run() {
   const incoming = bridges.filter((piece) => piece.facet === 1);
   const incomingVisible = incoming.filter((piece) =>
     limbFoldBridgeVisible(piece, 0, BEND_S, CONFIG.path.chamferTiles));
-  ok(incoming.length === 73,
-     `first incoming facet contains the measured 73 kerb/lip pieces (got ${incoming.length})`);
+  ok(incoming.length >= CONFIG.path.faceTiles &&
+     incoming.length <= CONFIG.path.faceTiles + 20,
+     `first incoming facet carries a bounded full-face kerb/lip population (got ${incoming.length})`);
   ok(incomingVisible.length === 4,
      `opening facet exposes only four bend-local incoming pieces, not all 73 (got ${incomingVisible.length})`);
   ok(incomingVisible.every((piece) => touchesChamfer(piece, BEND_S[0])),

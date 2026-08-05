@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONFIG } from '../../src/config.js';
 import {
-  BEND_S, DEG, HALT_S, SEGS, facetAtBends, yawAt,
+  BEND_S, CORNER_S, DEG, HALT_S, SEGS, facetAtBends, yawAt,
 } from '../../src/pure/path.js';
 import {
   cornerApproachReady, cornerApproachScrollTarget, cornerJointRule,
@@ -23,8 +23,9 @@ export async function run() {
   const bendS = BEND_S[0];
   const haltS = HALT_S[0];
 
-  ok(haltS === 75 && bendS === 90,
-     'fold regression exercises the worst-case first-gate halt (75) and bend (90)');
+  ok(haltS === CORNER_S[0] - CONFIG.waves.haltOffset &&
+     bendS === CORNER_S[0] + CONFIG.path.chamferTiles / 2,
+     `fold regression exercises the configured first-gate halt (${haltS}) and bend (${bendS})`);
 
   // Killing the gate while RIG is parked at HALT_S must never start a timed
   // camera handoff. A stationary player may wait forever and remains owned by

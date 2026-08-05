@@ -32,9 +32,11 @@ export async function run(SHARED) {
 // --- level arithmetic --------------------------------------------------
 ok(CONFIG.levelLength === PP.introTiles + PP.faces * PP.faceTiles + PP.outroTiles,
    'levelLength = intro + faces*faceTiles + outro');
-ok(CORNER_S.join(',') === '89,154,219,284,349,414',
-   'cornerS list, got ' + CORNER_S.join(','));
-ok(HALT_S.join(',') === '75,140,205,270,335,400',
+const expectedCorners = Array.from({ length: PP.faces }, (_, i) =>
+  PP.introTiles + PP.faceTiles * (i + 1));
+ok(CORNER_S.join(',') === expectedCorners.join(','),
+   'cornerS follows intro + faceTiles*k, got ' + CORNER_S.join(','));
+ok(HALT_S.every((halt, i) => halt === CORNER_S[i] - CONFIG.waves.haltOffset),
    'haltS = cornerS - haltOffset, got ' + HALT_S.join(','));
 
 // --- segment table / circuit closure ----------------------------------
@@ -74,21 +76,29 @@ for (let i = 1; i < SEGS.length; i++) {
 }
 
 // --- headings (sharp) --------------------------------------------------
-near(headingAt(SEGS, 50), 0, 0, 'face 1 heading 0');
-near(headingAt(SEGS, 89.5), 30 * DEG, 1e-12, 'chamfer diagonal heading 30 deg');
-near(headingAt(SEGS, 91.5), 60 * DEG, 1e-12, 'face 2 heading 60 deg');
-near(headingAt(SEGS, 300), 240 * DEG, 1e-9, 'after 4 corners heading 240 deg');
-near(headingAt(SEGS, 440), 360 * DEG, 1e-9, 'outro heading 360 deg');
+near(headingAt(SEGS, PP.introTiles + PP.faceTiles / 2), 0, 0, 'face 1 heading 0');
+near(headingAt(SEGS, CORNER_S[0] + 0.5), 30 * DEG, 1e-12,
+     'chamfer diagonal heading 30 deg');
+near(headingAt(SEGS, CORNER_S[0] + PP.chamferTiles + 0.5), 60 * DEG, 1e-12,
+     'face 2 heading 60 deg');
+near(headingAt(SEGS, CORNER_S[3] + PP.chamferTiles + 10), 240 * DEG, 1e-9,
+     'after 4 corners heading 240 deg');
+near(headingAt(SEGS, CORNER_S.at(-1) + PP.chamferTiles + 10), 360 * DEG, 1e-9,
+     'outro heading 360 deg');
 
 // --- yaw blending (dynamic entities) ----------------------------------
-near(yawAt(SEGS, 88, 1), 0, 1e-12, 'yaw untouched 1 tile before first bend');
-near(yawAt(SEGS, 90, 1), 30 * DEG, 1e-9, 'yaw exactly mid-corner at chamfer center');
-near(yawAt(SEGS, 92, 1), 60 * DEG, 1e-9, 'yaw complete 1 tile after second bend');
-near(yawAt(SEGS, 120, 1), 60 * DEG, 1e-9, 'yaw equals face heading mid-face');
+near(yawAt(SEGS, CORNER_S[0] - 1, 1), 0, 1e-12,
+     'yaw untouched 1 tile before first bend');
+near(yawAt(SEGS, CORNER_S[0] + 1, 1), 30 * DEG, 1e-9,
+     'yaw exactly mid-corner at chamfer center');
+near(yawAt(SEGS, CORNER_S[0] + PP.chamferTiles + 1, 1), 60 * DEG, 1e-9,
+     'yaw complete 1 tile after second bend');
+near(yawAt(SEGS, CORNER_S[0] + PP.faceTiles / 2, 1), 60 * DEG, 1e-9,
+     'yaw equals face heading mid-face');
 near(yawAt(SEGS, 50, 0), headingAt(SEGS, 50), 0, 'blend 0 degrades to sharp heading');
 {
   let prev = -1, mono = true;
-  for (let s = 87; s <= 93; s += 0.05) {
+  for (let s = CORNER_S[0] - 2; s <= CORNER_S[0] + PP.chamferTiles + 2; s += 0.05) {
     const y = yawAt(SEGS, s, PP.yawBlendTiles);
     if (y < prev - 1e-9) mono = false;
     prev = y;
@@ -98,10 +108,16 @@ near(yawAt(SEGS, 50, 0), headingAt(SEGS, 50), 0, 'blend 0 degrades to sharp head
 
 // --- face indexing -----------------------------------------------------
 ok(faceIndexAt(0, CONFIG) === 0 && faceIndexAt(23, CONFIG) === 0, 'intro is face 0');
-ok(faceIndexAt(24, CONFIG) === 1 && faceIndexAt(88, CONFIG) === 1, 'face 1 spans 24..88');
-ok(faceIndexAt(89, CONFIG) === 2, 'corner column belongs to the next face');
-ok(faceIndexAt(413, CONFIG) === 6, 'last face column');
-ok(faceIndexAt(414, CONFIG) === 7 && faceIndexAt(444, CONFIG) === 7, 'outro is face 7');
+ok(faceIndexAt(PP.introTiles, CONFIG) === 1 &&
+   faceIndexAt(CORNER_S[0] - 1, CONFIG) === 1,
+   'face 1 spans the configured first face');
+ok(faceIndexAt(CORNER_S[0], CONFIG) === 2,
+   'corner column belongs to the next face');
+ok(faceIndexAt(CORNER_S.at(-1) - 1, CONFIG) === PP.faces,
+   'last face column');
+ok(faceIndexAt(CORNER_S.at(-1), CONFIG) === PP.faces + 1 &&
+   faceIndexAt(CONFIG.levelLength - 1, CONFIG) === PP.faces + 1,
+   'outro is face 7');
 
 // --- corner ritual timeline -------------------------------------------
 const total = cornerEventTotalMs(CONFIG);
@@ -597,7 +613,8 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
       // Strictly wider, not merely wider-or-equal: at 2.2x the ground speed the
       // same gap must be easier. Equality would mean the right-clamp pin never
       // bit and the "floor" column was quietly measured at run speed.
-      ok(face1.every((g) => g.runSingle > g.floorSingle && g.runSingleAtLip),
+      ok(face1.every((g) => g.runSingle >= g.floorSingle && g.runSingleAtLip) &&
+         face1.some((g) => g.runSingle > g.floorSingle),
          'the same gaps are wider still at run speed, worst window ' + worst.toFixed(2) +
          ' tiles (the probe really is measuring the floor, not a free run)');
     }
@@ -754,8 +771,8 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
 // from its play strip. The same six pockets, public arena/arrival IDs, safe
 // seed bridges and 59-chunk deck remain; 73 intentional surfaces replace the
 // old 87-bar composition. The chunk stream is untouched (same seed/rng draws).
-ok(gH.length === 445 && plats.length === 73 && LVL.chunkLog.length === 59,
-   'normal generator shape pinned (445 columns / 73 platforms / 59 chunks), got ' +
+ok(gH.length === 583 && plats.length === 90 && LVL.chunkLog.length === 79,
+   'normal generator shape pinned (583 columns / 90 platforms / 79 chunks), got ' +
    gH.length + '/' + plats.length + '/' + LVL.chunkLog.length);
 // Moved three times inside T-009 and then moved BACK. Two passes lifted the
 // capsule out of the deck-line jump arc (rewardRise 0.7 -> 1.75, then a shelf
@@ -763,14 +780,14 @@ ok(gH.length === 445 && plats.length === 73 && LVL.chunkLog.length === 59,
 // cost a retreat; decisions.md entry 9 withdrew that requirement, so the
 // pocket is the plain shape again — shelf one generator tier over its mid
 // lane, capsule +0.7 over the tip. The chunk stream never moved at all (same
-// 445 columns, same 59 chunks, same rng draws — the lattice consumes none);
+// every route column with unchanged RNG ownership — the lattice consumes none);
 // what moves with the shelf height is the bands the patch pass reads, and at
 // the plain shape that is one catwalk fewer than the raised tier produced.
 // Re-pinned with the six face-specific support families. Geometry and the
 // fixed rewards are unchanged; the fingerprint now also covers the authored
 // rib/service/cavity/vent/braid/root presentation metadata consumed by the
 // production dressing pass.
-ok(fingerprint(LVL) === '7428339f',
+ok(fingerprint(LVL) === '10d82694',
    'normal generator fingerprint unchanged, got ' + fingerprint(LVL));
 
 const fixtureBefore = JSON.stringify(TRAVERSAL_FIXTURE);

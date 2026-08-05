@@ -76,7 +76,7 @@ export const SEAMS = {
 // `fog:true` on the halo material (src/render/seams.js): fog handles the
 // dominant case for this module's geometry — a pip's distance from the
 // CURRENT camera position varies continuously as the run scrolls past all
-// 445 tiles of it, which cannot be known at bake time — while this handles
+// the whole route, which cannot be known at bake time — while this handles
 // the literal, bake-time-knowable "depth" the packet's own risk note names,
 // small as that range is for deck/catwalk pips (both sit near the play
 // plane; the ?g1=1 limb backdrop this pass does not cover is where a large

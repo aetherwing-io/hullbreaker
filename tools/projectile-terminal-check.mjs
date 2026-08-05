@@ -6,12 +6,13 @@
 
 globalThis.__HB_QUERY__ = '';
 
-const [W, H, B, T, C] = await Promise.all([
+const [W, H, B, T, C, P] = await Promise.all([
   import('../src/sim/weapons.js'),
   import('../src/sim/hostiles.js'),
   import('../src/sim/bridge.js'),
   import('../src/sim/time.js'),
   import('../src/config.js'),
+  import('../src/pure/path.js'),
 ]);
 
 let passed = 0;
@@ -79,13 +80,15 @@ T.advanceGameMs(C.CONFIG.wasp.enterMs + 1);
 W.updateBullets(0);
 sole('hostile', row, 12.5, 7.25);
 
-// First normal-run bend is s=90. The projectile's terminal row is the first
+// The projectile's terminal row is the first bend-crossing substep, while
 // crossing substep, while bendCulled separately owns the tangent tracer.
-arm(row, { x: 89.9, y: 7, vx: C.CONFIG.weapons.R.speed, dieAt: T.gameMs + 1000 });
+const firstBend = P.BEND_S[0];
+arm(row, { x: firstBend - 0.1, y: 7, vx: C.CONFIG.weapons.R.speed,
+  dieAt: T.gameMs + 1000 });
 W.updateBullets(0.02);
 ok(bends.length === 1, 'bend exit emits exactly one tangent-tracer hook');
 sole('bend', row, bends[0].x, bends[0].y);
-ok(events[0].x >= 90 && bends[0].fromX < 90,
+ok(events[0].x >= firstBend && bends[0].fromX < firstBend,
   `bend terminal belongs to the crossing substep (${bends[0].fromX} -> ${events[0].x})`);
 
 // Unused pool rows are polled every frame but have no terminal row/reason and

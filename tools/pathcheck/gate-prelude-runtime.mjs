@@ -76,17 +76,18 @@ const threshold = runScenario('threshold and survivors', `
     startedGateBody: HOSTILES.hostiles.some((e) => e.gating &&
       TIME.gameMs >= e.enterUntil - CFG.CONFIG.wasp.enterMs),
   };
-  console.log(JSON.stringify({ before, expected, primed, atHalt, halt }));
+  console.log(JSON.stringify({ before, expected, primed, atHalt, halt,
+    prelude: WAVES.GATE_PRELUDE_TILES }));
 `);
 
 ok(JSON.stringify(threshold.before) === JSON.stringify({ primed: false, bodies: 0 }),
-  'the roster does not exist before the exact eight-tile threshold');
+  'the roster does not exist before the authored moving-prelude threshold');
 ok(threshold.primed.state === 'idle',
   'priming is a flag, not a corner state');
 ok(threshold.primed.busy === false,
   'priming does not hold the scrolling pursuit plane');
-ok(threshold.primed.at === threshold.halt - 8,
-  'the authored gate roster is pre-positioned exactly eight tiles before halt');
+ok(threshold.primed.at === threshold.halt - threshold.prelude,
+  'the authored gate roster is pre-positioned at the declared prelude distance');
 ok(threshold.primed.bodies === threshold.expected,
   'priming creates the complete existing authored roster once');
 ok(JSON.stringify(threshold.primed.encounterKeys) === JSON.stringify(['gate:1']),

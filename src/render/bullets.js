@@ -104,24 +104,20 @@ const coreMeshList = WEAPON_TYPES.map((type) => coreMeshes[type]);
 // used by the fallback below, so richer art never advertises extra collision.
 const ART_CELL_OCCUPANCY = 230 / 256;
 const ART_LOOK = Object.freeze({
-  // Actual FAR-view review put the first atlas pass at only 3-6 pixels of
-  // painted ink. Grow chiefly backward (unlimited cosmetic history) and in
-  // thickness; frontCap remains the collision-honesty authority. The five
-  // bodies now occupy roughly 6-11 pixels of distinct silhouette without
-  // moving a hit, speed, or point-collision edge.
-  R: Object.freeze({ frontCap: Infinity, tail: 0.70, thickness: 1.18 }),
+  // V3's compact pixel bodies are authored for the shipped 12-22px read. The
+  // former painted-sheet compensation made the new rivet almost RIG-sized;
+  // these lengths preserve a distinct chassis without turning ammunition
+  // into another actor. frontCap remains the collision-honesty authority.
+  R: Object.freeze({ frontCap: Infinity, tail: 0.45, thickness: 0.82 }),
   // Scatterbloom fires five independent sim pellets, so each slot must read
   // as ONE piece of ammunition. The replacement alpha is 4.34:1; 0.90 at
   // FAR's width gain resolves to about 16x4 display pixels instead of the old
   // fan's enemy-like winged silhouette. Length stays unchanged and collision
   // remains the point/nose contract below.
-  S: Object.freeze({ frontCap: Infinity, tail: 0.55, thickness: 0.90 }),
-  L: Object.freeze({ frontCap: 0.80, tail: 1.10, thickness: 0.82 }),
-  // H/F source cells are naturally the tallest in the atlas. Their former
-  // near-square projection resolved into a magenta/orange orb at FAR; retain
-  // all painted fins/jaws but present them as directional 12px machines.
-  H: Object.freeze({ frontCap: Infinity, tail: 1.02, thickness: 0.64 }),
-  F: Object.freeze({ frontCap: Infinity, tail: 1.05, thickness: 0.68 }),
+  S: Object.freeze({ frontCap: Infinity, tail: 0.45, thickness: 0.68 }),
+  L: Object.freeze({ frontCap: 0.80, tail: 0.70, thickness: 0.55 }),
+  H: Object.freeze({ frontCap: Infinity, tail: 0.72, thickness: 0.55 }),
+  F: Object.freeze({ frontCap: Infinity, tail: 0.78, thickness: 0.58 }),
 });
 
 function projectileArtGeometry(column) {
@@ -1025,7 +1021,7 @@ function syncSlot(i, b) {
     const flameLen = 1.95 + Math.min(0.42, heavy * 0.11) +
       Math.min(0.22, volatile * 0.07);
     if (groundArtMesh) {
-      // The packed alpha spans 230x37 inside its 256 cell. Its sharp leading
+      // The packed alpha spans 230x44 inside its 256 cell. Its sharp leading
       // lick lands exactly on the live sim point; all forged debris and flame
       // mass extends backward. Vertical scale is derived from that occupied
       // aspect and planted on crawlSurfaceY, never inferred from screen space.

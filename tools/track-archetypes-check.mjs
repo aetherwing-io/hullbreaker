@@ -93,11 +93,11 @@ assert.deepEqual(rebuiltWormA, TRACK_ARCHETYPES.WORM,
 
 const compatibility = wormCompatibilityReport(rebuiltWormA, currentTune);
 assert.equal(compatibility.ok, true, `WORM compatibility failed: ${compatibility.failedChecks.join(', ')}`);
-assert.deepEqual(compatibility.expectedCorners, [89, 154, 219, 284, 349, 414]);
+assert.deepEqual(compatibility.expectedCorners, [112, 200, 288, 376, 464, 552]);
 assert.deepEqual(compatibility.actualCorners, compatibility.expectedCorners);
 assert.deepEqual(compatibility.expectedBendStarts,
-  [89, 91, 154, 156, 219, 221, 284, 286, 349, 351, 414, 416]);
-assert.equal(compatibility.totalRouteTiles, 445);
+  [112, 114, 200, 202, 288, 290, 376, 378, 464, 466, 552, 554]);
+assert.equal(compatibility.totalRouteTiles, 583);
 assert.equal(compatibility.semanticTurnDeg, 60);
 assert.equal(compatibility.circuitTurnDeg, 360);
 
@@ -135,7 +135,7 @@ assert.match(badRouteReport, /ordered without skips/);
 const reports = Object.values(TRACK_ARCHETYPES).map(trackArchetypeReport);
 assert.deepEqual(reports.map((row) => row.violations), [[], [], []]);
 assert.deepEqual(reports.map((row) => row.segments), [6, 10, 10]);
-assert.deepEqual(reports.map((row) => row.totalLengthTiles), [390, 456, 606]);
+assert.deepEqual(reports.map((row) => row.totalLengthTiles), [528, 456, 606]);
 assert.deepEqual(reports.map((row) => row.totalRiseTiles), [0, 74, 100]);
 
 console.log('Body-plan track archetypes: PASS');

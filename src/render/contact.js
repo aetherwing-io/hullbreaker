@@ -63,8 +63,8 @@
  * ?g2=1): render/transform.js draws its OWN band geometry instead of the
  * tile bake in render/level.js (level.js skips that bake under
  * IS_TRANSFORM_SLICE), so sim groundH is not proven to coincide with the
- * drawn floor there. This is NOT "no groundH" — 400 of 445 columns measure
- * ground under ?slice=transform right now — it is a drawn-floor guarantee
+ * drawn floor there. This is NOT "no groundH" — most columns measure ground
+ * under ?slice=transform right now — it is a drawn-floor guarantee
  * this module cannot make without transform.js's own surface query, so
  * contact shadows stay off there until that query exists.
  *

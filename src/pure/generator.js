@@ -155,11 +155,13 @@ export function buildLevel(cfg) {
     cx += segLen;
   }
 
-  // corner aprons (corner-zone cleanliness): solid flat staging ground
-  // through each chamfer — the pivot and both bend columns must be ground,
-  // not gap — and no catwalk may span a bend.
+  // Gate arenas are broad maneuver spaces, not random deck traps. The whole
+  // authored 35-tile defense box gets a dependable recovery deck; elevated
+  // routes, ladders and cover supply its topology. This also guarantees that
+  // a last committed flyer can always close on a reachable lane.
   for (const cs of corners) {
-    for (let s = cs - 5; s <= cs + 2; s++) groundH[s] = 3;
+    for (let s = cs - LATTICE.pocket.cornerClearBefore; s <= cs + 2; s++)
+      groundH[s] = 3;
     for (let i = platforms.length - 1; i >= 0; i--)
       if (platforms[i].x1 >= cs - 3 && platforms[i].x0 <= cs + 3) platforms.splice(i, 1);
   }

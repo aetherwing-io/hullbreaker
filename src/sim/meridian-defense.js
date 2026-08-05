@@ -61,6 +61,7 @@ export function updateMeridianDefense() {
   }
   lastPresentation = {
     ...presentation,
+    nowMs: ctx.nowMs,
     playerX: ctx.playerX,
     viewLeft: ctx.viewLeft,
     viewRight: ctx.viewRight,

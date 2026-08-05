@@ -61,7 +61,10 @@ export const LEVEL1_ENEMY_ECOLOGY = Object.freeze([
  * intentionally resolve to the empty string. */
 export const LEVEL1_NEUTRAL_ECOLOGY_VISUAL = Object.freeze({
   hound: 'hound-railfang',
-  wasp: 'wasp-diveclaw',
+  // The neutral wasp now uses the compact pixel-authored flight sheet. Named
+  // ecology recipes still select their 64-state bodies; presentation remains
+  // independent from whether a recipe buys mechanics.
+  wasp: '',
   polyp: 'polyp-needle',
   mortar: 'mortar-craterpod',
 });

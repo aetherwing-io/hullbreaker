@@ -188,31 +188,31 @@ ok(/projectileOnVisibleFacet\(b\.x\)/.test(bullets) &&
   'fold, bend, pool replacement, and reset paths conceal without false hits');
 
 const png = readFileSync(join(root,
-  'assets/generated/projectiles/projectile-chassis-atlas-v2.png'));
+  'assets/generated/projectiles/projectile-chassis-atlas-v3.png'));
 ok(png.readUInt32BE(16) === 1536 && png.readUInt32BE(20) === 256,
   'the shipped atlas binary matches its 1536x256 runtime contract');
 
-const atlasPath = join(root, 'assets/generated/projectiles/projectile-chassis-atlas-v2.png');
+const atlasPath = join(root, 'assets/generated/projectiles/projectile-chassis-atlas-v3.png');
 const decoded = decodePng(atlasPath);
 const expectedCells = [
-  '766890aed993ed9ad95ddfbf76968c8b766e8ccd15d95db9a87e054f07f72a9a',
-  '5a1153d591bb503ffbc08f6a2e4f5352278298a31f3b2242a441fafe2aa29581',
-  'ec75b00bd5e52e09a1666dfdb534b69fa0cc42136c681b07aae6c9fd7785b77c',
-  'c9ceef8facf45816ba145feed6e0284bdf8f8266835f93a60a9423fc879f81f1',
-  '80939cd0872e55aca5435ee2c3ce24ec16c2811ce6bead51d5855d065adc398b',
-  '2f47851ef8157714bd62009b5fc04b2697a27b7c00e922bd411ca05cea5c4fa8',
+  'a00771c364149050574b9f1960a41bc591751f71384a365e237e97f8ccd61b99',
+  '3bbd2c8791e92fe9f45cf83aabc944bb10bd1cca1665fceed3005806f3a7361c',
+  '5c17a1305bcce1571791b7d16130e1ebea8537acad1795312f666366e2761560',
+  '18cd61dcf0db8c183d49a3cf1c7f86ef81adb02506184f19daec013c27fbcf22',
+  '704901ba1042ca472190504b1268ea59be4dd1db6173a410ac5d7c45c9ee8872',
+  'c4262d6dbaeab6be6a753715e08226e2ce04b87aa973a30cd6522dc04f02aadd',
 ];
 const actualCells = expectedCells.map((_, column) => rgbaCellSha(decoded, column));
 ok(actualCells.every((hash, column) => hash === expectedCells[column]),
-  'decoded RGBA locks five proven chassis plus the painted ground-fire wave');
+  'decoded RGBA locks six screen-authored pixel projectile bodies');
 
 const groundBounds = cellAlphaBounds(decoded, 5);
 const groundComponents = cellComponents(decoded, 5);
-ok(groundBounds.x === 13 && groundBounds.y === 109 &&
-   groundBounds.width === 230 && groundBounds.height === 37 &&
-   groundBounds.width / groundBounds.height >= 6 &&
-   groundBounds.partial >= 900 && groundComponents.greenLeak === 0,
-  'ground fire is a narrow antialiased 230x37 painted wave with no key fringe');
+ok(groundBounds.x === 13 && groundBounds.y === 106 &&
+   groundBounds.width === 230 && groundBounds.height === 44 &&
+   groundBounds.width / groundBounds.height >= 5 &&
+   groundBounds.partial === 0 && groundComponents.greenLeak === 0,
+  'ground fire is a narrow hard-edged 230x44 pixel wave with no key fringe');
 ok(/const groundArtMesh = artMeshes\.G \|\| null/.test(bullets) &&
    /groundArtMesh\.setMatrixAt\(i, _bm\)/.test(bullets) &&
    /paintedWave:\s*!!groundArtMesh/.test(bullets) &&
@@ -220,11 +220,11 @@ ok(/const groundArtMesh = artMeshes\.G \|\| null/.test(bullets) &&
   'deck ignition swaps the rigid chassis for one pooled painted ground wave');
 
 const scatterBounds = cellAlphaBounds(decoded, 1);
-ok(scatterBounds.x === 13 && scatterBounds.y === 101 &&
-   scatterBounds.width === 230 && scatterBounds.height === 53 &&
+ok(scatterBounds.x === 13 && scatterBounds.y === 96 &&
+   scatterBounds.width === 230 && scatterBounds.height === 63 &&
    scatterBounds.width / scatterBounds.height >= 3.5 &&
-   scatterBounds.partial >= 1000,
-  'Scatterbloom is one antialiased 230x53 narrow flechette with safe cell guards');
+   scatterBounds.partial === 0,
+  'Scatterbloom is one hard-edged 230x63 narrow flechette with safe cell guards');
 
 const scatterComponents = cellComponents(decoded, 1);
 ok(scatterComponents.sizes.length === 1 && scatterComponents.sizes[0] >= 8000 &&
@@ -237,31 +237,28 @@ ok(tinyScatter.every((sample) => sample.activeColumns >= sample.width - 1 &&
    sample.activePixels >= sample.width && sample.maxAlpha >= 220),
   'area-average 6/10/20px reductions retain a continuous pointed shot sentence');
 
-ok(/S:\s*Object\.freeze\(\{\s*frontCap:\s*Infinity,\s*tail:\s*0\.55,\s*thickness:\s*0\.90\s*\}\)/.test(bullets) &&
+ok(/S:\s*Object\.freeze\(\{\s*frontCap:\s*Infinity,\s*tail:\s*0\.45,\s*thickness:\s*0\.68\s*\}\)/.test(bullets) &&
    /S:\s*\{[^}]*wakeW:\s*0\.040,[^}]*trail:\s*0\.016/s.test(bullets) &&
    /syncTraitMark\(i, 'rapid', rapid, tail \+ 0\.28, 0\.54, 0\.16\)/.test(bullets) &&
    /syncStackMark\(i, 'rapid', rapid, tail \+ 0\.82, 0\.54, 0\.13\)/.test(bullets),
-  'Scatterbloom keeps a 14-18x3-5px FAR chassis; wake and RAPID ticks stay sub-body');
+  'Scatterbloom keeps a 12-16x3-5px FAR chassis; wake and RAPID ticks stay sub-body');
 
-const provenance = JSON.parse(read('assets/generated/projectiles/projectile-scatterbloom-flechette-provenance-v1.json'));
-// Scatterbloom's provenance remains a truthful record of the v1 five-cell
-// packing operation. The v2 check above independently proves that exact cell
-// survived unchanged when the sixth ground-fire column was appended.
-const atlasSha = createHash('sha256').update(readFileSync(join(root,
-  'assets/generated/projectiles/projectile-chassis-atlas-v1.png'))).digest('hex');
+const provenance = JSON.parse(read(
+  'assets/generated/projectiles/pixel-v1/projectile-pixel-pack-v1.json'));
+const atlasSha = createHash('sha256').update(readFileSync(atlasPath)).digest('hex');
 const farPxPerTile = ((7 / CONFIG.viewScales.far.depthMult) / 100) * 800 /
   CONFIG.player.height;
-const scatterArtLength = 0.36 + 0.55;
+const scatterArtLength = 0.36 + 0.45;
 const PROJECTED_SCATTER_FAR = {
   width: scatterArtLength * farPxPerTile,
   height: scatterArtLength / (230 / 256) * (scatterBounds.height / 256) *
-    0.90 * 1.24 * farPxPerTile,
+    0.68 * 1.24 * farPxPerTile,
 };
-ok(provenance.promptSummary.verbatim === false &&
-   provenance.selection.index === 15 &&
-   provenance.packing.atlasSha256 === atlasSha &&
-   PROJECTED_SCATTER_FAR.width >= 14 && PROJECTED_SCATTER_FAR.width <= 18 &&
+ok(provenance.generator.mode === 'OpenAI built-in image generation' &&
+   provenance.processing.order.join('') === 'RSLHFG' &&
+   provenance.sha256.atlas === atlasSha &&
+   PROJECTED_SCATTER_FAR.width >= 12 && PROJECTED_SCATTER_FAR.width <= 16 &&
    PROJECTED_SCATTER_FAR.height >= 3 && PROJECTED_SCATTER_FAR.height <= 5,
-  'provenance is honest and decoded FAR projection lands inside the 14-18x3-5px target');
+  'provenance is honest and decoded FAR projection lands inside the 12-16x3-5px target');
 
 console.log(`PROJECTILE PRESENTATION: ${passed}/${passed} contracts passed`);

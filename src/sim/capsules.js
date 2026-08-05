@@ -41,6 +41,7 @@ export function spawnCapsule(kind, letter, x, y, mode, vx, carriedGun = null) {
     kind, letter, x, y, baseY: y, vx: vx || 0, vy: mode === 'pop' ? CAP.popVy : 0,
     mode, dieAt: mode === 'pop' ? gameMs + CAP.recatchMs : 0, t: 0,
     noCatchUntil: mode === 'pop' ? gameMs + CAP.popNoCatchMs : 0,
+    departedPlayer: mode !== 'pop',
     gun,
   };
   capsules.push(c);
@@ -105,7 +106,14 @@ export function updateCapsules(dt) {
       c.y = c.baseY + Math.sin(c.t * CAP.bobFreq) * CAP.bobAmp * 0.3;
     }
 
-    if (gameMs >= c.noCatchUntil && circleHitsPlayer(c.x, c.y, CAP.pickupRadius)) {
+    // A damage pop begins inside RIG's body. It must leave that volume once
+    // before pickup can become eligible, so the return is a visible choice.
+    if (!c.departedPlayer &&
+        !circleHitsPlayer(c.x, c.y, CAP.pickupRadius + 0.18)) {
+      c.departedPlayer = true;
+    }
+    if (c.departedPlayer && gameMs >= c.noCatchUntil &&
+        circleHitsPlayer(c.x, c.y, CAP.pickupRadius)) {
       if (c.kind === 'mod') applyMod(c.letter);
       else {
         const def = setGun(c.gun);

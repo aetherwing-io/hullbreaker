@@ -7,7 +7,7 @@
    routes readable at any moment, and DESIGN's "Level-construction
    contract" asks the generator to become an assembler of authored chunks
    rather than the sole author of fun. Before this pass the six-face run
-   measured 1 surface at 243 of 445 columns (a single-lane corridor for
+   originally measured 1 surface at 243 of 445 columns (a single-lane corridor for
    55% of the climb) and a ten-column lookahead saw only two route bands
    across large stretches of every face. This module is the repair:
 
@@ -445,6 +445,13 @@ export function latticePocketSites(cfg, groundH, L = LATTICE) {
 // assumed): the approach adopts the incoming height, the drop across the
 // chasm is exactly 1, and both runs are longer than landingMin.
 export function latticeCarvePocket(groundH, site, GAP) {
+  // A generated one-column hole immediately before the authored chunk can
+  // consume the jump that belongs to the pocket itself. Give every pocket a
+  // two-column planted runway at the same deck height. This is outside the
+  // reward room, so it adds no shortcut; it only makes the authored obstacle
+  // begin with an honest, readable takeoff.
+  for (let s = site.x0 - 2; s < site.x0; s++)
+    if (s >= 0 && s < groundH.length) groundH[s] = site.deckY;
   for (let s = site.x0; s < site.x1; s++) {
     if (s < 0 || s >= groundH.length) continue;
     groundH[s] = s < site.gap.x0 ? site.deckY

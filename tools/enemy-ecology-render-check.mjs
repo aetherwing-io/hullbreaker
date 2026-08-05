@@ -81,7 +81,7 @@ assert(ENEMY_ECOLOGY_ATLAS.componentCount === 192 &&
 assert(ENEMY_ECOLOGY_VARIANTS.length === 12 && manifest.variants.length === 12,
   'expected twelve runtime variants');
 assert(same(LEVEL1_NEUTRAL_ECOLOGY_VISUAL, {
-  hound: 'hound-railfang', wasp: 'wasp-diveclaw',
+  hound: 'hound-railfang', wasp: '',
   polyp: 'polyp-needle', mortar: 'mortar-craterpod',
 }) && neutralEnemyEcologyVisualId('carrier') === '' &&
   neutralEnemyEcologyVisualId('warden') === '',

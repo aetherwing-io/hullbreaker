@@ -389,13 +389,13 @@ Evolved across three iterations: flat strip → continuous helix (rejected:
 user wanted staged progression, not continuous rotation) → **polygonal
 tower with corner events** (shipped):
 
-- Hexagonal tower exterior: 6 faces × 65 tiles, corners turn 60° left
+- Hexagonal tower exterior: 6 faces × 88 tiles, corners turn 60° left
   (counterclockwise circuit keeps the camera outside the tower).
 - Each face is a **wave** with authored escalating enemy composition.
-- **Wave gate**: scroll halts at `corner − haltOffset` until every wasp is
-  dead and the face's spawn entries are exhausted. Gated wasps get a faster
-  patrol and hotter dive settings so the arena fight stays honest. Strays
-  are culled on every edge so gates cannot deadlock.
+- **Wave gate**: scroll halts at `corner − haltOffset` until every gating
+  defender is dead and the face's spawn entries are exhausted. The final
+  mobile defender closes on RIG instead of hiding at the edge, and strays
+  are culled on every fold so gates cannot deadlock.
 - **Corner ritual** (the killing shot is the stinger): wind-up beat → 30°
   yaw snap (easeOutBack, slight overshoot) → ratchet hold → second 30° snap
   → settle → scroll eases back in. ~1.1s total; the player keeps full

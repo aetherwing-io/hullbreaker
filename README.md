@@ -45,6 +45,7 @@ to start, the game tells you so in plain language instead of going black.
 | Space (or K) | Jump — hold for height, press again in air for double jump |
 | J (or X) | Fire (hold for auto) |
 | Shift | Strafe-lock (freeze aim while moving) |
+| C | Swap between the field rifle and your carried capsule weapon |
 | Down + Jump | Drop through catwalks |
 | P / Esc | Pause (carries the options panel) |
 | R | Restart (while paused, or on death/victory) |

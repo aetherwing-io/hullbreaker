@@ -52,7 +52,11 @@ export const SPRITE_ART = {
   },
   wasp: {
     a: { file: 'wasp-drone-a.png', canvas: [32, 32], ink: [2, 2, 28, 24] },
-    b: { file: 'wasp-drone-v2.png', canvas: [460, 395], ink: [24, 24, 412, 347] },
+    // Pixel-authored at the size the FAR camera actually samples. The old
+    // 460px painting became a pale claw after 12:1 minification; this 128px
+    // card keeps one dark body mass, an acid head and articulated wings.
+    b: { file: 'wasp-pixel-v1/wasp-pixel-idle-v1.png',
+      canvas: [128, 128], ink: [13, 51, 102, 57] },
   },
   polyp: {
     a: { file: 'polyp-iris-a.png', canvas: [64, 64], ink: [4, 4, 58, 58] },
@@ -79,7 +83,8 @@ export const SPRITE_ART = {
 export const SPRITE_ACTION_ART = {
   hound:  { file: 'houndframe-action-v2.png', canvas: [666, 302], ink: [24, 24, 618, 254] },
   carrier:{ file: 'carrier-hauler-action-v2.png', canvas: [590, 397], ink: [24, 24, 542, 349] },
-  wasp:   { file: 'wasp-drone-action-v2.png', canvas: [486, 301], ink: [24, 24, 438, 253] },
+  wasp:   { file: 'wasp-pixel-v1/wasp-pixel-dive-v1.png',
+    canvas: [128, 128], ink: [19, 31, 84, 58] },
   polyp:  { file: 'iris-polyp-action-v2.png', canvas: [421, 399], ink: [24, 24, 373, 351] },
   mortar: { file: 'spore-mortar-action-v2.png', canvas: [499, 449], ink: [24, 24, 451, 401] },
 };
@@ -91,8 +96,8 @@ export const SPRITE_ACTION_ART = {
 // stay separate: committed dive/charge/vault always override locomotion.
 export const SPRITE_FLAP_ART = {
   wasp: {
-    file: 'wasp-flight-atlas-v1.png',
-    canvas: [2048, 512], ink: [40, 63, 1948, 350],
+    file: 'wasp-pixel-v1/wasp-pixel-flight-v1.png',
+    canvas: [512, 128], ink: [28, 18, 465, 92],
   },
   hound: {
     file: 'hound-gait-atlas-v2.png',
@@ -112,13 +117,13 @@ export const SPRITE_FLAP_ART = {
    atlas frame is independently stretched to fill a collision box. */
 export const SPRITE_MOTION_ART = Object.freeze({
   wasp: Object.freeze({
-    file: 'wasp-flight-atlas-v1.png', canvas: Object.freeze([2048, 512]),
-    referenceInkWidth: 412, anchorRole: 'reactor', grounded: false,
+    file: 'wasp-pixel-v1/wasp-pixel-flight-v1.png', canvas: Object.freeze([512, 128]),
+    referenceInkWidth: 102, anchorRole: 'body-mass', grounded: false,
     frames: Object.freeze([
-      Object.freeze({ cell: Object.freeze([0, 0, 512, 512]), anchor: Object.freeze([223, 284]) }),
-      Object.freeze({ cell: Object.freeze([512, 0, 512, 512]), anchor: Object.freeze([193, 283]) }),
-      Object.freeze({ cell: Object.freeze([1024, 0, 512, 512]), anchor: Object.freeze([169, 283]) }),
-      Object.freeze({ cell: Object.freeze([1536, 0, 512, 512]), anchor: Object.freeze([189, 287]) }),
+      Object.freeze({ cell: Object.freeze([0, 0, 128, 128]), anchor: Object.freeze([64, 64]) }),
+      Object.freeze({ cell: Object.freeze([128, 0, 128, 128]), anchor: Object.freeze([64, 64]) }),
+      Object.freeze({ cell: Object.freeze([256, 0, 128, 128]), anchor: Object.freeze([64, 64]) }),
+      Object.freeze({ cell: Object.freeze([384, 0, 128, 128]), anchor: Object.freeze([64, 64]) }),
     ]),
   }),
   hound: Object.freeze({

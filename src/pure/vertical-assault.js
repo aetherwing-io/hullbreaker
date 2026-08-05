@@ -10,7 +10,7 @@
  * wall-launch ribs and defensible perches.
  *
  * Coordinates stay in the simulation's (s, y) route space. `u` is local
- * distance inside a 65-tile face; `h` is height above that face's lowest deck
+ * distance inside the original 65-tile blueprint; `h` is height above that face's lowest deck
  * column.  Nothing extends into the final seven-tile gate apron.  The render
  * layer continues to project this data through the ordinary Meridian helix,
  * so this is a Level 1 map change, not a new camera or a future track.       */
@@ -178,7 +178,9 @@ export const VERTICAL_ASSAULT_FACES = Object.freeze([
       { from: 'root-high-right', to: 'root-apex' },
     ],
     solids: [
-      { key: 'crown-root-left', u0: 37, u1: 38, h0: 3, h1: 8.80, role: 'wall-launch' },
+      // The left root is carried by the platform dressing, not collision. A
+      // solid rib here intersected the low route and turned the last gate into
+      // an unexplained full stop unless the player happened to wall-jump.
       { key: 'crown-root-right', u0: 48, u1: 49, h0: 7, h1: 13.80, role: 'wall-launch' },
     ],
   }),
@@ -195,6 +197,38 @@ export const VERTICAL_ASSAULT = Object.freeze({
 });
 
 const round = (v) => Math.round(v * 1000) / 1000;
+
+// The first 18 tiles hold the arrival/pocket grammar and remain at their
+// proven scale. The reviewed assault beyond them shifts forward by the added
+// distance and keeps its original casting widths; EXPANDED_TRANSIT fills the
+// interval with new climbable topology.
+function faceU(face, cfg, u) {
+  const fixed = 18;
+  if (u <= fixed || cfg.path.faceTiles === 65) return face.s0 + u;
+  return face.s0 + u + (cfg.path.faceTiles - 65);
+}
+
+// A casting that starts in the preserved arrival grammar must keep its
+// reviewed width. Shifting its far endpoint independently stretched the
+// face-one entry step into a thirty-tile shelf when faces grew from 65 to 88.
+function faceSpan(face, cfg, u0, u1) {
+  const shift = cfg.path.faceTiles === 65 || u0 <= 18
+    ? 0
+    : cfg.path.faceTiles - 65;
+  return [face.s0 + u0 + shift, face.s0 + u1 + shift];
+}
+
+// Additional face length is authored as three real transit castings instead
+// of stretching every reviewed platform into a slab. `u` is live local
+// distance; these rows occupy the inserted space between arrival and assault.
+const EXPANDED_TRANSIT = Object.freeze([
+  { h: [3.4, 6.4, 9.4], roles: ['transit-low', 'transit-switchback', 'transit-overlook'] },
+  { h: [3.5, 7.0, 10.5], roles: ['transit-channel', 'transit-chimney', 'transit-perch'], approach: [15, 22, 4.35] },
+  { h: [4.0, 7.5, 11.0], roles: ['transit-low', 'transit-left', 'transit-right'], approach: [15, 20, 4.35] },
+  { h: [4.0, 8.0, 11.5], roles: ['transit-vent-low', 'transit-vent-mid', 'transit-vent-high'], approach: [13, 19, 3.35] },
+  { h: [3.0, 7.0, 11.0], roles: ['transit-braid-low', 'transit-braid-mid', 'transit-braid-high'] },
+  { h: [3.0, 7.0, 11.5], roles: ['transit-root-low', 'transit-root-mid', 'transit-root-high'], approach: [13, 18, 3.35] },
+]);
 
 function faceGroundMin(groundH, face) {
   let min = Infinity;
@@ -346,7 +380,7 @@ export function installVerticalAssault(
       const fallback = spec || { u0: 5, u1: 12, h: 4.35 };
       arrivalLower = platformAt(
         'assault-f' + faceNo + '-arrival-lower',
-        face.s0 + fallback.u0, face.s0 + fallback.u1,
+        faceU(face, cfg, fallback.u0), faceU(face, cfg, fallback.u1),
         minY + fallback.h, faceNo, 'arrival-lower', {
           arrival: true, supportFamily: plan.supportFamily,
         },
@@ -356,7 +390,8 @@ export function installVerticalAssault(
       arrivalLower.face = faceNo;
       arrivalLower.role = 'arrival-lower';
       if (Number.isFinite(plan.arrivalLowerU1))
-        arrivalLower.x1 = round(Math.max(arrivalLower.x1, face.s0 + plan.arrivalLowerU1));
+        arrivalLower.x1 = round(Math.max(arrivalLower.x1,
+          faceU(face, cfg, plan.arrivalLowerU1)));
     }
     byKey.set('arrival-lower', arrivalLower);
 
@@ -372,7 +407,7 @@ export function installVerticalAssault(
           : `assault-f${faceNo}-${spec.key}`;
       const p = platformAt(
         id,
-        face.s0 + spec.u0, face.s0 + spec.u1,
+        ...faceSpan(face, cfg, spec.u0, spec.u1),
         Math.min(peakY, minY + spec.h), faceNo, spec.role,
         {
           route: spec.role,
@@ -387,6 +422,44 @@ export function installVerticalAssault(
       facePlatforms.push(p);
       byKey.set(spec.key, p);
       if (spec.arena) byArenaName.set(spec.arena, p);
+    }
+
+    const transit = cfg.path.faceTiles > 65 ? EXPANDED_TRANSIT[index] : null;
+    if (transit) {
+      // The weapon pocket owns the first half of the face. Two broad, offset
+      // transit decks take over after it; adding three here made the pocket,
+      // deck and climb read as six simultaneous lanes instead of space.
+      const spans = [[31, 43], [40, 50]];
+      if (transit.approach) {
+        const [u0, u1, h] = transit.approach;
+        const approach = platformAt(
+          `assault-f${faceNo}-approach-relay`,
+          face.s0 + u0, face.s0 + u1,
+          Math.min(peakY, minY + h),
+          faceNo, 'arrival-relay', {
+            route: 'arrival-relay',
+            supportFamily: plan.supportFamily,
+            transit: true,
+          },
+        );
+        facePlatforms.push(approach);
+        byKey.set('approach-relay', approach);
+      }
+      for (let transitIndex = 0; transitIndex < spans.length; transitIndex++) {
+        const [u0, u1] = spans[transitIndex];
+        const p = platformAt(
+          `assault-f${faceNo}-transit-${transitIndex + 1}`,
+          face.s0 + u0, face.s0 + u1,
+          Math.min(peakY, minY + transit.h[transitIndex]),
+          faceNo, transit.roles[transitIndex], {
+            route: transit.roles[transitIndex],
+            supportFamily: plan.supportFamily,
+            transit: true,
+          },
+        );
+        facePlatforms.push(p);
+        byKey.set(`transit-${transitIndex + 1}`, p);
+      }
     }
 
     // If a V2 recovery lane spans the exact anonymous bridge retained above,
@@ -413,7 +486,7 @@ export function installVerticalAssault(
       const rail = makeLadder(
         `ladder-f${faceNo}-${railIndex + 1}-${spec.from}-to-${spec.to}`,
         from, to, faceNo, plan.kind,
-        Number.isFinite(spec.u) ? face.s0 + spec.u : null,
+        Number.isFinite(spec.u) ? faceU(face, cfg, spec.u) : null,
       );
       faceLadders.push(rail);
       connectorRows.push({
@@ -423,12 +496,27 @@ export function installVerticalAssault(
         to: spec.to,
       });
     }
+    if (transit) for (let railIndex = 0; railIndex < 1; railIndex++) {
+      const from = byKey.get(`transit-${railIndex + 1}`);
+      const to = byKey.get(`transit-${railIndex + 2}`);
+      const rail = makeLadder(
+        `ladder-f${faceNo}-transit-${railIndex + 1}`,
+        from, to, faceNo, plan.kind,
+      );
+      faceLadders.push(rail);
+      connectorRows.push({
+        id: rail.id, kind: 'ladder-or-jump',
+        from: `transit-${railIndex + 1}`,
+        to: `transit-${railIndex + 2}`,
+      });
+    }
 
     for (const spec of plan.solids) {
+      const [x0, x1] = faceSpan(face, cfg, spec.u0, spec.u1);
       const rect = {
         id: `assault-f${faceNo}-${spec.key}`,
-        x0: round(face.s0 + spec.u0),
-        x1: round(face.s0 + spec.u1),
+        x0: round(x0),
+        x1: round(x1),
         y0: round(minY + spec.h0),
         y1: round(Math.min(peakY, minY + spec.h1)),
         face: faceNo,

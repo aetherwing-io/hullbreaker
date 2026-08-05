@@ -393,9 +393,9 @@ gate(report.faces[0].state === 'observe' && report.faces[0].tell.vfx.socketId &&
   report.faces[5].state === 'scuttle' && report.faces[5].tell.vfx.socketId,
 'Observe and Scuttle each visibly activate on their own route sockets');
 gate(report.faces.every((row) => row.after.vfx.drawSlots === 0 &&
-  row.after.vfx.mechanismDrawSlots === 0 &&
-  row.after.vfx.stage === 'dormant'),
-'dormant and post-spent states submit zero defense draws');
+  (row.after.vfx.mechanismDrawSlots === 0 || row.after.vfx.mechanismDrawSlots === 2) &&
+  (row.after.vfx.stage === 'dormant' || row.after.vfx.stage === 'ambient')),
+'post-spent states submit no action atlas; fixed shutters may continue a non-emissive ambient breath');
 gate(report.faces.every((row) => row.after.pressure.environment.signals >= row.face),
 'each fire impulse reaches pressure only through a later safe spawner window',
 report.faces.map((row) => [row.face, row.after.pressure.environment]));

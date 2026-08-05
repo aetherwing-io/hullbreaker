@@ -505,10 +505,19 @@ function onHostileSync(e) {
 function onBulletHostileImpact(
   _slot, type, x, y, vx, vy, targetId, targetKind, damaged, lethal,
 ) {
-  if (!damaged) return;
   const inv = 1 / Math.max(0.001, Math.hypot(vx, vy));
   const ds = vx * inv, dy = vy * inv;
   const W = WEAPON_FX[type] || WEAPON_FX.R;
+
+  if (!damaged) {
+    // Armour and shields need a different sentence from a wound, but silence
+    // made a perfectly valid hit look like a miss. One cold cross-seam and a
+    // reverse ricochet communicate BLOCKED without adding a HUD badge.
+    const shield = targetKind === 'polyp' ? PAL.polyp : PAL.modCapsule;
+    fxDirectionalFlash(86, 0.62, 0.11, x, y, shield, -dy, ds, 0.04);
+    fxDirectedBurst(J.impact, x, y, shield, -ds, -dy, 0.72, 0.42);
+    return;
+  }
 
   // Advance the hp observer from the already-resolved sim row. This prevents
   // next frame's ordinary hostile sync from manufacturing a second, late,

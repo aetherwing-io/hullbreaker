@@ -44,7 +44,7 @@ export const PACE_CONTRACT = Object.freeze({
 // the baseline claim false.
 export const CURRENT_SIX_FACE_PATH = Object.freeze({
   faces: 6,
-  faceTiles: 65,
+  faceTiles: 88,
   introTiles: 24,
   outroTiles: 31,
   turnDeg: 30,

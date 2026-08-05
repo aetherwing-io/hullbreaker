@@ -16,14 +16,16 @@ import { view, host } from './bridge.js';
 import { gameMs, sliceStats, approach } from './time.js';
 import { sLeftEdge, sRightEdge } from './edges.js';
 import {
-  keys, jumpBufferedUntil, bufferJumpUntil, clearJumpBuffer, releaseAllKeys,
+  keys, jumpBufferedUntil, swapBufferedUntil, bufferJumpUntil, clearJumpBuffer,
+  clearSwapBuffer, releaseAllKeys,
 } from './input.js';
 import {
   LEVEL_LEN, groundH, groundTopAt, ladders, platforms, isSolid, activeScrollSpeed,
 } from './level.js';
 import { state, setState } from './state.js';
 import {
-  currentGun, currentGunDef, currentWeapon, fireWeapon, setWeapon, weaponHeldSince,
+  carriedGun, currentGunDef, currentWeapon, dropCarriedGun, fireWeapon,
+  setWeapon, swapWeapon, weaponHeldSince,
 } from './weapons.js';
 import { mods, clearMods } from './mods.js';
 import { CAP, spawnCapsule } from './capsules.js';
@@ -155,6 +157,10 @@ const hookApi = { chainMult: chainLaunchMult, clearTraversal: clearPlayerTravers
 
 export function updatePlayer(dt) {
   computeAim();
+  if (swapBufferedUntil > gameMs) {
+    swapWeapon();
+    clearSwapBuffer();
+  }
   const frameStartX = player.x;
 
   // ?crouch=1 (A/B prototype): a planted stance that drops the firing line onto
@@ -610,13 +616,13 @@ export function damagePlayer(amount, fromX) {
   player.grounded = false;
   // classic tension: the weapon capsule pops out toward the threat —
   // recatch it within the window or fall back to the rifle
-  if (!currentGun.starter && player.hp > 0 &&
+  if (carriedGun && player.hp > 0 &&
       gameMs - weaponHeldSince >= CAP.pickupGraceMs) {
+    const droppedGun = dropCarriedGun();
     spawnCapsule(
-      'letter', currentWeapon, player.x, player.y + 1.2, 'pop',
-      -away * CAP.popVx, currentGun,
+      'letter', droppedGun.letter, player.x, player.y + 1.2, 'pop',
+      -away * CAP.popVx, droppedGun,
     );
-    setWeapon('R');
   }
   if (player.hp <= 0) loseLife('damage');
 }

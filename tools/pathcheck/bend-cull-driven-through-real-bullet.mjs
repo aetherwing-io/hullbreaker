@@ -7,6 +7,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
+import { BEND_S } from '../../src/pure/path.js';
 import { ok, srcDir } from './_context.mjs';
 
 export const title = 'the bend cull, driven through the REAL bullet loop ----------------';
@@ -23,6 +24,7 @@ export async function run(SHARED) {
  * THIS side of the bend must still kill it, or "no damage past the bend" would
  * pass for a build where the gun simply stopped working.                    */
 {
+  const firstBend = BEND_S[0];
   const simUrl = 'file://' + join(srcDir, 'sim');
   const child = `
     globalThis.__HB_QUERY__ = '';
@@ -36,11 +38,12 @@ export async function run(SHARED) {
     const LANE = 7;                       // above every generator ground height
     const culls = [];
     B.installView({ bullets: { bendCulled: (i, b, fromX) => culls.push({ x: b.x, fromX, phase: 'far' }) } });
-    P.player.x = 85; P.player.y = 3; P.player.facing = 1;
+    const BEND = ${firstBend};
+    P.player.x = BEND - 5; P.player.y = 3; P.player.facing = 1;
     // both hostiles fully materialized before anything is fired: a wasp still
     // condensing out of the tower depth has no hitbox at all
-    H.spawnHostile(92, LANE, 0);          // past the bend: must be unreachable
-    H.spawnHostile(87, LANE, 0);          // before it: the control, must die
+    H.spawnHostile(BEND + 2, LANE, 0);    // past the bend: must be unreachable
+    H.spawnHostile(BEND - 3, LANE, 0);    // before it: the control, must die
     T.advanceGameMs(2000);
     const past = H.hostiles[0], near = H.hostiles[1];
     const pastHp0 = past.hp, nearHp0 = near.hp;
@@ -52,15 +55,15 @@ export async function run(SHARED) {
     };
     // 1. the case: fire past the bend, with the near hostile removed from the line
     H.hostiles.splice(1, 1);
-    W.fireWeapon('L', 85, LANE, 1, 0, true);        // the fastest bolt in the roster
+    W.fireWeapon('L', BEND - 5, LANE, 1, 0, true);  // the fastest bolt in the roster
     run(90);
     const pastHp = past.hp;
     // 2. the control: put the near hostile back and fire the same shot
-    H.spawnHostile(87, LANE, 0);
+    H.spawnHostile(BEND - 3, LANE, 0);
     T.advanceGameMs(2000);
     const ctrl = H.hostiles[H.hostiles.length - 1];
     const ctrlHp0 = ctrl.hp;
-    W.fireWeapon('R', 85, LANE, 1, 0, true);        // R does not pierce: it stops here
+    W.fireWeapon('R', BEND - 5, LANE, 1, 0, true);  // R does not pierce: it stops here
     run(30);
     const ctrlHp = ctrl.hp;
     // 3. backwards: from the far facet toward the one RIG came from, with the
@@ -68,7 +71,7 @@ export async function run(SHARED) {
     H.hostiles.splice(0, H.hostiles.length);
     const back = [];
     B.installView({ bullets: { bendCulled: (i, b, fromX) => back.push({ x: b.x, fromX }) } });
-    W.fireWeapon('R', 95, LANE, -1, 0, true);
+    W.fireWeapon('R', BEND + 5, LANE, -1, 0, true);
     run(60);
     console.log(JSON.stringify({
       culls, back, pastHp0, pastHp, ctrlHp0, ctrlHp,
@@ -87,9 +90,9 @@ export async function run(SHARED) {
     ok(sim.culls.length === 1, 'one shot fired across a bend, one cull, got ' + sim.culls.length);
     if (sim.culls.length) {
       const c = sim.culls[0];
-      ok(c.x >= 90 && c.x <= 90.5,
+      ok(c.x >= firstBend && c.x <= firstBend + 0.5,
          'the bolt dies within half a tile past the boundary, at ' + c.x.toFixed(3));
-      ok(c.fromX < 90,
+      ok(c.fromX < firstBend,
          'the departure tangent is read from BEFORE the boundary (' + c.fromX.toFixed(3) + ')');
     }
     ok(sim.pastHp === sim.pastHp0,
@@ -97,7 +100,8 @@ export async function run(SHARED) {
     ok(sim.ctrlHp < sim.ctrlHp0,
        'CONTROL: the same bolt still kills a hostile on this side of the bend ' +
        '(' + sim.ctrlHp0 + ' -> ' + sim.ctrlHp + ')');
-    ok(sim.back.length === 1 && sim.back[0].x <= 90 && sim.back[0].x > 89.4,
+    ok(sim.back.length === 1 && sim.back[0].x <= firstBend &&
+       sim.back[0].x > firstBend - 0.6,
        'a shot fired back toward the previous facet dies at the same boundary, got ' +
        JSON.stringify(sim.back));
     ok(sim.live === 0, 'no culled projectile is left alive in the pool');
