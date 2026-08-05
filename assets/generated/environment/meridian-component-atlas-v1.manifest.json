@@ -21,9 +21,9 @@
     "humanApproved": true,
     "approvedComponents": 32,
     "rejectedComponents": 0,
-    "alphaCoverage": 0.3094,
+    "alphaCoverage": 0.3154,
     "greenRemnant": 0,
-    "minifiedGreenRemnant": 0.000109,
+    "minifiedGreenRemnant": 0.000134,
     "alphaEdgeGreenRemnant": 0,
     "edgeProof": "assets/generated/environment/meridian-component-atlas-v1.edge-proof.png",
     "nativeBoundsMeasured": true,
@@ -53,7 +53,8 @@
   "sources": [
     {
       "id": "structure",
-      "file": "meridian-components-structure-chroma-v1.png",
+      "file": "meridian-components-structure-pixel-v2.png",
+      "keyMode": "alpha",
       "width": 1254,
       "height": 1254,
       "approvedComponents": 16,
@@ -62,6 +63,7 @@
     {
       "id": "defense",
       "file": "meridian-components-defense-chroma-v1.png",
+      "keyMode": "green",
       "width": 1254,
       "height": 1254,
       "approvedComponents": 16,
@@ -107,19 +109,20 @@
       "source": "structure",
       "sourceCell": 0,
       "sourceRect": {
-        "x": 14,
-        "y": 118,
-        "w": 320,
-        "h": 98
+        "x": 24,
+        "y": 116,
+        "w": 300,
+        "h": 95
       },
-      "sourceConnectedArea": 23034,
+      "sourceConnectedArea": 19065,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
-        "w": 308,
-        "h": 86
+        "w": 288,
+        "h": 83
       },
-      "nativeAspect": 3.5814,
+      "nativeAspect": 3.4699,
       "atlasCell": {
         "index": 0,
         "col": 0,
@@ -127,19 +130,19 @@
       },
       "visibleRect": {
         "x": 18,
-        "y": 98,
+        "y": 97,
         "w": 220,
-        "h": 60
+        "h": 61
       },
       "uvRect": [
         0.0087890625,
-        0.095703125,
+        0.0947265625,
         0.1162109375,
         0.154296875
       ],
       "guard": {
         "left": 18,
-        "top": 98,
+        "top": 97,
         "right": 18,
         "bottom": 98
       }
@@ -182,19 +185,20 @@
       "source": "structure",
       "sourceCell": 1,
       "sourceRect": {
-        "x": 337,
-        "y": 115,
-        "w": 294,
-        "h": 103
+        "x": 344,
+        "y": 121,
+        "w": 291,
+        "h": 88
       },
-      "sourceConnectedArea": 20122,
+      "sourceConnectedArea": 18237,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
-        "w": 282,
-        "h": 92
+        "w": 279,
+        "h": 76
       },
-      "nativeAspect": 3.0652,
+      "nativeAspect": 3.6711,
       "atlasCell": {
         "index": 1,
         "col": 1,
@@ -202,21 +206,21 @@
       },
       "visibleRect": {
         "x": 274,
-        "y": 93,
+        "y": 99,
         "w": 220,
-        "h": 69
+        "h": 58
       },
       "uvRect": [
         0.1337890625,
-        0.0908203125,
+        0.0966796875,
         0.2412109375,
-        0.158203125
+        0.1533203125
       ],
       "guard": {
         "left": 18,
-        "top": 93,
+        "top": 99,
         "right": 18,
-        "bottom": 94
+        "bottom": 99
       }
     },
     {
@@ -257,19 +261,20 @@
       "source": "structure",
       "sourceCell": 2,
       "sourceRect": {
-        "x": 651,
-        "y": 83,
-        "w": 282,
-        "h": 164
+        "x": 663,
+        "y": 105,
+        "w": 262,
+        "h": 119
       },
-      "sourceConnectedArea": 33941,
+      "sourceConnectedArea": 21909,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
-        "w": 270,
-        "h": 152
+        "w": 250,
+        "h": 107
       },
-      "nativeAspect": 1.7763,
+      "nativeAspect": 2.3364,
       "atlasCell": {
         "index": 2,
         "col": 2,
@@ -277,21 +282,21 @@
       },
       "visibleRect": {
         "x": 530,
-        "y": 66,
+        "y": 82,
         "w": 220,
-        "h": 123
+        "h": 92
       },
       "uvRect": [
         0.2587890625,
-        0.064453125,
+        0.080078125,
         0.3662109375,
-        0.1845703125
+        0.169921875
       ],
       "guard": {
         "left": 18,
-        "top": 66,
+        "top": 82,
         "right": 18,
-        "bottom": 67
+        "bottom": 82
       }
     },
     {
@@ -338,18 +343,19 @@
       "sourceCell": 3,
       "sourceRect": {
         "x": 956,
-        "y": 101,
-        "w": 284,
-        "h": 130
+        "y": 104,
+        "w": 276,
+        "h": 123
       },
-      "sourceConnectedArea": 11871,
+      "sourceConnectedArea": 14029,
+      "sourceConnectedParts": 2,
       "nativeBounds": {
         "x": 6,
         "y": 6,
-        "w": 272,
-        "h": 118
+        "w": 264,
+        "h": 111
       },
-      "nativeAspect": 2.3051,
+      "nativeAspect": 2.3784,
       "atlasCell": {
         "index": 3,
         "col": 3,
@@ -357,21 +363,21 @@
       },
       "visibleRect": {
         "x": 786,
-        "y": 80,
+        "y": 82,
         "w": 220,
-        "h": 95
+        "h": 92
       },
       "uvRect": [
         0.3837890625,
-        0.078125,
+        0.080078125,
         0.4912109375,
-        0.1708984375
+        0.169921875
       ],
       "guard": {
         "left": 18,
-        "top": 80,
+        "top": 82,
         "right": 18,
-        "bottom": 81
+        "bottom": 82
       }
     },
     {
@@ -422,6 +428,7 @@
         "h": 225
       },
       "sourceConnectedArea": 37651,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
@@ -504,6 +511,7 @@
         "h": 135
       },
       "sourceConnectedArea": 31677,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
@@ -583,6 +591,7 @@
         "h": 206
       },
       "sourceConnectedArea": 22654,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
@@ -662,6 +671,7 @@
         "h": 216
       },
       "sourceConnectedArea": 27577,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 5,
         "y": 5,
@@ -731,19 +741,20 @@
       "source": "structure",
       "sourceCell": 4,
       "sourceRect": {
-        "x": 20,
-        "y": 318,
-        "w": 294,
-        "h": 243
+        "x": 43,
+        "y": 313,
+        "w": 252,
+        "h": 253
       },
-      "sourceConnectedArea": 22240,
+      "sourceConnectedArea": 15876,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
-        "w": 282,
-        "h": 231
+        "w": 240,
+        "h": 241
       },
-      "nativeAspect": 1.2208,
+      "nativeAspect": 0.9959,
       "atlasCell": {
         "index": 8,
         "col": 0,
@@ -751,21 +762,21 @@
       },
       "visibleRect": {
         "x": 18,
-        "y": 294,
-        "w": 220,
-        "h": 180
+        "y": 274,
+        "w": 219,
+        "h": 220
       },
       "uvRect": [
         0.0087890625,
-        0.287109375,
-        0.1162109375,
-        0.462890625
+        0.267578125,
+        0.11572265625,
+        0.482421875
       ],
       "guard": {
         "left": 18,
-        "top": 38,
-        "right": 18,
-        "bottom": 38
+        "top": 18,
+        "right": 19,
+        "bottom": 18
       }
     },
     {
@@ -806,41 +817,42 @@
       "source": "structure",
       "sourceCell": 5,
       "sourceRect": {
-        "x": 369,
-        "y": 326,
-        "w": 248,
-        "h": 242
+        "x": 381,
+        "y": 325,
+        "w": 217,
+        "h": 234
       },
-      "sourceConnectedArea": 25777,
+      "sourceConnectedArea": 32914,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
-        "w": 236,
-        "h": 230
+        "w": 205,
+        "h": 222
       },
-      "nativeAspect": 1.0261,
+      "nativeAspect": 0.9234,
       "atlasCell": {
         "index": 9,
         "col": 1,
         "row": 1
       },
       "visibleRect": {
-        "x": 274,
-        "y": 276,
-        "w": 220,
-        "h": 215
+        "x": 282,
+        "y": 274,
+        "w": 203,
+        "h": 220
       },
       "uvRect": [
-        0.1337890625,
-        0.26953125,
-        0.2412109375,
-        0.4794921875
+        0.1376953125,
+        0.267578125,
+        0.23681640625,
+        0.482421875
       ],
       "guard": {
-        "left": 18,
-        "top": 20,
-        "right": 18,
-        "bottom": 21
+        "left": 26,
+        "top": 18,
+        "right": 27,
+        "bottom": 18
       }
     },
     {
@@ -887,40 +899,41 @@
       "source": "structure",
       "sourceCell": 6,
       "sourceRect": {
-        "x": 713,
-        "y": 287,
-        "w": 138,
-        "h": 300
+        "x": 697,
+        "y": 300,
+        "w": 139,
+        "h": 288
       },
-      "sourceConnectedArea": 19096,
+      "sourceConnectedArea": 21638,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
-        "w": 126,
-        "h": 288
+        "w": 127,
+        "h": 276
       },
-      "nativeAspect": 0.4375,
+      "nativeAspect": 0.4601,
       "atlasCell": {
         "index": 10,
         "col": 2,
         "row": 1
       },
       "visibleRect": {
-        "x": 592,
+        "x": 590,
         "y": 274,
-        "w": 95,
+        "w": 100,
         "h": 220
       },
       "uvRect": [
-        0.2890625,
+        0.2880859375,
         0.267578125,
-        0.33544921875,
+        0.3369140625,
         0.482421875
       ],
       "guard": {
-        "left": 80,
+        "left": 78,
         "top": 18,
-        "right": 81,
+        "right": 78,
         "bottom": 18
       }
     },
@@ -962,19 +975,20 @@
       "source": "structure",
       "sourceCell": 7,
       "sourceRect": {
-        "x": 927,
-        "y": 400,
-        "w": 314,
-        "h": 134
+        "x": 917,
+        "y": 401,
+        "w": 309,
+        "h": 123
       },
-      "sourceConnectedArea": 13366,
+      "sourceConnectedArea": 15125,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
-        "w": 302,
-        "h": 122
+        "w": 297,
+        "h": 112
       },
-      "nativeAspect": 2.4754,
+      "nativeAspect": 2.6518,
       "atlasCell": {
         "index": 11,
         "col": 3,
@@ -982,21 +996,21 @@
       },
       "visibleRect": {
         "x": 786,
-        "y": 340,
+        "y": 343,
         "w": 220,
-        "h": 88
+        "h": 81
       },
       "uvRect": [
         0.3837890625,
-        0.33203125,
+        0.3349609375,
         0.4912109375,
-        0.41796875
+        0.4140625
       ],
       "guard": {
         "left": 18,
-        "top": 84,
+        "top": 87,
         "right": 18,
-        "bottom": 84
+        "bottom": 88
       }
     },
     {
@@ -1048,6 +1062,7 @@
         "h": 184
       },
       "sourceConnectedArea": 33303,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 5,
@@ -1131,6 +1146,7 @@
         "h": 100
       },
       "sourceConnectedArea": 20913,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
@@ -1214,6 +1230,7 @@
         "h": 219
       },
       "sourceConnectedArea": 22060,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 5,
@@ -1294,6 +1311,7 @@
         "h": 249
       },
       "sourceConnectedArea": 35702,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
@@ -1371,19 +1389,20 @@
       "source": "structure",
       "sourceCell": 8,
       "sourceRect": {
-        "x": 12,
-        "y": 705,
-        "w": 335,
-        "h": 73
+        "x": 20,
+        "y": 719,
+        "w": 342,
+        "h": 75
       },
-      "sourceConnectedArea": 16791,
+      "sourceConnectedArea": 17698,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
-        "w": 323,
-        "h": 61
+        "w": 330,
+        "h": 63
       },
-      "nativeAspect": 5.2951,
+      "nativeAspect": 5.2381,
       "atlasCell": {
         "index": 16,
         "col": 0,
@@ -1457,40 +1476,41 @@
       "source": "structure",
       "sourceCell": 9,
       "sourceRect": {
-        "x": 394,
-        "y": 628,
-        "w": 181,
-        "h": 203
+        "x": 396,
+        "y": 640,
+        "w": 167,
+        "h": 181
       },
-      "sourceConnectedArea": 19177,
+      "sourceConnectedArea": 16170,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
-        "x": 5,
-        "y": 6,
-        "w": 170,
-        "h": 191
+        "x": 6,
+        "y": 5,
+        "w": 155,
+        "h": 170
       },
-      "nativeAspect": 0.8901,
+      "nativeAspect": 0.9118,
       "atlasCell": {
         "index": 17,
         "col": 1,
         "row": 2
       },
       "visibleRect": {
-        "x": 286,
+        "x": 283,
         "y": 530,
-        "w": 196,
+        "w": 202,
         "h": 220
       },
       "uvRect": [
-        0.1396484375,
+        0.13818359375,
         0.517578125,
-        0.2353515625,
+        0.23681640625,
         0.732421875
       ],
       "guard": {
-        "left": 30,
+        "left": 27,
         "top": 18,
-        "right": 30,
+        "right": 27,
         "bottom": 18
       }
     },
@@ -1543,19 +1563,20 @@
       "source": "structure",
       "sourceCell": 10,
       "sourceRect": {
-        "x": 633,
-        "y": 625,
-        "w": 277,
-        "h": 212
+        "x": 638,
+        "y": 650,
+        "w": 230,
+        "h": 167
       },
-      "sourceConnectedArea": 27892,
+      "sourceConnectedArea": 20262,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
-        "w": 265,
-        "h": 200
+        "w": 218,
+        "h": 155
       },
-      "nativeAspect": 1.325,
+      "nativeAspect": 1.4065,
       "atlasCell": {
         "index": 18,
         "col": 2,
@@ -1563,21 +1584,21 @@
       },
       "visibleRect": {
         "x": 530,
-        "y": 557,
+        "y": 561,
         "w": 220,
-        "h": 166
+        "h": 157
       },
       "uvRect": [
         0.2587890625,
-        0.5439453125,
+        0.5478515625,
         0.3662109375,
-        0.7060546875
+        0.701171875
       ],
       "guard": {
         "left": 18,
-        "top": 45,
+        "top": 49,
         "right": 18,
-        "bottom": 45
+        "bottom": 50
       }
     },
     {
@@ -1624,19 +1645,20 @@
       "source": "structure",
       "sourceCell": 11,
       "sourceRect": {
-        "x": 930,
-        "y": 694,
-        "w": 309,
-        "h": 104
+        "x": 913,
+        "y": 698,
+        "w": 311,
+        "h": 109
       },
-      "sourceConnectedArea": 22760,
+      "sourceConnectedArea": 23956,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
-        "w": 297,
-        "h": 92
+        "w": 299,
+        "h": 97
       },
-      "nativeAspect": 3.2283,
+      "nativeAspect": 3.0825,
       "atlasCell": {
         "index": 19,
         "col": 3,
@@ -1644,21 +1666,21 @@
       },
       "visibleRect": {
         "x": 786,
-        "y": 606,
+        "y": 605,
         "w": 220,
-        "h": 67
+        "h": 70
       },
       "uvRect": [
         0.3837890625,
-        0.591796875,
+        0.5908203125,
         0.4912109375,
-        0.6572265625
+        0.6591796875
       ],
       "guard": {
         "left": 18,
-        "top": 94,
+        "top": 93,
         "right": 18,
-        "bottom": 95
+        "bottom": 93
       }
     },
     {
@@ -1713,6 +1735,7 @@
         "h": 140
       },
       "sourceConnectedArea": 30322,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
@@ -1796,6 +1819,7 @@
         "h": 134
       },
       "sourceConnectedArea": 25769,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
@@ -1876,6 +1900,7 @@
         "h": 216
       },
       "sourceConnectedArea": 37013,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
@@ -1959,6 +1984,7 @@
         "h": 269
       },
       "sourceConnectedArea": 28607,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
@@ -2026,19 +2052,20 @@
       "source": "structure",
       "sourceCell": 12,
       "sourceRect": {
-        "x": 13,
-        "y": 889,
-        "w": 306,
-        "h": 285
+        "x": 28,
+        "y": 902,
+        "w": 274,
+        "h": 256
       },
-      "sourceConnectedArea": 43392,
+      "sourceConnectedArea": 30351,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
-        "w": 294,
-        "h": 273
+        "w": 262,
+        "h": 244
       },
-      "nativeAspect": 1.0769,
+      "nativeAspect": 1.0738,
       "atlasCell": {
         "index": 24,
         "col": 0,
@@ -2046,21 +2073,21 @@
       },
       "visibleRect": {
         "x": 18,
-        "y": 794,
+        "y": 793,
         "w": 220,
-        "h": 203
+        "h": 206
       },
       "uvRect": [
         0.0087890625,
-        0.775390625,
+        0.7744140625,
         0.1162109375,
-        0.9736328125
+        0.9755859375
       ],
       "guard": {
         "left": 18,
-        "top": 26,
+        "top": 25,
         "right": 18,
-        "bottom": 27
+        "bottom": 25
       }
     },
     {
@@ -2099,41 +2126,42 @@
       "source": "structure",
       "sourceCell": 13,
       "sourceRect": {
-        "x": 336,
-        "y": 917,
-        "w": 256,
+        "x": 354,
+        "y": 916,
+        "w": 227,
         "h": 242
       },
-      "sourceConnectedArea": 35046,
+      "sourceConnectedArea": 36320,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
-        "w": 244,
+        "w": 215,
         "h": 230
       },
-      "nativeAspect": 1.0609,
+      "nativeAspect": 0.9348,
       "atlasCell": {
         "index": 25,
         "col": 1,
         "row": 3
       },
       "visibleRect": {
-        "x": 274,
-        "y": 793,
-        "w": 220,
-        "h": 206
+        "x": 281,
+        "y": 786,
+        "w": 206,
+        "h": 220
       },
       "uvRect": [
-        0.1337890625,
-        0.7744140625,
-        0.2412109375,
-        0.9755859375
+        0.13720703125,
+        0.767578125,
+        0.23779296875,
+        0.982421875
       ],
       "guard": {
-        "left": 18,
-        "top": 25,
-        "right": 18,
-        "bottom": 25
+        "left": 25,
+        "top": 18,
+        "right": 25,
+        "bottom": 18
       }
     },
     {
@@ -2177,41 +2205,42 @@
       "source": "structure",
       "sourceCell": 14,
       "sourceRect": {
-        "x": 649,
-        "y": 913,
-        "w": 250,
-        "h": 261
+        "x": 645,
+        "y": 941,
+        "w": 224,
+        "h": 203
       },
-      "sourceConnectedArea": 50253,
+      "sourceConnectedArea": 31657,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
-        "w": 238,
-        "h": 249
+        "w": 212,
+        "h": 191
       },
-      "nativeAspect": 0.9558,
+      "nativeAspect": 1.1099,
       "atlasCell": {
         "index": 26,
         "col": 2,
         "row": 3
       },
       "visibleRect": {
-        "x": 534,
-        "y": 786,
-        "w": 211,
-        "h": 220
+        "x": 530,
+        "y": 797,
+        "w": 220,
+        "h": 198
       },
       "uvRect": [
-        0.2607421875,
-        0.767578125,
-        0.36376953125,
-        0.982421875
+        0.2587890625,
+        0.7783203125,
+        0.3662109375,
+        0.9716796875
       ],
       "guard": {
-        "left": 22,
-        "top": 18,
-        "right": 23,
-        "bottom": 18
+        "left": 18,
+        "top": 29,
+        "right": 18,
+        "bottom": 29
       }
     },
     {
@@ -2258,19 +2287,20 @@
       "source": "structure",
       "sourceCell": 15,
       "sourceRect": {
-        "x": 925,
-        "y": 934,
-        "w": 310,
-        "h": 212
+        "x": 939,
+        "y": 893,
+        "w": 274,
+        "h": 273
       },
-      "sourceConnectedArea": 41274,
+      "sourceConnectedArea": 41113,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
-        "w": 298,
-        "h": 200
+        "w": 263,
+        "h": 261
       },
-      "nativeAspect": 1.49,
+      "nativeAspect": 1.0077,
       "atlasCell": {
         "index": 27,
         "col": 3,
@@ -2278,21 +2308,21 @@
       },
       "visibleRect": {
         "x": 786,
-        "y": 822,
+        "y": 786,
         "w": 220,
-        "h": 147
+        "h": 219
       },
       "uvRect": [
         0.3837890625,
-        0.802734375,
+        0.767578125,
         0.4912109375,
-        0.9462890625
+        0.9814453125
       ],
       "guard": {
         "left": 18,
-        "top": 54,
+        "top": 18,
         "right": 18,
-        "bottom": 55
+        "bottom": 19
       }
     },
     {
@@ -2346,6 +2376,7 @@
         "h": 295
       },
       "sourceConnectedArea": 41105,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
@@ -2427,6 +2458,7 @@
         "h": 249
       },
       "sourceConnectedArea": 45688,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
@@ -2510,6 +2542,7 @@
         "h": 296
       },
       "sourceConnectedArea": 33434,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,
@@ -2590,6 +2623,7 @@
         "h": 265
       },
       "sourceConnectedArea": 44093,
+      "sourceConnectedParts": 1,
       "nativeBounds": {
         "x": 6,
         "y": 6,

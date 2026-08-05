@@ -12,18 +12,26 @@ import { normalAscentPitchAt } from '../pure/ascent.js';
 import { installView } from '../sim/bridge.js';
 import { DEFENSE_VFX_ART_SLOT } from './defense-vfx-art.js';
 import { DEFENSE_VFX_PACK } from './defense-vfx-pack.js';
-import { foregroundResponseSockets } from './level.js';
+import { foregroundResponseSockets, foregroundVentEmitters } from './level.js';
+import { fxVapor } from './fx.js';
 import { PAL } from './palette.js';
 import { postGain } from './post.js';
 import { HIDE, scene } from './scene.js';
 
 const sockets = foregroundResponseSockets();
+const ventEmitters = foregroundVentEmitters();
 const socketsByPhase = Array.from({ length: 6 }, () => []);
+const ventEmittersByPhase = Array.from({ length: 6 }, () => []);
 for (const socket of sockets) {
   if (socket.phase >= 0 && socket.phase < socketsByPhase.length)
     socketsByPhase[socket.phase].push(socket);
 }
 for (const list of socketsByPhase) list.sort((a, b) => a.route.s - b.route.s);
+for (const emitter of ventEmitters) {
+  if (emitter.phase >= 0 && emitter.phase < ventEmittersByPhase.length)
+    ventEmittersByPhase[emitter.phase].push(emitter);
+}
+for (const list of ventEmittersByPhase) list.sort((a, b) => a.s - b.s);
 
 const catalog = new Map();
 for (const component of DEFENSE_VFX_PACK.components) {
@@ -59,6 +67,8 @@ const stats = {
   activations: 0,
   ambientCycles: 0,
   missedSocketEvents: 0,
+  ventEmitters: ventEmitters.length,
+  ventPulses: 0,
   resets: 0,
 };
 const componentsUsed = new Set();
@@ -263,6 +273,9 @@ let ambientCycle = -1;
 let ambientLifeFace = -1;
 let ambientLifeCycle = -1;
 let ambientLifeHidden = false;
+let lastVentPhase = -1;
+let lastVentStage = '';
+let lastVentBeat = -1;
 
 // Dormant hull machinery gets a slow, recurring physical breath between the
 // authored immune events. It never draws the action atlas, glows, queues an
@@ -272,6 +285,41 @@ const AMBIENT_PERIOD_MS = 3600;
 const AMBIENT_ACTIVE_MS = 3000;
 const AMBIENT_LIFE_PERIOD_MS = 2800;
 const AMBIENT_LIFE_ACTIVE_MS = 2300;
+
+function syncVentExhaust(event) {
+  if (!event || event.face <= 0) return;
+  const list = ventEmittersByPhase[event.phase] || [];
+  if (!list.length) return;
+  const dormant = event.stage === 'dormant';
+  if (dormant && event.reason !== 'awaiting-activation' && event.reason !== 'spent') return;
+  const period = dormant ? 1500 : event.stage === 'fire' ? 260
+    : event.stage === 'tell' ? 620 : 460;
+  const now = Math.max(0, Number(event.nowMs) || 0);
+  const beat = Math.floor(now / period);
+  if (event.phase === lastVentPhase && event.stage === lastVentStage && beat === lastVentBeat)
+    return;
+  lastVentPhase = event.phase;
+  lastVentStage = event.stage;
+  lastVentBeat = beat;
+
+  const lo = Math.min(event.viewLeft, event.viewRight) - 1.5;
+  const hi = Math.min(Math.max(event.viewLeft, event.viewRight) + 1.5, event.cornerLimit);
+  const start = beat % list.length;
+  let emitter = null;
+  for (let step = 0; step < list.length; step++) {
+    const candidate = list[(start + step) % list.length];
+    if (candidate.s >= lo && candidate.s <= hi) {
+      emitter = candidate;
+      break;
+    }
+  }
+  if (!emitter) return;
+  const scale = dormant ? 0.30 : event.stage === 'fire' ? 0.72
+    : event.stage === 'tell' ? 0.46 : 0.40;
+  const drift = ((beat + start) & 1 ? 1 : -1) * (dormant ? 0.12 : 0.28);
+  fxVapor(emitter.s, emitter.y, PAL.vapor, drift, scale, emitter.depth);
+  stats.ventPulses++;
+}
 
 function hashString(text) {
   let value = 2166136261;
@@ -772,6 +820,7 @@ function sync(event) {
     hide();
     return;
   }
+  syncVentExhaust(event);
   if (event.stage === 'dormant') {
     eventKey = '';
     currentComponent = null;
@@ -822,6 +871,9 @@ function reset() {
   ambientLifeFace = -1;
   ambientLifeCycle = -1;
   ambientLifeSockets.fill(null);
+  lastVentPhase = -1;
+  lastVentStage = '';
+  lastVentBeat = -1;
   stats.resets++;
   stats.maxVisible = 0;
   stats.stageSwitches = 0;

@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { normalAscentAltAt, normalAscentPitchAt } from '../pure/ascent.js';
 import { defensePhaseForRouteFace } from '../pure/meridian-response.js';
+import { VERTICAL_ASSAULT } from '../pure/vertical-assault.js';
 import {
   SEGS, CORNER_S, polyAt, headingAt, faceIndexAt,
 } from '../pure/path.js';
@@ -222,6 +223,7 @@ const worldDetailPanels = [];
 const worldDetailRows = [];
 const ladderPools = [];
 const responseSockets = [];
+const ventEmitters = [];
 const componentPlanes = [];
 let dressingCullStamp = '';
 
@@ -230,8 +232,16 @@ export function foregroundResponseSockets() {
   // socket ownership from accidental mutation without cloning on the hot path.
   return responseSockets.slice();
 }
+export function foregroundVentEmitters() {
+  // Vent Stack presentation and its exhaust share these immutable route-space
+  // mouths. Returning a copy keeps render response code from mutating the
+  // level bake while avoiding another mesh, texture or gameplay fixture.
+  return ventEmitters.slice();
+}
 if (typeof globalThis !== 'undefined')
   globalThis.__HB_FOREGROUND_RESPONSE_SOCKETS = foregroundResponseSockets;
+if (typeof globalThis !== 'undefined')
+  globalThis.__HB_FOREGROUND_VENT_EMITTERS = foregroundVentEmitters;
 // Keep the historic tile-pool source guard scoped to its intended pool: the
 // value-ladder test counts literal THREE.InstancedMesh construction sites.
 // DressingPool is still the same class; the alias names this separate pass.
@@ -501,6 +511,14 @@ function registerResponseSocket(
   const margin = Math.min(0.46, Math.max(0.12, (moduleEnd - moduleStart) * 0.12));
   const socketS = Math.max(moduleStart + margin,
     Math.min(moduleEnd - margin, anchorS + response.routeOffset));
+  const routeFace = faceIndexAt(socketS, CONFIG);
+  const faceCorner = CONFIG.path.introTiles + routeFace * CONFIG.path.faceTiles;
+  // The gate apron must read as committed turn machinery, not an armed organ
+  // hanging in the last two tiles before the fold. Two old sockets landed
+  // there after module clamping and were visibly unsupported from the next
+  // camera angle; omit that optional dressing rather than detach it from its
+  // owning face.
+  if (routeFace >= 1 && socketS >= faceCorner - VERTICAL_ASSAULT.gateApron) return null;
   const socketY = groundY + response.verticalOffset;
   const yaw = headingAt(SEGS, socketS);
   polyAt(SEGS, socketS, _dressP);
@@ -1058,6 +1076,17 @@ function dressFaceAwareCatwalk(p, index, len, mid, gate) {
       trunkS, p.y - 1.02, componentDepth,
       0.92, 0.92, 'vent-hood', seed + 127, 0, gate,
     );
+    ventEmitters.push(Object.freeze({
+      id: `vent-${p.face || 0}-${index}`,
+      phase: defensePhaseForRouteFace(p.face || faceIndexAt(trunkS, CONFIG)),
+      s: trunkS,
+      // The hood is mounted below the collision deck; start vapor at its
+      // louver mouth so the short pooled wake clears the lip instead of
+      // appearing from the platform top or a detached point in open air.
+      y: p.y - 0.92,
+      depth: componentDepth + 0.12,
+      visibilityS: gate,
+    }));
     dressPipe(
       pipeS, p.y - 0.72 - drop / 2, 0.96,
       Math.min(1.82, drop), 0.09, PAL.limb.machine,
@@ -1537,7 +1566,12 @@ function buildIndustrialDressing(panelMaterial) {
   }
   const componentReady = FOREGROUND_COMPONENT_ART_SLOT.state === 'ready' &&
     !!FOREGROUND_COMPONENT_ART_SLOT.tex;
-  const componentMaterial = componentReady ? applySurface(new THREE.MeshStandardMaterial({
+  // These cutouts already contain their own one-pixel value ladder. Lighting
+  // them again through StandardMaterial crushed the teal/copper clusters into
+  // near-black at FAR and made the whole atlas look like muddy decoration.
+  // BasicMaterial is still fogged, tone-mapped, alpha-tested and depth-writing;
+  // it is not emissive and remains seated on the physical backplates below.
+  const componentMaterial = componentReady ? new THREE.MeshBasicMaterial({
     color: 0xffffff,
     map: FOREGROUND_COMPONENT_ART_SLOT.tex,
     vertexColors: true,
@@ -1548,8 +1582,8 @@ function buildIndustrialDressing(panelMaterial) {
     side: THREE.DoubleSide,
     forceSinglePass: true,
     fog: true,
-    flatShading: false,
-  }), 'plate') : null;
+    toneMapped: true,
+  }) : null;
   if (componentMaterial) {
     componentMaterial.name = 'Meridian native-shape component vocabulary';
     componentMaterial.alphaToCoverage = true;

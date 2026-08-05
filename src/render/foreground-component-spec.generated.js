@@ -18,12 +18,12 @@ export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze([
     "id": "route-cap-long",
     "category": "trim-cap",
     "renderKind": "cutout",
-    "nativeAspect": 3.5814,
+    "nativeAspect": 3.4699,
     "visibleRect": {
       "x": 18,
-      "y": 98,
+      "y": 97,
       "w": 220,
-      "h": 60
+      "h": 61
     },
     "pivot": [
       0.5,
@@ -62,12 +62,12 @@ export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze([
     "id": "scute-edge",
     "category": "trim-cap",
     "renderKind": "cutout",
-    "nativeAspect": 3.0652,
+    "nativeAspect": 3.6711,
     "visibleRect": {
       "x": 274,
-      "y": 93,
+      "y": 99,
       "w": 220,
-      "h": 69
+      "h": 58
     },
     "pivot": [
       0.5,
@@ -106,12 +106,12 @@ export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze([
     "id": "i-girder",
     "category": "beam-brace",
     "renderKind": "cutout",
-    "nativeAspect": 1.7763,
+    "nativeAspect": 2.3364,
     "visibleRect": {
       "x": 530,
-      "y": 66,
+      "y": 82,
       "w": 220,
-      "h": 123
+      "h": 92
     },
     "pivot": [
       0.5,
@@ -150,12 +150,12 @@ export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze([
     "id": "guard-rail",
     "category": "ladder-rail",
     "renderKind": "cutout",
-    "nativeAspect": 2.3051,
+    "nativeAspect": 2.3784,
     "visibleRect": {
       "x": 786,
-      "y": 80,
+      "y": 82,
       "w": 220,
-      "h": 95
+      "h": 92
     },
     "pivot": [
       0.5,
@@ -394,12 +394,12 @@ export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze([
     "id": "diagonal-brace",
     "category": "beam-brace",
     "renderKind": "cutout",
-    "nativeAspect": 1.2208,
+    "nativeAspect": 0.9959,
     "visibleRect": {
       "x": 18,
-      "y": 294,
-      "w": 220,
-      "h": 180
+      "y": 274,
+      "w": 219,
+      "h": 220
     },
     "pivot": [
       0.5,
@@ -438,12 +438,12 @@ export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze([
     "id": "cross-brace",
     "category": "beam-brace",
     "renderKind": "cutout",
-    "nativeAspect": 1.0261,
+    "nativeAspect": 0.9234,
     "visibleRect": {
-      "x": 274,
-      "y": 276,
-      "w": 220,
-      "h": 215
+      "x": 282,
+      "y": 274,
+      "w": 203,
+      "h": 220
     },
     "pivot": [
       0.5,
@@ -482,11 +482,11 @@ export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze([
     "id": "ladder-rail",
     "category": "ladder-rail",
     "renderKind": "cutout",
-    "nativeAspect": 0.4375,
+    "nativeAspect": 0.4601,
     "visibleRect": {
-      "x": 592,
+      "x": 590,
       "y": 274,
-      "w": 95,
+      "w": 100,
       "h": 220
     },
     "pivot": [
@@ -532,12 +532,12 @@ export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze([
     "id": "broken-guard",
     "category": "ladder-rail",
     "renderKind": "cutout",
-    "nativeAspect": 2.4754,
+    "nativeAspect": 2.6518,
     "visibleRect": {
       "x": 786,
-      "y": 340,
+      "y": 343,
       "w": 220,
-      "h": 88
+      "h": 81
     },
     "pivot": [
       0.5,
@@ -778,7 +778,7 @@ export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze([
     "id": "pressure-pipe",
     "category": "pipe-conduit",
     "renderKind": "cutout",
-    "nativeAspect": 5.2951,
+    "nativeAspect": 5.2381,
     "visibleRect": {
       "x": 18,
       "y": 619,
@@ -830,11 +830,11 @@ export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze([
     "id": "pipe-elbow",
     "category": "pipe-conduit",
     "renderKind": "cutout",
-    "nativeAspect": 0.8901,
+    "nativeAspect": 0.9118,
     "visibleRect": {
-      "x": 286,
+      "x": 283,
       "y": 530,
-      "w": 196,
+      "w": 202,
       "h": 220
     },
     "pivot": [
@@ -885,12 +885,12 @@ export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze([
     "id": "conduit-tee",
     "category": "pipe-conduit",
     "renderKind": "cutout",
-    "nativeAspect": 1.325,
+    "nativeAspect": 1.4065,
     "visibleRect": {
       "x": 530,
-      "y": 557,
+      "y": 561,
       "w": 220,
-      "h": 166
+      "h": 157
     },
     "pivot": [
       0.5,
@@ -940,12 +940,12 @@ export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze([
     "id": "cable-bundle",
     "category": "pipe-conduit",
     "renderKind": "cutout",
-    "nativeAspect": 3.2283,
+    "nativeAspect": 3.0825,
     "visibleRect": {
       "x": 786,
-      "y": 606,
+      "y": 605,
       "w": 220,
-      "h": 67
+      "h": 70
     },
     "pivot": [
       0.5,
@@ -1195,12 +1195,12 @@ export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze([
     "id": "keel-fin",
     "category": "near-silhouette",
     "renderKind": "cutout",
-    "nativeAspect": 1.0769,
+    "nativeAspect": 1.0738,
     "visibleRect": {
       "x": 18,
-      "y": 794,
+      "y": 793,
       "w": 220,
-      "h": 203
+      "h": 206
     },
     "pivot": [
       0.5,
@@ -1237,12 +1237,12 @@ export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze([
     "id": "armor-shoulder",
     "category": "near-silhouette",
     "renderKind": "cutout",
-    "nativeAspect": 1.0609,
+    "nativeAspect": 0.9348,
     "visibleRect": {
-      "x": 274,
-      "y": 793,
-      "w": 220,
-      "h": 206
+      "x": 281,
+      "y": 786,
+      "w": 206,
+      "h": 220
     },
     "pivot": [
       0.5,
@@ -1279,12 +1279,12 @@ export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze([
     "id": "vent-hood",
     "category": "service-organ",
     "renderKind": "cutout",
-    "nativeAspect": 0.9558,
+    "nativeAspect": 1.1099,
     "visibleRect": {
-      "x": 534,
-      "y": 786,
-      "w": 211,
-      "h": 220
+      "x": 530,
+      "y": 797,
+      "w": 220,
+      "h": 198
     },
     "pivot": [
       0.5,
@@ -1326,12 +1326,12 @@ export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze([
     "id": "sheared-scute",
     "category": "scuttle-damage",
     "renderKind": "cutout",
-    "nativeAspect": 1.49,
+    "nativeAspect": 1.0077,
     "visibleRect": {
       "x": 786,
-      "y": 822,
+      "y": 786,
       "w": 220,
-      "h": 147
+      "h": 219
     },
     "pivot": [
       0.5,

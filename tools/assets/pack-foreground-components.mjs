@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Extract two reviewed ImageGen chroma boards into one runtime component atlas.
+/* Extract two reviewed ImageGen component boards into one runtime atlas.
  *
  * Square source cells are authoring/storage only. Each assembly is keyed,
  * trimmed to native visible bounds, proportionally scaled into a guarded cell,
@@ -46,7 +46,8 @@ const part = (id, category, options = {}) => ({
 
 const SOURCES = [
   {
-    id: 'structure', file: 'meridian-components-structure-chroma-v1.png', colOffset: 0,
+    id: 'structure', file: 'meridian-components-structure-pixel-v2.png', colOffset: 0,
+    keyMode: 'alpha',
     components: [
       part('route-cap-long', 'trim-cap', { stretchAxes: ['x'], rotations: [0, 2],
         anchors: [{ name: 'route-edge', x: 0.5, y: 0.82 }] }),
@@ -87,6 +88,7 @@ const SOURCES = [
   },
   {
     id: 'defense', file: 'meridian-components-defense-chroma-v1.png', colOffset: 4,
+    keyMode: 'green',
     components: [
       part('observe-sensor-hood', 'defense-state', { state: 'observe', mirrorX: true,
         sockets: [{ kind: 'spawn', x: 0.5, y: 0.56 }], stateHooks: ['dormant', 'armed'],
@@ -180,10 +182,39 @@ function sourceAssemblies(file, width, height) {
     component.local = row * 4 + col;
     found.push(component);
   }
-  if (found.length !== 16 || new Set(found.map((entry) => entry.local)).size !== 16)
-    throw new Error(`${file}: expected one connected assembly in every cell, got ` +
-      JSON.stringify(found.map(({ local, area }) => ({ local, area }))));
-  return new Map(found.map((entry) => [entry.local, entry]));
+  // Broken rails, open clamp jaws and sheared armour can be authored as two
+  // deliberately separated silhouettes inside one storage cell. Treat the
+  // cell—not connected-component count—as the extraction unit, then union its
+  // islands into one guarded native crop. This keeps the negative space that
+  // makes a broken component readable at gameplay scale without permitting an
+  // island to leak across a neighboring cell.
+  const byCell = new Map();
+  for (const entry of found) {
+    if (!byCell.has(entry.local)) byCell.set(entry.local, []);
+    byCell.get(entry.local).push(entry);
+  }
+  if (byCell.size !== 16)
+    throw new Error(`${file}: expected visible machinery in every cell, got ` +
+      JSON.stringify([...byCell].map(([local, entries]) => ({
+        local, parts: entries.length, area: entries.reduce((sum, row) => sum + row.area, 0),
+      }))));
+  const assemblies = new Map();
+  for (let local = 0; local < 16; local++) {
+    const entries = byCell.get(local) || [];
+    if (!entries.length || entries.length > 4)
+      throw new Error(`${file}: cell ${local} has ${entries.length} extraction islands`);
+    const x = Math.min(...entries.map((entry) => entry.x));
+    const y = Math.min(...entries.map((entry) => entry.y));
+    const right = Math.max(...entries.map((entry) => entry.x + entry.w));
+    const bottom = Math.max(...entries.map((entry) => entry.y + entry.h));
+    assemblies.set(local, {
+      local, x, y, w: right - x, h: bottom - y,
+      cx: (x + right) / 2, cy: (y + bottom) / 2,
+      area: entries.reduce((sum, entry) => sum + entry.area, 0),
+      connectedParts: entries.length,
+    });
+  }
+  return assemblies;
 }
 
 try {
@@ -197,18 +228,25 @@ try {
     if (size.width !== size.height || size.width < 1024)
       throw new Error(`${source.file}: expected square >=1024px, got ${size.width}x${size.height}`);
     const keyed = join(work, `${source.id}-keyed.png`);
-    // Dominance-derived alpha tolerates ImageGen's green gradient; partial
-    // edge pixels have green spill clamped toward their non-green channels.
-    // This avoids both green halos and fixed-matte magenta over-correction.
-    magick([
-      sourceFile, '-alpha', 'set', '-channel', 'A',
-      '-fx', 'max(0,min(1,(0.588235-(g-max(r,b)))/0.490196))', '+channel',
-      // Neither reviewed board contains authored green. Clamp every remaining
-      // green-dominant source pixel into the nearest teal/neutral hull color;
-      // amber and magenta indicators are untouched because red/blue dominates.
-      '-channel', 'G', '-fx', 'min(g,max(r,b)*1.035)', '+channel',
-      '-channel', 'RGB', '-fx', 'a<0.02?0:u', '+channel', `PNG32:${keyed}`,
-    ]);
+    if (source.keyMode === 'alpha') {
+      // Pixel-native boards arrive from the shared ImageGen key-removal tool
+      // with a hard, reviewed alpha contour. Preserve their authored teal and
+      // copper palette instead of running the old green-dominance heuristic,
+      // which necessarily mistakes legitimate teal clusters for key spill.
+      magick([
+        sourceFile, '-alpha', 'set',
+        '-channel', 'RGB', '-fx', 'a<0.02?0:u', '+channel', `PNG32:${keyed}`,
+      ]);
+    } else {
+      // Dominance-derived alpha tolerates ImageGen's green gradient; partial
+      // edge pixels have green spill clamped toward their non-green channels.
+      magick([
+        sourceFile, '-alpha', 'set', '-channel', 'A',
+        '-fx', 'max(0,min(1,(0.588235-(g-max(r,b)))/0.490196))', '+channel',
+        '-channel', 'G', '-fx', 'min(g,max(r,b)*1.035)', '+channel',
+        '-channel', 'RGB', '-fx', 'a<0.02?0:u', '+channel', `PNG32:${keyed}`,
+      ]);
+    }
     const assemblies = sourceAssemblies(keyed, size.width, size.height);
     for (let local = 0; local < 16; local++) {
       const sourceCol = local % 4;
@@ -230,6 +268,12 @@ try {
       const atlasRow = sourceRow;
       const cellIndex = atlasRow * GRID[0] + atlasCol;
       const cellFile = join(work, `cell-${String(cellIndex).padStart(2, '0')}.png`);
+      const finishColor = source.keyMode === 'green' ? [
+        // Resampling can reintroduce a one-byte green excess from neighboring
+        // matte samples. Pixel-alpha sources deliberately keep their authored
+        // teal instead of entering this branch.
+        '-channel', 'G', '-fx', 'min(g,max(r,b))', '+channel',
+      ] : [];
       magick([
         keyed, '-crop', `${sourceRect.w}x${sourceRect.h}+${sourceRect.x}+${sourceRect.y}`,
         '+repage',
@@ -240,10 +284,7 @@ try {
         '-channel', 'A', '-threshold', '35%', '-morphology', 'Erode', 'Diamond:1', '+channel',
         '-channel', 'RGB', '-fx', 'a<0.01?0:u', '+channel',
         '-trim', '+repage', '-filter', 'Lanczos', '-resize', `${INNER}x${INNER}`,
-        // Resampling can reintroduce a one-byte green excess from neighboring
-        // matte samples. Clamp again on the final-resolution component; these
-        // boards have no authored green channel role.
-        '-channel', 'G', '-fx', 'min(g,max(r,b))', '+channel',
+        ...finishColor,
         '-channel', 'RGB', '-fx', 'a<0.01?0:u', '+channel',
         '-gravity', 'center', '-background', 'none', '-extent', `${CELL}x${CELL}`,
         `PNG32:${cellFile}`,
@@ -264,7 +305,8 @@ try {
       };
       cells[cellIndex] = {
         ...spec, source: source.id, sourceCell: local,
-        sourceRect, sourceConnectedArea: assembly.area, nativeBounds,
+        sourceRect, sourceConnectedArea: assembly.area,
+        sourceConnectedParts: assembly.connectedParts, nativeBounds,
         nativeAspect: Math.round(nativeBounds.w / nativeBounds.h * 10000) / 10000,
         atlasCell: { index: cellIndex, col: atlasCol, row: atlasRow },
         visibleRect: globalVisible,
@@ -277,7 +319,7 @@ try {
         guard,
       };
     }
-    sourceStats.push({ id: source.id, file: source.file, ...size,
+    sourceStats.push({ id: source.id, file: source.file, keyMode: source.keyMode, ...size,
       approvedComponents: 16, rejectedComponents: [] });
   }
 
@@ -299,8 +341,12 @@ try {
   const alphaMean = Number(magick([
     output, '-channel', 'A', '-separate', '-format', '%[fx:mean]', 'info:',
   ]).trim());
+  // Only the legacy defense board is green-keyed. Measuring the pixel-native
+  // structure half as "green spill" would reject its intentional oxidized
+  // teal palette, so chroma proofs operate on the defense half alone.
+  const greenProof = `${CELL * 4}x${CELL * 4}+${CELL * 4}+0`;
   const greenRemnant = Number(magick([
-    output,
+    output, '-crop', greenProof, '+repage',
     '-fx', '(a>0.01 && g>max(r,b)*1.08 && g>0.18)?1:0',
     '-alpha', 'off', '-format', '%[fx:mean]', 'info:',
   ]).trim());
@@ -308,12 +354,12 @@ try {
   // with transparent neighbors. Track that separate stress proof without
   // misreporting it as full-resolution chroma residue.
   const minifiedGreenRemnant = Number(magick([
-    output, '-resize', '1024x512!',
+    output, '-crop', greenProof, '+repage', '-resize', '512x512!',
     '-fx', '(a>0.01 && g>max(r,b)*1.08 && g>0.18)?1:0',
     '-alpha', 'off', '-format', '%[fx:mean]', 'info:',
   ]).trim());
   const edgeGreenRemnant = Number(magick([
-    output,
+    output, '-crop', greenProof, '+repage',
     '-fx', '(a>0.01 && a<0.99 && g>max(r,b)*1.04 && g>0.12)?1:0',
     '-alpha', 'off', '-format', '%[fx:mean]', 'info:',
   ]).trim());
