@@ -146,29 +146,37 @@ ok(queuedOnly.startedGateBody === true,
 const containPolyp = runScenario('CONTAIN forward polyp', `
   TIME.setScrollX(halt - WAVES.GATE_PRELUDE_TILES);
   GATE.primeGateWave(c);
-  const polyp = HOSTILES.hostiles.find((e) => e.kind === 'polyp');
+  const polyps = HOSTILES.hostiles.filter((e) => e.kind === 'polyp');
   const assault = LEVEL.levelData.assaults.find((a) => a.face === c.k);
   const stage = assault.staging.find((s) => s.role === 'connector-control');
   const mount = assault.platforms.find((p) => p.id === stage.platformId);
+  const embedded = polyps.some((polyp) => LEVEL.levelData.solidRects.some((rect) =>
+    polyp.x + polyp.shotR > rect.x0 && polyp.x - polyp.shotR < rect.x1 &&
+    polyp.y + polyp.shotR > rect.y0 && polyp.y - polyp.shotR < rect.y1));
   console.log(JSON.stringify({
     face: c.k,
-    polyp: polyp && {
+    polyps: polyps.map((polyp) => ({
       x: polyp.x, y: polyp.y, dir: polyp.dir, gating: polyp.gating,
-    },
+    })),
     stage: { role: stage.role, x: stage.x, y: stage.y },
     mount: { x0: mount.x0, x1: mount.x1, y: mount.y },
+    embedded,
     rootY: CFG.CONFIG.polyp.rootY,
   }));
 `, 2);
 
-ok(containPolyp.face === 3 && !!containPolyp.polyp,
-  'CONTAIN authors the first mandatory Iris Polyp');
-ok(containPolyp.polyp.gating === true,
-  'the CONTAIN Iris still owns the target-priority gate lesson');
+ok(containPolyp.face === 3 && containPolyp.polyps.length === 2,
+  'CONTAIN authors its two mandatory Iris variants as distinct bodies');
+ok(containPolyp.polyps.every((polyp) => polyp.gating === true),
+  'both CONTAIN Irises still own the target-priority gate lesson');
 ok(containPolyp.stage.role === 'connector-control' &&
-   containPolyp.polyp.x === containPolyp.mount.x1 - 0.75 &&
-   containPolyp.polyp.y === containPolyp.mount.y + containPolyp.rootY,
-  'the mandatory Iris mounts on CONTAIN\'s authored connector-control socket');
-ok(containPolyp.polyp.dir === -1,
-  'the connector Iris faces the approaching player across its owned lane');
+   new Set(containPolyp.polyps.map((polyp) => polyp.x)).size === 2 &&
+   Math.abs(containPolyp.polyps.reduce((sum, polyp) => sum + polyp.x, 0) /
+     containPolyp.polyps.length - containPolyp.stage.x) < 1e-9 &&
+   containPolyp.polyps.every((polyp) =>
+     polyp.y === containPolyp.mount.y + containPolyp.rootY) &&
+   containPolyp.embedded === false,
+  'the mandatory Irises flank CONTAIN\'s explicit clear connector-control socket');
+ok(containPolyp.polyps.every((polyp) => polyp.dir === -1),
+  'both connector Irises face the approaching player across their owned lane');
 }

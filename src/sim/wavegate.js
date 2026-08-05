@@ -191,6 +191,27 @@ function ecologyStage(k, row, role = row?.stageRole) {
   return socket && platform ? { ...socket, platform } : null;
 }
 
+function rootedStageX(kind, k, slot, stage, mount, fallbackX, radius) {
+  if (!stage) return mount ? mount.x1 - 0.75 : fallbackX;
+  // One authored control role can deliberately teach two ecology variants in
+  // consecutive beats. They share the semantic socket, not the same physical
+  // point: overlapping rooted hit circles let a closed front body intercept
+  // every projectile aimed at an open body behind it. Spread peers evenly
+  // around the reviewed stage centre and keep every circle inside its deck.
+  const peers = [];
+  for (let i = 0; i < waveSize(k, CONFIG); i++) {
+    const row = level1EcologyEncounterRow(k, i);
+    if (row?.kind === kind && row.stageRole === stage.role) peers.push(i);
+  }
+  const ordinal = peers.indexOf(slot);
+  const spacing = Math.max(1.5, radius * 2 + 0.32);
+  const offset = ordinal >= 0 && peers.length > 1
+    ? (ordinal - (peers.length - 1) / 2) * spacing
+    : 0;
+  const inset = radius + 0.28;
+  return Math.max(mount.x0 + inset, Math.min(mount.x1 - inset, stage.x + offset));
+}
+
 // Hounds remain deck machinery: catwalk grating does not magically become a
 // solid locomotion surface. Resolve the nearest three-column flat ground run
 // under the authored socket, bounded to its current face and gate approach.
@@ -294,7 +315,16 @@ function spawnGateRole(kind, k, slot, sx, lane, delayMs, pivot, encounterKey,
     // player enters the held arena above or behind its sightline.
     const mount = stage?.platform || low;
     const deck = mount ? mount.y : groundTopAt(pivot - 2.2);
-    const x = mount ? mount.x1 - 0.75 : pivot - 2.2;
+    // The stage socket is the reviewed firing position, not merely a label
+    // for its platform. Using the old generic right-edge inset put CONTAIN's
+    // mandatory Iris at x=271.25 — inside the authored [271,272] cover wall.
+    // Terrain is intentionally resolved before hostile hit circles, making
+    // that gate holder genuinely impossible to shoot. Root every authored
+    // emplacement on its explicit socket; retain the inset only as the
+    // legacy/fallback answer when no stage exists.
+    const x = rootedStageX(
+      kind, k, slot, stage, mount, pivot - 2.2, CONFIG.polyp.hitRadius,
+    );
     // CONTAIN makes the first iris a mandatory target-priority test. In the
     // later remix it remains a live connector hazard, but mobile bodies own
     // the gate so cleanup never becomes "find the turret" after the action.
@@ -312,7 +342,12 @@ function spawnGateRole(kind, k, slot, sx, lane, delayMs, pivot, encounterKey,
     // perch. Short/long landings and every intermediate tier stay visible.
     const mount = stage?.platform || high || low;
     const deck = mount ? mount.y : groundTopAt(pivot - 3.5);
-    const x = mount ? mount.x1 - 0.75 : pivot - 3.5;
+    // Mortars share the same placement contract as the Iris: a generated
+    // staging socket has already been checked against the face's cover and
+    // traversal lanes, whereas a generic platform-edge inset has not.
+    const x = rootedStageX(
+      kind, k, slot, stage, mount, pivot - 3.5, CONFIG.mortar.hitRadius,
+    );
     let zoneX = pivot - 4.65;
     let zoneY = groundTopAt(zoneX);
     const targetStage = ecologyStage(k, ecologyRow, ecologyRow?.targetStageRole);
