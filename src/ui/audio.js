@@ -278,6 +278,19 @@ function sfxHit(dmg = 1) {
   tone('square', 210 / w, 140 / w, 0.07, 0.1 * w);
   tone('sine', 90 / w, 46 / w, 0.045, 0.09 * w);
 }
+function sfxBlock(kind) {
+  // A block is dry, high and short; a wound has the lower crunch above. The
+  // rooted iris machines get a heavier shutter answer, while mobile shields
+  // throw the round away with a sharper ricochet. Two bounded voices keep a
+  // rapid homing volley from turning defensive feedback into a new noise bed.
+  if (kind === 'polyp' || kind === 'warden') {
+    noiseHit('bandpass', 2500, 920, 5, 0.055, 0.14);
+    tone('triangle', 720, 330, 0.085, 0.11);
+  } else {
+    noiseHit('highpass', 4600, 2300, 2.5, 0.038, 0.11);
+    tone('square', 1260, 690, 0.065, 0.09);
+  }
+}
 function sfxKill(kind, mutated = false) {
   // Three bounded voices per role, shaped like the construction that is
   // visibly failing. Crowd throttling remains at the caller, so variety does
@@ -732,6 +745,41 @@ function after(group, name, fn) {
   };
 }
 
+// Bullet/hostile contact carries ten allocation-free primitives. Keep this
+// hot wrapper fixed-arity (the generic three-argument bridge helper above is
+// intentionally not made variadic) and let the exact collision frame own the
+// audible answer. The id set suppresses the old next-frame HP-poll duplicate
+// while preserving that poll as a fallback for launch shock/scripted damage.
+const collisionHitIds = new Set();
+let collisionHits = 0;
+let collisionBlocks = 0;
+function afterHostileImpact(fn) {
+  const previous = view.bullets.hostileImpact;
+  view.bullets.hostileImpact = (a, b, c, d, e, f, g, h, i, j) => {
+    previous(a, b, c, d, e, f, g, h, i, j);
+    if (dead || !ctx) return;
+    try { fn(a, b, c, d, e, f, g, h, i, j); }
+    catch (error) { warnDead(error); }
+  };
+}
+
+function onBulletHostileImpact(
+  _slot, _type, _x, _y, _vx, _vy, targetId, targetKind, damaged, lethal,
+) {
+  if (!damaged) {
+    collisionBlocks++;
+    if (gate('block', 42)) sfxBlock(targetKind);
+    return;
+  }
+  collisionHits++;
+  if (lethal) return; // the role-specific break already owns this mix beat
+  collisionHitIds.add(targetId);
+  if (gate('hit', A.hitGapMs)) {
+    sfxHit(1);
+    bumpHeat(A.heat.hit);
+  }
+}
+
 const CT = cornerTimeline(CONFIG);
 const TT = transformTimeline(CONFIG);
 
@@ -796,7 +844,11 @@ function onHostileSpawned(e) {
 }
 function onHostileSync(e) {
   const hp = hostileHp.get(e.id);
-  if (hp !== undefined && e.hp < hp && gate('hit', A.hitGapMs)) { sfxHit(hp - e.hp); bumpHeat(A.heat.hit); }
+  const collisionOwned = collisionHitIds.delete(e.id);
+  if (!collisionOwned && hp !== undefined && e.hp < hp && gate('hit', A.hitGapMs)) {
+    sfxHit(hp - e.hp);
+    bumpHeat(A.heat.hit);
+  }
   hostileHp.set(e.id, e.hp);
   if (e.kind === 'hound') {
     const s = hostileState.get(e.id);
@@ -810,6 +862,7 @@ function onHostileSync(e) {
 function onHostileRemoved(e, fade) {
   hostileHp.delete(e.id);
   hostileState.delete(e.id);
+  collisionHitIds.delete(e.id);
   if (!fade) return;
   killChain = gameMs - lastKillAt <= 780 ? Math.min(5, killChain + 1) : 1;
   lastKillAt = gameMs;
@@ -975,6 +1028,7 @@ function onStateScreen(next) {
     applyLayers();
     hostileHp.clear();
     hostileState.clear();
+    collisionHitIds.clear();
     killChain = 0;
     lastKillAt = -1e9;
     xfSnap.clear();
@@ -1013,6 +1067,7 @@ if (AUDIO_ON) {
   after('bullets', 'slotSpawned', (i, type) => {
     if (FIRE[type] && gate('fire:' + type, A.fireGapMs)) { FIRE[type](); bumpHeat(A.heat.fire); }
   });
+  afterHostileImpact(onBulletHostileImpact);
   after('bullets', 'volatileImpact', onVolatileImpact);
   after('mods', 'lanceTelegraph', onLanceTelegraph);
   after('finale', 'started', onFinaleStarted);
@@ -1053,5 +1108,7 @@ export function audioSnapshot() {
     pressure: lastPressureIntensity,      // T-042: last computed crush-margin 0..1 intensity
     finale: { phase: finaleAudioPhase, wave: finaleAudioWave,
                transmitPlayed: finaleTransmitPlayed },
+    contact: { hits: collisionHits, blocks: collisionBlocks,
+               pendingHitBaselines: collisionHitIds.size },
   };
 }

@@ -2552,9 +2552,21 @@ function hideHostileVisual(v, e) {
 // no presenter retains it, so the hostile hot path remains allocation-free.
 const PRESENTER_FRAME = {
   K: null, depth: 0, sx: 1, sy: 1, sz: 1, glow: 0, signaling: false,
+  hitStrength: 0,
 };
 
-function syncEcologyMaterial(v) {
+function syncEcologyMaterial(v, frame) {
+  // The production ecology is an unlit painted card, so it deliberately has
+  // no emissive channel for the ordinary hostile hit flash to drive. That
+  // kept idle art honest, but also meant a real wound only changed scale by a
+  // couple of pixels at FAR/portrait view. Briefly lift the atlas exposure at
+  // the exact damage beat instead: no halo, no white replacement, and the
+  // painted facets remain visible. The cap keeps Railfang's higher idle gain
+  // inside the same authored value range as the rest of the ecology.
+  const baseGain = ENEMY_ECOLOGY_PAINT_GAIN[v.kind] || 1;
+  const gain = Math.min(1.92, baseGain + frame.hitStrength * 0.27);
+  v.mat.color.setRGB(gain, gain, gain, THREE.LinearSRGBColorSpace);
+  v.ecologyActionMat.color.setRGB(gain, gain, gain, THREE.LinearSRGBColorSpace);
   v.ecologyActionMat.opacity = v.mat.opacity;
   v.ecologyActionMesh.visible = true;
 }
@@ -2647,10 +2659,12 @@ function sync(e) {
   const K = LOOK[e.kind];
   let sx = scale, sy = scale, sz = scale;
   const flashing = gameMs < e.flashUntil;
+  const hitStrength = flashing
+    ? Math.min(1, Math.max(0, (e.flashUntil - gameMs) / 90)) : 0;
   if (flashing) {
     // A short silhouette punch survives FAR-view minification better than a
     // colour-only blink. It is isotropic, so feet/aim sockets do not shear.
-    const hitPunch = 1 + 0.08 * Math.min(1, (e.flashUntil - gameMs) / 90);
+    const hitPunch = 1 + 0.08 * hitStrength;
     sx *= hitPunch; sy *= hitPunch; sz *= hitPunch;
   }
   let glow = flashing ? FLASH[e.kind] : PAL.glowOff;
@@ -2689,6 +2703,7 @@ function sync(e) {
   PRESENTER_FRAME.sz = sz;
   PRESENTER_FRAME.glow = glow;
   PRESENTER_FRAME.signaling = signaling;
+  PRESENTER_FRAME.hitStrength = hitStrength;
   v.presenter.syncMaterial(PRESENTER_API, v, PRESENTER_FRAME);
   placeOnTower(v.mesh, e.x, e.y + v.presentationLift, depth);
   v.presenter.syncTransform(PRESENTER_API, v, e, PRESENTER_FRAME);

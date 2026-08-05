@@ -511,9 +511,12 @@ function onBulletHostileImpact(
 
   if (!damaged) {
     // Armour and shields need a different sentence from a wound, but silence
-    // made a perfectly valid hit look like a miss. One cold cross-seam and a
-    // reverse ricochet communicate BLOCKED without adding a HUD badge.
+    // made a perfectly valid hit look like a miss. One broken shutter closes
+    // around a cold cross-seam while the round kicks backward: unmistakably
+    // BLOCKED, still rooted in the machine rather than drawn as a HUD badge.
     const shield = targetKind === 'polyp' ? PAL.polyp : PAL.modCapsule;
+    fxRing(132, targetKind === 'warden' ? 0.88 : 0.72,
+      x, y, shield, 0.035);
     fxDirectionalFlash(86, 0.62, 0.11, x, y, shield, -dy, ds, 0.04);
     fxDirectedBurst(J.impact, x, y, shield, -ds, -dy, 0.72, 0.42);
     return;

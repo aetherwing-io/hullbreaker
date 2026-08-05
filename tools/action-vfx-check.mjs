@@ -86,10 +86,11 @@ ok(/function onBulletHostileImpact/.test(bulletHit) &&
   'actor staging consumes exact collision facts and advances the read-only hp baseline');
 ok(/hostileImpact: noop/.test(bridge) &&
    /const damaged = hitHostile/.test(weapons) &&
-   /if \(damaged\) view\.bullets\.hostileImpact\(/.test(weapons) &&
+   /view\.bullets\.hostileImpact\(/.test(weapons) &&
    /i, b\.type, b\.x, b\.y, impactVx, impactVy/.test(weapons) &&
+   /directId, targetKind, damaged, lethal/.test(weapons) &&
    !/hostileImpact\(\s*\{/.test(weapons),
-  'sim publishes allocation-free collision-frame primitives after real damage');
+  'sim publishes allocation-free damage and blocked collision facts');
 ok(/hp !== undefined && e\.hp < hp/.test(actorHit) &&
    /const type = 'R'/.test(actorHit),
   'non-projectile damage retains one neutral fallback without recent-shot inference');

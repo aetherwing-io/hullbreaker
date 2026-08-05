@@ -113,10 +113,10 @@ const collisionBranch = collisionStart >= 0 && collisionEnd > collisionStart
   : '';
 const damageAt = collisionBranch.indexOf('const damaged = hitHostile(');
 const lethalAt = collisionBranch.indexOf('const lethal = !hostiles.includes(e);');
-const factAt = collisionBranch.indexOf('if (damaged) view.bullets.hostileImpact(');
+const factAt = collisionBranch.indexOf('view.bullets.hostileImpact(');
 check(damageAt >= 0 && lethalAt > damageAt && factAt > lethalAt &&
-  /directId, targetKind, true, lethal,/.test(collisionBranch),
-  'collision fact carries production lethal result');
+  /directId, targetKind, damaged, lethal,/.test(collisionBranch),
+  'collision fact carries production damage and lethal results');
 check(runtime.includes('function onHostileImpact(') &&
   runtime.includes('claim(weaponIndex, x, y, angle'),
   'paint consumes exact collision endpoint');
