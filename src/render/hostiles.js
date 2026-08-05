@@ -1211,21 +1211,22 @@ for (const kind of Object.keys(LOOK)) {
     .lerp(new THREE.Color(LOOK[kind].color), HIT_TINT).getHex();
 }
 
-/* ------------------------- THE TELL LAMP (T-003) -------------------------
- * The warning light the houndframe's and the polyp's code comments have
+/* ------------------------ THE INTENT LAMP (T-003) -------------------------
+ * The local machine light the houndframe's and the polyp's code comments have
  * always described, given actual geometry so it survives the FAR default
  * view. A body-wide warning tint became an automatic dodge instruction at
- * play scale; the signal now stays on the arming part itself.
+ * play scale; the signal now stays on the part that owns the intent.
  *
  * It is a LAMP, not a HUD marker — a small light on the machine, sized in
  * world tiles and placed on the part of the body that is arming (the
  * houndframe's head, the polyp's iris aperture). CUE_GAIN holds its screen
  * size across the pull-back, so it stops shrinking away without becoming a
- * floating icon. It wears the roster's ONE warning color (PAL.houndTell /
- * PAL.polypTell — warm amber in both palettes), never the acid a body wears,
- * and it exists only while the sim row is actually in its tell state, so it
- * can never promise a threat the sim is not running. ?legibility=0 removes
- * it entirely.
+ * floating icon. During a real tell it wears the roster's ONE warning color
+ * (PAL.houndTell / PAL.polypTell — warm amber in both palettes) and grows. A prowling
+ * hound keeps only a two-pixel, steady chassis eye: faction identity, not an
+ * attack cue. The Polyp's spent vent gets an equally local dim ember so the
+ * vulnerable answer remains visible after the beam. Neither blinks, predicts,
+ * nor draws a lane the simulation is not running. ?legibility=0 removes them.
  *
  * Deliberately NOT given to the wasp: a lamp per drone in a swarm is the
  * clutter pillar 5 forbids, and a diving wasp already has a whole-body
@@ -1261,17 +1262,29 @@ function lampDetach(v) {
 
 function lampShow(v, e, dx, dy, alpha, swell) {
   v.lamp.visible = true;
-  lit(v.lampMat, v.lampColor);           // a warning light, not a warning decal
+  lit(v.lampMat, v.lampColor);           // a machine light, not a HUD decal
   v.lampMat.opacity = alpha;
   v.lamp.scale.setScalar(LAMP_R * CUE_GAIN * swell);
   placeOnTower(v.lamp, e.x + dx, e.y + dy, LAMP_DEPTH);
 }
 
-// Houndframe: a small charge lamp rides the head it rears back on, gathers
-// intensity, then goes solid and big on the final locked coil.
+// Houndframe: a steady chassis eye keeps the pale painted body from reading as
+// a companion. It moves up and brightens only when the real charge tell starts,
+// then goes solid and big on the final locked coil.
 function houndLamp(v, e) {
   const H = CONFIG.hound;
-  if (!LEGIBILITY_ON || e.state !== 'tell') { v.lamp.visible = false; return; }
+  if (!LEGIBILITY_ON) { v.lamp.visible = false; return; }
+  if (e.state !== 'tell') {
+    if (e.state === 'prowl' || e.state === 'skid') {
+      v.lampColor = PAL.hound;
+      lampShow(v, e, e.dir * 0.50, 0.34, e.state === 'skid' ? 0.22 : 0.16,
+        e.state === 'skid' ? 0.42 : 0.36);
+    } else {
+      v.lamp.visible = false;
+    }
+    return;
+  }
+  v.lampColor = PAL.houndTell;
   const dx = e.dir * 0.55, dy = 0.95;    // clear of the chassis it rears on
   if (e.stateUntil - gameMs <= H.tellCoilMs) {
     lampShow(v, e, dx, dy, 1, LAMP_COIL_SWELL);
@@ -1286,8 +1299,18 @@ function houndLamp(v, e) {
 // frozen commitment, keeping the signal local instead of flashing the bulb.
 function polypLamp(v, e) {
   const PP = CONFIG.polyp;
-  if (!LEGIBILITY_ON || e.state !== 'tell') { v.lamp.visible = false; return; }
   const dx = e.dir * PP.barrelTiles, dy = 0;
+  if (!LEGIBILITY_ON) { v.lamp.visible = false; return; }
+  if (e.state !== 'tell') {
+    if (e.state === 'vent') {
+      v.lampColor = PAL.polypVent;
+      lampShow(v, e, dx, dy, 0.28, 0.48);
+    } else {
+      v.lamp.visible = false;
+    }
+    return;
+  }
+  v.lampColor = PAL.polypTell;
   const left = Math.max(0, e.stateUntil - gameMs);
   if (left <= PP.commitCueMs) {
     lampShow(v, e, dx, dy, 1, LAMP_COIL_SWELL);
@@ -2106,8 +2129,8 @@ function spawnedStandard({ e, K, assets, presenter }) {
   }
   attachEnemyEcologyTactics(v, e);         // no-op for every ordinary row
   if (v.sprite) mesh.scale.x = spriteFaceX(e, v.poseKey); // pose-local authored facing
-  // the tell lamp (T-003): only the two kinds whose telegraph is a wind-up
-  // ON the body, and only while the readability pass is on
+  // The intent lamp (T-003): the two kinds whose intent is localized to one
+  // physical part, and only while the readability pass is on.
   if (LEGIBILITY_ON && LAMP_SYNC[e.kind]) {
     lampAttach(v, e.kind === 'polyp' ? PAL.polypTell : PAL.houndTell);
   }
@@ -2763,7 +2786,7 @@ function sync(e) {
   if (v.pod) mortarSync(v, e);           // pod arc + marked zone + detonation
   syncEnemyEcologyTactics(v, e);         // exact fixed Crosswind/Aircomb slots
   if (v.wardenCore) wardenSync(v, e);    // local iris/shutters + exact attack volumes
-  // the tell lamp reads the same sim state the pose does, one frame, no memory
+  // The intent lamp reads the same sim state the pose does, one frame, no memory.
   if (v.lamp) LAMP_SYNC[e.kind](v, e);
   if (v.presenter.id !== 'ecology') syncActorGlow(v, e, K, sx, sy, signaling);
   syncAttackRead(v, e);
