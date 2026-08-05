@@ -1,23 +1,8 @@
-// deterministic.mjs — the honesty check for --deterministic runs (I-018).
-//
-// --deterministic dispatches an event at the first sample tick where the
-// GAME's own clock has reached its `t`. Anything that stops that clock
-// therefore stops the run's input, and the report it writes looks like an
-// ordinary run that merely didn't get far: a plausible `not-completed`, no
-// events, no explanation, exit 0. That is the same class as a gate that
-// reports green because its subject was the author's intent rather than what
-// happened, and it cost a real cycle to identify from the outside.
-//
-// The original case was the shell's title screen: ?shell=title parks a
-// built-but-FROZEN run in MENU, so gameMs never leaves 0 — and the key that
-// would start it is itself gated on that clock. lib/driver.mjs now dispatches
-// on the wall clock while the game is parked there, so that shape RUNS instead
-// of dying quietly. This module is the backstop for every other way the clock
-// can fail to arrive: it reads what actually happened out of the trace and the
-// event records, names it, and hands back a verdict run.mjs turns into an exit
-// code. It is a pure function of (result, events) — no page, no I/O, no
-// clock of its own — so it can be asserted directly in tools/pathcheck.mjs
-// against synthetic runs instead of being trusted.
+// deterministic.mjs — honesty check for frame-scoped --deterministic runs.
+// The page owns exact input timing now, but a malformed bootstrap, frozen
+// shell state, early terminal outcome, or missing telemetry can still make a
+// plausible-looking report measure nothing. This pure verdict reads the trace
+// and the page-authored ledger and names that failure instead of exiting green.
 //
 // `fatal` is the "this run measured nothing" class and exits non-zero: no
 // event dispatched at all, or a sim clock that never advanced by a single
@@ -36,8 +21,10 @@ const EARLY_STOPS = new Set(['victory', 'game-over', 'max-runtime-ms']);
 export function diagnoseDeterministicRun(result, events) {
   const trace = result.trace || [];
   const clocks = trace.map((s) => s && s.gameMs).filter((v) => typeof v === 'number');
-  const dispatched = events.filter((e) => typeof e.actualDispatchMs === 'number');
-  const head = events.find((e) => typeof e.actualDispatchMs !== 'number') || null;
+  const wasDispatched = (e) => typeof e.actualDispatchTick === 'number' ||
+    typeof e.actualDispatchMs === 'number';
+  const dispatched = events.filter(wasDispatched);
+  const head = events.find((e) => !wasDispatched(e)) || null;
   const states = {};
   for (const s of trace) if (s && s.state) states[s.state] = (states[s.state] || 0) + 1;
   const stateSummary = Object.entries(states).map(([k, n]) => `${k}×${n}`).join(', ') || 'no state field';
@@ -47,7 +34,9 @@ export function diagnoseDeterministicRun(result, events) {
     dispatched: dispatched.length,
     pending: events.length - dispatched.length,
     pendingHeadT: head ? head.t : null,
-    viaWallclockTitle: (result.titleWallclockDispatches || []).length,
+    viaWallclockTitle: 0,
+    delivery: 'frame',
+    frameInputStatus: result.frameInput && result.frameInput.status || null,
     gameMsSamples: clocks.length,
     gameMsMax: clocks.length ? Math.max(...clocks) : null,
     clockAdvancedMs,
@@ -57,10 +46,14 @@ export function diagnoseDeterministicRun(result, events) {
     fatal: null,
     warning: null,
   };
+  if (result.frameInput && result.frameInput.status === 'error') {
+    d.fatal = `frame input initialization failed: ${result.frameInput.error || 'unknown error'}`;
+    return d;
+  }
   if (events.length === 0) return d;      // a policy-only script has no timeline to starve
   if (!clocks.length) {
-    d.fatal = 'sample.gameMs was never a number in any sample — --deterministic keys dispatch to ' +
-      'the game\'s own clock and needs testapi or window.HB (fidelity was ' +
+    d.fatal = 'sample.gameMs was never a number in any sample — --deterministic needs the ' +
+      'testapi clock and page-authored frame ledger (fidelity was ' +
       `"${(trace[0] && trace[0].fidelity) || 'unknown'}", states: ${stateSummary})`;
   } else if (clockAdvancedMs === 0) {
     d.fatal = `the game's sim clock never advanced (gameMs stayed at ${d.gameMsMax} across ` +

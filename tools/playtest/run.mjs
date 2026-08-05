@@ -18,6 +18,7 @@ import { runPlaytest } from './lib/driver.mjs';
 import { diagnoseDeterministicRun } from './lib/deterministic.mjs';
 import { computeMetrics } from './lib/metrics.mjs';
 import { writeReport } from './lib/report.mjs';
+import { GAMEPLAY_CODES } from '../../src/pure/frame-input.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '..', '..');
@@ -55,6 +56,16 @@ function ensureTestApi(url, enabled) {
   return url + (url.includes('?') ? '&' : '?') + 'testapi=1';
 }
 
+function ensureFixedDt(url, enabled) {
+  if (!enabled) return url;
+  const parsed = new URL(url);
+  if (!parsed.searchParams.has('fixeddt')) parsed.searchParams.set('fixeddt', '16.667');
+  const dt = Number(parsed.searchParams.get('fixeddt'));
+  if (!Number.isFinite(dt) || dt <= 0)
+    throw new Error('--deterministic requires a positive ?fixeddt=<ms>');
+  return parsed.toString();
+}
+
 function usage() {
   console.log(`Usage: node run.mjs <script.json> [options]
 
@@ -74,13 +85,10 @@ Options:
   --tail-ms <n>         Grace period after the last scripted input before stopping (default 900).
   --port <n>            Fixed port for the local static server (default: OS-assigned free port).
   --no-testapi          Don't append ?testapi=1 (on by default) — falls back to window.HB, then DOM/HUD parsing.
-  --deterministic       Key event dispatch to the game's own gameMs instead of wall-clock (see README "Deterministic injection mode").
-                        Requires testapi or window.HB (sample.gameMs must be a number). Writes a dispatch
-                        ledger to meta.deterministicDispatch and EXITS NON-ZERO, with a named reason, if the
-                        run's events could never have come due (no clock, a clock that never advanced, or one
-                        that never reached the first event). While the game is parked at the shell title
-                        screen, where gameMs is frozen at 0, events fall back to the wall clock and are
-                        stamped dispatchedVia: "wallclock-title".
+  --deterministic       Install the complete gameplay input schedule before navigation and drain it at the
+                        exact fixed-step simulation frame (default ?fixeddt=16.667). The page also freezes at
+                        the script's exact terminal tick, removing CDP delivery and sampler-stop jitter.
+                        Requires testapi and gameplay keys only; shell/pause/restart tests use ordinary mode.
   --stop-on-game-over   End the run once the game reaches GAME_OVER (last life spent) instead of sampling a frozen
                         world for the rest of the script window. Off by default; the run's own outcome is unchanged.
 
@@ -99,6 +107,19 @@ async function main() {
 
   const events = compileScript(script);
   const endMs = scriptEndMs(events, script);
+  if (args.deterministic && args.noTestapi)
+    throw new Error('--deterministic requires the testapi channel; remove --no-testapi');
+  if (args.deterministic) {
+    const allowed = new Set(GAMEPLAY_CODES);
+    const shellEvent = events.find((e) => !allowed.has(e.code));
+    if (shellEvent) throw new Error(`--deterministic accepts gameplay input only; ${shellEvent.code} ` +
+      'belongs to the shell/browser path and must be tested without --deterministic');
+    const targetSpec = args.url || script.url || 'index.html?slice=traversal';
+    const targetQuery = new URL(targetSpec, 'http://playtest.invalid/').searchParams;
+    if (targetQuery.get('shell') === 'title')
+      throw new Error('--deterministic cannot start a ?shell=title page because the simulation clock is ' +
+        'intentionally frozen in MENU; test title-screen behavior with ordinary real-key mode');
+  }
 
   let policyRules = null;
   if (script.policy) {
@@ -144,6 +165,7 @@ async function main() {
     url = `${server.baseUrl}/${scriptUrl.replace(/^\//, '')}`;
   }
   url = ensureTestApi(url, !args.noTestapi);
+  url = ensureFixedDt(url, !!args.deterministic);
 
   const outDir = args.out
     ? resolve(args.out)
@@ -153,7 +175,9 @@ async function main() {
     `${policyRules ? `, ${policyRules.length} policy rules` : ''}, script window ${endMs}ms)`);
   console.log(`[playtest] url:     ${url}`);
   console.log(`[playtest] out:     ${outDir}`);
-  if (args.deterministic) console.log('[playtest] mode:    deterministic injection (keyed to gameMs)');
+  if (args.deterministic) console.log('[playtest] mode:    frame-scoped deterministic input + exact sim stop');
+  if (args.deterministic && policyRules)
+    console.log('[playtest] note:    static events are frame-exact; reactive policy remains sampled/CDP input');
 
   const startedAt = new Date().toISOString();
   let result;
@@ -187,7 +211,9 @@ async function main() {
     servedFixture: result.servedFixture,
   });
 
-  const jitters = result.dispatchedEvents.filter((e) => typeof e.jitterMs === 'number').map((e) => e.jitterMs);
+  const jitterField = args.deterministic ? 'gameMsJitterMs' : 'jitterMs';
+  const jitters = result.dispatchedEvents.filter((e) => typeof e[jitterField] === 'number')
+    .map((e) => e[jitterField]);
   const avgJitter = jitters.length ? +(jitters.reduce((a, b) => a + Math.abs(b), 0) / jitters.length).toFixed(1) : null;
   const maxJitter = jitters.length ? Math.max(...jitters.map(Math.abs)) : null;
 
@@ -204,11 +230,6 @@ async function main() {
   } else if (deterministic && deterministic.warning) {
     console.warn(`[playtest] WARNING: ${deterministic.warning}`);
   }
-  if (deterministic && deterministic.viaWallclockTitle > 0) {
-    console.log(`[playtest] note:    ${deterministic.viaWallclockTitle} event(s) dispatched on the WALL ` +
-      'clock while the game was parked at the shell title screen (MENU freezes gameMs, so the key ' +
-      'that starts the run cannot be gated on it) — they carry dispatchedVia: "wallclock-title".');
-  }
 
   // Report paths relative to the repo root / output dir rather than absolute
   // filesystem paths — those are local-machine-specific and would otherwise
@@ -221,6 +242,11 @@ async function main() {
       bootError: result.bootError,
       dispatchJitterMsAvg: avgJitter, dispatchJitterMsMax: maxJitter,
       deterministic: result.deterministic,
+      deterministicScope: args.deterministic
+        ? (policyRules ? 'static-schedule-only; policy is external sampled/CDP input'
+          : 'complete static schedule and terminal tick')
+        : null,
+      frameInput: result.frameInput,
       // Why sampling stopped: victory / game-over / max-runtime-ms /
       // script-window / boot-error. The number of events left pending only
       // reads correctly next to this.
@@ -232,12 +258,9 @@ async function main() {
     },
     outcome: metrics.outcome,
     metrics,
-    // F7 fix: every time the testapi/HB `attempts` counter ticked up (a
-    // retry completed and releaseAllKeys() fired game-side), the driver
-    // re-pressed every key the script still considered "held". See
-    // lib/driver.mjs's reassertHeldKeys. Empty array = either the run never
-    // retried, or (dom-only fallback with no attempts signal at all) retries
-    // couldn't be detected — check meta.retryDetection below for which.
+    // F7 fix: ordinary/policy input is reasserted by the driver when attempts
+    // changes; frame input is reasserted synchronously inside resetGame(). The
+    // source field names which contract produced each evidence row.
     retryReassertions: result.retryReassertions,
     retryDetection: {
       maxLagMs: result.maxRetryDetectionLagMs,

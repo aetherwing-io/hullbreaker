@@ -291,10 +291,10 @@ through the integrator before touching overlapping runtime areas.
   real, unmodified sim in Node with synchronous frame-scoped input. Built by
   the T-002 divergence investigation, whose finding
   ([`playtests/2026-07-t2-frame-alignment.md`](playtests/2026-07-t2-frame-alignment.md))
-  proved the sim bit-deterministic once input lands on defined frames and
-  located the residual bot-run nondeterminism in browser input *delivery* —
-  the game-side synchronous input hook (playtest README hook request #5) is
-  the endorsed fix, not yet built.
+  proved the sim bit-deterministic once input lands on defined frames. The
+  endorsed game-side hook is now built (T-066): static schedules are installed
+  before navigation, drained at exact fixed-step frames through canonical
+  input semantics, and stopped on an exact simulation tick.
 - The wave-4 orchestration scaffold is in place: the root
   [`CLAUDE.md`](../CLAUDE.md) (hard rules + the integrator loop protocol),
   [`SPRINT.md`](../SPRINT.md) (task queue, checkpoint queue, inbox),

@@ -96,7 +96,9 @@ node tools/deploy/verify-bundle.mjs    # boots the real deploy bundle in Chrome
 
 Browser smoke test: open `index.html?selftest=1`. There is also a
 Playwright bot-player harness (`tools/playtest/`) and a headless sim lab
-(`tools/simlab/`) — each has its own README.
+(`tools/simlab/`) — each has its own README. The harness's `--deterministic`
+mode installs input before boot, applies it on exact simulation ticks, and
+freezes on an exact terminal tick for repeatable tuning comparisons.
 
 Useful URL flags while developing: `?view=near|mid|far` (camera) ·
 `?slice=traversal` (movement playground; `&polyp=1` / `&mortar=1` teach

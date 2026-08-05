@@ -40,8 +40,9 @@ function renderSummary(report) {
   }
   const rr = report.retryReassertions || [];
   if ((metrics.outcome.attempts ?? 1) > 1 || rr.length) {
+    const allFrameExact = rr.length > 0 && rr.every((r) => r.source === 'frame');
     lines.push(rr.length
-      ? `- Retry key re-assertion: ${rr.length} retry transition(s) detected, held keys re-pressed within <=${report.retryDetection.maxLagMs}ms each time (script held: ${[...new Set(rr.flatMap((r) => r.codes))].join(', ') || 'none'}) — see README "Fixed: zombie attempts (F7)"`
+      ? `- Retry key re-assertion: ${rr.length} transition(s), held keys restored ${allFrameExact ? 'synchronously on the reset tick' : `within <=${report.retryDetection.maxLagMs}ms`} (script held: ${[...new Set(rr.flatMap((r) => r.codes))].join(', ') || 'none'}) — see README "Fixed: zombie attempts (F7)"`
       : '- Retry key re-assertion: multiple attempts observed but no held keys needed re-pressing (nothing was down at any retry instant)');
   }
   lines.push('');
@@ -92,16 +93,16 @@ function renderSummary(report) {
   if (metrics.score) {
     lines.push(`- Score snapshot (final, tune=${metrics.score.tune}): CHARGE ${metrics.score.charge} (notch ${metrics.score.notch} ${metrics.score.notchName}), THREAT **${metrics.score.threat}** → ${metrics.score.classification}; counts ${JSON.stringify(metrics.score.counts)}; hot ${metrics.score.hotMs}ms of ${metrics.score.playMs}ms; setbacks ${metrics.score.setbacks}`);
   }
-  // I-018: a --deterministic run's input is gated on the GAME's clock, so the
-  // ledger of what actually dispatched belongs next to the metrics, not buried
+  // I-018/T-066: the page-authored frame ledger belongs next to the metrics, not buried
   // in report.json — a run that fired none of its events measured nothing, and
   // that has to be readable in the digest a human opens first.
   const dd = meta.deterministicDispatch;
   if (dd) {
-    lines.push('## Deterministic dispatch (input keyed to the game\'s own clock)');
+    lines.push('## Deterministic dispatch (frame-scoped, page-authored ledger)');
     lines.push(`- Events dispatched: **${dd.dispatched} of ${dd.events}**` +
-      (dd.viaWallclockTitle ? ` (${dd.viaWallclockTitle} on the wall clock at the shell title — MENU freezes gameMs)` : '') +
       `; sim clock reached ${fmtMs(dd.gameMsMax)} (advanced ${fmtMs(dd.clockAdvancedMs)}); stop reason: ${dd.stopReason ?? 'n/a'}`);
+    if (meta.frameInput) lines.push(`- Exact stop: tick ${meta.frameInput.tick}/${meta.frameInput.stopTick}, ` +
+      `status **${meta.frameInput.status}**, fixed dt ${meta.frameInput.fixedDtMs}ms`);
     if (dd.fatal) lines.push(`- **FAILED (exit 1): ${dd.fatal}**`);
     if (dd.warning) lines.push(`- WARNING: ${dd.warning}`);
     if (dd.pending > 0 && dd.pendingExpected) {

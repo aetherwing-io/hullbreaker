@@ -462,24 +462,44 @@ node tools/playtest/analyze-run.mjs /tmp/aimed --policy scripts/six-face-spaced-
 
 ## Deterministic injection mode
 
-The adversarial report also measured non-determinism: `t2-transform-seam-rush`
-(hold right + mash Space for 20s, byte-identical input) produced `maxX`
-112.11 / 83.65 / 87.30 across three runs — a 28-tile spread — with wall-clock
-dispatch jitter interacting with the game's variable-timestep frame loop as
-the suspected cause.
+`--deterministic` now removes the browser event queue from static scripted
+input entirely. Before navigation, the driver installs the complete immutable
+schedule with `addInitScript`; `src/main.js` validates it, converts every
+timestamp to a fixed-step tick, and drains each edge immediately before the
+owning `update()` call. The same `applyGameplayKeyEdge()` handles DOM and frame
+input, including jump/hook buffering. The page freezes simulation on the
+script's exact terminal tick, so a slow sampler cannot add accidental updates
+after the requested tail.
 
-`--deterministic` changes *when* an event is sent: instead of a wall-clock
-timer, the driver polls `sample.gameMs` (the game's own sim clock, requires
-`testapi`/`window.HB`) every sample tick and dispatches any event whose `t`
-has been reached, in order. This quantizes dispatch to the sample interval —
-an event scheduled for `gameMs=1400` fires at the first tick where
-`gameMs>=1400`, up to `sampleMs` of sim time late, recorded per-event as
-`gameMsJitterMs` — rather than eliminating jitter outright; lower
-`--sample-ms` for a tighter bound. A useful side effect: an event scheduled
-during a pause/retry freeze (`gameMs` doesn't advance) correctly waits for
-gameplay to resume instead of firing based on real elapsed time regardless.
+Unless the URL already supplies one, the CLI adds `?fixeddt=16.667`. Every
+event ledger row records `scheduledTick`, `actualDispatchTick`,
+`actualDispatchGameMs`, and `dispatchedVia: "frame"`. `gameMsJitterMs` is now
+only fixed-step quantization: a timestamp between two 16.667 ms boundaries
+belongs to the first tick whose start clock has reached it. It is not CDP or
+sampling latency, and changing `--sample-ms` cannot change input delivery.
 
-### When the clock never starts, and how you find out (T-027, I-018)
+The mode requires `testapi` and accepts gameplay controls only. Pause,
+restart, title-screen and other shell behavior must use ordinary mode so the
+real browser event path is tested. Closed-loop `policy` rules also remain
+external Playwright input chosen from sampled state; combining policy with
+`--deterministic` makes only the static part frame-exact, not the policy.
+
+Retries are handled in-page: any static key still held at reset is restored as
+a repeat keydown. That resumes movement/fire without creating a fresh
+jump/hook press. The full ledger and reassertions are read once at teardown;
+trace rows carry only a compact frame-input summary.
+
+Runtime proof (2026-08-05): three parallel `mid-route.json` runs produced the
+same SHA-256 over final sim state, outcome and all 26 ledger rows. Each ended
+at tick 594 / `gameMs=9900.198`, `x=55.649`, `scrollX=56.084655`, one kill,
+two HP, zero falls, with every `actualDispatchTick === scheduledTick` and no
+page/console errors.
+
+The sections below preserve the measurements that motivated this hook. Their
+sample-polled `gameMs` delivery, `wallclock-title` fallback, and residual CDP
+jitter describe the retired pre-2026-08-05 implementation, not current mode.
+
+### Historical: when the sampled clock did not start (retired)
 
 Gating input on the game's clock has one dead state, and it used to be
 silent: **the shell's title screen**. `?shell=title` parks a built-but-frozen
@@ -1043,7 +1063,7 @@ the adversarial report as 5.2s of `vx = 0` with the key conceptually held.
 Every metric computed past that point — idle fraction, route coverage,
 margins, `protoScore` — was measuring an empty room.
 
-**Fix** (`lib/driver.mjs`, `reassertHeldKeys`): the driver now tracks which
+**Fix, ordinary/policy path** (`lib/driver.mjs`, `reassertHeldKeys`): the driver tracks which
 codes the script currently considers "held" (`heldCodes`, updated as
 scripted keydown/keyup events are dispatched) and watches the
 `testapi`/`full` `attempts` counter on every sample (already polled every
@@ -1057,6 +1077,10 @@ jump buffer on `!e.repeat`. Detection lag is bounded by `sampleMs` (default
 harness produced; every run reports the exact lag and count in
 `retryReassertions`/`retryDetection`.
 
+**Fix, frame-scoped static path** (T-066): the in-page timeline owns its held
+set. `resetGame()` restores those keys immediately after `resetRunState()` as
+repeat edges, on the reset tick itself. No sample or CDP round-trip participates.
+
 **Proof** (`scripts/retry-recovery.json`, committed under
 `reports/demo/retry-recovery/`): holds `ArrowRight` only, dies deterministically
 around 13.9s (jams on the known column-39 step, `enemies=0`), and the trace
@@ -1066,18 +1090,20 @@ speed within one polling interval, not 5.2 seconds. `retryReassertions` in
 that report's JSON records the single re-press: `{tMs: 13937, attempts: 2,
 codes: ["ArrowRight"]}`.
 
-**What this doesn't fix:** a script that dies *while a `tap` is between its
+The T-066 frame-path rerun records the stronger current proof: ArrowRight was
+restored at tick 1043 / `gameMs=17383.681`, the scheduled release still landed
+exactly on tick 1188, attempt 2 resumed and the run froze exactly on tick 1254.
+`retryDetection.maxLagMs` is 0 and the row is stamped `source: "frame"`.
+
+**External-policy limitation:** a policy-driven run that dies *while a `tap` is between its
 keydown and keyup* (e.g. jump held for its scripted 90ms right as a death
 happens) will have that key correctly re-armed too, but the fix can't do
 anything about the ~1 polling-interval detection lag itself — a report's
 `retryDetection.maxLagMs` states that bound explicitly rather than implying
-instantaneous recovery. This is a harness-side fix only; it does not touch
-`src/sim/player.js` or `src/main.js` (the adversarial report's suggested
-game-side alternative — re-arming held keys on retry, or preserving key
-state and only clearing the jump buffer — remains open for
-`physics-reviewer` if a game-side fix is still wanted for real-player
-experience, which is a separate, `SUSPECTED`-not-`CONFIRMED` question the
-adversarial report left open).
+instantaneous recovery. That bound applies to external CDP policy/ordinary
+input only. Static frame input is synchronous and preserves real keyboard
+semantics by reasserting with repeat=true, so it never invents another buffered
+jump or hook press.
 
 ## Demo runs
 
@@ -1174,8 +1200,9 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    once, recatches 2 or 0, hot time 13.8 s or 17.9 s** — while lives spent (0)
    and final x (89.25) were identical in all five. Score/THREAT numbers from a
    single run are a band, not a target; structural outcomes (lives, forward
-   progress, terminal state) are the stable evidence. See honesty items 4 and
-   8 for why `--deterministic` cannot close this gap.
+   progress, terminal state) are the stable evidence. **These are pre-T-066
+   sample-polled-input reports.** Re-run them with the frame-scoped lane before
+   treating that spread as current simulation nondeterminism.
 3. **Route coverage/inference is approximate** — but it is now approximate
    *about the right fixture*. The nearest-connector greedy matcher in
    `lib/metrics.mjs` is still not a topological solve, and the 2.2-tile match
@@ -1190,12 +1217,13 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    build that swapped fixtures mid-run would need this re-read. Route metrics
    remain `testapi`/`full`-only (they need real x/y), and on a build with no
    authored routes they are `null` with a reason rather than a number.
-4. **Sampling is polled (~75ms), not event-driven.** A single fast frame at
+4. **Telemetry sampling is polled (~75ms), not event-driven.** A single fast frame at
    the true instantaneous minimum/maximum can be missed by a sample or two —
    e.g. the harness's tracked `minEdgeMargin` and the game's own end-of-run
    overlay figure can differ by a small amount for exactly this reason, not
-   a bug. The same applies to retry detection (see "Fixed: zombie attempts"
-   above): recovery is bounded by the polling interval, not instantaneous.
+   a bug. This no longer affects static input dispatch, exact stopping, or
+   static retry restoration. It still affects external closed-loop policy
+   decisions and their retry detection (see "Fixed: zombie attempts" above).
 5. **This harness's first pass missed the `?testapi=1` hook entirely** and
    built a DOM/HUD-text-only fallback assuming no such channel existed. That
    fallback is still there (and still the least-bad option if both `testapi`
@@ -1259,18 +1287,11 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
     open-loop scripts did not have: a "policy clears the route" claim after
     T-018 is a claim about a bot that can see holes.
 
-11. **Deterministic mode is not deterministic while the game is parked at the
-    title** (T-027, I-018). The wall-clock fallback described in "Deterministic
-    injection mode" is a real, documented hole in this mode's contract: those
-    events are dispatched on real elapsed time, carry no `gameMsJitterMs`, and
-    are stamped `dispatchedVia: "wallclock-title"` precisely so nobody reads
-    them as sim-time-locked. It is the lesser of two evils — the alternative
-    was a run that dispatches nothing at all — but a `?shell=title` run is
-    therefore *less* reproducible in its first keypress than a normal one, and
-    the rest of the timeline is shifted by however long the harness sat on the
-    title. Prefer `?shell=0` (or the default autostart) for anything you intend
-    to compare across runs; use `?shell=title` for screenshots and title-screen
-    behaviour, where that shift doesn't matter.
+11. **Frame-scoped mode deliberately does not simulate shell input** (T-027).
+    Static `--deterministic` schedules accept `GAMEPLAY_KEYMAP` codes only.
+    A title/pause/restart script fails validation instead of quietly falling
+    back to wall time and weakening the claim. Use ordinary mode for shell
+    behavior; default `?testapi=1` autostarts gameplay for frame-exact runs.
 
 12. **The dispatch ledger's fatal cases are about the CLOCK, not about the run
     being interesting** (T-027). `meta.deterministicDispatch.fatal` and the
@@ -1330,7 +1351,7 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    mode" above for the full result and the ruled-out candidates
    (`Math.random()`, stray `performance.now()`/`Date.now()`: none found in
    `src/sim/` or `src/pure/`). Superseded by hook request #5 below.
-5. **New, more specific hook request arising from #4's negative result:**
+5. ~~**New, more specific hook request arising from #4's negative result:**
    a synchronous, frame-scoped input hook — a way to say "this key state
    applies starting at the next `update()` call," rather than dispatching a
    real CDP key event and letting the browser's own event queue decide which
@@ -1338,17 +1359,20 @@ node run.mjs scripts/transform-slice.json --out /tmp/check --max-runtime-ms 2000
    the sim's `dt` value per frame; it doesn't and can't control which real
    frame boundary an asynchronously-delivered keyboard event straddles. This
    is a different, larger ask than `fixeddt` was, and not something to
-   assume is cheap — flagged for physics-review to evaluate, not built
-   around from the harness side.
-   **Status (T-002): confirmed worth building** — the pre-build instrument
+   assume is cheap — flagged for physics-review to evaluate.~~
+   **Done 2026-08-05:** the immutable pre-navigation timeline, canonical
+   input edge, frame-start drain, exact terminal tick, retry reassertion and
+   page-authored ledger are now the implementation behind `--deterministic`.
+   Real keyboard and external closed-loop policy paths remain.
+   **Prior status (T-002): confirmed worth building** — the pre-build instrument
    this README asked for ran, and the verdict is in
    `docs/playtests/2026-07-t2-frame-alignment.md`: the sim is bit-identical
    under frame-scoped input (so this hook is *sufficient* to make bot runs
    fully reproducible), a one-frame shift of a single tap forks the t2
    outcome (so nothing weaker is), and the ritual-arming check itself was
    refuted as the knife-edge (so there is no sim-side fix to prefer
-   instead). Until it lands, `tools/simlab/t2lab.mjs` provides the same
-   injection semantics headlessly against the real sim.
+   instead). `tools/simlab/t2lab.mjs` remains the renderer-free companion
+   proof against the real sim.
 6. ~~Replace `lib/fixture.mjs`'s hand-copied snapshot with a real import from
    `src/pure/traversal.js`~~ — **done** (T-005), and **superseded** (T-025):
    the import is gone too. Importing the fixture fixed staleness but not
@@ -1711,9 +1735,10 @@ position in every observed run); the real sensitivity is ordinary
 traversal/hazard knife-edges (gap lips, wasp contact) amplified by
 death→retry timeline shifts; a one-frame shift of a single scripted tap
 forks the outcome (26/178 variants), and the sim is bit-deterministic once
-input lands on defined frames. The new single best next action is therefore
-to **build hook request #5 game-side** (see its Status note above) — the
-evidence now says it is both sufficient and the only fix that can work.
+input lands on defined frames. Hook request #5 is now built game-side. The
+next harness action is to use repeatable final-state fingerprints while tuning
+gameplay, and investigate any remaining divergence as simulation/state leakage
+rather than input latency.
 
 (The previously-listed secondary action — replacing `lib/fixture.mjs`'s
 hand-copied snapshot with a real import — is done, and has since been

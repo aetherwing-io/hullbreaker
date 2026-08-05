@@ -1,13 +1,14 @@
-// driver.mjs — owns the browser: launch, navigate, replay input with real
-// timing, sample state concurrently, and collect everything needed for a
-// report. No game state is ever poked or mutated directly — every input is a
-// real CDP key event via Playwright's keyboard API, and every read is a
-// page.evaluate() over DOM/window, exactly what a human's browser would see.
+// driver.mjs — owns the browser, input delivery, sampling and report evidence.
+// Ordinary and policy input travels through real Playwright keyboard events.
+// Deterministic static input is different on purpose: the complete immutable
+// timeline is installed before navigation, then the game drains it at frame
+// start through the same canonical gameplay edge function as the DOM path.
 
 import { chromium } from 'playwright-core';
 import { sampleState, isReady, isVictorySample } from './sampler.mjs';
 import { probeServedFixture } from './fixture.mjs';
 import { evaluatePolicyTick } from './policy.mjs';
+import { FRAME_INPUT_VERSION } from '../../../src/pure/frame-input.js';
 
 const DEFAULT_VIEWPORT = { width: 1280, height: 800 };
 
@@ -33,6 +34,20 @@ export async function runPlaytest({
   if (video) contextOpts.recordVideo = { dir: outDir, size: viewport };
   const context = await browser.newContext(contextOpts);
   const page = await context.newPage();
+  const lastEventT = events.reduce((m, e) => Math.max(m, e.t), 0);
+  // durationMs is the script's declared minimum window; tailMs is part of the
+  // simulation contract in frame mode, not a Node timer noticed after the fact.
+  const scriptEndMs = Math.max(lastEventT, durationMs) + tailMs;
+
+  if (deterministic) {
+    await page.addInitScript((payload) => {
+      Object.defineProperty(globalThis, '__HULLBREAKER_INPUT_BOOTSTRAP__', {
+        value: payload,
+        configurable: true,
+        writable: false,
+      });
+    }, { version: FRAME_INPUT_VERSION, events, stopAtMs: scriptEndMs });
+  }
 
   const consoleErrors = [];
   const pageErrors = [];
@@ -76,6 +91,22 @@ export async function runPlaytest({
       'treating as a boot failure rather than guessing at state';
   }
 
+  let frameInput = null;
+  if (!bootError && deterministic) {
+    try {
+      frameInput = await page.evaluate(() => {
+        const api = globalThis.__HULLBREAKER_TEST__;
+        return api && typeof api.inputTimeline === 'function' ? api.inputTimeline() : null;
+      });
+      if (!frameInput || !['running', 'complete'].includes(frameInput.status)) {
+        bootError = 'frame-scoped input did not initialize: ' +
+          (frameInput && frameInput.error || 'testapi inputTimeline() is unavailable');
+      }
+    } catch (err) {
+      bootError = `frame-scoped input probe threw: ${String(err && err.message || err)}`;
+    }
+  }
+
   // One-time, before any input: ask the SERVED build which fixture it is
   // running (lib/fixture.mjs). Every fixture-derived column in the report is
   // computed against this answer instead of against whatever this checkout's
@@ -113,8 +144,8 @@ export async function runPlaytest({
   // the instant a retry fires, and stays dead until the script's own
   // scheduled keyup/keydown next touches that code — measured as 5.2s of
   // zero motion with a key conceptually held. heldCodes tracks what the
-  // script currently considers "down" (shared by the static timeline, policy
-  // hold rules, and policy taps below); the sample loop watches the
+  // script currently considers "down" for CDP-delivered input (ordinary
+  // static events plus policy holds/taps); the sample loop watches the
   // testapi/HB `attempts` counter (already polled every sampleMs) and, the
   // moment it ticks up, re-dispatches a keydown for every currently-held
   // code. Verified empirically: a second page.keyboard.down() for an
@@ -131,11 +162,6 @@ export async function runPlaytest({
 
   const t0 = Date.now();
   const elapsed = () => Date.now() - t0;
-  const lastEventT = events.reduce((m, e) => Math.max(m, e.t), 0);
-  // durationMs is the script's declared minimum window (e.g. an idle/no-input
-  // script has no events at all but must still run its full intended length) —
-  // never let a sparse event list truncate the run early.
-  const scriptEndMs = Math.max(lastEventT, durationMs) + tailMs;
 
   async function pressKey(code) {
     try {
@@ -165,73 +191,6 @@ export async function runPlaytest({
       }
     }
     retryReassertions.push({ tMs, attempts, codes });
-  }
-
-  // --- Deterministic injection mode ------------------------------------
-  // Default (deterministic: false) dispatches events on a wall-clock timer
-  // (inputLoop below) — subject to Node/CDP round-trip jitter interacting
-  // with the game's own variable rAF cadence. The adversarial report
-  // measured this compounding into a 28-tile maxX spread from byte-identical
-  // input on one build (t2-transform-seam-rush). Deterministic mode instead
-  // keys dispatch to the game's own sim clock: every sample tick, dispatch
-  // any event whose `t` has been reached by that tick's `gameMs`. This
-  // quantizes dispatch to the sample interval (an event scheduled for
-  // gameMs=1400 fires at the first tick where gameMs>=1400, up to `sampleMs`
-  // of sim time late — reported per-event as `gameMsJitterMs`) rather than
-  // eliminating jitter outright; --sample-ms controls that bound. Requires
-  // testapi/HB (sample.gameMs must be a number) — dom-only fallback cannot
-  // support this mode, and the driver reports an error rather than silently
-  // behaving like wall-clock mode.
-  //
-  // I-018 — the one state where waiting for the clock never ends. The game
-  // shell (T-013) parks a built-but-FROZEN run behind its title screen: state
-  // is `MENU` and `gameMs` stays at 0 until a key starts the run. In this mode
-  // that key is itself gated on `gameMs`, so a script whose first event is at
-  // t>0 waits forever — zero events dispatched, every sample `MENU`, and a
-  // report that looks like a run that simply didn't get anywhere. The clock
-  // cannot start until an event fires, so while (and only while) the game is
-  // parked at the title, events are dispatched on the WALL clock instead, and
-  // each one is stamped `dispatchedVia: 'wallclock-title'` so no report claims
-  // sim-time quantization it did not have. Every other frozen-clock state
-  // (PAUSED, the retry freeze, GAME_OVER) keeps the old behaviour on purpose —
-  // there the wait DOES end, and waiting is the useful half of this mode.
-  let nextDeterministicIdx = 0;
-  let deterministicGameMsMissingWarned = false;
-  const titleWallclockDispatches = [];
-
-  async function dispatchDueDeterministicEvents(sample, tMs) {
-    if (sample.state === 'MENU') {
-      while (nextDeterministicIdx < events.length && events[nextDeterministicIdx].t <= tMs) {
-        const ev = events[nextDeterministicIdx++];
-        if (ev.type === 'keydown') await pressKey(ev.code); else await releaseKey(ev.code);
-        ev.actualDispatchMs = tMs;
-        ev.jitterMs = tMs - ev.t;
-        ev.dispatchedVia = 'wallclock-title';
-        titleWallclockDispatches.push({ tMs, t: ev.t, type: ev.type, code: ev.code });
-        if (stop) break;
-      }
-      return;
-    }
-    if (typeof sample.gameMs !== 'number') {
-      if (!deterministicGameMsMissingWarned) {
-        pageErrors.push({
-          message: 'deterministic mode requested but sample.gameMs is not a number ' +
-            '(needs testapi or window.HB) — no events can be dispatched by sim time',
-        });
-        deterministicGameMsMissingWarned = true;
-      }
-      return;
-    }
-    while (nextDeterministicIdx < events.length && events[nextDeterministicIdx].t <= sample.gameMs) {
-      const ev = events[nextDeterministicIdx++];
-      if (ev.type === 'keydown') await pressKey(ev.code); else await releaseKey(ev.code);
-      ev.actualDispatchMs = tMs;
-      ev.actualDispatchGameMs = sample.gameMs;
-      ev.gameMsJitterMs = +(sample.gameMs - ev.t).toFixed(2);
-      ev.jitterMs = tMs - ev.t;   // wall-clock figure too, for cross-mode comparison
-      ev.dispatchedVia = 'gameMs';
-      if (stop) break;
-    }
   }
 
   // --- Closed-loop policy mode ------------------------------------------
@@ -338,9 +297,14 @@ export async function runPlaytest({
         }
         lastAttemptsForRetry = sample.attempts;
       }
-      if (deterministic && sample) await dispatchDueDeterministicEvents(sample, tMs);
       if (policyRules && policyRules.length && sample) await runPolicyTick(sample, tMs);
-      const timeUp = tMs >= scriptEndMs;
+      const frameDone = !!(sample && sample.frameInput && sample.frameInput.status === 'complete');
+      // A terminal/pause state intentionally stops gameMs. Preserve the old
+      // script-window sampling contract there; during PLAYING, only the exact
+      // in-page terminal tick may stop a deterministic run.
+      const frozenWindowDone = deterministic && sample && sample.state !== 'PLAYING' &&
+        tMs >= scriptEndMs;
+      const timeUp = deterministic ? frameDone || frozenWindowDone : tMs >= scriptEndMs;
       const hardCap = tMs >= maxRuntimeMs;
       const victoryDone = victorySeenAt !== null && tMs >= victorySeenAt + victorySettleMs;
       const gameOverDone = gameOverSeenAt !== null && tMs >= gameOverSeenAt + victorySettleMs;
@@ -358,7 +322,7 @@ export async function runPlaytest({
   }
 
   async function inputLoop() {
-    if (deterministic) return;   // dispatched from sampleLoop instead, keyed to gameMs
+    if (deterministic) return;   // the immutable schedule was installed before navigation
     for (const ev of events) {
       const wait = ev.t - elapsed();
       if (wait > 0) await new Promise((r) => setTimeout(r, wait));
@@ -372,6 +336,29 @@ export async function runPlaytest({
 
   if (!bootError) {
     await Promise.all([sampleLoop(), inputLoop()]);
+  }
+
+  // Read the full ledger once. Trace samples carry only a six-field summary,
+  // otherwise a 100-event schedule copied 1,000 times would dominate reports.
+  if (deterministic) {
+    try {
+      frameInput = await page.evaluate(() => {
+        const api = globalThis.__HULLBREAKER_TEST__;
+        return api && typeof api.inputTimeline === 'function' ? api.inputTimeline() : null;
+      });
+      if (frameInput && Array.isArray(frameInput.events)) {
+        for (let i = 0; i < events.length; i++) {
+          const actual = frameInput.events[i];
+          if (actual && actual.t === events[i].t && actual.type === events[i].type &&
+              actual.code === events[i].code) Object.assign(events[i], actual);
+        }
+      }
+      if (frameInput && Array.isArray(frameInput.reassertions)) {
+        retryReassertions.push(...frameInput.reassertions.map((r) => ({ ...r, source: 'frame' })));
+      }
+    } catch (err) {
+      pageErrors.push({ message: `frame input teardown probe failed: ${String(err && err.message || err)}` });
+    }
   }
 
   // Teardown starts here: no more input is scheduled, so any keyboard failure
@@ -403,7 +390,7 @@ export async function runPlaytest({
     pageErrors,
     teardownErrors,
     tapsSettledAtTeardown,
-    titleWallclockDispatches,
+    titleWallclockDispatches: [],
     stopReason: bootError ? 'boot-error' : stopReason,
     bootError,
     wallTimeMs: elapsed(),
@@ -411,8 +398,9 @@ export async function runPlaytest({
     videoPath,
     dispatchedEvents: events,
     retryReassertions,
-    maxRetryDetectionLagMs: sampleMs,
+    maxRetryDetectionLagMs: deterministic && !(policyRules && policyRules.length) ? 0 : sampleMs,
     deterministic,
+    frameInput,
     policyLog,
     policyMissingFieldWarnings: [...policyMissingFieldCounts.entries()].map(([key, count]) => {
       const [rule, field] = key.split(':');

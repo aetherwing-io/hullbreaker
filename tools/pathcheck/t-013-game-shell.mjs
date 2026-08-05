@@ -14,6 +14,7 @@ import {
   killsPerHundredShots, resolveStartDirection, runStatRows, shellKeyIntent,
   startDirection, startDirectionAt,
 } from '../../src/pure/shell.js';
+import { GAMEPLAY_CODES } from '../../src/pure/frame-input.js';
 import { here, layerFiles, ok, srcDir, stripComments } from './_context.mjs';
 
 export const title = 'T-013: game shell (pure + guards) ===================';
@@ -126,15 +127,14 @@ export async function run(SHARED) {
   }
 
   // --- the harness contract: the shell never swallows a gameplay key ----
-  // KEYMAP is read out of src/main.js itself, so this cannot drift from the
-  // real bindings the bot harness dispatches.
+  // The shared pure map is imported by src/main.js and the bot compiler, so
+  // the shell/harness contract has one owner instead of two parsed copies.
   const mainSrc = readFileSync(join(srcDir, 'main.js'), 'utf8');
-  const keymapBlock = mainSrc.slice(mainSrc.indexOf('const KEYMAP = {'),
-                                    mainSrc.indexOf('};', mainSrc.indexOf('const KEYMAP = {')));
-  const gameplayCodes = [...keymapBlock.matchAll(/(\w+)\s*:\s*'/g)].map((m) => m[1]);
+  const gameplayCodes = GAMEPLAY_CODES;
   ok(gameplayCodes.length >= 14 && gameplayCodes.includes('Space') &&
      gameplayCodes.includes('KeyJ') && gameplayCodes.includes('ArrowRight'),
-     'T-013: KEYMAP parsed out of src/main.js (' + gameplayCodes.length + ' codes)');
+     'T-013: shared GAMEPLAY_KEYMAP publishes the complete binding set (' +
+     gameplayCodes.length + ' codes)');
   const ALL_STATES = ['BOOT', 'MENU', 'PLAYING', 'PAUSED', 'SLICE_RETRY', 'GAME_OVER', 'VICTORY'];
   for (const code of gameplayCodes) {
     for (const st of ALL_STATES) {
@@ -329,7 +329,7 @@ export async function run(SHARED) {
     ok(/if \(e\.code === 'KeyR' && !startedFromTitle &&/.test(mainCode),
        'T-013: the press that leaves the title never also restarts the run');
     ok(mainCode.indexOf('shellKeyIntent(e.code, state)') > 0 &&
-       mainCode.indexOf('shellKeyIntent(e.code, state)') < mainCode.indexOf('const k = KEYMAP[e.code];'),
+       mainCode.indexOf('shellKeyIntent(e.code, state)') < mainCode.indexOf('if (!KEYMAP[e.code]) return;'),
        'T-013: the shell gets first look, then the ordinary gameplay path runs');
   }
 }

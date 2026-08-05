@@ -15,17 +15,16 @@ export async function run(SHARED) {
 
 /* ============ T-027: the bot harness's deterministic-dispatch honesty ==== *
  * lib/deterministic.mjs is the backstop for I-018: a --deterministic run
- * dispatches each event at the first tick where the GAME's own clock reaches
- * it, so anything that stops that clock stops the run's input — and the report
+ * drains each event inside the exact fixed-step frame, so anything that stops
+ * that clock stops the run's input — and the report
  * that comes out looks like an ordinary run that merely didn't get far (a
  * plausible `not-completed`, no events, exit 0). Same class as a gate that
  * reports green because its subject is the author's intent rather than what
  * happened, so the verdicts are asserted here on synthetic runs rather than
  * trusted: the module is a pure function of (result, events), no page, no I/O.
- * The primary fix — dispatching on the wall clock while the game is parked at
- * the shell title, where gameMs is frozen at 0 and the key that would start it
- * is itself gated on that clock — is in lib/driver.mjs and needs a browser, so
- * only its presence is guarded here; the behavioral proof is a run.           */
+ * The primary fix now installs the entire schedule before navigation and has
+ * src/main.js drain it before update(); only its presence is guarded here;
+ * the behavioral proof is a repeated browser run.                              */
 {
   const { diagnoseDeterministicRun } = await import('../playtest/lib/deterministic.mjs');
   const ev = (t) => ({ t, type: 'keydown', code: 'ArrowRight' });
@@ -74,14 +73,15 @@ export async function run(SHARED) {
   ok(policyOnly.fatal === null && policyOnly.warning === null,
      'T-027: a policy-only script has no timeline to starve and is never faulted for it');
 
-  // The driver-side half of I-018 and I-011. Static, and labelled as such:
+  // The driver-side half of frame delivery and I-011. Static, and labelled as such:
   // both need a real browser to exercise, so this asserts the mechanisms are
   // still wired, not that they work — the behavioral evidence is a bot run.
   const driverSrc = readFileSync(join(here, 'playtest', 'lib', 'driver.mjs'), 'utf8');
-  ok(/state === 'MENU'/.test(driverSrc) && /wallclock-title/.test(driverSrc),
-     'T-027: the driver still special-cases the shell title screen in deterministic mode, and ' +
-     'stamps those events dispatchedVia "wallclock-title" so no report claims sim-time ' +
-     'quantization it did not have (I-018)');
+  ok(/page\.addInitScript/.test(driverSrc) && /__HULLBREAKER_INPUT_BOOTSTRAP__/.test(driverSrc) &&
+     driverSrc.indexOf('page.addInitScript') < driverSrc.indexOf('page.goto') &&
+     !/queueEvent\s*:/.test(driverSrc),
+     'T-027: the complete immutable timeline is installed before navigation; no post-boot ' +
+     'queueEvent API can reintroduce CDP timing');
   ok(/teardownErrors/.test(driverSrc) && /flushPendingTapReleases/.test(driverSrc) &&
      !/pageErrors\.push\(\{ message: `key (up|down) failed/.test(driverSrc),
      'T-027: a tap release racing the browser context closing can no longer land in ' +

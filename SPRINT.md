@@ -3621,3 +3621,23 @@ least the complete intro plus first face. Live Chrome restart at 0-1m showed
 the dense first-face route immediately.
 
 verify: node tools/pathcheck.mjs; restart the live preview before crossing 24m
+
+## T-066 | harness | done | P1
+
+goal: remove CDP/browser-event latency and sample-stop drift from static bot
+playtests without weakening the real keyboard path.
+
+landed 2026-08-05: `--deterministic` installs one immutable gameplay schedule
+before navigation, maps timestamps to fixed-step ticks, drains edges through
+the same canonical jump/hook/key semantics immediately before `update()`, and
+freezes the simulation at the exact terminal tick. The page authors the event
+ledger; retries restore held inputs as repeat edges; shell controls remain
+real-browser-only and closed-loop policy remains explicitly external.
+
+proof: three `mid-route.json` Chrome runs produced the same SHA-256 over final
+sim state, outcome and all 26 ledger rows: tick 594, gameMs 9900.198,
+x 55.649, scrollX 56.084655, one kill, two HP, zero falls. Every actual tick
+equaled its scheduled tick; no page or console errors.
+
+verify: node tools/pathcheck.mjs; run `mid-route.json --deterministic` three
+times and compare final sim + ledger fingerprints

@@ -1,11 +1,12 @@
 // compile.mjs — turns a playtest script (JSON) into a flat, time-sorted list
 // of raw key events: { t, type: 'keydown'|'keyup', code }.
 //
-// `code` values must be real KeyboardEvent.code strings matching the game's
-// KEYMAP in index.html (ArrowLeft/KeyA, ArrowRight/KeyD, ArrowUp/KeyW,
-// ArrowDown/KeyS, Space/KeyK, KeyJ/KeyX, ShiftLeft/ShiftRight, plus KeyP,
-// KeyR, Escape). The harness never invents synthetic input APIs — every
-// event here is dispatched as a real CDP key event by the driver.
+// `code` values are real KeyboardEvent.code strings matching the game's
+// shared GAMEPLAY_KEYMAP, plus the browser/UI controls KeyP/KeyR/Escape.
+// Ordinary runs dispatch them as real CDP key events. `--deterministic`
+// installs gameplay-only events as one immutable frame schedule before boot.
+
+import { GAMEPLAY_CODES } from '../../../src/pure/frame-input.js';
 //
 // Scripts may specify events two ways, and both can be mixed in one file:
 //
@@ -24,12 +25,12 @@
 
 const ALIAS_TO_CODE = {
   left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown',
-  jump: 'Space', fire: 'KeyJ', strafe: 'ShiftLeft', pause: 'KeyP', restart: 'KeyR',
+  jump: 'Space', fire: 'KeyJ', strafe: 'ShiftLeft', hook: 'KeyL',
+  pause: 'KeyP', restart: 'KeyR',
 };
 
 const VALID_CODES = new Set([
-  'ArrowLeft', 'KeyA', 'ArrowRight', 'KeyD', 'ArrowUp', 'KeyW', 'ArrowDown', 'KeyS',
-  'Space', 'KeyK', 'KeyJ', 'KeyX', 'ShiftLeft', 'ShiftRight', 'KeyP', 'KeyR', 'Escape',
+  ...GAMEPLAY_CODES, 'KeyP', 'KeyR', 'Escape',
 ]);
 
 export function resolveCode(nameOrCode) {
@@ -83,11 +84,14 @@ function assertNoDoubleEdges(events) {
 }
 
 export function compileScript(script) {
-  const raw = (script.events || []).map((ev) => ({
-    t: ev.t, type: ev.type, code: resolveCode(ev.code),
+  const raw = (script.events || []).map((ev, order) => ({
+    t: ev.t, type: ev.type, code: resolveCode(ev.code), order,
   }));
-  const fromMoves = expandMoves(script.moves || []);
-  const events = raw.concat(fromMoves).sort((a, b) => a.t - b.t || (a.type === 'keyup' ? -1 : 1));
+  const fromMoves = expandMoves(script.moves || []).map((ev, i) => ({ ...ev, order: raw.length + i }));
+  const events = raw.concat(fromMoves)
+    .sort((a, b) => a.t - b.t ||
+      (a.type === b.type ? a.order - b.order : a.type === 'keyup' ? -1 : 1))
+    .map(({ order, ...ev }) => ev);
   assertNoDoubleEdges(events);
   return events;
 }

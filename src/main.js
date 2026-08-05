@@ -19,6 +19,9 @@ import {
 } from './mode.js';
 import { HALT_S } from './pure/path.js';
 import {
+  FRAME_INPUT_VERSION, GAMEPLAY_KEYMAP, createFrameInputTimeline,
+} from './pure/frame-input.js';
+import {
   RIG_SCREEN_FRACTION, SHELL_ELEMENT_VARS, START_DIRECTION_IDS, shellKeyIntent,
 } from './pure/shell.js';
 import { cornerEventTotalMs } from './pure/waves.js';
@@ -179,13 +182,26 @@ renderer.domElement.addEventListener('webglcontextlost', (e) => {
    left-hand alternate for WASD players. Both are the same intent — the A/B
    the operator is asked to judge is ?hookinput=auto, which needs no key at
    all (see src/mode.js). */
-const KEYMAP = {
-  ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
-  ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down',
-  Space: 'jump', KeyK: 'jump', KeyJ: 'fire', KeyX: 'fire',
-  ShiftLeft: 'strafe', ShiftRight: 'strafe',
-  KeyL: 'hook', KeyE: 'hook',
-};
+const KEYMAP = GAMEPLAY_KEYMAP;
+
+// One gameplay edge path for a human KeyboardEvent and the verification-only
+// frame timeline. Keeping jump/hook buffering here is load-bearing: a test
+// edge must not become a weaker direct write to `keys`, and reasserting a held
+// key after reset must use repeat=true so it does not manufacture a new press.
+function applyGameplayKeyEdge(code, type, repeat = false) {
+  const k = KEYMAP[code];
+  if (!k) return false;
+  if (type === 'keyup') {
+    keys[k] = false;
+    return true;
+  }
+  if (type !== 'keydown') return false;
+  if (k === 'jump' && !repeat) bufferJumpUntil(gameMs + CONFIG.player.jumpBufferMs);
+  if (k === 'hook' && !repeat && ACTIVE_SLICE && ACTIVE_SLICE.hook)
+    bufferHookUntil(gameMs + ACTIVE_SLICE.hook.bufferMs);
+  keys[k] = true;
+  return true;
+}
 
 addEventListener('keydown', (e) => {
   /* The game shell gets first look, but only where the simulation is not
@@ -219,20 +235,12 @@ addEventListener('keydown', (e) => {
     if (!e.repeat) resetGame();
     return;
   }
-  const k = KEYMAP[e.code];
-  if (!k) return;
+  if (!KEYMAP[e.code]) return;
   e.preventDefault();
-  if (k === 'jump' && !e.repeat) bufferJumpUntil(gameMs + CONFIG.player.jumpBufferMs);
-  // the hook is a buffered press like the jump: pressing a beat early still
-  // grabs the anchor you are flying toward, which is what removes the aiming
-  // pause. Inert unless ?hook=1 armed sim/hook.js.
-  if (k === 'hook' && !e.repeat && ACTIVE_SLICE && ACTIVE_SLICE.hook)
-    bufferHookUntil(gameMs + ACTIVE_SLICE.hook.bufferMs);
-  keys[k] = true;
+  applyGameplayKeyEdge(e.code, 'keydown', e.repeat);
 });
 addEventListener('keyup', (e) => {
-  const k = KEYMAP[e.code];
-  if (k) keys[k] = false;
+  applyGameplayKeyEdge(e.code, 'keyup', e.repeat);
 });
 
 addEventListener('blur', releaseAllKeys);
@@ -269,6 +277,11 @@ function toTitle() {
 
 function resetGame() {
   resetRunState();
+  // resetRunState intentionally releases every ordinary key. A frame-scoped
+  // script owns a longer-lived schedule, so restore only inputs that are still
+  // held at this tick. repeat=true preserves real keyboard semantics: a held
+  // jump/fire resumes, but reset never invents another jump/hook press edge.
+  if (frameInputTimeline) frameInputTimeline.reassertHeld(gameMs);
   if (ACTIVE_SLICE) {
     // route stakes: `rewards` is the pocket capsule plus whatever the active
     // pacing variant parks on its harder lines
@@ -561,15 +574,6 @@ function perfSnapshot() {
   };
 }
 
-// absent from every ordinary URL: only ?testapi=1 publishes the channel
-if (QUERY.has('testapi')) {
-  Object.defineProperty(globalThis, '__HULLBREAKER_TEST__', {
-    value: { snapshot: telemetry },
-    configurable: false,
-    writable: false,
-  });
-}
-
 /* ?fixeddt=<ms> (verification hook, harness-engineer request): every frame
    advances the sim by a CONSTANT dt instead of measured wall-clock time, so a
    sim-time-locked input script produces one outcome instead of forking on the
@@ -581,6 +585,58 @@ const FIXED_DT_MS = (() => {
   const raw = parseFloat(QUERY.get('fixeddt'));
   return Number.isFinite(raw) && raw > 0 ? Math.min(50, Math.max(1, raw)) : 0;
 })();
+
+/* The harness installs this payload with addInitScript BEFORE navigation, so
+   an event at t=0 cannot lose a race with module evaluation or the first rAF.
+   Ordinary/testapi-only pages have no payload and stay on the exact DOM path
+   above. There is intentionally no post-boot queueEvent mutation surface: a
+   complete schedule is evidence; CDP timing smuggled in after boot is not. */
+const frameInputBootstrap = QUERY.has('testapi')
+  ? globalThis.__HULLBREAKER_INPUT_BOOTSTRAP__
+  : null;
+let frameInputTimeline = null;
+let frameInputError = null;
+if (frameInputBootstrap) {
+  try {
+    if (frameInputBootstrap.version !== FRAME_INPUT_VERSION)
+      throw new Error(`frame input version ${frameInputBootstrap.version} does not match ${FRAME_INPUT_VERSION}`);
+    if (!FIXED_DT_MS) throw new Error('frame input requires ?fixeddt=<ms>');
+    frameInputTimeline = createFrameInputTimeline({
+      events: frameInputBootstrap.events,
+      fixedDtMs: FIXED_DT_MS,
+      stopAtMs: frameInputBootstrap.stopAtMs,
+      applyEdge: applyGameplayKeyEdge,
+    });
+  } catch (err) {
+    frameInputError = String(err && err.message || err);
+  }
+  // The copied/validated timeline is the only mutable owner from here on.
+  try { delete globalThis.__HULLBREAKER_INPUT_BOOTSTRAP__; } catch (_) { /* non-fatal */ }
+}
+
+function frameInputSnapshot() {
+  if (frameInputTimeline) return frameInputTimeline.snapshot();
+  return {
+    version: FRAME_INPUT_VERSION,
+    status: frameInputError ? 'error' : 'disabled',
+    error: frameInputError,
+    fixedDtMs: FIXED_DT_MS || null,
+    eventCount: 0,
+    events: [],
+    reassertions: [],
+  };
+}
+
+// absent from every ordinary URL: only ?testapi=1 publishes the channel.
+// Both methods return structured-cloneable snapshots; neither exposes a
+// mutable queue, keys object, or simulation row.
+if (QUERY.has('testapi')) {
+  Object.defineProperty(globalThis, '__HULLBREAKER_TEST__', {
+    value: Object.freeze({ snapshot: telemetry, inputTimeline: frameInputSnapshot }),
+    configurable: false,
+    writable: false,
+  });
+}
 
 let last = performance.now();
 /* The loop is written so that no single throw can leave a live page in
@@ -609,10 +665,19 @@ function frame(t) {
   const dt = FIXED_DT_MS ? FIXED_DT_MS / 1000 : Math.min(50, t - last) / 1000;
   last = t;
   if (state === 'PLAYING') {
-    try {
-      update(dt);
-    } catch (err) {
-      if (reportFault('update', err) === 'stop') return;
+    // Exact schedules drain immediately before the update they own and freeze
+    // at their declared terminal tick. This removes not only CDP latency but
+    // the old sampler race where a 75ms poll noticed the end several updates
+    // late. The render/HUD loop keeps drawing the frozen evidence frame.
+    const shouldUpdate = !frameInputTimeline || frameInputTimeline.beforeUpdate(gameMs);
+    if (shouldUpdate) {
+      try {
+        update(dt);
+      } catch (err) {
+        if (reportFault('update', err) === 'stop') return;
+      } finally {
+        if (frameInputTimeline) frameInputTimeline.afterUpdate();
+      }
     }
   }
   try {

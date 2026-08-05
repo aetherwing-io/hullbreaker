@@ -82,6 +82,7 @@ import * as d69 from './hostile-presenter-contract.mjs';
 import * as d70 from './boot-registry-contract.mjs';
 import * as d71 from './adaptive-fidelity-contract.mjs';
 import * as d72 from './render-submission-contract.mjs';
+import * as d73 from './frame-input-contract.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -157,4 +158,5 @@ export const DOMAINS = [
   d70,    // explicit view and run-reset registries
   d71,    // sustained-frame adaptive fidelity ladder
   d72,    // built-scene single-pass, idle upload, and canvas-AA truth
+  d73,    // frame-scoped deterministic input and exact sim stop
 ];

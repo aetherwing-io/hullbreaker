@@ -95,6 +95,10 @@ export function sampleState() {
     scrollX: null, gameMs: null, state: null, falls: null, airJumps: null,
     transform: null, pace: null, pursuitSpeed: null, pursuitPeak: null, setbacks: null,
     score: null, hostiles: null, capsules: null, momentum: null,
+    // Verification-only frame schedule state. Kept to a summary here so a
+    // long event ledger is not copied into every trace row; driver.mjs reads
+    // the full immutable ledger once at teardown.
+    frameInput: null,
     // stock lives, exact, from the telemetry channel (T-025 / SPRINT I-006).
     // null in dom fidelity — the HUD's own `×N` text is still in `hudTL` on
     // every sample and lib/metrics.mjs falls back to parsing it there, so a
@@ -182,6 +186,15 @@ export function sampleState() {
     result.kills = typeof hbSnap.kills === 'number' ? hbSnap.kills : base.kills;
   } else {
     result = base;
+  }
+
+  if (testapi && typeof testapi.inputTimeline === 'function') {
+    const f = testapi.inputTimeline();
+    result.frameInput = {
+      version: f.version, status: f.status, error: f.error || null,
+      fixedDtMs: f.fixedDtMs, tick: f.tick, stopTick: f.stopTick,
+      stopAtMs: f.stopAtMs, nextEvent: f.nextEvent, eventCount: f.eventCount,
+    };
   }
 
   // fallback only: the primary channel already filled this unless it was dom
