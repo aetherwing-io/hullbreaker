@@ -3,7 +3,7 @@ name: Deploy tagged release to Pages
 on:
   push:
     tags:
-      - '*'
+      - 'v*'
 
 # A release is immutable. If two tags arrive close together, finish the first
 # deployment before starting the next instead of cancelling a live publish.
@@ -34,6 +34,7 @@ jobs:
             echo "::error title=Tag is not current main::${GITHUB_REF_NAME} points to ${tagged_commit}, but origin/main is ${main_commit}. Tag the current main tip to deploy."
             exit 1
           fi
+          echo "RELEASE_COMMIT=${tagged_commit}" >> "${GITHUB_ENV}"
           echo "Deploying ${GITHUB_REF_NAME} from ${tagged_commit}."
 
       - name: Set up Node.js
@@ -49,11 +50,14 @@ jobs:
       - name: Install verifier browser
         run: node tools/deploy/node_modules/playwright-core/cli.js install --with-deps chromium
 
+      - name: Verify shared-asset union policy
+        run: node tools/deploy/asset-union-selftest.mjs
+
       - name: Build release bundle
         run: |
           mkdir -p "${RUNNER_TEMP}/hullbreaker-pages/site"
           node tools/deploy/build-bundle.mjs \
-            --ref "${GITHUB_SHA}" \
+            --ref "${RELEASE_COMMIT}" \
             --out "${RUNNER_TEMP}/hullbreaker-pages/hullbreaker-web.zip"
 
       - name: Verify release bundle
@@ -61,11 +65,19 @@ jobs:
           node tools/deploy/verify-bundle.mjs \
             --zip "${RUNNER_TEMP}/hullbreaker-pages/hullbreaker-web.zip"
 
-      - name: Prepare Pages site
+      - name: Build cache-consistent Pages site
         run: |
-          unzip -q "${RUNNER_TEMP}/hullbreaker-pages/hullbreaker-web.zip" \
-            -d "${RUNNER_TEMP}/hullbreaker-pages/site"
-          touch "${RUNNER_TEMP}/hullbreaker-pages/site/.nojekyll"
+          node tools/deploy/build-pages-site.mjs \
+            --zip "${RUNNER_TEMP}/hullbreaker-pages/hullbreaker-web.zip" \
+            --ref "${RELEASE_COMMIT}" \
+            --retain-tags 4 \
+            --out "${RUNNER_TEMP}/hullbreaker-pages/site"
+
+      - name: Verify warm-cache release rollover
+        run: |
+          node tools/deploy/verify-pages-site.mjs \
+            --site "${RUNNER_TEMP}/hullbreaker-pages/site" \
+            --revision "${RELEASE_COMMIT}"
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

@@ -5,7 +5,8 @@
   "description": "Dev-only itch.io deploy bundle builder + falsifying render test for HULLBREAKER (T-034/T-055). Not part of the game runtime.",
   "type": "module",
   "scripts": {
-    "verify": "node verify-bundle.mjs"
+    "verify": "node verify-bundle.mjs",
+    "test:asset-union": "node asset-union-selftest.mjs"
   },
   "devDependencies": {
     "playwright-core": "^1.48.0"

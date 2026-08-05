@@ -4,10 +4,12 @@ T-034 built this story; T-055 fixed the one thing in it that was wrong
 (I-048: the bundle omitted `assets/generated/`, so it would have shipped a
 game with none of its art and nothing to notice); 2026-08-04 pruned the
 ~92 MB of pipeline intermediates the art landings had grown into the bundle
-and added the GitHub Pages recipe (§7). This is the whole deploy story for
-a static-host bundle: how to build it, how it is proven to actually contain
+and added the GitHub Pages recipe (§7). The 2026-08-05 cache-consistency pass
+made the Pages package revision-aware after a new document was observed
+loading an older cached HUD module. This is the whole deploy story for a
+static-host bundle: how to build it, how it is proven to actually contain
 and render the art, the one honest remaining risk (the three.js CDN), and
-the exact steps to publish it. Nothing here changes the shipped game —
+the exact steps to publish it. Nothing here changes the source game —
 `src/`, `index.html`, `assets/`, `tools/pathcheck.mjs`, etc. are all
 untouched by the deploy tooling.
 
@@ -20,9 +22,11 @@ untouched by the deploy tooling.
    outside the repo, serves it, and asserts the art actually renders (not
    just that the zip contains files — see "Proving the bundle actually
    works" below). Run this before every upload that matters.
-3. Upload the zip to itch.io as an **HTML** project, check **"This file
-   will be played in the browser,"** set a viewport size, save. (For
-   GitHub Pages instead, see §7.)
+3. For Pages, `build-pages-site.mjs` gives that verified content a
+   commit-scoped module URL and `verify-pages-site.mjs` proves a warm browser
+   cannot combine two releases (§7). For itch.io, upload the zip as an
+   **HTML** project, check **"This file will be played in the browser,"** set
+   a viewport size, and save.
 4. Open the game page and play it. If it doesn't load, see "The CDN risk"
    below before assuming something else is broken.
 
@@ -290,18 +294,77 @@ section is written for the **operator** to follow by hand.
 
 ## 7. GitHub Pages tagged releases
 
-`.github/workflows/deploy-pages.yml` is the production path. Pushing any tag
-that resolves to the **current tip of `main`** builds, browser-verifies, and
-publishes the exact same static zip described above through GitHub's native
-Pages artifact deployment. A tag on another branch, or an old commit that is
-merely an ancestor of `main`, fails before packaging; a release can therefore
-never roll the public game backward by accident.
+`.github/workflows/deploy-pages.yml` is the production path. Pushing any `v*` tag
+that resolves to the **current tip of `main`** builds and browser-verifies the
+same static content described above, then applies one Pages-only packaging
+transform before GitHub's native artifact deployment. A tag on another branch,
+or an old commit that is merely an ancestor of `main`, fails before packaging;
+a release can therefore never roll the public game backward by accident.
+
+**Why Pages has a packaging transform.** Pages owns the response cache
+headers. Appending a release query to `index.html` does not version the URLs of
+its ES-module imports, and a real warm browser was observed running new HTML
+with an older cached `src/ui/hud.js`. `build-pages-site.mjs` instead publishes
+each module graph under its full commit id:
+
+```
+releases/<40-character-commit>/src/main.js
+```
+
+All relative JS imports remain under that directory. The root document carries
+the same commit in a `hullbreaker-build` meta marker and names that exact
+`main.js`, so no module URL is shared by two releases. The artifact retains the
+four most recent `v*` release tags on the current commit's first-parent history
+(about 2.5 MiB each, rather than duplicating the ~77 MiB art pack), allowing an
+older cached document to finish booting during a rollout. `/src` and the exact
+unmodified root document it booted are pinned to `v0.1.0`, the last unscoped
+release. They remain in the artifact permanently: a small compatibility cost
+that makes the first migration case provable instead of assuming its cache has
+expired.
+
+The workflow itself triggers only for `v*` tags, matching the retention
+namespace. First-parent filtering excludes tags on merged side branches. One
+honest residual remains without adding a fragile external deployment ledger:
+a `v*` tag on an older first-parent commit that failed the current-main guard
+is indistinguishable from a successfully published old tag later. It can be
+retained and therefore participate in the immutable-asset check. Release tags
+should consequently be created only for actual deploy attempts and never
+moved or reused.
+
+Art remains in the shared `/assets` tree because the generated filenames are
+already versioned. That is now an enforced contract, not an assumption: the
+builder compares Git blob ids across every retained release and **refuses to
+deploy if a PNG or SVG changed bytes without changing pathname**. Assets that
+existed only in a retained release are restored into the union. Rename changed
+art with a new `-vN` filename; never overwrite a published asset name.
 
 One repository setting is required once: **Settings → Pages → Build and
 deployment → Source → GitHub Actions**. The workflow uses only the automatic
 `GITHUB_TOKEN`; no deploy key or repository secret is required. It grants
 `contents: read` while building and grants `pages: write` plus `id-token:
 write` only to the isolated deploy job.
+
+The production domain is **https://hullbreaker.app/**. The repository Pages
+setting owns the domain binding, while every generated site also carries an
+exact `CNAME` file and `pages-release.json` marker; the deploy verifier rejects
+an artifact if either stops naming `hullbreaker.app`. In Cloudflare, keep the
+apex pointed at GitHub Pages and do not proxy it while GitHub is issuing or
+renewing the certificate.
+
+Cloudflare DNS should carry the four GitHub Pages apex records (DNS only), plus
+the recommended `www` alias:
+
+```
+A      @     185.199.108.153
+A      @     185.199.109.153
+A      @     185.199.110.153
+A      @     185.199.111.153
+CNAME  www   aetherwing-io.github.io
+```
+
+IPv6 may additionally use GitHub's four `2606:50c0:8000::153` through
+`2606:50c0:8003::153` `AAAA` records. Once DNS resolves and GitHub finishes the
+certificate, enable HTTPS in the Pages setting.
 
 To publish a release from a clean, current `main`:
 
@@ -315,9 +378,17 @@ git push origin main v0.1.0
 Use a new tag for every release; do not move or reuse a published tag. The
 workflow installs the verifier's locked Playwright dependency and Chromium,
 runs `build-bundle.mjs`, requires `verify-bundle.mjs` to pass at both the flat
-root and synthetic nested subpath, expands the verified zip, adds `.nojekyll`,
-and uploads only that site directory. The public deployment therefore carries
-no `reports/`, `tools/`, docs, source intermediates, or repository history.
+root and synthetic nested subpath, builds the commit-scoped Pages tree, and
+runs `verify-pages-site.mjs`. That second verifier scans every retained source
+graph for an unadjusted asset URL, independently recomputes the shared asset
+union and Git blob hashes, then performs the actual rollover races in one
+Chromium context. It always proves the exact legacy case (cached v0.1.0 HTML
+loading pinned `/src/main.js`, followed by a fresh scoped document); when a
+prior scoped `v*` tag exists it additionally proves scoped A→B. In each case it
+warms A, switches the server to B while A's document is cache-fresh, proves
+cached A remains all-A, then fetches B into that same warm module cache and
+proves every first-party JS request is all-B. The public deployment carries no
+`reports/`, `tools/`, docs, source intermediates, or repository history.
 
 The manual branch recipe below remains an emergency fallback. It builds the
 same zip and stages `gh-pages` directly; use it only if the native Pages
@@ -328,20 +399,29 @@ deployment service is unavailable, and switch the Pages source back to
 node tools/deploy/build-bundle.mjs --out /tmp/hb-pages/hullbreaker-web.zip
 node tools/deploy/verify-bundle.mjs          # boots the zip; must say PASS
 STAGE=$(mktemp -d)
-unzip -q /tmp/hb-pages/hullbreaker-web.zip -d "$STAGE/site"
-touch "$STAGE/site/.nojekyll"                # skip Pages' Jekyll pass
+node tools/deploy/build-pages-site.mjs \
+  --zip /tmp/hb-pages/hullbreaker-web.zip --ref HEAD \
+  --retain-tags 4 --out "$STAGE/site"
+node tools/deploy/verify-pages-site.mjs \
+  --site "$STAGE/site" --revision "$(git rev-parse HEAD)"
 export GIT_DIR=$PWD/.git GIT_WORK_TREE=$STAGE/site GIT_INDEX_FILE=$STAGE/index
 git add -A
 TREE=$(git write-tree)
-COMMIT=$(git commit-tree $TREE -m "deploy: Pages site from $(git rev-parse --short HEAD)")
+if git fetch origin gh-pages:refs/remotes/origin/gh-pages; then
+  PARENT=$(git rev-parse refs/remotes/origin/gh-pages)
+  COMMIT=$(git commit-tree "$TREE" -p "$PARENT" -m "deploy: Pages site from $(git rev-parse --short HEAD)")
+else
+  COMMIT=$(git commit-tree "$TREE" -m "deploy: Pages site from $(git rev-parse --short HEAD)")
+fi
 git update-ref refs/heads/gh-pages $COMMIT
 git push origin gh-pages
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE  # before any normal git work
 ```
 
 The `GIT_INDEX_FILE` detour is what keeps this from touching the real
-working tree or index. The site lands at
-`https://<owner>.github.io/hullbreaker/` — a subpath, which the game's
+working tree or index. The production address is `https://hullbreaker.app/`;
+the underlying GitHub URL is `https://aetherwing-io.github.io/hullbreaker/`.
+That underlying URL is a subpath, which the game's
 `import.meta.url`-relative asset loading already handles; verify-bundle's
 subpath check is the same shape and is the proof. Two host facts to know:
 Pages serves a private repo only on a paid plan (on a free org the repo
@@ -367,6 +447,12 @@ on every build and will grow as more art lands.
   renders (§2). Dev-only; needs `playwright-core` (`npm install` here once,
   or point `$HB_PLAYWRIGHT_CORE` at `tools/playtest`'s or `tools/
   durability`'s existing install).
+- `build-pages-site.mjs` — turns the verified zip into the commit-scoped Pages
+  tree, retains the rollout tail, and enforces immutable shared asset names.
+- `verify-pages-site.mjs` — structural and real-browser warm-cache A→B proof
+  for the Pages tree.
+- `asset-union-selftest.mjs` — focused falsifier for two retained releases
+  disagreeing on an asset pathname that current has deleted.
 - `package.json` — the dev-only `playwright-core` dependency for
   `verify-bundle.mjs`. Not a dependency of the shipped game.
 - `README.md` — this document.

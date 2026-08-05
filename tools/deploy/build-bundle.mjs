@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// build-bundle.mjs — produce the exact zip a static host serves as-is:
-// itch.io's browser-play uploader today, and the GitHub Pages gh-pages
-// branch is staged from this same output.
+// build-bundle.mjs — produce the exact zip itch.io serves as-is, and the
+// browser-verified content input for GitHub Pages. Pages adds a commit-scoped
+// module namespace with build-pages-site.mjs so warm caches cannot mix code
+// revisions; it does not alter the itch.io zip.
 //
 // WHAT THIS DOES. HULLBREAKER has no build step: the shipped game is
 // `index.html` + `src/**` + the runtime art under `assets/generated/**`,
@@ -165,4 +166,4 @@ const size = existsSync(outPath) ? statSync(outPath).size : 0;
 console.log(`\nWrote ${outPath} (${(size / 1048576).toFixed(1)} MiB, ${files.length - excludedFiles.length} shipped files, ` +
   `${excludedFiles.length} review/source intermediates pruned, ${assetFiles.length} PNGs tracked under assets/generated/, ref ${opts.ref}).`);
 console.log('Contents: index.html at the zip root, plus src/**, assets/ui/favicon.svg, and assets/generated/** minus review/source intermediates.');
-console.log('This zip is the exact file to upload to itch.io, or to unpack onto the gh-pages branch. See tools/deploy/README.md.');
+console.log('Upload this zip to itch.io; for Pages, pass it through build-pages-site.mjs. See tools/deploy/README.md.');
