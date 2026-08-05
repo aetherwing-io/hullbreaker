@@ -225,7 +225,18 @@ const ladderPools = [];
 const responseSockets = [];
 const ventEmitters = [];
 const componentPlanes = [];
+const componentNervePools = [];
 let dressingCullStamp = '';
+
+const nerveWakeState = {
+  activeFace: 0,
+  stage: 'dormant',
+  playerS: -9999,
+  amplitude: 0,
+  pools: 0,
+  drawCallsAdded: 0,
+  texturesAdded: 0,
+};
 
 export function foregroundResponseSockets() {
   // Records are frozen at bake time. Returning a new array protects route and
@@ -238,10 +249,45 @@ export function foregroundVentEmitters() {
   // level bake while avoiding another mesh, texture or gameplay fixture.
   return ventEmitters.slice();
 }
+export function syncForegroundNerveWake(event) {
+  if (!event) return resetForegroundNerveWake();
+  const stage = event.stage || 'dormant';
+  const base = stage === 'fire' ? 0.060 : stage === 'tell' ? 0.031
+    : stage === 'recovery' ? 0.024 : 0.012;
+  const amplitude = base * (1 + Math.max(0, Number(event.phase) || 0) * 0.055);
+  const face = Math.max(0, Number(event.face) || 0);
+  const playerS = Number.isFinite(event.playerX) ? event.playerX : -9999;
+  const time = Math.max(0, Number(event.nowMs) || 0) / 1000;
+  for (const pool of componentNervePools) {
+    const uniforms = pool.uniforms;
+    uniforms.playerS.value = playerS;
+    uniforms.time.value = time;
+    // The active skin sector flinches locally around RIG. Other facets stay
+    // mechanically still, so the motion reads as attention rather than an
+    // all-screen wobble or another ambient animation loop.
+    uniforms.amplitude.value = pool.face === face ? amplitude : 0;
+  }
+  nerveWakeState.activeFace = face;
+  nerveWakeState.stage = stage;
+  nerveWakeState.playerS = playerS;
+  nerveWakeState.amplitude = amplitude;
+}
+export function resetForegroundNerveWake() {
+  for (const pool of componentNervePools) pool.uniforms.amplitude.value = 0;
+  nerveWakeState.activeFace = 0;
+  nerveWakeState.stage = 'dormant';
+  nerveWakeState.playerS = -9999;
+  nerveWakeState.amplitude = 0;
+}
+export function foregroundNerveWakeSnapshot() {
+  return { ...nerveWakeState, pools: componentNervePools.length };
+}
 if (typeof globalThis !== 'undefined')
   globalThis.__HB_FOREGROUND_RESPONSE_SOCKETS = foregroundResponseSockets;
 if (typeof globalThis !== 'undefined')
   globalThis.__HB_FOREGROUND_VENT_EMITTERS = foregroundVentEmitters;
+if (typeof globalThis !== 'undefined')
+  globalThis.__HB_FOREGROUND_NERVE_WAKE = foregroundNerveWakeSnapshot;
 // Keep the historic tile-pool source guard scoped to its intended pool: the
 // value-ladder test counts literal THREE.InstancedMesh construction sites.
 // DressingPool is still the same class; the alias names this separate pass.
@@ -2015,6 +2061,66 @@ function buildForegroundPackPools(rows, material) {
   source.dispose();
 }
 
+function nerveWakeMaterial(base, bucket) {
+  const material = base.clone();
+  const anchorS = bucket.rows[0].anchorS ?? bucket.rows[0].s;
+  polyAt(SEGS, anchorS, _dressP);
+  const yaw = headingAt(SEGS, anchorS);
+  const uniforms = {
+    playerS: { value: -9999 },
+    time: { value: 0 },
+    amplitude: { value: 0 },
+    originS: { value: anchorS },
+    originXZ: { value: new THREE.Vector2(_dressP.x, _dressP.z) },
+    tangent: { value: new THREE.Vector2(Math.cos(yaw), -Math.sin(yaw)) },
+    normal: { value: new THREE.Vector2(Math.sin(yaw), Math.cos(yaw)) },
+  };
+  material.name = `Meridian nerve skin face ${bucket.phase} facet ${bucket.facet}`;
+  material.userData = {
+    ...material.userData,
+    nerveWake: true,
+    emissivePolicy: 'none-physical-displacement-only',
+  };
+  material.customProgramCacheKey = () => 'meridian-component-nerve-wake-v1';
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, {
+      uNervePlayerS: uniforms.playerS,
+      uNerveTime: uniforms.time,
+      uNerveAmplitude: uniforms.amplitude,
+      uNerveOriginS: uniforms.originS,
+      uNerveOriginXZ: uniforms.originXZ,
+      uNerveTangent: uniforms.tangent,
+      uNerveNormal: uniforms.normal,
+    });
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', `#include <common>
+        uniform float uNervePlayerS;
+        uniform float uNerveTime;
+        uniform float uNerveAmplitude;
+        uniform float uNerveOriginS;
+        uniform vec2 uNerveOriginXZ;
+        uniform vec2 uNerveTangent;
+        uniform vec2 uNerveNormal;
+      `)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+        float nerveRouteS = uNerveOriginS +
+          dot(transformed.xz - uNerveOriginXZ, uNerveTangent);
+        float nerveDistance = nerveRouteS - uNervePlayerS;
+        float nerveBand = (nerveDistance - 1.35) / 2.85;
+        float nerveEnvelope = exp(-0.5 * nerveBand * nerveBand);
+        float nerveWave = sin(nerveDistance * 2.45 - uNerveTime * 8.5);
+        float nerveOffset = nerveEnvelope * nerveWave * uNerveAmplitude;
+        transformed.xz += uNerveNormal * nerveOffset;
+        transformed.y += abs(nerveOffset) * 0.16;
+      `);
+  };
+  componentNervePools.push({
+    material, uniforms, face: bucket.phase, facet: bucket.facet,
+  });
+  nerveWakeState.pools = componentNervePools.length;
+  return material;
+}
+
 function buildForegroundComponentPools(rows, material) {
   if (!rows.length || !material) return;
   const byOwnership = new Map();
@@ -2043,7 +2149,7 @@ function buildForegroundComponentPools(rows, material) {
       );
       samples.push({ s: row.visibilityS ?? row.anchorS ?? row.s, vertexEnd: acc.vertices });
     }
-    const mesh = new THREE.Mesh(finishPanelGeometry(acc), material);
+    const mesh = new THREE.Mesh(finishPanelGeometry(acc), nerveWakeMaterial(material, bucket));
     mesh.name = `Meridian native components face ${bucket.facet} phase ${bucket.phase}`;
     mesh.userData.environmentRole = 'native-shape-component-composition';
     mesh.userData.routeFacet = bucket.facet;

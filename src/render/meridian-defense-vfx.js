@@ -12,7 +12,10 @@ import { normalAscentPitchAt } from '../pure/ascent.js';
 import { installView } from '../sim/bridge.js';
 import { DEFENSE_VFX_ART_SLOT } from './defense-vfx-art.js';
 import { DEFENSE_VFX_PACK } from './defense-vfx-pack.js';
-import { foregroundResponseSockets, foregroundVentEmitters } from './level.js';
+import {
+  foregroundResponseSockets, foregroundVentEmitters,
+  resetForegroundNerveWake, syncForegroundNerveWake,
+} from './level.js';
 import { fxVapor } from './fx.js';
 import { PAL } from './palette.js';
 import { postGain } from './post.js';
@@ -812,6 +815,7 @@ function sync(event) {
   stats.face = event?.face || 0;
   stats.state = event?.state || 'observe';
   if (!event || !mechanismRoot) {
+    resetForegroundNerveWake();
     eventKey = '';
     currentSocket = null;
     currentComponent = null;
@@ -820,6 +824,7 @@ function sync(event) {
     hide();
     return;
   }
+  syncForegroundNerveWake(event);
   syncVentExhaust(event);
   if (event.stage === 'dormant') {
     eventKey = '';
@@ -874,6 +879,7 @@ function reset() {
   lastVentPhase = -1;
   lastVentStage = '';
   lastVentBeat = -1;
+  resetForegroundNerveWake();
   stats.resets++;
   stats.maxVisible = 0;
   stats.stageSwitches = 0;
