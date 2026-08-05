@@ -288,12 +288,41 @@ section is written for the **operator** to follow by hand.
   created for either). This is the one part of "does it actually run on
   itch.io" that genuinely needs the operator's own upload to confirm.
 
-## 7. GitHub Pages (added 2026-08-04)
+## 7. GitHub Pages tagged releases
 
-The same zip deploys to GitHub Pages. The `gh-pages` branch is staged from
-the bundle — not pushed from `main` — so the published site carries no
-`reports/`, `tools/`, docs, or git history. Recipe, from the repo root,
-after a green build and verify:
+`.github/workflows/deploy-pages.yml` is the production path. Pushing any tag
+that resolves to the **current tip of `main`** builds, browser-verifies, and
+publishes the exact same static zip described above through GitHub's native
+Pages artifact deployment. A tag on another branch, or an old commit that is
+merely an ancestor of `main`, fails before packaging; a release can therefore
+never roll the public game backward by accident.
+
+One repository setting is required once: **Settings → Pages → Build and
+deployment → Source → GitHub Actions**. The workflow uses only the automatic
+`GITHUB_TOKEN`; no deploy key or repository secret is required. It grants
+`contents: read` while building and grants `pages: write` plus `id-token:
+write` only to the isolated deploy job.
+
+To publish a release from a clean, current `main`:
+
+```
+git switch main
+git pull --ff-only
+git tag -a v0.1.0 -m "HULLBREAKER v0.1.0"
+git push origin main v0.1.0
+```
+
+Use a new tag for every release; do not move or reuse a published tag. The
+workflow installs the verifier's locked Playwright dependency and Chromium,
+runs `build-bundle.mjs`, requires `verify-bundle.mjs` to pass at both the flat
+root and synthetic nested subpath, expands the verified zip, adds `.nojekyll`,
+and uploads only that site directory. The public deployment therefore carries
+no `reports/`, `tools/`, docs, source intermediates, or repository history.
+
+The manual branch recipe below remains an emergency fallback. It builds the
+same zip and stages `gh-pages` directly; use it only if the native Pages
+deployment service is unavailable, and switch the Pages source back to
+**Deploy from a branch** before relying on it:
 
 ```
 node tools/deploy/build-bundle.mjs --out /tmp/hb-pages/hullbreaker-web.zip
