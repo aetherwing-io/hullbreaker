@@ -37,6 +37,9 @@ import {
 import { applyDeckPanelTexture, applySurface } from './materials.js';
 import { deckPanelFaceGain, deckPanelUv } from './hulltiles.js';
 import {
+  PHYSICAL_DEPTH_LAYER, componentDepthOffset, physicalDepthOffset,
+} from './depth-layers.js';
+import {
   currentWorldFacet, routeRenderable, routeVisibilityStamp, routeWorldFacet,
 } from './route-visibility.js';
 
@@ -378,32 +381,12 @@ function componentHash(seed) {
   return (value ^ (value >>> 16)) >>> 0;
 }
 
-// Cutout parts are intentionally composed over one another: a brace can cross
-// a trim cap, paired conduits meet at a socket, and the two halves of a braid
-// share a junction.  Keeping every quad on the caller's exact depth made those
-// intersections coplanar. At the FAR camera the depth buffer then chose a
-// different winner from sample to sample, most visibly after MSAA was enabled.
-// Give each authored layer a small, deterministic physical separation. The
-// order follows the component vocabulary, while the placement term separates
-// two instances of the same part without adding a material or draw call.
-const COMPONENT_DEPTH_BIAS = Object.freeze({
-  'trim-cap': 0.008,
-  'beam-brace': 0.014,
-  'ladder-rail': 0.018,
-  'pipe-conduit': 0.022,
-  'service-organ': 0.026,
-  'defense-state': 0.030,
-  'scuttle-damage': 0.034,
-  'near-silhouette': 0.040,
-});
-
 function stableComponentDepth(component, seed, choice) {
-  const layer = COMPONENT_DEPTH_BIAS[component.category] ||
-    (component.depthBand === 'near' ? 0.040 : 0.010);
-  // Seven sublayers across 0.012 tiles are comfortably above FAR-view depth
-  // quantization but far below the thickness of even the smallest housing.
-  const placement = ((componentHash(seed ^ choice) >>> 5) % 7) * 0.002;
-  return layer + placement;
+  // Cutout roles and their seven deterministic placement sublayers live in
+  // one shared depth contract. This keeps a brace-over-cap ordering stable at
+  // FAR instead of letting each call site invent a partially-overlapping bias.
+  const placement = (componentHash(seed ^ choice) >>> 5) % 7;
+  return componentDepthOffset(component.category, component.depthBand, placement);
 }
 
 function dressComponentPlane(
@@ -2066,7 +2049,9 @@ function buildForegroundPackPools(rows, material) {
       (a.visibilityS ?? a.s) - (b.visibilityS ?? b.s));
     for (const row of bucket.rows) {
       appendPanelGeometry(
-        acc, source, dressingMatrix(row, row.sz / 2 + 0.008, 1).clone(), row.s, row.y,
+        acc, source, dressingMatrix(row,
+          row.sz / 2 + physicalDepthOffset(PHYSICAL_DEPTH_LAYER.FOREGROUND_PACK_INLAY),
+          1).clone(), row.s, row.y,
         bucket.facet, 0xffffff,
         _dressScale.set(row.sx, row.sy, 1).clone(),
         null, row.packCell, row.packTransform,

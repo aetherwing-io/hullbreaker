@@ -8,7 +8,18 @@ export const CONFIG = {
   scrollSpeed: 4.3,            // camera advance, units/sec (~10%/s of the wider screen)
   levelLength: 583,            // tiles = 24 intro + 6 faces × 88 + 31 outro
 
-  camera: { fov: 56, x: 5.0, y: 6.2, z: 22.5, lookX: 7.4, lookY: 4.8 }, // pulled back further: more room
+  camera: {
+    fov: 56, x: 5.0, y: 6.2, z: 22.5, lookX: 7.4, lookY: 4.8,
+    // No world geometry approaches the camera closer than the authored rig's
+    // multi-tile clearance. A 0.5 near plane preserves that clearance while
+    // giving the depth buffer 5x more useful precision than the old 0.1/200
+    // range for shallow, overlapping armour and playfield details.
+    near: 0.5, far: 200,
+    // Portrait keeps at least this much horizontal field. Without the same
+    // pullback already used by authored fixtures, an iPhone sees a magnified
+    // 20-tile slit of a game whose combat is composed across the route.
+    portraitMinAspect: 0.9,
+  },                                         // pulled back further: more room
                                              // to jump/dodge/shoot; player ~7% of screen height
   fog: { near: 30, far: 74 },  // pushed out with the camera
 

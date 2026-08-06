@@ -54,6 +54,7 @@ import {
   POLYP_ONSET_MS, POLYP_SWELL_EASE, WASP_DIVE_NARROW, waspDiveStretch,
 } from './legibility.js';
 import { HOSTILE_PRESENTERS } from './hostile-presenters/index.js';
+import { PHYSICAL_DEPTH_LAYER, physicalDepthOffset } from './depth-layers.js';
 
 /* sprites.js owns the one boot gate. Its auxiliary-animation slots point at
    these atlases in sprite-table.js, so locomotion settles with every existing
@@ -950,7 +951,7 @@ function enemyEcologyMaterial(tex, kind) {
   return mat;
 }
 
-const WASP_WING_DEPTH_BIAS = 0.015;
+const WASP_WING_DEPTH_BIAS = -physicalDepthOffset(PHYSICAL_DEPTH_LAYER.WASP_WING);
 const PLATFORM_OUTER_DEPTH = 0.70;
 
 function modularWaspWingAttach(v, e, K) {

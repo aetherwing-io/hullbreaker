@@ -80,6 +80,7 @@ import { groundTopAt, platforms } from '../sim/level.js';
 import { PAL } from './palette.js';
 import { scene, HIDE } from './scene.js';
 import { towerPose } from './tower.js';
+import { PHYSICAL_DEPTH_LAYER, physicalDepthOffset } from './depth-layers.js';
 
 // On by default (entries 16/17): only the literal opt-out ('0') or the
 // transformation slice's unproven drawn-floor guarantee turn it off.
@@ -93,7 +94,7 @@ export const CONTACT_SHADOWS_ENABLED =
   resolveContactShadows(QUERY.get('shadow'), IS_TRANSFORM_SLICE);
 
 const POOL_MAX = 48;               // see header note: generous headroom, not a hard cap
-const Y_LIFT = 0.02;               // world-Y lift off the surface, beats z-fighting
+const Y_LIFT = physicalDepthOffset(PHYSICAL_DEPTH_LAYER.CONTACT_SHADOW);
 const FOOTPRINT_SEGMENTS = 12;     // soft at FAR without paying for a texture or a canvas
 
 let mesh = null;

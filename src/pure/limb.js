@@ -170,12 +170,17 @@ function entryShoulderPlan(out, cfg, groundH, scale) {
 
   // Two colossal roots carry the mass off the left/bottom of frame.  These
   // use the exact shipped hull buckets and stop at the tile-stack underside.
-  for (const [a, b] of limbChunkRanges(facet.s0, facet.s1, L.chunkCols)) {
+  for (const [chunkOrdinal, [a, b]] of
+    limbChunkRanges(facet.s0, facet.s1, L.chunkCols).entries()) {
     const span = b - a;
     const mid = (a + b) / 2;
     push(out, 'hull', 0, mid, span,
          deckBottom - L.hull.drop / 2, L.hull.drop,
          L.hull.depth, L.hull.thickness, L.hull.tiltDeg * Math.PI / 180);
+    // The renderer maps this stable local ordinal onto its named physical
+    // depth lanes. Keeping the ordinal in the pure bake plan makes adjacent
+    // overlaps deterministic even when a facet's last chunk is shorter.
+    out[out.length - 1].surfaceDepthOrdinal = chunkOrdinal;
     push(out, 'hullRib', 0, mid, span,
          deckBottom - L.hull.ribH / 2, L.hull.ribH,
          L.hull.depth - 0.5, L.hull.ribThickness);
@@ -210,7 +215,8 @@ function facetPlan(out, facet, cfg, groundH, scale) {
   const L = cfg.limb;
   const k = facet.k;
   // --- the body under the deck -----------------------------------------
-  for (const [a, b] of limbChunkRanges(facet.s0, facet.s1, L.chunkCols)) {
+  for (const [chunkOrdinal, [a, b]] of
+    limbChunkRanges(facet.s0, facet.s1, L.chunkCols).entries()) {
     const ref = limbGroundRef(groundH, a, b);
     const span = b - a;
     const mid = (a + b) / 2;
@@ -218,6 +224,7 @@ function facetPlan(out, facet, cfg, groundH, scale) {
     // hull: mass running off the bottom of frame — the leg continues below
     push(out, 'hull', k, mid, span, deckBottom - L.hull.drop / 2, L.hull.drop,
          L.hull.depth, L.hull.thickness, L.hull.tiltDeg * Math.PI / 180);
+    out[out.length - 1].surfaceDepthOrdinal = chunkOrdinal;
     // the shadow line right under the deck lip
     push(out, 'hullRib', k, mid, span, deckBottom - L.hull.ribH / 2, L.hull.ribH,
          L.hull.depth - 0.5, L.hull.ribThickness);

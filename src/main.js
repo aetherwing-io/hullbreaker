@@ -881,17 +881,20 @@ if (QUERY.has('selftest')) {
     togglePause(); check('resume', state === 'PLAYING');
     dispatchEvent(new Event('resize'));
     check('resize handled', Math.abs(camera.aspect - innerWidth / innerHeight) < 1e-6);
-    // view scales: any ?view= must resolve to a declared entry (default is
-    // `far` for the shipped impossible-scale frame); when `near` IS selected it must
-    // reproduce the pre-view-scale camera depth exactly — checked against
-    // ACTIVE_FIXTURE (mode-agnostic: traversal or transform), the same
-    // thing activeCameraDepth() itself reads, so this holds at any aspect.
-    check('view resolved', !!CONFIG.viewScales[VIEW_ID] &&
+    // View scales: any ?view= must resolve to a declared entry (default is
+    // `far` for the shipped impossible-scale frame) and multiply the active
+    // run's base framing contract exactly. That contract is either an authored
+    // fixture or the normal run, so the assertion binds the portrait pullback
+    // rather than only checking that some positive camera depth appeared.
+    const expectedBaseDepth = traversalCameraDepth(
+      CONFIG.camera.z,
+      innerWidth / innerHeight,
+      ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run : CONFIG.camera,
+    );
+    check('view resolved and portrait pullback applied', !!CONFIG.viewScales[VIEW_ID] &&
       Number.isFinite(activeCameraDepth()) && activeCameraDepth() > 0 &&
       CONFIG.viewScales.near.depthMult === 1 &&
-      (VIEW_ID !== 'near' || activeCameraDepth() === (ACTIVE_FIXTURE
-        ? traversalCameraDepth(CONFIG.camera.z, innerWidth / innerHeight, ACTIVE_FIXTURE.run)
-        : CONFIG.camera.z)));
+      activeCameraDepth() === expectedBaseDepth * CONFIG.viewScales[VIEW_ID].depthMult);
     resetGame();
     // Snapshot the restart boundary now. The self-test intentionally performs
     // more UI/state choreography below; a slow renderer may legitimately

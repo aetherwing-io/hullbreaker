@@ -85,6 +85,7 @@ import * as d72 from './render-submission-contract.mjs';
 import * as d73 from './frame-input-contract.mjs';
 import * as d74 from './gilded-chassis.mjs';
 import * as d75 from './power-feedback-contract.mjs';
+import * as d76 from './depth-layer-contract.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -163,4 +164,5 @@ export const DOMAINS = [
   d73,    // frame-scoped deterministic input and exact sim stop
   d74,    // gilded chassis: Konami detector + presentation-only wiring
   d75,    // localized OVERDRIVE / RAGE feedback, no global wash
+  d76,    // opaque surface depth layers: one physical/raster contract
 ];

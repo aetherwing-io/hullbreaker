@@ -88,7 +88,12 @@ export const scene = new THREE.Scene();
 scene.background = new THREE.Color(PAL.bg);
 scene.fog = new THREE.Fog(PAL.bg, CONFIG.fog.near, CONFIG.fog.far);
 
-export const camera = new THREE.PerspectiveCamera(CONFIG.camera.fov, innerWidth / innerHeight, 0.1, 200);
+export const camera = new THREE.PerspectiveCamera(
+  CONFIG.camera.fov,
+  innerWidth / innerHeight,
+  CONFIG.camera.near,
+  CONFIG.camera.far,
+);
 
 export const HIDE = new THREE.Matrix4().makeScale(0, 0, 0);   // shared "invisible instance" matrix
 

@@ -35,6 +35,12 @@ import { HIDE, scene } from './scene.js';
 import { PAL, SHADE_GAIN } from './palette.js';
 import { applyHullTexture, applySurface, varyHullTexture } from './materials.js';
 import { cameraFacingFacet } from './camera.js';
+import {
+  PHYSICAL_DEPTH_LAYER,
+  RASTER_DEPTH_LAYER,
+  applyRasterDepthLayer,
+  physicalDepthOffset,
+} from './depth-layers.js';
 
 // One value ladder from the palette module (concept teal/rust by default,
 // grey-box via ?palette=classic): the deck (PAL.ground) stays the brightest
@@ -424,7 +430,7 @@ const MACRO_SCUTE_OUTLINE = Object.freeze([
 // piece, of the chamfer that bisects it) and the shared normal-run altitude.
 // Same mapping the tile bake uses, so the armour and the deck are one rising
 // body. Anatomy stays plumb; only floor-like geometry pitches with the grade.
-function pieceMatrix(piece) {
+function pieceMatrix(piece, depthOffset = 0) {
   const p = polyAt(SEGS, piece.s);
   const yaw = headingAt(SEGS, piece.s);
   // Local Z roll is a rake in the path's (s,y) plane. This is how a static
@@ -432,9 +438,9 @@ function pieceMatrix(piece) {
   _q.setFromEuler(_e.set(0, yaw, piece.roll || 0, 'YZX'));
   _s.set(piece.w, piece.h, piece.d);
   _v.set(
-    p.x + Math.sin(yaw) * piece.depth,
+    p.x + Math.sin(yaw) * (piece.depth + depthOffset),
     piece.y + normalAscentAltAt(piece.s, CONFIG.levelLength),
-    p.z + Math.cos(yaw) * piece.depth
+    p.z + Math.cos(yaw) * (piece.depth + depthOffset)
   );
   return _m.compose(_v, _q, _s);
 }
@@ -550,12 +556,10 @@ function bakeLimb() {
     applyHullTexture(material, key);
     varyHullTexture(material, textureVariant);
     // The route scutes sit flush with the collision tile face by design (they
-    // must not claim extra depth). A tiny raster offset prevents coplanar
-    // flicker without moving the geometry into the protected play volume.
+    // must not claim extra depth). The named raster layer breaks that tie
+    // without moving geometry into the protected play volume.
     if (shape === 'scute') {
-      material.polygonOffset = true;
-      material.polygonOffsetFactor = -1;
-      material.polygonOffsetUnits = -1;
+      applyRasterDepthLayer(material, RASTER_DEPTH_LAYER.FLUSH_ROUTE_ARMOUR);
     }
     const mesh = new THREE.InstancedMesh(geometry[shape], material, indices.length);
     mesh.name = `Meridian limb ${key}/${shape}/v${textureVariant}`;
@@ -567,7 +571,19 @@ function bakeLimb() {
     mesh.frustumCulled = false;                // static bake, one upload
     for (let i = 0; i < indices.length; i++) {
       const piece = plan[indices[i]];
-      mesh.setMatrixAt(i, pieceMatrix(piece));
+      // Hull lobes intentionally extend beyond their nominal chunk footprint
+      // to seal sky cracks at grazing angles. Their front faces formerly sat
+      // on the same plane, so the depth buffer could alternate between two
+      // differently textured castings. A deterministic three-lane physical
+      // layer keeps every adjacent overlap stable. Other `body*` anatomy does
+      // not participate: only the repeating under-deck hull needs this seam.
+      const hullLayer = piece.kind === 'hull'
+        ? physicalDepthOffset(
+          PHYSICAL_DEPTH_LAYER.LIMB_HULL_CASTING,
+          piece.surfaceDepthOrdinal,
+        )
+        : 0;
+      mesh.setMatrixAt(i, pieceMatrix(piece, hullLayer));
       const tone = limbFacetTone(piece.facet, CONFIG);
       const k = shade[indices[i]];             // 1.0 exactly when the flag is off
       _c.setHex(BASE_COLORS[key]);

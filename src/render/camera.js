@@ -34,9 +34,10 @@ function probeXAtNdc(ndcX) {
   return _probe.position.x + _edgeV.x * (-_probe.position.z / _edgeV.z);
 }
 
-/* Portrait action-safe framing. The normal run's camera keeps a fixed
-   vertical FOV, so at 390x844 RIG used to sit barely 10 CSS px inside the
-   glass while the deck was centred beneath the player's thumb controls.
+/* Portrait action-safe framing. The normal run and authored fixtures share a
+   minimum effective aspect: below 0.9 the camera pulls back so a phone keeps
+   enough horizontal combat context instead of magnifying a narrow route slit.
+   At 390x844 that changes the visible width from roughly 21 to 41 world tiles.
 
    Calibrate the normal run against symmetric inset NDC lines and lower its
    look target so the action strip rises above the touch deck. The renderer,
@@ -86,9 +87,11 @@ function activeViewDepthMult() {
 }
 
 export function activeCameraDepth() {
-  const base = ACTIVE_FIXTURE
-    ? traversalCameraDepth(CONFIG.camera.z, innerWidth / innerHeight, ACTIVE_FIXTURE.run)
-    : CONFIG.camera.z;
+  // The normal run used to bypass this portrait pullback while every authored
+  // fixture used it. That made desktop captures look correct but left the
+  // shipped iPhone view at the uncorrected fixed-vertical-FOV scale.
+  const framing = ACTIVE_FIXTURE ? ACTIVE_FIXTURE.run : CONFIG.camera;
+  const base = traversalCameraDepth(CONFIG.camera.z, innerWidth / innerHeight, framing);
   return base * activeViewDepthMult();
 }
 
