@@ -43,6 +43,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { QUERY } from '../mode.js';
 import { BEND_S, facetAtBends } from '../pure/path.js';
+import { portraitActorVisualGain } from '../pure/traversal.js';
 import { installView } from '../sim/bridge.js';
 import { gameMs, blink } from '../sim/time.js';
 import { player } from '../sim/player.js';
@@ -588,6 +589,7 @@ let seenNextFireAt = 0;
 let lastShotAt = -1e9;
 let lastVisualMs = 0;
 let lastVisualX = player.x;
+let lastPortraitGain = 1;
 let lastVisualY = player.y;
 let lastTravelSpeed = 0;
 let runPhase = 0;
@@ -713,6 +715,8 @@ function sync() {
   // mystery: the body squashes to the crouched collision height and the gun
   // drops with the muzzle the sim is actually firing from.
   const squash = player.crouched ? CONFIG.crouch.height / CONFIG.player.height : 1;
+  const portraitGain = portraitActorVisualGain(innerWidth / innerHeight);
+  lastPortraitGain = portraitGain;
   rig.scale.set(1, 1, 1);
   rig.rotation.z = 0;
   let dt = lastVisualMs ? gameMs - lastVisualMs : 0;
@@ -764,7 +768,7 @@ function sync() {
   // The authored plates already carry stride stretch and landing compression.
   // Procedurally scaling the whole cutout made RIG pop in size and detached the
   // independently aimed gun. Only the real crouch height changes presentation.
-  bodyGroup.scale.set(1, squash, 1);
+  bodyGroup.scale.set(portraitGain, squash * portraitGain, 1);
   bodyGroup.position.set(0, 0, 0);
   bodyGroup.rotation.z = 0;
   fallbackMesh.position.y = SPRITE_H / 2;
@@ -908,12 +912,17 @@ function sync() {
   );
   gunGroup.rotation.z = lastAimAngle;
   const mirrorY = ax < -0.1 || (Math.abs(ax) <= 0.1 && player.facing < 0) ? -1 : 1;
-  gunAssembly.scale.set(1, mirrorY * gunFamilyHeightGain, 1);
+  // Mobile readability enlarges the weapon about its muzzle endpoint, not its
+  // hand pivot. The compensating translation keeps the drawn bore on the
+  // exact simulation spawn point while the receiver gains enough pixels to
+  // remain distinguishable beside the enlarged body.
+  gunAssembly.scale.set(portraitGain,
+    mirrorY * gunFamilyHeightGain * portraitGain, 1);
   const recoilAge = gameMs - lastShotAt;
   const recoilT = recoilAge >= 0 && recoilAge < RIG_RECOIL_MS
     ? 1 - recoilAge / RIG_RECOIL_MS : 0;
   lastRecoil = RIG_RECOIL_TILES * recoilT * recoilT;
-  gunAssembly.position.x = -lastRecoil;
+  gunAssembly.position.x = RIG_GUN_MUZZLE_X * (1 - portraitGain) - lastRecoil;
 
   // OVERDRIVE lives on the machine, not only in a HUD label. Charge first
   // warms the chassis locally, WARM holds a low mechanical glow, and BREAKING
@@ -1048,6 +1057,7 @@ export function rigVisualSnapshot() {
       layerPrecedence: ['GILDED_GOLD', 'RAGE_RED_MAGENTA', 'OVERDRIVE_WARM'],
     },
     gunPresentation: {
+      portraitGain: +lastPortraitGain.toFixed(3),
       familyHeightGain: gunFamilyHeightGain,
       visibleTraitCount,
       traits: activeTraitSummary,

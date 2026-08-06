@@ -508,6 +508,27 @@
     user-select: none;
   }
   #shell.on { display: block; }
+  /* The module graph deliberately waits for production art before frame one.
+     Keep that honest cold-start behind the title promise instead of exposing
+     the already-mounted HUD over scene.background while the gate settles. */
+  body.booting .hud, body.booting #touchDeck, body.booting #finale,
+  body.booting #overlay { opacity: 0; pointer-events: none; }
+  body.booting #shell {
+    display: block;
+    background: #07131a url('assets/generated/ui/title-meridian-ascent-v1.png') 50% 50% / cover no-repeat;
+  }
+  body.booting #shell > * { visibility: hidden; }
+  body.booting #shell::before {
+    content: 'HULLBREAKER'; position: absolute; z-index: 2; left: 6%; top: 16%;
+    color: #fff2d8; font-size: clamp(38px, 9vw, 88px); font-weight: 900;
+    line-height: .9; letter-spacing: -.055em; text-shadow: 0 4px 24px rgba(5,15,22,.8);
+  }
+  body.booting #shell::after {
+    content: 'BRINGING THE MERIDIAN ONLINE'; position: absolute; z-index: 2;
+    left: 6%; top: calc(16% + clamp(48px, 10vw, 100px));
+    color: rgba(232,237,242,.74); font-size: 10px; font-weight: 800;
+    letter-spacing: .16em; text-shadow: 0 2px 8px #07131a;
+  }
   body.at-title .hud, body.nohud .hud { opacity: 0; }
   #shellArt {
     position: absolute; inset: -1.5%; overflow: hidden;
@@ -1008,7 +1029,7 @@
 }
 </script>
 </head>
-<body>
+<body class="booting">
 <div id="tint" style="position:fixed;inset:0;z-index:5;pointer-events:none;background:transparent;"></div>
 <!-- Hidden compatibility channels retain the stable plain-text contract used
      by deterministic playtest traces. The player-facing instruments below

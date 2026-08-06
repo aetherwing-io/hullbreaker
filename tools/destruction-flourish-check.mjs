@@ -56,7 +56,7 @@ ok(/for \(let m = 0; m < 3; m\+\+\) \{[\s\S]*?fragmentMeshes\[m\]\.setMatrixAt\(
 
 const geometrySlice = stripComments(fx.slice(
   fx.indexOf('function rupturedCoreGeometry()'),
-  fx.indexOf('function crushBoundaryGeometry()'),
+  fx.indexOf('if (JUICE_ENABLED)'),
 ));
 ok(!/SphereGeometry|CircleGeometry|RingGeometry|TorusGeometry|OctahedronGeometry/.test(geometrySlice),
   'destruction geometry contains no sphere, disk, perfect ring, torus, or generic gem');

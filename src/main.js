@@ -1133,6 +1133,10 @@ resetGame();
    even under those flags, which is how the harness screenshots it. */
 if (SHELL_ENABLED && !SHELL_AUTOSTART) setState('MENU');
 requestAnimationFrame(frame);
+// The static boot cover owns the cold module/preload interval. At this point
+// the real title is mounted (or an autostart frame is scheduled), so revealing
+// the application cannot expose the HUD over an unpainted scene.
+document.body.classList.remove('booting');
 /* LAST statement in the file, deliberately: until this runs, the inline
    bootstrap in index.html treats any uncaught failure as "the game could not
    start" and shows the boot panel. Reaching here means every module in the

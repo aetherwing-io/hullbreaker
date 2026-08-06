@@ -17,7 +17,7 @@ import {
 } from '../../src/pure/waves.js';
 import {
   TRAVERSAL_FIXTURE, traversalSolidAllowsGrab, traversalFollowTarget,
-  traversalCameraDepth,
+  portraitActorVisualGain, portraitViewDepthMult, traversalCameraDepth,
 } from '../../src/pure/traversal.js';
 import {
   solidRectContains, levelSolidCell, buildLevel, buildTraversalLevel, GAP,
@@ -1020,11 +1020,27 @@ ok(TF.routes.length === 6 && routeById.size === 6,
   const portraitAspect = 390 / 844;
   const portraitDepth = traversalCameraDepth(CC.z, portraitAspect, run);
   const portraitWidth = 2 * portraitDepth * Math.tan(CC.fov / 2 * DEG) * portraitAspect;
+  const desktopViewMult = portraitViewDepthMult(CONFIG.viewScales.far.depthMult, 16 / 9);
+  const portraitViewMult = portraitViewDepthMult(CONFIG.viewScales.far.depthMult, portraitAspect);
+  const desktopActorGain = portraitActorVisualGain(16 / 9);
+  const portraitActorGain = portraitActorVisualGain(portraitAspect);
+  const shippedPortraitWidth = portraitWidth * portraitViewMult;
+  const rigPortraitFraction = PL.height /
+    (2 * portraitDepth * portraitViewMult * Math.tan(CC.fov / 2 * DEG));
   ok(traversalCameraDepth(CC.z, 16 / 9, run) === CC.z &&
      portraitDepth > CC.z &&
      portraitDepth <= CC.z * 2 &&
      portraitWidth >= TF.darePocket.timing.entryEdgeMarginTiles + run.lookAheadTiles,
      'portrait pullback preserves retreat room and preview without shrinking play below half scale');
+  ok(desktopViewMult === CONFIG.viewScales.far.depthMult &&
+     portraitViewMult === 1.15 &&
+     desktopActorGain === 1 && portraitActorGain === 1.5 &&
+     shippedPortraitWidth >= 24 && shippedPortraitWidth <= 30 &&
+     rigPortraitFraction * portraitActorGain >= 0.04 &&
+     rigPortraitFraction * portraitActorGain <= 0.06,
+     'responsive portrait composition keeps desktop FAR exact while an iPhone sees ' +
+       shippedPortraitWidth.toFixed(1) + ' route tiles and a readable ' +
+       (rigPortraitFraction * portraitActorGain * 100).toFixed(1) + '% RIG');
 }
 
   Object.assign(SHARED, { B, CC, GG, LVL, PL, SP, TF, TL, TP, connectorById, gH, routeById, total });   // read by later domains

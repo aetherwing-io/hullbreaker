@@ -995,3 +995,36 @@ export function traversalFollowTarget(scroll, playerRight, screenLeadTiles, run)
 export function traversalCameraDepth(baseDepth, aspect, run) {
   return baseDepth * Math.max(1, run.portraitMinAspect / aspect);
 }
+
+/* Responsive composition for the production run. The portrait pullback above
+   protects horizontal reaction room, but stacking the full FAR multiplier on
+   top of it made a two-tile RIG collapse to roughly 16 CSS pixels on an
+   iPhone. Ease the view multiplier toward a compact-screen value as portrait
+   framing reaches full strength. This moves the camera, so the actor, weapon,
+   contact shadow and collision silhouette remain one honest world object. */
+export function portraitViewDepthMult(baseMult, aspect, {
+  startAspect = 0.9,
+  fullAspect = 0.56,
+  compactMult = 1.15,
+} = {}) {
+  if (!Number.isFinite(baseMult) || baseMult <= 0) return 1;
+  if (!Number.isFinite(aspect) || aspect <= 0 || aspect >= startAspect) return baseMult;
+  const span = Math.max(1e-6, startAspect - fullAspect);
+  const u = Math.min(1, Math.max(0, (startAspect - aspect) / span));
+  const target = Math.min(baseMult, Math.max(1, compactMult));
+  return baseMult + (target - baseMult) * u;
+}
+
+/* A portrait phone has fewer physical pixels for the primary actor even after
+   responsive camera composition. Give only RIG's presentation a bounded
+   screen-readability gain; collision and movement remain untouched. */
+export function portraitActorVisualGain(aspect, {
+  startAspect = 0.9,
+  fullAspect = 0.56,
+  maxGain = 1.5,
+} = {}) {
+  if (!Number.isFinite(aspect) || aspect <= 0 || aspect >= startAspect) return 1;
+  const span = Math.max(1e-6, startAspect - fullAspect);
+  const u = Math.min(1, Math.max(0, (startAspect - aspect) / span));
+  return 1 + (Math.max(1, maxGain) - 1) * u;
+}

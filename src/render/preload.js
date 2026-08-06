@@ -67,18 +67,23 @@ import { QUERY } from '../mode.js';
 import { renderer } from './scene.js';
 
 /* One budget for every asset the boot registers. Desktop keeps the measured
-   2500ms contract used by the deterministic harness. A touch device gets a
-   wider 6500ms cold-start window: real iPhone/Safari evidence showed the
-   three large Meridian depth sources losing the 2500ms race on GitHub Pages,
-   leaving the technically playable but visually unacceptable primitive
-   fallback for the whole run. Both limits remain inside the bootstrap's 10s
-   loading watchdog, and the gate still closes before simulation frame one. */
+   2500ms contract used by the deterministic harness. A touch device OR a
+   narrow portrait viewport gets a wider 6500ms cold-start window: real
+   iPhone/Safari evidence showed the three large Meridian depth sources losing
+   the 2500ms race on GitHub Pages, leaving the technically playable but
+   visually unacceptable primitive fallback for the whole run. The viewport
+   clause covers in-app iOS browsers that report neither maxTouchPoints nor a
+   coarse pointer. Both limits remain inside the bootstrap's 10s loading
+   watchdog, and the gate still closes before simulation frame one. */
 export const PRELOAD_BUDGET_MS = 2500;
 export const MOBILE_PRELOAD_BUDGET_MS = 6500;
 const TOUCH_PRELOAD = typeof navigator !== 'undefined' &&
   (navigator.maxTouchPoints > 0 ||
     (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches));
-const activePreloadBudgetMs = TOUCH_PRELOAD
+const PORTRAIT_PRELOAD = typeof innerWidth === 'number' && typeof innerHeight === 'number' &&
+  innerWidth <= 600 && innerHeight > innerWidth;
+const MOBILE_PRELOAD = TOUCH_PRELOAD || PORTRAIT_PRELOAD;
+const activePreloadBudgetMs = MOBILE_PRELOAD
   ? MOBILE_PRELOAD_BUDGET_MS : PRELOAD_BUDGET_MS;
 
 /* How many macrotask turns the registry must stay QUIET before the gate
@@ -419,6 +424,8 @@ export function preloadSnapshot() {
     desktopBudgetMs: PRELOAD_BUDGET_MS,
     mobileBudgetMs: MOBILE_PRELOAD_BUDGET_MS,
     touchBudget: TOUCH_PRELOAD,
+    portraitBudget: PORTRAIT_PRELOAD,
+    mobileBudgetActive: MOBILE_PRELOAD,
     // what the gate COST THE BOOT: frozen when it closed, not "time since
     // the page loaded" — the first version of this field reported the
     // latter and read like a 6-second stall in a 14ms preload.

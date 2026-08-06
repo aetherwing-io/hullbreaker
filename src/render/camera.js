@@ -9,7 +9,7 @@ import { CONFIG } from '../config.js';
 import { normalAscentAltAt } from '../pure/ascent.js';
 import { DEG, SEGS, polyAt } from '../pure/path.js';
 import { cornerYawDeltaDeg } from '../pure/waves.js';
-import { traversalCameraDepth } from '../pure/traversal.js';
+import { portraitViewDepthMult, traversalCameraDepth } from '../pure/traversal.js';
 import {
   TRANSFORM_FIXTURE, TRANSFORM_PATH, transformAltAt, transformBandHeading,
   transformYawDeltaDeg,
@@ -47,6 +47,7 @@ function probeXAtNdc(ndcX) {
 const PORTRAIT_SAFE = Object.freeze({
   startAspect: 0.9,
   fullAspect: 0.56,
+  compactViewDepthMult: 1.15,
   maxInsetPx: 46,
   lookDropTiles: 1.55,
 });
@@ -83,7 +84,13 @@ function activePortraitLookDrop() {
 // the pre-view-scale camera); absent selects FAR, while mid/far shrink RIG's screen fraction and widen
 // the calibrated s-strip by the same factor. See CONFIG.viewScales' comment.
 function activeViewDepthMult() {
-  return (CONFIG.viewScales[VIEW_ID] || CONFIG.viewScales.far).depthMult;
+  const base = (CONFIG.viewScales[VIEW_ID] || CONFIG.viewScales.far).depthMult;
+  if (ACTIVE_FIXTURE) return base;
+  return portraitViewDepthMult(base, innerWidth / innerHeight, {
+    startAspect: PORTRAIT_SAFE.startAspect,
+    fullAspect: PORTRAIT_SAFE.fullAspect,
+    compactMult: PORTRAIT_SAFE.compactViewDepthMult,
+  });
 }
 
 export function activeCameraDepth() {

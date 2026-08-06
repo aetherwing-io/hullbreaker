@@ -9,7 +9,10 @@
      cores     — compact split-hot machinery at a true terminal point
      fragments — wing, hound and machine silhouettes in one shared row pool
      vapor     — sparse rising aftermath, never a smoke disk
-     crush     — the pursuing damage plane's warning haze
+
+   The pursuing edge has no world-space marker. Its former vertical chevron
+   ladder read as stray UI laid over the hull; pressure remains communicated
+   by the existing rumble/ping curve in src/ui/audio.js and the HUD margin.
 
    WHAT THIS MODULE IS NOT: it decides nothing. `src/render/juice.js` owns
    the event vocabulary (what a kill looks like), `src/pure/juice.js` owns
@@ -47,7 +50,7 @@ import { CONFIG } from '../config.js';
 import { PAL } from './palette.js';
 import { JUICE_ENABLED } from '../mode.js';
 import {
-  burstVelocity, clamp01, flashAlpha, particleAlpha, particleScale, travelStretch, warnPulse,
+  burstVelocity, flashAlpha, particleAlpha, particleScale, travelStretch,
 } from '../pure/juice.js';
 import { postGain } from './post.js';
 import { scene, HIDE } from './scene.js';
@@ -67,7 +70,6 @@ const ROLE = {
   enemyGlow: PAL.wasp,        // hostile ecology
   capsule: PAL.capsule,       // pickup magenta
   modCapsule: PAL.modCapsule, // modifier gold
-  warn: PAL.houndTell,        // the roster's one warning amber
   rig: PAL.player,            // RIG's own off-white
 };
 
@@ -145,7 +147,7 @@ function makePool(n) {
 
 let sparks = null, flashes = null, rings = null, cores = null, fragments = null, vapors = null;
 let sparkMesh = null, flashMesh = null, ringMesh = null, coreMesh = null;
-let fragmentMeshes = null, vaporMesh = null, crushMesh = null, crushMat = null;
+let fragmentMeshes = null, vaporMesh = null;
 let seed = 1;                            // burst-shape seed, bumped per burst
 let liveSparks = 0, liveFlashes = 0, liveRings = 0, liveCores = 0;
 let liveFragments = 0, liveVapors = 0;
@@ -347,54 +349,6 @@ function installInstanceOpacity(material) {
   return material;
 }
 
-// The pursuing boundary is a gameplay plane, not a wall in the world.  Its
-// old 0.8 x 15 x 2.2 box could fill a cropped screen edge with one continuous
-// additive face whenever the camera caught it obliquely.  These disconnected
-// chevrons keep the same one-mesh budget and the same full-height warning
-// reach, but leave more air than metal at every height.  Local +x points from
-// the pursuing edge into the playable route, so every mark says "move".
-function crushBoundaryGeometry() {
-  const positions = [];
-  const indices = [];
-
-  function bar(x0, y0, x1, y1, thickness) {
-    const base = positions.length / 3;
-    const dx = x1 - x0, dy = y1 - y0;
-    const invLength = 1 / Math.max(1e-6, Math.hypot(dx, dy));
-    const nx = -dy * invLength * thickness * 0.5;
-    const ny = dx * invLength * thickness * 0.5;
-    positions.push(
-      x0 + nx, y0 + ny, 0,
-      x1 + nx, y1 + ny, 0,
-      x1 - nx, y1 - ny, 0,
-      x0 - nx, y0 - ny, 0,
-    );
-    indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
-  }
-
-  const count = 8;
-  const step = J.crush.height / count;
-  const chevronHeight = Math.min(1.08, step * 0.58);
-  const halfWidth = J.crush.width * 0.39;
-  const thickness = Math.max(0.085, J.crush.width * 0.13);
-  for (let i = 0; i < count; i++) {
-    // A restrained alternating set-back breaks the UI-perfect ladder while
-    // preserving an unmistakable, repeated direction of travel.
-    const cx = (i % 2 ? -0.045 : 0.035) * J.crush.width;
-    const cy = -J.crush.height * 0.5 + step * (i + 0.5);
-    const left = cx - halfWidth;
-    const tip = cx + halfWidth;
-    bar(left, cy + chevronHeight * 0.5, tip, cy, thickness);
-    bar(tip, cy, left, cy - chevronHeight * 0.5, thickness);
-  }
-
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geo.setIndex(indices);
-  geo.computeBoundingSphere();
-  return geo;
-}
-
 if (JUICE_ENABLED) {
   sparks = makePool(SPARK_MAX);
   flashes = makePool(FLASH_MAX);
@@ -525,22 +479,6 @@ if (JUICE_ENABLED) {
   vaporOpacity.needsUpdate = true;
   scene.add(vaporMesh);
 
-  // One sparse mechanical boundary marker, still one mesh and one material.
-  // It rides the actor/deck surface instead of occupying a deep volume, so an
-  // oblique facet or a screen crop can reveal chevrons but never a solid wall.
-  crushMat = new THREE.MeshBasicMaterial({
-    color: ROLE.warn, transparent: true, opacity: 0, fog: true,
-    blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true,
-    side: THREE.DoubleSide,
-    forceSinglePass: true,
-  });
-  crushMesh = new THREE.Mesh(crushBoundaryGeometry(), crushMat);
-  crushMesh.name = 'Pursuit boundary hazard chevrons';
-  crushMesh.userData.environmentRole = 'crush-warning';
-  crushMesh.frustumCulled = false;
-  crushMesh.visible = false;
-  crushMesh.renderOrder = 1;
-  scene.add(crushMesh);
 }
 
 /* ---------------------------- spawning ---------------------------- *
@@ -794,33 +732,6 @@ export function fxRing(ms, size, s, y, color, depth = 0) {
   row.size = size * 0.28;
   row.grow = size * 0.72;
   tint(row, color);
-}
-
-/* The crush warning, driven per frame from the live margin (0 = off). */
-export function fxCrush(intensity, sEdge, tMs) {
-  if (!JUICE_ENABLED || !crushMesh) return;
-  if (intensity <= 0) {
-    if (crushMesh.visible) { crushMesh.visible = false; crushMat.opacity = 0; }
-    return;
-  }
-  const C = J.crush;
-  // stand the band just INSIDE the plane: centred on the plane itself, half of
-  // it hangs off the edge of the frame and the cue is half as readable
-  const p = towerPose(sEdge + C.width * C.inset, _pose);
-  // Dynamic actors live at route depth 1.15.  Put the warning just proud of
-  // that same painted combat surface: deck and hostiles can occlude it, fog
-  // can recede it, and it cannot expose a box side during a facet transition.
-  const surfaceDepth = 1.16;
-  crushMesh.position.set(
-    p.x + Math.sin(p.yaw) * surfaceDepth,
-    C.y0 + C.height / 2 + p.alt,
-    p.z + Math.cos(p.yaw) * surfaceDepth,
-  );
-  crushMesh.rotation.y = p.yaw;
-  crushMesh.visible = true;
-  // the pulse rides ON the intensity ramp: it never fully blinks out once the
-  // margin is closing, or the frame the player needs it would be the dark one
-  crushMat.opacity = C.maxOpacity * intensity * (0.55 + 0.45 * warnPulse(intensity, tMs, C));
 }
 
 /* ----------------------------- per frame -------------------------- *
@@ -1090,7 +1001,6 @@ export function resetFx() {
   clearPool(vapors, vaporMesh);
   liveSparks = 0; liveFlashes = 0; liveRings = 0; liveCores = 0;
   liveFragments = 0; liveVapors = 0;
-  if (crushMesh) { crushMesh.visible = false; crushMat.opacity = 0; }
 }
 
 /* Read-only-capture companion: produce an exact same-frame VFX-on/off pair
@@ -1172,6 +1082,6 @@ export function fxStats() {
       rings: rings?.recycles || 0, cores: cores?.recycles || 0,
       fragments: fragments?.recycles || 0, vapor: vapors?.recycles || 0,
     },
-    crush: crushMat ? clamp01(crushMat.opacity / J.crush.maxOpacity) : 0,
+    crush: 0, // compatibility telemetry: pressure is audio-only
   };
 }

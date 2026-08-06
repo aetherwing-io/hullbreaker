@@ -77,9 +77,9 @@ ok(/airbornePoseContinuous/.test(playerSrc) && /landingBraceActive/.test(playerS
 ok(/const wallContact = player\.traversalState === 'wall'/.test(playerSrc) &&
    /locomotionState = 'wall'/.test(playerSrc) && /climb-\$\{player\.traversalSide/.test(playerSrc),
   'wall contact selects a facing-aware authored reach pose');
-ok(/bodyGroup\.scale\.set\(1, squash, 1\)/.test(playerSrc) &&
+ok(/bodyGroup\.scale\.set\(portraitGain, squash \* portraitGain, 1\)/.test(playerSrc) &&
    !/bodyScaleX|bodyScaleY|bodyGroup\.scale\.set\(body/.test(playerSrc),
-  'authored locomotion frames never pop through procedural whole-body scaling');
+  'authored locomotion frames use one stable viewport gain, never per-pose procedural scaling');
 
 const letters = Object.keys(RIG_WEAPON_ART);
 ok(letters.join('') === 'RSLHF', 'the held arsenal has exactly the five gameplay chassis');
@@ -113,6 +113,10 @@ ok(/function eightWayAimSector\([^)]*\)/.test(playerSrc) &&
 ok(/ax \* 0\.6 - ax \* RIG_GUN_MUZZLE_X/.test(playerSrc) &&
    /player\.muzzleY \+ ay \* 0\.5 - ay \* RIG_GUN_MUZZLE_X/.test(playerSrc),
   'the authored pivot places its muzzle on the exact gameplay spawn ellipse');
+ok(/portraitActorVisualGain\(innerWidth \/ innerHeight\)/.test(playerSrc) &&
+   /RIG_GUN_MUZZLE_X \* \(1 - portraitGain\) - lastRecoil/.test(playerSrc) &&
+   /portraitGain: \+lastPortraitGain\.toFixed\(3\)/.test(playerSrc),
+  'portrait RIG presentation is bounded and scales the weapon about its exact muzzle endpoint');
 ok(Math.abs(RIG_GUN_MUZZLE_X - 0.82) < 1e-9,
   'every authored chassis terminates at the shared 0.82-tile muzzle endpoint');
 

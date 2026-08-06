@@ -1,8 +1,8 @@
 /* ============================== JUICE ============================= */
 /* The baseline feedback pass's event vocabulary (T-011): what a kill,
-   a hit taken, a shot, a pickup, a ritual snap and a closing crush plane
-   LOOK like. It is the render layer's conductor — it decides nothing
-   about the run.
+   a hit taken, a shot, a pickup and a ritual snap LOOK like. It is the
+   render layer's conductor — it decides nothing about the run. Pursuit-edge
+   pressure is audio-only; render/fx.js creates no world-space marker for it.
 
    Boundary contract (the same one src/ui/audio.js established, and for
    the same reason): this module observes the simulation by WRAPPING the
@@ -29,12 +29,10 @@
 
 import { CONFIG } from '../config.js';
 import { JUICE_ENABLED } from '../mode.js';
-import { crushWarnIntensity } from '../pure/juice.js';
 import { cornerTimeline } from '../pure/waves.js';
 import { transformTimeline } from '../pure/transform.js';
 import { view } from '../sim/bridge.js';
 import { gameMs, hitStopRemainingMs } from '../sim/time.js';
-import { sLeftEdge } from '../sim/edges.js';
 import { player } from '../sim/player.js';
 import { hostiles } from '../sim/hostiles.js';
 import { scoreNotchNow } from '../sim/score.js';
@@ -43,7 +41,7 @@ import { activeTransformEvent } from '../sim/transform.js';
 import { addTrauma, cameraTrauma } from './camera.js';
 import { PAL } from './palette.js';
 import {
-  fxBurst, fxCoreRupture, fxCrush, fxDirectedBurst, fxDirectionalFlash,
+  fxBurst, fxCoreRupture, fxDirectedBurst, fxDirectionalFlash,
   fxFlash, fxHostileColor, fxImplode, fxRing, fxRole, fxRoleFragments,
   fxShotColor, fxStats, fxVapor, resetFx, updateFx,
 } from './fx.js';
@@ -893,10 +891,6 @@ export function updateJuice() {
   updateWardenRupture();
   updateFx(dtMs);
 
-  // crush-edge warning: the pursuing damage plane, intensifying as RIG's
-  // margin closes. Read-only — the plane is sim state and stays sim state.
-  const edge = sLeftEdge();
-  fxCrush(crushWarnIntensity(player.x - player.hw - edge, J.crush), edge, gameMs);
 }
 
 /* --------------------------- read surface ------------------------- */
