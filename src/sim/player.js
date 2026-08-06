@@ -579,8 +579,8 @@ export function updatePlayer(dt) {
     // CHARGE gates the gun and nothing else: WARM shortens the interval
     player.nextFireAt = gameMs + def.fireRateMs * rageMult * scoreFireMult();
     const a = player.aim;
-    fireWeapon(currentWeapon, player.x + a.x * 0.6,
-      player.y + player.muzzleY + a.y * 0.5, a.x, a.y, false);
+    fireWeapon(currentWeapon, player.x + a.x * P.barrelTiles,
+      player.y + player.muzzleY + a.y * P.barrelTiles, a.x, a.y, false);
   }
 
   // -- rig transform (s,y → tower world) + aim pose + i-frame flicker

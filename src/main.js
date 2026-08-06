@@ -75,6 +75,10 @@ import './render/critical-world-art.js';
 // The player is the next non-negotiable lane: locomotion, aim, weapons and
 // climb atlases start before any optional actor or endgame presentation.
 import './render/critical-rig-art.js';
+// Enemy bodies, locomotion, capsules and the Warden are the next visible
+// gameplay lane. Their compact delivery atlases must beat the same mobile
+// gate; later owners dedupe these exact URLs.
+import './render/critical-gameplay-art.js';
 // Register the complete Level 1 ecology atlas after baseline world art but
 // before the remaining optional owners can settle the shared preload gate.
 // Authored rows are still opt-in: ordinary enemies do not enter its branch.

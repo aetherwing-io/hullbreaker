@@ -142,7 +142,7 @@ function assetBlobs(ref) {
     if (!match) continue;
     const [, blob, path] = match;
     if (PRUNED_ASSET_RE.test(path)) continue;
-    if (!/\.(?:png|svg)$/i.test(path)) continue;
+    if (!/\.(?:png|webp|svg)$/i.test(path)) continue;
     out.set(path, blob);
   }
   return out;

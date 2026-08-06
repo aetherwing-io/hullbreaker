@@ -112,7 +112,8 @@ export const ENEMY_ECOLOGY_MANIFEST_SHA256 = '${manifestSha}';
 export const ENEMY_ECOLOGY_COMPONENT_SHA256 = '${componentSha}';
 
 export const ENEMY_ECOLOGY_ATLAS = Object.freeze({
-  file: '../../assets/generated/enemy-ecology/level1-enemy-ecology-atlas-v1.png',
+  file: '../../assets/generated/enemy-ecology/level1-enemy-ecology-atlas-v1.webp',
+  sourceFile: '../../assets/generated/enemy-ecology/level1-enemy-ecology-atlas-v1.png',
   canvas: Object.freeze([3840, 1280]),
   grid: Object.freeze([24, 8]),
   cellPx: 160,
@@ -177,4 +178,3 @@ console.log(JSON.stringify({
   components: manifest.components.length,
   packedBytes: quantized.byteLength,
 }, null, 2));
-

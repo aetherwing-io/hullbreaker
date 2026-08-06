@@ -5,6 +5,7 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { CONFIG } from '../src/config.js';
 import { decodePng, readPngSize } from './assets/lib/png.mjs';
 import {
   RIG_AIM_FRAMES, RIG_BODY_ATLAS_H, RIG_BODY_ATLAS_PATH, RIG_BODY_ATLAS_W,
@@ -110,15 +111,18 @@ ok(/lastAimAngle = Math\.atan2\(ay, ax\)/.test(playerSrc) &&
 ok(/function eightWayAimSector\([^)]*\)/.test(playerSrc) &&
    /'right', 'up-right', 'up', 'up-left',[\s\S]*'left', 'down-left', 'down', 'down-right'/.test(playerSrc),
   'runtime reports all eight keyboard/analog aim sectors');
-ok(/ax \* 0\.6 - ax \* RIG_GUN_MUZZLE_X/.test(playerSrc) &&
-   /player\.muzzleY \+ ay \* 0\.5 - ay \* RIG_GUN_MUZZLE_X/.test(playerSrc),
-  'the authored pivot places its muzzle on the exact gameplay spawn ellipse');
+ok(/gunGroup\.position\.set\(0, player\.muzzleY, 0\.25\)/.test(playerSrc) &&
+   /lastSimMuzzleX = ax \* RIG_GUN_MUZZLE_X/.test(playerSrc) &&
+   /lastSimMuzzleY = player\.muzzleY \+ ay \* RIG_GUN_MUZZLE_X/.test(playerSrc),
+  'one hand socket and one fixed barrel radius place the muzzle in all aim directions');
 ok(/portraitActorVisualGain\(innerWidth \/ innerHeight\)/.test(playerSrc) &&
    /RIG_GUN_MUZZLE_X \* \(1 - portraitGain\) - lastRecoil/.test(playerSrc) &&
    /portraitGain: \+lastPortraitGain\.toFixed\(3\)/.test(playerSrc),
   'portrait RIG presentation is bounded and scales the weapon about its exact muzzle endpoint');
 ok(Math.abs(RIG_GUN_MUZZLE_X - 0.82) < 1e-9,
   'every authored chassis terminates at the shared 0.82-tile muzzle endpoint');
+ok(Math.abs(RIG_GUN_MUZZLE_X - CONFIG.player.barrelTiles) < 1e-9,
+  'the renderer and simulation share the same hand-to-muzzle radius');
 
 const syncSection = section('function sync() {', 'const _rigScreenProbe');
 ok(syncSection.length > 0 && !/new THREE\.|new (?:Mesh|Material|Geometry|Texture)/.test(syncSection),

@@ -5,7 +5,8 @@ export const ENEMY_ECOLOGY_MANIFEST_SHA256 = 'f167990152404c3fa6a5659bf4adb1ca19
 export const ENEMY_ECOLOGY_COMPONENT_SHA256 = '1b5b78da1ad52d187ddd75e7942e9435c861122538805a544838472937dbc1bf';
 
 export const ENEMY_ECOLOGY_ATLAS = Object.freeze({
-  file: '../../assets/generated/enemy-ecology/level1-enemy-ecology-atlas-v1.png',
+  file: '../../assets/generated/enemy-ecology/level1-enemy-ecology-atlas-v1.webp',
+  sourceFile: '../../assets/generated/enemy-ecology/level1-enemy-ecology-atlas-v1.png',
   canvas: Object.freeze([3840, 1280]),
   grid: Object.freeze([24, 8]),
   cellPx: 160,

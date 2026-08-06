@@ -97,7 +97,7 @@ function assetBlobs(commit) {
     const match = line.match(/^\d+\s+blob\s+([0-9a-f]+)\t(.+)$/);
     if (!match) continue;
     const [, blob, path] = match;
-    if (PRUNED_ASSET_RE.test(path) || !/\.(?:png|svg)$/i.test(path)) continue;
+    if (PRUNED_ASSET_RE.test(path) || !/\.(?:png|webp|svg)$/i.test(path)) continue;
     out.set(path, blob);
   }
   return out;
@@ -245,6 +245,7 @@ const MIME = new Map([
   ['.js', 'text/javascript; charset=utf-8'],
   ['.json', 'application/json; charset=utf-8'],
   ['.png', 'image/png'],
+  ['.webp', 'image/webp'],
   ['.svg', 'image/svg+xml'],
 ]);
 

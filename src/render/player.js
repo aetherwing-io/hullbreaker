@@ -612,7 +612,7 @@ let activeTraitSummary = '';
 let lastAimAngle = 0;
 let lastAimX = 1;
 let lastAimY = 0;
-let lastSimMuzzleX = 0.6;
+let lastSimMuzzleX = RIG_GUN_MUZZLE_X;
 let lastSimMuzzleY = CONFIG.player.muzzleY;
 let lastPoseFacing = 1;
 let lastRecoil = 0;
@@ -893,23 +893,18 @@ function sync() {
   fallbackMesh.scale.x = faceX;
   spriteMesh.scale.x = faceX;
 
-  // The gun is a sibling of the crouch-scaled body, so its central axis
-  // remains the exact simulation aim. Offset its root so the shared local
-  // muzzle point lands on sim/player.js's actual spawn location for every
-  // horizontal, vertical and diagonal direction.
+  // The gun is a sibling of the crouch-scaled body and stays rooted on one
+  // hand socket. Its local muzzle radius is the same CONFIG value used by
+  // sim/player.js, so vertical aim cannot drag the receiver into RIG's legs.
   syncGunIdentity();
   const ax = player.aim.x, ay = player.aim.y;
   lastAimX = ax;
   lastAimY = ay;
   lastAimAngle = Math.atan2(ay, ax);
-  lastSimMuzzleX = ax * 0.6;
-  lastSimMuzzleY = player.muzzleY + ay * 0.5;
+  lastSimMuzzleX = ax * RIG_GUN_MUZZLE_X;
+  lastSimMuzzleY = player.muzzleY + ay * RIG_GUN_MUZZLE_X;
   gunGroup.visible = foldGain > 0.14;
-  gunGroup.position.set(
-    ax * 0.6 - ax * RIG_GUN_MUZZLE_X,
-    player.muzzleY + ay * 0.5 - ay * RIG_GUN_MUZZLE_X,
-    0.25,
-  );
+  gunGroup.position.set(0, player.muzzleY, 0.25);
   gunGroup.rotation.z = lastAimAngle;
   const mirrorY = ax < -0.1 || (Math.abs(ax) <= 0.1 && player.facing < 0) ? -1 : 1;
   // Mobile readability enlarges the weapon about its muzzle endpoint, not its

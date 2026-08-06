@@ -32,14 +32,15 @@ import { PAL } from './palette.js';
 import { awaitPreloads, preloadTexture } from './preload.js';
 import { releaseContactShadow, syncContactShadow } from './contact.js';
 import { routeRenderable } from './route-visibility.js';
+import { CAPSULE_ART_ATLAS, CAPSULE_ART_ROOT } from './capsule-art-spec.js';
 import {
   CAPSULE_SWEEP_FREQ, CAPSULE_SWEEP_RAD, GLYPH_EDGE, GLYPH_GAIN, GLYPH_INK_FILL,
   GLYPH_SQUEEZE_MIN, GLYPH_TEX_PX, LEGIBILITY_ON,
 } from './legibility.js';
 
-const ART_ROOT = '../../assets/generated/capsules/';
-const ATLAS_FILE = 'capsule-pickups-atlas-v1.png';
-const ATLAS_SIZE = Object.freeze([2048, 640]);
+const ART_ROOT = CAPSULE_ART_ROOT;
+const ATLAS_FILE = CAPSULE_ART_ATLAS.file;
+const ATLAS_SIZE = CAPSULE_ART_ATLAS.canvas;
 const WEAPON_CELL = Object.freeze({ S: 0, L: 1, H: 2, F: 3 });
 const ATLAS_CELL = Object.freeze([512, 320]);
 const CAPSULE_ART_ON = !['0', 'off'].includes((QUERY.get('capsules') || '').toLowerCase());

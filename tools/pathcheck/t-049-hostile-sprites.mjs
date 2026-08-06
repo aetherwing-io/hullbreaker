@@ -21,12 +21,15 @@
 //      same mount line, and bounded by the presentation envelope rather than
 //      by whatever transparent margin happened to ship in the canvas.
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { CONFIG } from '../../src/config.js';
+import { CAPSULE_ART_ATLAS, CAPSULE_ART_ROOT } from '../../src/render/capsule-art-spec.js';
+import { ENEMY_ECOLOGY_ATLAS } from '../../src/render/enemy-ecology-spec.js';
 import {
-  DEFAULT_VARIANT, MORTAR_STANCE, SPRITE_ART, SPRITE_KINDS, SPRITE_ROOT,
-  SPRITE_VARIANT_IDS, primitiveBox, resolveSpriteVariants, spriteQuad, spritesEnabled,
+  DEFAULT_VARIANT, MORTAR_STANCE, SPRITE_ACTION_ART, SPRITE_ART, SPRITE_KINDS,
+  SPRITE_MOTION_ART, SPRITE_ROOT, SPRITE_VARIANT_IDS, primitiveBox,
+  resolveSpriteVariants, spriteQuad, spritesEnabled,
 } from '../../src/render/sprite-table.js';
 // the budget constant only — src/render/preload.js itself imports three.js
 // and the renderer, so this harness reads it as TEXT below rather than
@@ -108,6 +111,32 @@ export async function run() {
   ok(!/\b(THREE|document|window)\b/.test(tableSrc),
      'T-049: src/render/sprite-table.js stays Node-safe (no THREE, no DOM) — it is ' +
      'the half of the sprite path a headless gate has to be able to import');
+
+  const renderDir = join(srcDir, 'render');
+  const deliveryFiles = [
+    ENEMY_ECOLOGY_ATLAS.file,
+    CAPSULE_ART_ROOT + CAPSULE_ART_ATLAS.file,
+    SPRITE_ROOT + SPRITE_ART.warden.b.file,
+    SPRITE_ROOT + SPRITE_MOTION_ART.hound.file,
+    SPRITE_ROOT + SPRITE_ACTION_ART.mortar.file,
+  ].map((file) => resolve(renderDir, file));
+  ok(deliveryFiles.every((file) => file.endsWith('.webp') && existsSync(file)),
+     'T-049: ecology, capsule, Warden, hound-gait, and mortar-action runtime WebPs exist');
+  const deliveryBytes = deliveryFiles.reduce((sum, file) => sum + statSync(file).size, 0);
+  ok(deliveryBytes < 1_500_000,
+     'T-049: the five cold-mobile gameplay atlases stay below a 1.5 MB delivery ceiling ' +
+     '(got ' + deliveryBytes + ' bytes)');
+  const criticalGameplaySrc = stripComments(readFileSync(
+    join(renderDir, 'critical-gameplay-art.js'), 'utf8',
+  ));
+  const mainSrc = stripComments(readFileSync(join(srcDir, 'main.js'), 'utf8'));
+  const criticalAt = mainSrc.indexOf("import './render/critical-gameplay-art.js'");
+  ok(criticalAt > mainSrc.indexOf("import './render/critical-rig-art.js'") &&
+     criticalAt < mainSrc.indexOf("import './render/enemy-ecology-art.js'") &&
+     /CRITICAL_GAMEPLAY_REQUESTS/.test(criticalGameplaySrc) &&
+     /files\.map\(\(file\) =>[\s\S]*preloadTexture/.test(criticalGameplaySrc) &&
+     !/awaitPreloads/.test(criticalGameplaySrc),
+     'T-049: five compact gameplay atlases register after RIG and before optional owners');
 
   /* --- 1b. the boot preload gate -------------------------------------- *
    * The determinism half of the runtime-asset contract, and the reason it
@@ -260,9 +289,10 @@ export async function run() {
   for (const kind of SPRITE_KINDS) {
     for (const variant of SPRITE_VARIANT_IDS) {
       const art = SPRITE_ART[kind][variant];
-      const file = join(SPRITE_DIR, art.file);
+      const measuredFile = art.sourceFile || art.file;
+      const file = join(SPRITE_DIR, measuredFile);
       ok(existsSync(file),
-         'T-049: ' + kind + '/' + variant + ' names an asset that exists (' + art.file + ')');
+         'T-049: ' + kind + '/' + variant + ' names a measured source that exists (' + measuredFile + ')');
       if (!existsSync(file)) continue;
       let m = null;
       try { m = measureInk(file); } catch (err) {

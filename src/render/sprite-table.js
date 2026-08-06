@@ -1,5 +1,5 @@
 /* ======================= HOSTILE SPRITE TABLE ===================== */
-/* The Node-safe half of the runtime sprite path (T-049): which PNG stands
+/* The Node-safe half of the runtime sprite path (T-049): which image stands
    for which hostile kind, how big the drawn art actually is inside its
    canvas, and the arithmetic that turns those two facts into a world-space
    quad. No three.js and no DOM in this file on purpose — the same reason
@@ -35,7 +35,7 @@ export const SPRITE_ROOT = '../../assets/generated/sprites/';
 /* The roster. `canvas` is the PNG's own size; `ink` is the opaque bounding
    box inside it as [x, y, w, h] in texels. Both are MEASURED (from
    assets/generated/sprites/*.png, decoded by tools/assets/lib/png.mjs) and
-   re-measured by pathcheck — a number here that stops matching the file is
+   re-measured from each PNG source master by pathcheck — a number here that stops matching the file is
    a failed gate, not a silently wrong quad.
 
    Two candidates per role, from T-046's batch: `a` is the bold single-mass
@@ -70,8 +70,10 @@ export const SPRITE_ART = {
   // selector ids resolve to it so the global ?spritevar= diagnostic remains
   // legal without inventing a low-quality alternate for the centerpiece.
   warden: {
-    a: { file: 'crown-warden-v1.png', canvas: [1672, 941], ink: [145, 17, 1413, 890] },
-    b: { file: 'crown-warden-v1.png', canvas: [1672, 941], ink: [145, 17, 1413, 890] },
+    a: { file: 'crown-warden-v1.webp', sourceFile: 'crown-warden-v1.png',
+      canvas: [1672, 941], ink: [145, 17, 1413, 890] },
+    b: { file: 'crown-warden-v1.webp', sourceFile: 'crown-warden-v1.png',
+      canvas: [1672, 941], ink: [145, 17, 1413, 890] },
   },
 };
 
@@ -86,7 +88,8 @@ export const SPRITE_ACTION_ART = {
   wasp:   { file: 'wasp-pixel-v1/wasp-pixel-dive-v1.png',
     canvas: [128, 128], ink: [19, 31, 84, 58] },
   polyp:  { file: 'iris-polyp-action-v2.png', canvas: [421, 399], ink: [24, 24, 373, 351] },
-  mortar: { file: 'spore-mortar-action-v2.png', canvas: [499, 449], ink: [24, 24, 451, 401] },
+  mortar: { file: 'spore-mortar-action-v2.webp', sourceFile: 'spore-mortar-action-v2.png',
+    canvas: [499, 449], ink: [24, 24, 451, 401] },
 };
 
 // Auxiliary animation plates loaded by sprites.js through the original boot
@@ -100,7 +103,7 @@ export const SPRITE_FLAP_ART = {
     canvas: [512, 128], ink: [28, 18, 465, 92],
   },
   hound: {
-    file: 'hound-gait-atlas-v2.png',
+    file: 'hound-gait-atlas-v2.webp', sourceFile: 'hound-gait-atlas-v2.png',
     canvas: [2048, 1024], ink: [48, 180, 1956, 740],
   },
 };
@@ -127,7 +130,8 @@ export const SPRITE_MOTION_ART = Object.freeze({
     ]),
   }),
   hound: Object.freeze({
-    file: 'hound-gait-atlas-v2.png', canvas: Object.freeze([2048, 1024]),
+    file: 'hound-gait-atlas-v2.webp', sourceFile: 'hound-gait-atlas-v2.png',
+    canvas: Object.freeze([2048, 1024]),
     referenceInkWidth: 472, anchorRole: 'orange-shoulder+deck-line', grounded: true,
     frames: Object.freeze([
       // Run: front contact, passing/tuck, rear drive/reach, suspension.

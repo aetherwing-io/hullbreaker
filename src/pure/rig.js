@@ -243,10 +243,9 @@ export const RIG_WEAPON_ART = Object.freeze({
 });
 
 // Every painted cutout and procedural fallback ends at this exact local x.
-// player.js offsets the group so this point coincides with sim/player.js's
-// elliptical spawn offset for all eight directions; changing the silhouette
-// never changes gameplay.
-export const RIG_GUN_MUZZLE_X = 0.82;
+// CONFIG owns the same hand-to-muzzle radius used by sim/player.js, so the
+// gun group can stay rooted on RIG's hand socket in all eight directions.
+export const RIG_GUN_MUZZLE_X = CONFIG.player.barrelTiles;
 
 // Same shape of check as spriteViolations() below, scoped to the real
 // sprite's plane size: proves the documented overrun stays inside its own

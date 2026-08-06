@@ -278,10 +278,14 @@ export const CONFIG = {
     wallJumpX: 11.8, wallJumpY: 12.5,
     traversalRecatchMs: 180, traversalEdgeGuard: 0.5,
     width: 0.7, height: 1.7,
-    muzzleY: 1.05,             // firing line above the feet while standing. It sits ABOVE a
+    muzzleY: 1.05,             // weapon-hand socket / level firing line above the feet. It
+                               //   sits ABOVE a
                                //   houndframe's hit circle (deck+0.03..0.87), which is the
                                //   whole reason the crouch/assist prototypes exist — the gap
                                //   is asserted in tools/pathcheck.mjs so it stays honest.
+    barrelTiles: 0.82,         // hand socket -> painted muzzle. Simulation shots and the
+                               //   render anchor share this one radius in every aim direction;
+                               //   never approximate the weapon with separate x/y ellipses.
     maxHealth: 3, lives: 3,
     iframesMs: 1200, hitstunMs: 220, knockbackX: 6, knockbackY: 5,
   },

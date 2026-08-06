@@ -33,7 +33,7 @@
 // Honesty notes (also in the README's limitations list):
 //   - The corridors below are drawn from the standing muzzle point
 //     (player.y + muzzleY) in a straight line. The game spawns a projectile at
-//     (x + ax*0.6, y + muzzleY + ay*0.5) and it travels while the target
+//     at the fixed 0.82-tile barrel endpoint from that socket and it travels while the target
 //     moves, so corridor occupancy is a "a shot fired now points at it" test,
 //     not a hit prediction.
 //   - No bend awareness: a shot dies at a facet bend (decisions.md entry 7)
