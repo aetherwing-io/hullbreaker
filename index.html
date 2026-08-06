@@ -4,7 +4,14 @@
 <meta charset="utf-8">
 <title>HULLBREAKER</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="preload" as="image" href="assets/generated/ui/title-meridian-ascent-v1.png">
+<link rel="preload" as="image" type="image/webp" href="assets/generated/ui/title-meridian-ascent-v1.webp" fetchpriority="high">
+<!-- These are compact runtime derivatives of the reviewed PNG masters.  They
+     start before the module graph so iOS cannot finish the small actor sheets
+     while permanently timing the world-art lanes out of the shared boot gate. -->
+<link rel="preload" as="image" type="image/webp" href="assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp" fetchpriority="high">
+<link rel="preload" as="image" type="image/webp" href="assets/generated/environment/meridian-foreground-pack-v1.webp" fetchpriority="high">
+<link rel="preload" as="image" type="image/webp" href="assets/generated/backdrops/backdrop-meridian-coils-v3.webp">
+<link rel="preload" as="image" type="image/webp" href="assets/generated/environment/meridian-component-atlas-v1.webp">
 <link rel="icon" href="assets/ui/favicon.svg" type="image/svg+xml">
 <style>
   :root {
@@ -515,7 +522,7 @@
   body.booting #overlay { opacity: 0; pointer-events: none; }
   body.booting #shell {
     display: block;
-    background: #07131a url('assets/generated/ui/title-meridian-ascent-v1.png') 50% 50% / cover no-repeat;
+    background: #07131a url('assets/generated/ui/title-meridian-ascent-v1.webp') 50% 50% / cover no-repeat;
   }
   body.booting #shell > * { visibility: hidden; }
   body.booting #shell::before {
@@ -532,7 +539,7 @@
   body.at-title .hud, body.nohud .hud { opacity: 0; }
   #shellArt {
     position: absolute; inset: -1.5%; overflow: hidden;
-    background: #07131a url('assets/generated/ui/title-meridian-ascent-v1.png') 50% 50% / cover no-repeat;
+    background: #07131a url('assets/generated/ui/title-meridian-ascent-v1.webp') 50% 50% / cover no-repeat;
     animation: title-breathe 13s ease-in-out infinite alternate;
   }
   #shellArt::after {

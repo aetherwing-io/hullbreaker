@@ -5,7 +5,7 @@
    non-rectangular silhouettes, structural-only dressing, opt-in cutout art,
    sparse housed luminaires, and allocation-free facet culling. */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodePng } from './assets/lib/png.mjs';
@@ -18,6 +18,7 @@ import {
 import {
   foregroundComponentCatalogStats, foregroundCompositionForModule,
 } from '../src/render/foreground-components.js';
+import { FOREGROUND_COMPONENT_ATLAS } from '../src/render/foreground-component-spec.generated.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => readFileSync(join(root, file), 'utf8');
@@ -28,6 +29,7 @@ const art = read('src/render/world-detail-art.js');
 const limb = read('src/render/limb.js');
 const pack = read('src/render/foreground-pack.js');
 const componentArt = read('src/render/foreground-component-art.js');
+const packSource = read('src/render/foreground-pack-source.js');
 let passed = 0;
 function ok(value, message) {
   if (!value) throw new Error(`FOREGROUND KIT FAIL: ${message}`);
@@ -106,6 +108,26 @@ for (const [label, file, width, height] of sourceAssets) {
   ok(image.width === width && image.height === height,
     `${label} source is present at its declared ${width}x${height} production dimensions`);
 }
+const runtimeAssets = [
+  ['foreground pack', {
+    file: '../../assets/generated/environment/meridian-foreground-pack-v1.webp',
+    sourceFile: '../../assets/generated/environment/meridian-foreground-pack-v1.png',
+  }],
+  ['native component atlas', FOREGROUND_COMPONENT_ATLAS],
+];
+let runtimeBytes = 0;
+for (const [label, atlas] of runtimeAssets) {
+  const runtimePath = join(root, 'src', 'render', atlas.file);
+  const bytes = statSync(runtimePath).size;
+  runtimeBytes += bytes;
+  ok(atlas.file.endsWith('.webp') && atlas.sourceFile.endsWith('.png') && bytes > 0,
+    `${label} keeps its PNG master and uses a present WebP runtime derivative`);
+}
+ok(runtimeBytes < 1_300_000,
+  `both foreground runtime atlases stay below a 1.3 MB mobile delivery ceiling (${runtimeBytes} bytes)`);
+ok(/FOREGROUND_PACK_SOURCE/.test(pack) &&
+   /meridian-foreground-pack-v1\.webp/.test(packSource),
+  'foreground consumer and first-paint owner share one dependency-free runtime source contract');
 ok(!/createElement\(['"]canvas|new\s+THREE\.CanvasTexture|drawImage\s*\(/.test(
   `${level}\n${pack}\n${componentArt}`,
 ), 'runtime surface composition uses resident source textures with no canvas manufacture or crop pass');

@@ -146,6 +146,10 @@ export async function run(SHARED) {
 
   // --- player.js paints from rig.js's data, not a parallel literal list ---
   const rigSrc = stripComments(readFileSync(join(srcDir, 'render', 'player.js'), 'utf8'));
+  const mainSrc = stripComments(readFileSync(join(srcDir, 'main.js'), 'utf8'));
+  const criticalRigSrc = stripComments(readFileSync(
+    join(srcDir, 'render', 'critical-rig-art.js'), 'utf8',
+  ));
   const deployVerifierSrc = stripComments(readFileSync(
     join(srcDir, '..', 'tools', 'deploy', 'verify-bundle.mjs'), 'utf8',
   ));
@@ -166,6 +170,18 @@ export async function run(SHARED) {
   ok(/preloadTexture/.test(rigSrc) && /RIG_SPRITE_PATH/.test(rigSrc),
      'T-040: RIG loads a real runtime sprite (decisions.md entry 16), through the shared ' +
      'src/render/preload.js boot gate (preloadTexture), not a bespoke loader');
+  ok(mainSrc.indexOf("import './render/critical-world-art.js'") >= 0 &&
+     mainSrc.indexOf("import './render/critical-rig-art.js'") >
+       mainSrc.indexOf("import './render/critical-world-art.js'") &&
+     mainSrc.indexOf("import './render/critical-rig-art.js'") <
+       mainSrc.indexOf("import './render/enemy-ecology-art.js'") &&
+     /RIG_BODY_ATLAS_PATH/.test(criticalRigSrc) &&
+     /RIG_AIM_ATLAS_PATH/.test(criticalRigSrc) &&
+     /RIG_WEAPON_ATLAS_PATH/.test(criticalRigSrc) &&
+     /RIG_CLIMB_ATLAS_PATH/.test(criticalRigSrc) &&
+     /preloadTexture/.test(criticalRigSrc) && !/awaitPreloads/.test(criticalRigSrc),
+     'T-040: four production RIG atlases register immediately after baseline world art ' +
+     'and before optional actor/endgame lanes');
   ok(/QUERY\.get\('rig'\)/.test(rigSrc) && /RIG_FORCE_CANVAS/.test(rigSrc),
      'T-040: an escape hatch (?rig=canvas) exists back to the fallback — the sprite ships ON by ' +
      'default per entry 16, not behind a flag the operator has to type');

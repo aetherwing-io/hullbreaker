@@ -436,7 +436,8 @@ try {
     ` * Source cells were chroma-keyed, connected-component extracted, trimmed\n` +
     ` * and padded offline. Edit the source boards/specs or packer, not this file. */\n\n` +
     `export const FOREGROUND_COMPONENT_ATLAS = Object.freeze(${JSON.stringify({
-      file: '../../assets/generated/environment/meridian-component-atlas-v1.png',
+      file: '../../assets/generated/environment/meridian-component-atlas-v1.webp',
+      sourceFile: '../../assets/generated/environment/meridian-component-atlas-v1.png',
       canvas: [2048, 1024], gpuTextures: 1, emissive: false, alphaTest: 0.035,
     }, null, 2)});\n\n` +
     `export const FOREGROUND_CUTOUT_COMPONENTS = Object.freeze(` +

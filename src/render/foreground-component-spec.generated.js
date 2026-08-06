@@ -3,7 +3,8 @@
  * and padded offline. Edit the source boards/specs or packer, not this file. */
 
 export const FOREGROUND_COMPONENT_ATLAS = Object.freeze({
-  "file": "../../assets/generated/environment/meridian-component-atlas-v1.png",
+  "file": "../../assets/generated/environment/meridian-component-atlas-v1.webp",
+  "sourceFile": "../../assets/generated/environment/meridian-component-atlas-v1.png",
   "canvas": [
     2048,
     1024

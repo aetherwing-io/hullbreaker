@@ -5,7 +5,7 @@
 // Edit this file to add assertions in this domain. Order inside the file is
 // preserved as written; order between files is manifest.mjs's business.
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   DEFAULT_START_DIRECTION, RIG_SCREEN_FRACTION, SHELL_CONSUMING_INTENTS,
@@ -275,8 +275,13 @@ export async function run(SHARED) {
     // Production key art now carries the player-facing promise; the original
     // data-backed composition remains code-native underneath for conformance.
     const htmlSrc = readFileSync(join(here, '..', 'index.html'), 'utf8');
-    ok(/title-meridian-ascent-v1\.png/.test(htmlSrc),
-       'T-013: the title references the concept-aligned production key art');
+    ok(/title-meridian-ascent-v1\.webp/.test(htmlSrc),
+       'T-013: the title references the compact runtime copy of the concept-aligned key art');
+    const runtimeTitleBytes = statSync(join(
+      here, '..', 'assets', 'generated', 'ui', 'title-meridian-ascent-v1.webp',
+    )).size;
+    ok(runtimeTitleBytes < 200_000,
+       `T-013: the boot/title key art stays below its 200 kB mobile delivery ceiling (${runtimeTitleBytes} bytes)`);
     for (const [label, src] of [['ui/shell.js', shellSrc],
                                 ['pure/shell.js', readFileSync(join(srcDir, 'pure', 'shell.js'), 'utf8')]])
       ok(!/<img|background-image/i.test(src),

@@ -14,19 +14,22 @@ import { CONFIG } from '../config.js';
 export const MERIDIAN_DEPTH_SOURCES = Object.freeze({
   far: Object.freeze({
     id: 'meridian-anatomy',
-    file: '../../assets/generated/backdrops/backdrop-meridian-anatomy-v1.png',
+    file: '../../assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp',
+    sourceFile: '../../assets/generated/backdrops/backdrop-meridian-anatomy-v1.png',
     canvas: Object.freeze([1672, 941]),
     alpha: false,
   }),
   mid: Object.freeze({
     id: 'meridian-coils',
-    file: '../../assets/generated/backdrops/backdrop-meridian-coils-v3.png',
+    file: '../../assets/generated/backdrops/backdrop-meridian-coils-v3.webp',
+    sourceFile: '../../assets/generated/backdrops/backdrop-meridian-coils-v3.png',
     canvas: Object.freeze([1983, 793]),
     alpha: true,
   }),
   near: Object.freeze({
     id: 'meridian-components',
-    file: '../../assets/generated/environment/meridian-component-atlas-v1.png',
+    file: '../../assets/generated/environment/meridian-component-atlas-v1.webp',
+    sourceFile: '../../assets/generated/environment/meridian-component-atlas-v1.png',
     canvas: Object.freeze([2048, 1024]),
     alpha: true,
   }),

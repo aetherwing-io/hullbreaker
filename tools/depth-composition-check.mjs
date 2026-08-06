@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Exact non-browser contract for the resident Meridian depth volume. */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   MERIDIAN_DEPTH_BUDGET,
@@ -18,6 +18,7 @@ const root = resolve(import.meta.dirname, '..');
 const atmosphere = readFileSync(resolve(root, 'src/render/atmosphere.js'), 'utf8');
 const backdrop = readFileSync(resolve(root, 'src/render/backdrop.js'), 'utf8');
 const plan = readFileSync(resolve(root, 'src/render/backdrop-depth-plan.js'), 'utf8');
+const criticalWorld = readFileSync(resolve(root, 'src/render/critical-world-art.js'), 'utf8');
 const main = readFileSync(resolve(root, 'src/main.js'), 'utf8');
 const manifest = JSON.parse(readFileSync(resolve(root, 'assets/manifest.json'), 'utf8'));
 let passed = 0;
@@ -86,13 +87,30 @@ ok(/map:\s*texture/.test(atmosphere) && /directResidentMap:\s*true/.test(atmosph
   /registerSource\(farBody/.test(backdrop) && /registerSource\(midBody/.test(backdrop) &&
   /registerSource\(fragmentBody/.test(backdrop),
   'far, mid and near art each use one direct preload-gated source map');
+ok(main.indexOf("import './render/critical-world-art.js'") >= 0 &&
+  main.indexOf("import './render/critical-world-art.js'") <
+    main.indexOf("import './render/enemy-ecology-art.js'") &&
+  /MERIDIAN_DEPTH_SOURCES\.far/.test(criticalWorld) &&
+  /MERIDIAN_DEPTH_SOURCES\.mid/.test(criticalWorld) &&
+  /MERIDIAN_DEPTH_SOURCES\.near/.test(criticalWorld) &&
+  /FOREGROUND_PACK_SOURCE/.test(criticalWorld) &&
+  !/awaitPreloads/.test(criticalWorld),
+  'four baseline world sources register before optional enemy/endgame art without settling the gate');
 
 for (const source of Object.values(MERIDIAN_DEPTH_SOURCES)) {
-  const file = resolve(root, 'src', 'render', source.file);
-  const measured = readPngSize(file);
+  const sourceFile = resolve(root, 'src', 'render', source.sourceFile);
+  const measured = readPngSize(sourceFile);
   ok(measured.width === source.canvas[0] && measured.height === source.canvas[1],
-    `${source.id} source dimensions match the direct-map contract`, measured);
+    `${source.id} PNG master dimensions match the direct-map contract`, measured);
+  const runtimeFile = resolve(root, 'src', 'render', source.file);
+  ok(source.file.endsWith('.webp') && statSync(runtimeFile).size > 0,
+    `${source.id} direct map uses a present WebP runtime derivative`);
 }
+const runtimeDepthBytes = Object.values(MERIDIAN_DEPTH_SOURCES).reduce((sum, source) =>
+  sum + statSync(resolve(root, 'src', 'render', source.file)).size, 0);
+ok(runtimeDepthBytes < 900_000,
+  'all three resident depth maps stay below a 900 kB mobile delivery ceiling',
+  { runtimeDepthBytes });
 const anatomyManifest = manifest.assets.find((entry) =>
   entry.path === 'assets/generated/backdrops/backdrop-meridian-anatomy-v1.png');
 ok(anatomyManifest?.gpu === true,

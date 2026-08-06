@@ -69,9 +69,15 @@ import {
 } from './sim/transform.js';
 import { updateScroll } from './sim/scroll.js';
 import { camera, renderer, scene } from './render/scene.js';
-// Register the complete Level 1 ecology atlas before any existing art owner
-// can settle the shared preload gate. Authored rows are still opt-in: this is
-// residency only, and ordinary enemies never enter its renderer branch.
+// Baseline world art owns the first four cold-start requests. The later
+// consumers reuse these promises through preload.js's URL-level dedupe.
+import './render/critical-world-art.js';
+// The player is the next non-negotiable lane: locomotion, aim, weapons and
+// climb atlases start before any optional actor or endgame presentation.
+import './render/critical-rig-art.js';
+// Register the complete Level 1 ecology atlas after baseline world art but
+// before the remaining optional owners can settle the shared preload gate.
+// Authored rows are still opt-in: ordinary enemies do not enter its branch.
 import './render/enemy-ecology-art.js';
 // The large world-detail atlas must join the boot gate before level.js enters
 // materials.js. Its consumer receives one frozen ready/fallback decision and

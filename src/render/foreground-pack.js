@@ -9,6 +9,7 @@
 import { IS_G1, QUERY } from '../mode.js';
 import { awaitPreloads, preloadTexture } from './preload.js';
 import { FOREGROUND_ATLAS_COMPONENTS } from './foreground-components.js';
+import { FOREGROUND_PACK_SOURCE } from './foreground-pack-source.js';
 
 const SHEET_ORIGIN = Object.freeze({
   A: Object.freeze([0, 0]),
@@ -39,8 +40,7 @@ for (let i = 0; i < 16; i++) allCells.push(cell('D', i));
 allCells.sort((a, b) => a.index - b.index);
 
 export const FOREGROUND_PACK = Object.freeze({
-  file: '../../assets/generated/environment/meridian-foreground-pack-v1.png',
-  canvas: Object.freeze([2048, 2048]),
+  ...FOREGROUND_PACK_SOURCE,
   grid: Object.freeze([8, 8]),
   cellSize: 256,
   uvGuardPx: 6,
