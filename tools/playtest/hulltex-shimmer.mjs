@@ -209,7 +209,8 @@ const MOMENTS = [
 // imported. 'KeyJ' (fire) held throughout matches that lane's own driving.
 const RAMP_SCRIPT = resolve(here, 'scripts', 'six-face-spaced-run.json');
 const VARIANTS = [
-  { tag: 'textured', query: '' },
+  { tag: 'pixel', query: '' },
+  { tag: 'painted', query: '&tex=painted' },
   { tag: 'flat', query: '&tex=flat' },
 ];
 const THRESH = 6;

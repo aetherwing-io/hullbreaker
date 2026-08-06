@@ -41,7 +41,8 @@ import { join } from 'node:path';
 import { CONFIG } from '../../src/config.js';
 import { SURFACE } from '../../src/pure/post.js';
 import {
-  hullPieceDims, hullTexRepeat, resolveHullTexOn, TEX_LAYOUT, TILE_WORLD_SIZE, worldPerTileCopy,
+  hullPieceDims, hullTexRepeat, resolveHullTexMode, resolveHullTexOn,
+  composePixelDeckPanel, TEX_LAYOUT, TILE_WORLD_SIZE, worldPerTileCopy,
 } from '../../src/render/hulltiles.js';
 import { decodePng } from '../../tools/assets/lib/png.mjs';
 import { ok, near, srcDir, stripComments } from './_context.mjs';
@@ -143,6 +144,32 @@ export async function run() {
        'T-052: ?tex=' + JSON.stringify(bad) + ' resolves to the textured default');
   ok(resolveHullTexOn('flat') === false,
      'T-052: ?tex=flat, and only that exact value, turns the pass off');
+  ok(resolveHullTexMode(null) === 'pixel' && resolveHullTexMode('junk') === 'pixel',
+     'T-052: the screen-authored material is the default, including for unknown values');
+  ok(resolveHullTexMode('flat') === 'flat' && resolveHullTexMode('painted') === 'painted',
+     'T-052: flat and the former painting remain explicit comparison modes');
+}
+
+/* ==== 4b. pixel-authored material preserves its exact spatial grid ====== */
+{
+  const file = 'hull-panel-pixel-tile-v1.png';
+  const png = decodePng(join(TEX_DIR, file));
+  ok(png.width === 256 && png.height === 256,
+     'T-052: ' + file + ' is the authored 256x256 runtime tile');
+  const colors = new Set();
+  let opaque = true;
+  for (let i = 0; i < png.rgba.length; i += 4) {
+    colors.add((png.rgba[i] << 16) | (png.rgba[i + 1] << 8) | png.rgba[i + 2]);
+    if (png.rgba[i + 3] !== 255) opaque = false;
+  }
+  ok(colors.size <= 20 && opaque,
+     'T-052: the pixel runtime tile stays opaque and within its 20-color budget (' +
+     colors.size + ' colors)');
+  const composed = composePixelDeckPanel({ data: png.rgba, width: png.width, height: png.height });
+  ok(!!composed && composed.width === png.width && composed.height === png.height,
+     'T-052: the pixel comparison preserves the exact source grid (no runtime resample)');
+  ok(composed?.layout?.pixelAuthored === true,
+     'T-052: the composed layout reports its screen-authored sampling contract');
 }
 
 /* ==== 5. cross-file consistency (text, comments stripped, paired with a === *

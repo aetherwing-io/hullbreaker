@@ -871,6 +871,31 @@
       "alpha": "opaque"
     },
     {
+      "id": "hull-panel-pixel-tile-v1",
+      "path": "assets/generated/textures/hull-panel-pixel-tile-v1.png",
+      "category": "textures",
+      "size": {
+        "w": 256,
+        "h": 256
+      },
+      "source": "assets/generated/textures/hull-panel-pixel-tile-v1.prompt.md",
+      "gpu": true,
+      "task": "T-057",
+      "generator": "OpenAI built-in ImageGen edit; full prompts, references, selected source, deterministic pixel-grid reduction, and sampling contract are preserved in the declared source file",
+      "addedOn": "2026-08-05",
+      "notes": "Screen-authored production replacement for the painted 512px route/hull panel. Broad 4px+ clusters and 19 opaque colors target stable mobile minification. The selected 1254px ImageGen result is retained beside it as hull-panel-pixel-tile-v1-source.png; only the 256px runtime tile is uploaded. The former painting remains available with ?tex=painted and the flat control with ?tex=flat.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "haze",
+          "ink",
+          "rust-orange"
+        ],
+        "checkedBy": "visual reference match plus deterministic 19-color finishing"
+      },
+      "alpha": "opaque"
+    },
+    {
       "id": "weld-seam-strip",
       "path": "assets/generated/textures/weld-seam-strip.png",
       "category": "textures",

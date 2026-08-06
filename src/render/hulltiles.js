@@ -327,6 +327,15 @@ export const DECK_PANEL_TONE = Object.freeze({
   gainTrim: 0.92,
 });
 
+// Hard pixel-cluster edges need less value excursion than the softly painted
+// source to read at the same size. This is a contrast budget, not a blur: the
+// authored grid remains exact while the step edges stay subordinate to the
+// route silhouette on a phone.
+export const PIXEL_DECK_PANEL_TONE = Object.freeze({
+  ...DECK_PANEL_TONE,
+  targetSd: 20,
+});
+
 // Facets deliberately sample different regions/orientations of the large
 // painting. The source is bound with MirroredRepeatWrapping in materials.js,
 // so negative/flipped coordinates and every integer boundary remain exact.
@@ -501,10 +510,48 @@ export function composeDeckPanel(cfg, base, tone = DECK_PANEL_TONE) {
   };
 }
 
+/* A screen-authored pixel material has already paid the resampling cost in
+   the asset pipeline. Preserve that exact grid here: runtime interpolation
+   cannot invent useful detail, and an eager resize would turn the deliberate
+   4px+ clusters back into the fractional-frequency edges this variant exists
+   to avoid. The tone-solve mechanism remains shared with the painted panel;
+   only the hard-edged source gets the smaller contrast budget above, while
+   both variants retain the same average surface value. */
+export function composePixelDeckPanel(base, tone = PIXEL_DECK_PANEL_TONE) {
+  if (!base || !base.data || !base.width || base.width !== base.height) return null;
+  const buf = new Uint8ClampedArray(base.data);
+  const curve = buildToneCurve(luminanceHistogram(buf), tone);
+  if (!curve) return null;
+  applyToneCurve(buf, curve.lut);
+  return {
+    data: buf,
+    width: base.width,
+    height: base.height,
+    curve,
+    layout: {
+      canvasPx: base.width,
+      cellPx: base.width,
+      copies: 1,
+      worldSpan: DECK_PANEL.worldSpan,
+      pixelAuthored: true,
+    },
+  };
+}
+
+// Three explicit comparison modes. The low-frequency pixel material is the
+// production default; the former painting remains one query away for visual
+// review, and unknown values stay on production rather than selecting an
+// experiment or disabling art.
+export function resolveHullTexMode(value) {
+  if (value === 'flat') return 'flat';
+  if (value === 'painted') return 'painted';
+  return 'pixel';
+}
+
 // ?tex=flat is the only thing that turns the pass off (decisions.md entry
-// 16: ON by default, a flag is the A/B). Absence, '', and any other junk all
+// 16: ON by default, flags provide the A/B). Absence, '', and any other junk all
 // resolve to "on" — the same "only an exact opt-out" idiom src/pure/post.js
 // uses for ?bloom=/?aa=, so a mistyped query never silently disables art.
 export function resolveHullTexOn(value) {
-  return value !== 'flat';
+  return resolveHullTexMode(value) !== 'flat';
 }

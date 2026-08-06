@@ -86,7 +86,7 @@ const DRIVE_SCRIPT = resolve(here, 'scripts', 'six-face-spaced-run.json');
 // The same two scroll thresholds T-052's evidence used (facet 0 just open, and
 // the full depth stack), so this rig's frames are comparable with that lane's.
 const ONLY = argOf('--moments', '');            // e.g. --moments near-open
-const EXTRA = argOf('--extra', '');             // extra query on the textured side only,
+const EXTRA = argOf('--extra', '');             // extra query on the production side only,
                                                 //   e.g. --extra light=flat, for an A/B
                                                 //   against something other than ?tex=flat
 const MOMENTS = [
@@ -94,7 +94,8 @@ const MOMENTS = [
   { tag: 'far-depth', scroll: 62, note: 'the whole depth stack in frame' },
 ].filter((m) => !ONLY || ONLY.split(',').includes(m.tag));
 const VARIANTS = [
-  { tag: 'textured', query: '?testapi=1' + (EXTRA ? '&' + EXTRA : '') },
+  { tag: 'pixel', query: '?testapi=1' + (EXTRA ? '&' + EXTRA : '') },
+  { tag: 'painted', query: '?testapi=1&tex=painted' },
   { tag: 'flat', query: '?testapi=1&tex=flat' },
 ];
 
@@ -262,7 +263,7 @@ async function shots() {
    encoder of its own. The pixels are the true-size pixels; only their size on
    the page changes. */
 async function makeCrops(browser) {
-  const files = readdirSync(OUT).filter((f) => /^(near-open|far-depth)-(textured|flat)\.png$/.test(f));
+  const files = readdirSync(OUT).filter((f) => /^(near-open|far-depth)-(pixel|painted|flat)\.png$/.test(f));
   if (!files.length) return;
   const context = await browser.newContext({ viewport: { width: 1000, height: 400 } });
   const page = await context.newPage();
@@ -354,7 +355,7 @@ async function fallbackCheck() {
 function measure() {
   if (!existsSync(OUT)) throw new Error('no captures in ' + OUT + ' — run `shots` first');
   const files = readdirSync(OUT)
-    .filter((f) => /^(near-open|far-depth)-(textured|flat)\.png$/.test(f)).sort();
+    .filter((f) => /^(near-open|far-depth)-(pixel|painted|flat)\.png$/.test(f)).sort();
   const w = (s, n) => String(s).padEnd(n);
   console.log(w('frame', 26) + w('band', 8) + w('mean', 9) + w('sd', 9) +
               w('fine', 9) + 'struct');
@@ -382,7 +383,7 @@ function measure() {
    per-row count of pixels that differ between a textured/flat pair, which is
    how the frozen rectangles above were chosen. Diagnostic only. */
 function bandProfile() {
-  const a = decodePng(join(OUT, 'near-open-textured.png'));
+  const a = decodePng(join(OUT, 'near-open-pixel.png'));
   const b = decodePng(join(OUT, 'near-open-flat.png'));
   const rowsOut = [];
   for (let y = 0; y < a.height; y++) {

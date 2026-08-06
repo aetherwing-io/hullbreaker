@@ -38,8 +38,8 @@ import { CONFIG } from '../config.js';
 import { QUERY } from '../mode.js';
 import { preloadTexture, awaitPreloads } from './preload.js';
 import {
-  hullPieceDims, hullTexRepeat, resolveHullTexOn, composeHullTile, composeDeckPanel,
-  DECK_PANEL, TILE_TONE, SCUTE_TILE_TONE,
+  hullPieceDims, hullTexRepeat, resolveHullTexMode, composeHullTile, composeDeckPanel,
+  composePixelDeckPanel, DECK_PANEL, TILE_TONE, SCUTE_TILE_TONE,
 } from './hulltiles.js';
 
 // The family table itself is data, so it lives in src/pure/post.js where
@@ -218,7 +218,8 @@ export function applySurface(material, family) {
  * draw + blocking pixel read) on every texture this file derives, before
  * the module finishes evaluating and anything downstream can run a frame.  */
 
-export const HULL_TEX_ON = resolveHullTexOn(QUERY.get('tex'));
+export const HULL_TEX_MODE = resolveHullTexMode(QUERY.get('tex'));
+export const HULL_TEX_ON = HULL_TEX_MODE !== 'flat';
 
 const TEX_DIR = new URL('../../assets/generated/textures/', import.meta.url).href;
 
@@ -256,10 +257,10 @@ const rawTex = new Map();
 // operator's own hardware.
 const HULL_MAX_ANISOTROPY = renderer.capabilities.getMaxAnisotropy();
 
-function registerRaw(file, url) {
+function registerRaw(file, url, enabled = HULL_TEX_ON) {
   const slot = { tex: null, ready: false };
   rawTex.set(file, slot);
-  if (!HULL_TEX_ON) return slot;
+  if (!enabled) return slot;
   preloadTexture(url, { anisotropy: HULL_MAX_ANISOTROPY }).then((entry) => {
     if (entry.state === 'ready') { slot.tex = entry.tex; slot.ready = true; }
     else console.warn('HULLBREAKER art: hull texture ' + file + ' did not load (' +
@@ -268,10 +269,13 @@ function registerRaw(file, url) {
   return slot;
 }
 
-// One large production panel source now serves route and limb. Bucket- and
-// facet-specific Texture descriptors are derived after decode, so this is one
-// network/preload request rather than query-string copies of identical bytes.
-registerRaw('hull-panel-tile-v2.png', TEX_DIR + 'hull-panel-tile-v2.png');
+// Exactly one selected production panel source serves route and limb.
+// Bucket- and facet-specific Texture descriptors are derived after decode, so
+// the normal page never downloads the inactive A/B source.
+registerRaw('hull-panel-tile-v2.png', TEX_DIR + 'hull-panel-tile-v2.png',
+  HULL_TEX_MODE === 'painted');
+registerRaw('hull-panel-pixel-tile-v1.png', TEX_DIR + 'hull-panel-pixel-tile-v1.png',
+  HULL_TEX_MODE === 'pixel');
 registerRaw('weld-seam-strip.png', TEX_DIR + 'weld-seam-strip.png');
 
 /* THE BOOT GATE. Same shared settlement T-049's sprite loader and this
@@ -344,7 +348,7 @@ function imageBytes(img) {
 }
 
 // Hand a Node-safe composition to the GPU. Hull and deck sources both pass
-// through this exact upload/warm path, so adding the large route painting
+// through this exact upload/warm path, so adding the selected route material
 // costs one preload and one resident canvas texture — never a first-use hitch.
 function uploadComposed(composed) {
   if (!composed) return null;
@@ -376,9 +380,12 @@ function buildTile(key, base, wear, tone = TILE_TONE) {
     tone));
 }
 
-function buildDeckPanel(base) {
+function buildDeckPanel(base, pixelAuthored = false) {
   if (!base || !base.ready) return null;
-  return uploadComposed(composeDeckPanel(CONFIG, imageBytes(base.tex.image)));
+  const bytes = imageBytes(base.tex.image);
+  return uploadComposed(pixelAuthored
+    ? composePixelDeckPanel(bytes)
+    : composeDeckPanel(CONFIG, bytes));
 }
 
 // preload.js's warm-up trick, repeated for a texture THIS file derives after
@@ -454,7 +461,7 @@ function finishHullTex() {
       curve: built.curve,
     };
   };
-  // The broad buckets are installed from the production route painting below
+  // The broad buckets are installed from the selected production route panel below
   // after its one shared composition is ready. Keep these literal bucket
   // declarations as the degrade contract: a missing panel leaves them flat.
   bucket('hull', null, null);
@@ -475,14 +482,17 @@ function finishHullTex() {
 }
 finishHullTex();
 
-// One continuous route-space painting for level.js. The original 512px crop
-// is used rather than the pre-kaleidoscoped mirror proof: MirroredRepeatWrapping
+// One continuous route-space material for level.js. MirroredRepeatWrapping
 // makes the boundary exact on the GPU while level.js's facet UV transforms
-// keep the strong centre motif from recurring in lockstep.
+// keep the strongest motif from recurring in lockstep.
 let DECK_PANEL_TEX = null;
 function finishDeckPanelTex() {
-  const base = rawTex.get('hull-panel-tile-v2.png');
-  const built = buildDeckPanel(base);
+  const pixelAuthored = HULL_TEX_MODE === 'pixel';
+  const sourceFile = pixelAuthored
+    ? 'hull-panel-pixel-tile-v1.png'
+    : 'hull-panel-tile-v2.png';
+  const base = rawTex.get(sourceFile);
+  const built = buildDeckPanel(base, pixelAuthored);
   if (built) {
     built.tex.wrapS = built.tex.wrapT = THREE.MirroredRepeatWrapping;
     built.tex.repeat.set(1, 1);
@@ -494,6 +504,8 @@ function finishDeckPanelTex() {
       gain: built.curve.gain,
       curve: built.curve,
       layout: built.layout,
+      sourceFile,
+      pixelAuthored,
     };
   }
   if (base && base.ready && base.tex) base.tex.dispose();
@@ -508,8 +520,8 @@ function installProductionLimbPanels() {
     const map = DECK_PANEL_TEX.map.clone();
     map.wrapS = map.wrapT = THREE.MirroredRepeatWrapping;
     map.repeat.set(
-      dims[key][0] / DECK_PANEL.worldSpan,
-      dims[key][1] / DECK_PANEL.worldSpan,
+      dims[key][0] / DECK_PANEL_TEX.layout.worldSpan,
+      dims[key][1] / DECK_PANEL_TEX.layout.worldSpan,
     );
     map.center.set(0.5, 0.5);
     map.needsUpdate = true;
@@ -526,7 +538,7 @@ function installProductionLimbPanels() {
 }
 installProductionLimbPanels();
 
-/* Bind the painted route panel without deciding where it lands. level.js
+/* Bind the selected route panel without deciding where it lands. level.js
    authors UVs in route space, so one source crosses dozens of collision
    tiles and platform faces without restarting. Palette hue remains in vertex
    colors because the uploaded map is grayscale by construction. */
@@ -544,8 +556,11 @@ export function applyDeckPanelTexture(material) {
 export function deckPanelTextureSnapshot() {
   const t = DECK_PANEL_TEX;
   return {
+    mode: HULL_TEX_MODE,
     ready: !!t,
-    sourceReady: !!rawTex.get('hull-panel-tile-v2.png')?.ready,
+    sourceReady: !!rawTex.get(t?.sourceFile)?.ready,
+    sourceFile: t?.sourceFile || null,
+    pixelAuthored: !!t?.pixelAuthored,
     wrapping: t ? 'mirrored-repeat' : 'flat-fallback',
     canvasPx: t ? t.layout.canvasPx : 0,
     worldSpan: t ? t.layout.worldSpan : 0,
@@ -629,6 +644,6 @@ export function hullTextureSnapshot() {
       mean: t.curve.mean, sd: t.curve.sd, contrast: t.curve.contrast,
       linMean: t.curve.linMean, linRelSd: t.curve.linRelSd,
     };
-  return { on: HULL_TEX_ON, files, buckets: Object.keys(HULL_TEX), tone };
+  return { on: HULL_TEX_ON, mode: HULL_TEX_MODE, files, buckets: Object.keys(HULL_TEX), tone };
 }
 if (typeof window !== 'undefined') window.__HB_HULL_TEX = hullTextureSnapshot;

@@ -238,9 +238,15 @@ function judgeArt(snap) {
   if (!snap.hullTex) {
     out.push({ name: 'hull textures (not flat material)', pass: false, detail: 'no __HB_HULL_TEX' });
   } else {
-    const files = Object.entries(snap.hullTex.files);
-    for (const [file, ready] of files) {
-      out.push({ name: `hull texture file: ${file}`, pass: !!ready, detail: ready ? 'ready' : 'not ready' });
+    out.push({
+      name: 'production hull texture mode: pixel',
+      pass: snap.hullTex.mode === 'pixel',
+      detail: `mode=${snap.hullTex.mode || 'unknown'}`,
+    });
+    for (const file of ['hull-panel-pixel-tile-v1.png', 'weld-seam-strip.png']) {
+      const ready = snap.hullTex.files[file];
+      out.push({ name: `hull texture file: ${file}`, pass: ready === true,
+        detail: ready === true ? 'ready' : 'not ready' });
     }
   }
 
