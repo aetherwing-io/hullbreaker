@@ -89,6 +89,16 @@ export async function run(SHARED) {
     for (const j of joints)
       ok(!limbSpanHasGap(groundH, j.apron0, j.apron1),
          'joint ' + j.k + ' apron is solid ground in every column');
+    for (const j of joints) {
+      const landmarks = plan.filter((p) =>
+        (p.kind === 'ridge' || p.kind === 'tendon') &&
+        Math.abs(p.s - j.sMid) <= 1.6 + 1e-9);
+      const expected = j.k === joints.length ? 1 : 3;
+      ok(landmarks.length === expected &&
+         landmarks.every((p) => p.facet === j.k - 1),
+         'joint ' + j.k + ' tall orbit landmarks belong to the departing facet: ' +
+         'they leave at handoff instead of appearing as a cut-off column');
+    }
     ok(limbFacetTone(0, CONFIG).join() === '1,1,1',
        'facet 0 is the untinted reference tone');
   }

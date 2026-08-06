@@ -571,6 +571,12 @@ function markSister(out, facet, cfg, lay) {
 function jointPlan(out, joint, cfg, groundH) {
   const J = cfg.limb.joint;
   const k = joint.k;                            // joint k sits between facets
+  // The tall orbit landmark belongs to the face RIG just left. Assigning it
+  // to the arriving face made the ridge and both tendon uprights appear only
+  // after the camera handoff, where their open ends read as a chopped-off
+  // column behind RIG. Departing ownership keeps them present while the
+  // camera orbits the hinge and culls them at the final detent.
+  const departingFacet = Math.max(0, k - 1);
   const ref = limbGroundRef(groundH, joint.apron0, joint.apron1);
   const s = joint.sMid;
   // The final hinge terminates inside the Crown's authored silhouette.  The
@@ -584,7 +590,8 @@ function jointPlan(out, joint, cfg, groundH) {
   // RIG is on from the facet beyond it.
   const ridgeAbove = crownJoint ? 0.2 : J.ridgeAbove;
   const ridgeH = J.ridgeBelow + ridgeAbove;
-  push(out, 'ridge', k, s, J.ridgeW, ref - J.ridgeBelow + ridgeH / 2, ridgeH,
+  push(out, 'ridge', departingFacet, s, J.ridgeW,
+       ref - J.ridgeBelow + ridgeH / 2, ridgeH,
        J.ridgeDepth, J.ridgeThickness);
   // The exposed joints swell at deck height. The summit joint deliberately
   // omits that box as well: the Crown's painted foundation is its cowl.
@@ -592,9 +599,9 @@ function jointPlan(out, joint, cfg, groundH) {
     push(out, 'collar', k, s, J.collarW, ref + J.collarAt, J.collarH,
          J.collarDepth, J.collarThickness);
   if (!crownJoint) {
-    push(out, 'tendon', k, s - 1.6, J.tendonW, ref + 4, 14,
+    push(out, 'tendon', departingFacet, s - 1.6, J.tendonW, ref + 4, 14,
          J.tendonDepth, J.tendonThickness);
-    push(out, 'tendon', k, s + 1.6, J.tendonW, ref + 4, 14,
+    push(out, 'tendon', departingFacet, s + 1.6, J.tendonW, ref + 4, 14,
          J.tendonDepth, J.tendonThickness);
   }
   // The ramp edge continues THROUGH the chamfer: the two columns that belong to
