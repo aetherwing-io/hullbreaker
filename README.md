@@ -108,8 +108,7 @@ stages) · `?juice=0` (pre-juice, simulation-identical build) · `?audio=0` ·
 
 ### Read these first
 
-New working sessions start with [`docs/HANDOFF.md`](docs/HANDOFF.md). The
-target game is [`docs/DESIGN.md`](docs/DESIGN.md); canon and open lore live
+The target game is [`docs/DESIGN.md`](docs/DESIGN.md); canon and open lore live
 in [`docs/STORY.md`](docs/STORY.md); [`docs/decisions.md`](docs/decisions.md)
 records operator verdicts, which are law. The full engineering tour that
 used to occupy this README is [`docs/ENGINEERING.md`](docs/ENGINEERING.md),

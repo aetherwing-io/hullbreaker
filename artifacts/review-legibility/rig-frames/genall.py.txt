@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""Resumable RIG frame generator: one generation per atlas slot, reference-chained
+to the approved V2 idle frame. Usage: python3 genall.py <slot> [slot...]"""
+import subprocess, sys, time, os
+
+TOOL = "/Users/scottmeyer/Library/Application Support/kimi-desktop/daimon-share/daimon/runtime/kimi-code/home/plugins/managed/image_generation/scripts/image_generation_tool.py"
+REF = "https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2Fb629221dd8b860514091e8961ce42957f0baf3aa063f038d8bc441ed33d954f0?filename=rig-v2-keyed.png&sig=JIWH5UnpLGMhsdNy8a5NjPZx-Ljs_3nRcPleJqav1IM=&t=o"
+OUT = "/tmp/hb-rig/frames"
+os.makedirs(OUT, exist_ok=True)
+
+INVARIANT = (
+"16-bit pixel art game sprite, single character full body, side view facing "
+"right: a sci-fi salvage marine in a fitted off-white armor suit. Tall "
+"slender elongated proportions — long legs half of total height, narrow "
+"torso, small rounded helmet one-sixth of height. Masses: rounded helmet, "
+"chest plate, slim backpack unit, long legs, slim rifle. One focal accent: "
+"glowing amber-orange horizontal visor slit, plus small matching amber "
+"details on the backpack vent and rifle core. Dark charcoal underlayer "
+"visible at joints. Clean flat pixel clusters, limited palette of about 10 "
+"flat colors, strong elegant readable silhouette, subtle two-tone cel "
+"shading only, lit from upper left. Classic 90s arcade run-and-gun sprite "
+"readability. No anti-aliasing, no gradients, no dithering, no noise "
+"texture, no outline glow, no motion blur, no cast shadow, no background, "
+"no text, no watermark. "
+)
+
+POSES = {
+ "contact":      "Pose: mid-stride at the moment the front foot strikes the ground — front leg extended forward heel-down, back leg trailing at full push-off, torso leaning into the run, rifle held level pointing right.",
+ "pass":         "Pose: mid-stride at the passing position — legs scissored directly beneath the body, one knee lifted high, torso at its tallest, rifle held level pointing right.",
+ "flight":       "Pose: mid-stride airborne — both feet off the ground, front knee driving up, back leg extended behind, maximum forward lean, rifle held level pointing right.",
+ "jump-rise":    "Pose: mid-jump ascending — legs tucked beneath the body, torso upright, free arm slightly raised, rifle held level pointing right.",
+ "jump-fall":    "Pose: mid-fall descending — legs extended slightly apart preparing to land, torso upright, rifle held level pointing right.",
+ "aim-right":    "Pose: standing tall, rifle raised to the shoulder pointing directly right, head sighting along the barrel, feet planted shoulder-width.",
+ "aim-up-right": "Pose: standing, rifle raised pointing up-right at 45 degrees, head tilted up sighting along the barrel, slight back-arch.",
+ "aim-up":       "Pose: standing, rifle pointing straight up, head tilted fully back sighting along the barrel, torso vertical.",
+ "aim-down-right":"Pose: standing in a slight crouch, rifle angled down-right at 45 degrees, head lowered sighting along the barrel.",
+ "climb-left-reach": "Pose: climbing a vertical surface seen from the side — body pressed flat facing right, left arm reaching straight up gripping, right arm bent at chest gripping, legs braced apart.",
+ "climb-left-drive": "Pose: climbing a vertical surface — left arm pulling down driving the body upward, right arm reaching up gripping, legs pushing from a low brace.",
+ "climb-right-reach":"Pose: climbing a vertical surface — right arm fully extended overhead gripping, left arm bent at chest gripping, legs braced apart.",
+ "climb-right-drive": "Pose: climbing a vertical surface — right arm pulling down driving the body upward, left arm reaching up gripping, legs mid-push.",
+}
+
+def gen(slot):
+    out = os.path.join(OUT, slot + ".png")
+    if os.path.exists(out) and os.path.getsize(out) > 10000:
+        print(f"[skip] {slot} exists", flush=True); return True
+    desc = INVARIANT + POSES[slot]
+    for attempt in (1, 2, 3):
+        r = subprocess.run(
+            ["python3", TOOL, "generate", "--description", desc,
+             "--ratio", "1:1", "--resolution", "1K", "--background", "transparent",
+             "--reference-image", REF, "--output", out],
+            capture_output=True, text=True)
+        ok = r.returncode == 0 and os.path.exists(out)
+        print(f"[{slot}] attempt {attempt}: {'ok' if ok else (r.stdout + r.stderr)[-200:]}", flush=True)
+        if ok: return True
+        time.sleep(25)
+    return False
+
+slots = sys.argv[1:]
+failed = [s for s in slots if not gen(s)]
+print("FAILED:", failed if failed else "none", flush=True)
+sys.exit(1 if failed else 0)
