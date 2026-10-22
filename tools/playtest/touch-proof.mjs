@@ -576,14 +576,29 @@ async function installRecorder(page) {
     // `downs`: the sim clock at the instant the deck receives each pointerdown
     // (capture phase, same dispatch that emits the key edge), so "ticks after
     // the press" counts from the press, not from a read before CDP latency.
-    window.__T101 = { samples: [], downs: [] };
+    window.__T101 = { samples: [], downs: [], holds: 0 };
     document.getElementById('thumbDeck').addEventListener('pointerdown', () => {
       window.__T101.downs.push(HB.gameMs());
     }, true);
+    // HOLD: freeze the simulation on the exact frame a closed-loop condition
+    // came true, so the harness's touch lands before the world moves on. It
+    // shadows document.hidden (no event dispatched): src/main.js frame()
+    // skips update and draw, while rAF, pointer dispatch and the deck itself
+    // run exactly as ever. The inline freeze watchdog reads the same
+    // visibilityState and resets rather than tripping.
+    window.__T101.hold = () => {
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+      window.__T101.holds++;
+      return true;
+    };
+    window.__T101.release = () => { delete document.hidden; delete document.visibilityState; };
     const rec = () => {
       requestAnimationFrame(rec);
       const p = HB.player, k = HB.keys;
-      window.__T101.samples.push({
+      const list = window.__T101.samples;
+      if (list.length && list[list.length - 1].t === HB.gameMs()) return;   // held frame
+      list.push({
         t: HB.gameMs(), x: p.x, y: p.y, vx: p.vx, vy: p.vy, g: p.grounded, aj: p.airJumpsLeft,
         ow: !!p.onOneWay, du: p.dropUntil, hp: p.hp, lives: p.lives, state: HB.state(),
         k: (k.left ? 1 : 0) | (k.right ? 2 : 0) | (k.up ? 4 : 0) | (k.down ? 8 : 0) | (k.jump ? 16 : 0) | (k.fire ? 32 : 0),
@@ -610,31 +625,37 @@ async function physics(owned, L, view) {
   const F = { x: L.fire.cx, y: L.fire.cy };
   const runSpeed = await page.evaluate(() => HB.CONFIG.player.runSpeed);
 
-  // The sim keeps running while this harness thinks, and RIG runs 9.4 tiles/s:
-  // the drive below is ONLY in-page waits and CDP dispatches — no analysis —
-  // and every number is computed afterwards from the per-tick recording.
-  // (A first version analysed between steps; RIG ran 8 tiles meanwhile and
-  // the double jump overshot the catwalk.)
+  // The sim keeps running while this harness thinks, and RIG runs 9.4 tiles/s.
+  // So every closed-loop decision HOLDS the sim on the exact frame its
+  // condition came true (window.__T101.hold, installed with the recorder),
+  // the touch lands, and the world resumes: positions and timings no longer
+  // depend on host load. Measured before this: a stop meant for x 32.6 landed
+  // anywhere in 33.0-34.7 at load 20-55, once inside the catwalk ladder's grab
+  // range, where stick-down takes the ladder instead of dropping through.
+  // Every number is computed afterwards from the per-tick recording.
   const mark = {};
+  const resume = () => page.evaluate(() => window.__T101.release());
 
   // 1. stick right + JUMP (held): the jump keeps the run
   await T.down(1, S.x, S.y);
   await T.move(1, S.x + 44, S.y);
-  mark.ok1 = await until(page, () => HB.player.grounded && HB.player.vx > 9 && HB.player.x >= 8);
+  mark.ok1 = await until(page, () =>
+    HB.player.grounded && HB.player.vx > 9 && HB.player.x >= 8 && window.__T101.hold());
   await T.down(2, J.x, J.y);
   mark.p1 = await lastDown(page);
+  await resume();
   mark.ok1 = mark.ok1 && await until(page, (t) => HB.gameMs() > t + 60 && HB.player.vy < 0, mark.p1);
   mark.ok1 = mark.ok1 && await until(page, () => HB.player.grounded);
   await T.up(2);
 
-  // 2. stick up-right + FIRE (RIG keeps running: NE still holds Right)
+  // 2. stick up-right + FIRE (RIG keeps running: NE still holds Right).
+  //    Waits key on the DECK's own sector; the sim's keys are what get judged
+  //    (a wait on keys.up would stall a defective deck and desync the route).
   await T.move(1, S.x + 40, S.y - 40);
-  // wait on the DECK's own quantization; the sim's keys are what get judged
-  // (a wait on keys.up would stall a defective deck and desync the route)
-  await until(page, () => __HB_TOUCH().stick.sector === 'NE', null, WAIT_MS);
+  await until(page, () => __HB_TOUCH().stick.sector === 'NE');
   const shots0 = await page.evaluate(() => HB.shotsFired());
   await T.down(3, F.x, F.y);
-  await until(page, (n) => HB.shotsFired() > n, shots0, WAIT_MS);
+  await until(page, (n) => HB.shotsFired() > n && window.__T101.hold(), shots0);
   const fire = await page.evaluate(async () => {
     const pool = (await import('/src/sim/weapons.js')).bulletPool;
     return {
@@ -650,25 +671,32 @@ async function physics(owned, L, view) {
   });
   await T.up(3);
   await T.move(1, S.x + 44, S.y);
+  await until(page, () => __HB_TOUCH().stick.sector === 'E');
+  await resume();
 
-  // 3. a TAPPED jump (press + lift back to back)
-  await until(page, () => HB.player.grounded);
+  // 3. a TAPPED jump: press, three ticks, lift (a quick human tap is 3-6)
+  await until(page, () => HB.player.grounded && window.__T101.hold());
   await T.down(2, J.x, J.y);
-  await T.up(2);
   mark.p3 = await lastDown(page);
+  await resume();
+  await until(page, (t) => HB.gameMs() >= t + 3 * 16.667 - 0.01 && window.__T101.hold(), mark.p3);
+  await T.up(2);
+  await resume();
   await until(page, (t) => HB.gameMs() > t + 60 && HB.player.grounded, mark.p3);
 
   // 4. a second JUMP press airborne is the air jump — and it carries RIG
-  //    onto the first catwalk (x 26-35, y 6.35): from ground at x 18.5-24
-  //    the double jump comes down around x 28-33.
-  mark.ok4 = await until(page, () => HB.player.grounded && HB.player.x >= 18.5);
+  //    onto the first catwalk (x 26-35, y 6.35): from ground at x 18.5 the
+  //    double jump comes down around x 28.
+  mark.ok4 = await until(page, () => HB.player.grounded && HB.player.x >= 18.5 && window.__T101.hold());
   mark.x4 = await page.evaluate(() => HB.player.x);
   await T.down(2, J.x, J.y);
-  await until(page, () => !HB.player.grounded && HB.player.vy <= 0.8);
+  await resume();
+  await until(page, () => !HB.player.grounded && HB.player.vy <= 0.8 && window.__T101.hold());
   await T.up(2);
   await T.down(2, J.x, J.y);
   mark.p4 = await lastDown(page);
-  await until(page, (t) => HB.gameMs() > t + 1 && HB.player.grounded, mark.p4, WAIT_MS);
+  await resume();
+  await until(page, (t) => HB.gameMs() > t + 1 && HB.player.grounded, mark.p4);
   await T.up(2);
   const landing = await page.evaluate(() => ({
     x: +HB.player.x.toFixed(3), y: +HB.player.y.toFixed(3), hp: HB.player.hp,
@@ -677,29 +705,32 @@ async function physics(owned, L, view) {
   const onCatwalk = !!landing.oneWay && Math.abs(landing.y - 6.35) < 0.02;
 
   // 5. on to the solid stretch under the catwalk, stop, then down + JUMP.
-  //    Stop over solid ground (x 32-34, y 2) and short of the rib ladder
-  //    whose foot stands on this catwalk at x 34.5 (grab half-width 0.48):
-  //    stick-down inside [34.02, 34.98] would take the ladder, not the floor.
+  //    Held at x >= 32.6, the stop lands at ~33.0: over solid ground (x
+  //    32-34, y 2) and clear of the rib ladder whose foot stands on this
+  //    catwalk at x 34.5 (grab half-width 0.48 -> [34.02, 34.98]).
   let stand = null;
   if (onCatwalk) {
-    await until(page, () => HB.player.x >= 32.3 || !HB.player.onOneWay, null, WAIT_MS);
+    await until(page, () => (HB.player.x >= 32.6 || !HB.player.onOneWay) && window.__T101.hold());
     await T.up(1);
-    await until(page, () => Math.abs(HB.player.vx) < 0.05, null, WAIT_MS);
+    await resume();
+    await until(page, () => Math.abs(HB.player.vx) < 0.05);
     stand = await page.evaluate(() => ({ x: HB.player.x, y: HB.player.y, ow: !!HB.player.onOneWay }));
     await T.down(1, S.x, S.y);
     await T.move(1, S.x, S.y + 44);
-    await until(page, () => __HB_TOUCH().stick.sector === 'S', null, WAIT_MS);
+    await until(page, () => __HB_TOUCH().stick.sector === 'S' && window.__T101.hold());
     stand.keysAtDrop = await page.evaluate(() => ({ down: HB.keys.down, left: HB.keys.left, right: HB.keys.right }));
     await T.down(2, J.x, J.y);
     mark.p5 = await lastDown(page);
+    await resume();
     await until(page, (t) => HB.gameMs() > t + 80, mark.p5);
     await T.up(2);
-    await until(page, () => HB.player.grounded, null, WAIT_MS);
+    await until(page, () => HB.player.grounded);
     await T.up(1);
   } else {
-    await shot(page, {path: join(OUT, `${view.name}-catwalk-miss.png`) });
+    await shot(page, { path: join(OUT, `${view.name}-catwalk-miss.png`) });
     await T.up(1);
   }
+  measure('holds', await page.evaluate(() => window.__T101.holds));
 
   /* ---------------- analysis, from the per-tick recording ---------------- */
   let s;

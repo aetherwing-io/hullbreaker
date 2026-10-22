@@ -1801,8 +1801,17 @@ turn its own checks red:
    RIG's i-frames so wave-1 contact cannot knock the closed-loop route off
    its line (the first unshielded run went hp 3 -> 1 and missed the catwalk).
    Neither touches the input path.
-6. "Within N ticks" counts fixed 16.667 ms updates after the `gameMs` the page
-   reported when the CDP dispatch resolved.
+6. "Within N ticks" counts fixed 16.667 ms updates after the `gameMs` the
+   deck stamped in its own `pointerdown` (capture phase, same dispatch that
+   emits the key edge).
+8. The live section HOLDS the sim at each closed-loop decision: the in-page
+   predicate that sees the condition (x >= 32.6, the apex, a landing) shadows
+   `document.hidden` on that exact frame, so `frame()` skips `update`, the
+   CDP touch lands, then the shadow is lifted. Without it a stop aimed at x
+   32.6 landed anywhere in 33.0-34.7 under load 20-55 (CDP latency at 9.4
+   tiles/s), once inside the catwalk ladder's grab range, where stick-down
+   takes the ladder instead of dropping through. The deck's input path runs
+   unchanged during a hold; the recorder skips held frames.
 7. Under SwiftShader every boot takes ~1 minute; the whole proof is slow and
    timing-sensitive checks (legacy's 170 ms tap) are retried, never loosened.
 
