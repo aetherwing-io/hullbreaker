@@ -4,7 +4,10 @@
 //   node tools/rig-grip/compose.mjs --before <capture dir>[,<dir>...]
 //     --after <capture dir>[,<dir>...] --out <dir> [--view desktop]
 //     [--guns RSLHF] [--scales 1,4] [--rows stand,run-contact,...]
-//     [--aims right,up,...] [--facings 1,-1] [--name <file prefix>]
+//     [--aims right,up,...] [--facings 1,-1] [--name <file prefix>] [--stack-guns]
+//
+// --stack-guns puts every requested weapon in ONE sheet (weapon-major row
+// groups) instead of one sheet per weapon; handy for short rows like crouch.
 //
 // Several capture dirs per side are merged in order (a later dir's rows and
 // cells replace an earlier one's), so a re-shot row or the ?crouch=1 row can
@@ -40,6 +43,7 @@ const VIEW = arg('view', 'desktop');
 const GUNS = arg('guns', 'RSLHF').split('');
 const SCALES = arg('scales', '1,4').split(',').map(Number);
 const NAME = arg('name', `${VIEW}`);
+const STACK = process.argv.includes('--stack-guns');
 const ALL_AIMS = ['right', 'up-right', 'up', 'up-left', 'left', 'down-left', 'down', 'down-right'];
 const ALL_ROWS = ['stand', 'run-contact', 'run-pass', 'run-flight', 'air-rise', 'air-fall',
   'climb-0', 'climb-1', 'climb-2', 'climb-3', 'wall', 'hit-iframe', 'respawn', 'crouch'];
@@ -72,12 +76,13 @@ const worst = (cells, field) => {
 
 const written = [];
 await withIsolatedBrowser(resolve(import.meta.dirname, '../..'), async ({ newPage }) => {
-  for (const gun of GUNS) for (const scale of SCALES) {
+  for (const sheetGuns of (STACK ? [GUNS] : GUNS.map((g) => [g]))) for (const scale of SCALES) {
+    const gunTag = sheetGuns.join('');
     const cols = [];
     for (const facing of facings) for (const aim of aims) cols.push([facing, aim]);
     const head = cols.map(([f, a]) => `<th>${a}<br>${f > 0 ? 'face R' : 'face L'}</th>`).join('');
     const body = [];
-    for (const row of rows) {
+    for (const gun of sheetGuns) for (const row of rows) {
       for (const side of sides) {
         const cells = cols.map(([facing, aim]) => side.view.cells[key(row, aim, facing, gun)]);
         const fg = worst(cells, 'fistToGripCssPx');
@@ -92,7 +97,8 @@ await withIsolatedBrowser(resolve(import.meta.dirname, '../..'), async ({ newPag
           tds.push(`<td><img data-s="${scale}" src="data:image/png;base64,${png.toString('base64')}">${note}</td>`);
         }
         const frame = side.view.rows[row]?.frame || '';
-        body.push(`<tr class="${side.tag.toLowerCase()}"><th class="rh"><b>${row}</b> <small>${frame}</small><br>` +
+        body.push(`<tr class="${side.tag.toLowerCase()}"><th class="rh"><b>${row}</b> <small>${frame}</small>` +
+          `${STACK ? ` <b>weapon ${gun}</b>` : ''}<br>` +
           `<span class="t">${side.tag}</span><br><small>worst fist-grip ${fmt(fg)} px<br>` +
           `worst muzzle-spawn ${fmt(ms)} px</small></th>${tds.join('')}</tr>`);
       }
@@ -110,7 +116,7 @@ await withIsolatedBrowser(resolve(import.meta.dirname, '../..'), async ({ newPag
         .t{font-weight:bold} tr.before .t{color:#ff8f70} tr.after .t{color:#8fe3a0}
         img{display:block;margin:0 auto;image-rendering:pixelated} .n{font-size:10px;color:#cfd8dc}
         </style><h1>RIG weapon hold // ${VIEW} ${v.viewport.width}x${v.viewport.height} DPR ${v.dpr}
-        // weapon ${gun} // ${scale === 1 ? 'TRUE SIZE (1 capture px = 1 sheet px)'
+        // weapon${sheetGuns.length > 1 ? 's' : ''} ${sheetGuns.join(' ')} // ${scale === 1 ? 'TRUE SIZE (1 capture px = 1 sheet px)'
           : `${scale}x nearest-neighbour of true size`}</h1>
         <p>BEFORE: ${sides[0].label}. AFTER: ${sides[1].label}. Every pose row shows BEFORE above AFTER.
         Numbers are LIVE measurements from the captured frame (css px at this viewport):
@@ -122,7 +128,7 @@ await withIsolatedBrowser(resolve(import.meta.dirname, '../..'), async ({ newPag
         i.complete ? 0 : new Promise((r) => { i.onload = r; }))).then(() => {
         for (const i of document.images) i.style.width = `${i.naturalWidth * Number(i.dataset.s)}px`;
       }));
-      const file = resolve(OUT, `${NAME}-${gun}-before-after-${scale}x.png`);
+      const file = resolve(OUT, `${NAME}-${gunTag}-before-after-${scale}x.png`);
       await page.page.screenshot({ path: file, fullPage: true, timeout: 300000 });
       written.push(file);
       console.log(file);
