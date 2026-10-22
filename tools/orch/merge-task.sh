@@ -29,6 +29,11 @@ set -euo pipefail
 # Declared here, not inside the smoke block: `set -u` would abort on the merge
 # message below when --skip-smoke leaves the block unentered.
 SMOKE_FLAKES=''
+# Optional smaller smoke viewport for GPU-less hosts (SwiftShader renders the
+# shipped scene at ~1 fps at 1280x800 under load). The smoke criterion is
+# boot + full deterministic schedule + no page errors, none of which depends
+# on canvas size. Unset = the script's own viewport, exactly as before.
+SMOKE_VIEWPORT="${HB_SMOKE_VIEWPORT:-}"
 
 TASK="${1:?usage: tools/orch/merge-task.sh <task-id> [--skip-smoke] [--accept-stale-verdicts]}"
 SKIP_SMOKE=0
@@ -41,6 +46,11 @@ for arg in "$@"; do
     *) printf 'merge-task: unknown flag %s\n' "$arg" >&2; exit 2 ;;
   esac
 done
+
+# Host knobs for a GPU-less container, if tools/orch/cloud-setup.sh wrote them
+# (slower boot budgets, smaller smoke canvas, browser perf probe skipped).
+# Absent on a normal workstation, where nothing changes.
+[ -f "$HOME/.hullbreaker-host.env" ] && . "$HOME/.hullbreaker-host.env"
 
 BRANCH="task/$TASK"
 MAIN_ROOT="$(git rev-parse --show-toplevel)"
@@ -137,9 +147,9 @@ if [ "$SKIP_SMOKE" = "0" ]; then
     for attempt in 1 2 3; do
       printf '== smoke: %s (attempt %d/3)\n' "$script" "$attempt"
       if (cd "$MAIN_ROOT/tools/playtest" && node run.mjs "scripts/$script" \
-            --deterministic --max-runtime-ms "$budget" \
+            --deterministic --max-runtime-ms "$budget" ${SMOKE_VIEWPORT:+--viewport "$SMOKE_VIEWPORT"} \
             --base-url "http://127.0.0.1:$PORT" --out "$out") \
-         && grep -q '"result": *"completed"' "$out/report.json"; then
+         && node "$MAIN_ROOT/tools/orch/smoke-verdict.mjs" "$out/report.json"; then
         result=completed
         [ "$attempt" -gt 1 ] && {
           printf '== smoke NOTE: %s completed on attempt %d of 3 — %d earlier run(s) did not.\n' \

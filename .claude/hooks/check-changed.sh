@@ -19,6 +19,9 @@ case "$file" in
   *) exit 0 ;;
 esac
 
+# GPU-less container knobs (tools/orch/cloud-setup.sh), when present.
+[ -f "$HOME/.hullbreaker-host.env" ] && . "$HOME/.hullbreaker-host.env"
+
 # Run the check in the checkout that owns the edited file (worktree-safe).
 root="$(git -C "$(dirname "$file")" rev-parse --show-toplevel 2>/dev/null)" || exit 0
 [ -f "$root/tools/pathcheck.mjs" ] || exit 0
@@ -37,7 +40,10 @@ root="$(git -C "$(dirname "$file")" rev-parse --show-toplevel 2>/dev/null)" || e
 PATHCHECK_TIMEOUT_S=120
 out="$(
   cd "$root" || exit 0
-  node tools/pathcheck.mjs 2>&1 &
+  # The per-edit hook never boots a browser: the perf-probe domain alone takes
+  # minutes (and >120 s on a loaded host), and a hook run killed mid-probe
+  # leaves its Chromium running. The merge gate still runs it on GPU hosts.
+  HB_GATE_SKIP_BROWSER_PROBE=1 node tools/pathcheck.mjs 2>&1 &
   pc=$!
   # >/dev/null is load-bearing, not tidiness: the watchdog inherits this
   # subshell's stdout, and command substitution blocks until EVERY holder of

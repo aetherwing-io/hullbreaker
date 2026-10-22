@@ -101,6 +101,17 @@ Two traps this one walked into, both worth knowing:
 
 ## Evidence standard
 
+**Read `decisions.md` entry 21 first (2026-10-22).** The operator: *"the
+tests may be misleading or not valuable too, i had no idea what i was
+doing."* The legacy pathcheck suite is unproven: a green gate is not
+evidence that anything works or looks right. A legacy assertion that pins an
+implementation detail (source text, an exact constant no decision protects, a
+retired design) may be rewritten or deleted when it blocks a real improvement
+— list each one with its reason in your report. Assertions guarding
+player-observable behaviour or a hard rule (boot, page errors, determinism,
+layer purity, reachability, softlocks, the movement envelope, frame budget,
+safe asset degradation) are never weakened.
+
 This project's signature failure is **an assertion whose subject is the
 author's intent rather than the observable result** — a gate that reports green
 while the thing it guards is broken (see I-019, I-031, and the four gate holes
