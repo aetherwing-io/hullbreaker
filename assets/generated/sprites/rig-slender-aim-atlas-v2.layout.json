@@ -26,6 +26,10 @@
     "changedShare": 0.00705,
     "meanNeutralization": 0.4066
   },
+  "armSurgery": {
+    "version": 1,
+    "tool": "tools/assets/rig-arm-surgery.mjs"
+  },
   "poses": [
     {
       "name": "right",
@@ -40,18 +44,28 @@
       "alpha": {
         "x": 132,
         "y": 297,
-        "w": 248,
+        "w": 236,
         "h": 429
       },
       "guard": {
         "left": 132,
         "top": 297,
-        "right": 132,
+        "right": 144,
         "bottom": 298
       },
       "paintedPixels": 42394,
       "partialPixels": 1474,
-      "rejectedComponents": []
+      "rejectedComponents": [],
+      "armSurgery": {
+        "erased": 3661,
+        "patched": 2334
+      },
+      "alphaBeforeSurgery": {
+        "x": 132,
+        "y": 297,
+        "w": 248,
+        "h": 429
+      }
     },
     {
       "name": "up-right",
@@ -77,7 +91,11 @@
       },
       "paintedPixels": 45825,
       "partialPixels": 1511,
-      "rejectedComponents": []
+      "rejectedComponents": [],
+      "armSurgery": {
+        "erased": 0,
+        "patched": 0
+      }
     },
     {
       "name": "up",
@@ -103,7 +121,11 @@
       },
       "paintedPixels": 46983,
       "partialPixels": 1350,
-      "rejectedComponents": []
+      "rejectedComponents": [],
+      "armSurgery": {
+        "erased": 0,
+        "patched": 0
+      }
     },
     {
       "name": "down-right",
@@ -118,18 +140,28 @@
       "alpha": {
         "x": 1629,
         "y": 333,
-        "w": 326,
+        "w": 258,
         "h": 357
       },
       "guard": {
         "left": 93,
         "top": 333,
-        "right": 93,
+        "right": 161,
         "bottom": 334
       },
       "paintedPixels": 41088,
       "partialPixels": 1375,
-      "rejectedComponents": []
+      "rejectedComponents": [],
+      "armSurgery": {
+        "erased": 5840,
+        "patched": 0
+      },
+      "alphaBeforeSurgery": {
+        "x": 1629,
+        "y": 333,
+        "w": 326,
+        "h": 357
+      }
     }
   ]
 }

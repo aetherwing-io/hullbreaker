@@ -64,6 +64,9 @@ import {
   RIG_SPRITE_H, RIG_SPRITE_PATH,
   RIG_WEAPON_ART, RIG_WEAPON_ATLAS_H, RIG_WEAPON_ATLAS_PATH, RIG_WEAPON_ATLAS_W,
   SPRITE_H, SPRITE_W, TORSO, VISOR,
+  RIG_ARM_RIGS, RIG_ARM_SEGMENTS, RIG_CLIMB_BODY_DROP, RIG_FAR_ARM_DEPTH,
+  RIG_GUN_DEPTH, RIG_GUN_FAMILY_HEIGHT_GAIN, RIG_NEAR_ARM_DEPTH,
+  rigArmPose, rigArmSegmentCorners, rigStationaryAimFrame, rigWeaponPlacement,
 } from '../pure/rig.js';
 import { awaitPreloads, preloadTexture } from './preload.js';
 import { camera, renderer, scene } from './scene.js';
@@ -217,8 +220,10 @@ function climbSpriteGeometry(spec) {
   const w = spec.trimW * RIG_CLIMB_WORLD_PER_PIXEL;
   const h = spec.trimH * RIG_CLIMB_WORLD_PER_PIXEL;
   const geo = new THREE.PlaneGeometry(w, h);
+  // T-103: the extended climb beats sit RIG_CLIMB_BODY_DROP lower so the free
+  // arm can hold the weapon at the sim's hip socket (see src/pure/rig.js).
   geo.translate((spec.trimW / 2 - spec.anchorX) * RIG_CLIMB_WORLD_PER_PIXEL,
-    (h - RIG_SPRITE_H) / 2, 0);
+    (h - RIG_SPRITE_H) / 2 - RIG_CLIMB_BODY_DROP, 0);
   return applySpriteUnderside(
     applyAtlasUv(geo, spec, RIG_CLIMB_ATLAS_W, RIG_CLIMB_ATLAS_H), 0.88);
 }
@@ -266,6 +271,8 @@ const aimFrameSlots = Object.fromEntries(Object.entries(RIG_AIM_FRAMES).map(([na
 const climbFrameSlots = RIG_CLIMB_FRAMES.map((spec) => ({
   ready: false, tex: null, error: null, spec,
 }));
+// T-103: the two re-poseable arm strips live in the body atlas (cell 6).
+const armSlot = { ready: false, tex: null, error: null };
 const weaponArtSlots = Object.fromEntries(Object.entries(RIG_WEAPON_ART).map(([letter, spec]) => [letter, {
   ready: false, tex: null, error: null, spec,
 }]));
@@ -280,6 +287,7 @@ if (!RIG_FORCE_CANVAS) {
       idleGunlessSlot.error = entry.error || entry.state;
       for (const slot of Object.values(runFrameSlots)) slot.error = idleGunlessSlot.error;
       for (const slot of Object.values(airFrameSlots)) slot.error = idleGunlessSlot.error;
+      armSlot.error = idleGunlessSlot.error;
       console.warn('RIG body atlas did not load (' + idleGunlessSlot.error +
         '); showing the procedural fallback instead.');
       return;
@@ -294,6 +302,8 @@ if (!RIG_FORCE_CANVAS) {
       slot.tex = entry.tex;
       slot.ready = true;
     }
+    armSlot.tex = entry.tex;
+    armSlot.ready = true;
     spriteReady = true;
     actionReady = aimReady;
   });
@@ -444,14 +454,11 @@ const GUN_GEOMETRIES = {
 // path is allowed to turn the held weapon back into a featureless rectangle.
 const fallbackGunGeo = GUN_GEOMETRIES.R;
 
-// The painted sources were authored as detailed inventory art. At the shipped
-// camera their raw cross-sections collapsed to five nearly identical stubs.
-// These restrained, family-specific bore-axis gains preserve RIG's slender
-// body while making the twin-bore, crystal rail, guided fins, and fuel nozzle
-// distinguishable in motion. X is never scaled: the shared muzzle stays exact.
-const GUN_FAMILY_HEIGHT_GAIN = Object.freeze({
-  R: 1.34, S: 1.62, L: 1.46, H: 1.58, F: 1.66,
-});
+// Family-specific bore-axis gains (readability at FAR; X is never scaled, so
+// the shared muzzle stays exact). The table lives in src/pure/rig.js since
+// T-103: the grip a fist must hold moves with it, so the arm solve and this
+// mesh read one number.
+const GUN_FAMILY_HEIGHT_GAIN = RIG_GUN_FAMILY_HEIGHT_GAIN;
 
 // One fixed overlay mesh swaps among five coarse family profiles. The painted
 // atlas keeps all close detail; these broad plates are the few pixels that
@@ -510,7 +517,7 @@ const TRAIT_GEOMETRIES = Object.freeze({
   ]),
 });
 
-gunGroup.position.set(0, 1.05, 0.25);
+gunGroup.position.set(0, 1.05, RIG_GUN_DEPTH);
 const gunAssembly = new THREE.Group();
 const gun = new THREE.Mesh(
   weaponArtSlots.R.ready ? GUN_ART_GEOMETRIES.R : GUN_GEOMETRIES.R,
@@ -551,6 +558,82 @@ const traitMeshes = Object.freeze(Object.fromEntries(
 ));
 gunGroup.add(gunAssembly);
 rig.add(gunGroup);
+
+/* T-103 — RIG'S HANDS. Every painted body frame had its fists at chest or
+   shoulder height while the simulation fires from a hip-height hand socket,
+   so the weapon floated under the fists in every pose. The painted arms are
+   now erased from the frames (tools/assets/rig-arm-surgery.mjs) and RIG's own
+   near arm, cut 1:1 from the aim painting into an upper-arm strip and a
+   forearm+fist strip (body atlas cell 6), is re-posed every frame by
+   rigArmPose() so the fist sits on the weapon's painted grip.
+   Two meshes, two layers: `armFar` draws between body and weapon (support
+   hand, or the gun hand on the climb beats where the painted near arm stays
+   on the rung); `armNear` draws over the weapon. Each holds two quads with
+   fixed UVs; sync() rewrites eight vertex positions in place and allocates
+   nothing. Arms are siblings of the body (outside the crouch squash and the
+   facing mirror) because rigArmPose already applies both. */
+function armGeometry() {
+  const geo = new THREE.BufferGeometry();
+  const uv = new Float32Array(16);
+  let o = 0;
+  for (const seg of [RIG_ARM_SEGMENTS.upper, RIG_ARM_SEGMENTS.fore]) {
+    const u0 = seg.x / RIG_BODY_ATLAS_W, u1 = (seg.x + seg.w) / RIG_BODY_ATLAS_W;
+    const v1 = 1 - seg.y / RIG_BODY_ATLAS_H, v0 = 1 - (seg.y + seg.h) / RIG_BODY_ATLAS_H;
+    uv.set([u0, v1, u1, v1, u0, v0, u1, v0], o);   // TL, TR, BL, BR
+    o += 8;
+  }
+  const normal = new Float32Array(24);
+  for (let i = 0; i < 8; i++) normal[i * 3 + 2] = 1;
+  geo.setAttribute('position',
+    new THREE.BufferAttribute(new Float32Array(24), 3).setUsage(THREE.DynamicDrawUsage));
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  geo.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
+  geo.setIndex([0, 2, 1, 2, 3, 1, 4, 6, 5, 6, 7, 5]);
+  return geo;
+}
+const armMaterial = new THREE.MeshStandardMaterial({
+  map: armSlot.ready ? armSlot.tex : null,
+  emissiveMap: armSlot.ready ? armSlot.tex : null,
+  emissive: PAL.player, emissiveIntensity: 0,
+  transparent: true, alphaTest: 0.015, side: THREE.DoubleSide,
+  forceSinglePass: true, fog: false,
+});
+const [armFar, armNear] = [
+  ['rig-arm-far', RIG_FAR_ARM_DEPTH, 2],
+  ['rig-arm-near', RIG_NEAR_ARM_DEPTH, 7],
+].map(([name, z, order]) => {
+  const mesh = new THREE.Mesh(armGeometry(), armMaterial);
+  mesh.name = name;
+  mesh.position.z = z;
+  mesh.renderOrder = order;
+  mesh.frustumCulled = false;     // vertices move every frame; RIG is always framed
+  mesh.visible = false;
+  rig.add(mesh);
+  return mesh;
+});
+const _armPose = {};
+const _armCorners = new Float32Array(8);
+const _gunPlacement = {};
+let armsShown = false;
+let armFarRole = 'none';
+let armNearRole = 'none';
+
+function writeArm(mesh, arm, pose) {
+  const pos = mesh.geometry.getAttribute('position');
+  const arr = pos.array;
+  rigArmSegmentCorners(RIG_ARM_SEGMENTS.upper, arm.sx, arm.sy, arm.ex, arm.ey,
+    pose.thick, pose.mirror, _armCorners, 0);
+  for (let i = 0; i < 4; i++) {
+    arr[i * 3] = _armCorners[i * 2]; arr[i * 3 + 1] = _armCorners[i * 2 + 1]; arr[i * 3 + 2] = 0;
+  }
+  rigArmSegmentCorners(RIG_ARM_SEGMENTS.fore, arm.ex, arm.ey, arm.hx, arm.hy,
+    pose.thick, pose.mirror, _armCorners, 0);
+  for (let i = 0; i < 4; i++) {
+    arr[12 + i * 3] = _armCorners[i * 2]; arr[12 + i * 3 + 1] = _armCorners[i * 2 + 1];
+    arr[12 + i * 3 + 2] = 0;
+  }
+  pos.needsUpdate = true;
+}
 
 scene.add(rig);
 
@@ -676,12 +759,10 @@ function syncGunIdentity() {
   }
 }
 
+// T-103: two stances survive the arm removal (src/pure/rig.js
+// RIG_STATIONARY_STANCE); the hands, not the torso, now carry the elevation.
 function stationaryAimFrame(x = player.aim.x, y = player.aim.y) {
-  const ax = Math.abs(x), ay = y;
-  if (ay > 0.82) return 'aim-up';
-  if (ay > 0.18) return 'aim-up-right';
-  if (ay < -0.18) return 'aim-down-right';
-  return 'aim-right';
+  return rigStationaryAimFrame(x, y);
 }
 
 function eightWayAimSector(x = player.aim.x, y = player.aim.y) {
@@ -896,6 +977,10 @@ function sync() {
   // The gun is a sibling of the crouch-scaled body and stays rooted on one
   // hand socket. Its local muzzle radius is the same CONFIG value used by
   // sim/player.js, so vertical aim cannot drag the receiver into RIG's legs.
+  // Mobile readability enlarges the weapon about its muzzle endpoint, not its
+  // hand pivot, so the drawn bore stays on the exact simulation spawn point.
+  // T-103: every number comes from rigWeaponPlacement(), the same function
+  // the arm solve uses to find the grip, so hand and weapon cannot drift.
   syncGunIdentity();
   const ax = player.aim.x, ay = player.aim.y;
   lastAimX = ax;
@@ -904,20 +989,43 @@ function sync() {
   lastSimMuzzleX = ax * RIG_GUN_MUZZLE_X;
   lastSimMuzzleY = player.muzzleY + ay * RIG_GUN_MUZZLE_X;
   gunGroup.visible = foldGain > 0.14;
-  gunGroup.position.set(0, player.muzzleY, 0.25);
-  gunGroup.rotation.z = lastAimAngle;
-  const mirrorY = ax < -0.1 || (Math.abs(ax) <= 0.1 && player.facing < 0) ? -1 : 1;
-  // Mobile readability enlarges the weapon about its muzzle endpoint, not its
-  // hand pivot. The compensating translation keeps the drawn bore on the
-  // exact simulation spawn point while the receiver gains enough pixels to
-  // remain distinguishable beside the enlarged body.
-  gunAssembly.scale.set(portraitGain,
-    mirrorY * gunFamilyHeightGain * portraitGain, 1);
   const recoilAge = gameMs - lastShotAt;
   const recoilT = recoilAge >= 0 && recoilAge < RIG_RECOIL_MS
     ? 1 - recoilAge / RIG_RECOIL_MS : 0;
   lastRecoil = RIG_RECOIL_TILES * recoilT * recoilT;
-  gunAssembly.position.x = RIG_GUN_MUZZLE_X * (1 - portraitGain) - lastRecoil;
+  rigWeaponPlacement(ax, ay, player.facing, player.muzzleY, gunFamilyHeightGain,
+    portraitGain, lastRecoil, _gunPlacement);
+  gunGroup.position.set(0, _gunPlacement.pivotY, RIG_GUN_DEPTH);
+  gunGroup.rotation.z = _gunPlacement.angle;
+  gunAssembly.scale.set(_gunPlacement.scaleX, _gunPlacement.scaleY, 1);
+  gunAssembly.position.x = _gunPlacement.offsetX;
+
+  // T-103: put the hands on the weapon. The solve runs on the frame actually
+  // shown (a failed climb strip shows a locomotion frame, which has its own
+  // rig). No arms over the procedural silhouette or without the strip atlas.
+  const armRig = RIG_ARM_RIGS[shownBodyFrame];
+  armsShown = !!armRig && armSlot.ready && !canvasFallback && spriteMesh.visible &&
+    gunGroup.visible;
+  if (armsShown) {
+    if (armMaterial.map !== armSlot.tex) {
+      armMaterial.map = armSlot.tex;
+      armMaterial.emissiveMap = armSlot.tex;
+      armMaterial.needsUpdate = true;
+    }
+    rigArmPose(shownBodyFrame, faceX, player.facing, ax, ay, currentWeapon, player.muzzleY,
+      portraitGain, squash, lastRecoil, gunUsesArt, _armPose);
+    const gunInFar = _armPose.gunLayer === 'far';
+    writeArm(gunInFar ? armFar : armNear, _armPose.gunArm, _armPose);
+    if (_armPose.supportArm) writeArm(armFar, _armPose.supportArm, _armPose);
+    armNearRole = gunInFar ? 'none' : 'gun';
+    armFarRole = gunInFar ? 'gun' : (_armPose.supportArm ? 'support' : 'none');
+  } else {
+    armNearRole = 'none';
+    armFarRole = 'none';
+  }
+  armNear.visible = armNearRole !== 'none';
+  armFar.visible = armFarRole !== 'none';
+  armMaterial.opacity = foldGain;
 
   // OVERDRIVE lives on the machine, not only in a HUD label. Charge first
   // warms the chassis locally, WARM holds a low mechanical glow, and BREAKING
@@ -951,6 +1059,8 @@ function sync() {
   fallbackMesh.material.emissiveIntensity = bodyHeat;
   spriteMesh.material.emissive.setHex(heatColor);
   spriteMesh.material.emissiveIntensity = bodyHeat;
+  armMaterial.emissive.setHex(heatColor);
+  armMaterial.emissiveIntensity = bodyHeat;
   _gunDisplayTint.copy(_rollTint);
   if (notch >= 2) _gunDisplayTint.lerp(_gunTraitColor.setHex(PAL.muzzle), 0.72);
   else if (notch === 1) _gunDisplayTint.lerp(_gunTraitColor.setHex(PAL.gun), 0.42);
@@ -1079,8 +1189,30 @@ export function rigVisualSnapshot() {
     bakedGunMasked: false,
     rectangleGunFallback: false,
     jumpExhaust: false,
-    fixedMeshes: 10,
-    maxVisibleDraws: 6,
+    // T-103: the hands. Rig-local tiles (same space as `muzzle`). `gunHand` is
+    // where the solved fist centre was put; `grip` is where the weapon's
+    // painted grip centroid is drawn. tools/rig-grip/capture.mjs re-derives
+    // both from the live mesh matrices instead of trusting these numbers.
+    hands: armsShown ? {
+      shown: true,
+      frame: _armPose.frame,
+      gunLayer: _armPose.gunLayer,
+      nearRole: armNearRole,
+      farRole: armFarRole,
+      grip: { x: _armPose.grip[0], y: _armPose.grip[1] },
+      gunHand: { x: _armPose.mirror * _armPose.gunArm.hx, y: _armPose.gunArm.hy },
+      gunShoulder: { x: _armPose.mirror * _armPose.gunArm.sx, y: _armPose.gunArm.sy },
+      gunElbow: { x: _armPose.mirror * _armPose.gunArm.ex, y: _armPose.gunArm.ey },
+      stretch: +_armPose.gunArm.stretch.toFixed(4),
+      supportStretch: _armPose.supportArm ? +_armPose.supportArm.stretch.toFixed(4) : null,
+      supportHand: _armPose.supportArm
+        ? { x: _armPose.mirror * _armPose.supportArm.hx, y: _armPose.supportArm.hy } : null,
+      mirror: _armPose.mirror,
+      gunUsesArt,
+    } : { shown: false, frame: shownBodyFrame, nearRole: 'none', farRole: 'none' },
+    gunDepth: gunGroup.position.z,
+    fixedMeshes: 12,
+    maxVisibleDraws: 8,
   };
 }
 
