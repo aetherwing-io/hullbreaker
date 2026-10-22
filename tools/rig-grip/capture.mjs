@@ -29,9 +29,12 @@
 // It works against pre-T-103 trees too (`--root` an exported base commit),
 // which is how the BEFORE sheets and numbers in reports/tasks/T-103 were made.
 // Honesty limits: SwiftShader is slow (budget minutes per viewport); the hit
-// / i-frame row stages a real damagePlayer() and photographs both blink
-// phases; "death" is the respawn drop that loseLife() produces (the game has
-// no death pose).
+// / i-frame row stages a real damagePlayer() and the respawn row a real
+// respawn(), and both photograph the VISIBLE blink phase (the hidden phase
+// hides body, arms and weapon together); "death" is the respawn drop (the game
+// has no death pose). --firing resumes the real loop until a shot is
+// simulated, pauses on that frame, and writes the full viewport plus a
+// 12 x 8 tile window around RIG for each direction, and a firing sheet.
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -367,20 +370,27 @@ await withIsolatedBrowser(ROOT, async ({ baseUrl, newPage }) => {
           await page.waitForFunction(() => window.HB.state() === 'PAUSED', null, { timeout: 60000 });
           const m = await page.evaluate(() => window.__RIG_GRIP__.measure());
           const bullets = await page.evaluate(() => window.__RIG_GRIP__.liveBullets());
-          // a wide in-situ window around RIG: 2.4x the matrix crop
+          // let the paused loop draw the held shot, then photograph it twice:
+          // the whole phone viewport, and a 12 x 8 tile window around RIG
+          await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+          const shotFile = `${viewName}-firing-${aimName}-viewport.png`;
+          await page.screenshot({ path: resolve(OUT, shotFile), timeout: 300000 });
           const [tl, br] = m.crop;
           const cx = (tl.x + br.x) / 2, cy = (tl.y + br.y) / 2;
-          const w = (br.x - tl.x) * 2.4, h = (br.y - tl.y) * 1.6;
-          const grab = await page.evaluate(([x, y, ww, hh]) => window.__RIG_GRIP__.grab(x, y, ww, hh),
-            [Math.floor(cx - w / 2), Math.floor(cy - h * 0.55), Math.ceil(w), Math.ceil(h)]);
+          const vp = page.viewportSize();
+          const w = 12 * m.pxPerTile, h = 8 * m.pxPerTile;
+          const x0 = Math.max(0, Math.floor(cx - w / 2)), y0 = Math.max(0, Math.floor(cy - h * 0.6));
+          const clip = { x: x0, y: y0, width: Math.min(vp.width - x0, Math.ceil(w)),
+            height: Math.min(vp.height - y0, Math.ceil(h)) };
           const file = `${viewName}-firing-${aimName}.png`;
-          writeRgba8Png(resolve(OUT, file), grab.w, grab.h, Buffer.from(grab.b64, 'base64'));
-          vr.firing[aimName] = { file, fired, frame: m.frame, weapon: m.weapon, hands: m.hands,
+          await page.screenshot({ path: resolve(OUT, file), clip, timeout: 300000 });
+          vr.firing[aimName] = { file, viewportFile: shotFile, clipCss: clip, fired, frame: m.frame,
+            weapon: m.weapon, hands: m.hands,
             muzzleToSpawnCssPx: m.muzzlePx && m.spawnPx
               ? +Math.hypot(m.muzzlePx.x - m.spawnPx.x, m.muzzlePx.y - m.spawnPx.y).toFixed(3) : null,
             fistToGripCssPx: m.fistPx && m.gripPx
               ? +Math.hypot(m.fistPx.x - m.gripPx.x, m.fistPx.y - m.gripPx.y).toFixed(3) : null,
-            bullets, grabPx: [grab.w, grab.h] };
+            bullets };
           console.log(JSON.stringify({ view: viewName, firing: aimName, ...vr.firing[aimName], hands: undefined }));
         }
       }
@@ -461,6 +471,42 @@ await withIsolatedBrowser(ROOT, async ({ baseUrl, newPage }) => {
         } finally {
           await sheetPage.close();
         }
+      }
+    }
+  }
+
+  // firing sheet: the held shots side by side, at true device size and 4x
+  for (const [viewName, vr] of Object.entries(FIRING ? report.views : {})) {
+    for (const scale of [1, 4]) {
+      const cells = [];
+      for (const [aimName, f] of Object.entries(vr.firing || {})) {
+        const png = await readFile(resolve(OUT, f.file));
+        cells.push(`<td><img data-s="${scale}" src="data:image/png;base64,${png.toString('base64')}">` +
+          `<div class="n">aim ${aimName} · frame ${f.frame} · weapon ${f.weapon} · ${f.bullets.length} live shot(s)<br>` +
+          `fist-grip ${f.fistToGripCssPx ?? '-'} css px · muzzle-spawn ${f.muzzleToSpawnCssPx ?? '-'} css px</div></td>`);
+      }
+      const rowsHtml = [];
+      for (let i = 0; i < cells.length; i += 2) rowsHtml.push(`<tr>${cells.slice(i, i + 2).join('')}</tr>`);
+      const sheetPage = await newPage({ viewport: { width: 1200, height: 800 }, deviceScaleFactor: 1 });
+      try {
+        await sheetPage.page.setContent(`<!doctype html><style>
+          body{margin:0;padding:8px;background:#10171b;color:#e9d6a8;font:11px/1.25 monospace}
+          h1{font-size:14px;margin:0 0 6px} table{border-collapse:collapse}
+          td{border:1px solid #2c3a40;padding:3px;vertical-align:top} .n{font-size:10px;color:#cfd8dc}
+          img{display:block;image-rendering:pixelated}
+          </style><h1>${LABEL} // ${viewName} ${vr.viewport.width}x${vr.viewport.height} DPR ${vr.dpr}
+          // RIG firing, in situ, game paused on the shot frame //
+          ${scale === 1 ? 'TRUE DEVICE SIZE (1 device px = 1 sheet px)' : `${scale}x nearest-neighbour of true size`}</h1>
+          <table>${rowsHtml.join('')}</table>`);
+        await sheetPage.page.evaluate(() => Promise.all([...document.images].map((i) =>
+          i.complete ? 0 : new Promise((r) => { i.onload = r; }))).then(() => {
+          for (const i of document.images) i.style.width = `${i.naturalWidth * Number(i.dataset.s)}px`;
+        }));
+        const file = resolve(OUT, `${viewName}-firing-sheet-${scale}x.png`);
+        await sheetPage.page.screenshot({ path: file, fullPage: true, timeout: 300000 });
+        (vr.sheets ||= []).push(file);
+      } finally {
+        await sheetPage.close();
       }
     }
   }
