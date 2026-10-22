@@ -173,7 +173,7 @@ only — no sim constants), `src/render/sprite-table.js`, RIG atlases under
 saying so, touch controls, or the camera.
 verify: node tools/pathcheck.mjs; the new alignment check; smoke scripts
 
-## T-104 | docs | doing | P1
+## T-104 | docs | done | P1
 
 goal: a grounded design proposal for (a) turning level 1 into a fast race to
 the top with longer faces — *"the 'sides' are a little short"*; and (b)
@@ -212,6 +212,13 @@ owner: lattice-designer
 fences: docs and new measurement tools only. No `src/` changes.
 verify: node tools/pathcheck.mjs (must stay green); re-run the measurement
 scripts and reproduce the numbers in the doc
+
+landed 2026-10-22 (merged via merge-task.sh, review APPROVE + playtest PASS):
+`docs/proposals/2026-10-race-to-the-top.md` + `tools/simlab/race/` +
+`artifacts/t104-race/`. Its §8 questions are answered by decisions.md entry 23.
+Its §7 task blocks are below as T-201..T-211 with the reviewer's
+fix-at-dispatch amendments; dispatch sends the proposal's block verbatim PLUS
+the amendment lines.
 
 ## T-105 | shell | todo | P1
 
@@ -270,11 +277,9 @@ the camera (T-107), not RIG art, not lattice data.
 verify: node tools/pathcheck.mjs; the new layout/copy/watchdog checks;
 smoke-verdict on both smoke scripts
 
-## T-106 | lattice | todo | P1
+## T-106 | lattice | done | P1
 
-goal: longer faces and a faster climb, built from T-104's accepted plan.
-accept: written at dispatch from T-104's task blocks.
-owner: lattice-designer
+superseded by T-205 (the long sides, from T-104's accepted plan).
 
 ## T-107 | render | todo | P1
 
@@ -291,10 +296,11 @@ accept:
 - [ ] Measured RIG height as a share of viewport height: phone landscape
       844x390, 932x430, 667x375 each within 5.5-6.5%; portrait reported and
       justified (6% of the SHORT side or of height — say which and why).
-- [ ] Look-ahead: in phone landscape the visible world ahead of RIG in the run
-      direction is at least the distance RIG covers in 1.0 s at `runSpeed`
-      (measure tiles ahead; shift RIG's screen anchor back if needed). A
-      framing that hides the next landing fails.
+- [ ] Look-ahead is OWNED by T-202 (the follow-lead scroll); T-107 must not
+      reduce it: measured route-ahead in phone landscape is no worse than
+      FAR's on the same seed. Vertical band: lift the frame ≈ 6 tiles with
+      the look target (T-104 §4.5) so the deck AND the face's apex are both in
+      view (measure: a 6 % pull-in alone tops out at y 18.7 = face-6 apex + RIG).
 - [ ] All five corner turns and the Crown approach captured before/during/after
       at phone framing: the landing is visible, no camera clipping into
       anatomy, static-anatomy rule intact (entry 3).
@@ -384,6 +390,76 @@ fences: `tools/art/`, `assets/generated/sprites/*-v2*`, `assets/manifest.json`
 entries it adds; in phase B only, the `?art=v2` branch in the render layer.
 verify: the one-command build reproduces byte-identical atlases; the anchor
 check; pathcheck green after phase B
+
+## T-201 | feature | todo | P1
+
+goal (M1): gate beats are always visible, fightable and bounded — full block
+in `docs/proposals/2026-10-race-to-the-top.md` §7 "T-201".
+amendments at dispatch: type is `feature` (not `bug`); add `src/mode.js` to the
+fences if a flag is added; a bot-row box is REPORTED, not asserted (§1.3).
+Fold into one lane with T-202 + T-203 (shared `wavegate.js`/`scroll.js`/
+`waves.js`). Dispatch after T-102 merges.
+
+## T-202 | feature | todo | P1
+
+goal (M1): follow-lead scroll + arm on arrival — §7 "T-202". Owns look-ahead
+(T-107 must not reduce it). Amendment: "saturate harmlessly" needs a threshold.
+
+## T-203 | feature | todo | P1
+
+goal (M2): rolling gates — §7 "T-203", REWRITTEN at dispatch per entry 23 #2:
+the turn never waits; an uncleared remix cell does not hold it; its survivors
+carry over and chase onto the next side (the price is pressure, entry 12).
+Drop "the halt stays as the safety net" and the bounded-beat release design;
+keep teach → test → remix → break and the visibility rule.
+
+## T-204 | render | todo | P2
+
+goal: per-side rendered rise — §7 "T-204". Amendment: its targets are written
+for 176-tile sides; rescale to grade (0.16-0.21, 9-12°) so they hold on 88-tile
+sides (≈ 14-18 m) and on 176 (28-36 m), or dispatch after T-205. Render-only:
+race-lab fingerprints byte-identical. Pair with T-107 (shared `camera.js`).
+
+## T-205 | lattice | todo | P1
+
+goal (M2): six 176-tile sides proved by play — §7 "T-205"; ~25 s per side on a
+good run (entry 23 #3), written in seconds. Amendment: cite only columns the
+M-tables have; the legacy checks in §7's collision table are rewritten or
+retired under entry 21, never "fixed" by bending the plan.
+
+## T-206 | feature | todo | P1
+
+goal (M3): levels as data + chaining + the between-level card + durable
+resume (entry 23 #4) — §7 "T-206". Amendment: add a box proving the six-face
+systems (momentum, overdrive charge, HULL FALLBACK) stay live in every level
+(`src/mode.js` scopes them to `ACTIVE_FIXTURE === null` today); add
+`src/mode.js` to the fences.
+
+## T-207 | lattice | todo | P1
+
+goal (M3): Level 2 RIBLINE & NECK (Contain → Quarantine) — §7 "T-207". Same
+six-face-systems box as T-206.
+
+## T-208 | art | todo | P2
+
+goal (M3/M4): L2/L3 dressing — §7 "T-208", now using entry 22's toolchain
+(Blender kit pieces placed from the 2D data, §5.7). `?dress=0` does not exist —
+name the real escape hatch.
+
+## T-209 | lattice | todo | P1
+
+goal (M4): Level 3 SPINE & CROWN with the Crown at the top, and L1 re-cut to
+three sides (entry 23 #1 = structure A) — §7 "T-209". Amendment: do not lean
+on the legacy finale domains as evidence (entry 21).
+
+## T-210 | harness | todo | P2
+
+goal (M3): the race lab follows levels — §7 "T-210".
+
+## T-211 | harness | todo | P3
+
+goal: offline level preview (unrolled map + 3D views around turns, sub-second)
+— §7 "T-211" and §5.7. Amendment: box 2's falsifier must bind to its assertion.
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
