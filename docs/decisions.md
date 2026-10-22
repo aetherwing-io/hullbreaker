@@ -884,3 +884,57 @@ decides on the distribution.
 (entry 15's goal block), but "not the axis" now means *preserve the spread*, not
 *freeze the numbers*. When a change moves outcomes, report the DISTRIBUTION —
 best run, worst run, spread — never a single average.
+
+## 20 — 2026-10-22 — Phone-first polish push: a fast race to the top, playable on a phone
+
+**Operator, verbatim, opening the push:**
+
+> "it's pretty cool but has a lot of loose ends. it's only one level, the
+> models are a little off (like guns don't align to hands) and on mobile some
+> things don't render correctly. the bones are there, but not the polish. the
+> concept is a human sized future soldier bounding up the sides of a huge
+> mechanical beast and the beast considers it an infection that it's trying
+> to fight off. the 'sides' are a little short and the 'turns' don't quite
+> work right all of the time. I want you to orchestrate a team to iterate and
+> bring it up to fantastic quality. i wanted to be able to play on my phone,
+> but those controls as we implemented are too wonky. it's supposed to be a
+> fast pace, race to the top, shoot-em up"
+
+(Typos in the original — "lever", "one mobile" — are normalized above to the
+words they plainly meant.)
+
+**What this decides.**
+
+1. **The phone is a first-class target.** This supersedes the 2026-08-02 goal
+   block's "Device: laptop/desktop KEYBOARD. No touch, no gamepad work
+   needed." The keyboard path stays fully supported; it is no longer the only
+   one that matters.
+2. **The shipped one-thumb touch scheme is judged and rejected** ("too
+   wonky"): floating stick, fire by crossing an outer rail, jump by tap, air
+   jump by lift-and-retouch "clutch". It is replaced, not tuned.
+3. **Genre statement: "fast pace, race to the top, shoot-em up."** This is
+   the same energy entries 10 and 11 asked for ("climb, climb climb, keep
+   going faster") stated as the identity of the game. A change that slows the
+   run down or flattens the climb has to argue against it.
+4. **Named defects, each now a tracked task:** one level only; weapons do not
+   sit in RIG's hands; mobile rendering defects; faces ("sides") too short;
+   corner turns unreliable.
+5. **Mission:** an orchestrated team iterates to "fantastic quality". Entry
+   8's autonomous-merge mandate stands and governs this push.
+
+**Integrator call under this verdict (reverse it if wrong):** because the
+operator has already judged the incumbent touch scheme, its replacement ships
+ON by default on touch devices, with `?touch=legacy` as the escape hatch back
+— entry 16's rule that judged work must not hide behind a flag the operator
+never types. The replacement's own feel is unjudged and goes to the
+checkpoint queue.
+
+**What does NOT change:** static anatomy (entry 3); FAR as the desktop
+camera (entries 7/17) — whether a phone gets different framing is put to the
+operator as a question, not assumed; the half-dose value ladder (14); impact
+language (15); runtime assets with safe degradation (16); renderer
+authorizations and the 60fps condition (18); variance is the feature (19);
+layer purity; determinism; frozen movement constants (pace comes from scroll,
+spawns and lattice, never from retuning RIG).
+
+**Source:** operator message opening the 2026-10-22 session.

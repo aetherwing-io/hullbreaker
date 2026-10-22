@@ -127,8 +127,11 @@ await withIsolatedBrowser(ROOT, async ({ baseUrl, newPage, launch }) => {
     await page.goto(`${baseUrl}/index.html?${URL_QUERY}`, {
       waitUntil: 'load', timeout: 45000,
     });
+    // Software-GL hosts (CI containers with no GPU: SwiftShader) boot the
+    // shipped scene several times slower than any real device. The default
+    // stays 20s; HB_PROBE_BOOT_MS widens it without touching the game.
     await page.waitForFunction(() => window.HB?.state() === 'PLAYING', null, {
-      timeout: 20000,
+      timeout: Number(process.env.HB_PROBE_BOOT_MS) || 20000,
     });
     result.bootToPlayingMs = +(performance.now() - started).toFixed(1);
 

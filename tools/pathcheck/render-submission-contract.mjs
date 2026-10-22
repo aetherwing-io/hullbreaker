@@ -10,7 +10,7 @@ const out = '/private/tmp/hullbreaker-pathcheck-render-submission';
 export async function run() {
   const result = spawnSync(process.execPath, [
     probe, '--seconds', '2', '--idle', '--draw-samples', '1', '--out', out,
-  ], { encoding: 'utf8', timeout: 45000 });
+  ], { encoding: 'utf8', timeout: Number(process.env.HB_PROBE_SPAWN_MS) || 45000 });
   if (result.status !== 0) {
     console.error(result.stdout || '');
     console.error(result.stderr || '');

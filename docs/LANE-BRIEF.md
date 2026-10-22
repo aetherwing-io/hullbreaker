@@ -10,14 +10,18 @@ fences into eight consecutive dispatch prompts and got one of them wrong.
 
 ## Who the game is for
 
-Read the `2026-08-02 OPERATOR GOAL CHANGE` block in `SPRINT.md`. Short version:
-the player is the operator's **9-year-old son**, on a laptop keyboard, reached
-by a public URL. He plays a lot of games and probes systematically — he is not
-a button-masher, and "a player would never do that" is not a defence.
+**Current (2026-10-22, `decisions.md` entry 20):** the operator wants to play
+it **on their phone** as well as on a keyboard. The game's identity, in
+their words: *"a fast pace, race to the top, shoot-em up."* Touch is a first-class
+input; the old one-thumb scheme was judged "too wonky" and is being replaced.
+Every lane checks its work at a phone viewport (landscape 844x390 and portrait
+390x844, `hasTouch: true`) as well as desktop.
 
-**Durability outranks difficulty.** He is fine with hard. He is not fine with
-broken. Do not tune the difficulty curve. A blank page, a softlock, a lost save
-or a crash is a P1 defect.
+**Still binding from 2026-08-02:** durability outranks difficulty. A blank
+page, a softlock, a lost save or a crash is a P1 defect. Assume a systematic,
+curious player who backtracks, sequence-breaks and stresses the lifecycle on
+purpose — "a player would never do that" is not a defence. Do not tune the
+difficulty curve; report outcome *distributions* (entry 19), never one run.
 
 ## Working rules (all lanes)
 
@@ -46,9 +50,10 @@ or a crash is a P1 defect.
   `Math.random`, `Date.now`, or `performance.now` in `src/pure/` or `src/sim/`.
 - **Palette.** Colors come from `src/render/palette.js` tokens. A raw hex
   literal in a tokenized render file is rejected by pathcheck.
-- **Asset independence.** The game must boot with every file under `assets/`
-  missing. Nothing in `src/` loads a file at runtime. A runtime loader needs a
-  recorded operator decision first.
+- **Assets degrade safely** (entry 16 retired "asset independence"). Runtime
+  sprites and textures are allowed. A missing or failed asset must degrade
+  visibly and safely, never wedge the game, and the sim must never branch on
+  whether an asset loaded.
 - **No build step, no runtime dependencies.** Dev-only deps are allowed under
   `tools/*/` with their own `package.json`, never for the game.
 - **Frozen constants.** Jump/movement constants in `CONFIG` are asserted. If
@@ -145,6 +150,7 @@ schema below with `I-???`; the integrator assigns numbers on triage.
 one paragraph: what, why it matters, and what the fix direction is
 ```
 
-Severity is judged by impact on a 9-year-old playing a lot: a softlock or
-lost-progress bug is S1 even if an expert could avoid it. Difficulty is not a
+Severity is judged by impact on a player playing a lot, on a phone or a
+keyboard: a softlock or lost-progress bug is S1 even if an expert could avoid
+it. Difficulty is not a
 defect axis right now.
