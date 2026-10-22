@@ -13,7 +13,8 @@
 // scripted schedule cleanly. So it passes only if:
 //   - the page reached a rendered HUD frame (no bootError);
 //   - the deterministic ledger completed: every scheduled event dispatched
-//     and the sim stopped on its exact terminal tick;
+//     and the sim stopped on its exact terminal tick — OR the run reached a
+//     sampled victory, which freezes the sim before that tick;
 //   - the page threw nothing (pageErrors empty);
 //   - the run did not stall (outcome.result !== 'stalled').
 // A death inside the window is reported, not failed: outcome variance is a
@@ -28,10 +29,17 @@ catch (err) { console.log(`smoke-verdict: FAIL — unreadable report ${path}: ${
 const problems = [];
 const meta = r.meta || {};
 const fi = meta.frameInput || {};
+// A sampled victory is a terminal state in its own right: VICTORY freezes the
+// sim, so the ledger can never reach the script's terminal tick after it.
+// transform-slice.json wins at tick 938 of 1104 on main (found by T-102), so
+// without this the gate refused every lane on a run that played to victory.
+const won = r.outcome?.result === 'completed';
 if (meta.bootError) problems.push(`boot error: ${meta.bootError}`);
-if (fi.status !== 'complete') problems.push(`deterministic ledger status ${fi.status ?? 'missing'}`);
-if (fi.nextEvent !== fi.eventCount) problems.push(`dispatched ${fi.nextEvent}/${fi.eventCount} events`);
-if (fi.tick !== fi.stopTick) problems.push(`stopped at tick ${fi.tick}, terminal tick ${fi.stopTick}`);
+if (!won) {
+  if (fi.status !== 'complete') problems.push(`deterministic ledger status ${fi.status ?? 'missing'}`);
+  if (fi.nextEvent !== fi.eventCount) problems.push(`dispatched ${fi.nextEvent}/${fi.eventCount} events`);
+  if (fi.tick !== fi.stopTick) problems.push(`stopped at tick ${fi.tick}, terminal tick ${fi.stopTick}`);
+}
 if ((r.pageErrors || []).length) problems.push(`page errors: ${r.pageErrors.map((e) => e.message).join(' | ')}`);
 if (r.outcome?.result === 'stalled') problems.push('run stalled (idle > 60% of PLAYING time)');
 
