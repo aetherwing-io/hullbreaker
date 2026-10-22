@@ -206,7 +206,8 @@ scripts and reproduce the numbers in the doc
 
 ## T-105 | shell | todo | P1
 
-goal: everything on screen renders correctly on a phone. Known from the
+goal: everything on screen renders correctly on a phone — iPhone Safari
+first, landscape first (entry-20 addendum). Known from the
 integrator's 2026-10-22 captures (iPhone-class 390x844 and 844x390, DPR 1):
 the portrait title clips "HULLBREAKER" to "HULLBREAK"; the title says "PRESS
 ANY KEY" and lists keyboard controls on a touch device; the failsafe panel
@@ -229,11 +230,13 @@ goal: longer faces and a faster climb, built from T-104's accepted plan.
 accept: written at dispatch from T-104's task blocks.
 owner: lattice-designer
 
-## T-107 | render | operator | P1
+## T-107 | render | todo | P1
 
-goal: phone framing. At the frozen FAR camera RIG is ~12-15 CSS px tall in
-phone landscape (3.7% of 390 px). Whether phones get different framing is the
-operator's call (entries 7/17); the question is queued below.
+goal: phone framing, authorized by the entry-20 addendum: on phone viewports
+only, RIG is ~6% of screen height (today ~3.7%, ~12-15 CSS px in 844x390
+landscape); desktop FAR stays byte-identical. Landscape is the tuning target.
+Dispatch after T-102 merges (shared `src/render/camera.js`).
+accept: written at dispatch.
 owner: gameplay-engineer
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)

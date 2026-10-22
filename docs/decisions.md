@@ -938,3 +938,21 @@ layer purity; determinism; frozen movement constants (pace comes from scroll,
 spawns and lattice, never from retuning RIG).
 
 **Source:** operator message opening the 2026-10-22 session.
+
+**Addendum, same session — four operator answers** (asked by the integrator,
+options chosen as worded):
+
+- **Orientation: landscape first.** "Classic run-and-gun: thumbs on the sides,
+  widest view ahead. Portrait still works but isn't the tuning target."
+- **Phone framing: closer on phones.** "Phones only get a tighter frame (RIG
+  ~6% of screen height); desktop keeps FAR exactly as decided in entries
+  7/17." This is a NEW, narrow exception to entries 7/17: it applies to phone
+  viewports only, its purpose is physical readability on a small screen, and
+  desktop FAR is untouched. It is not the dynamic push-in or middle view scale
+  entry 17 ruled out for character fidelity.
+- **Shipping: main + deploy milestones.** "Gated merges are pushed to main; I
+  tag a Pages release whenever a milestone is playable so you can test on
+  your phone." Merges still go through `tools/orch/merge-task.sh` only.
+- **Device: iPhone (Safari).** iOS Safari is the primary phone target: no
+  vibration API, no element fullscreen on iPhone, audio unlock on a gesture,
+  home-indicator and notch safe areas.
