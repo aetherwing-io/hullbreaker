@@ -207,22 +207,59 @@ scripts and reproduce the numbers in the doc
 ## T-105 | shell | todo | P1
 
 goal: everything on screen renders correctly on a phone — iPhone Safari
-first, landscape first (entry-20 addendum). Known from the
-integrator's 2026-10-22 captures (iPhone-class 390x844 and 844x390, DPR 1):
-the portrait title clips "HULLBREAKER" to "HULLBREAK"; the title says "PRESS
-ANY KEY" and lists keyboard controls on a touch device; the failsafe panel
-says "Press R, or click the button"; the HUD panel covers ~20% of portrait and
-the top-left quarter of landscape; in-run hints are keyboard hints; four
-`<link rel=preload>` images are fetched twice (crossorigin mismatch — wasted
-phone bandwidth); at DPR 3 the 4 s freeze watchdog can fire during the first
-frames (confirm whether a slow first shader compile on a real low-end phone
-could trip it, and make boot tolerant of that without blinding the watchdog).
-Audit the rest: pause/options, death and victory screens, safe-area insets
-(notch / home indicator), `100vh` vs dynamic viewport, rotation mid-run,
-text sizes and tap targets, audio unlock on first touch, and add-to-home-screen
-fullscreen (web app manifest + `apple-mobile-web-app-capable`).
-accept: to be finalized at dispatch (after T-101 lands the deck layout).
+first, landscape first (entry-20 addendum). Known from the integrator's
+2026-10-22 captures (390x844 and 844x390, DPR 1): the portrait title clips
+"HULLBREAKER" to "HULLBREAK"; the title says "PRESS ANY KEY" and lists
+keyboard controls on a touch device; the failsafe panel says "Press R, or
+click the button"; the HUD panel covers ~20% of portrait and the top-left
+quarter of landscape; in-run hints are keyboard hints; four `<link
+rel=preload>` images are fetched twice (crossorigin mismatch — wasted phone
+bandwidth); at DPR 3 the 4 s freeze watchdog fired before the title under
+SwiftShader — decide whether a slow first shader compile on a real low-end
+phone could do the same, and make boot tolerant of it without blinding the
+watchdog. Dispatch after T-101 merges (shared `index.html`, title prompt).
+
+accept:
+- [ ] Before/after capture matrix with `hasTouch` + an iOS Safari UA at DPR 2:
+      landscape 844x390, 932x430 and 667x375, portrait 390x844; screens: title,
+      play HUD, pause/options, capsule pickup/loot banners, death, game over,
+      victory/finale, and the failsafe panel (forced).
+- [ ] No clipped or overflowing text on any of those screens: a DOM check that
+      every visible text box fits its container and the viewport minus safe
+      areas. It must fail on current main's portrait title.
+- [ ] No keyboard-only copy on a touch device: a text scan of every screen for
+      key names and "press"/"click" wording returns zero hits under touch, and
+      the keyboard copy still appears on desktop. Must fail on current main.
+- [ ] Landscape HUD budget: at 844x390 the HUD's panels cover at most 10% of the
+      viewport area and none intersects the central 60%x60% play region
+      (bounding boxes, measured). Current main: report its numbers.
+- [ ] Safe areas: with notch insets forced (left/right 47 px, bottom 21 px —
+      the stylesheet already has a hook for Chromium, where env() is zero),
+      every control and HUD box sits inside the insets.
+- [ ] Preloads: zero "preload ... not used" console warnings, and each
+      preloaded URL is requested exactly once (count network requests).
+- [ ] Watchdog: a 6 s main-thread stall injected before the first rendered
+      frames does NOT show the "game got stuck" panel, while the same stall
+      after warm-up during PLAYING still does. Both directions demonstrated.
+- [ ] Home-screen play: a web app manifest (landscape, fullscreen/standalone,
+      icons cut from existing title art with PIL/ImageMagick) plus
+      `apple-mobile-web-app-capable`, status-bar style and `apple-touch-icon`.
+- [ ] Rotation mid-run (portrait↔landscape during PLAYING) resizes the canvas,
+      re-lays out the HUD, leaves no stuck input and no failsafe panel.
+- [ ] First touch resumes audio on iOS (the AudioContext unlock runs inside the
+      gesture handler); on-device confirmation is an operator question.
+- [ ] Desktop 1280x720 title/HUD/pause unchanged, or every difference named.
+- [ ] pathcheck green with assertions for any new pure logic; smoke-verdict
+      PASS on both smoke scripts.
+- [ ] Operator packet: query string + 3-5 non-leading questions.
 owner: gameplay-engineer
+fences: `index.html` (title, HUD, overlay, failsafe markup/CSS; the touch deck
+belongs to T-101's merged design — fix only integration bugs there),
+`src/ui/{shell,hud,overlay,failsafe,loot,tint,gilded,audio}.js`,
+`src/pure/failsafe.js`, `src/render/preload.js`, a new manifest + icons. Not
+the camera (T-107), not RIG art, not lattice data.
+verify: node tools/pathcheck.mjs; the new layout/copy/watchdog checks;
+smoke-verdict on both smoke scripts
 
 ## T-106 | lattice | todo | P1
 
@@ -236,8 +273,35 @@ goal: phone framing, authorized by the entry-20 addendum: on phone viewports
 only, RIG is ~6% of screen height (today ~3.7%, ~12-15 CSS px in 844x390
 landscape); desktop FAR stays byte-identical. Landscape is the tuning target.
 Dispatch after T-102 merges (shared `src/render/camera.js`).
-accept: written at dispatch.
+
+accept:
+- [ ] A pure, asserted framing resolver (viewport size + coarse pointer ->
+      view scale) in `src/pure/`; desktop 1280x720 and 1920x1080 resolve to
+      FAR with camera pose numbers identical to main (prove byte-identical
+      projection, not "looks the same").
+- [ ] Measured RIG height as a share of viewport height: phone landscape
+      844x390, 932x430, 667x375 each within 5.5-6.5%; portrait reported and
+      justified (6% of the SHORT side or of height — say which and why).
+- [ ] Look-ahead: in phone landscape the visible world ahead of RIG in the run
+      direction is at least the distance RIG covers in 1.0 s at `runSpeed`
+      (measure tiles ahead; shift RIG's screen anchor back if needed). A
+      framing that hides the next landing fails.
+- [ ] All five corner turns and the Crown approach captured before/during/after
+      at phone framing: the landing is visible, no camera clipping into
+      anatomy, static-anatomy rule intact (entry 3).
+- [ ] Hostile tells, bullets and capsules readable at phone framing — capture
+      sheet at DPR 2.
+- [ ] Escape hatches: `?view=far` forces desktop framing on a phone;
+      `?view=phone` forces phone framing on desktop for review.
+- [ ] Frame cost at phone framing reported against FAR on the same viewport
+      (worstMs / over20ms, interleaved rounds).
+- [ ] pathcheck green; smoke-verdict PASS; operator packet.
 owner: gameplay-engineer
+fences: `src/render/camera.js`, the view-scale entries in `src/config.js` /
+`src/mode.js`, a new `src/pure/` resolver, new checks. Not HUD layout (T-105),
+not the touch deck (T-101), not turn logic (T-102, merged first).
+verify: node tools/pathcheck.mjs; the framing measurement script;
+smoke-verdict on both smoke scripts
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
