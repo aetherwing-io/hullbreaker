@@ -1745,6 +1745,10 @@ Sections (`--only frozen,live,legacy,title,shots`):
 
 - **frozen** — the normal URL plus an empty frame-input schedule stopped at
   tick 0, so the run is `PLAYING` but never steps: the input layer alone.
+  After the layout/style read and the DPR-1 captures it shadows
+  `document.hidden`/`visibilityState` (no event dispatched) so the game loop
+  skips its software-rendered draw; rAF, pointer dispatch and the deck run
+  unchanged, and the visibility trial lifts the shadow before measuring.
   Layout vs drawing, computed `touch-action`/`user-select`, three pointers
   (stick + FIRE + JUMP) pressed and released in all 36 orders with the held set
   asserted after every step against both the deck's ledger and the sim's
@@ -1760,9 +1764,17 @@ Sections (`--only frozen,live,legacy,title,shots`):
 - **shots** — deck captures, idle and in use, at DPR 1 and 2.
 
 `--mutate <name>` serves `src/ui/touch-controls.js` with one named defect
-(`release-all-on-up`, `ignore-cancel`, `ignore-blur`) through `page.route` and
-writes `report-mutate-<name>.json`; a mutation whose anchor text is missing
-throws rather than passing vacuously.
+through `page.route` and writes `report-mutate-<name>.json`; a mutation whose
+anchor text is missing throws rather than passing vacuously. Each one must
+turn its own checks red:
+
+| mutation | the defect | goes red |
+|---|---|---|
+| `release-all-on-up` | lifting any finger releases every finger | the 36-order ledger |
+| `ignore-cancel` | no `pointercancel` listener | pointercancel release |
+| `ignore-blur` | no `blur` listener | isolated blur release |
+| `jump-pulse` | JUMP sends keyup right after keydown (the old scheme's pulse) | held vs tapped apex |
+| `stick-no-vertical` | the stick never emits Up/Down | up-right bullets, drop-through |
 
 **Honesty / limitations**
 
@@ -1777,11 +1789,17 @@ throws rather than passing vacuously.
    double-tap check cannot fail here; the pinch check is the falsifiable one,
    and the rig proves it can see a zoom by re-running the pinch with
    `touch-action` overridden.
-4. Window blur and `visibilitychange` are driven for real (a second page
-   brought to front) when the browser produces them, synthetically otherwise;
-   the report names which.
-5. GAME_OVER is forced through `src/sim/state.js` for the restart tap — test
-   setup, not a player path.
+4. Window blur is proved with an isolated synthetic `blur` event, and a real
+   focus loss (a second page brought to front) is also tried and recorded.
+   Headless Chromium 141 delivered NEITHER blur nor visibilitychange for that
+   real focus loss (measured 2026-10-22), so the visibility trial is
+   synthetic too: `document.hidden` shadowed to true plus a dispatched
+   `visibilitychange`. A phone's real backgrounding is untested here.
+5. Two test-setup writes, both labelled in the code: GAME_OVER is forced
+   through `src/sim/state.js` for the restart tap, and the live section pins
+   RIG's i-frames so wave-1 contact cannot knock the closed-loop route off
+   its line (the first unshielded run went hp 3 -> 1 and missed the catwalk).
+   Neither touches the input path.
 6. "Within N ticks" counts fixed 16.667 ms updates after the `gameMs` the page
    reported when the CDP dispatch resolved.
 7. Under SwiftShader every boot takes ~1 minute; the whole proof is slow and

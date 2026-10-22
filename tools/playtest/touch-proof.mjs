@@ -39,6 +39,9 @@
 //   1 and 2.
 //
 // Honesty notes:
+//   - the live section pins RIG's i-frames (test setup): enemy contact would
+//     otherwise knock the closed-loop route off its line (measured: hp 3 -> 1
+//     and a missed catwalk on the first unshielded run). Input is untouched.
 //   - "tick" = one fixed 16.667 ms sim update. A CDP event lands between
 //     frames, so "within N ticks" counts updates after the gameMs the page
 //     reported when the dispatch resolved.
@@ -99,6 +102,19 @@ const MUTATIONS = {
   'ignore-blur': [
     "    addEventListener('blur', () => releaseAll());\n",
     '\n',
+  ],
+  // JUMP becomes a pulse (the rejected scheme's fixed 96 ms press): a
+  // release follows every press at once, so holding JUMP can no longer
+  // carry a jump to full height
+  'jump-pulse': [
+    "        applyEdge(TOUCH_BIT_CODES[i], next & bit ? 'keydown' : 'keyup', false);\n",
+    "        applyEdge(TOUCH_BIT_CODES[i], next & bit ? 'keydown' : 'keyup', false);\n" +
+    "        if (bit === TOUCH_BIT.JUMP && (next & bit)) applyEdge('Space', 'keyup', false);\n",
+  ],
+  // the stick loses its vertical: no aim up, no down for drop-through
+  'stick-no-vertical': [
+    '      const bits = stickSectorBits(sector);\n',
+    '      const bits = stickSectorBits(sector) & ~(TOUCH_BIT.UP | TOUCH_BIT.DOWN);\n',
   ],
 };
 
@@ -515,7 +531,13 @@ async function gestures(owned, L) {
 
 async function installRecorder(page) {
   await page.evaluate(() => {
-    window.__T101 = { samples: [] };
+    // `downs`: the sim clock at the instant the deck receives each pointerdown
+    // (capture phase, same dispatch that emits the key edge), so "ticks after
+    // the press" counts from the press, not from a read before CDP latency.
+    window.__T101 = { samples: [], downs: [] };
+    document.getElementById('thumbDeck').addEventListener('pointerdown', () => {
+      window.__T101.downs.push(HB.gameMs());
+    }, true);
     const rec = () => {
       requestAnimationFrame(rec);
       const p = HB.player, k = HB.keys;
@@ -530,9 +552,16 @@ async function installRecorder(page) {
 }
 const samplesSince = (page, t) => page.evaluate((from) => window.__T101.samples.filter((s) => s.t > from), t);
 const gms = (page) => page.evaluate(() => HB.gameMs());
+const lastDown = (page) => page.evaluate(() => window.__T101.downs[window.__T101.downs.length - 1]);
 
 async function physics(owned, L, view) {
   const { page, touch: T } = owned;
+  // TEST SETUP, not a player path: wave-1 contact (measured: hp 3 -> 1 in the
+  // first unshielded run) knocks a closed-loop route off its line, which says
+  // nothing about the controls. Pinning RIG's i-frames makes damagePlayer()
+  // return early — no damage, knockback or hitstun — and touches nothing in
+  // the input path. Restored before the in-use capture (i-frames flicker RIG).
+  await page.evaluate(() => { HB.player.iframesUntil = 1e12; });
   await installRecorder(page);
   const S = { x: L.ghost.cx, y: L.ghost.cy };
   const J = { x: L.jump.cx, y: L.jump.cy };
@@ -543,17 +572,19 @@ async function physics(owned, L, view) {
   await T.down(1, S.x, S.y);
   await T.move(1, S.x + 44, S.y);
   let okw = await until(page, () => HB.player.grounded && HB.player.vx > 9 && HB.player.x >= 8);
-  const p1 = await gms(page);
   await T.down(2, J.x, J.y);
+  const p1 = await lastDown(page);
   okw = okw && await until(page, (t) => HB.gameMs() > t + 60 && HB.player.vy < 0, p1);
   okw = okw && await until(page, () => HB.player.grounded);
   await T.up(2);
+  // the sample stamped exactly at the press time is the state the press met
+  const at1 = (await samplesSince(page, p1 - 1))[0];
   let s = await samplesSince(page, p1);
   const rise = s.find((q) => q.vy > 0);
   const riseTick = rise ? Math.round((rise.t - p1) / TICK_MS) : null;
-  const yHeld0 = s.length ? s[0].y : NaN;
+  const yHeld0 = at1 ? at1.y : NaN;
   const landH = s.findIndex((q, i) => i > 0 && q.g);
-  const apexHeld = Math.max(...s.slice(0, landH > 0 ? landH : s.length).map((q) => q.y)) - 3;
+  const apexHeld = Math.max(...s.slice(0, landH > 0 ? landH : s.length).map((q) => q.y)) - yHeld0;
   check(`stick right + JUMP: vy>0 and vx>0 within ${JUMP_TICKS_N} ticks`,
     okw && rise && riseTick <= JUMP_TICKS_N && rise.vx > 0,
     rise ? `tick ${riseTick}: vy ${rise.vy.toFixed(2)}, vx ${rise.vx.toFixed(2)} (run ${runSpeed})` : 'no rise');
@@ -570,26 +601,38 @@ async function physics(owned, L, view) {
   const bullets = await page.evaluate(async () => (await import('/src/sim/weapons.js')).bulletPool
     .filter((b) => b.alive).map((b) => ({ vx: b.vx, vy: b.vy, deg: Math.atan2(b.vy, b.vx) * 180 / Math.PI })));
   const keysAtFire = await page.evaluate(() => ({ up: HB.keys.up, right: HB.keys.right, fire: HB.keys.fire }));
+  // what aim assist (normal-run default, <= CONFIG.assist.maxDeg) could have
+  // pulled toward: materialized hostiles, as offsets from RIG's muzzle
+  const nearAtFire = await page.evaluate(() => HB.hostiles
+    .filter((e) => HB.gameMs() >= e.enterUntil)
+    .map((e) => ({ kind: e.kind, dx: +(e.x - HB.player.x).toFixed(2), dy: +(e.y - HB.player.y - HB.player.muzzleY).toFixed(2) })));
+  const assistMaxDeg = await page.evaluate(() => HB.CONFIG.assist.maxDeg);
   await T.up(3);
   await T.move(1, S.x + 44, S.y);
   const upRight = bullets.length > 0 && bullets.every((b) => b.vx > 0 && b.vy > 0 && b.deg > 30 && b.deg < 60);
   check('stick up-right + FIRE spawns bullets travelling up-right',
     alive0 === 0 && upRight && keysAtFire.up && keysAtFire.right && keysAtFire.fire,
     `${bullets.length} live: ${bullets.map((b) => b.deg.toFixed(1) + '°').join(', ')}`);
-  measure('fireUpRight', { bullets: bullets.length, degrees: bullets.map((b) => +b.deg.toFixed(2)) });
+  measure('fireUpRight', { bullets: bullets.length, degrees: bullets.map((b) => +b.deg.toFixed(2)),
+    assistMaxDeg, hostilesAtFire: nearAtFire });
 
   // 3. a TAPPED jump (press + lift back to back)
   await until(page, () => HB.player.grounded);
-  const p3 = await gms(page);
   const y3 = await page.evaluate(() => HB.player.y);
   await T.down(2, J.x, J.y);
   await T.up(2);
+  const p3 = await lastDown(page);
   await until(page, (t) => HB.gameMs() > t + 60 && HB.player.grounded, p3);
   s = await samplesSince(page, p3);
   const apexTap = Math.max(...s.map((q) => q.y)) - y3;
+  // how long the sim actually saw the tap held (key bit 16 per tick)
+  const tapTicks = s.filter((q) => q.k & 16).length;
+  const heldTicks = (await samplesSince(page, p1)).filter((q) => q.t < p3 && (q.k & 16)).length;
   check('a held JUMP reaches a higher apex than a tapped one', apexHeld > apexTap + 0.5,
-    `held ${apexHeld.toFixed(3)} tiles, tapped ${apexTap.toFixed(3)} tiles`);
-  measure('apex', { held: +apexHeld.toFixed(3), tapped: +apexTap.toFixed(3), heldStartY: yHeld0 });
+    `held ${apexHeld.toFixed(3)} tiles (${heldTicks} ticks held), tapped ${apexTap.toFixed(3)} tiles ` +
+    `(${tapTicks} ticks held)`);
+  measure('apex', { held: +apexHeld.toFixed(3), tapped: +apexTap.toFixed(3), heldTicks, tapTicks,
+    heldStartY: yHeld0, tapStartY: y3 });
 
   // 4. a second JUMP press airborne is the air jump — and it carries RIG
   //    onto the first catwalk (x 26-35, y 6.35) for the drop-through.
@@ -598,8 +641,8 @@ async function physics(owned, L, view) {
   await until(page, () => !HB.player.grounded && HB.player.vy <= 0.8);
   const aj0 = await page.evaluate(() => HB.player.airJumpsLeft);
   await T.up(2);
-  const p4 = await gms(page);
   await T.down(2, J.x, J.y);
+  const p4 = await lastDown(page);
   await until(page, (t) => HB.gameMs() > t + 1, p4);
   await frames(page, 2);
   s = await samplesSince(page, p4);
@@ -608,22 +651,32 @@ async function physics(owned, L, view) {
     aj0 === 1 && used && used.vy > 10 && Math.round((used.t - p4) / TICK_MS) <= JUMP_TICKS_N,
     used ? `airJumpsLeft ${aj0}->${used.aj}, vy ${used.vy.toFixed(2)} at tick ${Math.round((used.t - p4) / TICK_MS)}` : `airJumpsLeft stayed ${aj0}`);
   measure('airJump', used ? { from: aj0, to: used.aj, vy: +used.vy.toFixed(3) } : null);
-  const onCatwalk = await until(page, () => HB.player.grounded, null, 20000) &&
-    await page.evaluate(() => !!HB.player.onOneWay && Math.abs(HB.player.y - 6.35) < 0.02);
+  const landedOk = await until(page, () => HB.player.grounded, null, 20000);
+  const landing = await page.evaluate(() => ({
+    x: +HB.player.x.toFixed(3), y: +HB.player.y.toFixed(3), hp: HB.player.hp,
+    oneWay: HB.player.onOneWay ? { x0: HB.player.onOneWay.x0, x1: HB.player.onOneWay.x1, y: HB.player.onOneWay.y } : null,
+  }));
+  const flight = (await samplesSince(page, p4)).map((q) => [+q.x.toFixed(2), +q.y.toFixed(2), q.g ? 1 : 0]);
+  measure('airJumpFlight', { landing, path: flight.filter((_, i) => i % 3 === 0) });
+  const onCatwalk = landedOk && !!landing.oneWay && Math.abs(landing.y - 6.35) < 0.02;
+  if (!onCatwalk) await page.screenshot({ path: join(OUT, `${view.name}-catwalk-miss.png`) });
   await T.up(2);
 
   // 5. walk to the solid stretch under the catwalk, stop, then down + JUMP
-  let dropped = false, detail = 'never reached the catwalk';
+  let dropped = false, detail = 'never reached the catwalk: landed at ' + JSON.stringify(landing);
   if (onCatwalk) {
-    await until(page, () => HB.player.x >= 32.6 || !HB.player.onOneWay, null, 20000);
+    // stop over solid ground (x 32-34, y 2) and short of the rib ladder whose
+    // foot stands on this catwalk at x 34.5 (grab half-width 0.48): stick-down
+    // inside [34.02, 34.98] would take the ladder, not the floor
+    await until(page, () => HB.player.x >= 32.3 || !HB.player.onOneWay, null, 20000);
     await T.up(1);
     await until(page, () => Math.abs(HB.player.vx) < 0.05, null, 20000);
     const stand = await page.evaluate(() => ({ x: HB.player.x, y: HB.player.y, ow: !!HB.player.onOneWay }));
     await T.down(1, S.x, S.y);
     await T.move(1, S.x, S.y + 44);
     await until(page, () => HB.keys.down && !HB.keys.left && !HB.keys.right, null, 10000);
-    const p5 = await gms(page);
     await T.down(2, J.x, J.y);
+    const p5 = await lastDown(page);
     await until(page, (t) => HB.gameMs() > t + 80, p5);
     await T.up(2);
     await until(page, () => HB.player.grounded, null, 20000);
@@ -642,10 +695,11 @@ async function physics(owned, L, view) {
   // damage would have meant the run was disturbed under the proof
   s = await samplesSince(page, 0);
   measure('hpMin', Math.min(...s.map((q) => q.hp)));
-  check('no damage or death disturbed the movement proof', s.every((q) => q.hp === 3 && q.state === 'PLAYING'),
-    `hp min ${Math.min(...s.map((q) => q.hp))}`);
+  check('no damage, death or state change disturbed the movement proof (i-frames pinned)',
+    s.every((q) => q.hp === 3 && q.state === 'PLAYING'), `hp min ${Math.min(...s.map((q) => q.hp))}`);
 
   // in-use screenshot: stick up-right, FIRE and JUMP held over the live run
+  await page.evaluate(() => { HB.player.iframesUntil = 0; });
   await T.move(1, S.x + 40, S.y - 40);
   await T.down(3, F.x, F.y);
   await T.down(2, J.x, J.y);
@@ -721,20 +775,25 @@ async function titleTap(newPage, view) {
   } finally { await owned.close(); }
 }
 
+// Deck captures: idle, then in use (stick up-right, FIRE and JUMP held).
+async function capture(page, T, view, dpr) {
+  const L = await page.evaluate(() => __HB_TOUCH().layout);
+  await frames(page, 3);
+  await page.screenshot({ path: join(OUT, `${view.name}-dpr${dpr}-idle.png`) });
+  await T.down(91, L.ghost.cx, L.ghost.cy);
+  await T.move(91, L.ghost.cx + 38, L.ghost.cy - 38);
+  await T.down(92, L.fire.cx, L.fire.cy);
+  await T.down(93, L.jump.cx, L.jump.cy);
+  await frames(page, 3);
+  await page.screenshot({ path: join(OUT, `${view.name}-dpr${dpr}-inuse.png`) });
+  await T.upAll();
+  await frames(page, 2);
+}
+
 async function shots(newPage, view, dpr) {
   const owned = await boot(newPage, view, { frozen: true, dpr });
-  const { page, touch: T } = owned;
   try {
-    const L = await page.evaluate(() => __HB_TOUCH().layout);
-    await frames(page, 3);
-    await page.screenshot({ path: join(OUT, `${view.name}-dpr${dpr}-idle.png`) });
-    await T.down(91, L.ghost.cx, L.ghost.cy);
-    await T.move(91, L.ghost.cx + 38, L.ghost.cy - 38);
-    await T.down(92, L.fire.cx, L.fire.cy);
-    await T.down(93, L.jump.cx, L.jump.cy);
-    await frames(page, 3);
-    await page.screenshot({ path: join(OUT, `${view.name}-dpr${dpr}-inuse.png`) });
-    await T.upAll();
+    await capture(owned.page, owned.touch, view, dpr);
     check(`dpr${dpr} capture page raised no errors`, owned.errors.length === 0, owned.errors.join(' | '));
   } finally { await owned.close(); }
 }
@@ -765,6 +824,7 @@ await withBrowser(async (newPage) => {
       const owned = await boot(newPage, view, { frozen: true });
       try {
         const L = await layoutAndStyle(owned.page);
+        if (ONLY.has('shots')) await capture(owned.page, owned.touch, view, 1);
         await quiet(owned.page, true);
         await pointerBookkeeping(owned.page, owned.touch, L);
         await lifecycleReleases(owned, L);
@@ -784,7 +844,7 @@ await withBrowser(async (newPage) => {
     }
     if (ONLY.has('shots')) {
       current = `${view.name}/shots`;
-      await shots(newPage, view, 1);
+      if (!ONLY.has('frozen')) await shots(newPage, view, 1);
       await shots(newPage, view, 2);
     }
   }

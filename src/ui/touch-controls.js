@@ -32,8 +32,8 @@ import { CONFIG } from '../config.js';
 import {
   STICK_SECTORS, TOUCH_BIT, TOUCH_BIT_CODES, autoFireSees, autoFireStep,
   clusterHitBits, deckZone, newDeckLayout, resetAutoFire, resolveAutoFire,
-  resolveTouchScheme, stickFollow, stickSector, stickSectorBits, touchDeckLayout,
-  touchMaskCodes,
+  resolveTouchScheme, sectorStartDeg, sectorWidthDeg, stickFollow, stickSector,
+  stickSectorBits, touchDeckLayout, touchMaskCodes,
 } from '../pure/touch-stick.js';
 import { hostiles } from '../sim/hostiles.js';
 import { gameMs } from '../sim/time.js';
@@ -109,6 +109,7 @@ function installThumbDeck({
 
   let stickSlot = -1;
   let sector = -1;
+  let drawnSector = -2;            // the sector the rim wedge last showed
   let stickMask = 0;
   let autoMask = 0;
   let emitted = 0;                 // the union of every owner, as last sent
@@ -183,6 +184,7 @@ function installThumbDeck({
   function endStick() {
     stickSlot = -1;
     sector = -1;
+    drawnSector = -2;
     stickMask = 0;
     if (stickEl) stickEl.classList.remove('on', 'dir');
   }
@@ -258,11 +260,18 @@ function installThumbDeck({
     const d = Math.hypot(nx, ny);
     if (d > layout.rim) { nx *= layout.rim / d; ny *= layout.rim / d; }
     nubEl.style.transform = `translate(${nx}px, ${ny}px)`;
-    if (sector >= 0) {
-      stickEl.style.setProperty('--sector', (sector * 45) + 'deg');
-      stickEl.classList.add('dir');
-    } else {
-      stickEl.classList.remove('dir');
+    if (sector !== drawnSector) {
+      drawnSector = sector;
+      if (sector >= 0) {
+        // conic angles run clockwise from 12 o'clock; sectors run
+        // counter-clockwise from +x — the lit arc is the sector's true span
+        const width = sectorWidthDeg(sector, STICK_CFG);
+        stickEl.style.setProperty('--wedge-from', (90 - sectorStartDeg(sector, STICK_CFG) - width) + 'deg');
+        stickEl.style.setProperty('--wedge-span', width + 'deg');
+        stickEl.classList.add('dir');
+      } else {
+        stickEl.classList.remove('dir');
+      }
     }
   }
 

@@ -348,38 +348,31 @@ export async function run() {
        'T-101: auto-fire holds the trigger ' + AC.holdMs + ' ms past the last sighting, then lets go');
   }
 
-  /* --------------------------- wiring (static) --------------------------- */
+  /* ---------------------------- static guards ---------------------------- */
+  // decisions.md entry 21: source-text checks are weak evidence, so this
+  // section keeps only what nothing else can show. Everything a browser CAN
+  // exercise (release on pointercancel / blur / visibilitychange /
+  // orientation, the legacy scheme, the 36-order pointer ledger) is proved by
+  // tools/playtest/touch-proof.mjs driving the real game with real touches.
   {
     const read = (rel) => readFileSync(join(srcDir, rel), 'utf8');
     const deck = stripComments(read('ui/touch-controls.js'));
-    const legacy = read('ui/touch-legacy.js');
-    const main = stripComments(read('main.js'));
+    // the one gameplay-input contract (a rule, not an implementation detail)
     ok(!/from\s+'\.\.\/sim\/input\.js'/.test(deck) && !/\bkeys\s*[.[]/.test(deck),
        'T-101: the deck never touches the sim\'s keys directly — it only emits key edges');
-    ok(/applyEdge\(TOUCH_BIT_CODES\[i\]/.test(deck) && /applyEdge\('Space', 'keydown', false\)/.test(deck) &&
-       (deck.match(/applyEdge\(/g) || []).length === 2,
-       'T-101: the deck has exactly two edge sites: the owner-union diff and the JUMP re-press');
-    ok(/installTouchControls\(\{\s*applyEdge: applyGameplayKeyEdge,/.test(main) &&
-       (main.match(/installTouchControls\(/g) || []).length === 1,
-       'T-101: main.js installs one touch controller, on the keyboard\'s own edge path');
-    ok(/resolveTouchScheme\(/.test(deck) && /installLegacyTouchControls\(host\)/.test(deck),
-       'T-101: the scheme resolver routes ?touch=legacy to the verbatim legacy module');
-    ok(/const CLUTCH_MS = 380;/.test(legacy) && /const JUMP_PULSE_MS = 96;/.test(legacy) &&
-       /const TAP_MS = 170;/.test(legacy) && /fire = rawMagnitude >= r \* 1\.14;/.test(legacy) &&
-       /export function installLegacyTouchControls\(/.test(legacy),
-       'T-101: the legacy module still carries the rejected scheme\'s own constants');
-    for (const ev of ['pointercancel', 'blur', 'pagehide', 'orientationchange', 'visibilitychange'])
-      ok(new RegExp(`addEventListener\\('${ev}'`).test(deck), 'T-101: the deck releases on ' + ev);
+    // iOS Safari surface: no Chromium (and no Playwright WebKit on this host)
+    // can exercise these, so a static guard is the only automated evidence
     ok(/'gesturestart', 'gesturechange', 'gestureend'/.test(deck) && /passive: false/.test(deck),
-       'T-101: iOS Safari pinch gestures are cancelled (gesturestart/change/end, non-passive)');
-    ok(!/navigator\.vibrate/.test(deck), 'T-101: no vibration API (absent on iPhone Safari)');
+       'T-101 (iOS): Safari pinch gestures are cancelled (gesturestart/change/end, non-passive)');
+    ok(/addEventListener\('orientationchange'/.test(deck) && /screen\.orientation/.test(deck) &&
+       /addEventListener\('pagehide'/.test(deck),
+       'T-101 (iOS): orientationchange, screen.orientation change and pagehide release the deck');
+    ok(!/navigator\.vibrate/.test(deck), 'T-101 (iOS): no vibration API (absent on iPhone Safari)');
     const html = readFileSync(join(srcDir, '..', 'index.html'), 'utf8');
     const deckCss = /#thumbDeck \{[^}]*\}/.exec(html);
-    ok(!!deckCss && /touch-action: none/.test(deckCss[0]) && /user-select: none/.test(deckCss[0]) &&
-       /-webkit-user-select: none/.test(deckCss[0]) && /-webkit-touch-callout: none/.test(deckCss[0]),
-       'T-101: the deck CSS carries touch-action:none, user-select:none and the -webkit- iOS twins');
-    ok(/html\.touch-twin, html\.touch-twin body \{[^}]*touch-action: pan-x pan-y/.test(html),
-       'T-101: the page itself refuses pinch and double-tap zoom in touch mode');
+    ok(!!deckCss && /touch-action: none/.test(deckCss[0]) && /-webkit-user-select: none/.test(deckCss[0]) &&
+       /-webkit-touch-callout: none/.test(deckCss[0]),
+       'T-101 (iOS): the deck CSS carries touch-action:none and the -webkit- twins Safari reads');
   }
 
   /* ------------------ audio unlock on a touch END (iOS) ------------------ */

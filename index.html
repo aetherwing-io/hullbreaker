@@ -334,6 +334,8 @@
   #thumbFire.auto i { display: block; }
   #thumbFire.autohold { border-color: #9ce23e; }
   .thumb-chip {
+    /* iOS Safari paints its own button chrome unless told not to */
+    -webkit-appearance: none; appearance: none;
     position: fixed; box-sizing: border-box; margin: 0; padding: 0;
     border: 2px solid rgba(232,237,242,.32); border-radius: 3px; outline: none;
     color: rgba(232,237,242,.84); background: rgba(7,19,26,.44);
@@ -345,7 +347,6 @@
   #thumbAuto.on { border-color: #9ce23e; color: #9ce23e; }
   #thumbAuto.on.down { color: #07131a; background: #9ce23e; }
   #thumbStick {
-    --sector: 0deg;
     position: fixed; left: 0; top: 0; box-sizing: border-box;
     width: calc(var(--rim) * 2); height: calc(var(--rim) * 2);
     margin: calc(var(--rim) * -1) 0 0 calc(var(--rim) * -1);
@@ -361,11 +362,12 @@
     margin: calc(var(--rim) * -.24); border-radius: 50%;
     border: 1px dashed rgba(232,237,242,.24);
   }
-  #thumbStick::after {                       /* which of the 8 ways is held */
-    content: ''; position: absolute; left: 50%; top: 50%;
-    width: 14px; height: 14px; margin: -7px; opacity: 0;
-    background: #9ce23e; clip-path: polygon(0 0, 100% 50%, 0 100%, 28% 50%);
-    transform: rotate(calc(var(--sector) * -1)) translateX(calc(var(--rim) - 3px));
+  #thumbStick::after {        /* the HELD 8-way sector, lit on the rim at its true width */
+    content: ''; position: absolute; inset: -2px; border-radius: 50%; opacity: 0;
+    background: conic-gradient(from var(--wedge-from, 0deg),
+      rgba(156,226,62,.92) 0 var(--wedge-span, 45deg), transparent var(--wedge-span, 45deg) 360deg);
+    -webkit-mask: radial-gradient(circle closest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+    mask: radial-gradient(circle closest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
   }
   #thumbStick.dir::after { opacity: 1; }
   #thumbNub {
