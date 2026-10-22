@@ -791,6 +791,12 @@ async function legacy(newPage, view) {
       cue: document.getElementById('touchCue').textContent,
     }));
     check('?touch=legacy shows the old deck and not the new one', !vis.legacy && vis.twin, JSON.stringify(vis));
+    await shot(page, { path: join(OUT, `${view.name}-dpr1-legacy.png`) });
+    // The old grammar's tap is a 170 ms window timed on the main thread, and a
+    // software-rendered frame on a loaded host is longer than that (measured:
+    // 0 of 3 taps registered at load ~55). Skip the draw, as the frozen
+    // section does, so the window measures the gesture and not the renderer.
+    await quiet(page, true);
     // the old gesture grammar: drag = arrows, past the outer rail = fire, tap = jump pulse
     const W = view.viewport.width, H = view.viewport.height;
     const x0 = W * 0.3, y0 = H * 0.82;
@@ -816,7 +822,6 @@ async function legacy(newPage, view) {
     check('legacy: a drag holds the arrow, the outer rail adds fire, a tap pulses jump',
       drag.held.includes('ArrowRight') && !drag.fire && rail.fire && rail.held.includes('KeyX') && tapped.jumps >= 1,
       `drag ${drag.held} / rail ${rail.held} / jumps ${tapped.jumps}`);
-    await shot(page, {path: join(OUT, `${view.name}-dpr1-legacy.png`) });
     check('legacy page raised no errors', owned.errors.length === 0, owned.errors.join(' | '));
   } finally { await owned.close(); }
 }
