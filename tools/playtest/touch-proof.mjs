@@ -93,9 +93,11 @@ const MUTATIONS = {
     '    clearSlot(i);\n    sync();\n  }',
     '    for (let k = 0; k < MAX_POINTERS; k++) clearSlot(k);\n    endStick();\n    sync();\n  }',
   ],
-  // the deck stops listening for pointercancel
+  // the deck stops listening for pointercancel — and for lostpointercapture,
+  // the second release path Chromium fires right after a cancel (measured:
+  // removing pointercancel alone left the check green, correctly)
   'ignore-cancel': [
-    "    deck.addEventListener('pointercancel', onUp);\n",
+    "    deck.addEventListener('pointercancel', onUp);\n    deck.addEventListener('lostpointercapture', onUp);\n",
     '\n',
   ],
   // a blur no longer releases anything
@@ -568,138 +570,170 @@ async function physics(owned, L, view) {
   const F = { x: L.fire.cx, y: L.fire.cy };
   const runSpeed = await page.evaluate(() => HB.CONFIG.player.runSpeed);
 
+  // The sim keeps running while this harness thinks, and RIG runs 9.4 tiles/s:
+  // the drive below is ONLY in-page waits and CDP dispatches — no analysis —
+  // and every number is computed afterwards from the per-tick recording.
+  // (A first version analysed between steps; RIG ran 8 tiles meanwhile and
+  // the double jump overshot the catwalk.)
+  const mark = {};
+
   // 1. stick right + JUMP (held): the jump keeps the run
   await T.down(1, S.x, S.y);
   await T.move(1, S.x + 44, S.y);
-  let okw = await until(page, () => HB.player.grounded && HB.player.vx > 9 && HB.player.x >= 8);
+  mark.ok1 = await until(page, () => HB.player.grounded && HB.player.vx > 9 && HB.player.x >= 8);
   await T.down(2, J.x, J.y);
-  const p1 = await lastDown(page);
-  okw = okw && await until(page, (t) => HB.gameMs() > t + 60 && HB.player.vy < 0, p1);
-  okw = okw && await until(page, () => HB.player.grounded);
+  mark.p1 = await lastDown(page);
+  mark.ok1 = mark.ok1 && await until(page, (t) => HB.gameMs() > t + 60 && HB.player.vy < 0, mark.p1);
+  mark.ok1 = mark.ok1 && await until(page, () => HB.player.grounded);
   await T.up(2);
-  // the sample stamped exactly at the press time is the state the press met
-  const at1 = (await samplesSince(page, p1 - 1))[0];
-  let s = await samplesSince(page, p1);
-  const rise = s.find((q) => q.vy > 0);
-  const riseTick = rise ? Math.round((rise.t - p1) / TICK_MS) : null;
-  const yHeld0 = at1 ? at1.y : NaN;
-  const landH = s.findIndex((q, i) => i > 0 && q.g);
-  const apexHeld = Math.max(...s.slice(0, landH > 0 ? landH : s.length).map((q) => q.y)) - yHeld0;
-  check(`stick right + JUMP: vy>0 and vx>0 within ${JUMP_TICKS_N} ticks`,
-    okw && rise && riseTick <= JUMP_TICKS_N && rise.vx > 0,
-    rise ? `tick ${riseTick}: vy ${rise.vy.toFixed(2)}, vx ${rise.vx.toFixed(2)} (run ${runSpeed})` : 'no rise');
-  measure('runJump', rise ? { tick: riseTick, vy: +rise.vy.toFixed(3), vx: +rise.vx.toFixed(3) } : null);
 
-  // 2. stick up-right + FIRE: bullets travel up-right
+  // 2. stick up-right + FIRE (RIG keeps running: NE still holds Right)
   await T.move(1, S.x + 40, S.y - 40);
   await until(page, () => HB.keys.up && HB.keys.right, null, 10000);
   const shots0 = await page.evaluate(() => HB.shotsFired());
-  const alive0 = await page.evaluate(async () => (await import('/src/sim/weapons.js')).bulletPool.filter((b) => b.alive).length);
   await T.down(3, F.x, F.y);
   await until(page, (n) => HB.shotsFired() > n, shots0, 20000);
-  await frames(page, 1);
-  const bullets = await page.evaluate(async () => (await import('/src/sim/weapons.js')).bulletPool
-    .filter((b) => b.alive).map((b) => ({ vx: b.vx, vy: b.vy, deg: Math.atan2(b.vy, b.vx) * 180 / Math.PI })));
-  const keysAtFire = await page.evaluate(() => ({ up: HB.keys.up, right: HB.keys.right, fire: HB.keys.fire }));
-  // what aim assist (normal-run default, <= CONFIG.assist.maxDeg) could have
-  // pulled toward: materialized hostiles, as offsets from RIG's muzzle
-  const nearAtFire = await page.evaluate(() => HB.hostiles
-    .filter((e) => HB.gameMs() >= e.enterUntil)
-    .map((e) => ({ kind: e.kind, dx: +(e.x - HB.player.x).toFixed(2), dy: +(e.y - HB.player.y - HB.player.muzzleY).toFixed(2) })));
-  const assistMaxDeg = await page.evaluate(() => HB.CONFIG.assist.maxDeg);
+  const fire = await page.evaluate(async () => {
+    const pool = (await import('/src/sim/weapons.js')).bulletPool;
+    return {
+      bullets: pool.filter((b) => b.alive).map((b) => ({ vx: b.vx, vy: b.vy, deg: Math.atan2(b.vy, b.vx) * 180 / Math.PI })),
+      keys: { up: HB.keys.up, right: HB.keys.right, fire: HB.keys.fire },
+      // what aim assist (normal-run default, <= CONFIG.assist.maxDeg) could
+      // have pulled toward: materialized hostiles, as offsets from the muzzle
+      hostiles: HB.hostiles.filter((e) => HB.gameMs() >= e.enterUntil).map((e) => ({
+        kind: e.kind, dx: +(e.x - HB.player.x).toFixed(2), dy: +(e.y - HB.player.y - HB.player.muzzleY).toFixed(2),
+      })),
+      assistMaxDeg: HB.CONFIG.assist.maxDeg,
+    };
+  });
   await T.up(3);
   await T.move(1, S.x + 44, S.y);
-  const upRight = bullets.length > 0 && bullets.every((b) => b.vx > 0 && b.vy > 0 && b.deg > 30 && b.deg < 60);
-  check('stick up-right + FIRE spawns bullets travelling up-right',
-    alive0 === 0 && upRight && keysAtFire.up && keysAtFire.right && keysAtFire.fire,
-    `${bullets.length} live: ${bullets.map((b) => b.deg.toFixed(1) + '°').join(', ')}`);
-  measure('fireUpRight', { bullets: bullets.length, degrees: bullets.map((b) => +b.deg.toFixed(2)),
-    assistMaxDeg, hostilesAtFire: nearAtFire });
 
   // 3. a TAPPED jump (press + lift back to back)
   await until(page, () => HB.player.grounded);
-  const y3 = await page.evaluate(() => HB.player.y);
   await T.down(2, J.x, J.y);
   await T.up(2);
-  const p3 = await lastDown(page);
-  await until(page, (t) => HB.gameMs() > t + 60 && HB.player.grounded, p3);
-  s = await samplesSince(page, p3);
-  const apexTap = Math.max(...s.map((q) => q.y)) - y3;
-  // how long the sim actually saw the tap held (key bit 16 per tick)
-  const tapTicks = s.filter((q) => q.k & 16).length;
-  const heldTicks = (await samplesSince(page, p1)).filter((q) => q.t < p3 && (q.k & 16)).length;
-  check('a held JUMP reaches a higher apex than a tapped one', apexHeld > apexTap + 0.5,
-    `held ${apexHeld.toFixed(3)} tiles (${heldTicks} ticks held), tapped ${apexTap.toFixed(3)} tiles ` +
-    `(${tapTicks} ticks held)`);
-  measure('apex', { held: +apexHeld.toFixed(3), tapped: +apexTap.toFixed(3), heldTicks, tapTicks,
-    heldStartY: yHeld0, tapStartY: y3 });
+  mark.p3 = await lastDown(page);
+  await until(page, (t) => HB.gameMs() > t + 60 && HB.player.grounded, mark.p3);
 
   // 4. a second JUMP press airborne is the air jump — and it carries RIG
-  //    onto the first catwalk (x 26-35, y 6.35) for the drop-through.
-  await until(page, () => HB.player.grounded && HB.player.x >= 18);
+  //    onto the first catwalk (x 26-35, y 6.35): from ground at x 18.5-24
+  //    the double jump comes down around x 28-33.
+  mark.ok4 = await until(page, () => HB.player.grounded && HB.player.x >= 18.5);
+  mark.x4 = await page.evaluate(() => HB.player.x);
   await T.down(2, J.x, J.y);
   await until(page, () => !HB.player.grounded && HB.player.vy <= 0.8);
-  const aj0 = await page.evaluate(() => HB.player.airJumpsLeft);
   await T.up(2);
   await T.down(2, J.x, J.y);
-  const p4 = await lastDown(page);
-  await until(page, (t) => HB.gameMs() > t + 1, p4);
-  await frames(page, 2);
-  s = await samplesSince(page, p4);
-  const used = s.find((q) => q.aj < aj0);
-  check('a second JUMP press airborne consumes the air jump',
-    aj0 === 1 && used && used.vy > 10 && Math.round((used.t - p4) / TICK_MS) <= JUMP_TICKS_N,
-    used ? `airJumpsLeft ${aj0}->${used.aj}, vy ${used.vy.toFixed(2)} at tick ${Math.round((used.t - p4) / TICK_MS)}` : `airJumpsLeft stayed ${aj0}`);
-  measure('airJump', used ? { from: aj0, to: used.aj, vy: +used.vy.toFixed(3) } : null);
-  const landedOk = await until(page, () => HB.player.grounded, null, 20000);
+  mark.p4 = await lastDown(page);
+  await until(page, (t) => HB.gameMs() > t + 1 && HB.player.grounded, mark.p4, 20000);
+  await T.up(2);
   const landing = await page.evaluate(() => ({
     x: +HB.player.x.toFixed(3), y: +HB.player.y.toFixed(3), hp: HB.player.hp,
     oneWay: HB.player.onOneWay ? { x0: HB.player.onOneWay.x0, x1: HB.player.onOneWay.x1, y: HB.player.onOneWay.y } : null,
   }));
-  const flight = (await samplesSince(page, p4)).map((q) => [+q.x.toFixed(2), +q.y.toFixed(2), q.g ? 1 : 0]);
-  measure('airJumpFlight', { landing, path: flight.filter((_, i) => i % 3 === 0) });
-  const onCatwalk = landedOk && !!landing.oneWay && Math.abs(landing.y - 6.35) < 0.02;
-  if (!onCatwalk) await page.screenshot({ path: join(OUT, `${view.name}-catwalk-miss.png`) });
-  await T.up(2);
+  const onCatwalk = !!landing.oneWay && Math.abs(landing.y - 6.35) < 0.02;
 
-  // 5. walk to the solid stretch under the catwalk, stop, then down + JUMP
-  let dropped = false, detail = 'never reached the catwalk: landed at ' + JSON.stringify(landing);
+  // 5. on to the solid stretch under the catwalk, stop, then down + JUMP.
+  //    Stop over solid ground (x 32-34, y 2) and short of the rib ladder
+  //    whose foot stands on this catwalk at x 34.5 (grab half-width 0.48):
+  //    stick-down inside [34.02, 34.98] would take the ladder, not the floor.
+  let stand = null;
   if (onCatwalk) {
-    // stop over solid ground (x 32-34, y 2) and short of the rib ladder whose
-    // foot stands on this catwalk at x 34.5 (grab half-width 0.48): stick-down
-    // inside [34.02, 34.98] would take the ladder, not the floor
     await until(page, () => HB.player.x >= 32.3 || !HB.player.onOneWay, null, 20000);
     await T.up(1);
     await until(page, () => Math.abs(HB.player.vx) < 0.05, null, 20000);
-    const stand = await page.evaluate(() => ({ x: HB.player.x, y: HB.player.y, ow: !!HB.player.onOneWay }));
+    stand = await page.evaluate(() => ({ x: HB.player.x, y: HB.player.y, ow: !!HB.player.onOneWay }));
     await T.down(1, S.x, S.y);
     await T.move(1, S.x, S.y + 44);
     await until(page, () => HB.keys.down && !HB.keys.left && !HB.keys.right, null, 10000);
     await T.down(2, J.x, J.y);
-    const p5 = await lastDown(page);
-    await until(page, (t) => HB.gameMs() > t + 80, p5);
+    mark.p5 = await lastDown(page);
+    await until(page, (t) => HB.gameMs() > t + 80, mark.p5);
     await T.up(2);
     await until(page, () => HB.player.grounded, null, 20000);
-    s = await samplesSince(page, p5);
-    const through = s.find((q) => q.y < 6.3 && !q.g);
-    const landed = s[s.length - 1];
-    dropped = stand.ow && through && Math.round((through.t - p5) / TICK_MS) <= JUMP_TICKS_N + 1 &&
-      landed.g && landed.y < 6.0 && s.some((q) => q.du > p5);
-    detail = `stood x ${stand.x.toFixed(2)} y ${stand.y.toFixed(2)} on catwalk ${stand.ow}; ` +
-      (through ? `below the deck at tick ${Math.round((through.t - p5) / TICK_MS)}; ` : 'never went below; ') +
+    await T.up(1);
+  } else {
+    await page.screenshot({ path: join(OUT, `${view.name}-catwalk-miss.png`) });
+    await T.up(1);
+  }
+
+  /* ---------------- analysis, from the per-tick recording ---------------- */
+  let s;
+  const all = await samplesSince(page, 0);
+  const since = (t) => all.filter((q) => q.t > t);
+  const atT = (t) => all.find((q) => q.t >= t - 1e-6);       // state the press met
+
+  let q = since(mark.p1);
+  const rise = q.find((r) => r.vy > 0);
+  const riseTick = rise ? Math.round((rise.t - mark.p1) / TICK_MS) : null;
+  const land1 = q.findIndex((r, i) => i > 0 && r.g);
+  const flight1 = q.slice(0, land1 > 0 ? land1 : q.length);
+  const y1 = atT(mark.p1) ? atT(mark.p1).y : NaN;
+  const apexHeld = Math.max(...flight1.map((r) => r.y)) - y1;
+  const heldTicks = flight1.filter((r) => r.k & 16).length;
+  check(`stick right + JUMP: vy>0 and vx>0 within ${JUMP_TICKS_N} ticks`,
+    mark.ok1 && rise && riseTick <= JUMP_TICKS_N && rise.vx > 0,
+    rise ? `tick ${riseTick}: vy ${rise.vy.toFixed(2)}, vx ${rise.vx.toFixed(2)} (run ${runSpeed})` : 'no rise');
+  measure('runJump', rise ? { tick: riseTick, vy: +rise.vy.toFixed(3), vx: +rise.vx.toFixed(3), x: +rise.x.toFixed(2) } : null);
+
+  const upRight = fire.bullets.length > 0 && fire.bullets.every((b) => b.vx > 0 && b.vy > 0 && b.deg > 30 && b.deg < 60);
+  check('stick up-right + FIRE spawns bullets travelling up-right',
+    upRight && fire.keys.up && fire.keys.right && fire.keys.fire,
+    `${fire.bullets.length} live: ${fire.bullets.map((b) => b.deg.toFixed(1) + '°').join(', ')}`);
+  measure('fireUpRight', { bullets: fire.bullets.length, degrees: fire.bullets.map((b) => +b.deg.toFixed(2)),
+    assistMaxDeg: fire.assistMaxDeg, hostilesAtFire: fire.hostiles });
+
+  q = since(mark.p3);
+  const land3 = q.findIndex((r, i) => i > 0 && r.g);
+  const flight3 = q.slice(0, land3 > 0 ? land3 : q.length);
+  const y3 = atT(mark.p3) ? atT(mark.p3).y : NaN;
+  const apexTap = Math.max(...flight3.map((r) => r.y)) - y3;
+  const tapTicks = flight3.filter((r) => r.k & 16).length;
+  check('a held JUMP reaches a higher apex than a tapped one', apexHeld > apexTap + 0.5,
+    `held ${apexHeld.toFixed(3)} tiles (${heldTicks} ticks held), tapped ${apexTap.toFixed(3)} tiles ` +
+    `(${tapTicks} ticks held)`);
+  measure('apex', { held: +apexHeld.toFixed(3), tapped: +apexTap.toFixed(3), heldTicks, tapTicks,
+    heldStartY: y1, tapStartY: y3 });
+
+  q = since(mark.p4);
+  const before4 = atT(mark.p4);
+  const aj0 = before4 ? before4.aj : null;
+  const used = q.find((r) => r.aj < aj0);
+  const usedTick = used ? Math.round((used.t - mark.p4) / TICK_MS) : null;
+  check('a second JUMP press airborne consumes the air jump',
+    mark.ok4 && before4 && !before4.g && aj0 === 1 && used && used.vy > 10 && usedTick <= JUMP_TICKS_N,
+    used ? `airJumpsLeft ${aj0}->${used.aj}, vy ${used.vy.toFixed(2)} at tick ${usedTick} (airborne at x ${before4.x.toFixed(2)})`
+      : `airJumpsLeft stayed ${aj0}`);
+  measure('airJump', used ? { from: aj0, to: used.aj, vy: +used.vy.toFixed(3), tick: usedTick } : null);
+  measure('airJumpFlight', { jumpFromX: +mark.x4.toFixed(3), landing,
+    path: q.filter((_, i) => i % 3 === 0).map((r) => [+r.x.toFixed(2), +r.y.toFixed(2), r.g ? 1 : 0]) });
+
+  let dropped = false, detail = 'never reached the catwalk: landed at ' + JSON.stringify(landing);
+  if (onCatwalk && stand) {
+    q = since(mark.p5);
+    const through = q.find((r) => r.y < 6.3 && !r.g);
+    const landed = q.filter((r) => r.g).pop();
+    const throughTick = through ? Math.round((through.t - mark.p5) / TICK_MS) : null;
+    dropped = stand.ow && through && throughTick <= JUMP_TICKS_N + 1 &&
+      landed && landed.y < 6.0 && q.some((r) => r.du > mark.p5);
+    detail = `stood x ${stand.x.toFixed(2)} y ${stand.y.toFixed(2)} on the catwalk: ${stand.ow}; ` +
+      (through ? `below the deck at tick ${throughTick}; ` : 'never went below; ') +
       `landed y ${landed ? landed.y.toFixed(2) : '?'}`;
-    measure('drop', { standX: +stand.x.toFixed(3), landedY: landed ? +landed.y.toFixed(3) : null });
+    measure('drop', { standX: +stand.x.toFixed(3), throughTick, landedY: landed ? +landed.y.toFixed(3) : null });
   }
   check('stick down + JUMP on a catwalk drops through it', dropped, detail);
 
   // damage would have meant the run was disturbed under the proof
   s = await samplesSince(page, 0);
+  measure('edges', await page.evaluate(() => ({ ...HB.edges(), x: HB.player.x, gameMs: HB.gameMs() })));
   measure('hpMin', Math.min(...s.map((q) => q.hp)));
   check('no damage, death or state change disturbed the movement proof (i-frames pinned)',
     s.every((q) => q.hp === 3 && q.state === 'PLAYING'), `hp min ${Math.min(...s.map((q) => q.hp))}`);
 
   // in-use screenshot: stick up-right, FIRE and JUMP held over the live run
   await page.evaluate(() => { HB.player.iframesUntil = 0; });
+  await T.down(1, S.x, S.y);
   await T.move(1, S.x + 40, S.y - 40);
   await T.down(3, F.x, F.y);
   await T.down(2, J.x, J.y);

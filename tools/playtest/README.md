@@ -1771,7 +1771,7 @@ turn its own checks red:
 | mutation | the defect | goes red |
 |---|---|---|
 | `release-all-on-up` | lifting any finger releases every finger | the 36-order ledger |
-| `ignore-cancel` | no `pointercancel` listener | pointercancel release |
+| `ignore-cancel` | no `pointercancel` and no `lostpointercapture` listener (Chromium fires the second right after a cancel, so removing one alone is not a defect) | pointercancel release |
 | `ignore-blur` | no `blur` listener | isolated blur release |
 | `jump-pulse` | JUMP sends keyup right after keydown (the old scheme's pulse) | held vs tapped apex |
 | `stick-no-vertical` | the stick never emits Up/Down | up-right bullets, drop-through |
