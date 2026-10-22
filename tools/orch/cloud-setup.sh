@@ -6,6 +6,7 @@
 #   - points Playwright's default `channel: 'chrome'` at the preinstalled
 #     Chromium when no system Chrome exists;
 #   - provides /private/tmp for capture tools that default to macOS paths;
+#   - installs the dev-only art toolchain (headless Blender, imaging, librsvg);
 #   - exports the slow-host knobs (perf probe timeouts, harness wall-clock
 #     slowdown, smaller smoke viewport) in the shell profile. SwiftShader boots
 #     the shipped scene in ~15-30 s and renders ~1-2 fps at 1280x720 under load.
@@ -21,6 +22,16 @@ if [ ! -x /opt/google/chrome/chrome ] && [ -x /opt/pw-browsers/chromium ]; then
 fi
 
 [ -e /private/tmp ] || { mkdir -p /private && ln -s /tmp /private/tmp; }
+
+# Art toolchain (decisions.md entry 22, tools/art/README.md): Mesa EGL/GL for
+# headless Blender, librsvg for vector UI, and a venv holding bpy + imaging.
+if ! [ -x /opt/hb-art/bin/python ] || ! command -v rsvg-convert >/dev/null; then
+  apt-get update -qq >/dev/null 2>&1 || true
+  apt-get install -y -qq libegl1 libgl1 libegl-mesa0 libgl1-mesa-dri libxi6 \
+    libxxf86vm1 libxfixes3 libxrender1 libxkbcommon0 libsm6 librsvg2-bin >/dev/null
+  [ -x /opt/hb-art/bin/python ] || uv venv -q --python /usr/bin/python3 /opt/hb-art
+  VIRTUAL_ENV=/opt/hb-art uv pip install -q -r "$root/tools/art/requirements.txt"
+fi
 
 for f in "$HOME/.bashrc" "$HOME/.profile"; do
   grep -q 'HB_HARNESS_SLOWDOWN' "$f" 2>/dev/null && continue

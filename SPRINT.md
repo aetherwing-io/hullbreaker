@@ -22,8 +22,10 @@ T-101 so nothing collides with that record.
 - Phone captures at deviceScaleFactor 3 trip the 4 s freeze watchdog in
   SwiftShader (a host artifact, not proof of a device defect). Capture phones
   at DPR 1-2 and say which.
-- No image-generation CLI (`codex`) is installed. New art comes from the
-  existing atlases/components, procedural/canvas drawing, or PIL/ImageMagick.
+- No image-generation CLI (`codex`) is installed. Entry 22 authorized an
+  open-source art toolchain instead: headless Blender 5.2 (`/opt/hb-art`,
+  Cycles CPU/Workbench), Pillow/NumPy/OpenCV, `rsvg-convert`, CC0 libraries.
+  Rules: `tools/art/README.md`.
 - 4 CPU cores: at most three browser-heavy lanes at once.
 - After a container restart, `bash tools/orch/cloud-setup.sh` restores all of
   the above (idempotent). The merge gate's smoke step uses
@@ -343,6 +345,43 @@ fences: `docs/proposals/`, `tools/orch/test-audit.json`, scratch timing tools
 under `tools/orch/`. No changes to `tools/pathcheck/`, `src/`, or any check.
 verify: re-run the instrumented timing and the mutation sample; numbers match
 the doc
+
+## T-109 | art | doing | P1
+
+goal: prove the 3D -> sprite pipeline (entry 22) on the two sprites a player
+looks at most — RIG with all five weapons, and the wasp — so guns are in hands
+by construction and the look can be judged against the current AI-painted art.
+
+phase A (now, no `src/` changes — T-103 owns `src/render/player.js`):
+- [ ] `tools/art/rig/`: a scripted, reproducible headless-Blender build of RIG
+      (low-poly armoured salvage marine true to boards 01/13 and STORY: human
+      scale, helmet + visor, pack, chunky plates, one accent), an armature,
+      and the five guns (R rivet, S spread, L laser, H homing, F flame) each
+      parented to the right-hand bone with grip and muzzle empties.
+- [ ] Every frame the game uses today (inventory it from `src/pure/rig.js` and
+      `src/render/player.js`: idle, run, jump rise/fall, climb, each aim
+      direction, hit/i-frame, any others) rendered through a fixed orthographic
+      camera, pixel-post-processed into the house palette, packed into atlases,
+      with per-frame JSON anchors (hand, muzzle per gun, feet, head).
+- [ ] A measured check that the drawn muzzle pixel and the exported muzzle
+      anchor agree within 1 px in every frame (it binds: offset one gun and
+      show it fail).
+- [ ] The same pipeline for the wasp: model, idle/cruise/dive/hit frames,
+      anchors, atlas.
+- [ ] Contact sheets: current art vs v2, true size at desktop FAR (RIG ~30 px)
+      and at phone framing (RIG ~6% of a 390 px landscape height), plus 4x.
+- [ ] Render cost per frame and total build time recorded; the build is one
+      command.
+phase B (after T-103 merges; the integrator will say so):
+- [ ] v2 wired in behind `?art=v2` (render-only; the sim muzzle stays truth —
+      report any delta), current art remains the default and the control.
+- [ ] In-game captures at desktop and phone landscape; operator packet with the
+      exact query string and 3-5 non-leading questions.
+owner: asset-artist
+fences: `tools/art/`, `assets/generated/sprites/*-v2*`, `assets/manifest.json`
+entries it adds; in phase B only, the `?art=v2` branch in the render layer.
+verify: the one-command build reproduces byte-identical atlases; the anchor
+check; pathcheck green after phase B
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 

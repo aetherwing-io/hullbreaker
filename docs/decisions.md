@@ -993,3 +993,42 @@ turns) was caught by any gate.
 gate plus behaviour tests that would have caught the entry-20 defects.
 
 **Source:** operator message, 2026-10-22, after wave 1 was dispatched.
+
+## 22 — 2026-10-22 — Open-source art tooling is authorized; the integrator picks it
+
+**Operator, verbatim:**
+
+> "if we need to pull in any tools for the agents to create better graphics,
+> we can do that too. i did my best before just generating with ai, but open
+> source tools might help. i don't know any"
+
+**What this decides.** Agents may install open-source tools to make better
+graphics. The choice of tools is delegated to the integrator. They stay
+DEV-ONLY: the game gains no runtime dependency and no build step.
+
+**Integrator choices under this verdict (reverse any of them if wrong):**
+- **Headless Blender 5.2 LTS (`bpy` from PyPI)** in `/opt/hb-art`, rendering
+  with Cycles on CPU or Workbench (no GPU here; EEVEE hung in testing). Used for
+  anything that animates: a rigged model through a fixed orthographic camera
+  cannot let a gun drift off a hand, and it exports per-frame anchors the game
+  reads. This targets the root cause of an entry-20 defect: AI-painted frames
+  share no skeleton.
+- **Pillow, NumPy, OpenCV** for deterministic pixel post-processing and
+  measurement; **librsvg** (`rsvg-convert`) for vector UI.
+- **Third-party material: CC0 / public domain only** (ambientCG, Poly Haven,
+  Kenney, CC0 items on OpenGameArt), provenance recorded per file. The game is
+  public; nothing with attribution or non-commercial terms goes in.
+- **Not adopted: CPU image diffusion.** Reachable via Hugging Face, but slow
+  here and stylistically inconsistent across frames — the property this push is
+  trying to remove.
+- Setup is reproducible: `tools/orch/cloud-setup.sh`; rules in
+  `tools/art/README.md`; the `asset-artist` agent definition is rewritten to
+  match (it still named the uninstalled `codex` CLI and the retired
+  asset-independence rule).
+
+**What does not change:** every new look ships behind an A/B flag with the
+current art as the control and becomes the default only on the operator's
+verdict (entry 16); FAR on desktop and the phone framing (entries 17, 20);
+the half-dose value ladder (14); entry 18's 60 fps condition.
+
+**Source:** operator message, 2026-10-22.
