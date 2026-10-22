@@ -1101,3 +1101,27 @@ iteration gets faster and the game stops being fragile.
   queued as their own tasks; they are not bundled into deletion batches.
 
 **Source:** operator message, 2026-10-22.
+
+## 25 — 2026-10-22 — Delete the hook v1 prototype and the zip-assembly corner
+
+**Operator, verbatim:**
+
+> "i never got to use the hook and i liked the aesthetic of building the
+> corner, but neither need to stay"
+
+**What this decides.** Both pieces of code that earlier verdicts deliberately
+kept are released for deletion under entry 24's cleanup: the inert `?hook=1`
+snap-hook prototype (kept "not deleted" by entry 5) and the legacy
+zip-assembly / brick-slam corner choreography (`?zip=1`, kept "extractable"
+by entry 3's addendum). This supersedes those two keep-clauses only; entry
+3's static-anatomy rule and entry 5's design guidance for any FUTURE tether
+(marker-less, button-less) still stand.
+
+**Recorded for later:** the operator liked the corner-building aesthetic.
+Entry 3's addendum still reserves assembly for things the ship *builds*
+(traps, emplacements, later defenders). When one of those is built, recover
+the choreography from git rather than reinventing it: it exists intact at
+`bb8e4df` (search `?zip=1` in `src/mode.js` and the corner-ritual code it
+gates).
+
+**Source:** operator message, 2026-10-22, answering entry 24's open item.
