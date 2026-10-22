@@ -5,7 +5,7 @@
 
 import { CONFIG } from '../config.js';
 import { BEND_S, activeWorldFacet, routeRenderOwned, worldFacetAt } from '../pure/path.js';
-import { ACTIVE_FIXTURE } from '../mode.js';
+import { ACTIVE_FIXTURE, IS_G1 } from '../mode.js';
 import { LEVEL_LEN, columnBuilt, levelBuildRevision } from '../sim/level.js';
 import { scrollX } from '../sim/time.js';
 import { cameraFacingFacet } from './camera.js';
@@ -24,18 +24,27 @@ export function routeWorldFacet(s) {
 }
 
 export function routeRenderable(s) {
-  // Corner presentation is render-only. The default static anatomy and the
-  // retired ?zip=1 brick reveal therefore share identical route ownership;
-  // only authored fixtures opt out because their geometry owns another path.
+  // Corner presentation is render-only; authored fixtures opt out because
+  // their geometry owns another path.
   if (ACTIVE_FIXTURE !== null) return true;
+  // T-102: under the default static-anatomy reveal (decisions.md entry 3) the
+  // arriving face was baked at boot and is REVEALED by camera ownership alone.
+  // Gating it on the simulation's construction rows — which still settle on
+  // the retired zipper's schedule (one column per 16 ms from 380 to 860 ms,
+  // the far set at 1100 ms) — made the arriving catwalks, ladders and hull
+  // assemble column by column after the camera handoff, and hid the pre-bend
+  // column RIG fights from. Only the retired ?zip=1 brick reveal, which does
+  // assemble, still reads the construction rows.
   return routeRenderOwned(
-    s, routeColumnBuilt(s), scrollX, cameraFacingFacet(), CONFIG, BEND_S,
+    s, IS_G1 || routeColumnBuilt(s), scrollX, cameraFacingFacet(), CONFIG, BEND_S,
   );
 }
 
 // A cheap cache key for static instance pools. It changes only at an intro /
-// camera-facet handoff or whenever the sim commits another construction row.
+// camera-facet handoff, or (?zip=1 only) whenever the sim commits another
+// construction row.
 export function routeVisibilityStamp() {
   if (ACTIVE_FIXTURE !== null) return 'fixture';
+  if (IS_G1) return `${currentWorldFacet()}`;
   return `${currentWorldFacet()}:${levelBuildRevision()}`;
 }
