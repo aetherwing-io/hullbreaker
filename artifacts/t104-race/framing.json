@@ -181,6 +181,142 @@
    },
    "nominalSameEdges": true,
    "screenshot": "framing-phone-portrait.png"
+  },
+  {
+   "id": "phone-landscape-view-mid",
+   "nominal": {
+    "width": 844,
+    "height": 390
+   },
+   "probed": {
+    "width": 844,
+    "height": 390
+   },
+   "query": "view=mid",
+   "wallMs": 392123,
+   "live": {
+    "inner": {
+     "w": 844,
+     "h": 390
+    },
+    "scrollX": 6.450129000000006,
+    "gameMs": 1500.029999999999,
+    "edgeL": -26.659948500550996,
+    "edgeR": 47.911747095065834,
+    "player": {
+     "x": 18.169134377819976,
+     "y": 3
+    },
+    "aheadTiles": 35.84274171724586,
+    "view": {
+     "id": "mid",
+     "label": "MID",
+     "depthMult": 1.42,
+     "cameraDepth": 31.95
+    },
+    "ui": {
+     "hudRigPanel": {
+      "x": 0.012,
+      "y": 0.018,
+      "w": 0.355,
+      "h": 0.297
+     },
+     "hudObjectivePanel": {
+      "x": 0.609,
+      "y": 0.018,
+      "w": 0.379,
+      "h": 0.087
+     },
+     "touchDeck": {
+      "x": 0,
+      "y": 0.54,
+      "w": 1,
+      "h": 0.46
+     }
+    }
+   },
+   "analytic": {
+    "left": -26.659948500551145,
+    "right": 47.911747095065756,
+    "width": 74.5716955956169,
+    "depth": 31.949999999999996,
+    "localYBottom": -12.674493211405554,
+    "localYTop": 21.480951702680958
+   },
+   "edgeErr": {
+    "left": 1.4921397450962104e-13,
+    "right": 7.815970093361102e-14
+   },
+   "nominalSameEdges": true,
+   "screenshot": "framing-phone-landscape-view-mid.png"
+  },
+  {
+   "id": "phone-landscape-view-near",
+   "nominal": {
+    "width": 844,
+    "height": 390
+   },
+   "probed": {
+    "width": 844,
+    "height": 390
+   },
+   "query": "view=near",
+   "wallMs": 303485,
+   "live": {
+    "inner": {
+     "w": 844,
+     "h": 390
+    },
+    "scrollX": 6.450129000000006,
+    "gameMs": 1500.029999999999,
+    "edgeL": -15.9619122162185,
+    "edgeR": 37.31334252995625,
+    "player": {
+     "x": 18.169134377819976,
+     "y": 3
+    },
+    "aheadTiles": 25.24433715213628,
+    "view": {
+     "id": "near",
+     "label": "NEAR",
+     "depthMult": 1,
+     "cameraDepth": 22.5
+    },
+    "ui": {
+     "hudRigPanel": {
+      "x": 0.012,
+      "y": 0.018,
+      "w": 0.355,
+      "h": 0.297
+     },
+     "hudObjectivePanel": {
+      "x": 0.609,
+      "y": 0.018,
+      "w": 0.379,
+      "h": 0.087
+     },
+     "touchDeck": {
+      "x": 0,
+      "y": 0.54,
+      "w": 1,
+      "h": 0.46
+     }
+    }
+   },
+   "analytic": {
+    "left": -15.961912216218433,
+    "right": 37.31334252995613,
+    "width": 53.27525474617457,
+    "depth": 22.5,
+    "localYBottom": -7.688216420615059,
+    "localYTop": 16.49272343421498
+   },
+   "edgeErr": {
+    "left": 6.750155989720952e-14,
+    "right": 1.2079226507921703e-13
+   },
+   "nominalSameEdges": true,
+   "screenshot": "framing-phone-landscape-view-near.png"
   }
  ]
 }

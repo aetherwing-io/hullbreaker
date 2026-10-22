@@ -274,6 +274,8 @@ Tables M1–M8 (with M7b) are generated verbatim below by
 `artifacts/t104-race/baseline.md`. "Oracle@L" rows are the instrument
 (perfect shooter at L ms per kill, racer movement); the four named rows are
 bots (12 seeds each); viewport "phone 6 %" is the estimated addendum frame.
+Tables M2 and M4–M6 show desktop and the phone 6 % frame to stay readable;
+`baseline.md` carries all four viewports.
 
 **2.2 Seconds per side** (M1, M2). A perfect racer takes **17.9–21.9 s** per
 side on desktop: 16.4–18.6 s while the scroll moves — **of which 5.3–5.9 s
@@ -349,7 +351,7 @@ the pursuing edge is moving:
   daylight on desktop, 34 / 49 / 61 in the 6 % phone frame — the frame is
   mostly *behind* the player. Bots are tighter (desktop p10 5–10), and in the
   6 % phone frame they spend 8–22 % of frames under 3 tiles of daylight,
-  almost all of it inside held gate fights (§4.5 rule 4).
+  almost all of it inside held gate fights (§4.5 rule 5).
 - **Portrait sees nothing either way**: 0 / 0 / 0 tiles of route ahead on
   97 % of moving frames, with a fixed 15 tiles behind.
 
@@ -606,7 +608,7 @@ each visible body stands from the damage plane in the held view: ≥ 8.4 tiles
 on desktop and ≥ 20 in today's FAR phone frame, but in the estimated 6 % phone
 frame 13 of 39 stand within 6 tiles of it (nearest 1.6), and bots there spend
 8–22 % of their frames with under 3 tiles of daylight behind them (desktop
-0–1 %, Table M7b) — see §4.5 rule 4.
+0–1 %, Table M7b) — see §4.5 rule 5.
 
 A real defect in a supported orientation: the addendum makes landscape the
 tuning target and keeps portrait working, and a five-minute hold that no
@@ -837,11 +839,16 @@ fingerprint must stay byte-identical (T-204).
 
 **The phone tuning target is the addendum's frame: 844×390 landscape, RIG
 ≈ 6 % of the height** (23.4 px). Modelled as a pure depth pull-in from FAR
-(the only model the shipped camera code has for a view change), it shows a
-**62.6 × 28.3-tile** window — 6.7 s of running ahead, 1.41 screens per
+(the only model the shipped camera code has for a view change — and the model
+is confirmed against the shipped page at the two shipped scales that bracket
+6 %: booting the landscape phone at `?view=mid` (RIG 5.0 %, 74.6 tiles) and
+`?view=near` (RIG 7.1 %, 53.3 tiles), the live edges match this model's
+prediction to 1.5e-13 and 1.2e-13, and both shots are committed beside
+`framing.json` as the closest look available at a closer phone frame), it
+shows a **62.6 × 28.3-tile** window — 6.7 s of running ahead, 1.41 screens per
 shipped side, 2.81 per proposed side. All 39 gate bodies stand inside its held
 view (`gate-view.json`), so the portrait defect of §2.8 does not recur there —
-but 13 of them stand within 6 tiles of the damage plane (rule 4 below).
+but 13 of them stand within 6 tiles of the damage plane (rule 5 below).
 
 **Readability rule for that frame (designs every side in §5):**
 
@@ -865,7 +872,16 @@ but 13 of them stand within 6 tiles of the damage plane (rule 4 below).
    tiles = 32 px) and the 3-tile mortar patch (41 px) all stay at or above
    ~27 px. Nothing smaller than one tile (13.8 px) should carry a route
    decision on a phone.
-4. *Room in front of the damage plane.* The closer frame brings the left
+4. *The frame is not all playfield.* Measured from the live DOM on a
+   844×390 landscape phone (`framing.json`): the RIG instrument panel covers
+   the top-left **35.5 % × 29.7 %** of the frame and the objective banner the
+   top-right **37.9 % × 8.7 %**; the touch deck's input surface covers the
+   bottom **46 %** (its drawn parts are the stick ring and the two chips in
+   the corners). A route decision authored to read only in the top-left
+   third of a phone frame is invisible; the readable band is the middle and
+   the lower-left. (HUD and deck layout belong to T-101/T-105 — this is the
+   level-design consequence, not a request.)
+5. *Room in front of the damage plane.* The closer frame brings the left
    edge in to `HALT_S − 20.6` while the authored gate sockets reach
    `HALT_S − 19`: **13 of 39 gate bodies stand < 6 tiles from the damage
    plane** in the held 6 % view (nearest 1.6 — gate 5's rooted gateweaver;
@@ -915,7 +931,7 @@ force a choice, and it is the operator's (§8 Q1):
 | | **A — one escalation across three levels** (recommended) | **B — every level escalates on its own** |
 | --- | --- | --- |
 | Defense states | L1 OBSERVE + INTERCEPT · L2 CONTAIN + QUARANTINE · L3 STERILIZE + SCUTTLE → Crown | each level OBSERVE → SCUTTLE; the Crown only at the end of L3 |
-| Story | STORY's north star intact: *"the higher RIG climbs, the more the Meridian recognizes the threat"* | the ship resets its alarm twice; contradicts STORY's single escalation unless STORY is rewritten |
+| Story | STORY's north star intact: *"The higher RIG climbs, the more the Meridian recognizes the threat—and the more of itself it is willing to destroy…"* | the ship resets its alarm twice; contradicts STORY's single escalation unless STORY is rewritten |
 | Content reuse | the six shipped authored strips and the 39-row ecology score are each used **once**, in order (§5.2) | needs three six-beat scores (3 × 39 rows) or repeats L1's teaching beats in L2 and L3 |
 | Level 1 alone | becomes the first act: wasps and hounds, no Crown | stays a complete game |
 | A phone session | one level ≈ one step of the escalation, ≈ 1.5–3 min (§5.2) | one level ≈ a whole arc |
@@ -1090,6 +1106,78 @@ Every new look must pass LANE-BRIEF's *bound is not visible* test (mean
 row-to-row luminance detail on the real surface at true size, against its own
 escape-hatch control) before it is reported as done.
 
+### 5.7 Level authoring pipeline — should level design move into Blender?
+
+Added at the integrator's request, answering an operator **musing** (not a
+decision), 2026-10-22: *"i wonder if the level design should also be in
+blender? i think we did a bunch of threejs math to create the 2d platformer to
+3d 'hard turn' feature. it worked ok, but was complex to iterate on."* Entry 22
+delegates tool choice to the integrator, so this section is a recommendation to
+him, not a question for the operator. Blender 5.2 headless (`bpy`,
+`/opt/hb-art/bin/python`, Cycles CPU / Workbench, no EEVEE) is installed, and
+T-109 is proving Blender → sprite for RIG and the wasp.
+
+**(a) Where the iteration cost of the hard turn actually lives.** Line counts
+from this tree (`wc -l`), with what each layer owns:
+
+| layer | files (lines) | owns | does the turn make it hard to iterate? |
+| --- | --- | --- | --- |
+| authored level data | `src/pure/vertical-assault.js` 636, `src/pure/lattice.js` 835, the `path`/`waves`/`BACKDROP_TUNE` tables inside `src/config.js` (1,548) | 68 platform rows, 38 connectors, 33 staging sockets, 6 pockets — every one a rectangle in `(s, y)` with a face index (`{ key, u0, u1, h, role }`) | **No.** A row knows nothing about 3D; the corner is only *which face owns the column*. |
+| simulation | `src/pure/path.js` 136, `src/pure/waves.js` 168, `src/sim/wavegate.js` 467, `src/sim/scroll.js` 126 | corner list, chamfer bends, the joint frontier/seal rule (`cornerJointRule`, 13 lines), the corner lifecycle idle → gate → approach → turning → done, halt targets | **No.** The sim never leaves `(s, y)`; a corner is a 1-D interval rule. |
+| path → 3D mapping | the `yawAt` / `bendSList` / `facetAtBends` / `routeRenderOwned` half of `src/pure/path.js` (~60 of its 136 lines) | heading per segment, the smoothstepped yaw blend across a bend, which facet owns a column | **This is the actual "2D→3D math" — and it is ~60 lines.** |
+| procedural render geometry | `src/render/level.js` **2,632**, `src/render/limb.js` 611 + `src/pure/limb.js` 721, `src/render/seams.js` 220, `src/render/tower.js` 62 | every tile, panel, catwalk, gusset, pipe, scute built *in code* (227 `dress*` references), merged into per-facet pools with per-facet UVs (`panelUvFor`, `buildDressingPool`, `buildDressingPanelPools`) and culled by ownership at bends (`updateWorldDressingCull`; 81 mentions of bend/facet/corner/chamfer) | **Yes.** "Move that rib" is a code edit; every new piece must also satisfy facet ownership, the cull and the draw-call budget. |
+| camera ratchet | `src/render/camera.js` 343 | the 60° turn choreography and the frozen FAR framing | Partly: small, but global and frozen by entries 7/17. |
+
+So the pain is **not** the turn's trigonometry and **not** the simulation. It
+is ~4,250 lines of procedural geometry written in JavaScript that has to agree
+with the data, with facet ownership and with the perf contract. A pipeline
+that does not touch `src/render/level.js` does not touch the iteration cost.
+
+Also load-bearing: today **collision and visuals come from the same rows** —
+`src/sim/level.js` exports `groundH, platforms, ladders, solidRects` from the
+pure generators, and `src/render/level.js` imports exactly those symbols from
+`src/sim/level.js`. Nothing in the renderer invents a surface. That property is
+what the options below must not spend.
+
+**(b) The options.**
+
+| option | removes | adds | single-source-of-truth risk | parallel agents | cost |
+| --- | --- | --- | --- | --- | --- |
+| **1. Blender as a KIT source; the 2D data stays the source of truth** (recommended) — rib heads, corner/joint pieces, vent hoods, collar machinery modelled once, exported as glTF or as baked sprite cells, *placed by the existing data tables* | the hand-written geometry builders for the pieces it replaces (`dressGusset`, `catwalkGussetGeometry`, `extrudedProfile`, parts of the limb mesh) — the dressing half of the 2,632-line file | a glTF load path (`three/addons/loaders/GLTFLoader.js` is already in the import map, no build step) or more atlas cells; entry 16's degrade-safely contract per asset; a provenance row | **Low** — placement still comes from the same rows; a missing mesh changes the picture, never the collision | **Good** if the authoring artifact is a `bpy` **Python script** (text, diffable, deterministic) that emits the mesh, as entry 22's sprite rule already requires. A committed `.blend` would not diff or merge and must not become the source | **S–M per piece**, incremental, stoppable at any point |
+| **2. Blender scene as the authoring source, with an exporter producing the 2D collision data** | the authored JS tables (`vertical-assault.js`, parts of `lattice.js`) | a whole exporter + schema + round-trip validator; an opaque binary between the designer and the game; every pure validator (reachability, pockets, archetypes) now runs on exporter output | **High** — the game's guarantee inverts: collision becomes *derived from a mesh*, and a modelling mistake (a 0.01-tile gap, a flipped normal, a scaled collection) becomes a gameplay defect | **Bad** — `.blend` is binary: two lanes editing the same level cannot merge, and the merge gate cannot review a diff | **L / high risk** |
+| **3. A 2D editor (LDtk or Tiled, JSON on disk)** | hand-editing JS object literals | an import step and a second schema; LDtk/Tiled grids assume square tiles and no `u`-local-to-face indirection, so either the editor model or the data model bends | **Medium** — JSON is still one source, but now the *authoring* copy and the *pure generator* can disagree | **Fine** — JSON diffs; one file per level | **M**, and it buys layout convenience the data already has (rows are 5 fields) |
+| **4. A fast offline level PREVIEW** — a deterministic unrolled 2D map of the authored data (PIL/SVG, sub-second), plus the existing headless captures for the turns | nothing | ~200 lines of tooling | **None** — read-only | **Ideal** — text in, PNG/SVG out | **S** |
+
+**Recommendation: 1 + 4, and explicitly not 2.** Blender earns its place where
+entry 22 already put it — *making the pieces* — while the 2D tables stay the
+one place a route exists. The measured reason is in the table above: the hard
+turn costs ~60 lines of mapping and ~4,250 lines of procedural dressing, and
+option 2 would spend the codebase's best property (collision and visuals from
+one row) to fix neither. The thing that actually makes iteration slow — you
+cannot see a side without booting the game, and on this host a single phone
+capture took 392–652 s — is fixed by option 4 for a fraction of the cost, and
+option 4 is also what lets a lattice lane judge a layout before it renders it.
+Option 3 is a reasonable later convenience, not a current need: the authored
+row is five fields wide, and T-205 adds sides, not a new coordinate system.
+
+Two sequencing notes. First, **let T-109 land before any level kit**: it is
+already proving the render → palette → true-size path on characters, and a kit
+piece is the same pipeline with a different subject. Second, **a Blender kit
+piece is a *look* change** — entry 16 means it ships behind an A/B flag with
+today's procedural piece as the control and becomes default only on the
+operator's verdict.
+
+**Conflicts, named:** entry 3 (static anatomy — modelled *pieces* are fine,
+imported *animation* of anatomy is not); entry 16 (A/B flag + verdict for every
+look change); entry 18 (60 fps with 200+ projectiles: imported meshes must join
+the existing merged/instanced pools and the render-submission contract, not add
+per-piece draw calls); entry 14 (the half-dose value ladder and the ≤ 8-colour
+rule still govern, so a Cycles render is raw material, never the shipped
+pixels); entry 22 (tool choice is the integrator's, dev-only, no runtime
+dependency, no build step); entries 7/17 (the camera ratchet stays frozen — a
+kit does not get to move the camera); and the CC0-only provenance rule for any
+third-party model. None of these blocks option 1; all of them bind it.
+
 ---
 
 ## 6. Checked against the decision log and the frozen constants
@@ -1219,12 +1307,12 @@ accept:
       6 % frame) AND phone portrait (today: 0 / 0 / 0 / 0 / 27). Falsify:
       restore the old socket resolution and show portrait > 0.
 - [ ] Currency: tiles between each gate body and the damage plane in the held
-      view (§4.5 rule 4). Test: `gate-view.mjs` reports no visible gate body
+      view (§4.5 rule 5). Test: `gate-view.mjs` reports no visible gate body
       < 6 tiles from the damage plane at any landscape viewport (today 13 of
       39 at the phone 6 % estimate, nearest 1.6; desktop nearest 8.4), and
       lab bots at phone-landscape-6pct spend ≤ 2 % of frames with < 3 tiles
       of daylight (today 8–22 % of all frames, and 52 % in the worst traced
-      `carried` run — almost all inside gate fights, §4.5 rule 4).
+      `carried` run — almost all inside gate fights, §4.5 rule 5).
       Re-run at T-107's built frame.
       Falsify: restore the old socket resolution → 13 bodies again.
 - [ ] A pathcheck domain runs the four oracle runs above (≈ 30 s wall) and
@@ -1597,7 +1685,7 @@ size/risk: M / low.
 ## 8. Open questions for the operator
 
 Five, each with neutral options. The build plan proceeds on everything that
-does not depend on them (§7 phase 1 and the level framework).
+does not depend on them (§7's milestone M1 and the level framework).
 
 1. **The six defense states across three levels.** Should the ship's six
    states (Observe → Scuttle) happen once across the whole game — two per
@@ -1607,8 +1695,8 @@ does not depend on them (§7 phase 1 and the level framework).
    they are destroyed (as now), or should it keep going with them following
    you onto the next side?
 3. **Length of a side.** Today a side takes about 20 seconds from turn to
-   turn. On a good run, should a side take about 15 seconds, about 25, or
-   about 40?
+   turn (18–22 s measured for a perfect run; 26–36 s when a gate is fought).
+   On a good run, should a side take about 15 seconds, about 25, or about 40?
 4. **Between levels on a phone.** When a level ends, should the climb carry
    straight on into the next one, stop on a short card you tap to continue,
    or go back to a menu where you pick a level?
@@ -1694,10 +1782,10 @@ build step or network. Every output lands in `artifacts/t104-race/`.
 | §2.1 course arithmetic, view widths, RIG pixel height, ascent per side | `node tools/simlab/race/facts.mjs` | `facts.json` |
 | §5.2 the proposed climb, validated against `src/pure/track-archetypes.js` | `node tools/simlab/race/climb-plan.mjs` | `climb-plan.json` |
 | §1.2 replica = Chrome | `node tools/simlab/race/browser-check.mjs` (defaults: 640×400, 24 s) | `browser-check-640x400.json` |
-| §1.2 / §2.1 live edges per viewport + framing screenshots | `node tools/simlab/race/probe-framing.mjs` | `framing.json`, `framing-*.png` |
+| §1.2 / §2.1 live edges per viewport + framing screenshots (`--only phone-landscape-view-mid,phone-landscape-view-near` for the two shipped scales that bracket the addendum's 6 % frame) | `node tools/simlab/race/probe-framing.mjs` | `framing.json`, `framing-*.png` |
 | §2.8 gate bodies outside the held view, and how close the visible ones stand to the damage plane | `node tools/simlab/race/gate-view.mjs` | `gate-view.json` |
 | §2.7 why a racer's view is empty (joint / clamp / free split) | `node tools/simlab/race/sight.mjs --preset racer` | stdout (prints each run's fingerprint) |
-| §4.5 rule 4 — which frames lose the daylight behind RIG, and in what corner state | `node tools/simlab/race/daylight.mjs --preset phone-crowding` | stdout (prints each run's fingerprint) |
+| §4.5 rule 5 — which frames lose the daylight behind RIG, and in what corner state | `node tools/simlab/race/daylight.mjs --preset phone-crowding` | stdout (prints each run's fingerprint) |
 
 Inputs the numbers depend on: `src/config.js` (`path`, `waves`, `spawner`,
 `momentum`, `player`, `camera`, `viewScales`), `src/pure/path.js`,
