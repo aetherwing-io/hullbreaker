@@ -273,9 +273,10 @@ async function stageCell(page, row, aim, facing, gun) {
     if (row === 'wall') { p.traversalSide = facing; }
     p.aim.set(AIM[0] / n, AIM[1] / n);
     q.sync(0);
-    if (row === 'hit-iframe') {
+    if (row === 'hit-iframe' || row === 'respawn') {
       // keep every cell mid-invulnerability and photograph a VISIBLE blink
-      // phase (the hidden phase hides body, arms and weapon together)
+      // phase (the hidden phase hides body, arms and weapon together; the
+      // respawn drop blinks the same way)
       p.iframesUntil = q.T.gameMs + 600;
       for (let i = 0; i < 12 && !q.rig.visible; i++) q.sync(16);
     }
