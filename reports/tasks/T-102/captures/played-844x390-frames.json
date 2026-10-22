@@ -1,0 +1,79 @@
+{
+ "viewport": {
+  "width": 844,
+  "height": 390,
+  "dpr": 1
+ },
+ "baseUrl": "http://127.0.0.1:8752",
+ "query": "",
+ "stage": "approach",
+ "frames": [
+  {
+   "file": "844x390-c1-00-t350.jpg",
+   "k": 1,
+   "target": "t350",
+   "state": "turning",
+   "tMs": 350,
+   "gameMs": 900,
+   "scrollX": 98,
+   "player": {
+    "x": 113,
+    "y": 3,
+    "vx": 9.4
+   },
+   "fold": {
+    "yaw": 0.5235987755982988,
+    "baseFacet": 0,
+    "facingFacet": 0,
+    "progress": 0.5,
+    "handoffProgress": 0.96
+   },
+   "hostiles": 0
+  },
+  {
+   "file": "844x390-c1-01-t700.jpg",
+   "k": 1,
+   "target": "t700",
+   "state": "turning",
+   "tMs": 700,
+   "gameMs": 1250,
+   "scrollX": 98,
+   "player": {
+    "x": 113,
+    "y": 3,
+    "vx": 9.4
+   },
+   "fold": {
+    "yaw": 1.0425263923428305,
+    "baseFacet": 0,
+    "facingFacet": 1,
+    "progress": 0.9955393718707329,
+    "handoffProgress": 0.96
+   },
+   "hostiles": 0
+  },
+  {
+   "file": "844x390-c1-02-after1500.jpg",
+   "k": 1,
+   "target": "after1500",
+   "state": "done",
+   "tMs": null,
+   "gameMs": 3150,
+   "scrollX": 104.85312500000009,
+   "player": {
+    "x": 114.649,
+    "y": 3,
+    "vx": 0
+   },
+   "fold": {
+    "yaw": 1.0471975511965976,
+    "baseFacet": 1,
+    "facingFacet": 1,
+    "progress": 0,
+    "handoffProgress": 0.96
+   },
+   "hostiles": 0
+  }
+ ],
+ "errors": []
+}
