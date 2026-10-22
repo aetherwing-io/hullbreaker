@@ -189,7 +189,9 @@ const PAGE_HELPERS = `
     const tick = () => {
       frames++;
       if (window.HB.shotsFired() > start || frames > 400) {
-        if (window.HB.state() === 'PLAYING') window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyP' }));
+        if (window.HB.state() === 'PLAYING') {
+          window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyP', shiftKey: true }));
+        }
         I.keys.fire = false;
         resolve({ frames, shots: window.HB.shotsFired() - start });
         return;
@@ -364,12 +366,28 @@ await withIsolatedBrowser(ROOT, async ({ baseUrl, newPage }) => {
             const n = Math.hypot(ax, ay);
             p.aim.set(ax / n, ay / n);
           }, AIM);
-          await page.keyboard.press('KeyP');            // resume the real loop
+          // Resume the real loop. main.js clears the strafe bit on any key event
+          // without Shift (stale-Shift recovery), and strafe is what holds a
+          // diagonal or vertical aim while standing; so the resume (and the
+          // pause in fireAndHold) is a Shift+P, and the staged aim is
+          // re-asserted. Without this every aim decays to level.
+          await page.evaluate(([ax, ay]) => {
+            window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyP', shiftKey: true }));
+            const q = window.__RIG_GRIP__;
+            q.I.keys.strafe = true;
+            const n = Math.hypot(ax, ay);
+            q.P.player.aim.set(ax / n, ay / n);
+          }, AIM);
           await page.waitForFunction(() => window.HB.state() === 'PLAYING', null, { timeout: 60000 });
           const fired = await page.evaluate(() => window.__RIG_GRIP__.fireAndHold());
           await page.waitForFunction(() => window.HB.state() === 'PAUSED', null, { timeout: 60000 });
           const m = await page.evaluate(() => window.__RIG_GRIP__.measure());
           const bullets = await page.evaluate(() => window.__RIG_GRIP__.liveBullets());
+          // self-check: did the shot leave along the staged aim?
+          const want = Math.atan2(AIM[1], AIM[0]);
+          const shotAngles = bullets.map((b) => Math.atan2(b.vy, b.vx));
+          const aimHeld = shotAngles.length > 0 && shotAngles.some((a) =>
+            Math.abs(Math.atan2(Math.sin(a - want), Math.cos(a - want))) < 0.09);
           // let the paused loop draw the held shot, then photograph it twice:
           // the whole phone viewport, and a 12 x 8 tile window around RIG
           await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
@@ -390,7 +408,8 @@ await withIsolatedBrowser(ROOT, async ({ baseUrl, newPage }) => {
               ? +Math.hypot(m.muzzlePx.x - m.spawnPx.x, m.muzzlePx.y - m.spawnPx.y).toFixed(3) : null,
             fistToGripCssPx: m.fistPx && m.gripPx
               ? +Math.hypot(m.fistPx.x - m.gripPx.x, m.fistPx.y - m.gripPx.y).toFixed(3) : null,
-            bullets };
+            bullets, aimHeld };
+          if (!aimHeld) errors.push(`firing ${aimName}: no live shot travels along the staged aim`);
           console.log(JSON.stringify({ view: viewName, firing: aimName, ...vr.firing[aimName], hands: undefined }));
         }
       }
