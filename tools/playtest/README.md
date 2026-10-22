@@ -1724,6 +1724,69 @@ renderer. `--width`, `--height`, `--dpr`, `--query`, `--root`, and
    Use a longer run or a purpose-built finale driver before claiming Crown
    coverage.
 
+## `touch-proof.mjs` — real multi-touch proof for the two-thumb deck (T-101)
+
+The touch deck (`src/ui/touch-controls.js`, pure half `src/pure/touch-stick.js`)
+emits keyboard key edges, so the key-script harness above cannot see whether
+a *thumb* produces the right ones. This rig drives the deck with real touch
+input — every press is a CDP `Input.dispatchTouchEvent`, so the page gets the
+browser's own touch → pointer pipeline, several pointers at once:
+
+```sh
+cd tools/playtest
+node touch-proof.mjs                                   # 844x390 + 390x844, ~15-25 min here
+node touch-proof.mjs --views landscape --only frozen   # one orientation, one section
+node touch-proof.mjs --base-url http://127.0.0.1:8751  # a pinned worktree server
+node touch-proof.mjs --mutate release-all-on-up        # falsification: must go red
+node touch-proof.mjs --out ../../reports/tasks/T-101/proof   # keep the evidence
+```
+
+Sections (`--only frozen,live,legacy,title,shots`):
+
+- **frozen** — the normal URL plus an empty frame-input schedule stopped at
+  tick 0, so the run is `PLAYING` but never steps: the input layer alone.
+  Layout vs drawing, computed `touch-action`/`user-select`, three pointers
+  (stick + FIRE + JUMP) pressed and released in all 36 orders with the held set
+  asserted after every step against both the deck's ledger and the sim's
+  `keys`, release on pointercancel / blur / visibilitychange / orientation flip,
+  PAUSE → tap-to-resume, an armed GAME_OVER tap-to-restart, and the zoom probes.
+- **live** — the default six-face run at `?fixeddt=16.667`: stick-right + JUMP
+  keeps the run, held vs tapped apex, the air jump, stick up-right + FIRE
+  bullet headings, and down + JUMP through the first catwalk (x 26-35, y 6.35),
+  closed-loop on the sim's own position.
+- **legacy** — `?touch=legacy` publishes the old snapshot shape and still obeys
+  the old gesture grammar.
+- **title** — a tap on the title starts the run and is not also a jump.
+- **shots** — deck captures, idle and in use, at DPR 1 and 2.
+
+`--mutate <name>` serves `src/ui/touch-controls.js` with one named defect
+(`release-all-on-up`, `ignore-cancel`, `ignore-blur`) through `page.route` and
+writes `report-mutate-<name>.json`; a mutation whose anchor text is missing
+throws rather than passing vacuously.
+
+**Honesty / limitations**
+
+1. Chromium only. Playwright's WebKit is not installed here, and iPhone Safari
+   is the primary phone target (decisions.md entry 20 addendum). Safari-only
+   behaviour — the edge back-swipe, `gesturestart`, touchend-only audio unlock,
+   home-indicator swipes — is not exercised by this rig.
+2. CDP touch input already carries user activation at `pointerdown`, so the
+   rig cannot tell a pointerdown audio unlock from a pointerup one (pathcheck
+   models that rule instead).
+3. Chromium never double-tap-zooms a `width=device-width` page, so the
+   double-tap check cannot fail here; the pinch check is the falsifiable one,
+   and the rig proves it can see a zoom by re-running the pinch with
+   `touch-action` overridden.
+4. Window blur and `visibilitychange` are driven for real (a second page
+   brought to front) when the browser produces them, synthetically otherwise;
+   the report names which.
+5. GAME_OVER is forced through `src/sim/state.js` for the restart tap — test
+   setup, not a player path.
+6. "Within N ticks" counts fixed 16.667 ms updates after the `gameMs` the page
+   reported when the CDP dispatch resolved.
+7. Under SwiftShader every boot takes ~1 minute; the whole proof is slow and
+   timing-sensitive checks (legacy's 170 ms tap) are retried, never loosened.
+
 ## Single best next action
 
 ~~Instrument the suspected ritual-arming decision point before building hook

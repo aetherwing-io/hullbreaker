@@ -257,6 +257,156 @@
     0% { transform: translateY(0); } 45% { transform: translateY(-5px); } 100% { transform: translateY(0); }
   }
   #touchDeck.jump .touch-chip { animation: touch-jump-kick 120ms steps(2, end); }
+
+  /* ---- Two-thumb touch deck (T-101, decisions.md entry 20) ----
+     The default on touch hardware; the block above is the rejected one-thumb
+     scheme, kept verbatim for ?touch=legacy. Geometry is NOT here: every
+     target is sized from the short screen side and placed inside the
+     safe-area insets by src/pure/touch-stick.js, and src/ui/touch-controls.js
+     writes it inline. This block owns the look only, and keeps it low
+     occlusion — thin rings, translucent fills, labels no heavier than the
+     HUD's — because RIG is a few percent of the frame and the action cluster
+     lives below the play band. Nothing here applies until .touch-twin. */
+  html.touch-twin, html.touch-twin body {
+    /* no pinch / double-tap zoom anywhere on the page; overlay scrollers pan */
+    touch-action: pan-x pan-y;
+    -webkit-text-size-adjust: 100%;
+  }
+  body.touch-twin {
+    user-select: none; -webkit-user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+  }
+  body.touch-twin canvas { touch-action: none; }
+  #thumbDeck {
+    /* CSS px under the safe top that the HUD owns; PAUSE/AUTO sit below it.
+       T-105 owns the HUD layout and may move this with it. */
+    --thumb-top-reserve: 48px;
+    --rim: 58px; --short: 390px;
+    position: fixed; inset: 0; z-index: 16;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (orientation: portrait) { #thumbDeck { --thumb-top-reserve: 170px; } }
+  #thumbDeck[hidden], #thumbModal[hidden] { display: none; }
+  #thumbDeck * {
+    touch-action: none; user-select: none; -webkit-user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+  }
+  #thumbSafe {
+    position: fixed; top: 0; left: 0; width: 0; height: 0;
+    visibility: hidden; pointer-events: none;
+    padding: var(--hud-safe-top) var(--hud-safe-right) var(--hud-safe-bottom) var(--hud-safe-left);
+  }
+  .thumb-btn {
+    position: fixed; box-sizing: border-box; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px; border-radius: 50%;
+    pointer-events: none;                      /* hit-tested geometrically by the deck */
+    border: 2px solid rgba(232,237,242,.40);
+    background: radial-gradient(circle at 50% 44%, rgba(7,19,26,.06), rgba(7,19,26,.34) 74%);
+    box-shadow: inset 0 0 0 1px rgba(7,19,26,.5), 0 3px 12px rgba(0,0,0,.16);
+    color: rgba(255,242,216,.84); text-shadow: 0 1px 2px #07131a;
+    transition: background-color 60ms linear, border-color 60ms linear, transform 60ms ease-out;
+  }
+  .thumb-btn b { font-size: 10px; font-weight: 800; line-height: 1; letter-spacing: .16em; padding-left: .16em; }
+  .thumb-btn::before { content: ''; display: block; background: currentColor; }
+  #thumbJump::before {
+    width: 30%; height: 15%;
+    clip-path: polygon(50% 0, 100% 100%, 76% 100%, 50% 46%, 24% 100%, 0 100%);
+  }
+  #thumbJump.on {
+    background: rgba(255,242,216,.78); border-color: #fff2d8; color: #07131a;
+    text-shadow: none; transform: scale(.95);
+  }
+  #thumbFire { border-color: rgba(255,189,121,.52); }
+  #thumbFire::before {
+    width: 22%; aspect-ratio: 1; background: none;
+    border: 2px solid currentColor; border-radius: 50%; box-sizing: border-box;
+  }
+  #thumbFire.on {
+    background: rgba(255,157,69,.66); border-color: #ffbd79; color: #07131a;
+    text-shadow: none; transform: scale(.95);
+  }
+  #thumbFire i {
+    display: none; position: absolute; bottom: 14%; font-style: normal;
+    font-size: 7px; font-weight: 800; letter-spacing: .16em; color: #9ce23e;
+  }
+  #thumbFire.auto i { display: block; }
+  #thumbFire.autohold { border-color: #9ce23e; }
+  .thumb-chip {
+    position: fixed; box-sizing: border-box; margin: 0; padding: 0;
+    border: 2px solid rgba(232,237,242,.32); border-radius: 3px; outline: none;
+    color: rgba(232,237,242,.84); background: rgba(7,19,26,.44);
+    font: 800 10px/1 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .08em;
+  }
+  .thumb-chip.down, #thumbSwap.on {
+    color: #07131a; border-color: #fff2d8; background: rgba(255,242,216,.86);
+  }
+  #thumbAuto.on { border-color: #9ce23e; color: #9ce23e; }
+  #thumbAuto.on.down { color: #07131a; background: #9ce23e; }
+  #thumbStick {
+    --sector: 0deg;
+    position: fixed; left: 0; top: 0; box-sizing: border-box;
+    width: calc(var(--rim) * 2); height: calc(var(--rim) * 2);
+    margin: calc(var(--rim) * -1) 0 0 calc(var(--rim) * -1);
+    border-radius: 50%; pointer-events: none; opacity: 0;
+    border: 2px solid rgba(232,237,242,.40);
+    background: radial-gradient(circle, rgba(7,19,26,.06) 0 32%, rgba(7,19,26,.28) 100%);
+    transition: opacity 80ms linear;
+  }
+  #thumbStick.on { opacity: .92; }
+  #thumbStick::before {                      /* the dead zone, drawn honestly */
+    content: ''; position: absolute; left: 50%; top: 50%; box-sizing: border-box;
+    width: calc(var(--rim) * .48); height: calc(var(--rim) * .48);
+    margin: calc(var(--rim) * -.24); border-radius: 50%;
+    border: 1px dashed rgba(232,237,242,.24);
+  }
+  #thumbStick::after {                       /* which of the 8 ways is held */
+    content: ''; position: absolute; left: 50%; top: 50%;
+    width: 14px; height: 14px; margin: -7px; opacity: 0;
+    background: #9ce23e; clip-path: polygon(0 0, 100% 50%, 0 100%, 28% 50%);
+    transform: rotate(calc(var(--sector) * -1)) translateX(calc(var(--rim) - 3px));
+  }
+  #thumbStick.dir::after { opacity: 1; }
+  #thumbNub {
+    position: absolute; left: 50%; top: 50%; box-sizing: border-box;
+    width: calc(var(--rim) * .72); height: calc(var(--rim) * .72);
+    margin: calc(var(--rim) * -.36); border-radius: 50%;
+    border: 2px solid #fff2d8; background: rgba(41,61,61,.82);
+    box-shadow: inset 0 0 0 4px rgba(23,41,44,.9), 0 2px 6px rgba(0,0,0,.32);
+    will-change: transform;
+  }
+  #thumbGhost {
+    position: fixed; box-sizing: border-box; display: grid; place-items: center;
+    border-radius: 50%; pointer-events: none;
+    border: 2px dashed rgba(232,237,242,.18);
+    color: rgba(232,237,242,.40); font-size: 8px; font-weight: 800; letter-spacing: .16em;
+    text-shadow: 0 1px 2px #07131a; transition: opacity 120ms linear;
+  }
+  #thumbGhost.off { opacity: 0; }
+  #thumbCue {
+    position: fixed; left: 50%; bottom: calc(var(--hud-safe-bottom) + 6px);
+    transform: translateX(-50%); pointer-events: none; white-space: nowrap;
+    color: rgba(232,237,242,.6); font-size: 8px; font-weight: 700; letter-spacing: .12em;
+    text-shadow: 0 1px 2px #07131a; transition: opacity .6s ease;
+  }
+  #thumbCue.learned { opacity: 0; }
+  /* Touch has no R / P / Esc: over a pause, death or summit screen this says
+     how to go on. It is armed (full strength) only once a tap will count. */
+  #thumbModal {
+    position: fixed; z-index: 21; left: 50%; bottom: calc(var(--hud-safe-bottom) + 18px);
+    display: none; transform: translateX(-50%); padding: 9px 16px 9px 18px;
+    pointer-events: none; white-space: nowrap;
+    border: 1px solid rgba(156,226,62,.5); border-left: 3px solid #9ce23e;
+    background: rgba(7,19,26,.84); color: #9ce23e;
+    font: 800 11px/1 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .22em;
+    opacity: .3; transition: opacity 200ms ease;
+  }
+  #thumbModal.on { display: block; }
+  #thumbModal.armed { opacity: 1; }
+  body.at-title #thumbDeck, body.at-modal #thumbDeck, body.at-victory #thumbDeck,
+  body.booting #thumbDeck { opacity: 0; pointer-events: none; }
+  body.at-title #thumbModal, body.booting #thumbModal { display: none; }
   /* Crown finale objective: one compact instrument panel, below the normal
      HUD and above the playfield. It never becomes a modal; RIG and every
      defense telegraph remain visible while the player holds the signal. */
@@ -1079,6 +1229,20 @@
   <button id="touchSwap" class="touch-chip" type="button" aria-label="Swap weapon">SWAP</button>
   <div id="touchCue" aria-hidden="true">DRAG · OUTER RAIL FIRES · TAP JUMPS</div>
 </div>
+<!-- Two-thumb deck (T-101): the touch default. Positions are written by
+     src/ui/touch-controls.js from src/pure/touch-stick.js's layout. -->
+<div id="thumbDeck" hidden aria-label="Touch controls">
+  <div id="thumbGhost" aria-hidden="true">MOVE · AIM</div>
+  <div id="thumbStick" aria-hidden="true"><span id="thumbNub"></span></div>
+  <div id="thumbFire" class="thumb-btn" aria-hidden="true"><b>FIRE</b><i>AUTO</i></div>
+  <div id="thumbJump" class="thumb-btn" aria-hidden="true"><b>JUMP</b></div>
+  <button id="thumbSwap" class="thumb-chip" type="button" tabindex="-1" data-chip="swap" aria-label="Swap weapon">SWAP</button>
+  <button id="thumbAuto" class="thumb-chip" type="button" tabindex="-1" data-chip="auto" aria-label="Auto-fire" aria-pressed="false">AUTO</button>
+  <button id="thumbPause" class="thumb-chip" type="button" tabindex="-1" data-chip="pause" aria-label="Pause game">II</button>
+  <div id="thumbCue" aria-hidden="true">LEFT THUMB: MOVE + AIM &nbsp;·&nbsp; RIGHT THUMB: JUMP + FIRE</div>
+  <div id="thumbSafe" aria-hidden="true"></div>
+</div>
+<div id="thumbModal" hidden aria-live="polite"></div>
 <div id="finale" aria-hidden="true" aria-live="polite" role="status">
   <div id="finaleTitle">CROWN UPLINK // HOLD THE SIGNAL</div>
   <div id="finaleMeta">ARMING BATTERED ARRAY</div>
