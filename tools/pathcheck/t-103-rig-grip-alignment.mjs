@@ -25,8 +25,9 @@ import {
   AIMS, CHASSIS, FRAMES, ONE_ATLAS_PX, measureWeapon, reachable, renderCombo, runGripCheck,
 } from '../rig-grip/check.mjs';
 import {
-  RIG_ARM_RIGS, RIG_ARM_SEGMENTS, RIG_STATIONARY_STANCE, RIG_WEAPON_ART,
-  RIG_WEAPON_ATLAS_PATH, rigArmPose, rigBodyFrameSpec, rigStationaryAimFrame,
+  RIG_ARM_RIGS, RIG_ARM_SEGMENTS, RIG_BODY_ATLAS_H, RIG_BODY_ATLAS_W, RIG_STATIONARY_STANCE,
+  RIG_WEAPON_ART, RIG_WEAPON_ATLAS_PATH, rigArmPose, rigArmSegmentUvs, rigBodyFrameSpec,
+  rigStationaryAimFrame,
 } from '../../src/pure/rig.js';
 
 export const title = 'T-103 — RIG holds the weapon: rendered fist on rendered grip';
@@ -143,6 +144,28 @@ export async function run() {
       'T-103: the hands are solved by rigArmPose() on the frame actually shown, written in place');
     ok(/RIG_CLIMB_BODY_DROP/.test(src) && /function stationaryAimFrame[\s\S]{0,200}rigStationaryAimFrame/.test(src),
       'T-103: player.js uses the shared climb drop and stance table the gate measured');
+  }
+
+  // --- 5a. the GPU samples the strip the way the gate rasterizes it ----------
+  // player.js builds the arm UVs with rigArmSegmentUvs(); decoded under flipY
+  // they must hit the strip's atlas corners in the order the positions use,
+  // or the fist would be drawn at the shoulder end while every number agreed.
+  {
+    let worst = 0;
+    for (const seg of Object.values(RIG_ARM_SEGMENTS)) {
+      const uv = rigArmSegmentUvs(seg, RIG_BODY_ATLAS_W, RIG_BODY_ATLAS_H);
+      const want = [[seg.x, seg.y], [seg.x + seg.w, seg.y], [seg.x, seg.y + seg.h], [seg.x + seg.w, seg.y + seg.h]];
+      for (let i = 0; i < 4; i++) {
+        const px = uv[i * 2] * RIG_BODY_ATLAS_W, py = (1 - uv[i * 2 + 1]) * RIG_BODY_ATLAS_H;
+        worst = Math.max(worst, Math.hypot(px - want[i][0], py - want[i][1]));
+      }
+    }
+    const src = stripComments(readFileSync(join(srcDir, 'render', 'player.js'), 'utf8'));
+    ok(worst < 1e-6 && /rigArmSegmentUvs\(RIG_ARM_SEGMENTS\.upper, RIG_BODY_ATLAS_W, RIG_BODY_ATLAS_H, uv, 0\)/.test(src) &&
+       /rigArmSegmentUvs\(RIG_ARM_SEGMENTS\.fore, RIG_BODY_ATLAS_W, RIG_BODY_ATLAS_H, uv, 8\)/.test(src) &&
+       /setIndex\(\[0, 2, 1, 2, 3, 1, 4, 6, 5, 6, 7, 5\]\)/.test(src),
+      'T-103: the arm strips\' GPU texture coordinates land on the same atlas corners, in the same ' +
+      'order, as the positions the gate measures');
   }
 
   // --- 5b. the per-frame math reuses its scratch (the render loop calls it

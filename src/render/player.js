@@ -67,7 +67,7 @@ import {
   RIG_ARM_RIGS, RIG_ARM_SEGMENTS, RIG_CLIMB_BODY_DROP, RIG_FAR_ARM_DEPTH,
   RIG_GUN_ACCENT_DEPTH, RIG_GUN_DEPTH, RIG_GUN_FAMILY_HEIGHT_GAIN, RIG_GUN_TRAIT_DEPTH,
   RIG_NEAR_ARM_DEPTH,
-  rigArmPose, rigArmSegmentCorners, rigStationaryAimFrame, rigWeaponPlacement,
+  rigArmPose, rigArmSegmentCorners, rigArmSegmentUvs, rigStationaryAimFrame, rigWeaponPlacement,
 } from '../pure/rig.js';
 import { awaitPreloads, preloadTexture } from './preload.js';
 import { camera, renderer, scene } from './scene.js';
@@ -575,14 +575,9 @@ rig.add(gunGroup);
    facing mirror) because rigArmPose already applies both. */
 function armGeometry() {
   const geo = new THREE.BufferGeometry();
-  const uv = new Float32Array(16);
-  let o = 0;
-  for (const seg of [RIG_ARM_SEGMENTS.upper, RIG_ARM_SEGMENTS.fore]) {
-    const u0 = seg.x / RIG_BODY_ATLAS_W, u1 = (seg.x + seg.w) / RIG_BODY_ATLAS_W;
-    const v1 = 1 - seg.y / RIG_BODY_ATLAS_H, v0 = 1 - (seg.y + seg.h) / RIG_BODY_ATLAS_H;
-    uv.set([u0, v1, u1, v1, u0, v0, u1, v0], o);   // TL, TR, BL, BR
-    o += 8;
-  }
+  const uv = new Float32Array(16);   // TL, TR, BL, BR per strip, fixed forever
+  rigArmSegmentUvs(RIG_ARM_SEGMENTS.upper, RIG_BODY_ATLAS_W, RIG_BODY_ATLAS_H, uv, 0);
+  rigArmSegmentUvs(RIG_ARM_SEGMENTS.fore, RIG_BODY_ATLAS_W, RIG_BODY_ATLAS_H, uv, 8);
   const normal = new Float32Array(24);
   for (let i = 0; i < 8; i++) normal[i * 3 + 2] = 1;
   geo.setAttribute('position',

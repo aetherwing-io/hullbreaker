@@ -511,6 +511,19 @@ export function rigArmSegmentCorners(seg, x0, y0, x1, y1, thick, mirror, out, of
   return out;
 }
 
+// GL texture coordinates for one strip's four corners in the SAME order
+// (TL, TR, BL, BR) rigArmSegmentCorners() writes positions, for a texture
+// uploaded with flipY (three.js' default for images): v = 1 - y / H.
+export function rigArmSegmentUvs(seg, atlasW, atlasH, out = new Array(8), offset = 0) {
+  const u0 = seg.x / atlasW, u1 = (seg.x + seg.w) / atlasW;
+  const vTop = 1 - seg.y / atlasH, vBottom = 1 - (seg.y + seg.h) / atlasH;
+  out[offset] = u0; out[offset + 1] = vTop;
+  out[offset + 2] = u1; out[offset + 3] = vTop;
+  out[offset + 4] = u0; out[offset + 5] = vBottom;
+  out[offset + 6] = u1; out[offset + 7] = vBottom;
+  return out;
+}
+
 // Everything the renderer needs to put RIG's hands on his weapon for one
 // pose. All inputs are presentation state already on the player row / sync();
 // nothing here is read by the simulation.
