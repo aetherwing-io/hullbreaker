@@ -374,8 +374,9 @@ Two more facts about iteration cost:
   main task/T-102`: no conflicts). None of the files main changed since
   `98b12c9` are files this branch touches.
 - The merge gate runs `node tools/pathcheck.mjs` inside this worktree, and this
-  worktree predates `e29665b`. On a loaded host (load ≳45), the perf probe's
-  hard-coded 45 s `page.goto` fails here exactly as it does on the base. Bringing
+  worktree predates `e29665b`. On a loaded host, the perf probe's hard-coded
+  45 s `page.goto` fails here exactly as it does on the base; it failed at load
+  ≈39–50 in every run here. Bringing
   main into the branch (no conflicts, per the line above) would pick up
   `e29665b`, which lets `HB_PROBE_BOOT_MS` widen that timeout. I did not merge
   main into this branch, as instructed.
