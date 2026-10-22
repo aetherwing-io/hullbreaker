@@ -25,6 +25,11 @@ T-101 so nothing collides with that record.
 - No image-generation CLI (`codex`) is installed. New art comes from the
   existing atlases/components, procedural/canvas drawing, or PIL/ImageMagick.
 - 4 CPU cores: at most three browser-heavy lanes at once.
+- After a container restart, `bash tools/orch/cloud-setup.sh` restores all of
+  the above (idempotent). The merge gate's smoke step uses
+  `tools/orch/smoke-verdict.mjs` (boot + full deterministic schedule + no page
+  errors + no stall); `HB_HARNESS_SLOWDOWN` / `HB_SMOKE_VIEWPORT` are its
+  slow-host knobs.
 
 ## Queue
 
