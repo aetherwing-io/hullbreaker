@@ -93,8 +93,12 @@ portrait; replica checked against Chrome, §1.2):
    (§5.5, Q4–Q5).
 7. **Art from the existing kit**, gaps named (§5.6).
 8. **Four playable milestones** — race pass → long sides → a second level →
-   the full climb — each a Pages release, ten task blocks whose acceptance
+   the full climb — each a Pages release, eleven task blocks whose acceptance
    boxes are behaviour tests that go red on the defect (§7).
+9. **Authoring pipeline** (operator musing, integrator's call under entry 22):
+   Blender for *kit pieces*, the 2D tables stay the source of truth, plus a
+   sub-second offline level preview — not a Blender-authored scene with an
+   exporter producing collision (§5.7).
 
 **Conflicts named, not resolved (§6):** follow-lead vs entries 7/17
 (horizontal tracking) and 11 (banked daylight); bounded beats vs entry 19
@@ -1238,7 +1242,7 @@ the default with the flag as the escape hatch.
 | milestone | what the operator plays on the Pages release (iPhone landscape + desktop) | tasks | depends on |
 | --- | --- | --- | --- |
 | **M1 — the race pass** | today's level 1 (6 × 88), but a racer sees ahead and never waits at a closed joint, gates never wait on an invisible or five-minute beat, the deck visibly climbs; in the 6 % phone frame once T-107 lands | T-201, T-202, T-204 | T-102 merged; T-101 (touch) for phone play; T-107 for the phone frame |
-| **M2 — long sides** | level 1 with six 176-tile sides (≈ 2.5 min for a racer, ≈ 4–5 min at the floor pace, §4.1) and rolling gates: teach and test on the move, one remix cell per side | T-205, T-203 | M1 |
+| **M2 — long sides** | level 1 with six 176-tile sides (≈ 2.5 min for a racer, ≈ 4–5 min at the floor pace, §4.1) and rolling gates: teach and test on the move, one remix cell per side | T-205, T-203 (+ T-211, authoring tooling, ships with neither) | M1 |
 | **M3 — a second level** | level 1 as in M2 (still ending at the Crown), plus **level 2 RIBLINE & NECK** reachable through the level framework, the between-level card and (per Q4/Q5) a resume | T-206, T-207, T-208 (L2 half), T-210 | M2; T-105 (phone shell) for the card |
 | **M4 — the full climb** | the three-level climb: L1 THE LEG → L2 → L3 SPINE & CROWN, the Crown at the top; level 1 re-cut to three sides if Q1 = A | T-209, T-208 (L3 half) | M3; Q1 answered |
 
@@ -1489,6 +1493,38 @@ fences: src/pure/vertical-assault.js, src/pure/lattice.js, CONFIG.path
 verify: node tools/pathcheck.mjs; node tools/simlab/race/lab.mjs baseline --seeds 6;
   node tools/simlab/race/facts.mjs
 size/risk: L / high — many assertions encode 88; six new bays of authoring.
+
+## T-211 | harness | todo | P3
+
+goal: see a side without booting the game — a deterministic offline preview of
+the authored level data (§5.7 option 4): an unrolled 2D map per side (every
+platform, ladder, solid, pocket, staging socket and gate apron, to scale, with
+the jump envelope and the scroll's reachable band drawn on it) plus a contact
+sheet of the existing headless captures at the turns. Read-only: no src/
+change, no effect on the game.
+
+accept:
+- [ ] Currency: seconds to see a layout change. Test: the preview renders all
+      six (later nine) sides in ≤ 5 s wall from a cold start, against
+      392–652 s for one in-game phone capture on this host (§1.2). Falsify:
+      point it at a side and time it.
+- [ ] It reads the SHIPPED data, not a copy: the preview imports
+      `src/sim/level.js`'s `groundH, platforms, ladders, solidRects` — the
+      same symbols `src/render/level.js` imports (§5.7) — and a pathcheck
+      domain asserts the preview module imports nothing else from `src/`.
+      Red: hard-code one platform row → the guard fails.
+- [ ] Every surface in the preview is a surface in play: for each side, the
+      platform ids drawn equal the ids the race lab reports as landed on plus
+      the unreached list (Table M8). Red: draw a platform that does not exist
+      in `platforms`.
+- [ ] Harness rule: zero effect on the shipped game; README updated with an
+      honesty note (a 2D unroll cannot show facet ownership, fog or the
+      camera ratchet — those still need a capture).
+owner: lattice-designer
+fences: new tools/levelview/*, one new pathcheck domain. No src/ change.
+verify: node tools/pathcheck.mjs; the preview's own command
+size/risk: S / low — the cheapest half of §5.7's recommendation, and T-205's
+  authoring gets faster the day it lands.
 
 ## T-203 | feature | todo | P1
 
