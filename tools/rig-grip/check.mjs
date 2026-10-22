@@ -219,10 +219,13 @@ export function runGripCheck({ frames = FRAMES, aims = Object.keys(AIMS), chassi
         stats.combos++;
         const label = `crouch/${frame}/${aimName}/body${bodyFacing > 0 ? 'R' : 'L'}/${letter}/gain${gain}`;
         const dAtlas = Math.hypot(combo.fist.x - combo.grip.x, combo.fist.y - combo.grip.y) / (ONE_ATLAS_PX * gain);
+        const dMuzzle = muzzleError(combo, letter, gain, 0) * FAR_PX_PER_TILE / gain;
         const stretch = combo.pose.gunArm.stretch;
-        table.push({ label, dAtlas, dMuzzle: 0, stretch, shown: true, gain });
+        table.push({ label, dAtlas, dMuzzle, stretch, shown: true, gain });
         stats.maxFistGripAtlasPx = Math.max(stats.maxFistGripAtlasPx, dAtlas);
+        stats.maxMuzzleScreenPx = Math.max(stats.maxMuzzleScreenPx, dMuzzle);
         if (dAtlas > 1) failures.push(`${label}: rendered fist centroid is ${dAtlas.toFixed(2)} atlas px off the rendered grip`);
+        if (dMuzzle > 1) failures.push(`${label}: rendered muzzle is ${dMuzzle.toFixed(2)} screen px off the crouched sim spawn`);
         if (gain === 1 && stretch > maxStretchAtGain1)
           failures.push(`${label}: arm stretched x${stretch.toFixed(3)} to reach the grip (bound ${maxStretchAtGain1})`);
         if (gain === 1) stats.maxStretchGain1 = Math.max(stats.maxStretchGain1, stretch);
