@@ -956,3 +956,40 @@ options chosen as worded):
 - **Device: iPhone (Safari).** iOS Safari is the primary phone target: no
   vibration API, no element fullscreen on iPhone, audio unlock on a gesture,
   home-indicator and notch safe areas.
+
+## 21 — 2026-10-22 — The legacy test suite is unproven; a green gate is not evidence of quality
+
+**Operator, verbatim:**
+
+> "the tests may be misleading or not valuable too, i had no idea what i was
+> doing"
+
+**What this decides.** The ~4,000-assertion `tools/pathcheck.mjs` suite, the
+35 standalone `tools/*-check.mjs` checks and the 58 playtest capture scripts
+are treated as UNPROVEN until audited. Measured at the time of this entry:
+49 of the 80 pathcheck domain files read files from disk, and many assertions
+match source text or pin exact implementation shapes rather than anything a
+player could observe. None of the five defects the operator named in entry 20
+(one level, guns off the hands, mobile rendering, short faces, unreliable
+turns) was caught by any gate.
+
+**Consequences, binding until the audit lands:**
+- A green gate is never reported as evidence that something works or looks
+  right. Evidence is what a player can observe: the game driven headlessly or
+  in a browser, captures judged against the boards, and the operator's own
+  play.
+- A legacy assertion whose subject is an implementation detail (source text,
+  an exact constant not tied to a recorded decision, a retired design such as
+  the dare wager or asset independence) may be rewritten or deleted when it
+  obstructs a real improvement. Every such change is listed with its reason in
+  the lane's report, and the reviewer checks each one.
+- Assertions that guard player-observable behaviour or a hard rule stay, and
+  are still never weakened to get green: boot, no page errors, determinism,
+  layer purity, reachability, no softlock, the movement envelope, the frame
+  budget, safe asset degradation.
+- New tests must bind: show them going red on the defect they guard.
+
+**Integrator action:** T-108 audits the whole suite and proposes a lean core
+gate plus behaviour tests that would have caught the entry-20 defects.
+
+**Source:** operator message, 2026-10-22, after wave 1 was dispatched.
