@@ -1,0 +1,186 @@
+{
+ "tool": "tools/simlab/race/probe-framing.mjs",
+ "stopAtMs": 1500,
+ "rows": [
+  {
+   "id": "desktop-16x10",
+   "nominal": {
+    "width": 1280,
+    "height": 800
+   },
+   "probed": {
+    "width": 640,
+    "height": 400
+   },
+   "wallMs": 190979,
+   "live": {
+    "inner": {
+     "w": 640,
+     "h": 400
+    },
+    "scrollX": 6.450129000000006,
+    "gameMs": 1500.029999999999,
+    "edgeL": -27.438263128944797,
+    "edgeR": 45.734923617703735,
+    "player": {
+     "x": 18.169134377819976,
+     "y": 3
+    },
+    "aheadTiles": 33.665918239883766,
+    "view": {
+     "id": "far",
+     "label": "FAR",
+     "depthMult": 1.9,
+     "cameraDepth": 42.75
+    }
+   },
+   "analytic": {
+    "left": -27.43826312894467,
+    "right": 45.73492361770403,
+    "width": 73.1731867466487,
+    "depth": 42.75
+   },
+   "edgeErr": {
+    "left": 1.2789769243681803e-13,
+    "right": 2.913225216616411e-13
+   },
+   "nominalSameEdges": true,
+   "screenshot": "framing-desktop-16x10.png"
+  },
+  {
+   "id": "desktop-16x9",
+   "nominal": {
+    "width": 1920,
+    "height": 1080
+   },
+   "probed": {
+    "width": 960,
+    "height": 540
+   },
+   "wallMs": 595082,
+   "live": {
+    "inner": {
+     "w": 960,
+     "h": 540
+    },
+    "scrollX": 6.450129000000006,
+    "gameMs": 1500.029999999999,
+    "edgeL": -31.11401480918851,
+    "edgeR": 50.23319842508215,
+    "player": {
+     "x": 18.169134377819976,
+     "y": 3
+    },
+    "aheadTiles": 38.164193047262174,
+    "view": {
+     "id": "far",
+     "label": "FAR",
+     "depthMult": 1.9,
+     "cameraDepth": 42.75
+    }
+   },
+   "analytic": {
+    "left": -31.11401480918856,
+    "right": 50.23319842508207,
+    "width": 81.34721323427064,
+    "depth": 42.75
+   },
+   "edgeErr": {
+    "left": 4.973799150320701e-14,
+    "right": 7.815970093361102e-14
+   },
+   "nominalSameEdges": true,
+   "screenshot": "framing-desktop-16x9.png"
+  },
+  {
+   "id": "phone-landscape",
+   "nominal": {
+    "width": 844,
+    "height": 390
+   },
+   "probed": {
+    "width": 844,
+    "height": 390
+   },
+   "wallMs": 651796,
+   "live": {
+    "inner": {
+     "w": 844,
+     "h": 390
+    },
+    "scrollX": 6.450129000000006,
+    "gameMs": 1500.029999999999,
+    "edgeL": -38.9753020171177,
+    "edgeR": 60.18436301276371,
+    "player": {
+     "x": 18.169134377819976,
+     "y": 3
+    },
+    "aheadTiles": 48.115357634943734,
+    "view": {
+     "id": "far",
+     "label": "FAR",
+     "depthMult": 1.9,
+     "cameraDepth": 42.75
+    }
+   },
+   "analytic": {
+    "left": -38.97530201711757,
+    "right": 60.184363012763924,
+    "width": 99.1596650298815,
+    "depth": 42.75
+   },
+   "edgeErr": {
+    "left": 1.2789769243681803e-13,
+    "right": 2.1316282072803006e-13
+   },
+   "nominalSameEdges": true,
+   "screenshot": "framing-phone-landscape.png"
+  },
+  {
+   "id": "phone-portrait",
+   "nominal": {
+    "width": 390,
+    "height": 844
+   },
+   "probed": {
+    "width": 390,
+    "height": 844
+   },
+   "wallMs": 469452,
+   "live": {
+    "inner": {
+     "w": 390,
+     "h": 844
+    },
+    "scrollX": 6.557830327426558,
+    "gameMs": 1500.029999999999,
+    "edgeL": -2.014596140956506,
+    "edgeR": 16.9847486791976,
+    "player": {
+     "x": 18.169134377819976,
+     "y": 3
+    },
+    "aheadTiles": 5.023444628804182,
+    "view": {
+     "id": "far",
+     "label": "FAR",
+     "depthMult": 1.9,
+     "cameraDepth": 50.39653846153846
+    }
+   },
+   "analytic": {
+    "left": -2.0145961409565114,
+    "right": 16.9847486791977,
+    "width": 18.999344820154214,
+    "depth": 50.39653846153846
+   },
+   "edgeErr": {
+    "left": 5.329070518200751e-15,
+    "right": 9.947598300641403e-14
+   },
+   "nominalSameEdges": true,
+   "screenshot": "framing-phone-portrait.png"
+  }
+ ]
+}
