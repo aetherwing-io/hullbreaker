@@ -26,7 +26,7 @@ import {
 } from '../rig-grip/check.mjs';
 import {
   RIG_ARM_RIGS, RIG_ARM_SEGMENTS, RIG_STATIONARY_STANCE, RIG_WEAPON_ART,
-  RIG_WEAPON_ATLAS_PATH, rigStationaryAimFrame,
+  RIG_WEAPON_ATLAS_PATH, rigArmPose, rigBodyFrameSpec, rigStationaryAimFrame,
 } from '../../src/pure/rig.js';
 
 export const title = 'T-103 — RIG holds the weapon: rendered fist on rendered grip';
@@ -143,6 +143,19 @@ export async function run() {
       'T-103: the hands are solved by rigArmPose() on the frame actually shown, written in place');
     ok(/RIG_CLIMB_BODY_DROP/.test(src) && /function stationaryAimFrame[\s\S]{0,200}rigStationaryAimFrame/.test(src),
       'T-103: player.js uses the shared climb drop and stance table the gate measured');
+  }
+
+  // --- 5b. the per-frame math reuses its scratch (the render loop calls it
+  // every frame and must stay allocation-free) ---------------------------------
+  {
+    const out = {};
+    rigArmPose('contact', 1, 1, 1, 0, 'R', 1.05, 1, 1, 0, true, out);
+    const keep = [out.grip, out.support, out.gunArm, out.gunShoulder, out.placement, out.supportSolve];
+    rigArmPose('aim-down-right', -1, -1, 0, 1, 'F', 1.05, 1.5, 1, 0.05, true, out);
+    ok(keep.every(Boolean) && [out.grip, out.support, out.gunArm, out.gunShoulder, out.placement,
+      out.supportSolve].every((v, i) => v === keep[i]) &&
+       rigBodyFrameSpec('contact') === rigBodyFrameSpec('contact'),
+      'T-103: rigArmPose() writes into the caller\'s scratch objects and the frame table is cached');
   }
 
   // --- 6. retired stances can never be selected ------------------------------

@@ -386,18 +386,21 @@ export const RIG_ARM_RIGS = Object.freeze({
 });
 
 // Which body frame a body-frame NAME uses: its spec, world-per-pixel, and the
-// render-only vertical offset player.js gives that plane.
+// render-only vertical offset player.js gives that plane. Built once: the
+// renderer asks every frame and must not allocate.
+const BODY_FRAME_SPECS = Object.freeze(Object.fromEntries([
+  ['idle', { spec: RIG_IDLE_GUNLESS, k: RIG_BODY_WORLD_PER_PIXEL, dropY: 0 }],
+  ...Object.entries(RIG_RUN_FRAMES).map(([n, spec]) =>
+    [n, { spec, k: RIG_BODY_WORLD_PER_PIXEL, dropY: 0 }]),
+  ...Object.entries(RIG_AIR_FRAMES).map(([n, spec]) =>
+    [`air-${n}`, { spec, k: RIG_BODY_WORLD_PER_PIXEL, dropY: 0 }]),
+  ...Object.entries(RIG_AIM_FRAMES).map(([n, spec]) =>
+    [`aim-${n}`, { spec, k: RIG_AIM_WORLD_PER_PIXEL, dropY: 0 }]),
+  ...RIG_CLIMB_FRAMES.map((spec, i) =>
+    [`climb-${i}`, { spec, k: RIG_CLIMB_WORLD_PER_PIXEL, dropY: RIG_CLIMB_BODY_DROP }]),
+].map(([n, v]) => [n, Object.freeze(v)])));
 export function rigBodyFrameSpec(name) {
-  if (name === 'idle') return { spec: RIG_IDLE_GUNLESS, k: RIG_BODY_WORLD_PER_PIXEL, dropY: 0 };
-  if (RIG_RUN_FRAMES[name]) return { spec: RIG_RUN_FRAMES[name], k: RIG_BODY_WORLD_PER_PIXEL, dropY: 0 };
-  if (name.startsWith('air-') && RIG_AIR_FRAMES[name.slice(4)])
-    return { spec: RIG_AIR_FRAMES[name.slice(4)], k: RIG_BODY_WORLD_PER_PIXEL, dropY: 0 };
-  if (name.startsWith('aim-') && RIG_AIM_FRAMES[name.slice(4)])
-    return { spec: RIG_AIM_FRAMES[name.slice(4)], k: RIG_AIM_WORLD_PER_PIXEL, dropY: 0 };
-  if (name.startsWith('climb-') && RIG_CLIMB_FRAMES[Number(name.slice(6))])
-    return { spec: RIG_CLIMB_FRAMES[Number(name.slice(6))], k: RIG_CLIMB_WORLD_PER_PIXEL,
-      dropY: RIG_CLIMB_BODY_DROP };
-  return null;
+  return BODY_FRAME_SPECS[name] || null;
 }
 
 // Body-frame atlas pixel -> rig-local (x, y), exactly as player.js places the
@@ -495,12 +498,9 @@ export function rigArmSegmentCorners(seg, x0, y0, x1, y1, thick, mirror, out, of
   const vx = x1 - x0, vy = y1 - y0;
   const vl = Math.max(1e-9, Math.hypot(vx, vy));
   const nx = -vy / vl, ny = vx / vl;   // +90 deg of the world bone
-  const corners = [
-    [seg.x, seg.y], [seg.x + seg.w, seg.y],
-    [seg.x, seg.y + seg.h], [seg.x + seg.w, seg.y + seg.h],
-  ];
-  for (let i = 0; i < 4; i++) {
-    const px = corners[i][0] - seg.from[0], py = -(corners[i][1] - seg.from[1]);
+  for (let i = 0; i < 4; i++) {   // TL, TR, BL, BR without allocating
+    const cx = seg.x + (i & 1) * seg.w, cy = seg.y + (i >> 1) * seg.h;
+    const px = cx - seg.from[0], py = -(cy - seg.from[1]);
     const along = (px * uhx + py * uhy) / ul;          // fraction of the bone
     const across = (-px * uhy + py * uhx);              // pixels, +90 deg side
     const wx = x0 + along * vx + across * thick * nx;
