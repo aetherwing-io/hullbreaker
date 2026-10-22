@@ -205,6 +205,19 @@ async function frames(page, n = 2) {
   }), n);
 }
 
+// Screenshots: generous ceiling (one SwiftShader frame on a loaded host has
+// exceeded Playwright's 30 s default), and a failed capture is a recorded
+// FAIL, never a crash that throws away every other result.
+async function shot(page, options) {
+  try {
+    await page.screenshot({ timeout: WAIT_MS, ...options });
+    return true;
+  } catch (error) {
+    check(`capture ${options.path.split('/').pop()}`, false, String(error.message || error).split('\n')[0]);
+    return false;
+  }
+}
+
 // The frozen section tests the input layer alone, and every animation frame of
 // the shipped scene is a full software-rendered draw here (SwiftShader, shared
 // cores). Shadowing document.hidden/visibilityState WITHOUT dispatching an
@@ -676,7 +689,7 @@ async function physics(owned, L, view) {
     await until(page, () => HB.player.grounded, null, WAIT_MS);
     await T.up(1);
   } else {
-    await page.screenshot({ path: join(OUT, `${view.name}-catwalk-miss.png`) });
+    await shot(page, {path: join(OUT, `${view.name}-catwalk-miss.png`) });
     await T.up(1);
   }
 
@@ -760,7 +773,7 @@ async function physics(owned, L, view) {
   await T.down(3, F.x, F.y);
   await T.down(2, J.x, J.y);
   await frames(page, 3);
-  await page.screenshot({ path: join(OUT, `${view.name}-dpr1-live-inuse.png`) });
+  await shot(page, {path: join(OUT, `${view.name}-dpr1-live-inuse.png`) });
   await T.upAll();
 }
 
@@ -803,7 +816,7 @@ async function legacy(newPage, view) {
     check('legacy: a drag holds the arrow, the outer rail adds fire, a tap pulses jump',
       drag.held.includes('ArrowRight') && !drag.fire && rail.fire && rail.held.includes('KeyX') && tapped.jumps >= 1,
       `drag ${drag.held} / rail ${rail.held} / jumps ${tapped.jumps}`);
-    await page.screenshot({ path: join(OUT, `${view.name}-dpr1-legacy.png`) });
+    await shot(page, {path: join(OUT, `${view.name}-dpr1-legacy.png`) });
     check('legacy page raised no errors', owned.errors.length === 0, owned.errors.join(' | '));
   } finally { await owned.close(); }
 }
@@ -835,13 +848,13 @@ async function titleTap(newPage, view) {
 async function capture(page, T, view, dpr) {
   const L = await page.evaluate(() => __HB_TOUCH().layout);
   await frames(page, 3);
-  await page.screenshot({ path: join(OUT, `${view.name}-dpr${dpr}-idle.png`) });
+  await shot(page, {path: join(OUT, `${view.name}-dpr${dpr}-idle.png`) });
   await T.down(91, L.ghost.cx, L.ghost.cy);
   await T.move(91, L.ghost.cx + 38, L.ghost.cy - 38);
   await T.down(92, L.fire.cx, L.fire.cy);
   await T.down(93, L.jump.cx, L.jump.cy);
   await frames(page, 3);
-  await page.screenshot({ path: join(OUT, `${view.name}-dpr${dpr}-inuse.png`) });
+  await shot(page, {path: join(OUT, `${view.name}-dpr${dpr}-inuse.png`) });
   await T.upAll();
   await frames(page, 2);
 }
