@@ -41,6 +41,7 @@ export HB_PROBE_BOOT_MS=180000
 export HB_PROBE_SPAWN_MS=300000
 export HB_HARNESS_SLOWDOWN=40
 export HB_SMOKE_VIEWPORT=480x300
+export HB_GATE_SKIP_BROWSER_PROBE=1
 ENV
 done
 echo "cloud-setup: ok (open a new shell or source ~/.bashrc for the env knobs)"

@@ -9,6 +9,19 @@ export const title = 'built-scene render submission and idle-upload contract';
 const probe = fileURLToPath(new URL('../playtest/perf-probe.mjs', import.meta.url));
 
 export async function run() {
+  // HB_GATE_SKIP_BROWSER_PROBE=1: GPU-less hosts (SwiftShader) cannot measure
+  // render cost, and under load the probe outlives any sane timeout (T-108
+  // measured 300 s in both of its timed runs). Skipped assertions are NOT
+  // counted as passes; the line below says so on every run. The merge gate's
+  // browser smoke still boots the real scene. Never set this on a GPU host.
+  if (process.env.HB_GATE_SKIP_BROWSER_PROBE === '1') {
+    console.log('SKIP render-submission-contract: 4 browser-probe assertions not run ' +
+      '(HB_GATE_SKIP_BROWSER_PROBE=1 — GPU-less host; not counted as passes)');
+    const source = readFileSync(probe, 'utf8');
+    ok(/--throttle/.test(source) && /--profile/.test(source) && /gl\.finish/.test(source),
+      'the committed probe retains CPU throttle, V8 profile, and GPU-fenced draw modes');
+    return;
+  }
   // A private, fresh output directory per run. This used to be one fixed
   // shared path, so when the probe failed to boot, the assertions below
   // certified whatever result.json another lane's run had left there — a gate
