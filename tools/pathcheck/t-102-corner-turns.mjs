@@ -63,6 +63,10 @@ function matrix() {
   // the one shipped framing narrow enough to need the cleared-gate approach
   // dolly, widened mid-approach (the scroll must not rewind)
   list.push({ policy: 'resize-approach-late', viewport: 'narrowTall' });
+  // momentum off: RIG rides the calibrated right clamp for whole stretches,
+  // which is the only way the framing bound is actually exercised
+  for (const viewport of ['desktop', 'phoneLandscape'])
+    list.push({ policy: 'run', viewport, query: 'momentum=0' });
   // the stock-lives tier (no HULL FALLBACK) dying on the turning joint
   for (const viewport of ['desktop', 'phoneLandscape'])
     list.push({ policy: 'stock-life-at-hinge', viewport, query: 'fallback=0' });

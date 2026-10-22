@@ -28,7 +28,7 @@ node tools/simlab/turnlab.mjs poses --viewport phoneLandscape > /tmp/poses.json
 node tools/simlab/turnlab-falsify.mjs                         # 25 rows; minutes
 ```
 
-The gate is `tools/pathcheck/t-102-corner-turns.mjs` (39 played runs plus
+The gate is `tools/pathcheck/t-102-corner-turns.mjs` (41 played runs plus
 static guards), which runs inside `node tools/pathcheck.mjs`.
 
 ## Policies

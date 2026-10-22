@@ -93,7 +93,7 @@ const ROWS = [
     { policy: 'run', viewport: 'desktop', expect: ['cameraYawJump'] }],
   ['M11', 'the screen clamp lets RIG run three tiles off-frame', 'src/config.js',
     'edges: { margin: 0.4, killY: -7 },', 'edges: { margin: -3, killY: -7 },',
-    { policy: 'run', viewport: 'desktop', expect: ['rigOffScreen'] }],
+    { policy: 'run', viewport: 'desktop', query: 'momentum=0', expect: ['rigOffScreen'] }],
   ['M12', 'a popped weapon settles half a tile into the deck', 'src/sim/capsules.js',
     '{ c.y = g + 0.3; c.vy = 0; c.vx *= 0.8; }', '{ c.y = g - 0.5; c.vy = 0; c.vx *= 0.8; }',
     { policy: 'pop-weapon-at-hinge', viewport: 'desktop', expect: ['capsuleThroughDeck'] }],
