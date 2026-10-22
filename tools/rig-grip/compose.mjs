@@ -92,7 +92,7 @@ await withIsolatedBrowser(resolve(import.meta.dirname, '../..'), async ({ newPag
           tds.push(`<td><img data-s="${scale}" src="data:image/png;base64,${png.toString('base64')}">${note}</td>`);
         }
         const frame = side.view.rows[row]?.frame || '';
-        body.push(`<tr class="${side.tag.toLowerCase()}"><th><b>${row}</b> <small>${frame}</small><br>` +
+        body.push(`<tr class="${side.tag.toLowerCase()}"><th class="rh"><b>${row}</b> <small>${frame}</small><br>` +
           `<span class="t">${side.tag}</span><br><small>worst fist-grip ${fmt(fg)} px<br>` +
           `worst muzzle-spawn ${fmt(ms)} px</small></th>${tds.join('')}</tr>`);
       }
@@ -105,14 +105,14 @@ await withIsolatedBrowser(resolve(import.meta.dirname, '../..'), async ({ newPag
         h1{font-size:14px;margin:0 0 4px} p{margin:0 0 6px;max-width:1100px;color:#b9c4c8}
         table{border-collapse:collapse}
         td,th{border:1px solid #2c3a40;padding:2px;text-align:center;vertical-align:middle}
-        th{min-width:150px;text-align:left} tr.before{background:#1d1416} tr.after{background:#121d18}
+        th.rh{min-width:150px;text-align:left} tr.before{background:#1d1416} tr.after{background:#121d18}
         tr.after td,tr.after th{border-bottom:3px solid #46555c}
         .t{font-weight:bold} tr.before .t{color:#ff8f70} tr.after .t{color:#8fe3a0}
         img{display:block;margin:0 auto;image-rendering:pixelated} .n{font-size:10px;color:#cfd8dc}
         </style><h1>RIG weapon hold // ${VIEW} ${v.viewport.width}x${v.viewport.height} DPR ${v.dpr}
         // weapon ${gun} // ${scale === 1 ? 'TRUE SIZE (1 capture px = 1 sheet px)'
           : `${scale}x nearest-neighbour of true size`}</h1>
-        <p>BEFORE = ${sides[0].label}; AFTER = ${sides[1].label}. Every pose row shows BEFORE above AFTER.
+        <p>BEFORE: ${sides[0].label}. AFTER: ${sides[1].label}. Every pose row shows BEFORE above AFTER.
         Numbers are LIVE measurements from the captured frame (css px at this viewport):
         fist-grip = projected centre of the fist that holds the weapon (BEFORE: the nearest painted fist
         on the shown frame; AFTER: the re-posed arm's fist) to the projected centroid of the weapon's

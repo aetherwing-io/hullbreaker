@@ -306,7 +306,7 @@ await withIsolatedBrowser(ROOT, async ({ baseUrl, newPage }) => {
       await page.waitForFunction(() => {
         const s = window.__HB_RIG_VISUAL?.();
         return s?.spriteReady && s?.aimReady && s?.climbReady && Object.values(s.artReady).every(Boolean);
-      }, null, { timeout: 120000, polling: 1000 });
+      }, null, { timeout: 300000, polling: 1000 });   // atlas decode is slow on a loaded SwiftShader host
       await page.keyboard.press('KeyP');
       await page.waitForFunction(() => window.HB.state() === 'PAUSED', null, { timeout: 60000 });
       await page.addStyleTag({ content: 'body > *:not(canvas){visibility:hidden!important}' });
