@@ -1,0 +1,187 @@
+{
+ "tool": "tools/simlab/race/climb-plan.mjs",
+ "schema": "src/pure/track-archetypes.js TRACK_SEGMENT_FIELDS",
+ "violations": [],
+ "valid": true,
+ "totals": {
+  "segments": 9,
+  "tiles": 1584,
+  "riseM": 274,
+  "netTurnDeg": 330,
+  "surfaces": {
+   "exterior": 7,
+   "interior": 2
+  }
+ },
+ "shippedForComparison": {
+  "tiles": 528,
+  "sides": 6,
+  "renderRiseM": 35
+ },
+ "sides": [
+  {
+   "level": "L1",
+   "id": "leg-p1-ankle-scutes",
+   "phase": "OBSERVE",
+   "surface": "exterior",
+   "bayB": "split-rib",
+   "tiles": 176,
+   "riseM": 28,
+   "grade": 0.159,
+   "pitchDeg": 9,
+   "secondsAtScrollFloor": 40.9,
+   "secondsAtEarnedCeiling": 29.2,
+   "secondsAtRunSpeed": 18.7,
+   "transition": "facet-ratchet"
+  },
+  {
+   "level": "L1",
+   "id": "leg-p2-shin-ribline",
+   "phase": "INTERCEPT",
+   "surface": "exterior",
+   "bayB": "chimney-fork",
+   "tiles": 176,
+   "riseM": 30,
+   "grade": 0.17,
+   "pitchDeg": 9.7,
+   "secondsAtScrollFloor": 40.9,
+   "secondsAtEarnedCeiling": 29.2,
+   "secondsAtRunSpeed": 18.7,
+   "transition": "facet-ratchet"
+  },
+  {
+   "level": "L1",
+   "id": "leg-p2-knee-gimbal",
+   "phase": "INTERCEPT",
+   "surface": "exterior",
+   "bayB": "NEW knee-gimbal",
+   "tiles": 176,
+   "riseM": 30,
+   "grade": 0.17,
+   "pitchDeg": 9.7,
+   "secondsAtScrollFloor": 40.9,
+   "secondsAtEarnedCeiling": 29.2,
+   "secondsAtRunSpeed": 18.7,
+   "transition": "joint-hub"
+  },
+  {
+   "level": "L2",
+   "id": "rib-p3-haunch-ribline",
+   "phase": "CONTAIN",
+   "surface": "exterior",
+   "bayB": "NEW haunch-ribline",
+   "tiles": 176,
+   "riseM": 36,
+   "grade": 0.205,
+   "pitchDeg": 11.6,
+   "secondsAtScrollFloor": 40.9,
+   "secondsAtEarnedCeiling": 29.2,
+   "secondsAtRunSpeed": 18.7,
+   "transition": "access-plate"
+  },
+  {
+   "level": "L2",
+   "id": "neck-p3-cervical-interior",
+   "phase": "CONTAIN",
+   "surface": "interior",
+   "bayB": "crossfire-cavity",
+   "tiles": 176,
+   "riseM": 20,
+   "grade": 0.114,
+   "pitchDeg": 6.5,
+   "secondsAtScrollFloor": 40.9,
+   "secondsAtEarnedCeiling": 29.2,
+   "secondsAtRunSpeed": 18.7,
+   "transition": "facet-ratchet"
+  },
+  {
+   "level": "L2",
+   "id": "neck-p4-pressure-tract",
+   "phase": "QUARANTINE",
+   "surface": "interior",
+   "bayB": "vent-stack",
+   "tiles": 176,
+   "riseM": 30,
+   "grade": 0.17,
+   "pitchDeg": 9.7,
+   "secondsAtScrollFloor": 40.9,
+   "secondsAtEarnedCeiling": 29.2,
+   "secondsAtRunSpeed": 18.7,
+   "transition": "dorsal-breach"
+  },
+  {
+   "level": "L3",
+   "id": "spine-p5-dorsal-ridge",
+   "phase": "STERILIZE",
+   "surface": "exterior",
+   "bayB": "kill-braid",
+   "tiles": 176,
+   "riseM": 32,
+   "grade": 0.182,
+   "pitchDeg": 10.3,
+   "secondsAtScrollFloor": 40.9,
+   "secondsAtEarnedCeiling": 29.2,
+   "secondsAtRunSpeed": 18.7,
+   "transition": "collar-ratchet"
+  },
+  {
+   "level": "L3",
+   "id": "spine-p5-collar",
+   "phase": "STERILIZE",
+   "surface": "exterior",
+   "bayB": "NEW collar",
+   "tiles": 176,
+   "riseM": 32,
+   "grade": 0.182,
+   "pitchDeg": 10.3,
+   "secondsAtScrollFloor": 40.9,
+   "secondsAtEarnedCeiling": 29.2,
+   "secondsAtRunSpeed": 18.7,
+   "transition": "collar-ratchet"
+  },
+  {
+   "level": "L3",
+   "id": "crown-p6-crown-roots",
+   "phase": "SCUTTLE",
+   "surface": "exterior",
+   "bayB": "crown-roots",
+   "tiles": 176,
+   "riseM": 36,
+   "grade": 0.205,
+   "pitchDeg": 11.6,
+   "secondsAtScrollFloor": 40.9,
+   "secondsAtEarnedCeiling": 29.2,
+   "secondsAtRunSpeed": 18.7,
+   "transition": "crown-entry"
+  }
+ ],
+ "levels": [
+  {
+   "level": "L1",
+   "sides": 3,
+   "tiles": 528,
+   "riseM": 88,
+   "movingSecondsAtScrollFloor": 122.7,
+   "movingSecondsAtEarnedCeiling": 87.6,
+   "movingSecondsAtRunSpeed": 56.1
+  },
+  {
+   "level": "L2",
+   "sides": 3,
+   "tiles": 528,
+   "riseM": 86,
+   "movingSecondsAtScrollFloor": 122.7,
+   "movingSecondsAtEarnedCeiling": 87.6,
+   "movingSecondsAtRunSpeed": 56.1
+  },
+  {
+   "level": "L3",
+   "sides": 3,
+   "tiles": 528,
+   "riseM": 100,
+   "movingSecondsAtScrollFloor": 122.7,
+   "movingSecondsAtEarnedCeiling": 87.6,
+   "movingSecondsAtRunSpeed": 56.1
+  }
+ ]
+}

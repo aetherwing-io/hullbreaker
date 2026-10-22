@@ -22,9 +22,18 @@ T-101 so nothing collides with that record.
 - Phone captures at deviceScaleFactor 3 trip the 4 s freeze watchdog in
   SwiftShader (a host artifact, not proof of a device defect). Capture phones
   at DPR 1-2 and say which.
-- No image-generation CLI (`codex`) is installed. New art comes from the
-  existing atlases/components, procedural/canvas drawing, or PIL/ImageMagick.
+- No image-generation CLI (`codex`) is installed. Entry 22 authorized an
+  open-source art toolchain instead: headless Blender 5.2 (`/opt/hb-art`,
+  Cycles CPU/Workbench), Pillow/NumPy/OpenCV, `rsvg-convert`, CC0 libraries.
+  Rules: `tools/art/README.md`.
 - 4 CPU cores: at most three browser-heavy lanes at once.
+- After a container restart, `bash tools/orch/cloud-setup.sh` restores all of
+  the above (idempotent). The slow-host knobs live in `~/.hullbreaker-host.env`
+  (load with `. ~/.hullbreaker-host.env`; `~/.bashrc` does NOT reach
+  non-interactive shells). The merge gate and the per-edit hook source it. The merge gate's smoke step uses
+  `tools/orch/smoke-verdict.mjs` (boot + full deterministic schedule + no page
+  errors + no stall); `HB_HARNESS_SLOWDOWN` / `HB_SMOKE_VIEWPORT` are its
+  slow-host knobs.
 
 ## Queue
 
@@ -164,7 +173,7 @@ only — no sim constants), `src/render/sprite-table.js`, RIG atlases under
 saying so, touch controls, or the camera.
 verify: node tools/pathcheck.mjs; the new alignment check; smoke scripts
 
-## T-104 | docs | doing | P1
+## T-104 | docs | done | P1
 
 goal: a grounded design proposal for (a) turning level 1 into a fast race to
 the top with longer faces — *"the 'sides' are a little short"*; and (b)
@@ -204,37 +213,277 @@ fences: docs and new measurement tools only. No `src/` changes.
 verify: node tools/pathcheck.mjs (must stay green); re-run the measurement
 scripts and reproduce the numbers in the doc
 
+landed 2026-10-22 (merged via merge-task.sh, review APPROVE + playtest PASS):
+`docs/proposals/2026-10-race-to-the-top.md` + `tools/simlab/race/` +
+`artifacts/t104-race/`. Its §8 questions are answered by decisions.md entry 23.
+Its §7 task blocks are below as T-201..T-211 with the reviewer's
+fix-at-dispatch amendments; dispatch sends the proposal's block verbatim PLUS
+the amendment lines.
+
 ## T-105 | shell | todo | P1
 
-goal: everything on screen renders correctly on a phone. Known from the
-integrator's 2026-10-22 captures (iPhone-class 390x844 and 844x390, DPR 1):
-the portrait title clips "HULLBREAKER" to "HULLBREAK"; the title says "PRESS
-ANY KEY" and lists keyboard controls on a touch device; the failsafe panel
-says "Press R, or click the button"; the HUD panel covers ~20% of portrait and
-the top-left quarter of landscape; in-run hints are keyboard hints; four
-`<link rel=preload>` images are fetched twice (crossorigin mismatch — wasted
-phone bandwidth); at DPR 3 the 4 s freeze watchdog can fire during the first
-frames (confirm whether a slow first shader compile on a real low-end phone
-could trip it, and make boot tolerant of that without blinding the watchdog).
-Audit the rest: pause/options, death and victory screens, safe-area insets
-(notch / home indicator), `100vh` vs dynamic viewport, rotation mid-run,
-text sizes and tap targets, audio unlock on first touch, and add-to-home-screen
-fullscreen (web app manifest + `apple-mobile-web-app-capable`).
-accept: to be finalized at dispatch (after T-101 lands the deck layout).
+goal: everything on screen renders correctly on a phone — iPhone Safari
+first, landscape first (entry-20 addendum). Known from the integrator's
+2026-10-22 captures (390x844 and 844x390, DPR 1): the portrait title clips
+"HULLBREAKER" to "HULLBREAK"; the title says "PRESS ANY KEY" and lists
+keyboard controls on a touch device; the failsafe panel says "Press R, or
+click the button"; the HUD panel covers ~20% of portrait and the top-left
+quarter of landscape; in-run hints are keyboard hints; four `<link
+rel=preload>` images are fetched twice (crossorigin mismatch — wasted phone
+bandwidth); at DPR 3 the 4 s freeze watchdog fired before the title under
+SwiftShader — decide whether a slow first shader compile on a real low-end
+phone could do the same, and make boot tolerant of it without blinding the
+watchdog. Dispatch after T-101 merges (shared `index.html`, title prompt).
+
+accept:
+- [ ] Before/after capture matrix with `hasTouch` + an iOS Safari UA at DPR 2:
+      landscape 844x390, 932x430 and 667x375, portrait 390x844; screens: title,
+      play HUD, pause/options, capsule pickup/loot banners, death, game over,
+      victory/finale, and the failsafe panel (forced).
+- [ ] No clipped or overflowing text on any of those screens: a DOM check that
+      every visible text box fits its container and the viewport minus safe
+      areas. It must fail on current main's portrait title.
+- [ ] No keyboard-only copy on a touch device: a text scan of every screen for
+      key names and "press"/"click" wording returns zero hits under touch, and
+      the keyboard copy still appears on desktop. Must fail on current main.
+- [ ] Landscape HUD budget: at 844x390 the HUD's panels cover at most 10% of the
+      viewport area and none intersects the central 60%x60% play region
+      (bounding boxes, measured). Current main: report its numbers.
+- [ ] Safe areas: with notch insets forced (left/right 47 px, bottom 21 px —
+      the stylesheet already has a hook for Chromium, where env() is zero),
+      every control and HUD box sits inside the insets.
+- [ ] Preloads: zero "preload ... not used" console warnings, and each
+      preloaded URL is requested exactly once (count network requests).
+- [ ] Watchdog: a 6 s main-thread stall injected before the first rendered
+      frames does NOT show the "game got stuck" panel, while the same stall
+      after warm-up during PLAYING still does. Both directions demonstrated.
+- [ ] Home-screen play: a web app manifest (landscape, fullscreen/standalone,
+      icons cut from existing title art with PIL/ImageMagick) plus
+      `apple-mobile-web-app-capable`, status-bar style and `apple-touch-icon`.
+- [ ] Rotation mid-run (portrait↔landscape during PLAYING) resizes the canvas,
+      re-lays out the HUD, leaves no stuck input and no failsafe panel.
+- [ ] First touch resumes audio on iOS (the AudioContext unlock runs inside the
+      gesture handler); on-device confirmation is an operator question.
+- [ ] Desktop 1280x720 title/HUD/pause unchanged, or every difference named.
+- [ ] pathcheck green with assertions for any new pure logic; smoke-verdict
+      PASS on both smoke scripts.
+- [ ] Operator packet: query string + 3-5 non-leading questions.
 owner: gameplay-engineer
+fences: `index.html` (title, HUD, overlay, failsafe markup/CSS; the touch deck
+belongs to T-101's merged design — fix only integration bugs there),
+`src/ui/{shell,hud,overlay,failsafe,loot,tint,gilded,audio}.js`,
+`src/pure/failsafe.js`, `src/render/preload.js`, a new manifest + icons. Not
+the camera (T-107), not RIG art, not lattice data.
+verify: node tools/pathcheck.mjs; the new layout/copy/watchdog checks;
+smoke-verdict on both smoke scripts
 
-## T-106 | lattice | todo | P1
+## T-106 | lattice | done | P1
 
-goal: longer faces and a faster climb, built from T-104's accepted plan.
-accept: written at dispatch from T-104's task blocks.
-owner: lattice-designer
+superseded by T-205 (the long sides, from T-104's accepted plan).
 
-## T-107 | render | operator | P1
+## T-107 | render | todo | P1
 
-goal: phone framing. At the frozen FAR camera RIG is ~12-15 CSS px tall in
-phone landscape (3.7% of 390 px). Whether phones get different framing is the
-operator's call (entries 7/17); the question is queued below.
+goal: phone framing, authorized by the entry-20 addendum: on phone viewports
+only, RIG is ~6% of screen height (today ~3.7%, ~12-15 CSS px in 844x390
+landscape); desktop FAR stays byte-identical. Landscape is the tuning target.
+Dispatch after T-102 merges (shared `src/render/camera.js`).
+
+accept:
+- [ ] A pure, asserted framing resolver (viewport size + coarse pointer ->
+      view scale) in `src/pure/`; desktop 1280x720 and 1920x1080 resolve to
+      FAR with camera pose numbers identical to main (prove byte-identical
+      projection, not "looks the same").
+- [ ] Measured RIG height as a share of viewport height: phone landscape
+      844x390, 932x430, 667x375 each within 5.5-6.5%; portrait reported and
+      justified (6% of the SHORT side or of height — say which and why).
+- [ ] Look-ahead is OWNED by T-202 (the follow-lead scroll); T-107 must not
+      reduce it: measured route-ahead in phone landscape is no worse than
+      FAR's on the same seed. Vertical band: lift the frame ≈ 6 tiles with
+      the look target (T-104 §4.5) so the deck AND the face's apex are both in
+      view (measure: a 6 % pull-in alone tops out at y 18.7 = face-6 apex + RIG).
+- [ ] All five corner turns and the Crown approach captured before/during/after
+      at phone framing: the landing is visible, no camera clipping into
+      anatomy, static-anatomy rule intact (entry 3).
+- [ ] Hostile tells, bullets and capsules readable at phone framing — capture
+      sheet at DPR 2.
+- [ ] Escape hatches: `?view=far` forces desktop framing on a phone;
+      `?view=phone` forces phone framing on desktop for review.
+- [ ] Frame cost at phone framing reported against FAR on the same viewport
+      (worstMs / over20ms, interleaved rounds).
+- [ ] pathcheck green; smoke-verdict PASS; operator packet.
 owner: gameplay-engineer
+fences: `src/render/camera.js`, the view-scale entries in `src/config.js` /
+`src/mode.js`, a new `src/pure/` resolver, new checks. Not HUD layout (T-105),
+not the touch deck (T-101), not turn logic (T-102, merged first).
+verify: node tools/pathcheck.mjs; the framing measurement script;
+smoke-verdict on both smoke scripts
+
+## T-108 | harness | doing | P1
+
+goal: find out which tests are worth having (decisions.md entry 21: *"the
+tests may be misleading or not valuable too, i had no idea what i was
+doing"*) and propose a lean gate that guards what a player would notice.
+
+accept:
+- [ ] Inventory and classification of every pathcheck domain, every
+      `tools/*-check.mjs`, the selftest, the deploy verifier and the playtest
+      capture scripts into CORE (player-observable behaviour or a hard rule),
+      PURE-INVARIANT (cheap, correct, not an implementation pin), PIN (source
+      text / implementation shape / a constant no decision protects), RETIRED
+      (guards a superseded design — cite the entry), TAUTOLOGY (cannot fail /
+      checks data against itself) and SLOW-ENV (browser/timing dependent),
+      with counts and file:line examples. Machine-readable copy in
+      `tools/orch/test-audit.json`.
+- [ ] Binding sample: a stratified sample of at least 25 assertions across the
+      classes, each mutated (break the guarded thing) to see whether the gate
+      goes red; report the kill rate per class.
+- [ ] Blind-spot table: for each entry-20 defect and each integrator-observed
+      mobile defect (portrait title clip, keyboard copy on touch, HUD coverage,
+      preload double fetch), which existing check could have caught it and why
+      none did.
+- [ ] Cost table: wall time per domain (one instrumented full run), total gate
+      time on this host, and which domains dominate.
+- [ ] Proposal: a fast headless CORE gate, a browser PLAY gate (desktop +
+      phone boot, deterministic smoke, no page errors, frame budget), optional
+      deep suites; the behaviour tests to ADD; the deletion list with reasons;
+      and a migration plan that runs AFTER wave-1 lanes merge (they add
+      pathcheck domains now). Written to `docs/proposals/2026-10-test-audit.md`.
+owner: general-purpose
+fences: `docs/proposals/`, `tools/orch/test-audit.json`, scratch timing tools
+under `tools/orch/`. No changes to `tools/pathcheck/`, `src/`, or any check.
+verify: re-run the instrumented timing and the mutation sample; numbers match
+the doc
+
+## T-109 | art | doing | P1
+
+goal: prove the 3D -> sprite pipeline (entry 22) on the two sprites a player
+looks at most — RIG with all five weapons, and the wasp — so guns are in hands
+by construction and the look can be judged against the current AI-painted art.
+
+phase A (now, no `src/` changes — T-103 owns `src/render/player.js`):
+- [ ] `tools/art/rig/`: a scripted, reproducible headless-Blender build of RIG
+      (low-poly armoured salvage marine true to boards 01/13 and STORY: human
+      scale, helmet + visor, pack, chunky plates, one accent), an armature,
+      and the five guns (R rivet, S spread, L laser, H homing, F flame) each
+      parented to the right-hand bone with grip and muzzle empties.
+- [ ] Every frame the game uses today (inventory it from `src/pure/rig.js` and
+      `src/render/player.js`: idle, run, jump rise/fall, climb, each aim
+      direction, hit/i-frame, any others) rendered through a fixed orthographic
+      camera, pixel-post-processed into the house palette, packed into atlases,
+      with per-frame JSON anchors (hand, muzzle per gun, feet, head).
+- [ ] A measured check that the drawn muzzle pixel and the exported muzzle
+      anchor agree within 1 px in every frame (it binds: offset one gun and
+      show it fail).
+- [ ] The same pipeline for the wasp: model, idle/cruise/dive/hit frames,
+      anchors, atlas.
+- [ ] Contact sheets: current art vs v2, true size at desktop FAR (RIG ~30 px)
+      and at phone framing (RIG ~6% of a 390 px landscape height), plus 4x.
+- [ ] Render cost per frame and total build time recorded; the build is one
+      command.
+phase B (after T-103 merges; the integrator will say so):
+- [ ] v2 wired in behind `?art=v2` (render-only; the sim muzzle stays truth —
+      report any delta), current art remains the default and the control.
+- [ ] In-game captures at desktop and phone landscape; operator packet with the
+      exact query string and 3-5 non-leading questions.
+owner: asset-artist
+fences: `tools/art/`, `assets/generated/sprites/*-v2*`, `assets/manifest.json`
+entries it adds; in phase B only, the `?art=v2` branch in the render layer.
+verify: the one-command build reproduces byte-identical atlases; the anchor
+check; pathcheck green after phase B
+
+## T-120 | harness | todo | P1
+
+goal: rebuild the gate per T-108's audit (`docs/proposals/2026-10-test-audit.md`
+once merged): a ~30 s headless CORE gate, a real-browser PLAY gate (desktop +
+phone boot, deterministic smoke, layout/copy/network bounds, no page errors),
+optional DEEP suites; write the 8 behaviour tests FIRST, then delete the ~508
+noise call sites and rewrite the 139 PINs that stand in for real properties, in
+reviewed batches, re-running the mutation sample after each (decisions entries
+21, 24). Owns ALL test/check infrastructure: `tools/pathcheck*`,
+`tools/*-check.mjs`, `tools/gatecheck.mjs`, `tools/playtest/`, the selftest,
+`tools/orch/merge-task.sh` + `smoke-verdict.mjs`, deploy verifiers.
+Dispatch when T-108 merges; deletions in domains an in-flight lane touches wait
+for that lane to merge.
+
+## T-121 | harness | doing | P1
+
+goal: clean up the codebase outside the test infrastructure (entry 24): dead
+`src/` modules and exports, flag sprawl, unused assets, committed review
+screenshots, one-off non-test tools, stale docs — every deletion proven
+behaviour-neutral. Full block in the dispatch prompt (it is long); summary:
+phase 1 inventory + evidence + `docs/proposals/2026-10-cleanup.md`; phase 2
+safe deletion batches on files no in-flight lane touches; phase 3 (proposal
+only) flag consolidation and large-file refactors, queued as new tasks.
+
+## T-201 | feature | todo | P1
+
+goal (M1): gate beats are always visible, fightable and bounded — full block
+in `docs/proposals/2026-10-race-to-the-top.md` §7 "T-201".
+amendments at dispatch: type is `feature` (not `bug`); add `src/mode.js` to the
+fences if a flag is added; a bot-row box is REPORTED, not asserted (§1.3).
+Fold into one lane with T-202 + T-203 (shared `wavegate.js`/`scroll.js`/
+`waves.js`). Dispatch after T-102 merges.
+
+## T-202 | feature | todo | P1
+
+goal (M1): follow-lead scroll + arm on arrival — §7 "T-202". Owns look-ahead
+(T-107 must not reduce it). Amendment: "saturate harmlessly" needs a threshold.
+
+## T-203 | feature | todo | P1
+
+goal (M2): rolling gates — §7 "T-203", REWRITTEN at dispatch per entry 23 #2:
+the turn never waits; an uncleared remix cell does not hold it; its survivors
+carry over and chase onto the next side (the price is pressure, entry 12).
+Drop "the halt stays as the safety net" and the bounded-beat release design;
+keep teach → test → remix → break and the visibility rule.
+
+## T-204 | render | todo | P2
+
+goal: per-side rendered rise — §7 "T-204". Amendment: its targets are written
+for 176-tile sides; rescale to grade (0.16-0.21, 9-12°) so they hold on 88-tile
+sides (≈ 14-18 m) and on 176 (28-36 m), or dispatch after T-205. Render-only:
+race-lab fingerprints byte-identical. Pair with T-107 (shared `camera.js`).
+
+## T-205 | lattice | todo | P1
+
+goal (M2): six 176-tile sides proved by play — §7 "T-205"; ~25 s per side on a
+good run (entry 23 #3), written in seconds. Amendment: cite only columns the
+M-tables have; the legacy checks in §7's collision table are rewritten or
+retired under entry 21, never "fixed" by bending the plan.
+
+## T-206 | feature | todo | P1
+
+goal (M3): levels as data + chaining + the between-level card + durable
+resume (entry 23 #4) — §7 "T-206". Amendment: add a box proving the six-face
+systems (momentum, overdrive charge, HULL FALLBACK) stay live in every level
+(`src/mode.js` scopes them to `ACTIVE_FIXTURE === null` today); add
+`src/mode.js` to the fences.
+
+## T-207 | lattice | todo | P1
+
+goal (M3): Level 2 RIBLINE & NECK (Contain → Quarantine) — §7 "T-207". Same
+six-face-systems box as T-206.
+
+## T-208 | art | todo | P2
+
+goal (M3/M4): L2/L3 dressing — §7 "T-208", now using entry 22's toolchain
+(Blender kit pieces placed from the 2D data, §5.7). `?dress=0` does not exist —
+name the real escape hatch.
+
+## T-209 | lattice | todo | P1
+
+goal (M4): Level 3 SPINE & CROWN with the Crown at the top, and L1 re-cut to
+three sides (entry 23 #1 = structure A) — §7 "T-209". Amendment: do not lean
+on the legacy finale domains as evidence (entry 21).
+
+## T-210 | harness | todo | P2
+
+goal (M3): the race lab follows levels — §7 "T-210".
+
+## T-211 | harness | todo | P3
+
+goal: offline level preview (unrolled map + 3D views around turns, sub-second)
+— §7 "T-211" and §5.7. Amendment: box 2's falsifier must bind to its assertion.
 
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 

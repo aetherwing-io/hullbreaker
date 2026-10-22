@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# cloud-setup.sh — make a fresh GPU-less cloud container able to run the gates.
+# Idempotent; safe to re-run. Zero effect on the game. Run from the repo root.
+#
+#   - installs the playtest harness's dev dependency (playwright-core);
+#   - points Playwright's default `channel: 'chrome'` at the preinstalled
+#     Chromium when no system Chrome exists;
+#   - provides /private/tmp for capture tools that default to macOS paths;
+#   - installs the dev-only art toolchain (headless Blender, imaging, librsvg);
+#   - exports the slow-host knobs (perf probe timeouts, harness wall-clock
+#     slowdown, smaller smoke viewport) in the shell profile. SwiftShader boots
+#     the shipped scene in ~15-30 s and renders ~1-2 fps at 1280x720 under load.
+set -euo pipefail
+root="$(git rev-parse --show-toplevel)"
+
+[ -d "$root/tools/playtest/node_modules/playwright-core" ] \
+  || (cd "$root/tools/playtest" && npm install --no-audit --no-fund >/dev/null)
+
+if [ ! -x /opt/google/chrome/chrome ] && [ -x /opt/pw-browsers/chromium ]; then
+  mkdir -p /opt/google/chrome
+  ln -sf "$(readlink -f /opt/pw-browsers/chromium)" /opt/google/chrome/chrome
+fi
+
+[ -e /private/tmp ] || { mkdir -p /private && ln -s /tmp /private/tmp; }
+
+# Art toolchain (decisions.md entry 22, tools/art/README.md): Mesa EGL/GL for
+# headless Blender, librsvg for vector UI, and a venv holding bpy + imaging.
+if ! [ -x /opt/hb-art/bin/python ] || ! command -v rsvg-convert >/dev/null; then
+  apt-get update -qq >/dev/null 2>&1 || true
+  apt-get install -y -qq libegl1 libgl1 libegl-mesa0 libgl1-mesa-dri libxi6 \
+    libxxf86vm1 libxfixes3 libxrender1 libxkbcommon0 libsm6 librsvg2-bin >/dev/null
+  [ -x /opt/hb-art/bin/python ] || uv venv -q --python /usr/bin/python3 /opt/hb-art
+  VIRTUAL_ENV=/opt/hb-art uv pip install -q -r "$root/tools/art/requirements.txt"
+fi
+
+# Slow-host knobs. They live in ONE file that the merge gate and the per-edit
+# hook source directly: ~/.bashrc returns early for non-interactive shells, and
+# the agents' shells are snapshotted at session start, so a profile export
+# never reached them (found by the T-104 playtest gate).
+cat > "$HOME/.hullbreaker-host.env" <<'ENV'
+# hullbreaker: GPU-less host knobs (tools/orch/cloud-setup.sh). Load with:
+#   . ~/.hullbreaker-host.env
+export HB_PROBE_BOOT_MS=180000
+export HB_PROBE_SPAWN_MS=300000
+export HB_HARNESS_SLOWDOWN=40
+export HB_SMOKE_VIEWPORT=480x300
+export HB_GATE_SKIP_BROWSER_PROBE=1
+ENV
+echo "cloud-setup: ok (load the host knobs in any shell with: . ~/.hullbreaker-host.env)"
