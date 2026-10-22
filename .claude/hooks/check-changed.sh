@@ -19,6 +19,9 @@ case "$file" in
   *) exit 0 ;;
 esac
 
+# GPU-less container knobs (tools/orch/cloud-setup.sh), when present.
+[ -f "$HOME/.hullbreaker-host.env" ] && . "$HOME/.hullbreaker-host.env"
+
 # Run the check in the checkout that owns the edited file (worktree-safe).
 root="$(git -C "$(dirname "$file")" rev-parse --show-toplevel 2>/dev/null)" || exit 0
 [ -f "$root/tools/pathcheck.mjs" ] || exit 0
