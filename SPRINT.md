@@ -308,6 +308,42 @@ not the touch deck (T-101), not turn logic (T-102, merged first).
 verify: node tools/pathcheck.mjs; the framing measurement script;
 smoke-verdict on both smoke scripts
 
+## T-108 | harness | doing | P1
+
+goal: find out which tests are worth having (decisions.md entry 21: *"the
+tests may be misleading or not valuable too, i had no idea what i was
+doing"*) and propose a lean gate that guards what a player would notice.
+
+accept:
+- [ ] Inventory and classification of every pathcheck domain, every
+      `tools/*-check.mjs`, the selftest, the deploy verifier and the playtest
+      capture scripts into CORE (player-observable behaviour or a hard rule),
+      PURE-INVARIANT (cheap, correct, not an implementation pin), PIN (source
+      text / implementation shape / a constant no decision protects), RETIRED
+      (guards a superseded design — cite the entry), TAUTOLOGY (cannot fail /
+      checks data against itself) and SLOW-ENV (browser/timing dependent),
+      with counts and file:line examples. Machine-readable copy in
+      `tools/orch/test-audit.json`.
+- [ ] Binding sample: a stratified sample of at least 25 assertions across the
+      classes, each mutated (break the guarded thing) to see whether the gate
+      goes red; report the kill rate per class.
+- [ ] Blind-spot table: for each entry-20 defect and each integrator-observed
+      mobile defect (portrait title clip, keyboard copy on touch, HUD coverage,
+      preload double fetch), which existing check could have caught it and why
+      none did.
+- [ ] Cost table: wall time per domain (one instrumented full run), total gate
+      time on this host, and which domains dominate.
+- [ ] Proposal: a fast headless CORE gate, a browser PLAY gate (desktop +
+      phone boot, deterministic smoke, no page errors, frame budget), optional
+      deep suites; the behaviour tests to ADD; the deletion list with reasons;
+      and a migration plan that runs AFTER wave-1 lanes merge (they add
+      pathcheck domains now). Written to `docs/proposals/2026-10-test-audit.md`.
+owner: general-purpose
+fences: `docs/proposals/`, `tools/orch/test-audit.json`, scratch timing tools
+under `tools/orch/`. No changes to `tools/pathcheck/`, `src/`, or any check.
+verify: re-run the instrumented timing and the mutation sample; numbers match
+the doc
+
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
 (packets append here as tasks land)
