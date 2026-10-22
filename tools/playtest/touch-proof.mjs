@@ -80,6 +80,11 @@ const VIEWS = [
 ].filter((v) => (arg('--views', 'landscape,portrait')).split(',').includes(v.name));
 const TICK_MS = 16.667;
 const JUMP_TICKS_N = 3;
+// Wall-clock ceiling for one in-page wait. Generous on purpose: under
+// SwiftShader on a shared host a single frame has taken over a second, and a
+// wait that expires mid-flight would report the HARNESS, not the controls
+// (seen: a 20 s wait snapshotting RIG mid-air as a 'landing').
+const WAIT_MS = 180000;
 
 mkdirSync(OUT, { recursive: true });
 
@@ -185,7 +190,7 @@ function keysAsCodes(keys) { return sortCodes(KEYS.filter((k) => keys[k]).map((k
 const same = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
 
 // Wait for a page-side predicate; returns false instead of throwing on timeout.
-async function until(page, fn, argument = null, timeout = 90000) {
+async function until(page, fn, argument = null, timeout = WAIT_MS) {
   try {
     await page.waitForFunction(fn, argument, { timeout, polling: 'raf' });
     return true;
@@ -475,23 +480,40 @@ async function modalTaps(owned, L) {
   // empty overlay background, clear of the options panel's links
   const bg = { x: L.width * 0.07, y: L.height * 0.9 };
   await tap(42, bg.x, bg.y);
-  await until(page, () => HB.state() === 'PLAYING', null, 5000);
+  await until(page, () => HB.state() === 'PLAYING');
   check('a tap on the pause screen resumes', (await page.evaluate(() => HB.state())) === 'PLAYING');
 
   // GAME_OVER: forced through the sim's state module (test setup). A tap
   // before the screen arms must not restart; one after must.
-  const attempts0 = await page.evaluate(() => HB.sliceStats.attempts);
-  await page.evaluate(async () => { (await import('/src/sim/state.js')).setState('GAME_OVER'); });
+  // Both instants are stamped in-page: under load the CDP round trip alone
+  // can outlast the 650 ms arming window, and a late "early" tap proves
+  // nothing either way.
+  await page.evaluate(async () => {
+    window.__t101modal = { downs: [] };
+    document.addEventListener('pointerdown', () => window.__t101modal.downs.push(performance.now()), true);
+    (await import('/src/sim/state.js')).setState('GAME_OVER');
+    window.__t101modal.shownAt = performance.now();
+  });
   await tap(43, bg.x, bg.y);
   await page.waitForTimeout(80);
-  const early = await page.evaluate(() => HB.state());
+  const early = await page.evaluate(() => ({ state: HB.state(),
+    afterMs: window.__t101modal.downs[0] - window.__t101modal.shownAt }));
+  if (early.afterMs < 650) {
+    check(`an early tap on GAME_OVER (${Math.round(early.afterMs)} ms after it showed) does not skip the screen`,
+      early.state === 'GAME_OVER', early.state);
+  } else {
+    console.log(`  NOTE [${current}] the "early" GAME_OVER tap landed ${Math.round(early.afterMs)} ms late ` +
+      '(host load); the arming check is not judged this run');
+    if (early.state !== 'GAME_OVER') {
+      await page.evaluate(async () => { (await import('/src/sim/state.js')).setState('GAME_OVER'); });
+    }
+  }
   await page.waitForTimeout(900);
   await tap(44, bg.x, bg.y);
-  await until(page, () => HB.state() === 'PLAYING', null, 5000);
-  const s2 = await page.evaluate(() => ({ state: HB.state(), attempts: HB.sliceStats.attempts }));
-  check('an early tap on GAME_OVER does not skip the screen', early === 'GAME_OVER', early);
-  check('a tap on an armed GAME_OVER screen restarts the run', s2.state === 'PLAYING',
-    `${JSON.stringify(s2)} (attempts before ${attempts0})`);
+  await until(page, () => HB.state() === 'PLAYING');
+  const s2 = await page.evaluate(() => ({ state: HB.state() }));
+  check('a tap on an armed GAME_OVER screen restarts the run', s2.state === 'PLAYING', JSON.stringify(s2));
+  measure('gameOverEarlyTapMs', Math.round(early.afterMs));
 }
 
 async function gestures(owned, L) {
@@ -589,10 +611,10 @@ async function physics(owned, L, view) {
 
   // 2. stick up-right + FIRE (RIG keeps running: NE still holds Right)
   await T.move(1, S.x + 40, S.y - 40);
-  await until(page, () => HB.keys.up && HB.keys.right, null, 10000);
+  await until(page, () => HB.keys.up && HB.keys.right, null, WAIT_MS);
   const shots0 = await page.evaluate(() => HB.shotsFired());
   await T.down(3, F.x, F.y);
-  await until(page, (n) => HB.shotsFired() > n, shots0, 20000);
+  await until(page, (n) => HB.shotsFired() > n, shots0, WAIT_MS);
   const fire = await page.evaluate(async () => {
     const pool = (await import('/src/sim/weapons.js')).bulletPool;
     return {
@@ -626,7 +648,7 @@ async function physics(owned, L, view) {
   await T.up(2);
   await T.down(2, J.x, J.y);
   mark.p4 = await lastDown(page);
-  await until(page, (t) => HB.gameMs() > t + 1 && HB.player.grounded, mark.p4, 20000);
+  await until(page, (t) => HB.gameMs() > t + 1 && HB.player.grounded, mark.p4, WAIT_MS);
   await T.up(2);
   const landing = await page.evaluate(() => ({
     x: +HB.player.x.toFixed(3), y: +HB.player.y.toFixed(3), hp: HB.player.hp,
@@ -640,18 +662,18 @@ async function physics(owned, L, view) {
   //    stick-down inside [34.02, 34.98] would take the ladder, not the floor.
   let stand = null;
   if (onCatwalk) {
-    await until(page, () => HB.player.x >= 32.3 || !HB.player.onOneWay, null, 20000);
+    await until(page, () => HB.player.x >= 32.3 || !HB.player.onOneWay, null, WAIT_MS);
     await T.up(1);
-    await until(page, () => Math.abs(HB.player.vx) < 0.05, null, 20000);
+    await until(page, () => Math.abs(HB.player.vx) < 0.05, null, WAIT_MS);
     stand = await page.evaluate(() => ({ x: HB.player.x, y: HB.player.y, ow: !!HB.player.onOneWay }));
     await T.down(1, S.x, S.y);
     await T.move(1, S.x, S.y + 44);
-    await until(page, () => HB.keys.down && !HB.keys.left && !HB.keys.right, null, 10000);
+    await until(page, () => HB.keys.down && !HB.keys.left && !HB.keys.right, null, WAIT_MS);
     await T.down(2, J.x, J.y);
     mark.p5 = await lastDown(page);
     await until(page, (t) => HB.gameMs() > t + 80, mark.p5);
     await T.up(2);
-    await until(page, () => HB.player.grounded, null, 20000);
+    await until(page, () => HB.player.grounded, null, WAIT_MS);
     await T.up(1);
   } else {
     await page.screenshot({ path: join(OUT, `${view.name}-catwalk-miss.png`) });
@@ -796,7 +818,7 @@ async function titleTap(newPage, view) {
     const L = await page.evaluate(() => __HB_TOUCH().layout);
     await T.down(81, L.jump.cx, L.jump.cy);
     await T.up(81);
-    await until(page, () => HB.state() === 'PLAYING', null, 10000);
+    await until(page, () => HB.state() === 'PLAYING');
     await frames(page, 3);
     const after = await page.evaluate(() => ({ state: HB.state(), jumps: __HB_TOUCH().jumps,
       held: __HB_TOUCH().held, jumpKey: HB.keys.jump, audio: HB.audio() }));
