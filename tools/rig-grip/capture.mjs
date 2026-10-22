@@ -123,7 +123,9 @@ const PAGE_HELPERS = `
   q.measure = () => {
     const snap = window.__HB_RIG_VISUAL();
     const out = { frame: snap.bodyFrame, weapon: snap.weapon, gunUsesArt: snap.gunUsesArt,
-      rigVisible: snap.rigVisible, hands: snap.hands || null };
+      rigVisible: snap.rigVisible, hands: snap.hands || null,
+      // legacy telemetry: "aligned" meant only that the frame matched the aim sector
+      aimArmAligned: snap.aimArmAligned };
     const gun = q.gunMesh();
     const spec = R.RIG_WEAPON_ART[snap.weapon];
     if (gun && gun.visible !== false && spec && snap.gunUsesArt) {
@@ -402,7 +404,7 @@ await withIsolatedBrowser(ROOT, async ({ baseUrl, newPage }) => {
           const muzzleSpawn = m.muzzlePx && m.spawnPx
             ? Math.hypot(m.muzzlePx.x - m.spawnPx.x, m.muzzlePx.y - m.spawnPx.y) : null;
           vr.cells[key] = { file, frame: m.frame, handKind: m.handKind || null, stretch: m.stretch ?? null,
-            pxPerTile: +m.pxPerTile.toFixed(3),
+            pxPerTile: +m.pxPerTile.toFixed(3), aimArmAligned: m.aimArmAligned,
             fistToGripCssPx: fistGrip === null ? null : +fistGrip.toFixed(3),
             fistToGripTiles: fistGrip === null ? null : +(fistGrip * pxToTiles).toFixed(4),
             muzzleToSpawnCssPx: muzzleSpawn === null ? null : +muzzleSpawn.toFixed(3),
