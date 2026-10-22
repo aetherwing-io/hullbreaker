@@ -324,11 +324,15 @@ export const RIG_ARM_REACH_GAIN = 1.25;
 // as parallax between the drawn muzzle and the shot: measured 0.7 px at
 // desktop FAR with the weapon at z=0.06 and RIG 30 tiles off the view axis
 // (the old z=0.25 is ~3 px there). Layering is carried by renderOrder; these
-// small separations only keep the depth test unambiguous (0.005 is ~20 depth
-// steps at FAR with the 0.5/200 near/far planes).
+// small separations only keep the depth test unambiguous (0.004 is ~16 depth
+// steps at FAR with the 0.5/200 near/far planes). Order front to back: near
+// arm, weapon trait parts (+0.007), family accent (+0.004), weapon, far arm,
+// body — so the gun hand is never depth-rejected behind an accent plate.
 export const RIG_GUN_DEPTH = 0.02;
-export const RIG_NEAR_ARM_DEPTH = 0.025;
-export const RIG_FAR_ARM_DEPTH = 0.015;
+export const RIG_GUN_ACCENT_DEPTH = 0.004;
+export const RIG_GUN_TRAIT_DEPTH = 0.007;
+export const RIG_NEAR_ARM_DEPTH = 0.032;
+export const RIG_FAR_ARM_DEPTH = 0.012;
 // The climb beats are painted fully extended (one hand up on a rung), which
 // puts their shoulders ~0.22 tiles higher above the boots than any standing
 // pose. Drawing the climb plane this much lower lets the free arm hold the

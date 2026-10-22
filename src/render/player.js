@@ -65,7 +65,8 @@ import {
   RIG_WEAPON_ART, RIG_WEAPON_ATLAS_H, RIG_WEAPON_ATLAS_PATH, RIG_WEAPON_ATLAS_W,
   SPRITE_H, SPRITE_W, TORSO, VISOR,
   RIG_ARM_RIGS, RIG_ARM_SEGMENTS, RIG_CLIMB_BODY_DROP, RIG_FAR_ARM_DEPTH,
-  RIG_GUN_DEPTH, RIG_GUN_FAMILY_HEIGHT_GAIN, RIG_NEAR_ARM_DEPTH,
+  RIG_GUN_ACCENT_DEPTH, RIG_GUN_DEPTH, RIG_GUN_FAMILY_HEIGHT_GAIN, RIG_GUN_TRAIT_DEPTH,
+  RIG_NEAR_ARM_DEPTH,
   rigArmPose, rigArmSegmentCorners, rigStationaryAimFrame, rigWeaponPlacement,
 } from '../pure/rig.js';
 import { awaitPreloads, preloadTexture } from './preload.js';
@@ -542,7 +543,7 @@ const attachmentMaterial = new THREE.MeshStandardMaterial({
 });
 const familyAccent = new THREE.Mesh(GUN_FAMILY_ACCENTS.R, attachmentMaterial);
 familyAccent.name = 'rig-gun-family-accent';
-familyAccent.position.z = 0.016;
+familyAccent.position.z = RIG_GUN_ACCENT_DEPTH;
 familyAccent.renderOrder = 5;
 gunAssembly.add(familyAccent);
 const traitMeshes = Object.freeze(Object.fromEntries(
@@ -550,7 +551,7 @@ const traitMeshes = Object.freeze(Object.fromEntries(
     const mesh = new THREE.Mesh(geometry, attachmentMaterial);
     mesh.name = `rig-gun-trait-${trait}`;
     mesh.visible = false;
-    mesh.position.z = 0.024;
+    mesh.position.z = RIG_GUN_TRAIT_DEPTH;
     mesh.renderOrder = 6;
     gunAssembly.add(mesh);
     return [trait, mesh];
