@@ -123,6 +123,11 @@ const MUTATIONS = {
     '      const bits = stickSectorBits(sector);\n',
     '      const bits = stickSectorBits(sector) & ~(TOUCH_BIT.UP | TOUCH_BIT.DOWN);\n',
   ],
+  // only Down is lost: aim up still works, the drop-through must not
+  'stick-no-down': [
+    '      const bits = stickSectorBits(sector);\n',
+    '      const bits = stickSectorBits(sector) & ~TOUCH_BIT.DOWN;\n',
+  ],
 };
 
 async function mutateRoute(route) {
@@ -624,7 +629,9 @@ async function physics(owned, L, view) {
 
   // 2. stick up-right + FIRE (RIG keeps running: NE still holds Right)
   await T.move(1, S.x + 40, S.y - 40);
-  await until(page, () => HB.keys.up && HB.keys.right, null, WAIT_MS);
+  // wait on the DECK's own quantization; the sim's keys are what get judged
+  // (a wait on keys.up would stall a defective deck and desync the route)
+  await until(page, () => __HB_TOUCH().stick.sector === 'NE', null, WAIT_MS);
   const shots0 = await page.evaluate(() => HB.shotsFired());
   await T.down(3, F.x, F.y);
   await until(page, (n) => HB.shotsFired() > n, shots0, WAIT_MS);
@@ -681,7 +688,8 @@ async function physics(owned, L, view) {
     stand = await page.evaluate(() => ({ x: HB.player.x, y: HB.player.y, ow: !!HB.player.onOneWay }));
     await T.down(1, S.x, S.y);
     await T.move(1, S.x, S.y + 44);
-    await until(page, () => HB.keys.down && !HB.keys.left && !HB.keys.right, null, WAIT_MS);
+    await until(page, () => __HB_TOUCH().stick.sector === 'S', null, WAIT_MS);
+    stand.keysAtDrop = await page.evaluate(() => ({ down: HB.keys.down, left: HB.keys.left, right: HB.keys.right }));
     await T.down(2, J.x, J.y);
     mark.p5 = await lastDown(page);
     await until(page, (t) => HB.gameMs() > t + 80, mark.p5);
@@ -750,7 +758,7 @@ async function physics(owned, L, view) {
     const through = q.find((r) => r.y < 6.3 && !r.g);
     const landed = q.filter((r) => r.g).pop();
     const throughTick = through ? Math.round((through.t - mark.p5) / TICK_MS) : null;
-    dropped = stand.ow && through && throughTick <= JUMP_TICKS_N + 1 &&
+    dropped = stand.ow && stand.keysAtDrop.down && through && throughTick <= JUMP_TICKS_N + 1 &&
       landed && landed.y < 6.0 && q.some((r) => r.du > mark.p5);
     detail = `stood x ${stand.x.toFixed(2)} y ${stand.y.toFixed(2)} on the catwalk: ${stand.ow}; ` +
       (through ? `below the deck at tick ${throughTick}; ` : 'never went below; ') +

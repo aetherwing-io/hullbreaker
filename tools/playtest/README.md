@@ -1774,7 +1774,8 @@ turn its own checks red:
 | `ignore-cancel` | no `pointercancel` and no `lostpointercapture` listener (Chromium fires the second right after a cancel, so removing one alone is not a defect) | pointercancel release |
 | `ignore-blur` | no `blur` listener | isolated blur release |
 | `jump-pulse` | JUMP sends keyup right after keydown (the old scheme's pulse) | held vs tapped apex |
-| `stick-no-vertical` | the stick never emits Up/Down | up-right bullets, drop-through |
+| `stick-no-vertical` | the stick never emits Up/Down | up-right bullets (and drop-through) |
+| `stick-no-down` | the stick never emits Down | drop-through only |
 
 **Honesty / limitations**
 
