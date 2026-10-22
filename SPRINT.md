@@ -391,6 +391,30 @@ entries it adds; in phase B only, the `?art=v2` branch in the render layer.
 verify: the one-command build reproduces byte-identical atlases; the anchor
 check; pathcheck green after phase B
 
+## T-120 | harness | todo | P1
+
+goal: rebuild the gate per T-108's audit (`docs/proposals/2026-10-test-audit.md`
+once merged): a ~30 s headless CORE gate, a real-browser PLAY gate (desktop +
+phone boot, deterministic smoke, layout/copy/network bounds, no page errors),
+optional DEEP suites; write the 8 behaviour tests FIRST, then delete the ~508
+noise call sites and rewrite the 139 PINs that stand in for real properties, in
+reviewed batches, re-running the mutation sample after each (decisions entries
+21, 24). Owns ALL test/check infrastructure: `tools/pathcheck*`,
+`tools/*-check.mjs`, `tools/gatecheck.mjs`, `tools/playtest/`, the selftest,
+`tools/orch/merge-task.sh` + `smoke-verdict.mjs`, deploy verifiers.
+Dispatch when T-108 merges; deletions in domains an in-flight lane touches wait
+for that lane to merge.
+
+## T-121 | harness | doing | P1
+
+goal: clean up the codebase outside the test infrastructure (entry 24): dead
+`src/` modules and exports, flag sprawl, unused assets, committed review
+screenshots, one-off non-test tools, stale docs — every deletion proven
+behaviour-neutral. Full block in the dispatch prompt (it is long); summary:
+phase 1 inventory + evidence + `docs/proposals/2026-10-cleanup.md`; phase 2
+safe deletion batches on files no in-flight lane touches; phase 3 (proposal
+only) flag consolidation and large-file refactors, queued as new tasks.
+
 ## T-201 | feature | todo | P1
 
 goal (M1): gate beats are always visible, fightable and bounded — full block

@@ -1070,3 +1070,34 @@ operator plays them (entry 16); the authoring-pipeline recommendation (§5.7:
 preview) is an integrator call under entry 22, not an operator verdict.
 
 **Source:** operator answers, 2026-10-22, to the integrator's question set.
+
+## 24 — 2026-10-22 — Clean up the mess: the codebase is a house of cards
+
+**Operator, verbatim:**
+
+> "maybe have an agent go cleanup that mess. i figured there was a lot of
+> badly produced garbage because iterations were taking forever. it felt like
+> the game was a house of cards barely keeping it together"
+
+**What this decides.** Cleanup is mandated work, not optional polish: dead
+code, flag sprawl, one-off tools, unused assets, committed review screenshots
+and the noise half of the test suite (entry 21, T-108) are to be removed, so
+iteration gets faster and the game stops being fragile.
+
+**Integrator rules for it (reverse any if wrong):**
+- Two lanes, fenced from each other and from in-flight work: **T-120** rebuilds
+  the gate per T-108 (all test and check infrastructure); **T-121** cleans
+  everything else (`src/`, `assets/`, `artifacts/`, docs, non-test tools).
+- **Every deletion is proven behaviour-neutral**, not argued: no remaining
+  reference; deterministic-run fingerprints identical before and after; the
+  default URL boots with zero page errors and renders identically; the deploy
+  bundle still builds and verifies. A deletion that cannot be proven neutral is
+  reported, not done.
+- **Code an earlier verdict deliberately kept is not deleted on this entry
+  alone:** the inert `?hook=1` prototype (entry 5) and the extractable
+  zip-assembly choreography (entry 3). The cleanup lane reports what each costs
+  (lines, files, flags, test sites) so the operator can decide with numbers.
+- Structural refactors of the largest files are proposed with evidence and
+  queued as their own tasks; they are not bundled into deletion batches.
+
+**Source:** operator message, 2026-10-22.
