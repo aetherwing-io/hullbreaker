@@ -14,14 +14,19 @@ onto the weapon's painted grip every frame (`src/pure/rig.js` `rigArmPose`).
 | `raster.mjs` | Deterministic software compositor: draws the shipped atlases through the same placement functions `src/render/player.js` runs (`rigBodyPoint`, `rigWeaponPlacement`, `rigArmPose`, `rigArmSegmentCorners`). Also writes PNGs. |
 | `check.mjs` | The measured gate (`runGripCheck`): re-measures every anchor from painted pixels, then for every combination checks the rendered fist centroid against the rendered grip centroid (bound 1 atlas px) and the rendered muzzle face against the sim spawn (bound 1 desktop-FAR px). Accepts fault injection so the gate can prove it binds. Run by `tools/pathcheck/t-103-rig-grip-alignment.mjs`. |
 | `preview.mjs` | Fast offline contact sheet (no browser): `node tools/rig-grip/preview.mjs --out x.png --gun F --ppt 120 --frames aim-right,contact --aims right,up`. |
-| `capture.mjs` | The live half: boots the real game, pauses it, drives the shipped presentation hook (`view.player.sync`) through every pose x aim x facing x weapon, reads the live mesh geometry + `matrixWorld` to measure fist-vs-grip and muzzle-vs-spawn on screen, grabs each cell with the shipped `renderFrame()` + `readPixels`, and composes true-size and 4x sheets. Works against pre-T-103 trees (`--root <exported tree>`) using a table of the old painted fist positions. `--firing` captures RIG actually firing in four directions with the real background. |
+| `capture.mjs` | The live half: boots the real game, pauses it, drives the shipped presentation hook (`view.player.sync`) through every pose x aim x facing x weapon, reads the live mesh geometry + `matrixWorld` to measure fist-vs-grip and muzzle-vs-spawn on screen, photographs each cell, and composes true-size and 4x sheets. Works against pre-T-103 trees (`--root <exported tree>`) using a table of the old painted fist positions. `--firing` captures RIG actually firing in four directions with the real background; `--crouch` boots `?crouch=1` for the crouch row. |
+| `compose.mjs` | BEFORE/AFTER sheets from two (or more, merged) capture dirs: every pose row twice, BEFORE above AFTER, with the live measurements in the row header (and per cell at 4x). The 4x sheet is the true-size capture magnified by nearest neighbour. |
 
 ```sh
 node tools/pathcheck.mjs                                   # includes the T-103 domain
 node tools/rig-grip/capture.mjs --out /tmp/cap --views desktop,phone
 node tools/rig-grip/capture.mjs --out /tmp/before --root /path/to/exported/base --label BEFORE
 node tools/rig-grip/capture.mjs --out /tmp/fire --views phone --firing
+node tools/rig-grip/compose.mjs --before /tmp/before --after /tmp/cap --out /tmp/sheets --guns RSLHF --scales 1,4
 ```
+
+Every capture/compose run binds only the OS-assigned ephemeral port of the
+repo's `withIsolatedBrowser` helper (never 8741/8742).
 
 ## Honesty / limitations
 
