@@ -78,3 +78,112 @@ gameMs/wall ratio of the fixeddt browser runs) and `--step`.
    this dt, this fixture). It is not a general no-nondeterminism proof for
    every slice — pathcheck's new T-002 assertions carry the durable,
    CI-shaped version of the claim.
+
+---
+
+# race lab — the shipped six-face run as distributions (T-104)
+
+`tools/simlab/race/` measures the DEFAULT six-face run (no fixture, every
+default-on system live: momentum pace, CHARGE, HULL FALLBACK, aim assist,
+hit-stop) headlessly, for `docs/proposals/2026-10-race-to-the-top.md`. Zero
+effect on the shipped game: it only imports `src/` read-only and writes under
+`artifacts/t104-race/`. No dependencies for the Node half; the two browser
+checks reuse `tools/playtest/node_modules` (playwright-core) via
+`tools/playtest/lib/isolated-browser.mjs`.
+
+| file | what it does |
+| --- | --- |
+| `race/edges.mjs` | analytic replica of `src/render/camera.js` calibrateEdges (FAR depth, portrait pullback, compact portrait multiplier, portrait look drop and NDC inset). Re-reads camera.js and throws if `PORTRAIT_SAFE` or the call shapes drift. |
+| `race/run-child.mjs` | ONE run in a fresh process: transcribed boot (`calibrateEdges` → `resetGame`), the sim half of `src/boot/run-reset.js`'s registry in registry order, and `src/main.js` `update()` for the six-face run at a fixed 1/60 s. Drift guards re-read main.js and run-reset.js and refuse to run if the update order, the registry ids or resetGame's six-face lines changed. Optional `instrument: "oracle"`, `replay`, `snapshotsAtMs`. |
+| `race/policies.mjs` | seeded reflex bots: `rush` (always right — the racer), `climber` (takes every higher surface and ladder), `fighter` (mid-screen, target-first), `carried` (a novice pushed along by the plane), `idle` (no input). Shared gate reflex: firing-spot search over walkable surfaces with the eight rays plus the shipped fire-time aim assist. |
+| `race/lab.mjs` | `baseline` runs the matrix (4 viewports — desktop 16:10, phone landscape FAR, phone landscape at RIG 6 % (estimate), phone portrait — × (4 policies × 12 seeds + idle + oracle@0/1500/3000 × 3 seeds) = 232 runs) and writes `baseline.json` / `baseline.md`; `check` re-runs every committed run (or every K-th with `--every K`) and compares fingerprints; `one '<json>'` runs one config. |
+| `race/doc-tables.mjs` | prints the markdown tables from `baseline.json`; `--condensed` prints exactly the Tables M1–M8 the proposal embeds. |
+| `race/sight.mjs` | why a racer's view is empty: splits one run's climb frames (corner idle, real sides) into standing at a closed joint, pinned at the right screen clamp, and free, and reports the route-ahead quantiles of the free ones. `--preset racer` reproduces the three runs the proposal's §2.7 quotes. |
+| `race/daylight.mjs` | where a single run loses the daylight behind it: samples one run's trace and splits the frames under N tiles of margin by corner state (a frozen plane in a held gate and an advancing plane during a climb are different problems). `--preset phone-crowding` reproduces the four runs the proposal's §4.5 quotes. |
+| `race/gate-view.mjs` | static: resolves every authored gate row to its Vertical Assault staging socket as `src/sim/wavegate.js` does and reports which sockets sit outside the view held at `HALT_S`, per viewport (`gate-view.json`). |
+| `race/facts.mjs` | static course arithmetic from source (`facts.json`). |
+| `race/climb-plan.mjs` | the proposed nine-side climb in the track-archetype schema, run through the shipped `trackArchetypeViolations()` (`climb-plan.json`). |
+| `race/browser-check.mjs` | fidelity proof: plays a frame-exact input schedule in real Chrome (`?testapi=1&fixeddt=16.667` + the frame-input bootstrap) and the same schedule through the replica; diffs the frozen final state field by field. |
+| `race/probe-framing.mjs` | boots each viewport in Chrome, compares the live edge calibration with `edges.mjs`, saves one framing screenshot per viewport. |
+
+```sh
+node tools/simlab/race/lab.mjs baseline            # 232 runs; 1572 s wall on 2 jobs at load ~35
+node tools/simlab/race/lab.mjs check               # reproduce: every fingerprint must match
+node tools/simlab/race/lab.mjs check --every 8     # a deterministic 29-run subset
+node tools/simlab/race/doc-tables.mjs --condensed  # the doc's Tables M1–M8
+node tools/simlab/race/facts.mjs
+node tools/simlab/race/gate-view.mjs
+node tools/simlab/race/sight.mjs --preset racer
+node tools/simlab/race/daylight.mjs --preset phone-crowding
+node tools/simlab/race/climb-plan.mjs
+node tools/simlab/race/browser-check.mjs           # 640x400, 24 s of game; SwiftShader-bound
+node tools/simlab/race/probe-framing.mjs
+```
+
+## The oracle is an instrument, not a player
+
+`instrument: "oracle"` breaks every materialized hostile inside the screen
+through the game's own death path (`forceBreakHostile`: kill tally, score
+event and gate bookkeeping all run) once it has been visible for
+`oracleLatencyMs`. With `rush` movement it measures the AUTHORED FLOOR of each
+side and gate (latency 0) and a competent shooter's time-to-kill (1500, 3000).
+It is the only thing in the lab that writes sim state other than input, and
+only when asked. It cannot see or kill anything outside the screen edges —
+deliberately, because a player cannot either.
+
+## Honesty / limitations
+
+1. **Bots are reflex players, not people.** Their gate times on sides 3–6 are
+   dominated by how badly they handle armoured, rooted teaching bodies (Iris
+   Polyp windows, mortar perches). Read gate stalls from the oracle rows; read
+   bot rows for behaviour (where a style spends its time, what it sees, how it
+   dies) and for spread, never as "how long a human takes".
+2. **The transcription can drift.** `run-child.mjs` copies `update()` and the
+   reset registry rather than importing `main.js` (which pulls three.js). The
+   drift guards catch reorders and renames; they cannot catch a NEW sim call
+   added to `update()` between two guarded lines. `browser-check.mjs` is the
+   end-to-end proof; re-run it after any change to `main.js`.
+3. **Fidelity is proven for one input path.** `browser-check.mjs` compares one
+   24 s open-loop schedule at 640×400 (in landscape the edge calibration
+   depends only on aspect, so this is the 1280×800 simulation at a quarter of
+   the painted pixels; the tool also checks the page's live edges against
+   `edges.mjs`). Policies read state the browser would also have, but a
+   closed-loop policy cannot be replayed in Chrome frame-exactly through the
+   current harness (policy rules are sampled, not frame-scoped). Under
+   SwiftShader on a loaded shared host the check takes up to an hour: rAF
+   advances one fixed step per painted frame.
+4. **Edges are a constant calibration per viewport**, exactly as the game
+   computes them at boot; no resize or rotation mid-run is modelled.
+5. **Fixed 1/60 s step.** The browser default is a variable step clamped to
+   50 ms; outcomes at other frame rates can differ by a frame here and there.
+6. **Phone = framing only.** The lab simulates a phone's edge calibration, not
+   touch input (T-101 owns the touch deck); a bot presses the same intent
+   booleans either way. The `phone-landscape-6pct` viewport (RIG ≈ 6 % of the
+   height, entry 20 addendum) is an ESTIMATE of a frame that does not exist
+   yet: the FAR camera pulled along its depth axis only, to depth 26.644
+   (1.184 × the base 22.5). Re-point it at the built frame when T-107 lands.
+7. **600 s cap.** A run still alive at 600 s of game time is reported as
+   `timeout`. The ecology beat lock (`LEVEL1_ECOLOGY_BEAT_LOCK_MS` = 300 s) can
+   hold a gate that long; a real player would have quit first.
+8. **Bots and the oracle perceive only the screen.** Bullets are not
+   edge-culled in the sim, so a bot that aimed at off-screen bodies would
+   clear portrait gates no human can see; `liveHostiles()` therefore only
+   returns hostiles inside the screen edges. A blind shot can still connect
+   by luck, as it can for a player.
+9. **One run per process.** The `src/` sim modules are module-level
+   singletons, so `runOne()` is not re-entrant: a second call in the same
+   process returns an empty trace and a different fingerprint. `lab.mjs` and
+   `daylight.mjs` therefore spawn one child per run; a new tool must do the
+   same (this bit `daylight.mjs` once and was caught by the fingerprints).
+10. **The terrain-stall counter includes held gates.** `framesTerrainStall`
+   counts frames where right is held, RIG is grounded and free, dx is
+   ~0 and RIG is not at the right clamp — which also happens while a gate
+   holds the scroll and the bot presses against arena geometry. On side 5
+   that is nearly all of it (a traced `rush` run: 3,012 of 3,073 near-still
+   samples inside the gate-5 fight). Read it per corner state, or restrict
+   the counter to corner-idle frames, before calling it a layout defect.
+11. **Lookahead is route, not screen.** Table M7's "route ahead" is RIG's
+   front to the right screen edge, clipped at the active corner's bend (the
+   next side is round the limb, not ahead), counted only on frames where the
+   pursuing edge moves. It measures what the frame frees up, not where a
+   player looks.
