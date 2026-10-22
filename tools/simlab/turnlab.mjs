@@ -12,7 +12,9 @@
  *   node tools/simlab/turnlab.mjs list
  *
  * Options: --query '<url query>' (e.g. 'fallback=0'), --no-god (real damage
- * budget), --reaction <ms> (oracle gunner delay, default 350), --json (raw).
+ * budget), --reaction <ms> (oracle gunner delay, default 350), --gunner
+ * oracle|paced, --pace <ms> (paced gunner: one visible kill per <ms>),
+ * --max-ticks <n>, --show <n> (violations printed), --json (raw).
  *
  * Dev-only. Zero effect on the shipped game. Honesty/limitations: README.md. */
 
@@ -73,6 +75,8 @@ if (isMain) {
   const base = {
     query: opt('query', ''), god: !has('no-god'),
     reactionMs: +opt('reaction', '350'),
+    gunnerMode: opt('gunner', 'oracle'), paceMs: +opt('pace', '1400'),
+    ...(opt('max-ticks', '') ? { maxTicks: +opt('max-ticks', '') } : {}),
   };
   const { POLICIES, VIEWPORTS } = await import(proofUrl);
   if (mode === 'list') {

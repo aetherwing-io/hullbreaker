@@ -23,6 +23,7 @@ node tools/simlab/turnlab.mjs list
 node tools/simlab/turnlab.mjs run --policy die-at-hinge --viewport desktop
 node tools/simlab/turnlab.mjs matrix --jobs 3                # every policy x 4 viewports
 node tools/simlab/turnlab.mjs run --policy run --viewport phonePortrait --query fallback=0
+node tools/simlab/turnlab.mjs run --policy run --viewport phonePortrait --gunner paced --pace 1400 --max-ticks 21600
 node tools/simlab/turnlab.mjs poses --viewport phoneLandscape > /tmp/poses.json
 node tools/simlab/turnlab-falsify.mjs                         # 25 rows; minutes
 ```

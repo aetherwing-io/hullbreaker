@@ -53,12 +53,15 @@ const poses = (parsed.poses || parsed).filter((p) =>
   cornersWanted.has(p.k) && (!only || only.has(p.label)));
 await mkdir(out, { recursive: true });
 const { browser } = await launchBrowser({ channel: 'chrome' });
-const context = await browser.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: dpr });
+// --touch: a phone context (navigator.maxTouchPoints > 0). That is also what
+// selects the game's 6.5 s mobile preload budget, as on a real iPhone.
+const touch = argv.includes('--touch');
+const context = await browser.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: dpr, hasTouch: touch });
 const page = await context.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e && e.stack || e)));
 page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
-const sidecar = { viewport: { width: vw, height: vh, dpr }, baseUrl, query, posesFile, frames: [], errors };
+const sidecar = { viewport: { width: vw, height: vh, dpr, touch }, baseUrl, query, posesFile, frames: [], errors };
 try {
   await page.goto(`${baseUrl}/index.html?testapi=1&shell=0&audio=0${query ? '&' + query : ''}`,
     { waitUntil: 'load', timeout: 180000 });
@@ -70,7 +73,17 @@ try {
     dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyP' }));
   });
   await page.waitForFunction(() => HB.state() === 'PAUSED', null, { timeout: 120000 });
-  log('booted + paused', vw + 'x' + vh);
+  // Which boot assets made the shared preload gate on THIS page. Under a
+  // loaded SwiftShader host the gate can close first and an asset degrades to
+  // its documented fallback — frame-to-frame texture differences between two
+  // capture sessions are attributable through this record.
+  sidecar.preload = await page.evaluate(() => {
+    const p = globalThis.__HB_PRELOAD ? __HB_PRELOAD() : null;
+    if (!p) return null;
+    const assets = (p.assets || []).map((a) => ({ url: String(a.url || '').split('/').pop(), state: a.state }));
+    return { budgetMs: p.budgetMs, costMs: p.costMs, notReady: assets.filter((a) => a.state !== 'ready') };
+  });
+  log('booted + paused', vw + 'x' + vh, 'preload notReady:', JSON.stringify(sidecar.preload && sidecar.preload.notReady));
   for (const pose of poses) {
     const name = `${tag}${vw}x${vh}-c${pose.k}-${pose.label}.${format === 'png' ? 'png' : 'jpg'}`;
     const file = resolve(out, name);
@@ -117,7 +130,17 @@ try {
       Li.updateLimbFoldCull();
       B.view.player.sync();
       if (!pose.skipShot) await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-      return { fold: Cam.cameraFoldSnapshot(), limb: Li.limbFoldCullSnapshot(),
+      // Live route ownership from the real module: how many rows of the
+      // arriving facet (k) and of the departing one (k-1) this frame draws.
+      const RV = await import('/src/render/route-visibility.js');
+      const P = await import('/src/pure/path.js');
+      const own = { arriving: 0, arrivingShown: 0, departing: 0, departingShown: 0 };
+      for (let column = 0; column < HB.levelData.groundH.length; column++) {
+        const f = P.facetAtBends(column + 0.5, P.BEND_S);
+        if (f === pose.k) { own.arriving++; if (RV.routeRenderable(column + 0.5)) own.arrivingShown++; }
+        if (f === pose.k - 1) { own.departing++; if (RV.routeRenderable(column + 0.5)) own.departingShown++; }
+      }
+      return { fold: Cam.cameraFoldSnapshot(), limb: Li.limbFoldCullSnapshot(), route: own,
         state: c.state, scrollX: T.scrollX, x: HB.player.x };
     }, { ...pose, skipShot });
     if (!skipShot) await page.screenshot(format === 'png'
@@ -128,7 +151,9 @@ try {
       replicaCameraFacet: pose.cameraFacet, page: applied });
     const yawDeg = applied.fold.yaw * 180 / Math.PI;
     log(name, 'yaw', yawDeg.toFixed(2), '(replica', pose.cameraYawDeg.toFixed(2) + ')',
-      'facet', applied.fold.facingFacet, '(replica', pose.cameraFacet + ')');
+      'facet', applied.fold.facingFacet, '(replica', pose.cameraFacet + ')',
+      'route k', `${applied.route.arrivingShown}/${applied.route.arriving}`,
+      'k-1', `${applied.route.departingShown}/${applied.route.departing}`);
     if (Math.abs(yawDeg - pose.cameraYawDeg) > 1e-6 || applied.fold.facingFacet !== pose.cameraFacet)
       errors.push(`pose ${name}: page camera disagrees with the replica`);
   }
