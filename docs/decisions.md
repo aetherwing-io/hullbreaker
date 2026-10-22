@@ -1032,3 +1032,41 @@ verdict (entry 16); FAR on desktop and the phone framing (entries 17, 20);
 the half-dose value ladder (14); entry 18's 60 fps condition.
 
 **Source:** operator message, 2026-10-22.
+
+## 23 — 2026-10-22 — The climb's shape: one escalation over three levels, turns never wait, ~25 s sides, card + resume
+
+Four operator answers to T-104's open questions
+(`docs/proposals/2026-10-race-to-the-top.md` §8), options chosen as worded:
+
+1. **Escalation: once across all three levels.** "Two states per level, Crown
+   finale only at the top of level 3. Keeps the story's single escalation and
+   reuses every existing encounter once; level 1 alone no longer ends at the
+   Crown." — the proposal's structure A: L1 THE LEG (Observe, Intercept), L2
+   RIBLINE & NECK (Contain, Quarantine), L3 SPINE & CROWN (Sterilize,
+   Scuttle, then the Crown finale).
+2. **Corners: keep climbing, enemies follow.** "The turn never waits;
+   survivors chase you onto the next side, so skipping fights costs you
+   pressure instead of time." This answers the proposal's Q2 for its rolling
+   gates (T-203): an uncleared remix cell does not hold the turn; its
+   survivors carry over. Entry 12's rule — the price is pressure — is the
+   design basis.
+3. **Side length: about 25 s on a good run.** "Roughly double today's
+   distance with no waiting; a full level ≈ 1.5–3 min." The proposal's
+   176-tile side (18.7 s at run speed, 29.2 s at the earned pace ceiling)
+   is consistent with it; acceptance boxes are written in seconds, and the
+   tile count stays a tuning parameter.
+4. **Between levels: card + resume.** "A ~3 s card between levels
+   (auto-continues), and you can start from the highest level you've reached
+   on this phone." This is the operator's explicit ruling on the conflict the
+   proposal named with entries 0a (checkpoint retreads) and 19 (unlocks as
+   retention): a level-start resume is phone session structure, wanted. The
+   durability contract still binds — a corrupt or missing save is ignored
+   safely and visibly, never a blocked title, and a lost save is P1.
+
+**Not decided here:** the follow-lead scroll's feel (tension with entries
+7/17 and 11) and every other new mechanic stay behind A/B flags until the
+operator plays them (entry 16); the authoring-pipeline recommendation (§5.7:
+2D data stays the source of truth, Blender for kit pieces, an offline level
+preview) is an integrator call under entry 22, not an operator verdict.
+
+**Source:** operator answers, 2026-10-22, to the integrator's question set.
