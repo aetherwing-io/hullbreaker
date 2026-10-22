@@ -59,6 +59,8 @@ const ALL_ROWS = ['stand', 'run-contact', 'run-pass', 'run-flight', 'air-rise', 
   'climb-0', 'climb-1', 'climb-2', 'climb-3', 'wall', 'hit-iframe', 'respawn'];
 const rows = arg('rows', ALL_ROWS.join(',')).split(',');
 const IN_SITU = has('in-situ');
+const FIRING = has('firing');   // in-situ: RIG actually firing in four directions
+const FIRING_AIMS = arg('firing-aims', 'right,up-right,up,left').split(',');
 const CROP = { x0: -1.45, x1: 1.45, y0: -0.35, y1: 2.75 };   // tiles, rig-local
 
 // PAINTED fists of the PRE-T-103 atlases (absolute atlas px), used only when
@@ -173,6 +175,26 @@ const PAGE_HELPERS = `
   };
   // advance the game clock while paused, then run the shipped presentation hook
   q.sync = (ms = 0) => { if (ms) T.advanceGameMs(ms); B.view.player.sync(); };
+  // Run the real loop (unpaused) until a NEW shot has been simulated, then
+  // pause synchronously on that same frame (a synthetic KeyP through the
+  // game's own keydown handler) so the frame on screen holds the shot.
+  q.fireAndHold = () => new Promise((resolve) => {
+    const start = window.HB.shotsFired();
+    let frames = 0;
+    const tick = () => {
+      frames++;
+      if (window.HB.shotsFired() > start || frames > 400) {
+        if (window.HB.state() === 'PLAYING') window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyP' }));
+        I.keys.fire = false;
+        resolve({ frames, shots: window.HB.shotsFired() - start });
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    I.keys.fire = true;
+    requestAnimationFrame(tick);
+  });
+  q.liveBullets = () => W.bulletPool.filter((b) => b.alive).map((b) => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy }));
   window.__RIG_GRIP__ = q;
   return true;
 })()`;
@@ -218,6 +240,13 @@ async function stageRow(page, row) {
       for (let i = 0; i < 40 && window.__HB_RIG_VISUAL().climbFrame !== wanted; i++) { p.y += 0.12; q.sync(16); }
     } else if (rowName === 'wall') {
       Object.assign(p, { grounded: false, traversalState: 'wall', vy: -0.2 });
+      q.sync(16);
+    } else if (rowName === 'crouch') {
+      // ?crouch=1 prototype: the sim squashes the stance and lowers the
+      // firing line; mirror exactly what updatePlayer() writes.
+      const C = window.HB.CONFIG.crouch;
+      Object.assign(p, { crouched: true, muzzleY: C.muzzleY, h: C.height });
+      I.keys.down = true;
       q.sync(16);
     } else if (rowName === 'hit-iframe') {
       P.damagePlayer(0, p.x - 1);
@@ -280,7 +309,7 @@ await withIsolatedBrowser(ROOT, async ({ baseUrl, newPage }) => {
       await page.addStyleTag({ content: 'body > *:not(canvas){visibility:hidden!important}' });
       await page.evaluate((fists) => { window.__LEGACY_FISTS__ = fists; }, LEGACY_FISTS);
       await page.evaluate(PAGE_HELPERS);
-      if (!IN_SITU) {
+      if (!IN_SITU && !FIRING) {
         // Isolate RIG: hide every world object except the rig and the light
         // rig (materials, tone mapping and bloom stay exactly as shipped).
         // SwiftShader draws the full Meridian at <1 fps on a loaded host; the
@@ -309,10 +338,55 @@ await withIsolatedBrowser(ROOT, async ({ baseUrl, newPage }) => {
         q.HB_MUZZLE_Y = window.HB.CONFIG.player.muzzleY;
         q.HB_HEIGHT = window.HB.CONFIG.player.height;
       });
-      for (const row of rows) {
+      await page.evaluate((g) => { window.__RIG_GRIP__.FIRE_GUN = g; }, GUNS[0]);
+      if (FIRING) {
+        vr.firing = {};
+        for (const aimName of FIRING_AIMS) {
+          const AIM = { right: [1, 0], 'up-right': [1, 1], up: [0, 1], 'up-left': [-1, 1], left: [-1, 0],
+            'down-left': [-1, -1], down: [0, -1], 'down-right': [1, -1] }[aimName];
+          await page.evaluate(([ax, ay]) => {
+            const q = window.__RIG_GRIP__;
+            const p = q.P.player;
+            q.H.clearHostiles();
+            q.W.clearBullets();
+            q.W.setWeapon(q.FIRE_GUN);
+            Object.assign(p, { x: 6, y: q.deck, vx: 0, vy: 0, grounded: true, traversalState: 'free',
+              iframesUntil: 0, nextFireAt: 0 });
+            for (const k of ['left', 'right', 'up', 'down', 'jump', 'fire']) q.I.keys[k] = false;
+            q.I.keys.strafe = true;
+            p.facing = ax < 0 ? -1 : 1;
+            const n = Math.hypot(ax, ay);
+            p.aim.set(ax / n, ay / n);
+          }, AIM);
+          await page.keyboard.press('KeyP');            // resume the real loop
+          await page.waitForFunction(() => window.HB.state() === 'PLAYING', null, { timeout: 60000 });
+          const fired = await page.evaluate(() => window.__RIG_GRIP__.fireAndHold());
+          await page.waitForFunction(() => window.HB.state() === 'PAUSED', null, { timeout: 60000 });
+          const m = await page.evaluate(() => window.__RIG_GRIP__.measure());
+          const bullets = await page.evaluate(() => window.__RIG_GRIP__.liveBullets());
+          // a wide in-situ window around RIG: 2.4x the matrix crop
+          const [tl, br] = m.crop;
+          const cx = (tl.x + br.x) / 2, cy = (tl.y + br.y) / 2;
+          const w = (br.x - tl.x) * 2.4, h = (br.y - tl.y) * 1.6;
+          const grab = await page.evaluate(([x, y, ww, hh]) => window.__RIG_GRIP__.grab(x, y, ww, hh),
+            [Math.floor(cx - w / 2), Math.floor(cy - h * 0.55), Math.ceil(w), Math.ceil(h)]);
+          const file = `${viewName}-firing-${aimName}.png`;
+          writeRgba8Png(resolve(OUT, file), grab.w, grab.h, Buffer.from(grab.b64, 'base64'));
+          vr.firing[aimName] = { file, fired, frame: m.frame, weapon: m.weapon, hands: m.hands,
+            muzzleToSpawnCssPx: m.muzzlePx && m.spawnPx
+              ? +Math.hypot(m.muzzlePx.x - m.spawnPx.x, m.muzzlePx.y - m.spawnPx.y).toFixed(3) : null,
+            fistToGripCssPx: m.fistPx && m.gripPx
+              ? +Math.hypot(m.fistPx.x - m.gripPx.x, m.fistPx.y - m.gripPx.y).toFixed(3) : null,
+            bullets, grabPx: [grab.w, grab.h] };
+          console.log(JSON.stringify({ view: viewName, firing: aimName, ...vr.firing[aimName], hands: undefined }));
+        }
+      }
+      for (const row of (FIRING ? [] : rows)) {
         const staged = await stageRow(page, row);
         vr.rows[row] = staged;
         for (const gun of GUNS) for (const facing of facings) for (const aim of aims) {
+          // crouched aim is forced level by the sim (CONFIG.crouch.aimLevel)
+          if (row === 'crouch' && !['right', 'left'].includes(aim)) continue;
           const m = await stageCell(page, row, aim, facing, gun);
           // let the paused loop draw this exact state, then photograph it
           await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
@@ -342,7 +416,7 @@ await withIsolatedBrowser(ROOT, async ({ baseUrl, newPage }) => {
   }
 
   // contact sheets: rows x (facing, aim) per (view, gun), true size and 4x
-  for (const [viewName, vr] of Object.entries(report.views)) {
+  for (const [viewName, vr] of Object.entries(FIRING ? {} : report.views)) {
     for (const gun of GUNS) {
       for (const scale of [1, 4]) {
         const cols = [];

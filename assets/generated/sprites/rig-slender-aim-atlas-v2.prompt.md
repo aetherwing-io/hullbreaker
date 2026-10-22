@@ -47,3 +47,9 @@ Deterministic finishing:
 - Native pixels are copied 1:1 into four `512×1024` windows on a `2048×1024` RGBA atlas. There is no resampling, stretching, rotation, or redraw.
 - Exact cell geometry, alpha bounds, guards, and palette correction are recorded in `rig-slender-aim-atlas-v2.layout.json`.
 
+
+T-103 arm surgery (2026-10-22):
+
+- The same repack command now ends with `tools/assets/rig-arm-surgery.mjs`. Painted forearms and fists that stood out past the torso are erased, and (aim `right` only) the upper arm across the chest is replaced by the same painting's abdomen plates cloned 1:1 from 50 px below. Nothing is resampled, redrawn or generated; every erased/cloned polygon is listed in that file and its pixel counts in the layout JSON (`armSurgery`).
+- Why: every painted frame held its fists at chest or shoulder height while the simulation fires from a hip-height hand socket, so the separately mounted weapon floated under the fists. The runtime now re-poses RIG's own arm onto the weapon's painted grip (`src/pure/rig.js` `rigArmPose`), checked by `tools/pathcheck/t-103-rig-grip-alignment.mjs`.
+- `up` and `up-right` are retained untouched but no longer shown: their raised arms cross the helmet and chest, and removing them would leave a face and chest that were never painted.

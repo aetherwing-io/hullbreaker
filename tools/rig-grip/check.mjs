@@ -141,7 +141,8 @@ function muzzleError(combo, letter, gain, recoil) {
 // --- the whole gate ---------------------------------------------------------
 export function runGripCheck({ frames = FRAMES, aims = Object.keys(AIMS), chassis = CHASSIS,
   gains = [1, 1.5], recoils = [0, RIG_RECOIL_TILES], inject = {}, weaponArt = RIG_WEAPON_ART,
-  fistAnchor = RIG_ARM_SEGMENTS.fore.to, maxStretchAtGain1 = 1.15, portraitStretchCeiling = 1.75 } = {}) {
+  fistAnchor = RIG_ARM_SEGMENTS.fore.to, maxStretchAtGain1 = 1.15, portraitStretchCeiling = 1.75,
+  crouch = true } = {}) {
   const failures = [];
   const table = [];
   const weaponImg = png(RIG_WEAPON_ATLAS_PATH);
@@ -204,5 +205,28 @@ export function runGripCheck({ frames = FRAMES, aims = Object.keys(AIMS), chassi
         if (shown && gain !== 1 && stretch > portraitStretchCeiling)
           failures.push(`${label}: portrait arm stretched x${stretch.toFixed(3)} (ceiling ${portraitStretchCeiling})`);
       }
+  // 3. crouch (?crouch=1 prototype, off by default): the body is squashed to
+  // the crouch height and the sim fires from CONFIG.crouch.muzzleY with the
+  // aim forced level; the shown frame is the level stance.
+  if (crouch) {
+    const squash = CONFIG.crouch.height / CONFIG.player.height;
+    for (const aimName of ['right', 'left']) for (const bodyFacing of [1, -1]) for (const letter of chassis)
+      for (const gain of gains) {
+        const aim = AIMS[aimName];
+        const frame = rigStationaryAimFrame(aim[0], aim[1]);
+        const combo = renderCombo({ frame, aim, bodyFacing, gunFacing: bodyFacing, letter, gain, squash,
+          muzzleY: CONFIG.crouch.muzzleY, inject });
+        stats.combos++;
+        const label = `crouch/${frame}/${aimName}/body${bodyFacing > 0 ? 'R' : 'L'}/${letter}/gain${gain}`;
+        const dAtlas = Math.hypot(combo.fist.x - combo.grip.x, combo.fist.y - combo.grip.y) / (ONE_ATLAS_PX * gain);
+        const stretch = combo.pose.gunArm.stretch;
+        table.push({ label, dAtlas, dMuzzle: 0, stretch, shown: true, gain });
+        stats.maxFistGripAtlasPx = Math.max(stats.maxFistGripAtlasPx, dAtlas);
+        if (dAtlas > 1) failures.push(`${label}: rendered fist centroid is ${dAtlas.toFixed(2)} atlas px off the rendered grip`);
+        if (gain === 1 && stretch > maxStretchAtGain1)
+          failures.push(`${label}: arm stretched x${stretch.toFixed(3)} to reach the grip (bound ${maxStretchAtGain1})`);
+        if (gain === 1) stats.maxStretchGain1 = Math.max(stats.maxStretchGain1, stretch);
+      }
+  }
   return { failures, stats, table };
 }
