@@ -27,6 +27,13 @@
  *   band    — where the lowest landing deck (y 2) and RIG's head on the
  *             highest route surface of every face land on screen, projected
  *             through the live camera at the actor depth across the frame.
+ *   clamp   — (--clamp) RIG pinned at the sim's right clamp (facing right)
+ *             and at the damage plane's margin (facing left), at deck height
+ *             and high: the gap in CSS px between his outermost PAINTED pixel
+ *             and the frame edge, from a RIG-only draw (<= 0: cut by the edge).
+ *   clear   — (--clear-shot) one frame with every scene object hidden: the
+ *             clear colour as the page draws it, the reference
+ *             tools/simlab/framing/void_columns.py measures voids against.
  *   rig     — (--rig) RIG standing on the first face: its 1.7-tile body
  *             projected through the live camera, AND its painted pixels: one
  *             direct render with everything but RIG hidden over a key colour,
@@ -89,6 +96,8 @@ const touch = has('touch');
 const dpr = +opt('dpr', '1');
 const query = opt('query', '');
 const wantRig = has('rig');
+const wantClamp = has('clamp');
+const clearShot = has('clear-shot');
 const shots = opt('shots', null);
 const out = resolve(opt('out', 'phone-framing-probe.json'));
 const bootMs = Number(process.env.HB_PROBE_BOOT_MS) || 180000;
@@ -134,7 +143,7 @@ try {
       });
       await page.waitForFunction(() => HB.state() === 'PAUSED', null, { timeout: bootMs });
       row.bootMs = Date.now() - t0;
-      Object.assign(row, await page.evaluate(async ({ POSES, wantRig }) => {
+      Object.assign(row, await page.evaluate(async ({ POSES, wantRig, wantClamp }) => {
         const [W, T, Hs, Cam, S, TW, THREE, LV, CFG] = await Promise.all([
           '/src/sim/wavegate.js', '/src/sim/time.js', '/src/sim/hostiles.js',
           '/src/render/camera.js', '/src/render/scene.js', '/src/render/tower.js', 'three',
@@ -293,8 +302,62 @@ try {
               return { bodyFrame: r.bodyFrame, portraitGain: r.gunPresentation && r.gunPresentation.portraitGain }; })() : null,
           };
         }
-        return { camera, facts, band, rig };
-      }, { POSES, wantRig }));
+        // ---- the clamp, in painted pixels (I-104) ----
+        // RIG pinned at the sim's right clamp facing right, and at the damage
+        // plane's margin facing left, at deck height and high on the frame;
+        // one direct RIG-only draw each; the gap between his outermost
+        // painted pixel and the frame edge (<= 0 means cut by the edge).
+        let clamp = null;
+        if (wantClamp) {
+          const B = await import('/src/sim/bridge.js');
+          const P = HB.player;
+          let accent = null;
+          S.scene.traverse((o) => { if (o.name === 'rig-gun-family-accent') accent = o; });
+          let top = accent;
+          while (top && top.parent && top.parent !== S.scene) top = top.parent;
+          const drawBox = () => {
+            const saved = [];
+            S.scene.traverse((o) => saved.push([o, o.visible]));
+            const bg = S.scene.background, fog = S.scene.fog, shadows = S.renderer.shadowMap.enabled;
+            for (const o of S.scene.children) o.visible = (o === top);
+            S.scene.background = new THREE.Color(0xff00ff); S.scene.fog = null; S.renderer.shadowMap.enabled = false;
+            S.renderer.setRenderTarget(null);
+            S.renderer.render(S.scene, cam);
+            const gl = S.renderer.getContext();
+            const bw = gl.drawingBufferWidth, bh = gl.drawingBufferHeight;
+            const px = new Uint8Array(bw * bh * 4);
+            gl.readPixels(0, 0, bw, bh, gl.RGBA, gl.UNSIGNED_BYTE, px);
+            for (const [o, vis] of saved) o.visible = vis;
+            S.scene.background = bg; S.scene.fog = fog; S.renderer.shadowMap.enabled = shadows;
+            let x0 = bw, x1 = -1, y0 = bh, y1 = -1;
+            for (let yy = 0; yy < bh; yy++) for (let xx = 0; xx < bw; xx++) {
+              const i = (yy * bw + xx) * 4;
+              if (Math.abs(px[i] - 255) + px[i + 1] + Math.abs(px[i + 2] - 255) < 60) continue;
+              if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy;
+            }
+            const sx = bw / innerWidth;
+            return x1 < 0 ? null : { leftGapCss: +(x0 / sx).toFixed(2), rightGapCss: +((bw - 1 - x1) / sx).toFixed(2),
+              topGapCss: +((bh - 1 - y1) / sx).toFixed(2), bottomGapCss: +(y0 / sx).toFixed(2) };
+          };
+          for (const c of W.cornerEvents) { c.state = 'idle'; c.tStart = 0; c.sealed = false; c.primed = false; }
+          Cam.resetCameraYaw();
+          T.setScrollX(40);
+          Cam.syncCamera();
+          const margin = CONFIG.edges.margin, hw = CONFIG.player.width / 2;
+          const xr = 40 + facts.edgeR - margin - hw, xl = 40 + facts.edgeL + margin + hw;
+          clamp = {};
+          for (const [label, x, facing, y] of [
+            ['right-deck', xr, 1, LV.groundTopAt(xr)], ['right-high', xr, 1, 15],
+            ['left-deck', xl, -1, LV.groundTopAt(xl)], ['left-high', xl, -1, 15],
+          ]) {
+            Object.assign(P, { x, y: Number.isFinite(y) ? y : 3, vx: 0, vy: 0, grounded: true, facing });
+            P.iframesUntil = 0;
+            B.view.player.sync();
+            clamp[label] = { x: +x.toFixed(3), y: P.y, box: drawBox() };
+          }
+        }
+        return { camera, facts, band, rig, clamp };
+      }, { POSES, wantRig, wantClamp }));
       if (row.rig && row.rig.painted && row.rig.painted.crop) {
         const data = row.rig.painted.crop.split(',')[1];
         delete row.rig.painted.crop;
@@ -303,6 +366,22 @@ try {
         const file = resolve(dir, `rig-painted-${w}x${h}${touch ? '-touch' : ''}${query ? '-' + query.replace(/[^a-z0-9]+/gi, '_') : ''}.png`);
         await writeFile(file, Buffer.from(data, 'base64'));
         row.rig.painted.cropFile = file;
+      }
+      if (clearShot) {
+        // the clear colour as this page draws it (post, tone mapping, JPEG):
+        // every scene object hidden for one presented frame
+        const dir = shots || dirname(out);
+        await mkdir(dir, { recursive: true });
+        await page.evaluate(async () => {
+          const S = await import('/src/render/scene.js');
+          globalThis.__T107_HIDDEN__ = S.scene.children.map((o) => [o, o.visible]);
+          for (const o of S.scene.children) o.visible = false;
+          await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        });
+        const file = resolve(dir, `clear-ref-${w}x${h}${touch ? '-touch' : ''}.jpg`);
+        await page.screenshot({ path: file, type: 'jpeg', quality: 80, timeout: bootMs });
+        await page.evaluate(() => { for (const [o, v] of globalThis.__T107_HIDDEN__) o.visible = v; });
+        row.clearShot = file;
       }
       if (shots) {
         await mkdir(shots, { recursive: true });

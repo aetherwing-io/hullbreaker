@@ -104,13 +104,23 @@ default) tops up hp so every run reaches all six corners.
 3. **The oracle is a perfect shot.** Proofs about the turn are not proofs
    about the fight. Outcome distributions (who survives which gate) are out of
    scope here — see the T-104 race lab.
-4. **The framing bound is relative.** On a flat face RIG pinned at the right
-   clamp already renders with its chest at NDC ≈1.012 at 1280x720 (edges are
-   calibrated on the z = 0 route plane; RIG draws 1.15 tiles toward the
-   camera). That general clamp fact is reported separately; this lab only
-   asserts that a turn never makes it worse.
+4. **The framing bound is relative.** Before T-107, RIG pinned at the right
+   clamp on a flat face rendered with its chest at NDC ≈1.012 at 1280x720
+   (edges calibrated on the z = 0 route plane; RIG draws 1.15 tiles toward the
+   camera). Since T-107 the right clamp is the actor plane's narrowest row
+   inset by RIG's widest drawn half-silhouette (`src/pure/framing.js`), and
+   every run records the chest NDC at the clamp as `clampNdc` (0.95 at
+   1280x720 and 844x390 touch); `rigOffScreen` keeps its constant bound, and
+   the T-107 pathcheck domain asserts `clampNdc < 1` on its own runs.
 5. **Viewports are calibrated analytically** (`edgesForViewport`), not probed;
-   portrait/landscape/desktop/narrow (260x1000) only.
+   portrait/landscape/desktop/narrow (260x1000), plus (T-107) the same phone
+   sizes on touch hardware: `phoneLandscapeTouch` 844x390, `phoneMaxTouch`
+   932x430, `phoneSmallTouch` 667x375, `phonePortraitTouch` 390x844. The lens
+   (FAR, or the phone frame on a touch phone), the lift and `?orbit=joint` come
+   from `src/pure/framing.js`, the module `render/camera.js` calls; the
+   untouched `phoneLandscape` / `phonePortrait` presets are what a
+   mouse-driven window of that size gets (FAR). The live page is re-measured
+   by `tools/playtest/phone-framing-probe.mjs`.
 6. **`drop-at-hinge` cannot drop through anything** in the shipped lattice:
    every joint apron (`[cornerS-6, cornerS+3)`) is flat solid ground with no
    catwalk, ladder or solid rect. The policy still crosses on a jump.
