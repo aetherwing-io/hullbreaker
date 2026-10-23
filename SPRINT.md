@@ -252,7 +252,12 @@ Its §7 task blocks are below as T-201..T-211 with the reviewer's
 fix-at-dispatch amendments; dispatch sends the proposal's block verbatim PLUS
 the amendment lines.
 
-## T-105 | shell | doing | P1
+## T-105 | shell | done | P1
+
+MERGED 7ecb1c4 (2026-10-23): review APPROVE, playtest PASS (both at 4fd25af).
+The integrator merged main (T-201) in as 43708a0 before the gate; the only conflict was
+the manifest list (d81 T-201, d82 T-105). The merge gate ran its own smoke on that
+combination. Follow-up before the phone release: T-126.
 
 goal: everything on screen renders correctly on a phone — iPhone Safari
 first, landscape first (entry-20 addendum). Known from the integrator's
@@ -573,6 +578,40 @@ hornet), then hound, polyp, mortar, carrier; kit-bashed CC0 where nothing fits;
 judged against board 06. Dispatch after the operator has seen T-124 in-game.
 owner: asset-artist
 
+## T-126 | shell | todo | P1
+
+goal: nothing on the pause screen can throw a run away by accident (T-105 review
+note 2, T-105 playtest issue 1). Under the two-thumb deck the pause panel's
+RESTART RUN / START SCREEN buttons act on the first tap, and they sit mid-screen
+where a "TAP TO RESUME" tap can land. The VIEW / AUDIO / SHELL option links are
+14 px tall and reload the run, and every reload adds a history entry Safari's
+back-swipe can return to.
+accept:
+- [ ] A single tap on RESTART RUN or START SCREEN never ends the run. The first
+      tap arms it (the label states the second tap); a second tap within a
+      stated window confirms; any other tap disarms it. Keyboard R / Q are
+      unchanged. Falsifier: remove the arming -> a touch-proof trial goes red.
+- [ ] A tap anywhere on the pause screen that is not on a control resumes,
+      including mid-screen over the panel's empty area (today's trials tap
+      only the bottom-left). Asserted in tools/playtest/touch-proof.mjs at
+      844x390 and 667x375.
+- [ ] Pause option targets are >= 44 css px in both dimensions at 844x390 and
+      667x375, and a reloading toggle leaves no new history entry
+      (`location.replace`). Falsifier: shrink a target or use `href` -> red.
+- [ ] Keyboard shell byte-identical (T-105's compare at 1280x720: 0
+      differences); bot-harness copy unchanged.
+- [ ] Operator packet: the iPhone checks (pause -> tap mid-screen; option
+      toggles then back-swipe; hold the stick then touch JUMP and FIRE: does
+      the stick stay held? — T-105 review note 1, WebKit `isPrimary`).
+owner: gameplay-engineer
+fences: src/ui/overlay.js, src/ui/shell.js, src/pure/shell-copy.js,
+src/pure/shell.js (intent table only), index.html (pause panel markup/CSS),
+tools/playtest/touch-proof.mjs, tools/pathcheck/t-105-phone-shell.mjs. NOT:
+src/sim, src/render, the deck's input code (src/ui/touch-controls.js) beyond a
+named one-line hook.
+verify: `HB_GATE_FAST=1 node tools/pathcheck.mjs`; touch-proof.mjs (+ the new
+mutation); phone-shell.mjs --only screens; both smoke scripts.
+
 ## T-201 | feature | done | P1
 
 MERGED b8d1b81 (2026-10-23): review APPROVE (c48ca1e, re-confirmed at 3b0d9e6
@@ -669,6 +708,22 @@ goal: offline level preview (unrolled map + 3D views around turns, sub-second)
 ## Operator checkpoint queue (feel verdicts — never block the loop on these)
 
 (packets append here as tasks land)
+
+- **T-105 phone shell** (merged; ON on touch hardware). On the iPhone, Safari,
+  held sideways, at the site root: A `index.html` — title → tap to start → play a
+  minute → II → tap to resume → die once → let the run end; B the same after
+  Share → Add to Home Screen, launched from the icon; C mid-run, rotate to portrait
+  and back with your thumbs down; D `index.html?touch=legacy` (the old one-thumb
+  scheme, for comparison). Questions: (1) On each screen (title, pause, death,
+  game over, summit), what did the screen tell you to do, and could you do it with
+  your thumbs alone? (2) During play, where did you look for hull, weapon,
+  overdrive and the objective line? Was anything at the top of the screen in the
+  way of RIG or of what was coming? (3) From the home screen (B): did it open full
+  screen and sideways, and was anything you needed under the notch, the Dynamic
+  Island or the home indicator? (4) On your first tap on the title, did you hear
+  the game (ring/silent switch?), and did sound come back after a call or switching
+  apps? (5) Did the page ever zoom, scroll, bounce or swipe you back a page, and did
+  it ever show "The game got stuck" while starting up?
 
 - **T-201 race pass** (merged; ON by default). URLs (after the site root, e.g.
   `https://aetherwing-io.github.io/hullbreaker/`): `index.html` (new default),
@@ -784,6 +839,24 @@ Rolling corners keep the ambient stream alive until the turn, so concurrent bodi
 
 ## I-124 | feel | S3 | repro: lab racer, landscape viewports @ b8d1b81 | evidence: T-201 playtest report
 At landscape, followers appear 3.6-14.3 tiles ahead of a racing RIG but turn hostile at a median 1.9-3.5 tiles away, and 46 of 95 are behind RIG by then. Extends I-118. Chase vs ambush is a feel call first.
+
+## I-125 | bug | S3 | repro: `cd tools/durability && node abuse.mjs` (scenario `frozen-watchdog`) on a host whose boots take 22-67 s @ main | evidence: reports/tasks/T-105/evidence/abuse-frozen-watchdog.txt
+The durability harness's frozen-watchdog scenario fails 3/3 on main and on T-105 here (`panel=false after a dead loop`). `openPage()` waits 15 s for `isBooted()` and swallows the timeout, so on a slow host it kills rAF before boot. Fix: fail loudly as "did not boot", or scale the wait with `HB_PROBE_BOOT_MS`. → T-120.
+
+## I-126 | bug | S3 | repro: `node tools/playtest/phone-shell.mjs --only watchdog --views l844` (trial "frame stall 6 s after warm-up") @ main | evidence: reports/tasks/T-105/evidence/watchdog-runs.txt
+The freeze watchdog times silence from the 1 s tick that SAW the last frame, not from the frame. On a host whose frames cost ~2 s, a 6 s stall after warm-up went unreported in seven of eight runs. On a phone the same rule reports it 4-5 s in (asserted with a fake clock). Fix direction, not made: stamp `lastBeatAt` inside `beat()`. That makes the watchdog up to one tick more eager, a T-032 policy call.
+
+## I-127 | bug | S3 | repro: `cd tools/playtest && node hud-instrument-smoke.mjs` on Linux @ main | evidence: reports/tasks/T-105/evidence/hud-instrument-smoke.txt
+The HUD-instrument smoke writes under the macOS-only `/private/tmp/` and hard-codes 30 s / 15 s / 5 s timeouts. This host boots in 22-98 s. Fix: an `--out` argument and the `HB_PROBE_BOOT_MS` knob. → T-120.
+
+## I-128 | art | S3 | repro: `node tools/playtest/phone-shell.mjs --only screens --views l667,p390` @ main | evidence: reports/tasks/T-105/evidence/hud-budget.txt; reports/tasks/T-105/playtest.md
+At 667x375 the HUD covers 11.58% during the Crown finale and 12.72% while a weapon card shows (play: 7.67%), over the 10% held at 844x390 (never inside the central 60% x 60%). Portrait: the loot card overlaps the AUTO chip by 3 px. At 667x300 (not in the brief) the summit eyebrow is cut by 3.7 px. Phone HUD text is 5-9 css px, unchanged from main: an operator legibility question.
+
+## I-129 | harness | S3 | repro: any default-run `tools/playtest/run.mjs` report @ main | evidence: reports/tasks/T-105/playtest.md issue 6
+The sampler's `/(\d+) kills/` is lower-case, but the default run prints "KILLS", so `finalKills` is null on every default-run report. → T-120.
+
+## I-130 | harness | S3 | repro: `node tools/pathcheck-labels.mjs --rev <ref> --out <file>` on the shared host @ main | evidence: tools/pathcheck-labels.mjs `materialise()`
+Each run materialises the whole tree (459 MB) in the system temp dir; it ended in ENOSPC during T-105. Fix: archive only the paths the suite reads. → T-120.
 
 ## Task schema
 

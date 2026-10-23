@@ -1164,6 +1164,26 @@ export const DOMAINS = {
     ],
   },
 
+  /* ---- T-105 (merged 7ecb1c4; classified by T-120 at the merge of main 69256b6) ---- */
+  't-105-phone-shell': {
+    scope: 'shipped',
+    mechanism: 'pure: src/pure/shell-copy.js copy tables and the touch-button/key equivalence; the INLINE bootstrap of index.html (the ' +
+      'failsafe and its freeze watchdog) extracted and run against a fake clock and a stub DOM; the web app manifest, iOS meta tags and ' +
+      'icon files; the preload list against its consumers',
+    verdict: 'CORE-GATE',
+    default: 'CORE',
+    note: 'T-105 (decisions.md entry 20 + addendum): what a phone player sees that is not the touch deck. The copy, the touch-button ' +
+      'equivalence, the failsafe hint by device and the watchdog warm-up are behaviour (the inline bootstrap is executed: it cannot be ' +
+      'imported); home-screen play is a static capability check (PURE-INVARIANT); the preload-mode check is a source pin whose behaviour ' +
+      'half is the PLAY gate\'s boot step (it counts the real requests).',
+    ranges: [
+      [128, 211, 'CORE', 'the copy a phone player reads (shell-copy.js tables) and every touch button doing what its key does'],
+      [213, 370, 'CORE', 'the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; ' +
+        'its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)'],
+      [373, 412, 'PURE-INVARIANT', 'home-screen play: the manifest, its icons at their declared sizes, the iOS meta tags (a static capability)'],
+    ],
+  },
+
   /* ---- T-120 fix round 1: the executed half of the deleted enemy-ecology checker, restored ---- */
   'enemy-ecology-selector': {
     scope: 'shipped',
@@ -1283,8 +1303,6 @@ export const SITES = [
     note: 'regex over route-visibility.js; the behaviour is the routeRenderable site next to it (CORE). Goes with ?zip=1 (T-121, entry 25)',
     marks: ['with:T-121'] },
   // touch-deck-contract (T-101)
-  { domain: 'touch-deck-contract', label: 'T-101: E/W 50°, N/S 35°, diagonals 47.5°', cls: 'PIN',
-    note: 'exact sector widths: T-101 tuning in CONFIG.touch.stick that no decision fixes; the property worth keeping is the next line (N/S narrowest)' },
   { domain: 'touch-deck-contract', label: 'T-101: the deck\'s whole vocabulary is keyboard codes', cls: 'PURE-INVARIANT',
     note: 'pure: every code the deck can emit is one the game already maps to the same intent (the mechanical rule misreads it as file text)' },
   { domain: 'touch-deck-contract', label: 'T-101: bit i is TOUCH_BIT_CODES[i]', cls: 'PIN',
@@ -1379,6 +1397,11 @@ export const SITES = [
     note: 'evaluates the SHIPPED routeRenderable (lifted from its text only because render/route-visibility.js imports three.js): whole facet' },
   { domain: 't-102-corner-turns', label: 'T-201: ?hinge=flow lets RIG keep moving after the camera hand-off', cls: 'CORE',
     note: 'played: the ?hinge=flow runs stall fewer ticks than the default lock (the rule misfiles it by a variable name)' },
+  // T-105's two source pins (classified at the merge of main 69256b6)
+  { domain: 't-105-phone-shell', label: 'T-105: the keyboard copy is byte-identical to the pre-T-105 build', cls: 'PIN',
+    note: 'a snapshot of the desktop copy taken before T-105: a migration guard, not a property (a deliberate copy edit turns it red)' },
+  { domain: 't-105-phone-shell', label: 'T-105: every image preload matches its consumer', cls: 'PIN',
+    note: 'request modes read from source; the behaviour half is the PLAY gate\'s boot step, which counts the real requests (K4)', marks: ['core'] },
   // t-120-retry-replays-the-run: the registry unit tests restored from tools/boot-registry-check.mjs (fix round 1)
   { domain: 't-120-retry-replays-the-run', label: 'T-120: makeResetRegistry runs its owners once each', cls: 'PURE-INVARIANT',
     note: 'the registry contract: declared order, one run each, an honest snapshot (restored from the deleted checker, review finding 3)' },

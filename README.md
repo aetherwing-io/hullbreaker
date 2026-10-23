@@ -10,8 +10,10 @@ send the signal home.
 
 ## ▶ [Play it now](https://aetherwing-io.github.io/hullbreaker/)
 
-Free, no install, nothing to download — keyboard required. If it ever fails
-to start, the game tells you so in plain language instead of going black.
+Free, no install, nothing to download — a keyboard, or a phone held sideways
+(on an iPhone, Safari's Share → Add to Home Screen gives it the whole
+screen). If it ever fails to start, the game tells you so in plain language
+instead of going black.
 
 ![Fighting up the tower catwalks, rivetgun out](docs/images/gameplay-rivetgun.jpg)
 
@@ -55,6 +57,16 @@ to start, the game tells you so in plain language instead of going black.
 
 Movement is the forgiving kind: coyote time, jump buffering, variable jump
 height, and i-frames on hit. Three lives.
+
+On a touch screen (held sideways) the two-thumb deck is on by default:
+
+| Touch | Action |
+| --- | --- |
+| Left thumb, anywhere on the left of the screen | Move + 8-way aim (the stick appears under your thumb) |
+| JUMP | Jump — hold for height, press again in the air for the double jump |
+| FIRE | Fire (hold) — or turn on AUTO |
+| Stick down + JUMP | Drop through catwalks |
+| SWAP / II / AUTO | Swap weapons / pause (tap anywhere to resume) / auto-fire on or off |
 
 ## Run it locally
 
@@ -107,7 +119,11 @@ stages) · `?juice=0` (pre-juice, simulation-identical build) · `?audio=0` ·
 `?momentum=0` (no earned pace escalation) · `?follow=0` (the scroll without
 the follow lead) · `?gates=legacy` (corners hold until the side's wave is
 cleared, as before the race pass) · `?hinge=flow` (unjudged A/B: RIG keeps
-moving through the turning joint after the camera hand-off).
+moving through the turning joint after the camera hand-off) ·
+`?touch=legacy|0|1` (touch input: `legacy` = the rejected one-thumb
+scheme, `0` = none, `1` = the two-thumb deck on a desktop, for review; the
+two-thumb deck is the default on touch hardware) · `?autofire=1|0` (overrides
+the deck's AUTO chip, which is off by default and remembered on the device).
 
 ### Read these first
 

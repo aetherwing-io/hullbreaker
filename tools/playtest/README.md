@@ -1771,6 +1771,12 @@ Sections (`--only frozen,live,legacy,title,shots`):
   (stick + FIRE + JUMP) pressed and released in all 36 orders with the held set
   asserted after every step against both the deck's ledger and the sim's
   `keys`, release on pointercancel / blur / visibilitychange / orientation flip,
+  the three T-105 follow-ups from T-101's review (three fingers down, then
+  PAUSED by the P key / GAME_OVER: everything released and still released
+  after resume and lift; a finger resting on a chip when a blur releases: the
+  chip's lit look goes out; a JUMP whose pointerup AND cancel are both lost —
+  swallowed by a window capture-phase listener, since CDP cannot drop them —
+  is released by the next touch, which then steers),
   PAUSE → tap-to-resume, an armed GAME_OVER tap-to-restart, and the zoom probes.
 - **live** — the default six-face run at `?fixeddt=16.667`: stick-right + JUMP
   keeps the run, held vs tapped apex, the air jump, stick up-right + FIRE
@@ -1794,6 +1800,9 @@ turn its own checks red:
 | `jump-pulse` | JUMP sends keyup right after keydown (the old scheme's pulse) | held vs tapped apex |
 | `stick-no-vertical` | the stick never emits Up/Down | up-right bullets (and drop-through) |
 | `stick-no-down` | the stick never emits Down | drop-through only |
+| `ignore-leave-playing` | leaving PLAYING (pause, death) releases nothing (T-105) | the PAUSED and GAME_OVER trials |
+| `chip-stays-lit` | `releaseAll()` leaves `.down` on a chip under a resting finger (T-105) | the chip-look trial |
+| `no-stale-release` | a primary touch never releases slots whose lift was lost (T-105) | the lost-pointerup trial |
 
 **Honesty / limitations**
 
@@ -1822,7 +1831,7 @@ turn its own checks red:
 6. "Within N ticks" counts fixed 16.667 ms updates after the `gameMs` the
    deck stamped in its own `pointerdown` (capture phase, same dispatch that
    emits the key edge).
-8. The live section HOLDS the sim at each closed-loop decision: the in-page
+7. The live section HOLDS the sim at each closed-loop decision: the in-page
    predicate that sees the condition (x >= 32.6, the apex, a landing) shadows
    `document.hidden` on that exact frame, so `frame()` skips `update`, the
    CDP touch lands, then the shadow is lifted. Without it a stop aimed at x
@@ -1830,8 +1839,129 @@ turn its own checks red:
    tiles/s), once inside the catwalk ladder's grab range, where stick-down
    takes the ladder instead of dropping through. The deck's input path runs
    unchanged during a hold; the recorder skips held frames.
-7. Under SwiftShader every boot takes ~1 minute; the whole proof is slow and
+8. Under SwiftShader every boot takes ~1 minute; the whole proof is slow and
    timing-sensitive checks (legacy's 170 ms tap) are retried, never loosened.
+9. The lost-pointerup trial fakes the loss in the page (a capture-phase
+   listener eats the events before the deck hears them). It proves what the
+   deck does once a lift is lost; whether, and how often, iOS loses one is
+   not something this rig can observe.
+
+## `phone-shell.mjs` — everything a phone player sees that is not the deck (T-105)
+
+The shell, measured in a real browser at phone sizes with `hasTouch`, an iOS
+Safari user agent and DPR 2: title, play HUD, the loot card, a death, pause /
+options, game over, the Crown finale, the summit and the failsafe panel, plus
+safe areas, preloads, the boot watchdog, a rotation mid-run, the first-touch
+audio unlock and home-screen metadata.
+
+```sh
+cd tools/playtest
+node phone-shell.mjs --base-url http://127.0.0.1:8784 --out <dir>                 # everything
+node phone-shell.mjs --base-url http://127.0.0.1:8785 --label base --out <dir>    # a base tree
+node phone-shell.mjs --compare <baseDir> <branchDir>          # desktop 1280x720 title/HUD/pause diff
+node phone-shell.mjs ... --only screens,safe --views l844,p390  # sections / views
+node phone-shell.mjs ... --dpr 1 --no-shots                   # fast layout iteration
+node phone-shell.mjs ... --mutate objective-nowrap            # falsification: must go red
+```
+
+Views: `l844` 844x390, `l932` 932x430, `l667` 667x375, `p390` 390x844 (all
+touch + iOS UA), `d1280` 1280x720 and `d1100` 1100x700 (desktop, no touch).
+
+Sections (`--only`, default all):
+
+- **screens** — one player-shaped walk per view (a CDP tap starts, pauses and
+  resumes on a phone; keys on a desktop). Each screen gets a capture and a
+  DOM audit: every visible text box must sit inside every ancestor that clips
+  it (overflow, `clip-path` — every HUD instrument panel is a chamfered
+  polygon — and `contain: paint`), inside the viewport minus the safe area,
+  without an ellipsis or a line clamp cutting it, and must not be painted
+  over another text (measured on line boxes, with 15% of the larger font as
+  vertical tolerance, so a display face's tight leading is not a collision).
+  The visible text and the pseudo-element text are scanned with
+  `keyboardCopyHits` (`src/pure/shell-copy.js`): zero hits under touch, and
+  the desktop title/pause/game-over must still show their keys. At landscape
+  phone sizes the HUD panels' area and their intersection with the central
+  60% x 60% are measured for play, a death, the finale and the loot card;
+  play and finale are held to <= 10% at 844x390.
+- **safe** — the landscape walks again with notch insets (left/right 47 px,
+  bottom 21 px) forced through CDP `Emulation.setSafeAreaInsetsOverride`
+  (falling back to the `--hud-safe-*` hook): every named HUD/deck box and
+  every overlay control inside the insets.
+- **gateline** — the objective slot at 667x375, 1100x700, 844x390, 932x430,
+  390x844 and 1280x720: lines up to 28 characters on ONE line, uncut; today's
+  longest strings (T-102's 47-character gate line, the 43-character hull
+  fallback line) uncut, wrapped if they must, and on a landscape phone the
+  panel ends above the central region and the deck's chips. Then T-201's
+  encounter lines (`rollingEncounterText` in `src/pure/waves.js`, at most 28
+  characters): where the served tree has that function, EVERY distinct line it
+  returns over the state space T-201's own pathcheck enumerates (1145 lines at
+  task/T-201 `c48ca1e`), one aggregated check per view — one line each,
+  nothing cut, none over 28 characters, and on a landscape phone the lowest
+  panel bottom above the central region and the chips. A tree without it
+  (main before T-201) gets nine of those lines verbatim instead (its three
+  28-character lines, the longest of each other family, the integrator's two
+  examples); the check's name says which set was measured.
+- **preload** — the default URL: "preload ... not used" console warnings and
+  the number of requests per preloaded URL.
+- **watchdog** — animation frames withheld (callbacks parked, nothing
+  scheduled, while the page's timers run) armed synchronously inside the
+  bootstrap's own `booted()` / `beat()`: 6 s at boot (0 frames), 6 s after
+  frame 1, 6 s and 10 s after 10 frames in PLAYING, and a loop held dead
+  from boot for 25 s; two 6 s main-thread busy-waits (reported, not judged);
+  a natural DPR-3 boot with no injection (reported: boot-to-first-frame time
+  and the worst gap between the first 60 frames). Every trial reports when
+  the panel appeared and the longest stretch of the stall in which no page
+  timer ran (counted from the arm, so it includes the frame still drawing
+  when the hold began). A panel that shows decides a trial either way; NO
+  panel counts only if the page's timers ran — at most 3 s quiet (the
+  bootstrap's own "suspended page" line), 750 ms for the 6 s after-warm-up
+  stall — and is otherwise printed as **UNDECIDED** (listed in the report and
+  the summary line, never counted as a pass).
+- **rotate** — portrait <-> landscape mid-run with three fingers down: canvas,
+  drawing buffer and camera follow, the HUD re-lays out and fits, nothing is
+  held afterwards, no failsafe panel, a fresh stick press steers.
+- **audio** — iOS's rule EMULATED in the page (contexts start suspended;
+  `resume()` takes effect only inside a `touchend` / `click` / `keydown`
+  dispatch): the first tap on the title must leave audio running with the
+  effective `resume()` inside the touch END, and a context forced to WebKit's
+  `interrupted` state must be resumed by the next tap.
+- **manifest** — the head's home-screen tags and the web app manifest as the
+  browser parsed it (CDP `Page.getAppManifest`), every icon decoded at size.
+
+Mutations (`--mutate`): `audio-no-end-unlock`, `no-canvas-resize`,
+`no-rotation-release`, `watchdog-no-warmup`, `copy-keys-on-touch`,
+`failsafe-hint-keys`, `title-wide`, `objective-nowrap`,
+`preload-no-crossorigin` — each serves one file with one defect; a missing
+anchor throws.
+
+**Honesty / limitations**
+
+1. Chromium (SwiftShader) only. The iOS user agent changes nothing in the
+   game (nothing reads it); it is there so a capture says what it emulates.
+   Fonts differ: this host has no Impact and falls back to a wide DejaVu face,
+   iOS falls back to its own sans; monospace text uses DejaVu Sans Mono here
+   and SF Mono on an iPhone (both ~0.6 em per glyph). Fit margins measured
+   here are for this host's fonts.
+2. Notch insets are CDP's `env()` emulation, not WebKit's; the status bar,
+   the home indicator's own gesture zone and Safari's toolbars are not drawn.
+3. The watchdog's frame stall models a GPU-side stall (rAF withheld while the
+   main thread is free). A busy-wait blocks the watchdog's own timer, which
+   the bootstrap's `slept` rule reads as a suspended page in BOTH directions
+   — that is pre-T-105 behaviour, reported each run, not judged. On a host
+   whose frames cost seconds (SwiftShader under load: ~2 s a frame measured
+   here) the 6 s after-warm-up stall cannot be decided — the 4 s rule counts
+   silence from the tick that saw the last frame, and the frame in flight
+   eats the margin, on main exactly as on the branch — so it comes out
+   UNDECIDED and the 10 s trial carries the rule; the same 6 s claim is
+   asserted on the real inline bootstrap with a fake clock in
+   `tools/pathcheck/t-105-phone-shell.mjs`.
+4. The audio trial proves WHERE `resume()` runs under an emulation of iOS's
+   gesture rule; it cannot prove iOS honours it. That is an on-device check.
+5. States a player reaches only after minutes of play (a rolled gun, the
+   finale, GAME_OVER, VICTORY, a forced failsafe panel) are entered through
+   the game's own modules, labelled TEST SETUP in the code.
+6. Under this host's load a view's walk takes 5-10 minutes; the whole run
+   about an hour.
 
 ## Single best next action
 

@@ -1,0 +1,47 @@
+# scratch copy of tools/playtest/hud-instrument-smoke.mjs (only its output path and timeouts widened; diff below), on the base export (main 08e5db1) and the final export (383b09f). The earlier hudi*.log attempts were killed (a foreground timeout / the restart), not page failures.
+
+===== q-hudi-base2.log
+rev 08e5db1 load 32.21 19.47 8.53
+PASS: desktop charge=100% rush=96% surge
+PASS: landscape charge=100% rush=96% surge
+PASS: notched-landscape charge=100% rush=96% surge
+PASS: portrait charge=100% rush=96% surge
+exit 0
+
+===== q-hudi-final.log
+rev 383b09f load 61.80 76.23 71.89
+PASS: desktop charge=100% rush=96% surge
+PASS: landscape charge=100% rush=96% surge
+PASS: notched-landscape charge=100% rush=96% surge
+PASS: portrait charge=100% rush=96% surge
+exit 0
+
+===== t105-hudi-diff.txt
+diff tools/playtest/hud-instrument-smoke.mjs (task/T-105 383b09f) vs the scratch copy run here:
+7c7
+< import { withIsolatedBrowser } from './lib/isolated-browser.mjs';
+---
+> import { withIsolatedBrowser } from '/home/user/hullbreaker/.claude/worktrees/T-105/tools/playtest/lib/isolated-browser.mjs';
+10,11c10,11
+< const ROOT = resolve(import.meta.dirname, '../..');
+< const OUT = '/private/tmp/hullbreaker-hud-instrument';
+---
+> const ROOT = process.argv[2];
+> const OUT = process.argv[3];
+44c44
+<         { waitUntil: 'load', timeout: 30000 },
+---
+>         { waitUntil: 'load', timeout: 300000 },
+52c52
+<       await page.waitForFunction(() => !!globalThis.HB, null, { timeout: 15000 });
+---
+>       await page.waitForFunction(() => !!globalThis.HB, null, { timeout: 300000 });
+57c57
+<         { timeout: 5000 });
+---
+>         { timeout: 120000 });
+129c129
+<       await page.screenshot({ path: `${OUT}-${view.name}.png` });
+---
+>       await page.screenshot({ path: `${OUT}-${view.name}.png`, timeout: 300000 });
+

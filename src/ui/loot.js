@@ -279,6 +279,35 @@ body:has(#finale.on) #lootReveal { top: 108px; }
   .loot-art-pips i { width: 9px; }
   body:has(#finale.on) #lootReveal { top: 126px; }
 }
+@media (max-height: 520px) and (pointer: coarse), (max-height: 520px) and (max-width: 980px) {
+  /* T-105, landscape phones: the card rides the HUD band's lane — right of
+     RIG's instrument strip, ending above the central play region
+     (index.html defines --hud-lane-*) — instead of landing on the fight.
+     The right slot (the objective, or the Crown banner) steps aside while
+     the card is up (index.html). No max-height: a card that grew past the
+     band must SHOW as a band violation in the measured check, not lose its
+     last line behind overflow: hidden. */
+  #lootReveal {
+    top: var(--hud-t, 6px);
+    left: calc(var(--hud-lane-l, 14px) + var(--hud-lane-w, calc(100vw - 28px)) / 2);
+    width: min(280px, var(--hud-lane-w, calc(100vw - 28px)));
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) 56px;
+    padding: 5px 6px 5px 10px;
+  }
+  body:has(#finale.on) #lootReveal { top: var(--hud-t, 6px); }
+  .loot-kicker { font-size: 7px; letter-spacing: .1em; }
+  .loot-name { margin-top: 2px; font-size: 13px; }
+  .loot-chassis { margin-top: 2px; font-size: 7px; letter-spacing: .08em; }
+  .loot-traits { margin-top: 4px; }
+  .loot-chip { padding: 2px 5px; font-size: 7px; }
+  .loot-atlas-clip { width: 52px; }
+  .loot-art::before { width: 54px; height: 40px; }
+  .loot-art::after { width: 40px; top: calc(50% + 20px); }
+  .loot-art-mark { top: 1px; right: 2px; font-size: 7px; }
+  .loot-art-pips { right: 2px; bottom: 2px; }
+  .loot-art-pips i { width: 9px; }
+}
 @media (prefers-reduced-motion: reduce) {
   #lootReveal.is-live { animation-name: loot-reveal-reduced; animation-timing-function: ease; }
   @keyframes loot-reveal-reduced {

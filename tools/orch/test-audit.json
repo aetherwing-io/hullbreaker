@@ -1,24 +1,24 @@
 {
  "tool": "tools/orch/test-census.mjs",
  "task": "T-108",
- "when": "2026-10-23T11:52:37.184Z",
- "tree": "00c4a82",
+ "when": "2026-10-23T12:48:35.509Z",
+ "tree": "90aecda",
  "rubric": "tools/orch/test-audit-spec.mjs (header); docs/proposals/2026-10-test-audit.md § Classes",
  "pathcheck": {
-  "domains": 85,
-  "callSites": 2217,
+  "domains": 86,
+  "callSites": 2242,
   "evaluations": 3695,
   "byClass": {
    "CORE": {
-    "sites": 344,
+    "sites": 363,
     "evals": 718
    },
    "PURE-INVARIANT": {
-    "sites": 1286,
+    "sites": 1291,
     "evals": 2324
    },
    "PIN": {
-    "sites": 533,
+    "sites": 534,
     "evals": 589
    },
    "RETIRED": {
@@ -34,21 +34,21 @@
     "evals": 4
    }
   },
-  "coreShippedSites": 292,
+  "coreShippedSites": 311,
   "coreShippedEvals": 612,
   "resolution": {
-   "site": 221,
-   "range": 1082,
+   "site": 222,
+   "range": 1106,
    "autoSrcText": 0,
    "domainDefault": 914,
-   "srcTextButNotPin": 108,
-   "pinButNotSrcText": 219
+   "srcTextButNotPin": 128,
+   "pinButNotSrcText": 218
   },
   "dispositions": {
-   "CORE-GATE:invariant-tier": 881,
+   "CORE-GATE:invariant-tier": 886,
    "DELETE": 361,
-   "CORE-GATE": 291,
-   "REWRITE-AS-BEHAVIOUR": 180,
+   "CORE-GATE": 310,
+   "REWRITE-AS-BEHAVIOUR": 181,
    "SPLIT-ASSERTION": 6,
    "DEEP": 452,
    "DELETE-WITH-FEATURE": 42,
@@ -65,16 +65,16 @@
    "PLAY-GATE": 4
   },
   "tiers": {
-   "fast": 1173,
+   "fast": 1197,
    "deep": 457,
    "play": 4,
-   "replaced": 180,
+   "replaced": 181,
    "gone": 403
   },
   "identity": {
    "lock": "tools/orch/test-audit-lock.json",
-   "base": "00c4a82",
-   "sites": 2217,
+   "base": "90aecda",
+   "sites": 2242,
    "moved": 0
   },
   "prelude": {
@@ -3343,12 +3343,12 @@
    "index": 74,
    "domain": "touch-deck-contract",
    "file": "tools/pathcheck/touch-deck-contract.mjs",
-   "lines": 429,
+   "lines": 432,
    "scope": "shipped",
    "mechanism": "pure src/pure/touch-stick.js (sectors, dead zone and hysteresis against a seeded jittery thumb with a no-hysteresis control, rim follow, deck layout at phone sizes x insets, hit test, resolvers, auto-fire) + source inspection of ui/touch-controls.js + a gesture-gated fake AudioContext child for the touch-end audio unlock",
    "verdict": "SPLIT",
    "note": "T-101: the two-thumb deck is the touch default (entries 16/20). Its pure contract is the invariant tier; the player-level proof (real multi-touch, 36 press orders, release on cancel/blur) is tools/playtest/touch-proof.mjs, which no gate runs yet (15-25 min on this host). Exact tuning numbers no decision fixes are PIN; the iOS-only static guards are PIN (core): no WebKit runner exists here to replace them. ?touch=legacy / ?touch=1 resolver lines are flag-scoped (deep).",
-   "sites": 46,
+   "sites": 45,
    "evals": 0,
    "srcTextSites": 7,
    "byClass": {
@@ -3361,7 +3361,7 @@
      "evals": 0
     },
     "PIN": {
-     "sites": 7,
+     "sites": 6,
      "evals": 0
     },
     "RETIRED": {
@@ -3517,6 +3517,50 @@
   },
   {
    "index": 78,
+   "domain": "t-105-phone-shell",
+   "file": "tools/pathcheck/t-105-phone-shell.mjs",
+   "lines": 439,
+   "scope": "shipped",
+   "mechanism": "pure: src/pure/shell-copy.js copy tables and the touch-button/key equivalence; the INLINE bootstrap of index.html (the failsafe and its freeze watchdog) extracted and run against a fake clock and a stub DOM; the web app manifest, iOS meta tags and icon files; the preload list against its consumers",
+   "verdict": "CORE-GATE",
+   "note": "T-105 (decisions.md entry 20 + addendum): what a phone player sees that is not the touch deck. The copy, the touch-button equivalence, the failsafe hint by device and the watchdog warm-up are behaviour (the inline bootstrap is executed: it cannot be imported); home-screen play is a static capability check (PURE-INVARIANT); the preload-mode check is a source pin whose behaviour half is the PLAY gate's boot step (it counts the real requests).",
+   "sites": 26,
+   "evals": 0,
+   "srcTextSites": 22,
+   "byClass": {
+    "CORE": {
+     "sites": 19,
+     "evals": 0
+    },
+    "PURE-INVARIANT": {
+     "sites": 5,
+     "evals": 0
+    },
+    "PIN": {
+     "sites": 2,
+     "evals": 0
+    },
+    "RETIRED": {
+     "sites": 0,
+     "evals": 0
+    },
+    "TAUTOLOGY": {
+     "sites": 0,
+     "evals": 0
+    },
+    "SLOW-ENV": {
+     "sites": 0,
+     "evals": 0
+    }
+   },
+   "wallMs": [
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "index": 79,
    "domain": "t-120-input-forgiveness",
    "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
    "lines": 87,
@@ -3560,7 +3604,7 @@
    ]
   },
   {
-   "index": 79,
+   "index": 80,
    "domain": "t-120-retry-replays-the-run",
    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
    "lines": 143,
@@ -3604,7 +3648,7 @@
    ]
   },
   {
-   "index": 80,
+   "index": 81,
    "domain": "t-120-determinism-and-art-blind-sim",
    "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
    "lines": 74,
@@ -3648,7 +3692,7 @@
    ]
   },
   {
-   "index": 81,
+   "index": 82,
    "domain": "t-120-prototype-flags-inert",
    "file": "tools/pathcheck/t-120-prototype-flags-inert.mjs",
    "lines": 74,
@@ -3692,7 +3736,7 @@
    ]
   },
   {
-   "index": 82,
+   "index": 83,
    "domain": "t-120-harness-reads-the-hud",
    "file": "tools/pathcheck/t-120-harness-reads-the-hud.mjs",
    "lines": 85,
@@ -3736,7 +3780,7 @@
    ]
   },
   {
-   "index": 83,
+   "index": 84,
    "domain": "enemy-ecology-selector",
    "file": "tools/pathcheck/enemy-ecology-selector.mjs",
    "lines": 147,
@@ -3780,7 +3824,7 @@
    ]
   },
   {
-   "index": 84,
+   "index": 85,
    "domain": "t-120-gate-self-tests",
    "file": "tools/pathcheck/t-120-gate-self-tests.mjs",
    "lines": 62,
@@ -4892,6 +4936,11 @@
     "file": "tools/playtest/perf-probe.mjs",
     "cls": "SLOW-ENV",
     "what": "real-browser perf probe; pathcheck's render-submission-contract spawns it"
+   },
+   {
+    "file": "tools/playtest/phone-shell.mjs",
+    "cls": "SLOW-ENV",
+    "what": "capture/evidence tool for operator judgement"
    },
    {
     "file": "tools/playtest/post-capture.mjs",
@@ -7826,56 +7875,56 @@
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: dead-zone hysteresis — a thumb wobbling ±2 px on the engage ring flips run on/off … x over 60",
-    "line": 110,
+    "line": 113,
     "cls": "CORE",
     "note": "a player resting a thumb on the engage ring does not strobe the run on and off (pillar 1); seeded thumb, no-hysteresis control must chatter"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: no chatter between E and NE — … sector changes over 600 wobbling … samples ( … with the hyste",
-    "line": 140,
+    "line": 143,
     "cls": "CORE",
     "note": "aim does not flicker on a wobbling thumb; seeded, with a control that must chatter"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: no chatter on the NE/N boundary either ( … changes)",
-    "line": 154,
+    "line": 157,
     "cls": "CORE",
     "note": "as above, the run-stopping N boundary"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: after a 300 px drag right, a … px reversal reads … (without rim follow: … )",
-    "line": 181,
+    "line": 184,
     "cls": "CORE",
     "note": "a reversal after a long drag reads at once (rim follow), with the no-follow control"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: absent ?touch=, the two-thumb deck is the touch-hardware default (entry 16/20)",
-    "line": 319,
+    "line": 322,
     "cls": "CORE",
     "note": "the shipped default on touch hardware (operator verdicts, entries 16/20)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: auto-fire defaults OFF (firing is not free in the sim: BACKLASH, face 6+)",
-    "line": 325,
+    "line": 328,
     "cls": "CORE",
     "note": "the shipped default: firing is not free in the sim (BACKLASH, face 6+)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: the deck never touches the sim's keys directly — it only emits key edges",
-    "line": 361,
+    "line": 364,
     "cls": "CORE",
     "note": "the one gameplay-input contract (touch emits the keyboard key edges, so every jump buffer and tuning decision holds): a layer rule, source text by necessity (ui/touch-controls.js is DOM code), like the prelude's layer guards"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: a touch-only tap unlocks audio on its END (iOS Safari's gesture), modelled with a … gesture-g",
-    "line": 424,
+    "line": 427,
     "cls": "CORE",
     "note": "drives the real ui/audio.js under a gesture-gated AudioContext: a touch-only player hears the game (iPhone Safari rule, modelled)"
    },
@@ -8116,6 +8165,139 @@
     "line": 416,
     "cls": "CORE",
     "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: the keyboard-copy scan finds every keyboard instruction the game prints … (so a phone screen ",
+    "line": 137,
+    "cls": "CORE",
+    "note": "the copy a phone player reads (shell-copy.js tables) and every touch button doing what its key does"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: no touch-mode string names a key or says press/click ( … strings) … — … , …",
+    "line": 150,
+    "cls": "CORE",
+    "note": "the copy a phone player reads (shell-copy.js tables) and every touch button doing what its key does"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: the scan does not mistake game vocabulary for key names … — flagged: … | …",
+    "line": 159,
+    "cls": "CORE",
+    "note": "the copy a phone player reads (shell-copy.js tables) and every touch button doing what its key does"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: on touch the overlay prints no instruction line of its own (the deck's … \"TAP TO …\" cue is th",
+    "line": 173,
+    "cls": "CORE",
+    "note": "the copy a phone player reads (shell-copy.js tables) and every touch button doing what its key does"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: only the two-thumb deck (the one scheme with a tap out of every screen) speaks touch",
+    "line": 178,
+    "cls": "CORE",
+    "note": "the copy a phone player reads (shell-copy.js tables) and every touch button doing what its key does"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: every touch button presses the key whose intent it names, in that state ( … , … ) … — … , …",
+    "line": 201,
+    "cls": "CORE",
+    "note": "the copy a phone player reads (shell-copy.js tables) and every touch button doing what its key does"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: no touch button repeats the verb the deck's modal tap already performs … (tap = resume / clim",
+    "line": 208,
+    "cls": "CORE",
+    "note": "the copy a phone player reads (shell-copy.js tables) and every touch button doing what its key does"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: index.html carries the failsafe panel's hint-mode rule as a named function",
+    "line": 216,
+    "cls": "CORE",
+    "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: the panel says \"tap\" exactly where a touch deck installs (inline rule = … src/pure/shell-copy",
+    "line": 225,
+    "cls": "CORE",
+    "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: the touch hint reads plainly, names the button and no key (\" … \"); the keyboard hint still na",
+    "line": 232,
+    "cls": "CORE",
+    "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: the REAL bootstrap paints the touch hint on touch hardware / a coarse pointer / … ?touch=1, a",
+    "line": 248,
+    "cls": "CORE",
+    "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: the inline warm-up numbers are the policy's ( … / … missing … vs … / … ), and the warm-up win",
+    "line": 258,
+    "cls": "CORE",
+    "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: index.html carries the watchdog decision as a named function",
+    "line": 266,
+    "cls": "CORE",
+    "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: the inline freeze verdict equals src/pure/failsafe.js over … states … (4000 seeded + every th",
+    "line": 306,
+    "cls": "CORE",
+    "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: a 6 s frame stall before the first frames are drawn (0, 1 or 2 beats in) shows NO … panel at ",
+    "line": 338,
+    "cls": "CORE",
+    "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: …while the same stall after warm-up (40 frames) still shows \"got stuck\", … ? … ms in (the … m",
+    "line": 343,
+    "cls": "CORE",
+    "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: after warm-up a stall shorter than … ms is still a hiccup, not a panel",
+    "line": 348,
+    "cls": "CORE",
+    "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: a hidden page that draws nothing is never \"stuck\" (saw … )",
+    "line": 351,
+    "cls": "CORE",
+    "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: a frame loop that dies during warm-up ( … frame(s) drawn) still gets the … \"got stuck\" panel,",
+    "line": 365,
+    "cls": "CORE",
+    "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)"
    },
    {
     "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
@@ -13988,182 +14170,182 @@
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: the run-stopping N/S sectors are the narrowest",
-    "line": 61,
+    "line": 64,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: screen +y is DOWN — a thumb pushed up the glass aims up",
-    "line": 69,
+    "line": 72,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: every sector holds exactly the keyboard chord for that direction",
-    "line": 74,
-    "cls": "PURE-INVARIANT",
-    "note": "(domain default)"
-   },
-   {
-    "file": "tools/pathcheck/touch-deck-contract.mjs",
-    "label": "T-101: neutral holds nothing",
     "line": 77,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
-    "label": "T-101: the deck's whole vocabulary is keyboard codes the game already maps … (one gameplay-input con",
+    "label": "T-101: neutral holds nothing",
     "line": 80,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: the deck's whole vocabulary is keyboard codes the game already maps … (one gameplay-input con",
+    "line": 83,
     "cls": "PURE-INVARIANT",
     "note": "pure: every code the deck can emit is one the game already maps to the same intent (the mechanical rule misreads it as file text)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: from neutral a direction engages only past … ·rim",
-    "line": 92,
+    "line": 95,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: a held direction survives down to … ·rim, then drops to neutral",
-    "line": 94,
+    "line": 97,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: a held E survives until … ° past the E/NE edge, then becomes NE",
-    "line": 119,
-    "cls": "PURE-INVARIANT",
-    "note": "(domain default)"
-   },
-   {
-    "file": "tools/pathcheck/touch-deck-contract.mjs",
-    "label": "T-101: …and a held NE survives … ° back past the same edge",
     "line": 122,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: …and a held NE survives … ° back past the same edge",
+    "line": 125,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: a 300 px drag drags the anchor along, leaving the thumb exactly one rim out",
-    "line": 162,
+    "line": 165,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: inside the rim the anchor stays put",
-    "line": 164,
+    "line": 167,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: JUMP ≥ 64 px, FIRE ≥ 56 px, every chip ≥ 44 px (HIG) at every … phone size and inset … — … , ",
-    "line": 287,
+    "line": 290,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: every target lies inside the safe-area insets (notch on either … side, home indicator) … — … ",
-    "line": 289,
+    "line": 292,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: no two targets overlap (JUMP↔FIRE keep their gap; chips clear … of both hit circles and of ea",
-    "line": 291,
+    "line": 294,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: JUMP/FIRE hit circles share a thin both-buttons lens (one thumb … can jump while firing) and ",
-    "line": 293,
+    "line": 296,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: the stick zone owns no button and has room for a full stick … — … , …",
-    "line": 295,
+    "line": 298,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: the right-thumb cluster stays a bottom-right corner (landscape … below 60% of the height and ",
-    "line": 297,
-    "cls": "PURE-INVARIANT",
-    "note": "(domain default)"
-   },
-   {
-    "file": "tools/pathcheck/touch-deck-contract.mjs",
-    "label": "T-101: no stick spawns in the … px left-edge gutter … (iOS Safari back swipe) … — … , …",
     "line": 300,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: no stick spawns in the … px left-edge gutter … (iOS Safari back swipe) … — … , …",
+    "line": 303,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: the hit test matches the drawing (centres, the both-lens, the … JUMP corner, a dead miss, chi",
-    "line": 302,
+    "line": 305,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: sliding needs the button itself — a thumb rocking off FIRE's … rim half-way across the gap ad",
-    "line": 304,
+    "line": 307,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: a tablet does not get dinner-plate buttons (clamped)",
-    "line": 313,
+    "line": 316,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: ?autofire= overrides the stored toggle; the stored toggle overrides the default",
-    "line": 327,
+    "line": 330,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: auto-fire ignores bodies with no hitbox yet … and bodies off screen",
-    "line": 338,
-    "cls": "PURE-INVARIANT",
-    "note": "(domain default)"
-   },
-   {
-    "file": "tools/pathcheck/touch-deck-contract.mjs",
-    "label": "T-101: …and sees a materialized body inside the edges",
-    "line": 340,
-    "cls": "PURE-INVARIANT",
-    "note": "(domain default)"
-   },
-   {
-    "file": "tools/pathcheck/touch-deck-contract.mjs",
-    "label": "T-101: a body counts once it is … tiles inside a screen edge",
     "line": 341,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: …and sees a materialized body inside the edges",
+    "line": 343,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
+    "label": "T-101: a body counts once it is … tiles inside a screen edge",
+    "line": 344,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: auto-fire holds the trigger … ms past the last sighting, then lets go",
-    "line": 347,
+    "line": 350,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
@@ -14404,6 +14586,41 @@
     "line": 275,
     "cls": "PURE-INVARIANT",
     "note": "pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: index.html links a web app manifest that parses ( … )",
+    "line": 379,
+    "cls": "PURE-INVARIANT",
+    "note": "home-screen play: the manifest, its icons at their declared sizes, the iOS meta tags (a static capability)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: the manifest launches the game page, landscape, … (start … , scope … ) — relative, so a subpa",
+    "line": 385,
+    "cls": "PURE-INVARIANT",
+    "note": "home-screen play: the manifest, its icons at their declared sizes, the iOS meta tags (a static capability)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: every manifest icon is a PNG at its declared size, with 192, 512 and a maskable one … — wrong",
+    "line": 396,
+    "cls": "PURE-INVARIANT",
+    "note": "home-screen play: the manifest, its icons at their declared sizes, the iOS meta tags (a static capability)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: apple-touch-icon is a 180x180 OPAQUE PNG (iOS paints transparency black) … (…x…, colour type ",
+    "line": 403,
+    "cls": "PURE-INVARIANT",
+    "note": "home-screen play: the manifest, its icons at their declared sizes, the iOS meta tags (a static capability)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: iOS home-screen launch is declared (capable, status-bar style, title) and the page … draws ed",
+    "line": 407,
+    "cls": "PURE-INVARIANT",
+    "note": "home-screen play: the manifest, its icons at their declared sizes, the iOS meta tags (a static capability)"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
@@ -17604,14 +17821,14 @@
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: ?touch=legacy restores the rejected scheme on any device",
-    "line": 321,
+    "line": 324,
     "cls": "PURE-INVARIANT",
     "note": "escape hatch to the rejected scheme"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: ?touch=0 / ?touch=1 keep their meanings",
-    "line": 323,
+    "line": 326,
     "cls": "PURE-INVARIANT",
     "note": "review flags (?touch=1 shows the deck on desktop)"
    },
@@ -18938,28 +19155,28 @@
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101 (iOS): Safari pinch gestures are cancelled (gesturestart/change/end, non-passive)",
-    "line": 365,
+    "line": 368,
     "cls": "PIN",
     "note": "iOS-only wiring by regex: no WebKit runner on this host; replace with a WebKit/iOS PLAY probe when one exists"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101 (iOS): orientationchange, screen.orientation change and pagehide release the deck",
-    "line": 367,
+    "line": 370,
     "cls": "PIN",
     "note": "iOS-only wiring by regex (touch-proof.mjs proves the Chromium half: release on an orientation flip)"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101 (iOS): no vibration API (absent on iPhone Safari)",
-    "line": 370,
+    "line": 373,
     "cls": "PIN",
     "note": "absence of a call by regex; replace with a WebKit/iOS PLAY probe when one exists"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101 (iOS): the deck CSS carries touch-action:none and the -webkit- twins Safari reads",
-    "line": 373,
+    "line": 376,
     "cls": "PIN",
     "note": "CSS text by regex; touch-proof.mjs reads the computed touch-action in Chromium"
    },
@@ -18983,6 +19200,13 @@
     "line": 294,
     "cls": "PIN",
     "note": "regex: the retired zipper (entry 25) stays out of the sim; the behaviour half is the default reveal drawing the whole arriving facet (t-102, future-facet: CORE)"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: every image preload matches its consumer's request mode ( … preloads; CORS for TextureLoader,",
+    "line": 434,
+    "cls": "PIN",
+    "note": "request modes read from source; the behaviour half is the PLAY gate's boot step, which counts the real requests (K4)"
    }
   ],
   "delete": [
@@ -21487,22 +21711,15 @@
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
-    "label": "T-101: E/W 50°, N/S 35°, diagonals 47.5° (CONFIG.touch.stick)",
-    "line": 57,
-    "cls": "PIN",
-    "note": "exact sector widths: T-101 tuning in CONFIG.touch.stick that no decision fixes; the property worth keeping is the next line (N/S narrowest)"
-   },
-   {
-    "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: bit i is TOUCH_BIT_CODES[i]",
-    "line": 83,
+    "line": 86,
     "cls": "PIN",
     "note": "exact bit encoding (16 / 32): an implementation detail; the chord-per-sector and vocabulary lines carry the property"
    },
    {
     "file": "tools/pathcheck/touch-deck-contract.mjs",
     "label": "T-101: sizes derive from the short side (844x390: JUMP … px, stick rim … px)",
-    "line": 308,
+    "line": 311,
     "cls": "PIN",
     "note": "exact 844x390 sizes (0.22 x short side, rim 58.5 px); the minimum-size, inset and overlap lines carry the property"
    },
@@ -21512,6 +21729,13 @@
     "line": 116,
     "cls": "PIN",
     "note": "exact index order no decision fixes; the property (front faces facing right) is the first line"
+   },
+   {
+    "file": "tools/pathcheck/t-105-phone-shell.mjs",
+    "label": "T-105: the keyboard copy is byte-identical to the pre-T-105 build (desktop unchanged)",
+    "line": 164,
+    "cls": "PIN",
+    "note": "a snapshot of the desktop copy taken before T-105: a migration guard, not a property (a deliberate copy edit turns it red)"
    }
   ],
   "deleteWithFeature": [
@@ -59858,26 +60082,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:57",
-   "line": 57,
-   "label": "T-101: E/W 50°, N/S 35°, diagonals 47.5° (CONFIG.touch.stick)",
-   "fn": "ok",
-   "cls": "PIN",
-   "how": "site",
-   "marks": [],
-   "core": false,
-   "srcText": false,
-   "evals": 0,
-   "message": "T-101: E/W 50°, N/S 35°, diagonals 47.5° (CONFIG.touch.stick)",
-   "note": "exact sector widths: T-101 tuning in CONFIG.touch.stick that no decision fixes; the property worth keeping is the next line (N/S narrowest)",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
-   "domain": "touch-deck-contract",
-   "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:61",
-   "line": 61,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:64",
+   "line": 64,
    "label": "T-101: the run-stopping N/S sectors are the narrowest",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -59894,8 +60100,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:69",
-   "line": 69,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:72",
+   "line": 72,
    "label": "T-101: screen +y is DOWN — a thumb pushed up the glass aims up",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -59912,8 +60118,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:74",
-   "line": 74,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:77",
+   "line": 77,
    "label": "T-101: every sector holds exactly the keyboard chord for that direction",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -59930,8 +60136,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:77",
-   "line": 77,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:80",
+   "line": 80,
    "label": "T-101: neutral holds nothing",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -59948,8 +60154,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:80",
-   "line": 80,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:83",
+   "line": 83,
    "label": "T-101: the deck's whole vocabulary is keyboard codes the game already maps … (one gameplay-input con",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -59966,8 +60172,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:83",
-   "line": 83,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:86",
+   "line": 86,
    "label": "T-101: bit i is TOUCH_BIT_CODES[i]",
    "fn": "ok",
    "cls": "PIN",
@@ -59984,8 +60190,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:92",
-   "line": 92,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:95",
+   "line": 95,
    "label": "T-101: from neutral a direction engages only past … ·rim",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60002,8 +60208,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:94",
-   "line": 94,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:97",
+   "line": 97,
    "label": "T-101: a held direction survives down to … ·rim, then drops to neutral",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60020,8 +60226,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:110",
-   "line": 110,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:113",
+   "line": 113,
    "label": "T-101: dead-zone hysteresis — a thumb wobbling ±2 px on the engage ring flips run on/off … x over 60",
    "fn": "ok",
    "cls": "CORE",
@@ -60038,8 +60244,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:119",
-   "line": 119,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:122",
+   "line": 122,
    "label": "T-101: a held E survives until … ° past the E/NE edge, then becomes NE",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60056,8 +60262,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:122",
-   "line": 122,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:125",
+   "line": 125,
    "label": "T-101: …and a held NE survives … ° back past the same edge",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60074,8 +60280,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:140",
-   "line": 140,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:143",
+   "line": 143,
    "label": "T-101: no chatter between E and NE — … sector changes over 600 wobbling … samples ( … with the hyste",
    "fn": "ok",
    "cls": "CORE",
@@ -60092,8 +60298,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:154",
-   "line": 154,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:157",
+   "line": 157,
    "label": "T-101: no chatter on the NE/N boundary either ( … changes)",
    "fn": "ok",
    "cls": "CORE",
@@ -60110,8 +60316,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:162",
-   "line": 162,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:165",
+   "line": 165,
    "label": "T-101: a 300 px drag drags the anchor along, leaving the thumb exactly one rim out",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60128,8 +60334,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:164",
-   "line": 164,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:167",
+   "line": 167,
    "label": "T-101: inside the rim the anchor stays put",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60146,8 +60352,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:181",
-   "line": 181,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:184",
+   "line": 184,
    "label": "T-101: after a 300 px drag right, a … px reversal reads … (without rim follow: … )",
    "fn": "ok",
    "cls": "CORE",
@@ -60164,8 +60370,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:287",
-   "line": 287,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:290",
+   "line": 290,
    "label": "T-101: JUMP ≥ 64 px, FIRE ≥ 56 px, every chip ≥ 44 px (HIG) at every … phone size and inset … — … , ",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60182,8 +60388,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:289",
-   "line": 289,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:292",
+   "line": 292,
    "label": "T-101: every target lies inside the safe-area insets (notch on either … side, home indicator) … — … ",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60200,8 +60406,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:291",
-   "line": 291,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:294",
+   "line": 294,
    "label": "T-101: no two targets overlap (JUMP↔FIRE keep their gap; chips clear … of both hit circles and of ea",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60218,8 +60424,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:293",
-   "line": 293,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:296",
+   "line": 296,
    "label": "T-101: JUMP/FIRE hit circles share a thin both-buttons lens (one thumb … can jump while firing) and ",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60236,8 +60442,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:295",
-   "line": 295,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:298",
+   "line": 298,
    "label": "T-101: the stick zone owns no button and has room for a full stick … — … , …",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60254,8 +60460,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:297",
-   "line": 297,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:300",
+   "line": 300,
    "label": "T-101: the right-thumb cluster stays a bottom-right corner (landscape … below 60% of the height and ",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60272,8 +60478,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:300",
-   "line": 300,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:303",
+   "line": 303,
    "label": "T-101: no stick spawns in the … px left-edge gutter … (iOS Safari back swipe) … — … , …",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60290,8 +60496,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:302",
-   "line": 302,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:305",
+   "line": 305,
    "label": "T-101: the hit test matches the drawing (centres, the both-lens, the … JUMP corner, a dead miss, chi",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60308,8 +60514,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:304",
-   "line": 304,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:307",
+   "line": 307,
    "label": "T-101: sliding needs the button itself — a thumb rocking off FIRE's … rim half-way across the gap ad",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60326,8 +60532,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:308",
-   "line": 308,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:311",
+   "line": 311,
    "label": "T-101: sizes derive from the short side (844x390: JUMP … px, stick rim … px)",
    "fn": "ok",
    "cls": "PIN",
@@ -60344,8 +60550,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:313",
-   "line": 313,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:316",
+   "line": 316,
    "label": "T-101: a tablet does not get dinner-plate buttons (clamped)",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60362,8 +60568,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:319",
-   "line": 319,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:322",
+   "line": 322,
    "label": "T-101: absent ?touch=, the two-thumb deck is the touch-hardware default (entry 16/20)",
    "fn": "ok",
    "cls": "CORE",
@@ -60380,8 +60586,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "flag:touch=legacy",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:321",
-   "line": 321,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:324",
+   "line": 324,
    "label": "T-101: ?touch=legacy restores the rejected scheme on any device",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60400,8 +60606,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "flag:touch",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:323",
-   "line": 323,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:326",
+   "line": 326,
    "label": "T-101: ?touch=0 / ?touch=1 keep their meanings",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60420,8 +60626,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:325",
-   "line": 325,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:328",
+   "line": 328,
    "label": "T-101: auto-fire defaults OFF (firing is not free in the sim: BACKLASH, face 6+)",
    "fn": "ok",
    "cls": "CORE",
@@ -60438,8 +60644,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:327",
-   "line": 327,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:330",
+   "line": 330,
    "label": "T-101: ?autofire= overrides the stored toggle; the stored toggle overrides the default",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60456,8 +60662,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:338",
-   "line": 338,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:341",
+   "line": 341,
    "label": "T-101: auto-fire ignores bodies with no hitbox yet … and bodies off screen",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60474,8 +60680,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:340",
-   "line": 340,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:343",
+   "line": 343,
    "label": "T-101: …and sees a materialized body inside the edges",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60492,8 +60698,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:341",
-   "line": 341,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:344",
+   "line": 344,
    "label": "T-101: a body counts once it is … tiles inside a screen edge",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60510,8 +60716,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:347",
-   "line": 347,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:350",
+   "line": 350,
    "label": "T-101: auto-fire holds the trigger … ms past the last sighting, then lets go",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -60528,8 +60734,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:361",
-   "line": 361,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:364",
+   "line": 364,
    "label": "T-101: the deck never touches the sim's keys directly — it only emits key edges",
    "fn": "ok",
    "cls": "CORE",
@@ -60546,8 +60752,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:365",
-   "line": 365,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:368",
+   "line": 368,
    "label": "T-101 (iOS): Safari pinch gestures are cancelled (gesturestart/change/end, non-passive)",
    "fn": "ok",
    "cls": "PIN",
@@ -60566,8 +60772,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:367",
-   "line": 367,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:370",
+   "line": 370,
    "label": "T-101 (iOS): orientationchange, screen.orientation change and pagehide release the deck",
    "fn": "ok",
    "cls": "PIN",
@@ -60586,8 +60792,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:370",
-   "line": 370,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:373",
+   "line": 373,
    "label": "T-101 (iOS): no vibration API (absent on iPhone Safari)",
    "fn": "ok",
    "cls": "PIN",
@@ -60606,8 +60812,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:373",
-   "line": 373,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:376",
+   "line": 376,
    "label": "T-101 (iOS): the deck CSS carries touch-action:none and the -webkit- twins Safari reads",
    "fn": "ok",
    "cls": "PIN",
@@ -60626,8 +60832,8 @@
   {
    "domain": "touch-deck-contract",
    "scope": "shipped",
-   "site": "tools/pathcheck/touch-deck-contract.mjs:424",
-   "line": 424,
+   "site": "tools/pathcheck/touch-deck-contract.mjs:427",
+   "line": 427,
    "label": "T-101: a touch-only tap unlocks audio on its END (iOS Safari's gesture), modelled with a … gesture-g",
    "fn": "ok",
    "cls": "CORE",
@@ -61942,6 +62148,476 @@
    "note": "(domain default)",
    "disposition": "CORE-GATE",
    "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:137",
+   "line": 137,
+   "label": "T-105: the keyboard-copy scan finds every keyboard instruction the game prints … (so a phone screen ",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: the keyboard-copy scan finds every keyboard instruction the game prints … (so a phone screen that still shows one fails) … — missed: … | …",
+   "note": "the copy a phone player reads (shell-copy.js tables) and every touch button doing what its key does",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:150",
+   "line": 150,
+   "label": "T-105: no touch-mode string names a key or says press/click ( … strings) … — … , …",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: no touch-mode string names a key or says press/click ( … strings) … — … , …",
+   "note": "the copy a phone player reads (shell-copy.js tables) and every touch button doing what its key does",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:159",
+   "line": 159,
+   "label": "T-105: the scan does not mistake game vocabulary for key names … — flagged: … | …",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-105: the scan does not mistake game vocabulary for key names … — flagged: … | …",
+   "note": "the copy a phone player reads (shell-copy.js tables) and every touch button doing what its key does",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:164",
+   "line": 164,
+   "label": "T-105: the keyboard copy is byte-identical to the pre-T-105 build (desktop unchanged)",
+   "fn": "ok",
+   "cls": "PIN",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: the keyboard copy is byte-identical to the pre-T-105 build (desktop unchanged)",
+   "note": "a snapshot of the desktop copy taken before T-105: a migration guard, not a property (a deliberate copy edit turns it red)",
+   "disposition": "DELETE",
+   "tier": "gone"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:173",
+   "line": 173,
+   "label": "T-105: on touch the overlay prints no instruction line of its own (the deck's … \"TAP TO …\" cue is th",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-105: on touch the overlay prints no instruction line of its own (the deck\\'s … \"TAP TO …\" cue is the one instruction)",
+   "note": "the copy a phone player reads (shell-copy.js tables) and every touch button doing what its key does",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:178",
+   "line": 178,
+   "label": "T-105: only the two-thumb deck (the one scheme with a tap out of every screen) speaks touch",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: only the two-thumb deck (the one scheme with a tap out of every screen) speaks touch",
+   "note": "the copy a phone player reads (shell-copy.js tables) and every touch button doing what its key does",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:201",
+   "line": 201,
+   "label": "T-105: every touch button presses the key whose intent it names, in that state ( … , … ) … — … , …",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-105: every touch button presses the key whose intent it names, in that state ( … , … ) … — … , …",
+   "note": "the copy a phone player reads (shell-copy.js tables) and every touch button doing what its key does",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:208",
+   "line": 208,
+   "label": "T-105: no touch button repeats the verb the deck's modal tap already performs … (tap = resume / clim",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: no touch button repeats the verb the deck\\'s modal tap already performs … (tap = resume / climb again), so a phone shows one instruction",
+   "note": "the copy a phone player reads (shell-copy.js tables) and every touch button doing what its key does",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:216",
+   "line": 216,
+   "label": "T-105: index.html carries the failsafe panel's hint-mode rule as a named function",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: index.html carries the failsafe panel\\'s hint-mode rule as a named function",
+   "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:225",
+   "line": 225,
+   "label": "T-105: the panel says \"tap\" exactly where a touch deck installs (inline rule = … src/pure/shell-copy",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: the panel says \"tap\" exactly where a touch deck installs (inline rule = … src/pure/shell-copy.js = resolveTouchScheme, … cases) … — … , …",
+   "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:232",
+   "line": 232,
+   "label": "T-105: the touch hint reads plainly, names the button and no key (\" … \"); the keyboard hint still na",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "T-105: the touch hint reads plainly, names the button and no key (\" … \"); the keyboard hint still names its key",
+   "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:248",
+   "line": 248,
+   "label": "T-105: the REAL bootstrap paints the touch hint on touch hardware / a coarse pointer / … ?touch=1, a",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: the REAL bootstrap paints the touch hint on touch hardware / a coarse pointer / … ?touch=1, and the key hint on a desktop and under ?touch=0 (got phone=\" … \", desktop=\" … \")",
+   "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:258",
+   "line": 258,
+   "label": "T-105: the inline warm-up numbers are the policy's ( … / … missing … vs … / … ), and the warm-up win",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: the inline warm-up numbers are the policy\\'s ( … / … missing … vs … / … ), and the warm-up window is … longer than the stall rule it relaxes",
+   "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:266",
+   "line": 266,
+   "label": "T-105: index.html carries the watchdog decision as a named function",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: index.html carries the watchdog decision as a named function",
+   "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:306",
+   "line": 306,
+   "label": "T-105: the inline freeze verdict equals src/pure/failsafe.js over … states … (4000 seeded + every th",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: the inline freeze verdict equals src/pure/failsafe.js over … states … (4000 seeded + every threshold at -1/0/+1 ms) covering every verdict ( … , … disagree)",
+   "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:338",
+   "line": 338,
+   "label": "T-105: a 6 s frame stall before the first frames are drawn (0, 1 or 2 beats in) shows NO … panel at ",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: a 6 s frame stall before the first frames are drawn (0, 1 or 2 beats in) shows NO … panel at all (saw … )",
+   "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:343",
+   "line": 343,
+   "label": "T-105: …while the same stall after warm-up (40 frames) still shows \"got stuck\", … ? … ms in (the … m",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: …while the same stall after warm-up (40 frames) still shows \"got stuck\", … ? … ms in (the … ms rule, one tick of slack)",
+   "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:348",
+   "line": 348,
+   "label": "T-105: after warm-up a stall shorter than … ms is still a hiccup, not a panel",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: after warm-up a stall shorter than … ms is still a hiccup, not a panel",
+   "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:351",
+   "line": 351,
+   "label": "T-105: a hidden page that draws nothing is never \"stuck\" (saw … )",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: a hidden page that draws nothing is never \"stuck\" (saw … )",
+   "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:365",
+   "line": 365,
+   "label": "T-105: a frame loop that dies during warm-up ( … frame(s) drawn) still gets the … \"got stuck\" panel,",
+   "fn": "ok",
+   "cls": "CORE",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: a frame loop that dies during warm-up ( … frame(s) drawn) still gets the … \"got stuck\" panel, … ms after it went quiet (limit … ms)",
+   "note": "the failsafe hint by device and the freeze watchdog: the REAL inline bootstrap executed against a fake clock and a stub DOM; its extraction targets and inline constants checked against src/pure by necessity (index.html cannot be imported)",
+   "disposition": "CORE-GATE",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:379",
+   "line": 379,
+   "label": "T-105: index.html links a web app manifest that parses ( … )",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: index.html links a web app manifest that parses ( … )",
+   "note": "home-screen play: the manifest, its icons at their declared sizes, the iOS meta tags (a static capability)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:385",
+   "line": 385,
+   "label": "T-105: the manifest launches the game page, landscape, … (start … , scope … ) — relative, so a subpa",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: the manifest launches the game page, landscape, … (start … , scope … ) — relative, so a subpath deploy works",
+   "note": "home-screen play: the manifest, its icons at their declared sizes, the iOS meta tags (a static capability)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:396",
+   "line": 396,
+   "label": "T-105: every manifest icon is a PNG at its declared size, with 192, 512 and a maskable one … — wrong",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: every manifest icon is a PNG at its declared size, with 192, 512 and a maskable one … — wrong: … , …",
+   "note": "home-screen play: the manifest, its icons at their declared sizes, the iOS meta tags (a static capability)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:403",
+   "line": 403,
+   "label": "T-105: apple-touch-icon is a 180x180 OPAQUE PNG (iOS paints transparency black) … (…x…, colour type ",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: apple-touch-icon is a 180x180 OPAQUE PNG (iOS paints transparency black) … (${ti.w}x${ti.h}, colour type ${ti.colorType}) … (missing)",
+   "note": "home-screen play: the manifest, its icons at their declared sizes, the iOS meta tags (a static capability)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:407",
+   "line": 407,
+   "label": "T-105: iOS home-screen launch is declared (capable, status-bar style, title) and the page … draws ed",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: iOS home-screen launch is declared (capable, status-bar style, title) and the page … draws edge to edge (viewport-fit=cover) — the safe-area insets are what keep it readable",
+   "note": "home-screen play: the manifest, its icons at their declared sizes, the iOS meta tags (a static capability)",
+   "disposition": "CORE-GATE:invariant-tier",
+   "tier": "fast"
+  },
+  {
+   "domain": "t-105-phone-shell",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-105-phone-shell.mjs:434",
+   "line": 434,
+   "label": "T-105: every image preload matches its consumer's request mode ( … preloads; CORS for TextureLoader,",
+   "fn": "ok",
+   "cls": "PIN",
+   "how": "site",
+   "marks": [
+    "core"
+   ],
+   "core": true,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-105: every image preload matches its consumer\\'s request mode ( … preloads; CORS for TextureLoader, no-cors for CSS) … — … ; …",
+   "note": "request modes read from source; the behaviour half is the PLAY gate's boot step, which counts the real requests (K4)",
+   "disposition": "REWRITE-AS-BEHAVIOUR",
+   "tier": "replaced"
   },
   {
    "domain": "t-120-input-forgiveness",
