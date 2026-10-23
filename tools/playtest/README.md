@@ -1873,7 +1873,16 @@ Sections (`--only`, default all):
   390x844 and 1280x720: lines up to 28 characters on ONE line, uncut; today's
   longest strings (T-102's 47-character gate line, the 43-character hull
   fallback line) uncut, wrapped if they must, and on a landscape phone the
-  panel ends above the central region and the deck's chips.
+  panel ends above the central region and the deck's chips. Then T-201's
+  encounter lines (`rollingEncounterText` in `src/pure/waves.js`, at most 28
+  characters): where the served tree has that function, EVERY distinct line it
+  returns over the state space T-201's own pathcheck enumerates (1145 lines at
+  task/T-201 `c48ca1e`), one aggregated check per view — one line each,
+  nothing cut, none over 28 characters, and on a landscape phone the lowest
+  panel bottom above the central region and the chips. A tree without it
+  (main before T-201) gets nine of those lines verbatim instead (its three
+  28-character lines, the longest of each other family, the integrator's two
+  examples); the check's name says which set was measured.
 - **preload** — the default URL: "preload ... not used" console warnings and
   the number of requests per preloaded URL.
 - **watchdog** — animation frames withheld (callbacks parked, nothing

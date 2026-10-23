@@ -755,6 +755,81 @@ const GATE_TODAY = [
   'WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND',   // 47 (T-102's widest)
   'HULL FALLBACK · LOWER ROUTE · KEEP MOVING →',        // 43, verbatim from src/ui/hud.js
 ];
+// T-201 (task/T-201, merging separately) rewrites what the line says:
+// rollingEncounterText() in src/pure/waves.js, at most ROLLING_TEXT_MAX (28)
+// characters. A served tree that HAS it is measured on every distinct line it
+// returns over the state space T-201's own pathcheck enumerates
+// (tools/pathcheck/t-201-race-pass.mjs: 6 faces x turning / primed / cleared /
+// greeting x live 0-13 x pending 0-9 x following 0-carryMax). A tree without
+// it (main before T-201) is measured on these lines instead, copied verbatim
+// from that function's output at task/T-201 c48ca1e: its three 28-character
+// lines, the longest of each other family (counts, inbound, followers, the
+// arrow glyph) and the integrator's two examples.
+const GATE_T201_FALLBACK = [
+  'WAVE 1/6 · OBSERVE · CONTACT',     // 28
+  'WAVE 3/6 · CONTAIN · CONTACT',     // 28
+  'WAVE 6/6 · SCUTTLE · CONTACT',     // 28
+  'QUARANTINE · 17 HOSTILES +9',      // 27
+  'QUARANTINE BROKEN · CLIMB →',      // 27, arrow glyph
+  '4 FOLLOWING → QUARANTINE',         // 24
+  'QUARANTINE · +9 INBOUND',          // 23
+  'OBSERVE · 4 HOSTILES',             // the integrator's examples
+  'INTERCEPT · 4 FOLLOWING',
+];
+// Runs in the page: the T-201 line set the served tree can produce.
+async function t201LinesInPage(fallback) {
+  let W = null, C = null;
+  try {
+    W = await import('/src/pure/waves.js');
+    C = (await import('/src/config.js')).CONFIG;
+  } catch (_) { /* a tree without the modules: fall back */ }
+  if (!W || typeof W.rollingEncounterText !== 'function' || !W.ROLLING_GATES || !C) {
+    return { source: 'fallback (the served tree has no rollingEncounterText)', lines: fallback };
+  }
+  const faces = C.path.faces, carry = W.ROLLING_GATES.carryMax;
+  const set = new Set();
+  for (let k = 1; k <= faces; k++) {
+    const phase = W.wavePhase(k, C), nextPhase = k < faces ? W.wavePhase(k + 1, C) : '';
+    for (const turning of [false, true]) for (const primed of [false, true])
+      for (const cleared of [false, true]) for (const greeting of [false, true])
+        for (let live = 0; live <= 13; live++) for (let pending = 0; pending <= 9; pending++)
+          for (let following = 0; following <= carry; following++) {
+            set.add(W.rollingEncounterText({ k, faces, phase, nextPhase, primed, live, pending,
+              following, cleared, turning, greeting }));
+          }
+  }
+  return { source: `enumerated from the served rollingEncounterText (max ${W.ROLLING_TEXT_MAX})`, lines: [...set] };
+}
+// Runs in the page: write each line into the slot the HUD writes and measure it.
+function measureGateLinesInPage(lines) {
+  const panel = document.getElementById('hudObjectivePanel');
+  const line = document.getElementById('hudObjective');
+  const L = (typeof __HB_TOUCH === 'function' && __HB_TOUCH().layout) || null;
+  const chipsTop = L && L.width ? Math.min(L.pause.y, L.auto.y) : Infinity;
+  const out = [];
+  for (const text of lines) {
+    // TEST SETUP: write the slot the HUD writes (a frozen sim never
+    // rewrites it), then let layout settle inside this evaluation
+    line.textContent = text;
+    panel.classList.remove('empty');
+    const r = document.createRange();
+    r.selectNodeContents(line);
+    const frags = [...r.getClientRects()].filter((q) => q.width > 0.5);
+    const tops = new Set(frags.map((q) => Math.round(q.top)));
+    const tr = r.getBoundingClientRect();
+    const pr = panel.getBoundingClientRect();
+    const lr = line.getBoundingClientRect();
+    const cs = getComputedStyle(line);
+    const cut = line.scrollWidth > line.clientWidth + 1 || line.scrollHeight > line.clientHeight + 1 ||
+      tr.right > lr.right + 1 || tr.left < lr.left - 1 || tr.right > pr.right + 1 ||
+      pr.right > innerWidth || pr.left < 0;
+    out.push({ text, chars: [...text].length, lines: tops.size, textW: +tr.width.toFixed(1),
+      slotW: line.clientWidth, scrollW: line.scrollWidth, whiteSpace: cs.whiteSpace,
+      panel: [pr.left, pr.top, pr.right, pr.bottom].map((v) => +v.toFixed(1)),
+      centralTop: +(innerHeight * 0.2).toFixed(1), chipsTop, cut });
+  }
+  return out;
+}
 async function sectionGateline(browser) {
   for (const id of ['l667', 'd1100', 'l844', 'l932', 'p390', 'd1280']) {
     const view = ALL_VIEWS[id];
@@ -764,35 +839,7 @@ async function sectionGateline(browser) {
     try {
       await until(page, () => HB.state() === 'PLAYING');
       await frames(page, 3);
-      const rows = await page.evaluate((lines) => {
-        const panel = document.getElementById('hudObjectivePanel');
-        const line = document.getElementById('hudObjective');
-        const L = (typeof __HB_TOUCH === 'function' && __HB_TOUCH().layout) || null;
-        const chipsTop = L && L.width ? Math.min(L.pause.y, L.auto.y) : Infinity;
-        const out = [];
-        for (const text of lines) {
-          // TEST SETUP: write the slot the HUD writes (a frozen sim never
-          // rewrites it), then let layout settle inside this evaluation
-          line.textContent = text;
-          panel.classList.remove('empty');
-          const r = document.createRange();
-          r.selectNodeContents(line);
-          const frags = [...r.getClientRects()].filter((q) => q.width > 0.5);
-          const tops = new Set(frags.map((q) => Math.round(q.top)));
-          const tr = r.getBoundingClientRect();
-          const pr = panel.getBoundingClientRect();
-          const lr = line.getBoundingClientRect();
-          const cs = getComputedStyle(line);
-          const cut = line.scrollWidth > line.clientWidth + 1 || line.scrollHeight > line.clientHeight + 1 ||
-            tr.right > lr.right + 1 || tr.left < lr.left - 1 || tr.right > pr.right + 1 ||
-            pr.right > innerWidth || pr.left < 0;
-          out.push({ text, chars: [...text].length, lines: tops.size, textW: +tr.width.toFixed(1),
-            slotW: line.clientWidth, scrollW: line.scrollWidth, whiteSpace: cs.whiteSpace,
-            panel: [pr.left, pr.top, pr.right, pr.bottom].map((v) => +v.toFixed(1)),
-            centralTop: +(innerHeight * 0.2).toFixed(1), chipsTop, cut });
-        }
-        return out;
-      }, [...GATE_ONE_LINE, ...GATE_TODAY]);
+      const rows = await page.evaluate(measureGateLinesInPage, [...GATE_ONE_LINE, ...GATE_TODAY]);
       const landscapePhone = view.phone && view.w > view.h;
       for (const r of rows) {
         const oneLine = r.chars <= 28;
@@ -809,6 +856,24 @@ async function sectionGateline(browser) {
         }
       }
       measure('gateLine', rows);
+      // T-201's encounter lines, all of them where the tree has the function
+      const set = await page.evaluate(t201LinesInPage, GATE_T201_FALLBACK);
+      const t201 = await page.evaluate(measureGateLinesInPage, set.lines);
+      const bad = t201.filter((r) => r.cut || r.lines !== 1 || r.chars > 28);
+      const widest = t201.slice().sort((a, b) => b.textW - a.textW);
+      const lowest = t201.reduce((m, r) => Math.max(m, r.panel[3]), -Infinity);
+      const top = widest[0];
+      check(`T-201 encounter lines, ${set.source}: all ${t201.length} on ONE line, nothing cut, none over 28 characters`,
+        t201.length > 0 && bad.length === 0,
+        `widest "${top.text}" (${top.chars} chars) ${top.textW} px in a ${top.slotW} px slot` +
+        (bad.length ? `; ${bad.length} bad: ` + bad.slice(0, 4).map((r) => `"${r.text}" ${r.lines} line(s) ${r.textW} px${r.cut ? ' CUT' : ''}`).join(' | ') : ''));
+      if (landscapePhone) {
+        check(`T-201 encounter lines: the panel ends above the central region (${top.centralTop}) and the deck chips (${top.chipsTop.toFixed ? top.chipsTop.toFixed(1) : top.chipsTop})`,
+          lowest <= top.centralTop && lowest <= top.chipsTop, `lowest panel bottom ${lowest}`);
+      }
+      measure('t201Lines', { source: set.source, distinct: t201.length, bad: bad.length,
+        maxChars: t201.reduce((m, r) => Math.max(m, r.chars), 0), maxLines: t201.reduce((m, r) => Math.max(m, r.lines), 0),
+        lowestPanelBottom: lowest, widest: widest.slice(0, 3) });
       await shot(page, join(OUT, `${LABEL}-${view.id}-gateline.png`));
     } finally { await owned.close(); }
   }
