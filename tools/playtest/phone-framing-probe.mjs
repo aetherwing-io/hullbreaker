@@ -4,7 +4,7 @@
  *
  *   node tools/playtest/phone-framing-probe.mjs --base-url http://127.0.0.1:8776 \
  *     --viewports 1280x720,1920x1080 [--touch] [--query view=far] [--dpr 1] \
- *     [--rig] [--shots <dir>] --out <file.json>
+ *     [--rig] [--shots <dir>] [--root <tree> instead of --base-url] --out <file.json>
  *   node tools/playtest/phone-framing-probe.mjs --compare base.json branch.json
  *
  * One headless Chrome, one fresh context per viewport (touch emulation with
@@ -47,6 +47,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { launchBrowser } from '../assets/lib/browser.mjs';
+import { startStaticServer } from './lib/server.mjs';
 
 const argv = process.argv.slice(2);
 const opt = (name, dflt) => {
@@ -90,7 +91,11 @@ if (has('compare')) {
 }
 
 /* ------------------------------- probe --------------------------------- */
-const baseUrl = opt('base-url', 'http://127.0.0.1:8776');
+// --root <tree>: serve that tree on an ephemeral 127.0.0.1 port for this run
+// (tools/playtest/lib/server.mjs) instead of --base-url
+const rootDir = opt('root', null);
+const server = rootDir ? await startStaticServer(resolve(rootDir), { port: 0 }) : null;
+const baseUrl = server ? server.baseUrl : opt('base-url', 'http://127.0.0.1:8776');
 const viewports = opt('viewports', '1280x720').split(',').map((s) => s.split('x').map(Number));
 const touch = has('touch');
 const dpr = +opt('dpr', '1');
@@ -406,5 +411,6 @@ try {
   }
 } finally {
   await browser.close().catch(() => {});
+  if (server) await server.close().catch(() => {});
 }
 process.exit(result.viewports.some((r) => r.error || r.errors.length) ? 1 : 0);

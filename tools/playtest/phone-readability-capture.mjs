@@ -5,7 +5,7 @@
  *
  *   node tools/playtest/phone-readability-capture.mjs --base-url http://127.0.0.1:8776 \
  *     --viewport 844x390 --dpr 2 --touch [--query view=far] --marks 9000,15000,21000 \
- *     --out <dir> [--tag phone]
+ *     --out <dir> [--tag phone] [--runup-scale 2] [--root <tree>]
  *
  * Boots the shipped run deterministically (?testapi=1&fixeddt=16.667, the
  * frame-input bootstrap: right + fire held, a jump every 0.9 s — the same
@@ -19,6 +19,15 @@
  * simulation; only the lens differs, so the sim may diverge slightly through
  * the right clamp: each sidecar says what it shows).
  *
+ * --root <tree> serves that tree on an ephemeral 127.0.0.1 port for the run
+ * (tools/playtest/lib/server.mjs) instead of --base-url.
+ *
+ * --runup-scale s plays the run between marks in a viewport s times smaller
+ * (same aspect, so the same lens and the same calibrated edges in tiles: the
+ * simulation is the same run), and resizes to the full viewport only to take
+ * each photo — SwiftShader then draws s^2 fewer pixels per run-up frame. The
+ * sidecar records the edges before and after each resize as the proof.
+ *
  * Honest limits: SwiftShader, DPR as requested; a paused frame, not motion;
  * readability is the operator's call (entry 15/17: tells read smaller at FAR
  * was an accepted cost) — this only puts the evidence in front of him.
@@ -27,10 +36,13 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { launchBrowser } from '../assets/lib/browser.mjs';
+import { startStaticServer } from './lib/server.mjs';
 
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.indexOf('--' + n); return i >= 0 && argv[i + 1] !== undefined ? argv[i + 1] : d; };
-const baseUrl = opt('base-url', 'http://127.0.0.1:8776');
+const rootDir = opt('root', null);
+const server = rootDir ? await startStaticServer(resolve(rootDir), { port: 0 }) : null;
+const baseUrl = server ? server.baseUrl : opt('base-url', 'http://127.0.0.1:8776');
 const [vw, vh] = opt('viewport', '844x390').split('x').map(Number);
 const dpr = +opt('dpr', '2');
 const touch = argv.includes('--touch');
@@ -38,6 +50,10 @@ const query = opt('query', '');
 const marks = opt('marks', '9000,15000,21000').split(',').map(Number);
 const out = resolve(opt('out', 'readability'));
 const tag = opt('tag', touch ? 'touch' : 'mouse');
+const runupScale = +opt('runup-scale', '1');
+const small = { width: vw / runupScale, height: vh / runupScale };
+if (!(runupScale >= 1) || !Number.isInteger(small.width) || !Number.isInteger(small.height))
+  throw new Error(`--runup-scale ${runupScale} must divide ${vw}x${vh} exactly (same aspect, same edges)`);
 const bootMs = Number(process.env.HB_PROBE_BOOT_MS) || 180000;
 const log = (...a) => console.error(new Date().toISOString().slice(11, 19), ...a);
 
@@ -53,6 +69,7 @@ const { browser } = await launchBrowser({ channel: 'chrome' });
 const context = await browser.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: dpr,
   hasTouch: touch, isMobile: touch });
 const page = await context.newPage();
+if (runupScale > 1) await page.setViewportSize(small);
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e && e.stack || e)));
 page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
@@ -75,6 +92,16 @@ for (const mark of marks) {
     dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyP' }));
   });
   await page.waitForFunction(() => HB.state() === 'PAUSED', null, { timeout: 120000 });
+  let resize = null;
+  if (runupScale > 1) {
+    const before = await page.evaluate(() => { const e = HB.edges(); return { w: innerWidth, h: innerHeight, left: e.left - HB.scrollX(), right: e.right - HB.scrollX() }; });
+    await page.setViewportSize({ width: vw, height: vh });
+    await page.waitForFunction((w) => innerWidth === w, vw, { timeout: 120000 });
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const after = await page.evaluate(() => { const e = HB.edges(); return { w: innerWidth, h: innerHeight, left: e.left - HB.scrollX(), right: e.right - HB.scrollX() }; });
+    resize = { before, after, sameEdges: Math.abs(before.left - after.left) < 1e-9 && Math.abs(before.right - after.right) < 1e-9 };
+    if (!resize.sameEdges) errors.push(`mark ${mark}: the run-up viewport calibrated different edges ${JSON.stringify(resize)}`);
+  }
   await page.addStyleTag({ content: '#overlay { display: none !important; }' });
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
   const facts = await page.evaluate(async () => {
@@ -107,8 +134,12 @@ for (const mark of marks) {
   });
   const file = resolve(out, `${tag}-${vw}x${vh}-dpr${dpr}-t${mark}.png`);
   await page.screenshot({ path: file, timeout: bootMs });
-  shots.push({ mark, file, ...facts });
+  shots.push({ mark, file, resize, ...facts });
   log(`mark ${mark}: gameMs ${Math.round(facts.gameMs)} hostiles ${facts.hostiles.length} bullets ${facts.bullets.length} capsules ${facts.capsules.length}`);
+  if (runupScale > 1 && mark !== lastMark) {
+    await page.setViewportSize(small);
+    await page.waitForFunction((w) => innerWidth === w, small.width, { timeout: 120000 });
+  }
   await page.evaluate(() => {
     dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyP' }));
     dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyP' }));
@@ -116,6 +147,7 @@ for (const mark of marks) {
   await page.waitForFunction(() => HB.state() === 'PLAYING', null, { timeout: 120000 });
 }
 await writeFile(resolve(out, `${tag}-${vw}x${vh}-dpr${dpr}.json`), JSON.stringify({ tool: 'tools/playtest/phone-readability-capture.mjs',
-  baseUrl, viewport: { vw, vh, dpr, touch }, query, marks, errors, shots }, null, 1));
+  baseUrl, viewport: { vw, vh, dpr, touch }, query, marks, runupScale, errors, shots }, null, 1));
 await browser.close();
+if (server) await server.close();
 process.exit(errors.length ? 1 : 0);
