@@ -476,8 +476,25 @@ async function gridProbe() {
         }
       }
       const compared = opaque - capped - shared;
+      // a poorly matching actor carries its evidence: the tile (8-bit,
+      // encoded as drawn) and the drawn pixels under its rect, top-down
+      let dump = null;
+      if (label === 'clean' && compared > 0 && near / compared < 0.9) {
+        dump = { w: tile.w, h: tile.h, tile: [], drawn: [] };
+        for (let ty = 0; ty < tile.h; ty++) {
+          for (let tx = 0; tx < tile.w; tx++) {
+            const i = (ty * tile.w + tx) * 4;
+            dump.tile.push(enc(tile.rgba[i]), enc(tile.rgba[i + 1]), enc(tile.rgba[i + 2]),
+              tile.rgba[i + 3] < 0.5 ? 0 : (tile.capped[ty * tile.w + tx] ? 128 : 255));
+            const px = a.rect.x + tx, py = H - 1 - (a.rect.y + ty);
+            const k = (py * W + px) * 4;
+            if (px < 0 || py < 0 || px >= W || py >= H) dump.drawn.push(0, 0, 0, 0);
+            else dump.drawn.push(shot[k], shot[k + 1], shot[k + 2], 255);
+          }
+        }
+      }
       rows.push({
-        index, name: a.name, rect: a.rect, drawnRect: r, S: a.S, fade: a.fade,
+        index, name: a.name, rect: a.rect, drawnRect: r, S: a.S, fade: a.fade, dump,
         anchorHere: { x: +ax.toFixed(4), y: +ay.toFixed(4) },
         anchorAgrees: Math.abs(ax - a.anchorPx.x) < 1e-3 && Math.abs(ay - a.anchorPx.y) < 1e-3,
         figureOnPixelEdge: a.snap.x === ex.x && a.snap.y === ex.y,

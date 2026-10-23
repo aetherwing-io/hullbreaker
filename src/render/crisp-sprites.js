@@ -313,26 +313,20 @@ const debug = {
      parts          Object3D roots whose meshes ARE the actor's painted body
      texelsPerTile  the art's own density, for the supersample choice
      fade()         optional: the actor's whole-figure opacity (default 1)
-     renderOrder    optional sort slot of the drawn quad among transparent
-                    effects; by default the LOWEST of its parts' slots, so
-                    whatever drew under the whole figure still does, whatever
-                    drew over all of it still does, and an effect that used to
-                    fall between two of its layers now draws over the figure
-                    (one quad cannot interleave)
+     renderOrder    optional fixed sort slot of the drawn quad among
+                    transparent effects; by default, every frame, the LOWEST
+                    slot among the parts drawn that frame (owners set their
+                    parts' slots after spawning), so whatever drew under the
+                    whole figure still does, whatever drew over all of it
+                    still does, and an effect that used to fall between two of
+                    its layers now draws over the figure (one quad cannot
+                    interleave)
      impostorParent optional: where the drawn quad hangs (default: the
                     anchor, so it shares the anchor's visibility and sort
                     position, and survives any tool that isolates the
                     actor's group; a pooled rig whose anchor piece may hide
                     alone passes the scene)
    Returns the record, or null on ?art=legacy (where nothing moves).        */
-function lowestRenderOrder(parts) {
-  let lo = Infinity;
-  for (let i = 0; i < parts.length; i++) {
-    parts[i].traverse((o) => { if (o.isMesh && o.renderOrder < lo) lo = o.renderOrder; });
-  }
-  return Number.isFinite(lo) ? lo : 0;
-}
-
 export function registerCrispActor(spec) {
   if (!CRISP_ON) return null;
   const uniforms = {
@@ -362,8 +356,8 @@ export function registerCrispActor(spec) {
   const impostor = new THREE.Mesh(impostorGeometry, material);
   impostor.name = 'crisp-sprite:' + spec.name;
   impostor.frustumCulled = false;
-  impostor.renderOrder = typeof spec.renderOrder === 'number' ? spec.renderOrder
-    : lowestRenderOrder(spec.parts);
+  const fixedOrder = typeof spec.renderOrder === 'number' ? spec.renderOrder : null;
+  impostor.renderOrder = fixedOrder === null ? 0 : fixedOrder;
   impostor.visible = false;
   impostor.userData.shadow = 'none';
   impostor.userData.crispImpostor = true;
@@ -385,6 +379,8 @@ export function registerCrispActor(spec) {
     tile: { x: 0, y: 0 },
     remap: new THREE.Matrix4(),
     fadeValue: 1,
+    fixedOrder,
+    lowestOrder: 0,
     drawn: false,
     removed: false,
   };
@@ -413,7 +409,7 @@ const _w = new THREE.Vector3();
 const _projScreen = new THREE.Matrix4();
 const _R = new THREE.Matrix4();
 const _clear = new THREE.Color();
-const _box = { minX: 0, minY: 0, maxX: 0, maxY: 0, any: false };
+const _box = { minX: 0, minY: 0, maxX: 0, maxY: 0, any: false, order: 0 };
 let _W = 1, _H = 1;
 let _actor = null;
 let frameStamp = 0;
@@ -444,6 +440,7 @@ function visitPart(o) {
   if (!o.isMesh || !o.visible || o.userData.crispImpostor) return;
   enrollMesh(o, _actor);
   _actor.meshes.push(o);
+  if (o.renderOrder < _box.order) _box.order = o.renderOrder;
   const geo = o.geometry;
   const pos = geo.getAttribute('position');
   if (!pos) return;
@@ -464,6 +461,7 @@ function measureActor(a) {
   _actor = a;
   _box.minX = Infinity; _box.minY = Infinity; _box.maxX = -Infinity; _box.maxY = -Infinity;
   _box.any = false;
+  _box.order = Infinity;
   for (let i = 0; i < a.parts.length; i++) {
     const root = a.parts[i];
     if (debug.hiddenParts.size && debug.hiddenParts.has(root.name)) continue;
@@ -471,6 +469,7 @@ function measureActor(a) {
   }
   _actor = null;
   if (!_box.any || !Number.isFinite(_box.minX)) return false;
+  a.lowestOrder = _box.order;
   _w.setFromMatrixPosition(a.anchor.matrixWorld);
   _v.copy(_w).applyMatrix4(_projScreen);
   a.anchorNdcZ = _v.z;
@@ -649,6 +648,7 @@ function composeTiles(cam, target) {
     u.uTile.value.set(a.tile.x, a.tile.y);
     u.uDepth.value = a.anchorNdcZ;
     u.uFade.value = a.fadeValue;
+    a.impostor.renderOrder = a.fixedOrder === null ? a.lowestOrder : a.fixedOrder;
     // it sorts with the transparent effects from its parent's world
     // position; a scene-level quad is moved onto the anchor for that
     if (a.impostor.parent === scene) {
