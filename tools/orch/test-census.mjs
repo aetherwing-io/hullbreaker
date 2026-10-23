@@ -4,7 +4,7 @@
 //
 //   node tools/orch/test-census.mjs                 # writes tools/orch/test-audit.json
 //   node tools/orch/test-census.mjs --print         # + a summary on stdout
-//   node tools/orch/test-census.mjs --check         # exit 1 when `problems` is not empty
+//   node tools/orch/test-census.mjs --check         # READ-ONLY: exit 1 when `problems` is not empty
 //   node tools/orch/test-census.mjs --write-lock    # re-record tools/orch/test-audit-lock.json
 //
 // Inputs (all committed under tools/orch/):
@@ -223,7 +223,9 @@ if (process.argv.includes('--write-lock')) {
     note: 'identity of every pathcheck call site at the last reviewed classification; see test-census.mjs header',
     sites: sites.map((s) => ({ key: keyOf(s), domain: s.domain, line: s.line, label: s.label, cls: s.cls, disposition: s.disposition })),
   }, null, 0).replace(/\},\{/g, '},\n{') + '\n');
-  lockReport = { lock: 'tools/orch/test-audit-lock.json', base: head, sites: sites.length, moved: 0, rewritten: true };
+  // exactly what the next read of this lock reports, so the test-audit.json this
+  // run writes is the one a following --check computes (no second run needed)
+  lockReport = { lock: 'tools/orch/test-audit-lock.json', base: head, sites: sites.length, moved: 0 };
 }
 
 // mutation kill rates by class, and what the PROPOSED fast gate would still see
@@ -354,7 +356,21 @@ const out = {
   problems,
   sites,
 };
-writeFileSync(join(HERE, 'test-audit.json'), JSON.stringify(out, null, 1) + '\n');
+// --check is READ-ONLY (T-120 fix round 1): it used to rewrite the tracked
+// test-audit.json on every run. Now it only says when the committed copy no
+// longer matches what the inputs give (ignoring the run's own when/tree stamps);
+// a run without --check (or with --write-lock) rewrites it.
+{
+  const AUDIT = join(HERE, 'test-audit.json');
+  const readOnly = process.argv.includes('--check') && !process.argv.includes('--write-lock');
+  if (!readOnly) writeFileSync(AUDIT, JSON.stringify(out, null, 1) + '\n');
+  else {
+    const strip = (o) => { const c = { ...o }; delete c.when; delete c.tree; return JSON.stringify(c); };
+    let stale = true;
+    try { stale = strip(JSON.parse(readFileSync(AUDIT, 'utf8'))) !== strip(out); } catch { /* missing: stale */ }
+    if (stale) problems.push('tools/orch/test-audit.json is stale — run node tools/orch/test-census.mjs (no --check) and commit it');
+  }
+}
 if (process.argv.includes('--print')) {
   console.log('domains', domains.length, 'call sites', sites.length, 'evaluations', out.pathcheck.evaluations);
   for (const k of CLASSES) console.log('  ' + k.padEnd(15), String(total[k].sites).padStart(5), 'sites', String(total[k].evals).padStart(6), 'evals');

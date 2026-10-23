@@ -91,6 +91,8 @@ import * as d82 from './t-120-retry-replays-the-run.mjs';
 import * as d83 from './t-120-determinism-and-art-blind-sim.mjs';
 import * as d84 from './t-120-prototype-flags-inert.mjs';
 import * as d85 from './t-120-harness-reads-the-hud.mjs';
+import * as d86 from './enemy-ecology-selector.mjs';
+import * as d87 from './t-120-gate-self-tests.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -175,4 +177,6 @@ export const DOMAINS = [
   d83,    // T-120: cross-process determinism + the sim is blind to the art (behaviour test)
   d84,    // T-120: unjudged prototypes inert unless typed (behaviour test)
   d85,    // T-120 (I-106): the bot harness parses the HUD line the game writes (deep)
+  d86,    // enemy ecology: the frame a hostile shows (selector) + spec/manifest agreement (T-120 fix 1, restored)
+  d87,    // T-120: the gates' own verdict rules hold their fixtures (deep)
 ];

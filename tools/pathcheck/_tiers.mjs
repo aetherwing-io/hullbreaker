@@ -39,6 +39,7 @@ export const DEEP_ONLY = Object.freeze([
   't-025-harness-may-not-report',
   't-029-runtime-truth-three-debug',
   't-120-harness-reads-the-hud',
+  't-120-gate-self-tests',
 ]);
 
 // PLAY — needs a real browser. Not run by the headless tiers; the PLAY gate
@@ -113,6 +114,7 @@ export const INDEPENDENT = Object.freeze([
   'touch-deck-contract',
   't-103-rig-grip-alignment',
   't-103-arm-winding',
+  'enemy-ecology-selector',
   // T-120 behaviour tests: each runs its own fresh child processes
   't-120-input-forgiveness',
   't-120-retry-replays-the-run',

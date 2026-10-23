@@ -81,7 +81,12 @@ const stripComments = (src) =>
    not the whole rule — tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs
    plays the default run in two processes and compares every frame, which is
    what catches an indirect source (T-120, proposal §7.1 prelude). */
-const nondeterministic = /\b(?:Math\s*\.\s*random|Date\s*\.\s*now|new\s+Date\b|crypto\s*\.\s*(?:getRandomValues|randomUUID))/;
+// T-120 fix round 1 (review finding 10): bracket access (Math['random'],
+// Date["now"]) is read too. Still not read: aliases ((0, Math).random, const
+// M = Math) — the cross-process twins catch those (M05c) — and timers:
+// src/sim/player.js keeps a pre-existing setTimeout on the traversal-fixture
+// retry path, reported to the integrator, not banned here.
+const nondeterministic = /\b(?:Math\s*(?:\.\s*random|\[\s*['"`]random['"`]\s*\])|Date\s*(?:\.\s*now|\[\s*['"`]now['"`]\s*\])|new\s+Date\b|crypto\s*\.\s*(?:getRandomValues|randomUUID))/;
 
 function guardDeterminism(label, file, src) {
   const hit = stripComments(src).match(nondeterministic);
@@ -110,20 +115,25 @@ function guardLayer(label, files, allowed) {
   }
 }
 
-guardLayer(
-  'pure',
-  [join(srcDir, 'config.js'), ...layerFiles('pure')],
-  (spec) => spec === '../config.js' || /^\.\/[\w-]+\.js$/.test(spec),
-);
-guardLayer(
-  'sim',
-  layerFiles('sim'),
-  (spec) => spec === '../config.js' || spec === '../mode.js' ||
-    /^\.\/[\w-]+\.js$/.test(spec) || /^\.\.\/pure\/[\w-]+\.js$/.test(spec),
-);
-// src/mode.js resolves the run's flags once and every sim module imports it, so
-// a random A/B assignment or a clock read there would fork the sim too.
-guardDeterminism('mode', join(srcDir, 'mode.js'), readFileSync(join(srcDir, 'mode.js'), 'utf8'));
+// A lane process (tools/pathcheck.mjs --lane) skips the guards: its runner ran
+// them in its own process, and exited, before it spawned any lane (they cost a
+// lane ~0.15 CPU-s each; T-120 fix round 1, the per-edit CPU budget).
+if (process.env.HB_PATHCHECK_LANE !== '1') {
+  guardLayer(
+    'pure',
+    [join(srcDir, 'config.js'), ...layerFiles('pure')],
+    (spec) => spec === '../config.js' || /^\.\/[\w-]+\.js$/.test(spec),
+  );
+  guardLayer(
+    'sim',
+    layerFiles('sim'),
+    (spec) => spec === '../config.js' || spec === '../mode.js' ||
+      /^\.\/[\w-]+\.js$/.test(spec) || /^\.\.\/pure\/[\w-]+\.js$/.test(spec),
+  );
+  // src/mode.js resolves the run's flags once and every sim module imports it, so
+  // a random A/B assignment or a clock read there would fork the sim too.
+  guardDeterminism('mode', join(srcDir, 'mode.js'), readFileSync(join(srcDir, 'mode.js'), 'utf8'));
+}
 
 /* ===================== pathcheck test suite ====================== */
 let fails = 0, passes = 0;

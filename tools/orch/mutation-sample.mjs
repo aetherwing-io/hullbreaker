@@ -118,6 +118,14 @@ for (let j = 0; j < JOBS; j++) {
   const nm = join(REPO, 'tools', 'playtest', 'node_modules');
   if (existsSync(nm)) symlinkSync(nm, join(TREE, 'tools', 'playtest', 'node_modules'));
 }
+// The scratch trees (~190 MB each) are removed when the sample ends or is
+// stopped (playtest I-H: they used to stay); --keep-trees keeps them, and a
+// --resume run archives them again when they are gone.
+const cleanTrees = () => {
+  if (args.includes('--keep-trees')) return;
+  for (let j = 0; j < JOBS; j++) { try { rmSync(treeOf(j), { recursive: true, force: true }); } catch { /* gone */ } }
+};
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.once(sig, () => { cleanTrees(); process.exit(130); });
 const sha = (buf) => createHash('sha256').update(buf).digest('hex');
 
 const prior = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : { mutants: [] };
@@ -237,4 +245,6 @@ await Promise.all(Array.from({ length: Math.min(JOBS, queue.length) }, async (_,
     write();
   }
 }));
-console.log('mutation-sample: results in ' + OUT);
+cleanTrees();
+console.log('mutation-sample: results in ' + OUT + (args.includes('--keep-trees') ? ' (scratch trees kept)'
+  : ` (its ${JOBS} scratch tree(s) removed; --keep-trees keeps them)`));
