@@ -88,5 +88,4 @@ export async function run() {
   ok(readFileSync(new URL('../../src/pure/limb.js', import.meta.url), 'utf8')
     .includes('THE LIMB NEVER MOVES'),
     'the pure plan retains its static-anatomy contract');
-  ok(srcDir.endsWith('/src'), 'contract resolves the shared source root');
 }

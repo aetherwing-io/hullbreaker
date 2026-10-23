@@ -22,7 +22,6 @@ export async function run(SHARED) {
 
 /* ============== CHARGE / THREAT prototype (proposal A.4) ============= */
 {
-  ok(SCORE === CONFIG.score, 'the score module reads its tune from CONFIG');
   let monotone = true;
   for (let i = 1; i < SCORE.notches.length; i++)
     if (SCORE.notches[i] <= SCORE.notches[i - 1]) monotone = false;

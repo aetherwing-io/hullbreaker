@@ -54,6 +54,7 @@
 // are still deleted line by line; test-census.mjs reports a verdict its own
 // sites contradict.
 
+// rekey-ranges: ranges keyed to the lock written 2026-10-23T02:30:11.450Z
 export const DOMAINS = {
   'pathcheck-suite': {
     scope: 'shipped',
@@ -208,10 +209,10 @@ export const DOMAINS = {
     default: 'PURE-INVARIANT',
     note: 'CP1 pace A/B for the traversal slice. Dare-pocket wager checks are retired; the tunneling budgets are the part worth keeping.',
     ranges: [
-      [110, 123, 'RETIRED', 'dare retreat margin / pocket as a tighter wager per pace (dare wager, entries 9/10/21)'],
-      [197, 199, 'RETIRED', 'pocket dead end vs overhang roof (dare wager, entries 9/10/21)'],
-      [260, 260, 'PIN', 'every pace keeps apex/dwell/launch inside hand-picked ranges'],
-      [285, 288, 'CORE', 'no pace (chain included) crosses a tile in one clamped frame (anti-tunneling) — reads the dt clamp from main.js source'],
+      [110, 110, 'PURE-INVARIANT', 'T-120 review: KEPT — the retreat clears its exit margin at the daylight each pace grants: "daylight against the pursuing edge holds" is the half entry 9 keeps (its wager-cost twin, :123 "a tighter wager than base", was deleted)'],
+      [186, 186, 'PURE-INVARIANT', 'T-120 review: KEPT — "no held-jump trap" (adversarial F11) is a softlock guard, on entry 21\'s never-weaken list (its twin "the dead end still seals the pocket" certified the wager\'s cul-de-sac and was deleted)'],
+      [247, 247, 'PIN', 'every pace keeps apex/dwell/launch inside hand-picked ranges'],
+      [272, 275, 'CORE', 'no pace (chain included) crosses a tile in one clamped frame (anti-tunneling) — reads the dt clamp from main.js source'],
     ],
   },
 
@@ -238,7 +239,7 @@ export const DOMAINS = {
     ranges: [
       [49, 72, 'PURE-INVARIANT', 'overlay never touches the shipped fixture'],
       [126, 126, 'CORE', 'the rib run inherits the frozen tune untouched'],
-      [251, 251, 'RETIRED', 'a single line has no dare pocket (dare wager, entries 9/10/21)'],
+      [251, 251, 'PURE-INVARIANT', 'T-120 review: KEPT — conjoins "no dare pocket" with a fixture-composition invariant (the rib run fields no lattice-authored hostiles) that is not retired'],
     ],
   },
 
@@ -269,7 +270,7 @@ export const DOMAINS = {
     verdict: 'DEEP',
     default: 'PURE-INVARIANT',
     note: 'Pursuit-speed step math for the slice paces.',
-    ranges: [[69, 69, 'RETIRED', 'entering the dare pocket drops the edge to pocketSpeed (dare wager, entries 9/10/21)']],
+    ranges: [[69, 69, 'PURE-INVARIANT', 'T-120 review: KEPT — the pursuing edge drops to pocketSpeed on entry, which is what keeps the pocket survivable: "daylight against the pursuing edge holds" (entry 9 keeps it)']],
   },
 
   'hull-fallback-tier-1': {
@@ -288,12 +289,11 @@ export const DOMAINS = {
     default: 'PURE-INVARIANT',
     note: 'CHARGE/THREAT meter arithmetic. Several lines pin the proposal\'s exact table shape.',
     ranges: [
-      [25, 25, 'TAUTOLOGY', 'SCORE === CONFIG.score — an alias of itself'],
-      [29, 29, 'PIN', 'exactly two notches'],
-      [61, 61, 'PIN', 'stall threshold equals the A.5 number exactly'],
-      [89, 89, 'CORE', 'same event script, same notch timeline (determinism)'],
-      [104, 104, 'PIN', 'notch glyphs never collide with hp pips — glyph table shape'],
-      [147, 147, 'PIN', 'reclaim/link/launch windows and ring buffer equal the proposal values'],
+      [28, 28, 'PIN', 'exactly two notches'],
+      [60, 60, 'PIN', 'stall threshold equals the A.5 number exactly'],
+      [88, 88, 'CORE', 'same event script, same notch timeline (determinism)'],
+      [103, 103, 'PIN', 'notch glyphs never collide with hp pips — glyph table shape'],
+      [146, 146, 'PIN', 'reclaim/link/launch windows and ring buffer equal the proposal values'],
     ],
   },
 
@@ -457,13 +457,12 @@ export const DOMAINS = {
       [48, 57, 'PURE-INVARIANT', 'CONFIG.juice schema: one block per effect, every burst spec valid (count/speed/ms/size > 0, finite gravity), pools sized for four simultaneous deaths — validity, not exact constants (DELETE-bucket spot check, review pass)'],
       [245, 245, 'CORE', 'bursts are seeded and never touch the sim rng stream (determinism)'],
       [272, 277, 'PIN', 'crush-warning signage removed / telemetry zero — regex'],
-      [283, 283, 'TAUTOLOGY', 'sim imports no render module — already enforced by _context.mjs guardLayer (exits before any domain), so this line can never be the one that fails'],
-      [286, 286, 'PIN', 'sim/time.js owns the hit-stop decision — regex'],
-      [288, 288, 'CORE', 'no render module can write the hit-stop clock (render must not write sim state)'],
-      [291, 336, 'PIN', 'frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)', ['core']],
-      [340, 342, 'CORE', 'juice modules carry no colour literals; roles resolve from PAL (palette hard rule)'],
-      [348, 357, 'PIN', 'import existence, wrapper order, ?juice=0 kill flag'],
-      [363, 379, 'PIN', 'pool allocation shape (free-stack pop) — regex', ['core']],
+      [284, 284, 'PIN', 'sim/time.js owns the hit-stop decision — regex'],
+      [286, 286, 'CORE', 'no render module can write the hit-stop clock (render must not write sim state)'],
+      [289, 326, 'PIN', 'frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)', ['core']],
+      [338, 340, 'CORE', 'juice modules carry no colour literals; roles resolve from PAL (palette hard rule)'],
+      [346, 355, 'PIN', 'import existence, wrapper order, ?juice=0 kill flag'],
+      [361, 377, 'PIN', 'pool allocation shape (free-stack pop) — regex', ['core']],
     ],
   },
 
@@ -623,11 +622,10 @@ export const DOMAINS = {
       [49, 119, 'PURE-INVARIANT', 'fault-streak policy: one bad frame never costs a run; storms restart bounded times then stop legibly'],
       [133, 133, 'PURE-INVARIANT', 'every failure kind has a title, explanation and way back'],
       [142, 142, 'PURE-INVARIANT', 'every player-facing failure line passes the plain-language rule'],
-      [146, 146, 'RETIRED', 'panel must name "R" and "button" — the keyboard-only device assumption entry 20 superseded; it pins the touch-device copy defect'],
-      [149, 158, 'PURE-INVARIANT', 'not-your-fault copy; the plain-language rule can fail'],
-      [174, 174, 'PURE-INVARIANT', 'the inline failsafe handler parses (new Function)'],
-      [263, 269, 'PIN', 'dt clamp spelled Math.min(N, t - last) / Math.max(0, Math.min(50, ...)) in main.js', ['core']],
-      [231, 256, 'PIN', 'frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex', ['core']],
+      [151, 160, 'PURE-INVARIANT', 'not-your-fault copy; the plain-language rule can fail'],
+      [176, 176, 'PURE-INVARIANT', 'the inline failsafe handler parses (new Function)'],
+      [265, 271, 'PIN', 'dt clamp spelled Math.min(N, t - last) / Math.max(0, Math.min(50, ...)) in main.js', ['core']],
+      [233, 258, 'PIN', 'frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex', ['core']],
     ],
   },
 
@@ -999,7 +997,6 @@ export const DOMAINS = {
       [35, 35, 'PURE-INVARIANT', 'the production renderer consumes the unchanged static plan'],
       [81, 81, 'PURE-INVARIANT', 'each facet carries connected near body, far mass and links (connected-hull invariant)'],
       [88, 88, 'CORE', 'the pure plan retains its static-anatomy contract'],
-      [91, 91, 'TAUTOLOGY', 'contract resolves the shared source root'],
     ],
   },
 
@@ -1009,7 +1006,8 @@ export const DOMAINS = {
     verdict: 'CORE-GATE',
     default: 'PURE-INVARIANT',
     note: 'The checker validates atlas alpha boxes, clips and sockets against PNG data.',
-    ranges: [[16, 16, 'TAUTOLOGY', 'greps "ACTOR MOTION: N/N contracts passed"']],
+    // T-120 batch B deleted the TAUTOLOGY at :16 (a \d+/\d+ grep any count satisfies)
+    ranges: [],
   },
 
   'crown-command-architecture': {

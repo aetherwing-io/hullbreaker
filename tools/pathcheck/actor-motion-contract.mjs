@@ -13,6 +13,4 @@ export async function run() {
   }
   ok(result.status === 0,
     'the declarative polyp, mortar, and Crown Warden motion contract executes');
-  ok(/ACTOR MOTION: \d+\/\d+ contracts passed/.test(result.stdout || ''),
-    'atlas geometry, clips, sockets, preload, and death continuity stay registered');
 }

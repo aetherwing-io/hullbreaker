@@ -109,21 +109,10 @@ export async function run(SHARED) {
   }
   ok(pocketFair,
      'dare retreat clears its exit margin at the daylight each pace actually grants');
-  // …and the wager is no longer free: a pace with a real clock must leave less
-  // slack than the shipped screen-width pocket did.
-  {
-    const slack = resolved.filter(function (F) { return F.pursuit.marginCapTiles > 0; })
-      .map(function (F) {
-        return traversalPocketEntryMargin(F) - (F.darePocket.reward.x - F.darePocket.bounds.x0) -
-          traversalPocketAdvanceTiles(F.pursuit, F.darePocket.timing.retreatSeconds);
-      });
-    const baseSlack = traversalPocketEntryMargin(resolved[0]) -
-      (resolved[0].darePocket.reward.x - resolved[0].darePocket.bounds.x0) -
-      traversalPocketAdvanceTiles(resolved[0].pursuit, resolved[0].darePocket.timing.retreatSeconds);
-    ok(slack.length >= 2 && slack.every(function (v) { return v < baseSlack; }),
-       'every seconds-bounded pace makes the pocket a tighter wager than base, got ' +
-       slack.map(function (v) { return v.toFixed(1); }).join(',') + ' vs ' + baseSlack.toFixed(1));
-  }
+  // (T-120: "every seconds-bounded pace makes the pocket a tighter wager than
+  // base" was deleted — its subject was the dare wager's COST, which entry 9
+  // removes rather than weakens. The daylight check above stays: entry 9 keeps
+  // "daylight against the pursuing edge holds".)
 
   /* ---- the crush clock is bounded in SECONDS, not in screen width -------- *
    * The shipped lead is a distance, so the same fixture gives 13.9 s of slack
@@ -196,10 +185,8 @@ export async function run(SHARED) {
     const lip = TRAVERSAL_FIXTURE.solidRects.find(function (r) { return r.id === 'dare-dead-end'; });
     ok(overhang && lip && lip.y1 <= overhang.y1 && lip.x0 >= overhang.x1 - 1,
        'the pocket dead end never rises above the overhang roof it meets (no held-jump trap)');
-    ok(lip.y1 > TRAVERSAL_FIXTURE.groundRuns.find(function (r) {
-      return r.x0 <= lip.x0 && r.x1 > lip.x0;
-    }).y + PL.height,
-       'the dead end still seals the pocket for a player standing inside it');
+    // (T-120: "the dead end still seals the pocket" was deleted — it certified
+    // the wager's cul-de-sac, entries 9/10; the no-trap check above stays.)
   }
 
   // authored rewards and hostiles per pace

@@ -143,9 +143,11 @@ export async function run(SHARED) {
            'T-032: player-facing line reads plainly — "' + line + '"' +
            (issues.length ? ' [' + issues.join(', ') + ']' : ''));
       }
-      ok(/\bR\b/.test(text.hint) && /button/i.test(text.hint),
-         'T-032: the panel names BOTH ways back in (a key and a button), got "' +
-         text.hint + '"');
+      // (T-120: "the panel names BOTH ways back in (a key and a button)" was
+      // deleted: it REQUIRED keyboard copy on every device — the defect the
+      // integrator saw on phones (entry 20 superseded the keyboard-only
+      // device; T-108 mutant M28: the touch-copy fix turned it red). Device-
+      // appropriate copy is checked in a real browser by tools/orch/play-gate.mjs.)
       ok(FAILSAFE_KINDS.every((k) => /not your fault|Wait a moment/i.test(text[k].b)),
          'T-032: every failure tells the player it is not their fault (or what to do ' +
          'instead) — the panel is a 9-year-old\'s only signal, and blame is not a signal');

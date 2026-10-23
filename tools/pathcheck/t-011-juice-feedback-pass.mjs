@@ -277,11 +277,9 @@ export async function run(SHARED) {
   ok(/crushWarnIntensity\(player\.x - player\.hw - sLeftEdge\(\), C\)/.test(audioCode),
      'T-011: pursuing-edge pressure remains on the existing audio curve after its signage is removed');
 
-  // the sim never imports the render layer (guardLayer already enforces the
-  // general rule; this names the juice case so a future shortcut is loud)
-  for (const f of layerFiles('sim'))
-    ok(!/from\s*['"]\.\.\/render\//.test(stripComments(readFileSync(f, 'utf8'))),
-       'T-011: sim layer imports no render module: ' + f);
+  // (T-120: the per-file "sim layer imports no render module" loop was deleted:
+  // _context.mjs's guardLayer exits on that before any domain runs, so this
+  // could never be the assertion that failed — T-108 mutant M32.)
   // hit-stop is decided sim-side and only ANNOUNCED to the renderer
   ok(/stepHitStop/.test(timeCode) && /view\.juice\.hitStop\(/.test(timeCode),
      'T-011: src/sim/time.js owns the hit-stop decision and notifies the view');

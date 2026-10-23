@@ -1,33 +1,33 @@
 {
  "tool": "tools/orch/test-census.mjs",
  "task": "T-108",
- "when": "2026-10-23T02:30:13.847Z",
- "tree": "e8aa5d6",
+ "when": "2026-10-23T02:42:07.525Z",
+ "tree": "84b31fb",
  "rubric": "tools/orch/test-audit-spec.mjs (header); docs/proposals/2026-10-test-audit.md § Classes",
  "pathcheck": {
   "domains": 81,
-  "callSites": 2073,
-  "evaluations": 3930,
+  "callSites": 2066,
+  "evaluations": 3800,
   "byClass": {
    "CORE": {
     "sites": 273,
-    "evals": 760
+    "evals": 756
    },
    "PURE-INVARIANT": {
-    "sites": 1192,
-    "evals": 2373
+    "sites": 1196,
+    "evals": 2349
    },
    "PIN": {
     "sites": 534,
-    "evals": 693
+    "evals": 623
    },
    "RETIRED": {
-    "sites": 62,
-    "evals": 58
+    "sites": 55,
+    "evals": 51
    },
    "TAUTOLOGY": {
-    "sites": 8,
-    "evals": 42
+    "sites": 4,
+    "evals": 17
    },
    "SLOW-ENV": {
     "sites": 4,
@@ -35,46 +35,46 @@
    }
   },
   "coreShippedSites": 221,
-  "coreShippedEvals": 652,
+  "coreShippedEvals": 650,
   "resolution": {
    "site": 183,
-   "range": 1057,
+   "range": 1050,
    "autoSrcText": 0,
    "domainDefault": 833,
-   "srcTextButNotPin": 82,
+   "srcTextButNotPin": 81,
    "pinButNotSrcText": 226
   },
   "dispositions": {
    "CORE-GATE:invariant-tier": 804,
-   "DELETE": 379,
+   "DELETE": 368,
    "DELETE-WITH-FEATURE": 50,
    "CORE-GATE": 219,
    "REWRITE-AS-BEHAVIOUR": 175,
    "SPLIT-ASSERTION": 7,
-   "DEEP": 435,
+   "DEEP": 439,
    "PLAY-GATE": 4
   },
   "dispositionEvals": {
-   "CORE-GATE:invariant-tier": 1887,
-   "DELETE": 563,
+   "CORE-GATE:invariant-tier": 1870,
+   "DELETE": 502,
    "DELETE-WITH-FEATURE": 50,
-   "CORE-GATE": 651,
-   "REWRITE-AS-BEHAVIOUR": 180,
+   "CORE-GATE": 649,
+   "REWRITE-AS-BEHAVIOUR": 139,
    "SPLIT-ASSERTION": 6,
-   "DEEP": 589,
+   "DEEP": 580,
    "PLAY-GATE": 4
   },
   "tiers": {
    "fast": 1025,
-   "deep": 440,
+   "deep": 444,
    "play": 4,
    "replaced": 175,
-   "gone": 429
+   "gone": 418
   },
   "identity": {
    "lock": "tools/orch/test-audit-lock.json",
-   "base": "e8aa5d6",
-   "sites": 2073,
+   "base": "84b31fb",
+   "sites": 2066,
    "moved": 0
   },
   "prelude": {
@@ -263,30 +263,30 @@
    "index": 4,
    "domain": "pacing-variants",
    "file": "tools/pathcheck/pacing-variants.mjs",
-   "lines": 315,
+   "lines": 302,
    "scope": "flag:slice=traversal&pace=",
    "mechanism": "pure calls over the pace table",
    "verdict": "DEEP",
    "note": "CP1 pace A/B for the traversal slice. Dare-pocket wager checks are retired; the tunneling budgets are the part worth keeping.",
-   "sites": 25,
-   "evals": 25,
+   "sites": 23,
+   "evals": 9,
    "srcTextSites": 2,
    "byClass": {
     "CORE": {
      "sites": 2,
-     "evals": 2
+     "evals": 0
     },
     "PURE-INVARIANT": {
-     "sites": 18,
-     "evals": 18
+     "sites": 20,
+     "evals": 9
     },
     "PIN": {
      "sites": 1,
-     "evals": 1
+     "evals": 0
     },
     "RETIRED": {
-     "sites": 4,
-     "evals": 4
+     "sites": 0,
+     "evals": 0
     },
     "TAUTOLOGY": {
      "sites": 0,
@@ -365,16 +365,16 @@
      "evals": 0
     },
     "PURE-INVARIANT": {
-     "sites": 30,
-     "evals": 30
+     "sites": 31,
+     "evals": 31
     },
     "PIN": {
      "sites": 1,
      "evals": 1
     },
     "RETIRED": {
-     "sites": 1,
-     "evals": 1
+     "sites": 0,
+     "evals": 0
     },
     "TAUTOLOGY": {
      "sites": 0,
@@ -497,16 +497,16 @@
      "evals": 0
     },
     "PURE-INVARIANT": {
-     "sites": 4,
-     "evals": 4
+     "sites": 5,
+     "evals": 5
     },
     "PIN": {
      "sites": 0,
      "evals": 0
     },
     "RETIRED": {
-     "sites": 1,
-     "evals": 1
+     "sites": 0,
+     "evals": 0
     },
     "TAUTOLOGY": {
      "sites": 0,
@@ -571,34 +571,34 @@
    "index": 11,
    "domain": "charge-threat-prototype",
    "file": "tools/pathcheck/charge-threat-prototype.mjs",
-   "lines": 152,
+   "lines": 151,
    "scope": "shipped (score/overdrive is default) + slice tune",
    "mechanism": "pure calls over SCORE tables",
    "verdict": "SPLIT",
    "note": "CHARGE/THREAT meter arithmetic. Several lines pin the proposal's exact table shape.",
-   "sites": 22,
-   "evals": 22,
+   "sites": 21,
+   "evals": 1,
    "srcTextSites": 0,
    "byClass": {
     "CORE": {
      "sites": 1,
-     "evals": 1
+     "evals": 0
     },
     "PURE-INVARIANT": {
      "sites": 16,
-     "evals": 16
+     "evals": 1
     },
     "PIN": {
      "sites": 4,
-     "evals": 4
+     "evals": 0
     },
     "RETIRED": {
      "sites": 0,
      "evals": 0
     },
     "TAUTOLOGY": {
-     "sites": 1,
-     "evals": 1
+     "sites": 0,
+     "evals": 0
     },
     "SLOW-ENV": {
      "sites": 0,
@@ -1187,18 +1187,18 @@
    "index": 25,
    "domain": "t-011-juice-feedback-pass",
    "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
-   "lines": 384,
+   "lines": 382,
    "scope": "shipped",
    "mechanism": "pure juice math + regex over render/sim/main source",
    "verdict": "SPLIT",
    "note": "Hit-stop / shake / crush-warning math is solid pure-invariant work (a freeze can only slow a frame; stacked freezes are capped). The back half pins frame-loop wiring by regex.",
-   "sites": 71,
-   "evals": 115,
-   "srcTextSites": 25,
+   "sites": 70,
+   "evals": 57,
+   "srcTextSites": 24,
    "byClass": {
     "CORE": {
      "sites": 4,
-     "evals": 4
+     "evals": 3
     },
     "PURE-INVARIANT": {
      "sites": 46,
@@ -1206,15 +1206,15 @@
     },
     "PIN": {
      "sites": 20,
-     "evals": 40
+     "evals": 5
     },
     "RETIRED": {
      "sites": 0,
      "evals": 0
     },
     "TAUTOLOGY": {
-     "sites": 1,
-     "evals": 22
+     "sites": 0,
+     "evals": 0
     },
     "SLOW-ENV": {
      "sites": 0,
@@ -1759,13 +1759,13 @@
    "index": 38,
    "domain": "pathcheck-suite-2",
    "file": "tools/pathcheck/pathcheck-suite-2.mjs",
-   "lines": 300,
+   "lines": 302,
    "scope": "shipped",
    "mechanism": "pure fault policy + regex over index.html / main.js / ui/failsafe.js",
    "verdict": "SPLIT",
    "note": "T-032 durability. The pure fault policy is good. The rest spells the frame loop and the inline bootstrap by regex — and line 146 REQUIRES the keyboard-only recovery copy (\"Press R, or click the button\") that is wrong on a phone.",
-   "sites": 47,
-   "evals": 71,
+   "sites": 46,
+   "evals": 38,
    "srcTextSites": 29,
    "byClass": {
     "CORE": {
@@ -1774,15 +1774,15 @@
     },
     "PURE-INVARIANT": {
      "sites": 16,
-     "evals": 33
+     "evals": 31
     },
     "PIN": {
      "sites": 30,
-     "evals": 37
+     "evals": 7
     },
     "RETIRED": {
-     "sites": 1,
-     "evals": 1
+     "sites": 0,
+     "evals": 0
     },
     "TAUTOLOGY": {
      "sites": 0,
@@ -2947,13 +2947,13 @@
    "index": 65,
    "domain": "limb-silhouette-production",
    "file": "tools/pathcheck/limb-silhouette-production.mjs",
-   "lines": 93,
+   "lines": 92,
    "scope": "shipped",
    "mechanism": "regex over render/limb.js + pure plan",
    "verdict": "SPLIT",
    "note": "16 of 19 call sites are regex over the renderer's source.",
-   "sites": 19,
-   "evals": 25,
+   "sites": 18,
+   "evals": 24,
    "srcTextSites": 16,
    "byClass": {
     "CORE": {
@@ -2973,8 +2973,8 @@
      "evals": 0
     },
     "TAUTOLOGY": {
-     "sites": 1,
-     "evals": 1
+     "sites": 0,
+     "evals": 0
     },
     "SLOW-ENV": {
      "sites": 0,
@@ -2991,13 +2991,13 @@
    "index": 66,
    "domain": "actor-motion-contract",
    "file": "tools/pathcheck/actor-motion-contract.mjs",
-   "lines": 19,
+   "lines": 17,
    "scope": "shipped",
    "mechanism": "spawns tools/actor-motion-check.mjs and greps its count",
    "verdict": "CORE-GATE",
    "note": "The checker validates atlas alpha boxes, clips and sockets against PNG data.",
-   "sites": 2,
-   "evals": 2,
+   "sites": 1,
+   "evals": 1,
    "srcTextSites": 0,
    "byClass": {
     "CORE": {
@@ -3017,8 +3017,8 @@
      "evals": 0
     },
     "TAUTOLOGY": {
-     "sites": 1,
-     "evals": 1
+     "sites": 0,
+     "evals": 0
     },
     "SLOW-ENV": {
      "sites": 0,
@@ -5369,7 +5369,7 @@
      "unmatchedFailLines": 0,
      "killers": [
       {
-       "site": "tools/pathcheck/pathcheck-suite-2.mjs:195",
+       "site": "tools/pathcheck/pathcheck-suite-2.mjs:197",
        "label": "T-032: a boot that never finishes is told to the player, not left as a void",
        "disposition": "REWRITE-AS-BEHAVIOUR",
        "tier": "replaced"
@@ -5383,7 +5383,7 @@
      "unmatchedFailLines": 0,
      "killers": [
       {
-       "site": "tools/pathcheck/pathcheck-suite-2.mjs:191",
+       "site": "tools/pathcheck/pathcheck-suite-2.mjs:193",
        "label": "T-032: it listens in the CAPTURE phase for errors (a module that never … loaded fires at i",
        "disposition": "REWRITE-AS-BEHAVIOUR",
        "tier": "replaced"
@@ -6316,7 +6316,7 @@
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "the same event script always produces the same notch timeline",
-    "line": 89,
+    "line": 88,
     "cls": "CORE",
     "note": "same event script, same notch timeline (determinism)"
    },
@@ -6722,21 +6722,21 @@
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: no render module can write the hit-stop clock",
-    "line": 288,
+    "line": 286,
     "cls": "CORE",
     "note": "no render module can write the hit-stop clock (render must not write sim state)"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: the juice modules carry no color literals — roles only",
-    "line": 340,
+    "line": 338,
     "cls": "CORE",
     "note": "juice modules carry no colour literals; roles resolve from PAL (palette hard rule)"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: …and every fx role resolves from the render palette module (PAL), … not CONFIG.palette — whic",
-    "line": 342,
+    "line": 340,
     "cls": "CORE",
     "note": "juice modules carry no colour literals; roles resolve from PAL (palette hard rule)"
    },
@@ -8670,112 +8670,112 @@
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "notch thresholds are inclusive, ordered, and clamped",
-    "line": 34,
+    "line": 33,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "THREAT multiplier rises with the notch and clamps",
-    "line": 38,
+    "line": 37,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "WARM shortens the fire interval; nothing else is gated by notch 1",
-    "line": 41,
+    "line": 40,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "CHARGE and THREAT tables cover the same event set",
-    "line": 44,
+    "line": 43,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "A.1 event set is priced, and movement kills dominate ground kills",
-    "line": 46,
+    "line": 45,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "drain: zero in the air/traversal/launch window, worst while standing still",
-    "line": 52,
+    "line": 51,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "drain never crosses the phase floor and charge never exceeds its max",
-    "line": 63,
+    "line": 62,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "gains clamp at max and unknown events are inert",
-    "line": 68,
+    "line": 67,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "the scripted 6-second horizon actually reaches BREAKING, got",
-    "line": 90,
+    "line": 89,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "classification ladder is a monotone step function of THREAT",
-    "line": 100,
+    "line": 99,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "THREAT scales with the notch and stalling never subtracts from it",
-    "line": 108,
+    "line": 107,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "connector visits resolve by nearest inside the radius",
-    "line": 116,
+    "line": 115,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "A.5 route coverage: three connectors, in order, or it does not count",
-    "line": 120,
+    "line": 119,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "BREAKING launch shock kills a wasp on contact without deleting a carrier",
-    "line": 128,
+    "line": 127,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "the pop grace is real but small against the recatch window",
-    "line": 141,
+    "line": 140,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "by the end of the grace the popped capsule has left the player: rise … vs height … , drift",
-    "line": 143,
+    "line": 142,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
@@ -10560,35 +10560,35 @@
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: every failure tells the player it is not their fault (or what to do … instead) — the panel is",
-    "line": 149,
+    "line": 151,
     "cls": "PURE-INVARIANT",
     "note": "not-your-fault copy; the plain-language rule can fail"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the plain-language rule rejects engineer-speak",
-    "line": 154,
-    "cls": "PURE-INVARIANT",
-    "note": "not-your-fault copy; the plain-language rule can fail"
-   },
-   {
-    "file": "tools/pathcheck/pathcheck-suite-2.mjs",
-    "label": "T-032: …and accepts the words a child can read",
     "line": 156,
     "cls": "PURE-INVARIANT",
     "note": "not-your-fault copy; the plain-language rule can fail"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
-    "label": "T-032: the readability bounds stay child-sized",
+    "label": "T-032: …and accepts the words a child can read",
     "line": 158,
     "cls": "PURE-INVARIANT",
     "note": "not-your-fault copy; the plain-language rule can fail"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
+    "label": "T-032: the readability bounds stay child-sized",
+    "line": 160,
+    "cls": "PURE-INVARIANT",
+    "note": "not-your-fault copy; the plain-language rule can fail"
+   },
+   {
+    "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the inline handler itself parses (nothing else can report it) … … —",
-    "line": 174,
+    "line": 176,
     "cls": "PURE-INVARIANT",
     "note": "the inline failsafe handler parses (new Function)"
    },
@@ -14833,92 +14833,106 @@
    },
    {
     "file": "tools/pathcheck/pacing-variants.mjs",
+    "label": "dare retreat clears its exit margin at the daylight each pace actually grants",
+    "line": 110,
+    "cls": "PURE-INVARIANT",
+    "note": "T-120 review: KEPT — the retreat clears its exit margin at the daylight each pace grants: \"daylight against the pursuing edge holds\" is the half entry 9 keeps (its wager-cost twin, :123 \"a tighter wager than base\", was deleted)"
+   },
+   {
+    "file": "tools/pathcheck/pacing-variants.mjs",
     "label": "seconds-bounded paces produce one aspect-invariant clock: …",
-    "line": 159,
+    "line": 148,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/pacing-variants.mjs",
     "label": "every declared crush clock still binds inside the narrowest supported … frustum, caps … ,",
-    "line": 169,
+    "line": 158,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/pacing-variants.mjs",
     "label": "a seconds-bounded pace also makes the plane lethal, so idling is not a free ride",
-    "line": 172,
+    "line": 161,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/pacing-variants.mjs",
     "label": "every variant places a hostile above the y= … roof so the fastest line costs something",
-    "line": 189,
+    "line": 178,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/pacing-variants.mjs",
+    "label": "the pocket dead end never rises above the overhang roof it meets (no held-jump trap)",
+    "line": 186,
+    "cls": "PURE-INVARIANT",
+    "note": "T-120 review: KEPT — \"no held-jump trap\" (adversarial F11) is a softlock guard, on entry 21's never-weaken list (its twin \"the dead end still seals the pocket\" certified the wager's cul-de-sac and was deleted)"
+   },
+   {
+    "file": "tools/pathcheck/pacing-variants.mjs",
     "label": "every pace spawns unique, in-bounds, non-embedded hostiles and fixed rewards",
-    "line": 228,
+    "line": 215,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/pacing-variants.mjs",
     "label": "the variants differ in kind: no two share a threat layout",
-    "line": 235,
+    "line": 222,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/pacing-variants.mjs",
     "label": "density spread across paces is real, got … ,",
-    "line": 238,
+    "line": 225,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/pacing-variants.mjs",
     "label": "no pace (chain included) crosses a tile in one clamped frame, worst … tiles in pace",
-    "line": 285,
+    "line": 272,
     "cls": "CORE",
     "note": "no pace (chain included) crosses a tile in one clamped frame (anti-tunneling) — reads the dt clamp from main.js source"
    },
    {
     "file": "tools/pathcheck/pacing-variants.mjs",
     "label": "no pace raises a vertical launch into the endpoint-only ceiling check, worst … tiles",
-    "line": 288,
+    "line": 275,
     "cls": "CORE",
     "note": "no pace (chain included) crosses a tile in one clamped frame (anti-tunneling) — reads the dt clamp from main.js source"
    },
    {
     "file": "tools/pathcheck/pacing-variants.mjs",
     "label": "no chain config means no launch amplification anywhere else in the game",
-    "line": 292,
+    "line": 279,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/pacing-variants.mjs",
     "label": "chain multiplier starts at 1 and clamps at its declared max",
-    "line": 296,
+    "line": 283,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/pacing-variants.mjs",
     "label": "ledgeAutoLaunch converts dwell expiry into a launch",
-    "line": 307,
+    "line": 294,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/pacing-variants.mjs",
     "label": "auto-launch still lets down release and an early jump launch first",
-    "line": 309,
+    "line": 296,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
    },
@@ -15218,6 +15232,13 @@
    },
    {
     "file": "tools/pathcheck/authored-slope-rib-run.mjs",
+    "label": "a single line has no dare pocket and fields no lattice-authored hostiles",
+    "line": 251,
+    "cls": "PURE-INVARIANT",
+    "note": "T-120 review: KEPT — conjoins \"no dare pocket\" with a fixture-composition invariant (the rib run fields no lattice-authored hostiles) that is not retired"
+   },
+   {
+    "file": "tools/pathcheck/authored-slope-rib-run.mjs",
     "label": "the stake rides the line: … tiles over the deck at x= … , grabbed on the way through",
     "line": 256,
     "cls": "PURE-INVARIANT",
@@ -15348,6 +15369,13 @@
     "line": 56,
     "cls": "PURE-INVARIANT",
     "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/pursuit-model.mjs",
+    "label": "entering the dare pocket drops the edge to pocketSpeed on the same frame",
+    "line": 69,
+    "cls": "PURE-INVARIANT",
+    "note": "T-120 review: KEPT — the pursuing edge drops to pocketSpeed on entry, which is what keeps the pocket survivable: \"daylight against the pursuing edge holds\" (entry 9 keeps it)"
    },
    {
     "file": "tools/pathcheck/score-wiring-sim-layer.mjs",
@@ -16434,84 +16462,84 @@
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: the bridge declares the juice hook as an inert no-op by default",
-    "line": 291,
+    "line": 289,
     "cls": "PIN",
     "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: the loop samples hit-stop once, before any entity update",
-    "line": 298,
+    "line": 296,
     "cls": "PIN",
     "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: hit-stop COMPOSES with CHRONO (wScale = chrono × hit-stop) instead … of replacing it",
-    "line": 300,
+    "line": 298,
     "cls": "PIN",
     "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: the pursuing scroll and the world still take the CHRONO-scaled dt … (now × hit-stop) — CHRONO",
-    "line": 303,
+    "line": 301,
     "cls": "PIN",
     "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: RIG and their projectiles take the hit-stop factor ALONE — the … freeze is global, and CHRONO",
-    "line": 308,
+    "line": 306,
     "cls": "PIN",
     "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: the effect pools step after RIG and BEFORE the death early-return, … so a death frame still d",
-    "line": 314,
+    "line": 312,
     "cls": "PIN",
     "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: the CHARGE meter still steps on real dt (proposal A.3), unscaled by … a freeze",
-    "line": 319,
+    "line": 317,
     "cls": "PIN",
     "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: shake is applied after the camera pose, never before it",
-    "line": 324,
+    "line": 322,
     "cls": "PIN",
     "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: edge calibration (the one sanctioned render→sim write) is computed … from the UNSHAKEN probe ",
-    "line": 328,
+    "line": 326,
     "cls": "PIN",
     "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: bursts claim from a preallocated pool — the hot loop allocates … nothing",
-    "line": 363,
+    "line": 361,
     "cls": "PIN",
     "note": "pool allocation shape (free-stack pop) — regex"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: claiming a pool row is O(1) — a free-stack pop or one … round-robin step, never a scan of the",
-    "line": 374,
+    "line": 372,
     "cls": "PIN",
     "note": "pool allocation shape (free-stack pop) — regex"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: …and a row rejoins the free stack exactly where it dies",
-    "line": 379,
+    "line": 377,
     "cls": "PIN",
     "note": "pool allocation shape (free-stack pop) — regex"
    },
@@ -16609,196 +16637,196 @@
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the failure handler is an INLINE classic script — the incident it … exists for is a module gr",
-    "line": 165,
+    "line": 167,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: …and it imports nothing, so nothing it depends on can fail with the game",
-    "line": 170,
+    "line": 172,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: …and it is installed BEFORE the game module, so a failure to load … that module is already co",
-    "line": 176,
+    "line": 178,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the inline watchdog numbers are the policy's ( … / … missing … vs … / … / … ) — a copy that i",
-    "line": 180,
+    "line": 182,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the keys that put a player back in the game match the policy, got … ,",
-    "line": 188,
+    "line": 190,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: it listens in the CAPTURE phase for errors (a module that never … loaded fires at its element",
-    "line": 191,
+    "line": 193,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: a boot that never finishes is told to the player, not left as a void",
-    "line": 195,
-    "cls": "PIN",
-    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
-   },
-   {
-    "file": "tools/pathcheck/pathcheck-suite-2.mjs",
-    "label": "T-032: the freeze watchdog knows a backgrounded or suspended page from a … stuck one — a hidden tab ",
     "line": 197,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
+    "label": "T-032: the freeze watchdog knows a backgrounded or suspended page from a … stuck one — a hidden tab ",
+    "line": 199,
+    "cls": "PIN",
+    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
+   },
+   {
+    "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the panel markup carries # … , which the bootstrap writes into",
-    "line": 202,
+    "line": 204,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the failure panel sits above the shell and the state overlay ( … #fail … > … #shell … > … #ov",
-    "line": 214,
+    "line": 216,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: every .fail-plain line lives inside the panel ( … of … )",
-    "line": 223,
+    "line": 225,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the frame loop is where the game either recovers or fails",
-    "line": 231,
+    "line": 233,
     "cls": "PIN",
     "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the halt check is the FIRST thing the loop does — once the panel is … up the simulation stops",
-    "line": 234,
+    "line": 236,
     "cls": "PIN",
     "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the next frame is requested before any work, so a throw cannot end … the loop by accident",
-    "line": 239,
+    "line": 241,
     "cls": "PIN",
     "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the loop beats every frame — that counter is what the freeze … watchdog reads",
-    "line": 242,
+    "line": 244,
     "cls": "PIN",
     "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: a simulation fault is caught and handed to the policy",
-    "line": 245,
+    "line": 247,
     "cls": "PIN",
     "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the draw is caught SEPARATELY, so a broken step still paints the … frame it broke on",
-    "line": 256,
+    "line": 258,
     "cls": "PIN",
     "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the frame loop clamps dt at the policy's … ms (got … no clamp … ) — Chrome suspends rAF in a ",
-    "line": 263,
+    "line": 265,
     "cls": "PIN",
     "note": "dt clamp spelled Math.min(N, t - last) / Math.max(0, Math.min(50, ...)) in main.js"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: a stale first rAF timestamp clamps to zero instead of running gameMs backward",
-    "line": 267,
-    "cls": "PIN",
-    "note": "dt clamp spelled Math.min(N, t - last) / Math.max(0, Math.min(50, ...)) in main.js"
-   },
-   {
-    "file": "tools/pathcheck/pathcheck-suite-2.mjs",
-    "label": "T-032: …and one clamped frame still cannot cross a whole tile, so returning … from a backgrounded ta",
     "line": 269,
     "cls": "PIN",
     "note": "dt clamp spelled Math.min(N, t - last) / Math.max(0, Math.min(50, ...)) in main.js"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
-    "label": "T-032: the one repair the game can make on its own is a full resetGame",
-    "line": 272,
+    "label": "T-032: …and one clamped frame still cannot cross a whole tile, so returning … from a backgrounded ta",
+    "line": 271,
     "cls": "PIN",
-    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
+    "note": "dt clamp spelled Math.min(N, t - last) / Math.max(0, Math.min(50, ...)) in main.js"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
-    "label": "T-032: a lost drawing surface — nothing thrown, loop still beating — fails … legibly instead of leav",
+    "label": "T-032: the one repair the game can make on its own is a full resetGame",
     "line": 274,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
-    "label": "T-032: window.HB publishes the failsafe state a headless abuse run reads",
-    "line": 278,
+    "label": "T-032: a lost drawing surface — nothing thrown, loop still beating — fails … legibly instead of leav",
+    "line": 276,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
-    "label": "T-032: boot is signalled by the LAST statement in main.js — until it runs, … any failure is \"the gam",
+    "label": "T-032: window.HB publishes the failsafe state a headless abuse run reads",
     "line": 280,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
+    "label": "T-032: boot is signalled by the LAST statement in main.js — until it runs, … any failure is \"the gam",
+    "line": 282,
+    "cls": "PIN",
+    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
+   },
+   {
+    "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: ?selftest=1 paints the real panel and gates the words that RENDERED",
-    "line": 283,
+    "line": 285,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the view layer takes its decisions from the pure policy",
-    "line": 289,
-    "cls": "PIN",
-    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
-   },
-   {
-    "file": "tools/pathcheck/pathcheck-suite-2.mjs",
-    "label": "T-032: uncaught errors AND broken frames run through the same fault streak — … one policy, so a stor",
     "line": 291,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
    {
     "file": "tools/pathcheck/pathcheck-suite-2.mjs",
+    "label": "T-032: uncaught errors AND broken frames run through the same fault streak — … one policy, so a stor",
+    "line": 293,
+    "cls": "PIN",
+    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
+   },
+   {
+    "file": "tools/pathcheck/pathcheck-suite-2.mjs",
     "label": "T-032: the halt flag and the browser self-check are exported for main.js",
-    "line": 294,
+    "line": 296,
     "cls": "PIN",
     "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete"
    },
@@ -18297,36 +18325,8 @@
    },
    {
     "file": "tools/pathcheck/pacing-variants.mjs",
-    "label": "dare retreat clears its exit margin at the daylight each pace actually grants",
-    "line": 110,
-    "cls": "RETIRED",
-    "note": "dare retreat margin / pocket as a tighter wager per pace (dare wager, entries 9/10/21)"
-   },
-   {
-    "file": "tools/pathcheck/pacing-variants.mjs",
-    "label": "every seconds-bounded pace makes the pocket a tighter wager than base, got … , … vs",
-    "line": 123,
-    "cls": "RETIRED",
-    "note": "dare retreat margin / pocket as a tighter wager per pace (dare wager, entries 9/10/21)"
-   },
-   {
-    "file": "tools/pathcheck/pacing-variants.mjs",
-    "label": "the pocket dead end never rises above the overhang roof it meets (no held-jump trap)",
-    "line": 197,
-    "cls": "RETIRED",
-    "note": "pocket dead end vs overhang roof (dare wager, entries 9/10/21)"
-   },
-   {
-    "file": "tools/pathcheck/pacing-variants.mjs",
-    "label": "the dead end still seals the pocket for a player standing inside it",
-    "line": 199,
-    "cls": "RETIRED",
-    "note": "pocket dead end vs overhang roof (dare wager, entries 9/10/21)"
-   },
-   {
-    "file": "tools/pathcheck/pacing-variants.mjs",
     "label": "every pace keeps jump apex, dwell budgets, launch authority and chain gain in range",
-    "line": 260,
+    "line": 247,
     "cls": "PIN",
     "note": "every pace keeps apex/dwell/launch inside hand-picked ranges"
    },
@@ -18338,51 +18338,30 @@
     "note": "the fixture fields exactly the flanges it was built from — data checked against itself (author's own spot check + review finding 14)"
    },
    {
-    "file": "tools/pathcheck/authored-slope-rib-run.mjs",
-    "label": "a single line has no dare pocket and fields no lattice-authored hostiles",
-    "line": 251,
-    "cls": "RETIRED",
-    "note": "a single line has no dare pocket (dare wager, entries 9/10/21)"
-   },
-   {
-    "file": "tools/pathcheck/pursuit-model.mjs",
-    "label": "entering the dare pocket drops the edge to pocketSpeed on the same frame",
-    "line": 69,
-    "cls": "RETIRED",
-    "note": "entering the dare pocket drops the edge to pocketSpeed (dare wager, entries 9/10/21)"
-   },
-   {
-    "file": "tools/pathcheck/charge-threat-prototype.mjs",
-    "label": "the score module reads its tune from CONFIG",
-    "line": 25,
-    "cls": "TAUTOLOGY",
-    "note": "SCORE === CONFIG.score — an alias of itself"
-   },
-   {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "A.4 prototype: two monotone notches, top notch at full charge, one mult/name each",
-    "line": 29,
+    "line": 28,
     "cls": "PIN",
     "note": "exactly two notches"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "stall threshold matches A.5 (and therefore the playtest harness) exactly",
-    "line": 61,
+    "line": 60,
     "cls": "PIN",
     "note": "stall threshold equals the A.5 number exactly"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "notch glyphs are one per notch and never collide with the hp pips",
-    "line": 104,
+    "line": 103,
     "cls": "PIN",
     "note": "notch glyphs never collide with hp pips — glyph table shape"
    },
    {
     "file": "tools/pathcheck/charge-threat-prototype.mjs",
     "label": "reclaim/link/launch windows and the A.5 ring buffer match the proposal",
-    "line": 147,
+    "line": 146,
     "cls": "PIN",
     "note": "reclaim/link/launch windows and ring buffer equal the proposal values"
    },
@@ -18640,43 +18619,36 @@
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
-    "label": "T-011: sim layer imports no render module:",
-    "line": 283,
-    "cls": "TAUTOLOGY",
-    "note": "sim imports no render module — already enforced by _context.mjs guardLayer (exits before any domain), so this line can never be the one that fails"
-   },
-   {
-    "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: src/sim/time.js owns the hit-stop decision and notifies the view",
-    "line": 286,
+    "line": 284,
     "cls": "PIN",
     "note": "sim/time.js owns the hit-stop decision — regex"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: … imports only modules that exist:",
-    "line": 348,
+    "line": 346,
     "cls": "PIN",
     "note": "import existence, wrapper order, ?juice=0 kill flag"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: juice hook wrappers call the prior implementation first",
-    "line": 352,
+    "line": 350,
     "cls": "PIN",
     "note": "import existence, wrapper order, ?juice=0 kill flag"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: ?juice=0 is the documented kill flag",
-    "line": 354,
+    "line": 352,
     "cls": "PIN",
     "note": "import existence, wrapper order, ?juice=0 kill flag"
    },
    {
     "file": "tools/pathcheck/t-011-juice-feedback-pass.mjs",
     "label": "T-011: ?juice=0 gates the wiring, the pools, and the sim scale (a disabled … boot is the pre-juice g",
-    "line": 357,
+    "line": 355,
     "cls": "PIN",
     "note": "import existence, wrapper order, ?juice=0 kill flag"
    },
@@ -19050,13 +19022,6 @@
     "line": 119,
     "cls": "PIN",
     "note": "(domain default)"
-   },
-   {
-    "file": "tools/pathcheck/pathcheck-suite-2.mjs",
-    "label": "T-032: the panel names BOTH ways back in (a key and a button), got \" … \"",
-    "line": 146,
-    "cls": "RETIRED",
-    "note": "panel must name \"R\" and \"button\" — the keyboard-only device assumption entry 20 superseded; it pins the touch-device copy defect"
    },
    {
     "file": "tools/pathcheck/t-041-impact-language.mjs",
@@ -20058,20 +20023,6 @@
     "line": 86,
     "cls": "PIN",
     "note": "regex / routing maps read out of the limb renderer source (hand pass: confirmed PIN)"
-   },
-   {
-    "file": "tools/pathcheck/limb-silhouette-production.mjs",
-    "label": "contract resolves the shared source root",
-    "line": 91,
-    "cls": "TAUTOLOGY",
-    "note": "contract resolves the shared source root"
-   },
-   {
-    "file": "tools/pathcheck/actor-motion-contract.mjs",
-    "label": "atlas geometry, clips, sockets, preload, and death continuity stay registered",
-    "line": 16,
-    "cls": "TAUTOLOGY",
-    "note": "greps \"ACTOR MOTION: N/N contracts passed\""
    },
    {
     "file": "tools/pathcheck/crown-command-architecture.mjs",
@@ -30358,40 +30309,22 @@
    "line": 110,
    "label": "dare retreat clears its exit margin at the daylight each pace actually grants",
    "fn": "ok",
-   "cls": "RETIRED",
+   "cls": "PURE-INVARIANT",
    "how": "range",
    "marks": [],
    "core": false,
    "srcText": false,
    "evals": 1,
    "message": "dare retreat clears its exit margin at the daylight each pace actually grants",
-   "note": "dare retreat margin / pocket as a tighter wager per pace (dare wager, entries 9/10/21)",
-   "disposition": "DELETE",
-   "tier": "gone"
+   "note": "T-120 review: KEPT — the retreat clears its exit margin at the daylight each pace grants: \"daylight against the pursuing edge holds\" is the half entry 9 keeps (its wager-cost twin, :123 \"a tighter wager than base\", was deleted)",
+   "disposition": "DEEP",
+   "tier": "deep"
   },
   {
    "domain": "pacing-variants",
    "scope": "flag:slice=traversal&pace=",
-   "site": "tools/pathcheck/pacing-variants.mjs:123",
-   "line": 123,
-   "label": "every seconds-bounded pace makes the pocket a tighter wager than base, got … , … vs",
-   "fn": "ok",
-   "cls": "RETIRED",
-   "how": "range",
-   "marks": [],
-   "core": false,
-   "srcText": false,
-   "evals": 1,
-   "message": "every seconds-bounded pace makes the pocket a tighter wager than base, got … , … vs",
-   "note": "dare retreat margin / pocket as a tighter wager per pace (dare wager, entries 9/10/21)",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
-   "domain": "pacing-variants",
-   "scope": "flag:slice=traversal&pace=",
-   "site": "tools/pathcheck/pacing-variants.mjs:159",
-   "line": 159,
+   "site": "tools/pathcheck/pacing-variants.mjs:148",
+   "line": 148,
    "label": "seconds-bounded paces produce one aspect-invariant clock: …",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -30399,7 +30332,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "seconds-bounded paces produce one aspect-invariant clock: …",
    "note": "(domain default)",
    "disposition": "DEEP",
@@ -30408,8 +30341,8 @@
   {
    "domain": "pacing-variants",
    "scope": "flag:slice=traversal&pace=",
-   "site": "tools/pathcheck/pacing-variants.mjs:169",
-   "line": 169,
+   "site": "tools/pathcheck/pacing-variants.mjs:158",
+   "line": 158,
    "label": "every declared crush clock still binds inside the narrowest supported … frustum, caps … ,",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -30417,7 +30350,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "every declared crush clock still binds inside the narrowest supported … frustum, caps … ,",
    "note": "(domain default)",
    "disposition": "DEEP",
@@ -30426,8 +30359,8 @@
   {
    "domain": "pacing-variants",
    "scope": "flag:slice=traversal&pace=",
-   "site": "tools/pathcheck/pacing-variants.mjs:172",
-   "line": 172,
+   "site": "tools/pathcheck/pacing-variants.mjs:161",
+   "line": 161,
    "label": "a seconds-bounded pace also makes the plane lethal, so idling is not a free ride",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -30435,7 +30368,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "a seconds-bounded pace also makes the plane lethal, so idling is not a free ride",
    "note": "(domain default)",
    "disposition": "DEEP",
@@ -30444,8 +30377,8 @@
   {
    "domain": "pacing-variants",
    "scope": "flag:slice=traversal&pace=",
-   "site": "tools/pathcheck/pacing-variants.mjs:189",
-   "line": 189,
+   "site": "tools/pathcheck/pacing-variants.mjs:178",
+   "line": 178,
    "label": "every variant places a hostile above the y= … roof so the fastest line costs something",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -30453,7 +30386,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "every variant places a hostile above the y= … roof so the fastest line costs something",
    "note": "(domain default)",
    "disposition": "DEEP",
@@ -30462,44 +30395,26 @@
   {
    "domain": "pacing-variants",
    "scope": "flag:slice=traversal&pace=",
-   "site": "tools/pathcheck/pacing-variants.mjs:197",
-   "line": 197,
+   "site": "tools/pathcheck/pacing-variants.mjs:186",
+   "line": 186,
    "label": "the pocket dead end never rises above the overhang roof it meets (no held-jump trap)",
    "fn": "ok",
-   "cls": "RETIRED",
+   "cls": "PURE-INVARIANT",
    "how": "range",
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "the pocket dead end never rises above the overhang roof it meets (no held-jump trap)",
-   "note": "pocket dead end vs overhang roof (dare wager, entries 9/10/21)",
-   "disposition": "DELETE",
-   "tier": "gone"
+   "note": "T-120 review: KEPT — \"no held-jump trap\" (adversarial F11) is a softlock guard, on entry 21's never-weaken list (its twin \"the dead end still seals the pocket\" certified the wager's cul-de-sac and was deleted)",
+   "disposition": "DEEP",
+   "tier": "deep"
   },
   {
    "domain": "pacing-variants",
    "scope": "flag:slice=traversal&pace=",
-   "site": "tools/pathcheck/pacing-variants.mjs:199",
-   "line": 199,
-   "label": "the dead end still seals the pocket for a player standing inside it",
-   "fn": "ok",
-   "cls": "RETIRED",
-   "how": "range",
-   "marks": [],
-   "core": false,
-   "srcText": false,
-   "evals": 1,
-   "message": "the dead end still seals the pocket for a player standing inside it",
-   "note": "pocket dead end vs overhang roof (dare wager, entries 9/10/21)",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
-   "domain": "pacing-variants",
-   "scope": "flag:slice=traversal&pace=",
-   "site": "tools/pathcheck/pacing-variants.mjs:228",
-   "line": 228,
+   "site": "tools/pathcheck/pacing-variants.mjs:215",
+   "line": 215,
    "label": "every pace spawns unique, in-bounds, non-embedded hostiles and fixed rewards",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -30507,7 +30422,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "every pace spawns unique, in-bounds, non-embedded hostiles and fixed rewards",
    "note": "(domain default)",
    "disposition": "DEEP",
@@ -30516,8 +30431,8 @@
   {
    "domain": "pacing-variants",
    "scope": "flag:slice=traversal&pace=",
-   "site": "tools/pathcheck/pacing-variants.mjs:235",
-   "line": 235,
+   "site": "tools/pathcheck/pacing-variants.mjs:222",
+   "line": 222,
    "label": "the variants differ in kind: no two share a threat layout",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -30525,7 +30440,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "the variants differ in kind: no two share a threat layout",
    "note": "(domain default)",
    "disposition": "DEEP",
@@ -30534,8 +30449,8 @@
   {
    "domain": "pacing-variants",
    "scope": "flag:slice=traversal&pace=",
-   "site": "tools/pathcheck/pacing-variants.mjs:238",
-   "line": 238,
+   "site": "tools/pathcheck/pacing-variants.mjs:225",
+   "line": 225,
    "label": "density spread across paces is real, got … ,",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -30543,7 +30458,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "density spread across paces is real, got … ,",
    "note": "(domain default)",
    "disposition": "DEEP",
@@ -30552,8 +30467,8 @@
   {
    "domain": "pacing-variants",
    "scope": "flag:slice=traversal&pace=",
-   "site": "tools/pathcheck/pacing-variants.mjs:260",
-   "line": 260,
+   "site": "tools/pathcheck/pacing-variants.mjs:247",
+   "line": 247,
    "label": "every pace keeps jump apex, dwell budgets, launch authority and chain gain in range",
    "fn": "ok",
    "cls": "PIN",
@@ -30561,7 +30476,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "every pace keeps jump apex, dwell budgets, launch authority and chain gain in range",
    "note": "every pace keeps apex/dwell/launch inside hand-picked ranges",
    "disposition": "DELETE",
@@ -30570,8 +30485,8 @@
   {
    "domain": "pacing-variants",
    "scope": "flag:slice=traversal&pace=",
-   "site": "tools/pathcheck/pacing-variants.mjs:285",
-   "line": 285,
+   "site": "tools/pathcheck/pacing-variants.mjs:272",
+   "line": 272,
    "label": "no pace (chain included) crosses a tile in one clamped frame, worst … tiles in pace",
    "fn": "ok",
    "cls": "CORE",
@@ -30579,7 +30494,7 @@
    "marks": [],
    "core": false,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "no pace (chain included) crosses a tile in one clamped frame, worst … tiles in pace",
    "note": "no pace (chain included) crosses a tile in one clamped frame (anti-tunneling) — reads the dt clamp from main.js source",
    "disposition": "DEEP",
@@ -30588,8 +30503,8 @@
   {
    "domain": "pacing-variants",
    "scope": "flag:slice=traversal&pace=",
-   "site": "tools/pathcheck/pacing-variants.mjs:288",
-   "line": 288,
+   "site": "tools/pathcheck/pacing-variants.mjs:275",
+   "line": 275,
    "label": "no pace raises a vertical launch into the endpoint-only ceiling check, worst … tiles",
    "fn": "ok",
    "cls": "CORE",
@@ -30597,7 +30512,7 @@
    "marks": [],
    "core": false,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "no pace raises a vertical launch into the endpoint-only ceiling check, worst … tiles",
    "note": "no pace (chain included) crosses a tile in one clamped frame (anti-tunneling) — reads the dt clamp from main.js source",
    "disposition": "DEEP",
@@ -30606,8 +30521,8 @@
   {
    "domain": "pacing-variants",
    "scope": "flag:slice=traversal&pace=",
-   "site": "tools/pathcheck/pacing-variants.mjs:292",
-   "line": 292,
+   "site": "tools/pathcheck/pacing-variants.mjs:279",
+   "line": 279,
    "label": "no chain config means no launch amplification anywhere else in the game",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -30615,8 +30530,44 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "no chain config means no launch amplification anywhere else in the game",
+   "note": "(domain default)",
+   "disposition": "DEEP",
+   "tier": "deep"
+  },
+  {
+   "domain": "pacing-variants",
+   "scope": "flag:slice=traversal&pace=",
+   "site": "tools/pathcheck/pacing-variants.mjs:283",
+   "line": 283,
+   "label": "chain multiplier starts at 1 and clamps at its declared max",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "chain multiplier starts at 1 and clamps at its declared max",
+   "note": "(domain default)",
+   "disposition": "DEEP",
+   "tier": "deep"
+  },
+  {
+   "domain": "pacing-variants",
+   "scope": "flag:slice=traversal&pace=",
+   "site": "tools/pathcheck/pacing-variants.mjs:294",
+   "line": 294,
+   "label": "ledgeAutoLaunch converts dwell expiry into a launch",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "ledgeAutoLaunch converts dwell expiry into a launch",
    "note": "(domain default)",
    "disposition": "DEEP",
    "tier": "deep"
@@ -30626,42 +30577,6 @@
    "scope": "flag:slice=traversal&pace=",
    "site": "tools/pathcheck/pacing-variants.mjs:296",
    "line": 296,
-   "label": "chain multiplier starts at 1 and clamps at its declared max",
-   "fn": "ok",
-   "cls": "PURE-INVARIANT",
-   "how": "default",
-   "marks": [],
-   "core": false,
-   "srcText": false,
-   "evals": 1,
-   "message": "chain multiplier starts at 1 and clamps at its declared max",
-   "note": "(domain default)",
-   "disposition": "DEEP",
-   "tier": "deep"
-  },
-  {
-   "domain": "pacing-variants",
-   "scope": "flag:slice=traversal&pace=",
-   "site": "tools/pathcheck/pacing-variants.mjs:307",
-   "line": 307,
-   "label": "ledgeAutoLaunch converts dwell expiry into a launch",
-   "fn": "ok",
-   "cls": "PURE-INVARIANT",
-   "how": "default",
-   "marks": [],
-   "core": false,
-   "srcText": false,
-   "evals": 1,
-   "message": "ledgeAutoLaunch converts dwell expiry into a launch",
-   "note": "(domain default)",
-   "disposition": "DEEP",
-   "tier": "deep"
-  },
-  {
-   "domain": "pacing-variants",
-   "scope": "flag:slice=traversal&pace=",
-   "site": "tools/pathcheck/pacing-variants.mjs:309",
-   "line": 309,
    "label": "auto-launch still lets down release and an early jump launch first",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -31959,16 +31874,16 @@
    "line": 251,
    "label": "a single line has no dare pocket and fields no lattice-authored hostiles",
    "fn": "ok",
-   "cls": "RETIRED",
+   "cls": "PURE-INVARIANT",
    "how": "range",
    "marks": [],
    "core": false,
    "srcText": false,
    "evals": 1,
    "message": "a single line has no dare pocket and fields no lattice-authored hostiles",
-   "note": "a single line has no dare pocket (dare wager, entries 9/10/21)",
-   "disposition": "DELETE",
-   "tier": "gone"
+   "note": "T-120 review: KEPT — conjoins \"no dare pocket\" with a fixture-composition invariant (the rib run fields no lattice-authored hostiles) that is not retired",
+   "disposition": "DEEP",
+   "tier": "deep"
   },
   {
    "domain": "authored-slope-rib-run",
@@ -32319,16 +32234,16 @@
    "line": 69,
    "label": "entering the dare pocket drops the edge to pocketSpeed on the same frame",
    "fn": "ok",
-   "cls": "RETIRED",
+   "cls": "PURE-INVARIANT",
    "how": "range",
    "marks": [],
    "core": false,
    "srcText": false,
    "evals": 1,
    "message": "entering the dare pocket drops the edge to pocketSpeed on the same frame",
-   "note": "entering the dare pocket drops the edge to pocketSpeed (dare wager, entries 9/10/21)",
-   "disposition": "DELETE",
-   "tier": "gone"
+   "note": "T-120 review: KEPT — the pursuing edge drops to pocketSpeed on entry, which is what keeps the pocket survivable: \"daylight against the pursuing edge holds\" (entry 9 keeps it)",
+   "disposition": "DEEP",
+   "tier": "deep"
   },
   {
    "domain": "hull-fallback-tier-1",
@@ -32407,26 +32322,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:25",
-   "line": 25,
-   "label": "the score module reads its tune from CONFIG",
-   "fn": "ok",
-   "cls": "TAUTOLOGY",
-   "how": "range",
-   "marks": [],
-   "core": false,
-   "srcText": false,
-   "evals": 1,
-   "message": "the score module reads its tune from CONFIG",
-   "note": "SCORE === CONFIG.score — an alias of itself",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
-   "domain": "charge-threat-prototype",
-   "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:29",
-   "line": 29,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:28",
+   "line": 28,
    "label": "A.4 prototype: two monotone notches, top notch at full charge, one mult/name each",
    "fn": "ok",
    "cls": "PIN",
@@ -32434,7 +32331,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "A.4 prototype: two monotone notches, top notch at full charge, one mult/name each",
    "note": "exactly two notches",
    "disposition": "DELETE",
@@ -32443,8 +32340,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:34",
-   "line": 34,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:33",
+   "line": 33,
    "label": "notch thresholds are inclusive, ordered, and clamped",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -32452,7 +32349,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "notch thresholds are inclusive, ordered, and clamped",
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
@@ -32461,8 +32358,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:38",
-   "line": 38,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:37",
+   "line": 37,
    "label": "THREAT multiplier rises with the notch and clamps",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -32470,7 +32367,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "THREAT multiplier rises with the notch and clamps",
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
@@ -32479,8 +32376,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:41",
-   "line": 41,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:40",
+   "line": 40,
    "label": "WARM shortens the fire interval; nothing else is gated by notch 1",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -32488,7 +32385,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "WARM shortens the fire interval; nothing else is gated by notch 1",
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
@@ -32497,8 +32394,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:44",
-   "line": 44,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:43",
+   "line": 43,
    "label": "CHARGE and THREAT tables cover the same event set",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -32506,7 +32403,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "CHARGE and THREAT tables cover the same event set",
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
@@ -32515,8 +32412,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:46",
-   "line": 46,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:45",
+   "line": 45,
    "label": "A.1 event set is priced, and movement kills dominate ground kills",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -32524,7 +32421,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "A.1 event set is priced, and movement kills dominate ground kills",
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
@@ -32533,8 +32430,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:52",
-   "line": 52,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:51",
+   "line": 51,
    "label": "drain: zero in the air/traversal/launch window, worst while standing still",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -32542,7 +32439,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "drain: zero in the air/traversal/launch window, worst while standing still",
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
@@ -32551,8 +32448,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:61",
-   "line": 61,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:60",
+   "line": 60,
    "label": "stall threshold matches A.5 (and therefore the playtest harness) exactly",
    "fn": "ok",
    "cls": "PIN",
@@ -32560,7 +32457,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "stall threshold matches A.5 (and therefore the playtest harness) exactly",
    "note": "stall threshold equals the A.5 number exactly",
    "disposition": "DELETE",
@@ -32569,8 +32466,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:63",
-   "line": 63,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:62",
+   "line": 62,
    "label": "drain never crosses the phase floor and charge never exceeds its max",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -32578,7 +32475,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "drain never crosses the phase floor and charge never exceeds its max",
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
@@ -32587,8 +32484,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:68",
-   "line": 68,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:67",
+   "line": 67,
    "label": "gains clamp at max and unknown events are inert",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -32596,7 +32493,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "gains clamp at max and unknown events are inert",
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
@@ -32605,8 +32502,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:89",
-   "line": 89,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:88",
+   "line": 88,
    "label": "the same event script always produces the same notch timeline",
    "fn": "ok",
    "cls": "CORE",
@@ -32614,7 +32511,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "the same event script always produces the same notch timeline",
    "note": "same event script, same notch timeline (determinism)",
    "disposition": "CORE-GATE",
@@ -32623,8 +32520,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:90",
-   "line": 90,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:89",
+   "line": 89,
    "label": "the scripted 6-second horizon actually reaches BREAKING, got",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -32641,8 +32538,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:100",
-   "line": 100,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:99",
+   "line": 99,
    "label": "classification ladder is a monotone step function of THREAT",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -32650,7 +32547,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "classification ladder is a monotone step function of THREAT",
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
@@ -32659,8 +32556,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:104",
-   "line": 104,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:103",
+   "line": 103,
    "label": "notch glyphs are one per notch and never collide with the hp pips",
    "fn": "ok",
    "cls": "PIN",
@@ -32668,7 +32565,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "notch glyphs are one per notch and never collide with the hp pips",
    "note": "notch glyphs never collide with hp pips — glyph table shape",
    "disposition": "DELETE",
@@ -32677,8 +32574,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:108",
-   "line": 108,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:107",
+   "line": 107,
    "label": "THREAT scales with the notch and stalling never subtracts from it",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -32686,7 +32583,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "THREAT scales with the notch and stalling never subtracts from it",
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
@@ -32695,8 +32592,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:116",
-   "line": 116,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:115",
+   "line": 115,
    "label": "connector visits resolve by nearest inside the radius",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -32704,7 +32601,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "connector visits resolve by nearest inside the radius",
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
@@ -32713,8 +32610,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:120",
-   "line": 120,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:119",
+   "line": 119,
    "label": "A.5 route coverage: three connectors, in order, or it does not count",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -32722,7 +32619,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "A.5 route coverage: three connectors, in order, or it does not count",
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
@@ -32731,8 +32628,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:128",
-   "line": 128,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:127",
+   "line": 127,
    "label": "BREAKING launch shock kills a wasp on contact without deleting a carrier",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -32740,7 +32637,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "BREAKING launch shock kills a wasp on contact without deleting a carrier",
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
@@ -32749,8 +32646,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:141",
-   "line": 141,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:140",
+   "line": 140,
    "label": "the pop grace is real but small against the recatch window",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -32758,7 +32655,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "the pop grace is real but small against the recatch window",
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
@@ -32767,8 +32664,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:143",
-   "line": 143,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:142",
+   "line": 142,
    "label": "by the end of the grace the popped capsule has left the player: rise … vs height … , drift",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -32776,7 +32673,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "by the end of the grace the popped capsule has left the player: rise … vs height … , drift",
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
@@ -32785,8 +32682,8 @@
   {
    "domain": "charge-threat-prototype",
    "scope": "shipped (score/overdrive is default) + slice tune",
-   "site": "tools/pathcheck/charge-threat-prototype.mjs:147",
-   "line": 147,
+   "site": "tools/pathcheck/charge-threat-prototype.mjs:146",
+   "line": 146,
    "label": "reclaim/link/launch windows and the A.5 ring buffer match the proposal",
    "fn": "ok",
    "cls": "PIN",
@@ -32794,7 +32691,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "reclaim/link/launch windows and the A.5 ring buffer match the proposal",
    "note": "reclaim/link/launch windows and ring buffer equal the proposal values",
    "disposition": "DELETE",
@@ -38357,26 +38254,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:283",
-   "line": 283,
-   "label": "T-011: sim layer imports no render module:",
-   "fn": "ok",
-   "cls": "TAUTOLOGY",
-   "how": "range",
-   "marks": [],
-   "core": false,
-   "srcText": true,
-   "evals": 22,
-   "message": "T-011: sim layer imports no render module:",
-   "note": "sim imports no render module — already enforced by _context.mjs guardLayer (exits before any domain), so this line can never be the one that fails",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
-   "domain": "t-011-juice-feedback-pass",
-   "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:286",
-   "line": 286,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:284",
+   "line": 284,
    "label": "T-011: src/sim/time.js owns the hit-stop decision and notifies the view",
    "fn": "ok",
    "cls": "PIN",
@@ -38384,7 +38263,7 @@
    "marks": [],
    "core": false,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-011: src/sim/time.js owns the hit-stop decision and notifies the view",
    "note": "sim/time.js owns the hit-stop decision — regex",
    "disposition": "DELETE",
@@ -38393,8 +38272,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:288",
-   "line": 288,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:286",
+   "line": 286,
    "label": "T-011: no render module can write the hit-stop clock",
    "fn": "ok",
    "cls": "CORE",
@@ -38411,8 +38290,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:291",
-   "line": 291,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:289",
+   "line": 289,
    "label": "T-011: the bridge declares the juice hook as an inert no-op by default",
    "fn": "ok",
    "cls": "PIN",
@@ -38422,7 +38301,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-011: the bridge declares the juice hook as an inert no-op by default",
    "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -38431,8 +38310,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:298",
-   "line": 298,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:296",
+   "line": 296,
    "label": "T-011: the loop samples hit-stop once, before any entity update",
    "fn": "ok",
    "cls": "PIN",
@@ -38442,7 +38321,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-011: the loop samples hit-stop once, before any entity update",
    "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -38451,8 +38330,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:300",
-   "line": 300,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:298",
+   "line": 298,
    "label": "T-011: hit-stop COMPOSES with CHRONO (wScale = chrono × hit-stop) instead … of replacing it",
    "fn": "ok",
    "cls": "PIN",
@@ -38471,8 +38350,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:303",
-   "line": 303,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:301",
+   "line": 301,
    "label": "T-011: the pursuing scroll and the world still take the CHRONO-scaled dt … (now × hit-stop) — CHRONO",
    "fn": "ok",
    "cls": "PIN",
@@ -38482,7 +38361,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-011: the pursuing scroll and the world still take the CHRONO-scaled dt … (now × hit-stop) — CHRONO must keep slowing the scroll it always slowed",
    "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -38491,8 +38370,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:308",
-   "line": 308,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:306",
+   "line": 306,
    "label": "T-011: RIG and their projectiles take the hit-stop factor ALONE — the … freeze is global, and CHRONO",
    "fn": "ok",
    "cls": "PIN",
@@ -38502,7 +38381,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-011: RIG and their projectiles take the hit-stop factor ALONE — the … freeze is global, and CHRONO still leaves the player at full speed",
    "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -38511,8 +38390,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:314",
-   "line": 314,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:312",
+   "line": 312,
    "label": "T-011: the effect pools step after RIG and BEFORE the death early-return, … so a death frame still d",
    "fn": "ok",
    "cls": "PIN",
@@ -38522,7 +38401,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-011: the effect pools step after RIG and BEFORE the death early-return, … so a death frame still draws its own burst",
    "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -38531,8 +38410,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:319",
-   "line": 319,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:317",
+   "line": 317,
    "label": "T-011: the CHARGE meter still steps on real dt (proposal A.3), unscaled by … a freeze",
    "fn": "ok",
    "cls": "PIN",
@@ -38542,7 +38421,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-011: the CHARGE meter still steps on real dt (proposal A.3), unscaled by … a freeze",
    "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -38551,8 +38430,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:324",
-   "line": 324,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:322",
+   "line": 322,
    "label": "T-011: shake is applied after the camera pose, never before it",
    "fn": "ok",
    "cls": "PIN",
@@ -38562,7 +38441,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-011: shake is applied after the camera pose, never before it",
    "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -38571,8 +38450,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:328",
-   "line": 328,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:326",
+   "line": 326,
    "label": "T-011: edge calibration (the one sanctioned render→sim write) is computed … from the UNSHAKEN probe ",
    "fn": "ok",
    "cls": "PIN",
@@ -38582,7 +38461,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-011: edge calibration (the one sanctioned render→sim write) is computed … from the UNSHAKEN probe pose — an effect can never move the damage plane",
    "note": "frame-loop wiring order spelled by regex (hit-stop sampled once, CHRONO composition, shake after pose)",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -38591,8 +38470,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:340",
-   "line": 340,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:338",
+   "line": 338,
    "label": "T-011: the juice modules carry no color literals — roles only",
    "fn": "ok",
    "cls": "CORE",
@@ -38600,7 +38479,7 @@
    "marks": [],
    "core": false,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-011: the juice modules carry no color literals — roles only",
    "note": "juice modules carry no colour literals; roles resolve from PAL (palette hard rule)",
    "disposition": "CORE-GATE",
@@ -38609,8 +38488,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:342",
-   "line": 342,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:340",
+   "line": 340,
    "label": "T-011: …and every fx role resolves from the render palette module (PAL), … not CONFIG.palette — whic",
    "fn": "ok",
    "cls": "CORE",
@@ -38627,8 +38506,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:348",
-   "line": 348,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:346",
+   "line": 346,
    "label": "T-011: … imports only modules that exist:",
    "fn": "ok",
    "cls": "PIN",
@@ -38636,8 +38515,26 @@
    "marks": [],
    "core": false,
    "srcText": true,
-   "evals": 21,
+   "evals": 0,
    "message": "T-011: … imports only modules that exist:",
+   "note": "import existence, wrapper order, ?juice=0 kill flag",
+   "disposition": "DELETE",
+   "tier": "gone"
+  },
+  {
+   "domain": "t-011-juice-feedback-pass",
+   "scope": "shipped",
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:350",
+   "line": 350,
+   "label": "T-011: juice hook wrappers call the prior implementation first",
+   "fn": "ok",
+   "cls": "PIN",
+   "how": "range",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "T-011: juice hook wrappers call the prior implementation first",
    "note": "import existence, wrapper order, ?juice=0 kill flag",
    "disposition": "DELETE",
    "tier": "gone"
@@ -38647,24 +38544,6 @@
    "scope": "shipped",
    "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:352",
    "line": 352,
-   "label": "T-011: juice hook wrappers call the prior implementation first",
-   "fn": "ok",
-   "cls": "PIN",
-   "how": "range",
-   "marks": [],
-   "core": false,
-   "srcText": true,
-   "evals": 1,
-   "message": "T-011: juice hook wrappers call the prior implementation first",
-   "note": "import existence, wrapper order, ?juice=0 kill flag",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
-   "domain": "t-011-juice-feedback-pass",
-   "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:354",
-   "line": 354,
    "label": "T-011: ?juice=0 is the documented kill flag",
    "fn": "ok",
    "cls": "PIN",
@@ -38681,8 +38560,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:357",
-   "line": 357,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:355",
+   "line": 355,
    "label": "T-011: ?juice=0 gates the wiring, the pools, and the sim scale (a disabled … boot is the pre-juice g",
    "fn": "ok",
    "cls": "PIN",
@@ -38690,7 +38569,7 @@
    "marks": [],
    "core": false,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-011: ?juice=0 gates the wiring, the pools, and the sim scale (a disabled … boot is the pre-juice game)",
    "note": "import existence, wrapper order, ?juice=0 kill flag",
    "disposition": "DELETE",
@@ -38699,8 +38578,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:363",
-   "line": 363,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:361",
+   "line": 361,
    "label": "T-011: bursts claim from a preallocated pool — the hot loop allocates … nothing",
    "fn": "ok",
    "cls": "PIN",
@@ -38710,7 +38589,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-011: bursts claim from a preallocated pool — the hot loop allocates … nothing",
    "note": "pool allocation shape (free-stack pop) — regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -38719,8 +38598,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:374",
-   "line": 374,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:372",
+   "line": 372,
    "label": "T-011: claiming a pool row is O(1) — a free-stack pop or one … round-robin step, never a scan of the",
    "fn": "ok",
    "cls": "PIN",
@@ -38730,7 +38609,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-011: claiming a pool row is O(1) — a free-stack pop or one … round-robin step, never a scan of the pool",
    "note": "pool allocation shape (free-stack pop) — regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -38739,8 +38618,8 @@
   {
    "domain": "t-011-juice-feedback-pass",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:379",
-   "line": 379,
+   "site": "tools/pathcheck/t-011-juice-feedback-pass.mjs:377",
+   "line": 377,
    "label": "T-011: …and a row rejoins the free stack exactly where it dies",
    "fn": "ok",
    "cls": "PIN",
@@ -38750,7 +38629,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-011: …and a row rejoins the free stack exactly where it dies",
    "note": "pool allocation shape (free-stack pop) — regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44343,26 +44222,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:146",
-   "line": 146,
-   "label": "T-032: the panel names BOTH ways back in (a key and a button), got \" … \"",
-   "fn": "ok",
-   "cls": "RETIRED",
-   "how": "range",
-   "marks": [],
-   "core": false,
-   "srcText": false,
-   "evals": 1,
-   "message": "T-032: the panel names BOTH ways back in (a key and a button), got \" … \"",
-   "note": "panel must name \"R\" and \"button\" — the keyboard-only device assumption entry 20 superseded; it pins the touch-device copy defect",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
-   "domain": "pathcheck-suite-2",
-   "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:149",
-   "line": 149,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:151",
+   "line": 151,
    "label": "T-032: every failure tells the player it is not their fault (or what to do … instead) — the panel is",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -44370,7 +44231,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: every failure tells the player it is not their fault (or what to do … instead) — the panel is a 9-year-old\\'s only signal, and blame is not a signal",
    "note": "not-your-fault copy; the plain-language rule can fail",
    "disposition": "CORE-GATE:invariant-tier",
@@ -44379,8 +44240,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:154",
-   "line": 154,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:156",
+   "line": 156,
    "label": "T-032: the plain-language rule rejects engineer-speak",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -44397,8 +44258,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:156",
-   "line": 156,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:158",
+   "line": 158,
    "label": "T-032: …and accepts the words a child can read",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -44415,8 +44276,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:158",
-   "line": 158,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:160",
+   "line": 160,
    "label": "T-032: the readability bounds stay child-sized",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -44424,7 +44285,7 @@
    "marks": [],
    "core": false,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: the readability bounds stay child-sized",
    "note": "not-your-fault copy; the plain-language rule can fail",
    "disposition": "CORE-GATE:invariant-tier",
@@ -44433,8 +44294,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:165",
-   "line": 165,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:167",
+   "line": 167,
    "label": "T-032: the failure handler is an INLINE classic script — the incident it … exists for is a module gr",
    "fn": "ok",
    "cls": "PIN",
@@ -44444,7 +44305,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: the failure handler is an INLINE classic script — the incident it … exists for is a module graph that never ran",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44453,8 +44314,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:170",
-   "line": 170,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:172",
+   "line": 172,
    "label": "T-032: …and it imports nothing, so nothing it depends on can fail with the game",
    "fn": "ok",
    "cls": "PIN",
@@ -44464,7 +44325,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: …and it imports nothing, so nothing it depends on can fail with the game",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44473,8 +44334,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:174",
-   "line": 174,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:176",
+   "line": 176,
    "label": "T-032: the inline handler itself parses (nothing else can report it) … … —",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -44491,8 +44352,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:176",
-   "line": 176,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:178",
+   "line": 178,
    "label": "T-032: …and it is installed BEFORE the game module, so a failure to load … that module is already co",
    "fn": "ok",
    "cls": "PIN",
@@ -44502,7 +44363,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: …and it is installed BEFORE the game module, so a failure to load … that module is already covered",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44511,8 +44372,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:180",
-   "line": 180,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:182",
+   "line": 182,
    "label": "T-032: the inline watchdog numbers are the policy's ( … / … missing … vs … / … / … ) — a copy that i",
    "fn": "ok",
    "cls": "PIN",
@@ -44522,7 +44383,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: the inline watchdog numbers are the policy\\'s ( … / … missing … vs … / … / … ) — a copy that is … gated is not a second source of truth",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44531,8 +44392,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:188",
-   "line": 188,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:190",
+   "line": 190,
    "label": "T-032: the keys that put a player back in the game match the policy, got … ,",
    "fn": "ok",
    "cls": "PIN",
@@ -44542,7 +44403,7 @@
    ],
    "core": true,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: the keys that put a player back in the game match the policy, got … ,",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44551,8 +44412,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:191",
-   "line": 191,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:193",
+   "line": 193,
    "label": "T-032: it listens in the CAPTURE phase for errors (a module that never … loaded fires at its element",
    "fn": "ok",
    "cls": "PIN",
@@ -44562,7 +44423,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: it listens in the CAPTURE phase for errors (a module that never … loaded fires at its element, not at the page) and for rejected work",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44571,8 +44432,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:195",
-   "line": 195,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:197",
+   "line": 197,
    "label": "T-032: a boot that never finishes is told to the player, not left as a void",
    "fn": "ok",
    "cls": "PIN",
@@ -44591,8 +44452,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:197",
-   "line": 197,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:199",
+   "line": 199,
    "label": "T-032: the freeze watchdog knows a backgrounded or suspended page from a … stuck one — a hidden tab ",
    "fn": "ok",
    "cls": "PIN",
@@ -44602,7 +44463,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: the freeze watchdog knows a backgrounded or suspended page from a … stuck one — a hidden tab paints nothing BY DESIGN and must never panel",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44611,8 +44472,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:202",
-   "line": 202,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:204",
+   "line": 204,
    "label": "T-032: the panel markup carries # … , which the bootstrap writes into",
    "fn": "ok",
    "cls": "PIN",
@@ -44622,7 +44483,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 8,
+   "evals": 0,
    "message": "T-032: the panel markup carries # … , which the bootstrap writes into",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44631,8 +44492,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:214",
-   "line": 214,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:216",
+   "line": 216,
    "label": "T-032: the failure panel sits above the shell and the state overlay ( … #fail … > … #shell … > … #ov",
    "fn": "ok",
    "cls": "PIN",
@@ -44642,7 +44503,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: the failure panel sits above the shell and the state overlay ( … #fail … > … #shell … > … #overlay … )",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44651,8 +44512,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:223",
-   "line": 223,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:225",
+   "line": 225,
    "label": "T-032: every .fail-plain line lives inside the panel ( … of … )",
    "fn": "ok",
    "cls": "PIN",
@@ -44662,7 +44523,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: every .fail-plain line lives inside the panel ( … of … )",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44671,8 +44532,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:231",
-   "line": 231,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:233",
+   "line": 233,
    "label": "T-032: the frame loop is where the game either recovers or fails",
    "fn": "ok",
    "cls": "PIN",
@@ -44682,7 +44543,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: the frame loop is where the game either recovers or fails",
    "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44691,8 +44552,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:234",
-   "line": 234,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:236",
+   "line": 236,
    "label": "T-032: the halt check is the FIRST thing the loop does — once the panel is … up the simulation stops",
    "fn": "ok",
    "cls": "PIN",
@@ -44702,7 +44563,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: the halt check is the FIRST thing the loop does — once the panel is … up the simulation stops instead of grinding out frames nobody can see",
    "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44711,8 +44572,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:239",
-   "line": 239,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:241",
+   "line": 241,
    "label": "T-032: the next frame is requested before any work, so a throw cannot end … the loop by accident",
    "fn": "ok",
    "cls": "PIN",
@@ -44722,7 +44583,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: the next frame is requested before any work, so a throw cannot end … the loop by accident",
    "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44731,8 +44592,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:242",
-   "line": 242,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:244",
+   "line": 244,
    "label": "T-032: the loop beats every frame — that counter is what the freeze … watchdog reads",
    "fn": "ok",
    "cls": "PIN",
@@ -44742,7 +44603,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: the loop beats every frame — that counter is what the freeze … watchdog reads",
    "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44751,8 +44612,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:245",
-   "line": 245,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:247",
+   "line": 247,
    "label": "T-032: a simulation fault is caught and handed to the policy",
    "fn": "ok",
    "cls": "PIN",
@@ -44762,7 +44623,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: a simulation fault is caught and handed to the policy",
    "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44771,8 +44632,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:256",
-   "line": 256,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:258",
+   "line": 258,
    "label": "T-032: the draw is caught SEPARATELY, so a broken step still paints the … frame it broke on",
    "fn": "ok",
    "cls": "PIN",
@@ -44782,7 +44643,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: the draw is caught SEPARATELY, so a broken step still paints the … frame it broke on",
    "note": "frame loop structure (halt check first, rAF before work, try/catch around update and draw) by regex",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44791,8 +44652,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:263",
-   "line": 263,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:265",
+   "line": 265,
    "label": "T-032: the frame loop clamps dt at the policy's … ms (got … no clamp … ) — Chrome suspends rAF in a ",
    "fn": "ok",
    "cls": "PIN",
@@ -44802,7 +44663,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: the frame loop clamps dt at the policy\\'s … ms (got … no clamp … ) — Chrome suspends rAF in a … hidden tab, and the frame that lands on return carries a minute of wall clock",
    "note": "dt clamp spelled Math.min(N, t - last) / Math.max(0, Math.min(50, ...)) in main.js",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44811,8 +44672,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:267",
-   "line": 267,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:269",
+   "line": 269,
    "label": "T-032: a stale first rAF timestamp clamps to zero instead of running gameMs backward",
    "fn": "ok",
    "cls": "PIN",
@@ -44831,8 +44692,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:269",
-   "line": 269,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:271",
+   "line": 271,
    "label": "T-032: …and one clamped frame still cannot cross a whole tile, so returning … from a backgrounded ta",
    "fn": "ok",
    "cls": "PIN",
@@ -44842,7 +44703,7 @@
    ],
    "core": true,
    "srcText": false,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: …and one clamped frame still cannot cross a whole tile, so returning … from a backgrounded tab cannot teleport RIG through a wall",
    "note": "dt clamp spelled Math.min(N, t - last) / Math.max(0, Math.min(50, ...)) in main.js",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44851,8 +44712,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:272",
-   "line": 272,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:274",
+   "line": 274,
    "label": "T-032: the one repair the game can make on its own is a full resetGame",
    "fn": "ok",
    "cls": "PIN",
@@ -44871,8 +44732,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:274",
-   "line": 274,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:276",
+   "line": 276,
    "label": "T-032: a lost drawing surface — nothing thrown, loop still beating — fails … legibly instead of leav",
    "fn": "ok",
    "cls": "PIN",
@@ -44882,7 +44743,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: a lost drawing surface — nothing thrown, loop still beating — fails … legibly instead of leaving a still canvas",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44891,8 +44752,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:278",
-   "line": 278,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:280",
+   "line": 280,
    "label": "T-032: window.HB publishes the failsafe state a headless abuse run reads",
    "fn": "ok",
    "cls": "PIN",
@@ -44911,8 +44772,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:280",
-   "line": 280,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:282",
+   "line": 282,
    "label": "T-032: boot is signalled by the LAST statement in main.js — until it runs, … any failure is \"the gam",
    "fn": "ok",
    "cls": "PIN",
@@ -44922,7 +44783,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: boot is signalled by the LAST statement in main.js — until it runs, … any failure is \"the game could not start\"",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44931,8 +44792,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:283",
-   "line": 283,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:285",
+   "line": 285,
    "label": "T-032: ?selftest=1 paints the real panel and gates the words that RENDERED",
    "fn": "ok",
    "cls": "PIN",
@@ -44942,7 +44803,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: ?selftest=1 paints the real panel and gates the words that RENDERED",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44951,8 +44812,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:289",
-   "line": 289,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:291",
+   "line": 291,
    "label": "T-032: the view layer takes its decisions from the pure policy",
    "fn": "ok",
    "cls": "PIN",
@@ -44971,8 +44832,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:291",
-   "line": 291,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:293",
+   "line": 293,
    "label": "T-032: uncaught errors AND broken frames run through the same fault streak — … one policy, so a stor",
    "fn": "ok",
    "cls": "PIN",
@@ -44982,7 +44843,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: uncaught errors AND broken frames run through the same fault streak — … one policy, so a storm of either is treated the same way",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -44991,8 +44852,8 @@
   {
    "domain": "pathcheck-suite-2",
    "scope": "shipped",
-   "site": "tools/pathcheck/pathcheck-suite-2.mjs:294",
-   "line": 294,
+   "site": "tools/pathcheck/pathcheck-suite-2.mjs:296",
+   "line": 296,
    "label": "T-032: the halt flag and the browser self-check are exported for main.js",
    "fn": "ok",
    "cls": "PIN",
@@ -45002,7 +44863,7 @@
    ],
    "core": true,
    "srcText": true,
-   "evals": 1,
+   "evals": 0,
    "message": "T-032: the halt flag and the browser self-check are exported for main.js",
    "note": "T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete",
    "disposition": "REWRITE-AS-BEHAVIOUR",
@@ -56715,24 +56576,6 @@
    "tier": "fast"
   },
   {
-   "domain": "limb-silhouette-production",
-   "scope": "shipped",
-   "site": "tools/pathcheck/limb-silhouette-production.mjs:91",
-   "line": 91,
-   "label": "contract resolves the shared source root",
-   "fn": "ok",
-   "cls": "TAUTOLOGY",
-   "how": "range",
-   "marks": [],
-   "core": false,
-   "srcText": false,
-   "evals": 1,
-   "message": "contract resolves the shared source root",
-   "note": "contract resolves the shared source root",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
    "domain": "actor-motion-contract",
    "scope": "shipped",
    "site": "tools/pathcheck/actor-motion-contract.mjs:14",
@@ -56749,24 +56592,6 @@
    "note": "(domain default)",
    "disposition": "CORE-GATE:invariant-tier",
    "tier": "fast"
-  },
-  {
-   "domain": "actor-motion-contract",
-   "scope": "shipped",
-   "site": "tools/pathcheck/actor-motion-contract.mjs:16",
-   "line": 16,
-   "label": "atlas geometry, clips, sockets, preload, and death continuity stay registered",
-   "fn": "ok",
-   "cls": "TAUTOLOGY",
-   "how": "range",
-   "marks": [],
-   "core": false,
-   "srcText": false,
-   "evals": 1,
-   "message": "atlas geometry, clips, sockets, preload, and death continuity stay registered",
-   "note": "greps \"ACTOR MOTION: N/N contracts passed\"",
-   "disposition": "DELETE",
-   "tier": "gone"
   },
   {
    "domain": "crown-command-architecture",
