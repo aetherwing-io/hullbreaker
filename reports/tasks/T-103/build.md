@@ -432,7 +432,7 @@ Not re-filed, because main fixed them after 98b12c9 while this lane ran (I hit b
 
 - Worktree `/home/user/hullbreaker/.claude/worktrees/T-103`, branch
   `task/T-103`, tree clean after the final commit. Not merged.
-- Ports used: 8753 (this worktree) and 8763 (the main export, for the timing and smoke controls), both through `tools/serve.mjs` and killed when done. The capture
+- Ports used: 8753 (this worktree) and 8763 (the main export, for the timing and smoke controls), both through `tools/serve.mjs`. Both are stopped now: 8763 by me, and 8753 when its background job reached the time limit after the smoke runs. The capture
   tools use the repo's `withIsolatedBrowser` helper, which binds an
   OS-assigned ephemeral port. 8741/8742 were never touched.
 - **Single best next action:** merge main into `task/T-103` and run the merge gate with `~/.hullbreaker-host.env` loaded. Main's 8fd25fc (smoke verdict and goto scaling) and 1a3a400/e29665b (perf-probe skip and private output) are the only things between this branch and a green gate on this host. After that, queue the five look questions; the portrait answer is the one that could reopen this lane.
