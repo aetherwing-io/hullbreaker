@@ -90,6 +90,7 @@ import * as d77 from './t-102-corner-turns.mjs';
 import * as d78 from './touch-deck-contract.mjs';
 import * as d79 from './t-103-rig-grip-alignment.mjs';
 import * as d80 from './t-103-arm-winding.mjs';
+import * as d81 from './t-123-crisp-sprite.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -173,4 +174,5 @@ export const DOMAINS = [
   d78,    // T-101 two-thumb touch deck: pure stick, layout, wiring
   d79,    // T-103: RIG holds the weapon — rendered fist on rendered grip
   d80,    // T-103: RIG's arms are front faces in both facings (winding + FrontSide)
+  d81,    // T-123: the crisp sprite path — device grid, one reduction, full gain (entry 27)
 ];

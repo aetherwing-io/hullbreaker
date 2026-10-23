@@ -13,6 +13,7 @@ import {
 } from './pure/traversal.js';
 import { mortarComposePlan, mortarTrialStage } from './pure/mortar.js';
 import { ribrunFixture } from './pure/ribrun.js';
+import { resolveArtMode, resolveCrispScale } from './pure/crisp-sprite.js';
 import { TRANSFORM_FIXTURE, selectTransformFixture } from './pure/transform.js';
 
 const SEARCH = typeof globalThis.__HB_QUERY__ === 'string'
@@ -139,6 +140,14 @@ export const RUN_FALLBACK_ENABLED = ACTIVE_FIXTURE === null && QUERY.get('fallba
 // actors. MID and NEAR remain explicit accessibility/comparison views.
 const VIEW_RAW = QUERY.get('view');
 export const VIEW_ID = CONFIG.viewScales[VIEW_RAW] ? VIEW_RAW : 'far';
+
+// ?art=legacy — T-123's escape hatch (decisions.md entry 27): the crisp
+// sprite path (unlit, full gain, nearest, mip-free, on the device pixel grid)
+// is the default; `legacy` restores today's lit/mipmapped/supersampled path.
+// ?crispscale=half — the crisp path one whole-number pixel-ratio step down.
+export const ART_ID = resolveArtMode(QUERY.get('art'));
+export const ART_CRISP = ART_ID === 'crisp';
+export const CRISP_SCALE = resolveCrispScale(QUERY.get('crispscale'));
 
 // Opt-in houndframe trial (DESIGN: teach → test → remix), orthogonal to the
 // pace: ?hound=1 teaches the charge alone, ?hound=2 adds the wasp that contests
