@@ -47,6 +47,11 @@ for arg in "$@"; do
   esac
 done
 
+# Host knobs for a GPU-less container, if tools/orch/cloud-setup.sh wrote them
+# (slower boot budgets, smaller smoke canvas, browser perf probe skipped).
+# Absent on a normal workstation, where nothing changes.
+[ -f "$HOME/.hullbreaker-host.env" ] && . "$HOME/.hullbreaker-host.env"
+
 BRANCH="task/$TASK"
 MAIN_ROOT="$(git rev-parse --show-toplevel)"
 cd "$MAIN_ROOT"

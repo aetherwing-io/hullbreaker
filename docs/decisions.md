@@ -993,3 +993,135 @@ turns) was caught by any gate.
 gate plus behaviour tests that would have caught the entry-20 defects.
 
 **Source:** operator message, 2026-10-22, after wave 1 was dispatched.
+
+## 22 — 2026-10-22 — Open-source art tooling is authorized; the integrator picks it
+
+**Operator, verbatim:**
+
+> "if we need to pull in any tools for the agents to create better graphics,
+> we can do that too. i did my best before just generating with ai, but open
+> source tools might help. i don't know any"
+
+**What this decides.** Agents may install open-source tools to make better
+graphics. The choice of tools is delegated to the integrator. They stay
+DEV-ONLY: the game gains no runtime dependency and no build step.
+
+**Integrator choices under this verdict (reverse any of them if wrong):**
+- **Headless Blender 5.2 LTS (`bpy` from PyPI)** in `/opt/hb-art`, rendering
+  with Cycles on CPU or Workbench (no GPU here; EEVEE hung in testing). Used for
+  anything that animates: a rigged model through a fixed orthographic camera
+  cannot let a gun drift off a hand, and it exports per-frame anchors the game
+  reads. This targets the root cause of an entry-20 defect: AI-painted frames
+  share no skeleton.
+- **Pillow, NumPy, OpenCV** for deterministic pixel post-processing and
+  measurement; **librsvg** (`rsvg-convert`) for vector UI.
+- **Third-party material: CC0 / public domain only** (ambientCG, Poly Haven,
+  Kenney, CC0 items on OpenGameArt), provenance recorded per file. The game is
+  public; nothing with attribution or non-commercial terms goes in.
+- **Not adopted: CPU image diffusion.** Reachable via Hugging Face, but slow
+  here and stylistically inconsistent across frames — the property this push is
+  trying to remove.
+- Setup is reproducible: `tools/orch/cloud-setup.sh`; rules in
+  `tools/art/README.md`; the `asset-artist` agent definition is rewritten to
+  match (it still named the uninstalled `codex` CLI and the retired
+  asset-independence rule).
+
+**What does not change:** every new look ships behind an A/B flag with the
+current art as the control and becomes the default only on the operator's
+verdict (entry 16); FAR on desktop and the phone framing (entries 17, 20);
+the half-dose value ladder (14); entry 18's 60 fps condition.
+
+**Source:** operator message, 2026-10-22.
+
+## 23 — 2026-10-22 — The climb's shape: one escalation over three levels, turns never wait, ~25 s sides, card + resume
+
+Four operator answers to T-104's open questions
+(`docs/proposals/2026-10-race-to-the-top.md` §8), options chosen as worded:
+
+1. **Escalation: once across all three levels.** "Two states per level, Crown
+   finale only at the top of level 3. Keeps the story's single escalation and
+   reuses every existing encounter once; level 1 alone no longer ends at the
+   Crown." — the proposal's structure A: L1 THE LEG (Observe, Intercept), L2
+   RIBLINE & NECK (Contain, Quarantine), L3 SPINE & CROWN (Sterilize,
+   Scuttle, then the Crown finale).
+2. **Corners: keep climbing, enemies follow.** "The turn never waits;
+   survivors chase you onto the next side, so skipping fights costs you
+   pressure instead of time." This answers the proposal's Q2 for its rolling
+   gates (T-203): an uncleared remix cell does not hold the turn; its
+   survivors carry over. Entry 12's rule — the price is pressure — is the
+   design basis.
+3. **Side length: about 25 s on a good run.** "Roughly double today's
+   distance with no waiting; a full level ≈ 1.5–3 min." The proposal's
+   176-tile side (18.7 s at run speed, 29.2 s at the earned pace ceiling)
+   is consistent with it; acceptance boxes are written in seconds, and the
+   tile count stays a tuning parameter.
+4. **Between levels: card + resume.** "A ~3 s card between levels
+   (auto-continues), and you can start from the highest level you've reached
+   on this phone." This is the operator's explicit ruling on the conflict the
+   proposal named with entries 0a (checkpoint retreads) and 19 (unlocks as
+   retention): a level-start resume is phone session structure, wanted. The
+   durability contract still binds — a corrupt or missing save is ignored
+   safely and visibly, never a blocked title, and a lost save is P1.
+
+**Not decided here:** the follow-lead scroll's feel (tension with entries
+7/17 and 11) and every other new mechanic stay behind A/B flags until the
+operator plays them (entry 16); the authoring-pipeline recommendation (§5.7:
+2D data stays the source of truth, Blender for kit pieces, an offline level
+preview) is an integrator call under entry 22, not an operator verdict.
+
+**Source:** operator answers, 2026-10-22, to the integrator's question set.
+
+## 24 — 2026-10-22 — Clean up the mess: the codebase is a house of cards
+
+**Operator, verbatim:**
+
+> "maybe have an agent go cleanup that mess. i figured there was a lot of
+> badly produced garbage because iterations were taking forever. it felt like
+> the game was a house of cards barely keeping it together"
+
+**What this decides.** Cleanup is mandated work, not optional polish: dead
+code, flag sprawl, one-off tools, unused assets, committed review screenshots
+and the noise half of the test suite (entry 21, T-108) are to be removed, so
+iteration gets faster and the game stops being fragile.
+
+**Integrator rules for it (reverse any if wrong):**
+- Two lanes, fenced from each other and from in-flight work: **T-120** rebuilds
+  the gate per T-108 (all test and check infrastructure); **T-121** cleans
+  everything else (`src/`, `assets/`, `artifacts/`, docs, non-test tools).
+- **Every deletion is proven behaviour-neutral**, not argued: no remaining
+  reference; deterministic-run fingerprints identical before and after; the
+  default URL boots with zero page errors and renders identically; the deploy
+  bundle still builds and verifies. A deletion that cannot be proven neutral is
+  reported, not done.
+- **Code an earlier verdict deliberately kept is not deleted on this entry
+  alone:** the inert `?hook=1` prototype (entry 5) and the extractable
+  zip-assembly choreography (entry 3). The cleanup lane reports what each costs
+  (lines, files, flags, test sites) so the operator can decide with numbers.
+- Structural refactors of the largest files are proposed with evidence and
+  queued as their own tasks; they are not bundled into deletion batches.
+
+**Source:** operator message, 2026-10-22.
+
+## 25 — 2026-10-22 — Delete the hook v1 prototype and the zip-assembly corner
+
+**Operator, verbatim:**
+
+> "i never got to use the hook and i liked the aesthetic of building the
+> corner, but neither need to stay"
+
+**What this decides.** Both pieces of code that earlier verdicts deliberately
+kept are released for deletion under entry 24's cleanup: the inert `?hook=1`
+snap-hook prototype (kept "not deleted" by entry 5) and the legacy
+zip-assembly / brick-slam corner choreography (`?zip=1`, kept "extractable"
+by entry 3's addendum). This supersedes those two keep-clauses only; entry
+3's static-anatomy rule and entry 5's design guidance for any FUTURE tether
+(marker-less, button-less) still stand.
+
+**Recorded for later:** the operator liked the corner-building aesthetic.
+Entry 3's addendum still reserves assembly for things the ship *builds*
+(traps, emplacements, later defenders). When one of those is built, recover
+the choreography from git rather than reinventing it: it exists intact at
+`bb8e4df` (search `?zip=1` in `src/mode.js` and the corner-ritual code it
+gates).
+
+**Source:** operator message, 2026-10-22, answering entry 24's open item.
