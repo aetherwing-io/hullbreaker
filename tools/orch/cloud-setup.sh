@@ -40,10 +40,12 @@ fi
 cat > "$HOME/.hullbreaker-host.env" <<'ENV'
 # hullbreaker: GPU-less host knobs (tools/orch/cloud-setup.sh). Load with:
 #   . ~/.hullbreaker-host.env
-export HB_PROBE_BOOT_MS=180000
-export HB_PROBE_SPAWN_MS=300000
-export HB_HARNESS_SLOWDOWN=100
-export HB_SMOKE_VIEWPORT=480x300
-export HB_GATE_SKIP_BROWSER_PROBE=1
+# Values already set in the caller's environment win (e.g. a longer
+# HB_HARNESS_SLOWDOWN for one merge on an overloaded host).
+export HB_PROBE_BOOT_MS="${HB_PROBE_BOOT_MS:-180000}"
+export HB_PROBE_SPAWN_MS="${HB_PROBE_SPAWN_MS:-300000}"
+export HB_HARNESS_SLOWDOWN="${HB_HARNESS_SLOWDOWN:-100}"
+export HB_SMOKE_VIEWPORT="${HB_SMOKE_VIEWPORT:-480x300}"
+export HB_GATE_SKIP_BROWSER_PROBE="${HB_GATE_SKIP_BROWSER_PROBE:-1}"
 ENV
 echo "cloud-setup: ok (load the host knobs in any shell with: . ~/.hullbreaker-host.env)"

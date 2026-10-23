@@ -34,6 +34,14 @@ T-101 so nothing collides with that record.
   `tools/orch/smoke-verdict.mjs` (boot + full deterministic schedule + no page
   errors + no stall); `HB_HARNESS_SLOWDOWN` / `HB_SMOKE_VIEWPORT` are its
   slow-host knobs.
+- **Merge-gate smoke on this host (integrator policy, 2026-10-23).** Under load
+  30-60 the gate's own deterministic smoke re-run can exceed any sane wall cap
+  (T-102: three attempts capped at 2000 s, the job then killed at 2 h). When the
+  playtest gate has run BOTH smoke scripts against the pinned worktree at the
+  SAME head, and the integrator re-judges those report.json files with
+  `tools/orch/smoke-verdict.mjs`, the merge runs with `--skip-smoke` and the
+  SPRINT entry records it. pathcheck still runs in the worktree and on main.
+  T-120's PLAY gate is to replace this with a gate that fits the host.
 
 ## Queue
 
@@ -99,7 +107,7 @@ touch HUD/title layout (T-105), the camera (T-107), or RIG art (T-103).
 verify: node tools/pathcheck.mjs; node tools/playtest/run.mjs
 scripts/mid-route.json --deterministic; the new touch proof script
 
-## T-102 | feature | review | P1
+## T-102 | feature | done | P1
 
 goal: the corner turns work every time. The operator: *"the 'turns' don't
 quite work right all of the time."* Find every way a corner turn (the 60°
@@ -142,6 +150,11 @@ not touch touch controls (T-101), RIG art (T-103) or authored lattice data
 (T-106). If the fix needs a face-length or lattice change, report it.
 verify: node tools/pathcheck.mjs; the new turn proof; smoke scripts
 
+
+landed 2026-10-23 (`3e18f90`): D1-D5 fixed with a 41-run headless turn proof
+(full tier) + a 4-run per-edit subset. Review APPROVE, playtest PASS (both smoke
+scripts PASS at head 6d3e58f, re-judged by the integrator); merged with
+`--skip-smoke` under the policy above. R1-R4 routed to T-122 / T-107 / T-201.
 ## T-103 | art | doing | P1
 
 goal: weapons sit in RIG's hands. The operator: *"the models are a little off
