@@ -533,7 +533,31 @@ helix today, 0.21 tiles (~3.3 px at 1280x720, ~2.6 px on the phone) at grade
 0.21**. That jog is the measurable form of "stepped tile columns"; whether it
 reads is the captures' call (below) and the operator's.
 
-PENDING-T204-CAPTURES
+**QA captures** (T-102's posed method, every art asset through the boot
+preload gate, page camera = replica at every frame): corners 1, 3 and 6 at
+approach (a straight), 350 ms into the ritual (the ratchet) and +4 s (the next
+straight; c6 = the Crown approach), `?rise=steep` against the shipped helix,
+at 844x390 touch (the phone frame) and 1280x720 (desktop FAR) —
+`captures/t204-helix-vs-steep-844x390.jpg`, `captures/t204-helix-vs-steep-1280x720.jpg`
+(36 frames).
+
+- **The deck visibly climbs.** On the steep frames the deck and every
+  catwalk run uphill left to right across the whole frame; on the helix they
+  read nearly level. Vertical anatomy (pillars, ladders) stays vertical — the
+  camera does not roll; nothing assembles (entry 3).
+- **Stepped tile columns: not at true size; a 1-2 px notch per tile when
+  magnified.** Same-crop comparisons (`captures/t204-deck-crop-c3-844x390-x3.jpg`,
+  `captures/t204-deck-crop-c3-1280x720-x2.jpg`) show the steep deck's top
+  edge and lit rim as straight slopes with ordinary raster aliasing. At x6
+  (`captures/t204-lip-steep-1280x720-x6.png`) the row boundary under the lit
+  lip shows a small notch about once per tile — the analytic seam jog above
+  (level.js stacks each column's rows straight down while every tile leans by
+  the pitch, so each row is offset sin theta along the slope: 2.9 px at
+  1280x720 on face 3, 3.4 px at 0.21; 1.0 px on today's helix). A fix (stack
+  rows along the tile's own normal, or shear instead of rotate) is in
+  render/level.js, outside this lane — inbox issue.
+- **"Firing into a hillside": see the fight captures and the inbox issue.**
+  PENDING-STEEPFIGHT
 
 ### Portrait actor gain (from T-103)
 
@@ -806,6 +830,17 @@ grade ~0.25). Whether it reads that way at 0.16-0.21 is the operator's call
 pitch RIG's gun group and each projectile body by the local ascent grade —
 lives in render/player.js and render/bullets.js (outside T-107's fence);
 needed before `?rise=steep` can become a default.
+
+## I-??? | art | S3 | repro: `index.html?rise=steep`, any straight; posed `tools/playtest/turn-pose-capture.mjs --query rise=steep` @ task/T-107 | evidence: reports/tasks/T-107/captures/t204-lip-steep-1280x720-x6.png, t204-deck-crop-c3-*.jpg
+render/level.js rotates each deck tile by the local ascent pitch but stacks a
+column's rows straight down (`j + 0.5 + alt`), so every row sits sin(theta)
+further along the slope than the one above: the vertical seams jog 1.0 px per
+row at 1280x720 on today's helix, 2.9 px on face 3 of `?rise=steep` (0.18)
+and 3.4 px at 0.21 (~2.3-2.7 px on the phone frame). At true size the steep
+deck reads as a straight slope; magnified, the row boundary under the lit lip
+notches about once per tile. Stacking rows along the tile's own normal (or
+shearing instead of rotating) removes it; a T-204 follow-up in level.js if
+the operator keeps the steep rise.
 
 ## I-??? | art | S2 | repro: posed turn captures c5/c6 at 844x390 touch (`tools/playtest/turn-pose-capture.mjs`) + `tools/simlab/framing/rig_crops.py` @ task/T-107 | evidence: reports/tasks/T-107/captures/crown-rig-crops-{main,branch}.png, evidence/rig-contrast-*.json
 On the Crown face and its approach the phone frame draws RIG 44% taller
