@@ -481,7 +481,13 @@ function measureActor(a) {
   _v.applyMatrix4(_projScreen);
   a.devicePxPerTile = Math.abs((1 - _v.y) * 0.5 * _H - a.anchorPx.y);
   a.S = crispSupersample(a.texelsPerTile, a.devicePxPerTile);
-  snapAnchor(a.anchorPx.x + debug.snapOffsetPx, a.anchorPx.y + debug.snapOffsetPx, a.snap);
+  snapAnchor(a.anchorPx.x, a.anchorPx.y, a.snap);
+  if (debug.snapOffsetPx) {
+    // falsifier: the figure lands this far off the pixel edge it was snapped
+    // to (applied to the snapped result, so it always moves the figure)
+    a.snap.x += debug.snapOffsetPx; a.snap.y += debug.snapOffsetPx;
+    a.snap.dx += debug.snapOffsetPx; a.snap.dy += debug.snapOffsetPx;
+  }
   crispTileRect(_box.minX, _box.minY, _box.maxX, _box.maxY, a.snap.dx, a.snap.dy, TILE_MARGIN, a.rect);
   // Only the part of the figure that can reach the screen is ever composed.
   const x0 = Math.max(a.rect.x, -TILE_MARGIN), y0 = Math.max(a.rect.y, -TILE_MARGIN);
