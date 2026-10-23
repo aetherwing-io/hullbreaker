@@ -1,13 +1,13 @@
 {
  "tool": "tools/orch/test-census.mjs",
  "task": "T-108",
- "when": "2026-10-23T03:15:05.499Z",
- "tree": "6d60548",
+ "when": "2026-10-23T03:17:49.432Z",
+ "tree": "3f2d876",
  "rubric": "tools/orch/test-audit-spec.mjs (header); docs/proposals/2026-10-test-audit.md § Classes",
  "pathcheck": {
-  "domains": 80,
-  "callSites": 2062,
-  "evaluations": 3799,
+  "domains": 77,
+  "callSites": 2052,
+  "evaluations": 3789,
   "byClass": {
    "CORE": {
     "sites": 273,
@@ -18,8 +18,8 @@
     "evals": 2349
    },
    "PIN": {
-    "sites": 530,
-    "evals": 622
+    "sites": 520,
+    "evals": 612
    },
    "RETIRED": {
     "sites": 55,
@@ -37,16 +37,16 @@
   "coreShippedSites": 221,
   "coreShippedEvals": 650,
   "resolution": {
-   "site": 179,
-   "range": 1050,
+   "site": 175,
+   "range": 1049,
    "autoSrcText": 0,
-   "domainDefault": 833,
+   "domainDefault": 828,
    "srcTextButNotPin": 81,
-   "pinButNotSrcText": 224
+   "pinButNotSrcText": 217
   },
   "dispositions": {
    "CORE-GATE:invariant-tier": 804,
-   "DELETE": 368,
+   "DELETE": 358,
    "DELETE-WITH-FEATURE": 50,
    "CORE-GATE": 219,
    "REWRITE-AS-BEHAVIOUR": 171,
@@ -56,7 +56,7 @@
   },
   "dispositionEvals": {
    "CORE-GATE:invariant-tier": 1870,
-   "DELETE": 502,
+   "DELETE": 492,
    "DELETE-WITH-FEATURE": 50,
    "CORE-GATE": 649,
    "REWRITE-AS-BEHAVIOUR": 138,
@@ -69,12 +69,12 @@
    "deep": 444,
    "play": 4,
    "replaced": 171,
-   "gone": 418
+   "gone": 408
   },
   "identity": {
    "lock": "tools/orch/test-audit-lock.json",
-   "base": "6d60548",
-   "sites": 2062,
+   "base": "3f2d876",
+   "sites": 2052,
    "moved": 0
   },
   "prelude": {
@@ -2505,50 +2505,6 @@
   },
   {
    "index": 55,
-   "domain": "t-057-hull-shimmer",
-   "file": "tools/pathcheck/t-057-hull-shimmer.mjs",
-   "lines": 104,
-   "scope": "shipped",
-   "mechanism": "regex over materials.js",
-   "verdict": "DELETE",
-   "note": "Pins the anisotropy call sites and \"still 3x3 copies, still non-power-of-two\" — implementation shape.",
-   "sites": 6,
-   "evals": 6,
-   "srcTextSites": 3,
-   "byClass": {
-    "CORE": {
-     "sites": 0,
-     "evals": 0
-    },
-    "PURE-INVARIANT": {
-     "sites": 0,
-     "evals": 0
-    },
-    "PIN": {
-     "sites": 6,
-     "evals": 6
-    },
-    "RETIRED": {
-     "sites": 0,
-     "evals": 0
-    },
-    "TAUTOLOGY": {
-     "sites": 0,
-     "evals": 0
-    },
-    "SLOW-ENV": {
-     "sites": 0,
-     "evals": 0
-    }
-   },
-   "wallMs": [
-    1,
-    1,
-    1
-   ]
-  },
-  {
-   "index": 56,
    "domain": "fold-handoff-player-ownership",
    "file": "tools/pathcheck/fold-handoff-player-ownership.mjs",
    "lines": 132,
@@ -2592,7 +2548,7 @@
    ]
   },
   {
-   "index": 57,
+   "index": 56,
    "domain": "future-facet-render-ownership",
    "file": "tools/pathcheck/future-facet-render-ownership.mjs",
    "lines": 135,
@@ -2636,7 +2592,7 @@
    ]
   },
   {
-   "index": 58,
+   "index": 57,
    "domain": "mod-route-visibility",
    "file": "tools/pathcheck/mod-route-visibility.mjs",
    "lines": 19,
@@ -2680,7 +2636,7 @@
    ]
   },
   {
-   "index": 59,
+   "index": 58,
    "domain": "limb-fold-bridge-locality",
    "file": "tools/pathcheck/limb-fold-bridge-locality.mjs",
    "lines": 81,
@@ -2724,7 +2680,7 @@
    ]
   },
   {
-   "index": 60,
+   "index": 59,
    "domain": "catwalk-built-prefix-visibility",
    "file": "tools/pathcheck/catwalk-built-prefix-visibility.mjs",
    "lines": 113,
@@ -2768,7 +2724,7 @@
    ]
   },
   {
-   "index": 61,
+   "index": 60,
    "domain": "vertical-assault-geometry",
    "file": "tools/pathcheck/vertical-assault-geometry.mjs",
    "lines": 151,
@@ -2812,7 +2768,7 @@
    ]
   },
   {
-   "index": 62,
+   "index": 61,
    "domain": "gate-prelude-runtime",
    "file": "tools/pathcheck/gate-prelude-runtime.mjs",
    "lines": 183,
@@ -2856,51 +2812,7 @@
    ]
   },
   {
-   "index": 63,
-   "domain": "capsule-reliquary-contract",
-   "file": "tools/pathcheck/capsule-reliquary-contract.mjs",
-   "lines": 24,
-   "scope": "shipped",
-   "mechanism": "spawns tools/capsule-reliquary-check.mjs (a regex \"fast source contract\") and greps its printed count",
-   "verdict": "DELETE",
-   "note": "Wrapper: line 1 = the checker exits 0 (the checker is regex over capsules.js); line 2 = its stdout says exactly \"27 focused contracts\".",
-   "sites": 2,
-   "evals": 2,
-   "srcTextSites": 0,
-   "byClass": {
-    "CORE": {
-     "sites": 0,
-     "evals": 0
-    },
-    "PURE-INVARIANT": {
-     "sites": 0,
-     "evals": 0
-    },
-    "PIN": {
-     "sites": 2,
-     "evals": 2
-    },
-    "RETIRED": {
-     "sites": 0,
-     "evals": 0
-    },
-    "TAUTOLOGY": {
-     "sites": 0,
-     "evals": 0
-    },
-    "SLOW-ENV": {
-     "sites": 0,
-     "evals": 0
-    }
-   },
-   "wallMs": [
-    47,
-    247,
-    72
-   ]
-  },
-  {
-   "index": 64,
+   "index": 62,
    "domain": "projectile-presentation-contract",
    "file": "tools/pathcheck/projectile-presentation-contract.mjs",
    "lines": 59,
@@ -2944,7 +2856,7 @@
    ]
   },
   {
-   "index": 65,
+   "index": 63,
    "domain": "limb-silhouette-production",
    "file": "tools/pathcheck/limb-silhouette-production.mjs",
    "lines": 92,
@@ -2988,7 +2900,7 @@
    ]
   },
   {
-   "index": 66,
+   "index": 64,
    "domain": "actor-motion-contract",
    "file": "tools/pathcheck/actor-motion-contract.mjs",
    "lines": 17,
@@ -3032,7 +2944,7 @@
    ]
   },
   {
-   "index": 67,
+   "index": 65,
    "domain": "crown-command-architecture",
    "file": "tools/pathcheck/crown-command-architecture.mjs",
    "lines": 172,
@@ -3076,51 +2988,7 @@
    ]
   },
   {
-   "index": 68,
-   "domain": "enemy-ecology-render-contract",
-   "file": "tools/pathcheck/enemy-ecology-render-contract.mjs",
-   "lines": 21,
-   "scope": "shipped",
-   "mechanism": "spawns tools/enemy-ecology-render-check.mjs and greps exact JSON numbers",
-   "verdict": "DELETE",
-   "note": "The checker is mostly regex over render source; the wrapper pins \"componentGeometries\": 192 / \"visualStates\": 768 / \"quadsPerEnemy\": 2.",
-   "sites": 2,
-   "evals": 2,
-   "srcTextSites": 0,
-   "byClass": {
-    "CORE": {
-     "sites": 0,
-     "evals": 0
-    },
-    "PURE-INVARIANT": {
-     "sites": 0,
-     "evals": 0
-    },
-    "PIN": {
-     "sites": 2,
-     "evals": 2
-    },
-    "RETIRED": {
-     "sites": 0,
-     "evals": 0
-    },
-    "TAUTOLOGY": {
-     "sites": 0,
-     "evals": 0
-    },
-    "SLOW-ENV": {
-     "sites": 0,
-     "evals": 0
-    }
-   },
-   "wallMs": [
-    283,
-    351,
-    221
-   ]
-  },
-  {
-   "index": 69,
+   "index": 66,
    "domain": "hostile-presenter-contract",
    "file": "tools/pathcheck/hostile-presenter-contract.mjs",
    "lines": 19,
@@ -3164,7 +3032,7 @@
    ]
   },
   {
-   "index": 70,
+   "index": 67,
    "domain": "adaptive-fidelity-contract",
    "file": "tools/pathcheck/adaptive-fidelity-contract.mjs",
    "lines": 19,
@@ -3208,7 +3076,7 @@
    ]
   },
   {
-   "index": 71,
+   "index": 68,
    "domain": "render-submission-contract",
    "file": "tools/pathcheck/render-submission-contract.mjs",
    "lines": 56,
@@ -3252,7 +3120,7 @@
    ]
   },
   {
-   "index": 72,
+   "index": 69,
    "domain": "frame-input-contract",
    "file": "tools/pathcheck/frame-input-contract.mjs",
    "lines": 74,
@@ -3296,7 +3164,7 @@
    ]
   },
   {
-   "index": 73,
+   "index": 70,
    "domain": "gilded-chassis",
    "file": "tools/pathcheck/gilded-chassis.mjs",
    "lines": 139,
@@ -3340,7 +3208,7 @@
    ]
   },
   {
-   "index": 74,
+   "index": 71,
    "domain": "power-feedback-contract",
    "file": "tools/pathcheck/power-feedback-contract.mjs",
    "lines": 92,
@@ -3384,7 +3252,7 @@
    ]
   },
   {
-   "index": 75,
+   "index": 72,
    "domain": "depth-layer-contract",
    "file": "tools/pathcheck/depth-layer-contract.mjs",
    "lines": 95,
@@ -3428,7 +3296,7 @@
    ]
   },
   {
-   "index": 76,
+   "index": 73,
    "domain": "t-120-input-forgiveness",
    "file": "tools/pathcheck/t-120-input-forgiveness.mjs",
    "lines": 79,
@@ -3472,7 +3340,7 @@
    ]
   },
   {
-   "index": 77,
+   "index": 74,
    "domain": "t-120-retry-replays-the-run",
    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
    "lines": 90,
@@ -3516,7 +3384,7 @@
    ]
   },
   {
-   "index": 78,
+   "index": 75,
    "domain": "t-120-determinism-and-art-blind-sim",
    "file": "tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs",
    "lines": 59,
@@ -3560,7 +3428,7 @@
    ]
   },
   {
-   "index": 79,
+   "index": 76,
    "domain": "t-120-prototype-flags-inert",
    "file": "tools/pathcheck/t-120-prototype-flags-inert.mjs",
    "lines": 74,
@@ -3905,7 +3773,7 @@
     "gated": "pathcheck",
     "cls": "PIN",
     "what": "\"fast source contract\" — 27 regexes over render/capsules.js",
-    "verdict": "DELETE",
+    "verdict": "DELETED by T-120 batch 5 (PIN-only checker; its domain went with it)",
     "run": {
      "ms": 105,
      "exit": 0,
@@ -3990,7 +3858,7 @@
     "gated": "pathcheck",
     "cls": "PIN",
     "what": "selector coverage + regex over render source; wrapper pins 192/768/2",
-    "verdict": "DELETE",
+    "verdict": "DELETED by T-120 batch 5 (PIN-only checker; its domain went with it)",
     "run": {
      "ms": 958,
      "exit": 0,
@@ -19648,48 +19516,6 @@
     "note": "tile lands at its declared span / above 80 CSS px"
    },
    {
-    "file": "tools/pathcheck/t-057-hull-shimmer.mjs",
-    "label": "T-057: materials.js reads the device's own anisotropy limit … (renderer.capabilities.getMaxAnisotrop",
-    "line": 46,
-    "cls": "PIN",
-    "note": "regex over materials.js anisotropy (hand pass: confirmed PIN)"
-   },
-   {
-    "file": "tools/pathcheck/t-057-hull-shimmer.mjs",
-    "label": "T-057: no remaining hardcoded numeric anisotropy literal anywhere in materials.js",
-    "line": 53,
-    "cls": "PIN",
-    "note": "regex over materials.js anisotropy (hand pass: confirmed PIN)"
-   },
-   {
-    "file": "tools/pathcheck/t-057-hull-shimmer.mjs",
-    "label": "T-057: `anisotropy` is set at both places this file actually uses it — the … preload opts AND the Ca",
-    "line": 56,
-    "cls": "PIN",
-    "note": "regex over materials.js anisotropy (hand pass: confirmed PIN)"
-   },
-   {
-    "file": "tools/pathcheck/t-057-hull-shimmer.mjs",
-    "label": "T-057: hull/wall still hold T-054's shipped 3x3 copies, not the 4x4 this task … measured and rejecte",
-    "line": 73,
-    "cls": "PIN",
-    "note": "(domain default)"
-   },
-   {
-    "file": "tools/pathcheck/t-057-hull-shimmer.mjs",
-    "label": "T-057: hull's composited-canvas cellPx is still the nearest-multiple-of-4 rule … ( … ), not a power-",
-    "line": 88,
-    "cls": "PIN",
-    "note": "(domain default)"
-   },
-   {
-    "file": "tools/pathcheck/t-057-hull-shimmer.mjs",
-    "label": "T-057: hull's composited canvas ( … px) is still non-power-of-two — … measured, and deliberately lef",
-    "line": 96,
-    "cls": "PIN",
-    "note": "(domain default)"
-   },
-   {
     "file": "tools/pathcheck/fold-handoff-player-ownership.mjs",
     "label": "fold regression exercises the configured first-gate halt (…) and bend (…)",
     "line": 26,
@@ -19800,20 +19626,6 @@
     "line": 95,
     "cls": "PIN",
     "note": "attack readiness follows the authored three-beat cohort score"
-   },
-   {
-    "file": "tools/pathcheck/capsule-reliquary-contract.mjs",
-    "label": "the capsule reliquary focused production contract executes successfully",
-    "line": 19,
-    "cls": "PIN",
-    "note": "(domain default)"
-   },
-   {
-    "file": "tools/pathcheck/capsule-reliquary-contract.mjs",
-    "label": "all twenty-seven capsule reliquary presentation contracts remain registered",
-    "line": 21,
-    "cls": "PIN",
-    "note": "count ratchet (\"27 focused contracts\") of a checker that is itself deleted (review finding 11)"
    },
    {
     "file": "tools/pathcheck/projectile-presentation-contract.mjs",
@@ -20045,20 +19857,6 @@
     "line": 169,
     "cls": "PIN",
     "note": "regex over the Crown renderer / art / finale source (hand pass: confirmed PIN)"
-   },
-   {
-    "file": "tools/pathcheck/enemy-ecology-render-contract.mjs",
-    "label": "manifest, fixed fit, selector, exact tactics and breakup contract execute",
-    "line": 14,
-    "cls": "PIN",
-    "note": "(domain default)"
-   },
-   {
-    "file": "tools/pathcheck/enemy-ecology-render-contract.mjs",
-    "label": "one texture supplies 192 independent layers and 768 two-quad combinations",
-    "line": 16,
-    "cls": "PIN",
-    "note": "exact counts 192 / 768 / 2 from the checker's stdout"
    },
    {
     "file": "tools/pathcheck/hostile-presenter-contract.mjs",
@@ -20491,10 +20289,7 @@
    }
   ],
   "deleteWholeDomains": [
-   "tools/pathcheck/t-057-hull-shimmer.mjs",
    "tools/pathcheck/mod-route-visibility.mjs",
-   "tools/pathcheck/capsule-reliquary-contract.mjs",
-   "tools/pathcheck/enemy-ecology-render-contract.mjs",
    "tools/pathcheck/hostile-presenter-contract.mjs"
   ],
   "deleteStandalone": [
@@ -20521,7 +20316,7 @@
    {
     "check": "tools/capsule-reliquary-check.mjs",
     "why": "\"fast source contract\" — 27 regexes over render/capsules.js",
-    "verdict": "DELETE"
+    "verdict": "DELETED by T-120 batch 5 (PIN-only checker; its domain went with it)"
    },
    {
     "check": "tools/defense-vfx-pack-check.mjs",
@@ -20541,7 +20336,7 @@
    {
     "check": "tools/enemy-ecology-render-check.mjs",
     "why": "selector coverage + regex over render source; wrapper pins 192/768/2",
-    "verdict": "DELETE"
+    "verdict": "DELETED by T-120 batch 5 (PIN-only checker; its domain went with it)"
    },
    {
     "check": "tools/foreground-kit-check.mjs",
@@ -53795,114 +53590,6 @@
    "tier": "fast"
   },
   {
-   "domain": "t-057-hull-shimmer",
-   "scope": "shipped",
-   "site": "tools/pathcheck/t-057-hull-shimmer.mjs:46",
-   "line": 46,
-   "label": "T-057: materials.js reads the device's own anisotropy limit … (renderer.capabilities.getMaxAnisotrop",
-   "fn": "ok",
-   "cls": "PIN",
-   "how": "site",
-   "marks": [],
-   "core": false,
-   "srcText": true,
-   "evals": 1,
-   "message": "T-057: materials.js reads the device\\'s own anisotropy limit … (renderer.capabilities.getMaxAnisotropy()) rather than a pinned guess",
-   "note": "regex over materials.js anisotropy (hand pass: confirmed PIN)",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
-   "domain": "t-057-hull-shimmer",
-   "scope": "shipped",
-   "site": "tools/pathcheck/t-057-hull-shimmer.mjs:53",
-   "line": 53,
-   "label": "T-057: no remaining hardcoded numeric anisotropy literal anywhere in materials.js",
-   "fn": "ok",
-   "cls": "PIN",
-   "how": "site",
-   "marks": [],
-   "core": false,
-   "srcText": true,
-   "evals": 1,
-   "message": "T-057: no remaining hardcoded numeric anisotropy literal anywhere in materials.js",
-   "note": "regex over materials.js anisotropy (hand pass: confirmed PIN)",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
-   "domain": "t-057-hull-shimmer",
-   "scope": "shipped",
-   "site": "tools/pathcheck/t-057-hull-shimmer.mjs:56",
-   "line": 56,
-   "label": "T-057: `anisotropy` is set at both places this file actually uses it — the … preload opts AND the Ca",
-   "fn": "ok",
-   "cls": "PIN",
-   "how": "site",
-   "marks": [],
-   "core": false,
-   "srcText": true,
-   "evals": 1,
-   "message": "T-057: `anisotropy` is set at both places this file actually uses it — the … preload opts AND the CanvasTexture built in buildTile (found … lowercase … `anisotropy` occurrences; the constant itself is HULL_MAX_ANISOTROPY",
-   "note": "regex over materials.js anisotropy (hand pass: confirmed PIN)",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
-   "domain": "t-057-hull-shimmer",
-   "scope": "shipped",
-   "site": "tools/pathcheck/t-057-hull-shimmer.mjs:73",
-   "line": 73,
-   "label": "T-057: hull/wall still hold T-054's shipped 3x3 copies, not the 4x4 this task … measured and rejecte",
-   "fn": "ok",
-   "cls": "PIN",
-   "how": "default",
-   "marks": [],
-   "core": false,
-   "srcText": false,
-   "evals": 1,
-   "message": "T-057: hull/wall still hold T-054\\'s shipped 3x3 copies, not the 4x4 this task … measured and rejected (found … )",
-   "note": "(domain default)",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
-   "domain": "t-057-hull-shimmer",
-   "scope": "shipped",
-   "site": "tools/pathcheck/t-057-hull-shimmer.mjs:88",
-   "line": 88,
-   "label": "T-057: hull's composited-canvas cellPx is still the nearest-multiple-of-4 rule … ( … ), not a power-",
-   "fn": "ok",
-   "cls": "PIN",
-   "how": "default",
-   "marks": [],
-   "core": false,
-   "srcText": false,
-   "evals": 1,
-   "message": "T-057: hull\\'s composited-canvas cellPx is still the nearest-multiple-of-4 rule … ( … ), not a power-of-two round (got … ) — every … power-of-two variant this task tried measured WORSE shimmer, not better (build.md)",
-   "note": "(domain default)",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
-   "domain": "t-057-hull-shimmer",
-   "scope": "shipped",
-   "site": "tools/pathcheck/t-057-hull-shimmer.mjs:96",
-   "line": 96,
-   "label": "T-057: hull's composited canvas ( … px) is still non-power-of-two — … measured, and deliberately lef",
-   "fn": "ok",
-   "cls": "PIN",
-   "how": "default",
-   "marks": [],
-   "core": false,
-   "srcText": false,
-   "evals": 1,
-   "message": "T-057: hull\\'s composited canvas ( … px) is still non-power-of-two — … measured, and deliberately left alone: making it power-of-two (either by rounding cellPx … or by raising the copy count) made I-049\\'s shimmer metric",
-   "note": "(domain default)",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
    "domain": "fold-handoff-player-ownership",
    "scope": "shipped",
    "site": "tools/pathcheck/fold-handoff-player-ownership.mjs:26",
@@ -55947,42 +55634,6 @@
    "tier": "fast"
   },
   {
-   "domain": "capsule-reliquary-contract",
-   "scope": "shipped",
-   "site": "tools/pathcheck/capsule-reliquary-contract.mjs:19",
-   "line": 19,
-   "label": "the capsule reliquary focused production contract executes successfully",
-   "fn": "ok",
-   "cls": "PIN",
-   "how": "default",
-   "marks": [],
-   "core": false,
-   "srcText": false,
-   "evals": 1,
-   "message": "the capsule reliquary focused production contract executes successfully",
-   "note": "(domain default)",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
-   "domain": "capsule-reliquary-contract",
-   "scope": "shipped",
-   "site": "tools/pathcheck/capsule-reliquary-contract.mjs:21",
-   "line": 21,
-   "label": "all twenty-seven capsule reliquary presentation contracts remain registered",
-   "fn": "ok",
-   "cls": "PIN",
-   "how": "site",
-   "marks": [],
-   "core": false,
-   "srcText": false,
-   "evals": 1,
-   "message": "all twenty-seven capsule reliquary presentation contracts remain registered",
-   "note": "count ratchet (\"27 focused contracts\") of a checker that is itself deleted (review finding 11)",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
    "domain": "projectile-presentation-contract",
    "scope": "shipped",
    "site": "tools/pathcheck/projectile-presentation-contract.mjs:24",
@@ -56981,42 +56632,6 @@
    "evals": 1,
    "message": "the architecture and art owners contain no finale timing, Warden tune, hitbox or hostile behavior",
    "note": "regex over the Crown renderer / art / finale source (hand pass: confirmed PIN)",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
-   "domain": "enemy-ecology-render-contract",
-   "scope": "shipped",
-   "site": "tools/pathcheck/enemy-ecology-render-contract.mjs:14",
-   "line": 14,
-   "label": "manifest, fixed fit, selector, exact tactics and breakup contract execute",
-   "fn": "ok",
-   "cls": "PIN",
-   "how": "default",
-   "marks": [],
-   "core": false,
-   "srcText": false,
-   "evals": 1,
-   "message": "manifest, fixed fit, selector, exact tactics and breakup contract execute",
-   "note": "(domain default)",
-   "disposition": "DELETE",
-   "tier": "gone"
-  },
-  {
-   "domain": "enemy-ecology-render-contract",
-   "scope": "shipped",
-   "site": "tools/pathcheck/enemy-ecology-render-contract.mjs:16",
-   "line": 16,
-   "label": "one texture supplies 192 independent layers and 768 two-quad combinations",
-   "fn": "ok",
-   "cls": "PIN",
-   "how": "range",
-   "marks": [],
-   "core": false,
-   "srcText": false,
-   "evals": 1,
-   "message": "one texture supplies 192 independent layers and 768 two-quad combinations",
-   "note": "exact counts 192 / 768 / 2 from the checker's stdout",
    "disposition": "DELETE",
    "tier": "gone"
   },

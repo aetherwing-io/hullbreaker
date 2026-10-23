@@ -64,7 +64,6 @@ import * as d51 from './t-049-hostile-sprites.mjs';
 import * as d52 from './t-052-hull-texture.mjs';
 import * as d53 from './t-051-backdrop.mjs';
 import * as d54 from './t-054-hull-contrast.mjs';
-import * as d55 from './t-057-hull-shimmer.mjs';
 import * as d56 from './fold-handoff-player-ownership.mjs';
 import * as d57 from './future-facet-render-ownership.mjs';
 import * as d58 from './mod-route-visibility.mjs';
@@ -72,12 +71,10 @@ import * as d59 from './limb-fold-bridge-locality.mjs';
 import * as d60 from './catwalk-built-prefix-visibility.mjs';
 import * as d61 from './vertical-assault-geometry.mjs';
 import * as d62 from './gate-prelude-runtime.mjs';
-import * as d63 from './capsule-reliquary-contract.mjs';
 import * as d64 from './projectile-presentation-contract.mjs';
 import * as d65 from './limb-silhouette-production.mjs';
 import * as d66 from './actor-motion-contract.mjs';
 import * as d67 from './crown-command-architecture.mjs';
-import * as d68 from './enemy-ecology-render-contract.mjs';
 import * as d69 from './hostile-presenter-contract.mjs';
 import * as d71 from './adaptive-fidelity-contract.mjs';
 import * as d72 from './render-submission-contract.mjs';
@@ -146,7 +143,6 @@ export const DOMAINS = [
   d52,    // T-052: hull surface textures (four tiles bound, entries 16/18)
   d53,    // T-051: backdrop layers (graded anatomy plates, entries 16/17) ====
   d54,    // T-054: hull texture legibility — density + range (entries 16/18) ====
-  d55,    // T-057: I-049 lower-hull shimmer — anisotropy fix + canvas non-regression
   d56,    // fold handoff: player ownership without old-facet leaks
   d57,    // future-face render ownership: generated is not visible
   d58,    // modifier echoes and telegraphs obey route visibility
@@ -154,12 +150,10 @@ export const DOMAINS = [
   d60,    // long catwalks expose only their built route prefix
   d61,    // Vertical Assault: deterministic, maneuverable six-face geometry
   d62,    // gate cohorts enter during movement instead of after the halt
-  d63,    // production capsule reliquary presentation contract
   d64,    // five-family projectile presentation contract
   d65,    // production limb silhouette: connected macro anatomy
   d66,    // declarative polyp, mortar, and Crown Warden actor motion
   d67,    // Crown finale: rooted vertical command architecture
-  d68,    // Level 1 enemy ecology: one-atlas two-layer presentation
   d69,    // spawn-time hostile presenter registry
   d71,    // sustained-frame adaptive fidelity ladder
   d72,    // built-scene single-pass, idle upload, and canvas-AA truth

@@ -865,14 +865,6 @@ export const DOMAINS = {
     ],
   },
 
-  't-057-hull-shimmer': {
-    scope: 'shipped',
-    mechanism: 'regex over materials.js',
-    verdict: 'DELETE',
-    default: 'PIN',
-    note: 'Pins the anisotropy call sites and "still 3x3 copies, still non-power-of-two" — implementation shape.',
-    ranges: [],
-  },
 
   'fold-handoff-player-ownership': {
     scope: 'shipped',
@@ -960,14 +952,6 @@ export const DOMAINS = {
     ],
   },
 
-  'capsule-reliquary-contract': {
-    scope: 'shipped',
-    mechanism: 'spawns tools/capsule-reliquary-check.mjs (a regex "fast source contract") and greps its printed count',
-    verdict: 'DELETE',
-    default: 'PIN',
-    note: 'Wrapper: line 1 = the checker exits 0 (the checker is regex over capsules.js); line 2 = its stdout says exactly "27 focused contracts".',
-    ranges: [[21, 21, 'TAUTOLOGY', 'greps the checker\'s own printed count — adding a contract fails it, weakening one does not']],
-  },
 
   'projectile-presentation-contract': {
     scope: 'shipped',
@@ -1023,14 +1007,6 @@ export const DOMAINS = {
     ],
   },
 
-  'enemy-ecology-render-contract': {
-    scope: 'shipped',
-    mechanism: 'spawns tools/enemy-ecology-render-check.mjs and greps exact JSON numbers',
-    verdict: 'DELETE',
-    default: 'PIN',
-    note: 'The checker is mostly regex over render source; the wrapper pins "componentGeometries": 192 / "visualStates": 768 / "quadsPerEnemy": 2.',
-    ranges: [[16, 16, 'PIN', 'exact counts 192 / 768 / 2 from the checker\'s stdout']],
-  },
 
   'hostile-presenter-contract': {
     scope: 'shipped',
@@ -1517,12 +1493,6 @@ export const SITES = [
   { domain: 't-051-backdrop', label: 'center y is derived from yBottom + half ', cls: 'TAUTOLOGY',
     note: 're-derives the placement formula it tests (first-pass spot check, applied in the review pass)' }, // :137
   // t-057-hull-shimmer
-  { domain: 't-057-hull-shimmer', label: 'T-057: materials.js reads the device\'s o', cls: 'PIN',
-    note: 'regex over materials.js anisotropy (hand pass: confirmed PIN)' }, // :46
-  { domain: 't-057-hull-shimmer', label: 'T-057: no remaining hardcoded numeric an', cls: 'PIN',
-    note: 'regex over materials.js anisotropy (hand pass: confirmed PIN)' }, // :53
-  { domain: 't-057-hull-shimmer', label: 'T-057: `anisotropy` is set at both place', cls: 'PIN',
-    note: 'regex over materials.js anisotropy (hand pass: confirmed PIN)' }, // :56
   // future-facet-render-ownership
   { domain: 'future-facet-render-ownership', label: 'pre-turn render ownership exposes zero f', cls: 'CORE',
     note: 'static anatomy (entry 3): runs the real routeRenderOwned over every column — zero future-face rows visible before the turn (review finding 1; the mechanical rule matched a variable name)' }, // :37
@@ -1549,8 +1519,6 @@ export const SITES = [
     note: 'render ownership by regex (nothing renders on an unbuilt or off-camera facet, entry 3): replace with the PLAY-gate ownership probe (§7.2 item 4), falsifier M20, then delete',
     marks: ['core'] }, // :146
   // capsule-reliquary-contract
-  { domain: 'capsule-reliquary-contract', label: 'all twenty-seven capsule reliquary prese', cls: 'PIN',
-    note: 'count ratchet ("27 focused contracts") of a checker that is itself deleted (review finding 11)' }, // :21
   // projectile-presentation-contract
   { domain: 'projectile-presentation-contract', label: 'all twenty-five projectile presentation ', cls: 'PIN',
     note: 'count ratchet ("25/25 contracts passed") of a checker that is itself deleted — goes with it (review finding 11)' }, // :26
