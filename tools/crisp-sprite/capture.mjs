@@ -70,6 +70,9 @@ const NO_GUNLESS = has('--no-gunless');
 // --falsify lit: serve the crisp path with the lit material restored
 // (lib.mjs FALSIFIERS) — the gain box's falsifier, which must read red
 const FALSIFY = argv('--falsify', '');
+// --lineup-frames N: let the lineup act for N frames before it is frozen
+// (default 3: materialized, not yet engaged; more frames reach tells/charges)
+const LINEUP_FRAMES = Number(argv('--lineup-frames', 3));
 const views = argv('--views', 'desktop,phone').split(',');
 const POSES = argv('--poses', 'idle,run,jump,upright,fire,fire-nofx,left').split(',');
 const RIG_DEPTH = 1.15;        // src/render/player.js RIG_SURFACE_DEPTH
@@ -197,7 +200,7 @@ async function captureView(browser, base, viewName, V) {
       const spawned = await page.evaluate(() => window.__CRISP_CAP.actors());
       // actors() ends every entrance at once (enterUntil = now), so three
       // frames settle them fully materialized and not yet engaged
-      await frames(page, 3);
+      await frames(page, LINEUP_FRAMES);
       await page.evaluate(() => window.__CRISP_CAP.pause());
       await frames(page, 1);
       const info = await page.evaluate((d) => window.__CRISP_CAP.info(d), RIG_DEPTH);
