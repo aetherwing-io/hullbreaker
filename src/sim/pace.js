@@ -70,9 +70,11 @@ export function momentumScrollSpeed() {
 /* ctx: { playerLeft, edgeLeft, edgeRight, kills, hp, lives, nowMs, held,
           leadDaylight? }
    `leadDaylight` (T-201, follow-lead on): the daylight RIG has when its
-   front sits on the follow-lead line — riding it banks fully, the way riding
-   the right clamp did (src/pure/momentum.js momentumLeadBank). Absent, the
-   shipped screen-fraction bank runs unchanged.
+   front sits on the follow line (the lead line, or the corner blend's line
+   when that binds first; sim/scroll.js followLineDaylight) — riding it banks
+   fully, the way riding the right clamp did (src/pure/momentum.js
+   momentumLeadBank). Absent, the shipped screen-fraction bank runs
+   unchanged.
    `primed` seeds the kill/health baselines on the first frame after a reset
    so a fresh run never reads its own initialization as a hit — the same
    contract stepHitStop uses in sim/time.js.                              */

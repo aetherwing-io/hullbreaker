@@ -85,6 +85,13 @@ const ROWS = [
     "export function levelBuildRevision() { return buildRevision; }",
     "export function levelBuildRevision() { return buildRevision; }\nexport function settleColumn(s) { built[s] = 1; buildRevision++; }",
     'fast', /keeps no zipper/],
+  ['F15', 'the six-face run starts its future faces unbuilt again (nothing settles them)', 'src/sim/level.js',
+    '  if (IS_TRAVERSAL_SLICE) {\n    let changed = false;', '  {\n    let changed = false;',
+    'fast', /every column exists through a played turn/],
+  ['F16', 'the bank saturates on the lead line only (the corner blend sheds a racer\'s bank)', 'src/sim/scroll.js',
+    'leadDaylight: FOLLOW_ENABLED ? followLineDaylight(c) : undefined,',
+    'leadDaylight: FOLLOW_ENABLED ? (EDGE_R - EDGE_L) - followLeadTiles(EDGE_R - EDGE_L, CONFIG.follow) - 2 * player.hw : undefined,',
+    'full', /BANK/],
 ];
 
 function copyTree() {

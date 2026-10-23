@@ -25,7 +25,7 @@ node tools/simlab/turnlab.mjs matrix --jobs 3                # every policy x 4 
 node tools/simlab/turnlab.mjs run --policy run --viewport phonePortrait --query fallback=0
 node tools/simlab/turnlab.mjs run --policy run --viewport phonePortrait --gunner paced --pace 1400 --max-ticks 21600
 node tools/simlab/turnlab.mjs poses --viewport phoneLandscape > /tmp/poses.json
-node tools/simlab/turnlab-falsify.mjs                         # 32 rows (T-201: P4 -> Z1, N1-N7); minutes
+node tools/simlab/turnlab-falsify.mjs                         # 33 rows (T-201: P4 -> Z1, N1-N8); minutes
 node tools/simlab/turnlab-falsify.mjs --fast-domain --only P1,P2,P3   # the per-edit tier binds
 ```
 

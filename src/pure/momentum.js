@@ -208,9 +208,12 @@ export function followCornerFloor(haltS, jointFront, rigFront, cfg) {
  * ~51 tiles) — so the shipped ramp would cap a racer's bank at ~0.37 and the
  * ceiling would be unreachable by racing. Re-expressed in tiles from the
  * damage plane: `daylight` is RIG's back to the plane, `leadDaylight` the
- * daylight RIG has when the follow-lead binds (its front on the lead line —
- * the follow frame's new clamp). Riding the lead line banks fully, exactly as
- * riding the clamp did; anywhere behind it the shipped fraction ramp is used
+ * daylight RIG has when the follow line binds (its front on the lead line, or
+ * on the corner blend's line when that binds first — the follow frame's new
+ * clamp; sim/scroll.js followLineDaylight). Riding the follow line banks
+ * fully, exactly as riding the clamp did — through the blend too, so a racer
+ * does not shed escalation in the last tiles before every joint because the
+ * frame compresses there; anywhere behind it the shipped fraction ramp is used
  * unchanged, so a player who never reaches the lead banks EXACTLY what they
  * banked before (the floor promise) and the carried player's deadband stays a
  * deadband. Without follow (`leadDaylight` = Infinity) this IS the shipped

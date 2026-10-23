@@ -22,8 +22,11 @@
  *   - Frames are taken by pausing (KeyP) on the first rendered frame that
  *     meets each milestone; the sidecar JSON records that frame's own sim
  *     state (corner state, ritual clock, RIG, scroll, every hostile with its
- *     follower flag) and the camera's fold snapshot. The pause overlay is
- *     hidden with CSS.
+ *     follower flag) and the camera's fold snapshot. The pause overlay and
+ *     the touch "TAP TO RESUME" cue are hidden with CSS, and the HUD and the
+ *     thumb deck — which a pause fades out (body.at-modal) — are shown, so a
+ *     frame reads as the playing frame it was paused on. The HUD keeps
+ *     updating while paused, so its text is that frame's.
  * Milestones (corner k): arrive (the corner opens with an encounter body of
  * the side alive), t350 (the 30-degree hold), t700 (just after the camera
  * hand-off), done (the ritual is over; followers are dormant), enter (the
@@ -66,7 +69,8 @@ try {
   await page.goto(url, { waitUntil: 'load', timeout: 300000 });
   await page.waitForFunction(() => globalThis.HB && HB.state() === 'PLAYING', null, { timeout: 600000 });
   log('booted', `${vw}x${vh}`, touch ? 'touch' : 'mouse', 'dpr', dpr);
-  await page.addStyleTag({ content: '#overlay { display: none !important; }' });
+  await page.addStyleTag({ content: '#overlay, #thumbModal { display: none !important; } ' +
+    'body.at-modal .hud, body.at-modal #thumbDeck { opacity: 1 !important; }' });
   await page.evaluate(async ({ k, milestones }) => {
     const [W, T, Hs, P, Cam, IN, LV, CF] = await Promise.all([
       '/src/sim/wavegate.js', '/src/sim/time.js', '/src/sim/hostiles.js', '/src/pure/path.js',

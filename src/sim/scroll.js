@@ -52,6 +52,24 @@ function followFloorNow(c) {
   return Math.min(floor, activeScrollEnd());
 }
 
+/* The daylight RIG has when its front stands on the follow line this frame —
+   the lead line, or (approaching an idle corner) the corner blend's line,
+   whichever binds first. The momentum bank saturates there (src/pure/
+   momentum.js momentumLeadBank): riding the follow line is the follow
+   frame's "riding the right clamp", blend included, so a racer's escalation
+   is not shed in the last tiles before every joint. Tiles from the damage
+   plane, read from the live edges. */
+function followLineDaylight(c) {
+  const lead = followLeadTiles(EDGE_R - EDGE_L, CONFIG.follow);
+  let daylight = (EDGE_R - EDGE_L) - lead - 2 * player.hw;
+  if (c && c.state === 'idle') {
+    const jointFront = c.s + 1 - CONFIG.edges.margin;
+    const frontOnBlend = jointFront - (HALT_S[c.k - 1] - scrollX) / (1 + CONFIG.follow.cornerBlendRate);
+    daylight = Math.min(daylight, frontOnBlend - 2 * player.hw - sLeftEdge());
+  }
+  return daylight;
+}
+
 export function updateScroll(dt) {
   if (IS_TRANSFORM_SLICE) {
     // The transformation fixture's own gate runtime owns the scroll. A
@@ -101,9 +119,7 @@ export function updateScroll(dt) {
       lives: player.lives,
       nowMs: gameMs,
       held: cornerBusy() || scrollX >= clamp - 1e-6,
-      leadDaylight: FOLLOW_ENABLED
-        ? (EDGE_R - EDGE_L) - followLeadTiles(EDGE_R - EDGE_L, CONFIG.follow) - 2 * player.hw
-        : undefined,
+      leadDaylight: FOLLOW_ENABLED ? followLineDaylight(c) : undefined,
     });
   }
   const followFloor = followFloorNow(c);

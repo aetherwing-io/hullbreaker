@@ -310,6 +310,22 @@ function playedChecks(list, outs) {
     ok(gates.every((g) => !g || !g.pursuers || (g.carried === g.pursuers && g.carriedSeen === g.pursuers && !g.dropped)),
       `T-201 [oracle@0 ${vp}] CARRY: every body that followed RIG round a corner re-entered on the ` +
       `arriving facet, inside the view (${gates.map((g) => g ? `${g.pursuers ?? 0}/${g.carriedSeen}` : '-').join(' ')})`);
+    // entry 11 under follow: racing still earns the ceiling. Riding the
+    // follow line — the corner blend's line included (sim/scroll.js
+    // followLineDaylight) — banks fully; before the blend counted, the
+    // phone-landscape racer's drive never passed 0.67 on any face.
+    const atCeiling = out.faces.slice(0, 6).filter((f) => f.driveMax >= 0.95).length;
+    ok(atCeiling >= 4,
+      `T-201 [oracle@0 ${vp}] BANK: riding the follow line (corner blend included) banks fully — the ` +
+      `racer reaches the momentum ceiling (drive >= 0.95) on ${atCeiling} of the six faces (>= 4; per-face ` +
+      `max ${out.faces.slice(0, 6).map((f) => f.driveMax.toFixed(2)).join(' ')})`);
+    // replaces pathcheck-suite's eight zipperOffset schedule pins: their
+    // protected property (the arriving face is whole before the scroll
+    // resumes) asserted as behaviour of a played run
+    ok(s.turnsChecked >= 12 && s.unbuiltAtTurns === 0,
+      `T-201 [oracle@0 ${vp}]: every column exists through a played turn — at all ${s.turnsChecked} turn ` +
+      `starts and ends the sim reported ${s.unbuiltAtTurns} unbuilt ground columns anywhere in the level ` +
+      '(the sim-side zipper is gone; entry 25)');
   }
 
   // --- a run that never fires: no softlock, survivors follow ---------------

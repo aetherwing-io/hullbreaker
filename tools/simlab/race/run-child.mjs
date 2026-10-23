@@ -334,11 +334,24 @@ export async function runOne(opts) {
   const stageSeen = new Set();
   const NEAR_PLANE = 6;
   // framesFollowNear: frames where the follow-lead floor or the corner blend
-  // (src/sim/scroll.js) reached within 0.05 tiles of the scroll — a superset
-  // of the frames either term can bind on, computed the same way on a tree
-  // with or without the follow-lead (?follow=0, the base tree), so a run
-  // with zero of them must replay identically with the follow-lead off.
+  // (src/sim/scroll.js) reached within 0.25 tiles of the scroll — a superset
+  // of the frames either term (or the bank's saturation on the follow line,
+  // 0.05 tiles of daylight) can act on, computed the same way on a tree with
+  // or without the follow-lead (?follow=0, the base tree), so a run with zero
+  // of them must replay identically with the follow-lead off.
   let framesFollowNear = 0, framesJointBeforeHalt = 0;
+  // unbuiltAtTurns: the most ground columns ANYWHERE in the level the sim
+  // reported unbuilt (sim/level.js columnBuilt) at any corner's turn start or
+  // turn end — the instants the brick-slam zipper used to unbuild and settle
+  // the arriving face. T-201 removed the sim-side zipper, so this must stay 0
+  // through every played turn. turnsChecked counts those instants.
+  let unbuiltAtTurns = 0, turnsChecked = 0;
+  const countUnbuilt = () => {
+    if (typeof LV.columnBuilt !== 'function') return null;
+    let n = 0;
+    for (let s = 0; s < LV.LEVEL_LEN; s++) if (LV.columnHasGround(s) && !LV.columnBuilt(s)) n++;
+    return n;
+  };
   const FC = CONFIG.follow || { leadFrac: 0.3, leadMinTiles: 6, leadMaxTiles: 24 };
   const blendRate = Number.isFinite(FC.cornerBlendRate) ? FC.cornerBlendRate : 0.5;
   // A digest of the simulated trajectory alone (no run labels), for the
@@ -387,10 +400,10 @@ export async function runOne(opts) {
       // the floors as sim/scroll.js computes them this frame (pre-update RIG)
       const front0 = player.x + player.hw;
       const lead0 = Math.min(FC.leadMaxTiles, Math.max(FC.leadMinTiles, FC.leadFrac * (E.EDGE_R - E.EDGE_L)));
-      let near = front0 - (E.EDGE_R - lead0) > T.scrollX - 0.05;
+      let near = front0 - (E.EDGE_R - lead0) > T.scrollX - 0.25;
       if (!near && c && c.state === 'idle') {
         const joint = c.s + 1 - CONFIG.edges.margin;
-        near = PATH.HALT_S[c.k - 1] - (1 + blendRate) * (joint - front0) > T.scrollX - 0.05;
+        near = PATH.HALT_S[c.k - 1] - (1 + blendRate) * (joint - front0) > T.scrollX - 0.25;
       }
       if (near && ST.state === 'PLAYING') framesFollowNear++;
     }
@@ -549,6 +562,10 @@ export async function runOne(opts) {
         if (to === 'approach') L.approachMs = T.gameMs;
         if (to === 'turning') L.turnStartMs = T.gameMs;
         if (to === 'done') { L.turnDoneMs = T.gameMs; L.driveThrough = L.gateEnteredMs === null; }
+        if (to === 'turning' || to === 'done') {
+          const n = countUnbuilt();
+          if (n !== null) { turnsChecked++; unbuiltAtTurns = Math.max(unbuiltAtTurns, n); }
+        }
       }
       prevCornerState[i] = ce.state;
       prevPrimed[i] = ce.primed;
@@ -622,7 +639,7 @@ export async function runOne(opts) {
     falls: T.sliceStats.falls, maxX: +maxX.toFixed(3),
     weaponEnd: WP.currentWeapon,
     profile: policy.prof,
-    framesFollowNear, framesJointBeforeHalt,
+    framesFollowNear, framesJointBeforeHalt, unbuiltAtTurns, turnsChecked,
     stage: { ...stage, minPlaneAtCondense: Number.isFinite(stage.minPlaneAtCondense)
       ? +stage.minPlaneAtCondense.toFixed(2) : null,
     minPlaneAtMaterial: Number.isFinite(stage.minPlaneAtMaterial)
