@@ -370,10 +370,11 @@ export const MUTANTS = [
   /* ------------------------ BLIND (entry 20) ------------------------ */
   {
     id: 'B1', targetClass: 'NONE', kind: 'blind',
-    site: 'none', why: 'entry 20 "guns don\'t align to hands": draw the gun 0.35 tiles above and 0.12 ahead of the hand socket (render only)',
+    site: 'none', why: 'entry 20 "guns don\'t align to hands": draw the gun 0.35 tiles above and 0.12 ahead of the hand socket (render only). ' +
+      'Re-anchored after T-103 fixed the defect: the gun now hangs on rigWeaponPlacement()\'s pivot, and this offsets that pivot',
     file: 'src/render/player.js',
-    from: '  gunGroup.position.set(0, player.muzzleY, 0.25);',
-    to: '  gunGroup.position.set(0.12, player.muzzleY + 0.35, 0.25);',
+    from: '  gunGroup.position.set(0, _gunPlacement.pivotY, RIG_GUN_DEPTH);',
+    to: '  gunGroup.position.set(0.12, _gunPlacement.pivotY + 0.35, RIG_GUN_DEPTH);',
   },
   {
     id: 'B2', targetClass: 'NONE', kind: 'blind',
@@ -400,10 +401,11 @@ export const MUTANTS = [
   },
   {
     id: 'B5', targetClass: 'NONE', kind: 'blind',
-    site: 'none', why: 'integrator: preload images fetched twice (crossorigin mismatch) — make it worse: a sixth uncredentialed preload',
+    site: 'none', why: 'integrator: preload images fetched twice (crossorigin mismatch). Re-anchored after T-105 fixed the defect ' +
+      '(every texture preload is credentialed now): the component atlas preload loses its crossorigin again',
     file: 'index.html',
-    from: '<link rel="preload" as="image" type="image/webp" href="assets/generated/environment/meridian-component-atlas-v1.webp">',
-    to: '<link rel="preload" as="image" type="image/webp" href="assets/generated/environment/meridian-component-atlas-v1.webp">\n<link rel="preload" as="image" type="image/webp" href="assets/generated/ui/title-meridian-ascent-v1.webp">',
+    from: '<link rel="preload" as="image" type="image/webp" crossorigin href="assets/generated/environment/meridian-component-atlas-v1.webp">',
+    to: '<link rel="preload" as="image" type="image/webp" href="assets/generated/environment/meridian-component-atlas-v1.webp">',
   },
   /* ------------- review pass (2026-10-23): falsifiers for the rewrite list ------------- */
   // Each breaks a property whose CURRENT check is a PIN marked for rewrite, or a
