@@ -73,6 +73,9 @@ const FALSIFY = argv('--falsify', '');
 // --lineup-frames N: let the lineup act for N frames before it is frozen
 // (default 3: materialized, not yet engaged; more frames reach tells/charges)
 const LINEUP_FRAMES = Number(argv('--lineup-frames', 3));
+// --lineup-fire: RIG fires along the lineup while it acts, so the frozen
+// frame holds hostiles mid-hit (hit flash, punch) as well as idle ones
+const LINEUP_FIRE = has('--lineup-fire');
 const views = argv('--views', 'desktop,phone').split(',');
 const POSES = argv('--poses', 'idle,run,jump,upright,fire,fire-nofx,left').split(',');
 const RIG_DEPTH = 1.15;        // src/render/player.js RIG_SURFACE_DEPTH
@@ -198,6 +201,7 @@ async function captureView(browser, base, viewName, V) {
     try {
       await release(page);
       const spawned = await page.evaluate(() => window.__CRISP_CAP.actors());
+      if (LINEUP_FIRE) await page.evaluate(() => window.__CRISP_CAP.stage({ aim: [1, 0], fire: true }));
       // actors() ends every entrance at once (enterUntil = now), so three
       // frames settle them fully materialized and not yet engaged
       await frames(page, LINEUP_FRAMES);
