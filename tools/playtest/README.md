@@ -443,6 +443,19 @@ node tools/playtest/analyze-run.mjs /tmp/aimed --policy scripts/six-face-spaced-
   despawn at that range reads as a kill, and that aim coverage is not modelled
   for a policy that holds `strafe`, since that freezes the aim vector.
 
+  **The gate timeline reads the HUD line through `lib/hud-gate.mjs`** (T-120,
+  I-106). Until then it matched `WAVE k/6 — N HOSTILES`, a line the game had
+  not printed for several releases, so every gate census was silently empty.
+  The parser now reads the line `src/ui/hud.js` writes while a gate holds
+  (`WAVE k/6 · PHASE · ` + `gateRequirementText`: `LAST SIGNAL · CLOSING`,
+  `N HOSTILES`, `N HOSTILES · +M INBOUND`, `+M INBOUND`), and a gate counts as
+  cleared when the next line is the broken-gate or corner line. The DEEP
+  pathcheck domain `t-120-harness-reads-the-hud` builds those lines from the
+  shipped template and the real `gateRequirementText` and fails if the parser
+  cannot read them back — so the next HUD wording change breaks a test, not
+  the census. Limitation: on the `LAST SIGNAL` line the HUD does not say how
+  many bodies are on screen, so "bodies" there is a lower bound (1).
+
   Two additions from T-027 (I-028), both about pricing a rule change on
   evidence you already have:
 

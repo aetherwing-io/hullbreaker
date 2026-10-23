@@ -1,12 +1,12 @@
 {
  "tool": "tools/orch/test-census.mjs",
  "task": "T-108",
- "when": "2026-10-23T04:01:51.321Z",
- "tree": "201e13e",
+ "when": "2026-10-23T04:09:26.943Z",
+ "tree": "bb1fdfb",
  "rubric": "tools/orch/test-audit-spec.mjs (header); docs/proposals/2026-10-test-audit.md § Classes",
  "pathcheck": {
-  "domains": 79,
-  "callSites": 2117,
+  "domains": 80,
+  "callSites": 2121,
   "evaluations": 3778,
   "byClass": {
    "CORE": {
@@ -14,7 +14,7 @@
     "evals": 755
    },
    "PURE-INVARIANT": {
-    "sites": 1227,
+    "sites": 1231,
     "evals": 2348
    },
    "PIN": {
@@ -37,11 +37,11 @@
   "coreShippedSites": 245,
   "coreShippedEvals": 649,
   "resolution": {
-   "site": 202,
+   "site": 204,
    "range": 1049,
    "autoSrcText": 0,
-   "domainDefault": 866,
-   "srcTextButNotPin": 91,
+   "domainDefault": 868,
+   "srcTextButNotPin": 93,
    "pinButNotSrcText": 220
   },
   "dispositions": {
@@ -51,7 +51,7 @@
    "CORE-GATE": 244,
    "REWRITE-AS-BEHAVIOUR": 176,
    "SPLIT-ASSERTION": 6,
-   "DEEP": 441,
+   "DEEP": 445,
    "PLAY-GATE": 4
   },
   "dispositionEvals": {
@@ -66,15 +66,15 @@
   },
   "tiers": {
    "fast": 1078,
-   "deep": 446,
+   "deep": 450,
    "play": 4,
    "replaced": 176,
    "gone": 413
   },
   "identity": {
    "lock": "tools/orch/test-audit-lock.json",
-   "base": "201e13e",
-   "sites": 2117,
+   "base": "bb1fdfb",
+   "sites": 2121,
    "moved": 0
   },
   "prelude": {
@@ -3534,6 +3534,50 @@
     },
     "PURE-INVARIANT": {
      "sites": 0,
+     "evals": 0
+    },
+    "PIN": {
+     "sites": 0,
+     "evals": 0
+    },
+    "RETIRED": {
+     "sites": 0,
+     "evals": 0
+    },
+    "TAUTOLOGY": {
+     "sites": 0,
+     "evals": 0
+    },
+    "SLOW-ENV": {
+     "sites": 0,
+     "evals": 0
+    }
+   },
+   "wallMs": [
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "index": 79,
+   "domain": "t-120-harness-reads-the-hud",
+   "file": "tools/pathcheck/t-120-harness-reads-the-hud.mjs",
+   "lines": 85,
+   "scope": "harness",
+   "mechanism": "the held-gate HUD line built from src/ui/hud.js's own template (read as text: DOM code) and the real gateRequirementText / wavePhase, parsed by tools/playtest/lib/hud-gate.mjs",
+   "verdict": "DEEP",
+   "note": "T-120 (I-106): a harness self-test — the bot harness reads the HUD the shipped game writes (analyze-run's gate census). DEEP like the other harness self-tests (§7.3): it guards evidence tooling, not the game. Falsified: the old pattern -> red; a HUD separator change -> red.",
+   "sites": 4,
+   "evals": 0,
+   "srcTextSites": 2,
+   "byClass": {
+    "CORE": {
+     "sites": 0,
+     "evals": 0
+    },
+    "PURE-INVARIANT": {
+     "sites": 4,
      "evals": 0
     },
     "PIN": {
@@ -16685,6 +16729,34 @@
     "line": 323,
     "cls": "PURE-INVARIANT",
     "note": "review flags (?touch=1 shows the deck on desktop)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-harness-reads-the-hud.mjs",
+    "label": "I-106: src/ui/hud.js still writes the held-gate line as `WAVE …/… · … · ` + … gateRequirementText(…)",
+    "line": 32,
+    "cls": "PURE-INVARIANT",
+    "note": "harness fidelity: the parser's input shape, read from hud.js as text because hud.js is DOM code; fails loudly (naming the parser) when the HUD line changes shape"
+   },
+   {
+    "file": "tools/pathcheck/t-120-harness-reads-the-hud.mjs",
+    "label": "I-106: analyze-run reads every held-gate line the HUD can print (… waves x … … requirement shapes) b",
+    "line": 59,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-harness-reads-the-hud.mjs",
+    "label": "I-106: the idle, primed, broken and corner-stinger objective lines are not read as a held gate … — …",
+    "line": 76,
+    "cls": "PURE-INVARIANT",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-120-harness-reads-the-hud.mjs",
+    "label": "I-106: a gate counts as broken exactly when the line after it is the broken-gate or corner line",
+    "line": 81,
+    "cls": "PURE-INVARIANT",
+    "note": "parser behaviour on lines built from the shipped template (the mechanical rule follows the template variable back to the file text)"
    }
   ],
   "playGate": [
@@ -60092,6 +60164,78 @@
    "note": "(domain default)",
    "disposition": "CORE-GATE",
    "tier": "fast"
+  },
+  {
+   "domain": "t-120-harness-reads-the-hud",
+   "scope": "harness",
+   "site": "tools/pathcheck/t-120-harness-reads-the-hud.mjs:32",
+   "line": 32,
+   "label": "I-106: src/ui/hud.js still writes the held-gate line as `WAVE …/… · … · ` + … gateRequirementText(…)",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "I-106: src/ui/hud.js still writes the held-gate line as `WAVE ${c.k}/… · ${c.phase} · ` + … gateRequirementText(…) — the shape tools/playtest/lib/hud-gate.mjs parses",
+   "note": "harness fidelity: the parser's input shape, read from hud.js as text because hud.js is DOM code; fails loudly (naming the parser) when the HUD line changes shape",
+   "disposition": "DEEP",
+   "tier": "deep"
+  },
+  {
+   "domain": "t-120-harness-reads-the-hud",
+   "scope": "harness",
+   "site": "tools/pathcheck/t-120-harness-reads-the-hud.mjs:59",
+   "line": 59,
+   "label": "I-106: analyze-run reads every held-gate line the HUD can print (… waves x … … requirement shapes) b",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "I-106: analyze-run reads every held-gate line the HUD can print (${faces} waves x ${shapes.length} … requirement shapes) back to its wave, phase, bodies on screen and bodies inbound … — … ; …",
+   "note": "(domain default)",
+   "disposition": "DEEP",
+   "tier": "deep"
+  },
+  {
+   "domain": "t-120-harness-reads-the-hud",
+   "scope": "harness",
+   "site": "tools/pathcheck/t-120-harness-reads-the-hud.mjs:76",
+   "line": 76,
+   "label": "I-106: the idle, primed, broken and corner-stinger objective lines are not read as a held gate … — …",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "default",
+   "marks": [],
+   "core": false,
+   "srcText": false,
+   "evals": 0,
+   "message": "I-106: the idle, primed, broken and corner-stinger objective lines are not read as a held gate … — … ; …",
+   "note": "(domain default)",
+   "disposition": "DEEP",
+   "tier": "deep"
+  },
+  {
+   "domain": "t-120-harness-reads-the-hud",
+   "scope": "harness",
+   "site": "tools/pathcheck/t-120-harness-reads-the-hud.mjs:81",
+   "line": 81,
+   "label": "I-106: a gate counts as broken exactly when the line after it is the broken-gate or corner line",
+   "fn": "ok",
+   "cls": "PURE-INVARIANT",
+   "how": "site",
+   "marks": [],
+   "core": false,
+   "srcText": true,
+   "evals": 0,
+   "message": "I-106: a gate counts as broken exactly when the line after it is the broken-gate or corner line",
+   "note": "parser behaviour on lines built from the shipped template (the mechanical rule follows the template variable back to the file text)",
+   "disposition": "DEEP",
+   "tier": "deep"
   }
  ]
 }

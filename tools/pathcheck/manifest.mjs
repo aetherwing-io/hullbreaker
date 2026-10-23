@@ -88,6 +88,7 @@ import * as d79 from './t-120-input-forgiveness.mjs';
 import * as d80 from './t-120-retry-replays-the-run.mjs';
 import * as d81 from './t-120-determinism-and-art-blind-sim.mjs';
 import * as d82 from './t-120-prototype-flags-inert.mjs';
+import * as d83 from './t-120-harness-reads-the-hud.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -169,4 +170,5 @@ export const DOMAINS = [
   d80,    // T-120: a retry replays the same run (behaviour test)
   d81,    // T-120: cross-process determinism + the sim is blind to the art (behaviour test)
   d82,    // T-120: unjudged prototypes inert unless typed (behaviour test)
+  d83,    // T-120 (I-106): the bot harness parses the HUD line the game writes (deep)
 ];

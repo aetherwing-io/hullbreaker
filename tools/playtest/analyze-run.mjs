@@ -69,11 +69,11 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { isGateBrokenLine, parseGateLine } from './lib/hud-gate.mjs';
 import { compilePolicy, evaluatePolicyTick } from './lib/policy.mjs';
 import { deriveThreat } from './lib/threat.mjs';
 
 const NEAR_TILES = 3;                    // "what was next to RIG" radius, tiles
-const GATE_RE = /^WAVE (\d+)\/(\d+) — (\d+) HOSTILES$/;
 const LIVES_RE = /×(\d+)/;
 
 function loadReport(p) {
@@ -90,9 +90,12 @@ function livesOf(sample) {
   return m ? Number(m[1]) : null;
 }
 
+// A held gate, read off the HUD objective line (lib/hud-gate.mjs, I-106).
+// `bodies` is what the line counts on screen (a lower bound of 1 on the LAST
+// SIGNAL line); `inbound` the gating bodies still parked behind the beat.
 function gateOf(sample) {
-  const m = typeof sample.hudTC === 'string' ? sample.hudTC.match(GATE_RE) : null;
-  return m ? { k: Number(m[1]), bodies: Number(m[3]) } : null;
+  const g = parseGateLine(sample.hudTC);
+  return g ? { k: g.k, bodies: g.present, inbound: g.inbound } : null;
 }
 
 // The active 8-way ray, given the direction keys held this tick, and whether a
@@ -234,8 +237,8 @@ function analyze({ path, report }, override = null) {
       }
     }
 
-    // Gate segmentation. The HUD prints `WAVE k/6 — N HOSTILES` only while the
-    // gate actually holds the scroll (src/ui/hud.js), so the segment ends the
+    // Gate segmentation. The HUD prints its held-gate line (lib/hud-gate.mjs)
+    // only while the gate actually holds the scroll (src/ui/hud.js), so the segment ends the
     // tick that line stops appearing — and `gate` is dropped there, or the
     // next gate's arrival would overwrite the end it already has.
     if (g) {
@@ -250,9 +253,9 @@ function analyze({ path, report }, override = null) {
         gate.endMs = s.gameMs;
       }
     } else if (gate) {
-      // `CLEAR` is the corner ritual's own stinger: the wave died rather than
-      // the run ending inside it.
-      gate.cleared = s.hudTC === 'CLEAR';
+      // the broken-gate line follows a gate whose wave died, rather than the
+      // run ending inside it (lib/hud-gate.mjs)
+      gate.cleared = isGateBrokenLine(s.hudTC);
       gate = null;
     }
 

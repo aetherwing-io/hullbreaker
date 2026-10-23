@@ -1159,6 +1159,14 @@ export const DOMAINS = {
     note: 'T-120, proposal §7.4 #8: unjudged prototypes (hook, flow, autobounce, ribrun, crouch, zip, trial stages) are off unless typed, with a positive control per flag (falsifiers M07, M07b).',
     ranges: [],
   },
+  't-120-harness-reads-the-hud': {
+    scope: 'harness',
+    mechanism: 'the held-gate HUD line built from src/ui/hud.js\'s own template (read as text: DOM code) and the real gateRequirementText / wavePhase, parsed by tools/playtest/lib/hud-gate.mjs',
+    verdict: 'DEEP',
+    default: 'PURE-INVARIANT',
+    note: 'T-120 (I-106): a harness self-test — the bot harness reads the HUD the shipped game writes (analyze-run\'s gate census). DEEP like the other harness self-tests (§7.3): it guards evidence tooling, not the game. Falsified: the old pattern -> red; a HUD separator change -> red.',
+    ranges: [],
+  },
 };
 
 // SITES — label-keyed hand entries (T-108 review pass, 2026-10-23). Each entry
@@ -1272,6 +1280,11 @@ export const SITES = [
     note: 'CSS text by regex; touch-proof.mjs reads the computed touch-action in Chromium', marks: ['core'] },
   { domain: 'touch-deck-contract', label: 'T-101: a touch-only tap unlocks audio on its END', cls: 'CORE',
     note: 'drives the real ui/audio.js under a gesture-gated AudioContext: a touch-only player hears the game (iPhone Safari rule, modelled)' },
+  // t-120-harness-reads-the-hud (I-106): two sites the source-text rule files PIN
+  { domain: 't-120-harness-reads-the-hud', label: 'I-106: src/ui/hud.js still writes the held-gate line', cls: 'PURE-INVARIANT',
+    note: 'harness fidelity: the parser\'s input shape, read from hud.js as text because hud.js is DOM code; fails loudly (naming the parser) when the HUD line changes shape' },
+  { domain: 't-120-harness-reads-the-hud', label: 'I-106: a gate counts as broken exactly when', cls: 'PURE-INVARIANT',
+    note: 'parser behaviour on lines built from the shipped template (the mechanical rule follows the template variable back to the file text)' },
   // T-120 step 0 (main 630a489, after the audit): a new generator invariant
   { domain: 'pathcheck-suite', label: 'every generated ground column is a finite height', cls: 'PURE-INVARIANT',
     note: 'schema integrity of the generated level: a half-made level-length edit leaves holes, and this turns M27h\'s hang into a red (630a489, T-108 re-gate QA)' }, // :263

@@ -38,6 +38,7 @@ export const DEEP_ONLY = Object.freeze([
   't-027-bot-harness-deterministic-dispatch',
   't-025-harness-may-not-report',
   't-029-runtime-truth-three-debug',
+  't-120-harness-reads-the-hud',
 ]);
 
 // PLAY — needs a real browser. Not run by the headless tiers; the PLAY gate
