@@ -14,9 +14,11 @@ was launched. This file replaces the first-pass verdict, which covered `798888d`
 only and stays in git (`f5b4e08`, `2fa58bb`, `0c13e2f`). The only repo file this
 gate wrote is this one. Scratch is session-scoped under
 `/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/qa-t108-r2/`:
-exports of `8d80f10` (`pin/` pristine, `work/` where the tools ran) and of the
-trial-merged tree, about 450 MB each, deleted at the end; the small evidence files
-stay in `qa-t108-r2/keep/`. Every tool that writes was run in a scratch export, or
+exports of `8d80f10` (`pin/` pristine, `work/` where the tools ran), of the
+trial-merged tree, and the mutation and census scratch trees, about 450 MB each,
+all deleted at the end; the small evidence files (regenerated `test-audit.json`,
+tables, census and gate outputs, `mutation-r2.json`, the probe) stay in
+`qa-t108-r2/keep/`. Every tool that writes was run in a scratch export, or
 from the worktree root with `--scratch` and `--out` in scratch.
 
 **What this verdict claims.** At `8d80f10`: (1) the lane has no effect on the
@@ -240,7 +242,7 @@ resolved by **line range**, which the label key detects but does not absorb.
 T-108, and does not block the merge.)
 
 ```
-## I-??? | bug | S3 | repro: copy src/ and tools/ of main a217831, `sed -i 's/faceTiles: 88,/faceTiles: 106,/' src/config.js`, then `node tools/pathcheck.mjs` (or node -e: import src/sim/level.js, groundH.every(h => Number.isFinite(h))) | evidence: tools/pathcheck/pathcheck-suite.mjs:260-261; QA probe qa-t108-r2/keep/hole-probe.mjs -> {"length":663,"emptySlots_holes":42,"everyIsFinite_main_ffd1778_assertion":true,"everyViaForLoop":false}
+## I-??? | bug | S3 | repro: in a copy of main's tree (a217831 or later) `sed -i 's/faceTiles: 88,/faceTiles: 106,/' src/config.js`, then `node tools/pathcheck.mjs` and look for the assertion among the FAIL lines; or `node qa-t108-r2/keep/hole-probe.mjs <copy>/src` | evidence: tools/pathcheck/pathcheck-suite.mjs:260-261; the probe prints {"length":663,"emptySlots_holes":42,"everyIsFinite_main_ffd1778_assertion":true,"everyViaForLoop":false}
 The assertion ffd1778 added for a half-made level-length edit,
 `ok(gH.every((h) => Number.isFinite(h)), 'every generated ground column is a finite
 height (a half-made level-length edit leaves holes)')`, cannot see the case it
@@ -251,8 +253,9 @@ assertion is not among the 23 FAIL lines. The hang itself is closed (the loops
 now test !(h < -100)) and the edit still fails loudly through other assertions
 (groundH spans the level; every column defined), so this is a weak guard, not a
 regression. Fix: iterate by index (or Array.from(gH).every(...)), and consider the
-same for any other `every`/`some`/`forEach` over a generated array. Also note the
-runner then dies on an uncaught TypeError in catwalk-built-prefix-visibility.mjs:40
-with no tally line; the per-domain bound in the instrumented runner would make
-that a clean red.
+same for any other `every`/`some`/`forEach` over a generated array. Side note: in
+that run the real runner ends on an uncaught TypeError in
+catwalk-built-prefix-visibility.mjs:40 with no tally line, because it has no
+per-domain try/catch (tools/orch/pathcheck-timed.mjs records such a throw as
+`threw` instead).
 ```
