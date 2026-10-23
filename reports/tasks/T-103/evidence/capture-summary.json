@@ -8,6 +8,7 @@
     "BEFORE T-103 (main 98b12c9)",
     "BEFORE T-103 (main 98b12c9) ?crouch=1",
     "BEFORE T-103 (main 98b12c9)",
+    "BEFORE T-103 (main 98b12c9)",
     "BEFORE T-103 (main 98b12c9)"
    ],
    "views": {
@@ -978,12 +979,14 @@
     }
    }
   },
-  "after-task-T-103": {
+  "after-task-T-103-6708326": {
    "sources": [
-    "AFTER T-103 (task/T-103 @ f1cb327)",
-    "AFTER T-103 (task/T-103 @ f1cb327) ?crouch=1",
+    "AFTER T-103 winding fix (task/T-103 @ 6708326)",
+    "AFTER T-103 winding fix (task/T-103 @ 6708326) ?crouch=1",
     "AFTER T-103 (task/T-103 @ 7096cb0)",
-    "AFTER T-103 (task/T-103 @ b7a3a44)"
+    "AFTER T-103 winding fix (task/T-103 @ 6708326)",
+    "AFTER T-103 winding fix (task/T-103 @ 6708326)",
+    "AFTER T-103 winding fix (task/T-103 @ 6708326)"
    ],
    "views": {
     "desktop": {
@@ -1424,12 +1427,12 @@
      "all": {
       "cells": 416,
       "fistToGripCssPx": {
-       "max": 0.011,
-       "mean": 0.004,
+       "max": 0.01,
+       "mean": 0.005,
        "min": 0
       },
       "muzzleToSpawnCssPx": {
-       "max": 0.076,
+       "max": 0.077,
        "mean": 0.028,
        "min": 0.002
       },
@@ -1451,7 +1454,7 @@
        },
        "muzzleToSpawnCssPx": {
         "max": 0.056,
-        "mean": 0.027,
+        "mean": 0.028,
         "min": 0.006
        },
        "armStretch": {
@@ -1472,7 +1475,7 @@
        "muzzleToSpawnCssPx": {
         "max": 0.059,
         "mean": 0.029,
-        "min": 0.006
+        "min": 0.007
        },
        "armStretch": {
         "max": 1,
@@ -1491,8 +1494,8 @@
        },
        "muzzleToSpawnCssPx": {
         "max": 0.066,
-        "mean": 0.033,
-        "min": 0.007
+        "mean": 0.034,
+        "min": 0.008
        },
        "armStretch": {
         "max": 1,
@@ -1506,13 +1509,13 @@
        "cells": 32,
        "fistToGripCssPx": {
         "max": 0.008,
-        "mean": 0.007,
-        "min": 0.006
+        "mean": 0.008,
+        "min": 0.007
        },
        "muzzleToSpawnCssPx": {
-        "max": 0.076,
+        "max": 0.077,
         "mean": 0.04,
-        "min": 0.009
+        "min": 0.01
        },
        "armStretch": {
         "max": 1,
@@ -1525,12 +1528,12 @@
       "air-rise": {
        "cells": 32,
        "fistToGripCssPx": {
-        "max": 0.002,
-        "mean": 0.001,
-        "min": 0
+        "max": 0.003,
+        "mean": 0.002,
+        "min": 0.001
        },
        "muzzleToSpawnCssPx": {
-        "max": 0.045,
+        "max": 0.046,
         "mean": 0.026,
         "min": 0.003
        },
@@ -1545,12 +1548,12 @@
       "air-fall": {
        "cells": 32,
        "fistToGripCssPx": {
-        "max": 0.002,
-        "mean": 0.001,
-        "min": 0
+        "max": 0.003,
+        "mean": 0.002,
+        "min": 0.001
        },
        "muzzleToSpawnCssPx": {
-        "max": 0.045,
+        "max": 0.046,
         "mean": 0.026,
         "min": 0.003
        },
@@ -1572,7 +1575,7 @@
        "muzzleToSpawnCssPx": {
         "max": 0.054,
         "mean": 0.027,
-        "min": 0.004
+        "min": 0.005
        },
        "armStretch": {
         "max": 1,
@@ -1592,7 +1595,7 @@
        "muzzleToSpawnCssPx": {
         "max": 0.053,
         "mean": 0.027,
-        "min": 0.003
+        "min": 0.004
        },
        "armStretch": {
         "max": 1,
@@ -1605,7 +1608,7 @@
       "climb-2": {
        "cells": 32,
        "fistToGripCssPx": {
-        "max": 0.002,
+        "max": 0.003,
         "mean": 0.002,
         "min": 0.001
        },
@@ -1626,7 +1629,7 @@
        "cells": 32,
        "fistToGripCssPx": {
         "max": 0.002,
-        "mean": 0.001,
+        "mean": 0.002,
         "min": 0
        },
        "muzzleToSpawnCssPx": {
@@ -1645,13 +1648,13 @@
       "wall": {
        "cells": 32,
        "fistToGripCssPx": {
-        "max": 0.004,
+        "max": 0.005,
         "mean": 0.004,
         "min": 0.003
        },
        "muzzleToSpawnCssPx": {
         "max": 0.056,
-        "mean": 0.027,
+        "mean": 0.028,
         "min": 0.006
        },
        "armStretch": {
@@ -1671,7 +1674,7 @@
        },
        "muzzleToSpawnCssPx": {
         "max": 0.056,
-        "mean": 0.027,
+        "mean": 0.028,
         "min": 0.006
        },
        "armStretch": {
@@ -1685,14 +1688,14 @@
       "respawn": {
        "cells": 32,
        "fistToGripCssPx": {
-        "max": 0.011,
+        "max": 0.01,
         "mean": 0.009,
         "min": 0.008
        },
        "muzzleToSpawnCssPx": {
-        "max": 0.022,
-        "mean": 0.016,
-        "min": 0.01
+        "max": 0.021,
+        "mean": 0.015,
+        "min": 0.009
        },
        "armStretch": {
         "max": 1,
@@ -1709,10 +1712,10 @@
        "fistToGripCssPx": {
         "max": 0.01,
         "mean": 0.004,
-        "min": 0
+        "min": 0.001
        },
        "muzzleToSpawnCssPx": {
-        "max": 0.076,
+        "max": 0.077,
         "mean": 0.028,
         "min": 0.002
        },
@@ -1727,12 +1730,12 @@
       "F": {
        "cells": 208,
        "fistToGripCssPx": {
-        "max": 0.011,
-        "mean": 0.004,
+        "max": 0.01,
+        "mean": 0.005,
         "min": 0
        },
        "muzzleToSpawnCssPx": {
-        "max": 0.076,
+        "max": 0.077,
         "mean": 0.028,
         "min": 0.002
        },
@@ -2124,7 +2127,7 @@
       "aimHeld": true,
       "liveShots": 1,
       "fistToGripCssPx": 0.007,
-      "muzzleToSpawnCssPx": 0.841,
+      "muzzleToSpawnCssPx": 0.84,
       "recoilTiles": 0.095,
       "muzzleToRecoiledSpawnCssPx": 0.05
      },
@@ -2133,8 +2136,8 @@
       "weapon": "R",
       "aimHeld": true,
       "liveShots": 1,
-      "fistToGripCssPx": 0.008,
-      "muzzleToSpawnCssPx": 0.871,
+      "fistToGripCssPx": 0.007,
+      "muzzleToSpawnCssPx": 0.87,
       "recoilTiles": 0.095,
       "muzzleToRecoiledSpawnCssPx": 0.035
      },
@@ -2146,7 +2149,7 @@
       "fistToGripCssPx": 0.008,
       "muzzleToSpawnCssPx": 0.847,
       "recoilTiles": 0.095,
-      "muzzleToRecoiledSpawnCssPx": 0.012
+      "muzzleToRecoiledSpawnCssPx": 0.011
      },
      "left": {
       "frame": "aim-right",
@@ -2156,10 +2159,300 @@
       "fistToGripCssPx": 0.01,
       "muzzleToSpawnCssPx": 0.832,
       "recoilTiles": 0.095,
-      "muzzleToRecoiledSpawnCssPx": 0.029
+      "muzzleToRecoiledSpawnCssPx": 0.028
      }
     }
    }
   }
- }
+ },
+ "facingSymmetry": {
+  "what": "tools/rig-grip/symmetry.mjs: mean figure colour of each right-facing cell vs the left-facing cell of the mirrored aim; symmetric = mean luma ratio 1.000 +- 0.005, mean RGB delta within +-0.5, no row off by more than 0.015",
+  "before-main-98b12c9 (desktop, cells split from the BEFORE sheets by the T-103 playtester)": {
+   "view": "desktop",
+   "pairs": 520,
+   "meanLumaRatio": 0.9996,
+   "std": 0.0185,
+   "p5": 0.9671,
+   "median": 1.0002,
+   "p95": 1.0277,
+   "shareDarkerFacingLeft": 0.1365,
+   "meanRgbDeltaLminusR": [
+    -0.02,
+    -0.04,
+    -0.04
+   ],
+   "byRow": {
+    "air-fall": 1.0045,
+    "air-rise": 0.9946,
+    "climb-0": 0.9973,
+    "climb-1": 1.0005,
+    "climb-2": 0.9987,
+    "climb-3": 1.0006,
+    "hit-iframe": 0.9973,
+    "respawn": 1.0036,
+    "run-contact": 1.0009,
+    "run-flight": 1.0054,
+    "run-pass": 1.0027,
+    "stand": 0.9989,
+    "wall": 0.9899
+   },
+   "symmetric": true,
+   "problems": []
+  },
+  "after-pre-fix-213e935-src (desktop)": {
+   "view": "desktop",
+   "pairs": 520,
+   "meanLumaRatio": 0.9579,
+   "std": 0.0277,
+   "p5": 0.9155,
+   "median": 0.9553,
+   "p95": 1.0004,
+   "shareDarkerFacingLeft": 0.7385,
+   "meanRgbDeltaLminusR": [
+    -3.98,
+    -2.27,
+    -1.25
+   ],
+   "byRow": {
+    "air-fall": 0.9461,
+    "air-rise": 0.9265,
+    "climb-0": 0.9854,
+    "climb-1": 0.9888,
+    "climb-2": 0.9868,
+    "climb-3": 0.9838,
+    "hit-iframe": 0.9239,
+    "respawn": 0.9496,
+    "run-contact": 0.9435,
+    "run-flight": 0.9483,
+    "run-pass": 0.9425,
+    "stand": 0.9455,
+    "wall": 0.9816
+   },
+   "symmetric": false,
+   "problems": [
+    "mean luma ratio 0.9579 is not 1.000 +- 0.005",
+    "mean RGB delta [-3.98,-2.27,-1.25] is not within +-0.5",
+    "row air-fall: mean luma ratio 0.946",
+    "row air-rise: mean luma ratio 0.927",
+    "row climb-3: mean luma ratio 0.984",
+    "row hit-iframe: mean luma ratio 0.924",
+    "row respawn: mean luma ratio 0.950",
+    "row run-contact: mean luma ratio 0.944",
+    "row run-flight: mean luma ratio 0.948",
+    "row run-pass: mean luma ratio 0.942",
+    "row stand: mean luma ratio 0.946",
+    "row wall: mean luma ratio 0.982"
+   ]
+  },
+  "after-fix-6708326 (desktop)": {
+   "view": "desktop",
+   "pairs": 520,
+   "meanLumaRatio": 1.0002,
+   "std": 0.0129,
+   "p5": 0.979,
+   "median": 1.0002,
+   "p95": 1.0229,
+   "shareDarkerFacingLeft": 0.0577,
+   "meanRgbDeltaLminusR": [
+    0.07,
+    0,
+    -0.07
+   ],
+   "byRow": {
+    "air-fall": 1.0067,
+    "air-rise": 0.9963,
+    "climb-0": 0.9983,
+    "climb-1": 1.0035,
+    "climb-2": 1.0007,
+    "climb-3": 0.9993,
+    "hit-iframe": 0.9928,
+    "respawn": 1.0053,
+    "run-contact": 0.9989,
+    "run-flight": 1.0033,
+    "run-pass": 1.0023,
+    "stand": 0.9998,
+    "wall": 0.9955
+   },
+   "symmetric": true,
+   "problems": []
+  },
+  "after-pre-fix (phone R,F)": {
+   "view": "phone",
+   "pairs": 208,
+   "meanLumaRatio": 0.9566,
+   "std": 0.0274,
+   "p5": 0.9152,
+   "median": 0.9544,
+   "p95": 1.0023,
+   "shareDarkerFacingLeft": 0.7692,
+   "meanRgbDeltaLminusR": [
+    -3.78,
+    -2.21,
+    -1.24
+   ],
+   "byRow": {
+    "air-fall": 0.938,
+    "air-rise": 0.9366,
+    "climb-0": 0.9844,
+    "climb-1": 0.984,
+    "climb-2": 0.9838,
+    "climb-3": 0.9822,
+    "hit-iframe": 0.9282,
+    "respawn": 0.9424,
+    "run-contact": 0.9452,
+    "run-flight": 0.9447,
+    "run-pass": 0.9402,
+    "stand": 0.9443,
+    "wall": 0.982
+   },
+   "symmetric": false,
+   "problems": [
+    "mean luma ratio 0.9566 is not 1.000 +- 0.005",
+    "mean RGB delta [-3.78,-2.21,-1.24] is not within +-0.5",
+    "row air-fall: mean luma ratio 0.938",
+    "row air-rise: mean luma ratio 0.937",
+    "row climb-0: mean luma ratio 0.984",
+    "row climb-1: mean luma ratio 0.984",
+    "row climb-2: mean luma ratio 0.984",
+    "row climb-3: mean luma ratio 0.982",
+    "row hit-iframe: mean luma ratio 0.928",
+    "row respawn: mean luma ratio 0.942",
+    "row run-contact: mean luma ratio 0.945",
+    "row run-flight: mean luma ratio 0.945",
+    "row run-pass: mean luma ratio 0.940",
+    "row stand: mean luma ratio 0.944",
+    "row wall: mean luma ratio 0.982"
+   ]
+  },
+  "after-fix-6708326 (phone R,F)": {
+   "view": "phone",
+   "pairs": 208,
+   "meanLumaRatio": 1.0005,
+   "std": 0.0142,
+   "p5": 0.9757,
+   "median": 1.0009,
+   "p95": 1.0205,
+   "shareDarkerFacingLeft": 0.101,
+   "meanRgbDeltaLminusR": [
+    0.06,
+    0.02,
+    -0.04
+   ],
+   "byRow": {
+    "air-fall": 1.0011,
+    "air-rise": 1.0007,
+    "climb-0": 1.0008,
+    "climb-1": 0.9993,
+    "climb-2": 1.003,
+    "climb-3": 1.0041,
+    "hit-iframe": 0.9979,
+    "respawn": 0.9996,
+    "run-contact": 1.001,
+    "run-flight": 0.9998,
+    "run-pass": 1.0004,
+    "stand": 1.0025,
+    "wall": 0.9962
+   },
+   "symmetric": true,
+   "problems": []
+  },
+  "after-pre-fix (crouch row)": {
+   "view": "desktop",
+   "pairs": 10,
+   "meanLumaRatio": 0.9279,
+   "std": 0.0154,
+   "p5": 0.9054,
+   "median": 0.9265,
+   "p95": 0.9516,
+   "shareDarkerFacingLeft": 1,
+   "meanRgbDeltaLminusR": [
+    -7.08,
+    -3.87,
+    -1.95
+   ],
+   "byRow": {
+    "crouch": 0.9279
+   },
+   "symmetric": false,
+   "problems": [
+    "mean luma ratio 0.9279 is not 1.000 +- 0.005",
+    "mean RGB delta [-7.08,-3.87,-1.95] is not within +-0.5",
+    "row crouch: mean luma ratio 0.928"
+   ]
+  },
+  "after-fix-6708326 (crouch row)": {
+   "view": "desktop",
+   "pairs": 10,
+   "meanLumaRatio": 1.0039,
+   "std": 0.0083,
+   "p5": 0.9958,
+   "median": 0.9998,
+   "p95": 1.019,
+   "shareDarkerFacingLeft": 0,
+   "meanRgbDeltaLminusR": [
+    0.13,
+    0.26,
+    0.29
+   ],
+   "byRow": {
+    "crouch": 1.0039
+   },
+   "symmetric": true,
+   "problems": []
+  },
+  "after-pre-fix (portrait R, 3 rows)": {
+   "view": "portrait",
+   "pairs": 24,
+   "meanLumaRatio": 0.9261,
+   "std": 0.027,
+   "p5": 0.8866,
+   "median": 0.9215,
+   "p95": 0.966,
+   "shareDarkerFacingLeft": 1,
+   "meanRgbDeltaLminusR": [
+    -6.23,
+    -3.6,
+    -2.03
+   ],
+   "byRow": {
+    "climb-1": 0.9593,
+    "run-contact": 0.9122,
+    "stand": 0.9068
+   },
+   "symmetric": false,
+   "problems": [
+    "mean luma ratio 0.9261 is not 1.000 +- 0.005",
+    "mean RGB delta [-6.23,-3.60,-2.03] is not within +-0.5",
+    "row climb-1: mean luma ratio 0.959",
+    "row run-contact: mean luma ratio 0.912",
+    "row stand: mean luma ratio 0.907"
+   ]
+  },
+  "after-fix-6708326 (portrait R, 3 rows)": {
+   "view": "portrait",
+   "pairs": 24,
+   "meanLumaRatio": 1.0004,
+   "std": 0.0027,
+   "p5": 0.9951,
+   "median": 1.0006,
+   "p95": 1.0034,
+   "shareDarkerFacingLeft": 0,
+   "meanRgbDeltaLminusR": [
+    0.02,
+    0.02,
+    0.02
+   ],
+   "byRow": {
+    "climb-1": 1.001,
+    "run-contact": 0.9999,
+    "stand": 1.0002
+   },
+   "symmetric": true,
+   "problems": []
+  }
+ },
+ "notes": [
+  "AFTER desktop, crouch, phone (R,F), portrait (R; stand, run-contact, climb-1) and firing were captured at 6708326, the winding fix.",
+  "The AFTER portrait cells outside those 3 rows (and gun F) come from the pre-fix capture (src 213e935). The fix changed only the triangle order, not vertex positions, so their fist/muzzle/stretch numbers are the same."
+ ]
 }

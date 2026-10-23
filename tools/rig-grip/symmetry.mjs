@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // symmetry.mjs — is RIG lit the same facing left as facing right?
 //
-//   node tools/rig-grip/symmetry.mjs <capture dir> [--view desktop]
+//   node tools/rig-grip/symmetry.mjs <capture dir> [--view desktop] [--json]
 //
 // Reads the cells a tools/rig-grip/capture.mjs run photographed. For every
 // (gun, pose row, aim) the right-facing cell and the left-facing cell with the
@@ -105,4 +105,13 @@ if (Math.abs(mean - 1) > 0.005) bad.push(`mean luma ratio ${mean.toFixed(4)} is 
 if (Math.max(...delta.map(Math.abs)) > 0.5) bad.push(`mean RGB delta [${delta.map((d) => d.toFixed(2))}] is not within +-0.5`);
 for (const [k, v] of Object.entries(rowMeans)) if (Math.abs(v - 1) > 0.015) bad.push(`row ${k}: mean luma ratio ${v.toFixed(3)}`);
 console.log(bad.length ? `NOT SYMMETRIC: ${bad.join('; ')}` : 'SYMMETRIC');
+if (process.argv.includes('--json')) {
+  const r4 = (v) => +v.toFixed(4);
+  console.log(JSON.stringify({ view, pairs: pairs.length, meanLumaRatio: r4(mean), std: r4(std),
+    p5: r4(percentile(ratios, 5)), median: r4(percentile(ratios, 50)), p95: r4(percentile(ratios, 95)),
+    shareDarkerFacingLeft: r4(ratios.filter((r) => r < 0.98).length / ratios.length),
+    meanRgbDeltaLminusR: delta.map((d) => +d.toFixed(2)),
+    byRow: Object.fromEntries(Object.entries(rowMeans).map(([k, v]) => [k, r4(v)])),
+    symmetric: !bad.length, problems: bad }));
+}
 process.exitCode = bad.length ? 1 : 0;
