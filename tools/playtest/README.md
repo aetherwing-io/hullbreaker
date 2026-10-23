@@ -1876,11 +1876,16 @@ Sections (`--only`, default all):
   panel ends above the central region and the deck's chips.
 - **preload** — the default URL: "preload ... not used" console warnings and
   the number of requests per preloaded URL.
-- **watchdog** — frames withheld for 6 s (rAF callbacks held while the page's
-  timers run) armed synchronously at boot (0 frames), after frame 1, and after
-  40 frames in PLAYING; the same two as a 6 s main-thread busy-wait (reported,
-  not judged); and a natural DPR-3 boot with no injection, reporting the
-  boot-to-first-frame time and the worst gap between the first 60 frames.
+- **watchdog** — animation frames withheld (callbacks parked, nothing
+  scheduled, while the page's timers run) armed synchronously inside the
+  bootstrap's own `booted()` / `beat()`: 6 s at boot (0 frames), 6 s after
+  frame 1, 6 s and 10 s after 10 frames in PLAYING, and a loop held dead
+  from boot for 25 s; two 6 s main-thread busy-waits (reported, not judged);
+  a natural DPR-3 boot with no injection (reported: boot-to-first-frame time
+  and the worst gap between the first 60 frames). Every trial reports when
+  the panel appeared and the worst gap in the page's own timers during the
+  stall — on a loaded host a 1 s tick can run seconds late, and the
+  bootstrap reads a tick more than 3 s late as a suspended page.
 - **rotate** — portrait <-> landscape mid-run with three fingers down: canvas,
   drawing buffer and camera follow, the HUD re-lays out and fits, nothing is
   held afterwards, no failsafe panel, a fresh stick press steers.

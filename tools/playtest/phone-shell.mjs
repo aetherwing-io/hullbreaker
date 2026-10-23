@@ -982,11 +982,16 @@ async function sectionWatchdog(browser) {
   const trials = [
     ['frame stall 6 s from boot (0 frames drawn)', { trigger: 'booted', kind: 'hold', ms: 6000 }, title, false],
     ['frame stall 6 s after the first frame (a slow first draw)', { trigger: 'beats', beats: 1, kind: 'hold', ms: 6000 }, title, false],
-    ['frame stall 6 s after warm-up, during PLAYING', { trigger: 'beats', beats: 40, kind: 'hold', ms: 6000 }, playing, true],
+    ['frame stall 6 s after warm-up, during PLAYING', { trigger: 'beats', beats: 10, kind: 'hold', ms: 6000 }, playing, true],
+    // the same rule with margin for a loaded host: the watchdog's 1 s ticks
+    // were measured running up to ~2 s late here, and a 6 s stall then ends
+    // before 4 s of silence is ever SEEN (the stall's own timer gap is
+    // reported with every trial)
+    ['frame stall 10 s after warm-up, during PLAYING', { trigger: 'beats', beats: 10, kind: 'hold', ms: 10000 }, playing, true],
     // not blinded: a loop that never draws at all still gets the hard panel
     ['frame loop dead from boot (0 frames, held 25 s)', { trigger: 'booted', kind: 'hold', ms: 25000 }, title, true],
     ['main-thread busy-wait 6 s from boot', { trigger: 'booted', kind: 'busy', ms: 6000 }, title, null],
-    ['main-thread busy-wait 6 s after warm-up, during PLAYING', { trigger: 'beats', beats: 40, kind: 'busy', ms: 6000 }, playing, null],
+    ['main-thread busy-wait 6 s after warm-up, during PLAYING', { trigger: 'beats', beats: 10, kind: 'busy', ms: 6000 }, playing, null],
   ];
   const rows = [];
   for (const [name, plan, query, wantPanel] of trials) {
