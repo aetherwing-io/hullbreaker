@@ -1,0 +1,65 @@
+PASS T-107: all 7 played turn runs at the phone frame completed
+PASS T-107 [run @844x390 touch]: all five turns and the Crown approach complete at the phone frame (6/6, VICTORY)
+PASS T-107 [run @844x390 touch]: T-102's envelope contract holds on every tick
+PASS T-107 [run @844x390 touch]: T-102's hinge contract holds on every tick
+PASS T-107 [run @844x390 touch]: T-102's gate contract holds on every tick
+PASS T-107 [run @844x390 touch]: T-102's turn contract holds on every tick
+PASS T-107 [run @844x390 touch]: T-102's facet contract holds on every tick
+PASS T-107 [run @844x390 touch]: T-102's ratchet contract holds on every tick
+PASS T-107 [run @844x390 touch]: T-102's framing contract holds on every tick
+PASS T-107 [run @844x390 touch]: RIG pinned at the right clamp renders its chest on screen (NDC 0.952, was ~1.012)
+PASS T-107 [run @932x430 touch]: all five turns and the Crown approach complete at the phone frame (6/6, VICTORY)
+PASS T-107 [run @932x430 touch]: T-102's envelope contract holds on every tick
+PASS T-107 [run @932x430 touch]: T-102's hinge contract holds on every tick
+PASS T-107 [run @932x430 touch]: T-102's gate contract holds on every tick
+PASS T-107 [run @932x430 touch]: T-102's turn contract holds on every tick
+PASS T-107 [run @932x430 touch]: T-102's facet contract holds on every tick
+PASS T-107 [run @932x430 touch]: T-102's ratchet contract holds on every tick
+PASS T-107 [run @932x430 touch]: T-102's framing contract holds on every tick
+PASS T-107 [run @932x430 touch]: RIG pinned at the right clamp renders its chest on screen (NDC 0.953, was ~1.012)
+PASS T-107 [run @390x844 touch]: all five turns and the Crown approach complete at the phone frame (6/6, VICTORY)
+PASS T-107 [run @390x844 touch]: T-102's envelope contract holds on every tick
+PASS T-107 [run @390x844 touch]: T-102's hinge contract holds on every tick
+PASS T-107 [run @390x844 touch]: T-102's gate contract holds on every tick
+PASS T-107 [run @390x844 touch]: T-102's turn contract holds on every tick
+PASS T-107 [run @390x844 touch]: T-102's facet contract holds on every tick
+PASS T-107 [run @390x844 touch]: T-102's ratchet contract holds on every tick
+PASS T-107 [run @390x844 touch]: T-102's framing contract holds on every tick
+PASS T-107 [run @390x844 touch]: RIG pinned at the right clamp renders its chest on screen (NDC 0.637, was ~1.012)
+PASS T-107 [run?orbit=joint @844x390 touch]: all five turns and the Crown approach complete at the phone frame (6/6, VICTORY)
+PASS T-107 [run?orbit=joint @844x390 touch]: T-102's envelope contract holds on every tick
+PASS T-107 [run?orbit=joint @844x390 touch]: T-102's hinge contract holds on every tick
+PASS T-107 [run?orbit=joint @844x390 touch]: T-102's gate contract holds on every tick
+PASS T-107 [run?orbit=joint @844x390 touch]: T-102's turn contract holds on every tick
+PASS T-107 [run?orbit=joint @844x390 touch]: T-102's facet contract holds on every tick
+PASS T-107 [run?orbit=joint @844x390 touch]: T-102's ratchet contract holds on every tick
+PASS T-107 [run?orbit=joint @844x390 touch]: T-102's framing contract holds on every tick
+PASS T-107 [run?orbit=joint @844x390 touch]: RIG pinned at the right clamp renders its chest on screen (NDC 0.952, was ~1.012)
+PASS T-107 [run?orbit=joint @1280x720]: all five turns and the Crown approach complete at the phone frame (6/6, VICTORY)
+PASS T-107 [run?orbit=joint @1280x720]: T-102's envelope contract holds on every tick
+PASS T-107 [run?orbit=joint @1280x720]: T-102's hinge contract holds on every tick
+PASS T-107 [run?orbit=joint @1280x720]: T-102's gate contract holds on every tick
+PASS T-107 [run?orbit=joint @1280x720]: T-102's turn contract holds on every tick
+PASS T-107 [run?orbit=joint @1280x720]: T-102's facet contract holds on every tick
+PASS T-107 [run?orbit=joint @1280x720]: T-102's ratchet contract holds on every tick
+PASS T-107 [run?orbit=joint @1280x720]: T-102's framing contract holds on every tick
+PASS T-107 [run?orbit=joint @1280x720]: RIG pinned at the right clamp renders its chest on screen (NDC 0.954, was ~1.012)
+PASS T-107 [run?momentum=0 @844x390 touch]: all five turns and the Crown approach complete at the phone frame (6/6, VICTORY)
+PASS T-107 [run?momentum=0 @844x390 touch]: T-102's envelope contract holds on every tick
+PASS T-107 [run?momentum=0 @844x390 touch]: T-102's hinge contract holds on every tick
+PASS T-107 [run?momentum=0 @844x390 touch]: T-102's gate contract holds on every tick
+PASS T-107 [run?momentum=0 @844x390 touch]: T-102's turn contract holds on every tick
+PASS T-107 [run?momentum=0 @844x390 touch]: T-102's facet contract holds on every tick
+PASS T-107 [run?momentum=0 @844x390 touch]: T-102's ratchet contract holds on every tick
+PASS T-107 [run?momentum=0 @844x390 touch]: T-102's framing contract holds on every tick
+PASS T-107 [run?momentum=0 @844x390 touch]: RIG pinned at the right clamp renders its chest on screen (NDC 0.952, was ~1.012)
+PASS T-107 [die-at-hinge @844x390 touch]: all five turns and the Crown approach complete at the phone frame (6/6, VICTORY)
+PASS T-107 [die-at-hinge @844x390 touch]: T-102's envelope contract holds on every tick
+PASS T-107 [die-at-hinge @844x390 touch]: T-102's hinge contract holds on every tick
+PASS T-107 [die-at-hinge @844x390 touch]: T-102's gate contract holds on every tick
+PASS T-107 [die-at-hinge @844x390 touch]: T-102's turn contract holds on every tick
+PASS T-107 [die-at-hinge @844x390 touch]: T-102's facet contract holds on every tick
+PASS T-107 [die-at-hinge @844x390 touch]: T-102's ratchet contract holds on every tick
+PASS T-107 [die-at-hinge @844x390 touch]: T-102's framing contract holds on every tick
+PASS T-107 [die-at-hinge @844x390 touch]: RIG pinned at the right clamp renders its chest on screen (NDC 0.952, was ~1.012)
+PASS T-107/T-204: ?rise=steep, ?orbit=joint and ?veil=legacy leave every simulated run byte-identical (policies x seeds x desktop/phone, sim fingerprints) while the falsifier ?momentum=0 moves every one

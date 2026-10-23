@@ -1,0 +1,48 @@
+PASS T-107: every mouse-driven window resolves to FAR, phone-sized ones included (1280x720, 1920x1080, 1280x800, 1440x900, 1366x768, 2560x1440, 844x390, 390x844)
+PASS T-107: every touch phone resolves to the phone frame in both orientations
+PASS T-107: touch tablets (short side over the phone bound) keep FAR
+PASS T-107: ?view=far forces FAR on a phone, ?view=phone forces the phone frame on desktop, near/mid keep their meaning, anything else is AUTO
+PASS T-107: a degenerate viewport (0, NaN, negative, infinite) is never a phone
+PASS T-107: every non-phone frame is the shipped fov with zero lift, exactly (the desktop projection identity)
+PASS T-107: desktop 16:10 keeps the damage plane where it was (EDGE_L -27.43826312894467; recorded live -27.438263128944797)
+PASS T-107: RIG's body is 5.5-6.5% of the height at 844x390 on touch — 5.569% at the frame's centre (5.34-5.794% across it); painted silhouette 6.551%
+PASS T-107: RIG's body is 5.5-6.5% of the height at 932x430 on touch — 5.569% at the frame's centre (5.339-5.794% across it); painted silhouette 6.551%
+PASS T-107: RIG's body is 5.5-6.5% of the height at 667x375 on touch — 5.569% at the frame's centre (5.381-5.754% across it); painted silhouette 6.551%
+PASS T-107: a portrait phone (390x844) keeps FAR's portrait frame exactly — RIG's body is already 7.002% of the short side, at least the landscape phone's size, with no widening
+PASS T-107: a portrait phone (430x932) keeps FAR's portrait frame exactly — RIG's body is already 7.001% of the short side, at least the landscape phone's size, with no widening
+PASS T-107: a portrait phone (375x667) keeps FAR's portrait frame exactly — RIG's body is already 6.995% of the short side, at least the landscape phone's size, with no widening
+PASS T-107: desktop FAR is untouched — RIG's body 3.826% of the height at the frame's centre (entry 7's ~3.7%)
+PASS T-107: the band the phone frame is built for is the shipped one — lowest landing deck y 2, highest route surface y 17 (re-derive the frame if the lattice moves)
+PASS T-107: 844x390 (no insets): RIG on the lowest deck never stands under the right-thumb cluster — worst 26.544 px above its top over 464 scroll poses; stick ring 19.836 px into its top (reported)
+PASS T-107: 844x390: RIG's painted head stays inside the frame on every route surface (worst 4.327 px below the top)
+PASS T-107: 844x390 (iPhone insets): RIG on the lowest deck never stands under the right-thumb cluster — worst 3.767 px above its top over 464 scroll poses; stick ring 38.041 px into its top (reported)
+PASS T-107: 932x430 (no insets): RIG on the lowest deck never stands under the right-thumb cluster — worst 29.266 px above its top over 464 scroll poses; stick ring 21.255 px into its top (reported)
+PASS T-107: 932x430: RIG's painted head stays inside the frame on every route surface (worst 4.77 px below the top)
+PASS T-107: 932x430 (iPhone insets): RIG on the lowest deck never stands under the right-thumb cluster — worst 6.307 px above its top over 464 scroll poses; stick ring 39.174 px into its top (reported)
+PASS T-107: 667x375 (no insets): RIG on the lowest deck never stands under the right-thumb cluster — worst 22.745 px above its top over 464 scroll poses; stick ring 14.838 px into its top (reported)
+PASS T-107: 667x375: RIG's painted head stays inside the frame on every route surface (worst 7.335 px below the top)
+PASS T-107: 667x375 (iPhone insets): RIG on the lowest deck never stands under the right-thumb cluster — worst 22.745 px above its top over 464 scroll poses; stick ring 14.838 px into its top (reported)
+PASS T-107: 844x350 (no insets): RIG on the lowest deck never stands under the right-thumb cluster — worst 24.902 px above its top over 464 scroll poses; stick ring 21.792 px into its top (reported)
+PASS T-107: 844x350: RIG's painted head stays inside the frame on every route surface (worst 1.932 px below the top)
+PASS T-107: 844x350 (iPhone insets): RIG on the lowest deck never stands under the right-thumb cluster — worst 2.473 px above its top over 464 scroll poses; stick ring 39.417 px into its top (reported)
+PASS T-107: a 6-tile lift would put the lowest deck 45.173 px UNDER the cluster at 844x390 (why the frame lifts 0.25 tiles, not 6)
+PASS T-107 (I-104): RIG pinned at the right clamp keeps its whole drawn silhouette on screen at all 17 viewports (rightmost pixel at NDC 0.998, 667x375 touch)
+PASS T-107 (I-104) falsifier: the pre-T-107 route-plane clamp puts RIG's CENTRE past the frame edge (NDC 1.028) — the bound above binds
+PASS T-107: the clamp's silhouette bound is pure/rig.js's documented overrun ceiling and covers the weapon (1.295 >= gun 0.825, muzzle 0.82)
+PASS T-107: the clamp is calibrated on the plane RIG and hostiles are drawn on (CONFIG.framing.actorDepth 1.15; render/player.js 1.15, render/hostiles.js 1.15)
+PASS T-107: the turn lab (sixface-host) and the race lab (edges.mjs) calibrate the edges the page does
+PASS T-107: render/camera.js still contains the lens and clamp calls the race lab replicates
+PASS T-107: the scene camera takes the resolved lens (fov only when it differs, lift added last) — on desktop both are the identity
+PASS T-204: with ?rise= absent the rendered helix is the shipped one bit for bit (altitude, grade and pitch at 4,700 samples)
+PASS T-204: ?rise=steep (or 1) selects the per-side table; absent, 0 or anything else is the shipped helix
+PASS T-204: every face of ?rise=steep climbs inside grade 0.16-0.21 (9.1-11.9 deg): F1 0.16, F2 0.17, F3 0.18, F4 0.19, F5 0.2, F6 0.21
+PASS T-204: on today's 88-tile sides each face rises 14-18.5 m (grade x side length): F1 14.013 m, F2 14.95 m, F3 15.83 m, F4 16.71 m, F5 17.59 m, F6 18.467 m; summit 101.01 m vs the helix's 35 m
+PASS T-204: ?rise=steep has no step and no kink — altitude continuous and climbing (max 0.21 per tile), grade continuous (max change 3.08e-4 per 1/64 tile), altitude is grade's integral (max error 1.00e-7)
+PASS T-204: ?rise=steep levels off onto the Crown summit (zero grade at the level end)
+PASS T-204: the rise is presentation — no src/sim module imports pure/ascent.js, and mode.js selects the profile once (played proof: the render-only fingerprints in the full tier)
+PASS T-107 (R3): ?orbit=joint is the shipped anchor before the ritual and after the catch-up (max 2.8e-14 / 4.4e-16 tiles)
+PASS T-107 (R3): after the swing ?orbit=joint stands at the settled depth from the arriving face (max error 2.8e-14 tiles) where the shipped halt-point orbit stands at 0.693 of it — the zoom pump
+PASS T-107 (R3): the joint orbit's camera moves no more per frame than the shipped orbit does (max 8.176 vs 7.984 tiles per 60 Hz frame, the ratchet's own snap) — a swing, not a jump
+PASS T-107 (R2): the lit far veil spans the whole frame at every settled corner pose (gate, post-turn catch-up) at 9 viewports up to 32:9, both orbits (closest edge 9.27 tiles inside its opaque span)
+PASS T-107 (R2): ... and its full height on every landscape screen up to 21:9 (closest 1.23 tiles inside; reported, not asserted: the 32:9 frame's corners reach 3.89 tiles past it, and portrait's unchanged FAR frame 1.89 — pre-existing)
+PASS T-107 (R2) falsifier: ?veil=legacy leaves the frame edge 44.57 tiles past the painting (T-102's voids)

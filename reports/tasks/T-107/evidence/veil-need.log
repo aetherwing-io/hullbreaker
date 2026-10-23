@@ -1,0 +1,27 @@
+
+== legacy veil, halt orbit (shipped before T-107)
+1280x720                           worst past the opaque veil: left 14.8 right 27.3 tiles | uncovered: c1:gate(R27.28) c1:after-s0(L9.74) c1:after-s4(L10.77) c1:after-s8(L11.8) c1:after-s12(L12.84) c1:after-s16(L12.5) c2:gate(R16.28) c2:after-s0(L0.61) +26
+1280x800                           worst past the opaque veil: left 8.7 right 19.5 tiles | uncovered: c1:gate(R19.47) c1:after-s0(L4) c1:after-s4(L4.84) c1:after-s8(L5.69) c1:after-s12(L6.53) c1:after-s16(L5.86) c2:gate(R8.47) c3:gate(R16.47) +15
+844x390 FAR (mouse or ?view=far)   worst past the opaque veil: left 28.1 right 44.6 tiles | uncovered: c1:gate(R44.57) c1:after-s0(L20.8) c1:after-s4(L22.49) c1:after-s8(L24.18) c1:after-s12(L25.88) c1:after-s16(L26.06) c2:gate(R33.57) c2:after-s0(L12.8) +28
+844x390 touch (phone lens)         worst past the opaque veil: left 3.6 right 13.7 tiles | uncovered: c1:gate(R13.65) c1:after-s4(L0.21) c1:after-s8(L0.76) c1:after-s12(L1.32) c1:after-s16(L0.44) c2:gate(R1.64) c3:gate(R10.65) c3:after-s0(L1.94) +7
+932x430 touch (phone lens)         worst past the opaque veil: left 3.7 right 13.8 tiles | uncovered: c1:gate(R13.75) c1:after-s4(L0.29) c1:after-s8(L0.85) c1:after-s12(L1.4) c1:after-s16(L0.53) c2:gate(R1.76) c3:gate(R10.75) c3:after-s0(L2.01) +7
+667x375 touch (phone lens)         worst past the opaque veil: left -6.4 right 1.6 tiles | uncovered: c1:gate(R1.6) c5:gate(R0.46)
+390x844 touch (phone lens)         worst past the opaque veil: left -26.6 right -28.1 tiles | covered at every settled pose
+
+== extended veil, halt orbit (T-107 default)
+1280x720                           worst past the opaque veil: left -105.2 right -92.7 tiles | covered at every settled pose
+1280x800                           worst past the opaque veil: left -111.3 right -100.5 tiles | covered at every settled pose
+844x390 FAR (mouse or ?view=far)   worst past the opaque veil: left -91.9 right -75.4 tiles | covered at every settled pose
+844x390 touch (phone lens)         worst past the opaque veil: left -116.4 right -106.3 tiles | covered at every settled pose
+932x430 touch (phone lens)         worst past the opaque veil: left -116.3 right -106.3 tiles | covered at every settled pose
+667x375 touch (phone lens)         worst past the opaque veil: left -126.4 right -118.4 tiles | covered at every settled pose
+390x844 touch (phone lens)         worst past the opaque veil: left -146.6 right -148.1 tiles | covered at every settled pose
+
+== extended veil, joint orbit (?orbit=joint)
+1280x720                           worst past the opaque veil: left -89.5 right -94.1 tiles | covered at every settled pose
+1280x800                           worst past the opaque veil: left -95.8 right -101.8 tiles | covered at every settled pose
+844x390 FAR (mouse or ?view=far)   worst past the opaque veil: left -75.9 right -77.0 tiles | covered at every settled pose
+844x390 touch (phone lens)         worst past the opaque veil: left -100.6 right -107.5 tiles | covered at every settled pose
+932x430 touch (phone lens)         worst past the opaque veil: left -100.5 right -107.4 tiles | covered at every settled pose
+667x375 touch (phone lens)         worst past the opaque veil: left -110.1 right -119.6 tiles | covered at every settled pose
+390x844 touch (phone lens)         worst past the opaque veil: left -136.3 right -148.7 tiles | covered at every settled pose

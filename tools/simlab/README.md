@@ -205,6 +205,7 @@ per-side rise. All dev-only, zero effect on the game; every number in
 | `framing/void_columns.py` | the same voids on real captures: share of columns (and rows) at least 90% the page's own clear colour (Pillow + NumPy). |
 | `framing/zoom-pump.mjs` | RIG's projected height at each corner's ritual end, +1.5 s and settled, halt-point vs joint orbit (T-102 R3). |
 | `framing/route-ahead.mjs` | route ahead of RIG per framing on the same seeds, from the lab's own histograms, to the sim's clamp and to the visible route edge; `--root` runs another tree's own lab (e.g. an export of main). |
+| `framing/vertical-band.mjs` | does the climbing band fit the frame: RIG's painted head on every reachable route surface vs the top edge, the lowest deck vs the touch deck's right-thumb cluster, for the helix and `?rise=steep`, phone and desktop. |
 | `framing/readability_sheet.py` | a contact sheet of every hostile, projectile and capsule a `tools/playtest/phone-readability-capture.mjs` session recorded, true size and 3x, with median on-screen sizes. |
 
 The browser half lives beside the other capture tools (documented in their

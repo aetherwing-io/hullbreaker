@@ -1,0 +1,105 @@
+BASELINE (unmutated): all green
+
+== M1 resolver: phone test on the LONG side -> RED (12)
+   FAIL T-107: every touch phone resolves to the phone frame in both orientations
+   FAIL T-107: ?view=far forces FAR on a phone, ?view=phone forces the phone frame on desktop, near/mid keep their meaning, anything else is AUTO
+   FAIL T-107: RIG's body is 5.5-6.5% of the height at 844x390 on touch — 3.826% at the frame's centre (3.596-4.051% across it); painted silhouette 4.502%
+   FAIL T-107: RIG's body is 5.5-6.5% of the height at 932x430 on touch — 3.826% at the frame's centre (3.596-4.052% across it); painted silhouette 4.502%
+   FAIL T-107: RIG's body is 5.5-6.5% of the height at 667x375 on touch — 3.826% at the frame's centre (3.637-4.012% across it); painted silhouette 4.502%
+   FAIL T-107: a portrait phone (390x844) keeps FAR's portrait frame exactly — RIG's body is already 7.002% of the short side, at least the landscape phone's size, with no widening
+   FAIL T-107: a portrait phone (430x932) keeps FAR's portrait frame exactly — RIG's body is already 7.001% of the short side, at least the landscape phone's size, with no widening
+   FAIL T-107: a portrait phone (375x667) keeps FAR's portrait frame exactly — RIG's body is already 6.995% of the short side, at least the landscape phone's size, with no widening
+   FAIL T-107: every touch phone resolves to the phone frame in both orientations
+   FAIL T-107: ?view=far forces FAR on a phone, ?view=phone forces the phone frame on desktop, near/mid keep their meaning, anything else is AUTO
+   FAIL T-107: RIG's body is 5.5-6.5% of the height at 844x390 on touch — 3.826% at the frame's centre (3.596-4.051% across it); painted silhouette 4.502%
+   FAIL T-107: RIG's body is 5.5-6.5% of the height at 932x430 on touch — 3.826% at the frame's centre (3.596-4.052% across it); painted silhouette 4.502%
+
+== M2 desktop identity: FAR fov off by 1e-9 -> RED (8)
+   FAIL T-107: every non-phone frame is the shipped fov with zero lift, exactly (the desktop projection identity)
+   FAIL T-107: a portrait phone (390x844) keeps FAR's portrait frame exactly — RIG's body is already 7.002% of the short side, at least the landscape phone's size, with no widening
+   FAIL T-107: a portrait phone (430x932) keeps FAR's portrait frame exactly — RIG's body is already 7.001% of the short side, at least the landscape phone's size, with no widening
+   FAIL T-107: a portrait phone (375x667) keeps FAR's portrait frame exactly — RIG's body is already 6.995% of the short side, at least the landscape phone's size, with no widening
+   FAIL T-107: every non-phone frame is the shipped fov with zero lift, exactly (the desktop projection identity)
+   FAIL T-107: a portrait phone (390x844) keeps FAR's portrait frame exactly — RIG's body is already 7.002% of the short side, at least the landscape phone's size, with no widening
+   FAIL T-107: a portrait phone (430x932) keeps FAR's portrait frame exactly — RIG's body is already 7.001% of the short side, at least the landscape phone's size, with no widening
+   FAIL T-107: a portrait phone (375x667) keeps FAR's portrait frame exactly — RIG's body is already 6.995% of the short side, at least the landscape phone's size, with no widening
+
+== M3 RIG share 7% -> RED (12)
+   FAIL T-107: RIG's body is 5.5-6.5% of the height at 844x390 on touch — 6.961% at the frame's centre (6.732-7.187% across it); painted silhouette 8.189%
+   FAIL T-107: RIG's body is 5.5-6.5% of the height at 932x430 on touch — 6.961% at the frame's centre (6.732-7.187% across it); painted silhouette 8.189%
+   FAIL T-107: RIG's body is 5.5-6.5% of the height at 667x375 on touch — 6.961% at the frame's centre (6.773-7.147% across it); painted silhouette 8.189%
+   FAIL T-107: 844x390: RIG's painted head stays inside the frame on every route surface (worst -38.52 px below the top)
+   FAIL T-107: 844x390 (iPhone insets): RIG on the lowest deck never stands under the right-thumb cluster — worst -7.532 px above its top over 464 scroll poses; stick ring 49.424 px into its top (reported)
+   FAIL T-107: 932x430: RIG's painted head stays inside the frame on every route surface (worst -42.471 px below the top)
+   FAIL T-107: 932x430 (iPhone insets): RIG on the lowest deck never stands under the right-thumb cluster — worst -6.151 px above its top over 464 scroll poses; stick ring 51.723 px into its top (reported)
+   FAIL T-107: 667x375: RIG's painted head stays inside the frame on every route surface (worst -33.677 px below the top)
+   FAIL T-107: 844x350: RIG's painted head stays inside the frame on every route surface (worst -36.743 px below the top)
+   FAIL T-107: 844x350 (iPhone insets): RIG on the lowest deck never stands under the right-thumb cluster — worst -7.749 px above its top over 464 scroll poses; stick ring 50.217 px into its top (reported)
+   FAIL T-107 (I-104): RIG pinned at the right clamp keeps its whole drawn silhouette on screen at all 17 viewports (rightmost pixel at NDC 1.001, 667x375 touch)
+   FAIL T-107: RIG's body is 5.5-6.5% of the height at 844x390 on touch — 6.961% at the frame's centre (6.732-7.187% across it); painted silhouette 8.189%
+
+== M4a lift 0 (head off the top) -> RED (8)
+   FAIL T-107: 844x390: RIG's painted head stays inside the frame on every route surface (worst -6.337 px below the top)
+   FAIL T-107: 932x430: RIG's painted head stays inside the frame on every route surface (worst -6.987 px below the top)
+   FAIL T-107: 667x375: RIG's painted head stays inside the frame on every route surface (worst -2.995 px below the top)
+   FAIL T-107: 844x350: RIG's painted head stays inside the frame on every route surface (worst -7.591 px below the top)
+   FAIL T-107: 844x390: RIG's painted head stays inside the frame on every route surface (worst -6.337 px below the top)
+   FAIL T-107: 932x430: RIG's painted head stays inside the frame on every route surface (worst -6.987 px below the top)
+   FAIL T-107: 667x375: RIG's painted head stays inside the frame on every route surface (worst -2.995 px below the top)
+   FAIL T-107: 844x350: RIG's painted head stays inside the frame on every route surface (worst -7.591 px below the top)
+
+== M4b lift 2 (deck under the thumbs) -> RED (6)
+   FAIL T-107: 844x390 (iPhone insets): RIG on the lowest deck never stands under the right-thumb cluster — worst -10.744 px above its top over 464 scroll poses; stick ring 53.141 px into its top (reported)
+   FAIL T-107: 932x430 (iPhone insets): RIG on the lowest deck never stands under the right-thumb cluster — worst -9.692 px above its top over 464 scroll poses; stick ring 55.823 px into its top (reported)
+   FAIL T-107: 844x350 (iPhone insets): RIG on the lowest deck never stands under the right-thumb cluster — worst -10.499 px above its top over 464 scroll poses; stick ring 53.02 px into its top (reported)
+   FAIL T-107: 844x390 (iPhone insets): RIG on the lowest deck never stands under the right-thumb cluster — worst -10.744 px above its top over 464 scroll poses; stick ring 53.141 px into its top (reported)
+   FAIL T-107: 932x430 (iPhone insets): RIG on the lowest deck never stands under the right-thumb cluster — worst -9.692 px above its top over 464 scroll poses; stick ring 55.823 px into its top (reported)
+   FAIL T-107: 844x350 (iPhone insets): RIG on the lowest deck never stands under the right-thumb cluster — worst -10.499 px above its top over 464 scroll poses; stick ring 53.02 px into its top (reported)
+
+== M5a clamp on the centre row only (the WIP) -> RED (2)
+   FAIL T-107 (I-104): RIG pinned at the right clamp keeps its whole drawn silhouette on screen at all 17 viewports (rightmost pixel at NDC 1.011, 1024x768 touch)
+   FAIL T-107 (I-104): RIG pinned at the right clamp keeps its whole drawn silhouette on screen at all 17 viewports (rightmost pixel at NDC 1.011, 1024x768 touch)
+
+== M5b clamp without the silhouette inset -> RED (2)
+   FAIL T-107 (I-104): RIG pinned at the right clamp keeps its whole drawn silhouette on screen at all 17 viewports (rightmost pixel at NDC 1.017, 667x375 touch)
+   FAIL T-107 (I-104): RIG pinned at the right clamp keeps its whole drawn silhouette on screen at all 17 viewports (rightmost pixel at NDC 1.017, 667x375 touch)
+
+== M6 race replica back on the route plane -> RED (2)
+   FAIL T-107: the turn lab (sixface-host) and the race lab (edges.mjs) calibrate the edges the page does
+   FAIL T-107: the turn lab (sixface-host) and the race lab (edges.mjs) calibrate the edges the page does
+
+== M7 camera.js drops the lift from the pose -> RED (2)
+   FAIL T-107: the scene camera takes the resolved lens (fov only when it differs, lift added last) — on desktop both are the identity
+   FAIL T-107: the scene camera takes the resolved lens (fov only when it differs, lift added last) — on desktop both are the identity
+
+== M8 helix total rise 35 -> 35.0001 -> RED (2)
+   FAIL T-204: with ?rise= absent the rendered helix is the shipped one bit for bit (altitude, grade and pitch at 4,700 samples)
+   FAIL T-204: with ?rise= absent the rendered helix is the shipped one bit for bit (altitude, grade and pitch at 4,700 samples)
+
+== M9 steep face 6 grade 0.23 -> RED (6)
+   FAIL T-204: every face of ?rise=steep climbs inside grade 0.16-0.21 (9.1-11.9 deg): F1 0.16, F2 0.17, F3 0.18, F4 0.19, F5 0.2, F6 0.23
+   FAIL T-204: on today's 88-tile sides each face rises 14-18.5 m (grade x side length): F1 14.013 m, F2 14.95 m, F3 15.83 m, F4 16.71 m, F5 17.597 m, F6 20.2 m; summit 102.95 m vs the helix's 35 m
+   FAIL T-204: ?rise=steep has no step and no kink — altitude continuous and climbing (max 0.23 per tile), grade continuous (max change 3.37e-4 per 1/64 tile), altitude is grade's integral (max error 1.10e-7)
+   FAIL T-204: every face of ?rise=steep climbs inside grade 0.16-0.21 (9.1-11.9 deg): F1 0.16, F2 0.17, F3 0.18, F4 0.19, F5 0.2, F6 0.23
+   FAIL T-204: on today's 88-tile sides each face rises 14-18.5 m (grade x side length): F1 14.013 m, F2 14.95 m, F3 15.83 m, F4 16.71 m, F5 17.597 m, F6 20.2 m; summit 102.95 m vs the helix's 35 m
+   FAIL T-204: ?rise=steep has no step and no kink — altitude continuous and climbing (max 0.23 per tile), grade continuous (max change 3.37e-4 per 1/64 tile), altitude is grade's integral (max error 1.10e-7)
+
+== M10 steep corner blend ~0 (a kink) -> RED (2)
+   FAIL T-204: ?rise=steep has no step and no kink — altitude continuous and climbing (max 0.21 per tile), grade continuous (max change 5.00e-3 per 1/64 tile), altitude is grade's integral (max error 2.38e-3)
+   FAIL T-204: ?rise=steep has no step and no kink — altitude continuous and climbing (max 0.21 per tile), grade continuous (max change 5.00e-3 per 1/64 tile), altitude is grade's integral (max error 2.38e-3)
+
+== M11 a sim module imports the ascent -> RED (2)
+   FAIL T-204: the rise is presentation — no src/sim module imports pure/ascent.js, and mode.js selects the profile once (played proof: the render-only fingerprints in the full tier)
+   FAIL T-204: the rise is presentation — no src/sim module imports pure/ascent.js, and mode.js selects the profile once (played proof: the render-only fingerprints in the full tier)
+
+== M12 joint orbit pivot never leaves the chamfer start -> RED (4)
+   FAIL T-107 (R3): ?orbit=joint is the shipped anchor before the ritual and after the catch-up (max 2.8e-14 / 1.0e+0 tiles)
+   FAIL T-107 (R3): after the swing ?orbit=joint stands at the settled depth from the arriving face (max error 1.0e+0 tiles) where the shipped halt-point orbit stands at 0.693 of it — the zoom pump
+   FAIL T-107 (R3): ?orbit=joint is the shipped anchor before the ritual and after the catch-up (max 2.8e-14 / 1.0e+0 tiles)
+   FAIL T-107 (R3): after the swing ?orbit=joint stands at the settled depth from the arriving face (max error 1.0e+0 tiles) where the shipped halt-point orbit stands at 0.693 of it — the zoom pump
+
+== M13 far veil extension 30 tiles -> RED (2)
+   FAIL T-107 (R2): the lit far veil spans the whole frame at every settled corner pose (gate, post-turn catch-up) at 9 viewports up to 32:9, both orbits (closest edge -80.73 tiles inside its opaque span)
+   FAIL T-107 (R2): the lit far veil spans the whole frame at every settled corner pose (gate, post-turn catch-up) at 9 viewports up to 32:9, both orbits (closest edge -80.73 tiles inside its opaque span)
+
+after restore: all green

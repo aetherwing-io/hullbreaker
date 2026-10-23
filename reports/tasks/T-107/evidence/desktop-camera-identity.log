@@ -1,0 +1,11 @@
+05:40:17 1280x720 ?juice=0: done (196 s)
+05:43:26 1920x1080 ?juice=0: done (189 s)
+05:45:23 1280x800 ?juice=0: done (116 s)
+05:49:05 1280x720 ?juice=0: done (215 s)
+05:51:32 1920x1080 ?juice=0: done (146 s)
+05:53:09 1280x800 ?juice=0: done (96 s)
+1280x720 ?juice=0: 17 poses, 0 differing camera numbers (max |delta| 0) | edges A L -31.114014809188518 R 50.23319842508215 / B L -31.114014809188518 R 47.71992630896875
+1920x1080 ?juice=0: 17 poses, 0 differing camera numbers (max |delta| 0) | edges A L -31.114014809188518 R 50.23319842508215 / B L -31.114014809188518 R 47.71992630896875
+1280x800 ?juice=0: 17 poses, 0 differing camera numbers (max |delta| 0) | edges A L -27.438263128944754 R 45.73492361770377 / B L -27.438263128944754 R 43.42525912650683
+CAMERA IDENTICAL (every element Object.is-equal)
+exit 0
