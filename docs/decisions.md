@@ -1125,3 +1125,13 @@ the choreography from git rather than reinventing it: it exists intact at
 gates).
 
 **Source:** operator message, 2026-10-22, answering entry 24's open item.
+
+**Addendum to entry 23, same day — integrator call on defaults (reverse it if
+wrong):** the never-wait corners (answer 2) and T-104's follow-lead scroll ship
+ON by default in the race pass, with `?gates=legacy` and `?follow=0` restoring
+today's behaviour exactly, and the release message carries both A/B links for
+the operator's phone. Entry 23's earlier line ("stay behind A/B flags until the
+operator plays them") is narrowed accordingly: entry 16 retired flags that hide
+work the operator never types, answer 2 is the operator's own choice, and the
+follow-lead directly serves entry 20's "race to the top". The hinge-stop variant
+(T-102 R4) and the per-side rendered rise stay OFF by default until played.

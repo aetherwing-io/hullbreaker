@@ -446,10 +446,14 @@ goal (M1): gate beats are always visible, fightable and bounded — full block
 in `docs/proposals/2026-10-race-to-the-top.md` §7 "T-201".
 amendments at dispatch: type is `feature` (not `bug`); add `src/mode.js` to the
 fences if a flag is added; a bot-row box is REPORTED, not asserted (§1.3).
-Fold into one lane with T-202 + T-203 (shared `wavegate.js`/`scroll.js`/
-`waves.js`). Dispatch after T-102 merges.
+DISPATCHED AS ONE LANE ("the race pass") covering T-201 + T-202 + T-203
+(entry-23 rewrite) + T-102's R4 hinge-stop A/B + the sim-side zipper removal
+(entry 25 / I-105). Brief: the integrator's dispatch prompt. Dispatch after
+T-102 merges.
 
 ## T-202 | feature | todo | P1
+
+(folded into T-201's lane)
 
 goal (M1): follow-lead scroll + arm on arrival — §7 "T-202". Owns look-ahead
 (T-107 must not reduce it). Amendment: "saturate harmlessly" needs a threshold.
@@ -460,6 +464,9 @@ call is the operator's.
 
 ## T-203 | feature | todo | P1
 
+(folded into T-201's lane — the never-wait corner part; bay-A teach beats
+still arrive with T-205)
+
 goal (M2): rolling gates — §7 "T-203", REWRITTEN at dispatch per entry 23 #2:
 the turn never waits; an uncleared remix cell does not hold it; its survivors
 carry over and chase onto the next side (the price is pressure, entry 12).
@@ -467,6 +474,8 @@ Drop "the halt stays as the safety net" and the bounded-beat release design;
 keep teach → test → remix → break and the visibility rule.
 
 ## T-204 | render | todo | P2
+
+(folded into T-107's lane)
 
 goal: per-side rendered rise — §7 "T-204". Amendment: its targets are written
 for 176-tile sides; rescale to grade (0.16-0.21, 9-12°) so they hold on 88-tile
