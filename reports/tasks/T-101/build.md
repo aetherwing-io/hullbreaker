@@ -15,8 +15,9 @@ released in all 36 orders left exactly the right keys held after every one of
 orientation flip each released everything. The ledger, cancel, blur,
 jump-height, aim and drop-through checks were then each shown RED by a
 one-line defect served into the page (§2); the visibility and orientation
-releases were not mutated in the browser (their listeners are guarded
-statically, also falsified, §3).
+releases were not mutated in the browser (the orientationchange/pagehide
+listeners are also guarded statically, falsified in §3; visibilitychange is
+not).
 
 | evidence | result |
 |---|---|
