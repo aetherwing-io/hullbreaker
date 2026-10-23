@@ -1,414 +1,328 @@
-FAIL
+PASS
 
-# T-103 playtest gate: weapons sit in RIG's hands
+# T-103 playtest RE-GATE: weapons sit in RIG's hands
 
-QA gate, 2026-10-23. Worktree `/home/user/hullbreaker/.claude/worktrees/T-103`, branch `task/T-103`, HEAD
-`11ff74e3fadc9a4d63e21efbc3283174117e5e7e` (`11ff74e`, "Merge main into task/T-103"). `git status --short` was
-empty before, between and after every run. Bots, captures and measurements are evidence about regressions and looks;
-this file makes no fun or feel claim, and feel observations are routed to the operator questions in section 8.
+QA re-gate, 2026-10-23. Worktree `/home/user/hullbreaker/.claude/worktrees/T-103`, branch `task/T-103`, HEAD
+`c6d475ebf074dacde4ac47b79795e9292446f78b` (`c6d475e`). `git status --short` was empty at the start and at the end, and
+the SHA-256 of `src/pure/rig.js` (`6f37f752…`), `src/render/player.js` (`5c066cf4…`), the d78 test, `symmetry.mjs`,
+`check.mjs` and `capture.mjs` were identical before and after every run (`$N/pin-sha-{before,after}.txt`). This file
+reports measurements and what I saw; it makes no fun or feel claim (feel questions are in section 8).
+`$N` = `/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t103-regate`.
 
 ## Verdict
 
-**FAIL, on one visible defect that the lane did not disclose and that none of its gates can see: whenever RIG faces
-left, his two re-posed arms are lit as back faces.** The arm renders at 71 % of the right-facing luminance (red channel
-62 %), warm tan turning grey-olive, and the whole figure is 4 % darker on average across 520 live desktop pairs and 200
-phone pairs. The pre-T-103 build is symmetric on the same measurement (mean luma ratio L/R 0.9996, same script).
-Cause: `rigArmSegmentCorners` mirrors by negating x (`src/pure/rig.js:508`) without reordering the quad, so every
-left-facing arm triangle is wound clockwise, and the arm material is `DoubleSide` with fixed +z normals
-(`src/render/player.js:582-596`), so three.js flips the normal and the key light drops out. Proven in the page
-(section 5): with `FrontSide` the left-facing arms vanish (0 of 126 pixels); with the triangles re-wound the
-left-facing arm is back to 0.993 of the right-facing luminance and the figure to 1.000. It is in the lane's own
-committed evidence (`phone-firing-after-4x.png`, "aim left" panel). The fix is a few lines and the re-gate is cheap
-(section 7). It is the operator's own complaint, "the models are a little off", reintroduced by the fix for it, which
-is why I am not passing it as a nit.
+**PASS.** The one defect the prior gate failed this lane on is fixed, and every re-gate criterion is met on numbers I
+took myself on `c6d475e`: facing left, RIG's arms are now lit like facing right (aggregate L/R luma 1.0002 over 520
+desktop pairs and 0.9999 over 520 phone pairs, arms drawn alone 0.990 to 1.007). The new pathcheck domain goes red on the
+defect and on four of five scratch mutants of it (the fifth is the reviewer's `needsUpdate` case, below). Nothing else
+moved: geometry gates, live fist-to-grip, both smoke scripts, selftest and the sim are unchanged, and in a same-page A/B
+not one facing-right pixel differs from the pre-fix renderer's. The one hole I found in the new test (the reviewer's
+finding, now reproduced live) does not touch the shipped build and does not fail the lane; it is proposed as an S3 issue
+below.
 
-Everything else passes and reproduces, and **nothing else I found blocks the merge**:
+**Prior gate:** FAIL at `11ff74e` (S2 art): the two re-posed arm meshes were wound clockwise when RIG faced left and, under
+a `DoubleSide` material with +z normals, were lit as back faces (arms 0.71 of the right-facing luma, whole figure 0.958 L/R,
+warm tan going grey-olive). The lane's fix is `6708326` (`rigArmTriangleIndex(mirror)` gives each facing a counter-clockwise
+triangle order, `writeArm` rewrites the 12 indices in place on a facing change, material `FrontSide`) plus the evidence,
+report and `symmetry.mjs` commits up to `c6d475e`. `git diff 11ff74e..c6d475e -- src` is `src/pure/rig.js` (+18) and
+`src/render/player.js` (+21/-4); `git diff 11ff74e..c6d475e -- src/sim src/config.js assets index.html` and
+`git diff 98b12c9..HEAD -- src/sim src/config.js` are both 0 lines.
 
-- **Smoke:** `mid-route.json` PASS and `transform-slice.json` PASS on the pinned worktree, first attempt each; final
-  sim state identical to the T-102 gate's runs on a different build (as it must be: no sim change).
-- **Live measurement (the lane's tool, my runs):** 1040 desktop-FAR cells and 400 phone-landscape cells, worst
-  fist-to-grip 0.023 css px, worst muzzle-to-spawn 0.157 css px (bound 1, zero cells over), zero page errors, RIG
-  visible in every cell, in-situ desktop firing frames consistent.
-- **Headless:** `runGripCheck` 4840 combinations / 0 failures, d77 21/21, the gate goes red when an anchor moves,
-  `pathcheck` 4007 passed / 0 failed, `src/sim` and `src/config.js` byte-identical to the base.
-- **Looks:** the guns sit in the fists in every pose, aim and gun, in both facings; no arm seams, no missing pixels,
-  layering consistent; the lane's disclosed limits are visible as described.
+## Re-gate criteria (section 7 of the prior verdict), measured at c6d475e
 
-**Next action:** return T-103 to the lane for the arm-winding fix (a few lines in `src/pure/rig.js` / `src/render/player.js`
-plus a test that binds), then re-gate against section 7. `merge-task.sh` will need a PASS newer than the new head.
+| # | criterion | bound | measured | result |
+| --- | --- | --- | --- | --- |
+| 1 | aggregate facing symmetry, full desktop matrix (5 guns x 13 rows x 2 facings x 8 aims = 1040 live cells, 520 mirrored pairs) | mean luma L/R 1.000 +-0.005; mean RGB delta within +-0.5/channel; no row off by more than 0.015 | **mean 1.0002** (std 0.0129); RGB delta **(+0.07, -0.00, -0.07)**; rows 0.993 (hit-iframe) to 1.007 (air-fall), worst row deviation 0.0072; pairs more than 2 % darker facing left 6 % (BEFORE 14 %, pre-fix 74 %). `python3 -I mirror-symmetry-check.py` exit **0**, the lane's `tools/rig-grip/symmetry.mjs` exit **0**, same numbers. Phone 844x390 DPR 2, all 1040 cells: 520 pairs, **0.9999**, (+0.08, -0.03, -0.14), rows 0.995 to 1.005, exit 0. Controls: exit 0 on main's BEFORE cells (0.9996), exit 1 on the lane's pre-fix cells (0.9591) and on a pre-fix capture I re-shot today (0.9250) | PASS |
+| 2 | left-facing arms drawn alone within +-3 % of right-facing luma | 0.97 to 1.03 | **0.996** (stand, the criterion's own case), 1.007 (run-flight), 0.990 (air-rise), 0.999 (climb-1). The same script at `11ff74e` today: 0.747 / 0.715 / 0.724 / 0.715 | PASS |
+| 3 | a pathcheck test red on the defect, green on the fix | red on the defect | d78 (`tools/pathcheck/t-103-arm-winding.mjs`): **4 passed / 0 failed** at `c6d475e`; **1 passed / 3 failed** on the pre-fix source (32000 of 32000 left-facing arm triangles clockwise); red on four of five scratch mutants of the winding/material/upload (the fifth is the reviewer's `needsUpdate` case, below) | PASS |
+| 4 | everything else unchanged | n/a | `check.mjs` CLI exit 0, 4840 combinations 0 failures; d77 21/0; full pathcheck 4011/0; sim/config diff 0 lines; live fist-to-grip max **0.022** css px desktop (1040 cells), **0.010** phone 844x390 DPR 2 (1040 cells); mid-route smoke PASS; transform-slice smoke PASS; selftest PASS (39); facing-right renders **pixel-identical** to the pre-fix renderer's in a same-page A/B (0 px, four poses) | PASS |
+| 5 | look at a fresh left/right pair, true size and 4x | left-facing arms warm, not grey-olive | looked (section 6): warm tan facing left in every pose I read, at 1x, 4x, 8x and in situ at 10x | PASS |
 
-## 1. Pinning
+## 1. Pinning and method
 
 | item | result |
 | --- | --- |
-| tree | worktree HEAD `11ff74e`; main at `5252c18` is merged into it. vs main: 40 files, +5077/-96; `src/` is only `src/pure/rig.js` (+345/-5) and `src/render/player.js` (+157/-29); `git diff 98b12c9..HEAD -- src/sim src/config.js` is **0 lines**. Main's `src/`, `assets/` and `index.html` are byte-identical to the lane's base `98b12c9`, so a `git archive 98b12c9` export is a faithful BEFORE |
-| server | `node /home/user/hullbreaker/tools/serve.mjs 8783 --root /home/user/hullbreaker/.claude/worktrees/T-103 --quiet` (main's copy, node pid 18078). `curl -I` shows `Cache-Control: no-store, no-cache, must-revalidate, max-age=0`. The served `src/pure/rig.js` has the worktree's SHA-256 (`42ed7224…`) and not main's (`b9eaf241…`). Killed at the end |
-| capture tool | the worktree's own `tools/rig-grip/capture.mjs` (it does not exist on main); it serves the worktree itself through `withIsolatedBrowser` on an OS-assigned port. Ports 8741/8742 were never touched |
-| host | `. ~/.hullbreaker-host.env` in every shell (`HB_HARNESS_SLOWDOWN=100`, `HB_SMOKE_VIEWPORT=480x300`, browser probe skipped). 4 cores, no GPU (SwiftShader), load average 23-45, with a reviewer's capture and other lanes' browsers running at the same time. No run was lost to a boot failure, so nothing was retried |
-| lane's sheets vs head | the sheets are labelled `f1cb327`; `git diff f1cb327..11ff74e -- src assets tools/assets` is only manifest notes/roles, README and the capture/compose tools, so the committed sheets show the shipped art and code. My live cells are closer to the lane's AFTER than to its BEFORE in 443 of 443 cells compared (blurred difference 0.62 vs 4.66 sum-RGB per pixel). Exact pixel equality is not expected: the camera's sub-pixel phase at pause time differs per run |
+| tree | worktree HEAD `c6d475e`, clean, hashes above. Main moved on while I worked (`08e5db1` at my last look); I tested the lane head only, not a merge with main (see the integrator note in section 7) |
+| server | `node /home/user/hullbreaker/tools/serve.mjs 8786 --root /home/user/hullbreaker/.claude/worktrees/T-103 --quiet --keep-orphan` (main's copy), `Cache-Control: no-store, no-cache, must-revalidate, max-age=0`; the served `src/pure/rig.js` and `src/render/player.js` have the worktree's SHA-256, not main's (`rig.js` `b9eaf241…`). Stopped by PID at the end (connection refused afterwards) |
+| capture tool | the worktree's own `tools/rig-grip/capture.mjs`: it boots the real game in an isolated headless Chrome on an OS-assigned port (8741/8742 never touched), pauses the sim, stages every cell through the shipped `view.player.sync()` hook and reads live `matrixWorld`. RIG is isolated from the world in the matrix cells (the lane's disclosed method); the firing captures keep the world. `--root` points it at an exported tree for the pre-fix controls |
+| host | `. ~/.hullbreaker-host.env` in every shell. 4 cores, no GPU (SwiftShader), load average 20 to 44 from other lanes' browsers while I ran |
+| retries | one, a harness/launch artifact: my first mid-route attempt died at once with `net::ERR_CONNECTION_REFUSED` because a `--quiet` server is leased to the shell that launched it and exited when my tool call returned (`launcher 6252 disappeared; closing leased Hullbreaker server`). I relaunched it with `--keep-orphan` and re-ran; PASS. Not a game boot failure (proposed issue 2). I also mistyped one crouch capture (no `--rows crouch`), killed it and re-ran it correctly (proposed issue 3) |
+| pre-fix controls | `git archive 11ff74e index.html src` into `$N/pre-11ff74e` (assets symlinked: `git diff 11ff74e..c6d475e -- assets` is empty), captured with the same tool. Mutants are scratch copies of `c6d475e` under `$N/mut/`; no tracked file was edited |
 
-## 2. Smoke set (main's harness, pinned worktree, `--deterministic`, 480x300)
+## 2. Criterion 1: facing symmetry
 
-```sh
-cd /home/user/hullbreaker/tools/playtest && . ~/.hullbreaker-host.env
-node run.mjs scripts/mid-route.json --deterministic --viewport 480x300 --base-url http://127.0.0.1:8783 --out $S/smoke-mid
-node run.mjs scripts/transform-slice.json --deterministic --viewport 480x300 --max-runtime-ms 20000 --base-url http://127.0.0.1:8783 --out $S/smoke-transform
-node /home/user/hullbreaker/tools/orch/smoke-verdict.mjs <out>/report.json
-```
-(`$S` = `/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t103-gate`)
+Instrument: pair every right-facing cell with the left-facing cell of the mirrored aim (one pose mirrored; lighting does not
+care which way RIG faces), mean colour of the figure's pixels (more than 30 off the isolation background), aggregate over
+pairs. `python3 -I $N/mirror-symmetry-check.py <capdir> <view>` is the prior gate's script (its source is embedded in the
+prior verdict, `git show 5af89c7:reports/tasks/T-103/playtest.md`, appendix); the lane ported it to
+`tools/rig-grip/symmetry.mjs`. I ran both on seven cell sets and they print the same numbers, verdict and exit code each
+time (only the array formatting differs).
 
-| script | verdict and evidence |
-| --- | --- |
-| `mid-route.json` | **PASS**: `smoke-verdict: PASS (outcome=not-completed deaths=0 tick=594/594)`. 26 of 26 events dispatched, `bootError` none, `pageErrors` [], 0 console errors, 0 deaths, 0 falls. Final state x 55.649, gameMs 9900.198, hp 2, scrollX 56.204, minEdgeMargin 26.53, **identical to the T-102 gate's run of the same script on a different build** (as it must be: no sim change). Idle fraction 0.34 (T-102: 0.353); the absolute seconds in `summary.md` (116.6 s idle of 342.9 s) are wall-clock weighted samples on a throttled host and mean nothing; fractions and counts are usable. 350 s wall on the first attempt |
-| `transform-slice.json` | **PASS** on the first attempt: `smoke-verdict: PASS (outcome=completed deaths=0 tick=938/1104)`. BREACH CLEAR at tick 938, 2 of 2 transformations: gameMs 15633.646, x 146.0874, y 10.4443, scrollX 130.2807, hp 3, 0 falls, **identical to the T-102 gate's run and to the lane's base-98b12c9 control**. `bootError` none, `pageErrors` [], 0 console errors, idle fraction 0, minEdgeMargin 30.07. The harness's "6 of 58 events never dispatched" line is the post-victory freeze. 863 s wall |
-
-No pacing dead spot in either (A.5 numbers above); no regression in the sim. Evidence:
-`$S/smoke-mid/{report.json,summary.md,screenshot.png}`, `$S/smoke-transform/{…}`.
-
-## 3. Headless gates (the lane's own, re-run)
-
-| command (from the worktree) | result |
-| --- | --- |
-| `node tools/rig-grip/check.mjs` (as assigned) | exit 0 in 0.4 s **with no output**. The file only exports `runGripCheck`; it has no CLI entry, so run directly it checks nothing. Reported as proposed issue 2 below. The real gate is the next row |
-| `runGripCheck()` called from my own script (`$S/run-gate.mjs`) | 4840 combinations, **0 failures**. Worst fist-to-grip 0.0965 atlas px (bound 1); worst muzzle-to-spawn 0.1035 desktop-FAR px (bound 1); gain-1 arm stretch max x1.135; portrait max x1.608, median x1.234. Matches the build report to the digit |
-| T-103 pathcheck domain alone (the lane's command) | `{ passes: 21, fails: 0 }` |
-| gate binding, from outside (`$S/run-gate-mutants.mjs`, through the gate's own fault-injection parameters, no file edited) | control 0 failures; fist anchor +3 atlas px -> red ("fist anchor [1171.8,705.7] is 3.02 px from the painted fist centroid"); rivet-gun grip +3 px -> red; rivet-gun `muzzleY` 82 (main's value) -> red; a +0.3 px nudge inside the stated tolerance stays green. The lane's source-mutation table (3 mutants, 2-3 failures each) was not repeated |
-| `node tools/pathcheck.mjs` at `11ff74e` (informational: a green gate is not evidence, decisions entry 21) | `pathcheck: 4007 passed, 0 failed`, 53 s. The 4 `render-submission-contract` browser-probe assertions are skipped by `HB_GATE_SKIP_BROWSER_PROBE=1` and not counted, so the lane's 4 host-bound failures are gone on this tree |
-| `git diff 98b12c9..HEAD -- src/sim src/config.js` | 0 lines. "No simulation change" holds |
-
-What these gates are: centroid arithmetic over painted pixels (check.mjs/raster.mjs), a software compositor with
-no lighting. They prove the hand lands on the grip. They cannot see shading, which is exactly where the defect is.
-
-## 4. Live re-measure (the lane's `tools/rig-grip/capture.mjs`, my runs, real game, real three.js meshes)
-
-The tool boots `index.html?testapi=1&audio=0&view=far&momentum=0&score=0`, pauses, stages every pose through the
-shipped `view.player.sync()` hook, and measures from live `matrixWorld`: the fist centre on the arm mesh vs the
-painted grip centroid on the weapon mesh, and the painted muzzle face vs the sim's bullet spawn placed the way
-`bullets.js` places it. RIG is isolated from the world (the lane's disclosed method).
-
-| view | cells | fist->grip css px max / mean | muzzle->spawn css px max / mean | arm stretch max | RIG hidden | page errors |
+| cell set | pairs | mean luma L/R (std) | pairs >2 % darker facing left | mean RGB delta L-R | rows min..max | exit |
 | --- | --- | --- | --- | --- | --- | --- |
-| desktop FAR 1280x800 DPR 1: 5 guns x 13 rows x 2 facings x 8 aims | **1040** | **0.023** / 0.0089 | **0.157** / 0.0565 | 1.102 (16 cells > 1.0, 4 > 1.05) | 0 | 0 |
-| phone landscape 844x390 DPR 2: 5 guns x rows stand, run-flight, air-rise, climb-1, wall x 16 | **400** (of 1040; see below) | **0.008** / 0.0042 | **0.076** / 0.0295 | 1.102 | 0 | 0 |
-| desktop FAR in situ, RIG actually firing (gun R: right, up-right, up, left), real background, paused on the shot frame | **4 shots** | 0.020 | 0.102 vs the recoil-shifted spawn; 1.78 vs the unshifted spawn (the 0.095-tile recoil kick, see below) | - | - | 0 |
+| **FIXED c6d475e, desktop FAR, fresh, 1040 cells** (`$N/cap-desktop`) | 520 | **1.0002** (0.0129) | 0.06 | **(+0.07, -0.00, -0.07)** | 0.993..1.007 | **0** |
+| **FIXED c6d475e, phone 844x390 DPR 2, fresh, 400 + 640 cells** (`$N/cap-phone-all`) | 520 | **0.9999** (0.0139) | 0.09 | (+0.08, -0.03, -0.14) | 0.995..1.005 | **0** |
+| FIXED, portrait 390x844 DPR 2, gun R, 3 rows | 24 | 1.0009 (0.0063) | 0.00 | (+0.05, +0.04, +0.06) | 1.000..1.002 | 0 |
+| FIXED, `?crouch=1` row, all guns | 10 | 0.9966 (0.0134) | 0.10 | (-0.10, -0.26, -0.32) | 0.997 | 0 |
+| control: main BEFORE `98b12c9` (lane's live BEFORE cells, split by the prior gate) | 520 | 0.9996 (0.0185) | 0.14 | (-0.02, -0.04, -0.04) | 0.990..1.005 | 0 |
+| control: the lane's pre-fix AFTER cells (same source) | 520 | 0.9591 (0.0269) | 0.74 | (-3.72, -2.12, -1.17) | 0.927..0.990 | **1** |
+| control: `11ff74e` re-captured live today, gun R stand / run-flight / air-rise | 24 | 0.9250 (0.0145) | 1.00 | (-6.27, -3.71, -2.12) | 0.909..0.933 | **1** |
+| the same 24 pairs, fixed head | 24 | 0.9984 (0.0119) | 0.08 | (+0.05, -0.10, -0.27) | 0.993..1.004 | 0 |
 
-Bound: 1 css px (the task's 1 screen px at FAR). **Zero cells over, in either view.** Hand kind is `rig-arm` in 1440
-of 1440 cells. Lane's numbers for comparison: 0.022 / 0.157 desktop, 0.011 / 0.076 phone; they reproduce. The phone
-view is 8.8 css px per tile (17.6 device px), the same device scale as desktop; it is not yet the tighter phone frame
-of entry 20's addendum (T-107's job). The phone run is 5 of 13 rows because the host could not afford the full
-1040 cells twice; the other rows are covered by the desktop run and by the lane's R+F phone matrix (416 cells).
+Cuts of the fixed desktop run (`$N/mirror-symmetry-desktop*.out`, `$N/symmetry-by-aim-fixed.out`):
 
-In-situ firing, desktop FAR (`$S/cap-fire-desktop-R/`):
+- by gun: F 1.001, H 1.001, L 1.001, R 0.999, S 1.000;
+- by aim class: forward aims (gun mirror equals body facing) 0.9993, **backward aims (strafe: the gun mirror is opposite the
+  body facing) 1.0018**, vertical 0.9993. Pre-fix the same three were 0.959 / 0.961 / 0.956; main BEFORE 1.008 / 0.993 / 0.998;
+- mirror-image fidelity, blurred pixel difference of each left cell against the mirror of its right twin, sum-RGB per pixel
+  (`$N/mirror-blur-diff.out`): fixed 1.911, main BEFORE 1.831 (the floor), pre-fix 2.590;
+- repeatability: a second capture of this same head from earlier today (an attempt a container restart killed; used for
+  nothing else in this verdict) gave 0.9993 and (-0.02, -0.06, -0.07), also inside the bounds, so run-to-run spread of the
+  aggregate is about 0.001 against a bound of 0.005. The lane's own committed figure for this code (measured at `6708326`,
+  whose `src/` is identical: 1.0002, std 0.0129, (0.07, 0.00, -0.07)) equals mine to the printed digit.
 
-| aim | body frame | fist->grip css px | muzzle vs spawn css px | vs recoil-shifted spawn | recoil kick (tiles) | live shot travels along the staged aim |
-| --- | --- | --- | --- | --- | --- | --- |
-| right | aim-right | 0.013 | 1.722 | 0.102 | 0.095 | True |
-| up-right | aim-down-right | 0.015 | 1.785 | 0.072 | 0.095 | True |
-| up | aim-down-right | 0.016 | 1.737 | 0.023 | 0.095 | True |
-| left | aim-right | 0.02 | 1.707 | 0.058 | 0.095 | True |
+## 3. Criterion 2: arms drawn alone
 
-The muzzle sits one recoil kick (RIG_RECOIL_TILES 0.095 = 1.7 css px at 18 px/tile) behind the nominal spawn on the frame
-of the shot; the kick is a presentation feature that exists on main, lasts 105 ms and decays quadratically (above 1 css px for
-about the first 25 ms), and the lane separated it from the placement error in `b7a3a44`. The lane's phone figure of
-0.83-0.87 css px against the unshifted spawn is the same kick at 8.8 px/tile. I read acceptance box 3 ("drawn muzzle and sim
-bullet spawn within 1 screen px at FAR") as the static placement, as the lane did; read to include the kick it would be
-exceeded for the first ~25 ms after each shot at desktop FAR, which is a call for the integrator, not a defect I am failing
-on. The static bound is met in all 1440 matrix cells and every live shot travels along the staged aim.
+`$N/diag-arm-lighting3.mjs` (the prior gate's diagnostic, now taking the tree under test from `T103_ROOT`) stages the pose
+facing right and the mirrored aim facing left, hides everything in RIG but the two `rig-arm-*` meshes, and measures the
+arms' pixels. Gun R; `analyze-case2.py` output in `$N/analyze-diag-{fixed,prefix,m4}.out`.
 
-Standing aim -> body frame, from the live cells: right and left -> `aim-right`; up-right, up, up-left, down-*, down
--> `aim-down-right` (the braced crouch). `aim-up` and `aim-up-right` are never shown: the lane's disclosed retirement
-holds.
-
-Control: the lane measured main `98b12c9` with this same tool at 3.0-28.4 css px fist-to-grip (mean 12.4) and 0.43-2.61 css px muzzle-to-spawn over the 1040 desktop cells, so the instrument can fail. I started a one-row control against a `git archive 98b12c9` export but stopped it at load 50+ on this host, so those BEFORE numbers are the lane's, not re-measured by me (my independent BEFORE control is the facing-symmetry one in section 5, on the lane's live BEFORE cells).
-
-My own contact sheets (AFTER only, true size and 4x, **all five guns** including the 4x sheets the lane left out of
-its commit): `$S/cap-desktop/sheet-desktop-{R,S,L,H,F}-{1x,4x}.png`, phone `$S/cap-phone/sheet-phone-{R,S,L,H,F}-{1x,4x}.png`,
-numbers in `$S/cap-desktop/capture.json`, `$S/cap-phone/capture.json`.
-
-## 5. The defect (basis of the FAIL)
-
-**What it is.** Facing left, RIG's near and far arm strips are shaded as back faces. The same pose, mirrored, is
-darker and greener than facing right, on every gun, in every pose that shows the arms.
-
-**Measured on the live render** (`$S/mirror-symmetry-check.py`, embedded in the appendix; it pairs each right-facing
-cell with the left-facing cell of the mirrored aim and compares the mean colour of the figure's pixels):
-
-| tree (cells measured by the same script) | pairs | mean luma ratio L/R (std) | share of pairs > 2 % darker facing left | mean RGB delta L-R | script exit |
+| pose | pre-fix `11ff74e` L/R luma | fixed `c6d475e` L/R luma | fixed arm pixels R / L | fixed arm RGB R | fixed arm RGB L |
 | --- | --- | --- | --- | --- | --- |
-| BEFORE, main `98b12c9`: the lane's live BEFORE cells (`$S/lane-before/`) | 520 | **0.9996** (0.0185) | 0.14 | (-0.02, -0.04, -0.04) | **0 (symmetric)** |
-| AFTER, the lane's live AFTER cells, same sheets (`$S/lane-after/`) | 520 | **0.9591** (0.0269) | 0.74 | (-3.72, -2.12, -1.17) | 1 |
-| AFTER, desktop FAR, my live capture (`$S/cap-desktop/`) | 520 | **0.9579** (0.0269) | 0.75 | (-3.98, -2.26, -1.23) | 1 |
-| AFTER, phone landscape, my live capture (`$S/cap-phone/`) | 200 | **0.9593** (0.0274) | 0.71 | (-3.80, -2.23, -1.30) | 1 |
+| stand, aim right / left | 0.747 | **0.996** | 134 / 137 | (83.1, 71.4, 55.7) | (82.3, 71.1, 56.1) |
+| run-flight, aim down | 0.715 | 1.007 | 120 / 122 | (79.5, 67.3, 52.3) | (79.8, 67.8, 53.0) |
+| air-rise, aim down | 0.724 | 0.990 | 118 / 122 | (81.5, 68.6, 52.6) | (80.5, 68.0, 52.3) |
+| climb-1, aim right | 0.715 | 0.999 | 65 / 68 | (82.3, 70.6, 55.1) | (81.8, 70.7, 55.6) |
 
-A single pair is noisy (the mirrored sprite lands on a different sub-pixel phase, so BEFORE's own pairs spread
-0.94-1.07), which is why the check gates on the aggregate. The shift is not noise: 95 % of AFTER pairs have the left
-facing cell no brighter than the right (p95 1.001, against 1.028 for BEFORE), and 88 % of the 520 (gun, pose, aim)
-pairs are darker than their own BEFORE pair (paired mean -0.0405). By row (my desktop capture), mean luma ratio L/R: stand 0.944, run
-0.940-0.947, jump rise 0.927, jump fall 0.944, hit/i-frames 0.930, respawn 0.947, climb 0.983-0.989, wall 0.981 (in the
-climb and wall frames the gun arm is the far arm, drawn behind the receiver, so less of it shows). By gun (my desktop capture): R 0.946, S 0.959, L 0.959, H 0.960, F 0.965.
+Pre-fix the left-facing arm reads (53.2, 54.4, 47.4), grey-olive, green minus red +1.2. (The prior gate quoted 0.711 for
+the stand case from an earlier version of this script; today's pre-fix figures are 0.715 to 0.747, the same 25 to 28 %
+deficit. A few percent between runs of this measure comes from the camera's sub-pixel phase at pause time, which differs
+per run and per tree.) Live mesh state read in the page: at `c6d475e` material side 0 (`FrontSide`), 0 clockwise triangles
+in every arm mesh in both facings, left-facing index `[0,1,2,2,1,3,4,5,6,6,5,7]`; at `11ff74e` side 2 (`DoubleSide`) and 4
+clockwise triangles per left-facing arm mesh.
 
-The arms are only about a sixth of the figure's visible pixels in the stand pose (68 of 428), so the arm itself is hit much harder. In-page, standing, rivet
-gun, aim right facing right vs aim left facing left, arms drawn alone (`$S/diag-R/`, `$S/analyze-case.py`; the script also
-stages run-flight, air-rise and climb-1, but I stopped it after the stand case, which was enough to prove the cause, to
-spare the host):
+**Same-page A/B, so the camera cannot move between the two shots** (`$N/prefix-emulation.mjs`, `$N/material-ab.mjs`;
+outputs `$N/ab-prefix-emulation.out`, `$N/ab-material.out`). In one page of the fixed head, I put the arm meshes back into
+the pre-fix renderer's state (material `DoubleSide` with `forceSinglePass`, and the single pre-fix triangle order for both
+facings), photographed, restored the shipped state and checked that it came back pixel-identical (0 px differ in all 8
+restores). Four poses, whole figure:
 
-| | pixels | mean RGB | luma | G-R |
+| pose (gun R) | facing right: shipped vs pre-fix state | facing left: shipped vs pre-fix state | whole-figure L/R luma, shipped | whole-figure L/R luma, pre-fix state |
 | --- | --- | --- | --- | --- |
-| right-facing arms, as shipped | 126 | (85.4, 72.8, 56.6) | 74.3 | -12.6 (warm tan) |
-| left-facing arms, as shipped | 126 | (52.5, 53.5, 46.4) | 52.8 | +1.0 (grey-olive) |
-| left-facing arms, `side = FrontSide` | **0** | - | - | the arms disappear |
-| left-facing arms, triangles re-wound (page-only experiment) | 128 | (84.4, 72.4, 56.9) | 73.8 | -11.9 |
+| stand, aim right / left | **0 px differ** | 141 px differ | 1.006 | 0.924 |
+| run-flight, aim down | **0 px differ** | 119 px | 1.014 | 0.948 |
+| air-rise, aim down | **0 px differ** | 118 px | 1.016 | 0.940 |
+| climb-1, aim right / left | **0 px differ** | 76 px | 0.989 | 0.960 |
 
-Left/right arm luma 0.711 as shipped (red channel 0.615), **0.993 re-wound**. The whole figure: luma ratio 0.921 as
-shipped, **1.000** re-wound. Image: `$S/diag-stand-R-vs-L-vs-fixed-10x.png` (shipped facing right | shipped facing
-left, flipped back for comparison | facing left with the winding corrected). At true size it is subtle (RIG's torso
-reads greyer when he faces left); at 3x it is plain: `$S/mirror-pairs-3x.png` (rows: gun R stand, gun R run-contact,
-gun F stand, gun F run-contact; left half facing right, right half the mirrored aims facing left) and
-`$S/mirror-pairs-1x.png` at true size. It also shows in situ, in the real scene with its lighting, bloom and tone
-mapping: my desktop firing frames at 10x, `$S/fire-desktop-R-right-vs-left-10x.png` (RIG firing right: torso warm tan;
-firing left: torso grey-olive, same pose, same deck).
+So the fix changes no facing-right pixel and, facing left, only pixels inside the arm meshes' footprint. Separately, swapping only the
+material (shipped `FrontSide` against the pre-fix `DoubleSide` + `forceSinglePass`, on the fixed index) changes **0 pixels**
+in all 8 cells (4 poses x 2 facings), and a same-page repeat is also 0: with the winding right, `FrontSide` hides nothing
+that `DoubleSide` drew.
 
-**Why** (read from the code, then proven):
+An exhaustive state-level sweep of the same live meshes, all 1040 cells in capture order and again in a seeded shuffle
+(so consecutive cells flip facing at random, which is what a stale index buffer would trip on) (`$N/sweep-live-winding.mjs`,
+`.log`): hands shown 1040, arm meshes visible 1680, **0 clockwise triangles, 0 not-FrontSide, 0 wrong index for the facing, 0
+stale facing flags**, smallest triangle area +0.0489 (positive is counter-clockwise), in both passes. It reads JS-side
+state, so it cannot see the GPU upload; the pixel checks above and in section 4 do.
 
-- `src/pure/rig.js:508` `out[offset + i * 2] = mirror < 0 ? -wx : wx;` negates x without swapping the corners.
-- `src/render/player.js:582-587` the strip geometry has fixed +z normals and fixed indices `[0,2,1, 2,3,1, …]`.
-- `src/render/player.js:590-596` the arm material is `MeshStandardMaterial` with `side: THREE.DoubleSide`.
-- Exact, browser-free (`$S/winding.mjs`, calls the shipped `rigArmSegmentCorners`): signed area of triangle
-  `[0,2,1]`/`[2,3,1]` is **+0.0606/+0.0606 facing right and -0.0606/-0.0606 facing left**, for both strips and every
-  arm direction tried. Counter-clockwise is front-facing; clockwise is not.
-- For a back face a `DoubleSide` standard material flips the normal (`normal *= faceDirection`), so the directional
-  light's N.L goes negative and only the hemisphere light is left. The body mesh is `FrontSide` and mirrors by
-  `scale.x = -1`, which three.js handles, so the body keeps its light and the arms do not. Inference from
-  `src/render/lightrig.js` (key light fixed at (6,12,8)) and `placeOnTower` (RIG yaws with the facet): which facing
-  goes dark may differ on other faces; I only captured the start face.
-- Proven in the page, tree untouched: `FrontSide` makes the left-facing arms vanish (0 of 126 px); re-winding the
-  indices for the mirrored pose restores the arm's colour and the figure's mean colour.
+No arm vanishes anywhere in the shipped build: figure pixel count L/R over the 520 desktop pairs has mean 0.9961 and
+minimum 0.936 (a wall-row cell; the pre-fix capture's minimum is 0.942 and main's BEFORE 0.955, so it is the body art's
+own wall asymmetry, not arms), no pair under 0.90, no cell with RIG hidden (`count-ratio-desktop.out`; phone 0.9949 / 0.940).
 
-**Why nothing caught it.** `raster.mjs` composites with no lighting, so the d77 gate, `check.mjs` and the live
-fist-to-grip tool are all blind to shading; `player-presentation-check.mjs` greps spellings. The BEFORE sheets in the
-lane's own evidence are symmetric and the AFTER sheets are not; the effect is visible in
-`phone-firing-after-4x.png` (aim left panel, olive patches on RIG's torso against the warm tan of the aim-right panel)
-and in every left-facing column of the `desktop-*-before-after` sheets. It was not mentioned in `build.md`.
+## 4. Criterion 3: the test binds
 
-**Why FAIL and not a nit.** It is new (BEFORE is symmetric), objective (the numbers above), on screen whenever RIG
-runs, aims or climbs facing left in the default build (least in the climb frames, 1-2 %), on all five guns, on desktop
-and phone; it hits the very
-asset the lane delivers; and the operator's own words were about the models looking off. It is also cheap: the cause
-is in two files and the in-page experiment shows the cure. To be fair about its size: at true 1x in situ, with RIG
-standing still, it is at the edge of what the eye picks up (see my firing sheet `$S/cap-fire-desktop-R/desktop-firing-sheet-1x.png`);
-it is plain from 3x up, and what a player gets at 1x is a shading flip on the arm and torso each time RIG turns round
-(an inference from the symmetric BEFORE and the 4-8 % whole-figure step, not something I filmed). I fail it on the
-measurements, the regression against a symmetric BEFORE and the operator's stated complaint, not on a claim that it is
-glaring at 1x; if the integrator weighs the severity differently, nothing else here blocks the merge.
+`node $N/run-domain.mjs <tree> t-103-arm-winding.mjs` runs one pathcheck domain from a given tree (the lane's own runner is
+`tools/pathcheck.mjs`, which runs all of them; d78 is registered in `tools/pathcheck/manifest.mjs` and the full run counts it).
+Scratch trees are `git archive` exports of `c6d475e` (`$N/mut/*`), one edit each, no tracked file touched.
 
-Suggested cures (the lane's call): re-wind the arm quads per facing (two prebuilt index sets), or write the strip
-normals as `z = mirror` so the shader's flip lands on +z, or give the arm material one explicit winding and mirror in
-the UVs instead. Whichever is chosen, it needs a test that binds (section 7).
+| tree | edit | d78 (passed / failed) | what it reported |
+| --- | --- | --- | --- |
+| `c6d475e` | none | **4 passed, 0 failed** | green |
+| `11ff74e` source + `c6d475e` gate files | the defect itself | **1 passed, 3 failed** | "order: one fixed order [0,2,1,2,3,1,4,6,5,6,7,5] for both facings; clockwise 0/32000 facing right, **32000/32000 facing left**"; the right-order assertion and the material assertion also fail |
+| M1 | `ARM_TRIANGLES_FACING_LEFT` set to the right-facing order | 3 / 1, red | 32000/32000 left-facing triangles clockwise |
+| M2 | arm material `FrontSide` back to `DoubleSide` | 3 / 1, red | the material contract assertion |
+| M3 | `writeArm` always picks facing 1's order | 3 / 1, red | "no arm index found in player.js" (it goes red by the reader losing the spelling, not by a computed area) |
+| M6 | the right-facing order made clockwise | 2 / 2, red | 32000/32000 right-facing clockwise; the unchanged-right-order assertion |
+| **M4** | **delete `index.needsUpdate = true;` in `writeArm`** | **4 / 0, green** | not seen statically |
 
-## 6. What I saw (true size and zoomed; everything below is observation, not a fun verdict)
+Browser-free cross-check (`$N/winding2.mjs`, the shipped `rigArmSegmentCorners` and `rigArmTriangleIndex`): signed area of
+the arm triangles is positive in both facings with the shipped per-facing order (0 of 32 clockwise); with the single
+pre-fix order every left-facing triangle is negative (16 of 32).
 
-I read the lane's committed sheets at true size, 3x, 4x and up to 14x (`$S/lane-crops/`), my own live cells at
-6x-10x, and the offline software previews at 60 px/tile (`$S/preview/`, `tools/rig-grip/preview.mjs`, no lighting).
-RIG at desktop FAR is about 30 px tall (18.0-18.25 px/tile).
+**The reviewer's finding (M4), reproduced live, not a failure.** With the `needsUpdate` line deleted the JS-side state is
+still right (index `left`, 0 clockwise triangles, `FrontSide`) but the GPU keeps the facing-right index buffer, so under
+`FrontSide` the left-facing arms vanish: arms drawn alone facing right 125 to 139 px, facing left **0 px**, in both poses I
+staged (`$N/analyze-diag-m4.out`). The live symmetry check does catch it: a 48-cell capture of that tree gives mean L/R
+**0.9045**, mean RGB delta (-6.44, -5.10, -3.49), `symmetry.mjs` and the Python script both exit **1**, and two pairs
+show a figure pixel-count drop under 0.90 (the same 24 pairs on the shipped head: 0.9984, exit 0). The line is present in
+the shipped build, so I do not fail the lane on it; proposed issue 1 asks for that small capture to run in a browser gate.
 
-- **Do the guns sit in the fists, idle / run / jump / climb / aim, five guns, both facings?** Yes, geometrically and
-  to the eye. In all 13 rows (stand, run contact/pass/flight, jump rise/fall, climb 0-3, wall cling, hit/i-frames,
-  respawn drop) the gun arm is a strip from RIG's shoulder down the front of the torso to the weapon's lower
-  pistol grip, and the weapon sits at his belt. The software previews (`$S/preview/stand-FRS-noarms-vs-arms-3x.png`,
-  `$S/preview/stand-LH-noarms-vs-arms-3x.png`) show it plainly: without arms each weapon has a bare painted grip;
-  with them a gloved hand is on it. At true size the 3-4 px fist is not separately legible on most guns; the
-  connection reads through the arm strip ending at the grip. (Cindermouth's bright orange block under the dome is
-  present on main too, so it is weapon art and not the fist; the arm ends on it.)
-- **Arm seams?** None visible at 1x-14x. The elbow between the two strips is not a seam; the offline 60 px/tile
-  previews show a continuous sleeve.
-- **Missing pixels where the arms were erased?** None. Counting background enclosed inside the figure's silhouette
-  over the lane's 1040 BEFORE/AFTER cells: BEFORE 1342 px in 481 cells, AFTER **917 px in 366 cells**, so AFTER has
-  fewer gaps. 25 cells gain 4 px or more (max +10); I looked at four of the worst at 11x (H wall down-left, F run-flight
-  down, R climb-2 up-right, L run-flight down): small gaps between arm, weapon and legs, not missing chunks.
-- **Gun in front of / behind the body wrongly?** Layering is consistent: weapon in front of the body, near arm over
-  the weapon, support arm between body and weapon. On ladders the gun hand is the far arm (behind the receiver) while
-  the painted near hand stays on the rung: one-handed, deliberate, no floating gun (acceptance box 4). Climb frames are
-  drawn 5 px lower than on main (the 0.3-tile render drop).
-- **Run frames:** BEFORE already had no pumping arms in the run frames, so nothing was lost there.
-- **Disclosed limits, as seen** (not failed): (1) *aim up* puts the weapon over the helmet for **all five guns**: at
-  true size RIG has no head, the gun sits on his shoulders (`$S/lane-crops/stand-up-5guns-AFTER-10x.png`); the build
-  report says "chest" in its limits and "chest and helmet" in its question 4, which is the accurate one. (2) standing
-  up/up-right/up-left aims use the braced crouch (hunched); confirmed in my live cells. (3) portrait arms stretch up to
-  x1.58: not re-run (landscape first, entry 20 addendum); I read `portrait-R-stand-before-after-1x.png`: the arms are
-  visibly long and thin. (4) the "retired" stances are not shown anywhere.
-- **Observations the lane did not make** (none fails the lane): in aim-down poses in the flight / air-rise frames the
-  solved arm folds with the elbow above and behind the shoulder, a dark wedge at true size
-  (`$S/preview/F-flight-air-down-ppt70.png`, `$S/my-flight-down-6x.png`); the shipped hold is belt height, where the
-  chest-height two-handed hold in concept board 01 is a different look (the sim's 1.05-tile muzzle is gameplay truth,
-  so this is a design question, not a defect); the lane's captures isolate RIG from the world, so RIG against real
-  ladder rungs and the 0.3-tile climb drop has not been judged in situ by anyone (the only in-situ frames are firing
-  shots on a deck).
-- **Not tested:** real GPU hardware and the 60 fps budget (SwiftShader only), iOS Safari, portrait, ladders in situ,
-  the `?crouch=1`
-  prototype (I read the lane's 1x/4x crouch sheets; its left-facing cells show the same grey-olive), feel.
+## 5. Criterion 4: everything else unchanged
 
-## 7. Re-gate criteria (falsifiable)
+| check | result |
+| --- | --- |
+| `node tools/rig-grip/check.mjs` (new CLI) | prints stats, **exit 0**: 4840 combinations, 0 failures; worst fist-to-grip 0.0965 atlas px (bound 1); worst muzzle-to-spawn 0.1035 desktop-FAR px (bound 1); gain-1 arm stretch max x1.135 (bound 1.15); portrait max x1.608 (ceiling 1.75). Identical to the prior gate's numbers. Its fail path: in a scratch copy with the fist anchor moved +3 atlas px it prints `FAIL arm strip: fist anchor [1171.8,705.7] is 3.02 px from the painted fist centroid` and **exits 1** (`$N/check-cli-mutant.out`) |
+| fault injection through the gate's own parameters (`$N/run-gate-mutants.mjs`) | control 0 failures; fist anchor +3 px red; rivet-gun grip +3 px red; rivet-gun `muzzleY` 82 (main's value) red; +0.3 px (inside tolerance) green: "GATE BINDS" |
+| d77 (`t-103-rig-grip-alignment.mjs`) / d78 | **21 passed / 0 failed**; **4 passed / 0 failed** |
+| `node tools/pathcheck.mjs` (informational; a green gate is not evidence, decisions entry 21) | `pathcheck: 4011 passed, 0 failed` in 19.6 s; the 4 `render-submission-contract` browser-probe assertions are skipped by `HB_GATE_SKIP_BROWSER_PROBE=1` and not counted. That is the prior gate's 4007 plus d78's 4 |
+| sim and config | `git diff 98b12c9..HEAD -- src/sim src/config.js` and `git diff 11ff74e..HEAD -- src/sim src/config.js assets index.html`: 0 lines |
+| live fist-to-grip, desktop FAR 1280x800 DPR 1, 1040 cells | max **0.022** / mean 0.0091 css px, 0 cells over 1 css px; muzzle-to-spawn max 0.157 / mean 0.0565 (bound 1, 0 over); hand kind `rig-arm` 1040 of 1040; RIG hidden in 0; page errors 0; arm stretch max 1.102 (16 cells above 1.0, 4 above 1.05). The prior gate measured 0.023 / 0.157: reproduces |
+| live fist-to-grip, phone 844x390 DPR 2, all 1040 cells (400 + 640) | max **0.010** / mean 0.0043 css px; muzzle-to-spawn max 0.076; 0 over; `rig-arm` 1040 of 1040; hidden 0; page errors 0; stretch max 1.102 |
+| portrait 390x844 DPR 2, gun R, 3 rows (48 cells); `?crouch=1` row (20 cells) | fist-to-grip 0.013 / 0.017, muzzle-to-spawn 0.137 / 0.120, 0 hidden, 0 page errors; portrait arm stretch up to x1.476 (the lane's disclosed limit, unchanged) |
+| in situ, desktop FAR, RIG actually firing in the real loop with the real background (gun R: right, left, up-left; paused on the shot frame) | fist-to-grip 0.013 / 0.013 / 0.014 css px; drawn muzzle vs the recoil-shifted spawn 0.102 / 0.049 / 0.036 css px, vs the unshifted spawn 1.71 / 1.72 / 1.69 (the 0.095-tile recoil kick that exists on main; unchanged from the prior gate); each live shot travels along its staged aim (vx +26, -26, and (-18.4, +18.4)) |
+| **smoke: `mid-route.json`** (main's harness, worktree served by main's server, `--deterministic --viewport 480x300`) | **PASS**: `smoke-verdict: PASS (outcome=not-completed deaths=0 tick=594/594)`. 26 of 26 events dispatched, `bootError` none, `pageErrors` [], 0 console errors, 0 falls. Final sim state x 55.649, y 1, gameMs 9900.198, hp 2, scrollX 56.2043, kills 0; minEdgeMargin 26.53; idle fraction 0.318 (prior gate 0.34: wall-clock-weighted samples; fractions are usable, absolute seconds are not). **Identical to the prior gate's final state** and to the T-102 gate's run on a different build, as it must be with no sim change |
+| **smoke: `transform-slice.json`** (same setup, `--max-runtime-ms 20000`) | **PASS**: `smoke-verdict: PASS (outcome=completed deaths=0 tick=938/1104)`. BREACH CLEAR at tick 938, 2 of 2 transformations; final x 146.0874, y 10.4443, scrollX 130.2807, gameMs 15633.646, hp 3, 0 falls; idle fraction 0; minEdgeMargin 30.07; `bootError` none, `pageErrors` [], 0 console errors. **Identical to the prior gate's final state.** The harness's "6 of 58 events never dispatched" is the post-victory freeze |
+| `?selftest=1` in the browser | `SELFTEST PASS (39 checks)`, 0 page errors (`$N/selftest.out`) |
+| right-facing renders unchanged | the fix reorders only the left-facing triangles and drops `DoubleSide`/`forceSinglePass`. **Same page, camera fixed: 0 facing-right pixels differ between the shipped state and the emulated pre-fix state in all four poses; 0 pixels differ from swapping the material alone in all 8 cells** (section 3). Across runs, the mean absolute colour difference per pixel (sum-RGB) between my fresh facing-right cells and the prior gate's `11ff74e` capture is 1.355 (p99 1.98, max 2.21), against a same-code noise floor of 1.384 (p99 2.09, max 2.52) between two captures of this very head (the sub-pixel phase of the camera at pause time differs per run, so exact equality across runs is not expected). Facing-left cells: 2.110 (p99 3.25, max 3.44) against a floor of 1.351: they changed, as intended |
 
-1. `python3 -I mirror-symmetry-check.py <capture dir> desktop` (appendix) exits 0 on a full desktop capture of the
-   fixed tree: mean luma ratio L/R 1.000 +-0.005, mean RGB delta within +-0.5 per channel, no row off by more than
-   0.015 (BEFORE: 0.9996, (-0.02, -0.04, -0.04), worst row 0.990; the same script already returns exit 0 on BEFORE and
-   exit 1 on the shipped AFTER, which is its binding proof).
-2. Left-facing arms drawn alone within +-3 % of the right-facing luma (`diag-arm-lighting.mjs` case `stand:right`;
-   shipped 0.711, re-wound 0.993).
-3. A test that goes red on the defect and green on the fix, living in pathcheck: for each strip and both mirrors the
-   drawn triangle winding (after whichever cure is chosen) is front-facing under the shipped material, or a live
-   check like (1). Show it red against the current head.
-4. Everything else must not move: `runGripCheck` stats, d77 21/21, both smoke scripts' final states (mid-route x 55.649
-   / gameMs 9900.198; transform tick 938 / gameMs 15633.646), live fist-to-grip <= 1 css px.
-Nothing else needs repeating: the lane's fix does not touch the sim.
+Pacing: no dead spot in either smoke script (A.5 numbers above; no sim change). I looked at both final screenshots
+(`$N/smoke-mid/screenshot.png`, `$N/smoke-transform/screenshot.png`, 480x300): the HUD, the deck, the BREACH CLEAR overlay,
+no glitches; RIG is about 6 px tall there, so the arms are judged from the capture tool, not from those frames.
 
-Notes for the integrator (decisions the lane raised or that I ran into; none is a QA criterion and none is why this
-fails):
+## 6. Criterion 5: what I saw (observation, not a fun verdict)
 
-- The lane ships the new hold ON by default with no `?hands=legacy` way back, which sits against decisions entry 22
-  ("every new look ships behind an A/B flag with the current art as the control") and against the touch precedent in
-  entry 20 (a default-on replacement that shipped with `?touch=legacy`). Its build report raises this as decision 1; I have nothing to add except that the old look is recoverable
-  only from `98b12c9`.
-- `assets/manifest.json` changed in the three RIG atlas entries (decision 3 in the lane's report); the merge gate does not
-  run the asset gate, which the lane says is red on main for two unrelated problems.
-- Acceptance box 3 and the recoil kick: see the end of section 4.
+I read these images; RIG at desktop FAR is about 30 px tall (18.0 to 18.25 px per tile).
 
-## 8. Operator checkpoint questions (feel; for the queue after the shading fix; I do not judge these)
+- **True size, 1x.** `$N/cap-desktop/sheet-desktop-R-1x.png` (13 poses x 8 aims, facing right on the left half and facing
+  left on the right half) and `$N/look/pairs-R-1x.png` (right-facing, mirrored left-facing as captured, left-facing
+  flipped back): the two halves read the same warm tan; nothing grey-olive; no missing arm, no seam, no stray pixels.
+- **4x.** `$N/look/pairs-R-4x.png` (gun R: stand, run-flight, air-rise), `$N/look/pairs-F-4x.png` (gun F: stand, run-contact,
+  air-fall), `$N/look/sheet-S-4x-wall-hit-respawn.png` (gun S, wall / hit / respawn, all 16 columns, facing right above and
+  facing left below), `$N/cap-desktop/sheet-desktop-{R,S,L,H,F}-4x.png` (all five guns): facing left is the mirror of
+  facing right in colour and form.
+- **Pre-fix vs fixed, side by side, same pose, today's captures.** `$N/look/fourway-R-stand-8x-livecontrol.png` and
+  `$N/look/fourway-R-4x-livecontrol.png` (columns: pre-fix right | pre-fix left | fixed right | fixed left). Pre-fix left:
+  the arm and the torso's near side go grey-olive (luma ratio 0.937 for the stand pose); fixed left: warm tan, 1.007.
+  `$N/look/diag-fixed-stand-8x.png`, `$N/look/diag-fixed-flight-air-6x.png`: the arms drawn alone are the same tan facing
+  either way.
+- **Phone and portrait.** `$N/look/pairs-phone-F-3x.png` (gun F, 844x390 DPR 2), `$N/look/pairs-portrait-R-3x.png`
+  (390x844 DPR 2, the long portrait arms): both facings the same warm colour.
+- **In the real scene, with its lighting, bloom and tone mapping.** `$N/cap-fire-desktop-R/desktop-firing-sheet-4x.png` and
+  `$N/look/fire-R-right-left-upleft-10x.png`: RIG firing right, firing left and firing up-left; the left-facing torso and
+  arms are warm tan like the right-facing one (the prior gate's same frame had the left-facing torso grey-olive), the
+  gun sits in the fist, the muzzle flash and shot leave from the barrel.
+- Everything the prior gate observed about the art is unchanged because the vertex positions and textures are unchanged:
+  the guns sit in the fists in all 13 poses, five guns, both facings; aim-up puts the weapon over the helmet for all five
+  guns (RIG reads headless at true size); standing up / diagonal aims use the braced crouch; in aim-down air frames the arm
+  folds with the elbow above and behind the shoulder; on ladders the gun hand is the far arm, drawn one-handed; portrait
+  arms stretch up to x1.5. These are the operator questions in section 8, not defects.
 
-URL: `node tools/serve.mjs 8783 --root <worktree>` then http://127.0.0.1:8783/index.html (desktop) and the same at
-844x390 in devtools. Main on 8741 is the comparison.
+## 7. Limits, and what this does not establish
 
-1. Hold height. Concept board 01 shows RIG with the rifle at chest height in both hands; the shipped hold is belt
-   height with one lowered arm to a low pistol grip, because the sim fires from 1.05 tiles. Is that read acceptable,
-   or should the muzzle (a sim change) come up? (It would be a sim change that moves the shot line.)
-2. Aiming straight up at true size: the weapon covers the helmet, RIG reads headless. Fine, or a problem for
-   "chaos stays readable"?
-3. Standing and aiming up or diagonally, RIG hunches into the braced crouch. How does that read next to main's raised
-   arms?
+- Bots and captures are evidence about regressions and looks. They are not a fun verdict, and they say nothing about feel.
+- The symmetry measure is a mean colour over a figure mask on staged, paused cells with RIG isolated from the world, on
+  SwiftShader. It proves left equals right; it does not prove the arms are the right colour in absolute terms. That the
+  right-facing arms did not change is shown separately: 0 differing pixels against the emulated pre-fix renderer in the same
+  page (section 3), and within the noise floor across runs.
+- **Other facets of the tower** were not captured (the tool stages at s = 6 only). By construction the arm and body quads
+  carry the same +z normal in both facings, so their lighting is identical on any facet; this is an inference, not a
+  measurement. The same applies to RIG against real ladder rungs and the 0.3-tile climb drop (nobody has judged them in situ).
+- In-situ coverage is three firing frames of gun R. The shuffled sweep exercises random facing flips on the real meshes,
+  but I did not film continuous play.
+- Not tested: real GPU hardware and the 60 fps budget (SwiftShader only; the reviewer measured +2 draws, +8 triangles and
+  192 bytes of vertex upload per frame), iOS Safari, ladders in situ, a merge with main.
+- **Integrator note** (none of it is a QA criterion): this PASS is pinned to `c6d475e`. Main has moved; the reviewer found
+  one conflict, `tools/pathcheck/manifest.mjs`, where main's `d77` / `d78` (T-102 turns, T-101 touch deck) collide with this
+  lane's two domains (renaming the lane's to `d79` / `d80` resolves it, per `review.md`). A merge changes the head, so
+  `merge-task.sh` will see this file as stale by mtime; `review.md` lists the check that the merge left the lane's files
+  alone. I did not test the merged tree. The integrator's ruling of no `?hands=legacy` hatch is recorded in `build.md`
+  (the old art is recoverable from `98b12c9`); I have nothing to add to it.
+
+## 8. Operator checkpoint questions (feel; for the queue; I do not judge these)
+
+Unchanged by the fix (the geometry and art are the same). URL: `node tools/serve.mjs 8783 --root
+/home/user/hullbreaker/.claude/worktrees/T-103`, then http://127.0.0.1:8783/index.html (desktop) and the same at 844x390 in
+devtools; main on 8741 is the comparison.
+
+1. Hold height. Concept board 01 shows the rifle at chest height in both hands; the shipped hold is belt height with one
+   lowered arm to a low pistol grip, because the sim fires from 1.05 tiles. Acceptable, or should the muzzle (a sim change
+   that moves the shot line) come up?
+2. Aiming straight up at true size: the weapon covers the helmet and RIG reads headless. Fine, or a problem for "chaos
+   stays readable"?
+3. Standing and aiming up or diagonally, RIG hunches into the braced crouch while the sim hitbox stays standing. How does
+   that read next to main's raised arms?
 4. Aiming down in the air (flight / rise): the arm folds up behind the shoulder. Does the pose look right at speed?
-5. Ladders: one hand on the rung, the other holding the weapon at the hip, body drawn 5 px lower. How does the climb
-   read, and does the mount/dismount pop?
-6. (The lane's) portrait: arms stretched up to x1.58 to stay on the grip. Accept, drop the portrait gain, or scale the
-   muzzle?
+5. Ladders: one hand on the rung, the other holding the weapon at the hip, body drawn 0.3 tiles lower than the sim's feet.
+   How does the climb read, and does the mount or dismount pop?
+6. Portrait: arms stretched up to x1.5 to stay on the grip. Accept, drop the portrait gain, or scale the sim muzzle?
+7. Turning round while firing: the arm and gun now flip facing exactly like the body. Does anything about the turn itself
+   (not the colour, which I measured) feel off compared with main?
 
 ## PROPOSED INBOX ISSUES
 
-I did not edit SPRINT.md. Issue ids are left for the integrator. `$S` is the scratch directory named in the appendix.
+I did not edit SPRINT.md. Issue ids are left for the integrator. `$N` is the scratch directory named at the top.
+Status of the prior gate's three proposed issues at `c6d475e`: the left-arm winding defect (S2) is **fixed**
+and verified above; `check.mjs` having no CLI (S3) is **fixed** and verified (it prints stats and exits 0 / 1); the 4x
+sheets (S3 docs) are **still open**, as proposed issue 4.
 
-## I-??? | art | S2 | repro: `cd /home/user/hullbreaker/.claude/worktrees/T-103 && . ~/.hullbreaker-host.env && node tools/rig-grip/capture.mjs --out $O --views desktop --guns R --rows stand,run-flight,air-rise` then `python3 -I mirror-symmetry-check.py $O desktop` (script embedded in reports/tasks/T-103/playtest.md; this 48-cell subset already shows the defect, the full 1040-cell matrix is the pass criterion) @ task/T-103 11ff74e; browser-free: `node winding.mjs` (same file) | evidence: reports/tasks/T-103/playtest.md section 5; $S/diag-stand-R-vs-L-vs-fixed-10x.png; $S/mirror-pairs-3x.png; the lane's own reports/tasks/T-103/evidence/phone-firing-after-4x.png (aim-left panel)
-Facing left, T-103's re-posed arm meshes render as back faces and lose the key light. `rigArmSegmentCorners` (src/pure/rig.js:508) mirrors by negating x without reordering the quad, so every left-facing arm triangle is clockwise (signed area -0.0606 vs +0.0606 facing right, both strips, every arm direction); the arm material is `DoubleSide` with fixed +z normals (src/render/player.js:582-596), so three.js flips the normal and N.L goes negative. Live: 520 desktop and 200 phone mirrored pairs have mean luma ratio L/R 0.958 / 0.959 (74 % of pairs more than 2 % darker facing left); the same script on the pre-T-103 cells gives 0.9996 (14 %) and exits 0. Arms drawn alone: left-facing 71 % of the right-facing luma, red 62 %, warm tan to grey-olive. In the page, `FrontSide` makes the left-facing arms vanish (0 of 126 px) and re-winding the mirrored triangles restores the arm to 0.993 and the figure to 1.000. Fails T-103 (see playtest.md); fix by re-winding per facing, or normals z = mirror, and add a test that binds (re-gate criteria in playtest.md section 7). The lane's gates are blind to it because raster.mjs has no lighting; a live symmetry check belongs next to the fist-to-grip tool.
+## I-??? | bug | S3 | repro: scratch copy of `c6d475e`, delete `index.needsUpdate = true;` in `writeArm` (`src/render/player.js:632`); `node $N/run-domain.mjs <copy> t-103-arm-winding.mjs` stays 4/0; then `node tools/rig-grip/capture.mjs --root <copy> --out $O --views desktop --guns R --rows stand,run-flight,air-rise && node tools/rig-grip/symmetry.mjs $O` (`<copy>` = a tree with `index.html`, `src/`, `assets/`) @ c6d475e | evidence: reports/tasks/T-103/playtest.md section 4; `$N/analyze-diag-m4.out`, `$N/mirror-symmetry-m4-live.out`, `$N/cap-m4/`
+d78 binds the winding and the material from the source spelling and cannot see the GPU upload: without `needsUpdate` the
+JS-side index is right but the GPU keeps the facing-right one, and under `FrontSide` the left-facing arms vanish (0 arm pixels live; right-facing 125 to 139). The
+shipped build has the line and is correct, so nothing blocks T-103. The live check catches it: the same 48-cell
+capture gives L/R 0.9045 and exit 1 on the mutant against 0.9984 and exit 0 on the shipped head (about a minute of browser time). Add that
+capture plus `symmetry.mjs` (and optionally an arm pixel-count check, `$N/count-ratio.py`) to the browser PLAY gate the
+reviewer suggested for T-120. Same hole class as decisions entry 21: a green static gate proves a spelling.
 
-## I-??? | bug | S3 | repro: `cd /home/user/hullbreaker/.claude/worktrees/T-103 && node tools/rig-grip/check.mjs; echo $?` @ 11ff74e | evidence: reports/tasks/T-103/playtest.md section 3; tools/rig-grip/README.md file table
-`tools/rig-grip/check.mjs` exits 0 in 0.4 s with no output: the file only exports `runGripCheck` and has no CLI entry, yet its README row calls it "the measured gate". A gate that is green by doing nothing is the entry-21 failure mode. Give it a main that prints the stats and exits non-zero on failures, or say in the README that it only runs through the d77 pathcheck domain.
+## I-??? | docs | S3 | repro: follow the `tools/playtest/README.md` "Pinned-worktree capture" recipe (`node <main-checkout>/tools/serve.mjs 8749 --root /tmp/hb-pin --quiet &`) inside an agent harness where each tool call is its own shell, then run `node run.mjs … --base-url http://127.0.0.1:8749` from a later call | evidence: `$N/serve-8786.log` ("launcher 6252 disappeared; closing leased Hullbreaker server"), `$N/smoke-mid.log` first attempt `net::ERR_CONNECTION_REFUSED`
+A `--quiet` server is leased to its launching process and exits when that shell does, so the recipe (and the QA brief's
+`… --quiet &`) fails with a connection refusal on the first run in a per-call shell. It reads like a game boot failure. The recipe should say
+`--quiet --keep-orphan` and kill the server by PID afterwards (never `pkill -f` a pattern that appears in the calling command line).
 
-## I-??? | docs | S3 | repro: `ls reports/tasks/T-103/evidence/` @ 11ff74e against SPRINT T-103 acceptance box 1 ("at true FAR size and at 4x") | evidence: reports/tasks/T-103/build.md "Contact sheets and captures"
-Only `desktop-R-before-after-4x.png` is committed. The S/L/H/F 4x sheets live in the worktree's git-ignored `tools/playtest/runs/T-103-sheets/` (present, 1 MB each) and disappear when the worktree is pruned; the 1x sheets for all five guns are committed. Commit them (about 4 MB), or record the regeneration command as the evidence. QA regenerated AFTER-only 4x sheets for all five guns in its own run (`$S/cap-desktop/sheet-desktop-*-4x.png`), which are not a substitute for the before/after pairs.
+## I-??? | docs | S3 | repro: `node tools/rig-grip/capture.mjs --out $O --views desktop --crouch` @ c6d475e | evidence: tools/rig-grip/README.md, `capture.mjs` usage header
+`--crouch` only appends `&crouch=1` to the URL; without `--rows crouch` the tool photographs all 13 default rows (1040
+cells) under `?crouch=1`. The README says "`--crouch` boots `?crouch=1` for the crouch row" and the usage line is `[--crouch]`.
+Make `--crouch` default `--rows` to `crouch`, or say so in both places.
 
-## Appendix: evidence index and embedded scripts
+## I-??? | docs | S3 | repro: `ls reports/tasks/T-103/evidence/` @ c6d475e against SPRINT T-103 acceptance box 1 ("at true FAR size and at 4x") | evidence: reports/tasks/T-103/build.md "Fix cycle 1", `$N/cap-desktop/sheet-desktop-{R,S,L,H,F}-4x.png`
+Carried from the prior gate, S3, the integrator's call: only `desktop-R-before-after-4x.png` is committed at 4x; the S / L / H / F 4x
+sheets are 4.0 MB together and the lane records the regeneration command instead (each is the committed 1x sheet
+magnified by nearest neighbour). I regenerated AFTER-only 4x sheets for all five guns from today's capture; they are in the
+scratch directory, not committed, and are not a before/after substitute.
 
-### Evidence index (all under `$S` = `/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t103-gate`)
+## Appendix: commands and evidence index
 
-| what | path |
+Commands (all from the worktree unless noted; `. ~/.hullbreaker-host.env` first):
+
+```sh
+# pin + server (main's copy)
+node /home/user/hullbreaker/tools/serve.mjs 8786 --root /home/user/hullbreaker/.claude/worktrees/T-103 --quiet --keep-orphan &
+# criterion 1: the fresh matrix, then both symmetry tools
+node tools/rig-grip/capture.mjs --out $N/cap-desktop --views desktop
+python3 -I $N/mirror-symmetry-check.py $N/cap-desktop desktop          # exit 0
+node tools/rig-grip/symmetry.mjs $N/cap-desktop --view desktop         # exit 0
+node tools/rig-grip/capture.mjs --out $N/cap-phone  --views phone --rows stand,run-flight,air-rise,climb-1,wall
+node tools/rig-grip/capture.mjs --out $N/cap-phone2 --views phone --rows run-contact,run-pass,air-fall,climb-0,climb-2,climb-3,hit-iframe,respawn
+node tools/rig-grip/capture.mjs --out $N/cap-fire-desktop-R --views desktop --firing --guns R --firing-aims right,left,up-left
+node tools/rig-grip/capture.mjs --out $N/cap-portrait --views portrait --guns R --rows stand,run-flight,climb-1
+node tools/rig-grip/capture.mjs --out $N/cap-crouch --views desktop --crouch --rows crouch
+# pre-fix control (exported 11ff74e) and the M4 mutant
+node tools/rig-grip/capture.mjs --root $N/pre-11ff74e --out $N/cap-prefix-R --views desktop --guns R --rows stand,run-flight,air-rise
+node tools/rig-grip/capture.mjs --root $N/mut/m4-no-needsUpdate --out $N/cap-m4 --views desktop --guns R --rows stand,run-flight,air-rise
+# criterion 2
+T103_ROOT=<tree> node $N/diag-arm-lighting3.mjs $N/diag-fixed-R R stand:right,run-flight:down,air-rise:down,climb-1:right
+python3 -I $N/analyze-case2.py $N/diag-fixed-R
+T103_ROOT=<tree> node $N/prefix-emulation.mjs $N/ab-prefix-emulation R stand:right,run-flight:down,air-rise:down,climb-1:right   # same-page A/B
+T103_ROOT=<tree> node $N/material-ab.mjs $N/ab-material R stand:right,run-flight:down,air-rise:down,climb-1:right
+QA_ROOT=<tree> node $N/sweep-live-winding.mjs $N/sweep-live-winding.json
+# criterion 3 and 4 (headless)
+node $N/run-domain.mjs <tree> t-103-arm-winding.mjs ; node $N/run-domain.mjs <tree> t-103-rig-grip-alignment.mjs
+node tools/rig-grip/check.mjs ; node $N/run-gate-mutants.mjs ; node tools/pathcheck.mjs ; node $N/winding2.mjs <tree>
+# smoke (cwd /home/user/hullbreaker/tools/playtest; main's harness)
+node run.mjs scripts/mid-route.json --deterministic --viewport 480x300 --base-url http://127.0.0.1:8786 --out $N/smoke-mid
+node run.mjs scripts/transform-slice.json --deterministic --viewport 480x300 --max-runtime-ms 20000 --base-url http://127.0.0.1:8786 --out $N/smoke-transform
+node /home/user/hullbreaker/tools/orch/smoke-verdict.mjs <out>/report.json
+node $N/selftest.mjs /home/user/hullbreaker/.claude/worktrees/T-103     # ?selftest=1 title
+```
+
+| what | path under `$N` |
 | --- | --- |
-| mid-route smoke | `$S/smoke-mid/{report.json,summary.md,screenshot.png}`, log `$S/smoke-mid.log` |
-| transform-slice smoke | `$S/smoke-transform/{report.json,summary.md,screenshot.png}`, log `$S/smoke-transform.log` |
-| desktop FAR matrix (1040 cells) | `$S/cap-desktop/{capture.json,cells/,sheet-desktop-{R,S,L,H,F}-{1x,4x}.png}`, log `$S/cap-desktop.log`, analysis `$S/analyze-desktop.out` |
-| phone landscape (400 cells) | `$S/cap-phone/{capture.json,cells/,sheet-phone-*}`, analysis `$S/analyze-phone.out` |
-| in-situ desktop firing, gun R | `$S/cap-fire-desktop-R/{capture.json,desktop-firing-*.png,desktop-firing-sheet-*.png}`, `$S/fire-desktop-R-right-upright-5x.png`, `$S/fire-desktop-R-up-zoom7x.png`, `$S/fire-desktop-R-right-vs-left-10x.png` (the defect in situ) |
-| facing symmetry (the defect) | `$S/mirror-symmetry-{desktop,phone,lane-before,lane-after}.out`, `$S/mirror-pairs-1x.png`, `$S/mirror-pairs-3x.png`, the split lane cells `$S/lane-before/`, `$S/lane-after/` |
-| in-page diagnostic (arms only, FrontSide, re-wound) | `$S/diag-R/*.png`, `$S/analyze-case.py`, `$S/diag-stand-R-vs-L-vs-fixed-10x.png`, `$S/diag-stand-R-SNA-10x.png` (shipped / no arms / arms only), `$S/diag-stand-R-overlay2-10x.png` (visible vs hidden arm pixels), script `$S/diag-arm-lighting.mjs` (run: `node diag-arm-lighting.mjs <out> R stand:right`) |
-| lane's sheets, my crops and zooms | `$S/lane-crops/*.png` |
-| offline software previews (no lighting) | `$S/preview/*.png` |
-| headless gate runs | `$S/run-gate.out`, `$S/run-gate-mutants.out`, `$S/d77.out`, `$S/pathcheck-full.log`, `$S/check-mjs.out` |
-| hole census, mirror colour on the lane's sheets | `$S/holes.py`, `$S/mirror-color.py` |
-| scripts written for this gate | `$S/{winding.mjs,mirror-symmetry-check.py,diag-arm-lighting.mjs,analyze-case.py,analyze-capture.py,run-gate.mjs,run-gate-mutants.mjs,holes.py,mirror-color.py,repro-blur.py,montage.py,cells.py,zoomcell.py,mycells.py}` |
-| working notes | `$S/notes.md` |
-
-### Embedded: exact winding, browser-free (`$S/winding.mjs`, run from the worktree)
-
-```js
-// QA scratch: signed area (CCW > 0, seen from +z) of the arm quads' two triangles, as player.js indexes them
-// ([0,2,1, 2,3,1] over corners TL,TR,BL,BR), for mirror = +1 and -1.
-const W = '/home/user/hullbreaker/.claude/worktrees/T-103';
-const R = await import(`${W}/src/pure/rig.js`);
-const out = new Float32Array(8);
-const area = (c, a, b, d) => ((c[b*2]-c[a*2])*(c[d*2+1]-c[a*2+1]) - (c[b*2+1]-c[a*2+1])*(c[d*2]-c[a*2])) / 2;
-for (const [name, seg] of Object.entries(R.RIG_ARM_SEGMENTS)) {
-  if (!seg.w) continue;
-  for (const [x0, y0, x1, y1, label] of [[0, 1.3, 0.1, 0.8, 'shoulder->down-front'], [0, 1.3, 0.5, 1.0, 'shoulder->forward-down'], [0, 1.3, -0.4, 1.0, 'shoulder->backward-down']]) {
-    const row = {};
-    for (const mirror of [1, -1]) {
-      R.rigArmSegmentCorners(seg, x0, y0, x1, y1, 0.0047, mirror, out, 0);
-      row[mirror > 0 ? 'facing right' : 'facing left'] = [area(out, 0, 2, 1), area(out, 2, 3, 1)].map((v) => +v.toFixed(6));
-    }
-    console.log(name.padEnd(6), label.padEnd(26), JSON.stringify(row));
-  }
-}
-```
-
-Output at `11ff74e`: every row reads `facing right [+x, +x]` and `facing left [-x, -x]` (e.g. `upper
-shoulder->down-front {"facing right":[0.060628,0.060628],"facing left":[-0.060628,-0.060628]}`).
-
-### Embedded: the facing-symmetry check (`$S/mirror-symmetry-check.py`; exit 1 if the aggregate is off)
-
-```python
-# QA scratch: facing symmetry of RIG's render, from a tools/rig-grip/capture.mjs cells/ directory.
-# For every (view, gun, row, aim): the right-facing cell and the left-facing cell with the MIRRORED aim should be
-# mirror images in colour (lighting does not care which way RIG faces).  Measures the mean RGB of the figure's
-# pixels in each cell.  A single pair is noisy (the mirrored sprite lands on a different sub-pixel phase; the
-# pre-T-103 build's own pairs spread 0.94-1.07), so the gate is on the AGGREGATE:
-#   mean luma ratio L/R within 1.000 +- 0.005, mean RGB delta (L - R) within +-0.5 per channel,
-#   and no pose row whose mean luma ratio is off by more than 0.015.
-# Control, pre-T-103 main 98b12c9 (520 pairs from the lane's BEFORE sheets): mean 0.9996, std 0.0185, mean RGB
-# delta (-0.02, -0.04, -0.04), worst pose mean 0.990 (wall).   T-103 @ 11ff74e: mean 0.958, mean RGB delta (-4.0, -2.3, -1.2).
-#   python3 -I mirror-symmetry-check.py <capdir> [view=desktop]        exit 0 = symmetric, 1 = not
-import sys, os, glob
-import numpy as np
-from PIL import Image
-
-cap = sys.argv[1]; view = sys.argv[2] if len(sys.argv) > 2 else 'desktop'
-MIR = {'right': 'left', 'left': 'right', 'up-right': 'up-left', 'up-left': 'up-right',
-       'down-left': 'down-right', 'down-right': 'down-left', 'up': 'up', 'down': 'down'}
-BG = np.array([0x4a, 0x56, 0x5c])
-LUMA = np.array([0.2126, 0.7152, 0.0722])
-def fig(path):
-    a = np.array(Image.open(path).convert('RGB')).astype(float)
-    m = np.abs(a - BG).sum(axis=2) > 30
-    return a[m].mean(axis=0)
-pairs = []
-for f in sorted(glob.glob(f'{cap}/cells/{view}-*-R.png')):
-    base = os.path.basename(f)[:-6]
-    gun, rest = base.split('-', 2)[1:]
-    for aim in sorted(MIR, key=len, reverse=True):
-        if rest.endswith('-' + aim):
-            row = rest[:-(len(aim) + 1)]; break
-    else:
-        continue
-    twin = f'{cap}/cells/{view}-{gun}-{row}-{MIR[aim]}-L.png'
-    if not os.path.exists(twin): continue
-    mR, mL = fig(f), fig(twin)
-    pairs.append((gun, row, aim, (mL @ LUMA) / (mR @ LUMA), mL - mR))
-if not pairs:
-    print('no mirrored pairs found'); sys.exit(2)
-ratio = np.array([p[3] for p in pairs]); d = np.array([p[4] for p in pairs])
-print(f'{len(pairs)} mirrored pairs in {cap} ({view})')
-print(f'  luma ratio L/R: mean {ratio.mean():.4f}  std {ratio.std():.4f}  p5 {np.percentile(ratio, 5):.3f}  median {np.median(ratio):.3f}  p95 {np.percentile(ratio, 95):.3f}')
-print(f'  share of pairs more than 2 % darker facing left: {(ratio < 0.98).mean():.2f}   (control: 0.14)')
-print(f'  mean RGB delta (L - R): {d.mean(axis=0).round(2)}')
-by = {}
-for p in pairs: by.setdefault(p[1], []).append(p[3])
-means = {k: float(np.mean(v)) for k, v in by.items()}
-print('  mean luma ratio by row:', {k: round(v, 3) for k, v in means.items()})
-bad = []
-if abs(ratio.mean() - 1) > 0.005: bad.append(f'mean luma ratio {ratio.mean():.4f} is not 1.000 +- 0.005')
-if np.abs(d.mean(axis=0)).max() > 0.5: bad.append(f'mean RGB delta {d.mean(axis=0).round(2)} is not within +-0.5')
-for k, v in means.items():
-    if abs(v - 1) > 0.015: bad.append(f'row {k}: mean luma ratio {v:.3f}')
-print('SYMMETRIC' if not bad else 'NOT SYMMETRIC: ' + '; '.join(bad))
-sys.exit(1 if bad else 0)
-```
-
-Use it on a capture directory: `node tools/rig-grip/capture.mjs --out $O --views desktop` (all 1040 cells, about 19
-minutes on this host; the aggregate needs the 520 pairs to be stable), then `python3 -I mirror-symmetry-check.py $O
-desktop`. On `11ff74e` it exits 1; on the pre-T-103 cells (`$S/lane-before`, split from the lane's BEFORE sheets) it
-exits 0.
+| desktop matrix, 1040 cells, 5 contact sheets at 1x and 4x | `cap-desktop/{capture.json,cells/,sheet-desktop-{R,S,L,H,F}-{1x,4x}.png}`, log `cap-desktop.log`, `analyze-desktop.out` |
+| symmetry outputs | `mirror-symmetry-{desktop,phone-all,portrait,crouch,main-before,lane-prefix,prefix-live,fixed-subsetR,m4-live}.out` (`.mjs.out` = the lane's port), `symmetry-by-aim-{fixed,prefix,before}.out`, `mirror-blur-diff.out`, `count-ratio-{desktop,phone,m4}.out` |
+| phone, portrait, crouch, in-situ firing | `cap-phone/`, `cap-phone2/`, `cap-phone-all/` (links), `cap-portrait/`, `cap-crouch/`, `cap-fire-desktop-R/{capture.json,desktop-firing-*.png}`, `analyze-{phone,phone2,portrait,crouch}.out` |
+| arms alone, same-page A/B | `diag-fixed-R/`, `diag-prefix-R/`, `diag-m4-R/` (+ `diag.json`), `analyze-diag-{fixed,prefix,m4}.out`, `ab-prefix-emulation/` + `.out`, `ab-material/` + `.out`, `sweep-live-winding.{json,log}` |
+| controls | `cap-prefix-R/` (live 11ff74e), `cap-m4/` (live M4), `pre-11ff74e/` (export), `mut/*` (scratch mutants), stored cells from the prior gate: `/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t103-gate/{lane-before,lane-after}/` |
+| headless gates | `check-cli.out`, `check-cli-mutant.out`, `run-gate.out`, `run-gate-mutants.out`, `d78-mutants.out`, `d78-vs-prefix-src.out`, `winding-fixed.out`, `pathcheck-full.log` |
+| smoke | `smoke-mid/{report.json,summary.md,screenshot.png}`, `smoke-mid.{log,verdict}`, `smoke-transform/{…}`, `smoke-transform.{log,verdict}`, `selftest.out` |
+| images I read | `look/{pairs-R-1x,pairs-R-4x,pairs-F-4x,pairs-phone-F-3x,pairs-portrait-R-3x,fourway-R-stand-8x-livecontrol,fourway-R-4x-livecontrol,diag-fixed-stand-8x,diag-fixed-flight-air-6x,fire-R-right-left-upleft-10x,sheet-S-4x-wall-hit-respawn}.png` |
+| scripts written for this re-gate | `mirror-symmetry-check.py`, `count-ratio.py`, `symmetry-by-aim.py`, `analyze-capture.py`, `analyze-case2.py`, `diag-arm-lighting3.mjs`, `prefix-emulation.mjs`, `material-ab.mjs`, `sweep-live-winding.mjs`, `winding2.mjs`, `run-domain.mjs`, `selftest.mjs`, `pairs.py`, `fourway.py`, `diag-montage.py`, `right-unchanged.py`, `mirror-blur-diff.py`, `run-gate.mjs`, `run-gate-mutants.mjs`, `queue{1,2,3,4,5}.sh`, `smoke-run.sh`, `smoke-transform.sh`, `m4-capture.sh`, `crouch-capture.sh`; the repo-resident equivalent of the symmetry script is `tools/rig-grip/symmetry.mjs` (identical output on all seven cell sets I ran both on) |
+| working notes | `notes.md`, `queue.log` |
