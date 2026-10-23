@@ -1,0 +1,10 @@
+  booted landscape in 54653 ms
+  title {"state":"MENU","deck":{"opacity":"0","pe":"none","hidden":false},"audio":{"enabled":true,"unlocked":false,"contextState":"none","dead":false,"layers":0,"voices":0,"maxVoices":14,"combatDuck":1,"heat":0,"pressure":0,"finale":{"phase":"dormant","wave":0,"transmitPlayed":false},"contact":{"hits":0,"blocks":0,"pendingHitBaselines":0}},"titleText":"CROWN UPLINK // HOLD THE SIGNAL","bodyClasses":["touch-controls","touch-twin","at-title"]}
+PASS [landscape] the plain default URL parks on the title (MENU) on a phone — MENU
+PASS [landscape] the deck is inert behind the title — {"opacity":"0","pe":"none","hidden":false}
+PASS [landscape] one tap anywhere on the title starts the run — PLAYING
+  after tap {"held":[],"jumps":0,"audio":{"enabled":true,"unlocked":true,"contextState":"running","dead":false,"layers":1,"voices":0,"maxVoices":14,"combatDuck":1,"heat":0,"pressure":0,"finale":{"phase":"dormant","wave":0,"transmitPlayed":false},"contact":{"hits":0,"blocks":0,"pendingHitBaselines":0}},"deckOpacity":"1","x":6}
+PASS [landscape] the starting tap is not also a gameplay input — {"held":[],"jumps":0}
+PASS [landscape] the deck is visible and interactive once PLAYING — 1
+PASS [landscape] no page errors / console errors
+phone-first-ten landscape: 6 passed, 0 failed

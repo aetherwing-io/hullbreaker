@@ -18,7 +18,7 @@
    here capture the final hook implementations.
 
    Autoplay policy: no AudioContext exists until the first user gesture
-   (keydown / pointerdown). Sounds requested before that are simply
+   (keydown / pointerdown / pointerup / touchend). Sounds requested before that are simply
    skipped — never queued, never erroring. ?audio=0 disables the module
    entirely (no wrappers, no listeners, no context: a muted boot is
    byte-identical to the pre-audio game).
@@ -1085,6 +1085,12 @@ if (AUDIO_ON) {
 
   addEventListener('keydown', unlock);
   addEventListener('pointerdown', unlock);
+  // A touch's pointerdown is not an activation-triggering event (HTML spec),
+  // and iOS Safari — the phone target, decisions.md entry 20 addendum — only
+  // honours resume() inside the touch's END. Without these a touch-only
+  // player builds a context that never leaves 'suspended' (T-101).
+  addEventListener('pointerup', unlock);
+  addEventListener('touchend', unlock);
   document.addEventListener('visibilitychange', () => {
     if (!ctx || dead) return;
     if (document.hidden) ctx.suspend().catch(() => {});
