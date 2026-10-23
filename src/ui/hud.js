@@ -29,6 +29,8 @@ import { hostiles, kills } from '../sim/hostiles.js';
 import { activeCorner, rollingEncounterStatus } from '../sim/wavegate.js';
 import { hookSnapshot } from '../sim/hook.js';
 import { flowSnapshot } from '../sim/flow.js';
+import { SHELL_COPY } from '../pure/shell-copy.js';
+import { liveCopyMode } from './shell.js';
 import {
   activeTransformEvent, committedBand, lastCommit, transformAltitudeAt, transformBandLabel,
 } from '../sim/transform.js';
@@ -115,6 +117,11 @@ function put(el, value) {
   if (el.textContent !== next) el.textContent = next;
 }
 
+// The input scheme is fixed once the deck has installed (before the first
+// frame), so the HUD reads it once: no per-frame classList walk.
+let copyModeCache = null;
+function hudCopyMode() { return copyModeCache || (copyModeCache = liveCopyMode()); }
+
 function updateContinuousMeter(el, percent, state) {
   el.style.setProperty('--meter', String(percent / 100));
   el.setAttribute('aria-valuenow', String(percent));
@@ -146,7 +153,10 @@ export function updateHUD() {
   let legacyOtherGun = '';
   if (carriedGun) {
     const other = currentGun === carriedGun ? 'RIFLE' : carriedGunLabel(true);
-    otherGun = (mobileHud ? 'C↔ ' : 'C SWAP // ') + other;
+    // "C" is a key; on the touch deck the verb is its SWAP chip (T-105).
+    // The hidden harness string below keeps its frozen keyboard spelling.
+    const swap = SHELL_COPY[hudCopyMode()];
+    otherGun = (mobileHud ? swap.weaponSwapCompact : swap.weaponSwap) + other;
     legacyOtherGun = (mobileHud ? ' · C↔ ' : ' · C SWAP ↔ ') + other;
   }
   // OVERDRIVE is welded to the weapon readout: it is an earned combat power,

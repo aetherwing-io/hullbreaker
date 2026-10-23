@@ -33,6 +33,9 @@ import { CONFIG } from '../config.js';
 import {
   START_DIRECTIONS, elementVars, runStatRows, startDirection, startDirectionAt,
 } from '../pure/shell.js';
+import {
+  SHELL_COPY, TOUCH_ACTION_KEYS, panelActions, shellCopyMode, shellLine,
+} from '../pure/shell-copy.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { player, P } from '../sim/player.js';
 import { kills } from '../sim/hostiles.js';
@@ -54,6 +57,17 @@ let atTitle = false;
 let runStartMs = 0;
 
 const MODE = IS_TRAVERSAL_SLICE ? 'traversal' : IS_TRANSFORM_SLICE ? 'transform' : 'six-face';
+
+/* Which words this screen speaks (T-105). The two-thumb deck marks <html>
+   with .touch-twin when it installs — before the first state screen is
+   drawn — and only that deck can tap its way out of every screen; the
+   keyboard, ?touch=0 and ?touch=legacy keep the keyboard copy. Read at
+   draw time, never cached, so a screen always matches the live scheme. */
+export function liveCopyMode() {
+  const twin = typeof document !== 'undefined' &&
+    document.documentElement.classList.contains('touch-twin');
+  return shellCopyMode(twin ? 'twin' : 'off');
+}
 
 /* ------------------------- composition ---------------------------- */
 
@@ -96,17 +110,21 @@ function renderTitle() {
   text.style.setProperty('--ty', '24%');
   text.style.setProperty('--tw', '47%');
   text.style.textAlign = 'left';
+  // a tap anywhere starts the run on a touch device (src/main.js's window
+  // pointerdown), so a phone is told to tap and shown its two thumbs
+  const copy = liveCopyMode();
   text.innerHTML =
     '<h1>HULLBREAKER</h1>' +
     '<p class="tag">' + dir.tagline + '</p>' +
-    '<p class="prompt">PRESS ANY KEY</p>';
+    '<p class="prompt">' + shellLine(copy, 'titlePrompt') + '</p>';
   shellEl.appendChild(text);
 
   const foot = document.createElement('div');
   foot.id = 'shellFoot';
+  foot.dataset.copy = copy;
   foot.innerHTML =
-    '<p><b>MOVE</b> WASD / ARROWS &nbsp;&middot;&nbsp; <b>JUMP</b> SPACE &nbsp;&middot;&nbsp; ' +
-    '<b>FIRE</b> J / X &nbsp;&middot;&nbsp; <b>PAUSE</b> P / ESC</p>' +
+    '<p>' + SHELL_COPY[copy].titleLegend.map(([what, how]) => '<b>' + what + '</b> ' + how)
+      .join(' &nbsp;&middot;&nbsp; ') + '</p>' +
     '<p class="dim">CLIMB THE MERIDIAN &nbsp;&middot;&nbsp; BREAK THE CROWN &nbsp;&middot;&nbsp; SEND THE SIGNAL</p>';
   shellEl.appendChild(foot);
 }
@@ -140,6 +158,20 @@ function keysHtml(pairs) {
     '<b>' + k + '</b> ' + what).join(' &nbsp;&middot;&nbsp; ') + '</p>';
 }
 
+/* Touch: the same verbs as buttons (see .shell-actions in index.html). */
+function actionsHtml(pairs) {
+  return '<div class="shell-actions">' + pairs.map(([action, label]) =>
+    '<button type="button" data-shell-action="' + action + '">' + label + '</button>').join('') +
+    '</div>';
+}
+
+// the panel's verbs for the live input scheme: a key legend, or buttons
+function verbsHtml(state, opts) {
+  const copy = liveCopyMode();
+  const pairs = panelActions(state, copy, opts);
+  return copy === 'touch' ? actionsHtml(pairs) : keysHtml(pairs);
+}
+
 // options that need a different boot (view depth, audio, the shell itself)
 // are honest about it: they reload the page with the flag applied. Nothing
 // here mutates a running simulation.
@@ -164,8 +196,7 @@ function optionsPanel() {
     label: id.toUpperCase(), on: id === VIEW_ID, href: flagUrl('view', id),
   }));
   return '<div class="panel">' +
-    keysHtml([['P / ESC', 'resume'], ['R', 'restart run'], ['Q', 'start screen'],
-              ['H', hudHidden ? 'show HUD' : 'hide HUD']]) +
+    verbsHtml('PAUSED', { hudHidden }) +
     '<div class="statgrid">' +
       '<span class="k">MODE</span><span class="v">' + MODE + '</span>' +
       linkRow('VIEW &#8635;', views) +
@@ -233,19 +264,35 @@ function statsPanel(state) {
       '</div>' +
       '<details class="result-details"><summary>FULL RUN TELEMETRY</summary>' +
         rowsHtml(rows) + '</details>' +
-      keysHtml([['R', 'break it again'], ['Q', 'start screen']]) +
+      verbsHtml('VICTORY', { summit: true }) +
       '</div>';
   }
-  return '<div class="panel">' + rowsHtml(rows) +
-    keysHtml(state === 'VICTORY'
-      ? [['R', 'run it again'], ['Q', 'start screen']]
-      : [['R', 'restart run'], ['Q', 'start screen']]) + '</div>';
+  return '<div class="panel">' + rowsHtml(rows) + verbsHtml(state) + '</div>';
 }
 
 function setPanel(html) {
   if (!panelEl) return;
   panelEl.innerHTML = html;
   panelEl.style.display = html ? 'block' : 'none';
+}
+
+/* A touch action presses, on the player's behalf, the key a keyboard player
+   would press: src/main.js's keydown handler and src/pure/shell.js's intent
+   table stay the ONE lifecycle path (restart, start screen, HUD). The deck's
+   modal tap ignores buttons (touch-controls.js interactive()), so tapping
+   one never also resumes or restarts. */
+if (panelEl) {
+  panelEl.addEventListener('click', (event) => {
+    const button = event.target && event.target.closest
+      ? event.target.closest('[data-shell-action]') : null;
+    if (!button || !panelEl.contains(button)) return;
+    event.preventDefault();
+    const code = TOUCH_ACTION_KEYS[button.dataset.shellAction];
+    if (code) {
+      dispatchEvent(new KeyboardEvent('keydown',
+        { code, key: code.slice(3).toLowerCase(), bubbles: true, cancelable: true }));
+    }
+  });
 }
 
 /* --------------------------- lifecycle ---------------------------- */
@@ -298,5 +345,6 @@ export function shellSnapshot() {
     directions: START_DIRECTIONS.map((d) => d.id),
     hud: !hudHidden,
     runMs: Math.max(0, gameMs - runStartMs),
+    copy: liveCopyMode(),
   };
 }

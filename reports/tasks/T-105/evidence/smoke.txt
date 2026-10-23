@@ -1,0 +1,65 @@
+# smoke as merge-task.sh runs it (run.mjs --deterministic --max-runtime-ms 15000|20000 --viewport 480x300 + smoke-verdict). smoke-mid*/smoke-tx* = pre-merge branch; q-smoke* = final export 383b09f.
+
+===== smoke-mid.log
+VERDICT-PASS attempt 1
+
+===== smoke-mid-1.log
+[playtest] script:  mid-route-competent (26 events, script window 9000ms)
+[playtest] url:     http://127.0.0.1:8784/index.html?slice=traversal&testapi=1&fixeddt=16.667
+[playtest] out:     /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t105/smoke-mid-1
+[playtest] mode:    frame-scoped deterministic input + exact sim stop
+[playtest] outcome: not-completed (fidelity: testapi)
+[playtest] deaths:  0 (from sliceStats.attempts); served build: traversal-slice (traversal-v1)
+[playtest] report:  /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t105/smoke-mid-1/report.json
+[playtest] summary: /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t105/smoke-mid-1/summary.md
+smoke-verdict: PASS (outcome=not-completed deaths=0 tick=594/594)
+
+===== smoke-tx.log
+VERDICT-PASS attempt 1
+
+===== smoke-tx-1.log
+[playtest] script:  transform-slice (58 events, script window 17500ms)
+[playtest] url:     http://127.0.0.1:8784/index.html?slice=transform&enemies=0&testapi=1&fixeddt=16.667
+[playtest] out:     /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t105/smoke-tx-1
+[playtest] mode:    frame-scoped deterministic input + exact sim stop
+[playtest] WARNING: 6 of 58 events never dispatched — the run stopped (script-window) with the sim clock at 15634ms, short of the next event's t=15800ms
+[playtest] outcome: completed (fidelity: testapi)
+[playtest] deaths:  0 (from sliceStats.attempts); served build: transform-slice
+[playtest] report:  /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t105/smoke-tx-1/report.json
+[playtest] summary: /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t105/smoke-tx-1/summary.md
+smoke-verdict: PASS (outcome=completed deaths=0 tick=938/1104)
+
+===== q-smoke.log
+rev 383b09f load 65.54 71.27 47.87
+serving /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t105/t105-final
+  http://127.0.0.1:8796/index.html
+  http://localhost:8796/index.html
+caching: no-store, no validators, conditional requests ignored
+pin shell-copy.js 200
+mid-route.json VERDICT-PASS attempt 1: smoke-verdict: PASS (outcome=not-completed deaths=0 tick=594/594)
+transform-slice.json VERDICT-PASS attempt 1: smoke-verdict: PASS (outcome=completed deaths=0 tick=938/1104)
+exit 0
+
+===== smoke-final-mid-route.log
+[playtest] script:  mid-route-competent (26 events, script window 9000ms)
+[playtest] url:     http://127.0.0.1:8796/index.html?slice=traversal&testapi=1&fixeddt=16.667
+[playtest] out:     /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t105/smoke-final-mid-route
+[playtest] mode:    frame-scoped deterministic input + exact sim stop
+[playtest] outcome: not-completed (fidelity: testapi)
+[playtest] deaths:  0 (from sliceStats.attempts); served build: traversal-slice (traversal-v1)
+[playtest] report:  /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t105/smoke-final-mid-route/report.json
+[playtest] summary: /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t105/smoke-final-mid-route/summary.md
+smoke-verdict: PASS (outcome=not-completed deaths=0 tick=594/594)
+
+===== smoke-final-transform-slice.log
+[playtest] script:  transform-slice (58 events, script window 17500ms)
+[playtest] url:     http://127.0.0.1:8796/index.html?slice=transform&enemies=0&testapi=1&fixeddt=16.667
+[playtest] out:     /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t105/smoke-final-transform-slice
+[playtest] mode:    frame-scoped deterministic input + exact sim stop
+[playtest] WARNING: 6 of 58 events never dispatched — the run stopped (script-window) with the sim clock at 15634ms, short of the next event's t=15800ms
+[playtest] outcome: completed (fidelity: testapi)
+[playtest] deaths:  0 (from sliceStats.attempts); served build: transform-slice
+[playtest] report:  /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t105/smoke-final-transform-slice/report.json
+[playtest] summary: /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t105/smoke-final-transform-slice/summary.md
+smoke-verdict: PASS (outcome=completed deaths=0 tick=938/1104)
+

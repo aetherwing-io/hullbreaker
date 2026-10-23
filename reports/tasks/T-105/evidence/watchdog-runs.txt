@@ -1,0 +1,87 @@
+# phone-shell --only watchdog, 844x390. q-wd-final = final export 383b09f (control for q-mut-watchdog-no-warmup in phone-shell-mutations.txt); wd2-* are the current judgement (722af33: quiet time from the arm; no panel on a stalled host = UNDECIDED). wd-*/wd1-* are earlier tool versions (superseded judgement), kept for the after-warm-up history in the inbox issue.
+
+===== q-wd-final.log
+serving /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t105/t105-final
+  http://127.0.0.1:8784/index.html
+  http://localhost:8784/index.html
+caching: no-store, no validators, conditional requests ignored
+pin 8784: shell-copy.js 200, rev 383b09f, load 60.75 75.53 71.70
+PASS [landscape-844x390/watchdog] frame stall 6 s from boot (0 frames drawn): no "game got stuck" panel, frames resume — panels [] (ms after the stall began {}), beats 0 -> 1, state MENU, longest stretch of the stall with no page timer 886 ms (decidable up to 3000)
+  UNDECIDED [landscape-844x390/watchdog] frame stall 6 s after the first frame (a slow first draw): this host's timers stalled during the hold, so no panel is not evidence either way — panels [] (ms after the stall began {}), beats 1 -> 6, state MENU, longest stretch of the stall with no page timer 6000 ms (decidable up to 3000)
+  UNDECIDED [landscape-844x390/watchdog] frame stall 6 s after warm-up, during PLAYING: this host's timers stalled during the hold, so no panel is not evidence either way — panels [] (ms after the stall began {}), beats 10 -> 14, state PLAYING, longest stretch of the stall with no page timer 2167 ms (decidable up to 750)
+PASS [landscape-844x390/watchdog] frame stall 10 s after warm-up, during PLAYING: the "game got stuck" panel DOES show — panels ["frozen"] (ms after the stall began {"frozen":7127}), beats 10 -> 14, state PLAYING, longest stretch of the stall with no page timer 2285 ms (decidable up to 3000)
+PASS [landscape-844x390/watchdog] frame loop dead from boot (0 frames, held 25 s): the "game got stuck" panel DOES show — panels ["frozen"] (ms after the stall began {"frozen":10852}), beats 0 -> 1, state MENU, longest stretch of the stall with no page timer 308 ms (decidable up to 3000)
+  NOTE [landscape-844x390/watchdog] main-thread busy-wait 6 s from boot (reported, not judged): panels [] (ms after the stall began {}), beats 0 -> 5, state MENU, longest stretch of the stall with no page timer 6000 ms
+  NOTE [landscape-844x390/watchdog] main-thread busy-wait 6 s after warm-up, during PLAYING (reported, not judged): panels [] (ms after the stall began {}), beats 10 -> 17, state PLAYING, longest stretch of the stall with no page timer 6000 ms
+  NOTE [landscape-844x390/watchdog] natural DPR-3 boot: panels [], boot->first beat 4 ms, worst beat gap 41459 ms after beat 1, beats 8
+  measure [landscape-844x390/watchdog] stalls = [{"name":"frame stall 6 s from boot (0 frames drawn)","plan":{"trigger":"booted","kind":"hold","ms":6000},"panels":[],"panelAfterArmMs":{},"quietMs":886,"showing":null,"beatsAtArm":0,"beatsNow":1,"bootToFirstBeatMs":6047,"worstBeatGapMs":0,"worstGapAfterBeat":-1,"firstBeats":[0],"pixelRatio":1,"state":"MENU","errors":0,"decidableQuietMs":3000,"verdict":"pass"},{"name":"frame stall 6 s after the fi…
+phone-shell [branch]: 3 passed, 0 failed, 2 undecided on this host in 838 s
+exit 0
+
+===== wd2-branch.log
+PASS [landscape-844x390/watchdog] frame stall 6 s from boot (0 frames drawn): no "game got stuck" panel, frames resume — panels [] (ms after the stall began {}), beats 0 -> 1, state MENU, longest stretch of the stall with no page timer 459 ms (decidable up to 3000)
+  UNDECIDED [landscape-844x390/watchdog] frame stall 6 s after the first frame (a slow first draw): this host's timers stalled during the hold, so no panel is not evidence either way — panels [] (ms after the stall began {}), beats 1 -> 7, state MENU, longest stretch of the stall with no page timer 6000 ms (decidable up to 3000)
+PASS [landscape-844x390/watchdog] frame stall 6 s after warm-up, during PLAYING: the "game got stuck" panel DOES show — panels ["frozen"] (ms after the stall began {"frozen":5609}), beats 10 -> 14, state PLAYING, longest stretch of the stall with no page timer 1023 ms (decidable up to 750)
+PASS [landscape-844x390/watchdog] frame stall 10 s after warm-up, during PLAYING: the "game got stuck" panel DOES show — panels ["frozen"] (ms after the stall began {"frozen":7133}), beats 10 -> 14, state PLAYING, longest stretch of the stall with no page timer 2987 ms (decidable up to 3000)
+PASS [landscape-844x390/watchdog] frame loop dead from boot (0 frames, held 25 s): the "game got stuck" panel DOES show — panels ["frozen"] (ms after the stall began {"frozen":10801}), beats 0 -> 1, state MENU, longest stretch of the stall with no page timer 487 ms (decidable up to 3000)
+  NOTE [landscape-844x390/watchdog] main-thread busy-wait 6 s from boot (reported, not judged): panels [] (ms after the stall began {}), beats 0 -> 9, state MENU, longest stretch of the stall with no page timer 6000 ms
+  NOTE [landscape-844x390/watchdog] main-thread busy-wait 6 s after warm-up, during PLAYING (reported, not judged): panels [] (ms after the stall began {}), beats 10 -> 16, state PLAYING, longest stretch of the stall with no page timer 6000 ms
+  NOTE [landscape-844x390/watchdog] natural DPR-3 boot: panels [], boot->first beat 5 ms, worst beat gap 32352 ms after beat 1, beats 5
+  measure [landscape-844x390/watchdog] stalls = [{"name":"frame stall 6 s from boot (0 frames drawn)","plan":{"trigger":"booted","kind":"hold","ms":6000},"panels":[],"panelAfterArmMs":{},"quietMs":459,"showing":null,"beatsAtArm":0,"beatsNow":1,"bootToFirstBeatMs":6015,"worstBeatGapMs":0,"worstGapAfterBeat":-1,"firstBeats":[0],"pixelRatio":1,"state":"MENU","errors":0,"decidableQuietMs":3000,"verdict":"pass"},{"name":"frame stall 6 s after the fi…
+phone-shell [branch]: 4 passed, 0 failed, 1 undecided on this host in 636 s
+exit 0
+
+===== wd2-base.log
+FAIL [landscape-844x390/watchdog] frame stall 6 s from boot (0 frames drawn): no "game got stuck" panel, frames resume — panels ["frozen"] (ms after the stall began {"frozen":1161}), beats 0 -> 1, state MENU, longest stretch of the stall with no page timer 325 ms (decidable up to 3000)
+  UNDECIDED [landscape-844x390/watchdog] frame stall 6 s after the first frame (a slow first draw): this host's timers stalled during the hold, so no panel is not evidence either way — panels [] (ms after the stall began {}), beats 1 -> 6, state MENU, longest stretch of the stall with no page timer 6000 ms (decidable up to 3000)
+  UNDECIDED [landscape-844x390/watchdog] frame stall 6 s after warm-up, during PLAYING: this host's timers stalled during the hold, so no panel is not evidence either way — panels [] (ms after the stall began {}), beats 10 -> 16, state PLAYING, longest stretch of the stall with no page timer 2493 ms (decidable up to 750)
+PASS [landscape-844x390/watchdog] frame stall 10 s after warm-up, during PLAYING: the "game got stuck" panel DOES show — panels ["frozen"] (ms after the stall began {"frozen":5862}), beats 10 -> 15, state PLAYING, longest stretch of the stall with no page timer 1456 ms (decidable up to 3000)
+PASS [landscape-844x390/watchdog] frame loop dead from boot (0 frames, held 25 s): the "game got stuck" panel DOES show — panels ["slow","frozen"] (ms after the stall began {"slow":null,"frozen":669}), beats 0 -> 1, state MENU, longest stretch of the stall with no page timer 489 ms (decidable up to 3000)
+  NOTE [landscape-844x390/watchdog] main-thread busy-wait 6 s from boot (reported, not judged): panels [] (ms after the stall began {}), beats 0 -> 8, state MENU, longest stretch of the stall with no page timer 6000 ms
+  NOTE [landscape-844x390/watchdog] main-thread busy-wait 6 s after warm-up, during PLAYING (reported, not judged): panels [] (ms after the stall began {}), beats 10 -> 14, state PLAYING, longest stretch of the stall with no page timer 5575 ms
+  NOTE [landscape-844x390/watchdog] natural DPR-3 boot: panels [], boot->first beat 6 ms, worst beat gap 54048 ms after beat 1, beats 5
+  measure [landscape-844x390/watchdog] stalls = [{"name":"frame stall 6 s from boot (0 frames drawn)","plan":{"trigger":"booted","kind":"hold","ms":6000},"panels":["frozen"],"panelAfterArmMs":{"frozen":1161},"quietMs":325,"showing":"frozen","beatsAtArm":0,"beatsNow":1,"bootToFirstBeatMs":6130,"worstBeatGapMs":0,"worstGapAfterBeat":-1,"firstBeats":[0],"pixelRatio":1,"state":"MENU","errors":0,"decidableQuietMs":3000,"verdict":"fail"},{"name":"fra…
+phone-shell [base]: 2 passed, 1 failed, 2 undecided on this host in 756 s
+exit 1
+
+===== wd-branch.log
+PASS [landscape-844x390/watchdog] frame stall 6 s from boot (0 frames drawn): no "game got stuck" panel, frames resume — panels [] (ms after the stall began {}), beats 0 -> 1, state MENU, worst timer gap during the stall 16991 ms
+PASS [landscape-844x390/watchdog] frame stall 6 s after the first frame (a slow first draw): no "game got stuck" panel, frames resume — panels [] (ms after the stall began {}), beats 1 -> 7, state MENU, worst timer gap during the stall 0 ms
+FAIL [landscape-844x390/watchdog] frame stall 6 s after warm-up, during PLAYING: the "game got stuck" panel DOES show — panels [] (ms after the stall began {}), beats 10 -> 16, state PLAYING, worst timer gap during the stall 2013 ms
+PASS [landscape-844x390/watchdog] frame stall 10 s after warm-up, during PLAYING: the "game got stuck" panel DOES show — panels ["frozen"] (ms after the stall began {"frozen":5911}), beats 10 -> 16, state PLAYING, worst timer gap during the stall 3162 ms
+PASS [landscape-844x390/watchdog] frame loop dead from boot (0 frames, held 25 s): the "game got stuck" panel DOES show — panels ["frozen"] (ms after the stall began {"frozen":10509}), beats 0 -> 1, state MENU, worst timer gap during the stall 20602 ms
+  NOTE [landscape-844x390/watchdog] main-thread busy-wait 6 s from boot (reported, not judged): panels [] (ms after the stall began {}), beats 0 -> 8, state MENU, worst timer gap during the stall 0 ms
+  NOTE [landscape-844x390/watchdog] main-thread busy-wait 6 s after warm-up, during PLAYING (reported, not judged): panels [] (ms after the stall began {}), beats 10 -> 19, state PLAYING, worst timer gap during the stall 0 ms
+  NOTE [landscape-844x390/watchdog] natural DPR-3 boot: panels [], boot->first beat 6 ms, worst beat gap 16348 ms after beat 1, beats 6
+  measure [landscape-844x390/watchdog] stalls = [{"name":"frame stall 6 s from boot (0 frames drawn)","plan":{"trigger":"booted","kind":"hold","ms":6000},"panels":[],"panelAfterArmMs":{},"worstTimerGapMs":16991,"showing":null,"beatsAtArm":0,"beatsNow":1,"bootToFirstBeatMs":6008,"worstBeatGapMs":0,"worstGapAfterBeat":-1,"firstBeats":[0],"pixelRatio":1,"state":"MENU","errors":0},{"name":"frame stall 6 s after the first frame (a slow first draw)",…
+phone-shell [branch]: 4 passed, 1 failed in 564 s
+exit 1
+
+===== wd-base.log
+FAIL [landscape-844x390/watchdog] frame stall 6 s from boot (0 frames drawn): no "game got stuck" panel, frames resume — panels ["frozen"] (ms after the stall began {"frozen":993}), beats 0 -> 2, state MENU, worst timer gap during the stall 17997 ms
+PASS [landscape-844x390/watchdog] frame stall 6 s after the first frame (a slow first draw): no "game got stuck" panel, frames resume — panels [] (ms after the stall began {}), beats 1 -> 8, state MENU, worst timer gap during the stall 0 ms
+FAIL [landscape-844x390/watchdog] frame stall 6 s after warm-up, during PLAYING: the "game got stuck" panel DOES show — panels [] (ms after the stall began {}), beats 10 -> 15, state PLAYING, worst timer gap during the stall 2475 ms
+PASS [landscape-844x390/watchdog] frame stall 10 s after warm-up, during PLAYING: the "game got stuck" panel DOES show — panels ["frozen"] (ms after the stall began {"frozen":7331}), beats 10 -> 16, state PLAYING, worst timer gap during the stall 2756 ms
+PASS [landscape-844x390/watchdog] frame loop dead from boot (0 frames, held 25 s): the "game got stuck" panel DOES show — panels ["frozen"] (ms after the stall began {"frozen":817}), beats 0 -> 1, state MENU, worst timer gap during the stall 10936 ms
+  NOTE [landscape-844x390/watchdog] main-thread busy-wait 6 s from boot (reported, not judged): panels [] (ms after the stall began {}), beats 0 -> 10, state MENU, worst timer gap during the stall 0 ms
+  NOTE [landscape-844x390/watchdog] main-thread busy-wait 6 s after warm-up, during PLAYING (reported, not judged): panels [] (ms after the stall began {}), beats 10 -> 15, state PLAYING, worst timer gap during the stall 0 ms
+  NOTE [landscape-844x390/watchdog] natural DPR-3 boot: panels [], boot->first beat 2 ms, worst beat gap 23855 ms after beat 1, beats 6
+  measure [landscape-844x390/watchdog] stalls = [{"name":"frame stall 6 s from boot (0 frames drawn)","plan":{"trigger":"booted","kind":"hold","ms":6000},"panels":["frozen"],"panelAfterArmMs":{"frozen":993},"worstTimerGapMs":17997,"showing":"frozen","beatsAtArm":0,"beatsNow":2,"bootToFirstBeatMs":6004,"worstBeatGapMs":6857,"worstGapAfterBeat":1,"firstBeats":[0,6857],"pixelRatio":1,"state":"MENU","errors":0},{"name":"frame stall 6 s after the fi…
+phone-shell [base]: 3 passed, 2 failed in 562 s
+exit 1
+
+===== wd1-base.log
+FAIL [landscape-844x390/watchdog] frame stall 6 s from boot (0 frames drawn): no "game got stuck" panel, frames resume — panels ["frozen"] (ms after the stall began {"frozen":1237}), beats 0 -> 1, state MENU, worst timer gap during the stall 14888 ms
+PASS [landscape-844x390/watchdog] frame stall 6 s after the first frame (a slow first draw): no "game got stuck" panel, frames resume — panels [] (ms after the stall began {}), beats 1 -> 13, state MENU, worst timer gap during the stall 0 ms
+FAIL [landscape-844x390/watchdog] frame stall 6 s after warm-up, during PLAYING: the "game got stuck" panel DOES show — panels [] (ms after the stall began {}), beats 40 -> 45, state PLAYING, worst timer gap during the stall 2142 ms
+PASS [landscape-844x390/watchdog] frame loop dead from boot (0 frames, held 25 s): the "game got stuck" panel DOES show — panels ["frozen"] (ms after the stall began {"frozen":798}), beats 0 -> 1, state MENU, worst timer gap during the stall 11159 ms
+  NOTE [landscape-844x390/watchdog] main-thread busy-wait 6 s from boot (reported, not judged): panels [] (ms after the stall began {}), beats 0 -> 7, state MENU, worst timer gap during the stall 0 ms
+FAIL [landscape-844x390/watchdog] harness completed — page.waitForFunction: Timeout 300000ms exceeded.     at stallTrial (/home/user/hullbreaker/.claude/worktrees/T-105/tools/playtest/phone-shell.mjs:947:18)     at async sectionWatchdog (/home/user/hullbreaker/.claude/worktrees/T-105/tools/playtest/phone-shell.mjs:986:15)
+phone-shell [base]: 2 passed, 3 failed in 634 s
+exit 1
+
+===== wd1-branch.log
+FAIL [landscape-844x390/watchdog] harness completed — page.waitForTimeout: Page crashed     at stallTrial (/home/user/hullbreaker/.claude/worktrees/T-105/tools/playtest/phone-shell.mjs:958:16)     at async sectionWatchdog (/home/user/hullbreaker/.claude/worktrees/T-105/tools/playtest/phone-shell.mjs:993:15)
+phone-shell [branch]: 0 passed, 1 failed in 43 s
+exit 1
+

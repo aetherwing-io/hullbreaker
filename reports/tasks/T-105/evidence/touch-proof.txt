@@ -1,0 +1,218 @@
+# touch-proof.mjs --only frozen --views landscape: control, then each follow-up mutation.
+
+===== tp-control.log
+  boot landscape frozen dpr1: 32410 ms
+PASS [landscape/frozen] the two-thumb deck is the touch default (legacy deck stays hidden)
+PASS [landscape/frozen] JUMP is drawn where the pure layout hit-tests it — rect {"x":717.25,"y":273,"width":85.796875,"height":85.796875,"top":273,"right":803.046875,"bottom":358.796875,"left":717.25} vs {"cx":760.15,"cy":315.9,"r":42.9}
+PASS [landscape/frozen] FIRE is drawn where the pure layout hit-tests it
+PASS [landscape/frozen] #thumbDeck computes touch-action:none — none
+PASS [landscape/frozen] #thumbDeck computes user-select:none — none
+PASS [landscape/frozen] #thumbJump computes touch-action:none — none
+PASS [landscape/frozen] #thumbJump computes user-select:none — none
+PASS [landscape/frozen] #thumbFire computes touch-action:none — none
+PASS [landscape/frozen] #thumbFire computes user-select:none — none
+PASS [landscape/frozen] #thumbSwap computes touch-action:none — none
+PASS [landscape/frozen] #thumbSwap computes user-select:none — none
+PASS [landscape/frozen] #thumbPause computes touch-action:none — none
+PASS [landscape/frozen] #thumbPause computes user-select:none — none
+PASS [landscape/frozen] #thumbAuto computes touch-action:none — none
+PASS [landscape/frozen] #thumbAuto computes user-select:none — none
+PASS [landscape/frozen] #thumbStick computes touch-action:none — none
+PASS [landscape/frozen] #thumbStick computes user-select:none — none
+PASS [landscape/frozen] #thumbNub computes touch-action:none — none
+PASS [landscape/frozen] #thumbNub computes user-select:none — none
+PASS [landscape/frozen] canvas computes touch-action:none — none
+PASS [landscape/frozen] the page refuses pinch/double-tap zoom (html touch-action pan-x pan-y) — pan-x pan-y
+PASS [landscape/frozen] body text selection is off in touch mode — none
+  measure [landscape/frozen] layout = {"width":844,"height":390,"short":390,"landscape":true,"safe":{"top":0,"right":0,"bottom":0,"left":0},"rim":58.5,"slop":1.25,"split":379.8,"stickMinX":20,"jump":{"cx":760.15,"cy":315.9,"r":42.9},"fire":{"cx":670.6605194837806,"cy":331.67940990459397,"r":37.05},"ghost":{"cx":113.1,"cy":305.025,"r":58.5},"swap":{"x":557.989789415054,"y":276.40765038995505,"w":44.85,"h":44.85},"pause":{"x":793.15,"y":72,"w":44.85,"h":44.85},"auto":{"x":740.3,"y":72,"w":44.85,"h":44.85},"cluster":{"x":557.989789415054,"y":262.275,"w":255.78521058494596,"h":115.71690990459399}}
+PASS [landscape/frozen] 3 pointers x 36 press/release orders: held set exact after all 216 steps — deck ledger and sim keys agree
+  measure [landscape/frozen] bookkeepingSteps = {"steps":216,"bad":0}
+PASS [landscape/frozen] a second finger on JUMP is a second press; lifting one keeps JUMP held — presses 2, held after first lift true, after both false
+PASS [landscape/frozen] pointercancel mid-press releases every held code — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] window blur mid-press releases every held code (isolated blur event) — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+  NOTE [landscape/frozen] this browser delivered no blur/visibilitychange for a real focus loss; only the isolated and synthetic trials stand for it
+  measure [landscape/frozen] realFocusLoss = {"blur":0,"vis":0}
+PASS [landscape/frozen] visibilitychange (hidden) mid-press releases every held code (synthetic hidden) — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+  measure [landscape/frozen] visibilityDriven = "synthetic"
+PASS [landscape/frozen] an orientation change mid-press releases every held code — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] lifting already-released fingers sends nothing back
+PASS [landscape/frozen] 3 fingers down, then PAUSED (P key): every held code is released, and stays released after PLAYING resumes and the fingers lift — held {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}} back {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}} lifted {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] 3 fingers down, then GAME_OVER: every held code is released, and stays released after PLAYING resumes and the fingers lift — held {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}} back {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}} lifted {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] a lifecycle release with a finger resting on a chip puts the chip's lit look out — lit before ["thumbSwap"], after blur [], after lift []
+PASS [landscape/frozen] a JUMP whose pointerup and cancel were both lost is released by the next touch, which then works — held ["Space"], after the lost lift ["Space"], after a new touch {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}, steering ["ArrowRight"], done {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] PAUSE chip tap pauses (and its own lift does not resume) — {"state":"PAUSED","cue":"TAP TO RESUME","shown":"block"}
+PASS [landscape/frozen] the paused screen tells a touch player how to resume
+PASS [landscape/frozen] a tap on the pause screen resumes
+PASS [landscape/frozen] an early tap on GAME_OVER (39 ms after it showed) does not skip the screen — GAME_OVER
+PASS [landscape/frozen] a tap on an armed GAME_OVER screen restarts the run — {"state":"PLAYING"}
+  measure [landscape/frozen] gameOverEarlyTapMs = 39
+PASS [landscape/frozen] a double-tap on JUMP leaves visualViewport.scale at 1 (cannot fail in Chromium: see notes) — scale 1
+PASS [landscape/frozen] a pinch on the play surface leaves visualViewport.scale at 1 — scale 1
+PASS [landscape/frozen] the pinch probe can see a zoom (touch-action overridden -> scale changes) — scale 5
+  measure [landscape/frozen] gestureProbe = {"afterDouble":1,"afterPinch":1,"overriddenPinch":5,"overriddenDouble":5}
+PASS [landscape/frozen] frozen page raised no errors
+touch-proof: 42 passed, 0 failed in 103 s
+exit 0
+
+===== tp-mut-chip-stays-lit.log
+  boot landscape frozen dpr1: 32427 ms
+PASS [landscape/frozen] the two-thumb deck is the touch default (legacy deck stays hidden)
+PASS [landscape/frozen] JUMP is drawn where the pure layout hit-tests it — rect {"x":717.25,"y":273,"width":85.796875,"height":85.796875,"top":273,"right":803.046875,"bottom":358.796875,"left":717.25} vs {"cx":760.15,"cy":315.9,"r":42.9}
+PASS [landscape/frozen] FIRE is drawn where the pure layout hit-tests it
+PASS [landscape/frozen] #thumbDeck computes touch-action:none — none
+PASS [landscape/frozen] #thumbDeck computes user-select:none — none
+PASS [landscape/frozen] #thumbJump computes touch-action:none — none
+PASS [landscape/frozen] #thumbJump computes user-select:none — none
+PASS [landscape/frozen] #thumbFire computes touch-action:none — none
+PASS [landscape/frozen] #thumbFire computes user-select:none — none
+PASS [landscape/frozen] #thumbSwap computes touch-action:none — none
+PASS [landscape/frozen] #thumbSwap computes user-select:none — none
+PASS [landscape/frozen] #thumbPause computes touch-action:none — none
+PASS [landscape/frozen] #thumbPause computes user-select:none — none
+PASS [landscape/frozen] #thumbAuto computes touch-action:none — none
+PASS [landscape/frozen] #thumbAuto computes user-select:none — none
+PASS [landscape/frozen] #thumbStick computes touch-action:none — none
+PASS [landscape/frozen] #thumbStick computes user-select:none — none
+PASS [landscape/frozen] #thumbNub computes touch-action:none — none
+PASS [landscape/frozen] #thumbNub computes user-select:none — none
+PASS [landscape/frozen] canvas computes touch-action:none — none
+PASS [landscape/frozen] the page refuses pinch/double-tap zoom (html touch-action pan-x pan-y) — pan-x pan-y
+PASS [landscape/frozen] body text selection is off in touch mode — none
+  measure [landscape/frozen] layout = {"width":844,"height":390,"short":390,"landscape":true,"safe":{"top":0,"right":0,"bottom":0,"left":0},"rim":58.5,"slop":1.25,"split":379.8,"stickMinX":20,"jump":{"cx":760.15,"cy":315.9,"r":42.9},"fire":{"cx":670.6605194837806,"cy":331.67940990459397,"r":37.05},"ghost":{"cx":113.1,"cy":305.025,"r":58.5},"swap":{"x":557.989789415054,"y":276.40765038995505,"w":44.85,"h":44.85},"pause":{"x":793.15,"y":72,"w":44.85,"h":44.85},"auto":{"x":740.3,"y":72,"w":44.85,"h":44.85},"cluster":{"x":557.989789415054,"y":262.275,"w":255.78521058494596,"h":115.71690990459399}}
+PASS [landscape/frozen] 3 pointers x 36 press/release orders: held set exact after all 216 steps — deck ledger and sim keys agree
+  measure [landscape/frozen] bookkeepingSteps = {"steps":216,"bad":0}
+PASS [landscape/frozen] a second finger on JUMP is a second press; lifting one keeps JUMP held — presses 2, held after first lift true, after both false
+PASS [landscape/frozen] pointercancel mid-press releases every held code — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] window blur mid-press releases every held code (isolated blur event) — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+  NOTE [landscape/frozen] this browser delivered no blur/visibilitychange for a real focus loss; only the isolated and synthetic trials stand for it
+  measure [landscape/frozen] realFocusLoss = {"blur":0,"vis":0}
+PASS [landscape/frozen] visibilitychange (hidden) mid-press releases every held code (synthetic hidden) — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+  measure [landscape/frozen] visibilityDriven = "synthetic"
+PASS [landscape/frozen] an orientation change mid-press releases every held code — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] lifting already-released fingers sends nothing back
+PASS [landscape/frozen] 3 fingers down, then PAUSED (P key): every held code is released, and stays released after PLAYING resumes and the fingers lift — held {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}} back {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}} lifted {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] 3 fingers down, then GAME_OVER: every held code is released, and stays released after PLAYING resumes and the fingers lift — held {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}} back {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}} lifted {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+FAIL [landscape/frozen] a lifecycle release with a finger resting on a chip puts the chip's lit look out — lit before ["thumbSwap"], after blur ["thumbSwap"], after lift ["thumbSwap"]
+PASS [landscape/frozen] a JUMP whose pointerup and cancel were both lost is released by the next touch, which then works — held ["Space"], after the lost lift ["Space"], after a new touch {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}, steering ["ArrowRight"], done {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] PAUSE chip tap pauses (and its own lift does not resume) — {"state":"PAUSED","cue":"TAP TO RESUME","shown":"block"}
+PASS [landscape/frozen] the paused screen tells a touch player how to resume
+PASS [landscape/frozen] a tap on the pause screen resumes
+PASS [landscape/frozen] an early tap on GAME_OVER (163 ms after it showed) does not skip the screen — GAME_OVER
+PASS [landscape/frozen] a tap on an armed GAME_OVER screen restarts the run — {"state":"PLAYING"}
+  measure [landscape/frozen] gameOverEarlyTapMs = 163
+PASS [landscape/frozen] a double-tap on JUMP leaves visualViewport.scale at 1 (cannot fail in Chromium: see notes) — scale 1
+PASS [landscape/frozen] a pinch on the play surface leaves visualViewport.scale at 1 — scale 1
+PASS [landscape/frozen] the pinch probe can see a zoom (touch-action overridden -> scale changes) — scale 5
+  measure [landscape/frozen] gestureProbe = {"afterDouble":1,"afterPinch":1,"overriddenPinch":5,"overriddenDouble":5}
+PASS [landscape/frozen] frozen page raised no errors
+touch-proof (mutation chip-stays-lit): 41 passed, 1 failed in 96 s
+exit 1
+
+===== tp-mut-ignore-leave-playing.log
+  boot landscape frozen dpr1: 28485 ms
+PASS [landscape/frozen] the two-thumb deck is the touch default (legacy deck stays hidden)
+PASS [landscape/frozen] JUMP is drawn where the pure layout hit-tests it — rect {"x":717.25,"y":273,"width":85.796875,"height":85.796875,"top":273,"right":803.046875,"bottom":358.796875,"left":717.25} vs {"cx":760.15,"cy":315.9,"r":42.9}
+PASS [landscape/frozen] FIRE is drawn where the pure layout hit-tests it
+PASS [landscape/frozen] #thumbDeck computes touch-action:none — none
+PASS [landscape/frozen] #thumbDeck computes user-select:none — none
+PASS [landscape/frozen] #thumbJump computes touch-action:none — none
+PASS [landscape/frozen] #thumbJump computes user-select:none — none
+PASS [landscape/frozen] #thumbFire computes touch-action:none — none
+PASS [landscape/frozen] #thumbFire computes user-select:none — none
+PASS [landscape/frozen] #thumbSwap computes touch-action:none — none
+PASS [landscape/frozen] #thumbSwap computes user-select:none — none
+PASS [landscape/frozen] #thumbPause computes touch-action:none — none
+PASS [landscape/frozen] #thumbPause computes user-select:none — none
+PASS [landscape/frozen] #thumbAuto computes touch-action:none — none
+PASS [landscape/frozen] #thumbAuto computes user-select:none — none
+PASS [landscape/frozen] #thumbStick computes touch-action:none — none
+PASS [landscape/frozen] #thumbStick computes user-select:none — none
+PASS [landscape/frozen] #thumbNub computes touch-action:none — none
+PASS [landscape/frozen] #thumbNub computes user-select:none — none
+PASS [landscape/frozen] canvas computes touch-action:none — none
+PASS [landscape/frozen] the page refuses pinch/double-tap zoom (html touch-action pan-x pan-y) — pan-x pan-y
+PASS [landscape/frozen] body text selection is off in touch mode — none
+  measure [landscape/frozen] layout = {"width":844,"height":390,"short":390,"landscape":true,"safe":{"top":0,"right":0,"bottom":0,"left":0},"rim":58.5,"slop":1.25,"split":379.8,"stickMinX":20,"jump":{"cx":760.15,"cy":315.9,"r":42.9},"fire":{"cx":670.6605194837806,"cy":331.67940990459397,"r":37.05},"ghost":{"cx":113.1,"cy":305.025,"r":58.5},"swap":{"x":557.989789415054,"y":276.40765038995505,"w":44.85,"h":44.85},"pause":{"x":793.15,"y":72,"w":44.85,"h":44.85},"auto":{"x":740.3,"y":72,"w":44.85,"h":44.85},"cluster":{"x":557.989789415054,"y":262.275,"w":255.78521058494596,"h":115.71690990459399}}
+PASS [landscape/frozen] 3 pointers x 36 press/release orders: held set exact after all 216 steps — deck ledger and sim keys agree
+  measure [landscape/frozen] bookkeepingSteps = {"steps":216,"bad":0}
+PASS [landscape/frozen] a second finger on JUMP is a second press; lifting one keeps JUMP held — presses 2, held after first lift true, after both false
+PASS [landscape/frozen] pointercancel mid-press releases every held code — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] window blur mid-press releases every held code (isolated blur event) — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+  NOTE [landscape/frozen] this browser delivered no blur/visibilitychange for a real focus loss; only the isolated and synthetic trials stand for it
+  measure [landscape/frozen] realFocusLoss = {"blur":0,"vis":0}
+PASS [landscape/frozen] visibilitychange (hidden) mid-press releases every held code (synthetic hidden) — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+  measure [landscape/frozen] visibilityDriven = "synthetic"
+PASS [landscape/frozen] an orientation change mid-press releases every held code — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] lifting already-released fingers sends nothing back
+FAIL [landscape/frozen] 3 fingers down, then PAUSED (P key): every held code is released, and stays released after PLAYING resumes and the fingers lift — held {"deck":["ArrowRight","Space","KeyX"],"keys":{"left":false,"right":true,"up":false,"down":false,"jump":true,"fire":true,"swap":false}} back {"deck":["ArrowRight","Space","KeyX"],"keys":{"left":false,"right":true,"up":false,"down":false,"jump":true,"fire":true,"swap":false}} lifted {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+FAIL [landscape/frozen] 3 fingers down, then GAME_OVER: every held code is released, and stays released after PLAYING resumes and the fingers lift — held {"deck":["ArrowRight","Space","KeyX"],"keys":{"left":false,"right":true,"up":false,"down":false,"jump":true,"fire":true,"swap":false}} back {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}} lifted {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] a lifecycle release with a finger resting on a chip puts the chip's lit look out — lit before ["thumbSwap"], after blur [], after lift []
+PASS [landscape/frozen] a JUMP whose pointerup and cancel were both lost is released by the next touch, which then works — held ["Space"], after the lost lift ["Space"], after a new touch {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}, steering ["ArrowRight"], done {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] PAUSE chip tap pauses (and its own lift does not resume) — {"state":"PAUSED","cue":"TAP TO RESUME","shown":"block"}
+PASS [landscape/frozen] the paused screen tells a touch player how to resume
+PASS [landscape/frozen] a tap on the pause screen resumes
+PASS [landscape/frozen] an early tap on GAME_OVER (30 ms after it showed) does not skip the screen — GAME_OVER
+PASS [landscape/frozen] a tap on an armed GAME_OVER screen restarts the run — {"state":"PLAYING"}
+  measure [landscape/frozen] gameOverEarlyTapMs = 30
+PASS [landscape/frozen] a double-tap on JUMP leaves visualViewport.scale at 1 (cannot fail in Chromium: see notes) — scale 1
+PASS [landscape/frozen] a pinch on the play surface leaves visualViewport.scale at 1 — scale 1
+PASS [landscape/frozen] the pinch probe can see a zoom (touch-action overridden -> scale changes) — scale 5
+  measure [landscape/frozen] gestureProbe = {"afterDouble":1,"afterPinch":1,"overriddenPinch":5,"overriddenDouble":5}
+PASS [landscape/frozen] frozen page raised no errors
+touch-proof (mutation ignore-leave-playing): 40 passed, 2 failed in 97 s
+exit 1
+
+===== tp-mut-no-stale-release.log
+  boot landscape frozen dpr1: 23531 ms
+PASS [landscape/frozen] the two-thumb deck is the touch default (legacy deck stays hidden)
+PASS [landscape/frozen] JUMP is drawn where the pure layout hit-tests it — rect {"x":717.25,"y":273,"width":85.796875,"height":85.796875,"top":273,"right":803.046875,"bottom":358.796875,"left":717.25} vs {"cx":760.15,"cy":315.9,"r":42.9}
+PASS [landscape/frozen] FIRE is drawn where the pure layout hit-tests it
+PASS [landscape/frozen] #thumbDeck computes touch-action:none — none
+PASS [landscape/frozen] #thumbDeck computes user-select:none — none
+PASS [landscape/frozen] #thumbJump computes touch-action:none — none
+PASS [landscape/frozen] #thumbJump computes user-select:none — none
+PASS [landscape/frozen] #thumbFire computes touch-action:none — none
+PASS [landscape/frozen] #thumbFire computes user-select:none — none
+PASS [landscape/frozen] #thumbSwap computes touch-action:none — none
+PASS [landscape/frozen] #thumbSwap computes user-select:none — none
+PASS [landscape/frozen] #thumbPause computes touch-action:none — none
+PASS [landscape/frozen] #thumbPause computes user-select:none — none
+PASS [landscape/frozen] #thumbAuto computes touch-action:none — none
+PASS [landscape/frozen] #thumbAuto computes user-select:none — none
+PASS [landscape/frozen] #thumbStick computes touch-action:none — none
+PASS [landscape/frozen] #thumbStick computes user-select:none — none
+PASS [landscape/frozen] #thumbNub computes touch-action:none — none
+PASS [landscape/frozen] #thumbNub computes user-select:none — none
+PASS [landscape/frozen] canvas computes touch-action:none — none
+PASS [landscape/frozen] the page refuses pinch/double-tap zoom (html touch-action pan-x pan-y) — pan-x pan-y
+PASS [landscape/frozen] body text selection is off in touch mode — none
+  measure [landscape/frozen] layout = {"width":844,"height":390,"short":390,"landscape":true,"safe":{"top":0,"right":0,"bottom":0,"left":0},"rim":58.5,"slop":1.25,"split":379.8,"stickMinX":20,"jump":{"cx":760.15,"cy":315.9,"r":42.9},"fire":{"cx":670.6605194837806,"cy":331.67940990459397,"r":37.05},"ghost":{"cx":113.1,"cy":305.025,"r":58.5},"swap":{"x":557.989789415054,"y":276.40765038995505,"w":44.85,"h":44.85},"pause":{"x":793.15,"y":72,"w":44.85,"h":44.85},"auto":{"x":740.3,"y":72,"w":44.85,"h":44.85},"cluster":{"x":557.989789415054,"y":262.275,"w":255.78521058494596,"h":115.71690990459399}}
+PASS [landscape/frozen] 3 pointers x 36 press/release orders: held set exact after all 216 steps — deck ledger and sim keys agree
+  measure [landscape/frozen] bookkeepingSteps = {"steps":216,"bad":0}
+PASS [landscape/frozen] a second finger on JUMP is a second press; lifting one keeps JUMP held — presses 2, held after first lift true, after both false
+PASS [landscape/frozen] pointercancel mid-press releases every held code — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] window blur mid-press releases every held code (isolated blur event) — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+  NOTE [landscape/frozen] this browser delivered no blur/visibilitychange for a real focus loss; only the isolated and synthetic trials stand for it
+  measure [landscape/frozen] realFocusLoss = {"blur":0,"vis":0}
+PASS [landscape/frozen] visibilitychange (hidden) mid-press releases every held code (synthetic hidden) — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+  measure [landscape/frozen] visibilityDriven = "synthetic"
+PASS [landscape/frozen] an orientation change mid-press releases every held code — {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] lifting already-released fingers sends nothing back
+PASS [landscape/frozen] 3 fingers down, then PAUSED (P key): every held code is released, and stays released after PLAYING resumes and the fingers lift — held {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}} back {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}} lifted {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] 3 fingers down, then GAME_OVER: every held code is released, and stays released after PLAYING resumes and the fingers lift — held {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}} back {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}} lifted {"deck":[],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":false,"fire":false,"swap":false}}
+PASS [landscape/frozen] a lifecycle release with a finger resting on a chip puts the chip's lit look out — lit before ["thumbSwap"], after blur [], after lift []
+FAIL [landscape/frozen] a JUMP whose pointerup and cancel were both lost is released by the next touch, which then works — held ["Space"], after the lost lift ["Space"], after a new touch {"deck":["Space"],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":true,"fire":false,"swap":false}}, steering ["ArrowRight","Space"], done {"deck":["Space"],"keys":{"left":false,"right":false,"up":false,"down":false,"jump":true,"fire":false,"swap":false}}
+PASS [landscape/frozen] PAUSE chip tap pauses (and its own lift does not resume) — {"state":"PAUSED","cue":"TAP TO RESUME","shown":"block"}
+PASS [landscape/frozen] the paused screen tells a touch player how to resume
+PASS [landscape/frozen] a tap on the pause screen resumes
+PASS [landscape/frozen] an early tap on GAME_OVER (26 ms after it showed) does not skip the screen — GAME_OVER
+PASS [landscape/frozen] a tap on an armed GAME_OVER screen restarts the run — {"state":"PLAYING"}
+  measure [landscape/frozen] gameOverEarlyTapMs = 26
+PASS [landscape/frozen] a double-tap on JUMP leaves visualViewport.scale at 1 (cannot fail in Chromium: see notes) — scale 1
+PASS [landscape/frozen] a pinch on the play surface leaves visualViewport.scale at 1 — scale 1
+PASS [landscape/frozen] the pinch probe can see a zoom (touch-action overridden -> scale changes) — scale 5
+  measure [landscape/frozen] gestureProbe = {"afterDouble":1,"afterPinch":1,"overriddenPinch":5,"overriddenDouble":5}
+PASS [landscape/frozen] frozen page raised no errors
+touch-proof (mutation no-stale-release): 41 passed, 1 failed in 106 s
+exit 1
+

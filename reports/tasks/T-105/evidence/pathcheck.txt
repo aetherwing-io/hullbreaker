@@ -1,0 +1,76 @@
+# pathcheck: full tier pre-merge (d3b0715), fast tier pre-merge, label diff pre-merge (base 08e5db1 vs branch), fast and full tier on the merged tree.
+
+===== pathcheck-full.log
+d3b0715 T-105 phone-shell: synchronous iOS audio-rule emulation, dead-from-boot watchdog trial with panel timing
+pathcheck note (reported, not asserted): a hold-right deck-line crossing collected 4 of 6 pocket capsules (weapon at the end H, closest approach 1.151 tiles at [51.95,6.12])
+SKIP render-submission-contract: 4 browser-probe assertions not run (HB_GATE_SKIP_BROWSER_PROBE=1 — GPU-less host; not counted as passes)
+pathcheck: 4425 passed, 0 failed
+wall 322 s
+exit 0
+
+===== pathcheck-fast-1.log
+pathcheck note (reported, not asserted): a hold-right deck-line crossing collected 4 of 6 pocket capsules (weapon at the end H, closest approach 1.151 tiles at [51.95,6.12])
+SKIP render-submission-contract: 4 browser-probe assertions not run (HB_GATE_SKIP_BROWSER_PROBE=1 — GPU-less host; not counted as passes)
+SKIP t-102-corner-turns: 37 of 41 played turn runs not run (HB_GATE_FAST=1 — per-edit tier; not counted as passes; unset it for the full matrix)
+pathcheck: 4128 passed, 0 failed
+exit 0
+
+===== labels-diff.txt
+pathcheck-labels, fast tier, same host env: base 08e5db1 (git archive) vs branch tree
+base: 4097 labels; branch: 4130 labels
+
+--- REMOVED (in base, not in branch)
+PASS	T-101: E/W 50°, N/S 35°, diagonals 47.5° (CONFIG.touch.stick)
+
+--- ADDED (in branch, not in base)
+PASS	T-049: src/pure/shell-copy.js names a sprite module — the pure layer may hold data, never a load path it could branch on
+PASS	T-049: src/pure/shell-copy.js names a texture loader — the pure layer may hold data, never a load path it could branch on
+PASS	T-051: pure/shell-copy.js names a backdrop asset path — the sim/pure layers must not be able to tell whether the backdrop loaded
+PASS	T-051: pure/shell-copy.js names a backdrop module — the sim/pure layers must not be able to tell whether the backdrop loaded
+PASS	T-051: pure/shell-copy.js names the backdrop tuning table — the sim/pure layers must not be able to tell whether the backdrop loaded
+PASS	T-105: a 6 s frame stall before the first frames are drawn (0, 1 or 2 beats in) shows NO panel at all (saw [[],[],[]])
+PASS	T-105: a frame loop that dies during warm-up (0 frame(s) drawn) still gets the "got stuck" panel, 10000 ms after it went quiet (limit 10000 ms)
+PASS	T-105: a frame loop that dies during warm-up (1 frame(s) drawn) still gets the "got stuck" panel, 11000 ms after it went quiet (limit 10000 ms)
+PASS	T-105: a frame loop that dies during warm-up (2 frame(s) drawn) still gets the "got stuck" panel, 11000 ms after it went quiet (limit 10000 ms)
+PASS	T-105: a hidden page that draws nothing is never "stuck" (saw [])
+PASS	T-105: after warm-up a stall shorter than 4000 ms is still a hiccup, not a panel
+PASS	T-105: apple-touch-icon is a 180x180 OPAQUE PNG (iOS paints transparency black) (180x180, colour type 2)
+PASS	T-105: every image preload matches its consumer's request mode (5 preloads; CORS for TextureLoader, no-cors for CSS)
+PASS	T-105: every manifest icon is a PNG at its declared size, with 192, 512 and a maskable one
+PASS	T-105: every touch button presses the key whose intent it names, in that state (PAUSED:restart, PAUSED:title, PAUSED:hud, GAME_OVER:title, VICTORY:title)
+PASS	T-105: iOS home-screen launch is declared (capable, status-bar style, title) and the page draws edge to edge (viewport-fit=cover) — the safe-area insets are what keep it readable
+PASS	T-105: index.html carries the failsafe panel's hint-mode rule as a named function
+PASS	T-105: index.html carries the watchdog decision as a named function
+PASS	T-105: index.html links a web app manifest that parses (assets/generated/ui/app/hullbreaker.webmanifest)
+PASS	T-105: no touch button repeats the verb the deck's modal tap already performs (tap = resume / climb again), so a phone shows one instruction
+PASS	T-105: no touch-mode string names a key or says press/click (15 strings)
+PASS	T-105: on touch the overlay prints no instruction line of its own (the deck's "TAP TO …" cue is the one instruction)
+PASS	T-105: only the two-thumb deck (the one scheme with a tap out of every screen) speaks touch
+PASS	T-105: the REAL bootstrap paints the touch hint on touch hardware / a coarse pointer / ?touch=1, and the key hint on a desktop and under ?touch=0 (got phone="Tap the button to play again.", desktop="Press R, or click the button, to play again.")
+PASS	T-105: the inline freeze verdict equals src/pure/failsafe.js over 4972 states (4000 seeded + every threshold at -1/0/+1 ms) covering every verdict ({"ok":4471,"frozen":501}, 0 disagree)
+PASS	T-105: the inline warm-up numbers are the policy's (3/10000 vs 3/10000), and the warm-up window is longer than the stall rule it relaxes
+PASS	T-105: the keyboard copy is byte-identical to the pre-T-105 build (desktop unchanged)
+PASS	T-105: the keyboard-copy scan finds every keyboard instruction the game prints (so a phone screen that still shows one fails)
+PASS	T-105: the manifest launches the game page, landscape, fullscreen (start /app/index.html, scope /app/) — relative, so a subpath deploy works
+PASS	T-105: the panel says "tap" exactly where a touch deck installs (inline rule = src/pure/shell-copy.js = resolveTouchScheme, 20 cases)
+PASS	T-105: the scan does not mistake game vocabulary for key names
+PASS	T-105: the touch hint reads plainly, names the button and no key ("Tap the button to play again."); the keyboard hint still names its key
+PASS	T-105: …while the same stall after warm-up (40 frames) still shows "got stuck", 4400 ms in (the 4000 ms rule, one tick of slack)
+PASS	legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/shell-copy.js
+
+===== t105-pc-fast-merged.log
+SKIP render-submission-contract: 4 browser-probe assertions not run (HB_GATE_SKIP_BROWSER_PROBE=1 — GPU-less host; not counted as passes)
+SKIP t-102-corner-turns: 37 of 41 played turn runs not run (HB_GATE_FAST=1 — per-edit tier; not counted as passes; unset it for the full matrix)
+pathcheck: 4155 passed, 0 failed
+tree 91879b839725f2f8944f773c4e71facb4cdd00b8 commit 9ecf462
+wall 47 s
+exit 0
+
+===== t105-pc-full-merged.log
+pathcheck note (reported, not asserted): a hold-right deck-line crossing collected 4 of 6 pocket capsules (weapon at the end H, closest approach 1.151 tiles at [51.95,6.12])
+SKIP render-submission-contract: 4 browser-probe assertions not run (HB_GATE_SKIP_BROWSER_PROBE=1 — GPU-less host; not counted as passes)
+pathcheck: 4450 passed, 0 failed
+tree 2921863e9d703d0bf54ca839324a2ac3e5f941f4 commit 383b09f (main af8bb0b merged as 9ecf462; T-105 domain = d82)
+wall 730 s, load at start 58.15, at end 68.29
+exit 0
+
