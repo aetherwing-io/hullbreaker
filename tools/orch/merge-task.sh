@@ -199,8 +199,9 @@ MERGE_MSG="Merge $TASK ($BRANCH)"
 [ -n "$SMOKE_FLAKES" ] && MERGE_MSG="$MERGE_MSG
 
 Smoke flake (recorded, not hidden): ${SMOKE_FLAKES%; }. A regression fails all
-three attempts; this one did not. See I-040 — the harness's --deterministic
-mode is unsound, which is why the gate samples three times instead of once."
+three attempts; this one did not. The PLAY gate samples each smoke script up to
+three times because one sample of a browser run on a loaded host is not a
+verdict (I-040); it never retries until green."
 if ! git merge --no-ff "$BRANCH" -m "$MERGE_MSG"; then
   git merge --abort 2>/dev/null || true
   fail "merge conflict (aborted, main left clean) — resolve manually or rebase the task branch"

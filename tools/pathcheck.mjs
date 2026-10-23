@@ -228,7 +228,9 @@ if (flag('--check-lanes')) {
   const { tmpdir } = await import('node:os');
   const dir = mkdtempSync(tmpdir() + '/pathcheck-check-lanes-');
   const serial = await new Promise((resolve) => {
-    const child = spawn(process.execPath, [fileURLToPath(import.meta.url), '--serial',
+    // the reference is the whole suite (--tier all), so an INDEPENDENT domain of
+    // any tier (the PLAY probe domain is one) has a serial row to compare with
+    const child = spawn(process.execPath, [fileURLToPath(import.meta.url), '--serial', '--tier', 'all',
       '--json', dir + '/serial.json'], { stdio: ['ignore', 'ignore', 'ignore'], env: process.env });
     child.on('close', () => {
       try { resolve(JSON.parse(readFileSync(dir + '/serial.json', 'utf8'))); } catch { resolve(null); }
