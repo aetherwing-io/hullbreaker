@@ -1,0 +1,15 @@
+# verification on the code head 0254aaa (main 8a05858 with T-105 and T-121 merged), 2026-10-23
+# CPU-s = bash time user+sys over the whole waited-for process tree
+
+$ node tools/pathcheck.mjs --deep
+wall/user/sys (s): 677.278 165.506 14.961
+pathcheck note (reported, not asserted): a hold-right deck-line crossing collected 2 of 6 pocket capsules (weapon at the end F, closest approach 1.151 tiles at [51.95,6.12])
+pathcheck note (reported, not asserted): a retry at clock +20 s vs a fresh boot at clock 0: first difference at frame 42 in hostiles (floating-point rounding of the monotonic game clock; see this domain's header)
+pathcheck tier core+deep: 85 domains in 676.8 s (85 in the main process; no lanes: load 58 on 4 cores, where lanes only add CPU); 1 browser domain(s) not run (tools/orch/play-gate.mjs runs them)
+pathcheck: 4688 passed, 0 failed
+
+$ node tools/orch/play-gate.mjs --self-test
+play-gate --self-test: 26 of 26 verdict fixtures hold
+
+$ node tools/orch/test-census.mjs --check
+exit 0 (2241 sites locked; resolution: site 219, range 1108, autoSrcText 0, domainDefault 914)

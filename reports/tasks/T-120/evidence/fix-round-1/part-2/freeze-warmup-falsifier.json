@@ -1,0 +1,20 @@
+[
+ {
+  "id": "warmup-ignored",
+  "why": "the freeze leniency ignores T-105's warm-up bound (always the 4 s rule)",
+  "exit": 1,
+  "last": "pathcheck: 549 passed, 1 failed",
+  "fails": [
+   "T-120 failsafe check: GPU-less, frozen panel inside the warm-up after a frame shorter than its 10 s bound -> FAIL — got REPORT"
+  ],
+  "prelude": []
+ },
+ {
+  "id": "control-selftests",
+  "why": "no mutation",
+  "exit": 0,
+  "last": "pathcheck: 550 passed, 0 failed",
+  "fails": [],
+  "prelude": []
+ }
+]

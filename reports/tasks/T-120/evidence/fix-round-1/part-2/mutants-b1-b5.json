@@ -1,0 +1,79 @@
+{
+  "tool": "tools/orch/mutation-sample.mjs",
+  "when": "2026-10-23T14:01:08.810Z",
+  "base": "0254aaa",
+  "runner": "gate",
+  "tier": "core+deep",
+  "mutants": [
+    {
+      "id": "B1",
+      "targetClass": "NONE",
+      "kind": "blind",
+      "site": "none",
+      "why": "entry 20 \"guns don't align to hands\": draw the gun 0.35 tiles above and 0.12 ahead of the hand socket (render only). Re-anchored after T-103 fixed the defect: the gun now hangs on rigWeaponPlacement()'s pivot, and this offsets that pivot",
+      "mutation": [
+        {
+          "file": "src/render/player.js",
+          "from": "  gunGroup.position.set(0, _gunPlacement.pivotY, RIG_GUN_DEPTH);",
+          "to": "  gunGroup.position.set(0.12, _gunPlacement.pivotY + 0.35, RIG_GUN_DEPTH);"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "runner": "gate",
+      "tier": "core+deep",
+      "exit": 1,
+      "red": true,
+      "redCore": true,
+      "lanesDied": [],
+      "ms": 1049871,
+      "hung": false,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": null,
+      "failCount": 1,
+      "failLines": [
+        "t-103-rig-grip-alignment: T-103: the drawn weapon is placed by rigWeaponPlacement(), the function the gate measures"
+      ],
+      "failingDomains": [
+        "t-103-rig-grip-alignment"
+      ],
+      "tree": "0254aaa"
+    },
+    {
+      "id": "B5",
+      "targetClass": "NONE",
+      "kind": "blind",
+      "site": "none",
+      "why": "integrator: preload images fetched twice (crossorigin mismatch). Re-anchored after T-105 fixed the defect (every texture preload is credentialed now): the component atlas preload loses its crossorigin again",
+      "mutation": [
+        {
+          "file": "index.html",
+          "from": "<link rel=\"preload\" as=\"image\" type=\"image/webp\" crossorigin href=\"assets/generated/environment/meridian-component-atlas-v1.webp\">",
+          "to": "<link rel=\"preload\" as=\"image\" type=\"image/webp\" href=\"assets/generated/environment/meridian-component-atlas-v1.webp\">"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "runner": "gate",
+      "tier": "core+deep",
+      "exit": 1,
+      "red": true,
+      "redCore": true,
+      "lanesDied": [],
+      "ms": 1044440,
+      "hung": false,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": null,
+      "failCount": 1,
+      "failLines": [
+        "t-105-phone-shell: T-105: every image preload matches its consumer's request mode (5 preloads; CORS for TextureLoader, no-cors for CSS) — meridian-component-atlas-v1.webp: no crossorigin on a CORS consumer"
+      ],
+      "failingDomains": [
+        "t-105-phone-shell"
+      ],
+      "tree": "0254aaa"
+    }
+  ]
+}

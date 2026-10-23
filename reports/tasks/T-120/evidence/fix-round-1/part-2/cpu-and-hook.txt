@@ -1,0 +1,22 @@
+# per-edit tier on the code head 0254aaa (main 8a05858 + T-120), 2026-10-23 ~14:02 UTC
+# new = HB_GATE_FAST=1 node tools/pathcheck.mjs in the T-120 worktree; old = the same command with main's own tools
+# on a git archive of main 8a05858 (src/ and index.html byte-identical to the worktree's: diff -rq clean).
+# cpu = bash time user+sys over the whole waited-for process tree (lanes included).
+# hook = .claude/hooks/check-changed.sh from the main checkout, unmodified, fed {"tool_input":{"file_path":"<T-120>/src/main.js"}}
+
+r6-new-1 wall=29.867s cpu=24.855s (user 21.914 sys 2.941) load 24.64->24.28 :: pathcheck: 3941 passed, 0 failed
+r6-old-1 wall=64.039s cpu=37.326s (user 33.671 sys 3.655) load 24.28->25.54 :: pathcheck: 4212 passed, 0 failed
+r6-new-2 wall=25.595s cpu=25.204s (user 22.518 sys 2.686) load 24.93->22.58 :: pathcheck: 3941 passed, 0 failed
+hook-r6-1 wall=15.1s exit=0 load 22.58->20.36 :: 
+hook-r6-2 wall=16.0s exit=0 load 20.36->18.75 :: 
+hook-r6-3 wall=15.5s exit=0 load 18.75->19.07 :: 
+R6-DONE
+
+# tier lines
+r6-new-1: pathcheck tier core: 70 domains in 29.8 s (14 in the main process, lane 1 18 in 22.5 s, lane 2 19 in 29.7 s, lane 3 19 in 21.8 s); 15 deep-only domain(s) not run (--deep runs them); 1 browser domain(s) not run (tools/orch/play-gate.mjs runs them)
+r6-old-1: 
+r6-new-2: pathcheck tier core: 70 domains in 25.5 s (14 in the main process, lane 1 18 in 21.6 s, lane 2 19 in 25.5 s, lane 3 19 in 21.6 s); 15 deep-only domain(s) not run (--deep runs them); 1 browser domain(s) not run (tools/orch/play-gate.mjs runs them)
+
+# the hook's own command run directly afterwards (load had fallen to 7):
+HB_GATE_SKIP_BROWSER_PROBE=1 HB_GATE_FAST=1 node tools/pathcheck.mjs: wall/user/sys 7.742 21.313 2.924 :: pathcheck: 3941 passed, 0 failed
+pathcheck tier core: 70 domains in 7.7 s (14 in the main process, lane 1 18 in 5.9 s, lane 2 19 in 7.7 s, lane 3 19 in 5.9 s); 15 deep-only domain(s) not run (--deep runs them); 1 browser domain(s) not run (tools/orch/play-gate.mjs runs them)

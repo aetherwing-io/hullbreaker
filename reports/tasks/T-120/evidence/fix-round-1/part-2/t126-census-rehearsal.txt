@@ -1,0 +1,34 @@
+tree: git archive of task/T-120 0254aaa
+simulated T-126 edits: +1 site in the copy section, 1 label changed in the freeze section, +1 section appended
+
+$ node tools/orch/test-census.mjs --check
+PROBLEMS (6)
+  unlocked site (new, or its label changed): tools/pathcheck/t-105-phone-shell.mjs:179 "T-126: RESTART RUN and START SCREEN arm on the first tap and say so (r" — classify it, then --write-lock
+  verdict drift: t-105-phone-shell "T-105: no touch button repeats the verb the deck's modal tap" line 208->212: CORE/CORE-GATE -> PIN/DELETE (a range drifted or the spec changed; review, then --write-lock)
+  unlocked site (new, or its label changed): tools/pathcheck/t-105-phone-shell.mjs:352 "T-126: after warm-up a stall shorter than … ms is still a hiccup, not " — classify it, then --write-lock
+  unlocked site (new, or its label changed): tools/pathcheck/t-105-phone-shell.mjs:445 "T-126: every pause option target is at least 44 css px tall (rehearsal" — classify it, then --write-lock
+  locked site gone: t-105-phone-shell:348 "T-105: after warm-up a stall shorter than … ms is still a hiccup, not "
+  tools/orch/test-audit.json is stale — run node tools/orch/test-census.mjs (no --check) and commit it
+exit 1
+
+$ node tools/orch/rekey-ranges.mjs --write
+rekey-ranges: 1 range(s) moved, 0 removed, 2 need a human
+  moved   t-105-phone-shell [373, 412] -> [383, 411]
+  MANUAL  t-105-phone-shell [128, 211] -> [137, 212] would also cover: 179 "T-126: RESTART RUN and START SCREEN arm on the fir"
+  MANUAL  t-105-phone-shell [213, 370] -> [220, 369] would also cover: 352 "T-126: after warm-up a stall shorter than … ms is "
+rekey-ranges: wrote /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t120/t126-rehearsal/tools/orch/test-audit-spec.mjs
+
+the human half (spec): the two MANUAL ranges take the bounds rekey printed, so the T-126 sites inside
+them take their section's class (CORE); the appended section gets a range of its own (CORE)
+
+$ node tools/orch/test-census.mjs
+PROBLEMS (4)
+  unlocked site (new, or its label changed): tools/pathcheck/t-105-phone-shell.mjs:179 "T-126: RESTART RUN and START SCREEN arm on the first tap and say so (r" — classify it, then --write-lock
+  unlocked site (new, or its label changed): tools/pathcheck/t-105-phone-shell.mjs:352 "T-126: after warm-up a stall shorter than … ms is still a hiccup, not " — classify it, then --write-lock
+  unlocked site (new, or its label changed): tools/pathcheck/t-105-phone-shell.mjs:445 "T-126: every pause option target is at least 44 css px tall (rehearsal" — classify it, then --write-lock
+  locked site gone: t-105-phone-shell:348 "T-105: after warm-up a stall shorter than … ms is still a hiccup, not "
+resolution {"site":219,"range":1110,"autoSrcText":0,"domainDefault":914,"srcTextButNotPin":129,"pinButNotSrcText":218}
+
+$ node tools/orch/test-census.mjs --write-lock && node tools/orch/test-census.mjs --check
+exit 0
+(scratch tree removed)

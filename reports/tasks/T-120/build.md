@@ -1,8 +1,10 @@
 # T-120 — rebuild the test gate (checkpoint 1, then fix round 1)
 
 **Fix round 1 is §9** — it answers `review.md` (REQUEST_CHANGES) and `playtest.md` (S2) on
-`7064c00` item by item, and supersedes §1's per-edit numbers and §5's server pin. §1-§8 are
-the checkpoint-1 record as it was handed back.
+`7064c00` item by item, and supersedes §1's per-edit numbers and §5's server pin. **§10 is its
+part 2**: main merged again (T-105, then T-121), the PLAY gate re-checked against T-105's
+failsafe policy, and the per-edit tier and the hook re-measured. §1-§8 are the checkpoint-1
+record as it was handed back.
 
 Lane T-120, branch `task/T-120`, worktree `/home/user/hullbreaker/.claude/worktrees/T-120`,
 based on main `5252c18` (T-108 merged), with main merged back in at `ace6618` (T-102 and
@@ -602,3 +604,102 @@ round: they wait for this round's verdicts, and the domains of the lanes still i
 fenced (T-107, T-123, T-124; T-201 and T-105 merged during this round). Single best next
 action: reviewer + playtester on the head of `task/T-120` (this report's commit, on top of code
 head `f35d9e6`).
+
+## 10. Fix round 1, part 2 (main with T-105, then T-121)
+
+**Integrator verdicts on §9.**
+- The per-edit trims `00c4a82` / `3720674` are accepted.
+- The two `.claude` changes (§9.5) stay out of this lane; I have not made them.
+
+**State.** Code head **`0254aaa`**; the branch head is the commit that adds this note. Not
+merged; the tree is clean. Evidence: `reports/tasks/T-120/evidence/fix-round-1/part-2/`. Load
+was 58 during the deep run, fell to 19-26 for the timings, and was 7 at the end. §9.7's
+merge and re-check steps are done; the §7 batches still wait for verdicts.
+
+**Merges and census.**
+- **`7b4c706` merges main `69256b6` (T-105).** One conflict, in `manifest.mjs`: T-105 takes d82
+  and T-120 keeps d83-d89. `t-105-phone-shell` is classified CORE-GATE (default CORE):
+  - CORE: the copy, the touch-button/key equivalence, the failsafe hint, and the freeze warm-up
+    (T-105's real inline bootstrap, run against a fake clock).
+  - PURE-INVARIANT: home-screen play.
+  - PIN, by label: the desktop-copy snapshot and the preload-mode check.
+  - Lock: 2217 -> 2242.
+- **`67057b4` merges main `8a05858` (T-121, which landed mid-round).** No conflict.
+  - rekey moved t-009's three ranges.
+  - t-009's three RETIRED zipper pins left with the sites T-121 deleted (entry 25).
+  - T-121's two inert-flag sites are CORE, and g1-1's two re-pointed sites stay CORE.
+  - T-120's own `ZIPPER_REVEAL` row in t-120-prototype-flags-inert is dropped, because t-009
+    now owns that claim.
+  - Lock: 2242 -> **2241**, with 0 mechanical decisions; `--check` exits 0.
+- **`0254aaa` re-anchors mutants B1 and B5.** T-103 and T-105 had moved their anchors, so the
+  sample would have recorded APPLY-ERROR for both. Each still reproduces the same defect, and
+  both are now **red in CORE** (`mutants-b1-b5.json`), so those two blind spots are closed:
+  - B1, the gun 0.35 tiles off the hand, is caught by T-103's source pin on
+    `rigWeaponPlacement()`. Because that is a pin, an offset spelled elsewhere could still get
+    past it.
+  - B5, the atlas preload without `crossorigin`, is caught by T-105's preload check.
+- Main's later commits `0ee213c` and `9cb3038` are docs only, so I did not merge them.
+
+**PLAY against T-105's merged failsafe policy.**
+- **Freeze leniency (`f65d28a`).** The gate now takes its bound from the page's own policy
+  (`failsafeSnapshot().policy`): 10 s until 3 beats, then 4 s.
+  - `--self-test`: **26 of 26**, including two new warm-up fixtures.
+  - Falsifier (always use 4 s): RED.
+- **Known defects (`393fc09`).**
+  - T-105 fixed K2 (keyboard copy on touch), K3 (the failure panel's keyboard hint on touch) and
+    K4 (preloads fetched twice); none was seen at any viewport. All three are retired, so a
+    regression of any of them now FAILs.
+  - K1 (title overflow) now shows only at 1280x800 and 844x390.
+  - K5 (T-107) is unchanged.
+  - Falsifier: with the touch hint reverted on a scratch tree, the gate gives **4 FAIL** "on a
+    coarse pointer the failure panel does not ask for a key". Before this change those were
+    KNOWN.
+- **HUD_CEILING.**
+  - Ceilings: desktop 14 %, landscape **10 %** (T-105's bound at 844x390), portrait **12.5 %**
+    (the merged reading + 5).
+  - New rule: on a phone, no HUD cell may sit in the central 60 % x 60 %.
+  - Readings: 8.7 / 6.8 / 7.7 %, with 0 central cells on both phones.
+- **PLAY `boot,failsafe` on `0254aaa`:** **40 passed, 0 failed, 2 known (K1 x2), 9 reported**, in
+  247 s. `393fc09` gave the same counts.
+
+**Verification on `0254aaa`.**
+- `node tools/pathcheck.mjs --deep`: **4688 passed, 0 failed**, in 677 s wall / 180.5 CPU-s at
+  load 58.
+- `play-gate --self-test`: 26 of 26.
+- `test-census --check`: exit 0.
+
+**Per-edit tier, in CPU-s.** Setup:
+- Command: `HB_GATE_FAST=1 node tools/pathcheck.mjs`.
+- CPU-s means user+sys over the whole process tree.
+- Main's gate ran on a `git archive` of main `8a05858`, with the same `src/` and `index.html`,
+  interleaved with this tier's runs at load 23-26.
+
+| | CPU-s | wall |
+|---|---|---|
+| this tier (3941 passed) | **24.9, 25.2** | 29.9 s, 25.6 s, with 3 lanes |
+| main's gate (4212 passed) | **37.3** | 64.0 s |
+| §9, at `f35d9e6` | 24.2, 23.8 (this tier) vs 38.2 (main's gate) | — |
+
+This tier stays a third under main's gate after taking T-105's domain. The README's measurement
+line is updated.
+
+**The real hook** (unmodified, payload naming this worktree's `src/main.js`): **15.1, 16.0 and
+15.5 s, exit 0 all three, at load 19-23**. Caveat: this load is far below §9's 44-60, where the
+same tier took 96-101 s inside the hook. The same command run directly at load 7 took 7.7 s
+wall / 24.2 CPU-s.
+
+**T-126 (in flight).**
+- **No shared file.** This branch touches none of T-126's fences, and `src/` and `index.html`
+  equal main's.
+- **No PLAY interaction.** The PLAY gate never reads the pause screen.
+- **The census needs one re-key** after both have landed. The census is not a merge gate, so it
+  cannot block T-126.
+- **Rehearsal** (`t126-census-rehearsal.txt`): three plausible T-126 edits to
+  `t-105-phone-shell.mjs`, made on a scratch archive.
+  - `rekey-ranges --write` moves one range on its own. It stops on the two ranges that would
+    absorb new sites (MANUAL) and prints their new bounds.
+  - The manual part: give those two ranges the printed bounds and the new section a range, then
+    run `test-census`, `--write-lock` and `--check`. `--check` exits 0, with 0 mechanical
+    decisions; the whole re-key takes about five minutes.
+
+**Next:** reviewer + playtester on the head of `task/T-120`.

@@ -44,7 +44,8 @@ runs the per-edit subsets: T-102's four runs as corner prefixes, T-201's race ru
 the operator's frame and its no-fire run, the T-120 driven tests on 150-frame windows
 (forgiveness at 60 Hz only); each prints one `SKIP` line, and the merge gate runs the
 full versions. Measured on the same `src/`, main's gate vs this tier, interleaved:
-24.9 / 24.6 vs 20.9 / 20.0 CPU-s before T-201 merged; with T-201 (after this lane trimmed its per-edit runs), 38.2 vs 24.2 / 23.8.
+24.9 / 24.6 vs 20.9 / 20.0 CPU-s before T-201 merged; with T-201 (after this lane trimmed its per-edit runs), 38.2 vs 24.2 / 23.8;
+with T-105 and T-121 merged as well, 37.3 vs 24.9 / 25.2.
 Every played proof a lane adds per edit lowers the load at which the hook still fits.
 
 **A killed run is reported, not lost.** A run that never finished (the hook's

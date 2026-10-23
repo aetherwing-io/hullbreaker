@@ -1,0 +1,56 @@
+pinned /home/user/hullbreaker/.claude/worktrees/T-120 on :8808 (pid 25158): serving /home/user/hullbreaker/.claude/worktrees/T-120   http://127.0.0.1:8808/index.html   http://localhost:8808/index.html 
+head 0254aaa + uncommitted: 1 files
+play-gate: http://127.0.0.1:8808 — views desktop, landscape, portrait; GPU-less host (perf report-only); DPR 0.5 for every viewport (HB_PLAY_DPR / GPU-less default); boot budget 180000 ms; 2 parallel contexts; load 57.4 50.1 48.0 on 4 cores
+play-gate PASS   boot [landscape]: the default URL boots to its title (59.1 s), starts on a tap and plays (123.4 s)
+play-gate PASS   boot [landscape]: no failure panel and no faults during a healthy boot
+play-gate PASS   boot [landscape]: no visible text overflows its box or the viewport (beyond tracked defects)
+play-gate KNOWN  boot [landscape]: the title "HULLBREAKER" overflows its box at 1280x800 and 844x390 (not at 390x844 since T-105) (K1, owner T-105; 524 px in 397)
+play-gate PASS   boot [landscape]: on a coarse pointer no visible text tells the player to press a key (beyond tracked defects)
+play-gate PASS   boot [landscape]: no URL is fetched twice beyond tracked defects (208 URLs)
+play-gate PASS   boot [landscape]: zero page errors
+play-gate PASS   boot [landscape]: zero unexplained console errors or warnings (2 host-noise lines ignored)
+play-gate REPORT boot [landscape]: HUD covers 6.8 % of the viewport, 0 cells of the central 60 % x 60 % (may not exceed 10.0 %, T-105's bound at 844x390; on a phone, no cell in the central region (T-105))
+play-gate REPORT boot [landscape]: art at boot: preload {"ready":13,"timeout":20} (budget 6500 ms, gate cost 22267 ms), sprites {"failed":5,"ready":1}, hull 0/3; 38 "missed the boot budget" warnings (reported only on a GPU-less host)
+play-gate REPORT boot [landscape]: frame times while booting: {"frames":10,"fps":0.1,"avgMs":10847.9,"worstMs":36765.2,"over20ms":10} (SwiftShader: a measurement of the host)
+play-gate PASS   boot [desktop]: the default URL boots to its title (78.2 s), starts on a key and plays (148.6 s)
+play-gate PASS   boot [desktop]: no failure panel and no faults during a healthy boot
+play-gate PASS   boot [desktop]: no visible text overflows its box or the viewport (beyond tracked defects)
+play-gate KNOWN  boot [desktop]: the title "HULLBREAKER" overflows its box at 1280x800 and 844x390 (not at 390x844 since T-105) (K1, owner T-105; 795 px in 602)
+play-gate PASS   boot [desktop]: no URL is fetched twice beyond tracked defects (208 URLs)
+play-gate PASS   boot [desktop]: zero page errors
+play-gate PASS   boot [desktop]: zero unexplained console errors or warnings (2 host-noise lines ignored)
+play-gate REPORT boot [desktop]: HUD covers 8.7 % of the viewport, 154 cells of the central 60 % x 60 % (may not exceed 14.0 %, the largest reading on main + 5)
+play-gate REPORT boot [desktop]: art at boot: preload {"ready":13,"timeout":20} (budget 2500 ms, gate cost 15897 ms), sprites {"failed":5,"ready":1}, hull 0/3; 38 "missed the boot budget" warnings (reported only on a GPU-less host)
+play-gate REPORT boot [desktop]: frame times while booting: {"frames":6,"fps":0,"avgMs":20638.07,"worstMs":47314.7,"over20ms":6} (SwiftShader: a measurement of the host)
+play-gate PASS   failsafe [desktop]: the failure panel reaches the player when src/main.js throws while it evaluates — "The game could not start." in 5.3 s, button on screen, no sim frame run
+play-gate PASS   failsafe [desktop]: the failure panel reaches the player when work started at boot fails as a rejected promise nobody handles — "The game could not start." in 0.7 s, button on screen, no sim frame run
+play-gate PASS   failsafe [desktop]: the failure panel reaches the player when src/main.js is missing (404) — "The game could not start." in 1.3 s, button on screen, no sim frame run
+play-gate PASS   failsafe [desktop]: the failure panel reaches the player when src/main.js never arrives (a boot that never finishes) — "Still loading." in 10.3 s, button on screen, no sim frame run
+play-gate PASS   failsafe [landscape]: the failure panel reaches the player when src/main.js throws while it evaluates — "The game could not start." in 20.1 s, button on screen, no sim frame run
+play-gate PASS   failsafe [landscape]: on a coarse pointer the failure panel does not ask for a key
+play-gate PASS   failsafe [landscape]: the failure panel reaches the player when work started at boot fails as a rejected promise nobody handles — "The game could not start." in 2.8 s, button on screen, no sim frame run
+play-gate PASS   failsafe [landscape]: on a coarse pointer the failure panel does not ask for a key
+play-gate PASS   failsafe [landscape]: the failure panel reaches the player when src/main.js is missing (404) — "The game could not start." in 1.4 s, button on screen, no sim frame run
+play-gate PASS   failsafe [landscape]: on a coarse pointer the failure panel does not ask for a key
+play-gate PASS   failsafe [landscape]: the failure panel reaches the player when src/main.js never arrives (a boot that never finishes) — "Still loading." in 10.3 s, button on screen, no sim frame run
+play-gate PASS   failsafe [landscape]: on a coarse pointer the failure panel does not ask for a key
+play-gate PASS   boot [portrait]: the default URL boots to its title (62.2 s), starts on a tap and plays (81.6 s)
+play-gate PASS   failsafe [portrait]: the failure panel reaches the player when src/main.js throws while it evaluates — "The game could not start." in 0.6 s, button on screen, no sim frame run
+play-gate PASS   failsafe [portrait]: on a coarse pointer the failure panel does not ask for a key
+play-gate PASS   boot [portrait]: no failure panel and no faults during a healthy boot
+play-gate PASS   failsafe [portrait]: the failure panel reaches the player when work started at boot fails as a rejected promise nobody handles — "The game could not start." in 1.0 s, button on screen, no sim frame run
+play-gate PASS   failsafe [portrait]: on a coarse pointer the failure panel does not ask for a key
+play-gate PASS   boot [portrait]: no visible text overflows its box or the viewport (beyond tracked defects)
+play-gate PASS   boot [portrait]: on a coarse pointer no visible text tells the player to press a key (beyond tracked defects)
+play-gate PASS   boot [portrait]: no URL is fetched twice beyond tracked defects (208 URLs)
+play-gate PASS   boot [portrait]: zero page errors
+play-gate PASS   boot [portrait]: zero unexplained console errors or warnings (0 host-noise lines ignored)
+play-gate REPORT boot [portrait]: HUD covers 7.7 % of the viewport, 0 cells of the central 60 % x 60 % (may not exceed 12.5 %, the reading as merged + 5; on a phone, no cell in the central region (T-105))
+play-gate REPORT boot [portrait]: art at boot: preload {"ready":4,"timeout":29} (budget 6500 ms, gate cost 16989 ms), sprites {"failed":6}, hull 0/3; 55 "missed the boot budget" warnings (reported only on a GPU-less host)
+play-gate REPORT boot [portrait]: frame times while booting: {"frames":13,"fps":0.2,"avgMs":5002.36,"worstMs":44181.6,"over20ms":13} (SwiftShader: a measurement of the host)
+play-gate PASS   failsafe [portrait]: the failure panel reaches the player when src/main.js is missing (404) — "The game could not start." in 0.9 s, button on screen, no sim frame run
+play-gate PASS   failsafe [portrait]: on a coarse pointer the failure panel does not ask for a key
+play-gate PASS   failsafe [portrait]: the failure panel reaches the player when src/main.js never arrives (a boot that never finishes) — "Still loading." in 10.2 s, button on screen, no sim frame run
+play-gate PASS   failsafe [portrait]: on a coarse pointer the failure panel does not ask for a key
+play-gate: 40 passed, 0 failed, 2 known (tracked), 9 reported, 0 skipped in 247 s
+EXIT=0 load 50.06 52.68 49.79
