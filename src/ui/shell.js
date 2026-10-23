@@ -34,7 +34,8 @@ import {
   START_DIRECTIONS, elementVars, runStatRows, startDirection, startDirectionAt,
 } from '../pure/shell.js';
 import {
-  SHELL_COPY, TOUCH_ACTION_KEYS, panelActions, shellCopyMode, shellLine,
+  CONFIRM_TAP, SHELL_COPY, TOUCH_ACTION_KEYS, confirmLabel, confirmTap, panelActions,
+  shellCopyMode, shellLine,
 } from '../pure/shell-copy.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { player, P } from '../sim/player.js';
@@ -158,18 +159,22 @@ function keysHtml(pairs) {
     '<b>' + k + '</b> ' + what).join(' &nbsp;&middot;&nbsp; ') + '</p>';
 }
 
-/* Touch: the same verbs as buttons (see .shell-actions in index.html). */
-function actionsHtml(pairs) {
-  return '<div class="shell-actions">' + pairs.map(([action, label]) =>
-    '<button type="button" data-shell-action="' + action + '">' + label + '</button>').join('') +
-    '</div>';
+/* Touch: the same verbs as buttons (see .shell-actions in index.html). A
+   verb that ends or leaves the run carries its armed label (T-126): its
+   first tap only arms it, a second confirms (see "armed taps" below). */
+function actionsHtml(state, pairs) {
+  return '<div class="shell-actions">' + pairs.map(([action, label]) => {
+    const arm = confirmLabel(state, action);
+    return '<button type="button" data-shell-action="' + action + '"' +
+      (arm ? ' data-arm-label="' + arm + '"' : '') + '>' + label + '</button>';
+  }).join('') + '</div>';
 }
 
 // the panel's verbs for the live input scheme: a key legend, or buttons
 function verbsHtml(state, opts) {
   const copy = liveCopyMode();
   const pairs = panelActions(state, copy, opts);
-  return copy === 'touch' ? actionsHtml(pairs) : keysHtml(pairs);
+  return copy === 'touch' ? actionsHtml(state, pairs) : keysHtml(pairs);
 }
 
 // options that need a different boot (view depth, audio, the shell itself)
@@ -190,8 +195,44 @@ function linkRow(label, options) {
       : '<a href="' + o.href + '">' + o.label + '</a>')).join(' / ') + '</span>';
 }
 
+/* Touch (T-126): the same options as 44 px cells — as links they were 14 px
+   tall under a thumb. A cell that reloads ends the run, so it arms first
+   like RESTART RUN. The current value is a cell too (pressed, inert): a tap
+   on it is a tap on a control, so it never resumes the run by surprise. */
+function cellRow(label, flag, options) {
+  const arm = confirmLabel('PAUSED', 'reload');
+  return '<span class="k">' + label + '</span><span class="v shell-seg">' + options.map((o) =>
+    (o.on
+      ? '<button type="button" class="on" aria-pressed="true">' + o.label + '</button>'
+      : '<button type="button" data-shell-action="reload" data-shell-flag="' + flag +
+        '" data-shell-value="' + (o.value === null ? '' : o.value) + '" data-arm-label="' + arm + '">' +
+        o.label + '</button>')).join('') + '</span>';
+}
+
+const OPTIONS_NOTE = '<p class="note dim">&#8635; reloads the run with that flag. ' +
+  'Live run stats are on the end-of-run screen.</p>';
+
 function optionsPanel() {
   const audioOn = QUERY.get('audio') !== '0';
+  if (liveCopyMode() === 'touch') {
+    return '<div class="panel">' +
+      verbsHtml('PAUSED', { hudHidden }) +
+      '<div class="statgrid shell-options">' +
+        '<span class="k">MODE</span><span class="v">' + MODE + '</span>' +
+        cellRow('VIEW &#8635;', 'view', Object.keys(CONFIG.viewScales).map((id) => ({
+          label: id.toUpperCase(), on: id === VIEW_ID, value: id,
+        }))) +
+        cellRow('AUDIO &#8635;', 'audio', [
+          { label: 'ON', on: audioOn, value: null },
+          { label: 'OFF', on: !audioOn, value: '0' },
+        ]) +
+        cellRow('SHELL &#8635;', 'shell', [
+          { label: 'ON', on: true, value: null },
+          { label: 'OFF', on: false, value: '0' },
+        ]) +
+      '</div>' + OPTIONS_NOTE + '</div>';
+  }
+  // the keyboard shell: byte-identical to the pre-T-126 panel
   const views = Object.keys(CONFIG.viewScales).map((id) => ({
     label: id.toUpperCase(), on: id === VIEW_ID, href: flagUrl('view', id),
   }));
@@ -208,10 +249,7 @@ function optionsPanel() {
         { label: 'ON', on: true, href: flagUrl('shell', null) },
         { label: 'OFF', on: false, href: flagUrl('shell', '0') },
       ]) +
-    '</div>' +
-    '<p class="note dim">&#8635; reloads the run with that flag. ' +
-    'Live run stats are on the end-of-run screen.</p>' +
-    '</div>';
+    '</div>' + OPTIONS_NOTE + '</div>';
 }
 
 /* every number here is read from state the game already keeps — the shell
@@ -272,27 +310,112 @@ function statsPanel(state) {
 
 function setPanel(html) {
   if (!panelEl) return;
+  disarm();                                   // a redrawn panel starts unarmed
   panelEl.innerHTML = html;
   panelEl.style.display = html ? 'block' : 'none';
 }
 
-/* A touch action presses, on the player's behalf, the key a keyboard player
-   would press: src/main.js's keydown handler and src/pure/shell.js's intent
-   table stay the ONE lifecycle path (restart, start screen, HUD). The deck's
-   modal tap ignores buttons (touch-controls.js interactive()), so tapping
-   one never also resumes or restarts. */
+/* ------------------------- armed taps (T-126) -------------------------- *
+ * Touch only (the keyboard shell prints a key legend, not buttons). A
+ * control that ends or leaves the run carries data-arm-label: its first tap
+ * ARMS it — the label says what a second tap does, a bar drains over the
+ * window — and a second tap inside the window (src/pure/shell-copy.js
+ * CONFIRM_TAP / confirmTap) does what the control always did. Any other tap
+ * disarms; so does the window running out and any redraw of the panel.
+ * Presentation state only: which control, since when. */
+let armedEl = null;
+let armedId = null;
+let armedAt = 0;
+let armedText = '';
+let armedTimer = 0;
+
+function controlId(el) {
+  const d = el.dataset;
+  return d.shellAction + (d.shellFlag ? ':' + d.shellFlag + '=' + d.shellValue : '');
+}
+
+function disarm() {
+  if (armedTimer) { clearTimeout(armedTimer); armedTimer = 0; }
+  const el = armedEl;
+  armedEl = null;
+  armedId = null;
+  if (!el) return;
+  el.classList.remove('armed');
+  el.textContent = armedText;
+  el.style.width = '';
+  el.style.height = '';
+  el.style.removeProperty('--arm-ms');
+}
+
+function arm(el, at) {
+  disarm();
+  // lock the box BEFORE the longer label goes in: it wraps inside, so
+  // nothing on the panel moves under a thumb that is about to tap again
+  // (the fractional rect: offsetWidth rounds, and the neighbours would shift)
+  const box = el.getBoundingClientRect();
+  el.style.width = box.width + 'px';
+  el.style.height = box.height + 'px';
+  el.style.setProperty('--arm-ms', CONFIRM_TAP.windowMs + 'ms');
+  armedText = el.textContent;
+  el.textContent = el.dataset.armLabel;
+  el.classList.add('armed');
+  armedEl = el;
+  armedId = controlId(el);
+  armedAt = at;
+  armedTimer = setTimeout(disarm, CONFIRM_TAP.windowMs);
+}
+
+/* What a control does — the ONE path it always had. A touch action presses,
+   on the player's behalf, the key a keyboard player would press:
+   src/main.js's keydown handler and src/pure/shell.js's intent table stay
+   the one lifecycle path (restart, start screen, HUD). A reload REPLACES
+   this history entry, so a toggle never leaves one behind that Safari's
+   edge back-swipe (or a trackpad's) could return to mid-run. */
+function perform(el) {
+  const action = el.dataset.shellAction;
+  if (action === 'reload') {
+    location.replace(flagUrl(el.dataset.shellFlag, el.dataset.shellValue || null));
+    return;
+  }
+  const code = TOUCH_ACTION_KEYS[action];
+  if (code) {
+    dispatchEvent(new KeyboardEvent('keydown',
+      { code, key: code.slice(3).toLowerCase(), bubbles: true, cancelable: true }));
+  }
+}
+
+/* The deck's modal tap ignores buttons and links (touch-controls.js
+   interactive()), so tapping a control never also resumes or restarts. */
 if (panelEl) {
   panelEl.addEventListener('click', (event) => {
-    const button = event.target && event.target.closest
-      ? event.target.closest('[data-shell-action]') : null;
+    const target = event.target && event.target.closest ? event.target : null;
+    if (!target) return;
+    // the keyboard shell's option links reload in place too (no history
+    // entry); a modified click — new tab, new window — stays the browser's
+    const link = target.closest('.statgrid a[href]');
+    if (link && panelEl.contains(link)) {
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      location.replace(link.href);
+      return;
+    }
+    const button = target.closest('[data-shell-action]');
     if (!button || !panelEl.contains(button)) return;
     event.preventDefault();
-    const code = TOUCH_ACTION_KEYS[button.dataset.shellAction];
-    if (code) {
-      dispatchEvent(new KeyboardEvent('keydown',
-        { code, key: code.slice(3).toLowerCase(), bubbles: true, cancelable: true }));
+    if (button.dataset.armLabel) {
+      const now = event.timeStamp || performance.now();
+      const step = confirmTap(armedEl === button ? armedId : null, armedAt, controlId(button), now);
+      if (step === 'arm') { arm(button, now); return; }
+      if (step === 'wait') return;              // the arming tap's own double: ignored
+      disarm();
     }
+    perform(button);
   });
+  // any other tap disarms — capture phase, so it lands before the deck's
+  // tap-to-resume and before the tapped control's own click
+  document.addEventListener('pointerdown', (event) => {
+    if (armedEl && !(event.target && armedEl.contains(event.target))) disarm();
+  }, true);
 }
 
 /* --------------------------- lifecycle ---------------------------- */

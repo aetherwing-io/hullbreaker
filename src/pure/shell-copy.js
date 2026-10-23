@@ -90,6 +90,80 @@ export const PANEL_ACTIONS = Object.freeze({
    intent table), not a second one. */
 export const TOUCH_ACTION_KEYS = Object.freeze({ restart: 'KeyR', title: 'KeyQ', hud: 'KeyH' });
 
+/* ------------------ touch: a run-ending tap is armed (T-126) ------------------
+ * Under the two-thumb deck the pause panel's controls sit where a "TAP TO
+ * RESUME" tap can land (the deck resumes on a tap that is NOT on a control).
+ * A control whose tap ends or leaves the run — RESTART RUN, START SCREEN, and
+ * the option toggles that reload the page — therefore needs TWO taps: the
+ * first only ARMS it (the control's label says what the second tap does), a
+ * second tap on the same control inside the window confirms it, by the one
+ * path the control always used (the key it presses; the reload). Any other
+ * tap disarms it. The keyboard is untouched: R and Q act at once, as before.
+ *
+ * Which controls: every touch action whose key is a LIFECYCLE intent in
+ * src/pure/shell.js's table ('restart', 'title' — main.js resets the run for
+ * both), plus 'reload'. HIDE HUD is reversible and keeps the pause, so it
+ * stays one tap. tools/pathcheck ties this list to the intent table, so a
+ * run-ending button added later cannot skip the arming.
+ *
+ * The window — reasoned, not tuned against a thumb (the operator's call):
+ *   minMs     a second tap sooner than this is the SAME gesture as the first
+ *             — a double-tap, a bouncing thumb — and is ignored: the control
+ *             stays armed, nothing fires. 300 ms is Android's double-tap
+ *             timeout (ViewConfiguration.DOUBLE_TAP_TIMEOUT), a platform's
+ *             own line between one gesture and two.
+ *   windowMs  the armed label has to be seen, read (two to five words) and
+ *             answered; 3 s leaves a first-time reader room, and is short
+ *             enough that a control armed by a stray thumb reverts by itself
+ *             before a player who looked away comes back to it. The control
+ *             shows the window as a bar that drains over it.
+ * Neither number is asserted (tools/pathcheck holds the invariants: one tap
+ * never confirms, a second tap inside the window does, outside it never). */
+export const CONFIRM_TAP = Object.freeze({ minMs: 300, windowMs: 3000 });
+
+export const CONFIRM_ACTIONS = Object.freeze(['restart', 'title', 'reload']);
+
+/* What an armed control says, by screen. It names the second tap and what it
+   does; touch copy, so the keyboard-copy scan holds it like every other
+   touch string. 'reload' is a 44 px option cell, so its words are the
+   fewest; the cell's row says what reloads (↻) and the note under the rows
+   says that ↻ reloads the run. */
+export const CONFIRM_LABELS = Object.freeze({
+  PAUSED: Object.freeze({
+    restart: 'TAP AGAIN TO RESTART', title: 'TAP AGAIN TO QUIT RUN', reload: 'TAP AGAIN',
+  }),
+  GAME_OVER: Object.freeze({ title: 'TAP AGAIN FOR START SCREEN' }),
+  VICTORY: Object.freeze({ title: 'TAP AGAIN FOR START SCREEN' }),
+});
+
+export function needsConfirm(action) {
+  return CONFIRM_ACTIONS.includes(action);
+}
+
+// the armed label for `action` on `state`'s screen, or null (one tap)
+export function confirmLabel(state, action) {
+  if (!needsConfirm(action)) return null;
+  const table = CONFIRM_LABELS[state];
+  return table && Object.prototype.hasOwnProperty.call(table, action) ? table[action] : null;
+}
+
+/* A tap on a run-ending control. `armedId` / `armedAt` describe the control
+   that is armed now (null when none), `tappedId` the control tapped, `now`
+   the tap's time on the same clock. Returns
+     'arm'     arm `tappedId` from `now` (nothing armed, a different control
+               was, or its window ran out: that never confirms);
+     'wait'    the same gesture as the arming tap: ignore it, stay armed;
+     'confirm' do what the control does.
+   A presentation decision, not a lifecycle: the caller does the ONE thing
+   the control always did. Pure: no DOM, no clock. */
+export function confirmTap(armedId, armedAt, tappedId, now, policy = CONFIRM_TAP) {
+  if (armedId === null || armedId === undefined || armedId !== tappedId) return 'arm';
+  const dt = now - armedAt;
+  if (!(dt >= 0)) return 'arm';               // NaN or a clock that ran back: start over
+  if (dt < policy.minMs) return 'wait';
+  return dt <= policy.windowMs ? 'confirm' : 'arm';
+}
+
 export function shellLine(mode, key) {
   const table = SHELL_COPY[mode === 'touch' ? 'touch' : 'keys'];
   return Object.prototype.hasOwnProperty.call(table, key) ? table[key] : null;

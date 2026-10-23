@@ -1739,9 +1739,10 @@ node touch-proof.mjs --views landscape --only frozen   # one orientation, one se
 node touch-proof.mjs --base-url http://127.0.0.1:8751  # a pinned worktree server
 node touch-proof.mjs --mutate release-all-on-up        # falsification: must go red
 node touch-proof.mjs --out ../../reports/tasks/T-101/proof   # keep the evidence
+node touch-proof.mjs --only pause                      # T-126: 844x390 + 667x375, ~10-20 min here
 ```
 
-Sections (`--only frozen,live,legacy,title,shots`):
+Sections (`--only frozen,live,legacy,title,shots,pause`):
 
 - **frozen** — the normal URL plus an empty frame-input schedule stopped at
   tick 0, so the run is `PLAYING` but never steps: the input layer alone.
@@ -1768,11 +1769,36 @@ Sections (`--only frozen,live,legacy,title,shots`):
   the old gesture grammar.
 - **title** — a tap on the title starts the run and is not also a jump.
 - **shots** — deck captures, idle and in use, at DPR 1 and 2.
+- **pause** (T-126) — nothing on the pause screen throws a run away by
+  accident, at **844x390 and 667x375** (the landscape views; `--views
+  landscape` or `--views landscape667` narrows it). Frozen sim, draw skipped
+  as in **frozen**. The run counts as ended if the reset registry ran
+  (`HB.resetRegistry().runs` — restart and start screen both reset), the state
+  reached `MENU`, or the page reloaded (a marker on `window` is gone). Every
+  timing is judged on the page's own clock (the click events' `timeStamp`),
+  against the policy the page itself exports (`CONFIRM_TAP`), never a number
+  pinned in the tool. Trials: every pause control is >= 44 x 44 css px; a
+  tap that is not on a control resumes the run at seven points — mid-screen
+  over the panel's EMPTY area (the empty point nearest the screen centre,
+  required to lie in the central 60% x 60%), the screen centre, the PAUSED
+  title, left and right of the panel, the TAP TO RESUME cue and the old
+  bottom-left point; ONE tap on RESTART RUN, START SCREEN and a reloading
+  option only arms it, and left alone it disarms with no reset and no reload;
+  a tap on another control (the already-chosen option, which does nothing
+  else) disarms RESTART RUN, so its next tap arms again instead of restarting;
+  START SCREEN takes the arming over from RESTART RUN; with RESTART RUN armed,
+  a tap on the panel's empty area resumes without restarting and the next
+  pause starts unarmed; a double-tap faster than the window's floor arms once
+  and never restarts; a second tap inside the window restarts / goes to the
+  start screen; keyboard R and Q still act at one press on a touch device;
+  GAME_OVER's and the summit's START SCREEN arm the same way; and two taps on
+  a VIEW option reload the run with it while `history.length` stays the same
+  (the reload replaced its entry).
 
-`--mutate <name>` serves `src/ui/touch-controls.js` with one named defect
-through `page.route` and writes `report-mutate-<name>.json`; a mutation whose
-anchor text is missing throws rather than passing vacuously. Each one must
-turn its own checks red:
+`--mutate <name>` serves one file (`src/ui/touch-controls.js` unless the
+table says otherwise) with one named defect through `page.route` and writes
+`report-mutate-<name>.json`; a mutation whose anchor text is missing throws
+rather than passing vacuously. Each one must turn its own checks red:
 
 | mutation | the defect | goes red |
 |---|---|---|
@@ -1785,6 +1811,11 @@ turn its own checks red:
 | `ignore-leave-playing` | leaving PLAYING (pause, death) releases nothing (T-105) | the PAUSED and GAME_OVER trials |
 | `chip-stays-lit` | `releaseAll()` leaves `.down` on a chip under a resting finger (T-105) | the chip-look trial |
 | `no-stale-release` | a primary touch never releases slots whose lift was lost (T-105) | the lost-pointerup trial |
+| `no-arming` (`src/ui/shell.js`) | a run-ending pause control acts on its FIRST tap (T-126) | the one-tap trials (RESTART RUN restarts at once) |
+| `no-disarm` (`src/ui/shell.js`) | a tap elsewhere no longer disarms an armed control (T-126) | the "another control disarms" trial |
+| `reload-push` (`src/ui/shell.js`) | a confirmed option reload pushes a history entry, as an `<a href>` does (T-126) | the history trial |
+| `small-targets` (`index.html`) | the option cells shrink to 30 px (T-126) | the 44 px trial |
+| `panel-swallows-taps` | the deck counts the whole options panel as a control (T-126) | the mid-screen panel-empty resume trial; the old bottom-left trial stays green |
 
 **Honesty / limitations**
 
@@ -1827,6 +1858,16 @@ turn its own checks red:
    listener eats the events before the deck hears them). It proves what the
    deck does once a lift is lost; whether, and how often, iOS loses one is
    not something this rig can observe.
+10. **pause**: a trial whose two taps the host pushed outside the confirm
+    window cannot tell "disarmed" from "expired", so it is retried (the
+    confirms) or reported as NOT JUDGED (the disarm trial, the double-tap) —
+    never counted as a pass. The double-tap trial needs both clicks inside
+    the window's floor; on a loaded host CDP may not deliver that, and the
+    run says so. Resume points are kept 12 px from every control, because
+    Chromium (like iOS) may adjust a touch onto a nearby target; whether a
+    real thumb near a button lands on it is a device question. The history
+    trial reads `history.length` in Chromium; Safari's back-swipe itself is
+    not exercised here (an operator check).
 
 ## `phone-shell.mjs` — everything a phone player sees that is not the deck (T-105)
 

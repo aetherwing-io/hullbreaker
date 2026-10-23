@@ -21,14 +21,21 @@
 //   - home-screen play: the web app manifest and the iOS meta tags, with
 //     every icon present at its declared size;
 //   - the preload list: each preloaded image is requested in the mode its
-//     consumer uses, so it is fetched once, not twice.
+//     consumer uses, so it is fetched once, not twice;
+//   - T-126: a touch control that ends or leaves the run arms on its first
+//     tap and confirms only on a second tap inside the window
+//     (confirmTap's decisions, and which controls it covers — tied to the
+//     intent table). The DOM half (the real taps, the disarm-on-any-other-
+//     tap, the reload's history entry, 44 px targets) needs a browser:
+//     tools/playtest/touch-proof.mjs --only pause.
 
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { FAILSAFE, freezeVerdict, plainLanguageIssues } from '../../src/pure/failsafe.js';
 import {
-  INPUT_MODES, PANEL_ACTIONS, SHELL_COPY, TOUCH_ACTION_KEYS,
-  failsafeHintMode, keyboardCopyHits, panelActions, shellCopyMode, shellLine,
+  CONFIRM_ACTIONS, CONFIRM_LABELS, CONFIRM_TAP, INPUT_MODES, PANEL_ACTIONS, SHELL_COPY,
+  TOUCH_ACTION_KEYS, confirmLabel, confirmTap, failsafeHintMode, keyboardCopyHits, needsConfirm,
+  panelActions, shellCopyMode, shellLine,
 } from '../../src/pure/shell-copy.js';
 import { shellKeyIntent } from '../../src/pure/shell.js';
 import { resolveTouchScheme } from '../../src/pure/touch-stick.js';
@@ -208,6 +215,98 @@ export async function run() {
     ok(dup.length === 0,
        'T-105: no touch button repeats the verb the deck\'s modal tap already performs ' +
        '(tap = resume / climb again), so a phone shows one instruction');
+  }
+
+  /* ---------- T-126: a run-ending touch tap is armed, never final ---------- *
+   * No number of the window is pinned here (it is reasoned, and the operator
+   * may retune it): every boundary below is read from CONFIRM_TAP itself.   */
+  {
+    const P = CONFIRM_TAP;
+    ok(Number.isFinite(P.minMs) && Number.isFinite(P.windowMs) && P.minMs >= 0 && P.windowMs > P.minMs,
+       'T-126: the confirm window is a real interval after the arming tap (' +
+       JSON.stringify(P) + ')');
+
+    // every gap a second tap can come at: a sweep, plus each boundary at -1/0/+1
+    const gaps = [-1000, -1, NaN, Infinity];
+    for (let t = 0; t <= 3 * P.windowMs; t += 25) gaps.push(t);
+    for (const b of [0, P.minMs, P.windowMs]) gaps.push(b - 1, b, b + 1);
+    const controls = ['restart', 'title', 'reload:view=near', 'reload:audio=', 'reload:shell=0'];
+
+    // ONE tap never confirms — nothing armed, or another control armed, at any time
+    let firstTaps = 0, firstConfirm = 0, firstWait = 0;
+    for (const tapped of controls) {
+      for (const armed of [null, undefined, ...controls.filter((c) => c !== tapped)]) {
+        for (const at of gaps) {
+          const step = confirmTap(armed, 0, tapped, at);
+          firstTaps++;
+          if (step === 'confirm') firstConfirm++;
+          if (step !== 'arm') firstWait++;
+        }
+      }
+    }
+    ok(firstConfirm === 0 && firstWait === 0,
+       'T-126: a first tap on a run-ending control only ARMS it, whatever else is armed and whenever ' +
+       'it lands (' + firstTaps + ' taps: ' + firstConfirm + ' confirmed, ' + (firstWait - firstConfirm) + ' ignored)');
+
+    // the same control tapped twice: confirms exactly when the second tap is
+    // inside the window; sooner is the arming tap's own double (ignored, still
+    // armed); later, or a clock that ran back, arms afresh and never confirms
+    const wrong = [];
+    let inside = 0;
+    for (const tapped of controls) {
+      for (const dt of gaps) {
+        const step = confirmTap(tapped, 1000, tapped, 1000 + dt);
+        const want = !(dt >= 0) || dt > P.windowMs ? 'arm' : dt < P.minMs ? 'wait' : 'confirm';
+        if (step === 'confirm') inside++;
+        if (step !== want) wrong.push(`${tapped} +${dt}: ${step} (want ${want})`);
+      }
+    }
+    ok(wrong.length === 0 && inside > 0,
+       'T-126: a second tap on the armed control confirms only inside [minMs, windowMs] after the first; ' +
+       'sooner it is ignored, later it re-arms (' + inside + ' confirming gaps)' +
+       (wrong.length ? ' — ' + wrong.slice(0, 4).join('; ') : ''));
+
+    // which controls arm: every touch action whose key is a LIFECYCLE intent
+    // in that state (main.js resets the run for 'restart' and 'title') must,
+    // and must say so; a reversible one (HIDE HUD) must not. A run-ending
+    // button added later cannot skip the arming.
+    const lifecycle = new Set(['restart', 'title']);
+    const unarmed = [];
+    const overArmed = [];
+    const seen = [];
+    for (const state of ['PAUSED', 'GAME_OVER', 'VICTORY']) {
+      for (const opts of [{}, { hudHidden: true }, { summit: true }]) {
+        for (const [action] of panelActions(state, 'touch', opts)) {
+          const intent = shellKeyIntent(TOUCH_ACTION_KEYS[action], state);
+          const label = confirmLabel(state, action);
+          seen.push(state + ':' + action);
+          if (lifecycle.has(intent) && !(needsConfirm(action) && label)) unarmed.push(state + ':' + action);
+          if (!lifecycle.has(intent) && (needsConfirm(action) || label)) overArmed.push(state + ':' + action);
+        }
+      }
+    }
+    ok(unarmed.length === 0 && overArmed.length === 0 && seen.some((s) => s.endsWith(':restart')) &&
+       seen.some((s) => s.endsWith(':title')) && seen.some((s) => s.endsWith(':hud')),
+       'T-126: every touch button that ends or leaves the run arms first (and says so); HIDE HUD, which ' +
+       'keeps the pause, stays one tap (' + [...new Set(seen)].join(', ') + ')' +
+       (unarmed.length ? ' — unarmed: ' + unarmed.join(', ') : '') +
+       (overArmed.length ? ' — armed but harmless: ' + overArmed.join(', ') : ''));
+    ok(needsConfirm('reload') && !!confirmLabel('PAUSED', 'reload') && CONFIRM_ACTIONS.includes('reload'),
+       'T-126: an option toggle that reloads the page (ending the run) arms first too');
+
+    // the armed words: name the second tap, and no key (touch copy)
+    const labels = Object.entries(CONFIRM_LABELS).flatMap(([state, t]) =>
+      Object.entries(t).map(([action, text]) => ({ at: state + ':' + action, text })));
+    const badLabel = labels.filter((l) => !/\bTAP AGAIN\b/.test(l.text) || keyboardCopyHits(l.text).length > 0);
+    ok(labels.length >= 4 && badLabel.length === 0,
+       'T-126: every armed label states the second tap and names no key (' + labels.length + ' labels)' +
+       (badLabel.length ? ' — ' + badLabel.map((l) => `${l.at} "${l.text}"`).join(', ') : ''));
+
+    // the keyboard keeps its one-press verbs: R and Q act at once on pause
+    // (the arming is touch presentation; the intent table is unchanged)
+    ok(shellKeyIntent('KeyR', 'PAUSED') === 'restart' && shellKeyIntent('KeyQ', 'PAUSED') === 'title' &&
+       shellKeyIntent('KeyQ', 'GAME_OVER') === 'title' && shellKeyIntent('KeyH', 'PAUSED') === 'hud',
+       'T-126: keyboard R / Q / H keep their one-press intents on the pause and result screens');
   }
 
   /* --------------------- the failsafe hint, by device -------------------- */

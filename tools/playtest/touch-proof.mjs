@@ -37,6 +37,19 @@
 //   plus: ?touch=legacy's snapshot shape and gesture behaviour; title tap
 //   starts the run without leaking a gameplay input; deck screenshots at DPR
 //   1 and 2.
+//   pause (T-126; frozen sim, at 844x390 AND 667x375 — the two landscape
+//         sizes its box names): nothing on the pause screen throws a run away
+//         by accident —
+//     - every pause control is >= 44 x 44 css px;
+//     - a tap that is not on a control resumes, wherever it lands: mid-screen
+//       over the panel's empty area, the screen centre, the title, either
+//       side, the cue, the old bottom-left corner;
+//     - ONE tap on RESTART RUN / START SCREEN / an option that reloads only
+//       arms it (and, left alone, it disarms: no reset, no reload); a second
+//       tap inside the window confirms it; any other tap disarms it; a
+//       double-tap faster than the window's floor never confirms; keyboard
+//       R / Q still act at once; the result screens' START SCREEN arms too;
+//     - a confirmed reload replaces the history entry (history.length stays).
 //
 // Honesty notes:
 //   - the live section pins RIG's i-frames (test setup): enemy contact would
@@ -73,11 +86,18 @@ const BASE_URL = arg('--base-url');
 // large, and the committed T-101 evidence is a curated subset.
 const OUT = resolve(arg('--out', join(tmpdir(), 'hullbreaker-touch-proof')));
 const MUTATE = arg('--mutate');
-const ONLY = new Set((arg('--only', 'frozen,live,legacy,title,shots') || '').split(',').filter(Boolean));
-const VIEWS = [
+const ONLY = new Set((arg('--only', 'frozen,live,legacy,title,shots,pause') || '').split(',').filter(Boolean));
+const ALL_VIEWS = [
   { name: 'landscape', viewport: { width: 844, height: 390 } },
   { name: 'portrait', viewport: { width: 390, height: 844 } },
-].filter((v) => (arg('--views', 'landscape,portrait')).split(',').includes(v.name));
+  // T-126: iPhone SE / 8 held sideways, the smallest landscape the shell is held to
+  { name: 'landscape667', viewport: { width: 667, height: 375 } },
+];
+const VIEWS_ARG = arg('--views');
+const VIEWS = ALL_VIEWS.filter((v) => (VIEWS_ARG || 'landscape,portrait').split(',').includes(v.name));
+// the pause section runs at both landscape sizes unless --views narrows it
+const PAUSE_VIEWS = ALL_VIEWS.filter((v) => v.viewport.width > v.viewport.height &&
+  (VIEWS_ARG || 'landscape,landscape667').split(',').includes(v.name));
 const TICK_MS = 16.667;
 const JUMP_TICKS_N = 3;
 // Wall-clock ceiling for one in-page wait. Generous on purpose: under
@@ -144,13 +164,48 @@ const MUTATIONS = {
     "    if (event.isPrimary && event.pointerType === 'touch') releaseStaleSlots();\n",
     '\n',
   ],
+  // T-126 (section pause), one defect each, in the file named below:
+  // the arming is gone: a run-ending control acts on its FIRST tap
+  'no-arming': [
+    '    if (button.dataset.armLabel) {\n',
+    '    if (false) {\n',
+  ],
+  // a tap elsewhere no longer disarms an armed control
+  'no-disarm': [
+    "    if (armedEl && !(event.target && armedEl.contains(event.target))) disarm();\n",
+    '\n',
+  ],
+  // a reloading option pushes a history entry (what a plain <a href> does)
+  'reload-push': [
+    '    location.replace(flagUrl(el.dataset.shellFlag, el.dataset.shellValue || null));\n',
+    '    location.assign(flagUrl(el.dataset.shellFlag, el.dataset.shellValue || null));\n',
+  ],
+  // the option cells shrink under the 44 px floor
+  'small-targets': [
+    'min-width: 44px; min-height: 44px; padding: 0 8px;',
+    'min-width: 30px; min-height: 30px; padding: 0 8px;',
+  ],
+  // the deck treats the whole options panel as a control: a tap on its empty
+  // area no longer resumes (the old bottom-left trial cannot see this)
+  'panel-swallows-taps': [
+    "target.closest('a,button,summary,details,input,select,label')",
+    "target.closest('a,button,summary,details,input,select,label,#ovPanel .panel')",
+  ],
 };
+// the file each mutation is served into (default: the deck)
+const MUTATION_FILE = {
+  'no-arming': 'src/ui/shell.js',
+  'no-disarm': 'src/ui/shell.js',
+  'reload-push': 'src/ui/shell.js',
+  'small-targets': 'index.html',
+};
+const mutationFile = (name) => MUTATION_FILE[name] || 'src/ui/touch-controls.js';
 
 async function mutateRoute(route) {
   const response = await route.fetch();
   let body = await response.text();
   const [from, to] = MUTATIONS[MUTATE];
-  if (!body.includes(from)) throw new Error(`mutation ${MUTATE}: anchor text not found`);
+  if (!body.includes(from)) throw new Error(`mutation ${MUTATE}: anchor text not found in ${mutationFile(MUTATE)}`);
   body = body.replace(from, to);
   await route.fulfill({ response, body, headers: { ...response.headers(), 'cache-control': 'no-store' } });
 }
@@ -272,7 +327,7 @@ async function boot(newPage, view, { frozen = false, query = '', dpr = 1, audio 
       globalThis.__HULLBREAKER_INPUT_BOOTSTRAP__ = { version: 1, events: [], stopAtMs: 0 };
     });
   }
-  if (MUTATE) await page.route('**/src/ui/touch-controls.js', mutateRoute);
+  if (MUTATE) await page.route(`**/${mutationFile(MUTATE)}*`, mutateRoute);
   const url = `${owned.baseUrl}/index.html?testapi=1&fixeddt=${TICK_MS}${audio ? '' : '&audio=0'}${query}`;
   const t0 = Date.now();
   await page.goto(url, { waitUntil: 'load', timeout: 240000 });
@@ -644,6 +699,390 @@ async function modalTaps(owned, L) {
   const s2 = await page.evaluate(() => ({ state: HB.state() }));
   check('a tap on an armed GAME_OVER screen restarts the run', s2.state === 'PLAYING', JSON.stringify(s2));
   measure('gameOverEarlyTapMs', Math.round(early.afterMs));
+}
+
+/* ------------------------- pause safety (T-126) ------------------------ *
+ * Nothing on the pause screen throws a run away by accident. The run is
+ * "ended" if the reset registry ran (HB.resetRegistry().runs: restart and
+ * start screen both reset), the state left for MENU, or the page reloaded
+ * (a marker on window is gone). Every timing is judged on the page's own
+ * clock (click event times), never on the harness's.                      */
+const CONTROLS = 'a,button,summary,details,input,select,label';   // = the deck's interactive()
+
+async function pauseSafety(newPage, view) {
+  const owned = await boot(newPage, view, { frozen: true });
+  const { page, touch: T } = owned;
+  const W = view.viewport.width, H = view.viewport.height;
+  try {
+    await quiet(page, true);
+    const L = await page.evaluate(() => __HB_TOUCH().layout);
+    const policy = await page.evaluate(async () => ({ ...(await import('/src/pure/shell-copy.js')).CONFIRM_TAP }));
+    measure('confirmPolicy', policy);
+    const install = () => page.evaluate(() => {
+      window.__t126 = { clicks: [], mark: true };
+      document.getElementById('ovPanel').addEventListener('click', (e) => {
+        const b = e.target && e.target.closest ? e.target.closest('button') : null;
+        if (b) window.__t126.clicks.push({ t: e.timeStamp, text: b.textContent });
+      }, true);
+    });
+    await install();
+    // a tap whose lift is not held back by the harness: both CDP events are
+    // queued before either is acknowledged (the deck's modal tap counts only
+    // when pointerdown -> pointerup is <= 700 ms on the page's clock)
+    let tapId = 300;
+    const tap = async (x, y) => {
+      const id = tapId++;
+      const p = [{ x, y, id, radiusX: 7, radiusY: 7, force: 1 }];
+      const down = T.send('touchStart', p);
+      await T.send('touchEnd', p);
+      await down;
+    };
+    const runs = () => page.evaluate(() => HB.resetRegistry().runs);
+    const state = () => page.evaluate(() => HB.state());
+    const look = () => page.evaluate((sel) => ({
+      state: HB.state(),
+      runs: HB.resetRegistry().runs,
+      armed: [...document.querySelectorAll('#ovPanel .armed')].map((b) => b.textContent),
+      mark: !!(window.__t126 && window.__t126.mark),
+      url: location.search,
+      history: history.length,
+      controls: [...document.querySelectorAll('#ovPanel ' + sel.split(',').join(',#ovPanel '))]
+        .filter((e) => e.getClientRects().length).map((e) => e.textContent.trim()),
+    }), CONTROLS);
+    const centreOf = (sel) => page.evaluate((s) => {
+      const e = document.querySelector(s);
+      if (!e) return null;
+      const r = e.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2, text: e.textContent.trim() };
+    }, sel);
+    const lastClick = () => page.evaluate(() => window.__t126.clicks[window.__t126.clicks.length - 1] || null);
+    // wait until `ms` has passed on the page's clock since `t` (a click's event time)
+    const pageWait = (t, ms) => until(page, ([from, span]) => performance.now() >= from + span, [t, ms], 60000);
+    const pause = async () => {
+      await tap(L.pause.x + L.pause.w / 2, L.pause.y + L.pause.h / 2);
+      const okp = await until(page, () => HB.state() === 'PAUSED', null, 30000);
+      await frames(page, 2);
+      return okp;
+    };
+    const toPlaying = async () => {
+      // from MENU a tap anywhere starts the run (the title's own rule)
+      if ((await state()) === 'MENU') await tap(W * 0.5, H * 0.5);
+      return until(page, () => HB.state() === 'PLAYING', null, 30000);
+    };
+    // let an armed control run out its window without touching anything
+    const waitOut = async (since) => {
+      await pageWait(since, policy.windowMs + 400);
+      await until(page, () => !document.querySelector('#ovPanel .armed'), null, 30000);
+    };
+
+    // 1. targets: every control on the pause panel, at this size
+    let okPause = await pause();
+    const targets = await page.evaluate((sel) => [...document.querySelectorAll('#ovPanel ' + sel.split(',').join(',#ovPanel '))]
+      .filter((e) => e.getClientRects().length).map((e) => {
+        const r = e.getBoundingClientRect();
+        return { text: e.textContent.trim(), w: +r.width.toFixed(1), h: +r.height.toFixed(1), tag: e.tagName.toLowerCase(),
+          href: e.tagName === 'A' && e.hasAttribute('href') };
+      }), CONTROLS);
+    const small = targets.filter((c) => c.w < 44 || c.h < 44);
+    const reloads = await page.evaluate(() => document.querySelectorAll('#ovPanel [data-shell-action="reload"]').length);
+    check(`pause ${W}x${H}: every pause control is >= 44 x 44 css px (${targets.length} controls, ` +
+      `smallest ${Math.min(...targets.map((c) => c.w))} x ${Math.min(...targets.map((c) => c.h))})`,
+      okPause && targets.length >= 4 && reloads >= 1 && small.length === 0,
+      small.length ? 'under 44: ' + small.map((c) => `${c.text} ${c.w}x${c.h}`).join(', ') : `${reloads} reloading options`);
+    measure('pauseTargets', targets);
+
+    // 2. a tap not on a control resumes — wherever it lands. Points are kept
+    //    a thumb's width (12 px) from every control: Chromium, like iOS,
+    //    adjusts a touch onto a nearby target, and that is not this question.
+    const points = await page.evaluate(([sel, W, H]) => {
+      const ctl = [...document.querySelectorAll(sel)].filter((e) => e.getClientRects().length)
+        .map((e) => e.getBoundingClientRect());
+      const clear = (x, y) => ctl.every((r) => x < r.left - 12 || x > r.right + 12 || y < r.top - 12 || y > r.bottom + 12);
+      const onControl = (x, y) => { const e = document.elementFromPoint(x, y); return !!(e && e.closest(sel)); };
+      const panel = document.querySelector('#ovPanel .panel').getBoundingClientRect();
+      const title = document.getElementById('ovTitle').getBoundingClientRect();
+      const cue = document.getElementById('thumbModal').getBoundingClientRect();
+      let best = null;                       // the panel's empty area nearest the screen centre
+      for (let y = panel.top + 3; y < panel.bottom - 3; y += 3) {
+        for (let x = panel.left + 3; x < panel.right - 3; x += 3) {
+          if (onControl(x, y) || !clear(x, y)) continue;
+          const d = Math.hypot(x - W / 2, y - H / 2);
+          if (!best || d < best.d) best = { x, y, d };
+        }
+      }
+      const named = [
+        ['mid-screen over the panel\'s empty area', best && best.x, best && best.y],
+        ['the screen centre', W / 2, H / 2],
+        ['the PAUSED title', title.left + title.width / 2, title.top + title.height / 2],
+        ['left of the panel', Math.max(30, panel.left / 2), H / 2],
+        ['right of the panel', panel.right + (W - panel.right) / 2, H / 2],
+        ['the TAP TO RESUME cue', cue.left + cue.width / 2, cue.top + cue.height / 2],
+        ['the bottom-left corner (the old trial point)', W * 0.06, H * 0.93],
+      ];
+      return named.map(([name, x, y]) => ({ name, x, y,
+        control: x == null ? null : onControl(x, y), clear: x == null ? null : clear(x, y),
+        inPanel: x != null && x >= panel.left && x <= panel.right && y >= panel.top && y <= panel.bottom }));
+    }, [CONTROLS, W, H]);
+    measure('resumePoints', points);
+    const mid = points[0];
+    check(`pause ${W}x${H}: the panel has an empty area mid-screen (inside the central 60% x 60%)`,
+      mid.x != null && mid.inPanel && mid.x >= W * 0.2 && mid.x <= W * 0.8 && mid.y >= H * 0.2 && mid.y <= H * 0.8,
+      mid.x != null ? `(${mid.x.toFixed(0)}, ${mid.y.toFixed(0)})` : 'no empty point in the panel');
+    for (const p of points) {
+      if (p.x == null) continue;
+      if (p.control || !p.clear) {
+        console.log(`  NOTE [${current}] ${p.name} (${p.x.toFixed(0)}, ${p.y.toFixed(0)}) is on or beside a control; ` +
+          'not a resume trial (the arming trials cover a tap there)');
+        continue;
+      }
+      if ((await state()) !== 'PAUSED') okPause = await pause();
+      const r0 = await runs();
+      await tap(p.x, p.y);
+      const resumed = await until(page, () => HB.state() === 'PLAYING', null, 20000);
+      const after = await look();
+      check(`pause ${W}x${H}: a tap on ${p.name} (${p.x.toFixed(0)}, ${p.y.toFixed(0)}) resumes the run`,
+        okPause && resumed && after.runs === r0 && after.mark,
+        `state ${after.state}, resets ${r0} -> ${after.runs}`);
+    }
+
+    // 3. ONE tap on a run-ending control only arms it; left alone it disarms
+    //    and the run is untouched
+    const single = async (label, sel, expectState) => {
+      if ((await state()) !== expectState) return check(`${label}: screen reached`, false, await state());
+      const before = await look();
+      const c = await centreOf(sel);
+      if (!c) return check(`${label}: control present`, false, sel);
+      await tap(c.x, c.y);
+      const armedOk = await until(page, () => !!document.querySelector('#ovPanel .armed'), null, 20000);
+      const armed = await look();
+      const click = await lastClick();
+      await waitOut(click ? click.t : 0);
+      const after = await look();
+      return check(`${label}: ONE tap only arms it ("${armed.armed[0] || '?'}"); left alone it disarms and the run ` +
+        `is untouched (still ${expectState}, no reset, no reload)`,
+        armedOk && armed.armed.length === 1 && /TAP AGAIN/.test(armed.armed[0]) && armed.state === expectState &&
+        after.state === expectState && after.runs === before.runs && after.mark && after.url === before.url &&
+        after.armed.length === 0 && after.controls.includes(c.text),
+        `armed ${JSON.stringify(armed.armed)} state ${armed.state} -> ${after.state}, resets ${before.runs} -> ${after.runs}, ` +
+        `reloaded ${!after.mark}, label back ${after.controls.includes(c.text)}`);
+    };
+    if ((await state()) !== 'PAUSED') await pause();
+    await single(`pause ${W}x${H}: RESTART RUN`, '#ovPanel [data-shell-action="restart"]', 'PAUSED');
+    await single(`pause ${W}x${H}: START SCREEN`, '#ovPanel [data-shell-action="title"]', 'PAUSED');
+    await single(`pause ${W}x${H}: a reloading option`, '#ovPanel [data-shell-action="reload"]', 'PAUSED');
+
+    // 4. any other tap disarms
+    const restartSel = '#ovPanel [data-shell-action="restart"]';
+    {
+      // (a) another control that does nothing (the option already chosen):
+      //     no state change to hide behind — only the disarm can explain it
+      const r0 = await runs();
+      const rr = await centreOf(restartSel);
+      const inert = await centreOf('#ovPanel [aria-pressed="true"]');
+      await tap(rr.x, rr.y);
+      await until(page, () => !!document.querySelector('#ovPanel .armed'), null, 20000);
+      const first = await lastClick();
+      await tap(inert.x, inert.y);
+      await frames(page, 1);
+      const mid1 = await look();
+      await pageWait(first.t, policy.minMs + 150);
+      const rr2 = await centreOf(restartSel);
+      await tap(rr2.x, rr2.y);
+      await until(page, () => !!document.querySelector('#ovPanel .armed'), null, 20000);
+      const second = await lastClick();
+      const after = await look();
+      const gap = second && first ? second.t - first.t : null;
+      const label = `pause ${W}x${H}: a tap on another control (the chosen "${inert.text}") disarms RESTART RUN; ` +
+        `the next tap on it arms it again instead of restarting (${gap == null ? '?' : Math.round(gap)} ms after the first)`;
+      const detail = `after the other tap: armed ${JSON.stringify(mid1.armed)}; after RESTART again: state ` +
+        `${after.state}, resets ${r0} -> ${after.runs}, armed ${JSON.stringify(after.armed)}`;
+      if (gap != null && gap >= policy.minMs && gap <= policy.windowMs) {
+        check(label, mid1.armed.length === 0 && mid1.state === 'PAUSED' && after.state === 'PAUSED' &&
+          after.runs === r0 && after.armed.length === 1, detail);
+      } else {
+        // outside the window the second tap would re-arm anyway: this run cannot tell
+        console.log(`  NOTE [${current}] not judged: the second tap landed ${gap == null ? '?' : Math.round(gap)} ms ` +
+          `after the first, outside [${policy.minMs}, ${policy.windowMs}] (host load) — ${detail}`);
+        measure('disarmUndecided', { gap, detail });
+      }
+      await waitOut(second ? second.t : 0);
+    }
+    {
+      // (b) the other run-ending control takes the arming over
+      const r0 = await runs();
+      const rr = await centreOf(restartSel);
+      const ss = await centreOf('#ovPanel [data-shell-action="title"]');
+      await tap(rr.x, rr.y);
+      await until(page, () => !!document.querySelector('#ovPanel .armed'), null, 20000);
+      await tap(ss.x, ss.y);
+      await frames(page, 1);
+      const mid2 = await look();
+      const click = await lastClick();
+      await waitOut(click ? click.t : 0);
+      const after = await look();
+      check(`pause ${W}x${H}: tapping START SCREEN while RESTART RUN is armed moves the arming over; left alone, ` +
+        'nothing ends', mid2.armed.length === 1 && /QUIT|START/.test(mid2.armed[0]) &&
+        mid2.controls.includes('RESTART RUN') && after.state === 'PAUSED' && after.runs === r0 && after.armed.length === 0,
+        `armed ${JSON.stringify(mid2.armed)}, state ${after.state}, resets ${r0} -> ${after.runs}`);
+    }
+    {
+      // (c) a tap off the controls disarms AND resumes; the next pause starts unarmed
+      const r0 = await runs();
+      const rr = await centreOf(restartSel);
+      await tap(rr.x, rr.y);
+      await until(page, () => !!document.querySelector('#ovPanel .armed'), null, 20000);
+      if (mid.x != null) await tap(mid.x, mid.y);
+      const resumed = await until(page, () => HB.state() === 'PLAYING', null, 20000);
+      await pause();
+      const after = await look();
+      check(`pause ${W}x${H}: with RESTART RUN armed, a tap on the panel's empty area resumes without restarting; ` +
+        'the next pause starts unarmed', resumed && after.runs === r0 && after.armed.length === 0 &&
+        after.controls.includes('RESTART RUN'), `resumed ${resumed}, resets ${r0} -> ${after.runs}, armed ${JSON.stringify(after.armed)}`);
+    }
+
+    // 5. a double-tap faster than the window's floor is ONE gesture: never a confirm
+    {
+      const r0 = await runs();
+      const n0 = await page.evaluate(() => window.__t126.clicks.length);
+      const rr = await centreOf(restartSel);
+      const p = (id) => [{ x: rr.x, y: rr.y, id, radiusX: 7, radiusY: 7, force: 1 }];
+      const sends = [T.send('touchStart', p(401)), T.send('touchEnd', p(401)),
+        T.send('touchStart', p(402)), T.send('touchEnd', p(402))];
+      await Promise.all(sends);
+      await until(page, (n) => window.__t126.clicks.length >= n + 2, n0, 20000);
+      const clicks = await page.evaluate((n) => window.__t126.clicks.slice(n), n0);
+      await frames(page, 2);
+      const after = await look();
+      const gap = clicks.length >= 2 ? clicks[1].t - clicks[0].t : null;
+      if (gap != null && gap < policy.minMs) {
+        check(`pause ${W}x${H}: a double-tap on RESTART RUN (${Math.round(gap)} ms apart) arms it once and never ` +
+          'restarts', after.state === 'PAUSED' && after.runs === r0 && after.armed.length === 1,
+          `state ${after.state}, resets ${r0} -> ${after.runs}, armed ${JSON.stringify(after.armed)}`);
+      } else {
+        console.log(`  NOTE [${current}] the double-tap's clicks landed ${gap == null ? '?' : Math.round(gap)} ms apart ` +
+          `(>= ${policy.minMs} on this host): not judged this run`);
+        measure('doubleTapUndecided', { gap, state: after.state, resets: [r0, after.runs] });
+      }
+      if (clicks.length) await waitOut(clicks[clicks.length - 1].t);
+      if ((await state()) !== 'PAUSED') { await toPlaying(); await pause(); }
+    }
+
+    // 6. a second tap inside the window confirms — by the one path each control had
+    // tap, wait past the floor on the page's clock, tap again; returns the two
+    // clicks' gap. A gap the host pushed outside the window re-arms instead of
+    // confirming (nothing ends), so that attempt is retried, not judged.
+    const confirmTwice = async (sel) => {
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const c = await centreOf(sel);
+        await tap(c.x, c.y);
+        await until(page, () => !!document.querySelector('#ovPanel .armed'), null, 20000);
+        const first = await lastClick();
+        await pageWait(first.t, policy.minMs + 200);
+        await tap(c.x, c.y);
+        await until(page, (t) => { const k = window.__t126.clicks; return k.length > 0 && k[k.length - 1].t > t; },
+          first.t, 20000);
+        const second = await lastClick();
+        const gap = second.t - first.t;
+        if (gap >= policy.minMs && gap <= policy.windowMs) return gap;
+        console.log(`  NOTE [${current}] confirm attempt ${attempt}: the taps landed ${Math.round(gap)} ms apart, ` +
+          'outside the window (host load); retried');
+        await waitOut(second.t);
+      }
+      return null;
+    };
+    {
+      const r0 = await runs();
+      const gap = await confirmTwice(restartSel);
+      const restarted = await until(page, () => HB.state() === 'PLAYING', null, 20000);
+      const after = await look();
+      check(`pause ${W}x${H}: a second tap on RESTART RUN inside the window (${gap == null ? '?' : Math.round(gap)} ms) ` +
+        'restarts the run', gap != null && restarted && after.runs === r0 + 1,
+        `state ${after.state}, resets ${r0} -> ${after.runs}`);
+      await pause();
+    }
+    {
+      const r0 = await runs();
+      const gap = await confirmTwice('#ovPanel [data-shell-action="title"]');
+      const titled = await until(page, () => HB.state() === 'MENU', null, 20000);
+      const after = await look();
+      check(`pause ${W}x${H}: a second tap on START SCREEN inside the window (${gap == null ? '?' : Math.round(gap)} ms) ` +
+        'goes to the start screen', gap != null && titled && after.runs === r0 + 1,
+        `state ${after.state}, resets ${r0} -> ${after.runs}`);
+      await toPlaying();
+      await pause();
+    }
+
+    // 7. the keyboard is unchanged: R and Q act at once, on a touch device too
+    {
+      const r0 = await runs();
+      await page.keyboard.press('KeyR');
+      const restarted = await until(page, () => HB.state() === 'PLAYING', null, 20000);
+      const r1 = await runs();
+      await pause();
+      await page.keyboard.press('KeyQ');
+      const titled = await until(page, () => HB.state() === 'MENU', null, 20000);
+      const r2 = await runs();
+      check(`pause ${W}x${H}: keyboard R restarts and Q goes to the start screen at ONE press (no arming)`,
+        restarted && r1 === r0 + 1 && titled && r2 === r1 + 1, `resets ${r0} -> ${r1} -> ${r2}`);
+      await toPlaying();
+    }
+
+    // 8. the result screens carry START SCREEN too: one tap arms, two leave
+    for (const [screen, settleMs] of [['GAME_OVER', 1000], ['VICTORY', 2800]]) {
+      // TEST SETUP: the state is forced through the sim's state module, as in modalTaps
+      await page.evaluate(async (s) => { (await import('/src/sim/state.js')).setState(s); }, screen);
+      await page.waitForTimeout(settleMs);
+      await single(`${screen} ${W}x${H}: START SCREEN`, '#ovPanel [data-shell-action="title"]', screen);
+      const r0 = await runs();
+      const gap = await confirmTwice('#ovPanel [data-shell-action="title"]');
+      const titled = await until(page, () => HB.state() === 'MENU', null, 20000);
+      const after = await look();
+      check(`${screen} ${W}x${H}: a second tap on START SCREEN inside the window ` +
+        `(${gap == null ? '?' : Math.round(gap)} ms) goes to the start screen`,
+        gap != null && titled && after.runs === r0 + 1, `state ${after.state}, resets ${r0} -> ${after.runs}`);
+      await toPlaying();
+    }
+
+    // 9. a confirmed reload replaces the history entry: nothing for Safari's
+    //    edge back-swipe to return to mid-run
+    {
+      await pause();
+      const before = await look();
+      const sel = '#ovPanel [data-shell-action="reload"][data-shell-flag="view"]';
+      const flag = await page.evaluate((s) => {
+        const e = document.querySelector(s);
+        return e.dataset.shellFlag + '=' + e.dataset.shellValue;
+      }, sel);
+      let navigated = false;
+      for (let attempt = 1; attempt <= 2 && !navigated; attempt++) {
+        const cell = await centreOf(sel);
+        await tap(cell.x, cell.y);
+        await until(page, () => !!document.querySelector('#ovPanel .armed'), null, 20000);
+        const first = await lastClick();
+        await pageWait(first.t, policy.minMs + 200);
+        const nav = page.waitForURL((u) => u.search.includes(flag), { timeout: 60000, waitUntil: 'commit' })
+          .then(() => true, () => false);
+        await tap(cell.x, cell.y);
+        navigated = await nav;
+        if (!navigated) {
+          const second = await lastClick();
+          console.log(`  NOTE [${current}] reload attempt ${attempt}: no navigation; taps ` +
+            `${second && first ? Math.round(second.t - first.t) : '?'} ms apart`);
+          await waitOut(second ? second.t : first.t);
+        }
+      }
+      await page.waitForFunction(() => globalThis.HB && typeof globalThis.__HB_TOUCH === 'function' &&
+        HB.state() === 'PLAYING', null, { timeout: 300000, polling: 250 }).catch(() => {});
+      const after = await page.evaluate(() => ({ url: location.search, history: history.length,
+        mark: !!(window.__t126 && window.__t126.mark), state: HB.state() }));
+      check(`pause ${W}x${H}: two taps on an option reload the run with it (${flag}) and leave NO new history ` +
+        `entry (history.length ${before.history} -> ${after.history})`,
+        navigated && !after.mark && after.url.includes(flag) && after.history === before.history,
+        `navigated ${navigated}, url ${after.url}, state ${after.state}`);
+      await quiet(page, true);
+    }
+    check(`pause ${W}x${H}: the page raised no errors`, owned.errors.length === 0, owned.errors.join(' | '));
+  } finally { await owned.close(); }
 }
 
 async function gestures(owned, L) {
@@ -1077,6 +1516,14 @@ await withBrowser(async (newPage) => {
   const first = VIEWS[0];
   if (first && ONLY.has('legacy')) { current = `${first.name}/legacy`; await legacy(newPage, first); }
   if (first && ONLY.has('title')) { current = `${first.name}/title`; await titleTap(newPage, first); }
+  if (ONLY.has('pause')) {
+    for (const view of PAUSE_VIEWS) {
+      current = `${view.name}/pause`;
+      try { await pauseSafety(newPage, view); } catch (error) {
+        check('pause section completed', false, String(error && error.stack || error).split('\n').slice(0, 3).join(' '));
+      }
+    }
+  }
 });
 
 const failed = results.filter((r) => !r.pass);

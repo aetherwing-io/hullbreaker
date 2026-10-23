@@ -697,6 +697,32 @@
   }
   #ovPanel .shell-actions button:active { color: #07131a; border-color: #ffe9c2; background: #ffe9c2; }
   #overlay.victory .result-panel > .shell-actions { grid-column: 2; justify-content: flex-start; margin: 0; }
+  /* T-126: on touch the pause options are 44 px cells, one segmented row per
+     option — as links they were 14 px tall under a thumb. The current value
+     is a pressed, inert cell (src/ui/shell.js cellRow). */
+  #ovPanel .statgrid.shell-options { align-items: center; row-gap: 4px; }
+  #ovPanel .shell-seg { display: flex; justify-content: flex-end; gap: 4px; }
+  #ovPanel .shell-seg button {
+    -webkit-appearance: none; appearance: none; margin: 0; min-width: 44px; min-height: 44px; padding: 0 8px;
+    border: 1px solid rgba(232,237,242,.22); border-radius: 3px; background: rgba(7,19,26,.62);
+    color: #e8edf2; font: 700 11px/1 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .06em;
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent; cursor: pointer;
+  }
+  #ovPanel .shell-seg button.on { color: #9ce23e; border-color: rgba(156,226,62,.5); cursor: default; }
+  /* T-126: a control that ends or leaves the run ARMS on its first tap
+     (src/ui/shell.js): its box is locked, its label says what a second tap
+     does, and a bar drains over the confirm window. */
+  #ovPanel .shell-actions button, #ovPanel .shell-seg button { position: relative; box-sizing: border-box; }
+  #ovPanel button.armed {
+    border-color: #ff4fd8; background: #ff4fd8; color: #07131a;
+    font-size: 9px; line-height: 1.1; letter-spacing: .06em; white-space: normal; padding: 0 5px 3px;
+  }
+  #ovPanel button.armed::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+    background: #07131a; transform-origin: 0 50%;
+    animation: shell-arm-drain var(--arm-ms, 3s) linear forwards;
+  }
+  @keyframes shell-arm-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 
   #shell {
     position: fixed; inset: 0; z-index: 30; display: none; overflow: hidden;
@@ -819,6 +845,7 @@
     #overlay.victory::before { opacity: .55; transform: rotate(-6deg); }
     #overlay.victory::after { opacity: 1; }
     #overlay.victory #ovBody::before { display: none; }
+    #ovPanel button.armed::after { animation: none; }
   }
   #shellText {
     /* never inside a notch: on desktop the inset is 0 and this is var(--tx) */
