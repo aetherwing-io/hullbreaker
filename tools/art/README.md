@@ -151,6 +151,39 @@ contested pixel (majority weight 2.0).
 - Crouch (`?crouch=1`) fires from 0.45 tiles: long magazines dip up to 0.2
   tiles under the deck line, as today's gun plane does there.
 
+## RIG v3.1 preview: board 01's marine (T-124 phase 1b)
+
+Decisions entry 28: v3 missed ("image 1 is much better than 2"); the target
+is board 01's marine itself. v3.1 is a LOOK PREVIEW -- gun R, eleven poses,
+two holds -- and ships nothing: no atlas, no manifest entry, nothing the
+game loads. The full inventory and the wiring wait for the operator's yes.
+
+    nice -n 15 /opt/hb-art/bin/python -I tools/art/build_rig_v31_preview.py --scene <scene_capture.mjs dir>
+        [--build <dir>] [--out reports/tasks/T-124] [--keep] [--skip-fetch]
+
+| Path | Role |
+|---|---|
+| `build_rig_v31_preview.py` | the one command: sources -> sim -> board-01 palette re-measure + role bands -> render A and B -> post -> anchor check -> packet; prints the cells' sha256 |
+| `rig/palette_v31.py` | board 01's marine BY FAMILY (rust / dark / bright clusters, each with its nearest board pixel; `board_palette.py --b01`); 7-step ramps: five fill tones, rim, hot rim. The lightest swatches are rim / glint only |
+| `rig/poses_v31.py` | the preview poses, SHOULDERED with a forward lean; holds A (today's bore, 1.05) and B (a render-only mock bore at 1.28, the highest at which every preview pose solves feet-planted) |
+| `rig/render.py --look v31 --hold A\|B [--probe]` | bulk from the mesh's own armour (plate faces pushed out along their normals per region; bigger helmet, chest, thicker pauldrons hung from the unscaled shoulder), the knee band painted as its own region, the gun's BUTT on the bore BUTT_BACK (0.10) behind the socket, the body translated so its near shoulder pocket lands on the butt (`solve_shoulder`) |
+| `rig/post.py --look v31` | warm rust plates (helmet, pauldrons, chest, arms, knee pads) over a near-black suit and gunmetal; five tones from the game's key, the warm back light also filling the warm plates; a warm rim from behind/above and a warm kicker from front/below on the silhouette and nearer depth edges; NO ink outline |
+| `rig/packet_v31.py` | phone first: board 01 crop vs v3.1 vs v3 at the same on-screen height, the true-size phone window (today / A / B, plus the frozen firing frame with the game's own flash), the run GIF, A vs B over six poses, the drawn figure against the sim hitbox; `measure-v31.json` |
+
+`--look v3` (the default) is untouched: re-rendering v3 frames with these
+scripts gives byte-identical cells (checked on 18 cells, T-124 build.md).
+
+**Effects are not baked.** The muzzle flash is the game's own
+(`src/render/juice.js` onShotSpawned, at the sim muzzle line). The board's
+foot-jet is not drawn by the game, and `tools/player-presentation-check.mjs`
+asserts RIG has NO jump-propulsion visual -- adding one is an operator call.
+
+**Limitations.** Hold B is a mock: its anchors sit on a 1.28 bore the sim does
+not have. The shouldered gun is barrelTiles + 0.10 = 0.92 tiles long (v3's R
+was 1.32): a shoulder pivot cannot put more gun ahead of RIG than the sim's
+barrel. Readability is measured on one captured deck plus flat backgrounds;
+the darkest hull elsewhere in the climb is not sampled.
+
 ## The A2 art spike (T-109): CC0 model -> toon -> pixels, judged on the real scene
 
 After the operator rejected the primitive-built v2 look (decisions.md entry

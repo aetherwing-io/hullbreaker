@@ -71,12 +71,13 @@ def frame_aim(key):
     raise SystemExit('check: no aim in %s' % key)
 
 
-def drawn_end(fam, anchor_px, aim_deg):
+def drawn_end(fam, anchor_px, aim_deg, gun_fams=None):
     """Distance (px, along the aim) from the exported anchor to the far edge
-    of the furthest gun pixel on the bore axis; None when there is none."""
+    of the furthest gun pixel on the bore axis; None when there is none.
+    `gun_fams`: the look's gun family indices (default: v3's)."""
     th = math.radians(aim_deg)
     a = np.array([math.cos(th), -math.sin(th)])          # pixel space: y down
-    ys, xs = np.nonzero(np.isin(fam, PO.GUN_FAMS))
+    ys, xs = np.nonzero(np.isin(fam, PO.GUN_FAMS if gun_fams is None else gun_fams))
     if len(xs) == 0:
         return None
     c = np.stack([xs + 0.5, ys + 0.5], 1) - np.asarray(anchor_px)

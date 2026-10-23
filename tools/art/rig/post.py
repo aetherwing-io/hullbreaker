@@ -320,6 +320,270 @@ class CellTooSmall(Exception):
     pass
 
 
+# ======================================================================= v3.1
+# T-124 phase 1b (decisions entry 28): board 01's marine. `--look v31`.
+#   FAMILY  armour plates split by body region: WARM rust plates on the
+#           helmet, pauldrons, chest, both arms and the knee pads; DARK
+#           gunmetal armour on the thighs, shins, hips, boots and gloves; the
+#           undersuit near-black; far-side limbs one step darker.
+#   TONE    five fill steps (v3 had four) from the game's key light
+#           (LIGHT_RIG.key, azimuth 40 / elevation 50) x ambient occlusion.
+#   RIM     a WARM rim from behind and above (azimuth 200 / elevation 38):
+#           silhouette pixels and depth-edge pixels on the NEARER part whose
+#           smoothed normal faces it get the family's rim colour (the board's
+#           orange-gold / pale tan), the strongest facing on the outermost
+#           pixel the hot rim (cream). Width 1 px, 2 px at d35. A warm KICKER
+#           from the front and below (azimuth 10 / elevation -15) rims the
+#           outermost body pixels facing it (1 px) in a MID rust (ramp step
+#           7): the dark legs and suit are outlined in orange all round, as
+#           on the board, whose leg rims are mostly mid orange.
+#   FILL    the warm plates also take the back light as a fill (BACK_FILL).
+#   LINES   a pixel > 0.08 tiles behind a 4-neighbour takes its family's
+#           deepest tone (overlaps stay separate shapes).
+#   NO INK OUTLINE: board 01's marine has none; its edge is the rim, the
+#           plates and the dark suit against the wall (packet_v31.py measures
+#           what that does on the game's hull).
+LOOK = 'v3'
+FAMS31 = ['plate_w', 'plate_w_f', 'plate_d', 'plate_d_f', 'suit', 'suit_f', 'visor', 'glow',
+          'gun_d', 'gun_m', 'gun_l', 'gun_acc', 'gun_rust', 'pack']
+WEIGHT31 = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.5, 3.0, 2.0, 2.0, 2.0, 2.6, 2.0, 1.0])
+R_CHEST, R_KNEE = 15, 16
+# board 01: helmet, pauldrons, chest, both arms, knee pads
+WARM_REGIONS = (R_HEAD, R_SH_R, R_SH_L, R_ARM_R, R_ARM_L, R_FORE_R, R_FORE_L, R_CHEST, R_KNEE)
+KEY31 = light_dir(40, 50)
+RIM31 = light_dir(200, 38)
+RIM_FACE, HOT_FACE = 0.22, 0.72
+# a warm KICKER from the front and below (board 01: the muzzle and the jet
+# light the front and under edges): the outermost body pixels facing it take
+# the rim tone too, so the dark legs and suit are outlined in orange all round
+KICK31 = light_dir(10, -15)
+KICK_FACE = 0.25
+RIM_W = {'d16': 1, 'd23': 1, 'd35': 2}
+
+
+def set_look(name):
+    """Swap the family table for a look; v3 stays the module default."""
+    global LOOK, FAMS, F, NF, WEIGHT, GUN_FAMS, THIN_FAMS, SPEC_FAMS
+    LOOK = name
+    if name == 'v31':
+        FAMS = FAMS31
+        F = {n: i for i, n in enumerate(FAMS)}
+        NF = len(FAMS)
+        WEIGHT = WEIGHT31
+        GUN_FAMS = [F[n] for n in ('gun_d', 'gun_m', 'gun_l', 'gun_acc', 'gun_rust')]
+        THIN_FAMS = [F['glow']] + GUN_FAMS
+        SPEC_FAMS = [F['plate_w'], F['gun_rust']]
+        globals()['WARM_FAMS'] = [F['plate_w'], F['plate_w_f'], F['gun_rust'], F['pack']]
+
+
+def families31(idp):
+    alpha = idp[..., 3] > 0.5
+    obj = np.rint(idp[..., 0] * 16).astype(int)
+    reg = np.rint(idp[..., 1] * 16).astype(int)
+    zone = np.rint(idp[..., 2] * 16).astype(int)
+    fam = np.full(obj.shape, -1, dtype=np.int16)
+    body = (obj >= 1) & (obj <= 3)
+    plate = body & (zone == 1)
+    suit = body & (zone == 0)
+    warm = plate & np.isin(reg, WARM_REGIONS)
+    far = np.isin(reg, FAR)
+    fam[plate] = F['plate_d']
+    fam[plate & far] = F['plate_d_f']
+    fam[warm] = F['plate_w']
+    fam[warm & far] = F['plate_w_f']
+    fam[suit] = F['suit']
+    fam[suit & far] = F['suit_f']
+    fam[suit & (reg == R_HEAD)] = F['visor']
+    fam[suit & (reg == R_HAND)] = F['plate_d']      # gloves: dark armour
+    fam[body & (obj == 3)] = F['plate_d']           # the gun hand (separate mesh)
+    fam[body & (zone == 2)] = F['glow']
+    fam[obj == 5] = F['pack']
+    for z, n in GUN_ZONES.items():
+        fam[(obj == 4) & (zone == z)] = F[n]
+    fam[~alpha] = -1
+    return fam, np.where(alpha, obj, 0)
+
+
+BACK_FILL = 0.55        # the warm back light also fills the warm plates facing it (board 01's plates are lit from behind)
+
+
+def tone31(nn, ao, warm=None):
+    lit = 0.10 + 0.90 * np.maximum(nn @ KEY31, 0.0)
+    if warm is not None:
+        lit = np.where(warm, np.minimum(1.0, lit + BACK_FILL * np.maximum(nn @ RIM31, 0.0)), lit)
+    val = lit * (0.70 + 0.30 * ao)
+    return np.select([val > 0.78, val > 0.60, val > 0.42, val > 0.26], [0, 1, 2, 3], 4).astype(np.int16)
+
+
+def rim31(f, t, n, d, width, step=0.08):
+    """The warm back/top rim on silhouette and nearer-side depth edges."""
+    import palette_v31 as P31
+    op = f >= 0
+    sil = np.zeros_like(op)
+    for dy, dx in N4:
+        sil |= op & ~shifted(op, dy, dx, False)
+    near = np.zeros_like(op)
+    for dy, dx in N4:
+        near |= op & shifted(op, dy, dx, False) & (shifted(d, dy, dx, -np.inf) - d > step)
+    edge = sil | near
+    band = edge.copy()
+    for _ in range(width - 1):
+        grow = np.zeros_like(op)
+        for dy, dx in N4:
+            grow |= shifted(band, dy, dx, False)
+        band = band | (grow & op)
+    face = n @ RIM31
+    ok = ~np.isin(f, (F['glow'], F['visor']))
+    t2 = t.copy()
+    t2[band & ok & (face > RIM_FACE)] = P31.RIM
+    t2[edge & ok & (face > HOT_FACE)] = P31.HOT
+    body = ok & ~np.isin(f, GUN_FAMS)
+    t2[edge & body & ((n @ KICK31) > KICK_FACE) & (t2 < 5)] = P31.KICK
+    return t2
+
+
+def tidy_tones31(f, t):
+    H, W = f.shape
+    t2 = t.copy()
+    for y in range(H):
+        for x in range(W):
+            if f[y, x] < 0 or t[y, x] >= 5:
+                continue
+            nb = [t[y + dy, x + dx] for dy, dx in N4
+                  if 0 <= y + dy < H and 0 <= x + dx < W and f[y + dy, x + dx] == f[y, x] and t[y + dy, x + dx] < 5]
+            if len(nb) >= 3 and t[y, x] not in nb:
+                vals, cnt = np.unique(nb, return_counts=True)
+                if cnt.max() >= 3:
+                    t2[y, x] = vals[np.argmax(cnt)]
+    return t2
+
+
+def tidy_visor31(f, t):
+    """The visor: dark, with a glint on its top row only where it faces the
+    key light (lit tones 0-1) -- a short slit, not a stripe round the helmet."""
+    import palette_v31 as P31
+    t2 = t.copy()
+    vis = f == F['visor']
+    for x in range(f.shape[1]):
+        ys = np.nonzero(vis[:, x])[0]
+        for k, y in enumerate(ys):
+            t2[y, x] = P31.HOT if (k == 0 and t[y, x] <= 1) else 3
+    return t2
+
+
+def tidy_gun31(f, t, muzzle):
+    """The board's pale line along the gun's top edge; a glint pixel at the drawn muzzle."""
+    import palette_v31 as P31
+    t2 = t.copy()
+    g = np.isin(f, GUN_FAMS)
+    above = np.isin(shifted(f, -1, 0, -1), GUN_FAMS)
+    top = g & ~above & (t2 < 5)
+    t2[top] = P31.RIM
+    if muzzle is not None and g.any():
+        ys, xs = np.nonzero(g)
+        dd = (xs - (muzzle[0] - 0.5)) ** 2 + (ys - (muzzle[1] - 0.5)) ** 2
+        j = int(np.argmin(dd))
+        if dd[j] <= 6.0:
+            t2[ys[j], xs[j]] = P31.HOT
+    return t2
+
+
+def compose31(f, t, line, gun_letter):
+    import palette_v31 as P31
+    H, W = f.shape
+    ramps = [P31.RAMPS[n] if n != 'gun_acc' else P31.accent_ramp(gun_letter) for n in FAMS]
+    lut = np.zeros((NF, 8, 3), dtype=np.uint8)
+    for i, r in enumerate(ramps):
+        lut[i] = np.array(r, dtype=np.uint8)
+    rgba = np.zeros((H, W, 4), dtype=np.uint8)
+    op = f >= 0
+    fs, ts = np.clip(f, 0, NF - 1), np.clip(t, 0, 7)
+    col = lut[fs, ts]
+    deep = line & (ts < 5)
+    col = np.where(deep[..., None], lut[fs, 4], col)
+    rgba[op, :3] = col[op]
+    rgba[op, 3] = 255
+    return rgba, np.zeros_like(op)
+
+
+def reduce31(fam, objmap, normal, ao, depth, idx, cw, ch):
+    """reduce() with the v3.1 tone + specular rule (shared binning)."""
+    N = cw * ch
+    valid = idx >= 0
+    fi = idx[valid]
+    fv = fam[valid].astype(int)
+    total = np.bincount(fi, minlength=N).astype(np.float64)
+    op = fv >= 0
+    opaque = np.bincount(fi[op], minlength=N).astype(np.float64)
+    counts = np.bincount(fi[op] * NF + fv[op], minlength=N * NF).reshape(N, NF).astype(np.float64)
+    thin = counts[:, THIN_FAMS].sum(1) / np.maximum(total, 1)
+    keep = (opaque > 0) & ~((opaque / np.maximum(total, 1) < 0.5) & (thin < 0.3))
+    score = counts * WEIGHT[None, :]
+    win = np.argmax(score, axis=1)
+    win = np.where(keep, win, -1)
+    sel = op.copy()
+    sel[op] = fv[op] == win[fi[op]]
+    si = fi[sel]
+    nsel = np.bincount(si, minlength=N).astype(np.float64)
+    nn = np.zeros((N, 3))
+    nv = normal[valid][sel]
+    for c in range(3):
+        nn[:, c] = np.bincount(si, weights=nv[:, c], minlength=N)
+    nn /= np.maximum(np.linalg.norm(nn, axis=1, keepdims=True), 1e-9)
+    aom = np.bincount(si, weights=ao[valid][sel], minlength=N) / np.maximum(nsel, 1)
+    dep = np.full(N, np.inf)
+    np.minimum.at(dep, fi[op], depth[valid][op])
+    objc = np.bincount(si * 8 + objmap[valid][sel], minlength=N * 8).reshape(N, 8)
+    obj = np.where(keep, np.argmax(objc, axis=1), 0)
+    sh = (ch, cw)
+    nn = smooth_normals(nn.reshape(ch, cw, 3), obj.reshape(sh), SMOOTH_PX).reshape(N, 3)
+    tone = tone31(nn, aom, np.isin(win, WARM_FAMS))
+    half = (KEY31 - VIEW) / np.linalg.norm(KEY31 - VIEW)
+    spec = np.isin(win, SPEC_FAMS) & ((np.maximum(nn @ half, 0.0) ** 28) > 0.45)
+    tone = np.where(spec, 5, tone)
+    return (win.reshape(sh).astype(np.int16), tone.reshape(sh), np.where(keep, dep, 1.0).reshape(sh),
+            nn.reshape(ch, cw, 3), obj.reshape(sh).astype(np.int16))
+
+
+def process31(src, meta, key, out_root, densities=DENSITY_ORDER):
+    fm = meta['frames'][key]
+    L, pid = fm['gun'], fm['pose']
+    base = os.path.join(src, L, pid)
+    idp = read16(base + '-id.png')
+    nrm = read16(base + '-nrm.png')
+    aod = read16(base + '-aod.png')
+    fam, objmap = families31(idp)
+    n = nrm[..., :3] * 2.0 - 1.0
+    n /= np.maximum(np.linalg.norm(n, axis=-1, keepdims=True), 1e-6)
+    ao = aod[..., 0]
+    depth = aod[..., 1] * 4.0
+    res = {}
+    for dn in densities:
+        ppt = DENSITIES[dn]
+        cw, ch, ox, oy = cell_geometry(meta, ppt)
+        idx = bin_index(meta, ppt, cw, ch, ox, oy)
+        f, t, d, nn, o = reduce31(fam, objmap, n, ao, depth, idx, cw, ch)
+        f2, t2, d2, o2, n2 = tidy_silhouette(f, t, d, o, nn)
+        t2 = tidy_tones31(f2, t2)
+        t2 = tidy_visor31(f2, t2)
+        t2 = tidy_gun31(f2, t2, muzzle_px(fm, ppt, ox, oy))
+        t2 = rim31(f2, t2, n2, d2, RIM_W[dn])
+        line = depth_lines(f2, d2)
+        rgba, outline = compose31(f2, t2, line, L)
+        op = f2 >= 0
+        edges = [nm for nm, e in (('top', op[0]), ('bottom', op[-1]), ('left', op[:, 0]), ('right', op[:, -1]))
+                 if e.any()]
+        if edges:
+            raise CellTooSmall('%s %s: the figure touches the cell %s edge' % (key, dn, '/'.join(edges)))
+        d_out = os.path.join(out_root, dn, L)
+        os.makedirs(d_out, exist_ok=True)
+        Image.fromarray(rgba, 'RGBA').save(os.path.join(d_out, pid + '.png'))
+        np.savez_compressed(os.path.join(d_out, pid + '-parts.npz'), fam=f2, tone=t2, line=line, outline=outline,
+                            obj=o2)
+        res[dn] = {'cell': [cw, ch], 'origin': [ox, oy]}
+    return res
+
+
 def muzzle_px(fm, ppt, ox, oy, key='drawnMuzzle'):
     x, y = fm['tiles'][key]
     return (ox + x * ppt, oy - y * ppt)
@@ -369,7 +633,10 @@ def main():
     ap.add_argument('--out', required=True)
     ap.add_argument('--meta', default='')
     ap.add_argument('--keys', default='')
+    ap.add_argument('--look', default='v3', choices=('v3', 'v31'))
     args = ap.parse_args()
+    set_look(args.look)
+    proc = process31 if args.look == 'v31' else process
     metas = [args.meta] if args.meta else sorted(os.path.join(args.src, f) for f in os.listdir(args.src)
                                                  if f.startswith('meta-') and f.endswith('.json'))
     errors = []
@@ -379,7 +646,7 @@ def main():
         for key in keys:
             if key in meta['frames']:
                 try:
-                    r = process(args.src, meta, key, args.out)
+                    r = proc(args.src, meta, key, args.out)
                 except CellTooSmall as e:
                     errors.append(str(e))
                     print('ERROR', e, flush=True)

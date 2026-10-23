@@ -27,6 +27,15 @@ cannot reach its grip is a build error. The support (far) hand takes the
 fore-end; it may let go only where poses.py says it may (a ladder rung, or
 an aim pointing down away from the far shoulder), and the JSON records it.
 
+--look v31 --hold A|B [--probe] (T-124 phase 1b, decisions entry 28: board 01's
+marine): gun R and the preview poses of poses_v31.py, the rifle SHOULDERED --
+its butt on the bore BUTT_BACK behind the socket, the body translated so its
+near shoulder pocket lands on the butt (solve_shoulder) -- with bulk from the
+mesh's own armour (inflate_plates, LOOK31, SHOULDER_SCALE31) and the knee band
+painted as its own region. Hold A keeps today's bore; hold B is a render-only
+mock bore (poses_v31.B_SOCKET_Y). --probe solves and reports without rendering.
+The default look (v3) is unchanged byte for byte.
+
 --falsify <gun>: that gun's MESH is moved FALSIFY_TILES (0.15) back along the bore
 while every exported anchor stays where the sim puts it (the negative
 control); tools/art/rig/check.py must then fail on exactly that gun.
@@ -96,8 +105,36 @@ CELL_TILES = dict(left=HI_OX / HI_PPT, right=(HI_W - HI_OX) / HI_PPT,
 
 OBJ_IDS = {'Body': 1, 'Head1': 2, 'HandSimple': 3, 'gun': 4, 'pack': 5}
 REGIONS = {'torso': 1, 'head': 2, 'arm_R': 3, 'arm_L': 4, 'hand': 5, 'leg_R': 6, 'leg_L': 7, 'foot': 8,
-           'shoulder_R': 9, 'shoulder_L': 10, 'shin_R': 11, 'shin_L': 12, 'forearm_R': 13, 'forearm_L': 14}
+           'shoulder_R': 9, 'shoulder_L': 10, 'shin_R': 11, 'shin_L': 12, 'forearm_R': 13, 'forearm_L': 14,
+           'chest': 15, 'knee': 16}
+KNEE_Y0 = 0.40            # v3.1: shin vertices above this rest height (the knee joint is at 0.537) are the knee pad
 ZONE_SUIT, ZONE_PLATE, ZONE_GLOW, ZONE_PACK = 0, 1, 2, 12
+
+# ---- v3.1 (T-124 phase 1b, decisions entry 28): board 01's marine. `--look v31`
+# swaps these in; v3 (the default) is untouched, byte for byte.
+LOOK = 'v3'
+LOOK31 = dict(HEAD_SCALE=1.62, LIMB_THICK=1.42, LEG_THICK=1.44, CHEST_SCALE=(1.30, 1.0, 1.34))
+# pauldrons: the shoulder bone's mesh thickened across the bone (x, z) and
+# barely along it (y), and the arm hung from the UNSCALED shoulder -- bigger
+# shoulder armour without spreading the arms apart (a uniform 1.62 put the
+# shoulders 0.9 tiles apart and the far hand could not reach a vertical gun)
+SHOULDER_SCALE31 = (1.62, 1.08, 1.62)
+# BULK from the CC0 mesh's own armour: every vertex of a PLATE face (the
+# Federal skin's armour zones, zone_image) is pushed out along its normal by
+# this much (mesh units, ~tiles), weighted by the share of plate faces around
+# it -- heavier pauldrons, chest and limb armour without adding geometry
+# (entry 26: no primitive-built characters).
+INFLATE31 = {'shoulder_R': 0.060, 'shoulder_L': 0.060, 'chest': 0.034, 'torso': 0.018, 'forearm_R': 0.030,
+             'forearm_L': 0.030, 'arm_R': 0.022, 'arm_L': 0.022, 'leg_R': 0.022, 'leg_L': 0.022,
+             'shin_R': 0.026, 'shin_L': 0.026}
+HOLD = None                # v3.1: 'A' | 'B' (poses_v31.HOLDS)
+
+
+def set_look(name, hold=None):
+    global LOOK, HOLD
+    LOOK, HOLD = name, hold
+    if name == 'v31':
+        globals().update(LOOK31)
 
 
 def region_of(bone):
@@ -105,6 +142,8 @@ def region_of(bone):
     side = bone.rsplit('.', 1)[-1] if '.' in bone else ''
     if b == 'head':
         return 'head'
+    if LOOK == 'v31' and b in ('chest', 'neck'):
+        return 'chest'
     if b in ('hips', 'spine', 'chest', 'neck'):
         return 'torso'
     if b == 'shoulder':
@@ -135,14 +174,46 @@ def paint_regions(ob, fixed=None):
             code = REGIONS[fixed]
         else:
             best = max(v.groups, key=lambda g: g.weight, default=None)
-            code = REGIONS[region_of(names[best.group])] if best else REGIONS['torso']
+            reg = region_of(names[best.group]) if best else 'torso'
+            if LOOK == 'v31' and reg.startswith('shin') and v.co.y >= KNEE_Y0:   # mesh is Y-up: co.y = height
+                reg = 'knee'
+            code = REGIONS[reg]
         attr.data[v.index].color = (code / 16.0, 0.0, 0.0, 1.0)
 
 
-def zone_image():
-    """The base mesh's own texture zones, classified once per texel (the
-    spike's rule, unchanged): blue plates / orange emblems -> armour plate,
-    lit emission -> glow, the rest -> undersuit. Its colours are discarded."""
+def inflate_plates(ob, zone):
+    """v3.1 bulk: push the mesh's own plate faces out along their normals
+    (INFLATE31 per body region), before skinning. Deterministic: rest-pose
+    normals, fixed per-region amounts, zone sampled at each face's UV centroid."""
+    me = ob.data
+    H, W = zone.shape
+    uv = me.uv_layers.active.data
+    names = {g.index: g.name for g in ob.vertex_groups}
+    nv = len(me.vertices)
+    plate_n = np.zeros(nv)
+    all_n = np.zeros(nv)
+    for poly in me.polygons:
+        us = np.array([uv[li].uv[:] for li in poly.loop_indices]).mean(0)
+        x = min(W - 1, max(0, int(us[0] * W)))
+        y = min(H - 1, max(0, int((1.0 - us[1]) * H)))
+        is_plate = zone[y, x] == ZONE_PLATE
+        for vi in poly.vertices:
+            all_n[vi] += 1
+            plate_n[vi] += is_plate
+    moved = 0
+    for v in me.vertices:
+        best = max(v.groups, key=lambda g: g.weight, default=None)
+        reg = region_of(names[best.group]) if best else 'torso'
+        amt = INFLATE31.get(reg, 0.0) * (plate_n[v.index] / max(all_n[v.index], 1))
+        if amt > 0:
+            v.co = v.co + v.normal * amt
+            moved += 1
+    me.update()
+    return moved
+
+
+def zone_array():
+    """zone_image's classification as a numpy array (top row first)."""
     alb = np.asarray(Image.open(os.path.join(SOLDIER, 'FederalSoldierSkin_Albedo.tga')).convert('RGB'),
                      dtype=np.float64) / 255.0
     emi = np.asarray(Image.open(os.path.join(SOLDIER, 'FederalSoldierSkin_Emission.png')).convert('RGB'),
@@ -162,9 +233,17 @@ def zone_image():
     s = np.where(mx > 1e-6, d / np.maximum(mx, 1e-6), 0)
     v = mx
     plate = ((h > 140) & (h < 235) & (v > 0.22) & ((s > 0.35) | (v > 0.40))) | ((h < 50) & (s > 0.55) & (v > 0.55))
-    zone = np.full(mx.shape, ZONE_SUIT, dtype=np.float64)
+    zone = np.full(mx.shape, ZONE_SUIT, dtype=np.int16)
     zone[plate] = ZONE_PLATE
     zone[emi.max(-1) > 0.25] = ZONE_GLOW
+    return zone
+
+
+def zone_image():
+    """The base mesh's own texture zones, classified once per texel (the
+    spike's rule, unchanged): blue plates / orange emblems -> armour plate,
+    lit emission -> glow, the rest -> undersuit. Its colours are discarded."""
+    zone = zone_array().astype(np.float64)
     H, W = zone.shape
     img = bpy.data.images.new('zones', W, H, alpha=True, float_buffer=True)
     try:
@@ -256,6 +335,13 @@ def load_gun(letter):
            'classes': classes, 'faceClassCounts': {c: int(sum(1 for f in face_cls if f == i))
                                                    for i, c in enumerate(classes)}}
     geo['k'] = G.gun_scale(geo['bore'][0], geo['grip'][0], P.SIM_BARREL, spec['grip_at'])
+    if LOOK == 'v31':
+        import poses_v31 as P31
+        # shouldered: the butt sits BUTT_BACK behind the socket on the bore, so
+        # the whole gun spans barrelTiles + BUTT_BACK; its cross-section in
+        # tiles is kept (thick scaled by the length ratio)
+        geo['k_sh'] = (P31.SIM_BARREL + P31.BUTT_BACK) / (geo['bore'][0] - geo['x0'])
+        geo['thick_sh'] = spec['thick'] * geo['k'] / geo['k_sh']
     return gun, geo
 
 
@@ -271,6 +357,8 @@ def load_scene(letters):
     paint_regions(bpy.data.objects['Body'])
     paint_regions(bpy.data.objects['Head1'], 'head')
     paint_regions(bpy.data.objects['HandSimple'], 'hand')
+    if LOOK == 'v31':
+        inflate_plates(bpy.data.objects['Body'], zone_array())
     gun_objs = {}
     for L in letters:
         gun_objs[L] = load_gun(L)
@@ -312,14 +400,16 @@ def place_gun(gun, geo, spec, aim_deg, socket_y, recoil=0.0, falsify=0.0, depth=
     SIM_BARREL down it. `recoil` slides the drawn gun back along the bore (the
     game's presentation kick); `falsify` slides the MESH alone (the anchor
     check's negative control). The sim muzzle never moves."""
-    k = geo['k']
+    shoulder = LOOK == 'v31'
+    k = geo['k_sh'] if shoulder else geo['k']
+    thick = geo['thick_sh'] if shoulder else spec['thick']
     th = math.radians(aim_deg)
     d = np.array([math.cos(th), 0.0, math.sin(th)])
     socket = np.array([0.0, depth, socket_y])
     muzzle = socket + P.SIM_BARREL * d
     drawn_muzzle = muzzle - recoil * d
     rot = np.array(Matrix.Rotation(-th, 3, 'Y'))
-    lin = rot @ np.diag([k, k * spec['thick'], k * spec['thick']])
+    lin = rot @ np.diag([k, k * thick, k * thick])
     loc = drawn_muzzle - lin @ geo['bore']
     m = np.eye(4)
     m[:3, :3] = lin
@@ -328,9 +418,14 @@ def place_gun(gun, geo, spec, aim_deg, socket_y, recoil=0.0, falsify=0.0, depth=
 
     def to_world(p):
         return loc + lin @ np.asarray(p, dtype=float)
-    return {'k': k, 'aim': aim_deg, 'dir': d, 'rot': rot, 'muzzle': muzzle, 'drawn_muzzle': drawn_muzzle,
-            'socket': socket, 'grip': to_world(geo['grip']), 'support': to_world(geo['support']),
-            'stock': to_world([geo['x0'], 0, geo['bore'][2]])}
+    out = {'k': k, 'aim': aim_deg, 'dir': d, 'rot': rot, 'muzzle': muzzle, 'drawn_muzzle': drawn_muzzle,
+           'socket': socket, 'grip': to_world(geo['grip']), 'support': to_world(geo['support']),
+           'stock': to_world([geo['x0'], 0, geo['bore'][2]])}
+    if shoulder:
+        # the butt on the bore line (where the shoulder pocket must be): it
+        # rides back with the recoil kick, as the shooter's shoulder does
+        out['butt'] = to_world([geo['x0'], geo['bore'][1], geo['bore'][2]])
+    return out
 
 
 def solve_pose(arm, spec, gunw, support_mode):
@@ -471,6 +566,146 @@ def solve_pose(arm, spec, gunw, support_mode):
     inv = np.linalg.inv(obj)
     info = {'drop': round(float(drop), 4), 'supportSlid': slid[0], 'support': support_mode, 'warnings': warnings}
     return {n: inv @ m for n, m in out.items()}, obj, info
+
+
+def pose_shoulder(arm, spec, gunw, px, drop):
+    """v3.1 body for a SHOULDERED gun at a given pelvis offset/drop: lean,
+    chest and head attitude from the spec, both hands on the gun (near hand
+    on the grip, far hand on the fore-end, sliding back along it until it
+    reaches), feet from spec['feet'] -- on the deck relative to the pelvis,
+    or (air) relative to each hip joint.
+    Returns frames, obj, info (with the near shoulder pocket and hip joints)."""
+    import poses_v31 as P31
+    yaw = math.radians(90.0 - YAW_DEG)
+    s = BODY_SCALE
+    rest = bl.rest_frames(arm)
+    base = np.array(Matrix.Rotation(yaw, 4, 'Z') @ Matrix.Scale(s, 4))
+    obj = np.array(Matrix.Translation((px, 0.0, -drop))) @ base
+    arm.matrix_world = Matrix(obj.tolist())
+    W = {n: obj @ m for n, m in rest.items()}
+    fwd = np.array([math.cos(math.radians(-YAW_DEG)), math.sin(math.radians(-YAW_DEG)), 0.0])
+    right = np.array([fwd[1], -fwd[0], 0.0])
+    out = {}
+
+    def fk(name, parent_world, local_rot=None, scale=None):
+        p = arm.data.bones[name].parent.name
+        rel = np.linalg.inv(W[p]) @ W[name]
+        m = parent_world @ rel
+        if local_rot is not None:
+            m = m @ local_rot
+        if scale is not None:
+            m = m @ np.diag(list(scale) + [1.0])
+        out[name] = m
+        return m
+
+    hips = W['hips'].copy()
+    lean = np.array(Matrix.Rotation(math.radians(-spec.get('lean', 0.0)), 4, Vector(right.tolist())))
+    hips[:3, :3] = lean[:3, :3] @ hips[:3, :3]
+    out['hips'] = hips
+    spine = fk('spine', hips)
+    tw = np.array(Matrix.Rotation(math.radians(spec.get('chest_twist', 0.0)), 4, 'Y'))
+    cl = np.array(Matrix.Rotation(math.radians(spec.get('chest_lean', 0.0)), 4, 'X'))
+    chest = fk('chest', spine, tw @ cl, CHEST_SCALE)
+    neck = fk('neck', chest)
+    hp = np.array(Matrix.Rotation(math.radians(spec.get('head_pitch', 0.0)), 4, 'X'))
+    ht = np.array(Matrix.Rotation(math.radians(spec.get('head_turn', 0.0)), 4, 'Y'))
+    fk('head', neck, ht @ hp, (HEAD_SCALE,) * 3)
+    ua = {}
+    for side in ('L', 'R'):
+        sh0 = chest @ np.linalg.inv(W['chest']) @ W['shoulder.' + side]      # unscaled: where the arm hangs
+        ua[side] = (sh0 @ np.linalg.inv(W['shoulder.' + side]) @ W['upper_arm.' + side])[:3, 3]
+        fk('shoulder.' + side, chest, None, SHOULDER_SCALE31)
+    pocket = ua['R'] + np.array([P31.POCKET[0], 0.0, P31.POCKET[1]])
+
+    warnings = []
+    hip_j = {}
+    for side, sgn in (('L', -1.0), ('R', 1.0)):
+        thigh_head = (hips @ np.linalg.inv(W['hips']) @ W['thigh.' + side])[:3, 3]
+        hip_j[side] = thigh_head
+        dx, dy, dz, heel = spec['feet'][side]
+        ankle_rest = W['foot.' + side][:3, 3]
+        ankle_z0 = (base @ rest['foot.' + side])[2, 3]
+        if spec.get('air'):        # tucked / trailing legs hang from the hip joints
+            ankle = np.array([thigh_head[0] + dx, dy if dy else ankle_rest[1], thigh_head[2] + dz])
+        else:
+            ankle = np.array([px + dx, dy, ankle_z0 + dz])
+        la = np.linalg.norm(W['shin.' + side][:3, 3] - W['thigh.' + side][:3, 3]) * LEG_LEN
+        lb = np.linalg.norm(ankle_rest - W['shin.' + side][:3, 3]) * LEG_LEN
+        pole = fwd + right * (sgn * spec.get('knee_out', 0.0))
+        knee, end, err = two_bone_ik(thigh_head, ankle, la, lb, pole)
+        if err > 1e-6:
+            warnings.append('leg %s short by %.3f tiles' % (side, err))
+        thick = (LEG_THICK, LEG_LEN, LEG_THICK)
+        out['thigh.' + side] = bone_frame(thigh_head, knee - thigh_head, W['thigh.' + side], thick)
+        out['shin.' + side] = bone_frame(knee, end - knee, W['shin.' + side], thick)
+        f = W['foot.' + side].copy()
+        if heel:
+            pr = np.array(Matrix.Rotation(math.radians(-heel), 4, Vector(right.tolist())))
+            f[:3, :3] = pr[:3, :3] @ f[:3, :3]
+        f[:3, 3] = end
+        out['foot.' + side] = f
+        rel = np.linalg.inv(W['foot.' + side]) @ W['toe.' + side]
+        out['toe.' + side] = f @ rel
+
+    rot = gunw['rot']
+    slid = [0.0]
+    targets = [('R', gunw['grip'] + rot @ np.array([-0.035, 0.0, 0.085]), np.array([-0.3, -0.5, -0.8])),
+               ('L', gunw['support'] + rot @ np.array([-0.02, 0.0, 0.10]), np.array([0.0, 0.6, -0.8]))]
+    for side, target, pole in targets:
+        ua_head = ua[side]
+        la = np.linalg.norm(W['forearm.' + side][:3, 3] - W['upper_arm.' + side][:3, 3]) * ARM_LEN
+        lb = np.linalg.norm(W['hand.' + side][:3, 3] - W['forearm.' + side][:3, 3]) * ARM_LEN
+        if side == 'L':
+            back = rot @ np.array([0.02, 0.0, 0.0])
+            while np.linalg.norm(target - ua_head) > 0.97 * (la + lb) and \
+                    float((target - gunw['grip']) @ gunw['dir']) > 0.04:
+                target = target - back
+            slid[0] = round(float((gunw['support'] - target) @ gunw['dir']), 3)
+        elbow, wrist, err = two_bone_ik(ua_head, target, la, lb, pole)
+        if err > 1e-6:
+            warnings.append('arm %s short by %.3f tiles' % (side, err))
+        thick = (LIMB_THICK, ARM_LEN, LIMB_THICK)
+        out['upper_arm.' + side] = bone_frame(ua_head, elbow - ua_head, W['upper_arm.' + side], thick)
+        out['forearm.' + side] = bone_frame(elbow, wrist - elbow, W['forearm.' + side], thick)
+        grip_dir = rot @ (unit(np.array([0.55, 0.0, -0.83])) if side == 'R' else unit(np.array([0.35, 0.0, -0.94])))
+        out['hand.' + side] = bone_frame(wrist, grip_dir, W['hand.' + side], (HAND_SCALE,) * 3)
+        for b in arm.data.bones:
+            if not b.name.endswith('.' + side):
+                continue
+            bn = b.name.split('.')[0]
+            if bn.startswith(('palm', 'f_', 'thumb')):
+                p = b.parent.name
+                rel = np.linalg.inv(W[p]) @ W[b.name]
+                curl = 0.0 if bn.startswith('palm') else (35.0 if bn.startswith('thumb') else 62.0)
+                out[b.name] = out[p] @ rel @ rot_axis((1, 0, 0), curl)
+    inv = np.linalg.inv(obj)
+    info = {'drop': round(float(drop), 4), 'pelvisX': round(float(px), 4), 'supportSlid': slid[0], 'support': 'gun',
+            'warnings': warnings, 'pocket': pocket, 'hips': hip_j}
+    return {n: inv @ m for n, m in out.items()}, obj, info
+
+
+def solve_shoulder(arm, spec, gunw, state, aim):
+    """Place the body so its near shoulder POCKET lands on the gun's butt
+    (the bore line, BUTT_BACK behind the socket): one rigid translation, then
+    the limbs. Ordered search over extra chest twist (the far hand must reach
+    the fore-end) and lean (grounded legs must reach the deck). A hand or a
+    planted foot that cannot reach is a build error."""
+    tried = []
+    for extra_lean in (0.0, -4.0, 4.0, -8.0, 8.0, -12.0):
+        for extra_twist in (0, -6, -12, -18, -24, -30, -36):
+            p = dict(spec)
+            p['lean'] = spec.get('lean', 0.0) + extra_lean
+            p['chest_twist'] = spec.get('chest_twist', 0.0) + extra_twist
+            _, _, i0 = pose_shoulder(arm, p, gunw, 0.0, 0.0)
+            px = float(gunw['butt'][0] - i0['pocket'][0])
+            drop = float(i0['pocket'][2] - gunw['butt'][2])
+            frames, obj, info = pose_shoulder(arm, p, gunw, px, drop)
+            tried.append((extra_lean, extra_twist, info['warnings']))
+            if not info['warnings']:
+                info['search'] = {'extraLean': extra_lean, 'extraTwist': extra_twist, 'tries': len(tried)}
+                info['pocketErr'] = round(float(np.linalg.norm((info['pocket'] - gunw['butt'])[[0, 2]])), 6)
+                return frames, obj, info
+    raise Unreachable('%s/%s: shoulder hold unreachable: %s' % (state, aim, tried[-1]))
 
 
 SUPPORT_MAY_REST = ('down', 'down-right')
@@ -646,9 +881,13 @@ def main():
     ap.add_argument('--guns', default=','.join(P.GUNS))
     ap.add_argument('--poses', default='')
     ap.add_argument('--falsify', default='')
+    ap.add_argument('--look', default='v3', choices=('v3', 'v31'))
+    ap.add_argument('--hold', default='A', help='v31: A (today\'s bore) | B (render-only mock, raised bore)')
+    ap.add_argument('--probe', action='store_true', help='v31: solve and report every pose, render nothing')
     args = ap.parse_args(sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:])
     os.makedirs(args.out, exist_ok=True)
     t0 = time.time()
+    set_look(args.look, args.hold if args.look == 'v31' else None)
     letters = args.guns.split(',')
     scene, arm, gun_objs, pack = load_scene(letters)
     body = [bpy.data.objects[n] for n in ('Body', 'Head1', 'HandSimple')]
@@ -662,7 +901,14 @@ def main():
     cam = bl.make_camera(scene)
     bl.frame_camera(cam, HI_W, HI_H, (HI_OX, HI_OY), HI_PPT)
     setup_cycles(scene, HI_W, HI_H)
-    specs = P.frame_specs()
+    if LOOK == 'v31':
+        import poses_v31 as P31
+        hold = P31.HOLDS[HOLD]
+        specs = P31.preview_specs()
+        for _pid, _st, _aim, sp in specs:
+            sp['socket_y'] = hold['socketY']
+    else:
+        specs = P.frame_specs()
     if args.poses:
         want = set(args.poses.split(','))
         specs = [s for s in specs if s[0] in want]
@@ -671,6 +917,10 @@ def main():
             'exaggeration': {'body': BODY_SCALE, 'head': HEAD_SCALE, 'hand': HAND_SCALE, 'limb': LIMB_THICK,
                              'armLen': ARM_LEN, 'leg': LEG_THICK, 'legLen': LEG_LEN, 'yawDeg': YAW_DEG},
             'falsify': args.falsify or None, 'guns': {}, 'frames': {}}
+    if LOOK == 'v31':
+        meta['look'] = 'v31'
+        meta['hold'] = dict(P31.HOLDS[HOLD], id=HOLD, buttBack=P31.BUTT_BACK, pocket=list(P31.POCKET))
+        meta['exaggeration'].update({'chest': list(CHEST_SCALE), 'shoulder': list(SHOULDER_SCALE31), 'inflate': INFLATE31})
     errors = []
     tag = '-'.join(letters) + ('-falsify-' + args.falsify if args.falsify else '')
     meta_path = os.path.join(args.out, 'meta-%s.json' % tag)
@@ -691,6 +941,9 @@ def main():
         meta['guns'][L] = {'fbx': spec_g['fbx'], 'k': round(geo['k'], 5), 'thick': spec_g['thick'],
                            'lengthTiles': round((geo['x1'] - geo['x0']) * geo['k'], 4),
                            'faceClasses': geo['faceClassCounts'], 'looks': spec_g['looks']}
+        if LOOK == 'v31':       # the shouldered gun: butt on the bore, BUTT_BACK behind the socket
+            meta['guns'][L].update({'kShoulder': round(geo['k_sh'], 5), 'thickShoulder': round(geo['thick_sh'], 4),
+                                    'lengthShoulderTiles': round((geo['x1'] - geo['x0']) * geo['k_sh'], 4)})
         for g2, _ in gun_objs.values():
             g2.hide_render = g2 is not gun
         for pid, state, aim, spec in specs:
@@ -699,7 +952,12 @@ def main():
             gunw = place_gun(gun, geo, spec_g, spec['aim'], socket_y, spec.get('recoil', 0.0),
                              FALSIFY_TILES if args.falsify == L else 0.0, GUN_DEPTH_BY_AIM.get(aim, GUN_DEPTH))
             try:
-                frames, obj, info = reach_search(arm, spec, gunw, state, aim)
+                if LOOK == 'v31':
+                    frames, obj, info = solve_shoulder(arm, spec, gunw, state, aim)
+                    info['pocket'] = tiles(info['pocket'])
+                    info['hips'] = {k: tiles(v) for k, v in info['hips'].items()}
+                else:
+                    frames, obj, info = reach_search(arm, spec, gunw, state, aim)
             except Unreachable as e:
                 errors.append('%s: %s' % (key, e))
                 print('UNREACHABLE', key, e, flush=True)
@@ -707,7 +965,7 @@ def main():
             bl.apply_pose(arm, frames)
             bpy.context.view_layer.update()
             timing = {}
-            for pname in ('id', 'nrm', 'aod'):
+            for pname in (() if args.probe else ('id', 'nrm', 'aod')):
                 if pname == 'id':
                     for ob in body:
                         assign(ob, mats['id_body'])
@@ -735,7 +993,13 @@ def main():
                           'head': tiles((bone_pt('head') + bone_pt('head', 'tail')) / 2),
                           'footR': tiles(bone_pt('foot.R')), 'footL': tiles(bone_pt('foot.L'))},
                 'lhand': info['support'], 'solve': info, 'render_s': timing}
-            print(key, info['support'], info.get('search'), timing, flush=True)
+            if LOOK == 'v31':
+                meta['frames'][key]['tiles']['butt'] = tiles(gunw['butt'])
+                meta['frames'][key]['mock'] = P31.HOLDS[HOLD]['mock']
+                print(key, 'pelvisX %.3f drop %.3f' % (info['pelvisX'], info['drop']), 'pocketErr', info['pocketErr'],
+                      info['search'], 'head', tiles(bone_pt('head', 'tail')), flush=True)
+            else:
+                print(key, info['support'], info.get('search'), timing, flush=True)
         save()
     save()
     print('done', meta['total_s'], 's', flush=True)
