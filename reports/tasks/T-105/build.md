@@ -807,9 +807,10 @@ Each run materialises the whole tree in the system temp dir — `git archive` to
 ## Hand-off
 
 - Worktree `/home/user/hullbreaker/.claude/worktrees/T-105`, branch
-  `task/T-105`: code and tools final at `383b09f`; the head is the commit on
-  top of it that adds this report, its evidence and two captures. Main
-  `af8bb0b` merged as `9ecf462`. Not merged to main; tree clean.
+  `task/T-105`: code and tools final at `383b09f`; the commits on top of it
+  touch only `reports/tasks/T-105/` (this report, its evidence, two
+  captures). Main `af8bb0b` merged as `9ecf462`. Not merged to main; tree
+  clean.
 - **Single best next action:** run `reviewer` and `playtester` on this
   worktree (the playtester's `phone-shell.mjs` and `touch-proof.mjs` runs
   are the same commands as above), then queue the operator's iPhone pass
