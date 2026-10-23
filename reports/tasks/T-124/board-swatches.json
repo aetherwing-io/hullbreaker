@@ -1,0 +1,635 @@
+{
+ "method": "1. RIG box: a tight box around one RIG figure (body + the near half of the\n     gun; the muzzle flash is outside every box).\n  2. Background model: deterministic k-means (k=4) of the pixels in a 5 px\n     ring just outside the box -- the hull, sky or wall RIG stands on.\n  3. RIG mask: box pixels farther than BG_DIST (sRGB) from every background\n     centre. Near-black RIG pixels on a near-black wall drop out here; that\n     is fine, they are the ink/void role, not the fill being measured.\n  4. Clusters: deterministic k-means of the masked pixels of all of a board's\n     boxes pooled (board 13: six panels), k = K per board. Each cluster is\n     reported with its centre, share, Rec.601 luma, HSV hue/sat, and the\n     board pixel nearest its centre (board, x, y) -- the swatch coordinate.",
+ "rustRule": {
+  "hueDeg": [
+   12.0,
+   42.0
+  ],
+  "minSat": 0.5,
+  "minLuma": 30.0,
+  "k": 4,
+  "pixels": 103
+ },
+ "boxes": [
+  {
+   "board": "01-exterior-gameplay.png",
+   "box": [
+    553,
+    366,
+    600,
+    433
+   ],
+   "label": "b01 jump-fire",
+   "rigPx": 757,
+   "backgroundCentres": [
+    [
+     66,
+     44,
+     25
+    ],
+    [
+     112,
+     65,
+     33
+    ],
+    [
+     178,
+     117,
+     64
+    ],
+    [
+     239,
+     217,
+     171
+    ]
+   ]
+  },
+  {
+   "board": "13-human-scale-monster-climb-grammar.png",
+   "box": [
+    316,
+    222,
+    346,
+    263
+   ],
+   "label": "b13 p1 run-fire",
+   "rigPx": 266,
+   "backgroundCentres": [
+    [
+     62,
+     51,
+     40
+    ],
+    [
+     18,
+     100,
+     109
+    ],
+    [
+     26,
+     102,
+     111
+    ],
+    [
+     123,
+     86,
+     57
+    ]
+   ]
+  },
+  {
+   "board": "13-human-scale-monster-climb-grammar.png",
+   "box": [
+    748,
+    136,
+    778,
+    180
+   ],
+   "label": "b13 p2 brace-fire",
+   "rigPx": 148,
+   "backgroundCentres": [
+    [
+     9,
+     19,
+     21
+    ],
+    [
+     41,
+     35,
+     28
+    ],
+    [
+     77,
+     57,
+     41
+    ],
+    [
+     125,
+     88,
+     57
+    ]
+   ]
+  },
+  {
+   "board": "13-human-scale-monster-climb-grammar.png",
+   "box": [
+    1260,
+    222,
+    1302,
+    262
+   ],
+   "label": "b13 p3 run-fire",
+   "rigPx": 184,
+   "backgroundCentres": [
+    [
+     10,
+     29,
+     34
+    ],
+    [
+     27,
+     37,
+     38
+    ],
+    [
+     37,
+     43,
+     41
+    ],
+    [
+     101,
+     91,
+     70
+    ]
+   ]
+  },
+  {
+   "board": "13-human-scale-monster-climb-grammar.png",
+   "box": [
+    808,
+    668,
+    845,
+    712
+   ],
+   "label": "b13 p5 run-fire",
+   "rigPx": 189,
+   "backgroundCentres": [
+    [
+     29,
+     43,
+     44
+    ],
+    [
+     78,
+     61,
+     46
+    ],
+    [
+     143,
+     123,
+     92
+    ],
+    [
+     34,
+     83,
+     90
+    ]
+   ]
+  },
+  {
+   "board": "13-human-scale-monster-climb-grammar.png",
+   "box": [
+    1376,
+    674,
+    1412,
+    712
+   ],
+   "label": "b13 p6 run-fire",
+   "rigPx": 302,
+   "backgroundCentres": [
+    [
+     38,
+     38,
+     35
+    ],
+    [
+     20,
+     87,
+     99
+    ],
+    [
+     39,
+     102,
+     110
+    ],
+    [
+     138,
+     94,
+     62
+    ]
+   ]
+  }
+ ],
+ "swatches": {
+  "01-exterior-gameplay.png": [
+   {
+    "rgb": [
+     206,
+     169,
+     117
+    ],
+    "hex": "#cea975",
+    "luma": 174.2,
+    "hue": 35.1,
+    "sat": 0.432,
+    "share": 0.145,
+    "n": 110,
+    "at": {
+     "board": "01-exterior-gameplay.png",
+     "x": 566,
+     "y": 378,
+     "rgb": [
+      206,
+      162,
+      120
+     ]
+    }
+   },
+   {
+    "rgb": [
+     135,
+     106,
+     74
+    ],
+    "hex": "#876a4a",
+    "luma": 111.0,
+    "hue": 31.5,
+    "sat": 0.452,
+    "share": 0.104,
+    "n": 79,
+    "at": {
+     "board": "01-exterior-gameplay.png",
+     "x": 569,
+     "y": 388,
+     "rgb": [
+      131,
+      107,
+      77
+     ]
+    }
+   },
+   {
+    "rgb": [
+     75,
+     79,
+     67
+    ],
+    "hex": "#4b4f43",
+    "luma": 76.7,
+    "hue": 80.0,
+    "sat": 0.152,
+    "share": 0.087,
+    "n": 66,
+    "at": {
+     "board": "01-exterior-gameplay.png",
+     "x": 570,
+     "y": 408,
+     "rgb": [
+      75,
+      79,
+      68
+     ]
+    }
+   },
+   {
+    "rgb": [
+     23,
+     30,
+     25
+    ],
+    "hex": "#171e19",
+    "luma": 27.0,
+    "hue": 137.1,
+    "sat": 0.233,
+    "share": 0.145,
+    "n": 110,
+    "at": {
+     "board": "01-exterior-gameplay.png",
+     "x": 573,
+     "y": 395,
+     "rgb": [
+      23,
+      31,
+      24
+     ]
+    }
+   },
+   {
+    "rgb": [
+     27,
+     20,
+     13
+    ],
+    "hex": "#1b140d",
+    "luma": 20.9,
+    "hue": 30.0,
+    "sat": 0.519,
+    "share": 0.089,
+    "n": 67,
+    "at": {
+     "board": "01-exterior-gameplay.png",
+     "x": 567,
+     "y": 421,
+     "rgb": [
+      27,
+      19,
+      13
+     ]
+    }
+   },
+   {
+    "rgb": [
+     16,
+     21,
+     18
+    ],
+    "hex": "#101512",
+    "luma": 19.1,
+    "hue": 144.0,
+    "sat": 0.238,
+    "share": 0.16,
+    "n": 121,
+    "at": {
+     "board": "01-exterior-gameplay.png",
+     "x": 580,
+     "y": 414,
+     "rgb": [
+      16,
+      21,
+      18
+     ]
+    }
+   },
+   {
+    "rgb": [
+     11,
+     14,
+     12
+    ],
+    "hex": "#0b0e0c",
+    "luma": 12.7,
+    "hue": 140.0,
+    "sat": 0.214,
+    "share": 0.166,
+    "n": 126,
+    "at": {
+     "board": "01-exterior-gameplay.png",
+     "x": 585,
+     "y": 386,
+     "rgb": [
+      11,
+      14,
+      13
+     ]
+    }
+   },
+   {
+    "rgb": [
+     4,
+     6,
+     6
+    ],
+    "hex": "#040606",
+    "luma": 5.6,
+    "hue": 180.0,
+    "sat": 0.333,
+    "share": 0.103,
+    "n": 78,
+    "at": {
+     "board": "01-exterior-gameplay.png",
+     "x": 568,
+     "y": 394,
+     "rgb": [
+      4,
+      7,
+      5
+     ]
+    }
+   }
+  ],
+  "13-human-scale-monster-climb-grammar.png": [
+   {
+    "rgb": [
+     236,
+     223,
+     185
+    ],
+    "hex": "#ecdfb9",
+    "luma": 222.5,
+    "hue": 44.7,
+    "sat": 0.216,
+    "share": 0.11,
+    "n": 120,
+    "at": {
+     "board": "13-human-scale-monster-climb-grammar.png",
+     "x": 819,
+     "y": 677,
+     "rgb": [
+      238,
+      224,
+      186
+     ]
+    }
+   },
+   {
+    "rgb": [
+     205,
+     185,
+     143
+    ],
+    "hex": "#cdb98f",
+    "luma": 186.1,
+    "hue": 40.6,
+    "sat": 0.302,
+    "share": 0.179,
+    "n": 195,
+    "at": {
+     "board": "13-human-scale-monster-climb-grammar.png",
+     "x": 1287,
+     "y": 235,
+     "rgb": [
+      208,
+      186,
+      142
+     ]
+    }
+   },
+   {
+    "rgb": [
+     174,
+     153,
+     115
+    ],
+    "hex": "#ae9973",
+    "luma": 154.9,
+    "hue": 38.6,
+    "sat": 0.339,
+    "share": 0.215,
+    "n": 234,
+    "at": {
+     "board": "13-human-scale-monster-climb-grammar.png",
+     "x": 810,
+     "y": 704,
+     "rgb": [
+      172,
+      154,
+      115
+     ]
+    }
+   },
+   {
+    "rgb": [
+     135,
+     126,
+     98
+    ],
+    "hex": "#877e62",
+    "luma": 125.4,
+    "hue": 45.4,
+    "sat": 0.274,
+    "share": 0.2,
+    "n": 218,
+    "at": {
+     "board": "13-human-scale-monster-climb-grammar.png",
+     "x": 1283,
+     "y": 228,
+     "rgb": [
+      134,
+      124,
+      100
+     ]
+    }
+   },
+   {
+    "rgb": [
+     83,
+     86,
+     73
+    ],
+    "hex": "#535649",
+    "luma": 83.8,
+    "hue": 73.8,
+    "sat": 0.151,
+    "share": 0.205,
+    "n": 223,
+    "at": {
+     "board": "13-human-scale-monster-climb-grammar.png",
+     "x": 1410,
+     "y": 689,
+     "rgb": [
+      82,
+      88,
+      72
+     ]
+    }
+   },
+   {
+    "rgb": [
+     16,
+     23,
+     24
+    ],
+    "hex": "#101718",
+    "luma": 20.7,
+    "hue": 187.5,
+    "sat": 0.333,
+    "share": 0.091,
+    "n": 99,
+    "at": {
+     "board": "13-human-scale-monster-climb-grammar.png",
+     "x": 338,
+     "y": 239,
+     "rgb": [
+      15,
+      22,
+      24
+     ]
+    }
+   }
+  ],
+  "rust (rule)": [
+   {
+    "rgb": [
+     225,
+     167,
+     97
+    ],
+    "hex": "#e1a761",
+    "luma": 176.5,
+    "hue": 32.8,
+    "sat": 0.569,
+    "share": 0.291,
+    "n": 30,
+    "at": {
+     "board": "01-exterior-gameplay.png",
+     "x": 561,
+     "y": 401,
+     "rgb": [
+      227,
+      165,
+      100
+     ]
+    }
+   },
+   {
+    "rgb": [
+     190,
+     136,
+     81
+    ],
+    "hex": "#be8851",
+    "luma": 145.7,
+    "hue": 30.3,
+    "sat": 0.574,
+    "share": 0.311,
+    "n": 32,
+    "at": {
+     "board": "13-human-scale-monster-climb-grammar.png",
+     "x": 1399,
+     "y": 677,
+     "rgb": [
+      192,
+      136,
+      82
+     ]
+    }
+   },
+   {
+    "rgb": [
+     150,
+     91,
+     48
+    ],
+    "hex": "#965b30",
+    "luma": 103.6,
+    "hue": 25.3,
+    "sat": 0.68,
+    "share": 0.252,
+    "n": 26,
+    "at": {
+     "board": "01-exterior-gameplay.png",
+     "x": 578,
+     "y": 430,
+     "rgb": [
+      144,
+      91,
+      50
+     ]
+    }
+   },
+   {
+    "rgb": [
+     101,
+     62,
+     39
+    ],
+    "hex": "#653e27",
+    "luma": 70.9,
+    "hue": 22.3,
+    "sat": 0.614,
+    "share": 0.146,
+    "n": 15,
+    "at": {
+     "board": "13-human-scale-monster-climb-grammar.png",
+     "x": 1379,
+     "y": 701,
+     "rgb": [
+      98,
+      62,
+      40
+     ]
+    }
+   }
+  ]
+ }
+}

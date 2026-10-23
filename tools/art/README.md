@@ -48,7 +48,7 @@ Rules for any 3D-sourced sprite:
    render at 2-4x, downscale with a known filter, quantize to the palette
    (`src/render/palette.js` roles, `docs/DESIGN.md` <=8-colour rule), add the
    1 px outline if the look calls for it. Same input, same pixels.
-4. **Judge at true size** — RIG is ~30 px tall at FAR on desktop and ~6% of
+4. **Judge at true size** — RIG is 32.5 px tall at FAR on a 1280x720 desktop (16.24 px/tile, measured) and ~6% of
    screen height on phones (entry 20 addendum). A sheet that reads at 4x and
    smears at 1x fails. Show both in every contact sheet.
 5. **Every look change is the operator's call.** Ship a new look behind an
@@ -129,8 +129,11 @@ gun pixels on the bore axis end within 1 px of the exported `drawnMuzzle`;
 `src/config.js` (`CONFIG.player.muzzleY`, `barrelTiles`, `CONFIG.crouch.muzzleY`)
 and `RIG_RECOIL_TILES`. `--falsify S` re-renders gun S with its MESH 0.15 tiles
 down the bore (anchors unmoved) and confirms only when exactly S's frames fail.
-It already caught one real defect: straight-down guns ran behind the near leg
-(1-24 px short) until render.py drew them in front (`GUN_DEPTH_BY_AIM`).
+It caught two real defects while v3 was built: straight-down guns ran behind
+the near leg (1-24 px short) until render.py drew them in front
+(`GUN_DEPTH_BY_AIM`), and at d16 the SMG's sub-pixel barrel stub lost its
+muzzle pixel to the knee beside it until post.py let gun parts win a
+contested pixel (majority weight 2.0).
 
 **Limitations, stated plainly.**
 - Byte-reproducibility is proven on this host only (two clean builds, same

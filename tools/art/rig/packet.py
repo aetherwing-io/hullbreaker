@@ -220,9 +220,10 @@ def panels(view, scene_root, v3, spike, spike_a, spike_b=None):
         tm = SM.today_mask(today, bgt, (lx[0], int(round((PANEL_TOP - 2.45) * u)), lx[1],
                                         int(round((PANEL_TOP + 0.15) * u))))
         tgun = None
-        if spike_a is not None:
-            _, (_, _, ag) = paste(bgimg, spike_a, sframe, (fx, fy), mirror)
-            tgun = ag[cbox[1]:cbox[3], cbox[0]:cbox[2]] & tm        # A's gun plane at the same placement (approximate)
+        if spike_a is not None and label != 'run':      # the run crop moved during its shot (the spike's exclusion)
+            # A's gun plane at the same placement (approximate), in the today shot's own coordinates
+            _, (_, _, ag) = paste(sc.shot(cur), spike_a, sframe, (cx, cy), mirror)
+            tgun = ag[cbox[1]:cbox[3], cbox[0]:cbox[2]] & tm
         st = SM.stats(today, bgt, tm, tgun, aim)
         _, ring = today_fill(tm)
         st.update(fill_stats(today, bgt, tm, ring))
@@ -268,13 +269,17 @@ def context(view, sc, v3, out_dir):
     tiles = [sc.shot('cur-frame-idle').crop(box)]
     comp, _ = paste(sc.shot('bg-frame'), v3, 'R:stand-right', (fx, fy), False)
     tiles.append(comp.crop(box))
-    gap, head = 6, 18
+    gap, head = 6, 36
     out = Image.new('RGBA', (2 * w + 3 * gap, h + head + 2 * gap), (12, 14, 18, 255))
     d = ImageDraw.Draw(out)
+    what = ('%s, TRUE SIZE: a 480x270 window of the 1280x720 FAR frame at DPR 1' % view.upper() if view == 'desktop' else
+            '%s, TRUE SIZE in device px: an 844x390 device-px window (422x195 css) of the 844x390 css phone frame at DPR 2'
+            % view.upper())
+    d.text((gap, gap), what, fill=(255, 214, 140, 255), font=SC.font(13))
     names = ['today (in-game screenshot)', 'v3, gun R, composited 1 texel = 1 device px']
     for i, (t, n) in enumerate(zip(tiles, names)):
         x = gap + i * (w + gap)
-        d.text((x, gap), n + ('  TRUE SIZE' if i == 0 else ''), fill=(220, 220, 210, 255), font=SC.font(13))
+        d.text((x, gap + 17), n, fill=(220, 220, 210, 255), font=SC.font(13))
         out.alpha_composite(t, (x, gap + head))
     p = os.path.join(out_dir, 'v3-%s-context.png' % view)
     out.convert('RGB').save(p, optimize=True)
@@ -415,7 +420,7 @@ def packet_one(out_dir, rig_px):
             small = im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.BOX)
             out.paste(small, (x, y + 22))
             d.text((x, y + 24 + small.height), '%s, %s' % (label, view), fill=(170, 175, 180), font=SC.font(10))
-            x += max(small.width, 120) + 10
+            x += max(small.width, 150) + 14
     p = os.path.join(out_dir, 'packet-1-true-size.png')
     out.save(p, optimize=True)
     return p
@@ -480,7 +485,8 @@ def main():
         print(packet_one(args.out, {v: 2 * m['pxPerTile'] for v, m in allm.items()}))
     v16 = V3(args.assets, args.cells, 'd16')
     for g in sorted({k.split(':')[0] for k in v16.index}):
-        print(inventory(v16, g, args.out) if g == 'R' else '', end='')
+        if g == 'R':
+            print(inventory(v16, g, args.out))
     print(inventory(V3(args.assets, args.cells, 'd23'), 'R', args.out, scale=2))
     if args.falsify_assets:
         fals = V3(args.falsify_assets, args.falsify_cells, 'd16')
