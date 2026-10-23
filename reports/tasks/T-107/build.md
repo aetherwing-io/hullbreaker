@@ -18,18 +18,18 @@ iPhone.
 - **On a phone (touch, landscape)** the camera is the FAR shot through a
   longer lens: RIG's body is **5.58%** of the screen height (21.8 px at
   844x390, measured live; FAR on the same phone today: 3.83%, 14.9 px), and the
-  frame shows **67.9 x 31.3 tiles** of route instead of 99.2 x 45.6. The frame is lifted
-  0.85 tiles so the lowest landing deck stays above the right-thumb cluster
-  (with the iPhone's home-indicator inset) while RIG's head stays inside the
-  top on every route surface he can reach. Desktop is untouched: the camera's
-  matrices are bit-identical to main at 1280x720, 1920x1080 and 1280x800.
+  frame shows **67.9 x 31.3 tiles** of route instead of 99.2 x 45.6. The frame is
+  lifted 0.85 tiles so the lowest landing deck stays above the right-thumb
+  cluster (with the iPhone's home-indicator inset) while RIG's head stays inside
+  the top on every route surface he can stand on. Desktop is untouched: the
+  camera's matrices are bit-identical to main at 1280x720, 1920x1080 and 1280x800.
 - **Portrait phones** keep FAR's portrait frame exactly (RIG's body is already
   7.0% of the short side there); the lens only ever narrows.
 - **Everywhere**, RIG pinned at the right clamp now stays fully on screen
   (on main he was half off at 1280x720 and **entirely off-screen** at 844x390
-  and 932x430 — measured in painted pixels, below), and the flat clear-colour
-  voids at the screen edge near every corner are filled by the far anatomy
-  veil reaching past both corners.
+  and 932x430 — measured in painted pixels, box 8), and the flat clear-colour
+  voids at the screen edge near every corner are gone (box 7: 11.8-19.0% of
+  columns on approach at 844x390 on main -> 0%).
 - Behind flags, for the operator to try: `?orbit=joint` (no post-turn zoom
   pump) and `?rise=steep` (the climb made literal: ~101 m instead of 35 m).
 
@@ -46,18 +46,21 @@ Runtime (6 files):
 | `src/mode.js` | `VIEW_REQUEST` (raw `?view=`), `TURN_ORBIT` (`?orbit=joint`), `VEIL_EXTENDED` (`?veil=legacy` escape hatch), `RISE_ID` (selects the ascent profile once at import). |
 | `src/config.js` | `CONFIG.framing`: phone bound 540 px, `rigShortSideFrac` 0.056, `liftTiles` 0.85, `actorDepth` 1.15, `actorHalfExtent` 1.295 (pure/rig.js's documented overrun ceiling). |
 
+`src/sim/` is untouched (`git diff --stat ace6618 -- src/sim` is empty).
+
 What I kept from the snapshot, and what I changed after measuring:
 
 - **Kept: the lens model** (narrow the fov at the FAR pose) over a depth
-  pull-in. The camera never stands closer to the anatomy than FAR does (no
-  clipping risk through the orbit), the backdrop keeps its scale against RIG,
-  fog and every distance-keyed system stay as authored.
+  pull-in. The camera never stands closer to the anatomy than FAR does (no new
+  clipping risk anywhere in the orbit), the backdrop keeps its scale against
+  RIG, fog and every distance-keyed system stay as authored.
 - **Changed: RIG share 5.8% -> 5.6%, lift 0 -> 0.85.** The snapshot's 5.8% /
   0 put RIG's painted head off the top of the frame on face 6's highest
-  surfaces once the helix's tilt across the frame is counted (`-6.3 px` at
-  844x390; falsifier row M4a). Solved instead for the largest share at which
-  BOTH hold at 844x390, 932x430, 667x375 and a Safari-chrome 844x350: RIG's
-  painted head inside the top on every reachable surface, and the lowest deck
+  surfaces once the helix's tilt across the frame is counted (13.0 px at
+  844x390, 14.3 px at 932x430, 9.3 px at 667x375; `vertical-band.mjs` with the
+  snapshot's constants). Solved instead for the largest share at which BOTH
+  hold at 844x390, 932x430, 667x375 and a Safari-chrome 844x350: RIG's painted
+  head inside the top on every surface he can stand on, and the lowest deck
   above the right-thumb cluster with the 21 px home-indicator inset. 6.0% is
   infeasible (no lift satisfies both); 5.6% with lift 0.85 holds with >= 1.9 px
   and >= 2.5 px to spare (`evidence/pathcheck-t107-static-labels.txt`).
@@ -68,7 +71,7 @@ What I kept from the snapshot, and what I changed after measuring:
 - **Changed: the clamp row.** The snapshot calibrated EDGE_R on the actor
   plane at the frame's centre row; the slight downward pitch narrows the
   frame's right edge toward the top by up to 0.75 tiles at 16:9, so RIG high on
-  the lattice still overhung (falsifier row M5a: NDC 1.011 at 1024x768).
+  the lattice still overhung (falsifier M5a: NDC 1.011 at 1024x768).
   EDGE_R now uses the narrowest row.
 - **Changed: the veil extension 45 -> 120 tiles.** 45 left 0.4 tiles of margin
   on a FAR phone and did not cover 21:9 (needs 55) or 32:9 (111) monitors.
@@ -79,25 +82,25 @@ Tooling (zero effect on the game):
 
 - `tools/simlab/lib/sixface-host.mjs` and `tools/simlab/race/edges.mjs` now take
   the lens, the lift and the clamp from `src/pure/framing.js` (they had their
-  own route-plane math, which the WIP's camera change would have left silently
+  own route-plane math, which the camera change would have left silently
   stale: the race lab's `assertCameraSourceMatches()` threw on the snapshot).
   New turn-lab presets `phoneLandscapeTouch`, `phoneMaxTouch`,
   `phoneSmallTouch`, `phonePortraitTouch`; race-lab rows
   `phone-landscape-far` / `phone-portrait-far` (the escape hatch).
 - `tools/simlab/race/probe-framing.mjs` re-pointed at the T-101 deck's
-  published layout (`__HB_TOUCH().layout`: cluster box, stick ring, split)
+  published layout (`__HB_TOUCH().layout`: cluster box, stick ghost, split)
   instead of the retired hidden `#touchDeck`.
 - New: `tools/pathcheck/t-107-phone-framing.mjs` (domain d79 here; **d81 after
   the merge** — T-103 took d79/d80 on main), `tools/playtest/phone-framing-probe.mjs`,
   `tools/playtest/phone-readability-capture.mjs`, `tools/playtest/framing-cost.mjs`,
-  `tools/simlab/framing/{render-only,veil-need,zoom-pump,route-ahead,vertical-band}.mjs`,
-  `tools/simlab/framing/{void_columns,readability_sheet}.py`. Documented in
+  `tools/simlab/framing/{render-only,veil-need,zoom-pump,route-ahead,vertical-band,thumb-overlap,rig-boxes}.mjs`,
+  `tools/simlab/framing/{void_columns,readability_sheet,rig_crops,turn_sheet}.py`. Documented in
   `tools/simlab/README.md` ("The phone frame (T-107)") and
   `tools/simlab/TURNLAB.md` (limitations 4-5).
 
-## Acceptance, box by box (measured; before = main `ace6618`, after = this branch)
+## Acceptance, box by box (SPRINT T-107 order; before = main `ace6618`, after = this branch)
 
-### 1. A pure, asserted framing resolver; desktop byte-identical projection
+### 1. A pure, asserted framing resolver; desktop byte-identical projection — MET
 
 `src/pure/framing.js` `resolveFramingId(?view=, w, h, touch)`: a touch screen
 whose short side is <= 540 CSS px is a phone; everything else is FAR.
@@ -132,10 +135,10 @@ each page's `gameMs` at pause. Both trees run the same shake code; the
 projection matrices were identical there too. EDGE_L is identical; EDGE_R
 moves by design (box 8, I-104).
 
-### 2. RIG's height share at 844x390 / 932x430 / 667x375; portrait
+### 2. RIG's height share at 844x390 / 932x430 / 667x375; portrait — MET
 
 Measured live (`phone-framing-probe.mjs --rig`, RIG standing at the frame's
-centre column, touch emulation, `evidence/` probe JSON):
+centre column, touch emulation, `evidence/probe-phone-*.json`):
 
 | viewport (touch) | main: body px / % of height | branch: body px / % | branch: painted silhouette px / % (pose frame) | fov | visible route W x H, tiles |
 | --- | --- | --- | --- | --- | --- |
@@ -152,35 +155,35 @@ silhouette is `RIG_BODY_VISUAL_H` = 2.0 tiles (a render-only overrun), so in
 paint he is 6.1-6.6% depending on the pose frame. The body share varies about
 +-4% across the frame (5.34-5.79% at 844x390) because the camera yaws ~3 deg
 toward its look target; the table and the assertion use the centre column.
-
-Why 5.6% and not 6.0% — the vertical band (box 3) does not fit at 6.0%: see the
-table there.
+Why 5.6% and not 6.0%: the vertical band (box 3) does not fit at 6.0%.
 
 **Portrait (justified):** portrait keeps FAR's portrait frame exactly
 (asserted: fov 56, lift 0). Its compact portrait framing already draws RIG's
 body at **7.0% of the short side** (27.4 px at 390 wide) — larger than the
 landscape phone frame — so there is nothing to tighten; widening it to match
 landscape (the snapshot's rule, "5.8% of the short side") would shrink RIG and
-push the frame's bottom 11.6 tiles past the far anatomy veil. "6% of the short
+push the frame's bottom 11.6 tiles past the far anatomy veil. "6% of the SHORT
 side" is the right yardstick for a phone (rotating the phone does not change
-the glass), and portrait already exceeds it. Consequence for the portrait actor
-gain: see "Portrait actor gain" below.
+the glass or the thumb), and portrait already exceeds it. Consequence for the
+portrait actor gain: see "Portrait actor gain" below.
 
-### 3. Look-ahead; the vertical band; the thumbs
+### 3. Look-ahead (owned by T-201) and the vertical band
 
-**Vertical band — why 0.85 tiles of lift, not ~6.** T-104 modelled a ~6-tile
-lift before the T-101 deck existed. With the deck: the lowest landing deck in
-the shipped lattice is y 2 and the highest route surface y 17 (asserted from the
-level data, so a lattice change re-derives this), RIG's painted head there is at
-19.0, and the helix tilts the band ~4 tiles across a phone frame. A 6-tile lift
-puts the lowest deck **45 px under the right-thumb cluster** at 844x390
-(asserted as the falsifier). Solved over every scroll position on faces 1-6
-and every route surface RIG can reach (damage-plane margin to right clamp),
-`tools/simlab/framing/vertical-band.mjs`:
+**Vertical band — MET with 0.85 tiles of lift, not ~6 (why).** T-104 modelled
+a ~6-tile lift for a depth pull-in, before the T-101 deck existed. The lens
+model keeps FAR's pose, whose band already sits mid-frame. With the deck: the
+lowest landing deck in the shipped lattice is y 2 and the highest route
+surface y 17 (asserted from the level data, so a lattice change re-derives
+this), RIG's painted head there is at 19.0, and the helix tilts the band ~4
+tiles across a phone frame. A 6-tile lift puts the lowest deck **45 px under
+the right-thumb cluster** at 844x390 (asserted as the falsifier). Solved over
+every scroll position on faces 1-6 and every route surface RIG can reach
+(damage-plane margin to right clamp), `tools/simlab/framing/vertical-band.mjs`:
 
 | frame | lift | RIG's painted head vs top (worst) | lowest deck vs cluster top, iPhone insets (worst) |
 | --- | --- | --- | --- |
 | body 6.0% | any | infeasible: lift >= ~1.1 to keep the head in, <= ~0.4 to keep the deck clear | |
+| body 5.8% (the snapshot) | 0 | 13.0 / 14.3 / 9.3 px **off the top** (844x390 / 932x430 / 667x375) | |
 | body 5.75% | 1.0 | 1.4 px inside (844x390) | 0.7 px clear |
 | **body 5.6%** | **0.85** | **4.3 / 4.8 / 7.3 / 1.9 px inside** (844x390 / 932x430 / 667x375 / 844x350) | **3.8 / 6.3 / 22.7 / 2.5 px clear** |
 | body 5.6% | 0 (falsifier M4a) | 6.3 / 7.0 / 3.0 / 7.6 px **off the top** | |
@@ -190,16 +193,20 @@ and every route surface RIG can reach (damage-plane margin to right clamp),
 Without insets (desktop Chrome emulation) the deck clears the cluster by
 22.7-29.3 px. Asserted per viewport in the T-107 domain.
 
-**The stick ring (reported, not met):** RIG on the lowest deck at the far left
-of the frame (the resting stick ring's x range, i.e. pressed against the damage
-plane) has his feet **15-22 px into the top of the resting stick ring**
-(no insets), **38-39 px** with the iPhone's 21 px inset. The ring's centre —
-where the left thumb rests — is still ~20 px below his feet. No lift fixes both
-this and the head (they pull in opposite directions); a smaller RIG would. Open
-question for the operator, and an inbox issue.
+**The same band in PLAY** (`tools/simlab/framing/thumb-overlap.mjs`,
+`evidence/thumb-overlap.{log,json}`: the race lab's replica, rush / climber /
+fighter / carried x 2 seeds + the oracle racer, 300 s each, 100 ms trace,
+every straight-face frame projected through the replica camera): RIG's
+painted head goes above the top of the phone frame in **0.17-0.18% of frames**
+(rush, climber, fighter; ~0.5 s per 5-minute run), by up to **22 px** — always
+mid-jump from face 5's highest surfaces (feet at y 18.6-20.6, above the
+highest surface). FAR on the same phone: never (>= 39 px to spare). The
+assertion covers standing; a jump apex above the highest surface does not
+fit the 5.5-6.5% box together with the deck (an open question for the
+operator, packet Q4).
 
-**Look-ahead (T-201 owns it; measured here, not met as worded).** Race-lab
-replica, 4 policies x 4 seeds + the oracle racer x 2, 300 s each,
+**Look-ahead — NOT MET as worded; escalated.** Race-lab replica, 4 policies x
+4 seeds + the oracle racer x 2, 300 s each,
 `tools/simlab/framing/route-ahead.mjs` (`evidence/route-ahead-*.json`); median
 look-ahead to the visible route edge, tiles:
 
@@ -215,14 +222,15 @@ Route ahead capped at the joint, medians: main phone 17/18/38/38/13 -> branch
 phone 15/15/30/32/0. So the closer phone frame **does** show less route ahead
 than FAR on the same phone (16-26 tiles at the median), and about what desktop
 FAR shows (0-7 tiles less). That is the closer frame itself, not a separate
-reduction: the operator chose a 1.5x closer frame on phones, and shifting the
+reduction: the operator chose a ~1.5x closer frame on phones, and shifting the
 frame forward to compensate would move the damage plane (a difficulty lever).
 Under T-201's follow-lead (`lead = clamp(0.3 x (EDGE_R - EDGE_L), 6, 24)`) a
 racer sees `lead + 1.99` = **21.8 tiles** ahead on the phone frame (2.3 s at
-run speed) vs 24 on today's FAR phone. Escalated to the operator (packet Q1).
+run speed) vs 24 on today's FAR phone (-9%). The remedy lives in T-201's lead
+(e.g. a 22-tile floor on phones restores 24); escalated to the operator
+(packet Q1) and to T-201 (inbox issue).
 
-### Edge API for T-201 (unchanged shape: `setEdges(left, right)`)
-
+**Edge API for T-201 — the shape is unchanged (`setEdges(left, right)`).**
 Live calibration, `HB.edges()` minus `scrollX` (probe), and what T-201's
 `followLeadTiles(EDGE_R - EDGE_L)` therefore gets:
 
@@ -236,46 +244,57 @@ Live calibration, `HB.edges()` minus `scrollX` (probe), and what T-201's
 | 390x844 touch | -2.015 / 16.985 / 19.00 | -2.015 / **15.881** / 17.90 | 16.985 | 6 -> 6 (clamped) |
 
 What changes on phones: EDGE_L comes in by 14 tiles (the damage plane is still
-the screen's left edge — the frame is narrower), EDGE_R by 19, W by a third.
-EDGE_R everywhere is now the **actor-plane clamp**, 1.5-2.5 tiles inside the
-visible route edge, so `EDGE_R - EDGE_L` is the clamp-to-plane width the sim
-actually lets RIG use; the visible route width is 2-2.5 tiles more. RIG kept
-`lead` tiles from EDGE_R therefore sees `lead + (routeRight - EDGE_R)` of route.
-The race lab's `lookahead`/`routeAhead` histograms measure to EDGE_R, so they
-read ~2 tiles low against pre-T-107 numbers (`route-ahead.mjs` adds it back).
+the screen's left edge — the frame is narrower, so RIG has 25 tiles of
+retreat room behind the scroll instead of 39; desktop 16:10 has 27.4), EDGE_R
+by 19, W by a third. EDGE_R everywhere is now the **actor-plane clamp**,
+1.5-2.5 tiles inside the visible route edge, so `EDGE_R - EDGE_L` is the
+clamp-to-plane width the sim actually lets RIG use; the visible route width
+is 2-2.5 tiles more. RIG kept `lead` tiles from EDGE_R therefore sees
+`lead + (routeRight - EDGE_R)` of route. The race lab's
+`lookahead`/`routeAhead` histograms measure to EDGE_R, so they read ~2 tiles
+low against pre-T-107 numbers (`route-ahead.mjs` adds it back; `edges.mjs`
+reports `routeRight` beside `right`).
 
-### 8. RIG at the right clamp (I-104) — whole sprite on screen, every viewport
+### 4. Five corner turns and the Crown approach at the phone frame — MET
 
-EDGE_R = the frame's right edge on the actor plane at its narrowest row, minus
-RIG's widest drawn half-silhouette (1.295 tiles = `RIG_SPRITE_MAX_OVERRUN` x
-half-width; covers the weapon's 0.825-tile reach).
+T-102's posed-capture method (`tools/simlab/turnlab.mjs` poses at the phone
+frame + `tools/playtest/turn-pose-capture.mjs`), 844x390 touch: every corner
+k = 1-6 (five turns + the Crown approach) at approach (before), 350 and 700 ms
+into the ritual (during), done and +1.5 s (after) — 30 frames; the joint orbit
+at corners 1 and 3 (6 frames); main's FAR phone frame at approach and +1.5 s
+(12 frames). Contact sheet: `captures/turns-phone-844x390-sheet.jpg`.
 
-- Asserted analytically at 17 viewports (desktop 16:10 ... 32:9, touch phones
-  both orientations, mouse phones, 260x1000, tablets), RIG at deck height, mid
-  and on the highest surfaces: rightmost silhouette point at NDC **<= 0.998**;
-  the pre-T-107 route-plane clamp puts his **centre** at NDC 1.028.
-- Played (turn proof at the phone frame, 7 runs incl. `?momentum=0`, which
-  rides the clamp): RIG's chest at the clamp at NDC **0.952** (was ~1.012).
-- Live, in painted pixels (RIG-only draw at the clamp, facing right):
+- **The landing is visible:** RIG's painted box (projected through the same
+  camera, `tools/simlab/framing/rig-boxes.mjs`) is wholly on screen in all 30
+  frames (x 416-596, y 180-242 of 844x390), never under the right-thumb
+  cluster (top 262; 241 with the iPhone inset, whose columns RIG never shares
+  in these frames), and the arriving face's deck and lattice are in view from
+  the ritual's end (t700) on.
+- **No camera clipping:** the lens model never moves the camera — every pose is
+  FAR's pose plus 0.85 tiles up — so nothing comes closer to the camera than
+  it does on desktop today; the joint orbit stands farther from the arriving
+  face than the shipped one. No near-plane cut in any of the 48 frames.
+- **Static anatomy (entry 3):** in all 48 frames the page's route ownership
+  is whole facets only (`turn-pose-capture` sidecars: the arriving face 0/88
+  rows drawn through t350, 88/88 from t700; the departing one the reverse;
+  no partial facet anywhere), and the page camera equals the replica at every
+  frame (0 errors). The arriving stretch is revealed whole, never assembled.
+- The pause card ("TAP TO RESUME") in these frames is the capture's: the
+  poses are applied to a paused page.
 
-| viewport | main: gap from RIG's outermost pixel to the right edge | branch |
-| --- | --- | --- |
-| 844x390 touch | **no RIG pixel on screen at all** | 7.28 px (deck), 4.55 px (high) |
-| 932x430 touch | **no RIG pixel on screen at all** | 8.18 px, 4.55 px |
-| 667x375 touch | 0 px (cut by the edge) | 7.28 px, 4.55 px |
-| 1280x720 | 0 px on the deck (cut); **no pixel on screen** high (y 15) | 12.8 px, 8.0 px |
-| 1280x800 | 0 px on the deck (cut); **no pixel on screen** high | 13.6 px, 8.8 px |
+**The Crown face — RIG's readability (T-102's gate note).** RIG cut out at
+true size and 4x on face 6 and on the Crown approach (`rig_crops.py`,
+`captures/crown-rig-crops-{main,branch}.png`): the phone frame draws him
+**31 px tall instead of 21.5** (painted box, +44%), but his figure-ground
+contrast does not change (box-vs-surround luminance proxy 0.34 on the branch
+vs 0.39 on main at the Crown approach +1.5 s; 0.08 vs 0.01 on the approach):
+he is still a dark silhouette against the Crown's lit orange/magenta
+machinery. Size is the camera's lever and it is pulled; contrast is RIG's
+value/rim lighting (entry 14, RIG art) — an inbox issue, not this lane.
 
-  On main a phone loses RIG entirely when he is pinned at the right clamp (his
-  draw depth narrows the frame by ~1.5-2 tiles at that aspect), and even on
-  desktop he vanishes when pinned there high on the lattice (the frame's right
-  edge narrows toward the top). Pairs `(deck, high)`: RIG at deck height and at
-  y 15, facing right, `phone-framing-probe.mjs --clamp` (`evidence/probe-*.json`).
-- Reported, not changed: at the damage plane (EDGE_L) RIG's back still touches
-  the left edge (0 px gap, main and branch) — EDGE_L is the damage plane, and
-  moving it is a difficulty lever.
+### 5. Hostile tells, bullets and capsules at DPR 2 — PENDING-READABILITY
 
-### 6. The post-turn zoom pump (R3) — `?orbit=joint`, OFF by default
+### 6. The post-turn zoom pump (R3) — MET behind `?orbit=joint` (OFF by default)
 
 `tools/simlab/framing/zoom-pump.mjs` (played turn proof, RIG's projected body
 height at each corner's ritual end / +1.5 s / settled; `evidence/zoom-pump.json`):
@@ -291,7 +310,88 @@ the shipped anchor exactly before the ritual and after the catch-up (2.8e-14
 tiles), stands at the settled depth from the arriving face right after the
 swing (error 2.8e-14) where the shipped orbit stands at 0.693 of it, and moves
 the camera no more per frame than the shipped orbit does (8.18 vs 7.98 tiles per
-60 Hz frame at the ratchet's snap). Render-only (the sim fingerprints, box T-204).
+60 Hz frame at the ratchet's snap). Captures: `captures/r3-orbit-shipped-vs-joint-844x390.jpg`
+(corners 1 and 3 at t700 / done / +1.5 s, both orbits). Render-only (T-204's proof).
+
+### 7. Edge voids near corners (R2) — PENDING-R2-DESKTOP
+
+Same column metric as T-102 (`tools/simlab/framing/void_columns.py`: a column
+is a void when >= 90% of its pixels are within 10 of the clear colour
+(47, 85, 94), sampled from main's void), on the posed captures:
+
+| 844x390 touch | main (FAR) approach | main +1.5 s after the turn | branch approach | branch t350 / t700 / done | branch +1.5 s |
+| --- | --- | --- | --- | --- | --- |
+| c1 | 19.0% (right edge) | 11.4% (left edge) | 0% | 0 / 0 / 0% | 0% |
+| c2 | 12.8% | 5.5% | 0% | 0 / 0 / 0% | 0% |
+| c3 | 17.3% | 12.7% | 0% | 0 / 0 / 0% | 0% |
+| c4 | 11.8% | 3.8% | 0% | 0 / 0 / 0% | 0% |
+| c5 | 18.5% | 10.4% | 0% | 0 / 0 / 0% | 0% |
+| c6 (Crown) | 13.5% | 0% | 0% | 0 / 0 / 0% | 0% |
+
+(T-102 measured "up to 18.7% on approach, 10-11% after a turn" on main.) On
+the branch not one pixel of the clear colour remains in any of the 36 phone
+frames (clear-pixel share 0.00%; main's c1 +1.5 s: 12.0%), the joint-orbit
+frames included. Analytically (`tools/simlab/framing/veil-need.mjs`,
+`evidence/veil-need.json`) the extended veil covers every settled pose with
+>= 75 tiles to spare at every viewport from 390x844 to 32:9; the old veil
+needed 27 more tiles at the phone frame, 45 on a FAR phone, 55 at 21:9 and 111
+at 32:9. PENDING-R2-SAMEFRAME
+
+### 8. RIG at the right clamp (I-104) — whole sprite on screen, every viewport — MET
+
+EDGE_R = the frame's right edge on the actor plane at its narrowest row, minus
+RIG's widest drawn half-silhouette (1.295 tiles = `RIG_SPRITE_MAX_OVERRUN` x
+half-width; covers the weapon's 0.825-tile reach).
+
+- Asserted analytically at 17 viewports (desktop 16:10 ... 32:9, touch phones
+  both orientations, mouse phones, 260x1000, tablets), RIG at deck height, mid
+  and on the highest surfaces: rightmost silhouette point at NDC **<= 0.998**;
+  the pre-T-107 route-plane clamp puts his **centre** at NDC 1.028.
+- Played (turn proof at the phone frame, 7 runs incl. `?momentum=0`, which
+  rides the clamp): RIG's chest at the clamp at NDC **0.952** (was ~1.012).
+- Live, in painted pixels (RIG-only draw at the clamp, facing right,
+  `phone-framing-probe.mjs --clamp`, `evidence/probe-*.json`):
+
+| viewport | main: gap from RIG's outermost pixel to the right edge | branch (deck, y 15) |
+| --- | --- | --- |
+| 844x390 touch | **no RIG pixel on screen at all** | 7.28 px, 4.55 px |
+| 932x430 touch | **no RIG pixel on screen at all** | 8.18 px, 4.55 px |
+| 667x375 touch | 0 px (cut by the edge) | 7.28 px, 4.55 px |
+| 1280x720 | 0 px on the deck (cut); **no pixel on screen** high (y 15) | 12.8 px, 8.0 px |
+| 1280x800 | 0 px on the deck (cut); **no pixel on screen** high | 13.6 px, 8.8 px |
+
+On main a phone loses RIG entirely when he is pinned at the right clamp (his
+draw depth narrows the frame by ~1.5-2 tiles at that aspect), and even on
+desktop he vanishes when pinned there high on the lattice (the frame's right
+edge narrows toward the top). At the damage plane (EDGE_L) RIG's back still
+touches the left edge (0 px gap, main and branch): reported as an inbox
+issue, not changed — moving EDGE_L moves the damage plane.
+
+### 9. Escape hatches `?view=far` / `?view=phone` — MET
+
+- `?view=far` on a touch phone (844x390): fov 56, lift 0, route edge 60.184 =
+  main's phone calibration (`evidence/probe-phone-branch-viewfar.json`).
+  PENDING-HATCH
+- `?view=phone` on desktop (1280x720): fov 40.09, lift 0.85, RIG's body 40.2 px
+  = **5.58%** of the height (`evidence/probe-desktop-branch-viewphone.json`).
+
+### 10. Frame cost, phone frame vs FAR on the same viewport — PENDING-COST
+
+### 11. pathcheck green; smoke-verdict PASS; operator packet — MET
+
+See "Verification" (full tier 4511 passed, 0 failed; both smoke scripts PASS)
+and "Operator packet".
+
+## The dispatch's further boxes
+
+### T-201 coordination (look-ahead, the edge API)
+
+Box 3: `setEdges(left, right)` keeps its shape; on phones W shrinks by a third
+and T-201's lead with it (24 -> 19.8 tiles at 844x390); the clamp moved ~2
+tiles in everywhere, so every race-lab baseline shifts and the lab's
+histograms read ~2 tiles low against T-104's tables. T-201 should re-take its
+baseline on the merged tree; its `phone-landscape-6pct` row was T-104's
+estimate and `phone-landscape` is now the built frame.
 
 ### T-204 — the per-side rise, `?rise=steep`, OFF by default
 
@@ -319,7 +419,8 @@ rendered ALT readout and the query label), and the falsifier `momentum=0`
 moves **14 of 14**. The lab's own fingerprint cannot be the proof as worded:
 it hashes `faces[].altMax` (the HUD ALT, which `?rise=` changes on purpose)
 and the query label (which every flag changes) — so it differs for every
-flag, render-only or not.
+flag, render-only or not. The turn lab's played checks run unchanged under the
+flags too (T-107 played checks, `?orbit=joint` rows).
 
 **The currency** (same runs; ALT gained per face, faces 1-6, oracle racer):
 
@@ -360,6 +461,56 @@ reads is the captures' call (below) and the operator's.
 
 PENDING-T204-CAPTURES
 
+### Portrait actor gain (from T-103)
+
+The portrait framing decision removes the need for the gain: portrait keeps
+FAR's portrait frame, where RIG's body is already 7.0% of the short side —
+more than the landscape phone frame's 5.6% — so the 1.5x actor visual gain
+render/player.js applies in portrait is no longer buying legibility the frame
+lacks. Removing it is one line in `src/render/player.js` (RIG art, outside
+this lane's fence), so it is proposed, not done. PENDING-STRETCH
+
+### The touch deck: the cluster, the stick, and `probe-framing.mjs`
+
+Frame-vs-thumb, two currencies:
+
+- **Authored geometry** (asserted, T-107 domain): RIG's feet on the lowest
+  landing deck stay above the right-thumb cluster's top edge at every scroll
+  position on faces 1-6, at 844x390, 932x430, 667x375 and 844x350, with and
+  without the iPhone's insets (box 3's table).
+- **Play** (`thumb-overlap.mjs`, 2 seeds x 4 policies + the oracle racer, 300 s,
+  every straight-face frame; `evidence/thumb-overlap.{log,json}`):
+
+| 844x390, share of frames | phone frame, no insets | phone frame, iPhone insets | today's FAR, no insets | today's FAR, iPhone insets |
+| --- | --- | --- | --- | --- |
+| RIG under the right-thumb cluster | **0%** | **0.02%** (fighter: one frame, falling into a pit, 0.7 px) | 0% | 0% |
+| RIG inside the resting stick ghost's circle | 0-2.0% (worst 28 px) | **0.5-4.1%** (worst 30 px) | 0% | 0-**22.7%** (worst 13 px) |
+| RIG under main's HUD panels (pre-T-105) | **14.5-25.9%** (worst 131 px) | same panels | 2.3-4.0% (worst 53 px) | same |
+
+Policies: rush / climber / fighter / carried (the oracle racer is lower on
+every row). The cluster box is MET in play. The **stick ghost is not met as
+"never"**: the larger RIG reaches into the ghost's circle when he stands on
+a deck in the left third of the frame — with the iPhone inset 458 of the 464
+such frames had his feet above the lowest deck, and the worst frames are y 3
+decks at gates (corner state `gate`), where the scroll holds and the policies
+hang back. Today's FAR frame has him inside it more often, less deeply.
+No lift fixes both this and the head at 5.5-6.5% (they pull opposite ways
+across the helix's tilt); a smaller phone RIG, a camera that follows RIG
+vertically, or a ghost placed lower would. Reported to the operator (packet
+Q5) and as an inbox issue. "Stick zone" is read as the resting ghost (where
+the left thumb sits), not T-101's whole left `stickZone` fraction, which RIG
+crosses whenever he is in the left ~45% of the frame.
+
+**The HUD row is T-105's lane** — these are main's panels as the probe
+measured them (`hudRigPanel` 300x116 at the top-left, `hudObjectivePanel`
+320x34 at the top-right), not T-105's phone shell. The closer frame raises
+the band into them; T-105's layout has to be measured against this frame on the
+merged tree (`thumb-overlap.mjs --hud-from <probe JSON>`).
+
+`tools/simlab/race/probe-framing.mjs` now reads `__HB_TOUCH().layout` (cluster
+box, stick ghost, split) from the live T-101 deck instead of the retired
+hidden `#touchDeck`. PENDING-PROBE-FRAMING
+
 ### Defaults, flags and hard rules
 
 | behaviour | default | escape hatch / opt-in |
@@ -385,7 +536,7 @@ PENDING-T204-CAPTURES
 - **60 fps condition (entry 18):** box 10.
 - **Layer purity / determinism:** `src/pure/framing.js` has no three.js, DOM
   or randomness (pathcheck layer guard + T-003/T-049/T-051 per-file guards);
-  the sim is untouched (`git diff --stat ace6618 -- src/sim` is empty).
+  the sim is untouched.
 
 ## Falsification — every new assertion shown to bind
 
@@ -426,11 +577,15 @@ computes the pre-T-107 route-plane clamp beside it (NDC 1.028 > 1).
 | `HB_GATE_FAST=1 node tools/pathcheck.mjs` on a scratch merge of this branch onto current main `9bedbaa` (T-103 merged; the manifest conflict resolved with T-107 as **d81**) | **4176 passed, 0 failed** |
 | `git merge-tree --write-tree --name-only main HEAD` | one conflict: `tools/pathcheck/manifest.mjs` (both append a domain after d78: T-103's d79/d80 on main, T-107's d79 here). Resolution: keep both, T-107 becomes d81. No other file is changed on both sides. |
 | T-107 played checks alone (7 turn runs at the phone frame + render-only) | **65 passed, 0 failed** (`evidence/pathcheck-t107-played-labels.txt`) |
+| `cd tools/playtest && node run.mjs scripts/mid-route.json --deterministic --viewport 480x300` + `tools/orch/smoke-verdict.mjs` (branch) | **smoke-verdict: PASS** (outcome=not-completed deaths=0 tick=594/594) |
+| `cd tools/playtest && node run.mjs scripts/transform-slice.json --deterministic --viewport 480x300` + `smoke-verdict.mjs` (branch) | **smoke-verdict: PASS** (outcome=completed deaths=0 tick=938/1104) |
 | `node tools/playtest/phone-framing-probe.mjs --compare` main vs branch, 1280x720 / 1920x1080 / 1280x800, `?juice=0` | **CAMERA IDENTICAL** (17 poses x 3, every element) |
 | `node tools/simlab/framing/render-only.mjs --seeds 2 --viewports desktop-16x10,phone-landscape --max-game-ms 480000` | 42/42 flagged runs sim-identical, 14/14 falsifier runs differ (16.5 min) |
 | `node tools/simlab/framing/zoom-pump.mjs --viewports desktop,phoneLandscapeTouch,phoneLandscape` | table in box 6 |
 | `node tools/simlab/framing/route-ahead.mjs` (branch) and `--root <ace6618 export>` (main) | table in box 3 |
+| `node tools/simlab/framing/thumb-overlap.mjs --seeds 2 --hud-from evidence/probe-phone-branch.json` | tables in boxes 3 and "the touch deck" (3.7 min) |
 | `node tools/simlab/framing/veil-need.mjs`, `vertical-band.mjs` | tables in boxes 3, 7, T-204 |
+| `node tools/playtest/turn-pose-capture.mjs` (posed captures: 30 + 6 + 12 frames at 844x390 touch; PENDING-DESKTOP-FRAMES) | 0 errors (page camera = replica at every frame) |
 | `node tools/simlab/turnlab.mjs run --policy run --viewport phoneLandscapeTouch` | VICTORY, 6/6 corners, no violations (7.5 s) |
 | `node tools/simlab/race/lab.mjs one '{"policy":"rush","seed":1,"viewport":"desktop-16x10","maxGameMs":30000}'` | runs (the race lab's `assertCameraSourceMatches()` passes on this camera.js; it threw on the snapshot) |
 
@@ -448,94 +603,18 @@ shared module:
 | `tools/simlab/race/edges.mjs` | `assertCameraSourceMatches()` needles `setEdges(probeXAtNdc(-rightNdc), probeXAtNdc(rightNdc))` and `_probe.lookAt(C.lookX, C.lookY - activePortraitLookDrop(), 0)` | replaced by the new call shapes (lens resolution, lifted probe pose, actor-plane clamp) | pinned the pre-T-107 calibration text; the replica now calls `src/pure/framing.js` itself, so "the lab models the page's camera" is enforced by shared code plus the T-107 parity assertion |
 | `tools/simlab/lib/sixface-host.mjs` | `edgesForViewport()` (the turn proof's camera) | now the framing module's edges (+ `viewport.touch`) | its route-plane copy would have measured a clamp the page no longer has, at every viewport — green while stale |
 
-## PROPOSED INBOX ISSUES
+## Captures
 
-## I-??? | feel | S2 | repro: `node tools/simlab/framing/route-ahead.mjs` (branch) vs `--root <export of ace6618>` @ task/T-107 | evidence: reports/tasks/T-107/evidence/route-ahead-*.json
-The closer phone frame (operator-approved, entry 20 addendum) shows 16-26
-tiles less route ahead of RIG than today's FAR phone frame at the median of
-every bot style (rush 58 -> 42, carried 84 -> 58, the oracle racer 30 -> 12),
-roughly what desktop FAR shows. That is inherent in a 1.5x closer frame; the
-remedy is T-201's follow-lead, which on this frame keeps a racer 21.8 tiles of
-visible route ahead (lead 19.77 + 1.99 clamp offset). Needs the operator's
-call on whether that is enough on a phone (packet Q1), and T-201's lab numbers
-re-taken on the built frame (its `phone-landscape-6pct` row is T-104's estimate).
-
-## I-??? | feel | S3 | repro: `node tools/simlab/framing/vertical-band.mjs` and the T-107 domain's "stick ring" labels @ task/T-107 | evidence: reports/tasks/T-107/evidence/pathcheck-t107-static-labels.txt
-On a landscape phone, RIG on the lowest deck at the far left of the frame
-(pressed against the damage plane) has his feet 15-22 px into the top of the
-resting stick ring (38-39 px with the iPhone's 21 px home-indicator inset); the
-ring's centre, where the thumb rests, stays ~20 px below. The helix tilts the
-band down on the left. No lift fixes this without pushing RIG's head off the top
-on face 6; a smaller phone RIG would, or a stick ghost placed lower (T-101/T-105).
-
-## I-??? | art | S2 | repro: `?rise=steep` on 844x390 touch, face 5-6 upper lattice near the right clamp; `node tools/simlab/framing/vertical-band.mjs` @ task/T-107 | evidence: reports/tasks/T-107/evidence/vertical-band-helix-vs-steep.log
-With the per-side rise (unjudged, off by default) the band tilts ~13 tiles
-across a phone frame: RIG's painted head on face 6's highest reachable
-surfaces goes 55-61 px above the top of the frame. Desktop fits. A camera that
-follows RIG vertically, a partial roll with the grade, or a lower grade on
-phones are the options; it is the operator's design call before `?rise=steep`
-can become a default.
-
-## I-??? | art | S3 | repro: render/player.js `portraitActorVisualGain(innerWidth / innerHeight)` on main 9bedbaa; `tools/rig-grip/capture.mjs --views portrait` | evidence: PENDING-STRETCH
-Portrait already draws RIG's body at 7.0% of the short side (27.4 px at 390
-wide) — larger than the landscape phone frame — yet render/player.js still
-applies the 1.5x portrait actor gain, which is what stretches T-103's arms
-(T-103's own inbox issue asks for this call). One line removes it:
-`const portraitGain = 1;` (or `maxGain: 1` in pure/traversal.js). Not done here:
-render/player.js is RIG art, outside this lane's fence. Measured stretch with
-and without: PENDING-STRETCH-NUMBERS.
-
-## I-??? | bug | S3 | repro: `phone-framing-probe.mjs --clamp`, `left-deck` / `left-high` @ task/T-107 and main | evidence: reports/tasks/T-107/evidence/probe-*.json
-At the damage plane (EDGE_L) RIG's back still touches the left frame edge (0 px
-gap, main and branch, every viewport): EDGE_L is calibrated on the route plane
-while RIG draws 1.15 tiles toward the camera. Left as is on purpose — EDGE_L is
-the damage plane, and moving it is a difficulty lever (LANE-BRIEF) — but the
-pinned-at-the-plane frame shows a cut RIG. Fix direction, if wanted: move the
-crush visual (render/juice.js) rather than the plane.
-
-## I-??? | docs | S3 | repro: `grep -n "routeAhead\|lookahead" tools/simlab/race/run-child.mjs` @ task/T-107 | evidence: tools/simlab/framing/route-ahead.mjs header
-The race lab's `lookahead` / `routeAhead` histograms measure to the sim's
-EDGE_R. Since T-107 that is the actor-plane right clamp, 2.0-2.5 tiles inside
-the visible route edge, so post-T-107 numbers read ~2 tiles low against
-T-104's tables; and every viewport's race-lab baseline changes (the clamp
-moved everywhere). T-201 should re-take its baseline on the merged tree.
-`edges.mjs` now reports `routeRight` beside `right`.
-
-## I-??? | art | S3 | repro: `node tools/simlab/framing/veil-need.mjs` (vertical column) @ task/T-107 | evidence: reports/tasks/T-107/evidence/veil-need.json
-The far veil's vertical extent does not cover the bottom of the frame in
-portrait (1.9 tiles past its opaque edge after a turn, pre-existing, 4.2 under
-`?orbit=joint`) or the corners of a 32:9 monitor (3.9 tiles). Horizontal voids
-(R2) are fixed everywhere; these vertical ones are small and pre-existing.
-
-PENDING-ISSUES
+PENDING-CAPTURES
 
 ## Operator packet
 
-Build: this branch merged (or `node tools/serve.mjs <port> --root <this worktree>`).
-On the iPhone, hold it in **landscape**; every URL below is `index.html` plus
-the query shown. The phone frame needs no flag — it is on for every touch phone.
-
-| try | iPhone (landscape) | desktop |
-| --- | --- | --- |
-| the new default | `index.html` | `index.html` (unchanged camera) |
-| A/B: today's frame | `index.html?view=far` | — |
-| preview the phone frame | — | `index.html?view=phone` |
-| A/B: no post-turn zoom (unjudged) | `index.html?orbit=joint` vs `index.html` | `index.html?orbit=joint` vs `index.html` |
-| A/B: the climb made literal (unjudged) | `index.html?rise=steep` vs `index.html` | `index.html?rise=steep` vs `index.html` |
-| A/B: the old corner edges | `index.html?veil=legacy` vs `index.html` | `index.html?veil=legacy` vs `index.html` |
-
-Questions (please answer in your own words):
-
-1. On the phone, between `index.html` and `index.html?view=far`: which lets you
-   see enough of what is coming, and which makes RIG easier to keep track of?
-2. Right after a turn, how quickly do you find RIG? Is that different with
-   `?orbit=joint`?
-3. With `?orbit=joint`, does anything about the view right after a turn feel
-   different from the default — and does that feel like part of the turn?
-4. With `?rise=steep`, does the ground read as climbing the beast, or as a
-   ramp? On the phone, does anything you need to see go off the top of the
-   screen on the later faces?
-5. Does RIG ever end up under your thumbs, or under the panels at the top of
-   the screen?
-
 PENDING-PACKET
+
+## PROPOSED INBOX ISSUES
+
+PENDING-ISSUES
+
+## Worktree, branch, next action
+
+PENDING-END
