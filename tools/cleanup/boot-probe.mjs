@@ -13,7 +13,9 @@
  *          frame-input schedule that freezes the simulation at --stop-ms
  *          (src/pure/frame-input.js), then screenshots the frozen frame
  *          twice (--settle-ms apart) so render-side noise is measured, and
- *          records window.HB.snapshot() at the frozen tick.
+ *          records window.HB.snapshot() at the frozen tick, which art made
+ *          the boot gate, and what sits in every bridge slot (owner, juice
+ *          and audio wrappers — the audible half a screenshot cannot see).
  *
  *   node tools/cleanup/boot-probe.mjs --base-url http://127.0.0.1:8771 \
  *        --out /tmp/probe-branch [--viewport 1280x720] [--touch] \
@@ -21,9 +23,9 @@
  *   node tools/cleanup/boot-probe.mjs --compare <dirA> <dirB>
  *
  * --compare diffs two probe directories: request sets, error counts, the
- * frozen-tick sim snapshot (byte-equal JSON or not) and the screenshots
- * (changed-pixel share and max channel delta, against each side's own
- * same-tick noise).
+ * frozen-tick sim snapshot (byte-equal JSON or not), the bridge wiring, and
+ * the screenshots (changed-pixel share and max channel delta, against each
+ * side's own same-tick noise; judged only when both kept the same art).
  *
  * Zero effect on the shipped game: it only reads a served tree. Honesty notes
  * in tools/cleanup/README.md.                                              */
@@ -121,6 +123,39 @@ async function plain(browser) {
   return rec;
 }
 
+// What sits in every src/sim/bridge.js slot after boot, outermost first:
+// juice wrappers (they carry their tag and a link to what they wrap), the
+// audio module's wrappers (recognised by their source shape), the bridge's
+// own no-op, or an owner function (by name). Owners install in
+// initializeViewRegistry() AFTER src/ui/audio.js has wrapped the slots at
+// import time, so deleting or adding an owner install changes which audio
+// observers survive — audible, invisible to a screenshot (T-121 batch 4).
+function bridgeWiring(page) {
+  return page.evaluate(async () => {
+    const { view } = await import('/src/sim/bridge.js');
+    const PREV = Symbol.for('hullbreaker.previousBridge');
+    const OBS = Symbol.for('hullbreaker.juiceObserver');
+    const kind = (f) => {
+      if (f[OBS]) return `juice:${f[OBS]}`;
+      const s = f.toString();
+      if (/\bprev(?:ious)?\([a-j, ]+\);\s*if \(dead \|\| !ctx\)/.test(s)) return 'audio-wrapper';
+      if (s === '() => {}') return 'bridge-noop';
+      return `fn:${f.name || '(anonymous)'}`;
+    };
+    const chain = (fn) => {
+      const out = [];
+      for (let f = fn, i = 0; i < 12 && typeof f === 'function'; i++, f = f[PREV]) out.push(kind(f));
+      return out;
+    };
+    const res = {};
+    for (const [group, hooks] of Object.entries(view)) {
+      if (typeof hooks === 'function') res[group] = chain(hooks);
+      else for (const [name, f] of Object.entries(hooks)) res[`${group}.${name}`] = chain(f);
+    }
+    return res;
+  });
+}
+
 async function frame(browser) {
   const rec = { mode: 'frame', url: null, pageErrors: [], consoleErrors: [], consoleWarnings: [],
     failed: [], badStatus: [], requests: [], stopMs: STOP_MS };
@@ -151,6 +186,12 @@ async function frame(browser) {
       return { status: t.status, tick: t.tick, stopTick: t.stopTick, error: t.error || null };
     });
     rec.snapshot = await page.evaluate(() => window.HB.snapshot());
+    // which art made the shared boot gate: on a loaded host an asset that
+    // misses the budget is dropped for the session (the documented degrade
+    // path), so two loads of the SAME tree can render different frames
+    rec.art = await page.evaluate(() => (window.__HB_PRELOAD ? window.__HB_PRELOAD().assets : [])
+      .map((a) => [a.url.replace(location.origin, ''), a.state]).sort());
+    rec.bridge = await bridgeWiring(page);
     await page.screenshot({ path: join(OUT, 'frame-a.png'), ...SHOT });
     await page.waitForTimeout(SETTLE_MS);
     await page.screenshot({ path: join(OUT, 'frame-b.png'), ...SHOT });
@@ -222,16 +263,62 @@ function compare(dirA, dirB) {
     if (out[m].errorsB > out[m].errorsA || out[m].fatalB) verdict = false;
   }
   if (A.frame && B.frame && A.frame.snapshot && B.frame.snapshot) {
-    const strip = (s) => JSON.stringify({ ...s, perf: undefined });
-    out.frame.snapshotIdentical = strip(A.frame.snapshot) === strip(B.frame.snapshot);
+    // Presentation telemetry (asset residency, draw counts, frame timing) is
+    // load-dependent by design; everything else in HB.snapshot() is sim state.
+    const PRESENTATION = ['perf', 'post', 'adaptiveFidelity', 'actionVfx', 'viewInit', 'juice'];
+    const sim = (s) => JSON.stringify(Object.fromEntries(Object.entries(s)
+      .filter(([k]) => !PRESENTATION.includes(k))));
+    out.frame.simSnapshotIdentical = sim(A.frame.snapshot) === sim(B.frame.snapshot);
     out.frame.tickA = A.frame.timeline && A.frame.timeline.tick;
     out.frame.tickB = B.frame.timeline && B.frame.timeline.tick;
+    // unknown (null) when either probe predates art recording — never a match
+    out.frame.artStatesMatch = A.frame.art && B.frame.art
+      ? JSON.stringify(A.frame.art) === JSON.stringify(B.frame.art) : null;
+    if (!out.frame.artStatesMatch && A.frame.art && B.frame.art) {
+      const mb = new Map(B.frame.art);
+      out.frame.artDiffers = A.frame.art.filter(([u, st]) => mb.get(u) !== st)
+        .map(([u, st]) => `${u}: ${st} -> ${mb.get(u)}`);
+    }
     out.frame.pixels = pixelDiff(join(dirA, 'frame-a.png'), join(dirB, 'frame-a.png'));
     out.frame.noiseA = A.frame.selfNoise || null;
     out.frame.noiseB = B.frame.selfNoise || null;
-    if (!out.frame.snapshotIdentical) verdict = false;
+    // bridge wiring: null (unknown) when either probe predates its recording
+    if (A.frame.bridge && B.frame.bridge) {
+      const slots = [...new Set([...Object.keys(A.frame.bridge), ...Object.keys(B.frame.bridge)])];
+      const differs = slots.filter((k) =>
+        JSON.stringify(A.frame.bridge[k]) !== JSON.stringify(B.frame.bridge[k]))
+        .map((k) => `${k}: ${JSON.stringify(A.frame.bridge[k] || null)} -> ${JSON.stringify(B.frame.bridge[k] || null)}`);
+      out.frame.bridgeWiringIdentical = differs.length === 0;
+      if (differs.length) out.frame.bridgeDiffers = differs;
+      if (differs.length) verdict = false;
+    } else out.frame.bridgeWiringIdentical = null;
+    // The other load-dependent boot outcomes that change pixels without any
+    // code difference: the bloom pass has its own boot budget (src/render/
+    // post.js) and falls back to direct rendering when it misses it, and the
+    // adaptive-fidelity governor may lower the resolution scale.
+    const boot = (f) => {
+      const p = f.snapshot.post || {};
+      return { post: p.status ?? null, adaptiveScale: p.resources ? p.resources.adaptiveScale : null,
+        drawingBuffer: p.drawingBuffer ?? null,
+        fidelityLevel: f.snapshot.adaptiveFidelity ? f.snapshot.adaptiveFidelity.level : null };
+    };
+    const bootA = boot(A.frame), bootB = boot(B.frame);
+    const bootMatch = JSON.stringify(bootA) === JSON.stringify(bootB);
+    if (!bootMatch) out.frame.bootStateDiffers = { a: bootA, b: bootB };
+    out.frame.presentationMatch = out.frame.artStatesMatch === null ? null
+      : out.frame.artStatesMatch && bootMatch;
+    if (!out.frame.simSnapshotIdentical) verdict = false;
+    if (out.frame.presentationMatch && !out.frame.pixels.identical) verdict = false;
+    out.frame.pixelVerdict = out.frame.presentationMatch === null
+      ? 'inconclusive: art states were not recorded on both sides'
+      : out.frame.presentationMatch
+        ? (out.frame.pixels.identical ? 'identical' : 'DIFFERENT with matching art and boot states')
+        : 'inconclusive: the two boots kept different art or boot states (see artDiffers / ' +
+          'bootStateDiffers); re-run for a matched pair';
   }
-  out.verdict = verdict ? 'NEUTRAL (no new errors, same frozen-tick sim snapshot)' : 'DIFFERENT';
+  out.verdict = verdict ? 'NEUTRAL (no new errors, same frozen-tick sim snapshot' +
+    (out.frame && out.frame.bridgeWiringIdentical ? ', same bridge wiring' : '') +
+    (out.frame && out.frame.presentationMatch ? ', identical frame)' : ')') : 'DIFFERENT';
   console.log(JSON.stringify(out, null, 1));
   return verdict ? 0 : 1;
 }

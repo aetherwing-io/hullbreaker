@@ -53,6 +53,23 @@ in `/opt/node-tools/node_modules`, which the scripts also try).
   which halts the loop; the probe then reports the failsafe panel rather than
   waiting forever. Late-arriving art (the boot gate starts the game without an
   asset that misses its budget) can make two captures of the SAME tree differ,
-  so a base-vs-branch pixel diff is only meaningful next to each side's own
-  repeat — the probe records that noise. The frozen-tick sim snapshot does not
-  depend on load and is compared byte-for-byte.
+  so each frame capture records which art made the gate (`__HB_PRELOAD()`
+  states) and `--compare` only judges pixels when both sides kept the same
+  art AND the same boot outcomes that change pixels without a code change:
+  the bloom pass's own boot budget (`post.status` `active` vs `failed` —
+  under load it falls back to direct rendering), the adaptive resolution
+  scale, the drawing-buffer size. Matching states + different pixels fails
+  the verdict; different states are reported as `inconclusive` with what
+  differed (re-run the pair, ideally concurrently, until they match). The frozen-tick snapshot is
+  compared byte-for-byte minus its presentation telemetry (`perf`, `post`,
+  `adaptiveFidelity`, `actionVfx`, `viewInit`, `juice` — residency, draw
+  counts, timing); everything else in `HB.snapshot()` is sim state and does
+  not depend on load.
+- **Bridge wiring is a shape, not a proof of bodies.** Frame captures also
+  record what sits in each `src/sim/bridge.js` slot after boot: juice
+  wrappers by tag, audio wrappers by their source pattern, the bridge's
+  no-op, or an owner by function name. Two trees with the same wiring can
+  still differ inside an owner's body; what this catches is an install added
+  or removed — which decides whether an audio observer survives (audio wraps
+  at import time, before the owners install). Renaming an owner function
+  shows up as a difference.

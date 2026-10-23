@@ -196,12 +196,13 @@ Batch 2 deleted them. The other 33 are not deletable by this lane alone:
   of live atlases.
 - `ui/title-meridian-ascent-v1.png` is the reviewed master of the runtime WebP.
 
-Of the provenance-only class, the 21 review boards under
-`assets/generated/enemy-ecology/review/` (13.6 MiB, already pruned from the
+Of the provenance-only class, the 27 review boards under
+`assets/generated/enemy-ecology/review/` (17.3 MiB, already pruned from the
 bundle) are committed review screenshots by any reading of entry 24, but
 `tools/level1-enemy-ecology-check.mjs` asserts each one exists and measures
-it — **needs T-120** before they can go. The manifest-listed glyph/HUD/SVG
-outputs (~60 tiny files) need `assets/manifest.json` edits (T-103's fence).
+it — **needs T-120** before they can go. The 68 files only
+`assets/manifest.json` names (390 KiB of glyph/HUD/SVG/recipe outputs) need
+manifest edits, and the manifest is T-103's fence.
 
 ## 4. `artifacts/` and `reports/`
 
