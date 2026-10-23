@@ -13,7 +13,7 @@ import {
 } from '../../src/pure/path.js';
 import {
   waveSize, waveLane, easeOutBack, cornerTimeline, cornerEventTotalMs, cornerYawDeltaDeg,
-  cornerScrollVel, zipperOffset,
+  cornerScrollVel,
 } from '../../src/pure/waves.js';
 import {
   TRAVERSAL_FIXTURE, traversalSolidAllowsGrab, traversalFollowTarget,
@@ -170,28 +170,13 @@ near(cornerScrollVel(1100, CONFIG), CONFIG.scrollSpeed, 1e-9, 'full speed at eve
 near(cornerScrollVel(5000, CONFIG), CONFIG.scrollSpeed, 1e-9, 'clamped to full speed after');
 
 // --- brick zipper ------------------------------------------------------
-ok(zipperOffset(219, 0, CONFIG).phase === 'hidden', 'column 0 hidden before impact frame');
-near(zipperOffset(220, 0, CONFIG).dy, WW.zipDropTiles, 1e-9, 'column 0 starts 2.75 above');
-near(zipperOffset(280, 0, CONFIG).dy, WW.zipDropTiles * 0.75, 1e-9,
-     'gravity ease: u=0.5 -> 75 percent of drop remains');
-ok(zipperOffset(235, 1, CONFIG).phase === 'hidden' && zipperOffset(236, 1, CONFIG).phase === 'drop',
-   'column 1 starts exactly 16 ms later');
-{
-  const d = zipperOffset(220 + WW.zipDropMs + 1, 0, CONFIG);
-  ok(d.phase === 'dip' && Math.abs(d.dy + WW.zipDipTiles) < 1e-9, 'one-beat dip after landing');
-}
-{
-  const l = zipperOffset(220 + WW.zipDropMs + WW.zipDipMs + 1, 0, CONFIG);
-  ok(l.phase === 'locked' && l.dy === 0, 'column locks to base after dip');
-}
-{
-  const lastLand = WW.zipStartMs + (WW.zipCols - 1) * WW.zipPerColMs + WW.zipDropMs;
-  ok(lastLand === 820 && lastLand < total,
-     'last slam column lands at 820 ms, before the event ends (' + lastLand + ')');
-  const T = cornerTimeline(CONFIG);
-  ok(lastLand + WW.zipDipMs <= T.t5,
-     'zipper fully locked (' + (lastLand + WW.zipDipMs) + ' ms) before scroll resumes (t5=' + T.t5 + ')');
-}
+// T-201 (decisions.md entries 21 and 25): the eight assertions that pinned the
+// brick-slam zipper's drop / dip / lock schedule (zipperOffset) were deleted
+// with the zipper itself. Their protected property — the arriving face is
+// whole before the scroll resumes — now holds by construction (the sim keeps
+// no build state; the next face pre-exists) and is asserted as behaviour in
+// tools/pathcheck/t-201-race-pass.mjs ("every column exists through a played
+// turn").
 
 // --- waves -------------------------------------------------------------
 ok([1, 2, 3, 4, 5, 6].map(function (k) { return waveSize(k, CONFIG); }).join(',') === '4,5,6,7,8,9',

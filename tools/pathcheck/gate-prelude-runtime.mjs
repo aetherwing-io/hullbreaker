@@ -1,5 +1,14 @@
 /* Mandatory actual-sim proof for the moving gate prelude.  Each scenario runs
-   in a fresh child because the sim layer deliberately owns module singletons. */
+   in a fresh child because the sim layer deliberately owns module singletons.
+
+   T-201 (decisions.md entries 21, 23 #2, 25): these scenarios describe the
+   HELD gate — the whole roster primed 18 tiles before the halt, survivors
+   holding the corner at the halt — which is now the `?gates=legacy` escape
+   hatch, so every child runs with gates=legacy and still guards it verbatim.
+   The default rolling corner's equivalents — beats released one at a time
+   (the teach beat on proximity or today's prelude rule), nothing holding the
+   corner, an authored socket used verbatim whenever it lies inside the live
+   view — are asserted in tools/pathcheck/t-201-race-pass.mjs. */
 
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -11,7 +20,7 @@ const srcDir = fileURLToPath(new URL('../../src/', import.meta.url));
 
 function runScenario(name, body, cornerIndex = 0) {
   const child = `
-    globalThis.__HB_QUERY__ = '?momentum=0&score=0&juice=0';
+    globalThis.__HB_QUERY__ = '?momentum=0&score=0&juice=0&gates=legacy';
     const base = ${JSON.stringify(srcDir)};
     const url = (path) => new URL(path, 'file://' + base).href;
     const [CFG, PATH, WAVES, EDGES, TIME, GATE, SCROLL, HOSTILES, LEVEL] =

@@ -25,24 +25,27 @@ node tools/simlab/turnlab.mjs matrix --jobs 3                # every policy x 4 
 node tools/simlab/turnlab.mjs run --policy run --viewport phonePortrait --query fallback=0
 node tools/simlab/turnlab.mjs run --policy run --viewport phonePortrait --gunner paced --pace 1400 --max-ticks 21600
 node tools/simlab/turnlab.mjs poses --viewport phoneLandscape > /tmp/poses.json
-node tools/simlab/turnlab-falsify.mjs                         # 25 rows; minutes
+node tools/simlab/turnlab-falsify.mjs                         # 32 rows (T-201: P4 -> Z1, N1-N6, N8); minutes
 node tools/simlab/turnlab-falsify.mjs --fast-domain --only P1,P2,P3   # the per-edit tier binds
 ```
 
 The gate is `tools/pathcheck/t-102-corner-turns.mjs`, which runs inside
 `node tools/pathcheck.mjs` in one of two tiers:
 
-- **full** (default): the static guards plus all 41 played runs, about 380 s
-  on a loaded 4-core SwiftShader host;
-- **per-edit** (`HB_GATE_FAST=1`): the same static guards plus 4 of the 41
+- **full** (default): the static guards plus all 50 played runs (T-102's 41,
+  plus T-201's: a never-firing run at three viewports, the held-gate escape
+  hatch `?gates=legacy&follow=0` with the paced gunner at three viewports and
+  `?gates=legacy` at 1280x720, and `?hinge=flow` at two). About 4.5 minutes on
+  a loaded 4-core host (T-201 measured 267 s at load 40-49);
+- **per-edit** (`HB_GATE_FAST=1`): the same static guards plus 5 of the 50
   played runs, one per fixed defect that only a played run can catch, and the
-  operator's device. These are `die-at-hinge` @1280x720 (D1), the paced
-  visible-only gunner @390x844 (D2), `resize-approach-late` @260x1000 (D3) and
-  `run` @844x390. Every run goes to VICTORY, with one child per run. It took
-  about 43 s at load average 40-45. It prints one `SKIP t-102-corner-turns: 37
-  of 41 …` line, and the 37 skipped runs are not counted as passes. Its runs
-  are drawn from the full matrix, with the same options as their full-matrix
-  twins.
+  operator's device: `die-at-hinge` @1280x720 (D1), the paced visible-only
+  gunner @390x844 (D2's successor under rolling corners: never wait, every
+  staged body in frame), `resize-approach-late` @260x1000 (D3), `run`
+  @844x390, and (T-201) a never-firing `run` @844x390. It prints one
+  `SKIP t-102-corner-turns: 45 of 50 …` line, and the skipped runs are not
+  counted as passes. Its runs are drawn from the full matrix, with the same
+  options as their full-matrix twins.
 
 `turnlab-falsify.mjs --fast-domain` uses that whole per-edit domain as every
 row's guard. It first checks the tier is green on the unbroken copy, then
@@ -54,7 +57,10 @@ watchdog, and an orphaned run would otherwise play on to its tick cap.
 
 ## Policies
 
-`run` (hold right, gap-jump reflex), `jump` / `jump2` (cross the bend on a
+`run` (hold right, gap-jump reflex — since T-201 it also jumps off a catwalk
+end that drops toward a hole and spends the air jump falling over one, because
+under the follow-lead RIG runs whole sides at the frozen run speed instead of
+riding the scroll at the right clamp), `jump` / `jump2` (cross the bend on a
 jump / mid double-jump), `idle` (stop for 4 s once the gate opens),
 `backtrack` (hold left for 3.3 s from the turn's first tick),
 `backtrack-approach` (walk away from the bend after the clear),
@@ -76,8 +82,17 @@ solidifies, through the real death path (`forceBreakHostile` →
 `destroyHostile` → `removeHostile` → `onHostileRemoved`). `paced` kills one
 body per `paceMs`, and only a body that is materialized, on the camera-facing
 facet and inside the projected frame — so a body the player cannot see
-genuinely holds its gate. Both are reported in every summary; `god` (on by
-default) tops up hp so every run reaches all six corners.
+genuinely holds its gate. `none` (T-201) never kills and never even holds the
+fire key: the no-softlock proof for corners that never wait. All are reported
+in every summary; `god` (on by default) tops up hp so every run reaches all six
+corners.
+
+**Two corner lifecycles (T-201).** The default run's corners are ROLLING
+(decisions.md entry 23 #2: the turn never waits; the side's encounter plays on
+the move and its mobile bodies follow RIG onto the next side); `?gates=legacy`
+restores the held gate. Every summary carries `rolling`. The gate family below
+is asserted on held-gate runs only; on rolling runs the never-wait family
+replaces it (`tools/pathcheck/t-102-corner-turns.mjs` `familiesFor`).
 
 ## Invariants (per tick)
 
@@ -85,7 +100,8 @@ default) tops up hp so every run reaches all six corners.
 | --- | --- | --- |
 | envelope | `teleport`, `popAfterRelocation`, `relocateOutsideOwnedRoute` | `|dx| <= max(runSpeed, wallJumpX, ledgeLaunchX, knockbackX, fallback tossVx, scroll x hardCeilMult) * dt`, `|dy| <= max(jumpVel, airJumpVel, -terminalVel, wallJumpY, ledgeLaunchY, knockbackY, |tossVy|) * dt`, plus the ledge/ladder snap allowance only on a tick whose traversal state changed; all from `CONFIG`. A respawn/fallback must land inside `cornerPlayerRouteWindow` and the next two ticks must stay inside the envelope. |
 | hinge | `hingeFallThrough`, `hingeFallDeath`, `capsuleThroughDeck` | feet never cross below a solid apron deck top (−0.05); no fall death within a tile of an apron; no pickup sinks into a solid column |
-| gate | `gateShutWithKillConditionMet`, `haltedButIdle`, `gateBlind` | the gate opens on the same tick its last gating body dies; a corner never sits `idle` at its halt; a shut gate never shows nothing of its encounter (present, on-facet, on-screen) for longer than one 900 ms entrance beat (`CONFIG.wasp.enterMs`) |
+| gate (held gates: `?gates=legacy`) | `gateShutWithKillConditionMet`, `haltedButIdle`, `gateBlind`, `hudLastButMore` | the gate opens on the same tick its last gating body dies; a corner never sits `idle` at its halt; a shut gate never shows nothing of its encounter (present, on-facet, on-screen) for longer than one 900 ms entrance beat (`CONFIG.wasp.enterMs`); LAST SIGNAL only when one kill opens it |
+| neverWait (rolling corners, the default) | `turnWaitedAfterArrival`, `haltedButIdle`, `beatOverBound`, `stagedOutsideView`, `carriedInvisible`, `carryLost`, `hudTooLong`, `hudBrokenButAlive`, `gateStateInRolling` | RIG presses into a CLOSED joint (corner idle or held) for at most 200 ms (T-201 box: 0.2 s plus the ritual); the halt always arms; no beat waits more than 6 s for the one before it; every encounter body and every follower starts condensing on the camera-facing facet, inside the projected frame, and (landscape) >= 6 tiles inside the damage plane; every body that followed RIG round corner k re-entered before corner k+1 turns; the encounter line fits 28 characters and never says BROKEN while a body of it lives; a rolling corner never enters `gate` |
 | turn | `approachAtBendNoTurn`, `turnWithoutRigAtBend`, `turnSkippedApproach` | `approach` + RIG at `BEND_S` turns on that tick; a turn starts only from `approach`, with RIG exactly on the bend |
 | facet | `playerFacetBackwards`, `cameraFacetBackwards`, `rigCulledByFold` | facets never decrease within a run; `render/player.js` `foldVisibility()` is 1 on every PLAYING tick |
 | ratchet | `ratchetOutOfEnvelope`, `ratchetBaseMismatch`, `cameraYawJump`, `scrollBackwards` | yaw within `[windUpDeg, 60 + 5%]` per corner and exactly `k x 60` after k corners; no per-tick yaw step beyond the curve's own steepest step at this dt; the scroll never decreases |
@@ -124,3 +140,30 @@ default) tops up hp so every run reaches all six corners.
 6. **`drop-at-hinge` cannot drop through anything** in the shipped lattice:
    every joint apron (`[cornerS-6, cornerS+3)`) is flat solid ground with no
    catwalk, ladder or solid rect. The policy still crosses on a jump.
+7. **(T-201) The frame after a turn is skewed until the scroll crosses the
+   bend.** `render/camera.js` anchors the view at the scroll; after a turn the
+   anchor stays on the departing facet until the scroll passes the bend, so the
+   sim's `[left, right]` strip overstates what is drawn on the arriving facet
+   (about 0.6 tiles per tile of lag on landscape views; measured with the
+   camera replica in this lab). The rolling encounter therefore stages nothing
+   — no beat, no follower — until the scroll has crossed the last bend, and the
+   never-wait family checks every staged body against the PROJECTED frame, not
+   the strip. If `render/camera.js` changes how it anchors after a turn (T-107's
+   `?orbit=joint`), re-measure.
+8. **(T-201) God mode can make an impossible crush.** With hp topped up every
+   tick, a RIG stuck in a pit against a wall is crushed by the damage plane
+   forever, and the plane's crush pin (`src/sim/player.js`: RIG pinned at the
+   wall's outside face) moves RIG a whole tile whenever the plane crosses a
+   column — which the envelope family reports as a teleport. In real play the
+   crush kills in three frames (or HULL FALLBACK relocates). T-201 met this once
+   (stock-life-at-hinge?fallback=0 @1280x720, after the old gap reflex fell into
+   face 4's pocket pit at full speed) and fixed the policy, not the check; the
+   envelope family still does not classify the crush pin as a designed
+   relocation (reported as an inbox issue).
+9. **(T-201) `beatOverBound` has no turnlab falsifier row.** Every turnlab
+   policy reaches each beat's line (or clears the beat) inside the 6 s bound,
+   so raising the bound to the old 300 s lock changes nothing a turnlab run
+   sees (12 policy/gunner/viewport combinations tried). The same invariant,
+   measured the same way (a beat still waiting at the turn counts), is shown
+   red in the race lab: `tools/simlab/race/race-falsify.mjs` F7b (its `skip`
+   run at 1280x800 releases side 6's third beat on the bound) and F7.

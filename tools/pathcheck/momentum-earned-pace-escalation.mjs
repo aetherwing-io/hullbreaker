@@ -307,9 +307,21 @@ export async function run(SHARED) {
    * Everything above is a claim about a curve. This is the claim that the
    * game plays it: a child process boots src/sim with and without the flag,
    * PLACES the player (right clamp = a player outrunning the world, damage
-   * plane = a player being carried) and steps the shipped scroll.        */
+   * plane = a player being carried) and steps the shipped scroll.
+   *
+   * T-201/T-202 (decisions.md entries 11, 21, 25): the follow-lead is ON by
+   * default, and under it RIG can never sit at the right clamp — the plane
+   * follows a racer so their front stays `lead` tiles inside the right edge.
+   * Pinning RIG at the clamp every frame would make the follow floor drag the
+   * scroll a lead's width per frame, which is not a player. So the probe runs
+   * twice: under ?follow=0 (T-022's screen-fraction bank, the escape hatch)
+   * with every assertion below unchanged, and under the default with the
+   * racer riding the LEAD LINE — the follow frame's new clamp — where the
+   * re-expressed bank (src/pure/momentum.js momentumLeadBank) must reproduce
+   * the clamp run's speed trace byte for byte. HB_MOM_PLACE picks the line. */
   const momentumChild = `
     globalThis.__HB_QUERY__ = process.env.HB_MOM || '';
+    const MP = await import(${JSON.stringify('file://' + join(srcDir) + '/')} + 'pure/momentum.js');
     const S = ${JSON.stringify('file://' + join(srcDir) + '/')};
     const [CF, T, E, LV, PL, SC, WG, PA, HO, SPW] = await Promise.all([
       import(S + 'config.js'), import(S + 'sim/time.js'), import(S + 'sim/edges.js'),
@@ -362,7 +374,11 @@ export async function run(SHARED) {
       return { speeds, spawns, predicted, scrolled: T.scrollX,
                drive: PA.momentumDrive(), peakDrive: PA.momentumPeakDrive() };
     }
-    const clamp = (l, r) => r - M - hw;              // pinned to the right clamp
+    // pinned to the right clamp — or, under the follow-lead, to the lead line
+    const lead = MP.followLeadTiles(E.EDGE_R - E.EDGE_L, C.follow);
+    const clamp = process.env.HB_MOM_PLACE === 'lead'
+      ? (l, r) => r - lead - hw
+      : (l, r) => r - M - hw;
     const plane = (l) => l + M + hw;                 // shoved against the plane
     const dt = 1 / 60;
     const strong = run(clamp, 25, dt);
@@ -380,23 +396,32 @@ export async function run(SHARED) {
     WG.cornerEvents[0].state = 'gate';
     const gated = run(clamp, 8, dt);
     WG.cornerEvents[0].state = 'done';
+    // A racer who outruns the pursuit: RIG advances at the frozen run speed
+    // from the lead line, so the follow floor (when on) carries the scroll.
+    let rx = null;
+    const racing = run((l, r) => {
+      rx = rx === null ? clamp(l, r) : rx + C.player.runSpeed * dt;
+      return rx;
+    }, 12, dt);
     console.log(JSON.stringify({
       base: C.scrollSpeed, ceil: C.scrollSpeed * C.momentum.ceilMult,
       strong: strong.speeds, weak: weak.speeds, fed: fed.speeds, weakFed: weakFed.speeds,
       hurt: hurt.speeds, again: strongAgain.speeds, coarse: coarse.speeds,
       gated: gated.speeds,
+      racing: { scrolled: racing.scrolled, spawns: racing.spawns, predicted: racing.predicted },
+      runSpeed: C.player.runSpeed,
       peaks: { strong: strong.peakDrive, fed: fed.peakDrive, weak: weak.peakDrive },
       spawns: { strong: strong.spawns, fed: fed.spawns, weak: weak.spawns },
       predicted: { strong: strong.predicted, fed: fed.predicted, weak: weak.predicted },
       scrolled: { strong: strong.scrolled, fed: fed.scrolled, weak: weak.scrolled },
     }));
   `;
-  function momentumProbe(query) {
+  function momentumProbe(query, place = 'clamp') {
     try {
       return JSON.parse(execFileSync(process.execPath,
         ['--input-type=module', '-e', momentumChild],
         { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024,
-          env: { ...process.env, HB_MOM: query } }));
+          env: { ...process.env, HB_MOM: query, HB_MOM_PLACE: place } }));
     } catch (e) {
       console.error('pathcheck: momentum probe child failed (' + query + '): ' + e.message);
       return null;
@@ -434,8 +459,32 @@ export async function run(SHARED) {
        'FLAG: no fixture URL can arm it — the traversal and transformation slices ' +
        'keep the pursuit models they already own');
   }
-  const off = momentumProbe('momentum=0');
-  const on = momentumProbe('');
+  // T-022's model, unchanged: the follow-lead off (?follow=0).
+  const off = momentumProbe('momentum=0&follow=0');
+  const on = momentumProbe('follow=0');
+  // The shipped default: follow-lead on, the racer on the lead line.
+  const offLead = momentumProbe('momentum=0', 'lead');
+  const onLead = momentumProbe('', 'lead');
+  ok(!!offLead && !!onLead && !!on && !!off &&
+     JSON.stringify([onLead.strong, onLead.weak, onLead.fed, onLead.weakFed, onLead.hurt,
+       onLead.gated]) === JSON.stringify([on.strong, on.weak, on.fed, on.weakFed, on.hurt, on.gated]) &&
+     JSON.stringify(onLead.spawns) === JSON.stringify(on.spawns) &&
+     JSON.stringify(offLead.spawns) === JSON.stringify(off.spawns),
+     'T-201 FOLLOW/BANK: with the follow-lead ON, riding the lead line escalates, holds, sheds ' +
+     'and spawns EXACTLY as riding the right clamp does with it off — every speed trace and ' +
+     'ambient count byte-identical, so the bank re-expressed in tiles from the damage plane ' +
+     'is T-022\'s bank with the clamp moved to the lead line (entry 11, named not buried)');
+  if (onLead && offLead) {
+    const r = onLead.racing, base0 = offLead.racing, runSpeed = onLead.runSpeed;
+    ok(r.scrolled <= runSpeed * 12 + 1e-6 && r.scrolled > on.scrolled.strong * 12 / 25,
+       'T-201 FOLLOW/CEILING: a racer who outruns the pursuit drags the plane at most at the ' +
+       'frozen run speed (' + r.scrolled.toFixed(1) + ' tiles in 12 s, bound ' +
+       (runSpeed * 12).toFixed(1) + ') — under the follow-lead the pace of a racer is the ' +
+       'racer\'s own legs, never the momentum ceiling; that is the race (entry 20)');
+    ok(r.spawns === r.predicted && base0.spawns === base0.predicted,
+       'T-201 FOLLOW/CEILING: …and the ambient table it uncovers is exactly the prefix that ' +
+       'distance scrolled (' + r.spawns + ' entries): faster is sooner, never denser per tile');
+  }
   ok(!!off && !!on, 'the momentum probe drives the real six-face scroll headlessly');
   if (off && on) {
     ok(off.strong.every((s) => s === base) && off.weak.every((s) => s === base),
