@@ -1,0 +1,100 @@
+{
+ "tool": "tools/playtest/framing-cost.mjs",
+ "viewport": {
+  "vw": 1280,
+  "vh": 800,
+  "dpr": 1,
+  "touch": false
+ },
+ "variants": [
+  {
+   "label": "main",
+   "base": "http://127.0.0.1:8777",
+   "query": ""
+  },
+  {
+   "label": "branch",
+   "base": "http://127.0.0.1:8776",
+   "query": ""
+  }
+ ],
+ "rounds": 2,
+ "readings": [
+  {
+   "round": 1,
+   "variant": "main",
+   "perf": {
+    "frames": 23,
+    "fps": 0.1,
+    "avgMs": 7641.72,
+    "worstMs": 39648.4,
+    "over20ms": 23
+   },
+   "liveProjectiles": 256,
+   "framing": "far",
+   "errors": [],
+   "wallMs": 200342
+  },
+  {
+   "round": 1,
+   "variant": "branch",
+   "perf": {
+    "frames": 20,
+    "fps": 0.1,
+    "avgMs": 15021.06,
+    "worstMs": 58897.7,
+    "over20ms": 20
+   },
+   "liveProjectiles": 256,
+   "framing": "far",
+   "errors": [],
+   "wallMs": 359727
+  },
+  {
+   "round": 2,
+   "variant": "main",
+   "perf": {
+    "frames": 14,
+    "fps": 0.1,
+    "avgMs": 11218.59,
+    "worstMs": 28248.9,
+    "over20ms": 14
+   },
+   "liveProjectiles": 111,
+   "framing": "far",
+   "errors": [],
+   "wallMs": 221279
+  },
+  {
+   "round": 2,
+   "variant": "branch",
+   "perf": {
+    "frames": 15,
+    "fps": 0.1,
+    "avgMs": 12960.59,
+    "worstMs": 68963.9,
+    "over20ms": 15
+   },
+   "liveProjectiles": 150,
+   "framing": "far",
+   "errors": [],
+   "wallMs": 239351
+  }
+ ],
+ "summary": {
+  "main": {
+   "n": 2,
+   "medianAvgMs": 11218.59,
+   "medianWorstMs": 39648.4,
+   "medianOver20ms": 23,
+   "medianFps": 0.1
+  },
+  "branch": {
+   "n": 2,
+   "medianAvgMs": 15021.06,
+   "medianWorstMs": 68963.9,
+   "medianOver20ms": 20,
+   "medianFps": 0.1
+  }
+ }
+}

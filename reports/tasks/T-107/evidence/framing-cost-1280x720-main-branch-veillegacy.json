@@ -1,0 +1,193 @@
+{
+ "tool": "tools/playtest/framing-cost.mjs",
+ "viewport": {
+  "vw": 1280,
+  "vh": 720,
+  "dpr": 1,
+  "touch": false
+ },
+ "variants": [
+  {
+   "label": "main",
+   "base": "http://127.0.0.1:8777",
+   "query": ""
+  },
+  {
+   "label": "branch",
+   "base": "http://127.0.0.1:8776",
+   "query": ""
+  },
+  {
+   "label": "veillegacy",
+   "base": "http://127.0.0.1:8776",
+   "query": "veil=legacy"
+  }
+ ],
+ "rounds": 2,
+ "readings": [
+  {
+   "round": 1,
+   "variant": "main",
+   "perf": {
+    "frames": 15,
+    "fps": 0.2,
+    "avgMs": 5576.45,
+    "worstMs": 21765.8,
+    "over20ms": 15
+   },
+   "liveProjectiles": 256,
+   "render": {
+    "calls": 161,
+    "triangles": 200727,
+    "points": 0,
+    "lines": 0
+   },
+   "framing": "far",
+   "errors": [],
+   "wallMs": 102358
+  },
+  {
+   "round": 1,
+   "variant": "branch",
+   "perf": {
+    "frames": 18,
+    "fps": 0.2,
+    "avgMs": 5502.56,
+    "worstMs": 17215.9,
+    "over20ms": 18
+   },
+   "liveProjectiles": 256,
+   "render": {
+    "calls": 162,
+    "triangles": 201007,
+    "points": 0,
+    "lines": 0
+   },
+   "framing": "far",
+   "errors": [],
+   "wallMs": 128779
+  },
+  {
+   "round": 1,
+   "variant": "veillegacy",
+   "perf": {
+    "frames": 16,
+    "fps": 0.1,
+    "avgMs": 9516.28,
+    "worstMs": 40165.02,
+    "over20ms": 16
+   },
+   "liveProjectiles": 256,
+   "render": {
+    "calls": 175,
+    "triangles": 200741,
+    "points": 0,
+    "lines": 0
+   },
+   "framing": "far",
+   "errors": [],
+   "wallMs": 188731
+  },
+  {
+   "round": 2,
+   "variant": "main",
+   "perf": {
+    "frames": 21,
+    "fps": 0.1,
+    "avgMs": 11117.02,
+    "worstMs": 30415.4,
+    "over20ms": 21
+   },
+   "liveProjectiles": 256,
+   "render": {
+    "calls": 162,
+    "triangles": 201007,
+    "points": 0,
+    "lines": 0
+   },
+   "framing": "far",
+   "errors": [],
+   "wallMs": 272922
+  },
+  {
+   "round": 2,
+   "variant": "branch",
+   "perf": {
+    "frames": 17,
+    "fps": 0.1,
+    "avgMs": 6909.52,
+    "worstMs": 37465.2,
+    "over20ms": 17
+   },
+   "liveProjectiles": 220,
+   "render": {
+    "calls": 155,
+    "triangles": 197155,
+    "points": 0,
+    "lines": 0
+   },
+   "framing": "far",
+   "errors": [],
+   "wallMs": 157142
+  },
+  {
+   "round": 2,
+   "variant": "veillegacy",
+   "perf": {
+    "frames": 24,
+    "fps": 0.1,
+    "avgMs": 6707.37,
+    "worstMs": 16566,
+    "over20ms": 24
+   },
+   "liveProjectiles": 256,
+   "render": {
+    "calls": 156,
+    "triangles": 197950,
+    "points": 0,
+    "lines": 0
+   },
+   "framing": "far",
+   "errors": [],
+   "wallMs": 198751
+  }
+ ],
+ "summary": {
+  "main": {
+   "n": 2,
+   "medianAvgMs": 11117.02,
+   "medianWorstMs": 30415.4,
+   "medianOver20ms": 21,
+   "medianFps": 0.2,
+   "medianCalls": 162,
+   "medianTriangles": 201007,
+   "framings": [
+    "far"
+   ]
+  },
+  "branch": {
+   "n": 2,
+   "medianAvgMs": 6909.52,
+   "medianWorstMs": 37465.2,
+   "medianOver20ms": 18,
+   "medianFps": 0.2,
+   "medianCalls": 162,
+   "medianTriangles": 201007,
+   "framings": [
+    "far"
+   ]
+  },
+  "veillegacy": {
+   "n": 2,
+   "medianAvgMs": 9516.28,
+   "medianWorstMs": 40165.02,
+   "medianOver20ms": 24,
+   "medianFps": 0.1,
+   "medianCalls": 175,
+   "medianTriangles": 200741,
+   "framings": [
+    "far"
+   ]
+  }
+ }
+}

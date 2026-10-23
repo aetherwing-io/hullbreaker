@@ -612,7 +612,75 @@ changed — moving EDGE_L moves the damage plane.
 - `?view=phone` on desktop (1280x720): fov 40.09, lift 0.85, RIG's body 40.2 px
   = **5.58%** of the height (`evidence/probe-desktop-branch-viewphone.json`).
 
-### 10. Frame cost, phone frame vs FAR on the same viewport — PENDING-COST
+### 10. Frame cost, phone frame vs FAR on the same viewport — reported; this host cannot measure the 60 fps bar (entry 18), the draw counts say the frame costs no more
+
+**The stress path, as entry 18 asks** (`tools/playtest/framing-cost.mjs`: boot,
+hold right, then twelve spread shots a frame — the 256-slot projectile pool
+saturates — plus a death burst and flash every frame for 5 s; `HB.perf()`'s
+sampler; interleaved rounds; final tree;
+`evidence/framing-cost-844x390-phone-far-steep.json`,
+`evidence/framing-cost-1280x720-main-branch-veillegacy.json`):
+
+| round 1 / round 2 | fps | avgMs | worstMs | over20ms (= frames sampled) | calls / triangles, the last frame drawn |
+| --- | --- | --- | --- | --- | --- |
+| 844x390 touch, phone frame | 0.4 / 0.3 | 2535 / 3056 | 14,566 / 15,183 | 17 / 14 | 149 / 149; 200,062 / 199,534 |
+| 844x390 touch, `?view=far` | 0.5 / 0.4 | 1861 / 2580 | 10,883 / 16,099 | 20 / 14 | 164 / 163; 201,289 / 199,941 |
+| 844x390 touch, `?rise=steep` | 0.4 / 0.4 | 2683 / 2722 | 17,283 / 16,816 | 16 / 23 | 151 / 151; 200,606 / 200,622 |
+| 1280x720, main `71d3941` | 0.2 / 0.1 | 5576 / 11,117 | 21,766 / 30,415 | 15 / 21 | 161 / 162; 200,727 / 201,007 |
+| 1280x720, this branch | 0.2 / 0.1 | 5503 / 6910 | 17,216 / 37,465 | 18 / 17 | 162 / 155; 201,007 / 197,155 |
+| 1280x720, this branch `?veil=legacy` | 0.1 / 0.1 | 9516 / 6707 | 40,165 / 16,566 | 16 / 24 | 175 / 156; 200,741 / 197,950 |
+
+**Not evidence, said plainly:** SwiftShader on a host at load 27-62 draws
+every variant, main included, at 0.1-0.5 fps; every sampled frame is over
+20 ms; a variant's two rounds differ more than variants do (FAR's round 2 is
+slower than the phone frame's round 1). The stress run's draw counts are
+state-dependent (wherever the run is at the 5 s mark: 155-175 calls at
+desktop). An earlier pre-merge desktop run (1280x800,
+`evidence/framing-cost-1280x800-main-vs-branch-premerge.json`) was the same:
+0.1 fps both trees. **Whether the phone frame holds 60 fps with 200+
+projectiles needs a GPU host or the iPhone** — this lane cannot claim it, and
+says so (entry 18).
+
+**What the framing asks the GPU to draw, measured deterministically**
+(`tools/playtest/phone-framing-probe.mjs --render-info`, new: the 17 fixed
+poses the identity proof uses — flat faces, a turn at seven ritual clocks,
+completed corners, late faces — hostiles removed, the play loop's facet culls
+run, the renderer's count for a whole presented frame; every asset resident
+and the bloom composer off (`?bloom=0`) on every session, so every session
+draws the same path — under this load the composer came up `failed` (its
+bounded 1.2 s boot, then the direct path for the session) on all 10 desktop
+boots that recorded it; `evidence/render-info-posed.json`):
+
+| 17 poses, total (per pose) | draw calls | triangles |
+| --- | --- | --- |
+| 844x390 touch, phone frame | **2569** (140-194) | **3,354,508** |
+| 844x390 touch, `?view=far` | 2644 (142-194) | 3,365,114 |
+| 844x390 touch, `?rise=steep` | 2585 (142-193) | 3,359,933 |
+| 1280x720, main `71d3941` | 2614 | 3,362,343 |
+| 1280x720, this branch | **2614 — identical at every pose** | **3,362,343 — identical at every pose** |
+| 1280x720, this branch `?veil=legacy` | 2614, identical | 3,362,343, identical |
+
+- **The phone frame draws no more than FAR on the same phone:** 0-12 fewer
+  draw calls per pose (75 fewer over the 17, -2.8%) and 0-1,216 fewer
+  triangles (-0.3%): the narrower frustum culls a few more pieces.
+- **Desktop is unchanged:** main and this branch submit exactly the same draws
+  at every pose; the extended veil adds no draw call and no triangle (the
+  same 20-segment mesh, wider).
+- **`?rise=steep`** moves which pieces fall in the frustum: -8 to +5 calls per
+  pose (+16 in total, +0.6%), +0.16% triangles.
+- The phone frame was measured on two `?bloom=0` boots 20 minutes apart:
+  identical at every pose (two earlier boots without the flag, whose
+  composer state was not yet recorded, gave the same numbers exactly). One
+  boot read exactly 14 calls and 14 triangles more at every pose — 14
+  one-triangle draws, the shape of the composer's full-screen passes (that
+  probe build did not record the composer state;
+  `evidence/render-info-posed-phone-composer-on.json`): a fixed per-frame
+  cost whatever the lens.
+- **Not in these counts:** fill. The phone frame draws every object 1.46x
+  larger (2.1x the pixels per object), and the extended veil covers the edge
+  columns that were clear colour (up to 19% of the frame near a corner); both
+  are pixel cost, which only a GPU timing on a real device can price.
+
 
 ### 11. pathcheck green; smoke-verdict PASS; operator packet — MET
 
@@ -807,8 +875,25 @@ at 844x390 touch (the phone frame) and 1280x720 (desktop FAR) —
   1280x720 on face 3, 3.4 px at 0.21; 1.0 px on today's helix). A fix (stack
   rows along the tile's own normal, or shear instead of rotate) is in
   render/level.js, outside this lane — inbox issue.
-- **"Firing into a hillside": see the fight captures and the inbox issue.**
-  PENDING-STEEPFIGHT
+- **"Firing into a hillside" — the fight, photographed (final tree).** The
+  readability capture's deterministic run (hold right + fire, a jump every
+  0.9 s) at 12 and 15 s, `?rise=steep` against the shipped helix at 1280x720,
+  every art asset resident in both sessions (`captures/t204-fight-helix-vs-steep-1280x720-t12000.jpg`,
+  RIG and his rounds at x2: `...-t12000-rig-x2.jpg`; the phone frame:
+  `captures/t204-steep-fight-844x390-t{12000,15000}.jpg`, RIG at x4:
+  `t204-steep-fight-844x390-t12000-rig-x4.png`). The two desktop sessions are
+  the same simulation (RIG at x 46.28 / 66.98, every round at the same screen
+  x to 0.25 px) — the browser repeat of the render-only proof. On screen, the
+  same 8 rounds climb **5.6 deg more steeply under `?rise=steep`** than on the
+  helix at both marks (least squares, `evidence/t204-fight-extra-tilt.json`) —
+  the face-1 grade difference (atan 0.16 - atan 0.0617 = 5.56 deg analytic;
+  5.61-5.62 deg measured on screen). In the
+  frames RIG's barrel and every round's body are drawn level while the stream
+  of rounds rises along the deck: a staircase of level rounds climbing away
+  from a level gun. That is the geometry of the inbox issue below (the shots
+  follow the deck, sim-correct; the drawn barrel and bodies do not pitch).
+  Whether it reads as "firing into a hillside" is the operator's call (packet
+  Q3).
 
 ### Portrait actor gain (from T-103)
 
@@ -944,7 +1029,11 @@ re-run on the final code (`captures/probe-framing-phone-portrait.jpg`,
   arriving face drawn whole at the hand-off (box 4).
 - **Half-dose value ladder (entry 14):** untouched (no colour, material or
   light change). The veil is the same painting, mirrored past its old edges.
-- **60 fps condition (entry 18):** box 10.
+- **60 fps condition (entry 18):** box 10 — not measurable on this host
+  (0.1-0.5 fps for every variant, main included); deterministically, the
+  phone frame submits 2.8% fewer draw calls than FAR on the same phone and
+  desktop submits exactly main's draws. Fill (larger actors, the wider veil)
+  is the unpriced cost; the device check is the operator's.
 - **Layer purity / determinism:** `src/pure/framing.js` has no three.js, DOM
   or randomness (pathcheck layer guard + T-003/T-049/T-051 per-file guards);
   the sim is untouched.
@@ -1092,7 +1181,8 @@ and ascent unchanged since).
 | `probe-framing-phone-{landscape,portrait,landscape-far}.jpg` | the re-pointed race probe's live photos (the deck's thumbs drawn) |
 | `portrait-gain-main-1.5x-sheet.png`, `portrait-gain-removed-sheet.png` | the portrait actor gain's arm stretch, before / after removing it (scratch copy) |
 | `tells-phone-vs-far-dpr2-sheet.jpg`, `tells-{phone,far}-844x390-dpr2-t3000.jpg` | box 5: a wasp mid-dive at 3.0 / 3.25 s, phone frame vs `?view=far`, DPR 2 (final tree) |
-PENDING-CAPTURES-MORE
+| `t204-fight-helix-vs-steep-1280x720-t12000.jpg`, `...-t12000-rig-x2.jpg` | T-204: the same fight moment on the helix and under `?rise=steep`, desktop, full frame and RIG's rounds at x2 (final tree) |
+| `t204-steep-fight-844x390-t{12000,15000}.jpg`, `t204-steep-fight-844x390-t12000-rig-x4.png` | T-204: `?rise=steep` on the phone frame mid-fight; RIG and his rounds at x4 (final tree) |
 
 ## Operator packet
 
@@ -1128,6 +1218,9 @@ Questions (please answer in your own words):
    platforms, did the screen cut off anything you needed to see?
 5. Where, if anywhere, did your thumbs or the panels at the top of the screen
    get in the way of seeing RIG or the route?
+
+One observation request (this host cannot measure frame rate, box 10): if
+the phone stutters anywhere, note where (a corner, a big fight, the Crown).
 
 Calls only you can make (not feel questions; each is an inbox issue below with
 its numbers): (a) the phone frame shows less route ahead than today's FAR
@@ -1209,7 +1302,7 @@ follows RIG vertically, a partial roll with the grade, or a lower grade on
 phones are the options; it is the operator's design call before `?rise=steep`
 can become a default.
 
-## I-??? | art | S2 | repro: `index.html?rise=steep`, hold right + fire on face 1 (desktop or 844x390 touch); `tools/playtest/phone-readability-capture.mjs --query rise=steep --marks 9000` @ task/T-107 | evidence: PENDING-STEEPFIGHT-EVIDENCE
+## I-??? | art | S2 | repro: `index.html?rise=steep`, hold right + fire on face 1 (desktop or 844x390 touch); `tools/playtest/phone-readability-capture.mjs --query rise=steep --marks 9000` @ task/T-107 | evidence: reports/tasks/T-107/captures/t204-fight-helix-vs-steep-1280x720-t12000*.jpg, t204-steep-fight-844x390-*.jpg/png, evidence/t204-fight-extra-tilt.json
 With the per-side rise (unjudged, off by default) a level shot no longer
 travels along its own barrel. RIG and his gun are only translated by the
 ascent, never pitched (render/tower.js placeOnTower), and each projectile body
@@ -1219,7 +1312,10 @@ the deck 6.6 tiles ahead on face 1 (grade 0.16) and 5.0 tiles ahead on face 6
 (0.21) — 17 tiles on today's helix — and the shot climbs away from the
 barrel's line at 9.1-11.9 deg (3.5 deg today): 10 tiles out it is 1.6-2.1
 tiles above that line, 21-27 px on the phone frame and 26-34 px at desktop
-(8-10 px on the helix). The shots do follow the deck (sim-correct: they hit
+(8-10 px on the helix). Photographed in play (same simulation, both
+ascents): the same rounds' stream climbs 5.6 deg more steeply on screen under
+`?rise=steep` on face 1, each round's body and RIG's barrel drawn level. The
+shots do follow the deck (sim-correct: they hit
 what stands on it); it is the drawn barrel whose line runs into the slope —
 the geometry behind docs/proposals/2026-10-race-to-the-top.md §4.1's "a level
 shot along the deck reads as firing into a hillside" (there predicted above

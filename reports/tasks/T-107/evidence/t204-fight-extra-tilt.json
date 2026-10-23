@@ -1,0 +1,19 @@
+{
+ "note": "Same rounds (same sim: render-only), steep minus helix screen y against screen x, least squares. Screen x is identical (max shift listed); the extra tilt is the stream climbing that much more steeply on screen under ?rise=steep than on the shipped helix.",
+ "marks": [
+  {
+   "mark": 12000,
+   "rounds": 8,
+   "maxScreenXShiftPx": 0.0999999999999659,
+   "extraRisePerPx": 0.0982,
+   "extraTiltDeg": 5.61
+  },
+  {
+   "mark": 15000,
+   "rounds": 8,
+   "maxScreenXShiftPx": 0.25,
+   "extraRisePerPx": 0.0984,
+   "extraTiltDeg": 5.62
+  }
+ ]
+}

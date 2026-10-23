@@ -1,0 +1,107 @@
+{
+ "note": "phone frame 844x390 touch, composer ACTIVE on this boot (old probe build: post status not recorded; inferred from the +14 one-triangle draws per pose vs the ?bloom=0 run, which equals the batch-1 direct-path runs exactly)",
+ "renderInfo": {
+  "culls": [
+   "updateBackdropFacetVisibility",
+   "updateWorldDressingCull",
+   "updateSeamFoldCull",
+   "updateCrownFacetCull",
+   "updateLimbFoldCull"
+  ],
+  "poses": [
+   {
+    "label": "flat-s0",
+    "calls": 155,
+    "triangles": 197514
+   },
+   {
+    "label": "flat-s10",
+    "calls": 167,
+    "triangles": 198401
+   },
+   {
+    "label": "flat-s40",
+    "calls": 174,
+    "triangles": 200877
+   },
+   {
+    "label": "halt-1",
+    "calls": 157,
+    "triangles": 199082
+   },
+   {
+    "label": "turn-1-t0",
+    "calls": 157,
+    "triangles": 199082
+   },
+   {
+    "label": "turn-1-t120",
+    "calls": 163,
+    "triangles": 199806
+   },
+   {
+    "label": "turn-1-t350",
+    "calls": 171,
+    "triangles": 200047
+   },
+   {
+    "label": "turn-1-t520",
+    "calls": 171,
+    "triangles": 200047
+   },
+   {
+    "label": "turn-1-t690",
+    "calls": 155,
+    "triangles": 194679
+   },
+   {
+    "label": "turn-1-t900",
+    "calls": 154,
+    "triangles": 194539
+   },
+   {
+    "label": "turn-1-t1100",
+    "calls": 154,
+    "triangles": 194539
+   },
+   {
+    "label": "after-1-s98",
+    "calls": 154,
+    "triangles": 194539
+   },
+   {
+    "label": "after-1-s106",
+    "calls": 160,
+    "triangles": 195903
+   },
+   {
+    "label": "after-1-s116",
+    "calls": 164,
+    "triangles": 196763
+   },
+   {
+    "label": "turn-3-t500",
+    "calls": 168,
+    "triangles": 197427
+   },
+   {
+    "label": "flat-s420",
+    "calls": 175,
+    "triangles": 199929
+   },
+   {
+    "label": "flat-s540",
+    "calls": 208,
+    "triangles": 191572
+   }
+  ],
+  "totalCalls": 2807,
+  "totalTriangles": 3354746
+ },
+ "preloadAttempts": [
+  {
+   "attempt": 1,
+   "notReady": []
+  }
+ ]
+}

@@ -4,7 +4,8 @@
  *
  *   node tools/playtest/phone-framing-probe.mjs --base-url http://127.0.0.1:8776 \
  *     --viewports 1280x720,1920x1080 [--touch] [--query view=far] [--dpr 1] \
- *     [--rig] [--shots <dir>] [--root <tree> instead of --base-url] --out <file.json>
+ *     [--rig] [--clamp] [--clear-shot] [--render-info] [--shots <dir>]
+ *     [--boot-attempts 1] [--root <tree> instead of --base-url] --out <file.json>
  *   node tools/playtest/phone-framing-probe.mjs --compare base.json branch.json
  *
  * One headless Chrome, one fresh context per viewport (touch emulation with
@@ -38,6 +39,23 @@
  *             projected through the live camera, AND its painted pixels: one
  *             direct render with everything but RIG hidden over a key colour,
  *             read back with gl.readPixels, bounding box of non-key pixels.
+ *   renderInfo — (--render-info) the frame cost the FRAMING asks for, free of
+ *             host load: at every fixed pose (hostiles removed, nothing
+ *             firing) the page's own facet culls run as the play loop runs
+ *             them (backdrop facets, world dressing, seams, Crown, limb
+ *             folds), two presented frames pass, and the renderer's count for
+ *             the last one is read (post.js resets renderer.info once per
+ *             presented frame, so it is the whole frame: scene, shadow and
+ *             post passes). Deterministic for a given boot state: the same
+ *             tree, pose, art residency and composer state give the same
+ *             numbers on any host — compare only rows whose `preload`
+ *             (notReady) and `post` (status) match; --boot-attempts re-boots
+ *             until every asset is ready and the composer is active. On a
+ *             loaded host the composer can miss its boot budget on every
+ *             boot: compare framings with `--query bloom=0` (the direct path
+ *             on every session; the composer's passes are a fixed per-frame
+ *             cost — 14 one-triangle draws at 844x390 — whatever the lens
+ *             frames). Runs last, so --shots is unaffected.
  *
  * Honesty: a posed page is not a played page (hostiles are removed; no
  * motion). The painted-pixel box is the sprite's alpha-tested pixels in ONE
@@ -103,6 +121,8 @@ const query = opt('query', '');
 const wantRig = has('rig');
 const wantClamp = has('clamp');
 const clearShot = has('clear-shot');
+const wantRenderInfo = has('render-info');
+const bootAttempts = Math.max(1, +opt('boot-attempts', '1'));
 const shots = opt('shots', null);
 const out = resolve(opt('out', 'phone-framing-probe.json'));
 const bootMs = Number(process.env.HB_PROBE_BOOT_MS) || 180000;
@@ -130,17 +150,48 @@ const { browser } = await launchBrowser({ channel: 'chrome' });
 try {
   for (const [w, h] of viewports) {
     const t0 = Date.now();
-    const context = await browser.newContext({ viewport: { width: w, height: h },
-      deviceScaleFactor: dpr, hasTouch: touch, isMobile: touch });
-    const page = await context.newPage();
+    let context = null, page = null;
     const errors = [];
-    page.on('pageerror', (e) => errors.push(String(e && e.stack || e)));
-    page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
-    const row = { viewport: `${w}x${h}`, touch, dpr, query, errors };
+    const row = { viewport: `${w}x${h}`, touch, dpr, query, errors, preloadAttempts: [] };
     try {
-      await page.goto(`${baseUrl}/index.html?testapi=1&shell=0&audio=0${query ? '&' + query : ''}`,
-        { waitUntil: 'load', timeout: bootMs });
-      await page.waitForFunction(() => globalThis.HB && HB.state() === 'PLAYING', null, { timeout: bootMs });
+      // Boot, and re-boot (--boot-attempts) while any art missed the boot
+      // preload gate or the bloom composer missed its boot budget: on a
+      // loaded host either can happen, and the page then draws documented
+      // fallbacks for the whole session — fewer meshes or no composer passes,
+      // so different --render-info counts. Every attempt's record is kept.
+      for (let attempt = 1; attempt <= bootAttempts; attempt++) {
+        context = await browser.newContext({ viewport: { width: w, height: h },
+          deviceScaleFactor: dpr, hasTouch: touch, isMobile: touch });
+        page = await context.newPage();
+        errors.length = 0;
+        page.on('pageerror', (e) => errors.push(String(e && e.stack || e)));
+        page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
+        await page.goto(`${baseUrl}/index.html?testapi=1&shell=0&audio=0${query ? '&' + query : ''}`,
+          { waitUntil: 'load', timeout: bootMs });
+        await page.waitForFunction(() => globalThis.HB && HB.state() === 'PLAYING', null, { timeout: bootMs });
+        row.preload = await page.evaluate(() => {
+          const p = globalThis.__HB_PRELOAD ? __HB_PRELOAD() : null;
+          if (!p) return null;
+          const assets = (p.assets || []).map((a) => ({ url: String(a.url || '').split('/').pop(), state: a.state }));
+          return { budgetMs: p.budgetMs, costMs: p.costMs, notReady: assets.filter((a) => a.state !== 'ready') };
+        });
+        // the bloom composer settles at boot within its own bounded budget
+        // (render/post.js); when it misses, the session draws the direct path
+        // (no composer passes) — a different frame, so a different count
+        row.post = await page.evaluate(async () => {
+          const P = await import('/src/render/post.js');
+          if (typeof P.postSnapshot !== 'function') return null;
+          const q = P.postSnapshot();
+          return { on: q.on, status: q.status, readyStatus: q.readyStatus };
+        });
+        const missed = row.preload ? row.preload.notReady.length : 0;
+        const postDown = row.post && row.post.on && row.post.status !== 'active';
+        row.preloadAttempts.push({ attempt, notReady: row.preload ? row.preload.notReady.map((a) => a.url) : null,
+          post: row.post && row.post.status });
+        if ((!missed && !postDown) || attempt === bootAttempts) break;
+        log(`${w}x${h}: ${missed} assets missed the preload gate, post ${row.post && row.post.status}; re-booting (attempt ${attempt + 1})`);
+        await context.close().catch(() => {});
+      }
       page.setDefaultTimeout(bootMs);
       await page.evaluate(() => {
         dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyP' }));
@@ -398,6 +449,51 @@ try {
         await page.screenshot({ path: file, type: 'jpeg', quality: 80, timeout: bootMs });
         row.shot = file;
       }
+      if (wantRenderInfo) {
+        row.renderInfo = await page.evaluate(async ({ POSES }) => {
+          const [W, T, Cam, S, ...culls] = await Promise.all([
+            '/src/sim/wavegate.js', '/src/sim/time.js', '/src/render/camera.js', '/src/render/scene.js',
+            '/src/render/backdrop.js', '/src/render/level.js', '/src/render/seams.js',
+            '/src/render/crown.js', '/src/render/limb.js',
+          ].map((q) => import(q)));
+          // the play loop's culls after syncCamera (src/main.js update()), by name
+          const CULLS = ['updateBackdropFacetVisibility', 'updateWorldDressingCull', 'updateSeamFoldCull',
+            'updateCrownFacetCull', 'updateLimbFoldCull'];
+          const runCulls = () => {
+            for (const name of CULLS) for (const m of culls) if (typeof m[name] === 'function') { m[name](); break; }
+          };
+          const finish = (c) => {
+            if (c.state === 'done') return;
+            if (c.state !== 'turning') { c.state = 'turning'; c.tStart = T.gameMs; }
+            c.sealed = true;
+            if (typeof W.updateZipper === 'function') W.updateZipper(c, 1e9);
+            W.finishCorner(c);
+          };
+          const twoFrames = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+          const rows = [];
+          for (const p of POSES) {
+            for (let k = 1; k <= (p.done || 0); k++) finish(W.cornerEvents[k - 1]);
+            if (p.k) {
+              const c = W.cornerEvents[p.k - 1];
+              c.primed = true; c.state = p.state;
+              c.tStart = p.state === 'turning' ? T.gameMs - p.tMs : 0;
+              if (p.state === 'turning') c.sealed = true;
+            }
+            T.setScrollX(p.scroll);
+            Cam.syncCamera();
+            runCulls();
+            await twoFrames();
+            const ri = S.renderer.info.render;
+            rows.push({ label: p.label, calls: ri.calls, triangles: ri.triangles });
+            if (p.k) {
+              const c = W.cornerEvents[p.k - 1];
+              if (c.state !== 'done') { c.state = 'idle'; c.tStart = 0; c.sealed = false; c.primed = false; }
+            }
+          }
+          return { culls: CULLS, poses: rows,
+            totalCalls: rows.reduce((a, r) => a + r.calls, 0), totalTriangles: rows.reduce((a, r) => a + r.triangles, 0) };
+        }, { POSES });
+      }
     } catch (error) {
       row.error = String(error && error.message || error).split('\n')[0];
     } finally {
@@ -406,7 +502,7 @@ try {
       await mkdir(dirname(out), { recursive: true });
       await writeFile(out, JSON.stringify(result, null, 1));
       log(`${w}x${h}${touch ? ' touch' : ''}${query ? ' ?' + query : ''}: ${row.error ? 'FAILED ' + row.error : 'done'} (${Math.round(row.wallMs / 1000)} s)`);
-      await context.close().catch(() => {});
+      if (context) await context.close().catch(() => {});
     }
   }
 } finally {

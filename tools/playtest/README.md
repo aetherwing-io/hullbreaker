@@ -1836,7 +1836,8 @@ phone frame (T-107)"). Each takes `--root <tree>` (served on an ephemeral port
 for the run) or `--base-url`.
 
 ```sh
-# the live camera at chosen viewports; --compare diffs two runs element by element
+# the live camera at chosen viewports; --compare diffs two runs element by element;
+# --render-info: the renderer's draw calls / triangles at each fixed pose (deterministic)
 node tools/playtest/phone-framing-probe.mjs --root <tree> --viewports 844x390 --touch --rig --out a.json
 node tools/playtest/phone-framing-probe.mjs --compare main.json branch.json
 # a fight photographed at game-time marks, with every body's screen box (for readability_sheet.py)
@@ -1854,10 +1855,24 @@ node tools/playtest/selftest-views.mjs --root <tree> --views 390x844,390x844t,84
 1. Everything runs on SwiftShader in headless Chrome. Geometry (edges, matrices,
    projected sizes, painted-pixel boxes) is exact; wall-clock frame times are
    not evidence about any device — on a loaded host `framing-cost.mjs` reads
-   0.1-0.4 fps and its rounds differ more from each other than its variants
+   0.1-0.5 fps and its rounds differ more from each other than its variants
    do. Its `render` block (calls, triangles of the last frame drawn; the game
-   resets `renderer.info` per displayed frame) is the load-independent number,
-   and it is one frame, not an average.
+   resets `renderer.info` per displayed frame) is load-independent but
+   state-dependent: one frame of a stress run, wherever the run happens to be.
+   For a like-for-like count use `phone-framing-probe.mjs --render-info`: the
+   same 17 fixed poses on every tree or framing, hostiles removed, the play
+   loop's facet culls run, the whole presented frame counted. It is
+   deterministic only for a given boot state: on a loaded host the art
+   preload gate (2.5 s desktop / 6.5 s touch) and the bloom composer's own
+   boot budget can each close first, and that session then draws fallbacks
+   (fewer meshes; no composer passes — 14 one-triangle draws fewer per frame
+   at 844x390). Each row records `preload.notReady` and `post.status`;
+   `--boot-attempts N` re-boots until every asset is resident and the
+   composer is active. Compare only rows whose boot states match; under heavy
+   load the composer can miss on every boot, so compare framings with
+   `--query bloom=0` (the same direct path on every session; the composer's
+   passes are a fixed per-frame cost whatever the lens frames). Neither
+   count is a GPU time: fill (how many pixels each draw covers) is not in it.
 2. A posed page (`phone-framing-probe.mjs`) is not a played page: hostiles are
    removed and nothing moves; the painted-pixel box is one sprite pose.
 3. `phone-readability-capture.mjs` boxes are projected world boxes, not

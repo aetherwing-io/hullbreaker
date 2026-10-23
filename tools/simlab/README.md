@@ -241,7 +241,9 @@ headers; listed here so the T-107 set is in one place):
 `tools/playtest/phone-framing-probe.mjs` (the live camera per viewport: the
 desktop identity proof by element-wise comparison of the camera matrices
 against another tree, edges, lens, the deck's cluster box, RIG's projected and
-painted height, the clamp in painted pixels, a clear-colour reference frame),
+painted height, the clamp in painted pixels, a clear-colour reference frame,
+and with `--render-info` the renderer's draw calls and triangles at each fixed
+pose — a deterministic frame-cost comparison of two framings or two trees),
 `tools/playtest/phone-readability-capture.mjs` (a deterministic fight paused at
 game-time marks, with every body's screen box) and
 `tools/playtest/framing-cost.mjs` (interleaved frame-cost rounds under the

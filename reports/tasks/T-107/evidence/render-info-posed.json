@@ -1,0 +1,783 @@
+{
+ "tool": "tools/playtest/phone-framing-probe.mjs --render-info --boot-attempts 10 --query bloom=0 (+ the variant query)",
+ "note": "17 fixed poses, hostiles removed, the play loop facet culls run, two presented frames, renderer.info.render of the last (post.js resets it per presented frame). Composer off (?bloom=0) on every session so all draw the same path; every asset resident (preload notReady empty) on the counted boot. desk-main = main 71d3941 export on :8777; the rest = this branch on :8776. phone was measured twice (rinfo3 and rinfo4): identical.",
+ "variants": {
+  "phone": {
+   "viewport": "844x390",
+   "touch": true,
+   "query": "bloom=0",
+   "preloadAttempts": [
+    {
+     "attempt": 1,
+     "notReady": [],
+     "post": "off"
+    }
+   ],
+   "post": {
+    "on": false,
+    "status": "off",
+    "readyStatus": "off"
+   },
+   "framing": {
+    "id": "phone",
+    "fovDeg": 40.09096815082921,
+    "liftTiles": 0.85,
+    "actorClamp": true,
+    "cameraDepth": 42.75,
+    "cameraFov": 40.09096815082921,
+    "touch": true,
+    "viewRequest": null,
+    "orbit": "halt",
+    "edgeRouteRight": 42.85297327325489
+   },
+   "renderInfo": {
+    "culls": [
+     "updateBackdropFacetVisibility",
+     "updateWorldDressingCull",
+     "updateSeamFoldCull",
+     "updateCrownFacetCull",
+     "updateLimbFoldCull"
+    ],
+    "poses": [
+     {
+      "label": "flat-s0",
+      "calls": 141,
+      "triangles": 197500
+     },
+     {
+      "label": "flat-s10",
+      "calls": 153,
+      "triangles": 198387
+     },
+     {
+      "label": "flat-s40",
+      "calls": 160,
+      "triangles": 200863
+     },
+     {
+      "label": "halt-1",
+      "calls": 143,
+      "triangles": 199068
+     },
+     {
+      "label": "turn-1-t0",
+      "calls": 143,
+      "triangles": 199068
+     },
+     {
+      "label": "turn-1-t120",
+      "calls": 149,
+      "triangles": 199792
+     },
+     {
+      "label": "turn-1-t350",
+      "calls": 157,
+      "triangles": 200033
+     },
+     {
+      "label": "turn-1-t520",
+      "calls": 157,
+      "triangles": 200033
+     },
+     {
+      "label": "turn-1-t690",
+      "calls": 141,
+      "triangles": 194665
+     },
+     {
+      "label": "turn-1-t900",
+      "calls": 140,
+      "triangles": 194525
+     },
+     {
+      "label": "turn-1-t1100",
+      "calls": 140,
+      "triangles": 194525
+     },
+     {
+      "label": "after-1-s98",
+      "calls": 140,
+      "triangles": 194525
+     },
+     {
+      "label": "after-1-s106",
+      "calls": 146,
+      "triangles": 195889
+     },
+     {
+      "label": "after-1-s116",
+      "calls": 150,
+      "triangles": 196749
+     },
+     {
+      "label": "turn-3-t500",
+      "calls": 154,
+      "triangles": 197413
+     },
+     {
+      "label": "flat-s420",
+      "calls": 161,
+      "triangles": 199915
+     },
+     {
+      "label": "flat-s540",
+      "calls": 194,
+      "triangles": 191558
+     }
+    ],
+    "totalCalls": 2569,
+    "totalTriangles": 3354508
+   }
+  },
+  "far": {
+   "viewport": "844x390",
+   "touch": true,
+   "query": "view=far&bloom=0",
+   "preloadAttempts": [
+    {
+     "attempt": 1,
+     "notReady": [],
+     "post": "off"
+    }
+   ],
+   "post": {
+    "on": false,
+    "status": "off",
+    "readyStatus": "off"
+   },
+   "framing": {
+    "id": "far",
+    "fovDeg": 56,
+    "liftTiles": 0,
+    "actorClamp": false,
+    "cameraDepth": 42.75,
+    "cameraFov": 56,
+    "touch": true,
+    "viewRequest": "far",
+    "orbit": "halt",
+    "edgeRouteRight": 60.18436301276371
+   },
+   "renderInfo": {
+    "culls": [
+     "updateBackdropFacetVisibility",
+     "updateWorldDressingCull",
+     "updateSeamFoldCull",
+     "updateCrownFacetCull",
+     "updateLimbFoldCull"
+    ],
+    "poses": [
+     {
+      "label": "flat-s0",
+      "calls": 152,
+      "triangles": 198163
+     },
+     {
+      "label": "flat-s10",
+      "calls": 155,
+      "triangles": 199003
+     },
+     {
+      "label": "flat-s40",
+      "calls": 167,
+      "triangles": 201619
+     },
+     {
+      "label": "halt-1",
+      "calls": 145,
+      "triangles": 199544
+     },
+     {
+      "label": "turn-1-t0",
+      "calls": 145,
+      "triangles": 199544
+     },
+     {
+      "label": "turn-1-t120",
+      "calls": 161,
+      "triangles": 200707
+     },
+     {
+      "label": "turn-1-t350",
+      "calls": 164,
+      "triangles": 200715
+     },
+     {
+      "label": "turn-1-t520",
+      "calls": 164,
+      "triangles": 200715
+     },
+     {
+      "label": "turn-1-t690",
+      "calls": 145,
+      "triangles": 195869
+     },
+     {
+      "label": "turn-1-t900",
+      "calls": 142,
+      "triangles": 195001
+     },
+     {
+      "label": "turn-1-t1100",
+      "calls": 142,
+      "triangles": 195001
+     },
+     {
+      "label": "after-1-s98",
+      "calls": 142,
+      "triangles": 195001
+     },
+     {
+      "label": "after-1-s106",
+      "calls": 148,
+      "triangles": 196477
+     },
+     {
+      "label": "after-1-s116",
+      "calls": 156,
+      "triangles": 197965
+     },
+     {
+      "label": "turn-3-t500",
+      "calls": 157,
+      "triangles": 198001
+     },
+     {
+      "label": "flat-s420",
+      "calls": 165,
+      "triangles": 200231
+     },
+     {
+      "label": "flat-s540",
+      "calls": 194,
+      "triangles": 191558
+     }
+    ],
+    "totalCalls": 2644,
+    "totalTriangles": 3365114
+   }
+  },
+  "steep": {
+   "viewport": "844x390",
+   "touch": true,
+   "query": "rise=steep&bloom=0",
+   "preloadAttempts": [
+    {
+     "attempt": 1,
+     "notReady": [],
+     "post": "off"
+    }
+   ],
+   "post": {
+    "on": false,
+    "status": "off",
+    "readyStatus": "off"
+   },
+   "framing": {
+    "id": "phone",
+    "fovDeg": 40.09096815082921,
+    "liftTiles": 0.85,
+    "actorClamp": true,
+    "cameraDepth": 42.75,
+    "cameraFov": 40.09096815082921,
+    "touch": true,
+    "viewRequest": null,
+    "orbit": "halt",
+    "edgeRouteRight": 42.85297327325489
+   },
+   "renderInfo": {
+    "culls": [
+     "updateBackdropFacetVisibility",
+     "updateWorldDressingCull",
+     "updateSeamFoldCull",
+     "updateCrownFacetCull",
+     "updateLimbFoldCull"
+    ],
+    "poses": [
+     {
+      "label": "flat-s0",
+      "calls": 142,
+      "triangles": 197780
+     },
+     {
+      "label": "flat-s10",
+      "calls": 154,
+      "triangles": 198667
+     },
+     {
+      "label": "flat-s40",
+      "calls": 160,
+      "triangles": 200863
+     },
+     {
+      "label": "halt-1",
+      "calls": 144,
+      "triangles": 199208
+     },
+     {
+      "label": "turn-1-t0",
+      "calls": 144,
+      "triangles": 199208
+     },
+     {
+      "label": "turn-1-t120",
+      "calls": 149,
+      "triangles": 199792
+     },
+     {
+      "label": "turn-1-t350",
+      "calls": 157,
+      "triangles": 200033
+     },
+     {
+      "label": "turn-1-t520",
+      "calls": 157,
+      "triangles": 200033
+     },
+     {
+      "label": "turn-1-t690",
+      "calls": 146,
+      "triangles": 195805
+     },
+     {
+      "label": "turn-1-t900",
+      "calls": 144,
+      "triangles": 195413
+     },
+     {
+      "label": "turn-1-t1100",
+      "calls": 144,
+      "triangles": 195413
+     },
+     {
+      "label": "after-1-s98",
+      "calls": 144,
+      "triangles": 195413
+     },
+     {
+      "label": "after-1-s106",
+      "calls": 149,
+      "triangles": 196469
+     },
+     {
+      "label": "after-1-s116",
+      "calls": 151,
+      "triangles": 197001
+     },
+     {
+      "label": "turn-3-t500",
+      "calls": 154,
+      "triangles": 197413
+     },
+     {
+      "label": "flat-s420",
+      "calls": 153,
+      "triangles": 199868
+     },
+     {
+      "label": "flat-s540",
+      "calls": 193,
+      "triangles": 191554
+     }
+    ],
+    "totalCalls": 2585,
+    "totalTriangles": 3359933
+   }
+  },
+  "desk-main": {
+   "viewport": "1280x720",
+   "touch": false,
+   "query": "bloom=0",
+   "preloadAttempts": [
+    {
+     "attempt": 1,
+     "notReady": [],
+     "post": "off"
+    }
+   ],
+   "post": {
+    "on": false,
+    "status": "off",
+    "readyStatus": "off"
+   },
+   "framing": null,
+   "renderInfo": {
+    "culls": [
+     "updateBackdropFacetVisibility",
+     "updateWorldDressingCull",
+     "updateSeamFoldCull",
+     "updateCrownFacetCull",
+     "updateLimbFoldCull"
+    ],
+    "poses": [
+     {
+      "label": "flat-s0",
+      "calls": 142,
+      "triangles": 197640
+     },
+     {
+      "label": "flat-s10",
+      "calls": 154,
+      "triangles": 198723
+     },
+     {
+      "label": "flat-s40",
+      "calls": 162,
+      "triangles": 201163
+     },
+     {
+      "label": "halt-1",
+      "calls": 144,
+      "triangles": 199404
+     },
+     {
+      "label": "turn-1-t0",
+      "calls": 144,
+      "triangles": 199404
+     },
+     {
+      "label": "turn-1-t120",
+      "calls": 161,
+      "triangles": 200707
+     },
+     {
+      "label": "turn-1-t350",
+      "calls": 161,
+      "triangles": 200707
+     },
+     {
+      "label": "turn-1-t520",
+      "calls": 161,
+      "triangles": 200707
+     },
+     {
+      "label": "turn-1-t690",
+      "calls": 144,
+      "triangles": 195589
+     },
+     {
+      "label": "turn-1-t900",
+      "calls": 142,
+      "triangles": 195001
+     },
+     {
+      "label": "turn-1-t1100",
+      "calls": 142,
+      "triangles": 195001
+     },
+     {
+      "label": "after-1-s98",
+      "calls": 142,
+      "triangles": 195001
+     },
+     {
+      "label": "after-1-s106",
+      "calls": 147,
+      "triangles": 196169
+     },
+     {
+      "label": "after-1-s116",
+      "calls": 152,
+      "triangles": 197337
+     },
+     {
+      "label": "turn-3-t500",
+      "calls": 157,
+      "triangles": 198001
+     },
+     {
+      "label": "flat-s420",
+      "calls": 165,
+      "triangles": 200231
+     },
+     {
+      "label": "flat-s540",
+      "calls": 194,
+      "triangles": 191558
+     }
+    ],
+    "totalCalls": 2614,
+    "totalTriangles": 3362343
+   }
+  },
+  "desk-branch": {
+   "viewport": "1280x720",
+   "touch": false,
+   "query": "bloom=0",
+   "preloadAttempts": [
+    {
+     "attempt": 1,
+     "notReady": [
+      "crown-command-core-runtime-v2.png",
+      "crown-command-kit-runtime-v2.png",
+      "projectile-chassis-atlas-v3.png",
+      "action-vfx-atlas-v2.png",
+      "emplacement-motion-atlas-v2.png",
+      "warden-motion-atlas-v2.png",
+      "meridian-defense-vfx-pack-v1.png",
+      "hull-panel-pixel-tile-v1.png",
+      "weld-seam-strip.png",
+      "meridian-mutation-atlas-v1.png",
+      "houndframe-v2.png",
+      "carrier-hauler-v2.png",
+      "wasp-pixel-idle-v1.png",
+      "iris-polyp-v2.png",
+      "spore-mortar-v2.png",
+      "wasp-pixel-flight-v1.png",
+      "houndframe-action-v2.png",
+      "carrier-hauler-action-v2.png",
+      "wasp-pixel-dive-v1.png",
+      "iris-polyp-action-v2.png"
+     ],
+     "post": "off"
+    },
+    {
+     "attempt": 2,
+     "notReady": [],
+     "post": "off"
+    }
+   ],
+   "post": {
+    "on": false,
+    "status": "off",
+    "readyStatus": "off"
+   },
+   "framing": {
+    "id": "far",
+    "fovDeg": 56,
+    "liftTiles": 0,
+    "actorClamp": false,
+    "cameraDepth": 42.75,
+    "cameraFov": 56,
+    "touch": false,
+    "viewRequest": null,
+    "orbit": "halt",
+    "edgeRouteRight": 50.23319842508215
+   },
+   "renderInfo": {
+    "culls": [
+     "updateBackdropFacetVisibility",
+     "updateWorldDressingCull",
+     "updateSeamFoldCull",
+     "updateCrownFacetCull",
+     "updateLimbFoldCull"
+    ],
+    "poses": [
+     {
+      "label": "flat-s0",
+      "calls": 142,
+      "triangles": 197640
+     },
+     {
+      "label": "flat-s10",
+      "calls": 154,
+      "triangles": 198723
+     },
+     {
+      "label": "flat-s40",
+      "calls": 162,
+      "triangles": 201163
+     },
+     {
+      "label": "halt-1",
+      "calls": 144,
+      "triangles": 199404
+     },
+     {
+      "label": "turn-1-t0",
+      "calls": 144,
+      "triangles": 199404
+     },
+     {
+      "label": "turn-1-t120",
+      "calls": 161,
+      "triangles": 200707
+     },
+     {
+      "label": "turn-1-t350",
+      "calls": 161,
+      "triangles": 200707
+     },
+     {
+      "label": "turn-1-t520",
+      "calls": 161,
+      "triangles": 200707
+     },
+     {
+      "label": "turn-1-t690",
+      "calls": 144,
+      "triangles": 195589
+     },
+     {
+      "label": "turn-1-t900",
+      "calls": 142,
+      "triangles": 195001
+     },
+     {
+      "label": "turn-1-t1100",
+      "calls": 142,
+      "triangles": 195001
+     },
+     {
+      "label": "after-1-s98",
+      "calls": 142,
+      "triangles": 195001
+     },
+     {
+      "label": "after-1-s106",
+      "calls": 147,
+      "triangles": 196169
+     },
+     {
+      "label": "after-1-s116",
+      "calls": 152,
+      "triangles": 197337
+     },
+     {
+      "label": "turn-3-t500",
+      "calls": 157,
+      "triangles": 198001
+     },
+     {
+      "label": "flat-s420",
+      "calls": 165,
+      "triangles": 200231
+     },
+     {
+      "label": "flat-s540",
+      "calls": 194,
+      "triangles": 191558
+     }
+    ],
+    "totalCalls": 2614,
+    "totalTriangles": 3362343
+   }
+  },
+  "desk-veillegacy": {
+   "viewport": "1280x720",
+   "touch": false,
+   "query": "veil=legacy&bloom=0",
+   "preloadAttempts": [
+    {
+     "attempt": 1,
+     "notReady": [],
+     "post": "off"
+    }
+   ],
+   "post": {
+    "on": false,
+    "status": "off",
+    "readyStatus": "off"
+   },
+   "framing": {
+    "id": "far",
+    "fovDeg": 56,
+    "liftTiles": 0,
+    "actorClamp": false,
+    "cameraDepth": 42.75,
+    "cameraFov": 56,
+    "touch": false,
+    "viewRequest": null,
+    "orbit": "halt",
+    "edgeRouteRight": 50.23319842508215
+   },
+   "renderInfo": {
+    "culls": [
+     "updateBackdropFacetVisibility",
+     "updateWorldDressingCull",
+     "updateSeamFoldCull",
+     "updateCrownFacetCull",
+     "updateLimbFoldCull"
+    ],
+    "poses": [
+     {
+      "label": "flat-s0",
+      "calls": 142,
+      "triangles": 197640
+     },
+     {
+      "label": "flat-s10",
+      "calls": 154,
+      "triangles": 198723
+     },
+     {
+      "label": "flat-s40",
+      "calls": 162,
+      "triangles": 201163
+     },
+     {
+      "label": "halt-1",
+      "calls": 144,
+      "triangles": 199404
+     },
+     {
+      "label": "turn-1-t0",
+      "calls": 144,
+      "triangles": 199404
+     },
+     {
+      "label": "turn-1-t120",
+      "calls": 161,
+      "triangles": 200707
+     },
+     {
+      "label": "turn-1-t350",
+      "calls": 161,
+      "triangles": 200707
+     },
+     {
+      "label": "turn-1-t520",
+      "calls": 161,
+      "triangles": 200707
+     },
+     {
+      "label": "turn-1-t690",
+      "calls": 144,
+      "triangles": 195589
+     },
+     {
+      "label": "turn-1-t900",
+      "calls": 142,
+      "triangles": 195001
+     },
+     {
+      "label": "turn-1-t1100",
+      "calls": 142,
+      "triangles": 195001
+     },
+     {
+      "label": "after-1-s98",
+      "calls": 142,
+      "triangles": 195001
+     },
+     {
+      "label": "after-1-s106",
+      "calls": 147,
+      "triangles": 196169
+     },
+     {
+      "label": "after-1-s116",
+      "calls": 152,
+      "triangles": 197337
+     },
+     {
+      "label": "turn-3-t500",
+      "calls": 157,
+      "triangles": 198001
+     },
+     {
+      "label": "flat-s420",
+      "calls": 165,
+      "triangles": 200231
+     },
+     {
+      "label": "flat-s540",
+      "calls": 194,
+      "triangles": 191558
+     }
+    ],
+    "totalCalls": 2614,
+    "totalTriangles": 3362343
+   }
+  }
+ }
+}

@@ -1,0 +1,391 @@
+{
+ "tool": "tools/playtest/phone-readability-capture.mjs",
+ "baseUrl": "http://127.0.0.1:34795",
+ "viewport": {
+  "vw": 844,
+  "vh": 390,
+  "dpr": 1,
+  "touch": true
+ },
+ "query": "rise=steep",
+ "marks": [
+  12000,
+  15000
+ ],
+ "runupScale": 2,
+ "preload": [
+  {
+   "attempt": 1,
+   "bootS": 51,
+   "preload": {
+    "budgetMs": 6500,
+    "notReady": []
+   }
+  }
+ ],
+ "errors": [],
+ "shots": [
+  {
+   "mark": 12000,
+   "file": "steep-844x390-dpr1-t12000.png",
+   "resize": {
+    "before": {
+     "w": 422,
+     "h": 195,
+     "left": -25.041646281381226,
+     "right": 40.86433266919104
+    },
+    "after": {
+     "w": 844,
+     "h": 390,
+     "left": -25.041646281381226,
+     "right": 40.86433266919104
+    },
+    "sameEdges": true
+   },
+   "gameMs": 12033.573999999953,
+   "scrollX": 51.61234656050084,
+   "player": {
+    "x": 46.43929833338428,
+    "y": 4,
+    "hp": 3
+   },
+   "framing": {
+    "id": "phone",
+    "fovDeg": 40.09096815082921,
+    "liftTiles": 0.85,
+    "actorClamp": true,
+    "cameraDepth": 42.75,
+    "cameraFov": 40.09096815082921,
+    "touch": true,
+    "viewRequest": null,
+    "orbit": "halt",
+    "edgeRouteRight": 42.85297327325489
+   },
+   "hostiles": [
+    {
+     "kind": "carrier",
+     "state": "cruise",
+     "hp": 9,
+     "telegraph": false,
+     "box": [
+      7.7,
+      201.3,
+      52.7,
+      250.8
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 3,
+     "telegraph": false,
+     "box": [
+      28.9,
+      212.9,
+      61.1,
+      248.5
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 1,
+     "telegraph": false,
+     "box": [
+      177.2,
+      203.4,
+      208.3,
+      238.5
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      381.8,
+      150.3,
+      411.5,
+      184.7
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      596.5,
+      143.7,
+      625.1,
+      177.3
+     ]
+    }
+   ],
+   "bullets": [
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      335.4,
+      200.7,
+      339.4,
+      205.2
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      306,
+      211.6,
+      310,
+      216.1
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      277.5,
+      224,
+      281.5,
+      228.6
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      505.7,
+      134.7,
+      509.5,
+      139.1
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      477.6,
+      163.1,
+      481.4,
+      167.5
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      364.2,
+      193.4,
+      368.1,
+      197.9
+     ]
+    }
+   ],
+   "capsules": [
+    {
+     "kind": "letter",
+     "letter": "S",
+     "box": [
+      320.3,
+      162.8,
+      330.8,
+      174.8
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "L",
+     "box": [
+      705.3,
+      69.4,
+      708.2,
+      72.3
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      480,
+      58.7,
+      482.1,
+      61.3
+     ]
+    }
+   ]
+  },
+  {
+   "mark": 15000,
+   "file": "steep-844x390-dpr1-t15000.png",
+   "resize": {
+    "before": {
+     "w": 422,
+     "h": 195,
+     "left": -25.041646281381226,
+     "right": 40.864332669191036
+    },
+    "after": {
+     "w": 844,
+     "h": 390,
+     "left": -25.041646281381226,
+     "right": 40.864332669191036
+    },
+    "sameEdges": true
+   },
+   "gameMs": 15016.966999999857,
+   "scrollX": 63.84855909156229,
+   "player": {
+    "x": 69.92473429937671,
+    "y": 3.6465921992120003,
+    "hp": 2
+   },
+   "framing": {
+    "id": "phone",
+    "fovDeg": 40.09096815082921,
+    "liftTiles": 0.85,
+    "actorClamp": true,
+    "cameraDepth": 42.75,
+    "cameraFov": 40.09096815082921,
+    "touch": true,
+    "viewRequest": null,
+    "orbit": "halt",
+    "edgeRouteRight": 42.85297327325489
+   },
+   "hostiles": [
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      558.1,
+      130.2,
+      586.9,
+      163.9
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      473.8,
+      122.3,
+      503,
+      156.3
+     ]
+    }
+   ],
+   "bullets": [
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      588.8,
+      186.1,
+      592.5,
+      190.5
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      562.5,
+      137.4,
+      566.2,
+      141.8
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      546.2,
+      138.1,
+      550,
+      142.6
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      518.4,
+      149.6,
+      522.2,
+      154
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      490.4,
+      171.7,
+      494.2,
+      176.1
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      462.4,
+      178.8,
+      466.2,
+      183.2
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      434.2,
+      197.4,
+      438,
+      201.8
+     ]
+    }
+   ],
+   "capsules": [
+    {
+     "kind": "letter",
+     "letter": "S",
+     "box": [
+      157.7,
+      188.3,
+      168.6,
+      200.5
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "L",
+     "box": [
+      662.5,
+      76,
+      665.2,
+      78.9
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      447,
+      63.6,
+      449.1,
+      66.2
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,487 @@
+{
+ "tool": "tools/playtest/phone-readability-capture.mjs",
+ "baseUrl": "http://127.0.0.1:45333",
+ "viewport": {
+  "vw": 1280,
+  "vh": 720,
+  "dpr": 1,
+  "touch": false
+ },
+ "query": "rise=steep",
+ "marks": [
+  12000,
+  15000
+ ],
+ "runupScale": 4,
+ "preload": [
+  {
+   "attempt": 1,
+   "bootS": 45,
+   "preload": {
+    "budgetMs": 2500,
+    "notReady": []
+   }
+  }
+ ],
+ "errors": [],
+ "shots": [
+  {
+   "mark": 12000,
+   "file": "steep-1280x720-dpr1-t12000.png",
+   "resize": {
+    "before": {
+     "w": 320,
+     "h": 180,
+     "left": -31.11401480918851,
+     "right": 50.23319842508215
+    },
+    "after": {
+     "w": 1280,
+     "h": 720,
+     "left": -31.11401480918851,
+     "right": 50.23319842508215
+    },
+    "sameEdges": true
+   },
+   "gameMs": 12016.906999999954,
+   "scrollX": 51.313002317359704,
+   "player": {
+    "x": 46.282628533384276,
+    "y": 4,
+    "hp": 3
+   },
+   "framing": {
+    "id": "far",
+    "fovDeg": 56,
+    "liftTiles": 0,
+    "actorClamp": false,
+    "cameraDepth": 42.75,
+    "cameraFov": 56,
+    "touch": false,
+    "viewRequest": null,
+    "orbit": "halt",
+    "edgeRouteRight": 50.23319842508215
+   },
+   "hostiles": [
+    {
+     "kind": "carrier",
+     "state": "cruise",
+     "hp": 8,
+     "telegraph": false,
+     "box": [
+      109.2,
+      352.4,
+      166.3,
+      415
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "recover",
+     "hp": 2,
+     "telegraph": false,
+     "box": [
+      133.9,
+      411.3,
+      174.7,
+      456.4
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      357.3,
+      364.8,
+      396.5,
+      409.1
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "dive",
+     "hp": 3,
+     "telegraph": true,
+     "box": [
+      516.5,
+      299.8,
+      554.6,
+      343.5
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      788.7,
+      293.4,
+      825.3,
+      336.1
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      1052.4,
+      211,
+      1087.9,
+      252.9
+     ]
+    }
+   ],
+   "bullets": [
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      526.8,
+      337,
+      531.8,
+      342.8
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      491.5,
+      377.2,
+      496.5,
+      383
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      454.7,
+      383.2,
+      459.7,
+      388.9
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      743.9,
+      270.2,
+      748.8,
+      275.8
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      708.4,
+      306.2,
+      713.2,
+      311.8
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      672.6,
+      348.1,
+      677.5,
+      353.7
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      636.8,
+      357.1,
+      641.7,
+      362.7
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      598.5,
+      320.5,
+      603.4,
+      326.1
+     ]
+    }
+   ],
+   "capsules": [
+    {
+     "kind": "letter",
+     "letter": "S",
+     "box": [
+      516.1,
+      304.5,
+      529.4,
+      319.7
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "L",
+     "box": [
+      1000.3,
+      196.8,
+      1003.9,
+      200.5
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      714.5,
+      184.2,
+      717.2,
+      187.5
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "F",
+     "box": [
+      413.5,
+      84.1,
+      415.9,
+      89.1
+     ]
+    }
+   ]
+  },
+  {
+   "mark": 15000,
+   "file": "steep-1280x720-dpr1-t15000.png",
+   "resize": {
+    "before": {
+     "w": 320,
+     "h": 180,
+     "left": -31.11401480918851,
+     "right": 50.23319842508215
+    },
+    "after": {
+     "w": 1280,
+     "h": 720,
+     "left": -31.11401480918851,
+     "right": 50.23319842508215
+    },
+    "sameEdges": true
+   },
+   "gameMs": 15016.966999999857,
+   "scrollX": 63.70589000329204,
+   "player": {
+    "x": 66.97693615579213,
+    "y": 2.4316395996859996,
+    "hp": 2
+   },
+   "framing": {
+    "id": "far",
+    "fovDeg": 56,
+    "liftTiles": 0,
+    "actorClamp": false,
+    "cameraDepth": 42.75,
+    "cameraFov": 56,
+    "touch": false,
+    "viewRequest": null,
+    "orbit": "halt",
+    "edgeRouteRight": 50.23319842508215
+   },
+   "hostiles": [
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      20.8,
+      407.8,
+      62.5,
+      453.3
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 3,
+     "telegraph": false,
+     "box": [
+      139.6,
+      386.6,
+      180.4,
+      431.7
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      750.9,
+      276.1,
+      787.7,
+      319
+     ]
+    },
+    {
+     "kind": "wasp",
+     "state": "cruise",
+     "hp": 4,
+     "telegraph": false,
+     "box": [
+      742.5,
+      237.2,
+      779.4,
+      280.1
+     ]
+    }
+   ],
+   "bullets": [
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      787.9,
+      314.9,
+      792.7,
+      320.5
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      752.6,
+      319.5,
+      757.4,
+      325.1
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      609.9,
+      380.7,
+      614.8,
+      386.4
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      645.8,
+      368.6,
+      650.7,
+      374.3
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      889.8,
+      329,
+      894.5,
+      334.6
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      835.6,
+      327.6,
+      840.3,
+      333.2
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      717.2,
+      338.3,
+      722,
+      344
+     ]
+    },
+    {
+     "type": "R",
+     "hostile": false,
+     "box": [
+      681.6,
+      348.7,
+      686.4,
+      354.4
+     ]
+    }
+   ],
+   "capsules": [
+    {
+     "kind": "letter",
+     "letter": "S",
+     "box": [
+      307.4,
+      337,
+      321.2,
+      352.5
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "S",
+     "box": [
+      1194,
+      207.4,
+      1196.4,
+      215.8
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "L",
+     "box": [
+      945.3,
+      205.2,
+      948.7,
+      208.9
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "H",
+     "box": [
+      672.1,
+      190.5,
+      674.9,
+      193.8
+     ]
+    },
+    {
+     "kind": "letter",
+     "letter": "F",
+     "box": [
+      362.4,
+      91.1,
+      365.1,
+      96.1
+     ]
+    }
+   ]
+  }
+ ]
+}
