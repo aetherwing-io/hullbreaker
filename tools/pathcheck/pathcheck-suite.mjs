@@ -257,6 +257,8 @@ ok(CONFIG.wasp.visualRadius === 0.5 && CONFIG.wasp.contactRadius === 0.55 &&
 const LVL = buildLevel(CONFIG);
 const gH = LVL.groundH, plats = LVL.platforms;
 ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
+ok(gH.every((h) => Number.isFinite(h)),
+   'every generated ground column is a finite height (a half-made level-length edit leaves holes)');
 {
   let bad = 0;
   for (let i = 0; i < gH.length; i++) {
@@ -282,7 +284,7 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
   let badRun = 0, badLand = 0, badDelta = 0, gapCols = 0;
   let i = 0;
   while (i < gH.length) {
-    if (gH[i] > -100) { i++; continue; }
+    if (!(gH[i] < -100)) { i++; continue; }   // non-finite columns advance (T-108 M27h)
     const start = i;
     while (i < gH.length && gH[i] < -100) i++;
     const run = i - start;
@@ -350,7 +352,10 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
     const out = [];
     let i = 0;
     while (i < cols.length) {
-      if (cols[i] > -100) { i++; continue; }
+      // `!(x < -100)`, not `x > -100`: a non-finite column (a half-made level
+      // edit leaves undefined ones) must advance, not spin forever — the
+      // finiteness assertion below turns it red instead (T-108 QA, M27h).
+      if (!(cols[i] < -100)) { i++; continue; }
       const s = i;
       while (i < cols.length && cols[i] < -100) i++;
       if (s > 0 && i < cols.length) out.push([s, i - 1]);
@@ -378,7 +383,7 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
     const gaps = [];
     { let i = 0;
       while (i < LV.groundH.length) {
-        if (LV.groundH[i] > -100) { i++; continue; }
+        if (!(LV.groundH[i] < -100)) { i++; continue; }
         const s = i;
         while (i < LV.groundH.length && LV.groundH[i] < -100) i++;
         if (s > 0 && i < LV.groundH.length)
@@ -583,7 +588,7 @@ ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
   try {
     probe = JSON.parse(execFileSync(process.execPath,
       ['--input-type=module', '-e', gapProbeChild],
-      { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }));
+      { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, timeout: 300000 }));
   } catch (e) {
     console.error('pathcheck: gap-crossing probe child failed: ' + e.message);
   }
