@@ -1135,3 +1135,36 @@ operator plays them") is narrowed accordingly: entry 16 retired flags that hide
 work the operator never types, answer 2 is the operator's own choice, and the
 follow-lead directly serves entry 20's "race to the top". The hinge-stop variant
 (T-102 R4) and the per-side rendered rise stay OFF by default until played.
+
+## 26 — 2026-10-23 — The 3D v2 look is rejected; today's AI-painted art is a placeholder, not the bar
+
+**Operator verdicts, two messages:**
+
+1. On T-109 phase A's primitive-built "v2" RIG and wasp (contact sheets at
+   true size), rejecting the look — in part, verbatim: *"pixels stuck
+   together"*. (The full message is not preserved in the integrator's record;
+   only this fragment is quoted.)
+2. On the existing art: *"the art was also just ai generated and may not be the
+   quality it needs to be for good quality assets"*.
+
+**What this decides.** No sprite set in the repository is the quality target —
+neither the shipped AI-painted atlases nor the v2 renders. The bar is shipped
+commercial 2D action games at a comparable on-screen size: a crisp silhouette,
+3-4 value steps per material, a clean outline, a legible weapon, exaggerated
+proportions that read at ~30 px (desktop FAR) and ~23 css px (phone, entry 20
+addendum).
+
+**Integrator calls under this verdict (reverse them if wrong):**
+- Building characters from primitive shapes is dropped. The 3D route continues
+  only from professionally modelled CC0 sources (entry 22's licence rule), toon
+  shaded with an outline; the A2 spike compares that against the current art
+  drawn crisp, at true size, on the real game background.
+- The spike also prices the alternatives for every animated actor — CC0 models
+  + the pipeline, a paid game-licensed model pack + the pipeline, or a
+  commissioned human pixel artist — so the operator chooses a production
+  method with evidence. Nothing paid is bought or downloaded without the
+  operator's say-so.
+- T-103's gun-in-hand fix still ships on the current art: it removes a defect
+  the operator named (entry 20) independently of which art wins.
+
+**Source:** operator messages, 2026-10-22 and 2026-10-23.
