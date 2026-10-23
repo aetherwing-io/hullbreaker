@@ -7,14 +7,10 @@ per-letter `shots`), so a retune of a token re-colours the sprites on the next
 build instead of drifting from them. The build fails loudly if a token it
 needs disappears.
 
-Roles used (DESIGN.md's <= 8 colour roles; entry 17's "3-4 value steps, one
-accent" for RIG):
-
-  RIG    ink (capsuleInk) < playerDark < playerMid < player   + gun (visor accent)
-  guns   the same neutral ladder + each letter's shot colour (weapon identity,
-         palette.js: "subordinate to MUZZLE") + muzzle warm white
-  wasp   ink + the acid-green ecology ladder (houndCharge < carrier < wasp <
-         polypBeam) + waspDive for the committed dive
+Used by tools/art/rig/palette_v3.py (RIG v3: board-measured swatches plus
+these tokens -- the visor `gun`, `muzzle`, the cool rim `vapor`, the weapon
+identity `shots.*`) and by the spike's wasp. The v2 per-class tables that lived
+here went with the primitive builder (decisions entry 26).
 """
 
 import os
@@ -103,37 +99,3 @@ def tok(name):
     if name.startswith('shots.'):
         return rgb(TOKENS['shots'][name.split('.', 1)[1]])
     return rgb(TOKENS[name])
-
-
-# --------------------------------------------------------------------------
-# Material classes -> palette swatches per light band (0 = lit ... n = shade).
-# A class lists token NAMES, never hex: the build resolves them through TOKENS.
-# --------------------------------------------------------------------------
-
-RIG_CLASSES = {
-    # name         bands (lit -> shade)                       weight (downscale vote)
-    'armor':      (['player', 'playerMid', 'playerDark'],     1.0),
-    'armor_dk':   (['playerMid', 'playerDark', 'playerDark'], 1.0),   # pack, back plates
-    'suit':       (['playerDark', 'capsuleInk'],              1.25),
-    'visor':      (['gun'],                                   3.0),
-    'gunmetal':   (['playerDark', 'capsuleInk'],              2.2),
-    'gunlight':   (['playerMid', 'playerDark'],               2.2),
-    'id_R':       (['shots.R'],                               2.6),
-    'id_S':       (['shots.S'],                               2.6),
-    'id_L':       (['shots.L'],                               2.6),
-    'id_H':       (['shots.H'],                               2.6),
-    'id_F':       (['shots.F'],                               2.6),
-    'muzzle':     (['muzzle'],                                3.0),
-}
-
-WASP_CLASSES = {
-    'shell':      (['wasp', 'carrier', 'houndCharge'],        1.0),
-    'shell_dive': (['waspDive', 'wasp', 'carrier'],           1.0),
-    'chassis':    (['capsuleInk', 'capsuleInk'],              1.2),
-    'wing':       (['mortarPod', 'wasp'],                     1.4),
-    'eye':        (['capsuleInk'],                            3.0),
-    'sting':      (['polypBeam', 'mortarPod'],                2.5),
-    'flash':      (['hitFlash'],                              1.0),
-}
-
-INK = 'capsuleInk'

@@ -1,20 +1,18 @@
-"""Small rigid-body kinematics kit (numpy only, no bpy) for posing the sprite rigs.
+"""Rigid-body kinematics for posing the sprite rigs (numpy only, no bpy).
 
 Conventions (shared by every script in tools/art/):
   world X = screen right (the authored facing), world Z = up, world Y = depth
   (the orthographic camera sits at -Y looking +Y, so -Y is "toward the viewer").
   1 world unit = 1 game tile.
 
-A frame is a 4x4 matrix whose columns are the X, Y, Z axes and origin.
-Blender bones point along their local +Y; every limb frame here follows that.
+Blender bones point along their local +Y; every limb frame follows that.
+(The frame/rotation helpers the T-109 phase-A primitive poser used went with
+it, decisions entry 26.)
 """
 
 import math
+
 import numpy as np
-
-
-def v3(x, y, z):
-    return np.array([float(x), float(y), float(z)])
 
 
 def unit(v):
@@ -22,76 +20,6 @@ def unit(v):
     if n < 1e-12:
         raise ValueError('zero-length vector')
     return v / n
-
-
-def frame(x_axis, y_axis, z_axis, origin):
-    m = np.eye(4)
-    m[:3, 0] = x_axis
-    m[:3, 1] = y_axis
-    m[:3, 2] = z_axis
-    m[:3, 3] = origin
-    return m
-
-
-def translate(x, y=None, z=None):
-    if y is None:
-        x, y, z = x
-    m = np.eye(4)
-    m[:3, 3] = (x, y, z)
-    return m
-
-
-def rot_axis(axis, deg):
-    """4x4 rotation about a unit axis through the origin (right-handed)."""
-    a = unit(np.asarray(axis, dtype=float))
-    t = math.radians(deg)
-    c, s = math.cos(t), math.sin(t)
-    x, y, z = a
-    r = np.array([
-        [c + x * x * (1 - c), x * y * (1 - c) - z * s, x * z * (1 - c) + y * s],
-        [y * x * (1 - c) + z * s, c + y * y * (1 - c), y * z * (1 - c) - x * s],
-        [z * x * (1 - c) - y * s, z * y * (1 - c) + x * s, c + z * z * (1 - c)],
-    ])
-    m = np.eye(4)
-    m[:3, :3] = r
-    return m
-
-
-def rot_x(deg):
-    return rot_axis((1, 0, 0), deg)
-
-
-def rot_y(deg):
-    return rot_axis((0, 1, 0), deg)
-
-
-def rot_z(deg):
-    return rot_axis((0, 0, 1), deg)
-
-
-def about(point, m):
-    """Apply 4x4 m about a pivot point."""
-    p = np.asarray(point, dtype=float)
-    return translate(p) @ m @ translate(-p)
-
-
-def xform(m, p):
-    return (m @ np.append(np.asarray(p, dtype=float), 1.0))[:3]
-
-
-def xdir(m, d):
-    return m[:3, :3] @ np.asarray(d, dtype=float)
-
-
-def orthonormal_from_y(y_axis, z_hint, origin):
-    """Bone-style frame: +Y along y_axis, +Z as close to z_hint as possible."""
-    y = unit(y_axis)
-    z = np.asarray(z_hint, dtype=float) - y * float(np.dot(z_hint, y))
-    if np.linalg.norm(z) < 1e-9:
-        raise ValueError('z_hint parallel to bone axis')
-    z = unit(z)
-    x = np.cross(y, z)
-    return frame(x, y, z, origin)
 
 
 def two_bone_ik(root, target, len_a, len_b, pole):

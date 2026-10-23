@@ -1,127 +1,16 @@
-"""Deterministic pixel post-processing: ID maps -> palette-locked sprites.
+"""Deterministic pixel I/O for the sprite builds: a hand-rolled indexed-PNG
+writer (the bytes depend only on the pixels: no encoder version, timestamp or
+metadata chunk) and a fixed-grid atlas packer.
 
-Every step is integer/numpy arithmetic with fixed tie-breaks, so the same ID
-maps always give the same bytes (no resampling library, no float colour
-blending, no dithering):
-
-  1. downscale_ids  weighted MODE filter, ss x ss -> 1 px. A pixel takes the
-                    material class with the largest (coverage x class weight);
-                    background competes with weight 1. Small important parts
-                    (visor, muzzle, gun) carry more weight so a 1-px feature
-                    survives instead of averaging into its neighbours. Within
-                    the winning class the most common light band wins.
-  2. to_rgba        class/band -> the house palette (tools/art/lib/palette.py,
-                    i.e. src/render/palette.js tokens). Opaque or empty only.
-  3. outline        optional 1 px ink rim on transparent pixels that touch the
-                    sprite (4-neighbourhood).
+The T-109 phase-A ID-map post (weighted-mode downscale, despeckle, class LUTs)
+went with the primitive builder (decisions entry 26); RIG v3's reduction is
+tools/art/rig/post.py.
 """
 
-import zlib
 import struct
+import zlib
 
 import numpy as np
-
-EMPTY = 255
-
-
-def downscale_ids(ids_hi, ss, class_weights, n_bands, bg_weight=1.0):
-    """ids_hi: uint8 (H*ss, W*ss), EMPTY = background, else class*n_bands+band."""
-    H = ids_hi.shape[0] // ss
-    W = ids_hi.shape[1] // ss
-    blocks = ids_hi[:H * ss, :W * ss].reshape(H, ss, W, ss).transpose(0, 2, 1, 3).reshape(H, W, ss * ss).astype(np.int64)
-    n_classes = len(class_weights)
-    cls = np.where(blocks == EMPTY, -1, blocks // n_bands)
-    band = np.where(blocks == EMPTY, -1, blocks % n_bands)
-    best_score = (blocks == EMPTY).sum(axis=2).astype(np.float64) * bg_weight
-    best_cls = np.full((H, W), -1, dtype=np.int64)
-    for c in range(n_classes):
-        score = (cls == c).sum(axis=2).astype(np.float64) * class_weights[c]
-        win = score > best_score + 1e-9                     # ties keep the earlier winner
-        best_score = np.where(win, score, best_score)
-        best_cls = np.where(win, c, best_cls)
-    out = np.full((H, W), EMPTY, dtype=np.uint8)
-    have = best_cls >= 0
-    best_band = np.zeros((H, W), dtype=np.int64)
-    best_band_n = np.full((H, W), -1, dtype=np.int64)
-    for b in range(n_bands):
-        nb = ((cls == best_cls[..., None]) & (band == b)).sum(axis=2)
-        win = nb > best_band_n                               # ties keep the lighter band
-        best_band_n = np.where(win, nb, best_band_n)
-        best_band = np.where(win, b, best_band)
-    out[have] = (best_cls[have] * n_bands + best_band[have]).astype(np.uint8)
-    return out
-
-
-def despeckle(ids, group_ids):
-    """One deterministic pass that removes single-pixel band noise inside a
-    material group (e.g. the body's armour/suit bands). A pixel of the group
-    whose own ID appears in none of its 8 neighbours takes the most common
-    neighbouring ID of the same group when that ID holds >= 5 of the 8
-    neighbours. Pixels outside the group (gun, visor, accents, empty) are
-    never changed and never adopted. Ties -> the lower ID."""
-    g = np.zeros(256, dtype=bool)
-    g[list(group_ids)] = True
-    H, W = ids.shape
-    pad = np.pad(ids, 1, constant_values=EMPTY)
-    neigh = np.stack([pad[1 + dy:H + 1 + dy, 1 + dx:W + 1 + dx]
-                      for dy in (-1, 0, 1) for dx in (-1, 0, 1) if (dy, dx) != (0, 0)], axis=0)
-    out = ids.copy()
-    cand = g[ids] & ~(neigh == ids[None]).any(axis=0)
-    best_id = np.full((H, W), EMPTY, dtype=np.int64)
-    best_n = np.zeros((H, W), dtype=np.int64)
-    for gid in sorted(group_ids):
-        n = (neigh == gid).sum(axis=0)
-        win = n > best_n
-        best_n = np.where(win, n, best_n)
-        best_id = np.where(win, gid, best_id)
-    sel = cand & (best_n >= 5)
-    out[sel] = best_id[sel].astype(ids.dtype)
-    return out
-
-
-def class_mask(ids, class_indices, n_bands):
-    m = np.zeros(ids.shape, dtype=bool)
-    valid = ids != EMPTY
-    for c in class_indices:
-        m |= valid & ((ids // n_bands) == c)
-    return m
-
-
-def to_rgba(ids, lut):
-    """lut: dict id -> (r, g, b)."""
-    out = np.zeros(ids.shape + (4,), dtype=np.uint8)
-    for k, rgb in lut.items():
-        sel = ids == k
-        if sel.any():
-            out[sel, 0] = rgb[0]
-            out[sel, 1] = rgb[1]
-            out[sel, 2] = rgb[2]
-            out[sel, 3] = 255
-    missing = (ids != EMPTY) & (out[..., 3] == 0)
-    if missing.any():
-        raise RuntimeError('ids without a palette entry: %s' % sorted(set(ids[missing].tolist())))
-    return out
-
-
-def outline_mask(ids):
-    """Transparent pixels 4-adjacent to the sprite."""
-    solid = ids != EMPTY
-    near = np.zeros_like(solid)
-    near[1:, :] |= solid[:-1, :]
-    near[:-1, :] |= solid[1:, :]
-    near[:, 1:] |= solid[:, :-1]
-    near[:, :-1] |= solid[:, 1:]
-    return near & ~solid
-
-
-def build_lut(classes, n_bands, palette_rgb):
-    """classes: ordered {name: ([token names per band], weight)}."""
-    lut = {}
-    for ci, (name, (tokens, _w)) in enumerate(classes.items()):
-        for b in range(n_bands):
-            t = tokens[min(b, len(tokens) - 1)]
-            lut[ci * n_bands + b] = palette_rgb(t)
-    return lut
 
 
 # --------------------------------------------------------------------------
@@ -137,17 +26,18 @@ def _chunk(tag, data):
 
 def write_indexed_png(path, rgba):
     h, w = rgba.shape[:2]
-    flat = rgba.reshape(-1, 4)
-    colors = sorted({tuple(int(v) for v in px) for px in flat if px[3] > 0})
-    if len(colors) > 255:
+    px = rgba.reshape(-1, 4).astype(np.uint32)
+    packed = (px[:, 0] << 24) | (px[:, 1] << 16) | (px[:, 2] << 8) | px[:, 3]
+    opaque = px[:, 3] > 0
+    # np.unique sorts the packed RGBA words: the same order as sorting (r, g, b, a) tuples
+    uniq, inv = np.unique(packed[opaque], return_inverse=True)
+    if len(uniq) > 255:
         raise RuntimeError('more than 255 colours; not palette-locked')
+    colors = [(int(u >> 24), int((u >> 16) & 255), int((u >> 8) & 255), int(u & 255)) for u in uniq]
     entries = [(0, 0, 0, 0)] + colors
-    index = {c: i for i, c in enumerate(entries)}
-    idx = np.zeros((h, w), dtype=np.uint8)
-    opaque = rgba[..., 3] > 0
-    if opaque.any():
-        keys = [tuple(int(v) for v in px) for px in rgba[opaque]]
-        idx[opaque] = np.array([index[k] for k in keys], dtype=np.uint8)
+    idx = np.zeros(h * w, dtype=np.uint8)
+    idx[opaque] = (inv + 1).astype(np.uint8)
+    idx = idx.reshape(h, w)
     raw = b''.join(b'\x00' + idx[y].tobytes() for y in range(h))
     ihdr = struct.pack('>IIBBBBB', w, h, 8, 3, 0, 0, 0)
     plte = b''.join(struct.pack('BBB', r, g, b) for r, g, b, _ in entries)
