@@ -1,0 +1,2165 @@
+{
+ "generatedBy": "T-103 capture summary (tools/rig-grip/capture.mjs output, condensed)",
+ "units": "css px at the capture viewport (DPR 2 => 1 css px = 2 device px); armStretch = drawn arm length / painted length",
+ "trees": {
+  "before-main-98b12c9": {
+   "sources": [
+    "BEFORE T-103 (main 98b12c9)",
+    "BEFORE T-103 (main 98b12c9)",
+    "BEFORE T-103 (main 98b12c9) ?crouch=1",
+    "BEFORE T-103 (main 98b12c9)",
+    "BEFORE T-103 (main 98b12c9)"
+   ],
+   "views": {
+    "desktop": {
+     "viewport": {
+      "width": 1280,
+      "height": 800
+     },
+     "dpr": 1,
+     "pageErrors": 0,
+     "all": {
+      "cells": 1060,
+      "fistToGripCssPx": {
+       "max": 28.42,
+       "mean": 12.413,
+       "min": 3.004
+      },
+      "muzzleToSpawnCssPx": {
+       "max": 2.614,
+       "mean": 1.301,
+       "min": 0.407
+      },
+      "armStretch": null,
+      "hiddenCells": 0,
+      "legacyAimArmAlignedTrue": 100
+     },
+     "byRow": {
+      "stand": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 28.42,
+        "mean": 18.176,
+        "min": 6.796
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.196,
+        "mean": 1.239,
+        "min": 0.464
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 80
+      },
+      "run-contact": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 14.417,
+        "mean": 10.769,
+        "min": 5.048
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.216,
+        "mean": 1.239,
+        "min": 0.464
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "run-pass": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 12.773,
+        "mean": 8.591,
+        "min": 3.28
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.268,
+        "mean": 1.24,
+        "min": 0.469
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "run-flight": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 16.106,
+        "mean": 11.552,
+        "min": 6.578
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.34,
+        "mean": 1.243,
+        "min": 0.431
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "air-rise": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 12.605,
+        "mean": 9.627,
+        "min": 5.42
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.278,
+        "mean": 1.395,
+        "min": 0.735
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "air-fall": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 12.978,
+        "mean": 8.389,
+        "min": 3.306
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.278,
+        "mean": 1.395,
+        "min": 0.735
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-0": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 16.702,
+        "mean": 14.051,
+        "min": 9.131
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.191,
+        "mean": 1.262,
+        "min": 0.507
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-1": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 20.015,
+        "mean": 17.361,
+        "min": 12.653
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.188,
+        "mean": 1.276,
+        "min": 0.533
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-2": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 16.236,
+        "mean": 13.565,
+        "min": 8.564
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.183,
+        "mean": 1.312,
+        "min": 0.598
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-3": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 19.018,
+        "mean": 16.353,
+        "min": 11.6
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.203,
+        "mean": 1.35,
+        "min": 0.663
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "wall": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 16.723,
+        "mean": 13.872,
+        "min": 8.693
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.196,
+        "mean": 1.239,
+        "min": 0.464
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "hit-iframe": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 12.728,
+        "mean": 9.795,
+        "min": 5.525
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.196,
+        "mean": 1.239,
+        "min": 0.464
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "respawn": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 13.474,
+        "mean": 8.473,
+        "min": 3.004
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.614,
+        "mean": 1.545,
+        "min": 0.437
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "crouch": {
+       "cells": 20,
+       "fistToGripCssPx": {
+        "max": 17.363,
+        "mean": 15.585,
+        "min": 14.398
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 1.927,
+        "mean": 1.06,
+        "min": 0.407
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 20
+      }
+     },
+     "byGun": {
+      "R": {
+       "cells": 212,
+       "fistToGripCssPx": {
+        "max": 28.42,
+        "mean": 12.476,
+        "min": 3.645
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.129,
+        "mean": 1.605,
+        "min": 1.282
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 20
+      },
+      "S": {
+       "cells": 212,
+       "fistToGripCssPx": {
+        "max": 26.042,
+        "mean": 12.035,
+        "min": 4.232
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.614,
+        "mean": 2.083,
+        "min": 1.758
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 20
+      },
+      "L": {
+       "cells": 212,
+       "fistToGripCssPx": {
+        "max": 28.398,
+        "mean": 12.827,
+        "min": 3.004
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 1.409,
+        "mean": 0.899,
+        "min": 0.579
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 20
+      },
+      "H": {
+       "cells": 212,
+       "fistToGripCssPx": {
+        "max": 25.297,
+        "mean": 12.342,
+        "min": 3.28
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 1.229,
+        "mean": 0.725,
+        "min": 0.407
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 20
+      },
+      "F": {
+       "cells": 212,
+       "fistToGripCssPx": {
+        "max": 26.658,
+        "mean": 12.385,
+        "min": 3.634
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 1.71,
+        "mean": 1.194,
+        "min": 0.872
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 20
+      }
+     },
+     "rowFrames": {
+      "stand": "aim-right",
+      "run-contact": "contact",
+      "run-pass": "pass",
+      "run-flight": "flight",
+      "air-rise": "air-rise",
+      "air-fall": "air-fall",
+      "climb-0": "climb-0",
+      "climb-1": "climb-1",
+      "climb-2": "climb-2",
+      "climb-3": "climb-3",
+      "wall": "climb-0",
+      "hit-iframe": "air-rise",
+      "respawn": "air-fall",
+      "crouch": "aim-right"
+     }
+    },
+    "phone": {
+     "viewport": {
+      "width": 844,
+      "height": 390
+     },
+     "dpr": 2,
+     "pageErrors": 0,
+     "all": {
+      "cells": 416,
+      "fistToGripCssPx": {
+       "max": 13.855,
+       "mean": 6.03,
+       "min": 1.772
+      },
+      "muzzleToSpawnCssPx": {
+       "max": 1.038,
+       "mean": 0.685,
+       "min": 0.442
+      },
+      "armStretch": null,
+      "hiddenCells": 0,
+      "legacyAimArmAlignedTrue": 32
+     },
+     "byRow": {
+      "stand": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 13.855,
+        "mean": 8.928,
+        "min": 3.521
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.84,
+        "mean": 0.652,
+        "min": 0.456
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 32
+      },
+      "run-contact": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 6.673,
+        "mean": 5.258,
+        "min": 2.91
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.85,
+        "mean": 0.652,
+        "min": 0.454
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "run-pass": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 5.909,
+        "mean": 4.191,
+        "min": 1.772
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.875,
+        "mean": 0.652,
+        "min": 0.452
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "run-flight": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 7.552,
+        "mean": 5.632,
+        "min": 3.294
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.91,
+        "mean": 0.653,
+        "min": 0.442
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "air-rise": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 6.145,
+        "mean": 4.693,
+        "min": 3
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.876,
+        "mean": 0.729,
+        "min": 0.59
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "air-fall": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 6.077,
+        "mean": 4.096,
+        "min": 1.908
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.876,
+        "mean": 0.729,
+        "min": 0.59
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-0": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 7.807,
+        "mean": 6.854,
+        "min": 5.113
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.837,
+        "mean": 0.663,
+        "min": 0.477
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-1": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 9.409,
+        "mean": 8.465,
+        "min": 6.831
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.835,
+        "mean": 0.67,
+        "min": 0.49
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-2": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 7.584,
+        "mean": 6.619,
+        "min": 4.836
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.831,
+        "mean": 0.688,
+        "min": 0.522
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-3": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 8.924,
+        "mean": 7.975,
+        "min": 6.319
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.84,
+        "mean": 0.707,
+        "min": 0.554
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "wall": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 7.817,
+        "mean": 6.768,
+        "min": 4.897
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.84,
+        "mean": 0.652,
+        "min": 0.456
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "hit-iframe": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 6.205,
+        "mean": 4.775,
+        "min": 3.043
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.84,
+        "mean": 0.652,
+        "min": 0.456
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "respawn": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 6.322,
+        "mean": 4.14,
+        "min": 1.777
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 1.038,
+        "mean": 0.8,
+        "min": 0.445
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      }
+     },
+     "byGun": {
+      "R": {
+       "cells": 208,
+       "fistToGripCssPx": {
+        "max": 13.855,
+        "mean": 6.053,
+        "min": 1.777
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 1.038,
+        "mean": 0.785,
+        "min": 0.643
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 16
+      },
+      "F": {
+       "cells": 208,
+       "fistToGripCssPx": {
+        "max": 12.996,
+        "mean": 6.008,
+        "min": 1.772
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.834,
+        "mean": 0.584,
+        "min": 0.442
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 16
+      }
+     },
+     "rowFrames": {
+      "stand": "aim-right",
+      "run-contact": "contact",
+      "run-pass": "pass",
+      "run-flight": "flight",
+      "air-rise": "air-rise",
+      "air-fall": "air-fall",
+      "climb-0": "climb-0",
+      "climb-1": "climb-1",
+      "climb-2": "climb-2",
+      "climb-3": "climb-3",
+      "wall": "climb-0",
+      "hit-iframe": "air-rise",
+      "respawn": "air-fall"
+     }
+    },
+    "portrait": {
+     "viewport": {
+      "width": 390,
+      "height": 844
+     },
+     "dpr": 2,
+     "pageErrors": 0,
+     "all": {
+      "cells": 416,
+      "fistToGripCssPx": {
+       "max": 53.028,
+       "mean": 23.489,
+       "min": 2.632
+      },
+      "muzzleToSpawnCssPx": {
+       "max": 2.58,
+       "mean": 1.91,
+       "min": 1.395
+      },
+      "armStretch": null,
+      "hiddenCells": 0,
+      "legacyAimArmAlignedTrue": 32
+     },
+     "byRow": {
+      "stand": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 53.028,
+        "mean": 31.773,
+        "min": 6.743
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.28,
+        "mean": 1.857,
+        "min": 1.424
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 32
+      },
+      "run-contact": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 27.947,
+        "mean": 21.703,
+        "min": 10.847
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.295,
+        "mean": 1.857,
+        "min": 1.42
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "run-pass": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 24.713,
+        "mean": 18.326,
+        "min": 7.091
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.334,
+        "mean": 1.856,
+        "min": 1.411
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "run-flight": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 28.252,
+        "mean": 20.728,
+        "min": 7.785
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.388,
+        "mean": 1.856,
+        "min": 1.395
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "air-rise": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 27.15,
+        "mean": 19.212,
+        "min": 9.006
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.348,
+        "mean": 1.986,
+        "min": 1.638
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "air-fall": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 23.103,
+        "mean": 15.345,
+        "min": 2.755
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.348,
+        "mean": 1.986,
+        "min": 1.638
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-0": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 33.901,
+        "mean": 27.349,
+        "min": 17.812
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.278,
+        "mean": 1.877,
+        "min": 1.458
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-1": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 38.557,
+        "mean": 31.826,
+        "min": 21.612
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.277,
+        "mean": 1.889,
+        "min": 1.479
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-2": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 33.295,
+        "mean": 26.75,
+        "min": 17.395
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.275,
+        "mean": 1.919,
+        "min": 1.53
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-3": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 37.315,
+        "mean": 30.598,
+        "min": 20.448
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.289,
+        "mean": 1.95,
+        "min": 1.581
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "wall": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 33.859,
+        "mean": 27.063,
+        "min": 17.504
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.28,
+        "mean": 1.857,
+        "min": 1.424
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "hit-iframe": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 27.173,
+        "mean": 19.293,
+        "min": 9.088
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.28,
+        "mean": 1.857,
+        "min": 1.424
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "respawn": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 23.33,
+        "mean": 15.391,
+        "min": 2.632
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.58,
+        "mean": 2.09,
+        "min": 1.445
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      }
+     },
+     "byGun": {
+      "R": {
+       "cells": 208,
+       "fistToGripCssPx": {
+        "max": 53.028,
+        "mean": 23.675,
+        "min": 2.632
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.58,
+        "mean": 2.187,
+        "min": 1.946
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 16
+      },
+      "F": {
+       "cells": 208,
+       "fistToGripCssPx": {
+        "max": 50.676,
+        "mean": 23.303,
+        "min": 4.751
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 2.018,
+        "mean": 1.634,
+        "min": 1.395
+       },
+       "armStretch": null,
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 16
+      }
+     },
+     "rowFrames": {
+      "stand": "aim-right",
+      "run-contact": "contact",
+      "run-pass": "pass",
+      "run-flight": "flight",
+      "air-rise": "air-rise",
+      "air-fall": "air-fall",
+      "climb-0": "climb-0",
+      "climb-1": "climb-1",
+      "climb-2": "climb-2",
+      "climb-3": "climb-3",
+      "wall": "climb-0",
+      "hit-iframe": "air-rise",
+      "respawn": "air-fall"
+     }
+    }
+   },
+   "firing": {
+    "view": "phone",
+    "viewport": {
+     "width": 844,
+     "height": 390
+    },
+    "dpr": 2,
+    "errors": [],
+    "shots": {
+     "right": {
+      "frame": "aim-right",
+      "weapon": "R",
+      "aimHeld": true,
+      "liveShots": 1,
+      "fistToGripCssPx": 9.009,
+      "muzzleToSpawnCssPx": 1.054,
+      "recoilTiles": 0.095,
+      "muzzleToRecoiledSpawnCssPx": 0.661
+     },
+     "up-right": {
+      "frame": "aim-up-right",
+      "weapon": "R",
+      "aimHeld": true,
+      "liveShots": 1,
+      "fistToGripCssPx": 12.489,
+      "muzzleToSpawnCssPx": 1.229,
+      "recoilTiles": 0.095,
+      "muzzleToRecoiledSpawnCssPx": 0.779
+     },
+     "up": {
+      "frame": "aim-up",
+      "weapon": "R",
+      "aimHeld": true,
+      "liveShots": 1,
+      "fistToGripCssPx": 14.733,
+      "muzzleToSpawnCssPx": 1.316,
+      "recoilTiles": 0.095,
+      "muzzleToRecoiledSpawnCssPx": 0.947
+     },
+     "left": {
+      "frame": "aim-right",
+      "weapon": "R",
+      "aimHeld": true,
+      "liveShots": 1,
+      "fistToGripCssPx": 8.939,
+      "muzzleToSpawnCssPx": 0.994,
+      "recoilTiles": 0.095,
+      "muzzleToRecoiledSpawnCssPx": 0.759
+     }
+    }
+   }
+  },
+  "after-task-T-103": {
+   "sources": [
+    "AFTER T-103 (task/T-103 @ f1cb327)",
+    "AFTER T-103 (task/T-103 @ f1cb327) ?crouch=1",
+    "AFTER T-103 (task/T-103 @ 7096cb0)",
+    "AFTER T-103 (task/T-103 @ b7a3a44)"
+   ],
+   "views": {
+    "desktop": {
+     "viewport": {
+      "width": 1280,
+      "height": 800
+     },
+     "dpr": 1,
+     "pageErrors": 0,
+     "all": {
+      "cells": 1060,
+      "fistToGripCssPx": {
+       "max": 0.022,
+       "mean": 0.009,
+       "min": 0
+      },
+      "muzzleToSpawnCssPx": {
+       "max": 0.157,
+       "mean": 0.057,
+       "min": 0.003
+      },
+      "armStretch": {
+       "max": 1.102,
+       "mean": 1.001,
+       "min": 1
+      },
+      "hiddenCells": 0,
+      "legacyAimArmAlignedTrue": 100
+     },
+     "byRow": {
+      "stand": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 0.014,
+        "mean": 0.013,
+        "min": 0.01
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.114,
+        "mean": 0.056,
+        "min": 0.012
+       },
+       "armStretch": {
+        "max": 1.102,
+        "mean": 1.006,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 80
+      },
+      "run-contact": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 0.014,
+        "mean": 0.013,
+        "min": 0.01
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.12,
+        "mean": 0.059,
+        "min": 0.013
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "run-pass": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 0.015,
+        "mean": 0.014,
+        "min": 0.011
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.135,
+        "mean": 0.068,
+        "min": 0.015
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "run-flight": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 0.017,
+        "mean": 0.015,
+        "min": 0.013
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.157,
+        "mean": 0.082,
+        "min": 0.019
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "air-rise": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 0.005,
+        "mean": 0.002,
+        "min": 0
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.093,
+        "mean": 0.054,
+        "min": 0.005
+       },
+       "armStretch": {
+        "max": 1.007,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "air-fall": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 0.005,
+        "mean": 0.002,
+        "min": 0
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.093,
+        "mean": 0.054,
+        "min": 0.005
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-0": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 0.008,
+        "mean": 0.007,
+        "min": 0.006
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.111,
+        "mean": 0.055,
+        "min": 0.009
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-1": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 0.007,
+        "mean": 0.006,
+        "min": 0.005
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.109,
+        "mean": 0.055,
+        "min": 0.007
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-2": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 0.005,
+        "mean": 0.004,
+        "min": 0.003
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.104,
+        "mean": 0.054,
+        "min": 0.003
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-3": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 0.003,
+        "mean": 0.002,
+        "min": 0.001
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.099,
+        "mean": 0.053,
+        "min": 0.005
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "wall": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 0.009,
+        "mean": 0.008,
+        "min": 0.007
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.114,
+        "mean": 0.056,
+        "min": 0.012
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "hit-iframe": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 0.014,
+        "mean": 0.013,
+        "min": 0.01
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.114,
+        "mean": 0.056,
+        "min": 0.012
+       },
+       "armStretch": {
+        "max": 1.007,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "respawn": {
+       "cells": 80,
+       "fistToGripCssPx": {
+        "max": 0.022,
+        "mean": 0.019,
+        "min": 0.017
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.045,
+        "mean": 0.033,
+        "min": 0.021
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "crouch": {
+       "cells": 20,
+       "fistToGripCssPx": {
+        "max": 0.017,
+        "mean": 0.016,
+        "min": 0.016
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.12,
+        "mean": 0.085,
+        "min": 0.05
+       },
+       "armStretch": {
+        "max": 1.057,
+        "mean": 1.008,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 20
+      }
+     },
+     "byGun": {
+      "R": {
+       "cells": 212,
+       "fistToGripCssPx": {
+        "max": 0.021,
+        "mean": 0.009,
+        "min": 0.001
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.157,
+        "mean": 0.057,
+        "min": 0.003
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 20
+      },
+      "S": {
+       "cells": 212,
+       "fistToGripCssPx": {
+        "max": 0.021,
+        "mean": 0.009,
+        "min": 0.001
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.157,
+        "mean": 0.057,
+        "min": 0.003
+       },
+       "armStretch": {
+        "max": 1.022,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 20
+      },
+      "L": {
+       "cells": 212,
+       "fistToGripCssPx": {
+        "max": 0.021,
+        "mean": 0.009,
+        "min": 0.001
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.157,
+        "mean": 0.057,
+        "min": 0.003
+       },
+       "armStretch": {
+        "max": 1.027,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 20
+      },
+      "H": {
+       "cells": 212,
+       "fistToGripCssPx": {
+        "max": 0.021,
+        "mean": 0.009,
+        "min": 0.001
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.157,
+        "mean": 0.057,
+        "min": 0.003
+       },
+       "armStretch": {
+        "max": 1.016,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 20
+      },
+      "F": {
+       "cells": 212,
+       "fistToGripCssPx": {
+        "max": 0.022,
+        "mean": 0.009,
+        "min": 0
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.157,
+        "mean": 0.057,
+        "min": 0.003
+       },
+       "armStretch": {
+        "max": 1.102,
+        "mean": 1.002,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 20
+      }
+     },
+     "rowFrames": {
+      "stand": "aim-right",
+      "run-contact": "contact",
+      "run-pass": "pass",
+      "run-flight": "flight",
+      "air-rise": "air-rise",
+      "air-fall": "air-fall",
+      "climb-0": "climb-0",
+      "climb-1": "climb-1",
+      "climb-2": "climb-2",
+      "climb-3": "climb-3",
+      "wall": "climb-0",
+      "hit-iframe": "air-rise",
+      "respawn": "air-fall",
+      "crouch": "aim-right"
+     }
+    },
+    "phone": {
+     "viewport": {
+      "width": 844,
+      "height": 390
+     },
+     "dpr": 2,
+     "pageErrors": 0,
+     "all": {
+      "cells": 416,
+      "fistToGripCssPx": {
+       "max": 0.011,
+       "mean": 0.004,
+       "min": 0
+      },
+      "muzzleToSpawnCssPx": {
+       "max": 0.076,
+       "mean": 0.028,
+       "min": 0.002
+      },
+      "armStretch": {
+       "max": 1.102,
+       "mean": 1.001,
+       "min": 1
+      },
+      "hiddenCells": 0,
+      "legacyAimArmAlignedTrue": 32
+     },
+     "byRow": {
+      "stand": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.007,
+        "mean": 0.006,
+        "min": 0.005
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.056,
+        "mean": 0.027,
+        "min": 0.006
+       },
+       "armStretch": {
+        "max": 1.102,
+        "mean": 1.011,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 32
+      },
+      "run-contact": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.007,
+        "mean": 0.006,
+        "min": 0.005
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.059,
+        "mean": 0.029,
+        "min": 0.006
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "run-pass": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.007,
+        "mean": 0.007,
+        "min": 0.006
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.066,
+        "mean": 0.033,
+        "min": 0.007
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "run-flight": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.008,
+        "mean": 0.007,
+        "min": 0.006
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.076,
+        "mean": 0.04,
+        "min": 0.009
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "air-rise": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.002,
+        "mean": 0.001,
+        "min": 0
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.045,
+        "mean": 0.026,
+        "min": 0.003
+       },
+       "armStretch": {
+        "max": 1.007,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "air-fall": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.002,
+        "mean": 0.001,
+        "min": 0
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.045,
+        "mean": 0.026,
+        "min": 0.003
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-0": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.004,
+        "mean": 0.004,
+        "min": 0.003
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.054,
+        "mean": 0.027,
+        "min": 0.004
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-1": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.003,
+        "mean": 0.003,
+        "min": 0.002
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.053,
+        "mean": 0.027,
+        "min": 0.003
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-2": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.002,
+        "mean": 0.002,
+        "min": 0.001
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.051,
+        "mean": 0.026,
+        "min": 0.002
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-3": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.002,
+        "mean": 0.001,
+        "min": 0
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.048,
+        "mean": 0.026,
+        "min": 0.003
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "wall": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.004,
+        "mean": 0.004,
+        "min": 0.003
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.056,
+        "mean": 0.027,
+        "min": 0.006
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "hit-iframe": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.007,
+        "mean": 0.006,
+        "min": 0.005
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.056,
+        "mean": 0.027,
+        "min": 0.006
+       },
+       "armStretch": {
+        "max": 1.007,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "respawn": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.011,
+        "mean": 0.009,
+        "min": 0.008
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.022,
+        "mean": 0.016,
+        "min": 0.01
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      }
+     },
+     "byGun": {
+      "R": {
+       "cells": 208,
+       "fistToGripCssPx": {
+        "max": 0.01,
+        "mean": 0.004,
+        "min": 0
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.076,
+        "mean": 0.028,
+        "min": 0.002
+       },
+       "armStretch": {
+        "max": 1,
+        "mean": 1,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 16
+      },
+      "F": {
+       "cells": 208,
+       "fistToGripCssPx": {
+        "max": 0.011,
+        "mean": 0.004,
+        "min": 0
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.076,
+        "mean": 0.028,
+        "min": 0.002
+       },
+       "armStretch": {
+        "max": 1.102,
+        "mean": 1.002,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 16
+      }
+     },
+     "rowFrames": {
+      "stand": "aim-right",
+      "run-contact": "contact",
+      "run-pass": "pass",
+      "run-flight": "flight",
+      "air-rise": "air-rise",
+      "air-fall": "air-fall",
+      "climb-0": "climb-0",
+      "climb-1": "climb-1",
+      "climb-2": "climb-2",
+      "climb-3": "climb-3",
+      "wall": "climb-0",
+      "hit-iframe": "air-rise",
+      "respawn": "air-fall"
+     }
+    },
+    "portrait": {
+     "viewport": {
+      "width": 390,
+      "height": 844
+     },
+     "dpr": 2,
+     "pageErrors": 0,
+     "all": {
+      "cells": 416,
+      "fistToGripCssPx": {
+       "max": 0.018,
+       "mean": 0.007,
+       "min": 0.001
+      },
+      "muzzleToSpawnCssPx": {
+       "max": 0.137,
+       "mean": 0.05,
+       "min": 0.002
+      },
+      "armStretch": {
+       "max": 1.579,
+       "mean": 1.22,
+       "min": 1
+      },
+      "hiddenCells": 0,
+      "legacyAimArmAlignedTrue": 32
+     },
+     "byRow": {
+      "stand": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.012,
+        "mean": 0.01,
+        "min": 0.006
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.099,
+        "mean": 0.049,
+        "min": 0.009
+       },
+       "armStretch": {
+        "max": 1.579,
+        "mean": 1.201,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 32
+      },
+      "run-contact": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.012,
+        "mean": 0.01,
+        "min": 0.006
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.104,
+        "mean": 0.052,
+        "min": 0.009
+       },
+       "armStretch": {
+        "max": 1.395,
+        "mean": 1.188,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "run-pass": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.013,
+        "mean": 0.011,
+        "min": 0.007
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.118,
+        "mean": 0.06,
+        "min": 0.011
+       },
+       "armStretch": {
+        "max": 1.42,
+        "mean": 1.208,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "run-flight": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.014,
+        "mean": 0.012,
+        "min": 0.008
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.137,
+        "mean": 0.072,
+        "min": 0.014
+       },
+       "armStretch": {
+        "max": 1.264,
+        "mean": 1.106,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "air-rise": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.005,
+        "mean": 0.003,
+        "min": 0.001
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.084,
+        "mean": 0.048,
+        "min": 0.004
+       },
+       "armStretch": {
+        "max": 1.532,
+        "mean": 1.297,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "air-fall": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.005,
+        "mean": 0.003,
+        "min": 0.001
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.084,
+        "mean": 0.048,
+        "min": 0.004
+       },
+       "armStretch": {
+        "max": 1.377,
+        "mean": 1.182,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-0": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.007,
+        "mean": 0.006,
+        "min": 0.003
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.097,
+        "mean": 0.049,
+        "min": 0.007
+       },
+       "armStretch": {
+        "max": 1.451,
+        "mean": 1.227,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-1": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.006,
+        "mean": 0.005,
+        "min": 0.002
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.095,
+        "mean": 0.048,
+        "min": 0.005
+       },
+       "armStretch": {
+        "max": 1.463,
+        "mean": 1.235,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-2": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.005,
+        "mean": 0.004,
+        "min": 0.001
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.092,
+        "mean": 0.048,
+        "min": 0.002
+       },
+       "armStretch": {
+        "max": 1.468,
+        "mean": 1.242,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "climb-3": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.003,
+        "mean": 0.003,
+        "min": 0.001
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.088,
+        "mean": 0.047,
+        "min": 0.004
+       },
+       "armStretch": {
+        "max": 1.498,
+        "mean": 1.26,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "wall": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.008,
+        "mean": 0.007,
+        "min": 0.004
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.099,
+        "mean": 0.049,
+        "min": 0.009
+       },
+       "armStretch": {
+        "max": 1.468,
+        "mean": 1.234,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "hit-iframe": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.012,
+        "mean": 0.01,
+        "min": 0.006
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.099,
+        "mean": 0.049,
+        "min": 0.009
+       },
+       "armStretch": {
+        "max": 1.532,
+        "mean": 1.297,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      },
+      "respawn": {
+       "cells": 32,
+       "fistToGripCssPx": {
+        "max": 0.018,
+        "mean": 0.014,
+        "min": 0.011
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.035,
+        "mean": 0.025,
+        "min": 0.017
+       },
+       "armStretch": {
+        "max": 1.377,
+        "mean": 1.182,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 0
+      }
+     },
+     "byGun": {
+      "R": {
+       "cells": 208,
+       "fistToGripCssPx": {
+        "max": 0.017,
+        "mean": 0.007,
+        "min": 0.001
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.137,
+        "mean": 0.05,
+        "min": 0.002
+       },
+       "armStretch": {
+        "max": 1.476,
+        "mean": 1.19,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 16
+      },
+      "F": {
+       "cells": 208,
+       "fistToGripCssPx": {
+        "max": 0.018,
+        "mean": 0.008,
+        "min": 0.001
+       },
+       "muzzleToSpawnCssPx": {
+        "max": 0.137,
+        "mean": 0.05,
+        "min": 0.002
+       },
+       "armStretch": {
+        "max": 1.579,
+        "mean": 1.25,
+        "min": 1
+       },
+       "hiddenCells": 0,
+       "legacyAimArmAlignedTrue": 16
+      }
+     },
+     "rowFrames": {
+      "stand": "aim-right",
+      "run-contact": "contact",
+      "run-pass": "pass",
+      "run-flight": "flight",
+      "air-rise": "air-rise",
+      "air-fall": "air-fall",
+      "climb-0": "climb-0",
+      "climb-1": "climb-1",
+      "climb-2": "climb-2",
+      "climb-3": "climb-3",
+      "wall": "climb-0",
+      "hit-iframe": "air-rise",
+      "respawn": "air-fall"
+     }
+    }
+   },
+   "firing": {
+    "view": "phone",
+    "viewport": {
+     "width": 844,
+     "height": 390
+    },
+    "dpr": 2,
+    "errors": [],
+    "shots": {
+     "right": {
+      "frame": "aim-right",
+      "weapon": "R",
+      "aimHeld": true,
+      "liveShots": 1,
+      "fistToGripCssPx": 0.007,
+      "muzzleToSpawnCssPx": 0.841,
+      "recoilTiles": 0.095,
+      "muzzleToRecoiledSpawnCssPx": 0.05
+     },
+     "up-right": {
+      "frame": "aim-down-right",
+      "weapon": "R",
+      "aimHeld": true,
+      "liveShots": 1,
+      "fistToGripCssPx": 0.008,
+      "muzzleToSpawnCssPx": 0.871,
+      "recoilTiles": 0.095,
+      "muzzleToRecoiledSpawnCssPx": 0.035
+     },
+     "up": {
+      "frame": "aim-down-right",
+      "weapon": "R",
+      "aimHeld": true,
+      "liveShots": 1,
+      "fistToGripCssPx": 0.008,
+      "muzzleToSpawnCssPx": 0.847,
+      "recoilTiles": 0.095,
+      "muzzleToRecoiledSpawnCssPx": 0.012
+     },
+     "left": {
+      "frame": "aim-right",
+      "weapon": "R",
+      "aimHeld": true,
+      "liveShots": 1,
+      "fistToGripCssPx": 0.01,
+      "muzzleToSpawnCssPx": 0.832,
+      "recoilTiles": 0.095,
+      "muzzleToRecoiledSpawnCssPx": 0.029
+     }
+    }
+   }
+  }
+ }
+}
