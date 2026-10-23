@@ -680,6 +680,23 @@ export function resetPlayerForRun(x = 6, y = 3) {
   clearJumpBuffer();
 }
 
+/* T-102: designed relocations (HULL FALLBACK, respawn) honour the same route
+   window the per-frame clamps in updatePlayer enforce. Before this, a lethal
+   hit on the turning joint knocked RIG 1.5 tiles back across the sealed fold,
+   and a stock-life respawn within ~10 s of a turn (while the left screen edge
+   still lay on the departing face) dropped RIG up to 40 tiles behind it: one
+   frame on the old facet — culled once the camera had committed — then the
+   seal clamp popped RIG forward. Inside the window this is the identity. */
+function clampToOwnedRoute(x) {
+  const w = cornerPlayerRouteWindow(player.hw);
+  const lo = Math.max(w.sealLeft, transformSealX()) + player.hw;
+  const hi = Math.min(w.frontierRight, transformFrontierX()) - player.hw;
+  // The turning joint is a zero-width lock (seal + hw === frontier - hw up to
+  // float noise); collapse an inverted window onto its midpoint.
+  if (lo > hi) return (lo + hi) / 2;
+  return Math.min(hi, Math.max(lo, x));
+}
+
 /* --------------------- HULL FALLBACK tier 1 (B.1) -------------------- *
  * The ship does not delete an anomaly on its hull, it dislodges one. Losing
  * costs altitude, CHARGE and a couple of seconds of position — never control,
@@ -740,8 +757,8 @@ function hullFallback(reason) {
   if (landY === null && !surfaces.length) {           // over a gap: catch ahead
     let i = Math.max(0, Math.floor(player.x));
     while (i < LEVEL_LEN - 2 && groundTopAt(i) < -100) i++;
-    player.x = i + 0.5;
-    landY = groundTopAt(i) > -100 ? groundTopAt(i) : 3;
+    player.x = clampToOwnedRoute(i + 0.5);
+    landY = groundTopAt(player.x) > -100 ? groundTopAt(player.x) : 3;
   }
 
   if (landY !== null) {
@@ -751,7 +768,7 @@ function hullFallback(reason) {
     // Already on the lowest route: there is no altitude left to take, so the
     // ship takes margin instead. A fallback is never free.
     const le = sLeftEdge() + CONFIG.edges.margin + player.hw;
-    player.x = Math.max(le, player.x - F.groundKnockTiles);
+    player.x = clampToOwnedRoute(Math.max(le, player.x - F.groundKnockTiles));
     player.vy = Math.max(player.vy, 0);
   }
   // A fallback may only ever move RIG down or back — never up past the band
@@ -809,9 +826,12 @@ export function loseLife(reason = 'damage') {
 
 export function respawn() {
   let i = Math.max(2, Math.ceil(sLeftEdge()) + 3);
+  // never behind a sealed corner (T-102, clampToOwnedRoute above)
+  i = Math.max(i, Math.ceil(clampToOwnedRoute(-Infinity) - 0.5));
   while (i < LEVEL_LEN - 2 && (groundH[i] < -100 || groundH[i + 1] < -100)) i++;
-  player.x = i + 0.5;
-  player.y = (groundH[i] > -100 ? groundH[i] : 3) + 4;   // drop in from above
+  player.x = clampToOwnedRoute(i + 0.5);
+  const col = Math.floor(player.x);
+  player.y = (groundH[col] > -100 ? groundH[col] : 3) + 4;   // drop in from above
   player.vx = 0; player.vy = 0;
   player.hp = P.maxHealth;
   player.iframesUntil = gameMs + 2000;
