@@ -6,6 +6,12 @@
 //   - each intended cell keeps only its connected character assembly;
 //   - chroma sources receive a straight-alpha green-key matte;
 //   - every used output cell is validated for one assembly and a clear guard.
+//
+// T-103 adds one final, still non-synthesizing pass (tools/assets/
+// rig-arm-surgery.mjs): painted arms are erased/patched out of the poses and
+// the `aim/right` near arm is copied 1:1 into body cell 6 as two strips that
+// the runtime bends onto the weapon grip. `--out <dir>` writes the atlases and
+// layouts somewhere other than assets/generated/sprites (preview runs).
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -14,8 +20,14 @@ import { deflateSync } from 'node:zlib';
 import { REPO_ROOT } from './lib/browser.mjs';
 import { decodePng } from './lib/png.mjs';
 import { classify } from './lib/palette.mjs';
+import {
+  ARM_STRIP_SOURCE, ARM_STRIP_TARGET, ARM_SURGERY, ARM_SURGERY_VERSION,
+  applyPoseSurgery, copyArmStrips,
+} from './rig-arm-surgery.mjs';
 
 const SPRITES = resolve(REPO_ROOT, 'assets/generated/sprites');
+const outFlag = process.argv.indexOf('--out');
+const OUT_DIR = outFlag > 0 ? resolve(process.argv[outFlag + 1]) : SPRITES;
 const ALPHA_FLOOR = 8;
 const COMPONENT_FLOOR = 40;
 const GUARD = 24;
@@ -282,6 +294,7 @@ function outputAlphaBox(rgba, atlasW, rect) {
   return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
 }
 
+const built = new Map();
 for (const job of JOBS) {
   const sourcePath = resolve(SPRITES, job.source);
   let decoded = decodePng(sourcePath);
@@ -328,21 +341,65 @@ for (const job of JOBS) {
       throw new Error(`${job.id}/${pose.name} has ${post.length} output assemblies`);
     layout.push({ name: pose.name, sourceCell: pose.sourceCell, outputCell: pose.outputCell,
       sourceRect, alpha, guard, paintedPixels: assembly.painted,
-      partialPixels: assembly.partial, rejectedComponents: assembly.rejectedComponents });
+      partialPixels: assembly.partial, rejectedComponents: assembly.rejectedComponents,
+      cell });
   }
 
+  // Palette first, exactly as before T-103, so paletteFinish stays comparable
+  // and every pixel the surgery moves is already palette-final.
   const paletteFinish = normalizePalette(atlas);
-  const outputPath = resolve(SPRITES, `${job.id}.png`);
+  // The strip source is captured BEFORE its own arm is erased below.
+  const unsurgered = job.id === ARM_STRIP_SOURCE ? Uint8Array.from(atlas) : null;
+
+  // T-103 arm surgery: erase/patch the painted arms inside each pose's cell.
+  const surgery = ARM_SURGERY[job.id] || {};
+  for (const row of layout) {
+    const ops = surgery[row.name];
+    if (!ops) continue;
+    row.armSurgery = applyPoseSurgery(atlas, atlasW, atlasH, row.cell, ops);
+    if (row.armSurgery.erased || row.armSurgery.patched) {
+      row.alphaBeforeSurgery = row.alpha;
+      row.alpha = outputAlphaBox(atlas, atlasW, row.cell);
+      row.guard = {
+        left: row.alpha.x - row.cell.x, top: row.alpha.y - row.cell.y,
+        right: row.cell.x + row.cell.w - row.alpha.x - row.alpha.w,
+        bottom: row.cell.y + row.cell.h - row.alpha.y - row.alpha.h,
+      };
+      const post = components({ width: atlasW, rgba: atlas }, row.cell);
+      if (post.length !== 1)
+        throw new Error(`${job.id}/${row.name} has ${post.length} assemblies after arm surgery ` +
+          `(${post.map((c) => `${c.count}px @ x${row.cell.x + c.x0}-${row.cell.x + c.x1} ` +
+            `y${row.cell.y + c.y0}-${row.cell.y + c.y1}`).join(', ')})`);
+    }
+  }
+
+  built.set(job.id, { job, atlas, unsurgered, atlasW, atlasH, layout, paletteFinish,
+    sourceSize: [decoded.width, decoded.height] });
+}
+
+// The near-arm strips are copied 1:1 from the palette-final, PRE-surgery aim
+// painting, so each strip is byte-identical to the arm it was cut from.
+const stripSource = built.get(ARM_STRIP_SOURCE);
+const stripTarget = built.get(ARM_STRIP_TARGET);
+const armStrips = copyArmStrips(stripSource.unsurgered, stripSource.atlasW, stripSource.atlasH,
+  stripTarget.atlas, stripTarget.atlasW, stripTarget.atlasH);
+
+for (const { job, atlas, atlasW, atlasH, layout, paletteFinish, sourceSize } of built.values()) {
+  const outputPath = resolve(OUT_DIR, `${job.id}.png`);
   writePng(outputPath, atlasW, atlasH, atlas);
   const metadata = {
     id: job.id,
     source: `assets/generated/sprites/${job.source}`,
     output: `assets/generated/sprites/${job.id}.png`,
-    sourceSize: [decoded.width, decoded.height], outputSize: job.output,
+    sourceSize, outputSize: job.output,
     outputCell: job.outputCell, method: 'connected assembly extraction + 1:1 integer repack',
     resampled: false, guard: GUARD, alphaFloor: ALPHA_FLOOR,
-    componentFloor: COMPONENT_FLOOR, paletteFinish, poses: layout,
+    componentFloor: COMPONENT_FLOOR, paletteFinish,
+    armSurgery: { version: ARM_SURGERY_VERSION, tool: 'tools/assets/rig-arm-surgery.mjs' },
+    poses: layout.map(({ cell, ...row }) => row),
   };
-  writeFileSync(resolve(SPRITES, `${job.id}.layout.json`), `${JSON.stringify(metadata, null, 2)}\n`);
-  console.log(JSON.stringify(metadata, null, 2));
+  if (job.id === ARM_STRIP_TARGET) metadata.armStrips = { source: ARM_STRIP_SOURCE, strips: armStrips };
+  writeFileSync(resolve(OUT_DIR, `${job.id}.layout.json`), `${JSON.stringify(metadata, null, 2)}\n`);
+  console.log(JSON.stringify({ id: job.id, poses: layout.map((r) => ({ name: r.name,
+    alpha: r.alpha, armSurgery: r.armSurgery })), armStrips: metadata.armStrips }));
 }

@@ -88,7 +88,10 @@ import * as d75 from './power-feedback-contract.mjs';
 import * as d76 from './depth-layer-contract.mjs';
 import * as d77 from './t-102-corner-turns.mjs';
 import * as d78 from './touch-deck-contract.mjs';
-import * as d79 from './t-105-phone-shell.mjs';
+import * as d79 from './t-103-rig-grip-alignment.mjs';
+import * as d80 from './t-103-arm-winding.mjs';
+// d81 is T-201's race pass (merging separately); T-105 takes d82.
+import * as d82 from './t-105-phone-shell.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -170,5 +173,7 @@ export const DOMAINS = [
   d76,    // opaque surface depth layers: one physical/raster contract
   d77,    // T-102: every corner turn, played headlessly under player policies
   d78,    // T-101 two-thumb touch deck: pure stick, layout, wiring
-  d79,    // T-105 the phone shell: copy, failsafe watchdog, home-screen play
+  d79,    // T-103: RIG holds the weapon — rendered fist on rendered grip
+  d80,    // T-103: RIG's arms are front faces in both facings (winding + FrontSide)
+  d82,    // T-105 the phone shell: copy, failsafe watchdog, home-screen play
 ];
