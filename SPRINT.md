@@ -163,7 +163,7 @@ landed 2026-10-23 (`3e18f90`): D1-D5 fixed with a 41-run headless turn proof
 (full tier) + a 4-run per-edit subset. Review APPROVE, playtest PASS (both smoke
 scripts PASS at head 6d3e58f, re-judged by the integrator); merged with
 `--skip-smoke` under the policy above. R1-R4 routed to T-122 / T-107 / T-201.
-## T-103 | art | doing | P1
+## T-103 | art | done | P1
 
 goal: weapons sit in RIG's hands. The operator: *"the models are a little off
 (like guns don't align to hands)."* Every gun, every pose, every aim
@@ -194,6 +194,17 @@ only — no sim constants), `src/render/sprite-table.js`, RIG atlases under
 saying so, touch controls, or the camera.
 verify: node tools/pathcheck.mjs; the new alignment check; smoke scripts
 
+
+landed 2026-10-23 (`fffc69e`): fist on grip in every pose/aim/facing/gun
+(worst 28.4 → 0.02 css px desktop), drawn muzzle on the bullet spawn, arm
+meshes with a two-bone solve; the left-facing back-face lighting defect found by
+the first playtest gate was fixed and re-gated (L/R luma 1.0002). Review APPROVE,
+playtest PASS at c6d475e (both smoke scripts PASS at that head, re-judged by the
+integrator); merged with `--skip-smoke --accept-stale-verdicts` (integrator-only
+manifest renumbering: T-103's domains are d79/d80). No `?hands=legacy` hatch —
+a defect fix of an operator-named problem (entry 20). Operator look questions
+(hold height, aim-up over the helmet, braced crouch, ladders, portrait arm
+stretch) go with the first phone release.
 ## T-104 | docs | done | P1
 
 goal: a grounded design proposal for (a) turning level 1 into a fast race to
