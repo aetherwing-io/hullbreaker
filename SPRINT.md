@@ -573,7 +573,12 @@ hornet), then hound, polyp, mortar, carrier; kit-bashed CC0 where nothing fits;
 judged against board 06. Dispatch after the operator has seen T-124 in-game.
 owner: asset-artist
 
-## T-201 | feature | review | P1
+## T-201 | feature | done | P1
+
+MERGED b8d1b81 (2026-10-23): review APPROVE (c48ca1e, re-confirmed at 3b0d9e6
+after the integrator's merge chores), playtest PASS (c48ca1e; runtime trees identical
+at 3b0d9e6). Smoke skipped at merge: both scripts ran twice at c48ca1e and re-judge
+PASS (mid-route 594/594, transform-slice VICTORY 938/1104).
 
 STATUS 2026-10-23: built (`task/T-201` d699627, `reports/tasks/T-201/build.md`);
 boxes 1-3, 6-11 met, box 4 met with a 1.7% caveat at the 6% frame, box 5 NOT met
@@ -665,6 +670,19 @@ goal: offline level preview (unrolled map + 3D views around turns, sub-second)
 
 (packets append here as tasks land)
 
+- **T-201 race pass** (merged; ON by default). URLs (after the site root, e.g.
+  `https://aetherwing-io.github.io/hullbreaker/`): `index.html` (new default),
+  `index.html?follow=0&gates=legacy` (the pre-race-pass run), `index.html?gates=legacy`
+  (follow-lead only), `index.html?follow=0` (rolling corners only), `index.html?hinge=flow`
+  (unjudged A/B). Questions: (1) Which side made you stop moving, and why? (2) At a
+  corner, what happened to the enemies that were still alive? Did anything about it feel
+  unfair or confusing? (3) How far ahead could you see where you were going? Did anything
+  hit you that you could not see coming? (4) Default vs `?hinge=flow`: at the corners,
+  which felt better, and what was different? (5) Default vs `?follow=0&gates=legacy`:
+  which would you rather play again, and why? Measured, not judged: followers are off
+  screen for the 1.1 s ritual plus ~4 s after each turn; non-killing play peaks at
+  23-27 bodies alive (I-123); portrait skipping is free (I-118).
+
 ## Inbox (playtester/adversarial file here; integrator triages each cycle)
 
 <!-- issue schema:
@@ -726,6 +744,8 @@ audio pass (T-105's fence holds src/ui/audio.js; not added to T-105 mid-flight).
 ## I-112 | docs | S3 | repro: read README.md:104-107, .claude/skills/threejs-geometry/SKILL.md:61-62,745-749 | evidence: T-121 review items 4-5
 README still lists `?zip=1` and opt-in `?momentum=1`; the three.js geometry
 skill describes the deleted `tileBaseMats` / `faceRanges`. → T-121 phase 2.
+README's flags line was fixed at the T-201 merge. Still open:
+`.claude/skills/threejs-animation/SKILL.md:34` names the removed `zipperOffset`.
 
 ## I-113 | docs | S3 | repro: `node tools/simlab/race/lab.mjs check --every 8` on main | evidence: T-121 review item 8
 `artifacts/t104-race/baseline.json` (digest 8ea94ef8) is stale on main itself:
@@ -734,6 +754,36 @@ skill describes the deleted `tileBaseMats` / `faceRanges`. → T-121 phase 2.
 
 ## I-114 | bug | S3 | repro: `?selftest=1` at 390x844 @ main (T-120 PLAY K5) | evidence: reports/tasks/T-120/build.md
 The in-page selftest fails at 390x844 portrait. → T-107 (portrait framing).
+
+## I-115 | harness | S3 | repro: turnlab `stock-life-at-hinge`, desktop, `fallback=0` @ task/T-201 | evidence: tools/simlab/TURNLAB.md limitation 8
+The envelope family classifies the plane's crush pin under god mode as a teleport. → T-120.
+
+## I-116 | bug | S3 | repro: `?zip=1` @ task/T-201 | evidence: src/render/level.js `unbuiltHidden`/`zipperColumn`
+With the sim zipper gone, the retired `?zip=1` render branch hides the first 31 columns of every arriving face. → T-121 phase 2 (deletes it); merge T-121 phase 2 soon after T-201.
+
+## I-117 | docs | S3 | repro: read src/pure/waves.js `ROLLING_GATES`, CONFIG.waves zip* keys @ task/T-201 | evidence: reports/tasks/T-201/build.md
+`ROLLING_GATES` belongs in `CONFIG.waves`; the zip* keys are dead config. → next gameplay lane.
+
+## I-118 | fairness | S3 | repro: `node tools/simlab/race/lab.mjs baseline --seeds 6`, portrait rows, rush vs skip @ task/T-201 | evidence: T-201 build.md box 5
+Skipping fights is free at portrait (followers re-enter in a ~1-tile band and are run past). Landscape is the target (entry 20 addendum). Options: re-enter behind RIG on narrow views, or widen the window. Feel call first.
+
+## I-119 | bug | S4 | repro: `tools/simlab/race/stage-view.mjs`, 6 % row @ task/T-201 | evidence: T-201 build.md box 4
+1.7% of bodies are 5.2-6.0 tiles from the damage plane when they become shootable (the plane speeds up mid-entrance). Fix: bound the staging advance by RIG's run speed.
+
+## I-120 | harness | S3 | repro: `node tools/simlab/race/lab.mjs baseline --seeds 12` after T-201 merges | evidence: I-113
+Re-baseline `artifacts/t104-race/baseline.json`: every fingerprint moves by design. Re-point the 6 % row when T-107 lands.
+
+## I-121 | harness | S3 | repro: `tools/pathcheck/t-102-corner-turns.mjs` hinge=flow assertion @ b8d1b81 | evidence: reports/tasks/T-201/review.md (re-confirmation, findings 1-2)
+Two limits of the `?hinge=flow` guard. (1) It binds "the flag does something and is off by default", not the release moment: a release 300 ms late stays green (354 vs 394). (2) Nothing asserts that the two flow rows stay planned: the run-count check shrinks with the list. Fix: `ok(full.filter((o) => o.query === 'hinge=flow').length >= 2)` in `run()`'s full branch, plus a per-corner bound (flow <= ~45 stalled ticks vs >= 60 by default). → whichever lane next touches the turn proof (T-120 pin work or T-121 phase 2).
+
+## I-122 | art | S3 | repro: corner approach under the follow-lead, desktop and 844x390 @ b8d1b81 | evidence: /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t201-gate/out/ (T-201 playtest)
+Flat clear-colour edge strips show in motion for the last ~2.5 s of each approach under the follow-lead. Same class as I-102 (edge voids). → T-107 (R2).
+
+## I-123 | fairness | S3 | repro: lab no-fire policy, desktop seed 1 @ b8d1b81 | evidence: reports/tasks/T-201/review.md finding 3; T-201 playtest (peak-bodies.mjs)
+Rolling corners keep the ambient stream alive until the turn, so concurrent bodies roughly double for play that doesn't kill. No-fire desktop peaks at 27 alive and 23 in view, with 27% of the run above 12 in view; a competent shooter peaks at 9 (main 6). Pillar 5 (chaos stays readable) and frame budget: operator question first.
+
+## I-124 | feel | S3 | repro: lab racer, landscape viewports @ b8d1b81 | evidence: T-201 playtest report
+At landscape, followers appear 3.6-14.3 tiles ahead of a racing RIG but turn hostile at a median 1.9-3.5 tiles away, and 46 of 95 are behind RIG by then. Extends I-118. Chase vs ambush is a feel call first.
 
 ## Task schema
 

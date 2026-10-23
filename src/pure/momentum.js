@@ -156,6 +156,79 @@ export function momentumDriveFromSpeed(speed, baseSpeed, cfg) {
   return clamp01((speed / baseSpeed - 1) / (cfg.ceilMult - 1));
 }
 
+/* --------------------------- follow-lead ---------------------------- *
+ * T-201/T-202 (docs/proposals/2026-10-race-to-the-top.md §4.2). Measured on
+ * the shipped run: a racer pinned against the right clamp saw a median of 5
+ * tiles of route ahead (1 in the closer phone frame) and stood ~5-6 s at
+ * every closed joint waiting for the scroll. The follow-lead term is the
+ * fixtures' follow rule (src/pure/traversal.js traversalFollowTarget) for the
+ * six-face run: the pursuing edge advances at least fast enough to keep RIG
+ * `lead` tiles from the right edge. It is a FLOOR on the scroll, never a
+ * ceiling: a player who never comes within `lead` of the right edge never
+ * engages it, so the floor pace (and that player's whole run) is unchanged.
+ *
+ * `visibleWidth` is the live edge calibration (EDGE_R - EDGE_L), never a
+ * typed number: the closer phone frame (T-107) changes it.                 */
+export function followLeadTiles(visibleWidth, cfg) {
+  const w = Number.isFinite(visibleWidth) && visibleWidth > 0 ? visibleWidth : 0;
+  const lead = cfg.leadFrac * w;
+  return lead < cfg.leadMinTiles ? cfg.leadMinTiles
+    : lead > cfg.leadMaxTiles ? cfg.leadMaxTiles : lead;
+}
+
+// The lowest scroll that keeps RIG's front `lead` tiles inside the right edge
+// (edgeRight is the right edge's offset from scrollX, sim/edges.js EDGE_R).
+export function followScrollFloor(rigFront, edgeRight, lead) {
+  return rigFront - (edgeRight - lead);
+}
+
+/* The corner blend. The lead alone would bring a racer to a closed joint with
+ * the scroll short of the corner's halt (desktop FAR: 9.2 tiles; today's FAR
+ * phone frame: 21.6), and render/camera.js anchors the view at the scroll — so
+ * the turn would orbit a point 24-37 tiles before the joint instead of today's
+ * 15, and right after it RIG would draw 2-4x their size with the arriving
+ * facet out of frame (measured with the T-102 camera replica; T-201 report).
+ * Inside the approach to an idle corner the scroll therefore also keeps up
+ * with this floor, which reaches the halt exactly when RIG's front reaches the
+ * joint: the plane gains `cornerBlendRate` tiles on RIG per tile RIG closes.
+ * It binds only in the last (lead offset - joint gap) / rate tiles before the
+ * joint, and never on a view whose lead already passes the halt (portrait).
+ * The corner then arms at its halt the moment RIG arrives — no wait, and the
+ * ritual frames the turn exactly as it does today.                        */
+export function followCornerFloor(haltS, jointFront, rigFront, cfg) {
+  return haltS - (1 + cfg.cornerBlendRate) * (jointFront - rigFront);
+}
+
+/* The bank under follow — entry 11's tension, named rather than buried.
+ * Entry 11 makes banked daylight the currency of escalation, and T-022 reads
+ * it as RIG's fraction of the strip between the damage plane and the right
+ * clamp: riding the clamp (frac 0.97-0.99) saturated the bank. Under follow
+ * the clamp is never reached — the lead converts the leading ~30 % of the
+ * frame from bank into lookahead (desktop's maximum daylight drops from ~72 to
+ * ~51 tiles) — so the shipped ramp would cap a racer's bank at ~0.37 and the
+ * ceiling would be unreachable by racing. Re-expressed in tiles from the
+ * damage plane: `daylight` is RIG's back to the plane, `leadDaylight` the
+ * daylight RIG has when the follow line binds (its front on the lead line, or
+ * on the corner blend's line when that binds first — the follow frame's new
+ * clamp; sim/scroll.js followLineDaylight). Riding the follow line banks
+ * fully, exactly as riding the clamp did — through the blend too, so a racer
+ * does not shed escalation in the last tiles before every joint because the
+ * frame compresses there; anywhere behind it the shipped fraction ramp is used
+ * unchanged, so a player who never reaches the lead banks EXACTLY what they
+ * banked before (the floor promise) and the carried player's deadband stays a
+ * deadband. Without follow (`leadDaylight` = Infinity) this IS the shipped
+ * bank, byte for byte. */
+export const FOLLOW_BANK_EPS_TILES = 0.05;
+export function momentumLeadBank(frac, daylight, leadDaylight, cfg) {
+  if (Number.isFinite(leadDaylight) && daylight >= leadDaylight - FOLLOW_BANK_EPS_TILES) return 1;
+  return momentumBank(frac, cfg);
+}
+
+// The held/moving sample with the follow re-expression (sim/pace.js).
+export function momentumLeadBankSample(heldBank, frac, daylight, leadDaylight, held, cfg) {
+  return held ? clamp01(heldBank) : momentumLeadBank(frac, daylight, leadDaylight, cfg);
+}
+
 /* ---------------------------- readouts ------------------------------ */
 
 // Banded drive for the HUD and for telemetry: 0..cfg.tiers.length.

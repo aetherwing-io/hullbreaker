@@ -20,8 +20,8 @@ import { CONFIG } from '../config.js';
 import { ACTIVE_SLICE, MOMENTUM_ENABLED } from '../mode.js';
 import { traversalPaceStep } from '../pure/traversal.js';
 import {
-  momentumBankSample, momentumClampSpeed, momentumCombatStep, momentumOnDamage,
-  momentumScreenFrac, momentumSpeed, momentumStep, momentumTarget,
+  momentumBankSample, momentumClampSpeed, momentumCombatStep, momentumLeadBankSample,
+  momentumOnDamage, momentumScreenFrac, momentumSpeed, momentumStep, momentumTarget,
 } from '../pure/momentum.js';
 
 const PURSUIT = ACTIVE_SLICE ? ACTIVE_SLICE.pursuit : null;
@@ -67,7 +67,14 @@ export function momentumScrollSpeed() {
   return momentumClampSpeed(momentumSpeed(drive, CONFIG.scrollSpeed, M), CONFIG.scrollSpeed, M);
 }
 
-/* ctx: { playerLeft, edgeLeft, edgeRight, kills, hp, lives, nowMs, held }
+/* ctx: { playerLeft, edgeLeft, edgeRight, kills, hp, lives, nowMs, held,
+          leadDaylight? }
+   `leadDaylight` (T-201, follow-lead on): the daylight RIG has when its
+   front sits on the follow line (the lead line, or the corner blend's line
+   when that binds first; sim/scroll.js followLineDaylight) — riding it banks
+   fully, the way riding the right clamp did (src/pure/momentum.js
+   momentumLeadBank). Absent, the shipped screen-fraction bank runs
+   unchanged.
    `primed` seeds the kill/health baselines on the first frame after a reset
    so a fresh run never reads its own initialization as a hit — the same
    contract stepHitStop uses in sim/time.js.                              */
@@ -93,8 +100,11 @@ export function updateMomentum(dt, ctx) {
     mercyUntil = ctx.nowMs + M.hitMercyMs;
   }
   combat = momentumCombatStep(combat, killsThisFrame, dt, M);
-  bank = momentumBankSample(
-    bank, momentumScreenFrac(ctx.playerLeft, ctx.edgeLeft, ctx.edgeRight), ctx.held, M);
+  const frac = momentumScreenFrac(ctx.playerLeft, ctx.edgeLeft, ctx.edgeRight);
+  bank = ctx.leadDaylight === undefined
+    ? momentumBankSample(bank, frac, ctx.held, M)
+    : momentumLeadBankSample(bank, frac, ctx.playerLeft - ctx.edgeLeft, ctx.leadDaylight,
+      ctx.held, M);
   drive = momentumStep(drive, momentumTarget(bank, combat, M), dt, M, {
     mercy: ctx.nowMs < mercyUntil,
   });
