@@ -1,0 +1,28 @@
+# T-101 pathcheck label diff — tools/pathcheck-labels.mjs, run 2026-10-23 ~00:40-00:50 UTC
+#   node tools/pathcheck-labels.mjs --rev 98b12c9 --out base.labels
+#   node tools/pathcheck-labels.mjs --tree .      --out branch.labels   (branch at 59b85df)
+# Both captured back to back on the same loaded host (load average ~35).
+
+labels: base 3989, branch 4041
+FAIL in base:   4
+  FAIL	the permanent real-browser performance probe boots the shipped scene
+  FAIL	every built transparent DoubleSide material is single-pass or carries a named exception
+  FAIL	a paused scene uploads zero unchanged instance-matrix bytes
+  FAIL	the composed path does not allocate redundant default-framebuffer MSAA
+FAIL in branch: 4
+  FAIL	the permanent real-browser performance probe boots the shipped scene
+  FAIL	every built transparent DoubleSide material is single-pass or carries a named exception
+  FAIL	a paused scene uploads zero unchanged instance-matrix bytes
+  FAIL	the composed path does not allocate redundant default-framebuffer MSAA
+
+removed from base (labels in base, not in branch): 0
+added in branch: 52
+  of which the new domain (T-101: ...): 46
+  of which existing per-file guards now also covering src/pure/touch-stick.js:
+    PASS  T-049: src/pure/touch-stick.js names a sprite module — the pure layer may hold data, never a load path it could branch on
+    PASS  T-049: src/pure/touch-stick.js names a texture loader — the pure layer may hold data, never a load path it could branch on
+    PASS  T-051: pure/touch-stick.js names a backdrop asset path — the sim/pure layers must not be able to tell whether the backdrop loaded
+    PASS  T-051: pure/touch-stick.js names a backdrop module — the sim/pure layers must not be able to tell whether the backdrop loaded
+    PASS  T-051: pure/touch-stick.js names the backdrop tuning table — the sim/pure layers must not be able to tell whether the backdrop loaded
+    PASS  legibility: the sim and pure layers do not know this pass exists: <TREE>/src/pure/touch-stick.js
+status changes on shared labels (PASS<->FAIL): 0

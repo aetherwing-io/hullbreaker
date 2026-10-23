@@ -1,0 +1,312 @@
+{
+  "tool": "tools/playtest/touch-proof.mjs",
+  "mutate": "ignore-cancel",
+  "baseUrl": "(ephemeral)",
+  "ms": 293601,
+  "passed": 37,
+  "failed": 1,
+  "results": [
+    {
+      "view": "landscape/frozen",
+      "name": "the two-thumb deck is the touch default (legacy deck stays hidden)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "JUMP is drawn where the pure layout hit-tests it",
+      "pass": true,
+      "detail": "rect {\"x\":717.25,\"y\":273,\"width\":85.796875,\"height\":85.796875,\"top\":273,\"right\":803.046875,\"bottom\":358.796875,\"left\":717.25} vs {\"cx\":760.15,\"cy\":315.9,\"r\":42.9}"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "FIRE is drawn where the pure layout hit-tests it",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbDeck computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbDeck computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbJump computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbJump computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbFire computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbFire computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbSwap computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbSwap computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbPause computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbPause computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbAuto computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbAuto computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbStick computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbStick computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbNub computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "#thumbNub computes user-select:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "canvas computes touch-action:none",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "the page refuses pinch/double-tap zoom (html touch-action pan-x pan-y)",
+      "pass": true,
+      "detail": "pan-x pan-y"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "body text selection is off in touch mode",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "3 pointers x 36 press/release orders: held set exact after all 216 steps",
+      "pass": true,
+      "detail": "deck ledger and sim keys agree"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "a second finger on JUMP is a second press; lifting one keeps JUMP held",
+      "pass": true,
+      "detail": "presses 2, held after first lift true, after both false"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "pointercancel mid-press releases every held code",
+      "pass": false,
+      "detail": "{\"deck\":[\"ArrowRight\",\"Space\",\"KeyX\"],\"keys\":{\"left\":false,\"right\":true,\"up\":false,\"down\":false,\"jump\":true,\"fire\":true,\"swap\":false}}"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "window blur mid-press releases every held code (isolated blur event)",
+      "pass": true,
+      "detail": "{\"deck\":[],\"keys\":{\"left\":false,\"right\":false,\"up\":false,\"down\":false,\"jump\":false,\"fire\":false,\"swap\":false}}"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "visibilitychange (hidden) mid-press releases every held code (synthetic hidden)",
+      "pass": true,
+      "detail": "{\"deck\":[],\"keys\":{\"left\":false,\"right\":false,\"up\":false,\"down\":false,\"jump\":false,\"fire\":false,\"swap\":false}}"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "an orientation change mid-press releases every held code",
+      "pass": true,
+      "detail": "{\"deck\":[],\"keys\":{\"left\":false,\"right\":false,\"up\":false,\"down\":false,\"jump\":false,\"fire\":false,\"swap\":false}}"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "lifting already-released fingers sends nothing back",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "PAUSE chip tap pauses (and its own lift does not resume)",
+      "pass": true,
+      "detail": "{\"state\":\"PAUSED\",\"cue\":\"TAP TO RESUME\",\"shown\":\"block\"}"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "the paused screen tells a touch player how to resume",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "a tap on the pause screen resumes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "an early tap on GAME_OVER does not skip the screen",
+      "pass": true,
+      "detail": "GAME_OVER"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "a tap on an armed GAME_OVER screen restarts the run",
+      "pass": true,
+      "detail": "{\"state\":\"PLAYING\",\"attempts\":0} (attempts before 0)"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "a double-tap on JUMP leaves visualViewport.scale at 1 (cannot fail in Chromium: see notes)",
+      "pass": true,
+      "detail": "scale 1"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "a pinch on the play surface leaves visualViewport.scale at 1",
+      "pass": true,
+      "detail": "scale 1"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "the pinch probe can see a zoom (touch-action overridden -> scale changes)",
+      "pass": true,
+      "detail": "scale 5"
+    },
+    {
+      "view": "landscape/frozen",
+      "name": "frozen page raised no errors",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "measures": {
+    "landscape/frozen": {
+      "layout": {
+        "width": 844,
+        "height": 390,
+        "short": 390,
+        "landscape": true,
+        "safe": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        },
+        "rim": 58.5,
+        "slop": 1.25,
+        "split": 379.8,
+        "stickMinX": 20,
+        "jump": {
+          "cx": 760.15,
+          "cy": 315.9,
+          "r": 42.9
+        },
+        "fire": {
+          "cx": 670.6605194837806,
+          "cy": 331.67940990459397,
+          "r": 37.05
+        },
+        "ghost": {
+          "cx": 113.1,
+          "cy": 305.025,
+          "r": 58.5
+        },
+        "swap": {
+          "x": 557.989789415054,
+          "y": 276.40765038995505,
+          "w": 44.85,
+          "h": 44.85
+        },
+        "pause": {
+          "x": 793.15,
+          "y": 54,
+          "w": 44.85,
+          "h": 44.85
+        },
+        "auto": {
+          "x": 740.3,
+          "y": 54,
+          "w": 44.85,
+          "h": 44.85
+        },
+        "cluster": {
+          "x": 557.989789415054,
+          "y": 262.275,
+          "w": 255.78521058494596,
+          "h": 115.71690990459399
+        }
+      },
+      "bookkeepingSteps": {
+        "steps": 216,
+        "bad": 0
+      },
+      "realFocusLoss": {
+        "blur": 0,
+        "vis": 0
+      },
+      "visibilityDriven": "synthetic",
+      "gestureProbe": {
+        "afterDouble": 1,
+        "afterPinch": 1,
+        "overriddenPinch": 5,
+        "overriddenDouble": 5
+      }
+    }
+  }
+}
