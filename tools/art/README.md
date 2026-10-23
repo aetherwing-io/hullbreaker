@@ -157,3 +157,57 @@ CONFIRMED when the check fails on exactly those frames.
   crop with the v2 frame for the aim it recorded; a label that times out is
   listed in `errors` and skipped. It took ~1 min per crop at DPR 1 and
   2.5-5 min per crop at DPR 2 on a 4-core host at load 25-48.
+
+## The A2 art spike (T-109): CC0 model -> toon -> pixels, judged on the real scene
+
+After the operator rejected the primitive-built v2 look (decisions.md entry
+26), the spike compares, at true size on the real game background: today's
+painted art drawn crisp (A), a professionally modelled CC0 character through
+this pipeline with a toon reduction (B), and B plus a scripted 1x tidy pass
+(D). Evidence and the operator packet: `reports/tasks/T-109/spike.md`.
+Nothing here is loaded by the game.
+
+    /opt/hb-art/bin/python -I tools/art/spike/fetch_cc0.py                  # CC0 sources, sha256-checked
+    node tools/art/spike/scene_capture.mjs --view desktop                   # real scene + today's art in it
+    node tools/art/spike/scene_capture.mjs --view phone
+    /opt/hb-art/bin/python -I tools/art/spike/crisp.py --ppt <p> --out tools/art/build/spike/a-<view>
+    /opt/hb-art/bin/python -I tools/art/spike/v3_render.py --ppt <p> --out tools/art/build/spike/b-<view>
+    /opt/hb-art/bin/python -I tools/art/spike/v3_post.py --src tools/art/build/spike/b-<view> --out tools/art/build/spike/post-<view>
+    /opt/hb-art/bin/python -I tools/art/spike/wasp_v3.py --ppt <p> --out tools/art/build/spike/wasp-<view>
+    /opt/hb-art/bin/python -I tools/art/spike/compose.py --view <view>      # sheets -> reports/tasks/T-109/spike/
+    /opt/hb-art/bin/python -I tools/art/spike/measure.py --view <view>      # numbers -> measure-<view>.json
+    /opt/hb-art/bin/python -I tools/art/spike/packet.py
+
+`<p>` is the device px per tile `scene_capture.mjs` measured (desktop
+1280x720: 16.24; phone frame: 2 x 11.70 = 23.39).
+
+| Script | Role |
+|---|---|
+| `spike/cc0.json`, `fetch_cc0.py` | the CC0 sources (author, page, licence, sha256, members used); downloads into git-ignored `build/cc0/` |
+| `spike/scene_capture.mjs` | the real scene: raises `preload.js`'s boot budget at the ROUTE layer so every atlas loads on this slow host, freezes the scroll/hostiles/player each frame from a rAF hook, hides RIG by moving his group to render layer 31, screenshots the RIG-free frame and today's RIG per pose, records live projections |
+| `spike/crisp.py` | candidate A: today's atlases + gun cutout + accent plates assembled like `src/render/player.js`, area-downsampled once to device px, 50% alpha cut, unlit |
+| `spike/v3_render.py` | candidate B render: Irondust's CC0 soldier + quaternius' CC0 Bullpup on the sim's shot line, analytic IK with a reach search (a hand that cannot reach the gun is a build error), data passes in Cycles at 8x |
+| `spike/v3_post.py` | B and D: families from texture zones and bone regions, 4-tone toon from the game's key light, majority reduction, depth lines, ink outline; D adds the scripted tidy rules |
+| `spike/wasp_v3.py` | the wasp from MikeMoon's CC0 rigged hornet through the same reduction |
+| `spike/compose.py`, `measure.py`, `packet.py` | true-size composites on the captured frames, the numbers, the packet |
+
+Limitations, stated plainly:
+- Candidates are composited 1 texel = 1 device px. Today's renderer does not
+  draw sprites that way (lit material + ACES, mipmaps, a 1.25x desktop canvas
+  downsampled by the browser, 2.14-2.2x on phones); A shows how much of
+  today's softness is that path. B/D in the game need a phase-B draw path
+  (unlit, nearest, snapped to the device grid, density per device).
+- The phone frame is the FAR shot at the phone density, centre-cropped to
+  844x390 CSS: the in-flight T-107 lens is that crop optically; its small
+  camera lift is not modelled. The capture's canvas ratio (2.139) is close to
+  a real 844x390 phone's (2.2), not equal.
+- B's look is bounded by its base mesh: a slim CC0 cyber-soldier exaggerated
+  in code (bigger helmet, hands and gun; shorter legs), not a model designed
+  for a 32 px marine. The sim's hip-height shot line (53% of RIG's height)
+  forces a hip hold; boards 01/13 hold the rifle at the shoulder.
+- Reproducibility, on this host only: two clean B/D builds at desktop
+  density gave byte-identical final PNGs (14/14) and pixel-identical Cycles
+  passes (the pass PNG files differ only in Blender's embedded render
+  metadata). Cycles runs at 1 spp, fixed seed, AO 16 samples; another CPU or
+  Blender build may move pixels — compare hashes before trusting a sheet
+  built elsewhere.
