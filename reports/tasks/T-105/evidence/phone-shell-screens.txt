@@ -1,0 +1,457 @@
+# phone-shell --only screens (+ safe, partial) — base = main 08e5db1 export; branch = pre-merge branch. The branch run's notch section was cut by the host (browser closed); the safe-area numbers come from phone-shell-rest.txt.
+
+===== base-full.log
+  boot landscape-844x390?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr2: 26052 ms
+  measure [landscape-844x390/screens] resumedFromPause = "PLAYING"
+  measure [landscape-844x390/screens] restartedFromGameOver = "PLAYING"
+PASS [landscape-844x390/screens] the walk raised no page errors
+PASS [landscape-844x390/screens] title: every visible text box fits its container and the viewport minus safe areas (9 boxes)
+FAIL [landscape-844x390/screens] title: no keyboard-only copy on a touch device — "PRESS", "KEY", "WASD", "ARROWS", "SPACE", "ESC", "J / X", "P / ESC"
+PASS [landscape-844x390/screens] play: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [landscape-844x390/screens] play: no keyboard-only copy on a touch device
+FAIL [landscape-844x390/screens] loot: every visible text box fits its container and the viewport minus safe areas (31 boxes) — #hudMetricC "0m": overlaps "WEAPON ACQUIRED // MARK " (#lootReveal > div.loot-copy > div.loot-kicker) by 11.7 x 8.7 px | #hudMetricCLabel "FORWARD": overlaps "HYDRA STARFIRE BLOOM" (#lootReveal > div.loot-copy > div.loot-name) by 17.0 x 5.3 px
+PASS [landscape-844x390/screens] loot: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] death: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [landscape-844x390/screens] death: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] pause: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+FAIL [landscape-844x390/screens] pause: no keyboard-only copy on a touch device — "ESC", "esc", "P / ESC", "p / esc", "R", "Q", "H"
+FAIL [landscape-844x390/screens] gameover: every visible text box fits its container and the viewport minus safe areas (30 boxes) — #thumbModal "TAP TO CLIMB AGAIN": overlaps "GET BACK UP THERE." (#ovBody > p) by 162.8 x 10.7 px | #ovBody > p.dim "r to climb again": clipped (overflow) by #overlay (text 343.8..500.3 x 379.7..397.7, box 0.0..844.0 x 0.0..390.0); leaves the viewport minus safe area (text 343.8..500.3 x 379.7..397.7 vs 0..844 x 0..390) | #ovTitle::before "CARRIER COLLAPSED // LINK SEVERED": host of ::before text leaves the viewport minus safe area (221.3..622.7 x -12.7..46.7)
+FAIL [landscape-844x390/screens] gameover: no keyboard-only copy on a touch device — "R", "Q", "r"
+FAIL [landscape-844x390/screens] finale: every visible text box fits its container and the viewport minus safe areas (26 boxes) — #hudPowerState "COLD": overlaps "CROWN WARDEN // INTERLOC" (#finaleTitle) by 22.8 x 6.4 px | #hudMetricC "0m": overlaps "BREAK FOUR SEALS · FIRE " (#finaleMeta) by 11.7 x 3.7 px
+PASS [landscape-844x390/screens] finale: no keyboard-only copy on a touch device
+FAIL [landscape-844x390/screens] victory: every visible text box fits its container and the viewport minus safe areas (22 boxes) — #thumbModal "TAP TO CLIMB AGAIN": overlaps "break it again ·" (#ovPanel > div.panel.result-panel > p.keys) by 91.5 x 2.7 px
+FAIL [landscape-844x390/screens] victory: no keyboard-only copy on a touch device — "R", "Q"
+PASS [landscape-844x390/screens] failsafe: every visible text box fits its container and the viewport minus safe areas (6 boxes)
+FAIL [landscape-844x390/screens] failsafe: no keyboard-only copy on a touch device — "Press", "click"
+  measure [landscape-844x390/screens] hudBudget.play = {"areaPct":13.88,"central":true,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":7,"right":310,"bottom":123,"w":300,"h":116},"areaPct":10.57,"central":true},{"sel":"#hudObjectivePanel","rect":{"left":514,"top":7,"right":834,"bottom":41,"w":320,"h":34},"areaPct":3.31,"central":false}],"centralRegion":{"left":168.8,"right":675.2,"top":78,"bottom":312}}
+FAIL [landscape-844x390/screens] play: HUD panels cover <= 10% of 844x390 (13.88%) — #hudRigPanel 10.57%, #hudObjectivePanel 3.31%
+FAIL [landscape-844x390/screens] play: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel {"left":10,"top":7,"right":310,"bottom":123,"w":300,"h":116}
+  measure [landscape-844x390/screens] hudBudget.death = {"areaPct":13.88,"central":true,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":7,"right":310,"bottom":123,"w":300,"h":116},"areaPct":10.57,"central":true},{"sel":"#hudObjectivePanel","rect":{"left":514,"top":7,"right":834,"bottom":41,"w":320,"h":34},"areaPct":3.31,"central":false}],"centralRegion":{"left":168.8,"right":675.2,"top":78,"bottom":312}}
+FAIL [landscape-844x390/screens] death: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel {"left":10,"top":7,"right":310,"bottom":123,"w":300,"h":116}
+  measure [landscape-844x390/screens] hudBudget.finale = {"areaPct":24.98,"central":true,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":7,"right":310,"bottom":123,"w":300,"h":116},"areaPct":10.57,"central":true},{"sel":"#hudObjectivePanel","rect":{"left":514,"top":7,"right":834,"bottom":41,"w":320,"h":34},"areaPct":3.31,"central":false},{"sel":"#finale","rect":{"left":162,"top":52,"right":682,"bottom":122.3,"w":520,"h":70.3},"areaPct":11.11,"cent…
+FAIL [landscape-844x390/screens] finale: HUD panels cover <= 10% of 844x390 (24.98%) — #hudRigPanel 10.57%, #hudObjectivePanel 3.31%, #finale 11.11%
+FAIL [landscape-844x390/screens] finale: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel {"left":10,"top":7,"right":310,"bottom":123,"w":300,"h":116}, #finale {"left":162,"top":52,"right":682,"bottom":122.3,"w":520,"h":70.3}
+  measure [landscape-844x390/screens] hudBudget.loot = {"areaPct":21.35,"central":true,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":7,"right":310,"bottom":123,"w":300,"h":116},"areaPct":10.57,"central":true},{"sel":"#hudObjectivePanel","rect":{"left":514,"top":7,"right":834,"bottom":41,"w":320,"h":34},"areaPct":3.31,"central":false},{"sel":"#lootReveal","rect":{"left":267,"top":78,"right":577,"bottom":157.3,"w":310,"h":79.3},"areaPct":7.47,"c…
+FAIL [landscape-844x390/screens] loot: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel {"left":10,"top":7,"right":310,"bottom":123,"w":300,"h":116}, #lootReveal {"left":267,"top":78,"right":577,"bottom":157.3,"w":310,"h":79.3}
+  measure [landscape-844x390/screens] screens = {"title":{"textBoxes":9,"keyboardHits":["PRESS","KEY","WASD","ARROWS","SPACE","ESC","J / X","P / ESC","PAUSE P"]},"play":{"textBoxes":24,"keyboardHits":[]},"loot":{"textBoxes":31,"keyboardHits":[]},"death":{"textBoxes":24,"keyboardHits":[]},"pause":{"textBoxes":24,"keyboardHits":["ESC","esc","P / ESC","p / esc","R","Q","H"]},"gameover":{"textBoxes":30,"keyboardHits":["R","Q","r"]},"finale":{"textB…
+  boot landscape-932x430?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr2: 59440 ms
+  measure [landscape-932x430/screens] resumedFromPause = "PLAYING"
+  measure [landscape-932x430/screens] restartedFromGameOver = "PLAYING"
+PASS [landscape-932x430/screens] the walk raised no page errors
+PASS [landscape-932x430/screens] title: every visible text box fits its container and the viewport minus safe areas (9 boxes)
+FAIL [landscape-932x430/screens] title: no keyboard-only copy on a touch device — "PRESS", "KEY", "WASD", "ARROWS", "SPACE", "ESC", "J / X", "P / ESC"
+PASS [landscape-932x430/screens] play: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [landscape-932x430/screens] play: no keyboard-only copy on a touch device
+PASS [landscape-932x430/screens] loot: every visible text box fits its container and the viewport minus safe areas (31 boxes)
+PASS [landscape-932x430/screens] loot: no keyboard-only copy on a touch device
+PASS [landscape-932x430/screens] death: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [landscape-932x430/screens] death: no keyboard-only copy on a touch device
+PASS [landscape-932x430/screens] pause: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+FAIL [landscape-932x430/screens] pause: no keyboard-only copy on a touch device — "ESC", "esc", "P / ESC", "p / esc", "R", "Q", "H"
+PASS [landscape-932x430/screens] gameover: every visible text box fits its container and the viewport minus safe areas (30 boxes)
+FAIL [landscape-932x430/screens] gameover: no keyboard-only copy on a touch device — "R", "Q", "r"
+FAIL [landscape-932x430/screens] finale: every visible text box fits its container and the viewport minus safe areas (24 boxes) — #hudMetricC "0m": overlaps "BREAK FOUR SEALS · FIRE " (#finaleMeta) by 2.2 x 3.7 px
+PASS [landscape-932x430/screens] finale: no keyboard-only copy on a touch device
+FAIL [landscape-932x430/screens] victory: every visible text box fits its container and the viewport minus safe areas (22 boxes) — #thumbModal "TAP TO CLIMB AGAIN": overlaps "break it again ·" (#ovPanel > div.panel.result-panel > p.keys) by 51.9 x 7.3 px
+FAIL [landscape-932x430/screens] victory: no keyboard-only copy on a touch device — "R", "Q"
+PASS [landscape-932x430/screens] failsafe: every visible text box fits its container and the viewport minus safe areas (6 boxes)
+FAIL [landscape-932x430/screens] failsafe: no keyboard-only copy on a touch device — "Press", "click"
+  measure [landscape-932x430/screens] hudBudget.play = {"areaPct":11.4,"central":true,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":7,"right":310,"bottom":123,"w":300,"h":116},"areaPct":8.68,"central":true},{"sel":"#hudObjectivePanel","rect":{"left":602,"top":7,"right":922,"bottom":41,"w":320,"h":34},"areaPct":2.71,"central":false}],"centralRegion":{"left":186.4,"right":745.6,"top":86,"bottom":344}}
+FAIL [landscape-932x430/screens] play: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel {"left":10,"top":7,"right":310,"bottom":123,"w":300,"h":116}
+  measure [landscape-932x430/screens] hudBudget.death = {"areaPct":11.4,"central":true,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":7,"right":310,"bottom":123,"w":300,"h":116},"areaPct":8.68,"central":true},{"sel":"#hudObjectivePanel","rect":{"left":602,"top":7,"right":922,"bottom":41,"w":320,"h":34},"areaPct":2.71,"central":false}],"centralRegion":{"left":186.4,"right":745.6,"top":86,"bottom":344}}
+FAIL [landscape-932x430/screens] death: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel {"left":10,"top":7,"right":310,"bottom":123,"w":300,"h":116}
+  measure [landscape-932x430/screens] hudBudget.finale = {"areaPct":17.81,"central":true,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":7,"right":310,"bottom":123,"w":300,"h":116},"areaPct":8.68,"central":true},{"sel":"#finale","rect":{"left":206,"top":52,"right":726,"bottom":122.3,"w":520,"h":70.3},"areaPct":9.12,"central":true}],"centralRegion":{"left":186.4,"right":745.6,"top":86,"bottom":344}}
+FAIL [landscape-932x430/screens] finale: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel {"left":10,"top":7,"right":310,"bottom":123,"w":300,"h":116}, #finale {"left":206,"top":52,"right":726,"bottom":122.3,"w":520,"h":70.3}
+  measure [landscape-932x430/screens] hudBudget.loot = {"areaPct":17.53,"central":true,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":7,"right":310,"bottom":123,"w":300,"h":116},"areaPct":8.68,"central":true},{"sel":"#hudObjectivePanel","rect":{"left":602,"top":7,"right":922,"bottom":41,"w":320,"h":34},"areaPct":2.71,"central":false},{"sel":"#lootReveal","rect":{"left":311,"top":78,"right":621,"bottom":157.3,"w":310,"h":79.3},"areaPct":6.13,"ce…
+FAIL [landscape-932x430/screens] loot: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel {"left":10,"top":7,"right":310,"bottom":123,"w":300,"h":116}, #lootReveal {"left":311,"top":78,"right":621,"bottom":157.3,"w":310,"h":79.3}
+  measure [landscape-932x430/screens] screens = {"title":{"textBoxes":9,"keyboardHits":["PRESS","KEY","WASD","ARROWS","SPACE","ESC","J / X","P / ESC","PAUSE P"]},"play":{"textBoxes":24,"keyboardHits":[]},"loot":{"textBoxes":31,"keyboardHits":[]},"death":{"textBoxes":24,"keyboardHits":[]},"pause":{"textBoxes":24,"keyboardHits":["ESC","esc","P / ESC","p / esc","R","Q","H"]},"gameover":{"textBoxes":30,"keyboardHits":["R","Q","r"]},"finale":{"textB…
+  boot landscape-667x375?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr2: 22669 ms
+  measure [landscape-667x375/screens] resumedFromPause = "PLAYING"
+  measure [landscape-667x375/screens] restartedFromGameOver = "PLAYING"
+PASS [landscape-667x375/screens] the walk raised no page errors
+PASS [landscape-667x375/screens] title: every visible text box fits its container and the viewport minus safe areas (9 boxes)
+FAIL [landscape-667x375/screens] title: no keyboard-only copy on a touch device — "PRESS", "KEY", "WASD", "ARROWS", "SPACE", "ESC", "J / X", "P / ESC"
+PASS [landscape-667x375/screens] play: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [landscape-667x375/screens] play: no keyboard-only copy on a touch device
+FAIL [landscape-667x375/screens] loot: every visible text box fits its container and the viewport minus safe areas (31 boxes) — #hudMetricC "0m": overlaps "WEAPON ACQUIRED // MARK " (#lootReveal > div.loot-copy > div.loot-kicker) by 11.6 x 8.7 px | #hudMetricCLabel "FORWARD": overlaps "HYDRA STARFIRE BLOOM" (#lootReveal > div.loot-copy > div.loot-name) by 24.6 x 5.3 px
+PASS [landscape-667x375/screens] loot: no keyboard-only copy on a touch device
+FAIL [landscape-667x375/screens] death: every visible text box fits its container and the viewport minus safe areas (24 boxes) — #hudObjective "HULL FALLBACK · LOWER ROUTE · KEEP MOVIN": clipped (overflow) by #hudObjective (text 411.5..654.8 x 22.0..31.0, box 411.5..648.5 x 23.0..31.0); truncated inside itself (scrollWidth 243 > clientWidth 237, text-overflow ellipsis)
+PASS [landscape-667x375/screens] death: no keyboard-only copy on a touch device
+PASS [landscape-667x375/screens] pause: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+FAIL [landscape-667x375/screens] pause: no keyboard-only copy on a touch device — "ESC", "esc", "P / ESC", "p / esc", "R", "Q", "H"
+FAIL [landscape-667x375/screens] gameover: every visible text box fits its container and the viewport minus safe areas (30 boxes) — #thumbModal "TAP TO CLIMB AGAIN": overlaps "GET BACK UP THERE." (#ovBody > p) by 162.8 x 10.8 px | #ovBody > p.dim "r to climb again": clipped (overflow) by #overlay (text 255.3..411.8 x 372.2..390.2, box 0.0..667.0 x 0.0..375.0); leaves the viewport minus safe area (text 255.3..411.8 x 372.2..390.2 vs 0..667 x 0..375) | #ovTitle::before "CARRIER COLLAPSED // LINK SEVERED": host of ::before text leaves the viewport minus safe area (132.8..534.2 x -20.2..39.2)
+FAIL [landscape-667x375/screens] gameover: no keyboard-only copy on a touch device — "R", "Q", "r"
+FAIL [landscape-667x375/screens] finale: every visible text box fits its container and the viewport minus safe areas (24 boxes) — #hudPowerState "COLD": overlaps "CROWN WARDEN // INTERLOC" (#finaleTitle) by 22.8 x 6.4 px | #hudMetricB "1/6": overlaps "BREAK FOUR SEALS · FIRE " (#finaleMeta) by 11.8 x 3.7 px | #hudMetricC "0m": overlaps "BREAK FOUR SEALS · FIRE " (#finaleMeta) by 11.6 x 3.7 px
+PASS [landscape-667x375/screens] finale: no keyboard-only copy on a touch device
+FAIL [landscape-667x375/screens] victory: every visible text box fits its container and the viewport minus safe areas (22 boxes) — #thumbModal "TAP TO CLIMB AGAIN": overlaps "FULL RUN TELEMETRY" (#ovPanel > div.panel.result-panel > details.result-details > summary) by 42.8 x 9.9 px | div.panel.result-panel > div.result-strip > span > b "0:00.0": overlaps "0" (div.panel.result-panel > div.result-strip > span > b) by 11.5 x 19.0 px | #ovPanel > div.panel.result-panel > p.keys "break it again ·": needs scrolling in #overlay (text 170.3..323.3 x 354.9..380.9, box 0.0..667.0 x 0.0..375.0); leaves the viewport minus safe area (text 170.3..323.3 x 354.9..380.9 vs 0..667 x 0..375) | #ovTitle::before "MERIDIAN CROWN // LINK SECURED": host of ::before text leaves the viewport minus safe area (33.3..380.2 x -10.4..105.4)
+FAIL [landscape-667x375/screens] victory: no keyboard-only copy on a touch device — "R", "Q"
+PASS [landscape-667x375/screens] failsafe: every visible text box fits its container and the viewport minus safe areas (6 boxes)
+FAIL [landscape-667x375/screens] failsafe: no keyboard-only copy on a touch device — "Press", "click"
+  measure [landscape-667x375/screens] hudBudget.play = {"areaPct":14.58,"central":true,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":7,"right":250.1,"bottom":123,"w":240.1,"h":116},"areaPct":11.14,"central":true},{"sel":"#hudObjectivePanel","rect":{"left":403.5,"top":7,"right":657,"bottom":41,"w":253.5,"h":34},"areaPct":3.45,"central":false}],"centralRegion":{"left":133.4,"right":533.6,"top":75,"bottom":300}}
+FAIL [landscape-667x375/screens] play: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel {"left":10,"top":7,"right":250.1,"bottom":123,"w":240.1,"h":116}
+  measure [landscape-667x375/screens] hudBudget.death = {"areaPct":14.58,"central":true,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":7,"right":250.1,"bottom":123,"w":240.1,"h":116},"areaPct":11.14,"central":true},{"sel":"#hudObjectivePanel","rect":{"left":403.5,"top":7,"right":657,"bottom":41,"w":253.5,"h":34},"areaPct":3.45,"central":false}],"centralRegion":{"left":133.4,"right":533.6,"top":75,"bottom":300}}
+FAIL [landscape-667x375/screens] death: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel {"left":10,"top":7,"right":250.1,"bottom":123,"w":240.1,"h":116}
+  measure [landscape-667x375/screens] hudBudget.finale = {"areaPct":25.75,"central":true,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":7,"right":250.1,"bottom":123,"w":240.1,"h":116},"areaPct":11.14,"central":true},{"sel":"#finale","rect":{"left":73.5,"top":52,"right":593.5,"bottom":122.3,"w":520,"h":70.3},"areaPct":14.62,"central":true}],"centralRegion":{"left":133.4,"right":533.6,"top":75,"bottom":300}}
+FAIL [landscape-667x375/screens] finale: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel {"left":10,"top":7,"right":250.1,"bottom":123,"w":240.1,"h":116}, #finale {"left":73.5,"top":52,"right":593.5,"bottom":122.3,"w":520,"h":70.3}
+  measure [landscape-667x375/screens] hudBudget.loot = {"areaPct":24.41,"central":true,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":7,"right":250.1,"bottom":123,"w":240.1,"h":116},"areaPct":11.14,"central":true},{"sel":"#hudObjectivePanel","rect":{"left":403.5,"top":7,"right":657,"bottom":41,"w":253.5,"h":34},"areaPct":3.45,"central":false},{"sel":"#lootReveal","rect":{"left":178.5,"top":78,"right":488.5,"bottom":157.3,"w":310,"h":79.3},"area…
+FAIL [landscape-667x375/screens] loot: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel {"left":10,"top":7,"right":250.1,"bottom":123,"w":240.1,"h":116}, #lootReveal {"left":178.5,"top":78,"right":488.5,"bottom":157.3,"w":310,"h":79.3}
+  measure [landscape-667x375/screens] screens = {"title":{"textBoxes":9,"keyboardHits":["PRESS","KEY","WASD","ARROWS","SPACE","ESC","J / X","P / ESC","PAUSE P"]},"play":{"textBoxes":24,"keyboardHits":[]},"loot":{"textBoxes":31,"keyboardHits":[]},"death":{"textBoxes":24,"keyboardHits":[]},"pause":{"textBoxes":24,"keyboardHits":["ESC","esc","P / ESC","p / esc","R","Q","H"]},"gameover":{"textBoxes":30,"keyboardHits":["R","Q","r"]},"finale":{"textB…
+  boot portrait-390x844?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr2: 59344 ms
+  measure [portrait-390x844/screens] resumedFromPause = "PLAYING"
+  measure [portrait-390x844/screens] restartedFromGameOver = "PLAYING"
+PASS [portrait-390x844/screens] the walk raised no page errors
+FAIL [portrait-390x844/screens] title: every visible text box fits its container and the viewport minus safe areas (8 boxes) — #shellText > h1 "HULLBREAKER": clipped (overflow) by #shell (text 23.4..473.3 x 129.0..186.0, box 0.0..390.0 x 0.0..844.0); leaves the viewport minus safe area (text 23.4..473.3 x 134.7..180.3 vs 0..390 x 0..844)
+FAIL [portrait-390x844/screens] title: no keyboard-only copy on a touch device — "PRESS", "KEY", "WASD", "ARROWS", "SPACE", "ESC", "J / X", "P / ESC"
+PASS [portrait-390x844/screens] play: every visible text box fits its container and the viewport minus safe areas (26 boxes)
+PASS [portrait-390x844/screens] play: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] loot: every visible text box fits its container and the viewport minus safe areas (32 boxes)
+FAIL [portrait-390x844/screens] loot: no keyboard-only copy on a touch device — "C"
+PASS [portrait-390x844/screens] death: every visible text box fits its container and the viewport minus safe areas (26 boxes)
+FAIL [portrait-390x844/screens] death: no keyboard-only copy on a touch device — "C"
+PASS [portrait-390x844/screens] pause: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+FAIL [portrait-390x844/screens] pause: no keyboard-only copy on a touch device — "ESC", "esc", "P / ESC", "p / esc", "R", "Q", "H"
+PASS [portrait-390x844/screens] gameover: every visible text box fits its container and the viewport minus safe areas (30 boxes)
+FAIL [portrait-390x844/screens] gameover: no keyboard-only copy on a touch device — "R", "Q", "r"
+FAIL [portrait-390x844/screens] finale: every visible text box fits its container and the viewport minus safe areas (27 boxes) — #hudMetricA "3m": overlaps "CROWN WARDEN // INTERLOC" (#finaleTitle) by 11.7 x 1.8 px | #hudMetricALabel "ALT": overlaps "CROWN WARDEN // INTERLOC" (#finaleTitle) by 9.7 x 5.5 px | #hudMetricB "1/6": overlaps "CROWN WARDEN // INTERLOC" (#finaleTitle) by 17.5 x 1.8 px | #hudMetricBLabel "WAVE": overlaps "CROWN WARDEN // INTERLOC" (#finaleTitle) by 12.9 x 5.5 px
+PASS [portrait-390x844/screens] finale: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] victory: every visible text box fits its container and the viewport minus safe areas (20 boxes)
+FAIL [portrait-390x844/screens] victory: no keyboard-only copy on a touch device — "R", "Q"
+PASS [portrait-390x844/screens] failsafe: every visible text box fits its container and the viewport minus safe areas (6 boxes)
+FAIL [portrait-390x844/screens] failsafe: no keyboard-only copy on a touch device — "Press", "click"
+  measure [portrait-390x844/screens] screens = {"title":{"textBoxes":8,"keyboardHits":["PRESS","KEY","WASD","ARROWS","SPACE","ESC","J / X","P / ESC","PAUSE P"]},"play":{"textBoxes":26,"keyboardHits":[]},"loot":{"textBoxes":32,"keyboardHits":["C"]},"death":{"textBoxes":26,"keyboardHits":["C"]},"pause":{"textBoxes":24,"keyboardHits":["ESC","esc","P / ESC","p / esc","R","Q","H"]},"gameover":{"textBoxes":30,"keyboardHits":["R","Q","r"]},"finale":{…
+  boot desktop-1280x720?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr1: 42801 ms
+  measure [desktop-1280x720/screens] resumedFromPause = "PLAYING"
+  measure [desktop-1280x720/screens] restartedFromGameOver = "PLAYING"
+PASS [desktop-1280x720/screens] the walk raised no page errors
+PASS [desktop-1280x720/screens] title: every visible text box fits its container and the viewport minus safe areas (9 boxes)
+PASS [desktop-1280x720/screens] play: every visible text box fits its container and the viewport minus safe areas (21 boxes)
+PASS [desktop-1280x720/screens] loot: every visible text box fits its container and the viewport minus safe areas (28 boxes)
+PASS [desktop-1280x720/screens] death: every visible text box fits its container and the viewport minus safe areas (21 boxes)
+PASS [desktop-1280x720/screens] pause: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [desktop-1280x720/screens] gameover: every visible text box fits its container and the viewport minus safe areas (30 boxes)
+PASS [desktop-1280x720/screens] finale: every visible text box fits its container and the viewport minus safe areas (23 boxes)
+PASS [desktop-1280x720/screens] victory: every visible text box fits its container and the viewport minus safe areas (22 boxes)
+PASS [desktop-1280x720/screens] failsafe: every visible text box fits its container and the viewport minus safe areas (6 boxes)
+PASS [desktop-1280x720/screens] title: desktop still shows the keyboard instructions — "PRESS", "KEY", "WASD", "ARROWS", "SPACE", "ESC"
+PASS [desktop-1280x720/screens] pause: desktop still shows the keyboard instructions — "WASD", "ARROWS", "SPACE", "ESC", "ESC", "esc"
+PASS [desktop-1280x720/screens] gameover: desktop still shows the keyboard instructions — "WASD", "ARROWS", "SPACE", "ESC", "J/X", "R"
+  measure [desktop-1280x720/screens] screens = {"title":{"textBoxes":9,"keyboardHits":["PRESS","KEY","WASD","ARROWS","SPACE","ESC","J / X","P / ESC","PAUSE P"]},"play":{"textBoxes":21,"keyboardHits":["WASD","ARROWS","SPACE","ESC","J/X","SWAP C"]},"loot":{"textBoxes":28,"keyboardHits":["WASD","ARROWS","SPACE","ESC","J/X","C","SWAP C"]},"death":{"textBoxes":21,"keyboardHits":["WASD","ARROWS","SPACE","ESC","J/X","C","SWAP C"]},"pause":{"textBoxes…
+  boot landscape-844x390?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr2 insets:cdp: 30196 ms
+  measure [landscape-844x390/notch] notch-resumedFromPause = "PLAYING"
+  measure [landscape-844x390/notch] notch-restartedFromGameOver = "PLAYING"
+PASS [landscape-844x390/notch] the walk raised no page errors
+FAIL [landscape-844x390/notch] title (notch): every visible text box fits its container and the viewport minus safe areas (9 boxes) — #shellText > h1 "HULLBREAKER": leaves the viewport minus safe area (text 42.2..566.6 x 93.0..146.2 vs 47..797 x 0..369) | #shellText > p.tag "THE MERIDIAN IS AWAKE. THE WORLD TURNS U": leaves the viewport minus safe area (text 42.2..411.0 x 163.8..193.8 vs 47..797 x 0..369) | #shellText > p.prompt "PRESS ANY KEY": leaves the viewport minus safe area (text 42.2..218.1 x 224.8..242.8 vs 47..797 x 0..369) | #shellFoot > p > b "MOVE": leaves the viewport minus safe area (text 42.2..72.2 x 335.9..348.9 vs 47..797 x 0..369)
+FAIL [landscape-844x390/notch] title (notch): no keyboard-only copy on a touch device — "PRESS", "KEY", "WASD", "ARROWS", "SPACE", "ESC", "J / X", "P / ESC"
+FAIL [landscape-844x390/notch] title (notch): every control and HUD box sits inside the insets (3 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; #shellText {"left":42.2,"top":93.6,"right":438.9,"bottom":242.8,"w":396.7,"h":149.3} | #shellFoot {"left":42.2,"top":332.9,"right":633,"bottom":372.5,"w":590.8,"h":39.6} | #shellText h1 {"left":42.2,"top":93.6,"right":438.9,"bottom":146.8,"w":396.7,"h":53.2}
+PASS [landscape-844x390/notch] play (notch): every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [landscape-844x390/notch] play (notch): no keyboard-only copy on a touch device
+PASS [landscape-844x390/notch] play (notch): every control and HUD box sits inside the insets (10 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; 
+FAIL [landscape-844x390/notch] loot (notch): every visible text box fits its container and the viewport minus safe areas (31 boxes) — #hudMetricC "0m": overlaps "WEAPON ACQUIRED // MARK " (#lootReveal > div.loot-copy > div.loot-kicker) by 11.7 x 8.7 px | #hudMetricCLabel "FORWARD": overlaps "HYDRA STARFIRE BLOOM" (#lootReveal > div.loot-copy > div.loot-name) by 24.6 x 5.3 px
+PASS [landscape-844x390/notch] loot (notch): no keyboard-only copy on a touch device
+PASS [landscape-844x390/notch] loot (notch): every control and HUD box sits inside the insets (11 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; 
+PASS [landscape-844x390/notch] death (notch): every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [landscape-844x390/notch] death (notch): no keyboard-only copy on a touch device
+PASS [landscape-844x390/notch] death (notch): every control and HUD box sits inside the insets (10 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; 
+PASS [landscape-844x390/notch] pause (notch): every visible text box fits its container and the viewport minus safe areas (24 boxes)
+FAIL [landscape-844x390/notch] pause (notch): no keyboard-only copy on a touch device — "ESC", "esc", "P / ESC", "p / esc", "R", "Q", "H"
+PASS [landscape-844x390/notch] pause (notch): every control and HUD box sits inside the insets (5 boxes, 4 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; 
+FAIL [landscape-844x390/notch] gameover (notch): every visible text box fits its container and the viewport minus safe areas (30 boxes) — #thumbModal "TAP TO CLIMB AGAIN": overlaps "MERIDIAN CUT THE TRANSMI" (#ovBody > p) by 162.8 x 8.7 px | #ovBody > p.dim "r to climb again": clipped (overflow) by #overlay (text 343.8..500.3 x 379.7..397.7, box 0.0..844.0 x 0.0..390.0); leaves the viewport minus safe area (text 343.8..500.3 x 379.7..397.7 vs 47..797 x 0..369) | #ovTitle::before "CARRIER COLLAPSED // LINK SEVERED": host of ::before text leaves the viewport minus safe area (221.3..622.7 x -12.7..46.7)
+FAIL [landscape-844x390/notch] gameover (notch): no keyboard-only copy on a touch device — "R", "Q", "r"
+FAIL [landscape-844x390/notch] gameover (notch): every control and HUD box sits inside the insets (5 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; #ovTitle {"left":221.3,"top":-12.7,"right":622.7,"bottom":46.7,"w":401.5,"h":59.4} | #ovBody {"left":275.3,"top":315.7,"right":568.7,"bottom":402.7,"w":293.4,"h":87}
+FAIL [landscape-844x390/notch] finale (notch): every visible text box fits its container and the viewport minus safe areas (24 boxes) — #hudPowerState "COLD": overlaps "CROWN WARDEN // INTERLOC" (#finaleTitle) by 22.8 x 6.4 px | #hudMetricC "0m": overlaps "BREAK FOUR SEALS · FIRE " (#finaleMeta) by 11.7 x 3.7 px
+PASS [landscape-844x390/notch] finale (notch): no keyboard-only copy on a touch device
+PASS [landscape-844x390/notch] finale (notch): every control and HUD box sits inside the insets (9 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; 
+FAIL [landscape-844x390/notch] victory (notch): every visible text box fits its container and the viewport minus safe areas (22 boxes) — #ovTitle "SIGNAL SENT": leaves the viewport minus safe area (text 42.2..335.1 x 36.6..144.5 vs 47..797 x 0..369) | #ovPanel > div.panel.result-panel > p.keys > b "R": leaves the viewport minus safe area (text 179.2..186.5 x 359.3..372.3 vs 47..797 x 0..369) | #ovPanel > div.panel.result-panel > p.keys "break it again ·": leaves the viewport minus safe area (text 186.5..434.1 x 359.3..372.3 vs 47..797 x 0..369) | #ovPanel > div.panel.result-panel > p.keys > b "Q": leaves the viewport minus safe area (text 332.1..339.4 x 359.3..372.3 vs 47..797 x 0..369)
+FAIL [landscape-844x390/notch] victory (notch): no keyboard-only copy on a touch device — "R", "Q"
+FAIL [landscape-844x390/notch] victory (notch): every control and HUD box sits inside the insets (5 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; #ovTitle {"left":42.2,"top":13.6,"right":481.1,"bottom":145.5,"w":438.9,"h":131.9} | #ovBody {"left":42.2,"top":156.5,"right":481.1,"bottom":226.3,"w":438.9,"h":69.8} | #ovPanel {"left":42.2,"top":241.3,"right":481.1,"bottom":384.3,"w":438.9,"h":143} | #ovPanel .panel {"left":42.2,"top":241.3,"right":481.1,"bottom":384.3,"w":438.9,"h":143}
+PASS [landscape-844x390/notch] failsafe (notch): every visible text box fits its container and the viewport minus safe areas (6 boxes)
+FAIL [landscape-844x390/notch] failsafe (notch): no keyboard-only copy on a touch device — "Press", "click"
+FAIL [landscape-844x390/notch] failsafe (notch): every control and HUD box sits inside the insets (7 boxes, 1 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; #ovTitle {"left":42.2,"top":13.6,"right":481.1,"bottom":145.5,"w":438.9,"h":131.9} | #ovBody {"left":42.2,"top":156.5,"right":481.1,"bottom":226.3,"w":438.9,"h":69.8} | #ovPanel {"left":42.2,"top":241.3,"right":481.1,"bottom":384.3,"w":438.9,"h":143} | #ovPanel .panel {"left":42.2,"top":241.3,"right":481.1,"bottom":384.3,"w":438.9,"h":143}
+  boot landscape-932x430?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr2 insets:cdp: 35770 ms
+  measure [landscape-932x430/notch] notch-resumedFromPause = "PLAYING"
+  measure [landscape-932x430/notch] notch-restartedFromGameOver = "PLAYING"
+PASS [landscape-932x430/notch] the walk raised no page errors
+PASS [landscape-932x430/notch] title (notch): every visible text box fits its container and the viewport minus safe areas (9 boxes)
+FAIL [landscape-932x430/notch] title (notch): no keyboard-only copy on a touch device — "PRESS", "KEY", "WASD", "ARROWS", "SPACE", "ESC", "J / X", "P / ESC"
+FAIL [landscape-932x430/notch] title (notch): every control and HUD box sits inside the insets (3 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; #shellFoot {"left":46.6,"top":371.1,"right":666.6,"bottom":410.7,"w":620,"h":39.6}
+PASS [landscape-932x430/notch] play (notch): every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [landscape-932x430/notch] play (notch): no keyboard-only copy on a touch device
+PASS [landscape-932x430/notch] play (notch): every control and HUD box sits inside the insets (10 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; 
+FAIL [landscape-932x430/notch] loot (notch): every visible text box fits its container and the viewport minus safe areas (31 boxes) — #hudMetricC "0m": overlaps "WEAPON ACQUIRED // MARK " (#lootReveal > div.loot-copy > div.loot-kicker) by 10.0 x 8.7 px | #hudMetricCLabel "FORWARD": overlaps "HYDRA STARFIRE BLOOM" (#lootReveal > div.loot-copy > div.loot-name) by 10.0 x 5.3 px
+PASS [landscape-932x430/notch] loot (notch): no keyboard-only copy on a touch device
+PASS [landscape-932x430/notch] loot (notch): every control and HUD box sits inside the insets (11 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; 
+PASS [landscape-932x430/notch] death (notch): every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [landscape-932x430/notch] death (notch): no keyboard-only copy on a touch device
+PASS [landscape-932x430/notch] death (notch): every control and HUD box sits inside the insets (10 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; 
+PASS [landscape-932x430/notch] pause (notch): every visible text box fits its container and the viewport minus safe areas (24 boxes)
+FAIL [landscape-932x430/notch] pause (notch): no keyboard-only copy on a touch device — "ESC", "esc", "P / ESC", "p / esc", "R", "Q", "H"
+PASS [landscape-932x430/notch] pause (notch): every control and HUD box sits inside the insets (5 boxes, 4 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; 
+FAIL [landscape-932x430/notch] gameover (notch): every visible text box fits its container and the viewport minus safe areas (30 boxes) — #thumbModal "TAP TO CLIMB AGAIN": overlaps "GET BACK UP THERE." (#ovBody > p) by 162.8 x 11.0 px | #ovBody > p.dim "r to climb again": leaves the viewport minus safe area (text 387.8..544.3 x 401.7..419.7 vs 47..885 x 0..409)
+FAIL [landscape-932x430/notch] gameover (notch): no keyboard-only copy on a touch device — "R", "Q", "r"
+FAIL [landscape-932x430/notch] gameover (notch): every control and HUD box sits inside the insets (5 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; #ovBody {"left":319.3,"top":337.7,"right":612.7,"bottom":424.7,"w":293.4,"h":87}
+FAIL [landscape-932x430/notch] finale (notch): every visible text box fits its container and the viewport minus safe areas (24 boxes) — #hudPowerState "COLD": overlaps "CROWN WARDEN // INTERLOC" (#finaleTitle) by 22.6 x 6.4 px | #hudMetricC "0m": overlaps "BREAK FOUR SEALS · FIRE " (#finaleMeta) by 11.7 x 3.7 px
+PASS [landscape-932x430/notch] finale (notch): no keyboard-only copy on a touch device
+PASS [landscape-932x430/notch] finale (notch): every control and HUD box sits inside the insets (9 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; 
+PASS [landscape-932x430/notch] victory (notch): every visible text box fits its container and the viewport minus safe areas (22 boxes)
+FAIL [landscape-932x430/notch] victory (notch): no keyboard-only copy on a touch device — "R", "Q"
+FAIL [landscape-932x430/notch] victory (notch): every control and HUD box sits inside the insets (5 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; #ovPanel {"left":46.6,"top":267.3,"right":531.2,"bottom":410.3,"w":484.6,"h":143} | #ovPanel .panel {"left":46.6,"top":267.3,"right":531.2,"bottom":410.3,"w":484.6,"h":143}
+PASS [landscape-932x430/notch] failsafe (notch): every visible text box fits its container and the viewport minus safe areas (6 boxes)
+FAIL [landscape-932x430/notch] failsafe (notch): no keyboard-only copy on a touch device — "Press", "click"
+FAIL [landscape-932x430/notch] failsafe (notch): every control and HUD box sits inside the insets (7 boxes, 1 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; #ovPanel {"left":46.6,"top":267.3,"right":531.2,"bottom":410.3,"w":484.6,"h":143} | #ovPanel .panel {"left":46.6,"top":267.3,"right":531.2,"bottom":410.3,"w":484.6,"h":143}
+  boot landscape-667x375?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr2 insets:cdp: 66647 ms
+  measure [landscape-667x375/notch] notch-resumedFromPause = "PLAYING"
+  measure [landscape-667x375/notch] notch-restartedFromGameOver = "PLAYING"
+PASS [landscape-667x375/notch] the walk raised no page errors
+FAIL [landscape-667x375/notch] title (notch): every visible text box fits its container and the viewport minus safe areas (9 boxes) — #shellText > h1 "HULLBREAKER": leaves the viewport minus safe area (text 33.3..447.8 x 90.0..132.0 vs 47..620 x 0..354) | #shellText > p.tag "THE MERIDIAN IS AWAKE. THE WORLD TURNS U": leaves the viewport minus safe area (text 33.3..301.6 x 149.0..179.1 vs 47..620 x 0..354) | #shellText > p.prompt "PRESS ANY KEY": leaves the viewport minus safe area (text 33.3..209.3 x 210.1..228.1 vs 47..620 x 0..354) | #shellFoot > p > b "MOVE": leaves the viewport minus safe area (text 33.3..63.4 x 301.7..314.7 vs 47..620 x 0..354)
+FAIL [landscape-667x375/notch] title (notch): no keyboard-only copy on a touch device — "PRESS", "KEY", "WASD", "ARROWS", "SPACE", "ESC", "J / X", "P / ESC"
+FAIL [landscape-667x375/notch] title (notch): every control and HUD box sits inside the insets (3 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; #shellText {"left":33.3,"top":90,"right":346.8,"bottom":228.1,"w":313.5,"h":138.1} | #shellFoot {"left":33.3,"top":298.7,"right":500.2,"bottom":358.1,"w":466.9,"h":59.4} | #shellText h1 {"left":33.3,"top":90,"right":346.8,"bottom":132,"w":313.5,"h":42}
+PASS [landscape-667x375/notch] play (notch): every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [landscape-667x375/notch] play (notch): no keyboard-only copy on a touch device
+PASS [landscape-667x375/notch] play (notch): every control and HUD box sits inside the insets (10 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; 
+FAIL [landscape-667x375/notch] loot (notch): every visible text box fits its container and the viewport minus safe areas (31 boxes) — #hudMetricB "1/6": overlaps "WEAPON ACQUIRED // MARK " (#lootReveal > div.loot-copy > div.loot-kicker) by 17.5 x 8.7 px | #hudMetricBLabel "WAVE": overlaps "HYDRA STARFIRE BLOOM" (#lootReveal > div.loot-copy > div.loot-name) by 14.0 x 5.3 px | #hudMetricC "0m": overlaps "WEAPON ACQUIRED // MARK " (#lootReveal > div.loot-copy > div.loot-kicker) by 11.6 x 8.7 px | #hudMetricCLabel "FORWARD": overlaps "HYDRA STARFIRE BLOOM" (#lootReveal > div.loot-copy > div.loot-name) by 24.6 x 5.3 px
+PASS [landscape-667x375/notch] loot (notch): no keyboard-only copy on a touch device
+PASS [landscape-667x375/notch] loot (notch): every control and HUD box sits inside the insets (11 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; 
+FAIL [landscape-667x375/notch] death (notch): every visible text box fits its container and the viewport minus safe areas (24 boxes) — #hudObjective "HULL FALLBACK · LOWER ROUTE · KEEP MOVIN": clipped (overflow) by #hudObjective (text 374.5..617.8 x 22.0..31.0, box 374.5..611.5 x 23.0..31.0); truncated inside itself (scrollWidth 243 > clientWidth 237, text-overflow ellipsis)
+PASS [landscape-667x375/notch] death (notch): no keyboard-only copy on a touch device
+PASS [landscape-667x375/notch] death (notch): every control and HUD box sits inside the insets (10 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; 
+FAIL [landscape-667x375/notch] pause (notch): every visible text box fits its container and the viewport minus safe areas (24 boxes) — #thumbModal "TAP TO RESUME": overlaps "p / esc to resume" (#ovBody > p.dim) by 117.6 x 3.2 px
+FAIL [landscape-667x375/notch] pause (notch): no keyboard-only copy on a touch device — "ESC", "esc", "P / ESC", "p / esc", "R", "Q", "H"
+FAIL [landscape-667x375/notch] pause (notch): every control and HUD box sits inside the insets (5 boxes, 4 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; #ovPanel {"left":36.8,"top":129.2,"right":630.2,"bottom":266.2,"w":593.5,"h":137} | #ovPanel .panel {"left":36.8,"top":129.2,"right":630.2,"bottom":266.2,"w":593.5,"h":137}
+FAIL [landscape-667x375/notch] gameover (notch): every visible text box fits its container and the viewport minus safe areas (30 boxes) — #thumbModal "TAP TO CLIMB AGAIN": overlaps "MERIDIAN CUT THE TRANSMI" (#ovBody > p) by 162.8 x 11.0 px | #ovBody > p.dim "r to climb again": clipped (overflow) by #overlay (text 255.3..411.8 x 372.2..390.2, box 0.0..667.0 x 0.0..375.0); leaves the viewport minus safe area (text 255.3..411.8 x 372.2..390.2 vs 47..620 x 0..354) | #ovTitle::before "CARRIER COLLAPSED // LINK SEVERED": host of ::before text leaves the viewport minus safe area (132.8..534.2 x -20.2..39.2)
+FAIL [landscape-667x375/notch] gameover (notch): no keyboard-only copy on a touch device — "R", "Q", "r"
+FAIL [landscape-667x375/notch] gameover (notch): every control and HUD box sits inside the insets (5 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; #ovTitle {"left":132.8,"top":-20.2,"right":534.2,"bottom":39.2,"w":401.5,"h":59.4} | #ovBody {"left":186.8,"top":308.2,"right":480.2,"bottom":395.2,"w":293.4,"h":87}
+FAIL [landscape-667x375/notch] finale (notch): every visible text box fits its container and the viewport minus safe areas (24 boxes) — #hudPowerState "COLD": overlaps "CROWN WARDEN // INTERLOC" (#finaleTitle) by 22.8 x 6.4 px | #hudMetricB "1/6": overlaps "BREAK FOUR SEALS · FIRE " (#finaleMeta) by 17.5 x 3.7 px | #hudMetricC "0m": overlaps "BREAK FOUR SEALS · FIRE " (#finaleMeta) by 11.6 x 3.7 px
+PASS [landscape-667x375/notch] finale (notch): no keyboard-only copy on a touch device
+PASS [landscape-667x375/notch] finale (notch): every control and HUD box sits inside the insets (9 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; 
+FAIL [landscape-667x375/notch] victory (notch): every visible text box fits its container and the viewport minus safe areas (22 boxes) — #thumbModal "TAP TO CLIMB AGAIN": overlaps "K / 100" (div.panel.result-panel > div.result-strip > span > small) by 35.3 x 7.1 px; overlaps "DEATHS" (div.panel.result-panel > div.result-strip > span > small) by 30.3 x 7.1 px | #ovTitle "SIGNAL SENT": leaves the viewport minus safe area (text 33.3..282.5 x 13.1..105.0 vs 47..620 x 0..354) | div.panel.result-panel > div.result-strip > span > b "0:00.0": overlaps "0" (div.panel.result-panel > div.result-strip > span > b) by 11.5 x 19.0 px | #ovPanel > div.panel.result-panel > p.keys > b "R": leaves the viewport minus safe area (text 170.3..177.6 x 354.9..367.9 vs 47..620 x 0..354)
+FAIL [landscape-667x375/notch] victory (notch): no keyboard-only copy on a touch device — "R", "Q"
+FAIL [landscape-667x375/notch] victory (notch): every control and HUD box sits inside the insets (5 boxes, 0 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; #ovTitle {"left":33.3,"top":-10.4,"right":380.2,"bottom":105.4,"w":346.8,"h":115.8} | #ovBody {"left":33.3,"top":116.4,"right":380.2,"bottom":221.9,"w":346.8,"h":105.5} | #ovPanel {"left":33.3,"top":236.9,"right":380.2,"bottom":392.9,"w":346.8,"h":156} | #ovPanel .panel {"left":33.3,"top":236.9,"right":380.2,"bottom":392.9,"w":346.8,"h":156}
+FAIL [landscape-667x375/notch] failsafe (notch): every visible text box fits its container and the viewport minus safe areas (6 boxes) — #failBody "The picture stopped moving, so the game ": leaves the viewport minus safe area (text 31.0..636.0 x 98.2..139.4 vs 47..620 x 0..354) | #failMore "What broke (for grown-ups)": leaves the viewport minus safe area (text 39.4..246.0 x 315.8..329.8 vs 47..620 x 0..354)
+FAIL [landscape-667x375/notch] failsafe (notch): no keyboard-only copy on a touch device — "Press", "click"
+FAIL [landscape-667x375/notch] failsafe (notch): every control and HUD box sits inside the insets (7 boxes, 1 controls) — safe {"top":0,"right":47,"bottom":21,"left":47}; #ovTitle {"left":33.3,"top":-10.4,"right":380.2,"bottom":105.4,"w":346.8,"h":115.8} | #ovBody {"left":33.3,"top":116.4,"right":380.2,"bottom":221.9,"w":346.8,"h":105.5} | #ovPanel {"left":33.3,"top":236.9,"right":380.2,"bottom":392.9,"w":346.8,"h":156} | #ovPanel .panel {"left":33.3,"top":236.9,"right":380.2,"bottom":392.9,"w":346.8,"h":156}
+  boot landscape-667x375?testapi=1&fixeddt=16.667&audio=0 dpr2: 65671 ms
+PASS [landscape-667x375/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 158.4 px, 1 line(s) in a 237 px slot (scroll 237); panel [403.5,7,657,41]
+PASS [landscape-667x375/gateline] "WWWWWWWWWWWWWWWWWW…": the panel ends above the central region (75) and the deck chips (54.0) — panel bottom 41
+PASS [landscape-667x375/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 158.4 px, 1 line(s) in a 237 px slot (scroll 237); panel [403.5,7,657,41]
+PASS [landscape-667x375/gateline] "WAVE 6/6 · SCUTTLE…": the panel ends above the central region (75) and the deck chips (54.0) — panel bottom 41
+PASS [landscape-667x375/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 124.5 px, 1 line(s) in a 237 px slot (scroll 237); panel [403.5,7,657,41]
+PASS [landscape-667x375/gateline] "1 HOSTILE · +2 INB…": the panel ends above the central region (75) and the deck chips (54.0) — panel bottom 41
+PASS [landscape-667x375/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 147.1 px, 1 line(s) in a 237 px slot (scroll 237); panel [403.5,7,657,41]
+PASS [landscape-667x375/gateline] "BROKEN · RUN TO TH…": the panel ends above the central region (75) and the deck chips (54.0) — panel bottom 41
+FAIL [landscape-667x375/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 265.9 px, 1 line(s) in a 237 px slot (scroll 266); panel [403.5,7,657,41]
+PASS [landscape-667x375/gateline] "WAVE 4/6 · QUARANT…": the panel ends above the central region (75) and the deck chips (54.0) — panel bottom 41
+PASS [landscape-667x375/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING" (41 chars), wrapped if it must — text 231.9 px, 1 line(s) in a 237 px slot (scroll 237); panel [403.5,7,657,41]
+PASS [landscape-667x375/gateline] "HULL FALLBACK · LO…": the panel ends above the central region (75) and the deck chips (54.0) — panel bottom 41
+  measure [landscape-667x375/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":158.4,"slotW":237,"scrollW":237,"whiteSpace":"nowrap","panel":[403.5,7,657,41],"centralTop":75,"chipsTop":54,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":158.4,"slotW":237,"scrollW":237,"whiteSpace":"nowrap","panel":[403.5,7,657,41],"centralTop":75,"chipsTop":54,"cut":false},{"text":"1 HOSTILE …
+  boot desktop-1100x700?testapi=1&fixeddt=16.667&audio=0 dpr1: 50476 ms
+PASS [desktop-1100x700/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 237.6 px, 1 line(s) in a 366 px slot (scroll 366); panel [352,14,748,56]
+PASS [desktop-1100x700/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 237.6 px, 1 line(s) in a 366 px slot (scroll 366); panel [352,14,748,56]
+PASS [desktop-1100x700/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 186.7 px, 1 line(s) in a 366 px slot (scroll 366); panel [352,14,748,56]
+PASS [desktop-1100x700/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 220.6 px, 1 line(s) in a 366 px slot (scroll 366); panel [352,14,748,56]
+FAIL [desktop-1100x700/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 398.8 px, 1 line(s) in a 366 px slot (scroll 399); panel [352,14,748,56]
+PASS [desktop-1100x700/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING" (41 chars), wrapped if it must — text 347.9 px, 1 line(s) in a 366 px slot (scroll 366); panel [352,14,748,56]
+  measure [desktop-1100x700/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":237.6,"slotW":366,"scrollW":366,"whiteSpace":"nowrap","panel":[352,14,748,56],"centralTop":140,"chipsTop":null,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":237.6,"slotW":366,"scrollW":366,"whiteSpace":"nowrap","panel":[352,14,748,56],"centralTop":140,"chipsTop":null,"cut":false},{"text":"1 HOST…
+  boot landscape-844x390?testapi=1&fixeddt=16.667&audio=0 dpr2: 66802 ms
+PASS [landscape-844x390/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 158.4 px, 1 line(s) in a 304 px slot (scroll 304); panel [514,7,834,41]
+PASS [landscape-844x390/gateline] "WWWWWWWWWWWWWWWWWW…": the panel ends above the central region (78) and the deck chips (54.0) — panel bottom 41
+PASS [landscape-844x390/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 158.4 px, 1 line(s) in a 304 px slot (scroll 304); panel [514,7,834,41]
+PASS [landscape-844x390/gateline] "WAVE 6/6 · SCUTTLE…": the panel ends above the central region (78) and the deck chips (54.0) — panel bottom 41
+PASS [landscape-844x390/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 124.5 px, 1 line(s) in a 304 px slot (scroll 304); panel [514,7,834,41]
+PASS [landscape-844x390/gateline] "1 HOSTILE · +2 INB…": the panel ends above the central region (78) and the deck chips (54.0) — panel bottom 41
+PASS [landscape-844x390/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 147.1 px, 1 line(s) in a 304 px slot (scroll 304); panel [514,7,834,41]
+PASS [landscape-844x390/gateline] "BROKEN · RUN TO TH…": the panel ends above the central region (78) and the deck chips (54.0) — panel bottom 41
+PASS [landscape-844x390/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 265.9 px, 1 line(s) in a 304 px slot (scroll 304); panel [514,7,834,41]
+PASS [landscape-844x390/gateline] "WAVE 4/6 · QUARANT…": the panel ends above the central region (78) and the deck chips (54.0) — panel bottom 41
+PASS [landscape-844x390/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING" (41 chars), wrapped if it must — text 231.9 px, 1 line(s) in a 304 px slot (scroll 304); panel [514,7,834,41]
+PASS [landscape-844x390/gateline] "HULL FALLBACK · LO…": the panel ends above the central region (78) and the deck chips (54.0) — panel bottom 41
+  measure [landscape-844x390/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":158.4,"slotW":304,"scrollW":304,"whiteSpace":"nowrap","panel":[514,7,834,41],"centralTop":78,"chipsTop":54,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":158.4,"slotW":304,"scrollW":304,"whiteSpace":"nowrap","panel":[514,7,834,41],"centralTop":78,"chipsTop":54,"cut":false},{"text":"1 HOSTILE · +2…
+  boot landscape-932x430?testapi=1&fixeddt=16.667&audio=0 dpr2: 74542 ms
+PASS [landscape-932x430/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 158.4 px, 1 line(s) in a 304 px slot (scroll 304); panel [602,7,922,41]
+PASS [landscape-932x430/gateline] "WWWWWWWWWWWWWWWWWW…": the panel ends above the central region (86) and the deck chips (54.0) — panel bottom 41
+PASS [landscape-932x430/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 158.4 px, 1 line(s) in a 304 px slot (scroll 304); panel [602,7,922,41]
+PASS [landscape-932x430/gateline] "WAVE 6/6 · SCUTTLE…": the panel ends above the central region (86) and the deck chips (54.0) — panel bottom 41
+PASS [landscape-932x430/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 124.5 px, 1 line(s) in a 304 px slot (scroll 304); panel [602,7,922,41]
+PASS [landscape-932x430/gateline] "1 HOSTILE · +2 INB…": the panel ends above the central region (86) and the deck chips (54.0) — panel bottom 41
+PASS [landscape-932x430/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 147.1 px, 1 line(s) in a 304 px slot (scroll 304); panel [602,7,922,41]
+PASS [landscape-932x430/gateline] "BROKEN · RUN TO TH…": the panel ends above the central region (86) and the deck chips (54.0) — panel bottom 41
+PASS [landscape-932x430/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 265.9 px, 1 line(s) in a 304 px slot (scroll 304); panel [602,7,922,41]
+PASS [landscape-932x430/gateline] "WAVE 4/6 · QUARANT…": the panel ends above the central region (86) and the deck chips (54.0) — panel bottom 41
+PASS [landscape-932x430/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING" (41 chars), wrapped if it must — text 231.9 px, 1 line(s) in a 304 px slot (scroll 304); panel [602,7,922,41]
+PASS [landscape-932x430/gateline] "HULL FALLBACK · LO…": the panel ends above the central region (86) and the deck chips (54.0) — panel bottom 41
+  measure [landscape-932x430/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":158.4,"slotW":304,"scrollW":304,"whiteSpace":"nowrap","panel":[602,7,922,41],"centralTop":86,"chipsTop":54,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":158.4,"slotW":304,"scrollW":304,"whiteSpace":"nowrap","panel":[602,7,922,41],"centralTop":86,"chipsTop":54,"cut":false},{"text":"1 HOSTILE · +2…
+  boot portrait-390x844?testapi=1&fixeddt=16.667&audio=0 dpr2: 50586 ms
+PASS [portrait-390x844/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 170.6 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,136,383,167]
+PASS [portrait-390x844/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 170.6 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,136,383,167]
+PASS [portrait-390x844/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 134.1 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,136,383,167]
+PASS [portrait-390x844/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 158.4 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,136,383,167]
+PASS [portrait-390x844/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 286.4 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,136,383,167]
+PASS [portrait-390x844/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING" (41 chars), wrapped if it must — text 249.8 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,136,383,167]
+  measure [portrait-390x844/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":170.6,"slotW":356,"scrollW":356,"whiteSpace":"nowrap","panel":[7,136,383,167],"centralTop":168.8,"chipsTop":176,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":170.6,"slotW":356,"scrollW":356,"whiteSpace":"nowrap","panel":[7,136,383,167],"centralTop":168.8,"chipsTop":176,"cut":false},{"text":"1 HO…
+  boot desktop-1280x720?testapi=1&fixeddt=16.667&audio=0 dpr1: 64270 ms
+PASS [desktop-1280x720/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 237.6 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+PASS [desktop-1280x720/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 237.6 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+PASS [desktop-1280x720/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 186.7 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+PASS [desktop-1280x720/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 220.6 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+PASS [desktop-1280x720/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 398.8 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+PASS [desktop-1280x720/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING" (41 chars), wrapped if it must — text 347.9 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+  measure [desktop-1280x720/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":237.6,"slotW":400,"scrollW":400,"whiteSpace":"nowrap","panel":[425,14,855,56],"centralTop":144,"chipsTop":null,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":237.6,"slotW":400,"scrollW":400,"whiteSpace":"nowrap","panel":[425,14,855,56],"centralTop":144,"chipsTop":null,"cut":false},{"text":"1 HOST…
+  measure [landscape-844x390/preload] preloads = [{"href":"http://127.0.0.1:8785/assets/generated/ui/title-meridian-ascent-v1.webp","as":"image","crossorigin":null,"requests":1},{"href":"http://127.0.0.1:8785/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp","as":"image","crossorigin":null,"requests":2},{"href":"http://127.0.0.1:8785/assets/generated/environment/meridian-foreground-pack-v1.webp","as":"image","crossorigin":null,"reque…
+  measure [landscape-844x390/preload] preloadWarnings = ["A preload for 'http://127.0.0.1:8785/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.","A preload for 'http://127.0.0.1:8785/assets/generated/backdrops/backdrop-meridian-coils-v3.webp' is found, but is not used because the request credentials mode does not …
+  measure [landscape-844x390/preload] anyDuplicateRequests = ["/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp x2","/assets/generated/environment/meridian-foreground-pack-v1.webp x2","/assets/generated/backdrops/backdrop-meridian-coils-v3.webp x2","/assets/generated/environment/meridian-component-atlas-v1.webp x2"]
+FAIL [landscape-844x390/preload] zero "preload ... not used" console warnings — A preload for 'http://127.0.0.1:8785/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute. | A preload for 'http://127.0.0.1:8785/assets/generated/backdrops/backdrop-meridian-coils-v3.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute. | A preload for 'http://127.0.0.1:8785/assets/generated/environment/meridian-component-atlas-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.
+FAIL [landscape-844x390/preload] each preloaded URL is requested exactly once — /assets/generated/ui/title-meridian-ascent-v1.webp: 1, /assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp: 2, /assets/generated/environment/meridian-foreground-pack-v1.webp: 2, /assets/generated/backdrops/backdrop-meridian-coils-v3.webp: 2, /assets/generated/environment/meridian-component-atlas-v1.webp: 2
+  measure [desktop-1280x720/preload] preloads = [{"href":"http://127.0.0.1:8785/assets/generated/ui/title-meridian-ascent-v1.webp","as":"image","crossorigin":null,"requests":1},{"href":"http://127.0.0.1:8785/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp","as":"image","crossorigin":null,"requests":2},{"href":"http://127.0.0.1:8785/assets/generated/environment/meridian-foreground-pack-v1.webp","as":"image","crossorigin":null,"reque…
+  measure [desktop-1280x720/preload] preloadWarnings = ["A preload for 'http://127.0.0.1:8785/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.","A preload for 'http://127.0.0.1:8785/assets/generated/backdrops/backdrop-meridian-coils-v3.webp' is found, but is not used because the request credentials mode does not …
+  measure [desktop-1280x720/preload] anyDuplicateRequests = ["/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp x2","/assets/generated/environment/meridian-foreground-pack-v1.webp x2","/assets/generated/backdrops/backdrop-meridian-coils-v3.webp x2","/assets/generated/environment/meridian-component-atlas-v1.webp x2"]
+FAIL [desktop-1280x720/preload] zero "preload ... not used" console warnings — A preload for 'http://127.0.0.1:8785/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute. | A preload for 'http://127.0.0.1:8785/assets/generated/backdrops/backdrop-meridian-coils-v3.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute. | A preload for 'http://127.0.0.1:8785/assets/generated/environment/meridian-component-atlas-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.
+FAIL [desktop-1280x720/preload] each preloaded URL is requested exactly once — /assets/generated/ui/title-meridian-ascent-v1.webp: 1, /assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp: 2, /assets/generated/environment/meridian-foreground-pack-v1.webp: 2, /assets/generated/backdrops/backdrop-meridian-coils-v3.webp: 2, /assets/generated/environment/meridian-component-atlas-v1.webp: 2
+PASS [landscape-844x390/watchdog] frame stall 6 s from boot (0 frames drawn): no "game got stuck" panel, frames resume — panels [], beats 0 -> 3, state MENU
+PASS [landscape-844x390/watchdog] frame stall 6 s after the first frame (a slow first draw): no "game got stuck" panel, frames resume — panels [], beats 1 -> 7, state MENU
+FAIL [landscape-844x390/watchdog] frame stall 6 s after warm-up, during PLAYING: the "game got stuck" panel DOES show — panels [], beats 40 -> 45, state PLAYING
+  NOTE [landscape-844x390/watchdog] main-thread busy-wait 6 s from boot (reported, not judged): panels [], beats 0 -> 9, state MENU
+FAIL [landscape-844x390/watchdog] harness completed — page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8785/index.html?testapi=1&audio=0 Call log: [2m  - navigating to "http://127.0.0.1:8785/index.html?testapi=1&audio=0", waiting until "domcontentloaded"[22m
+phone-shell [base]: 148 passed, 101 failed in 6248 s
+exit 1
+
+===== branch-full.log
+  boot landscape-844x390?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr2: 38130 ms
+  measure [landscape-844x390/screens] resumedFromPause = "PLAYING"
+  measure [landscape-844x390/screens] restartedFromGameOver = "PLAYING"
+PASS [landscape-844x390/screens] the walk raised no page errors
+PASS [landscape-844x390/screens] title: every visible text box fits its container and the viewport minus safe areas (8 boxes)
+PASS [landscape-844x390/screens] title: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] play: every visible text box fits its container and the viewport minus safe areas (23 boxes)
+PASS [landscape-844x390/screens] play: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] loot: every visible text box fits its container and the viewport minus safe areas (29 boxes)
+PASS [landscape-844x390/screens] loot: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] death: every visible text box fits its container and the viewport minus safe areas (23 boxes)
+PASS [landscape-844x390/screens] death: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] pause: every visible text box fits its container and the viewport minus safe areas (21 boxes)
+PASS [landscape-844x390/screens] pause: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] gameover: every visible text box fits its container and the viewport minus safe areas (27 boxes)
+PASS [landscape-844x390/screens] gameover: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] finale: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [landscape-844x390/screens] finale: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] victory: every visible text box fits its container and the viewport minus safe areas (20 boxes)
+PASS [landscape-844x390/screens] victory: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] failsafe: every visible text box fits its container and the viewport minus safe areas (6 boxes)
+PASS [landscape-844x390/screens] failsafe: no keyboard-only copy on a touch device
+  measure [landscape-844x390/screens] hudBudget.play = {"areaPct":6.47,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":370,"bottom":48.3,"w":360,"h":42.3},"areaPct":4.63,"central":false},{"sel":"#hudObjectivePanel","rect":{"left":563.9,"top":6,"right":834,"bottom":28.5,"w":270.1,"h":22.5},"areaPct":1.85,"central":false}],"centralRegion":{"left":168.8,"right":675.2,"top":78,"bottom":312}}
+PASS [landscape-844x390/screens] play: HUD panels cover <= 10% of 844x390 (6.47%) — #hudRigPanel 4.63%, #hudObjectivePanel 1.85%
+PASS [landscape-844x390/screens] play: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 4.63%, #hudObjectivePanel 1.85%
+  measure [landscape-844x390/screens] hudBudget.death = {"areaPct":7.42,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":370,"bottom":48.3,"w":360,"h":42.3},"areaPct":4.63,"central":false},{"sel":"#hudObjectivePanel","rect":{"left":563.9,"top":6,"right":834,"bottom":40,"w":270.1,"h":34},"areaPct":2.79,"central":false}],"centralRegion":{"left":168.8,"right":675.2,"top":78,"bottom":312}}
+PASS [landscape-844x390/screens] death: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 4.63%, #hudObjectivePanel 2.79%
+  measure [landscape-844x390/screens] hudBudget.finale = {"areaPct":9.08,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":370,"bottom":48.3,"w":360,"h":42.3},"areaPct":4.63,"central":false},{"sel":"#finale","rect":{"left":530.2,"top":6,"right":834,"bottom":54.3,"w":303.8,"h":48.3},"areaPct":4.46,"central":false}],"centralRegion":{"left":168.8,"right":675.2,"top":78,"bottom":312}}
+PASS [landscape-844x390/screens] finale: HUD panels cover <= 10% of 844x390 (9.08%) — #hudRigPanel 4.63%, #finale 4.46%
+PASS [landscape-844x390/screens] finale: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 4.63%, #finale 4.46%
+  measure [landscape-844x390/screens] hudBudget.loot = {"areaPct":9.93,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":370,"bottom":48.3,"w":360,"h":42.3},"areaPct":4.63,"central":false},{"sel":"#lootReveal","rect":{"left":466,"top":6,"right":746,"bottom":68.3,"w":280,"h":62.3},"areaPct":5.3,"central":false}],"centralRegion":{"left":168.8,"right":675.2,"top":78,"bottom":312}}
+PASS [landscape-844x390/screens] loot: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 4.63%, #lootReveal 5.3%
+  measure [landscape-844x390/screens] screens = {"title":{"textBoxes":8,"keyboardHits":[]},"play":{"textBoxes":23,"keyboardHits":[]},"loot":{"textBoxes":29,"keyboardHits":[]},"death":{"textBoxes":23,"keyboardHits":[]},"pause":{"textBoxes":21,"keyboardHits":[]},"gameover":{"textBoxes":27,"keyboardHits":[]},"finale":{"textBoxes":24,"keyboardHits":[]},"victory":{"textBoxes":20,"keyboardHits":[]},"failsafe":{"textBoxes":6,"keyboardHits":[]}}
+  boot landscape-932x430?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr2: 30282 ms
+  measure [landscape-932x430/screens] resumedFromPause = "PLAYING"
+  measure [landscape-932x430/screens] restartedFromGameOver = "PLAYING"
+PASS [landscape-932x430/screens] the walk raised no page errors
+PASS [landscape-932x430/screens] title: every visible text box fits its container and the viewport minus safe areas (8 boxes)
+PASS [landscape-932x430/screens] title: no keyboard-only copy on a touch device
+PASS [landscape-932x430/screens] play: every visible text box fits its container and the viewport minus safe areas (23 boxes)
+PASS [landscape-932x430/screens] play: no keyboard-only copy on a touch device
+PASS [landscape-932x430/screens] loot: every visible text box fits its container and the viewport minus safe areas (29 boxes)
+PASS [landscape-932x430/screens] loot: no keyboard-only copy on a touch device
+PASS [landscape-932x430/screens] death: every visible text box fits its container and the viewport minus safe areas (23 boxes)
+PASS [landscape-932x430/screens] death: no keyboard-only copy on a touch device
+PASS [landscape-932x430/screens] pause: every visible text box fits its container and the viewport minus safe areas (21 boxes)
+PASS [landscape-932x430/screens] pause: no keyboard-only copy on a touch device
+PASS [landscape-932x430/screens] gameover: every visible text box fits its container and the viewport minus safe areas (27 boxes)
+PASS [landscape-932x430/screens] gameover: no keyboard-only copy on a touch device
+PASS [landscape-932x430/screens] finale: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [landscape-932x430/screens] finale: no keyboard-only copy on a touch device
+PASS [landscape-932x430/screens] victory: every visible text box fits its container and the viewport minus safe areas (20 boxes)
+PASS [landscape-932x430/screens] victory: no keyboard-only copy on a touch device
+PASS [landscape-932x430/screens] failsafe: every visible text box fits its container and the viewport minus safe areas (6 boxes)
+PASS [landscape-932x430/screens] failsafe: no keyboard-only copy on a touch device
+  measure [landscape-932x430/screens] hudBudget.play = {"areaPct":5.47,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":370,"bottom":48.3,"w":360,"h":42.3},"areaPct":3.8,"central":false},{"sel":"#hudObjectivePanel","rect":{"left":623.8,"top":6,"right":922,"bottom":28.5,"w":298.2,"h":22.5},"areaPct":1.67,"central":false}],"centralRegion":{"left":186.4,"right":745.6,"top":86,"bottom":344}}
+PASS [landscape-932x430/screens] play: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 3.8%, #hudObjectivePanel 1.67%
+  measure [landscape-932x430/screens] hudBudget.death = {"areaPct":6.33,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":370,"bottom":48.3,"w":360,"h":42.3},"areaPct":3.8,"central":false},{"sel":"#hudObjectivePanel","rect":{"left":623.8,"top":6,"right":922,"bottom":40,"w":298.2,"h":34},"areaPct":2.53,"central":false}],"centralRegion":{"left":186.4,"right":745.6,"top":86,"bottom":344}}
+PASS [landscape-932x430/screens] death: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 3.8%, #hudObjectivePanel 2.53%
+  measure [landscape-932x430/screens] hudBudget.finale = {"areaPct":7.66,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":370,"bottom":48.3,"w":360,"h":42.3},"areaPct":3.8,"central":false},{"sel":"#finale","rect":{"left":602,"top":6,"right":922,"bottom":54.3,"w":320,"h":48.3},"areaPct":3.86,"central":false}],"centralRegion":{"left":186.4,"right":745.6,"top":86,"bottom":344}}
+PASS [landscape-932x430/screens] finale: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 3.8%, #finale 3.86%
+  measure [landscape-932x430/screens] hudBudget.loot = {"areaPct":8.15,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":370,"bottom":48.3,"w":360,"h":42.3},"areaPct":3.8,"central":false},{"sel":"#lootReveal","rect":{"left":510,"top":6,"right":790,"bottom":68.3,"w":280,"h":62.3},"areaPct":4.35,"central":false}],"centralRegion":{"left":186.4,"right":745.6,"top":86,"bottom":344}}
+PASS [landscape-932x430/screens] loot: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 3.8%, #lootReveal 4.35%
+  measure [landscape-932x430/screens] screens = {"title":{"textBoxes":8,"keyboardHits":[]},"play":{"textBoxes":23,"keyboardHits":[]},"loot":{"textBoxes":29,"keyboardHits":[]},"death":{"textBoxes":23,"keyboardHits":[]},"pause":{"textBoxes":21,"keyboardHits":[]},"gameover":{"textBoxes":27,"keyboardHits":[]},"finale":{"textBoxes":24,"keyboardHits":[]},"victory":{"textBoxes":20,"keyboardHits":[]},"failsafe":{"textBoxes":6,"keyboardHits":[]}}
+  boot landscape-667x375?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr2: 55245 ms
+  measure [landscape-667x375/screens] resumedFromPause = "PLAYING"
+  measure [landscape-667x375/screens] restartedFromGameOver = "PLAYING"
+PASS [landscape-667x375/screens] the walk raised no page errors
+PASS [landscape-667x375/screens] title: every visible text box fits its container and the viewport minus safe areas (8 boxes)
+PASS [landscape-667x375/screens] title: no keyboard-only copy on a touch device
+PASS [landscape-667x375/screens] play: every visible text box fits its container and the viewport minus safe areas (23 boxes)
+PASS [landscape-667x375/screens] play: no keyboard-only copy on a touch device
+PASS [landscape-667x375/screens] loot: every visible text box fits its container and the viewport minus safe areas (29 boxes)
+PASS [landscape-667x375/screens] loot: no keyboard-only copy on a touch device
+PASS [landscape-667x375/screens] death: every visible text box fits its container and the viewport minus safe areas (23 boxes)
+PASS [landscape-667x375/screens] death: no keyboard-only copy on a touch device
+PASS [landscape-667x375/screens] pause: every visible text box fits its container and the viewport minus safe areas (21 boxes)
+PASS [landscape-667x375/screens] pause: no keyboard-only copy on a touch device
+PASS [landscape-667x375/screens] gameover: every visible text box fits its container and the viewport minus safe areas (27 boxes)
+PASS [landscape-667x375/screens] gameover: no keyboard-only copy on a touch device
+PASS [landscape-667x375/screens] finale: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [landscape-667x375/screens] finale: no keyboard-only copy on a touch device
+PASS [landscape-667x375/screens] victory: every visible text box fits its container and the viewport minus safe areas (20 boxes)
+PASS [landscape-667x375/screens] victory: no keyboard-only copy on a touch device
+PASS [landscape-667x375/screens] failsafe: every visible text box fits its container and the viewport minus safe areas (6 boxes)
+PASS [landscape-667x375/screens] failsafe: no keyboard-only copy on a touch device
+  measure [landscape-667x375/screens] hudBudget.play = {"areaPct":7.67,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":350,"bottom":48.3,"w":340,"h":42.3},"areaPct":5.75,"central":false},{"sel":"#hudObjectivePanel","rect":{"left":443.6,"top":6,"right":657,"bottom":28.5,"w":213.4,"h":22.5},"areaPct":1.92,"central":false}],"centralRegion":{"left":133.4,"right":533.6,"top":75,"bottom":300}}
+PASS [landscape-667x375/screens] play: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 5.75%, #hudObjectivePanel 1.92%
+  measure [landscape-667x375/screens] hudBudget.death = {"areaPct":8.65,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":350,"bottom":48.3,"w":340,"h":42.3},"areaPct":5.75,"central":false},{"sel":"#hudObjectivePanel","rect":{"left":443.6,"top":6,"right":657,"bottom":40,"w":213.4,"h":34},"areaPct":2.9,"central":false}],"centralRegion":{"left":133.4,"right":533.6,"top":75,"bottom":300}}
+PASS [landscape-667x375/screens] death: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 5.75%, #hudObjectivePanel 2.9%
+  measure [landscape-667x375/screens] hudBudget.finale = {"areaPct":11.58,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":350,"bottom":48.3,"w":340,"h":42.3},"areaPct":5.75,"central":false},{"sel":"#finale","rect":{"left":407,"top":6,"right":657,"bottom":64.3,"w":250,"h":58.3},"areaPct":5.83,"central":false}],"centralRegion":{"left":133.4,"right":533.6,"top":75,"bottom":300}}
+PASS [landscape-667x375/screens] finale: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 5.75%, #finale 5.83%
+  measure [landscape-667x375/screens] hudBudget.loot = {"areaPct":12.72,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":350,"bottom":48.3,"w":340,"h":42.3},"areaPct":5.75,"central":false},{"sel":"#lootReveal","rect":{"left":367.5,"top":6,"right":647.5,"bottom":68.3,"w":280,"h":62.3},"areaPct":6.97,"central":false}],"centralRegion":{"left":133.4,"right":533.6,"top":75,"bottom":300}}
+PASS [landscape-667x375/screens] loot: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 5.75%, #lootReveal 6.97%
+  measure [landscape-667x375/screens] screens = {"title":{"textBoxes":8,"keyboardHits":[]},"play":{"textBoxes":23,"keyboardHits":[]},"loot":{"textBoxes":29,"keyboardHits":[]},"death":{"textBoxes":23,"keyboardHits":[]},"pause":{"textBoxes":21,"keyboardHits":[]},"gameover":{"textBoxes":27,"keyboardHits":[]},"finale":{"textBoxes":24,"keyboardHits":[]},"victory":{"textBoxes":20,"keyboardHits":[]},"failsafe":{"textBoxes":6,"keyboardHits":[]}}
+  boot portrait-390x844?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr2: 60189 ms
+  measure [portrait-390x844/screens] resumedFromPause = "PLAYING"
+  measure [portrait-390x844/screens] restartedFromGameOver = "PLAYING"
+PASS [portrait-390x844/screens] the walk raised no page errors
+PASS [portrait-390x844/screens] title: every visible text box fits its container and the viewport minus safe areas (7 boxes)
+PASS [portrait-390x844/screens] title: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] play: every visible text box fits its container and the viewport minus safe areas (23 boxes)
+PASS [portrait-390x844/screens] play: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] loot: every visible text box fits its container and the viewport minus safe areas (29 boxes)
+PASS [portrait-390x844/screens] loot: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] death: every visible text box fits its container and the viewport minus safe areas (23 boxes)
+PASS [portrait-390x844/screens] death: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] pause: every visible text box fits its container and the viewport minus safe areas (21 boxes)
+PASS [portrait-390x844/screens] pause: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] gameover: every visible text box fits its container and the viewport minus safe areas (27 boxes)
+PASS [portrait-390x844/screens] gameover: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] finale: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [portrait-390x844/screens] finale: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] victory: every visible text box fits its container and the viewport minus safe areas (18 boxes)
+PASS [portrait-390x844/screens] victory: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] failsafe: every visible text box fits its container and the viewport minus safe areas (6 boxes)
+PASS [portrait-390x844/screens] failsafe: no keyboard-only copy on a touch device
+  measure [portrait-390x844/screens] screens = {"title":{"textBoxes":7,"keyboardHits":[]},"play":{"textBoxes":23,"keyboardHits":[]},"loot":{"textBoxes":29,"keyboardHits":[]},"death":{"textBoxes":23,"keyboardHits":[]},"pause":{"textBoxes":21,"keyboardHits":[]},"gameover":{"textBoxes":27,"keyboardHits":[]},"finale":{"textBoxes":24,"keyboardHits":[]},"victory":{"textBoxes":18,"keyboardHits":[]},"failsafe":{"textBoxes":6,"keyboardHits":[]}}
+  boot desktop-1280x720?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr1: 57948 ms
+  measure [desktop-1280x720/screens] resumedFromPause = "PLAYING"
+  measure [desktop-1280x720/screens] restartedFromGameOver = "PLAYING"
+PASS [desktop-1280x720/screens] the walk raised no page errors
+PASS [desktop-1280x720/screens] title: every visible text box fits its container and the viewport minus safe areas (9 boxes)
+PASS [desktop-1280x720/screens] play: every visible text box fits its container and the viewport minus safe areas (21 boxes)
+PASS [desktop-1280x720/screens] loot: every visible text box fits its container and the viewport minus safe areas (28 boxes)
+PASS [desktop-1280x720/screens] death: every visible text box fits its container and the viewport minus safe areas (21 boxes)
+PASS [desktop-1280x720/screens] pause: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [desktop-1280x720/screens] gameover: every visible text box fits its container and the viewport minus safe areas (30 boxes)
+PASS [desktop-1280x720/screens] finale: every visible text box fits its container and the viewport minus safe areas (21 boxes)
+PASS [desktop-1280x720/screens] victory: every visible text box fits its container and the viewport minus safe areas (22 boxes)
+PASS [desktop-1280x720/screens] failsafe: every visible text box fits its container and the viewport minus safe areas (6 boxes)
+PASS [desktop-1280x720/screens] title: desktop still shows the keyboard instructions — "PRESS", "KEY", "WASD", "ARROWS", "SPACE", "ESC"
+PASS [desktop-1280x720/screens] pause: desktop still shows the keyboard instructions — "WASD", "ARROWS", "SPACE", "ESC", "ESC", "esc"
+PASS [desktop-1280x720/screens] gameover: desktop still shows the keyboard instructions — "WASD", "ARROWS", "SPACE", "ESC", "J/X", "R"
+  measure [desktop-1280x720/screens] screens = {"title":{"textBoxes":9,"keyboardHits":["PRESS","KEY","WASD","ARROWS","SPACE","ESC","J / X","P / ESC","PAUSE P"]},"play":{"textBoxes":21,"keyboardHits":["WASD","ARROWS","SPACE","ESC","J/X","SWAP C"]},"loot":{"textBoxes":28,"keyboardHits":["WASD","ARROWS","SPACE","ESC","J/X","C","SWAP C"]},"death":{"textBoxes":21,"keyboardHits":["WASD","ARROWS","SPACE","ESC","J/X","C","SWAP C"]},"pause":{"textBoxes…
+  boot landscape-844x390?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr2 insets:cdp: 41597 ms
+  measure [landscape-844x390/notch] notch-resumedFromPause = "PLAYING"
+FAIL [landscape-844x390/notch] gameover: screen reached — page.evaluate: Target page, context or browser has been closed
+FAIL [landscape-844x390/notch] harness completed — browserContext.close: Target page, context or browser has been closed Browser logs: 
+phone-shell [branch]: 103 passed, 2 failed in 4280 s
+

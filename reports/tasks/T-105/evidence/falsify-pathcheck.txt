@@ -1,0 +1,26 @@
+CONTROL domain t-105-phone-shell.mjs: 28 passed, 0 failed
+RED  touch-string-says-press: 1 failing — no touch-mode string names a key or says press/click (15 strings) — "PRESS" in "PRESS TO START"
+RED  scanner-loses-press-click: 2 failing — the keyboard-copy scan finds every keyboard instruction the game prints (so a phone screen that still shows one fails) — missed: Press R,  || the touch hint reads plainly, names the button and no key ("Tap the button to play again."); the keyboard hint still names its key
+RED  keyboard-copy-changed: 1 failing — the keyboard copy is byte-identical to the pre-T-105 build (desktop unchanged)
+RED  touch-overlay-prints-a-line: 1 failing — on touch the overlay prints no instruction line of its own (the deck's "TAP TO …" cue is the one instruction)
+RED  legacy-speaks-touch: 1 failing — only the two-thumb deck (the one scheme with a tap out of every screen) speaks touch
+RED  restart-button-presses-Q: 1 failing — every touch button presses the key whose intent it names, in that state (PAUSED:restart, PAUSED:title, PAUSED:hud, GAME_OVER:title, VICTOR
+RED  touch-pause-offers-resume: 2 failing — every touch button presses the key whose intent it names, in that state (PAUSED:resume, PAUSED:restart, PAUSED:title, PAUSED:hud, GAME_OVE || no touch button repeats the verb the deck's modal tap already performs (tap = resume / climb again), so a phone shows one instruction
+RED  inline-hint-legacy-keys: 1 failing — the panel says "tap" exactly where a touch deck installs (inline rule = src/pure/shell-copy.js = resolveTouchScheme, 20 cases) — inline(le
+RED  touch-hint-says-press: 1 failing — the touch hint reads plainly, names the button and no key ("Press the button to play again."); the keyboard hint still names its key
+RED  bootstrap-paints-key-hint: 1 failing — the REAL bootstrap paints the touch hint on touch hardware / a coarse pointer / ?touch=1, and the key hint on a desktop and under ?touch=0
+RED  inline-warm-beats-2: 3 failing — the inline warm-up numbers are the policy's (2/10000 vs 3/10000), and the warm-up window is longer than the stall rule it relaxes || a 6 s frame stall before the first frames are drawn (0, 1 or 2 beats in) shows NO panel at all (saw [[],[],["frozen","frozen"]]) || a frame loop that dies during warm-up (2 frame(s) drawn) still gets the "got stuck" panel, 5000 ms after it went quiet (limit 10000 ms)
+RED  inline-warmup-ignores-last-beat: 1 failing — the inline freeze verdict equals src/pure/failsafe.js over 4972 states (4000 seeded + every threshold at -1/0/+1 ms) covering every verdic
+RED  pure-verdict-drifts: 1 failing — the inline freeze verdict equals src/pure/failsafe.js over 4972 states (4000 seeded + every threshold at -1/0/+1 ms) covering every verdic
+RED  watchdog-blinded-in-warmup: 3 failing — a frame loop that dies during warm-up (0 frame(s) drawn) still gets the "got stuck" panel, 13000 ms after it went quiet (limit 10000 ms) || a frame loop that dies during warm-up (1 frame(s) drawn) still gets the "got stuck" panel, 13000 ms after it went quiet (limit 10000 ms) || a frame loop that dies during warm-up (2 frame(s) drawn) still gets the "got stuck" panel, 13000 ms after it went quiet (limit 10000 ms)
+RED  no-warmup-both-sides: 5 failing — the inline warm-up numbers are the policy's (0/10000 vs 0/10000), and the warm-up window is longer than the stall rule it relaxes || a 6 s frame stall before the first frames are drawn (0, 1 or 2 beats in) shows NO panel at all (saw [["frozen","frozen"],["frozen","frozen || a frame loop that dies during warm-up (0 frame(s) drawn) still gets the "got stuck" panel, 2000 ms after it went quiet (limit 10000 ms) || a frame loop that dies during warm-up (1 frame(s) drawn) still gets the "got stuck" panel, 5000 ms after it went quiet (limit 10000 ms) || a frame loop that dies during warm-up (2 frame(s) drawn) still gets the "got stuck" panel, 5000 ms after it went quiet (limit 10000 ms)
+RED  frozen-rule-dead-after-warmup: 1 failing — …while the same stall after warm-up (40 frames) still shows "got stuck", ? ms in (the 4000 ms rule, one tick of slack)
+RED  manifest-portrait: 1 failing — the manifest launches the game page, landscape, fullscreen (start /app/index.html, scope /app/) — relative, so a subpath deploy works
+RED  manifest-start-url-wrong: 1 failing — the manifest launches the game page, landscape, fullscreen (start /app/assets/generated/ui/app/index.html, scope /app/) — relative, so a s
+RED  icon-size-lies: 1 failing — every manifest icon is a PNG at its declared size, with 192, 512 and a maskable one — wrong: icon-192.png
+RED  touch-icon-wrong-size: 1 failing — apple-touch-icon is a 180x180 OPAQUE PNG (iOS paints transparency black) (192x192, colour type 2)
+RED  no-apple-capable: 1 failing — iOS home-screen launch is declared (capable, status-bar style, title) and the page draws edge to edge (viewport-fit=cover) — the safe-area
+RED  texture-preload-no-cors: 1 failing — every image preload matches its consumer's request mode (5 preloads; CORS for TextureLoader, no-cors for CSS) — backdrop-meridian-coils-v3
+RED  title-preload-cors: 1 failing — every image preload matches its consumer's request mode (5 preloads; CORS for TextureLoader, no-cors for CSS) — title-meridian-ascent-v1.w
+RESTORED domain t-105-phone-shell.mjs: 28 passed, 0 failed
+every mutation went red

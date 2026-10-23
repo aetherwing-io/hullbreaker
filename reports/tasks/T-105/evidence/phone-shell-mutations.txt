@@ -1,0 +1,336 @@
+# phone-shell --mutate runs. q-mut-watchdog-no-warmup = final export, current judgement; mut-watchdog-no-warmup = the same mutation under the superseded judgement (pre-722af33); mut1-objective-nowrap-vacuous = the first, vacuous objective-nowrap (54/0), corrected before mut-objective-nowrap.
+
+===== mut-copy-keys-on-touch.log
+  boot landscape-844x390?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr1: 36895 ms
+  measure [landscape-844x390/screens] resumedFromPause = "PLAYING"
+  measure [landscape-844x390/screens] restartedFromGameOver = "PLAYING"
+PASS [landscape-844x390/screens] the walk raised no page errors
+PASS [landscape-844x390/screens] title: every visible text box fits its container and the viewport minus safe areas (9 boxes)
+FAIL [landscape-844x390/screens] title: no keyboard-only copy on a touch device — "PRESS", "KEY", "WASD", "ARROWS", "SPACE", "ESC", "J / X", "P / ESC"
+PASS [landscape-844x390/screens] play: every visible text box fits its container and the viewport minus safe areas (23 boxes)
+PASS [landscape-844x390/screens] play: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] loot: every visible text box fits its container and the viewport minus safe areas (29 boxes)
+PASS [landscape-844x390/screens] loot: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] death: every visible text box fits its container and the viewport minus safe areas (23 boxes)
+PASS [landscape-844x390/screens] death: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] pause: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+FAIL [landscape-844x390/screens] pause: no keyboard-only copy on a touch device — "ESC", "esc", "P / ESC", "p / esc", "R", "Q", "H"
+PASS [landscape-844x390/screens] gameover: every visible text box fits its container and the viewport minus safe areas (30 boxes)
+FAIL [landscape-844x390/screens] gameover: no keyboard-only copy on a touch device — "R", "Q", "r"
+PASS [landscape-844x390/screens] finale: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [landscape-844x390/screens] finale: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] victory: every visible text box fits its container and the viewport minus safe areas (22 boxes)
+FAIL [landscape-844x390/screens] victory: no keyboard-only copy on a touch device — "R", "Q"
+PASS [landscape-844x390/screens] failsafe: every visible text box fits its container and the viewport minus safe areas (6 boxes)
+PASS [landscape-844x390/screens] failsafe: no keyboard-only copy on a touch device
+  measure [landscape-844x390/screens] hudBudget.play = {"areaPct":6.47,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":370,"bottom":48.3,"w":360,"h":42.3},"areaPct":4.63,"central":false},{"sel":"#hudObjectivePanel","rect":{"left":563.9,"top":6,"right":834,"bottom":28.5,"w":270.1,"h":22.5},"areaPct":1.85,"central":false}],"centralRegion":{"left":168.8,"right":675.2,"top":78,"bottom":312}}
+PASS [landscape-844x390/screens] play: HUD panels cover <= 10% of 844x390 (6.47%) — #hudRigPanel 4.63%, #hudObjectivePanel 1.85%
+PASS [landscape-844x390/screens] play: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 4.63%, #hudObjectivePanel 1.85%
+  measure [landscape-844x390/screens] hudBudget.death = {"areaPct":7.42,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":370,"bottom":48.3,"w":360,"h":42.3},"areaPct":4.63,"central":false},{"sel":"#hudObjectivePanel","rect":{"left":563.9,"top":6,"right":834,"bottom":40,"w":270.1,"h":34},"areaPct":2.79,"central":false}],"centralRegion":{"left":168.8,"right":675.2,"top":78,"bottom":312}}
+PASS [landscape-844x390/screens] death: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 4.63%, #hudObjectivePanel 2.79%
+  measure [landscape-844x390/screens] hudBudget.finale = {"areaPct":9.08,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":370,"bottom":48.3,"w":360,"h":42.3},"areaPct":4.63,"central":false},{"sel":"#finale","rect":{"left":530.2,"top":6,"right":834,"bottom":54.3,"w":303.8,"h":48.3},"areaPct":4.46,"central":false}],"centralRegion":{"left":168.8,"right":675.2,"top":78,"bottom":312}}
+PASS [landscape-844x390/screens] finale: HUD panels cover <= 10% of 844x390 (9.08%) — #hudRigPanel 4.63%, #finale 4.46%
+PASS [landscape-844x390/screens] finale: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 4.63%, #finale 4.46%
+  measure [landscape-844x390/screens] hudBudget.loot = {"areaPct":9.93,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":370,"bottom":48.3,"w":360,"h":42.3},"areaPct":4.63,"central":false},{"sel":"#lootReveal","rect":{"left":466,"top":6,"right":746,"bottom":68.3,"w":280,"h":62.3},"areaPct":5.3,"central":false}],"centralRegion":{"left":168.8,"right":675.2,"top":78,"bottom":312}}
+PASS [landscape-844x390/screens] loot: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 4.63%, #lootReveal 5.3%
+  measure [landscape-844x390/screens] screens = {"title":{"textBoxes":9,"keyboardHits":["PRESS","KEY","WASD","ARROWS","SPACE","ESC","J / X","P / ESC","PAUSE P"]},"play":{"textBoxes":23,"keyboardHits":[]},"loot":{"textBoxes":29,"keyboardHits":[]},"death":{"textBoxes":23,"keyboardHits":[]},"pause":{"textBoxes":24,"keyboardHits":["ESC","esc","P / ESC","p / esc","R","Q","H"]},"gameover":{"textBoxes":30,"keyboardHits":["R","Q","r"]},"finale":{"textB…
+phone-shell [mut] (mutation copy-keys-on-touch): 21 passed, 4 failed in 100 s
+exit 1
+
+===== mut-failsafe-hint-keys.log
+  boot landscape-844x390?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr1: 44348 ms
+  measure [landscape-844x390/screens] resumedFromPause = "PLAYING"
+  measure [landscape-844x390/screens] restartedFromGameOver = "PLAYING"
+PASS [landscape-844x390/screens] the walk raised no page errors
+PASS [landscape-844x390/screens] title: every visible text box fits its container and the viewport minus safe areas (8 boxes)
+PASS [landscape-844x390/screens] title: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] play: every visible text box fits its container and the viewport minus safe areas (23 boxes)
+PASS [landscape-844x390/screens] play: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] loot: every visible text box fits its container and the viewport minus safe areas (29 boxes)
+PASS [landscape-844x390/screens] loot: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] death: every visible text box fits its container and the viewport minus safe areas (23 boxes)
+PASS [landscape-844x390/screens] death: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] pause: every visible text box fits its container and the viewport minus safe areas (21 boxes)
+PASS [landscape-844x390/screens] pause: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] gameover: every visible text box fits its container and the viewport minus safe areas (27 boxes)
+PASS [landscape-844x390/screens] gameover: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] finale: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [landscape-844x390/screens] finale: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] victory: every visible text box fits its container and the viewport minus safe areas (20 boxes)
+PASS [landscape-844x390/screens] victory: no keyboard-only copy on a touch device
+PASS [landscape-844x390/screens] failsafe: every visible text box fits its container and the viewport minus safe areas (6 boxes)
+FAIL [landscape-844x390/screens] failsafe: no keyboard-only copy on a touch device — "Press", "click"
+  measure [landscape-844x390/screens] hudBudget.play = {"areaPct":6.47,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":370,"bottom":48.3,"w":360,"h":42.3},"areaPct":4.63,"central":false},{"sel":"#hudObjectivePanel","rect":{"left":563.9,"top":6,"right":834,"bottom":28.5,"w":270.1,"h":22.5},"areaPct":1.85,"central":false}],"centralRegion":{"left":168.8,"right":675.2,"top":78,"bottom":312}}
+PASS [landscape-844x390/screens] play: HUD panels cover <= 10% of 844x390 (6.47%) — #hudRigPanel 4.63%, #hudObjectivePanel 1.85%
+PASS [landscape-844x390/screens] play: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 4.63%, #hudObjectivePanel 1.85%
+  measure [landscape-844x390/screens] hudBudget.death = {"areaPct":7.42,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":370,"bottom":48.3,"w":360,"h":42.3},"areaPct":4.63,"central":false},{"sel":"#hudObjectivePanel","rect":{"left":563.9,"top":6,"right":834,"bottom":40,"w":270.1,"h":34},"areaPct":2.79,"central":false}],"centralRegion":{"left":168.8,"right":675.2,"top":78,"bottom":312}}
+PASS [landscape-844x390/screens] death: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 4.63%, #hudObjectivePanel 2.79%
+  measure [landscape-844x390/screens] hudBudget.finale = {"areaPct":9.08,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":370,"bottom":48.3,"w":360,"h":42.3},"areaPct":4.63,"central":false},{"sel":"#finale","rect":{"left":530.2,"top":6,"right":834,"bottom":54.3,"w":303.8,"h":48.3},"areaPct":4.46,"central":false}],"centralRegion":{"left":168.8,"right":675.2,"top":78,"bottom":312}}
+PASS [landscape-844x390/screens] finale: HUD panels cover <= 10% of 844x390 (9.08%) — #hudRigPanel 4.63%, #finale 4.46%
+PASS [landscape-844x390/screens] finale: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 4.63%, #finale 4.46%
+  measure [landscape-844x390/screens] hudBudget.loot = {"areaPct":9.93,"central":false,"rows":[{"sel":"#hudRigPanel","rect":{"left":10,"top":6,"right":370,"bottom":48.3,"w":360,"h":42.3},"areaPct":4.63,"central":false},{"sel":"#lootReveal","rect":{"left":466,"top":6,"right":746,"bottom":68.3,"w":280,"h":62.3},"areaPct":5.3,"central":false}],"centralRegion":{"left":168.8,"right":675.2,"top":78,"bottom":312}}
+PASS [landscape-844x390/screens] loot: no HUD panel intersects the central 60% x 60% play region — #hudRigPanel 4.63%, #lootReveal 5.3%
+  measure [landscape-844x390/screens] screens = {"title":{"textBoxes":8,"keyboardHits":[]},"play":{"textBoxes":23,"keyboardHits":[]},"loot":{"textBoxes":29,"keyboardHits":[]},"death":{"textBoxes":23,"keyboardHits":[]},"pause":{"textBoxes":21,"keyboardHits":[]},"gameover":{"textBoxes":27,"keyboardHits":[]},"finale":{"textBoxes":24,"keyboardHits":[]},"victory":{"textBoxes":20,"keyboardHits":[]},"failsafe":{"textBoxes":6,"keyboardHits":["Press","c…
+phone-shell [mut] (mutation failsafe-hint-keys): 24 passed, 1 failed in 129 s
+exit 1
+
+===== mut-title-wide.log
+  boot portrait-390x844?testapi=1&fixeddt=16.667&shell=title&audio=0 dpr1: 52974 ms
+  measure [portrait-390x844/screens] resumedFromPause = "PLAYING"
+  measure [portrait-390x844/screens] restartedFromGameOver = "PLAYING"
+PASS [portrait-390x844/screens] the walk raised no page errors
+FAIL [portrait-390x844/screens] title: every visible text box fits its container and the viewport minus safe areas (7 boxes) — #shellText > h1 "HULLBREAKER": clipped (overflow) by #shell (text 23.4..473.3 x 129.0..186.0, box 0.0..390.0 x 0.0..844.0); leaves the viewport minus safe area (text 23.4..473.3 x 134.7..180.3 vs 0..390 x 0..844)
+PASS [portrait-390x844/screens] title: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] play: every visible text box fits its container and the viewport minus safe areas (23 boxes)
+PASS [portrait-390x844/screens] play: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] loot: every visible text box fits its container and the viewport minus safe areas (29 boxes)
+PASS [portrait-390x844/screens] loot: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] death: every visible text box fits its container and the viewport minus safe areas (23 boxes)
+PASS [portrait-390x844/screens] death: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] pause: every visible text box fits its container and the viewport minus safe areas (21 boxes)
+PASS [portrait-390x844/screens] pause: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] gameover: every visible text box fits its container and the viewport minus safe areas (27 boxes)
+PASS [portrait-390x844/screens] gameover: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] finale: every visible text box fits its container and the viewport minus safe areas (24 boxes)
+PASS [portrait-390x844/screens] finale: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] victory: every visible text box fits its container and the viewport minus safe areas (18 boxes)
+PASS [portrait-390x844/screens] victory: no keyboard-only copy on a touch device
+PASS [portrait-390x844/screens] failsafe: every visible text box fits its container and the viewport minus safe areas (6 boxes)
+PASS [portrait-390x844/screens] failsafe: no keyboard-only copy on a touch device
+  measure [portrait-390x844/screens] screens = {"title":{"textBoxes":7,"keyboardHits":[]},"play":{"textBoxes":23,"keyboardHits":[]},"loot":{"textBoxes":29,"keyboardHits":[]},"death":{"textBoxes":23,"keyboardHits":[]},"pause":{"textBoxes":21,"keyboardHits":[]},"gameover":{"textBoxes":27,"keyboardHits":[]},"finale":{"textBoxes":24,"keyboardHits":[]},"victory":{"textBoxes":18,"keyboardHits":[]},"failsafe":{"textBoxes":6,"keyboardHits":[]}}
+phone-shell [mut] (mutation title-wide): 18 passed, 1 failed in 132 s
+exit 1
+
+===== mut-objective-nowrap.log
+  boot landscape-667x375?testapi=1&fixeddt=16.667&audio=0 dpr1: 49484 ms
+PASS [landscape-667x375/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 185.4 px, 1 line(s) in a 197 px slot (scroll 197); panel [443.6,6,657,28.5]
+PASS [landscape-667x375/gateline] "WWWWWWWWWWWWWWWWWW…": the panel ends above the central region (75) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-667x375/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 185.4 px, 1 line(s) in a 197 px slot (scroll 197); panel [443.6,6,657,28.5]
+PASS [landscape-667x375/gateline] "WAVE 6/6 · SCUTTLE…": the panel ends above the central region (75) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-667x375/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 145.7 px, 1 line(s) in a 197 px slot (scroll 197); panel [443.6,6,657,28.5]
+PASS [landscape-667x375/gateline] "1 HOSTILE · +2 INB…": the panel ends above the central region (75) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-667x375/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 172.1 px, 1 line(s) in a 197 px slot (scroll 197); panel [443.6,6,657,28.5]
+PASS [landscape-667x375/gateline] "BROKEN · RUN TO TH…": the panel ends above the central region (75) and the deck chips (72.0) — panel bottom 28.5
+FAIL [landscape-667x375/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 311.2 px, 1 line(s) in a 197 px slot (scroll 311); panel [443.6,6,657,28.5]
+PASS [landscape-667x375/gateline] "WAVE 4/6 · QUARANT…": the panel ends above the central region (75) and the deck chips (72.0) — panel bottom 28.5
+FAIL [landscape-667x375/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING →" (43 chars), wrapped if it must — text 284.7 px, 1 line(s) in a 197 px slot (scroll 285); panel [443.6,6,657,28.5]
+PASS [landscape-667x375/gateline] "HULL FALLBACK · LO…": the panel ends above the central region (75) and the deck chips (72.0) — panel bottom 28.5
+  measure [landscape-667x375/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":185.4,"slotW":197,"scrollW":197,"whiteSpace":"nowrap","panel":[443.6,6,657,28.5],"centralTop":75,"chipsTop":72,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":185.4,"slotW":197,"scrollW":197,"whiteSpace":"nowrap","panel":[443.6,6,657,28.5],"centralTop":75,"chipsTop":72,"cut":false},{"text":"1 HOST…
+  boot desktop-1100x700?testapi=1&fixeddt=16.667&audio=0 dpr1: 56660 ms
+PASS [desktop-1100x700/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 237.6 px, 1 line(s) in a 366 px slot (scroll 366); panel [352,14,748,56]
+PASS [desktop-1100x700/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 237.6 px, 1 line(s) in a 366 px slot (scroll 366); panel [352,14,748,56]
+PASS [desktop-1100x700/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 186.7 px, 1 line(s) in a 366 px slot (scroll 366); panel [352,14,748,56]
+PASS [desktop-1100x700/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 220.6 px, 1 line(s) in a 366 px slot (scroll 366); panel [352,14,748,56]
+PASS [desktop-1100x700/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 330.9 px, 2 line(s) in a 366 px slot (scroll 366); panel [352,14,748,68.2]
+PASS [desktop-1100x700/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING →" (43 chars), wrapped if it must — text 364.8 px, 1 line(s) in a 366 px slot (scroll 366); panel [352,14,748,56]
+  measure [desktop-1100x700/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":237.6,"slotW":366,"scrollW":366,"whiteSpace":"normal","panel":[352,14,748,56],"centralTop":140,"chipsTop":null,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":237.6,"slotW":366,"scrollW":366,"whiteSpace":"normal","panel":[352,14,748,56],"centralTop":140,"chipsTop":null,"cut":false},{"text":"1 HOST…
+  boot landscape-844x390?testapi=1&fixeddt=16.667&audio=0 dpr1: 41984 ms
+PASS [landscape-844x390/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 185.4 px, 1 line(s) in a 254 px slot (scroll 254); panel [563.9,6,834,28.5]
+PASS [landscape-844x390/gateline] "WWWWWWWWWWWWWWWWWW…": the panel ends above the central region (78) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-844x390/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 185.4 px, 1 line(s) in a 254 px slot (scroll 254); panel [563.9,6,834,28.5]
+PASS [landscape-844x390/gateline] "WAVE 6/6 · SCUTTLE…": the panel ends above the central region (78) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-844x390/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 145.7 px, 1 line(s) in a 254 px slot (scroll 254); panel [563.9,6,834,28.5]
+PASS [landscape-844x390/gateline] "1 HOSTILE · +2 INB…": the panel ends above the central region (78) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-844x390/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 172.1 px, 1 line(s) in a 254 px slot (scroll 254); panel [563.9,6,834,28.5]
+PASS [landscape-844x390/gateline] "BROKEN · RUN TO TH…": the panel ends above the central region (78) and the deck chips (72.0) — panel bottom 28.5
+FAIL [landscape-844x390/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 311.2 px, 1 line(s) in a 254 px slot (scroll 311); panel [563.9,6,834,28.5]
+PASS [landscape-844x390/gateline] "WAVE 4/6 · QUARANT…": the panel ends above the central region (78) and the deck chips (72.0) — panel bottom 28.5
+FAIL [landscape-844x390/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING →" (43 chars), wrapped if it must — text 284.7 px, 1 line(s) in a 254 px slot (scroll 285); panel [563.9,6,834,28.5]
+PASS [landscape-844x390/gateline] "HULL FALLBACK · LO…": the panel ends above the central region (78) and the deck chips (72.0) — panel bottom 28.5
+  measure [landscape-844x390/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":185.4,"slotW":254,"scrollW":254,"whiteSpace":"nowrap","panel":[563.9,6,834,28.5],"centralTop":78,"chipsTop":72,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":185.4,"slotW":254,"scrollW":254,"whiteSpace":"nowrap","panel":[563.9,6,834,28.5],"centralTop":78,"chipsTop":72,"cut":false},{"text":"1 HOST…
+  boot landscape-932x430?testapi=1&fixeddt=16.667&audio=0 dpr1: 39937 ms
+PASS [landscape-932x430/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 185.4 px, 1 line(s) in a 282 px slot (scroll 282); panel [623.8,6,922,28.5]
+PASS [landscape-932x430/gateline] "WWWWWWWWWWWWWWWWWW…": the panel ends above the central region (86) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-932x430/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 185.4 px, 1 line(s) in a 282 px slot (scroll 282); panel [623.8,6,922,28.5]
+PASS [landscape-932x430/gateline] "WAVE 6/6 · SCUTTLE…": the panel ends above the central region (86) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-932x430/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 145.7 px, 1 line(s) in a 282 px slot (scroll 282); panel [623.8,6,922,28.5]
+PASS [landscape-932x430/gateline] "1 HOSTILE · +2 INB…": the panel ends above the central region (86) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-932x430/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 172.1 px, 1 line(s) in a 282 px slot (scroll 282); panel [623.8,6,922,28.5]
+PASS [landscape-932x430/gateline] "BROKEN · RUN TO TH…": the panel ends above the central region (86) and the deck chips (72.0) — panel bottom 28.5
+FAIL [landscape-932x430/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 311.2 px, 1 line(s) in a 282 px slot (scroll 311); panel [623.8,6,922,28.5]
+PASS [landscape-932x430/gateline] "WAVE 4/6 · QUARANT…": the panel ends above the central region (86) and the deck chips (72.0) — panel bottom 28.5
+FAIL [landscape-932x430/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING →" (43 chars), wrapped if it must — text 284.7 px, 1 line(s) in a 282 px slot (scroll 285); panel [623.8,6,922,28.5]
+PASS [landscape-932x430/gateline] "HULL FALLBACK · LO…": the panel ends above the central region (86) and the deck chips (72.0) — panel bottom 28.5
+  measure [landscape-932x430/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":185.4,"slotW":282,"scrollW":282,"whiteSpace":"nowrap","panel":[623.8,6,922,28.5],"centralTop":86,"chipsTop":72,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":185.4,"slotW":282,"scrollW":282,"whiteSpace":"nowrap","panel":[623.8,6,922,28.5],"centralTop":86,"chipsTop":72,"cut":false},{"text":"1 HOST…
+  boot portrait-390x844?testapi=1&fixeddt=16.667&audio=0 dpr1: 57774 ms
+PASS [portrait-390x844/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 170.6 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,59,383,82.3]
+PASS [portrait-390x844/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 170.6 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,59,383,82.3]
+PASS [portrait-390x844/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 134.1 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,59,383,82.3]
+PASS [portrait-390x844/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 158.4 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,59,383,82.3]
+PASS [portrait-390x844/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 286.4 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,59,383,82.3]
+PASS [portrait-390x844/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING →" (43 chars), wrapped if it must — text 262 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,59,383,82.3]
+  measure [portrait-390x844/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":170.6,"slotW":356,"scrollW":356,"whiteSpace":"normal","panel":[7,59,383,82.3],"centralTop":168.8,"chipsTop":176,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":170.6,"slotW":356,"scrollW":356,"whiteSpace":"normal","panel":[7,59,383,82.3],"centralTop":168.8,"chipsTop":176,"cut":false},{"text":"1 HO…
+  boot desktop-1280x720?testapi=1&fixeddt=16.667&audio=0 dpr1: 52617 ms
+PASS [desktop-1280x720/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 237.6 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+PASS [desktop-1280x720/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 237.6 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+PASS [desktop-1280x720/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 186.7 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+PASS [desktop-1280x720/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 220.6 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+PASS [desktop-1280x720/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 398.8 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+PASS [desktop-1280x720/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING →" (43 chars), wrapped if it must — text 364.8 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+  measure [desktop-1280x720/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":237.6,"slotW":400,"scrollW":400,"whiteSpace":"normal","panel":[425,14,855,56],"centralTop":144,"chipsTop":null,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":237.6,"slotW":400,"scrollW":400,"whiteSpace":"normal","panel":[425,14,855,56],"centralTop":144,"chipsTop":null,"cut":false},{"text":"1 HOST…
+phone-shell [mut] (mutation objective-nowrap): 48 passed, 6 failed in 450 s
+exit 1
+
+===== mut1-objective-nowrap-vacuous.log
+  boot landscape-667x375?testapi=1&fixeddt=16.667&audio=0 dpr1: 61284 ms
+PASS [landscape-667x375/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 185.4 px, 1 line(s) in a 197 px slot (scroll 197); panel [443.6,6,657,28.5]
+PASS [landscape-667x375/gateline] "WWWWWWWWWWWWWWWWWW…": the panel ends above the central region (75) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-667x375/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 185.4 px, 1 line(s) in a 197 px slot (scroll 197); panel [443.6,6,657,28.5]
+PASS [landscape-667x375/gateline] "WAVE 6/6 · SCUTTLE…": the panel ends above the central region (75) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-667x375/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 145.7 px, 1 line(s) in a 197 px slot (scroll 197); panel [443.6,6,657,28.5]
+PASS [landscape-667x375/gateline] "1 HOSTILE · +2 INB…": the panel ends above the central region (75) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-667x375/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 172.1 px, 1 line(s) in a 197 px slot (scroll 197); panel [443.6,6,657,28.5]
+PASS [landscape-667x375/gateline] "BROKEN · RUN TO TH…": the panel ends above the central region (75) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-667x375/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 165.5 px, 2 line(s) in a 197 px slot (scroll 197); panel [443.6,6,657,40]
+PASS [landscape-667x375/gateline] "WAVE 4/6 · QUARANT…": the panel ends above the central region (75) and the deck chips (72.0) — panel bottom 40
+PASS [landscape-667x375/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING →" (43 chars), wrapped if it must — text 192 px, 2 line(s) in a 197 px slot (scroll 197); panel [443.6,6,657,40]
+PASS [landscape-667x375/gateline] "HULL FALLBACK · LO…": the panel ends above the central region (75) and the deck chips (72.0) — panel bottom 40
+  measure [landscape-667x375/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":185.4,"slotW":197,"scrollW":197,"whiteSpace":"normal","panel":[443.6,6,657,28.5],"centralTop":75,"chipsTop":72,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":185.4,"slotW":197,"scrollW":197,"whiteSpace":"normal","panel":[443.6,6,657,28.5],"centralTop":75,"chipsTop":72,"cut":false},{"text":"1 HOST…
+  boot desktop-1100x700?testapi=1&fixeddt=16.667&audio=0 dpr1: 46644 ms
+PASS [desktop-1100x700/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 237.6 px, 1 line(s) in a 366 px slot (scroll 366); panel [352,14,748,56]
+PASS [desktop-1100x700/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 237.6 px, 1 line(s) in a 366 px slot (scroll 366); panel [352,14,748,56]
+PASS [desktop-1100x700/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 186.7 px, 1 line(s) in a 366 px slot (scroll 366); panel [352,14,748,56]
+PASS [desktop-1100x700/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 220.6 px, 1 line(s) in a 366 px slot (scroll 366); panel [352,14,748,56]
+PASS [desktop-1100x700/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 330.9 px, 2 line(s) in a 366 px slot (scroll 366); panel [352,14,748,68.2]
+PASS [desktop-1100x700/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING →" (43 chars), wrapped if it must — text 364.8 px, 1 line(s) in a 366 px slot (scroll 366); panel [352,14,748,56]
+  measure [desktop-1100x700/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":237.6,"slotW":366,"scrollW":366,"whiteSpace":"normal","panel":[352,14,748,56],"centralTop":140,"chipsTop":null,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":237.6,"slotW":366,"scrollW":366,"whiteSpace":"normal","panel":[352,14,748,56],"centralTop":140,"chipsTop":null,"cut":false},{"text":"1 HOST…
+  boot landscape-844x390?testapi=1&fixeddt=16.667&audio=0 dpr1: 36644 ms
+PASS [landscape-844x390/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 185.4 px, 1 line(s) in a 254 px slot (scroll 254); panel [563.9,6,834,28.5]
+PASS [landscape-844x390/gateline] "WWWWWWWWWWWWWWWWWW…": the panel ends above the central region (78) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-844x390/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 185.4 px, 1 line(s) in a 254 px slot (scroll 254); panel [563.9,6,834,28.5]
+PASS [landscape-844x390/gateline] "WAVE 6/6 · SCUTTLE…": the panel ends above the central region (78) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-844x390/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 145.7 px, 1 line(s) in a 254 px slot (scroll 254); panel [563.9,6,834,28.5]
+PASS [landscape-844x390/gateline] "1 HOSTILE · +2 INB…": the panel ends above the central region (78) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-844x390/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 172.1 px, 1 line(s) in a 254 px slot (scroll 254); panel [563.9,6,834,28.5]
+PASS [landscape-844x390/gateline] "BROKEN · RUN TO TH…": the panel ends above the central region (78) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-844x390/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 238.3 px, 2 line(s) in a 254 px slot (scroll 254); panel [563.9,6,834,40]
+PASS [landscape-844x390/gateline] "WAVE 4/6 · QUARANT…": the panel ends above the central region (78) and the deck chips (72.0) — panel bottom 40
+PASS [landscape-844x390/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING →" (43 chars), wrapped if it must — text 225.1 px, 2 line(s) in a 254 px slot (scroll 254); panel [563.9,6,834,40]
+PASS [landscape-844x390/gateline] "HULL FALLBACK · LO…": the panel ends above the central region (78) and the deck chips (72.0) — panel bottom 40
+  measure [landscape-844x390/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":185.4,"slotW":254,"scrollW":254,"whiteSpace":"normal","panel":[563.9,6,834,28.5],"centralTop":78,"chipsTop":72,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":185.4,"slotW":254,"scrollW":254,"whiteSpace":"normal","panel":[563.9,6,834,28.5],"centralTop":78,"chipsTop":72,"cut":false},{"text":"1 HOST…
+  boot landscape-932x430?testapi=1&fixeddt=16.667&audio=0 dpr1: 52845 ms
+PASS [landscape-932x430/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 185.4 px, 1 line(s) in a 282 px slot (scroll 282); panel [623.8,6,922,28.5]
+PASS [landscape-932x430/gateline] "WWWWWWWWWWWWWWWWWW…": the panel ends above the central region (86) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-932x430/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 185.4 px, 1 line(s) in a 282 px slot (scroll 282); panel [623.8,6,922,28.5]
+PASS [landscape-932x430/gateline] "WAVE 6/6 · SCUTTLE…": the panel ends above the central region (86) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-932x430/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 145.7 px, 1 line(s) in a 282 px slot (scroll 282); panel [623.8,6,922,28.5]
+PASS [landscape-932x430/gateline] "1 HOSTILE · +2 INB…": the panel ends above the central region (86) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-932x430/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 172.1 px, 1 line(s) in a 282 px slot (scroll 282); panel [623.8,6,922,28.5]
+PASS [landscape-932x430/gateline] "BROKEN · RUN TO TH…": the panel ends above the central region (86) and the deck chips (72.0) — panel bottom 28.5
+PASS [landscape-932x430/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 258.2 px, 2 line(s) in a 282 px slot (scroll 282); panel [623.8,6,922,40]
+PASS [landscape-932x430/gateline] "WAVE 4/6 · QUARANT…": the panel ends above the central region (86) and the deck chips (72.0) — panel bottom 40
+PASS [landscape-932x430/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING →" (43 chars), wrapped if it must — text 271.5 px, 2 line(s) in a 282 px slot (scroll 282); panel [623.8,6,922,40]
+PASS [landscape-932x430/gateline] "HULL FALLBACK · LO…": the panel ends above the central region (86) and the deck chips (72.0) — panel bottom 40
+  measure [landscape-932x430/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":185.4,"slotW":282,"scrollW":282,"whiteSpace":"normal","panel":[623.8,6,922,28.5],"centralTop":86,"chipsTop":72,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":185.4,"slotW":282,"scrollW":282,"whiteSpace":"normal","panel":[623.8,6,922,28.5],"centralTop":86,"chipsTop":72,"cut":false},{"text":"1 HOST…
+  boot portrait-390x844?testapi=1&fixeddt=16.667&audio=0 dpr1: 27061 ms
+PASS [portrait-390x844/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 170.6 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,59,383,82.3]
+PASS [portrait-390x844/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 170.6 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,59,383,82.3]
+PASS [portrait-390x844/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 134.1 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,59,383,82.3]
+PASS [portrait-390x844/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 158.4 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,59,383,82.3]
+PASS [portrait-390x844/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 286.4 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,59,383,82.3]
+PASS [portrait-390x844/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING →" (43 chars), wrapped if it must — text 262 px, 1 line(s) in a 356 px slot (scroll 356); panel [7,59,383,82.3]
+  measure [portrait-390x844/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":170.6,"slotW":356,"scrollW":356,"whiteSpace":"normal","panel":[7,59,383,82.3],"centralTop":168.8,"chipsTop":176,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":170.6,"slotW":356,"scrollW":356,"whiteSpace":"normal","panel":[7,59,383,82.3],"centralTop":168.8,"chipsTop":176,"cut":false},{"text":"1 HO…
+  boot desktop-1280x720?testapi=1&fixeddt=16.667&audio=0 dpr1: 51866 ms
+PASS [desktop-1280x720/gateline] objective slot holds "WWWWWWWWWWWWWWWWWWWWWWWWWWWW" (28 chars) on ONE line, nothing cut — text 237.6 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+PASS [desktop-1280x720/gateline] objective slot holds "WAVE 6/6 · SCUTTLE · INBOUND" (28 chars) on ONE line, nothing cut — text 237.6 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+PASS [desktop-1280x720/gateline] objective slot holds "1 HOSTILE · +2 INBOUND" (22 chars) on ONE line, nothing cut — text 186.7 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+PASS [desktop-1280x720/gateline] objective slot holds "BROKEN · RUN TO THE TURN →" (26 chars) on ONE line, nothing cut — text 220.6 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+PASS [desktop-1280x720/gateline] objective slot shows all of "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND" (47 chars), wrapped if it must — text 398.8 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+PASS [desktop-1280x720/gateline] objective slot shows all of "HULL FALLBACK · LOWER ROUTE · KEEP MOVING →" (43 chars), wrapped if it must — text 364.8 px, 1 line(s) in a 400 px slot (scroll 400); panel [425,14,855,56]
+  measure [desktop-1280x720/gateline] gateLine = [{"text":"WWWWWWWWWWWWWWWWWWWWWWWWWWWW","chars":28,"lines":1,"textW":237.6,"slotW":400,"scrollW":400,"whiteSpace":"normal","panel":[425,14,855,56],"centralTop":144,"chipsTop":null,"cut":false},{"text":"WAVE 6/6 · SCUTTLE · INBOUND","chars":28,"lines":1,"textW":237.6,"slotW":400,"scrollW":400,"whiteSpace":"normal","panel":[425,14,855,56],"centralTop":144,"chipsTop":null,"cut":false},{"text":"1 HOST…
+phone-shell [mut] (mutation objective-nowrap): 54 passed, 0 failed in 425 s
+exit 0
+
+===== mut-preload-no-crossorigin.log
+  measure [landscape-844x390/preload] preloads = [{"href":"http://127.0.0.1:8798/assets/generated/ui/title-meridian-ascent-v1.webp","as":"image","crossorigin":null,"requests":1},{"href":"http://127.0.0.1:8798/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp","as":"image","crossorigin":null,"requests":2},{"href":"http://127.0.0.1:8798/assets/generated/environment/meridian-foreground-pack-v1.webp","as":"image","crossorigin":"","request…
+  measure [landscape-844x390/preload] preloadWarnings = ["A preload for 'http://127.0.0.1:8798/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.","The resource http://127.0.0.1:8798/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp was preloaded using link preload but not used within a few seconds from t…
+  measure [landscape-844x390/preload] anyDuplicateRequests = ["/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp x2"]
+FAIL [landscape-844x390/preload] zero "preload ... not used" console warnings — A preload for 'http://127.0.0.1:8798/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute. | The resource http://127.0.0.1:8798/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+FAIL [landscape-844x390/preload] each preloaded URL is requested exactly once — /assets/generated/ui/title-meridian-ascent-v1.webp: 1, /assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp: 2, /assets/generated/environment/meridian-foreground-pack-v1.webp: 1, /assets/generated/backdrops/backdrop-meridian-coils-v3.webp: 1, /assets/generated/environment/meridian-component-atlas-v1.webp: 1
+  measure [desktop-1280x720/preload] preloads = [{"href":"http://127.0.0.1:8798/assets/generated/ui/title-meridian-ascent-v1.webp","as":"image","crossorigin":null,"requests":1},{"href":"http://127.0.0.1:8798/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp","as":"image","crossorigin":null,"requests":2},{"href":"http://127.0.0.1:8798/assets/generated/environment/meridian-foreground-pack-v1.webp","as":"image","crossorigin":"","request…
+  measure [desktop-1280x720/preload] preloadWarnings = ["A preload for 'http://127.0.0.1:8798/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.","The resource http://127.0.0.1:8798/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp was preloaded using link preload but not used within a few seconds from t…
+  measure [desktop-1280x720/preload] anyDuplicateRequests = ["/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp x2"]
+FAIL [desktop-1280x720/preload] zero "preload ... not used" console warnings — A preload for 'http://127.0.0.1:8798/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute. | The resource http://127.0.0.1:8798/assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+FAIL [desktop-1280x720/preload] each preloaded URL is requested exactly once — /assets/generated/ui/title-meridian-ascent-v1.webp: 1, /assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp: 2, /assets/generated/environment/meridian-foreground-pack-v1.webp: 1, /assets/generated/backdrops/backdrop-meridian-coils-v3.webp: 1, /assets/generated/environment/meridian-component-atlas-v1.webp: 1
+phone-shell [mut] (mutation preload-no-crossorigin): 0 passed, 4 failed in 162 s
+exit 1
+
+===== q-mut-watchdog-no-warmup.log
+serving /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t105/t105-final
+  http://127.0.0.1:8794/index.html
+  http://localhost:8794/index.html
+caching: no-store, no validators, conditional requests ignored
+pin 8794: shell-copy.js 200, rev 383b09f, load 32.01 18.33 7.88
+FAIL [landscape-844x390/watchdog] frame stall 6 s from boot (0 frames drawn): no "game got stuck" panel, frames resume — panels ["frozen"] (ms after the stall began {"frozen":1853}), beats 0 -> 1, state MENU, longest stretch of the stall with no page timer 900 ms (decidable up to 3000)
+  UNDECIDED [landscape-844x390/watchdog] frame stall 6 s after the first frame (a slow first draw): this host's timers stalled during the hold, so no panel is not evidence either way — panels [] (ms after the stall began {}), beats 1 -> 7, state MENU, longest stretch of the stall with no page timer 6000 ms (decidable up to 3000)
+  UNDECIDED [landscape-844x390/watchdog] frame stall 6 s after warm-up, during PLAYING: this host's timers stalled during the hold, so no panel is not evidence either way — panels [] (ms after the stall began {}), beats 10 -> 13, state PLAYING, longest stretch of the stall with no page timer 3167 ms (decidable up to 750)
+PASS [landscape-844x390/watchdog] frame stall 10 s after warm-up, during PLAYING: the "game got stuck" panel DOES show — panels ["frozen"] (ms after the stall began {"frozen":8433}), beats 10 -> 15, state PLAYING, longest stretch of the stall with no page timer 4182 ms (decidable up to 3000)
+PASS [landscape-844x390/watchdog] frame loop dead from boot (0 frames, held 25 s): the "game got stuck" panel DOES show — panels ["frozen"] (ms after the stall began {"frozen":659}), beats 0 -> 1, state MENU, longest stretch of the stall with no page timer 393 ms (decidable up to 3000)
+  NOTE [landscape-844x390/watchdog] main-thread busy-wait 6 s from boot (reported, not judged): panels [] (ms after the stall began {}), beats 0 -> 5, state MENU, longest stretch of the stall with no page timer 6000 ms
+  NOTE [landscape-844x390/watchdog] main-thread busy-wait 6 s after warm-up, during PLAYING (reported, not judged): panels ["slow"] (ms after the stall began {"slow":null}), beats 10 -> 14, state PLAYING, longest stretch of the stall with no page timer 6000 ms
+  NOTE [landscape-844x390/watchdog] natural DPR-3 boot: panels [], boot->first beat 23 ms, worst beat gap 21639 ms after beat 1, beats 6
+  measure [landscape-844x390/watchdog] stalls = [{"name":"frame stall 6 s from boot (0 frames drawn)","plan":{"trigger":"booted","kind":"hold","ms":6000},"panels":["frozen"],"panelAfterArmMs":{"frozen":1853},"quietMs":900,"showing":"frozen","beatsAtArm":0,"beatsNow":1,"bootToFirstBeatMs":6011,"worstBeatGapMs":0,"worstGapAfterBeat":-1,"firstBeats":[0],"pixelRatio":1,"state":"MENU","errors":0,"decidableQuietMs":3000,"verdict":"fail"},{"name":"fra…
+phone-shell [mut] (mutation watchdog-no-warmup): 2 passed, 1 failed, 2 undecided on this host in 840 s
+exit 1
+
+===== mut-watchdog-no-warmup.log
+FAIL [landscape-844x390/watchdog] frame stall 6 s from boot (0 frames drawn): no "game got stuck" panel, frames resume — panels ["frozen"] (ms after the stall began {"frozen":2816}), beats 0 -> 1, state MENU, worst timer gap during the stall 16578 ms
+PASS [landscape-844x390/watchdog] frame stall 6 s after the first frame (a slow first draw): no "game got stuck" panel, frames resume — panels [] (ms after the stall began {}), beats 1 -> 7, state MENU, worst timer gap during the stall 0 ms
+FAIL [landscape-844x390/watchdog] frame stall 6 s after warm-up, during PLAYING: the "game got stuck" panel DOES show — panels [] (ms after the stall began {}), beats 10 -> 16, state PLAYING, worst timer gap during the stall 1495 ms
+PASS [landscape-844x390/watchdog] frame stall 10 s after warm-up, during PLAYING: the "game got stuck" panel DOES show — panels ["frozen"] (ms after the stall began {"frozen":6604}), beats 10 -> 16, state PLAYING, worst timer gap during the stall 1926 ms
+PASS [landscape-844x390/watchdog] frame loop dead from boot (0 frames, held 25 s): the "game got stuck" panel DOES show — panels ["frozen"] (ms after the stall began {"frozen":713}), beats 0 -> 1, state MENU, worst timer gap during the stall 14497 ms
+  NOTE [landscape-844x390/watchdog] main-thread busy-wait 6 s from boot (reported, not judged): panels [] (ms after the stall began {}), beats 0 -> 10, state MENU, worst timer gap during the stall 0 ms
+  NOTE [landscape-844x390/watchdog] main-thread busy-wait 6 s after warm-up, during PLAYING (reported, not judged): panels [] (ms after the stall began {}), beats 10 -> 19, state PLAYING, worst timer gap during the stall 2218 ms
+  NOTE [landscape-844x390/watchdog] natural DPR-3 boot: panels [], boot->first beat 2 ms, worst beat gap 30222 ms after beat 1, beats 5
+  measure [landscape-844x390/watchdog] stalls = [{"name":"frame stall 6 s from boot (0 frames drawn)","plan":{"trigger":"booted","kind":"hold","ms":6000},"panels":["frozen"],"panelAfterArmMs":{"frozen":2816},"worstTimerGapMs":16578,"showing":"frozen","beatsAtArm":0,"beatsNow":1,"bootToFirstBeatMs":6075,"worstBeatGapMs":0,"worstGapAfterBeat":-1,"firstBeats":[0],"pixelRatio":1,"state":"MENU","errors":0},{"name":"frame stall 6 s after the first fr…
+phone-shell [mut] (mutation watchdog-no-warmup): 3 passed, 2 failed in 556 s
+exit 1
+
+===== mut-audio-no-end-unlock.log
+  boot landscape-844x390 dpr1: 29837 ms
+  measure [landscape-844x390/audio] firstTap = {"audio":{"enabled":true,"unlocked":true,"contextState":"suspended","dead":false,"layers":1,"voices":0,"maxVoices":14,"combatDuck":1,"heat":0,"pressure":0,"finale":{"phase":"dormant","wave":0,"transmitPlayed":false},"contact":{"hits":0,"blocks":0,"pendingHitBaselines":0}},"calls":[{"evt":"pointerdown","pointerType":"touch","state":"suspended","honoured":false,"at":1792740070820}],"created":1}
+FAIL [landscape-844x390/audio] the first tap on the title leaves audio RUNNING under the iOS rule (built suspended, resumed in the gesture) — context suspended; resume() calls: pointerdown:suspended
+FAIL [landscape-844x390/audio] …and the resume() that took effect ran inside the touch END dispatch — no honoured resume()
+FAIL [landscape-844x390/audio] a context iOS reports as "interrupted" is resumed by the next tap, inside its touch END — pointerdown:interrupted
+PASS [landscape-844x390/audio] audio trial raised no page errors
+phone-shell [mut] (mutation audio-no-end-unlock): 1 passed, 3 failed in 70 s
+exit 1
+
+===== mut-no-canvas-resize.log
+  boot landscape-844x390?testapi=1&fixeddt=16.667&audio=0 dpr1: 47966 ms
+PASS [landscape-844x390/rotate] three fingers down hold run + fire + jump before the rotation — right,jump,fire
+FAIL [landscape-844x390/rotate] rotated to portrait mid-run: canvas and camera follow the new viewport 390x844 — css 844,390, px 928,429, ratio 1.1, aspect 2.1641
+PASS [landscape-844x390/rotate] rotated to portrait mid-run: the HUD is re-laid out inside the new viewport, deck re-laid out (layout width 390) — rig 7,7,383,49 obj 7,59,383,82
+PASS [landscape-844x390/rotate] rotated to portrait mid-run: no stuck input (deck holds nothing, sim keys all up) and no failsafe panel — keys  deck  failsafe null state PLAYING
+PASS [landscape-844x390/rotate] portrait after rotation: every visible text box fits its container and the viewport minus safe areas (22 boxes)
+PASS [landscape-844x390/rotate] portrait after rotation: no keyboard-only copy on a touch device
+PASS [landscape-844x390/rotate] rotated back to landscape: canvas and camera follow the new viewport 844x390 — css 844,390, px 928,429, ratio 1.1, aspect 2.1641
+PASS [landscape-844x390/rotate] rotated back to landscape: the HUD is re-laid out inside the new viewport, deck re-laid out (layout width 844) — rig 10,6,370,48 obj 564,6,834,29
+PASS [landscape-844x390/rotate] rotated back to landscape: no stuck input (deck holds nothing, sim keys all up) and no failsafe panel — keys  deck  failsafe null state PLAYING
+PASS [landscape-844x390/rotate] landscape after rotating back: every visible text box fits its container and the viewport minus safe areas (22 boxes)
+PASS [landscape-844x390/rotate] landscape after rotating back: no keyboard-only copy on a touch device
+PASS [landscape-844x390/rotate] a fresh stick press after the rotations runs RIG right — right
+  measure [landscape-844x390/rotate] rotation = {"held":{"W":844,"H":390,"canvasCss":[844,390],"canvasPx":[928,429],"pixelRatio":1.1,"cameraAspect":2.164102564102564,"rig":[10,6,370,48.34375],"obj":[563.921875,6,834,28.5],"keys":["right","jump","fire"],"deck":["ArrowRight","Space","KeyX"],"deckW":844,"failsafe":null,"state":"PLAYING"},"portrait":{"W":390,"H":844,"canvasCss":[844,390],"canvasPx":[928,429],"pixelRatio":1.1,"cameraAspect":2.164102…
+PASS [landscape-844x390/rotate] rotation raised no page errors
+phone-shell [mut] (mutation no-canvas-resize): 12 passed, 1 failed in 139 s
+exit 1
+
+===== mut-no-rotation-release.log
+  boot landscape-844x390?testapi=1&fixeddt=16.667&audio=0 dpr1: 33043 ms
+PASS [landscape-844x390/rotate] three fingers down hold run + fire + jump before the rotation — right,jump,fire
+PASS [landscape-844x390/rotate] rotated to portrait mid-run: canvas and camera follow the new viewport 390x844 — css 390,844, px 429,928, ratio 1.1, aspect 0.4621
+PASS [landscape-844x390/rotate] rotated to portrait mid-run: the HUD is re-laid out inside the new viewport, deck re-laid out (layout width 390) — rig 7,7,383,49 obj 7,59,383,82
+FAIL [landscape-844x390/rotate] rotated to portrait mid-run: no stuck input (deck holds nothing, sim keys all up) and no failsafe panel — keys right,jump,fire deck ArrowRight,Space,KeyX failsafe null state PLAYING
+PASS [landscape-844x390/rotate] portrait after rotation: every visible text box fits its container and the viewport minus safe areas (21 boxes)
+PASS [landscape-844x390/rotate] portrait after rotation: no keyboard-only copy on a touch device
+PASS [landscape-844x390/rotate] rotated back to landscape: canvas and camera follow the new viewport 844x390 — css 844,390, px 928,429, ratio 1.1, aspect 2.1641
+PASS [landscape-844x390/rotate] rotated back to landscape: the HUD is re-laid out inside the new viewport, deck re-laid out (layout width 844) — rig 10,6,370,48 obj 564,6,834,29
+PASS [landscape-844x390/rotate] rotated back to landscape: no stuck input (deck holds nothing, sim keys all up) and no failsafe panel — keys  deck  failsafe null state PLAYING
+PASS [landscape-844x390/rotate] landscape after rotating back: every visible text box fits its container and the viewport minus safe areas (22 boxes)
+PASS [landscape-844x390/rotate] landscape after rotating back: no keyboard-only copy on a touch device
+PASS [landscape-844x390/rotate] a fresh stick press after the rotations runs RIG right — right
+  measure [landscape-844x390/rotate] rotation = {"held":{"W":844,"H":390,"canvasCss":[844,390],"canvasPx":[928,429],"pixelRatio":1.1,"cameraAspect":2.164102564102564,"rig":[10,6,370,48.34375],"obj":[563.921875,6,834,28.5],"keys":["right","jump","fire"],"deck":["ArrowRight","Space","KeyX"],"deckW":844,"failsafe":null,"state":"PLAYING"},"portrait":{"W":390,"H":844,"canvasCss":[390,844],"canvasPx":[429,928],"pixelRatio":1.1,"cameraAspect":0.462085…
+PASS [landscape-844x390/rotate] rotation raised no page errors
+phone-shell [mut] (mutation no-rotation-release): 12 passed, 1 failed in 135 s
+exit 1
+
