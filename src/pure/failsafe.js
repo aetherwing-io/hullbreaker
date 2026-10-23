@@ -43,6 +43,19 @@ export const FAILSAFE = {
   bootWatchdogMs: 10000,
   freezeStallMs: 4000,
   freezeTickMs: 1000,
+  /* The freeze watchdog's WARM-UP (T-105). Until the frame loop has beaten
+     this many times — until the first frames have actually been drawn — a
+     silent heartbeat is the boot still finishing, not a stuck game. The
+     first draw is where a phone compiles its shaders and uploads its
+     textures, and a slow GPU can hold frames back for seconds while the
+     page's timers run on time: exactly the signature the 4 s rule reads as
+     "stuck". The "got stuck" panel never downgrades and its button reloads
+     into the same first draw, so on that phone the game could never start.
+     Before warm-up the most a silent loop earns is the SOFT "still loading"
+     panel, after warmStallMs; it comes down by itself once frames flow.
+     After warm-up the 4 s rule is exactly what it was. */
+  warmBeats: 3,
+  warmStallMs: 10000,
   /* src/main.js's frame-dt clamp. The literal in the frame loop stays the
      single source of truth (it is what the collision-tunneling budget is
      asserted against); this copy lets the policy state the contract, and
@@ -93,6 +106,31 @@ export function faultStep(prev, nowMs, policy = FAILSAFE) {
     }
   }
   return { ...next, action };
+}
+
+/* ------------------------- the freeze verdict ---------------------- *
+ * One sample of the inline watchdog (index.html), as a decision:
+ *   'ok'     nothing to do;
+ *   'slow'   show the soft "still loading" panel (booted, never warmed up);
+ *   'hide'   take that soft panel down again (the frames are flowing now);
+ *   'frozen' show the hard "got stuck" panel (warmed up, then silent).
+ * `s` = { booted, showing, slept, visible, beats, bootedAt, visibleSince,
+ * lastBeatAt }, all wall-clock ms. The inline bootstrap cannot import this
+ * module (it must survive every module failing), so it carries a copy of
+ * this function written in the same ES5 subset; tools/pathcheck runs both
+ * over the same seeded states and requires every verdict to agree.      */
+export function freezeVerdict(s, now, policy) {
+  var P = policy || FAILSAFE;
+  if (!s.booted || s.slept || !s.visible) return 'ok';
+  if (s.showing && s.showing !== 'slow') return 'ok';
+  if (s.beats < P.warmBeats) {
+    if (s.showing === 'slow') return 'ok';
+    var since = Math.max(s.bootedAt, s.visibleSince);
+    return now - since >= P.warmStallMs ? 'slow' : 'ok';
+  }
+  if (s.showing === 'slow') return 'hide';
+  if (now - s.visibleSince < P.freezeStallMs) return 'ok';
+  return now - s.lastBeatAt >= P.freezeStallMs ? 'frozen' : 'ok';
 }
 
 /* ------------------------ plain language -------------------------- *
