@@ -1,0 +1,118 @@
+{
+ "tool": "tools/simlab/framing/corner-approach.mjs",
+ "viewport": "phoneLandscape",
+ "size": [
+  844,
+  390
+ ],
+ "touch": false,
+ "query": "follow=0&momentum=0",
+ "policy": "run",
+ "offsets": [
+  2500,
+  1500,
+  500
+ ],
+ "endState": "VICTORY",
+ "finishedCorners": 6,
+ "silhouette": {
+  "reachTiles": 1.295,
+  "gain": 1,
+  "heights": [
+   0.1,
+   0.85,
+   2
+  ]
+ },
+ "whole": {
+  "ticks": 9650,
+  "past": 327,
+  "maxNdc": 1.0437442594112007,
+  "at": {
+   "gameMs": 56900,
+   "x": 286.69,
+   "y": 3
+  }
+ },
+ "clamp": {
+  "1": {
+   "ticks": 1207,
+   "past": 14,
+   "maxNdc": 1.0063091229424135,
+   "at": {
+    "gameMs": 12833,
+    "state": "idle",
+    "x": 110.86,
+    "y": 3
+   },
+   "turnAtMs": 23466.666666666944,
+   "doneAtMs": 24566.666666667024
+  },
+  "2": {
+   "ticks": 1186,
+   "past": 0,
+   "maxNdc": 0.9853068305489239,
+   "at": {
+    "gameMs": 35417,
+    "state": "idle",
+    "x": 198.97,
+    "y": 3
+   },
+   "turnAtMs": 45683.33333333241,
+   "doneAtMs": 46799.999999998916
+  },
+  "3": {
+   "ticks": 1254,
+   "past": 103,
+   "maxNdc": 1.0437442594112007,
+   "at": {
+    "gameMs": 56900,
+    "state": "idle",
+    "x": 286.69,
+    "y": 3
+   },
+   "turnAtMs": 68033.33333333024,
+   "doneAtMs": 69133.33333333056
+  },
+  "4": {
+   "ticks": 1258,
+   "past": 84,
+   "maxNdc": 1.0436336367813908,
+   "at": {
+    "gameMs": 79167,
+    "state": "idle",
+    "x": 374.73,
+    "y": 3
+   },
+   "turnAtMs": 90650.00000000349,
+   "doneAtMs": 91750.00000000381
+  },
+  "5": {
+   "ticks": 1265,
+   "past": 91,
+   "maxNdc": 1.0437295132905393,
+   "at": {
+    "gameMs": 102050,
+    "state": "idle",
+    "x": 462.69,
+    "y": 3
+   },
+   "turnAtMs": 113416.66666667679,
+   "doneAtMs": 114516.6666666771
+  },
+  "6": {
+   "ticks": 1243,
+   "past": 35,
+   "maxNdc": 1.0222761911504068,
+   "at": {
+    "gameMs": 125167,
+    "state": "idle",
+    "x": 550.78,
+    "y": 3
+   },
+   "turnAtMs": 135816.66666667917,
+   "doneAtMs": 136933.3333333452
+  }
+ },
+ "poses": 18
+}

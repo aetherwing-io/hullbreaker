@@ -1,11 +1,11 @@
 # T-107 build report — the phone camera (+ T-204 per-side rise, T-102 R2/R3/I-104)
 
 Worktree `/home/user/hullbreaker/.claude/worktrees/T-107`, branch `task/T-107`,
-base `ace6618` (main at dispatch), **merged with main `af8bb0b`** (T-103's guns
-in hands, decisions 27) at `cda5057` — a merge commit, no rebase; the only
-conflict was the pathcheck manifest, where **T-107's domain is now d83** (d79/d80
-are T-103's on main; d81 is left for T-201's race pass and d82 for T-105, which
-may need one).
+base `ace6618` (main at dispatch). **Merged with main twice, as merge commits:**
+`af8bb0b` (T-103's guns in hands, decisions 27) at `cda5057`, then **`71d3941`
+(T-201's race pass, merged on main at `b8d1b81`) at `e55100a`**. Conflicts: the
+pathcheck manifest both times — **T-107's domain is d83** (d79/d80 T-103, d81
+T-201; d82 left for T-105) — and `tools/simlab/README.md` (both kept).
 Resumed twice from container restarts: first from the previous agent's
 uncommitted snapshot `f245087`, then from `dd367d1` (the readability tool's
 boot retry and the portrait-gain sheets, reviewed and kept). Everything below
@@ -13,12 +13,19 @@ was measured by this lane; nothing is inherited from a snapshot or another
 lane without a re-run, and every capture batch the second restart cut short
 was re-run from scratch (partial outputs were discarded, not cited). Ports:
 8776 (this tree), 8777 (the "before" tree: an untouched `git archive ace6618`
-export for the first batches, then main's `src/` at `af8bb0b`, verified
-file-for-file); 8778/8779 were used by the first session's batches. All servers
-were stopped at the end.
+export for the first batches, then main's `src/` at `af8bb0b` and finally at
+`71d3941`, each verified file-for-file); 8778/8779 were used by the first
+session's batches. All servers were stopped at the end.
+
+**Which tree each number is from.** Rows marked *pre-merge* were measured on
+this branch before T-201 merged and before the clamp rule below; they are kept
+where T-201 cannot move them (camera, lens, veil, ascent) and re-measured on
+the final tree everywhere T-201 or the clamp rule can (edges, route-ahead,
+R2 near corners, the clamp near corners, the paced-gunner guard, smoke,
+pathcheck).
 
 Host: GPU-less SwiftShader, 4 cores shared with several agents, load average
-40-80 through both sessions. Every browser number below is from that host and
+40-95 through both sessions. Every browser number below is from that host and
 is evidence about the code's geometry and relative cost, never about an
 iPhone.
 
@@ -30,32 +37,54 @@ iPhone.
   frame shows **67.9 x 31.3 tiles** of route instead of 99.2 x 45.6. The frame is
   lifted 0.85 tiles so the lowest landing deck stays above the right-thumb
   cluster (with the iPhone's home-indicator inset) while RIG's head stays inside
-  the top on every route surface he can stand on. Desktop is untouched: the
-  camera's matrices are bit-identical to main at 1280x720, 1920x1080 and 1280x800.
+  the top on every route surface he can stand on. On that frame RIG pinned at
+  the right clamp stays whole on screen (on today's FAR phone frame he vanishes
+  there entirely).
+- **Desktop is untouched, camera and sim alike:** the camera's matrices are
+  bit-identical to main at 1280x720, 1920x1080 and 1280x800, and every FAR
+  frame (desktop, `?view=far`, portrait) calibrates main's edges bit for bit —
+  a played desktop run on this branch reaches main's exact state at all 18
+  sampled approach poses, and T-102's paced-gunner runs give T-201's numbers.
 - **Portrait phones** keep FAR's portrait frame exactly (RIG's body is already
-  7.0% of the short side there); the lens only ever narrows.
-- **Everywhere**, RIG pinned at the right clamp now stays fully on screen
-  (on main he was half off at 1280x720 and **entirely off-screen** at 844x390
-  and 932x430 — measured in painted pixels, box 8), and the flat clear-colour
-  voids at the screen edge near every corner are gone (box 7: 11.8-19.0% of
-  columns on approach at 844x390 on main -> 0%).
+  7.0% of the short side there); the lens only ever narrows. `?selftest=1` now
+  passes in portrait (I-114).
+- **Everywhere**, the flat clear-colour strips at the screen edge near corners
+  are gone (box 7: 11.8-19.0% of columns on approach at 844x390 on main -> 0%,
+  and the last seconds of every approach under T-201's follow-lead, I-122).
 - Behind flags, for the operator to try: `?orbit=joint` (no post-turn zoom
   pump) and `?rise=steep` (the climb made literal: ~101 m instead of 35 m).
 
 ## What changed and why
 
-Runtime (6 files):
+Runtime (7 files):
 
 | file | change |
 | --- | --- |
-| `src/pure/framing.js` (new) | the pure resolver: device class (`isPhoneViewport`: touch AND short side <= 540 CSS px), `resolveFramingId(?view=, w, h, touch)`, the phone lens (`phoneLensFovDeg`, `framingLens` — only ever narrows; non-phone ids return the shipped fov and zero lift exactly), the actor-plane right clamp (`actorPlaneRightX`, `rightClampInsetTiles`), a three.js-free camera (`lookBasis`, `rayPlanePoint`, `projectNdc`, `framedEdges`) that the labs and pathcheck share, and `jointOrbitAnchor` (R3). |
-| `src/render/camera.js` | resolves the lens on every calibration (boot/resize), applies fov (only when it differs) and the lift (camera and look target together, pitch unchanged); EDGE_R = the actor plane's narrowest row minus RIG's widest half-silhouette (I-104); `?orbit=joint` anchor; `cameraFramingSnapshot()` read surface for tools. |
+| `src/pure/framing.js` (new) | the pure resolver: device class (`isPhoneViewport`: touch AND short side <= 540 CSS px), `resolveFramingId(?view=, w, h, touch)`, the phone lens (`phoneLensFovDeg`, `framingLens` — only ever narrows; non-phone ids return the shipped fov, zero lift and route-plane edges exactly), the actor-plane right clamp (`actorPlaneRightX`, `rightClampInsetTiles`) and the rule for when it applies (`actorClampForLens`: exactly when the phone lens narrows the frame), a three.js-free camera (`lookBasis`, `rayPlanePoint`, `projectNdc`, `framedEdges`) that the labs and pathcheck share, and `jointOrbitAnchor` (R3). |
+| `src/render/camera.js` | resolves the lens on every calibration (boot/resize), applies fov (only when it differs) and the lift (camera and look target together, pitch unchanged); under the phone lens EDGE_R = the actor plane's narrowest row minus RIG's widest half-silhouette (I-104), at every FAR frame main's route-plane edge exactly; `?orbit=joint` anchor; `cameraFramingSnapshot()` read surface for tools; `PORTRAIT_SAFE` exported for the selftest. |
+| `src/main.js` | I-114 (assigned to T-107 by the integrator): the selftest's "view resolved and portrait pullback applied" expects the portrait view multiplier camera.js applies (`portraitViewDepthMult` with `PORTRAIT_SAFE`) instead of the bare one, so it passes on a portrait phone. Selftest only. |
 | `src/render/atmosphere.js` | the far veil extends 120 tiles past both of its old edges, painting mirrored, flat at full bow depth, same 20 segments (R2). `?veil=legacy` restores it. |
 | `src/pure/ascent.js` | a second profile, `steep` (`?rise=steep`): one grade per face 0.16 -> 0.21, smoothstep blends across each fold, levels onto the summit. The default `helix` is the shipped one bit for bit. |
 | `src/mode.js` | `VIEW_REQUEST` (raw `?view=`), `TURN_ORBIT` (`?orbit=joint`), `VEIL_EXTENDED` (`?veil=legacy` escape hatch), `RISE_ID` (selects the ascent profile once at import). |
 | `src/config.js` | `CONFIG.framing`: phone bound 540 px, `rigShortSideFrac` 0.056, `liftTiles` 0.85, `actorDepth` 1.15, `actorHalfExtent` 1.295 (pure/rig.js's documented overrun ceiling). |
 
-`src/sim/` is untouched (`git diff --stat ace6618 -- src/sim` is empty).
+`src/sim/` is untouched by this lane (`git diff main -- src/sim` is empty).
+
+**Why the actor-plane clamp is the phone lens's only (changed after T-201
+merged).** The sim reads ONE right edge, EDGE_R, for RIG's clamp and also for
+the ambient spawn trigger (`spawner.js`: a row spawns once it passes `EDGE_R -
+1.5`), the gate cohort and patrol box, the approach dolly and T-201's follow
+lead. The first version calibrated EDGE_R on the actor plane at every
+viewport; at a FAR frame that moved all of those 2.3-3 tiles — at 1280x720
+ambient spawns triggered 2.5 tiles of scroll later — and on the tree merged
+with T-201 it failed T-102's paced-gunner guard at desktop (2 held gates
+under `?gates=legacy&follow=0`, need >= 3; bisected in scratch to the spawner
+alone — "T-201 coordination"). So the actor-plane clamp now belongs to the
+phone lens — a new frame, calibrated fresh — and every FAR frame keeps main's
+calibration exactly. The cost is small and measured: under T-201's follow-lead
+RIG never reaches the right clamp in default play (box 8), so the FAR overhang
+is visible only under `?follow=0`. Fixing it there too needs a second sim edge
+(proposed, inbox).
 
 What I kept from the snapshot, and what I changed after measuring:
 
@@ -102,7 +131,8 @@ Tooling (zero effect on the game):
 - New: `tools/pathcheck/t-107-phone-framing.mjs` (domain **d83** — see the
   header), `tools/playtest/phone-framing-probe.mjs`,
   `tools/playtest/phone-readability-capture.mjs`, `tools/playtest/framing-cost.mjs`,
-  `tools/simlab/framing/{render-only,veil-need,zoom-pump,route-ahead,vertical-band,thumb-overlap,rig-boxes}.mjs`,
+  `tools/playtest/selftest-views.mjs` (I-114),
+  `tools/simlab/framing/{render-only,veil-need,zoom-pump,route-ahead,vertical-band,thumb-overlap,rig-boxes,corner-approach}.mjs`,
   `tools/simlab/framing/{void_columns,readability_sheet,rig_crops,turn_sheet}.py`. Documented in
   `tools/simlab/README.md` ("The phone frame (T-107)") and
   `tools/simlab/TURNLAB.md` (limitations 4-5).
@@ -401,49 +431,63 @@ mirror axis shows near the right edge as symmetric arches — distant anatomy
 instead of a flat void, but a visible symmetry (inbox issue; the phone frame
 and desktop 16:9 do not reach the axis in these poses).
 
-### 8. RIG at the right clamp (I-104) — whole sprite on screen, every viewport — MET
+### 8. RIG at the right clamp (I-104) — MET on the phone frame; at FAR frames left as main has it (escalated: needs a second sim edge)
 
-EDGE_R = the frame's right edge on the actor plane at its narrowest row, minus
-RIG's widest drawn half-silhouette (1.295 tiles = `RIG_SPRITE_MAX_OVERRUN` x
-half-width; covers the weapon's 0.825-tile reach).
+Under the phone lens EDGE_R = the frame's right edge on the actor plane at its
+narrowest row, minus RIG's widest drawn half-silhouette (1.295 tiles =
+`RIG_SPRITE_MAX_OVERRUN` x half-width; covers the weapon's 0.825-tile reach).
+Every FAR frame calibrates main's route-plane EDGE_R exactly — why: "What
+changed and why" (the one sim edge also drives the spawn trigger and the
+encounter; moving it on desktop changed desktop play and broke a T-102 guard
+once T-201 merged).
 
-- Asserted analytically at 17 viewports (desktop 16:10 ... 32:9, touch phones
-  both orientations, mouse phones, 260x1000, tablets), RIG at deck height, mid
-  and on the highest surfaces: rightmost silhouette point at NDC **<= 0.998**;
-  the pre-T-107 route-plane clamp puts his **centre** at NDC 1.028.
-- **At the size the renderer actually draws him** (added after the merge with
-  T-103): render/player.js scales RIG's body by
-  `portraitActorVisualGain(innerWidth / innerHeight)` — up to 1.5x on a
-  portrait phone, 1.22x on a portrait tablet. The widest frame in the atlases
-  is 1.14 tiles from his x at gain 1 (the run `contact` frame's trailing side;
-  facing right the widest is 0.85, `air-fall`), so at 1.5x the 1.295-tile bound
-  alone would not cover portrait. The assertion now scales the silhouette (and
-  its sample heights) by that gain; the muzzle never moves
-  (`rigWeaponPlacement` scales the weapon about it). Result: worst NDC still
-  0.998 (667x375 touch, gain 1); **with the gain, worst 0.957 (768x1024 touch,
-  gain 1.22)** and lower on portrait phones — the portrait safe inset (46 px per
-  side, camera.js `PORTRAIT_SAFE`) keeps the clamp well inside the glass, so
-  **no camera change was needed**. A source guard ties the modelled gain to
-  player.js's own call (falsifiers M14, M15, M15b below).
-- Played (turn proof at the phone frame, 7 runs incl. `?momentum=0`, which
-  rides the clamp): RIG's chest at the clamp at NDC **0.952** (was ~1.012).
+- **Asserted analytically** (T-107 domain; each of 17 viewports as it
+  resolves, with `?view=phone` and with `?view=far`): wherever the phone lens
+  is active (**15 cases**, including `?view=phone` forced at desktop aspects,
+  which keeps the narrowest-row refinement binding) RIG pinned at the clamp —
+  at deck height, mid and on the highest surfaces, at the size the renderer
+  draws him (render/player.js's portrait gain modelled, source-guarded) —
+  keeps his rightmost silhouette point at NDC **<= 0.998**; the same lens with
+  the pre-T-107 route-plane clamp puts his **centre** at NDC 1.023
+  (falsifier). Every FAR case (**36**) calibrates the route-plane edge
+  **exactly** (`Object.is`) — main's EDGE_R.
+- **Reported, not asserted:** at FAR frames RIG pinned at the clamp still
+  reaches NDC **1.057** worst (1024x768 touch tablet; 1280x720: his chest at
+  ~1.012, T-102's number) — the pre-existing I-104 overhang, unchanged.
+- **In play, on the final tree with T-201** (`tools/simlab/framing/corner-approach.mjs`,
+  RIG's widest possible drawn point projected every tick, `evidence/clamp-near-corners-*.json`):
+
+| played run (`run` policy, whole run) | RIG's widest point, max NDC | ticks past the right edge | near corners (40 tiles before each bend -> 4 s after the turn), max NDC |
+| --- | --- | --- | --- |
+| desktop 1280x720 (default: follow-lead) | **0.586** | **0 / 5733** | 0.494-0.586 |
+| desktop `?momentum=0` | 0.586 | 0 / 5740 | 0.495-0.586 |
+| desktop `?follow=0&momentum=0` (no follow-lead, rides the clamp) | 1.048 | 1779 / 9647 (18%) | — |
+| phone 844x390 FAR (mouse) `?follow=0&momentum=0` | 1.044 | 327 / 9650 | — |
+| **phone frame 844x390 touch (default)** | **0.701** | **0 / 5768** | 0.443-0.701 (0.701 after the Crown turn) |
+| phone frame `?follow=0&momentum=0` | 0.997 | 0 / 9636 | — |
+
+  So with T-201's follow-lead RIG never reaches the right clamp in default
+  play on any frame — the FAR overhang shows only under the `?follow=0` hatch
+  — and the phone frame's actor clamp holds even when RIG rides it.
 - Live, in painted pixels (RIG-only draw at the clamp, facing right,
-  `phone-framing-probe.mjs --clamp`, `evidence/probe-*.json`):
+  `phone-framing-probe.mjs --clamp`, `evidence/probe-*.json`; *pre-merge*, when
+  the actor clamp applied at every viewport — the desktop "branch" column is
+  therefore what the FAR frame would get from a second sim edge; today FAR is
+  main's column by construction):
 
-| viewport | main: gap from RIG's outermost pixel to the right edge | branch (deck, y 15) |
+| viewport | main: gap from RIG's outermost pixel to the right edge | phone lens / actor clamp (deck, y 15) |
 | --- | --- | --- |
 | 844x390 touch | **no RIG pixel on screen at all** | 7.28 px, 4.55 px |
 | 932x430 touch | **no RIG pixel on screen at all** | 8.18 px, 4.55 px |
 | 667x375 touch | 0 px (cut by the edge) | 7.28 px, 4.55 px |
-| 1280x720 | 0 px on the deck (cut); **no pixel on screen** high (y 15) | 12.8 px, 8.0 px |
-| 1280x800 | 0 px on the deck (cut); **no pixel on screen** high | 13.6 px, 8.8 px |
+| 1280x720 | 0 px on the deck (cut); **no pixel on screen** high (y 15) | (actor clamp: 12.8 px, 8.0 px) |
+| 1280x800 | 0 px on the deck (cut); **no pixel on screen** high | (actor clamp: 13.6 px, 8.8 px) |
 
-On main a phone loses RIG entirely when he is pinned at the right clamp (his
-draw depth narrows the frame by ~1.5-2 tiles at that aspect), and even on
-desktop he vanishes when pinned there high on the lattice (the frame's right
-edge narrows toward the top). At the damage plane (EDGE_L) RIG's back still
-touches the left edge (0 px gap, main and branch): reported as an inbox
-issue, not changed — moving EDGE_L moves the damage plane.
+On main a FAR phone frame loses RIG entirely when he is pinned at the right
+clamp (his draw depth narrows the frame by ~1.5-2 tiles at that aspect); the
+phone frame fixes that. At the damage plane (EDGE_L) RIG's back still touches
+the left edge (0 px gap, main and branch): reported as an inbox issue, not
+changed — moving EDGE_L moves the damage plane.
 
 ### 9. Escape hatches `?view=far` / `?view=phone` — MET
 

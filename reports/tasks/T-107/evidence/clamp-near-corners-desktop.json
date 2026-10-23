@@ -1,0 +1,118 @@
+{
+ "tool": "tools/simlab/framing/corner-approach.mjs",
+ "viewport": "desktop",
+ "size": [
+  1280,
+  720
+ ],
+ "touch": false,
+ "query": "",
+ "policy": "run",
+ "offsets": [
+  2500,
+  1500,
+  500
+ ],
+ "endState": "VICTORY",
+ "finishedCorners": 6,
+ "silhouette": {
+  "reachTiles": 1.295,
+  "gain": 1,
+  "heights": [
+   0.1,
+   0.85,
+   2
+  ]
+ },
+ "whole": {
+  "ticks": 5733,
+  "past": 0,
+  "maxNdc": 0.5858127504015914,
+  "at": {
+   "gameMs": 82633,
+   "x": 582.65,
+   "y": 5.61
+  }
+ },
+ "clamp": {
+  "1": {
+   "ticks": 587,
+   "past": 0,
+   "maxNdc": 0.4943059817567074,
+   "at": {
+    "gameMs": 9283,
+    "state": "idle",
+    "x": 78.35,
+    "y": 3.95
+   },
+   "turnAtMs": 13116.666666666548,
+   "doneAtMs": 14233.333333333174
+  },
+  "2": {
+   "ticks": 580,
+   "past": 0,
+   "maxNdc": 0.4972339399554323,
+   "at": {
+    "gameMs": 29300,
+    "state": "done",
+    "x": 227.09,
+    "y": 4
+   },
+   "turnAtMs": 25333.333333333747,
+   "doneAtMs": 26433.333333333827
+  },
+  "3": {
+   "ticks": 587,
+   "past": 0,
+   "maxNdc": 0.494838101632189,
+   "at": {
+    "gameMs": 41683,
+    "state": "done",
+    "x": 323.53,
+    "y": 5.52
+   },
+   "turnAtMs": 36566.66666666707,
+   "doneAtMs": 37683.333333333576
+  },
+  "4": {
+   "ticks": 575,
+   "past": 0,
+   "maxNdc": 0.4975613132878547,
+   "at": {
+    "gameMs": 51783,
+    "state": "done",
+    "x": 402.97,
+    "y": 3.22
+   },
+   "turnAtMs": 47766.66666666544,
+   "doneAtMs": 48883.333333331946
+  },
+  "5": {
+   "ticks": 590,
+   "past": 0,
+   "maxNdc": 0.4965111691550504,
+   "at": {
+    "gameMs": 63567,
+    "state": "done",
+    "x": 491.52,
+    "y": 5.45
+   },
+   "turnAtMs": 59449.999999997075,
+   "doneAtMs": 60566.66666666358
+  },
+  "6": {
+   "ticks": 598,
+   "past": 0,
+   "maxNdc": 0.5857928370928371,
+   "at": {
+    "gameMs": 75783,
+    "state": "done",
+    "x": 582.65,
+    "y": 5.61
+   },
+   "turnAtMs": 71183.33333333116,
+   "doneAtMs": 72283.33333333148
+  }
+ },
+ "poses": 18
+}

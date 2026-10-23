@@ -1,0 +1,118 @@
+{
+ "tool": "tools/simlab/framing/corner-approach.mjs",
+ "viewport": "desktop",
+ "size": [
+  1280,
+  720
+ ],
+ "touch": false,
+ "query": "momentum=0",
+ "policy": "run",
+ "offsets": [
+  2500,
+  1500,
+  500
+ ],
+ "endState": "VICTORY",
+ "finishedCorners": 6,
+ "silhouette": {
+  "reachTiles": 1.295,
+  "gain": 1,
+  "heights": [
+   0.1,
+   0.85,
+   2
+  ]
+ },
+ "whole": {
+  "ticks": 5740,
+  "past": 0,
+  "maxNdc": 0.5858127504015914,
+  "at": {
+   "gameMs": 82750,
+   "x": 582.65,
+   "y": 5.61
+  }
+ },
+ "clamp": {
+  "1": {
+   "ticks": 587,
+   "past": 0,
+   "maxNdc": 0.49451691393774655,
+   "at": {
+    "gameMs": 9117,
+    "state": "idle",
+    "x": 77.22,
+    "y": 4.57
+   },
+   "turnAtMs": 13116.666666666548,
+   "doneAtMs": 14233.333333333174
+  },
+  "2": {
+   "ticks": 584,
+   "past": 0,
+   "maxNdc": 0.5017276924354696,
+   "at": {
+    "gameMs": 29250,
+    "state": "done",
+    "x": 225.99,
+    "y": 6.27
+   },
+   "turnAtMs": 25400.00000000042,
+   "doneAtMs": 26500.0000000005
+  },
+  "3": {
+   "ticks": 587,
+   "past": 0,
+   "maxNdc": 0.5014787800086907,
+   "at": {
+    "gameMs": 40600,
+    "state": "done",
+    "x": 314.05,
+    "y": 5.57
+   },
+   "turnAtMs": 36583.333333333736,
+   "doneAtMs": 37700.00000000024
+  },
+  "4": {
+   "ticks": 575,
+   "past": 0,
+   "maxNdc": 0.5006070055519176,
+   "at": {
+    "gameMs": 51733,
+    "state": "done",
+    "x": 402.03,
+    "y": 3
+   },
+   "turnAtMs": 47816.666666665435,
+   "doneAtMs": 48933.33333333194
+  },
+  "5": {
+   "ticks": 591,
+   "past": 0,
+   "maxNdc": 0.501026955603445,
+   "at": {
+    "gameMs": 63433,
+    "state": "done",
+    "x": 490.07,
+    "y": 4.51
+   },
+   "turnAtMs": 59516.66666666373,
+   "doneAtMs": 60633.333333330236
+  },
+  "6": {
+   "ticks": 595,
+   "past": 0,
+   "maxNdc": 0.5857928370928371,
+   "at": {
+    "gameMs": 75900,
+    "state": "done",
+    "x": 582.65,
+    "y": 5.61
+   },
+   "turnAtMs": 71299.99999999786,
+   "doneAtMs": 72399.99999999818
+  }
+ },
+ "poses": 18
+}

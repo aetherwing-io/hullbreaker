@@ -1,0 +1,118 @@
+{
+ "tool": "tools/simlab/framing/corner-approach.mjs",
+ "viewport": "phoneLandscapeTouch",
+ "size": [
+  844,
+  390
+ ],
+ "touch": true,
+ "query": "follow=0&momentum=0",
+ "policy": "run",
+ "offsets": [
+  2500,
+  1500,
+  500
+ ],
+ "endState": "VICTORY",
+ "finishedCorners": 6,
+ "silhouette": {
+  "reachTiles": 1.295,
+  "gain": 1,
+  "heights": [
+   0.1,
+   0.85,
+   2
+  ]
+ },
+ "whole": {
+  "ticks": 9636,
+  "past": 0,
+  "maxNdc": 0.9965633036510936,
+  "at": {
+   "gameMs": 129133,
+   "x": 550.71,
+   "y": 3
+  }
+ },
+ "clamp": {
+  "1": {
+   "ticks": 1201,
+   "past": 0,
+   "maxNdc": 0.9963628048224236,
+   "at": {
+    "gameMs": 16917,
+    "state": "idle",
+    "x": 110.68,
+    "y": 3
+   },
+   "turnAtMs": 23366.666666666937,
+   "doneAtMs": 24466.666666667017
+  },
+  "2": {
+   "ticks": 1197,
+   "past": 0,
+   "maxNdc": 0.9963686913950177,
+   "at": {
+    "gameMs": 39167,
+    "state": "idle",
+    "x": 198.68,
+    "y": 3
+   },
+   "turnAtMs": 45616.666666665755,
+   "doneAtMs": 46733.33333333226
+  },
+  "3": {
+   "ticks": 1260,
+   "past": 0,
+   "maxNdc": 0.9963686913949529,
+   "at": {
+    "gameMs": 61417,
+    "state": "idle",
+    "x": 286.68,
+    "y": 3
+   },
+   "turnAtMs": 67966.66666666356,
+   "doneAtMs": 69066.66666666388
+  },
+  "4": {
+   "ticks": 1250,
+   "past": 0,
+   "maxNdc": 0.9963418346718698,
+   "at": {
+    "gameMs": 83567,
+    "state": "idle",
+    "x": 374.68,
+    "y": 3
+   },
+   "turnAtMs": 90300.00000000339,
+   "doneAtMs": 91400.00000000371
+  },
+  "5": {
+   "ticks": 1226,
+   "past": 0,
+   "maxNdc": 0.9964664067073493,
+   "at": {
+    "gameMs": 106417,
+    "state": "idle",
+    "x": 462.72,
+    "y": 3
+   },
+   "turnAtMs": 112866.66666667663,
+   "doneAtMs": 113966.66666667695
+  },
+  "6": {
+   "ticks": 1227,
+   "past": 0,
+   "maxNdc": 0.9965633036510936,
+   "at": {
+    "gameMs": 129133,
+    "state": "idle",
+    "x": 550.71,
+    "y": 3
+   },
+   "turnAtMs": 135583.33333334597,
+   "doneAtMs": 136700.000000012
+  }
+ },
+ "poses": 18
+}
