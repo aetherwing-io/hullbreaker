@@ -9,7 +9,7 @@
 //
 //   node tools/crisp-sprite/capture.mjs --out <dir> [--base-url <url> | --root <tree>]
 //     [--views desktop,phone,phone3,spikephone] [--query art=legacy]
-//     [--poses idle,run,jump,upright,fire,left] [--three-dir <dir>] [--probe]
+//     [--poses idle,run,jump,upright,fire,fire-nofx,left] [--three-dir <dir>] [--probe]
 //     [--actors] [--direct] [--no-gunless] [--falsify lit]
 //
 // Views:
@@ -71,7 +71,7 @@ const NO_GUNLESS = has('--no-gunless');
 // (lib.mjs FALSIFIERS) — the gain box's falsifier, which must read red
 const FALSIFY = argv('--falsify', '');
 const views = argv('--views', 'desktop,phone').split(',');
-const POSES = argv('--poses', 'idle,run,jump,upright,fire,left').split(',');
+const POSES = argv('--poses', 'idle,run,jump,upright,fire,fire-nofx,left').split(',');
 const RIG_DEPTH = 1.15;        // src/render/player.js RIG_SURFACE_DEPTH
 
 async function main() {
