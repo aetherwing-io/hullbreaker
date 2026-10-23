@@ -118,6 +118,12 @@ async function captureView(browser, base, viewName, V) {
     jump: { aim: [1, 0], hold: { grounded: false, vy: 3.5 }, dy: 1.5 },
     left: { aim: [-1, 0], hold: { facing: -1 } },
     fire: { aim: [1, 0], fire: true },
+    // the same frozen shot frame with the effect pools hidden for all three
+    // shots (src/render/fx.js setFxProofVisible): in game the muzzle flash is
+    // drawn OVER the gun (renderOrder 4.1, no depth test) on both paths,
+    // while the spike pasted column A over it, so only this variant compares
+    // RIG's own firing frame (recoil kick, gun heat) like for like
+    'fire-nofx': { aim: [1, 0], fire: true, nofx: true },
     run: { run: true },
   };
 
@@ -148,6 +154,7 @@ async function captureView(browser, base, viewName, V) {
         else await page.evaluate(() => window.__CRISP_CAP.pause());
       }
       await frames(page, 1);
+      if (spec.nofx) await page.evaluate(() => window.__CRISP_CAP.fxVisible(false));
       const info = await page.evaluate((d) => window.__CRISP_CAP.info(d), RIG_DEPTH);
       const u = info.pxPerTile;
       const clip = { x: Math.max(0, Math.round(info.feet.x - 3.5 * u)), y: Math.max(0, Math.round(info.feet.y - 0.62 * 4.6 * u)),
@@ -170,6 +177,7 @@ async function captureView(browser, base, viewName, V) {
         }
       }
       await page.evaluate(() => window.__CRISP_CAP.show('show'));
+      if (spec.nofx) await page.evaluate(() => window.__CRISP_CAP.fxVisible(true));
       await release(page);
       await page.evaluate(() => window.__CRISP_CAP.resume());
       report.shots[pose] = row;
@@ -177,6 +185,7 @@ async function captureView(browser, base, viewName, V) {
       console.log(viewName, pose, 'frame', info.rig?.bodyFrame, 'ppt', u.toFixed(3));
     } catch (err) {
       report.errors.push(`${pose}: ${String(err?.message || err).split('\n')[0]}`);
+      await page.evaluate(() => window.__CRISP_CAP && window.__CRISP_CAP.fxVisible(true)).catch(() => {});
       await release(page).catch(() => {});
       await page.evaluate(() => window.__CRISP_CAP && window.__CRISP_CAP.resume()).catch(() => {});
       await save();
@@ -292,6 +301,7 @@ async function installHarness({ x, scroll }) {
       if (Q.hold === null) { Object.assign(P.player, base()); I.keys.strafe = false; }
     },
     pause() { ST.setState('PAUSED'); },
+    fxVisible(v) { FX.setFxProofVisible(v); },
     // advance real frames until RIG's presentation reports `state` (or give
     // up after `max`), returning how many frames that took
     settle(state, max) {
