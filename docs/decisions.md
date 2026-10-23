@@ -1300,3 +1300,12 @@ a recommendation.
   - or RIG drawn in a permanent crouch.
 
 **Source:** operator message with one attached image, 2026-10-23.
+
+**Addendum (same session), operator, verbatim:** *"board 01 looks cool, v3.1
+wouldn't even be recognizable as a solder if it were not in context"*. The
+failure is basic legibility, not style: out of context, at true size, v3.1
+does not read as a soldier at all. Integrator call (reverse if wrong): any
+replacement route's first gate is an out-of-context read. The sprite is shown
+alone at true size on a neutral ground. It must read as an armoured soldier
+holding a rifle before palette, light or animation are judged. Board 01's
+marine is the reference that passes.
