@@ -67,7 +67,8 @@ import {
   RIG_ARM_RIGS, RIG_ARM_SEGMENTS, RIG_CLIMB_BODY_DROP, RIG_FAR_ARM_DEPTH,
   RIG_GUN_ACCENT_DEPTH, RIG_GUN_DEPTH, RIG_GUN_FAMILY_HEIGHT_GAIN, RIG_GUN_TRAIT_DEPTH,
   RIG_NEAR_ARM_DEPTH,
-  rigArmPose, rigArmSegmentCorners, rigArmSegmentUvs, rigStationaryAimFrame, rigWeaponPlacement,
+  rigArmPose, rigArmSegmentCorners, rigArmSegmentUvs, rigArmTriangleIndex, rigStationaryAimFrame,
+  rigWeaponPlacement,
 } from '../pure/rig.js';
 import { awaitPreloads, preloadTexture } from './preload.js';
 import { camera, renderer, scene } from './scene.js';
@@ -584,15 +585,22 @@ function armGeometry() {
     new THREE.BufferAttribute(new Float32Array(24), 3).setUsage(THREE.DynamicDrawUsage));
   geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   geo.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
-  geo.setIndex([0, 2, 1, 2, 3, 1, 4, 6, 5, 6, 7, 5]);
+  // The triangle order flips with the facing (rigArmTriangleIndex; writeArm
+  // rewrites these 12 indices in place when the facing changes) so every arm
+  // triangle stays counter-clockwise, i.e. front-facing, in both facings.
+  geo.setIndex(new THREE.BufferAttribute(new Uint16Array(rigArmTriangleIndex(1)), 1));
   return geo;
 }
+// FrontSide on purpose: with the winding kept counter-clockwise for both
+// facings, the +z normals are the lit side. Under DoubleSide a mis-wound
+// (clockwise) arm would be shaded as a back face (normal flipped, key light
+// lost: the T-103 playtest defect); under FrontSide it would vanish, which no
+// one can miss. tools/pathcheck/t-103-arm-winding.mjs holds both halves.
 const armMaterial = new THREE.MeshStandardMaterial({
   map: armSlot.ready ? armSlot.tex : null,
   emissiveMap: armSlot.ready ? armSlot.tex : null,
   emissive: PAL.player, emissiveIntensity: 0,
-  transparent: true, alphaTest: 0.015, side: THREE.DoubleSide,
-  forceSinglePass: true, fog: false,
+  transparent: true, alphaTest: 0.015, side: THREE.FrontSide, fog: false,
 });
 const [armFar, armNear] = [
   ['rig-arm-far', RIG_FAR_ARM_DEPTH, 2],
@@ -604,6 +612,7 @@ const [armFar, armNear] = [
   mesh.renderOrder = order;
   mesh.frustumCulled = false;     // vertices move every frame; RIG is always framed
   mesh.visible = false;
+  mesh.userData.armMirror = 1;    // the facing its index buffer is wound for
   rig.add(mesh);
   return mesh;
 });
@@ -615,6 +624,14 @@ let armFarRole = 'none';
 let armNearRole = 'none';
 
 function writeArm(mesh, arm, pose) {
+  // Wind the strips for this facing first: the corners below are mirrored by
+  // pose.mirror, so the index must be the one for pose.mirror too.
+  if (mesh.userData.armMirror !== pose.mirror) {
+    const index = mesh.geometry.index;
+    index.array.set(rigArmTriangleIndex(pose.mirror));
+    index.needsUpdate = true;
+    mesh.userData.armMirror = pose.mirror;
+  }
   const pos = mesh.geometry.getAttribute('position');
   const arr = pos.array;
   rigArmSegmentCorners(RIG_ARM_SEGMENTS.upper, arm.sx, arm.sy, arm.ex, arm.ey,

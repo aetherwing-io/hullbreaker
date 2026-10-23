@@ -12,17 +12,20 @@ onto the weapon's painted grip every frame (`src/pure/rig.js` `rigArmPose`).
 | file | what it is |
 |---|---|
 | `raster.mjs` | Deterministic software compositor: draws the shipped atlases through the same placement functions `src/render/player.js` runs (`rigBodyPoint`, `rigWeaponPlacement`, `rigArmPose`, `rigArmSegmentCorners`). Also writes PNGs. |
-| `check.mjs` | The measured gate (`runGripCheck`): re-measures every anchor from painted pixels, then for every combination checks the rendered fist centroid against the rendered grip centroid (bound 1 atlas px) and the rendered muzzle face against the sim spawn (bound 1 desktop-FAR px). Accepts fault injection so the gate can prove it binds. Run by `tools/pathcheck/t-103-rig-grip-alignment.mjs`. |
+| `check.mjs` | The measured gate (`runGripCheck`): re-measures every anchor from painted pixels, then for every combination checks the rendered fist centroid against the rendered grip centroid (bound 1 atlas px) and the rendered muzzle face against the sim spawn (bound 1 desktop-FAR px). Accepts fault injection so the gate can prove it binds. Run by `tools/pathcheck/t-103-rig-grip-alignment.mjs`, or directly: `node tools/rig-grip/check.mjs [--json]` prints the stats and every failure and exits 1 on any failure. |
 | `preview.mjs` | Fast offline contact sheet (no browser): `node tools/rig-grip/preview.mjs --out x.png --gun F --ppt 120 --frames aim-right,contact --aims right,up`. |
 | `capture.mjs` | The live half: boots the real game, pauses it, drives the shipped presentation hook (`view.player.sync`) through every pose x aim x facing x weapon, reads the live mesh geometry + `matrixWorld` to measure fist-vs-grip and muzzle-vs-spawn on screen, photographs each cell, and composes true-size and 4x sheets. Works against pre-T-103 trees (`--root <exported tree>`) using a table of the old painted fist positions. `--firing` captures RIG actually firing in four directions with the real background; `--crouch` boots `?crouch=1` for the crouch row. |
+| `symmetry.mjs` | The shading half the geometric gates cannot see: `node tools/rig-grip/symmetry.mjs <capture dir> [--view desktop]` pairs every right-facing cell with the left-facing cell of the mirrored aim and compares the figure's mean colour; exit 0 only if the aggregate is symmetric (mean luma ratio L/R 1.000 +- 0.005, mean RGB delta within +-0.5, no pose row off by more than 0.015). Pre-T-103 main: 0.9996, exit 0. T-103 before its winding fix: 0.958, exit 1. Node port of the T-103 playtester's script, same numbers. |
 | `compose.mjs` | BEFORE/AFTER sheets from two (or more, merged) capture dirs: every pose row twice, BEFORE above AFTER, with the live measurements in the row header (and per cell at 4x). The 4x sheet is the true-size capture magnified by nearest neighbour. |
 
 ```sh
-node tools/pathcheck.mjs                                   # includes the T-103 domain
+node tools/pathcheck.mjs                                   # includes the T-103 domains (d77 grip, d78 arm winding)
+node tools/rig-grip/check.mjs                              # the grip gate alone; exit 1 on any failure
 node tools/rig-grip/capture.mjs --out /tmp/cap --views desktop,phone
 node tools/rig-grip/capture.mjs --out /tmp/before --root /path/to/exported/base --label BEFORE
 node tools/rig-grip/capture.mjs --out /tmp/fire --views phone --firing
 node tools/rig-grip/compose.mjs --before /tmp/before --after /tmp/cap --out /tmp/sheets --guns RSLHF --scales 1,4
+node tools/rig-grip/symmetry.mjs /tmp/cap                  # facing-left vs facing-right shading; exit 1 if lopsided
 ```
 
 Every capture/compose run binds only the OS-assigned ephemeral port of the
@@ -35,6 +38,11 @@ repo's `withIsolatedBrowser` helper (never 8741/8742).
   what alignment needs. `check.mjs` uses the exact affine centroid of the
   painted pixels and cross-checks it against a literal rasterization on a
   sample (agreement within 0.3 atlas px is asserted).
+- `raster.mjs`, `check.mjs`, d77 and the fist-to-grip capture are all blind to
+  shading. When T-103's arms were drawn as back faces facing left, every one of
+  them stayed green; the T-103 playtest caught it by colour. `symmetry.mjs`
+  measures that colour, and `tools/pathcheck/t-103-arm-winding.mjs` (d78) holds
+  its cause, the triangle winding and the FrontSide material.
 - The gate measures centroids. "Fist on grip" means the alpha centroid of the
   painted closed fist lands on the alpha centroid of the painted pistol grip;
   it does not judge whether the result LOOKS held. That is the operator's call

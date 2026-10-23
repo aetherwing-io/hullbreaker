@@ -26,8 +26,8 @@ import {
 } from '../rig-grip/check.mjs';
 import {
   RIG_ARM_RIGS, RIG_ARM_SEGMENTS, RIG_BODY_ATLAS_H, RIG_BODY_ATLAS_W, RIG_STATIONARY_STANCE,
-  RIG_WEAPON_ART, RIG_WEAPON_ATLAS_PATH, rigArmPose, rigArmSegmentUvs, rigBodyFrameSpec,
-  rigStationaryAimFrame,
+  RIG_WEAPON_ART, RIG_WEAPON_ATLAS_PATH, rigArmPose, rigArmSegmentUvs, rigArmTriangleIndex,
+  rigBodyFrameSpec, rigStationaryAimFrame,
 } from '../../src/pure/rig.js';
 
 export const title = 'T-103 — RIG holds the weapon: rendered fist on rendered grip';
@@ -163,7 +163,8 @@ export async function run() {
     const src = stripComments(readFileSync(join(srcDir, 'render', 'player.js'), 'utf8'));
     ok(worst < 1e-6 && /rigArmSegmentUvs\(RIG_ARM_SEGMENTS\.upper, RIG_BODY_ATLAS_W, RIG_BODY_ATLAS_H, uv, 0\)/.test(src) &&
        /rigArmSegmentUvs\(RIG_ARM_SEGMENTS\.fore, RIG_BODY_ATLAS_W, RIG_BODY_ATLAS_H, uv, 8\)/.test(src) &&
-       /setIndex\(\[0, 2, 1, 2, 3, 1, 4, 6, 5, 6, 7, 5\]\)/.test(src),
+       /setIndex\(new THREE\.BufferAttribute\(new Uint16Array\(rigArmTriangleIndex\(1\)\), 1\)\)/.test(src) &&
+       rigArmTriangleIndex(1).join(',') === '0,2,1,2,3,1,4,6,5,6,7,5',
       'T-103: the arm strips\' GPU texture coordinates land on the same atlas corners, in the same ' +
       'order, as the positions the gate measures');
   }

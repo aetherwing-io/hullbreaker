@@ -511,6 +511,24 @@ export function rigArmSegmentCorners(seg, x0, y0, x1, y1, thick, mirror, out, of
   return out;
 }
 
+// Triangle order over the two strips' eight corners (TL, TR, BL, BR each, as
+// rigArmSegmentCorners() writes them). Mirroring by negating x reverses a
+// quad's winding, so drawing a left-facing arm with the right-facing order
+// makes every triangle clockwise, i.e. a BACK face: under a DoubleSide
+// material three.js then flips the normal and the arm loses the key light
+// (the T-103 playtest measured the left-facing arm at 71 % of the right-facing
+// luma), and under FrontSide it vanishes. The renderer therefore takes its
+// index from here with the same `mirror` it passes rigArmSegmentCorners(), so
+// every arm triangle it draws is counter-clockwise (front-facing) in both
+// facings. Same two triangles per strip either way: TL-BL-TR and BL-BR-TR.
+// tools/pathcheck/t-103-arm-winding.mjs recomputes the winding of every arm
+// triangle the renderer can draw.
+const ARM_TRIANGLES_FACING_RIGHT = Object.freeze([0, 2, 1, 2, 3, 1, 4, 6, 5, 6, 7, 5]);
+const ARM_TRIANGLES_FACING_LEFT = Object.freeze([0, 1, 2, 2, 1, 3, 4, 5, 6, 6, 5, 7]);
+export function rigArmTriangleIndex(mirror) {
+  return mirror < 0 ? ARM_TRIANGLES_FACING_LEFT : ARM_TRIANGLES_FACING_RIGHT;
+}
+
 // GL texture coordinates for one strip's four corners in the SAME order
 // (TL, TR, BL, BR) rigArmSegmentCorners() writes positions, for a texture
 // uploaded with flipY (three.js' default for images): v = 1 - y / H.

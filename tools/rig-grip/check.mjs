@@ -14,7 +14,13 @@
 // `runGripCheck(opts)` returns { failures, stats, table } and accepts fault
 // injections so tools/pathcheck/t-103-rig-grip-alignment.mjs can prove each
 // assertion binds.
+//
+// Run directly it is the same gate on its own:
+//   node tools/rig-grip/check.mjs [--json]
+// prints the stats and every failure, and exits 1 if there is any failure
+// (0 only when every combination passes). pathcheck runs it through d77.
 
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decodePng } from '../assets/lib/png.mjs';
 import { CONFIG } from '../../src/config.js';
@@ -232,4 +238,25 @@ export function runGripCheck({ frames = FRAMES, aims = Object.keys(AIMS), chassi
       }
   }
   return { failures, stats, table };
+}
+
+// --- CLI ---------------------------------------------------------------------
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const t0 = Date.now();
+  const { failures, stats, table } = runGripCheck();
+  if (process.argv.includes('--json')) {
+    console.log(JSON.stringify({ ok: failures.length === 0, stats, failures }, null, 2));
+  } else {
+    const worstStretch = table.filter((r) => r.shown && r.gain === 1).sort((a, b) => b.stretch - a.stretch)[0];
+    console.log(`rig-grip gate: ${stats.combos} combinations in ${Date.now() - t0} ms`);
+    console.log(`  worst fist-to-grip   ${stats.maxFistGripAtlasPx.toFixed(4)} atlas px (bound 1) at ${stats.worst}`);
+    console.log(`  worst muzzle-to-spawn ${stats.maxMuzzleScreenPx.toFixed(4)} desktop-FAR px (bound 1)`);
+    console.log(`  arm stretch: gain-1 max x${stats.maxStretchGain1.toFixed(3)} (bound 1.15; ` +
+      `${stats.stretchedGain1} stretched)${worstStretch ? ` at ${worstStretch.label}` : ''}; ` +
+      `portrait max x${stats.maxStretchPortrait.toFixed(3)} (ceiling 1.75)`);
+    for (const f of failures.slice(0, 40)) console.log(`  FAIL ${f}`);
+    if (failures.length > 40) console.log(`  ... and ${failures.length - 40} more failures`);
+    console.log(failures.length ? `RIG-GRIP GATE: FAIL (${failures.length} failures)` : 'RIG-GRIP GATE: PASS');
+  }
+  process.exitCode = failures.length ? 1 : 0;
 }
