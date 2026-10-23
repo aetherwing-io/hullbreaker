@@ -36,15 +36,23 @@
 // but does not guard what a player of the shipped game notices; the proposal
 // keeps CORE∩shipped in the core gate and moves CORE∩flag to the deep suite.
 //
-// RANGES: [fromLine, toLine, CLASS, note, marks?] — matched against each call
-// site's START line (lib/callsites.mjs). Lines not covered by a range take the
-// domain's `default`. marks: 'core' (PIN/TAUTOLOGY with CORE intent), 'scope:shipped' / 'scope:flag'
-// (overrides the domain scope for that range), 'fixture'
-// (asserts authored fixture data rather than the shipped run).
+// SITES (end of file): label-keyed entries for single call sites; they outrank
+// ranges and survive line drift (test-census.mjs, SITE IDENTITY).
 //
-// VERDICT per domain: CORE-GATE (keep in the fast gate), DEEP (keep, optional
-// suite), REWRITE (intent worth keeping, mechanism is a pin — replace with a
-// behaviour test, then delete), DELETE, SPLIT (assertion-level: see ranges).
+// RANGES: [fromLine, toLine, CLASS, note, marks?] — matched against each call
+// site's START line (lib/callsites.mjs). Lines not covered by a SITES entry or a
+// range take the domain's `default`. marks: 'core' (PIN/TAUTOLOGY with CORE
+// intent), 'scope:shipped' / 'scope:flag:<x>' (overrides the domain scope),
+// 'fixture' (asserts authored fixture data rather than the shipped run),
+// 'split' (keep the property, drop its pinned conjuncts) and 'with:T-121' (goes
+// with hook v1 / the zip corner, entry 25) — see the SITES header.
+//
+// VERDICT per domain says where the domain LIVES: CORE-GATE (fast gate), DEEP
+// (optional suite), REWRITE (intent worth keeping, mechanism is a pin — replace
+// with a behaviour test, then delete), DELETE (nothing kept), SPLIT (kept lines
+// go to more than one tier). PIN/RETIRED/TAUTOLOGY lines inside a kept domain
+// are still deleted line by line; test-census.mjs reports a verdict its own
+// sites contradict.
 
 export const DOMAINS = {
   'pathcheck-suite': {
@@ -66,8 +74,6 @@ export const DOMAINS = {
       [161, 161, 'PIN', 'easeOutBack overshoot ~5%'],
       [165, 167, 'PIN', 'scroll frozen until exactly t=900; quadratic midpoint value'],
       [169, 170, 'PURE-INVARIANT', 'scroll returns to full speed and clamps'],
-      [173, 189, 'PIN', 'zipper column timings at exact ms (16 ms stagger, 820 ms last slam)'],
-      [192, 192, 'PURE-INVARIANT', 'every next-face column is locked (collidable) before the scroll resumes — gameplay-relevant'],
       [197, 197, 'PIN', 'wave sizes exactly 4..9'],
       [218, 220, 'PURE-INVARIANT', 'wave composition valid and escalating; lane mapping'],
       [227, 227, 'CORE', 'frozen movement constants (hard rule); NB it also pins scrollSpeed 4.3, which entry 11 names a lever, not a frozen constant'],
@@ -92,7 +98,6 @@ export const DOMAINS = {
       [988, 988, 'PURE-INVARIANT', 'slice sprint inside its own declared target window', ['fixture']],
       [994, 994, 'RETIRED', 'dare entry margin covers the backtrack (dare wager, entries 9/10/21)'],
       [1010, 1030, 'PURE-INVARIANT', 'camera follow / look-ahead / portrait pullback arithmetic'],
-      [1035, 1035, 'PIN', 'portrait multipliers pinned to exactly 1.15 / 1.5 and a 4-6% RIG band; entry 20 makes landscape the phone tuning target'],
     ],
   },
 
@@ -101,15 +106,32 @@ export const DOMAINS = {
     mechanism: 'pure calls: closed-form fairness arithmetic + decision functions',
     verdict: 'SPLIT',
     default: 'PURE-INVARIANT',
-    note: 'Mostly closed-form fairness arithmetic tying hound/polyp tells to player physics, plus unit tests ' +
-      'of the ledge/wall/assist/crouch decision functions. Cheap and correct; almost all of it is about the ' +
-      'traversal slice and opt-in trial stages, not the shipped run. Its three scope:shipped lines (RIG screen fraction 76-82, the polyp ENEMY row 553, the LOOK-row regex 559) go to the CORE gate / rewrite; everything else is deep.',
+    note: 'Closed-form fairness arithmetic tying hound/polyp tells to player physics, plus unit tests ' +
+      'of the ledge/wall/assist/crouch decision functions. Cheap and correct. The domain is filed under the ' +
+      'traversal slice, but the hound/polyp rows read the SHIPPED CONFIG.hound / CONFIG.polyp with the frozen ' +
+      'six-face tune as their first row, and aim assist is on by default in the normal run: those ranges carry ' +
+      'scope:shipped (invariant tier — M19 is caught there), as do the RIG screen fraction (76-82), the polyp ' +
+      'ENEMY row (553) and the LOOK-row regex (559, rewrite). Fixture-only rows (paces, trial stages, crouch, ' +
+      'traversal decisions) stay deep (review finding 5).',
     ranges: [
       [47, 52, 'PURE-INVARIANT', 'view-scale table shape'],
       [76, 82, 'CORE', 'analytic RIG screen fraction per view: near ~7%, far ~3.5-4% (concept-art invariant, entry 7/17) — analytic, not measured', ['scope:shipped']],
       [91, 101, 'PIN', 'slice tune ranges (apex 3-3.5, dwell budgets) — no decision protects the slice tune', ['fixture']],
       [314, 320, 'PIN', 'exactly one stage claims the exemption and it is stage 2; default composition is two wasps', ['fixture']],
       [553, 553, 'PURE-INVARIANT', 'sim ENEMY table carries the polyp as configured', ['scope:shipped']],
+      // review finding 5: the hound/polyp fairness arithmetic reads the SHIPPED CONFIG.hound /
+      // CONFIG.polyp (both spawn in the default lattice: src/pure/lattice.js, src/sim/spawner.js) and
+      // its first tune row is the frozen six-face player tune, so these rows guard the shipped run
+      [159, 186, 'PURE-INVARIANT', 'hound tell vs reaction cost, per tune — row one is the shipped normal tune', ['scope:shipped']],
+      [217, 217, 'PURE-INVARIANT', 'the hound commit coil is a distinct final beat of the tell (shipped CONFIG.hound)', ['scope:shipped']],
+      [224, 224, 'PURE-INVARIANT', 'tightest hound telegraph headroom across all tunes, the shipped one included', ['scope:shipped']],
+      [243, 253, 'PURE-INVARIANT', 'shipped hound sweep / substep tunnelling / hit circle / no HP sponge / floor denied temporarily', ['scope:shipped']],
+      [263, 269, 'PURE-INVARIANT', 'shipped i-frames vs the hound cycle (one pass costs one point; facetanking bounded)', ['scope:shipped']],
+      [297, 297, 'PURE-INVARIANT', 'hound lane band reaches a full generator step below the plate', ['scope:shipped']],
+      [565, 609, 'PURE-INVARIANT', 'shipped polyp rhythm, hit circle, sight march and tell vs the slowest escape, per tune (row one shipped)', ['scope:shipped']],
+      [614, 633, 'PURE-INVARIANT', 'polyp beam/clamp pure functions the shipped sim uses', ['scope:shipped']],
+      [792, 798, 'PURE-INVARIANT', 'the standing muzzle vs the shipped hound circle (the aim gap assist closes)', ['scope:shipped']],
+      [832, 870, 'PURE-INVARIANT', 'aim assist (ON by default in the normal run, src/mode.js AIM_ASSIST_ENABLED) — pure cone/range/target tests', ['scope:shipped']],
       [559, 559, 'PIN', 'every ENEMY kind has a LOOK row — checked by regex over render/hostiles.js source', ['core', 'scope:shipped']],
       [954, 954, 'RETIRED', 'non-grabbable dare wall (dare wager, entries 9/10/21)'],
       [924, 953, 'PURE-INVARIANT', 'ledge probe decision function'],
@@ -126,9 +148,7 @@ export const DOMAINS = {
       'pinned to exact millisecond beats.',
     ranges: [
       [52, 155, 'PURE-INVARIANT', 'one static path: continuity, unit steps, exact detents, climbing grade, silhouettes', ['fixture']],
-      [161, 161, 'PIN', 'assembly choreography code is retained (entry 3 addendum asks for extractable code, not a test)'],
       [164, 164, 'CORE', 'no transition constant drives an assembly (static anatomy, entry 3)'],
-      [168, 168, 'PIN', 'the reserved assembly curve still settles'],
       [175, 175, 'PIN', 'ritual total exactly 990 ms'],
       [176, 176, 'PURE-INVARIANT', 'ritual inside its 0.8-1.2 s budget'],
       [177, 202, 'PIN', 'beats at 90/250/550/690/810 ms, exact snap values, overshoot peaks'],
@@ -203,8 +223,8 @@ export const DOMAINS = {
     note: 'Snap hook v1 was judged and rejected (entry 5: keep it inert). Only the "flags off is the shipped game" check guards a live rule; FLOW is still an unjudged experiment.',
     ranges: [
       [66, 66, 'CORE', '?hook/?flow off: every pace resolves exactly as shipped (?hook=1 must stay inert — CLAUDE.md)'],
-      [86, 254, 'RETIRED', 'snap-hook anchors/tether/zip/whip mechanics (hook v1 rejected, entry 5)'],
-      [169, 169, 'RETIRED', 'dare pocket cannot hook out (hook v1, entry 5; dare wager, entries 9/10)'],
+      [86, 254, 'RETIRED', 'snap-hook anchors/tether/zip/whip mechanics (hook v1: rejected by entry 5, released for deletion by entry 25) — deleted with the feature by T-121; :86/:208/:212 are flow bounds (SITES)', ['with:T-121']],
+      [169, 169, 'RETIRED', 'dare pocket cannot hook out (hook v1, entries 5/25; dare wager, entries 9/10) — deleted with the feature by T-121', ['with:T-121']],
       [260, 315, 'PURE-INVARIANT', 'FLOW momentum-chain arithmetic (?flow=1, unjudged experiment)'],
     ],
   },
@@ -309,10 +329,10 @@ export const DOMAINS = {
 
   'snap-hook-driven-through-real-sim': {
     scope: 'flag:hook=1&flow=1',
-    mechanism: 'child process drives the real sim with ?hook=1',
-    verdict: 'DELETE',
+    mechanism: 'child process drives the real sim with ?hook=1&flow=1',
+    verdict: 'SPLIT',
     default: 'RETIRED',
-    note: 'Proves the rejected hook v1 works when armed (entry 5: inert, no further investment). Keep the code extractable; the test guards nothing a player gets.',
+    note: 'Sections 1-3 prove the rejected hook v1 works when armed (entry 5; entry 25 releases it for deletion): those 14 sites go WITH the feature (T-121). Section 4 drives the live, unjudged ?flow=1 momentum chain into the damage plane (no-clip, no grind, terminal pocket, dislodging setback): 7 sites, CORE/PURE-INVARIANT on a flag, DEEP — T-121 must keep that child section running when it removes the hook imports (review finding 3). Every site is label-keyed in SITES.',
     ranges: [],
   },
 
@@ -363,7 +383,7 @@ export const DOMAINS = {
     mechanism: 'two child processes (default vs ?zip=1) compared frame by frame',
     verdict: 'CORE-GATE',
     default: 'CORE',
-    note: 'A render-only flag cannot change the simulation — the shape every "art may fail, gameplay may not change" claim (entry 16) should take.',
+    note: 'A render-only flag cannot change the simulation — the shape every "art may fail, gameplay may not change" claim (entry 16) should take — and, as two processes compared frame by frame, the only killer of M05 (Math.random in the sim). Its flag is ?zip=1, which entry 25 deletes (T-121): an unknown query is ignored, so the test keeps passing as a two-process determinism check; re-point it at a surviving render-only switch (e.g. ?limbs=legacy) and relabel it rather than deleting it, or land §7.4 #7 first.',
     ranges: [],
   },
 
@@ -434,7 +454,7 @@ export const DOMAINS = {
     default: 'PURE-INVARIANT',
     note: 'Hit-stop / shake / crush-warning math is solid pure-invariant work (a freeze can only slow a frame; stacked freezes are capped). The back half pins frame-loop wiring by regex.',
     ranges: [
-      [48, 57, 'PIN', 'CONFIG.juice carries exactly the declared blocks and pool sizes'],
+      [48, 57, 'PURE-INVARIANT', 'CONFIG.juice schema: one block per effect, every burst spec valid (count/speed/ms/size > 0, finite gravity), pools sized for four simultaneous deaths — validity, not exact constants (DELETE-bucket spot check, review pass)'],
       [245, 245, 'CORE', 'bursts are seeded and never touch the sim rng stream (determinism)'],
       [272, 277, 'PIN', 'crush-warning signage removed / telemetry zero — regex'],
       [283, 283, 'TAUTOLOGY', 'sim imports no render module — already enforced by _context.mjs guardLayer (exits before any domain), so this line can never be the one that fails'],
@@ -572,7 +592,6 @@ export const DOMAINS = {
     default: 'PURE-INVARIANT',
     note: 'Entry 11 made pace escalate at the player\'s momentum; the WIRING block drives the shipped scroll and proves a struggling player is carried at the floor while a good one escalates.',
     ranges: [
-      [50, 64, 'PIN', 'tune-table shape (weights sum to 1, tiers inside (0,1))'],
       [277, 277, 'CORE', 'the escalation curve is a pure function (determinism)'],
       [283, 283, 'CORE', 'momentum/pace read no wall clock or unseeded random (determinism hard rule) — regex'],
       [286, 286, 'PIN', 'momentum module has no elapsed-time/face input — signature regex'],
@@ -874,10 +893,9 @@ export const DOMAINS = {
     mechanism: 'pure route-visibility functions + regex over render modules',
     verdict: 'SPLIT',
     default: 'PURE-INVARIANT',
-    note: 'Future-face rows stay invisible before the turn — a static-anatomy reveal invariant on pure ownership functions.',
+    note: 'Future-face rows stay invisible before the turn — a static-anatomy reveal invariant on pure ownership functions. :37 is the behavioural conclusion (CORE, review finding 1); :89 keeps its laterVisible conjunct (SPLIT). T-102 edits this domain.',
     ranges: [
       [87, 87, 'PIN', 'handoff pinned to the live 690->1100 ms interval'],
-      [89, 89, 'PIN', 'handoff frame retains exactly 19 built arrival columns'],
       [108, 131, 'PIN', 'render modules wire the ownership gate — regex', ['core']],
     ],
   },
@@ -1030,8 +1048,8 @@ export const DOMAINS = {
     mechanism: 'spawns tools/boot-registry-check.mjs (regex over main.js / boot/*.js) and greps counts',
     verdict: 'DELETE',
     default: 'PIN',
-    note: 'The checker asserts the exact ordered id list of the view/reset registries from source text; the wrapper pins "13 views, 31 reset owners". Adding a view fails it.',
-    ranges: [[16, 16, 'PIN', 'exact "13 views, 31 reset owners"']],
+    note: 'The checker asserts the exact ordered id list of the view/reset registries from source text; the wrapper pins "13 views, 31 reset owners". Adding a view fails it. Deleting it is right on the evidence (M34, a retry that no longer resets the hostile RNG, is green), but only after the retry-replay test replaces the property it proxied (§7.4 #9, review finding 8).',
+    ranges: [],   // both sites are label-keyed in SITES (review finding 8)
   },
 
   'adaptive-fidelity-contract': {
@@ -1045,14 +1063,15 @@ export const DOMAINS = {
 
   'render-submission-contract': {
     scope: 'shipped',
-    mechanism: 'boots a REAL browser (tools/playtest/perf-probe.mjs, SwiftShader) and reads its result.json from a FIXED /private/tmp path',
+    mechanism: 'boots a REAL browser (tools/playtest/perf-probe.mjs, SwiftShader) into a private mkdtemp output dir; HB_GATE_SKIP_BROWSER_PROBE=1 skips it loudly',
     verdict: 'REWRITE',
     default: 'SLOW-ENV',
-    note: 'The only browser boot inside pathcheck — 92% of gate wall time in T-108\'s timed run, and it TIMED OUT (300 s) there. On timeout it still read a result.json written an hour earlier (by another run) from the shared fixed path, so three assertions "passed" on stale data. Its subject (material passes, idle uploads, MSAA) is perf hygiene, not boot.',
+    note: 'The only browser boot inside pathcheck. At T-108\'s base (38d0409) it was 89-93% of gate wall time, TIMED OUT (300 s) in both timed runs, and then read a result.json another run had left at a fixed shared path, so three assertions "passed" on stale data. Main fixed the plumbing after the base (e29665b: private mkdtemp dir per run; 1a3a400: an explicit, counted-as-not-run skip on GPU-less hosts, which this host now sets in ~/.hullbreaker-host.env). Its four probe assertions are boot plus frame-budget hygiene (material passes, idle uploads, MSAA): they move to the PLAY gate, gated on a GPU host.',
     ranges: [
-      [22, 22, 'SLOW-ENV', 'the probe boots the shipped scene (real browser; host-load dependent)'],
-      [24, 28, 'TAUTOLOGY', 'read from a fixed shared /private/tmp/…/result.json: passes on a stale or foreign result when the probe fails'],
-      [32, 32, 'PIN', 'the probe source still contains --throttle / --profile / gl.finish'],
+      [21, 21, 'PIN', 'skip branch: the probe source still contains --throttle / --profile / gl.finish'],
+      [41, 41, 'SLOW-ENV', 'the probe boots the shipped scene (real browser; host-load dependent) — PLAY gate'],
+      [43, 47, 'SLOW-ENV', 'frame-budget hygiene (material passes, idle uploads, MSAA) — PLAY gate, gated on a GPU host (§7.2 item 9); no longer stale since e29665b'],
+      [53, 53, 'PIN', 'the probe source still contains --throttle / --profile / gl.finish'],
     ],
   },
 
@@ -1109,3 +1128,492 @@ export const DOMAINS = {
     ],
   },
 };
+
+// SITES — label-keyed hand entries (T-108 review pass, 2026-10-23). Each entry
+// names ONE call site by its domain and a prefix of its message label (see
+// tools/orch/test-census.mjs, SITE IDENTITY), so it survives a lane shifting
+// the domain's lines; `nth` picks among repeated labels. An entry outranks
+// every line range. The trailing // :N comment is the line on the tree the
+// entry was written against (c80dad0, whose tools/pathcheck/ equals main
+// 2fa58bb), for a reader only — the census never reads it.
+//
+// marks (in addition to the DOMAINS ones):
+//   'split'       the assertion conjoins a property worth keeping with pinned
+//                 conjuncts: keep it in its tier, drop only the pinned
+//                 conjuncts when the domain is next edited (SPLIT-ASSERTION)
+//   'with:T-121'  guards hook v1 or the zip-assembly corner, which entry 25
+//                 releases for deletion: T-121 deletes the assertion together
+//                 with the code (DELETE-WITH-FEATURE), not T-120's batches
+export const SITES = [
+  // pathcheck-suite
+  { domain: 'pathcheck-suite', label: 'column 0 hidden before impact frame', cls: 'RETIRED',
+    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
+    marks: ['with:T-121'] }, // :173
+  { domain: 'pathcheck-suite', label: 'column 0 starts 2.75 above', cls: 'RETIRED',
+    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
+    marks: ['with:T-121'] }, // :174
+  { domain: 'pathcheck-suite', label: 'gravity ease: u=0.5 -> 75 percent of dro', cls: 'RETIRED',
+    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
+    marks: ['with:T-121'] }, // :175
+  { domain: 'pathcheck-suite', label: 'column 1 starts exactly 16 ms later', cls: 'RETIRED',
+    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
+    marks: ['with:T-121'] }, // :177
+  { domain: 'pathcheck-suite', label: 'one-beat dip after landing', cls: 'RETIRED',
+    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
+    marks: ['with:T-121'] }, // :181
+  { domain: 'pathcheck-suite', label: 'column locks to base after dip', cls: 'RETIRED',
+    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
+    marks: ['with:T-121'] }, // :185
+  { domain: 'pathcheck-suite', label: 'last slam column lands at 820 ms, before', cls: 'RETIRED',
+    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
+    marks: ['with:T-121'] }, // :189
+  { domain: 'pathcheck-suite', label: 'zipper fully locked ( … ms) before scrol', cls: 'RETIRED',
+    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
+    marks: ['with:T-121'] }, // :192
+  { domain: 'pathcheck-suite', label: 'portrait pullback preserves retreat room', cls: 'PURE-INVARIANT',
+    note: 'portrait pullback keeps retreat room and preview — NOTE it reads TF.darePocket.timing.entryEdgeMarginTiles (retired dare fixture data): re-point it before the RETIRED batch removes that data (review finding 9)' }, // :1030
+  { domain: 'pathcheck-suite', label: 'responsive portrait composition keeps de', cls: 'CORE',
+    note: 'keep the desktop-FAR identity conjuncts (desktopViewMult === far.depthMult, desktopActorGain === 1: entries 7/17/20); drop the portrait 1.15 / 24-30 tiles / 4-6 % pins — split only after T-107 lands its byte-identical projection proof (review finding 9)',
+    marks: ['split'] }, // :1035
+  // world-transitions
+  { domain: 'world-transitions', label: 'the assembly choreography is retained fo', cls: 'RETIRED',
+    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — asserts the retained assembly code exists (recoverable at bb8e4df)',
+    marks: ['with:T-121'] }, // :161
+  { domain: 'world-transitions', label: 'the reserved assembly curve still settle', cls: 'RETIRED',
+    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — asserts the retained assembly curve still settles',
+    marks: ['with:T-121'] }, // :168
+  // g2-neck-access-plate-flip-gate
+  { domain: 'g2-neck-access-plate-flip-gate', label: 'the default-arg level build follows the ', cls: 'PURE-INVARIANT',
+    note: 'the default-arg level build follows the live selection — flag plumbing, not behaviour (review finding 14)' }, // :71
+  // movement-verb-prototypes
+  { domain: 'movement-verb-prototypes', label: 'arming both verbs adds the two tuning ta', cls: 'PURE-INVARIANT',
+    note: 'the ?flow=1 overlay adds its table and exactly one movement override (ledgeAutoLaunch); drop the hook half with T-121',
+    marks: ['split', 'scope:flag:flow=1'] }, // :86
+  { domain: 'movement-verb-prototypes', label: 'hook + flow + every pace chain keeps hor', cls: 'PURE-INVARIANT',
+    note: 'dt-clamp tunnelling bound for every flow-armed pace — their only one (pacing-variants.mjs covers paces without flow); drop the hook candidate with T-121',
+    marks: ['split', 'scope:flag:flow=1'] }, // :208
+  { domain: 'movement-verb-prototypes', label: 'no verb raises an upward launch into the', cls: 'PURE-INVARIANT',
+    note: 'upward-launch tunnelling bound for every flow-armed pace; drop the hook launchY candidate with T-121',
+    marks: ['split', 'scope:flag:flow=1'] }, // :212
+  // authored-slope-rib-run
+  { domain: 'authored-slope-rib-run', label: 'the rib run inherits the fixture tune un', cls: 'PURE-INVARIANT',
+    note: 'the rib run inherits the fixture tune untouched — config equality, not behaviour (review finding 14)' }, // :126
+  { domain: 'authored-slope-rib-run', label: 'the fixture fields exactly those flanges', cls: 'PIN',
+    note: 'the fixture fields exactly the flanges it was built from — data checked against itself (author\'s own spot check + review finding 14)' }, // :214
+  // rib-run-driven-through-real-sim
+  { domain: 'rib-run-driven-through-real-sim', label: ': the rib is a … s pass, inside the fixt', cls: 'CORE',
+    note: 'driven pass time inside the fixture\'s 4-12 s window (review finding 14)' }, // :130
+  { domain: 'rib-run-driven-through-real-sim', label: ': the whole climb averages … t/s, … % of', cls: 'CORE',
+    note: 'driven climb keeps 85 % of run speed (momentum pillar; review finding 14)' }, // :140
+  { domain: 'rib-run-driven-through-real-sim', label: ': the rib never holds RIG still for long', cls: 'CORE',
+    note: 'driven climb never holds RIG under 2 t/s for 600 ms (momentum pillar; review finding 14)' }, // :144
+  // snap-hook-driven-through-real-sim
+  { domain: 'snap-hook-driven-through-real-sim', label: 'sim/hook.js drives the real player loop ', cls: 'RETIRED',
+    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
+    marks: ['with:T-121'] }, // :199
+  { domain: 'snap-hook-driven-through-real-sim', label: 'pressing hook at the fixture spawn grabs', cls: 'RETIRED',
+    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
+    marks: ['with:T-121'] }, // :201
+  { domain: 'snap-hook-driven-through-real-sim', label: 'while the tether is taut the player carr', cls: 'RETIRED',
+    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
+    marks: ['with:T-121'] }, // :204
+  { domain: 'snap-hook-driven-through-real-sim', label: 'the zip arrives and dangles before it th', cls: 'RETIRED',
+    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
+    marks: ['with:T-121'] }, // :207
+  { domain: 'snap-hook-driven-through-real-sim', label: 'the dangle always converts: one grab, on', cls: 'RETIRED',
+    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
+    marks: ['with:T-121'] }, // :208
+  { domain: 'snap-hook-driven-through-real-sim', label: 'the whip throws forward at a bounded spe', cls: 'RETIRED',
+    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
+    marks: ['with:T-121'] }, // :213
+  { domain: 'snap-hook-driven-through-real-sim', label: 'the whip refunds the air jump, so a grab', cls: 'RETIRED',
+    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
+    marks: ['with:T-121'] }, // :219
+  { domain: 'snap-hook-driven-through-real-sim', label: 'the grab gained real altitude: … tiles', cls: 'RETIRED',
+    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
+    marks: ['with:T-121'] }, // :221
+  { domain: 'snap-hook-driven-through-real-sim', label: 'the cooldown and the anchor lock refuse ', cls: 'RETIRED',
+    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
+    marks: ['with:T-121'] }, // :223
+  { domain: 'snap-hook-driven-through-real-sim', label: 'a hook launch is a momentum-chain link', cls: 'RETIRED',
+    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
+    marks: ['with:T-121'] }, // :224
+  { domain: 'snap-hook-driven-through-real-sim', label: 'the launch that followed the grab pays a', cls: 'RETIRED',
+    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
+    marks: ['with:T-121'] }, // :226
+  { domain: 'snap-hook-driven-through-real-sim', label: 'and the A.5 event stream carries it, wit', cls: 'RETIRED',
+    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
+    marks: ['with:T-121'] }, // :229
+  { domain: 'snap-hook-driven-through-real-sim', label: 'down releases the tether and drops, exac', cls: 'RETIRED',
+    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
+    marks: ['with:T-121'] }, // :231
+  { domain: 'snap-hook-driven-through-real-sim', label: 'a press with no valid anchor is simply a', cls: 'RETIRED',
+    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
+    marks: ['with:T-121'] }, // :234
+  { domain: 'snap-hook-driven-through-real-sim', label: 'crush case: two contact launches armed a', cls: 'PURE-INVARIANT',
+    note: 'precondition of the flow-chain crush case (?flow=1 is live and unjudged)',
+    marks: ['scope:flag:flow=1'] }, // :243
+  { domain: 'snap-hook-driven-through-real-sim', label: 'a live chain carried into the plane\'s wa', cls: 'CORE',
+    note: 'a live ?flow=1 chain dies on the crush frame (setback un-earns momentum); drop the hookPhase conjunct with T-121',
+    marks: ['split', 'scope:flag:flow=1'] }, // :244
+  { domain: 'snap-hook-driven-through-real-sim', label: 'and no frame left RIG behind the damage ', cls: 'CORE',
+    note: 'no frame leaves RIG behind the damage plane with a live ?flow=1 chain (no-clip hard rule)',
+    marks: ['scope:flag:flow=1'] }, // :247
+  { domain: 'snap-hook-driven-through-real-sim', label: 'the crush still resolves in its own fram', cls: 'CORE',
+    note: 'the crush resolves in its own frame, not grinding, under ?flow=1 (no softlock)',
+    marks: ['scope:flag:flow=1'] }, // :248
+  { domain: 'snap-hook-driven-through-real-sim', label: 'and the sealed pocket stays terminal: th', cls: 'CORE',
+    note: 'the sealed pocket stays terminal: the ?flow=1 momentum spine cannot buy a rescue the fallback rule denies',
+    marks: ['scope:flag:flow=1'] }, // :251
+  { domain: 'snap-hook-driven-through-real-sim', label: 'a lethal hit mid-chain also un-earns the', cls: 'CORE',
+    note: 'a lethal hit mid ?flow=1 chain un-earns the chain; drop the hookPhase conjunct with T-121',
+    marks: ['split', 'scope:flag:flow=1'] }, // :257
+  { domain: 'snap-hook-driven-through-real-sim', label: 'and the setback is still a dislodging, n', cls: 'CORE',
+    note: 'a lethal hit is a dislodging, not a stop, under ?flow=1 (play continues on a lower route)',
+    marks: ['scope:flag:flow=1'] }, // :260
+  // t-012-audio-layer-static-guards
+  { domain: 't-012-audio-layer-static-guards', label: 'T-012: audio module declares imports', cls: 'PIN',
+    note: 'regex / import shape over the audio wiring (hand pass of the mechanical rule: confirmed PIN)' }, // :31
+  { domain: 't-012-audio-layer-static-guards', label: 'T-012: ui/audio.js imports nothing from ', cls: 'PIN',
+    note: 'regex / import shape over the audio wiring (hand pass of the mechanical rule: confirmed PIN)' }, // :32
+  { domain: 't-012-audio-layer-static-guards', label: 'T-012: audio sim import is a sanctioned ', cls: 'PIN',
+    note: 'regex / import shape over the audio wiring (hand pass of the mechanical rule: confirmed PIN)' }, // :50
+  { domain: 't-012-audio-layer-static-guards', label: 'T-012/T-029: main.js touches the audio m', cls: 'PIN',
+    note: 'regex / import shape over the audio wiring (hand pass of the mechanical rule: confirmed PIN)' }, // :66
+  { domain: 't-012-audio-layer-static-guards', label: 'T-012: audio hook wrappers call the prio', cls: 'PIN',
+    note: 'regex / import shape over the audio wiring (hand pass of the mechanical rule: confirmed PIN)' }, // :72
+  { domain: 't-012-audio-layer-static-guards', label: 'T-012: ?audio=0 gates all wiring off', cls: 'PIN',
+    note: 'regex / import shape over the audio wiring (hand pass of the mechanical rule: confirmed PIN)' }, // :75
+  { domain: 't-012-audio-layer-static-guards', label: 'T-012: onCornerFinished recounts ambienc', cls: 'PIN',
+    note: 'regex / import shape over the audio wiring (hand pass of the mechanical rule: confirmed PIN)' }, // :89
+  { domain: 't-012-audio-layer-static-guards', label: 'T-012: onFaceRevealed does not recount l', cls: 'PIN',
+    note: 'regex / import shape over the audio wiring (hand pass of the mechanical rule: confirmed PIN)' }, // :91
+  { domain: 't-012-audio-layer-static-guards', label: 'T-012: wavegate.finishCorner commits sta', cls: 'PIN',
+    note: 'regex / import shape over the audio wiring (hand pass of the mechanical rule: confirmed PIN)' }, // :96
+  // t-013-game-shell
+  { domain: 't-013-game-shell', label: 'T-013: " … " carries its board-05 brand ', cls: 'PURE-INVARIANT',
+    note: 'every title direction carries its board-05 copy (schema of the title-direction data)' }, // :68
+  { domain: 't-013-game-shell', label: 'T-013: the six-face stats screen reports', cls: 'PURE-INVARIANT',
+    note: 'runStatRows is a pure function: the shipped six-face stats screen (review finding 6)' }, // :212
+  { domain: 't-013-game-shell', label: 'T-013: time leads the stats screen', cls: 'PURE-INVARIANT',
+    note: 'runStatRows is a pure function: the shipped six-face stats screen (review finding 6)' }, // :215
+  { domain: 't-013-game-shell', label: 'T-013: no stats row is empty or undefine', cls: 'PURE-INVARIANT',
+    note: 'runStatRows is a pure function: the shipped six-face stats screen (review finding 6)' }, // :217
+  { domain: 't-013-game-shell', label: 'T-013: the fixture stats screen counts a', cls: 'PURE-INVARIANT',
+    note: 'runStatRows for the traversal fixture (pure)',
+    marks: ['scope:flag:slice=traversal'] }, // :221
+  { domain: 't-013-game-shell', label: 'T-013: the transform stats screen report', cls: 'PURE-INVARIANT',
+    note: 'runStatRows for the transform fixture (pure)',
+    marks: ['scope:flag:slice=transform'] }, // :225
+  { domain: 't-013-game-shell', label: 'T-013: the score prototype adds no rows ', cls: 'PURE-INVARIANT',
+    note: 'runStatRows is a pure function: the shipped six-face stats screen (review finding 6)' }, // :228
+  { domain: 't-013-game-shell', label: 'T-013: ?score=1 folds the protoScore fie', cls: 'PURE-INVARIANT',
+    note: 'runStatRows with the ?score=1 prototype (pure)',
+    marks: ['scope:flag:score=1'] }, // :233
+  { domain: 't-013-game-shell', label: 'T-013: hull fallbacks appear only when t', cls: 'PURE-INVARIANT',
+    note: 'runStatRows is a pure function: the shipped six-face stats screen (review finding 6)' }, // :238
+  // t-009-static-anatomy-reveal-default
+  { domain: 't-009-static-anatomy-reveal-default', label: 'T-009: ?zip=1 restores the brick-slam re', cls: 'RETIRED',
+    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — ?zip=1 restores the brick-slam reveal',
+    marks: ['with:T-121'] }, // :49
+  { domain: 't-009-static-anatomy-reveal-default', label: 'T-009: ?g1=0 is the same escape hatch, f', cls: 'RETIRED',
+    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — ?g1=0 is the same escape hatch',
+    marks: ['with:T-121'] }, // :51
+  { domain: 't-009-static-anatomy-reveal-default', label: 'T-009: the zipper hook is still written ', cls: 'RETIRED',
+    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121',
+    marks: ['with:T-121'] }, // :57
+  { domain: 't-009-static-anatomy-reveal-default', label: 'T-009: the gate runtime still drives the', cls: 'RETIRED',
+    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121',
+    marks: ['with:T-121'] }, // :60
+  // t-018-bot-harness-relative-geometry
+  { domain: 't-018-bot-harness-relative-geometry', label: 'T-018: … never reaches for eval()/new Fu', cls: 'PURE-INVARIANT',
+    note: 'static honesty lint of the bot grammar: no eval/new Function (a rule, like the layer guard)' }, // :116
+  { domain: 't-018-bot-harness-relative-geometry', label: 'T-018: … declares no module-level mutabl', cls: 'PURE-INVARIANT',
+    note: 'static honesty lint of the bot grammar: no module-level mutable state' }, // :121
+  { domain: 't-018-bot-harness-relative-geometry', label: 'T-019: … is driven by relative geometry ', cls: 'PURE-INVARIANT',
+    note: 'six-face script honesty lint (relative geometry only) — keep with its four negative controls (review finding 6)' }, // :320
+  { domain: 't-018-bot-harness-relative-geometry', label: 'T-019: the guard catches a clause naming', cls: 'PURE-INVARIANT',
+    note: 'negative control of the six-face script honesty lint — without it the lint cannot fail' }, // :332
+  { domain: 't-018-bot-harness-relative-geometry', label: 'T-019: …a timed movement `move`', cls: 'PURE-INVARIANT',
+    note: 'negative control of the six-face script honesty lint — without it the lint cannot fail' }, // :334
+  { domain: 't-018-bot-harness-relative-geometry', label: 'T-019: …and a timed movement in the RAW ', cls: 'PURE-INVARIANT',
+    note: 'negative control of the six-face script honesty lint — without it the lint cannot fail' }, // :336
+  { domain: 't-018-bot-harness-relative-geometry', label: 'T-019: …and a six-face script with no po', cls: 'PURE-INVARIANT',
+    note: 'negative control of the six-face script honesty lint — without it the lint cannot fail' }, // :339
+  // momentum-earned-pace-escalation
+  { domain: 'momentum-earned-pace-escalation', label: 'momentum: the two earn weights sum to ex', cls: 'PURE-INVARIANT',
+    note: 'relational validity of the shipped momentum tune (weights sum to 1; the bank interval guards the divide in momentumBank; ceilings ordered; relief faster than escalation — entry 11; tiers ascending) — review finding 7' }, // :50
+  { domain: 'momentum-earned-pace-escalation', label: 'momentum: the bank ramp is a real interv', cls: 'PURE-INVARIANT',
+    note: 'relational validity of the shipped momentum tune (weights sum to 1; the bank interval guards the divide in momentumBank; ceilings ordered; relief faster than escalation — entry 11; tiers ascending) — review finding 7' }, // :53
+  { domain: 'momentum-earned-pace-escalation', label: 'momentum: escalation ceiling is above th', cls: 'PURE-INVARIANT',
+    note: 'relational validity of the shipped momentum tune (weights sum to 1; the bank interval guards the divide in momentumBank; ceilings ordered; relief faster than escalation — entry 11; tiers ascending) — review finding 7' }, // :55
+  { domain: 'momentum-earned-pace-escalation', label: 'momentum: drive sheds faster than it ear', cls: 'PURE-INVARIANT',
+    note: 'relational validity of the shipped momentum tune (weights sum to 1; the bank interval guards the divide in momentumBank; ceilings ordered; relief faster than escalation — entry 11; tiers ascending) — review finding 7' }, // :57
+  { domain: 'momentum-earned-pace-escalation', label: 'momentum: a hit caps the drive at a real', cls: 'PURE-INVARIANT',
+    note: 'relational validity of the shipped momentum tune (weights sum to 1; the bank interval guards the divide in momentumBank; ceilings ordered; relief faster than escalation — entry 11; tiers ascending) — review finding 7' }, // :60
+  { domain: 'momentum-earned-pace-escalation', label: 'momentum: the kill streak saturates at a', cls: 'PURE-INVARIANT',
+    note: 'relational validity of the shipped momentum tune (weights sum to 1; the bank interval guards the divide in momentumBank; ceilings ordered; relief faster than escalation — entry 11; tiers ascending) — review finding 7' }, // :62
+  { domain: 'momentum-earned-pace-escalation', label: 'momentum: the HUD tiers are an ascending', cls: 'PURE-INVARIANT',
+    note: 'relational validity of the shipped momentum tune (weights sum to 1; the bank interval guards the divide in momentumBank; ceilings ordered; relief faster than escalation — entry 11; tiers ascending) — review finding 7' }, // :64
+  // t-029-runtime-truth-three-debug
+  { domain: 't-029-runtime-truth-three-debug', label: 'T-029/I-005: src/ui/audio.js still expor', cls: 'PIN',
+    note: 'regex over the HUD/overlay/audio source (hand pass: confirmed PIN)' }, // :45
+  { domain: 't-029-runtime-truth-three-debug', label: 'T-029/I-009: the HUD turn counter reads ', cls: 'PIN',
+    note: 'regex over the HUD/overlay/audio source (hand pass: confirmed PIN)' }, // :79
+  { domain: 't-029-runtime-truth-three-debug', label: 'T-029/I-009: …and so does the clear over', cls: 'PIN',
+    note: 'regex over the HUD/overlay/audio source (hand pass: confirmed PIN)' }, // :82
+  // pathcheck-suite-2
+  { domain: 'pathcheck-suite-2', label: 'T-032: index.html carries the failure te', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :126
+  { domain: 'pathcheck-suite-2', label: 'T-032: …and that table is literal data, ', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :129
+  { domain: 'pathcheck-suite-2', label: 'T-032: the failure handler is an INLINE ', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :165
+  { domain: 'pathcheck-suite-2', label: 'T-032: …and it imports nothing, so nothi', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :170
+  { domain: 'pathcheck-suite-2', label: 'T-032: …and it is installed BEFORE the g', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :176
+  { domain: 'pathcheck-suite-2', label: 'T-032: the inline watchdog numbers are t', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :180
+  { domain: 'pathcheck-suite-2', label: 'T-032: the keys that put a player back i', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :188
+  { domain: 'pathcheck-suite-2', label: 'T-032: it listens in the CAPTURE phase f', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :191
+  { domain: 'pathcheck-suite-2', label: 'T-032: a boot that never finishes is tol', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :195
+  { domain: 'pathcheck-suite-2', label: 'T-032: the freeze watchdog knows a backg', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :197
+  { domain: 'pathcheck-suite-2', label: 'T-032: the panel markup carries # … , wh', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :202
+  { domain: 'pathcheck-suite-2', label: 'T-032: the failure panel sits above the ', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :214
+  { domain: 'pathcheck-suite-2', label: 'T-032: every .fail-plain line lives insi', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :223
+  { domain: 'pathcheck-suite-2', label: 'T-032: the one repair the game can make ', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :272
+  { domain: 'pathcheck-suite-2', label: 'T-032: a lost drawing surface — nothing ', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :274
+  { domain: 'pathcheck-suite-2', label: 'T-032: window.HB publishes the failsafe ', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :278
+  { domain: 'pathcheck-suite-2', label: 'T-032: boot is signalled by the LAST sta', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :280
+  { domain: 'pathcheck-suite-2', label: 'T-032: ?selftest=1 paints the real panel', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :283
+  { domain: 'pathcheck-suite-2', label: 'T-032: the view layer takes its decision', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :289
+  { domain: 'pathcheck-suite-2', label: 'T-032: uncaught errors AND broken frames', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :291
+  { domain: 'pathcheck-suite-2', label: 'T-032: the halt flag and the browser sel', cls: 'PIN',
+    note: 'T-032 failure-panel wiring (boot / safe degradation, CLAUDE.md + entry 21 never-delete list) checked by regex: keep until the PLAY-gate failsafe case (§7.2 item 3) is green and shown red on M12/M36/M37, then delete',
+    marks: ['core'] }, // :294
+  // t-039-contact-shadows
+  { domain: 't-039-contact-shadows', label: 'T-039: contact.js builds one bounded rad', cls: 'PIN',
+    note: 'regex over contact.js / its callers (hand pass: confirmed PIN)' }, // :151
+  { domain: 't-039-contact-shadows', label: 'T-039: contact.js uses MultiplyBlending ', cls: 'PIN',
+    note: 'regex over contact.js / its callers (hand pass: confirmed PIN)' }, // :155
+  { domain: 't-039-contact-shadows', label: 'T-039: the material keeps fog:true — a m', cls: 'PIN',
+    note: 'regex over contact.js / its callers (hand pass: confirmed PIN)' }, // :159
+  { domain: 't-039-contact-shadows', label: 'T-039: exactly one InstancedMesh — the +', cls: 'PIN',
+    note: 'headless frame-budget proxy (draw calls / per-frame allocation / instancing): keep until a GATED frame budget exists (§7.7 operator question 1) — exactly one InstancedMesh, the +1 draw call',
+    marks: ['core'] }, // :162
+  { domain: 't-039-contact-shadows', label: 'T-039: feathering is fixed vertex/instan', cls: 'PIN',
+    note: 'regex over contact.js / its callers (hand pass: confirmed PIN)' }, // :164
+  { domain: 't-039-contact-shadows', label: 'T-039: contact.js reads the raw groundTo', cls: 'PIN',
+    note: 'regex over contact.js / its callers (hand pass: confirmed PIN)' }, // :177
+  { domain: 't-039-contact-shadows', label: 'T-039: contact.js is guarded off under t', cls: 'PIN',
+    note: 'regex over contact.js / its callers (hand pass: confirmed PIN)' }, // :180
+  { domain: 't-039-contact-shadows', label: 'T-039: the flag is ?shadow= (QUERY.get(\'', cls: 'PIN',
+    note: 'regex over contact.js / its callers (hand pass: confirmed PIN)' }, // :182
+  { domain: 't-039-contact-shadows', label: 'T-039: RIG calls syncContactShadow every', cls: 'PIN',
+    note: 'regex over contact.js / its callers (hand pass: confirmed PIN)' }, // :205
+  { domain: 't-039-contact-shadows', label: 'T-039: hostiles.js both places and relea', cls: 'PIN',
+    note: 'regex over contact.js / its callers (hand pass: confirmed PIN)' }, // :208
+  { domain: 't-039-contact-shadows', label: 'T-039: hostiles.js defines a CONTACT_FOO', cls: 'PIN',
+    note: 'regex over contact.js / its callers (hand pass: confirmed PIN)' }, // :212
+  { domain: 't-039-contact-shadows', label: 'T-039: capsules.js both places and relea', cls: 'PIN',
+    note: 'regex over contact.js / its callers (hand pass: confirmed PIN)' }, // :218
+  // t-035-value-ladder
+  { domain: 't-035-value-ladder', label: 'T-035: gain 0 is exactly 1.0 for every p', cls: 'PURE-INVARIANT',
+    note: 'computed bake: gain 0 is exactly 1.0, so ?shade=0 / ?palette=classic reproduce the old bake bit for bit (review finding 6)' }, // :117
+  { domain: 't-035-value-ladder', label: 'T-035: the row ramp has one entry per de', cls: 'PIN',
+    note: 'CONFIG row ramp vs VISUAL_DEPTH parsed from source text (hand pass: confirmed PIN)' }, // :130
+  { domain: 't-035-value-ladder', label: 'T-035/S2: …and every one of them sits in', cls: 'PURE-INVARIANT',
+    note: 'computed against the live band: every value inside T-045\'s [0.25, 0.85] fence (review finding 6)' }, // :413
+  // t-047-light-rig
+  { domain: 't-047-light-rig', label: 'T-047: …and the pre-T-047 world-fixed ri', cls: 'PIN',
+    note: 'asserts that the ESCAPE-HATCH rig keeps its old defect (first-pass spot check, applied in the review pass)' }, // :134
+  { domain: 't-047-light-rig', label: 'T-047: the flat rig\'s horizontal surface', cls: 'PIN',
+    note: 'asserts that the ESCAPE-HATCH rig keeps its old property (first-pass spot check, applied in the review pass)' }, // :139
+  { domain: 't-047-light-rig', label: 'T-047: one 2048-max map. Bigger buys tex', cls: 'PIN',
+    note: 'headless frame-budget proxy (draw calls / per-frame allocation / instancing): keep until a GATED frame budget exists (§7.7 operator question 1) — one shadow map, 2048 max',
+    marks: ['core'] }, // :191
+  { domain: 't-047-light-rig', label: 'T-047: userData.shadow=\' … \' overrides t', cls: 'PURE-INVARIANT',
+    note: 'the shadow policy function honours a userData override (review finding 6)' }, // :238
+  // t-048-post-pass
+  { domain: 't-048-post-pass', label: 'T-048: every hostile kind names a surfac', cls: 'PIN',
+    note: 'surface-family names counted out of hostile source text (hand pass: confirmed PIN)' }, // :166
+  { domain: 't-048-post-pass', label: 'T-048: …and every family a mesh names ex', cls: 'PIN',
+    note: 'surface-family names read out of hostile source text (hand pass: confirmed PIN)' }, // :168
+  { domain: 't-048-post-pass', label: 'T-048: …and fx.js reads it ONCE per fram', cls: 'PIN',
+    note: 'headless frame-budget proxy (draw calls / per-frame allocation / instancing): keep until a GATED frame budget exists (§7.7 operator question 1) — fx.js reads postGain once per frame, not per particle',
+    marks: ['core'] }, // :225
+  // t-044-corner-setpieces
+  { domain: 't-044-corner-setpieces', label: 'T-044: every ARRIVAL ends before that fa', cls: 'PURE-INVARIANT',
+    note: 'no arrival set-piece overlaps its face\'s pocket — pockets still exist in the shipped level; a geometry non-overlap invariant, not the retired wager (review finding 14)' }, // :96
+  // t-052-hull-texture
+  { domain: 't-052-hull-texture', label: 'T-054: one authored copy of the … bucket', cls: 'TAUTOLOGY',
+    note: 're-derives the placement formula it tests (first-pass spot check, applied in the review pass)' }, // :97
+  // t-051-backdrop
+  { domain: 't-051-backdrop', label: 'center y is derived from yBottom + half ', cls: 'TAUTOLOGY',
+    note: 're-derives the placement formula it tests (first-pass spot check, applied in the review pass)' }, // :137
+  // t-057-hull-shimmer
+  { domain: 't-057-hull-shimmer', label: 'T-057: materials.js reads the device\'s o', cls: 'PIN',
+    note: 'regex over materials.js anisotropy (hand pass: confirmed PIN)' }, // :46
+  { domain: 't-057-hull-shimmer', label: 'T-057: no remaining hardcoded numeric an', cls: 'PIN',
+    note: 'regex over materials.js anisotropy (hand pass: confirmed PIN)' }, // :53
+  { domain: 't-057-hull-shimmer', label: 'T-057: `anisotropy` is set at both place', cls: 'PIN',
+    note: 'regex over materials.js anisotropy (hand pass: confirmed PIN)' }, // :56
+  // future-facet-render-ownership
+  { domain: 'future-facet-render-ownership', label: 'pre-turn render ownership exposes zero f', cls: 'CORE',
+    note: 'static anatomy (entry 3): runs the real routeRenderOwned over every column — zero future-face rows visible before the turn (review finding 1; the mechanical rule matched a variable name)' }, // :37
+  { domain: 'future-facet-render-ownership', label: 'handoff frame retains its 19 built arriv', cls: 'CORE',
+    note: 'keep `laterVisible === 0` (static anatomy at the handoff frame); drop the 19-column prefix pin when the line is split (review finding 1)',
+    marks: ['split'] }, // :89
+  // mod-route-visibility
+  { domain: 'mod-route-visibility', label: 'modifier presentation uses the shared bu', cls: 'PIN',
+    note: 'mods.js imports the shared visibility contract — regex (hand pass: confirmed PIN)' }, // :12
+  { domain: 'mod-route-visibility', label: 'each clone slot clears stale art before ', cls: 'PIN',
+    note: 'render ownership by regex (nothing renders on an unbuilt or off-camera facet, entry 3): replace with the PLAY-gate ownership probe (§7.2 item 4), falsifier M20, then delete',
+    marks: ['core'] }, // :14
+  { domain: 'mod-route-visibility', label: 'the orbital-lance telegraph cannot be pl', cls: 'PIN',
+    note: 'render ownership by regex (nothing renders on an unbuilt or off-camera facet, entry 3): replace with the PLAY-gate ownership probe (§7.2 item 4), falsifier M20, then delete',
+    marks: ['core'] }, // :16
+  // vertical-assault-geometry
+  { domain: 'vertical-assault-geometry', label: 'authored route decisions need no anonymo', cls: 'PURE-INVARIANT',
+    note: 'authored route decisions need no density-repair bars — a content signal M27 turned red (review finding 6)' }, // :29
+  { domain: 'vertical-assault-geometry', label: 'route ownership is normal-run topology, ', cls: 'PIN',
+    note: 'regex over the route/ladder builders (hand pass: confirmed PIN)' }, // :139
+  { domain: 'vertical-assault-geometry', label: 'both normal-run reveal styles build the ', cls: 'PIN',
+    note: 'regex over the route/ladder builders (hand pass: confirmed PIN)' }, // :143
+  { domain: 'vertical-assault-geometry', label: 'ladder pools apply facet/build culling b', cls: 'PIN',
+    note: 'render ownership by regex (nothing renders on an unbuilt or off-camera facet, entry 3): replace with the PLAY-gate ownership probe (§7.2 item 4), falsifier M20, then delete',
+    marks: ['core'] }, // :146
+  // capsule-reliquary-contract
+  { domain: 'capsule-reliquary-contract', label: 'all twenty-seven capsule reliquary prese', cls: 'PIN',
+    note: 'count ratchet ("27 focused contracts") of a checker that is itself deleted (review finding 11)' }, // :21
+  // projectile-presentation-contract
+  { domain: 'projectile-presentation-contract', label: 'all twenty-five projectile presentation ', cls: 'PIN',
+    note: 'count ratchet ("25/25 contracts passed") of a checker that is itself deleted — goes with it (review finding 11)' }, // :26
+  { domain: 'projectile-presentation-contract', label: 'all nineteen exact endpoint and reason c', cls: 'PIN',
+    note: 'anti-weakening count ratchet of a CORE checker (terminal 19/19): move a contract-count floor into the checker, then drop this grep (review finding 11; §7.7 operator question 2)',
+    marks: ['core'] }, // :36
+  { domain: 'projectile-presentation-contract', label: 'all thirty-six ignition, platform, PHASE', cls: 'PIN',
+    note: 'anti-weakening count ratchet of a CORE checker (cindermouth 36/36): move a contract-count floor into the checker, then drop this grep (review finding 11; §7.7 operator question 2)',
+    marks: ['core'] }, // :46
+  { domain: 'projectile-presentation-contract', label: 'all seventeen destruction geometry, pool', cls: 'PIN',
+    note: 'count ratchet ("17/17") of a checker that is itself deleted — goes with it (review finding 11)' }, // :56
+  // limb-silhouette-production
+  { domain: 'limb-silhouette-production', label: 'production is the default and ?limbs=leg', cls: 'PIN',
+    note: 'regex / routing maps read out of the limb renderer source (hand pass: confirmed PIN)' }, // :37
+  { domain: 'limb-silhouette-production', label: 'every large body, backdrop and joint kin', cls: 'PIN',
+    note: 'regex / routing maps read out of the limb renderer source (hand pass: confirmed PIN)' }, // :39
+  { domain: 'limb-silhouette-production', label: 'the A/B retains the former implicit box ', cls: 'PIN',
+    note: 'regex / routing maps read out of the limb renderer source (hand pass: confirmed PIN)' }, // :41
+  { domain: 'limb-silhouette-production', label: 'omitted distance cards require no extra ', cls: 'PIN',
+    note: 'regex / routing maps read out of the limb renderer source (hand pass: confirmed PIN)' }, // :44
+  { domain: 'limb-silhouette-production', label: 'under-deck contact line, sister lip and ', cls: 'PIN',
+    note: 'regex / routing maps read out of the limb renderer source (hand pass: confirmed PIN)' }, // :47
+  { domain: 'limb-silhouette-production', label: 'legacy lip data needs no extra productio', cls: 'PIN',
+    note: 'regex / routing maps read out of the limb renderer source (hand pass: confirmed PIN)' }, // :50
+  { domain: 'limb-silhouette-production', label: 'production omits the duplicate brown lip', cls: 'PIN',
+    note: 'regex / routing maps read out of the limb renderer source (hand pass: confirmed PIN)' }, // :53
+  { domain: 'limb-silhouette-production', label: 'far-side reference marks leave with thei', cls: 'PIN',
+    note: 'regex / routing maps read out of the limb renderer source (hand pass: confirmed PIN)' }, // :56
+  { domain: 'limb-silhouette-production', label: 'omitted accents allocate no replacement ', cls: 'PIN',
+    note: 'regex / routing maps read out of the limb renderer source (hand pass: confirmed PIN)' }, // :58
+  { domain: 'limb-silhouette-production', label: 'large anatomy uses a beveled polygon ext', cls: 'PIN',
+    note: 'regex / routing maps read out of the limb renderer source (hand pass: confirmed PIN)' }, // :60
+  { domain: 'limb-silhouette-production', label: 'front, back and contact bevels carry an ', cls: 'PIN',
+    note: 'regex / routing maps read out of the limb renderer source (hand pass: confirmed PIN)' }, // :64
+  { domain: 'limb-silhouette-production', label: 'three bucket-reused under-deck roots and', cls: 'PIN',
+    note: 'regex / routing maps read out of the limb renderer source (hand pass: confirmed PIN)' }, // :67
+  { domain: 'limb-silhouette-production', label: 'the fold callback creates no Three.js va', cls: 'PIN',
+    note: 'headless frame-budget proxy (draw calls / per-frame allocation / instancing): keep until a GATED frame budget exists (§7.7 operator question 1) — the fold callback allocates nothing per frame',
+    marks: ['core'] }, // :74
+  { domain: 'limb-silhouette-production', label: 'every fixed pool exposes its silhouette ', cls: 'PIN',
+    note: 'regex / routing maps read out of the limb renderer source (hand pass: confirmed PIN)' }, // :76
+  { domain: 'limb-silhouette-production', label: 'limb cleanup remains independent of the ', cls: 'PIN',
+    note: 'regex / routing maps read out of the limb renderer source (hand pass: confirmed PIN)' }, // :86
+  // crown-command-architecture
+  { domain: 'crown-command-architecture', label: 'four art organs, buried anatomy, shell h', cls: 'PIN',
+    note: 'exact per-kind part counts over the pure Crown plan (not source text — review finding 6 — but an exact count no decision protects)' }, // :53
+  { domain: 'crown-command-architecture', label: 'production is default, legacy is a same-', cls: 'PIN',
+    note: 'headless frame-budget proxy (draw calls / per-frame allocation / instancing): keep until a GATED frame budget exists (§7.7 operator question 1) — repeated fixed Crown parts are instanced',
+    marks: ['core'] }, // :94
+  { domain: 'crown-command-architecture', label: 'one atlas upload supplies three independ', cls: 'PIN',
+    note: 'regex over the Crown renderer / art / finale source (hand pass: confirmed PIN)' }, // :98
+  { domain: 'crown-command-architecture', label: 'the payoff moves six physical shutters a', cls: 'PIN',
+    note: 'regex over the Crown renderer / art / finale source (hand pass: confirmed PIN)' }, // :102
+  { domain: 'crown-command-architecture', label: 'the debug snapshot exposes modular-art, ', cls: 'PIN',
+    note: 'regex over the Crown renderer / art / finale source (hand pass: confirmed PIN)' }, // :105
+  { domain: 'crown-command-architecture', label: 'root, core, antenna, shell and turbine a', cls: 'PIN',
+    note: 'regex over the Crown renderer / art / finale source (hand pass: confirmed PIN)' }, // :108
+  { domain: 'crown-command-architecture', label: 'the Crown obeys the shared built-prefix/', cls: 'PIN',
+    note: 'render ownership by regex (nothing renders on an unbuilt or off-camera facet, entry 3): replace with the PLAY-gate ownership probe (§7.2 item 4), falsifier M20, then delete',
+    marks: ['core'] }, // :114
+  { domain: 'crown-command-architecture', label: 'energy walks only staged nerves, iris an', cls: 'PIN',
+    note: 'regex over the Crown renderer / art / finale source (hand pass: confirmed PIN)' }, // :124
+  { domain: 'crown-command-architecture', label: 'action projection mutates existing mecha', cls: 'PIN',
+    note: 'headless frame-budget proxy (draw calls / per-frame allocation / instancing): keep until a GATED frame budget exists (§7.7 operator question 1) — the Crown mechanics allocate no meshes or textures per frame',
+    marks: ['core'] }, // :130
+  { domain: 'crown-command-architecture', label: 'the boot owner exposes two palette-appro', cls: 'PIN',
+    note: 'regex over the Crown renderer / art / finale source (hand pass: confirmed PIN)' }, // :137
+  { domain: 'crown-command-architecture', label: 'all four reusable organs publish stable ', cls: 'PIN',
+    note: 'regex over the Crown renderer / art / finale source (hand pass: confirmed PIN)' }, // :142
+  { domain: 'crown-command-architecture', label: 'approach, occupation, exposed, rupture a', cls: 'PIN',
+    note: 'regex over the Crown renderer / art / finale source (hand pass: confirmed PIN)' }, // :147
+  { domain: 'crown-command-architecture', label: 'the two textures settle at the shared ea', cls: 'PIN',
+    note: 'regex over the Crown renderer / art / finale source (hand pass: confirmed PIN)' }, // :151
+  { domain: 'crown-command-architecture', label: 'desktop and portrait share the same phys', cls: 'PIN',
+    note: 'regex over the Crown renderer / art / finale source (hand pass: confirmed PIN)' }, // :156
+  { domain: 'crown-command-architecture', label: 'the private payoff clock wakes only for ', cls: 'PIN',
+    note: 'regex over the Crown renderer / art / finale source (hand pass: confirmed PIN)' }, // :159
+  { domain: 'crown-command-architecture', label: 'real packet, committed attack, Warden ru', cls: 'PIN',
+    note: 'regex over the Crown renderer / art / finale source (hand pass: confirmed PIN)' }, // :164
+  { domain: 'crown-command-architecture', label: 'the architecture and art owners contain ', cls: 'PIN',
+    note: 'regex over the Crown renderer / art / finale source (hand pass: confirmed PIN)' }, // :169
+  // hostile-presenter-contract
+  { domain: 'hostile-presenter-contract', label: 'ecology, modular, actor, sprite, and pri', cls: 'PIN',
+    note: 'count ratchet ("5 lifecycle owners") of a checker that is itself deleted (review finding 11)' }, // :16
+  // boot-registry-contract
+  { domain: 'boot-registry-contract', label: 'boot bridge ownership and run teardown a', cls: 'PIN',
+    note: 'proxy for "a retry replays the same run": replace with the retry-replay test (§7.4 #9, falsifier M34) before the domain goes (review finding 8)',
+    marks: ['core'] }, // :14
+  { domain: 'boot-registry-contract', label: 'registry manifests retain every declared', cls: 'PIN',
+    note: 'exact "13 views, 31 reset owners" — proxy for the retry-replay property: replace (§7.4 #9, falsifier M34) before deleting',
+    marks: ['core'] }, // :16
+  // adaptive-fidelity-contract
+  { domain: 'adaptive-fidelity-contract', label: 'supersample, bloom, and shadow resolutio', cls: 'PIN',
+    note: 'anti-weakening ratchet ("3 stable degradation rungs") of a kept checker: move it into the checker (review finding 11; §7.7 operator question 2)',
+    marks: ['core'] }, // :16
+];

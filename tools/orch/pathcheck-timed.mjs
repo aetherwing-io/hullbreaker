@@ -119,7 +119,8 @@ const result = {
   tool: 'tools/orch/pathcheck-timed.mjs',
   tree, head, when: new Date().toISOString(),
   host: { cpus: cpus().length, loadavg: loadavg().map((x) => +x.toFixed(2)) },
-  env: { HB_PROBE_BOOT_MS: process.env.HB_PROBE_BOOT_MS || null, HB_PROBE_SPAWN_MS: process.env.HB_PROBE_SPAWN_MS || null },
+  // every HB_* knob the gate or the host profile can set (~/.hullbreaker-host.env)
+  env: Object.fromEntries(Object.entries(process.env).filter(([k]) => /^HB_/.test(k)).sort()),
   subset: only ? [...only] : null, skipped: [...skip],
   prelude: { contextMs: Math.round(tCtx - t0), manifestImportMs: Math.round(tMan - tCtx) },
   totalMs: Math.round(total), passes, fails,

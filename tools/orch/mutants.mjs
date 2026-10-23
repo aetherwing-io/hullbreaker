@@ -4,6 +4,10 @@
 // expect?, domains? } or `edits: [{file, from, to, count}]` for multi-file ones.
 //   targetClass  the class (tools/orch/test-audit-spec.mjs) of the assertion aimed at
 //   kind         property  — break the guarded property the way a real regression could
+//                evasion   — a property mutant deliberately placed where a pin's regex
+//                            does not read (red = the pin saw the property after
+//                            all); an existence proof that a pin can miss what it
+//                            names, never a kill rate (T-108 review finding 13)
 //                refactor  — semantics-preserving rewrite (red = FALSE ALARM)
 //                intended  — an intentional design change a decision allows (red = OBSTRUCTION)
 //                fix       — the fix for a real, observed defect (red = the gate blocks the fix)
@@ -198,7 +202,7 @@ export const MUTANTS = [
 
   /* ------------------------------- PIN ------------------------------ */
   {
-    id: 'M20', targetClass: 'PIN', kind: 'property',
+    id: 'M20', targetClass: 'PIN', kind: 'evasion',
     site: 'tools/pathcheck/mod-route-visibility.mjs:14',
     why: 'ghost-squad clones are drawn 40 tiles ahead, on an unbuilt facet — the property the regex claims to guard',
     file: 'src/render/mods.js',
@@ -224,7 +228,7 @@ export const MUTANTS = [
     expect: 'a simulation fault is caught and handed to the policy',
   },
   {
-    id: 'M23', targetClass: 'PIN', kind: 'property',
+    id: 'M23', targetClass: 'PIN', kind: 'evasion',
     site: 'tools/pathcheck/pathcheck-suite-2.mjs:291',
     why: 'durability: a fault storm that should RESTART the run halts it instead (the recover branch is dead) — ui/failsafe.js',
     file: 'src/ui/failsafe.js',
@@ -259,7 +263,7 @@ export const MUTANTS = [
     to: '    player.airJumpsLeft = P.airJumps;\n    player.coyoteUntil = gameMs + P.coyoteMs;',
   },
   {
-    id: 'M33', targetClass: 'PIN', kind: 'property',
+    id: 'M33', targetClass: 'PIN', kind: 'evasion',
     site: 'tools/pathcheck/catwalk-built-prefix-visibility.mjs:108',
     why: 'the last half tile of every catwalk stops being solid (players drop off early); the regex still matches its prefix',
     file: 'src/sim/player.js',
@@ -268,7 +272,7 @@ export const MUTANTS = [
     expect: 'player collision still consumes the original authored catwalk extents',
   },
   {
-    id: 'M34', targetClass: 'PIN', kind: 'property',
+    id: 'M34', targetClass: 'PIN', kind: 'evasion',
     site: 'tools/pathcheck/boot-registry-contract.mjs:16',
     why: 'run teardown: the hostile RNG owner stays registered but no longer resets (a retry no longer replays the same run)',
     file: 'src/boot/run-reset.js',
@@ -277,7 +281,7 @@ export const MUTANTS = [
     expect: 'registry manifests retain every declared owner',
   },
   {
-    id: 'M35', targetClass: 'PIN', kind: 'property',
+    id: 'M35', targetClass: 'PIN', kind: 'evasion',
     site: 'tools/pathcheck/pathcheck-suite-2.mjs:263',
     why: 'durability: a resumed tab advances the whole gap again (catch-up multiplier) while the regexed Math.min(50, t - last) text stays',
     file: 'src/main.js',
@@ -398,5 +402,61 @@ export const MUTANTS = [
     file: 'index.html',
     from: '<link rel="preload" as="image" type="image/webp" href="assets/generated/environment/meridian-component-atlas-v1.webp">',
     to: '<link rel="preload" as="image" type="image/webp" href="assets/generated/environment/meridian-component-atlas-v1.webp">\n<link rel="preload" as="image" type="image/webp" href="assets/generated/ui/title-meridian-ascent-v1.webp">',
+  },
+  /* ------------- review pass (2026-10-23): falsifiers for the rewrite list ------------- */
+  // Each breaks a property whose CURRENT check is a PIN marked for rewrite, or a
+  // check this pass reclassified. Run against today's gate they show what the
+  // existing line catches; the replacement test must turn the same mutant red
+  // before the old line is deleted (proposal §7.6).
+  {
+    id: 'M36', targetClass: 'PIN', kind: 'property',
+    site: 'tools/pathcheck/pathcheck-suite-2.mjs:195',
+    why: 'T-032: the boot watchdog never tells the player a boot that never finished (the slow-boot panel is dead)',
+    file: 'index.html',
+    from: "setTimeout(function () { if (!booted) show('slow')", to: "setTimeout(function () { if (false) show('slow')",
+    expect: 'a boot that never finishes is told to the player',
+  },
+  {
+    id: 'M37', targetClass: 'PIN', kind: 'property',
+    site: 'tools/pathcheck/pathcheck-suite-2.mjs:191',
+    why: 'T-032: the failsafe listens in the bubble phase, so a game module that never loaded (its error fires at the <script>, not the page) shows no panel',
+    file: 'index.html',
+    from: "  addEventListener('error', caught, true);", to: "  addEventListener('error', caught, false);",
+    expect: 'it listens in the CAPTURE phase for errors',
+  },
+  {
+    id: 'M38', targetClass: 'CORE', kind: 'property',
+    site: 'tools/pathcheck/future-facet-render-ownership.mjs:37',
+    why: 'static anatomy (entry 3): route-bound art on the NEXT face becomes visible before the turn',
+    file: 'src/pure/path.js',
+    from: '    worldFacetAt(s, cfg, bends) === activeWorldFacet(scroll, cameraFacet, cfg);',
+    to: '    worldFacetAt(s, cfg, bends) <= activeWorldFacet(scroll, cameraFacet, cfg) + 1;',
+    expect: 'pre-turn render ownership exposes zero future rows',
+  },
+  {
+    id: 'M39', targetClass: 'CORE', kind: 'property',
+    site: 'tools/pathcheck/snap-hook-driven-through-real-sim.mjs:257',
+    why: '?flow=1: a hit no longer un-earns the momentum chain (the chain survives the damage path)',
+    file: 'src/sim/player.js',
+    from: '  if (FLOW_ENABLED) flowBreak();\n  player.hp -= amount;', to: '  player.hp -= amount;',
+    expect: 'a lethal hit mid-chain also un-earns the chain',
+  },
+  {
+    id: 'M39b', targetClass: 'CORE', kind: 'property',
+    site: 'tools/pathcheck/snap-hook-driven-through-real-sim.mjs:244',
+    why: '?flow=1: neither a hit nor a lost life un-earns the momentum chain (both flowBreak calls removed — M39 removed only the hit one, and a lethal hit still breaks the chain through loseLife)',
+    edits: [
+      { file: 'src/sim/player.js', count: 1, from: '  if (FLOW_ENABLED) flowBreak();\n  player.hp -= amount;', to: '  player.hp -= amount;' },
+      { file: 'src/sim/player.js', count: 1, from: '  if (FLOW_ENABLED) flowBreak();\n  if (ACTIVE_FIXTURE) {', to: '  if (ACTIVE_FIXTURE) {' },
+    ],
+    expect: 'dies on the crush frame',
+  },
+  {
+    id: 'M40', targetClass: 'PIN', kind: 'property',
+    site: 'tools/pathcheck/t-039-contact-shadows.mjs:162',
+    why: 'frame budget: contact shadows add a second instanced draw call to the scene',
+    file: 'src/render/contact.js',
+    from: '  scene.add(mesh);\n}', to: '  scene.add(mesh);\n  scene.add(new THREE.InstancedMesh(geo, mat, POOL_MAX));\n}',
+    expect: 'exactly one InstancedMesh',
   },
 ];

@@ -5,7 +5,8 @@
 //   node tools/orch/mutation-sample.mjs --scratch <empty-dir>            # every mutant
 //   node tools/orch/mutation-sample.mjs --scratch <dir> --only M01,M02   # a subset
 //   node tools/orch/mutation-sample.mjs --list                           # print the sample
-//   ... --out tools/orch/evidence/mutation-results.json                  # (default)
+//   ... --out <file>       # default <scratch>/mutation-results.json — the committed
+//                          # evidence file is written only when named explicitly
 //   ... --verbose          # let the runner print each finished domain (a hang
 //                          # then records the last domains that completed)
 //   ... --timeout-ms N     # per-mutant bound, default 20 min; a mutant that
@@ -31,8 +32,10 @@
 // producers — see tools/orch/pathcheck-timed.mjs.
 //
 // KINDS. `property` mutants break the guarded property the way a real
-// regression could. `refactor` mutants are semantics-preserving rewrites (a
-// rename, a reformat) — for those, red is a FALSE ALARM. `fix` mutants apply a
+// regression could. `evasion` mutants break a pin's property where its regex
+// does not read (an existence proof, never a rate). `refactor` mutants are
+// semantics-preserving rewrites (a rename, a reformat) — for those, red is a
+// FALSE ALARM. `fix` mutants apply a
 // fix for a real, observed defect — red there means the gate obstructs the fix.
 // `blind` mutants reproduce an entry-20 / integrator-observed defect that no
 // class claims to guard — red there would mean the gate was not blind after all.
@@ -48,7 +51,11 @@ const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 const REPO = resolve(HERE, '..', '..');
-const OUT = resolve(opt('--out') || join(HERE, 'evidence', 'mutation-results.json'));
+// --out defaults INTO the scratch dir (or, for --merge, must be named): a verify
+// step run without --out must never rewrite the committed evidence (review
+// finding 14).
+if (opt('--merge') && !opt('--out')) { console.error('--merge needs an explicit --out'); process.exit(2); }
+const OUT = resolve(opt('--out') || join(opt('--scratch') || '.', 'mutation-results.json'));
 const only = opt('--only') ? new Set(opt('--only').split(',')) : null;
 
 // --merge a.json,b.json: fold rows from other result files (later files win per
@@ -56,9 +63,11 @@ const only = opt('--only') ? new Set(opt('--only').split(',')) : null;
 // three batches in two scratch trees to save wall time; this is the join.
 if (opt('--merge')) {
   const base = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : { mutants: [] };
-  const rows = new Map(base.mutants.map((m) => [m.id, m]));
+  // every row remembers the tree it ran on (rows of the base file: the base's own)
+  const rows = new Map(base.mutants.map((m) => [m.id, { ...m, tree: m.tree || base.base }]));
   for (const f of opt('--merge').split(',')) {
-    for (const m of JSON.parse(readFileSync(resolve(f), 'utf8')).mutants) rows.set(m.id, { ...m, batch: f.split('/').pop() });
+    const B = JSON.parse(readFileSync(resolve(f), 'utf8'));
+    for (const m of B.mutants) rows.set(m.id, { ...m, batch: f.split('/').pop(), tree: B.base });
   }
   const order = MUTANTS.map((x) => x.id);
   const known = new Set(order);
@@ -67,7 +76,7 @@ if (opt('--merge')) {
   for (const m of MUTANTS) if (rows.has(m.id)) rows.get(m.id).kind = m.kind;
   writeFileSync(OUT, JSON.stringify({
     tool: 'tools/orch/mutation-sample.mjs', when: new Date().toISOString(), base: base.base,
-    merged: opt('--merge').split(',').map((f) => f.split('/').pop()),
+    merged: [...new Set([...(base.merged || []), ...opt('--merge').split(',').map((f) => f.split('/').pop())])],
     mutants: [...rows.values()].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)),
   }, null, 2) + '\n');
   console.log('mutation-sample: merged ' + rows.size + ' rows into ' + OUT);

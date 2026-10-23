@@ -1,0 +1,17 @@
+# T-108 review pass: does the site-identity lock catch line drift? (2026-10-23)
+# command: git archive HEAD (c80dad0) into a scratch dir; copy tools/orch/ over it (spec + lock as committed); insert ONE
+#          comment line at the top of tools/pathcheck/pathcheck-suite-2.mjs (what any lane edit above a range does);
+#          node tools/orch/test-census.mjs --check
+# result: exit 1; 47 sites moved one line; the line ranges then silently reclassified 8 of them, and the lock names each:
+  verdict drift: pathcheck-suite-2 "T-032: a non-finite timestamp cannot trip the policy" line 119->120: PURE-INVARIANT/CORE-GATE:invariant-tier -> PIN/DELETE (a range drifted or the spec changed; review, then --write-lock)
+  verdict drift: pathcheck-suite-2 "T-032: the " … " failure has a title, an explanation and a w" line 133->134: PURE-INVARIANT/CORE-GATE:invariant-tier -> PIN/DELETE (a range drifted or the spec changed; review, then --write-lock)
+  verdict drift: pathcheck-suite-2 "T-032: player-facing line reads plainly — " … " … [ … , … ] " line 142->143: PURE-INVARIANT/CORE-GATE:invariant-tier -> PIN/DELETE (a range drifted or the spec changed; review, then --write-lock)
+  verdict drift: pathcheck-suite-2 "T-032: the panel names BOTH ways back in (a key and a button" line 146->147: RETIRED/DELETE -> PIN/DELETE (a range drifted or the spec changed; review, then --write-lock)
+  verdict drift: pathcheck-suite-2 "T-032: the readability bounds stay child-sized" line 158->159: PURE-INVARIANT/CORE-GATE:invariant-tier -> PIN/DELETE (a range drifted or the spec changed; review, then --write-lock)
+  verdict drift: pathcheck-suite-2 "T-032: the inline handler itself parses (nothing else can re" line 174->175: PURE-INVARIANT/CORE-GATE:invariant-tier -> PIN/DELETE (a range drifted or the spec changed; review, then --write-lock)
+  verdict drift: pathcheck-suite-2 "T-032: the draw is caught SEPARATELY, so a broken step still" line 256->257: PIN/REWRITE-AS-BEHAVIOUR -> PIN/DELETE (a range drifted or the spec changed; review, then --write-lock)
+  verdict drift: pathcheck-suite-2 "T-032: …and one clamped frame still cannot cross a whole til" line 269->270: PIN/REWRITE-AS-BEHAVIOUR -> PIN/DELETE (a range drifted or the spec changed; review, then --write-lock)
+  (also)   pathcheck-suite-2: range 133-133 (PURE-INVARIANT) covers no call site
+  (also)   pathcheck-suite-2: range 142-142 (PURE-INVARIANT) covers no call site
+  (also)   pathcheck-suite-2: range 146-146 (RETIRED) covers no call site
+  (also)   pathcheck-suite-2: range 174-174 (PURE-INVARIANT) covers no call site
