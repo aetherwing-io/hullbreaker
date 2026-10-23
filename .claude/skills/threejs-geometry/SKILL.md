@@ -744,9 +744,12 @@ const interleaved = BufferGeometryUtils.interleaveAttributes([
 <!-- HULLBREAKER: before reaching for mergeGeometries to cut draw calls, check
      whether the case is already instanced - src/render/limb.js merges ~800
      armour pieces into one InstancedMesh per material key precisely to avoid
-     ~800 draws, and src/render/level.js bakes the whole tower into one. Merging
-     also destroys per-column instance ranges (columnInstances / faceRanges),
-     which the corner ritual depends on. -->
+     ~800 draws, and src/render/level.js bakes a fixture's whole tile tower
+     into one (the six-face run's hull is already one merged static
+     BufferGeometry, its "continuous production hull skin"). Merging that
+     fixture tower would destroy its per-column instance ranges
+     (columnInstances), which unbuiltHidden() uses to hide the columns the
+     fixture holds unbuilt. -->
 
 ## Common Patterns
 
