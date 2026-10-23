@@ -1,0 +1,55 @@
+{
+ "tool": "tools/playtest/selftest-views.mjs",
+ "baseUrl": "http://127.0.0.1:44551",
+ "query": "",
+ "results": [
+  {
+   "view": "390x844",
+   "width": 390,
+   "height": 844,
+   "touch": false,
+   "title": "SELFTEST PASS (39 checks)",
+   "selftestLines": [
+    "SELFTEST PASS (39 checks)"
+   ],
+   "errors": [],
+   "ms": 60037
+  },
+  {
+   "view": "390x844t",
+   "width": 390,
+   "height": 844,
+   "touch": true,
+   "title": "SELFTEST PASS (39 checks)",
+   "selftestLines": [
+    "SELFTEST PASS (39 checks)"
+   ],
+   "errors": [],
+   "ms": 82229
+  },
+  {
+   "view": "844x390t",
+   "width": 844,
+   "height": 390,
+   "touch": true,
+   "title": "SELFTEST PASS (39 checks)",
+   "selftestLines": [
+    "SELFTEST PASS (39 checks)"
+   ],
+   "errors": [],
+   "ms": 57542
+  },
+  {
+   "view": "1280x720",
+   "width": 1280,
+   "height": 720,
+   "touch": false,
+   "title": "SELFTEST PASS (39 checks)",
+   "selftestLines": [
+    "SELFTEST PASS (39 checks)"
+   ],
+   "errors": [],
+   "ms": 80831
+  }
+ ]
+}

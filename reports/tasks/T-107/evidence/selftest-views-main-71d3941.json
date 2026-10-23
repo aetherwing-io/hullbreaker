@@ -1,0 +1,31 @@
+{
+ "tool": "tools/playtest/selftest-views.mjs",
+ "baseUrl": "http://127.0.0.1:41597",
+ "query": "",
+ "results": [
+  {
+   "view": "390x844",
+   "width": 390,
+   "height": 844,
+   "touch": false,
+   "title": "SELFTEST FAIL: view resolved and portrait pullback applied",
+   "selftestLines": [
+    "SELFTEST FAIL: view resolved and portrait pullback applied"
+   ],
+   "errors": [],
+   "ms": 53572
+  },
+  {
+   "view": "844x390t",
+   "width": 844,
+   "height": 390,
+   "touch": true,
+   "title": "SELFTEST PASS (39 checks)",
+   "selftestLines": [
+    "SELFTEST PASS (39 checks)"
+   ],
+   "errors": [],
+   "ms": 98467
+  }
+ ]
+}

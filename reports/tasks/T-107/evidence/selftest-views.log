@@ -1,0 +1,11 @@
+== 11:16:35 branch
+11:17:40 390x844 mouse SELFTEST PASS (39 checks) 60 s
+11:19:04 390x844t touch SELFTEST PASS (39 checks) 82 s
+11:20:04 844x390t touch SELFTEST PASS (39 checks) 58 s
+11:21:30 1280x720 mouse SELFTEST PASS (39 checks) 81 s
+== exit 0
+== 11:21:32 main
+11:22:33 390x844 mouse SELFTEST FAIL: view resolved and portrait pullback applied 54 s
+11:24:12 844x390t touch SELFTEST PASS (39 checks) 98 s
+== exit 1
+SELFTEST DONE 11:24:14

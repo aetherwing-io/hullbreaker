@@ -513,6 +513,27 @@ packet" below.
 
 ## The dispatch's further boxes
 
+### I-114 — `?selftest=1` fails in portrait (assigned to T-107 by the integrator) — FIXED
+
+The selftest's "view resolved and portrait pullback applied" expected
+`traversalCameraDepth(...) x CONFIG.viewScales[VIEW_ID].depthMult` — the bare
+FAR multiplier, 1.9 — but render/camera.js eases the normal run's multiplier
+toward the compact portrait value below 0.9 aspect (`portraitViewDepthMult`
+with `PORTRAIT_SAFE`: 1.15 at 390x844), so the check failed on every portrait
+phone (it had never run at a phone viewport before T-120's play gate). The
+selftest now computes the same expectation from the same pure function and
+camera.js's (now exported) `PORTRAIT_SAFE`; fixtures keep the bare multiplier,
+as camera.js does. `tools/playtest/selftest-views.mjs` (new), on the final
+tree (`evidence/selftest-views-*.json`):
+
+| `?selftest=1` | 390x844 | 390x844 touch | 844x390 touch (phone frame) | 1280x720 |
+| --- | --- | --- | --- | --- |
+| main `71d3941` | **FAIL: view resolved and portrait pullback applied** | — | PASS (39 checks) | — |
+| this branch | **PASS (39 checks)** | PASS (39) | PASS (39) | PASS (39) |
+
+T-120's play gate (not on main yet) prints K5 for this as a KNOWN item; once
+both are merged, K5 stops reproducing and should be deleted from its list.
+
 ### T-201 coordination (T-201 merged on main at `b8d1b81`; this branch merged it at `e55100a`)
 
 **The edge API keeps its shape (`setEdges(left, right)`).** At every FAR frame
