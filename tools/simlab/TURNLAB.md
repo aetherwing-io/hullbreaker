@@ -123,11 +123,17 @@ replaces it (`tools/pathcheck/t-102-corner-turns.mjs` `familiesFor`).
 4. **The framing bound is relative.** Before T-107, RIG pinned at the right
    clamp on a flat face rendered with its chest at NDC ≈1.012 at 1280x720
    (edges calibrated on the z = 0 route plane; RIG draws 1.15 tiles toward the
-   camera). Since T-107 the right clamp is the actor plane's narrowest row
-   inset by RIG's widest drawn half-silhouette (`src/pure/framing.js`), and
-   every run records the chest NDC at the clamp as `clampNdc` (0.95 at
-   1280x720 and 844x390 touch); `rigOffScreen` keeps its constant bound, and
-   the T-107 pathcheck domain asserts `clampNdc < 1` on its own runs.
+   camera). Since T-107, under the phone lens (touch phones in landscape,
+   `?view=phone`) the right clamp is the actor plane's narrowest row inset by
+   RIG's widest drawn half-silhouette (`src/pure/framing.js`); every FAR frame
+   — desktop included — keeps the route-plane clamp exactly, because the sim's
+   one right edge also drives the spawn trigger (moving it at desktop shifted
+   spawns and a T-102 guard; T-107 report). Every run records the chest NDC
+   at the clamp as `clampNdc` (0.95 on the phone frame, ~1.012 at 1280x720 as
+   before); `rigOffScreen` keeps its constant bound, and the T-107 pathcheck
+   domain asserts `clampNdc < 1` on its own phone-frame runs. With T-201's
+   follow-lead RIG does not reach the clamp in default play
+   (`framing/corner-approach.mjs`).
 5. **Viewports are calibrated analytically** (`edgesForViewport`), not probed;
    portrait/landscape/desktop/narrow (260x1000), plus (T-107) the same phone
    sizes on touch hardware: `phoneLandscapeTouch` 844x390, `phoneMaxTouch`
