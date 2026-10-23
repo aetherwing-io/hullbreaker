@@ -94,7 +94,25 @@ landscape size. The box's 10% is held at 844x390 for play AND the finale
 (reported, not gated: the box names 844x390). Every size comes from the
 viewport and the safe insets, never from RIG.
 
-### 5. Safe areas — ⟨pending: notch walks⟩
+### 5. Safe areas (notch L/R 47, home indicator 21) — DONE
+`--only safe`: CDP `Emulation.setSafeAreaInsetsOverride` (left/right 47 px,
+bottom 21 px — the page's `env()` reads them; `insets:cdp` in the log) and the
+whole nine-screen walk again at each landscape size. Every visible text box
+must fit the viewport MINUS the insets, and every named HUD / deck box and
+every overlay control must sit inside them.
+
+| view | main | branch |
+|---|---|---|
+| 844x390 | 15 pass / **13 fail**; inside the insets: title (headline and tagline from x 42.2, under the 47 px notch), game over (title from y -12.7, off the top; body to y 402.7, past the bottom of a 390 px screen), summit (title under the notch; its R / Q line at y 359-372, on the home indicator) | **28 / 0** |
+| 932x430 | 17 / **11**; title foot to y 410.7 and summit panel to 410.3 (home indicator from 409), game-over body to 424.7 | **28 / 0** |
+| 667x375 | 10 / **18**; title, pause panel (x 36.8), game over (y -20.2 .. 395.2), summit (y -10.4 .. 392.9), failsafe panel (x 26.7 .. 640.3) | **28 / 0** |
+
+The rest of main's failures there are the copy and overlap defects of boxes
+2-3. Falsification: main itself — the same audit and walk, one change of
+tree. The insets reach CSS as `env(safe-area-inset-*)` through the
+`--hud-safe-*` variables, combined with each element's own margin (`max()`
+or `calc()`), for the HUD, the title text and foot, the overlay column, the
+failsafe panel and (T-101's) deck.
 
 ### 6. Preloads — ⟨pending: branch⟩
 Main, both a landscape phone and desktop: the four world textures are each
@@ -105,7 +123,49 @@ found, but is not used because the request credentials mode does not match"
 for each. Cause: `THREE.TextureLoader` requests in CORS mode; the preloads
 were no-cors.
 
-### 7. Watchdog — ⟨pending⟩
+### 7. Watchdog: a slow first draw is not "stuck"; a stall in play still is — DONE
+The change: until the loop has drawn 3 frames, the freeze limit is 10 s
+measured from the later of boot, visibility and the last frame; after
+that, the unchanged 4 s rule. Same hard "got stuck" panel either way.
+
+**Shipped code, fake clock** (`tools/pathcheck/t-105-phone-shell.mjs` runs the
+real inline bootstrap from `index.html`): a 6 s frame stall with 0, 1 or 2
+frames drawn shows no panel; the SAME 6 s stall after 40 frames shows "got
+stuck" 4-5 s in; a loop dead from boot gets the panel 10-11 s after it went
+quiet. These went red under the domain's watchdog mutations (warm-up 0 on
+both sides, warm-up beats 2 inline, warm-up blinding the panel, the inline
+verdict ignoring the last frame, the 4 s rule dead after warm-up, a `>=` /
+`>` drift between the two copies) — see "The new checks".
+
+**Browser** (`--only watchdog`, 844x390): animation frames withheld while the
+page's timers run, armed synchronously inside the bootstrap's own `booted()`
+/ `beat()`. A panel that shows decides a trial; NO panel counts only if the
+page's own timers kept running through the stall (otherwise UNDECIDED — see
+the README's honesty note 3).
+
+| trial | main `08e5db1` | branch |
+|---|---|---|
+| 6 s stall from boot, 0 frames | **"got stuck" 1161 ms into the stall** (earlier runs: 993, 1237 ms) | **no panel**, frames resume (timers ran: longest quiet 459 ms) |
+| 6 s stall after warm-up, PLAYING | ⟨wd2-base⟩ | **"got stuck" 5609 ms in** |
+| 10 s stall after warm-up, PLAYING | ⟨wd2-base⟩ | **"got stuck" 7133 ms in** |
+| loop dead from boot (held 25 s) | ⟨wd2-base⟩ | **"got stuck" 10801 ms in** — reported, just later |
+| 6 s stall after frame 1 | ⟨wd2-base⟩ | UNDECIDED: the first draw blocked every page timer for the whole 6 s (SwiftShader) |
+| 6 s busy-wait, from boot / in play (reported) | ⟨wd2-base⟩ | no panel either way — the bootstrap's pre-T-105 `slept` rule |
+| natural boot at DPR 3, 25 s (reported) | ⟨wd2-base⟩ | no panel; 5 frames, worst gap 32.4 s (after frame 1) |
+
+Falsified in the browser: `--mutate watchdog-no-warmup` ⟨mut⟩.
+
+The DPR-3 question from the dispatch ("DPR 3 trips the freeze watchdog under
+SwiftShader"): in these runs neither tree raised the panel within a natural
+25 s DPR-3 boot (branch: 5 frames, 32.4 s between frames 1 and 2; main:
+⟨wd2-base natural⟩). On this host a first draw blocks the page's own timers
+(measured at DPR 1: the "after frame 1" trial saw no page timer run for the
+whole 6 s), and the bootstrap reads a tick more than 3 s late as a suspended
+page. A first draw that is slow WITHOUT blocking the page — a phone GPU
+compiling shaders — is the case the warm-up is for, and it is what the
+"6 s from boot" trial reproduces (main: panel; branch: none). A loop that
+still delivers a frame only every 16+ s after its first 3 gets the 4 s rule,
+unchanged.
 
 ### 8. Home-screen play — ⟨pending: manifest section⟩
 
@@ -186,7 +246,9 @@ slot), 1100x700, 844x390, 932x430, 390x844 and 1280x720; T-102's
 cut (two lines at 667 / 844 / 932 / 1100) and the panel ends at y 40, above
 the deck's chips (72) and the central region. Main cut the 47-char line at
 667x375 and 1100x700 and the 43-char one at 667x375. Falsified:
-`--mutate objective-nowrap` ⟨pending⟩.
+`--mutate objective-nowrap` (main's one-line ellipsis put back into the
+landscape slot) → 48 pass / **6 fail**: both long lines cut at 667, 844 and
+932 (e.g. 311.2 px of text in a 197 px slot at 667).
 
 **The HUD sized from the viewport, never from RIG** — see box 4. T-107's
 closer phone camera changes nothing here: every HUD size is `vw` / px /
@@ -204,3 +266,79 @@ Nothing else in pathcheck, the playtest harness or any gate was weakened,
 removed or rewritten. T-032's assertions still pass unchanged (the keyboard
 hint still names R and the button; the inline `WATCH` numbers still mirror
 the policy).
+
+## What changed, and why
+
+| surface | change | files |
+|---|---|---|
+| words on every screen | One table of what each screen says, per input mode (`src/pure/shell-copy.js`). Under the two-thumb deck (the only scheme with a tap out of every screen) the title says TAP TO START and shows the two thumbs; the pause / death / summit / route-lost screens print NO instruction line of their own — the deck's `#thumbModal` cue (TAP TO RESUME / TAP TO CLIMB AGAIN) is the one instruction; the panel's R / Q / H legend becomes RESTART RUN / START SCREEN / HIDE HUD buttons that press that key on the player's behalf (one lifecycle path: `src/main.js`'s keydown handler and `src/pure/shell.js`'s intent table); the HUD's swap hint drops its "C". Keyboard / `?touch=0` / `?touch=legacy` keep today's words byte-for-byte. | `src/pure/shell-copy.js` (new), `src/ui/{shell,overlay,hud}.js` |
+| failsafe panel | The hint says "Tap the button to play again." wherever a touch deck would install (an inline copy of the rule, so it works with every module dead); padding keeps the panel inside the notch / home-indicator insets. | `index.html` (inline bootstrap, `#fail` CSS) |
+| freeze watchdog | Before the loop has drawn 3 frames the stall limit is 10 s (timed from the later of boot, visibility and the last beat), not 4 s; after that, the 4 s rule as before. Same hard "got stuck" panel either way: a first-draw stall of up to 10 s is tolerated, a loop that is dead during boot is still reported. Policy in `src/pure/failsafe.js` (`warmBeats`, `warmStallMs`, `freezeVerdict`), mirrored inline. | `src/pure/failsafe.js`, `index.html` |
+| landscape HUD | One top band that ends above the central 60% x 60%: RIG's instrument as a 4-column / 2-row strip (hull + lives + overdrive, then the weapon across the strip, ascent + rush on the right), the objective top-right (wraps instead of an ellipsis), the Crown finale banner in the objective's slot, the 1-2 s loot card (and the gilded toast) in the lane between. The deck's PAUSE / AUTO chips sit under the right slot (`--thumb-top-reserve: 66px` in landscape; 48 before). Sized from the viewport and the safe insets only. | `index.html`, `src/ui/{loot,gilded}.js` |
+| portrait HUD | The same strip, full width at the top; the objective under it; the finale banner in the objective's slot (main drew it over the ascent metrics). | `index.html` |
+| desktop HUD | The objective line wraps instead of losing its end to an ellipsis (T-102's 47-character gate line); at 1280 px every measured line still renders on one line. | `index.html` |
+| state screens on a short glass | One compact column above the deck's cue, inside the insets; the title's portrait headline no longer clips (9.4vw, tighter tracking). | `index.html` |
+| preloads | `crossorigin` on the four texture preloads — `THREE.TextureLoader` requests in CORS mode, so a no-cors preload was never reused: each was fetched twice. The CSS-background title art keeps its no-cors preload. | `index.html` |
+| home-screen play | Web app manifest (landscape, fullscreen with standalone fallback, relative `start_url`/`scope` so a subpath deploy works), `apple-mobile-web-app-capable`, `black-translucent` status bar, title, theme colour, `apple-touch-icon` (180, opaque). Icons are square crops of the title key art, reproducible byte-for-byte by `tools/assets/make-app-icons.py --check`. | `index.html`, `assets/generated/ui/app/*`, `tools/assets/make-app-icons.py` |
+| audio | iOS's own fourth context state, `interrupted` (a call, Siri, an app switch), is treated as resumable, so the next tap — inside its touch END, where T-101's unlock already runs — brings sound back. | `src/ui/audio.js` |
+| deck follow-ups (T-101 review) | (1) `releaseAll()` puts out every `[data-chip]`'s lit `.down`; (2) the leave-PLAYING release is now proved, with a mutation; (3) a primary touch `pointerdown` releases slots whose lift and cancel were both lost, checked before the duplicate-delivery guard (covers a reused `pointerId`); (4) the exact sector-width pin is removed, N/S-narrowest stays. | `src/ui/touch-controls.js`, `tools/playtest/touch-proof.mjs`, `tools/pathcheck/touch-deck-contract.mjs` |
+| checks | `tools/pathcheck/t-105-phone-shell.mjs` (28 assertions; runs the REAL inline bootstrap against a fake clock), `tools/playtest/phone-shell.mjs` (the browser matrix), README sections for both browser tools. | `tools/...` |
+
+**Design notes that are judgment calls, not measurements** (the look is the
+operator's): the RIG strip keeps every instrument the old panel had (hull,
+lives, weapon, overdrive, the three ascent metrics, rush) but drops the
+"RIG // VITALS" and "ASCENT" captions and the second-weapon line on phones;
+the strip is ~42 px tall in every state because the weapon has its own row;
+the loot card hides the objective / Crown banner for its 1.25-1.9 s;
+portrait uses the same strip (≈7.5% of the screen with the objective,
+measured at 390x844).
+
+## The new checks
+
+**`tools/pathcheck/t-105-phone-shell.mjs` — 28 assertions.** Its core runs the
+REAL inline bootstrap from `index.html` against a fake clock and a stub DOM —
+nothing re-implemented — so the watchdog and the failsafe hint are tested as
+shipped: a 6 s frame stall with 0, 1 or 2 frames drawn shows no panel; the
+same stall after 40 frames shows "got stuck" 4-5 s in; a sub-4 s stall and a
+hidden page never panel; a loop that dies with 0, 1 or 2 frames drawn still
+gets the hard panel 10-11 s after going quiet; the real bootstrap paints the
+touch hint on touch hardware / a coarse pointer / `?touch=1` and the key hint
+on a desktop and under `?touch=0`. Also: the inline `freezeVerdict` equals
+`src/pure/failsafe.js`'s over 4,972 states (4,000 seeded + every threshold at
+-1 / 0 / +1 ms); the inline hint rule equals `src/pure/shell-copy.js` and
+`resolveTouchScheme` over 20 cases; the copy scan finds every keyboard
+instruction the game prints and nothing in any touch string or in game
+vocabulary; every touch button presses the key whose intent it names in that
+state and none repeats the modal tap's verb; the keyboard copy is
+byte-identical to main; the manifest launches the game page (relative, so a
+subpath deploy works), every icon is a PNG at its declared size, the touch
+icon is an opaque 180x180; every image preload matches its consumer's
+request mode. **Falsified: 23 single-edit mutations in a scratch copy, every
+one red, control and restore 28/0**
+(`reports/tasks/T-105/evidence/falsify-pathcheck.txt`). One of them first
+stayed GREEN — a `>=` → `>` drift between the two watchdog copies hides from
+random states — which is why the boundary sweep exists.
+
+**`tools/playtest/phone-shell.mjs`** — the browser matrix behind boxes 1-11
+(README section added). Audit rules worth knowing: clipping by `clip-path`
+and `contain: paint` counts (every HUD panel is a `clip-path` polygon, so an
+overflow-only check would have passed clipped HUD text); overlap is judged
+on line boxes with a font-relative tolerance (the content-area rects of a
+50 px rank letter at `line-height: .9` "overlap" its caption with nothing
+on screen — the WIP's first run flagged exactly that). Falsification runs:
+see "Falsification of the browser checks".
+
+**`tools/playtest/touch-proof.mjs`** — `followUps()` and three mutations (above).
+
+## iOS Safari: what was designed for, and what this host cannot verify
+
+No WebKit here: every browser number above is Chromium 141 with `isMobile` +
+`hasTouch` + an iOS user agent (which changes nothing — the game reads no UA).
+
+| iOS behaviour | what the branch does | evidence available here |
+|---|---|---|
+| home-screen launch | manifest + `apple-mobile-web-app-capable` + `black-translucent` status bar + title + 180 px opaque touch icon; `viewport-fit=cover`; every box keeps to the insets | Chromium parses the manifest (box 8); iOS reads the meta tags, not the manifest's `display`/`orientation` — device check |
+| notch on a side, home indicator at the bottom | every HUD box, control and overlay inside `env(safe-area-inset-*)` (via the `--hud-safe-*` vars) | CDP `setSafeAreaInsetsOverride` 47/47/21 (box 5); WebKit's own insets — device check |
+| audio needs a touch END | T-101's `pointerup`/`touchend` unlock + `interrupted` treated as resumable | iOS's rule emulated in Chromium (box 10) — device check |
+| no Impact font | display text falls back; this host's fallback (DejaVu) is WIDER than iOS's, so fit margins measured here are pessimistic for the display face | — |
+| slow first shader compile | the warm-up limit (box 7) | SwiftShader is not a phone GPU — device check (questions 1, 5) |
