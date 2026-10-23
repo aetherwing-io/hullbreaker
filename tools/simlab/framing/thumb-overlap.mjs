@@ -7,6 +7,7 @@
  *
  *   node tools/simlab/framing/thumb-overlap.mjs [--viewports phone-landscape,phone-landscape-far]
  *        [--seeds 2] [--max-game-ms 300000] [--jobs 2] [--json out.json]
+ *        [--hud-from <tools/playtest/phone-framing-probe.mjs JSON>]
  *
  * Runs the race lab's replica (tools/simlab/race/run-child.mjs, 100 ms trace)
  * for rush / climber / fighter / carried x seeds plus the oracle@0 racer.
@@ -23,14 +24,20 @@
  * Both without insets (desktop Chrome emulation) and with the iPhone's
  * landscape safe-area insets (left/right 47, bottom 21). Reported per policy:
  * the share of frames RIG's box overlaps each, and the worst overlap in CSS
- * px (how far into the circle / below the cluster's top edge).
+ * px (how far into the circle / below the cluster's top edge); and the share
+ * of frames RIG's painted head is above the frame's top edge (mid-jump
+ * included — the pathcheck's band assertion covers standing only).
+ *
+ * --hud-from adds the HUD panels a live probe measured at the same viewport
+ * (facts.hud: e.g. main's RIG panel and objective panel) as a third target,
+ * reported the same way — the HUD is T-105's lane; this only measures it.
  *
  * Honest limits: straight faces only (turn frames: the posed captures); the
  * oracle racer's kills are instrumented (it is a pacing reference, not a
  * player). Dev-only; zero effect on the game.                              */
 
 import { spawn } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -61,6 +68,21 @@ const AD = CONFIG.framing.actorDepth;
 const STRAIGHT = new Set(['moving', 'gate', 'approach']);
 const CATCH_UP_MS = 4000;
 const lowestDeck = Math.min(...LV.groundH.filter((g) => g > -100));
+const HUD_FROM = opt('hud-from', null);
+const HUD = HUD_FROM ? JSON.parse(readFileSync(resolve(HUD_FROM), 'utf8')) : null;
+function hudBoxes(w, h) {
+  const v = HUD && HUD.viewports.find((q) => q.viewport === `${w}x${h}`);
+  if (!v || !v.facts || !v.facts.hud) return [];
+  return Object.entries(v.facts.hud)
+    .filter(([name, b]) => b && name !== 'thumbDeck' && name !== 'touchDeck' && b.w > 0 && b.h > 0 && b.w < w)
+    .map(([name, b]) => ({ name, ...b }));
+}
+// overlap of two boxes: how far RIG's box reaches up into a top panel where
+// they share columns (> 0 = under the panel)
+function panelDepth(b, P) {
+  if (b[2] <= P.x || b[0] >= P.x + P.w || b[3] <= P.y) return -Infinity;
+  return P.y + P.h - b[1];
+}
 
 function child(spec) {
   return new Promise((res, rej) => {
@@ -119,10 +141,12 @@ for (const viewport of VPS) {
   const lens = VEIL.lensFor(v.width, v.height, true, v.rigFraction === 'far' ? 'far' : null);
   for (const [insetName, ins] of Object.entries(INSETS)) {
     const Lay = TS.touchDeckLayout(v.width, v.height, ins, 0, CONFIG.touch.layout, CONFIG.touch.stick);
+    const panels = hudBoxes(v.width, v.height);
     for (const group of ['rush', 'climber', 'fighter', 'carried', 'oracle@0']) {
       let frames = 0, inCluster = 0, inGhost = 0, worstCluster = -Infinity, worstGhost = -Infinity;
       let atCluster = null, atGhost = null;
-      let ghostOffDeck = 0;
+      let ghostBelow = 0, ghostOn = 0, ghostAbove = 0, inHud = 0, worstHud = -Infinity, atHud = null;
+      let offTop = 0, worstTop = -Infinity, atTop = null;
       for (const r of out.filter((o) => o.spec.viewport === viewport && o.group === group)) {
         let lastTurn = -Infinity;
         for (const [ms, x, y, scrollX, seg, k] of r.run.trace || []) {
@@ -132,10 +156,19 @@ for (const viewport of VPS) {
           frames++;
           const dc = clusterDepth(b, Lay.cluster), dg = circleDepth(b, Lay.ghost);
           if (dc > 0) inCluster++;
-          if (dg > 0) { inGhost++; if (y > lowestDeck + 0.01) ghostOffDeck++; }
+          if (dg > 0) {
+            inGhost++;
+            if (y < lowestDeck - 0.01) ghostBelow++; else if (y > lowestDeck + 0.01) ghostAbove++; else ghostOn++;
+          }
+          let dh = -Infinity;
+          for (const P of panels) dh = Math.max(dh, panelDepth(b, P));
+          if (dh > 0) inHud++;
           const at = { seed: r.spec.seed, ms, x, y, face: k, seg, boxPx: b.map((q) => +q.toFixed(1)) };
           if (dc > worstCluster) { worstCluster = dc; atCluster = at; }
           if (dg > worstGhost) { worstGhost = dg; atGhost = at; }
+          if (dh > worstHud) { worstHud = dh; atHud = at; }
+          if (b[1] < 0) offTop++;
+          if (-b[1] > worstTop) { worstTop = -b[1]; atTop = at; }
         }
       }
       rows.push({ viewport, insets: insetName, group, frames, lens: { fovDeg: +lens.fovDeg.toFixed(3), liftTiles: lens.liftTiles },
@@ -143,8 +176,17 @@ for (const viewport of VPS) {
         ghostShare: frames ? +(inGhost / frames).toFixed(4) : null,
         worstClusterPx: Number.isFinite(worstCluster) ? +worstCluster.toFixed(1) : null,
         worstGhostPx: Number.isFinite(worstGhost) ? +worstGhost.toFixed(1) : null,
-        // the ghost frames where RIG stood ABOVE the lowest deck (a platform, a jump)
-        ghostAboveLowestDeck: ghostOffDeck, worstClusterAt: atCluster, worstGhostAt: atGhost,
+        // the ghost frames by where RIG's feet were: below the lowest deck (a
+        // pit fall), on it, above it (a higher deck, a platform, a jump)
+        ghostFramesByFeet: { belowLowestDeck: ghostBelow, onLowestDeck: ghostOn, above: ghostAbove },
+        worstClusterAt: atCluster, worstGhostAt: atGhost,
+        // RIG's painted head above the frame's top edge (jumps included)
+        offTopShare: frames ? +(offTop / frames).toFixed(4) : null,
+        worstOffTopPx: Number.isFinite(worstTop) ? +worstTop.toFixed(1) : null, worstOffTopAt: atTop,
+        hudPanels: panels.length ? panels : undefined,
+        hudShare: panels.length && frames ? +(inHud / frames).toFixed(4) : undefined,
+        worstHudPx: panels.length && Number.isFinite(worstHud) ? +worstHud.toFixed(1) : undefined,
+        worstHudAt: panels.length ? atHud : undefined,
         ghost: { cx: +Lay.ghost.cx.toFixed(1), cy: +Lay.ghost.cy.toFixed(1), r: +Lay.ghost.r.toFixed(1) },
         cluster: { x: +Lay.cluster.x.toFixed(1), y: +Lay.cluster.y.toFixed(1), w: +Lay.cluster.w.toFixed(1), h: +Lay.cluster.h.toFixed(1) } });
     }
@@ -153,8 +195,12 @@ for (const viewport of VPS) {
 for (const r of rows)
   console.log(`${r.viewport.padEnd(20)} ${r.insets.padEnd(6)} ${r.group.padEnd(9)} frames ${String(r.frames).padStart(5)}  ` +
     `under cluster ${(r.clusterShare * 100).toFixed(2).padStart(6)}% (worst ${r.worstClusterPx} px)  ` +
-    `in stick ghost ${(r.ghostShare * 100).toFixed(2).padStart(6)}% (worst ${r.worstGhostPx} px; ${r.ghostAboveLowestDeck} above the lowest deck)` +
+    `in stick ghost ${(r.ghostShare * 100).toFixed(2).padStart(6)}% (worst ${r.worstGhostPx} px; feet below/on/above the lowest deck ` +
+    `${r.ghostFramesByFeet.belowLowestDeck}/${r.ghostFramesByFeet.onLowestDeck}/${r.ghostFramesByFeet.above})` +
+    (r.hudShare !== undefined ? `  under a HUD panel ${(r.hudShare * 100).toFixed(2)}% (worst ${r.worstHudPx} px)` : '') +
+    `  head off the top ${(r.offTopShare * 100).toFixed(2)}% (worst ${r.worstOffTopPx} px${r.worstOffTopPx > 0 ? ' at ' + JSON.stringify(r.worstOffTopAt) : ''})` +
     (r.worstClusterPx > 0 ? `  cluster worst at ${JSON.stringify(r.worstClusterAt)}` : '') +
     (r.worstGhostPx > 0 ? `  ghost worst at ${JSON.stringify(r.worstGhostAt)}` : ''));
 const json = opt('json', null);
-if (json) writeFileSync(resolve(json), JSON.stringify({ tool: 'tools/simlab/framing/thumb-overlap.mjs', seeds: SEEDS, maxGameMs: MAX, rows }, null, 1));
+if (json) writeFileSync(resolve(json), JSON.stringify({ tool: 'tools/simlab/framing/thumb-overlap.mjs', seeds: SEEDS, maxGameMs: MAX,
+  hudFrom: HUD_FROM, rows }, null, 1));
