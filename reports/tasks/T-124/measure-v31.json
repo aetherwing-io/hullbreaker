@@ -1,0 +1,2135 @@
+{
+ "board01Marine": {
+  "edgeDE": 0.73,
+  "edgeDEmedian": 18.5,
+  "edgeVisible": 0.793,
+  "heightPx": 62,
+  "meanL": 71.4,
+  "px": 896,
+  "valueShares": {
+   "0-30": 0.491,
+   "120-160": 0.154,
+   "160-200": 0.08,
+   "200-256": 0.019,
+   "30-50": 0.009,
+   "50-80": 0.037,
+   "80-120": 0.21
+  }
+ },
+ "desktop": {
+  "density": "d16",
+  "dpr": 1,
+  "flatSweep": {
+   "A": {
+    "10": {
+     "edgeDE": 0.722,
+     "edgeVisible": 0.722
+    },
+    "20": {
+     "edgeDE": 0.722,
+     "edgeVisible": 0.722
+    },
+    "30": {
+     "edgeDE": 0.722,
+     "edgeVisible": 0.886
+    },
+    "40": {
+     "edgeDE": 0.886,
+     "edgeVisible": 0.949
+    },
+    "50": {
+     "edgeDE": 0.949,
+     "edgeVisible": 1.0
+    },
+    "60": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.975
+    },
+    "80": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.924
+    },
+    "100": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.899
+    },
+    "130": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.785
+    },
+    "160": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.481
+    }
+   },
+   "B": {
+    "10": {
+     "edgeDE": 0.738,
+     "edgeVisible": 0.738
+    },
+    "20": {
+     "edgeDE": 0.738,
+     "edgeVisible": 0.738
+    },
+    "30": {
+     "edgeDE": 0.738,
+     "edgeVisible": 0.929
+    },
+    "40": {
+     "edgeDE": 0.929,
+     "edgeVisible": 0.964
+    },
+    "50": {
+     "edgeDE": 0.964,
+     "edgeVisible": 1.0
+    },
+    "60": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.988
+    },
+    "80": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.893
+    },
+    "100": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.81
+    },
+    "130": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.762
+    },
+    "160": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.512
+    }
+   },
+   "v3": {
+    "10": {
+     "edgeDE": 0.0,
+     "edgeVisible": 0.0
+    },
+    "20": {
+     "edgeDE": 0.0,
+     "edgeVisible": 0.0
+    },
+    "30": {
+     "edgeDE": 0.0,
+     "edgeVisible": 0.0
+    },
+    "40": {
+     "edgeDE": 0.0,
+     "edgeVisible": 0.0
+    },
+    "50": {
+     "edgeDE": 0.0,
+     "edgeVisible": 1.0
+    },
+    "60": {
+     "edgeDE": 1.0,
+     "edgeVisible": 1.0
+    },
+    "80": {
+     "edgeDE": 1.0,
+     "edgeVisible": 1.0
+    },
+    "100": {
+     "edgeDE": 1.0,
+     "edgeVisible": 1.0
+    },
+    "130": {
+     "edgeDE": 1.0,
+     "edgeVisible": 1.0
+    },
+    "160": {
+     "edgeDE": 1.0,
+     "edgeVisible": 1.0
+    }
+   }
+  },
+  "pxPerTile": 16.24190430140757,
+  "rows": {
+   "aim up": {
+    "A": {
+     "colours": 12,
+     "contrastBehind": 54.1,
+     "edgeDE": 0.841,
+     "edgeDEmedian": 53.4,
+     "edgeVisible": 0.854,
+     "extent": {
+      "bottom": -0.062,
+      "centreX": 0.308,
+      "height": 1.662,
+      "left": -0.185,
+      "right": 0.8,
+      "top": 1.601,
+      "width": 0.985,
+      "withGun": {
+       "left": -0.185,
+       "right": 0.8,
+       "top": 1.847
+      }
+     },
+     "fill40": 0.466,
+     "fillContrast": 54.1,
+     "fillEdgeVisible": 0.804,
+     "fillPx": 279,
+     "gunContrast": 95.1,
+     "gunLen": 14,
+     "gunPx": 46,
+     "h": 31,
+     "meanL": 64.2,
+     "outlineDark": 0.232,
+     "px": 279,
+     "rimEdge": 0.585,
+     "valueShares": {
+      "0-30": 0.541,
+      "120-160": 0.093,
+      "160-200": 0.097,
+      "200-256": 0.018,
+      "30-50": 0.0,
+      "50-80": 0.061,
+      "80-120": 0.19
+     },
+     "valueSteps": 7,
+     "w": 16
+    },
+    "B": {
+     "colours": 12,
+     "contrastBehind": 60.6,
+     "edgeDE": 0.94,
+     "edgeDEmedian": 59.9,
+     "edgeVisible": 0.905,
+     "extent": {
+      "bottom": 0.0,
+      "centreX": 0.277,
+      "height": 1.847,
+      "left": -0.185,
+      "right": 0.739,
+      "top": 1.847,
+      "width": 0.924,
+      "withGun": {
+       "left": -0.185,
+       "right": 0.739,
+       "top": 2.093
+      }
+     },
+     "fill40": 0.533,
+     "fillContrast": 60.6,
+     "fillEdgeVisible": 0.917,
+     "fillPx": 289,
+     "gunContrast": 101.3,
+     "gunLen": 14,
+     "gunPx": 46,
+     "h": 34,
+     "meanL": 67.4,
+     "outlineDark": 0.25,
+     "px": 289,
+     "rimEdge": 0.643,
+     "valueShares": {
+      "0-30": 0.509,
+      "120-160": 0.087,
+      "160-200": 0.104,
+      "200-256": 0.021,
+      "30-50": 0.0,
+      "50-80": 0.052,
+      "80-120": 0.228
+     },
+     "valueSteps": 7,
+     "w": 15
+    },
+    "v3": {
+     "colours": 13,
+     "contrastBehind": 62.5,
+     "edgeDE": 0.169,
+     "edgeDEmedian": 11.1,
+     "edgeVisible": 0.506,
+     "fill40": 0.7,
+     "fillContrast": 74.3,
+     "fillEdgeVisible": 0.852,
+     "fillPx": 300,
+     "gunContrast": 71.6,
+     "gunLen": 21,
+     "gunPx": 105,
+     "h": 32,
+     "meanL": 86.1,
+     "outlineDark": 0.614,
+     "px": 390,
+     "valueShares": {
+      "0-30": 0.344,
+      "120-160": 0.256,
+      "160-200": 0.067,
+      "200-256": 0.026,
+      "30-50": 0.0,
+      "50-80": 0.136,
+      "80-120": 0.172
+     },
+     "valueSteps": 6,
+     "w": 20
+    }
+   },
+   "aim up-right": {
+    "A": {
+     "colours": 12,
+     "contrastBehind": 58.9,
+     "edgeDE": 0.815,
+     "edgeDEmedian": 59.1,
+     "edgeVisible": 0.802,
+     "extent": {
+      "bottom": -0.062,
+      "centreX": 0.154,
+      "height": 1.662,
+      "left": -0.308,
+      "right": 0.616,
+      "top": 1.601,
+      "width": 0.924,
+      "withGun": {
+       "left": -0.308,
+       "right": 0.616,
+       "top": 1.662
+      }
+     },
+     "fill40": 0.519,
+     "fillContrast": 58.9,
+     "fillEdgeVisible": 0.812,
+     "fillPx": 297,
+     "gunContrast": 85.2,
+     "gunLen": 15,
+     "gunPx": 52,
+     "h": 28,
+     "meanL": 70.3,
+     "outlineDark": 0.136,
+     "px": 297,
+     "rimEdge": 0.679,
+     "valueShares": {
+      "0-30": 0.475,
+      "120-160": 0.088,
+      "160-200": 0.121,
+      "200-256": 0.013,
+      "30-50": 0.0,
+      "50-80": 0.081,
+      "80-120": 0.222
+     },
+     "valueSteps": 7,
+     "w": 15
+    },
+    "B": {
+     "colours": 12,
+     "contrastBehind": 59.8,
+     "edgeDE": 0.864,
+     "edgeDEmedian": 60.7,
+     "edgeVisible": 0.864,
+     "extent": {
+      "bottom": 0.0,
+      "centreX": 0.154,
+      "height": 1.847,
+      "left": -0.308,
+      "right": 0.616,
+      "top": 1.847,
+      "width": 0.924,
+      "withGun": {
+       "left": -0.308,
+       "right": 0.616,
+       "top": 1.909
+      }
+     },
+     "fill40": 0.523,
+     "fillContrast": 59.8,
+     "fillEdgeVisible": 0.879,
+     "fillPx": 310,
+     "gunContrast": 79.7,
+     "gunLen": 15,
+     "gunPx": 52,
+     "h": 31,
+     "meanL": 67.9,
+     "outlineDark": 0.198,
+     "px": 310,
+     "rimEdge": 0.667,
+     "valueShares": {
+      "0-30": 0.5,
+      "120-160": 0.074,
+      "160-200": 0.123,
+      "200-256": 0.019,
+      "30-50": 0.0,
+      "50-80": 0.084,
+      "80-120": 0.2
+     },
+     "valueSteps": 7,
+     "w": 15
+    },
+    "today": {
+     "colours": 291,
+     "contrastBehind": 34.2,
+     "edgeDE": 0.393,
+     "edgeDEmedian": 11.1,
+     "edgeVisible": 0.385,
+     "fill40": 0.352,
+     "fillContrast": 38.7,
+     "fillEdgeVisible": 0.542,
+     "fillPx": 128,
+     "h": 29,
+     "meanL": 55.0,
+     "outlineDark": 0.016,
+     "px": 297,
+     "valueShares": {
+      "0-30": 0.286,
+      "120-160": 0.074,
+      "160-200": 0.003,
+      "200-256": 0.0,
+      "30-50": 0.269,
+      "50-80": 0.222,
+      "80-120": 0.145
+     },
+     "valueSteps": 7,
+     "w": 26
+    },
+    "v3": {
+     "colours": 13,
+     "contrastBehind": 65.7,
+     "edgeDE": 0.176,
+     "edgeDEmedian": 11.0,
+     "edgeVisible": 0.506,
+     "fill40": 0.742,
+     "fillContrast": 78.7,
+     "fillEdgeVisible": 0.948,
+     "fillPx": 287,
+     "gunContrast": 69.4,
+     "gunLen": 22,
+     "gunPx": 91,
+     "h": 32,
+     "meanL": 88.4,
+     "outlineDark": 0.612,
+     "px": 379,
+     "valueShares": {
+      "0-30": 0.364,
+      "120-160": 0.288,
+      "160-200": 0.061,
+      "200-256": 0.04,
+      "30-50": 0.0,
+      "50-80": 0.082,
+      "80-120": 0.166
+     },
+     "valueSteps": 6,
+     "w": 19
+    }
+   },
+   "firing (flash: the game's own)": {
+    "A": {
+     "colours": 12,
+     "contrastBehind": 61.6,
+     "edgeDE": 0.859,
+     "edgeDEmedian": 51.3,
+     "edgeVisible": 0.846,
+     "extent": {
+      "bottom": -0.062,
+      "centreX": 0.062,
+      "height": 1.662,
+      "left": -0.493,
+      "right": 0.616,
+      "top": 1.601,
+      "width": 1.108,
+      "withGun": {
+       "left": -0.493,
+       "right": 0.739,
+       "top": 1.601
+      }
+     },
+     "fill40": 0.554,
+     "fillContrast": 61.6,
+     "fillEdgeVisible": 0.839,
+     "fillPx": 296,
+     "gunContrast": 66.5,
+     "gunLen": 14,
+     "gunPx": 46,
+     "h": 27,
+     "meanL": 68.6,
+     "outlineDark": 0.205,
+     "px": 296,
+     "rimEdge": 0.603,
+     "valueShares": {
+      "0-30": 0.514,
+      "120-160": 0.108,
+      "160-200": 0.118,
+      "200-256": 0.02,
+      "30-50": 0.0,
+      "50-80": 0.061,
+      "80-120": 0.179
+     },
+     "valueSteps": 7,
+     "w": 20
+    },
+    "B": {
+     "colours": 12,
+     "contrastBehind": 61.9,
+     "edgeDE": 0.931,
+     "edgeDEmedian": 58.2,
+     "edgeVisible": 0.851,
+     "extent": {
+      "bottom": 0.0,
+      "centreX": -0.031,
+      "height": 1.847,
+      "left": -0.616,
+      "right": 0.554,
+      "top": 1.847,
+      "width": 1.17,
+      "withGun": {
+       "left": -0.616,
+       "right": 0.739,
+       "top": 1.847
+      }
+     },
+     "fill40": 0.545,
+     "fillContrast": 61.9,
+     "fillEdgeVisible": 0.907,
+     "fillPx": 321,
+     "gunContrast": 79.7,
+     "gunLen": 14,
+     "gunPx": 50,
+     "h": 30,
+     "meanL": 67.5,
+     "outlineDark": 0.195,
+     "px": 321,
+     "rimEdge": 0.655,
+     "valueShares": {
+      "0-30": 0.52,
+      "120-160": 0.09,
+      "160-200": 0.131,
+      "200-256": 0.019,
+      "30-50": 0.0,
+      "50-80": 0.062,
+      "80-120": 0.178
+     },
+     "valueSteps": 6,
+     "w": 22
+    },
+    "today": {
+     "colours": 320,
+     "contrastBehind": 30.2,
+     "edgeDE": 0.402,
+     "edgeDEmedian": 11.7,
+     "edgeVisible": 0.386,
+     "fill40": 0.356,
+     "fillContrast": 37.8,
+     "fillEdgeVisible": 0.73,
+     "fillPx": 149,
+     "h": 30,
+     "meanL": 68.2,
+     "outlineDark": 0.015,
+     "px": 328,
+     "valueShares": {
+      "0-30": 0.189,
+      "120-160": 0.116,
+      "160-200": 0.04,
+      "200-256": 0.003,
+      "30-50": 0.274,
+      "50-80": 0.22,
+      "80-120": 0.159
+     },
+     "valueSteps": 7,
+     "w": 32
+    },
+    "v3": {
+     "colours": 13,
+     "contrastBehind": 61.3,
+     "edgeDE": 0.308,
+     "edgeDEmedian": 12.3,
+     "edgeVisible": 0.626,
+     "fill40": 0.66,
+     "fillContrast": 70.9,
+     "fillEdgeVisible": 0.888,
+     "fillPx": 294,
+     "gunContrast": 49.8,
+     "gunLen": 22,
+     "gunPx": 93,
+     "h": 32,
+     "meanL": 82.8,
+     "outlineDark": 0.747,
+     "px": 398,
+     "valueShares": {
+      "0-30": 0.392,
+      "120-160": 0.229,
+      "160-200": 0.05,
+      "200-256": 0.045,
+      "30-50": 0.0,
+      "50-80": 0.116,
+      "80-120": 0.168
+     },
+     "valueSteps": 6,
+     "w": 24
+    }
+   },
+   "idle, aim right": {
+    "A": {
+     "colours": 12,
+     "contrastBehind": 60.1,
+     "edgeDE": 0.785,
+     "edgeDEmedian": 61.6,
+     "edgeVisible": 0.797,
+     "extent": {
+      "bottom": -0.062,
+      "centreX": 0.123,
+      "height": 1.662,
+      "left": -0.431,
+      "right": 0.677,
+      "top": 1.601,
+      "width": 1.108,
+      "withGun": {
+       "left": -0.431,
+       "right": 0.8,
+       "top": 1.601
+      }
+     },
+     "fill40": 0.503,
+     "fillContrast": 60.1,
+     "fillEdgeVisible": 0.782,
+     "fillPx": 290,
+     "gunContrast": 78.9,
+     "gunLen": 14,
+     "gunPx": 43,
+     "h": 27,
+     "meanL": 71.9,
+     "outlineDark": 0.114,
+     "px": 290,
+     "rimEdge": 0.684,
+     "valueShares": {
+      "0-30": 0.49,
+      "120-160": 0.11,
+      "160-200": 0.131,
+      "200-256": 0.024,
+      "30-50": 0.0,
+      "50-80": 0.072,
+      "80-120": 0.172
+     },
+     "valueSteps": 7,
+     "w": 20
+    },
+    "B": {
+     "colours": 12,
+     "contrastBehind": 59.8,
+     "edgeDE": 0.893,
+     "edgeDEmedian": 63.5,
+     "edgeVisible": 0.869,
+     "extent": {
+      "bottom": 0.0,
+      "centreX": 0.092,
+      "height": 1.847,
+      "left": -0.493,
+      "right": 0.677,
+      "top": 1.847,
+      "width": 1.17,
+      "withGun": {
+       "left": -0.493,
+       "right": 0.8,
+       "top": 1.847
+      }
+     },
+     "fill40": 0.497,
+     "fillContrast": 59.8,
+     "fillEdgeVisible": 0.873,
+     "fillPx": 320,
+     "gunContrast": 83.7,
+     "gunLen": 14,
+     "gunPx": 48,
+     "h": 30,
+     "meanL": 69.2,
+     "outlineDark": 0.143,
+     "px": 320,
+     "rimEdge": 0.714,
+     "valueShares": {
+      "0-30": 0.506,
+      "120-160": 0.084,
+      "160-200": 0.134,
+      "200-256": 0.016,
+      "30-50": 0.0,
+      "50-80": 0.066,
+      "80-120": 0.194
+     },
+     "valueSteps": 7,
+     "w": 21
+    },
+    "today": {
+     "colours": 311,
+     "contrastBehind": 31.0,
+     "edgeDE": 0.404,
+     "edgeDEmedian": 10.1,
+     "edgeVisible": 0.426,
+     "fill40": 0.312,
+     "fillContrast": 34.8,
+     "fillEdgeVisible": 0.577,
+     "fillPx": 144,
+     "h": 33,
+     "meanL": 53.7,
+     "outlineDark": 0.037,
+     "px": 321,
+     "valueShares": {
+      "0-30": 0.265,
+      "120-160": 0.059,
+      "160-200": 0.003,
+      "200-256": 0.0,
+      "30-50": 0.305,
+      "50-80": 0.249,
+      "80-120": 0.118
+     },
+     "valueSteps": 5,
+     "w": 23
+    },
+    "v3": {
+     "colours": 13,
+     "contrastBehind": 63.3,
+     "edgeDE": 0.156,
+     "edgeDEmedian": 9.2,
+     "edgeVisible": 0.467,
+     "fill40": 0.701,
+     "fillContrast": 76.7,
+     "fillEdgeVisible": 0.939,
+     "fillPx": 294,
+     "gunContrast": 62.3,
+     "gunLen": 21,
+     "gunPx": 88,
+     "h": 32,
+     "meanL": 85.0,
+     "outlineDark": 0.522,
+     "px": 392,
+     "valueShares": {
+      "0-30": 0.378,
+      "120-160": 0.232,
+      "160-200": 0.061,
+      "200-256": 0.046,
+      "30-50": 0.0,
+      "50-80": 0.12,
+      "80-120": 0.163
+     },
+     "valueSteps": 6,
+     "w": 23
+    }
+   },
+   "jump (rise)": {
+    "A": {
+     "colours": 12,
+     "contrastBehind": 53.6,
+     "edgeDE": 0.848,
+     "edgeDEmedian": 57.6,
+     "edgeVisible": 0.899,
+     "extent": {
+      "bottom": 0.062,
+      "centreX": 0.062,
+      "height": 1.539,
+      "left": -0.554,
+      "right": 0.677,
+      "top": 1.601,
+      "width": 1.231,
+      "withGun": {
+       "left": -0.554,
+       "right": 0.8,
+       "top": 1.601
+      }
+     },
+     "fill40": 0.441,
+     "fillContrast": 53.6,
+     "fillEdgeVisible": 0.892,
+     "fillPx": 286,
+     "gunContrast": 79.3,
+     "gunLen": 10,
+     "gunPx": 31,
+     "h": 25,
+     "meanL": 63.4,
+     "outlineDark": 0.19,
+     "px": 286,
+     "rimEdge": 0.633,
+     "valueShares": {
+      "0-30": 0.531,
+      "120-160": 0.108,
+      "160-200": 0.08,
+      "200-256": 0.014,
+      "30-50": 0.0,
+      "50-80": 0.073,
+      "80-120": 0.192
+     },
+     "valueSteps": 7,
+     "w": 22
+    },
+    "B": {
+     "colours": 12,
+     "contrastBehind": 54.8,
+     "edgeDE": 0.835,
+     "edgeDEmedian": 58.1,
+     "edgeVisible": 0.924,
+     "extent": {
+      "bottom": 0.308,
+      "centreX": 0.062,
+      "height": 1.539,
+      "left": -0.554,
+      "right": 0.677,
+      "top": 1.847,
+      "width": 1.231,
+      "withGun": {
+       "left": -0.554,
+       "right": 0.8,
+       "top": 1.847
+      }
+     },
+     "fill40": 0.443,
+     "fillContrast": 54.8,
+     "fillEdgeVisible": 0.892,
+     "fillPx": 287,
+     "gunContrast": 87.7,
+     "gunLen": 10,
+     "gunPx": 32,
+     "h": 25,
+     "meanL": 65.8,
+     "outlineDark": 0.114,
+     "px": 287,
+     "rimEdge": 0.696,
+     "valueShares": {
+      "0-30": 0.512,
+      "120-160": 0.101,
+      "160-200": 0.101,
+      "200-256": 0.01,
+      "30-50": 0.0,
+      "50-80": 0.084,
+      "80-120": 0.192
+     },
+     "valueSteps": 7,
+     "w": 22
+    },
+    "today": {
+     "colours": 269,
+     "contrastBehind": 27.5,
+     "edgeDE": 0.324,
+     "edgeDEmedian": 9.4,
+     "edgeVisible": 0.284,
+     "fill40": 0.232,
+     "fillContrast": 31.7,
+     "fillEdgeVisible": 0.646,
+     "fillPx": 151,
+     "h": 30,
+     "meanL": 48.0,
+     "outlineDark": 0.039,
+     "px": 287,
+     "valueShares": {
+      "0-30": 0.408,
+      "120-160": 0.056,
+      "160-200": 0.007,
+      "200-256": 0.0,
+      "30-50": 0.226,
+      "50-80": 0.192,
+      "80-120": 0.111
+     },
+     "valueSteps": 5,
+     "w": 28
+    },
+    "v3": {
+     "colours": 13,
+     "contrastBehind": 56.3,
+     "edgeDE": 0.0,
+     "edgeDEmedian": 9.4,
+     "edgeVisible": 0.423,
+     "fill40": 0.754,
+     "fillContrast": 67.9,
+     "fillEdgeVisible": 0.962,
+     "fillPx": 281,
+     "gunContrast": 56.1,
+     "gunLen": 21,
+     "gunPx": 90,
+     "h": 29,
+     "meanL": 81.6,
+     "outlineDark": 0.535,
+     "px": 361,
+     "valueShares": {
+      "0-30": 0.349,
+      "120-160": 0.216,
+      "160-200": 0.03,
+      "200-256": 0.042,
+      "30-50": 0.0,
+      "50-80": 0.183,
+      "80-120": 0.18
+     },
+     "valueSteps": 5,
+     "w": 23
+    }
+   },
+   "run (pass)": {
+    "A": {
+     "colours": 12,
+     "contrastBehind": 62.0,
+     "edgeDE": 0.803,
+     "edgeDEmedian": 63.3,
+     "edgeVisible": 0.831,
+     "extent": {
+      "bottom": -0.062,
+      "centreX": 0.123,
+      "height": 1.662,
+      "left": -0.431,
+      "right": 0.677,
+      "top": 1.601,
+      "width": 1.108,
+      "withGun": {
+       "left": -0.431,
+       "right": 0.8,
+       "top": 1.601
+      }
+     },
+     "fill40": 0.522,
+     "fillContrast": 62.0,
+     "fillEdgeVisible": 0.827,
+     "fillPx": 268,
+     "gunContrast": 84.2,
+     "gunLen": 13,
+     "gunPx": 34,
+     "h": 27,
+     "meanL": 69.6,
+     "outlineDark": 0.127,
+     "px": 268,
+     "rimEdge": 0.704,
+     "valueShares": {
+      "0-30": 0.496,
+      "120-160": 0.127,
+      "160-200": 0.112,
+      "200-256": 0.019,
+      "30-50": 0.0,
+      "50-80": 0.078,
+      "80-120": 0.168
+     },
+     "valueSteps": 7,
+     "w": 20
+    },
+    "B": {
+     "colours": 12,
+     "contrastBehind": 62.1,
+     "edgeDE": 0.795,
+     "edgeDEmedian": 65.7,
+     "edgeVisible": 0.795,
+     "extent": {
+      "bottom": 0.0,
+      "centreX": 0.123,
+      "height": 1.847,
+      "left": -0.431,
+      "right": 0.677,
+      "top": 1.847,
+      "width": 1.108,
+      "withGun": {
+       "left": -0.431,
+       "right": 0.8,
+       "top": 1.847
+      }
+     },
+     "fill40": 0.509,
+     "fillContrast": 62.1,
+     "fillEdgeVisible": 0.802,
+     "fillPx": 287,
+     "gunContrast": 85.2,
+     "gunLen": 13,
+     "gunPx": 41,
+     "h": 30,
+     "meanL": 68.7,
+     "outlineDark": 0.096,
+     "px": 287,
+     "rimEdge": 0.699,
+     "valueShares": {
+      "0-30": 0.519,
+      "120-160": 0.118,
+      "160-200": 0.118,
+      "200-256": 0.021,
+      "30-50": 0.0,
+      "50-80": 0.08,
+      "80-120": 0.143
+     },
+     "valueSteps": 7,
+     "w": 20
+    },
+    "today": {
+     "colours": 206,
+     "contrastBehind": 34.1,
+     "edgeDE": 0.305,
+     "edgeDEmedian": 8.1,
+     "edgeVisible": 0.398,
+     "fill40": 0.632,
+     "fillContrast": 57.5,
+     "fillEdgeVisible": 0.9,
+     "fillPx": 57,
+     "h": 30,
+     "meanL": 52.1,
+     "outlineDark": 0.025,
+     "px": 209,
+     "valueShares": {
+      "0-30": 0.33,
+      "120-160": 0.062,
+      "160-200": 0.0,
+      "200-256": 0.0,
+      "30-50": 0.249,
+      "50-80": 0.234,
+      "80-120": 0.124
+     },
+     "valueSteps": 7,
+     "w": 39
+    },
+    "v3": {
+     "colours": 12,
+     "contrastBehind": 67.6,
+     "edgeDE": 0.086,
+     "edgeDEmedian": 5.2,
+     "edgeVisible": 0.111,
+     "fill40": 0.822,
+     "fillContrast": 84.8,
+     "fillEdgeVisible": 0.876,
+     "fillPx": 269,
+     "gunContrast": 56.5,
+     "gunLen": 21,
+     "gunPx": 86,
+     "h": 31,
+     "meanL": 83.6,
+     "outlineDark": 0.123,
+     "px": 358,
+     "valueShares": {
+      "0-30": 0.355,
+      "120-160": 0.201,
+      "160-200": 0.047,
+      "200-256": 0.047,
+      "30-50": 0.0,
+      "50-80": 0.131,
+      "80-120": 0.218
+     },
+     "valueSteps": 5,
+     "w": 23
+    }
+   }
+  },
+  "sweep": {
+   "A": {
+    "deckY": 390.1,
+    "edgeDE": {
+     "max": 1.0,
+     "median": 0.797,
+     "min": 0.722,
+     "p10": 0.722
+    },
+    "edgeVisible": {
+     "max": 0.975,
+     "median": 0.835,
+     "min": 0.722,
+     "p10": 0.759
+    },
+    "fillContrast": {
+     "max": 66.8,
+     "median": 60.4,
+     "min": 56.4,
+     "p10": 58.4
+    },
+    "stops": 300,
+    "worstEdgeVisibleAtX": 292
+   },
+   "B": {
+    "deckY": 390.1,
+    "edgeDE": {
+     "max": 1.0,
+     "median": 0.857,
+     "min": 0.738,
+     "p10": 0.749
+    },
+    "edgeVisible": {
+     "max": 1.0,
+     "median": 0.869,
+     "min": 0.738,
+     "p10": 0.774
+    },
+    "fillContrast": {
+     "max": 65.2,
+     "median": 58.9,
+     "min": 53.9,
+     "p10": 56.19
+    },
+    "stops": 300,
+    "worstEdgeVisibleAtX": 916
+   },
+   "v3": {
+    "deckY": 390.1,
+    "edgeDE": {
+     "max": 1.0,
+     "median": 0.222,
+     "min": 0.0,
+     "p10": 0.0
+    },
+    "edgeVisible": {
+     "max": 1.0,
+     "median": 0.256,
+     "min": 0.0,
+     "p10": 0.044
+    },
+    "fillContrast": {
+     "max": 95.6,
+     "median": 79.7,
+     "min": 49.4,
+     "p10": 62.75
+    },
+    "stops": 300,
+    "worstEdgeVisibleAtX": 176
+   }
+  }
+ },
+ "hitbox": {
+  "height": 1.7,
+  "width": 0.7
+ },
+ "phone": {
+  "density": "d23",
+  "dpr": 2,
+  "flatSweep": {
+   "A": {
+    "10": {
+     "edgeDE": 0.763,
+     "edgeVisible": 0.763
+    },
+    "20": {
+     "edgeDE": 0.763,
+     "edgeVisible": 0.763
+    },
+    "30": {
+     "edgeDE": 0.763,
+     "edgeVisible": 0.915
+    },
+    "40": {
+     "edgeDE": 0.915,
+     "edgeVisible": 0.958
+    },
+    "50": {
+     "edgeDE": 0.958,
+     "edgeVisible": 1.0
+    },
+    "60": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.992
+    },
+    "80": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.949
+    },
+    "100": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.831
+    },
+    "130": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.703
+    },
+    "160": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.483
+    }
+   },
+   "B": {
+    "10": {
+     "edgeDE": 0.733,
+     "edgeVisible": 0.733
+    },
+    "20": {
+     "edgeDE": 0.733,
+     "edgeVisible": 0.733
+    },
+    "30": {
+     "edgeDE": 0.733,
+     "edgeVisible": 0.941
+    },
+    "40": {
+     "edgeDE": 0.941,
+     "edgeVisible": 0.978
+    },
+    "50": {
+     "edgeDE": 0.978,
+     "edgeVisible": 1.0
+    },
+    "60": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.993
+    },
+    "80": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.911
+    },
+    "100": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.807
+    },
+    "130": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.741
+    },
+    "160": {
+     "edgeDE": 1.0,
+     "edgeVisible": 0.556
+    }
+   },
+   "v3": {
+    "10": {
+     "edgeDE": 0.0,
+     "edgeVisible": 0.0
+    },
+    "20": {
+     "edgeDE": 0.0,
+     "edgeVisible": 0.0
+    },
+    "30": {
+     "edgeDE": 0.0,
+     "edgeVisible": 0.0
+    },
+    "40": {
+     "edgeDE": 0.0,
+     "edgeVisible": 0.0
+    },
+    "50": {
+     "edgeDE": 0.0,
+     "edgeVisible": 1.0
+    },
+    "60": {
+     "edgeDE": 1.0,
+     "edgeVisible": 1.0
+    },
+    "80": {
+     "edgeDE": 1.0,
+     "edgeVisible": 1.0
+    },
+    "100": {
+     "edgeDE": 1.0,
+     "edgeVisible": 1.0
+    },
+    "130": {
+     "edgeDE": 1.0,
+     "edgeVisible": 1.0
+    },
+    "160": {
+     "edgeDE": 1.0,
+     "edgeVisible": 1.0
+    }
+   }
+  },
+  "pxPerTile": 23.370295633692017,
+  "rows": {
+   "aim up": {
+    "A": {
+     "colours": 12,
+     "contrastBehind": 52.2,
+     "edgeDE": 0.877,
+     "edgeDEmedian": 54.5,
+     "edgeVisible": 0.877,
+     "extent": {
+      "bottom": -0.085,
+      "centreX": 0.278,
+      "height": 1.667,
+      "left": -0.214,
+      "right": 0.769,
+      "top": 1.581,
+      "width": 0.983,
+      "withGun": {
+       "left": -0.214,
+       "right": 0.769,
+       "top": 1.88
+      }
+     },
+     "fill40": 0.465,
+     "fillContrast": 52.2,
+     "fillEdgeVisible": 0.843,
+     "fillPx": 574,
+     "gunContrast": 83.8,
+     "gunLen": 22,
+     "gunPx": 93,
+     "h": 46,
+     "meanL": 59.2,
+     "outlineDark": 0.246,
+     "px": 574,
+     "rimEdge": 0.615,
+     "valueShares": {
+      "0-30": 0.556,
+      "120-160": 0.087,
+      "160-200": 0.068,
+      "200-256": 0.014,
+      "30-50": 0.0,
+      "50-80": 0.073,
+      "80-120": 0.202
+     },
+     "valueSteps": 7,
+     "w": 23
+    },
+    "B": {
+     "colours": 12,
+     "contrastBehind": 54.5,
+     "edgeDE": 0.929,
+     "edgeDEmedian": 59.6,
+     "edgeVisible": 0.929,
+     "extent": {
+      "bottom": 0.0,
+      "centreX": 0.278,
+      "height": 1.838,
+      "left": -0.171,
+      "right": 0.726,
+      "top": 1.838,
+      "width": 0.897,
+      "withGun": {
+       "left": -0.171,
+       "right": 0.726,
+       "top": 2.094
+      }
+     },
+     "fill40": 0.487,
+     "fillContrast": 54.5,
+     "fillEdgeVisible": 0.911,
+     "fillPx": 595,
+     "gunContrast": 88.2,
+     "gunLen": 22,
+     "gunPx": 97,
+     "h": 49,
+     "meanL": 61.7,
+     "outlineDark": 0.236,
+     "px": 595,
+     "rimEdge": 0.669,
+     "valueShares": {
+      "0-30": 0.543,
+      "120-160": 0.086,
+      "160-200": 0.086,
+      "200-256": 0.012,
+      "30-50": 0.0,
+      "50-80": 0.061,
+      "80-120": 0.213
+     },
+     "valueSteps": 7,
+     "w": 21
+    },
+    "v3": {
+     "colours": 14,
+     "contrastBehind": 66.5,
+     "edgeDE": 0.165,
+     "edgeDEmedian": 10.9,
+     "edgeVisible": 0.526,
+     "fill40": 0.691,
+     "fillContrast": 76.4,
+     "fillEdgeVisible": 0.871,
+     "fillPx": 619,
+     "gunContrast": 69.9,
+     "gunLen": 31,
+     "gunPx": 212,
+     "h": 46,
+     "meanL": 92.1,
+     "outlineDark": 0.571,
+     "px": 762,
+     "valueShares": {
+      "0-30": 0.304,
+      "120-160": 0.272,
+      "160-200": 0.055,
+      "200-256": 0.051,
+      "30-50": 0.0,
+      "50-80": 0.154,
+      "80-120": 0.164
+     },
+     "valueSteps": 6,
+     "w": 28
+    }
+   },
+   "aim up-right": {
+    "A": {
+     "colours": 12,
+     "contrastBehind": 55.0,
+     "edgeDE": 0.852,
+     "edgeDEmedian": 61.6,
+     "edgeVisible": 0.836,
+     "extent": {
+      "bottom": -0.085,
+      "centreX": 0.171,
+      "height": 1.667,
+      "left": -0.299,
+      "right": 0.641,
+      "top": 1.581,
+      "width": 0.94,
+      "withGun": {
+       "left": -0.299,
+       "right": 0.641,
+       "top": 1.667
+      }
+     },
+     "fill40": 0.511,
+     "fillContrast": 55.0,
+     "fillEdgeVisible": 0.845,
+     "fillPx": 605,
+     "gunContrast": 89.8,
+     "gunLen": 21,
+     "gunPx": 96,
+     "h": 41,
+     "meanL": 65.4,
+     "outlineDark": 0.098,
+     "px": 605,
+     "rimEdge": 0.713,
+     "valueShares": {
+      "0-30": 0.501,
+      "120-160": 0.063,
+      "160-200": 0.096,
+      "200-256": 0.018,
+      "30-50": 0.0,
+      "50-80": 0.101,
+      "80-120": 0.221
+     },
+     "valueSteps": 7,
+     "w": 22
+    },
+    "B": {
+     "colours": 12,
+     "contrastBehind": 55.2,
+     "edgeDE": 0.892,
+     "edgeDEmedian": 62.1,
+     "edgeVisible": 0.862,
+     "extent": {
+      "bottom": 0.0,
+      "centreX": 0.171,
+      "height": 1.838,
+      "left": -0.299,
+      "right": 0.641,
+      "top": 1.838,
+      "width": 0.94,
+      "withGun": {
+       "left": -0.299,
+       "right": 0.641,
+       "top": 1.88
+      }
+     },
+     "fill40": 0.493,
+     "fillContrast": 55.2,
+     "fillEdgeVisible": 0.885,
+     "fillPx": 637,
+     "gunContrast": 83.0,
+     "gunLen": 22,
+     "gunPx": 102,
+     "h": 44,
+     "meanL": 64.6,
+     "outlineDark": 0.138,
+     "px": 637,
+     "rimEdge": 0.723,
+     "valueShares": {
+      "0-30": 0.52,
+      "120-160": 0.063,
+      "160-200": 0.104,
+      "200-256": 0.017,
+      "30-50": 0.0,
+      "50-80": 0.082,
+      "80-120": 0.215
+     },
+     "valueSteps": 7,
+     "w": 22
+    },
+    "today": {
+     "colours": 574,
+     "contrastBehind": 36.0,
+     "edgeDE": 0.291,
+     "edgeDEmedian": 8.2,
+     "edgeVisible": 0.307,
+     "fill40": 0.39,
+     "fillContrast": 42.9,
+     "fillEdgeVisible": 0.524,
+     "fillPx": 341,
+     "h": 43,
+     "meanL": 56.0,
+     "outlineDark": 0.0,
+     "px": 602,
+     "valueShares": {
+      "0-30": 0.317,
+      "120-160": 0.09,
+      "160-200": 0.015,
+      "200-256": 0.0,
+      "30-50": 0.246,
+      "50-80": 0.191,
+      "80-120": 0.141
+     },
+     "valueSteps": 6,
+     "w": 37
+    },
+    "v3": {
+     "colours": 14,
+     "contrastBehind": 69.3,
+     "edgeDE": 0.203,
+     "edgeDEmedian": 11.1,
+     "edgeVisible": 0.531,
+     "fill40": 0.76,
+     "fillContrast": 79.6,
+     "fillEdgeVisible": 0.922,
+     "fillPx": 584,
+     "gunContrast": 65.7,
+     "gunLen": 31,
+     "gunPx": 175,
+     "h": 46,
+     "meanL": 93.7,
+     "outlineDark": 0.625,
+     "px": 719,
+     "valueShares": {
+      "0-30": 0.303,
+      "120-160": 0.255,
+      "160-200": 0.083,
+      "200-256": 0.049,
+      "30-50": 0.0,
+      "50-80": 0.111,
+      "80-120": 0.199
+     },
+     "valueSteps": 6,
+     "w": 26
+    }
+   },
+   "firing (flash: the game's own)": {
+    "A": {
+     "colours": 12,
+     "contrastBehind": 59.8,
+     "edgeDE": 0.908,
+     "edgeDEmedian": 56.2,
+     "edgeVisible": 0.867,
+     "extent": {
+      "bottom": -0.043,
+      "centreX": 0.043,
+      "height": 1.667,
+      "left": -0.513,
+      "right": 0.598,
+      "top": 1.624,
+      "width": 1.111,
+      "withGun": {
+       "left": -0.513,
+       "right": 0.726,
+       "top": 1.624
+      }
+     },
+     "fill40": 0.552,
+     "fillContrast": 59.8,
+     "fillEdgeVisible": 0.863,
+     "fillPx": 607,
+     "gunContrast": 68.9,
+     "gunLen": 22,
+     "gunPx": 87,
+     "h": 39,
+     "meanL": 63.5,
+     "outlineDark": 0.158,
+     "px": 607,
+     "rimEdge": 0.692,
+     "valueShares": {
+      "0-30": 0.535,
+      "120-160": 0.1,
+      "160-200": 0.091,
+      "200-256": 0.018,
+      "30-50": 0.0,
+      "50-80": 0.087,
+      "80-120": 0.168
+     },
+     "valueSteps": 7,
+     "w": 29
+    },
+    "B": {
+     "colours": 12,
+     "contrastBehind": 59.0,
+     "edgeDE": 0.921,
+     "edgeDEmedian": 60.5,
+     "edgeVisible": 0.886,
+     "extent": {
+      "bottom": 0.0,
+      "centreX": -0.021,
+      "height": 1.838,
+      "left": -0.641,
+      "right": 0.598,
+      "top": 1.838,
+      "width": 1.239,
+      "withGun": {
+       "left": -0.641,
+       "right": 0.726,
+       "top": 1.838
+      }
+     },
+     "fill40": 0.517,
+     "fillContrast": 59.0,
+     "fillEdgeVisible": 0.863,
+     "fillPx": 654,
+     "gunContrast": 84.7,
+     "gunLen": 22,
+     "gunPx": 87,
+     "h": 43,
+     "meanL": 64.2,
+     "outlineDark": 0.157,
+     "px": 654,
+     "rimEdge": 0.721,
+     "valueShares": {
+      "0-30": 0.538,
+      "120-160": 0.089,
+      "160-200": 0.098,
+      "200-256": 0.02,
+      "30-50": 0.0,
+      "50-80": 0.078,
+      "80-120": 0.177
+     },
+     "valueSteps": 7,
+     "w": 32
+    },
+    "today": {
+     "colours": 634,
+     "contrastBehind": 32.5,
+     "edgeDE": 0.355,
+     "edgeDEmedian": 9.4,
+     "edgeVisible": 0.35,
+     "fill40": 0.372,
+     "fillContrast": 38.8,
+     "fillEdgeVisible": 0.61,
+     "fillPx": 387,
+     "h": 44,
+     "meanL": 70.0,
+     "outlineDark": 0.015,
+     "px": 653,
+     "valueShares": {
+      "0-30": 0.243,
+      "120-160": 0.121,
+      "160-200": 0.051,
+      "200-256": 0.012,
+      "30-50": 0.225,
+      "50-80": 0.173,
+      "80-120": 0.175
+     },
+     "valueSteps": 8,
+     "w": 45
+    },
+    "v3": {
+     "colours": 14,
+     "contrastBehind": 66.9,
+     "edgeDE": 0.31,
+     "edgeDEmedian": 12.5,
+     "edgeVisible": 0.614,
+     "fill40": 0.702,
+     "fillContrast": 75.6,
+     "fillEdgeVisible": 0.848,
+     "fillPx": 593,
+     "gunContrast": 55.1,
+     "gunLen": 31,
+     "gunPx": 180,
+     "h": 45,
+     "meanL": 91.7,
+     "outlineDark": 0.669,
+     "px": 749,
+     "valueShares": {
+      "0-30": 0.31,
+      "120-160": 0.256,
+      "160-200": 0.061,
+      "200-256": 0.051,
+      "30-50": 0.0,
+      "50-80": 0.132,
+      "80-120": 0.19
+     },
+     "valueSteps": 6,
+     "w": 33
+    }
+   },
+   "idle, aim right": {
+    "A": {
+     "colours": 12,
+     "contrastBehind": 54.1,
+     "edgeDE": 0.839,
+     "edgeDEmedian": 63.2,
+     "edgeVisible": 0.831,
+     "extent": {
+      "bottom": -0.043,
+      "centreX": 0.128,
+      "height": 1.667,
+      "left": -0.427,
+      "right": 0.684,
+      "top": 1.624,
+      "width": 1.111,
+      "withGun": {
+       "left": -0.427,
+       "right": 0.812,
+       "top": 1.624
+      }
+     },
+     "fill40": 0.465,
+     "fillContrast": 54.1,
+     "fillEdgeVisible": 0.829,
+     "fillPx": 615,
+     "gunContrast": 79.6,
+     "gunLen": 22,
+     "gunPx": 89,
+     "h": 39,
+     "meanL": 63.1,
+     "outlineDark": 0.11,
+     "px": 615,
+     "rimEdge": 0.746,
+     "valueShares": {
+      "0-30": 0.54,
+      "120-160": 0.088,
+      "160-200": 0.094,
+      "200-256": 0.018,
+      "30-50": 0.0,
+      "50-80": 0.085,
+      "80-120": 0.176
+     },
+     "valueSteps": 7,
+     "w": 29
+    },
+    "B": {
+     "colours": 12,
+     "contrastBehind": 54.3,
+     "edgeDE": 0.874,
+     "edgeDEmedian": 63.2,
+     "edgeVisible": 0.874,
+     "extent": {
+      "bottom": 0.0,
+      "centreX": 0.085,
+      "height": 1.838,
+      "left": -0.513,
+      "right": 0.684,
+      "top": 1.838,
+      "width": 1.197,
+      "withGun": {
+       "left": -0.513,
+       "right": 0.812,
+       "top": 1.838
+      }
+     },
+     "fill40": 0.455,
+     "fillContrast": 54.3,
+     "fillEdgeVisible": 0.863,
+     "fillPx": 657,
+     "gunContrast": 85.3,
+     "gunLen": 22,
+     "gunPx": 88,
+     "h": 43,
+     "meanL": 62.4,
+     "outlineDark": 0.148,
+     "px": 657,
+     "rimEdge": 0.719,
+     "valueShares": {
+      "0-30": 0.554,
+      "120-160": 0.09,
+      "160-200": 0.087,
+      "200-256": 0.021,
+      "30-50": 0.0,
+      "50-80": 0.073,
+      "80-120": 0.175
+     },
+     "valueSteps": 7,
+     "w": 31
+    },
+    "today": {
+     "colours": 614,
+     "contrastBehind": 35.4,
+     "edgeDE": 0.364,
+     "edgeDEmedian": 9.8,
+     "edgeVisible": 0.407,
+     "fill40": 0.379,
+     "fillContrast": 41.9,
+     "fillEdgeVisible": 0.651,
+     "fillPx": 390,
+     "h": 48,
+     "meanL": 56.8,
+     "outlineDark": 0.024,
+     "px": 656,
+     "valueShares": {
+      "0-30": 0.294,
+      "120-160": 0.082,
+      "160-200": 0.017,
+      "200-256": 0.0,
+      "30-50": 0.232,
+      "50-80": 0.244,
+      "80-120": 0.131
+     },
+     "valueSteps": 7,
+     "w": 34
+    },
+    "v3": {
+     "colours": 14,
+     "contrastBehind": 68.1,
+     "edgeDE": 0.182,
+     "edgeDEmedian": 9.6,
+     "edgeVisible": 0.469,
+     "fill40": 0.737,
+     "fillContrast": 79.6,
+     "fillEdgeVisible": 0.897,
+     "fillPx": 594,
+     "gunContrast": 53.6,
+     "gunLen": 31,
+     "gunPx": 177,
+     "h": 45,
+     "meanL": 92.3,
+     "outlineDark": 0.51,
+     "px": 747,
+     "valueShares": {
+      "0-30": 0.308,
+      "120-160": 0.246,
+      "160-200": 0.062,
+      "200-256": 0.058,
+      "30-50": 0.0,
+      "50-80": 0.131,
+      "80-120": 0.195
+     },
+     "valueSteps": 6,
+     "w": 33
+    }
+   },
+   "jump (rise)": {
+    "A": {
+     "colours": 12,
+     "contrastBehind": 53.0,
+     "edgeDE": 0.87,
+     "edgeDEmedian": 58.5,
+     "edgeVisible": 0.935,
+     "extent": {
+      "bottom": 0.043,
+      "centreX": 0.064,
+      "height": 1.581,
+      "left": -0.556,
+      "right": 0.684,
+      "top": 1.624,
+      "width": 1.239,
+      "withGun": {
+       "left": -0.556,
+       "right": 0.812,
+       "top": 1.624
+      }
+     },
+     "fill40": 0.435,
+     "fillContrast": 53.0,
+     "fillEdgeVisible": 0.935,
+     "fillPx": 604,
+     "gunContrast": 100.1,
+     "gunLen": 22,
+     "gunPx": 70,
+     "h": 37,
+     "meanL": 62.8,
+     "outlineDark": 0.179,
+     "px": 604,
+     "rimEdge": 0.715,
+     "valueShares": {
+      "0-30": 0.533,
+      "120-160": 0.101,
+      "160-200": 0.076,
+      "200-256": 0.018,
+      "30-50": 0.0,
+      "50-80": 0.078,
+      "80-120": 0.194
+     },
+     "valueSteps": 7,
+     "w": 32
+    },
+    "B": {
+     "colours": 12,
+     "contrastBehind": 52.8,
+     "edgeDE": 0.829,
+     "edgeDEmedian": 58.5,
+     "edgeVisible": 0.927,
+     "extent": {
+      "bottom": 0.256,
+      "centreX": 0.064,
+      "height": 1.581,
+      "left": -0.556,
+      "right": 0.684,
+      "top": 1.838,
+      "width": 1.239,
+      "withGun": {
+       "left": -0.556,
+       "right": 0.812,
+       "top": 1.838
+      }
+     },
+     "fill40": 0.413,
+     "fillContrast": 52.8,
+     "fillEdgeVisible": 0.933,
+     "fillPx": 600,
+     "gunContrast": 91.8,
+     "gunLen": 22,
+     "gunPx": 69,
+     "h": 37,
+     "meanL": 63.1,
+     "outlineDark": 0.154,
+     "px": 600,
+     "rimEdge": 0.715,
+     "valueShares": {
+      "0-30": 0.533,
+      "120-160": 0.098,
+      "160-200": 0.078,
+      "200-256": 0.017,
+      "30-50": 0.0,
+      "50-80": 0.087,
+      "80-120": 0.187
+     },
+     "valueSteps": 7,
+     "w": 32
+    },
+    "today": {
+     "colours": 512,
+     "contrastBehind": 30.7,
+     "edgeDE": 0.297,
+     "edgeDEmedian": 9.4,
+     "edgeVisible": 0.316,
+     "fill40": 0.26,
+     "fillContrast": 35.1,
+     "fillEdgeVisible": 0.651,
+     "fillPx": 369,
+     "h": 43,
+     "meanL": 49.9,
+     "outlineDark": 0.038,
+     "px": 583,
+     "valueShares": {
+      "0-30": 0.415,
+      "120-160": 0.093,
+      "160-200": 0.01,
+      "200-256": 0.0,
+      "30-50": 0.208,
+      "50-80": 0.182,
+      "80-120": 0.093
+     },
+     "valueSteps": 5,
+     "w": 41
+    },
+    "v3": {
+     "colours": 14,
+     "contrastBehind": 61.7,
+     "edgeDE": 0.0,
+     "edgeDEmedian": 9.4,
+     "edgeVisible": 0.37,
+     "fill40": 0.768,
+     "fillContrast": 72.4,
+     "fillEdgeVisible": 0.901,
+     "fillPx": 564,
+     "gunContrast": 56.2,
+     "gunLen": 31,
+     "gunPx": 174,
+     "h": 40,
+     "meanL": 88.7,
+     "outlineDark": 0.462,
+     "px": 693,
+     "valueShares": {
+      "0-30": 0.304,
+      "120-160": 0.214,
+      "160-200": 0.061,
+      "200-256": 0.049,
+      "30-50": 0.0,
+      "50-80": 0.176,
+      "80-120": 0.196
+     },
+     "valueSteps": 6,
+     "w": 33
+    }
+   },
+   "run (pass)": {
+    "A": {
+     "colours": 12,
+     "contrastBehind": 58.5,
+     "edgeDE": 0.81,
+     "edgeDEmedian": 63.5,
+     "edgeVisible": 0.838,
+     "extent": {
+      "bottom": -0.043,
+      "centreX": 0.128,
+      "height": 1.667,
+      "left": -0.427,
+      "right": 0.684,
+      "top": 1.624,
+      "width": 1.111,
+      "withGun": {
+       "left": -0.427,
+       "right": 0.812,
+       "top": 1.624
+      }
+     },
+     "fill40": 0.5,
+     "fillContrast": 58.5,
+     "fillEdgeVisible": 0.831,
+     "fillPx": 546,
+     "gunContrast": 90.1,
+     "gunLen": 22,
+     "gunPx": 73,
+     "h": 39,
+     "meanL": 65.6,
+     "outlineDark": 0.086,
+     "px": 546,
+     "rimEdge": 0.743,
+     "valueShares": {
+      "0-30": 0.516,
+      "120-160": 0.114,
+      "160-200": 0.086,
+      "200-256": 0.022,
+      "30-50": 0.0,
+      "50-80": 0.101,
+      "80-120": 0.161
+     },
+     "valueSteps": 7,
+     "w": 29
+    },
+    "B": {
+     "colours": 12,
+     "contrastBehind": 56.6,
+     "edgeDE": 0.766,
+     "edgeDEmedian": 65.3,
+     "edgeVisible": 0.758,
+     "extent": {
+      "bottom": 0.043,
+      "centreX": 0.128,
+      "height": 1.795,
+      "left": -0.427,
+      "right": 0.684,
+      "top": 1.838,
+      "width": 1.111,
+      "withGun": {
+       "left": -0.427,
+       "right": 0.812,
+       "top": 1.838
+      }
+     },
+     "fill40": 0.475,
+     "fillContrast": 56.6,
+     "fillEdgeVisible": 0.782,
+     "fillPx": 569,
+     "gunContrast": 81.8,
+     "gunLen": 22,
+     "gunPx": 82,
+     "h": 42,
+     "meanL": 64.5,
+     "outlineDark": 0.089,
+     "px": 569,
+     "rimEdge": 0.71,
+     "valueShares": {
+      "0-30": 0.536,
+      "120-160": 0.118,
+      "160-200": 0.093,
+      "200-256": 0.016,
+      "30-50": 0.0,
+      "50-80": 0.084,
+      "80-120": 0.153
+     },
+     "valueSteps": 7,
+     "w": 29
+    },
+    "today": {
+     "colours": 394,
+     "contrastBehind": 36.0,
+     "edgeDE": 0.206,
+     "edgeDEmedian": 7.2,
+     "edgeVisible": 0.261,
+     "fill40": 0.63,
+     "fillContrast": 53.5,
+     "fillEdgeVisible": 0.646,
+     "fillPx": 162,
+     "h": 43,
+     "meanL": 51.2,
+     "outlineDark": 0.006,
+     "px": 397,
+     "valueShares": {
+      "0-30": 0.327,
+      "120-160": 0.048,
+      "160-200": 0.005,
+      "200-256": 0.0,
+      "30-50": 0.237,
+      "50-80": 0.259,
+      "80-120": 0.123
+     },
+     "valueSteps": 6,
+     "w": 22
+    },
+    "v3": {
+     "colours": 14,
+     "contrastBehind": 74.3,
+     "edgeDE": 0.048,
+     "edgeDEmedian": 5.3,
+     "edgeVisible": 0.064,
+     "fill40": 0.841,
+     "fillContrast": 88.8,
+     "fillEdgeVisible": 0.846,
+     "fillPx": 546,
+     "gunContrast": 57.6,
+     "gunLen": 31,
+     "gunPx": 174,
+     "h": 44,
+     "meanL": 89.7,
+     "outlineDark": 0.16,
+     "px": 679,
+     "valueShares": {
+      "0-30": 0.318,
+      "120-160": 0.208,
+      "160-200": 0.065,
+      "200-256": 0.059,
+      "30-50": 0.0,
+      "50-80": 0.144,
+      "80-120": 0.206
+     },
+     "valueSteps": 6,
+     "w": 33
+    }
+   }
+  },
+  "sheet1": {
+   "A": {
+    "boardMarinePx": 62,
+    "boardScale": 0.5959,
+    "v31JumpHeightPx": 36.9
+   },
+   "B": {
+    "boardMarinePx": 62,
+    "boardScale": 0.5959,
+    "v31JumpHeightPx": 36.9
+   }
+  },
+  "sweep": {
+   "A": {
+    "deckY": 433.2,
+    "edgeDE": {
+     "max": 1.0,
+     "median": 0.839,
+     "min": 0.763,
+     "p10": 0.763
+    },
+    "edgeVisible": {
+     "max": 0.975,
+     "median": 0.864,
+     "min": 0.763,
+     "p10": 0.788
+    },
+    "fillContrast": {
+     "max": 62.2,
+     "median": 54.5,
+     "min": 50.2,
+     "p10": 52.31
+    },
+    "stops": 402,
+    "worstEdgeVisibleAtX": 352
+   },
+   "B": {
+    "deckY": 433.2,
+    "edgeDE": {
+     "max": 1.0,
+     "median": 0.83,
+     "min": 0.733,
+     "p10": 0.741
+    },
+    "edgeVisible": {
+     "max": 1.0,
+     "median": 0.859,
+     "min": 0.733,
+     "p10": 0.763
+    },
+    "fillContrast": {
+     "max": 59.6,
+     "median": 54.1,
+     "min": 50.0,
+     "p10": 51.4
+    },
+    "stops": 402,
+    "worstEdgeVisibleAtX": 520
+   },
+   "v3": {
+    "deckY": 433.2,
+    "edgeDE": {
+     "max": 1.0,
+     "median": 0.189,
+     "min": 0.0,
+     "p10": 0.0
+    },
+    "edgeVisible": {
+     "max": 1.0,
+     "median": 0.213,
+     "min": 0.0,
+     "p10": 0.022
+    },
+    "fillContrast": {
+     "max": 99.6,
+     "median": 84.25,
+     "min": 49.4,
+     "p10": 73.01
+    },
+    "stops": 402,
+    "worstEdgeVisibleAtX": 172
+   }
+  }
+ }
+}

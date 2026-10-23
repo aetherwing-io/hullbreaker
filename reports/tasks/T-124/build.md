@@ -1,5 +1,8 @@
 # T-124 build report — RIG v3, phase 1 (assets, build, checks, packet)
 
+> **Phase 1b (RIG v3.1, after decisions entry 28 judged v3 a miss) is at the
+> end of this file:** "Phase 1b — RIG v3.1: board 01's marine".
+
 **Status: phase 1 built; nothing under `src/` changed and nothing in the game
 loads v3 yet** (phase 2 wires it into T-123's crisp path). Whether v3 looks
 right is the operator's call; this report states measurements, costs and the
@@ -468,3 +471,454 @@ the operator with the five questions now — the look verdict does not need the
 wiring — and dispatch T-124 phase 2 when T-123 merges: load `rig-v3.json`,
 pick the density per device at an integer scale, mirror by the gun, ON by
 default with `?art=legacy`.
+
+---
+
+# Phase 1b — RIG v3.1: board 01's marine (decisions entry 28)
+
+**Status: a look preview; nothing ships.** Entry 28 recorded that v3 missed
+("image 1 is much better than 2") and made board 01's marine RIG's target.
+v3.1 is gun R, eleven poses, two holds, three densities. There is no atlas,
+no manifest entry, nothing under `src/`, nothing the game loads. The phase-1
+v3 atlases stay on the branch, unwired (entry 28). Whether v3.1 is closer to
+the board is the operator's call; this section gives the changes, the
+numbers and the questions. Branch `task/T-124`, worktree
+`/home/user/hullbreaker/.claude/worktrees/T-124`, not merged.
+
+## 1b.0 In one screen
+
+- **Value structure, from board 01.** A near-black suit and gunmetal; rust
+  plates in the mid tones on the helmet, pauldrons, chest, arms and knee
+  pads; the lightest swatches only on rims, the visor glint and the muzzle
+  pixel. Luma shares of the figure, board 01's marine vs v3.1 (phone cells,
+  idle / jump / run): under 30: 49% vs 52-55%; 80-160: 36% vs 26-30%;
+  160 and up: 10% vs 9-11%. v3 was 30-32% / 41-44% / 11-12%.
+- **Light.** The game's key light. A warm back light from behind and above:
+  a rim on silhouette and nearer depth edges, plus a fill on the warm
+  plates. A warm kicker from the front and below rims the dark legs in mid
+  rust. No ink outline (board 01's marine has none).
+- **Bulk**, from the CC0 mesh's own armour: plate faces pushed out along
+  their normals per region, a bigger helmet and chest, thicker pauldrons.
+  Against a control frame with v3's proportions in the same pose: +25% body
+  pixels, +28% upper-body width, +33% helmet-band width.
+- **Shouldered, leaning forward.** The rifle's butt sits on the sim's bore,
+  0.10 tiles behind the socket. The body is translated so its shoulder
+  pocket lands on the butt (error 0). Two holds:
+  - **Hold A, today's bore (1.05).** RIG crouches: pelvis 0.34-0.43 tiles
+    down; drawn 1.58-1.62 tiles tall against the 1.7-tile hitbox.
+  - **Hold B, render-only mock bore (1.28).** Pelvis 0.11-0.20 tiles down;
+    drawn 1.79-1.85 tiles tall.
+  - For comparison, today's RIG is drawn about 2.0 tiles tall and v3 1.84.
+- **Readability on the real hull** (phone, six poses). Silhouette-edge
+  visibility (at least 20 luma from the touching hull pixel):
+  - A 0.83-0.94, B 0.76-0.93; today 0.26-0.41, v3 0.06-0.61.
+  - By colour difference (dE at least 15): A 0.81-0.91, B 0.77-0.93; v3
+    0.00-0.31.
+  - Slid along the whole deck: minimum 0.76 (A) and 0.73 (B), against v3's
+    0.00.
+  - On a flat hull at luma 10-20, 24-27% of v3.1's edge does not read: the
+    unlit dark edge. The rest is rim-lit and does.
+- **Effects are not baked.**
+  - The muzzle flash is the game's own effect, drawn at the sim muzzle;
+    hold A's muzzle sits under it.
+  - The board's foot-jet is not drawn by the game, and
+    `tools/player-presentation-check.mjs:157` asserts RIG has no
+    jump-propulsion visual. Adding one is an operator call.
+- **Checks and reproducibility.**
+  - All 66 cells: drawn muzzle within 0.79 px of its anchor. A's anchors
+    sit on today's shot origin (2.4e-6 tiles); B's on its mock bore.
+  - The check binds: with R's mesh moved 0.15 tiles, every checked cell
+    fails (2.04-4.78 px).
+  - Three independent builds: render passes pixel-identical, cells
+    byte-identical.
+  - v3 re-rendered with the edited scripts: 18 of 18 cells byte-identical.
+
+## 1b.1 Board 01's marine, measured
+
+`tools/art/rig/board_palette.py --b01` re-measures this on every build (the
+build fails if a swatch moves). The method:
+- Background: deterministic k-means (k=3) of four clean wall patches beside
+  the marine. The phase-1 ring model had swallowed the jet flame and the
+  muzzle flash, which masked out the rims.
+- Mask: pixels of box (555, 367)-(604, 435) farther than 38 sRGB from every
+  wall centre: 896 px, 62 px tall. The muzzle flash starts at x 604.
+- Families, each clustered on its own:
+  - rust: HSV hue 12-42 degrees, saturation at least 0.5, luma at least 30;
+    k=5
+  - dark: luma under 70; k=5
+  - bright: luma 150 and up; k=3
+
+Evidence: `board01-swatches.png` / `.json`.
+
+| swatch | hex | board 01 (x, y) | luma | used as |
+|---|---|---|---|---|
+| rust0 | `#dba25e` | (560, 382) | 171 | rim on warm plates (the lightest rust: rim only) |
+| rust1 | `#bd8148` | (578, 402) | 140 | lit plate; kick on warm plates |
+| rust2 | `#a26635` | (582, 382) | 114 | plate; kick on the dark legs and suit |
+| rust3 | `#7e5230` | (586, 382) | 92 | plate shadow |
+| rust4 | `#8b3c17` | (587, 391) | 79 | red-rust deep (LCh hue 50.0, inside the rust band) |
+| dark0 | `#3a453e` | (568, 407) | 65 | cool gunmetal highlight (the thigh) |
+| dark1 | `#7d280e` | (562, 380) | 63 | NOT USED: LCh hue 44.6 lies in no role band |
+| dark2 | `#151b17` | (581, 415) | 25 | suit / gunmetal |
+| dark3 | `#11120e` | (574, 410) | 17 | suit shadow |
+| dark4 | `#060908` | (570, 397) | 8 | near-black |
+| bright0 | `#e9ddb2` | (568, 380) | 220 | hot rim, visor glint, muzzle pixel |
+| bright1 | `#d9a767` | (588, 410) | 175 | orange-gold rim on the dark armour |
+| bright2 | `#bba27b` | (569, 378) | 165 | the pale line along the gun's top |
+
+Every ramp has 8 steps:
+- tones 0-4, lit to deep (the warm plates use four distinct rusts there)
+- 5 rim
+- 6 hot rim or glint
+- 7 kick
+
+Region to family:
+- warm plates: helmet, pauldrons, chest, both arms, knee pads (a new
+  region: shin vertices above 0.40 mesh units of rest height; the knee
+  joint is at 0.537)
+- dark armour: thighs, shins, hips, boots, gloves
+- suit (zone 0): near-black
+- far-side limbs: one step darker
+- the salvage pack: rust (board 01 shows a rust/tan block at the marine's
+  back, the pack or the far pauldron)
+
+There are 16 possible colours, all in a palette role band (rust-orange,
+warm-white, haze, ink, hull). Four of them are gun R's identity-token ramp,
+which this gun's model never uses; each cell uses 12, all from board 01.
+
+## 1b.2 Light and edges (`tools/art/rig/post.py --look v31`)
+
+- **Fill tones:** five steps from the game's key light (`LIGHT_RIG.key`,
+  azimuth 40 / elevation 50) times ambient occlusion.
+- **Warm back light** (azimuth 200 / elevation 38):
+  - a rim on silhouette pixels, and on depth-edge pixels of the nearer part,
+    whose smoothed normal faces it; 1 px wide (2 px at d35)
+  - the strongest facings on the outermost pixel take the hot rim
+  - it also fills the warm plates (`BACK_FILL` 0.55): board 01's plates are
+    lit from behind
+- **Warm kicker** (azimuth 10 / elevation -15): the outermost body pixels
+  facing it take a mid rust, so the dark legs are outlined in orange all
+  round. Board 01's leg rims are mostly mid orange (luma 115-126).
+  - A first version put the kick in the bright rim colour, which raised the
+    bright share to 15-19% against the board's 10%.
+- **No ink outline**, and depth lines take the family's deepest tone.
+- **Rim share of the silhouette edge:** 0.61-0.75 (phone).
+
+## 1b.3 Bulk (`tools/art/rig/render.py --look v31`)
+
+- No primitive geometry (entry 26): every plate face of the CC0 soldier is
+  pushed out along its rest normal, weighted by the share of plate faces
+  around each vertex. Tiles per region:
+  - pauldrons 0.060
+  - chest 0.034
+  - forearms 0.030
+  - shins 0.026
+  - upper arms and thighs 0.022
+  - torso 0.018
+- Scales:
+  - helmet x1.62 (v3: 1.50)
+  - chest (1.30, 1.0, 1.34) (v3: 1.16, 1.0, 1.12)
+  - limbs x1.42 / x1.44 (v3: 1.28 / 1.34)
+  - pauldrons (1.62, 1.08, 1.62), across the bone only, with the arm hung
+    from the unscaled shoulder. A uniform 1.62 spread the shoulders 0.9
+    tiles apart, and the far hand could not reach a vertical gun.
+
+The measured effect isolates the bulk from the pose. The control is the same
+pose and hold rendered with v3's proportions and no inflation:
+
+| hold A, phone (d23) | body px | upper-body mean width (top 45%) | helmet band width (top 22%) | body area / height^2 |
+|---|---|---|---|---|
+| idle, control | 421 | 0.455 tiles | 0.385 | 0.292 |
+| idle, v3.1 | 526 (+25%) | 0.582 (+28%) | 0.513 (+33%) | 0.346 |
+| run, control | 381 | 0.463 | 0.385 | 0.264 |
+| run, v3.1 | 473 (+24%) | 0.579 (+25%) | 0.513 (+33%) | 0.311 |
+| v3 (phase 1) idle | — | 0.430 | 0.385 | 0.226 |
+
+## 1b.4 The shouldered hold: A (today's bore) and B (mock), side by side
+
+**Geometry** (`tools/art/rig/poses_v31.py`, `render.py` `solve_shoulder`).
+The sim still fixes the gun: the bore runs through (0, socketY) along the aim,
+with the muzzle 0.82 tiles down it.
+- A shouldered rifle pivots on the shoulder, so the butt sits on the bore
+  0.10 tiles behind the socket.
+- The whole gun is therefore 0.82 + 0.10 = 0.92 tiles long; v3's R was
+  1.32. Its cross-section in tiles is kept (thickness x2.01).
+- The body is posed from the spec, then translated so its near-shoulder
+  pocket (0.035 tiles forward of and 0.055 below the shoulder joint) lands
+  on the butt. The error is 0 in every frame.
+- Both hands hold the gun in every preview frame. On the vertical aim the
+  far hand slides 0.24 tiles down the fore-end to reach.
+- An ordered search over lean and chest twist makes the legs and arms
+  reach; a frame that cannot is a build error. None failed.
+
+**Hold B's bore, 1.28 tiles,** is the highest, stepping down from 1.40 in
+0.04s, at which every preview pose solves with feet planted. The run's
+contact stride binds: 1.32 left a leg 0.032 tiles short. It is a mock:
+raising the bore moves the shot origin (`CONFIG.player.muzzleY`), a sim
+change that is not made here.
+
+| pose | A: pelvis drop | A: drawn top / height (tiles) | B: pelvis drop | B: drawn top / height | body x-span A (tiles) |
+|---|---|---|---|---|---|
+| idle | 0.354 | 1.62 / 1.67 | 0.124 | 1.84 / 1.84 | -0.43 .. +0.68 |
+| firing (kick) | 0.354 | 1.62 / 1.67 | 0.124 | 1.84 / 1.84 | -0.51 .. +0.60 |
+| aim up-right | 0.426 | 1.58 / 1.67 | 0.196 | 1.84 / 1.84 | -0.30 .. +0.64 |
+| aim up | 0.433 | 1.58 / 1.67 | 0.203 | 1.84 / 1.84 | -0.21 .. +0.77 |
+| jump (rise) | 0.358 | 1.62 / 1.58 | 0.128 | 1.84 / 1.58 | -0.56 .. +0.68 |
+| run (6 beats) | 0.337-0.349 | 1.62 / 1.67 | 0.107-0.132 | 1.84 / 1.79-1.84 | -0.43 .. +0.68 (pass) |
+
+**Against the sim hitbox** (`CONFIG.player` width 0.7, height 1.7):
+- **Hold A** is drawn 1.58-1.62 tiles tall: 93-95% of the hitbox height.
+  The bore sits at about 65% of the drawn height.
+- **Hold B** is drawn 1.84: 108% of the hitbox.
+- **Today's RIG** is drawn about 2.0 tiles tall (118%), with the bore at 53%;
+  **v3** is 1.84.
+- **Horizontally:**
+  - the pack overhangs the hitbox's back edge (x -0.35) by up to 0.21 tiles
+    (A) and 0.29 (B, firing)
+  - the arms and hands reach 0.25-0.42 tiles past its front edge (x +0.35)
+  - the gun reaches 0.81
+- `v31-5-hitbox-phone-4x.png` draws the hitbox and both bore lines on today,
+  v3, A and B.
+
+**What A costs, stated plainly.**
+- A is buildable: every preview pose solves with both hands on the gun and
+  feet planted.
+- It is a crouch in every frame: the pelvis sits 0.23 tiles lower than in B
+  everywhere, and RIG is drawn 0.22 tiles (about 5 px at phone density)
+  shorter than B and about 0.4 tiles shorter than today.
+- In the run its knees never straighten.
+- On both holds, the vertical aim stands the gun beside the helmet, and the
+  up-right gun reads as a short wedge at the helmet.
+
+Whether A looks right is the operator's question (section 1b.10). I have no
+measurement that says it cannot.
+
+## 1b.5 Muzzle flash and foot-jet
+
+- **Muzzle flash: drawn by the game.**
+  - Where: `src/render/juice.js` `onShotSpawned`, run on every volley:
+    `fxFlash` and `fxDirectedBurst`, plus `fxRing` for the breach chassis.
+  - Placement: at `player.y + player.muzzleY + aim * 0.5` tiles; size 0.5
+    x the chassis' flash factor; 80 ms (`CONFIG.juice.muzzle`).
+  - It is not baked into any v3.1 frame. The frozen firing frame in
+    `v31-2-window-phone.png` shows the game's own flash: on hold A it sits on
+    the drawn muzzle; on hold B it sits 0.23 tiles below the mock gun, because
+    the game still fires from 1.05.
+- **Foot-jet: not drawn by the game, and guarded against.**
+  - `src/render/player.js` reports `jumpExhaust: false`.
+  - `tools/player-presentation-check.mjs:157` asserts "RIG has no
+    out-of-place jump propulsion visual" (from 5fee529, 2026-08-04).
+  - Entry 28 lists the board's "foot-jet flare in the air". The two
+    conflict, so it needs the operator's decision. It is not baked (an
+    effect tied to jump events belongs to the render layer) and not mocked
+    here. Question 4 below.
+
+## 1b.6 Readability on the real hull at true size
+
+**What is measured:**
+- Panels and captures as phase 1 (`v31-4-*`): the real frame with RIG
+  hidden, the cell pasted 1 texel = 1 device px at the projected sim point.
+- `edgeVisible`: the spike's metric, the share of silhouette-edge pixels at
+  least 20 luma from the hull pixel they touch.
+- `edgeDE`: the same with CIELAB dE76 of at least 15, which counts an orange
+  rim on a teal hull at equal luma.
+- `rim share`: silhouette-edge pixels drawn in a rim, hot or kick tone.
+- Entry 27's fill rule is retired (entry 28). `fillContrast` stays in
+  `measure-v31.json` for comparison only (A 52-60, B 53-59, phone).
+
+#### phone (23.37 device px/tile; 844x518 css at DPR 2, the 844x390 frame inside)
+
+| pose | edgeVisible today / v3 / A / B | edgeDE today / v3 / A / B | rim share A / B | gun contrast v3 / A / B | gun px v3 / A / B |
+|---|---|---|---|---|---|
+| idle, aim right | 0.41 / 0.47 / 0.83 / 0.87 | 0.36 / 0.18 / 0.84 / 0.87 | 0.75 / 0.72 | 53.6 / 79.6 / 85.3 | 177 / 89 / 88 |
+| firing | 0.35 / 0.61 / 0.87 / 0.89 | 0.35 / 0.31 / 0.91 / 0.92 | 0.69 / 0.72 | 55.1 / 68.9 / 84.7 | 180 / 87 / 87 |
+| aim up-right | 0.31 / 0.53 / 0.84 / 0.86 | 0.29 / 0.20 / 0.85 / 0.89 | 0.71 / 0.72 | 65.7 / 89.8 / 83.0 | 175 / 96 / 102 |
+| aim up | — / 0.53 / 0.88 / 0.93 | — / 0.17 / 0.88 / 0.93 | 0.61 / 0.67 | 69.9 / 83.8 / 88.2 | 212 / 93 / 97 |
+| jump (rise) | 0.32 / 0.37 / 0.94 / 0.93 | 0.30 / 0.00 / 0.87 / 0.83 | 0.71 / 0.71 | 56.2 / 100.1 / 91.8 | 174 / 70 / 69 |
+| run (pass) | 0.26 / 0.06 / 0.84 / 0.76 | 0.21 / 0.05 / 0.81 / 0.77 | 0.74 / 0.71 | 57.6 / 90.1 / 81.8 | 174 / 73 / 82 |
+
+#### desktop (16.24 device px/tile; 1280x720 FAR at DPR 1)
+
+| pose | edgeVisible today / v3 / A / B | edgeDE today / v3 / A / B | rim share A / B | gun contrast v3 / A / B | gun px v3 / A / B |
+|---|---|---|---|---|---|
+| idle, aim right | 0.43 / 0.47 / 0.80 / 0.87 | 0.40 / 0.16 / 0.79 / 0.89 | 0.68 / 0.71 | 62.3 / 78.9 / 83.7 | 88 / 43 / 48 |
+| firing | 0.39 / 0.63 / 0.85 / 0.85 | 0.40 / 0.31 / 0.86 / 0.93 | 0.60 / 0.66 | 49.8 / 66.5 / 79.7 | 93 / 46 / 50 |
+| aim up-right | 0.39 / 0.51 / 0.80 / 0.86 | 0.39 / 0.18 / 0.81 / 0.86 | 0.68 / 0.67 | 69.4 / 85.2 / 79.7 | 91 / 52 / 52 |
+| aim up | — / 0.51 / 0.85 / 0.91 | — / 0.17 / 0.84 / 0.94 | 0.58 / 0.64 | 71.6 / 95.1 / 101.3 | 105 / 46 / 46 |
+| jump (rise) | 0.28 / 0.42 / 0.90 / 0.92 | 0.32 / 0.00 / 0.85 / 0.83 | 0.63 / 0.70 | 56.1 / 79.3 / 87.7 | 90 / 31 / 32 |
+| run (pass) | 0.40 / 0.11 / 0.83 / 0.80 | 0.30 / 0.09 / 0.80 / 0.80 | 0.70 / 0.70 | 56.5 / 84.2 / 85.2 | 86 / 34 / 41 |
+
+The capture has no "aim up" frame of today. The gun pixel count halves
+against v3: the gun is 30% shorter, and the shouldered hold lays both arms
+across it.
+
+**Along the deck** (the idle cell slid every 4 px across the captured frame):
+
+| view (stops) | candidate | edgeVisible min / p10 / median | edgeDE min |
+|---|---|---|---|
+| phone (402) | A | 0.76 / 0.79 / 0.86 | 0.76 |
+| phone (402) | B | 0.73 / 0.76 / 0.86 | 0.73 |
+| phone (402) | v3 | 0.00 / 0.02 / 0.21 | 0.00 |
+| desktop (300) | A | 0.72 / 0.76 / 0.84 | 0.72 |
+| desktop (300) | B | 0.74 / 0.77 / 0.87 | 0.74 |
+| desktop (300) | v3 | 0.00 / 0.04 / 0.26 | 0.00 |
+
+**Where the dark figure stops reading.** The idle cell is placed on flat
+teal-grey hulls of rising luma (phone; entries are edgeVisible / edgeDE):
+
+| hull luma | 10 | 20 | 30 | 40 | 50 | 60 | 80 | 100 | 130 | 160 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A | 0.76 / 0.76 | 0.76 / 0.76 | 0.92 / 0.76 | 0.96 / 0.92 | 1.00 / 0.96 | 0.99 / 1.00 | 0.95 / 1.00 | 0.83 / 1.00 | 0.70 / 1.00 | 0.48 / 1.00 |
+| B | 0.73 / 0.73 | 0.73 / 0.73 | 0.94 / 0.73 | 0.98 / 0.94 | 1.00 / 0.98 | 0.99 / 1.00 | 0.91 / 1.00 | 0.81 / 1.00 | 0.74 / 1.00 | 0.56 / 1.00 |
+| v3 | 0.00 / 0.00 | 0.00 / 0.00 | 0.00 / 0.00 | 0.00 / 0.00 | 1.00 / 0.00 | 1.00 / 1.00 | 1.00 / 1.00 | 1.00 / 1.00 | 1.00 / 1.00 | 1.00 / 1.00 |
+
+- **Dark hulls (luma 10-20):** 24-27% of v3.1's silhouette edge, its
+  unlit dark-armour edge, does not read. The fill was not brightened to fix
+  this (entry 28).
+- **Light hulls (luma 160):** the rims sit close to the hull's luma
+  (edgeVisible 0.48-0.56), but every edge pixel still differs by colour.
+- **v3's ink outline** reads on no hull darker than luma 50.
+
+For reference, board 01's own marine against its own wall: edgeVisible 0.79,
+edgeDE 0.73, mean luma 71 (v3.1: 59-66 phone).
+
+## 1b.7 Checks, reproducibility, cost
+
+- **Anchor check** (every cell, all densities, `build_rig_v31_preview.py`):
+  - 66 of 66 drawn muzzles within 1 px of the exported anchor (max 0.79 px
+    at d16, 0.65 at d23, 0.55 at d35).
+  - Hold A's anchors equal today's shot origin re-read from `src/config.js`
+    (2.4e-6 tiles); hold B's equal its mock bore and are flagged `mock`.
+  - **It binds on v3.1 too.** Gun R was re-rendered for hold A with its
+    mesh moved 0.15 tiles down the bore and every anchor left where the sim
+    puts it (`render.py --look v31 --falsify R`). Stand-right,
+    stand-up-right, stand-up and run-pass all fail at all three densities
+    (2.04-4.78 px off); the honest cells pass (0.19-0.79 px).
+- **Reproducible**, three independent renders of both holds (a scratch
+  build, the one-command build, a final clean one-command build):
+  - The 66 render passes are pixel-identical. Their PNG bytes differ only in
+    Blender's date and render-time stamps.
+  - Every cell is byte-identical: A `ebf8c99aecf7e94e1d6c9860b828a583c577a6897151dc17e19fc006d6b9e302`,
+    B `e4a4ace8f5badc3cabd7133d1aaf0a9d9b99a21f076f1d12a8650b4cd322f05a`
+    (sha256 over the cell PNGs).
+- **v3 untouched:** R and S at stand-right, stand-up-right and air-fall-down
+  were re-rendered and re-posted with the edited scripts; 18 of 18 cells are
+  byte-identical to the phase-1 build.
+- **One command:**
+  `nice -n 15 /opt/hb-art/bin/python -I tools/art/build_rig_v31_preview.py --scene <scene_capture.mjs dir>`
+  - Clean, at load average 24-35: 109 s (render 70 s for 22 frames in two
+    parallel jobs, post 15 s, packet 22 s).
+  - At load 45-58: 298 s (render 190 s, post 43 s, packet 61 s).
+  - The full inventory (71 poses x 5 guns) is 355 frames. Each costs the
+    same three passes as v3; v3's 355 took 54 min of render with three jobs
+    at load 55-90. Expect 15-60 min of render plus about 30 min of post,
+    depending on load.
+- **Gate:** `HB_GATE_FAST=1 node tools/pathcheck.mjs`: 4122 passed, 0 failed.
+
+## 1b.8 The packet — phone first (`reports/tasks/T-124/`)
+
+1. `v31-1-board-vs-sprite-phone.png`: board 01's marine box-downscaled to
+   v3.1's jump height (37 device px), next to v3.1 (jump, run) and v3 (the
+   before), per hold. True size on top, nearest x4 below. The operator's
+   own format.
+2. `v31-2-window-phone.png`: a true-size 844x390 device-px window of the
+   phone frame. Today, hold A and hold B idle; then the frozen firing frame
+   (the game's own flash) at 1x and x4.
+3. `v31-3-run-cycle-phone-4x.gif`: the six-beat run cycle at 300 ms per
+   stride (`src/pure/rig.js`), holds A and B side by side, on the real
+   hull.
+4. `v31-4-holds-phone-1x.png` and `-4x.png`: today, A and B over six poses.
+   `v31-4-holds-desktop-1x.png` and `-4x.png` hold the same at desktop.
+5. `v31-5-hitbox-phone-4x.png`: the sim hitbox and both bore lines over
+   today, v3, A and B.
+
+Evidence: `board01-swatches.png` / `.json`, `measure-v31.json`.
+
+## 1b.9 Limitations, stated plainly
+
+- **Preview scope:** gun R, eleven poses. The other four guns, the crouch,
+  climb, down aims and the per-gun identity parts are not re-made. The full
+  inventory waits for the operator's yes.
+- **Hold B is a mock:** its anchors sit on a 1.28 bore that the sim does not
+  have. In the game today the flash and the shots would leave 0.23 tiles
+  below B's gun.
+- **Gun length:** the shouldered gun is 0.92 tiles (v3's R 1.32). Board
+  01's rifle reaches about 1.1 tiles ahead of the shoulder, estimated by
+  taking the marine as 2 tiles tall. A shoulder pivot
+  cannot put more gun ahead of RIG than the sim's barrel.
+- **Boots:** in hold A they dip 0.04-0.09 tiles (1-2 px at d23) below the
+  deck line. The foot solve does not yet clamp the sole to the deck.
+- **Board 01 measurement:** the box's lower-left corner holds the rear boot,
+  where the jet flame starts (23 of 896 mask pixels; 6 of the 117 bright
+  ones). Excluding it moves the bright swatches by at most 5 per channel
+  (`#d9a767` to `#d8a564`).
+- **Readability coverage:** measured on one captured deck (both framings)
+  plus flat backgrounds. The darkest hull elsewhere in the climb is not
+  sampled, and the phone frame is still the centre crop of the FAR shot
+  without T-107's lift.
+- **Not covered by the metrics:** they measure edges and value, not
+  whether RIG reads as a person or as board 01's marine. That is the
+  operator's call.
+
+## 1b.10 Open look questions for the operator (non-leading)
+
+1. In `v31-1-board-vs-sprite-phone.png`, board 01's marine sits next to
+   v3.1 at the same on-screen height. What still separates them for you?
+2. Hold A keeps today's firing line and draws RIG crouched (about 1.6 tiles
+   tall). Hold B raises the firing line, a sim change, and stands him at
+   about 1.84. In `v31-4-holds-phone-4x.png` and the run GIF, which would
+   you build on, and what decides it?
+3. In the true-size phone window (`v31-2-window-phone.png`), how does v3.1
+   read against the hull, compared with today's RIG?
+4. Board 01 shows a flare at the marine's feet in the air. The game draws
+   none, and a check asserts it stays that way. Should RIG have one?
+5. The shouldered rifle is shorter than v3's (0.92 vs 1.32 tiles) because
+   the sim's barrel length caps it. At true size, can you tell where the
+   gun points in each pose?
+
+## 1b.11 PROPOSED INBOX ISSUES
+
+## I-??? | render | S3 | repro: board 01 (foot-jet flare) vs `tools/player-presentation-check.mjs:157` | evidence: decisions entry 28 bullet "foot-jet flare in the air"; src/render/player.js `jumpExhaust: false`
+Entry 28 reads a foot-jet flare into board 01's marine. A presentation check
+added in 5fee529 asserts that RIG has no jump-propulsion visual
+(`jumpFlare`, `jumpExhaust: true`, `jetExhaust`). Both cannot hold. The art
+lane does not bake effects the game would draw. Direction: the operator
+decides. If yes, a render-layer effect keyed to jump and air-jump events
+replaces the guard with its own decision entry; if no, entry 28's list drops
+the flare.
+
+## I-??? | sim | S2 | repro: T-124 phase 1b hold B (`tools/art/rig/poses_v31.py` B_SOCKET_Y 1.28) | evidence: reports/tasks/T-124/v31-2-window-phone.png (firing strip), v31-5-hitbox-phone-4x.png
+Only if the operator picks hold B. A shouldered RIG standing at about 1.84
+tiles needs the firing line at about 1.28 tiles (`CONFIG.player.muzzleY`,
+today 1.05). That moves every shot's origin by 0.23 tiles, and so which
+level shots hit low hostiles. The crouch prototype's firing gap is asserted
+in pathcheck. Direction: a decision entry, then a sim task that moves the
+bore with its assertions; the art follows by changing B_SOCKET_Y alone.
+
+## I-??? | art | S3 | repro: v3.1 `R:stand-up`, `R:stand-up-right` (both holds) | evidence: reports/tasks/T-124/v31-4-holds-phone-4x.png rows "aim up-right", "aim up"
+With the rifle pivoting on the shoulder:
+- the vertical aim stands the gun beside the helmet
+- the far hand slides 0.24 tiles down the fore-end
+- the up-right gun reads as a short wedge at the helmet
+Readable direction is the question. Direction: for the full inventory, judge
+these against the board family. Options: a hip-to-shoulder transition for
+steep aims, or a raised-elbow pose for the vertical aim, each re-checked
+against the 1 px anchor rule.
+
+## 1b.12 Commits, and the single best next action
+
+- **Commits on `task/T-124`** (not merged):
+  - `c918d9d`: v3.1 tooling (`board_palette.py --b01`, `palette_v31.py`,
+    `poses_v31.py`, `render.py` / `post.py --look v31`, `packet_v31.py`,
+    `build_rig_v31_preview.py`, README)
+  - the commit that carries this section: the packet, `measure-v31.json`,
+    the board-01 swatch evidence
+- **Fences:** nothing outside `tools/art/` and `reports/tasks/T-124/`
+  changed in phase 1b. No server was started: the packet reuses phase 1's
+  captures.
+- **Single best next action:** put `v31-1-board-vs-sprite-phone.png`,
+  `v31-4-holds-phone-4x.png` and `v31-3-run-cycle-phone-4x.gif` in front of
+  the operator with the five questions. On a look yes with a hold chosen,
+  make the full inventory in the chosen hold for all five guns and re-run
+  the anchor check and falsification; if the hold is B, a sim decision comes
+  first. On a look no, his answer to question 1 is the brief for v3.2.

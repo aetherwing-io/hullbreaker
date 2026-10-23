@@ -85,7 +85,7 @@ RAMPS = {
     'gun_m':     [B('dark0'), B('dark2'), B('dark3'), B('dark4'), B('dark4'), B('bright2'), B('bright0'), B('dark0')],
     'gun_d':     [B('dark2'), B('dark3'), B('dark4'), B('dark4'), B('dark4'), B('bright2'), B('bright0'), B('dark2')],
     'gun_rust':  [B('rust1'), B('rust2'), B('rust3'), B('rust4'), B('dark3'), B('rust0'), B('bright0'), B('rust1')],
-    # the salvage pack: board 01's marine carries a rust block on his back
+    # the salvage pack: board 01 shows a rust/tan block at the marine's back (the pack or the far pauldron)
     'pack':      [B('rust2'), B('rust3'), B('rust4'), B('dark2'), B('dark3'), B('rust0'), B('bright0'), B('rust2')],
 }
 RIM, HOT, KICK = 5, 6, 7
