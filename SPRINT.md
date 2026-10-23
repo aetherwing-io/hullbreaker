@@ -399,7 +399,13 @@ under `tools/orch/`. No changes to `tools/pathcheck/`, `src/`, or any check.
 verify: re-run the instrumented timing and the mutation sample; numbers match
 the doc
 
-## T-109 | art | doing | P1
+## T-109 | art | done | P1
+
+STATUS 2026-10-23: phase A + the A2 spike delivered (`task/T-109` f2e6ef9,
+`reports/tasks/T-109/spike.md`). Operator verdict recorded as decisions entry 27
+(B/D in board colours; CC0 + pipeline). The branch is NOT merged: its v2 atlases
+are rejected (entry 26) and its `tools/art/` + reports land with T-124. Phase B
+below is superseded by T-123 (crisp path) and T-124 (RIG v3).
 
 goal: prove the 3D -> sprite pipeline (entry 22) on the two sprites a player
 looks at most — RIG with all five weapons, and the wasp — so guns are in hands
@@ -437,6 +443,13 @@ verify: the one-command build reproduces byte-identical atlases; the anchor
 check; pathcheck green after phase B
 
 ## T-120 | harness | doing | P1
+
+STATUS 2026-10-23: checkpoint 1 (7064c00) review REQUEST_CHANGES
+(`reports/tasks/T-120/review.md`): play-gate's slow-run INCONCLUSIVE rule skips
+the art-blocked run's error/panel checks; GPU-host perf step measures `--root`
+(main) not the worktree; `enemy-ecology-render-check.mjs` deleted though 28/39
+of its assertions run code (+ `makeResetRegistry` unit). Fix round after the
+playtest gate reports.
 
 goal: rebuild the gate per T-108's revised audit
 (`docs/proposals/2026-10-test-audit.md` at task/T-108 8d80f10, §7 and §10): a
@@ -485,7 +498,87 @@ earlier or graded hand-off; judged in `tools/playtest/turn-pose-capture.mjs`
 frames t680/t700 at desktop and 844x390. Static anatomy (entry 3) binds.
 owner: asset-artist + gameplay-engineer. Dispatch after T-107 and T-109.
 
-## T-201 | feature | doing | P1
+## T-123 | render | todo | P1
+
+goal: the crisp sprite path (decisions entry 27; `reports/tasks/T-109/spike.md`
+§3-§4 on `task/T-109`): every atlas-drawn actor is drawn unlit at full gain,
+nearest-neighbour, mip-free, at a density chosen per device and snapped to the
+device pixel grid, so art arrives as authored. Today's art is the first input
+(spike column A); T-124's RIG v3 is the next.
+accept:
+- [ ] Gain: RIG's per-channel gain vs its atlas, measured in-game with the
+      spike's method (RIG-free difference frames, `tools/art/spike/measure.py`),
+      is 1.00 +/- 0.03 on R, G and B at 1280x720 and 844x390 (today
+      0.81/0.76/0.62). Falsifier: restore the lit material -> red.
+- [ ] No resample: canvas backing size == css size x the chosen device ratio,
+      with no compositor scale, at DPR 1, 2 and 3 (today desktop 1.25x then
+      x0.8; DPR 3 capped at 2.2x then upscaled x1.36). If the 3D scene cannot
+      afford full DPR 3 (entry 18), the sprite layer still lands on device
+      pixels and the lane states how. Falsifier: reinstate the 2.2 cap -> red.
+- [ ] Grid snap: each sprite quad's projected left/top edges land on integer
+      device pixels and its texel-to-pixel scale is an integer, or the
+      deviation is stated per actor; asserted by a pure helper plus a browser
+      probe. Falsifier: a half-pixel offset -> red.
+- [ ] Silhouette-edge visibility and gun-edge contrast at true size >= the
+      spike's column A on the real background, desktop FAR and phone framing.
+- [ ] No gun-in-hand regression (`tools/rig-grip/capture.mjs`, L/R parity).
+- [ ] Frame cost vs today at the same viewports (reported; GPU-less host).
+- [ ] `?art=legacy` restores today's path exactly (same frame at a fixed
+      tick); the crisp path is ON by default (entry 27).
+- [ ] Sim untouched: fingerprints identical; layer purity; determinism.
+- [ ] Operator packet: iPhone landscape + desktop URLs (default vs
+      `?art=legacy`) and 3-5 non-leading questions.
+owner: gameplay-engineer
+fences: the actor sprite path in `src/render/` (player, enemy and pickup
+sprite drawing, atlas texture setup), `src/pure/render-budget.js` (pixel-ratio
+policy), a new `src/pure/` grid-snap helper, `src/mode.js` (the flag line), new
+checks/captures. NOT: `src/render/camera.js`/`atmosphere.js` (T-107),
+`index.html`/`src/ui/` (T-105), `src/sim/`, art assets (T-124).
+verify: `HB_GATE_FAST=1 node tools/pathcheck.mjs`; the spike metrics on
+in-game captures; rig-grip capture; both smoke scripts.
+
+## T-124 | art | todo | P1
+
+goal: RIG v3 (decisions entry 27): the CC0 soldier from the A2 spike (B/D),
+toon-shaded in the concept boards' warm khaki/rust, every pose the game draws,
+the five guns placed on the sim's shot line first, anchors exported, at the
+densities T-123 chooses, judged at true size on the real hull.
+phase 1 (no `src/` changes):
+- [ ] Branch from `task/T-109`; first commit removes the rejected v2 atlases
+      (`assets/generated/sprites/art-v2/`) and their `assets/manifest.json`
+      entries; the spike's `tools/art/` is kept and becomes the build.
+- [ ] Palette from the boards (01/13 for RIG): measured swatches with their
+      board coordinates; the hull-separation rule of entry 27 — RIG's fill
+      separates from the hull behind it by >= 40 luma or a stated better
+      metric on the real background, at desktop FAR and phone framing.
+- [ ] The full frame inventory the game draws today (from `src/pure/rig.js`
+      and `src/render/player.js`) x 5 guns, one-command reproducible build,
+      provenance (`tools/art/spike/cc0.json`) for every source.
+- [ ] Anchor check: drawn muzzle pixel vs exported anchor within 1 px in every
+      frame; it binds (offset one gun -> red).
+- [ ] Packet: today vs v3 at true size on the real background, desktop and
+      phone, plus 4x; run-cycle GIF.
+phase 2 (after T-123 merges; the integrator says so): wire v3 into the crisp
+path, ON by default, `?art=legacy` = today; in-game captures; operator packet.
+owner: asset-artist (phase 2 wiring: gameplay-engineer)
+fences: `tools/art/`, `assets/generated/sprites/*v3*`, the manifest entries it
+adds; phase 2 only: the atlas selection in the render layer.
+verify: the build reproduces byte-identical atlases; the anchor check;
+pathcheck green after phase 2.
+
+## T-125 | art | todo | P2
+
+goal: enemies through the same route (entry 27), wasp first (the spike's CC0
+hornet), then hound, polyp, mortar, carrier; kit-bashed CC0 where nothing fits;
+judged against board 06. Dispatch after the operator has seen T-124 in-game.
+owner: asset-artist
+
+## T-201 | feature | review | P1
+
+STATUS 2026-10-23: built (`task/T-201` d699627, `reports/tasks/T-201/build.md`);
+boxes 1-3, 6-11 met, box 4 met with a 1.7% caveat at the 6% frame, box 5 NOT met
+at portrait (skipping is free there; landscape is the target, entry 20
+addendum). Gates dispatched. Merge renumbers its pathcheck domain d79 -> d81.
 
 goal (M1): gate beats are always visible, fightable and bounded — full block
 in `docs/proposals/2026-10-race-to-the-top.md` §7 "T-201".
