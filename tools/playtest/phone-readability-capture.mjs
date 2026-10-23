@@ -5,7 +5,7 @@
  *
  *   node tools/playtest/phone-readability-capture.mjs --base-url http://127.0.0.1:8776 \
  *     --viewport 844x390 --dpr 2 --touch [--query view=far] --marks 9000,15000,21000 \
- *     --out <dir> [--tag phone] [--runup-scale 2] [--root <tree>]
+ *     --out <dir> [--tag phone] [--runup-scale 2] [--root <tree>] [--boot-attempts 3]
  *
  * Boots the shipped run deterministically (?testapi=1&fixeddt=16.667, the
  * frame-input bootstrap: right + fire held, a jump every 0.9 s — the same
@@ -66,22 +66,46 @@ for (let t = 600; t < lastMark + 2000; t += 900) {
 
 await mkdir(out, { recursive: true });
 const { browser } = await launchBrowser({ channel: 'chrome' });
-const context = await browser.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: dpr,
-  hasTouch: touch, isMobile: touch });
-const page = await context.newPage();
-if (runupScale > 1) await page.setViewportSize(small);
+// Boot, and re-boot while any art asset missed the boot preload gate: on a
+// loaded host the gate (6.5 s on touch) can close first, and the page then
+// draws the documented fallback for the whole run — which would make a
+// readability photo a picture of the fallback. Up to --boot-attempts boots;
+// every attempt's preload record goes in the sidecar.
+const bootAttempts = Math.max(1, +opt('boot-attempts', '3'));
+const preloadLog = [];
+let context = null, page = null;
 const errors = [];
-page.on('pageerror', (e) => errors.push(String(e && e.stack || e)));
-page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
-await page.addInitScript((payload) => {
-  Object.defineProperty(globalThis, '__HULLBREAKER_INPUT_BOOTSTRAP__', { value: payload, configurable: true, writable: false });
-}, { version: 1, events, stopAtMs: lastMark + 2000 });
-const t0 = Date.now();
-await page.goto(`${baseUrl}/index.html?testapi=1&fixeddt=16.667&audio=0${query ? '&' + query : ''}`,
-  { waitUntil: 'domcontentloaded', timeout: bootMs });
-await page.waitForFunction(() => globalThis.HB && HB.state() === 'PLAYING', null, { timeout: bootMs, polling: 500 });
+for (let attempt = 1; attempt <= bootAttempts; attempt++) {
+  context = await browser.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: dpr,
+    hasTouch: touch, isMobile: touch });
+  page = await context.newPage();
+  if (runupScale > 1) await page.setViewportSize(small);
+  errors.length = 0;
+  page.on('pageerror', (e) => errors.push(String(e && e.stack || e)));
+  page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
+  await page.addInitScript((payload) => {
+    Object.defineProperty(globalThis, '__HULLBREAKER_INPUT_BOOTSTRAP__', { value: payload, configurable: true, writable: false });
+  }, { version: 1, events, stopAtMs: lastMark + 2000 });
+  const t0 = Date.now();
+  await page.goto(`${baseUrl}/index.html?testapi=1&fixeddt=16.667&audio=0${query ? '&' + query : ''}`,
+    { waitUntil: 'domcontentloaded', timeout: bootMs });
+  await page.waitForFunction(() => globalThis.HB && HB.state() === 'PLAYING', null, { timeout: bootMs, polling: 500 });
+  const preload = await page.evaluate(() => {
+    const p = globalThis.__HB_PRELOAD ? __HB_PRELOAD() : null;
+    if (!p) return null;
+    const assets = (p.assets || []).map((a) => ({ url: String(a.url || '').split('/').pop(), state: a.state }));
+    return { budgetMs: p.budgetMs, notReady: assets.filter((a) => a.state !== 'ready') };
+  });
+  preloadLog.push({ attempt, bootS: Math.round((Date.now() - t0) / 1000), preload });
+  log('booted', `${vw}x${vh}@${dpr}`, touch ? 'touch' : 'mouse', query, `${Math.round((Date.now() - t0) / 1000)} s`,
+    'preload notReady:', JSON.stringify(preload && preload.notReady.map((a) => a.url)));
+  if (!preload || !preload.notReady.length || attempt === bootAttempts) break;
+  await context.close().catch(() => {});
+}
+const lastPreload = preloadLog[preloadLog.length - 1].preload;
+if (lastPreload && lastPreload.notReady.length)
+  errors.push(`art missed the boot preload gate on every attempt: ${lastPreload.notReady.map((a) => a.url).join(', ')}`);
 page.setDefaultTimeout(bootMs);
-log('booted', `${vw}x${vh}@${dpr}`, touch ? 'touch' : 'mouse', query, `${Math.round((Date.now() - t0) / 1000)} s`);
 const shots = [];
 for (const mark of marks) {
   // run until the mark on the game's own clock, then pause in-page
@@ -147,7 +171,7 @@ for (const mark of marks) {
   await page.waitForFunction(() => HB.state() === 'PLAYING', null, { timeout: 120000 });
 }
 await writeFile(resolve(out, `${tag}-${vw}x${vh}-dpr${dpr}.json`), JSON.stringify({ tool: 'tools/playtest/phone-readability-capture.mjs',
-  baseUrl, viewport: { vw, vh, dpr, touch }, query, marks, runupScale, errors, shots }, null, 1));
+  baseUrl, viewport: { vw, vh, dpr, touch }, query, marks, runupScale, preload: preloadLog, errors, shots }, null, 1));
 await browser.close();
 if (server) await server.close();
 process.exit(errors.length ? 1 : 0);

@@ -1,0 +1,44 @@
+{
+ "tool": "tools/rig-grip/capture.mjs (main 9bedbaa export; second tree = the same with render/player.js portraitGain = 1)",
+ "views": "portrait 390x844 DPR 2, weapon R, rows stand/run-contact/climb-1, 16 aims",
+ "runs": {
+  "main": {
+   "label": "main (gain 1.5)",
+   "summary": {
+    "cells": 48,
+    "fistToGripCssPx": {
+     "max": 0.012,
+     "mean": 0.008250000000000004
+    },
+    "muzzleToSpawnCssPx": {
+     "max": 0.104,
+     "mean": 0.04983333333333334
+    },
+    "stretch": {
+     "max": 1.476,
+     "over1_05": 30
+    },
+    "hidden": 0
+   }
+  },
+  "gain1": {
+   "label": "portrait gain removed",
+   "summary": {
+    "cells": 48,
+    "fistToGripCssPx": {
+     "max": 0.01,
+     "mean": 0.007895833333333336
+    },
+    "muzzleToSpawnCssPx": {
+     "max": 0.104,
+     "mean": 0.04983333333333334
+    },
+    "stretch": {
+     "max": 1,
+     "over1_05": 0
+    },
+    "hidden": 0
+   }
+  }
+ }
+}
