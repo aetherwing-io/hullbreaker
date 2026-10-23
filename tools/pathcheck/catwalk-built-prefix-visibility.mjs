@@ -59,6 +59,7 @@ export async function run() {
       (2 * CONFIG.path.turnDeg) < 0.96) handoffMs++;
   const partial = shipped.platforms.find((p) => p.id === 'pocket-shelf-f3');
   const partialSegments = splitPlatform(partial.x0, partial.x1);
+  LV.unbuildFutureFaces();                              // the boot/reset row, as shipped
   const drawnWithCamera = (cameraFacet) => partialSegments.filter((segment) => routeRenderOwned(
     segment.s, LV.columnBuilt(Math.floor(segment.s)), HALT_S[1], cameraFacet, CONFIG, BEND_S)).length;
   ok(handoffMs === 690 && partial.x0 === CORNER_S[1] + 29 && partial.x1 === CORNER_S[1] + 34 &&

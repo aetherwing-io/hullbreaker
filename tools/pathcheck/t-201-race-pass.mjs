@@ -277,8 +277,8 @@ export function pureChecks() {
     let first = 0;
     while (cornerYawDeltaDeg(first, CONFIG) / (2 * CONFIG.path.turnDeg) < FOLD_HANDOFF_PROGRESS) first++;
     ok(!!m && Number(m[1]) === FOLD_HANDOFF_PROGRESS && cornerHandoffMs(CONFIG) === first && first === 690,
-      `T-201: ?hinge=flow releases RIG at the camera's own fold hand-off (${first} ms, progress ` +
-      `${FOLD_HANDOFF_PROGRESS} in both waves.js and render/camera.js)`);
+      `T-201: ?hinge=flow releases RIG at the camera's own fold hand-off (${first} ms; progress ` +
+      `${FOLD_HANDOFF_PROGRESS} in waves.js, ${m ? m[1] : 'not found'} in render/camera.js)`);
   }
 
   // the sim-side zipper is gone (entry 25): no build schedule, no settling

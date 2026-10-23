@@ -5,9 +5,10 @@
    HELD gate — the whole roster primed 18 tiles before the halt, survivors
    holding the corner at the halt — which is now the `?gates=legacy` escape
    hatch, so every child runs with gates=legacy and still guards it verbatim.
-   The default rolling corner's equivalents (the teach beat is the only body
-   primed; nothing holds the corner; CONTAIN's Irises keep their reviewed
-   sockets) are asserted in tools/pathcheck/t-201-race-pass.mjs. */
+   The default rolling corner's equivalents — beats released one at a time
+   (the teach beat on proximity or today's prelude rule), nothing holding the
+   corner, an authored socket used verbatim whenever it lies inside the live
+   view — are asserted in tools/pathcheck/t-201-race-pass.mjs. */
 
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';

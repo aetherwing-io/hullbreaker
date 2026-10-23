@@ -34,7 +34,8 @@ const only = opt('only', '') ? new Set(opt('only', '').split(',')) : null;
 const work = opt('work', '') || mkdtempSync(join(tmpdir(), 't201-falsify-'));
 const keep = argv.includes('--keep');
 
-// [id, what it breaks, file, find, replace, guarding runs (regex | 'none'), expected FAIL regex]
+// [id, what it breaks, file, find, replace, guarding runs (regex | 'none'), expected FAIL regex,
+//  optional: another pathcheck domain to run instead of t-201-race-pass.mjs]
 const ORACLE_DESKTOP = '^oracle:desktop-16x10::';
 const SKIP_PHONE = '^skip:phone-landscape::';
 const ROWS = [
@@ -65,7 +66,7 @@ const ROWS = [
     'none', /waits exactly its 6000 ms bound/],
   ['F7b', 'the beat bound is the old 300 s lock (played: a slow player)', 'src/pure/waves.js',
     'beatBoundMs: 6000,', 'beatBoundMs: 300000,',
-    '^floor:desktop-16x10::', /\[carried s\d [^\]]+\] BEATS/],
+    '^floor:[^:]+::', /\[carried s\d [^\]]+\] BEATS/],
   ['F8', 'the encounter line outgrows its slot', 'src/pure/waves.js',
     '`${n(s.following)} FOLLOWING → ${s.nextPhase}`', '`${n(s.following)} SURVIVORS FOLLOWING → ${s.nextPhase}`',
     'none', /fits the ~28-character HUD slot/],
@@ -97,6 +98,18 @@ const ROWS = [
     'leadDaylight: FOLLOW_ENABLED ? followLineDaylight(c) : undefined,',
     'leadDaylight: FOLLOW_ENABLED ? (EDGE_R - EDGE_L) - followLeadTiles(EDGE_R - EDGE_L, CONFIG.follow) - 2 * player.hw : undefined,',
     '^oracle:phone-landscape::', /BANK/],
+  // The two KEPT legacy checks re-modelled off zipperOffset (dispatch item 4):
+  // their protected property is that the default reveal draws the arriving
+  // facet whole at the hand-off and the pre-bend column before the turn. They
+  // run their own (static) domains, not the T-201 one.
+  ['L1', 'the six-face run starts its future faces unbuilt again (future-facet ownership)', 'src/sim/level.js',
+    '  if (IS_TRAVERSAL_SLICE) {\n    let changed = false;', '  {\n    let changed = false;',
+    'none', /pre-bend column \(the deck RIG fights from\) is built|draws all \d+ arrival rows/,
+    'future-facet-render-ownership.mjs'],
+  ['L2', 'the six-face run starts its future faces unbuilt again (catwalk at the hand-off)', 'src/sim/level.js',
+    '  if (IS_TRAVERSAL_SLICE) {\n    let changed = false;', '  {\n    let changed = false;',
+    'none', /arriving catwalk is drawn whole/,
+    'catwalk-built-prefix-visibility.mjs'],
 ];
 
 function copyTree() {
@@ -110,8 +123,8 @@ function runChild(args, env = {}) {
     (err, stdout, stderr) => resolve({ err, stdout, stderr })));
 }
 
-async function domainRun(runs) {
-  const domain = pathToFileURL(join(work, 'tools', 'pathcheck', 't-201-race-pass.mjs')).href;
+async function domainRun(runs, file = 't-201-race-pass.mjs') {
+  const domain = pathToFileURL(join(work, 'tools', 'pathcheck', file)).href;
   const ctx = pathToFileURL(join(work, 'tools', 'pathcheck', '_context.mjs')).href;
   const src = `
     const { counts } = await import(${JSON.stringify(ctx)});
@@ -136,15 +149,24 @@ console.log(`work copy: ${work}`);
 const selected = ROWS.filter(([id]) => !only || only.has(id));
 const union = [...new Set(selected.map((r) => r[5]).filter((x) => x !== 'none'))];
 const b = await domainRun(union.length ? union.map((x) => `(?:${x})`).join('|') : 'none');
-const baselineGreen = !b.error && b.fails === 0;
-console.log(`baseline (unbroken copy, runs ${union.join(' | ') || 'none'}): ` + (b.error ? 'ERROR ' + b.error
-  : `${b.passes} passed, ${b.fails} failed, ${b.wallS} s`) + (baselineGreen ? '' : ' — NOT GREEN'));
+let baselineGreen = !b.error && b.fails === 0;
+console.log(`baseline (unbroken copy, t-201-race-pass.mjs, runs ${union.join(' | ') || 'none'}): ` +
+  (b.error ? 'ERROR ' + b.error : `${b.passes} passed, ${b.fails} failed, ${b.wallS} s`) +
+  (baselineGreen ? '' : ' — NOT GREEN'));
 if (!baselineGreen) for (const e of (b.errs || []).slice(0, 5)) console.log('   ', e.slice(0, 200));
+for (const file of new Set(selected.map((r) => r[7]).filter(Boolean))) {
+  const x = await domainRun('none', file);
+  const green = !x.error && x.fails === 0;
+  baselineGreen = baselineGreen && green;
+  console.log(`baseline (unbroken copy, ${file}): ` + (x.error ? 'ERROR ' + x.error
+    : `${x.passes} passed, ${x.fails} failed`) + (green ? '' : ' — NOT GREEN'));
+  if (!green) for (const e of (x.errs || []).slice(0, 5)) console.log('   ', e.slice(0, 200));
+}
 console.log('| row | what is broken | file | guarding runs | went red? | evidence |');
 console.log('| --- | --- | --- | --- | --- | --- |');
 const pristine = new Map();
 const results = [];
-for (const [id, what, file, find, replace, runs, expect] of selected) {
+for (const [id, what, file, find, replace, runs, expect, domainFile] of selected) {
   const path = join(work, file);
   if (!pristine.has(file)) pristine.set(file, readFileSync(path, 'utf8'));
   const text = pristine.get(file);
@@ -154,7 +176,7 @@ for (const [id, what, file, find, replace, runs, expect] of selected) {
     continue;
   }
   writeFileSync(path, text.replace(find, replace));
-  const r = await domainRun(runs);
+  const r = await domainRun(runs, domainFile);
   writeFileSync(path, text);                       // restore before the next row
   const fails = r.error ? [] : (r.errs || []).filter((e) => e.startsWith('FAIL') || e.startsWith('THREW'));
   const hit = fails.find((e) => expect.test(e)) || null;
@@ -162,7 +184,8 @@ for (const [id, what, file, find, replace, runs, expect] of selected) {
   results.push({ id, applied: true, red });
   const evidence = r.error ? 'ERROR ' + r.error
     : `${hit ? hit.slice(0, 260) : 'no FAIL matching ' + expect} (${r.passes} passed, ${r.fails} failed, ${r.wallS} s)`;
-  console.log(`| ${id} | ${what} | ${file} | \`${runs}\` | ${red ? 'YES' : 'NO'} | ${evidence.replace(/\|/g, '/')} |`);
+  const guard = domainFile ? `${domainFile} (static)` : `\`${runs}\``;
+  console.log(`| ${id} | ${what} | ${file} | ${guard} | ${red ? 'YES' : 'NO'} | ${evidence.replace(/\|/g, '/')} |`);
 }
 const bad = results.filter((r) => !r.applied || !r.red);
 console.log(bad.length ? `\n${bad.length} row(s) did not bind: ${bad.map((r) => r.id).join(', ')}`

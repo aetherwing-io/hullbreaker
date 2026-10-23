@@ -56,7 +56,7 @@ const ROWS = [
     { policy: 'run', viewport: 'phonePortrait', gunnerMode: 'paced', paceMs: 1400, maxTicks: 60 * 240,
       query: 'gates=legacy&follow=0', expect: ['gateBlind'], expectNotVictory: true }],
   ['P3', 'pre-fix: the approach dolly can rewind the scroll on a resize', 'src/sim/scroll.js',
-    'setScrollX(Math.max(scrollX, Math.min(nextScroll, target)));', 'setScrollX(Math.min(nextScroll, target));',
+    'let next = Math.max(scrollX, Math.min(nextScroll, target));', 'let next = Math.min(nextScroll, target);',
     { policy: 'resize-approach-late', viewport: 'narrowTall', expect: ['scrollBackwards'] }],
   // T-201 replaces P4 (the default reveal reading the zipper's construction
   // rows): the sim no longer keeps those rows, so that render path cannot draw
@@ -107,9 +107,12 @@ const ROWS = [
     'if (tMs < T.t4) { const u = (tMs - T.t3) / W.snap2Ms; return snap + snap * easeOutBack(u, W.backS); }',
     'if (tMs < T.t4) return snap * 2;',
     { policy: 'run', viewport: 'desktop', expect: ['cameraYawJump'] }],
+  // T-201: under the follow-lead (default) the plane follows RIG, so a racer
+  // never reaches the right clamp and loosening it changes nothing a run can
+  // see; the clamp is exercised where it still binds, on ?follow=0.
   ['M11', 'the screen clamp lets RIG run three tiles off-frame', 'src/config.js',
     'edges: { margin: 0.4, killY: -7 },', 'edges: { margin: -3, killY: -7 },',
-    { policy: 'run', viewport: 'desktop', query: 'momentum=0', expect: ['rigOffScreen'] }],
+    { policy: 'run', viewport: 'desktop', query: 'momentum=0&follow=0', expect: ['rigOffScreen'] }],
   ['M12', 'a popped weapon settles half a tile into the deck', 'src/sim/capsules.js',
     '{ c.y = g + 0.3; c.vy = 0; c.vx *= 0.8; }', '{ c.y = g - 0.5; c.vy = 0; c.vx *= 0.8; }',
     { policy: 'pop-weapon-at-hinge', viewport: 'desktop', expect: ['capsuleThroughDeck'] }],

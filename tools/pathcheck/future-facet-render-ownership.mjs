@@ -48,6 +48,7 @@ export async function run() {
   // from the SIM's own build query: the pre-bend column is drawn before the
   // turn, and the camera-owned hull around it with it.
   {
+    LV.unbuildFutureFaces();                            // the boot/reset row, as shipped
     const preBend = BEND_S[0] - 0.5;
     const builtPre = LV.columnBuilt(Math.floor(preBend));
     ok(routeRenderOwned(BEND_S[0] - 1.5, LV.columnBuilt(Math.floor(BEND_S[0] - 1.5)), HALT_S[0] - 11,
