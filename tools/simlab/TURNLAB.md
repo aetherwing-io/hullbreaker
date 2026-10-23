@@ -26,7 +26,7 @@ node tools/simlab/turnlab.mjs run --policy run --viewport phonePortrait --query 
 node tools/simlab/turnlab.mjs run --policy run --viewport phonePortrait --gunner paced --pace 1400 --max-ticks 21600
 node tools/simlab/turnlab.mjs poses --viewport phoneLandscape > /tmp/poses.json
 node tools/simlab/turnlab-falsify.mjs                         # 32 rows (T-201: P4 -> Z1, N1-N6, N8); minutes
-node tools/simlab/turnlab-falsify.mjs --fast-domain --only P1,P2,P3   # the per-edit tier binds
+node tools/simlab/turnlab-falsify.mjs --fast-domain --only P1,P3,N1,N2,N3,N4,N6,N8   # the per-edit tier binds
 ```
 
 The gate is `tools/pathcheck/t-102-corner-turns.mjs`, which runs inside
@@ -37,22 +37,26 @@ The gate is `tools/pathcheck/t-102-corner-turns.mjs`, which runs inside
   hatch `?gates=legacy&follow=0` with the paced gunner at three viewports and
   `?gates=legacy` at 1280x720, and `?hinge=flow` at two). About 4.5 minutes on
   a loaded 4-core host (T-201 measured 267 s at load 40-49);
-- **per-edit** (`HB_GATE_FAST=1`): the same static guards plus 5 of the 50
+- **per-edit** (`HB_GATE_FAST=1`): the same static guards plus 4 of the 50
   played runs, one per fixed defect that only a played run can catch, and the
   operator's device: `die-at-hinge` @1280x720 (D1), the paced visible-only
   gunner @390x844 (D2's successor under rolling corners: never wait, every
-  staged body in frame), `resize-approach-late` @260x1000 (D3), `run`
-  @844x390, and (T-201) a never-firing `run` @844x390, one child per run.
-  Since T-120 each plays only its first corners and stops 3 s after the last
-  (turn-proof's `stopAfterCorner`, the column in `FAST_SUBSET`): D1, D3 and the
-  plain run two, D2 three (its gunner must meet three moving encounters), the
-  never-firing run five (its encounter must be staged on five sides). It prints
-  one `SKIP t-102-corner-turns: 45 of 50 …` line; the skipped runs and the
-  unplayed corners are not counted as passes. Its runs are drawn from the full
-  matrix with the same options as their full-matrix twins, plus the stop and a
-  cap of a minute of game time per corner: up to the stop they are the same
-  ticks (per-corner records compared, T-120 fix round 1), and the full matrix
-  still plays every corner.
+  staged body in frame), `resize-approach-late` @260x1000 (D3) and `run`
+  @844x390, one child per run. Since T-120 each plays only its first corners
+  and stops 3 s after the last (turn-proof's `stopAfterCorner`, the column in
+  `FAST_SUBSET`): D2 three (its gunner must meet three moving encounters), the
+  others two. T-201's never-firing `run` @844x390 is full-tier only since
+  T-120's per-edit budget pass: `t-201-race-pass` plays its own no-fire run at
+  844x390 per edit, and every `--fast-domain` row below binds without it. It
+  prints one `SKIP t-102-corner-turns: 46 of 50 …` line; the skipped runs and
+  the unplayed corners are not counted as passes. Its runs are drawn from the
+  full matrix with the same options as their full-matrix twins, plus the stop
+  and a cap of a minute of game time per corner: up to the stop they are the
+  same ticks (per-corner records compared, T-120 fix round 1; the last corner's
+  record differs only in counters the twin keeps adding after the stop), and
+  the full matrix still plays every corner. On the merged tree
+  `--fast-domain --only P1,P3,N1,N2,N3,N4,N6,N8` is red row for row; P2's held
+  gate lives on `?gates=legacy`, which only the full tier plays.
 
 `turnlab-falsify.mjs --fast-domain` uses that whole per-edit domain as every
 row's guard. It first checks the tier is green on the unbroken copy, then

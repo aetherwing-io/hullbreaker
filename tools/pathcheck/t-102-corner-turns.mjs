@@ -49,7 +49,8 @@
  * after that corner completes (the sim is deterministic: the same ticks up to
  * there) and capped at one minute of game time per corner played, so a wedged
  * gate fails fast. Falsified in fast mode:
- * `node tools/simlab/turnlab-falsify.mjs --fast-domain --only P1,P2,P3`.
+ * `node tools/simlab/turnlab-falsify.mjs --fast-domain --only P1,P3,N1,N2,N3,N4,N6,N8`
+ * (P2, the held gate, lives on `?gates=legacy`: full tier only).
  *
  * T-120 fix round 1 (playtest I-A, the per-edit hook at load ~50): the four
  * whole runs were 8.3 of the per-edit tier's ~25 CPU-s; the prefixes cost
@@ -146,7 +147,10 @@ const FAST_SUBSET = Object.freeze([
   ['run', 'phonePortrait', 'paced', 3],                // D2's successor: never wait, every body in frame
   ['resize-approach-late', 'narrowTall', 'oracle', 2], // D3: the scroll never rewinds
   ['run', 'phoneLandscape', 'oracle', 2],              // 844x390: the plain run on the primary device
-  ['run', 'phoneLandscape', 'none', 5],                // T-201: a run that never fires takes every corner
+  // T-201's no-fire run (`gunnerMode: 'none'` @844x390) is full-tier only since
+  // T-120's per-edit budget pass: t-201-race-pass plays its own no-fire run at
+  // 844x390 per edit (NO SOFTLOCK, every corner taken), and no turnlab-falsify
+  // row needs this one to go red per edit (P1, P3, N1-N4, N6, N8 bind without it)
 ]);
 const FAST_TICKS_PER_CORNER = 60 * 60;                 // the cap: a minute of game time per corner
 
@@ -177,7 +181,7 @@ export async function run() {
       `(HB_GATE_FAST=1 — per-edit tier; not counted as passes; unset it for the full matrix)`);
     ok(fast.length === FAST_SUBSET.length,
       `T-102: every fast-tier run is a run of the full matrix (${fast.length} of ${FAST_SUBSET.length} found)`);
-    // Five short runs: one child per run (up to one per core) so the tier
+    // Four short runs: one child per run (up to one per core) so the tier
     // finishes in about one run's wall time.
     await playedChecks(fast, Math.max(1, Math.min(fast.length, cpus().length)));
     return;

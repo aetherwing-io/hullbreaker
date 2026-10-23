@@ -2,7 +2,7 @@
 /* turnlab-falsify.mjs — prove every T-102 turn assertion BINDS.
  *
  *   node tools/simlab/turnlab-falsify.mjs [--only P1,M3] [--work <dir>] [--keep]
- *   node tools/simlab/turnlab-falsify.mjs --fast-domain --only P1,P2,P3
+ *   node tools/simlab/turnlab-falsify.mjs --fast-domain --only P1,P3,N1,N2,N3,N4,N6,N8
  *
  * --fast-domain swaps every row's guard for the whole pathcheck domain
  * (tools/pathcheck/t-102-corner-turns.mjs run()) in its per-edit tier,
