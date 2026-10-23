@@ -83,13 +83,16 @@ export const MUTANTS = [
     expect: 'it never moves before the lock elapses',
   },
   {
+    // T-127: re-aimed. M07 armed the rejected ?hook=1 by default; hook v1 was
+    // deleted under decisions.md entry 25 (no reader of ?hook is left), so it
+    // now breaks the surviving half of the same flags-off contract.
     id: 'M07', targetClass: 'CORE', kind: 'property',
-    site: 'tools/pathcheck/movement-verb-prototypes.mjs:66',
-    why: '?hook=1 stops being inert: the rejected hook arms by default in the traversal slice (CLAUDE.md: keep it inert)',
-    file: 'src/mode.js',
-    from: "export const HOOK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('hook') === '1';",
-    to: "export const HOOK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('hook') !== '0';",
-    expect: 'no ?hook / ?flow: every pace resolves exactly as it shipped',
+    site: 'tools/pathcheck/movement-verb-prototypes.mjs:47',
+    why: 'the unjudged ?flow=1 momentum spine resolves armed for every traversal pace without its flag (the flags-off contract; M07 aimed at ?hook=1 until entry 25 deleted it)',
+    file: 'src/pure/traversal.js',
+    from: '  const flow = opts.flow ? { ...TRAVERSAL_FLOW } : null;',
+    to: '  const flow = { ...TRAVERSAL_FLOW };',
+    expect: 'no ?flow: every pace resolves exactly as it shipped',
   },
   {
     id: 'M08', targetClass: 'CORE', kind: 'property',
@@ -335,15 +338,8 @@ export const MUTANTS = [
     to: 'timing: { retreatSeconds: 1.5, entryEdgeMarginTiles: 12, minExitMarginTiles: 8 },',
     expect: 'dare entry margin covers backtrack',
   },
-  {
-    id: 'M30', targetClass: 'RETIRED', kind: 'intended',
-    site: 'tools/pathcheck/snap-hook-driven-through-real-sim.mjs:207',
-    why: 'touch the rejected hook v1 (entry 5): lengthen its dangle 110 -> 160 ms',
-    file: 'src/pure/traversal.js',
-    from: '  hangMs: 110,              // the dangle. Auto-whips on expiry, always.',
-    to: '  hangMs: 160,              // the dangle. Auto-whips on expiry, always.',
-    expect: 'dangle',
-  },
+  // M30 (touch the rejected hook v1: lengthen its dangle) was removed by T-127:
+  // hook v1 and the assertions it obstructed were deleted under entry 25.
 
   /* ---------------------------- TAUTOLOGY --------------------------- */
   {
@@ -435,7 +431,7 @@ export const MUTANTS = [
   },
   {
     id: 'M39', targetClass: 'CORE', kind: 'property',
-    site: 'tools/pathcheck/snap-hook-driven-through-real-sim.mjs:257',
+    site: 'tools/pathcheck/flow-chain-crush-contract.mjs:157',
     why: '?flow=1: a hit no longer un-earns the momentum chain (the chain survives the damage path)',
     file: 'src/sim/player.js',
     from: '  if (FLOW_ENABLED) flowBreak();\n  player.hp -= amount;', to: '  player.hp -= amount;',
@@ -443,7 +439,7 @@ export const MUTANTS = [
   },
   {
     id: 'M39b', targetClass: 'CORE', kind: 'property',
-    site: 'tools/pathcheck/snap-hook-driven-through-real-sim.mjs:244',
+    site: 'tools/pathcheck/flow-chain-crush-contract.mjs:144',
     why: '?flow=1: neither a hit nor a lost life un-earns the momentum chain (both flowBreak calls removed — M39 removed only the hit one, and a lethal hit still breaks the chain through loseLife)',
     edits: [
       { file: 'src/sim/player.js', count: 1, from: '  if (FLOW_ENABLED) flowBreak();\n  player.hp -= amount;', to: '  player.hp -= amount;' },

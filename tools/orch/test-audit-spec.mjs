@@ -148,22 +148,22 @@ export const DOMAINS = {
       'pinned to exact millisecond beats.',
     ranges: [
       [52, 155, 'PURE-INVARIANT', 'one static path: continuity, unit steps, exact detents, climbing grade, silhouettes', ['fixture']],
-      [164, 164, 'CORE', 'no transition constant drives an assembly (static anatomy, entry 3)'],
-      [175, 175, 'PIN', 'ritual total exactly 990 ms'],
-      [176, 176, 'PURE-INVARIANT', 'ritual inside its 0.8-1.2 s budget'],
-      [177, 202, 'PIN', 'beats at 90/250/550/690/810 ms, exact snap values, overshoot peaks'],
-      [206, 236, 'PIN', 'scroll freeze / seam pull / resume ramp at exact values', ['fixture']],
-      [226, 226, 'PURE-INVARIANT', 'the ritual never scrolls the world backwards'],
-      [251, 373, 'PIN', 'cover / plate / vent choreography curves at exact beats (the sanctioned moving parts)', ['fixture']],
-      [310, 314, 'PURE-INVARIANT', 'the plate never swings back past its settle; relocks flush and stays'],
-      [382, 382, 'PURE-INVARIANT', 'a chamfer grants at most a stride of altitude'],
-      [394, 394, 'CORE', 'no sim file reads the cover choreography (sim/render separation) — regex over sim source'],
-      [400, 400, 'CORE', 'render/transform.js never calls assembly choreography (static anatomy, entry 3) — regex'],
-      [402, 402, 'PIN', 'no debris system in the transition render (no decision forbids debris)'],
-      [405, 406, 'PIN', 'atmosphere mix starts/ends at exact beats'],
-      [407, 581, 'PURE-INVARIANT', 'fixture integrity, gate geometry order, reachability, ecology', ['fixture']],
-      [524, 524, 'CORE', 'the fixture overrides no movement constant (frozen movement constants)'],
-      [564, 564, 'PIN', 'ecology stays exactly as simple as authored'],
+      [163, 163, 'CORE', 'no transition constant drives an assembly (static anatomy, entry 3)'],
+      [170, 170, 'PIN', 'ritual total exactly 990 ms'],
+      [171, 171, 'PURE-INVARIANT', 'ritual inside its 0.8-1.2 s budget'],
+      [172, 197, 'PIN', 'beats at 90/250/550/690/810 ms, exact snap values, overshoot peaks'],
+      [201, 231, 'PIN', 'scroll freeze / seam pull / resume ramp at exact values', ['fixture']],
+      [221, 221, 'PURE-INVARIANT', 'the ritual never scrolls the world backwards'],
+      [246, 368, 'PIN', 'cover / plate / vent choreography curves at exact beats (the sanctioned moving parts)', ['fixture']],
+      [305, 309, 'PURE-INVARIANT', 'the plate never swings back past its settle; relocks flush and stays'],
+      [377, 377, 'PURE-INVARIANT', 'a chamfer grants at most a stride of altitude'],
+      [389, 389, 'CORE', 'no sim file reads the cover choreography (sim/render separation) — regex over sim source'],
+      [395, 395, 'CORE', 'render/transform.js never calls assembly choreography (static anatomy, entry 3) — regex'],
+      [397, 397, 'PIN', 'no debris system in the transition render (no decision forbids debris)'],
+      [400, 401, 'PIN', 'atmosphere mix starts/ends at exact beats'],
+      [402, 576, 'PURE-INVARIANT', 'fixture integrity, gate geometry order, reachability, ecology', ['fixture']],
+      [519, 519, 'CORE', 'the fixture overrides no movement constant (frozen movement constants)'],
+      [559, 559, 'PIN', 'ecology stays exactly as simple as authored'],
     ],
   },
 
@@ -216,16 +216,16 @@ export const DOMAINS = {
   },
 
   'movement-verb-prototypes': {
-    scope: 'flag:hook=1 / flow=1',
-    mechanism: 'pure calls over hook/flow tables',
-    verdict: 'SPLIT',
-    default: 'RETIRED',
-    note: 'Snap hook v1 was judged and rejected (entry 5: keep it inert). Only the "flags off is the shipped game" check guards a live rule; FLOW is still an unjudged experiment.',
+    scope: 'flag:flow=1',
+    mechanism: 'pure calls over the flow table',
+    verdict: 'DEEP',
+    default: 'PURE-INVARIANT',
+    note: 'FLOW (?flow=1) is still an unjudged experiment; the "flags off is the shipped game" check guards the live rule that it stays off unless typed. ' +
+      'T-127 deleted the snap-hook v1 half (entry 5 rejected it, entry 25 released it): 22 hook-only sites went with the feature, and the three ' +
+      'SPLIT sites lost their hook conjuncts (SITES).',
     ranges: [
-      [66, 66, 'CORE', '?hook/?flow off: every pace resolves exactly as shipped (?hook=1 must stay inert — CLAUDE.md)'],
-      [86, 254, 'RETIRED', 'snap-hook anchors/tether/zip/whip mechanics (hook v1: rejected by entry 5, released for deletion by entry 25) — deleted with the feature by T-121; :86/:208/:212 are flow bounds (SITES)', ['with:T-121']],
-      [169, 169, 'RETIRED', 'dare pocket cannot hook out (hook v1, entries 5/25; dare wager, entries 9/10) — deleted with the feature by T-121', ['with:T-121']],
-      [260, 315, 'PURE-INVARIANT', 'FLOW momentum-chain arithmetic (?flow=1, unjudged experiment)'],
+      [47, 47, 'CORE', '?flow off: every pace resolves exactly as shipped (an unjudged prototype stays off unless typed — falsifier M07)'],
+      [106, 162, 'PURE-INVARIANT', 'FLOW momentum-chain arithmetic (?flow=1, unjudged experiment)'],
     ],
   },
 
@@ -327,12 +327,14 @@ export const DOMAINS = {
     ranges: [[128, 128, 'PIN', 'exact per-event pricing of the run tune']],
   },
 
-  'snap-hook-driven-through-real-sim': {
-    scope: 'flag:hook=1&flow=1',
-    mechanism: 'child process drives the real sim with ?hook=1&flow=1',
-    verdict: 'SPLIT',
-    default: 'RETIRED',
-    note: 'Sections 1-3 prove the rejected hook v1 works when armed (entry 5; entry 25 releases it for deletion): those 14 sites go WITH the feature (T-121). Section 4 drives the live, unjudged ?flow=1 momentum chain into the damage plane (no-clip, no grind, terminal pocket, dislodging setback): 7 sites, CORE/PURE-INVARIANT on a flag, DEEP — T-121 must keep that child section running when it removes the hook imports (review finding 3). Every site is label-keyed in SITES.',
+  'flow-chain-crush-contract': {
+    scope: 'flag:flow=1',
+    mechanism: 'child process drives the real sim with ?slice=traversal&pace=surge&flow=1&score=1',
+    verdict: 'DEEP',
+    default: 'CORE',
+    note: 'Was snap-hook-driven-through-real-sim. Its sections 1-3 proved the rejected hook v1 works when armed (entry 5); T-127 deleted those 14 sites ' +
+      'WITH the feature (entry 25). What is kept drives the live, unjudged ?flow=1 momentum chain into the damage plane (no-clip, no grind, terminal ' +
+      'pocket, dislodging setback): 7 sites plus the relabelled "flow child ran" guard, CORE/PURE-INVARIANT on a flag, DEEP. Every site is label-keyed in SITES.',
     ranges: [],
   },
 
@@ -397,9 +399,9 @@ export const DOMAINS = {
       [118, 136, 'CORE', 'driven: the ritual decision trace orders halt/trigger/arm/start'],
       [156, 162, 'CORE', 'driven twin runs: byte-identical frame input -> bit-identical simulation (determinism)'],
       [173, 177, 'PURE-INVARIANT', '?palette resolution'],
-      [198, 199, 'PURE-INVARIANT', 'classic palette is byte-faithful to CONFIG (the A/B instrument)'],
-      [305, 308, 'CORE', 'no scattered CONFIG.palette reads / raw colour literals in tokenized render files (palette hard rule)'],
-      [313, 313, 'PIN', 'scene background and fog built from the same token — regex over scene.js'],
+      [196, 197, 'PURE-INVARIANT', 'classic palette is byte-faithful to CONFIG (the A/B instrument)'],
+      [303, 306, 'CORE', 'no scattered CONFIG.palette reads / raw colour literals in tokenized render files (palette hard rule)'],
+      [311, 311, 'PIN', 'scene background and fog built from the same token — regex over scene.js'],
     ],
   },
 
@@ -1175,26 +1177,22 @@ export const SITES = [
   { domain: 'pathcheck-suite', label: 'responsive portrait composition keeps de', cls: 'CORE',
     note: 'keep the desktop-FAR identity conjuncts (desktopViewMult === far.depthMult, desktopActorGain === 1: entries 7/17/20); drop the portrait 1.15 / 24-30 tiles / 4-6 % pins — split only after T-107 lands its byte-identical projection proof (review finding 9)',
     marks: ['split'] }, // :1035
-  // world-transitions
-  { domain: 'world-transitions', label: 'the assembly choreography is retained fo', cls: 'RETIRED',
-    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — asserts the retained assembly code exists (recoverable at bb8e4df)',
-    marks: ['with:T-121'] }, // :161
-  { domain: 'world-transitions', label: 'the reserved assembly curve still settle', cls: 'RETIRED',
-    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — asserts the retained assembly curve still settles',
-    marks: ['with:T-121'] }, // :168
+  // world-transitions: its two with:T-121 zip rows (:161 "the assembly
+  // choreography is retained …", :168 "the reserved assembly curve still
+  // settles …") were deleted with the band-slam curve by T-127 (entry 25)
   // g2-neck-access-plate-flip-gate
   { domain: 'g2-neck-access-plate-flip-gate', label: 'the default-arg level build follows the ', cls: 'PURE-INVARIANT',
     note: 'the default-arg level build follows the live selection — flag plumbing, not behaviour (review finding 14)' }, // :71
-  // movement-verb-prototypes
-  { domain: 'movement-verb-prototypes', label: 'arming both verbs adds the two tuning ta', cls: 'PURE-INVARIANT',
-    note: 'the ?flow=1 overlay adds its table and exactly one movement override (ledgeAutoLaunch); drop the hook half with T-121',
-    marks: ['split', 'scope:flag:flow=1'] }, // :86
-  { domain: 'movement-verb-prototypes', label: 'hook + flow + every pace chain keeps hor', cls: 'PURE-INVARIANT',
-    note: 'dt-clamp tunnelling bound for every flow-armed pace — their only one (pacing-variants.mjs covers paces without flow); drop the hook candidate with T-121',
-    marks: ['split', 'scope:flag:flow=1'] }, // :208
+  // movement-verb-prototypes (T-127 made the three splits: the hook halves are gone)
+  { domain: 'movement-verb-prototypes', label: 'arming flow adds its tuning table and exactly one movement', cls: 'PURE-INVARIANT',
+    note: 'the ?flow=1 overlay adds its table and exactly one movement override (ledgeAutoLaunch); was "arming both verbs adds the two tuning tables …" (hook half dropped by T-127)',
+    marks: ['scope:flag:flow=1'] }, // :66
+  { domain: 'movement-verb-prototypes', label: 'flow + every pace chain keeps horizontal displacement', cls: 'PURE-INVARIANT',
+    note: 'dt-clamp tunnelling bound for every flow-armed pace — their only one (pacing-variants.mjs covers paces without flow); was "hook + flow + …" (hook candidate dropped by T-127)',
+    marks: ['scope:flag:flow=1'] }, // :93
   { domain: 'movement-verb-prototypes', label: 'no verb raises an upward launch into the', cls: 'PURE-INVARIANT',
-    note: 'upward-launch tunnelling bound for every flow-armed pace; drop the hook launchY candidate with T-121',
-    marks: ['split', 'scope:flag:flow=1'] }, // :212
+    note: 'upward-launch tunnelling bound for every flow-armed pace (the hook launchY candidate was dropped by T-127)',
+    marks: ['scope:flag:flow=1'] }, // :97
   // authored-slope-rib-run
   { domain: 'authored-slope-rib-run', label: 'the rib run inherits the fixture tune un', cls: 'PURE-INVARIANT',
     note: 'the rib run inherits the fixture tune untouched — config equality, not behaviour (review finding 14)' }, // :126
@@ -1207,70 +1205,33 @@ export const SITES = [
     note: 'driven climb keeps 85 % of run speed (momentum pillar; review finding 14)' }, // :140
   { domain: 'rib-run-driven-through-real-sim', label: ': the rib never holds RIG still for long', cls: 'CORE',
     note: 'driven climb never holds RIG under 2 t/s for 600 ms (momentum pillar; review finding 14)' }, // :144
-  // snap-hook-driven-through-real-sim
-  { domain: 'snap-hook-driven-through-real-sim', label: 'sim/hook.js drives the real player loop ', cls: 'RETIRED',
-    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
-    marks: ['with:T-121'] }, // :199
-  { domain: 'snap-hook-driven-through-real-sim', label: 'pressing hook at the fixture spawn grabs', cls: 'RETIRED',
-    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
-    marks: ['with:T-121'] }, // :201
-  { domain: 'snap-hook-driven-through-real-sim', label: 'while the tether is taut the player carr', cls: 'RETIRED',
-    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
-    marks: ['with:T-121'] }, // :204
-  { domain: 'snap-hook-driven-through-real-sim', label: 'the zip arrives and dangles before it th', cls: 'RETIRED',
-    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
-    marks: ['with:T-121'] }, // :207
-  { domain: 'snap-hook-driven-through-real-sim', label: 'the dangle always converts: one grab, on', cls: 'RETIRED',
-    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
-    marks: ['with:T-121'] }, // :208
-  { domain: 'snap-hook-driven-through-real-sim', label: 'the whip throws forward at a bounded spe', cls: 'RETIRED',
-    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
-    marks: ['with:T-121'] }, // :213
-  { domain: 'snap-hook-driven-through-real-sim', label: 'the whip refunds the air jump, so a grab', cls: 'RETIRED',
-    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
-    marks: ['with:T-121'] }, // :219
-  { domain: 'snap-hook-driven-through-real-sim', label: 'the grab gained real altitude: … tiles', cls: 'RETIRED',
-    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
-    marks: ['with:T-121'] }, // :221
-  { domain: 'snap-hook-driven-through-real-sim', label: 'the cooldown and the anchor lock refuse ', cls: 'RETIRED',
-    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
-    marks: ['with:T-121'] }, // :223
-  { domain: 'snap-hook-driven-through-real-sim', label: 'a hook launch is a momentum-chain link', cls: 'RETIRED',
-    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
-    marks: ['with:T-121'] }, // :224
-  { domain: 'snap-hook-driven-through-real-sim', label: 'the launch that followed the grab pays a', cls: 'RETIRED',
-    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
-    marks: ['with:T-121'] }, // :226
-  { domain: 'snap-hook-driven-through-real-sim', label: 'and the A.5 event stream carries it, wit', cls: 'RETIRED',
-    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
-    marks: ['with:T-121'] }, // :229
-  { domain: 'snap-hook-driven-through-real-sim', label: 'down releases the tether and drops, exac', cls: 'RETIRED',
-    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
-    marks: ['with:T-121'] }, // :231
-  { domain: 'snap-hook-driven-through-real-sim', label: 'a press with no valid anchor is simply a', cls: 'RETIRED',
-    note: 'hook v1 (entry 5, released for deletion by entry 25): deleted together with the feature by T-121',
-    marks: ['with:T-121'] }, // :234
-  { domain: 'snap-hook-driven-through-real-sim', label: 'crush case: two contact launches armed a', cls: 'PURE-INVARIANT',
+  // flow-chain-crush-contract (was snap-hook-driven-through-real-sim): its 14
+  // with:T-121 hook rows (grab / zip / dangle / whip / re-grab / link / drop /
+  // miss, and the hook child guard) were deleted with hook v1 by T-127 (entry 25)
+  { domain: 'flow-chain-crush-contract', label: 'the momentum spine drives the real player loop headlessly', cls: 'CORE',
+    note: 'the flow child ran: without it every assertion below is silently skipped (relabelled from the hook child guard by T-127; shown red when the child throws)',
+    marks: ['scope:flag:flow=1'] }, // :134
+  { domain: 'flow-chain-crush-contract', label: 'crush case: two contact launches armed a', cls: 'PURE-INVARIANT',
     note: 'precondition of the flow-chain crush case (?flow=1 is live and unjudged)',
-    marks: ['scope:flag:flow=1'] }, // :243
-  { domain: 'snap-hook-driven-through-real-sim', label: 'a live chain carried into the plane\'s wa', cls: 'CORE',
-    note: 'a live ?flow=1 chain dies on the crush frame (setback un-earns momentum); drop the hookPhase conjunct with T-121',
-    marks: ['split', 'scope:flag:flow=1'] }, // :244
-  { domain: 'snap-hook-driven-through-real-sim', label: 'and no frame left RIG behind the damage ', cls: 'CORE',
+    marks: ['scope:flag:flow=1'] }, // :143
+  { domain: 'flow-chain-crush-contract', label: 'a live chain carried into the plane\'s wa', cls: 'CORE',
+    note: 'a live ?flow=1 chain dies on the crush frame (setback un-earns momentum); the hookPhase conjunct was dropped by T-127',
+    marks: ['scope:flag:flow=1'] }, // :144
+  { domain: 'flow-chain-crush-contract', label: 'and no frame left RIG behind the damage ', cls: 'CORE',
     note: 'no frame leaves RIG behind the damage plane with a live ?flow=1 chain (no-clip hard rule)',
-    marks: ['scope:flag:flow=1'] }, // :247
-  { domain: 'snap-hook-driven-through-real-sim', label: 'the crush still resolves in its own fram', cls: 'CORE',
+    marks: ['scope:flag:flow=1'] }, // :147
+  { domain: 'flow-chain-crush-contract', label: 'the crush still resolves in its own fram', cls: 'CORE',
     note: 'the crush resolves in its own frame, not grinding, under ?flow=1 (no softlock)',
-    marks: ['scope:flag:flow=1'] }, // :248
-  { domain: 'snap-hook-driven-through-real-sim', label: 'and the sealed pocket stays terminal: th', cls: 'CORE',
+    marks: ['scope:flag:flow=1'] }, // :148
+  { domain: 'flow-chain-crush-contract', label: 'and the sealed pocket stays terminal: th', cls: 'CORE',
     note: 'the sealed pocket stays terminal: the ?flow=1 momentum spine cannot buy a rescue the fallback rule denies',
-    marks: ['scope:flag:flow=1'] }, // :251
-  { domain: 'snap-hook-driven-through-real-sim', label: 'a lethal hit mid-chain also un-earns the', cls: 'CORE',
-    note: 'a lethal hit mid ?flow=1 chain un-earns the chain; drop the hookPhase conjunct with T-121',
-    marks: ['split', 'scope:flag:flow=1'] }, // :257
-  { domain: 'snap-hook-driven-through-real-sim', label: 'and the setback is still a dislodging, n', cls: 'CORE',
+    marks: ['scope:flag:flow=1'] }, // :151
+  { domain: 'flow-chain-crush-contract', label: 'a lethal hit mid-chain also un-earns the', cls: 'CORE',
+    note: 'a lethal hit mid ?flow=1 chain un-earns the chain; the hookPhase conjunct was dropped by T-127',
+    marks: ['scope:flag:flow=1'] }, // :157
+  { domain: 'flow-chain-crush-contract', label: 'and the setback is still a dislodging, n', cls: 'CORE',
     note: 'a lethal hit is a dislodging, not a stop, under ?flow=1 (play continues on a lower route)',
-    marks: ['scope:flag:flow=1'] }, // :260
+    marks: ['scope:flag:flow=1'] }, // :160
   // t-012-audio-layer-static-guards
   { domain: 't-012-audio-layer-static-guards', label: 'T-012: audio module declares imports', cls: 'PIN',
     note: 'regex / import shape over the audio wiring (hand pass of the mechanical rule: confirmed PIN)' }, // :31
