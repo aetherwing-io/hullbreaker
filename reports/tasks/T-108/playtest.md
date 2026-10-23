@@ -8,22 +8,49 @@ worktree `/home/user/hullbreaker/.claude/worktrees/T-108`. Run 2026-10-22
 lanes' SwiftShader browsers). `git status --porcelain` in the worktree was empty
 before and after; the only repo file this gate wrote is this one. Scratch lives
 under `/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/qa-t108/`
-(session-scoped): `pristine/` and `work/` are two `git archive HEAD` exports,
-`base/` is `git archive 38d0409`, `merged/` is the trial-merge tree. Every tool
-was run either from a scratch export or from the worktree root with `--scratch`
-and `--out` pointed at that scratch directory, never at the committed evidence.
+(session-scoped). During the run it held two `git archive HEAD` exports
+(`pristine/`, `work/`), `git archive 38d0409` (`base/`) and the trial-merge tree
+(`merged/`), about 440 MB each; I deleted those at the end. What remains, in
+`qa-t108/keep/` (3.4 MB): the regenerated and the committed `test-audit.json`, the
+regenerated `tables-*.md`, `base-timed.json`, `callsite-counts.regen.json`,
+`mutation-qa-*.json`, `standalone-sweep.tsv` with every check's output, the M27h
+probe `m27h-probe.mjs`, and the run logs. Every tool was run either from a scratch
+export or from the worktree root with `--scratch` and `--out` pointed at that
+scratch directory, never at the committed evidence.
 
 **What this verdict claims.** (1) The lane does not change the shipped game or
 the merge gate: byte-for-byte. (2) The committed evidence reproduces: the static
 join, the audit tables, the per-call-site census, the domain list and assertion
 total, seven of the 42 mutants (six scored red/green, one hang), and the exit
-code of 34 standalone checks. (3) The three requested blind-spot rows (and several more) say what the
-code says. **What it does not claim:** anything about fun or feel; that the
-proposal's design is right; that the audit's hand classification of 2,049 call
-sites is correct (a judgement, which the doc says plainly); or anything from a
-browser (none was launched, see section 7). A green legacy `pathcheck` is not
-evidence (decisions entry 21); I used it only as a counter whose total the doc
-quotes. The verdict is pinned to `798888d`.
+code of 34 standalone checks. (3) The three requested blind-spot rows (and several
+more) say what the code says. **What it does not claim:** anything about fun or
+feel; that the proposal's design is right; that the audit's hand classification of
+2,049 call sites is correct (a judgement, which the doc says plainly, and which the
+reviewer's REQUEST_CHANGES, section 5, contests in the DELETE bucket); or anything
+from a browser (none was launched, see section 7). A green legacy `pathcheck` is
+not evidence (decisions entry 21); I used it only as a counter whose total the doc
+quotes. **The verdict is pinned to `798888d`.**
+
+**The branch moved while this gate ran, and this PASS does not cover anything
+newer.** While I was writing this up the reviewer returned REQUEST_CHANGES on the
+same commit (`95c4f6d`, "hard-rule guards in the delete list; fixes sent to the
+lane"), the integrator committed two earlier snapshots of this very file to main
+(`f5b4e08`, `2fa58bb`, the first marked "pre-fix commit; will be re-checked after
+the review fixes"), and merged main into the task branch (`c80dad0`, the head when
+I last looked). At `c80dad0` every file the lane owns is byte-identical to
+`798888d` (`git diff 798888d task/T-108` over `docs/proposals/2026-10-test-audit.md`
+and `tools/orch/` is empty) and the three-dot diff against main is still exactly
+the same 26 files, +58,826 / -0, so nothing the lane delivers has changed yet; the
+review's fixes (spec edits, doc edits, regenerated `test-audit.json`) will make a
+new head. **That head needs this gate again.**
+Cheap re-gate, all of it scripted above: `git diff --name-only main...task/T-108`
+still only `docs/proposals/` and `tools/orch/`; the tree-object comparison of
+section 1.2 against `main`; `node tools/orch/test-census.mjs` in a scratch export
+giving `problems: []` and a `test-audit.json` that differs from the committed one
+only in `when`; `audit-tables --section {classes,examples,domains,mutation,standalone,cost}`
+lines all present in the doc; and `callsite-counts.json` re-checked (masked) if it
+changed. The merge gate's freshness rule (`merge-task.sh`: a verdict older than the
+branch head's commit is refused) would force this anyway.
 
 Environment note: `source ~/.bashrc` exports none of the `HB_*` knobs in a
 non-interactive shell (the file returns early; same as T-104's gate found), so I
@@ -86,7 +113,7 @@ All counts below are against the committed bytes of `798888d`.
 | `test-audit.json` is the join of spec + static census + evidence | `node tools/orch/test-census.mjs --print` in `work/`, then `cmp` against `pristine/` | **byte-identical except line 4, the `"when"` timestamp** (both 1,270,585 bytes; `diff` shows exactly 2 differing lines). `problems: []`. Prints `domains 77 call sites 2049 evaluations 3989`, CORE 241 / P-INV 1160 / PIN 572 / RET 59 / TAUT 16 / SLOW 1, dispositions 738 / 508 / 196 / 139 / 467 / 1 |
 | every table in the doc is generated, not transcribed | `node tools/orch/audit-tables.mjs --section {classes,examples,domains,mutation,standalone,cost}` | **234 of 234 generated lines appear verbatim in the doc** (19 + 25 + 79 + 54 + 41 + 16). The `spotcheck` section (41 lines) is on-demand output, not quoted; the five sites the doc names (`authored-slope-rib-run:214`, `t-047-light-rig:134/139`, `t-052-hull-texture:97`, `t-051-backdrop:137`) are all in that seed-7 sample, which is itself reproducible (two runs `cmp` equal) |
 | per-call-site evaluation counts (2,049 sites, 3,989 evals) | from the **worktree**: `node tools/orch/callsite-census.mjs --scratch <empty> --out <scratch>/callsite-counts.regen.json --skip render-submission-contract` (83 s wall, load 39) | 76 domains, 3,984 passes, 0 fails, 2,042 runtime call-site keys. **Byte-identical to the committed `evidence/callsite-counts.json` after masking its six host/time fields** (`tree`, `when`, `host`, `totalMs`, `prelude`, `domains[].ms`): 183,048 bytes, sha256 `511d7a00...` both. Per-domain passes/fails/failLines identical; 0 call-site entries differ. 2,049 static sites = 2,042 evaluated + 5 (browser domain) + 2 error-path sites that never run (`t-049-hostile-sprites.mjs:299`, `t-051-backdrop.mjs:78`, both "could not be decoded/read"), matching the 0-eval rows in the JSON |
-| sizes in doc section 1 | `ls`, `grep`, `find` | 1,936 `ok` + 113 `near`; 387 source-text sites in 47 of 77 domains; 35 `*-check.mjs` (30 + 5) + 4 = 39 surfaces; 58 `tools/playtest/*.mjs`; 42 bot scripts under `scripts/`; 48 `check()` sites in `src/main.js:873-1135`; exactly seven per-file `Math.random`/`Date.now` regexes. **One miss: the doc says 61 bot scripts (42 + 19); the tree has 60 (42 + 18), see issue 2** |
+| sizes in doc section 1 | `ls`, `grep`, `find` | 1,936 `ok` + 113 `near`; 387 source-text sites in 47 of 77 domains; 35 `*-check.mjs` (30 + 5) + 4 = 39 surfaces; 58 `tools/playtest/*.mjs`; 42 bot scripts under `scripts/`; 48 `check()` sites in `src/main.js:873-1135`; exactly seven per-file `Math.random`/`Date.now` regexes. **One miss: the doc says 61 bot scripts (42 + 19); the tree has 60 (42 + 18; the 19th file in `adversarial/` is `repeat.mjs`, a runner). The reviewer found the same (review finding 13)** |
 | six standalone checks are red "right now" | all 34 headless checks the census lists (not the 3 x 300 s timeouts, not the 2 browser checks), `node <check>` from `work/`, `timeout 180` each, 103 s total | **34 of 34 exit codes equal the committed census** (29 x 0, 5 x 1; 0 mismatches). That is five of the doc's six reds; the sixth, `tools/playtest/sprite-fallback-check.mjs` (Playwright `TimeoutError`), is a browser check and was not re-run. The five reds fail for exactly the stated reasons: `enemy-motion-check` "wasp frame 0: substantial opaque body"; `finale-pacing-check` "the first readable trio preserves its reviewed neutral forms"; `foreground-pack-check` `spawnSync magick ENOENT`; `enemy-ecology-runtime-check` "ordinary Level 1 kinds own deterministic zero-recipe visual identities"; `rig-slender-check` "body emission must remain zero outside explicit overdrive action" (plus "weapon emission must remain zero until firing/overdrive action", which the doc does not quote) |
 | mutation evidence is internally consistent | read of `mutation-results.json`, `-batch2`, `-batch4`, `mutation-recheck.json` | 42 rows = 26 property + 5 refactor + 3 intended + 1 fix + 5 blind + 1 equivalent + 1 robustness (the doc's "4 intended/fix"); no apply errors; batch rows are what the merged file carries; the six recheck rows equal the merged rows (red, targetHit, failCount, failingDomains); 26 distinct aimed-at assertion sites among the property mutants, 35 distinct overall (acceptance asks >= 25) |
 | timing (cost table) | the 76-domain re-runs above | wall time is not reproducible by nature and the doc says so: **same ranking at the top** (`pathcheck-suite`, `g1-1-render-only-proved-sim`, `t-042-audio-punch`, `momentum-earned-pace-escalation`; 6 of the top 10 shared), but my 76 domains took 67.9-83.1 s wall (15.9-17.3 s user CPU) at load 38-43, against the doc's 24.2 / 35.8 s at load 24-27. The doc's "about 30 s" CORE-gate figure is therefore an extrapolation from a lighter load (the kept subset was never timed), not a measurement at today's load |
@@ -184,32 +211,49 @@ the scratch tree is what the domains see.
    `tools/orch/play-gate.mjs`, is the *proposed* file); `048716c` is an ancestor of
    `38d0409` and `git diff 048716c 38d0409` over the five cited UI paths is empty.
 
-## 5. Findings that do not change the verdict
+## 5. Findings, and how they relate to the review
 
-None of these changes a conclusion of the audit, and none comes from the lane
-touching anything it should not. Four are filed below (one S2 in the existing gate,
-three S3).
+This gate and the reviewer looked at different things: I checked that the lane has
+no effect and that its evidence reproduces; the reviewer judged whether the
+classification is right and the plan safe. The reviewer's REQUEST_CHANGES
+(`reports/tasks/T-108/review.md`, 14 findings, 4 blockers) is about the second, and
+nothing in this file is in tension with it. Where we probed the same ground:
 
-- **S2 hang in the existing gate, reproduced** (issue 1). The lane found it
-  (M27h); this gate reproduced it and found the cause.
-- **Doc count off by one** (issue 2): 61 bot scripts should be 60.
-- **Deletion list vs entry 21's never-weaken list** (issue 3): two groups of
-  DELETE-disposition sites that describe "boot / never wedge" and "movement
-  envelope" behaviour with no replacement row.
-- **Re-run hazards in `tools/orch`** (issue 4).
-- Honesty of the headline numbers: "12 % CORE", "0 of 5 PINs killed, 4 of 4 refactors
-  false-alarmed", "0 of 5 blind mutants red" are exactly what the committed rows
-  say. The doc scopes the sample as "small and chosen, not random", states that
-  PURE-INVARIANT is an upper bound (5 of 40 re-judged), and says M12/M13 (CORE
-  `main.js`-boot) cannot be caught headlessly by construction, which is why CORE's
-  0.67 includes them.
-- Not a defect: the dispositions are the lane's judgement, and the DELETE bucket
-  is otherwise clean against entry 21. A narrow keyword scan of all 508 DELETE and
-  139 REWRITE rows for determinism / softlock / reachability / crossability /
-  frame budget / wedge / page error finds one harness regex pin
-  (`t-027-bot-harness-deterministic-dispatch.mjs:85`) and nothing else; the two
-  groups in issue 3 came from a broader scan (boot / jump / fallback / layer,
-  52 DELETE rows read by hand).
+- **Agree, independently found:** the T-032 failsafe group in
+  `pathcheck-suite-2.mjs` (19 PIN sites, 165-223 and 272-294, all DELETE while only
+  231-269 are REWRITE; `:195` slow-boot panel and `:274` lost-WebGL-context are
+  player-visible "never wedge" behaviour with no replacement row) is the reviewer's
+  BLOCKER 2. The `61 vs 60` bot-script count is their finding 13. The
+  `mutation-sample.mjs` default `--out` hazard is in their finding 14.
+- **Cleared by the reviewer, and I set it aside too:** `g2-neck-access-plate-flip-gate.mjs:667-668`
+  (discrete jump apex 2.61 / 2.49 at 60 / 30 Hz, classed PIN). I considered it a
+  possible movement-envelope loss; the frozen constants are asserted at
+  `pathcheck-suite.mjs:227-231` and the player-relevant apex requirement (clears the
+  lane offsets at the dt floor) stays at `g2-neck...:669-673`, so deleting the two
+  exact-figure lines weakens nothing a player sees.
+- **My scans were narrow and found less than the reviewer's targeted probes did.**
+  A keyword scan of all 508 DELETE and 139 REWRITE rows for determinism / softlock /
+  reachability / crossability / frame budget / wedge / page error finds one harness
+  regex pin (`t-027-bot-harness-deterministic-dispatch.mjs:85`); a broader one
+  (boot / jump / fallback / layer, 52 DELETE rows read by hand) found only the
+  T-032 group above. It did not find the reviewer's findings 1, 3 and 4
+  (`future-facet-render-ownership.mjs:37`, the `?flow=1` chain sites in
+  `snap-hook-driven-through-real-sim.mjs`, the `render-submission-contract` frame
+  budget rows). **Do not read my "found little" as "the DELETE bucket is clean":
+  the review says it is not.**
+- **New from this gate, not in the review:** a hang in the existing gate (issue 1
+  below, S2) and two small re-run hazards (issue 2, S3).
+
+Other observations, none changing a conclusion:
+
+- Honesty of the headline numbers: "12 % CORE", "0 of 5 PINs killed, 4 of 4
+  refactors false-alarmed", "0 of 5 blind mutants red" are exactly what the
+  committed rows say. The doc scopes the sample as "small and chosen, not random",
+  states that PURE-INVARIANT is an upper bound (5 of 40 re-judged), and says M12/M13
+  (CORE `main.js` boot) cannot be caught headlessly by construction, which is why
+  CORE's 0.67 includes them. The review's finding 13 adds, rightly, that "0 of 5" is
+  an existence proof (the five were hand-built where the regex does not read), not a
+  rate.
 - No `tools/orch/README.md` exists (nor did one before this lane). CLAUDE.md's
   tooling definition of done asks for a README with an honesty note; each new tool
   carries its limitations in its header (`pathcheck-timed`, `callsite-census`,
@@ -276,8 +320,8 @@ leaves to the operator are passed through unjudged in section 8.
   `/home/user/hullbreaker/tools/playtest` `node run.mjs scripts/mid-route.json --deterministic --viewport 480x300 --base-url http://127.0.0.1:87NN`.
 - The other 35 of 42 mutants and the 2,049-site hand classification were not
   re-derived. The classification is a judgement the doc flags as such; the
-  per-site JSON exists so a reviewer can disagree line by line (section 5 notes
-  the lines I would disagree with).
+  per-site JSON exists so a reviewer can disagree line by line, and the reviewer
+  did (section 5 lists where my probes overlapped theirs).
 
 ## 8. Questions for the operator (passed through from the doc, not judged here)
 
@@ -302,7 +346,12 @@ because this lane changes nothing a player sees.
 ## PROPOSED INBOX ISSUES
 
 (SPRINT schema; I did not edit `SPRINT.md`. Issue types follow the schema's
-`bug|feel|fairness|art|docs`. None blocks merging T-108.)
+`bug|feel|fairness|art|docs`. Neither blocks merging T-108. Three further
+candidates were dropped as duplicates of the reviewer's findings: the 61-vs-60 bot
+script count (review finding 13), the T-032 failsafe group in the DELETE bucket
+(finding 2, a blocker already sent to the lane), and the `mutation-sample.mjs`
+default `--out` (finding 14). The doc's own section 8 issues 1 and 2 are already
+fixed on main, see the triage notes above.)
 
 ```
 ## I-??? | bug | S2 | repro: node tools/orch/mutation-sample.mjs --scratch <empty dir> --only M27h --timeout-ms 70000 --verbose --out <file.json>  @ 798888d (no browser needed; ~90 s) | evidence: tools/orch/evidence/mutation-results.json (M27h, hung: true); QA re-run row {hung:true, ms:70162, lastDomainsReported:[]}
@@ -318,60 +367,29 @@ outside kills it. The only bound is the PostToolUse hook's 120 s watchdog, and
 that one prints "Not treating this as a pathcheck failure" and exits 0
 (.claude/hooks/check-changed.sh), so the per-edit check lets the hanging edit
 through; merge-task.sh runs `node tools/pathcheck.mjs` with no bound at all.
-Reproduced in a scratch copy without the gate: with that one-token edit, an
-iteration-capped copy of the loop hits the cap at i = 583; on the unmutated tree
-it returns 18 runs. The side-length lanes (T-205 "six 176-tile sides", any "longer
-sides" work, which is exactly entry 20's complaint) edit these two numbers by
-hand. Fix direction: before scanning, assert groundH.length === CONFIG.levelLength
-and every column is finite, so the edit fails loudly; and give each domain a
-wall-clock bound so any future hang is a red, not a stall. T-120 owns pathcheck.
+Reproduced in a scratch copy without the gate (probe saved as
+qa-t108/keep/m27h-probe.mjs; run it next to a copy of src/ with
+`sed -i 's/faceTiles: 88,/faceTiles: 106,/' src/config.js`): with that one-token
+edit, an iteration-capped copy of the loop hits the cap at i = 583; on the
+unmutated tree it returns 18 runs. The side-length lanes (T-205 "six 176-tile
+sides", any "longer sides" work, which is exactly entry 20's complaint) edit these
+two numbers by hand. Fix direction: before scanning, assert groundH.length ===
+CONFIG.levelLength and every column is finite, so the edit fails loudly; and give
+each domain a wall-clock bound so any future hang is a red, not a stall. T-120 owns
+pathcheck.
 
-## I-??? | docs | S3 | repro: ls tools/playtest/scripts/*.json tools/playtest/scripts/adversarial/*.json | wc -l  @ 798888d (prints 60) | evidence: docs/proposals/2026-10-test-audit.md:55, tools/orch/standalone-spec.mjs:88 (so also test-audit.json -> standalone)
-The audit says "61 bot scripts (42 in tools/playtest/scripts/, 19 in its
-adversarial/)" and "merge-smoke (2 of 61)". The tree has 60 JSON scripts (42 + 18);
-the 19th file in adversarial/ is repeat.mjs, a runner, not a script. The doc's own
-reproduction command (section "How to reproduce every number", last row) prints 60.
-No conclusion depends on it. Fix: 60 / 18 / "2 of 60" in the doc and in
-standalone-spec.mjs, then re-run node tools/orch/test-census.mjs.
-
-## I-??? | docs | S3 | repro: read docs/proposals/2026-10-test-audit.md 7.5 against tools/orch/test-audit.json (sites with disposition DELETE) in tools/pathcheck/pathcheck-suite-2.mjs and g2-neck-access-plate-flip-gate.mjs  @ 798888d | evidence: pathcheck-suite-2.mjs:195,197,274; g2-neck-access-plate-flip-gate.mjs:667-668
-Entry 21 says assertions that guard boot, the movement envelope and safe
-degradation stay and are never weakened. The deletion list sends two groups of
-sites to DELETE (not REWRITE-AS-BEHAVIOUR) with no replacement row in 7.2/7.4.
-(a) pathcheck-suite-2.mjs, T-032 failsafe block: 19 PIN sites (165-223 and
-272-294, mostly regexes over index.html's inline handler and src/main.js) are
-DELETE while only 231-269 are REWRITE. Most are pure wiring pins (and M23/M35 show
-such pins do not bind), but :195 asserts that a boot that never finishes raises
-the "slow" panel and :274 that a lost WebGL context fails legibly: player-visible
-"never wedge" behaviour. The PLAY gate's `?selftest=1` row paints the panel
-(`src/main.js:1113-1119`, `failsafeSelfCheck()`) but forces neither a slow boot nor a
-context loss. (b) g2-neck-access-plate-flip-gate.mjs:667-668 drive the real player loop to
-the discrete single-jump apex at 60 Hz and 30 Hz (2.61 / 2.49, +-0.02) and are
-classed PIN. They are the recorded physical reasoning of the frozen jump
-(CLAUDE.md: constants "frozen and asserted ... update the physical reasoning and
-the pathcheck assertions together"); the constants themselves are asserted
-separately (pathcheck-suite.mjs:227-231), but an integrator or dt change that
-moves the apex without touching a constant is caught only here, and the kept
-lines 669-673 bound the apex from below only. Suggest the T-120 reviewer re-label
-these REWRITE-AS-BEHAVIOUR (or CORE) and add the matching behaviour row before
-migration step 5, so the "rewrite first, then delete" rule holds for them.
-
-## I-??? | bug | S3 | repro: read tools/orch/mutation-sample.mjs:51,84,164 and tools/orch/test-census.mjs:213; node tools/orch/test-census.mjs twice and diff tools/orch/test-audit.json  @ 798888d | evidence: tools/orch/test-audit.json:4
-Three re-run hazards in tools T-120 will use after every deletion batch. (1)
-test-census.mjs rewrites tools/orch/test-audit.json with a fresh "when" every run;
-that is the only differing line in 1,270,585 bytes, so "re-run and git diff"
-never reads clean, and the runtime evidence JSONs carry six host/time fields
-(tree, when, host, totalMs, prelude, domains[].ms) that must be masked before they
-compare byte-equal (they do, after masking). A `--check` mode that masks them
-would make "does the evidence reproduce" one command. (2) mutation-sample.mjs
-defaults --out to the committed tools/orch/evidence/mutation-results.json, so the
-doc's own reproduction row for the binding sample (`... --scratch <empty dir>`)
-overwrites that evidence in place and writes base=<current HEAD>, dropping the
-`merged` key. (3) it reuses a non-empty --scratch tree whenever
-tools/pathcheck/manifest.mjs exists there (line 84), so a run killed between
-applying and restoring a mutant leaves a mutated baseline for the next run (a
-re-applied mutant would fail its anchor-count check loudly; a leftover edit in
-another file would not). (2) and (3) are from reading the code, not exercised.
-Fix: default --out into --scratch, refuse a non-empty --scratch without --reuse,
-and drop or mask `when` in test-audit.json.
+## I-??? | bug | S3 | repro: node tools/orch/test-census.mjs twice, diff tools/orch/test-audit.json; read tools/orch/mutation-sample.mjs:84  @ 798888d | evidence: tools/orch/test-audit.json:4; tools/orch/mutation-sample.mjs:84
+Two re-run hazards in tools T-120 will run after every deletion batch (the review's
+finding 14 already covers mutation-sample's default --out). (1) test-census.mjs
+rewrites tools/orch/test-audit.json with a fresh "when" every run; that is the only
+differing line in 1,270,585 bytes, so "re-run and git diff" never reads clean, and
+the runtime evidence JSONs carry six host/time fields (tree, when, host, totalMs,
+prelude, domains[].ms) that must be masked before they compare byte-equal (they do,
+after masking). A `--check` mode that masks them would make "does the evidence
+reproduce" one command. (2) mutation-sample.mjs reuses a non-empty --scratch tree
+whenever tools/pathcheck/manifest.mjs exists there (line 84), so a run killed
+between applying and restoring a mutant leaves a mutated baseline for the next run
+(a re-applied mutant would fail its anchor-count check loudly; a leftover edit in
+another file would not). (2) is from reading the code, not exercised. Fix: refuse
+a non-empty --scratch without --reuse; drop or mask `when`.
 ```
