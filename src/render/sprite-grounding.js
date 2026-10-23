@@ -6,11 +6,19 @@
    the live loop allocates nothing and pays no extra draw/material/texture. */
 
 import * as THREE from 'three';
+import { ART_CRISP } from '../mode.js';
 
+/* T-123: on the crisp sprite path (the default) actors are drawn unlit at
+   the painting's own value, so this lighting-rig stand-in is neutral (floor
+   1, the attribute kept so vertex-coloured materials still read white).
+   Kept, it would be a multiply of 0.84 at RIG's boots rising to 1 at the top
+   of his plane - ~0.92 averaged over the plane's height - i.e. the kind of
+   darkening entry 27's crisp path exists to remove. ?art=legacy keeps every
+   floor below as authored. */
 export function applySpriteUnderside(geometry, floor = 0.80) {
   const position = geometry?.getAttribute?.('position');
   if (!position || position.count === 0 || geometry.getAttribute('color')) return geometry;
-  floor = Math.max(0.68, Math.min(1, floor));
+  floor = ART_CRISP ? 1 : Math.max(0.68, Math.min(1, floor));
   let minY = Infinity, maxY = -Infinity;
   for (let i = 0; i < position.count; i++) {
     const y = position.getY(i);

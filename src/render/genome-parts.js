@@ -11,7 +11,7 @@
 
 import * as THREE from 'three';
 import { QUERY } from '../mode.js';
-import { awaitPreloads, preloadTexture } from './preload.js';
+import { actorAtlasOptions, awaitPreloads, preloadTexture } from './preload.js';
 import { spritesEnabled } from './sprite-table.js';
 
 export const GENOME_PART_ATLAS = Object.freeze({
@@ -65,7 +65,7 @@ const slot = {
 
 if (enabled) {
   requestCount++;
-  preloadTexture(new URL(GENOME_PART_ATLAS.file, import.meta.url).href)
+  preloadTexture(new URL(GENOME_PART_ATLAS.file, import.meta.url).href, actorAtlasOptions())
     .then((entry) => {
       preloadReadyAt = clock();
       if (entry.state === 'ready') {

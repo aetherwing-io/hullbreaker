@@ -3,7 +3,7 @@
    Consumers receive one immutable ready/fallback decision before first RAF. */
 
 import { QUERY } from '../mode.js';
-import { awaitPreloads, preloadTexture } from './preload.js';
+import { actorAtlasOptions, awaitPreloads, preloadTexture } from './preload.js';
 import {
   ACTOR_MOTION_ATLASES, ACTOR_MOTION_KINDS, ACTOR_MOTION_SPEC,
 } from './actor-motion-spec.js';
@@ -15,7 +15,7 @@ const startedAt = globalThis.performance?.now?.() ?? Date.now();
 const atlasRequests = new Map();
 for (const [id, art] of Object.entries(ACTOR_MOTION_ATLASES)) {
   atlasRequests.set(id, ACTOR_MOTION_ON
-    ? preloadTexture(new URL(art.file, import.meta.url).href, { anisotropy: 8 })
+    ? preloadTexture(new URL(art.file, import.meta.url).href, actorAtlasOptions({ anisotropy: 8 }))
     : null);
 }
 

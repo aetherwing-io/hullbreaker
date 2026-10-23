@@ -1,7 +1,7 @@
 /* One immutable boot decision for the compact modular wasp atlas. */
 
 import { QUERY } from '../mode.js';
-import { awaitPreloads, preloadTexture } from './preload.js';
+import { actorAtlasOptions, awaitPreloads, preloadTexture } from './preload.js';
 import { WASP_MODULAR_SPEC } from './wasp-modular-spec.js';
 
 // The old modular sheet remains a useful A/B and a complete fallback, but its
@@ -14,7 +14,7 @@ export const WASP_MODULAR_ON = QUERY.get('sprites') !== '0' &&
 
 const request = WASP_MODULAR_ON
   ? preloadTexture(new URL(WASP_MODULAR_SPEC.runtime.file, import.meta.url).href,
-    { anisotropy: 8 })
+    actorAtlasOptions({ anisotropy: 8 }))
   : null;
 
 await awaitPreloads();

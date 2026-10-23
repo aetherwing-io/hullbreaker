@@ -12,8 +12,8 @@
 
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-import { QUERY } from '../mode.js';
-import { resolveRenderPixelRatio } from '../pure/render-budget.js';
+import { ART_CRISP, CRISP_SCALE, QUERY } from '../mode.js';
+import { resolveCrispPixelRatio, resolveRenderPixelRatio } from '../pure/render-budget.js';
 import { PAL } from './palette.js';
 import { installLightRig } from './lights.js';
 
@@ -47,8 +47,18 @@ export function renderPixelRatio(
   height = innerHeight,
   budgeted = RENDER_BUDGETED,
 ) {
+  // T-123 (decisions.md entry 27): the crisp path draws at the DEVICE ratio,
+  // so the backing store is css x dpr and nothing resamples it; past its
+  // budget it steps down by a whole number and the canvas's
+  // image-rendering:pixelated makes that upscale nearest. The opt-in
+  // adaptive ladder's "0.80" rung becomes one such whole-number step there.
+  if (ART_CRISP) {
+    return resolveCrispPixelRatio(dpr, width, height,
+      CRISP_SCALE * (adaptiveRenderScale < 1 ? 2 : 1), _crispRatio).ratio;
+  }
   return resolveRenderPixelRatio(dpr, width, height, budgeted) * adaptiveRenderScale;
 }
+const _crispRatio = {};
 
 // DPR can change without a reload (dragging between displays, browser zoom,
 // phone rotation changing the compact bucket). WebGLRenderer does not follow
@@ -76,6 +86,11 @@ export function setAdaptiveRenderScale(scale) {
 
 syncRenderPixelRatio();
 renderer.setSize(innerWidth, innerHeight);
+// T-123: inert while the backing store is exactly css x dpr (the crisp
+// default everywhere inside its budget); when it is a whole-number fraction
+// of it, this is what keeps the browser's upscale a pixel replication rather
+// than a filter. Set from here so index.html (T-105's) is untouched.
+if (ART_CRISP) renderer.domElement.style.imageRendering = 'pixelated';
 document.body.appendChild(renderer.domElement);
 
 // Registered before camera.js and post.js listeners. A resize therefore
@@ -111,7 +126,8 @@ export function rendererResourceSnapshot() {
   const gl = renderer.getContext();
   const attributes = gl.getContextAttributes();
   return {
-    policy: RENDER_BUDGETED ? 'bounded' : 'legacy',
+    policy: ART_CRISP ? 'crisp' : RENDER_BUDGETED ? 'bounded' : 'legacy',
+    crispUpscale: ART_CRISP ? _crispRatio.upscale : null,
     adaptiveScale: adaptiveRenderScale,
     pixelRatio: renderer.getPixelRatio(),
     css: { width: resourceCssSize.x, height: resourceCssSize.y },

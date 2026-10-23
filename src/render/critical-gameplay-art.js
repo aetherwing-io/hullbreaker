@@ -9,7 +9,7 @@ import { ENEMY_ECOLOGY_ATLAS } from './enemy-ecology-spec.js';
 import {
   SPRITE_ACTION_ART, SPRITE_ART, SPRITE_MOTION_ART, SPRITE_ROOT,
 } from './sprite-table.js';
-import { preloadTexture } from './preload.js';
+import { actorAtlasOptions, preloadTexture } from './preload.js';
 
 const files = Object.freeze([
   ENEMY_ECOLOGY_ATLAS.file,
@@ -20,4 +20,4 @@ const files = Object.freeze([
 ]);
 
 export const CRITICAL_GAMEPLAY_REQUESTS = Object.freeze(files.map((file) =>
-  preloadTexture(new URL(file, import.meta.url).href, { anisotropy: 8 })));
+  preloadTexture(new URL(file, import.meta.url).href, actorAtlasOptions({ anisotropy: 8 }))));

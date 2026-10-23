@@ -5,7 +5,7 @@
    hostile fallback. No source board or manifest is fetched at runtime. */
 
 import { QUERY } from '../mode.js';
-import { awaitPreloads, preloadTexture } from './preload.js';
+import { actorAtlasOptions, awaitPreloads, preloadTexture } from './preload.js';
 import { ENEMY_ECOLOGY_ATLAS } from './enemy-ecology-spec.js';
 
 export const ENEMY_ECOLOGY_ART_ON = QUERY.get('sprites') !== '0' &&
@@ -14,7 +14,7 @@ export const ENEMY_ECOLOGY_ART_ON = QUERY.get('sprites') !== '0' &&
 const startedAt = globalThis.performance?.now?.() ?? Date.now();
 const request = ENEMY_ECOLOGY_ART_ON
   ? preloadTexture(new URL(ENEMY_ECOLOGY_ATLAS.file, import.meta.url).href,
-    { anisotropy: 8 })
+    actorAtlasOptions({ anisotropy: 8 }))
   : null;
 
 await awaitPreloads();

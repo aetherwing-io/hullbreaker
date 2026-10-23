@@ -17,6 +17,7 @@ import {
 } from './genome-parts.js';
 import { postGain } from './post.js';
 import { camera, renderer, scene } from './scene.js';
+import { CRISP_ON, registerCrispActor, unregisterCrispActor } from './crisp-sprites.js';
 import {
   primitiveBox, SPRITE_MOTION_ART, spriteActionQuad, spriteFlapQuad,
   spriteMotionFrame, spriteQuad,
@@ -2011,7 +2012,48 @@ function spawnedEnemyEcology({ e, K, assets, presenter }) {
   hideHostileVisual(v, e);
   scene.add(mesh);
   meshes.set(e, v);
+  crispHostile(v, e);
   ecologyPairsSpawned++;
+}
+
+/* T-123 (decisions.md entry 27): a hostile's PAINTED body goes through the
+   crisp sprite path (src/render/crisp-sprites.js) - drawn unlit at the
+   painting's own value, reduced once at the live device density, shown 1
+   texel = 1 device pixel. "Painted body" is the body card and everything
+   parented to it (ecology action layer, primitive barrel/stalk, mortar
+   legs), the modular wing bank, the fallback downstroke and the painted
+   genome modules. Every per-frame decision above them is unchanged: pose
+   cells, roll, hit punch, entrance depth/scale and the emissive hit flash /
+   state glow all land in the composed tile. Tell lamps, readability glows,
+   signal hardware, beams, pods, marks and blasts are light, not paint, and
+   stay in the lit, bloomed main pass. The record follows the mesh into its
+   corpse and is released with it. ?art=legacy registers nothing. */
+const HOSTILE_TEXELS_PER_TILE = 214;
+
+function crispHostile(v, e) {
+  if (!CRISP_ON) return;
+  const parts = [v.mesh];
+  if (v.waspWingMesh) parts.push(v.waspWingMesh);
+  if (v.flapMesh) parts.push(v.flapMesh);
+  for (const row of v.paintedGeneRows || []) if (row.mesh) parts.push(row.mesh);
+  // The fallback downstroke crossfades with the body by COMPLEMENTARY opacity,
+  // so the figure's presence is their sum; every other part follows the body.
+  v.crisp = registerCrispActor({
+    name: 'hostile:' + e.kind, anchor: v.mesh, parts,
+    texelsPerTile: HOSTILE_TEXELS_PER_TILE,
+    fade: () => Math.min(1, v.mat.opacity +
+      (v.flapMesh && v.flapMesh.visible && v.flapMat ? v.flapMat.opacity : 0)),
+  });
+}
+
+function crispDeathRig(rig, kind) {
+  if (!CRISP_ON) return;
+  rig.crisp = registerCrispActor({
+    name: 'hostile-death:' + kind, anchor: rig.pieces[0].mesh, impostorParent: scene,
+    parts: rig.pieces.map((part) => part.mesh),
+    texelsPerTile: HOSTILE_TEXELS_PER_TILE,
+    fade: () => rig.mat.opacity,
+  });
 }
 
 function spawnedStandard({ e, K, assets, presenter }) {
@@ -2138,6 +2180,7 @@ function spawnedStandard({ e, K, assets, presenter }) {
   mesh.visible = false;                    // hidden until its materialization begins
   scene.add(mesh);
   meshes.set(e, v);
+  crispHostile(v, e);
 }
 
 function spawned(e) {
@@ -2365,6 +2408,7 @@ function buildFixedWardenDeathRig() {
     return { mesh, def };
   });
   const rig = { key, mat, pieces, inUse: false, fixedAtBoot: true };
+  crispDeathRig(rig, 'warden');
   deathRigPools.set(key, [rig]);
   deathRigCount++;
   deathPlaneCount += pieces.length;
@@ -2406,6 +2450,7 @@ function claimDeathRig(v, e) {
         return { mesh, def };
       });
       rig = { key, mat, pieces, inUse: false, fixedAtBoot: false };
+      crispDeathRig(rig, e.kind);
       pool.push(rig);
       deathRigCount++;
       deathPlaneCount += pieces.length;
@@ -2544,8 +2589,10 @@ function removed(e, fade) {
                    face, kind: e.kind, spec, rig, systems, frozenMotion,
                    ecologyDeath,
                    ecologyActionMesh: v.ecologyActionMesh || null,
-                   ecologyActionMat: v.ecologyActionMat || null });
+                   ecologyActionMat: v.ecologyActionMat || null,
+                   crisp: v.crisp || null });
   } else {
+    unregisterCrispActor(v.crisp);
     scene.remove(v.mesh);
     if (v.ecologyActionMat) {
       v.ecologyActionMat.dispose();
@@ -3025,6 +3072,7 @@ if (typeof window !== 'undefined')
 const corpses = [];
 
 function releaseCorpse(c) {
+  unregisterCrispActor(c.crisp);
   scene.remove(c.mesh);
   if (c.ecologyActionMat) {
     c.ecologyActionMat.dispose();

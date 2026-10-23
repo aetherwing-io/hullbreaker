@@ -63,7 +63,7 @@
    gameplay must not be able to tell whether an asset arrived. */
 
 import * as THREE from 'three';
-import { QUERY } from '../mode.js';
+import { ART_CRISP, QUERY } from '../mode.js';
 import { renderer } from './scene.js';
 
 /* One budget for every asset the boot registers. Desktop keeps the measured
@@ -134,12 +134,37 @@ function prepare(tex, opts) {
     tex.magFilter = opts.magFilter || THREE.LinearFilter;
     return;
   }
+  // T-123 (decisions.md entry 27): an atlas drawn through the crisp sprite
+  // path is never shown directly. src/render/crisp-sprites.js point-samples it
+  // into a tile composed at up to 8x the device density and area-reduces that
+  // ONCE, so the painting is resampled exactly one time. A mip chain here
+  // would be a second, linear-light prefilter in front of that reduction
+  // (measured: +8% mean gain against the column-A reference) and a third of
+  // the texture's memory for nothing. Nearest, mip-free, as authored.
+  if (opts.crisp) {
+    tex.generateMipmaps = false;
+    tex.minFilter = THREE.NearestFilter;
+    tex.magFilter = THREE.NearestFilter;
+    tex.anisotropy = 1;
+    tex.needsUpdate = true;
+    if (typeof renderer.initTexture === 'function') renderer.initTexture(tex);
+    return;
+  }
   tex.anisotropy = opts.anisotropy || 4;
   tex.generateMipmaps = true;
   tex.minFilter = THREE.LinearMipmapLinearFilter;
   tex.magFilter = opts.magFilter || THREE.LinearFilter;
   tex.needsUpdate = true;
   if (typeof renderer.initTexture === 'function') renderer.initTexture(tex);
+}
+
+/* T-123: the options every ACTOR atlas registers with (RIG, hostiles, their
+   death rigs, pickups). Whichever module registers a URL first decides its
+   preparation, so every owner of an actor atlas passes these: on the crisp
+   path (the default) that is nearest + mip-free, on ?art=legacy it is the
+   caller's own options unchanged. */
+export function actorAtlasOptions(opts = {}) {
+  return ART_CRISP ? { ...opts, crisp: true } : opts;
 }
 
 /* Register one texture with the boot gate. The returned promise resolves —

@@ -29,7 +29,8 @@ import { QUERY } from '../mode.js';
 import { scene } from './scene.js';
 import { placeOnTower } from './tower.js';
 import { PAL } from './palette.js';
-import { awaitPreloads, preloadTexture } from './preload.js';
+import { actorAtlasOptions, awaitPreloads, preloadTexture } from './preload.js';
+import { registerCrispActor } from './crisp-sprites.js';
 import { releaseContactShadow, syncContactShadow } from './contact.js';
 import { routeRenderable } from './route-visibility.js';
 import { CAPSULE_ART_ATLAS, CAPSULE_ART_ROOT } from './capsule-art-spec.js';
@@ -123,7 +124,7 @@ const TRAIT_HARDPOINT = Object.freeze({
 });
 
 const atlasEntry = CAPSULE_ART_ON
-  ? preloadTexture(new URL(ART_ROOT + ATLAS_FILE, import.meta.url).href)
+  ? preloadTexture(new URL(ART_ROOT + ATLAS_FILE, import.meta.url).href, actorAtlasOptions())
   : Promise.resolve({ state: 'disabled', tex: null, error: 'disabled by ?capsules=0' });
 
 const artSlots = new Map(Object.entries(ART_TABLE).map(([key, spec]) => [key, {
@@ -736,6 +737,18 @@ for (let rowIndex = 0; rowIndex < CAPSULE_POOL_MAX; rowIndex++) {
   poolRows.push(v);
   freeRows.push(rowIndex);
   scene.add(v.root, fallbackMesh);
+  // T-123 (decisions.md entry 27): the reliquary's painted card and its
+  // flat-colour casing, tier hardware and trait hardpoints are drawn through
+  // the crisp sprite path (src/render/crisp-sprites.js) — unlit at their own
+  // value, reduced once at the device density, 1 texel = 1 device pixel. The
+  // signal plate and the scanning slit are light and stay in the lit,
+  // bloomed main pass; so does the rotating letter-cube failure fallback,
+  // which is a 3D box rather than a sprite. ?art=legacy registers nothing.
+  v.crisp = registerCrispActor({
+    name: 'capsule', anchor: v.root,
+    parts: [v.metal, v.ink, v.art, v.warm, v.sockets, ...v.hardpoints],
+    texelsPerTile: 214,
+  });
 }
 
 function claimRow(c) {

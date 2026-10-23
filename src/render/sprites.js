@@ -44,7 +44,7 @@
 
 import * as THREE from 'three';
 import { QUERY } from '../mode.js';
-import { awaitPreloads, preloadTexture } from './preload.js';
+import { actorAtlasOptions, awaitPreloads, preloadTexture } from './preload.js';
 import {
   SPRITE_ACTION_ART, SPRITE_ART, SPRITE_FLAP_ART, SPRITE_KINDS, SPRITE_ROOT,
   resolveSpriteVariants, spritesEnabled,
@@ -89,7 +89,7 @@ for (const kind of SPRITE_KINDS) {
   slots.set(kind, slot);
   if (!SPRITES_ON) continue;
   if (!art) { fail(kind, slot, 'no art declared for this kind'); continue; }
-  preloadTexture(new URL(SPRITE_ROOT + art.file, import.meta.url).href)
+  preloadTexture(new URL(SPRITE_ROOT + art.file, import.meta.url).href, actorAtlasOptions())
     .then((entry) => {
       if (entry.state === 'ready') { slot.tex = entry.tex; slot.state = 'ready'; }
       else fail(kind, slot, entry.error || entry.state);
@@ -106,7 +106,7 @@ for (const kind of SPRITE_KINDS) {
   };
   flapSlots.set(kind, slot);
   if (!SPRITES_ON || !art) continue;
-  preloadTexture(new URL(SPRITE_ROOT + art.file, import.meta.url).href)
+  preloadTexture(new URL(SPRITE_ROOT + art.file, import.meta.url).href, actorAtlasOptions())
     .then((entry) => {
       if (entry.state === 'ready') { slot.tex = entry.tex; slot.state = 'ready'; }
       else fail(kind + ' flap', slot, entry.error || entry.state);
@@ -124,7 +124,7 @@ for (const kind of SPRITE_KINDS) {
   };
   actionSlots.set(kind, slot);
   if (!SPRITES_ON || !art) continue;
-  preloadTexture(new URL(SPRITE_ROOT + art.file, import.meta.url).href)
+  preloadTexture(new URL(SPRITE_ROOT + art.file, import.meta.url).href, actorAtlasOptions())
     .then((entry) => {
       if (entry.state === 'ready') { slot.tex = entry.tex; slot.state = 'ready'; }
       else fail(kind + ' action', slot, entry.error || entry.state);

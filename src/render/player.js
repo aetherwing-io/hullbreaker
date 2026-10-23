@@ -72,6 +72,8 @@ import {
 } from '../pure/rig.js';
 import { awaitPreloads, preloadTexture } from './preload.js';
 import { camera, renderer, scene } from './scene.js';
+import { registerCrispActor } from './crisp-sprites.js';
+import { RIG_ART_PRELOAD_OPTIONS } from './critical-rig-art.js';
 import { cameraFacingFacet } from './camera.js';
 import { placeOnTower } from './tower.js';
 import { PAL } from './palette.js';
@@ -284,7 +286,7 @@ const weaponArtSlots = Object.fromEntries(Object.entries(RIG_WEAPON_ART).map(([l
 // never change movement, hitboxes, firing, or deterministic timing.
 if (!RIG_FORCE_CANVAS) {
   // One lossless atlas request supplies idle, run, and rise/fall silhouettes.
-  preloadTexture(new URL(RIG_BODY_ATLAS_PATH, import.meta.url).href).then((entry) => {
+  preloadTexture(new URL(RIG_BODY_ATLAS_PATH, import.meta.url).href, RIG_ART_PRELOAD_OPTIONS).then((entry) => {
     if (entry.state !== 'ready') {
       idleGunlessSlot.error = entry.error || entry.state;
       for (const slot of Object.values(runFrameSlots)) slot.error = idleGunlessSlot.error;
@@ -312,7 +314,7 @@ if (!RIG_FORCE_CANVAS) {
 
   // Aim has its own higher-resolution strip. It shares a measured scale across
   // all elevations, so raising the gun never shrinks or enlarges the pilot.
-  preloadTexture(new URL(RIG_AIM_ATLAS_PATH, import.meta.url).href).then((entry) => {
+  preloadTexture(new URL(RIG_AIM_ATLAS_PATH, import.meta.url).href, RIG_ART_PRELOAD_OPTIONS).then((entry) => {
     if (entry.state !== 'ready') {
       for (const slot of Object.values(aimFrameSlots)) slot.error = entry.error || entry.state;
       console.warn('RIG aim atlas did not load (' + (entry.error || entry.state) +
@@ -329,7 +331,7 @@ if (!RIG_FORCE_CANVAS) {
 
   // A second atlas supplies every gun. Each chassis geometry already owns its
   // atlas UV rectangle, so pickups only swap one resident geometry.
-  preloadTexture(new URL(RIG_WEAPON_ATLAS_PATH, import.meta.url).href).then((entry) => {
+  preloadTexture(new URL(RIG_WEAPON_ATLAS_PATH, import.meta.url).href, RIG_ART_PRELOAD_OPTIONS).then((entry) => {
     if (entry.state !== 'ready') {
       for (const slot of Object.values(weaponArtSlots))
         slot.error = entry.error || entry.state;
@@ -344,7 +346,7 @@ if (!RIG_FORCE_CANVAS) {
   // The climb strip is independent of the locomotion atlas. A failed request
   // never introduces a geometric placeholder: the existing production body
   // atlas supplies pass/flight poses while the ladder remains fully playable.
-  preloadTexture(new URL(RIG_CLIMB_ATLAS_PATH, import.meta.url).href).then((entry) => {
+  preloadTexture(new URL(RIG_CLIMB_ATLAS_PATH, import.meta.url).href, RIG_ART_PRELOAD_OPTIONS).then((entry) => {
     if (entry.state !== 'ready') {
       climbError = entry.error || entry.state;
       for (const slot of climbFrameSlots) slot.error = climbError;
@@ -649,6 +651,23 @@ function writeArm(mesh, arm, pose) {
 }
 
 scene.add(rig);
+
+/* T-123 (decisions.md entry 27): THE CRISP SPRITE PATH, the default. RIG's
+   painted parts - body plane or fallback, both arms, the aimed gun with its
+   accents and traits - keep every mesh, material and per-frame pose above,
+   but are drawn by src/render/crisp-sprites.js: composed unlit at the live
+   device density, reduced once, and shown 1 texel = 1 device pixel with his
+   sim point on a pixel edge. The auras below stay in the lit main pass
+   (they are light, not paint). ?art=legacy registers nothing and RIG draws
+   through the lit planes exactly as before. */
+bodyGroup.name = 'rig-body';
+gunGroup.name = 'rig-gun';
+registerCrispActor({
+  name: 'rig',
+  anchor: rig,
+  parts: [bodyGroup, armFar, gunGroup, armNear],
+  texelsPerTile: 1 / RIG_AIM_WORLD_PER_PIXEL,
+});
 
 /* GILDED CHASSIS (Konami-code cosmetic): the aura's meshes, canvas texture,
    and latch live in src/render/gilded-aura.js — T-040 freezes THIS file's
