@@ -98,12 +98,193 @@
   },
   {
    "id": "phone-portrait",
+   "nominal": {
+    "width": 390,
+    "height": 844
+   },
    "probed": {
     "width": 390,
     "height": 844
    },
-   "wallMs": 205610,
-   "error": "page.evaluate: Target page, context or browser has been closed"
+   "query": "",
+   "wallMs": 299628,
+   "live": {
+    "framing": {
+     "id": "phone",
+     "fovDeg": 56,
+     "liftTiles": 0,
+     "actorClamp": false,
+     "cameraDepth": 50.39653846153846,
+     "cameraFov": 56,
+     "touch": true,
+     "viewRequest": null,
+     "orbit": "halt",
+     "edgeRouteRight": 16.9847486791976
+    },
+    "deck": {
+     "cluster": {
+      "x": 0.464,
+      "y": 0.764,
+      "w": 0.458,
+      "h": 0.212
+     },
+     "stickGhost": {
+      "x": 0.12,
+      "y": 0.83,
+      "w": 0.3,
+      "h": 0.139
+     },
+     "stickZoneRight": 0.45,
+     "safe": {
+      "top": 0,
+      "right": 0,
+      "bottom": 0,
+      "left": 0
+     }
+    },
+    "inner": {
+     "w": 390,
+     "h": 844
+    },
+    "scrollX": 8.13259534101791,
+    "gameMs": 1500.029999999999,
+    "edgeL": -2.014596140956506,
+    "edgeR": 16.9847486791976,
+    "player": {
+     "x": 18.169134377819976,
+     "y": 3
+    },
+    "aheadTiles": 6.598209642395535,
+    "view": {
+     "id": "far",
+     "label": "FAR",
+     "depthMult": 1.9,
+     "cameraDepth": 50.39653846153846
+    },
+    "ui": {
+     "hudRigPanel": {
+      "x": 0.018,
+      "y": 0.008,
+      "w": 0.964,
+      "h": 0.131
+     },
+     "hudObjectivePanel": {
+      "x": 0.018,
+      "y": 0.161,
+      "w": 0.964,
+      "h": 0.037
+     }
+    }
+   },
+   "analytic": {
+    "left": -2.014596140956513,
+    "right": 16.9847486791977,
+    "width": 18.999344820154214,
+    "depth": 50.39653846153846,
+    "localYBottom": -24.532106999465967,
+    "localYTop": 29.35676731170332
+   },
+   "edgeErr": {
+    "left": 7.105427357601002e-15,
+    "right": 9.947598300641403e-14
+   },
+   "nominalSameEdges": true,
+   "screenshot": "framing-phone-portrait.png"
+  },
+  {
+   "id": "phone-landscape-far",
+   "nominal": {
+    "width": 844,
+    "height": 390
+   },
+   "probed": {
+    "width": 844,
+    "height": 390
+   },
+   "query": "view=far",
+   "wallMs": 361946,
+   "live": {
+    "framing": {
+     "id": "far",
+     "fovDeg": 56,
+     "liftTiles": 0,
+     "actorClamp": false,
+     "cameraDepth": 42.75,
+     "cameraFov": 56,
+     "touch": true,
+     "viewRequest": "far",
+     "orbit": "halt",
+     "edgeRouteRight": 60.18436301276371
+    },
+    "deck": {
+     "cluster": {
+      "x": 0.661,
+      "y": 0.673,
+      "w": 0.303,
+      "h": 0.297
+     },
+     "stickGhost": {
+      "x": 0.065,
+      "y": 0.632,
+      "w": 0.139,
+      "h": 0.3
+     },
+     "stickZoneRight": 0.45,
+     "safe": {
+      "top": 0,
+      "right": 0,
+      "bottom": 0,
+      "left": 0
+     }
+    },
+    "inner": {
+     "w": 844,
+     "h": 390
+    },
+    "scrollX": 6.450129000000006,
+    "gameMs": 1500.029999999999,
+    "edgeL": -38.9753020171177,
+    "edgeR": 60.18436301276371,
+    "player": {
+     "x": 18.169134377819976,
+     "y": 3
+    },
+    "aheadTiles": 48.115357634943734,
+    "view": {
+     "id": "far",
+     "label": "FAR",
+     "depthMult": 1.9,
+     "cameraDepth": 42.75
+    },
+    "ui": {
+     "hudRigPanel": {
+      "x": 0.012,
+      "y": 0.018,
+      "w": 0.355,
+      "h": 0.297
+     },
+     "hudObjectivePanel": {
+      "x": 0.609,
+      "y": 0.018,
+      "w": 0.379,
+      "h": 0.087
+     }
+    }
+   },
+   "analytic": {
+    "left": -38.97530201711757,
+    "right": 60.184363012763924,
+    "width": 99.1596650298815,
+    "depth": 42.75,
+    "localYBottom": -18.39394431292879,
+    "localYTop": 27.20125664881902
+   },
+   "edgeErr": {
+    "left": 1.2789769243681803e-13,
+    "right": 2.1316282072803006e-13
+   },
+   "nominalSameEdges": true,
+   "screenshot": "framing-phone-landscape-far.png"
   }
  ]
 }

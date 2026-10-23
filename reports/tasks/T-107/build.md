@@ -755,7 +755,12 @@ and `captures/portrait-gain-removed-sheet.png`):
 | after: gain removed | **x1.000** | **0 of 48** | 0.010 CSS px | 0.104 CSS px |
 
 (T-103 measured the same effect over its 416-cell portrait grid, R and F:
-worst x1.58, 291 of 416 over x1.05.) PENDING-STRETCH-FULL
+worst x1.58, 291 of 416 over x1.05.) The full 416-cell grid was not re-run
+here: it was queued and then dropped to free the host for the I-122 and
+merged-tree captures. The 48-cell subset covers all three body families
+(standing, running, climbing) across the whole aim circle, and its "after"
+is exact by construction: with the gain at 1 the arm solve has nothing to
+stretch for (x1.000 worst).
 
 ### The touch deck: the cluster, the stick, and `probe-framing.mjs`
 
@@ -805,7 +810,15 @@ the screen (top edge 262 px), the resting stick ghost at x 0.065-0.204, y
 0.632-0.932 and the split at 0.45 — the numbers the T-107 domain asserts
 against; main's HUD panels cover x 0.012-0.367, y 0.018-0.315 (RIG panel) and
 x 0.609-0.988, y 0.018-0.105 (objective). In the photo RIG fires from the
-deck above the FIRE/JUMP cluster. PENDING-PROBE-FRAMING
+deck above the FIRE/JUMP cluster. The two rows the restart cut short were
+re-run on the final code (`captures/probe-framing-phone-portrait.jpg`,
+`captures/probe-framing-phone-landscape-far.jpg`):
+
+| row (touch) | resolved lens | live edges L / R / W (= replica to) | cluster box (x, y, w, h of the screen) |
+| --- | --- | --- | --- |
+| `phone-landscape` 844x390 | phone, fov 40.09, lift 0.85, actor clamp | -25.042 / 40.864 / 65.91 (2.7e-13) | 0.661, 0.673, 0.303, 0.297 |
+| `phone-portrait` 390x844 | phone id, FAR's portrait lens (fov 56, lift 0), route-plane clamp | -2.015 / 16.985 / 19.00 — main's (9.9e-14) | 0.464, 0.764, 0.458, 0.212 |
+| `phone-landscape-far` 844x390 `?view=far` | FAR (fov 56, lift 0), route-plane clamp | -38.975 / 60.184 / 99.16 — main's (2.1e-13) | 0.661, 0.673, 0.303, 0.297 |
 
 ### Defaults, flags and hard rules
 
