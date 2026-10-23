@@ -169,17 +169,12 @@ const VIEW_IDS = (opt('--views', 'desktop,landscape,portrait')).split(',').filte
 const KNOWN_DEFECTS = [
   // A tracked defect may not get WORSE: each carries the magnitude measured on
   // main when it was recorded (+ a small margin), and a reading beyond it fails.
-  { id: 'K1-title-overflow', owner: 'T-105', what: 'the title "HULLBREAKER" overflows its box (clips to "HULLBREAK" on a 390-px phone)',
-    // measured 795/602 (1.32) desktop, 524/397 (1.32) landscape, 450/343 (1.31) portrait
+  { id: 'K1-title-overflow', owner: 'T-105', what: 'the title "HULLBREAKER" overflows its box at 1280x800 and 844x390 (not at 390x844 since T-105)',
+    // measured 795/602 (1.32) desktop, 524/397 (1.32) landscape; portrait fits since T-105 (7b4c706)
     overflow: (o) => o.text === 'HULLBREAKER' && o.scrollWidth <= o.clientWidth * 1.36 },
-  { id: 'K2-keyboard-copy-on-touch', owner: 'T-105', what: 'on a coarse pointer the title says "PRESS ANY KEY" and lists keyboard controls',
-    copy: (where, phrase) => where === 'shell' && /^(press any key|wasd|arrows?|space|enter|shift|keys?|keyboard|press [a-z0-9])$/.test(phrase) },
-  { id: 'K3-failsafe-hint-keyboard-on-touch', owner: 'T-105', what: 'on a coarse pointer the failure panel says "Press R, or click the button"',
-    copy: (where, phrase) => where === 'fail' && /^(press r|keys?|press [a-z0-9])$/.test(phrase) },
-  { id: 'K4-preload-double-fetch', owner: 'T-105', what: 'the four <link rel=preload> images are fetched twice (crossorigin mismatch) and Chrome warns about it',
-    dupe: (url) => /\/assets\/generated\/(backdrops|environment)\/[\w.-]+\.webp$/.test(url),
-    console: (t) => /A preload for '.*' is found, but is not used because the request credentials mode does not match/.test(t) ||
-      /was preloaded using link preload but not used within a few seconds from the window's load event/.test(t) },
+  // K2 (keyboard copy on touch), K3 (the failure panel's keyboard hint on touch)
+  // and K4 (the preloads fetched twice) were fixed by T-105 and are gone from the
+  // tree as merged (7b4c706: no K2/K3/K4 at any viewport): each is a FAIL again
   { id: 'K5-selftest-portrait-pullback', owner: 'T-107', what: '?selftest=1 at 390x844 fails "view resolved and portrait pullback applied": ' +
       'its expected camera depth predates render/camera.js PORTRAIT_SAFE compact framing (the selftest never ran at a phone viewport before this gate)',
     selftest: (view, title) => view === 'portrait' && /^SELFTEST FAIL: view resolved and portrait pullback applied$/.test(title) },
@@ -383,24 +378,38 @@ async function bootStep(view) {
       const knownCopy = text.copy.filter((c) => KNOWN_DEFECTS.some((k) => k.copy && k.copy(c.where, c.phrase)));
       if (unknownCopy.length) record('boot', view, 'FAIL', 'on a coarse pointer no visible text tells the player to press a key', unknownCopy);
       else record('boot', view, 'PASS', 'on a coarse pointer no visible text tells the player to press a key (beyond tracked defects)');
-      if (knownCopy.length) record('boot', view, 'KNOWN', known('K2-keyboard-copy-on-touch').what + ` (K2, owner T-105: ${[...new Set(knownCopy.map((c) => c.phrase))].join(', ')})`);
+      if (knownCopy.length) {
+        const k = KNOWN_DEFECTS.find((d) => d.copy && d.copy(knownCopy[0].where, knownCopy[0].phrase));
+        record('boot', view, 'KNOWN', known(k.id).what + ` (${k.id}, owner ${k.owner}: ${[...new Set(knownCopy.map((c) => c.phrase))].join(', ')})`);
+      }
     }
     // network: one fetch per URL
     const dupes = [...log.requests].filter(([, n]) => n > 1).map(([u, n]) => ({ url: u.replace(base, ''), n }));
     const unknownDupes = dupes.filter((d) => !KNOWN_DEFECTS.some((k) => k.dupe && k.dupe(d.url)));
     if (unknownDupes.length) record('boot', view, 'FAIL', 'no URL is fetched twice', unknownDupes.slice(0, 6));
     else record('boot', view, 'PASS', `no URL is fetched twice beyond tracked defects (${log.requests.size} URLs)`);
-    if (dupes.length - unknownDupes.length) record('boot', view, 'KNOWN', known('K4-preload-double-fetch').what + ` (K4, owner T-105: ${dupes.length - unknownDupes.length} URLs)`);
+    if (dupes.length - unknownDupes.length) {
+      const k = KNOWN_DEFECTS.find((d) => d.dupe && dupes.some((x) => d.dupe(x.url)));
+      record('boot', view, 'KNOWN', known(k.id).what + ` (${k.id}, owner ${k.owner}: ${dupes.length - unknownDupes.length} URLs)`);
+    }
     const { artBudget } = judgeConsole('boot', view, log);
-    // The HUD bound is T-105's to decide (it proposes <= 10 % at 844x390); until
-    // then the gate holds the line measured on main: it may not get worse.
-    // The reading is taken at the first played frame, whose moment varies with
-    // the host, so two runs on main read 7.0 / 8.7 % desktop, 14.0 / 14.0 %
-    // landscape, 16.4 / 12.7 % portrait; the ceiling is the larger + 5 points.
-    const HUD_CEILING = { desktop: 0.14, landscape: 0.19, portrait: 0.215 }[view];
-    record('boot', view, hud.share <= HUD_CEILING ? 'REPORT' : 'FAIL',
+    // The HUD bound. T-105 set it for the phones (reports/tasks/T-105/build.md
+    // §4): at 844x390 the HUD stays within 10 % of the screen in play AND the
+    // Crown finale, and no HUD panel touches the central 60 % x 60 % in any
+    // state at any landscape size. The gate holds that at 844x390; at 390x844
+    // (the same strip, ≈7.5 % by T-105) it holds the central rule and the
+    // merged reading + 5 points; desktop keeps the reading on main + 5. The
+    // reading is taken at the first played frame: on the tree as merged
+    // (7b4c706) 8.7 % desktop (154 central cells), 6.8 % landscape and 7.7 %
+    // portrait (0 central cells each); before T-105, 14.0 % and 12.7-16.4 %.
+    const HUD_CEILING = { desktop: 0.14, landscape: 0.10, portrait: 0.125 }[view];
+    const HUD_WHY = { desktop: 'the largest reading on main + 5', landscape: 'T-105\'s bound at 844x390',
+      portrait: 'the reading as merged + 5' }[view];
+    const phone = view !== 'desktop';
+    const hudOk = hud.share <= HUD_CEILING && (!phone || hud.centralCells === 0);
+    record('boot', view, hudOk ? 'REPORT' : 'FAIL',
       `HUD covers ${(hud.share * 100).toFixed(1)} % of the viewport, ${hud.centralCells} cells of the central 60 % x 60 % ` +
-      `(may not exceed ${(HUD_CEILING * 100).toFixed(1)} %, the largest reading on main + 5; T-105 owns the real bound)`);
+      `(may not exceed ${(HUD_CEILING * 100).toFixed(1)} %, ${HUD_WHY}${phone ? '; on a phone, no cell in the central region (T-105)' : ''})`);
     const notReady = art.preloadNotReady.length;
     const artLine = `art at boot: preload ${JSON.stringify(art.preload)} (budget ${art.preloadBudgetMs} ms, gate cost ${art.preloadCostMs} ms), ` +
       `sprites ${JSON.stringify(art.sprites)}, hull ${art.hullReady}/${art.hullFiles}; ${artBudget.length} "missed the boot budget" warnings`;
@@ -475,10 +484,10 @@ async function failsafeStep(view, f) {
     // device-appropriate copy: on a coarse pointer the hint must not ask for a key
     if (shown.coarse) {
       const phrases = [...shown.hint.toLowerCase().matchAll(/press [a-z0-9]\b|\bkey(board)?s?\b|\benter\b|\bspace\b/g)].map((m) => m[0]);
-      const k3 = KNOWN_DEFECTS.find((k) => k.id === 'K3-failsafe-hint-keyboard-on-touch');
-      const unknownCopy = phrases.filter((ph) => !k3.copy('fail', ph));
+      const knownBy = (ph) => KNOWN_DEFECTS.find((k) => k.copy && k.copy('fail', ph));
+      const unknownCopy = phrases.filter((ph) => !knownBy(ph));
       if (unknownCopy.length) record('failsafe', view, 'FAIL', 'on a coarse pointer the failure panel does not ask for a key', shown.hint);
-      else if (phrases.length) record('failsafe', view, 'KNOWN', known(k3.id).what + ` (K3, owner T-105: "${shown.hint}")`);
+      else if (phrases.length) record('failsafe', view, 'KNOWN', known(knownBy(phrases[0]).id).what + ` (${knownBy(phrases[0]).owner}: "${shown.hint}")`);
       else record('failsafe', view, 'PASS', 'on a coarse pointer the failure panel does not ask for a key');
     }
     const extra = log.pageErrors.filter((e) => !e.includes('PLAY gate: forced boot failure'));

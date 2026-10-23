@@ -28,19 +28,22 @@ exit code is non-zero iff anything FAILed. `--out <dir>` keeps `play-gate.json` 
 failure screenshots.
 
 - **FAIL** blocks a merge. Read the detail after the dash; the screenshot is in `--out`.
-- **KNOWN** is a defect present on main that a named lane owns (K1-K5 in the file). It
-  never fails — unless it got WORSE than recorded (the title overflow ratio, the HUD
-  ceiling): then it is a FAIL. When a known defect stops reproducing the gate says so;
-  delete its entry in the lane that fixed it.
+- **KNOWN** is a defect present on main that a named lane owns (K1 and K5 in the file;
+  T-105 fixed K2-K4, which are FAILs again). It never fails — unless it got WORSE than
+  recorded (the title overflow ratio): then it is a FAIL. When a known defect stops
+  reproducing the gate says so; delete its entry in the lane that fixed it.
 - **REPORT** is a measurement this host cannot judge: frame times, art at boot, HUD
-  coverage, perf on a GPU-less host, and the two rules below.
+  coverage, perf on a GPU-less host, and the two rules below. The HUD line FAILs past its
+  ceiling (T-105's 10 % at 844x390; the merged reading + 5 points at 390x844; main + 5 on
+  desktop) and, on a phone, for any HUD cell inside the central 60 % x 60 % (T-105).
 
 ## The two GPU-less leniencies, and what still fails
 
 1. **Freeze panel** (`tools/orch/lib/failsafe-check.mjs`). The failsafe raises `frozen`
-   after 4 s without a frame; one SwiftShader frame here can take 8-100 s. A `frozen`
-   panel is REPORTED only when the page measured a frame >= 4 s AND its loop kept
-   beating afterwards. Any other panel, a fault, a halt, or a loop that stays stopped fails.
+   after 4 s without a frame (10 s inside T-105's warm-up, before the first 3 frames);
+   one SwiftShader frame here can take 8-100 s. A `frozen` panel is REPORTED only when
+   the page measured a frame at least as long as the bound that could have fired it AND
+   its loop kept beating afterwards. Any other panel, a fault, a halt, or a loop that stays stopped fails.
 2. **Slow degrade** (`tools/orch/lib/degrade-verdicts.mjs`). The art-blocked boot plays
    one tick per rendered frame. Page errors, the failure panel and the aborted-art check
    are judged on both runs **whatever their speed**; a run whose tick did not move for five
