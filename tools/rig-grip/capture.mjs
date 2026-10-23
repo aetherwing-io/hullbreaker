@@ -184,7 +184,10 @@ const PAGE_HELPERS = `
     // px per tile at RIG for unit conversion
     const a = q.rigLocalToScreen(0, 0), b = q.rigLocalToScreen(0, 1);
     out.pxPerTile = Math.hypot(b.x - a.x, b.y - a.y);
-    out.crop = [q.rigLocalToScreen(${CROP.x0}, ${CROP.y1}), q.rigLocalToScreen(${CROP.x1}, ${CROP.y0})];
+    // the crop grows with the portrait actor gain, so a 1.5x RIG keeps his helmet
+    const g = snap.portraitGain || 1;
+    out.portraitGain = g;
+    out.crop = [q.rigLocalToScreen(${CROP.x0} * g, ${CROP.y1} * g), q.rigLocalToScreen(${CROP.x1} * g, ${CROP.y0} * g)];
     return out;
   };
   // advance the game clock while paused, then run the shipped presentation hook
