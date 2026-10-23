@@ -101,7 +101,7 @@ What I kept from the snapshot, and what I changed after measuring:
   head inside the top on every surface he can stand on, and the lowest deck
   above the right-thumb cluster with the 21 px home-indicator inset. 6.0% is
   infeasible (no lift satisfies both); 5.6% with lift 0.85 holds with >= 1.9 px
-  and >= 2.5 px to spare (`evidence/pathcheck-t107-static-labels.txt`).
+  and >= 2.5 px to spare (`evidence/pathcheck-t107-static-labels-final.txt`).
 - **Changed: the lens only narrows.** The snapshot widened portrait to 65.6
   deg (RIG 5.8% of the short side), which pushed the frame's bottom 11.6 tiles
   past the far veil (a new portrait void) and shrank RIG below FAR's own
@@ -132,7 +132,7 @@ Tooling (zero effect on the game):
   header), `tools/playtest/phone-framing-probe.mjs`,
   `tools/playtest/phone-readability-capture.mjs`, `tools/playtest/framing-cost.mjs`,
   `tools/playtest/selftest-views.mjs` (I-114),
-  `tools/simlab/framing/{render-only,veil-need,zoom-pump,route-ahead,vertical-band,thumb-overlap,rig-boxes,corner-approach}.mjs`,
+  `tools/simlab/framing/{render-only,veil-need,zoom-pump,route-ahead,vertical-band,thumb-overlap,rig-boxes,corner-approach,tell-sweep}.mjs`,
   `tools/simlab/framing/{void_columns,readability_sheet,rig_crops,turn_sheet}.py`. Documented in
   `tools/simlab/README.md` ("The phone frame (T-107)") and
   `tools/simlab/TURNLAB.md` (limitations 4-5).
@@ -591,9 +591,10 @@ changed — moving EDGE_L moves the damage plane.
 
 ### 11. pathcheck green; smoke-verdict PASS; operator packet — MET
 
-See "Verification": on the merged tree the full tier is **4537 passed, 0
-failed** and both smoke scripts PASS as the merge gate runs them; "Operator
-packet" below.
+See "Verification": on the final tree (main `71d3941` merged) the full tier
+is **4698 passed, 0 failed**, the fast tier on the final HEAD PENDING-FAST-HEAD,
+and both smoke scripts PASS as the merge gate runs them; "Operator packet"
+below.
 
 ## The dispatch's further boxes
 
@@ -975,8 +976,8 @@ rule and I-114):
 | --- | --- |
 | `git merge main` (`71d3941`, merge commit `e55100a`) | two conflicts: `tools/pathcheck/manifest.mjs` (d81 = T-201's race pass, d82 left free for T-105, T-107 = **d83**) and `tools/simlab/README.md` (both sides kept, main's numbered list first) |
 | `HB_GATE_FAST=1 node tools/pathcheck.mjs` (merged + the lens rule, `c3b6485`) | **4236 passed, 0 failed** |
-| `node tools/pathcheck.mjs` (full tier, `fff06c1`) | 4699 passed, **1 failed** — my own played clamp check, `[run?orbit=joint @1280x720]`: chest at NDC 1.012. That check asserted the actor clamp on every played run; under the lens rule a FAR run keeps main's clamp on purpose, so the check claimed a property the final design does not give FAR frames. Scoped to phone-lens runs in `b200886`; on FAR runs it now prints the value as a note. Not a weakening of anything legacy: it is a T-107 assertion, the FAR edges are asserted identical to main's (36 cases), and the overhang is reported (box 8, inbox issue) |
-| `node tools/pathcheck.mjs` (full tier, `b200886`) | PENDING-FULL-FINAL |
+| `node tools/pathcheck.mjs` (full tier, `fff06c1`) | 4699 passed, **1 failed** (`evidence/pathcheck-full-fff06c1-stale-check.log`) — my own played clamp check, `[run?orbit=joint @1280x720]`: chest at NDC 1.012. That check asserted the actor clamp on every played run; under the lens rule a FAR run keeps main's clamp on purpose, so the check claimed a property the final design does not give FAR frames. Scoped to phone-lens runs in `b200886`; on FAR runs it now prints the value as a note. Not a weakening of anything legacy: it is a T-107 assertion, the FAR edges are asserted identical to main's (36 cases), and the overhang is reported (box 8, inbox issue) |
+| `node tools/pathcheck.mjs` (full tier, `b200886`) | **4698 passed, 0 failed** (19.6 min; `evidence/pathcheck-full-final-b200886.log`). 4698 = 4700 - 2: the two FAR played runs' clamp checks (`run @390x844 touch`, NDC 0.727, and `run?orbit=joint @1280x720`, 1.012) are now printed notes; every other assertion of the 4700 passes |
 | T-107 domain alone, final tree: static / played | **50 passed, 0 failed** + 1 note / **63 passed, 0 failed** + 2 notes (`evidence/pathcheck-t107-{static,played}-labels-final.txt`) |
 | smoke as `tools/orch/merge-task.sh` runs it (480x300, `--deterministic`, budgets 15000 / 20000 ms) + `smoke-verdict.mjs`, at `fff06c1` (= the final runtime) | mid-route **PASS** (outcome=not-completed deaths=0 tick=594/594); transform-slice **PASS** (outcome=completed deaths=0 tick=938/1104) |
 | `tools/playtest/selftest-views.mjs --views 390x844,390x844t,844x390t,1280x720` (branch) and `390x844,844x390t` (main `71d3941`) | branch **PASS (39 checks)** at all four; main **FAIL: view resolved and portrait pullback applied** at 390x844, PASS at 844x390 touch (`evidence/selftest-views-*.json`, `selftest-views.log`) |

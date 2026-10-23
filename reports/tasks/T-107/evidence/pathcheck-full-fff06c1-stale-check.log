@@ -1,0 +1,6 @@
+pathcheck note (reported, not asserted): a hold-right deck-line crossing collected 2 of 6 pocket capsules (weapon at the end F, closest approach 1.151 tiles at [51.95,6.12])
+SKIP render-submission-contract: 4 browser-probe assertions not run (HB_GATE_SKIP_BROWSER_PROBE=1 — GPU-less host; not counted as passes)
+pathcheck note (reported, not asserted): T-107: at FAR frames RIG pinned at the right clamp still reaches NDC 1.057 (1024x768 touch) — the pre-existing I-104 overhang, left as main has it; fixing it without moving the spawn trigger needs a second sim edge (T-107 report)
+FAIL T-107 [run?orbit=joint @1280x720]: RIG pinned at the right clamp renders its chest on screen (NDC 1.012, was ~1.012)
+pathcheck: 4699 passed, 1 failed
+exit 1 after 1878 s
