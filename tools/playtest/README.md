@@ -1575,6 +1575,18 @@ tools/playtest/
                             taken when a polled predicate first passes, so each
                             frame's true tMs is recorded in index.json — trust
                             those numbers, not the filenames, for beat placement.
+  phone-framing-probe.mjs  T-107: the live camera per viewport (matrices, edges,
+                            lens, deck layout, RIG's painted height, the clamp
+                            in painted pixels); --compare proves two trees'
+                            cameras bit-identical. See "The phone-frame tools".
+  phone-readability-capture.mjs  T-107: a deterministic fight paused at game-time
+                            marks at any DPR, every hostile/projectile/capsule's
+                            screen box beside each photo.
+  framing-cost.mjs         T-107: interleaved frame-cost rounds under the
+                            256-projectile stress path, plus the renderer's own
+                            draw calls / triangles for the last frame.
+  selftest-views.mjs       T-107 (I-114): the in-page ?selftest=1 verdict at
+                            chosen viewports, with or without touch.
 ```
 
 ## `post-capture.mjs` — the screen-pass A/B rig (T-048)
@@ -1814,6 +1826,50 @@ turn its own checks red:
    unchanged during a hold; the recorder skips held frames.
 7. Under SwiftShader every boot takes ~1 minute; the whole proof is slow and
    timing-sensitive checks (legacy's 170 ms tap) are retried, never loosened.
+
+## The phone-frame tools (T-107)
+
+Four dev-only browser tools for the phone frame (SPRINT T-107). Their Node-side
+counterparts — replicas of the same camera from `src/pure/framing.js` — live in
+`tools/simlab/framing/` and are documented in `tools/simlab/README.md` ("The
+phone frame (T-107)"). Each takes `--root <tree>` (served on an ephemeral port
+for the run) or `--base-url`.
+
+```sh
+# the live camera at chosen viewports; --compare diffs two runs element by element
+node tools/playtest/phone-framing-probe.mjs --root <tree> --viewports 844x390 --touch --rig --out a.json
+node tools/playtest/phone-framing-probe.mjs --compare main.json branch.json
+# a fight photographed at game-time marks, with every body's screen box (for readability_sheet.py)
+node tools/playtest/phone-readability-capture.mjs --root <tree> --viewport 844x390 --dpr 2 --touch \
+  --marks 3000,3250 [--query view=far] [--runup-scale 2] --out <dir> --tag phone
+# frame cost, two framings (or two trees) interleaved
+node tools/playtest/framing-cost.mjs --variants "phone=http://127.0.0.1:8776|,far=http://127.0.0.1:8776|view=far" \
+  --viewport 844x390 --touch --rounds 2 --out cost.json
+# the in-page selftest at chosen viewports (a trailing t = touch emulation)
+node tools/playtest/selftest-views.mjs --root <tree> --views 390x844,390x844t,844x390t,1280x720 --out st.json
+```
+
+**Honesty / limitations**
+
+1. Everything runs on SwiftShader in headless Chrome. Geometry (edges, matrices,
+   projected sizes, painted-pixel boxes) is exact; wall-clock frame times are
+   not evidence about any device — on a loaded host `framing-cost.mjs` reads
+   0.1-0.4 fps and its rounds differ more from each other than its variants
+   do. Its `render` block (calls, triangles of the last frame drawn; the game
+   resets `renderer.info` per displayed frame) is the load-independent number,
+   and it is one frame, not an average.
+2. A posed page (`phone-framing-probe.mjs`) is not a played page: hostiles are
+   removed and nothing moves; the painted-pixel box is one sprite pose.
+3. `phone-readability-capture.mjs` boxes are projected world boxes, not
+   occlusion tests: a body behind anatomy still gets a box. Judge the crops.
+   With `?view=far` the run is the same input, but the sims can drift apart
+   through the right edge (spawns trigger on it); each sidecar records what
+   it shows.
+4. `--runup-scale` plays the run between marks in a smaller viewport of the
+   same aspect (same lens, same edges in tiles; the sidecar records the edges
+   before and after each resize as the proof) and photographs at full size.
+5. None of these tools judges readability or feel; they put the evidence in
+   front of the operator.
 
 ## Single best next action
 

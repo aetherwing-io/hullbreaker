@@ -134,8 +134,9 @@ Tooling (zero effect on the game):
   `tools/playtest/selftest-views.mjs` (I-114),
   `tools/simlab/framing/{render-only,veil-need,zoom-pump,route-ahead,vertical-band,thumb-overlap,rig-boxes,corner-approach,tell-sweep}.mjs`,
   `tools/simlab/framing/{void_columns,readability_sheet,rig_crops,turn_sheet}.py`. Documented in
-  `tools/simlab/README.md` ("The phone frame (T-107)") and
-  `tools/simlab/TURNLAB.md` (limitations 4-5).
+  `tools/simlab/README.md` ("The phone frame (T-107)"),
+  `tools/simlab/TURNLAB.md` (limitations 4-5) and `tools/playtest/README.md`
+  ("The phone-frame tools (T-107)", with its honesty/limitations list).
 
 ## Acceptance, box by box (SPRINT T-107 order; before = main `ace6618`, after = this branch)
 
