@@ -250,7 +250,7 @@ being half-patched. Nothing below is on `task/T-121` yet.
 | `/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t121/zip-fenced.py <root>` | zip: the fenced remainder of the render-side deletion | after T-101 + T-102 |
 | `/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t121/route-zip.py <root>` | zip: the `?zip=1`-only branch T-102 adds to `route-visibility.js`, and T-102's pins of it | after T-102, when told |
 
-**Verified twice.**
+**Verified four ways.**
 
 1. **On this branch's own clone.** Hook alone: pathcheck **3916/0**; the
    ordered label diff is the 36 T-108 DELETE-WITH-FEATURE sites, plus 5
@@ -275,6 +275,58 @@ being half-patched. Nothing below is on `task/T-121` yet.
      T-102's `tools/simlab/lib/sixface-host.mjs` imports `sim/hook.js` and
      transcribes the run-reset registry row for row. `hook-t102.py` exists
      for exactly that.
+   - **Race lab, as a differential.** The committed race-lab fingerprints
+     are stale for the merged tree: 9 of 29 differ, and the same 9 differ
+     on both sides, because the in-flight lanes changed the sim. So I
+     compared what each run actually produced, before against after the
+     scripts (`race-actual.mjs`): **29/29 identical**. Traversal matrix
+     with the patched tool against the pre-patch src: **EQUIVALENT,
+     44/44**.
+3. **On the real main once T-101 and T-102 had merged.** The trial is main
+   `ace6618` + `task/T-103` + this branch. Pathcheck goes **4416/0 →
+   4344/0**, the same 80-out / 8-in label delta as the first trial, with
+   numbers masked.
+4. **With T-120's in-flight gate rebuild merged on top as well.** All five
+   scripts still apply. T-120 deletes `tools/boot-registry-check.mjs` and
+   `tools/pathcheck/boot-registry-contract.mjs`, so `hook-patch.py` now
+   skips those two when they are absent. T-120 also adds a tier map
+   (`tools/pathcheck/_tiers.mjs`) whose runner refuses to start on a stale
+   domain name, so the script renames `snap-hook-driven-through-real-sim`
+   there too. T-120's runner (`node tools/pathcheck.mjs --tier all`)
+   goes **4423/0 → 4350/0**. By domain:
+   - `movement-verb-prototypes` 39 → 17;
+   - `snap-hook-driven-through-real-sim` 21 → `flow-chain-crush-contract` 8;
+   - `t-013-game-shell` −15 (the `KeyL`/`KeyE` loop and one per-file
+     guard);
+   - `t-049` −7 and `t-051` −6 (per-file guards over the deleted hook
+     modules);
+   - `world-transitions` −3 (two band-slam sites, plus "hook.js never
+     reads the cover choreography");
+   - `t-003` −2, `t-012` −1, `g2-neck-access-plate-flip-gate` −1 ("hook.js
+     never reads the G2 render-only gate fields");
+   - `t-102-corner-turns` −1 (the zip-only site);
+   - `t-120-prototype-flags-inert` −2: T-120's own `HOOK_ENABLED` rows,
+     which skip by design once the export is gone ("its rows report
+     gone").
+
+**Lanes dispatched since this work was staged.** Main `ace6618` put
+T-105, T-107, T-120 and T-201 in flight. I checked each one with
+`git diff --name-only $(git merge-base main task/<id>) task/<id>`
+against the staged file list:
+
+- **T-120** already changes three staged files. That is handled (point 4
+  above).
+- **T-105** fences `src/ui/hud.js` and `src/ui/audio.js`, where the
+  staged edits remove the hook legend and change one comment. Its branch
+  has no commits yet.
+- **T-201** owns the sim-side zipper removal (entry 25 / I-105), so
+  `route-zip.py` keeping `routeColumnBuilt` exported is a hand-off to it.
+- **T-107**: no overlap.
+- **T-103** overlaps only on `tools/pathcheck/manifest.mjs`, on different
+  lines.
+
+Landing the scripts before those lanes write their first commits costs
+the lanes nothing.
 
 **Hook v1: what the scripts do.** src: 18 files, −717/+47. tools: 14
 files.
@@ -525,29 +577,51 @@ how an asset regression slips through. Fix direction (T-120): check only
 runtime-named and manifest-listed files by default, cache decoded headers by
 content hash, and keep the full sweep as a deep suite.
 
-## I-??? | bug | S2 | repro: boot `index.html` at any commit since 6b62b34, then in the console `(await import('/src/sim/bridge.js')).view.bullets.slotSpawned` and walk `[Symbol.for('hullbreaker.previousBridge')]` — the juice wrapper wraps the bullets owner directly; no audio wrapper anywhere in the chain | evidence: `tools/cleanup/boot-probe.mjs` frame captures (`bridge` field) at e5ce7d4 and on task/T-121; 6b62b34^:src/main.js:131-159 vs src/main.js:165
+## I-??? | bug | S2 | repro: boot `index.html` @ e5ce7d4 (or current main), then in the console `const {view} = await import('/src/sim/bridge.js')` and walk `view.bullets.slotSpawned[Symbol.for('hullbreaker.previousBridge')]` — juice's wrapper wraps the bullets owner directly; no audio wrapper anywhere in the chain | evidence: `tools/cleanup/boot-probe.mjs` frame captures (`bridge` field) at e5ce7d4 and on task/T-121; bridge dumps at 6b62b34^ and 71f3062 (T-121 scratch)
 `src/ui/audio.js` wires all of its observers when it is imported
-(audio.js:1060-1084, `after()` wraps whatever is in the slot then). Since
-`6b62b34` ("make render lifecycle explicit") the base owners install later, in
-`initializeViewRegistry()` (main.js:165), and `installView` replaces a slot
-outright, so at boot every audio observer on a slot that has an owner is
-thrown away: firing (`bullets.slotSpawned`), `player.sync`, hostile
-spawn/sync/remove, capsule pickup, loot, the lance, the finale, the corner
-(`corner.finished`), and the state-screen lifecycle (`stateScreen`, which
-drives the ambience layers). Before 6b62b34 the owners installed at import,
-and main.js imported them ahead of audio.js, so audio wrapped them. In the
-shipped default run only `bullets.hostileImpact` (and in the transform slice
-`transform.*`, which has no owner there) still reaches audio. Nothing catches
-it: the T-012 audio guards read source text, and headless runs never unlock
-an AudioContext. T-121 found it because deleting the zipper renderer's
-install let one discarded observer, the faceRevealed boom, come back. That
-lane put back do-nothing owners so the deletion stays inaudible
-(`src/render/level.js`, `zipperColumn`/`faceRevealed`). Fix direction:
-T-105, which fences audio.js. Register audio as an observer in
-`VIEW_OBSERVER_MANIFEST` (src/boot/view-init.js) after the owners, the way
-juice is. Then delete the two do-nothing owners and add a boot-time wiring
-assertion (boot-probe's `bridgeWiring` is a starting point). It changes
-what players hear, so it needs an operator ear-check.
+(audio.js:1060-1084), and `after()` wraps whatever is in the slot at that
+moment. Every owner installs later than that, in `initializeViewRegistry()`
+(main.js:165), and `installView` replaces a slot outright. So at boot,
+every audio observer on a slot that has an owner is thrown away:
+
+- firing (`bullets.slotSpawned`), `player.sync`, hostile spawn/sync/remove;
+- capsule pickup, loot, the lance, the finale;
+- the corner (`corner.finished`, `level.faceRevealed`);
+- the state-screen lifecycle (`stateScreen`: menu, pause and game-over
+  ducking, and the layer recount).
+
+The boot-time bridge dump at e5ce7d4 shows each of those slots as
+`[juice wrapper →] owner`, with no audio wrapper in the chain. What still
+plays in the shipped default run is the ambience bed, which starts when the
+AudioContext unlocks, and the hit sounds on `bullets.hostileImpact`, the one
+observer whose slot has no owner. In the transform slice, the `transform.*`
+observers die the same way once that slice installs its owner.
+
+**It is older than the lifecycle refactor.** At `6b62b34^` and at
+`71f3062`, the oldest commit in this repository's history, `player.sync`
+and `hostiles.spawned` already hold bare owners. Their owners install after
+a top-level `await awaitPreloads()`, so the import order main.js
+documented ("audio also loads after every render/ui module") did not hold.
+`6b62b34` fixed the same race for juice by making it an observer that
+installs after the owners, and left audio at import time.
+
+**Nothing catches it.** The T-012 audio guards read source text. T-042's
+behavioural half does drive `audio.js` through the real bridge hooks, but
+in a Node child where no render owner is installed, so audio's wrappers
+survive there. Browser playtests never unlock an AudioContext. My own
+audio probe could not show the voices either: at 0.2–0.3 fps on this
+host, heat decays between frames. The wiring is the evidence. T-121 found this because deleting the
+zipper renderer's install let one discarded observer, the `faceRevealed`
+boom, come back. That lane put back do-nothing owners so the deletion
+stays inaudible (`src/render/level.js`, `zipperColumn`/`faceRevealed`).
+
+**Fix direction (T-105, which fences audio.js).** Register audio as an
+observer in `VIEW_OBSERVER_MANIFEST` (`src/boot/view-init.js`) after the
+owners, the way juice is. Then delete the two do-nothing owners and add a
+boot-time wiring assertion (boot-probe's `bridgeWiring` is a starting
+point). The fix changes what players hear, so it needs an operator
+ear-check. Operator verdicts on audio given since the wiring broke were
+made on a nearly silent build; the integrator may want to note that.
 
 ## I-??? | bug | S3 | repro: boot the same tree twice concurrently with `node tools/cleanup/boot-probe.mjs --mode frame` on the shared host, then `--compare` | evidence: T-121's probe dirs: identical sim state, 38–46% of pixels different, explained each time by `__HB_PRELOAD()` art states or `HB.snapshot().post.status`
 On a loaded GPU-less host, two boots of the same tree do not render the
@@ -593,7 +667,9 @@ snapshots were served on 8771.
 | `node tools/deploy/build-bundle.mjs --ref <sha>` + per-file diff | 393 files, 80.8 MiB | 390 files, 75.3 MiB; only the 3 deleted assets and the 12 edited src files differ |
 | ESLint 10.1.0 `--no-config-lookup`, `no-unused-vars` over every edited src file | — | no findings |
 | mutation checks on the re-based / relabelled guards | — | `g1-1` red on a `?view=near`-scales-scroll mutant and on `Math.random` in the sim scroll; the flow child-ran guard red when the child throws; all restored |
-| trial merge (main `5252c18` + T-102 + T-101 + T-103 + this branch) with the five staged scripts | 4412/0 | 4340/0; label diff = the listed hook/zip sites |
+| trial merges with the five staged scripts: (1) main `5252c18` + T-102 + T-101 + T-103 + this branch; (2) main `ace6618` + T-103 + this branch; (3) = (2) + T-120 | (1) 4412/0 (2) 4416/0 (3) 4423/0 (`--tier all`) | (1) 4340/0 (2) 4344/0 (3) 4350/0; every removed label/count listed |
+| `node tools/simlab/race/lab.mjs check --every 8` on trial (1), before vs after the scripts, compared run by run (`race-actual.mjs`) | committed matrix stale for the merged tree (9/29 differ) | the same actual fingerprint on 29/29 runs |
+| `node tools/movement/matrix.mjs --grid baseline --against <trial (1) pre-patch>/src` | — | EQUIVALENT, 44 runs |
 
 Two things were **not** run.
 
@@ -606,19 +682,24 @@ Two things were **not** run.
 
 ## Single best next action
 
-**Integrator: send this lane the go once T-101, T-102 and T-103 have
-merged.** The lane will then merge main into `task/T-121` and apply the
-five staged scripts. They already apply cleanly to a trial merge of all
-three lanes, and that trial merge passes pathcheck at 4340/0. The lane
-re-runs this report's protocol on the result and hands back for
-review/merge.
+**Integrator: give this lane the go now.** T-101 and T-102 have merged.
+T-103 overlaps the staged scripts only on `tools/pathcheck/manifest.mjs`,
+on different lines, so waiting for it buys nothing. Every day of waiting
+lets T-105, T-120 and T-201 write commits that the scripts then have to
+merge around. On the go, the lane will:
+
+- merge main into `task/T-121`;
+- apply the five staged scripts, which already apply to current main +
+  T-103, and to the same with T-120 on top;
+- re-run this report's protocol;
+- hand back for review and merge.
 
 The finding that most needs a separate owner is the **audio-wiring
-issue**. Since `6b62b34` the game plays almost none of its own sound
-effects, and nothing in the gate can see it. It belongs in T-105, which
+issue**. The shipped game plays almost none of its own sound effects.
+Some of them have been silent since at least `71f3062`, the oldest commit
+in the history. Nothing in the gate can see it. It belongs in T-105, which
 fences `src/ui/audio.js`, and it needs an operator ear-check, because the
 fix changes what players hear.
 
 Merge-order note: batch 3 edits `src/render/preload.js`, which T-105
-fences too. Merging T-121 before T-105 is dispatched avoids a (small)
-conflict.
+fences too. Merging T-121 before T-105 commits avoids a small conflict.
