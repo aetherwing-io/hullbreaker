@@ -104,10 +104,36 @@ async function draws(n) {
     calls = S.renderer.info.render.calls;
   }
   times.sort((a, b) => a - b);
+  // The crisp path's own share: the same paused frame with every crisp actor
+  // off (no tile pass, no reduction, no quads), and how much it composed.
+  let split = null;
+  const dbg = window.__HB_CRISP_DEBUG;
+  if (dbg && window.__HB_CRISP) {
+    const snap = window.__HB_CRISP();
+    const drawn = snap.actors.filter((a) => a.drawn);
+    const devicePx = drawn.reduce((t, a) => t + a.rect.w * a.rect.h, 0);
+    const S = drawn.length ? drawn[0].S : 0;
+    const off = [];
+    dbg.hideAll = true;
+    try {
+      for (let i = 0; i < n; i++) {
+        sync();
+        const t0 = performance.now();
+        P.renderFrame();
+        sync();
+        off.push(performance.now() - t0);
+      }
+    } finally {
+      dbg.hideAll = false;
+    }
+    off.sort((a, b) => a - b);
+    split = { actorsOffMedianMs: +off[Math.floor(n / 2)].toFixed(2), tileDevicePx: devicePx, S,
+      tileSamples: devicePx * S * S };
+  }
   const H = await import('/src/sim/hostiles.js');
   const W = await import('/src/sim/weapons.js');
   return {
-    medianMs: +times[Math.floor(n / 2)].toFixed(2), worstMs: +times[n - 1].toFixed(2), draws: n, calls,
+    medianMs: +times[Math.floor(n / 2)].toFixed(2), worstMs: +times[n - 1].toFixed(2), draws: n, calls, split,
     hostiles: H.hostiles.length, bullets: W.bullets ? W.bullets.filter((b) => b.active !== false).length : null,
     crisp: window.__HB_CRISP ? (({ atlas, actors }) => ({ atlas, drawn: actors.filter((a) => a.drawn).length,
       S: actors.length ? actors[0].S : null }))(window.__HB_CRISP()) : null,
