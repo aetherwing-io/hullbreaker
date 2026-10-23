@@ -519,18 +519,25 @@ export function playedList() {
 export async function playedChecks(list = playedList(), jobs = Math.max(1, Math.min(3, cpus().length - 1))) {
   let results = [];
   try { results = await runMatrix(list, jobs); } catch (e) { console.error('pathcheck: T-107 turn child failed: ' + e.message); }
-  ok(results.length === list.length, `T-107: all ${list.length} played turn runs at the phone frame completed`);
+  ok(results.length === list.length, `T-107: all ${list.length} played turn runs completed`);
   for (const r of results) {
     const tag = `${r.policy}${r.query ? '?' + r.query : ''} @${r.viewport.width}x${r.viewport.height}${r.viewport.touch ? ' touch' : ''}`;
+    // which frame this run played through: the phone lens (and its actor-plane
+    // clamp) or a FAR frame, whose edges are main's (asserted statically above)
+    const L = lensForViewport(CONFIG, r.viewport.width, r.viewport.height, 'far', !!r.viewport.touch, null);
+    const phoneLens = FR.actorClampForLens(L.fovDeg);
+    const frame = phoneLens ? 'the phone frame' : 'a FAR frame';
     ok(r.finishedCorners === 6 && r.endState === 'VICTORY',
-      `T-107 [${tag}]: all five turns and the Crown approach complete at the phone frame (${r.finishedCorners}/6, ${r.endState})`);
+      `T-107 [${tag}]: all five turns and the Crown approach complete on ${frame} (${r.finishedCorners}/6, ${r.endState})`);
     for (const [family, kinds] of Object.entries(FAMILIES)) {
       const hits = kinds.map((k) => [k, r.counts[k] || 0]).filter(([, n]) => n > 0);
       const first = hits.length ? r.violations.find((v) => kinds.includes(v.kind)) : null;
       ok(hits.length === 0, `T-107 [${tag}]: T-102's ${family} contract holds on every tick` +
         (hits.length ? ` — ${hits.map(([k, n]) => `${k}x${n}`).join(', ')}; first ${JSON.stringify(first)}` : ''));
     }
-    ok(r.clampNdc < 1, `T-107 [${tag}]: RIG pinned at the right clamp renders its chest on screen (NDC ${r3(r.clampNdc)}, was ~1.012)`);
+    if (phoneLens) ok(r.clampNdc < 1, `T-107 [${tag}]: on the phone frame RIG pinned at the right clamp renders his chest on screen (NDC ${r3(r.clampNdc)}, was ~1.012)`);
+    else console.log(`pathcheck note (reported, not asserted): T-107 [${tag}]: ${frame} keeps main's right clamp — RIG's chest ` +
+      `there at NDC ${r3(r.clampNdc)} (FAR edges are asserted identical to main's above; with the follow-lead RIG does not reach it in default play)`);
   }
   // the rise and the corner camera are presentation: the simulation is
   // byte-identical with and without them (and a sim flag is not)
