@@ -10,6 +10,7 @@
 //   node tools/crisp-sprite/capture.mjs --out <dir> [--base-url <url> | --root <tree>]
 //     [--views desktop,phone,phone3,spikephone] [--query art=legacy]
 //     [--poses idle,run,jump,upright,fire,left] [--three-dir <dir>] [--probe]
+//     [--actors] [--direct] [--no-gunless] [--falsify lit]
 //
 // Views:
 //   desktop     1280x720 @ DPR 1 — the shipped FAR desktop frame
@@ -66,6 +67,9 @@ const ACTORS = has('--actors');
 // --no-gunless: skip the gun-hidden shot (today's path is measured against
 // column A's gun mask at the same placement, as the T-109 spike did)
 const NO_GUNLESS = has('--no-gunless');
+// --falsify lit: serve the crisp path with the lit material restored
+// (lib.mjs FALSIFIERS) — the gain box's falsifier, which must read red
+const FALSIFY = argv('--falsify', '');
 const views = argv('--views', 'desktop,phone').split(',');
 const POSES = argv('--poses', 'idle,run,jump,upright,fire,left').split(',');
 const RIG_DEPTH = 1.15;        // src/render/player.js RIG_SURFACE_DEPTH
@@ -92,10 +96,10 @@ async function captureView(browser, base, viewName, V) {
   const dir = join(OUT, viewName);
   await mkdir(dir, { recursive: true });
   const report = { view: viewName, viewport: V.viewport, dpr: V.dpr, frame: V.frame, base, query: EXTRA,
-    direct: DIRECT, shots: {}, errors: [], probe: null };
+    direct: DIRECT, falsify: FALSIFY || null, shots: {}, errors: [], probe: null };
   const save = () => writeFile(join(dir, 'capture.json'), JSON.stringify(report, null, 1) + '\n');
   const { context, page, bootMs } = await openGame(browser, base, V,
-    { query: EXTRA, threeDir: THREE_DIR, direct: DIRECT, errors: report.errors });
+    { query: EXTRA, threeDir: THREE_DIR, direct: DIRECT, errors: report.errors, falsify: FALSIFY });
   report.bootMs = bootMs;
   await page.evaluate(installHarness, { x: 6, scroll: 0 });
   await frames(page, 6);

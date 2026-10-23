@@ -39,7 +39,22 @@ const THREE_FILES = {
 export const TIMEOUT = 900000;
 export const BASE_QUERY = 'testapi=1&audio=0&shell=0&adaptive=0&momentum=0&score=0&fixeddt=16.667';
 
-export async function openGame(browser, base, V, { query = '', threeDir = '', direct = false, errors = [] } = {}) {
+// --falsify lit: the gain box's falsifier, "restore the lit material". The
+// crisp path's tile pass is served with its unlit patch removed and the light
+// rig enrolled on its layer, so RIG's MeshStandardMaterial planes are shaded
+// by the shipped key/fill/hemisphere again — and NOTHING else changes (device
+// grid, nearest mip-free atlases, one reduction, the exact inverse tone map).
+// Served from this route only; the file on disk is untouched.
+const FALSIFIERS = {
+  lit: [
+    ['function unlitPatch(shader) {', 'function unlitPatch(shader) { return;'],
+    ['cam.layers.set(CRISP_LAYER);',
+      'cam.layers.set(CRISP_LAYER); scene.traverse((o) => { if (o.isLight) o.layers.enable(CRISP_LAYER); });'],
+  ],
+};
+
+export async function openGame(browser, base, V, { query = '', threeDir = '', direct = false, errors = [],
+  falsify = '' } = {}) {
   const context = await browser.newContext({ viewport: V.viewport, deviceScaleFactor: V.dpr });
   const page = await context.newPage();
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
@@ -71,6 +86,19 @@ export async function openGame(browser, base, V, { query = '', threeDir = '', di
       const patched = src.replace(/const POST_BOOT_BUDGET_MS = \d+;/, 'const POST_BOOT_BUDGET_MS = 240000;');
       if (patched === src) errors.push('post.js boot budget constant not found');
       return route.fulfill({ status: 200, contentType: 'text/javascript; charset=utf-8', body: patched,
+        headers: { 'Cache-Control': 'no-store' } });
+    });
+  }
+  if (falsify) {
+    const edits = FALSIFIERS[falsify];
+    if (!edits) throw new Error(`unknown falsifier ${falsify}`);
+    await page.route('**/src/render/crisp-sprites.js', async (route) => {
+      let src = await (await route.fetch()).text();
+      for (const [from, to] of edits) {
+        if (!src.includes(from)) errors.push(`falsifier ${falsify}: "${from}" not found`);
+        src = src.split(from).join(to);
+      }
+      return route.fulfill({ status: 200, contentType: 'text/javascript; charset=utf-8', body: src,
         headers: { 'Cache-Control': 'no-store' } });
     });
   }

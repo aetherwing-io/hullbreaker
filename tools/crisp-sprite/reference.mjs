@@ -29,7 +29,8 @@
 // in game) and ref.json (origin = sim point in pixel-edge coords).
 //
 // Honesty: the in-game crisp path is NOT this code (it composes on the GPU at
-// up to 8x with the atlas's own mip chain as the prefilter), so agreement
+// 2x-8x the device density, sampling the nearest atlas texel, mip-free, then
+// box-reduces once in a shader), so agreement
 // between the two is evidence, not a tautology; and this is still a
 // reconstruction of the spike's method, not the spike's own crisp.py, which
 // hard-codes b114869's trims.
