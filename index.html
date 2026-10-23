@@ -4,14 +4,33 @@
 <meta charset="utf-8">
 <title>HULLBREAKER</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Home-screen play (T-105): a web app manifest for Android/Chrome, and the
+     iOS Safari equivalents it still reads from meta tags. black-translucent
+     lets the game draw under the status bar; every HUD box already keeps to
+     env(safe-area-inset-*). Icons are crops of the title key art
+     (tools/assets/make-app-icons.py). -->
+<link rel="manifest" href="assets/generated/ui/app/hullbreaker.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HULLBREAKER">
+<meta name="theme-color" content="#07131a">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/generated/ui/app/apple-touch-icon-180.png">
+<!-- The title art is a CSS background (a no-cors fetch), so its preload is
+     no-cors too. -->
 <link rel="preload" as="image" type="image/webp" href="assets/generated/ui/title-meridian-ascent-v1.webp" fetchpriority="high">
 <!-- These are compact runtime derivatives of the reviewed PNG masters.  They
      start before the module graph so iOS cannot finish the small actor sheets
-     while permanently timing the world-art lanes out of the shared boot gate. -->
-<link rel="preload" as="image" type="image/webp" href="assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp" fetchpriority="high">
-<link rel="preload" as="image" type="image/webp" href="assets/generated/environment/meridian-foreground-pack-v1.webp" fetchpriority="high">
-<link rel="preload" as="image" type="image/webp" href="assets/generated/backdrops/backdrop-meridian-coils-v3.webp">
-<link rel="preload" as="image" type="image/webp" href="assets/generated/environment/meridian-component-atlas-v1.webp">
+     while permanently timing the world-art lanes out of the shared boot gate.
+     `crossorigin` is load-bearing: src/render/preload.js loads them through
+     THREE.TextureLoader, which requests in CORS mode (crossOrigin
+     'anonymous'). A preload in a different mode is never matched — the
+     browser fetched each of these twice and warned "preloaded but not used"
+     (T-105). -->
+<link rel="preload" as="image" type="image/webp" crossorigin href="assets/generated/backdrops/backdrop-meridian-anatomy-v1.webp" fetchpriority="high">
+<link rel="preload" as="image" type="image/webp" crossorigin href="assets/generated/environment/meridian-foreground-pack-v1.webp" fetchpriority="high">
+<link rel="preload" as="image" type="image/webp" crossorigin href="assets/generated/backdrops/backdrop-meridian-coils-v3.webp">
+<link rel="preload" as="image" type="image/webp" crossorigin href="assets/generated/environment/meridian-component-atlas-v1.webp">
 <link rel="icon" href="assets/ui/favicon.svg" type="image/svg+xml">
 <style>
   :root {
@@ -659,6 +678,21 @@
   #ovPanel .keys { margin: 10px 0 2px; font-size: 12px; opacity: .7; letter-spacing: .06em; }
   #ovPanel .keys b { color: #ffe9c2; }
   #ovPanel .note { margin: 8px 0 0; font-size: 11px; }
+  /* Touch (T-105): the keyboard legend's verbs as buttons — a phone has no
+     R / Q / H. Each one presses that key on the player's behalf
+     (src/ui/shell.js), so there is one lifecycle path, not two. 44 px is
+     the touch-target floor the deck's chips use. */
+  #ovPanel .shell-actions {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 2px 0 8px;
+  }
+  #ovPanel .shell-actions button {
+    -webkit-appearance: none; appearance: none; margin: 0; min-height: 44px; padding: 0 14px;
+    border: 1px solid rgba(255,233,194,.34); border-radius: 3px; background: rgba(7,19,26,.62);
+    color: #ffe9c2; font: 800 11px/1 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .12em;
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent; cursor: pointer;
+  }
+  #ovPanel .shell-actions button:active { color: #07131a; border-color: #ffe9c2; background: #ffe9c2; }
+  #overlay.victory .result-panel > .shell-actions { grid-column: 2; justify-content: flex-start; margin: 0; }
 
   #shell {
     position: fixed; inset: 0; z-index: 30; display: none; overflow: hidden;
@@ -783,7 +817,8 @@
     #overlay.victory #ovBody::before { display: none; }
   }
   #shellText {
-    position: absolute; left: var(--tx); top: var(--ty); width: var(--tw);
+    /* never inside a notch: on desktop the inset is 0 and this is var(--tx) */
+    position: absolute; left: max(var(--tx), calc(var(--hud-safe-left) + 12px)); top: var(--ty); width: var(--tw);
     z-index: 2; min-width: 260px;
     text-shadow: 0 2px 18px rgba(7,19,26,.95), 0 0 42px rgba(7,19,26,.9);
   }
@@ -803,7 +838,8 @@
   @keyframes sl-pulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { #shellText .prompt { animation: none; } }
   #shellFoot {
-    position: absolute; z-index: 2; right: auto; bottom: 4.5%; left: 5%; width: min(620px, 70vw);
+    position: absolute; z-index: 2; right: auto; width: min(620px, 70vw);
+    bottom: max(4.5%, calc(var(--hud-safe-bottom) + 8px)); left: max(5%, calc(var(--hud-safe-left) + 12px));
     font-size: 11px; line-height: 1.8; letter-spacing: .08em; text-align: left;
     text-shadow: 0 1px 8px #07131a, 0 0 18px #07131a;
   }
@@ -823,7 +859,11 @@
     flex-direction: column; align-items: center; justify-content: center;
     background: #07131a; color: #e8edf2; text-align: center;
     font-family: ui-monospace, Menlo, Consolas, monospace;
-    padding: 24px; box-sizing: border-box; overflow: auto;
+    /* 24 px everywhere on a desktop; never inside a notch or the home
+       indicator on a phone (T-105) */
+    padding: max(24px, var(--hud-safe-top)) max(24px, calc(var(--hud-safe-right) + 12px))
+      max(24px, var(--hud-safe-bottom)) max(24px, calc(var(--hud-safe-left) + 12px));
+    box-sizing: border-box; overflow: auto;
   }
   #fail.on { display: flex; }
   #fail .failbox { max-width: min(620px, 92vw); }
@@ -936,39 +976,156 @@
       background: linear-gradient(90deg, rgba(7,19,26,.9), rgba(7,19,26,.28)),
                   linear-gradient(0deg, rgba(7,19,26,.72), transparent 48%);
     }
-    #shellText { left: 6%; top: 16%; width: 88%; min-width: 0; text-align: left; }
-    #shellText h1 { font-size: clamp(38px, 13vw, 62px); }
+    #shellText {
+      left: max(6%, calc(var(--hud-safe-left) + 12px)); top: 16%; width: 88%; min-width: 0; text-align: left;
+    }
+    /* T-105: 13vw with .115em tracking drew HULLBREAKER ~1.15 viewport
+       widths wide on every portrait phone (320-430 px measured), so a player
+       read "HULLBREAK". 9.4vw with tighter tracking keeps the word inside
+       88% of the width even in a wide fallback face (iOS has no Impact). */
+    #shellText h1 { font-size: clamp(28px, 9.4vw, 62px); letter-spacing: .06em; }
     #shellText .tag { font-size: 11px; letter-spacing: .1em; }
-    #shellFoot { left: 6%; bottom: 2.5%; width: 88%; font-size: 10px; line-height: 1.6; }
+    #shellFoot {
+      left: max(6%, calc(var(--hud-safe-left) + 12px)); bottom: max(2.5%, calc(var(--hud-safe-bottom) + 8px));
+      width: 88%; font-size: 10px; line-height: 1.6;
+    }
     #shellFoot .dim { display: none; }
   }
 
   /* Phones in landscape are wide but short, so width-only mobile rules never
-     reached them. Keep each instrument in its own row and reserve the lower
-     edge for touch instead of letting three HUD strings collide. */
+     reached them. T-105: the whole HUD is ONE top band — RIG's instrument on
+     the left, the objective on the right, a lane between them for the loot
+     card and the Crown finale — and nothing in it reaches below 20% of the
+     screen height, so the central 60% x 60% stays the play field (measured:
+     tools/playtest/phone-shell.mjs). Every size comes from the viewport and
+     the safe insets, never from RIG, so a closer phone camera (T-107) needs
+     no HUD change. The right edge below the band belongs to the touch deck's
+     PAUSE / AUTO chips (src/pure/touch-stick.js places them under
+     #thumbDeck's --thumb-top-reserve). */
   @media (max-height: 520px) and (pointer: coarse),
          (max-height: 520px) and (max-width: 980px) {
-    #hudRigPanel {
-      top: max(7px, var(--hud-safe-top)); left: max(10px, var(--hud-safe-left));
-      width: min(300px, 36vw); min-width: 0; padding: 6px 8px;
+    :root {
+      --hud-l: max(10px, calc(var(--hud-safe-left) + 4px));
+      --hud-r: max(10px, calc(var(--hud-safe-right) + 4px));
+      --hud-t: max(6px, var(--hud-safe-top));
+      /* the band ends 2 px above the central region (20% of the height) */
+      --hud-band: calc(20vh - var(--hud-t) - 2px);
+      --hud-rig-w: clamp(212px, 34vw, 300px);
+      --hud-obj-w: clamp(206px, 30vw, 268px);
+      /* the deck's chip column: 2 chips of clamp(44px, 11.5% of the short
+         side, 56px), the 8 px gap and the 6 px margin (CONFIG.touch.layout) */
+      --hud-chips: calc(2 * clamp(44px, 11.5vmin, 56px) + 14px);
+      --hud-lane-l: calc(var(--hud-l) + var(--hud-rig-w) + 8px);
+      --hud-lane-r: calc(var(--hud-safe-right) + var(--hud-chips) + 8px);
+      --hud-lane-w: calc(100vw - var(--hud-lane-l) - var(--hud-lane-r));
     }
+    #hudRigPanel {
+      top: var(--hud-t); left: var(--hud-l); width: var(--hud-rig-w); min-width: 0;
+      max-height: var(--hud-band); padding: 5px 8px 5px;
+      display: grid; grid-template-columns: auto auto minmax(0, 1fr);
+      column-gap: 7px; row-gap: 4px; align-items: center;
+    }
+    /* RIG // VITALS collapses into the grid: its label and rule go, the
+       lives count (hidden here before T-105) sits beside the hull pips */
+    #hudRigPanel .hud-eyebrow { display: contents; }
+    #hudRigPanel .hud-eyebrow > span:first-child, #hudRigPanel .hud-eyebrow::after { display: none; }
+    #hudLives { grid-column: 2; grid-row: 1; font-size: 9px; letter-spacing: .06em; }
+    #hudRigPanel .hud-vitals { grid-column: 1; grid-row: 1; margin: 0; gap: 4px; }
+    #hudRigPanel .hud-weapon {
+      grid-column: 3; grid-row: 1; margin: 0; padding: 0; border: 0; gap: 0 5px;
+    }
+    #hudRigPanel .hud-power { grid-column: 1 / span 2; grid-row: 2; margin: 0; gap: 4px; font-size: 7px; }
+    #hudRunPanel { grid-column: 3; grid-row: 2; margin: 0; padding: 0; border: 0; }
+    #hudWeaponOther, #hudStatus { display: none; }
+    #hudRushRow { margin-top: 3px; }
+    #hudHealthPips { font-size: 11px; }
+    #hudHealthValue { font-size: 8px; }
+    #hudWeaponKey { min-width: 26px; padding: 3px 3px; font-size: 9px; }
+    /* a long rolled name wraps onto a second line instead of losing its end */
+    #hudWeaponName {
+      font-size: 9px; line-height: 1.1; white-space: normal; overflow-wrap: anywhere;
+      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    }
+    .hud-metric b { font-size: 9px; }
+    #hudPowerState { font-size: 7px; }
+    .hud-metric span { font-size: 5px; }
+    /* the objective: one line that holds 28 characters, top right, above
+       the deck's chips */
     #hudObjectivePanel {
-      top: max(7px, var(--hud-safe-top)); right: max(10px, var(--hud-safe-right));
-      left: auto; width: min(320px, 38vw); min-height: 34px; padding: 5px 7px;
-      transform: none;
+      top: var(--hud-t); right: var(--hud-r); left: auto; width: var(--hud-obj-w);
+      min-height: 0; padding: 4px 7px 5px; transform: none;
     }
     #hudObjectivePanel.empty { transform: translateY(-4px); }
-    #hudWeaponOther, #hudStatus { display: none; }
-    .hud-vitals, .hud-weapon, .hud-power, #hudRushRow { margin-top: 4px; }
-    #hudRunPanel { margin-top: 4px; padding-top: 4px; }
-    #hudRigPanel .hud-eyebrow { display: none; }
-    #hudHealthPips { font-size: 11px; }
-    #hudWeaponName, .hud-metric b { font-size: 9px; }
-    .hud-metric span, #hudObjectiveLabel { font-size: 5px; }
-    #hudObjective { font-size: 8px; }
+    #hudObjectiveLabel { display: none; }
+    #hudObjective { margin-top: 0; font-size: 10px; letter-spacing: .06em; }
+    /* the lane holds one transient at a time: while the loot card or the
+       finale is up, the objective steps aside (the portrait rule, below) */
+    body:has(#lootReveal.is-live) #hudObjectivePanel,
+    body:has(#finale.on) #hudObjectivePanel { opacity: 0; }
+    #finale {
+      top: var(--hud-t); left: var(--hud-lane-l); right: var(--hud-lane-r);
+      width: auto; max-width: 440px; margin: 0 auto; max-height: var(--hud-band);
+      padding: 5px 9px 6px; transform: translateY(-7px) scale(.985);
+      font-size: 10px; letter-spacing: .06em;
+    }
+    #finale.on { transform: none; }
+    #finaleMeta { margin-top: 3px; font-size: 8px; line-height: 1.25; letter-spacing: .04em; }
+    #finaleProgress { height: 3px; margin-top: 3px; }
     #touchDeck { height: 46vh; height: 46dvh; }
     .touch-chip { bottom: max(30px, calc(env(safe-area-inset-bottom) + 21px)); }
     #touchCue { font-size: 8px; }
+
+    /* State screens on a short glass: one compact column that fits above
+       the deck's modal cue (a touch player's one instruction), every line
+       inside the safe insets. */
+    #overlay {
+      box-sizing: border-box; padding: max(8px, var(--hud-safe-top))
+        calc(var(--hud-safe-right) + 12px) calc(var(--hud-safe-bottom) + 10px)
+        calc(var(--hud-safe-left) + 12px);
+    }
+    html.touch-twin #overlay { padding-bottom: calc(var(--hud-safe-bottom) + 58px); }
+    #overlay h1 { margin-bottom: 8px; font-size: 30px; }
+    #overlay[data-state="paused"] h1,
+    #overlay[data-state="game_over"] h1,
+    #overlay[data-state="slice_retry"] h1 { font-size: clamp(28px, 9vh, 44px); }
+    #overlay[data-state="paused"] h1::before,
+    #overlay[data-state="game_over"] h1::before,
+    #overlay[data-state="slice_retry"] h1::before { margin-bottom: 5px; font-size: 8px; }
+    #overlay p { margin: 3px 0; font-size: 12px; }
+    #overlay .dim { margin-top: 8px; }
+    #ovPanel { margin: 2px 0 6px; }
+    #ovPanel .panel { padding: 7px 12px 6px; }
+    #ovPanel .statgrid { grid-template-columns: auto auto auto auto; gap: 1px 14px; font-size: 11px; }
+    #ovPanel .keys { margin: 6px 0 2px; font-size: 11px; }
+    #ovPanel .note { margin-top: 5px; font-size: 10px; }
+    #overlay.victory {
+      justify-content: center; padding: max(10px, var(--hud-safe-top))
+        calc(var(--hud-safe-right) + 16px) calc(var(--hud-safe-bottom) + 10px)
+        calc(var(--hud-safe-left) + 20px);
+    }
+    html.touch-twin #overlay.victory { padding-bottom: calc(var(--hud-safe-bottom) + 58px); }
+    #overlay.victory > * { width: min(600px, 64vw); }
+    #overlay.victory #ovTitle {
+      margin-bottom: 6px; font-size: clamp(34px, 11vh, 58px); white-space: nowrap;
+    }
+    #overlay.victory #ovTitle::before { margin-bottom: 6px; font-size: 8px; letter-spacing: .18em; }
+    #overlay.victory #ovBody { margin-bottom: 8px; }
+    #overlay.victory #ovBody .victory-kicker { margin-bottom: 4px; font-size: 11px; }
+    #overlay.victory #ovBody .victory-rig { font-size: 11px; }
+    #overlay.victory #ovBody .victory-reply { margin-top: 3px; font-size: 13px; line-height: 1.3; }
+    #overlay.victory #ovPanel .result-panel {
+      grid-template-columns: 82px minmax(0, 1fr); gap: 6px 12px; padding: 8px 12px 7px;
+    }
+    .result-rank { padding-right: 10px; }
+    .result-rank strong { font-size: 50px; }
+    .result-strip b { font-size: 15px; }
+    #overlay.victory .result-panel > .keys { font-size: 10px; }
+    #fail { padding-top: max(14px, var(--hud-safe-top)); padding-bottom: max(14px, var(--hud-safe-bottom)); }
+    #fail h2 { margin-bottom: 10px; font-size: clamp(22px, 7vh, 34px); }
+    #fail p { margin: 5px 0; font-size: clamp(13px, 4vh, 17px); line-height: 1.4; }
+    #failBtn { margin: 12px 0 6px; padding: 11px 28px; font-size: 18px; }
+    #fail .failhint { font-size: 12px; }
+    #fail details { margin-top: 12px; }
   }
 </style>
 <!-- ===== FAILSAFE BOOTSTRAP (T-032) ==================================
@@ -1022,19 +1179,55 @@
       "a": "Try again"
     },
     "hint": "Press R, or click the button, to play again.",
+    "hintTouch": "Tap the button to play again.",
     "tell": "If this keeps happening, show this screen to a grown-up.",
     "more": "What broke (for grown-ups)"
   };
 
   // mirrors FAILSAFE in src/pure/failsafe.js; pathcheck asserts they agree
   var WATCH = { bootMs: 10000, stallMs: 4000, tickMs: 1000 };
+  var WARM = { beats: 3, stallMs: 10000 };
+  var POLICY = { freezeStallMs: WATCH.stallMs, warmBeats: WARM.beats, warmStallMs: WARM.stallMs };
   var KEYS = ['KeyR', 'Enter', 'Space'];
   var HARD = { boot: 1, crash: 1, frozen: 1 };     // panels that never downgrade
+
+  // A phone has no R key: the panel says "tap" wherever the touch deck
+  // would install. Mirrors failsafeHintMode in src/pure/shell-copy.js;
+  // pathcheck runs both over the same inputs.
+  function hintMode(raw, hw) {
+    if (raw === '0' || raw === 'off') return 'keys';
+    if (raw === '1' || raw === 'on' || raw === 'legacy') return 'touch';
+    return hw ? 'touch' : 'keys';
+  }
+  var TOUCH_HINT = (function () {
+    try {
+      var raw = new URLSearchParams(location.search).get('touch');
+      var hw = navigator.maxTouchPoints > 0 ||
+        (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
+      return hintMode(raw, hw) === 'touch';
+    } catch (e) { return false; }
+  })();
+
+  // One watchdog sample as a decision. Mirrors freezeVerdict in
+  // src/pure/failsafe.js (same ES5 subset); pathcheck runs both over the
+  // same seeded states and requires every verdict to agree.
+  function freezeVerdict(s, now, P) {
+    if (!s.booted || s.slept || !s.visible) return 'ok';
+    if (s.showing && s.showing !== 'slow') return 'ok';
+    if (s.beats < P.warmBeats) {
+      if (s.showing === 'slow') return 'ok';
+      var since = Math.max(s.bootedAt, s.visibleSince);
+      return now - since >= P.warmStallMs ? 'slow' : 'ok';
+    }
+    if (s.showing === 'slow') return 'hide';
+    if (now - s.visibleSince < P.freezeStallMs) return 'ok';
+    return now - s.lastBeatAt >= P.freezeStallMs ? 'frozen' : 'ok';
+  }
 
   var booted = false, showing = null, beats = 0, errors = 0, waiting = false;
   var notes = [];
   var now = Date.now();
-  var visibleSince = now, lastBeatAt = now, lastBeats = 0, lastTickAt = now;
+  var visibleSince = now, lastBeatAt = now, lastBeats = 0, lastTickAt = now, bootedAt = now;
 
   function el(id) { return document.getElementById(id); }
 
@@ -1052,7 +1245,7 @@
     el('failTitle').textContent = text.t;
     el('failBody').textContent = text.b;
     el('failBtn').textContent = text.a;
-    el('failHint').textContent = HB_FAIL_TEXT.hint;
+    el('failHint').textContent = TOUCH_HINT ? HB_FAIL_TEXT.hintTouch : HB_FAIL_TEXT.hint;
     el('failTell').textContent = HB_FAIL_TEXT.tell;
     el('failMore').textContent = HB_FAIL_TEXT.more;
     el('failDetail').textContent = notes.join('\n\n');
@@ -1142,12 +1335,25 @@
     var slept = t - lastTickAt > WATCH.tickMs * 3;  // our own timer was suspended:
     lastTickAt = t;                                 //   the page was frozen, not stuck
     if (beats !== lastBeats) { lastBeats = beats; lastBeatAt = t; }
-    if (!booted || showing || slept) return;
-    if (document.visibilityState !== 'visible') { visibleSince = t; lastBeatAt = t; return; }
-    if (t - visibleSince < WATCH.stallMs) return;
-    if (t - lastBeatAt >= WATCH.stallMs)
+    var visible = document.visibilityState === 'visible';
+    if (!visible) { visibleSince = t; lastBeatAt = t; }
+    // Until the loop has drawn its first frames (WARM.beats) a silent
+    // heartbeat is the boot finishing — a first shader compile on a slow
+    // phone — and earns at most the soft "still loading" panel, which comes
+    // down by itself once frames flow. After warm-up: the 4 s rule.
+    var verdict = freezeVerdict({
+      booted: booted, showing: showing, slept: slept, visible: visible, beats: beats,
+      bootedAt: bootedAt, visibleSince: visibleSince, lastBeatAt: lastBeatAt,
+    }, t, POLICY);
+    if (verdict === 'slow') {
+      show('slow', new Date().toISOString() + '  booted ' + Math.round((t - bootedAt) / 1000) +
+        's ago, but only ' + beats + ' frame(s) have been drawn');
+    } else if (verdict === 'hide') {
+      hide();
+    } else if (verdict === 'frozen') {
       show('frozen', new Date().toISOString() + '  the frame loop stopped ' +
         Math.round((t - lastBeatAt) / 1000) + 's ago');
+    }
   }, WATCH.tickMs);
 
   var API = {
@@ -1163,6 +1369,7 @@
     // — that is the whole point of it being the last statement in main.js.
     booted: function () {
       booted = true;
+      bootedAt = Date.now();
       if (showing === 'slow' || showing === 'boot') hide();
     },
     isBooted: function () { return booted; },
@@ -1173,6 +1380,8 @@
     detail: function () { return notes.join('\n\n'); },
     text: HB_FAIL_TEXT,
     watch: WATCH,
+    warm: WARM,
+    touchHint: TOUCH_HINT,
     keys: KEYS,
     onUncaught: null,
   };
