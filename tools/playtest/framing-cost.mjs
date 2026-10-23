@@ -28,9 +28,15 @@ import { launchBrowser } from '../assets/lib/browser.mjs';
 
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.indexOf('--' + n); return i >= 0 && argv[i + 1] !== undefined ? argv[i + 1] : d; };
+// label=<baseUrl>|<query>: split on the FIRST '=' and the first '|' only, so a
+// query value (view=far, rise=steep) survives intact
 const variants = opt('variants', 'phone=http://127.0.0.1:8776|,far=http://127.0.0.1:8776|view=far').split(',').map((v) => {
-  const [label, rest] = v.split('='); const [base, q] = rest.split('|'); return { label, base, query: q || '' };
+  const eq = v.indexOf('=');
+  const label = v.slice(0, eq), rest = v.slice(eq + 1);
+  const bar = rest.indexOf('|');
+  return { label, base: bar < 0 ? rest : rest.slice(0, bar), query: bar < 0 ? '' : rest.slice(bar + 1) };
 });
+for (const v of variants) if (!v.label || !/^https?:\/\//.test(v.base)) throw new Error(`bad --variants entry: ${JSON.stringify(v)}`);
 const [vw, vh] = opt('viewport', '844x390').split('x').map(Number);
 const touch = argv.includes('--touch');
 const dpr = +opt('dpr', '1');
