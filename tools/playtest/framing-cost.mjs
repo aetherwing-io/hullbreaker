@@ -88,13 +88,19 @@ try {
         const res = await page.evaluate(async () => {
           const W = await import('/src/sim/weapons.js');
           const CAM = await import('/src/render/camera.js');
+          const SC = await import('/src/render/scene.js');
           let live = 0; for (const b of W.bulletPool) if (b.alive) live++;
+          // the renderer's own count for the last frame drawn: a load-independent
+          // measure of what the framing asks the GPU to do (frustum-culled draw
+          // calls and triangles), beside the wall-clock sampler
+          const ri = SC.renderer && SC.renderer.info ? SC.renderer.info.render : null;
           return { perf: HB.perf(), liveProjectiles: live,
+            render: ri ? { calls: ri.calls, triangles: ri.triangles, points: ri.points, lines: ri.lines } : null,
             framing: typeof CAM.cameraFramingSnapshot === 'function' ? CAM.cameraFramingSnapshot().id : 'far' };
         });
         await page.evaluate(() => { globalThis.__STRESS_ON__ = false; });
         readings.push({ round: r + 1, variant: v.label, ...res, errors, wallMs: Date.now() - t0 });
-        log(`round ${r + 1} ${v.label}: ${JSON.stringify(res.perf)} live ${res.liveProjectiles} (${res.framing})`);
+        log(`round ${r + 1} ${v.label}: ${JSON.stringify(res.perf)} render ${JSON.stringify(res.render)} live ${res.liveProjectiles} (${res.framing})`);
       } catch (e) {
         readings.push({ round: r + 1, variant: v.label, error: String(e.message || e).split('\n')[0], errors });
         log(`round ${r + 1} ${v.label}: FAILED ${e.message}`);
@@ -110,7 +116,10 @@ const summary = {};
 for (const v of variants) {
   const rs = readings.filter((x) => x.variant === v.label && x.perf);
   const med = (k) => { const a = rs.map((x) => x.perf[k]).filter(Number.isFinite).sort((p, q) => p - q); return a.length ? a[Math.floor(a.length / 2)] : null; };
-  summary[v.label] = { n: rs.length, medianAvgMs: med('avgMs'), medianWorstMs: med('worstMs'), medianOver20ms: med('over20ms'), medianFps: med('fps') };
+  const medR = (k) => { const a = rs.map((x) => x.render && x.render[k]).filter(Number.isFinite).sort((p, q) => p - q); return a.length ? a[Math.floor(a.length / 2)] : null; };
+  summary[v.label] = { n: rs.length, medianAvgMs: med('avgMs'), medianWorstMs: med('worstMs'), medianOver20ms: med('over20ms'), medianFps: med('fps'),
+    medianCalls: medR('calls'), medianTriangles: medR('triangles'),
+    framings: [...new Set(rs.map((x) => x.framing))] };
 }
 console.log(JSON.stringify(summary, null, 1));
 if (out) await writeFile(resolve(out), JSON.stringify({ tool: 'tools/playtest/framing-cost.mjs', viewport: { vw, vh, dpr, touch },
