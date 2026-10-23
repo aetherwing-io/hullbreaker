@@ -1,0 +1,6 @@
+1280x720 ?juice=0: 17 poses, 0 differing camera numbers (max |delta| 0) | edges A L -31.114014809188518 R 50.23319842508215 / B L -31.114014809188518 R 50.23319842508215
+1920x1080 ?juice=0: 17 poses, 0 differing camera numbers (max |delta| 0) | edges A L -31.114014809188518 R 50.23319842508215 / B L -31.114014809188518 R 50.23319842508215
+1280x800 ?juice=0: 17 poses, 0 differing camera numbers (max |delta| 0) | edges A L -27.438263128944754 R 45.73492361770377 / B L -27.438263128944754 R 45.73492361770377
+CAMERA IDENTICAL (every element Object.is-equal)
+compare exit 0
+IDENT DONE 14:15:50

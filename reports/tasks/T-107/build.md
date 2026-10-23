@@ -1,11 +1,13 @@
 # T-107 build report — the phone camera (+ T-204 per-side rise, T-102 R2/R3/I-104)
 
 Worktree `/home/user/hullbreaker/.claude/worktrees/T-107`, branch `task/T-107`,
-base `ace6618` (main at dispatch). **Merged with main twice, as merge commits:**
-`af8bb0b` (T-103's guns in hands, decisions 27) at `cda5057`, then **`71d3941`
-(T-201's race pass, merged on main at `b8d1b81`) at `e55100a`**. Conflicts: the
-pathcheck manifest both times — **T-107's domain is d83** (d79/d80 T-103, d81
-T-201; d82 left for T-105) — and `tools/simlab/README.md` (both kept).
+base `ace6618` (main at dispatch). **Merged with main three times, as merge
+commits:** `af8bb0b` (T-103's guns in hands, decisions 27) at `cda5057`;
+**`71d3941` (T-201's race pass, merged on main at `b8d1b81`) at `e55100a`**;
+and **`9cb3038` (T-105's phone shell, T-121's cleanup phase 1, decisions 28) at
+`9c4ade8`**. Conflicts: the pathcheck manifest every time — **T-107's domain is
+d83** (d79/d80 T-103, d81 T-201, d82 T-105) — and once `tools/simlab/README.md`
+(both kept).
 Resumed twice from container restarts: first from the previous agent's
 uncommitted snapshot `f245087`, then from `dd367d1` (the readability tool's
 boot retry and the portrait-gain sheets, reviewed and kept). Everything below
@@ -20,9 +22,16 @@ session's batches. All servers were stopped at the end.
 **Which tree each number is from.** Rows marked *pre-merge* were measured on
 this branch before T-201 merged and before the clamp rule below; they are kept
 where T-201 cannot move them (camera, lens, veil, ascent) and re-measured on
-the final tree everywhere T-201 or the clamp rule can (edges, route-ahead,
-R2 near corners, the clamp near corners, the paced-gunner guard, smoke,
-pathcheck).
+the tree merged with T-201 everywhere T-201 or the clamp rule can (edges,
+route-ahead, R2 near corners, the clamp near corners, the paced-gunner guard).
+"Final tree" in the boxes means that tree (main `71d3941` merged). The last
+merge (`9cb3038`) changes no file under `src/sim`, no camera, config, path,
+traversal, ascent, framing or touch-layout module; in `src/pure` it only
+deletes three unused exports and adds T-105's shell copy and failsafe — so
+those measurements stand. What it can move was re-run on the tree merged with
+it: the gates (fast, full, smoke), the selftest, the desktop camera identity
+and the `?view=far` hatch against main `9cb3038`, and RIG against T-105's
+phone HUD (see "Verification").
 
 Host: GPU-less SwiftShader, 4 cores shared with several agents, load average
 40-95 through both sessions. Every browser number below is from that host and
@@ -172,12 +181,15 @@ first run without `?juice=0` differed after completed corners only, by up to
 0.29 tiles of camera translation: the corner-completion juice adds shake
 trauma, which a paused page never decays, and the shake's phase depends on
 each page's `gameMs` at pause. Both trees run the same shake code; the
-projection matrices were identical there too. *Pre-merge* run; the camera
-code is unchanged since. The edges: the probe then also recorded EDGE_R
-moving at desktop (the first, all-viewport clamp); under the lens rule every
-FAR frame calibrates main's edges exactly (asserted, box 8), and the live
-`?view=far` probe on the final code reads main's numbers to 1e-13 ("The touch
-deck" section).
+projection matrices were identical there too. That run was *pre-merge*, when
+the probe also recorded EDGE_R moving at desktop (the first, all-viewport
+clamp). **Re-run on the final tree** (main `71d3941` vs this branch, the same
+three viewports, `?juice=0`; `evidence/desktop-camera-identity-final.log`,
+`evidence/identity-final-{main,branch}-j0.json`): **CAMERA IDENTICAL** — 17
+poses x 3 viewports, 0 differing numbers — **and the live edges are main's to
+the last bit** (1280x720 and 1920x1080: L -31.114014809188518, R
+50.23319842508215; 1280x800: L -27.438263128944754, R 45.73492361770377, both
+trees).
 
 ### 2. RIG's height share at 844x390 / 932x430 / 667x375; portrait — MET
 
@@ -615,8 +627,9 @@ changed — moving EDGE_L moves the damage plane.
 ### 10. Frame cost, phone frame vs FAR on the same viewport — reported; this host cannot measure the 60 fps bar (entry 18), the draw counts say the frame costs no more
 
 **The stress path, as entry 18 asks** (`tools/playtest/framing-cost.mjs`: boot,
-hold right, then twelve spread shots a frame — the 256-slot projectile pool
-saturates — plus a death burst and flash every frame for 5 s; `HB.perf()`'s
+hold right, then twelve spread-gun shots a frame in a ring (T-011's
+`juice-stress.mjs` load; the 256-slot projectile pool saturates) plus a death
+burst and flash every frame for 5 s; `HB.perf()`'s
 sampler; interleaved rounds; final tree;
 `evidence/framing-cost-844x390-phone-far-steep.json`,
 `evidence/framing-cost-1280x720-main-branch-veillegacy.json`):
@@ -1082,9 +1095,18 @@ Host knobs from `~/.hullbreaker-host.env` in every shell;
 `HB_GATE_SKIP_BROWSER_PROBE=1` per the host policy (4 browser-probe assertions
 skipped, never counted as passes).
 
-**The final tree — the state to review** (main `71d3941` merged at `e55100a`;
-the runtime is unchanged since `1958a52`, a comment, and `c3b6485`, the lens
-rule and I-114):
+**The final tree — the state to review** (main `9cb3038` merged at
+`9c4ade8`; this lane's runtime is unchanged since `1958a52`, a comment, and
+`c3b6485`, the lens rule and I-114):
+
+| command | result |
+| --- | --- |
+| `git merge main` (`9cb3038`, merge commit `9c4ade8`) | one conflict, `tools/pathcheck/manifest.mjs`: d82 = T-105's phone shell, T-107 = **d83**; `src/mode.js`, `src/render/atmosphere.js` and `tools/playtest/README.md` auto-merged (checked by hand: T-121's deletions and T-107's additions do not touch the same lines) |
+| `HB_GATE_FAST=1 node tools/pathcheck.mjs` (`9c4ade8`) | **4268 passed, 0 failed** |
+| PENDING-B14 | |
+
+**Measured on the tree merged with main `71d3941`** (at `e55100a` and after;
+the measurements the boxes cite):
 
 | command | result |
 | --- | --- |
@@ -1102,7 +1124,12 @@ rule and I-114):
 | `tools/simlab/race/probe-framing.mjs` (live page, touch: `phone-landscape`, `phone-portrait`, `phone-landscape-far`) | the touch-deck table; edges = the replica to <= 2.7e-13 tiles (`evidence/probe-framing.json`) |
 | falsification on the final tree (scratch export, one mutation at a time) | M5a, M5b, M6, M14, M16, M17, M18 all bind (`evidence/falsification-clamp-lens-rule.log`) |
 | `tools/simlab/framing/thumb-overlap.mjs --seeds 2 --hud-from evidence/probe-phone-branch.json` (run twice; the second with the cluster frames split by RIG's feet — identical numbers) | the touch-deck play table, box 3's head row (4.5 min; `evidence/thumb-overlap-final.{log,json}`) |
-| PENDING-VERIFY-MORE | |
+| `phone-readability-capture.mjs --viewport 844x390 --dpr 2 --touch --marks 3000,3250 --runup-scale 2` (default and `--query view=far`) + `readability_sheet.py --min-aspect 0.6 --min-size-frac 0.6` | box 5's tell table; every asset resident on the first boot of both sessions; 0 errors |
+| `tools/playtest/framing-cost.mjs` — 844x390 touch phone / `view=far` / `rise=steep`, and 1280x720 main / branch / `veil=legacy`, 2 interleaved rounds each | box 10's stress table (0.1-0.5 fps on every variant: not evidence) |
+| `phone-framing-probe.mjs --render-info --boot-attempts 10 --query bloom=0` x 6 variants (+ the phone frame repeated) | box 10's posed table: phone <= FAR, desktop = main at every pose, deterministic on repeat |
+| `phone-readability-capture.mjs --query rise=steep --marks 12000,15000` at 844x390 touch and 1280x720, and the helix at 1280x720 (`--boot-attempts 12`) | T-204's fight frames; the desktop pair is the same simulation (render-only, in the browser); 5.6 deg extra climb |
+| `phone-framing-probe.mjs --viewports 1280x720,1920x1080,1280x800 --query juice=0` on main `71d3941` and this branch + `--compare` | **CAMERA IDENTICAL** (17 poses x 3, every element) and identical live edges (box 1) |
+| PENDING-FAST-FINAL | |
 
 **Intermediate: after merging main `af8bb0b` (T-103), before T-201 merged**
 (superseded by the final tree; kept because the combined-tree diagnosis cites
@@ -1398,4 +1425,18 @@ cleans it; T-107's own probes get the same fix (see "Captures").
 
 ## Worktree, branch, next action
 
-PENDING-END
+- **Worktree:** `/home/user/hullbreaker/.claude/worktrees/T-107`
+- **Branch:** `task/T-107` at PENDING-HEAD (tree clean). Main merged as merge
+  commits: `af8bb0b` at `cda5057`, then `71d3941` (T-201) at `e55100a`.
+  PENDING-MAIN-STATE
+- **Pathcheck domain:** d83 (`tools/pathcheck/t-107-phone-framing.mjs`).
+- **Servers:** every server and capture process this lane started is stopped.
+- **Does this change move the corner camera anchor?** By default, no
+  ("T-201 coordination"); `?orbit=joint` (off, unjudged) does.
+
+**Single best next action:** put the operator packet in front of the
+operator on an iPhone in landscape — `index.html` against
+`index.html?view=far` — for call (a): the phone frame shows desktop's look-ahead
+(21 tiles at the median) but 11-14 tiles less than today's FAR phone. His
+answer decides whether the phone frame ships as is or T-201 gives phones a
+longer lead; nothing else in this lane waits on it.
