@@ -1,0 +1,33 @@
+# T-126 pathcheck falsification: scratch git-archive of b00dfea; each run = ONE edit of src/pure/shell-copy.js in the scratch copy, domain t-105-phone-shell.mjs run alone (/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t126/bin/one-domain.mjs). Script: /tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t126/bin/falsify-pc.sh
+== control
+    domain t-105-phone-shell.mjs: 35 passed, 0 failed
+== mutation first-tap-confirms
+    FAIL T-126: a first tap on a run-ending control only ARMS it, whatever else is armed and whenever it lands (11220 taps: 11220 confirmed, 0 ignored)
+    domain t-105-phone-shell.mjs: 34 passed, 1 failed
+== mutation no-upper-bound
+    FAIL T-126: a second tap on the armed control confirms only inside [minMs, windowMs] after the first; sooner it is ignored, later it re-arms (1775 confirming gaps) — restart +Infinity: confirm (want arm); restart +3025: confirm (want arm); restart +3050: confirm (want arm); restart +3075: confirm (want arm)
+    domain t-105-phone-shell.mjs: 34 passed, 1 failed
+== mutation no-floor
+    FAIL T-126: a second tap on the armed control confirms only inside [minMs, windowMs] after the first; sooner it is ignored, later it re-arms (640 confirming gaps) — restart +0: confirm (want wait); restart +25: confirm (want wait); restart +50: confirm (want wait); restart +75: confirm (want wait)
+    domain t-105-phone-shell.mjs: 34 passed, 1 failed
+== mutation title-unarmed
+    FAIL T-126: every touch button that ends or leaves the run arms first (and says so); HIDE HUD, which keeps the pause, stays one tap (PAUSED:restart, PAUSED:title, PAUSED:hud, GAME_OVER:title, VICTORY:title) — unarmed: PAUSED:title, PAUSED:title, PAUSED:title, GAME_OVER:title, GAME_OVER:title, GAME_OVER:title, VICTORY:title, VICTORY:title, VICTORY:title
+    domain t-105-phone-shell.mjs: 34 passed, 1 failed
+== mutation hud-armed
+    FAIL T-126: every touch button that ends or leaves the run arms first (and says so); HIDE HUD, which keeps the pause, stays one tap (PAUSED:restart, PAUSED:title, PAUSED:hud, GAME_OVER:title, VICTORY:title) — armed but harmless: PAUSED:hud, PAUSED:hud, PAUSED:hud
+    domain t-105-phone-shell.mjs: 34 passed, 1 failed
+== mutation label-names-key
+    FAIL T-126: every armed label states the second tap and names no key (5 labels) — PAUSED:restart "PRESS R AGAIN TO RESTART"
+    domain t-105-phone-shell.mjs: 34 passed, 1 failed
+== mutation label-no-second-tap
+    FAIL T-126: every armed label states the second tap and names no key (5 labels) — PAUSED:title "QUIT RUN?"
+    domain t-105-phone-shell.mjs: 34 passed, 1 failed
+== mutation game-over-unarmed
+    FAIL T-126: every touch button that ends or leaves the run arms first (and says so); HIDE HUD, which keeps the pause, stays one tap (PAUSED:restart, PAUSED:title, PAUSED:hud, GAME_OVER:title, VICTORY:title) — unarmed: GAME_OVER:title, GAME_OVER:title, GAME_OVER:title
+    domain t-105-phone-shell.mjs: 34 passed, 1 failed
+== mutation window-inverted
+    FAIL T-126: the confirm window is a real interval after the arming tap ({"minMs":3000,"windowMs":300})
+    FAIL T-126: a second tap on the armed control confirms only inside [minMs, windowMs] after the first; sooner it is ignored, later it re-arms (0 confirming gaps) — restart +325: wait (want arm); restart +350: wait (want arm); restart +375: wait (want arm); restart +400: wait (want arm)
+    domain t-105-phone-shell.mjs: 33 passed, 2 failed
+== restored
+    domain t-105-phone-shell.mjs: 35 passed, 0 failed
