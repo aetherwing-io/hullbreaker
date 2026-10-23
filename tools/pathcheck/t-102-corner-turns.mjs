@@ -26,7 +26,16 @@
  *               already allows
  *
  * Bounds and policies are documented in tools/simlab/TURNLAB.md, with the
- * falsification record in reports/tasks/T-102/build.md.                   */
+ * falsification record in reports/tasks/T-102/build.md.
+ *
+ * TWO TIERS. The full matrix (41 played runs, minutes on a loaded host) runs
+ * by default. HB_GATE_FAST=1 is the per-edit tier: every static guard below,
+ * plus the four played runs in FAST_SUBSET (one per fixed defect a played run
+ * guards, and the operator's device). It prints one SKIP line naming the
+ * played runs it did not run; skipped runs are NOT counted as passes. The
+ * subset is drawn from matrix() itself, so a fast run is the same run with the
+ * same options as its full-matrix twin. Falsified in fast mode:
+ * `node tools/simlab/turnlab-falsify.mjs --fast-domain --only P1,P2,P3`.  */
 
 import { readFileSync } from 'node:fs';
 import { cpus } from 'node:os';
@@ -76,9 +85,37 @@ function matrix() {
   return list.map((o) => ({ god: true, reactionMs: 350, ...o }));
 }
 
+// HB_GATE_FAST=1: one played run per fixed defect that only a played run can
+// catch, plus a plain run on the operator's device. D4 and D5 are guarded by
+// static checks, which run in both tiers.
+//   [policy, viewport, gunnerMode]
+const FAST_SUBSET = Object.freeze([
+  ['die-at-hinge', 'desktop', 'oracle'],               // D1: relocations honour the sealed fold
+  ['run', 'phonePortrait', 'paced'],                   // D2: no gate waits on a body off screen
+  ['resize-approach-late', 'narrowTall', 'oracle'],    // D3: the scroll never rewinds
+  ['run', 'phoneLandscape', 'oracle'],                 // 844x390: the plain run on the primary device
+]);
+
+export function fastSubset(list = matrix()) {
+  return list.filter((o) => !o.query && FAST_SUBSET.some(([policy, viewport, gunner]) =>
+    o.policy === policy && o.viewport === viewport && (o.gunnerMode || 'oracle') === gunner));
+}
+
 export async function run() {
   await staticChecks();
-  await playedChecks();
+  const full = matrix();
+  if (process.env.HB_GATE_FAST === '1') {
+    const fast = fastSubset(full);
+    console.log(`SKIP t-102-corner-turns: ${full.length - fast.length} of ${full.length} played turn ` +
+      `runs not run (HB_GATE_FAST=1 — per-edit tier; not counted as passes; unset it for the full matrix)`);
+    ok(fast.length === FAST_SUBSET.length,
+      `T-102: every fast-tier run is a run of the full matrix (${fast.length} of ${FAST_SUBSET.length} found)`);
+    // Four short runs: one child per run (up to one per core) so the tier
+    // finishes in about one run's wall time.
+    await playedChecks(fast, Math.max(1, Math.min(fast.length, cpus().length)));
+    return;
+  }
+  await playedChecks(full);
 }
 
 // Drift guards, the reveal rule and the gate-legibility predicate: fast,
@@ -219,10 +256,10 @@ export async function staticChecks() {
 }
 
 // The played matrix: every policy, every corner, fresh child per run.
-export async function playedChecks(list = matrix()) {
+export async function playedChecks(list = matrix(), jobs = Math.max(1, Math.min(3, cpus().length - 1))) {
   let results = [];
   try {
-    results = await runMatrix(list, Math.max(1, Math.min(3, cpus().length - 1)));
+    results = await runMatrix(list, jobs);
   } catch (error) {
     console.error('pathcheck: T-102 turn matrix child failed: ' + error.message);
   }
@@ -242,9 +279,10 @@ export async function playedChecks(list = matrix()) {
         (hits.length ? ` — ${hits.map(([k, n]) => `${k}x${n}`).join(', ')}; first ${JSON.stringify(first)}` : ''));
     }
   }
-  // the paced gunner really exercised held gates at every viewport
+  // the paced gunner really exercised held gates at every viewport it ran at
+  const pacedPlanned = list.filter((o) => o.gunnerMode === 'paced').length;
   const paced = results.filter((r) => r.gunnerMode === 'paced');
-  ok(paced.length === 3 && paced.every((r) =>
+  ok(pacedPlanned > 0 && paced.length === pacedPlanned && paced.every((r) =>
       Object.values(r.perCorner).filter((pc) => pc.gateTicks > 0).length >= 3),
     'T-102: the visible-only gunner fought at least three held gates per viewport');
 }

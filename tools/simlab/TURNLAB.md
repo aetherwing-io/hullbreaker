@@ -26,10 +26,31 @@ node tools/simlab/turnlab.mjs run --policy run --viewport phonePortrait --query 
 node tools/simlab/turnlab.mjs run --policy run --viewport phonePortrait --gunner paced --pace 1400 --max-ticks 21600
 node tools/simlab/turnlab.mjs poses --viewport phoneLandscape > /tmp/poses.json
 node tools/simlab/turnlab-falsify.mjs                         # 25 rows; minutes
+node tools/simlab/turnlab-falsify.mjs --fast-domain --only P1,P2,P3   # the per-edit tier binds
 ```
 
-The gate is `tools/pathcheck/t-102-corner-turns.mjs` (41 played runs plus
-static guards), which runs inside `node tools/pathcheck.mjs`.
+The gate is `tools/pathcheck/t-102-corner-turns.mjs`, which runs inside
+`node tools/pathcheck.mjs` in one of two tiers:
+
+- **full** (default): the static guards plus all 41 played runs, about 380 s
+  on a loaded 4-core SwiftShader host;
+- **per-edit** (`HB_GATE_FAST=1`): the same static guards plus 4 of the 41
+  played runs, one per fixed defect that only a played run can catch, and the
+  operator's device. These are `die-at-hinge` @1280x720 (D1), the paced
+  visible-only gunner @390x844 (D2), `resize-approach-late` @260x1000 (D3) and
+  `run` @844x390. Every run goes to VICTORY, with one child per run. It took
+  about 43 s at load average 40-45. It prints one `SKIP t-102-corner-turns: 37
+  of 41 …` line, and the 37 skipped runs are not counted as passes. Its runs
+  are drawn from the full matrix, with the same options as their full-matrix
+  twins.
+
+`turnlab-falsify.mjs --fast-domain` uses that whole per-edit domain as every
+row's guard. It first checks the tier is green on the unbroken copy, then
+counts a row as red only on a FAIL line naming the row's own violation.
+
+Children exit on their own if their parent dies (`process.ppid` is checked
+every 600 ticks). The per-edit hook `kill -9`s a pathcheck that outlives its
+watchdog, and an orphaned run would otherwise play on to its tick cap.
 
 ## Policies
 

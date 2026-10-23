@@ -2,6 +2,13 @@
 /* turnlab-falsify.mjs — prove every T-102 turn assertion BINDS.
  *
  *   node tools/simlab/turnlab-falsify.mjs [--only P1,M3] [--work <dir>] [--keep]
+ *   node tools/simlab/turnlab-falsify.mjs --fast-domain --only P1,P2,P3
+ *
+ * --fast-domain swaps every row's guard for the whole pathcheck domain
+ * (tools/pathcheck/t-102-corner-turns.mjs run()) in its per-edit tier,
+ * HB_GATE_FAST=1. A row goes red only on a FAIL line that names the row's own
+ * violation kind (or, for static rows, its own label). Before the rows, the
+ * same fast domain runs once on the unbroken copy and must be green.
  *
  * A green gate is not evidence that a gate works (docs/LANE-BRIEF.md). For
  * each assertion family of tools/pathcheck/t-102-corner-turns.mjs this copies
@@ -19,6 +26,7 @@ import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } 
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { VIEWPORTS } from './lib/turn-proof.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..');
@@ -30,6 +38,7 @@ const opt = (name, dflt) => {
 const only = opt('only', '') ? new Set(opt('only', '').split(',')) : null;
 const work = opt('work', '') || mkdtempSync(join(tmpdir(), 't102-falsify-'));
 const keep = argv.includes('--keep');
+const fastDomain = argv.includes('--fast-domain');
 
 // One break per row: [id, what it breaks, file, find, replace, check].
 // check = { policy, viewport, query?, gunnerMode?, paceMs?, maxTicks?, expect: [kinds] }
@@ -124,10 +133,49 @@ function copyTree() {
     cpSync(join(root, rel), join(work, rel), { recursive: true });
 }
 
-function runChild(args) {
+function runChild(args, env = {}) {
   return new Promise((resolve) => execFile(process.execPath, args,
-    { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, cwd: work },
+    { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, cwd: work, env: { ...process.env, ...env } },
     (err, stdout, stderr) => resolve({ err, stdout, stderr })));
+}
+
+// The whole T-102 pathcheck domain, per-edit tier, in the scratch copy: its
+// FAIL lines, its SKIP line, its pass/fail counts and its wall time.
+async function fastDomainRun() {
+  const domain = pathToFileURL(join(work, 'tools', 'pathcheck', 't-102-corner-turns.mjs')).href;
+  const ctx = pathToFileURL(join(work, 'tools', 'pathcheck', '_context.mjs')).href;
+  const src = `
+    const { counts } = await import(${JSON.stringify(ctx)});
+    const errs = [], logs = [];
+    const oe = console.error, ol = console.log;
+    console.error = (...a) => { errs.push(a.join(' ')); };
+    console.log = (...a) => { logs.push(a.join(' ')); };
+    const t0 = Date.now();
+    try { await (await import(${JSON.stringify(domain)})).run(); }
+    catch (e) { errs.push('THREW ' + e.message); }
+    const wallS = (Date.now() - t0) / 1000;
+    console.error = oe; console.log = ol;
+    process.stdout.write(JSON.stringify({ ...counts(), errs, logs, wallS }));`;
+  const { err, stdout, stderr } = await runChild(['--input-type=module', '-e', src], { HB_GATE_FAST: '1' });
+  if (err && !stdout) return { error: (stderr || err.message).split('\n').slice(0, 3).join(' ') };
+  return JSON.parse(stdout);
+}
+
+// Every FAIL line naming this row's violation; the one from the row's own
+// guard run (its policy/viewport tag, as the domain prints it) is preferred.
+function fastDomainHits(r, check) {
+  const all = (r.errs || []).filter((e) => e.startsWith('FAIL') && (check.static
+    ? check.expectFail.test(e)
+    : check.expect.some((k) => e.includes(k)) ||
+      (check.expectNotVictory && /Crown approach complete/.test(e))));
+  let own = null;
+  if (!check.static) {
+    const vp = VIEWPORTS[check.viewport];
+    const tag = `[${check.policy}${check.gunnerMode === 'paced' ? '/paced-gunner' : ''}` +
+      `${check.query ? '?' + check.query : ''} @${vp.width}x${vp.height}]`;
+    own = all.find((e) => e.includes(tag)) || null;
+  }
+  return { hit: own || all[0] || null, own: !!own, all };
 }
 
 async function played(check) {
@@ -164,9 +212,18 @@ copyTree();
 const pristine = new Map();
 const results = [];
 console.log(`work copy: ${work}`);
+let baselineGreen = true;
+if (fastDomain) {
+  // Baseline: the unbroken copy must be green in the same fast tier, or a red
+  // row below would prove nothing.
+  const b = await fastDomainRun();
+  baselineGreen = !b.error && b.fails === 0 && (b.logs || []).some((l) => l.startsWith('SKIP t-102'));
+  console.log(`fast-domain baseline (unbroken copy, HB_GATE_FAST=1): ` + (b.error ? 'ERROR ' + b.error
+    : `${b.passes} passed, ${b.fails} failed, ${b.wallS} s; ${(b.logs || []).find((l) => l.startsWith('SKIP')) || 'no SKIP line'}`) +
+    (baselineGreen ? '' : ' — NOT GREEN: rows below cannot be trusted'));
+}
 console.log('| row | what is broken | file | guard | went red? | evidence |');
 console.log('| --- | --- | --- | --- | --- | --- |');
-// Baseline: the unbroken copy must be green on every guard used below.
 for (const [id, what, file, find, replace, check] of ROWS) {
   if (only && !only.has(id)) continue;
   const path = join(work, file);
@@ -179,7 +236,16 @@ for (const [id, what, file, find, replace, check] of ROWS) {
   }
   writeFileSync(path, text.replace(find, replace));
   let red = false, evidence = '';
-  if (check.static) {
+  if (fastDomain) {
+    const r = await fastDomainRun();
+    const h = r.error ? { hit: null, own: false, all: [] } : fastDomainHits(r, check);
+    red = !!h.hit;
+    const others = h.all.filter((e) => e !== h.hit).map((e) => (e.match(/\[[^\]]+\]/) || ['?'])[0]);
+    evidence = r.error ? 'ERROR ' + r.error
+      : `${h.hit ? h.hit.slice(0, 220) : 'no FAIL naming this row\'s violation'}` +
+        (others.length ? `; also ${others.join(', ')}` : '') +
+        ` (${r.passes} passed, ${r.fails} failed, ${r.wallS} s)`;
+  } else if (check.static) {
     const r = await staticRun();
     const hit = (r.errs || []).find((e) => check.expectFail.test(e));
     red = !!hit;
@@ -196,9 +262,12 @@ for (const [id, what, file, find, replace, check] of ROWS) {
   }
   writeFileSync(path, text);                       // restore before the next row
   results.push({ id, applied: true, red });
-  console.log(`| ${id} | ${what} | ${file} | ${check.static ? 'static' : `${check.policy}@${check.viewport}`} | ${red ? 'YES' : 'NO'} | ${evidence.replace(/\|/g, '/')} |`);
+  const guard = fastDomain ? 'T-102 domain, HB_GATE_FAST=1'
+    : check.static ? 'static' : `${check.policy}@${check.viewport}`;
+  console.log(`| ${id} | ${what} | ${file} | ${guard} | ${red ? 'YES' : 'NO'} | ${evidence.replace(/\|/g, '/')} |`);
 }
 const bad = results.filter((r) => !r.applied || !r.red);
 console.log(bad.length ? `\n${bad.length} row(s) did not bind: ${bad.map((r) => r.id).join(', ')}` : '\nevery guard went red when its behaviour was broken');
+if (!baselineGreen) console.log('fast-domain baseline was not green: the table above is not evidence');
 if (!keep) rmSync(work, { recursive: true, force: true });
-process.exit(bad.length ? 1 : 0);
+process.exit(bad.length || !baselineGreen ? 1 : 0);

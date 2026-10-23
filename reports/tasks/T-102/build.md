@@ -93,6 +93,11 @@ predicate. Bounds are stated in `tools/simlab/TURNLAB.md` and are derived from
 CONFIG design constants, never from the code under test (three guards were
 first written the other way and failed to bind — see falsification).
 
+Two tiers (integrator follow-up, below): the full matrix runs by default;
+`HB_GATE_FAST=1` (the per-edit hook) runs the same static guards plus 4 of the
+41 played runs and prints a SKIP line for the other 37, which are not counted
+as passes.
+
 ## Verification (every command run, with its result)
 
 Host: 4 cores shared with three other lanes, load average 30–64 throughout;
@@ -112,9 +117,10 @@ HB_PROBE_SPAWN_MS=300000`.
 | `node tools/simlab/turnlab-falsify.mjs` (final tree) | **25 of 25 rows went red** ("every guard went red when its behaviour was broken") |
 | `node tools/simlab/turnlab.mjs matrix --jobs 3` (19 policies x 3 viewports, oracle gunner, before any fix) | violations only in the 12 death/respawn rows (D1); every other policy/viewport clean. The oracle clears gates too fast to expose D2 — the visible-only paced gunner found it |
 | smoke `mid-route.json` with main's harness, read-only, against :8752 (`HB_HARNESS_SLOWDOWN=40 … --deterministic --viewport 480x300`) + `tools/orch/smoke-verdict.mjs` | **PASS** — tick 594/594, deaths 0, outcome not-completed (victory not required) |
-| smoke `transform-slice.json`, same recipe, `--max-runtime-ms 20000` (attempts 1-2 at `HB_HARNESS_SLOWDOWN` 40/100 hit the host: the wall cap at tick 629/1104, then the harness's 30 s `page.goto`) | attempt 3 (`HB_HARNESS_SLOWDOWN=100`, 1001 s wall): harness outcome **completed**, deaths 0, falls 0, setbacks 0. **smoke-verdict FAIL**: "deterministic ledger status running; dispatched 52/58 events; stopped at tick 938, terminal tick 1104". The slice reached BREACH CLEAR (`VICTORY`, 2/2 transformations) at tick 938 (gameMs 15 633.6). Victory freezes the sim, so the ledger can never reach its terminal tick. **Base control, the same command against the untouched `98b12c9` export on :8762 (925 s wall): identical** — VICTORY at gameMs 15 633.646, x 146.0874, y 10.4443, scroll 130.2807, tick 938/1104, 52/58 events, the same smoke-verdict FAIL line. Pre-existing on main (main has the same `src/` as `98b12c9`). It is not this branch; see the S1 inbox issue. |
+| smoke `transform-slice.json`, same recipe, `--max-runtime-ms 20000` (attempts 1-2 at `HB_HARNESS_SLOWDOWN` 40/100 hit the host: the wall cap at tick 629/1104, then the harness's 30 s `page.goto`) | attempt 3 (`HB_HARNESS_SLOWDOWN=100`, 1001 s wall): harness outcome **completed**, deaths 0, falls 0, setbacks 0. **smoke-verdict FAIL**: "deterministic ledger status running; dispatched 52/58 events; stopped at tick 938, terminal tick 1104". The slice reached BREACH CLEAR (`VICTORY`, 2/2 transformations) at tick 938 (gameMs 15 633.6). Victory freezes the sim, so the ledger can never reach its terminal tick. **Base control, the same command against the untouched `98b12c9` export on :8762 (925 s wall): identical** — VICTORY at gameMs 15 633.646, x 146.0874, y 10.4443, scroll 130.2807, tick 938/1104, 52/58 events, the same smoke-verdict FAIL line. Pre-existing on main (main has the same `src/` as `98b12c9`); not this branch. The integrator fixed the verdict in `8fd25fc` (a sampled victory is terminal), now merged here. |
 | why this branch cannot change that run | with no death or fallback, none of the changed sim lines execute in `?slice=transform`: `clampToOwnedRoute` runs only in HULL FALLBACK and `respawn`; both `scroll.js` changes sit after the slice's early return (`src/sim/scroll.js:30-36`); the gate functions run only for six-face corners, which stay `idle` in the slice; `hud.js` and `route-visibility.js` are UI/render. Headless A/B: `node tools/simlab/t2lab.mjs run --script tools/playtest/scripts/transform-slice.json --end 18400` gives **byte-identical output** on this branch and on the `98b12c9` export. (t2lab's transcription is older than the live loop, so it records a death at 15.18 s where the browser reached victory; it is A/B evidence only.) |
 | `git merge-tree --write-tree --name-only main HEAD` | clean (no conflicts); no file is changed on both main (since `98b12c9`) and this branch |
+| `node tools/orch/smoke-verdict.mjs` (the fixed `8fd25fc` version, merged here) on this branch's two smoke reports | `transform-slice`: **PASS** (outcome=completed deaths=0 tick=938/1104); `mid-route`: **PASS** (outcome=not-completed deaths=0 tick=594/594) |
 | played cross-check of the posed method: `tools/playtest/turn-capture.mjs --stage approach --touch --viewport 844x390 --corners 1` vs the posed frames | t350: mean abs dL 0.93, 0.02 % of pixels differ by >24; t700: mean 1.46, 0.24 % (a pickup drawn in the played session) |
 | posed captures: page camera vs headless replica, every frame | 0 disagreements in yaw or facing facet (all 4 sessions) |
 
@@ -171,6 +177,92 @@ was derived from the clamp under test, and the default policy never rode the
 clamp). All three were rewritten to use independent truths (the sim's count of
 completed corners; the design constants; a fixed 1.03 NDC bound plus two
 momentum-off clamp-riding runs) and now bind.
+
+## Per-edit tier: `HB_GATE_FAST=1` (integrator follow-up)
+
+**Why.** The per-edit PostToolUse hook runs `node tools/pathcheck.mjs` after
+every `src/` edit with a 120 s watchdog. The full T-102 matrix alone takes
+≈380 s on this host.
+
+**What changed** (tooling only, no runtime file):
+
+- `tools/pathcheck/t-102-corner-turns.mjs`: with `HB_GATE_FAST=1` the domain
+  runs every static guard (24, unchanged) plus four played runs. They are
+  drawn from `matrix()` by `fastSubset()`, with the same options as their
+  full-matrix twins:
+
+  | run | guards |
+  | --- | --- |
+  | `die-at-hinge` @1280x720 | D1 |
+  | paced visible-only gunner @390x844 | D2 |
+  | `resize-approach-late` @260x1000 | D3 |
+  | `run` @844x390 | the operator's device |
+
+  D4 and D5 are static guards, so they run in both tiers. The domain prints
+  one line, `SKIP t-102-corner-turns: 37 of 41 played turn runs not run
+  (HB_GATE_FAST=1 — per-edit tier; not counted as passes; unset it for the
+  full matrix)`, following the `HB_GATE_SKIP_BROWSER_PROBE` precedent. It adds
+  one fast-only assertion, that every fast run exists in the full matrix (so a
+  matrix edit cannot silently drop one). It runs one child per run, up to one
+  per core. Fast mode totals 59 assertions: 24 static + 1 + 4 x 8 + 2.
+  Without the env var, nothing changes: the same 41 runs, the same 3-job pool,
+  the same 354 assertions. The only edit on the full path generalises the
+  paced-gunner assertion from `=== 3` to "every paced run planned", which is 3
+  in full mode.
+- `tools/simlab/turnlab.mjs` / `lib/turn-proof.mjs`: a turnlab child exits by
+  itself if its parent dies. It checks `process.ppid` every 600 ticks. The hook
+  `kill -9`s a pathcheck that outlives its watchdog, and orphaned runs would
+  otherwise play on to VICTORY or their tick cap. Tested: after a `kill -9` of
+  a fast-tier parent, all four children were gone within 4 s.
+- `tools/simlab/turnlab-falsify.mjs --fast-domain`: every row's guard becomes
+  the whole T-102 domain in the per-edit tier. It first checks the tier is
+  green on the unbroken copy. A row is red only on a FAIL line naming the
+  row's own violation, and the line from the row's own guard run is
+  preferred.
+- `tools/simlab/TURNLAB.md`: both tiers, the falsifier flag, the orphan guard.
+
+**Run time on this host** (4 cores shared with other lanes, load average
+30–48):
+
+| what | result |
+| --- | --- |
+| T-102 domain alone, `HB_GATE_FAST=1` (prelude + `run()`, as `tools/pathcheck.mjs` runs it), first version with 3 jobs | 59 passed, 0 failed, 52.9 s (load ≈44–48) |
+| same, final version with one child per run, two runs | 59 passed, 0 failed, **43.0 s** and **42.5 s** (load ≈39–45) |
+| same, as the falsifier's baselines (scratch copy) | 59 passed, 0 failed, 50.9 s and 44.8 s |
+| whole gate as the per-edit hook will run it: `HB_GATE_FAST=1 HB_GATE_SKIP_BROWSER_PROBE=1 node tools/pathcheck.mjs` | **4044 passed, 0 failed, 101.3 s wall** (load ≈33–38); two SKIP lines (browser probe, T-102). The other domains take ≈58 s of that |
+| T-102 domain alone, full matrix (no env var) | **354 passed, 0 failed, 405.1 s** (load ≈30–34), no SKIP line. Same count as before this change |
+| whole gate, full tier: `HB_GATE_SKIP_BROWSER_PROBE=1 node tools/pathcheck.mjs` | **4339 passed, 0 failed, 6 min 5 s** (load ≈26–34); one SKIP line (browser probe). 4339 = 4044 − 59 + 354 |
+
+The whole per-edit gate clears the 120 s watchdog by about 19 s at load ≈35.
+The T-102 share is ≈43 s. At higher load the margin shrinks; the remaining
+≈58 s is in other domains (T-120's tiering).
+
+**Falsification in the per-edit tier**:
+`node tools/simlab/turnlab-falsify.mjs --fast-domain --only P1,P2,P3`. That is
+2 min 46 s wall; each row runs the whole domain in fast mode on a scratch copy
+with one fix reverted.
+
+| row | what is broken | went red? | evidence (the domain's own FAIL lines) |
+| --- | --- | --- | --- |
+| baseline | nothing (unbroken copy) | no (green) | 59 passed, 0 failed, 44.75 s, SKIP line present |
+| P1 (D1) | relocations ignore the corner route window | **YES** | `FAIL T-102 [die-at-hinge @1280x720]: envelope contract holds on every tick — popAfterRelocationx6, relocateOutsideOwnedRoutex6; first {"kind":"relocateOutsideOwnedRoute","tick":1155,"gameMs":19266.7,"x":111.5,…}`; also the same run's facet line (57 passed, 2 failed, 39.4 s) |
+| P2 (D2) | a gate waits on view-bound bodies it cannot show | **YES** | `FAIL T-102 [run/paced-gunner @390x844]: all five turns and the Crown approach complete and the run reaches VICTORY (2/6, TICK_CAP)`; also the same run's gate line and `[resize-approach-late @260x1000]` gate (`gateBlind`) (56 passed, 3 failed, 37.5 s). Run directly, the mutated paced run is `TICK_CAP`, corners 2/6, gate 3 held, `gateBlind`x50 423 in 11.3 s |
+| P3 (D3) | the approach dolly can rewind the scroll on a resize | **YES** | `FAIL T-102 [resize-approach-late @260x1000]: ratchet contract holds on every tick — scrollBackwardsx6; first {"kind":"scrollBackwards","tick":1334,"gameMs":22250,"from":98.32,"to":98,…}` (58 passed, 1 failed, 40.4 s) |
+
+**What the per-edit tier gives up.** The static rows (P4, P5b, M15–M18) bind
+the same in both tiers, because the static guards run in full. The other
+played rows (P1b, P5, M1–M14) were falsified against the full matrix only.
+Their guard runs are not in the fast subset, and I did not falsify them in
+fast mode. Most of their violations (seal, ratchet, gate arming, turn firing)
+happen in any run that crosses a corner, so the four fast runs probably still
+catch them, but that is unproven. M11 (the screen clamp) needs the
+momentum-off clamp-riding runs, and M12 (a popped weapon in the deck) needs
+`pop-weapon-at-hinge`; neither is in the fast subset. To measure all of it:
+`node tools/simlab/turnlab-falsify.mjs --fast-domain` (25 rows, ≈20 min
+here). The full tier still runs everything by default, wherever
+`HB_GATE_FAST` is unset. The merge gate's two `node tools/pathcheck.mjs` calls
+(`tools/orch/merge-task.sh:112` and `:195`) do not set it, so they run the
+full tier unless the caller's environment exports it.
 
 ## Captures
 
@@ -303,21 +395,10 @@ zipper models.
 HUD format that no longer exists (it has been `WAVE k/6 · PHASE · …` since before
 T-102), so gate segmentation from that tool is silently empty.
 
-## I-??? | bug | S1 | repro: `cd tools/playtest && HB_HARNESS_SLOWDOWN=100 node run.mjs scripts/transform-slice.json --deterministic --max-runtime-ms 20000 --viewport 480x300 --out <dir> && node ../orch/smoke-verdict.mjs <dir>/report.json`, task/T-102 and an untouched 98b12c9 export | evidence: reports/tasks/T-102/build.md, Verification table (transform-slice rows)
-`tools/orch/smoke-verdict.mjs` passes a run only if the deterministic ledger
-reaches the script's terminal tick (1104 for `transform-slice.json`). Played to
-the end, the slice reaches BREACH CLEAR (`VICTORY`, 2/2 transformations) at tick
-938 (gameMs 15 633.6). Victory freezes the sim, so the ledger stops at 52/58
-events and the verdict is FAIL even though the harness outcome is "completed"
-with 0 deaths. Aspect 1.6 calibrates to the same edges at 480x300 and at the
-default 1280x800: [-27.438, 45.735] from the fixture branch of `calibrateEdges`,
-which equals the edges t2lab measured live at 1280x800. So the smaller smoke
-viewport does not cause it. The untouched `98b12c9` export (the same `src/` as
-main) gives the identical result: the same victory tick, the same position to 4
-decimals, the same verdict line. As things stand, the merge gate's
-`smoke transform-slice.json 20000` step cannot pass for any lane. Fix direction
-(orch): accept a sampled victory as a terminal state, or end the script's
-schedule before the slice's victory tick.
+(The S1 transform-slice smoke issue reported in the first hand-back is resolved:
+the integrator fixed `tools/orch/smoke-verdict.mjs` in `8fd25fc`, now merged
+into this branch. Both of this branch's smoke reports pass the fixed verdict;
+see Verification.)
 
 ## Pacing observations for T-104 (not acted on)
 
@@ -370,16 +451,21 @@ Two more facts about iteration cost:
   families do not depend on the gate holding. R4 (the 1.1 s joint lock) is a
   separate wait from the gate. Whether it counts as "waiting" under entry 23 is
   for the operator or T-203; this report does not interpret it.
-- The branch merges cleanly onto current main (`git merge-tree --write-tree
-  main task/T-102`: no conflicts). None of the files main changed since
-  `98b12c9` are files this branch touches.
-- The merge gate runs `node tools/pathcheck.mjs` inside this worktree, and this
-  worktree predates `e29665b`. On a loaded host, the perf probe's hard-coded
-  45 s `page.goto` fails here exactly as it does on the base; it failed at load
-  ≈39–50 in every run here. Bringing
-  main into the branch (no conflicts, per the line above) would pick up
-  `e29665b`, which lets `HB_PROBE_BOOT_MS` widen that timeout. I did not merge
-  main into this branch, as instructed.
+- The integrator merged main into this branch (`1f5e073`, no conflicts). The
+  merge brings `e29665b` (`HB_PROBE_BOOT_MS` now widens the perf probe's
+  `page.goto`), `HB_GATE_SKIP_BROWSER_PROBE`, and the fixed smoke verdict
+  (`8fd25fc`). Before the merge, the perf probe's hard-coded 45 s `page.goto`
+  failed on this branch exactly as on the base, at load ≈39–50 in every run.
+- `decisions.md` entry 25 (merged here) releases `?zip=1` for deletion (T-121).
+  When it goes, these T-102 pins become obsolete and should be deleted with it
+  (entry 21): the static assertions "?zip=1 keeps its assembling reveal" and
+  "render/route-visibility.js reads construction rows only under ?zip=1 …",
+  falsifier row P4, and the `?zip=1:` relabel in
+  `future-facet-render-ownership.mjs`. Keep the property itself: at the camera
+  hand-off the default reveal draws the whole arriving facet and nothing else,
+  and the pre-bend column is drawn before the turn. The sim's zipper-strip
+  hole at the pre-bend column (the S3 inbox issue) likely goes with the zipper
+  schedule.
 
 ## Worktree and branch
 
@@ -387,12 +473,12 @@ Two more facts about iteration cost:
 
 ## Single best next action
 
-Merge T-102: five correctness fixes, each guarded by played-run assertions that
-were shown to fail when the behaviour breaks. Before that, fix the merge gate's
-transform-slice smoke criterion (the S1 inbox issue). It fails identically on
-main, so it would refuse this lane and every other lane on a run that played
-cleanly to victory. After the merge, the remaining turn defects a player sees
-every time are the 0.96 hand-off pop (R1) and the corner edge voids (R2,
-largest on the phone). Both are render-art work, to be iterated against
+Gate and merge T-102, with `HB_GATE_FAST=1` set in the per-edit hook so the
+turn proof costs about 43 s there instead of about 380 s. The five fixes are
+each guarded by played-run assertions that were shown to fail when the
+behaviour breaks, and D1, D2 and D3 are also shown to fail in the per-edit
+tier. After the merge, the turn defects a player still sees every time are the
+0.96 hand-off pop (R1) and the corner edge voids (R2, largest on the phone).
+Both are render-art work, to be iterated against
 `tools/playtest/turn-pose-capture.mjs` and these captures. T-107 takes the
 post-turn zoom pump (R3) with its camera work.

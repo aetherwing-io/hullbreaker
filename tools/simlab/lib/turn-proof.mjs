@@ -328,6 +328,9 @@ export async function runTurnProof(opts = {}) {
       continue;
     }
     if (M.ST.state !== 'PLAYING') { endState = M.ST.state; break; }
+    // opts.shouldAbort: turnlab's child passes "my parent is gone" (checked
+    // every 600 ticks — a syscall, so not every frame).
+    if (opts.shouldAbort && tick % 600 === 0 && opts.shouldAbort()) { endState = 'ORPHANED'; break; }
     if (god) { p.hp = CONFIG.player.maxHealth; p.lives = Math.max(p.lives, 2); }
     const before = { x: p.x, y: p.y, trav: p.traversalState, gameMs: M.T.gameMs,
       lives: p.lives, setbacks: M.T.sliceStats.setbacks, scroll: M.T.scrollX,

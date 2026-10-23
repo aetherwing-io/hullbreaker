@@ -25,12 +25,18 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const proofUrl = pathToFileURL(join(here, 'lib', 'turn-proof.mjs')).href;
 
+// The child exits on its own if its parent dies. The per-edit hook kill -9s a
+// pathcheck that outlives its watchdog, and an orphaned run would otherwise
+// play on to VICTORY (or its tick cap) with nobody reading the result.
 export function runChild(opts) {
   const src = `
     const { runTurnProof, VIEWPORTS } = await import(${JSON.stringify(proofUrl)});
     const o = ${JSON.stringify(opts)};
     if (typeof o.viewport === 'string') o.viewport = VIEWPORTS[o.viewport];
+    const parent = process.ppid;
+    o.shouldAbort = () => process.ppid !== parent;
     const r = await runTurnProof(o);
+    if (r.endState === 'ORPHANED') process.exit(3);
     process.stdout.write(JSON.stringify(r));
   `;
   return new Promise((resolve, reject) => {
