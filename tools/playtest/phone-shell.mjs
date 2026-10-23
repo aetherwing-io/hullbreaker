@@ -193,6 +193,8 @@ async function applyMutation(page) {
 /* ------------------------------- reporting ------------------------------- */
 const results = [];
 const measures = {};
+// trials this host could not decide either way (watchdog): listed, never counted as a pass
+const undecided = [];
 let current = '';
 function check(name, pass, detail = '') {
   results.push({ at: current, name, pass: !!pass, detail });
@@ -916,15 +918,22 @@ function stallInit() {
   S.beatTimes = [];
   const realBeatLog = () => { if (api && S.beatTimes.length < 60) S.beatTimes.push(Date.now()); };
   S.logBeat = realBeatLog;
-  // what the player saw, sampled at 20 ms — and how late this page's own
-  // timers ran during the stall (the bootstrap reads a tick more than 3 s
-  // late as a suspended page and judges nothing on it)
-  S.worstTimerGapMs = 0;
+  // what the player saw, sampled at 20 ms — and the longest stretch OF THE
+  // STALL in which no page timer ran at all (this 20 ms timer included, so the
+  // watchdog's 1 s one cannot have run either). It counts from the arm, so it
+  // includes the frame that was still drawing when the hold began, and it
+  // ignores time before the arm (a boot that blocked the thread for 17 s
+  // before booted() is not part of a stall that starts at booted()). The
+  // bootstrap reads a tick more than 3 s late as a suspended page and judges
+  // nothing on it.
+  S.quietMs = 0;
   let lastTick = Date.now();
   const tick = () => {
     const now = Date.now();
-    if (S.armedAt && now - S.armedAt < (S.plan ? S.plan.ms || 0 : 0) + 1000) {
-      S.worstTimerGapMs = Math.max(S.worstTimerGapMs, now - lastTick);
+    if (S.armedAt && now > S.armedAt) {
+      const end = S.armedAt + (S.plan ? S.plan.ms || 0 : 0);
+      const quiet = Math.min(now, end) - Math.max(lastTick, S.armedAt);
+      if (quiet > S.quietMs) S.quietMs = quiet;
     }
     lastTick = now;
     if (api) {
@@ -964,7 +973,7 @@ async function stallTrial(browser, view, plan, query, { dpr = 1, settleMs = null
       const t = S.beatTimes;
       let worstGap = 0, worstAt = -1;
       for (let i = 1; i < t.length; i++) if (t[i] - t[i - 1] > worstGap) { worstGap = t[i] - t[i - 1]; worstAt = i; }
-      return { panels: S.panels, panelAfterArmMs: S.panelAfterArmMs, worstTimerGapMs: S.worstTimerGapMs,
+      return { panels: S.panels, panelAfterArmMs: S.panelAfterArmMs, quietMs: S.quietMs,
         showing: api.showing(), beatsAtArm: S.beatsAtArm, beatsNow: api.beats(),
         bootToFirstBeatMs: t.length && S.bootedAtWall !== null ? t[0] - S.bootedAtWall : null,
         worstBeatGapMs: worstGap, worstGapAfterBeat: worstAt, firstBeats: t.slice(0, 8).map((x) => x - t[0]),
@@ -979,35 +988,61 @@ async function sectionWatchdog(browser) {
   current = `${view.name}/watchdog`;
   const title = '';                                 // the default URL (title screen)
   const playing = `?testapi=1&audio=0`;             // auto-starts into PLAYING
-  // [name, plan, query, want] — want: true = the hard "got stuck" panel must
-  // show; false = it must not, and frames must resume; null = reported only.
+  // [name, plan, query, want, decidableQuietMs] — want: true = the hard "got
+  // stuck" panel must show; false = it must not, and frames must resume;
+  // null = reported only.
+  //
+  // A frame-stall trial models "frames stop while the page's timers keep
+  // running". On a host whose timers do not run through the hold, the trial
+  // can only be decided one way:
+  //  - a panel that SHOWS decides it (a pass when wanted, a fail when not);
+  //  - NO panel is evidence only if the page's timers ran: the longest stretch
+  //    of the stall with no page timer (quietMs, which includes the frame that
+  //    was still drawing when the hold began) must be <= decidableQuietMs.
+  //    Otherwise the host, not the rule, decided it, and the trial is
+  //    reported as UNDECIDED instead of passed or failed.
+  // The bounds: 3000 ms is the bootstrap's own "suspended page" line. The 6 s
+  // after-warm-up stall gets 750 ms: the 4 s rule counts silence from the
+  // tick that SAW the last frame, so the frame still drawing at the arm and
+  // two tick periods eat into the 6 s — on this host frames cost ~2 s each
+  // and that trial ends before 4 s of silence is ever seen, on main exactly
+  // as on the branch. The 10 s trial carries the same rule with room for it.
   const trials = [
-    ['frame stall 6 s from boot (0 frames drawn)', { trigger: 'booted', kind: 'hold', ms: 6000 }, title, false],
-    ['frame stall 6 s after the first frame (a slow first draw)', { trigger: 'beats', beats: 1, kind: 'hold', ms: 6000 }, title, false],
-    ['frame stall 6 s after warm-up, during PLAYING', { trigger: 'beats', beats: 10, kind: 'hold', ms: 6000 }, playing, true],
-    // the same rule with margin for a loaded host: the watchdog's 1 s ticks
-    // were measured running up to ~2 s late here, and a 6 s stall then ends
-    // before 4 s of silence is ever SEEN (the stall's own timer gap is
-    // reported with every trial)
-    ['frame stall 10 s after warm-up, during PLAYING', { trigger: 'beats', beats: 10, kind: 'hold', ms: 10000 }, playing, true],
+    ['frame stall 6 s from boot (0 frames drawn)', { trigger: 'booted', kind: 'hold', ms: 6000 }, title, false, 3000],
+    ['frame stall 6 s after the first frame (a slow first draw)', { trigger: 'beats', beats: 1, kind: 'hold', ms: 6000 }, title, false, 3000],
+    ['frame stall 6 s after warm-up, during PLAYING', { trigger: 'beats', beats: 10, kind: 'hold', ms: 6000 }, playing, true, 750],
+    ['frame stall 10 s after warm-up, during PLAYING', { trigger: 'beats', beats: 10, kind: 'hold', ms: 10000 }, playing, true, 3000],
     // not blinded: a loop that never draws at all still gets the hard panel
-    ['frame loop dead from boot (0 frames, held 25 s)', { trigger: 'booted', kind: 'hold', ms: 25000 }, title, true],
-    ['main-thread busy-wait 6 s from boot', { trigger: 'booted', kind: 'busy', ms: 6000 }, title, null],
-    ['main-thread busy-wait 6 s after warm-up, during PLAYING', { trigger: 'beats', beats: 10, kind: 'busy', ms: 6000 }, playing, null],
+    ['frame loop dead from boot (0 frames, held 25 s)', { trigger: 'booted', kind: 'hold', ms: 25000 }, title, true, 3000],
+    ['main-thread busy-wait 6 s from boot', { trigger: 'booted', kind: 'busy', ms: 6000 }, title, null, 0],
+    ['main-thread busy-wait 6 s after warm-up, during PLAYING', { trigger: 'beats', beats: 10, kind: 'busy', ms: 6000 }, playing, null, 0],
   ];
   const rows = [];
-  for (const [name, plan, query, wantPanel] of trials) {
+  for (const [name, plan, query, wantPanel, decidableQuietMs] of trials) {
     const r = await stallTrial(browser, view, plan, query);
     const frozen = r.panels.includes('frozen');
-    rows.push({ name, plan, ...r, errors: r.errors.length });
+    const resumed = r.beatsNow > r.beatsAtArm;
+    const decidable = r.quietMs <= decidableQuietMs;
+    let verdict;
+    if (wantPanel === null) verdict = 'reported';
+    else if (wantPanel) verdict = frozen ? 'pass' : decidable ? 'fail' : 'undecided';
+    else verdict = frozen || !resumed ? 'fail' : decidable ? 'pass' : 'undecided';
+    rows.push({ name, plan, ...r, decidableQuietMs, verdict, errors: r.errors.length });
     const detail = `panels ${JSON.stringify(r.panels)} (ms after the stall began ${JSON.stringify(r.panelAfterArmMs)}), ` +
-      `beats ${r.beatsAtArm} -> ${r.beatsNow}, state ${r.state}, worst timer gap during the stall ${r.worstTimerGapMs} ms`;
-    if (wantPanel === null) {
+      `beats ${r.beatsAtArm} -> ${r.beatsNow}, state ${r.state}, longest stretch of the stall with no page timer ` +
+      `${r.quietMs} ms` + (wantPanel === null ? '' : ` (decidable up to ${decidableQuietMs})`);
+    if (verdict === 'reported') {
       console.log(`  NOTE [${current}] ${name} (reported, not judged): ${detail}`);
       continue;
     }
+    if (verdict === 'undecided') {
+      undecided.push({ at: current, name, detail });
+      console.log(`  UNDECIDED [${current}] ${name}: this host's timers stalled during the hold, so ` +
+        `no panel is not evidence either way — ${detail}`);
+      continue;
+    }
     check(`${name}: ${wantPanel ? 'the "game got stuck" panel DOES show' : 'no "game got stuck" panel, frames resume'}`,
-      wantPanel ? frozen : !frozen && r.beatsNow > r.beatsAtArm, detail);
+      verdict === 'pass', detail);
   }
   // The integrator's observation, unforced: the default URL booted on a
   // landscape phone at DPR 3 (SwiftShader here), and what the player sees in
@@ -1288,8 +1323,9 @@ const failed = results.filter((r) => !r.pass);
 const report = {
   tool: 'tools/playtest/phone-shell.mjs', label: LABEL, baseUrl: BASE_URL, mutate: MUTATE || null, dpr: DPR,
   sections: [...ONLY], views: VIEW_IDS, ms: Date.now() - started,
-  passed: results.length - failed.length, failed: failed.length, results, measures,
+  passed: results.length - failed.length, failed: failed.length, undecided, results, measures,
 };
 writeFileSync(join(OUT, `report-${LABEL}${MUTATE ? '-mutate-' + MUTATE : ''}.json`), JSON.stringify(report, null, 2));
-console.log(`phone-shell [${LABEL}]${MUTATE ? ` (mutation ${MUTATE})` : ''}: ${report.passed} passed, ${report.failed} failed in ${Math.round(report.ms / 1000)} s`);
+console.log(`phone-shell [${LABEL}]${MUTATE ? ` (mutation ${MUTATE})` : ''}: ${report.passed} passed, ${report.failed} failed` +
+  `${undecided.length ? `, ${undecided.length} undecided on this host` : ''} in ${Math.round(report.ms / 1000)} s`);
 process.exit(failed.length ? 1 : 0);

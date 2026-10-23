@@ -1883,9 +1883,13 @@ Sections (`--only`, default all):
   from boot for 25 s; two 6 s main-thread busy-waits (reported, not judged);
   a natural DPR-3 boot with no injection (reported: boot-to-first-frame time
   and the worst gap between the first 60 frames). Every trial reports when
-  the panel appeared and the worst gap in the page's own timers during the
-  stall — on a loaded host a 1 s tick can run seconds late, and the
-  bootstrap reads a tick more than 3 s late as a suspended page.
+  the panel appeared and the longest stretch of the stall in which no page
+  timer ran (counted from the arm, so it includes the frame still drawing
+  when the hold began). A panel that shows decides a trial either way; NO
+  panel counts only if the page's timers ran — at most 3 s quiet (the
+  bootstrap's own "suspended page" line), 750 ms for the 6 s after-warm-up
+  stall — and is otherwise printed as **UNDECIDED** (listed in the report and
+  the summary line, never counted as a pass).
 - **rotate** — portrait <-> landscape mid-run with three fingers down: canvas,
   drawing buffer and camera follow, the HUD re-lays out and fits, nothing is
   held afterwards, no failsafe panel, a fresh stick press steers.
@@ -1916,7 +1920,14 @@ anchor throws.
 3. The watchdog's frame stall models a GPU-side stall (rAF withheld while the
    main thread is free). A busy-wait blocks the watchdog's own timer, which
    the bootstrap's `slept` rule reads as a suspended page in BOTH directions
-   — that is pre-T-105 behaviour, reported each run, not judged.
+   — that is pre-T-105 behaviour, reported each run, not judged. On a host
+   whose frames cost seconds (SwiftShader under load: ~2 s a frame measured
+   here) the 6 s after-warm-up stall cannot be decided — the 4 s rule counts
+   silence from the tick that saw the last frame, and the frame in flight
+   eats the margin, on main exactly as on the branch — so it comes out
+   UNDECIDED and the 10 s trial carries the rule; the same 6 s claim is
+   asserted on the real inline bootstrap with a fake clock in
+   `tools/pathcheck/t-105-phone-shell.mjs`.
 4. The audio trial proves WHERE `resume()` runs under an emulation of iOS's
    gesture rule; it cannot prove iOS honours it. That is an on-device check.
 5. States a player reaches only after minutes of play (a rolled gun, the
