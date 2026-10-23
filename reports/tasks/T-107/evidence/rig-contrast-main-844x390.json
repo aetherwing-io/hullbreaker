@@ -1,0 +1,189 @@
+{
+ "tool": "tools/simlab/framing/rig_crops.py",
+ "viewport": [
+  844,
+  390
+ ],
+ "stats": [
+  {
+   "k": 1,
+   "label": "approach",
+   "file": "base-844x390-c1-approach.jpg",
+   "rigBoxCss": [
+    480,
+    189.2,
+    491.7,
+    207.4
+   ],
+   "lumaRig": 49.5,
+   "lumaRing": 32.9,
+   "ringStd": 20.9,
+   "contrast": 0.79
+  },
+  {
+   "k": 1,
+   "label": "after1500",
+   "file": "base-844x390-c1-after1500.jpg",
+   "rigBoxCss": [
+    504.8,
+    191.6,
+    518.2,
+    213
+   ],
+   "lumaRig": 24.0,
+   "lumaRing": 30.7,
+   "ringStd": 22.1,
+   "contrast": 0.3
+  },
+  {
+   "k": 2,
+   "label": "approach",
+   "file": "base-844x390-c2-approach.jpg",
+   "rigBoxCss": [
+    479.5,
+    189.2,
+    491.4,
+    207.4
+   ],
+   "lumaRig": 39.7,
+   "lumaRing": 32.1,
+   "ringStd": 18.3,
+   "contrast": 0.41
+  },
+  {
+   "k": 2,
+   "label": "after1500",
+   "file": "base-844x390-c2-after1500.jpg",
+   "rigBoxCss": [
+    523.7,
+    175.7,
+    537.1,
+    197.2
+   ],
+   "lumaRig": 39.0,
+   "lumaRing": 35.1,
+   "ringStd": 22.7,
+   "contrast": 0.17
+  },
+  {
+   "k": 3,
+   "label": "approach",
+   "file": "base-844x390-c3-approach.jpg",
+   "rigBoxCss": [
+    479.5,
+    189.2,
+    491.4,
+    207.4
+   ],
+   "lumaRig": 48.5,
+   "lumaRing": 36.4,
+   "ringStd": 22.1,
+   "contrast": 0.55
+  },
+  {
+   "k": 3,
+   "label": "after1500",
+   "file": "base-844x390-c3-after1500.jpg",
+   "rigBoxCss": [
+    526.8,
+    188.5,
+    540.3,
+    210.1
+   ],
+   "lumaRig": 37.3,
+   "lumaRing": 36.5,
+   "ringStd": 22.6,
+   "contrast": 0.04
+  },
+  {
+   "k": 4,
+   "label": "approach",
+   "file": "base-844x390-c4-approach.jpg",
+   "rigBoxCss": [
+    479.5,
+    189.2,
+    491.4,
+    207.4
+   ],
+   "lumaRig": 31.4,
+   "lumaRing": 27.8,
+   "ringStd": 19.1,
+   "contrast": 0.19
+  },
+  {
+   "k": 4,
+   "label": "after1500",
+   "file": "base-844x390-c4-after1500.jpg",
+   "rigBoxCss": [
+    523.7,
+    196.3,
+    537.1,
+    217.8
+   ],
+   "lumaRig": 31.0,
+   "lumaRing": 32.7,
+   "ringStd": 23.2,
+   "contrast": 0.07
+  },
+  {
+   "k": 5,
+   "label": "approach",
+   "file": "base-844x390-c5-approach.jpg",
+   "rigBoxCss": [
+    479.5,
+    189.2,
+    491.4,
+    207.4
+   ],
+   "lumaRig": 39.1,
+   "lumaRing": 33.7,
+   "ringStd": 21.8,
+   "contrast": 0.25
+  },
+  {
+   "k": 5,
+   "label": "after1500",
+   "file": "base-844x390-c5-after1500.jpg",
+   "rigBoxCss": [
+    526.1,
+    186.3,
+    539.6,
+    208
+   ],
+   "lumaRig": 37.4,
+   "lumaRing": 41.3,
+   "ringStd": 23.3,
+   "contrast": 0.16
+  },
+  {
+   "k": 6,
+   "label": "approach",
+   "file": "base-844x390-c6-approach.jpg",
+   "rigBoxCss": [
+    479.5,
+    189.2,
+    491.4,
+    207.4
+   ],
+   "lumaRig": 39.9,
+   "lumaRing": 39.7,
+   "ringStd": 18.1,
+   "contrast": 0.01
+  },
+  {
+   "k": 6,
+   "label": "after1500",
+   "file": "base-844x390-c6-after1500.jpg",
+   "rigBoxCss": [
+    526.9,
+    178.5,
+    540.3,
+    200
+   ],
+   "lumaRig": 28.7,
+   "lumaRing": 40.3,
+   "ringStd": 29.4,
+   "contrast": 0.39
+  }
+ ]
+}

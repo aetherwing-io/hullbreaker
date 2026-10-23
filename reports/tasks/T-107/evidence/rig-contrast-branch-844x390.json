@@ -1,0 +1,459 @@
+{
+ "tool": "tools/simlab/framing/rig_crops.py",
+ "viewport": [
+  844,
+  390
+ ],
+ "stats": [
+  {
+   "k": 1,
+   "label": "approach",
+   "file": "branch-844x390-c1-approach.jpg",
+   "rigBoxCss": [
+    506.4,
+    197.2,
+    523.5,
+    223.9
+   ],
+   "lumaRig": 53.9,
+   "lumaRing": 32.9,
+   "ringStd": 21.8,
+   "contrast": 0.96
+  },
+  {
+   "k": 1,
+   "label": "t350",
+   "file": "branch-844x390-c1-t350.jpg",
+   "rigBoxCss": [
+    503.9,
+    200.6,
+    528.2,
+    232.3
+   ],
+   "lumaRig": 28.5,
+   "lumaRing": 37.4,
+   "ringStd": 24.8,
+   "contrast": 0.36
+  },
+  {
+   "k": 1,
+   "label": "t700",
+   "file": "branch-844x390-c1-t700.jpg",
+   "rigBoxCss": [
+    422.1,
+    205.1,
+    448.5,
+    241.9
+   ],
+   "lumaRig": 31.7,
+   "lumaRing": 41.7,
+   "ringStd": 23.0,
+   "contrast": 0.44
+  },
+  {
+   "k": 1,
+   "label": "done",
+   "file": "branch-844x390-c1-done.jpg",
+   "rigBoxCss": [
+    421.2,
+    205.2,
+    447.7,
+    241.8
+   ],
+   "lumaRig": 31.5,
+   "lumaRing": 41.8,
+   "ringStd": 23.2,
+   "contrast": 0.44
+  },
+  {
+   "k": 1,
+   "label": "after1500",
+   "file": "branch-844x390-c1-after1500.jpg",
+   "rigBoxCss": [
+    538.8,
+    202.9,
+    558.1,
+    233.9
+   ],
+   "lumaRig": 25.0,
+   "lumaRing": 30.5,
+   "ringStd": 23.5,
+   "contrast": 0.24
+  },
+  {
+   "k": 2,
+   "label": "approach",
+   "file": "branch-844x390-c2-approach.jpg",
+   "rigBoxCss": [
+    505.7,
+    197.2,
+    523.1,
+    223.9
+   ],
+   "lumaRig": 38.5,
+   "lumaRing": 32.4,
+   "ringStd": 19.9,
+   "contrast": 0.31
+  },
+  {
+   "k": 2,
+   "label": "t350",
+   "file": "branch-844x390-c2-t350.jpg",
+   "rigBoxCss": [
+    503.9,
+    200.6,
+    528.2,
+    232.3
+   ],
+   "lumaRig": 29.6,
+   "lumaRing": 25.3,
+   "ringStd": 16.5,
+   "contrast": 0.26
+  },
+  {
+   "k": 2,
+   "label": "t700",
+   "file": "branch-844x390-c2-t700.jpg",
+   "rigBoxCss": [
+    416.1,
+    205.3,
+    442.2,
+    242.4
+   ],
+   "lumaRig": 23.5,
+   "lumaRing": 25.7,
+   "ringStd": 19.1,
+   "contrast": 0.12
+  },
+  {
+   "k": 2,
+   "label": "done",
+   "file": "branch-844x390-c2-done.jpg",
+   "rigBoxCss": [
+    420.5,
+    205.2,
+    446.9,
+    241.8
+   ],
+   "lumaRig": 25.4,
+   "lumaRing": 26.3,
+   "ringStd": 19.0,
+   "contrast": 0.05
+  },
+  {
+   "k": 2,
+   "label": "after1500",
+   "file": "branch-844x390-c2-after1500.jpg",
+   "rigBoxCss": [
+    571.2,
+    179.7,
+    590.5,
+    210.7
+   ],
+   "lumaRig": 40.9,
+   "lumaRing": 36.1,
+   "ringStd": 24.1,
+   "contrast": 0.2
+  },
+  {
+   "k": 3,
+   "label": "approach",
+   "file": "branch-844x390-c3-approach.jpg",
+   "rigBoxCss": [
+    505.7,
+    197.2,
+    523.1,
+    223.9
+   ],
+   "lumaRig": 47.3,
+   "lumaRing": 36.8,
+   "ringStd": 23.5,
+   "contrast": 0.45
+  },
+  {
+   "k": 3,
+   "label": "t350",
+   "file": "branch-844x390-c3-t350.jpg",
+   "rigBoxCss": [
+    503.9,
+    200.6,
+    528.2,
+    232.3
+   ],
+   "lumaRig": 35.7,
+   "lumaRing": 38.8,
+   "ringStd": 23.6,
+   "contrast": 0.13
+  },
+  {
+   "k": 3,
+   "label": "t700",
+   "file": "branch-844x390-c3-t700.jpg",
+   "rigBoxCss": [
+    416.1,
+    205.3,
+    442.2,
+    242.4
+   ],
+   "lumaRig": 30.3,
+   "lumaRing": 38.3,
+   "ringStd": 23.5,
+   "contrast": 0.34
+  },
+  {
+   "k": 3,
+   "label": "done",
+   "file": "branch-844x390-c3-done.jpg",
+   "rigBoxCss": [
+    420.5,
+    205.2,
+    446.9,
+    241.8
+   ],
+   "lumaRig": 30.4,
+   "lumaRing": 39.1,
+   "ringStd": 23.4,
+   "contrast": 0.37
+  },
+  {
+   "k": 3,
+   "label": "after1500",
+   "file": "branch-844x390-c3-after1500.jpg",
+   "rigBoxCss": [
+    569.6,
+    206,
+    588.9,
+    237
+   ],
+   "lumaRig": 39.2,
+   "lumaRing": 34.8,
+   "ringStd": 24.7,
+   "contrast": 0.18
+  },
+  {
+   "k": 4,
+   "label": "approach",
+   "file": "branch-844x390-c4-approach.jpg",
+   "rigBoxCss": [
+    506.4,
+    197.2,
+    523.5,
+    223.9
+   ],
+   "lumaRig": 33.1,
+   "lumaRing": 28.3,
+   "ringStd": 20.3,
+   "contrast": 0.23
+  },
+  {
+   "k": 4,
+   "label": "t350",
+   "file": "branch-844x390-c4-t350.jpg",
+   "rigBoxCss": [
+    503.9,
+    200.6,
+    528.2,
+    232.3
+   ],
+   "lumaRig": 27.2,
+   "lumaRing": 25.8,
+   "ringStd": 15.9,
+   "contrast": 0.09
+  },
+  {
+   "k": 4,
+   "label": "t700",
+   "file": "branch-844x390-c4-t700.jpg",
+   "rigBoxCss": [
+    422.1,
+    205.1,
+    448.5,
+    241.9
+   ],
+   "lumaRig": 23.8,
+   "lumaRing": 22.7,
+   "ringStd": 16.1,
+   "contrast": 0.07
+  },
+  {
+   "k": 4,
+   "label": "done",
+   "file": "branch-844x390-c4-done.jpg",
+   "rigBoxCss": [
+    421.2,
+    205.2,
+    447.7,
+    241.8
+   ],
+   "lumaRig": 23.4,
+   "lumaRing": 22.6,
+   "ringStd": 16.0,
+   "contrast": 0.05
+  },
+  {
+   "k": 4,
+   "label": "after1500",
+   "file": "branch-844x390-c4-after1500.jpg",
+   "rigBoxCss": [
+    568.4,
+    209.6,
+    587.6,
+    240.5
+   ],
+   "lumaRig": 36.8,
+   "lumaRing": 33.4,
+   "ringStd": 24.8,
+   "contrast": 0.14
+  },
+  {
+   "k": 5,
+   "label": "approach",
+   "file": "branch-844x390-c5-approach.jpg",
+   "rigBoxCss": [
+    506.4,
+    197.2,
+    523.5,
+    223.9
+   ],
+   "lumaRig": 40.6,
+   "lumaRing": 33.8,
+   "ringStd": 23.0,
+   "contrast": 0.3
+  },
+  {
+   "k": 5,
+   "label": "t350",
+   "file": "branch-844x390-c5-t350.jpg",
+   "rigBoxCss": [
+    503.9,
+    200.6,
+    528.2,
+    232.3
+   ],
+   "lumaRig": 36.8,
+   "lumaRing": 40.6,
+   "ringStd": 24.7,
+   "contrast": 0.15
+  },
+  {
+   "k": 5,
+   "label": "t700",
+   "file": "branch-844x390-c5-t700.jpg",
+   "rigBoxCss": [
+    422.1,
+    205.1,
+    448.5,
+    241.9
+   ],
+   "lumaRig": 26.8,
+   "lumaRing": 35.0,
+   "ringStd": 23.2,
+   "contrast": 0.35
+  },
+  {
+   "k": 5,
+   "label": "done",
+   "file": "branch-844x390-c5-done.jpg",
+   "rigBoxCss": [
+    421.2,
+    205.2,
+    447.7,
+    241.8
+   ],
+   "lumaRig": 26.1,
+   "lumaRing": 35.3,
+   "ringStd": 23.7,
+   "contrast": 0.39
+  },
+  {
+   "k": 5,
+   "label": "after1500",
+   "file": "branch-844x390-c5-after1500.jpg",
+   "rigBoxCss": [
+    576.4,
+    209,
+    595.6,
+    239.9
+   ],
+   "lumaRig": 42.0,
+   "lumaRing": 40.0,
+   "ringStd": 27.1,
+   "contrast": 0.07
+  },
+  {
+   "k": 6,
+   "label": "approach",
+   "file": "branch-844x390-c6-approach.jpg",
+   "rigBoxCss": [
+    506.4,
+    197.2,
+    523.5,
+    223.9
+   ],
+   "lumaRig": 38.9,
+   "lumaRing": 40.3,
+   "ringStd": 18.6,
+   "contrast": 0.08
+  },
+  {
+   "k": 6,
+   "label": "t350",
+   "file": "branch-844x390-c6-t350.jpg",
+   "rigBoxCss": [
+    503.9,
+    200.6,
+    528.2,
+    232.3
+   ],
+   "lumaRig": 35.5,
+   "lumaRing": 27.3,
+   "ringStd": 16.2,
+   "contrast": 0.51
+  },
+  {
+   "k": 6,
+   "label": "t700",
+   "file": "branch-844x390-c6-t700.jpg",
+   "rigBoxCss": [
+    422.1,
+    205.1,
+    448.5,
+    241.9
+   ],
+   "lumaRig": 46.1,
+   "lumaRing": 38.0,
+   "ringStd": 27.6,
+   "contrast": 0.29
+  },
+  {
+   "k": 6,
+   "label": "done",
+   "file": "branch-844x390-c6-done.jpg",
+   "rigBoxCss": [
+    421.2,
+    205.2,
+    447.7,
+    241.8
+   ],
+   "lumaRig": 47.5,
+   "lumaRing": 38.1,
+   "ringStd": 27.9,
+   "contrast": 0.34
+  },
+  {
+   "k": 6,
+   "label": "after1500",
+   "file": "branch-844x390-c6-after1500.jpg",
+   "rigBoxCss": [
+    568.4,
+    184.2,
+    587.7,
+    215.1
+   ],
+   "lumaRig": 29.0,
+   "lumaRing": 39.6,
+   "ringStd": 31.3,
+   "contrast": 0.34
+  }
+ ]
+}

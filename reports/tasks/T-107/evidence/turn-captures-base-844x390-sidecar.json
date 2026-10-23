@@ -1,0 +1,511 @@
+{
+ "viewport": {
+  "width": 844,
+  "height": 390,
+  "dpr": 1,
+  "touch": true
+ },
+ "baseUrl": "http://127.0.0.1:8779",
+ "query": "",
+ "posesFile": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/poses/base-844x390.json",
+ "frames": [
+  {
+   "file": "base-844x390-c1-approach.jpg",
+   "k": 1,
+   "label": "approach",
+   "tMs": null,
+   "scrollX": 98,
+   "player": {
+    "x": 112.44426666666668,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 0,
+   "replicaCameraFacet": 0,
+   "page": {
+    "fold": {
+     "yaw": 0,
+     "baseFacet": 0,
+     "facingFacet": 0,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 0,
+     "cameraFacet": 0,
+     "hidden": 864,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 113,
+     "departingShown": 113
+    },
+    "state": "approach",
+    "scrollX": 98,
+    "x": 112.44426666666668
+   }
+  },
+  {
+   "file": "base-844x390-c1-after1500.jpg",
+   "k": 1,
+   "label": "after1500",
+   "tMs": null,
+   "scrollX": 105.47190320823245,
+   "player": {
+    "x": 124.649,
+    "y": 2.58,
+    "vx": 0,
+    "vy": 0,
+    "grounded": false,
+    "facing": 1
+   },
+   "cameraYawDeg": 59.99999999999999,
+   "replicaCameraFacet": 1,
+   "page": {
+    "fold": {
+     "yaw": 1.0471975511965976,
+     "baseFacet": 1,
+     "facingFacet": 1,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 0,
+     "cameraFacet": 1,
+     "hidden": 939,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 88,
+     "departing": 113,
+     "departingShown": 0
+    },
+    "state": "done",
+    "scrollX": 105.47190320823245,
+    "x": 124.649
+   }
+  },
+  {
+   "file": "base-844x390-c2-approach.jpg",
+   "k": 2,
+   "label": "approach",
+   "tMs": null,
+   "scrollX": 186,
+   "player": {
+    "x": 200.40666666666667,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 59.99999999999999,
+   "replicaCameraFacet": 1,
+   "page": {
+    "fold": {
+     "yaw": 1.0471975511965976,
+     "baseFacet": 1,
+     "facingFacet": 1,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 1,
+     "cameraFacet": 1,
+     "hidden": 936,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "approach",
+    "scrollX": 186,
+    "x": 200.40666666666667
+   }
+  },
+  {
+   "file": "base-844x390-c2-after1500.jpg",
+   "k": 2,
+   "label": "after1500",
+   "tMs": null,
+   "scrollX": 193.35086003828764,
+   "player": {
+    "x": 214.40104444444438,
+    "y": 4,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 119.99999999999999,
+   "replicaCameraFacet": 2,
+   "page": {
+    "fold": {
+     "yaw": 2.0943951023931953,
+     "baseFacet": 2,
+     "facingFacet": 2,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 1,
+     "cameraFacet": 2,
+     "hidden": 956,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 88,
+     "departing": 88,
+     "departingShown": 0
+    },
+    "state": "done",
+    "scrollX": 193.35086003828764,
+    "x": 214.40104444444438
+   }
+  },
+  {
+   "file": "base-844x390-c3-approach.jpg",
+   "k": 3,
+   "label": "approach",
+   "tMs": null,
+   "scrollX": 274,
+   "player": {
+    "x": 288.4066666666667,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 119.99999999999999,
+   "replicaCameraFacet": 2,
+   "page": {
+    "fold": {
+     "yaw": 2.0943951023931953,
+     "baseFacet": 2,
+     "facingFacet": 2,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 2,
+     "cameraFacet": 2,
+     "hidden": 953,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "approach",
+    "scrollX": 274,
+    "x": 288.4066666666667
+   }
+  },
+  {
+   "file": "base-844x390-c3-after1500.jpg",
+   "k": 3,
+   "label": "after1500",
+   "tMs": null,
+   "scrollX": 281.13510240361813,
+   "player": {
+    "x": 302.54853333333585,
+    "y": 2.744584,
+    "vx": 9.4,
+    "vy": -12.732000000000001,
+    "grounded": false,
+    "facing": 1
+   },
+   "cameraYawDeg": 180,
+   "replicaCameraFacet": 3,
+   "page": {
+    "fold": {
+     "yaw": 3.141592653589793,
+     "baseFacet": 3,
+     "facingFacet": 3,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 2,
+     "cameraFacet": 3,
+     "hidden": 964,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 88,
+     "departing": 88,
+     "departingShown": 0
+    },
+    "state": "done",
+    "scrollX": 281.13510240361813,
+    "x": 302.54853333333585
+   }
+  },
+  {
+   "file": "base-844x390-c4-approach.jpg",
+   "k": 4,
+   "label": "approach",
+   "tMs": null,
+   "scrollX": 362,
+   "player": {
+    "x": 376.4066666666667,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 180,
+   "replicaCameraFacet": 3,
+   "page": {
+    "fold": {
+     "yaw": 3.141592653589793,
+     "baseFacet": 3,
+     "facingFacet": 3,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 3,
+     "cameraFacet": 3,
+     "hidden": 961,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "approach",
+    "scrollX": 362,
+    "x": 376.4066666666667
+   }
+  },
+  {
+   "file": "base-844x390-c4-after1500.jpg",
+   "k": 4,
+   "label": "after1500",
+   "tMs": null,
+   "scrollX": 369.3151650559764,
+   "player": {
+    "x": 390.38851111111313,
+    "y": 2,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 239.99999999999997,
+   "replicaCameraFacet": 4,
+   "page": {
+    "fold": {
+     "yaw": 4.1887902047863905,
+     "baseFacet": 4,
+     "facingFacet": 4,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 3,
+     "cameraFacet": 4,
+     "hidden": 934,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 88,
+     "departing": 88,
+     "departingShown": 0
+    },
+    "state": "done",
+    "scrollX": 369.3151650559764,
+    "x": 390.38851111111313
+   }
+  },
+  {
+   "file": "base-844x390-c5-approach.jpg",
+   "k": 5,
+   "label": "approach",
+   "tMs": null,
+   "scrollX": 450,
+   "player": {
+    "x": 464.4066666666667,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 239.99999999999997,
+   "replicaCameraFacet": 4,
+   "page": {
+    "fold": {
+     "yaw": 4.1887902047863905,
+     "baseFacet": 4,
+     "facingFacet": 4,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 4,
+     "cameraFacet": 4,
+     "hidden": 931,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "approach",
+    "scrollX": 450,
+    "x": 464.4066666666667
+   }
+  },
+  {
+   "file": "base-844x390-c5-after1500.jpg",
+   "k": 5,
+   "label": "after1500",
+   "tMs": null,
+   "scrollX": 457.0270460305986,
+   "player": {
+    "x": 478.39186666666916,
+    "y": 2.9567840000000007,
+    "vx": 9.4,
+    "vy": -11.832,
+    "grounded": false,
+    "facing": 1
+   },
+   "cameraYawDeg": 299.99999999999994,
+   "replicaCameraFacet": 5,
+   "page": {
+    "fold": {
+     "yaw": 5.235987755982988,
+     "baseFacet": 5,
+     "facingFacet": 5,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 4,
+     "cameraFacet": 5,
+     "hidden": 951,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 88,
+     "arrivingShown": 88,
+     "departing": 88,
+     "departingShown": 0
+    },
+    "state": "done",
+    "scrollX": 457.0270460305986,
+    "x": 478.39186666666916
+   }
+  },
+  {
+   "file": "base-844x390-c6-approach.jpg",
+   "k": 6,
+   "label": "approach",
+   "tMs": null,
+   "scrollX": 538,
+   "player": {
+    "x": 552.4066666666666,
+    "y": 3,
+    "vx": 9.4,
+    "vy": 0,
+    "grounded": true,
+    "facing": 1
+   },
+   "cameraYawDeg": 299.99999999999994,
+   "replicaCameraFacet": 5,
+   "page": {
+    "fold": {
+     "yaw": 5.235987755982988,
+     "baseFacet": 5,
+     "facingFacet": 5,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 5,
+     "cameraFacet": 5,
+     "hidden": 948,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 30,
+     "arrivingShown": 0,
+     "departing": 88,
+     "departingShown": 88
+    },
+    "state": "approach",
+    "scrollX": 538,
+    "x": 552.4066666666666
+   }
+  },
+  {
+   "file": "base-844x390-c6-after1500.jpg",
+   "k": 6,
+   "label": "after1500",
+   "tMs": null,
+   "scrollX": 545.3106488637759,
+   "player": {
+    "x": 566.6867777777774,
+    "y": 3.7083333333333353,
+    "vx": 9.4,
+    "vy": -9.399999999999997,
+    "grounded": false,
+    "facing": 1
+   },
+   "cameraYawDeg": 359.99999999999994,
+   "replicaCameraFacet": 6,
+   "page": {
+    "fold": {
+     "yaw": 6.283185307179585,
+     "baseFacet": 6,
+     "facingFacet": 6,
+     "progress": 0,
+     "handoffProgress": 0.96
+    },
+    "limb": {
+     "facet": 5,
+     "cameraFacet": 6,
+     "hidden": 1061,
+     "pools": 22
+    },
+    "route": {
+     "arriving": 30,
+     "arrivingShown": 30,
+     "departing": 88,
+     "departingShown": 0
+    },
+    "state": "done",
+    "scrollX": 545.3106488637759,
+    "x": 566.6867777777774
+   }
+  }
+ ],
+ "errors": [],
+ "preload": {
+  "budgetMs": 6500,
+  "costMs": 6870,
+  "notReady": []
+ }
+}
