@@ -257,7 +257,10 @@ ok(CONFIG.wasp.visualRadius === 0.5 && CONFIG.wasp.contactRadius === 0.55 &&
 const LVL = buildLevel(CONFIG);
 const gH = LVL.groundH, plats = LVL.platforms;
 ok(gH.length === CONFIG.levelLength, 'groundH spans the level');
-ok(gH.every((h) => Number.isFinite(h)),
+// Array.from, not gH.every: `every` SKIPS sparse holes, and a half-made
+// level-length edit leaves exactly that — holes, not undefined values — so the
+// direct form passed vacuously on the edit it names (T-108 re-gate QA).
+ok(Array.from(gH).every((h) => Number.isFinite(h)),
    'every generated ground column is a finite height (a half-made level-length edit leaves holes)');
 {
   let bad = 0;
