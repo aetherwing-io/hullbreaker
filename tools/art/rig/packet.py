@@ -96,16 +96,16 @@ class Spike:
         self.meta = json.load(open(os.path.join(root, 'meta.json')))
 
     def image(self, frame):
-        d = os.path.join(self.root, self.kind) if self.kind == 'D' else self.root
+        d = os.path.join(self.root, self.kind) if self.kind in ('B', 'D') else self.root
         return Image.open(os.path.join(d, frame + '.png')).convert('RGBA')
 
     def origin(self, frame):
-        if self.kind == 'D':
+        if self.kind in ('B', 'D'):
             return tuple(self.meta['origin'])
         return tuple(self.meta['frames'][frame]['origin'])
 
     def masks(self, frame):
-        d = os.path.join(self.root, self.kind) if self.kind == 'D' else self.root
+        d = os.path.join(self.root, self.kind) if self.kind in ('B', 'D') else self.root
         z = np.load(os.path.join(d, frame + '-parts.npz'))
         if self.kind == 'A':
             g = z['gun']
@@ -168,7 +168,7 @@ def today_fill(mask):
     return mask, mask & ~er
 
 
-def panels(view, scene_root, v3, spike, spike_a):
+def panels(view, scene_root, v3, spike, spike_a, spike_b=None):
     sc = SC.Scene.__new__(SC.Scene)
     sc.dir = os.path.join(scene_root, view)
     sc.meta = json.load(open(os.path.join(sc.dir, 'scene.json')))
@@ -193,13 +193,16 @@ def panels(view, scene_root, v3, spike, spike_a):
         row = [today]
         res = {}
         aim = 45.0 if 'up-right' in frame else (180.0 if mirror else 0.0)
-        for name, cand, fr in (('spikeD', spike, sframe), ('v3', v3, frame)):
+        for name, cand, fr, shown in (('spikeB', spike_b, sframe, False), ('spikeD', spike, sframe, True),
+                                      ('v3', v3, frame, True)):
             if cand is None:
-                row.append(Image.new('RGBA', (pw, ph), (12, 14, 18, 255)))
+                if shown:
+                    row.append(Image.new('RGBA', (pw, ph), (12, 14, 18, 255)))
                 continue
             comp, (sprite, outline, gun) = paste(bgimg, cand, fr, (fx, fy), mirror)
             crop = comp.crop(box)
-            row.append(crop)
+            if shown:
+                row.append(crop)
             sl = (slice(box[1], box[3]), slice(box[0], box[2]))
             bgc = bgimg.crop(box)
             st = SM.stats(crop, bgc, sprite[sl], gun[sl], aim)
@@ -381,6 +384,43 @@ def falsify_sheet(v3, fals, gun, poses, out_dir, scale=8):
     return p
 
 
+BOARD_REFS = [   # (board, RIG box measured on 8x grid zooms, RIG's height in board px, label)
+    ('01-exterior-gameplay.png', (548, 366, 640, 436), 64.0, 'board 01'),
+    ('13-human-scale-monster-climb-grammar.png', (1255, 218, 1330, 266), 42.0, 'board 13 (panel 3)'),
+]
+
+
+def packet_one(out_dir, rig_px):
+    """Image 1 of the operator packet: the desktop and phone true-size
+    contexts (today | v3), and the boards' RIG box-downscaled to the same
+    on-screen height for reference."""
+    ctx = [Image.open(os.path.join(out_dir, 'v3-%s-context.png' % v)).convert('RGB')
+           for v in ('desktop', 'phone') if os.path.exists(os.path.join(out_dir, 'v3-%s-context.png' % v))]
+    strip_h = 30 + int(max(rig_px.values()) * 1.6)
+    W = max(c.width for c in ctx)
+    H = sum(c.height for c in ctx) + strip_h + 8
+    out = Image.new('RGB', (W, H), (12, 14, 18))
+    y = 0
+    for c in ctx:
+        out.paste(c, (0, y))
+        y += c.height
+    d = ImageDraw.Draw(out)
+    d.text((6, y + 4), "Reference: the boards' RIG box-downscaled to the same on-screen height (%s)" % ', '.join(
+        '%s %.0f px' % (k, v) for k, v in rig_px.items()), fill=(220, 220, 210), font=SC.font(12))
+    x = 6
+    for view, px in rig_px.items():
+        for fname, box, h, label in BOARD_REFS:
+            im = Image.open(os.path.join(ROOT, 'docs', 'concept-art', fname)).convert('RGB').crop(box)
+            k = px / h
+            small = im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.BOX)
+            out.paste(small, (x, y + 22))
+            d.text((x, y + 24 + small.height), '%s, %s' % (label, view), fill=(170, 175, 180), font=SC.font(10))
+            x += max(small.width, 120) + 10
+    p = os.path.join(out_dir, 'packet-1-true-size.png')
+    out.save(p, optimize=True)
+    return p
+
+
 def sweep(view, sc, v3):
     """v3 idle slid along the deck row across the frame: fill separation at every stop."""
     f = sc.feet('cur-frame-idle')
@@ -423,8 +463,9 @@ def main():
             continue
         v3 = V3(args.assets, args.cells, VIEW_DENSITY[view])
         spike = Spike(os.path.join(args.spike, 'post-' + view)) if args.spike else None
+        spike_b = Spike(os.path.join(args.spike, 'post-' + view), 'B') if args.spike else None
         spike_a = Spike(os.path.join(args.spike_a, 'a-' + view), 'A') if args.spike_a else None
-        sc, grid, stats_rows, size, u = panels(view, args.scene, v3, spike, spike_a)
+        sc, grid, stats_rows, size, u = panels(view, args.scene, v3, spike, spike_a, spike_b)
         title = '%s, %.2f device px/tile (RIG %.0f px)' % (view.upper(), u, 2 * u)
         for scale in (1, 4):
             p = os.path.join(args.out, 'v3-%s-%dx.png' % (view, scale))
@@ -435,6 +476,8 @@ def main():
             print(p)
         print(run_gif(view, sc, v3, args.out))
         allm[view] = {'pxPerTile': u, 'dpr': sc.dpr, 'rows': stats_rows, 'sweep': sweep(view, sc, v3)}
+    if allm:
+        print(packet_one(args.out, {v: 2 * m['pxPerTile'] for v, m in allm.items()}))
     v16 = V3(args.assets, args.cells, 'd16')
     for g in sorted({k.split(':')[0] for k in v16.index}):
         print(inventory(v16, g, args.out) if g == 'R' else '', end='')
@@ -451,7 +494,7 @@ def main():
         print('==', view, 'px/tile %.2f' % m['pxPerTile'])
         print('%-16s %-7s ' % ('row', 'cand') + ' '.join('%9s' % k[:9] for k in keys))
         for row, res in m['rows'].items():
-            for k in ('today', 'spikeD', 'v3'):
+            for k in ('today', 'spikeB', 'spikeD', 'v3'):
                 r = res.get(k) or {}
                 print('%-16s %-7s ' % (row[:16], k) + ' '.join('%9s' % r.get(x, '-') for x in keys))
         print('sweep', json.dumps(m['sweep']))

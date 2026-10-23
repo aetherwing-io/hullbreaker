@@ -209,8 +209,8 @@ def main():
     for name, sw in res['swatches'].items():
         print(name)
         for r in sw:
-            print('  %s L%5.1f h%5.1f s%.2f share %.3f  at %s,%d,%d' % (r['hex'], r['luma'], r['hue'], r['sat'], r['share'],
-                                                                     name[:2], r['at']['x'], r['at']['y']))
+            print('  %s L%5.1f h%5.1f s%.2f share %.3f  at board %s, %d,%d' % (
+                r['hex'], r['luma'], r['hue'], r['sat'], r['share'], r['at']['board'][:2], r['at']['x'], r['at']['y']))
     for b in res['boxes']:
         print(b['label'], 'rig px', b['rigPx'], 'bg', b['backgroundCentres'])
 

@@ -61,102 +61,92 @@ Rules for any 3D-sourced sprite:
 (`ambientcg.com`, CC0 PBR materials), Poly Haven (`api.polyhaven.com`, CC0
 textures/HDRIs/models), Kenney (`kenney.nl`, CC0 game kits). OpenGameArt hosts
 mixed licences — take only items marked CC0. Record every imported file's
-source URL, author and licence in `assets/manifest.json` (`provenance`
-field). Raw downloads are working material: commit only what the game loads,
+source URL, author, licence and sha256 in `tools/art/spike/cc0.json` and in the
+manifest entry's `generator`/`notes` (the manifest schema has no `provenance`
+field; `tools/assets/lib/manifest.mjs` rejects unknown fields). Raw downloads are working material: commit only what the game loads,
 processed into the house palette and pixel scale, never a photo texture
 pasted onto the hull (entry 14's value ladder and the pixel material still
 govern the look).
 
-## The 3D -> sprite pipeline (T-109)
+## RIG v3: the CC0 soldier in the boards' colours (T-124)
 
-One command builds RIG (all five guns) and the wasp from primitives in code:
+Decisions entry 27 picked the spike's B/D -- Irondust's CC0 soldier,
+toon-reduced by this pipeline -- recoloured from white to the concept boards'
+khaki/rust, and "Free CC0 models + pipeline" for RIG and every enemy. The
+primitive-built v2 builder of T-109 phase A is gone (entry 26); its
+`tools/art/lib` helpers were trimmed to what this route uses. One command
+builds every shipped file:
 
-    /opt/hb-art/bin/python tools/art/build.py            # render + post + check, prints sha256s
-    /opt/hb-art/bin/python tools/art/build.py --falsify  # proves the anchor check binds
+    /opt/hb-art/bin/python -I tools/art/build_rig_v3.py                 # sources -> sim -> palette -> render -> post -> pack -> check
+    /opt/hb-art/bin/python -I tools/art/build_rig_v3.py --falsify S     # + the anchor check's negative control
+        [--jobs 1|2|3|5] [--build <dir>] [--out <dir>] [--keep]
+
+Run it under `nice -n 15` on a shared host. Sources live in the git-ignored
+`tools/art/build/cc0/` unless `HB_ART_CC0=<dir>` points elsewhere (every
+script reads the same variable). Build time: see `reports/tasks/T-124/build.md`.
 
 | Path | Role |
 |---|---|
-| `rig/model.py` | RIG: skeleton (bones), low-poly body parts, five guns (`R S L H F`) in gun-local space, grip/foregrip points, `MUZZLE_X = 0.82` |
-| `rig/pose.py` | Pure-numpy pose solver + the frame inventory. The gun is placed FIRST on the sim's shot line (`CONFIG.player.muzzleY`, `barrelTiles`); the right hand bone is the gun frame times a fixed grip offset; analytic two-bone IK reaches the arms and legs; a fixed, ordered search nudges pelvis/lean until every limb reaches (an unreachable hand is a build error) |
-| `rig/render.py` | Blender driver: armature, parts parented to bones, guns parented to `hand.R` with `grip.*` / `muzzle.*` / `foregrip.*` empties; renders ID maps; projects the evaluated empties for anchors; asserts Blender's evaluated hand/gun equal the solver's |
-| `wasp/model.py`, `wasp/render.py` | The wasp: thorax/head/3-joint abdomen/4 wing bones; idle, 4-phase cruise, dive-lock, 2 dive, hit |
-| `lib/bl.py` | Workbench/FLAT/no-AA/no-dither render setup, ID materials, low-poly mesh builder, per-face cel banding, armature + bone parenting, pose writer |
-| `lib/pixel.py` | Weighted-mode downscale, despeckle, palette LUT, 1 px ink outline, grid packer, hand-rolled indexed PNG writer |
-| `lib/palette.py` | Swatches parsed from `src/render/palette.js` (CONCEPT) and `src/config.js` — no hex is invented here |
-| `post.py` | ID maps -> palette atlas PNG + compact anchor JSON + a dev part-ID atlas (for the check) |
-| `check_anchors.py` | Drawn muzzle / sting pixel vs exported anchor, <= 1 px, on the shipped pixels |
-| `capture/current-art.mjs` | Captures the CURRENT art in the live game (+ the measured px/tile) for comparisons: `node tools/art/capture/current-art.mjs [--only desktop\|phone] [--wasp-only \| --climb-only] [--port N]` (own server; `--port 0` = OS-assigned; `--wasp-only` re-takes the wasp crops into `current-art-wasp.json`; `--climb-only` re-takes the four ladder phases and merges them into `current-art.json`) |
-| `sheets.py` | Contact sheets: current vs v2 at true size and 4x, the v2 frame inventory, the five guns, the anchor falsification |
-| `measure.py` | Numbers behind the comparison (size, colours, value steps, contrast vs background) -> `reports/tasks/T-109/measurements.json` |
-| `preview.py` | Iteration helper (not part of the build) |
+| `build_rig_v3.py` | the one command (steps in its docstring); prints every output's sha256 |
+| `rig/poses.py` | the frame inventory -- every state `src/render/player.js` draws x every aim the sim can produce there (71 poses per gun) -- the pose library, the loader's `CLIPS` and mirror rule |
+| `rig/guns.py` | the five chassis (R Bullpup_3, S Shotgun_ShortStock, L SniperRifle_4, H SubmachineGun_1, F Bullpup_2): grip/support points, scale so the grip sits on the sim's hand socket, cross-section exaggeration, barrel boost, identity part |
+| `rig/render.py` | Blender: the soldier + pack + guns; the gun placed FIRST on the sim's shot line (bore through `(0, muzzleY)`, muzzle `barrelTiles` along the aim), the body solved around it (analytic IK + a fixed, ordered reach search; an unreachable hand is a build error); three packed Cycles passes per frame (`id`: object/region/zone, `nrm`, `aod`: AO + depth) on one 280.8 px/tile grid; anchors exported in tiles |
+| `rig/post.py` | the spike's D reduction: samples binned to each density's pixels, weighted-majority material family, 4 tones from the game's key light + AO, cool rim, depth lines, the scripted tidy rules, the 1 px ink outline |
+| `rig/board_palette.py`, `rig/palette_v3.py` | the palette MEASURED from boards 01/13 (k-means of RIG's pixels in fixed boxes, nearest-pixel coordinates; a stated rule for the rust plates) + the game's own accent tokens; the build re-measures the boards and fails if a swatch moved |
+| `rig/pack.py` | one indexed-PNG atlas per density + ONE JSON naming every frame once |
+| `rig/check.py` | the anchor check on the shipped pixels (below) |
+| `rig/manifest.mjs` | the manifest entries, computed with the asset gate's own library (`tools/assets/lib`) |
+| `rig/packet.py` | today vs v3 at true size on the real captured frame (`spike/scene_capture.mjs`), the measurements, the run-cycle GIF, the inventory and falsification sheets |
 
-**Rendering contract.** Workbench with FLAT lighting, AA off, dither 0, and ID
-colours instead of palette colours: every rendered pixel is exactly one
-material's (class, light band) or empty. The light band is chosen per face in
-Python from the evaluated world normal against one fixed key light — a
-deterministic cel shade — so the render has no sampling noise at all. The
-pixel post downscales 8x by weighted MODE (no colour blending), despeckles
-single-pixel band noise inside the body only, maps IDs to the house palette,
-adds a 1 px `capsuleInk` outline, packs a power-of-two grid, and writes an
-indexed PNG with a hand-rolled encoder (no metadata, no timestamps).
+**Outputs** (`assets/generated/sprites/`): `rig-v3-d16.png`, `rig-v3-d23.png`,
+`rig-v3-d35.png`, `rig-v3.json`. Not wired into the game: phase 2 waits for
+T-123's crisp path.
 
-**Densities.** `far` = 18 px/tile (`capture/current-art.mjs` measured 18.065
-px/tile at 1280x800 FAR: RIG's 2.0-tile visual height is 36.1 CSS px, 4.5% of
-the height — older docs' "~30 px" predates the 2.0-tile sprite);
-`phone2x` = 23.4 px/tile (entry 20 addendum: 6% of a 390 px landscape height,
-at DPR 2). Each density is a native render + pixel post, not a resample.
+**Densities** (native renders, never resampled; RIG's FAR px/tile scales with
+the viewport height, 0.02256 x css height, times the DPR):
 
-**Outputs** (`assets/generated/sprites/art-v2/`): `rig-v2-{far,phone2x}.png|json`
-(300 frames = 60 poses x 5 guns), `wasp-v2-{far,phone2x}.png|json` (9 frames).
-JSON per frame: atlas rect, state/aim/gun, and anchors in cell pixels
-(`hand`, `handL`, `muzzle`, `head`, `footR`, `footL`; wasp `sting`,
-`stingBase`, `eye`, `head`, `wingRoot`), plus `origin` (the sim point) and
-`pxPerTile` so tiles = `((x - origin.x) / pxPerTile, (origin.y - y) / pxPerTile)`.
-Authored facing +x; facing -1 is a horizontal flip about `origin.x`.
+| id | px/tile | RIG (2 tiles) | integer-scale screens |
+|---|---|---|---|
+| d16 | 16.2419 | 32.5 px | x1 1280x720 desktop FAR at DPR 1 (measured); x2 a 720 css-tall window at DPR 2 or 1440 tall at DPR 1; x3 2160 tall |
+| d23 | 23.4 | 46.8 px | x1 the phone landscape frame (RIG 6% of 390 css px, T-107) at DPR 2; 1920x1080 FAR wants 24.4 (d23 draws RIG 4% small there) |
+| d35 | 35.1 | 70.2 px | x1 the same phone frame at DPR 3 (the operator's iPhone) |
 
-**The anchor check.** On the shipped pixels: (1) the PNG must equal
-palette(part-ID atlas) exactly; (2) the drawn gun pixels on the bore axis end
-within 1 px of the exported muzzle anchor; (3) the exported muzzle is compared
-with the simulation's own shot origin computed from the JSON's `sim` block.
-`--falsify` moves gun S's mesh 0.1 tiles (1.8 px) down its barrel while its
-empties stay, and the wasp's sting likewise; the build only reports
-CONFIRMED when the check fails on exactly those frames.
+**JSON** (`rig-v3.json`): `frames` lists the 355 keys (`<gun>:<pose>-<aim>`)
+ONCE; frame i is cell i of every density's atlas (`x = (i % columns) *
+cell.w`, `y = floor(i / columns) * cell.h`). `anchors` (`muzzle` = the sim's
+shot origin, `drawnMuzzle`, `hand`, `handL`, `support`, `socket`, `grip`,
+`head`, `footR`, `footL`) are in tiles from the sim point, density-independent:
+`px = origin + (x, -y) * pxPerTile`. `lhand` says where the far hand is (`gun`,
+`rung`, `rest`). `densities` carries each atlas's `pxPerTile`, `image`, `size`,
+`cell`, `origin`, `columns` and the screens it serves. `clips` maps the game's
+states to poses and aims; `mirror` states the facing rule (cells face +x;
+mirror when the gun points left, or for a vertical aim when facing is -1).
+
+**The anchor check** (`rig/check.py`, run by every build on the shipped files):
+(1) post's part map, re-coloured, equals the atlas cell byte for byte; (2) the
+gun pixels on the bore axis end within 1 px of the exported `drawnMuzzle`;
+(3) the exported muzzle equals the shot origin recomputed from
+`src/config.js` (`CONFIG.player.muzzleY`, `barrelTiles`, `CONFIG.crouch.muzzleY`)
+and `RIG_RECOIL_TILES`. `--falsify S` re-renders gun S with its MESH 0.15 tiles
+down the bore (anchors unmoved) and confirms only when exactly S's frames fail.
+It already caught one real defect: straight-down guns ran behind the near leg
+(1-24 px short) until render.py drew them in front (`GUN_DEPTH_BY_AIM`).
 
 **Limitations, stated plainly.**
-- Byte-reproducibility is proven on this host (two clean builds, identical
-  sha256). Workbench rasterizes on Mesa llvmpipe; a different Mesa or bpy
-  version may move edge pixels. Rebuild and compare hashes before trusting a
-  sheet built elsewhere.
-- The anchor tolerance is 1 px because a pixel-art barrel end is quantized:
-  a diagonal barrel's last pixel overshoots its true end by up to ~0.87 px.
-- The atlases are palette-exact UNLIT pixels. In today's renderer RIG is a lit
-  `MeshStandardMaterial` under ACES, which darkens it (the contact sheets show
-  an approximate "lit" panel); which material v2 uses is a phase-B call.
-- `capture/current-art.mjs` stages only sim state (player row, aim, weapon,
-  ladder, a spawned wasp with its `enterUntil` in the past), runs the game at
-  `?fixeddt=16` so a slow host advances the sim 16 ms per frame instead of
-  skipping, aborts large atlases that cannot appear in the crops so RIG's and
-  the wasp's own art survive the 2.5 s boot budget (`--wasp-only` aborts the
-  scene's backdrops too, so its crops show flat fallbacks behind the wasp),
-  rewinds the scroll with the sim's own setter, climbs the ladder with the
-  sim's own climb key (aim held up; the renderer's phase is distance-driven,
-  so a phase needs 4-10 rendered frames), and crops at device pixels
-  through Playwright's `page.screenshot({ scale: 'device' })`. (A raw DevTools
-  `Page.captureScreenshot` with a clip resets the context's device-metrics
-  emulation on the game page — `devicePixelRatio` 2 -> 1 after the first
-  capture — so later "2x" crops are upscaled DPR-1 renders. Don't use it for
-  DPR > 1 evidence.)
-  The RIG-free background is the same clip re-shot with RIG stepped 4 tiles
-  right (the camera follows the scroll cursor, not RIG). Hiding RIG with the
-  i-frame blink was tried first and is unreliable: a slow screenshot lands
-  on a random blink phase. Air and climb crops have no RIG-free background,
-  so the sheets put v2 on a flat patch there.
-  The camera still drifts a few px between a staged pose and its screenshot;
-  `sheets.py` measures that drift by image registration. Each label records
-  `bodyFrame` / `canvasFallback` / the sim aim, and `sheets.py` pairs each
-  crop with the v2 frame for the aim it recorded; a label that times out is
-  listed in `errors` and skipped. It took ~1 min per crop at DPR 1 and
-  2.5-5 min per crop at DPR 2 on a 4-core host at load 25-48.
+- Byte-reproducibility is proven on this host only (two clean builds, same
+  sha256 -- `reports/tasks/T-124/build.md`). Cycles on another CPU or Blender
+  build may move pixels; compare hashes before trusting a build made elsewhere.
+- The 1 px tolerance: a diagonal barrel's last pixel reaches up to 0.71 px
+  past its centre line.
+- The cells are palette-exact UNLIT pixels; today's lit material + ACES would
+  darken them (the spike measured gain 0.81/0.76/0.62). They are meant for the
+  crisp path (T-123): unlit, nearest, mip-free, snapped to the device grid.
+- The sim fires from the hip (53% of RIG's height); every gun is held there.
+  The boards hold the rifle at the shoulder -- a sim decision, not an art one.
+- In motion the 105 ms firing kick is not drawn (stand-fire frames carry it
+  standing); a strafe backpedal plays the run cycle backwards (loader rule).
+- Crouch (`?crouch=1`) fires from 0.45 tiles: long magazines dip up to 0.2
+  tiles under the deck line, as today's gun plane does there.
 
 ## The A2 art spike (T-109): CC0 model -> toon -> pixels, judged on the real scene
 
