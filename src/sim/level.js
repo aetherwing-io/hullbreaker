@@ -4,14 +4,17 @@
    owns the runtime queries. Tile instances for the same columns live in
    src/render/level.js.
 
-   T-201 (decisions.md entry 25, SPRINT I-105): the sim no longer keeps a
-   built/unbuilt column state. It used to mark every face beyond the current
-   corner inert until the retired brick-slam zipper "slammed it in" during the
-   ritual, which made weapon capsules, wasp dive floors, flame crawl and
-   bullets treat the pre-bend column RIG fights from as a hole, and would have
-   let a survivor that follows RIG round the corner fall through a deck the
-   player can see. Under the static-anatomy rule (entry 3) the next stretch
-   pre-exists and is revealed; the sim now agrees: every column exists. */
+   T-201 (decisions.md entry 25, inbox I-105): the six-face run no longer
+   keeps a built/unbuilt column state. Every face beyond the current corner
+   used to be inert until the retired brick-slam zipper "slammed it in" during
+   the ritual, which made weapon capsules, wasp dive floors, flame crawl and
+   bullets treat the pre-bend column RIG fights from as a hole — and would let
+   a survivor that follows RIG round a corner fall through a deck the player
+   can see. Under the static-anatomy rule (entry 3) the next stretch
+   pre-exists and is revealed; the sim now agrees: in the six-face run every
+   column exists from boot. Only the traversal slice still marks the six-face
+   corners' faces inert, as it always has: its play area ends before the first
+   corner, its renderer hides those columns, and nothing ever settles them. */
 
 import { CONFIG } from '../config.js';
 import { CORNER_S } from '../pure/path.js';
@@ -68,13 +71,13 @@ export function groundTopAt(x) {
   return g > -100 ? g : -999;
 }
 
-// RENDER-ONLY LEGACY LISTS. src/render/level.js still imports these column
-// lists for the ?zip=1 brick reveal's tile hiding (lane T-121 deletes that
-// consumer and the flag under entry 25). The simulation no longer reads them:
-// no column here is ever inert. Kept as plain geometry so the render module
-// keeps loading until T-121 lands; delete with it.
-export const slamSets = [];                               // corner k-1 -> first 31 arrival columns
-export const farSets = [];                                // corner k-1 -> rest of the next face
+// Column lists of every face after each corner, split where the retired
+// zipper strip used to end. src/render/level.js still hides these tiles in
+// the traversal slice (unbuiltHidden), and so does the sim below; the six-face
+// run reads neither. (Kept under their historical names because the render
+// module imports them; lane T-121 owns that consumer.)
+export const slamSets = [];                               // corner k-1 → first zipCols arrival columns
+export const farSets = [];                                // corner k-1 → rest of the next face
 for (const cs of CORNER_S) {
   const strip = [], far = [];
   const faceEnd = Math.min(cs + CONFIG.path.faceTiles - 1, LEVEL_LEN - 1);
@@ -84,25 +87,60 @@ for (const cs of CORNER_S) {
   farSets.push(far);
 }
 
-export function columnHasGround(s) { return groundH[s] > -100; }
-// Every column exists (see the header). These two keep their names for the
-// render consumers (src/render/route-visibility.js) until T-121 lands.
-export function columnBuilt() { return true; }
-export function levelBuildRevision() { return 0; }
+// Column state: 1 = this column exists in the world and collides. Gap
+// columns are never marked, and their queries are identical either way
+// because groundH already reports them empty. In the six-face run every
+// column is 1 for the whole run (T-201: nothing builds it; nothing settles
+// it). The traversal slice marks the six-face corners' faces 0 at every reset
+// and never changes them.
+const built = new Uint8Array(LEVEL_LEN).fill(1);
+let buildRevision = 0;
 
-// Boot and every run reset: the render half (its ?zip=1 path and the
-// traversal slice's tile bake) still hides the columns it always hid; the sim
-// marks nothing. The transformation fixture owns its own bands.
+export function columnHasGround(s) { return groundH[s] > -100; }
+export function columnBuilt(s) { return built[s] === 1; }
+// Changes only when the traversal slice's reset marks its beyond-the-slice
+// columns (read by src/render/route-visibility.js's cache stamp).
+export function levelBuildRevision() { return buildRevision; }
+
+// Boot and every run reset (src/boot/run-reset.js 'future-faces'). The
+// transformation fixture owns its own bands (src/sim/transform.js) and the
+// six-face run has nothing to mark; only the traversal slice keeps the faces
+// beyond its play area inert, matching its renderer.
 export function unbuildFutureFaces() {
   if (IS_TRANSFORM_SLICE) return;
+  if (IS_TRAVERSAL_SLICE) {
+    let changed = false;
+    for (const sets of [slamSets, farSets])
+      for (const cols of sets)
+        for (const s of cols) if (columnHasGround(s) && built[s] !== 0) {
+          built[s] = 0;
+          changed = true;
+        }
+    if (changed) buildRevision++;
+  }
   view.level.unbuiltHidden();            // render: unchanged presentation hook
 }
 
-// The terrain queries projectiles, wasp dive floors, flame crawl, mortar zones
-// and capsules use. They were build-gated by the zipper; they are the plain
-// geometry queries now, and keep their names for their (unfenced) callers.
-export function builtSolidAt(x, y) { return isSolid(Math.floor(x), Math.floor(y)); }
-export function builtGroundTopAt(x) { return groundTopAt(x); }
+// Terrain queries for everything but RIG's own collision (projectiles, wasp
+// dive floors, flame crawl, mortar zones, capsules). In the six-face run they
+// are the plain geometry queries (every column is built); in the traversal
+// slice the inert columns beyond its play area do not collide, matching the
+// tiles its renderer hides. The names are historical (zipper-era callers).
+export function builtSolidAt(x, y) {
+  const i = Math.floor(x);
+  if (i >= 0 && i < LEVEL_LEN) {
+    if (columnHasGround(i) && !columnBuilt(i)) return false;
+  }
+  return isSolid(i, Math.floor(y));
+}
+
+export function builtGroundTopAt(x) {
+  const i = Math.floor(x);
+  if (i >= 0 && i < LEVEL_LEN) {
+    if (columnHasGround(i) && !columnBuilt(i)) return -999;
+  }
+  return groundTopAt(x);
+}
 
 // helper shared by every spawn site: lane altitude over local ground,
 // gap-safe, capped so hostiles stay in the fightable band

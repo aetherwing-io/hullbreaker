@@ -182,6 +182,23 @@ export function followScrollFloor(rigFront, edgeRight, lead) {
   return rigFront - (edgeRight - lead);
 }
 
+/* The corner blend. The lead alone would bring a racer to a closed joint with
+ * the scroll short of the corner's halt (desktop FAR: 9.2 tiles; today's FAR
+ * phone frame: 21.6), and render/camera.js anchors the view at the scroll — so
+ * the turn would orbit a point 24-37 tiles before the joint instead of today's
+ * 15, and right after it RIG would draw 2-4x their size with the arriving
+ * facet out of frame (measured with the T-102 camera replica; T-201 report).
+ * Inside the approach to an idle corner the scroll therefore also keeps up
+ * with this floor, which reaches the halt exactly when RIG's front reaches the
+ * joint: the plane gains `cornerBlendRate` tiles on RIG per tile RIG closes.
+ * It binds only in the last (lead offset - joint gap) / rate tiles before the
+ * joint, and never on a view whose lead already passes the halt (portrait).
+ * The corner then arms at its halt the moment RIG arrives — no wait, and the
+ * ritual frames the turn exactly as it does today.                        */
+export function followCornerFloor(haltS, jointFront, rigFront, cfg) {
+  return haltS - (1 + cfg.cornerBlendRate) * (jointFront - rigFront);
+}
+
 /* The bank under follow — entry 11's tension, named rather than buried.
  * Entry 11 makes banked daylight the currency of escalation, and T-022 reads
  * it as RIG's fraction of the strip between the damage plane and the right

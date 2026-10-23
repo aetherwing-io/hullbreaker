@@ -271,11 +271,16 @@ export const CONFIG = {
   //   lead = clamp(leadFrac x visible width, leadMinTiles, leadMaxTiles)
   // and the visible width read from the LIVE edge calibration every frame
   // (sim/edges.js — the phone camera lane changes it, so no width is typed
-  // here): 22 tiles on desktop FAR, ~18.8 in the closer phone frame, 6 in
-  // portrait. A pace lever only: nothing here touches CONFIG.player below, and
-  // a player who never comes within `lead` of the right edge never engages it.
+  // here): 22 tiles on desktop FAR 16:10, ~18.8 in the closer phone frame, 6
+  // in portrait. Approaching an idle corner the plane also gains
+  // cornerBlendRate tiles on RIG per tile RIG closes, so a racer reaches the
+  // joint with the scroll exactly at the corner's halt (src/pure/momentum.js
+  // followCornerFloor). A pace lever only: nothing here touches CONFIG.player
+  // below, and a player who never comes within `lead` of the right edge (or
+  // near enough a joint for the blend) never engages it.
   follow: {
     leadFrac: 0.3, leadMinTiles: 6, leadMaxTiles: 24,
+    cornerBlendRate: 0.5,
   },
 
   player: {

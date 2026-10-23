@@ -133,20 +133,22 @@ export const SLICE_FALLBACK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('fallback'
 // keeps the old stock-only consequence available for direct comparison. Past
 // the streak ceiling the stock lives path is still the next consequence tier.
 export const RUN_FALLBACK_ENABLED = ACTIVE_FIXTURE === null && QUERY.get('fallback') !== '0';
-/* THE RACE PASS (T-201: decisions.md entries 20, 23 #2 and its addendum in
-   entry 25). Six-face run only; the fixtures own their own pursuit and gates.
-     ?follow=0       the plain pursuit plane: no follow-lead term and no
-                     arm-on-arrival — today's scroll exactly.
+/* THE RACE PASS (T-201: decisions.md entries 20, 23 #2 and the integrator
+   call in entry 25's addendum). Six-face run only; the fixtures own their own
+   pursuit and gates.
+     ?follow=0       the plain pursuit plane: no follow-lead floor and no
+                     corner blend — today's scroll exactly.
      ?gates=legacy   held wave gates: the turn waits for the encounter to be
                      cleared, beats unlock one at a time behind a 300 s lock —
-                     today's corners exactly. Default `rolling`: a corner turns
-                     when RIG reaches its joint, whatever is still alive, and
-                     the side's mobile survivors follow RIG onto the next side.
-     ?hinge=flow     UNJUDGED A/B (T-102 R4), off by default: RIG is released
+                     today's corners exactly. Default (rolling): the corner
+                     opens the moment it arms, whatever is still alive, the
+                     side's encounter plays on the move, and its mobile bodies
+                     follow RIG onto the next side.
+     ?hinge=flow     UNJUDGED A/B (T-102 R4), OFF by default: RIG is released
                      onto the arriving facet at the camera hand-off instead of
                      standing on the hinge for the whole 1.1 s ritual.
-   The defaults are an integrator call recorded in entry 25's addendum to entry
-   23; both escape hatches stay so the operator can compare. */
+   Both escape hatches together are today's run, except for the sim-side
+   zipper removal (entry 25), which has no flag. */
 const FOLLOW_RAW = QUERY.get('follow');
 export const FOLLOW_ENABLED = ACTIVE_FIXTURE === null &&
   !(FOLLOW_RAW === '0' || FOLLOW_RAW === 'off');

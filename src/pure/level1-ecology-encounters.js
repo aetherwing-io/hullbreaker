@@ -9,8 +9,8 @@
  * The gate runtime keeps the existing 4/5/6/7/8/9 body counts. Under the
  * held gate (`?gates=legacy`) the next beat unlocks when the current one is
  * cleared, behind a 300 s lock; under the default rolling encounter (T-201,
- * src/pure/waves.js ROLLING_GATES) a beat is released by clear, proximity or
- * a bounded clock, and each released body condenses on its own short
+ * src/pure/waves.js ROLLING_GATES) a beat is released by proximity, a clear
+ * or a bounded clock, and each released body condenses on its own short
  * in-beat stagger (level1EcologyRollingDelay).                             */
 
 import { resolveEnemyEcology } from './enemy-ecology.js';

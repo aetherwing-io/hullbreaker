@@ -313,10 +313,12 @@ export async function runOne(opts) {
     k: c.k, firstAtPivotMs: null, primedMs: null, armedMs: null, gateEnteredMs: null, gateClearedMs: null,
     approachMs: null, turnStartMs: null, turnDoneMs: null, driveThrough: null,
     killsAtArm: null,
-    // T-201: RIG at the corner's joint in any pre-turn state (closed joint or
-    // past it), the climb held after it, and the carry-over of survivors.
-    arrivedMs: null, armedBy: null, survivorsAtTurn: null, candidatesAtTurn: null,
-    pursuers: null, carried: null,
+    // T-201: RIG at the corner's joint in any pre-turn state; the time RIG
+    // pressed into a CLOSED joint (corner idle or a held gate) — the climb
+    // held by the corner; and the carry-over the sim reports (read at the end
+    // of the run: followers re-enter after the turn).
+    arrivedMs: null, holdAtJointMs: 0, survivorsAtTurn: null, pursuers: null,
+    unreleasedCarried: null, carried: null, dropped: null,
     carriedSeen: 0, carriedSeenIds: [], beatLog: null, beatMaxGapMs: null, beatsReleased: null,
     clearedAtTurn: null,
   }));
@@ -328,7 +330,14 @@ export async function runOne(opts) {
     minPlaneAtCondense: Infinity, minPlaneAtMaterial: Infinity, worst: [] };
   const stageSeen = new Set();
   const NEAR_PLANE = 6;
-  let framesLeadBound = 0, framesJointBeforeHalt = 0;
+  // framesFollowNear: frames where the follow-lead floor or the corner blend
+  // (src/sim/scroll.js) reached within 0.05 tiles of the scroll — a superset
+  // of the frames either term can bind on, computed the same way on a tree
+  // with or without the follow-lead (?follow=0, the base tree), so a run
+  // with zero of them must replay identically with the follow-lead off.
+  let framesFollowNear = 0, framesJointBeforeHalt = 0;
+  const FC = CONFIG.follow || { leadFrac: 0.3, leadMinTiles: 6, leadMaxTiles: 24 };
+  const blendRate = Number.isFinite(FC.cornerBlendRate) ? FC.cornerBlendRate : 0.5;
   // A digest of the simulated trajectory alone (no run labels), for the
   // floor-promise comparison of the same run under two queries.
   let simHash = 2166136261 >>> 0;
@@ -371,6 +380,17 @@ export async function runOne(opts) {
 
     const faceBefore = faceNow();
     const stateBefore = FN.finaleActive() ? 'finale' : (c ? c.state : 'outro');
+    {
+      // the floors as sim/scroll.js computes them this frame (pre-update RIG)
+      const front0 = player.x + player.hw;
+      const lead0 = Math.min(FC.leadMaxTiles, Math.max(FC.leadMinTiles, FC.leadFrac * (E.EDGE_R - E.EDGE_L)));
+      let near = front0 - (E.EDGE_R - lead0) > T.scrollX - 0.05;
+      if (!near && c && c.state === 'idle') {
+        const joint = c.s + 1 - CONFIG.edges.margin;
+        near = PATH.HALT_S[c.k - 1] - (1 + blendRate) * (joint - front0) > T.scrollX - 0.05;
+      }
+      if (near && ST.state === 'PLAYING') framesFollowNear++;
+    }
     update(dt);
     frames++;
     if (o.instrument === 'oracle' && ST.state === 'PLAYING') {
@@ -390,20 +410,16 @@ export async function runOne(opts) {
     if (ST.state === 'PLAYING') {
       const L = E.sLeftEdge(), Rr = E.sRightEdge();
       const front = player.x + player.hw;
-      // The follow-lead this frame WOULD keep (CONFIG.follow, or the
-      // proposal's numbers on a tree that predates it), so a follow=0 run and
-      // the base tree flag the same frames a follow run would have bound on.
-      const FC = CONFIG.follow || { leadFrac: 0.3, leadMinTiles: 6, leadMaxTiles: 24 };
-      const leadNow = Math.min(FC.leadMaxTiles, Math.max(FC.leadMinTiles, FC.leadFrac * (E.EDGE_R - E.EDGE_L)));
-      if (front >= Rr - leadNow - 0.3) framesLeadBound++;
       const acNow = WG.activeCorner();
       if (acNow) {
         const frontier = acNow.s + 1 - CONFIG.edges.margin;
         const L0 = cornerLog[acNow.k - 1];
-        if (acNow.state === 'idle' && front >= frontier - 0.05 &&
+        const atJoint = front >= frontier - 0.05;
+        const closed = acNow.state === 'idle' || acNow.state === 'gate';
+        if (acNow.state === 'idle' && atJoint &&
             T.scrollX < PATH.HALT_S[acNow.k - 1] - 1e-6) framesJointBeforeHalt++;
-        if (L0.arrivedMs === null && acNow.state !== 'turning' && front >= frontier - 0.05)
-          L0.arrivedMs = T.gameMs;
+        if (L0.arrivedMs === null && acNow.state !== 'turning' && atJoint) L0.arrivedMs = T.gameMs;
+        if (closed && atJoint && IN.keys.right && !IN.keys.left) L0.holdAtJointMs += o.dtMs;
       }
       for (const e of HO.hostiles) {
         if (e.gateBreakExit || !(String(e.encounterKey || '').startsWith('gate:') ||
@@ -520,22 +536,12 @@ export async function runOne(opts) {
       if (ce.primed && !prevPrimed[i]) L.primedMs = T.gameMs;
       if (ce.state !== prevCornerState[i]) {
         const from = prevCornerState[i], to = ce.state;
-        if (from === 'idle') { L.armedMs = T.gameMs; L.killsAtArm = HO.kills; L.armedBy = ce.armedBy ?? null; }
+        if (from === 'idle') { L.armedMs = T.gameMs; L.killsAtArm = HO.kills; }
         if (to === 'gate') L.gateEnteredMs = T.gameMs;
         if (from === 'gate' && to === 'approach') L.gateClearedMs = T.gameMs;
         if (to === 'approach') L.approachMs = T.gameMs;
-        if (to === 'turning') {
-          L.turnStartMs = T.gameMs;
-          L.pursuers = ce.pursuers ?? null;
-          L.clearedAtTurn = ce.clearedAtTurn ?? null;
-          // the sim's own count, taken before the carry cap and retirement
-          L.survivorsAtTurn = ce.survivorsAtTurn ?? null;
-          L.candidatesAtTurn = ce.candidatesAtTurn ?? null;
-        }
-        if (to === 'done') {
-          L.turnDoneMs = T.gameMs; L.driveThrough = L.gateEnteredMs === null;
-          L.carried = ce.carried ?? null;
-        }
+        if (to === 'turning') L.turnStartMs = T.gameMs;
+        if (to === 'done') { L.turnDoneMs = T.gameMs; L.driveThrough = L.gateEnteredMs === null; }
       }
       prevCornerState[i] = ce.state;
       prevPrimed[i] = ce.primed;
@@ -571,8 +577,18 @@ export async function runOne(opts) {
   }
   WG.cornerEvents.forEach((ce, i) => {
     const L = cornerLog[i];
+    // the sim's own carry-over counts (absent on a tree without rolling corners)
+    if (ce.state === 'done' || ce.state === 'turning') {
+      L.survivorsAtTurn = ce.survivorsAtTurn ?? null;
+      L.clearedAtTurn = ce.clearedAtTurn ?? null;
+      L.pursuers = ce.pursuers ?? null;
+      L.unreleasedCarried = ce.unreleasedCarried ?? null;
+      L.carried = ce.carried ?? null;
+      L.dropped = ce.dropped ?? null;
+    }
+    L.holdAtJointMs = Math.round(L.holdAtJointMs);
     const log = Array.isArray(ce.beatLog) ? ce.beatLog.map((b) => ({ beat: b.beat, atMs: Math.round(b.atMs),
-      reason: b.reason, spawned: b.spawned, of: b.of })) : [];
+      reason: b.reason, spawned: b.spawned, authored: b.authored ?? null, of: b.of })) : [];
     L.beatLog = log;
     L.beatsReleased = log.length;
     let gap = 0;
@@ -599,7 +615,7 @@ export async function runOne(opts) {
     falls: T.sliceStats.falls, maxX: +maxX.toFixed(3),
     weaponEnd: WP.currentWeapon,
     profile: policy.prof,
-    framesLeadBound, framesJointBeforeHalt,
+    framesFollowNear, framesJointBeforeHalt,
     stage: { ...stage, minPlaneAtCondense: Number.isFinite(stage.minPlaneAtCondense)
       ? +stage.minPlaneAtCondense.toFixed(2) : null,
     minPlaneAtMaterial: Number.isFinite(stage.minPlaneAtMaterial)

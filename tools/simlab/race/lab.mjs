@@ -165,15 +165,18 @@ export function compactRun(out) {
       // catching up to the halt: time spent waiting for the gate to START
       pivotWaitMs: f.gate && f.gate.firstAtPivotMs !== null && f.gate.armedMs !== null
         ? Math.max(0, Math.round(f.gate.armedMs - f.gate.firstAtPivotMs)) : null,
-      // T-201: the climb held after RIG reaches the joint (arrival -> turn
-      // start), the carry-over count and what the next side actually showed.
+      // T-201: the climb held by the corner after RIG reaches the joint
+      // (pressing into a closed joint), arrival -> turn start (includes RIG's
+      // own last tile to the bend), the carry-over the sim reports and what
+      // the next side actually showed.
+      holdAtJointMs: f.gate ? f.gate.holdAtJointMs ?? null : null,
       holdAfterArrivalMs: f.gate && f.gate.arrivedMs !== null && f.gate.turnStartMs !== null
         ? Math.max(0, Math.round(f.gate.turnStartMs - f.gate.arrivedMs)) : null,
-      armedBy: f.gate ? f.gate.armedBy : null,
       survivorsAtTurn: f.gate ? f.gate.survivorsAtTurn : null,
-      candidatesAtTurn: f.gate ? f.gate.candidatesAtTurn : null,
       pursuers: f.gate ? f.gate.pursuers : null,
+      unreleasedCarried: f.gate ? f.gate.unreleasedCarried : null,
       carried: f.gate ? f.gate.carried : null,
+      dropped: f.gate ? f.gate.dropped : null,
       carriedSeen: f.gate ? f.gate.carriedSeen : null,
       clearedAtTurn: f.gate ? f.gate.clearedAtTurn : null,
       beatsReleased: f.gate ? f.gate.beatsReleased : null,
@@ -254,7 +257,7 @@ export function aggregate(runs) {
       minPlaneAtCondense: dist(list.map((r) => r.summary.stage?.minPlaneAtCondense ?? null)),
       minPlaneAtMaterial: dist(list.map((r) => r.summary.stage?.minPlaneAtMaterial ?? null)),
     };
-    row.framesLeadBound = dist(list.map((r) => r.summary.framesLeadBound ?? null));
+    row.framesFollowNear = dist(list.map((r) => r.summary.framesFollowNear ?? null));
     row.framesJointBeforeHalt = dist(list.map((r) => r.summary.framesJointBeforeHalt ?? null));
     row.perFace = FACE_IDS.map((k) => {
       const faces = list.map((r) => r.faces[k - 1]);
@@ -291,13 +294,15 @@ export function aggregate(runs) {
         driveMean: dist(done.map((f) => f.driveMean)),
         terrainStallSeconds: dist(faces.filter((f) => f.frames > 0).map((f) => f.framesTerrainStall / 60)),
         // T-201
+        holdAtJointSeconds: dist(done.map((f) => f.holdAtJointMs === null ? null
+          : f.holdAtJointMs / 1000)),
+        holdAtJointP90: p90(done.map((f) => f.holdAtJointMs === null ? null
+          : f.holdAtJointMs / 1000)),
         holdAfterArrivalSeconds: dist(done.map((f) => f.holdAfterArrivalMs === null ? null
           : f.holdAfterArrivalMs / 1000)),
-        holdAfterArrivalP90: p90(done.map((f) => f.holdAfterArrivalMs === null ? null
-          : f.holdAfterArrivalMs / 1000)),
         pivotWaitP90: p90(done.map((f) => f.pivotWaitMs === null ? 0 : f.pivotWaitMs / 1000)),
-        armedByArrival: done.filter((f) => f.armedBy === 'arrival').length,
         survivorsAtTurn: dist(done.map((f) => f.survivorsAtTurn)),
+        pursuers: dist(done.map((f) => f.pursuers)),
         carried: dist(done.map((f) => f.carried)),
         carriedSeen: dist(done.map((f) => f.carriedSeen)),
         clearedAtTurnRate: done.length && done[0].clearedAtTurn !== null

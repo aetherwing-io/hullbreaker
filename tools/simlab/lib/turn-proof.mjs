@@ -24,15 +24,17 @@
  *              foldVisibility) while PLAYING
  *   ratchet    each corner's camera yaw lands exactly +60 deg (turnSign) and
  *              never leaves [base - windUp - eps, base + 60 + overshoot]
- *   neverWait  (T-201, rolling corners — the default) the climb is never held
- *              more than 0.2 s at a joint RIG presses into; no beat waits
- *              longer than its bound; every staged or re-entering body starts
- *              condensing inside the frame (and >= 6 tiles inside the damage
- *              plane on a landscape view); every survivor carried round a
- *              corner re-enters on the arriving facet; the HUD line fits its
- *              slot and never calls a live encounter broken. These REPLACE the
- *              held-gate family (gateOpen/gateLegible) on rolling runs; that
- *              family still guards the `?gates=legacy` escape hatch.
+ *   neverWait  (T-201, rolling corners — the default) RIG is never held more
+ *              than 0.2 s against a CLOSED joint it presses into; no beat
+ *              waits longer than its 6 s bound; every staged or re-entering
+ *              body starts condensing inside the projected frame, on the
+ *              camera-facing facet (and >= 6 tiles inside the damage plane on
+ *              a landscape view); every body carried round a corner re-enters
+ *              on the arriving facet before the next turn (none lost); the HUD
+ *              line fits its ~28-character slot and never calls a live
+ *              encounter broken. These REPLACE the held-gate family
+ *              (gateOpen/gateLegible) on rolling runs; that family still
+ *              guards the `?gates=legacy` escape hatch.
  *
  * Policies are frame-exact functions of sim state (no wall clock). The
  * "oracle gunner" kills hostiles through the REAL death path
@@ -129,7 +131,7 @@ export async function runTurnProof(opts = {}) {
     gateInvisibleTicks: 0, gateOffFacetTicks: 0, gateHudZeroTicks: 0,
     pinnedTicks: 0, pinnedInputTicks: 0, stalledInputTicks: 0, yawMin: Infinity, yawMax: -Infinity,
     arrivedAtMs: null, heldAfterArrivalMs: 0, pursuers: null, carried: null, carriedEntered: 0,
-    staged: 0, beatsReleased: 0,
+    staged: 0, beatsReleased: 0, encounterKills: 0, survivorsAtTurn: null, dropped: 0,
     yawAfter: null, minNdcX: Infinity, maxNdcX: -Infinity, minNdcY: Infinity, maxNdcY: -Infinity,
     gateTicks: 0,
   };
@@ -153,7 +155,9 @@ export async function runTurnProof(opts = {}) {
   };
   const press = (name) => H.keyEdge(name, true);
   const release = (name) => H.keyEdge(name, false);
-  press('fire');
+  // T-201: the no-fire gunner never even holds the trigger (a run that never
+  // shoots must still take every corner); every other gunner fires throughout
+  if (gunnerMode !== 'none') press('fire');
   press('right');
 
   // Is a body something the player can SEE and SHOOT right now? Materialized,
@@ -165,6 +169,10 @@ export async function runTurnProof(opts = {}) {
     return !n.behind && Math.abs(n.x) <= 1 && Math.abs(n.y) <= 1;
   }
   let nextPacedKillAt = 0;
+  const countKill = (e) => {
+    const k = /^gate:(\d)$/.exec(e.encounterKey || '');
+    if (k && perCorner[+k[1]]) perCorner[+k[1]].encounterKills++;
+  };
   function gunner() {
     if (gunnerMode === 'none') return;       // T-201: never fires (no-softlock proof)
     if (gunnerMode === 'paced') {
@@ -176,6 +184,7 @@ export async function runTurnProof(opts = {}) {
       for (let i = M.HO.hostiles.length - 1; i >= 0; i--) {
         const e = M.HO.hostiles[i];
         if (e.kind === 'warden' || !killable(e, pose)) continue;
+        countKill(e);
         M.HO.forceBreakHostile(e, 'R');
         nextPacedKillAt = M.T.gameMs + paceMs;
         return;
@@ -189,6 +198,7 @@ export async function runTurnProof(opts = {}) {
       const e = M.HO.hostiles[i];
       if (e.kind === 'warden') continue;          // the finale owns its boss
       if (M.T.gameMs < e.enterUntil + reactionMs) continue;
+      countKill(e);
       M.HO.forceBreakHostile(e, 'R');
     }
   }
@@ -343,6 +353,14 @@ export async function runTurnProof(opts = {}) {
   }
   const condenseSeen = new Set();
   let pressRun = 0;
+  // every body carried round corner k must have re-entered by the time the
+  // next corner turns (or the run ends): none silently lost
+  const checkCarry = (k) => {
+    const ck = corner(k);
+    if (!rolling || ck.state !== 'done' || ck.pursuers === 0) return;
+    if (ck.carried !== ck.pursuers || ck.dropped)
+      note('carryLost', { k, pursuers: ck.pursuers, carried: ck.carried, dropped: ck.dropped });
+  };
   const hudIn = { k: 1, faces: 6, phase: '', nextPhase: '', primed: false, live: 0, pending: 0,
     following: 0, cleared: false, turning: false, greeting: false };
 
@@ -427,11 +445,10 @@ export async function runTurnProof(opts = {}) {
       const c = corner(k), pc = perCorner[k];
       if (c.primed && pc.primedAt === null) pc.primedAt = tick;
       if (c.state !== stateBefore[k]) {
-        if (rolling && c.state === 'turning') pc.pursuers = c.pursuers;
-        if (rolling && c.state === 'done') {
-          pc.carried = c.carried;
-          // every survivor that followed must re-enter (none silently lost)
-          if (c.carried < c.pursuers) note('carryDropped', { k, pursuers: c.pursuers, carried: c.carried });
+        if (rolling && c.state === 'turning') {
+          pc.pursuers = c.pursuers;
+          pc.survivorsAtTurn = c.survivorsAtTurn;
+          if (k > 1) checkCarry(k - 1);
         }
         if (c.state === 'gate') pc.gateAt = tick;
         if (c.state === 'approach') { pc.approachAt = tick; pc.approachX = p.x; pc.approachAtMs = M.T.gameMs; }
@@ -447,13 +464,17 @@ export async function runTurnProof(opts = {}) {
     // -- never-wait (rolling corners, T-201) ------------------------------
     if (rolling && M.ST.state === 'PLAYING') {
       if (c && c.state === 'gate') note('gateStateInRolling', { k: c.k });
-      // The climb is held only if RIG presses into its joint and nothing
-      // turns: count consecutive such ticks.
+      // The climb is held only while RIG presses into a CLOSED joint (the
+      // corner not yet open: idle, or a held gate): count consecutive such
+      // ticks. Once the corner is open RIG walks the last tile to the bend and
+      // the turn family checks that it fires there.
       if (c && c.state !== 'turning') {
         const frontier = c.s + 1 - CONFIG.edges.margin;
-        const pressing = M.IN.keys.right && !M.IN.keys.left && p.x + p.hw >= frontier - 0.05;
+        const atJoint = p.x + p.hw >= frontier - 0.05;
+        const closed = c.state === 'idle' || c.state === 'gate';
+        const pressing = M.IN.keys.right && !M.IN.keys.left && atJoint && closed;
         const pc = perCorner[c.k];
-        if (p.x + p.hw >= frontier - 0.05 && pc.arrivedAtMs === null) pc.arrivedAtMs = M.T.gameMs;
+        if (atJoint && pc.arrivedAtMs === null) pc.arrivedAtMs = M.T.gameMs;
         pressRun = pressing ? pressRun + 1 : 0;
         pc.heldAfterArrivalMs = Math.max(pc.heldAfterArrivalMs, pressRun * dtMs);
         if (pressRun * dtMs > HOLD_BOUND_MS + 1e-6)
@@ -609,6 +630,11 @@ export async function runTurnProof(opts = {}) {
         M.T.gameMs - perCorner[stopAfterCorner].doneAtMs > 3000) { endState = 'STOPPED'; break; }
   }
 
+  for (let k = 1; k <= 6; k++) {
+    const ck = corner(k);
+    perCorner[k].carried = ck.carried;
+    perCorner[k].dropped = ck.dropped;
+  }
   // per-corner ratchet result
   for (let k = 1; k <= 6; k++) {
     const pc = perCorner[k];
@@ -627,6 +653,7 @@ export async function runTurnProof(opts = {}) {
     ticks: tick, gameMs: +M.T.gameMs.toFixed(1), finishedCorners,
     finalX: +p.x.toFixed(3), scrollX: +M.T.scrollX.toFixed(3),
     lives: p.lives, setbacks: M.T.sliceStats.setbacks, pausedTicks,
+    kills: M.HO.kills, shotsFired: M.WP.shotsFired,
     envelope: ENV, clampNdc, counts, violations, perCorner,
   };
 }

@@ -1,7 +1,7 @@
 /* ============================ SCROLL ============================== */
 /* Forced-scroll advance: the corner ritual's frozen-then-eased resume,
    the wave-gate clamp, the fixture's camera-follow floor, the six-face
-   follow-lead (T-201), and the gate arming that used to sit inside
+   follow-lead (T-201/T-202), and the gate arming that used to sit inside
    updateCamera. The camera *pose* half of that function now lives in
    src/render/camera.js and derives its yaw from the same corner events, so
    the sim owns scroll and only scroll. */
@@ -9,10 +9,9 @@
 import { CONFIG } from '../config.js';
 import { BEND_S, HALT_S } from '../pure/path.js';
 import {
-  cornerApproachScrollTarget, cornerArrivalReady, cornerJointRule, cornerScrollVel,
-  cornerEventTotalMs, gatePreludeReady,
+  cornerApproachScrollTarget, cornerScrollVel, cornerEventTotalMs, gatePreludeReady,
 } from '../pure/waves.js';
-import { followLeadTiles, followScrollFloor } from '../pure/momentum.js';
+import { followCornerFloor, followLeadTiles, followScrollFloor } from '../pure/momentum.js';
 import {
   traversalFollowTarget, traversalMarginCapScroll,
 } from '../pure/traversal.js';
@@ -28,15 +27,30 @@ import { updateMomentum, updatePace } from './pace.js';
 import { player } from './player.js';
 import {
   activeCorner, armGate, cornerBusy, finishCorner, primeGateWave,
-  retireUnseenGateRows, rollingPrimeReady, updateRollingEncounter,
+  retireUnseenGateRows, updatePursuers, updateRollingEncounter,
 } from './wavegate.js';
 import { updateTransformScroll } from './transform.js';
 
-// A corner arms when RIG reaches its closed joint as well as when the scroll
-// reaches the halt — under the follow-lead (T-202) and under rolling corners
-// (entry 23 #2: the turn never waits). `?follow=0&gates=legacy` is today's
-// halt-only arming exactly.
-const ARM_ON_ARRIVAL = FOLLOW_ENABLED || GATES_ROLLING;
+/* FOLLOW-LEAD (T-202 block, docs/proposals/2026-10-race-to-the-top.md §4.2;
+   ON by default, `?follow=0` restores the plain pursuit plane). The lowest
+   scroll this frame may hold: RIG's front stays `lead` tiles inside the right
+   edge, lead = clamp(0.3 x visible width, 6, 24) read from the LIVE edge
+   calibration (sim/edges.js — the phone camera lane changes it), and on the
+   approach to an idle corner the plane also keeps pace with the corner blend
+   (src/pure/momentum.js followCornerFloor) so a racer reaches the joint with
+   the scroll at the halt. Never above the run's scroll end; -Infinity (no
+   floor) when the follow-lead is off. */
+function followFloorNow(c) {
+  if (!FOLLOW_ENABLED) return -Infinity;
+  const front = player.x + player.hw;
+  const lead = followLeadTiles(EDGE_R - EDGE_L, CONFIG.follow);
+  let floor = followScrollFloor(front, EDGE_R, lead);
+  if (c && c.state === 'idle') {
+    const jointFront = c.s + 1 - CONFIG.edges.margin;    // cornerJointRule('idle').frontierRight
+    floor = Math.max(floor, followCornerFloor(HALT_S[c.k - 1], jointFront, front, CONFIG.follow));
+  }
+  return Math.min(floor, activeScrollEnd());
+}
 
 export function updateScroll(dt) {
   if (IS_TRANSFORM_SLICE) {
@@ -60,12 +74,6 @@ export function updateScroll(dt) {
     });
   }
   const c = activeCorner();
-  // FOLLOW-LEAD (T-202): the lead and the scroll floor that keeps RIG's front
-  // that far inside the right edge, from the LIVE edge calibration.
-  const lead = FOLLOW_ENABLED ? followLeadTiles(EDGE_R - EDGE_L, CONFIG.follow) : 0;
-  const followFloor = FOLLOW_ENABLED
-    ? Math.min(followScrollFloor(player.x + player.hw, EDGE_R, lead), activeScrollEnd())
-    : -Infinity;
   /* MOMENTUM (T-022, ?momentum=1, six-face run only): the same "decide this
      frame's edge speed before anything reads it" contract the fixture pursuit
      model above uses. Its inputs are player state only — where RIG sits
@@ -93,18 +101,21 @@ export function updateScroll(dt) {
       lives: player.lives,
       nowMs: gameMs,
       held: cornerBusy() || scrollX >= clamp - 1e-6,
-      leadDaylight: FOLLOW_ENABLED ? EDGE_R - lead - EDGE_L - 2 * player.hw : undefined,
+      leadDaylight: FOLLOW_ENABLED
+        ? (EDGE_R - EDGE_L) - followLeadTiles(EDGE_R - EDGE_L, CONFIG.follow) - 2 * player.hw
+        : undefined,
     });
   }
+  const followFloor = followFloorNow(c);
   if (c && c.state === 'turning') {
     const t = gameMs - c.tStart;
     // The ritual owns the scroll. RIG is pinned on the hinge, so the follow
-    // floor equals the scroll already reached and never moves it — except
-    // under ?hinge=flow, where RIG may run on after the camera hand-off and
-    // the frame keeps its lead instead of snapping after the ritual.
+    // floor sits at or below the scroll already reached and never moves it —
+    // except under ?hinge=flow, where RIG may run on after the camera
+    // hand-off and the frame keeps its lead instead of snapping afterwards.
     setScrollX(Math.min(Math.max(scrollX + cornerScrollVel(t, CONFIG) * dt, followFloor),
       activeScrollEnd()));
-    if (t >= cornerEventTotalMs(CONFIG)) finishCorner(c, player.x);
+    if (t >= cornerEventTotalMs(CONFIG)) finishCorner(c);
   } else {
     let target = activeScrollEnd();                     // wave-gate / fixture clamp
     if (c) {
@@ -113,9 +124,8 @@ export function updateScroll(dt) {
       // physically reaches BEND_S. Without this composition a portrait/FAR
       // frustum could clamp the right edge more than a tile before the joint,
       // leaving the run permanently in `approach` with no enemies remaining.
-      // A corner armed on arrival holds the scroll where it was (heldS).
       const cornerTarget = cornerApproachScrollTarget(
-        c.state, c.heldS === null ? HALT_S[c.k - 1] : c.heldS, BEND_S[c.k - 1], EDGE_R,
+        c.state, HALT_S[c.k - 1], BEND_S[c.k - 1], EDGE_R,
         CONFIG.edges.margin, player.hw,
       );
       target = Math.min(target, cornerTarget);
@@ -154,31 +164,25 @@ export function updateScroll(dt) {
     // reached: 0.32 tiles at 260x1000, more with any closer camera).
     let next = Math.max(scrollX, Math.min(nextScroll, target));
     // FOLLOW-LEAD: a floor applied after the halt clamp. RIG cannot pass the
-    // corner frontier before the turn, so the floor keeps the joint (and at
-    // most one lead of the next facet) in frame and never runs the camera
-    // past the corner; on narrow views it is what keeps the joint reachable
-    // without the approach dolly. A held legacy gate keeps its scroll.
-    if (FOLLOW_ENABLED && (!c || c.state !== 'gate')) next = Math.max(next, followFloor);
+    // corner frontier before the turn, and the corner blend tops out at the
+    // halt, so on a wide view the floor never carries the camera past the
+    // halt; on a narrow one (portrait) the lead itself passes it and the halt
+    // arms first, exactly like the approach dolly above. A held legacy gate
+    // keeps its scroll.
+    if (!c || c.state !== 'gate') next = Math.max(next, followFloor);
     setScrollX(next);
-    if (c && c.state === 'idle' && !c.primed &&
-        (gatePreludeReady(c.state, c.primed, scrollX, HALT_S[c.k - 1]) ||
-         rollingPrimeReady(c, player.x)))
-      primeGateWave(c, dt > 0 ? (scrollX - scrollBefore) / dt : 0);
-    if (c && c.state === 'idle') {
-      if (scrollX >= HALT_S[c.k - 1] - 1e-6) armGate(c);
-      // (the rule object is only built near the joint: the hot path stays
-      // allocation-free on every other frame)
-      else if (ARM_ON_ARRIVAL && player.x + player.hw >= c.s - 1 &&
-          cornerArrivalReady(c.state, player.x + player.hw,
-            cornerJointRule('idle', c.s, BEND_S[c.k - 1], player.hw, CONFIG.edges.margin)
-              .frontierRight)) armGate(c, true);
-    }
+    if (c && !GATES_ROLLING && gatePreludeReady(c.state, c.primed, scrollX, HALT_S[c.k - 1]))
+      primeGateWave(c);
+    if (c && c.state === 'idle' && scrollX >= HALT_S[c.k - 1] - 1e-6) armGate(c);
     // T-102 (held gate only): the frozen view decides which deck/rooted
     // bodies can hold it. Re-checked every gate frame because a resize
     // changes the strip. Rolling encounters stage every body inside the live
-    // view instead, so nothing needs retiring.
+    // view instead and hold nothing, so they never reach this state.
     if (c && c.state === 'gate') retireUnseenGateRows(c);
-    if (c && GATES_ROLLING)
-      updateRollingEncounter(c, player.x, dt > 0 ? (scrollX - scrollBefore) / dt : 0);
+  }
+  if (GATES_ROLLING) {
+    const planeTilesPerSec = dt > 0 ? (scrollX - scrollBefore) / dt : 0;
+    if (c) updateRollingEncounter(c, player.x + player.hw, planeTilesPerSec);
+    updatePursuers(player.x, planeTilesPerSec);
   }
 }

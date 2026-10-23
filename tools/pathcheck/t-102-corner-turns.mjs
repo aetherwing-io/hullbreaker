@@ -11,10 +11,20 @@
  *               designed relocation (respawn / HULL FALLBACK) lands RIG inside
  *               the owned route window and never pops afterwards
  *   hinge       RIG never sinks through the joint apron or dies falling there
- *   gate        a gate never stays shut once its last gating body is gone
+ *   gate        (held gates — the `?gates=legacy` escape hatch since T-201)
+ *               a gate never stays shut once its last gating body is gone
  *               (bound: the same tick), never sits idle at its halt, and never
  *               shows nothing of its encounter for longer than one 900 ms
  *               entrance beat while it is shut (gate legibility)
+ *   neverWait   (rolling corners, the default since T-201 — decisions.md entry
+ *               23 #2; REPLACES the gate family on those runs) RIG is never
+ *               held more than 0.2 s against a closed joint; the halt always
+ *               arms; no beat waits beyond its 6 s bound; every staged or
+ *               re-entering body condenses inside the projected frame on the
+ *               camera's facet (>= 6 tiles inside the damage plane on a
+ *               landscape view); every body that followed RIG round a corner
+ *               re-enters before the next turn; the HUD line fits ~28
+ *               characters and never calls a live encounter broken
  *   turn        approach + RIG at the bend fires the turn on that tick; a turn
  *               never fires with RIG off the bend; all six corners complete
  *   facet       RIG's facet and the camera's facing facet never go backwards
@@ -46,15 +56,28 @@ import { runMatrix } from '../simlab/turnlab.mjs';
 
 export const title = 'T-102: every corner turn, played headlessly under player policies';
 
-const FAMILIES = Object.freeze({
+const COMMON_FAMILIES = Object.freeze({
   envelope: ['teleport', 'popAfterRelocation', 'relocateOutsideOwnedRoute'],
   hinge: ['hingeFallThrough', 'hingeFallDeath', 'capsuleThroughDeck'],
-  gate: ['gateShutWithKillConditionMet', 'haltedButIdle', 'gateBlind', 'hudLastButMore'],
   turn: ['approachAtBendNoTurn', 'turnWithoutRigAtBend', 'turnSkippedApproach'],
   facet: ['playerFacetBackwards', 'cameraFacetBackwards', 'rigCulledByFold'],
   ratchet: ['ratchetOutOfEnvelope', 'ratchetBaseMismatch', 'cameraYawJump', 'scrollBackwards'],
   framing: ['rigOffScreen'],
 });
+// Held gates (?gates=legacy) keep T-102's gate family verbatim. Rolling
+// corners (the default) replace it with the never-wait family: the same
+// player-facing promise — the climb never stalls on something the player
+// cannot see or act on — stated for a corner that does not hold at all.
+const GATE_FAMILY = Object.freeze({
+  gate: ['gateShutWithKillConditionMet', 'haltedButIdle', 'gateBlind', 'hudLastButMore'],
+});
+const NEVER_WAIT_FAMILY = Object.freeze({
+  neverWait: ['turnWaitedAfterArrival', 'haltedButIdle', 'beatOverBound', 'stagedOutsideView',
+    'carriedInvisible', 'carryLost', 'hudTooLong', 'hudBrokenButAlive', 'gateStateInRolling'],
+});
+export function familiesFor(rolling) {
+  return { ...COMMON_FAMILIES, ...(rolling ? NEVER_WAIT_FAMILY : GATE_FAMILY) };
+}
 
 const LANDSCAPE_POLICIES = [
   'run', 'jump', 'jump2', 'idle', 'backtrack', 'backtrack-approach',
@@ -82,6 +105,21 @@ function matrix() {
   // gate legibility: a steady gunner that can only shoot what is on screen
   for (const viewport of ['desktop', 'phoneLandscape', 'phonePortrait'])
     list.push({ policy: 'run', viewport, gunnerMode: 'paced', paceMs: 1400, maxTicks: 60 * 900 });
+  // T-201: the no-softlock proof — a run that never fires a shot must still
+  // take every corner (the turn never waits on a kill)
+  for (const viewport of ['desktop', 'phoneLandscape', 'phonePortrait'])
+    list.push({ policy: 'run', viewport, gunnerMode: 'none' });
+  // T-201: the held-gate escape hatch keeps T-102's gate guards — D2 (no
+  // gate waits on a body off screen) with today's scroll, and the held gate
+  // under the follow-lead
+  for (const viewport of ['desktop', 'phoneLandscape', 'phonePortrait'])
+    list.push({ policy: 'run', viewport, gunnerMode: 'paced', paceMs: 1400, maxTicks: 60 * 900,
+      query: 'gates=legacy&follow=0' });
+  list.push({ policy: 'run', viewport: 'desktop', query: 'gates=legacy' });
+  // T-201 R4 A/B (?hinge=flow, off by default): RIG released at the camera
+  // hand-off must still satisfy every turn family
+  for (const viewport of ['desktop', 'phoneLandscape'])
+    list.push({ policy: 'run', viewport, query: 'hinge=flow' });
   return list.map((o) => ({ god: true, reactionMs: 350, ...o }));
 }
 
@@ -91,9 +129,10 @@ function matrix() {
 //   [policy, viewport, gunnerMode]
 const FAST_SUBSET = Object.freeze([
   ['die-at-hinge', 'desktop', 'oracle'],               // D1: relocations honour the sealed fold
-  ['run', 'phonePortrait', 'paced'],                   // D2: no gate waits on a body off screen
+  ['run', 'phonePortrait', 'paced'],                   // D2's successor: never wait, every body in frame
   ['resize-approach-late', 'narrowTall', 'oracle'],    // D3: the scroll never rewinds
   ['run', 'phoneLandscape', 'oracle'],                 // 844x390: the plain run on the primary device
+  ['run', 'phoneLandscape', 'none'],                   // T-201: a run that never fires takes every corner
 ]);
 
 export function fastSubset(list = matrix()) {
@@ -177,8 +216,15 @@ export async function staticChecks() {
   const routeSrc = stripComments(readFileSync(join(srcDir, 'render', 'route-visibility.js'), 'utf8'));
   // Behaviour of the SHIPPED function, not its text: evaluate render/
   // route-visibility.js's routeRenderable (three.js-free arithmetic) against
-  // the simulation's real construction schedule at the camera handoff.
+  // the simulation's real construction state at the camera handoff.
+  // T-201 (decisions.md entries 21, 25): the sim no longer keeps a zipper
+  // build schedule — every six-face column exists from boot (sim/level.js) —
+  // so the construction rows are the SIM's own columnBuilt(), read live, and
+  // the old "?zip=1 keeps its assembling reveal" pin is replaced: neither
+  // reveal flag can draw a construction prefix any more (T-121 deletes the
+  // flag's render half; entry 25 released it).
   {
+    const LV = await import('../../src/sim/level.js');
     const start = routeSrc.indexOf('function routeRenderable(');
     let depth = 0, end = -1;
     for (let i = routeSrc.indexOf('{', start); i < routeSrc.length; i++) {
@@ -187,19 +233,17 @@ export async function staticChecks() {
     }
     const build = (deps) => Function(...Object.keys(deps),
       `"use strict"; return (${routeSrc.slice(start, end)});`)(...Object.values(deps));
-    const k = 1, cornerS = PATH.CORNER_S[k - 1];
-    const T6 = WAVES.cornerEventTotalMs(CONFIG);
-    const builtAt = (column, tMs) => {                  // sim/level.js + wavegate.js schedule
-      if (column < cornerS) return true;
-      const j = column - cornerS;
-      if (j < CONFIG.waves.zipCols) return WAVES.zipperOffset(tMs, j, CONFIG).phase === 'locked';
-      return tMs >= T6;
+    const k = 1;
+    LV.unbuildFutureFaces();                            // the boot/reset row, as shipped
+    const builtNow = (s) => {                           // render/route-visibility.js routeColumnBuilt
+      const column = Math.floor(s);
+      return column < 0 || column >= LV.LEVEL_LEN || LV.columnBuilt(column);
     };
-    const visibleArriving = (isG1, tMs) => {
+    const visibleArriving = (isG1) => {
       const routeRenderable = build({
         ACTIVE_FIXTURE: null, IS_G1: isG1, CONFIG, BEND_S: PATH.BEND_S,
         routeRenderOwned: PATH.routeRenderOwned, scrollX: PATH.HALT_S[k - 1],
-        cameraFacingFacet: () => k, routeColumnBuilt: (s) => builtAt(Math.floor(s), tMs),
+        cameraFacingFacet: () => k, routeColumnBuilt: builtNow,
       });
       let shown = 0, rows = 0;
       for (let column = 0; column < CONFIG.levelLength; column++) {
@@ -209,12 +253,14 @@ export async function staticChecks() {
       }
       return { shown, rows };
     };
-    const g1 = visibleArriving(true, handoffMs), zip = visibleArriving(false, handoffMs);
+    const g1 = visibleArriving(true), zip = visibleArriving(false);
     ok(start >= 0 && end > start && g1.shown === g1.rows,
       `T-102: the shipped routeRenderable draws the whole arriving facet (${g1.rows} rows) at the ` +
       `${handoffMs} ms handoff under the default reveal, not a construction prefix (drew ${g1.shown})`);
-    ok(zip.shown < zip.rows,
-      `T-102: ?zip=1 keeps its assembling reveal (${zip.shown} of ${zip.rows} rows at the handoff)`);
+    ok(zip.shown === zip.rows && zip.rows === g1.rows,
+      `T-201: with no sim build state, even the retired ?zip=1 branch of routeRenderable draws the ` +
+      `whole arriving facet at the handoff (${zip.shown} of ${zip.rows} rows): nothing in the sim ` +
+      `assembles the creature's anatomy any more (entries 3, 25)`);
   }
   ok(/IS_G1 \|\| routeColumnBuilt\(s\)/.test(routeSrc) &&
      /if \(IS_G1\) return `\$\{currentWorldFacet\(\)\}`/.test(routeSrc),
@@ -271,7 +317,7 @@ export async function playedChecks(list = matrix(), jobs = Math.max(1, Math.min(
     ok(r.finishedCorners === 6 && r.endState === 'VICTORY',
       `T-102 [${tag}]: all five turns and the Crown approach complete and the run reaches VICTORY ` +
       `(${r.finishedCorners}/6, ${r.endState})`);
-    for (const [family, kinds] of Object.entries(FAMILIES)) {
+    for (const [family, kinds] of Object.entries(familiesFor(r.rolling))) {
       const hits = kinds.map((k) => [k, r.counts[k] || 0]).filter(([, n]) => n > 0);
       const first = hits.length ? r.violations.find((v) => kinds.includes(v.kind)) : null;
       ok(hits.length === 0,
@@ -279,10 +325,21 @@ export async function playedChecks(list = matrix(), jobs = Math.max(1, Math.min(
         (hits.length ? ` — ${hits.map(([k, n]) => `${k}x${n}`).join(', ')}; first ${JSON.stringify(first)}` : ''));
     }
   }
-  // the paced gunner really exercised held gates at every viewport it ran at
+  // the paced gunner really exercised what it guards at every viewport it ran
+  // at: held gates under the escape hatch; under rolling corners, the side's
+  // encounter on the move (it killed encounter bodies on at least 3 sides)
   const pacedPlanned = list.filter((o) => o.gunnerMode === 'paced').length;
   const paced = results.filter((r) => r.gunnerMode === 'paced');
-  ok(pacedPlanned > 0 && paced.length === pacedPlanned && paced.every((r) =>
-      Object.values(r.perCorner).filter((pc) => pc.gateTicks > 0).length >= 3),
-    'T-102: the visible-only gunner fought at least three held gates per viewport');
+  ok(pacedPlanned > 0 && paced.length === pacedPlanned && paced.every((r) => r.rolling
+      ? Object.values(r.perCorner).filter((pc) => pc.encounterKills > 0).length >= 3
+      : Object.values(r.perCorner).filter((pc) => pc.gateTicks > 0).length >= 3),
+    'T-102: the visible-only gunner fought at least three held gates (escape hatch) or three ' +
+    'moving encounters (rolling) per viewport');
+  // T-201: the no-fire runs really never fired, and still met encounters
+  const silent = results.filter((r) => r.gunnerMode === 'none');
+  const silentPlanned = list.filter((o) => o.gunnerMode === 'none').length;
+  ok(silent.length === silentPlanned && silent.every((r) => r.rolling && r.shotsFired === 0 &&
+      Object.values(r.perCorner).filter((pc) => pc.staged > 0).length >= 5),
+    `T-201: every no-fire run fired no shot (${silent.map((r) => r.shotsFired).join('/')}) ` +
+    'and still had the encounter staged on at least five sides');
 }
