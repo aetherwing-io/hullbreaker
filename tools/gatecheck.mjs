@@ -51,7 +51,7 @@
 //     NAMED assertion in the mutant's failure list, not merely a non-zero exit.
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -156,6 +156,10 @@ function pathcheckMutant({ from, to, expect, wantHits }) {
       if (!f.endsWith('.mjs')) continue;
       writeFileSync(join(MUTANT_DIR, f), readFileSync(join(CHECKS, f), 'utf8').split(from).join(to), 'utf8');
     }
+    // T-120: domains import helpers from tools/pathcheck/lib/ (the default-run
+    // host, its child scenarios, the render stubs); mirror them unmutated so the
+    // mirrored domains resolve them exactly as the real ones do
+    if (existsSync(join(CHECKS, 'lib'))) cpSync(join(CHECKS, 'lib'), join(MUTANT_DIR, 'lib'), { recursive: true });
   }
   let runner = readFileSync(PATHCHECK, 'utf8').split(from).join(to);
   if (existsSync(CHECKS)) {
