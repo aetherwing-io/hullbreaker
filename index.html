@@ -891,45 +891,30 @@
   }
 
   @media (max-width: 600px) {
+    /* T-105: portrait phones use the same RIG strip as landscape (the
+       shared block below); here it spans the width at the top. The
+       objective sits under it, and the Crown finale banner takes the
+       objective's slot (it IS the objective then). Before T-105 the panel
+       was ~129 px tall and the finale banner was drawn over its ascent
+       metrics (measured, tools/playtest/phone-shell.mjs). */
     #hudRigPanel {
       top: max(7px, var(--hud-safe-top)); right: max(7px, var(--hud-safe-right));
-      left: max(7px, var(--hud-safe-left)); width: auto; max-width: 390px;
-      min-width: 0; padding: 6px 7px 7px;
+      left: max(7px, var(--hud-safe-left)); width: auto; max-width: 420px;
     }
     #hudObjectivePanel {
-      top: calc(max(7px, var(--hud-safe-top)) + 129px);
+      top: calc(max(7px, var(--hud-safe-top)) + 52px);
       right: max(7px, var(--hud-safe-right)); left: max(7px, var(--hud-safe-left));
-      width: auto; min-height: 31px; padding: 5px 9px 6px; transform: none;
+      width: auto; min-height: 0; padding: 5px 9px 6px; transform: none;
     }
     #hudObjectivePanel.empty { transform: translateY(-4px); }
-    .hud-eyebrow { gap: 5px; font-size: 6px; letter-spacing: .1em; }
-    .hud-vitals { gap: 4px; margin-top: 5px; }
-    #hudHealthPips { font-size: 11px; letter-spacing: .04em; }
-    #hudHealthValue { font-size: 7px; }
-    .hud-weapon { gap: 2px 5px; margin-top: 4px; padding-top: 4px; }
-    #hudWeaponKey { min-width: 24px; padding: 3px 2px; font-size: 8px; }
-    #hudWeaponName { font-size: 9px; letter-spacing: .025em; }
-    #hudWeaponOther { min-height: 7px; font-size: 6px; letter-spacing: .03em; }
-    .hud-power { gap: 4px; margin-top: 4px; font-size: 6px; }
-    .hud-track { height: 3px; }
-    #hudPowerState { font-size: 6px; }
-    #hudStatus { display: none; }
-    #hudRunPanel { margin-top: 4px; padding-top: 4px; }
-    #hudRunMetrics { gap: 4px; }
-    #hudRunLabel { font-size: 5px; letter-spacing: .08em; }
-    .hud-metric { text-align: center; }
-    .hud-metric b { font-size: 9px; }
-    .hud-metric span { margin-top: 2px; font-size: 5px; letter-spacing: .045em; }
-    #hudRushRow { grid-template-columns: auto 1fr 34px; gap: 4px; margin-top: 4px; font-size: 5px; }
-    #hudRushState { font-size: 5px; }
     #hudObjectiveLabel { display: none; }
-    #hudObjective { margin-top: 0; font-size: 9px; letter-spacing: .075em; }
+    #hudObjective { margin-top: 0; font-size: 9px; line-height: 1.15; letter-spacing: .075em; }
     #hudBL {
       right: auto; bottom: 8px; left: 50%; width: calc(100% - 20px);
       max-width: none; padding: 6px 8px 7px; font-size: 8px; line-height: 1.3;
     }
     #finale {
-      top: 82px; width: calc(100% - 20px); padding: 7px 8px 8px;
+      top: calc(max(7px, var(--hud-safe-top)) + 52px); width: calc(100% - 20px); padding: 7px 8px 8px;
       font-size: 9px; letter-spacing: .065em;
     }
     body:has(#finale.on) #hudObjectivePanel { opacity: 0; }
@@ -996,6 +981,54 @@
     #shellFoot .dim { display: none; }
   }
 
+  /* T-105: on every phone (portrait, or a short landscape glass) RIG's
+     instrument is ONE two-row strip — row 1: hull | lives | overdrive;
+     row 2: the weapon across the strip's width, so a rolled name (up to ~25
+     characters) never wraps or loses its end; ascent + rush on the right,
+     spanning both rows. ~42 px tall in every state, measured at 844x390 /
+     932x430 / 667x375 / 390x844 (tools/playtest/phone-shell.mjs). Where it
+     sits is the orientation blocks' business. Placed after the portrait
+     block so it wins the cascade there too. */
+  @media (max-width: 600px),
+         (max-height: 520px) and (pointer: coarse),
+         (max-height: 520px) and (max-width: 980px) {
+    #hudRigPanel {
+      min-width: 0; padding: 4px 8px;
+      display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto;
+      column-gap: 6px; row-gap: 3px; align-items: center;
+    }
+    /* RIG // VITALS collapses into the grid: its label and rule go, the
+       lives count sits beside the hull pips */
+    #hudRigPanel .hud-eyebrow { display: contents; }
+    #hudRigPanel .hud-eyebrow > span:first-child, #hudRigPanel .hud-eyebrow::after { display: none; }
+    #hudLives { grid-column: 2; grid-row: 1; font-size: 9px; letter-spacing: .06em; }
+    #hudRigPanel .hud-vitals { grid-column: 1; grid-row: 1; margin: 0; gap: 4px; }
+    #hudRigPanel .hud-power {
+      grid-column: 3; grid-row: 1; margin: 0; gap: 4px; font-size: 7px;
+      grid-template-columns: auto minmax(28px, 1fr) auto;
+    }
+    #hudRigPanel .hud-weapon {
+      grid-column: 1 / span 3; grid-row: 2; margin: 0; padding: 0; border: 0; gap: 0 5px;
+    }
+    #hudRunPanel {
+      grid-column: 4; grid-row: 1 / span 2; align-self: center; margin: 0;
+      padding: 0 0 0 8px; border: 0; border-left: 1px solid rgba(232,237,242,.13);
+    }
+    /* "ASCENT" names the group; the three metric labels say the rest */
+    #hudRunLabel { display: none; }
+    #hudRunMetrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    #hudWeaponOther, #hudStatus { display: none; }
+    #hudRushRow { grid-template-columns: auto minmax(28px, 1fr) auto; gap: 4px; margin-top: 3px; }
+    #hudHealthPips { font-size: 11px; }
+    #hudHealthValue { font-size: 8px; }
+    #hudWeaponKey { grid-row: 1; min-width: 26px; padding: 3px 3px; font-size: 9px; }
+    /* one line at every phone size measured; wraps rather than lose its end */
+    #hudWeaponName { font-size: 9px; line-height: 1.1; white-space: normal; overflow-wrap: break-word; }
+    .hud-metric b { font-size: 9px; }
+    .hud-metric span { font-size: 5px; }
+    #hudPowerState { font-size: 7px; }
+  }
+
   /* The deck's PAUSE / AUTO chips start this far under the safe top. On a
      landscape phone the HUD band's right slot holds the finale banner (up
      to ~60 px tall), so the chips sit just below it, still outside the
@@ -1035,48 +1068,7 @@
       --hud-lane-l: calc(var(--hud-l) + var(--hud-rig-w) + 8px);
       --hud-lane-w: calc(100vw - var(--hud-lane-l) - var(--hud-r));
     }
-    /* row 1: hull | lives | overdrive — row 2: the weapon, the strip's full
-       width so a rolled name never wraps — ascent + rush on the right,
-       spanning both rows */
-    #hudRigPanel {
-      top: var(--hud-t); left: var(--hud-l); width: var(--hud-rig-w); min-width: 0;
-      padding: 4px 8px;
-      display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto;
-      column-gap: 6px; row-gap: 3px; align-items: center;
-    }
-    /* RIG // VITALS collapses into the grid: its label and rule go, the
-       lives count (hidden here before T-105) sits beside the hull pips */
-    #hudRigPanel .hud-eyebrow { display: contents; }
-    #hudRigPanel .hud-eyebrow > span:first-child, #hudRigPanel .hud-eyebrow::after { display: none; }
-    #hudLives { grid-column: 2; grid-row: 1; font-size: 9px; letter-spacing: .06em; }
-    #hudRigPanel .hud-vitals { grid-column: 1; grid-row: 1; margin: 0; gap: 4px; }
-    #hudRigPanel .hud-power {
-      grid-column: 3; grid-row: 1; margin: 0; gap: 4px; font-size: 7px;
-      grid-template-columns: auto minmax(28px, 1fr) auto;
-    }
-    #hudRigPanel .hud-weapon {
-      grid-column: 1 / span 3; grid-row: 2; margin: 0; padding: 0; border: 0; gap: 0 5px;
-    }
-    #hudRunPanel {
-      grid-column: 4; grid-row: 1 / span 2; align-self: center; margin: 0;
-      padding: 0 0 0 8px; border: 0; border-left: 1px solid rgba(232,237,242,.13);
-    }
-    /* "ASCENT" names the group; the three metric labels say the rest */
-    #hudRunLabel { display: none; }
-    #hudRunMetrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-    #hudWeaponOther, #hudStatus { display: none; }
-    #hudRushRow { grid-template-columns: auto minmax(28px, 1fr) auto; gap: 4px; margin-top: 3px; }
-    #hudHealthPips { font-size: 11px; }
-    #hudHealthValue { font-size: 8px; }
-    #hudWeaponKey { grid-row: 1; min-width: 26px; padding: 3px 3px; font-size: 9px; }
-    /* a long rolled name wraps onto a second line instead of losing its end;
-       the measured fit (phone-shell.mjs) is what says two lines suffice */
-    #hudWeaponName {
-      font-size: 9px; line-height: 1.1; white-space: normal; overflow-wrap: break-word;
-    }
-    .hud-metric b { font-size: 9px; }
-    #hudPowerState { font-size: 7px; }
-    .hud-metric span { font-size: 5px; }
+    #hudRigPanel { top: var(--hud-t); left: var(--hud-l); width: var(--hud-rig-w); }
     /* the objective, top right: 28 characters on one line, anything longer
        wraps (T-102 measured a 47-character gate line; ellipsis ate it) */
     #hudObjectivePanel {

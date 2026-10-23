@@ -269,23 +269,41 @@ export async function run() {
       const P = { freezeStallMs: FAILSAFE.freezeStallMs, warmBeats: FAILSAFE.warmBeats, warmStallMs: FAILSAFE.warmStallMs };
       const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
       const kinds = {};
-      let disagree = 0;
+      let disagree = 0, cases = 0;
+      const compare = (s, now) => {
+        const a = freezeVerdict(s, now, P), b = inlineVerdict(s, now, P);
+        kinds[a] = (kinds[a] || 0) + 1;
+        cases++;
+        if (a !== b) disagree++;
+      };
       for (let i = 0; i < 4000; i++) {
         const now = 100000 + Math.floor(rnd() * 40000);
-        const s = {
+        compare({
           booted: rnd() < 0.9, slept: rnd() < 0.1, visible: rnd() < 0.9,
           showing: pick([null, null, null, 'slow', 'frozen', 'crash', 'boot']),
           beats: pick([0, 1, 2, 3, 4, 40]),
           bootedAt: now - Math.floor(rnd() * 20000), visibleSince: now - Math.floor(rnd() * 20000),
           lastBeatAt: now - Math.floor(rnd() * 12000),
-        };
-        const a = freezeVerdict(s, now, P), b = inlineVerdict(s, now, P);
-        kinds[a] = (kinds[a] || 0) + 1;
-        if (a !== b) disagree++;
+        }, now);
       }
+      // …and every threshold at -1 / 0 / +1 ms, beats either side of the
+      // warm-up count: random times almost never land ON a boundary, and an
+      // off-by-one between the two copies lives exactly there
+      const now = 200000;
+      for (const beats of [0, P.warmBeats - 1, P.warmBeats, P.warmBeats + 1])
+        for (const showing of [null, 'slow', 'frozen'])
+          for (const dw of [-1, 0, 1]) for (const df of [-1, 0, 1]) for (const dv of [-1, 0, 1]) {
+            compare({ booted: true, slept: false, visible: true, showing, beats,
+              bootedAt: now - P.warmStallMs - dw, visibleSince: now - P.freezeStallMs - dv,
+              lastBeatAt: now - P.freezeStallMs - df }, now);
+            compare({ booted: true, slept: false, visible: true, showing, beats,
+              bootedAt: now - 30000, visibleSince: now - P.warmStallMs - dw,
+              lastBeatAt: now - P.freezeStallMs - df }, now);
+          }
       ok(disagree === 0 && ['ok', 'slow', 'hide', 'frozen'].every((k) => kinds[k] > 0),
-         'T-105: the inline freeze verdict equals src/pure/failsafe.js over 4000 seeded states ' +
-         'covering every verdict (' + JSON.stringify(kinds) + ', ' + disagree + ' disagree)');
+         'T-105: the inline freeze verdict equals src/pure/failsafe.js over ' + cases + ' states ' +
+         '(4000 seeded + every threshold at -1/0/+1 ms) covering every verdict (' +
+         JSON.stringify(kinds) + ', ' + disagree + ' disagree)');
     }
 
     // The REAL bootstrap, played. Boot, then the stall, then frames again.
