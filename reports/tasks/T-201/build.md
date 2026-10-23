@@ -748,4 +748,34 @@ Gate it (reviewer + playtester on `task/T-201`, renumbering its pathcheck
 domain to d81 at merge), then put the operator packet in front of the
 operator on the phone at 844x390 — the defaults ship ON, and `?hinge=flow`,
 the followers' disappearance during the ritual and portrait's free skipping
-all wait on his answers.
+all wait on their answers.
+
+## Integrator addendum (merge chores after the review, 2026-10-23)
+
+The reviewer approved c48ca1e. These changes touch tests, dev tools and this
+report only; `src/`, `index.html` and `assets/` are unchanged.
+
+- **`?hinge=flow` guard (review finding 1).** Nothing bound the A/B: with
+  `hingeFlowOpen` forced false, the turnlab `?hinge=flow` runs stayed green
+  with numbers identical to the default. `tools/pathcheck/t-102-corner-turns.mjs`
+  now asserts, per viewport, that the flow run stalls with a direction held
+  for fewer ticks than the default `run` on the same viewport. It runs in the
+  full tier only; the per-edit tier runs no `?query` runs and says so in its
+  SKIP line. Falsifier: the same mutant (`hingeFlowOpen` returns false) turns
+  it red. Evidence is in the merge note.
+- **Stale zipper calls (review finding 2).** `tools/playtest/turn-capture.mjs:89`
+  and `turn-pose-capture.mjs:107,117` called the removed `W.updateZipper`.
+  They now call it only when the served tree still has it
+  (`W.updateZipper?.(…)`), because a pre-T-201 base export served for a
+  before/after comparison still needs its zipper state set.
+- **Unlisted rewording (review finding 5).** The legacy-assertion table also
+  includes `t-102-corner-turns.mjs` paced-gunner row. It moves from "fought at
+  least three held gates" to "three held gates on the escape hatch, or three
+  moving encounters with encounter kills (rolling)". It is not weaker, because
+  it binds on both paths.
+- **For the operator (review finding 3).** Rolling corners keep the ambient
+  stream alive until the turn, where the held gate retired it at the halt. For
+  policies that don't kill, concurrent bodies roughly double. On desktop
+  seed 1: climber 22 (main 12), never-firing `skip` 27; a competent shooter
+  peaks at 9 (main 6). This is a readability (pillar 5) and frame-budget
+  question for the operator's play, not a defect.

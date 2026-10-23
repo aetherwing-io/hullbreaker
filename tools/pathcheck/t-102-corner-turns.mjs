@@ -342,4 +342,18 @@ export async function playedChecks(list = matrix(), jobs = Math.max(1, Math.min(
       Object.values(r.perCorner).filter((pc) => pc.staged > 0).length >= 5),
     `T-201: every no-fire run fired no shot (${silent.map((r) => r.shotsFired).join('/')}) ` +
     'and still had the encounter staged on at least five sides');
+  // T-201 R4 A/B: `?hinge=flow` must really release RIG at the camera hand-off.
+  // The turn families above stay green with the release switched off, so bind
+  // it here: fewer ticks standing still with a direction held than the
+  // default lock on the same viewport (full tier only; the per-edit tier runs
+  // no ?query runs and says so in its SKIP line)
+  const stalledTicks = (r) => Object.values(r.perCorner).reduce((n, pc) => n + pc.stalledInputTicks, 0);
+  for (const flow of results.filter((r) => r.policy === 'run' && r.query === 'hinge=flow')) {
+    const vp = `${flow.viewport.width}x${flow.viewport.height}`;
+    const base = results.find((r) => r.policy === 'run' && !r.query && r.gunnerMode === flow.gunnerMode &&
+      r.viewport.width === flow.viewport.width && r.viewport.height === flow.viewport.height);
+    ok(!!base && stalledTicks(base) > 0 && stalledTicks(flow) < stalledTicks(base),
+      `T-201: ?hinge=flow lets RIG keep moving after the camera hand-off @${vp} (ticks stalled ` +
+      `with a direction held: ${stalledTicks(flow)} vs ${base ? stalledTicks(base) : 'no default run'} by default)`);
+  }
 }
