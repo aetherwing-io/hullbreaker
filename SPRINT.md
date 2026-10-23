@@ -45,7 +45,7 @@ T-101 so nothing collides with that record.
 
 ## Queue
 
-## T-101 | shell | doing | P1
+## T-101 | shell | done | P1
 
 goal: replace the rejected one-thumb touch scheme (entry 20) with a
 conventional two-thumb run-and-gun layout that makes a fast climb playable on a
@@ -106,6 +106,14 @@ ONLY where touch is installed, and new pathcheck/playtest files. Does not
 touch HUD/title layout (T-105), the camera (T-107), or RIG art (T-103).
 verify: node tools/pathcheck.mjs; node tools/playtest/run.mjs
 scripts/mid-route.json --deterministic; the new touch proof script
+
+
+landed 2026-10-23 (`c336ad0`): two-thumb deck ON by default on touch hardware,
+`?touch=legacy|0|1`, `?autofire=1|0` (auto-fire default OFF: the BACKLASH gene
+makes firing not free). Review APPROVE, playtest PASS (smoke at 49f6a0a,
+re-judged); merged with `--skip-smoke --accept-stale-verdicts` (integrator-only
+manifest resolution: turn proof d77, touch deck d78). Four small deck
+follow-ups from the review ride with T-105.
 
 ## T-102 | feature | done | P1
 
@@ -233,7 +241,7 @@ Its §7 task blocks are below as T-201..T-211 with the reviewer's
 fix-at-dispatch amendments; dispatch sends the proposal's block verbatim PLUS
 the amendment lines.
 
-## T-105 | shell | todo | P1
+## T-105 | shell | doing | P1
 
 goal: everything on screen renders correctly on a phone — iPhone Safari
 first, landscape first (entry-20 addendum). Known from the integrator's
@@ -294,7 +302,7 @@ smoke-verdict on both smoke scripts
 
 superseded by T-205 (the long sides, from T-104's accepted plan).
 
-## T-107 | render | todo | P1
+## T-107 | render | doing | P1
 
 goal: phone framing, authorized by the entry-20 addendum: on phone viewports
 only, RIG is ~6% of screen height (today ~3.7%, ~12-15 CSS px in 844x390
@@ -417,7 +425,7 @@ entries it adds; in phase B only, the `?art=v2` branch in the render layer.
 verify: the one-command build reproduces byte-identical atlases; the anchor
 check; pathcheck green after phase B
 
-## T-120 | harness | todo | P1
+## T-120 | harness | doing | P1
 
 goal: rebuild the gate per T-108's revised audit
 (`docs/proposals/2026-10-test-audit.md` at task/T-108 8d80f10, §7 and §10): a
@@ -466,7 +474,7 @@ earlier or graded hand-off; judged in `tools/playtest/turn-pose-capture.mjs`
 frames t680/t700 at desktop and 844x390. Static anatomy (entry 3) binds.
 owner: asset-artist + gameplay-engineer. Dispatch after T-107 and T-109.
 
-## T-201 | feature | todo | P1
+## T-201 | feature | doing | P1
 
 goal (M1): gate beats are always visible, fightable and bounded — full block
 in `docs/proposals/2026-10-race-to-the-top.md` §7 "T-201".
