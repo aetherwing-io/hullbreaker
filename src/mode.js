@@ -79,28 +79,22 @@ export const ACTIVE_SLICE = IS_TRAVERSAL_SLICE
 // fixture (its run window, scroll floor, spawn point, fast retry) reads this
 // one, so a second fixture does not have to re-plumb the composition root.
 export const ACTIVE_FIXTURE = IS_TRANSFORM_SLICE ? TRANSFORM_FIXTURE : ACTIVE_SLICE;
-/* The static-anatomy corner reveal — DEFAULT since T-009 (six-face
-   integration). Formerly the opt-in G1 limb-turn experiment (?g1=1,
-   docs/proposals/2026-07-meridian-monster-greybox-map.md): the SIX-FACE run,
-   unchanged in every simulated respect, with the corner ritual re-read as a
-   camera orbit around a static faceted leg. Render-only — it selects the limb
-   bake (src/render/limb.js), its atmosphere, and the suppression of the
-   brick-slam zipper's *visuals*; the sim's inert-until-crossed gating is
-   untouched in both modes.
+/* IS_G1 — "this is the six-face run", which always renders the corner
+   ritual as the static-anatomy reveal (T-009; decisions.md entry 3): a camera
+   orbit around a static faceted leg (src/render/limb.js), never assembled
+   geometry. The name is historical — it began as the opt-in G1 limb-turn
+   experiment (?g1=1, docs/proposals/2026-07-meridian-monster-greybox-map.md).
+   The fixtures own their own transitions, so it is false there.
 
-   decisions.md entry 3 is why it is the default: "the creature's anatomy is
-   monumental and static during a transition — RIG and the camera are what
-   move ... never assembled, slammed, or articulated into place." The zipper
-   is RETIRED FROM THE WORLD, NOT DELETED (that entry's July 30 addendum):
-   ?zip=1 still plays the brick-slam reveal, so the choreography stays
-   playable and extractable for the traps/emplacements lane.
-
-   The constant keeps its old name because five modules import it (three of
-   them owned by other lanes this cycle) — the meaning is in this comment and
-   in the flag, not in the identifier. The fixtures own their own transitions,
-   so this is a normal-run flag only. */
-export const ZIPPER_REVEAL = QUERY.get('zip') === '1' || QUERY.get('g1') === '0';
-export const IS_G1 = ACTIVE_FIXTURE === null && !ZIPPER_REVEAL;
+   The legacy brick-slam zipper reveal (?zip=1, alias ?g1=0) was deleted under
+   decisions.md entry 25; both flags are now ignored. The operator liked that
+   corner-building aesthetic: entry 3's addendum reserves assembly for things
+   the ship BUILDS, so recover the choreography from git at bb8e4df (the
+   zipperColumn / faceRevealed hooks in src/render/level.js) when a trap or an
+   emplacement wants it. Its SIM half — the built-column state machine and the
+   zipper timeline in src/sim/wavegate.js / src/pure/waves.js — is gameplay
+   truth (columns stay inert until their ritual) and was not touched. */
+export const IS_G1 = ACTIVE_FIXTURE === null;
 
 /* EARNED pace escalation (T-022, decisions.md entry 11): the
    pursuing edge's speed rises with how well the run is being played (where

@@ -28,4 +28,10 @@ The Level 1 wasp is one body state plus one independently selected wing phase. E
 - Production report: `artifacts/wasp-modular-v2/production/report.json`
 - Controlled report: `artifacts/wasp-modular-v2/live/report.json`
 
+The three committed outputs above were removed from the tree by the T-121
+cleanup (2026-10). The commands above regenerate them into the same paths;
+the committed copies are recoverable with
+`git show e5ce7d4:artifacts/wasp-modular-v2/<path>` (index:
+`docs/archive/2026-10-artifacts-index.md`).
+
 The source sheets and exact ImageGen prompts/provenance live beside each other under `assets/generated/sprites/wasp-modular-v2/source-sheets/`. The v2 body sheet is explicitly retained as rejected crop evidence; the v3 spacing edit and wing Cycle A are the production inputs.
