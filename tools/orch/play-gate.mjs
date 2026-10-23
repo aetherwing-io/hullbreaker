@@ -7,7 +7,7 @@
 //   node tools/orch/play-gate.mjs                       serve this tree in-process
 //   node tools/orch/play-gate.mjs --base-url http://127.0.0.1:8780   a pinned server
 //   ... --out <dir>          evidence (play-gate.json + failure screenshots)
-//   ... --only boot,failsafe,selftest,degrade,smoke,perf     a subset of steps
+//   ... --only boot,failsafe,selftest,degrade,ownership,smoke,perf   a subset of steps
 //   ... --views desktop,landscape,portrait                   a subset of viewports
 //   ... --skip-smoke         (merge-task.sh --skip-smoke passes this through)
 //
@@ -33,6 +33,16 @@
 //             schedule EQUALS the same schedule's state with the art loaded
 //             (entry 16; proposal §7.4 #6, browser half). Falsifier M12 (boot)
 //             and any sim branch on a real render signal.
+//   ownership nothing is drawn on a face the climb has not reached (static
+//             anatomy, entry 3; proposal §7.4 #11, pre-turn half): RIG posed
+//             13 tiles short of the first bend with GHOST SQUAD and ORBITAL
+//             LANCE active, and every visible on-screen object near the route
+//             (InstancedMesh instances included) mapped back to its route
+//             coordinate s through the path polyline AND the ascent altitude
+//             (the six faces wrap a hexagon: XZ alone is ambiguous). Anything
+//             on a facet the camera does not own, more than one tile past the
+//             corner's chamfer, fails. Falsifier M20 (clones drawn 40 tiles
+//             ahead). The turn/hand-off half is T-102's turn proof and T-122's.
 //   smoke     the deterministic smoke: scripts/mid-route.json,
 //             scripts/transform-slice.json and scripts/default-url-smoke.json
 //             (the default URL), best of three each, judged by
@@ -432,11 +442,13 @@ const DEGRADE_EVENTS = [
   ...[600, 1500, 2400, 3300, 4200].flatMap((t) => [{ t, type: 'keydown', code: 'Space' }, { t: t + 300, type: 'keyup', code: 'Space' }]),
   { t: 2000, type: 'keydown', code: 'ArrowUp' }, { t: 3000, type: 'keyup', code: 'ArrowUp' },
 ];
+// The phone (landscape, touch): it is the operator's device, and its 6.5 s
+// preload budget (src/render/preload.js) is the one under which a CPU-starved
+// host still gets SOME art ready — at desktop's 2.5 s every asset can miss and
+// the comparison would have nothing to compare (measured: 0 of 33 ready).
+const DEGRADE_VIEW = 'landscape';
 async function degradeRun(blockArt) {
-  const view = 'desktop';
-  const { page, log, close } = await newPage(view);
-  const small = (process.env.HB_SMOKE_VIEWPORT || '').match(/^(\d+)x(\d+)$/);
-  if (small) await page.setViewportSize({ width: +small[1], height: +small[2] });
+  const { page, log, close } = await newPage(DEGRADE_VIEW);
   let aborted = 0;
   try {
     if (blockArt) await page.route(/\/assets\/generated\//, (route) => { aborted++; return route.abort(); });
@@ -478,34 +490,122 @@ async function degradeRun(blockArt) {
 async function degradeStep() {
   const [art, bare] = await Promise.all([degradeRun(false), degradeRun(true)]);
   if (art.error || bare.error) {
-    record('degrade', 'desktop', 'FAIL', 'both runs (art / art blocked) reached the end of the input schedule',
+    record('degrade', DEGRADE_VIEW, 'FAIL', 'both runs (art / art blocked) reached the end of the input schedule',
       { art: art.error || 'ok', blocked: bare.error || 'ok', blockedPageErrors: bare.pageErrors?.slice(0, 2) });
     return;
   }
   const reached = (r) => r.tick === r.stopTick && r.dispatched === r.events;
-  record('degrade', 'desktop', reached(art) && reached(bare) ? 'PASS' : 'FAIL',
+  record('degrade', DEGRADE_VIEW, reached(art) && reached(bare) ? 'PASS' : 'FAIL',
     `both runs played the whole frame-exact schedule (${art.tick}/${art.stopTick} and ${bare.tick}/${bare.stopTick} ticks)`);
   const readyCount = (a) => (a.preload.ready || 0) + (a.sprites.ready || 0) + a.hullReady;
-  record('degrade', 'desktop', bare.aborted > 0 && readyCount(bare.art) === 0 ? 'PASS' : 'FAIL',
+  record('degrade', DEGRADE_VIEW, bare.aborted > 0 && readyCount(bare.art) === 0 ? 'PASS' : 'FAIL',
     `with ${bare.aborted} art requests aborted the game still played and reports no art ready ` +
     `(${JSON.stringify(bare.art)} blocked vs ${JSON.stringify(art.art)} with the art)`);
   const fsOk = !bare.failsafe.showing && !bare.failsafe.halted && bare.failsafe.faults === 0;
-  record('degrade', 'desktop', fsOk ? 'PASS' : 'FAIL', 'missing art never raises the failure panel or a fault', fsOk ? null : bare.failsafe);
-  record('degrade', 'desktop', bare.pageErrors.length ? 'FAIL' : 'PASS', 'missing art throws no page error', bare.pageErrors.slice(0, 2));
+  record('degrade', DEGRADE_VIEW, fsOk ? 'PASS' : 'FAIL', 'missing art never raises the failure panel or a fault', fsOk ? null : bare.failsafe);
+  record('degrade', DEGRADE_VIEW, bare.pageErrors.length ? 'FAIL' : 'PASS', 'missing art throws no page error', bare.pageErrors.slice(0, 2));
   const same = art.sim === bare.sim;
   // Honesty: if the art run's art never arrived either (a CPU-starved
   // SwiftShader host misses the 2.5 s boot budget), the two runs are the same
   // run and the comparison proves nothing about art-loaded play. A divergence
   // still fails; an identical pair is then only REPORTED. The headless twin in
   // tools/pathcheck/t-120-determinism-and-art-blind-sim.mjs is the binding half.
-  if (!same) record('degrade', 'desktop', 'FAIL',
+  if (!same) record('degrade', DEGRADE_VIEW, 'FAIL',
     'missing art does not change play: the sim state at the terminal tick is identical with and without the art',
     { art: art.sim.slice(0, 300), blocked: bare.sim.slice(0, 300) });
-  else if (readyCount(art.art) === 0) record('degrade', 'desktop', 'REPORT',
+  else if (readyCount(art.art) === 0) record('degrade', DEGRADE_VIEW, 'REPORT',
     'missing art does not change play — INCONCLUSIVE here: the art run\'s art also missed the boot budget ' +
     `(${JSON.stringify(art.art)}), so both runs played without it; identical sim state, but nothing was compared`);
-  else record('degrade', 'desktop', 'PASS',
+  else record('degrade', DEGRADE_VIEW, 'PASS',
     `missing art does not change play: the sim state at the terminal tick is identical with ${readyCount(art.art)} art surfaces ready and with none`);
+}
+
+/* ----------------------------- step: ownership ------------------------------ */
+const OWNERSHIP_PROBE = async (frames) => {
+  const [PL, T, MO, HO, LV, PATH, S, CAM, ASC, CFG, THREE] = await Promise.all(['/src/sim/player.js', '/src/sim/time.js',
+    '/src/sim/mods.js', '/src/sim/hostiles.js', '/src/sim/level.js', '/src/pure/path.js', '/src/render/scene.js',
+    '/src/render/camera.js', '/src/pure/ascent.js', '/src/config.js', 'three'].map((p) => import(p)));
+  const C = CFG.CONFIG, LEN = C.levelLength;
+  // the pose (scenario setup, through the sim's own modules): RIG on face 1,
+  // 13 tiles short of the first bend, nobody left to fight, untouchable; GHOST
+  // SQUAD and ORBITAL LANCE active through applyMod, the pickup path
+  for (let i = HO.hostiles.length - 1; i >= 0; i--) HO.removeHostile(i, false);
+  const x = PATH.BEND_S[0] - 13;
+  Object.assign(PL.player, { x, y: LV.groundTopAt(x), vx: 0, vy: 0, grounded: true, iframesUntil: T.gameMs + 1e9 });
+  T.setScrollX(x - 10);
+  MO.applyMod('GS'); MO.applyMod('OL');
+  const segs = PATH.SEGS;
+  const invert = (X, Y, Z) => {
+    let best = null;
+    for (let i = 0; i < segs.length; i++) {
+      const g = segs[i]; const L = (segs[i + 1] ? segs[i + 1].s0 : LEN) - g.s0;
+      const dx = X - g.x, dz = Z - g.z;
+      const d = dx * Math.cos(g.heading) - dz * Math.sin(g.heading);
+      const lat = dx * Math.sin(g.heading) + dz * Math.cos(g.heading);
+      const dd = d < 0 ? -d : d > L ? d - L : 0;
+      const sv = g.s0 + Math.max(0, Math.min(L, d));
+      const yRoute = Y - ASC.normalAscentAltAt(sv, LEN);
+      if (yRoute < -6 || yRoute > 24) continue;              // another face of the hexagon
+      const score = Math.abs(lat) + dd * 2;
+      if (!best || score < best.score) best = { score, s: sv, lat, dd };
+    }
+    return best;
+  };
+  const v = new THREE.Vector3(), w = new THREE.Vector3(), m = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3();
+  const found = new Map();
+  let checked = 0, clonesSeen = 0;
+  for (let f = 0; f < frames; f++) {
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const facet = CAM.cameraFacingFacet();
+    const k = Math.min(facet, PATH.CORNER_S.length - 1);
+    const jointEnd = PATH.CORNER_S[k] + C.path.chamferTiles + 1;   // the hinge, and one tile of anatomy past it
+    if (MO.mods.clonesVisible) clonesSeen++;
+    S.scene.updateMatrixWorld();
+    const check = (obj, pos) => {
+      w.copy(pos).project(S.camera);
+      if (!(Math.abs(w.x) <= 1.1 && Math.abs(w.y) <= 1.1 && w.z > -1 && w.z < 1)) return;
+      const r = invert(pos.x, pos.y, pos.z);
+      if (!r || Math.abs(r.lat) > 4 || r.dd > 1) return;
+      checked++;
+      if (PATH.facetAtBends(r.s, PATH.BEND_S) <= facet || r.s <= jointEnd) return;
+      const key = (obj.name || obj.type) + (obj.parent && obj.parent.name ? ' < ' + obj.parent.name : '');
+      const e = found.get(key) || { frames: 0, s: +r.s.toFixed(2), facet: PATH.facetAtBends(r.s, PATH.BEND_S), cameraFacet: facet };
+      e.frames++; found.set(key, e);
+    };
+    S.scene.traverseVisible((obj) => {
+      if (obj.isInstancedMesh) {
+        for (let i = 0; i < obj.count; i++) {
+          obj.getMatrixAt(i, m); m.premultiply(obj.matrixWorld); m.decompose(v, q, sc);
+          if (Math.abs(sc.x * sc.y * sc.z) < 1e-9) continue;
+          check(obj, v);
+        }
+      } else if (obj.isMesh || obj.isSprite || obj.isPoints || obj.isLine) {
+        const mat = Array.isArray(obj.material) ? obj.material[0] : obj.material;
+        if (mat && (mat.visible === false || (mat.transparent && mat.opacity < 0.02))) return;
+        obj.getWorldPosition(v); check(obj, v);
+      }
+    });
+  }
+  return { checked, clonesSeen, frames, violations: [...found.entries()] };
+};
+async function ownershipStep() {
+  const view = 'desktop';
+  const { page, log, close } = await newPage(view);
+  try {
+    await page.goto(base + '/index.html?testapi=1&fixeddt=16.667&audio=0', { waitUntil: 'commit', timeout: BOOT_MS });
+    await waitPhase(page, 'PLAYING', () => window.HB && window.HB.state() === 'PLAYING', null, BOOT_MS);
+    const r = await page.evaluate(OWNERSHIP_PROBE, 12);
+    const live = r.checked > 50 && r.clonesSeen > 0;
+    record('ownership', view, live ? 'PASS' : 'FAIL',
+      `the probe saw the posed scene (${r.checked} on-screen route-near objects checked over ${r.frames} frames, GHOST SQUAD clones live in ${r.clonesSeen})`);
+    if (r.violations.length) record('ownership', view, 'FAIL',
+      'nothing is drawn on a face the climb has not reached (beyond the corner\'s hinge)',
+      r.violations.slice(0, 6).map(([k, e]) => `${k} at s=${e.s} (facet ${e.facet}, camera ${e.cameraFacet}, ${e.frames} frames)`));
+    else record('ownership', view, 'PASS', 'nothing is drawn on a face the climb has not reached (beyond the corner\'s hinge)');
+    if (log.pageErrors.length) record('ownership', view, 'FAIL', 'zero page errors during the probe', log.pageErrors.slice(0, 2));
+  } catch (err) {
+    record('ownership', view, 'FAIL', 'the render-ownership probe ran', String(err && err.message || err).slice(0, 400));
+  } finally { await close(); }
 }
 
 /* ------------------------------- step: smoke -------------------------------- */
@@ -558,7 +658,8 @@ try {
   if (step('boot')) for (const v of VIEW_IDS) jobs.push(job('boot', v, () => bootStep(v)));
   if (step('failsafe')) for (const v of VIEW_IDS) for (const f of FAILURES) jobs.push(job('failsafe', v, () => failsafeStep(v, f)));
   if (step('selftest')) for (const v of VIEW_IDS) jobs.push(job('selftest', v, () => selftestStep(v)));
-  if (step('degrade')) jobs.push(job('degrade', 'desktop', () => degradeStep()));
+  if (step('degrade')) jobs.push(job('degrade', DEGRADE_VIEW, () => degradeStep()));
+  if (step('ownership')) jobs.push(job('ownership', 'desktop', () => ownershipStep()));
   await pool(jobs);
   if (step('smoke') && !argv.includes('--skip-smoke')) {
     // the harness scripts run one at a time: each owns its own Chrome

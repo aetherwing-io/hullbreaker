@@ -203,6 +203,8 @@ export const MUTANTS = [
   /* ------------------------------- PIN ------------------------------ */
   {
     id: 'M20', targetClass: 'PIN', kind: 'evasion',
+    // T-120: its behaviour-level falsifier target is tools/orch/play-gate.mjs
+    // step `ownership` (red: "Mesh at s=140 (facet 1, camera 0)")
     site: 'tools/pathcheck/mod-route-visibility.mjs:14',
     why: 'ghost-squad clones are drawn 40 tiles ahead, on an unbuilt facet — the property the regex claims to guard',
     file: 'src/render/mods.js',
