@@ -410,7 +410,8 @@ an ellipsis; desktop wraps too. Measured (`--only gateline`, pre-merge
 branch): 28 characters (28 x "W" and three real shapes) on ONE line at
 667x375 (185.4 px in a 197 px slot), 1100x700, 844x390, 932x430, 390x844 and
 1280x720; T-102's 47-character line and the shipped 43-character
-hull-fallback line are never cut (two lines at 667 / 844 / 932 / 1100) and
+hull-fallback line are never cut (both wrap to two lines at 667 / 844 / 932,
+the 47-character one also at 1100; one line at 390 portrait and 1280) and
 the panel ends at y 40, above the deck's chips (72) and the central region.
 Main cut the 47-char line at 667x375 and 1100x700 and the 43-char one at
 667x375. Falsified: `--mutate objective-nowrap` (main's one-line ellipsis put
@@ -442,9 +443,9 @@ monospace`: SF Mono on an iPhone, DejaVu Sans Mono here, both ~0.6 em a
 glyph), so 28 characters is one width whatever the words: 11.6 px to spare
 at 667x375. This branch alone (the nine lines): one line, uncut, at all six
 sizes (the same widths), 63 / 0. Main (the nine lines): one line too, at
-every size — main's landscape slot used an 8 px font (158.4 px in a 237 px slot at 667x375); what this
-branch adds for these lines is the 10 px face with the fit kept, not the
-fit itself. Main's three failures in that run are the two long lines
+every size — main's landscape slot used an 8 px font (158.4 px in a 237 px
+slot at 667x375); what this branch adds for these lines is the 10 px face
+with the fit kept, not the fit itself. Main's three failures in that run are the two long lines
 above (60 / 3).
 
 **The HUD sized from the viewport, never from RIG** — see box 4.
