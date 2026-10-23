@@ -144,6 +144,15 @@ const PAGE_HELPERS = `
     q.dummy.updateMatrixWorld(true);
     q.tmp.copy(q.dummy.position);
     out.spawnPx = q.toScreen(q.tmp.clone());
+    // Recoil deliberately kicks the drawn weapon back along the bore for a few
+    // frames after a shot (presentation only). Where the muzzle SHOULD be
+    // drawn during that kick: the spawn pulled back by the snapshot's recoil.
+    out.recoil = snap.recoil || 0;
+    const kx = p.x + p.aim.x * (q.P_BARREL - out.recoil), ky = p.y + p.muzzleY + p.aim.y * (q.P_BARREL - out.recoil);
+    TW.placeOnTower(q.dummy, kx, ky, 1.15);
+    q.dummy.updateMatrixWorld(true);
+    q.tmp.copy(q.dummy.position);
+    out.recoiledSpawnPx = q.toScreen(q.tmp.clone());
     // T-103 tree: the fist centre on the live arm mesh that holds the gun
     const role = snap.hands && snap.hands.shown
       ? (snap.hands.nearRole === 'gun' ? 'rig-arm-near' : snap.hands.farRole === 'gun' ? 'rig-arm-far' : null)
@@ -406,6 +415,9 @@ await withIsolatedBrowser(ROOT, async ({ baseUrl, newPage }) => {
             weapon: m.weapon, hands: m.hands,
             muzzleToSpawnCssPx: m.muzzlePx && m.spawnPx
               ? +Math.hypot(m.muzzlePx.x - m.spawnPx.x, m.muzzlePx.y - m.spawnPx.y).toFixed(3) : null,
+            recoilTiles: m.recoil,
+            muzzleToRecoiledSpawnCssPx: m.muzzlePx && m.recoiledSpawnPx
+              ? +Math.hypot(m.muzzlePx.x - m.recoiledSpawnPx.x, m.muzzlePx.y - m.recoiledSpawnPx.y).toFixed(3) : null,
             fistToGripCssPx: m.fistPx && m.gripPx
               ? +Math.hypot(m.fistPx.x - m.gripPx.x, m.fistPx.y - m.gripPx.y).toFixed(3) : null,
             bullets, aimHeld };
@@ -502,7 +514,9 @@ await withIsolatedBrowser(ROOT, async ({ baseUrl, newPage }) => {
         const png = await readFile(resolve(OUT, f.file));
         cells.push(`<td><img data-s="${scale}" src="data:image/png;base64,${png.toString('base64')}">` +
           `<div class="n">aim ${aimName} · frame ${f.frame} · weapon ${f.weapon} · ${f.bullets.length} live shot(s)<br>` +
-          `fist-grip ${f.fistToGripCssPx ?? '-'} css px · muzzle-spawn ${f.muzzleToSpawnCssPx ?? '-'} css px</div></td>`);
+          `fist-grip ${f.fistToGripCssPx ?? '-'} css px · muzzle vs spawn ${f.muzzleToSpawnCssPx ?? '-'} css px ` +
+          `(recoil kick ${(f.recoilTiles ?? 0).toFixed(3)} tiles; vs recoil-shifted spawn ` +
+          `${f.muzzleToRecoiledSpawnCssPx ?? '-'} css px)</div></td>`);
       }
       const rowsHtml = [];
       for (let i = 0; i < cells.length; i += 2) rowsHtml.push(`<tr>${cells.slice(i, i + 2).join('')}</tr>`);
