@@ -1,0 +1,5 @@
+# Build intermediates (ID maps, part atlases, captures, reports). The shipped
+# outputs live in assets/generated/sprites/art-v2/; everything here is rebuilt by
+# tools/art/build.py and tools/art/capture/current-art.mjs.
+build/
+__pycache__/

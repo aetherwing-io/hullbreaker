@@ -1306,6 +1306,104 @@
         "checkedBy": "tools/assets/check.mjs"
       },
       "alpha": "cutout"
+    },
+    {
+      "id": "rig-v2-far",
+      "path": "assets/generated/sprites/art-v2/rig-v2-far.png",
+      "category": "sprites",
+      "size": {
+        "w": 1024,
+        "h": 1024
+      },
+      "gpu": true,
+      "task": "T-109",
+      "generator": "headless Blender 5.2 (bpy, Workbench) via tools/art/build.py: low-poly model built from primitives in code (no downloaded models), posed by tools/art/rig/pose.py or tools/art/wasp/model.py, rendered as ID maps through a fixed orthographic camera, pixel-post-processed by tools/art/post.py into src/render/palette.js tokens; byte-reproducible (two clean builds, identical sha256)",
+      "addedOn": "2026-10-23",
+      "notes": "T-109 phase A, NOT wired into the game (phase B puts it behind ?art=v2 with the current art as the control). RIG with every gun baked into the right hand: 300 frames = 60 poses (stand x4 aims, run contact/pass/flight x both leading legs x4 aims, jump rise/fall x5 aims, climb x4 phases x5 aims, hit, crouch) x 5 guns (R S L H F). 18 px/tile = desktop FAR at 1280x800 (RIG 36 px). Per-frame anchors (hand, handL, muzzle, head, footR, footL) in the sibling rig-v2-far.json; tools/art/check_anchors.py proves every drawn muzzle lies within 1 px of its exported anchor (max 0.867 px) and every anchor on the sim's shot origin (max 0.0001 px). Indexed PNG, 11 colours, hard alpha (pixel art: sample NEAREST).",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "deep-teal",
+          "haze",
+          "hot-magenta",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "rig-v2-phone2x",
+      "path": "assets/generated/sprites/art-v2/rig-v2-phone2x.png",
+      "category": "sprites",
+      "size": {
+        "w": 2048,
+        "h": 1024
+      },
+      "gpu": true,
+      "task": "T-109",
+      "generator": "headless Blender 5.2 (bpy, Workbench) via tools/art/build.py: low-poly model built from primitives in code (no downloaded models), posed by tools/art/rig/pose.py or tools/art/wasp/model.py, rendered as ID maps through a fixed orthographic camera, pixel-post-processed by tools/art/post.py into src/render/palette.js tokens; byte-reproducible (two clean builds, identical sha256)",
+      "addedOn": "2026-10-23",
+      "notes": "Same 300 RIG frames as rig-v2-far, natively rendered (not resampled) at 23.4 px/tile = the entry-20 phone framing (RIG 6% of a 390 px landscape height) at DPR 2 (RIG 46.8 px). Anchors in rig-v2-phone2x.json; anchor check max 0.382 px. Not wired into the game (phase B).",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "deep-teal",
+          "haze",
+          "hot-magenta",
+          "hull",
+          "ink",
+          "rust-orange",
+          "warm-white"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "wasp-v2-far",
+      "path": "assets/generated/sprites/art-v2/wasp-v2-far.png",
+      "category": "sprites",
+      "size": {
+        "w": 512,
+        "h": 64
+      },
+      "gpu": true,
+      "task": "T-109",
+      "generator": "headless Blender 5.2 (bpy, Workbench) via tools/art/build.py: low-poly model built from primitives in code (no downloaded models), posed by tools/art/rig/pose.py or tools/art/wasp/model.py, rendered as ID maps through a fixed orthographic camera, pixel-post-processed by tools/art/post.py into src/render/palette.js tokens; byte-reproducible (two clean builds, identical sha256)",
+      "addedOn": "2026-10-23",
+      "notes": "T-109 phase A wasp: 9 frames (idle, cruise x4 wing phases, dive-lock, dive x2, hit) at 18 px/tile; dive frames wear the waspDive token. Anchors (sting, stingBase, eye, head, wingRoot) in wasp-v2-far.json; drawn sting within 0.53 px of its anchor. Not wired into the game.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
+    },
+    {
+      "id": "wasp-v2-phone2x",
+      "path": "assets/generated/sprites/art-v2/wasp-v2-phone2x.png",
+      "category": "sprites",
+      "size": {
+        "w": 512,
+        "h": 64
+      },
+      "gpu": true,
+      "task": "T-109",
+      "generator": "headless Blender 5.2 (bpy, Workbench) via tools/art/build.py: low-poly model built from primitives in code (no downloaded models), posed by tools/art/rig/pose.py or tools/art/wasp/model.py, rendered as ID maps through a fixed orthographic camera, pixel-post-processed by tools/art/post.py into src/render/palette.js tokens; byte-reproducible (two clean builds, identical sha256)",
+      "addedOn": "2026-10-23",
+      "notes": "The wasp-v2-far frames natively rendered at 23.4 px/tile (phone framing at DPR 2). Anchors in wasp-v2-phone2x.json. Not wired into the game.",
+      "palette": {
+        "status": "pass",
+        "roles": [
+          "acid-green",
+          "ink"
+        ],
+        "checkedBy": "tools/assets/check.mjs"
+      }
     }
   ]
 }
