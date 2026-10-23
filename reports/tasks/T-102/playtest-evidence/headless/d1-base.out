@@ -1,0 +1,18 @@
+die-at-hinge         1280x720  VICTORY   corners 6/6 [1:done 2:done 3:done 4:done 5:done 6:done]  violations: relocateOutsideOwnedRoute=6, playerFacetBackwards=6, popAfterRelocation=6, hudLastButMore=272
+   {"kind":"relocateOutsideOwnedRoute","tick":1155,"gameMs":19266.7,"x":111.5,"sealLeft":112.65,"frontierRight":113.35,"from":113}
+   {"kind":"playerFacetBackwards","tick":1155,"gameMs":19266.7,"from":1,"to":0,"x":111.5}
+   {"kind":"popAfterRelocation","tick":1156,"gameMs":19283.3,"dx":1.5,"dy":0.073,"x0":111.5,"x":113,"y0":3,"y":3.0733333333333333,"bound":[0.197,0.533],"trav":["free","free"]}
+   {"kind":"hudLastButMore","tick":2242,"gameMs":37383.3,"k":2,"gatingLeft":2,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":2243,"gameMs":37400,"k":2,"gatingLeft":2,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":2244,"gameMs":37416.7,"k":2,"gatingLeft":2,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":2245,"gameMs":37433.3,"k":2,"gatingLeft":2,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":2246,"gameMs":37450,"k":2,"gatingLeft":2,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":2247,"gameMs":37466.7,"k":2,"gatingLeft":2,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":2248,"gameMs":37483.3,"k":2,"gatingLeft":2,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":2249,"gameMs":37500,"k":2,"gatingLeft":2,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":2250,"gameMs":37516.7,"k":2,"gatingLeft":2,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+
+real	0m8.430s
+user	0m2.603s
+sys	0m0.194s
+exit=0

@@ -1,0 +1,5 @@
+desktop-1100x700: panel clientWidth=366px font=12px/900 ls=1.26px display=block | new realistic truncated 20/39 | new worst-case truncated 6/12 | OLD strings truncated 3/24 | pageErrors=0
+desktop-1024x768: panel clientWidth=339px font=12px/900 ls=1.26px display=block | new realistic truncated 30/39 | new worst-case truncated 6/12 | OLD strings truncated 6/24 | pageErrors=0
+phone-landscape-667x375 (iPhone SE class): panel clientWidth=237px font=8px/900 ls=0.84px display=block | new realistic truncated 30/39 | new worst-case truncated 6/12 | OLD strings truncated 6/24 | pageErrors=0
+phone-landscape-812x375 (iPhone mini class): panel clientWidth=293px font=8px/900 ls=0.84px display=block | new realistic truncated 0/39 | new worst-case truncated 0/12 | OLD strings truncated 0/24 | pageErrors=0
+exit=0 wall=418 s

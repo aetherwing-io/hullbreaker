@@ -15,7 +15,7 @@ import { momentumMeter } from '../pure/momentum.js';
 import { normalAscentAltAt } from '../pure/ascent.js';
 import { momentumDrive } from '../sim/pace.js';
 import { scoreNotchGlyphs } from '../pure/score.js';
-import { activeGateThreatCount, wavePhase } from '../pure/waves.js';
+import { gateRequirement, gateRequirementText, wavePhase } from '../pure/waves.js';
 import { gameMs, scrollX, sliceStats } from '../sim/time.js';
 import { player, P } from '../sim/player.js';
 import { scoreCharge, scoreNotchNow } from '../sim/score.js';
@@ -293,14 +293,10 @@ export function updateHUD() {
         ? compactLandscape ? ' · CONTACT' : ' · MERIDIAN HAS SEEN YOU'
         : '');
   } else if (c && c.state === 'gate') {
-    // Count only this encounter's current visible/condensing beat. Later
-    // resident rows are implementation detail, and `gating` describes who
-    // owns the eventual clear rather than which body is threatening RIG now.
-    const threats = activeGateThreatCount(
-      hostiles, c.encounterKey, gameMs, CONFIG.wasp.enterMs,
-    );
-    tc = `WAVE ${c.k}/${CONFIG.path.faces} · ${c.phase} · ` +
-      (threats === 1 ? 'LAST SIGNAL · CLOSING' : `${threats} HOSTILES`);
+    // The current visible/condensing beat, plus the gating bodies still
+    // parked behind it (T-102): "LAST SIGNAL" only when one kill opens it.
+    tc = `WAVE ${c.k}/${CONFIG.path.faces} · ${c.phase} · ` + gateRequirementText(
+      gateRequirement(hostiles, c.encounterKey, gameMs, CONFIG.wasp.enterMs));
   } else if (c && c.state === 'approach') {
     tc = `WAVE ${c.k}/${CONFIG.path.faces} BROKEN · RUN TO THE TURN →`;
   } else if (c && c.state === 'turning' && gameMs - c.tStart < CONFIG.waves.clearMsgMs) {

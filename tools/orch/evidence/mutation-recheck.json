@@ -1,0 +1,172 @@
+{
+  "tool": "tools/orch/mutation-sample.mjs",
+  "when": "2026-10-22T23:03:33.435Z",
+  "base": "38d0409",
+  "mutants": [
+    {
+      "id": "M01",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/pathcheck-suite.mjs:708",
+      "why": "coyote time silently stops being granted on landing (a late press no longer forgives)",
+      "mutation": [
+        {
+          "file": "src/sim/player.js",
+          "from": "    player.coyoteUntil = gameMs + P.coyoteMs;",
+          "to": "    player.coyoteUntil = gameMs;"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 52744,
+      "hung": false,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": []
+    },
+    {
+      "id": "M02",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/damage-plane-never-leaves-geometry-behind.mjs:80",
+      "why": "the six-face wall stops holding a plane-pinned player (the adversarial F4 shove-through-a-wall regression)",
+      "mutation": [
+        {
+          "file": "src/sim/player.js",
+          "from": "        player.x = Math.floor(player.x + player.hw) - player.hw - 0.001;\n",
+          "to": ""
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 56272,
+      "hung": false,
+      "fails": 2,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 2,
+      "failLines": [
+        "damage-plane-never-leaves-geometry-behind: a plane-pinned player never ends a frame inside terrain, got 4 frames",
+        "damage-plane-never-leaves-geometry-behind: the plane never pushes a player through the wall it is pinned against, got 2 frames"
+      ],
+      "failingDomains": [
+        "damage-plane-never-leaves-geometry-behind"
+      ]
+    },
+    {
+      "id": "M07",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/movement-verb-prototypes.mjs:66",
+      "why": "?hook=1 stops being inert: the rejected hook arms by default in the traversal slice (CLAUDE.md: keep it inert)",
+      "mutation": [
+        {
+          "file": "src/mode.js",
+          "from": "export const HOOK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('hook') === '1';",
+          "to": "export const HOOK_ENABLED = IS_TRAVERSAL_SLICE && QUERY.get('hook') !== '0';"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 73069,
+      "hung": false,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": []
+    },
+    {
+      "id": "M10",
+      "targetClass": "CORE",
+      "kind": "property",
+      "site": "tools/pathcheck/t-049-hostile-sprites.mjs:89",
+      "why": "entry 16: the sim branches on whether art loaded (wasp hitbox grows when a render-set global says the art is ready)",
+      "mutation": [
+        {
+          "file": "src/sim/hostiles.js",
+          "from": "hitR: CONFIG.wasp.contactRadius, shotR: CONFIG.wasp.shotRadius, gating: true },",
+          "to": "hitR: CONFIG.wasp.contactRadius * (globalThis.__HB_ART_READY__ ? 1.2 : 1), shotR: CONFIG.wasp.shotRadius, gating: true },"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 75280,
+      "hung": false,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": []
+    },
+    {
+      "id": "M20",
+      "targetClass": "PIN",
+      "kind": "property",
+      "site": "tools/pathcheck/mod-route-visibility.mjs:14",
+      "why": "ghost-squad clones are drawn 40 tiles ahead, on an unbuilt facet — the property the regex claims to guard",
+      "mutation": [
+        {
+          "file": "src/render/mods.js",
+          "from": "      placeOnTower(cm, p.x, p.y + 0.85, 0);",
+          "to": "      placeOnTower(cm, p.x + 40, p.y + 0.85, 0);"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 0,
+      "red": false,
+      "ms": 74965,
+      "hung": false,
+      "fails": 0,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": false,
+      "failCount": 0,
+      "failLines": [],
+      "failingDomains": []
+    },
+    {
+      "id": "M21",
+      "targetClass": "PIN",
+      "kind": "refactor",
+      "site": "tools/pathcheck/mod-route-visibility.mjs:14",
+      "why": "rename the loop local `cm` to `clone` (no behaviour change)",
+      "mutation": [
+        {
+          "file": "src/render/mods.js",
+          "from": "      const cm = cloneMeshes[d];\n      cm.visible = false;\n      if (!p || !routeRenderable(p.x)) continue;\n      cm.visible = true;\n      placeOnTower(cm, p.x,",
+          "to": "      const clone = cloneMeshes[d];\n      clone.visible = false;\n      if (!p || !routeRenderable(p.x)) continue;\n      clone.visible = true;\n      placeOnTower"
+        }
+      ],
+      "domainsRun": "all except render-submission-contract",
+      "exit": 1,
+      "red": true,
+      "ms": 79991,
+      "hung": false,
+      "fails": 1,
+      "threwDomains": [],
+      "preludeExit": [],
+      "targetHit": true,
+      "failCount": 1,
+      "failLines": [
+        "mod-route-visibility: each clone slot clears stale art before requiring a present, route-owned trail sample"
+      ],
+      "failingDomains": [
+        "mod-route-visibility"
+      ]
+    }
+  ]
+}

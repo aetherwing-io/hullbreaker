@@ -1,0 +1,200 @@
+{
+  "base": "http://127.0.0.1:8779",
+  "view": "portrait",
+  "passed": 32,
+  "failed": 0,
+  "results": [
+    {
+      "view": "portrait",
+      "name": "A: finger lands on FIRE -> only FIRE held",
+      "pass": true,
+      "detail": "want [KeyX] deck [KeyX] sim [KeyX]"
+    },
+    {
+      "view": "portrait",
+      "name": "A: the SAME finger rolled onto JUMP -> FIRE stays held AND JUMP is pressed",
+      "pass": true,
+      "detail": "want [Space,KeyX] deck [Space,KeyX] sim [Space,KeyX]"
+    },
+    {
+      "view": "portrait",
+      "name": "A: lifting that one finger releases both",
+      "pass": true,
+      "detail": "want [] deck [] sim []"
+    },
+    {
+      "view": "portrait",
+      "name": "A: the roll counted exactly one JUMP press",
+      "pass": true,
+      "detail": "jumps 1"
+    },
+    {
+      "view": "portrait",
+      "name": "B: a landing in the lens (9.1 px thick) presses JUMP+FIRE",
+      "pass": true,
+      "detail": "want [Space,KeyX] deck [Space,KeyX] sim [Space,KeyX]"
+    },
+    {
+      "view": "portrait",
+      "name": "B: lens finger lifted -> released",
+      "pass": true,
+      "detail": "want [] deck [] sim []"
+    },
+    {
+      "view": "portrait",
+      "name": "B: 3 px short of the lens (FIRE side) -> FIRE only",
+      "pass": true,
+      "detail": "want [KeyX] deck [KeyX] sim [KeyX]"
+    },
+    {
+      "view": "portrait",
+      "name": "B: 3 px past the lens (JUMP side) -> JUMP only",
+      "pass": true,
+      "detail": "want [Space] deck [Space] sim [Space]"
+    },
+    {
+      "view": "portrait",
+      "name": "C: sliding to 1.1x JUMP radius (inside the 1.25 landing slop) does NOT press JUMP",
+      "pass": true,
+      "detail": "want [KeyX] deck [KeyX] sim [KeyX]"
+    },
+    {
+      "view": "portrait",
+      "name": "C: sliding onto the JUMP face (0.92 radius) presses JUMP",
+      "pass": true,
+      "detail": "want [Space,KeyX] deck [Space,KeyX] sim [Space,KeyX]"
+    },
+    {
+      "view": "portrait",
+      "name": "C: lifted -> released",
+      "pass": true,
+      "detail": "want [] deck [] sim []"
+    },
+    {
+      "view": "portrait",
+      "name": "D: a touch 8 px from the left glass edge spawns no stick and holds nothing",
+      "pass": true,
+      "detail": "{\"stick\":false,\"kinds\":[\"dead\"],\"held\":[]}"
+    },
+    {
+      "view": "portrait",
+      "name": "D: a touch just inside the gutter (x 26) is a live stick",
+      "pass": true,
+      "detail": "want [ArrowRight] deck [ArrowRight] sim [ArrowRight]"
+    },
+    {
+      "view": "portrait",
+      "name": "D: lifted -> released",
+      "pass": true,
+      "detail": "want [] deck [] sim []"
+    },
+    {
+      "view": "portrait",
+      "name": "E: finger A drags right -> ArrowRight",
+      "pass": true,
+      "detail": "want [ArrowRight] deck [ArrowRight] sim [ArrowRight]"
+    },
+    {
+      "view": "portrait",
+      "name": "E: a second left-zone finger B takes the stick (A is dropped, nothing held at neutral)",
+      "pass": true,
+      "detail": "want [] deck [] sim []"
+    },
+    {
+      "view": "portrait",
+      "name": "E: B drags up -> ArrowUp",
+      "pass": true,
+      "detail": "want [ArrowUp] deck [ArrowUp] sim [ArrowUp]"
+    },
+    {
+      "view": "portrait",
+      "name": "E: the dropped finger's wiggle and lift leave B's ArrowUp alone",
+      "pass": true,
+      "detail": "want [ArrowUp] deck [ArrowUp] sim [ArrowUp]"
+    },
+    {
+      "view": "portrait",
+      "name": "E: B lifted -> released",
+      "pass": true,
+      "detail": "want [] deck [] sim []"
+    },
+    {
+      "view": "portrait",
+      "name": "F: drag right -> ArrowRight",
+      "pass": true,
+      "detail": "want [ArrowRight] deck [ArrowRight] sim [ArrowRight]"
+    },
+    {
+      "view": "portrait",
+      "name": "F: a long drag (196 px) still ArrowRight",
+      "pass": true,
+      "detail": "want [ArrowRight] deck [ArrowRight] sim [ArrowRight]"
+    },
+    {
+      "view": "portrait",
+      "name": "F: pulling back one rim + 22 px reverses to ArrowLeft (anchor trailed the thumb)",
+      "pass": true,
+      "detail": "want [ArrowLeft] deck [ArrowLeft] sim [ArrowLeft]"
+    },
+    {
+      "view": "portrait",
+      "name": "F: lifted -> released",
+      "pass": true,
+      "detail": "want [] deck [] sim []"
+    },
+    {
+      "view": "portrait",
+      "name": "G: a FIRE finger dragged across the SWAP chip never presses SWAP (still just FIRE)",
+      "pass": true,
+      "detail": "want [KeyX] deck [KeyX] sim [KeyX]"
+    },
+    {
+      "view": "portrait",
+      "name": "G: a finger DOWN on SWAP holds KeyC (swap)",
+      "pass": true,
+      "detail": "want [KeyC] deck [KeyC] sim [KeyC]"
+    },
+    {
+      "view": "portrait",
+      "name": "G: SWAP lifted -> KeyC released",
+      "pass": true,
+      "detail": "want [] deck [] sim []"
+    },
+    {
+      "view": "portrait",
+      "name": "G: PAUSE pressed then lifted 120 px away does NOT pause the run",
+      "pass": true,
+      "detail": "PLAYING"
+    },
+    {
+      "view": "portrait",
+      "name": "H: AUTO defaults OFF on a fresh profile",
+      "pass": true,
+      "detail": "{\"on\":false,\"stored\":null}"
+    },
+    {
+      "view": "portrait",
+      "name": "H: tapping AUTO turns it on and remembers it",
+      "pass": true,
+      "detail": "{\"on\":true,\"stored\":\"1\",\"pressed\":\"true\",\"cls\":\"thumb-btn auto\"}"
+    },
+    {
+      "view": "portrait",
+      "name": "H: tapping AUTO again turns it off and remembers that",
+      "pass": true,
+      "detail": "{\"on\":false,\"stored\":\"0\"}"
+    },
+    {
+      "view": "portrait",
+      "name": "end: nothing left held after the whole sequence",
+      "pass": true,
+      "detail": "{\"deck\":[],\"keys\":[]}"
+    },
+    {
+      "view": "portrait",
+      "name": "page raised no errors",
+      "pass": true,
+      "detail": ""
+    }
+  ]
+}

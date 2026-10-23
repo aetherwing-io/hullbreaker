@@ -1,0 +1,2351 @@
+[
+ {
+  "viewport": "desktop-1280x720",
+  "bootMs": 76658,
+  "errors": [],
+  "info": {
+   "panelDisplay": "block",
+   "fontSize": "12px",
+   "fontWeight": "900",
+   "letterSpacing": "1.26px",
+   "whiteSpace": "nowrap",
+   "textOverflow": "ellipsis",
+   "clientWidth": 400,
+   "panelRect": {
+    "x": 425,
+    "y": 14,
+    "width": 430,
+    "height": 42,
+    "top": 14,
+    "right": 855,
+    "bottom": 56,
+    "left": 425
+   },
+   "rigRect": {
+    "x": 18,
+    "y": 14,
+    "width": 326,
+    "height": 170.296875,
+    "top": 14,
+    "right": 344,
+    "bottom": 184.296875,
+    "left": 18
+   },
+   "innerWidth": 1280,
+   "innerHeight": 720
+  },
+  "realistic": [
+   {
+    "face": 1,
+    "beat": 0,
+    "present": 1,
+    "queued": 3,
+    "text": "WAVE 1/6 · OBSERVE · 1 HOSTILE · +3 INBOUND",
+    "len": 43,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "beat": 1,
+    "present": 1,
+    "queued": 2,
+    "text": "WAVE 1/6 · OBSERVE · 1 HOSTILE · +2 INBOUND",
+    "len": 43,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "beat": 2,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 1/6 · OBSERVE · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "beat": 2,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 1/6 · OBSERVE · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "beat": 0,
+    "present": 1,
+    "queued": 4,
+    "text": "WAVE 2/6 · INTERCEPT · 1 HOSTILE · +4 INBOUND",
+    "len": 45,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "beat": 1,
+    "present": 1,
+    "queued": 3,
+    "text": "WAVE 2/6 · INTERCEPT · 1 HOSTILE · +3 INBOUND",
+    "len": 45,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "beat": 2,
+    "present": 3,
+    "queued": 0,
+    "text": "WAVE 2/6 · INTERCEPT · 3 HOSTILES",
+    "len": 33,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "beat": 2,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 2/6 · INTERCEPT · 2 HOSTILES",
+    "len": 33,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "beat": 2,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 2/6 · INTERCEPT · LAST SIGNAL · CLOSING",
+    "len": 44,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 0,
+    "present": 1,
+    "queued": 5,
+    "text": "WAVE 3/6 · CONTAIN · 1 HOSTILE · +5 INBOUND",
+    "len": 43,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 1,
+    "present": 1,
+    "queued": 4,
+    "text": "WAVE 3/6 · CONTAIN · 1 HOSTILE · +4 INBOUND",
+    "len": 43,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 2,
+    "present": 2,
+    "queued": 2,
+    "text": "WAVE 3/6 · CONTAIN · 2 HOSTILES · +2 INBOUND",
+    "len": 44,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 2,
+    "present": 1,
+    "queued": 2,
+    "text": "WAVE 3/6 · CONTAIN · 1 HOSTILE · +2 INBOUND",
+    "len": 43,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 3,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 3/6 · CONTAIN · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 3,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 3/6 · CONTAIN · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 0,
+    "present": 1,
+    "queued": 6,
+    "text": "WAVE 4/6 · QUARANTINE · 1 HOSTILE · +6 INBOUND",
+    "len": 46,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 1,
+    "present": 1,
+    "queued": 5,
+    "text": "WAVE 4/6 · QUARANTINE · 1 HOSTILE · +5 INBOUND",
+    "len": 46,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 2,
+    "present": 1,
+    "queued": 4,
+    "text": "WAVE 4/6 · QUARANTINE · 1 HOSTILE · +4 INBOUND",
+    "len": 46,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 3,
+    "present": 2,
+    "queued": 2,
+    "text": "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND",
+    "len": 47,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 3,
+    "present": 1,
+    "queued": 2,
+    "text": "WAVE 4/6 · QUARANTINE · 1 HOSTILE · +2 INBOUND",
+    "len": 46,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 4,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 4/6 · QUARANTINE · 2 HOSTILES",
+    "len": 34,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 4,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 4/6 · QUARANTINE · LAST SIGNAL · CLOSING",
+    "len": 45,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 0,
+    "present": 1,
+    "queued": 7,
+    "text": "WAVE 5/6 · STERILIZE · 1 HOSTILE · +7 INBOUND",
+    "len": 45,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 1,
+    "present": 1,
+    "queued": 6,
+    "text": "WAVE 5/6 · STERILIZE · 1 HOSTILE · +6 INBOUND",
+    "len": 45,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 2,
+    "present": 3,
+    "queued": 3,
+    "text": "WAVE 5/6 · STERILIZE · 3 HOSTILES · +3 INBOUND",
+    "len": 46,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 2,
+    "present": 2,
+    "queued": 3,
+    "text": "WAVE 5/6 · STERILIZE · 2 HOSTILES · +3 INBOUND",
+    "len": 46,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 2,
+    "present": 1,
+    "queued": 3,
+    "text": "WAVE 5/6 · STERILIZE · 1 HOSTILE · +3 INBOUND",
+    "len": 45,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 3,
+    "present": 3,
+    "queued": 0,
+    "text": "WAVE 5/6 · STERILIZE · 3 HOSTILES",
+    "len": 33,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 3,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 5/6 · STERILIZE · 2 HOSTILES",
+    "len": 33,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 3,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 5/6 · STERILIZE · LAST SIGNAL · CLOSING",
+    "len": 44,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 0,
+    "present": 3,
+    "queued": 6,
+    "text": "WAVE 6/6 · SCUTTLE · 3 HOSTILES · +6 INBOUND",
+    "len": 44,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 0,
+    "present": 2,
+    "queued": 6,
+    "text": "WAVE 6/6 · SCUTTLE · 2 HOSTILES · +6 INBOUND",
+    "len": 44,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 0,
+    "present": 1,
+    "queued": 6,
+    "text": "WAVE 6/6 · SCUTTLE · 1 HOSTILE · +6 INBOUND",
+    "len": 43,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 1,
+    "present": 3,
+    "queued": 3,
+    "text": "WAVE 6/6 · SCUTTLE · 3 HOSTILES · +3 INBOUND",
+    "len": 44,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 1,
+    "present": 2,
+    "queued": 3,
+    "text": "WAVE 6/6 · SCUTTLE · 2 HOSTILES · +3 INBOUND",
+    "len": 44,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 1,
+    "present": 1,
+    "queued": 3,
+    "text": "WAVE 6/6 · SCUTTLE · 1 HOSTILE · +3 INBOUND",
+    "len": 43,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 2,
+    "present": 3,
+    "queued": 0,
+    "text": "WAVE 6/6 · SCUTTLE · 3 HOSTILES",
+    "len": 31,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 2,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 6/6 · SCUTTLE · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 2,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 6/6 · SCUTTLE · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   }
+  ],
+  "oldRows": [
+   {
+    "face": 1,
+    "threats": 1,
+    "text": "WAVE 1/6 · OBSERVE · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "threats": 2,
+    "text": "WAVE 1/6 · OBSERVE · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "threats": 3,
+    "text": "WAVE 1/6 · OBSERVE · 3 HOSTILES",
+    "len": 31,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "threats": 4,
+    "text": "WAVE 1/6 · OBSERVE · 4 HOSTILES",
+    "len": 31,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "threats": 1,
+    "text": "WAVE 2/6 · INTERCEPT · LAST SIGNAL · CLOSING",
+    "len": 44,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "threats": 2,
+    "text": "WAVE 2/6 · INTERCEPT · 2 HOSTILES",
+    "len": 33,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "threats": 3,
+    "text": "WAVE 2/6 · INTERCEPT · 3 HOSTILES",
+    "len": 33,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "threats": 4,
+    "text": "WAVE 2/6 · INTERCEPT · 4 HOSTILES",
+    "len": 33,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "threats": 1,
+    "text": "WAVE 3/6 · CONTAIN · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "threats": 2,
+    "text": "WAVE 3/6 · CONTAIN · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "threats": 3,
+    "text": "WAVE 3/6 · CONTAIN · 3 HOSTILES",
+    "len": 31,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "threats": 4,
+    "text": "WAVE 3/6 · CONTAIN · 4 HOSTILES",
+    "len": 31,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "threats": 1,
+    "text": "WAVE 4/6 · QUARANTINE · LAST SIGNAL · CLOSING",
+    "len": 45,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "threats": 2,
+    "text": "WAVE 4/6 · QUARANTINE · 2 HOSTILES",
+    "len": 34,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "threats": 3,
+    "text": "WAVE 4/6 · QUARANTINE · 3 HOSTILES",
+    "len": 34,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "threats": 4,
+    "text": "WAVE 4/6 · QUARANTINE · 4 HOSTILES",
+    "len": 34,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "threats": 1,
+    "text": "WAVE 5/6 · STERILIZE · LAST SIGNAL · CLOSING",
+    "len": 44,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "threats": 2,
+    "text": "WAVE 5/6 · STERILIZE · 2 HOSTILES",
+    "len": 33,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "threats": 3,
+    "text": "WAVE 5/6 · STERILIZE · 3 HOSTILES",
+    "len": 33,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "threats": 4,
+    "text": "WAVE 5/6 · STERILIZE · 4 HOSTILES",
+    "len": 33,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "threats": 1,
+    "text": "WAVE 6/6 · SCUTTLE · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "threats": 2,
+    "text": "WAVE 6/6 · SCUTTLE · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "threats": 3,
+    "text": "WAVE 6/6 · SCUTTLE · 3 HOSTILES",
+    "len": 31,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "threats": 4,
+    "text": "WAVE 6/6 · SCUTTLE · 4 HOSTILES",
+    "len": 31,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   }
+  ],
+  "worst": [
+   {
+    "face": 1,
+    "text": "WAVE 1/6 · OBSERVE · 3 HOSTILES · +6 INBOUND",
+    "len": 44,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "text": "WAVE 1/6 · OBSERVE · +6 INBOUND",
+    "len": 31,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "text": "WAVE 2/6 · INTERCEPT · 3 HOSTILES · +6 INBOUND",
+    "len": 46,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "text": "WAVE 2/6 · INTERCEPT · +6 INBOUND",
+    "len": 33,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "text": "WAVE 3/6 · CONTAIN · 3 HOSTILES · +6 INBOUND",
+    "len": 44,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "text": "WAVE 3/6 · CONTAIN · +6 INBOUND",
+    "len": 31,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "text": "WAVE 4/6 · QUARANTINE · 3 HOSTILES · +6 INBOUND",
+    "len": 47,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "text": "WAVE 4/6 · QUARANTINE · +6 INBOUND",
+    "len": 34,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "text": "WAVE 5/6 · STERILIZE · 3 HOSTILES · +6 INBOUND",
+    "len": 46,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "text": "WAVE 5/6 · STERILIZE · +6 INBOUND",
+    "len": 33,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "text": "WAVE 6/6 · SCUTTLE · 3 HOSTILES · +6 INBOUND",
+    "len": 44,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "text": "WAVE 6/6 · SCUTTLE · +6 INBOUND",
+    "len": 31,
+    "scrollWidth": 400,
+    "clientWidth": 400,
+    "truncated": false
+   }
+  ]
+ },
+ {
+  "viewport": "phone-landscape-844x390",
+  "bootMs": 99379,
+  "errors": [],
+  "info": {
+   "panelDisplay": "block",
+   "fontSize": "8px",
+   "fontWeight": "900",
+   "letterSpacing": "0.84px",
+   "whiteSpace": "nowrap",
+   "textOverflow": "ellipsis",
+   "clientWidth": 304,
+   "panelRect": {
+    "x": 514,
+    "y": 7,
+    "width": 320,
+    "height": 34,
+    "top": 7,
+    "right": 834,
+    "bottom": 41,
+    "left": 514
+   },
+   "rigRect": {
+    "x": 10,
+    "y": 7,
+    "width": 300,
+    "height": 116.015625,
+    "top": 7,
+    "right": 310,
+    "bottom": 123.015625,
+    "left": 10
+   },
+   "innerWidth": 844,
+   "innerHeight": 390
+  },
+  "realistic": [
+   {
+    "face": 1,
+    "beat": 0,
+    "present": 1,
+    "queued": 3,
+    "text": "WAVE 1/6 · OBSERVE · 1 HOSTILE · +3 INBOUND",
+    "len": 43,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "beat": 1,
+    "present": 1,
+    "queued": 2,
+    "text": "WAVE 1/6 · OBSERVE · 1 HOSTILE · +2 INBOUND",
+    "len": 43,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "beat": 2,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 1/6 · OBSERVE · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "beat": 2,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 1/6 · OBSERVE · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "beat": 0,
+    "present": 1,
+    "queued": 4,
+    "text": "WAVE 2/6 · INTERCEPT · 1 HOSTILE · +4 INBOUND",
+    "len": 45,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "beat": 1,
+    "present": 1,
+    "queued": 3,
+    "text": "WAVE 2/6 · INTERCEPT · 1 HOSTILE · +3 INBOUND",
+    "len": 45,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "beat": 2,
+    "present": 3,
+    "queued": 0,
+    "text": "WAVE 2/6 · INTERCEPT · 3 HOSTILES",
+    "len": 33,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "beat": 2,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 2/6 · INTERCEPT · 2 HOSTILES",
+    "len": 33,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "beat": 2,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 2/6 · INTERCEPT · LAST SIGNAL · CLOSING",
+    "len": 44,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 0,
+    "present": 1,
+    "queued": 5,
+    "text": "WAVE 3/6 · CONTAIN · 1 HOSTILE · +5 INBOUND",
+    "len": 43,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 1,
+    "present": 1,
+    "queued": 4,
+    "text": "WAVE 3/6 · CONTAIN · 1 HOSTILE · +4 INBOUND",
+    "len": 43,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 2,
+    "present": 2,
+    "queued": 2,
+    "text": "WAVE 3/6 · CONTAIN · 2 HOSTILES · +2 INBOUND",
+    "len": 44,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 2,
+    "present": 1,
+    "queued": 2,
+    "text": "WAVE 3/6 · CONTAIN · 1 HOSTILE · +2 INBOUND",
+    "len": 43,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 3,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 3/6 · CONTAIN · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 3,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 3/6 · CONTAIN · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 0,
+    "present": 1,
+    "queued": 6,
+    "text": "WAVE 4/6 · QUARANTINE · 1 HOSTILE · +6 INBOUND",
+    "len": 46,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 1,
+    "present": 1,
+    "queued": 5,
+    "text": "WAVE 4/6 · QUARANTINE · 1 HOSTILE · +5 INBOUND",
+    "len": 46,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 2,
+    "present": 1,
+    "queued": 4,
+    "text": "WAVE 4/6 · QUARANTINE · 1 HOSTILE · +4 INBOUND",
+    "len": 46,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 3,
+    "present": 2,
+    "queued": 2,
+    "text": "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND",
+    "len": 47,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 3,
+    "present": 1,
+    "queued": 2,
+    "text": "WAVE 4/6 · QUARANTINE · 1 HOSTILE · +2 INBOUND",
+    "len": 46,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 4,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 4/6 · QUARANTINE · 2 HOSTILES",
+    "len": 34,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 4,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 4/6 · QUARANTINE · LAST SIGNAL · CLOSING",
+    "len": 45,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 0,
+    "present": 1,
+    "queued": 7,
+    "text": "WAVE 5/6 · STERILIZE · 1 HOSTILE · +7 INBOUND",
+    "len": 45,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 1,
+    "present": 1,
+    "queued": 6,
+    "text": "WAVE 5/6 · STERILIZE · 1 HOSTILE · +6 INBOUND",
+    "len": 45,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 2,
+    "present": 3,
+    "queued": 3,
+    "text": "WAVE 5/6 · STERILIZE · 3 HOSTILES · +3 INBOUND",
+    "len": 46,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 2,
+    "present": 2,
+    "queued": 3,
+    "text": "WAVE 5/6 · STERILIZE · 2 HOSTILES · +3 INBOUND",
+    "len": 46,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 2,
+    "present": 1,
+    "queued": 3,
+    "text": "WAVE 5/6 · STERILIZE · 1 HOSTILE · +3 INBOUND",
+    "len": 45,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 3,
+    "present": 3,
+    "queued": 0,
+    "text": "WAVE 5/6 · STERILIZE · 3 HOSTILES",
+    "len": 33,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 3,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 5/6 · STERILIZE · 2 HOSTILES",
+    "len": 33,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 3,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 5/6 · STERILIZE · LAST SIGNAL · CLOSING",
+    "len": 44,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 0,
+    "present": 3,
+    "queued": 6,
+    "text": "WAVE 6/6 · SCUTTLE · 3 HOSTILES · +6 INBOUND",
+    "len": 44,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 0,
+    "present": 2,
+    "queued": 6,
+    "text": "WAVE 6/6 · SCUTTLE · 2 HOSTILES · +6 INBOUND",
+    "len": 44,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 0,
+    "present": 1,
+    "queued": 6,
+    "text": "WAVE 6/6 · SCUTTLE · 1 HOSTILE · +6 INBOUND",
+    "len": 43,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 1,
+    "present": 3,
+    "queued": 3,
+    "text": "WAVE 6/6 · SCUTTLE · 3 HOSTILES · +3 INBOUND",
+    "len": 44,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 1,
+    "present": 2,
+    "queued": 3,
+    "text": "WAVE 6/6 · SCUTTLE · 2 HOSTILES · +3 INBOUND",
+    "len": 44,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 1,
+    "present": 1,
+    "queued": 3,
+    "text": "WAVE 6/6 · SCUTTLE · 1 HOSTILE · +3 INBOUND",
+    "len": 43,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 2,
+    "present": 3,
+    "queued": 0,
+    "text": "WAVE 6/6 · SCUTTLE · 3 HOSTILES",
+    "len": 31,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 2,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 6/6 · SCUTTLE · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 2,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 6/6 · SCUTTLE · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   }
+  ],
+  "oldRows": [
+   {
+    "face": 1,
+    "threats": 1,
+    "text": "WAVE 1/6 · OBSERVE · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "threats": 2,
+    "text": "WAVE 1/6 · OBSERVE · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "threats": 3,
+    "text": "WAVE 1/6 · OBSERVE · 3 HOSTILES",
+    "len": 31,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "threats": 4,
+    "text": "WAVE 1/6 · OBSERVE · 4 HOSTILES",
+    "len": 31,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "threats": 1,
+    "text": "WAVE 2/6 · INTERCEPT · LAST SIGNAL · CLOSING",
+    "len": 44,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "threats": 2,
+    "text": "WAVE 2/6 · INTERCEPT · 2 HOSTILES",
+    "len": 33,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "threats": 3,
+    "text": "WAVE 2/6 · INTERCEPT · 3 HOSTILES",
+    "len": 33,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "threats": 4,
+    "text": "WAVE 2/6 · INTERCEPT · 4 HOSTILES",
+    "len": 33,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "threats": 1,
+    "text": "WAVE 3/6 · CONTAIN · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "threats": 2,
+    "text": "WAVE 3/6 · CONTAIN · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "threats": 3,
+    "text": "WAVE 3/6 · CONTAIN · 3 HOSTILES",
+    "len": 31,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "threats": 4,
+    "text": "WAVE 3/6 · CONTAIN · 4 HOSTILES",
+    "len": 31,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "threats": 1,
+    "text": "WAVE 4/6 · QUARANTINE · LAST SIGNAL · CLOSING",
+    "len": 45,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "threats": 2,
+    "text": "WAVE 4/6 · QUARANTINE · 2 HOSTILES",
+    "len": 34,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "threats": 3,
+    "text": "WAVE 4/6 · QUARANTINE · 3 HOSTILES",
+    "len": 34,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "threats": 4,
+    "text": "WAVE 4/6 · QUARANTINE · 4 HOSTILES",
+    "len": 34,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "threats": 1,
+    "text": "WAVE 5/6 · STERILIZE · LAST SIGNAL · CLOSING",
+    "len": 44,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "threats": 2,
+    "text": "WAVE 5/6 · STERILIZE · 2 HOSTILES",
+    "len": 33,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "threats": 3,
+    "text": "WAVE 5/6 · STERILIZE · 3 HOSTILES",
+    "len": 33,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "threats": 4,
+    "text": "WAVE 5/6 · STERILIZE · 4 HOSTILES",
+    "len": 33,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "threats": 1,
+    "text": "WAVE 6/6 · SCUTTLE · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "threats": 2,
+    "text": "WAVE 6/6 · SCUTTLE · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "threats": 3,
+    "text": "WAVE 6/6 · SCUTTLE · 3 HOSTILES",
+    "len": 31,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "threats": 4,
+    "text": "WAVE 6/6 · SCUTTLE · 4 HOSTILES",
+    "len": 31,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   }
+  ],
+  "worst": [
+   {
+    "face": 1,
+    "text": "WAVE 1/6 · OBSERVE · 3 HOSTILES · +6 INBOUND",
+    "len": 44,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "text": "WAVE 1/6 · OBSERVE · +6 INBOUND",
+    "len": 31,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "text": "WAVE 2/6 · INTERCEPT · 3 HOSTILES · +6 INBOUND",
+    "len": 46,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "text": "WAVE 2/6 · INTERCEPT · +6 INBOUND",
+    "len": 33,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "text": "WAVE 3/6 · CONTAIN · 3 HOSTILES · +6 INBOUND",
+    "len": 44,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "text": "WAVE 3/6 · CONTAIN · +6 INBOUND",
+    "len": 31,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "text": "WAVE 4/6 · QUARANTINE · 3 HOSTILES · +6 INBOUND",
+    "len": 47,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "text": "WAVE 4/6 · QUARANTINE · +6 INBOUND",
+    "len": 34,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "text": "WAVE 5/6 · STERILIZE · 3 HOSTILES · +6 INBOUND",
+    "len": 46,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "text": "WAVE 5/6 · STERILIZE · +6 INBOUND",
+    "len": 33,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "text": "WAVE 6/6 · SCUTTLE · 3 HOSTILES · +6 INBOUND",
+    "len": 44,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "text": "WAVE 6/6 · SCUTTLE · +6 INBOUND",
+    "len": 31,
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "truncated": false
+   }
+  ]
+ },
+ {
+  "viewport": "phone-portrait-390x844",
+  "bootMs": 85026,
+  "errors": [],
+  "info": {
+   "panelDisplay": "block",
+   "fontSize": "9px",
+   "fontWeight": "900",
+   "letterSpacing": "0.675px",
+   "whiteSpace": "nowrap",
+   "textOverflow": "ellipsis",
+   "clientWidth": 356,
+   "panelRect": {
+    "x": 7,
+    "y": 136,
+    "width": 376,
+    "height": 31,
+    "top": 136,
+    "right": 383,
+    "bottom": 167,
+    "left": 7
+   },
+   "rigRect": {
+    "x": 7,
+    "y": 7,
+    "width": 376,
+    "height": 110.328125,
+    "top": 7,
+    "right": 383,
+    "bottom": 117.328125,
+    "left": 7
+   },
+   "innerWidth": 390,
+   "innerHeight": 844
+  },
+  "realistic": [
+   {
+    "face": 1,
+    "beat": 0,
+    "present": 1,
+    "queued": 3,
+    "text": "WAVE 1/6 · OBSERVE · 1 HOSTILE · +3 INBOUND",
+    "len": 43,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "beat": 1,
+    "present": 1,
+    "queued": 2,
+    "text": "WAVE 1/6 · OBSERVE · 1 HOSTILE · +2 INBOUND",
+    "len": 43,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "beat": 2,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 1/6 · OBSERVE · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "beat": 2,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 1/6 · OBSERVE · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "beat": 0,
+    "present": 1,
+    "queued": 4,
+    "text": "WAVE 2/6 · INTERCEPT · 1 HOSTILE · +4 INBOUND",
+    "len": 45,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "beat": 1,
+    "present": 1,
+    "queued": 3,
+    "text": "WAVE 2/6 · INTERCEPT · 1 HOSTILE · +3 INBOUND",
+    "len": 45,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "beat": 2,
+    "present": 3,
+    "queued": 0,
+    "text": "WAVE 2/6 · INTERCEPT · 3 HOSTILES",
+    "len": 33,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "beat": 2,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 2/6 · INTERCEPT · 2 HOSTILES",
+    "len": 33,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "beat": 2,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 2/6 · INTERCEPT · LAST SIGNAL · CLOSING",
+    "len": 44,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 0,
+    "present": 1,
+    "queued": 5,
+    "text": "WAVE 3/6 · CONTAIN · 1 HOSTILE · +5 INBOUND",
+    "len": 43,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 1,
+    "present": 1,
+    "queued": 4,
+    "text": "WAVE 3/6 · CONTAIN · 1 HOSTILE · +4 INBOUND",
+    "len": 43,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 2,
+    "present": 2,
+    "queued": 2,
+    "text": "WAVE 3/6 · CONTAIN · 2 HOSTILES · +2 INBOUND",
+    "len": 44,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 2,
+    "present": 1,
+    "queued": 2,
+    "text": "WAVE 3/6 · CONTAIN · 1 HOSTILE · +2 INBOUND",
+    "len": 43,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 3,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 3/6 · CONTAIN · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "beat": 3,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 3/6 · CONTAIN · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 0,
+    "present": 1,
+    "queued": 6,
+    "text": "WAVE 4/6 · QUARANTINE · 1 HOSTILE · +6 INBOUND",
+    "len": 46,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 1,
+    "present": 1,
+    "queued": 5,
+    "text": "WAVE 4/6 · QUARANTINE · 1 HOSTILE · +5 INBOUND",
+    "len": 46,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 2,
+    "present": 1,
+    "queued": 4,
+    "text": "WAVE 4/6 · QUARANTINE · 1 HOSTILE · +4 INBOUND",
+    "len": 46,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 3,
+    "present": 2,
+    "queued": 2,
+    "text": "WAVE 4/6 · QUARANTINE · 2 HOSTILES · +2 INBOUND",
+    "len": 47,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 3,
+    "present": 1,
+    "queued": 2,
+    "text": "WAVE 4/6 · QUARANTINE · 1 HOSTILE · +2 INBOUND",
+    "len": 46,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 4,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 4/6 · QUARANTINE · 2 HOSTILES",
+    "len": 34,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "beat": 4,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 4/6 · QUARANTINE · LAST SIGNAL · CLOSING",
+    "len": 45,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 0,
+    "present": 1,
+    "queued": 7,
+    "text": "WAVE 5/6 · STERILIZE · 1 HOSTILE · +7 INBOUND",
+    "len": 45,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 1,
+    "present": 1,
+    "queued": 6,
+    "text": "WAVE 5/6 · STERILIZE · 1 HOSTILE · +6 INBOUND",
+    "len": 45,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 2,
+    "present": 3,
+    "queued": 3,
+    "text": "WAVE 5/6 · STERILIZE · 3 HOSTILES · +3 INBOUND",
+    "len": 46,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 2,
+    "present": 2,
+    "queued": 3,
+    "text": "WAVE 5/6 · STERILIZE · 2 HOSTILES · +3 INBOUND",
+    "len": 46,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 2,
+    "present": 1,
+    "queued": 3,
+    "text": "WAVE 5/6 · STERILIZE · 1 HOSTILE · +3 INBOUND",
+    "len": 45,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 3,
+    "present": 3,
+    "queued": 0,
+    "text": "WAVE 5/6 · STERILIZE · 3 HOSTILES",
+    "len": 33,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 3,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 5/6 · STERILIZE · 2 HOSTILES",
+    "len": 33,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "beat": 3,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 5/6 · STERILIZE · LAST SIGNAL · CLOSING",
+    "len": 44,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 0,
+    "present": 3,
+    "queued": 6,
+    "text": "WAVE 6/6 · SCUTTLE · 3 HOSTILES · +6 INBOUND",
+    "len": 44,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 0,
+    "present": 2,
+    "queued": 6,
+    "text": "WAVE 6/6 · SCUTTLE · 2 HOSTILES · +6 INBOUND",
+    "len": 44,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 0,
+    "present": 1,
+    "queued": 6,
+    "text": "WAVE 6/6 · SCUTTLE · 1 HOSTILE · +6 INBOUND",
+    "len": 43,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 1,
+    "present": 3,
+    "queued": 3,
+    "text": "WAVE 6/6 · SCUTTLE · 3 HOSTILES · +3 INBOUND",
+    "len": 44,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 1,
+    "present": 2,
+    "queued": 3,
+    "text": "WAVE 6/6 · SCUTTLE · 2 HOSTILES · +3 INBOUND",
+    "len": 44,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 1,
+    "present": 1,
+    "queued": 3,
+    "text": "WAVE 6/6 · SCUTTLE · 1 HOSTILE · +3 INBOUND",
+    "len": 43,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 2,
+    "present": 3,
+    "queued": 0,
+    "text": "WAVE 6/6 · SCUTTLE · 3 HOSTILES",
+    "len": 31,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 2,
+    "present": 2,
+    "queued": 0,
+    "text": "WAVE 6/6 · SCUTTLE · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "beat": 2,
+    "present": 1,
+    "queued": 0,
+    "text": "WAVE 6/6 · SCUTTLE · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   }
+  ],
+  "oldRows": [
+   {
+    "face": 1,
+    "threats": 1,
+    "text": "WAVE 1/6 · OBSERVE · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "threats": 2,
+    "text": "WAVE 1/6 · OBSERVE · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "threats": 3,
+    "text": "WAVE 1/6 · OBSERVE · 3 HOSTILES",
+    "len": 31,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "threats": 4,
+    "text": "WAVE 1/6 · OBSERVE · 4 HOSTILES",
+    "len": 31,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "threats": 1,
+    "text": "WAVE 2/6 · INTERCEPT · LAST SIGNAL · CLOSING",
+    "len": 44,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "threats": 2,
+    "text": "WAVE 2/6 · INTERCEPT · 2 HOSTILES",
+    "len": 33,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "threats": 3,
+    "text": "WAVE 2/6 · INTERCEPT · 3 HOSTILES",
+    "len": 33,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "threats": 4,
+    "text": "WAVE 2/6 · INTERCEPT · 4 HOSTILES",
+    "len": 33,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "threats": 1,
+    "text": "WAVE 3/6 · CONTAIN · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "threats": 2,
+    "text": "WAVE 3/6 · CONTAIN · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "threats": 3,
+    "text": "WAVE 3/6 · CONTAIN · 3 HOSTILES",
+    "len": 31,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "threats": 4,
+    "text": "WAVE 3/6 · CONTAIN · 4 HOSTILES",
+    "len": 31,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "threats": 1,
+    "text": "WAVE 4/6 · QUARANTINE · LAST SIGNAL · CLOSING",
+    "len": 45,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "threats": 2,
+    "text": "WAVE 4/6 · QUARANTINE · 2 HOSTILES",
+    "len": 34,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "threats": 3,
+    "text": "WAVE 4/6 · QUARANTINE · 3 HOSTILES",
+    "len": 34,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "threats": 4,
+    "text": "WAVE 4/6 · QUARANTINE · 4 HOSTILES",
+    "len": 34,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "threats": 1,
+    "text": "WAVE 5/6 · STERILIZE · LAST SIGNAL · CLOSING",
+    "len": 44,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "threats": 2,
+    "text": "WAVE 5/6 · STERILIZE · 2 HOSTILES",
+    "len": 33,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "threats": 3,
+    "text": "WAVE 5/6 · STERILIZE · 3 HOSTILES",
+    "len": 33,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "threats": 4,
+    "text": "WAVE 5/6 · STERILIZE · 4 HOSTILES",
+    "len": 33,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "threats": 1,
+    "text": "WAVE 6/6 · SCUTTLE · LAST SIGNAL · CLOSING",
+    "len": 42,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "threats": 2,
+    "text": "WAVE 6/6 · SCUTTLE · 2 HOSTILES",
+    "len": 31,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "threats": 3,
+    "text": "WAVE 6/6 · SCUTTLE · 3 HOSTILES",
+    "len": 31,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "threats": 4,
+    "text": "WAVE 6/6 · SCUTTLE · 4 HOSTILES",
+    "len": 31,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   }
+  ],
+  "worst": [
+   {
+    "face": 1,
+    "text": "WAVE 1/6 · OBSERVE · 3 HOSTILES · +6 INBOUND",
+    "len": 44,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 1,
+    "text": "WAVE 1/6 · OBSERVE · +6 INBOUND",
+    "len": 31,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "text": "WAVE 2/6 · INTERCEPT · 3 HOSTILES · +6 INBOUND",
+    "len": 46,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 2,
+    "text": "WAVE 2/6 · INTERCEPT · +6 INBOUND",
+    "len": 33,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "text": "WAVE 3/6 · CONTAIN · 3 HOSTILES · +6 INBOUND",
+    "len": 44,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 3,
+    "text": "WAVE 3/6 · CONTAIN · +6 INBOUND",
+    "len": 31,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "text": "WAVE 4/6 · QUARANTINE · 3 HOSTILES · +6 INBOUND",
+    "len": 47,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 4,
+    "text": "WAVE 4/6 · QUARANTINE · +6 INBOUND",
+    "len": 34,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "text": "WAVE 5/6 · STERILIZE · 3 HOSTILES · +6 INBOUND",
+    "len": 46,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 5,
+    "text": "WAVE 5/6 · STERILIZE · +6 INBOUND",
+    "len": 33,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "text": "WAVE 6/6 · SCUTTLE · 3 HOSTILES · +6 INBOUND",
+    "len": 44,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   },
+   {
+    "face": 6,
+    "text": "WAVE 6/6 · SCUTTLE · +6 INBOUND",
+    "len": 31,
+    "scrollWidth": 356,
+    "clientWidth": 356,
+    "truncated": false
+   }
+  ]
+ }
+]

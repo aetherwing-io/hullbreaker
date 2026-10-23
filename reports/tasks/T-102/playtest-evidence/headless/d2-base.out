@@ -1,0 +1,18 @@
+run                  390x844   TICK_CAP  corners 2/6 [1:done 2:done 3:gate 4:- 5:- 6:-]  violations: hudLastButMore=17883, gateBlind=18131
+   {"kind":"hudLastButMore","tick":1161,"gameMs":19366.7,"k":1,"gatingLeft":3,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":1162,"gameMs":19383.3,"k":1,"gatingLeft":3,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":1163,"gameMs":19400,"k":1,"gatingLeft":3,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":1164,"gameMs":19416.7,"k":1,"gatingLeft":3,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":1165,"gameMs":19433.3,"k":1,"gatingLeft":3,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":1166,"gameMs":19450,"k":1,"gatingLeft":3,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":1167,"gameMs":19466.7,"k":1,"gatingLeft":3,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":1168,"gameMs":19483.3,"k":1,"gatingLeft":3,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":1169,"gameMs":19500,"k":1,"gatingLeft":3,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":1170,"gameMs":19516.7,"k":1,"gatingLeft":3,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":1171,"gameMs":19533.3,"k":1,"gatingLeft":3,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+   {"kind":"hudLastButMore","tick":1172,"gameMs":19550,"k":1,"gatingLeft":3,"text":"LAST SIGNAL · CLOSING (pre-T-102 rule)"}
+
+real	0m8.438s
+user	0m2.071s
+sys	0m0.172s
+exit=0

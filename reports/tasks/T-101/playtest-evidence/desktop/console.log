@@ -1,0 +1,17 @@
+  booted 106210 ms
+  probe {"url":"http://127.0.0.1:8779/index.html","hardware":{"maxTouchPoints":0,"coarse":false},"deck":{"hidden":true,"display":"none","rect":{"x":0,"y":0,"width":0,"height":0,"top":0,"right":0,"bottom":0,"left":0}},"legacy":{"hidden":true,"display":"none"},"modal":{"hidden":true,"display":"none"},"bodyClasses":["at-title"],"htmlClasses":[],"htmlTouchAction":"auto","bodyUserSelect":"auto","touchSnapshot":{"enabled":false,"scheme":"off","held":[],"stick":{"active":false,"sector":null,"anchor":{"x":0,"y":0},"thumb":{"x":0,"y":0}},"pointers":[],"autoFire":{"enabled":false,"holding":false},"jumps":0,"edges":0,"modal":{"state":"","cue":null},"layout":{"width":0,"height":0,"short":0,"landscape":true,"safe":{"top":0,"right":0,"bottom":0,"left":0},"rim":0,"slop":1,"split":0,"stickMinX":0,"jump":{"cx":0,"cy":0,"r":0},"fire":{"cx":0,"cy":0,"r":0},"ghost":{"cx":0,"cy":0,"r":0},"swap":{"x":0,"y":0,"w":0,"h":0},"pause":{"x":0,"y":0,"w":0,"h":0},"auto":{"x":0,"y":0,"w":0,"h":0},"cluster":{"x":0,"y":0,"w":0,"h":0}}},"state":"MENU"}
+PASS desktop (no touch hardware): the two-thumb deck is hidden — {"hidden":true,"display":"none","rect":{"x":0,"y":0,"width":0,"height":0,"top":0,"right":0,"bottom":0,"left":0}}
+PASS desktop: the legacy deck is hidden too — {"hidden":true,"display":"none"}
+PASS desktop: the touch modal cue is hidden — {"hidden":true,"display":"none"}
+PASS desktop: no touch classes on <html>/<body> — body at-title | html 
+PASS desktop: the page-level touch-action / user-select rules are not applied — html touch-action auto, body user-select auto
+PASS desktop: deck snapshot says enabled:false, scheme off — {"enabled":false,"scheme":"off","held":[]}
+PASS desktop: no touch hardware reported (the premise of this check) — {"maxTouchPoints":0,"coarse":false}
+  state at load: MENU
+PASS desktop: a keypress leaves the title and the run is PLAYING — state PLAYING
+PASS desktop: holding ArrowRight runs RIG right (keyboard path intact) — {"x0":6,"x":9.480000000000002,"vx":9.4,"right":true,"state":"PLAYING"}
+PASS desktop: KeyX fires — shotsFired 0 -> 1
+PASS desktop: Space jumps (RIG leaves the ground)
+PASS desktop: the deck stayed inert through keyboard play — {"hidden":true,"held":[],"edges":0}
+PASS desktop: no page errors / console errors
+desktop-check: 13 passed, 0 failed

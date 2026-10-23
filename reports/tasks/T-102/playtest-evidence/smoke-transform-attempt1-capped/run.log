@@ -1,0 +1,9 @@
+[playtest] script:  transform-slice (58 events, script window 17500ms)
+[playtest] url:     http://127.0.0.1:8773/index.html?slice=transform&enemies=0&testapi=1&fixeddt=16.667
+[playtest] out:     /tmp/t102-smoke-tr
+[playtest] mode:    frame-scoped deterministic input + exact sim stop
+[playtest] outcome: not-completed (fidelity: testapi)
+[playtest] deaths:  0 (from sliceStats.attempts); served build: transform-slice
+[playtest] report:  /tmp/t102-smoke-tr/report.json
+[playtest] summary: /tmp/t102-smoke-tr/summary.md
+exit=0

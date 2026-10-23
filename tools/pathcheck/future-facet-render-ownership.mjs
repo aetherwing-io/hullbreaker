@@ -86,8 +86,12 @@ export async function run() {
   const atFinish = incomingPrefixAt(timeline.t6);
   ok(handoffMs === 690 && timeline.t6 === 1100,
      `handoff regression pins the live 690→1100 ms interval (got ${handoffMs}→${timeline.t6})`);
+  // T-102 relabel (decisions.md entry 21): this build-state prefix is now the
+  // retired ?zip=1 reveal's contract only. The default static-anatomy reveal
+  // shows the whole baked arriving face at the handoff (asserted in
+  // t-102-corner-turns.mjs) instead of assembling it column by column.
   ok(atHandoff.prefix === 19 && atHandoff.laterVisible === 0,
-     'handoff frame retains its 19 built arrival columns and leaks zero future rows ' +
+     '?zip=1: handoff frame retains its 19 built arrival columns and leaks zero future rows ' +
      `(got ${atHandoff.prefix} prefix, ${atHandoff.laterVisible} later)`);
   ok(atFinish.prefix === CONFIG.path.faceTiles &&
      atFinish.total === CONFIG.path.faceTiles && atFinish.laterVisible === 0,

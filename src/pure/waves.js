@@ -47,6 +47,39 @@ export function activeGateThreatCount(rows, encounterKey, nowMs, enterMs) {
   return count;
 }
 
+/* T-102: what still holds a shut gate, in the player's terms. The beat count
+ * above is what is on screen; `gatingLeft` is what the turn actually waits
+ * for. Multi-beat encounters park later holders (level1EcologyEncounterDelay),
+ * so "one visible body" was usually NOT the last: measured on the shipped run,
+ * 149 of gate 3's 158 "LAST SIGNAL" frames still had up to three gating
+ * bodies queued behind them. */
+export function gateRequirement(rows, encounterKey, nowMs, enterMs) {
+  const out = { present: 0, gatingPresent: 0, gatingQueued: 0, gatingLeft: 0 };
+  if (!Array.isArray(rows) || !encounterKey || !Number.isFinite(nowMs) ||
+      !Number.isFinite(enterMs) || enterMs < 0) return out;
+  for (const row of rows) {
+    if (!row || row.encounterKey !== encounterKey || row.gateBreakExit ||
+        !Number.isFinite(row.enterUntil)) continue;
+    const present = nowMs >= row.enterUntil - enterMs;
+    if (present) out.present++;
+    if (!row.gating) continue;
+    out.gatingLeft++;
+    if (present) out.gatingPresent++;
+    else out.gatingQueued++;
+  }
+  return out;
+}
+
+// "LAST SIGNAL" only when one more kill opens the gate; queued holders are
+// announced instead of hidden behind the current beat.
+export function gateRequirementText(need) {
+  if (need.gatingLeft === 1 && need.gatingPresent === 1) return 'LAST SIGNAL · CLOSING';
+  const now = need.present === 1 ? '1 HOSTILE' : `${need.present} HOSTILES`;
+  if (need.gatingQueued > 0)
+    return need.present > 0 ? `${now} · +${need.gatingQueued} INBOUND` : `+${need.gatingQueued} INBOUND`;
+  return now;
+}
+
 export function waveSize(k, cfg) { return cfg.waves.baseSize + cfg.waves.sizePerWave * k; }
 
 export function waveLane(k, i, cfg) {                   // per-wave altitude composition
