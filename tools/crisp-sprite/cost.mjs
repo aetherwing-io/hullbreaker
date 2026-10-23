@@ -5,7 +5,7 @@
 //   node tools/crisp-sprite/cost.mjs --out <file.json>
 //     --variant base=http://127.0.0.1:8805 --variant crisp=http://127.0.0.1:8804
 //     --variant legacy=http://127.0.0.1:8804?art=legacy
-//     [--views desktop,phone,phone3] [--rounds 1] [--frames 150] [--three-dir <dir>]
+//     [--views desktop,phone,phone3] [--rounds 1] [--frames 150] [--draws 15] [--three-dir <dir>]
 //
 // Per (round, view, variant), in that nesting so variants alternate:
 //   * boot (tools/crisp-sprite/lib.mjs: real atlases, real composer);
@@ -16,7 +16,7 @@
 //     of five kinds) whenever the barrage kills one;
 //   * after --frames real frames: window.HB.perf() — avgMs, worstMs, over20ms
 //     over the last <=180 real frame intervals (the in-game sampler);
-//   * then, paused, 15 isolated draws: renderFrame() bracketed by gl.finish(),
+//   * then, paused, --draws (15) isolated draws: renderFrame() bracketed by gl.finish(),
 //     median and worst, with renderer.info's draw calls for that frame (the
 //     crisp tile pass and reduction included).
 //
@@ -38,6 +38,7 @@ const OUT = resolve(argv('--out', 'crisp-cost.json'));
 const views = argv('--views', 'desktop,phone,phone3').split(',');
 const ROUNDS = Number(argv('--rounds', 1));
 const FRAMES = Number(argv('--frames', 150));
+const DRAWS = Math.max(1, Number(argv('--draws', 15)));
 const THREE_DIR = argv('--three-dir', '');
 const variants = all('--variant').map((v) => {
   const [name, url] = v.split('=');
@@ -78,7 +79,7 @@ function stress() {
   })();
 }
 
-async function draws() {
+async function draws(n) {
   const S = await import('/src/render/scene.js');
   const P = await import('/src/render/post.js');
   const ST = await import('/src/sim/state.js');
@@ -87,7 +88,7 @@ async function draws() {
   const gl = S.renderer.getContext();
   const times = [];
   let calls = 0;
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < n; i++) {
     S.renderer.info.reset();
     gl.finish();
     const t0 = performance.now();
@@ -100,7 +101,7 @@ async function draws() {
   const H = await import('/src/sim/hostiles.js');
   const W = await import('/src/sim/weapons.js');
   return {
-    medianMs: +times[7].toFixed(2), worstMs: +times[14].toFixed(2), calls,
+    medianMs: +times[Math.floor(n / 2)].toFixed(2), worstMs: +times[n - 1].toFixed(2), draws: n, calls,
     hostiles: H.hostiles.length, bullets: W.bullets ? W.bullets.filter((b) => b.active !== false).length : null,
     crisp: window.__HB_CRISP ? (({ atlas, actors }) => ({ atlas, drawn: actors.filter((a) => a.drawn).length,
       S: actors.length ? actors[0].S : null }))(window.__HB_CRISP()) : null,
@@ -125,14 +126,14 @@ async function main() {
             await frames(page, FRAMES);
             const perf = await page.evaluate(() => window.HB.perf());
             await page.keyboard.up('ArrowRight');
-            const draw = await page.evaluate(draws);
+            const draw = await page.evaluate(draws, DRAWS);
             const row = { round, view, variant: v.name, bootMs, canvas: facts.canvas, pixelRatio: facts.pixelRatio,
               drawingPixels: facts.canvas[0] * facts.canvas[1], post: facts.post?.status, perf, draw, errors };
             rows.push(row);
             console.log([round, view, v.name, facts.canvas.join('x'), 'perf avg', perf.avgMs, 'worst', perf.worstMs,
               'over20', perf.over20ms, '| draw median', draw.medianMs, 'worst', draw.worstMs, 'calls', draw.calls,
               'post', facts.post?.status].join(' '));
-            await writeFile(OUT, JSON.stringify({ frames: FRAMES, rows }, null, 1) + '\n');
+            await writeFile(OUT, JSON.stringify({ frames: FRAMES, draws: DRAWS, rows }, null, 1) + '\n');
           } finally {
             await context.close();
           }
