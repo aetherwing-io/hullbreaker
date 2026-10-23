@@ -54,7 +54,7 @@
 // are still deleted line by line; test-census.mjs reports a verdict its own
 // sites contradict.
 
-// rekey-ranges: ranges keyed to the lock written 2026-10-23T03:17:45.493Z
+// rekey-ranges: ranges keyed to the lock written 2026-10-23T10:10:28.653Z
 export const DOMAINS = {
   'pathcheck-suite': {
     scope: 'shipped',
@@ -75,30 +75,30 @@ export const DOMAINS = {
       [161, 161, 'PIN', 'easeOutBack overshoot ~5%'],
       [165, 167, 'PIN', 'scroll frozen until exactly t=900; quadratic midpoint value'],
       [169, 170, 'PURE-INVARIANT', 'scroll returns to full speed and clamps'],
-      [197, 197, 'PIN', 'wave sizes exactly 4..9'],
-      [218, 220, 'PURE-INVARIANT', 'wave composition valid and escalating; lane mapping'],
-      [227, 227, 'CORE', 'frozen movement constants (hard rule); NB it also pins scrollSpeed 4.3, which entry 11 names a lever, not a frozen constant'],
-      [229, 239, 'CORE', 'jump tune frozen + the physical reasoning CLAUDE.md requires alongside it'],
-      [242, 242, 'CORE', 'frozen FAR camera pose (entries 7/17) — pins numbers, not the framing'],
-      [246, 246, 'PURE-INVARIANT', 'analytic RIG height bound (< 9% of screen)'],
-      [248, 252, 'PIN', 'scroll-per-screen fraction, fog near/far 30/74, tracer radius 0.16, wasp radii 0.5/0.55 — no decision protects these'],
-      [259, 305, 'PURE-INVARIANT', 'generator column invariants (gap width, landing strip, step height)'],
-      [598, 601, 'CORE', 'FAIR-GAP probe boots the real player loop and saw every generated gap'],
-      [608, 700, 'CORE', 'FAIR-GAP: every face-1 gap crossable at the SCROLL FLOOR, with speed meter + negative control (I-021/I-024)'],
-      [702, 702, 'PIN', 'the first gap is still columns 29-31 at h=2 — pins generator output'],
-      [704, 732, 'CORE', 'FAIR-GAP: first gap jumpable both ways, coyote grace, every gap crossable with the taught verbs'],
-      [742, 769, 'PURE-INVARIANT', 'chunk variety, height band, flat corner aprons, catwalk cap'],
-      [771, 771, 'PIN', 'Vertical Assault final apex pinned at 17'],
-      [773, 773, 'PURE-INVARIANT', 'every catwalk within double-jump reach — static, authored-geometry reachability'],
-      [782, 798, 'PIN', 'golden generator shape 583/90/79 and fingerprint 10d82694: fails on every intentional level change', ['core']],
-      [805, 805, 'CORE', 'fixture build is deterministic (determinism hard rule)'],
-      [807, 871, 'PURE-INVARIANT', 'traversal fixture schema / half-open solids / no mutation', ['fixture']],
-      [874, 874, 'RETIRED', 'dare dead-end wall adhesion — the dare wager (entries 9/10; entry 21 names it)'],
-      [884, 971, 'PURE-INVARIANT', 'traversal slice fixture: overhang, connectors, route graph, fork cap', ['fixture']],
-      [982, 993, 'RETIRED', 'dare reward confined to its route + directed retreat path (dare wager, entries 9/10/21)'],
-      [996, 996, 'PURE-INVARIANT', 'slice sprint inside its own declared target window', ['fixture']],
-      [1002, 1002, 'RETIRED', 'dare entry margin covers the backtrack (dare wager, entries 9/10/21)'],
-      [1018, 1038, 'PURE-INVARIANT', 'camera follow / look-ahead / portrait pullback arithmetic'],
+      [182, 182, 'PIN', 'wave sizes exactly 4..9'],
+      [203, 205, 'PURE-INVARIANT', 'wave composition valid and escalating; lane mapping'],
+      [212, 212, 'CORE', 'frozen movement constants (hard rule); NB it also pins scrollSpeed 4.3, which entry 11 names a lever, not a frozen constant'],
+      [214, 224, 'CORE', 'jump tune frozen + the physical reasoning CLAUDE.md requires alongside it'],
+      [227, 227, 'CORE', 'frozen FAR camera pose (entries 7/17) — pins numbers, not the framing'],
+      [231, 231, 'PURE-INVARIANT', 'analytic RIG height bound (< 9% of screen)'],
+      [233, 237, 'PIN', 'scroll-per-screen fraction, fog near/far 30/74, tracer radius 0.16, wasp radii 0.5/0.55 — no decision protects these'],
+      [244, 290, 'PURE-INVARIANT', 'generator column invariants (gap width, landing strip, step height)'],
+      [583, 586, 'CORE', 'FAIR-GAP probe boots the real player loop and saw every generated gap'],
+      [593, 675, 'CORE', 'FAIR-GAP: every face-1 gap crossable at the SCROLL FLOOR, with speed meter + negative control (I-021/I-024)'],
+      [687, 687, 'PIN', 'the first gap is still columns 29-31 at h=2 — pins generator output'],
+      [689, 717, 'CORE', 'FAIR-GAP: first gap jumpable both ways, coyote grace, every gap crossable with the taught verbs'],
+      [727, 754, 'PURE-INVARIANT', 'chunk variety, height band, flat corner aprons, catwalk cap'],
+      [756, 756, 'PIN', 'Vertical Assault final apex pinned at 17'],
+      [758, 758, 'PURE-INVARIANT', 'every catwalk within double-jump reach — static, authored-geometry reachability'],
+      [767, 783, 'PIN', 'golden generator shape 583/90/79 and fingerprint 10d82694: fails on every intentional level change', ['core']],
+      [790, 790, 'CORE', 'fixture build is deterministic (determinism hard rule)'],
+      [792, 855, 'PURE-INVARIANT', 'traversal fixture schema / half-open solids / no mutation', ['fixture']],
+      [859, 859, 'RETIRED', 'dare dead-end wall adhesion — the dare wager (entries 9/10; entry 21 names it)'],
+      [869, 956, 'PURE-INVARIANT', 'traversal slice fixture: overhang, connectors, route graph, fork cap', ['fixture']],
+      [967, 978, 'RETIRED', 'dare reward confined to its route + directed retreat path (dare wager, entries 9/10/21)'],
+      [981, 981, 'PURE-INVARIANT', 'slice sprint inside its own declared target window', ['fixture']],
+      [987, 987, 'RETIRED', 'dare entry margin covers the backtrack (dare wager, entries 9/10/21)'],
+      [1003, 1023, 'PURE-INVARIANT', 'camera follow / look-ahead / portrait pullback arithmetic'],
     ],
   },
 
@@ -594,8 +594,8 @@ export const DOMAINS = {
       [277, 277, 'CORE', 'the escalation curve is a pure function (determinism)'],
       [283, 283, 'CORE', 'momentum/pace read no wall clock or unseeded random (determinism hard rule) — regex'],
       [286, 286, 'PIN', 'momentum module has no elapsed-time/face input — signature regex'],
-      [439, 541, 'CORE', 'WIRING: driven six-face scroll — floor carried exactly, earned escalation, mercy window, determinism at 30/60 Hz, ceiling'],
-      [549, 551, 'PIN', 'live scroll speed leaves through momentumClampSpeed — regex', ['core']],
+      [488, 586, 'CORE', 'WIRING: driven six-face scroll — floor carried exactly, earned escalation, mercy window, determinism at 30/60 Hz, ceiling'],
+      [600, 600, 'PIN', 'live scroll speed leaves through momentumClampSpeed — regex', ['core']],
     ],
   },
 
@@ -608,7 +608,7 @@ export const DOMAINS = {
     ranges: [
       [97, 104, 'PURE-INVARIANT', 'fixture turn counts chain in band order'],
       [130, 142, 'PURE-INVARIANT', 'speed inversion saturates; tier equals HUD glyphs'],
-      [192, 207, 'PURE-INVARIANT', 'driven: published drive/peakDrive are live and reset per run (instrument truth)'],
+      [196, 211, 'PURE-INVARIANT', 'driven: published drive/peakDrive are live and reset per run (instrument truth)'],
     ],
   },
 
@@ -885,8 +885,8 @@ export const DOMAINS = {
     default: 'PURE-INVARIANT',
     note: 'Future-face rows stay invisible before the turn — a static-anatomy reveal invariant on pure ownership functions. :37 is the behavioural conclusion (CORE, review finding 1); :89 keeps its laterVisible conjunct (SPLIT). T-102 edits this domain.',
     ranges: [
-      [87, 87, 'PIN', 'handoff pinned to the live 690->1100 ms interval'],
-      [112, 135, 'PIN', 'render modules wire the ownership gate — regex', ['core']],
+      [91, 91, 'PIN', 'handoff pinned to the live 690->1100 ms interval'],
+      [119, 140, 'PIN', 'render modules wire the ownership gate — regex', ['core']],
     ],
   },
 
@@ -919,10 +919,9 @@ export const DOMAINS = {
     default: 'PIN',
     note: 'Tests real render arithmetic by extracting the function text and eval-ing it — clever, but a refactor that splits the function breaks the extraction.',
     ranges: [
-      [41, 44, 'PURE-INVARIANT', 'the extracted splitter appends half-open segments in sim-column order'],
-      [67, 67, 'PIN', 'handoff pinned at exactly 690 ms and a specific face-3 shelf'],
-      [71, 79, 'PURE-INVARIANT', 'partial prefix drawn exactly at the frontier; fractional ends gap-free'],
-      [91, 108, 'PIN', 'geometry-row and draw-gate statements spelled by regex', ['core']],
+      [42, 45, 'PURE-INVARIANT', 'the extracted splitter appends half-open segments in sim-column order'],
+      [75, 75, 'PURE-INVARIANT', 'partial prefix drawn exactly at the frontier; fractional ends gap-free'],
+      [87, 104, 'PIN', 'geometry-row and draw-gate statements spelled by regex', ['core']],
     ],
   },
 
@@ -947,8 +946,8 @@ export const DOMAINS = {
     default: 'CORE',
     note: 'Driven softlock guard: gate state always has a visible or entering gating body; a prelude kill is not repopulated.',
     ranges: [
-      [95, 95, 'PIN', 'attack readiness follows the authored three-beat cohort score'],
-      [168, 180, 'PURE-INVARIANT', 'CONTAIN authors two Iris bodies flanking its socket'],
+      [104, 104, 'PIN', 'attack readiness follows the authored three-beat cohort score'],
+      [177, 189, 'PURE-INVARIANT', 'CONTAIN authors two Iris bodies flanking its socket'],
     ],
   },
 
@@ -1148,6 +1147,23 @@ export const DOMAINS = {
     ranges: [],
   },
 
+  /* ---- T-201 (merged b8d1b81; classified by T-120 at the merge of main 71d3941) ---- */
+  't-201-race-pass': {
+    scope: 'shipped',
+    mechanism: 'fresh child processes playing the shipped six-face run under race-lab policies (tools/simlab/race/run-child.mjs, every ' +
+      'default verb on): route ahead vs the lead, joint holds, waits before a corner arms, beat waits, staging inside the view, ' +
+      'followers, the no-fire run, the floor promise; plus the pure follow-lead / rolling-corner logic those runs depend on',
+    verdict: 'CORE-GATE',
+    default: 'CORE',
+    note: 'T-201 (entries 20, 23 #2, the entry-25 addendum): the race pass, PLAYED — its played assertions are what replaced the held-gate ' +
+      'pins it retired (entry 21). pureChecks() is PURE-INVARIANT: the follow-lead formula, the corner blend, the rolling stage band, beat ' +
+      'line and carry rank, the HUD line — design invariants a deliberate retune moves. Its three source reads are by label (SITES). ' +
+      'HB_GATE_FAST=1 runs every pure assertion plus FAST (5 of 22 runs) and prints one SKIP line.',
+    ranges: [
+      [149, 293, 'PURE-INVARIANT', 'pureChecks(): the pure follow-lead / bank / rolling-corner logic the played runs depend on'],
+    ],
+  },
+
   /* ---- T-120 fix round 1: the executed half of the deleted enemy-ecology checker, restored ---- */
   'enemy-ecology-selector': {
     scope: 'shipped',
@@ -1237,30 +1253,6 @@ export const DOMAINS = {
 //                 with the code (DELETE-WITH-FEATURE), not T-120's batches
 export const SITES = [
   // pathcheck-suite
-  { domain: 'pathcheck-suite', label: 'column 0 hidden before impact frame', cls: 'RETIRED',
-    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
-    marks: ['with:T-121'] }, // :173
-  { domain: 'pathcheck-suite', label: 'column 0 starts 2.75 above', cls: 'RETIRED',
-    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
-    marks: ['with:T-121'] }, // :174
-  { domain: 'pathcheck-suite', label: 'gravity ease: u=0.5 -> 75 percent of dro', cls: 'RETIRED',
-    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
-    marks: ['with:T-121'] }, // :175
-  { domain: 'pathcheck-suite', label: 'column 1 starts exactly 16 ms later', cls: 'RETIRED',
-    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
-    marks: ['with:T-121'] }, // :177
-  { domain: 'pathcheck-suite', label: 'one-beat dip after landing', cls: 'RETIRED',
-    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
-    marks: ['with:T-121'] }, // :181
-  { domain: 'pathcheck-suite', label: 'column locks to base after dip', cls: 'RETIRED',
-    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
-    marks: ['with:T-121'] }, // :185
-  { domain: 'pathcheck-suite', label: 'last slam column lands at 820 ms, before', cls: 'RETIRED',
-    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
-    marks: ['with:T-121'] }, // :189
-  { domain: 'pathcheck-suite', label: 'zipper fully locked ( … ms) before scrol', cls: 'RETIRED',
-    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121 — brick-zipper column timeline',
-    marks: ['with:T-121'] }, // :192
   // T-120 behaviour tests: the default-run host's drift guards read src/main.js
   // (the mechanical source-text rule would file them PIN/DELETE); they are what
   // keeps every driven result of that host honest (see the domain's spec note)
@@ -1287,9 +1279,6 @@ export const SITES = [
     note: 'static anatomy (entry 3): at every corner\'s camera handoff the default reveal shows the whole arriving facet at once and nothing else — the real routeRenderOwned over every column' },
   { domain: 't-102-corner-turns', label: 'T-102: the shipped routeRenderable draws the whole arriving facet', cls: 'CORE',
     note: 'static anatomy (entry 3): the SHIPPED render-side routeRenderable, evaluated against the sim\'s real construction schedule, draws the whole facet at the handoff' },
-  { domain: 't-102-corner-turns', label: 'T-102: ?zip=1 keeps its assembling reveal', cls: 'RETIRED',
-    note: 'the zip-assembly corner (entry 3 addendum, released for deletion by entry 25): goes with ?zip=1 (T-121)',
-    marks: ['with:T-121'] },
   { domain: 't-102-corner-turns', label: 'T-102: render/route-visibility.js reads construction rows only under ?zip=1', cls: 'PIN',
     note: 'regex over route-visibility.js; the behaviour is the routeRenderable site next to it (CORE). Goes with ?zip=1 (T-121, entry 25)',
     marks: ['with:T-121'] },
@@ -1364,6 +1353,32 @@ export const SITES = [
   { domain: 't-103-arm-winding', label: 'T-103: the arm material is FrontSide with +z normals', cls: 'PIN',
     note: 'material side, normals and no mirroring transform, by regex over player.js: replace with a PLAY probe reading the live arm meshes (material.side, world-matrix determinant), then delete',
     marks: ['core'] },
+  // T-201's sites (classified at the merge of main 71d3941): the source reads, and the sites the
+  // mechanical source-text rule misfiles (they evaluate the real functions; see each note)
+  { domain: 't-201-race-pass', label: 'T-201: sim/scroll.js derives the lead from the live edge calibration', cls: 'PIN',
+    note: 'regex over sim/scroll.js; the played route-ahead runs at four viewports measure the same property (a typed width would miss ' +
+      '0.9 x lead somewhere) — keep until a mutant shows them red, then delete', marks: ['core'] },
+  { domain: 't-201-race-pass', label: 'T-201: ?hinge=flow releases RIG at the camera\'s own fold hand-off', cls: 'CORE',
+    note: 'cross-layer agreement read by necessity: the sim\'s hand-off constant must equal render/camera.js\'s (which imports three.js)' },
+  { domain: 't-201-race-pass', label: 'T-201: the sim keeps no zipper', cls: 'PIN',
+    note: 'regex: the retired zipper (entry 25) stays out of the sim; the behaviour half is the default reveal drawing the whole arriving ' +
+      'facet (t-102, future-facet: CORE)', marks: ['core'] },
+  { domain: 'catwalk-built-prefix-visibility', label: 'regression drives the real five-segment pocket-shelf-f3', cls: 'PIN',
+    note: 'T-201\'s successor of the 690-1100 ms fixture precondition (was PIN at :67): the regression fixture exists' },
+  { domain: 'catwalk-built-prefix-visibility', label: 'T-201: at the corner-2 handoff its arriving catwalk is drawn whole', cls: 'PURE-INVARIANT',
+    note: 'T-201\'s successor (was PURE-INVARIANT at :71): the extracted render splitter, evaluated — the arriving catwalk whole at the handoff' },
+  { domain: 'catwalk-built-prefix-visibility', label: 'T-201: before that handoff none of it is drawn', cls: 'PURE-INVARIANT',
+    note: 'T-201\'s successor (was PURE-INVARIANT at :73): nothing of the arriving facet drawn before the handoff' },
+  { domain: 'future-facet-render-ownership', label: 'T-201: at the … ms handoff the default reveal draws all', cls: 'CORE',
+    note: 'static anatomy (entry 3): the real routeRenderOwned at the handoff draws the whole arriving facet — the default reveal, not ?zip=1' },
+  { domain: 'future-facet-render-ownership', label: 'shared render ownership reads the sim build query', cls: 'PIN',
+    note: 'T-201\'s successor of the composition pin (was PIN/core at :112)', marks: ['core'] },
+  { domain: 't-009-static-anatomy-reveal-default', label: 'T-201: the gate runtime drives no zipper timeline', cls: 'PIN',
+    note: 'regex: the retired zipper timeline (entry 25) stays gone; its behaviour half is the whole-facet reveal (CORE elsewhere)', marks: ['core'] },
+  { domain: 't-102-corner-turns', label: 'T-201: with no sim build state, even the retired ?zip=1 branch', cls: 'CORE',
+    note: 'evaluates the SHIPPED routeRenderable (lifted from its text only because render/route-visibility.js imports three.js): whole facet' },
+  { domain: 't-102-corner-turns', label: 'T-201: ?hinge=flow lets RIG keep moving after the camera hand-off', cls: 'CORE',
+    note: 'played: the ?hinge=flow runs stall fewer ticks than the default lock (the rule misfiles it by a variable name)' },
   // t-120-retry-replays-the-run: the registry unit tests restored from tools/boot-registry-check.mjs (fix round 1)
   { domain: 't-120-retry-replays-the-run', label: 'T-120: makeResetRegistry runs its owners once each', cls: 'PURE-INVARIANT',
     note: 'the registry contract: declared order, one run each, an honest snapshot (restored from the deleted checker, review finding 3)' },
@@ -1528,9 +1543,6 @@ export const SITES = [
   { domain: 't-009-static-anatomy-reveal-default', label: 'T-009: the zipper hook is still written ', cls: 'RETIRED',
     note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121',
     marks: ['with:T-121'] }, // :57
-  { domain: 't-009-static-anatomy-reveal-default', label: 'T-009: the gate runtime still drives the', cls: 'RETIRED',
-    note: 'zip-assembly corner (entry 3 addendum, released for deletion by entry 25): deleted together with the feature by T-121',
-    marks: ['with:T-121'] }, // :60
   // t-018-bot-harness-relative-geometry
   { domain: 't-018-bot-harness-relative-geometry', label: 'T-018: … never reaches for eval()/new Fu', cls: 'PURE-INVARIANT',
     note: 'static honesty lint of the bot grammar: no eval/new Function (a rule, like the layer guard)' }, // :116
@@ -1690,11 +1702,6 @@ export const SITES = [
   // future-facet-render-ownership
   { domain: 'future-facet-render-ownership', label: 'pre-turn render ownership exposes zero f', cls: 'CORE',
     note: 'static anatomy (entry 3): runs the real routeRenderOwned over every column — zero future-face rows visible before the turn (review finding 1; the mechanical rule matched a variable name)' }, // :37
-  { domain: 'future-facet-render-ownership', label: '?zip=1: handoff frame retains its 19 bu', cls: 'RETIRED',
-    note: 'T-102 relabelled it the retired ?zip=1 reveal\'s contract (entry 21; was CORE/split at :89). The default reveal\'s half of the ' +
-      'property (nothing later visible at the handoff) is t-102-corner-turns \'at the … ms camera handoff … nothing else\' (CORE); this ' +
-      'line goes with ?zip=1 (T-121, entry 25)',
-    marks: ['with:T-121'] }, // :93
   // mod-route-visibility
   { domain: 'mod-route-visibility', label: 'modifier presentation uses the shared bu', cls: 'PIN',
     note: 'mods.js imports the shared visibility contract — regex (hand pass: confirmed PIN)' }, // :12

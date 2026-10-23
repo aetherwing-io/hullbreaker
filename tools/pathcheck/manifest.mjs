@@ -86,13 +86,15 @@ import * as d77 from './t-102-corner-turns.mjs';
 import * as d78 from './touch-deck-contract.mjs';
 import * as d79 from './t-103-rig-grip-alignment.mjs';
 import * as d80 from './t-103-arm-winding.mjs';
-import * as d81 from './t-120-input-forgiveness.mjs';
-import * as d82 from './t-120-retry-replays-the-run.mjs';
-import * as d83 from './t-120-determinism-and-art-blind-sim.mjs';
-import * as d84 from './t-120-prototype-flags-inert.mjs';
-import * as d85 from './t-120-harness-reads-the-hud.mjs';
-import * as d86 from './enemy-ecology-selector.mjs';
-import * as d87 from './t-120-gate-self-tests.mjs';
+import * as d81 from './t-201-race-pass.mjs';
+// d82: kept free for T-105 (in flight), which takes it next
+import * as d83 from './t-120-input-forgiveness.mjs';
+import * as d84 from './t-120-retry-replays-the-run.mjs';
+import * as d85 from './t-120-determinism-and-art-blind-sim.mjs';
+import * as d86 from './t-120-prototype-flags-inert.mjs';
+import * as d87 from './t-120-harness-reads-the-hud.mjs';
+import * as d88 from './enemy-ecology-selector.mjs';
+import * as d89 from './t-120-gate-self-tests.mjs';
 
 export const DOMAINS = [
   d00,    // pathcheck suite
@@ -172,11 +174,12 @@ export const DOMAINS = [
   d78,    // T-101 two-thumb touch deck: pure stick, layout, wiring
   d79,    // T-103: RIG holds the weapon — rendered fist on rendered grip
   d80,    // T-103: RIG's arms are front faces in both facings (winding + FrontSide)
-  d81,    // T-120: coyote time + jump buffer, air jump withheld (behaviour test)
-  d82,    // T-120: a retry replays the same run (behaviour test)
-  d83,    // T-120: cross-process determinism + the sim is blind to the art (behaviour test)
-  d84,    // T-120: unjudged prototypes inert unless typed (behaviour test)
-  d85,    // T-120 (I-106): the bot harness parses the HUD line the game writes (deep)
-  d86,    // enemy ecology: the frame a hostile shows (selector) + spec/manifest agreement (T-120 fix 1, restored)
-  d87,    // T-120: the gates' own verdict rules hold their fixtures (deep)
+  d81,    // T-201: the race pass — follow-lead, never-wait corners, rolling encounters
+  d83,    // T-120: coyote time + jump buffer, air jump withheld (behaviour test)
+  d84,    // T-120: a retry replays the same run (behaviour test)
+  d85,    // T-120: cross-process determinism + the sim is blind to the art (behaviour test)
+  d86,    // T-120: unjudged prototypes inert unless typed (behaviour test)
+  d87,    // T-120 (I-106): the bot harness parses the HUD line the game writes (deep)
+  d88,    // enemy ecology: the frame a hostile shows (selector) + spec/manifest agreement (T-120 fix 1, restored)
+  d89,    // T-120: the gates' own verdict rules hold their fixtures (deep)
 ];

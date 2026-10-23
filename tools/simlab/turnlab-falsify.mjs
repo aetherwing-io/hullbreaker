@@ -50,19 +50,25 @@ const ROWS = [
   ['P1b', 'pre-fix: a stock-life respawn after a turn lands behind the seal', 'src/sim/player.js',
     'function clampToOwnedRoute(x) {', 'function clampToOwnedRoute(x) { return x;',
     { policy: 'die-after-turn', viewport: 'phoneLandscape', expect: ['rigCulledByFold', 'popAfterRelocation'] }],
-  ['P2', 'pre-fix: a gate waits on view-bound bodies it cannot show', 'src/sim/scroll.js',
+  // T-201: held gates are the ?gates=legacy escape hatch; their rows run there.
+  ['P2', 'pre-fix: a gate waits on view-bound bodies it cannot show (escape hatch)', 'src/sim/scroll.js',
     "if (c && c.state === 'gate') retireUnseenGateRows(c);", '',
-    { policy: 'run', viewport: 'phonePortrait', gunnerMode: 'paced', paceMs: 1400, maxTicks: 60 * 240, expect: ['gateBlind'], expectNotVictory: true }],
+    { policy: 'run', viewport: 'phonePortrait', gunnerMode: 'paced', paceMs: 1400, maxTicks: 60 * 240,
+      query: 'gates=legacy&follow=0', expect: ['gateBlind'], expectNotVictory: true }],
   ['P3', 'pre-fix: the approach dolly can rewind the scroll on a resize', 'src/sim/scroll.js',
-    'setScrollX(Math.max(scrollX, Math.min(nextScroll, target)));', 'setScrollX(Math.min(nextScroll, target));',
+    'let next = Math.max(scrollX, Math.min(nextScroll, target));', 'let next = Math.min(nextScroll, target);',
     { policy: 'resize-approach-late', viewport: 'narrowTall', expect: ['scrollBackwards'] }],
-  ['P4', 'pre-fix: the default reveal reads the zipper construction rows', 'src/render/route-visibility.js',
-    'IS_G1 || routeColumnBuilt(s)', 'routeColumnBuilt(s)',
-    { static: true, expectFail: /draws the whole arriving facet/ }],
+  // T-201 replaces P4 (the default reveal reading the zipper's construction
+  // rows): the sim no longer keeps those rows, so that render path cannot draw
+  // a prefix. What now guards the same property is the sim marking nothing.
+  ['Z1', 'the sim marks the six-face run\'s future faces unbuilt again (zipper state back)', 'src/sim/level.js',
+    '  if (IS_TRAVERSAL_SLICE) {\n    let changed = false;', '  {\n    let changed = false;',
+    { static: true, expectFail: /draws the whole arriving facet|retired \?zip=1 branch/ }],
   ['P5', 'pre-fix: the gate HUD calls one visible body the last', 'src/pure/waves.js',
     "  if (need.gatingLeft === 1 && need.gatingPresent === 1) return 'LAST SIGNAL · CLOSING';",
     "  if (need.present === 1) return 'LAST SIGNAL · CLOSING';",
-    { policy: 'run', viewport: 'desktop', gunnerMode: 'paced', paceMs: 1400, maxTicks: 60 * 900, expect: ['hudLastButMore'] }],
+    { policy: 'run', viewport: 'desktop', gunnerMode: 'paced', paceMs: 1400, maxTicks: 60 * 900,
+      query: 'gates=legacy&follow=0', expect: ['hudLastButMore'] }],
   ['P5b', 'pre-fix: hud.js prints the current beat count, not the requirement', 'src/ui/hud.js',
     "    tc = `WAVE ${c.k}/${CONFIG.path.faces} · ${c.phase} · ` + gateRequirementText(\n      gateRequirement(hostiles, c.encounterKey, gameMs, CONFIG.wasp.enterMs));",
     "    const threats = gateRequirement(hostiles, c.encounterKey, gameMs, CONFIG.wasp.enterMs).present;\n    tc = `WAVE ${c.k}/${CONFIG.path.faces} · ${c.phase} · ` +\n      (threats === 1 ? 'LAST SIGNAL · CLOSING' : `${threats} HOSTILES`);",
@@ -77,7 +83,8 @@ const ROWS = [
   ['M3', 'the last gating kill no longer opens the gate', 'src/sim/wavegate.js',
     "for (const e of gateRows(c)) e.gateBreakExit = true;\n    c.state = 'approach';",
     'for (const e of gateRows(c)) e.gateBreakExit = true;',
-    { policy: 'run', viewport: 'desktop', maxTicks: 60 * 60, expect: ['gateShutWithKillConditionMet'] }],
+    { policy: 'run', viewport: 'desktop', maxTicks: 60 * 60, query: 'gates=legacy&follow=0',
+      expect: ['gateShutWithKillConditionMet'] }],
   ['M4', 'reaching the halt no longer arms the gate', 'src/sim/scroll.js',
     "if (c && c.state === 'idle' && scrollX >= HALT_S[c.k - 1] - 1e-6) armGate(c);", '',
     { policy: 'run', viewport: 'desktop', maxTicks: 60 * 40, expect: ['haltedButIdle'] }],
@@ -100,16 +107,19 @@ const ROWS = [
     'if (tMs < T.t4) { const u = (tMs - T.t3) / W.snap2Ms; return snap + snap * easeOutBack(u, W.backS); }',
     'if (tMs < T.t4) return snap * 2;',
     { policy: 'run', viewport: 'desktop', expect: ['cameraYawJump'] }],
+  // T-201: under the follow-lead (default) the plane follows RIG, so a racer
+  // never reaches the right clamp and loosening it changes nothing a run can
+  // see; the clamp is exercised where it still binds, on ?follow=0.
   ['M11', 'the screen clamp lets RIG run three tiles off-frame', 'src/config.js',
     'edges: { margin: 0.4, killY: -7 },', 'edges: { margin: -3, killY: -7 },',
-    { policy: 'run', viewport: 'desktop', query: 'momentum=0', expect: ['rigOffScreen'] }],
+    { policy: 'run', viewport: 'desktop', query: 'momentum=0&follow=0', expect: ['rigOffScreen'] }],
   ['M12', 'a popped weapon settles half a tile into the deck', 'src/sim/capsules.js',
     '{ c.y = g + 0.3; c.vy = 0; c.vx *= 0.8; }', '{ c.y = g - 0.5; c.vy = 0; c.vx *= 0.8; }',
     { policy: 'pop-weapon-at-hinge', viewport: 'desktop', expect: ['capsuleThroughDeck'] }],
   ['M13', 'a cleared prelude skips the joint approach', 'src/sim/wavegate.js',
     "  retireGateDenials(c);\n  c.state = 'approach';\n  c.tStart = 0;",
     "  retireGateDenials(c);\n  c.state = 'turning';\n  c.tStart = gameMs;\n  c.sealed = true;",
-    { policy: 'run', viewport: 'desktop', expect: ['turnSkippedApproach'] }],
+    { policy: 'run', viewport: 'desktop', query: 'gates=legacy&follow=0', expect: ['turnSkippedApproach'] }],
   ['M14', 'a completed corner stops sealing the fold', 'src/pure/waves.js',
     "sealLeft: state === 'turning' || state === 'done'", "sealLeft: state === 'turning'",
     { policy: 'backtrack', viewport: 'desktop', expect: ['playerFacetBackwards', 'rigCulledByFold'] }],
@@ -126,6 +136,45 @@ const ROWS = [
   ['M18', 'held-view test uses centres instead of whole circles', 'src/sim/wavegate.js',
     'return e.x + r < left || e.x - r > right;', 'return e.x < left || e.x > right;',
     { static: true, expectFail: /outside the held view only when its whole circle is/ }],
+  // T-201: the never-wait family that replaces the gate family on rolling runs
+  ['N1', 'a rolling corner holds while its gating bodies live', 'src/sim/wavegate.js',
+    "  if (GATES_ROLLING) {\n    // The turn never waits",
+    "  if (GATES_ROLLING && !hostiles.some((e) => e.encounterKey === c.encounterKey && e.gating && !e.gateBreakExit)) {\n    // The turn never waits",
+    { policy: 'run', viewport: 'desktop', gunnerMode: 'none', maxTicks: 60 * 90,
+      expect: ['turnWaitedAfterArrival'] }],
+  ['N8', 'a rolling corner falls back into the held-gate state', 'src/sim/wavegate.js',
+    "  if (GATES_ROLLING) {\n    // The turn never waits",
+    "  if (GATES_ROLLING && !hostiles.some((e) => e.encounterKey === c.encounterKey && e.gating && !e.gateBreakExit)) {\n    // The turn never waits",
+    { policy: 'run', viewport: 'desktop', gunnerMode: 'none', maxTicks: 60 * 90,
+      expect: ['gateStateInRolling'] }],
+  ['N2', 'encounter bodies are staged at their sockets whatever the view', 'src/sim/wavegate.js',
+    'const advance = Math.max(0, planeTilesPerSec || 0) * (maxDelayMs + CONFIG.wasp.enterMs) / 1000;\n  return rollingStageBand(sLeftEdge(), sRightEdge(), pivotS, advance, ROLLING_GATES, out);',
+    'out.lo = -1e9; out.hi = 1e9; return out;',
+    { policy: 'run', viewport: 'phonePortrait', gunnerMode: 'paced', paceMs: 1400, expect: ['stagedOutsideView'] }],
+  ['N3', 'followers re-enter past the right edge', 'src/sim/wavegate.js',
+    'const x0 = lo + (hi - lo) * ((j % R.carryMax) + 0.5) / R.carryMax;',
+    'const x0 = sRightEdge() + 6;',
+    { policy: 'run', viewport: 'desktop', gunnerMode: 'none', expect: ['carriedInvisible'] }],
+  ['N4', 'followers never come back on the arriving facet', 'src/sim/wavegate.js',
+    'export function updatePursuers(rigX, planeTilesPerSec = 0) {\n  if (!GATES_ROLLING) return;',
+    'export function updatePursuers(rigX, planeTilesPerSec = 0) {\n  return;',
+    { policy: 'run', viewport: 'desktop', gunnerMode: 'none', expect: ['carryLost'] }],
+  ['N5', 'the encounter line calls a live encounter broken', 'src/pure/waves.js',
+    '  if (live > 0) {\n    return `${s.phase} · ${live} HOSTILE',
+    '  if (live > 99) {\n    return `${s.phase} · ${live} HOSTILE',
+    { policy: 'run', viewport: 'desktop', gunnerMode: 'paced', paceMs: 1400, expect: ['hudBrokenButAlive'] }],
+  ['N6', 'the encounter line outgrows its slot', 'src/pure/waves.js',
+    '`${n(s.following)} FOLLOWING → ${s.nextPhase}`', '`${n(s.following)} SURVIVORS FOLLOWING → ${s.nextPhase}`',
+    { policy: 'run', viewport: 'desktop', gunnerMode: 'none', expect: ['hudTooLong'] }],
+  // No N7 row: beatOverBound (no beat waits > 6 s, a beat still waiting at
+  // the turn included) cannot be shown red here. With the bound raised to the
+  // old 300 s lock, none of the 12 policy/gunner/viewport combinations T-201
+  // tried starves a beat (run, idle, backtrack, backtrack-approach,
+  // die-after-turn, die-mid-turn; gunner none or paced; 1280x720, 844x390,
+  // 390x844 — listed in reports/tasks/T-201/build.md): each reaches every
+  // beat's line, or clears it, inside 6 s. The same invariant, measured the same way, goes
+  // red in the race lab: tools/simlab/race/race-falsify.mjs F7b (its skip run
+  // @1280x800 releases side 6's third beat on the bound) and F7 (pure).
 ];
 
 function copyTree() {
