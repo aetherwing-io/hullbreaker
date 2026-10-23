@@ -24,9 +24,11 @@
  * Both without insets (desktop Chrome emulation) and with the iPhone's
  * landscape safe-area insets (left/right 47, bottom 21). Reported per policy:
  * the share of frames RIG's box overlaps each, and the worst overlap in CSS
- * px (how far into the circle / below the cluster's top edge); and the share
- * of frames RIG's painted head is above the frame's top edge (mid-jump
- * included — the pathcheck's band assertion covers standing only).
+ * px (how far into the circle / below the cluster's top edge), with the
+ * overlapping frames split by where RIG's feet were (below the lowest landing
+ * deck = in a pit; on it; above it); and the share of frames RIG's painted
+ * head is above the frame's top edge (mid-jump included — the pathcheck's
+ * band assertion covers standing only).
  *
  * --hud-from adds the HUD panels a live probe measured at the same viewport
  * (facts.hud: e.g. main's RIG panel and objective panel) as a third target,
@@ -146,6 +148,7 @@ for (const viewport of VPS) {
       let frames = 0, inCluster = 0, inGhost = 0, worstCluster = -Infinity, worstGhost = -Infinity;
       let atCluster = null, atGhost = null;
       let ghostBelow = 0, ghostOn = 0, ghostAbove = 0, inHud = 0, worstHud = -Infinity, atHud = null;
+      let clusterBelow = 0, clusterOn = 0, clusterAbove = 0;
       let offTop = 0, worstTop = -Infinity, atTop = null;
       for (const r of out.filter((o) => o.spec.viewport === viewport && o.group === group)) {
         let lastTurn = -Infinity;
@@ -155,7 +158,10 @@ for (const viewport of VPS) {
           const b = rigBox(x, y, scrollX, k, lens, v.width, v.height);
           frames++;
           const dc = clusterDepth(b, Lay.cluster), dg = circleDepth(b, Lay.ghost);
-          if (dc > 0) inCluster++;
+          if (dc > 0) {
+            inCluster++;
+            if (y < lowestDeck - 0.01) clusterBelow++; else if (y > lowestDeck + 0.01) clusterAbove++; else clusterOn++;
+          }
           if (dg > 0) {
             inGhost++;
             if (y < lowestDeck - 0.01) ghostBelow++; else if (y > lowestDeck + 0.01) ghostAbove++; else ghostOn++;
@@ -179,6 +185,7 @@ for (const viewport of VPS) {
         // the ghost frames by where RIG's feet were: below the lowest deck (a
         // pit fall), on it, above it (a higher deck, a platform, a jump)
         ghostFramesByFeet: { belowLowestDeck: ghostBelow, onLowestDeck: ghostOn, above: ghostAbove },
+        clusterFramesByFeet: { belowLowestDeck: clusterBelow, onLowestDeck: clusterOn, above: clusterAbove },
         worstClusterAt: atCluster, worstGhostAt: atGhost,
         // RIG's painted head above the frame's top edge (jumps included)
         offTopShare: frames ? +(offTop / frames).toFixed(4) : null,
@@ -194,7 +201,8 @@ for (const viewport of VPS) {
 }
 for (const r of rows)
   console.log(`${r.viewport.padEnd(20)} ${r.insets.padEnd(6)} ${r.group.padEnd(9)} frames ${String(r.frames).padStart(5)}  ` +
-    `under cluster ${(r.clusterShare * 100).toFixed(2).padStart(6)}% (worst ${r.worstClusterPx} px)  ` +
+    `under cluster ${(r.clusterShare * 100).toFixed(2).padStart(6)}% (worst ${r.worstClusterPx} px; feet below/on/above the lowest deck ` +
+    `${r.clusterFramesByFeet.belowLowestDeck}/${r.clusterFramesByFeet.onLowestDeck}/${r.clusterFramesByFeet.above})  ` +
     `in stick ghost ${(r.ghostShare * 100).toFixed(2).padStart(6)}% (worst ${r.worstGhostPx} px; feet below/on/above the lowest deck ` +
     `${r.ghostFramesByFeet.belowLowestDeck}/${r.ghostFramesByFeet.onLowestDeck}/${r.ghostFramesByFeet.above})` +
     (r.hudShare !== undefined ? `  under a HUD panel ${(r.hudShare * 100).toFixed(2)}% (worst ${r.worstHudPx} px)` : '') +

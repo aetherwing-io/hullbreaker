@@ -236,17 +236,20 @@ every scroll position on faces 1-6 and every route surface RIG can reach
 Without insets (desktop Chrome emulation) the deck clears the cluster by
 22.7-29.3 px. Asserted per viewport in the T-107 domain.
 
-**The same band in PLAY** (`tools/simlab/framing/thumb-overlap.mjs`,
-`evidence/thumb-overlap.{log,json}`: the race lab's replica, rush / climber /
-fighter / carried x 2 seeds + the oracle racer, 300 s each, 100 ms trace,
-every straight-face frame projected through the replica camera): RIG's
-painted head goes above the top of the phone frame in **0.17-0.18% of frames**
-(rush, climber, fighter; ~0.5 s per 5-minute run), by up to **22 px** — always
-mid-jump from face 5's highest surfaces (feet at y 18.6-20.6, above the
-highest surface). FAR on the same phone: never (>= 39 px to spare). The
-assertion covers standing; a jump apex above the highest surface does not
-fit the 5.5-6.5% box together with the deck (an open question for the
-operator, packet Q4).
+**The same band in PLAY** (`tools/simlab/framing/thumb-overlap.mjs` on the
+final tree, `evidence/thumb-overlap-final.{log,json}`: the race lab's replica
+with T-201's follow-lead and rolling corners, rush / climber / fighter /
+carried x 2 seeds + the oracle racer, up to 300 s each, 100 ms trace, every
+straight-face frame projected through the replica camera): RIG's painted head
+goes above the top of the phone frame in **1.3% (rush) and 1.9% (climber) of
+frames** — 13 and 16 frames, under a second per run; never for the fighter,
+the carried bot or the oracle racer — by up to **18 px**, always mid-jump above
+face 6's arena apex (the surface is y 17, his feet at 19.6). FAR on the same
+phone: never (>= 38 px to spare). The assertion covers standing; a jump apex
+above the highest surface does not fit the 5.5-6.5% box together with the deck
+(an open question for the operator, packet Q4). Pre-merge (held gates, longer
+runs; `evidence/thumb-overlap.{log,json}`): 0.17-0.18% of frames, up to 22 px,
+above face 5's highest surfaces.
 
 **Look-ahead — NOT MET as worded; escalated.** First, *pre-merge*, without
 T-201's follow-lead (and with the first, all-viewport clamp on the branch's
@@ -489,9 +492,12 @@ catches up to the halt as RIG reaches the joint, so the camera nears the end
 of the face's veil during the approach itself. `tools/simlab/framing/corner-approach.mjs`
 played the run on each tree and emitted the exact state 2.5, 1.5 and 0.5 s
 before every turn; the frames were posed with `turn-pose-capture.mjs`
-(`evidence/i122-*.json`; the branch phone session had every art asset loaded,
-the other sessions missed RIG/enemy/VFX art at the preload gate on this host,
-never a backdrop plate the metric reads):
+(`evidence/i122-*.json`; the branch phone session had every art asset loaded;
+the other three missed 20-28 RIG, enemy, VFX and hull-panel/weld textures at
+the preload gate on this host, never a backdrop plate (`backdrop-meridian-*`,
+`meridian-component-atlas`) — the far veil the metric reads. main's desktop
+sidecar is rebuilt from its capture log, `i122-captures-main-1280x720.log`: a
+retry that crashed at boot had overwritten it empty):
 
 | void columns, s before the turn | 2.5 s | 1.5 s | 0.5 s |
 | --- | --- | --- | --- |
@@ -822,28 +828,42 @@ Frame-vs-thumb, two currencies:
   landing deck stay above the right-thumb cluster's top edge at every scroll
   position on faces 1-6, at 844x390, 932x430, 667x375 and 844x350, with and
   without the iPhone's insets (box 3's table).
-- **Play** (`thumb-overlap.mjs`, 2 seeds x 4 policies + the oracle racer, 300 s,
-  every straight-face frame; `evidence/thumb-overlap.{log,json}`):
+- **Play** (`thumb-overlap.mjs`, 2 seeds x 4 policies + the oracle racer, up
+  to 300 s, every straight-face frame; re-run on the final tree, where T-201's
+  rolling corners finish the six faces sooner — so fewer frames per run than
+  the pre-merge run had; `evidence/thumb-overlap-final.{log,json}`):
 
-| 844x390, share of frames | phone frame, no insets | phone frame, iPhone insets | today's FAR, no insets | today's FAR, iPhone insets |
+| 844x390, share of frames (final tree) | phone frame, no insets | phone frame, iPhone insets | today's FAR, no insets | today's FAR, iPhone insets |
 | --- | --- | --- | --- | --- |
-| RIG under the right-thumb cluster | **0%** | **0.02%** (fighter: one frame, falling into a pit, 0.7 px) | 0% | 0% |
-| RIG inside the resting stick ghost's circle | 0-2.0% (worst 28 px) | **0.5-4.1%** (worst 30 px) | 0% | 0-**22.7%** (worst 13 px) |
-| RIG under main's HUD panels (pre-T-105) | **14.5-25.9%** (worst 131 px) | same panels | 2.3-4.0% (worst 53 px) | same |
+| RIG under the right-thumb cluster | **0%** for all four bot styles; oracle racer 0.60% (3 frames, worst 14 px) | **0%** for all four bot styles; oracle racer 1.40% (7 frames, worst 35 px) | 0% | 0% |
+| RIG inside the resting stick ghost's circle | 0-4.0% (worst 28 px) | **0-8.9%** (worst 22 px) | 0-0.3% (worst 40 px, in a pit) | 0-4.0% (worst 59 px, in a pit) |
+| RIG under main's HUD panels (pre-T-105) | **1.6-13.4%** (worst 105 px) | same panels | 0-11.0% (worst 45 px) | same |
+| RIG's painted head above the top edge | **0-1.9%** (rush 1.3%, climber 1.9%; worst 18 px) | same | 0% | same |
 
-Policies: rush / climber / fighter / carried (the oracle racer is lower on
-every row). The cluster box is MET in play. The **stick ghost is not met as
-"never"**: the larger RIG reaches into the ghost's circle when he stands on
-a deck in the left third of the frame — with the iPhone inset 458 of the 464
-such frames had his feet above the lowest deck, and the worst frames are y 3
-decks at gates (corner state `gate`), where the scroll holds and the policies
-hang back. Today's FAR frame has him inside it more often, less deeply.
-No lift fixes both this and the head at 5.5-6.5% (they pull opposite ways
-across the helix's tilt); a smaller phone RIG, a camera that follows RIG
-vertically, or a ghost placed lower would. Reported to the operator (packet
-Q5) and as an inbox issue. "Stick zone" is read as the resting ghost (where
-the left thumb sits), not T-101's whole left `stickZone` fraction, which RIG
-crosses whenever he is in the left ~45% of the frame.
+Policies: rush / climber / fighter / carried / the oracle racer. **The cluster
+box is MET for every bot style.** Every one of the oracle racer's cluster
+frames (3 / 7) has RIG's feet below the lowest landing deck: it drops into the
+two-tile pit on face 4 (x 334-335), down to 3.6 tiles under the deck, and
+climbs back out in under a second (no fall counted). The authored assertion covers RIG
+on the lowest landing deck; a pit at the bottom of the frame is under the
+thumbs on the phone frame. The **stick ghost is not met as "never"**: the
+larger RIG reaches into the ghost's circle when he stands on a deck in the
+left third of the frame — with the iPhone inset all 246 carried-bot frames
+and all 32 fighter frames had his feet above the lowest deck (the worst ones
+on y-3 decks during a corner approach). Today's FAR frame is inside
+it less often (0-4.0%) but deeper (its worst frames are pit dips). The head
+leaves the top only mid-jump above face 6's arena apex (the surface is at
+y 17, his feet at 19.6). No lift fixes the ghost and the head together (they
+pull opposite ways across the helix's tilt); a smaller phone RIG, a camera
+that follows RIG vertically, or a ghost placed lower would. Reported to the
+operator (packet Q5) and as inbox issues. "Stick zone" is read as the resting
+ghost (where the left thumb sits), not T-101's whole left `stickZone`
+fraction, which RIG crosses whenever he is in the left ~45% of the frame.
+
+Before the T-201 merge (`evidence/thumb-overlap.{log,json}`; held gates, so
+longer straights): cluster 0% (one fighter frame, 0.7 px, iPhone insets);
+ghost 0-2.0% / 0.5-4.1% on the phone frame vs 0% / 0-22.7% at FAR; HUD
+14.5-25.9% vs 2.3-4.0%; head off the top ~0.2% (face 5), FAR never.
 
 **The HUD row is T-105's lane** — these are main's panels as the probe
 measured them (`hudRigPanel` 300x116 at the top-left, `hudObjectivePanel`
@@ -936,20 +956,48 @@ again after the last restore; the worktree was never mutated):
 | M18 | camera.js applies the actor clamp whatever the lens | the camera.js source check the race lab replicates (`... ACTIVE_FIXTURE \|\| !lens.actorClamp`) |
 
 The played checks carry their own falsifiers: the render-only proof's
-`momentum=0` runs must differ (14/14 did), and the clamp's analytic check
-computes the pre-T-107 route-plane clamp beside it (NDC 1.028 > 1).
+`momentum=0` runs must differ (14/14 did); the clamp's analytic check computes
+the pre-T-107 route-plane clamp beside it (NDC 1.023 > 1 on the final tree);
+and the played clamp check's FAR runs, which keep main's clamp, print what the
+same check reads there (desktop `?orbit=joint`: chest at NDC 1.012 > 1).
 
 ## Verification (every command run, with its result)
 
-**After the merge with main `af8bb0b` — the state to review** (host knobs from
-`~/.hullbreaker-host.env` in every shell; `HB_GATE_SKIP_BROWSER_PROBE=1` per
-the host policy):
+Host knobs from `~/.hullbreaker-host.env` in every shell;
+`HB_GATE_SKIP_BROWSER_PROBE=1` per the host policy (4 browser-probe assertions
+skipped, never counted as passes).
+
+**The final tree — the state to review** (main `71d3941` merged at `e55100a`;
+the runtime is unchanged since `1958a52`, a comment, and `c3b6485`, the lens
+rule and I-114):
+
+| command | result |
+| --- | --- |
+| `git merge main` (`71d3941`, merge commit `e55100a`) | two conflicts: `tools/pathcheck/manifest.mjs` (d81 = T-201's race pass, d82 left free for T-105, T-107 = **d83**) and `tools/simlab/README.md` (both sides kept, main's numbered list first) |
+| `HB_GATE_FAST=1 node tools/pathcheck.mjs` (merged + the lens rule, `c3b6485`) | **4236 passed, 0 failed** |
+| `node tools/pathcheck.mjs` (full tier, `fff06c1`) | 4699 passed, **1 failed** — my own played clamp check, `[run?orbit=joint @1280x720]`: chest at NDC 1.012. That check asserted the actor clamp on every played run; under the lens rule a FAR run keeps main's clamp on purpose, so the check claimed a property the final design does not give FAR frames. Scoped to phone-lens runs in `b200886`; on FAR runs it now prints the value as a note. Not a weakening of anything legacy: it is a T-107 assertion, the FAR edges are asserted identical to main's (36 cases), and the overhang is reported (box 8, inbox issue) |
+| `node tools/pathcheck.mjs` (full tier, `b200886`) | PENDING-FULL-FINAL |
+| T-107 domain alone, final tree: static / played | **50 passed, 0 failed** + 1 note / **63 passed, 0 failed** + 2 notes (`evidence/pathcheck-t107-{static,played}-labels-final.txt`) |
+| smoke as `tools/orch/merge-task.sh` runs it (480x300, `--deterministic`, budgets 15000 / 20000 ms) + `smoke-verdict.mjs`, at `fff06c1` (= the final runtime) | mid-route **PASS** (outcome=not-completed deaths=0 tick=594/594); transform-slice **PASS** (outcome=completed deaths=0 tick=938/1104) |
+| `tools/playtest/selftest-views.mjs --views 390x844,390x844t,844x390t,1280x720` (branch) and `390x844,844x390t` (main `71d3941`) | branch **PASS (39 checks)** at all four; main **FAIL: view resolved and portrait pullback applied** at 390x844, PASS at 844x390 touch (`evidence/selftest-views-*.json`, `selftest-views.log`) |
+| `tools/simlab/framing/corner-approach.mjs` x 6 runs (desktop default / `momentum=0` / `follow=0&momentum=0`; phone frame default / `follow=0&momentum=0`; FAR phone `follow=0&momentum=0`) | box 8's played table (`evidence/clamp-near-corners-*.json`) |
+| `corner-approach.mjs --poses-out` + `turn-pose-capture.mjs` + `void_columns.py`, main `71d3941` export vs branch, 1280x720 and 844x390 touch | box 7's I-122 table (72 frames; `evidence/i122-*.json`) |
+| `tools/simlab/framing/route-ahead.mjs --viewports phone-landscape,phone-landscape-far,desktop-16x10 --seeds 4` | box 3's final table (`evidence/route-ahead-final.{log,json}`) |
+| the paced visible-only gunner, `runTurnProof` direct, 3 viewports x {`gates=legacy&follow=0`, default} | 5 / 4 / 5 and 6 / 6 / 5 — T-201's own numbers (`evidence/paced-gunner-final.json`) |
+| `tools/simlab/race/probe-framing.mjs` (live page, touch: `phone-landscape`, `phone-portrait`, `phone-landscape-far`) | the touch-deck table; edges = the replica to <= 2.7e-13 tiles (`evidence/probe-framing.json`) |
+| falsification on the final tree (scratch export, one mutation at a time) | M5a, M5b, M6, M14, M16, M17, M18 all bind (`evidence/falsification-clamp-lens-rule.log`) |
+| `tools/simlab/framing/thumb-overlap.mjs --seeds 2 --hud-from evidence/probe-phone-branch.json` (run twice; the second with the cluster frames split by RIG's feet — identical numbers) | the touch-deck play table, box 3's head row (4.5 min; `evidence/thumb-overlap-final.{log,json}`) |
+| PENDING-VERIFY-MORE | |
+
+**Intermediate: after merging main `af8bb0b` (T-103), before T-201 merged**
+(superseded by the final tree; kept because the combined-tree diagnosis cites
+it):
 
 | command | result |
 | --- | --- |
 | `git merge main` (merge commit `cda5057`) | one conflict, `tools/pathcheck/manifest.mjs`: main's d79/d80 (T-103) kept, T-107 is **d83** (d81/d82 left free) |
 | `HB_GATE_FAST=1 node tools/pathcheck.mjs` (merged) | **4176 passed, 0 failed**; after the clamp-gain strengthening (`d8a3295`) the T-107 domain's static checks are 49/0 |
-| `node tools/pathcheck.mjs` (full tier, merged, at `d8a3295`) | **4537 passed, 0 failed** (23 min; 4 browser-probe assertions skipped, not counted) (`evidence/pathcheck-full-merged-af8bb0b.log`) |
+| `node tools/pathcheck.mjs` (full tier, merged, at `d8a3295`) | **4537 passed, 0 failed** (23 min) (`evidence/pathcheck-full-merged-af8bb0b.log`) |
 | smoke, as `tools/orch/merge-task.sh` runs it: `node run.mjs scripts/mid-route.json --deterministic --max-runtime-ms 15000 --viewport 480x300` + `smoke-verdict.mjs` | **smoke-verdict: PASS** (outcome=not-completed deaths=0 tick=594/594) |
 | same, `scripts/transform-slice.json --max-runtime-ms 20000` | **smoke-verdict: PASS** (outcome=completed deaths=0 tick=938/1104) |
 | `phone-framing-probe.mjs --compare` main vs `?view=far`, 844x390 touch, `?juice=0` | **CAMERA IDENTICAL** (17 poses) |
@@ -961,7 +1009,6 @@ the host policy):
 | combined tree: `node tools/pathcheck.mjs` (full tier) | **4696 passed, 1 failed** — T-102's coverage guard under T-201's escape hatch at desktop; diagnosed in "T-201 coordination" (`evidence/pathcheck-full-combined-T-201.log`) |
 | combined tree, T-201 alone (`git archive c48ca1e`), this branch, main: the paced visible-only gunner, `runTurnProof` direct | the failure reproduced and localized (`evidence/paced-gunner-combined-T-201.json`) |
 | falsification M14, M15, M15b (scratch export, one mutation at a time) | all bind (`evidence/falsification-clamp-gain.log`) |
-| PENDING-VERIFY-MORE | |
 
 **Before the merge (first session, base `ace6618`) — the runs the box tables
 above cite:**
@@ -1090,32 +1137,39 @@ past mid-frame). Operator's call (packet Q1, call (a)); T-201's lab rows
 should be re-taken on the built frame (`phone-landscape`, not the
 `phone-landscape-6pct` estimate).
 
-## I-??? | feel | S2 | repro: `node tools/simlab/framing/thumb-overlap.mjs --hud-from <phone-framing-probe JSON of the merged tree>` @ task/T-107 (+ T-105) | evidence: reports/tasks/T-107/evidence/thumb-overlap.{log,json}
+## I-??? | feel | S2 | repro: `node tools/simlab/framing/thumb-overlap.mjs --hud-from <phone-framing-probe JSON of the merged tree>` @ task/T-107 (+ T-105) | evidence: reports/tasks/T-107/evidence/thumb-overlap-final.{log,json}
 With main's HUD (the 300x116 RIG panel at the top-left, the 320x34 objective
 panel at the top-right of 844x390), RIG on the phone frame is drawn under a
-HUD panel in 14.5-25.9% of straight-face frames per bot style (today's FAR
-phone frame: 2.3-4.0%): the closer frame raises the play band into the top
-strip. T-105's phone shell owns the HUD; its layout needs this measurement on
-the merged tree. If the overlap stays, the HUD is the lever (moving the band
-down would put the decks under the thumbs, box 3).
+HUD panel in 1.6-13.4% of straight-face frames per bot style, by up to 105 px
+(final tree; today's FAR phone frame: 0-11.0%, up to 45 px): the closer frame
+raises the play band into the top strip. T-105's phone shell owns the HUD
+(merging to main as this report is written); its layout needs this
+measurement on the merged tree (`--hud-from` a probe of that tree). If the
+overlap stays, the HUD is the lever (moving the band down would put the decks
+under the thumbs, box 3).
 
-## I-??? | feel | S3 | repro: `node tools/simlab/framing/thumb-overlap.mjs` and the T-107 domain's "stick ring" labels @ task/T-107 | evidence: reports/tasks/T-107/evidence/thumb-overlap.log, pathcheck-t107-static-labels.txt
-RIG is drawn inside the resting stick ghost's circle in 0.5-4.1% of
-straight-face frames with the iPhone's insets (worst 30 px; today's FAR frame:
-0-22.7%, worst 13 px) — mostly on y-3 decks in the left third of the frame at
-gates, where the scroll holds. Pressed against the damage plane on the lowest
-deck his feet are 38-39 px into the ghost's top (its centre, where the thumb
-rests, ~20 px lower). No lift fixes this and the head together at 5.5-6.5%;
-a lower ghost (T-101), a camera that follows RIG vertically, or a smaller
-phone RIG would.
+## I-??? | feel | S3 | repro: `node tools/simlab/framing/thumb-overlap.mjs` and the T-107 domain's "stick ring" labels @ task/T-107 | evidence: reports/tasks/T-107/evidence/thumb-overlap-final.log, pathcheck-t107-static-labels-final.txt
+On the phone frame RIG is drawn inside the resting stick ghost's circle in up
+to 8.9% of straight-face frames per bot style with the iPhone's insets (carried
+bot; worst 22 px; 0-4.0% without insets, worst 28 px). Today's FAR frame:
+0-4.0%, its worst frames pit dips. Mostly on y-3 decks in the left third of
+the frame during corner approaches. Pressed against the damage plane on the
+lowest deck his feet are 38-39 px into the ghost's top (its centre, where the
+thumb rests, ~20 px lower). Separately, a pit at the bottom of the frame puts
+him under the right-thumb cluster: the oracle racer's dip into face 4's
+two-tile pit (x 334-335, 3.6 tiles under the deck) is under it for 3-7 frames
+(worst 35 px with insets) — no bot style's run is. No lift fixes these and the
+head together at 5.5-6.5%; a lower ghost (T-101), a camera that follows RIG
+vertically, or a smaller phone RIG would.
 
-## I-??? | feel | S3 | repro: `node tools/simlab/framing/thumb-overlap.mjs` @ task/T-107 | evidence: reports/tasks/T-107/evidence/thumb-overlap.log ("head off the top")
-On the phone frame RIG's painted head leaves the top of the screen in ~0.2% of
-straight-face frames (rush, climber, fighter), by up to 22 px — mid-jump from
-face 5's highest surfaces (feet at y 18.6-20.6). Standing on any surface is
-asserted inside; a jump apex above the highest surface does not fit together
-with the deck above the thumbs at this RIG size. Today's FAR phone frame:
-never. Same lever as above (vertical follow), or the operator accepts it.
+## I-??? | feel | S3 | repro: `node tools/simlab/framing/thumb-overlap.mjs` @ task/T-107 | evidence: reports/tasks/T-107/evidence/thumb-overlap-final.log ("head off the top")
+On the phone frame RIG's painted head leaves the top of the screen in 1.3%
+(rush) and 1.9% (climber) of straight-face frames on the final tree — under a
+second per run — by up to 18 px, mid-jump above face 6's arena apex (surface
+y 17, feet at 19.6). Standing on any surface is asserted inside; a jump apex
+above the highest surface does not fit together with the deck above the
+thumbs at this RIG size. Today's FAR phone frame: never. Same lever as above
+(vertical follow), or the operator accepts it.
 
 ## I-??? | art | S2 | repro: `?rise=steep` on 844x390 touch, face 5-6 upper lattice near the right clamp; `node tools/simlab/framing/vertical-band.mjs` @ task/T-107 | evidence: reports/tasks/T-107/evidence/vertical-band-helix-vs-steep.log
 With the per-side rise (unjudged, off by default) the band tilts ~13 tiles

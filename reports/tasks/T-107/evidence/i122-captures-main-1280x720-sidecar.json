@@ -5,9 +5,170 @@
   "dpr": 1,
   "touch": false
  },
- "baseUrl": "http://127.0.0.1:8777",
+ "baseUrl": "http://127.0.0.1:8777 (main 71d3941 export)",
  "query": "",
- "posesFile": "/tmp/claude-0/-home-user-hullbreaker/0c748965-85bc-570b-a00a-0186b03c4f4f/scratchpad/t107/i122/main-poses-desktop.json",
- "frames": [],
- "errors": []
+ "note": "Reconstructed from the capture log (i122-captures-main-1280x720.log): the tool wrote its sidecar at the end of this session, and a retry that crashed at boot (page closed) then overwrote it with an empty one. The 6 frames below are the measured ones; errors: none.",
+ "frames": [
+  {
+   "file": "main-1280x720-c1-pre2500.jpg",
+   "yawDeg": 0.0,
+   "replicaYawDeg": 0.0,
+   "facet": 0,
+   "replicaFacet": 0
+  },
+  {
+   "file": "main-1280x720-c1-pre500.jpg",
+   "yawDeg": 0.0,
+   "replicaYawDeg": 0.0,
+   "facet": 0,
+   "replicaFacet": 0
+  },
+  {
+   "file": "main-1280x720-c3-pre2500.jpg",
+   "yawDeg": 120.0,
+   "replicaYawDeg": 120.0,
+   "facet": 2,
+   "replicaFacet": 2
+  },
+  {
+   "file": "main-1280x720-c3-pre500.jpg",
+   "yawDeg": 120.0,
+   "replicaYawDeg": 120.0,
+   "facet": 2,
+   "replicaFacet": 2
+  },
+  {
+   "file": "main-1280x720-c5-pre2500.jpg",
+   "yawDeg": 240.0,
+   "replicaYawDeg": 240.0,
+   "facet": 4,
+   "replicaFacet": 4
+  },
+  {
+   "file": "main-1280x720-c5-pre500.jpg",
+   "yawDeg": 240.0,
+   "replicaYawDeg": 240.0,
+   "facet": 4,
+   "replicaFacet": 4
+  }
+ ],
+ "errors": [],
+ "preload": {
+  "budgetMs": 2500,
+  "budgetSource": "src/render/preload.js PRELOAD_BUDGET_MS (not in T-107 diff; the log line records only notReady)",
+  "notReady": [
+   {
+    "url": "rig-slender-body-atlas-v2.png",
+    "state": "timeout"
+   },
+   {
+    "url": "rig-slender-aim-atlas-v2.png",
+    "state": "timeout"
+   },
+   {
+    "url": "rig-weapons-atlas-v1.png",
+    "state": "timeout"
+   },
+   {
+    "url": "level1-enemy-ecology-atlas-v1.webp",
+    "state": "timeout"
+   },
+   {
+    "url": "capsule-pickups-atlas-v1.webp",
+    "state": "timeout"
+   },
+   {
+    "url": "crown-warden-v1.webp",
+    "state": "timeout"
+   },
+   {
+    "url": "hound-gait-atlas-v2.webp",
+    "state": "timeout"
+   },
+   {
+    "url": "spore-mortar-action-v2.webp",
+    "state": "timeout"
+   },
+   {
+    "url": "crown-command-core-runtime-v2.png",
+    "state": "timeout"
+   },
+   {
+    "url": "crown-command-kit-runtime-v2.png",
+    "state": "timeout"
+   },
+   {
+    "url": "projectile-chassis-atlas-v3.png",
+    "state": "timeout"
+   },
+   {
+    "url": "action-vfx-atlas-v2.png",
+    "state": "timeout"
+   },
+   {
+    "url": "emplacement-motion-atlas-v2.png",
+    "state": "timeout"
+   },
+   {
+    "url": "warden-motion-atlas-v2.png",
+    "state": "timeout"
+   },
+   {
+    "url": "meridian-defense-vfx-pack-v1.png",
+    "state": "timeout"
+   },
+   {
+    "url": "hull-panel-pixel-tile-v1.png",
+    "state": "timeout"
+   },
+   {
+    "url": "weld-seam-strip.png",
+    "state": "timeout"
+   },
+   {
+    "url": "meridian-mutation-atlas-v1.png",
+    "state": "timeout"
+   },
+   {
+    "url": "houndframe-v2.png",
+    "state": "timeout"
+   },
+   {
+    "url": "carrier-hauler-v2.png",
+    "state": "timeout"
+   },
+   {
+    "url": "wasp-pixel-idle-v1.png",
+    "state": "timeout"
+   },
+   {
+    "url": "iris-polyp-v2.png",
+    "state": "timeout"
+   },
+   {
+    "url": "spore-mortar-v2.png",
+    "state": "timeout"
+   },
+   {
+    "url": "wasp-pixel-flight-v1.png",
+    "state": "timeout"
+   },
+   {
+    "url": "houndframe-action-v2.png",
+    "state": "timeout"
+   },
+   {
+    "url": "carrier-hauler-action-v2.png",
+    "state": "timeout"
+   },
+   {
+    "url": "wasp-pixel-dive-v1.png",
+    "state": "timeout"
+   },
+   {
+    "url": "iris-polyp-action-v2.png",
+    "state": "timeout"
+   }
+  ]
+ }
 }
