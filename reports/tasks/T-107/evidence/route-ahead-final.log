@@ -1,0 +1,19 @@
+phone-landscape        rush      n=4  lookahead p10/med/p90 10/19/25  routeAhead 9/19/24  visible 12/21/27 (offset 1.99)
+phone-landscape        climber   n=4  lookahead p10/med/p90 10/19/25  routeAhead 8/19/23  visible 12/21/27 (offset 1.99)
+phone-landscape        fighter   n=4  lookahead p10/med/p90 31/49/52  routeAhead 16/26/40  visible 33/51/54 (offset 1.99)
+phone-landscape        carried   n=4  lookahead p10/med/p90 31/54/61  routeAhead 19/43/60  visible 33/56/63 (offset 1.99)
+phone-landscape        oracle@0  n=2  lookahead p10/med/p90 10/19/25  routeAhead 6/19/24  visible 12/21/27 (offset 1.99)
+phone-landscape-far    rush      n=4  lookahead p10/med/p90 27/32/44  routeAhead 9/30/41  visible 27/32/44 (offset 0)
+phone-landscape-far    climber   n=4  lookahead p10/med/p90 27/32/44  routeAhead 8/30/42  visible 27/32/44 (offset 0)
+phone-landscape-far    fighter   n=4  lookahead p10/med/p90 49/62/73  routeAhead 12/26/58  visible 49/62/73 (offset 0)
+phone-landscape-far    carried   n=4  lookahead p10/med/p90 51/76/93  routeAhead 20/59/85  visible 51/76/93 (offset 0)
+phone-landscape-far    oracle@0  n=2  lookahead p10/med/p90 27/35/44  routeAhead 5/29/42  visible 27/35/44 (offset 0)
+desktop-16x10          rush      n=4  lookahead p10/med/p90 15/21/30  routeAhead 8/21/28  visible 15/21/30 (offset 0)
+desktop-16x10          climber   n=4  lookahead p10/med/p90 15/21/30  routeAhead 8/21/27  visible 15/21/30 (offset 0)
+desktop-16x10          fighter   n=4  lookahead p10/med/p90 35/45/62  routeAhead 7/28/45  visible 35/45/62 (offset 0)
+desktop-16x10          carried   n=4  lookahead p10/med/p90 36/60/68  routeAhead 19/46/67  visible 36/60/68 (offset 0)
+desktop-16x10          oracle@0  n=2  lookahead p10/med/p90 15/22/30  routeAhead 6/21/28  visible 15/22/30 (offset 0)
+
+real	18m12.820s
+user	2m20.943s
+sys	0m11.031s

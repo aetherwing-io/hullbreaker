@@ -264,53 +264,55 @@ FAR shows (0-7 tiles less). That is the closer frame itself, not a separate
 reduction: the operator chose a ~1.5x closer frame on phones, and shifting the
 frame forward to compensate would move the damage plane (a difficulty lever).
 **With T-201's follow-lead, measured — the decisive numbers.** Look-ahead is
-T-201's lever, so I measured the two lanes together: the same tool on a
-scratch export of `git merge-tree` of this branch and `task/T-201` (`c48ca1e`;
-fast gate 4235/0, "T-201 coordination" below), T-201's own race lab with its
-follow-lead, the same seeds (`evidence/route-ahead-combined-T-201.{log,json}`).
-Visible route ahead of RIG, tiles, median (p10):
+T-201's lever; with T-201 merged, the same tool on the final tree (T-201's own
+race lab and follow-lead, the same seeds; `evidence/route-ahead-final.{log,json}`;
+a combined pre-merge tree gave the same phone numbers,
+`evidence/route-ahead-combined-T-201.*`). Visible route ahead of RIG, tiles,
+median (p10):
 
-| combined tree | rush | climber | fighter | carried | oracle@0 racer |
+| final tree | rush | climber | fighter | carried | oracle@0 racer |
 | --- | --- | --- | --- | --- | --- |
-| desktop 16:10 | 23.3 (15.3) | 23.3 (15.3) | 56.3 (36.3) | 59.3 (36.3) | 23.3 (15.3) |
+| desktop 16:10 | 21 (15) | 21 (15) | 45 (35) | 60 (36) | 22 (15) |
 | phone 844x390, the phone frame | **21 (12)** | **21 (12)** | **51 (33)** | **56 (33)** | **21 (12)** |
-| phone 844x390, `?view=far` | 32 (27) | 32 (27) | 60 (48) | 76 (51) | 35 (27) |
+| phone 844x390, `?view=far` | 32 (27) | 32 (27) | 62 (49) | 76 (51) | 35 (27) |
 
-So under the follow-lead a racer on the phone frame sees **about what desktop
-FAR shows** (21 vs 23.3 tiles at the median; 2.2 s at run speed) — T-104's own
+So under the follow-lead a racer on the phone frame sees **what desktop FAR
+shows** (21 vs 21-22 tiles at the median; ~2.2 s at run speed) — T-104's own
 phone target (§4.2: lead 18.8 in the 6% frame, + the ~2-tile clamp offset) —
-but **11-14 tiles less than today's FAR frame on the same phone**, and its
-p10 falls from 27 to 12. The box's "no worse than FAR's on the same seed" is
+but **11-14 tiles less than today's FAR frame on the same phone**, and its p10
+falls from 27 to 12. The box's "no worse than FAR's on the same seed" is
 therefore NOT met, and cannot be met by the camera without moving the damage
-plane: the remedy is T-201's lead on phones (its `leadFrac` 0.3 gives 19.8
-tiles on the 65.9-tile phone strip; matching the FAR phone's 32-tile median
-needs a lead of ~30, which puts RIG just past mid-frame, 53% across). Escalated to the
-operator (packet Q1, call (a)) and to T-201 (inbox issue).
+plane: the remedy is T-201's lead on phones (`leadFrac` 0.3 gives 19.8 tiles
+on the 65.9-tile phone strip; matching the FAR phone's 32-tile median needs a
+lead of ~30, which puts RIG just past mid-frame, 53% across). Escalated to the
+operator (packet Q1, call (a)) and to the gameplay lane (inbox issue).
 
 **Edge API for T-201 — the shape is unchanged (`setEdges(left, right)`).**
-Live calibration, `HB.edges()` minus `scrollX` (probe), and what T-201's
-`followLeadTiles(EDGE_R - EDGE_L)` therefore gets:
+Live calibration, `HB.edges()` minus `scrollX` (probe; the phone rows), the
+analytic replica the T-107 domain asserts against the page (every row), and
+what T-201's `followLeadTiles(EDGE_R - EDGE_L)` therefore gets:
 
 | viewport | main L / R / W | branch L / R / W | visible route edge (branch) | T-201 lead main -> branch |
 | --- | --- | --- | --- | --- |
-| 1280x720, 1920x1080 | -31.114 / 50.233 / 81.35 | -31.114 / **47.720** / 78.83 | 50.233 | 24 -> 23.65 |
-| 1280x800 | -27.438 / 45.735 / 73.17 | -27.438 / **43.425** / 70.86 | 45.735 | 21.95 -> 21.26 |
+| 1280x720, 1920x1080 | -31.114 / 50.233 / 81.35 | **identical** (FAR) | 50.233 | 24 -> 24 |
+| 1280x800 | -27.438 / 45.735 / 73.17 | **identical** (FAR) | 45.735 | 21.95 -> 21.95 |
 | 844x390 touch | -38.975 / 60.184 / 99.16 | **-25.042 / 40.864 / 65.91** | 42.853 | 24 -> 19.77 |
 | 932x430 touch | -39.043 / 60.271 / 99.31 | **-25.090 / 40.919 / 66.01** | 42.910 | 24 -> 19.80 |
 | 667x375 touch | -31.132 / 50.256 / 81.39 | **-19.467 / 34.569 / 54.04** | 36.300 | 24 -> 16.21 |
-| 390x844 touch | -2.015 / 16.985 / 19.00 | -2.015 / **15.881** / 17.90 | 16.985 | 6 -> 6 (clamped) |
+| 390x844 touch | -2.015 / 16.985 / 19.00 | **identical** (FAR's portrait frame) | 16.985 | 6 -> 6 (clamped) |
+| 844x390 touch `?view=far` | — | **identical to main's 844x390** | 60.184 | 24 -> 24 |
 
 What changes on phones: EDGE_L comes in by 14 tiles (the damage plane is still
 the screen's left edge — the frame is narrower, so RIG has 25 tiles of
 retreat room behind the scroll instead of 39; desktop 16:10 has 27.4), EDGE_R
-by 19, W by a third. EDGE_R everywhere is now the **actor-plane clamp**,
-1.5-2.5 tiles inside the visible route edge, so `EDGE_R - EDGE_L` is the
-clamp-to-plane width the sim actually lets RIG use; the visible route width
-is 2-2.5 tiles more. RIG kept `lead` tiles from EDGE_R therefore sees
+by 19, W by a third. On the phone frame EDGE_R is the **actor-plane clamp**,
+1.99 tiles inside the visible route edge at 844x390, so `EDGE_R - EDGE_L` is
+the clamp-to-plane width the sim actually lets RIG use; the visible route
+width is ~2 tiles more, and RIG kept `lead` tiles from EDGE_R sees
 `lead + (routeRight - EDGE_R)` of route. The race lab's
-`lookahead`/`routeAhead` histograms measure to EDGE_R, so they read ~2 tiles
-low against pre-T-107 numbers (`route-ahead.mjs` adds it back; `edges.mjs`
-reports `routeRight` beside `right`).
+`lookahead`/`routeAhead` histograms measure to EDGE_R, so its phone-frame rows
+read ~2 tiles low against visible route (`route-ahead.mjs` adds it back;
+`edges.mjs` reports `routeRight` beside `right`). Every FAR row is main's.
 
 ### 4. Five corner turns and the Crown approach at the phone frame — MET
 
@@ -971,13 +973,13 @@ spawner, staging, lead and cohort on the view edge, RIG's clamp on the actor
 plane (camera.js already computes both); verified at desktop in scratch to
 keep the guard green. Low priority while the follow-lead ships.
 
-## I-??? | feel | S2 | repro: `node tools/simlab/framing/route-ahead.mjs --root <export of git merge-tree task/T-107 task/T-201> --viewports phone-landscape,phone-landscape-far,desktop-16x10` @ task/T-107 + task/T-201 | evidence: reports/tasks/T-107/evidence/route-ahead-combined-T-201.{log,json}, route-ahead-*.json
+## I-??? | feel | S2 | repro: `node tools/simlab/framing/route-ahead.mjs --viewports phone-landscape,phone-landscape-far,desktop-16x10` @ task/T-107 (T-201 merged) | evidence: reports/tasks/T-107/evidence/route-ahead-final.{log,json}
 The closer phone frame (operator-approved, entry 20 addendum) shows less route
 ahead than today's FAR frame on the same phone. With T-201's follow-lead
-(measured on a combined tree), a racer's visible route ahead is 21 tiles at
+(measured on the final tree), a racer's visible route ahead is 21 tiles at
 the median (p10 12) on the phone frame vs 32-35 (p10 27) with `?view=far` —
-about desktop FAR's 23.3, which is T-104's phone target (§4.2: lead 18.8 in
-the 6% frame), but 11-14 tiles less than the FAR phone. The camera cannot buy
+desktop FAR's 21-22, which is T-104's phone target (§4.2: lead 18.8 in the 6%
+frame), but 11-14 tiles less than the FAR phone. The camera cannot buy
 it back without moving the damage plane; T-201's lead can (`leadFrac` 0.3 of
 the 65.9-tile phone strip = 19.8; matching the FAR phone needs ~30, RIG just
 past mid-frame). Operator's call (packet Q1, call (a)); T-201's lab rows
