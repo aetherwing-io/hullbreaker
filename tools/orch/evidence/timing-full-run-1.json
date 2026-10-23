@@ -1,0 +1,802 @@
+{
+  "tool": "tools/orch/pathcheck-timed.mjs",
+  "tree": "/home/user/hullbreaker/.claude/worktrees/T-108",
+  "head": "38d0409",
+  "when": "2026-10-22T21:25:17.354Z",
+  "host": {
+    "cpus": 4,
+    "loadavg": [
+      23.64,
+      20.52,
+      20
+    ]
+  },
+  "env": {
+    "HB_PROBE_BOOT_MS": "180000",
+    "HB_PROBE_SPAWN_MS": "300000"
+  },
+  "subset": null,
+  "skipped": [],
+  "prelude": {
+    "contextMs": 44,
+    "manifestImportMs": 235
+  },
+  "totalMs": 325319,
+  "passes": 3988,
+  "fails": 1,
+  "threwCount": 0,
+  "domains": [
+    {
+      "index": 0,
+      "file": "pathcheck-suite",
+      "title": "pathcheck suite",
+      "ms": 3990,
+      "passes": 168,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 1,
+      "file": "view-scale-experiment",
+      "title": "view-scale experiment (viewscale lane) ===========",
+      "ms": 8,
+      "passes": 214,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 2,
+      "file": "world-transitions",
+      "title": "world transitions (slice) ======================",
+      "ms": 88,
+      "passes": 144,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 3,
+      "file": "g2-neck-access-plate-flip-gate",
+      "title": "G2 — neck access-plate flip gate (?g2=1) ==============",
+      "ms": 176,
+      "passes": 132,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 4,
+      "file": "pacing-variants",
+      "title": "pacing variants (CP1) ==========================",
+      "ms": 2,
+      "passes": 25,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 5,
+      "file": "movement-verb-prototypes",
+      "title": "MOVEMENT VERB PROTOTYPES (wave 3, opt-in) =============",
+      "ms": 3,
+      "passes": 39,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 6,
+      "file": "authored-slope-rib-run",
+      "title": "THE AUTHORED SLOPE — rib run (?ribrun=1) ==============",
+      "ms": 130,
+      "passes": 32,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 7,
+      "file": "rib-run-driven-through-real-sim",
+      "title": "the rib run, driven through the REAL sim loop ----------------",
+      "ms": 994,
+      "passes": 25,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 8,
+      "file": "headroom-over-every-authored-ground-run",
+      "title": "headroom over every authored ground run ---------------",
+      "ms": 1,
+      "passes": 2,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 9,
+      "file": "pursuit-model",
+      "title": "pursuit model (pure step math) ------------------",
+      "ms": 1,
+      "passes": 5,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 10,
+      "file": "hull-fallback-tier-1",
+      "title": "HULL FALLBACK tier 1 (proposal B.1) --------------",
+      "ms": 0,
+      "passes": 4,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 11,
+      "file": "charge-threat-prototype",
+      "title": "CHARGE / THREAT prototype (proposal A.4) =============",
+      "ms": 1,
+      "passes": 22,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 12,
+      "file": "cp4-promotion-full-run-tune",
+      "title": "CP4 promotion: the full-run tune (T-016) ===============",
+      "ms": 0,
+      "passes": 11,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 13,
+      "file": "score-wiring-sim-layer",
+      "title": "score wiring at the sim layer (A.1 semantics) ---------",
+      "ms": 102,
+      "passes": 12,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 14,
+      "file": "cp4-promotion-wiring-default-run-score",
+      "title": "CP4 promotion wiring: the DEFAULT run, baseline overdrive/fallback ----",
+      "ms": 498,
+      "passes": 11,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 15,
+      "file": "snap-hook-driven-through-real-sim",
+      "title": "the snap hook, driven through the REAL sim loop --------------",
+      "ms": 857,
+      "passes": 21,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 16,
+      "file": "damage-plane-never-leaves-geometry-behind",
+      "title": "the damage plane never leaves geometry behind it ------------------",
+      "ms": 2,
+      "passes": 5,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 17,
+      "file": "hull-fallback-cannot-pay-itself",
+      "title": "HULL FALLBACK cannot pay for itself (fixture contract) ------------",
+      "ms": 620,
+      "passes": 9,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 18,
+      "file": "g1-limb-read-tower-bend-cull",
+      "title": "G1: the limb read of the tower, and the bend cull -----------------",
+      "ms": 59,
+      "passes": 51,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 19,
+      "file": "bend-cull-driven-through-real-bullet",
+      "title": "the bend cull, driven through the REAL bullet loop ----------------",
+      "ms": 335,
+      "passes": 8,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 20,
+      "file": "g1-1-render-only-proved-sim",
+      "title": "?g1=1 is render-only, proved at the sim layer --------------------",
+      "ms": 1987,
+      "passes": 7,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 21,
+      "file": "t-002-ritual-decision-trace-frame",
+      "title": "T-002: ritual decision trace + frame-scoped input determinism ----",
+      "ms": 713,
+      "passes": 36,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 22,
+      "file": "t-003-far-view-legibility-compensation",
+      "title": "T-003: FAR-view legibility compensation (entry 7)",
+      "ms": 38,
+      "passes": 115,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 23,
+      "file": "t-012-audio-layer-static-guards",
+      "title": "T-012: audio layer (ui) static guards =================",
+      "ms": 13,
+      "passes": 38,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 24,
+      "file": "t-014-spore-mortar",
+      "title": "T-014: SPORE MORTAR (?mortar=)",
+      "ms": 3,
+      "passes": 87,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 25,
+      "file": "t-011-juice-feedback-pass",
+      "title": "T-011: juice — the feedback pass ====================",
+      "ms": 30,
+      "passes": 115,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 26,
+      "file": "t-013-game-shell",
+      "title": "T-013: game shell (pure + guards) ===================",
+      "ms": 28,
+      "passes": 229,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 27,
+      "file": "t-009-six-face-lattice",
+      "title": "T-009: the six-face lattice (route density) ==============",
+      "ms": 299,
+      "passes": 29,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 28,
+      "file": "t-009-static-anatomy-reveal-default",
+      "title": "T-009: the static-anatomy reveal is the DEFAULT corner ritual -----",
+      "ms": 526,
+      "passes": 8,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 29,
+      "file": "t-009-houndframe-stations-six-face",
+      "title": "T-009: houndframe stations on the six-face run (faces 2+) ------",
+      "ms": 2,
+      "passes": 12,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 30,
+      "file": "t-009-non-gating-station-cannot",
+      "title": "T-009: a non-gating station cannot hold a wave gate shut ----------",
+      "ms": 375,
+      "passes": 4,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 31,
+      "file": "t-009-whole-run-crossable-driven",
+      "title": "T-009: the whole run is crossable, driven through the REAL sim ----",
+      "ms": 738,
+      "passes": 5,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 32,
+      "file": "t-009-pocket-route-works-driven",
+      "title": "T-009: the pocket route works, driven through the REAL sim --------",
+      "ms": 265,
+      "passes": 2,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 33,
+      "file": "t-018-bot-harness-relative-geometry",
+      "title": "T-018: the bot harness's relative-geometry grammar ==========",
+      "ms": 8,
+      "passes": 58,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 34,
+      "file": "t-027-bot-harness-deterministic-dispatch",
+      "title": "T-027: the bot harness's deterministic-dispatch honesty ====",
+      "ms": 2,
+      "passes": 9,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 35,
+      "file": "t-025-harness-may-not-report",
+      "title": "T-025: the harness may not report what the run did not do ========",
+      "ms": 9,
+      "passes": 20,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 36,
+      "file": "momentum-earned-pace-escalation",
+      "title": "MOMENTUM — earned pace escalation (T-022) =================",
+      "ms": 1530,
+      "passes": 72,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 37,
+      "file": "t-029-runtime-truth-three-debug",
+      "title": "T-029 — runtime truth: three debug/copy surfaces ==========",
+      "ms": 320,
+      "passes": 27,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 38,
+      "file": "pathcheck-suite-2",
+      "title": "pathcheck suite",
+      "ms": 13,
+      "passes": 71,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 39,
+      "file": "t-041-impact-language",
+      "title": "T-041 impact language (S10)",
+      "ms": 2,
+      "passes": 22,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 40,
+      "file": "t-043-wasp-aim-lock-squad",
+      "title": "T-043: wasp aim-lock + squad stagger (enemy aggression)",
+      "ms": 795,
+      "passes": 18,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 41,
+      "file": "t-039-contact-shadows",
+      "title": "T-039: contact shadows (S6) =====================",
+      "ms": 74,
+      "passes": 304,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 42,
+      "file": "pathcheck-suite-3",
+      "title": "pathcheck suite",
+      "ms": 66,
+      "passes": 41,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 43,
+      "file": "t-035-value-ladder",
+      "title": "T-035 value ladder (S1 + S2) ======================",
+      "ms": 524,
+      "passes": 44,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 44,
+      "file": "t-038-seam-pips",
+      "title": "T-038: sparse housed route luminaires",
+      "ms": 52,
+      "passes": 32,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 45,
+      "file": "t-047-light-rig",
+      "title": "T-047 light rig, shadows, tone mapping (decisions 18)",
+      "ms": 19,
+      "passes": 116,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 46,
+      "file": "t-048-post-pass",
+      "title": "T-048: the screen pass (bloom), atmosphere fidelity, surface families",
+      "ms": 18,
+      "passes": 34,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 47,
+      "file": "t-042-audio-punch",
+      "title": "T-042: audio punch — static + behavioral guards =================",
+      "ms": 1590,
+      "passes": 43,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 48,
+      "file": "t-050-shipped-plan-carries-the-scale-pass",
+      "title": "T-050: the shipped plan carries the scale pass (I-037)",
+      "ms": 53,
+      "passes": 21,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 49,
+      "file": "t-040-rig-sprite",
+      "title": "T-040 — RIG silhouette (pure + guards)",
+      "ms": 5,
+      "passes": 47,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 50,
+      "file": "t-044-corner-setpieces",
+      "title": "T-044 — corner reveal set pieces (ARRIVAL + ARENA)",
+      "ms": 781,
+      "passes": 17,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 51,
+      "file": "t-049-hostile-sprites",
+      "title": "T-049 runtime hostile sprites",
+      "ms": 660,
+      "passes": 353,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 52,
+      "file": "t-052-hull-texture",
+      "title": "T-052 hull surface textures (four tiles, entries 16/18)",
+      "ms": 66,
+      "passes": 49,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 53,
+      "file": "t-051-backdrop",
+      "title": "T-051 backdrop layers",
+      "ms": 32,
+      "passes": 343,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 54,
+      "file": "t-054-hull-contrast",
+      "title": "T-054 hull texture legibility (density + range, entries 16/18)",
+      "ms": 564,
+      "passes": 44,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 55,
+      "file": "t-057-hull-shimmer",
+      "title": "T-057 lower-hull shimmer (I-049): anisotropy fix + canvas-resize non-regression",
+      "ms": 1,
+      "passes": 6,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 56,
+      "file": "fold-handoff-player-ownership",
+      "title": "fold handoff keeps RIG owned without leaking the old facet",
+      "ms": 5,
+      "passes": 21,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 57,
+      "file": "future-facet-render-ownership",
+      "title": "future facets have zero visible route-bound renderables",
+      "ms": 8,
+      "passes": 17,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 58,
+      "file": "mod-route-visibility",
+      "title": "modifier echoes and telegraphs obey route visibility",
+      "ms": 0,
+      "passes": 3,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 59,
+      "file": "limb-fold-bridge-locality",
+      "title": "limb fold bridge is local to the shared chamfer",
+      "ms": 46,
+      "passes": 22,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 60,
+      "file": "catwalk-built-prefix-visibility",
+      "title": "long catwalks expose only their built route prefix",
+      "ms": 65,
+      "passes": 10,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 61,
+      "file": "vertical-assault-geometry",
+      "title": "Vertical Assault authored geometry remains deterministic and traversable",
+      "ms": 132,
+      "passes": 329,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 62,
+      "file": "gate-prelude-runtime",
+      "title": "gate rosters materialize during the moving prelude",
+      "ms": 1015,
+      "passes": 18,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 63,
+      "file": "capsule-reliquary-contract",
+      "title": "capsule reliquary production presentation",
+      "ms": 47,
+      "passes": 2,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 64,
+      "file": "projectile-presentation-contract",
+      "title": "projectile family production presentation",
+      "ms": 919,
+      "passes": 8,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 65,
+      "file": "limb-silhouette-production",
+      "title": "production limb silhouette: connected macro anatomy",
+      "ms": 47,
+      "passes": 25,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 66,
+      "file": "actor-motion-contract",
+      "title": "declarative rooted-enemy actor motion",
+      "ms": 715,
+      "passes": 2,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 67,
+      "file": "crown-command-architecture",
+      "title": "Crown command organ: modular rooted finale",
+      "ms": 5,
+      "passes": 28,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 68,
+      "file": "enemy-ecology-render-contract",
+      "title": "Level 1 enemy ecology two-layer presentation",
+      "ms": 283,
+      "passes": 2,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 69,
+      "file": "hostile-presenter-contract",
+      "title": "spawn-time hostile presenter registry",
+      "ms": 138,
+      "passes": 2,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 70,
+      "file": "boot-registry-contract",
+      "title": "explicit view and run-reset registries",
+      "ms": 439,
+      "passes": 2,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 71,
+      "file": "adaptive-fidelity-contract",
+      "title": "sustained-frame adaptive fidelity ladder",
+      "ms": 148,
+      "passes": 2,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 72,
+      "file": "render-submission-contract",
+      "title": "built-scene render submission and idle-upload contract",
+      "ms": 300866,
+      "passes": 4,
+      "fails": 1,
+      "threw": null,
+      "failLines": [
+        "the permanent real-browser performance probe boots the shipped scene"
+      ]
+    },
+    {
+      "index": 73,
+      "file": "frame-input-contract",
+      "title": "frame-scoped deterministic input",
+      "ms": 27,
+      "passes": 10,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 74,
+      "file": "gilded-chassis",
+      "title": "gilded chassis: Konami detector + wiring ============",
+      "ms": 41,
+      "passes": 25,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 75,
+      "file": "power-feedback-contract",
+      "title": "localized OVERDRIVE / RAGE presentation ===========",
+      "ms": 4,
+      "passes": 19,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    },
+    {
+      "index": 76,
+      "file": "depth-layer-contract",
+      "title": "opaque surface depth layers: one physical/raster contract",
+      "ms": 7,
+      "passes": 19,
+      "fails": 0,
+      "threw": null,
+      "failLines": []
+    }
+  ]
+}
