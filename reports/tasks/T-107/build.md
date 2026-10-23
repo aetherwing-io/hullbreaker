@@ -508,3 +508,34 @@ portrait (1.9 tiles past its opaque edge after a turn, pre-existing, 4.2 under
 (R2) are fixed everywhere; these vertical ones are small and pre-existing.
 
 PENDING-ISSUES
+
+## Operator packet
+
+Build: this branch merged (or `node tools/serve.mjs <port> --root <this worktree>`).
+On the iPhone, hold it in **landscape**; every URL below is `index.html` plus
+the query shown. The phone frame needs no flag — it is on for every touch phone.
+
+| try | iPhone (landscape) | desktop |
+| --- | --- | --- |
+| the new default | `index.html` | `index.html` (unchanged camera) |
+| A/B: today's frame | `index.html?view=far` | — |
+| preview the phone frame | — | `index.html?view=phone` |
+| A/B: no post-turn zoom (unjudged) | `index.html?orbit=joint` vs `index.html` | `index.html?orbit=joint` vs `index.html` |
+| A/B: the climb made literal (unjudged) | `index.html?rise=steep` vs `index.html` | `index.html?rise=steep` vs `index.html` |
+| A/B: the old corner edges | `index.html?veil=legacy` vs `index.html` | `index.html?veil=legacy` vs `index.html` |
+
+Questions (please answer in your own words):
+
+1. On the phone, between `index.html` and `index.html?view=far`: which lets you
+   see enough of what is coming, and which makes RIG easier to keep track of?
+2. Right after a turn, how quickly do you find RIG? Is that different with
+   `?orbit=joint`?
+3. With `?orbit=joint`, does anything about the view right after a turn feel
+   different from the default — and does that feel like part of the turn?
+4. With `?rise=steep`, does the ground read as climbing the beast, or as a
+   ramp? On the phone, does anything you need to see go off the top of the
+   screen on the later faces?
+5. Does RIG ever end up under your thumbs, or under the panels at the top of
+   the screen?
+
+PENDING-PACKET
