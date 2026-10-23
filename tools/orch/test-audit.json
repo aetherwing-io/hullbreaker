@@ -1,8 +1,8 @@
 {
  "tool": "tools/orch/test-census.mjs",
  "task": "T-108",
- "when": "2026-10-23T11:34:17.808Z",
- "tree": "5ad79dc",
+ "when": "2026-10-23T11:52:37.184Z",
+ "tree": "00c4a82",
  "rubric": "tools/orch/test-audit-spec.mjs (header); docs/proposals/2026-10-test-audit.md § Classes",
  "pathcheck": {
   "domains": 85,
@@ -73,7 +73,7 @@
   },
   "identity": {
    "lock": "tools/orch/test-audit-lock.json",
-   "base": "5ad79dc",
+   "base": "00c4a82",
    "sites": 2217,
    "moved": 0
   },
@@ -3299,7 +3299,7 @@
    "index": 73,
    "domain": "t-102-corner-turns",
    "file": "tools/pathcheck/t-102-corner-turns.mjs",
-   "lines": 395,
+   "lines": 399,
    "scope": "shipped",
    "mechanism": "fresh child processes playing all six corners of the shipped six-face run under closed-loop player policies (tools/simlab/lib/turn-proof.mjs, every default verb on); pure reveal and gate-legibility predicates; drift guards on the replica",
    "verdict": "CORE-GATE",
@@ -3563,7 +3563,7 @@
    "index": 79,
    "domain": "t-120-retry-replays-the-run",
    "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
-   "lines": 142,
+   "lines": 143,
    "scope": "shipped",
    "mechanism": "two fresh child processes: the real sim + the REAL run-reset registry (render rows stubbed), a dirty run retried vs a fresh boot at the same clock",
    "verdict": "CORE-GATE",
@@ -7672,154 +7672,154 @@
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-201: the full matrix still plans both ?hinge=flow rows (… planned)",
-    "line": 171,
+    "line": 175,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: every fast-tier run is a run of the full matrix (… of … found)",
-    "line": 178,
+    "line": 182,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: src/main.js update() still steps the sim in the order tools/simlab/lib/sixface-host.mjs … tra",
-    "line": 199,
+    "line": 203,
     "cls": "CORE",
     "note": "harness fidelity: tools/simlab/lib/sixface-host.mjs transcribes main.js update(); a drifted replica would make every played turn result lie"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: update() still returns between updatePlayer and updateHostiles when RIG's frame ended the run",
-    "line": 202,
+    "line": 206,
     "cls": "CORE",
     "note": "harness fidelity: the replica's early return after a run-ending player frame"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: the replica's edge calibration uses render/camera.js's PORTRAIT_SAFE verbatim",
-    "line": 208,
+    "line": 212,
     "cls": "CORE",
     "note": "harness fidelity: the replica's screen edges come from the shipped PORTRAIT_SAFE (framing and gate-legibility bounds depend on it)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: the run-reset registry is the one the replica transcribes, row for row",
-    "line": 212,
+    "line": 216,
     "cls": "CORE",
     "note": "harness fidelity: the replica transcribes boot/run-reset.js row for row (an exact id list by necessity; t-120-retry runs the REAL registry)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: at the … ms camera handoff of corner … the default reveal shows all … … rows of the arriving ",
-    "line": 236,
+    "line": 240,
     "cls": "CORE",
     "note": "static anatomy (entry 3): at every corner's camera handoff the default reveal shows the whole arriving facet at once and nothing else — the real routeRenderOwned over every column"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: corner …'s pre-bend column (the deck RIG holds the gate from) is drawn before the turn",
-    "line": 240,
+    "line": 244,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: the shipped routeRenderable draws the whole arriving facet (… rows) at the … … ms handoff und",
-    "line": 285,
+    "line": 289,
     "cls": "CORE",
     "note": "static anatomy (entry 3): the SHIPPED render-side routeRenderable, evaluated against the sim's real construction schedule, draws the whole facet at the handoff"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-201: with no sim build state, even the retired ?zip=1 branch of routeRenderable draws the … whole ",
-    "line": 288,
+    "line": 292,
     "cls": "CORE",
     "note": "evaluates the SHIPPED routeRenderable (lifted from its text only because render/route-visibility.js imports three.js): whole facet"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: the gate HUD says LAST SIGNAL exactly when one more kill opens the gate",
-    "line": 304,
+    "line": 308,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: gating bodies parked behind the current beat are announced, retired rows are not … (got \"…\")",
-    "line": 307,
+    "line": 311,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: the held-gate HUD line prints gateRequirementText(gateRequirement(...)) — the proof checks th",
-    "line": 315,
+    "line": 319,
     "cls": "CORE",
     "note": "harness fidelity: binds the HUD line to the pure requirement text the domain checks (ui/hud.js reads the DOM)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: the wave gate exposes its held-view legibility rule",
-    "line": 321,
-    "cls": "CORE",
-    "note": "(domain default)"
-   },
-   {
-    "file": "tools/pathcheck/t-102-corner-turns.mjs",
-    "label": "T-102: a gate body is outside the held view only when its whole circle is (the 390x844 … CONTAIN Iri",
     "line": 325,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
+    "label": "T-102: a gate body is outside the held view only when its whole circle is (the 390x844 … CONTAIN Iri",
+    "line": 329,
+    "cls": "CORE",
+    "note": "(domain default)"
+   },
+   {
+    "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: all … played turn runs completed",
-    "line": 340,
+    "line": 344,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102 […]: its first … turns complete and it plays on 3 s past the last … (the per-edit prefix of it",
-    "line": 346,
+    "line": 350,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102 […]: all five turns and the Crown approach complete and the run reaches VICTORY … (…/6, …)",
-    "line": 349,
+    "line": 353,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102 […]: … contract holds on every tick … — …x…`).join(', ')}; first … …",
-    "line": 355,
+    "line": 359,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: the visible-only gunner fought at least three held gates (escape hatch) or three … moving enc",
-    "line": 367,
+    "line": 371,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-201: every no-fire run fired no shot (…) … and still had the encounter staged on at least five sid",
-    "line": 376,
+    "line": 380,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-201: ?hinge=flow lets RIG keep moving after the camera hand-off @… (ticks stalled … with a directi",
-    "line": 390,
+    "line": 394,
     "cls": "CORE",
     "note": "played: the ?hinge=flow runs stall fewer ticks than the default lock (the rule misfiles it by a variable name)"
    },
@@ -8155,49 +8155,49 @@
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: src/main.js update() still makes the sim calls tools/pathcheck/lib/default-run.mjs transcribe",
-    "line": 74,
+    "line": 75,
     "cls": "CORE",
     "note": "harness fidelity: the replica transcribes main.js update(); a drifted replica would make the driven CORE results lie"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: src/main.js resetGame() still starts with resetRunState() and ends the default run with the c",
-    "line": 81,
+    "line": 82,
     "cls": "CORE",
     "note": "harness fidelity: the replica transcribes main.js resetGame(); a drifted replica would make the retry result lie"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: both retry twins ran headlessly … — retried: … … — fresh: …",
-    "line": 115,
+    "line": 116,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: the dirty prefix really played before the retry (shots …, scroll …, … hostiles alive …, kills",
-    "line": 120,
+    "line": 121,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: the compared window is … frames long and contains hostile spawns and a wasp dive … (frames …/",
-    "line": 123,
+    "line": 124,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: the retry ran the shipped registry (… owners)",
-    "line": 126,
+    "line": 127,
     "cls": "CORE",
     "note": "(domain default)"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boo",
-    "line": 129,
+    "line": 130,
     "cls": "CORE",
     "note": "(domain default)"
    },
@@ -14408,28 +14408,28 @@
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: makeResetRegistry runs its owners once each, in declared order, and its snapshot says so",
-    "line": 92,
+    "line": 93,
     "cls": "PURE-INVARIANT",
     "note": "the registry contract: declared order, one run each, an honest snapshot (restored from the deleted checker, review finding 3)"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: a second reset owner with the same id is refused",
-    "line": 96,
+    "line": 97,
     "cls": "PURE-INVARIANT",
     "note": "the registry contract: no owner silently replaces another"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: a failing reset owner is named, not swallowed",
-    "line": 99,
+    "line": 100,
     "cls": "PURE-INVARIANT",
     "note": "the registry contract: a failed teardown names its owner"
    },
    {
     "file": "tools/pathcheck/t-120-retry-replays-the-run.mjs",
     "label": "T-120: a reset cannot start inside a reset",
-    "line": 104,
+    "line": 105,
     "cls": "PURE-INVARIANT",
     "note": "the registry contract: not reentrant"
    },
@@ -21805,7 +21805,7 @@
    {
     "file": "tools/pathcheck/t-102-corner-turns.mjs",
     "label": "T-102: render/route-visibility.js reads construction rows only under ?zip=1, and its cache stamp … c",
-    "line": 293,
+    "line": 297,
     "cls": "PIN",
     "note": "regex over route-visibility.js; the behaviour is the routeRenderable site next to it (CORE). Goes with ?zip=1 (T-121, entry 25)"
    }
@@ -59388,8 +59388,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:171",
-   "line": 171,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:175",
+   "line": 175,
    "label": "T-201: the full matrix still plans both ?hinge=flow rows (… planned)",
    "fn": "ok",
    "cls": "CORE",
@@ -59406,8 +59406,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:178",
-   "line": 178,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:182",
+   "line": 182,
    "label": "T-102: every fast-tier run is a run of the full matrix (… of … found)",
    "fn": "ok",
    "cls": "CORE",
@@ -59424,8 +59424,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:199",
-   "line": 199,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:203",
+   "line": 203,
    "label": "T-102: src/main.js update() still steps the sim in the order tools/simlab/lib/sixface-host.mjs … tra",
    "fn": "ok",
    "cls": "CORE",
@@ -59442,8 +59442,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:202",
-   "line": 202,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:206",
+   "line": 206,
    "label": "T-102: update() still returns between updatePlayer and updateHostiles when RIG's frame ended the run",
    "fn": "ok",
    "cls": "CORE",
@@ -59460,8 +59460,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:208",
-   "line": 208,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:212",
+   "line": 212,
    "label": "T-102: the replica's edge calibration uses render/camera.js's PORTRAIT_SAFE verbatim",
    "fn": "ok",
    "cls": "CORE",
@@ -59478,8 +59478,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:212",
-   "line": 212,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:216",
+   "line": 216,
    "label": "T-102: the run-reset registry is the one the replica transcribes, row for row",
    "fn": "ok",
    "cls": "CORE",
@@ -59496,8 +59496,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:236",
-   "line": 236,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:240",
+   "line": 240,
    "label": "T-102: at the … ms camera handoff of corner … the default reveal shows all … … rows of the arriving ",
    "fn": "ok",
    "cls": "CORE",
@@ -59514,8 +59514,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:240",
-   "line": 240,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:244",
+   "line": 244,
    "label": "T-102: corner …'s pre-bend column (the deck RIG holds the gate from) is drawn before the turn",
    "fn": "ok",
    "cls": "CORE",
@@ -59532,8 +59532,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:285",
-   "line": 285,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:289",
+   "line": 289,
    "label": "T-102: the shipped routeRenderable draws the whole arriving facet (… rows) at the … … ms handoff und",
    "fn": "ok",
    "cls": "CORE",
@@ -59550,8 +59550,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:288",
-   "line": 288,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:292",
+   "line": 292,
    "label": "T-201: with no sim build state, even the retired ?zip=1 branch of routeRenderable draws the … whole ",
    "fn": "ok",
    "cls": "CORE",
@@ -59568,8 +59568,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:293",
-   "line": 293,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:297",
+   "line": 297,
    "label": "T-102: render/route-visibility.js reads construction rows only under ?zip=1, and its cache stamp … c",
    "fn": "ok",
    "cls": "PIN",
@@ -59588,8 +59588,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:304",
-   "line": 304,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:308",
+   "line": 308,
    "label": "T-102: the gate HUD says LAST SIGNAL exactly when one more kill opens the gate",
    "fn": "ok",
    "cls": "CORE",
@@ -59606,8 +59606,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:307",
-   "line": 307,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:311",
+   "line": 311,
    "label": "T-102: gating bodies parked behind the current beat are announced, retired rows are not … (got \"…\")",
    "fn": "ok",
    "cls": "CORE",
@@ -59624,8 +59624,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:315",
-   "line": 315,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:319",
+   "line": 319,
    "label": "T-102: the held-gate HUD line prints gateRequirementText(gateRequirement(...)) — the proof checks th",
    "fn": "ok",
    "cls": "CORE",
@@ -59642,8 +59642,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:321",
-   "line": 321,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:325",
+   "line": 325,
    "label": "T-102: the wave gate exposes its held-view legibility rule",
    "fn": "ok",
    "cls": "CORE",
@@ -59660,8 +59660,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:325",
-   "line": 325,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:329",
+   "line": 329,
    "label": "T-102: a gate body is outside the held view only when its whole circle is (the 390x844 … CONTAIN Iri",
    "fn": "ok",
    "cls": "CORE",
@@ -59678,8 +59678,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:340",
-   "line": 340,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:344",
+   "line": 344,
    "label": "T-102: all … played turn runs completed",
    "fn": "ok",
    "cls": "CORE",
@@ -59696,8 +59696,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:346",
-   "line": 346,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:350",
+   "line": 350,
    "label": "T-102 […]: its first … turns complete and it plays on 3 s past the last … (the per-edit prefix of it",
    "fn": "ok",
    "cls": "CORE",
@@ -59714,8 +59714,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:349",
-   "line": 349,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:353",
+   "line": 353,
    "label": "T-102 […]: all five turns and the Crown approach complete and the run reaches VICTORY … (…/6, …)",
    "fn": "ok",
    "cls": "CORE",
@@ -59732,8 +59732,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:355",
-   "line": 355,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:359",
+   "line": 359,
    "label": "T-102 […]: … contract holds on every tick … — …x…`).join(', ')}; first … …",
    "fn": "ok",
    "cls": "CORE",
@@ -59750,8 +59750,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:367",
-   "line": 367,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:371",
+   "line": 371,
    "label": "T-102: the visible-only gunner fought at least three held gates (escape hatch) or three … moving enc",
    "fn": "ok",
    "cls": "CORE",
@@ -59768,8 +59768,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:376",
-   "line": 376,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:380",
+   "line": 380,
    "label": "T-201: every no-fire run fired no shot (…) … and still had the encounter staged on at least five sid",
    "fn": "ok",
    "cls": "CORE",
@@ -59786,8 +59786,8 @@
   {
    "domain": "t-102-corner-turns",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-102-corner-turns.mjs:390",
-   "line": 390,
+   "site": "tools/pathcheck/t-102-corner-turns.mjs:394",
+   "line": 394,
    "label": "T-201: ?hinge=flow lets RIG keep moving after the camera hand-off @… (ticks stalled … with a directi",
    "fn": "ok",
    "cls": "CORE",
@@ -62036,8 +62036,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:74",
-   "line": 74,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:75",
+   "line": 75,
    "label": "T-120: src/main.js update() still makes the sim calls tools/pathcheck/lib/default-run.mjs transcribe",
    "fn": "ok",
    "cls": "CORE",
@@ -62054,8 +62054,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:81",
-   "line": 81,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:82",
+   "line": 82,
    "label": "T-120: src/main.js resetGame() still starts with resetRunState() and ends the default run with the c",
    "fn": "ok",
    "cls": "CORE",
@@ -62072,8 +62072,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:92",
-   "line": 92,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:93",
+   "line": 93,
    "label": "T-120: makeResetRegistry runs its owners once each, in declared order, and its snapshot says so",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -62090,8 +62090,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:96",
-   "line": 96,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:97",
+   "line": 97,
    "label": "T-120: a second reset owner with the same id is refused",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -62108,8 +62108,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:99",
-   "line": 99,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:100",
+   "line": 100,
    "label": "T-120: a failing reset owner is named, not swallowed",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -62126,8 +62126,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:104",
-   "line": 104,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:105",
+   "line": 105,
    "label": "T-120: a reset cannot start inside a reset",
    "fn": "ok",
    "cls": "PURE-INVARIANT",
@@ -62144,8 +62144,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:115",
-   "line": 115,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:116",
+   "line": 116,
    "label": "T-120: both retry twins ran headlessly … — retried: … … — fresh: …",
    "fn": "ok",
    "cls": "CORE",
@@ -62162,8 +62162,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:120",
-   "line": 120,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:121",
+   "line": 121,
    "label": "T-120: the dirty prefix really played before the retry (shots …, scroll …, … hostiles alive …, kills",
    "fn": "ok",
    "cls": "CORE",
@@ -62180,8 +62180,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:123",
-   "line": 123,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:124",
+   "line": 124,
    "label": "T-120: the compared window is … frames long and contains hostile spawns and a wasp dive … (frames …/",
    "fn": "ok",
    "cls": "CORE",
@@ -62198,8 +62198,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:126",
-   "line": 126,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:127",
+   "line": 127,
    "label": "T-120: the retry ran the shipped registry (… owners)",
    "fn": "ok",
    "cls": "CORE",
@@ -62216,8 +62216,8 @@
   {
    "domain": "t-120-retry-replays-the-run",
    "scope": "shipped",
-   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:129",
-   "line": 129,
+   "site": "tools/pathcheck/t-120-retry-replays-the-run.mjs:130",
+   "line": 130,
    "label": "T-120: a retry replays the same run — every frame of sim state after a real retry equals a fresh boo",
    "fn": "ok",
    "cls": "CORE",

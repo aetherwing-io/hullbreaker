@@ -50,13 +50,14 @@ import { makeResetRegistry } from '../../src/boot/reset-registry.js';
 export const title = 'T-120: a retry replays the same run (the shipped reset registry, driven)';
 
 const CHILD = fileURLToPath(new URL('./lib/default-run-child.mjs', import.meta.url));
-// Per edit (HB_GATE_FAST=1): 5 s compared instead of 10 s, and the reported
+// Per edit (HB_GATE_FAST=1): 2.5 s compared instead of 10 s, and the reported
 // later-clock comparison is skipped. The dirty prefix is 20 s in both tiers: a
 // 10 s one (0.2 CPU-s cheaper) never reached the first gate, so a dead
 // 'corner-events' row read green per edit (T-120 fix round 1 owner sweep).
 const FAST = process.env.HB_GATE_FAST === '1';
 const DIRTY = 1200;                   // frames of play before the retry
-const WINDOW = FAST ? 300 : 600;      // frames compared after it (spawns from frame 42, first dive ~96)
+const WINDOW = FAST ? 150 : 600;      // frames compared after it (spawns from frame 42, first dive ~96;
+                                      // every red owner of the sweep differs by frame 42)
 
 export async function run() {
   /* ---- the replica is still the shipped loop (drift guard) ------------- *
@@ -105,8 +106,8 @@ export async function run() {
   }
 
   /* ---- the twins ------------------------------------------------------- */
-  if (FAST) console.log('SKIP t-120-retry-replays-the-run: seconds 5-10 of the compared window and the later-clock report ' +
-    '(HB_GATE_FAST=1 — per-edit tier compares 5 s after the same 20 s dirty prefix; unset it for 10 s)');
+  if (FAST) console.log('SKIP t-120-retry-replays-the-run: seconds 2.5-10 of the compared window and the later-clock report ' +
+    '(HB_GATE_FAST=1 — per-edit tier compares 2.5 s after the same 20 s dirty prefix; unset it for 10 s)');
   const [retried, fresh, laterClockFresh] = await Promise.all([
     runChild(CHILD, [JSON.stringify({ mode: 'retry', dirtyFrames: DIRTY, frames: WINDOW })]),
     runChild(CHILD, [JSON.stringify({ mode: 'retry', cleanClock: true, dirtyFrames: DIRTY, frames: WINDOW })]),

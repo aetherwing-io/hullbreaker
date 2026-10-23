@@ -30,17 +30,17 @@ import { firstDivergence, runChild } from './lib/spawn.mjs';
 export const title = 'T-120: the default run is deterministic across processes and blind to the art';
 
 const CHILD = fileURLToPath(new URL('./lib/default-run-child.mjs', import.meta.url));
-// Per edit (HB_GATE_FAST=1): 300 frames, and only twins A and C — C is a second
+// Per edit (HB_GATE_FAST=1): 150 frames, and only twins A and C — C is a second
 // process with the same input (plus the poisoned render globals), so A === C
 // proves both properties at once; B is played only when A and C differ, to say
 // which one broke. The merge gate plays 600 frames with all three. Falsifiers
 // M10 (frame 42) and M05c (an aliased Math.random, frame 96) are red in both;
 // M05b (Math['random']) is a prelude kill since the ban reads bracket access.
 const FAST = process.env.HB_GATE_FAST === '1';
-const WINDOW = FAST ? 300 : 600;
+const WINDOW = FAST ? 150 : 600;     // per edit: the first spawn (frame 42) and dive (96) inside
 
 export async function run() {
-  if (FAST) console.log('SKIP t-120-determinism-and-art-blind-sim: twin B and frames 300-600 ' +
+  if (FAST) console.log('SKIP t-120-determinism-and-art-blind-sim: twin B and frames 150-600 ' +
     '(HB_GATE_FAST=1 — per-edit tier; B runs only to tell a failure apart; unset it for the full run)');
   const trace = (extra = {}) => runChild(CHILD, [JSON.stringify({ mode: 'trace', frames: WINDOW, ...extra })]);
   let a, b, c;
